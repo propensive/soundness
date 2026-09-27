@@ -48,6 +48,7 @@ import obligatory.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import telekinesis.*, postables.jsonPostable
 import urticose.*
 import vacuous.*
@@ -65,7 +66,7 @@ object Anthropic:
   def apply(model: Text, key: Text): Anthropic =
     new Anthropic
       ( model, key, url"https://api.anthropic.com", t"2023-06-01", Unset, Unset, Llm.Settings(),
-        List(), List() )
+        List(), List(), false )
 
   // A named instance class rather than an anonymous given: an anonymous subclass would freshen
   // the capability types in its inferred `Result` member.
@@ -111,19 +112,22 @@ object Anthropic:
     given encodable: Payload is Json.Encodable = Json.EncodableDerivation.derived
 
   // The request body, spelled exactly as the wire wants it: absent `Optional` fields are
-  // omitted from the JSON entirely, which is what the API requires of unset knobs.
+  // omitted from the JSON entirely, which is what the API requires of unset knobs. `system`
+  // is JSON because the wire takes either a string or a list of blocks, and only the block
+  // form carries a cache breakpoint.
   private[sibylline] case class Payload
     ( model:          Text,
       messages:       List[Json],
       max_tokens:     Int,
-      system:         Optional[Text]       = Unset,
+      system:         Optional[Json]       = Unset,
       temperature:    Optional[Double]     = Unset,
       top_p:          Optional[Double]     = Unset,
       stop_sequences: Optional[List[Text]] = Unset,
       stream:         Optional[Boolean]    = Unset,
       tools:          Optional[List[Json]] = Unset,
       tool_choice:    Optional[Json]       = Unset,
-      thinking:       Optional[Json]       = Unset )
+      thinking:       Optional[Json]       = Unset,
+      output_config:  Optional[Json]       = Unset )
 
   private[sibylline] object Tokens:
     // Sealed: the optional-field decodable takes the tactic both directly and inside its
@@ -259,7 +263,7 @@ object Anthropic:
         stop(safely(text(json.stop_reason)).or(t"end_turn"), safely(text(json.stop_sequence))),
         Tokens.usage(tokens(json.usage)),
         safely(text(json.model)),
-        safely(text(json.id)) )
+        safely(text(json.id)).let(Llm.Id(_)) )
 
   // One SSE frame, translated into neutral events. `message_start` carries the input-token
   // count and `message_delta` the *cumulative* output count, so usage is emitted as input-only
@@ -275,7 +279,9 @@ object Anthropic:
         val usage = safely(tokens(json.message.usage)).let(Tokens.usage(_))
 
         List
-          ( Llm.Event.Started(safely(text(json.message.id)), safely(text(json.message.model))),
+          ( Llm.Event.Started
+              ( safely(text(json.message.id)).let(Llm.Id(_)),
+                safely(text(json.message.model)) ),
             Llm.Event.Update(Unset, usage.let(_.copy(output = 0))) )
 
       case t"content_block_start" =>
@@ -345,6 +351,140 @@ object Anthropic:
 
     Llm.Error(reason, detail, status.code)
 
+  object Batch:
+    // Where a batch is in its life on the wire. Decoding is total: a status this vocabulary
+    // does not model keeps its code.
+    enum Status:
+      case Processing, Canceling, Ended
+      case Other(code: Text)
+
+    // How many of the batch's requests are in each state; `processing` reaches zero when the
+    // batch has `Ended`.
+    case class Counts(processing: Int, succeeded: Int, errored: Int, canceled: Int, expired: Int)
+
+    private[sibylline] def status(code: Text): Status = code match
+      case t"in_progress" => Status.Processing
+      case t"canceling"   => Status.Canceling
+      case t"ended"       => Status.Ended
+      case other          => Status.Other(other)
+
+    private[sibylline] def counts(json: Json): Counts raises Json.Error =
+      Counts
+        ( integer(json.processing), integer(json.succeeded), integer(json.errored),
+          integer(json.canceled), integer(json.expired) )
+
+    // The batch object the wire returns on creation and retrieval.
+    private[sibylline] def parse[value: Json.Decodable](target: Anthropic, json: Json)
+      ( using Tactic[Llm.Error], Diagnostics )
+    :   Batch[value] =
+
+      given jsonTactic: (Tactic[Json.Error]^) = summon[Tactic[Llm.Error]].contramap: _ =>
+        Llm.Error(Llm.Error.Reason.Malformed, t"the batch had an unexpected shape")
+
+      Batch[value]
+        ( target, Llm.Id(text(json.id)), status(text(json.processing_status)),
+          counts(json.request_counts) )
+
+    // One line of the results file: the request's identifier and either the reply, decoded
+    // to the type the batch was submitted for, or the error standing in for it.
+    private[sibylline] def outcome[value: Json.Decodable](json: Json)
+      ( using Tactic[Llm.Error], Diagnostics )
+    :   Llm.Outcome[value] =
+
+      given jsonTactic: (Tactic[Json.Error]^) = summon[Tactic[Llm.Error]].contramap: _ =>
+        Llm.Error(Llm.Error.Reason.Malformed, t"a batch outcome had an unexpected shape")
+
+      val id: Llm.Id[Llm.Request] = Llm.Id(text(json.custom_id))
+
+      val result: value | Llm.Error = text(json.result.`type`) match
+        case t"succeeded" =>
+          val document: Json = Llm.parsed(reply(json.result.message).text)
+
+          caps.unsafe.unsafeAssumeSeparate(safely(document.as[value])).or:
+            Llm.Error(Llm.Error.Reason.Malformed, t"the answer did not match its schema")
+
+        case t"errored" =>
+          failure(Http.Status.BadRequest, json.result.error)
+
+        case t"canceled" =>
+          Llm.Error(Llm.Error.Reason.Provider(t"canceled"), t"the request was canceled")
+
+        case t"expired" =>
+          Llm.Error(Llm.Error.Reason.Provider(t"expired"), t"the batch expired before it ran")
+
+        case other =>
+          Llm.Error(Llm.Error.Reason.Malformed, t"the outcome $other is not recognized")
+
+      Llm.Outcome(id, result)
+
+  // A batch of structured questions on the Message Batches API, as last seen: its identifier,
+  // status and counts, and the type each answer decodes to. A pure record; consulting the
+  // provider — `refresh`, `await`, `outcomes` — takes the HTTP capabilities at the call, so a
+  // batch may be kept, passed around, or resumed from its identifier in a later process.
+  class Batch[value: Json.Decodable] private[sibylline]
+    ( target:     Anthropic,
+      val id:     Llm.Id[Anthropic.Batch[?]],
+      val status: Anthropic.Batch.Status,
+      val counts: Anthropic.Batch.Counts ):
+
+    def refresh()
+      ( using online:      Online,
+              backend:     Http.Backend,
+              loggable:    (Http.Event is Loggable)^,
+              tactic:      Tactic[Llm.Error],
+              diagnostics: Diagnostics )
+    :   Batch[value] =
+
+      given connectTactic: (Tactic[Connect.Error]^) = tactic.contramap: _ =>
+        Llm.Error(Llm.Error.Reason.Unreachable, t"the provider could not be reached")
+
+      // As in `countTokens`: the send thunk captures the tactic `fetch` raises through.
+      val response =
+        caps.unsafe.unsafeAssumeSeparate:
+          Llm.fetch(Anthropic.failure(_, _)):
+            target.consult(t"v1/messages/batches/${id.text}")
+
+      Anthropic.Batch.parse[value](target, Llm.receive(response))
+
+    // Polls until the batch has ended, sleeping `seconds` between polls: batches take minutes
+    // to hours, so this is a plain blocking wait on the caller's thread, as `fetch`'s retry
+    // delay is.
+    def await(seconds: Int = 30)
+      ( using online:      Online,
+              backend:     Http.Backend,
+              loggable:    (Http.Event is Loggable)^,
+              tactic:      Tactic[Llm.Error],
+              diagnostics: Diagnostics )
+    :   Batch[value] =
+
+      def poll(batch: Batch[value]): Batch[value] =
+        if batch.status == Anthropic.Batch.Status.Ended then batch
+        else
+          Thread.sleep(seconds*1000L)
+          poll(batch.refresh())
+
+      poll(this)
+
+    // Every request's outcome, in the order the provider reports them — which is not the
+    // order of submission, so each carries its request's identifier.
+    def outcomes()
+      ( using online:      Online,
+              backend:     Http.Backend,
+              loggable:    (Http.Event is Loggable)^,
+              tactic:      Tactic[Llm.Error],
+              diagnostics: Diagnostics )
+    :   List[Llm.Outcome[value]] =
+
+      given connectTactic: (Tactic[Connect.Error]^) = tactic.contramap: _ =>
+        Llm.Error(Llm.Error.Reason.Unreachable, t"the provider could not be reached")
+
+      val response =
+        caps.unsafe.unsafeAssumeSeparate:
+          Llm.fetch(Anthropic.failure(_, _)):
+            target.consult(t"v1/messages/batches/${id.text}/results")
+
+      Llm.lines(response).map: line => Anthropic.Batch.outcome[value](Llm.parsed(line))
+
 // The provider target: a pure value — no connection, no session state — so it may be a `val`,
 // shared and reused across sessions. `Anthropic(model, key).session: session ?=> …` opens one.
 class Anthropic private
@@ -356,7 +496,8 @@ class Anthropic private
     val system:   Optional[Text],
     val settings: Llm.Settings,
     val priming:  List[Llm.Message],
-    val tools:    List[Llm.Tool] )
+    val tools:    List[Llm.Tool],
+    val cached:   Boolean )
 :
 
   private def copy
@@ -366,12 +507,17 @@ class Anthropic private
       tools:    List[Llm.Tool]    = tools,
       base:     HttpUrl           = base,
       version:  Text              = version,
-      beta:     Optional[Text]    = beta )
+      beta:     Optional[Text]    = beta,
+      cached:   Boolean           = cached )
   :   Anthropic =
 
-    new Anthropic(model, key, base, version, beta, system, settings, priming, tools)
+    new Anthropic(model, key, base, version, beta, system, settings, priming, tools, cached)
 
   def prompted(system: Text): Anthropic = copy(system = system)
+
+  // Marks the system prompt as a prompt-cache breakpoint, so that every request sharing it
+  // reads the prefix from the provider's cache; `Llm.Usage.cacheRead` reports the reads.
+  def caching: Anthropic = copy(cached = true)
   def limit(maxTokens: Int): Anthropic = copy(settings = settings.copy(maxTokens = maxTokens))
 
   def warmth(temperature: Double): Anthropic =
@@ -398,19 +544,91 @@ class Anthropic private
     val stops = turn.settings.stopSequences
     val tools = turn.tools.map(Anthropic.tool(_))
 
+    // The block form of the system prompt exists only to carry the cache breakpoint.
+    val system: Optional[Json] = turn.system.let: system =>
+      if cached
+      then
+        val block: Json =
+          Json.make
+            ( `type`        = t"text".in[Json],
+              text          = system.in[Json],
+              cache_control = Json.make(`type` = t"ephemeral".in[Json]) )
+
+        // Ascribed: a list literal's `Populated` refinement has no JSON encoder of its own.
+        val blocks: List[Json] = List(block)
+        blocks.in[Json]
+      else
+        system.in[Json]
+
+    val format: Optional[Json] = turn.format.let: schema =>
+      Json.make
+        ( format = Json.make(`type` = t"json_schema".in[Json], schema = schema.in[Json]) )
+
     Anthropic.Payload
       ( model          = model,
         messages       = turn.history.map(Anthropic.message(_)),
         max_tokens     = turn.settings.maxTokens.or(4096),
-        system         = turn.system,
+        system         = system,
         temperature    = turn.settings.temperature,
         top_p          = turn.settings.topP,
         stop_sequences = if stops.nil then Unset else stops,
         stream         = if streaming then true else Unset,
         tools          = if turn.tools.nil then Unset else tools,
-        tool_choice    = turn.settings.toolChoice.let(Anthropic.choice(_)) )
+        tool_choice    = turn.settings.toolChoice.let(Anthropic.choice(_)),
+        output_config  = format )
 
     . in[Json]
+
+  // Many structured questions, one submission: each request becomes its own exchange — this
+  // target's system prompt and settings, the prompt as the user turn, and the schema derived
+  // from `value` as the reply's format — on the Message Batches API, which answers them
+  // asynchronously at half the price of the Messages API. The returned batch is consulted for
+  // its outcomes once it has ended.
+  def elicitAll[value]
+    ( requests: List[Llm.Request] )
+    ( using schematic: value is Schematic over JsonSchema, decodable: value is Json.Decodable )
+    ( using online:      Online,
+            backend:     Http.Backend,
+            loggable:    (Http.Event is Loggable)^,
+            tactic:      Tactic[Llm.Error],
+            diagnostics: Diagnostics )
+  :   Anthropic.Batch[value] =
+
+    given connectTactic: (Tactic[Connect.Error]^) = tactic.contramap: _ =>
+      Llm.Error(Llm.Error.Reason.Unreachable, t"the provider could not be reached")
+
+    val schema: JsonSchema = schematic.schema()
+
+    val entries: List[Json] = requests.map: request =>
+      val message = Llm.Message(Llm.Role.User, request.prompt)
+      val turn = Llm.Exchange(system, priming + List(message), List(), settings, schema)
+      Json.make(custom_id = request.id.in[Json], params = payload(turn, streaming = false))
+
+    val body = Json.make(requests = entries.in[Json])
+
+    // As in `countTokens`: the send thunk captures the tactic `fetch` raises through.
+    val response =
+      caps.unsafe.unsafeAssumeSeparate:
+        Llm.fetch(Anthropic.failure(_, _)):
+          submit(address(t"v1/messages/batches"), body)
+
+    Anthropic.Batch.parse[value](this, Llm.receive(response))
+
+  // A batch submitted earlier — in this process or another — found again by its identifier,
+  // with its current status.
+  def batch[value: Json.Decodable]
+    ( id: Llm.Id[Anthropic.Batch[?]] )
+    ( using online:      Online,
+            backend:     Http.Backend,
+            loggable:    (Http.Event is Loggable)^,
+            tactic:      Tactic[Llm.Error],
+            diagnostics: Diagnostics )
+  :   Anthropic.Batch[value] =
+
+    Anthropic.Batch[value]
+      ( this, id, Anthropic.Batch.Status.Other(t"unknown"), Anthropic.Batch.Counts(0, 0, 0, 0, 0) )
+
+    . refresh()
 
   // The `count_tokens` endpoint: how much of the context window a prospective exchange would
   // spend, without spending it.
@@ -454,6 +672,17 @@ class Anthropic private
           ( Http.Post, xApiKey = key, anthropicVersion = version, anthropicBeta = beta )
           ( body )
 
+  // A `GET` of one of the API's resources, with the same headers `submit` sends.
+  private[sibylline] def consult(path: Text)
+    ( using Online, Http.Backend, (Http.Event is Loggable)^, Tactic[Connect.Error] )
+  :   Http.Response =
+
+    import Anthropic.{xApiKey, anthropicVersion, anthropicBeta}
+    val endpoint = address(path)
+
+    beta.lay(endpoint.fetch(xApiKey = key, anthropicVersion = version)): beta =>
+      endpoint.fetch(xApiKey = key, anthropicVersion = version, anthropicBeta = beta)
+
 // The `Llm.Dialect` for the Messages API: constructed per session by the `Sessional`,
 // capturing the HTTP capabilities and the caller's tactic, so the session itself never
 // touches HTTP.
@@ -466,6 +695,9 @@ private[sibylline] class AnthropicDialect(target: Anthropic)
 extends Llm.Dialect, caps.ExclusiveCapability:
 
   def name: Text = t"anthropic"
+
+  // The Messages API constrains a reply to a JSON schema natively, through `output_config`.
+  override def structured: Boolean = true
 
   private def endpoint: HttpUrl = target.address(t"v1/messages")
 

@@ -246,7 +246,7 @@ object Gemini:
         stopped,
         usage(json.usageMetadata).or(Llm.Usage(0, 0)),
         safely(text(json.modelVersion)),
-        safely(text(json.responseId)) )
+        safely(text(json.responseId)).let(Llm.Id(_)) )
 
   // One streamed frame — a whole `GenerateContentResponse` fragment — as neutral events.
   // Text fragments grow block zero; a function call arrives whole, as its own block, opened
@@ -264,7 +264,10 @@ object Gemini:
     val started: List[Llm.Event] =
       if progress.begun then List() else
         progress.begun = true
-        List(Llm.Event.Started(safely(text(json.responseId)), safely(text(json.modelVersion))))
+
+        List:
+          Llm.Event.Started
+            ( safely(text(json.responseId)).let(Llm.Id(_)), safely(text(json.modelVersion)) )
 
     usage(json.usageMetadata).let(progress.usage = _)
 

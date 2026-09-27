@@ -271,7 +271,7 @@ object OpenAI:
         safely(text(json.choices(0).finish_reason)).let(stop(_)).or(Llm.Stop.Ended),
         usage(json.usage).or(Llm.Usage(0, 0)),
         safely(text(json.model)),
-        safely(text(json.id)) )
+        safely(text(json.id)).let(Llm.Id(_)) )
 
   // One Chat streaming chunk as neutral events. Text deltas live at index 0; each tool call
   // occupies `1 + `its wire index. The terminal `[DONE]` frame yields nothing here — the
@@ -291,7 +291,7 @@ object OpenAI:
       val started: List[Llm.Event] =
         if progress.begun then List() else
           progress.begun = true
-          List(Llm.Event.Started(safely(text(json.id)), safely(text(json.model))))
+          List(Llm.Event.Started(safely(text(json.id)).let(Llm.Id(_)), safely(text(json.model))))
 
       usage(json.usage).let(progress.usage = _)
       val delta: Optional[Json] = safely(json.choices(0).delta)
@@ -644,7 +644,7 @@ private[sibylline] object ResponsesDialect:
         stop,
         usage(json.usage).or(Llm.Usage(0, 0)),
         safely(text(json.model)),
-        safely(text(json.id)) )
+        safely(text(json.id)).let(Llm.Id(_)) )
 
   // One semantic streaming event as neutral events, dispatched on the SSE `event:` field.
   private[sibylline] def events(progress: Llm.Progress, sse: Sse)
@@ -662,7 +662,8 @@ private[sibylline] object ResponsesDialect:
 
         List:
           Llm.Event.Started
-            ( safely(text(json.response.id)), safely(text(json.response.model)) )
+            ( safely(text(json.response.id)).let(Llm.Id(_)),
+              safely(text(json.response.model)) )
 
       case t"response.output_item.added" =>
         val index = integer(json.output_index)

@@ -137,10 +137,12 @@ as a model ability.
 
 ### Structured answers
 
-`elicit` asks for an answer of a given type. The type's JSON schema is derived and presented to
-the model as the one tool it must call, and the arguments it supplies are decoded to the type —
-so the result is a value, not text to be parsed, on every provider, including local servers that
-have no native structured-output mode:
+`elicit` asks for an answer of a given type. The type's JSON schema is derived, and the document
+the model supplies is decoded to the type — so the result is a value, not text to be parsed. How
+the schema reaches the model is the dialect's business: Anthropic's wire constrains the reply to
+it natively, and elsewhere it is presented as the one tool the model must call. The caller names
+a type and receives a value, on every provider, including local servers that have no
+structured-output mode:
 
 ```scala
 case class Verdict(ticker: Text, rating: Text, confidence: Double)
@@ -152,9 +154,41 @@ local.session:
   llm.elicit[Verdict](t"Summarize your recommendation for AAPL.")
 ```
 
-A reply that ignores the forced tool, or arguments that do not decode, raise `Llm.Error` with
-the reason `Malformed`, so a malformed answer is an error to handle rather than a value that
+A reply that ignores the forced tool, or a document that does not decode, raises `Llm.Error`
+with the reason `Malformed`, so a malformed answer is an error to handle rather than a value that
 looks right.
+
+### Batches
+
+Many questions that need no answer today go through Anthropic's Message Batches API, which runs
+them asynchronously at half the price. `elicitAll` takes a list of requests, each a prompt with
+an identifier of the caller's choosing — checked by `Llm.Id.request` before anything is sent —
+and returns a batch: a pure record of its identifier, status and counts, whose answers are
+decoded to the named type once it has ended:
+
+<!-- doccheck: skip -->
+```scala
+val requests = List
+  ( Llm.Request(Llm.Id.request(t"aapl"), t"Summarize your recommendation for AAPL."),
+    Llm.Request(Llm.Id.request(t"msft"), t"Summarize your recommendation for MSFT.") )
+
+val batch = claude.prompted(t"Be terse.").elicitAll[Verdict](requests)
+
+batch.await().outcomes().each: outcome =>
+  outcome.result match
+    case verdict: Verdict => Out.println(t"${outcome.id}: ${verdict.rating}")
+    case error: Llm.Error => Out.println(t"${outcome.id} failed: ${error.message}")
+```
+
+Outcomes arrive in the provider's order, not the order of submission, which is why each carries
+its request's identifier. A batch survives the process that submitted it: `claude.batch[Verdict](id)`
+finds it again by its identifier, with its current status. Identifiers are typed by what they
+name — an `Llm.Id[Llm.Request]`, an `Llm.Id[Llm.Reply]`, an `Llm.Id[Anthropic.Batch[?]]` — so a
+reply's identifier can never be handed to a method expecting a batch's.
+
+A prompt shared by every request in a batch, or by every turn of a long session, is worth
+caching at the provider: `claude.caching` marks the system prompt as a cache breakpoint, and
+`Llm.Usage.cacheRead` reports how much of each request was read from the cache.
 
 ### Messages and content
 

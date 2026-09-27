@@ -61,6 +61,19 @@ object FakeModel:
          "stop_reason": "end_turn",
          "usage": {"input_tokens": 7, "output_tokens": 13}}"""
 
+  // A Message Batches object, as returned on creation and retrieval.
+  def batch(status: Text, processing: Int, succeeded: Int, errored: Int): Text =
+    t"""{"id": "msgbatch_1", "type": "message_batch", "processing_status": "$status",
+         "request_counts": {"processing": $processing, "succeeded": $succeeded,
+                            "errored": $errored, "canceled": 0, "expired": 0}}"""
+
+  // A batch's results file: one succeeded structured reply and one errored request.
+  val results: Text = scala.List
+    ( t"""{"custom_id": "first", "result": {"type": "succeeded", "message": {"id": "msg_9", "model": "claude-sonnet-4-5", "role": "assistant", "content": [{"type": "text", "text": "{\\"ticker\\": \\"AAPL\\", \\"rating\\": \\"buy\\"}"}], "stop_reason": "end_turn", "usage": {"input_tokens": 3, "output_tokens": 9}}}}""",
+      t"""""",
+      t"""{"custom_id": "second", "result": {"type": "errored", "error": {"type": "error", "error": {"type": "invalid_request_error", "message": "too long"}}}}""" )
+  . mkString("\n").tt
+
   // A complete streamed turn: the full Messages event sequence, including a `ping`, split
   // text deltas, and the usage convention (input on `message_start`, output on
   // `message_delta`).
@@ -137,6 +150,9 @@ class FakeModel(route: (Http.Method, Text, Int) -> Http.Response) extends Http.B
 
     route(method, path, attempt)
 
+// A structured answer type for these tests; `Verdict` is a probably name in the umbrella.
+case class Appraisal(ticker: Text, rating: Text)
+
 object AnthropicTests extends Suite(m"Anthropic dialect tests"):
   import Llm.{Content, Role, Stop, Usage}
 
@@ -152,7 +168,7 @@ object AnthropicTests extends Suite(m"Anthropic dialect tests"):
     test(m"a one-shot ask decodes the reply"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer(t"Suur Munamägi"))
       val reply = target.session(llm.ask(t"Tallest mountain in Estonia?"))
-      (reply.text, reply.stop, reply.usage, reply.id)
+      (reply.text, reply.stop, reply.usage, reply.id.let(_.text))
     . assert(_ == (t"Suur Munamägi", Stop.Ended, Usage(7, 13), t"msg_1"))
 
     test(m"the request carries the model, system and message"):
@@ -185,6 +201,83 @@ object AnthropicTests extends Suite(m"Anthropic dialect tests"):
       val exchange = fake.exchanges.stdlib.reverse.head
       (exchange.method, exchange.path)
     . assert(_ == (Http.Post, t"/v1/messages"))
+
+    test(m"a structured answer sends the schema as the reply's format"):
+      given fake: FakeModel = FakeModel: (_, _, _) =>
+        FakeModel.answer(t"""{\\"ticker\\": \\"AAPL\\", \\"rating\\": \\"buy\\"}""")
+
+      val verdict = target.session(llm.elicit[Appraisal](t"Summarise."))
+      val json = sent(fake)
+      val body = fake.exchanges.stdlib.reverse.head.body.option.get
+
+      ( verdict,
+        json.output_config.format.`type`.as[Text],
+        json.output_config.format.schema.properties.ticker.`type`.as[Text],
+        body.contains(t"tools") )
+    . assert(_ == (Appraisal(t"AAPL", t"buy"), t"json_schema", t"string", false))
+
+    test(m"a structured reply that is not JSON raises Malformed"):
+      given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer(t"not json"))
+      capture[Llm.Error](target.session(llm.elicit[Appraisal](t"Summarise."))).reason
+    . assert(_ == Llm.Error.Reason.Malformed)
+
+    test(m"caching marks the system prompt as a cache breakpoint"):
+      given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer(t"yes"))
+      target.prompted(t"Be terse.").caching.session(llm.ask(t"Ready?"))
+      val json = sent(fake)
+      (json.system(0).text.as[Text], json.system(0).cache_control.`type`.as[Text])
+    . assert(_ == (t"Be terse.", t"ephemeral"))
+
+    test(m"a batch is submitted, awaited and its outcomes decoded"):
+      given fake: FakeModel = FakeModel: (method, path, _) =>
+        (method, path) match
+          case (Http.Post, t"/v1/messages/batches") =>
+            FakeModel.reply(FakeModel.batch(t"in_progress", 2, 0, 0))
+
+          case (Http.Get, t"/v1/messages/batches/msgbatch_1") =>
+            FakeModel.reply(FakeModel.batch(t"ended", 0, 1, 1))
+
+          case (Http.Get, t"/v1/messages/batches/msgbatch_1/results") =>
+            FakeModel.reply(FakeModel.results)
+
+          case _ =>
+            FakeModel.failure(Http.NotFound, t"not_found_error", t"no such resource")
+
+      val requests =
+        List
+          ( Llm.Request(Llm.Id.request(t"first"), t"Summarise AAPL."),
+            Llm.Request(Llm.Id.request(t"second"), t"Summarise MSFT.") )
+
+      val submitted = target.prompted(t"Be terse.").elicitAll[Appraisal](requests)
+      val json = fake.exchanges.stdlib.reverse.head.body.option.get.read[Json]
+      val ended = submitted.await(0)
+
+      val outcomes = ended.outcomes().map: outcome =>
+        outcome.result match
+          case error: Llm.Error => (outcome.id.text, error.reason.toString.tt)
+          case verdict: Appraisal => (outcome.id.text, verdict.rating)
+
+      ( json.requests(0).custom_id.as[Text],
+        json.requests(0).params.output_config.format.`type`.as[Text],
+        json.requests(0).params.system.as[Text],
+        submitted.id.text, submitted.status, ended.status, ended.counts.succeeded,
+        outcomes )
+    . assert(_ == ( t"first", t"json_schema", t"Be terse.", t"msgbatch_1",
+                    Anthropic.Batch.Status.Processing, Anthropic.Batch.Status.Ended, 1,
+                    List((t"first", t"buy"), (t"second", t"Invalid")) ))
+
+    test(m"a batch is resumed from its identifier"):
+      given fake: FakeModel = FakeModel: (_, _, _) =>
+        FakeModel.reply(FakeModel.batch(t"ended", 0, 2, 0))
+
+      val id: Llm.Id[Anthropic.Batch[?]] = t"msgbatch_1".as[Llm.Id[Anthropic.Batch[?]]]
+      val batch = target.batch[Appraisal](id)
+      (batch.status, batch.counts.succeeded)
+    . assert(_ == (Anthropic.Batch.Status.Ended, 2))
+
+    test(m"a request identifier with a space is rejected before submission"):
+      capture[Llm.Error](Llm.Id.request(t"no spaces")).reason
+    . assert(_ == Llm.Error.Reason.Invalid)
 
     test(m"a rate limit with retry-after is retried"):
       given fake: FakeModel = FakeModel: (_, _, attempt) =>

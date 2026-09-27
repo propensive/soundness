@@ -63,6 +63,41 @@ object Llm:
   enum Role:
     case User, Assistant
 
+  object Id:
+    // Only the dialects mint identifiers from the wire; a caller mints a request identifier
+    // through `request`, which checks it before any provider can reject it.
+    private[sibylline] def apply[subject](text: Text): Id[subject] = text
+
+    // Anthropic's `custom_id` rules — one to sixty-four characters from letters, digits, `_`
+    // and `-` — are the strictest of the wire APIs', so they are the rule for every dialect.
+    def request(text: Text)(using Diagnostics): Id[Request] raises Error =
+      val valid: Boolean =
+        text.length >= 1 && text.length <= 64 && text.s.forall: char =>
+          char.isLetterOrDigit && char < 0x80 || char == '_' || char == '-'
+
+      if valid then text
+      else abort(Error(Error.Reason.Invalid, t"the request identifier $text is not permitted"))
+
+    extension [subject](id: Id[subject]) def text: Text = id
+
+    given showable: [subject] => Id[subject] is Showable = id => id
+    given encodable: [subject] => Id[subject] is Encodable in Text = id => id
+    given decodable: [subject] => Id[subject] is Decodable in Text = text => text
+
+    // Bare text would be indistinguishable from a `Text`; the constructor form names the type.
+    given inspectable: [subject] => Id[subject] is Inspectable = id => t"Llm.Id(${id.inspect})"
+
+  // An identifier the provider issued or a caller chose, typed by what it identifies: a
+  // `Reply`, a `Request` in a batch, or a provider's batch. Distinct subjects never mix.
+  opaque type Id[subject] = Text
+
+  // One question in a batch of many, with the identifier its outcome will be keyed by.
+  case class Request(id: Id[Request], prompt: Text)
+
+  // What became of one batched request: the decoded answer, or the error that stands in for it,
+  // keyed by the request's own identifier since providers return outcomes in any order.
+  case class Outcome[value](id: Id[Request], result: value | Error)
+
   object Content:
     // Where binary content lives: inline bytes, rendered as base64 at the wire, or a URL the
     // provider fetches itself. Some wire APIs distinguish these structurally; the others render
@@ -129,8 +164,8 @@ object Llm:
     ( message: Message,
       stop:    Stop,
       usage:   Usage,
-      model:   Optional[Text] = Unset,
-      id:      Optional[Text] = Unset ):
+      model:   Optional[Text]      = Unset,
+      id:      Optional[Id[Reply]] = Unset ):
 
     def text: Text =
       message.content.bind:
@@ -166,11 +201,15 @@ object Llm:
   case class Tool(name: Text, description: Text, parameters: JsonSchema)
 
   // A pure description of one request: everything a dialect needs to encode a wire call.
+  // `format`, when set, is the JSON schema the reply's text must conform to; only sibylline
+  // sets it, deriving it from the type a caller named, and a dialect that is not `structured`
+  // never sees one.
   case class Exchange
     ( system:   Optional[Text],
       history:  List[Message],
       tools:    List[Tool],
-      settings: Settings )
+      settings: Settings,
+      format:   Optional[JsonSchema] = Unset )
 
   object Event:
     // A fragment of an open content block. `Arguments` carries partial JSON text, complete only
@@ -184,7 +223,7 @@ object Llm:
   // The neutral streaming vocabulary, index-addressed: every wire API's event stream reduces to
   // blocks that open, grow by increments, and close, with message-level updates alongside.
   enum Event:
-    case Started(id: Optional[Text], model: Optional[Text])
+    case Started(id: Optional[Id[Reply]], model: Optional[Text])
     case Opened(index: Int, content: Content)
     case Delta(index: Int, increment: Event.Increment)
     case Closed(index: Int)
@@ -199,6 +238,11 @@ object Llm:
     def name: Text
     def exchange(turn: Exchange): Reply
     def stream(turn: Exchange): Iterator[Event]^{this}
+
+    // Whether the wire can constrain a reply to a JSON schema natively. When it cannot, a
+    // structured answer is obtained through a forced tool call instead; the caller sees no
+    // difference.
+    def structured: Boolean = false
 
   object Error:
     // The numbers are the `SN-990.e` subcodes, and are frozen: codes added later append.
@@ -288,6 +332,17 @@ object Llm:
 
     body(response).lest(Error(Error.Reason.Malformed, t"the reply was not valid JSON"))
 
+  // The response body as lines of text, blank lines dropped: the shape of a JSON Lines results
+  // file.
+  private[sibylline] def lines(response: Http.Response)(using Tactic[Error], Diagnostics)
+  :   List[Text] =
+
+    val text: Text =
+      safely(response.body.stream.memoize.read[Text]).lest:
+        Error(Error.Reason.Malformed, t"the reply was not valid UTF-8")
+
+    text.cut(t"\n").filter(!_.s.isBlank)
+
   // The response body as raw server-sent-event frames, one `Text` per event, decoded
   // incrementally off the live connection.
   private[sibylline] def frames(consume response: Http.Response)
@@ -364,7 +419,7 @@ object Llm:
     private var model0: Optional[Text] = Unset
 
     @scala.caps.unsafe.untrackedCaptures
-    private var id0: Optional[Text] = Unset
+    private var id0: Optional[Id[Reply]] = Unset
 
     @scala.caps.unsafe.untrackedCaptures
     private var finished0: Boolean = false
@@ -560,6 +615,21 @@ object Llm:
     private[sibylline] update def arguments(reply: Reply): Json =
       reply.toolCalls.prim.let(_.arguments).or:
         abort(Error(Error.Reason.Malformed, t"the model did not call the answer tool"))
+
+    // Whether this session's dialect constrains replies to a schema natively.
+    update def structured: Boolean = dialect.structured
+
+    // One turn whose reply must conform to `schema`: the native counterpart of `forced`, for a
+    // dialect that is `structured`. No tools are offered, so the reply is the document itself.
+    private[sibylline] update def shaped(message: Message, schema: JsonSchema): Reply =
+      val turn = Exchange(system, history0 + List(message), List(), settings, schema)
+      val reply = dialect.exchange(turn)
+      commit(message, reply)
+      reply
+
+    // The structured reply's text as JSON; raised through the session's own tactic, as
+    // `arguments` is, so callers need no tactic of their own.
+    private[sibylline] update def structure(reply: Reply): Json = parsed(reply.text)
 
     private[sibylline] update def malformed(): Nothing =
       abort(Error(Error.Reason.Malformed, t"the answer did not match its schema"))
