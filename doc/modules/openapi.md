@@ -52,13 +52,18 @@ characters Scala does not allow in an identifier is written in backticks, as in
 `` api.`museum-hours` `` or `` api.users.`@me` ``.
 
 The base URL comes from the specification's first server, with its `{variables}` at their
-defaults. A specification whose server is relative (`/api/v3`), or which declares none, takes the
-base from the caller, which a relative server URL then extends:
+defaults, checked as a URL as the code compiles. A specification whose server is relative
+(`/api/v3`), or which declares none, must take its base from the caller, which a relative server
+URL then extends:
 
 <!-- doccheck: skip -->
 ```scala
-val api = Api(cp"/apis/petstore3.json", base = t"https://petstore3.swagger.io")
+val api = Api(cp"/apis/petstore3.json", base = url"https://petstore3.swagger.io")
 ```
+
+What is about to be sent is a value too: `request` on any navigated `Api` or `Api.Response` is an
+`Api.Request` holding the method, the base `HttpUrl`, the path template and its substitutions, the
+`Query`, the `Http.Header`s, the body with its `MediaType`, and the `accept` media type.
 
 ### Calling
 
@@ -80,8 +85,25 @@ api.pets(42).delete(api_key = t"…")      // a header parameter, sent as a head
 Parameters declared on the path item apply to every operation on it, and one written as a
 `$ref` into the document's components is followed, as are `$ref` responses and request bodies.
 Where an operation declares several successful responses, `200` is preferred, then `201`, then
-the lowest. Asking for a type the response schema does not support is a compile error; a
-response outside the success range raises an `Api.Error` carrying the status.
+the lowest. Asking for a type the response schema does not support is a compile error.
+
+### Errors
+
+A response outside the success range raises an `Api.Error`, carrying the status and the error
+body construed as the type the specification declares for it: the `default` response's media
+type first, then `4XX`/`5XX`, then the lowest-numbered error response with a body. So an API
+whose errors are JSON problems raises `Api.Error[Json]`, and one which declares no error body
+raises `Api.Error[Text]`, the body as text. The type is part of the operation's `Api.Response`,
+so it is known where the call is written and handled through [contingency](contingency.md) like
+any other error:
+
+<!-- doccheck: skip -->
+```scala
+val customer = recover:
+  case Api.Error(Http.NotFound, problem: Json) => Unset
+. within:
+    api.v1.customers(id).get.call()
+```
 
 A bare `call()` reads the response as the type its media type *construes* (below): a `Json` for
 `application/json`, a `Raster in Png` for `image/png`, `Unit` where the operation declares no

@@ -40,10 +40,12 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
+import gesticulate.*
 import gossamer.*
 import hellenism.*
 import hieroglyph.*
 import jacinta.*
+import legerdemain.*
 import polyvinyl.*
 import prepositional.*
 import rudiments.*
@@ -63,8 +65,12 @@ object Api:
   transparent inline def apply(inline resource: Resource): Any = ${Apoplexy.root('resource)}
 
   // As above, with a base URL for a spec whose servers are relative (`/api/v3`) or absent
-  transparent inline def apply(inline resource: Resource, base: Text): Any =
+  transparent inline def apply(inline resource: Resource, base: HttpUrl): Any =
     ${Apoplexy.rootAt('resource, 'base)}
+
+  // A relative server URL (`/api/v3`) appended to a caller's base
+  def extend(base: HttpUrl, server: Text): HttpUrl =
+    Url(base.origin, t"${base.location}$server", base.query, base.fragment)
 
   def make(apiRequest: Api.Request): Api = new Api:
     def request: Api.Request = apiRequest
@@ -78,66 +84,48 @@ object Api:
     def list(json: Json, transform: Text => Json => Any): List[Record] =
       repeated(t"", json).map(build(_, transform))
 
-  // The JSON body of a successful response, for `record()` and `tuple()`
-  def json(request: Api.Request)
-    ( using Online,
-            Http.Event is Loggable,
-            Tactic[Connect.Error],
-            Tactic[Url.Error],
-            Tactic[Parse.Error],
-            Tactic[Api.Error] )
-    ( using client: Http.Client onto Origin["http" | "https"] )
-  :   Json =
-
-    val response = send(request)
-    Conformant.successful(response)
+  // A response body read as JSON, for `record()` and `tuple()`
+  def jsonOf(response: Http.Response)(using Tactic[Parse.Error]): Json =
     val data: Data = response.body.stream.memoize
     summon[Json is Aggregable by Data].aggregate(Chain(data))
 
-  // The runtime send (invoked by the code `.call` emits): assemble the URL (base +
-  // substituted path + query), set the `accept` header to the media type the spec
-  // says the response has and the `content-type` to the body's, add the header
-  // parameters, and dispatch through the telekinesis `Http.Client` — which uses
-  // whichever `Http.Backend` is in scope.
+  // The runtime send (invoked by the code `.call` emits): the URL is the base with the
+  // substituted path template appended and the query attached; the `accept` header names the
+  // media type the spec says the response has, the `content-type` the body's, and the header
+  // parameters follow; then the request goes through the telekinesis `Http.Client` — which
+  // uses whichever `Http.Backend` is in scope.
   def send(request: Api.Request)
     ( using Online,
             Http.Event is Loggable,
-            Tactic[Connect.Error],
-            Tactic[Url.Error] )
+            Tactic[Connect.Error] )
     ( using client: Http.Client onto Origin["http" | "https"] )
   :   Http.Response =
 
+    // A substituted value is encoded as a path segment: percent-escaped, with a space as `%20`
     val substituted =
       request.substitutions.fold(request.path): (path, entry) =>
-        path.sub(t"{${entry(0)}}", entry(1))
+        path.sub(t"{${entry(0)}}", entry(1).urlEncode.sub(t"+", t"%20"))
 
-    val full =
-      if request.query.nil then t"${request.base}$substituted"
-      else
-        val parameters =
-          request.query.map: (key, value) => t"${key.urlEncode}=${value.urlEncode}"
+    val query: Optional[Text] =
+      if request.query.values.nil then request.base.query else request.query.queryString
 
-        t"${request.base}$substituted?${parameters.join(t"&")}"
-
-    val url = full.as[HttpUrl]
+    val base = request.base
+    val url: HttpUrl = Url(base.origin, t"${base.location}$substituted", query, base.fragment)
 
     val empty: Spring[Data] = () => Iterator.empty[Data].stream
 
-    val (contentType, body): (Optional[Text], Spring[Data]) = request.body match
+    val (contentType, body): (Optional[MediaType], Spring[Data]) = request.body match
       case Api.Body.Empty                  => (Unset, empty)
       case Api.Body.Content(media, spring) => (media, spring)
 
     val contentTypeHeader: List[Http.Header] = contentType.lay(Nil): media =>
-      List(Http.Header(t"content-type", media))
+      List(Http.Header(t"content-type", media.show))
 
     val acceptHeader: List[Http.Header] = request.accept.lay(Nil): media =>
-      List(Http.Header(t"accept", media))
-
-    val parameterHeaders: List[Http.Header] = request.headers.map: (key, value) =>
-      Http.Header(key, value)
+      List(Http.Header(t"accept", media.show))
 
     val headers: List[Http.Header] =
-      List.concat(acceptHeader, List.concat(contentTypeHeader, parameterHeaders))
+      List.concat(acceptHeader, List.concat(contentTypeHeader, request.headers))
 
     val httpRequest =
       Http.Request
@@ -156,14 +144,14 @@ object Api:
   object Body:
     // Builds the body here, outside the call site's capture checking, from the carrier value
     // and its `Postable`, which the `invoke` macro summons where the call is written
-    def content[carrier](mediaType: Text, value: carrier)(using postable: carrier is Postable)
+    def content[carrier](mediaType: MediaType, value: carrier)(using postable: carrier is Postable)
     :   Body =
 
       Body.Content(mediaType, () => postable.stream(value))
 
   enum Body derives CanEqual:
     case Empty
-    case Content(mediaType: Text, spring: Spring[Data])
+    case Content(mediaType: MediaType, spring: Spring[Data])
 
   // The runtime description of a navigated/invoked call. `base` is the server
   // URL from the spec; `path` is the still-templated path; `substitutions`
@@ -171,13 +159,13 @@ object Api:
   // `body` is the encoded request body (`Body.Empty` when there is none).
   case class Request
     ( method:        Http.Method,
-      base:          Text,
+      base:          HttpUrl,
       path:          Text,
-      substitutions: Map[Text, Text]    = Map(),
-      query:         List[(Text, Text)] = Nil,
-      body:          Api.Body           = Api.Body.Empty,
-      headers:       List[(Text, Text)] = Nil,
-      accept:        Optional[Text]     = Unset )
+      substitutions: Map[Text, Text]     = Map(),
+      query:         Query               = Query(),
+      body:          Api.Body            = Api.Body.Empty,
+      headers:       List[Http.Header]   = Nil,
+      accept:        Optional[MediaType] = Unset )
 
   // The result of invoking an endpoint. Its refined type records `Result` (a
   // JSON-pointer to the 2xx response schema) and `Form` (the spec source),
@@ -186,18 +174,34 @@ object Api:
     def make(apiRequest: Api.Request): Api.Response = new Api.Response:
       def request: Api.Request = apiRequest
 
+  // The result of invoking an endpoint. Its refined type records `Result` (a
+  // JSON pointer to the success response's schema within the spec), `Form` (the
+  // spec resource), `Transport` (the type the success response is construed as)
+  // and `Failure` (the type a response outside the success range is construed
+  // as, which `call` raises as the payload of an `Api.Error`).
   trait Response extends Transportive:
     type Result
     type Form
-    // type Transport (the wire format) inherited from Transportive
+    type Failure
     def request: Api.Request
+
+    // Raises `Api.Error` with the failure payload unless the status is in the 2xx range
+    inline def ensure(response: Http.Response)
+      ( using tactic: Tactic[Api.Error[Failure]], diagnostics: Diagnostics )
+    :   Unit =
+
+      if response.status.category != Http.Status.Category.Successful then
+        val payload = compiletime.summonInline[(Failure is Conformant) over Failure].read(response)
+        abort(Api.Error(response.status, payload))(using tactic)
 
     // Performs the request and construes the response as `value`. The empty
     // parentheses mark the side effect. A bare `.call()` leaves `value`
     // unconstrained, so `value is Defaulting to Transport` resolves it to the
     // response's own carrier: the type the spec's media type construes (a `Json`, a
     // `Raster in Png`), `Unit` for a response with no body, or the raw
-    // `Http.Response` when nothing in scope construes the media type.
+    // `Http.Response` when nothing in scope construes the media type. A response
+    // outside the success range raises `Api.Error[Failure]`, carrying the status and
+    // the error body construed as `Failure`.
     //
     // The macro first checks `value` against the response schema; the send and the
     // reading run in inline code, so `value` is concrete when the `Conformant` (and
@@ -205,15 +209,17 @@ object Api:
     // which is what lets `List[T]` and other collections resolve their decoders.
     transparent inline def call[value]()
       ( using erased default: value is Defaulting to Transport )
-      ( using online:   Online,
-              loggable: Http.Event is Loggable,
-              connect:  Tactic[Connect.Error],
-              urlError: Tactic[Url.Error],
-              client:   Http.Client onto Origin["http" | "https"] )
+      ( using online:      Online,
+              loggable:    Http.Event is Loggable,
+              connect:     Tactic[Connect.Error],
+              failure:     Tactic[Api.Error[Failure]],
+              diagnostics: Diagnostics,
+              client:      Http.Client onto Origin["http" | "https"] )
     :   value =
 
       Apoplexy.check[value](this)
-      val response = Api.send(request)(using online, loggable, connect, urlError)(using client)
+      val response = Api.send(request)(using online, loggable, connect)(using client)
+      ensure(response)
       compiletime.summonInline[(value is Conformant) over Transport].read(response)
 
     // Performs the request and reads the JSON response as a record typed by its schema: one
@@ -222,49 +228,39 @@ object Api:
     // `Json.Provider`). Only for a JSON response; the schema must describe an object or an array
     // of objects.
     transparent inline def record()
-      ( using online:   Online,
-              loggable: Http.Event is Loggable,
-              connect:  Tactic[Connect.Error],
-              urlError: Tactic[Url.Error],
-              parse:    Tactic[Parse.Error],
-              apiError: Tactic[Api.Error],
-              client:   Http.Client onto Origin["http" | "https"] )
+      ( using online:      Online,
+              loggable:    Http.Event is Loggable,
+              connect:     Tactic[Connect.Error],
+              parse:       Tactic[Parse.Error],
+              failure:     Tactic[Api.Error[Failure]],
+              diagnostics: Diagnostics,
+              client:      Http.Client onto Origin["http" | "https"] )
     :   Any =
 
-      val json =
-        Api.json(request)(using online, loggable, connect, urlError, parse, apiError)(using client)
-
-      Apoplexy.record(this, json)
+      val response = Api.send(request)(using online, loggable, connect)(using client)
+      ensure(response)
+      Apoplexy.record(this, Api.jsonOf(response))
 
     // As `record()`, but an eagerly-read named tuple, in the schema's property order
     transparent inline def tuple()
-      ( using online:   Online,
-              loggable: Http.Event is Loggable,
-              connect:  Tactic[Connect.Error],
-              urlError: Tactic[Url.Error],
-              parse:    Tactic[Parse.Error],
-              apiError: Tactic[Api.Error],
-              client:   Http.Client onto Origin["http" | "https"] )
+      ( using online:      Online,
+              loggable:    Http.Event is Loggable,
+              connect:     Tactic[Connect.Error],
+              parse:       Tactic[Parse.Error],
+              failure:     Tactic[Api.Error[Failure]],
+              diagnostics: Diagnostics,
+              client:      Http.Client onto Origin["http" | "https"] )
     :   Any =
 
-      val json =
-        Api.json(request)(using online, loggable, connect, urlError, parse, apiError)(using client)
+      val response = Api.send(request)(using online, loggable, connect)(using client)
+      ensure(response)
+      Apoplexy.tuple(this, Api.jsonOf(response))
 
-      Apoplexy.tuple(this, json)
-
-  // ApiError → Api.Error
-  object Error:
-    object Reason:
-      given Reason is Communicable =
-        case Status(code) => m"the server responded with an unsuccessful status, $code"
-        case Malformed    => m"the response body was not valid JSON"
-
-    enum Reason(val number: Int) extends Clarification:
-      case Status(code: Int) extends Reason(1)
-      case Malformed         extends Reason(2)
-
-  case class Error(reason: Api.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(914, reason.number)(m"the API request was not successful because $reason")
+  // A response outside the success range: its status, and its body construed as the type the
+  // specification declares for that response (`Failure` on the `Api.Response`), or as `Text`
+  // where it declares none
+  case class Error[payload](status: Http.Status, payload: payload)(using Diagnostics)
+  extends fulminate.Error(914, 1)(m"the server responded with an unsuccessful status, $status")
 
 trait Api extends Dynamic, Locative, Transportive:
   def request: Api.Request

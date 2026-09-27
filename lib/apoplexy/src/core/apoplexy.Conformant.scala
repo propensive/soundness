@@ -33,19 +33,18 @@
 package apoplexy
 
 import anticipation.*
-import contingency.*
 import distillate.*
-import fulminate.*
 import hieroglyph.*
 import prepositional.*
 import telekinesis.*
 import turbulence.*
 
-import errorDiagnostics.emptyDiagnostics
 import zephyrine.{Parse, memoize}
 
 // Interprets an `Http.Response` as a value of `Self`, reading the body as the carrier type
-// `Transport` the spec's media type construes (see `gesticulate.Construable`).
+// `Transport` the spec's media type construes (see `gesticulate.Construable`). It reads only:
+// the status is checked by `Api.Response.call` beforehand, which raises `Api.Error` with the
+// failure body construed by the same means.
 // `Api.Response.call[T]()` checks at compile time that `T` conforms to the response schema,
 // then summons `(T is Conformant) over <Transport>` at the concrete call site — so only the
 // carrier's own `Aggregable`, and the value's `Decodable` in it, are demanded, and
@@ -57,62 +56,47 @@ import zephyrine.{Parse, memoize}
 // The layering keeps a carrier which is both `Aggregable by Data` and `by Text` (`Text` is)
 // from being ambiguous, and keeps a carrier from decoding through its own identity `Decodable`.
 trait Conformant3:
-  // A 2xx body decoded to any value decodable from a text-read carrier
+  // A body decoded to any value decodable from a text-read carrier
   given decodableText: [value, carrier]
   =>  ( aggregable: carrier is Aggregable by Text,
         decodable:  value is Decodable in carrier,
-        decoder:    CharDecoder,
-        tactic:     Tactic[Api.Error] )
+        decoder:    CharDecoder )
   =>  (value is Conformant) over carrier =
     response =>
-      Conformant.successful(response)
       val data: Data = response.body.stream.memoize
       decodable.decoded(aggregable.aggregate(Chain(decoder.decoded(data))))
 
 trait Conformant2 extends Conformant3:
-  // A 2xx body decoded to any value decodable from a byte-read carrier
+  // A body decoded to any value decodable from a byte-read carrier
   given decodable: [value, carrier]
-  =>  ( aggregable: carrier is Aggregable by Data,
-        decodable:  value is Decodable in carrier,
-        tactic:     Tactic[Api.Error] )
+  =>  ( aggregable: carrier is Aggregable by Data, decodable: value is Decodable in carrier )
   =>  (value is Conformant) over carrier =
     response =>
-      Conformant.successful(response)
       val data: Data = response.body.stream.memoize
       decodable.decoded(aggregable.aggregate(Chain(data)))
 
-  // The raw 2xx body as a carrier read from text. The bytes are decoded to `Text` (through the
+  // The body as a carrier read from text. The bytes are decoded to `Text` (through the
   // `CharDecoder`) before the carrier's parser sees them.
   given carrierText: [carrier]
-  =>  ( aggregable: carrier is Aggregable by Text, decoder: CharDecoder, tactic: Tactic[Api.Error] )
+  =>  ( aggregable: carrier is Aggregable by Text, decoder: CharDecoder )
   =>  (carrier is Conformant) over carrier =
     response =>
-      Conformant.successful(response)
       val data: Data = response.body.stream.memoize
       aggregable.aggregate(Chain(decoder.decoded(data)))
 
 object Conformant extends Conformant2:
-  // Raise `Api.Error` unless the response status is in the 2xx range.
-  def successful(response: Http.Response)(using Tactic[Api.Error]): Unit =
-    if response.status.category != Http.Status.Category.Successful
-    then abort(Api.Error(Api.Error.Reason.Status(response.status.code)))
-
-  // The escape hatch: the raw response, with no status check (any transport).
+  // The escape hatch: the raw response (any transport)
   given response: [transport] => (Http.Response is Conformant) over transport =
     response => response
 
-  // Just check for success and discard the body — for no-content (204) endpoints
-  // such as `delete`, and the default target of a bare `.call()` on them. Never reads the
-  // body, so an empty one is fine; transport-agnostic.
-  given unit: [transport] => Tactic[Api.Error] => (Unit is Conformant) over transport =
-    response => successful(response)
+  // Discard the body — for no-content (204) endpoints such as `delete`, and the default target
+  // of a bare `.call()` on them; transport-agnostic.
+  given unit: [transport] => (Unit is Conformant) over transport = response => ()
 
-  // The raw 2xx body as a carrier read from bytes
-  given carrier: [carrier]
-  =>  ( aggregable: carrier is Aggregable by Data, tactic: Tactic[Api.Error] )
+  // The body as a carrier read from bytes
+  given carrier: [carrier] => (aggregable: carrier is Aggregable by Data)
   =>  (carrier is Conformant) over carrier =
     response =>
-      successful(response)
       val data: Data = response.body.stream.memoize
       aggregable.aggregate(Chain(data))
 

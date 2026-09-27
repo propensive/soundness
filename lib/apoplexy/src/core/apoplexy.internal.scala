@@ -39,6 +39,7 @@ import scala.quoted.*
 import anticipation.*
 import contingency.*
 import denominative.*
+import distillate.*
 import fulminate.*
 import gesticulate.*
 import gigantism.*
@@ -46,12 +47,14 @@ import gossamer.*
 import hellenism.*
 import hieroglyph.*
 import jacinta.*
+import legerdemain.*
 import polyvinyl.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
 import telekinesis.*
 import turbulence.*
+import urticose.*
 import vacuous.*
 import xylophone.*
 
@@ -161,7 +164,7 @@ object Apoplexy:
     doc.paths(locus).let((locus, _)).or:
       val target = segments(locus)
 
-      doc.paths.keys.to[List].seek(key => segments(key) == target).let: key =>
+      doc.paths.keys.to[List].seek { key => segments(key) == target }.let: key =>
         doc.paths(key).let((key, _))
 
   // --- HTTP method helpers -------------------------------------------------
@@ -239,9 +242,12 @@ object Apoplexy:
         def follow(schema: JsonSchema, depth: Int): JsonSchema = schema match
           case ref: JsonSchema.Ref if depth < 8 =>
             given OpenApi = doc
+
             try follow(OpenApi.apply(ref: JsonSchema)(), depth + 1)
             catch case error: OpenApi.Error => ref
-          case other => other
+
+          case other =>
+            other
 
         follow(ref, 0) match
           case _: JsonSchema.Ref => TypeRepr.of[Json]
@@ -342,6 +348,34 @@ object Apoplexy:
     val names = medias(content)
     names.seek(construable(_).present).or(names.prim)
 
+  // A media type the spec names, as a `MediaType` value in the generated code, if it parses
+  private def mediaTypeExpr(using Quotes)(media: Text): Optional[Expr[MediaType]] =
+    try
+      Media.parse(media)
+      Optional('{unsafely[MediaType.Error](Media.parse(${Expr(media.s)}.tt))})
+    catch case error: MediaType.Error => Unset
+
+  // The type a response outside the success range is construed as: the carrier of the media
+  // type of the operation's `default` response, else its `4XX`/`5XX` or lowest-numbered error
+  // response with a body; the body as `Text` where none is declared or construable. (Not the
+  // raw `Http.Response`: it is a capability, which an error's payload cannot be.)
+  private def failureTransport(using quotes: Quotes)(doc: OpenApi, operation: OpenApi.Operation)
+  :   quotes.reflect.TypeRepr =
+
+    import quotes.reflect.*
+
+    val statuses = operation.responses.keys.filter(!_.starts(t"2")).to[List]
+
+    val first = List(t"default", t"4XX", t"5XX").filter(statuses.has(_))
+    val ordered = List.concat(first, statuses.filter(!first.has(_)).order(_.s))
+
+    val contents = ordered.bind: status =>
+      operation.responses(status).let(resolve[OpenApi.Response](doc, _)).let(_.content)
+      . lay(List[Map[Text, OpenApi.MediaTypeObject]]()): content =>
+          if content.nil then List() else List(content)
+
+    contents.prim.let(chosenMedia(_)).let(construable(_)).or(TypeRepr.of[Text])
+
   // The status of the response an operation's success returns: `200` or `201` where the
   // operation declares one, else its lowest-numbered 2xx.
   private def successStatus(operation: OpenApi.Operation): Optional[Text] =
@@ -410,7 +444,9 @@ object Apoplexy:
 
     val verb = methodName(method)
 
-    val (key, operation) = pathItem(doc, locus).let { (key, item) => item.operations(method).let((key, _)) }.or:
+    val found = pathItem(doc, locus).let { (key, item) => item.operations(method).let((key, _)) }
+
+    val (key, operation) = found.or:
       halt(m"apoplexy: $locus defines no $verb operation")
 
     val params = parameters(doc, locus, method)
@@ -451,8 +487,10 @@ object Apoplexy:
       if !named.exists(_(0) == param.name)
       then halt(m"apoplexy: required parameter ${param.name} is missing")
 
-    val queryExpr = Lifts.list(queryEntries)
-    val headersExpr = Lifts.list(headerEntries)
+    val queryExpr: Expr[Query] = '{Query(${Lifts.list(queryEntries)})}
+
+    val headersExpr: Expr[List[Http.Header]] =
+      Lifts.list(headerEntries.map { entry => '{Http.Header($entry(0), $entry(1))} })
 
     val status = successStatus(operation).or(t"200")
 
@@ -463,9 +501,9 @@ object Apoplexy:
     // The `accept` header names the response media type the client construes
     val accept: Optional[Text] = responseContent(doc, operation).let(chosenMedia(_))
 
-    val acceptExpr: Expr[Optional[Text]] = accept match
-      case Unset       => '{Unset}
-      case media: Text => '{Optional(${Expr(media.s)}.tt)}
+    val acceptExpr: Expr[Optional[MediaType]] = accept.let(mediaTypeExpr(_)) match
+      case Unset                             => '{Unset}
+      case media: Expr[MediaType] @unchecked => '{Optional($media)}
 
     val bodyExpr: Expr[Api.Body] = positional match
       case Nil =>
@@ -483,7 +521,9 @@ object Apoplexy:
           val body = t"the $media request body of $verb $locus"
           halt(m"apoplexy: nothing in scope construes $body; $advice")
 
-        val mediaExpr = Expr(media.s)
+        val mediaExpr: Expr[MediaType] = mediaTypeExpr(media).or:
+          halt(m"apoplexy: the request media type $media of $verb $locus is not a media type")
+
         val actual = argExpr.asTerm.tpe.widen
 
         carrierRepr.asType.absolve match
@@ -495,7 +535,7 @@ object Apoplexy:
 
             if actual <:< carrierRepr then
               val value = argExpr.asExprOf[carrier]
-              '{Api.Body.content[carrier]($mediaExpr.tt, $value)(using $postable)}
+              '{Api.Body.content[carrier]($mediaExpr, $value)(using $postable)}
             else
               actual.asType.absolve match
                 case '[bodyType] =>
@@ -505,7 +545,7 @@ object Apoplexy:
                     halt(m"apoplexy: the request body cannot be encoded as ${carrierRepr.show}")
 
                   val encoded = '{$encodable.encoded($value)}
-                  '{Api.Body.content[carrier]($mediaExpr.tt, $encoded)(using $postable)}
+                  '{Api.Body.content[carrier]($mediaExpr, $encoded)(using $postable)}
 
       case _ =>
         halt(m"apoplexy: $verb $locus takes a single request body")
@@ -524,14 +564,19 @@ object Apoplexy:
     val mExpr = methodExpr(method)
     val locusExpr = Expr(key.s)
 
+    val failure = failureTransport(doc, operation)
+
     val responseType =
       Refinement
         ( Refinement
-           ( Refinement(TypeRepr.of[Api.Response], "Result", bounds(literalType(pointer))),
-             "Form",
-             bounds(literalType(source)) ),
-          "Transport",
-          bounds(transport) )
+            ( Refinement
+                ( Refinement(TypeRepr.of[Api.Response], "Result", bounds(literalType(pointer))),
+                  "Form",
+                  bounds(literalType(source)) ),
+              "Transport",
+              bounds(transport) ),
+          "Failure",
+          bounds(failure) )
 
     responseType.asType.absolve match
       case '[type result <: Api.Response; result] =>
@@ -594,12 +639,13 @@ object Apoplexy:
 
   def root(resource: Expr[Resource]): Macro[Api] = rootWith(resource, Unset)
 
-  def rootAt(resource: Expr[Resource], base: Expr[Text]): Macro[Api] = rootWith(resource, base)
+  def rootAt(resource: Expr[Resource], base: Expr[HttpUrl]): Macro[Api] = rootWith(resource, base)
 
-  // The base URL comes from the spec's first server, with its variables at their defaults. A
-  // server URL which is relative (`/api/v3`), or absent, needs a base from the caller, which it
-  // then extends; a caller's base replaces an absolute server URL outright.
-  private def rootWith(using Quotes)(resource: Expr[Resource], base: Optional[Expr[Text]])
+  // The base URL comes from the spec's first server, with its variables at their defaults,
+  // checked as a URL when the code compiles. A server URL which is relative (`/api/v3`), or
+  // absent, needs a base from the caller, which it then extends; a caller's base replaces an
+  // absolute server URL outright.
+  private def rootWith(using Quotes)(resource: Expr[Resource], base: Optional[Expr[HttpUrl]])
   :   Expr[Api] =
 
     import quotes.reflect.*
@@ -614,12 +660,20 @@ object Apoplexy:
     val serverExpr = Expr(server.s)
 
     // A plain match: a quote inside an inline argument (`lay`'s lambda) crashes the pickler
-    val baseExpr: Expr[Text] = base match
+    val baseExpr: Expr[HttpUrl] = base match
       case Unset =>
-        '{$serverExpr.tt}
+        if server == t"" then halt(m"apoplexy: the spec declares no server; pass a `base` URL")
 
-      case supplied: Expr[Text] @unchecked =>
-        if server.starts(t"/") then '{($supplied.s + $serverExpr).tt} else supplied
+        if server.starts(t"/")
+        then halt(m"apoplexy: the spec's server URL $server is relative; pass a `base` URL")
+
+        try server.as[HttpUrl]
+        catch case error: Url.Error => halt(m"apoplexy: the spec's server URL $server is not valid")
+
+        '{unsafely[Url.Error]($serverExpr.tt.as[HttpUrl])}
+
+      case supplied: Expr[HttpUrl] @unchecked =>
+        if server.starts(t"/") then '{Api.extend($supplied, $serverExpr.tt)} else supplied
 
     val transport = uniformTransport(doc)
 

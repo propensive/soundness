@@ -113,7 +113,7 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert: request =>
           request.method == Http.Get && request.path == t"/pets/{petId}/photos"
           && request.substitutions == Map(t"petId" -> t"42")
-          && request.query == List(t"width" -> t"10", t"height" -> t"20")
+          && request.query.values == List(t"width" -> t"10", t"height" -> t"20")
 
       test(m"POST sole method with a positional body"):
         api.login(Credentials(t"jon", t"pw")).request
@@ -133,13 +133,14 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert(_ == Http.Put)
 
       test(m"an optional query parameter may be omitted"):
-        api.pets(42).photos(width = 10).request.query
+        api.pets(42).photos(width = 10).request.query.values
       . assert(_ == List(t"width" -> t"10"))
 
     suite(m"explicit terminals for multi-method endpoints"):
       test(m"GET /pets via explicit .get with a query parameter"):
         api.pets.get(limit = 10).request
-      . assert(request => request.method == Http.Get && request.query == List(t"limit" -> t"10"))
+      . assert: request =>
+          request.method == Http.Get && request.query.values == List(t"limit" -> t"10")
 
       test(m"POST /pets via explicit .post with a body"):
         api.pets.post(NewPet(t"Milo", tag = t"cat")).request
@@ -244,10 +245,11 @@ object ApiTests extends Suite(m"Api client tests"):
         (recorder.lastMethod, recorder.lastBody.present)
       . assert(_ == (Http.Post, true))
 
-      test(m"a non-2xx response raises Api.Error"):
-        given Http.Backend = Recorder(() => Http.Response(Http.NotFound)(t"{}"))
-        capture[Api.Error](api.pets(42).get.call[Pet]()).reason
-      . assert(_ == Api.Error.Reason.Status(404))
+      test(m"a non-2xx response with no declared body raises Api.Error with its text"):
+        given Http.Backend = Recorder(() => Http.Response(Http.NotFound)(t"gone"))
+        val error = capture[Api.Error[Text]](api.pets(42).get.call[Pet]())
+        (error.status, error.payload)
+      . assert(_ == (Http.NotFound, t"gone"))
 
       test(m"a type that does not conform to the schema is rejected"):
         demilitarize:
@@ -257,11 +259,11 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert(_ > 0)
 
     suite(m"references, path-level parameters, headers and servers"):
-      val refs = Api(cp"/openapi/local/refstore.json", base = t"https://ref.example.com")
+      val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
       val itemJson = t"""{"id": 7, "name": "spoon"}"""
 
       test(m"a relative server URL, with its variable at its default, extends the base"):
-        refs.request.base
+        refs.request.base.show
       . assert(_ == t"https://ref.example.com/v2")
 
       test(m"a path-level int64 parameter accepts a Long"):
@@ -273,12 +275,12 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert(_ == Map(t"itemId" -> t"7"))
 
       test(m"a referenced query parameter is recognised"):
-        refs.items.get(limit = 5, `X-Request-Id` = t"r1").request.query
+        refs.items.get(limit = 5, `X-Request-Id` = t"r1").request.query.values
       . assert(_ == List(t"limit" -> t"5"))
 
       test(m"a path-level header parameter is sent as a header"):
         refs.items.get(`X-Request-Id` = t"r1").request.headers
-      . assert(_ == List(t"X-Request-Id" -> t"r1"))
+      . assert(_ == List(Http.Header(t"X-Request-Id", t"r1")))
 
       test(m"omitting a required header parameter is rejected"):
         demilitarize(refs.items.get(limit = 5)).length
@@ -308,8 +310,23 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert(_ > 0)
 
     suite(m"media types construe their carriers"):
-      val refs = Api(cp"/openapi/local/refstore.json", base = t"https://ref.example.com")
+      val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
       val itemJson = t"""{"id": 7, "name": "spoon"}"""
+
+      test(m"a declared error response is construed as the error's payload"):
+        given Http.Backend =
+          Recorder(() => Http.Response(Http.NotFound, contentType = media"application/json")(t"""{"message": "no spoon"}"""))
+
+        val error = capture[Api.Error[Json]](refs.items(7).get.call[Item]())
+        (error.status, error.payload(t"message").as[Text])
+      . assert(_ == (Http.NotFound, t"no spoon"))
+
+      test(m"a path substitution is percent-encoded"):
+        val recorder = Recorder(() => Http.Response(Http.Ok, contentType = media"text/plain")(t"x"))
+        given Http.Backend = recorder
+        refs.items(7).label.get.call()
+        recorder.lastUrl
+      . assert(_ == t"https://ref.example.com/v2/items/7/label")
 
       test(m"a bare call() on a JSON endpoint yields the Json"):
         given Http.Backend = Recorder(() => ok(itemJson))
@@ -416,7 +433,7 @@ object ApiTests extends Suite(m"Api client tests"):
 
       test(m"the request body is encoded as XML"):
         xmlApi.notes.post(NewNote(t"hi")).request.body match
-          case Api.Body.Content(media, _) => media == t"application/xml"
+          case Api.Body.Content(media, _) => media == media"application/xml"
           case _                          => false
       . assert(_ == true)
 

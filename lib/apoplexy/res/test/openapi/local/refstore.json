@@ -41,7 +41,13 @@
       ],
       "get": {
         "operationId": "getItem",
-        "responses": { "200": { "$ref": "#/components/responses/Item" } }
+        "responses": {
+          "200": { "$ref": "#/components/responses/Item" },
+          "default": {
+            "description": "a problem",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Problem" } } }
+          }
+        }
       }
     },
     "/items/{itemId}/label": {
@@ -127,6 +133,11 @@
         "type": "object",
         "required": ["name"],
         "properties": { "name": { "type": "string" } }
+      },
+      "Problem": {
+        "type": "object",
+        "required": ["message"],
+        "properties": { "message": { "type": "string" } }
       }
     },
     "parameters": {

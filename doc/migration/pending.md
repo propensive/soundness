@@ -117,8 +117,31 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - Module `apoplexy.core` now depends on `xylophone.http` and `ypsiloid.http` (new modules, both in
   the `web` bundle) in place of `xylophone.core` and `ypsiloid.core`. (#2091)
 - Module `apoplexy.core` now also depends on `polyvinyl.core`; new `apoplexy.Api.Records` (a
-  `Json.Provider.Primitives`) and `Api.json(request: Api.Request)(using …): Json` support the new
-  `Api.Response#record()` and `#tuple()`. (#2091)
+  `Json.Provider.Primitives`) and `Api.jsonOf(response: Http.Response)(using Tactic[Parse.Error]):
+  Json` support the new `Api.Response#record()` and `#tuple()`. (#2091)
+- `apoplexy.Api.Request(method: Http.Method, base: Text, path: Text, substitutions: Map[Text, Text],
+  query: List[(Text, Text)], body: Api.Body, headers: List[(Text, Text)], accept: Optional[Text])`
+  became `Request(method: Http.Method, base: HttpUrl, path: Text, substitutions: Map[Text, Text] =
+  Map(), query: legerdemain.Query = Query(), body: Api.Body = Api.Body.Empty, headers:
+  List[Http.Header] = Nil, accept: Optional[MediaType] = Unset)`; `Api.Body.Content(mediaType:
+  Text, spring)` became `Content(mediaType: MediaType, spring)` and `Api.Body.content` takes a
+  `MediaType`; `Api(resource, base: Text)` became `Api(resource, base: HttpUrl)`; `Api.send(request)
+  (using Online, Http.Event is Loggable, Tactic[Connect.Error], Tactic[Url.Error])(using client)`
+  lost its `Tactic[Url.Error]` (the URL is built, not parsed). New `Api.extend(base: HttpUrl,
+  server: Text): HttpUrl`. Behaviour: a spec whose first server URL is absent, relative or not a
+  valid URL is now a compile error at `Api(resource)` unless `base` is given (previously the base
+  was the raw text and failed at send time); a path substitution is now percent-encoded (a space
+  as `%20`). (#2091)
+- `apoplexy.Api.Error(reason: Api.Error.Reason)`, with `Reason.Status(code: Int)` and
+  `Reason.Malformed`, became `case class Api.Error[payload](status: Http.Status, payload:
+  payload)(using Diagnostics)` (still `SN-914`, now `914.1` only). `Api.Response` gained the type
+  member `Failure`, set per operation by the macros to the carrier of the declared error response
+  (`default`, then `4XX`/`5XX`, then the lowest error status with a body), else `Text`; `call()`,
+  `record()` and `tuple()` now require `Tactic[Api.Error[Failure]]` and `Diagnostics` at the call
+  site and raise `Api.Error[Failure]` with the error body construed. `Api.Response#ensure(response)`
+  is the new inline status check. The `Conformant` givens (`carrier`, `carrierText`, `decodable`,
+  `decodableText`, `unit`) no longer take a `Tactic[Api.Error]` and no longer check the status;
+  `Conformant.successful` removed. (#2091)
 
 ## caduceus
 

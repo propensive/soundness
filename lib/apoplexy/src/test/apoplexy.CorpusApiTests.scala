@@ -62,14 +62,14 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
       Http.Response(Http.Ok, contentType = media"application/json")(body)
 
     suite(m"Swagger Petstore v3"):
-      val api = Api(cp"/openapi/swagger/petstore3.json", base = t"https://petstore3.swagger.io")
+      val api = Api(cp"/openapi/swagger/petstore3.json", base = url"https://petstore3.swagger.io")
 
       val petJson =
         t"""{"id": 42, "name": "Milo", "photoUrls": ["a"], "status": "available",
              "tags": [{"id": 1, "name": "cat"}]}"""
 
       test(m"the relative server URL extends the base"):
-        api.request.base
+        api.request.base.show
       . assert(_ == t"https://petstore3.swagger.io/api/v3")
 
       test(m"an int64 path parameter takes a Long"):
@@ -88,7 +88,7 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
       . assert(_ == (t"Milo", List(t"a")))
 
       test(m"a required query parameter feeds findByStatus"):
-        api.pet.findByStatus.get(status = t"available").request.query
+        api.pet.findByStatus.get(status = t"available").request.query.values
       . assert(_ == List(t"status" -> t"available"))
 
       test(m"findByStatus decodes a list of pets"):
@@ -129,11 +129,11 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
       val api = Api(cp"/openapi/redocly/museum.yaml")
 
       test(m"the server URL is read from YAML"):
-        api.request.base
+        api.request.base.show
       . assert(_ == t"https://redocly.com/_mock/docs/openapi/museum-api")
 
       test(m"referenced query parameters are recognised"):
-        api.`museum-hours`.get(startDate = t"2024-01-01", limit = 5).request.query
+        api.`museum-hours`.get(startDate = t"2024-01-01", limit = 5).request.query.values
       . assert(_ == List(t"startDate" -> t"2024-01-01", t"limit" -> t"5"))
 
       test(m"a PNG ticket code is construed as a Raster"):
@@ -149,12 +149,12 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
       . assert(_ == List())
 
     suite(m"Kubernetes RBAC"):
-      val api = Api(cp"/openapi/kubernetes/rbac.json", base = t"https://cluster.example")
+      val api = Api(cp"/openapi/kubernetes/rbac.json", base = url"https://cluster.example")
 
       test(m"path-level and operation parameters combine"):
         val roles = api.apis.`rbac.authorization.k8s.io`.v1.namespaces(t"default").roles
         val request = roles.get(limit = 5, pretty = t"true").request
-        (request.path, request.substitutions, request.query)
+        (request.path, request.substitutions, request.query.values)
       . assert: request =>
           request(0) == t"/apis/rbac.authorization.k8s.io/v1/namespaces/{namespace}/roles"
           && request(1) == Map(t"namespace" -> t"default")
@@ -163,7 +163,7 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
       test(m"JSON is preferred among the response media types"):
         val typed: Api.Response over Json = api.apis.`rbac.authorization.k8s.io`.v1.get
         typed.request.accept
-      . assert(_ == t"application/json")
+      . assert(_ == media"application/json")
 
     suite(m"Discord (OpenAPI 3.1)"):
       val api = Api(cp"/openapi/discord/openapi.json")
@@ -173,7 +173,7 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
       . assert(_ == t"/users/@me")
 
       test(m"messages take a limit"):
-        api.channels(t"1").messages.get(limit = 10).request.query
+        api.channels(t"1").messages.get(limit = 10).request.query.values
       . assert(_ == List(t"limit" -> t"10"))
 
       test(m"an undeclared path is rejected"):
@@ -185,8 +185,15 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
 
       test(m"customers are listed with a limit"):
         val request = api.v1.customers.get(limit = 3).request
-        (request.path, request.query)
+        (request.path, request.query.values)
       . assert(_ == (t"/v1/customers", List(t"limit" -> t"3")))
+
+      test(m"Stripe's default error response types the failure as Json"):
+        given Http.Backend =
+          Recorder(() => Http.Response(Http.BadRequest, contentType = media"application/json")(t"""{"error": {"message": "no"}}"""))
+
+        capture[Api.Error[Json]](api.v1.customers(t"cus_1").get.call()).payload(t"error")(t"message").as[Text]
+      . assert(_ == t"no")
 
       test(m"a customer is fetched by id"):
         api.v1.customers(t"cus_1").get.request.substitutions
@@ -196,5 +203,5 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
       val api = Api(cp"/openapi/twilio/accounts_v1.json")
 
       test(m"an int64 query parameter takes a Long"):
-        api.v1.Credentials.AWS.get(PageSize = 5L).request.query
+        api.v1.Credentials.AWS.get(PageSize = 5L).request.query.values
       . assert(_ == List(t"PageSize" -> t"5"))
