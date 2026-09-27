@@ -95,7 +95,9 @@ This typeclass is what lets an [HTTP](http-server.md) handler return a value and
 
 The `multipart/form-data` format of file uploads parses into a `Multipart` of typed `Part`s, each
 with its disposition, name, optional filename, headers and body stream — parsed incrementally, so
-a large upload streams rather than accumulating:
+a large upload streams rather than accumulating. A part's body is lent from the input, zero-copy:
+read it (`part.read[Data]`, or `part.body()` for the stream) before moving on to the next part,
+after which whatever remained of it has been skipped and it reads as empty:
 
 ```scala
 val body =

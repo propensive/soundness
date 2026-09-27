@@ -73,6 +73,10 @@ object Streamable:
   // request or response body can be `read` directly.
   given httpBody: Buffering => HttpStreams.Body is Streamable by Data over Credit = _.stream
 
+  // A spring mints a fresh endpoint per call, so it can be `read` (or handed to a parser)
+  // as it is: a request's body, a multipart part's.
+  given spring: Spring[Data] is Streamable by Data over Credit = _()
+
   given inputStream: [input <: ji.InputStream] => (tactic: Tactic[Truncation.Error], buffering: Buffering)
   =>  ((input is Streamable by Data over Credit)^{tactic}) =
     // Laundered for the Scala.js pipeline, as `Sink.outputStream` (see #1520).

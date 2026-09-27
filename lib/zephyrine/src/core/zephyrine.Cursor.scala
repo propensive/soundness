@@ -239,14 +239,23 @@ object Cursor:
         // hold a non-Unscoped capture.
         locally:
           val filler = new Filler[addressable0.Storage]:
-            val block: Int = buffering.capacity(addressable0.substrate)
+            private val window: Int = buffering.window(addressable0.substrate)
+
+            // The only state a filler has; the cursor alone calls it, from `refill`.
+            @caps.unsafe.untrackedCaptures
+            private var block0: Int = buffering.capacity(addressable0.substrate)
+            def block: Int = block0
 
             def fill(storage: addressable0.Storage, offset: Int, space: Int): Int =
-              stream.refill(Credit(space.min(block))).lay(-1): count =>
+              stream.refill(Credit(space.min(block0))).lay(-1): count =>
                 val copied = count.min(space)
                 val source = stream.unsafeStorage(using Unsafe).asInstanceOf[addressable0.Storage]
                 addressable0.transfer(source, stream.start, storage, offset, copied)
                 stream.skip(copied)
+
+                // A fill that arrives full suggests a long input: ask for twice as much next
+                // time, up to the policy's window (by default the block itself: no growth).
+                if copied == block0 && block0 < window then block0 = (block0*2).min(window)
                 copied
 
           // Sealed like the loader: the filler captures the adopted stream (consumed by
@@ -699,6 +708,24 @@ extends caps.Mutable:
 
   private update def moreSlow(): Boolean =
     !ended && { refill(); pos < writeEnd }
+
+  // Pull more from the source without consuming anything: the readable region grows in
+  // place (compaction keeps everything from the current position, or from the hold's start
+  // when one is active). `true` when at least one element arrived; `false` once the source
+  // is exhausted, or for a static cursor, which already holds everything. For a scan that
+  // must keep a tail across a fill — a possible prefix of a delimiter at the end of the
+  // buffer — where `more` refills only once the buffer has drained.
+  update def extend(): Boolean =
+    if ended || static then false else
+      val held = holdStart >= 0
+      val position = basePos + pos
+      val before = writeEnd - pos
+      if !held then holdStart = pos
+      pos = writeEnd
+      refill()
+      pos = (position - basePos).toInt
+      if !held then holdStart = -1
+      writeEnd - pos > before
 
   inline update def finished: Boolean = !more
   inline def position: Ordinal = (basePos + pos).toInt.z

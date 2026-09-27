@@ -524,12 +524,19 @@ format. Entries are grouped by module, most-recently-added last within a module.
   the IANA registry is compiled into a string table (`gesticulate.MediaTypeData`, private) at
   build time from `lib/gesticulate/data`. The `media"…"` macro's unregistered-type check is
   unchanged. (#2082)
-- `gesticulate.Multipart.parse` now emits a part's body as it scans it, so `Part#body` (a
-  `Chain[Data]`) may hold several blocks for one part — roughly one per 4 KiB of a large body —
-  where it previously always held exactly one. Reading the body through `read[Data]`,
-  `Part is Streamable`, or anything else that concatenates the chain is unaffected; code that
-  took `body.head` (or a `Chain(single)` pattern) as the whole body must concatenate instead.
-  The bytes, the parts and their order are unchanged. (#PR)
+- `gesticulate.Part#body` is now a `zephyrine.Spring[Data]` (call `body()` for a fresh
+  `Stream[Data] over Credit`) instead of a `Chain[Data]`, and `Multipart.parse` no longer
+  materialises bodies: each part's body is lent zero-copy from the input being parsed, and is
+  readable only while that part is the current one. Forcing the next part of `Multipart#parts`
+  (or `Multipart#at`, which forces every part before the match) skips whatever remains of the
+  earlier body, after which it reads as empty. Read a body before moving on: `part.read[Data]`
+  and `Part is Streamable` are unchanged; code that held `part.body` as a value and read it
+  later, or iterated its blocks, must read through `part.body()` (a stream) while the part is
+  current. `Part(disposition, headers, name, filename, body)` takes a `Spring[Data]` in the
+  last position. (#PR)
+- `gesticulate.Multipart.parse` fills its cursor in blocks that grow from 4 KiB towards 64 KiB
+  once an input proves long (`zephyrine.Buffering#window`, new, default `capacity`), so a parse
+  of a large body holds a buffer of up to about 128 KiB where it previously held 8 KiB. (#PR)
 
 ## gossamer
 

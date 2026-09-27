@@ -56,7 +56,7 @@ object Tests extends Suite(m"Gesticulate tests"):
             Array.frozen(data.readable.slice(offset, end)) #:: go(end)
         go(0)
 
-      def bodyText(part: Part): Text = part.body.read[Data].utf8
+      def bodyText(part: Part): Text = part.read[Data].utf8
 
       val blockSizes = List(1, 2, 3, 7, 13, 32, 4096)
 
@@ -220,14 +220,33 @@ object Tests extends Suite(m"Gesticulate tests"):
       for blockSize <- List(1, 7, 4096, 65536) do
         test(m"100 KB binary body round-trips at block size $blockSize"):
           val part = Multipart.parse(bytesChunks(binaryWire(large), blockSize)).parts.stdlib.head
-          same(part.body.read[Data], large)
+          same(part.read[Data], large)
 
         . assert(_ == true)
 
-      test(m"A body larger than the cursor's window is emitted as several blocks"):
-        Multipart.parse(bytesChunks(binaryWire(large), 4096)).parts.stdlib.head.body.stdlib.length
+      test(m"A body larger than the cursor's window is lent as several regions"):
+        var regions = 0
+        val upload = Multipart.parse(bytesChunks(binaryWire(large), 4096))
+        upload.parts.stdlib.head.body().drain { region => range => regions += 1 }
+        regions
 
       . assert(_ > 1)
+
+      test(m"A part's body reads as empty once the next part has been read"):
+        val parts = Multipart.parse(chunks(twoParts, 4096)).parts
+        parts.stdlib.length
+        bodyText(parts.stdlib.head)
+
+      . assert(_ == t"")
+
+      test(m"A body may be read in two pieces"):
+        val part = Multipart.parse(bytesChunks(binaryWire(large), 4096)).parts.stdlib.head
+        val first = part.body()
+        val piece = first.refill(Credit(1000)).or(0)
+        first.skip(piece)
+        piece + part.read[Data].length
+
+      . assert(_ == 100000)
 
       test(m"A field after a 100 KB binary body is still read"):
         val rest =
@@ -244,7 +263,7 @@ object Tests extends Suite(m"Gesticulate tests"):
         test(m"Body of $size bytes, delimiter at a window edge, round-trips"):
           val body = binary(size, size)
           val part = Multipart.parse(bytesChunks(binaryWire(body), 4096)).parts.stdlib.head
-          same(part.body.read[Data], body)
+          same(part.read[Data], body)
 
         . assert(_ == true)
 

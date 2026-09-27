@@ -373,6 +373,63 @@ def streamOf[data](cursor: Cursor[data, {}]^, length: Optional[Long] = Unset)
       // Deliberately not overridden: `close()` must leave the lent cursor open
       // for the caller to resume.
 
+// A pull endpoint lending a cursor up to a delimiter: the bytes before the next occurrence
+// of `delimiter`, exposed zero-copy from the cursor's own buffer and found in bulk
+// (`distance`). Each region is what the buffer holds before the delimiter or, while it has
+// not been found, all but the last `delimiter.length - 1` buffered bytes — a possible prefix
+// of a delimiter straddling the fill — which the cursor keeps while it `extend`s. At
+// end-of-stream the cursor stands AT the delimiter, for the caller to consume, or is
+// exhausted if the input ended first; the caller tells the two apart with `finished`. Lent,
+// not consumed, under the discipline the length-bounded factory above states.
+def streamOf(cursor: Cursor[Data, {}]^, delimiter: Cursor.Delimiter)
+:   (Stream[Data] over Credit)^{cursor, caps.any} =
+
+    new Stream[Data]:
+      type Transport = Credit
+
+      // A snapshot of the cursor's buffer state, as the length-bounded factory keeps.
+      private var storage: AnyRef = ""
+      private var start0: Int = 0
+      private var limit0: Int = 0
+
+      protected def storage0: AnyRef = storage
+      def start: Int = start0
+      def limit: Int = limit0
+
+      update def skip(count: Int): Unit =
+        start0 += count
+        cursor.unsafeAdvanceBy(count)(using Unsafe)
+
+      // How many buffered bytes may be exposed next: those before the delimiter once it is
+      // buffered; otherwise all but a possible prefix of it, fetching more when that leaves
+      // none. Zero means the delimiter is at the cursor, or the input has ended.
+      private update def exposable(): Int =
+        if !cursor.more then 0 else
+          val distance = cursor.distance(delimiter)
+
+          if distance >= 0 then distance else
+            val available = cursor.available
+            val retained = (delimiter.length - 1).min(available)
+
+            if available > retained then available - retained
+            else if cursor.extend() then exposable()
+            else available
+
+      update def refill(demand: Credit): Optional[Int] =
+        if limit0 > start0 then limit0 - start0 else
+          val count = exposable()
+
+          if count == 0 then Unset else
+            val granted = summon[Credit is Regulation].grant(demand)
+
+            if granted == 0 then 0 else
+              storage = cursor.unsafeBuffer(using Unsafe).asInstanceOf[AnyRef]
+              start0 = cursor.unsafePos(using Unsafe)
+              limit0 = start0 + count.min(granted)
+              limit0 - start0
+
+      // Not overridden, as above: `close()` leaves the lent cursor open at the delimiter.
+
 // A pull endpoint over a bounded range of an `Expanse`: each refill reads the
 // next chunk of the range — sized by the buffering policy's transfer block — and
 // exposes the freshly-read buffer as the region, zero-copy. Reads are issued

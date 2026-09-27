@@ -85,7 +85,6 @@ lib/gastronomy/src/core/gastronomy.Digest.scala	1	0	2
 lib/gastronomy/src/core/gastronomy.PureHashes.scala	23	0	0
 lib/geodesy/src/core/geodesy.Compass.scala	0	3	0
 lib/geodesy/src/core/geodesy.internal.scala	0	0	1
-lib/gesticulate/src/core/gesticulate.Multipart.scala	1	0	0
 lib/gossamer/src/core/gossamer.Cuttable.scala	1	0	0
 lib/gossamer/src/core/gossamer.Decimalizer.scala	2	0	1
 lib/gossamer/src/core/gossamer.Pue.scala	1	0	1

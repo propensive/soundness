@@ -35,16 +35,18 @@ package gesticulate
 import anticipation.*
 import prepositional.*
 import turbulence.*
-import zephyrine.Credit
+import zephyrine.{Credit, Spring}
 import vacuous.*
 
 object Part:
-  given streamable: Part is Streamable by Data over Credit = part =>
-    zephyrine.Stream(part.body)
+  given streamable: Part is Streamable by Data over Credit = _.body()
 
+// `body` is lent from the input being parsed, zero-copy: it is readable until the next part
+// is read (which skips whatever remains of it), after which it reads as empty. Each `body()`
+// continues from wherever the previous one stopped.
 case class Part
   ( disposition: Optional[Multipart.Disposition],
     headers:     Map[Text, Text],
     name:        Optional[Text],
     filename:    Optional[Text],
-    body:        Chain[Data] )
+    body:        Spring[Data] )

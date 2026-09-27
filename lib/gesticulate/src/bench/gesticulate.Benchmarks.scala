@@ -51,6 +51,7 @@ import sedentary.*
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import vacuous.*
+import zephyrine.*
 
 object Benchmarks extends Suite(m"Gesticulate benchmarks"):
   sealed trait Information extends Dimension
@@ -123,14 +124,23 @@ object Benchmarks extends Suite(m"Gesticulate benchmarks"):
 
   // ─── helpers (called from quoted bench bodies) ────────────────────────────
 
-  // Drains every part and every block of every body, as a consumer of the request would, and
+  // Drains every part's lent body region by region, as a consumer of the request would, and
   // returns the total body bytes.
   def soundness(blocks: Chain[Data]): Long =
     var total = 0L
 
     Multipart.parse(blocks).parts.each: part =>
-      part.body.each: block =>
-        total += block.length
+      val body = part.body()
+
+      def loop(): Unit = body.refill(Credit(65536)) match
+        case count: Int =>
+          total += count
+          body.skip(count)
+          loop()
+
+        case _ => ()
+
+      loop()
 
     total
 
