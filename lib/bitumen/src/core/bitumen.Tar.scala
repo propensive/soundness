@@ -39,7 +39,7 @@ import denominative.*
 import distillate.*
 import galilei.*
 import gossamer.*
-import hieroglyph.*, charEncoders.asciiEncoder, textMetrics.uniformMetric
+import hieroglyph.*, codepages.asciiCodepage, textMetrics.uniformMetric
 import hypotenuse.*, arithmeticOptions.uncheckedOverflow
 import nomenclature.*
 import prepositional.*

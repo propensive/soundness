@@ -35,7 +35,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import denominative.dysasymptotics.linearSize
 
 // Key fields (spec §20): the `key` flag on `Field`, its schema validity

@@ -110,7 +110,7 @@ private[facsimile] object CosWriter:
 
   private def name(builder: DataBuilder, text: Text): Unit =
     builder += '/'.toByte
-    val raw = charEncoders.utf8Encoder.encoded(text)
+    val raw = codepages.utf8Codepage.encoded(text)
 
     raw.extent.each: i =>
       val byte = raw(i) & 0xff

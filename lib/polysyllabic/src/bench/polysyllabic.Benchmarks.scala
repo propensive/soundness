@@ -42,7 +42,7 @@ import escritoire.columnar.Paragraph
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
-import hieroglyph.*, charDecoders.utf8Decoder, textMetrics.uniformMetric, textSanitizers.strictSanitizer
+import hieroglyph.*, charsets.utf8Charset, textMetrics.uniformMetric, textSanitizers.strictSanitizer
 import probably.*
 import proscenium.*
 import quantitative.*

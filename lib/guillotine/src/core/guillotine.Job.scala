@@ -67,7 +67,7 @@ object Job:
     (process, stream) =>
       process.stdin
         ( stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]
-          . via(hieroglyph.CharEncoder.system).asInstanceOf[(Stream[Data] over Credit)^] )
+          . via(hieroglyph.Codepage.system).asInstanceOf[(Stream[Data] over Credit)^] )
 
 // A `Job` is a *capability*: it is the live handle to a running subprocess (its streams and
 // its lifecycle), tracked fresh from `fork()`. `Exclusive` because a subprocess's stdio has
@@ -104,7 +104,7 @@ extends Subprocess, Process.Ref, caps.ExclusiveCapability:
   // kernel, with adaptive line separation — matching the treatment of `\n`,
   // `\r\n` and `\r` by `BufferedReader.readLine`, which this replaces.
   def lines()(using Tactic[Truncation.Error]): (Stream[Array[Text]^{}] over Credit)^ =
-    import hieroglyph.charDecoders.utf8Decoder, hieroglyph.textSanitizers.substituteSanitizer
+    import hieroglyph.charsets.utf8Charset, hieroglyph.textSanitizers.substituteSanitizer
     import turbulence.lineSeparation.adaptiveLinefeedLineSeparation
     stdout().delineate
 

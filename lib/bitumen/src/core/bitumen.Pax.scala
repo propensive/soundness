@@ -37,7 +37,7 @@ import anticipation.*
 import denominative.*
 import contingency.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8Encoder
+import hieroglyph.*, codepages.utf8Codepage
 import rudiments.*
 import vacuous.*
 import symbolism.*

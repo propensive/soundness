@@ -60,7 +60,7 @@ object Tests extends Suite(m"Reliquary Tests"):
   // suite: a golden value locking the Stored zip profile byte-for-byte.
   val goldenDerivative: Text = t"ωӟMſÔǽƒJMôҷЖǣΞYǣЭOЫǿ3ωḡm3ќḞήUШďå"
 
-  def encode(text: Text): Data = charEncoders.utf8Encoder.encoded(text)
+  def encode(text: Text): Data = codepages.utf8Codepage.encoded(text)
 
   def resource(name: Text): Data =
     val stream = getClass.getResourceAsStream(s"/reliquary/${name}.tel").nn

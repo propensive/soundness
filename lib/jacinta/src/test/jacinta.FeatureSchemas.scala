@@ -34,7 +34,7 @@ package jacinta
 
 import soundness.*
 
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import strategies.throwUnsafely
 
 // Small hand-written schemas, each exercising one JSON Schema feature the provider handles,

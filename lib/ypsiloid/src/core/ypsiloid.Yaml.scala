@@ -51,7 +51,7 @@ import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
-import hieroglyph.CharEncoder
+import hieroglyph.Codepage
 import hypotenuse.Bcd
 import panopticon.*
 import prepositional.*
@@ -1707,7 +1707,7 @@ object Yaml extends Yaml2, Dynamic:
   // the UTF-8 encoder duct — windowed, not whole-document.
   private def utf8Stream(consume stream: (Stream[Text] over Credit)^)(using Buffering)
   :   (Stream[Data] over Credit)^ =
-    stream.via(hieroglyph.charEncoders.utf8Encoder).asInstanceOf[(Stream[Data] over Credit)^]
+    stream.via(hieroglyph.codepages.utf8Codepage).asInstanceOf[(Stream[Data] over Credit)^]
 
   given aggregable: (tactic: Tactic[Parse.Error], tracking: Yaml.Tracking)
   =>  ((Yaml is Aggregable by Text)^{tactic}) =
@@ -1760,7 +1760,7 @@ object Yaml extends Yaml2, Dynamic:
   // `Postable`/`Servable` from it); `Instantiable across HttpRequests` reads a
   // request/response body back into `Yaml`. Encoding needs a `Yaml.Formatting` in
   // scope (see `printers`), which drives the `Yaml.Ast` `Showable` instance.
-  given abstractable: (encoder: CharEncoder, formatting: Formatting)
+  given abstractable: (encoder: Codepage, formatting: Formatting)
   =>  Yaml is Abstractable across HttpStreams to HttpStreams.Content =
 
     new Abstractable:

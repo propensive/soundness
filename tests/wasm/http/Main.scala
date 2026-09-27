@@ -7,7 +7,7 @@ import scala.scalajs.wasi.http.types.{IncomingRequest, ResponseOutparam}
 import anticipation.*
 import gesticulate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8Encoder
+import hieroglyph.*, codepages.utf8Codepage
 import prepositional.*
 import spectacular.*
 import telekinesis.*, telekinesis.wasiApis.wasiHttpApi

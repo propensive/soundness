@@ -39,7 +39,7 @@ import monotonous.*
 import proscenium.*
 
 import alphabets.base64Url
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import providers.javaBaseProvider
 
 // Proof Key for Code Exchange (RFC 7636): a verifier the client keeps, and the `S256` challenge

@@ -114,7 +114,7 @@ extension (data: Data)
   // lines duct as above.
   @targetName("delineateWholeData")
   def delineate
-    ( using decoder: CharDecoder, lineSeparation: LineSeparation, buffering: Buffering )
+    ( using decoder: Charset, lineSeparation: LineSeparation, buffering: Buffering )
   :   Array[Text]^{} =
 
     decoder.decoded(data).delineate
@@ -128,7 +128,7 @@ extension (consume stream: (Stream[Data] over Credit)^)
   // units contain `0x0A` bytes) decodes first and splits the characters.
   @targetName("delineateData")
   def delineate
-    ( using decoder: CharDecoder, lineSeparation: LineSeparation, buffering: Buffering )
+    ( using decoder: Charset, lineSeparation: LineSeparation, buffering: Buffering )
   :   (Stream[Array[Text]^{}] over Credit)^ =
 
     val charset = decoder.encoding.charset

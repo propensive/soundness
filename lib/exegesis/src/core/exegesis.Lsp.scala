@@ -1663,7 +1663,7 @@ object Lsp:
     ( using Stdio^, Monitor, Probate )
   :   Unit =
 
-    import charEncoders.utf8Encoder
+    import codepages.utf8Codepage
     import strategies.throwUnsafely
     import Json.jsonEncodableInText
 

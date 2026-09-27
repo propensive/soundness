@@ -35,7 +35,7 @@ import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import eucalyptus.*, logging.silentLogging
 import gossamer.*
-import hieroglyph.charEncoders.utf8Encoder
+import hieroglyph.codepages.utf8Codepage
 import jacinta.*, formatting.compactJsonFormatting, servables.jsonServable
 import parasite.*, probates.awaitProbate
 import proscenium.*

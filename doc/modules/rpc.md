@@ -31,8 +31,8 @@ encoding for the bytes that cross the wire:
 ```scala
 import soundness.*
 import strategies.throwUnsafely
-import charEncoders.utf8Encoder
-import charDecoders.utf8Decoder
+import codepages.utf8Codepage
+import charsets.utf8Charset
 ```
 
 ### An interface

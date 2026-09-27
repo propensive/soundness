@@ -36,7 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.emptyDiagnostics
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 
 
 object Tests extends Suite(m"Corpuscular tests"):

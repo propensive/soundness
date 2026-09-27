@@ -52,7 +52,7 @@ import vacuous.*
 import zephyrine.*
 
 import alphabets.base64Standard
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import environments.javaBaseEnvironment
 import errorDiagnostics.stackTracesDiagnostics
 import formatting.compactJsonFormatting

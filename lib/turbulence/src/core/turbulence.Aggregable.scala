@@ -87,7 +87,7 @@ object Aggregable:
             case _ =>
               ()
 
-  given bytesText: (decoder: CharDecoder) => ((Text is Aggregable by Data)) =
+  given bytesText: (decoder: Charset) => ((Text is Aggregable by Data)) =
     bytesData.map(decoder.decoded)
 
   given textText: Text is Aggregable by Text = new Aggregable:

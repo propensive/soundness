@@ -59,7 +59,7 @@ object AtomsBlob:
     val body = rows.join(t"\n")
     val header = s"tel 1.0 ${Lira.Schemas.atomsSignature}\n\ndiscipline ${atomization.discipline}"
     val text = Text(if rows.nil then s"$header\n" else s"$header\n\n$body\n")
-    charEncoders.utf8Encoder.encoded(text)
+    codepages.utf8Codepage.encoded(text)
 
   def decode(data: Data): Atomization raises Lira.Error =
     import Tels.Decoder.validate

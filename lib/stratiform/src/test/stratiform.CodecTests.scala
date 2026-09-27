@@ -35,7 +35,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import denominative.dysasymptotics.linearSize
 
 // Scalar encodings (spec §21.7): the codec interface and its laws C1–C3,

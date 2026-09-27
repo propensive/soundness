@@ -36,7 +36,7 @@ import soundness.*
 
 import providers.javaBaseProvider
 import alphabets.hexLowerCase
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import formatting.compactJsonFormatting
 import strategies.throwUnsafely
 import Http2.*

@@ -299,7 +299,7 @@ object Http:
     def serialize(request: Request)(using buffering: Buffering)
     :   (Stream[Data] over Credit)^ =
 
-      import charEncoders.asciiEncoder
+      import codepages.asciiCodepage
 
       val endpoint = request.body()
       val block = buffering.capacity(Substrate.Bytes)
@@ -841,7 +841,7 @@ object Http:
       ( using buffering: Buffering )
     :   (Stream[Data] over Credit)^ =
 
-      import charEncoders.asciiEncoder
+      import codepages.asciiCodepage
 
       val upgrade: Boolean = response.status == Http.SwitchingProtocols
       val (head, chunked) = framing(response, version)

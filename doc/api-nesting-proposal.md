@@ -98,7 +98,7 @@ Errors, events and satellites nesting under an existing companion (the dominant 
 | guillotine.core | `PidError→Pid.Error`, `ProcessInput→Process.Input`, `ProcessRef→Process.Ref` |
 | hallucination.core | `RasterError→Raster.Error`, `RasterFormats→Raster.Formats` |
 | hellenism.core | `ClasspathEntry→Classpath.Entry`, `ClasspathError→Classpath.Error`, `ClasspathEvent→Classpath.Event` |
-| hieroglyph.core | `CharDecodeError→CharDecoder.Error`, `CharEncodeError→CharEncoder.Error` (nesting under the typeclass that raises them) |
+| hieroglyph.core | `CharsetError→Charset.Error`, `CodepageError→Codepage.Error` (nesting under the typeclass that raises them) |
 | inimitable.core | `UuidError→Uuid.Error` |
 | jacinta.core | `JsonError→Json.Error`, `JsonPrimitive→Json.Primitive`, `JsonPointerError→JsonPointer.Error` |
 | jacinta.records | `JsonBlueprintDoc→JsonBlueprint.Doc`, `JsonBlueprintError→JsonBlueprint.Error` |

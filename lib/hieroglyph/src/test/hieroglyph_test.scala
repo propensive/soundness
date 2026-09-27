@@ -41,9 +41,9 @@ import textMetrics.eastAsianScriptsMetric
 import errorDiagnostics.stackTracesDiagnostics
 import denominative.dysasymptotics.linearSize
 
-case class DecodeIssues(items: List[(Int, CharDecoder.Error)] = Nil)(using Diagnostics)
+case class DecodeIssues(items: List[(Int, Charset.Error)] = Nil)(using Diagnostics)
 extends Error(m"${items.size} decoding issues"):
-  def +(position: Int, error: CharDecoder.Error): DecodeIssues =
+  def +(position: Int, error: Charset.Error): DecodeIssues =
     DecodeIssues(items :+ (position, error))
 
 object Tests extends Suite(m"Hieroglyph tests"):
@@ -93,73 +93,73 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
       test(m"Decode Japanese from UTF-8"):
         import textSanitizers.skipSanitizer
-        charDecoders.utf8Decoder.decoded(japaneseData)
+        charsets.utf8Charset.decoded(japaneseData)
       . assert(_ == japanese)
 
       for chunk <- 1 to 25 do
         test(m"Decode Japanese text in chunks of size $chunk"):
           import textSanitizers.skipSanitizer
-          charDecoders.utf8Decoder.decoded(japaneseData.readable.grouped(chunk).map(Array.frozen(_)).to(Chain)).join
+          charsets.utf8Charset.decoded(japaneseData.readable.grouped(chunk).map(Array.frozen(_)).to(Chain)).join
         . assert(_ == japanese)
 
       val badUtf8 = Data(45, -62, 49, 48)
 
       test(m"Decode invalid UTF-8 sequence, skipping errors"):
         import textSanitizers.skipSanitizer
-        charDecoders.utf8Decoder.decoded(badUtf8)
+        charsets.utf8Charset.decoded(badUtf8)
       . assert(_ == t"-10")
 
       test(m"Decode invalid UTF-8 with question mark substitution"):
         import textSanitizers.substituteSanitizer
-        charDecoders.utf8Decoder.decoded(badUtf8)
+        charsets.utf8Charset.decoded(badUtf8)
       . assert(_ == t"-?10")
 
       test(m"Decode invalid UTF-8 sequence, throwing exception"):
         import textSanitizers.strictSanitizer
-        capture[CharDecoder.Error](charDecoders.utf8Decoder.decoded(badUtf8))
-      . assert(_ == CharDecoder.Error(1, enc"UTF-8"))
+        capture[Charset.Error](charsets.utf8Charset.decoded(badUtf8))
+      . assert(_ == Charset.Error(1, enc"UTF-8"))
 
       test(m"Ensure that decoding is finished"):
         import textSanitizers.strictSanitizer
-        given CharEncoder = enc"UTF-8".encoder
-        capture[CharDecoder.Error](charDecoders.utf8Decoder.decoded(Array.frozen(t"café".in[Data].readable.dropRight(1))))
-      . assert(_ == CharDecoder.Error(4, enc"UTF-8"))
+        given Codepage = enc"UTF-8".encoder
+        capture[Charset.Error](charsets.utf8Charset.decoded(Array.frozen(t"café".in[Data].readable.dropRight(1))))
+      . assert(_ == Charset.Error(4, enc"UTF-8"))
 
     suite(m"Accruing decode errors"):
       val badUtf8 = Data(45, -62, 49, 48)
       val worseUtf8 = Data(45, -62, 49, -62, 48)
 
       test(m"Valid UTF-8 accrues no errors"):
-        validate[CharDecoder.Focus](DecodeIssues()):
-          case error: CharDecoder.Error => accrual + (prior.let(_.position).or(0), error)
+        validate[Charset.Focus](DecodeIssues()):
+          case error: Charset.Error => accrual + (prior.let(_.position).or(0), error)
         . protect:
             import textSanitizers.accrueSanitizer
-            charDecoders.utf8Decoder.decoded(japaneseData)
+            charsets.utf8Charset.decoded(japaneseData)
       . assert(_.items.size == 0)
 
       test(m"A single bad sequence accrues one error"):
-        validate[CharDecoder.Focus](DecodeIssues()):
-          case error: CharDecoder.Error => accrual + (prior.let(_.position).or(0), error)
+        validate[Charset.Focus](DecodeIssues()):
+          case error: Charset.Error => accrual + (prior.let(_.position).or(0), error)
         . protect:
             import textSanitizers.accrueSanitizer
-            charDecoders.utf8Decoder.decoded(badUtf8)
-      . assert(_.items == List((1, CharDecoder.Error(1, enc"UTF-8"))))
+            charsets.utf8Charset.decoded(badUtf8)
+      . assert(_.items == List((1, Charset.Error(1, enc"UTF-8"))))
 
       test(m"Both bad sequences accrue (decoding does not stop at the first)"):
-        validate[CharDecoder.Focus](DecodeIssues()):
-          case error: CharDecoder.Error => accrual + (prior.let(_.position).or(0), error)
+        validate[Charset.Focus](DecodeIssues()):
+          case error: Charset.Error => accrual + (prior.let(_.position).or(0), error)
         . protect:
             import textSanitizers.accrueSanitizer
-            charDecoders.utf8Decoder.decoded(worseUtf8)
-      . assert(_.items == List((1, CharDecoder.Error(1, enc"UTF-8")), (3, CharDecoder.Error(3, enc"UTF-8"))))
+            charsets.utf8Charset.decoded(worseUtf8)
+      . assert(_.items == List((1, Charset.Error(1, enc"UTF-8")), (3, Charset.Error(3, enc"UTF-8"))))
 
       test(m"Decoded text substitutes the replacement character at each error"):
         var text: Text = t""
-        validate[CharDecoder.Focus](DecodeIssues()):
-          case error: CharDecoder.Error => accrual + (prior.let(_.position).or(0), error)
+        validate[Charset.Focus](DecodeIssues()):
+          case error: Charset.Error => accrual + (prior.let(_.position).or(0), error)
         . protect:
             import textSanitizers.accrueSanitizer
-            text = charDecoders.utf8Decoder.decoded(worseUtf8)
+            text = charsets.utf8Charset.decoded(worseUtf8)
         text
       . assert(_ == t"-?1?0")
 
@@ -200,23 +200,23 @@ object Tests extends Suite(m"Hieroglyph tests"):
         Array.unsafeFrozen(chunks.stdlib.flatMap(_.readable.toSeq).toArray)
 
       test(m"encoding a whole text agrees with encoding it in one chunk"):
-        joined(charEncoders.utf8Encoder.encoded(Chain(astral))).to[List]
-      . assert(_ == charEncoders.utf8Encoder.encoded(astral).to[List])
+        joined(codepages.utf8Codepage.encoded(Chain(astral))).to[List]
+      . assert(_ == codepages.utf8Codepage.encoded(astral).to[List])
 
       for chunk <- 1 to 12 do
         test(m"encode astral text in chunks of size $chunk"):
           val chunks = astral.s.grouped(chunk).map(_.tt).to(Chain)
-          joined(charEncoders.utf8Encoder.encoded(chunks)).to[List]
-        . assert(_ == charEncoders.utf8Encoder.encoded(astral).to[List])
+          joined(codepages.utf8Codepage.encoded(chunks)).to[List]
+        . assert(_ == codepages.utf8Codepage.encoded(astral).to[List])
 
       test(m"a chunked encoding round-trips through the decoder"):
         import textSanitizers.skipSanitizer
         val chunks = astral.s.grouped(3).map(_.tt).to(Chain)
-        charDecoders.utf8Decoder.decoded(joined(charEncoders.utf8Encoder.encoded(chunks)))
+        charsets.utf8Charset.decoded(joined(codepages.utf8Codepage.encoded(chunks)))
       . assert(_ == astral)
 
       test(m"an empty chain encodes to no data"):
-        joined(charEncoders.utf8Encoder.encoded(Chain())).to[List]
+        joined(codepages.utf8Codepage.encoded(Chain())).to[List]
       . assert(_ == Nil)
 
     suite(m"Compile-time tests"):

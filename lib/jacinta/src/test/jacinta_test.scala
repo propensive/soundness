@@ -40,7 +40,7 @@ import jacinta.optics.{jsonEachOptical, jsonFilterOptical, jsonLens, jsonOrdinal
 
 import scala.language.dynamics
 
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import strategies.throwUnsafely
 import formatting.compactJsonFormatting
 

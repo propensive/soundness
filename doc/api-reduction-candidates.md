@@ -270,7 +270,7 @@ ultimatum's is the likelier one to rename.
 | `Block*` | enigmatic, galilei | 4 | `BlockCipher`, `BlockCipherMode`, `BlockCipherPadding`, `BlockDevice` |
 | `Box*` | tessellate | 2 | `BoxDrawing`, `BoxLine` |
 | `C*` | xenophile | 2 | `CHeaderAtomizer`, `CHeaderDiscipline` |
-| `Char*` | escapade, galilei, hieroglyph | 4 | `CharDecoder`, `CharDevice`, `CharEncoder`, `CharSpan` |
+| `Char*` | escapade, galilei, hieroglyph | 4 | `Charset`, `CharDevice`, `Codepage`, `CharSpan` |
 | `Class*` | honeycomb, mandible, proscenium, vivisection | 4 | `ClassList`, `ClassLoaderId`, `ClassSurface`, `ClassTag` |
 | `Classfile*` | mandible | 2 | `ClassfileAtomizer`, `ClassfileDiscipline` |
 | `Compile*` | anthology, larceny | 7 | `CompileError`, `CompileEvent`, `CompileEvents`, `CompileFlag`, `CompileProcess`, `CompileProgress`, `CompileResult` |

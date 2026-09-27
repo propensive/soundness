@@ -34,8 +34,8 @@ package zeppelin
 
 import soundness.*
 
-import charDecoders.utf8Decoder
-import charEncoders.utf8Encoder
+import charsets.utf8Charset
+import codepages.utf8Codepage
 import filesystemOptions.createNonexistentParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.dereferenceSymlinks

@@ -52,7 +52,7 @@ import Http2.Error.Reason
 import anticipation.*
 import denominative.*
 import scala.collection.concurrent as scc
-import hieroglyph.*, charEncoders.asciiEncoder
+import hieroglyph.*, codepages.asciiCodepage
 import proscenium.*
 import turbulence.*
 import zephyrine.*

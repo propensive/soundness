@@ -70,4 +70,4 @@ object TreePath:
 
 // A validated path within a section tree (§9.2).
 case class TreePath private(text: Text):
-  def bytes: Data = charEncoders.utf8Encoder.encoded(text)
+  def bytes: Data = codepages.utf8Codepage.encoded(text)

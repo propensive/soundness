@@ -82,7 +82,7 @@ object Writable:
 
     (outputStream, stream) => drain(outputStream, stream)
 
-  given outputStreamText: (streamCut: Emit[Truncation.Error], encoder: CharEncoder,
+  given outputStreamText: (streamCut: Emit[Truncation.Error], encoder: Codepage,
       buffering: Buffering)
   =>  ((ji.OutputStream is Writable by Text)^{streamCut}) =
 
@@ -95,7 +95,7 @@ object Writable:
   // Operand adapters: a byte writer accepts characters through the encoder
   // duct, and vice versa.
   given decodingAdapter: [writable]
-  =>  (writable0: (writable is Writable by Text)^, decoder: CharDecoder, buffering: Buffering)
+  =>  (writable0: (writable is Writable by Text)^, decoder: Charset, buffering: Buffering)
   =>  ((writable is Writable by Data)^{writable0}) =
 
     (target, stream) =>
@@ -105,7 +105,7 @@ object Writable:
           . asInstanceOf[(Stream[Text] over Credit)^] )
 
   given encodingAdapter: [writable]
-  =>  (writable0: (writable is Writable by Data)^, encoder: CharEncoder, buffering: Buffering)
+  =>  (writable0: (writable is Writable by Data)^, encoder: Codepage, buffering: Buffering)
   =>  ((writable is Writable by Text)^{writable0}) =
 
     (target, stream) =>

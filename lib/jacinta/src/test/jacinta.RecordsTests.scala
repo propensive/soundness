@@ -36,7 +36,7 @@ package jacinta
 import soundness.*
 
 
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import emailAddressInterfaces.soundnessEmailAddress
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely

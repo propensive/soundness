@@ -38,7 +38,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
-import hieroglyph.*, charEncoders.asciiEncoder
+import hieroglyph.*, codepages.asciiCodepage
 import prepositional.*
 import rudiments.*
 import turbulence.*

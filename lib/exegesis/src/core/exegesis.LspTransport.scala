@@ -51,7 +51,7 @@ private[exegesis] object LspTransport:
   // A message with its header. The body is encoded twice — once to measure it, once to write it —
   // because `Content-Length` counts bytes, not characters, and a message may not be ASCII.
   def frame(body: Text): Data =
-    import charEncoders.utf8Encoder
+    import codepages.utf8Codepage
     val payload: Data = body.in[Data]
 
     t"Content-Length: ${payload.length}\r\n\r\n$body".in[Data]

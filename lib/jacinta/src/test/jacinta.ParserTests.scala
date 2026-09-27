@@ -40,7 +40,7 @@ import soundness.*
 import pathInterfaces.pathOnLinux
 import strategies.throwUnsafely
 import logging.silentLogging
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import environments.javaBaseEnvironment
 import gitCommands.searchpathGitCommand
 import systems.javaBaseSystem

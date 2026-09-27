@@ -40,8 +40,8 @@ import construables.{jsonConstruable, xmlConstruable, plainTextConstruable, pngC
 import postables.{jsonPostable, xmlPostable}
 import classloaders.threadContextClassloader
 import internetAccess.online
-import charEncoders.utf8Encoder
-import charDecoders.utf8Decoder
+import codepages.utf8Codepage
+import charsets.utf8Charset
 import textSanitizers.skipSanitizer
 import formatting.compactJsonFormatting
 import errorDiagnostics.stackTracesDiagnostics

@@ -35,7 +35,7 @@ package enigmatic
 import soundness.*
 
 import strategies.throwUnsafely
-import charDecoders.utf8Decoder, charEncoders.utf8Encoder, textSanitizers.skipSanitizer
+import charsets.utf8Charset, codepages.utf8Codepage, textSanitizers.skipSanitizer
 import gossamer.textDecodable
 import errorDiagnostics.stackTracesDiagnostics
 import providers.javaBaseProvider
@@ -217,7 +217,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
     test(m"stream-encrypted data decrypts through the whole-value path"):
       import blockCipherModes.cbc, blockCipherPaddings.pkcs7
-      import charEncoders.utf8Encoder
+      import codepages.utf8Codepage
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         t"Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize
@@ -226,7 +226,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
     test(m"whole-value-encrypted data decrypts through a stream"):
       import blockCipherModes.cbc, blockCipherPaddings.pkcs7
-      import charEncoders.utf8Encoder
+      import codepages.utf8Codepage
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         t"Hello world".encrypt(InitializationVector.random).stream.decrypt.memoize.to[List]
@@ -234,7 +234,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
     test(m"one-byte-chunk streams roundtrip through stream encrypt and decrypt"):
       import blockCipherModes.cbc, blockCipherPaddings.pkcs7
-      import charEncoders.utf8Encoder
+      import codepages.utf8Codepage
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         val plain = t"The quick brown fox jumps over the lazy dog".in[Data]
@@ -243,7 +243,7 @@ object Tests extends Suite(m"Enigmatic tests"):
     . assert(_ == t"The quick brown fox jumps over the lazy dog".in[Data].to[List])
 
     test(m"CTR/NoPadding streams roundtrip (stream-aligned check at end)"):
-      import charEncoders.utf8Encoder
+      import codepages.utf8Codepage
       val key = SymmetricKey.generate[Aes[128] over Ctr against NoPadding]()
       key.uncloak:
         t"Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize
@@ -252,7 +252,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
     test(m"legacy Chain encryption survives one-byte chunks"):
       import blockCipherModes.cbc, blockCipherPaddings.pkcs7
-      import charEncoders.utf8Encoder
+      import codepages.utf8Codepage
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         val plain = t"Hello world".in[Data]

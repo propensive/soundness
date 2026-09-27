@@ -35,7 +35,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 
 // Layer-selective composition (§8.1/§20.3), signature decomposition
 // under a layer selection, and the schema-resolution engine's step
@@ -69,7 +69,7 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
 
   private def layeredDoc: Tel = layeredSource.read[Tel]
   private def layeredSchema: Tels = Tels.Reconstructor.fromTel(layeredDoc)
-  private def layeredBytes: Data = summon[CharEncoder].encoded(layeredSource)
+  private def layeredBytes: Data = summon[Codepage].encoded(layeredSource)
 
   // The composed document's field keywords, sorted, as one Text.
   private def memberKeywords(schema: Tels): Text =
@@ -233,7 +233,7 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
       test(m"a tampered cached body fails verification"):
         val store = Tels.Resolution.Store.Memory()
         val signature = signatureFor(List())
-        val tampered = summon[CharEncoder].encoded(
+        val tampered = summon[Codepage].encoded(
           Text("tel 1.0\n\nname other\n\ndocument\n  field other String\n"))
         store.cache(signature, tampered)
 

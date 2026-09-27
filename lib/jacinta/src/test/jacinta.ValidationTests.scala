@@ -35,7 +35,7 @@ package jacinta
 import soundness.*
 
 
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import denominative.dysasymptotics.linearSize

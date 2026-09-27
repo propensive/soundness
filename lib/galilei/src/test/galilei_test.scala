@@ -41,8 +41,8 @@ import filesystemBackends.javaBaseFilesystem
 
 object Tests extends Suite(m"Galilei tests"):
   def run(): Unit =
-    import charEncoders.utf8Encoder
-    import charDecoders.utf8Decoder
+    import codepages.utf8Codepage
+    import charsets.utf8Charset
     import textSanitizers.skipSanitizer
 
     suite(m"Direct read and write"):
@@ -785,7 +785,7 @@ object Tests extends Suite(m"Galilei tests"):
     suite(m"Slice windows write"):
       import filesystemOptions.createNonexistentParents
       import filesystemOptions.overwritePreexisting
-      import charDecoders.utf8Decoder
+      import charsets.utf8Charset
       import textSanitizers.skipSanitizer
 
       val windowLeaf: Text = Uuid().show

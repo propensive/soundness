@@ -79,7 +79,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   request body's format comes from the media type the specification declares, through the
   `gesticulate.Construable` in scope for it (see below), and its bytes from that carrier's
   `telekinesis.Postable`, which must be in scope where the call is written (`import
-  postables.jsonPostable` for JSON, with the `CharEncoder` and `Json.Formatting` it needs;
+  postables.jsonPostable` for JSON, with the `Codepage` and `Json.Formatting` it needs;
   `postables.xmlPostable`, new in module `xylophone.http`, for XML). Previously JSON and XML
   bodies were serialised with built-in defaults and no imports. (#2091)
 - `apoplexy.Api.send(request: Api.Request, accept: Text)(…)` became `send(request: Api.Request)(…)`;
@@ -91,7 +91,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   (value is Conformant) over Json` and `LowPriorityConformant.xmlDecodable` removed, and the trait
   `apoplexy.LowPriorityConformant` with them. Replacements, generic in the carrier:
   `Conformant.carrier: [carrier: Aggregable by Data] => (carrier is Conformant) over carrier`,
-  `Conformant2.carrierText: [carrier: Aggregable by Text] => CharDecoder => …`,
+  `Conformant2.carrierText: [carrier: Aggregable by Text] => Charset => …`,
   `Conformant2.decodable: [value, carrier] => (carrier is Aggregable by Data, value is Decodable in
   carrier) => (value is Conformant) over carrier` and `Conformant3.decodableText` (the `by Text`
   twin). A malformed body now raises the carrier's own parse error (e.g. `zephyrine.Parse.Error`
@@ -574,6 +574,28 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `harlequin.core` no longer depends on `anthology.scala` or `hellenism.jvm` (nor, through them, on
   `anthology.core`, `hellenism.core`, `galilei`, `ambience`, `guillotine`, `aperture`); a consumer
   that reached any of these only through `harlequin.core` must declare it, or `harlequin.typed`. (#2082)
+
+## hieroglyph
+
+- `hieroglyph.CharDecoder` renamed `hieroglyph.Charset` (bytes to text) and `hieroglyph.CharEncoder`
+  renamed `hieroglyph.Codepage` (text to bytes); the `soundness.CharDecoder` and
+  `soundness.CharEncoder` exports are now `soundness.Charset` and `soundness.Codepage`. Members are
+  unchanged, so the nested types and factories follow: `CharDecoder.Error` → `Charset.Error`,
+  `CharDecoder.Focus` → `Charset.Focus`, `CharDecoder.system` → `Charset.system`,
+  `CharDecoder.unapply` → `Charset.unapply`, `CharEncoder.Error` → `Codepage.Error`,
+  `CharEncoder.system` → `Codepage.system`, `CharEncoder.unapply` → `Codepage.unapply`. The source
+  files are now `hieroglyph.Charset.scala` and `hieroglyph.Codepage.scala`.
+- The family packages `hieroglyph.charDecoders` and `hieroglyph.charEncoders` (and their
+  `soundness.charDecoders`/`soundness.charEncoders` mirrors) renamed `charsets` and `codepages`,
+  and every member takes the new role suffix: `charDecoders.utf8Decoder` → `charsets.utf8Charset`,
+  `utf16Decoder` → `utf16Charset`, `utf16LeDecoder` → `utf16LeCharset`, `utf16BeDecoder` →
+  `utf16BeCharset`, `asciiDecoder` → `asciiCharset`, `iso88591Decoder` → `iso88591Charset`;
+  `charEncoders.utf8Encoder` → `codepages.utf8Codepage`, `utf16Encoder` → `utf16Codepage`,
+  `utf16LeEncoder` → `utf16LeCodepage`, `utf16BeEncoder` → `utf16BeCodepage`, `asciiEncoder` →
+  `asciiCodepage`, `iso88591Encoder` → `iso88591Codepage`. Replace `import charEncoders.utf8Encoder`
+  with `import codepages.utf8Codepage` and `import charDecoders.utf8Decoder` with
+  `import charsets.utf8Charset`. As before, the ISO-8859-1 members are only in the `hieroglyph`
+  packages, not the `soundness` mirrors.
 
 ## honeycomb
 
@@ -1240,3 +1262,9 @@ format. Entries are grouped by module, most-recently-added last within a module.
   reset the fields (with `Zip.Entry#withHeaders`, to `Unset` and `localSizes = true`) before
   writing. `Zipfile.read` also now reads every entry's local header eagerly, where it
   previously deferred that read to the entry's content. (#2045)
+
+## zephyrine
+
+- The duct-stage givens `zephyrine.Ductile.charDecoder: Instance[CharDecoder, Data, Text, Credit,
+  Credit]` and `zephyrine.Ductile.charEncoder: Instance[CharEncoder, Text, Data, Credit, Credit]`
+  renamed `Ductile.charset` and `Ductile.codepage`, following the hieroglyph renames above.

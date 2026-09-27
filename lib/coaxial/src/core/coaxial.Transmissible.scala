@@ -46,10 +46,10 @@ object Transmissible:
   given stream: [stream <: Chain[Data]] => stream is Transmissible = value =>
     Stream(value)
 
-  given text: [text <: Text] => CharEncoder => text is Transmissible =
-    text => summon[CharEncoder].encoded(text).stream
+  given text: [text <: Text] => Codepage => text is Transmissible =
+    text => summon[Codepage].encoded(text).stream
 
-  given encoder: [message: Encodable in Text] => CharEncoder => message is Transmissible =
+  given encoder: [message: Encodable in Text] => Codepage => message is Transmissible =
     value => value.encode.in[Data].stream
 
 // One call to `serialize` yields the wire form of one message, as a fresh pull

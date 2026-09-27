@@ -190,7 +190,7 @@ applies its own threshold, so the file can keep `Fine` detail while the terminal
 `Warn` and `Fail`:
 
 ```scala
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import filesystemOptions.createNonexistentParents
 import pathInterfaces.pathOnLinux
 import temporaryDirectories.javaBaseTemporaryDirectory

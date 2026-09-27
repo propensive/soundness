@@ -60,7 +60,7 @@ private[facsimile] object ContentWriter:
   :   Unit =
 
     def out(text: Text): Unit =
-      val raw = charEncoders.iso88591Encoder.encoded(text)
+      val raw = codepages.iso88591Codepage.encoded(text)
       var i = 0
       while i < raw.length do { builder += raw.readUnchecked(i); i += 1 }
 

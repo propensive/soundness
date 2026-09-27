@@ -257,4 +257,4 @@ private[facsimile] class CosLexer(scan: Scan):
     if high >= 0 then bytes += (high << 4).toByte // an odd final digit implies a trailing zero
     CosToken.Chars(bytes.result())
 
-  private def decode(bytes: Data): Text = charDecoders.utf8Decoder.decoded(bytes)
+  private def decode(bytes: Data): Text = charsets.utf8Charset.decoded(bytes)

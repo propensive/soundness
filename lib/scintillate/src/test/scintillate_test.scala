@@ -38,7 +38,7 @@ import soundness.*
 
 import logging.silentLogging
 import strategies.throwUnsafely
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import webserverErrorPages.minimalErrorPage
 import threading.virtualThreading
 import probates.awaitProbate
@@ -367,7 +367,7 @@ object Tests extends Suite(m"Scintillate tests"):
           // Serve a `Streamable by Text` value: `Servable` wraps it as an
           // `Http.Body.Flowing` whose source pipes the text through the
           // char-encoder duct. #1629 hung here (a self-referential `given
-          // encoder = summonInline[CharEncoder]` in `Servable` spun at 100% CPU).
+          // encoder = summonInline[Codepage]` in `Servable` spun at 100% CPU).
           val page = TextPage(List.tabulate(4000)(i => t"line-$i\n"))
           val server = SocketServer(port).handle(Http.Response(Http.Ok)(page))
 

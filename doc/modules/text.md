@@ -163,7 +163,7 @@ t"banana".count(_ == 'a')          // 3
 Text encodes to bytes through the character encoding in scope, and bytes decode back:
 
 ```scala
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 
 val bytes = t"Adélaïde".in[Data]   // the UTF-8 bytes
 bytes.utf8                     // t"Adélaïde"

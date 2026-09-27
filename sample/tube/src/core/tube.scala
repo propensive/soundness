@@ -2,8 +2,8 @@ package tube.terminal
 
 import soundness.*
 
-import charDecoders.utf8Decoder
-import charEncoders.utf8Encoder
+import charsets.utf8Charset
+import codepages.utf8Codepage
 import classloaders.threadContextClassloader
 import dsvFormats.csvWithHeaderFormat
 import enumIdentification.kebabCaseIdentifiable

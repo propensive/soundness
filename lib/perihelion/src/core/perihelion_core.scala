@@ -100,7 +100,7 @@ inline def webSocket[state](initial: state = ())[message]
 // `Channel` boundary.
 given overTransmissible: [transport, value]
 =>  ( format: transport is Encodable in Text, codec: value is Encodable in transport )
-=>  CharEncoder
+=>  Codepage
 =>  (value over transport) is Transmissible =
   payload => zephyrine.Stream(Websocket.Frame.Text(true, format.encoded(codec.encoded(payload)).in[Data]).encode)
 
@@ -110,9 +110,9 @@ given overTransmissible: [transport, value]
 // `Tactic` is contravariant) and summon them in the body, where it is in scope.
 given overIngressive: [transport, value]
 =>  ( format: transport is Decodable in Text, codec: value is Decodable in transport )
-=>  ( CharDecoder, Tactic[Hazard] )
+=>  ( Charset, Tactic[Hazard] )
 =>  (value over transport) is Ingressive =
-  bytes => codec.decoded(format.decoded(summon[CharDecoder].decoded(bytes))).over[transport]
+  bytes => codec.decoded(format.decoded(summon[Charset].decoded(bytes))).over[transport]
 
 // Tag a value with the transport format it should ride, so a reply resolves the
 // `over`-composed `Transmissible`. `over` is a phantom type member, so this is a

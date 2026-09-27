@@ -74,7 +74,7 @@ object ManifestSigning:
   // conforming manifest of the base schema.
   def input(manifest: Lira.Manifest): Data raises Lira.Error =
     val stripped = manifest.copy(signature = List())
-    val data = charEncoders.utf8Encoder.encoded(stripped.render)
+    val data = codepages.utf8Codepage.encoded(stripped.render)
 
     val bytes =
       import errorDiagnostics.emptyDiagnostics

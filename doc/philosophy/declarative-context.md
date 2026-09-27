@@ -47,7 +47,7 @@ global settings, builder methods and runtime flags:
 
 ```scala
 import strategies.throwUnsafely            // what a failure does
-import charEncoders.utf8Encoder            // how text becomes bytes
+import codepages.utf8Codepage            // how text becomes bytes
 import formatting.compactJsonFormatting    // how JSON is rendered
 import dateFormats.iso8601DateFormat       // how dates are shown
 import affirmations.yesNoAffirmation       // how a boolean is shown

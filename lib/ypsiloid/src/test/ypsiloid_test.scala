@@ -618,7 +618,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         . assert(_ == Person(t"Alice", 42))
 
         test(m"a document parses from a byte stream without transcoding"):
-          import charEncoders.utf8Encoder
+          import codepages.utf8Codepage
           summon[Yaml is Aggregable by Data].accept(personDoc.in[Data].stream).as[Person]
         . assert(_ == Person(t"Alice", 42))
 
@@ -1258,7 +1258,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(identity)
 
     suite(m"HTTP content-type integration"):
-      import charEncoders.utf8Encoder
+      import codepages.utf8Codepage
       import formatting.blockYamlFormatting
 
       test(m"serialises with an application/yaml media type"):

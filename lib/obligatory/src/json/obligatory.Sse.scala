@@ -54,7 +54,7 @@ import zephyrine.*
 
 object Sse:
   given servable: Chain[Sse] is Servable =
-    import charEncoders.utf8Encoder
+    import codepages.utf8Codepage
 
     Servable[Chain[Sse]](_ => media"text/event-stream"): stream =>
       Http.Body.Flowing(() => zephyrine.Stream(stream.map(_.encode.in[Data])))

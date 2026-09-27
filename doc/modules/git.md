@@ -29,7 +29,7 @@ capabilities the operations need in scope:
 ```scala
 import soundness.*
 
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import filesystemOptions.createNonexistentParents
 import gitCommands.searchpathGitCommand
 import internetAccess.online

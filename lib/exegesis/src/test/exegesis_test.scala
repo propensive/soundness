@@ -40,7 +40,7 @@ import java.util.concurrent as juc
 
 import soundness.*
 
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import errorDiagnostics.stackTracesDiagnostics
 import logging.silentLogging
 import probates.awaitProbate

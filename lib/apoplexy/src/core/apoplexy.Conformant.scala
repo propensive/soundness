@@ -60,7 +60,7 @@ trait Conformant3:
   given decodableText: [value, carrier]
   =>  ( aggregable: carrier is Aggregable by Text,
         decodable:  value is Decodable in carrier,
-        decoder:    CharDecoder )
+        decoder:    Charset )
   =>  (value is Conformant) over carrier =
     response =>
       val data: Data = response.body.stream.memoize
@@ -76,9 +76,9 @@ trait Conformant2 extends Conformant3:
       decodable.decoded(aggregable.aggregate(Chain(data)))
 
   // The body as a carrier read from text. The bytes are decoded to `Text` (through the
-  // `CharDecoder`) before the carrier's parser sees them.
+  // `Charset`) before the carrier's parser sees them.
   given carrierText: [carrier]
-  =>  ( aggregable: carrier is Aggregable by Text, decoder: CharDecoder )
+  =>  ( aggregable: carrier is Aggregable by Text, decoder: Charset )
   =>  (carrier is Conformant) over carrier =
     response =>
       val data: Data = response.body.stream.memoize

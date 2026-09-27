@@ -29,8 +29,8 @@ directory of their own:
 ```scala
 import soundness.*
 
-import charEncoders.utf8Encoder
-import charDecoders.utf8Decoder
+import codepages.utf8Codepage
+import charsets.utf8Charset
 import filesystemOptions.createNonexistentParents
 import logging.silentLogging
 import pathInterfaces.pathOnLinux

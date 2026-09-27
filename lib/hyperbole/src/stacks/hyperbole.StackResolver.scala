@@ -50,7 +50,7 @@ import turbulence.*
 import vacuous.*
 
 import StackTrace.Frame.Kind
-import charDecoders.utf8Decoder
+import charsets.utf8Charset
 import textSanitizers.skipSanitizer
 import denominative.z
 import denominative.dysasymptotics.linearSize

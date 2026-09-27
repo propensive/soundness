@@ -48,7 +48,7 @@ import logging.silentLogging
 import internetAccess.online
 
 import strategies.throwUnsafely
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import errorDiagnostics.stackTracesDiagnostics
 
 import filesystemOptions.dereferenceSymlinks

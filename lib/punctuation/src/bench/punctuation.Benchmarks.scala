@@ -40,7 +40,7 @@ import contingency.*, strategies.throwUnsafely
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
-import hieroglyph.*, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
+import hieroglyph.*, charsets.utf8Charset, textSanitizers.strictSanitizer
 import prepositional.*
 import probably.*
 import spectacular.show

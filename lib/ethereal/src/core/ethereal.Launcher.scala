@@ -42,7 +42,7 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8Encoder
+import hieroglyph.*, codepages.utf8Codepage
 import prepositional.*
 import rudiments.*
 import spectacular.*

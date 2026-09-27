@@ -58,49 +58,49 @@ extension (char: Char)
   def majuscular: Boolean = Character.isUpperCase(char)
   def minuscular: Boolean = Character.isLowerCase(char)
 
-package charDecoders:
-  given utf8Decoder: (sanitizer: TextSanitizer) => (CharDecoder) =
-    CharDecoder.unapply("UTF-8".tt).get
+package charsets:
+  given utf8Charset: (sanitizer: TextSanitizer) => (Charset) =
+    Charset.unapply("UTF-8".tt).get
 
-  given utf16Decoder: (sanitizer: TextSanitizer) => (CharDecoder) =
-    CharDecoder.unapply("UTF-16".tt).get
+  given utf16Charset: (sanitizer: TextSanitizer) => (Charset) =
+    Charset.unapply("UTF-16".tt).get
 
-  given utf16LeDecoder: (sanitizer: TextSanitizer) => (CharDecoder) =
-    CharDecoder.unapply("UTF-16LE".tt).get
+  given utf16LeCharset: (sanitizer: TextSanitizer) => (Charset) =
+    Charset.unapply("UTF-16LE".tt).get
 
-  given utf16BeDecoder: (sanitizer: TextSanitizer) => (CharDecoder) =
-    CharDecoder.unapply("UTF-16BE".tt).get
+  given utf16BeCharset: (sanitizer: TextSanitizer) => (Charset) =
+    Charset.unapply("UTF-16BE".tt).get
 
-  given asciiDecoder: (sanitizer: TextSanitizer) => (CharDecoder) =
-    CharDecoder.unapply("ASCII".tt).get
+  given asciiCharset: (sanitizer: TextSanitizer) => (Charset) =
+    Charset.unapply("ASCII".tt).get
 
-  given iso88591Decoder: CharDecoder =
-    CharDecoder.unapply("ISO-8859-1".tt)(using textSanitizers.skipSanitizer).get
+  given iso88591Charset: Charset =
+    Charset.unapply("ISO-8859-1".tt)(using textSanitizers.skipSanitizer).get
 
-package charEncoders:
-  given utf8Encoder: CharEncoder = CharEncoder.unapply("UTF-8".tt).get
-  given utf16Encoder: CharEncoder = CharEncoder.unapply("UTF-16".tt).get
-  given utf16LeEncoder: CharEncoder = CharEncoder.unapply("UTF-16LE".tt).get
-  given utf16BeEncoder: CharEncoder = CharEncoder.unapply("UTF-16BE".tt).get
-  given asciiEncoder: CharEncoder = CharEncoder.unapply("ASCII".tt).get
-  given iso88591Encoder: CharEncoder = CharEncoder.unapply("ISO-8859-1".tt).get
+package codepages:
+  given utf8Codepage: Codepage = Codepage.unapply("UTF-8".tt).get
+  given utf16Codepage: Codepage = Codepage.unapply("UTF-16".tt).get
+  given utf16LeCodepage: Codepage = Codepage.unapply("UTF-16LE".tt).get
+  given utf16BeCodepage: Codepage = Codepage.unapply("UTF-16BE".tt).get
+  given asciiCodepage: Codepage = Codepage.unapply("ASCII".tt).get
+  given iso88591Codepage: Codepage = Codepage.unapply("ISO-8859-1".tt).get
 
 package textSanitizers:
   // Sealed per the codec-thunk pattern (rep/DECISIONS.md): the resolution-scoped tactic
-  // shares the sanitizer's given-resolution lifetime, keeping `CharDecoder` untracked.
-  given strictSanitizer: (Tactic[CharDecoder.Error]^) => (TextSanitizer) =
-    caps.unsafe.unsafeAssumePure: (position, encoding) => abort(CharDecoder.Error(position, encoding))
+  // shares the sanitizer's given-resolution lifetime, keeping `Charset` untracked.
+  given strictSanitizer: (Tactic[Charset.Error]^) => (TextSanitizer) =
+    caps.unsafe.unsafeAssumePure: (position, encoding) => abort(Charset.Error(position, encoding))
 
   given skipSanitizer: TextSanitizer = (position, encoding) => Unset
   given substituteSanitizer: TextSanitizer = (position, encoding) => '?'
 
   // Sealed like `strictSanitizer` above.
   given accrueSanitizer
-  :   (Tactic[CharDecoder.Error]^, Foci[CharDecoder.Focus]^) => (TextSanitizer) =
+  :   (Tactic[Charset.Error]^, Foci[Charset.Focus]^) => (TextSanitizer) =
 
     caps.unsafe.unsafeAssumePure: (position, encoding) =>
-      focus(CharDecoder.Focus(position)):
-        raise(CharDecoder.Error(position, encoding))
+      focus(Charset.Focus(position)):
+        raise(Charset.Error(position, encoding))
 
       '?'
 

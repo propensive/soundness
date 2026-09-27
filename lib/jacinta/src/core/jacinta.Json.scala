@@ -1916,7 +1916,7 @@ object Json extends Json2, Dynamic:
     val (ast, index) = Json.Ast.parseTracked(input)
     new Json(ast, index)
 
-  def parseTracked(source: Text)(using NumberMode, CharEncoder): Json raises Parse.Error =
+  def parseTracked(source: Text)(using NumberMode, Codepage): Json raises Parse.Error =
     parseTracked(source.in[Data])
 
   // Parse a byte-chunk iterator into a `Json`, honouring the in-scope
@@ -2505,7 +2505,7 @@ object Json extends Json2, Dynamic:
     given formatting: Formatting = Formatting(Unset, trailingNewline = false)
     (json: Json).root.show
 
-  given abstractable: (encoder: CharEncoder, formatting: Formatting)
+  given abstractable: (encoder: Codepage, formatting: Formatting)
   =>  Json is Abstractable across HttpStreams to HttpStreams.Content =
 
     new Abstractable:
@@ -2522,12 +2522,12 @@ object Json extends Json2, Dynamic:
   given decodable: (tactic: Tactic[Parse.Error])
   =>  Json is distillate.Decodable in Text =
     caps.unsafe.unsafeAssumePure:
-      text => Chain(text.in[Data](using charEncoders.utf8Encoder)).read[Json]
+      text => Chain(text.in[Data](using codepages.utf8Codepage)).read[Json]
 
   given instantiable: (tactic: Tactic[Parse.Error])
   =>  Json is Instantiable across HttpRequests from Text =
     caps.unsafe.unsafeAssumePure:
-      text => Chain(text.in[Data](using charEncoders.utf8Encoder)).read[Json]
+      text => Chain(text.in[Data](using codepages.utf8Codepage)).read[Json]
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Json)*): Json =
     val keys: Array[String]^{} = Array.from(elements.map(_(0))).asInstanceOf[Array[String]^{}]

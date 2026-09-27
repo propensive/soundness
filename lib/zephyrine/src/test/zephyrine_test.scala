@@ -875,13 +875,13 @@ object Tests extends Suite(m"Zephyrine tests"):
         out
       . assert(_ == "abcd")
 
-      import charDecoders.utf8Decoder, charEncoders.utf8Encoder, textSanitizers.skipSanitizer
+      import charsets.utf8Charset, codepages.utf8Codepage, textSanitizers.skipSanitizer
 
       val exotic = t"héllo → 🎉 fin"
 
       test(m"char decoder duct reassembles multi-byte characters split across refills"):
         val chunks = exotic.s.getBytes("UTF-8").nn.toSeq.map { byte => Array[Byte](byte) }
-        val stream = chunks.iterator.stream.via(summon[CharDecoder])
+        val stream = chunks.iterator.stream.via(summon[Charset])
         val builder = StringBuilder()
 
         def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
@@ -900,7 +900,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
       test(m"char encoder duct emits UTF-8 for supplementary characters"):
         val gather = Gather()
-        exotic.stream.via(summon[CharEncoder]).pump(gather)
+        exotic.stream.via(summon[Codepage]).pump(gather)
         scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
       . assert(_ == Array.unsafeFrozen(exotic.s.getBytes("UTF-8").nn).to[List])
 
@@ -915,7 +915,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         0xc3.toByte)                                                      // truncated at end
 
       test(m"char decoder duct sanitizes malformed input like whole-value decoding"):
-        val stream = malformed.stream.via(summon[CharDecoder])
+        val stream = malformed.stream.via(summon[Charset])
         val builder = StringBuilder()
 
         def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
@@ -930,12 +930,12 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         scala.caps.unsafe.unsafeAssumeSeparate(recur())
         builder.toString.tt
-      . assert(_ == summon[CharDecoder].decoded(malformed))
+      . assert(_ == summon[Charset].decoded(malformed))
 
       test(m"charset ducts roundtrip through both directions"):
         val gather = Gather()
-        exotic.stream.via(summon[CharEncoder]).pump(gather)
-        val decoded = scala.caps.unsafe.unsafeAssumeSeparate(gather.data).stream.via(summon[CharDecoder])
+        exotic.stream.via(summon[Codepage]).pump(gather)
+        val decoded = scala.caps.unsafe.unsafeAssumeSeparate(gather.data).stream.via(summon[Charset])
         val builder = StringBuilder()
 
         def recur(): Unit = decoded.refill(Credit(4)) match
@@ -1092,7 +1092,7 @@ object Tests extends Suite(m"Zephyrine tests"):
       . assert(_ == 1)
 
       test(m"chain reassembles a transformed pipeline"):
-        val text = Stream(Iterator(Array[Byte](104, 105))).via(summon[CharDecoder]).chain
+        val text = Stream(Iterator(Array[Byte](104, 105))).via(summon[Charset]).chain
         text.to[List].join.s
       . assert(_ == "hi")
 

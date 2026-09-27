@@ -38,7 +38,7 @@ encoding, and a choice of output formatting:
 ```scala
 import soundness.*
 
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import errorDiagnostics.stackTracesDiagnostics
 import formatting.compactJsonFormatting
 import strategies.throwUnsafely

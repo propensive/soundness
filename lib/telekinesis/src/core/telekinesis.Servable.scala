@@ -86,7 +86,7 @@ object Servable:
   private val textHeaders: List[Http.Header] =
     List(Http.Header(t"content-type", media"text/plain".show))
 
-  given text: (encoder: hieroglyph.CharEncoder) => Text is Servable =
+  given text: (encoder: hieroglyph.Codepage) => Text is Servable =
     text => Http.Ok(textHeaders, Http.Body.Fixed(text.in[Data]))
 
   inline given media: [media: Media] => media is Servable = compiletime.summonFrom:
@@ -101,7 +101,7 @@ object Servable:
         Http.Ok(headers, Http.Body.Flowing(() => streamable.stream(value)))
 
     case streamable: (`media` is Streamable by Text over Credit) =>
-      val encoder0: hieroglyph.CharEncoder = compiletime.summonInline[hieroglyph.CharEncoder]
+      val encoder0: hieroglyph.Codepage = compiletime.summonInline[hieroglyph.Codepage]
       val buffering0: zephyrine.Buffering = compiletime.summonInline[zephyrine.Buffering]
 
       value =>

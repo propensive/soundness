@@ -134,7 +134,7 @@ object Digestible extends Derivable[Digestible]:
     (digestion, char) => digestion.append(Array((char >> 8).toByte, char.toByte))
 
   given text: [text <: Text] => text is Digestible =
-    (digestion, text) => digestion.append(text.in[Data](using charEncoders.utf8Encoder))
+    (digestion, text) => digestion.append(text.in[Data](using codepages.utf8Codepage))
 
   given bytes: Data is Digestible = _.append(_)
   given digest: Digest is Digestible = (digestion, digest) => digestion.append(digest.data)

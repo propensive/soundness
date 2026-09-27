@@ -126,7 +126,7 @@ object settings:
     "-Wconf:origin=.*unsafeExceptions.canThrowAny:s",
     "-Wconf:origin=.*strategies.throwUnsafely:s",
     "-Wconf:origin=.*providers.soundnessProvider:s",
-    "-Wconf:origin=.*charEncoders.asciiEncoder:s",
+    "-Wconf:origin=.*codepages.asciiCodepage:s",
     "-Wconf:origin=.*textMetrics.uniformMetric:s",
     "-Wconf:origin=.*arithmeticOptions.uncheckedOverflow:s",
     "-Wconf:origin=.*errorDiagnostics.emptyDiagnostics:s",

@@ -83,7 +83,7 @@ object Dap:
   :   Unit =
 
     import strategies.throwUnsafely
-    import charEncoders.utf8Encoder
+    import codepages.utf8Codepage
 
     val outgoing: Relay[Json] = Relay()
 

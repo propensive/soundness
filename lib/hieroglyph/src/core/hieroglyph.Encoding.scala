@@ -78,14 +78,14 @@ object Encoding:
     new Encoding(name) { type CanEncode = canEncode.type }
 
   extension (encoding: Encoding { type CanEncode = true })
-    def encoder: CharEncoder = CharEncoder(encoding)
+    def encoder: Codepage = Codepage(encoding)
 
 class Encoding(name0: Text):
   def name: Text = charset.displayName.nn.tt
 
   type CanEncode <: Boolean
 
-  def decoder(using TextSanitizer): CharDecoder = CharDecoder(this)
+  def decoder(using TextSanitizer): Charset = Charset(this)
   lazy val charset: jnc.Charset = jnc.Charset.forName(name0.s).nn
 
   override def toString: String = s"enc\"${charset.displayName}\""

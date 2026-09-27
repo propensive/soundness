@@ -35,7 +35,7 @@ tar layers; both halves come from the `soundness` package:
 import soundness.*
 
 import alphabets.hexLowerCase
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import formatting.compactJsonFormatting
 import providers.javaBaseProvider
 import strategies.throwUnsafely

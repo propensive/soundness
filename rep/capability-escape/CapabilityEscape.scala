@@ -2,7 +2,7 @@ package exegesis
 
 import soundness.*
 
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import strategies.throwUnsafely
 
 // ── capability-escape (a GENUINE capture, not a spurious box) ─────────────────────────────────────

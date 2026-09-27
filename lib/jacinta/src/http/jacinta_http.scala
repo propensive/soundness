@@ -41,7 +41,7 @@ import telekinesis.*
 import zephyrine.*
 
 package postables:
-  given jsonPostable: (encoder: CharEncoder, formatting: Json.Formatting) => Json is Postable =
+  given jsonPostable: (encoder: Codepage, formatting: Json.Formatting) => Json is Postable =
     Postable(media"application/json"(charset = "UTF-8"), value => value.show.in[Data].stream)
 
 package servables:
@@ -49,7 +49,7 @@ package servables:
   // type, which is not something to repeat per response.
   private val jsonMediaType: MediaType = media"application/json"(charset = "UTF-8")
 
-  given jsonServable: (encoder: CharEncoder, formatting: Json.Formatting) => Json is Servable =
+  given jsonServable: (encoder: Codepage, formatting: Json.Formatting) => Json is Servable =
     Servable[Json](jsonMediaType): value => Http.Body.Fixed(value.show.in[Data])
 
 package construables:

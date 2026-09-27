@@ -39,7 +39,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import charEncoders.utf8Encoder
+import codepages.utf8Codepage
 import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
 import workingDirectories.javaBaseWorkingDirectory
