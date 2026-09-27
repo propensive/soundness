@@ -32,74 +32,29 @@
                                                                                                   */
 package telekinesis
 
-import anticipation.*
-import contingency.*
-import distillate.*
-import fulminate.*
-import gossamer.*
-import hieroglyph.*, charEncoders.utf8Encoder
-import kaleidoscope.*
-import monotonous.*
-import prepositional.*
-import spectacular.*
-import vacuous.*
+import soundness.*
 
-object Auth:
-  import alphabets.base64Standard
+import errorDiagnostics.stackTracesDiagnostics
+import strategies.throwUnsafely
 
-  // Over any subtype, so that a value typed as a case (`Auth.Bearer`) renders as the header
-  // value rather than through the generic enumeration instance
-  given showable: [auth <: Auth] => auth is Showable =
-    case Basic(username, password) => t"Basic ${t"$username:$password".in[Data].serialize[Base64]}"
-    case Bearer(token)             => t"Bearer $token"
-    case Digest(digest)            => t"Digest $digest"
-    case Hoba(text)                => t"HOBA $text"
-    case Mutual(text)              => t"Mutual $text"
-    case Negotiate(text)           => t"Negotiate $text"
-    case OAuth(text)               => t"OAuth $text"
-    case ScramSha1(text)           => t"SCRAM-SHA-1 $text"
-    case ScramSha256(text)         => t"SCRAM-SHA-256 $text"
-    case Vapid(text)               => t"vapid $text"
+object AuthTests extends Suite(m"Authorization header tests"):
+  def run(): Unit =
+    test(m"Basic credentials encode as one base64 text"):
+      Auth.Basic(t"user", t"pass").show
+    . assert(_ == t"Basic dXNlcjpwYXNz")
 
-  given decodable: (tactic: Tactic[Auth.Error])
-  =>  ( (Auth is Decodable in Text)^{tactic} ) = value => value match
-    case r"Bearer $token(.*)"        => Bearer(token)
-    case r"Digest $digest(.*)"       => Digest(digest)
-    case r"HOBA $value(.*)"          => Hoba(value)
-    case r"Mutual $value(.*)"        => Mutual(value)
-    case r"Negotiate $value(.*)"     => Negotiate(value)
-    case r"OAuth $value(.*)"         => OAuth(value)
-    case r"SCRAM-SHA-1 $value(.*)"   => ScramSha1(value)
-    case r"SCRAM-SHA-256 $value(.*)" => ScramSha256(value)
-    case r"vapid $value(.*)"         => Vapid(value)
+    test(m"Basic credentials decode from one base64 text"):
+      t"Basic dXNlcjpwYXNz".as[Auth]
+    . assert(_ == Auth.Basic(t"user", t"pass"))
 
-    // The credentials are one base64 text, `username:password`, split at the first colon after
-    // decoding (a password may itself contain colons; a username may not)
-    case r"Basic $encoded(.*)" =>
-      val decoded: Optional[Text] = safely(encoded.deserialize[Base64].utf8)
+    test(m"a password containing colons round-trips"):
+      Auth.Basic(t"user", t"p:a:ss").show.as[Auth]
+    . assert(_ == Auth.Basic(t"user", t"p:a:ss"))
 
-      decoded.let: text =>
-        text.s.indexOf(':') match
-          case -1    => Unset
-          case colon => Basic(text.s.substring(0, colon).nn.tt, text.s.substring(colon + 1).nn.tt)
+    test(m"Basic credentials without a colon are invalid"):
+      capture[Auth.Error](t"Basic dXNlcg==".as[Auth]).value
+    . assert(_ == t"Basic dXNlcg==")
 
-      . lest(Auth.Error(value))
-
-    case value =>
-      abort(Auth.Error(value))
-
-  // AuthError → Auth.Error
-  case class Error(value: Text)(using Diagnostics)
-  extends fulminate.Error(570, 0)(m"the authentication value $value is not valid")
-
-enum Auth:
-  case Basic(username: Text, password: Text)
-  case Bearer(token: Text)
-  case Digest(digest: Text)
-  case Hoba(text: Text)
-  case Mutual(text: Text)
-  case Negotiate(text: Text)
-  case OAuth(text: Text)
-  case ScramSha1(text: Text)
-  case ScramSha256(text: Text)
-  case Vapid(text: Text)
+    test(m"a Bearer token round-trips"):
+      Auth.Bearer(t"abc.def").show.as[Auth]
+    . assert(_ == Auth.Bearer(t"abc.def"))
