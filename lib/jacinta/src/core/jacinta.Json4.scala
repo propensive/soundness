@@ -355,14 +355,19 @@ trait Json4:
     // resolve against the document, so a schema embedded in one — a response schema within an
     // OpenAPI document, referring to `#/components/schemas/…` — reads as it would alone. An
     // object reads as a `Member.Record`, an array of objects as one of `Multiplicity.Many`.
-    def memberOf(document: Json, node: Json): Member =
-      Walk(document).member(node, scala.collection.immutable.Set())
+    def memberOf(document: Json, node: Json, limit: Int = Int.MaxValue): Member =
+      Walk(document, limit).member(node, scala.collection.immutable.Set())
 
     // The walk from a schema node to the `Member` reading a value it describes. `seen` holds
     // the `$ref` targets on the path to the node, so a recursive schema reads as raw `Json` at
     // the point of recursion rather than expanding without end. The walk keeps to the standard
     // library's lists internally and converts at its boundary.
-    private class Walk(root: Json):
+    // `limit` bounds how many `$ref`s deep the walk follows before reading a reference as raw
+    // `Json`: an API's error schema may refer into a graph of thousands of properties, of which
+    // a caller wants the first level or two as a record. References already followed are
+    // memoised, so a graph is walked once, not once per path into it.
+    private class Walk(root: Json, limit: Int = Int.MaxValue):
+      private val followed = scala.collection.mutable.HashMap[Text, Member]()
       private type Sl[element] = scala.collection.immutable.List[element]
       private type SSet[element] = scala.collection.immutable.Set[element]
       private val Sl = scala.collection.immutable.List
@@ -702,10 +707,10 @@ trait Json4:
         if !target.s.startsWith("#") then
           externalRefs.set(true)
           any
-        else if seen.contains(target) then
+        else if seen.contains(target) || seen.size >= limit then
           any
         else
-          deref(target).let(member(_, seen.incl(target))).or(any)
+          followed.getOrElseUpdate(target, deref(target).let(member(_, seen.incl(target))).or(any))
 
     // The schema a provider is built from: JSON already parsed, or — through the conversions in
     // the companion, applied at the `into` parameter — anything readable as JSON, such as a

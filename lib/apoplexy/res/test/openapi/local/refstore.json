@@ -43,6 +43,7 @@
         "operationId": "getItem",
         "responses": {
           "200": { "$ref": "#/components/responses/Item" },
+          "404": { "$ref": "#/components/responses/Missing" },
           "default": {
             "description": "a problem",
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Problem" } } }
@@ -147,6 +148,10 @@
       }
     },
     "responses": {
+      "Missing": {
+        "description": "no such item",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Problem" } } }
+      },
       "Item": {
         "description": "an item",
         "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Item" } } }

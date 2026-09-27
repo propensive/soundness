@@ -245,11 +245,10 @@ object ApiTests extends Suite(m"Api client tests"):
         (recorder.lastMethod, recorder.lastBody.present)
       . assert(_ == (Http.Post, true))
 
-      test(m"a non-2xx response with no declared body raises Api.Error with its text"):
+      test(m"a status the spec does not declare raises Api.Violation"):
         given Http.Backend = Recorder(() => Http.Response(Http.NotFound)(t"gone"))
-        val error = capture[Api.Error[Text]](api.pets(42).get.call[Pet]())
-        (error.status, error.payload)
-      . assert(_ == (Http.NotFound, t"gone"))
+        capture[Api.Violation](api.pets(42).get.call[Pet]()).status
+      . assert(_ == Http.NotFound)
 
       test(m"a type that does not conform to the schema is rejected"):
         demilitarize:
@@ -313,13 +312,50 @@ object ApiTests extends Suite(m"Api client tests"):
       val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
       val itemJson = t"""{"id": 7, "name": "spoon"}"""
 
-      test(m"a declared error response is construed as the error's payload"):
-        given Http.Backend =
-          Recorder(() => Http.Response(Http.NotFound, contentType = media"application/json")(t"""{"message": "no spoon"}"""))
+      val problemJson = t"""{"message": "no spoon"}"""
 
-        val error = capture[Api.Error[Json]](refs.items(7).get.call[Item]())
-        (error.status, error.payload(t"message").as[Text])
-      . assert(_ == (Http.NotFound, t"no spoon"))
+      def problem(status: Http.Status): Http.Response =
+        Http.Response(status, contentType = media"application/json")(problemJson)
+
+      test(m"a declared 404 raises Api.NotFound, its payload a record of the error schema"):
+        given Http.Backend = Recorder(() => problem(Http.NotFound))
+
+        refs.items(7).get.attempt[Item]() match
+          case Attempt.Failure(Api.NotFound(problem)) => problem.message
+          case _                                      => t"?"
+      . assert(_ == t"no spoon")
+
+      test(m"a status the default response covers raises Api.OtherError with the status"):
+        given Http.Backend = Recorder(() => problem(Http.InternalServerError))
+
+        refs.items(7).get.attempt[Item]() match
+          case Attempt.Failure(Api.OtherError(status, problem)) => (status, problem.message)
+          case _                                                => (Http.Ok, t"?")
+      . assert(_ == (Http.InternalServerError, t"no spoon"))
+
+      test(m"the declared errors are matched exhaustively as a union"):
+        given Http.Backend = Recorder(() => problem(Http.NotFound))
+        val outcome = refs.items(7).get.attempt[Item]()
+
+        outcome.recover:
+          case Api.NotFound(problem)      => Item(0L, problem.message)
+          case Api.OtherError(_, problem) => Item(1L, problem.message)
+      . assert(_ == Item(0L, t"no spoon"))
+
+      test(m"an operation declaring no errors raises only Api.Violation"):
+        given Http.Backend = Recorder(() => Http.Response(Http.Conflict)(t"busy"))
+        capture[Api.Violation](refs.items(7).label.get.call()).status
+      . assert(_ == Http.Conflict)
+
+      test(m"a case for an undeclared error does not compile"):
+        demilitarize:
+          given Http.Backend = Recorder(() => problem(Http.NotFound))
+
+          refs.items(7).get.attempt[Item]() match
+            case Attempt.Failure(Api.Conflict(problem)) => t"?"
+            case _                                      => t"?"
+        . length
+      . assert(_ > 0)
 
       test(m"a path substitution is percent-encoded"):
         val recorder = Recorder(() => Http.Response(Http.Ok, contentType = media"text/plain")(t"x"))

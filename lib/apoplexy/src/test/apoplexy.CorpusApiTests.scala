@@ -117,6 +117,14 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
         (recorder.lastMethod, recorder.lastHeaders.filter(_.key == t"content-type").map(_.value))
       . assert(_ == (Http.Post, List(t"application/octet-stream")))
 
+      test(m"a declared 404 without a body raises Api.NotFound[Unit]"):
+        given Http.Backend = Recorder(() => Http.Response(Http.NotFound)())
+
+        api.pet(42L).get.attempt[Swagger.Pet]() match
+          case Attempt.Failure(Api.NotFound(())) => true
+          case _                                 => false
+      . assert(_ == true)
+
       test(m"a query parameter of the wrong type is rejected"):
         demilitarize(api.pet.findByStatus.get(status = 1)).length
       . assert(_ > 0)
@@ -188,12 +196,14 @@ object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
         (request.path, request.query.values)
       . assert(_ == (t"/v1/customers", List(t"limit" -> t"3")))
 
-      test(m"Stripe's default error response types the failure as Json"):
+      test(m"Stripe's default error response raises OtherError with a record payload"):
         given Http.Backend =
           Recorder(() => Http.Response(Http.BadRequest, contentType = media"application/json")(t"""{"error": {"message": "no"}}"""))
 
-        capture[Api.Error[Json]](api.v1.customers(t"cus_1").get.call()).payload(t"error")(t"message").as[Text]
-      . assert(_ == t"no")
+        api.v1.customers(t"cus_1").get.attempt[Json]() match
+          case Attempt.Failure(Api.OtherError(status, problem)) => status
+          case _                                                => Http.Ok
+      . assert(_ == Http.BadRequest)
 
       test(m"a customer is fetched by id"):
         api.v1.customers(t"cus_1").get.request.substitutions

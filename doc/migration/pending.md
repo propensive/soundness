@@ -133,15 +133,29 @@ format. Entries are grouped by module, most-recently-added last within a module.
   was the raw text and failed at send time); a path substitution is now percent-encoded (a space
   as `%20`). (#2091)
 - `apoplexy.Api.Error(reason: Api.Error.Reason)`, with `Reason.Status(code: Int)` and
-  `Reason.Malformed`, became `case class Api.Error[payload](status: Http.Status, payload:
-  payload)(using Diagnostics)` (still `SN-914`, now `914.1` only). `Api.Response` gained the type
-  member `Failure`, set per operation by the macros to the carrier of the declared error response
-  (`default`, then `4XX`/`5XX`, then the lowest error status with a body), else `Text`; `call()`,
-  `record()` and `tuple()` now require `Tactic[Api.Error[Failure]]` and `Diagnostics` at the call
-  site and raise `Api.Error[Failure]` with the error body construed. `Api.Response#ensure(response)`
-  is the new inline status check. The `Conformant` givens (`carrier`, `carrierText`, `decodable`,
-  `decodableText`, `unit`) no longer take a `Tactic[Api.Error]` and no longer check the status;
-  `Conformant.successful` removed. (#2091)
+  `Reason.Malformed`, replaced by a sealed hierarchy: `sealed abstract class Api.Error[+payload]
+  (val status: Http.Status, val payload: payload)(using Diagnostics)` (`SN-914.1`) with one case
+  class per status telekinesis names outside the 2xx range — `Api.BadRequest[+payload](payload)`,
+  `Api.NotFound[+payload](payload)`, … `Api.NetworkAuthenticationRequired[+payload](payload)`,
+  each fixing `status` — plus `Api.Informational[+payload](status, payload)`, `Api.Redirection`,
+  `Api.ClientError`, `Api.ServerError` (the `1XX`–`5XX` range keys, and a numbered status
+  telekinesis does not name) and `Api.OtherError[+payload](status, payload)` (`default`); the
+  payload is covariant so that the compiler's exhaustiveness check covers a union of them; and
+  `case class Api.Violation(status: Http.Status, body: Data)(using Diagnostics)` (`SN-914.2`) for
+  a status the operation does not declare. `Api.Response` gained type members `Locus`, `Verb` and
+  `Failure <: Hazard`, the last set per operation by the macros to the union of the error types
+  its declared error responses raise (`Nothing` where it declares none); the payload of each is
+  a polyvinyl `Record` typed by the error schema (references followed two levels deep;
+  constrained members relaxed to their plain types) for a JSON object or array of objects, else
+  the media type's carrier, else `Text`, or `Unit` for a response without a body. `call()`,
+  `record()` and `tuple()` summon, where they are written, a `Tactic` for each member of
+  `Failure` and a `Tactic[Api.Violation]`, plus a `Diagnostics`, and raise the error for the
+  response's status (exact status first, then range, then `default`, else `Violation`); a missing
+  `Tactic` is a compile error naming the error type. New `Api.Response#attempt[value]()`, an
+  `Attempt[value, Failure]` over the declared errors, and `Api.Response#ensure(response)`. The
+  `Conformant` givens (`carrier`, `carrierText`, `decodable`, `decodableText`, `unit`) no longer
+  take a `Tactic[Api.Error]` and no longer check the status; `Conformant.successful` removed.
+  (#2091)
 
 ## caduceus
 
@@ -711,7 +725,9 @@ format. Entries are grouped by module, most-recently-added last within a module.
   property of `type: integer` with `format: int64` and no bounds now reads through the new
   `Json.Provider.long` instance (`"long"`, to `Long`) rather than `integer` (to `Int`); a
   bounded int64 still reads as `"integer!"`. New `Json.Provider.memberOf(document: Json, node:
-  Json): polyvinyl.Member` walks a schema node within a larger document. (#2091)
+  Json, limit: Int = Int.MaxValue): polyvinyl.Member` walks a schema node within a larger
+  document, following at most `limit` references deep (a reference beyond reads as raw `Json`)
+  and memoising each reference followed. (#2091)
 
 ## octogenarian
 

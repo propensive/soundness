@@ -57,6 +57,7 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import xylophone.*
+import zephyrine.Parse
 
 import charEncoders.utf8Encoder
 import strategies.throwUnsafely
@@ -355,26 +356,138 @@ object Apoplexy:
       Optional('{unsafely[MediaType.Error](Media.parse(${Expr(media.s)}.tt))})
     catch case error: MediaType.Error => Unset
 
-  // The type a response outside the success range is construed as: the carrier of the media
-  // type of the operation's `default` response, else its `4XX`/`5XX` or lowest-numbered error
-  // response with a body; the body as `Text` where none is declared or construable. (Not the
-  // raw `Http.Response`: it is a capability, which an error's payload cannot be.)
-  private def failureTransport(using quotes: Quotes)(doc: OpenApi, operation: OpenApi.Operation)
+  // How a declared error response is raised: by the class of its status, a range class for
+  // `4XX`-style keys (and for a numbered status telekinesis does not name), or `OtherError` for
+  // `default`; and what its payload is
+  private enum Payload:
+    case Empty
+    case Carrier(name: Text)
+    case Record(fields: List[(Text, Member)], many: Boolean)
+
+  private case class Failure(key: Text, status: Optional[Http.Status], payload: Payload):
+    def range: Boolean = status.absent && key != t"default"
+
+  private def statusOf(key: Text): Optional[Http.Status] =
+    scala.collection.immutable.ArraySeq.unsafeWrapArray(Http.Status.values)
+    . find(_.code.toString == key.s) match
+      case Some(status) => status
+      case None         => Unset
+
+  // The declared error responses of an operation, each with the payload its body construes: a
+  // record for a JSON object schema, the carrier of its media type otherwise, `Text` where
+  // nothing construes the media type, nothing where the response has no body
+  private def failures(using Quotes)
+    ( doc: OpenApi, source: Text, key: Text, verb: Text, operation: OpenApi.Operation )
+  :   List[Failure] =
+
+    val keys = operation.responses.keys.filter(!_.starts(t"2")).to[List].order(_.s)
+
+    // Hoisted, explicitly typed: `t""` inside nested `lay` lambdas with an inferred enum result
+    // trips the compiler's `wildApprox` assertion
+    def schemaPointer(status: Text, referable: OpenApi.Referable[OpenApi.Response], media: Text)
+    :   Text =
+
+      referable match
+        case OpenApi.Ref(reference) =>
+          t"${reference.encode}/content/${escape(media)}/schema"
+
+        case _ =>
+          t"#/paths/${escape(key)}/$verb/responses/$status/content/${escape(media)}/schema"
+
+    def recordPayload(status: Text, referable: OpenApi.Referable[OpenApi.Response], media: Text)
+    :   Payload =
+
+      val pointer: Text = schemaPointer(status, referable, media)
+
+      // An error payload's record follows references two levels deep; beyond, raw `Json`
+      Json.Provider.memberOf(specJson(source), schemaNode(source, pointer), 2) match
+        case Member.Record(fields, Multiplicity.One)  => Payload.Record(relaxed(fields), false)
+        case Member.Record(fields, Multiplicity.Many) => Payload.Record(relaxed(fields), true)
+        case _                                        => Payload.Carrier(media)
+
+    def payloadOf(status: Text, referable: OpenApi.Referable[OpenApi.Response]): Payload =
+      val response: OpenApi.Response = resolve[OpenApi.Response](doc, referable)
+      val content: Map[Text, OpenApi.MediaTypeObject] = response.content
+      val media: Optional[Text] = chosenMedia(content)
+
+      media match
+        case Unset       => Payload.Empty
+        case media: Text => construable(media) match
+          case Unset => Payload.Carrier(t"text/plain")
+
+          case repr: quotes.reflect.TypeRepr @unchecked =>
+            if repr =:= quotes.reflect.TypeRepr.of[Json] then recordPayload(status, referable, media)
+            else Payload.Carrier(media)
+
+    keys.map: status =>
+      val referable: Optional[OpenApi.Referable[OpenApi.Response]] = operation.responses(status)
+
+      val payload: Payload = referable match
+        case Unset                                                     => Payload.Empty
+        case referable: OpenApi.Referable[OpenApi.Response] @unchecked => payloadOf(status, referable)
+
+      Failure(status, statusOf(status), payload)
+
+  // An error payload is read for diagnosis, not validated: its constrained members (an `enum`, a
+  // `pattern`, a bounded number) read as their plain types, so that no member of the record is
+  // fallible — a fallible member would make the error type a capability, which it cannot be
+  private def relax(member: Member): Member = member match
+    case Member.Value(label, _, multiplicity) =>
+      val plain = label.s match
+        case "string!" | "enum" | "pattern" => t"string"
+        case "integer!"                     => t"integer"
+        case "number!"                      => t"number"
+        case other                          => other.tt
+
+      Member.Value(plain, Nil, multiplicity)
+
+    case Member.Record(fields, multiplicity) => Member.Record(relaxed(fields), multiplicity)
+    case Member.Union(alternatives, multiplicity) =>
+      Member.Union(alternatives.map { (kind, member) => (kind, relax(member)) }, multiplicity)
+
+  private def relaxed(fields: List[(Text, Member)]): List[(Text, Member)] =
+    fields.map { (name, member) => (name, relax(member)) }
+
+  // The error class a declared response raises, applied to its payload type
+  private def failureType(using quotes: Quotes)(failure: Failure): quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+
+    val payload: TypeRepr = failure.payload match
+      case Payload.Empty          => TypeRepr.of[Unit]
+      case Payload.Carrier(media) => construable(media).or(TypeRepr.of[Text])
+
+      case Payload.Record(fields, many) =>
+        val (refined, _) =
+          Specification.recordExpansion[Json, Json.Provider]('{Api.Records}, fields)
+
+        refined.absolve match
+          case '[refined] =>
+            if many then TypeRepr.of[List[refined]] else TypeRepr.of[refined]
+
+    val errorClass: TypeRepr = failure.status match
+      case status: Http.Status =>
+        val name = status.toString
+        Symbol.requiredClass(s"apoplexy.Api.$name").typeRef
+
+      case _ =>
+        val name =
+          if failure.key == t"default" then "OtherError"
+          else if failure.key.starts(t"1") then "Informational"
+          else if failure.key.starts(t"3") then "Redirection"
+          else if failure.key.starts(t"4") then "ClientError"
+          else "ServerError"
+
+        Symbol.requiredClass(s"apoplexy.Api.$name").typeRef
+
+    errorClass.appliedTo(payload)
+
+  // The union of an operation's declared error types, `Nothing` where it declares none
+  private def failureTransport(using quotes: Quotes)(failures: List[Failure])
   :   quotes.reflect.TypeRepr =
 
     import quotes.reflect.*
-
-    val statuses = operation.responses.keys.filter(!_.starts(t"2")).to[List]
-
-    val first = List(t"default", t"4XX", t"5XX").filter(statuses.has(_))
-    val ordered = List.concat(first, statuses.filter(!first.has(_)).order(_.s))
-
-    val contents = ordered.bind: status =>
-      operation.responses(status).let(resolve[OpenApi.Response](doc, _)).let(_.content)
-      . lay(List[Map[Text, OpenApi.MediaTypeObject]]()): content =>
-          if content.nil then List() else List(content)
-
-    contents.prim.let(chosenMedia(_)).let(construable(_)).or(TypeRepr.of[Text])
+    val types: List[TypeRepr] = failures.map(failureType(_))
+    types.fold[TypeRepr](TypeRepr.of[Nothing]) { (left, right) => OrType(left, right) }
 
   // The status of the response an operation's success returns: `200` or `201` where the
   // operation declares one, else its lowest-numbered 2xx.
@@ -564,19 +677,18 @@ object Apoplexy:
     val mExpr = methodExpr(method)
     val locusExpr = Expr(key.s)
 
-    val failure = failureTransport(doc, operation)
+    val failure = failureTransport(failures(doc, source, key, verb, operation))
 
     val responseType =
-      Refinement
-        ( Refinement
-            ( Refinement
-                ( Refinement(TypeRepr.of[Api.Response], "Result", bounds(literalType(pointer))),
-                  "Form",
-                  bounds(literalType(source)) ),
-              "Transport",
-              bounds(transport) ),
-          "Failure",
-          bounds(failure) )
+      List
+        ( ("Result", bounds(literalType(pointer))),
+          ("Form", bounds(literalType(source))),
+          ("Locus", bounds(literalType(key))),
+          ("Verb", bounds(literalType(verb))),
+          ("Transport", bounds(transport)),
+          ("Failure", bounds(failure)) )
+      . fold[TypeRepr](TypeRepr.of[Api.Response]): (parent, member) =>
+          Refinement(parent, member(0), member(1))
 
     responseType.asType.absolve match
       case '[type result <: Api.Response; result] =>
@@ -873,6 +985,172 @@ object Apoplexy:
       case _ =>
         val advice = t"use `call[T]()` for this response"
         halt(m"apoplexy: $what needs a schema describing an object or an array of objects; $advice")
+
+  // The cases of the dispatch, for the exactly-declared statuses and for the declared ranges.
+  // Object-level recursion over the standard library's list: a lambda building a quote under a
+  // `map`'s live type variables trips the compiler's `wildApprox` assertion.
+  private def statusCases(using Quotes)
+    ( failures: scala.collection.immutable.List[Failure],
+      code0:    Expr[Int],
+      raise:    Failure => Expr[Nothing] )
+  :   scala.collection.immutable.List[(Expr[Boolean], Expr[Nothing])] =
+
+    failures match
+      case scala.collection.immutable.Nil => scala.collection.immutable.Nil
+
+      case scala.collection.immutable.::(failure, rest) =>
+        val code: Int = failure.status match
+          case status: Http.Status => status.code
+          case _                   => 0
+
+        val expected: Expr[Int] = Expr(code)
+        val test: Expr[Boolean] = '{$code0 == $expected}
+        val body: Expr[Nothing] = raise(failure)
+        scala.collection.immutable.::((test, body), statusCases(rest, code0, raise))
+
+  private def rangeCasesOf(using Quotes)
+    ( failures: scala.collection.immutable.List[Failure],
+      code0:    Expr[Int],
+      raise:    Failure => Expr[Nothing] )
+  :   scala.collection.immutable.List[(Expr[Boolean], Expr[Nothing])] =
+
+    failures match
+      case scala.collection.immutable.Nil => scala.collection.immutable.Nil
+
+      case scala.collection.immutable.::(failure, rest) =>
+        val digit: Int = failure.key.s.charAt(0).toInt - '0'.toInt
+        val range: Expr[Int] = Expr(digit)
+        val test: Expr[Boolean] = '{$code0 / 100 == $range}
+        val body: Expr[Nothing] = raise(failure)
+        scala.collection.immutable.::((test, body), rangeCasesOf(rest, code0, raise))
+
+  // A chain of `if`s over the cases, ending in `otherwise`
+  private def cascade(using Quotes)
+    ( cases:     scala.collection.immutable.List[(Expr[Boolean], Expr[Nothing])],
+      otherwise: Expr[Nothing] )
+  :   Expr[Nothing] =
+
+    cases match
+      case scala.collection.immutable.Nil => otherwise
+
+      case scala.collection.immutable.::((test, body), rest) =>
+        val tail: Expr[Nothing] = cascade(rest, otherwise)
+        '{if $test then $body else $tail}
+
+  // The inline entry point called from `Api.Response.ensure`
+  inline def ensure(inline self: Api.Response, response: Http.Response): Unit =
+    ${ensureMacro('self, 'response)}
+
+  // Raises the declared error for a response outside the success range. Each declared error
+  // type needs a `Tactic` where the call is written — as does `Api.Violation`, for a status the
+  // specification does not declare — which is what makes handling exhaustive: a handler missing
+  // one is a compile error naming it.
+  def ensureMacro(self: Expr[Api.Response], response: Expr[Http.Response]): Macro[Unit] =
+    import quotes.reflect.*
+
+    val members = (refinements(self.asTerm.tpe) ++ refinements(self.asTerm.tpe.widen)).to(Map)
+
+    def member(name: Text): Text =
+      members(name).lay(halt(m"apoplexy: the response has no `$name` member"))(stringOf(_))
+
+    val source = member(t"Form")
+    val key = member(t"Locus")
+    val verb = member(t"Verb")
+    val doc = spec(source)
+
+    val operation =
+      pathItem(doc, key).let(_(1)).let(_.operations(verbs(verb).or(Http.Get))).or:
+        halt(m"apoplexy: $key defines no $verb operation")
+
+    val declared = failures(doc, source, key, verb, operation)
+
+    // A `Tactic` for an error type, summoned where the call is written. `Tactic` is
+    // contravariant, so one for the whole `Failure` union (an `attempt`'s) serves each member.
+    def tacticFor(repr: TypeRepr): Expr[Tactic[Nothing]] =
+      Implicits.search(TypeRepr.of[Tactic].appliedTo(repr)) match
+        case success: ImplicitSearchSuccess => success.tree.asExprOf[Tactic[Nothing]]
+
+        case _ =>
+          val shown = repr.show
+          val advice = t"a `Tactic[$shown]` is needed"
+          halt(m"apoplexy: $verb $key may respond with $shown, which nothing handles here; $advice")
+
+    val diagnostics = Expr.summon[Diagnostics].getOrElse:
+      halt(m"apoplexy: a `Diagnostics` is needed where an API is called")
+
+    // The payload of a failure, read from the response
+    def payloadExpr(failure: Failure): Expr[Any] = failure.payload match
+      case Payload.Empty => '{()}
+
+      case Payload.Carrier(media) =>
+        construable(media).or(TypeRepr.of[Text]).asType.absolve match
+          case '[carrier] =>
+            val conformant = Expr.summon[(carrier is Conformant) over carrier].getOrElse:
+              val shown = Type.show[carrier]
+              halt(m"apoplexy: the ${failure.key} response of $verb $key cannot be read as $shown")
+
+            '{$conformant.read($response)}
+
+      case Payload.Record(fields, many) =>
+        val (refined, transform) =
+          Specification.recordExpansion[Json, Json.Provider]('{Api.Records}, fields)
+
+        val parse = Expr.summon[Tactic[Parse.Error]].getOrElse:
+          val advice = t"a `Tactic[Parse.Error]` is needed"
+          halt(m"apoplexy: reading the ${failure.key} response of $verb $key; $advice")
+
+        refined.absolve match
+          case '[type refined <: Record; refined] =>
+            val json = '{Api.jsonOf($response)(using $parse)}
+
+            if many then '{Api.Records.list($json, $transform).asInstanceOf[List[refined]]}
+            else '{Api.Records.build($json, $transform).asInstanceOf[refined]}
+
+    // The raise of one declared failure: the error constructed by class, with its payload and
+    // (for a range or `default` class) the status, through its own tactic
+    def raise(failure: Failure): Expr[Nothing] =
+      val errorType = failureType(failure)
+      val tactic = tacticFor(errorType)
+      val payloadType = errorType.typeArgs.head
+      val constructor = errorType.typeSymbol.primaryConstructor
+
+      val arguments: List[Term] = failure.status match
+        case status: Http.Status => List(payloadExpr(failure).asTerm)
+        case _                   => List('{$response.status}.asTerm, payloadExpr(failure).asTerm)
+
+      val construction =
+        New(Inferred(errorType)).select(constructor).appliedToType(payloadType)
+        . appliedToArgs(arguments.stdlib).appliedTo(diagnostics.asTerm)
+
+      errorType.asType.absolve match
+        case '[error] =>
+          val errorExpr = '{${construction.asExpr}.asInstanceOf[error & Hazard]}
+          '{$tactic.asInstanceOf[Tactic[error & Hazard]].abort($errorExpr)}
+
+    val status0: Expr[Http.Status] = '{$response.status}
+    val code0: Expr[Int] = '{$response.status.code}
+
+    val violationTactic = Expr.summon[Tactic[Api.Violation]].getOrElse:
+      halt(m"apoplexy: a `Tactic[Api.Violation]` is needed, for a status $verb $key does not declare")
+
+    val violation: Expr[Nothing] =
+      '{$violationTactic.abort(Api.Violation($status0, Api.dataOf($response))(using $diagnostics))}
+
+    val undeclared: Expr[Nothing] = declared.seek(_.key == t"default") match
+      case Unset            => violation
+      case failure: Failure => raise(failure)
+
+    // The dispatch on the status: each exactly-declared status, then each declared range, then
+    // `default`, else a violation. The cases are built on the standard library's list and
+    // cascaded by an object-level method: a nested recursive method over the opaque `List`, or
+    // a quote inside a fold's lambda, trips the compiler's `wildApprox` assertion.
+    val exactCases = statusCases(declared.filter(_.status.present).stdlib, code0, raise)
+    val rangeCases = rangeCasesOf(declared.filter(_.range).stdlib, code0, raise)
+    val dispatch: Expr[Nothing] = cascade(exactCases ++ rangeCases, undeclared)
+
+    ' {
+        if $status0.category != Http.Status.Category.Successful then $dispatch
+      }
 
   // The inline entry points called from `Api.Response.record()`/`tuple()`, which supply the
   // response body already read as JSON, with the givens the send needs bound at the call site
