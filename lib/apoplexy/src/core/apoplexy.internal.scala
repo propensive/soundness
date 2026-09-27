@@ -64,19 +64,26 @@ object Apoplexy:
   private val specs: scala.collection.mutable.HashMap[Text, OpenApi] =
     scala.collection.mutable.HashMap()
 
+  private def resource(using Quotes)(source: Text): Text =
+    val stream = Optional(getClass.getResourceAsStream(source.s)).or:
+      halt(m"apoplexy: could not read the OpenAPI spec at $source on the classpath")
+
+    scala.io.Source.fromInputStream(stream).mkString.tt
+
+  // The caches are keyed by the resource's content as well as its name, so that a spec edited
+  // between two compilations in the same compiler process is read afresh.
+  private def key(source: Text, content: Text): Text = t"$source#${content.hashCode}"
+
   private def spec(using Quotes)(source: Text): OpenApi =
+    val content = resource(source)
+
     specs.synchronized:
-      specs.at(source).or:
-        val stream = Optional(getClass.getResourceAsStream(source.s)).or:
-          halt(m"apoplexy: could not read the OpenAPI spec at $source on the classpath")
-
-        val content = scala.io.Source.fromInputStream(stream).mkString.tt
-
+      specs.at(key(source, content)).or:
         val doc =
           try content.read[OpenApi]
           catch case error: Exception => halt(m"apoplexy: the OpenAPI spec at $source is not valid")
 
-        specs(source) = doc
+        specs(key(source, content)) = doc
         doc
 
   // --- refinement-type helpers (mirroring xenophile) ----------------------
@@ -147,21 +154,62 @@ object Apoplexy:
 
   private val verbs: Map[Text, Http.Method] =
     Map(t"get" -> Http.Get, t"post" -> Http.Post, t"put" -> Http.Put, t"patch" -> Http.Patch,
-        t"delete" -> Http.Delete)
+        t"delete" -> Http.Delete, t"head" -> Http.Head, t"options" -> Http.Options,
+        t"trace" -> Http.Trace)
 
   private def methodName(method: Http.Method): Text = method match
-    case Http.Post   => t"post"
-    case Http.Put    => t"put"
-    case Http.Patch  => t"patch"
-    case Http.Delete => t"delete"
-    case _           => t"get"
+    case Http.Post    => t"post"
+    case Http.Put     => t"put"
+    case Http.Patch   => t"patch"
+    case Http.Delete  => t"delete"
+    case Http.Head    => t"head"
+    case Http.Options => t"options"
+    case Http.Trace   => t"trace"
+    case _            => t"get"
 
   private def methodExpr(using Quotes)(method: Http.Method): Expr[Http.Method] = method match
-    case Http.Post   => '{Http.Post}
-    case Http.Put    => '{Http.Put}
-    case Http.Patch  => '{Http.Patch}
-    case Http.Delete => '{Http.Delete}
-    case _           => '{Http.Get}
+    case Http.Post    => '{Http.Post}
+    case Http.Put     => '{Http.Put}
+    case Http.Patch   => '{Http.Patch}
+    case Http.Delete  => '{Http.Delete}
+    case Http.Head    => '{Http.Head}
+    case Http.Options => '{Http.Options}
+    case Http.Trace   => '{Http.Trace}
+    case _            => '{Http.Get}
+
+  // --- the specification's components --------------------------------------
+
+  // A component written in place or by reference, resolved; a reference the document cannot
+  // satisfy is a compile error naming it.
+  private def resolve[value <: OpenApi.Parameter | OpenApi.Response | OpenApi.RequestBody]
+    ( using Quotes, value is OpenApi.Componental )
+    ( doc: OpenApi, referable: OpenApi.Referable[value] )
+  :   value =
+
+    given OpenApi = doc
+
+    try referable()
+    catch case error: OpenApi.Error => halt(m"apoplexy: ${error.message}")
+
+  // The parameters of an operation: those its path item declares for every operation, overridden
+  // by its own on the same name and location, each resolved through the components.
+  private def parameters(using Quotes)(doc: OpenApi, locus: Text, method: Http.Method)
+  :   List[OpenApi.Parameter] =
+
+    val item = doc.paths(locus)
+    def resolved(referables: List[OpenApi.Referable[OpenApi.Parameter]])
+    :   List[OpenApi.Parameter] =
+
+      referables.map(resolve[OpenApi.Parameter](doc, _))
+
+    val operation = item.let(_.operations(method))
+    val own = operation.lay(List[OpenApi.Parameter]())(_.parameters.pipe(resolved))
+    val shared = item.lay(List[OpenApi.Parameter]())(_.parameters.pipe(resolved))
+
+    def overridden(parameter: OpenApi.Parameter): Boolean =
+      own.exists(param => param.name == parameter.name && param.`in` == parameter.`in`)
+
+    List.concat(own, shared.filter(!overridden(_)))
 
   // --- schema → Scala type -------------------------------------------------
 
@@ -171,7 +219,9 @@ object Apoplexy:
     import quotes.reflect.*
 
     schema match
-      case _: JsonSchema.Integer => TypeRepr.of[Int]
+      case integer: JsonSchema.Integer =>
+        if integer.format == JsonSchema.Format.Int64 then TypeRepr.of[Long] else TypeRepr.of[Int]
+
       case _: JsonSchema.Number  => TypeRepr.of[Double]
       case _: JsonSchema.String  => TypeRepr.of[Text]
       case _: JsonSchema.Boolean => TypeRepr.of[Boolean]
@@ -183,6 +233,22 @@ object Apoplexy:
       case _ =>
         TypeRepr.of[Json]
 
+  // Whether an argument's type may fill a parameter of the schema's type: exactly, or by the
+  // widenings a caller would expect, an `Int` where the schema says int64, or an integer where
+  // it says number.
+  private def conforms(using quotes: Quotes)
+    ( actual: quotes.reflect.TypeRepr, expected: quotes.reflect.TypeRepr )
+  :   Boolean =
+
+    import quotes.reflect.*
+
+    val integral = actual <:< TypeRepr.of[Int] || actual <:< TypeRepr.of[Long]
+    val widensToLong = expected =:= TypeRepr.of[Long] && actual <:< TypeRepr.of[Int]
+    val fractional = integral || actual <:< TypeRepr.of[Float]
+    val widensToDouble = expected =:= TypeRepr.of[Double] && fractional
+
+    actual <:< expected || widensToLong || widensToDouble
+
   private def pathParamType(using quotes: Quotes)(doc: OpenApi, path: Text, parameter: Text)
   :   quotes.reflect.TypeRepr =
 
@@ -190,10 +256,12 @@ object Apoplexy:
 
     val params =
       doc.paths(path).lay(List[OpenApi.Parameter]()): item =>
-        item.operations.values.flatMap(_.parameters)
+        item.operations.keys.to[List].bind(parameters(doc, path, _))
 
-    params.seek { p => p.name == parameter && p.`in` == OpenApi.Parameter.In.Path }
-    . lay(TypeRepr.of[Text]): param =>
+    def matches(param: OpenApi.Parameter): Boolean =
+      param.name == parameter && param.`in` == OpenApi.Parameter.In.Path
+
+    params.seek(matches).lay(TypeRepr.of[Text]): param =>
       param.schema.lay(TypeRepr.of[Text])(schemaType(doc, _))
 
   // --- wire format ---------------------------------------------------------
@@ -214,19 +282,29 @@ object Apoplexy:
     else if content.defines(t"application/xml") || content.defines(t"text/xml") then Wire.Xml
     else Wire.Json
 
-  // The wire format of an operation's first 2xx response body, if any.
-  private def responseWire(operation: OpenApi.Operation): Optional[Wire] =
-    val status = operation.responses.keys.filter(_.starts(t"2")).to[List].order(_.s).prim
+  // The status of the response an operation's success returns: `200` or `201` where the
+  // operation declares one, else its lowest-numbered 2xx.
+  private def successStatus(operation: OpenApi.Operation): Optional[Text] =
+    val statuses = operation.responses.keys.filter(_.starts(t"2")).to[List]
 
-    status.let(operation.responses(_)).let: response => wireOf(response.content)
+    if statuses.has(t"200") then t"200"
+    else if statuses.has(t"201") then t"201"
+    else statuses.order(_.s).prim
+
+  // The wire format of an operation's success response body, if any.
+  private def responseWire(using Quotes)(doc: OpenApi, operation: OpenApi.Operation)
+  :   Optional[Wire] =
+
+    successStatus(operation).let(operation.responses(_)).let(resolve[OpenApi.Response](doc, _))
+    . let: response => wireOf(response.content)
 
   // The spec-wide wire format if every operation agrees, else `Json` as a neutral
   // placeholder for navigation types. The authoritative format is always recomputed
   // per operation by `invoke`.
-  private def uniformWire(doc: OpenApi): Wire =
+  private def uniformWire(using Quotes)(doc: OpenApi): Wire =
     val wires =
       doc.paths.values.flatMap(_.operations.values).to[List].bind: operation =>
-        responseWire(operation).lay(List[Wire]())(List(_))
+        responseWire(doc, operation).lay(List[Wire]())(List(_))
 
     . to[Set]
 
@@ -248,9 +326,9 @@ object Apoplexy:
   // --- invocation ----------------------------------------------------------
 
   // Builds the `Api.Response` for invoking `method` on the complete endpoint
-  // `locus`: typechecks named args against the query parameters, the single
-  // optional positional against the request body, and records the 2xx response
-  // schema's pointer in the result type.
+  // `locus`: typechecks named args against the query and header parameters, the
+  // single optional positional against the request body, and records the success
+  // response schema's pointer in the result type.
   private def invoke(using quotes: Quotes)
     ( self:       Expr[Api],
       doc:        OpenApi,
@@ -268,42 +346,59 @@ object Apoplexy:
     val operation = doc.paths(locus).let(_.operations(method)).or:
       halt(m"apoplexy: $locus defines no $verb operation")
 
-    val queryParams = operation.parameters.filter(_.`in` == OpenApi.Parameter.In.Query)
+    val params = parameters(doc, locus, method)
+    val queryParams = params.filter(_.`in` == OpenApi.Parameter.In.Query)
+    val headerParams = params.filter(_.`in` == OpenApi.Parameter.In.Header)
 
-    val queryEntries: List[Expr[(Text, Text)]] = named.map: (name, argExpr) =>
-      val param = queryParams.seek(_.name == name).or:
-        halt(m"apoplexy: $verb $locus has no query parameter $name")
-
+    // A named argument fills the query parameter of that name, else the header parameter
+    def entry(name: Text, argExpr: Expr[Any], param: OpenApi.Parameter): Expr[(Text, Text)] =
       val expected = param.schema.lay(TypeRepr.of[Text])(schemaType(doc, _))
       val actual = argExpr.asTerm.tpe.widen
+      val where = if param.`in` == OpenApi.Parameter.In.Query then t"query" else t"header"
 
-      if !(actual <:< expected)
-      then halt(m"apoplexy: the query parameter $name expects ${expected.show}")
+      if !conforms(actual, expected)
+      then halt(m"apoplexy: the $where parameter $name expects ${expected.show}")
 
       actual.asType.absolve match
         case '[argType] =>
           val value = argExpr.asExprOf[argType]
 
           val showable = Expr.summon[argType is Showable].getOrElse:
-            halt(m"apoplexy: the query parameter $name cannot be rendered as text")
+            halt(m"apoplexy: the $where parameter $name cannot be rendered as text")
 
           '{(${Expr(name.s)}.tt, $showable.text($value))}
 
-    queryParams.filter(_.required.or(false)).each: param =>
+    val queryEntries: List[Expr[(Text, Text)]] = named.bind: (name, argExpr) =>
+      queryParams.seek(_.name == name).lay(List[Expr[(Text, Text)]]()): param =>
+        List(entry(name, argExpr, param))
+
+    val headerEntries: List[Expr[(Text, Text)]] = named.bind: (name, argExpr) =>
+      headerParams.seek(_.name == name).lay(List[Expr[(Text, Text)]]()): param =>
+        List(entry(name, argExpr, param))
+
+    named.each: (name, _) =>
+      if !queryParams.exists(_.name == name) && !headerParams.exists(_.name == name)
+      then halt(m"apoplexy: $verb $locus has no query or header parameter $name")
+
+    List.concat(queryParams, headerParams).filter(_.required.or(false)).each: param =>
       if !named.exists(_(0) == param.name)
-      then halt(m"apoplexy: required query parameter ${param.name} is missing")
+      then halt(m"apoplexy: required parameter ${param.name} is missing")
 
     val queryExpr = Lifts.list(queryEntries)
+    val headersExpr = Lifts.list(headerEntries)
 
-    val status =
-      operation.responses.keys.filter(_.starts(t"2")).to[List].order(_.s).prim.or(t"200")
+    val status = successStatus(operation).or(t"200")
+
+    val response: Optional[OpenApi.Referable[OpenApi.Response]] = operation.responses(status)
 
     // The wire format the spec dictates for this operation: the response body's
     // media type, else the request body's, else JSON. An operation that mixes
     // request and response media types is not supported.
-    val respWire = operation.responses(status).let: response => wireOf(response.content)
+    val respWire = response.let(resolve[OpenApi.Response](doc, _)).let: response =>
+      wireOf(response.content)
 
-    val reqWire = operation.requestBody.let: body => wireOf(body.content)
+    val requestBody = operation.requestBody.let(resolve[OpenApi.RequestBody](doc, _))
+    val reqWire = requestBody.let: body => wireOf(body.content)
 
     respWire.let: resp =>
       reqWire.let: req =>
@@ -314,13 +409,13 @@ object Apoplexy:
 
     val bodyExpr: Expr[Api.Body] = positional match
       case Nil =>
-        if operation.requestBody.let(_.required.or(false)).or(false)
+        if requestBody.let(_.required.or(false)).or(false)
         then halt(m"apoplexy: $verb $locus requires a request body")
 
         '{Api.Body.Empty}
 
       case List(argExpr) =>
-        if operation.requestBody.absent then halt(m"apoplexy: $verb $locus takes no request body")
+        if requestBody.absent then halt(m"apoplexy: $verb $locus takes no request body")
 
         argExpr.asTerm.tpe.widen.asType.absolve match
           case '[bodyType] =>
@@ -344,8 +439,14 @@ object Apoplexy:
 
     val mediaContent = escape(mediaOf(wire))
 
-    val pointer =
-      t"#/paths/${escape(locus)}/$verb/responses/$status/content/$mediaContent/schema"
+    // The schema's pointer: into the components when the response is a reference, else into
+    // the operation
+    val pointer = response match
+      case OpenApi.Ref(reference) =>
+        t"${reference.encode}/content/$mediaContent/schema"
+
+      case _ =>
+        t"#/paths/${escape(locus)}/$verb/responses/$status/content/$mediaContent/schema"
 
     val mExpr = methodExpr(method)
     val locusExpr = Expr(locus.s)
@@ -364,10 +465,11 @@ object Apoplexy:
         ' {
             val request =
               $self.request.copy
-                ( method = $mExpr,
-                  path   = $locusExpr.tt,
-                  query  = $queryExpr,
-                  body   = $bodyExpr )
+                ( method  = $mExpr,
+                  path    = $locusExpr.tt,
+                  query   = $queryExpr,
+                  body    = $bodyExpr,
+                  headers = $headersExpr )
 
             Api.Response.make(request).asInstanceOf[result]
           }
@@ -416,7 +518,16 @@ object Apoplexy:
 
   // --- macros --------------------------------------------------------------
 
-  def root(resource: Expr[Resource]): Macro[Api] =
+  def root(resource: Expr[Resource]): Macro[Api] = rootWith(resource, Unset)
+
+  def rootAt(resource: Expr[Resource], base: Expr[Text]): Macro[Api] = rootWith(resource, base)
+
+  // The base URL comes from the spec's first server, with its variables at their defaults. A
+  // server URL which is relative (`/api/v3`), or absent, needs a base from the caller, which it
+  // then extends; a caller's base replaces an absolute server URL outright.
+  private def rootWith(using Quotes)(resource: Expr[Resource], base: Optional[Expr[Text]])
+  :   Expr[Api] =
+
     import quotes.reflect.*
 
     val members = (refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)).to(Map)
@@ -425,13 +536,22 @@ object Apoplexy:
       members(t"Locus").lay(halt(m"apoplexy: the resource has no `Locus` path"))(stringOf(_))
 
     val doc = spec(source)
-    val base = doc.servers.prim.lay(t"")(_.url)
-    val baseExpr = Expr(base.s)
+    val server = doc.servers.prim.lay(t"")(_.resolved)
+    val serverExpr = Expr(server.s)
+
+    // A plain match: a quote inside an inline argument (`lay`'s lambda) crashes the pickler
+    val baseExpr: Expr[Text] = base match
+      case Unset =>
+        '{$serverExpr.tt}
+
+      case supplied: Expr[Text] @unchecked =>
+        if server.starts(t"/") then '{($supplied.s + $serverExpr).tt} else supplied
+
     val wire = uniformWire(doc)
 
     apiType(t"/", source, wire).asType.absolve match
       case '[type result <: Api; result] =>
-        '{Api.make(Api.Request(Http.Get, $baseExpr.tt, t"/")).asInstanceOf[result]}
+        '{Api.make(Api.Request(Http.Get, $baseExpr, t"/")).asInstanceOf[result]}
 
   def select(self: Expr[Api], field: Expr[String]): Macro[Any] =
     val name = field.valueOrAbort.tt
@@ -511,7 +631,7 @@ object Apoplexy:
     val expected = pathParamType(doc, templatedLocus, parameter)
     val actual = arg.asTerm.tpe.widen
 
-    if !(actual <:< expected)
+    if !conforms(actual, expected)
     then halt(m"apoplexy: path parameter $parameter expects ${expected.show}")
 
     val locusExpr = Expr(templatedLocus.s)
@@ -565,18 +685,15 @@ object Apoplexy:
     scala.collection.mutable.HashMap()
 
   private def specJson(using Quotes)(source: Text): Json =
+    val content = resource(source)
+
     specJsons.synchronized:
-      specJsons.at(source).or:
-        val stream = Optional(getClass.getResourceAsStream(source.s)).or:
-          halt(m"apoplexy: could not read the OpenAPI spec at $source on the classpath")
-
-        val content = scala.io.Source.fromInputStream(stream).mkString.tt
-
+      specJsons.at(key(source, content)).or:
         val json =
           try OpenApi.sourceJson(content)
           catch case error: Exception => halt(m"apoplexy: the OpenAPI spec at $source is not valid")
 
-        specJsons(source) = json
+        specJsons(key(source, content)) = json
         json
 
   // Resolve the response-schema `JsonSchema` at a JSON-pointer into the spec.
@@ -608,8 +725,8 @@ object Apoplexy:
     def ok(value: TypeRepr, schema: JsonSchema): Boolean = schema match
       case ref: JsonSchema.Ref   => simpleName(value) == componentName(ref.pointer)
       case _: JsonSchema.String  => value =:= TypeRepr.of[Text]
-      case _: JsonSchema.Integer => value =:= TypeRepr.of[Int]
-      case _: JsonSchema.Number  => value =:= TypeRepr.of[Double]
+      case _: JsonSchema.Integer => value =:= TypeRepr.of[Int] || value =:= TypeRepr.of[Long]
+      case _: JsonSchema.Number  => value =:= TypeRepr.of[Double] || value =:= TypeRepr.of[Float]
       case _: JsonSchema.Boolean => value =:= TypeRepr.of[Boolean]
       case _: JsonSchema.Object  => value.typeSymbol.flags.is(Flags.Case)
 

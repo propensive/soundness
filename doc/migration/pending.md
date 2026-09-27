@@ -41,6 +41,38 @@ format. Entries are grouped by module, most-recently-added last within a module.
   JsonSchema is Decodable in Yaml` removed. A YAML document is read by translating it to JSON
   with the new `apoplexy.OpenApi.json(yaml: Yaml): Json` and decoding that; consequently the
   `enum` values of a schema in a YAML document are now retained (previously dropped). (#pending)
+- `apoplexy.OpenApi.Operation.parameters: List[OpenApi.Parameter]` became
+  `List[OpenApi.Referable[OpenApi.Parameter]]`, `Operation.requestBody: Optional[RequestBody]`
+  became `Optional[Referable[RequestBody]]`, `Operation.responses: Map[Text, Response]` became
+  `Map[Text, Referable[Response]]`, and `OpenApi.PathItem.parameters: List[Parameter]` became
+  `List[Referable[Parameter]]`, where `type Referable[value] = value | OpenApi.Ref` and
+  `case class Ref(pointer: JsonPointer)` is a `$ref` left unresolved. The extension
+  `Operation#response(status: Http.Status)` now returns `Optional[Referable[Response]]`. A new
+  extension `[value <: Parameter | Response | RequestBody: OpenApi.Componental]
+  (referable: Referable[value]) def apply()(using OpenApi): value raises OpenApi.Error` resolves
+  a reference into `#/components/{parameters,responses,requestBodies}/…` (raising
+  `Reason.UnresolvableRef` or `Reason.UnsupportedRef` otherwise). Previously a `$ref` parameter
+  failed to decode and a `$ref` response or request body decoded as an empty object. (#pending)
+- `apoplexy.OpenApi.Components(schemas: Map[Text, JsonSchema])` gained trailing fields
+  `parameters: Map[Text, Referable[Parameter]] = Map()`, `responses: Map[Text,
+  Referable[Response]] = Map()`, `requestBodies: Map[Text, Referable[RequestBody]] = Map()`;
+  `OpenApi.Server(url, description)` gained `variables: Map[Text, OpenApi.ServerVariable] =
+  Map()` (new `case class ServerVariable(default: Text, enum: Optional[List[Text]] = Unset,
+  description: Optional[Text] = Unset)`) and a method `resolved: Text` (the URL with each
+  `{variable}` at its default); `apoplexy.Api.Request(method, base, path, substitutions, query,
+  body)` gained a trailing `headers: List[(Text, Text)] = Nil`. Positional patterns gain
+  elements. (#pending)
+- Behaviour change in the `apoplexy.Api` macros: a path item's own `parameters` now apply to
+  every operation on it (previously ignored, so a path-level path parameter was typed `Text`
+  and a path-level query parameter was rejected as unknown); a named argument may fill an
+  `in: header` parameter, which is sent as a request header (previously rejected); `head`,
+  `options` and `trace` are navigable verbs like `get`; among several 2xx responses `200` is
+  preferred, then `201`, then the lowest (previously the lexicographically smallest); a
+  parameter or response schema of `type: integer` with `format: int64` is typed `Long` (an
+  `Int` argument is still accepted; `call[T]()` accepts `Long` or `Int` fields for any integer
+  schema, and `Float` or `Double` for a number); the spec's first `servers` URL has its
+  `{variables}` replaced by their defaults. New `Api(resource, base: Text)`: `base` is prefixed
+  to a relative server URL (`/api/v3`) and replaces an absolute one. (#pending)
 
 ## caduceus
 

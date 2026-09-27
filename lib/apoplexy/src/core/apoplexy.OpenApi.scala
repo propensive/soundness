@@ -52,7 +52,88 @@ import zephyrine.Parse
 
 object OpenApi:
   case class Info(title: Text, version: Text, description: Optional[Text] = Unset)
-  case class Server(url: Text, description: Optional[Text] = Unset)
+
+  object ServerVariable:
+    given decodable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    =>  ServerVariable is Json.Decodable = Json.DecodableDerivation.derived
+
+  case class ServerVariable
+    ( default:     Text,
+      `enum`:      Optional[List[Text]] = Unset,
+      description: Optional[Text]       = Unset )
+
+  object Server:
+    given decodable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    =>  Server is Json.Decodable = Json.DecodableDerivation.derived
+
+  case class Server
+    ( url:         Text,
+      description: Optional[Text]           = Unset,
+      variables:   Map[Text, ServerVariable] = Map() ):
+
+    // The URL with every `{variable}` replaced by its default
+    def resolved: Text = variables.fold(url): (url, entry) =>
+      url.sub(t"{${entry(0)}}", entry(1).default)
+
+  // A reference to a component, by JSON pointer (`#/components/parameters/limit`), left
+  // unresolved where the document uses one; `apply()` resolves it against the document.
+  case class Ref(pointer: JsonPointer)
+
+  // A component object may be written in place or referred to by a `$ref`
+  type Referable[value] = value | Ref
+
+  // The decoder of a place-or-reference position: a `$ref` key marks a `Ref`, anything else
+  // is decoded as the component itself
+  private def referable[value](inner: value is Json.Decodable)
+    ( using Tactic[Json.Error], Tactic[JsonPointer.Error] )
+  :   Referable[value] is Json.Decodable =
+
+    Json.Decodable(Morphology.Any): json =>
+      json("$ref".tt).as[Optional[Text]].lay(inner.decoded(json)): reference =>
+        Ref(reference.as[JsonPointer])
+
+  object Componental:
+    given parameter: Parameter is Componental = Componental(t"parameters", _.parameters)
+    given response: Response is Componental = Componental(t"responses", _.responses)
+    given requestBody: RequestBody is Componental = Componental(t"requestBodies", _.requestBodies)
+
+    def apply[value](kind0: Text, map: Components => Map[Text, Referable[value]])
+    :   value is Componental =
+
+      new Componental:
+        type Self = value
+        def kind: Text = kind0
+
+        def lookup(components: Components, name: Text): Optional[value] =
+          map(components).at(name) match
+            case found: Ref => Unset
+            case found      => found.asInstanceOf[Optional[value]]
+
+  // Which map in `Components` holds a kind of component, and under what pointer prefix
+  trait Componental extends Typeclass.Pure:
+    def kind: Text
+    def lookup(components: Components, name: Text): Optional[Self]
+
+  // Resolves a place-or-reference position to the component: the value itself, or the
+  // component named by the reference. Only references into the document's own components
+  // are supported.
+  // The bound keeps `apply` from being tried on every application of a value without one.
+  extension [value <: Parameter | Response | RequestBody: Componental](referable: Referable[value])
+    def apply()(using doc: OpenApi): value raises OpenApi.Error = referable match
+      case Ref(pointer) =>
+        val reference = pointer.encode
+        val prefix = t"#/components/${value.kind}/"
+
+        if reference.starts(prefix) then
+          val name = reference.skip(prefix.length)
+
+          doc.components.let(value.lookup(_, name)).or:
+            abort(OpenApi.Error(OpenApi.Error.Reason.UnresolvableRef(reference)))
+        else
+          abort(OpenApi.Error(OpenApi.Error.Reason.UnsupportedRef(reference)))
+
+      case value =>
+        value.asInstanceOf[value]
 
   object Parameter:
     object In:
@@ -70,6 +151,9 @@ object OpenApi:
     // so a plain-typed anchor would be bypassed and the type re-derived inline.
     given decodableJson: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  Parameter is Json.Decodable = Json.DecodableDerivation.derived
+
+    given referable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    =>  Referable[Parameter] is Json.Decodable = OpenApi.referable(decodableJson)
 
     enum In:
       case Path, Query, Header, Cookie
@@ -90,8 +174,11 @@ object OpenApi:
   case class MediaTypeObject(schema: Optional[JsonSchema] = Unset)
 
   object RequestBody:
-    given (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    given decodable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  RequestBody is Json.Decodable = Json.DecodableDerivation.derived
+
+    given referable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    =>  Referable[RequestBody] is Json.Decodable = OpenApi.referable(decodable)
 
   case class RequestBody
     ( description: Optional[Text]             = Unset,
@@ -99,8 +186,11 @@ object OpenApi:
       content:     Map[Text, MediaTypeObject] = Map() )
 
   object Response:
-    given (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    given decodable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  Response is Json.Decodable = Json.DecodableDerivation.derived
+
+    given referable: (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
+    =>  Referable[Response] is Json.Decodable = OpenApi.referable(decodable)
 
   case class Response
     ( description: Optional[Text]             = Unset,
@@ -116,12 +206,12 @@ object OpenApi:
     =>  Operation is Json.Decodable = Json.DecodableDerivation.derived
 
   case class Operation
-    ( operationId: Optional[Text]        = Unset,
-      summary:     Optional[Text]        = Unset,
-      description: Optional[Text]        = Unset,
-      parameters:  List[Parameter]       = Nil,
-      requestBody: Optional[RequestBody] = Unset,
-      responses:   Map[Text, Response]   = Map() )
+    ( operationId: Optional[Text]                    = Unset,
+      summary:     Optional[Text]                    = Unset,
+      description: Optional[Text]                    = Unset,
+      parameters:  List[Referable[Parameter]]        = Nil,
+      requestBody: Optional[Referable[RequestBody]]  = Unset,
+      responses:   Map[Text, Referable[Response]]    = Map() )
 
   object PathItem:
     given (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
@@ -141,7 +231,7 @@ object OpenApi:
       head:        Optional[Operation] = Unset,
       patch:       Optional[Operation] = Unset,
       trace:       Optional[Operation] = Unset,
-      parameters:  List[Parameter]     = Nil ):
+      parameters:  List[Referable[Parameter]] = Nil ):
 
     def operations: Map[Http.Method, Operation] =
       val verbs =
@@ -158,13 +248,17 @@ object OpenApi:
     given (Tactic[Json.Error], Tactic[JsonPointer.Error], Tactic[OpenApi.Error])
     =>  Components is Json.Decodable = Json.DecodableDerivation.derived
 
-  case class Components(schemas: Map[Text, JsonSchema] = Map())
+  case class Components
+    ( schemas:       Map[Text, JsonSchema]              = Map(),
+      parameters:    Map[Text, Referable[Parameter]]    = Map(),
+      responses:     Map[Text, Referable[Response]]     = Map(),
+      requestBodies: Map[Text, Referable[RequestBody]]  = Map() )
 
   // The `responses` map is keyed by status text (`"200"`, `"2XX"`, `"default"`),
   // not all of which are valid `Http.Status` codes; `response` interprets a
   // concrete status against those keys.
   extension (operation: Operation)
-    def response(status: Http.Status): Optional[Response] =
+    def response(status: Http.Status): Optional[Referable[Response]] =
       operation.responses.at(status.code.show)
       . or(operation.responses.at(t"${status.code/100}XX"))
       . or(operation.responses.at(t"default"))

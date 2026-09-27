@@ -49,6 +49,8 @@ case class Photo(url: Text, width: Optional[Int] = Unset, height: Optional[Int] 
 case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
 case class Note(id: Int, text: Text)
 case class NewNote(text: Text)
+case class Item(id: Long, name: Text)
+case class NewItem(name: Text)
 
 // A test `Http.Backend` that captures the request it is given and replies with a
 // canned response, so `.call` can be exercised without any network access.
@@ -248,6 +250,57 @@ object ApiTests extends Suite(m"Api client tests"):
         demilitarize:
           given Http.Backend = Recorder(() => ok(petJson))
           api.pets(42).get.call[Photo]()
+        . length
+      . assert(_ > 0)
+
+    suite(m"references, path-level parameters, headers and servers"):
+      val refs = Api(cp"/apoplexy/refstore.json", base = t"https://ref.example.com")
+      val itemJson = t"""{"id": 7, "name": "spoon"}"""
+
+      test(m"a relative server URL, with its variable at its default, extends the base"):
+        refs.request.base
+      . assert(_ == t"https://ref.example.com/v2")
+
+      test(m"a path-level int64 parameter accepts a Long"):
+        refs.items(7L).request.substitutions
+      . assert(_ == Map(t"itemId" -> t"7"))
+
+      test(m"a path-level int64 parameter accepts an Int"):
+        refs.items(7).request.substitutions
+      . assert(_ == Map(t"itemId" -> t"7"))
+
+      test(m"a referenced query parameter is recognised"):
+        refs.items.get(limit = 5, `X-Request-Id` = t"r1").request.query
+      . assert(_ == List(t"limit" -> t"5"))
+
+      test(m"a path-level header parameter is sent as a header"):
+        refs.items.get(`X-Request-Id` = t"r1").request.headers
+      . assert(_ == List(t"X-Request-Id" -> t"r1"))
+
+      test(m"omitting a required header parameter is rejected"):
+        demilitarize(refs.items.get(limit = 5)).length
+      . assert(_ > 0)
+
+      test(m"HEAD is a verb"):
+        refs.items.head(`X-Request-Id` = t"r1").request.method
+      . assert(_ == Http.Head)
+
+      test(m"a referenced response schema types the call"):
+        given Http.Backend = Recorder(() => ok(itemJson))
+        refs.items(7).get.call[Item]()
+      . assert(_ == Item(7L, t"spoon"))
+
+      test(m"a referenced request body is accepted, and 201 is preferred to 202"):
+        val recorder = Recorder(() => Http.Response(Http.Created, contentType = media"application/json")(itemJson))
+        given Http.Backend = recorder
+        refs.items.post(NewItem(t"spoon"), `X-Request-Id` = t"r1").call[Item]()
+        recorder.lastHeaders.filter(_.key.lower == t"x-request-id").map(_.value)
+      . assert(_ == List(t"r1"))
+
+      test(m"a type that does not conform to a referenced schema is rejected"):
+        demilitarize:
+          given Http.Backend = Recorder(() => ok(itemJson))
+          refs.items(7).get.call[Note]()
         . length
       . assert(_ > 0)
 

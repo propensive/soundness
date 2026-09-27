@@ -61,6 +61,10 @@ object Api:
   // spec source so navigation macros can re-read it.
   transparent inline def apply(inline resource: Resource): Any = ${Apoplexy.root('resource)}
 
+  // As above, with a base URL for a spec whose servers are relative (`/api/v3`) or absent
+  transparent inline def apply(inline resource: Resource, base: Text): Any =
+    ${Apoplexy.rootAt('resource, 'base)}
+
   def make(apiRequest: Api.Request): Api = new Api:
     def request: Api.Request = apiRequest
 
@@ -106,7 +110,11 @@ object Api:
     val contentTypeHeader: List[Http.Header] = contentType.lay(Nil): media =>
       List(Http.Header(t"content-type", media))
 
-    val headers: List[Http.Header] = Http.Header(t"accept", accept) :: contentTypeHeader
+    val parameterHeaders: List[Http.Header] = request.headers.map: (key, value) =>
+      Http.Header(key, value)
+
+    val headers: List[Http.Header] =
+      Http.Header(t"accept", accept) :: List.concat(contentTypeHeader, parameterHeaders)
 
     val httpRequest =
       Http.Request
@@ -137,7 +145,8 @@ object Api:
       path:          Text,
       substitutions: Map[Text, Text]    = Map(),
       query:         List[(Text, Text)] = Nil,
-      body:          Api.Body           = Api.Body.Empty )
+      body:          Api.Body           = Api.Body.Empty,
+      headers:       List[(Text, Text)] = Nil )
 
   // The result of invoking an endpoint. Its refined type records `Result` (a
   // JSON-pointer to the 2xx response schema) and `Form` (the spec source),

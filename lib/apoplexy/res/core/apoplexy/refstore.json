@@ -1,0 +1,83 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Refstore", "version": "1.0.0" },
+  "servers": [
+    { "url": "/v{version}", "variables": { "version": { "default": "2", "enum": ["1", "2"] } } }
+  ],
+  "paths": {
+    "/items": {
+      "parameters": [{ "$ref": "#/components/parameters/requestId" }],
+      "get": {
+        "operationId": "listItems",
+        "parameters": [{ "$ref": "#/components/parameters/limit" }],
+        "responses": {
+          "200": {
+            "description": "items",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Item" } }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "operationId": "probeItems",
+        "responses": { "200": { "description": "ok" } }
+      },
+      "post": {
+        "operationId": "createItem",
+        "requestBody": { "$ref": "#/components/requestBodies/NewItem" },
+        "responses": {
+          "202": { "description": "queued" },
+          "201": { "$ref": "#/components/responses/Item" }
+        }
+      }
+    },
+    "/items/{itemId}": {
+      "parameters": [
+        { "name": "itemId", "in": "path", "required": true,
+          "schema": { "type": "integer", "format": "int64" } }
+      ],
+      "get": {
+        "operationId": "getItem",
+        "responses": { "200": { "$ref": "#/components/responses/Item" } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Item": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "name": { "type": "string" }
+        }
+      },
+      "NewItem": {
+        "type": "object",
+        "required": ["name"],
+        "properties": { "name": { "type": "string" } }
+      }
+    },
+    "parameters": {
+      "limit": { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+      "requestId": {
+        "name": "X-Request-Id", "in": "header", "required": true, "schema": { "type": "string" }
+      }
+    },
+    "responses": {
+      "Item": {
+        "description": "an item",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Item" } } }
+      }
+    },
+    "requestBodies": {
+      "NewItem": {
+        "required": true,
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/NewItem" } } }
+      }
+    }
+  }
+}
