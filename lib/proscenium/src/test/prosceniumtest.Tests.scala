@@ -99,11 +99,12 @@ object Tests extends Suite(m"Proscenium consumer-view tests"):
       // that cannot be built this way. The omission looks accidental rather than intended —
       // `Sequence`'s only deliberate omission is documented as the conversion in the *other*
       // direction.
-      test(m"a stdlib collection builds a sequence"):
-        demilitarize:
-          val sequence: Sequence[Int] = scala.collection.immutable.List(1, 2).to(Sequence)
-        . map(_.message)
-      . aspire(_.isEmpty)
+      aspirationally:
+        test(m"a stdlib collection builds a sequence"):
+          demilitarize:
+            val sequence: Sequence[Int] = scala.collection.immutable.List(1, 2).to(Sequence)
+          . map(_.message)
+        . assert(_.isEmpty)
 
     suite(m"Non-emptiness proofs"):
       // From outside the package these are the operations that matter: `head` is total only on

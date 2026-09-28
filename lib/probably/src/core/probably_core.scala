@@ -97,6 +97,17 @@ def suite[report](name: Name[Probing], description: Message)
   runner.suite(Testable(description, suite, name), block)
 
 
+// Marks every test within the block as an aspiration: it is written like any other test, but
+// its verdict is recorded as `AspirePass` or `AspireFail`, neither failing the run nor being
+// forgotten. The block sees a `Runner.Aspirational` view of the contextual runner, which
+// shares its state and report.
+def aspirationally[report, result](using runner: Runner[report])
+  ( block: Runner[report] ?=> result )
+:   result =
+
+  block(using Runner.Aspirational(runner))
+
+
 package harnesses:
   given threadLocalHarness: Harness:
     override def capture[value: Decomposable](name: Text, value: value): value =

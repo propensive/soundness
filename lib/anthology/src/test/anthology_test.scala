@@ -309,22 +309,24 @@ object Tests extends Suite(m"Anthology Tests"):
     // result type record the intent, but rejecting these statically awaits further
     // separation-checker support (as telekinesis's `Http.Session.fetch` notes for its own
     // borrow).
-    test(m"A compiler session handle cannot escape its scope"):
-      demilitarize:
-        val classpath: LocalClasspath = ???
-        val leaked = Scalac[3.8](Nil).on(classpath).session(compilation)
-      . map(_.message)
-    . aspire(_.nonEmpty)
+    aspirationally:
+      test(m"A compiler session handle cannot escape its scope"):
+        demilitarize:
+          val classpath: LocalClasspath = ???
+          val leaked = Scalac[3.8](Nil).on(classpath).session(compilation)
+        . map(_.message)
+      . assert(_.nonEmpty)
 
-    test(m"A live compile process cannot span a further compile"):
-      demilitarize:
-        val classpath: LocalClasspath = ???
+    aspirationally:
+      test(m"A live compile process cannot span a further compile"):
+        demilitarize:
+          val classpath: LocalClasspath = ???
 
-        Scalac[3.8](Nil).on(classpath).session:
-          val process1 = compilation.compile(Map(t"a.scala" -> t"class A"))
-          val process2 = compilation.compile(Map(t"b.scala" -> t"class B"))
-          process1.errors
-    . aspire(_.nonEmpty)
+          Scalac[3.8](Nil).on(classpath).session:
+            val process1 = compilation.compile(Map(t"a.scala" -> t"class A"))
+            val process2 = compilation.compile(Map(t"b.scala" -> t"class B"))
+            process1.errors
+      . assert(_.nonEmpty)
 
     // The OCI edge itself needs only a WIT world (the component is linked by the preceding
     // edge, whose provider probes the WASI toolchain), so its graph shape is checkable without

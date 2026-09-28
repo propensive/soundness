@@ -57,8 +57,8 @@ object Test:
   // body is not deferrable: it could run after the block that scoped its capability has
   // exited, or alongside a sibling sharing tracked mutable state. A body that needs one
   // creates it inside itself (`supervise` within the test), or the test becomes a `check`,
-  // which accepts any body and runs it inline, its value flowing onward. `aspire` is likewise
-  // permissive: an aspiration is informational, so it runs inline, like a `check`.
+  // which accepts any body and runs it inline, its value flowing onward. The same holds
+  // within an `aspirationally` block, whose runner only changes how verdicts are recorded.
   //
   // The purity is enforced in the macro (`internal.pure`), not by this signature alone: the
   // capture checker does not hold an inline method's arguments to its parameter types.
@@ -72,12 +72,6 @@ object Test:
     inline def matches(inline pf: test ~> Any): Unit = assert(pf.isDefinedAt(_))
 
   extension [test](test: Test[test]^)
-    inline def aspire(inline predicate: test => Boolean): Unit =
-      ${probably.internal.aspire[test]('test, 'predicate)}
-
-    inline def aspire(): Unit =
-      ${probably.internal.aspire[test]('test, '{probably.internal.succeed})}
-
     inline def check(inline predicate: test => Boolean): test =
       ${probably.internal.check[test]('test, 'predicate)}
 

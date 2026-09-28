@@ -96,6 +96,14 @@ object Tests extends Suite(m"Probably Tests"):
           index(labels, t"scheduled:$name") < index(labels, t"started:$name")
       . assert(_ == scala.List(true, true, true, true))
 
+      test(m"an assertion within `aspirationally` records an aspiration"):
+        invoked(Probe(), t"")(1).filter(_.starts(t"completed:six"))
+      . assert(_ == scala.List(t"completed:six:aspire-fail"))
+
+      test(m"a pure aspiration is queued like any other assertion"):
+        invoked(Probe(), t"--workers=1")(1).filter(_.starts(t"scheduled:six"))
+      . assert(_ == scala.List(t"scheduled:six"))
+
       test(m"a check runs inline and its value reaches a later assertion"):
         invoked(Probe(), t"--workers=1")(1).filter(_.starts(t"completed:three"))
       . assert(_ == scala.List(t"completed:three:pass"))

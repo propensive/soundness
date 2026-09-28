@@ -52,7 +52,8 @@ class Probe extends Suite(m"probe"):
       test(m"four")(4).assert(_ == 4)
       test(m"five")(5).assert(_ == 6)
 
-    test(m"six")(6).aspire(_ == 7)
+    aspirationally:
+      test(m"six")(6).assert(_ == 7)
 
 // An `Error` is not an `Exception`: it escapes the test's own bracket and, from a worker,
 // must surface as the run's termination.

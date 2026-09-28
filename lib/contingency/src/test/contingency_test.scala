@@ -161,14 +161,15 @@ object Tests extends Suite(m"Contingency"):
         . values
       . assert(_ == List(1, 2))
 
-      test(m"recover compiles inside an `inline def` (see #534)"):
-        demilitarize:
-          inline def inlineRecover: String =
-            recover:
-              case ErrorA(n) => s"recovered:$n"
-            . protect(failA(7))
-          inlineRecover
-      . aspire(_.isEmpty)
+      aspirationally:
+        test(m"recover compiles inside an `inline def` (see #534)"):
+          demilitarize:
+            inline def inlineRecover: String =
+              recover:
+                case ErrorA(n) => s"recovered:$n"
+              . protect(failA(7))
+            inlineRecover
+        . assert(_.isEmpty)
 
       test(m"recover works inside an `inline def` via a non-inline helper"):
         def helperRecover: String =

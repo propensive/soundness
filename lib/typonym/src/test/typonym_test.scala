@@ -100,11 +100,12 @@ object Tests extends Suite(m"Typonym tests"):
       // making `reifyAs` at a narrower element type fail its cast — which is why
       // `Reifiable.listUnion` routes through `TypeSet`. A type list knows its element types just
       // as well as a type set does, so this asymmetry looks like a bug rather than a limit.
-      test(m"A type list can be reified at its element type"):
-        demilitarize:
-          reifyAs[TypeList[("a", "b")], List[String]]
-        . map(_.message)
-      . aspire(_.isEmpty)
+      aspirationally:
+        test(m"A type list can be reified at its element type"):
+          demilitarize:
+            reifyAs[TypeList[("a", "b")], List[String]]
+          . map(_.message)
+        . assert(_.isEmpty)
 
     suite(m"Reifiable"):
       test(m"A directly-constructed Reifiable returns its value"):

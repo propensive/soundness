@@ -38,10 +38,10 @@ import soundness.*
 object ConformanceTests:
   // Adds the YAML 1.2 test-suite cases as `test(...)` entries inside the
   // calling Suite's `run()` body. Tests that the parser currently
-  // satisfies emit `assert`; tests that currently fail emit `aspire`,
-  // which keeps the build green during iterative improvement and surfaces
-  // an `aspire-passed` signal when a previously-failing case starts
-  // working.
+  // satisfies emit `assert`; tests that currently fail emit an `assert`
+  // within `aspirationally`, which keeps the build green during iterative
+  // improvement and surfaces an `aspire-pass` signal when a
+  // previously-failing case starts working.
   def all()(using Testable, Runner[Report]): Unit =
     suite(m"YAML test suite conformance"):
       if !Conformance.available() then ()
@@ -56,4 +56,4 @@ object ConformanceTests:
           val name = m"`$id` $firstLine"
 
           if result.passed then test(name)(result.passed).assert(identity)
-          else test(name)(result.passed).aspire(identity)
+          else aspirationally(test(name)(result.passed).assert(identity))
