@@ -41,8 +41,16 @@ object Tests extends Suite(m"Parser tests"):
 ```
 
 `check` is `assert` returning the value, for chaining further work on it; `matches` asserts that a
-value fits a pattern; and `aspire` marks an assertion that *should* hold but is known not to yet —
-recorded distinctly, neither failing the build nor forgotten.
+value fits a pattern. A test that *should* pass but is known not to yet is written like any other,
+inside an `aspirationally` block: every assertion within it is recorded as an aspiration, neither
+failing the build nor forgotten, and reported distinctly once it starts to pass.
+
+```scala
+aspirationally:
+  test(m"a hexadecimal integer parses"):
+    t"0x2a".as[Int]
+  . assert(_ == 42)
+```
 
 Approximate comparison is built in for the numeric cases where exact equality is wrong:
 

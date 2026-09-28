@@ -62,7 +62,7 @@ object Spread:
               details:   Inclusion[report, Verdict.Detail] )
     :   Unit =
 
-      run(spread.id, spread.axis, spread.action, { (_, _) => true }, false)
+      run(spread.id, spread.axis, spread.action, { (_, _) => true })
 
     def assert[report](predicate: result => Boolean)
       ( using runner:    Runner[report],
@@ -70,7 +70,7 @@ object Spread:
               details:   Inclusion[report, Verdict.Detail] )
     :   Unit =
 
-      run(spread.id, spread.axis, spread.action, { (_, result) => predicate(result) }, false)
+      run(spread.id, spread.axis, spread.action, { (_, result) => predicate(result) })
 
     def assert[report](predicate: (value, result) => Boolean)
       ( using runner:    Runner[report],
@@ -78,22 +78,13 @@ object Spread:
               details:   Inclusion[report, Verdict.Detail] )
     :   Unit =
 
-      run(spread.id, spread.axis, spread.action, predicate, false)
-
-    def aspire[report](predicate: (value, result) => Boolean)
-      ( using runner:    Runner[report],
-              inclusion: Inclusion[report, Verdict],
-              details:   Inclusion[report, Verdict.Detail] )
-    :   Unit =
-
-      run(spread.id, spread.axis, spread.action, predicate, true)
+      run(spread.id, spread.axis, spread.action, predicate)
 
   private def run[value, result, report]
     ( id:           Test.Id,
       axis:         Axis[value],
       action:       (Harness => (value ~> result))^,
-      predicate:    (value, result) => Boolean,
-      aspirational: Boolean )
+      predicate:    (value, result) => Boolean )
     ( using runner:    Runner[report],
             inclusion: Inclusion[report, Verdict],
             details:   Inclusion[report, Verdict.Detail] )
@@ -117,7 +108,6 @@ object Spread:
             inclusion,
             details,
             Decomposable.any[result],
-            aspirational,
             coordinates,
             true,
             false )
@@ -138,7 +128,7 @@ object Spread2:
               details:   Inclusion[report, Verdict.Detail] )
     :   Unit =
 
-      run(spread.id, spread.first, spread.second, spread.action, { (_, _, _) => true }, false)
+      run(spread.id, spread.first, spread.second, spread.action, { (_, _, _) => true })
 
     def assert[report](predicate: result => Boolean)
       ( using runner:    Runner[report],
@@ -151,8 +141,7 @@ object Spread2:
           spread.first,
           spread.second,
           spread.action,
-          { (_, _, result) => predicate(result) },
-          false )
+          { (_, _, result) => predicate(result) } )
 
     def assert[report](predicate: (left, right, result) => Boolean)
       ( using runner:    Runner[report],
@@ -160,23 +149,14 @@ object Spread2:
               details:   Inclusion[report, Verdict.Detail] )
     :   Unit =
 
-      run(spread.id, spread.first, spread.second, spread.action, predicate, false)
-
-    def aspire[report](predicate: (left, right, result) => Boolean)
-      ( using runner:    Runner[report],
-              inclusion: Inclusion[report, Verdict],
-              details:   Inclusion[report, Verdict.Detail] )
-    :   Unit =
-
-      run(spread.id, spread.first, spread.second, spread.action, predicate, true)
+      run(spread.id, spread.first, spread.second, spread.action, predicate)
 
   private def run[left, right, result, report]
     ( id:           Test.Id,
       first:        Axis[left],
       second:       Axis[right],
       action:       (Harness => (((left, right)) ~> result))^,
-      predicate:    (left, right, result) => Boolean,
-      aspirational: Boolean )
+      predicate:    (left, right, result) => Boolean )
     ( using runner:    Runner[report],
             inclusion: Inclusion[report, Verdict],
             details:   Inclusion[report, Verdict.Detail] )
@@ -199,7 +179,6 @@ object Spread2:
               inclusion,
               details,
               Decomposable.any[result],
-              aspirational,
               coordinates,
               true,
               false )

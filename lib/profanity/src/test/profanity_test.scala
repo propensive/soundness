@@ -183,13 +183,14 @@ object Tests extends Suite(m"Profanity Tests"):
           // between consecutive bytes of \e[D can exceed Profanity's 30 ms ESC timeout in
           // Keyboard.process, which dismisses the widget before the arrow code completes.
           // The state-transition suite below covers Left-arrow handling deterministically.
-          test(m"Left arrow moves the cursor"):
-            runFixture(t"line-editor"):
-              Tmux.enter("helo")
-              Tmux.enter(t"Left")
-              Tmux.enter("l")
-              Tmux.enter('\r')
-          . aspire(_.contains(t"RESULT:hello"))
+          aspirationally:
+            test(m"Left arrow moves the cursor"):
+              runFixture(t"line-editor"):
+                Tmux.enter("helo")
+                Tmux.enter(t"Left")
+                Tmux.enter("l")
+                Tmux.enter('\r')
+            . check(_.contains(t"RESULT:hello"))
 
           // Wrap-aware redraw: typing past the terminal width and then backspacing back
           // across the wrap boundary must clear the wrapped row and reposition the cursor.
