@@ -92,9 +92,10 @@ doc.verify[Assignment].office.city.as[Text]   // t"Town"
 ```
 
 Unverified dynamic access — reaching into a document whose shape is only informally known — is
-available too, enabled by `import dynamicAccess.dynamicTel`, keeping the checked and unchecked
-styles visibly distinct. A keyword may legitimately repeat, which a single-valued accessor cannot
-express, so `fields` returns every matching child in document order:
+available too, enabled by `import dynamicAccess.dynamicTel` (or, for a single block,
+`dynamically[Tel]:`), keeping the checked and unchecked styles visibly distinct. A keyword may
+legitimately repeat, which a single-valued accessor cannot express, so `fields` returns every
+matching child in document order:
 
 ```scala
 t"item 1\nitem 2\nitem 3\n".read[Tel].fields(t"item").map(_.primaryAtom)

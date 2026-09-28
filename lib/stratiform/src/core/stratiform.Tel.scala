@@ -7877,8 +7877,8 @@ extends scala.Dynamic, Documentary, Topical, Original:
 
   // Dynamic field access: `tel.firstName` looks up the kebab-case keyword
   // "first-name". For a schema-typed `Tel of P from R` the macro checks `P` has
-  // the field and yields `Tel of <field-type> from R` (no `DynamicTelEnabler`
-  // import needed); for a plain `Tel` it requires the enabler, as before.
+  // the field and yields `Tel of <field-type> from R` (no `Dynamical`
+  // permission needed); for a plain `Tel` it requires `Tel is Dynamical`.
   transparent inline def selectDynamic(field: String): Tel = ${Stratiform.select('this, 'field)}
 
   // Chained access: `tel.contacts(0)`. For a schema-typed `Tel of P from R`
@@ -7948,7 +7948,7 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // kebab-case). When the field is missing it is appended to the last
   // block; when present it is replaced in place, preserving surrounding
   // formatting.
-  def modify(fieldName: String, value: Tel)(using erased dynamicTelEnabler: DynamicTelEnabler): Tel =
+  def modify(fieldName: String, value: Tel)(using erased dynamical: (? >: Tel) is Dynamical): Tel =
     val name = Tel.camelToKebab(fieldName)
 
     val newCompound = value.subtree match

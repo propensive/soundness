@@ -34,7 +34,7 @@ package soundness
 
 export
   jacinta
-  . { DynamicJsonEnabler, j, jp, Json, Json2, JsonPointer,
+  . { j, jp, Json, Json2, JsonPointer,
       NumberMode }
 
 package formatting:

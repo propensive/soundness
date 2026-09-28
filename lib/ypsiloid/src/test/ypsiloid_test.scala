@@ -928,6 +928,47 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         updated.as[List[Int]]
       . assert(_ == List(1, 5, 3))
 
+    suite(m"Dynamic access in a dynamically block"):
+      import codepages.utf8Codepage
+
+      val yaml = t"{name: Alice, age: 30}".read[Yaml]
+      val json = t"""{"name": "Bob", "age": 40}""".read[Json]
+
+      test(m"dynamically[Yaml] permits dynamic access to Yaml"):
+        dynamically[Yaml]:
+          yaml.name.as[Text]
+      . assert(_ == t"Alice")
+
+      test(m"dynamically[Yaml] permits dynamic updates to Yaml"):
+        dynamically[Yaml]:
+          val updated = yaml.age = 31
+          updated.as[Person]
+      . assert(_ == Person(t"Alice", 31))
+
+      test(m"dynamically[Json | Yaml] permits access to both formats"):
+        dynamically[Json | Yaml]:
+          (yaml.name.as[Text], json.name.as[Text])
+      . assert(_ == (t"Alice", t"Bob"))
+
+      test(m"dynamically with no type argument permits every format"):
+        dynamically:
+          (yaml.age.as[Int], json.age.as[Int])
+      . assert(_ == (30, 40))
+
+      test(m"dynamically[Json] does not permit dynamic access to Yaml"):
+        demilitarize:
+          dynamically[Json]:
+            yaml.name
+        . nonEmpty
+      . assert(identity)
+
+      test(m"dynamically[Yaml] does not permit dynamic access to Json"):
+        demilitarize:
+          dynamically[Yaml]:
+            json.name
+        . head.message
+      . assert(_.contains("dynamically[Json]"))
+
     suite(m"Yaml.make construction"):
       test(m"Yaml.make with one field"):
         Yaml.make(name = t"Anna".in[Yaml]).as[Map[Text, Text]]

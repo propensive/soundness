@@ -128,6 +128,9 @@ person.name.as[Text]                 // t"Ada"
 (person.age = 40).as[Person]         // Person(t"Ada", 40)
 ```
 
+The import grants `Cbor is Dynamical` to the rest of its scope; `dynamically[Cbor]:` grants
+it to a single block instead, as described in the JSON tutorial.
+
 Deeper updates use a [lens](optics.md), with `Each` and `Filter` optics touching many elements at
 once, exactly as for the textual formats.
 

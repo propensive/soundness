@@ -119,7 +119,7 @@ package optics:
   private def withCell(row: Dsv, name: String, value: Text): Dsv =
     row.columns.let(_(name.tt)).lay(row): index => row.copy(data = Array.frozen(row.data.readable.updated(index, value)))
 
-  given dsvCellLens: [name <: Label: ValueOf] => (erased dynamicDsvEnabler: DynamicDsvEnabler)
+  given dsvCellLens: [name <: Label: ValueOf] => (erased dynamical: (? >: Dsv) is Dynamical)
   =>  name is Lens from Dsv onto Text =
     Lens(cell(_, valueOf[name]), withCell(_, valueOf[name], _))
 

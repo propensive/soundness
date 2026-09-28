@@ -1222,7 +1222,7 @@ object Yaml extends Yaml2, Dynamic:
   =>  ((Bytes is Decodable in Yaml)^{tactic, caps.any}) =
     _.root.long.b
 
-  given lens: [name <: Label: ValueOf] => (erased dynamicYamlEnabler: DynamicYamlEnabler) => (tactic: Tactic[Yaml.Error])
+  given lens: [name <: Label: ValueOf] => (erased dynamical: (? >: Yaml) is Dynamical) => (tactic: Tactic[Yaml.Error])
   =>  ((name is Lens from Yaml onto Yaml)^{tactic}) =
     Lens(_.selectDynamic(valueOf[name]), (yaml, value) => yaml.modify(valueOf[name], value))
 
@@ -6078,18 +6078,18 @@ extends Dynamic derives CanEqual:
       case index => new Yaml(root.objectValue(index))
 
   // Dynamic field access — `yaml.foo` desugars to `selectDynamic("foo")`.
-  // Gated on an erased `DynamicYamlEnabler` so the feature is opt-in via
-  // `import dynamicAccess.dynamicYaml`.
-  def selectDynamic(field: String)(using erased dynamicYamlEnabler: DynamicYamlEnabler): Yaml = apply(field.tt)
+  // Gated on an erased `Yaml is Dynamical` so the feature is opt-in via
+  // `import dynamicAccess.dynamicYaml` or a `dynamically` block.
+  def selectDynamic(field: String)(using erased dynamical: (? >: Yaml) is Dynamical): Yaml = apply(field.tt)
 
-  def applyDynamic(field: String)(index: Int)(using erased dynamicYamlEnabler: DynamicYamlEnabler)
+  def applyDynamic(field: String)(index: Int)(using erased dynamical: (? >: Yaml) is Dynamical)
   :   Yaml raises Yaml.Error =
 
     apply(field.tt)(index)
 
   // Immutable update: `yaml(0) = newValue` desugars to `update(0, newValue)`.
   def update[value: Encodable in Yaml](index: Int, value: value)
-    ( using erased dynamicYamlEnabler: DynamicYamlEnabler )
+    ( using erased dynamical: (? >: Yaml) is Dynamical )
   :   Yaml raises Yaml.Error =
 
     if !root.isArray then
@@ -6111,12 +6111,12 @@ extends Dynamic derives CanEqual:
   // `yaml.foo = newValue` — replaces `foo` if present, or appends a new
   // entry. `yaml.foo = Unset` deletes the entry.
   def updateDynamic(field: String)[value: Encodable in Yaml](value: value)
-    ( using erased dynamicYamlEnabler: DynamicYamlEnabler )
+    ( using erased dynamical: (? >: Yaml) is Dynamical )
   :   Yaml raises Yaml.Error =
 
     modify(field, value.encode)
 
-  def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamicYamlEnabler: DynamicYamlEnabler)
+  def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamical: (? >: Yaml) is Dynamical)
   :   Yaml raises Yaml.Error =
 
     delete(field)

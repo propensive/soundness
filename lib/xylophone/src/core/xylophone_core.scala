@@ -116,7 +116,7 @@ private def updateChildElements(xml: Xml, select: Int => Boolean, lambda: Xml =>
 
 package optics:
   given xmlLens: [name <: Label: ValueOf]
-  =>  ( erased dynamicXmlEnabler: DynamicXmlEnabler, scope: Xml.Scope )
+  =>  ( erased dynamical: (? >: Xml) is Dynamical, scope: Xml.Scope )
   =>  name is Lens from Xml onto Xml =
     Lens(_.applyDynamic(valueOf[name])(Prim), replaceNamedChild(_, valueOf[name], _))
 

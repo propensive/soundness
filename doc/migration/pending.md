@@ -30,3 +30,67 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - An assertion with `Runner#aspirational` set is now queued for a worker (under
   `--workers=<n>`) on the same terms as any other `assert` — a pure body in a capture-checked
   unit — where an `aspire` always ran inline. (#2101)
+
+## breviloquence
+
+- `breviloquence.DynamicCborEnabler` (and its `soundness` export) removed. Its replacement is
+  `breviloquence.Cbor is rudiments.Dynamical`. `breviloquence.dynamicAccess.dynamicCbor` is
+  retained, retyped from `DynamicCborEnabler` to `Cbor is Dynamical`. The erased parameter
+  `(using erased dynamicCborEnabler: DynamicCborEnabler)` of `Cbor#selectDynamic`,
+  `Cbor#applyDynamic` and both `Cbor#updateDynamic` overloads, and the erased context parameter
+  of the `Cbor.lens` given, are now `(? >: Cbor) is Dynamical`. `dynamicCbor` satisfies it, and
+  so does a `rudiments.dynamically[Cbor]` or `dynamically` block. (#2102)
+
+## caesura
+
+- `caesura.DynamicDsvEnabler` (and its `soundness` export) removed. Its replacement is
+  `caesura.Dsv is rudiments.Dynamical`. `caesura.dynamicAccess.dynamicDsv` is retained, retyped
+  from `DynamicDsvEnabler` to `Dsv is Dynamical`. The erased parameter
+  `(using erased dynamicDsvEnabler: DynamicDsvEnabler)` of `Dsv#selectDynamic`, and the erased
+  context parameter of the `caesura.dsvCellLens` given, are now `(? >: Dsv) is Dynamical`.
+  `dynamicDsv` satisfies it, and so does a `rudiments.dynamically[Dsv]` or `dynamically`
+  block. (#2102)
+
+## jacinta
+
+- `jacinta.DynamicJsonEnabler` (and its `soundness` export) removed. Its replacement is
+  `jacinta.Json is rudiments.Dynamical`. `jacinta.dynamicAccess.dynamicJson` is retained,
+  retyped from `DynamicJsonEnabler` to `Json is Dynamical`. The erased parameter
+  `(using erased dynamicJsonEnabler: DynamicJsonEnabler)` of `Json#update` and both
+  `Json#updateDynamic` overloads, and the erased context parameter of the
+  `jacinta.optics.jsonLens` given, are now `(? >: Json) is Dynamical`. `Json#selectDynamic` and
+  `Json#applyDynamic` on an unverified `Json` now summon `(? >: Json) is Dynamical` in place of
+  `DynamicJsonEnabler`. `dynamicJson` satisfies each of these, and so does a
+  `rudiments.dynamically[Json]` or `dynamically` block. (#2102)
+
+## stratiform
+
+- `stratiform.DynamicTelEnabler` (and its `soundness` export) removed. Its replacement is
+  `stratiform.Tel is rudiments.Dynamical`. `stratiform.dynamicAccess.dynamicTel` is retained,
+  retyped from `DynamicTelEnabler` to `Tel is Dynamical`. The erased parameter
+  `(using erased dynamicTelEnabler: DynamicTelEnabler)` of `Tel#modify`, and the erased context
+  parameter of the `stratiform.optics.telLens` given, are now `(? >: Tel) is Dynamical`.
+  `Tel#selectDynamic` and `Tel#applyDynamic` on an unverified `Tel` now summon
+  `(? >: Tel) is Dynamical` in place of `DynamicTelEnabler`. `dynamicTel` satisfies each of
+  these, and so does a `rudiments.dynamically[Tel]` or `dynamically` block. (#2102)
+
+## xylophone
+
+- `xylophone.DynamicXmlEnabler` (and its `soundness` export) removed. Its replacement is
+  `xylophone.Xml is rudiments.Dynamical`. `xylophone.dynamicAccess.dynamicXml` is retained,
+  retyped from `DynamicXmlEnabler` to `Xml is Dynamical`. The erased parameter
+  `erased dynamicXmlEnabler: DynamicXmlEnabler` of `Xml#selectDynamic(name: String)` and
+  `Xml#applyDynamic(name: String)`, and the erased context parameter of the
+  `xylophone.xmlLens` given, are now `(? >: Xml) is Dynamical`. `dynamicXml` satisfies it,
+  and so does a `rudiments.dynamically[Xml]` or `dynamically` block. (#2102)
+
+## ypsiloid
+
+- `ypsiloid.DynamicYamlEnabler` (and its `soundness` export) removed. Its replacement is
+  `ypsiloid.Yaml is rudiments.Dynamical`. `ypsiloid.dynamicAccess.dynamicYaml` is retained,
+  retyped from `DynamicYamlEnabler` to `Yaml is Dynamical`. The erased parameter
+  `(using erased dynamicYamlEnabler: DynamicYamlEnabler)` of `Yaml#selectDynamic`,
+  `Yaml#applyDynamic`, `Yaml#update` and both `Yaml#updateDynamic` overloads, and the erased
+  context parameter of the `Yaml.lens` given, are now `(? >: Yaml) is Dynamical`.
+  `dynamicYaml` satisfies it, and so does a `rudiments.dynamically[Yaml]` or `dynamically`
+  block. (#2102)

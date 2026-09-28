@@ -429,6 +429,12 @@ object Tests extends Suite(m"Jacinta Tests"):
         org2.as[Org]
       . assert(_ == Org("The Beatles", Entity("John", 41, List(Role("Leader")))))
 
+      test(m"Lens update on JSON in a dynamically block"):
+        dynamically[Json]:
+          val org2 = org.lens(_.leader.age = 41.in[Json])
+          org2.as[Org]
+      . assert(_ == Org("The Beatles", Entity("John", 41, List(Role("Leader")))))
+
       test(m"Lens update with optic on JSON"):
         import dynamicAccess.dynamicJson, conversions.encodableToJson
         val org2 = org.lens(_.leader.roles(Prim) = Role("-"))

@@ -50,7 +50,7 @@ import vacuous.*
 // and delegate here: when the receiver's position is bound and the field name is a
 // literal, the macro looks the field up in `P`'s structure and yields a `Tel of
 // <field-type> from R`; otherwise it falls back to the plain
-// (`DynamicTelEnabler`-gated) runtime access. Mirrors `jacinta.internal`.
+// (`Dynamical`-gated) runtime access. Mirrors `jacinta.internal`.
 object Stratiform:
 
   private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
@@ -108,12 +108,12 @@ object Stratiform:
   def select(self: Expr[Tel], field: Expr[String]): Macro[Tel] =
 
     def plain: Expr[Tel] =
-      if Expr.summon[DynamicTelEnabler].nil
+      if Expr.summon[(? >: Tel) is Dynamical].nil
       then
         halt:
           m"""
             dynamic field access on an unverified `Tel` requires `import dynamicAccess.dynamicTel`
-            (or verify the value against a schema first)
+            or a `dynamically[Tel]:` block (or verify the value against a schema first)
           """
 
       '{$self.selectField($field)}
@@ -143,10 +143,10 @@ object Stratiform:
     import quotes.reflect.*
 
     def plain: Expr[Tel] =
-      if Expr.summon[DynamicTelEnabler].nil then halt:
+      if Expr.summon[(? >: Tel) is Dynamical].nil then halt:
         m"""
           dynamic field access on an unverified `Tel` requires `import dynamicAccess.dynamicTel`
-          (or verify the value against a schema first)
+          or a `dynamically[Tel]:` block (or verify the value against a schema first)
         """
 
       '{$self.selectFieldIndex($field, $idx)}

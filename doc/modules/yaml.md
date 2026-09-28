@@ -162,6 +162,9 @@ doc.name.as[Text]      // t"Alice"
 doc.lens(_.age = 31.in[Yaml])
 ```
 
+The import grants `Yaml is Dynamical` to the rest of its scope; `dynamically[Yaml]:` grants
+it to a single block instead, as described in the JSON tutorial.
+
 ### Positions and accumulated errors
 
 With tracking switched on, every value remembers its line and column, so a decoding failure can
