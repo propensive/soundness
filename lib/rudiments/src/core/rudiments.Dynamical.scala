@@ -30,17 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package xylophone
+package rudiments
 
-import rudiments.*
+import prepositional.*
 
-// Phantom-typed gate for `xml.selectDynamic("…")` and friends. Importing
-// `dynamicAccess.dynamicXml` brings the given into scope and unlocks the
-// dynamic navigation syntax (`xml.foo`, `xml.foo(Prim)`); without that import
-// the dynamic methods are inaccessible, mirroring jacinta's
-// `DynamicJsonEnabler` and stratiform's `DynamicTelEnabler`.
+// An erased permission for `scala.Dynamic` field access on an untyped data value. A format
+// gates its dynamic methods on `(? >: Json) is Dynamical`, so the permission may be granted for
+// that format alone (`Json is Dynamical`, as the format's `dynamicAccess` given does), for a
+// union of formats, or for every format at once (`Any is Dynamical`).
+sealed trait Dynamical extends Typeclass
 
-sealed trait DynamicXmlEnabler
+// Contravariant, so that `Dynamically` (a `Dynamically[Any]`) is a `Dynamically[data]` for every
+// `data`, and so that `dynamically` with no type argument infers `data` as `Any`.
+sealed class Dynamically[-data]:
+  inline def apply[result](lambda: (erased dynamical: (? >: data) is Dynamical) ?=> result)
+  :   result =
+    lambda(using !![data is Dynamical])
 
-package dynamicAccess:
-  inline given dynamicXml: DynamicXmlEnabler = !!
+object Dynamically extends Dynamically[Any]
+
+def dynamically[data]: Dynamically[data] = Dynamically

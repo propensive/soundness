@@ -35,4 +35,4 @@ package jacinta
 import rudiments.*
 
 package dynamicAccess:
-  inline given dynamicJson: DynamicJsonEnabler = !!
+  inline given dynamicJson: Json is Dynamical = !!

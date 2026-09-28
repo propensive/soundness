@@ -4563,8 +4563,8 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
   // flattening across all element-nodes in the current `Fragment` (XML tags
   // are not unique, so a dereference yields a `Fragment` of zero or more
   // matches). `xml.foo(ordinal)` picks a single one; the ordinal defaults to
-  // `Prim`, so `xml.foo()` is the first match. Both are gated by an imported
-  // `DynamicXmlEnabler` (see `dynamicAccess.dynamicXml`).
+  // `Prim`, so `xml.foo()` is the first match. Both are gated by an erased
+  // `Xml is Dynamical` (see `dynamicAccess.dynamicXml` and `dynamically`).
 
   private def selfNodes: Array[Node]^{} = this match
     case Fragment(nodes*) => Array.from(nodes)
@@ -4608,13 +4608,13 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
   def element(name: Xml.Name, ordinal: Ordinal = Prim): Fragment =
     namedElements(name).at(ordinal).lay(new Fragment())(new Fragment(_))
 
-  def selectDynamic(name: String)(using erased dynamicXmlEnabler: DynamicXmlEnabler, scope: Scope)
+  def selectDynamic(name: String)(using erased dynamical: (? >: Xml) is Dynamical, scope: Scope)
   :   Fragment =
 
     new Fragment(childElements(name)*)
 
   def applyDynamic(name: String)(ordinal: Ordinal = Prim)
-    ( using erased dynamicXmlEnabler: DynamicXmlEnabler, scope: Scope )
+    ( using erased dynamical: (? >: Xml) is Dynamical, scope: Scope )
   :   Fragment =
 
     childElements(name).at(ordinal).lay(new Fragment())(new Fragment(_))

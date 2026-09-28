@@ -2765,7 +2765,7 @@ extends Dynamic, Topical, Original derives CanEqual:
 
   // Dynamic field selection. For a schema-typed `Json of P from R` the macro
   // checks `P` has the field and yields `Json of <field-type> from R`; for a
-  // plain `Json` it requires a `DynamicJsonEnabler` (as before) and reads the
+  // plain `Json` it requires `Json is Dynamical` and reads the
   // field at runtime.
   transparent inline def selectDynamic(field: String): Json =
     ${jacinta.internal.select('this, 'field)}
@@ -2775,7 +2775,7 @@ extends Dynamic, Topical, Original derives CanEqual:
 
 
   def update[value: anticipation.Encodable in Json](index: Int, value: value)
-    (using erased dynamicJsonEnabler: DynamicJsonEnabler)
+    (using erased dynamical: (? >: Json) is Dynamical)
   :   Json raises Json.Error =
 
     if !root.isArray then raise(Json.Error(Reason.NotType(root.primitive, Json.Primitive.Array)))
@@ -2794,13 +2794,13 @@ extends Dynamic, Topical, Original derives CanEqual:
 
 
   def updateDynamic(field: String)[value: anticipation.Encodable in Json](value: value)
-    (using erased dynamicJsonEnabler: DynamicJsonEnabler)
+    (using erased dynamical: (? >: Json) is Dynamical)
   :   Json raises Json.Error =
 
     modify(field, value.encode)
 
 
-  def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamicJsonEnabler: DynamicJsonEnabler)
+  def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamical: (? >: Json) is Dynamical)
   :   Json raises Json.Error =
 
     delete(field)

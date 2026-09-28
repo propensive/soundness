@@ -35,4 +35,4 @@ package ypsiloid
 import rudiments.*
 
 package dynamicAccess:
-  inline given dynamicYaml: DynamicYamlEnabler = !!
+  inline given dynamicYaml: Yaml is Dynamical = !!

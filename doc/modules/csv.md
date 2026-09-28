@@ -186,6 +186,9 @@ val row = t"greeting,number\nhello,23".read[Sheet].rows(Prim)
 row.number[Int]   // 23
 ```
 
+The import grants `Dsv is Dynamical` to the rest of its scope; `dynamically[Dsv]:` grants
+it to a single block instead, as described in the JSON tutorial.
+
 ### Reporting every bad cell
 
 A spreadsheet exported from elsewhere is rarely wrong in only one place, and a decoder that stops

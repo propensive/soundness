@@ -228,6 +228,9 @@ val list = t"<r><x>1</x><x>2</x></r>".read[Xml]
 list.x(Sec).as[Int]    // 2 — the second <x>
 ```
 
+The import grants `Xml is Dynamical` to the rest of its scope; `dynamically[Xml]:` grants
+it to a single block instead, as described in the JSON tutorial.
+
 ### Updating
 
 An element is updated through a lens, which reaches through several levels and may carry optics such

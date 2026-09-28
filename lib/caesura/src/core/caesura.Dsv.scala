@@ -508,7 +508,7 @@ case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) 
     Array.tabulate(columns.size)(columns(_))
 
 
-  def selectDynamic[value](field: String)(using erased dynamicDsvEnabler: DynamicDsvEnabler)
+  def selectDynamic[value](field: String)(using erased dynamical: (? >: Dsv) is Dynamical)
     ( using value: (value is Decodable in Text)^ )
     ( using Dsv.Redesignation )
   :   Optional[value] =

@@ -111,7 +111,7 @@ object internal:
   // inline` and delegate here: when the receiver's position is bound and the field
   // name is a literal, the macro looks the field up in `P`'s structure and yields a
   // `Json of <field-type> from R`; otherwise it falls back to the plain
-  // (`DynamicJsonEnabler`-gated) runtime access, exactly as before.
+  // (`Dynamical`-gated) runtime access.
 
   // Every `type X = …` member of a (possibly nested) refinement, by name.
   private def armsFor(using Quotes)(arms: List[quotes.reflect.CaseDef], fallthrough: quotes.reflect.CaseDef)
@@ -179,10 +179,10 @@ object internal:
     // Plain (unverified) access: gate on the enabler (resolved at the call site),
     // then read the field totally.
     def plain: Expr[Json] =
-      if Expr.summon[DynamicJsonEnabler].nil then halt:
+      if Expr.summon[(? >: Json) is Dynamical].nil then halt:
         m"""
           dynamic field access on an unverified `Json` requires `import dynamicAccess.dynamicJson`
-          (or verify the value against a schema first)
+          or a `dynamically[Json]:` block (or verify the value against a schema first)
         """
 
       '{$self.selectField($field)}
@@ -239,10 +239,10 @@ object internal:
     import quotes.reflect.*
 
     def plain: Expr[Json] =
-      if Expr.summon[DynamicJsonEnabler].nil then halt:
+      if Expr.summon[(? >: Json) is Dynamical].nil then halt:
         m"""
           dynamic field access on an unverified `Json` requires `import dynamicAccess.dynamicJson`
-          (or verify the value against a schema first)
+          or a `dynamically[Json]:` block (or verify the value against a schema first)
         """
 
       Expr.summon[Tactic[Json.Error]] match

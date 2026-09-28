@@ -35,4 +35,4 @@ package caesura
 import rudiments.*
 
 package dynamicAccess:
-  inline given dynamicDsv: DynamicDsvEnabler = !!
+  inline given dynamicDsv: Dsv is Dynamical = !!

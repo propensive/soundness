@@ -189,3 +189,20 @@ object VerifyTests extends Suite(m"Jacinta verify tests"):
           t"""{"name": "Alice"}""".read[Json].name
         . head.message
       . assert(_.contains("dynamicAccess.dynamicJson"))
+
+      test(m"Plain field access is permitted in a dynamically[Json] block"):
+        dynamically[Json]:
+          t"""{"name": "Alice"}""".read[Json].name.as[Text]
+      . assert(_ == t"Alice")
+
+      test(m"Plain field access is permitted in a dynamically block"):
+        dynamically:
+          t"""{"items": [1, 2, 3]}""".read[Json].items(1).as[Int]
+      . assert(_ == 2)
+
+      test(m"A dynamically block for another type does not permit access"):
+        demilitarize:
+          dynamically[Text]:
+            t"""{"name": "Alice"}""".read[Json].name
+        . head.message
+      . assert(_.contains("dynamically[Json]"))

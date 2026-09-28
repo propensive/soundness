@@ -35,4 +35,4 @@ package breviloquence
 import rudiments.*
 
 package dynamicAccess:
-  inline given dynamicCbor: DynamicCborEnabler = !!
+  inline given dynamicCbor: Cbor is Dynamical = !!

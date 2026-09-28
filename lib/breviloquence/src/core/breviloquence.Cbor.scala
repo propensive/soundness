@@ -551,7 +551,7 @@ object Cbor extends Cbor2, Dynamic:
   // and `filterOptical` traverse every (or matching) array element. All reuse the
   // existing `selectDynamic`/`modify`/`element`/`Ast.array` primitives and rebuild
   // immutably. Mirrors jacinta's `Json` optics.
-  given lens: [name <: Label: ValueOf] => (erased dynamicCborEnabler: DynamicCborEnabler) => (tactic: Tactic[Cbor.Error])
+  given lens: [name <: Label: ValueOf] => (erased dynamical: (? >: Cbor) is Dynamical) => (tactic: Tactic[Cbor.Error])
   =>  ((name is Lens from Cbor onto Cbor)^{tactic}) =
     // Both lambdas only read through the same resolution-scoped tactic; no aliased writer.
     scala.caps.unsafe.unsafeAssumeSeparate:
@@ -1846,24 +1846,24 @@ object Cbor extends Cbor2, Dynamic:
 class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives CanEqual:
   def apply(index: Int): Cbor raises Cbor.Error = Cbor(root.array.readUnchecked(index))
 
-  def selectDynamic(field: String)(using erased dynamicCborEnabler: DynamicCborEnabler): Cbor raises Cbor.Error =
+  def selectDynamic(field: String)(using erased dynamical: (? >: Cbor) is Dynamical): Cbor raises Cbor.Error =
     apply(field.tt)
 
 
-  def applyDynamic(field: String)(index: Int)(using erased dynamicCborEnabler: DynamicCborEnabler)
+  def applyDynamic(field: String)(index: Int)(using erased dynamical: (? >: Cbor) is Dynamical)
   :   Cbor raises Cbor.Error =
 
     apply(field.tt)(index)
 
 
   def updateDynamic(field: String)[value: Encodable in Cbor](value: value)
-    ( using erased dynamicCborEnabler: DynamicCborEnabler )
+    ( using erased dynamical: (? >: Cbor) is Dynamical )
   :   Cbor raises Cbor.Error =
 
     modify(field, value.encode)
 
 
-  def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamicCborEnabler: DynamicCborEnabler)
+  def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamical: (? >: Cbor) is Dynamical)
   :   Cbor raises Cbor.Error =
 
     delete(field)

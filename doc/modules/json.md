@@ -287,6 +287,18 @@ to `Unset`:
 person(t"missing").as[Optional[Int]]   // Unset
 ```
 
+The import grants the permission, `Json is Dynamical`, to the rest of its scope. The same
+permission can be confined to a single block with `dynamically`, which names the formats it
+covers: `dynamically[Json]` for JSON alone, a union such as `dynamically[Json | Yaml]` for
+several, or no type argument at all for every format with dynamic access:
+
+```scala
+val config = t"""{"server": {"port": 8080}}""".read[Json]
+
+dynamically[Json]:
+  config.server.port.as[Int]   // 8080
+```
+
 ### Updating
 
 A field assigned through dynamic access produces a new document — JSON values are
