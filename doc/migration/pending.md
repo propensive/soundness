@@ -39,7 +39,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `(using erased dynamicCborEnabler: DynamicCborEnabler)` of `Cbor#selectDynamic`,
   `Cbor#applyDynamic` and both `Cbor#updateDynamic` overloads, and the erased context parameter
   of the `Cbor.lens` given, are now `(? >: Cbor) is Dynamical`. `dynamicCbor` satisfies it, and
-  so does a `rudiments.dynamically[Cbor]` or `dynamically` block. (#TBD)
+  so does a `rudiments.dynamically[Cbor]` or `dynamically` block. (#2102)
 
 ## caesura
 
@@ -49,7 +49,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `(using erased dynamicDsvEnabler: DynamicDsvEnabler)` of `Dsv#selectDynamic`, and the erased
   context parameter of the `caesura.dsvCellLens` given, are now `(? >: Dsv) is Dynamical`.
   `dynamicDsv` satisfies it, and so does a `rudiments.dynamically[Dsv]` or `dynamically`
-  block. (#TBD)
+  block. (#2102)
 
 ## jacinta
 
@@ -61,7 +61,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `jacinta.optics.jsonLens` given, are now `(? >: Json) is Dynamical`. `Json#selectDynamic` and
   `Json#applyDynamic` on an unverified `Json` now summon `(? >: Json) is Dynamical` in place of
   `DynamicJsonEnabler`. `dynamicJson` satisfies each of these, and so does a
-  `rudiments.dynamically[Json]` or `dynamically` block. (#TBD)
+  `rudiments.dynamically[Json]` or `dynamically` block. (#2102)
 
 ## stratiform
 
@@ -72,7 +72,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   parameter of the `stratiform.optics.telLens` given, are now `(? >: Tel) is Dynamical`.
   `Tel#selectDynamic` and `Tel#applyDynamic` on an unverified `Tel` now summon
   `(? >: Tel) is Dynamical` in place of `DynamicTelEnabler`. `dynamicTel` satisfies each of
-  these, and so does a `rudiments.dynamically[Tel]` or `dynamically` block. (#TBD)
+  these, and so does a `rudiments.dynamically[Tel]` or `dynamically` block. (#2102)
 
 ## xylophone
 
@@ -82,7 +82,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `erased dynamicXmlEnabler: DynamicXmlEnabler` of `Xml#selectDynamic(name: String)` and
   `Xml#applyDynamic(name: String)`, and the erased context parameter of the
   `xylophone.xmlLens` given, are now `(? >: Xml) is Dynamical`. `dynamicXml` satisfies it,
-  and so does a `rudiments.dynamically[Xml]` or `dynamically` block. (#TBD)
+  and so does a `rudiments.dynamically[Xml]` or `dynamically` block. (#2102)
 
 ## ypsiloid
 
@@ -93,4 +93,4 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Yaml#applyDynamic`, `Yaml#update` and both `Yaml#updateDynamic` overloads, and the erased
   context parameter of the `Yaml.lens` given, are now `(? >: Yaml) is Dynamical`.
   `dynamicYaml` satisfies it, and so does a `rudiments.dynamically[Yaml]` or `dynamically`
-  block. (#TBD)
+  block. (#2102)
