@@ -125,13 +125,14 @@ object internal:
     // when the delimiter itself is missing or invalid, else the character
     // after the `index`th further occurrence of the delimiter.
     def offsetOf(index: Int): Int =
-      if raw.isEmpty || Telp.delimiters.s.indexOf(raw.charAt(0).toInt) < 0 then 0 else
-        val delimiter = raw.charAt(0)
+      val delimiter: String = raw.take(1)
 
+      if raw.isEmpty || !Telp.delimiters.s.contains(delimiter) then 0 else
         @annotation.tailrec
         def advance(remaining: Int, from: Int): Int =
-          if remaining == 0 || from >= raw.length then from
-          else advance(if raw.charAt(from) == delimiter then remaining - 1 else remaining, from + 1)
+          if remaining == 0 then from else
+            val next = raw.indexOf(delimiter, from)
+            if next < 0 then raw.length else advance(remaining - 1, next + 1)
 
         advance(index, 1).min(raw.length - 1)
 
