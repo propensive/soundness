@@ -52,8 +52,8 @@ model haiku
   provider   anthropic
   model      claude-haiku-4-5
   credential anthropic
-  batch      20
-  limit      4096
+  batch      10
+  limit      16384
   mode       batches
 
 # The coercion-helper census (doc/standards/plumbing.md): small definitions that only re-wrap a
