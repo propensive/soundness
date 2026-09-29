@@ -1,0 +1,3 @@
+# The repositories each release of Soundness is proposed to, as a draft pull request moving their
+# pin to it. Pyrocosm carries it further, to fume, flame and flair. See propensive/.github.
+propensive/pyrocosm

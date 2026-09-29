@@ -359,9 +359,14 @@ object xeqRelease extends Module:
         .digest(os.read.bytes(f)).map("%02x".format(_)).mkString
       if !(os.exists(path) && sha(path) == want) then
         os.makeDir.all(dir)
-        val url = s"https://github.com/propensive/xeq/releases/download/xeq-$version/xeq"
+        // xeq is now xek: its releases since the rename are `xek-<version>/xek`, those before it
+        // `xeq-<version>/xeq`. Both are tried, newest naming first; the SHA-256 decides.
+        val base = "https://github.com/propensive/xek/releases/download"
         val tmp = dir / "xeq.part"
-        os.proc("curl", "-fsSL", "-o", tmp.toString, url).call()
+        val fetched = List(s"$base/xek-$version/xek", s"$base/xeq-$version/xeq").exists: url =>
+          os.proc("curl", "-fsSL", "-o", tmp.toString, url).call(check = false, stderr = os.Pipe)
+            .exitCode == 0
+        if !fetched then throw new Exception(s"no xek builder script published for version $version")
         val got = sha(tmp)
         if got != want then
           os.remove(tmp)

@@ -25,3 +25,7 @@ jobs:
     permissions:
       contents: write
     uses: propensive/.github/.github/workflows/scala-release.yml@main
+    # PROPAGATE_TOKEN, a token with write access to the repositories in etc/downstream, to which
+    # the published release is proposed as draft pull requests; the job's own token reaches no
+    # other repository. Without the secret, the release is published and nothing is proposed.
+    secrets: inherit
