@@ -113,7 +113,7 @@ lib/hypotenuse/src/core/hypotenuse.internal.scala	4	0	0
 lib/hypotenuse/src/core/hypotenuse.rationalInternal.scala	33	0	19
 lib/hypotenuse/src/core/hypotenuse_core.scala	4	0	0
 lib/jacinta/src/core/jacinta.Json.Parser.scala	57	12	0
-lib/jacinta/src/core/jacinta.Json.scala	37	41	5
+lib/jacinta/src/core/jacinta.Json.scala	39	41	5
 lib/jacinta/src/core/jacinta.Json4.scala	0	0	0
 lib/jacinta/src/core/jacinta.JsonPointer.scala	1	0	4
 lib/jacinta/src/core/jacinta.internal.scala	12	20	2

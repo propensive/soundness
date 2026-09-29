@@ -39,6 +39,7 @@ import java.util.concurrent as juc
 import anticipation.Data
 import anticipation.*
 import denominative.*
+import prepositional.*
 import vacuous.*
 
 // A sink into which a value of one medium is written in pieces. The same producing code can be
@@ -197,19 +198,32 @@ object Producer:
 
     protected update def publishChunk(chunk: medium): Unit = deliver(chunk)
 
+  // A consumer lent a filled block: the block's storage as a `Region` with its branded
+  // extent, valid only for the duration of the call — the discipline of `Stream.lend` — so
+  // nothing is copied, and a consumer that must keep the bytes materializes them itself.
+  type Lending[medium] = (region: Region[medium]) => (Interval in region.type) => Unit
+
   // Streaming text as UTF-8: characters are encoded straight into a byte block, and each full
-  // block is handed to `deliver` inline, so a text serializer writes bytes to a socket or an
-  // `OutputStream` without materializing a `Text` per block and encoding it again. A lone
-  // surrogate encodes as U+FFFD, as `String.getBytes` would.
+  // block is lent to `lending` inline, so a text serializer writes bytes to a socket or an
+  // `OutputStream` without materializing a `Text` per block and encoding it again, and without
+  // copying the block. A lone surrogate encodes as U+FFFD, as `String.getBytes` would.
+  def lendUtf8(lending: Lending[Data], block: Optional[Int] = Unset)(using buffering: Buffering)
+    ( body: ((Producer[Text] { type Operand = Char })^) => Unit )
+  :   Unit =
+
+    val producer = Utf8Sink(lending, block.or(buffering.capacity(Substrate.Bytes)))
+    body(producer)
+    producer.finish()
+
+  // The owning form of `lendUtf8`: each block is delivered as a fresh `Data` the consumer may
+  // keep.
   def utf8(deliver: Data => Unit, block: Optional[Int] = Unset)(using buffering: Buffering)
     ( body: ((Producer[Text] { type Operand = Char })^) => Unit )
   :   Unit =
 
-    val producer = Utf8Sink(deliver, block.or(buffering.capacity(Substrate.Bytes)))
-    body(producer)
-    producer.finish()
+    lendUtf8(region => interval => deliver(region.materialize(interval)), block)(body)
 
-  final class Utf8Sink(deliver: Data => Unit, block: Int) extends Producer[Text]:
+  final class Utf8Sink(lending: Lending[Data], block: Int) extends Producer[Text]:
     type Operand = Char
 
     // Encoding goes through the JDK's UTF-8 `CharsetEncoder`, whose ASCII path is vectorized:
@@ -232,8 +246,7 @@ object Producer:
 
     private update def publish(): Unit =
       if current.position() > 0 then
-        val array = current.array().nn
-        deliver(Array.unsafeFrozen(java.util.Arrays.copyOfRange(array, 0, current.position()).nn))
+        Region.over[Data, Unit](current.array().nn, 0, current.position())(lending)
         current.clear()
 
     // Encodes the scratch, publishing the block each time it fills; a trailing high surrogate is

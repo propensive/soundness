@@ -149,6 +149,18 @@ object Tests extends Suite(m"Stratiform Tests"):
         builder.toString.tt == parsed.show
       . assert(identity)
 
+      test(m"lend hands out borrowed blocks whose bytes equal the encoded text"):
+        val parsed = t"name Zoë ☃ 😀\nage 21\n".read[Tel]
+        val out = new java.io.ByteArrayOutputStream()
+
+        Tel.lend(parsed): region =>
+          interval =>
+            val extent: Interval = interval
+            out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), extent.start.n0, extent.size)
+
+        java.util.Arrays.equals(out.toByteArray, parsed.show.s.getBytes("UTF-8"))
+      . assert(identity)
+
       test(m"emit as UTF-8 bytes matches the encoded text, including non-ASCII"):
         val parsed = t"name Zoë ☃ 😀\n".read[Tel]
         val out = new java.io.ByteArrayOutputStream()

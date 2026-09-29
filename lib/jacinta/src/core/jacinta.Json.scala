@@ -1394,7 +1394,7 @@ object Json extends Json2, Dynamic:
           var index = 0
 
           while index < n do
-            out.ascii(Bcd.bcdLongText(bcds(index)))
+            out.bcdLong(bcds(index))
             if index < last then out.ascii(",")
             index += 1
 
@@ -1407,7 +1407,7 @@ object Json extends Json2, Dynamic:
           var index = 0
 
           while index < n do
-            out.ascii(Bcd.bcdIntText(smalls(index)))
+            out.bcdInt(smalls(index))
             if index < last then out.ascii(",")
             index += 1
 
@@ -1430,7 +1430,7 @@ object Json extends Json2, Dynamic:
 
           case smallBcd: Int =>
             // Small-BCD number — at most 7 nibbles packed into one Int.
-            out.ascii(Bcd.bcdIntText(smallBcd))
+            out.bcdInt(smallBcd)
 
           case boolean: Boolean =>
             out.ascii(if boolean then "true" else "false")
@@ -1442,7 +1442,7 @@ object Json extends Json2, Dynamic:
             // High-precision number — emit the canonical JSON-number text from the
             // BCD nibble stream directly; this preserves all digits the parser saw,
             // in contrast to a `Double.toString` round-trip.
-            out.ascii(bcd.asInstanceOf[Bcd].text)
+            out.bcd(bcd.asInstanceOf[Bcd])
 
           case bcds: scala.Array[Long] @unchecked =>
             writeBcdLongArray(bcds)
@@ -1473,11 +1473,21 @@ object Json extends Json2, Dynamic:
 
       update def long(value: Long): Unit
 
+      // The parser's three BCD forms, rendered as canonical JSON-number text: the nibbles are
+      // digits, `.`, `e` and `e-`, so a byte-level output writes them without a round trip
+      // through a `String`.
+      update def bcdInt(value: Int): Unit
+      update def bcdLong(value: Long): Unit
+      update def bcd(value: Bcd): Unit
+
     private[jacinta] final class Textual(producer: (Producer[Text] { type Operand = Char })^)
     extends Out:
       update def ascii(text: String): Unit = producer.put(text.tt)
       update def raw(text: String): Unit = producer.put(text.tt)
       update def long(value: Long): Unit = producer.put(value.toString.tt)
+      update def bcdInt(value: Int): Unit = producer.put(Bcd.bcdIntText(value).tt)
+      update def bcdLong(value: Long): Unit = producer.put(Bcd.bcdLongText(value).tt)
+      update def bcd(value: Bcd): Unit = producer.put(value.text.tt)
 
       // JSON string escaping: the quote and backslash, the named control escapes, and any other
       // U+0000-001F control character as a `\uXXXX` reference.
@@ -1539,7 +1549,7 @@ object Json extends Json2, Dynamic:
 
 
 
-    private[jacinta] final class Bytes(deliver: Data => Unit, block: Int) extends Out:
+    private[jacinta] final class Bytes(lending: Producer.Lending[Data], block: Int) extends Out:
       // The byte block is a fresh, exclusive allocation reached only through this writer;
       // `untrackedCaptures` keeps that exclusivity out of the class's own type.
       @caps.unsafe.untrackedCaptures
@@ -1554,9 +1564,11 @@ object Json extends Json2, Dynamic:
       // A high surrogate awaiting its low half across a scratch boundary, or zero.
       private var pending: Char = 0
 
+      // The filled block is lent, not copied: the consumer sees the writer's own array through
+      // a `Region` for the duration of the call, after which the block is reused.
       private update def publish(): Unit =
         if index > 0 then
-          deliver(Array.unsafeFrozen(java.util.Arrays.copyOfRange(current, 0, index).nn))
+          Region.over[Data, Unit](current, 0, index)(lending)
           index = 0
 
       private update def byte(value: Int): Unit =
@@ -1711,6 +1723,76 @@ object Json extends Json2, Dynamic:
           val length = index + 20 - k
           System.arraycopy(out, k, out, index, length)
           index += length
+
+      // A nibble of any BCD form as its JSON-number character(s); at most two bytes.
+      private update def nibble(value: Int): Unit =
+        if value <= 9 then
+          current(index) = ('0' + value).toByte
+          index += 1
+        else if value == 0xA then
+          current(index) = '.'
+          index += 1
+        else
+          current(index) = 'e'
+          index += 1
+
+          if value == 0xC then
+            current(index) = '-'
+            index += 1
+
+      // Small BCD (at most 7 nibbles): at most 17 bytes, reserved up front so the nibble
+      // writes need no bounds handling. The parser omits the leading `0` of `0.xxx`, so it is
+      // re-inserted when the oldest nibble is `.`, as `Bcd.bcdIntText` does.
+      update def bcdInt(value: Int): Unit =
+        val count = Bcd.bcdIntNibbleCount(value)
+        if index + 24 > block then publish()
+
+        if count == 0 then
+          current(index) = '0'
+          index += 1
+        else
+          if Bcd.bcdIntNegative(value) then
+            current(index) = '-'
+            index += 1
+
+          if ((value >>> ((count - 1)*4)) & 0xF) == 0xA then
+            current(index) = '0'
+            index += 1
+
+          var j = count - 1
+
+          // Shape 1: nibbles are read from the oldest down, terminating at the youngest.
+          while j >= 0 do
+            nibble((value >>> (j*4)) & 0xF)
+            j -= 1
+
+      // Single-Long BCD (at most 14 nibbles): at most 31 bytes, reserved up front.
+      update def bcdLong(value: Long): Unit =
+        val count = Bcd.bcdLongNibbleCount(value)
+        if index + 40 > block then publish()
+
+        if count == 0 then
+          current(index) = '0'
+          index += 1
+        else
+          if Bcd.bcdLongNegative(value) then
+            current(index) = '-'
+            index += 1
+
+          if ((value >>> ((count - 1)*4)) & 0xFL) == 0xAL then
+            current(index) = '0'
+            index += 1
+
+          var j = count - 1
+
+          // Shape 1: nibbles are read from the oldest down, terminating at the youngest.
+          while j >= 0 do
+            nibble(((value >>> (j*4)) & 0xFL).toInt)
+            j -= 1
+
+      // The unbounded BCD form (more than 14 nibbles) is rare, and its inline nibble walk cannot
+      // be expanded outside the opaque type's companion, so it renders through its text.
+      update def bcd(value: Bcd): Unit = ascii(value.text)
 
       update def finish(): Unit = publish()
 
@@ -2780,9 +2862,20 @@ object Json extends Json2, Dynamic:
         ( using buffering: Buffering )
       :   Unit =
 
-        val out = new Json.Ast.Bytes(deliver, buffering.capacity(Substrate.Bytes))
-        Json.Ast.write(out, formatting, json.root)
-        out.finish()
+        lend(json)(region => interval => deliver(region.materialize(interval)))(using formatting)
+
+  // The borrowing form of the push `emit`: serializes to UTF-8 on the caller's thread, and
+  // lends each filled block to `lending` as a `Region[Data]` with its branded extent, valid
+  // only for the duration of the call — the discipline of `Stream.lend` — so nothing is
+  // copied. A consumer that must keep the bytes materializes them itself; `emit[Data]` is that
+  // consumer for the common case.
+  def lend(json: Json)(lending: Producer.Lending[Data])
+    ( using formatting: Formatting, buffering: Buffering )
+  :   Unit =
+
+    val out = new Json.Ast.Bytes(lending, buffering.capacity(Substrate.Bytes))
+    Json.Ast.write(out, formatting, json.root)
+    out.finish()
 
 
   // `Json` is a plain class, so there is no reflection to derive from, and its `Showable`

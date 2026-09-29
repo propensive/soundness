@@ -92,6 +92,13 @@ format. Entries are grouped by module, most-recently-added last within a module.
   UTF-8 bytes written directly by a byte-level serializer that escapes and encodes each string in
   one pass. `trait Json.Emitter[medium]` with givens `Json.Emitter.text` and `Json.Emitter.data`
   selects between them. The type argument is required when `deliver` is an untyped lambda.
+- New `jacinta.Json.lend(json: Json)(lending: zephyrine.Producer.Lending[Data])(using Json.Formatting, zephyrine.Buffering): Unit`,
+  the borrowing form of the push `emit`: each filled block of UTF-8 is lent as a
+  `zephyrine.Region[Data]` with its branded `Interval in region.type`, valid only for the
+  duration of the call (the discipline of `Stream.lend`), so nothing is copied; `emit[Data]` is
+  now defined over it and materializes each block. Numbers parsed as BCD are rendered by the
+  byte-level writer directly from their nibbles, with no `String` round trip; the text of every
+  form is unchanged.
 
 ## locomotion
 
@@ -139,6 +146,9 @@ format. Entries are grouped by module, most-recently-added last within a module.
   fills: `emit[Text]` delivers text blocks and `emit[Data]` delivers UTF-8 bytes encoded
   straight from the serializer. The type argument is required when `deliver` is an untyped
   lambda.
+- New `stratiform.Tel.lend(tel: Tel)(lending: zephyrine.Producer.Lending[Data])(using zephyrine.Buffering): Unit`,
+  the borrowing form of the push `emit`: each filled block of UTF-8 is lent as a
+  `zephyrine.Region[Data]` with its branded extent, valid only for the duration of the call.
 
 ## xylophone
 
@@ -195,7 +205,10 @@ format. Entries are grouped by module, most-recently-added last within a module.
   the partial last block after `body` returns.
 - New `zephyrine.Producer.utf8(deliver: Data => Unit, block: Optional[Int] = Unset)(using Buffering)(body: Producer[Text] { type Operand = Char }^ => Unit): Unit`
   (the class `Producer.Utf8Sink`): a `Producer[Text]` whose blocks are delivered as UTF-8
-  `Data`, encoded as characters arrive; a lone surrogate encodes as U+FFFD.
+  `Data`, encoded as characters arrive; a lone surrogate encodes as U+FFFD. It is the owning
+  form of the new `zephyrine.Producer.lendUtf8(lending: Producer.Lending[Data], block: Optional[Int] = Unset)(using Buffering)(body: …): Unit`,
+  which lends each filled block as a `Region[Data]` with its branded extent instead of copying
+  it, under the new alias `type Producer.Lending[medium] = (region: Region[medium]) => (Interval in region.type) => Unit`.
 - New `trait zephyrine.Producer.Emission[medium]` with givens `Producer.Emission.text` and
   `Producer.Emission.data`, selecting `sink` or `utf8` for a text serializer's push form; it is
   the context bound of `Json.emit[medium]` and `Tel.emit[medium]`.

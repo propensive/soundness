@@ -349,6 +349,17 @@ encoded straight from the serializer — which is the shape for writing to a fil
 Json.emit[Data](json, chunk => socket.write(chunk))
 ```
 
+Where even the copy into each `Data` chunk is unwanted, `Json.lend` lends each filled block
+instead: the consumer sees the writer's own buffer as a `Region`, with a branded interval that
+proves every index in range, valid only for the duration of the call — the same discipline as a
+stream's `lend`:
+
+<!-- doccheck: skip -->
+```scala
+Json.lend(json): region =>
+  interval => region.visit(interval)(index => sink.put(region(index)))
+```
+
 Where a consumer pulls instead, `Json.emit(json)` serializes on a fiber and hands out the text
 through an iterator, and a `Json` is `Streamable` by `Text` on the same terms, under a
 `supervise` block:

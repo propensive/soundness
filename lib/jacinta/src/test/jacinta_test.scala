@@ -1314,6 +1314,29 @@ object Tests extends Suite(m"Jacinta Tests"):
         java.util.Arrays.equals(out.toByteArray, json.show.s.getBytes("UTF-8"))
       . assert(identity)
 
+      test(m"lend hands out borrowed blocks whose bytes equal the encoded text"):
+        import formatting.compactJsonFormatting
+        val json = Json.make(name = t"Zoë ☃ 😀".in[Json], n = 42.in[Json], big = t"[${(0 until 3000).mkString(",")}]".read[Json])
+        val out = new java.io.ByteArrayOutputStream()
+        var blocks = 0
+
+        Json.lend(json): region =>
+          interval =>
+            val extent: Interval = interval
+            blocks += 1
+            out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), extent.start.n0, extent.size)
+
+        blocks > 1 && java.util.Arrays.equals(out.toByteArray, json.show.s.getBytes("UTF-8"))
+      . assert(identity)
+
+      test(m"the byte form renders every BCD number form as show does"):
+        import formatting.compactJsonFormatting
+        val json = t"""{"a":[1,-2,0.5,1e3,2.5e-7,-0.001],"b":12345678901234567890,"c":[0.25,100,3e2],"d":123456789012345678901234567890.5}""".read[Json]
+        val out = new java.io.ByteArrayOutputStream()
+        Json.emit[Data](json, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+        String(out.toByteArray, "UTF-8").tt == json.show
+      . assert(identity)
+
       test(m"emit as UTF-8 bytes of a large document arrives in more than one chunk"):
         import formatting.compactJsonFormatting
         val json = t"[${(0 until 20000).mkString(",")}]".read[Json]

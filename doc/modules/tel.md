@@ -67,6 +67,7 @@ hands out the text through an iterator, and a `Tel` is `Streamable` by `Text` on
 <!-- doccheck: skip -->
 ```scala
 Tel.emit[Data](document, chunk => socket.write(chunk))
+Tel.lend(document)(region => interval => …)   // each block lent, not copied
 
 supervise:
   Tel.emit(document).each(chunk => out.write(chunk))

@@ -3552,6 +3552,17 @@ object Tel extends Tel2:
     summon[Producer.Emission[medium]].run(deliver): producer =>
       writeDocument(producer, document)
 
+  // The borrowing form of the push `emit`: serializes to UTF-8 on the caller's thread, lending
+  // each filled block to `lending` as a `Region[Data]` with its branded extent, valid only for
+  // the duration of the call — the discipline of `Stream.lend` — so nothing is copied.
+  def lend(tel: Tel)(lending: Producer.Lending[Data])(using Buffering): Unit =
+    val document = tel.subtree match
+      case document: Document => document
+      case other              => Document(Unset, Unset, LineEndings.Lf, 0, other.children)
+
+    Producer.lendUtf8(lending): producer =>
+      writeDocument(producer, document)
+
   // `Tel` is a plain class, so there is no reflection to derive from, and TEL's block syntax is
   // multi-line, which an inspection is not. The document is rendered with its line breaks
   // escaped, so all of it is visible on one line and is distinguishable from the `Text` holding

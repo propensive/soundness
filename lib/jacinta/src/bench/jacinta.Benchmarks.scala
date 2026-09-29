@@ -39,6 +39,7 @@ import scala.quoted.*
 import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
+import denominative.*
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
@@ -55,6 +56,7 @@ import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 // Typed targets for the decode benchmarks (Example 4's shape). `BenchUsers`
 // opts in to direct parsing, so `read[BenchUsers in Json]` never builds the
@@ -154,6 +156,15 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     given Json.Formatting = compact
     val out = sink()
     Json.emit[Data](logsJson, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+
+  def lendLogsMerino(): Unit =
+    given Json.Formatting = compact
+    val out = sink()
+
+    Json.lend(logsJson): region =>
+      interval =>
+        val extent: Interval = interval
+        out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), extent.start.n0, extent.size)
 
   def streamLogsJackson(): Unit = jacksonMapper.writeValue(sink(), logsJackson)
 
@@ -623,6 +634,9 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
       bench(m"Merino: emit, pushed as UTF-8 bytes")(target = 1*Second, operationSize = size5):
         '{ jacinta.Benchmarks.pushBytesLogsMerino() }
+
+      bench(m"Merino: lend, borrowed UTF-8 blocks")(target = 1*Second, operationSize = size5):
+        '{ jacinta.Benchmarks.lendLogsMerino() }
 
       bench(m"Merino: show, then write the whole text")(target = 1*Second, operationSize = size5):
         '{ jacinta.Benchmarks.writeLogsMerinoWhole() }
