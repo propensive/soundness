@@ -1549,17 +1549,31 @@ object Json extends Json2, Dynamic:
 
 
 
+    // The block classes keying the shared `Blockpool`: the cast erases the allocation's fresh
+    // capture before `getClass`, which needs no capability (as `Conduit` does).
+    private val bytesClass: Class[?] = (new scala.Array[Byte](0)).asInstanceOf[AnyRef].getClass.nn
+    private val charsClass: Class[?] = (new scala.Array[Char](0)).asInstanceOf[AnyRef].getClass.nn
+
     private[jacinta] final class Bytes(lending: Producer.Lending[Data], block: Int) extends Out:
-      // The byte block is a fresh, exclusive allocation reached only through this writer;
-      // `untrackedCaptures` keeps that exclusivity out of the class's own type.
+      // The byte block and the char scratch are leased from the shared `Blockpool` and offered
+      // back at `finish`, so a writer allocates nothing of its own once the pool is warm. Each
+      // is reached only through this writer, and `untrackedCaptures` keeps the block's
+      // exclusivity out of the class's own type.
       @caps.unsafe.untrackedCaptures
-      private val current: scala.Array[Byte]^ = new scala.Array[Byte](block)
+      private val current: scala.Array[Byte]^ =
+        Blockpool.poll(bytesClass, block) match
+          case null   => new scala.Array[Byte](block)
+          case pooled => pooled.asInstanceOf[scala.Array[Byte]]
+
       private var index: Int = 0
 
       // Characters are inflated into this scratch a block at a time, so the encoding loop reads
       // a raw array rather than paying `charAt`'s coder check per character.
       @caps.unsafe.untrackedCaptures
-      private val scratch: scala.Array[Char] = new scala.Array[Char](block.max(32))
+      private val scratch: scala.Array[Char] =
+        Blockpool.poll(charsClass, block) match
+          case null   => new scala.Array[Char](block)
+          case pooled => pooled.asInstanceOf[scala.Array[Char]]
 
       // A high surrogate awaiting its low half across a scratch boundary, or zero.
       private var pending: Char = 0
@@ -1794,7 +1808,11 @@ object Json extends Json2, Dynamic:
       // be expanded outside the opaque type's companion, so it renders through its text.
       update def bcd(value: Bcd): Unit = ascii(value.text)
 
-      update def finish(): Unit = publish()
+      // Flushes the last block and returns both buffers to the pool; the writer is spent.
+      update def finish(): Unit =
+        publish()
+        Blockpool.offer(bytesClass, block, current.asInstanceOf[AnyRef])
+        Blockpool.offer(charsClass, block, scratch.asInstanceOf[AnyRef])
 
     case class Position
       ( line:                Int,

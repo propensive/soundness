@@ -223,6 +223,11 @@ object Producer:
 
     lendUtf8(region => interval => deliver(region.materialize(interval)), block)(body)
 
+  // The block classes keying the shared `Blockpool`: the cast erases the allocation's fresh
+  // capture before `getClass`, which needs no capability (as `Conduit` does).
+  private val bytesClass: Class[?] = (new scala.Array[Byte](0)).asInstanceOf[AnyRef].getClass.nn
+  private val charsClass: Class[?] = (new scala.Array[Char](0)).asInstanceOf[AnyRef].getClass.nn
+
   final class Utf8Sink(lending: Lending[Data], block: Int) extends Producer[Text]:
     type Operand = Char
 
@@ -236,11 +241,19 @@ object Producer:
       . onMalformedInput(java.nio.charset.CodingErrorAction.REPLACE).nn
       . onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPLACE).nn
 
-    private val current: java.nio.ByteBuffer = java.nio.ByteBuffer.allocate(block).nn
+    // The byte block and the char scratch are leased from the shared `Blockpool` and offered
+    // back at `finish`, so a sink allocates nothing of its own once the pool is warm.
+    private val current: java.nio.ByteBuffer =
+      Blockpool.poll(bytesClass, block) match
+        case null   => java.nio.ByteBuffer.allocate(block).nn
+        case pooled => java.nio.ByteBuffer.wrap(pooled.asInstanceOf[scala.Array[Byte]]).nn
 
     // The scratch is a raw array with its own fill count — a `CharBuffer`'s position bookkeeping
     // per `put` measured as most of the sink's cost — wrapped only when a whole block is encoded.
-    private val scratch: scala.Array[Char] = new scala.Array[Char](block.max(8))
+    private val scratch: scala.Array[Char] =
+      Blockpool.poll(charsClass, block) match
+        case null   => new scala.Array[Char](block)
+        case pooled => pooled.asInstanceOf[scala.Array[Char]]
     private val scratchView: java.nio.CharBuffer = java.nio.CharBuffer.wrap(scratch).nn
     private var filled: Int = 0
 
@@ -297,6 +310,8 @@ object Producer:
       filled = 0
       encoder.reset()
       publish()
+      Blockpool.offer(bytesClass, block, current.array().nn.asInstanceOf[AnyRef])
+      Blockpool.offer(charsClass, block, scratch.asInstanceOf[AnyRef])
 
   // The media a text serializer's push form can be delivered as: `Text` blocks through `sink`,
   // or UTF-8 `Data` blocks through `utf8`. A format's `emit[medium](value, deliver)` summons

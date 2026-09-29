@@ -209,6 +209,9 @@ format. Entries are grouped by module, most-recently-added last within a module.
   form of the new `zephyrine.Producer.lendUtf8(lending: Producer.Lending[Data], block: Optional[Int] = Unset)(using Buffering)(body: …): Unit`,
   which lends each filled block as a `Region[Data]` with its branded extent instead of copying
   it, under the new alias `type Producer.Lending[medium] = (region: Region[medium]) => (Interval in region.type) => Unit`.
+  Both lease their byte block and char scratch from the shared `zephyrine.Blockpool` and offer
+  them back when the body returns, as `Json.lend`'s writer does, so a warm writer allocates
+  nothing of its own.
 - New `trait zephyrine.Producer.Emission[medium]` with givens `Producer.Emission.text` and
   `Producer.Emission.data`, selecting `sink` or `utf8` for a text serializer's push form; it is
   the context bound of `Json.emit[medium]` and `Tel.emit[medium]`.
