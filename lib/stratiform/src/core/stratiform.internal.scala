@@ -101,6 +101,52 @@ object internal:
       ( parts.to(proscenium.List), contextual.Interpolation.decodeOrigins[origins],
         1, charStart, (charEnd - charStart).max(1) )
 
+  // The `telp"…"` literal. Reuses `Telp.parse` at macro-expansion time; a
+  // `Telp.Error`'s component index is mapped back to the character offset of
+  // that component within the literal, and thence to a source position, so
+  // the compiler's caret lands on the offending component. Mirrors
+  // `jacinta.internal.jsonPointer`, including the rejection of substitutions.
+  def telp[parts <: Tuple: Type, origins <: Tuple: Type](insertions: Expr[Seq[Any]])
+  :   Macro[Telp] =
+
+    import quotes.reflect.*
+
+    def collectParts[tuple: Type](acc: List[String]): List[String] = Type.of[tuple] match
+      case '[head *: tail] => collectParts[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: acc)
+      case _               => acc
+
+    val parts = collectParts[parts](Nil)
+
+    val raw: String = parts match
+      case List(raw) => raw
+      case _         => halt(m"a TELP literal cannot have substitutions")
+
+    // The character offset of the component at `index`: the first character
+    // when the delimiter itself is missing or invalid, else the character
+    // after the `index`th further occurrence of the delimiter.
+    def offsetOf(index: Int): Int =
+      if raw.isEmpty || Telp.delimiters.s.indexOf(raw.charAt(0).toInt) < 0 then 0 else
+        val delimiter = raw.charAt(0)
+
+        @annotation.tailrec
+        def advance(remaining: Int, from: Int): Int =
+          if remaining == 0 || from >= raw.length then from
+          else advance(if raw.charAt(from) == delimiter then remaining - 1 else remaining, from + 1)
+
+        advance(index, 1).min(raw.length - 1)
+
+    given Diagnostics = Diagnostics.omit
+
+    try unsafely(Telp.parse(raw.tt)) catch
+      case error: Telp.Error =>
+        val position = contextual.Interpolation.sourcePosition
+          ( parts.to(proscenium.List), contextual.Interpolation.decodeOrigins[origins], 1,
+            offsetOf(error.index), 1 )
+
+        halt(error.message, position)
+
+    '{unsafely(Telp.parse(${Expr(raw)}.tt))}
+
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
     ( insertions0: Expr[Seq[Any]] )
   :   Macro[Tel] =
