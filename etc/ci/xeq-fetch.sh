@@ -14,10 +14,15 @@ VERSION=$(awk -F'\t' '$1=="version"{print $2}' "$PIN")
 WANT=$(awk -F'\t' '$1=="xeq"{print $2}' "$PIN")
 [[ -n "$VERSION" && -n "$WANT" ]] || { echo "xeq-fetch: bad pin $PIN" >&2; exit 1; }
 
-URL="https://github.com/propensive/xeq/releases/download/xeq-$VERSION/xeq"
+# propensive/xeq is now propensive/xek: releases since the rename are `xek-<version>` with the
+# script as `xek`, those before it `xeq-<version>` with it as `xeq`. Both are tried, newest naming
+# first, and the pinned SHA-256 decides what is accepted.
+BASE="https://github.com/propensive/xek/releases/download"
 mkdir -p dist
 TMP=dist/.xeq.part
-if command -v curl >/dev/null 2>&1; then curl -fsSL "$URL" -o "$TMP"; else wget -qO "$TMP" "$URL"; fi
+fetch() { if command -v curl >/dev/null 2>&1; then curl -fsSL "$1" -o "$TMP"; else wget -qO "$TMP" "$1"; fi; }
+fetch "$BASE/xek-$VERSION/xek" 2>/dev/null || fetch "$BASE/xeq-$VERSION/xeq" ||
+  { echo "xeq-fetch: no builder script published for version $VERSION" >&2; rm -f "$TMP"; exit 1; }
 GOT=$( { sha256sum "$TMP" 2>/dev/null || shasum -a 256 "$TMP"; } | cut -d' ' -f1)
 if [[ "$GOT" != "$WANT" ]]; then
   echo "xeq-fetch: SHA-256 mismatch for xeq (got $GOT, want $WANT)" >&2; rm -f "$TMP"; exit 1

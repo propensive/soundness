@@ -55,6 +55,7 @@ LICENSE
 tests/JSONTestSuite
 
 # The pinned commit of propensive/.github runs the scripts around a build, not the build, and
-# etc/release configures the release rather than the build or the tests.
+# etc/release and etc/downstream configure the release rather than the build or the tests.
 etc/github-ref
 etc/release
+etc/downstream
