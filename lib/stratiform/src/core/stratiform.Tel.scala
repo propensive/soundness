@@ -49,6 +49,7 @@ import contingency.*
 import denominative.{Span, z}
 import distillate.*
 import gossamer.*
+import parasite.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -3368,9 +3369,15 @@ object Tel extends Tel2:
   // inserted between lines but never after the last (total newlines = lines - 1; trailing
   // blank-line counts realised by appending that many empty lines).
   given documentShowable: Tel.Document is Showable = document =>
-    import scala.language.unsafeNulls
-
     Producer.collect[Text](): producer =>
+      writeDocument(producer, document)
+
+  // The single TEL serializer, driven through a `Producer`: `documentShowable` collects it
+  // into one `Text`, and `Tel.emit` streams it line by line from a fiber, so a large document
+  // can be sent before it is fully rendered — the model of xylophone's `emit`.
+  private def writeDocument(producer: (Producer[Text])^, document: Tel.Document): Unit =
+      import scala.language.unsafeNulls
+
       val newline = document.lineEndings match
         case Tel.LineEndings.Lf   => "\n"
         case Tel.LineEndings.Crlf => "\r\n"
@@ -3510,6 +3517,27 @@ object Tel extends Tel2:
       case other              => Document(Unset, Unset, LineEndings.Lf, 0, other.children)
 
     document.show
+
+  // `^{monitor}` only: `Probate` is not capture-tracked, as in xylophone's `streamable`.
+  given streamable: (monitor: Monitor, probate: Probate)
+  =>  ((Tel is Streamable by Text over Credit)^{monitor}) =
+    tel => zephyrine.Stream(emit(tel))
+
+  // Serializes on a fiber, handing out text as it is produced, so a large document can be
+  // written to a socket or file before it is fully rendered — the model of `Xml.emit`. A `Tel`
+  // rooted at a Compound is wrapped in a Document first, exactly as `showable` wraps it.
+  def emit(tel: Tel)(using monitor: Monitor, probate: Probate): Iterator[Text] =
+    val document = tel.subtree match
+      case document: Document => document
+      case other              => Document(Unset, Unset, LineEndings.Lf, 0, other.children)
+
+    val producer = Producer[Text]()
+
+    async:
+      writeDocument(producer, document)
+      producer.finish()
+
+    producer.iterator
 
   // `Tel` is a plain class, so there is no reflection to derive from, and TEL's block syntax is
   // multi-line, which an inspection is not. The document is rendered with its line breaks

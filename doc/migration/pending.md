@@ -81,6 +81,11 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Json#applyDynamic` on an unverified `Json` now summon `(? >: Json) is Dynamical` in place of
   `DynamicJsonEnabler`. `dynamicJson` satisfies each of these, and so does a
   `rudiments.dynamically[Json]` or `dynamically` block. (#2102)
+- New `jacinta.Json.emit(json: Json)(using Json.Formatting, parasite.Monitor, parasite.Probate): Iterator[Text]`,
+  which serializes on a fiber and hands out the text as it is produced, and a new given
+  `jacinta.Json.streamable: (Json.Formatting, Monitor, Probate) => Json is turbulence.Streamable by Text over Credit`
+  built on it. `show` is unchanged and renders identically. `jacinta.core` now depends on
+  `parasite.core`.
 
 ## locomotion
 
@@ -117,6 +122,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   offending component, and a substitution is rejected. Backed by the new
   `stratiform.Telp.interpolable: Telp is contextual.Interpolable` given. `Telp.parse(text)` is
   unchanged for runtime paths. (#2104)
+- New `stratiform.Tel.emit(tel: Tel)(using parasite.Monitor, parasite.Probate): Iterator[Text]`,
+  which serializes on a fiber and hands out the text line by line as it is produced (a `Tel`
+  rooted at a Compound is wrapped in a Document first, as `show` wraps it), and a new given
+  `stratiform.Tel.streamable: (Monitor, Probate) => Tel is turbulence.Streamable by Text over Credit`
+  built on it. `show` is unchanged and renders identically. `stratiform.core` now depends on
+  `parasite.core`.
 
 ## xylophone
 

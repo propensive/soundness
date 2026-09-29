@@ -57,7 +57,16 @@ t"name Alice\nage 30\n".read[Person in Tel]    // the same, in one step
 ```
 
 Encoding runs the other way: `in[Tel]` produces a `Tel` from a value, a compound per field, ready
-to render or to embed in a larger document.
+to render or to embed in a larger document. `show` renders a `Tel` into one `Text`; a large
+document need not be held in memory before it is sent, since `Tel.emit` serializes on a fiber and
+hands out the text line by line as it is produced, and a `Tel` is `Streamable` by `Text` on the
+same terms:
+
+<!-- doccheck: skip -->
+```scala
+supervise:
+  Tel.emit(document).each(chunk => out.write(chunk))
+```
 
 A literal document is written with the `tel"…"` interpolator, parsed as the code compiles, with
 each substitution encoded through its own static type. A malformed literal is a compile error

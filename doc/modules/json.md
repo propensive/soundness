@@ -338,6 +338,17 @@ import formatting.indentedJsonFormatting
 List(1, 2, 3).in[Json].show   // pretty-printed across several lines
 ```
 
+`show` renders the whole document into one `Text`. A large document need not be held in memory
+before it is sent: `Json.emit` serializes on a fiber and hands out the text as it is produced, and
+a `Json` is `Streamable` by `Text` on the same terms, so it can be written to a socket or a file
+chunk by chunk under a `supervise` block:
+
+<!-- doccheck: skip -->
+```scala
+supervise:
+  Json.emit(json).each(chunk => out.write(chunk))
+```
+
 ### Errors
 
 A conversion that cannot be made raises a `Json.Error` whose reason says what went

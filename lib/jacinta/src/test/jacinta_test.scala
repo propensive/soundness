@@ -42,6 +42,8 @@ import scala.language.dynamics
 
 import codepages.utf8Codepage
 import strategies.throwUnsafely
+import threading.virtualThreading
+import probates.cancelProbate
 import formatting.compactJsonFormatting
 
 import discriminables.jsonByKindDiscriminable
@@ -1281,6 +1283,18 @@ object Tests extends Suite(m"Jacinta Tests"):
         val printed = (List(1, 2, 3): List[Int]).in[Json].show
         printed.contains(t"\n")
       . assert(identity)
+
+      test(m"emit streams exactly the text show renders"):
+        import formatting.indentedJsonFormatting
+        val json = Json.make(a = 1.in[Json], b = (List(t"x", t"y"): List[Text]).in[Json], c = t"q\"\n".in[Json])
+        supervise(Json.emit(json).to(List).mkString.tt) == json.show
+      . assert(identity)
+
+      test(m"emit of a large document arrives in more than one chunk"):
+        import formatting.compactJsonFormatting
+        val json = t"[${(0 until 20000).mkString(",")}]".read[Json]
+        supervise(Json.emit(json).to(List).length)
+      . assert(_ > 1)
 
     suite(m"Discriminator strategies"):
       test(m"Discriminate by 'kind' (default in this file)"):

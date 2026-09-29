@@ -49,6 +49,7 @@ import gastronomy.*
 import gossamer.*
 import hieroglyph.*
 import panopticon.*
+import parasite.*
 
 // The `Tel` lens and optic instances live in `stratiform.optics` now, outside `Tel`'s implicit
 // scope, so they must be imported by name.
@@ -66,6 +67,8 @@ import zephyrine.lineation.linefeedByte
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import codepages.utf8Codepage
+import threading.virtualThreading
+import probates.cancelProbate
 import Tel.given
 
 object Tests extends Suite(m"Stratiform Tests"):
@@ -127,6 +130,17 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"stratiform's types inspect natively"):
         Inspectable.fallbacks(t"name Jane\n".read[Tel].inspect, Tel.empty.inspect)
       . assert(_ == Nil)
+
+      test(m"emit streams exactly the text show renders"):
+        val source = t"tel 1.0\n\n# people\nperson Jane  # lead\n  age 21\n\nperson Bob\n"
+        val parsed = source.read[Tel]
+        supervise(Tel.emit(parsed).to(List).join) == parsed.show
+      . assert(identity)
+
+      test(m"emit of an encoded value wraps it in a document, as show does"):
+        val parsed = t"name Jane\n".read[Tel]
+        supervise(Tel.emit(parsed).to(List).join) == parsed.show
+      . assert(identity)
 
     // Positive fixtures whose reference dump differs from this implementation's
     // presentation model by design; each is explained in the corpus

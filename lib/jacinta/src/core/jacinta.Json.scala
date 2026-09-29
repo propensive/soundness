@@ -55,6 +55,7 @@ import fulminate.*
 import gossamer.*
 import hypotenuse.Bcd
 import hieroglyph.*
+import parasite.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -1323,6 +1324,15 @@ object Json extends Json2, Dynamic:
     // arrays are distinguished by the length parity of their boxed `Array[Any]^{}` backing.
     given showable: (formatting: Json.Formatting) => Json.Ast is Showable = ast =>
       Producer.collect[Text](): producer =>
+        write(producer, formatting, ast)
+
+    // The single JSON serializer, driven through a `Producer`: `showable` collects it into one
+    // `Text`, and `Json.emit` streams it chunk by chunk from a fiber, so a large document can
+    // be sent before it is fully rendered — the model of xylophone's `emit`.
+    private[jacinta] def write
+      ( producer: (Producer[Text])^, formatting: Json.Formatting, ast: Json.Ast )
+    :   Unit =
+
         def newlineIndent(level: Int): Unit = formatting.indent.let: unit =>
           producer.put("\n")
           repeat(level):
@@ -2495,6 +2505,24 @@ object Json extends Json2, Dynamic:
       data => parseDirect(data, parsable).asInstanceOf[value in Json]
 
   given showable: Formatting => Json is Showable = _.root.show
+
+  // `^{monitor}` only: `Probate` is not capture-tracked, as in xylophone's `streamable`.
+  given streamable: (formatting: Formatting, monitor: Monitor, probate: Probate)
+  =>  ((Json is Streamable by Text over Credit)^{monitor}) =
+    json => zephyrine.Stream(emit(json))
+
+  // Serializes on a fiber, handing out text as it is produced, so a large document can be
+  // written to a socket or file before it is fully rendered — the model of `Xml.emit`.
+  def emit(json: Json)(using formatting: Formatting, monitor: Monitor, probate: Probate)
+  :   Iterator[Text] =
+
+    val producer = Producer[Text]()
+
+    async:
+      Json.Ast.write(producer, formatting, json.root)
+      producer.finish()
+
+    producer.iterator
 
   // `Json` is a plain class, so there is no reflection to derive from, and its `Showable`
   // needs a `Formatting` which a debugger has no way to supply — without an instance it
