@@ -32,8 +32,23 @@
                                                                                                   */
 package breviloquence
 
+import anticipation.*
 import gesticulate.*
 import prepositional.*
+import telekinesis.*
+import zephyrine.*
+
+private val cborMediaType: MediaType = media"application/cbor"
+
+// CBOR is binary: the body is the encoded bytes, with no charset.
+package postables:
+  given cborPostable: Cbor is Postable =
+    Postable(cborMediaType, value => Stream(Cbor.Ast.encodable.encoded(Cbor.unseal(value))))
+
+package servables:
+  given cborServable: Cbor is Servable =
+    Servable[Cbor](cborMediaType): value =>
+      Http.Body.Fixed(Cbor.Ast.encodable.encoded(Cbor.unseal(value)))
 
 package construables:
   given cborConstruable: ("application/cbor" is Construable to Cbor) = Construable()

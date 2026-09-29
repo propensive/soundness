@@ -51,6 +51,10 @@ extension [entity: Encodable in Tel](value: entity) def tel: Tel = value.encode
 extension (inline context: StringContext)
   transparent inline def tel: Interpolation = interpolation[Tel](context)
 
+  // A TELP literal, checked as the code compiles; the counterpart of jacinta's `jp` and
+  // ypsiloid's `yp`. Substitutions are rejected: a path is a constant.
+  transparent inline def telp: Interpolation = interpolation[Telp](context)
+
 // Collection/optic helpers used by the `Tel2` codec and optic givens. They are pure functions of
 // their arguments, so they live at package level rather than as members of the `Tel2` trait —
 // referencing a trait member would make the codec/optic lambdas capture `Tel2.this`, which the

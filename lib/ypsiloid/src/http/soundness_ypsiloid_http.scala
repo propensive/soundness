@@ -32,5 +32,11 @@
                                                                                                   */
 package soundness
 
+package postables:
+  export ypsiloid.postables.yamlPostable
+
+package servables:
+  export ypsiloid.servables.yamlServable
+
 package construables:
   export ypsiloid.construables.yamlConstruable

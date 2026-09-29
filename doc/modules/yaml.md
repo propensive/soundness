@@ -181,3 +181,9 @@ tracked.locate(YamlPath()(t"a"))   // the position of a
 Under an accruing strategy, decoding collects every fault in a document rather than stopping at
 the first, each tagged with its path — `#/age`, `#/email` — so a whole configuration file's
 problems are reported together.
+
+### YAML over HTTP
+
+A `Yaml` value serves as a request or response body with the `application/yaml` media type, and a
+body parses back to `Yaml` on arrival, so a YAML API is consumed and offered with the same code
+as a [JSON](json.md) one — only the format's type differs.

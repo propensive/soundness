@@ -135,3 +135,9 @@ case class Unnumbered(value: Int, other: Int)   // fields 1 and 2
 A malformed message raises a `Protobuf.Error` naming the problem and the byte offset — truncated
 input, a malformed varint, an unexpected wire type, a missing required field — so wire-level faults
 are debugged from the error rather than a hex dump.
+
+### Protocol Buffers over HTTP
+
+A `Protobuf` value serves as a request or response body with the `application/protobuf` media
+type, and a body parses back on arrival, so a binary API is consumed and offered with the same
+code as a [JSON](json.md) one — only the format's type differs.

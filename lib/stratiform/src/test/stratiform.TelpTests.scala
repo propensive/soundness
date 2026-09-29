@@ -311,3 +311,39 @@ object TelpTests extends Suite(m"Stratiform TELP tests"):
       test(m"prepending builds a root-first keyword path"):
         Telp.Root.prepend(t"name").prepend(t"person").components
       . assert(_ == List(t"person", t"name"))
+
+    suite(m"Literal interpolator"):
+      test(m"a slash-delimited literal parses"):
+        telp"/contact/email".components
+      . assert(_ == List(t"contact", t"email"))
+
+      test(m"a dot-delimited literal is the same path"):
+        telp".contact.email" == telp"/contact/email"
+      . assert(identity)
+
+      test(m"the delimiter alone is the root path"):
+        telp"/"
+      . assert(_ == Telp.Root)
+
+      test(m"a literal with selectors parses"):
+        telp":contact:a.b/c:email:0".components
+      . assert(_ == List(t"contact", t"a.b/c", t"email", t"0"))
+
+      test(m"a literal not beginning with a delimiter is rejected at its first character"):
+        demilitarize:
+          telp"contact/email"
+        . map(_.focus)
+      . assert(_ == List("c"))
+
+      test(m"an empty component is rejected at the component"):
+        demilitarize:
+          telp"/contact//email"
+        . map(_.focus)
+      . assert(_ == List("/"))
+
+      test(m"a substitution is rejected"):
+        demilitarize:
+          val name = t"email"
+          telp"/contact/$name"
+        . length
+      . assert(_ == 1)

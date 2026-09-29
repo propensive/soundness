@@ -32,6 +32,7 @@
 package stratiform
 
 import anticipation.*
+import contextual.*
 import contingency.*
 import distillate.*
 import fulminate.*
@@ -128,6 +129,18 @@ object Telp:
 
   given decodable: (tactic: Tactic[Telp.Error])
   =>  ((Telp is Decodable in Text)^{tactic}) = text => parse(text)
+
+  // The `telp"…"` literal: the path is parsed as the code compiles, and a
+  // syntax error is reported at the offending component. Substitutions are
+  // rejected, as `jp"…"` and `yp"…"` reject them.
+  inline given interpolable: Telp is Interpolable:
+    type Result = Telp
+
+    transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+      ( inline insertions: Any* )
+    :   Telp =
+
+      ${stratiform.internal.telp[parts, origins]('insertions)}
 
   // Renders under the first delimiter — `/`, then `.`, then the rest of
   // §3's set in order — that occurs in no component. A path whose
