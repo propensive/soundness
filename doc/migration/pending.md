@@ -57,6 +57,15 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `dynamicDsv` satisfies it, and so does a `rudiments.dynamically[Dsv]` or `dynamically`
   block. (#2102)
 
+## gesticulate
+
+- The registry behind the `media"…"` interpolator's compile-time check (`gesticulate/data/media.types`)
+  is refreshed from IANA's current media-type registry: 409 types are added, among them
+  `application/protobuf`, `application/yaml`, `application/toml`, `image/jxl` and `audio/flac`,
+  and none is removed. A literal of a newly-registered type, previously a compile error
+  ("… is not a registered media type"), now compiles; no literal that compiled before is
+  rejected. (#2105)
+
 ## jacinta
 
 - `jacinta.DynamicJsonEnabler` (and its `soundness` export) removed. Its replacement is
