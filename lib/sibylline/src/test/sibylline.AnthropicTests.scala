@@ -213,8 +213,10 @@ object AnthropicTests extends Suite(m"Anthropic dialect tests"):
       ( verdict,
         json.output_config.format.`type`.as[Text],
         json.output_config.format.schema.properties.ticker.`type`.as[Text],
-        body.contains(t"tools") )
-    . assert(_ == (Appraisal(t"AAPL", t"buy"), t"json_schema", t"string", false))
+        json.output_config.format.schema.required.as[List[Text]],
+        body.contains(t"tools"), body.contains(t"optional") )
+    . assert(_ == ( Appraisal(t"AAPL", t"buy"), t"json_schema", t"string",
+                    List(t"ticker", t"rating"), false, false ))
 
     test(m"a structured reply that is not JSON raises Malformed"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer(t"not json"))

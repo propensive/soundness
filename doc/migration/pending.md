@@ -63,6 +63,16 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `DynamicJsonEnabler`. `dynamicJson` satisfies each of these, and so does a
   `rudiments.dynamically[Json]` or `dynamically` block. (#2102)
 
+## sibylline
+
+- `sibylline.Anthropic` now sends a structured-output schema (`elicit`, `elicitAll`) as the JSON
+  Schema subset the Messages API accepts: `type`, `properties`, `required`,
+  `additionalProperties`, `items`, `enum`, `const`, `description`, `oneOf`/`allOf`/`anyOf`/`not`,
+  `$ref`, and a string's `pattern` and `format`. jacinta's `optional` marker (rejected by the
+  API as an unknown keyword) and the numeric and length bounds are no longer sent; a field's
+  optionality is already expressed through `required`. Previously any `elicit` on Anthropic
+  failed with `Invalid` (`property 'optional' is not supported`). (#TBD)
+
 ## stratiform
 
 - `stratiform.DynamicTelEnabler` (and its `soundness` export) removed. Its replacement is

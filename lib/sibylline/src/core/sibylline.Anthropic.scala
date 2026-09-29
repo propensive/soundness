@@ -321,6 +321,80 @@ object Anthropic:
 
       case other => List()
 
+  private[sibylline] object Node:
+    given encodable: Node is Json.Encodable = Json.EncodableDerivation.derived
+
+  // One schema node as the wire wants it: absent `Optional` fields are omitted from the JSON,
+  // which the endpoint requires (a `null` description is rejected), exactly as `Payload`'s are.
+  private[sibylline] case class Node
+    ( `type`:               Optional[Text]            = Unset,
+      description:          Optional[Text]            = Unset,
+      properties:           Optional[Map[Text, Json]] = Unset,
+      required:             Optional[List[Text]]      = Unset,
+      additionalProperties: Optional[Boolean]         = Unset,
+      items:                Optional[Json]            = Unset,
+      `enum`:               Optional[List[Json]]      = Unset,
+      const:                Optional[Json]            = Unset,
+      oneOf:                Optional[List[Json]]      = Unset,
+      allOf:                Optional[List[Json]]      = Unset,
+      anyOf:                Optional[List[Json]]      = Unset,
+      not:                  Optional[Json]            = Unset,
+      pattern:              Optional[Text]            = Unset,
+      format:               Optional[Text]            = Unset,
+      `$ref`:               Optional[Text]            = Unset )
+
+  // A schema as the structured-output endpoint accepts it: `type`, `properties`, `required`,
+  // `additionalProperties`, `items`, `enum`, `const`, `description`, the combinators, `$ref`,
+  // and a string's `pattern` and `format`. jacinta's own `optional` marker — which the endpoint
+  // rejects as an unknown keyword — is left out, its meaning already carried by `required`; so
+  // are the numeric and length bounds the endpoint does not support.
+  private[sibylline] def schema(value: JsonSchema): Json =
+    def schemas(list: Optional[List[JsonSchema]]): Optional[List[Json]] = list.let(_.map(schema(_)))
+
+    val node: Node = value match
+      case JsonSchema.Object
+          ( description, properties, _, required, enumeration, additional, oneOf, _, allOf, anyOf,
+            not, const ) =>
+        Node
+          ( `type`               = t"object",
+            description          = description,
+            properties           = properties.map(schema(_)),
+            required             = required,
+            additionalProperties = additional,
+            `enum`               = enumeration,
+            oneOf                = schemas(oneOf),
+            allOf                = schemas(allOf),
+            anyOf                = schemas(anyOf),
+            not                  = not.let(schema(_)),
+            const                = const )
+
+      case JsonSchema.Array(description, items, _, _, _, _, _) =>
+        Node(`type` = t"array", description = description, items = items.let(schema(_)))
+
+      case JsonSchema.String(description, _, _, pattern, format, _) =>
+        Node
+          ( `type`      = t"string",
+            description = description,
+            pattern     = pattern,
+            format      = format.let(_.encode) )
+
+      case JsonSchema.Number(description, _, _, _, _, _, _) =>
+        Node(`type` = t"number", description = description)
+
+      case JsonSchema.Integer(description, _, _, _, _, _, _) =>
+        Node(`type` = t"integer", description = description)
+
+      case JsonSchema.Boolean(description, _) =>
+        Node(`type` = t"boolean", description = description)
+
+      case JsonSchema.Null(description, _) =>
+        Node(`type` = t"null", description = description)
+
+      case JsonSchema.Ref(pointer, description, _) =>
+        Node(`$ref` = pointer.encode, description = description)
+
+    node.in[Json]
+
   // The wire error envelope, `{"type": "error", "error": {"type": …, "message": …}}`, mapped
   // totally onto `Llm.Error`: an unrecognized error type keeps its code under `Provider`.
   private[sibylline] def failure(status: Http.Status, json: Optional[Json])(using Diagnostics)
@@ -562,7 +636,8 @@ class Anthropic private
 
     val format: Optional[Json] = turn.format.let: schema =>
       Json.make
-        ( format = Json.make(`type` = t"json_schema".in[Json], schema = schema.in[Json]) )
+        ( format =
+            Json.make(`type` = t"json_schema".in[Json], schema = Anthropic.schema(schema)) )
 
     Anthropic.Payload
       ( model          = model,
