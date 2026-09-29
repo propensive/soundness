@@ -32,8 +32,25 @@
                                                                                                   */
 package ypsiloid
 
+import anticipation.*
 import gesticulate.*
+import hieroglyph.*
 import prepositional.*
+import spectacular.*
+import telekinesis.*
+import zephyrine.*
+
+// The media type is built once: applying the charset parameter parses and re-renders the
+// type, which is not something to repeat per request or response.
+private val yamlMediaType: MediaType = media"application/yaml"(charset = "UTF-8")
+
+package postables:
+  given yamlPostable: (encoder: Codepage, formatting: Yaml.Formatting) => Yaml is Postable =
+    Postable(yamlMediaType, value => Stream(encoder.encoded(value.show)))
+
+package servables:
+  given yamlServable: (encoder: Codepage, formatting: Yaml.Formatting) => Yaml is Servable =
+    Servable[Yaml](yamlMediaType): value => Http.Body.Fixed(encoder.encoded(value.show))
 
 package construables:
   given yamlConstruable: ("application/yaml" is Construable to Yaml) = Construable()

@@ -66,7 +66,7 @@ object internal:
   private val validGroups: Set[Text] =
     Set
       ( t"application", t"audio", t"image", t"message", t"multipart",
-        t"text", t"video", t"font", t"example", t"model" )
+        t"text", t"video", t"font", t"example", t"model", t"haptics" )
 
   private val specials: Set[Char] =
     Set('(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '+')

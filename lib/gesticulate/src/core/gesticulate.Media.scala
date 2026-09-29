@@ -61,7 +61,7 @@ object Media:
     given showable: Group is Showable = _.name.lower
 
   enum Group:
-    case Application, Audio, Image, Message, Multipart, Text, Video, Font, Example, Model
+    case Application, Audio, Image, Message, Multipart, Text, Video, Font, Example, Model, Haptics
 
     def name: Text = this.toString.tt.lower
 

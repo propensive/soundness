@@ -32,5 +32,11 @@
                                                                                                   */
 package soundness
 
+package postables:
+  export locomotion.postables.protobufPostable
+
+package servables:
+  export locomotion.servables.protobufServable
+
 package construables:
   export locomotion.construables.protobufConstruable

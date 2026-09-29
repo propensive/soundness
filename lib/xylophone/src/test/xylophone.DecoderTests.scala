@@ -129,6 +129,59 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
             </root>""".as[DContact]
       . assert(_ == DContact(DPerson(t"Carol", 40, t"c@x"), t"Acme"))
 
+    suite(m"Optional fields"):
+      test(m"A missing Optional field decodes as Unset"):
+        x"<root><name>Ann</name></root>".as[Profile]
+      . assert(_ == Profile(t"Ann", Unset, Unset))
+
+      test(m"A present Optional field decodes as its inner type"):
+        x"<root><name>Ann</name><nickname>annie</nickname><age>30</age></root>".as[Profile]
+      . assert(_ == Profile(t"Ann", t"annie", 30))
+
+      test(m"A missing Optional @attribute field decodes as Unset"):
+        x"""<root id="x1"><body>hi</body></root>""".as[Tagged]
+      . assert(_ == Tagged(t"x1", Unset, t"hi"))
+
+      test(m"A present Optional @attribute field decodes the attribute"):
+        x"""<root id="x1" lang="en"><body>hi</body></root>""".as[Tagged]
+      . assert(_ == Tagged(t"x1", t"en", t"hi"))
+
+      test(m"A missing Optional nested product decodes as Unset"):
+        x"<root><name>Smith</name></root>".as[Household]
+      . assert(_ == Household(t"Smith", Unset))
+
+      test(m"A present Optional nested product decodes"):
+        x"<root><name>Smith</name><head><name>Ann</name><age>30</age><email>a@b.c</email></head></root>"
+        . as[Household]
+      . assert(_ == Household(t"Smith", DPerson(t"Ann", 30, t"a@b.c")))
+
+      test(m"A malformed present Optional field is still an error"):
+        validateXml(x"<root><name>Ann</name><age>old</age></root>")(_.as[Profile]).items.map(_(0).s)
+      . assert(_ == List("/age[1]"))
+
+    suite(m"Map fields"):
+      test(m"Entry elements decode as mappings"):
+        x"""<root><name>shop</name>
+              <stock><key>apple</key><value>3</value></stock>
+              <stock><key>pear</key><value>5</value></stock>
+            </root>""".as[Inventory]
+      . assert(_ == Inventory(t"shop", Map(t"apple" -> 3, t"pear" -> 5)))
+
+      test(m"No entry elements decode as an empty Map"):
+        x"<root><name>shop</name></root>".as[Inventory]
+      . assert(_ == Inventory(t"shop", Map()))
+
+      test(m"Non-textual keys and product values decode"):
+        x"""<root>
+              <members><key>1</key><value><name>Ann</name><age>30</age><email>a@b.c</email></value></members>
+            </root>""".as[Roster]
+      . assert(_ == Roster(Map(1 -> DPerson(t"Ann", 30, t"a@b.c"))))
+
+      test(m"An entry missing its value registers an error"):
+        validateXml(x"<root><name>shop</name><stock><key>apple</key></stock></root>")(_.as[Inventory])
+        . items.map(_(0).s)
+      . assert(_ == List("/stock[1]"))
+
     suite(m"Gated construction"):
       test(m"Constructor does not run when any field failed"):
         XProbe.constructions = 0

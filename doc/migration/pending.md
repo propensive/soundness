@@ -40,6 +40,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Cbor#applyDynamic` and both `Cbor#updateDynamic` overloads, and the erased context parameter
   of the `Cbor.lens` given, are now `(? >: Cbor) is Dynamical`. `dynamicCbor` satisfies it, and
   so does a `rudiments.dynamically[Cbor]` or `dynamically` block. (#2102)
+- New `breviloquence.postables.cborPostable: Cbor is telekinesis.Postable` and
+  `breviloquence.servables.cborServable: Cbor is telekinesis.Servable` (media type
+  `application/cbor`, the encoded bytes as the body), also exported as
+  `soundness.postables.cborPostable` and `soundness.servables.cborServable`. The `breviloquence.http`
+  module now depends on `telekinesis.core` and, like `jacinta.http`, is JVM-only, so
+  `breviloquence.construables.cborConstruable` is no longer available on Scala.js. (#2104)
 
 ## caesura
 
@@ -50,6 +56,19 @@ format. Entries are grouped by module, most-recently-added last within a module.
   context parameter of the `caesura.dsvCellLens` given, are now `(? >: Dsv) is Dynamical`.
   `dynamicDsv` satisfies it, and so does a `rudiments.dynamically[Dsv]` or `dynamically`
   block. (#2102)
+
+## gesticulate
+
+- The registry behind the `media"…"` interpolator's compile-time check (`gesticulate/data/media.types`)
+  is refreshed from IANA's current media-type registry: 409 types are added, among them
+  `application/protobuf`, `application/yaml`, `application/toml`, `image/jxl` and `audio/flac`,
+  and none is removed. A literal of a newly-registered type, previously a compile error
+  ("… is not a registered media type"), now compiles; no literal that compiled before is
+  rejected. (#2105)
+- New enum case `gesticulate.Media.Group.Haptics`, for IANA's `haptics` top-level type (RFC
+  9695). `haptics/…` media types, previously rejected with `MediaType.Error.Reason.InvalidGroup`
+  both when parsed and as `media"…"` literals, are now accepted. A `match` over `Media.Group`
+  that was exhaustive needs a `Haptics` case.
 
 ## jacinta
 
@@ -63,6 +82,25 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `DynamicJsonEnabler`. `dynamicJson` satisfies each of these, and so does a
   `rudiments.dynamically[Json]` or `dynamically` block. (#2102)
 
+## locomotion
+
+- New `locomotion.postables.protobufPostable: Protobuf is telekinesis.Postable` and
+  `locomotion.servables.protobufServable: Protobuf is telekinesis.Servable` (media type
+  `application/protobuf`, the wire-format bytes as the body), also exported as
+  `soundness.postables.protobufPostable` and `soundness.servables.protobufServable`. The
+  `locomotion.http` module now depends on `telekinesis.core` and, like `jacinta.http`, is
+  JVM-only, so `locomotion.construables.protobufConstruable` is no longer available on Scala.js. (#2104)
+
+## sibylline
+
+- `sibylline.Anthropic` now sends a structured-output schema (`elicit`, `elicitAll`) as the JSON
+  Schema subset the Messages API accepts: `type`, `properties`, `required`,
+  `additionalProperties`, `items`, `enum`, `const`, `description`, `oneOf`/`allOf`/`anyOf`/`not`,
+  `$ref`, and a string's `pattern` and `format`. jacinta's `optional` marker (rejected by the
+  API as an unknown keyword) and the numeric and length bounds are no longer sent; a field's
+  optionality is already expressed through `required`. Previously any `elicit` on Anthropic
+  failed with `Invalid` (`property 'optional' is not supported`). (#2105)
+
 ## stratiform
 
 - `stratiform.DynamicTelEnabler` (and its `soundness` export) removed. Its replacement is
@@ -73,6 +111,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Tel#selectDynamic` and `Tel#applyDynamic` on an unverified `Tel` now summon
   `(? >: Tel) is Dynamical` in place of `DynamicTelEnabler`. `dynamicTel` satisfies each of
   these, and so does a `rudiments.dynamically[Tel]` or `dynamically` block. (#2102)
+- New `telp` string interpolator, `extension (inline context: StringContext) transparent inline def telp: contextual.Interpolation`
+  (also exported as `soundness.telp`), producing a `stratiform.Telp` checked as the code
+  compiles: a literal that `Telp.parse` would reject is a compile error positioned at the
+  offending component, and a substitution is rejected. Backed by the new
+  `stratiform.Telp.interpolable: Telp is contextual.Interpolable` given. `Telp.parse(text)` is
+  unchanged for runtime paths. (#2104)
 
 ## xylophone
 
@@ -83,6 +127,18 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Xml#applyDynamic(name: String)`, and the erased context parameter of the
   `xylophone.xmlLens` given, are now `(? >: Xml) is Dynamical`. `dynamicXml` satisfies it,
   and so does a `rudiments.dynamically[Xml]` or `dynamically` block. (#2102)
+- New codec givens in `object Xml`: `optionalDecodable`/`optionalEncodable` for any
+  `value >: Unset.type` with a `vacuous.Mandatable to inner` (i.e. `Optional[inner]`), and
+  `mapDecodable`/`mapEncodable` for `Map[key, value]`. A derived case class may now have
+  `Optional` and `Map` fields. An `Unset` field encodes to no child element (an `@Xml.attribute`
+  field to no attribute) and a missing element or attribute decodes to `Unset`; a `Map` field
+  encodes to one child element per entry holding `<key>` and `<value>` children, and gathers all
+  same-named children back. Previously such a field failed to derive, or (for `Optional[Text]`,
+  through the `Decodable in Text` bridge) raised `Xml.Error(Reason.Missing)` when absent.
+  `Optional[List[element]]` remains unsupported; use `List[element]`. (#2104)
+- New `xylophone.servables.xmlServable: (Codepage) => Xml is telekinesis.Servable` (media type
+  `application/xml; charset=UTF-8`), also exported as `soundness.servables.xmlServable`,
+  alongside the existing `xmlPostable`. (#2104)
 
 ## ypsiloid
 
@@ -94,3 +150,9 @@ format. Entries are grouped by module, most-recently-added last within a module.
   context parameter of the `Yaml.lens` given, are now `(? >: Yaml) is Dynamical`.
   `dynamicYaml` satisfies it, and so does a `rudiments.dynamically[Yaml]` or `dynamically`
   block. (#2102)
+- New `ypsiloid.postables.yamlPostable: (Codepage, Yaml.Formatting) => Yaml is telekinesis.Postable`
+  and `ypsiloid.servables.yamlServable: (Codepage, Yaml.Formatting) => Yaml is telekinesis.Servable`
+  (media type `application/yaml; charset=UTF-8`), also exported as
+  `soundness.postables.yamlPostable` and `soundness.servables.yamlServable`. The `ypsiloid.http`
+  module now depends on `telekinesis.core` and, like `jacinta.http`, is JVM-only, so
+  `ypsiloid.construables.yamlConstruable` is no longer available on Scala.js. (#2104)

@@ -388,6 +388,124 @@ object Xml extends Tag.Container
     collectionEncodable[Vector, element]
     . asInstanceOf[sequence[element] is Encodable in Xml]
 
+  // An `Optional[value]` field: the `Absent` sentinel — a missing child
+  // element or attribute — decodes to `Unset`, never an error; anything
+  // present decodes as the inner type. Not `Repeatable`: a present optional
+  // is the first matching child, exactly as a mandatory field is, so
+  // `Optional[List[element]]` is not a supported shape (a `List` field is
+  // already empty when absent).
+  given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  ( decodable0: => (inner is Decodable in Xml)^ )
+  =>  value is Decodable in Xml =
+
+    // Sealed per the codec-thunk pattern, as in `collectionDecodable`.
+    caps.unsafe.unsafeAssumePure:
+      new distillate.Decodable:
+        type Self = value
+        type Form = Xml
+
+        def decoded(xml: Xml): value =
+          if xml eq Absent then Unset else decodable0.decoded(xml)
+
+  // The mirror of `optionalDecodable`. `Unset` encodes to an *empty*
+  // `Fragment`, and a present value to a one-node `Fragment`: the encoder is
+  // `Repeatable`, so the product encoder flattens the former to no child
+  // element at all (or, for an `@attribute` field, to no attribute) and the
+  // latter to the single relabelled child a mandatory field would produce.
+  given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  ( encodable: => (inner is Encodable in Xml)^ )
+  =>  value is Encodable in Xml =
+
+    // Sealed per the codec-thunk pattern, as in `collectionDecodable`.
+    caps.unsafe.unsafeAssumePure:
+      new anticipation.Encodable with Repeatable:
+        type Self = value
+        type Form = Xml
+
+        def encoded(value: value): Xml =
+          value.let(_.asInstanceOf[inner]).lay(Fragment()): present =>
+            encodable.encoded(present) match
+              case node: Node         => Fragment(node)
+              case fragment: Fragment => fragment
+
+  // A `Map[key, value]` field encodes as repeated child elements — one per
+  // entry, each relabelled with the field's wire name by the product encoder
+  // through the `Repeatable` mixin — every entry holding a `<key>` and a
+  // `<value>` child, the shape of stratiform's `entries`. Keys and values are
+  // any XML-encodable type, so a key need not be a valid element name.
+  given mapEncodable: [key, value]
+  =>  ( keyEncodable:   => (key is Encodable in Xml)^,
+        valueEncodable: => (value is Encodable in Xml)^ )
+  =>  Map[key, value] is Encodable in Xml =
+
+    // Sealed per the codec-thunk pattern, as in `collectionDecodable`.
+    caps.unsafe.unsafeAssumePure:
+      new anticipation.Encodable with Repeatable:
+        type Self = Map[key, value]
+        type Form = Xml
+
+        private def child(label: Text, encoded: Xml): Node = encoded match
+          case element: Element           => Element(label, element.attributes, element.children, element.scope)
+          case Fragment(element: Element) => Element(label, element.attributes, element.children, element.scope)
+          case node: Node                 => Element(label, Attributes.empty, Array(node))
+          case Fragment(nodes*)           => Element(label, Attributes.empty, Array.unsafeFrozen(nodes.toArray))
+
+        def encoded(map: Map[key, value]): Xml =
+          val entries: scm.ArrayBuffer[Node] = scm.ArrayBuffer()
+
+          map.keys.to[List].each: key =>
+            map(key).let: value =>
+              val pair: Array[Node]^{} =
+                Array(child(t"key", keyEncodable.encoded(key)), child(t"value", valueEncodable.encoded(value)))
+
+              entries += Element(t"", Attributes.empty, pair)
+
+          Fragment(entries.toSeq*)
+
+  // The mirror of `mapEncodable`: every gathered entry element contributes
+  // one mapping, its `<key>` and `<value>` children decoding as the key and
+  // value types. A missing child is handed the `Absent` sentinel, so a
+  // primitive registers a focused error and an `Optional` value reads as
+  // `Unset`, exactly as a missing product field does.
+  given mapDecodable: [key, value]
+  =>  ( keyDecodable:   => (key is Decodable in Xml)^,
+        valueDecodable: => (value is Decodable in Xml)^ )
+  =>  Map[key, value] is Decodable in Xml =
+
+    // Sealed per the codec-thunk pattern, as in `collectionDecodable`.
+    caps.unsafe.unsafeAssumePure:
+      new distillate.Decodable with Repeatable:
+        type Self = Map[key, value]
+        type Form = Xml
+
+        private def childOf(entry: Element, label: Text): Xml =
+          val found = entry.children.readable.find:
+            case element: Element => element.label == label
+            case _                => false
+
+          found match
+            case Some(node) => node
+            case None       => Absent
+
+        def decoded(xml: Xml): Map[key, value] =
+          var accumulator = Map.empty[key, value]
+
+          def entry(element: Element): Unit =
+            val key = keyDecodable.decoded(childOf(element, t"key"))
+            val value = valueDecodable.decoded(childOf(element, t"value"))
+            accumulator = accumulator.define(key, value)
+
+          xml match
+            case Fragment(nodes*) =>
+              nodes.each:
+                case element: Element => entry(element)
+                case _                => ()
+
+            case element: Element => entry(element)
+            case _                => ()
+
+          accumulator
+
   // Single entry-point for resolving `Decodable in Xml`. Prefers a textual
   // decoder when one exists (so any `Decodable in Text` value works as a
   // field type); otherwise falls back to Wisteria-derived case-class /
@@ -800,9 +918,13 @@ object Xml extends Tag.Container
               if !qualified || unqualifiedFields.defines(fieldLabel) then undeclaring else Unset
 
             // `@attribute` fields become attributes carrying the encoded leaf's
-            // text; every other field becomes a child element via `wrap`.
-            if attributeFields.defines(fieldLabel)
-            then attributes += wireName -> textOf(encoded).or(t"")
+            // text — unless the leaf is an absent `Optional`, whose empty
+            // `Fragment` yields no attribute at all; every other field becomes
+            // a child element via `wrap`.
+            if attributeFields.defines(fieldLabel) then
+              encoded match
+                case Fragment() => ()
+                case _          => attributes += wireName -> textOf(encoded).or(t"")
             else
               // The `AnyRef` cast (rather than `asMatchable`) sidesteps the
               // capture-refined singleton type the checker would otherwise

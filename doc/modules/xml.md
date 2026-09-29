@@ -183,6 +183,19 @@ enum Light:
 A sum type decodes by its element label, so the element's name selects the variant; a label
 naming no variant raises an `Xml.Error` rather than falling through to a default.
 
+An `Optional` field is simply absent when it is `Unset` — no child element, or for an
+`@Xml.attribute` field no attribute — and a document without the element decodes it as `Unset`
+rather than as an error. A `Map` field becomes one child element per entry, each holding a
+`<key>` and a `<value>`, so a key need not be a valid element name and may be any XML-encodable
+type:
+
+```scala
+case class Profile(name: Text, nickname: Optional[Text], stock: Map[Text, Int])
+
+Profile(t"Ann", Unset, Map(t"apple" -> 3)).in[Xml]
+// x"<Profile><name>Ann</name><stock><key>apple</key><value>3</value></stock></Profile>"
+```
+
 ### What decoding tolerates
 
 Real XML is untidy, and a decoder that insists on tidiness is of little use. Text, comments and
