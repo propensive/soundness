@@ -32,8 +32,23 @@
                                                                                                   */
 package locomotion
 
+import anticipation.*
 import gesticulate.*
 import prepositional.*
+import telekinesis.*
+import zephyrine.*
+
+private val protobufMediaType: MediaType = media"application/protobuf"
+
+// Protocol Buffers is binary: the body is the wire-format bytes, with no charset.
+package postables:
+  given protobufPostable: Protobuf is Postable =
+    Postable(protobufMediaType, value => Stream(Protobuf.encodableInData.encoded(value)))
+
+package servables:
+  given protobufServable: Protobuf is Servable =
+    Servable[Protobuf](protobufMediaType): value =>
+      Http.Body.Fixed(Protobuf.encodableInData.encoded(value))
 
 package construables:
   given protobufConstruable: ("application/protobuf" is Construable to Protobuf) = Construable()

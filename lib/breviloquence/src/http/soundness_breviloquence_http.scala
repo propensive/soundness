@@ -32,5 +32,11 @@
                                                                                                   */
 package soundness
 
+package postables:
+  export breviloquence.postables.cborPostable
+
+package servables:
+  export breviloquence.servables.cborServable
+
 package construables:
   export breviloquence.construables.cborConstruable

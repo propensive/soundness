@@ -44,8 +44,14 @@ package construables:
   given xmlConstruable: ("application/xml" is Construable to Xml) = Construable()
   given textXmlConstruable: ("text/xml" is Construable to Xml) = Construable()
 
-package postables:
-  private val xmlMediaType: MediaType = media"application/xml"(charset = "UTF-8")
+// The media type is built once: applying the charset parameter parses and re-renders the
+// type, which is not something to repeat per request or response.
+private val xmlMediaType: MediaType = media"application/xml"(charset = "UTF-8")
 
+package postables:
   given xmlPostable: (encoder: Codepage) => Xml is Postable =
     Postable(xmlMediaType, value => Stream(encoder.encoded(value.show)))
+
+package servables:
+  given xmlServable: (encoder: Codepage) => Xml is Servable =
+    Servable[Xml](xmlMediaType): value => Http.Body.Fixed(encoder.encoded(value.show))
