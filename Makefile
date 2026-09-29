@@ -40,6 +40,13 @@ check-while:
 unsafety:
 	flair metrics --dry-run
 
+# The coercion-helper census: small defs that only re-wrap a value, found from the parse tree and
+# judged by a model against doc/standards/plumbing.md, recorded in git notes under
+# refs/notes/flair-assess/plumbing (rule `plumbing` in .pyrocosm/flair/config.tel). Needs the
+# `anthropic` credential in Pyrocosm's cascade; nothing here fails.
+plumbing:
+	flair assess plumbing $(PLUMBING_ARGS)
+
 build:
 	./mill groupCheck.validate
 	python3 etc/check-given-uniqueness.py
