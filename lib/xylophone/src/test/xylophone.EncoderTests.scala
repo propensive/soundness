@@ -66,9 +66,67 @@ enum Light derives CanEqual:
   @name(t"green")    case Go(seconds: Int)
                      case Wait(seconds: Int)
 
+// `Optional` fields: an absent value is no child element (or, for an
+// `@attribute` field, no attribute) at all, and a present one is encoded as
+// the inner type would be.
+case class Profile(name: Text, nickname: Optional[Text], age: Optional[Int]) derives CanEqual
+case class Tagged(@attribute id: Text, @attribute lang: Optional[Text], body: Text) derives CanEqual
+case class Household(name: Text, head: Optional[DPerson]) derives CanEqual
+
+// `Map` fields: one child element per entry, each holding a `<key>` and a
+// `<value>` child, so keys need not be valid element names.
+case class Inventory(name: Text, stock: Map[Text, Int]) derives CanEqual
+case class Roster(members: Map[Int, DPerson]) derives CanEqual
+
 object EncoderTests extends Suite(m"Xylophone case-class encoder tests"):
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
+
+    suite(m"Optional fields"):
+      test(m"An absent Optional field encodes no element"):
+        Profile(t"Ann", Unset, Unset).in[Xml]
+      . assert(_ == x"<Profile><name>Ann</name></Profile>")
+
+      test(m"A present Optional field encodes as its inner type"):
+        Profile(t"Ann", t"annie", 30).in[Xml]
+      . assert(_ == x"<Profile><name>Ann</name><nickname>annie</nickname><age>30</age></Profile>")
+
+      test(m"An absent Optional @attribute field encodes no attribute"):
+        Tagged(t"x1", Unset, t"hi").in[Xml]
+      . assert(_ == x"""<Tagged id="x1"><body>hi</body></Tagged>""")
+
+      test(m"A present Optional @attribute field encodes the attribute"):
+        Tagged(t"x1", t"en", t"hi").in[Xml]
+      . assert(_ == x"""<Tagged id="x1" lang="en"><body>hi</body></Tagged>""")
+
+      test(m"A present Optional nested product encodes as a child element"):
+        Household(t"Smith", DPerson(t"Ann", 30, t"a@b.c")).in[Xml]
+      . assert: xml =>
+          xml == x"""<Household><name>Smith</name><head><name>Ann</name><age>30</age><email>a@b.c</email></head></Household>"""
+
+      test(m"Optional fields round-trip"):
+        List(Profile(t"Ann", Unset, Unset), Profile(t"Bob", t"bobby", 41), Profile(t"Cy", Unset, 7))
+        . map(_.in[Xml].as[Profile])
+      . assert(_ == List(Profile(t"Ann", Unset, Unset), Profile(t"Bob", t"bobby", 41), Profile(t"Cy", Unset, 7)))
+
+    suite(m"Map fields"):
+      test(m"A Map field encodes one entry element per mapping"):
+        Inventory(t"shop", Map(t"apple" -> 3)).in[Xml]
+      . assert: xml =>
+          xml == x"""<Inventory><name>shop</name><stock><key>apple</key><value>3</value></stock></Inventory>"""
+
+      test(m"An empty Map field encodes no element"):
+        Inventory(t"shop", Map()).in[Xml]
+      . assert(_ == x"<Inventory><name>shop</name></Inventory>")
+
+      test(m"A Map field round-trips"):
+        Inventory(t"shop", Map(t"apple" -> 3, t"pear" -> 5)).in[Xml].as[Inventory]
+      . assert(_ == Inventory(t"shop", Map(t"apple" -> 3, t"pear" -> 5)))
+
+      test(m"A Map with non-textual keys and product values round-trips"):
+        val roster = Roster(Map(1 -> DPerson(t"Ann", 30, t"a@b.c"), 2 -> DPerson(t"Bob", 41, t"b@c.d")))
+        roster.in[Xml].as[Roster]
+      . assert(_ == Roster(Map(1 -> DPerson(t"Ann", 30, t"a@b.c"), 2 -> DPerson(t"Bob", 41, t"b@c.d"))))
 
     suite(m"Simple product"):
       test(m"Encode a flat case class"):

@@ -37,3 +37,6 @@ package construables:
 
 package postables:
   export xylophone.postables.xmlPostable
+
+package servables:
+  export xylophone.servables.xmlServable

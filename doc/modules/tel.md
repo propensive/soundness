@@ -102,6 +102,21 @@ t"item 1\nitem 2\nitem 3\n".read[Tel].fields(t"item").map(_.primaryAtom)
 // Array(t"1", t"2", t"3")
 ```
 
+### Paths
+
+A location in a document is a `Telp`, a TEL path: its first character chooses the delimiter, and
+each further component names a keyword, or selects one occurrence of a repeatable keyword by key
+value or index. A `telp"…"` literal is checked as the code compiles, so a path that is not
+syntactically a TELP is a compile error rather than a runtime one, and a path is the same
+whichever delimiter writes it:
+
+```scala
+telp"/office/city" == telp".office.city"   // true
+telp"office/city"                          // does not compile: no leading delimiter
+```
+
+The path a decoding error is tagged with, such as `/office/city`, is itself a `Telp`.
+
 ### Editing without destroying the file
 
 The reason a TEL document keeps its comments, blank lines and layout is so that a program can

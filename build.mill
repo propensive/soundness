@@ -1493,7 +1493,8 @@ object breviloquence extends Library:
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
   // The media type `Cbor` construes
-  object http extends Component(core, gesticulate.core):
+  object http extends Component(core, telekinesis.core):
+    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, staged, sedentary.core, eucalyptus.core)
@@ -2652,7 +2653,8 @@ object locomotion extends Library:
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
   // The media type `Protobuf` construes
-  object http extends Component(core, gesticulate.core):
+  object http extends Component(core, telekinesis.core):
+    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, staged):
@@ -3655,7 +3657,8 @@ object ypsiloid extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
   // The media type `Yaml` construes
-  object http extends Component(core, gesticulate.core):
+  object http extends Component(core, telekinesis.core):
+    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, jacinta.core):
