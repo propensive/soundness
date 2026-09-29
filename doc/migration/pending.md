@@ -45,7 +45,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `application/cbor`, the encoded bytes as the body), also exported as
   `soundness.postables.cborPostable` and `soundness.servables.cborServable`. The `breviloquence.http`
   module now depends on `telekinesis.core` and, like `jacinta.http`, is JVM-only, so
-  `breviloquence.construables.cborConstruable` is no longer available on Scala.js.
+  `breviloquence.construables.cborConstruable` is no longer available on Scala.js. (#2104)
 
 ## caesura
 
@@ -76,7 +76,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `application/protobuf`, the wire-format bytes as the body), also exported as
   `soundness.postables.protobufPostable` and `soundness.servables.protobufServable`. The
   `locomotion.http` module now depends on `telekinesis.core` and, like `jacinta.http`, is
-  JVM-only, so `locomotion.construables.protobufConstruable` is no longer available on Scala.js.
+  JVM-only, so `locomotion.construables.protobufConstruable` is no longer available on Scala.js. (#2104)
 
 ## sibylline
 
@@ -103,7 +103,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   compiles: a literal that `Telp.parse` would reject is a compile error positioned at the
   offending component, and a substitution is rejected. Backed by the new
   `stratiform.Telp.interpolable: Telp is contextual.Interpolable` given. `Telp.parse(text)` is
-  unchanged for runtime paths.
+  unchanged for runtime paths. (#2104)
 
 ## xylophone
 
@@ -122,10 +122,10 @@ format. Entries are grouped by module, most-recently-added last within a module.
   encodes to one child element per entry holding `<key>` and `<value>` children, and gathers all
   same-named children back. Previously such a field failed to derive, or (for `Optional[Text]`,
   through the `Decodable in Text` bridge) raised `Xml.Error(Reason.Missing)` when absent.
-  `Optional[List[element]]` remains unsupported; use `List[element]`.
+  `Optional[List[element]]` remains unsupported; use `List[element]`. (#2104)
 - New `xylophone.servables.xmlServable: (Codepage) => Xml is telekinesis.Servable` (media type
   `application/xml; charset=UTF-8`), also exported as `soundness.servables.xmlServable`,
-  alongside the existing `xmlPostable`.
+  alongside the existing `xmlPostable`. (#2104)
 
 ## ypsiloid
 
@@ -142,4 +142,4 @@ format. Entries are grouped by module, most-recently-added last within a module.
   (media type `application/yaml; charset=UTF-8`), also exported as
   `soundness.postables.yamlPostable` and `soundness.servables.yamlServable`. The `ypsiloid.http`
   module now depends on `telekinesis.core` and, like `jacinta.http`, is JVM-only, so
-  `ypsiloid.construables.yamlConstruable` is no longer available on Scala.js.
+  `ypsiloid.construables.yamlConstruable` is no longer available on Scala.js. (#2104)
