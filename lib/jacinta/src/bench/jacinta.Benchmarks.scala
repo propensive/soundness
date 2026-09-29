@@ -42,6 +42,7 @@ import contingency.*, strategies.throwUnsafely
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
+import parasite.*, threading.virtualThreading, probates.cancelProbate
 import prepositional.*
 import probably.*
 import proscenium.*
@@ -111,6 +112,45 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
   def parseWithJackson(text: String): com.fasterxml.jackson.databind.JsonNode =
     jacksonMapper.readTree(text).nn
+
+  // ── Streaming output ───────────────────────────────────────────────────
+  //
+  // Every arm writes the Logs document (500 entries, ~55 kB) to a discarding
+  // `OutputStream`, as a server writing a response body would. Three arms
+  // stream — Merino's `Json.emit` (chunks handed off from a fiber), Jackson's
+  // generator (`ObjectMapper.writeValue` drives a `JsonGenerator` whose buffer
+  // flushes to the stream as it fills) and Jsoniter's `writeToStream` — and two
+  // render the whole document to a `String` first, the non-streaming baseline
+  // each side pays today: Merino's `show` and circe's `noSpaces`. The Merino
+  // streaming arm includes the cost of a `supervise` scope per operation,
+  // which is what a caller without an ambient `Monitor` pays.
+  private val utf8Charset: java.nio.charset.Charset = java.nio.charset.StandardCharsets.UTF_8.nn
+  private val compact: Json.Formatting = Json.Formatting(Unset, false)
+
+  lazy val logsJson: Json = Chain(jsonBytes5).read[Json]
+  lazy val logsCirce: io.circe.Json = parseWithJsoniter(jsonText5)
+  lazy val logsJackson: com.fasterxml.jackson.databind.JsonNode = parseWithJackson(jsonText5)
+
+  private def sink(): java.io.OutputStream = java.io.OutputStream.nullOutputStream().nn
+
+  def writeLogsMerinoWhole(): Unit =
+    given Json.Formatting = compact
+    sink().write(logsJson.show.s.getBytes(utf8Charset).nn)
+
+  def streamLogsMerino(): Unit =
+    given Json.Formatting = compact
+    val out = sink()
+
+    supervise:
+      Json.emit(logsJson).foreach: chunk =>
+        out.write(chunk.s.getBytes(utf8Charset).nn)
+
+  def streamLogsJackson(): Unit = jacksonMapper.writeValue(sink(), logsJackson)
+
+  def streamLogsJsoniter(): Unit =
+    com.github.plokhotnyuk.jsoniter_scala.core.writeToStream(logsCirce, sink())(using jsoniterCodec)
+
+  def writeLogsCirceWhole(): Unit = sink().write(logsCirce.noSpaces.getBytes(utf8Charset).nn)
 
   // The decode arms: materialize the AST and walk it with `Decodable`;
   // parse tokens straight into the records with `Parsable`; or use
@@ -561,6 +601,24 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     suite(m"Print high-precision-number AST"):
       bench(m"Print blockchain example (50 transactions)")(target = 1*Second):
         '{ jacinta.Benchmarks.printBlockchain() }
+
+    suite(m"Stream example 5 (500 log entries) to an output stream"):
+      val size5 = jsonBytes5.length*Byte
+
+      bench(m"Merino: emit, streamed chunk by chunk")(target = 1*Second, operationSize = size5):
+        '{ jacinta.Benchmarks.streamLogsMerino() }
+
+      bench(m"Merino: show, then write the whole text")(target = 1*Second, operationSize = size5):
+        '{ jacinta.Benchmarks.writeLogsMerinoWhole() }
+
+      bench(m"Jackson: generator, streamed")(target = 1*Second, operationSize = size5):
+        '{ jacinta.Benchmarks.streamLogsJackson() }
+
+      bench(m"Jsoniter: writeToStream, streamed")(target = 1*Second, operationSize = size5):
+        '{ jacinta.Benchmarks.streamLogsJsoniter() }
+
+      bench(m"Circe: noSpaces, then write the whole text")(target = 1*Second, operationSize = size5):
+        '{ jacinta.Benchmarks.writeLogsCirceWhole() }
 
   lazy val jsonText1: String = jsonExample1.s
   lazy val jsonText2: String = jsonExample2.s
