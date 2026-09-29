@@ -339,9 +339,19 @@ List(1, 2, 3).in[Json].show   // pretty-printed across several lines
 ```
 
 `show` renders the whole document into one `Text`. A large document need not be held in memory
-before it is sent: `Json.emit` serializes on a fiber and hands out the text as it is produced, and
-a `Json` is `Streamable` by `Text` on the same terms, so it can be written to a socket or a file
-chunk by chunk under a `supervise` block:
+before it is sent. The push form of `Json.emit` serializes on the caller's thread and hands each
+block to a function as it fills — as text with `emit[Text]`, or as UTF-8 bytes with `emit[Data]`,
+encoded straight from the serializer — which is the shape for writing to a file, a socket or an
+`OutputStream`:
+
+<!-- doccheck: skip -->
+```scala
+Json.emit[Data](json, chunk => socket.write(chunk))
+```
+
+Where a consumer pulls instead, `Json.emit(json)` serializes on a fiber and hands out the text
+through an iterator, and a `Json` is `Streamable` by `Text` on the same terms, under a
+`supervise` block:
 
 <!-- doccheck: skip -->
 ```scala

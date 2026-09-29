@@ -145,6 +145,16 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       Json.emit(logsJson).foreach: chunk =>
         out.write(chunk.s.getBytes(utf8Charset).nn)
 
+  def pushLogsMerino(): Unit =
+    given Json.Formatting = compact
+    val out = sink()
+    Json.emit[Text](logsJson, chunk => out.write(chunk.s.getBytes(utf8Charset).nn))
+
+  def pushBytesLogsMerino(): Unit =
+    given Json.Formatting = compact
+    val out = sink()
+    Json.emit[Data](logsJson, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+
   def streamLogsJackson(): Unit = jacksonMapper.writeValue(sink(), logsJackson)
 
   def streamLogsJsoniter(): Unit =
@@ -607,6 +617,12 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
       bench(m"Merino: emit, streamed chunk by chunk")(target = 1*Second, operationSize = size5):
         '{ jacinta.Benchmarks.streamLogsMerino() }
+
+      bench(m"Merino: emit, pushed synchronously")(target = 1*Second, operationSize = size5):
+        '{ jacinta.Benchmarks.pushLogsMerino() }
+
+      bench(m"Merino: emit, pushed as UTF-8 bytes")(target = 1*Second, operationSize = size5):
+        '{ jacinta.Benchmarks.pushBytesLogsMerino() }
 
       bench(m"Merino: show, then write the whole text")(target = 1*Second, operationSize = size5):
         '{ jacinta.Benchmarks.writeLogsMerinoWhole() }

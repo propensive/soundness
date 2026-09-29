@@ -3539,6 +3539,19 @@ object Tel extends Tel2:
 
     producer.iterator
 
+  // The push form: serializes on the caller's thread, handing each block of text to `consume`
+  // as it fills, so no fiber is involved — the right shape for writing to a file, a socket or
+  // an `OutputStream`, where the pull form above pays a thread handoff per block.
+  // The medium is chosen by the type argument: `emit[Text]` delivers text, and `emit[Data]`
+  // delivers UTF-8 bytes encoded straight from the serializer, with no intermediate `Text`.
+  def emit[medium: Producer.Emission](tel: Tel, deliver: medium => Unit)(using Buffering): Unit =
+    val document = tel.subtree match
+      case document: Document => document
+      case other              => Document(Unset, Unset, LineEndings.Lf, 0, other.children)
+
+    summon[Producer.Emission[medium]].run(deliver): producer =>
+      writeDocument(producer, document)
+
   // `Tel` is a plain class, so there is no reflection to derive from, and TEL's block syntax is
   // multi-line, which an inspection is not. The document is rendered with its line breaks
   // escaped, so all of it is visible on one line and is distinguishable from the `Text` holding

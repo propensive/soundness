@@ -1330,10 +1330,17 @@ object Json extends Json2, Dynamic:
     // `Text`, and `Json.emit` streams it chunk by chunk from a fiber, so a large document can
     // be sent before it is fully rendered — the model of xylophone's `emit`.
     private[jacinta] def write
-      ( producer: (Producer[Text])^, formatting: Json.Formatting, ast: Json.Ast )
+      ( producer: (Producer[Text] { type Operand = Char })^, formatting: Json.Formatting,
+        ast: Json.Ast )
     :   Unit =
 
-        def newlineIndent(level: Int): Unit = formatting.indent.let: unit =>
+        // Resolved once: testing the `Optional` on every structural character measured as a
+        // sixth of the writer's time under compact formatting.
+        val indentation: Optional[Text] = formatting.indent
+        val indented: Boolean = indentation.present
+        val unit: Text = indentation.or(t"")
+
+        def newlineIndent(level: Int): Unit = if indented then
           producer.put("\n")
           repeat(level):
             producer.put(unit)
@@ -1383,7 +1390,7 @@ object Json extends Json2, Dynamic:
 
             writeString(node.readUnchecked(index*2).asInstanceOf[String])
             producer.put(":")
-            if formatting.indent.present then producer.put(" ")
+            if indented then producer.put(" ")
             recur(node.readUnchecked(index*2 + 1).asInstanceOf[Json.Ast], level + 1)
 
             if index < last then producer.put(",")
@@ -2523,6 +2530,18 @@ object Json extends Json2, Dynamic:
       producer.finish()
 
     producer.iterator
+
+  // The push form: serializes on the caller's thread, handing each block to `deliver` as it
+  // fills, so no fiber is involved — the right shape for writing to a file, a socket or an
+  // `OutputStream`, where the pull form above pays a thread handoff per block. The medium is
+  // chosen by the type argument: `emit[Text]` delivers text, and `emit[Data]` delivers UTF-8
+  // bytes encoded straight from the serializer, with no intermediate `Text` per block.
+  def emit[medium: Producer.Emission](json: Json, deliver: medium => Unit)
+    ( using formatting: Formatting, buffering: Buffering )
+  :   Unit =
+
+    summon[Producer.Emission[medium]].run(deliver): producer =>
+      Json.Ast.write(producer, formatting, json.root)
 
   // `Json` is a plain class, so there is no reflection to derive from, and its `Showable`
   // needs a `Formatting` which a debugger has no way to supply — without an instance it

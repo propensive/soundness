@@ -142,6 +142,20 @@ object Tests extends Suite(m"Stratiform Tests"):
         supervise(Tel.emit(parsed).to(List).join) == parsed.show
       . assert(identity)
 
+      test(m"the push form of emit delivers exactly the text show renders"):
+        val parsed = t"tel 1.0\n\n# people\nperson Jane  # lead\n  age 21\n".read[Tel]
+        val builder = new jl.StringBuilder()
+        Tel.emit[Text](parsed, chunk => builder.append(chunk.s))
+        builder.toString.tt == parsed.show
+      . assert(identity)
+
+      test(m"emit as UTF-8 bytes matches the encoded text, including non-ASCII"):
+        val parsed = t"name Zoë ☃ 😀\n".read[Tel]
+        val out = new java.io.ByteArrayOutputStream()
+        Tel.emit[Data](parsed, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+        java.util.Arrays.equals(out.toByteArray, parsed.show.s.getBytes("UTF-8"))
+      . assert(identity)
+
     // Positive fixtures whose reference dump differs from this implementation's
     // presentation model by design; each is explained in the corpus
     // DIVERGENCES note. Their structure is still checked by the round-trip and

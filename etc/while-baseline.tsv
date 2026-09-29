@@ -252,7 +252,7 @@ lib/zephyrine/src/core/zephyrine.Duct.scala	2	0	0
 lib/zephyrine/src/core/zephyrine.Ductile.scala	3	0	0
 lib/zephyrine/src/core/zephyrine.Handoff.scala	5	0	0
 lib/zephyrine/src/core/zephyrine.Intake.scala	2	0	0
-lib/zephyrine/src/core/zephyrine.Producer.scala	1	0	0
+lib/zephyrine/src/core/zephyrine.Producer.scala	4	0	1
 lib/zephyrine/src/core/zephyrine.Region.scala	3	0	0
 lib/zephyrine/src/core/zephyrine.Slate.scala	1	0	0
 lib/zephyrine/src/core/zephyrine.internal.scala	0	0	1

@@ -1290,6 +1290,38 @@ object Tests extends Suite(m"Jacinta Tests"):
         supervise(Json.emit(json).to(List).mkString.tt) == json.show
       . assert(identity)
 
+      test(m"the push form of emit delivers exactly the text show renders"):
+        import formatting.indentedJsonFormatting
+        val json = Json.make(a = 1.in[Json], b = (List(t"x", t"y"): List[Text]).in[Json], c = t"q\"\n".in[Json])
+        val builder = new StringBuilder()
+        Json.emit[Text](json, chunk => builder.append(chunk.s))
+        builder.toString.tt == json.show
+      . assert(identity)
+
+      test(m"the push form of emit delivers a large document in more than one chunk"):
+        import formatting.compactJsonFormatting
+        val json = t"[${(0 until 20000).mkString(",")}]".read[Json]
+        var chunks = 0
+        Json.emit[Text](json, _ => chunks += 1)
+        chunks
+      . assert(_ > 1)
+
+      test(m"emit as UTF-8 bytes matches the encoded text, including non-ASCII"):
+        import formatting.compactJsonFormatting
+        val json = Json.make(name = t"Zoë ☃ 😀".in[Json], n = 42.in[Json])
+        val out = new java.io.ByteArrayOutputStream()
+        Json.emit[Data](json, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+        java.util.Arrays.equals(out.toByteArray, json.show.s.getBytes("UTF-8"))
+      . assert(identity)
+
+      test(m"emit as UTF-8 bytes of a large document arrives in more than one chunk"):
+        import formatting.compactJsonFormatting
+        val json = t"[${(0 until 20000).mkString(",")}]".read[Json]
+        var chunks = 0
+        Json.emit[Data](json, _ => chunks += 1)
+        chunks
+      . assert(_ > 1)
+
       test(m"emit of a large document arrives in more than one chunk"):
         import formatting.compactJsonFormatting
         val json = t"[${(0 until 20000).mkString(",")}]".read[Json]

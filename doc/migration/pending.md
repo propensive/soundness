@@ -86,6 +86,11 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `jacinta.Json.streamable: (Json.Formatting, Monitor, Probate) => Json is turbulence.Streamable by Text over Credit`
   built on it. `show` is unchanged and renders identically. `jacinta.core` now depends on
   `parasite.core`.
+- New push form `jacinta.Json.emit[medium: zephyrine.Producer.Emission](json: Json, deliver: medium => Unit)(using Json.Formatting, zephyrine.Buffering): Unit`,
+  which serializes on the caller's thread with no fiber, handing each block to `deliver` as it
+  fills: `emit[Text]` delivers text blocks and `emit[Data]` delivers UTF-8 bytes encoded
+  straight from the serializer. The type argument is required when `deliver` is an untyped
+  lambda.
 
 ## locomotion
 
@@ -128,6 +133,11 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `stratiform.Tel.streamable: (Monitor, Probate) => Tel is turbulence.Streamable by Text over Credit`
   built on it. `show` is unchanged and renders identically. `stratiform.core` now depends on
   `parasite.core`.
+- New push form `stratiform.Tel.emit[medium: zephyrine.Producer.Emission](tel: Tel, deliver: medium => Unit)(using zephyrine.Buffering): Unit`,
+  which serializes on the caller's thread with no fiber, handing each block to `deliver` as it
+  fills: `emit[Text]` delivers text blocks and `emit[Data]` delivers UTF-8 bytes encoded
+  straight from the serializer. The type argument is required when `deliver` is an untyped
+  lambda.
 
 ## xylophone
 
@@ -167,3 +177,24 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `soundness.postables.yamlPostable` and `soundness.servables.yamlServable`. The `ypsiloid.http`
   module now depends on `telekinesis.core` and, like `jacinta.http`, is JVM-only, so
   `ypsiloid.construables.yamlConstruable` is no longer available on Scala.js. (#2104)
+
+## zephyrine
+
+- `zephyrine.Producer.Channel[medium]` (the streaming producer returned by `Producer[medium](…)`)
+  gained a second type parameter: it is now `Producer.Channel[medium, operand]`, extending the
+  new `abstract class Producer.Staged[medium, operand](block: Int)(using medium is Addressable { type Operand = operand })`,
+  which holds the block staging shared with the new `Producer.Sink`. `Producer[medium](…)` now
+  returns `Producer.Channel[medium, addr.Operand]^` in place of
+  `Producer.Channel[medium] { type Operand = addr.Operand }^`; code that named the class
+  spells `Channel[Text, Char]` (or the refinement's equivalent). `put`, `push`, `finish` and
+  `iterator` are unchanged.
+- New `zephyrine.Producer.sink[medium](deliver: medium => Unit, block: Optional[Int] = Unset)(using medium is Addressable, Buffering)(body: Producer[medium] { type Operand = … }^ => Unit): Unit`
+  (the class `Producer.Sink[medium, operand]`): the synchronous streaming counterpart of
+  `Producer.collect`, handing each filled block to `deliver` on the calling thread and flushing
+  the partial last block after `body` returns.
+- New `zephyrine.Producer.utf8(deliver: Data => Unit, block: Optional[Int] = Unset)(using Buffering)(body: Producer[Text] { type Operand = Char }^ => Unit): Unit`
+  (the class `Producer.Utf8Sink`): a `Producer[Text]` whose blocks are delivered as UTF-8
+  `Data`, encoded as characters arrive; a lone surrogate encodes as U+FFFD.
+- New `trait zephyrine.Producer.Emission[medium]` with givens `Producer.Emission.text` and
+  `Producer.Emission.data`, selecting `sink` or `utf8` for a text serializer's push form; it is
+  the context bound of `Json.emit[medium]` and `Tel.emit[medium]`.
