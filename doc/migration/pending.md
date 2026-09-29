@@ -71,7 +71,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `$ref`, and a string's `pattern` and `format`. jacinta's `optional` marker (rejected by the
   API as an unknown keyword) and the numeric and length bounds are no longer sent; a field's
   optionality is already expressed through `required`. Previously any `elicit` on Anthropic
-  failed with `Invalid` (`property 'optional' is not supported`). (#TBD)
+  failed with `Invalid` (`property 'optional' is not supported`). (#2105)
 
 ## stratiform
 
