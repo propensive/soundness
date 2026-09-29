@@ -1324,81 +1324,43 @@ object Json extends Json2, Dynamic:
     // arrays are distinguished by the length parity of their boxed `Array[Any]^{}` backing.
     given showable: (formatting: Json.Formatting) => Json.Ast is Showable = ast =>
       Producer.collect[Text](): producer =>
-        write(producer, formatting, ast)
+        write(new Textual(producer), formatting, ast)
 
     // The single JSON serializer, driven through a `Producer`: `showable` collects it into one
     // `Text`, and `Json.emit` streams it chunk by chunk from a fiber, so a large document can
     // be sent before it is fully rendered — the model of xylophone's `emit`.
-    private[jacinta] def write
-      ( producer: (Producer[Text] { type Operand = Char })^, formatting: Json.Formatting,
-        ast: Json.Ast )
-    :   Unit =
-
+    private[jacinta] def write(out: Json.Ast.Out^, formatting: Json.Formatting, ast: Json.Ast): Unit =
         // Resolved once: testing the `Optional` on every structural character measured as a
         // sixth of the writer's time under compact formatting.
         val indentation: Optional[Text] = formatting.indent
         val indented: Boolean = indentation.present
-        val unit: Text = indentation.or(t"")
+        val unit: String = indentation.or(t"").s
 
         def newlineIndent(level: Int): Unit = if indented then
-          producer.put("\n")
+          out.ascii("\n")
           repeat(level):
-            producer.put(unit)
-
-        def unicode(char: Char): Text =
-          val hex = Integer.toHexString(char.toInt).nn
-          if hex.length == 1 then t"\\u000$hex" else t"\\u00$hex"
-
-        // JSON string escaping (RFC 8259): the quote and backslash, the named control escapes, and any
-        // other U+0000-001F control character as a `\uXXXX` reference.
-        def writeString(string: String): Unit =
-          producer.put("\"")
-          val length = string.length
-          var start = 0
-          var index = 0
-
-          inline def escape(entity: Text): Unit =
-            if index > start then producer.put(string.tt, start.z, index - start)
-            producer.put(entity)
-            start = index + 1
-
-          while index < length do
-            string.charAt(index) match
-              case '"'          => escape(t"\\\"")
-              case '\\'         => escape(t"\\\\")
-              case '\b'         => escape(t"\\b")
-              case '\f'         => escape(t"\\f")
-              case '\n'         => escape(t"\\n")
-              case '\r'         => escape(t"\\r")
-              case '\t'         => escape(t"\\t")
-              case c if c < ' ' => escape(unicode(c))
-              case _            => ()
-
-            index += 1
-
-          if length > start then producer.put(string.tt, start.z, length - start)
-          producer.put("\"")
+            out.raw(unit)
 
         def writeObject(node: Array[Any]^{}, level: Int): Unit =
           val n = node.length/2
-          producer.put("{")
+          out.ascii("{")
           val last = n - 1
           var index = 0
 
           while index < n do
             newlineIndent(level)
 
-            writeString(node.readUnchecked(index*2).asInstanceOf[String])
-            producer.put(":")
-            if indented then producer.put(" ")
+            out.string(node.readUnchecked(index*2).asInstanceOf[String])
+            out.ascii(":")
+            if indented then out.ascii(" ")
             recur(node.readUnchecked(index*2 + 1).asInstanceOf[Json.Ast], level + 1)
 
-            if index < last then producer.put(",")
+            if index < last then out.ascii(",")
             index += 1
 
           newlineIndent(level - 1)
 
-          producer.put("}")
+          out.ascii("}")
 
         def writeArray(elements: Array[Any]^{}, level: Int): Unit =
           // Strip the sentinel pad if present (parity-padded heterogeneous arrays
@@ -1410,7 +1372,7 @@ object Json extends Json2, Dynamic:
             then raw - 1
             else raw
 
-          producer.put("[")
+          out.ascii("[")
           val last = n - 1
           var index = 0
 
@@ -1418,55 +1380,44 @@ object Json extends Json2, Dynamic:
             newlineIndent(level)
 
             recur(elements.readUnchecked(index).asInstanceOf[Json.Ast], level + 1)
-            if index < last then producer.put(",")
+            if index < last then out.ascii(",")
             index += 1
 
           newlineIndent(level - 1)
 
-          producer.put("]")
+          out.ascii("]")
 
         def writeBcdLongArray(bcds: scala.Array[Long]): Unit =
           val n = bcds.length
-          producer.put("[")
+          out.ascii("[")
           val last = n - 1
           var index = 0
 
           while index < n do
-            producer.put(Bcd.bcdLongText(bcds(index)).tt)
-            if index < last then producer.put(",")
+            out.ascii(Bcd.bcdLongText(bcds(index)))
+            if index < last then out.ascii(",")
             index += 1
 
-          producer.put("]")
+          out.ascii("]")
 
         def writeSmallBcdArray(smalls: scala.Array[Int]): Unit =
           val n = smalls.length
-          producer.put("[")
+          out.ascii("[")
           val last = n - 1
           var index = 0
 
           while index < n do
-            producer.put(Bcd.bcdIntText(smalls(index)).tt)
-            if index < last then producer.put(",")
+            out.ascii(Bcd.bcdIntText(smalls(index)))
+            if index < last then out.ascii(",")
             index += 1
 
-          producer.put("]")
+          out.ascii("]")
 
+        // Ordered by frequency in typical documents — strings and objects first — since each
+        // case is a type test the value passes through in turn.
         def recur(json: Json.Ast, level: Int): Unit = json.asMatchable match
-          case bcds: scala.Array[Long] @unchecked =>
-            writeBcdLongArray(bcds)
-
-          case smalls: scala.Array[Int] @unchecked =>
-            writeSmallBcdArray(smalls)
-
-          case bcd: scala.Array[Double] @unchecked =>
-            // High-precision number — emit the canonical JSON-number text from the
-            // BCD nibble stream directly; this preserves all digits the parser saw,
-            // in contrast to a `Double.toString` round-trip.
-            producer.put(bcd.asInstanceOf[Bcd].text.tt)
-
-          case smallBcd: Int =>
-            // Small-BCD number — at most 7 nibbles packed into one Int.
-            producer.put(Bcd.bcdIntText(smallBcd).tt)
+          case string: String =>
+            out.string(string)
 
           case arr: (Array[Any]^{}) @unchecked =>
             // Heterogeneous array or object, distinguished by length parity: even =
@@ -1475,22 +1426,293 @@ object Json extends Json2, Dynamic:
             if (arr.length & 1) == 0 then writeObject(arr, level) else writeArray(arr, level)
 
           case long: Long =>
-            producer.put(long.toString.tt)
+            out.long(long)
 
-          case double: Double =>
-            producer.put(double.toString.tt)
-
-          case string: String =>
-            writeString(string)
+          case smallBcd: Int =>
+            // Small-BCD number — at most 7 nibbles packed into one Int.
+            out.ascii(Bcd.bcdIntText(smallBcd))
 
           case boolean: Boolean =>
-            producer.put(boolean.toString.tt)
+            out.ascii(if boolean then "true" else "false")
+
+          case double: Double =>
+            out.ascii(double.toString)
+
+          case bcd: scala.Array[Double] @unchecked =>
+            // High-precision number — emit the canonical JSON-number text from the
+            // BCD nibble stream directly; this preserves all digits the parser saw,
+            // in contrast to a `Double.toString` round-trip.
+            out.ascii(bcd.asInstanceOf[Bcd].text)
+
+          case bcds: scala.Array[Long] @unchecked =>
+            writeBcdLongArray(bcds)
+
+          case smalls: scala.Array[Int] @unchecked =>
+            writeSmallBcdArray(smalls)
 
           case _ =>
-            producer.put("null")
+            out.ascii("null")
 
         recur(ast, 1)
-        if formatting.trailingNewline then producer.put("\n")
+        if formatting.trailingNewline then out.ascii("\n")
+
+    // The leaf operations of the serializer, per output medium; the traversal in `write` is
+    // shared. `Textual` puts text into a `Producer[Text]`, so `show` and the pull form of `emit`
+    // render through the same code; `Bytes` writes UTF-8 straight into a byte block, escaping
+    // and encoding each string in one pass over its characters and rendering numbers as digits
+    // in place — the model of Jackson's generator — and delivers each block as it fills.
+    private[jacinta] trait Out extends caps.ExclusiveCapability, caps.Stateful:
+      // A literal known to be ASCII: punctuation, keywords, digits.
+      update def ascii(text: String): Unit
+
+      // Text written verbatim, escaped for nothing: the indentation unit.
+      update def raw(text: String): Unit
+
+      // A JSON string literal, quoted and escaped per RFC 8259.
+      update def string(string: String): Unit
+
+      update def long(value: Long): Unit
+
+    private[jacinta] final class Textual(producer: (Producer[Text] { type Operand = Char })^)
+    extends Out:
+      update def ascii(text: String): Unit = producer.put(text.tt)
+      update def raw(text: String): Unit = producer.put(text.tt)
+      update def long(value: Long): Unit = producer.put(value.toString.tt)
+
+      // JSON string escaping: the quote and backslash, the named control escapes, and any other
+      // U+0000-001F control character as a `\uXXXX` reference.
+      update def string(string: String): Unit =
+        producer.put("\"")
+        val length = string.length
+        var start = 0
+        var index = 0
+
+        inline def escape(entity: Text): Unit =
+          if index > start then producer.put(string.tt, start.z, index - start)
+          producer.put(entity)
+          start = index + 1
+
+        while index < length do
+          string.charAt(index) match
+            case '"'          => escape(t"\\\"")
+            case '\\'         => escape(t"\\\\")
+            case '\b'         => escape(t"\\b")
+            case '\f'         => escape(t"\\f")
+            case '\n'         => escape(t"\\n")
+            case '\r'         => escape(t"\\r")
+            case '\t'         => escape(t"\\t")
+            case c if c < ' ' => escape(Out.unicode(c))
+            case _            => ()
+
+          index += 1
+
+        if length > start then producer.put(string.tt, start.z, length - start)
+        producer.put("\"")
+
+    private[jacinta] object Out:
+      def unicode(char: Char): Text =
+        val hex = Integer.toHexString(char.toInt).nn
+        if hex.length == 1 then t"\\u000$hex" else t"\\u00$hex"
+
+      // For each ASCII character, the byte that follows the backslash in its escape (`n` for a
+      // newline, `"` for a quote), `u` for a `\uXXXX` reference, or zero for none.
+      @caps.unsafe.untrackedCaptures
+      private[jacinta] val escapes: scala.Array[Byte] =
+        val table = new scala.Array[Byte](128)
+        var index = 0
+
+        while index < 0x20 do
+          table(index) = 'u'.toByte
+          index += 1
+
+        table('\b') = 'b'.toByte
+        table('\f') = 'f'.toByte
+        table('\n') = 'n'.toByte
+        table('\r') = 'r'.toByte
+        table('\t') = 't'.toByte
+        table('"') = '"'.toByte
+        table('\\') = '\\'.toByte
+        table
+
+      @caps.unsafe.untrackedCaptures
+      private[jacinta] val hexDigits: scala.Array[Byte] = "0123456789abcdef".getBytes("US-ASCII").nn
+
+
+
+    private[jacinta] final class Bytes(deliver: Data => Unit, block: Int) extends Out:
+      // The byte block is a fresh, exclusive allocation reached only through this writer;
+      // `untrackedCaptures` keeps that exclusivity out of the class's own type.
+      @caps.unsafe.untrackedCaptures
+      private val current: scala.Array[Byte]^ = new scala.Array[Byte](block)
+      private var index: Int = 0
+
+      // Characters are inflated into this scratch a block at a time, so the encoding loop reads
+      // a raw array rather than paying `charAt`'s coder check per character.
+      @caps.unsafe.untrackedCaptures
+      private val scratch: scala.Array[Char] = new scala.Array[Char](block.max(32))
+
+      // A high surrogate awaiting its low half across a scratch boundary, or zero.
+      private var pending: Char = 0
+
+      private update def publish(): Unit =
+        if index > 0 then
+          deliver(Array.unsafeFrozen(java.util.Arrays.copyOfRange(current, 0, index).nn))
+          index = 0
+
+      private update def byte(value: Int): Unit =
+        if index == block then publish()
+        current(index) = value.toByte
+        index += 1
+
+      private update def replacement(): Unit =
+        byte(0xef)
+        byte(0xbf)
+        byte(0xbd)
+
+      // The slow path: a non-ASCII character, or any character while a surrogate is pending.
+      private update def encode(char: Char): Unit =
+        if pending != 0 then
+          val high = pending
+          pending = 0
+
+          if Character.isLowSurrogate(char) then
+            val codepoint = Character.toCodePoint(high, char)
+            byte(0xf0 | (codepoint >> 18))
+            byte(0x80 | ((codepoint >> 12) & 0x3f))
+            byte(0x80 | ((codepoint >> 6) & 0x3f))
+            byte(0x80 | (codepoint & 0x3f))
+          else
+            replacement()
+            encode(char)
+        else if Character.isHighSurrogate(char) then pending = char
+        else if Character.isLowSurrogate(char) then replacement()
+        else if char < 0x80 then byte(char)
+        else if char < 0x800 then
+          byte(0xc0 | (char >> 6))
+          byte(0x80 | (char & 0x3f))
+        else
+          byte(0xe0 | (char >> 12))
+          byte(0x80 | ((char >> 6) & 0x3f))
+          byte(0x80 | (char & 0x3f))
+
+      private update def escape(code: Byte, char: Char): Unit =
+        byte('\\')
+        byte(code)
+
+        if code == 'u' then
+          byte('0')
+          byte('0')
+          byte(Out.hexDigits(char >> 4))
+          byte(Out.hexDigits(char & 0xf))
+
+      // Encodes `text(from until end)` when `chars` is null, else `chars(from until end)`,
+      // escaping for a JSON string when `escaping`. A short string is read through `charAt`,
+      // whose per-character cost is below the fixed cost of inflating it into the scratch;
+      // a long one is inflated a scratch-full at a time by `chars`. Shape 2 (index arithmetic
+      // derived from the data): `k` runs over `[from, end)`, and `at` shadows `index` within
+      // `[0, block]`, written back around every slow-path call and at exit, so the block's
+      // fill count is always exact. The hot loop reads only locals.
+      private update def encodeRange
+        ( text: String, chars: scala.Array[Char] | Null, from: Int, end: Int, escaping: Boolean )
+      :   Unit =
+
+        val table = Out.escapes
+        val out = current
+        val limit = block
+        var k = from
+        var at = index
+
+        while k < end do
+          val char = if chars == null then text.charAt(k) else chars(k)
+
+          if char < 0x80 && pending == 0 then
+            val code: Byte = if escaping then table(char) else 0
+
+            if code == 0 then
+              if at == limit then
+                index = at
+                publish()
+                at = 0
+
+              out(at) = char.toByte
+              at += 1
+            else
+              index = at
+              escape(code, char)
+              at = index
+          else
+            index = at
+            encode(char)
+            at = index
+
+          k += 1
+
+        index = at
+
+      private update def chars(text: String, escaping: Boolean): Unit =
+        val end = text.length
+
+        if end <= 64 then encodeRange(text, null, 0, end, escaping)
+        else
+          var from = 0
+
+          // Shape 2: `from` advances through `text` by at most a scratch-full of characters at
+          // a time, so every step makes progress.
+          while from < end do
+            val count = (end - from).min(scratch.length)
+            text.getChars(from, from + count, scratch, 0)
+            encodeRange(text, scratch, 0, count, escaping)
+            from += count
+
+        if pending != 0 then
+          pending = 0
+          replacement()
+
+      update def ascii(text: String): Unit =
+        val length = text.length
+        if index + length > block then publish()
+        var k = 0
+
+        // Shape 2: `k` runs over `text`, whose length is at most a block (a literal).
+        while k < length do
+          current(index) = text.charAt(k).toByte
+          index += 1
+          k += 1
+
+      update def raw(text: String): Unit = chars(text, false)
+
+      update def string(string: String): Unit =
+        byte('"')
+        chars(string, true)
+        byte('"')
+
+      update def long(value: Long): Unit =
+        if value == Long.MinValue then ascii("-9223372036854775808")
+        else
+          if index + 20 > block then publish()
+          val out = current
+          var n = if value < 0 then -value else value
+          var k = index + 20
+
+          // Digits are written backwards from a fixed end; shape 1, terminating when `n` is 0.
+          while n != 0 do
+            k -= 1
+            out(k) = ('0' + n % 10).toByte
+            n /= 10
+
+          if k == index + 20 then
+            k -= 1
+            out(k) = '0'
+
+          if value < 0 then
+            k -= 1
+            out(k) = '-'
+
+          val length = index + 20 - k
+          System.arraycopy(out, k, out, index, length)
+          index += length
+
+      update def finish(): Unit = publish()
 
     case class Position
       ( line:                Int,
@@ -2526,7 +2748,7 @@ object Json extends Json2, Dynamic:
     val producer = Producer[Text]()
 
     async:
-      Json.Ast.write(producer, formatting, json.root)
+      Json.Ast.write(new Json.Ast.Textual(producer), formatting, json.root)
       producer.finish()
 
     producer.iterator
@@ -2536,12 +2758,32 @@ object Json extends Json2, Dynamic:
   // `OutputStream`, where the pull form above pays a thread handoff per block. The medium is
   // chosen by the type argument: `emit[Text]` delivers text, and `emit[Data]` delivers UTF-8
   // bytes encoded straight from the serializer, with no intermediate `Text` per block.
-  def emit[medium: Producer.Emission](json: Json, deliver: medium => Unit)
+  def emit[medium: Emitter](json: Json, deliver: medium => Unit)
     ( using formatting: Formatting, buffering: Buffering )
   :   Unit =
 
-    summon[Producer.Emission[medium]].run(deliver): producer =>
-      Json.Ast.write(producer, formatting, json.root)
+    summon[Emitter[medium]].emit(json, formatting, deliver)
+
+  // How the push form of `emit` reaches its consumer: as text blocks through a `Producer[Text]`,
+  // or as UTF-8 blocks written directly by the byte-level writer.
+  trait Emitter[medium]:
+    def emit(json: Json, formatting: Formatting, deliver: medium => Unit)(using Buffering): Unit
+
+  object Emitter:
+    given text: Emitter[Text]:
+      def emit(json: Json, formatting: Formatting, deliver: Text => Unit)(using Buffering): Unit =
+        Producer.sink[Text](deliver): producer =>
+          Json.Ast.write(new Json.Ast.Textual(producer), formatting, json.root)
+
+    given data: Emitter[Data]:
+      def emit(json: Json, formatting: Formatting, deliver: Data => Unit)
+        ( using buffering: Buffering )
+      :   Unit =
+
+        val out = new Json.Ast.Bytes(deliver, buffering.capacity(Substrate.Bytes))
+        Json.Ast.write(out, formatting, json.root)
+        out.finish()
+
 
   // `Json` is a plain class, so there is no reflection to derive from, and its `Showable`
   // needs a `Formatting` which a debugger has no way to supply — without an instance it

@@ -86,11 +86,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `jacinta.Json.streamable: (Json.Formatting, Monitor, Probate) => Json is turbulence.Streamable by Text over Credit`
   built on it. `show` is unchanged and renders identically. `jacinta.core` now depends on
   `parasite.core`.
-- New push form `jacinta.Json.emit[medium: zephyrine.Producer.Emission](json: Json, deliver: medium => Unit)(using Json.Formatting, zephyrine.Buffering): Unit`,
+- New push form `jacinta.Json.emit[medium: Json.Emitter](json: Json, deliver: medium => Unit)(using Json.Formatting, zephyrine.Buffering): Unit`,
   which serializes on the caller's thread with no fiber, handing each block to `deliver` as it
-  fills: `emit[Text]` delivers text blocks and `emit[Data]` delivers UTF-8 bytes encoded
-  straight from the serializer. The type argument is required when `deliver` is an untyped
-  lambda.
+  fills: `emit[Text]` delivers text blocks through a `Producer[Text]`, and `emit[Data]` delivers
+  UTF-8 bytes written directly by a byte-level serializer that escapes and encodes each string in
+  one pass. `trait Json.Emitter[medium]` with givens `Json.Emitter.text` and `Json.Emitter.data`
+  selects between them. The type argument is required when `deliver` is an untyped lambda.
 
 ## locomotion
 
