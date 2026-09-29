@@ -271,6 +271,14 @@ object Tests extends Suite(m"Gesticulate tests"):
       t"application/json".as[MediaType].group
     . assert(_ == Media.Group.Application)
 
+    test(m"parse a haptics media type's type"):
+      t"haptics/ivs".as[MediaType].group
+    . assert(_ == Media.Group.Haptics)
+
+    test(m"a haptics media type literal compiles"):
+      media"haptics/hjif"
+    . assert(_ == MediaType(Media.Group.Haptics, Media.Subtype.Standard(t"hjif")))
+
     test(m"parse media type's subtype"):
       t"application/json".as[MediaType].subtype
     . assert(_ == Media.Subtype.Standard(t"json"))

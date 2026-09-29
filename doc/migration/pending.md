@@ -65,6 +65,10 @@ format. Entries are grouped by module, most-recently-added last within a module.
   and none is removed. A literal of a newly-registered type, previously a compile error
   ("… is not a registered media type"), now compiles; no literal that compiled before is
   rejected. (#2105)
+- New enum case `gesticulate.Media.Group.Haptics`, for IANA's `haptics` top-level type (RFC
+  9695). `haptics/…` media types, previously rejected with `MediaType.Error.Reason.InvalidGroup`
+  both when parsed and as `media"…"` literals, are now accepted. A `match` over `Media.Group`
+  that was exhaustive needs a `Haptics` case.
 
 ## jacinta
 
