@@ -968,12 +968,11 @@ object soundness extends Toolchain:
     def summary = "Testing: suites, assertions, generators and browser automation"
 
   object tool extends Bundle(anthology.core, degustation.core,
-    degustation.lira, mandible.lira, xenophile.lira, harlequin.core, harlequin.typed, hellenism.core,
-    hyperbole.tasty, hyperbole.core, octogenarian.core, reliquary.core, reliquary.derive,
+    harlequin.core, harlequin.typed, hellenism.core,
+    hyperbole.tasty, hyperbole.core, octogenarian.core,
     revolution.core, revolution.semver,
     anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
-    anthology.lira,
     anthology.`scala`, exegesis.core, espionage.core, hellenism.jvm, delicious.core,
     delicious.`scala`, delicious.compiler, harlequin.compiler,
     delicious.ansi, anthology.kotlin, anthology.oci, hyperbole.stacks,
@@ -1304,11 +1303,6 @@ object anthology extends Library:
   // compile-only: the caller supplies the compiler it wants to drive. That also keeps 28,000
   // classfiles out of every downstream assembly — enough to push the umbrella test assembly past
   // the 65,535-entry limit at which a JAR must become ZIP64, which ethereal's runner cannot read.
-  object lira extends Component(core, reliquary.core, reliquary.derive):
-    override def scalaJs = false // reads compilation outputs from the filesystem
-    override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-
   object kotlin extends Component(core):
     override def scalaJs = false // wraps the Kotlin compiler
     override def scalacOptions = Task:
@@ -1794,13 +1788,8 @@ object degustation extends Library:
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-tasty-inspector_3:${scalaVersion()}")
 
-  object lira extends Component(core, rudiments.core, reliquary.core):
-    override def scalaJs = false // adapts the discipline to reliquary's JVM-only SPI
-    override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-
-  object test extends Tests(core, lira, eucalyptus.core, anthology.`scala`, anthology.lira,
-      reliquary.derive, hellenism.jvm, imperial.core):
+  object test extends Tests(core, eucalyptus.core, anthology.`scala`, hellenism.jvm,
+      imperial.core):
     def mvnDeps = Seq(
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-tasty-inspector_3:${scalaVersion()}")
@@ -2628,12 +2617,7 @@ object mandible extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object lira extends Component(core, reliquary.core, reliquary.derive):
-    override def scalaJs = false // adapts the discipline to reliquary's JVM-only SPI
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-
-  object test extends Tests(core, lira, revolution.core, quantitative.units, eucalyptus.core,
+  object test extends Tests(core, revolution.core, quantitative.units, eucalyptus.core,
       anthology.`scala`,
       anthology.java, hellenism.jvm):
     override def scalacOptions = Task:
@@ -3004,18 +2988,6 @@ object quantitative extends Library:
   object test extends Tests(core, units, mandible.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
-
-object reliquary extends Library:
-  object core extends Component(pneumatic.brotli, stratiform.core, stratiform.base256,
-      gastronomy.core, pneumatic.core, revolution.semver, turbulence.async):
-    override def scalaJs = false // not yet verified on Scala.js
-    override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  object derive extends Component(core, zeppelin.core, hellenism.jvm, galilei.jvm, turbulence.async):
-    override def scalaJs = false // filesystem materialization and zip derivation
-    override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  object test extends Tests(core, derive, imperial.core, enigmatic.core)
 
 object revolution extends Library:
   object semver extends Component(gossamer.core, distillate.core):
@@ -3549,10 +3521,6 @@ object xenophile extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
-  object lira extends Component(typescript, webidl, wit, cffi, kotlin, reliquary.core):
-    override def scalaJs = false // adapts the disciplines to reliquary's JVM-only SPI
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The platform-neutral C front end (the `Native` ecosystem type markers and the `CHeader.Dialect`
   // header parser); shared by the JVM Panama backend and the Scala Native backend, so it carries no
   // platform runtime and cross-compiles to both.
@@ -3605,7 +3573,7 @@ object xenophile extends Library:
   // Every backend at once — which only typechecks because they now share the single `invoke` in
   // `core` rather than exporting one apiece into `soundness`.
   object test extends Tests(typescript, native, wit, webidl, wasm, kotlin, js, scalanative,
-      lira, hellenism.core, harlequin.core, harlequin.typed):
+      hellenism.core, harlequin.core, harlequin.typed):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
     // kotlin-stdlib is the Kotlin-classfile fixture: its `@Metadata`-annotated classes let the
@@ -3745,7 +3713,7 @@ val allLibraries: Seq[Library] = Seq(
   prepositional,
   prescience,
   probably, profanity, prophesy,
-  proscenium, punctuation, quantitative, querencia, reliquary, revolution, rudiments, savagery,
+  proscenium, punctuation, quantitative, querencia, revolution, rudiments, savagery,
   scintillate, sedentary, serpentine, sibylline, spectacular, stenography, stratiform, superlunary,
   surveillance, symbolism, synesthesia, tarantula, tasseomancy, telekinesis, tessellate, turbulence,
   typonym,

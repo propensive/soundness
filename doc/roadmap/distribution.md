@@ -14,8 +14,8 @@ enough for an agent to execute against a downstream codebase. Beyond it lies dis
 itself: LIRA — one file per library release carrying every compiled representation, with a TEL
 manifest, API-derived versioning and verifiable signatures — replaces Maven Central. Its
 implementation began here as the reliquary library, but LIRA is a format and a tool in its own
-right, like fury; it belongs in the `lira` repository, and this roadmap tracks only what
-Soundness must do to be published through it (`dist-10`). Maven Central publishing has already been switched off: each tagged
+right, like fury; it now lives in the `lira` repository (`dist-10`), and this roadmap tracks
+only what Soundness must do to be published through it. Maven Central publishing has already been switched off: each tagged
 version is published as a GitHub release whose assets are the individual component jars, an
 interim channel until LIRA is live. Each released jar embeds its POM and ivy.xml, and
 `make sync-releases` installs a release into `~/.ivy2/local`, from which Mill resolves the
@@ -59,14 +59,14 @@ the file.
 ## dist-3: LIRA exists
 
 Horizon: near → mid
-Baseline: reliquary reads and assembles `.lira` files, with unit round-trips of trees, atoms, deltas and manifests; no whole-release round-trip exists (measured 2026-09-25)
+Baseline: the LIRA format implementation (then reliquary) reads and assembles `.lira` files, with unit round-trips of trees, atoms, deltas and manifests; no whole-release round-trip exists (measured 2026-09-25)
 
 The specification gets its reference implementation: a reader and writer for `.lira` files
 carrying classfiles, TASTy, Scala.js IR and Native IR with a TEL manifest, round-tripping the
-current Soundness artifacts. reliquary (`Lira`, `LiraAssembler`) is that implementation, and
-anthology, degustation, mandible and xenophile each carry a `lira` component; what the
-criterion still wants is the scripted test over a real release, run against the
-implementation wherever it lives after `dist-10`.
+current Soundness artifacts. The `lira` repository's format modules (`Lira`, `LiraAssembler`,
+and the disciplines over anthology, degustation, mandible and xenophile) are that
+implementation; what the criterion still wants is the scripted test over a real release, run
+against it.
 
 Done when: the reference implementation round-trips a Soundness release — every published
 component packed into `.lira` files and unpacked byte-identically — in a scripted test.
@@ -138,8 +138,8 @@ verification (no maintainer credentials, public data only) passes for the latest
 
 ## dist-10: LIRA's implementation leaves this repository
 
-Horizon: near
-Baseline: `lib/reliquary` (7,387 lines in `core`, `derive` and `test`) plus the four `lira` adapter components — `anthology.lira`, `degustation.lira`, `mandible.lira`, `xenophile.lira` — and their tests (measured 2026-09-25)
+Done: #2111 (2026-09-30)
+Baseline was `lib/reliquary` (7,387 lines in `core`, `derive` and `test`) plus the four `lira` adapter components — `anthology.lira`, `degustation.lira`, `mandible.lira`, `xenophile.lira` — and their tests (measured 2026-09-25)
 
 reliquary was written here (#1700) because the libraries it needed were here, but nothing in
 Soundness depends on it: its only in-tree consumers are the four adapter components that plug
@@ -148,6 +148,8 @@ them, and the degustation and mandible suites that exercise those adapters. Deve
 not Soundness work, any more than developing fury is. reliquary and the four adapters move to
 the `lira` repository, which pins Soundness as an ordinary consumer; the `library-archives`
 topic, the umbrella export, the compatibility row and the doc-coverage entry go with them.
+They arrived there in propensive/lira#26 as its `format`, `derive`, `tasty`, `classfile`,
+`foreign` and `bundle` modules, all in package `lira`, with their suites.
 
 Done when:
 

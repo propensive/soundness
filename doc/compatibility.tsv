@@ -122,7 +122,6 @@ proscenium	yes	yes	yes	js
 punctuation	yes	yes	no	js	JVM-only submodule(s): ansi
 quantitative	yes	yes	yes	js	
 querencia	yes	yes	no	js	
-reliquary	yes	no	no	no	`revolution.core` (JAR manifests) is JVM-only
 revolution	yes	no	no	no	JAR manifests (`java.util.jar`)
 rudiments	yes	yes	yes	js	
 savagery	yes	yes	no	js	

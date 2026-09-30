@@ -693,9 +693,6 @@ classpath reorder from a build break) and go first, in the same PR:
   locomotion.core's dead spectacular edge. Declare it before that edge is cut.
 - **ziggurat.packager** uses `digest[Sha2[256]]` (ziggurat.Packager.scala:133) with
   gastronomy undeclared, currently supplied via telekinesis.jvm → coaxial.jvm. Declare it.
-- **degustation.lira** imports rudiments (degustation.Tasty.scala:40) undeclared, reached
-  through a chain of dead edges (reliquary → stratiform → contextual → rudiments). Declare
-  it before cutting `contextual.core → rudiments.core`.
 
 **Conduit edges** — name-dead, but the sole supplier of a module the consumer genuinely
 imports. These are misdeclared dependency lists, not cuttable edges: declare what is really

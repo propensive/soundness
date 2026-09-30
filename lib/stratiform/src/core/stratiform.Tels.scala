@@ -414,7 +414,7 @@ object Tels extends Tels2:
 
   // The schema-resolution protocol of §8.2: the step taxonomy, the
   // content-addressed store abstraction serving steps 2–3, the step-4
-  // delegate SPI (implemented by LIRA in reliquary), and the resolution
+  // delegate SPI (implemented by the LIRA format, in the lira repository), and the resolution
   // error, which sits outside the E1xx–E3xx taxonomy and identifies the
   // failing step. The engine itself lives in stratiform.binary
   // (`SchemaResolver`), since it needs signature computation.

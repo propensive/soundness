@@ -104,7 +104,6 @@ proscenium: re-exports stdlib utilities boilerplate-reduction
 punctuation: markdown commonmark prose text-formatting
 quantitative: units quantities dimensional-analysis si-units measurements physics
 querencia: dom browser typed-dom web-ui client-side
-reliquary: lira library-archive release publication api-identity versioning
 revolution: jar-manifest semver versioning
 rudiments: utilities core-library bijection loops indexable
 savagery: svg vector-graphics 2d-graphics path shapes

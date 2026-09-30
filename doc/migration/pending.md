@@ -31,6 +31,13 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `--workers=<n>`) on the same terms as any other `assert` — a pure body in a capture-checked
   unit — where an `aspire` always ran inline. (#2101)
 
+## anthology
+
+- Component `anthology.lira` (artifact `anthology-lira`) removed; it moved to the propensive/lira
+  repository with reliquary (see the reliquary entry). Its types — `LiraBundle` — move from
+  package `anthology` to package `lira`, unchanged in name and signature, and are no longer
+  exported into `soundness`. Depend on `dev.propensive:lira-bundle` instead. (#2111)
+
 ## breviloquence
 
 - `breviloquence.DynamicCborEnabler` (and its `soundness` export) removed. Its replacement is
@@ -56,6 +63,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   context parameter of the `caesura.dsvCellLens` given, are now `(? >: Dsv) is Dynamical`.
   `dynamicDsv` satisfies it, and so does a `rudiments.dynamically[Dsv]` or `dynamically`
   block. (#2102)
+
+## degustation
+
+- Component `degustation.lira` (artifact `degustation-lira`) removed; it moved to the
+  propensive/lira repository with reliquary (see the reliquary entry). Its types —
+  `TastyDiscipline` — move from package `degustation` to package `lira`, unchanged in name and
+  signature, and are no longer exported into `soundness`. Depend on `dev.propensive:lira-tasty`
+  instead. (#2111)
 
 ## gesticulate
 
@@ -109,6 +124,28 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `locomotion.http` module now depends on `telekinesis.core` and, like `jacinta.http`, is
   JVM-only, so `locomotion.construables.protobufConstruable` is no longer available on Scala.js. (#2104)
 
+## mandible
+
+- Component `mandible.lira` (artifact `mandible-lira`) removed; it moved to the propensive/lira
+  repository with reliquary (see the reliquary entry). Its types — `ClassfileAtomizer`,
+  `ClassfileDiscipline`, `CtSym`, `HostArchive`, `HostContracts`, `HostRelease`, `HostTree`,
+  `JsigDiscipline`, `JvmProfile` and `UsedSets` — move from package `mandible` to package `lira`,
+  unchanged in name and signature, and are no longer exported into `soundness`. Depend on
+  `dev.propensive:lira-classfile` instead. (#2111)
+
+## reliquary
+
+- Library `reliquary` removed, with its components `reliquary.core` (artifact `reliquary-core`)
+  and `reliquary.derive` (`reliquary-derive`); it now lives in the propensive/lira repository.
+  Its types move from package `reliquary` to package `lira`, unchanged in name and signature
+  (`reliquary.Lira` → `lira.Lira`, `reliquary.Verification` → `lira.Verification`, and so on for
+  every type the component exported), and they are no longer exported into `soundness`: a file
+  that reached them through `import soundness.*` also needs `import lira.*` (or is itself in
+  package `lira`). Replace the dependency `reliquary-core` with `dev.propensive:lira-format` and
+  `reliquary-derive` with `dev.propensive:lira-derive`, published as GitHub release assets of
+  propensive/lira and versioned with lira, not with Soundness. The `soundness-tool` bundle no
+  longer contains them. (#2111)
+
 ## sibylline
 
 - `sibylline.Anthropic` now sends a structured-output schema (`elicit`, `elicitAll`) as the JSON
@@ -152,6 +189,16 @@ format. Entries are grouped by module, most-recently-added last within a module.
   the borrowing form of the push `emit`: each filled block of UTF-8 is lent as a
   `zephyrine.Region[Data]` with its branded extent, valid only for the duration of the call;
   `emit[Data]` is defined over it and materializes each block. (#2109)
+
+## xenophile
+
+- Component `xenophile.lira` (artifact `xenophile-lira`) removed; it moved to the propensive/lira
+  repository with reliquary (see the reliquary entry). Its types — `CHeaderAtomizer`,
+  `CHeaderDiscipline`, `DtsAtomizer`, `DtsDiscipline`, `KotlinMetadataAtomizer`,
+  `KotlinMetadataDiscipline`, `WebIdlAtomizer`, `WebIdlDiscipline`, `WitAtomizer` and
+  `WitDiscipline` — move from package `xenophile` to package `lira`, unchanged in name and
+  signature, and are no longer exported into `soundness`. Depend on `dev.propensive:lira-foreign`
+  instead. (#2111)
 
 ## xylophone
 
