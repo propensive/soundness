@@ -41,7 +41,6 @@ import denominative.*
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
-import hieroglyph.*, textSanitizers.skipSanitizer
 import parasite.*, threading.virtualThreading, probates.cancelProbate
 import probably.*
 import proscenium.*
@@ -82,9 +81,10 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
   // through an `InputStream`. Aalto is the fastest StAX parser on the JVM, and its pull scan
   // — every event visited, nothing built — is the floor for any tree-building parse; the
   // JDK's DOM builder is the tree-building rival an application gets with no dependency.
-  given decoder: Charset = Charset.unapply(t"UTF-8").get
-
-  def parseXylophoneBytes(bytes: Data): Xml = unsafely(bytes.read[Xml])
+  // Through the parser directly, as `load` does for text, so that a document's leading
+  // declaration is accepted: `read[Xml]` parses a fragment, which has none.
+  def parseXylophoneBytes(bytes: Data): Xml =
+    unsafely(Xml.XmlParser.fromData(bytes).parseXml(headers0 = true))
 
   lazy val aaltoInput: javax.xml.stream.XMLInputFactory =
     new com.fasterxml.aalto.stax.InputFactoryImpl()

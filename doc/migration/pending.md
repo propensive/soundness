@@ -282,8 +282,6 @@ format. Entries are grouped by module, most-recently-added last within a module.
   therefore parsed without a `hieroglyph.Charset` given and without decoding, and non-UTF-8
   byte input must be decoded to `Text` by the caller first. Only code that names a given
   changes. (#TBD)
-- `xylophone.Xml.loadable` (`Xml is Loadable by Text`) takes a further context parameter,
-  `buffering: zephyrine.Buffering`, after `tracking: PositionTracking`. (#TBD)
 - `xylophone.Xml.Issue` has a new case, `BadEncoding` (described as "the input is not valid
   UTF-8"), raised in a `Parse.Error` when a slice of the input the parser keeps — a name, an
   attribute value, character data, a comment, CDATA or a processing instruction — is not

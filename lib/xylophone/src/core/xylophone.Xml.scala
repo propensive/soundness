@@ -2005,19 +2005,16 @@ object Xml extends Tag.Container
   // the same shape as a header-less load (keeping it aligned with the index, which
   // is built from the root element alone).
   given loadable: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
-  =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking, buffering: Buffering)
+  =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  ((Xml is Loadable by Text)^{tactic}) = stream =>
-    // The text stream is transcoded to UTF-8 through the encoder duct, straight into the
-    // bytes the parser reads region by region (stratiform's `loadable` precedent). The
-    // non-consume `load` crosses to the parser as a neutral reference.
-    val bytes =
-      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]
-      . via(codepages.utf8Codepage)
-      . asInstanceOf[(Stream[Data] over Credit)^]
+    // The chunk chain view of the pull endpoint (the audited bridge); the parser encodes
+    // each chunk to UTF-8 as it reaches it.
+    val chunks =
+      zephyrine.chain(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
 
     val parser = tracking match
-      case PositionTracking.On  => XmlParser.fromStreamTracked(bytes)
-      case PositionTracking.Off => XmlParser.fromStream(bytes)
+      case PositionTracking.On  => XmlParser.fromChainTracked(chunks)
+      case PositionTracking.Off => XmlParser.fromChain(chunks)
 
     val parsed = parser.parseXml(headers0 = true)
 
@@ -2691,11 +2688,30 @@ object Xml extends Tag.Container
 
     private val Utf8Charset: java.nio.charset.Charset = java.nio.charset.StandardCharsets.UTF_8.nn
 
-    // Text input reaches the byte parser encoded as UTF-8: a whole `Text` in one `getBytes`
-    // (the JDK's intrinsified encoder), a chain of chunks through the UTF-8 `Codepage`, which
-    // carries a surrogate pair split across two chunks whole.
+    // Text input reaches the byte parser encoded as UTF-8 by `getBytes` (the JDK's intrinsified
+    // encoder): a whole `Text` in one call, a chain of chunks one chunk at a time, lazily. A
+    // surrogate pair split across two chunks is carried whole: a chunk ending in a high
+    // surrogate keeps it back and prepends it to the next. (Not the `Codepage` duct, whose
+    // encoder, staging buffer and block are a fixed cost per parse that a small document
+    // notices.)
     private[xylophone] def utf8(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(Utf8Charset).nn)
-    private[xylophone] def utf8(chain: Chain[Text]): Chain[Data] = codepages.utf8Codepage.encoded(chain)
+
+    private[xylophone] def utf8(chain: Chain[Text]): Chain[Data] =
+      def encode(todo: Chain[Text], carry: String): Chain[Data] =
+        if todo.nil then
+          if carry.isEmpty then Chain.empty else Chain(utf8(carry.tt))
+        else
+          val chunk = carry + Chain.head(todo).s
+          val length = chunk.length
+
+          val (whole, rest) =
+            if length > 0 && Character.isHighSurrogate(chunk.charAt(length - 1))
+            then (chunk.substring(0, length - 1).nn, chunk.substring(length - 1).nn)
+            else (chunk, "")
+
+          utf8(whole.tt) #:: encode(Chain.tail(todo), rest)
+
+      Chain.defer(encode(chain, ""))
 
     // Use untracked lineation in the cursor: avoids a per-`advance` branch
     // (newline detection) and a per-`mark` write into the cursor's parallel
@@ -3118,6 +3134,17 @@ object Xml extends Tag.Container
       val end = cursor.mark(using heldToken.nn)
       slice(start, end)
 
+    // As `slice`, for a scan that saw every byte of the region and knows whether any was
+    // non-ASCII: an ASCII region is copied without the decoder's own scan.
+    protected def slice(start: Cursor.Mark, ascii: Boolean)(using Tactic[Parse.Error]): Text =
+      syncTo()
+      val end = cursor.mark(using heldToken.nn)
+
+      if ascii
+      then cursor.slice(start, end): (storage, offset, length) =>
+        Utf8.ascii(storage.asInstanceOf[scala.Array[Byte]], offset, length)
+      else slice(start, end)
+
     // The slice decoded: an all-ASCII one through the Latin-1 `String` constructor, any other
     // through the strict decoder, which rejects malformed UTF-8 as a parse error.
     protected def slice(start: Cursor.Mark, end: Cursor.Mark)(using Tactic[Parse.Error]): Text =
@@ -3253,22 +3280,23 @@ object Xml extends Tag.Container
         if width == 0 then fail(Issue.Unexpected(peekChar), start)
         pos += width
 
+      // The ASCII loop is the hot one; it leaves only at a non-name byte or a high byte, and
+      // the outer loop resumes it after a multi-byte name character.
       var scanning = true
 
-      while scanning && more do
-        val c = peek
+      while scanning do
+        while more && { val c = peek; c >= 0 && isNameChar(c) } do
+          val c = peek
 
-        if c >= 0 then
-          if !isNameChar(c) then scanning = false
-          else
-            if len < 8 then
-              packedLow = packedLow | ((c.toLong & 0xFFL) << (len << 3))
-            else if len < 16 then
-              packedHigh = packedHigh | ((c.toLong & 0xFFL) << ((len - 8) << 3))
+          if len < 8 then
+            packedLow = packedLow | ((c.toLong & 0xFFL) << (len << 3))
+          else if len < 16 then
+            packedHigh = packedHigh | ((c.toLong & 0xFFL) << ((len - 8) << 3))
 
-            len += 1
-            advance()
-        else
+          len += 1
+          advance()
+
+        if more && peek < 0 then
           val width = nameWidth(start = false)
 
           if width == 0 then scanning = false
@@ -3276,12 +3304,13 @@ object Xml extends Tag.Container
             ascii = false
             len += 1
             pos += width
+        else scanning = false
 
       nameLow = packedLow
       nameHigh = packedHigh
       namePackable = ascii && len <= TagCacheMaxChars
 
-      if !ascii || len > TagCacheMaxChars then slice(start)
+      if !ascii || len > TagCacheMaxChars then slice(start, ascii)
       else
         val idx =
           ((packedLow.toInt ^ (packedLow >>> 32).toInt) ^
@@ -3293,7 +3322,7 @@ object Xml extends Tag.Container
           tagCacheHigh(idx) == packedHigh
         then cached.nn
         else
-          val fresh = slice(start)
+          val fresh = slice(start, ascii = true)
           tagCacheTarget(idx)     = fresh
           tagCacheLowTarget(idx)  = packedLow
           tagCacheHighTarget(idx) = packedHigh
@@ -3364,11 +3393,15 @@ object Xml extends Tag.Container
       var hasHole = false
       val quoteRepl = Words.replicate(quote)
       var scanning = true
+      var ascii = true
 
       // Eight bytes per step past the plain content; the stop bytes — the quote, `<`, `&`
-      // and the hole marker — are examined one at a time.
+      // and the hole marker — are examined one at a time. The scan notes any non-ASCII
+      // byte, so an ASCII value is copied out without a second scan.
       while scanning do
         skipWords: word =>
+          if Words.nonAscii(word) != 0L then ascii = false
+
           (Words.matches(word, quoteRepl) | Words.matches(word, XmlParser.LtRepl) |
             Words.matches(word, XmlParser.AmpRepl) | Words.zeroes(word)) == 0L
 
@@ -3380,12 +3413,17 @@ object Xml extends Tag.Container
           if c == '<' then fail(Issue.Unexpected('<'), start)
           if c == '&' then hasEntity = true
           if c == '\u0000' then hasHole = true
+          if c < 0 then ascii = false
           advance()
 
       val end = begin()
       advance() // consume closing quote
 
-      if !hasEntity && !hasHole then slice(start, end)
+      if !hasEntity && !hasHole then
+        if ascii
+        then cursor.slice(start, end): (storage, offset, length) =>
+          Utf8.ascii(storage.asInstanceOf[scala.Array[Byte]], offset, length)
+        else slice(start, end)
       else
         // Mixed: entities and/or holes. Walk again with a buffer.
         // We rewind to start and re-scan with appendSlice between events.
@@ -3522,12 +3560,16 @@ object Xml extends Tag.Container
       var buf: jl.StringBuilder | Null = null
       var segStart: Cursor.Mark = start
       var scanning = true
+      var ascii = true
 
       // Eight bytes per step past the plain content; `<`, `&`, `]` and the hole marker are
-      // examined one at a time, and after a `]` every byte is, so that a `]]>` is seen.
+      // examined one at a time, and after a `]` every byte is, so that a `]]>` is seen. The
+      // scan notes any non-ASCII byte, so an ASCII run is copied out without a second scan.
       while scanning do
         if bracketCount == 0 then
           skipWords: word =>
+            if Words.nonAscii(word) != 0L then ascii = false
+
             (Words.matches(word, XmlParser.LtRepl) | Words.matches(word, XmlParser.AmpRepl) |
               Words.matches(word, XmlParser.BracketRepl) | Words.zeroes(word)) == 0L
 
@@ -3556,9 +3598,10 @@ object Xml extends Tag.Container
               advance()
               segStart = begin()
             else
+              if c < 0 then ascii = false
               advance()
 
-      if buf == null then slice(start)
+      if buf == null then slice(start, ascii)
       else
         appendSlice(segStart, buf.nn)
         buf.nn.toString.nn.tt

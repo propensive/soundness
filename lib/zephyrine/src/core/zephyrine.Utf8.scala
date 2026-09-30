@@ -118,6 +118,11 @@ object Utf8:
 
     i
 
+  // The text of the bytes `[offset, offset + length)`, which the caller knows to be ASCII
+  // (a scan that has already seen every byte): one copy, no validation.
+  inline def ascii(bytes: scala.Array[Byte], offset: Int, length: Int): Text =
+    jl.String(bytes, offset, length, Latin1).tt
+
   // The text of the bytes `[offset, offset + length)`, or `Unset` if they are not valid UTF-8.
   def decode(bytes: scala.Array[Byte], offset: Int, length: Int): Optional[Text] =
     val end = offset + length
