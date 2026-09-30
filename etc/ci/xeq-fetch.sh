@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 #
-# Fetch the pinned `xeq` builder script into dist/xeq, verified against etc/xeq.tsv.
+# Fetch the pinned `xek` builder into dist/xeq, verified against etc/xeq.tsv.
 #
-# `xeq` is the single implementation of the XEQ executable format, published from
-# propensive/xeq with the runner stubs. Soundness shells out to it (build.mill packaging tasks
-# and `exoskeleton.Enclave` at test time) rather than carrying its own copy.
+# `xek` is the single implementation of the XEK executable format, published from
+# propensive/xek with the runner stubs. Soundness shells out to it (build.mill packaging tasks
+# and `exoskeleton.Enclave` at test time) rather than carrying its own copy. Since xek-0.10 it is
+# an XEK executable itself, published as a polyglot file which replaces itself with the native
+# executable for its platform the first time it runs.
 
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
