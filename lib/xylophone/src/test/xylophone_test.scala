@@ -1223,6 +1223,89 @@ object Tests extends Suite(m"Xylophone tests"):
             Header(t"1.0", Unset, Unset))
 
 
+    suite(m"Byte input"):
+      def utf8(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
+
+      // The bytes as two chunks, cut at `at` — inside a multi-byte sequence, for the
+      // refill-boundary tests.
+      def split(bytes: Data, at: Int): Chain[Data] =
+        val raw = bytes.asInstanceOf[scala.Array[Byte]]
+        Chain
+          ( Array.unsafeFrozen(java.util.Arrays.copyOfRange(raw, 0, at).nn),
+            Array.unsafeFrozen(java.util.Arrays.copyOfRange(raw, at, raw.length).nn) )
+
+      test(m"ASCII bytes parse as the text does"):
+        root(utf8(t"""<a x="1">hello<b/></a>""").read[Xml])
+      . assert(_ == root(t"""<a x="1">hello<b/></a>""".read[Xml]))
+
+      test(m"Non-ASCII character data is decoded"):
+        root(utf8(t"<a>héllo wörld</a>").read[Xml])
+      . assert(_ == elem(t"a", TextNode(t"héllo wörld")))
+
+      test(m"Astral character data becomes a surrogate pair"):
+        root(utf8(t"<a>😀</a>").read[Xml])
+      . assert(_ == elem(t"a", TextNode(t"😀")))
+
+      test(m"Non-ASCII element and attribute names"):
+        root(utf8(t"""<résumé lang="fr" ñ="1"/>""").read[Xml])
+      . assert(_ == elem(t"résumé", Map(t"lang" -> t"fr", t"ñ" -> t"1")))
+
+      test(m"Astral letter in a name"):
+        root(utf8(t"<a𝔸/>").read[Xml])
+      . assert(_ == elem(t"a𝔸"))
+
+      test(m"Non-ASCII attribute values"):
+        root(utf8(t"""<a x="ça va"/>""").read[Xml])
+      . assert(_ == elem(t"a", Map(t"x" -> t"ça va")))
+
+      test(m"Entities among non-ASCII text"):
+        root(utf8(t"<a>é&amp;ü&#233;</a>").read[Xml])
+      . assert(_ == elem(t"a", TextNode(t"é&üé")))
+
+      test(m"Non-ASCII comment, CDATA and processing instruction"):
+        root(utf8(t"<a><!-- café --><![CDATA[naïve]]><?pi über?></a>").read[Xml])
+      . assert(_ == elem(t"a", Comment(t" café "), Cdata(t"naïve"), ProcessingInstruction(t"pi", t"über")))
+
+      test(m"Malformed UTF-8 in text is a parse error"):
+        val bytes: Data =
+          Array.unsafeFrozen(scala.Array[Byte]('<', 'a', '>', 0xc3.toByte, '(', '<', '/', 'a', '>'))
+
+        capture[Parse.Error](bytes.read[Xml]).issue
+      . assert(_ == Xml.Issue.BadEncoding)
+
+      test(m"An overlong encoding is a parse error"):
+        val bytes: Data =
+          Array.unsafeFrozen
+            ( scala.Array[Byte]('<', 'a', '>', 0xc0.toByte, 0xaf.toByte, '<', '/', 'a', '>') )
+
+        capture[Parse.Error](bytes.read[Xml]).issue
+      . assert(_ == Xml.Issue.BadEncoding)
+
+      test(m"A multi-byte sequence split across chunks in a name"):
+        root(split(utf8(t"<résumé>x</résumé>"), 3).read[Xml])
+      . assert(_ == elem(t"résumé", TextNode(t"x")))
+
+      test(m"A multi-byte sequence split across chunks in text"):
+        root(split(utf8(t"<a>é😀</a>"), 4).read[Xml])
+      . assert(_ == elem(t"a", TextNode(t"é😀")))
+
+      test(m"An astral sequence split across chunks in text"):
+        root(split(utf8(t"<a>é😀</a>"), 7).read[Xml])
+      . assert(_ == elem(t"a", TextNode(t"é😀")))
+
+      test(m"Text-source error offsets are char offsets"):
+        val input = t"<a>é😀</b>"
+        val error = capture[Parse.Error](input.read[Xml])
+        val pos = error.position.asInstanceOf[Xml.Position]
+        val start = pos.offset.or(0)
+        input.s.substring(start, (start + pos.length.or(0)).min(input.s.length)).nn.tt
+      . assert(_.s.contains("b"))
+
+      test(m"Byte-source error offsets are byte offsets"):
+        val error = capture[Parse.Error](utf8(t"<a>é😀</b>").read[Xml])
+        error.position.asInstanceOf[Xml.Position].offset
+      . assert(_ == 11)
+
     suite(m"Document load tests"):
       test(m"Document with single root element"):
         supervise:

@@ -1806,14 +1806,28 @@ object Xml extends Tag.Container
       ${xylophone.internal.extractor[parts, origins]('scrutinee)}
 
 
+  // The parser reads UTF-8 bytes, so a byte source is parsed as it arrives; a text source
+  // is encoded first (see `XmlParser`).
   given aggregable: [content <: Label: Reifiable to List[String]]
+  =>  (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
+  =>  (tactic: Tactic[Parse.Error])
+  =>  (((Xml of content) is Aggregable by Data)^{tactic}) =
+
+    input => XmlParser.fromDataChain(input).parseXml(headers0 = false).of[content]
+
+  given aggregable2: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
+  =>  (tactic: Tactic[Parse.Error])
+  =>  ((Xml is Aggregable by Data)^{tactic}) =
+    input => XmlParser.fromDataChain(input).parseXml(headers0 = false)
+
+  given aggregableText: [content <: Label: Reifiable to List[String]]
   =>  (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
   =>  (tactic: Tactic[Parse.Error])
   =>  (((Xml of content) is Aggregable by Text)^{tactic}) =
 
     input => XmlParser.fromChain(input).parseXml(headers0 = false).of[content]
 
-  given aggregable2: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
+  given aggregable2Text: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
   =>  (tactic: Tactic[Parse.Error])
   =>  ((Xml is Aggregable by Text)^{tactic}) =
     input => XmlParser.fromChain(input).parseXml(headers0 = false)
@@ -1850,15 +1864,31 @@ object Xml extends Tag.Container
   =>  ( parsable: (value is Xml.Parsable)^ )
   =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
   =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
+  =>  ( ((value in Xml) is Aggregable by Data)^{parsable, tactic, xmlTactic} ) =
+
+    input => parseDirectData(input, parsable).asInstanceOf[value in Xml]
+
+  given aggregableParsedText: [value]
+  =>  ( parsable: (value is Xml.Parsable)^ )
+  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
   =>  ( ((value in Xml) is Aggregable by Text)^{parsable, tactic, xmlTactic} ) =
 
     input => parseDirect(input, parsable).asInstanceOf[value in Xml]
 
-  // Whole-`Text` direct read: when the entire content is already in hand,
+  // Whole-value direct reads: when the entire content is already in hand,
   // parse it in place rather than wrapping it in a one-element stream —
-  // jacinta's `readableParsed` precedent. Concrete in `Text`, so it beats
-  // the composed pipeline by specificity.
+  // jacinta's `readableParsed` precedent. Concrete in `Data` / `Text`, so
+  // they beat the composed pipelines by specificity.
   given readableParsed: [value]
+  =>  ( parsable: (value is Xml.Parsable)^ )
+  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
+  =>  ( (Data is Readable to (value in Xml))^{parsable, tactic, xmlTactic} ) =
+
+    data => parseDirectData(data, parsable).asInstanceOf[value in Xml]
+
+  given readableParsedText: [value]
   =>  ( parsable: (value is Xml.Parsable)^ )
   =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
   =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
@@ -1893,6 +1923,29 @@ object Xml extends Tag.Container
   :   value =
 
     parseWith(XmlParser.fromChain(input), parsable)
+
+  // The byte forms, the parser's own input: a chain of blocks, and a whole `Data`.
+  private def parseDirectData[value](input: Chain[Data], parsable: (value is Xml.Parsable)^)
+    ( using schema:      XmlSchema,
+            scope:       Scope,
+            namespacing: Namespacing,
+            tactic:      Tactic[Parse.Error],
+            xmlTactic:   Tactic[Xml.Error],
+            foci:        Foci[Xml.Focus] )
+  :   value =
+
+    parseWith(XmlParser.fromDataChain(input), parsable)
+
+  private def parseDirectData[value](input: Data, parsable: (value is Xml.Parsable)^)
+    ( using schema:      XmlSchema,
+            scope:       Scope,
+            namespacing: Namespacing,
+            tactic:      Tactic[Parse.Error],
+            xmlTactic:   Tactic[Xml.Error],
+            foci:        Foci[Xml.Focus] )
+  :   value =
+
+    parseWith(XmlParser.fromData(input), parsable)
 
   // The legacy interoperation shape: a stdlib `Iterator` of chunks.
   private def parseDirect[value](input: Iterator[Text], parsable: (value is Xml.Parsable)^)
@@ -1952,16 +2005,19 @@ object Xml extends Tag.Container
   // the same shape as a header-less load (keeping it aligned with the index, which
   // is built from the root element alone).
   given loadable: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
-  =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking)
+  =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking, buffering: Buffering)
   =>  ((Xml is Loadable by Text)^{tactic}) = stream =>
-    // The chunk chain view of the pull endpoint (the audited bridge; the
-    // DOM loader's parser is chain-fed).
-    val chunks =
-      zephyrine.chain(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
+    // The text stream is transcoded to UTF-8 through the encoder duct, straight into the
+    // bytes the parser reads region by region (stratiform's `loadable` precedent). The
+    // non-consume `load` crosses to the parser as a neutral reference.
+    val bytes =
+      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]
+      . via(codepages.utf8Codepage)
+      . asInstanceOf[(Stream[Data] over Credit)^]
 
     val parser = tracking match
-      case PositionTracking.On  => XmlParser.fromChainTracked(chunks)
-      case PositionTracking.Off => XmlParser.fromChain(chunks)
+      case PositionTracking.On  => XmlParser.fromStreamTracked(bytes)
+      case PositionTracking.Off => XmlParser.fromStream(bytes)
 
     val parsed = parser.parseXml(headers0 = true)
 
@@ -2362,11 +2418,13 @@ object Xml extends Tag.Container
     case UnknownAttributeStart(name: Text)
     case InvalidAttributeUse(attribute: Text, element: Text)
     case UnboundPrefix(prefix: Text)
+    case BadEncoding
 
     def describe: Message = this match
       case BadInsertion                   => m"a value cannot be inserted into XML at this point"
       case UnboundPrefix(prefix)          => m"the prefix $prefix is not bound to a namespace"
       case ExpectedMore                   => m"the content ended prematurely"
+      case BadEncoding                    => m"the input is not valid UTF-8"
       case BadDocument                    => m"the document did not contain a single root tag"
       case UnquotedAttribute              => m"the attribute value must be single- or double-quoted"
       case InvalidTag(name)               => m"<$name> is not a valid tag"
@@ -2587,27 +2645,24 @@ object Xml extends Tag.Container
     case Node(parent: Text)
 
   // ───────────────────────────────────────────────────────────────────────
-  // Unified parser: a single algorithm split across substrates.
+  // The parser reads UTF-8 bytes from a `Cursor[Data]`, as jacinta's and stratiform's do:
+  // the whole algorithm (tags, attributes, text, entities, comments, CDATA, processing
+  // instructions, doctype, header) runs over a parser-local snapshot of the cursor's byte
+  // buffer, scanning eight bytes per step for the stop bytes of a text run, an attribute
+  // value, a comment or a CDATA section, and decodes a slice to `Text` only when it keeps
+  // it — an all-ASCII slice through the JDK's Latin-1 constructor, anything else through
+  // zephyrine's strict `Utf8`. Markup is ASCII, so bytes need no decoding to be
+  // recognised; only a name that reaches a byte above 0x7F decodes the code point to
+  // classify it. Text input is encoded to UTF-8 first (a whole `Text` by `getBytes`, a
+  // stream through the UTF-8 `Codepage`), so a `Text` source costs one copy, as its
+  // `char[]` cursor did.
   //
-  // The abstract `XmlParser` base implements the entire XML parsing
-  // algorithm (tags, attributes, text, entities, comments, CDATA,
-  // processing instructions, doctype, header) in terms of a small
-  // substrate API: `more`/`peek`/`advance`, `position`, `begin`/`slice`/
-  // `reset`/`appendSlice`, and `computePosition` (for lazy line/column on
-  // error). Two concrete substrates supply that API:
-  //
-  //   * `XmlDirect`   — operates directly on an underlying `String` with a
-  //                     `var pos`. Used by `aggregable` / `loadable`. Faster
-  //                     because all primitives are trivial integer
-  //                     arithmetic; `final` lets the JIT devirtualise them.
-  //   * `XmlStreaming` — operates over a `Cursor[Text, ?]^` against an
-  //                     `Iterator[Text]`. Used by macro interpolators
-  //                     (which need callbacks for `\u0000` placeholders);
-  //                     handles unbounded streaming inputs.
-  //
-  // Both substrates share the same parsing algorithm — schema-validation,
-  // header parsing, error reporting, entity expansion etc. all live in the
-  // base class.
+  // Positions (`Parse.Error`, the tracked `PositionIndex`) count bytes: lines by line
+  // feeds, columns by code points, offsets and lengths in bytes — which is what an editor
+  // needs to underline a span in a UTF-8 file, and equals the char count for ASCII. The
+  // one exception is a `Parse.Error`'s `offset`/`length` for a whole-`Text` source, which
+  // `computePosition` converts back to chars while the input is still buffered, so the
+  // interpolator's error spans stay right for a literal with non-ASCII content.
 
   private[xylophone] object XmlParser:
     // Exact powers of ten for the Clinger double fast path: every entry is
@@ -2626,6 +2681,22 @@ object Xml extends Tag.Container
       ('f'.toLong & 0xFF) | (('a'.toLong & 0xFF) << 8) | (('l'.toLong & 0xFF) << 16)
         | (('s'.toLong & 0xFF) << 24) | (('e'.toLong & 0xFF) << 32)
 
+    // The stop bytes of the SWAR scans, replicated into every lane (see `zephyrine.Words`).
+    private[xylophone] val LtRepl:       Long = Words.replicate('<')
+    private[xylophone] val GtRepl:       Long = Words.replicate('>')
+    private[xylophone] val AmpRepl:      Long = Words.replicate('&')
+    private[xylophone] val BracketRepl:  Long = Words.replicate(']')
+    private[xylophone] val DashRepl:     Long = Words.replicate('-')
+    private[xylophone] val QuestionRepl: Long = Words.replicate('?')
+
+    private val Utf8Charset: java.nio.charset.Charset = java.nio.charset.StandardCharsets.UTF_8.nn
+
+    // Text input reaches the byte parser encoded as UTF-8: a whole `Text` in one `getBytes`
+    // (the JDK's intrinsified encoder), a chain of chunks through the UTF-8 `Codepage`, which
+    // carries a surrogate pair split across two chunks whole.
+    private[xylophone] def utf8(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(Utf8Charset).nn)
+    private[xylophone] def utf8(chain: Chain[Text]): Chain[Data] = codepages.utf8Codepage.encoded(chain)
+
     // Use untracked lineation in the cursor: avoids a per-`advance` branch
     // (newline detection) and a per-`mark` write into the cursor's parallel
     // offsets array. Errors still carry an accurate absolute `offset` /
@@ -2633,17 +2704,30 @@ object Xml extends Tag.Container
     // pinpoint the failure), but `line` / `column` stay at 1/1. Acceptable
     // trade: error quality remains useful while parsing-throughput improves.
 
-    def fromText(text: Text)(using XmlSchema, Scope, Namespacing): XmlParser =
-      new XmlParser(Cursor[Text](text), tracking = false)
+    def fromData(data: Data)(using XmlSchema, Scope, Namespacing): XmlParser =
+      new XmlParser(Cursor[Data](data), tracking = false)
 
-    // Native `Chain` sibling of `fromIterator`: same cursor construction, no
-    // stdlib hop.
+    def fromDataChain(input: Chain[Data])(using XmlSchema, Scope, Namespacing): XmlParser =
+      new XmlParser(Cursor[Data](input), tracking = false)
+
+    // A pull endpoint: the cursor reads each region in place (see `Cursor.apply`).
+    def fromStream(consume input: (Stream[Data] over Credit)^)(using Buffering)
+      ( using XmlSchema, Scope, Namespacing )
+    :   XmlParser =
+
+      new XmlParser(Cursor[Data](input), tracking = false)
+
+    // The text-input forms encode to UTF-8 and read the bytes; their error offsets are
+    // converted back to chars (`charOffsets`), the units of the text supplied.
+    def fromText(text: Text)(using XmlSchema, Scope, Namespacing): XmlParser =
+      new XmlParser(Cursor[Data](utf8(text)), tracking = false, charOffsets = true)
+
     def fromChain(input: Chain[Text])(using XmlSchema, Scope, Namespacing): XmlParser =
-      new XmlParser(Cursor[Text](input), tracking = false)
+      new XmlParser(Cursor[Data](utf8(input)), tracking = false, charOffsets = true)
 
     // The legacy interoperation shape: a stdlib `Iterator` of chunks.
     def fromIterator(input: Iterator[Text])(using XmlSchema, Scope, Namespacing): XmlParser =
-      new XmlParser(Cursor[Text](input), tracking = false)
+      fromChain(Chain.from(input))
 
     // Tracking-mode constructors build the cursor with a `\n`-aware
     // `Lineation` so `cursor.line` / `cursor.column` reflect real source
@@ -2651,26 +2735,40 @@ object Xml extends Tag.Container
     // The parser's hot loop still bypasses lineation via `unsafeAdvanceBy`;
     // reconciliation happens only at element / attribute capture points
     // and before any refill in `moreSlow`.
-    def fromTextTracked(text: Text)(using XmlSchema, Scope, Namespacing): XmlParser =
-      import zephyrine.lineation.linefeedChar
-      new XmlParser(Cursor[Text](text), tracking = true)
+    def fromDataTracked(data: Data)(using XmlSchema, Scope, Namespacing): XmlParser =
+      import zephyrine.lineation.linefeedByte
+      new XmlParser(Cursor[Data](data), tracking = true)
 
-    // Native `Chain` sibling of `fromIteratorTracked`.
+    def fromDataChainTracked(input: Chain[Data])(using XmlSchema, Scope, Namespacing): XmlParser =
+      import zephyrine.lineation.linefeedByte
+      new XmlParser(Cursor[Data](input), tracking = true)
+
+    def fromStreamTracked(consume input: (Stream[Data] over Credit)^)(using Buffering)
+      ( using XmlSchema, Scope, Namespacing )
+    :   XmlParser =
+
+      import zephyrine.lineation.linefeedByte
+      new XmlParser(Cursor[Data](input), tracking = true)
+
+    def fromTextTracked(text: Text)(using XmlSchema, Scope, Namespacing): XmlParser =
+      import zephyrine.lineation.linefeedByte
+      new XmlParser(Cursor[Data](utf8(text)), tracking = true, charOffsets = true)
+
     def fromChainTracked(input: Chain[Text])(using XmlSchema, Scope, Namespacing): XmlParser =
-      import zephyrine.lineation.linefeedChar
-      new XmlParser(Cursor[Text](input), tracking = true)
+      import zephyrine.lineation.linefeedByte
+      new XmlParser(Cursor[Data](utf8(input)), tracking = true, charOffsets = true)
 
     // The legacy interoperation shape: a stdlib `Iterator` of chunks.
     def fromIteratorTracked(input: Iterator[Text])(using XmlSchema, Scope, Namespacing)
     :   XmlParser =
 
-      import zephyrine.lineation.linefeedChar
-      new XmlParser(Cursor[Text](input), tracking = true)
+      fromChainTracked(Chain.from(input))
 
   private[xylophone] final class XmlParser
-    ( val cursor:               Cursor[Text, ?]^,
+    ( val cursor:               Cursor[Data, ?]^,
      protected[xylophone] val tracking: Boolean,
-     callback:                  (Ordinal, Hole) => Unit = (_, _) => () )
+     callback:                  (Ordinal, Hole) => Unit = (_, _) => (),
+     charOffsets:               Boolean = false )
     ( using schema: XmlSchema, scope0: Scope, namespacing: Namespacing )
   extends caps.ExclusiveCapability:
     type Region = Cursor.Mark
@@ -2834,18 +2932,26 @@ object Xml extends Tag.Container
         var newlines = 0
         var lastNewlineAt = -1
 
+        // Columns count code points, not bytes: a continuation byte adds nothing.
+        var continuations = 0
+
         while i < end do
-          if bytes(i) == '\n' then
+          val b = bytes(i)
+
+          if b == '\n' then
             newlines += 1
             lastNewlineAt = i
+            continuations = 0
+          else if Utf8.continuation(b) then
+            continuations += 1
 
           i += 1
 
         if newlines > 0 then
           cursor.unsafeBumpLine(newlines)(using Unsafe)
-          cursor.unsafeSetColumn(end - lastNewlineAt - 1)(using Unsafe)
+          cursor.unsafeSetColumn(end - lastNewlineAt - 1 - continuations)(using Unsafe)
         else
-          cursor.unsafeBumpColumn(end - lineationPos)(using Unsafe)
+          cursor.unsafeBumpColumn(end - lineationPos - continuations)(using Unsafe)
 
         lineationPos = end
 
@@ -2923,9 +3029,9 @@ object Xml extends Tag.Container
     // pattern): a typed array field's snapshot of the cursor's buffer trips both the
     // classifier and the consume checks.
     @scala.caps.unsafe.untrackedCaptures
-    private var bytes0: AnyRef = cursor.unsafeTextBuffer(using Unsafe).asInstanceOf[AnyRef]
+    private var bytes0: AnyRef = cursor.unsafeDataBuffer(using Unsafe).asInstanceOf[AnyRef]
 
-    private inline def bytes: scala.Array[Char]^ = bytes0.asInstanceOf[scala.Array[Char]^]
+    private inline def bytes: scala.Array[Byte]^ = bytes0.asInstanceOf[scala.Array[Byte]^]
     @scala.caps.unsafe.untrackedCaptures
     private var pos:    Int = cursor.unsafePos(using Unsafe)
     @scala.caps.unsafe.untrackedCaptures
@@ -2935,7 +3041,7 @@ object Xml extends Tag.Container
       cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
     private inline def syncFrom(): Unit =
-      bytes0 = cursor.unsafeTextBuffer(using Unsafe).asInstanceOf[AnyRef]
+      bytes0 = cursor.unsafeDataBuffer(using Unsafe).asInstanceOf[AnyRef]
       pos    = cursor.unsafePos(using Unsafe)
       bufEnd = cursor.unsafeWriteEnd(using Unsafe)
       lineationPos = pos
@@ -2956,8 +3062,43 @@ object Xml extends Tag.Container
         if tracking then syncFrom()
         false
 
-    protected inline def peek: Char = bytes(pos)
+    protected inline def peek: Byte = bytes(pos)
     protected inline def advance(): Unit = pos += 1
+
+    // The current byte for an error message: an ASCII byte as itself, a multi-byte
+    // sequence as its code point's first char, and a malformed one as U+FFFD.
+    protected def peekChar: Char =
+      val b = peek
+
+      if b >= 0 then b.toChar
+      else
+        ensureAvailable(4)
+        val point = Utf8.point(bytes, pos, bufEnd)
+        if point < 0 then '\ufffd' else Character.toChars(point).nn(0)
+
+    // Makes at least `n` bytes available from the current position, unless the input ends
+    // first — for the look-ahead a multi-byte sequence needs at a refill boundary. Marks,
+    // advances through the cursor to force the refills, and cues back: inside the parse's
+    // `hold`, the mark keeps the bytes resident. (The `Tel.Parser.ensureLookahead` pattern.)
+    private def ensureAvailable(n: Int): Unit =
+      if pos + n > bufEnd then
+        syncTo()
+        if tracking then reconcileLineation()
+        val mark = cursor.mark(using heldToken.nn)
+        var steps = 0
+
+        while steps < n && cursor.more do
+          cursor.advance()
+          steps += 1
+
+        cursor.cue(mark)
+        syncFrom()
+
+    // Skips whole words while `clear` finds no stop byte in them, leaving `pos` on the word
+    // holding the first stop byte (or fewer than eight bytes from the buffer's end) for the
+    // byte-by-byte loop that follows to examine.
+    private inline def skipWords(inline clear: Long => Boolean): Unit =
+      while pos + 8 <= bufEnd && clear(Words.load(bytes, pos)) do pos += 8
 
     protected inline def position: Int =
       syncTo()
@@ -2972,23 +3113,33 @@ object Xml extends Tag.Container
       syncTo()
       cursor.mark(using heldToken.nn)
 
-    protected def slice(start: Cursor.Mark): Text =
+    protected def slice(start: Cursor.Mark)(using Tactic[Parse.Error]): Text =
       syncTo()
       val end = cursor.mark(using heldToken.nn)
-      cursor.grab(start, end).asInstanceOf[Text]
+      slice(start, end)
 
-    protected def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
-      cursor.grab(start, end).asInstanceOf[Text]
+    // The slice decoded: an all-ASCII one through the Latin-1 `String` constructor, any other
+    // through the strict decoder, which rejects malformed UTF-8 as a parse error.
+    protected def slice(start: Cursor.Mark, end: Cursor.Mark)(using Tactic[Parse.Error]): Text =
+      cursor.slice(start, end): (storage, offset, length) =>
+        Utf8.decode(storage.asInstanceOf[scala.Array[Byte]], offset, length)
+        . or(fail(Issue.BadEncoding, start))
 
     protected def reset(start: Cursor.Mark): Unit =
       syncTo()
       cursor.cue(start)
       syncFrom()
 
-    protected def appendSlice(start: Cursor.Mark, buf: jl.StringBuilder): Unit =
+    protected def appendSlice(start: Cursor.Mark, buf: jl.StringBuilder)
+      ( using Tactic[Parse.Error] )
+    :   Unit =
+
       syncTo()
       val end = cursor.mark(using heldToken.nn)
-      cursor.clone(start, end)(buf.asInstanceOf[cursor.addressable.Target])
+
+      cursor.slice(start, end): (storage, offset, length) =>
+        if !Utf8.append(storage.asInstanceOf[scala.Array[Byte]], offset, length, buf)
+        then fail(Issue.BadEncoding, start)
 
     protected def computePosition(start: Optional[Cursor.Mark] = Unset): Position =
       // The cursor itself uses untracked lineation in the hot path (see the
@@ -3007,17 +3158,37 @@ object Xml extends Tag.Container
       var i = 0
 
       while i < pos do
-        if bytes(i) == '\n' then
+        val b = bytes(i)
+
+        if b == '\n' then
           line += 1
           col = 1
-        else
+        else if !Utf8.continuation(b) then
           col += 1
 
         i += 1
 
       val end = cursor.position.n0
-      val offset: Optional[Int] = start.let(_.absolute.toInt)
-      val length: Optional[Int] = start.let: mark => end - mark.absolute.toInt
+      val base = end - pos
+
+      // Offsets are byte offsets, except for a text source, whose offsets are converted to
+      // char offsets — the units of the `Text` supplied — while the input is still buffered
+      // from its start (always so for a whole `Text`).
+      def chars(byteOffset: Int): Int =
+        if !charOffsets || base != 0 || byteOffset > pos then byteOffset else
+          var count = 0
+          var j = 0
+
+          while j < byteOffset do
+            val b = bytes(j)
+            // A four-byte sequence is a surrogate pair: two chars.
+            if !Utf8.continuation(b) then count += (if (b & 0xf8) == 0xf0 then 2 else 1)
+            j += 1
+
+          count
+
+      val offset: Optional[Int] = start.let: mark => chars(mark.absolute.toInt)
+      val length: Optional[Int] = start.let: mark => chars(end) - chars(mark.absolute.toInt)
       Position(line.u, col.u, offset = offset, length = length)
 
     protected inline def fail(issue: Issue)(using Tactic[Parse.Error]): Nothing =
@@ -3026,54 +3197,85 @@ object Xml extends Tag.Container
     protected def fail(issue: Issue, start: Cursor.Mark)(using Tactic[Parse.Error]): Nothing =
       abort(Parse.Error(Xml, computePosition(start), issue))
 
-    protected inline def isAsciiLetter(c: Char): Boolean =
+    protected inline def isAsciiLetter(c: Byte): Boolean =
       ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
 
-    protected inline def isAsciiDigit(c: Char): Boolean = '0' <= c && c <= '9'
+    protected inline def isAsciiDigit(c: Byte): Boolean = '0' <= c && c <= '9'
 
-    protected inline def isNameStart(c: Char): Boolean =
-      isAsciiLetter(c) || c == '_' || c == ':' || (c > 127 && c.isLetter)
+    // The ASCII name characters; a byte above 0x7F is classified by `nameWidth`.
+    protected inline def isNameStart(c: Byte): Boolean = isAsciiLetter(c) || c == '_' || c == ':'
 
-    protected inline def isNameChar(c: Char): Boolean =
-      isAsciiLetter(c) || isAsciiDigit(c) || c == '_' || c == '-' || c == '.' || c == ':' ||
-        (c > 127 && (c == '·' || c.isLetter || c.isDigit))
+    protected inline def isNameChar(c: Byte): Boolean =
+      isAsciiLetter(c) || isAsciiDigit(c) || c == '_' || c == '-' || c == '.' || c == ':'
 
-    protected inline def isWs(c: Char): Boolean =
+    // The width of the multi-byte sequence at the current position if it encodes a name
+    // character (a letter to start a name; a letter, a digit or U+00B7 within one), or 0 if
+    // it does not, or is malformed or incomplete at the end of the input.
+    private def nameWidth(start: Boolean): Int =
+      ensureAvailable(4)
+      val point = Utf8.point(bytes, pos, bufEnd)
+
+      val named =
+        point >= 0 &&
+          (if start then Character.isLetter(point)
+           else point == 0xb7 || Character.isLetterOrDigit(point))
+
+      if named then Utf8.width(peek & 0xff) else 0
+
+    protected inline def isWs(c: Byte): Boolean =
       c == ' ' || c == '\n' || c == '\r' || c == '\t' || c == '\f'
 
     protected def skipWs(): Unit = while more && isWs(peek) do advance()
 
     protected def expectChar(chr: Char)(using Tactic[Parse.Error]): Unit =
       if !more then fail(Issue.ExpectedMore)
-      if peek != chr then fail(Issue.Unexpected(peek))
+      if peek != chr then fail(Issue.Unexpected(peekChar))
       advance()
 
     protected def readName()(using Tactic[Parse.Error]): Text =
       val start = begin()
       if !more then fail(Issue.ExpectedMore, start)
       val first = peek
-      if !isNameStart(first) then fail(Issue.Unexpected(first), start)
-      advance()
 
-      // Pack chars into a Long pair while scanning; track whether they all
+      // Pack bytes into a Long pair while scanning; track whether they all
       // stay in the 7-bit ASCII range. The pair is later used as the cache
       // key when both conditions (ascii + length ≤ 16) hold.
       var packedLow:  Long = first.toLong & 0xFFL
       var packedHigh: Long = 0L
       var len: Int = 1
-      var ascii: Boolean = first < 128
+      var ascii: Boolean = first >= 0
 
-      while more && isNameChar(peek) do
-        val c = peek
-        if c >= 128 then ascii = false
-
-        if len < 8 then
-          packedLow = packedLow | ((c.toLong & 0xFFL) << (len << 3))
-        else if len < 16 then
-          packedHigh = packedHigh | ((c.toLong & 0xFFL) << ((len - 8) << 3))
-
-        len += 1
+      if first >= 0 then
+        if !isNameStart(first) then fail(Issue.Unexpected(peekChar), start)
         advance()
+      else
+        val width = nameWidth(start = true)
+        if width == 0 then fail(Issue.Unexpected(peekChar), start)
+        pos += width
+
+      var scanning = true
+
+      while scanning && more do
+        val c = peek
+
+        if c >= 0 then
+          if !isNameChar(c) then scanning = false
+          else
+            if len < 8 then
+              packedLow = packedLow | ((c.toLong & 0xFFL) << (len << 3))
+            else if len < 16 then
+              packedHigh = packedHigh | ((c.toLong & 0xFFL) << ((len - 8) << 3))
+
+            len += 1
+            advance()
+        else
+          val width = nameWidth(start = false)
+
+          if width == 0 then scanning = false
+          else
+            ascii = false
+            len += 1
+            pos += width
 
       nameLow = packedLow
       nameHigh = packedHigh
@@ -3123,7 +3325,7 @@ object Xml extends Tag.Container
               if dec <= 9 then 16*value + dec
               else
                 val hex = ((c | 0x20) - 'a').toChar
-                if hex <= 5 then 16*value + hex + 10 else fail(Issue.Unexpected(c))
+                if hex <= 5 then 16*value + hex + 10 else fail(Issue.Unexpected(peekChar))
 
             advance()
         else
@@ -3132,7 +3334,7 @@ object Xml extends Tag.Container
             val dec = (c - '0').toChar
 
             if dec <= 9 then value = 10*value + dec
-            else fail(Issue.Unexpected(c))
+            else fail(Issue.Unexpected(peekChar))
 
             advance()
 
@@ -3145,8 +3347,7 @@ object Xml extends Tag.Container
         val nameStart = begin()
 
         while more && peek != ';' do
-          val c = peek
-          if !isNameChar(c) then fail(Issue.Unexpected(c), nameStart)
+          if !isNameChar(peek) then fail(Issue.Unexpected(peekChar), nameStart)
           advance()
 
         if !more then fail(Issue.ExpectedMore, nameStart)
@@ -3157,19 +3358,30 @@ object Xml extends Tag.Container
     // Read attribute value enclosed in `quote`. Returns the unescaped
     // value as Text. Position starts just after the opening quote and
     // ends just after the closing quote.
-    protected def readAttrValue(tag: Text, quote: Char)(using Tactic[Parse.Error]): Text =
+    protected def readAttrValue(tag: Text, quote: Byte)(using Tactic[Parse.Error]): Text =
       val start = begin()
       var hasEntity = false
       var hasHole = false
+      val quoteRepl = Words.replicate(quote)
+      var scanning = true
 
-      while more && peek != quote do
+      // Eight bytes per step past the plain content; the stop bytes — the quote, `<`, `&`
+      // and the hole marker — are examined one at a time.
+      while scanning do
+        skipWords: word =>
+          (Words.matches(word, quoteRepl) | Words.matches(word, XmlParser.LtRepl) |
+            Words.matches(word, XmlParser.AmpRepl) | Words.zeroes(word)) == 0L
+
+        if !more then fail(Issue.ExpectedMore, start)
         val c = peek
-        if c == '<' then fail(Issue.Unexpected('<'), start)
-        if c == '&' then hasEntity = true
-        if c == '\u0000' then hasHole = true
-        advance()
 
-      if !more then fail(Issue.ExpectedMore, start)
+        if c == quote then scanning = false
+        else
+          if c == '<' then fail(Issue.Unexpected('<'), start)
+          if c == '&' then hasEntity = true
+          if c == '\u0000' then hasHole = true
+          advance()
+
       val end = begin()
       advance() // consume closing quote
 
@@ -3309,30 +3521,42 @@ object Xml extends Tag.Container
       var bracketCount = 0
       var buf: jl.StringBuilder | Null = null
       var segStart: Cursor.Mark = start
+      var scanning = true
 
-      while more && peek != '<' do
-        val c = peek
+      // Eight bytes per step past the plain content; `<`, `&`, `]` and the hole marker are
+      // examined one at a time, and after a `]` every byte is, so that a `]]>` is seen.
+      while scanning do
+        if bracketCount == 0 then
+          skipWords: word =>
+            (Words.matches(word, XmlParser.LtRepl) | Words.matches(word, XmlParser.AmpRepl) |
+              Words.matches(word, XmlParser.BracketRepl) | Words.zeroes(word)) == 0L
 
-        if c == ']' then bracketCount += 1
+        if !more then scanning = false
         else
-          if bracketCount >= 2 && c == '>' then fail(Issue.Unexpected('>'), start)
-          bracketCount = 0
+          val c = peek
 
-        if c == '&' then
-          if buf == null then buf = jl.StringBuilder()
-          appendSlice(segStart, buf.nn)
-          advance()
-          buf.nn.append(readEntity().s)
-          segStart = begin()
-        else if c == '\u0000' then
-          if buf == null then buf = jl.StringBuilder()
-          appendSlice(segStart, buf.nn)
-          callback(position.z, Hole.Node(parentLabel))
-          buf.nn.append('\u0000')
-          advance()
-          segStart = begin()
-        else
-          advance()
+          if c == '<' then scanning = false
+          else
+            if c == ']' then bracketCount += 1
+            else
+              if bracketCount >= 2 && c == '>' then fail(Issue.Unexpected('>'), start)
+              bracketCount = 0
+
+            if c == '&' then
+              if buf == null then buf = jl.StringBuilder()
+              appendSlice(segStart, buf.nn)
+              advance()
+              buf.nn.append(readEntity().s)
+              segStart = begin()
+            else if c == '\u0000' then
+              if buf == null then buf = jl.StringBuilder()
+              appendSlice(segStart, buf.nn)
+              callback(position.z, Hole.Node(parentLabel))
+              buf.nn.append('\u0000')
+              advance()
+              segStart = begin()
+            else
+              advance()
 
       if buf == null then slice(start)
       else
@@ -3341,40 +3565,28 @@ object Xml extends Tag.Container
 
     protected def readComment()(using Tactic[Parse.Error]): Text =
       val start = begin()
+      var result: Text | Null = null
 
-      while
+      // Eight bytes per step to each `-`, then a byte at a time to see whether `-->` follows.
+      while result == null do
+        skipWords(Words.matches(_, XmlParser.DashRepl) == 0L)
         if !more then fail(Issue.ExpectedMore, start)
-        !(peek == '-')
-      do advance()
-      // Try to match `-->`
-      val end = begin()
-      advance()
-      if !more then fail(Issue.ExpectedMore, start)
-      if peek != '-' then
-        // Not the end; continue from here
-        readComment_continue(start)
-      else
-        advance()
-        if !more then fail(Issue.ExpectedMore, start)
-        if peek != '>' then fail(Issue.Unexpected(peek), start)
-        advance()
-        slice(start, end)
 
-    private def readComment_continue(start: Region)(using Tactic[Parse.Error]): Text =
-      // We saw '-' but the next wasn't '-' or '>'. Continue scanning.
-      while more && peek != '-' do advance()
-      if !more then fail(Issue.ExpectedMore, start)
-      val end = begin()
-      advance()
-      if !more then fail(Issue.ExpectedMore, start)
+        if peek == '-' then
+          val end = begin()
+          advance()
+          if !more then fail(Issue.ExpectedMore, start)
 
-      if peek != '-' then readComment_continue(start)
-      else
-        advance()
-        if !more then fail(Issue.ExpectedMore, start)
-        if peek != '>' then fail(Issue.Unexpected(peek), start)
-        advance()
-        slice(start, end)
+          if peek == '-' then
+            advance()
+            if !more then fail(Issue.ExpectedMore, start)
+            if peek != '>' then fail(Issue.Unexpected(peekChar), start)
+            advance()
+            result = slice(start, end)
+        else
+          advance()
+
+      result.nn
 
     protected def readCdata()(using Tactic[Parse.Error]): Text =
       val start = begin()
@@ -3382,6 +3594,7 @@ object Xml extends Tag.Container
       var endRegion: Region = start
 
       while !done do
+        skipWords(Words.matches(_, XmlParser.BracketRepl) == 0L)
         if !more then fail(Issue.ExpectedMore, start)
 
         if peek == ']' then
@@ -3404,12 +3617,7 @@ object Xml extends Tag.Container
     // the appropriate Node.
     protected def readProcessingInstruction()(using Tactic[Parse.Error]): Node =
       val nameStart = begin()
-      if !more then fail(Issue.ExpectedMore, nameStart)
-      val first = peek
-      if !isNameStart(first) then fail(Issue.Unexpected(first), nameStart)
-      advance()
-      while more && isNameChar(peek) do advance()
-      val target = slice(nameStart)
+      val target = readName()
 
       val isXmlName =
         target.s.length == 3 &&
@@ -3468,50 +3676,39 @@ object Xml extends Tag.Container
           skipWs()
 
         if !more then fail(Issue.ExpectedMore, nameStart)
-        if peek != '?' then fail(Issue.Unexpected(peek), nameStart)
+        if peek != '?' then fail(Issue.Unexpected(peekChar), nameStart)
         advance()
         if !more then fail(Issue.ExpectedMore, nameStart)
-        if peek != '>' then fail(Issue.Unexpected(peek), nameStart)
+        if peek != '>' then fail(Issue.Unexpected(peekChar), nameStart)
         advance()
         Header(version, encoding, standalone)
       else
         skipWs()
         val dataStart = begin()
+        var result: ProcessingInstruction | Null = null
 
-        while
+        // Eight bytes per step to each `?`, then a byte to see whether `?>` follows.
+        while result == null do
+          skipWords(Words.matches(_, XmlParser.QuestionRepl) == 0L)
           if !more then fail(Issue.ExpectedMore, dataStart)
-          !(peek == '?')
-        do advance()
-        // Now at '?'. Need '?>'.
-        val dataEnd = begin()
-        advance()
-        if !more then fail(Issue.ExpectedMore, dataStart)
-        if peek != '>' then
-          // Not the terminator, continue
-          readPiData(dataStart, target)
-        else
-          advance()
-          val data = slice(dataStart, dataEnd)
-          ProcessingInstruction(target, data)
 
-    private def readPiData(dataStart: Region, target: Text)
-      ( using Tactic[Parse.Error] )
-    :   ProcessingInstruction =
+          if peek == '?' then
+            val dataEnd = begin()
+            advance()
+            if !more then fail(Issue.ExpectedMore, dataStart)
 
-      while more && peek != '?' do advance()
-      if !more then fail(Issue.ExpectedMore, dataStart)
-      val dataEnd = begin()
-      advance()
-      if !more then fail(Issue.ExpectedMore, dataStart)
+            if peek == '>' then
+              advance()
+              result = ProcessingInstruction(target, slice(dataStart, dataEnd))
+          else
+            advance()
 
-      if peek != '>' then readPiData(dataStart, target)
-      else
-        advance()
-        ProcessingInstruction(target, slice(dataStart, dataEnd))
+        result.nn
 
     protected def readDoctype()(using Tactic[Parse.Error]): Text =
       skipWs()
       val start = begin()
+      skipWords(Words.matches(_, XmlParser.GtRepl) == 0L)
       while more && peek != '>' do advance()
       if !more then fail(Issue.ExpectedMore, start)
       val end = begin()
@@ -3525,7 +3722,7 @@ object Xml extends Tag.Container
         callback(position.z, Hole.Element(t""))
         advance()
         if !more then fail(Issue.ExpectedMore)
-        if peek != '>' then fail(Issue.Unexpected(peek))
+        if peek != '>' then fail(Issue.Unexpected(peekChar))
         advance()
         Element(t"\u0000", Attributes.empty, Array.empty[Node])
       else
@@ -3538,11 +3735,11 @@ object Xml extends Tag.Container
         if peek == '/' then
           advance()
           if !more then fail(Issue.ExpectedMore)
-          if peek != '>' then fail(Issue.Unexpected(peek))
+          if peek != '>' then fail(Issue.Unexpected(peekChar))
           advance()
           Element(name, attrs, Array.empty[Node], own)
         else
-          if peek != '>' then fail(Issue.Unexpected(peek))
+          if peek != '>' then fail(Issue.Unexpected(peekChar))
           advance()
           scope = own
           val children = readChildren(name)
@@ -3568,7 +3765,7 @@ object Xml extends Tag.Container
             val close = readName()
             skipWs()
             if !more then fail(Issue.ExpectedMore, closeStart)
-            if peek != '>' then fail(Issue.Unexpected(peek), closeStart)
+            if peek != '>' then fail(Issue.Unexpected(peekChar), closeStart)
             advance()
             if close != parentName then fail(Issue.MismatchedTag(parentName, close), closeStart)
             done = true
@@ -3578,7 +3775,7 @@ object Xml extends Tag.Container
             if more && peek == '-' then
               advance()
               if !more then fail(Issue.ExpectedMore)
-              if peek != '-' then fail(Issue.Unexpected(peek))
+              if peek != '-' then fail(Issue.Unexpected(peekChar))
               advance()
               children += Comment(readComment())
             else if more && peek == '[' then
@@ -3587,7 +3784,7 @@ object Xml extends Tag.Container
               children += Cdata(readCdata())
             else
               if !more then fail(Issue.ExpectedMore)
-              fail(Issue.Unexpected(peek))
+              fail(Issue.Unexpected(peekChar))
           else if c2 == '?' then
             advance()
             children += readProcessingInstruction()
@@ -3617,7 +3814,7 @@ object Xml extends Tag.Container
 
       while i < literal.length do
         if !more then fail(Issue.ExpectedMore)
-        if peek != literal.charAt(i) then fail(Issue.Unexpected(peek))
+        if peek != literal.charAt(i) then fail(Issue.Unexpected(peekChar))
         advance()
         i += 1
 
@@ -3665,7 +3862,7 @@ object Xml extends Tag.Container
             if more && peek == '-' then
               advance()
               if !more then fail(Issue.ExpectedMore)
-              if peek != '-' then fail(Issue.Unexpected(peek))
+              if peek != '-' then fail(Issue.Unexpected(peekChar))
               advance()
               nodes += Comment(readComment())
             else if more && (peek == 'D' || peek == 'd') then
@@ -3677,7 +3874,7 @@ object Xml extends Tag.Container
               nodes += Cdata(readCdata())
             else
               if !more then fail(Issue.ExpectedMore)
-              fail(Issue.Unexpected(peek))
+              fail(Issue.Unexpected(peekChar))
           else if c2 == '?' then
             advance()
             nodes += readProcessingInstruction()
@@ -3718,7 +3915,7 @@ object Xml extends Tag.Container
         callback(position.z, Hole.Element(t""))
         advance()
         if !more then fail(Issue.ExpectedMore)
-        if peek != '>' then fail(Issue.Unexpected(peek))
+        if peek != '>' then fail(Issue.Unexpected(peekChar))
         advance()
         val attrDescs = getIndexBuffer()
         val attrEnds  = getIndexBuffer()
@@ -3749,11 +3946,11 @@ object Xml extends Tag.Container
           if peek == '/' then
             advance()
             if !more then fail(Issue.ExpectedMore)
-            if peek != '>' then fail(Issue.Unexpected(peek))
+            if peek != '>' then fail(Issue.Unexpected(peekChar))
             advance()
             Element(name, attrs, Array.empty[Node], own)
           else
-            if peek != '>' then fail(Issue.Unexpected(peek))
+            if peek != '>' then fail(Issue.Unexpected(peekChar))
             advance()
             scope = own
             val children = readChildrenTracked(name, childDescs, childEnds)
@@ -3899,7 +4096,7 @@ object Xml extends Tag.Container
             val close = readName()
             skipWs()
             if !more then fail(Issue.ExpectedMore, closeStart)
-            if peek != '>' then fail(Issue.Unexpected(peek), closeStart)
+            if peek != '>' then fail(Issue.Unexpected(peekChar), closeStart)
             advance()
             if close != parentName then fail(Issue.MismatchedTag(parentName, close), closeStart)
             done = true
@@ -3909,7 +4106,7 @@ object Xml extends Tag.Container
             if more && peek == '-' then
               advance()
               if !more then fail(Issue.ExpectedMore)
-              if peek != '-' then fail(Issue.Unexpected(peek))
+              if peek != '-' then fail(Issue.Unexpected(peekChar))
               advance()
               children += Comment(readComment())
             else if more && peek == '[' then
@@ -3918,7 +4115,7 @@ object Xml extends Tag.Container
               children += Cdata(readCdata())
             else
               if !more then fail(Issue.ExpectedMore)
-              fail(Issue.Unexpected(peek))
+              fail(Issue.Unexpected(peekChar))
           else if c2 == '?' then
             advance()
             children += readProcessingInstruction()
@@ -3964,7 +4161,7 @@ object Xml extends Tag.Container
             if more && peek == '-' then
               advance()
               if !more then fail(Issue.ExpectedMore)
-              if peek != '-' then fail(Issue.Unexpected(peek))
+              if peek != '-' then fail(Issue.Unexpected(peekChar))
               advance()
               nodes += Comment(readComment())
             else if more && (peek == 'D' || peek == 'd') then
@@ -3976,7 +4173,7 @@ object Xml extends Tag.Container
               nodes += Cdata(readCdata())
             else
               if !more then fail(Issue.ExpectedMore)
-              fail(Issue.Unexpected(peek))
+              fail(Issue.Unexpected(peekChar))
           else if c2 == '?' then
             advance()
             nodes += readProcessingInstruction()
@@ -4007,10 +4204,10 @@ object Xml extends Tag.Container
 
         val matches =
           got == expected ||
-            isAsciiLetter(expected) &&
+            isAsciiLetter(expected.toByte) &&
             (got == (expected | 0x20).toChar || got == (expected & ~0x20).toChar)
 
-        if !matches then fail(Issue.Unexpected(got))
+        if !matches then fail(Issue.Unexpected(peekChar))
         advance()
         i += 1
 
@@ -4137,11 +4334,11 @@ object Xml extends Tag.Container
       if peek == '/' then
         advance()
         if !more then fail(Issue.ExpectedMore)
-        if peek != '>' then fail(Issue.Unexpected(peek))
+        if peek != '>' then fail(Issue.Unexpected(peekChar))
         advance()
         directEmpty = true
       else
-        if peek != '>' then fail(Issue.Unexpected(peek))
+        if peek != '>' then fail(Issue.Unexpected(peekChar))
         advance()
         directEmpty = false
 
@@ -4159,7 +4356,7 @@ object Xml extends Tag.Container
       val close = readName()
       skipWs()
       if !more then fail(Issue.ExpectedMore, closeStart)
-      if peek != '>' then fail(Issue.Unexpected(peek), closeStart)
+      if peek != '>' then fail(Issue.Unexpected(peekChar), closeStart)
       advance()
       if close != parent then fail(Issue.MismatchedTag(parent, close), closeStart)
       directPop()
@@ -4170,7 +4367,7 @@ object Xml extends Tag.Container
       if more && peek == '-' then
         advance()
         if !more then fail(Issue.ExpectedMore)
-        if peek != '-' then fail(Issue.Unexpected(peek))
+        if peek != '-' then fail(Issue.Unexpected(peekChar))
         advance()
         readComment()
       else if more && peek == '[' then
@@ -4179,7 +4376,7 @@ object Xml extends Tag.Container
         readCdata()
       else
         if !more then fail(Issue.ExpectedMore)
-        fail(Issue.Unexpected(peek))
+        fail(Issue.Unexpected(peekChar))
 
     // Steps to the current element's next child *element*, opening it and
     // returning its name, or consumes the close tag and returns `null` once
@@ -4319,7 +4516,7 @@ object Xml extends Tag.Container
         var digits = 0
         var neg = false
         var bad = false
-        var c = ' '
+        var c: Byte = 0
 
         while !bad && more && { c = peek; c != '<' } do
           if c >= '0' && c <= '9' then
@@ -4373,7 +4570,7 @@ object Xml extends Tag.Container
         var decimals = -1
         var neg = false
         var bad = false
-        var c = ' '
+        var c: Byte = 0
 
         while !bad && more && { c = peek; c != '<' } do
           if c >= '0' && c <= '9' then
@@ -4426,7 +4623,7 @@ object Xml extends Tag.Container
         var word = 0L
         var length = 0
         var bad = false
-        var c = ' '
+        var c: Byte = 0
 
         while !bad && more && { c = peek; c != '<' } do
           if c >= 'a' && c <= 'z' && length < 5 then
@@ -4527,7 +4724,9 @@ object Xml extends Tag.Container
 
     // Lenient: a literal may use a prefix bound only by a `Namespace` given at its call site,
     // which the interpolator checks after parsing
-    new XmlParser(Cursor[Text](input), tracking = false, callback)
+    new XmlParser
+      ( Cursor[Data](XmlParser.utf8(Chain.from(input))), tracking = false, callback,
+        charOffsets = true )
       (using schema, Scope.xml, Namespacing.Lenient)
     . parseXml(headers0)
 

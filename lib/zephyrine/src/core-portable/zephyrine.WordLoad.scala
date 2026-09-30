@@ -30,14 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package jacinta
+package zephyrine
 
-// Little-endian 64-bit reads over the parser's byte buffer, for SWAR scans: eight input bytes
-// per step instead of one. Little-endian regardless of the platform so
-// `numberOfTrailingZeros(mask) >> 3` is always the offset of the first flagged byte. The
-// shift-and-or here is the Scala.js/Scala Native variant; the JVM twin in `src/core-jvm`
-// reads the whole word through a byte-array view `VarHandle`, which only the JVM provides.
-private[jacinta] object WordAccess:
+// Little-endian 64-bit reads over a byte buffer, for SWAR scans: eight input bytes per step
+// instead of one. The shift-and-or variant for the Scala.js and Scala Native crosses; the JVM
+// twin in `src/core-jvm` reads the whole word through a byte-array view `VarHandle`, which
+// only the JVM provides.
+object WordLoad:
   def get(bytes: scala.Array[Byte], index: Int): Long =
     var word: Long = 0L
     var i = 7

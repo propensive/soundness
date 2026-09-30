@@ -30,23 +30,38 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package jacinta
+package zephyrine
 
-// Little-endian 64-bit view over the parser's byte buffer, for SWAR scans: eight input bytes
-// per step instead of one. Little-endian regardless of the platform so
-// `numberOfTrailingZeros(mask) >> 3` is always the offset of the first flagged byte. The
-// portable twin in `src/core-portable` serves the Scala.js and Scala Native crosses, which
-// have no `java.lang.invoke`.
-private[jacinta] object WordAccess:
-  private val Handle: java.lang.invoke.VarHandle =
-    // `Class.forName("[J")` rather than `classOf[Array[Long]]`: under
-    // capture checking the latter's type does not adapt to the JDK
-    // signature's wildcard.
-    java.lang.invoke.MethodHandles
-      . byteArrayViewVarHandle(Class.forName("[J").nn, java.nio.ByteOrder.LITTLE_ENDIAN)
-      . nn
+import java.lang as jl
 
-  def get(bytes: scala.Array[Byte], index: Int): Long =
-    // The cast erases the parameter's read capability: the signature-polymorphic `get` accepts
-    // only a capture-free array, and it does nothing but read.
-    Handle.get(bytes.asInstanceOf[scala.Array[Byte]^{}], index)
+// SWAR primitives over a byte buffer: eight bytes are read as one little-endian `Long`
+// (`load`, through the platform's `WordLoad`) and classified lane by lane with the classic
+// has-zero-byte arithmetic, so a scan for a stop byte advances eight bytes per step. Every
+// mask has the high bit set in each lane that satisfies the test; the borrow from one flagged
+// lane can spill into the lanes above it, so only the *lowest* flagged lane is exact — which
+// is the one `first` reports, and the only one a scan needs. The tests are valid for ASCII
+// lanes; a lane with its own high bit set (a UTF-8 byte) is flagged by `nonAscii` and must be
+// handled separately by any scan that cares.
+object Words:
+  inline val HighBits  = 0x8080808080808080L
+  inline val EveryByte = 0x0101010101010101L
+
+  inline def load(bytes: scala.Array[Byte], index: Int): Long = WordLoad.get(bytes, index)
+
+  // A byte value replicated into all eight lanes, the comparand for `matches` and `below`.
+  inline def replicate(byte: Int): Long = (byte & 0xffL)*EveryByte
+
+  // The lanes of `word` that are zero.
+  inline def zeroes(word: Long): Long = (word - EveryByte) & ~word & HighBits
+
+  // The lanes of `word` equal to the replicated byte.
+  inline def matches(word: Long, replicated: Long): Long = zeroes(word ^ replicated)
+
+  // The lanes of `word` below the replicated byte (both ASCII).
+  inline def below(word: Long, replicated: Long): Long = (word - replicated) & ~word & HighBits
+
+  // The lanes of `word` holding a non-ASCII byte.
+  inline def nonAscii(word: Long): Long = word & HighBits
+
+  // The offset within the word of the lowest flagged lane of a non-zero mask.
+  inline def first(mask: Long): Int = jl.Long.numberOfTrailingZeros(mask) >> 3

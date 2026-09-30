@@ -3870,51 +3870,23 @@ object Tel extends Tel2:
 
     // ── SWAR (SIMD-within-a-register) byte scan helpers ──────────────────────
     // The inner byte-scan loops in the parser read a `Long` of 8 bytes at a
-    // time from the buffer and use the classic "haszero" trick to detect a
-    // target byte across all 8 lanes in two arithmetic ops. On long content
-    // runs (literal payloads, source-atom lines, inline atoms) this replaces
-    // an 8-iteration byte loop with one Long load plus a couple of bitwise
-    // operations.
-
-    // Reads a little-endian `Long` from eight bytes at `pos`. Assembled by hand
-    // rather than through a `java.lang.invoke.VarHandle` byte-array view so that
-    // this compiles and links on Scala.js (which has no `java.lang.invoke`); the
-    // JIT folds this to an equivalent load on the JVM.
-    private def longView(bytes: scala.Array[Byte], pos: Int): Long =
-      (bytes(pos) & 0xffL) |
-        ((bytes(pos + 1) & 0xffL) << 8) |
-        ((bytes(pos + 2) & 0xffL) << 16) |
-        ((bytes(pos + 3) & 0xffL) << 24) |
-        ((bytes(pos + 4) & 0xffL) << 32) |
-        ((bytes(pos + 5) & 0xffL) << 40) |
-        ((bytes(pos + 6) & 0xffL) << 48) |
-        ((bytes(pos + 7) & 0xffL) << 56)
-
-    private final val OnesMask:     Long = 0x0101010101010101L
-    private final val HighBitsMask: Long = 0x8080808080808080L
-
-    // The byte `b` replicated across all 8 lanes of a Long.
-    private inline def replicate(b: Byte): Long = (b & 0xFFL) * OnesMask
+    // time from the buffer (`zephyrine.Words.load`: a byte-array view
+    // `VarHandle` on the JVM, shift-and-or on the crosses) and use the classic
+    // "haszero" trick (`Words.matches`) to detect a target byte across all 8
+    // lanes in two arithmetic ops. On long content runs (literal payloads,
+    // source-atom lines, inline atoms) this replaces an 8-iteration byte loop
+    // with one Long load plus a couple of bitwise operations.
 
     // Pre-computed replications for the constant scan targets.
-    private final val SpRepl: Long = (SP & 0xFFL) * OnesMask
-    private final val LfRepl: Long = (LF & 0xFFL) * OnesMask
-    private final val CrRepl: Long = (CR & 0xFFL) * OnesMask
-
-    // Per-lane "is this byte zero?" mask: each 0x80 marks a zero byte in `v`.
-    private inline def haszero(v: Long): Long =
-      (v - OnesMask) & ~v & HighBitsMask
-
-    // Per-lane "does this byte equal the target?" mask.
-    private inline def matchByte(v: Long, replicated: Long): Long =
-      haszero(v ^ replicated)
+    private final val SpRepl: Long = Words.replicate(SP)
+    private final val LfRepl: Long = Words.replicate(LF)
+    private final val CrRepl: Long = Words.replicate(CR)
 
     // A compound-line scan's stop bytes — space, LF, CR — in one mask; zero
-    // means all eight bytes are keyword or atom content. Little-endian
-    // (`longView`), so `numberOfTrailingZeros(mask) >> 3` is the offset of
-    // the first stop byte.
+    // means all eight bytes are keyword or atom content. Little-endian, so
+    // `Words.first(mask)` is the offset of the first stop byte.
     private inline def contentStops(word: Long): Long =
-      matchByte(word, SpRepl) | matchByte(word, LfRepl) | matchByte(word, CrRepl)
+      Words.matches(word, SpRepl) | Words.matches(word, LfRepl) | Words.matches(word, CrRepl)
 
     // The packed-keyword printability test: true when the first `len` bytes
     // of `packed` are all printable ASCII (0x21–0x7E), so the packed form
@@ -3924,11 +3896,10 @@ object Tel extends Tel2:
     private inline def printableWord(packed: Long, len: Int): Boolean =
       val tail = if len == 8 then 0L else -1L << (len*8)
       val filled = packed | (tail & 0x2121212121212121L)
-      val below = (filled - 0x2121212121212121L) & ~filled & HighBitsMask
-      val del = { val x = filled ^ 0x7F7F7F7F7F7F7F7FL
-                  (x - OnesMask) & ~x & HighBitsMask }
+      val below = Words.below(filled, 0x2121212121212121L)
+      val del = Words.matches(filled, 0x7F7F7F7F7F7F7F7FL)
 
-      (below | del | (packed & HighBitsMask)) == 0L
+      (below | del | Words.nonAscii(packed)) == 0L
 
     // Carries the look-ahead state for the next unconsumed line. Parsed once
     // by `fillHead`, then consulted by recursive-descent functions to decide
@@ -4448,8 +4419,8 @@ object Tel extends Tel2:
     // Advance pos until bytes(pos) == target1, or pos == bufEnd.
     private update def scanUntil1(target1: Byte, repl1: Long): Unit =
       while pos + 8 <= bufEnd do
-        val v = Parser.longView(bytes, pos)
-        val mask = Parser.matchByte(v, repl1)
+        val v = Words.load(bytes, pos)
+        val mask = Words.matches(v, repl1)
 
         if mask != 0L then
           pos += (java.lang.Long.numberOfTrailingZeros(mask) >>> 3)
@@ -4462,8 +4433,8 @@ object Tel extends Tel2:
     // Advance pos until bytes(pos) ∈ {target1, target2}, or pos == bufEnd.
     private update def scanUntil2(target1: Byte, target2: Byte, repl1: Long, repl2: Long): Unit =
       while pos + 8 <= bufEnd do
-        val v = Parser.longView(bytes, pos)
-        val combined = Parser.matchByte(v, repl1) | Parser.matchByte(v, repl2)
+        val v = Words.load(bytes, pos)
+        val combined = Words.matches(v, repl1) | Words.matches(v, repl2)
 
         if combined != 0L then
           pos += (java.lang.Long.numberOfTrailingZeros(combined) >>> 3)
@@ -4480,10 +4451,10 @@ object Tel extends Tel2:
     :   Unit =
 
       while pos + 8 <= bufEnd do
-        val v = Parser.longView(bytes, pos)
+        val v = Words.load(bytes, pos)
 
         val combined =
-          Parser.matchByte(v, rA) | Parser.matchByte(v, rB) | Parser.matchByte(v, rC)
+          Words.matches(v, rA) | Words.matches(v, rB) | Words.matches(v, rC)
 
         if combined != 0L then
           pos += (java.lang.Long.numberOfTrailingZeros(combined) >>> 3)
@@ -4500,13 +4471,13 @@ object Tel extends Tel2:
     :   Unit =
 
       while pos + 8 <= bufEnd do
-        val v = Parser.longView(bytes, pos)
+        val v = Words.load(bytes, pos)
 
         val combined =
-          Parser.matchByte(v, rA) |
-            Parser.matchByte(v, rB) |
-            Parser.matchByte(v, rC) |
-            Parser.matchByte(v, rD)
+          Words.matches(v, rA) |
+            Words.matches(v, rB) |
+            Words.matches(v, rC) |
+            Words.matches(v, rD)
 
         if combined != 0L then
           pos += (java.lang.Long.numberOfTrailingZeros(combined) >>> 3)
@@ -4973,7 +4944,7 @@ object Tel extends Tel2:
       // one load usually decides.
       while pos + 8 <= bufEnd && {
         val nonSpace =
-          ~Parser.matchByte(Parser.longView(bytes, pos), Parser.SpRepl) & Parser.HighBitsMask
+          ~Words.matches(Words.load(bytes, pos), Parser.SpRepl) & Words.HighBits
 
         if nonSpace == 0L then
           pos += 8
@@ -6601,7 +6572,7 @@ object Tel extends Tel2:
       var slow = true
 
       if pos + 8 <= bufEnd then
-        val word: Long = Parser.longView(bytes, pos)
+        val word: Long = Words.load(bytes, pos)
         val stops = Parser.contentStops(word)
 
         if stops != 0L then
@@ -7137,7 +7108,7 @@ object Tel extends Tel2:
             var scan = pos
 
             while endPos < 0 && scan + 8 <= bufEnd do
-              val word: Long = Parser.longView(bytes, scan)
+              val word: Long = Words.load(bytes, scan)
               val stops = Parser.contentStops(word)
 
               if stops != 0L

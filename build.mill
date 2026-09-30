@@ -2536,12 +2536,6 @@ object jacinta extends Library:
   object core extends Component(zephyrine.core, turbulence.core, serpentine.core, adversaria.core,
       hypotenuse.core, polyvinyl.core, parasite.core, anticipation.url, anticipation.time,
       anticipation.net, anticipation.uuid):
-    // The parser's SWAR word reads: the JVM variant is a byte-array view `VarHandle`, which
-    // neither Scala.js nor Scala Native provides, so the crosses compile the portable
-    // shift-and-or variant instead (the split `jslink.fastLinkJS` enforces).
-    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
-    override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "core-portable")
-    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-portable")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The panopticon lens/optic instances for `Json`, and jacinta's only use of panopticon.
@@ -3675,6 +3669,13 @@ object ypsiloid extends Library:
 
 object zephyrine extends Library:
   object core extends Component(hieroglyph.core):
+    // The SWAR word reads behind `Words.load` (shared by the jacinta, stratiform and xylophone
+    // parsers): the JVM variant is a byte-array view `VarHandle`, which neither Scala.js nor
+    // Scala Native provides, so the crosses compile the portable shift-and-or variant instead
+    // (the split `jslink.fastLinkJS` enforces).
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
+    override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "core-portable")
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-portable")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, capricious.core, parasite.core):

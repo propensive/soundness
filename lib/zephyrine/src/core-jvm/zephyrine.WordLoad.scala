@@ -30,39 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package xylophone
+package zephyrine
 
-import anticipation.*
-import contingency.*
-import distillate.*
-import prepositional.*
-import turbulence.*
-import zephyrine.*
+// Little-endian 64-bit reads over a byte buffer, for SWAR scans: eight input bytes per step
+// instead of one. Little-endian regardless of the platform, so `Words.first(mask)` — the
+// offset of the first flagged byte — is `numberOfTrailingZeros(mask) >> 3` everywhere. This
+// is the JVM variant, a byte-array view `VarHandle`; the twin in `src/core-portable` serves
+// the Scala.js and Scala Native crosses, which have no `java.lang.invoke`.
+object WordLoad:
+  private val Handle: java.lang.invoke.VarHandle =
+    // `Class.forName("[J")` rather than `classOf[Array[Long]]`: under capture checking the
+    // latter's type does not adapt to the JDK signature's wildcard.
+    java.lang.invoke.MethodHandles
+    . byteArrayViewVarHandle(Class.forName("[J").nn, java.nio.ByteOrder.LITTLE_ENDIAN)
+    . nn
 
-// The lower-priority layer of `object Xml` (which extends it), holding the
-// AST-materializing read path so that `object Xml`'s direct-parsing
-// `aggregableParsed` — a direct member, hence more specific — wins whenever
-// the value has an `Xml.Parsable`; when it does not (all pre-`Parsable`
-// code), this resolves exactly as before.
-trait Xml2 extends Xml3:
-  // `source.read[Foo in Xml]` shorthand for `source.read[Xml].as[Foo]`.
-  // Mirrors `jacinta`'s `aggregableDirect` for `value in Json`. The `Form`
-  // type-tag is added by an `asInstanceOf` cast — `value in Xml` is just
-  // `value { type Form = Xml }` so the cast is a no-op at runtime.
-  given aggregableIn: [value: Decodable in Xml]
-  =>  ( schema: XmlSchema, scope: Xml.Scope, namespacing: Xml.Namespacing )
-  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error] )
-  =>  ( ((value in Xml) is Aggregable by Data)^{tactic, xmlTactic} ) =
-
-    input =>
-      Xml.XmlParser.fromDataChain(input).parseXml(headers0 = false).as[value]
-      . asInstanceOf[value in Xml]
-
-  given aggregableInText: [value: Decodable in Xml]
-  =>  ( schema: XmlSchema, scope: Xml.Scope, namespacing: Xml.Namespacing )
-  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error] )
-  =>  ( ((value in Xml) is Aggregable by Text)^{tactic, xmlTactic} ) =
-
-    input =>
-      Xml.XmlParser.fromChain(input).parseXml(headers0 = false).as[value]
-      . asInstanceOf[value in Xml]
+  def get(bytes: scala.Array[Byte], index: Int): Long =
+    // The cast erases the parameter's read capability: the signature-polymorphic `get`
+    // accepts only a capture-free array, and it does nothing but read.
+    Handle.get(bytes.asInstanceOf[scala.Array[Byte]^{}], index)
