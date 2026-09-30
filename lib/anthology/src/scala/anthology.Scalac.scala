@@ -74,6 +74,9 @@ object Scalac:
   def refresh(): Unit = mutex { Scala3 = new dtd.Compiler() }
   def compiler(): dtd.Compiler = Scala3
 
+  // The version of the embedded compiler, as it reports itself: `3.9.0-p16` for the fork.
+  def version: Text = dtd.config.Properties.versionNumberString.tt
+
   // Preserves the single-type-argument call form, `Scalac[3.6](options)`, which targets the
   // classfile universe.
   @targetName("applyClassfile")
@@ -105,7 +108,8 @@ object Scalac:
     // artifacts, and `save` materializes them under a directory, only if the caller wants
     // them on disk. Since session compiles run synchronously, the result is already complete
     // by the time the process is returned.
-    class Process private[anthology] (output: dtio.AbstractFile) extends CompileProcess():
+    class Process private[anthology] (output: dtio.AbstractFile)
+    extends CompileProcess(Scalac.version):
       // Every artifact the compile emitted — classfiles, TASTy, `.sjsir`, `.nir` — keyed by
       // its location on the classpath this output constitutes. Empty if the compile failed
       // before the back-end ran.
@@ -228,6 +232,7 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
   ( options: List[Scalac.Option[version]] ):
 
   def commandLineArguments: List[Text] = options.bind(_.flags)
+  def version: Text = Scalac.version
 
   def targeting[universe2 <: Universe]: Scalac[version, universe2] = new Scalac(options)
 
@@ -243,7 +248,7 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
     ( using Tactic[Compiler.Error], (CompileEvent is Loggable)^ )
   :   CompileProcess =
 
-    val scalacProcess: CompileProcess = CompileProcess()
+    val scalacProcess: CompileProcess = CompileProcess(version)
     val reporter = processReporter(scalacProcess)
 
     val arguments: List[Text] =

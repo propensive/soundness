@@ -41,6 +41,7 @@ import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
+import org.jetbrains.kotlin.config.KotlinCompilerVersion
 import org.jetbrains.kotlin.config.Services
 
 import ambience.*
@@ -61,6 +62,9 @@ object Kotlinc:
 
   case class Option[-version <: Versions](flags: Text*)
 
+  // The version of the embedded compiler, as it reports itself: `2.4.10`.
+  def version: Text = KotlinCompilerVersion.VERSION.nn.tt
+
   // Deletes a scratch tree, depth-first; failing to do so is not a compilation failure.
   private def remove(path: jnf.Path): Unit =
     try jnf.Files.walk(path).nn.sorted(java.util.Comparator.reverseOrder()).nn.forEach: entry =>
@@ -75,6 +79,7 @@ object Kotlinc:
 // are mapped back onto the names they were given.
 case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[version]]):
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
+  def version: Text = Kotlinc.version
 
   def apply(classpath: LocalClasspath)[path: Abstractable across Paths to Text]
     ( sources: Map[Text, Text], out: path )
@@ -82,7 +87,7 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
   :   CompileProcess logs CompileEvent raises Compiler.Error =
 
     Log.info(CompileEvent.Start)
-    val process: CompileProcess = CompileProcess()
+    val process: CompileProcess = CompileProcess(version)
     val scratch: jnf.Path = jnf.Files.createTempDirectory("kotlinc").nn
 
     // The name each source was given, keyed by the canonical path it was written to, so that a

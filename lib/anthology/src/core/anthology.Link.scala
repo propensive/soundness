@@ -35,6 +35,7 @@ package anthology
 import anticipation.*
 import digression.*
 import fulminate.*
+import murmuration.fold
 
 object Link:
   // LinkError → Link.Error
@@ -49,7 +50,7 @@ object Link:
       case DuplicateEdge(source: Text, target: Text)  extends Reason(8)
       case CyclicToolchain                            extends Reason(9)
       case UnexpectedInput(format: Text)              extends Reason(10)
-      case CompilationFailed(errors: Int)             extends Reason(11)
+      case CompilationFailed(notices: List[Notice])   extends Reason(11)
       case MissingSetting(name: Text)                 extends Reason(12)
       case Packaging(detail: Text)                    extends Reason(13)
       case CompilerCrash                              extends Reason(14)
@@ -80,7 +81,12 @@ object Link:
       case Reason.UnexpectedInput(format) =>
         m"the tool producing $format cannot consume the content it was given"
 
-      case Reason.CompilationFailed(errors) => m"compilation failed with $errors errors"
+      case Reason.CompilationFailed(notices) =>
+        val errors: Int = notices.fold(0): (count, notice) =>
+          if notice.importance == Importance.Error then count + 1 else count
+
+        m"compilation failed with $errors errors"
+
       case Reason.MissingSetting(name)      => m"the setting $name is required but unspecified"
       case Reason.Packaging(detail)         => m"packaging failed: $detail"
       case Reason.CompilerCrash             => m"the compiler crashed"

@@ -85,4 +85,4 @@ object javacEdges:
             case CompileResult.Crash(_) => abort(Link.Error(Link.Error.Reason.CompilerCrash))
 
             case CompileResult.Failure =>
-              abort(Link.Error(Link.Error.Reason.CompilationFailed(process.errors)))
+              abort(Link.Error(Link.Error.Reason.CompilationFailed(process.notices)))

@@ -52,7 +52,9 @@ object CompileProcess:
     case Noticed(notice: Notice)
     case Progressed(progress: CompileProgress)
 
-class CompileProcess():
+// `version` is the version of the compiler that ran, so a completed compilation can report what
+// produced its output without the caller keeping the compiler in hand.
+class CompileProcess(val version: Text):
   @scala.caps.unsafe.untrackedCaptures
   private[anthology] var continue: Boolean = true
 
