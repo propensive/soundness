@@ -1263,7 +1263,7 @@ object internal:
 
       // Named `eachPair` (not `each`): rudiments' generic one-parameter `each` extension
       // otherwise wins resolution and rejects the two-parameter lambda.
-      def eachPair(action: (Text, Text) => Unit): Unit =
+      inline def eachPair(inline action: (Text, Text) => Unit): Unit =
         val a = storage(attrs)
         var i = 0
 
@@ -1566,6 +1566,18 @@ object internal:
     extension (scope: Scope)
       def isEmpty: Boolean = storage(scope).length == 0
       def size: Int = storage(scope).length/2
+
+      // Whether the two scopes hold the same bindings in the same order: the serializer's test
+      // that an element needs no declarations written for it. The parser shares one scope
+      // between an element and each child that declares nothing, so the identity test usually
+      // decides it.
+      private[xylophone] def same(other: Scope): Boolean =
+        val left = storage(scope)
+        val right = storage(other)
+
+        val leftObjects = left.asInstanceOf[scala.Array[AnyRef | Null]]
+        val rightObjects = right.asInstanceOf[scala.Array[AnyRef | Null]]
+        (leftObjects eq rightObjects) || java.util.Arrays.equals(leftObjects, rightObjects)
 
       // The URI bound to the prefix (`Unset` for the default namespace), or `Unset` if it is
       // unbound or has been undeclared with an empty URI.

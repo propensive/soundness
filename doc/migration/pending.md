@@ -141,14 +141,17 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `stratiform.Tel.streamable: (Monitor, Probate) => Tel is turbulence.Streamable by Text over Credit`
   built on it. `show` is unchanged and renders identically. `stratiform.core` now depends on
   `parasite.core`. (#2109)
-- New push form `stratiform.Tel.emit[medium: zephyrine.Producer.Emission](tel: Tel, deliver: medium => Unit)(using zephyrine.Buffering): Unit`,
+- New push form `stratiform.Tel.emit[medium: Tel.Emitter](tel: Tel, deliver: medium => Unit)(using zephyrine.Buffering): Unit`,
   which serializes on the caller's thread with no fiber, handing each block to `deliver` as it
-  fills: `emit[Text]` delivers text blocks and `emit[Data]` delivers UTF-8 bytes encoded
-  straight from the serializer. The type argument is required when `deliver` is an untyped
-  lambda. (#2109)
+  fills: `emit[Text]` delivers text blocks through a `Producer[Text]`, and `emit[Data]` delivers
+  UTF-8 bytes written directly by a byte-level serializer, which copies a parsed atom's bytes
+  without decoding them. `trait Tel.Emitter[medium]` with givens `Tel.Emitter.text` and
+  `Tel.Emitter.data` selects between them. The type argument is required when `deliver` is an
+  untyped lambda. (#2109)
 - New `stratiform.Tel.lend(tel: Tel)(lending: zephyrine.Producer.Lending[Data])(using zephyrine.Buffering): Unit`,
   the borrowing form of the push `emit`: each filled block of UTF-8 is lent as a
-  `zephyrine.Region[Data]` with its branded extent, valid only for the duration of the call. (#2109)
+  `zephyrine.Region[Data]` with its branded extent, valid only for the duration of the call;
+  `emit[Data]` is defined over it and materializes each block. (#2109)
 
 ## xylophone
 
@@ -171,6 +174,17 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - New `xylophone.servables.xmlServable: (Codepage) => Xml is telekinesis.Servable` (media type
   `application/xml; charset=UTF-8`), also exported as `soundness.servables.xmlServable`,
   alongside the existing `xmlPostable`. (#2104)
+- New push form `xylophone.Xml.emit[medium: Xml.Emitter](document: turbulence.Document[Xml], deliver: medium => Unit)(using Xml.Formatting, zephyrine.Buffering): Unit`,
+  which serializes on the caller's thread with no fiber, handing each block to `deliver` as it
+  fills: `emit[Text]` delivers text blocks through a `Producer[Text]`, and `emit[Data]` delivers
+  UTF-8 bytes written directly by a byte-level serializer that escapes and encodes each string in
+  one pass. `trait Xml.Emitter[medium]` with givens `Xml.Emitter.text` and `Xml.Emitter.data`
+  selects between them. The type argument is required when `deliver` is an untyped lambda.
+- New `xylophone.Xml.lend(document: turbulence.Document[Xml])(lending: zephyrine.Producer.Lending[Data])(using Xml.Formatting, zephyrine.Buffering): Unit`,
+  the borrowing form of the push `emit`: each filled block of UTF-8 is lent as a
+  `zephyrine.Region[Data]` with its branded `Interval in region.type`, valid only for the
+  duration of the call, so nothing is copied; `emit[Data]` is defined over it and materializes
+  each block. The text of `show` and of the fiber form of `emit` is unchanged.
 
 ## ypsiloid
 
@@ -213,5 +227,18 @@ format. Entries are grouped by module, most-recently-added last within a module.
   them back when the body returns, as `Json.lend`'s writer does, so a warm writer allocates
   nothing of its own. (#2109)
 - New `trait zephyrine.Producer.Emission[medium]` with givens `Producer.Emission.text` and
-  `Producer.Emission.data`, selecting `sink` or `utf8` for a text serializer's push form; it is
-  the context bound of `Json.emit[medium]` and `Tel.emit[medium]`. (#2109)
+  `Producer.Emission.data`, selecting `sink` or `utf8` for a text serializer's push form written
+  against `Producer[Text]`. (#2109)
+- New `final class zephyrine.Producer.Utf8Writer(lending: Producer.Lending[Data], block: Int)`,
+  the byte-level writer behind `Xml.lend` and `Tel.lend`, shared so that a text format's push
+  form supplies only its escapes: `ascii(text: String)`, `name(text: String)` (through a cache
+  of encoded names matched by identity or equality), `text(text: String)`,
+  `escaped(text: String, escapes: Utf8Writer.Escapes)`,
+  `bytes(source: scala.Array[Byte], from: Int, end: Int)`, `byte(value: Int)`,
+  `long(value: Long)` and `finish(): Unit`, all `update` methods. It encodes UTF-8 straight into
+  a block leased from the `Blockpool`, with a lone surrogate as U+FFFD (as `?` in a `name`), and
+  lends each full block to `lending`.
+  `Producer.Utf8Writer.escapes(entities: (Char, String)*): Utf8Writer.Escapes` builds an escape
+  table for ASCII characters, and
+  `Producer.Utf8Writer.lend(lending: Producer.Lending[Data], block: Optional[Int] = Unset)(using Buffering)(body: Utf8Writer^ => Unit): Unit`
+  writes with `body` and flushes.

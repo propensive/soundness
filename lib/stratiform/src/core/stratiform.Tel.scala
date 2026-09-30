@@ -2766,6 +2766,21 @@ object Tel extends Tel2:
         else
           Text(t)
 
+      // The parser's UTF-8 slice, so a byte-level serializer can copy it without decoding it:
+      // the arena (null for an atom built from text), and the slice's offset and length in it.
+      // Immutable for the reason `fromArena` gives: the slice is committed before the arena
+      // changes.
+      private[stratiform] def arena: scala.IArray[Byte] | Null =
+        bytes.asInstanceOf[scala.IArray[Byte] | Null]
+
+      private[stratiform] def arenaOffset: Int = byteOff
+      private[stratiform] def arenaLength: Int = byteLen
+
+      // Whether the atom is empty, without decoding it.
+      private[stratiform] def vacant: Boolean =
+        val t = _text
+        if t == null then byteLen == 0 else t.isEmpty
+
       override def equals(other: Any): Boolean = other match
         case o: Inline => text == o.text && precedingSpaces == o.precedingSpaces
         case _         => false
@@ -3369,143 +3384,210 @@ object Tel extends Tel2:
   // inserted between lines but never after the last (total newlines = lines - 1; trailing
   // blank-line counts realised by appending that many empty lines).
   given documentShowable: Tel.Document is Showable = document =>
-    Producer.collect[Text](): producer =>
-      writeDocument(producer, document)
+    Producer.collect[Text](): producer => Serializer(new Textual(producer), document).write()
 
-  // The single TEL serializer, driven through a `Producer`: `documentShowable` collects it
-  // into one `Text`, and `Tel.emit` streams it line by line from a fiber, so a large document
-  // can be sent before it is fully rendered — the model of xylophone's `emit`.
-  private def writeDocument(producer: (Producer[Text])^, document: Tel.Document): Unit =
-      import scala.language.unsafeNulls
+  // The leaf operations of the serializer, per output medium; the traversal in `Serializer` is
+  // shared. `Textual` puts text into a `Producer[Text]`, so `show` and the pull form of `emit`
+  // render through the same code; `Bytes` writes UTF-8 straight into a byte block through
+  // zephyrine's `Utf8Writer`, copying a parsed atom's bytes from the parser's arena without
+  // decoding them, and lends each block as it fills. TEL escapes nothing: an atom's form was
+  // chosen, when it was built, so that it reads back as written.
+  private[stratiform] trait Out extends caps.ExclusiveCapability, caps.Stateful:
+    // Text known to be ASCII: line endings, indentation and spacing.
+    update def ascii(text: String): Unit
 
-      val newline = document.lineEndings match
-        case Tel.LineEndings.Lf   => "\n"
-        case Tel.LineEndings.Crlf => "\r\n"
+    // A compound's keyword; a document repeats its keywords, so a byte-level output may cache
+    // their encodings.
+    update def keyword(text: String): Unit
 
-      var first = true
+    // Text written verbatim.
+    update def text(text: String): Unit
 
-      // Emit one line, inserting the document's line ending between lines but never after the last.
-      def out(text: String): Unit =
-        if first then first = false else producer.put(Text(newline))
-        producer.put(Text(text))
+    // An inline atom's text, written verbatim.
+    update def atom(atom: Tel.Atom.Inline): Unit
 
-      def emitCompound(compound: Tel.Compound, indent: Int, sigil: Char): Unit =
-        val pad = "  "*indent
-        val line = StringBuilder()
-        line.append(pad)
-        line.append(compound.keyword.s)
+  private[stratiform] final class Textual(producer: (Producer[Text])^) extends Out:
+    update def ascii(text: String): Unit = producer.put(text.tt)
+    update def keyword(text: String): Unit = producer.put(text.tt)
+    update def text(text: String): Unit = producer.put(text.tt)
+    update def atom(atom: Tel.Atom.Inline): Unit = producer.put(atom.text)
 
-        var trailingAtom: Optional[Tel.Atom] = Unset
+  private[stratiform] final class Bytes(writer: Producer.Utf8Writer^) extends Out:
+    update def ascii(text: String): Unit = writer.ascii(text)
+    update def keyword(text: String): Unit = writer.name(text)
+    update def text(text: String): Unit = writer.text(text)
 
-        compound.atoms.each:
-          case atom @ Tel.Atom.Source(_)     => trailingAtom = atom
-          case atom @ Tel.Atom.Literal(_, _) => trailingAtom = atom
+    update def atom(atom: Tel.Atom.Inline): Unit =
+      val arena = atom.arena
 
-          // An empty inline atom serializes as no atom at all (a keyword-bearing compound with
-          // no atom reads back as the empty string), so its spacing is not written either: a
-          // trailing space would make the line unparseable.
-          case Tel.Atom.Inline(text, precedingSpaces) =>
-            if !text.s.isEmpty then
-              var k = 0
-              while k < precedingSpaces do { line.append(' '); k += 1 }
-              line.append(text.s)
+      if arena == null then writer.text(atom.text.s)
+      else
+        val offset = atom.arenaOffset
+        writer.bytes(arena.asInstanceOf[scala.Array[Byte]], offset, offset + atom.arenaLength)
 
-        compound.remark.let: remark =>
-          // Two spaces before the sigil ensure correct re-parsing regardless of whether the
-          // preceding atoms put the line into hard-space mode: in hard mode only hard spaces
-          // terminate phrases, so a single space before `#` would be absorbed as atom content.
-          // §18.1 permits a minimum hard space before remark introducers.
-          line.append("  ")
-          line.append(sigil)
-          line.append(' ')
-          line.append(remark.s)
+  private object Serializer:
+    // Runs of spaces for indentation and atom spacing, so that none is built per line.
+    private val runs: scala.Array[String] =
+      val array = new scala.Array[String](65)
+      var count = 0
 
-        out(line.toString)
+      // Shape 1: `count` rises to the array's last index.
+      while count <= 64 do
+        array(count) = " "*count
+        count += 1
 
-        trailingAtom match
-          case Tel.Atom.Source(text) =>
-            val sourcePad = "  "*(indent + 2)
-            // §14 "Convention A": `text` is LF-separated with no trailing LF, so each LF-delimited
-            // segment is one source line (an empty segment is a blank line with no indentation).
-            val sourceText = text.s
-            var start = 0
+      array
 
-            while start <= sourceText.length do
-              val nl = sourceText.indexOf('\n', start)
-              val end = if nl < 0 then sourceText.length else nl
-              val seg = sourceText.substring(start, end).nn
-              out(if seg.isEmpty then "" else sourcePad + seg)
-              if nl < 0 then start = sourceText.length + 1 else start = nl + 1
+    def spaces(count: Int): String = if count <= 64 then runs(count) else " "*count
 
-          case Tel.Atom.Literal(delimiter, text) =>
-            val delimiterLine = "  "*(indent + 3) + delimiter.s
-            out(delimiterLine)
-            val payload = text.s
-            var start = 0
+  // The single TEL serializer: `documentShowable` collects it into one `Text`, `Tel.emit`
+  // streams it from a fiber or pushes it as it fills, and `Tel.lend` writes it as UTF-8. Each
+  // line is written piece by piece, with the document's line ending between lines but never
+  // after the last. Every loop walks a frozen array with `iterate`, whose index is a plain
+  // `Int`, and inline atoms, by far the most common, are tested first.
+  private final class Serializer(out: Out^, document: Tel.Document):
+    private val newline: String = document.lineEndings match
+      case Tel.LineEndings.Lf   => "\n"
+      case Tel.LineEndings.Crlf => "\r\n"
 
-            while start <= payload.length do
-              val nl = payload.indexOf('\n', start)
-              val end = if nl < 0 then payload.length else nl
-              out(payload.substring(start, end).nn)
-              if nl < 0 then start = payload.length + 1 else start = nl + 1
+    private val sigil: String = document.pragma.let(_.sigil.or('#')).or('#').toString
+    // Reached only through this serializer, which is confined to one `write`.
+    @caps.unsafe.untrackedCaptures
+    private var first: Boolean = true
 
-            out(delimiterLine)
+    // Starts a line: the line ending, unless it is the document's first line.
+    private def line(): Unit = if first then first = false else out.ascii(newline)
 
-          case _ => ()
+    // `text(start until end)` as one line, indented by `indent` spaces unless it is empty.
+    private def segment(text: String, start: Int, end: Int, indent: Int): Unit =
+      line()
 
-        // indexed: the foreach lambda would capture the exclusive producer transitively
-        var childIndex = 0
-        while childIndex < compound.children.length do
-          emitBlock(compound.children.readUnchecked(childIndex), indent + 1, sigil)
-          childIndex += 1
+      if end > start then
+        out.ascii(Serializer.spaces(indent))
+        out.text(text.substring(start, end).nn)
 
-      def emitBlock(block: Tel.Block, indent: Int, sigil: Char): Unit =
-        val pad = "  "*indent
+    // The LF-separated lines of `text`, each indented by `indent` spaces (§14 "Convention A":
+    // no trailing LF, and an empty segment is a blank line with no indentation).
+    private def segments(text: String, indent: Int): Unit =
+      var start = 0
 
-        block.comments.each: comment =>
-          val text = comment.text.s
+      // Shape 1: `start` moves past each LF found, and beyond the end after the last segment.
+      while start <= text.length do
+        val newline = text.indexOf('\n', start)
+        val end = if newline < 0 then text.length else newline
+        segment(text, start, end, indent)
+        start = if newline < 0 then text.length + 1 else newline + 1
 
-          if text.isEmpty then out(s"$pad$sigil") else out(s"$pad$sigil $text")
-
-        block.tabulation.let: tab =>
-          val line = StringBuilder()
-          var i = 0
-
-          while i < tab.markerOffsets.length do
-            val targetCol = tab.markerOffsets.readUnchecked(i)
-            while line.length < targetCol do line.append(' ')
-            line.append(sigil)
-            val heading = tab.headings.readUnchecked(i).s
-
-            if heading.nonEmpty then
-              line.append(' ')
-              line.append(heading)
-
-            i += 1
-
-          out(line.toString)
-
-        block.compounds.each(emitCompound(_, indent, sigil))
-
-        repeat(block.trailingBlankLines):
-          out("")
-
-      val sigil = document.pragma.let(_.sigil.or('#')).or('#')
-
-      document.interpreterDirective.let: payload => out("#!" + payload.s)
+    def write(): Unit =
+      document.interpreterDirective.let: payload =>
+        line()
+        out.ascii("#!")
+        out.text(payload.s)
 
       document.pragma.let: pragma =>
         val parts = scala.collection.mutable.ArrayBuffer.empty[String]
         parts += "tel"
         parts += s"${pragma.version._1}.${pragma.version._2}"
-        pragma.reference.let: r => parts += r.text.s
+        pragma.reference.let: reference => parts += reference.text.s
         pragma.layers.each: layer => parts += s"+$layer"
-        pragma.signature.let: s => parts += s.s
-        pragma.sigil.let: c => parts += c.toString
-        out(parts.mkString(" "))
-        out("")
+        pragma.signature.let: signature => parts += signature.s
+        pragma.sigil.let: sigil => parts += sigil.toString
+        line()
+        out.text(parts.mkString(" "))
+        line()
 
-      document.children.each(emitBlock(_, 0, sigil))
+      val children = document.children
+      children.iterate: index => block(children(index), 0)
+
+    private def block(block: Tel.Block, indent: Int): Unit =
+      val pad = Serializer.spaces(indent*2)
+      val comments = block.comments
+
+      comments.iterate: index =>
+        val text = comments(index).text.s
+        line()
+        out.ascii(pad)
+        out.text(sigil)
+
+        if !text.isEmpty then
+          out.ascii(" ")
+          out.text(text)
+
+      block.tabulation.let: tabulation =>
+        val builder = java.lang.StringBuilder()
+        val offsets = tabulation.markerOffsets
+        val headings = tabulation.headings
+
+        offsets.iterate: index =>
+          val column = offsets(index)
+          while builder.length < column do builder.append(' ')
+          builder.append(sigil)
+          // The parser records a heading for every marker, so the two arrays have one length.
+          val heading = headings(index).or(t"").s
+
+          if heading.nonEmpty then
+            builder.append(' ')
+            builder.append(heading)
+
+        line()
+        out.text(builder.toString)
+
+      val compounds = block.compounds
+      compounds.iterate: index => compound(compounds(index), indent)
+
+      repeat(block.trailingBlankLines):
+        line()
+
+    private def compound(compound: Tel.Compound, indent: Int): Unit =
+      line()
+      out.ascii(Serializer.spaces(indent*2))
+      out.keyword(compound.keyword.s)
+
+      // A source or literal atom is written after the line, on its own lines; only the last
+      // counts.
+      var trailing: Tel.Atom | Null = null
+      val atoms = compound.atoms
+
+      atoms.iterate: index =>
+        atoms(index) match
+          // An empty inline atom serializes as no atom at all (a keyword-bearing compound with
+          // no atom reads back as the empty string), so its spacing is not written either: a
+          // trailing space would make the line unparseable.
+          case atom: Tel.Atom.Inline =>
+            if !atom.vacant then
+              out.ascii(Serializer.spaces(atom.precedingSpaces))
+              out.atom(atom)
+
+          case atom =>
+            trailing = atom
+
+      compound.remark.let: remark =>
+        // Two spaces before the sigil ensure correct re-parsing regardless of whether the
+        // preceding atoms put the line into hard-space mode: in hard mode only hard spaces
+        // terminate phrases, so a single space before `#` would be absorbed as atom content.
+        // §18.1 permits a minimum hard space before remark introducers.
+        out.ascii("  ")
+        out.text(sigil)
+        out.ascii(" ")
+        out.text(remark.s)
+
+      trailing match
+        case Tel.Atom.Source(text) =>
+          segments(text.s, (indent + 2)*2)
+
+        case Tel.Atom.Literal(delimiter, text) =>
+          val delimiterLine = Serializer.spaces((indent + 3)*2) + delimiter.s
+          line()
+          out.text(delimiterLine)
+          segments(text.s, 0)
+          line()
+          out.text(delimiterLine)
+
+        case _ =>
+          ()
+
+      val children = compound.children
+      children.iterate: index => block(children(index), indent + 1)
 
   // Render a `Tel` value. A `Tel` produced by `parse` is rooted at a Document and renders
   // presentation-preservingly; one produced by `encode` is rooted at a Compound, so its children
@@ -3523,45 +3605,52 @@ object Tel extends Tel2:
   =>  ((Tel is Streamable by Text over Credit)^{monitor}) =
     tel => zephyrine.Stream(emit(tel))
 
-  // Serializes on a fiber, handing out text as it is produced, so a large document can be
-  // written to a socket or file before it is fully rendered — the model of `Xml.emit`. A `Tel`
-  // rooted at a Compound is wrapped in a Document first, exactly as `showable` wraps it.
-  def emit(tel: Tel)(using monitor: Monitor, probate: Probate): Iterator[Text] =
-    val document = tel.subtree match
-      case document: Document => document
-      case other              => Document(Unset, Unset, LineEndings.Lf, 0, other.children)
+  // The document a `Tel` renders as: its own, or, for one rooted at a Compound, its children
+  // wrapped in one, exactly as `showable` wraps them.
+  private def document(tel: Tel): Document = tel.subtree match
+    case document: Document => document
+    case other              => Document(Unset, Unset, LineEndings.Lf, 0, other.children)
 
+  // Serializes on a fiber, handing out text as it is produced, so a large document can be
+  // written to a socket or file before it is fully rendered — the model of `Xml.emit`.
+  def emit(tel: Tel)(using monitor: Monitor, probate: Probate): Iterator[Text] =
     val producer = Producer[Text]()
 
     async:
-      writeDocument(producer, document)
+      Serializer(new Textual(producer), document(tel)).write()
       producer.finish()
 
     producer.iterator
 
-  // The push form: serializes on the caller's thread, handing each block of text to `consume`
-  // as it fills, so no fiber is involved — the right shape for writing to a file, a socket or
-  // an `OutputStream`, where the pull form above pays a thread handoff per block.
-  // The medium is chosen by the type argument: `emit[Text]` delivers text, and `emit[Data]`
-  // delivers UTF-8 bytes encoded straight from the serializer, with no intermediate `Text`.
-  def emit[medium: Producer.Emission](tel: Tel, deliver: medium => Unit)(using Buffering): Unit =
-    val document = tel.subtree match
-      case document: Document => document
-      case other              => Document(Unset, Unset, LineEndings.Lf, 0, other.children)
+  // The push form: serializes on the caller's thread, handing each block to `deliver` as it
+  // fills, so no fiber is involved — the right shape for writing to a file, a socket or an
+  // `OutputStream`, where the pull form above pays a thread handoff per block. The medium is
+  // chosen by the type argument: `emit[Text]` delivers text, and `emit[Data]` delivers UTF-8
+  // bytes written straight from the serializer, with no intermediate `Text`.
+  def emit[medium: Emitter](tel: Tel, deliver: medium => Unit)(using Buffering): Unit =
+    summon[Emitter[medium]].emit(tel, deliver)
 
-    summon[Producer.Emission[medium]].run(deliver): producer =>
-      writeDocument(producer, document)
+  // How the push form of `emit` reaches its consumer: as text blocks through a `Producer[Text]`,
+  // or as UTF-8 blocks written directly by the byte-level writer.
+  object Emitter:
+    given text: Emitter[Text]:
+      def emit(tel: Tel, deliver: Text => Unit)(using Buffering): Unit =
+        Producer.sink[Text](deliver): producer =>
+          Serializer(new Textual(producer), document(tel)).write()
+
+    given data: Emitter[Data]:
+      def emit(tel: Tel, deliver: Data => Unit)(using Buffering): Unit =
+        lend(tel): region => interval => deliver(region.materialize(interval))
+
+  trait Emitter[medium]:
+    def emit(tel: Tel, deliver: medium => Unit)(using Buffering): Unit
 
   // The borrowing form of the push `emit`: serializes to UTF-8 on the caller's thread, lending
   // each filled block to `lending` as a `Region[Data]` with its branded extent, valid only for
   // the duration of the call — the discipline of `Stream.lend` — so nothing is copied.
   def lend(tel: Tel)(lending: Producer.Lending[Data])(using Buffering): Unit =
-    val document = tel.subtree match
-      case document: Document => document
-      case other              => Document(Unset, Unset, LineEndings.Lf, 0, other.children)
-
-    Producer.lendUtf8(lending): producer =>
-      writeDocument(producer, document)
+    Producer.Utf8Writer.lend(lending): writer =>
+      Serializer(new Bytes(writer), document(tel)).write()
 
   // `Tel` is a plain class, so there is no reflection to derive from, and TEL's block syntax is
   // multi-line, which an inspection is not. The document is rendered with its line breaks

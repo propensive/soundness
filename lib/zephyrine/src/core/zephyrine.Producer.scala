@@ -228,6 +228,9 @@ object Producer:
   private val bytesClass: Class[?] = (new scala.Array[Byte](0)).asInstanceOf[AnyRef].getClass.nn
   private val charsClass: Class[?] = (new scala.Array[Char](0)).asInstanceOf[AnyRef].getClass.nn
 
+  private val namesClass: Class[?] =
+    (new scala.Array[AnyRef | Null](0)).asInstanceOf[AnyRef].getClass.nn
+
   final class Utf8Sink(lending: Lending[Data], block: Int) extends Producer[Text]:
     type Operand = Char
 
@@ -312,6 +315,329 @@ object Producer:
       publish()
       Blockpool.offer(bytesClass, block, current.array().nn.asInstanceOf[AnyRef])
       Blockpool.offer(charsClass, block, scratch.asInstanceOf[AnyRef])
+
+  object Utf8Writer:
+    // The number of slots in the writer's name cache: a power of two.
+    val NameSlots: Int = 256
+
+    // An escape table: `codes` holds, for each ASCII character, zero when it is written as it
+    // is, or the one-based number of the entity that replaces it, whose bytes are
+    // `data(offsets(code - 1) until offsets(code))`. Pure and flat, so the encoding loop tests
+    // one byte per character.
+    final class Escapes private[Utf8Writer]
+      ( val codes:   scala.IArray[Byte],
+        val offsets: scala.IArray[Int],
+        val data:    scala.IArray[Byte] )
+
+    // The table replacing each character in `entities`, which must be ASCII, with its entity.
+    def escapes(entities: (Char, String)*): Escapes =
+      val codes = new scala.Array[Byte](128)
+      val offsets = new scala.Array[Int](entities.length + 1)
+      val data = java.io.ByteArrayOutputStream()
+
+      entities.zipWithIndex.foreach: (entity, index) =>
+        codes(entity(0)) = (index + 1).toByte
+        data.write(entity(1).getBytes(java.nio.charset.StandardCharsets.US_ASCII).nn)
+        offsets(index + 1) = data.size
+
+      Escapes
+        ( scala.IArray.unsafeFromArray(codes),
+          scala.IArray.unsafeFromArray(offsets),
+          scala.IArray.unsafeFromArray(data.toByteArray.nn) )
+
+    // Writes with `body` through a writer lending each block to `lending`, then flushes it.
+    def lend(lending: Lending[Data], block: Optional[Int] = Unset)(using buffering: Buffering)
+      ( body: (Utf8Writer^) => Unit )
+    :   Unit =
+
+      val writer = Utf8Writer(lending, block.or(buffering.capacity(Substrate.Bytes)))
+      body(writer)
+      writer.finish()
+
+  // A byte-level writer for a text format's push form: it encodes UTF-8 straight into a block
+  // leased from the `Blockpool`, escaping each string through the format's table in the same
+  // pass, and lends each filled block to `lending` as `lendUtf8` does. A serializer writing
+  // through it never builds a `Text` for its output, so nothing is encoded twice; this is the
+  // model of JSON's byte writer, shared so that each format supplies only its escapes. A lone
+  // surrogate encodes as U+FFFD, except in a name (see `name`).
+  final class Utf8Writer(lending: Lending[Data], block: Int)
+  extends caps.ExclusiveCapability, caps.Stateful:
+    // The byte block and the char scratch are leased from the shared `Blockpool` and offered
+    // back at `finish`, so a writer allocates nothing of its own once the pool is warm. Each is
+    // reached only through this writer, and `untrackedCaptures` keeps the block's exclusivity
+    // out of the class's own type.
+    @caps.unsafe.untrackedCaptures
+    private val current: scala.Array[Byte]^ =
+      Blockpool.poll(bytesClass, block) match
+        case null   => new scala.Array[Byte](block)
+        case pooled => pooled.asInstanceOf[scala.Array[Byte]]
+
+    private var index: Int = 0
+
+    // Characters are inflated into this scratch a block at a time, so the encoding loop reads a
+    // raw array rather than paying `charAt`'s coder check per character.
+    @caps.unsafe.untrackedCaptures
+    private val scratch: scala.Array[Char] =
+      Blockpool.poll(charsClass, block) match
+        case null   => new scala.Array[Char](block)
+        case pooled => pooled.asInstanceOf[scala.Array[Char]]
+
+    // A high surrogate awaiting its low half across a scratch boundary, or zero.
+    private var pending: Char = 0
+
+    // The filled block is lent, not copied: the consumer sees the writer's own array through a
+    // `Region` for the duration of the call, after which the block is reused.
+    private update def publish(): Unit =
+      if index > 0 then
+        Region.over[Data, Unit](current, 0, index)(lending)
+        index = 0
+
+    update def byte(value: Int): Unit =
+      if index == block then publish()
+      current(index) = value.toByte
+      index += 1
+
+    // `String#getBytes(int, int, byte[], int)` is deprecated because it drops each character's
+    // high byte, which is exactly right for ASCII, and it copies a Latin-1 string's storage
+    // directly.
+    @scala.annotation.nowarn("cat=deprecation")
+    private update def copyAscii(text: String, from: Int, end: Int): Unit =
+      text.getBytes(from, end, current, index)
+
+    // Text known to be ASCII, such as markup: each character is one byte.
+    update def ascii(text: String): Unit =
+      val length = text.length
+
+      if index + length <= block then
+        copyAscii(text, 0, length)
+        index += length
+      else
+        var from = 0
+
+        // Shape 2: `from` advances through `text` by the room left in the block, which is
+        // published whenever it fills, so every step makes progress.
+        while from < length do
+          if index == block then publish()
+          val count = (length - from).min(block - index)
+          copyAscii(text, from, from + count)
+          index += count
+          from += count
+
+    // Bytes already encoded as UTF-8, copied verbatim: `source(from until end)`. A copy that
+    // fits the block is the common case, and is one `arraycopy`, which measured faster than a
+    // loop even for a name of a few bytes.
+    update def bytes(source: scala.Array[Byte], from: Int, end: Int): Unit =
+      val length = end - from
+
+      if index + length <= block then
+        System.arraycopy(source, from, current, index, length)
+        index += length
+      else
+        spill(source, from, end)
+
+    private update def spill(source: scala.Array[Byte], from: Int, end: Int): Unit =
+      var start = from
+
+      // Shape 2: `start` advances through `[from, end)` by the room left in the block, which is
+      // published whenever it fills, so every step makes progress.
+      while start < end do
+        if index == block then publish()
+        val count = (end - start).min(block - index)
+        System.arraycopy(source, start, current, index, count)
+        index += count
+        start += count
+
+    // Text encoded as UTF-8 with nothing escaped.
+    update def text(text: String): Unit = chars(text, null)
+
+    // The names a document repeats (its element and attribute names) and their encodings, in a
+    // direct-mapped cache keyed by the string's own cached hash and matched by identity, or
+    // failing that by equality: a parser shares one instance per distinct name, and literals
+    // are interned, so a repeated name is usually found with one comparison, and a name built
+    // afresh for each use (as a derived encoder's labels are) with a comparison of its
+    // characters, and in both cases written with one copy. Any other string is encoded by
+    // `String#getBytes`, which writes a lone surrogate as `?` where the other
+    // methods write U+FFFD, and no well-formed name contains one; it then replaces the entry
+    // in its slot. The cache holds each slot's name and
+    // encoding side by side, and is leased from the `Blockpool` like the block, so it stays
+    // warm from one document to the next.
+    @caps.unsafe.untrackedCaptures
+    private val names: scala.Array[AnyRef | Null]^ =
+      Blockpool.poll(namesClass, Utf8Writer.NameSlots*2) match
+        case null   => new scala.Array[AnyRef | Null](Utf8Writer.NameSlots*2)
+        case pooled => pooled.asInstanceOf[scala.Array[AnyRef | Null]]
+
+    // A name, encoded as UTF-8 with nothing escaped, through the cache.
+    update def name(text: String): Unit =
+      val hash = text.hashCode
+      val slot = ((hash ^ (hash >>> 16)) & (Utf8Writer.NameSlots - 1))*2
+      val cached = names(slot + 1)
+
+      val name = names(slot)
+
+      val encoded: scala.Array[Byte] =
+        if cached != null && name != null && ((name eq text.asInstanceOf[AnyRef]) || name == text)
+        then cached.asInstanceOf[scala.Array[Byte]]
+        else
+          val fresh = text.getBytes(java.nio.charset.StandardCharsets.UTF_8).nn
+          names(slot) = text
+          names(slot + 1) = fresh.asInstanceOf[AnyRef]
+          fresh
+
+      bytes(encoded, 0, encoded.length)
+
+    // Text encoded as UTF-8 with each ASCII character that `escapes` names replaced by its
+    // entity.
+    update def escaped(text: String, escapes: Utf8Writer.Escapes): Unit = chars(text, escapes)
+
+    // A decimal integer.
+    update def long(value: Long): Unit =
+      if value == Long.MinValue then ascii("-9223372036854775808")
+      else
+        if index + 20 > block then publish()
+        val out = current
+        var n = if value < 0 then -value else value
+        var k = index + 20
+
+        // Digits are written backwards from a fixed end; shape 1, terminating when `n` is 0.
+        while n != 0 do
+          k -= 1
+          out(k) = ('0' + n % 10).toByte
+          n /= 10
+
+        if k == index + 20 then
+          k -= 1
+          out(k) = '0'
+
+        if value < 0 then
+          k -= 1
+          out(k) = '-'
+
+        val length = index + 20 - k
+        System.arraycopy(out, k, out, index, length)
+        index += length
+
+    // The bytes of the entity numbered `code` in `escapes`.
+    private update def entity(escapes: Utf8Writer.Escapes, code: Int): Unit =
+      val offsets = escapes.offsets.asInstanceOf[scala.Array[Int]]
+      val start = offsets(code - 1)
+      val end = offsets(code)
+      if index + end - start > block then publish()
+      System.arraycopy(escapes.data.asInstanceOf[AnyRef], start, current, index, end - start)
+      index += end - start
+
+    private update def replacement(): Unit =
+      byte(0xef)
+      byte(0xbf)
+      byte(0xbd)
+
+    // The slow path: a non-ASCII character, or any character while a surrogate is pending.
+    private update def encode(char: Char): Unit =
+      if pending != 0 then
+        val high = pending
+        pending = 0
+
+        if Character.isLowSurrogate(char) then
+          val codepoint = Character.toCodePoint(high, char)
+          byte(0xf0 | (codepoint >> 18))
+          byte(0x80 | ((codepoint >> 12) & 0x3f))
+          byte(0x80 | ((codepoint >> 6) & 0x3f))
+          byte(0x80 | (codepoint & 0x3f))
+        else
+          replacement()
+          encode(char)
+      else if Character.isHighSurrogate(char) then
+        pending = char
+      else if Character.isLowSurrogate(char) then
+        replacement()
+      else if char < 0x80 then
+        byte(char)
+      else if char < 0x800 then
+        byte(0xc0 | (char >> 6))
+        byte(0x80 | (char & 0x3f))
+      else
+        byte(0xe0 | (char >> 12))
+        byte(0x80 | ((char >> 6) & 0x3f))
+        byte(0x80 | (char & 0x3f))
+
+    // Encodes `text(from until end)` when `chars` is null, else `chars(from until end)`,
+    // escaping through `escapes` unless it is null. A short string is read through `charAt`,
+    // whose per-character cost is below the fixed cost of inflating it into the scratch; a
+    // long one is inflated a scratch-full at a time by `chars`. Shape 2 (index arithmetic
+    // derived from the data): `k` runs over `[from, end)`, and `at` shadows `index` within
+    // `[0, block]`, written back around every slow-path call and at exit, so the block's fill
+    // count is always exact. The hot loop reads only locals.
+    private update def encodeRange
+      ( text:    String,
+        chars:   scala.Array[Char] | Null,
+        from:    Int,
+        end:     Int,
+        escapes: Utf8Writer.Escapes | Null )
+    :   Unit =
+
+      val out = current
+      val limit = block
+
+      // The table's codes, read as the plain array they are: `IArray`'s generic `apply` would box
+      // each byte.
+      val codes: scala.Array[Byte] | Null =
+        if escapes == null then null else escapes.codes.asInstanceOf[scala.Array[Byte]]
+
+      var k = from
+      var at = index
+
+      while k < end do
+        val char = if chars == null then text.charAt(k) else chars(k)
+
+        if char < 0x80 && pending == 0 then
+          val code = if codes == null then 0 else codes(char)
+
+          if code == 0 then
+            if at == limit then
+              index = at
+              publish()
+              at = 0
+
+            out(at) = char.toByte
+            at += 1
+          else
+            index = at
+            entity(escapes.nn, code)
+            at = index
+        else
+          index = at
+          encode(char)
+          at = index
+
+        k += 1
+
+      index = at
+
+    private update def chars(text: String, escapes: Utf8Writer.Escapes | Null): Unit =
+      val end = text.length
+
+      if end <= 64 then encodeRange(text, null, 0, end, escapes)
+      else
+        var from = 0
+
+        // Shape 2: `from` advances through `text` by at most a scratch-full of characters at a
+        // time, so every step makes progress.
+        while from < end do
+          val count = (end - from).min(scratch.length)
+          text.getChars(from, from + count, scratch, 0)
+          encodeRange(text, scratch, 0, count, escapes)
+          from += count
+
+      if pending != 0 then
+        pending = 0
+        replacement()
+
+    // Flushes the last block and returns both buffers to the pool; the writer is spent.
+    update def finish(): Unit =
+      publish()
+      Blockpool.offer(bytesClass, block, current.asInstanceOf[AnyRef])
+      Blockpool.offer(charsClass, block, scratch.asInstanceOf[AnyRef])
+      Blockpool.offer(namesClass, Utf8Writer.NameSlots*2, names.asInstanceOf[AnyRef])
 
   // The media a text serializer's push form can be delivered as: `Text` blocks through `sink`,
   // or UTF-8 `Data` blocks through `utf8`. A format's `emit[medium](value, deliver)` summons

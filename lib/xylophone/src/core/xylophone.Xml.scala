@@ -1995,6 +1995,8 @@ object Xml extends Tag.Container
   =>  ((Document[Xml] is Streamable by Text over Credit)^{monitor}) =
     document => zephyrine.Stream(emit(document))
 
+  // Serializes on a fiber, handing out text as it is produced, so a large document can be
+  // written to a socket or file before it is fully rendered.
   def emit(document: Document[Xml])
     ( using formatting: Formatting, monitor: Monitor, probate: Probate )
   :   Iterator[Text] =
@@ -2002,178 +2004,268 @@ object Xml extends Tag.Container
     val producer = Producer[Text]()
 
     async:
-      writeDocument(producer, formatting, document)
+      writeDocument(new Textual(producer), formatting, document)
       producer.finish()
 
     producer.iterator
 
-  private def writeDocument
-    ( producer: (Producer[Text])^, formatting: Formatting, document: Document[Xml] )
+  // The push form: serializes on the caller's thread, handing each block to `deliver` as it
+  // fills, so no fiber is involved — the right shape for writing to a file, a socket or an
+  // `OutputStream`, where the pull form above pays a thread handoff per block. The medium is
+  // chosen by the type argument: `emit[Text]` delivers text, and `emit[Data]` delivers UTF-8
+  // bytes encoded straight from the serializer, with no intermediate `Text` per block.
+  def emit[medium: Emitter](document: Document[Xml], deliver: medium => Unit)
+    ( using formatting: Formatting, buffering: Buffering )
   :   Unit =
 
-    writeXml(producer, formatting, document.metadata, 0)
-    if formatting.indent.present then producer.put("\n")
-    writeXml(producer, formatting, document.root, 0)
-    if formatting.trailingNewline then producer.put("\n")
+    summon[Emitter[medium]].emit(document, formatting, deliver)
 
-  // Escape text content so the result is well-formed and round-trips exactly. `&` and `<` must be
-  // escaped; `>` is escaped too so the `]]>` sequence can never appear; and a carriage return is
-  // written as a character reference so XML line-ending normalization cannot rewrite it to `\n`.
-  private def writeEscapedText(producer: (Producer[Text])^, text: Text): Unit =
-    val source = text.s
-    val length = source.length
-    var start = 0
-    var index = 0
+  // How the push form of `emit` reaches its consumer: as text blocks through a `Producer[Text]`,
+  // or as UTF-8 blocks written directly by the byte-level writer.
+  object Emitter:
+    given text: Emitter[Text]:
+      def emit(document: Document[Xml], formatting: Formatting, deliver: Text => Unit)
+        ( using Buffering )
+      :   Unit =
 
-    inline def escape(entity: Text): Unit =
-      if index > start then producer.put(text, start.z, index - start)
-      producer.put(entity)
-      start = index + 1
+        Producer.sink[Text](deliver): producer =>
+          writeDocument(new Textual(producer), formatting, document)
 
-    while index < length do
-      source.charAt(index) match
-        case '&'  => escape(t"&amp;")
-        case '<'  => escape(t"&lt;")
-        case '>'  => escape(t"&gt;")
-        case '\r' => escape(t"&#xD;")
-        case _    => ()
+    given data: Emitter[Data]:
+      def emit(document: Document[Xml], formatting: Formatting, deliver: Data => Unit)
+        ( using buffering: Buffering )
+      :   Unit =
 
-      index += 1
+        given Formatting = formatting
 
-    if length > start then producer.put(text, start.z, length - start)
+        lend(document): region => interval => deliver(region.materialize(interval))
 
-  // Escape an attribute value delimited by double quotes. Besides the text escapes, the delimiter
-  // and the whitespace characters tab, line feed and carriage return become character references,
-  // since attribute-value normalization would otherwise collapse literal whitespace to spaces.
-  private def writeEscapedAttribute(producer: (Producer[Text])^, text: Text): Unit =
-    val source = text.s
-    val length = source.length
-    var start = 0
-    var index = 0
+  trait Emitter[medium]:
+    def emit(document: Document[Xml], formatting: Formatting, deliver: medium => Unit)
+      ( using Buffering )
+    :   Unit
 
-    inline def escape(entity: Text): Unit =
-      if index > start then producer.put(text, start.z, index - start)
-      producer.put(entity)
-      start = index + 1
+  // The borrowing form of the push `emit`: serializes to UTF-8 on the caller's thread, and lends
+  // each filled block to `lending` as a `Region[Data]` with its branded extent, valid only for
+  // the duration of the call — the discipline of `Stream.lend` — so nothing is copied. A
+  // consumer that must keep the bytes materializes them itself; `emit[Data]` is that consumer
+  // for the common case.
+  def lend(document: Document[Xml])(lending: Producer.Lending[Data])
+    ( using formatting: Formatting, buffering: Buffering )
+  :   Unit =
 
-    while index < length do
-      source.charAt(index) match
-        case '&'  => escape(t"&amp;")
-        case '<'  => escape(t"&lt;")
-        case '>'  => escape(t"&gt;")
-        case '"'  => escape(t"&quot;")
-        case '\t' => escape(t"&#x9;")
-        case '\n' => escape(t"&#xA;")
-        case '\r' => escape(t"&#xD;")
-        case _    => ()
+    Producer.Utf8Writer.lend(lending): writer =>
+      writeDocument(new Bytes(writer), formatting, document)
 
-      index += 1
+  private def writeDocument(out: Out^, formatting: Formatting, document: Document[Xml]): Unit =
+    writeXml(out, formatting, document.metadata, 0)
+    if formatting.indent.present then out.ascii("\n")
+    writeXml(out, formatting, document.root, 0)
+    if formatting.trailingNewline then out.ascii("\n")
 
-    if length > start then producer.put(text, start.z, length - start)
+  // The leaf operations of the serializer, per output medium; the traversal in `writeXml` is
+  // shared. `Textual` puts text into a `Producer[Text]`, so `show` and the pull form of `emit`
+  // render through the same code; `Bytes` writes UTF-8 straight into a byte block through
+  // zephyrine's `Utf8Writer`, escaping and encoding each string in one pass over its characters,
+  // and lends each block as it fills.
+  private[xylophone] trait Out extends caps.ExclusiveCapability, caps.Stateful:
+    // Markup known to be ASCII: delimiters and keywords.
+    update def ascii(text: String): Unit
 
-  // The single, spec-correct XML serializer. `emit` drives it through a streaming `Producer` and
-  // `showable` through a synchronous one, so the two never drift. When the `Formatting` carries
-  // an `indent`, element-only content is laid out one child per indented line; an element that
-  // contains any character data is kept inline so its text is never altered.
-  // `declared` holds the bindings the output has declared above this node. An element whose
-  // scope binds a prefix it uses (or its default namespace) differently from what is declared,
-  // and does not declare it among its own attributes, has the declaration written for it, so a
-  // subtree built in code or cut from a document serializes namespace-well-formed; a parsed
-  // document carries its declarations as attributes, and is written back exactly as read.
+    // An element or attribute name, or a namespace prefix, written verbatim; a document repeats
+    // its names, so a byte-level output may cache their encodings.
+    update def name(text: String): Unit
+
+    // Text written verbatim, escaped for nothing: the content of comments, CDATA sections,
+    // doctypes and processing instructions.
+    update def raw(text: String): Unit
+
+    // Character data, escaped for text content.
+    update def text(text: String): Unit
+
+    // An attribute value, escaped for a double-quoted attribute.
+    update def attribute(text: String): Unit
+
+  private[xylophone] final class Textual(producer: (Producer[Text])^) extends Out:
+    update def ascii(text: String): Unit = producer.put(text.tt)
+    update def name(text: String): Unit = producer.put(text.tt)
+    update def raw(text: String): Unit = producer.put(text.tt)
+    update def text(text: String): Unit = writeEscaped(text, false)
+    update def attribute(text: String): Unit = writeEscaped(text, true)
+
+    // Escapes character data, or a double-quoted attribute value when `attribute`. `&` and `<`
+    // must be escaped; `>` is escaped too so the `]]>` sequence can never appear; and a carriage
+    // return is written as a character reference so XML line-ending normalization cannot
+    // rewrite it to `\n`. In an attribute, the delimiter and the whitespace characters tab and
+    // line feed become character references too, since attribute-value normalization would
+    // otherwise collapse literal whitespace to spaces.
+    private update def writeEscaped(source: String, attribute: Boolean): Unit =
+      val text = source.tt
+      val length = source.length
+      var start = 0
+      var index = 0
+
+      inline def escape(entity: Text): Unit =
+        if index > start then producer.put(text, start.z, index - start)
+        producer.put(entity)
+        start = index + 1
+
+      while index < length do
+        source.charAt(index) match
+          case '&'                => escape(t"&amp;")
+          case '<'                => escape(t"&lt;")
+          case '>'                => escape(t"&gt;")
+          case '\r'               => escape(t"&#xD;")
+          case '"' if attribute   => escape(t"&quot;")
+          case '\t' if attribute  => escape(t"&#x9;")
+          case '\n' if attribute  => escape(t"&#xA;")
+          case _                  => ()
+
+        index += 1
+
+      if length > start then producer.put(text, start.z, length - start)
+
+  private[xylophone] object Bytes:
+    // The same escapes as `Textual`'s, as tables.
+    val textEscapes: Producer.Utf8Writer.Escapes =
+      Producer.Utf8Writer.escapes('&' -> "&amp;", '<' -> "&lt;", '>' -> "&gt;", '\r' -> "&#xD;")
+
+    val attributeEscapes: Producer.Utf8Writer.Escapes =
+      Producer.Utf8Writer.escapes
+        ( '&' -> "&amp;", '<' -> "&lt;", '>' -> "&gt;", '\r' -> "&#xD;", '"' -> "&quot;",
+          '\t' -> "&#x9;", '\n' -> "&#xA;" )
+
+  private[xylophone] final class Bytes(writer: Producer.Utf8Writer^) extends Out:
+    update def ascii(text: String): Unit = writer.ascii(text)
+    update def name(text: String): Unit = writer.name(text)
+    update def raw(text: String): Unit = writer.text(text)
+    update def text(text: String): Unit = writer.escaped(text, Bytes.textEscapes)
+    update def attribute(text: String): Unit = writer.escaped(text, Bytes.attributeEscapes)
+
+  // The single, spec-correct XML serializer. `emit`, `lend` and `showable` all drive it, so they
+  // never drift. When the `Formatting` carries an `indent`, element-only content is laid out
+  // one child per indented line; an element that contains any character data is kept inline so
+  // its text is never altered. Elements and text are tested first, since nearly every node of
+  // a document is one or the other.
   private def writeXml
-    ( producer: (Producer[Text])^, formatting: Formatting, node: Xml, depth: Int,
-      declared: Scope = Scope.xml )
+    ( out: Out^, formatting: Formatting, node: Xml, depth: Int, declared: Scope = Scope.xml )
   :   Unit =
 
     node match
-      case Fragment(nodes*) =>
-        nodes.each(writeXml(producer, formatting, _, depth, declared))
+      case element: Element =>
+        writeElement(out, formatting, element, depth, declared)
 
-      case TextNode(text) =>
-        writeEscapedText(producer, text)
+      case node: TextNode =>
+        out.text(node.text.s)
+
+      case Fragment(nodes*) =>
+        nodes.each(writeXml(out, formatting, _, depth, declared))
 
       case Comment(comment) =>
-        producer.put("<!--")
-        producer.put(comment)
-        producer.put("-->")
+        out.ascii("<!--")
+        out.raw(comment.s)
+        out.ascii("-->")
 
       case Cdata(text) =>
-        producer.put("<![CDATA[")
-        producer.put(text)
-        producer.put("]]>")
+        out.ascii("<![CDATA[")
+        out.raw(text.s)
+        out.ascii("]]>")
 
       case Doctype(text) =>
-        producer.put("<!DOCTYPE ")
-        producer.put(text)
-        producer.put(">")
+        out.ascii("<!DOCTYPE ")
+        out.raw(text.s)
+        out.ascii(">")
 
       case ProcessingInstruction(target, data) =>
-        producer.put("<?")
-        producer.put(target)
+        out.ascii("<?")
+        out.name(target.s)
 
         if !data.nil then
-          producer.put(" ")
-          producer.put(data)
+          out.ascii(" ")
+          out.raw(data.s)
 
-        producer.put("?>")
+        out.ascii("?>")
 
       case Header(version, encoding, standalone, _) =>
-        producer.put("<?xml version=\"")
-        producer.put(version)
-        producer.put("\"")
+        out.ascii("<?xml version=\"")
+        out.raw(version.s)
+        out.ascii("\"")
 
         encoding.let: encoding =>
-          producer.put(" encoding=\"")
-          producer.put(encoding)
-          producer.put("\"")
+          out.ascii(" encoding=\"")
+          out.raw(encoding.s)
+          out.ascii("\"")
 
         standalone.let: standalone =>
-          producer.put(if standalone then " standalone=\"yes\"" else " standalone=\"no\"")
+          out.ascii(if standalone then " standalone=\"yes\"" else " standalone=\"no\"")
 
-        producer.put("?>")
+        out.ascii("?>")
 
-      case element: Element =>
-        val label = element.label
-        val attributes = element.attributes
-        val children = element.children
-        producer.put("<")
-        producer.put(label)
+  // `declared` holds the bindings the output has declared above this element. An element whose
+  // scope binds a prefix it uses (or its default namespace) differently from what is declared,
+  // and does not declare it among its own attributes, has the declaration written for it, so a
+  // subtree built in code or cut from a document serializes namespace-well-formed; a parsed
+  // document carries its declarations as attributes, and is written back exactly as read. An
+  // element whose scope is the one declared needs no search: the parser shares a scope between
+  // an element and each child that declares nothing, and passing the element's own scope down
+  // keeps the identity test cheap for its descendants.
+  private def writeElement
+    ( out: Out^, formatting: Formatting, element: Element, depth: Int, declared: Scope )
+  :   Unit =
 
-        val own =
-          if attributes.declaresNamespace then Scope.declared(declared, attributes) else declared
+    val label = element.label.s
+    val attributes = element.attributes
+    val children = element.children
+    val scope = element.scope
+    out.ascii("<")
+    out.name(label)
 
-        // The declarations the element's scope implies but nothing has written
+    val own =
+      if attributes.declaresNamespace then Scope.declared(declared, attributes) else declared
+
+    val inner =
+      if scope.isEmpty then own
+      else if scope.same(own) then scope
+      else
         val missing = Xml.undeclared(element, own)
 
         missing.eachPair: (prefix, uri) =>
-          producer.put(if prefix.nil then t" xmlns=\"" else t" xmlns:$prefix=\"")
-          writeEscapedAttribute(producer, uri)
-          producer.put("\"")
+          out.ascii(" xmlns")
 
-        if !attributes.nil then attributes.eachPair: (key, value) =>
-          producer.put(" ")
-          producer.put(key)
-          producer.put("=\"")
-          writeEscapedAttribute(producer, value)
-          producer.put("\"")
+          if !prefix.nil then
+            out.ascii(":")
+            out.name(prefix.s)
 
-        val inner = if missing.nil then own else own ++ Scope.fromAttributes(missing)
+          out.ascii("=\"")
+          out.attribute(uri.s)
+          out.ascii("\"")
 
-        if children.nil then producer.put("/>") else
-          producer.put(">")
+        if missing.nil then own else own ++ Scope.fromAttributes(missing)
 
-          if formatting.indent.present && !children.exists(textual) then
-            children.each: child =>
-              newline(producer, formatting, depth + 1)
-              writeXml(producer, formatting, child, depth + 1, inner)
+    if !attributes.nil then attributes.eachPair: (key, value) =>
+      out.ascii(" ")
+      out.name(key.s)
+      out.ascii("=\"")
+      out.attribute(value.s)
+      out.ascii("\"")
 
-            newline(producer, formatting, depth)
-          else
-            children.each(writeXml(producer, formatting, _, depth, inner))
+    if children.nil then out.ascii("/>") else
+      out.ascii(">")
 
-          producer.put("</")
-          producer.put(label)
-          producer.put(">")
+      // `iterate` rather than `each`: `each` counts its ordinal through a boxed closure, which
+      // measured as a third of the time to write a document.
+      if formatting.indent.present && !children.exists(textual) then
+        children.iterate: index =>
+          newline(out, formatting, depth + 1)
+          writeXml(out, formatting, children(index), depth + 1, inner)
+
+        newline(out, formatting, depth)
+      else
+        children.iterate: index => writeXml(out, formatting, children(index), depth, inner)
+
+      out.ascii("</")
+      out.name(label)
+      out.ascii(">")
 
   // Character data (text or CDATA) forces an element to be serialized inline, so indentation
   // whitespace can never alter its content.
@@ -2183,15 +2275,16 @@ object Xml extends Tag.Container
     case _           => false
 
   // In indented mode, emit a newline followed by `depth` indent units.
-  private def newline(producer: (Producer[Text])^, formatting: Formatting, depth: Int): Unit =
+  private def newline(out: Out^, formatting: Formatting, depth: Int): Unit =
     formatting.indent.let: unit =>
-      producer.put("\n")
+      out.ascii("\n")
+
       repeat(depth):
-        producer.put(unit)
+        out.raw(unit.s)
 
   given showable: [xml <: Xml] => (formatting: Formatting) => xml is Showable = node =>
     Producer.collect[Text](): producer =>
-      writeXml(producer, formatting, node, 0)
+      writeXml(new Textual(producer), formatting, node, 0)
       if formatting.trailingNewline then producer.put("\n")
 
   // `Element`, `Fragment`, `TextNode`, `Cdata`, `Comment`, `Doctype`, `ProcessingInstruction` and
@@ -2204,7 +2297,7 @@ object Xml extends Tag.Container
     val formatting: Formatting = Formatting(Unset, trailingNewline = false)
 
     val markup: Text = Producer.collect[Text](): producer =>
-      writeXml(producer, formatting, node, 0)
+      writeXml(new Textual(producer), formatting, node, 0)
 
     val builder: StringBuilder = new StringBuilder()
     markup.each { char => builder.append(Inspectable.escape(char).s) }

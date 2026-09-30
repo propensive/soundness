@@ -40,19 +40,23 @@ import scala.quoted.*
 import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
+import denominative.*
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
 import hieroglyph.*, codepages.utf8Codepage
+import parasite.*, threading.virtualThreading, probates.cancelProbate
 import probably.*
 import proscenium.*
 import quantitative.*
 import rudiments.*
 import sedentary.*
+import spectacular.*
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 // Parser-throughput benchmarks against TEL-converted versions of the
 // eight JSON samples that the `jacinta.Benchmarks` suite uses. The
@@ -76,6 +80,13 @@ case class BOrder
     discount: Double )
 
 case class BOrders(orders: List[BOrder])
+
+// The serialization corpus: the 500-entry log document of `example5.tel`, as case classes, so
+// that it can be encoded to a `Tel` whose atoms hold strings, as a server's response would.
+case class BLog
+  ( timestamp: Long, level: Text, service: Text, requestId: Text, userId: Int, message: Text )
+
+case class BLogs(logs: List[BLog])
 
 object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
   sealed trait Information extends Dimension
@@ -157,6 +168,54 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
 
   given bintelParsable: (BOrders is Bintel.Parsable) = BintelInlinable.parsable[BOrders]
 
+  // ── Serialization ──────────────────────────────────────────────────────
+  //
+  // Every arm writes the 500-entry log document to a discarding `OutputStream`, as a server
+  // writing a response body would: once parsed from `example5.tel`, whose atoms are slices of
+  // the parser's arena, and once encoded from case classes, whose atoms are strings. `show`
+  // renders the whole text first; `emit` streams chunks from a fiber, or pushes them
+  // synchronously as text or as UTF-8 bytes; and `lend` lends its own UTF-8 blocks.
+  private val utf8Charset: java.nio.charset.Charset = java.nio.charset.StandardCharsets.UTF_8.nn
+
+  private def sink(): java.io.OutputStream = java.io.OutputStream.nullOutputStream().nn
+
+  lazy val logsParsed: Tel = Tel.parse(example5Bytes)
+
+  lazy val logsEncoded: Tel =
+    import Tel.given
+    val levels = scala.Array("info", "debug", "warn", "error")
+    val services = scala.Array("auth", "api", "db", "cache", "worker")
+
+    def log(index: Int): BLog =
+      BLog
+        ( 1700000000L + index, levels(index & 3).tt, services(index%5).tt,
+          ("req-"+index).tt, 1000 + index%50, ("event "+index+" processed").tt )
+
+    BLogs(List.tabulate(500)(log(_))).encode
+
+  def writeWhole(tel: Tel): Unit = sink().write(tel.show.s.getBytes(utf8Charset).nn)
+
+  def stream(tel: Tel): Unit =
+    val out = sink()
+    supervise(Tel.emit(tel).foreach(chunk => out.write(chunk.s.getBytes(utf8Charset).nn)))
+
+  def push(tel: Tel): Unit =
+    val out = sink()
+    Tel.emit[Text](tel, chunk => out.write(chunk.s.getBytes(utf8Charset).nn))
+
+  def pushBytes(tel: Tel): Unit =
+    val out = sink()
+    Tel.emit[Data](tel, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+
+  def lend(tel: Tel): Unit =
+    val out = sink()
+
+    Tel.lend(tel): region =>
+      interval =>
+        val extent: Interval = interval
+        val raw = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+        out.write(raw, extent.start.n0, extent.size)
+
   def decodeBintelAst(): BOrders = Bintel.read[BOrders](bintelData)
   def decodeBintelInlined(): BOrders = Bintel.parse[BOrders](bintelData)
 
@@ -173,6 +232,42 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
 
       bench(m"BinTEL via AST")(target = 1*Second):
         '{ stratiform.Benchmarks.decodeBintelAst() }
+
+    suite(m"Write 500 log entries, parsed from example5.tel, to an output stream"):
+      val size = stratiform.Benchmarks.logsParsed.show.s.getBytes("UTF-8").nn.length*Byte
+
+      bench(m"show, then write the whole text")(target = 1*Second, operationSize = size):
+        '{ stratiform.Benchmarks.writeWhole(stratiform.Benchmarks.logsParsed) }
+
+      bench(m"emit, streamed chunk by chunk")(target = 1*Second, operationSize = size):
+        '{ stratiform.Benchmarks.stream(stratiform.Benchmarks.logsParsed) }
+
+      bench(m"emit, pushed synchronously")(target = 1*Second, operationSize = size):
+        '{ stratiform.Benchmarks.push(stratiform.Benchmarks.logsParsed) }
+
+      bench(m"emit, pushed as UTF-8 bytes")(target = 1*Second, operationSize = size):
+        '{ stratiform.Benchmarks.pushBytes(stratiform.Benchmarks.logsParsed) }
+
+      bench(m"lend, borrowed UTF-8 blocks")(target = 1*Second, operationSize = size):
+        '{ stratiform.Benchmarks.lend(stratiform.Benchmarks.logsParsed) }
+
+    suite(m"Write 500 log entries, encoded from case classes, to an output stream"):
+      val size = stratiform.Benchmarks.logsEncoded.show.s.getBytes("UTF-8").nn.length*Byte
+
+      bench(m"show, then write the whole text")(target = 1*Second, operationSize = size):
+        '{ stratiform.Benchmarks.writeWhole(stratiform.Benchmarks.logsEncoded) }
+
+      bench(m"emit, streamed chunk by chunk")(target = 1*Second, operationSize = size):
+        '{ stratiform.Benchmarks.stream(stratiform.Benchmarks.logsEncoded) }
+
+      bench(m"emit, pushed synchronously")(target = 1*Second, operationSize = size):
+        '{ stratiform.Benchmarks.push(stratiform.Benchmarks.logsEncoded) }
+
+      bench(m"emit, pushed as UTF-8 bytes")(target = 1*Second, operationSize = size):
+        '{ stratiform.Benchmarks.pushBytes(stratiform.Benchmarks.logsEncoded) }
+
+      bench(m"lend, borrowed UTF-8 blocks")(target = 1*Second, operationSize = size):
+        '{ stratiform.Benchmarks.lend(stratiform.Benchmarks.logsEncoded) }
 
     suite(m"Example 1 — web-app servlet config"):
       val size = example1Bytes.length*Byte
