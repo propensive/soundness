@@ -49,6 +49,7 @@ import gastronomy.*
 import gossamer.*
 import hieroglyph.*
 import panopticon.*
+import parasite.*
 
 // The `Tel` lens and optic instances live in `stratiform.optics` now, outside `Tel`'s implicit
 // scope, so they must be imported by name.
@@ -66,6 +67,8 @@ import zephyrine.lineation.linefeedByte
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import codepages.utf8Codepage
+import threading.virtualThreading
+import probates.cancelProbate
 import Tel.given
 
 object Tests extends Suite(m"Stratiform Tests"):
@@ -127,6 +130,43 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"stratiform's types inspect natively"):
         Inspectable.fallbacks(t"name Jane\n".read[Tel].inspect, Tel.empty.inspect)
       . assert(_ == Nil)
+
+      test(m"emit streams exactly the text show renders"):
+        val source = t"tel 1.0\n\n# people\nperson Jane  # lead\n  age 21\n\nperson Bob\n"
+        val parsed = source.read[Tel]
+        supervise(Tel.emit(parsed).to(List).join) == parsed.show
+      . assert(identity)
+
+      test(m"emit of an encoded value wraps it in a document, as show does"):
+        val parsed = t"name Jane\n".read[Tel]
+        supervise(Tel.emit(parsed).to(List).join) == parsed.show
+      . assert(identity)
+
+      test(m"the push form of emit delivers exactly the text show renders"):
+        val parsed = t"tel 1.0\n\n# people\nperson Jane  # lead\n  age 21\n".read[Tel]
+        val builder = new jl.StringBuilder()
+        Tel.emit[Text](parsed, chunk => builder.append(chunk.s))
+        builder.toString.tt == parsed.show
+      . assert(identity)
+
+      test(m"lend hands out borrowed blocks whose bytes equal the encoded text"):
+        val parsed = t"name Zoë ☃ 😀\nage 21\n".read[Tel]
+        val out = new java.io.ByteArrayOutputStream()
+
+        Tel.lend(parsed): region =>
+          interval =>
+            val extent: Interval = interval
+            out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), extent.start.n0, extent.size)
+
+        java.util.Arrays.equals(out.toByteArray, parsed.show.s.getBytes("UTF-8"))
+      . assert(identity)
+
+      test(m"emit as UTF-8 bytes matches the encoded text, including non-ASCII"):
+        val parsed = t"name Zoë ☃ 😀\n".read[Tel]
+        val out = new java.io.ByteArrayOutputStream()
+        Tel.emit[Data](parsed, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+        java.util.Arrays.equals(out.toByteArray, parsed.show.s.getBytes("UTF-8"))
+      . assert(identity)
 
     // Positive fixtures whose reference dump differs from this implementation's
     // presentation model by design; each is explained in the corpus

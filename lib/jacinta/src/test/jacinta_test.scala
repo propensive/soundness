@@ -42,6 +42,8 @@ import scala.language.dynamics
 
 import codepages.utf8Codepage
 import strategies.throwUnsafely
+import threading.virtualThreading
+import probates.cancelProbate
 import formatting.compactJsonFormatting
 
 import discriminables.jsonByKindDiscriminable
@@ -1281,6 +1283,73 @@ object Tests extends Suite(m"Jacinta Tests"):
         val printed = (List(1, 2, 3): List[Int]).in[Json].show
         printed.contains(t"\n")
       . assert(identity)
+
+      test(m"emit streams exactly the text show renders"):
+        import formatting.indentedJsonFormatting
+        val json = Json.make(a = 1.in[Json], b = (List(t"x", t"y"): List[Text]).in[Json], c = t"q\"\n".in[Json])
+        supervise(Json.emit(json).to(List).mkString.tt) == json.show
+      . assert(identity)
+
+      test(m"the push form of emit delivers exactly the text show renders"):
+        import formatting.indentedJsonFormatting
+        val json = Json.make(a = 1.in[Json], b = (List(t"x", t"y"): List[Text]).in[Json], c = t"q\"\n".in[Json])
+        val builder = new StringBuilder()
+        Json.emit[Text](json, chunk => builder.append(chunk.s))
+        builder.toString.tt == json.show
+      . assert(identity)
+
+      test(m"the push form of emit delivers a large document in more than one chunk"):
+        import formatting.compactJsonFormatting
+        val json = t"[${(0 until 20000).mkString(",")}]".read[Json]
+        var chunks = 0
+        Json.emit[Text](json, _ => chunks += 1)
+        chunks
+      . assert(_ > 1)
+
+      test(m"emit as UTF-8 bytes matches the encoded text, including non-ASCII"):
+        import formatting.compactJsonFormatting
+        val json = Json.make(name = t"Zoë ☃ 😀".in[Json], n = 42.in[Json])
+        val out = new java.io.ByteArrayOutputStream()
+        Json.emit[Data](json, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+        java.util.Arrays.equals(out.toByteArray, json.show.s.getBytes("UTF-8"))
+      . assert(identity)
+
+      test(m"lend hands out borrowed blocks whose bytes equal the encoded text"):
+        import formatting.compactJsonFormatting
+        val json = Json.make(name = t"Zoë ☃ 😀".in[Json], n = 42.in[Json], big = t"[${(0 until 3000).mkString(",")}]".read[Json])
+        val out = new java.io.ByteArrayOutputStream()
+        var blocks = 0
+
+        Json.lend(json): region =>
+          interval =>
+            val extent: Interval = interval
+            blocks += 1
+            out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), extent.start.n0, extent.size)
+
+        blocks > 1 && java.util.Arrays.equals(out.toByteArray, json.show.s.getBytes("UTF-8"))
+      . assert(identity)
+
+      test(m"the byte form renders every BCD number form as show does"):
+        import formatting.compactJsonFormatting
+        val json = t"""{"a":[1,-2,0.5,1e3,2.5e-7,-0.001],"b":12345678901234567890,"c":[0.25,100,3e2],"d":123456789012345678901234567890.5}""".read[Json]
+        val out = new java.io.ByteArrayOutputStream()
+        Json.emit[Data](json, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+        String(out.toByteArray, "UTF-8").tt == json.show
+      . assert(identity)
+
+      test(m"emit as UTF-8 bytes of a large document arrives in more than one chunk"):
+        import formatting.compactJsonFormatting
+        val json = t"[${(0 until 20000).mkString(",")}]".read[Json]
+        var chunks = 0
+        Json.emit[Data](json, _ => chunks += 1)
+        chunks
+      . assert(_ > 1)
+
+      test(m"emit of a large document arrives in more than one chunk"):
+        import formatting.compactJsonFormatting
+        val json = t"[${(0 until 20000).mkString(",")}]".read[Json]
+        supervise(Json.emit(json).to(List).length)
+      . assert(_ > 1)
 
     suite(m"Discriminator strategies"):
       test(m"Discriminate by 'kind' (default in this file)"):

@@ -2538,8 +2538,8 @@ object iridescence extends Library:
 
 object jacinta extends Library:
   object core extends Component(zephyrine.core, turbulence.core, serpentine.core, adversaria.core,
-      hypotenuse.core, polyvinyl.core, anticipation.url, anticipation.time, anticipation.net,
-      anticipation.uuid):
+      hypotenuse.core, polyvinyl.core, parasite.core, anticipation.url, anticipation.time,
+      anticipation.net, anticipation.uuid):
     // The parser's SWAR word reads: the JVM variant is a byte-array view `VarHandle`, which
     // neither Scala.js nor Scala Native provides, so the crosses compile the portable
     // shift-and-or variant instead (the split `jslink.fastLinkJS` enforces).
@@ -3177,7 +3177,8 @@ object stratiform extends Library:
   object base256 extends Component(contingency.core, fulminate.core, anticipation.codec):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object core extends Component(zephyrine.core, turbulence.core, gossamer.core, contingency.core,
+  object core extends Component(zephyrine.core, turbulence.core, parasite.core, gossamer.core,
+      contingency.core,
       anticipation.codec, distillate.core, wisteria.core, prepositional.core, contextual.core,
       gigantism.core, fulminate.core, adversaria.core, aperture.core, praxinoscope.core,
       base256, gastronomy.core, ulysses.core, polyvinyl.core):

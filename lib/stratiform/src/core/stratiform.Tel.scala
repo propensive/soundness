@@ -49,6 +49,7 @@ import contingency.*
 import denominative.{Span, z}
 import distillate.*
 import gossamer.*
+import parasite.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -3368,9 +3369,15 @@ object Tel extends Tel2:
   // inserted between lines but never after the last (total newlines = lines - 1; trailing
   // blank-line counts realised by appending that many empty lines).
   given documentShowable: Tel.Document is Showable = document =>
-    import scala.language.unsafeNulls
-
     Producer.collect[Text](): producer =>
+      writeDocument(producer, document)
+
+  // The single TEL serializer, driven through a `Producer`: `documentShowable` collects it
+  // into one `Text`, and `Tel.emit` streams it line by line from a fiber, so a large document
+  // can be sent before it is fully rendered — the model of xylophone's `emit`.
+  private def writeDocument(producer: (Producer[Text])^, document: Tel.Document): Unit =
+      import scala.language.unsafeNulls
+
       val newline = document.lineEndings match
         case Tel.LineEndings.Lf   => "\n"
         case Tel.LineEndings.Crlf => "\r\n"
@@ -3510,6 +3517,51 @@ object Tel extends Tel2:
       case other              => Document(Unset, Unset, LineEndings.Lf, 0, other.children)
 
     document.show
+
+  // `^{monitor}` only: `Probate` is not capture-tracked, as in xylophone's `streamable`.
+  given streamable: (monitor: Monitor, probate: Probate)
+  =>  ((Tel is Streamable by Text over Credit)^{monitor}) =
+    tel => zephyrine.Stream(emit(tel))
+
+  // Serializes on a fiber, handing out text as it is produced, so a large document can be
+  // written to a socket or file before it is fully rendered — the model of `Xml.emit`. A `Tel`
+  // rooted at a Compound is wrapped in a Document first, exactly as `showable` wraps it.
+  def emit(tel: Tel)(using monitor: Monitor, probate: Probate): Iterator[Text] =
+    val document = tel.subtree match
+      case document: Document => document
+      case other              => Document(Unset, Unset, LineEndings.Lf, 0, other.children)
+
+    val producer = Producer[Text]()
+
+    async:
+      writeDocument(producer, document)
+      producer.finish()
+
+    producer.iterator
+
+  // The push form: serializes on the caller's thread, handing each block of text to `consume`
+  // as it fills, so no fiber is involved — the right shape for writing to a file, a socket or
+  // an `OutputStream`, where the pull form above pays a thread handoff per block.
+  // The medium is chosen by the type argument: `emit[Text]` delivers text, and `emit[Data]`
+  // delivers UTF-8 bytes encoded straight from the serializer, with no intermediate `Text`.
+  def emit[medium: Producer.Emission](tel: Tel, deliver: medium => Unit)(using Buffering): Unit =
+    val document = tel.subtree match
+      case document: Document => document
+      case other              => Document(Unset, Unset, LineEndings.Lf, 0, other.children)
+
+    summon[Producer.Emission[medium]].run(deliver): producer =>
+      writeDocument(producer, document)
+
+  // The borrowing form of the push `emit`: serializes to UTF-8 on the caller's thread, lending
+  // each filled block to `lending` as a `Region[Data]` with its branded extent, valid only for
+  // the duration of the call — the discipline of `Stream.lend` — so nothing is copied.
+  def lend(tel: Tel)(lending: Producer.Lending[Data])(using Buffering): Unit =
+    val document = tel.subtree match
+      case document: Document => document
+      case other              => Document(Unset, Unset, LineEndings.Lf, 0, other.children)
+
+    Producer.lendUtf8(lending): producer =>
+      writeDocument(producer, document)
 
   // `Tel` is a plain class, so there is no reflection to derive from, and TEL's block syntax is
   // multi-line, which an inspection is not. The document is rendered with its line breaks

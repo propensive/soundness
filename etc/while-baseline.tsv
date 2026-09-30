@@ -113,7 +113,7 @@ lib/hypotenuse/src/core/hypotenuse.internal.scala	4	0	0
 lib/hypotenuse/src/core/hypotenuse.rationalInternal.scala	33	0	19
 lib/hypotenuse/src/core/hypotenuse_core.scala	4	0	0
 lib/jacinta/src/core/jacinta.Json.Parser.scala	57	12	0
-lib/jacinta/src/core/jacinta.Json.scala	32	41	3
+lib/jacinta/src/core/jacinta.Json.scala	39	41	5
 lib/jacinta/src/core/jacinta.Json4.scala	0	0	0
 lib/jacinta/src/core/jacinta.JsonPointer.scala	1	0	4
 lib/jacinta/src/core/jacinta.internal.scala	12	20	2
@@ -252,7 +252,7 @@ lib/zephyrine/src/core/zephyrine.Duct.scala	2	0	0
 lib/zephyrine/src/core/zephyrine.Ductile.scala	3	0	0
 lib/zephyrine/src/core/zephyrine.Handoff.scala	5	0	0
 lib/zephyrine/src/core/zephyrine.Intake.scala	2	0	0
-lib/zephyrine/src/core/zephyrine.Producer.scala	1	0	0
+lib/zephyrine/src/core/zephyrine.Producer.scala	4	0	1
 lib/zephyrine/src/core/zephyrine.Region.scala	3	0	0
 lib/zephyrine/src/core/zephyrine.Slate.scala	1	0	0
 lib/zephyrine/src/core/zephyrine.internal.scala	0	0	1
