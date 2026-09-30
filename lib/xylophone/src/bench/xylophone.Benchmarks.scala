@@ -40,10 +40,12 @@ import contingency.*, strategies.throwUnsafely
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
+import parasite.*, threading.virtualThreading, probates.cancelProbate
 import probably.*
 import proscenium.*
 import quantitative.*
 import sedentary.*
+import spectacular.*
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
@@ -70,6 +72,113 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
     unsafely(text.load[Xml])
 
   def parseScalaXml(text: String): scala.xml.Elem = scala.xml.XML.loadString(text)
+
+  // ── Streaming output ───────────────────────────────────────────────────
+  //
+  // Every arm writes a parsed document to a discarding `OutputStream`, as a server writing a
+  // response body would. Xylophone's `emit` streams chunks from a fiber, and its `show`
+  // renders the whole text first. The StAX arms walk a W3C DOM tree through a
+  // `XMLStreamWriter`, so, like Xylophone, each serializes a generic tree rather than
+  // code written for the document's shape: Aalto is the fastest StAX writer on the JVM, and
+  // the JDK's own is what an application gets with no dependency. The JDK's `Transformer`
+  // is the classic DOM-to-stream serializer, and scala-xml's `toString` builds the whole
+  // text, the non-streaming baseline.
+  private val compact: Xml.Formatting = Xml.Formatting(Unset, false)
+  private val utf8Charset: java.nio.charset.Charset = java.nio.charset.StandardCharsets.UTF_8.nn
+
+  private def sink(): java.io.OutputStream = java.io.OutputStream.nullOutputStream().nn
+
+  lazy val aaltoOutput: javax.xml.stream.XMLOutputFactory =
+    new com.fasterxml.aalto.stax.OutputFactoryImpl()
+
+  lazy val jdkOutput: javax.xml.stream.XMLOutputFactory =
+    javax.xml.stream.XMLOutputFactory.newDefaultFactory().nn
+
+  lazy val transformer: javax.xml.transform.Transformer =
+    javax.xml.transform.TransformerFactory.newDefaultInstance().nn.newTransformer().nn
+
+  def parseDom(text: String): org.w3c.dom.Document =
+    val factory = javax.xml.parsers.DocumentBuilderFactory.newDefaultInstance().nn
+    factory.setNamespaceAware(true)
+    val input = java.io.ByteArrayInputStream(text.getBytes(utf8Charset).nn)
+    factory.newDocumentBuilder().nn.parse(input).nn
+
+  def writeXylophoneWhole(document: Document[Xml]): Unit =
+    given Xml.Formatting = compact
+    sink().write(document.root.show.s.getBytes(utf8Charset).nn)
+
+  def streamXylophone(document: Document[Xml]): Unit =
+    given Xml.Formatting = compact
+    val out = sink()
+
+    supervise:
+      Xml.emit(document).foreach: chunk =>
+        out.write(chunk.s.getBytes(utf8Charset).nn)
+
+  // Walks the DOM, writing each node through the StAX writer; attributes are written with
+  // their qualified names, as the parser saw them.
+  private def walk(writer: javax.xml.stream.XMLStreamWriter, node: org.w3c.dom.Node): Unit =
+    node.getNodeType match
+      case org.w3c.dom.Node.ELEMENT_NODE =>
+        writer.writeStartElement(node.getNodeName.nn)
+        val attributes = node.getAttributes.nn
+        val count = attributes.getLength
+        var index = 0
+
+        while index < count do
+          val attribute = attributes.item(index).nn
+          writer.writeAttribute(attribute.getNodeName.nn, attribute.getNodeValue.nn)
+          index += 1
+
+        var child = node.getFirstChild
+
+        while child != null do
+          walk(writer, child)
+          child = child.getNextSibling
+
+        writer.writeEndElement()
+
+      case org.w3c.dom.Node.TEXT_NODE =>
+        writer.writeCharacters(node.getNodeValue.nn)
+
+      case org.w3c.dom.Node.CDATA_SECTION_NODE =>
+        writer.writeCData(node.getNodeValue.nn)
+
+      case org.w3c.dom.Node.COMMENT_NODE =>
+        writer.writeComment(node.getNodeValue.nn)
+
+      case _ =>
+        ()
+
+  def streamStax(factory: javax.xml.stream.XMLOutputFactory, document: org.w3c.dom.Document)
+  :   Unit =
+
+    val writer = factory.createXMLStreamWriter(sink(), "UTF-8").nn
+    writer.writeStartDocument("UTF-8", "1.0")
+    walk(writer, document.getDocumentElement.nn)
+    writer.writeEndDocument()
+    writer.close()
+
+  def streamAalto(document: org.w3c.dom.Document): Unit = streamStax(aaltoOutput, document)
+  def streamJdk(document: org.w3c.dom.Document): Unit = streamStax(jdkOutput, document)
+
+  def streamTransformer(document: org.w3c.dom.Document): Unit =
+    transformer.transform
+      ( javax.xml.transform.dom.DOMSource(document),
+        javax.xml.transform.stream.StreamResult(sink()) )
+
+  def writeScalaXmlWhole(element: scala.xml.Elem): Unit =
+    sink().write(element.toString.getBytes(utf8Charset).nn)
+
+  lazy val document3: Document[Xml] = parseXylophone(xml3)
+  lazy val document4: Document[Xml] = parseXylophone(xml4)
+  lazy val document5: Document[Xml] = parseXylophone(xml5)
+  lazy val dom3: org.w3c.dom.Document = parseDom(xmlText3)
+  lazy val dom4: org.w3c.dom.Document = parseDom(xmlText4)
+  lazy val dom5: org.w3c.dom.Document = parseDom(xmlText5)
+  lazy val elem3: scala.xml.Elem = parseScalaXml(xmlText3)
+  lazy val elem4: scala.xml.Elem = parseScalaXml(xmlText4)
+  lazy val elem5: scala.xml.Elem = parseScalaXml(xmlText5)
 
   def run(): Unit =
     val bench = Bench()
@@ -134,6 +243,81 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
 
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size5):
         '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText5) }
+
+    suite(m"Stream example 3 (Atom feed) to an output stream"):
+      bench(m"Xylophone: emit, streamed chunk by chunk")
+        ( target = 1*Second, operationSize = size3 ):
+        '{ xylophone.Benchmarks.streamXylophone(xylophone.Benchmarks.document3) }
+
+      bench(m"Xylophone: show, then write the whole text")
+        ( target = 1*Second, operationSize = size3 ):
+        '{ xylophone.Benchmarks.writeXylophoneWhole(xylophone.Benchmarks.document3) }
+
+      bench(m"Aalto: StAX writer over a DOM, streamed")
+        ( target = 1*Second, operationSize = size3 ):
+        '{ xylophone.Benchmarks.streamAalto(xylophone.Benchmarks.dom3) }
+
+      bench(m"JDK: StAX writer over a DOM, streamed")
+        ( target = 1*Second, operationSize = size3 ):
+        '{ xylophone.Benchmarks.streamJdk(xylophone.Benchmarks.dom3) }
+
+      bench(m"JDK: Transformer over a DOM, streamed")
+        ( target = 1*Second, operationSize = size3 ):
+        '{ xylophone.Benchmarks.streamTransformer(xylophone.Benchmarks.dom3) }
+
+      bench(m"scala-xml: toString, then write the whole text")
+        ( target = 1*Second, operationSize = size3 ):
+        '{ xylophone.Benchmarks.writeScalaXmlWhole(xylophone.Benchmarks.elem3) }
+
+    suite(m"Stream example 4 (100 book records) to an output stream"):
+      bench(m"Xylophone: emit, streamed chunk by chunk")
+        ( target = 1*Second, operationSize = size4 ):
+        '{ xylophone.Benchmarks.streamXylophone(xylophone.Benchmarks.document4) }
+
+      bench(m"Xylophone: show, then write the whole text")
+        ( target = 1*Second, operationSize = size4 ):
+        '{ xylophone.Benchmarks.writeXylophoneWhole(xylophone.Benchmarks.document4) }
+
+      bench(m"Aalto: StAX writer over a DOM, streamed")
+        ( target = 1*Second, operationSize = size4 ):
+        '{ xylophone.Benchmarks.streamAalto(xylophone.Benchmarks.dom4) }
+
+      bench(m"JDK: StAX writer over a DOM, streamed")
+        ( target = 1*Second, operationSize = size4 ):
+        '{ xylophone.Benchmarks.streamJdk(xylophone.Benchmarks.dom4) }
+
+      bench(m"JDK: Transformer over a DOM, streamed")
+        ( target = 1*Second, operationSize = size4 ):
+        '{ xylophone.Benchmarks.streamTransformer(xylophone.Benchmarks.dom4) }
+
+      bench(m"scala-xml: toString, then write the whole text")
+        ( target = 1*Second, operationSize = size4 ):
+        '{ xylophone.Benchmarks.writeScalaXmlWhole(xylophone.Benchmarks.elem4) }
+
+    suite(m"Stream example 5 (500 log entries) to an output stream"):
+      bench(m"Xylophone: emit, streamed chunk by chunk")
+        ( target = 1*Second, operationSize = size5 ):
+        '{ xylophone.Benchmarks.streamXylophone(xylophone.Benchmarks.document5) }
+
+      bench(m"Xylophone: show, then write the whole text")
+        ( target = 1*Second, operationSize = size5 ):
+        '{ xylophone.Benchmarks.writeXylophoneWhole(xylophone.Benchmarks.document5) }
+
+      bench(m"Aalto: StAX writer over a DOM, streamed")
+        ( target = 1*Second, operationSize = size5 ):
+        '{ xylophone.Benchmarks.streamAalto(xylophone.Benchmarks.dom5) }
+
+      bench(m"JDK: StAX writer over a DOM, streamed")
+        ( target = 1*Second, operationSize = size5 ):
+        '{ xylophone.Benchmarks.streamJdk(xylophone.Benchmarks.dom5) }
+
+      bench(m"JDK: Transformer over a DOM, streamed")
+        ( target = 1*Second, operationSize = size5 ):
+        '{ xylophone.Benchmarks.streamTransformer(xylophone.Benchmarks.dom5) }
+
+      bench(m"scala-xml: toString, then write the whole text")
+        ( target = 1*Second, operationSize = size5 ):
+        '{ xylophone.Benchmarks.writeScalaXmlWhole(xylophone.Benchmarks.elem5) }
 
   lazy val xmlText1: String = xmlExample1.s
   lazy val xmlText2: String = xmlExample2.s
