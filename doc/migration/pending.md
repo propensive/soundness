@@ -78,7 +78,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   (`ethereal.name` unset) now reads `This application must be invoked through its XEK
   launcher.`, gives the command as `xek <jar> <name>` instead of `xeq build --jar <jar> --out
   <name>`, and points to `https://propensive.dev/xek` and `https://github.com/propensive/xek`
-  instead of `https://github.com/propensive/xeq`. Exit status unchanged (1). (#PR)
+  instead of `https://github.com/propensive/xeq`. Exit status unchanged (1). (#2113)
 
 ## exoskeleton
 
@@ -86,7 +86,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   by `$XEQ` (default `dist/xeq`) as `<builder> [--build-id <id>] <jar> <target>`, the command
   line of `xek` 0.10 and later, instead of `<builder> build --jar <jar> --out <target>
   [--build-id <id>]`. `$XEQ`, or `dist/xeq`, must therefore be an `xek` from the `xek-0.10`
-  release or later; the `xeq` script of 0.9 and earlier fails to package. (#PR)
+  release or later; the `xeq` script of 0.9 and earlier fails to package. (#2113)
 
 ## gesticulate
 
