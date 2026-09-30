@@ -193,6 +193,31 @@ object Tests extends Suite(m"Stratiform Tests"):
           TelCheckTree.of(reparsed)
         . assert(_ == TelCheckTree.of(testcase.source.read[Tel]))
 
+    // The byte-level writer copies parsed atoms from the parser's arena rather than rendering
+    // them as text, so every fixture checks that it writes exactly the encoding of `show`.
+    suite(m"Byte-level serialization"):
+      def lent(tel: Tel): scala.Array[Byte] =
+        val out = new java.io.ByteArrayOutputStream()
+
+        Tel.lend(tel): region =>
+          interval =>
+            val extent: Interval = interval
+            val raw = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+            out.write(raw, extent.start.n0, extent.size)
+
+        out.toByteArray.nn
+
+      CorpusLoader.positive.each: testcase =>
+        test(m"lend writes the encoding of show for ${testcase.stem}"):
+          val parsed = testcase.source.read[Tel]
+          java.util.Arrays.equals(lent(parsed), parsed.show.s.getBytes("UTF-8"))
+        . assert(identity)
+
+      test(m"lend writes the encoding of show for an encoded value"):
+        val encoded = Person(t"Zoë ☃", 30).encode
+        java.util.Arrays.equals(lent(encoded), encoded.show.s.getBytes("UTF-8"))
+      . assert(identity)
+
     suite(m"Blank-then-deeper layout (§9, issue #1834)"):
       // Blank lines have no structural effect: a blank run before a deeper
       // line neither errors nor (formerly) silently ends the document. The
