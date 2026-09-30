@@ -94,7 +94,7 @@ The August figure counted the modules that *override* their options downward —
 and one benchmark, both justified in comments. It missed that separation checking is opted
 *into*: `Component`, `Tests` and `Benchmarks` default to plain `settings.scalaOptions`, so a
 module that never mentions `settings.sep` is not checked at all, and eighty-odd never do
-(among them the anthology formats, reliquary, synesthesia, telekinesis's JVM backend and every
+(among them the anthology formats, synesthesia, telekinesis's JVM backend and every
 benchmark). The end-state has no such module: every one compiles with separation checking.
 
 Done when: no component in `build.mill` compiles with anything weaker than `settings.sep`.

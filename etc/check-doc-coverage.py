@@ -28,14 +28,13 @@ INTERNAL = {
     'anticipation', 'prepositional', 'proscenium', 'murmuration', 'corpuscular', 'tessellate',
     'beneficence', 'umbrageous', 'prescience', 'frontier', 'symbolism', 'denominative',
     'concordance', 'delicious', 'prophesy', 'stenography', 'wisteria', 'polaris',
+    'degustation',    # the TASTy reader; its only tutorial was the LIRA topic, retired by dist-10
 }
 
 # Libraries whose coverage the export-name heuristic cannot see, mapped by hand.
 COVERED_BY = {
     'exegesis': ['lsp.md'],
     'espionage': ['acp.md'],
-    'degustation': ['library-archives.md'],
-    'reliquary': ['library-archives.md'],
     'virility': ['cli.md'],
     'ziggurat': ['packaging.md'],
     'digression': ['stack-traces.md'],

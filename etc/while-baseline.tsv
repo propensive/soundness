@@ -173,12 +173,6 @@ lib/punctuation/src/core/punctuation.InlineSupport.scala	37	0	99
 lib/punctuation/src/core/punctuation.LinkRefs.scala	1	0	1
 lib/punctuation/src/core/punctuation.ParserSupport.scala	12	0	21
 lib/punctuation/src/core/punctuation.Serializer.scala	10	0	15
-lib/reliquary/src/core/reliquary.AtomsBlob.scala	1	0	0
-lib/reliquary/src/core/reliquary.Blob.scala	1	0	0
-lib/reliquary/src/core/reliquary.BlobStream.scala	1	0	0
-lib/reliquary/src/core/reliquary.Lira.scala	4	0	3
-lib/reliquary/src/core/reliquary.SchemaDelegate.scala	3	0	0
-lib/reliquary/src/core/reliquary.UsesBlob.scala	1	0	0
 lib/rudiments/src/core/rudiments.Atomic.scala	1	0	0
 lib/rudiments/src/core/rudiments.Loop.scala	1	0	0
 lib/rudiments/src/core/rudiments.atomicMacros.scala	4	0	0

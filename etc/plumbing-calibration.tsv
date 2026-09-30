@@ -4,7 +4,6 @@
 # `legitimate` above 4. Columns: locus, label, note.
 lib/aviation/src/core/aviation.Calendar.scala ▸ Calendar.monthName(month: Mensual): Text	definite	toString.tt where Showable exists
 lib/stratiform/src/core/stratiform.Tels.scala ▸ Tels.Axiom.kebab(s: String): Text	definite	alias for Text(s)
-lib/mandible/src/lira/mandible.ClassfileAtomizer.scala ▸ ClassfileAtomizer.tag(out: Scribe[Byte], char: Char): Unit	definite	same byte adapter in six files
 lib/telekinesis/src/wasi/telekinesis_wasi.scala ▸ wasiHttp/request(url, method, headers, body, x$5)/bytes(text: Text): Data	definite	hand-rolled UTF-8 encoding
 lib/vivisection/src/eval/vivisection.Purview.scala ▸ Purview.normalise(text: Text): Text	definite	Text→String→Text round trip
 lib/mandible/src/core/mandible.ClasspathIndex.scala ▸ ClasspathIndex.url(entry: Text): jn.URL	definite	Text→File→URI→URL chain
@@ -32,10 +31,8 @@ lib/honeycomb/src/core/honeycomb.internal.scala ▸ internal.Attributes.extensio
 lib/jacinta/src/core/jacinta.Json.scala ▸ Json.Ast.showable(formatting)/writeString(string)/escape(entity: Text): Unit	legitimate	buffer logic
 lib/probably/src/core/probably.Selection.scala ▸ Selection.hex(text: Text): Boolean	legitimate	validation
 lib/probably/src/core/probably.Selection.scala ▸ Selection.number(text: Text): Optional[Double]	legitimate	parse to Optional
-lib/reliquary/src/core/reliquary.TreePath.scala ▸ TreePath.check(text)/segment(part: String | Null): Boolean	legitimate	validation
 lib/spectacular/src/core/spectacular.Inspectable.scala ▸ Inspectable.stream(inspectable)/recur(stream: Chain[element], todo: Int): Text	legitimate	rendering recursion
 lib/tasseomancy/src/core/tasseomancy.Framing.scala ▸ Framing.hexOf(color)/channel(value: Double): Text	legitimate	arithmetic
-lib/xenophile/src/lira/xenophile.KotlinMetadataAtomizer.scala ▸ KotlinMetadataAtomizer.atomize(content, classpath)/loadMetadataName(name)/variants(name: String): SList[String]	legitimate	logic
 lib/xenophile/src/nativeruntime/xenophile.ForeignLibrary.scala ▸ ForeignLibrary.register(paths: Text*): Unit	legitimate	logic with panic
 lib/xylophone/src/core/xylophone.Xml4.scala ▸ Xml4.Provider.access(name: Text, xml: Xml): Xml	legitimate	logic
 lib/mandible/src/core/mandible.Bytecode.scala ▸ Bytecode.Opcode.typeKindToFrame(kind: jlc.TypeKind): Frame	likely	one-to-one enum ladder

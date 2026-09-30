@@ -392,7 +392,7 @@ item
   track distribution
   horizon near-mid
   status open
-  baseline  reliquary reads and assembles .lira files with unit round-trips; no whole-release round-trip (2026-09-25)
+  baseline  the lira repository's format modules read and assemble .lira files with unit round-trips; no whole-release round-trip (2026-09-25)
   criterion  the LIRA reference implementation round-trips a Soundness release byte-identically in a scripted test
 
 item
@@ -447,7 +447,8 @@ item
   id dist-10
   track distribution
   horizon near
-  status open
+  status done
+  done  #2111 (2026-09-30)
   baseline  lib/reliquary (7387 lines) plus anthology.lira, degustation.lira, mandible.lira, xenophile.lira and their tests (2026-09-25)
   criterion  lib/reliquary is absent, no lib/*/src/lira directory remains, and build.mill, etc/ and doc/modules do not mention reliquary
 

@@ -135,7 +135,7 @@ them:
 - fury, developed in its own repository, becomes able to build this repository (gates `tool-4`,
   and through it `dist-5` and `doc-8`). Its progress is not tracked here; the Soundness side of
   the bootstrap is.
-- LIRA's implementation, once it has moved to the `lira` repository (`dist-10`), round-trips
+- LIRA's implementation, now in the `lira` repository (`dist-10`), round-trips
   and publishes a Soundness release (gates `dist-3`, `dist-6`, `dist-7`). As with fury, only
   what Soundness owes it is tracked here.
 
