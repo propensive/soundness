@@ -157,11 +157,11 @@ t"<Worker><name>Alice</name><age>30</age></Worker>".read[Worker in Xml]
 // Worker(t"Alice", 30)
 ```
 
-A field marked `@Xml.attribute` becomes an attribute rather than a child element, and round-trips as
+A field marked `@attribute` becomes an attribute rather than a child element, and round-trips as
 one:
 
 ```scala
-case class Book(title: Text, @Xml.attribute isbn: Text)
+case class Book(title: Text, @attribute isbn: Text)
 
 Book(t"Dune", t"0441013597").in[Xml]
 // x"""<Book isbn="0441013597"><title>Dune</title></Book>"""
@@ -184,7 +184,7 @@ A sum type decodes by its element label, so the element's name selects the varia
 naming no variant raises an `Xml.Error` rather than falling through to a default.
 
 An `Optional` field is simply absent when it is `Unset` — no child element, or for an
-`@Xml.attribute` field no attribute — and a document without the element decodes it as `Unset`
+`@attribute` field no attribute — and a document without the element decodes it as `Unset`
 rather than as an error. A `Map` field becomes one child element per entry, each holding a
 `<key>` and a `<value>`, so a key need not be a valid element name and may be any XML-encodable
 type:

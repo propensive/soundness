@@ -39,6 +39,13 @@ export
   . { Xml, Xml2, Xml3, Xml4, XmlSchema, Xsd, Namespace, x, xp,
       XPath }
 
+export xylophone.Xml.{xmlns, unqualified}
+
+// A type alias rather than an export: `galilei` and `tarantula` already export a term named
+// `attribute` into the umbrella, which the case class's companion would collide with, whereas an
+// annotation needs only the type.
+type attribute = xylophone.Xml.attribute
+
 package namespaceOptions:
   export xylophone.namespaceOptions.{lenientNamespaces, strictNamespaces}
 

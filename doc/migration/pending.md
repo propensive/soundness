@@ -232,6 +232,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `zephyrine.Region[Data]` with its branded `Interval in region.type`, valid only for the
   duration of the call, so nothing is copied; `emit[Data]` is defined over it and materializes
   each block. The text of `show` and of the fiber form of `emit` is unchanged.
+- The annotations `xylophone.Xml.attribute`, `xylophone.Xml.xmlns` and `xylophone.Xml.unqualified`
+  are now reachable under `import soundness.*` as `@attribute`, `@xmlns(…)` and `@unqualified`,
+  as they already were under `import xylophone.*`. `xmlns` and `unqualified` are exported;
+  `attribute` is the type alias `soundness.attribute = xylophone.Xml.attribute`, so only the
+  annotation (type) resolves and the term `attribute` still names `galilei`'s and `tarantula`'s
+  methods. `@Xml.attribute` continues to work. (#1953)
 
 ## ypsiloid
 
