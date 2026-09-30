@@ -946,6 +946,91 @@ object Tests extends Suite(m"Xylophone tests"):
         supervise(Xml.emit(document).to(List).mkString.tt)
       . assert(_ == t"<?xml version=\"1.0\"?>\n<a>\n  <b/>\n</a>\n")
 
+    // The fiber form of `emit` is the reference: the push and borrowing forms must write the
+    // same document, the byte forms as its UTF-8 encoding.
+    suite(m"Streaming serialization"):
+      def reference(document: Document[Xml])(using Xml.Formatting): Text =
+        supervise(Xml.emit(document).to(List).mkString.tt)
+
+      def pushed(document: Document[Xml])(using Xml.Formatting): Text =
+        val builder = new java.lang.StringBuilder()
+        Xml.emit[Text](document, chunk => builder.append(chunk.s))
+        builder.toString.tt
+
+      def lent(document: Document[Xml])(using Xml.Formatting): scala.Array[Byte] =
+        val out = new java.io.ByteArrayOutputStream()
+
+        Xml.lend(document): region =>
+          interval =>
+            val extent: Interval = interval
+            val raw = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+            out.write(raw, extent.start.n0, extent.size)
+
+        out.toByteArray.nn
+
+      def encoded(document: Document[Xml])(using Xml.Formatting): scala.Array[Byte] =
+        val out = new java.io.ByteArrayOutputStream()
+        Xml.emit[Data](document, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+        out.toByteArray.nn
+
+      def utf8(text: Text): scala.Array[Byte] = text.s.getBytes("UTF-8").nn
+
+      val soap: Text =
+        t"""<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:soap="http://""" +
+          t"""www.w3.org/2003/05/soap-envelope" xmlns:ord="urn:orders"><soap:Body>""" +
+          t"""<ord:Item ord:code="A&amp;B" note="&lt;tab&#x9;line&#xA;cr&#xD;&quot;">""" +
+          t"""Zoë ☃ 😀 &amp; &lt;b&gt; cr&#xD;</ord:Item><!-- a comment --><![CDATA[""" +
+          t"""<raw & text>]]><?target data?></soap:Body></soap:Envelope>"""
+
+      val document = unsafely(soap.load[Xml])
+
+      test(m"the push form of emit writes exactly what the fiber form writes"):
+        import formatting.compactXmlFormatting
+        pushed(document)
+      . assert(_ == reference(document))
+
+      test(m"lend writes the UTF-8 encoding of what the fiber form writes"):
+        import formatting.compactXmlFormatting
+        java.util.Arrays.equals(lent(document), utf8(reference(document)))
+      . assert(identity)
+
+      test(m"emit as UTF-8 bytes writes the encoding of what the fiber form writes"):
+        import formatting.compactXmlFormatting
+        java.util.Arrays.equals(encoded(document), utf8(reference(document)))
+      . assert(identity)
+
+      test(m"lend indents exactly as the fiber form does"):
+        import formatting.indentedXmlFormatting
+        java.util.Arrays.equals(lent(document), utf8(reference(document)))
+      . assert(identity)
+
+      // The item, cut from its envelope, carries a scope binding prefixes that nothing above it
+      // declares, so the writer must declare them itself.
+      val item: Element = root(document.root) match
+        case Element(_, _, Array(Element(_, _, Array(item: Element, _*)))) => item
+        case _                                                            => elem(t"none")
+
+      val cut = Document[Xml](item, Header(t"1.0", Unset, Unset))
+
+      test(m"lend declares the namespaces a subtree cut from a document needs"):
+        import formatting.compactXmlFormatting
+        String(lent(cut), "UTF-8").tt
+      . assert(_ == reference(cut))
+
+      test(m"a subtree cut from a document declares its namespaces"):
+        import formatting.compactXmlFormatting
+        reference(cut)
+      . assert(_.contains(t"xmlns:ord=\"urn:orders\""))
+
+      // Longer than a block, and with its text node longer than the writer's scratch, so that
+      // surrogate pairs and entities straddle both boundaries.
+      test(m"lend writes a document spanning many blocks exactly"):
+        import formatting.compactXmlFormatting
+        val text = t"a😀&<é"*40000
+        val large = Document[Xml](elem(t"big", TextNode(text)), Header(t"1.0", Unset, Unset))
+        java.util.Arrays.equals(lent(large), utf8(reference(large)))
+      . assert(identity)
+
 
     suite(m"Documents with prologs"):
       test(m"Document with comment in prolog"):

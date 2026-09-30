@@ -269,6 +269,38 @@ import formatting.indentedXmlFormatting
 Worker(t"Alice", 30).in[Xml].show   // indented across several lines
 ```
 
+`show` renders the whole node into one `Text`. A large document need not be held in memory
+before it is sent. The push form of `Xml.emit` serializes a `Document[Xml]`, with its header, on
+the caller's thread and hands each block to a function as it fills — as text with `emit[Text]`,
+or as UTF-8 bytes with `emit[Data]`, escaped and encoded straight from the serializer — which is
+the shape for writing to a file, a socket or an `OutputStream`:
+
+<!-- doccheck: skip -->
+```scala
+Xml.emit[Data](document, chunk => socket.write(chunk))
+```
+
+Where even the copy into each `Data` chunk is unwanted, `Xml.lend` lends each filled block
+instead: the consumer sees the writer's own buffer as a `Region`, with a branded interval that
+proves every index in range, valid only for the duration of the call — the same discipline as a
+stream's `lend`:
+
+<!-- doccheck: skip -->
+```scala
+Xml.lend(document): region =>
+  interval => region.visit(interval)(index => sink.put(region(index)))
+```
+
+Where a consumer pulls instead, `Xml.emit(document)` serializes on a fiber and hands out the text
+through an iterator, and a `Document[Xml]` is `Streamable` by `Text` on the same terms, under a
+`supervise` block:
+
+<!-- doccheck: skip -->
+```scala
+supervise:
+  Xml.emit(document).each(chunk => out.write(chunk))
+```
+
 ### Paths
 
 An [XPath](https://en.wikipedia.org/wiki/XPath)-like path names a location within a document. The

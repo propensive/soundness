@@ -237,7 +237,7 @@ lib/vivisection/src/core/vivisection.Variable.scala	0	0	2
 lib/xylophone/src/core/xylophone.XPath.scala	1	0	2
 lib/xylophone/src/core/xylophone.XPathEngine.scala	5	2	4
 lib/xylophone/src/core/xylophone.XPathReader.scala	15	0	25
-lib/xylophone/src/core/xylophone.Xml.scala	52	46	14
+lib/xylophone/src/core/xylophone.Xml.scala	51	46	13
 lib/xylophone/src/core/xylophone.internal.scala	22	18	2
 lib/yossarian/src/core/yossarian.Pty.scala	14	2	0
 lib/yossarian/src/core/yossarian.internal.scala	3	0	0
@@ -252,7 +252,7 @@ lib/zephyrine/src/core/zephyrine.Duct.scala	2	0	0
 lib/zephyrine/src/core/zephyrine.Ductile.scala	3	0	0
 lib/zephyrine/src/core/zephyrine.Handoff.scala	5	0	0
 lib/zephyrine/src/core/zephyrine.Intake.scala	2	0	0
-lib/zephyrine/src/core/zephyrine.Producer.scala	4	0	1
+lib/zephyrine/src/core/zephyrine.Producer.scala	9	0	1
 lib/zephyrine/src/core/zephyrine.Region.scala	3	0	0
 lib/zephyrine/src/core/zephyrine.Slate.scala	1	0	0
 lib/zephyrine/src/core/zephyrine.internal.scala	0	0	1

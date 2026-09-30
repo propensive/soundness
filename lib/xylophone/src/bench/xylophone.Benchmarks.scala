@@ -37,6 +37,7 @@ import scala.quoted.*
 import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
+import denominative.*
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
@@ -76,7 +77,8 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
   // ── Streaming output ───────────────────────────────────────────────────
   //
   // Every arm writes a parsed document to a discarding `OutputStream`, as a server writing a
-  // response body would. Xylophone's `emit` streams chunks from a fiber, and its `show`
+  // response body would. Xylophone's `emit` streams chunks from a fiber or pushes them
+  // synchronously, as text or as UTF-8 bytes; `lend` lends its own UTF-8 blocks; and `show`
   // renders the whole text first. The StAX arms walk a W3C DOM tree through a
   // `XMLStreamWriter`, so, like Xylophone, each serializes a generic tree rather than
   // code written for the document's shape: Aalto is the fastest StAX writer on the JVM, and
@@ -114,6 +116,26 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
     supervise:
       Xml.emit(document).foreach: chunk =>
         out.write(chunk.s.getBytes(utf8Charset).nn)
+
+  def pushXylophone(document: Document[Xml]): Unit =
+    given Xml.Formatting = compact
+    val out = sink()
+    Xml.emit[Text](document, chunk => out.write(chunk.s.getBytes(utf8Charset).nn))
+
+  def pushBytesXylophone(document: Document[Xml]): Unit =
+    given Xml.Formatting = compact
+    val out = sink()
+    Xml.emit[Data](document, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+
+  def lendXylophone(document: Document[Xml]): Unit =
+    given Xml.Formatting = compact
+    val out = sink()
+
+    Xml.lend(document): region =>
+      interval =>
+        val extent: Interval = interval
+        val raw = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+        out.write(raw, extent.start.n0, extent.size)
 
   // Walks the DOM, writing each node through the StAX writer; attributes are written with
   // their qualified names, as the parser saw them.
@@ -249,6 +271,18 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
         ( target = 1*Second, operationSize = size3 ):
         '{ xylophone.Benchmarks.streamXylophone(xylophone.Benchmarks.document3) }
 
+      bench(m"Xylophone: emit, pushed synchronously")
+        ( target = 1*Second, operationSize = size3 ):
+        '{ xylophone.Benchmarks.pushXylophone(xylophone.Benchmarks.document3) }
+
+      bench(m"Xylophone: emit, pushed as UTF-8 bytes")
+        ( target = 1*Second, operationSize = size3 ):
+        '{ xylophone.Benchmarks.pushBytesXylophone(xylophone.Benchmarks.document3) }
+
+      bench(m"Xylophone: lend, borrowed UTF-8 blocks")
+        ( target = 1*Second, operationSize = size3 ):
+        '{ xylophone.Benchmarks.lendXylophone(xylophone.Benchmarks.document3) }
+
       bench(m"Xylophone: show, then write the whole text")
         ( target = 1*Second, operationSize = size3 ):
         '{ xylophone.Benchmarks.writeXylophoneWhole(xylophone.Benchmarks.document3) }
@@ -274,6 +308,18 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
         ( target = 1*Second, operationSize = size4 ):
         '{ xylophone.Benchmarks.streamXylophone(xylophone.Benchmarks.document4) }
 
+      bench(m"Xylophone: emit, pushed synchronously")
+        ( target = 1*Second, operationSize = size4 ):
+        '{ xylophone.Benchmarks.pushXylophone(xylophone.Benchmarks.document4) }
+
+      bench(m"Xylophone: emit, pushed as UTF-8 bytes")
+        ( target = 1*Second, operationSize = size4 ):
+        '{ xylophone.Benchmarks.pushBytesXylophone(xylophone.Benchmarks.document4) }
+
+      bench(m"Xylophone: lend, borrowed UTF-8 blocks")
+        ( target = 1*Second, operationSize = size4 ):
+        '{ xylophone.Benchmarks.lendXylophone(xylophone.Benchmarks.document4) }
+
       bench(m"Xylophone: show, then write the whole text")
         ( target = 1*Second, operationSize = size4 ):
         '{ xylophone.Benchmarks.writeXylophoneWhole(xylophone.Benchmarks.document4) }
@@ -298,6 +344,18 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
       bench(m"Xylophone: emit, streamed chunk by chunk")
         ( target = 1*Second, operationSize = size5 ):
         '{ xylophone.Benchmarks.streamXylophone(xylophone.Benchmarks.document5) }
+
+      bench(m"Xylophone: emit, pushed synchronously")
+        ( target = 1*Second, operationSize = size5 ):
+        '{ xylophone.Benchmarks.pushXylophone(xylophone.Benchmarks.document5) }
+
+      bench(m"Xylophone: emit, pushed as UTF-8 bytes")
+        ( target = 1*Second, operationSize = size5 ):
+        '{ xylophone.Benchmarks.pushBytesXylophone(xylophone.Benchmarks.document5) }
+
+      bench(m"Xylophone: lend, borrowed UTF-8 blocks")
+        ( target = 1*Second, operationSize = size5 ):
+        '{ xylophone.Benchmarks.lendXylophone(xylophone.Benchmarks.document5) }
 
       bench(m"Xylophone: show, then write the whole text")
         ( target = 1*Second, operationSize = size5 ):
