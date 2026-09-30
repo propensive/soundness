@@ -120,8 +120,8 @@ snapshot:
 snapshot-prune:
 	./etc/shared snapshot-prune.sh soundness $(DAYS)
 
-# Fetch the pinned `xeq` builder script (etc/xeq.tsv) from the propensive/xeq release into
-# dist/xeq, verified against its SHA-256. The build shells out to it for packaging.
+# Fetch the pinned `xek` builder (etc/xeq.tsv) from the propensive/xek release into dist/xeq,
+# verified against its SHA-256. The build shells out to it for packaging.
 xeq-fetch:
 	./etc/ci/xeq-fetch.sh
 

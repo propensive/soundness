@@ -175,13 +175,19 @@ def configure(): Unit = cli[Message]:
 
 ### Packaging
 
-The distributable is assembled by the `xeq` builder script, published with the runner stubs from
-[propensive/xeq](https://github.com/propensive/xeq). It joins the platform's native launcher stub,
-a small configuration record and the application JAR into one executable file:
+The distributable is assembled by the `xek` builder, published with the runner stubs from
+[propensive/xek](https://github.com/propensive/xek), and installed with
+`curl -fsSL https://propensive.dev/xek | sh`. It joins the platform's native launcher stub, a
+small configuration record and the application JAR into one executable file:
 
 ```sh
-xeq build --jar mytool.jar --out mytool
+xek mytool.jar
 ```
+
+That writes `mytool`, for the platform `xek` runs on. `xek -p linux-x64 -p windows-x64
+mytool.jar` builds for other platforms, and `xek --polyglot mytool.jar` builds one file for all
+of them, which runs in `sh` (and in PowerShell and `cmd.exe` once renamed) and unpacks the right
+launcher where it runs; `xek --help` lists the rest.
 
 The launcher finds or fetches a suitable JVM, starts the daemon when none is running, and — where a
 public key was built in — accepts only signed binaries when the application
@@ -208,9 +214,7 @@ Each release is then built and signed in two steps. The build bakes in the publi
 identifier:
 
 ```sh
-xeq build --jar dist/myapp.jar --out dist/myapp \
-     --build-id 42 \
-     --public-key release-keys/myapp.pub
+xek --build-id 42 --public-key release-keys/myapp.pub dist/myapp.jar dist/myapp
 ```
 
 `--build-id` must increase monotonically; the verifier compares it against the running launcher's

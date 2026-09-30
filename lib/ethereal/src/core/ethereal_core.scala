@@ -102,11 +102,11 @@ def cli[bus <: Matchable](using executive: Executive)
 
         val work: Path on Linux = workingDirectory
         val relativeJar: Relative on Linux = work.toward(jarFile)
-        Out.println(e"$Bold(This application must be invoked through its XEQ launcher.)")
+        Out.println(e"$Bold(This application must be invoked through its XEK launcher.)")
         Out.println(e"Build one with:")
-        Out.println(e"    xeq build --jar $Italic($relativeJar) --out $Italic(<name>)")
+        Out.println(e"    xek $Italic($relativeJar) $Italic(<name>)")
         Out.println()
-        Out.println(e"`xeq` is published with the runner stubs; see $Italic(https://github.com/propensive/xeq)")
+        Out.println(e"Install `xek` with $Italic(curl -fsSL https://propensive.dev/xek | sh); see $Italic(https://github.com/propensive/xek)")
         Exit.Fail(1).terminate()
 
     . protect(System.properties.ethereal.name[Text]())

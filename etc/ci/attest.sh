@@ -135,7 +135,7 @@ if [[ "${SOUNDNESS_CI_SKIP_BUILD:-0}" != "1" ]]; then
   set +e
   (
     cd "$WORKTREE" || exit 1
-    # The `xeq` builder script is not stored in the repo or any JAR; fetch the pinned release
+    # The `xek` builder is not stored in the repo or any JAR; fetch the pinned release
     # into `dist/xeq` so the test suite (the `Enclave` rig and the ethereal/profanity tests,
     # which shell out to it to package their fixtures) can find it. It is not part of the
     # Soundness (Mill) build.

@@ -954,7 +954,7 @@ object Tests extends Suite(m"Ethereal Tests"):
         // way to bake in a test public key the pair of "valid signed upgrade
         // applies / tampered upgrade rejected" end-to-end tests can be added
         // here; for now the cryptographic verifier is covered by the Rust
-        // unit tests in `propensive/xeq`'s src/runner/src/verify.rs.
+        // unit tests in `propensive/xek`'s src/runner/src/verify.rs.
 
         test(m"launcher rejects unsigned pending binary"):
           sh"mkdir -p $selfuDataDir".exec[Unit]()
