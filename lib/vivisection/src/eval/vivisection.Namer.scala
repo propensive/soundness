@@ -57,7 +57,7 @@ class Namer(classpath: LocalClasspath):
 
   def define(cls: Text, path: Text, line: Int): Optional[Text] =
     load(cls).let: tasty =>
-      if !tasty.path.let(_ == path).or(false) then Unset else
+      if !tasty.compiledFrom(path) then Unset else
         tasty.covering(line).prim.let: definition =>
           val owners: List[Text] = definition.owners.reverse.map(display(_))
           val owner: Text = owners.filter(_ != t"").join(t".")
