@@ -239,6 +239,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `zephyrine.Region[Data]` with its branded extent, valid only for the duration of the call;
   `emit[Data]` is defined over it and materializes each block. (#2109)
 
+## tessellate
+
+- `tessellate.Flow.wrap[textual: Textual { type Result = Char }](content: textual, width: Int, hyphen: Text = t"-")(using Text is Measurable, Hyphenation): Sequence[textual]`
+  gains a fourth defaulted parameter, `unbreakable: List[denominative.Interval] = Nil`, in its
+  first clause. Each interval is a span of char offsets into `content.plain` within which no
+  soft break (space or hyphenation point) is taken; hard breaks inside one still break the
+  line. With the default the behaviour is unchanged. (#2121)
+
 ## turbulence
 
 - `turbulence.load` (the extension `value.load[result <: Documentary]`) no longer takes context
