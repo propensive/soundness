@@ -1000,7 +1000,8 @@ object soundness extends Toolchain:
     caduceus.resend,
     orthodoxy.core, orthodoxy.server,
     jacinta.http, xylophone.http, ypsiloid.http,
-    stratiform.http, stratiform.optics, obligatory.core, obligatory.json, sibylline.core,
+    stratiform.http, stratiform.optics, stratiform.duplex, obligatory.core, obligatory.json,
+    sibylline.core,
     synesthesia.content,
     synesthesia.core, apoplexy.core,
     cataclysm.html, querencia.core, telekinesis.http2, embarcadero.containerd, obligatory.grpc,
@@ -3195,7 +3196,13 @@ object stratiform extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, base256, binaryStaged, staged, optics, time, http,
+  // BinTEL messages in a length-prefixed framing over a coaxial `Duplex` (`Framed`): the glue
+  // between the codec, obligatory's framing and the transport, kept out of `core` so BinTEL users
+  // don't inherit the socket layer.
+  object duplex extends Component(core, obligatory.core, coaxial.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, base256, binaryStaged, staged, optics, time, http, duplex,
       eucalyptus.core, galilei.jvm)
   object bench extends Benchmarks(core, base256, binaryStaged, quantitative.units,
       hellenism.core, ambience.core)

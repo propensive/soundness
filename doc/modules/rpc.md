@@ -126,6 +126,31 @@ lines.iterator.frames[Linefeed]            // or bare linefeeds, or CR alone
 
 gRPC's own framing — a flag byte and a four-byte length — is `Grpc.Framing`, used the same way.
 
+A `Duplex` carrying BinTEL messages — a daemon's protocol over TLS, or over a UNIX domain socket
+to a local tool — is `framed` by naming what it reads and what it sends. Each `send` writes one
+length-prefixed record whose body is the value's BinTEL encoding, `messages` reads the peer's
+records back as values, and the schemas are derived from the two types once, when the connection
+is framed, not per message. One end's `Framed from Reply to Request` meets the other's
+`Framed from Request to Reply`:
+
+<!-- doccheck: skip -->
+```scala
+case class Request(id: Int, text: Text)
+case class Reply(id: Int, length: Int)
+
+val (near, far) = Duplex.pair()
+val client: Framed from Reply to Request = near.framed[Reply, Request]
+val server: Framed from Request to Reply = far.framed[Request, Reply]
+
+client.send(Request(1, t"hello"))
+val request = server.messages.next()            // Request(1, "hello")
+server.send(Reply(request.id, request.text.length))
+client.messages.next()                          // Reply(1, 5)
+```
+
+A truncated record raises `Framing.Error`, and a body that is not the expected message raises
+`Bintel.Error`, each as the record is read.
+
 Framing is independent of how the bytes arrive. A message split across three chunks, two messages
 in one chunk, and a final message with no terminator are all handled, because the framer keeps its
 own position rather than assuming chunk boundaries mean anything:
