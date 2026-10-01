@@ -53,24 +53,20 @@ import providers.javaBaseProvider
 // `protocols` lists the ALPN application protocols to offer, in preference order (e.g.
 // `h2`, `http/1.1`); empty means no ALPN is offered, preserving the plain-TLS handshake a
 // `wss` peer expects. `versions` restricts the TLS protocol versions (e.g. `TLSv1.3`);
-// empty accepts the context's defaults. The default `given` is fully secure and offers no
-// ALPN. A `TlsAcceptance` (the richer, permit-gated trust policy) is presented in this
-// form via its `tls(...)` extension.
+// empty accepts the context's defaults. `mutual` makes a `SecurePort` listening with this
+// configuration demand a certificate of every client (and a client's context, see
+// `TlsAcceptance#keyed`, must then present one), so that both peers authenticate. The default
+// `given` is fully secure and offers no ALPN. A `TlsAcceptance` (the richer, permit-gated
+// trust policy) is presented in this form via its `tls(...)` and `keyed(...)` extensions.
 object Tls:
   given Tls = Tls()
 
   // The key material of a PKCS#12 keystore, as a `Tls` whose context PRESENTS it: the
   // configuration a `SecurePort` listens with, or a client authenticating itself to a peer.
-  // Trust is the platform's default; compose with a `TlsAcceptance` for anything else. The
-  // store's bytes are passed rather than a path, so the caller decides where secrets live.
-  def keyed(keystore: Data, password: Text): Tls =
-    val store = load(keystore, password)
-    val factory = jns.KeyManagerFactory.getInstance(jns.KeyManagerFactory.getDefaultAlgorithm.nn).nn
-    factory.init(store, password.s.toCharArray)
-
-    val context = SSLContext.getInstance("TLS").nn
-    context.init(factory.getKeyManagers, null, null)
-    Tls(context)
+  // Trust is the platform's default; `TlsAcceptance#keyed` presents the same material under
+  // any other acceptance. The store's bytes are passed rather than a path, so the caller
+  // decides where secrets live.
+  def keyed(keystore: Data, password: Text): Tls = TlsAcceptance().keyed(keystore, password)
 
   // The DER encoding of the first certificate the keystore holds under a private key: the
   // certificate a `SecurePort` bound with `keyed(keystore, password)` presents, whose
@@ -94,7 +90,7 @@ object Tls:
   // compares, and what `openssl x509 -fingerprint -sha256` prints.
   def fingerprint(certificate: Data): Data = certificate.digest[Sha2[256]].data
 
-  private def load(keystore: Data, password: Text): js.KeyStore =
+  private[coaxial] def load(keystore: Data, password: Text): js.KeyStore =
     val store = js.KeyStore.getInstance("PKCS12").nn
     val in = ji.ByteArrayInputStream(keystore.unsafeMutable(using Unsafe))
     try store.load(in, password.s.toCharArray) finally in.close()
@@ -104,4 +100,5 @@ case class Tls
   ( context:   Optional[SSLContext] = Unset,
     verify:    Boolean = true,
     protocols: List[Text] = Nil,
-    versions:  List[Text] = Nil )
+    versions:  List[Text] = Nil,
+    mutual:    Boolean = false )

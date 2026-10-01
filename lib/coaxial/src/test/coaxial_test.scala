@@ -292,11 +292,11 @@ object Tests extends Suite(m"Coaxial tests"):
       suite(m"TLS server and client"):
         import internetAccess.online
 
-        // A throwaway self-signed identity from the JDK's own `keytool`, so the test needs no
+        // Throwaway self-signed identities from the JDK's own `keytool`, so the test needs no
         // checked-in key material. PKCS#12 bytes, password `secret`.
         val password: Text = t"secret"
 
-        val keystore: Data =
+        def identity(name: Text): Data =
           val file = java.nio.file.Files.createTempFile("coaxial-", ".p12").nn
           java.nio.file.Files.delete(file)
           val keytool = java.lang.System.getProperty("java.home").nn+"/bin/keytool"
@@ -304,19 +304,32 @@ object Tests extends Suite(m"Coaxial tests"):
           val process =
             ProcessBuilder
               ( keytool, "-genkeypair", "-alias", "peer", "-keyalg", "EC", "-groupname",
-                "secp256r1", "-dname", "CN=coaxial-test", "-validity", "1", "-storetype",
+                "secp256r1", "-dname", s"CN=${name.s}", "-validity", "1", "-storetype",
                 "PKCS12", "-keystore", file.toString, "-storepass", password.s, "-keypass",
                 password.s )
-            . redirectErrorStream(true).nn.start().nn
+            . directory(file.getParent.nn.toFile) // not the daemon's cwd, which may be gone
+            . nn.redirectErrorStream(true).nn.start().nn
 
-          process.getInputStream.nn.readAllBytes()
+          val output = String(process.getInputStream.nn.readAllBytes().nn, "UTF-8")
           process.waitFor()
+
+          // Reported here rather than as a missing file: `keytool`'s complaint is the diagnosis.
+          if !java.nio.file.Files.exists(file)
+          then panic(m"keytool produced no keystore for $name: ${output.tt}")
+
           val bytes = Array.unsafeFrozen(java.nio.file.Files.readAllBytes(file).nn)
           java.nio.file.Files.delete(file)
           bytes
 
+        val keystore: Data = identity(t"coaxial-test")
         val certificate: Data = Tls.certificate(keystore, password).or(Data())
         val fingerprint: Data = Tls.fingerprint(certificate)
+
+        // A second identity, for a client that authenticates itself to the listener.
+        val clientStore: Data = identity(t"coaxial-client")
+
+        val clientFingerprint: Data =
+          Tls.fingerprint(Tls.certificate(clientStore, password).or(Data()))
 
         // One refill window is the peer's single message (no half-close on a duplex).
         def message(duplex: Duplex): Data =
@@ -324,40 +337,67 @@ object Tests extends Suite(m"Coaxial tests"):
           val count = source.refill(zephyrine.Credit(64)).or(0)
           source.lend { region => range => region.materialize(range.capped(count)) }
 
-        def exchange(acceptance: TlsAcceptance): List[Byte] =
+        def exchange(serverTls: Tls, clientTls: Tls): List[Byte] =
           val port = Port[Tcp]()
           val secure: SecurePort = SecurePort(port)
-          given server: Tls = Tls.keyed(keystore, password)
+          given server: Tls = serverTls
 
           secure.listen[Data](message(_)):
-            given client: Tls = acceptance.tls()
+            given client: Tls = clientTls
 
             SecureEndpoint(t"127.0.0.1", port.number).duplex: duplex =>
               duplex.send(zephyrine.Stream(ascii(t"ping")))
               bytes(message(duplex))
+
+        // A refusal surfaces as a handshake exception on the client, or — under TLS 1.3, where
+        // the client finishes its handshake before the listener has judged its certificate — as
+        // the listener closing the connection without replying.
+        def outcome(serverTls: Tls, clientTls: Tls): Text =
+          try
+            if exchange(serverTls, clientTls) == bytes(ascii(t"ping")) then t"connected"
+            else t"refused"
+          catch case error: Exception => t"refused"
 
         test(m"the keystore's certificate is found and fingerprinted"):
           (certificate.length > 0, fingerprint.length)
         . assert(_ == (true, 32))
 
         test(m"a client pinning the server's certificate completes an exchange"):
-          exchange(TlsAcceptance().pinning(fingerprint))
+          exchange(Tls.keyed(keystore, password), TlsAcceptance().pinning(fingerprint).tls())
         . assert(_ == bytes(ascii(t"ping")))
 
         test(m"a client pinning a different fingerprint is refused"):
           val wrong: Data = Data.fill(32) { index => index.toByte }
-          try
-            exchange(TlsAcceptance().pinning(wrong))
-            t"connected"
-          catch case error: Exception => t"refused"
+          outcome(Tls.keyed(keystore, password), TlsAcceptance().pinning(wrong).tls())
         . assert(_ == t"refused")
 
         test(m"a strict client rejects the self-signed server"):
-          try
-            exchange(TlsAcceptance())
-            t"connected"
-          catch case error: Exception => t"refused"
+          outcome(Tls.keyed(keystore, password), TlsAcceptance().tls())
         . assert(_ == t"refused")
+
+        test(m"peers pinning each other complete a mutually-authenticated exchange"):
+          exchange
+            ( TlsAcceptance().pinning(clientFingerprint).keyed(keystore, password, mutual = true),
+              TlsAcceptance().pinning(fingerprint).keyed(clientStore, password) )
+        . assert(_ == bytes(ascii(t"ping")))
+
+        test(m"a mutual listener refuses a client presenting a different identity"):
+          outcome
+            ( TlsAcceptance().pinning(clientFingerprint).keyed(keystore, password, mutual = true),
+              TlsAcceptance().pinning(fingerprint).keyed(keystore, password) )
+        . assert(_ == t"refused")
+
+        test(m"a mutual listener refuses a client presenting no certificate"):
+          outcome
+            ( TlsAcceptance().pinning(clientFingerprint).keyed(keystore, password, mutual = true),
+              TlsAcceptance().pinning(fingerprint).tls() )
+        . assert(_ == t"refused")
+
+        test(m"a listener that is not mutual still admits a client without a certificate"):
+          outcome
+            ( TlsAcceptance().pinning(clientFingerprint).keyed(keystore, password),
+              TlsAcceptance().pinning(fingerprint).tls() )
+        . assert(_ == t"connected")
 
     suite(m"Socket options"):
       test(m"reuseAddress sets SO_REUSEADDR on a configured TCP server socket"):

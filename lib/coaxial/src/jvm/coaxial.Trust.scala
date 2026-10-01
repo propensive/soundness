@@ -128,14 +128,7 @@ object TlsAcceptance:
   // transport layer, keyed on the acceptance value.
   extension (acceptance: TlsAcceptance)
     def materialize(): (jns.SSLContext, jns.SSLParameters) =
-      // The strict default is exactly the platform's own behaviour; only a
-      // relaxed acceptance pays for a custom trust manager.
-      val context =
-        if acceptance == TlsAcceptance() then jns.SSLContext.getDefault.nn else
-          val custom = jns.SSLContext.getInstance("TLS").nn
-          custom.init(null, scala.Array(trustManager(acceptance)), null)
-          custom
-
+      val context = acceptance.context(null)
       val parameters = context.getDefaultSSLParameters().nn
 
       if acceptance.versions != Nil then
@@ -159,6 +152,42 @@ object TlsAcceptance:
           verify = acceptance.trust.hostname,
           protocols = protocols,
           versions = acceptance.versions.map(_.id) )
+
+    // The key material of a PKCS#12 keystore, presented under this acceptance's trust: what
+    // each end of a mutually-authenticated connection needs, since `Tls.keyed` alone trusts the
+    // platform's anchors and `tls()` alone presents no certificate. `mutual` makes a
+    // `SecurePort` bound with the result demand a certificate of every client, which this
+    // acceptance then judges — a pinned one accepting exactly the pinned client.
+    def keyed
+      ( keystore: Data, password: Text, protocols: List[Text] = Nil, mutual: Boolean = false )
+    :   Tls =
+
+      val store = Tls.load(keystore, password)
+
+      val factory =
+        jns.KeyManagerFactory.getInstance(jns.KeyManagerFactory.getDefaultAlgorithm.nn).nn
+
+      factory.init(store, password.s.toCharArray)
+
+      Tls
+        ( acceptance.context(factory.getKeyManagers),
+          verify = acceptance.trust.hostname,
+          protocols = protocols,
+          versions = acceptance.versions.map(_.id),
+          mutual = mutual )
+
+    // An `SSLContext` presenting `keys` (none, for a peer that does not authenticate itself)
+    // under this acceptance's trust. The strict default with no keys is exactly the platform's
+    // own context; only a relaxed acceptance pays for a custom trust manager, and key material
+    // always needs a context of its own.
+    private def context(keys: scala.Array[jns.KeyManager | Null] | Null): jns.SSLContext =
+      if keys == null && acceptance == TlsAcceptance() then jns.SSLContext.getDefault.nn else
+        val trust: scala.Array[jns.TrustManager | Null] | Null =
+          if acceptance == TlsAcceptance() then null else scala.Array(trustManager(acceptance))
+
+        val custom = jns.SSLContext.getInstance("TLS").nn
+        custom.init(keys, trust, null)
+        custom
 
   private def platformManager(anchors: List[jsc.X509Certificate])
   :   jns.X509ExtendedTrustManager =
@@ -247,9 +276,10 @@ object TlsAcceptance:
           case error: jsc.CertificateException =>
             if !tolerable(error) then throw error
 
-      // A pinned acceptance answers from the pin alone; an unpinned one defers to the
-      // platform, tolerating what the acceptance tolerates.
-      private def server(chain: scala.Array[jsc.X509Certificate | Null] | Null)(check: => Unit)
+      // A pinned acceptance answers from the pin alone, whichever side the peer is on — a
+      // listener's pin names the one client it admits; an unpinned one defers to the platform,
+      // tolerating what the acceptance tolerates.
+      private def peer(chain: scala.Array[jsc.X509Certificate | Null] | Null)(check: => Unit)
       :   Unit =
 
         pinned(chain) match
@@ -257,14 +287,18 @@ object TlsAcceptance:
           case false => throw jsc.CertificateException("the peer's certificate is not the pinned one")
           case _     => attempt(check)
 
+      // A pinned listener names no issuers: under TLS 1.2 they are sent in the certificate
+      // request, and a client offers no certificate whose issuer is absent from them — which, for
+      // a self-signed client, would be every certificate it has.
       def getAcceptedIssuers(): scala.Array[jsc.X509Certificate | Null] | Null =
-        platform.getAcceptedIssuers()
+        if acceptance.trust.pinned.present then scala.Array.empty[jsc.X509Certificate | Null]
+        else platform.getAcceptedIssuers()
 
       def checkClientTrusted
         ( chain: scala.Array[jsc.X509Certificate | Null] | Null, authType: String | Null )
       :   Unit =
 
-        platform.checkClientTrusted(chain, authType)
+        peer(chain)(platform.checkClientTrusted(chain, authType))
 
       def checkClientTrusted
         ( chain:    scala.Array[jsc.X509Certificate | Null] | Null,
@@ -272,7 +306,7 @@ object TlsAcceptance:
           socket:   java.net.Socket | Null )
       :   Unit =
 
-        platform.checkClientTrusted(chain, authType, socket)
+        peer(chain)(platform.checkClientTrusted(chain, authType, socket))
 
       def checkClientTrusted
         ( chain:    scala.Array[jsc.X509Certificate | Null] | Null,
@@ -280,13 +314,13 @@ object TlsAcceptance:
           engine:   jns.SSLEngine | Null )
       :   Unit =
 
-        platform.checkClientTrusted(chain, authType, engine)
+        peer(chain)(platform.checkClientTrusted(chain, authType, engine))
 
       def checkServerTrusted
         ( chain: scala.Array[jsc.X509Certificate | Null] | Null, authType: String | Null )
       :   Unit =
 
-        server(chain)(platform.checkServerTrusted(chain, authType))
+        peer(chain)(platform.checkServerTrusted(chain, authType))
 
       def checkServerTrusted
         ( chain:    scala.Array[jsc.X509Certificate | Null] | Null,
@@ -294,7 +328,7 @@ object TlsAcceptance:
           socket:   java.net.Socket | Null )
       :   Unit =
 
-        server(chain)(platform.checkServerTrusted(chain, authType, socket))
+        peer(chain)(platform.checkServerTrusted(chain, authType, socket))
 
       def checkServerTrusted
         ( chain:    scala.Array[jsc.X509Certificate | Null] | Null,
@@ -302,7 +336,7 @@ object TlsAcceptance:
           engine:   jns.SSLEngine | Null )
       :   Unit =
 
-        server(chain)(platform.checkServerTrusted(chain, authType, engine))
+        peer(chain)(platform.checkServerTrusted(chain, authType, engine))
 
 case class TlsAcceptance
   ( versions:   List[Trust.Version] = Nil, // Nil selects the platform default set

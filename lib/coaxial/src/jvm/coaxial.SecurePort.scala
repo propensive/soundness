@@ -85,6 +85,11 @@ object SecurePort:
 
       if !tls.versions.nil then parameters.setProtocols(tls.versions.stdlib.map(_.s).toArray)
 
+      // A mutually-authenticated listener demands a certificate of every client; whether the
+      // one presented is accepted is the context's trust manager's decision, so a `Tls` from a
+      // pinning `TlsAcceptance#keyed` admits exactly the pinned client.
+      if tls.mutual then parameters.setNeedClientAuth(true)
+
       socket.setSSLParameters(parameters)
       socket
 
