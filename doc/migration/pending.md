@@ -245,7 +245,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   gains a fourth defaulted parameter, `unbreakable: List[denominative.Interval] = Nil`, in its
   first clause. Each interval is a span of char offsets into `content.plain` within which no
   soft break (space or hyphenation point) is taken; hard breaks inside one still break the
-  line. With the default the behaviour is unchanged. (#NNNN)
+  line. With the default the behaviour is unchanged. (#2121)
 
 ## turbulence
 
