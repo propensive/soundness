@@ -46,6 +46,11 @@ object Compiler:
   extends fulminate.Error(779, 0)(m"there was a problem with the compiler configuration")
 
 trait Compiler:
+  // The version of the compiler this drives, as the compiler itself reports it (`3.9.0-p16`,
+  // `25.0.4`, `2.4.10`): what a build records as the tool that produced an output, and what
+  // its memoization key must include so that a rebuild misses when the compiler changes.
+  def version: Text
+
   def apply
     ( classpath: LocalClasspath )
     [ path: Abstractable across Paths to Text ]

@@ -44,8 +44,9 @@ val dag = Dag(8 -> Set(4, 6), 6 -> Set(3, 2), 4 -> Set(2), 3 -> Set(), 2 -> Set(
 ```
 
 The first form names every node with its dependencies; `Dag(8 -> 4, 8 -> 6, 6 -> 3)` builds a
-graph from edges alone, and `Dag(Set(2, 3, 4, 6, 8))(dependencies)` from a set of nodes and a
-function giving each one's dependencies.
+graph from edges alone, every node at either end of an edge becoming a node of the graph, and
+`Dag(Set(2, 3, 4, 6, 8))(dependencies)` from a set of nodes and a function giving each one's
+dependencies.
 
 ### Ordering and reachability
 

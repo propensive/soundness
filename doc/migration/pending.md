@@ -31,8 +31,23 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `--workers=<n>`) on the same terms as any other `assert` — a pure body in a capture-checked
   unit — where an `aspire` always ran inline. (#2101)
 
+## acyclicity
+
+- `acyclicity.Dag.apply[node](edges: (node, node)*): Dag[node]` (and
+  `acyclicity.Dag#add(key: node, value: node): Dag[node]`, which is built on it) now makes the
+  target of every edge a key of the graph, with an empty dependency set unless it has edges of
+  its own; previously only sources were keys. So `Dag(a -> b).keys` is `Set(a, b)` where it was
+  `Set(a)`; `sources` includes such targets; `has(target)` is `true`; and `sorted`, `reachable`,
+  `descendants`, `ancestors`, `lineage`, `closure` and `traversal` no longer raise
+  `Dag.Error(Cyclic)` for a graph whose edges reach a node that is not itself a source. `edges`
+  and `dot` are unchanged. (#2114)
+
 ## anthology
 
+- `anthology.Link.Error.Reason.CompilationFailed(errors: Int)` is now
+  `CompilationFailed(notices: List[anthology.Notice])`, carrying every diagnostic the compiler
+  reported; the former count is `notices.filter(_.importance == anthology.Importance.Error).length`.
+  The message, `compilation failed with N errors`, is unchanged. (#2114)
 - Component `anthology.lira` (artifact `anthology-lira`) removed; it moved to the propensive/lira
   repository with reliquary (see the reliquary entry). Its types — `LiraBundle` — move from
   package `anthology` to package `lira`, unchanged in name and signature, and are no longer

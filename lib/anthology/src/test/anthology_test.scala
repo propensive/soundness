@@ -428,6 +428,39 @@ object Tests extends Suite(m"Anthology Tests"):
           process.complete()
         . check(_ == CompileResult.Success)
 
+        test(m"The compiler reports its version"):
+          Scalac[3.8](Nil).version
+        . assert(_.starts(t"3."))
+
+        test(m"A compilation reports the version of the compiler that ran it"):
+          process.version
+        . assert(_ == Scalac.version)
+
+        test(m"The Java compiler reports the runtime's version"):
+          Javac(Nil).version
+        . assert(_ == Runtime.version().nn.toString.tt)
+
+        // Byte determinism (LIRA §17): the same sources under the same compiler yield the same
+        // bytes, which a build tool relies on to check a rebuild by comparison. The TASTy UUID
+        // is a hash of the file's own sections, and virtual sources carry the names they were
+        // given, so neither the run nor the output directory leaves a trace.
+        test(m"Compiling the same sources twice yields byte-identical output"):
+          val again: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+          Files.createDirectories(Paths.get(again.encode.s))
+          Scalac[3.8](Nil)(classpath)(Map(t"hello.scala" -> source), again).complete()
+
+          def emitted(root: JnfPath): scala.List[(String, String)] =
+            Files.walk(root).nn.iterator.nn.asScala.to(scala.List)
+            . filter(Files.isRegularFile(_))
+            . map: file =>
+                val hex = java.util.HexFormat.of().nn.formatHex(Files.readAllBytes(file)).nn
+                (root.relativize(file).nn.toString, hex)
+            . sortBy(_(0))
+
+          val first = emitted(Paths.get(out.encode.s).nn)
+          (first.length > 1, first == emitted(Paths.get(again.encode.s).nn))
+        . check(_ == (true, true))
+
         val linked: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
 
         test(m"Linking a JAR produces a runnable artifact"):
@@ -460,7 +493,7 @@ object Tests extends Suite(m"Anthology Tests"):
               mute[Exec.Event](sh"java -jar $artifact".exec[Text]()).trim
         . check(_ == t"hello")
 
-        test(m"A compile edge reports a failing compilation as an error count"):
+        test(m"A compile edge reports a failing compilation with its diagnostics"):
           val toolchain = Toolchain(List(scalacEdges.classfile(Scalac[3.8](Nil))))
           val staged: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
           val bad = Map(t"bad.scala" -> t"class Bad:\n  def x: Int = \"nope\"\n")
@@ -473,9 +506,11 @@ object Tests extends Suite(m"Anthology Tests"):
                   staged ) )
 
           . reason match
-              case Link.Error.Reason.CompilationFailed(errors) => errors > 0
-              case _                                          => false
-        . check(_ == true)
+              case Link.Error.Reason.CompilationFailed(notices) =>
+                notices.filter(_.importance == Importance.Error).map(_.file).to[List]
+
+              case _ => List()
+        . check(_ == List(t"bad.scala"))
 
         test(m"Linking as DEX produces an archive containing classes.dex"):
           Toolchain(dexEdges()).produce

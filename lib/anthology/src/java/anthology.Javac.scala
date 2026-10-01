@@ -57,10 +57,15 @@ object Javac:
   def refresh(): Unit = Javac = jt.ToolProvider.getSystemJavaCompiler().nn
   def compiler(): jt.JavaCompiler = Javac
 
+  // The system compiler is the running JDK's, so its version is the runtime's: `25.0.4`.
+  def version: Text = Runtime.version().nn.toString.tt
+
   // JavacOption → Javac.Option
   case class Option(flags: Text*)
 
 case class Javac(options: List[Javac.Option]):
+  def version: Text = Javac.version
+
   case class JavaSource(name: Text, code: Text)
   extends jt.SimpleJavaFileObject
     ( jn.URI.create(t"string:///$name".s), jt.JavaFileObject.Kind.SOURCE ):
@@ -72,7 +77,7 @@ case class Javac(options: List[Javac.Option]):
   :   CompileProcess logs CompileEvent raises Compiler.Error =
 
     Log.info(CompileEvent.Start)
-    val process: CompileProcess = CompileProcess()
+    val process: CompileProcess = CompileProcess(version)
 
     val diagnostics = new jt.DiagnosticListener[jt.JavaFileObject]:
       def report(diagnostic: jt.Diagnostic[? <: jt.JavaFileObject] | Null): Unit =

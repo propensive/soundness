@@ -95,9 +95,8 @@ object Tests extends Suite(m"Acyclicity Tests"):
         count
       . assert(_ < divisors.size*(divisors.size - 1))
 
-    // A diamond: `a` depends on `b` and `c`, both of which depend on `d`. Built through the
-    // `keys`-and-dependencies factory so that every node is a key; the varargs edge factory
-    // records only the source of each edge (see "Dangling targets" below).
+    // A diamond: `a` depends on `b` and `c`, both of which depend on `d`, built through the
+    // `keys`-and-dependencies factory.
     val diamond = Dag(Set(t"a", t"b", t"c", t"d")):
       case t"a" => Set(t"b", t"c")
       case t"b" => Set(t"d")
@@ -291,17 +290,28 @@ object Tests extends Suite(m"Acyclicity Tests"):
         (depth(t"d"), depth(t"b"), depth(t"a"))
       . assert(_ == (0, 1, 2))
 
-    suite(m"Dangling targets"):
-      // The varargs edge factory records only the source of each edge, so an edge target that
-      // is never itself a source is not a key. `sorted` then finds no node whose dependencies
-      // are all satisfied and reports a cycle, rather than a missing node.
-      test(m"an edge target is not made a key"):
+    suite(m"Edge targets"):
+      // The varargs edge factory makes both ends of every edge a key, so a target with no
+      // edges of its own is a source with no dependencies, not a dangling reference.
+      test(m"an edge target is made a key"):
         Dag(t"a" -> t"b").keys
-      . assert(_ == Set(t"a"))
+      . assert(_ == Set(t"a", t"b"))
 
-      test(m"a dangling target is reported as a cycle, not as a missing node"):
-        capture[Dag.Error](Dag(t"a" -> t"b").sorted).reason
-      . assert(_ == Dag.Error.Reason.Cyclic)
+      test(m"a target with no edges of its own is a source"):
+        Dag(8 -> 4, 4 -> 2).sources
+      . assert(_ == Set(2))
+
+      test(m"a graph built from edges alone sorts"):
+        Dag(8 -> 4, 4 -> 2).sorted
+      . assert(_ == List(2, 4, 8))
+
+      test(m"adding an edge makes its target a key"):
+        diamond.add(t"d", t"e").sorted.head
+      . assert(_ == t"e")
+
+      test(m"the edges of an edge-built graph are the edges given"):
+        Dag(8 -> 4, 4 -> 2).edges
+      . assert(_ == Set((8, 4), (4, 2)))
 
     suite(m"Dot serialization"):
       test(m"a single directed edge serializes to a digraph"):

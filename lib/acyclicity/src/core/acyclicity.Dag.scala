@@ -52,10 +52,14 @@ object Dag:
   def apply[node](keys: Set[node])(dependencies: node => Set[node]): Dag[node] =
     Dag(keys.map { key => (key, dependencies(key)) }.to(Map))
 
+  // Both ends of every edge become keys: a target with no edges of its own has an empty
+  // dependency set, so it is a source of the graph and `sorted` can place it first.
   @targetName("fromEdges")
   def apply[node](edges: (node, node)*): Dag[node] = Dag:
     edges.foldLeft(Map[node, Set[node]]()): case (acc, (key, value)) =>
-      acc.updated(key, acc.get(key).fold(Set(value))(_ + value))
+      acc
+      . updated(key, acc.get(key).fold(Set(value))(_ + value))
+      . updated(value, acc.getOrElse(value, Set()))
 
   @targetName("fromNodes")
   def apply[node](nodes: (node, Set[node])*): Dag[node] = Dag(Map(nodes*))
