@@ -281,18 +281,18 @@ format. Entries are grouped by module, most-recently-added last within a module.
   text to UTF-8 and parse the bytes. A byte source (`path.read[Xml]`, an HTTP body) is
   therefore parsed without a `hieroglyph.Charset` given and without decoding, and non-UTF-8
   byte input must be decoded to `Text` by the caller first. Only code that names a given
-  changes. (#TBD)
+  changes. (#2116)
 - `xylophone.Xml.Issue` has a new case, `BadEncoding` (described as "the input is not valid
   UTF-8"), raised in a `Parse.Error` when a slice of the input the parser keeps — a name, an
   attribute value, character data, a comment, CDATA or a processing instruction — is not
   well-formed UTF-8 (an overlong form, a surrogate, a value above U+10FFFF, a bad lead or
   continuation byte). Such input was previously substituted by the `Charset`'s
-  `TextSanitizer` before parsing. Exhaustive matches on `Issue` need the case. (#TBD)
+  `TextSanitizer` before parsing. Exhaustive matches on `Issue` need the case. (#2116)
 - `xylophone.Xml.Position` for a byte source counts bytes: `offset` and `length` are byte
   offsets into the input, and the tracked `Xml.PositionIndex` lengths (`Document[Xml]#locate`)
   are byte lengths. `column` counts code points (previously UTF-16 chars: an astral character
   now advances it by one, not two). For a `Text` source, `offset` and `length` remain char
-  offsets into the text. All are unchanged for ASCII input. (#TBD)
+  offsets into the text. All are unchanged for ASCII input. (#2116)
 
 ## ypsiloid
 
