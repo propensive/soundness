@@ -693,6 +693,13 @@ object Tests extends Suite(m"Savagery tests"):
         parsed.metadata.name
       .assert(_ == t"UTF-8")
 
+      test(m"load[Svg] from bytes"):
+        val original = Document(Svg(10, 10), enc"UTF-8")
+        val bytes: Data = Array.unsafeFrozen(original.show.s.getBytes("UTF-8").nn)
+        val parsed: Document[Svg] = bytes.load[Svg]
+        (parsed.show == original.show, parsed.metadata.name)
+      .assert(_ == (true, t"UTF-8"))
+
       test(m"Non-SVG root raises NotAnSvg"):
         capture[Svg.Error](t"""<html/>""".read[Svg])
       .assert:

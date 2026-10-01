@@ -39,6 +39,19 @@ import soundness.sortingAlgorithms.timsort
 
 import filesystemBackends.javaBaseFilesystem
 
+// A document type with a byte-native `Loadable`, to exercise `load` on a path: the metadata
+// is the byte count.
+case class Manifest(text: Text) extends Documentary:
+  type Self = Manifest
+  type Metadata = Int
+
+object Manifest:
+  given loadable: (buffering: Buffering) => Manifest is Loadable by Data = stream =>
+    val bytes: Data =
+      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].memoize
+
+    Document(Manifest(bytes.utf8), bytes.length)
+
 object Tests extends Suite(m"Galilei tests"):
   def run(): Unit =
     import codepages.utf8Codepage
@@ -54,6 +67,15 @@ object Tests extends Suite(m"Galilei tests"):
           dest.write(t"Hello world")
           dest.read[Text]
       . assert(_ == t"Hello world")
+
+      // A path is not streamable, so `load` reads it whole as bytes and hands them to the
+      // document type's byte-native `Loadable`.
+      test(m"Loading a file hands its bytes to the document's loader"):
+        unsafely:
+          dest.write(t"Hello world")
+          val document = dest.load[Manifest]
+          (document.root.text, document.metadata)
+      . assert(_ == (t"Hello world", 11))
 
     suite(m"Opening files"):
       val openLeaf: Text = Uuid().show

@@ -150,6 +150,13 @@ object PositionTests extends Suite(m"Xylophone position-index tests"):
         len(tracked.locate(XPath().element(t"root", 1)))
       . assert(_ == 15)
 
+      test(m"A byte source is tracked the same way"):
+        val bytes: Data = Array.unsafeFrozen("<root>é\n <child/></root>".getBytes("UTF-8").nn)
+        val tracked = bytes.load[Xml]
+        (line(tracked.locate(XPath().element(t"root", 1).element(t"child", 1))),
+         col(tracked.locate(XPath().element(t"root", 1).element(t"child", 1))))
+      . assert(_ == (2, 2))
+
       test(m"A newline after non-ASCII content resets the column"):
         val tracked = trackedDoc(t"<root>é\n <child/></root>")
         col(tracked.locate(XPath().element(t"root", 1).element(t"child", 1)))
