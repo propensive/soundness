@@ -34,6 +34,7 @@ package hyperbole
 
 import scala.collection.mutable
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import digression.*
@@ -52,6 +53,7 @@ import vacuous.*
 import StackTrace.Frame.Kind
 import charsets.utf8Charset
 import textSanitizers.skipSanitizer
+import workingDirectories.javaBaseWorkingDirectory
 import denominative.z
 import denominative.dysasymptotics.linearSize
 
@@ -169,7 +171,7 @@ class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
     origin.cls.let: cls =>
       tastyFile(cls).let: tasty =>
         tasty.path.let: path =>
-          if path == origin.path then definitionSource(tasty, path, origin.line) else Unset
+          if tasty.compiledFrom(origin.path) then definitionSource(tasty, path, origin.line) else Unset
 
   private def definitionSource(tasty: Tasty.File, path: Text, line: Int)
   :   Optional[StackTrace.Frame.Source] =
@@ -209,4 +211,13 @@ class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
     sourceFiles.synchronized:
       sourceFiles.getOrElseUpdate
        ( path,
-         safely(path.as[Path on Linux].read[Text].cut(t"\n").to[Sequence]) )
+         file(path).let: file =>
+           safely(file.read[Text].cut(t"\n").to[Sequence]) )
+
+  // A path recorded relative to `-sourceroot` resolves against the working directory, as the
+  // compiler resolves it when unpickling. Not `Path#resolve`, whose result captures the tactic it
+  // is applied to, which separation checking rejects.
+  private def file(path: Text): Optional[Path on Linux] =
+    safely(path.as[Path on Linux]).or:
+      val base: Path on Linux = workingDirectory[Path on Linux]
+      safely(base + path.as[Relative on Linux])

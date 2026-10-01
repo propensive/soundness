@@ -100,6 +100,13 @@ object Tasty:
   // from. `path` is the full path the file was compiled from, of which a stack trace keeps only the
   // last segment.
   case class File(path: Optional[Text], definitions: List[Definition]):
+    // Whether this file was compiled from the source at `source`. A build compiled with
+    // `-sourceroot` (as Soundness is) records `path` relative to that root, while the same file
+    // may be named absolutely elsewhere—in an SMAP written in the same compilation, say—so a
+    // relative path matches any path it is a trailing segment of.
+    def compiledFrom(source: Text): Boolean = path.lay(false): path =>
+      path == source || source.ends(t"/$path") || path.ends(t"/$source")
+
     // Every definition covering `line`, innermost first, where nesting is measured by how much
     // source a definition covers—so an anonymous function comes before the method containing it.
     // Definitions the compiler synthesized, such as a constructor an `object` never declared, are
