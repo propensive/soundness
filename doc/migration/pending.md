@@ -86,16 +86,16 @@ format. Entries are grouped by module, most-recently-added last within a module.
   protocols: List[Text] = Nil, versions: List[Text] = Nil, mutual: Boolean = false)`. Positional
   construction or extraction over four fields must add it; named construction and `copy` are
   unaffected. A `coaxial.SecurePort` bound with a `Tls` whose `mutual` is `true` calls
-  `SSLParameters.setNeedClientAuth(true)` on its `SSLServerSocket`. (#NNNN)
+  `SSLParameters.setNeedClientAuth(true)` on its `SSLServerSocket`. (#2120)
 - `coaxial.Tls.keyed(keystore: Data, password: Text): Tls` is now defined as
   `TlsAcceptance().keyed(keystore, password)`; its context is still initialised with the
-  keystore's key managers and `null` trust managers, so behaviour is unchanged. (#NNNN)
+  keystore's key managers and `null` trust managers, so behaviour is unchanged. (#2120)
 - The trust manager a non-strict `coaxial.TlsAcceptance` materializes now applies
   `Trust.pinned` in its three `checkClientTrusted` overloads as it did in `checkServerTrusted`
   (a chain whose leaf's SHA-256 fingerprint is not the pin is rejected with a
   `CertificateException`), and its `getAcceptedIssuers` returns an empty array while pinned.
   Observable only from a listener requiring client certificates, which was not previously
-  possible. (#NNNN)
+  possible. (#2120)
 
 ## degustation
 
