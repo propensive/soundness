@@ -147,6 +147,11 @@ object settings:
     "-Wconf:src=.*synesthesia.McpServer.*&msg=match may not be exhaustive:s",
     // "-Wsafe-init",
     "-Xmax-inlines", "32",
+    // Record source paths in TASTy relative to the repository (`lib/<library>/src/…`), not as the
+    // building machine's absolute paths (#2117). A downstream compiler `stat`s every unpickled
+    // unit's path, and the CI runner's `/home/runner/…` lands in macOS's autofs `/home`, where each
+    // lookup costs milliseconds; a relative path misses instantly, and leaks no build layout.
+    "-sourceroot", mill.api.BuildCtx.workspaceRoot.toString,
     //"-Ycc-new",
     "-Yno-flexible-types",
     "-Yexplicit-nulls",

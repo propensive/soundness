@@ -350,3 +350,13 @@ format. Entries are grouped by module, most-recently-added last within a module.
   table for ASCII characters, and
   `Producer.Utf8Writer.lend(lending: Producer.Lending[Data], block: Optional[Int] = Unset)(using Buffering)(body: Utf8Writer^ => Unit): Unit`
   writes with `body` and flushes.
+
+## All modules (build)
+
+- Every artifact is now compiled with `-sourceroot <repository root>`, so the source path TASTy
+  records for each unit is relative to the Soundness repository
+  (`lib/ethereal/src/core/ethereal.Client.scala`) where it was the build machine's absolute path
+  (`/home/runner/work/soundness/soundness/lib/…`). Code that reads the source file of a symbol or
+  of a position inlined from a Soundness library (a macro's `Position.sourceFile.path`, a
+  JSR-45 source map, a tool resolving TASTy sources) sees the relative path; resolve it against
+  a Soundness checkout if a file is needed. No source change is required. (#2117)
