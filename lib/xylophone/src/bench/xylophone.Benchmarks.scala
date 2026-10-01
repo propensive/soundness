@@ -74,6 +74,42 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
 
   def parseScalaXml(text: String): scala.xml.Elem = scala.xml.XML.loadString(text)
 
+  // ── Byte input ─────────────────────────────────────────────────────────
+  //
+  // A document arrives as UTF-8 bytes (a file, an HTTP body), so the parse that matters is
+  // the one from bytes: Xylophone reads them through its `Readable` bridge, and the rivals
+  // through an `InputStream`. Aalto is the fastest StAX parser on the JVM, and its pull scan
+  // — every event visited, nothing built — is the floor for any tree-building parse; the
+  // JDK's DOM builder is the tree-building rival an application gets with no dependency.
+  // Through the parser directly, as `load` does for text, so that a document's leading
+  // declaration is accepted: `read[Xml]` parses a fragment, which has none.
+  def parseXylophoneBytes(bytes: Data): Xml =
+    unsafely(Xml.XmlParser.fromData(bytes).parseXml(headers0 = true))
+
+  lazy val aaltoInput: javax.xml.stream.XMLInputFactory =
+    new com.fasterxml.aalto.stax.InputFactoryImpl()
+
+  lazy val domBuilder: javax.xml.parsers.DocumentBuilder =
+    val factory = javax.xml.parsers.DocumentBuilderFactory.newDefaultInstance().nn
+    factory.setNamespaceAware(true)
+    factory.newDocumentBuilder().nn
+
+  private def inputStream(bytes: Data): java.io.InputStream =
+    java.io.ByteArrayInputStream(bytes.asInstanceOf[scala.Array[Byte]])
+
+  def scanAalto(bytes: Data): Int =
+    val reader = aaltoInput.createXMLStreamReader(inputStream(bytes)).nn
+    var events = 0
+
+    while reader.hasNext do
+      reader.next()
+      events += 1
+
+    reader.close()
+    events
+
+  def parseDomBytes(bytes: Data): org.w3c.dom.Document = domBuilder.parse(inputStream(bytes)).nn
+
   // ── Streaming output ───────────────────────────────────────────────────
   //
   // Every arm writes a parsed document to a discarding `OutputStream`, as a server writing a
@@ -195,6 +231,11 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
   lazy val document3: Document[Xml] = parseXylophone(xml3)
   lazy val document4: Document[Xml] = parseXylophone(xml4)
   lazy val document5: Document[Xml] = parseXylophone(xml5)
+  lazy val xmlBytes1: Data = Array.unsafeFrozen(xmlText1.getBytes(utf8Charset).nn)
+  lazy val xmlBytes2: Data = Array.unsafeFrozen(xmlText2.getBytes(utf8Charset).nn)
+  lazy val xmlBytes3: Data = Array.unsafeFrozen(xmlText3.getBytes(utf8Charset).nn)
+  lazy val xmlBytes4: Data = Array.unsafeFrozen(xmlText4.getBytes(utf8Charset).nn)
+  lazy val xmlBytes5: Data = Array.unsafeFrozen(xmlText5.getBytes(utf8Charset).nn)
   lazy val dom3: org.w3c.dom.Document = parseDom(xmlText3)
   lazy val dom4: org.w3c.dom.Document = parseDom(xmlText4)
   lazy val dom5: org.w3c.dom.Document = parseDom(xmlText5)
@@ -222,6 +263,15 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size1):
         '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText1) }
 
+      bench(m"Parse bytes with Xylophone")(target = 1*Second, operationSize = size1):
+        '{ xylophone.Benchmarks.parseXylophoneBytes(xylophone.Benchmarks.xmlBytes1) }
+
+      bench(m"Parse bytes with JDK DOM")(target = 1*Second, operationSize = size1):
+        '{ xylophone.Benchmarks.parseDomBytes(xylophone.Benchmarks.xmlBytes1) }
+
+      bench(m"Scan bytes with Aalto (no tree)")(target = 1*Second, operationSize = size1):
+        '{ xylophone.Benchmarks.scanAalto(xylophone.Benchmarks.xmlBytes1) }
+
     suite(m"Parse example 2 (SOAP envelope)"):
       bench(m"Parse file with Xylophone")
         ( target = 1*Second, operationSize = size2 ):
@@ -232,6 +282,15 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
 
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size2):
         '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText2) }
+
+      bench(m"Parse bytes with Xylophone")(target = 1*Second, operationSize = size2):
+        '{ xylophone.Benchmarks.parseXylophoneBytes(xylophone.Benchmarks.xmlBytes2) }
+
+      bench(m"Parse bytes with JDK DOM")(target = 1*Second, operationSize = size2):
+        '{ xylophone.Benchmarks.parseDomBytes(xylophone.Benchmarks.xmlBytes2) }
+
+      bench(m"Scan bytes with Aalto (no tree)")(target = 1*Second, operationSize = size2):
+        '{ xylophone.Benchmarks.scanAalto(xylophone.Benchmarks.xmlBytes2) }
 
     suite(m"Parse example 3 (Atom feed)"):
       bench(m"Parse file with Xylophone")
@@ -244,6 +303,15 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size3):
         '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText3) }
 
+      bench(m"Parse bytes with Xylophone")(target = 1*Second, operationSize = size3):
+        '{ xylophone.Benchmarks.parseXylophoneBytes(xylophone.Benchmarks.xmlBytes3) }
+
+      bench(m"Parse bytes with JDK DOM")(target = 1*Second, operationSize = size3):
+        '{ xylophone.Benchmarks.parseDomBytes(xylophone.Benchmarks.xmlBytes3) }
+
+      bench(m"Scan bytes with Aalto (no tree)")(target = 1*Second, operationSize = size3):
+        '{ xylophone.Benchmarks.scanAalto(xylophone.Benchmarks.xmlBytes3) }
+
     suite(m"Parse example 4 (100 book records)"):
       bench(m"Parse file with Xylophone")
         ( target = 1*Second, operationSize = size4 ):
@@ -255,6 +323,15 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size4):
         '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText4) }
 
+      bench(m"Parse bytes with Xylophone")(target = 1*Second, operationSize = size4):
+        '{ xylophone.Benchmarks.parseXylophoneBytes(xylophone.Benchmarks.xmlBytes4) }
+
+      bench(m"Parse bytes with JDK DOM")(target = 1*Second, operationSize = size4):
+        '{ xylophone.Benchmarks.parseDomBytes(xylophone.Benchmarks.xmlBytes4) }
+
+      bench(m"Scan bytes with Aalto (no tree)")(target = 1*Second, operationSize = size4):
+        '{ xylophone.Benchmarks.scanAalto(xylophone.Benchmarks.xmlBytes4) }
+
     suite(m"Parse example 5 (500 log entries)"):
       bench(m"Parse file with Xylophone")
         ( target = 1*Second, operationSize = size5 ):
@@ -265,6 +342,15 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
 
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size5):
         '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText5) }
+
+      bench(m"Parse bytes with Xylophone")(target = 1*Second, operationSize = size5):
+        '{ xylophone.Benchmarks.parseXylophoneBytes(xylophone.Benchmarks.xmlBytes5) }
+
+      bench(m"Parse bytes with JDK DOM")(target = 1*Second, operationSize = size5):
+        '{ xylophone.Benchmarks.parseDomBytes(xylophone.Benchmarks.xmlBytes5) }
+
+      bench(m"Scan bytes with Aalto (no tree)")(target = 1*Second, operationSize = size5):
+        '{ xylophone.Benchmarks.scanAalto(xylophone.Benchmarks.xmlBytes5) }
 
     suite(m"Stream example 3 (Atom feed) to an output stream"):
       bench(m"Xylophone: emit, streamed chunk by chunk")

@@ -139,6 +139,22 @@ object PositionTests extends Suite(m"Xylophone position-index tests"):
         col(tracked.locate(XPath().element(t"root", 1).element(t"child", 1)))
       . assert(_ == 3)
 
+    suite(m"Non-ASCII content"):
+      test(m"Columns count code points, not bytes or chars"):
+        val tracked = trackedDoc(t"<root>é😀<child/></root>")
+        col(tracked.locate(XPath().element(t"root", 1).element(t"child", 1)))
+      . assert(_ == 9)
+
+      test(m"Lengths count bytes"):
+        val tracked = trackedDoc(t"<root>é</root>")
+        len(tracked.locate(XPath().element(t"root", 1)))
+      . assert(_ == 15)
+
+      test(m"A newline after non-ASCII content resets the column"):
+        val tracked = trackedDoc(t"<root>é\n <child/></root>")
+        col(tracked.locate(XPath().element(t"root", 1).element(t"child", 1)))
+      . assert(_ == 2)
+
     suite(m"Mixed content"):
       test(m"Text between elements doesn't break child indexing"):
         val tracked = trackedDoc(t"<root>hi<a/>bye<b/>!</root>")

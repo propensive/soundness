@@ -91,28 +91,15 @@ private[jacinta] object Parser:
   private inline val NullWord  = 0x6C6C_756E
   private inline val FalseWord = 0x0000_0065_736C_6166L
 
-  // The SWAR word reads go through `WordAccess.get` — a per-platform object, because the JVM's
-  // byte-array view `VarHandle` exists on neither Scala.js nor Scala Native (see
-  // `src/core-jvm` and `src/core-portable`).
-
-  private inline val HighBits = 0x8080808080808080L
-  private inline val EveryByte = 0x0101010101010101L
-
-  // The classic has-byte trick: the high bit of each byte of the result is
-  // set exactly where `word` holds `target` (for targets < 0x80).
-  private inline def matchByte(word: Long, inline target: Long): Long =
-    val x = word ^ (target*EveryByte)
-    (x - EveryByte) & ~x & HighBits
-
-  // High bit set where a byte is < 0x20 (valid for bytes < 0x80; bytes with
-  // their own high bit set are caught separately by masking `HighBits`).
-  private inline def below32(word: Long): Long =
-    (word - (0x20L*EveryByte)) & ~word & HighBits
+  // The SWAR scans read eight bytes at a time through `zephyrine.Words` (its `load` is the
+  // platform's word read: a byte-array view `VarHandle` on the JVM, shift-and-or on the
+  // crosses) and classify the lanes with its masks.
 
   // A string scan's stop bytes — quote, backslash, control, non-ASCII — in
   // one mask; zero means all eight bytes are plain string content.
   private inline def stringStops(word: Long): Long =
-    matchByte(word, 0x22L) | matchByte(word, 0x5CL) | below32(word) | (word & HighBits)
+    Words.matches(word, Words.replicate('"')) | Words.matches(word, Words.replicate('\\')) |
+      Words.below(word, Words.replicate(0x20)) | Words.nonAscii(word)
 
   // Immutable (frozen) so class methods can index it without a global-mutable uses clause.
   private val TenPow: Array[Double]^{} =
@@ -774,7 +761,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     var scanning = true
 
     while scanning && i <= limit - 8 do
-      val word: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], i)
+      val word: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], i)
       val stops = stringStops(word)
 
       if stops == 0L then i += 8
@@ -830,7 +817,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     var scanning = true
 
     while scanning && i <= limit - 8 do
-      val word: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], i)
+      val word: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], i)
       val stops = stringStops(word)
 
       if stops == 0L then i += 8
@@ -2228,7 +2215,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       var scanning = true
 
       while scanning && i <= limit - 8 do
-        val word: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], i)
+        val word: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], i)
         val stops = stringStops(word)
 
         if stops == 0L then i += 8
@@ -2290,7 +2277,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       var scanning = true
 
       while scanning && i <= limit - 8 do
-        val word: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], i)
+        val word: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], i)
         val stops = stringStops(word)
 
         if stops == 0L then i += 8
@@ -2619,7 +2606,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // find the closing quote are the packed form. Window-edge keys take the
     // general step.
     if start + 8 > limit then return Int.MinValue
-    val word0: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start)
+    val word0: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start)
     val stops0 = stringStops(word0)
     var low = 0L
     var high = 0L
@@ -2632,7 +2619,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return Int.MinValue
-      val word1: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
+      val word1: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
       val stops1 = stringStops(word1)
       low = word0
 
@@ -2718,7 +2705,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // scanning. A key at the window's edge takes the general step, exactly
     // like an escaped or oversized one.
     if start + 8 > limit then return -2L
-    val word0: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start)
+    val word0: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start)
     val stops0 = stringStops(word0)
     var low = 0L
     var high = 0L
@@ -2733,7 +2720,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return -2L
-      val word1: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
+      val word1: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
       val stops1 = stringStops(word1)
       low = word0
 
@@ -2798,7 +2785,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // scanning. A key at the window's edge takes the general step, exactly
     // like an escaped or oversized one.
     if start + 8 > limit then return -2L
-    val word0: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start)
+    val word0: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start)
     val stops0 = stringStops(word0)
     var low = 0L
     var high = 0L
@@ -2813,7 +2800,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return -2L
-      val word1: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
+      val word1: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
       val stops1 = stringStops(word1)
       low = word0
 
@@ -2885,7 +2872,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // scanning. A key at the window's edge takes the general step, exactly
     // like an escaped or oversized one.
     if start + 8 > limit then return -2L
-    val word0: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start)
+    val word0: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start)
     val stops0 = stringStops(word0)
     var low = 0L
     var high = 0L
@@ -2900,7 +2887,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return -2L
-      val word1: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
+      val word1: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
       val stops1 = stringStops(word1)
       low = word0
 

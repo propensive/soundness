@@ -629,6 +629,141 @@ object Tests extends Suite(m"Zephyrine tests"):
           (inner, cursor.grab(outer, cursor.mark).s)
       . assert(_ == ((true, "a")))
 
+    suite(m"Utf8 tests"):
+      def bytes(values: Int*): scala.Array[Byte] = scala.Array(values.map(_.toByte)*)
+
+      test(m"An ASCII byte is its own code point"):
+        zephyrine.Utf8.point(bytes('A'), 0, 1)
+      . assert(_ == 'A'.toInt)
+
+      test(m"A two-byte sequence decodes"):
+        zephyrine.Utf8.point(bytes(0xc3, 0xa9), 0, 2)
+      . assert(_ == 0xe9)
+
+      test(m"A three-byte sequence decodes"):
+        zephyrine.Utf8.point(bytes(0xe2, 0x82, 0xac), 0, 3)
+      . assert(_ == 0x20ac)
+
+      test(m"A four-byte sequence decodes"):
+        zephyrine.Utf8.point(bytes(0xf0, 0x9f, 0x98, 0x80), 0, 4)
+      . assert(_ == 0x1f600)
+
+      test(m"An overlong two-byte form is malformed"):
+        zephyrine.Utf8.point(bytes(0xc0, 0xaf), 0, 2)
+      . assert(_ == zephyrine.Utf8.Malformed)
+
+      test(m"An overlong three-byte form is malformed"):
+        zephyrine.Utf8.point(bytes(0xe0, 0x80, 0xaf), 0, 3)
+      . assert(_ == zephyrine.Utf8.Malformed)
+
+      test(m"An overlong four-byte form is malformed"):
+        zephyrine.Utf8.point(bytes(0xf0, 0x80, 0x80, 0x80), 0, 4)
+      . assert(_ == zephyrine.Utf8.Malformed)
+
+      test(m"An encoded surrogate is malformed"):
+        zephyrine.Utf8.point(bytes(0xed, 0xa0, 0x80), 0, 3)
+      . assert(_ == zephyrine.Utf8.Malformed)
+
+      test(m"A value above U+10FFFF is malformed"):
+        zephyrine.Utf8.point(bytes(0xf4, 0x90, 0x80, 0x80), 0, 4)
+      . assert(_ == zephyrine.Utf8.Malformed)
+
+      test(m"A stray continuation byte is malformed"):
+        zephyrine.Utf8.point(bytes(0x80, 'a'), 0, 2)
+      . assert(_ == zephyrine.Utf8.Malformed)
+
+      test(m"A missing continuation byte is malformed"):
+        zephyrine.Utf8.point(bytes(0xc3, 'a'), 0, 2)
+      . assert(_ == zephyrine.Utf8.Malformed)
+
+      test(m"A sequence cut short by the end is incomplete"):
+        zephyrine.Utf8.point(bytes(0xf0, 0x9f, 0x98, 0x80), 0, 3)
+      . assert(_ == zephyrine.Utf8.Incomplete)
+
+      test(m"Lead widths"):
+        List(0x41, 0xc3, 0xe2, 0xf0, 0x80, 0xc1, 0xf5).map(zephyrine.Utf8.width(_))
+      . assert(_ == List(1, 2, 3, 4, 0, 0, 0))
+
+      test(m"decode widens ASCII"):
+        zephyrine.Utf8.decode(bytes('a', 'b', 'c'), 0, 3)
+      . assert(_ == t"abc")
+
+      test(m"decode of a sub-range"):
+        zephyrine.Utf8.decode(bytes('x', 0xc3, 0xa9, 'y'), 1, 2)
+      . assert(_ == t"é")
+
+      test(m"decode makes a surrogate pair"):
+        zephyrine.Utf8.decode(bytes('a', 0xf0, 0x9f, 0x98, 0x80, 'b'), 0, 6)
+      . assert(_ == t"a😀b")
+
+      test(m"decode rejects malformed input"):
+        zephyrine.Utf8.decode(bytes('a', 0xc3, '('), 0, 3)
+      . assert(_ == Unset)
+
+      test(m"decode rejects a truncated tail"):
+        zephyrine.Utf8.decode(bytes('a', 0xc3), 0, 2)
+      . assert(_ == Unset)
+
+      test(m"append adds the decoded text to a builder"):
+        val builder = java.lang.StringBuilder("<")
+        val ok = zephyrine.Utf8.append(bytes(0xc3, 0xa9, '!'), 0, 3, builder)
+        (ok, builder.toString.tt)
+      . assert(_ == (true, t"<é!"))
+
+      test(m"append leaves the builder alone on malformed input"):
+        val builder = java.lang.StringBuilder("<")
+        val ok = zephyrine.Utf8.append(bytes(0xc3, '!'), 0, 2, builder)
+        (ok, builder.toString.tt)
+      . assert(_ == (false, t"<"))
+
+      test(m"asciiEnd finds the first high byte beyond a word"):
+        zephyrine.Utf8.asciiEnd(bytes('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 0xc3, 0xa9), 0, 11)
+      . assert(_ == 9)
+
+      test(m"asciiEnd finds a high byte within the first word"):
+        zephyrine.Utf8.asciiEnd(bytes('a', 0xc3, 0xa9, 'd', 'e', 'f', 'g', 'h', 'i'), 0, 9)
+      . assert(_ == 1)
+
+      test(m"asciiEnd is the end for pure ASCII"):
+        zephyrine.Utf8.asciiEnd(bytes('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'), 2, 10)
+      . assert(_ == 10)
+
+    suite(m"Words tests"):
+      def bytes(values: Int*): scala.Array[Byte] = scala.Array(values.map(_.toByte)*)
+
+      test(m"load is little-endian"):
+        zephyrine.Words.load(bytes(1, 2, 3, 4, 5, 6, 7, 8), 0)
+      . assert(_ == 0x0807060504030201L)
+
+      test(m"matches flags the lane holding the byte"):
+        val word = zephyrine.Words.load(bytes('a', 'b', 'c', '<', 'e', 'f', 'g', 'h'), 0)
+        zephyrine.Words.first(zephyrine.Words.matches(word, zephyrine.Words.replicate('<')))
+      . assert(_ == 3)
+
+      test(m"matches is zero without the byte"):
+        val word = zephyrine.Words.load(bytes('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'), 0)
+        zephyrine.Words.matches(word, zephyrine.Words.replicate('<'))
+      . assert(_ == 0L)
+
+      test(m"zeroes flags a zero lane"):
+        val word = zephyrine.Words.load(bytes('a', 'b', 0, 'd', 'e', 'f', 'g', 'h'), 0)
+        zephyrine.Words.first(zephyrine.Words.zeroes(word))
+      . assert(_ == 2)
+
+      test(m"below flags the first lane under the bound"):
+        val word = zephyrine.Words.load(bytes('a', 'b', 'c', 'd', 0x1f, 'f', 0x01, 'h'), 0)
+        zephyrine.Words.first(zephyrine.Words.below(word, zephyrine.Words.replicate(0x20)))
+      . assert(_ == 4)
+
+      test(m"nonAscii flags the first high byte"):
+        val word = zephyrine.Words.load(bytes('a', 'b', 'c', 'd', 'e', 0xc3, 0xa9, 'h'), 0)
+        zephyrine.Words.first(zephyrine.Words.nonAscii(word))
+      . assert(_ == 5)
+
+      test(m"a word at an offset"):
+        zephyrine.Words.load(bytes(9, 9, 1, 2, 3, 4, 5, 6, 7, 8), 2)
+      . assert(_ == 0x0807060504030201L)
+
     suite(m"Region tests"):
       def sample(size: Int): scala.Array[Byte]^ =
         val buffer = Array.scratch[Byte](size)

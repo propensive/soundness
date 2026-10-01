@@ -129,6 +129,13 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
         t"<root><name>Alice</name><age>30</age></root>".read[PWorker in Xml]
       . assert(_ == PWorker(t"Alice", 30))
 
+      test(m"Parse directly from bytes"):
+        val bytes: Data =
+          Array.unsafeFrozen(t"<root><name>Zoë</name><age>3</age></root>".s.getBytes("UTF-8").nn)
+
+        bytes.read[PWorker in Xml]
+      . assert(_ == PWorker(t"Zoë", 3))
+
       test(m"Field order doesn't matter, equally on both paths"):
         parity[PWorker](t"<root><age>21</age><name>Bob</name></root>")
       . assert(identity)

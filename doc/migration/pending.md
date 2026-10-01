@@ -269,6 +269,30 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `attribute` is the type alias `soundness.attribute = xylophone.Xml.attribute`, so only the
   annotation (type) resolves and the term `attribute` still names `galilei`'s and `tarantula`'s
   methods. `@Xml.attribute` continues to work. (#1953)
+- `xylophone.Xml` is parsed from UTF-8 bytes. The `Aggregable` givens in `object Xml` that
+  were `by Text` are now `by Data` under their existing names — `Xml.aggregable`
+  (`(Xml of content) is Aggregable by Data`), `Xml.aggregable2` (`Xml is Aggregable by Data`)
+  and `Xml.aggregableParsed` (`(value in Xml) is Aggregable by Data`), and
+  `xylophone.Xml2.aggregableIn` (`(value in Xml) is Aggregable by Data`) — and
+  `Xml.readableParsed` is now `Data is Readable to (value in Xml)`. The `by Text` forms are
+  retained under new names, `Xml.aggregableText`, `Xml.aggregable2Text`,
+  `Xml.aggregableParsedText`, `Xml2.aggregableInText` and `Xml.readableParsedText`
+  (`Text is Readable to (value in Xml)`), with the same parameters as before; they encode the
+  text to UTF-8 and parse the bytes. A byte source (`path.read[Xml]`, an HTTP body) is
+  therefore parsed without a `hieroglyph.Charset` given and without decoding, and non-UTF-8
+  byte input must be decoded to `Text` by the caller first. Only code that names a given
+  changes. (#2116)
+- `xylophone.Xml.Issue` has a new case, `BadEncoding` (described as "the input is not valid
+  UTF-8"), raised in a `Parse.Error` when a slice of the input the parser keeps — a name, an
+  attribute value, character data, a comment, CDATA or a processing instruction — is not
+  well-formed UTF-8 (an overlong form, a surrogate, a value above U+10FFFF, a bad lead or
+  continuation byte). Such input was previously substituted by the `Charset`'s
+  `TextSanitizer` before parsing. Exhaustive matches on `Issue` need the case. (#2116)
+- `xylophone.Xml.Position` for a byte source counts bytes: `offset` and `length` are byte
+  offsets into the input, and the tracked `Xml.PositionIndex` lengths (`Document[Xml]#locate`)
+  are byte lengths. `column` counts code points (previously UTF-16 chars: an astral character
+  now advances it by one, not two). For a `Text` source, `offset` and `length` remain char
+  offsets into the text. All are unchanged for ASCII input. (#2116)
 
 ## ypsiloid
 
