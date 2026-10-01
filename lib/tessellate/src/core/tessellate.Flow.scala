@@ -120,8 +120,15 @@ object Flow:
   // new line. When a soft break is needed, the latest hyphenation point of the overflowing
   // word that still fits (with `hyphen` appended) is preferred; failing that, the line wraps
   // at the last space; failing that, the over-long word runs on beyond `width`.
+  //
+  // `unbreakable` names spans of `content.plain` (char offsets, as `segment` takes them) that
+  // must survive intact — a verbatim code sample amid prose. No soft break is admitted inside
+  // one: its spaces are not break opportunities and its hyphenation points are ignored, so it
+  // wraps as a single word, moving whole to the next line when it does not fit and running on
+  // beyond `width` when it cannot. A hard break inside a span still breaks the line, since a
+  // newline in verbatim content is one of its lines ending.
   def wrap[textual: Textual { type Result = Char }]
-    ( content: textual, width: Int, hyphen: Text = t"-" )
+    ( content: textual, width: Int, hyphen: Text = t"-", unbreakable: List[Interval] = Nil )
     ( using metric: Text is Measurable, hyphenation: Hyphenation )
   :   Sequence[textual] =
 
@@ -136,6 +143,20 @@ object Flow:
     val rightMin = hyphenation.rightMin
 
     def charStart(cluster: Int): Int = boundaries.readable(cluster)
+
+    // Whether the char offset `position` lies strictly inside `span`: either edge of a span is
+    // a fine place to break, since the span is then whole on one side.
+    def inside(span: Interval, position: Int): Boolean =
+      span.start.n0 < position && position < span.limit.n0
+
+    // Whether a line may end before `cluster`: a break there is inside no unbreakable span.
+    def breakable(cluster: Int): Boolean =
+      val position = charStart(cluster)
+      unbreakable.all(!inside(_, position))
+
+    // A space the line may be broken at; a space inside an unbreakable span is not one.
+    def spaceBreak(cluster: Int): Boolean =
+      plain.charAt(charStart(cluster)) == ' ' && breakable(cluster)
 
     def segment(fromCluster: Int, toCluster: Int): textual =
       if fromCluster == toCluster then textual(t"")
@@ -168,11 +189,12 @@ object Flow:
       val char = plain.charAt(charStart(cluster))
       char == '\n' || char == '\r'
 
-    // The cluster after the end of the word containing `cluster` (the next space or hard
-    // break, or the end of the content).
+    // The cluster after the end of the word containing `cluster` (the next breakable space or
+    // hard break, or the end of the content); a space inside an unbreakable span is part of the
+    // word.
     def wordEnd(cluster: Int): Int =
       var end = cluster
-      while end < clusters && plain.charAt(charStart(end)) != ' ' && !hardBreak(end) do end += 1
+      while end < clusters && !spaceBreak(end) && !hardBreak(end) do end += 1
       end
 
     // The latest hyphenation point of the word spanning clusters [wordStart, wordEnd0) which,
@@ -191,7 +213,7 @@ object Flow:
       while index < breaks.readable.length do
         val candidate = clusterAt(boundaries, start + breaks.readable(index))
 
-        if candidate > 0 then
+        if candidate > 0 && breakable(candidate) then
           val breakWidth = widths.readable(candidate) - widths.readable(lineStart) + hyphenWidth
           if breakWidth <= width && candidate > best then best = candidate
 
@@ -200,13 +222,15 @@ object Flow:
       best
 
     // Walk the clusters, accumulating display width since `lineStart`; `lastSpace` is the most
-    // recent space cluster on the current line. Lines accumulate in reverse in `acc`.
+    // recent breakable space cluster on the current line (a space inside an unbreakable span
+    // is an ordinary cluster, measured but never broken at). Lines accumulate in reverse in
+    // `acc`.
     def recur(cluster: Int, lineStart: Int, lastSpace: Int, acc: List[textual]): List[textual] =
       if cluster >= clusters then
         if lineStart == cluster then acc else budgeted(lineStart, cluster) :: acc
       else if hardBreak(cluster) then
         recur(cluster + 1, cluster + 1, cluster + 1, budgeted(lineStart, cluster) :: acc)
-      else if plain.charAt(charStart(cluster)) == ' ' then
+      else if spaceBreak(cluster) then
         recur(cluster + 1, lineStart, cluster, acc)
       else
         val widthSoFar = widths.readable(cluster + 1) - widths.readable(lineStart)

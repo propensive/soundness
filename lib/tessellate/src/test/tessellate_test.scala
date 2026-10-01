@@ -171,6 +171,41 @@ object Tests extends Suite(m"Tessellate tests"):
 
       . assert(_ == List(t"a ", t"b"))
 
+      // Unbreakable spans (#1992): a verbatim run amid prose wraps as one word. The spans are
+      // char offsets into the plain content, as `Flow` positions always are.
+      def protecting(content: Text, width: Int, spans: Interval*): List[Text] =
+        Flow.wrap(content, width, unbreakable = spans.to(List)).to[List]
+
+      test(m"an unbreakable span moves whole to the next line rather than breaking inside"):
+        protecting(t"see foo bar baz here", 12, 4.z thru 14.u)
+
+      . assert(_ == List(t"see", t"foo bar baz", t"here"))
+
+      test(m"the same content without the span breaks at its spaces"):
+        wrapped(t"see foo bar baz here", 12)
+
+      . assert(_ == List(t"see foo bar", t"baz here"))
+
+      test(m"an unbreakable span is not hyphenated"):
+        protecting(t"hyphenation", 7, 0.z thru 10.u)
+
+      . assert(_ == List(t"hyphenation"))
+
+      test(m"a space at the edge of an unbreakable span is still a break opportunity"):
+        protecting(t"ab cd ef", 5, 3.z thru 5.u)
+
+      . assert(_ == List(t"ab cd", t"ef"))
+
+      test(m"a hard break inside an unbreakable span still breaks the line"):
+        protecting(t"x = 1\ny = 2 and so on", 9, 0.z thru 10.u)
+
+      . assert(_ == List(t"x = 1", t"y = 2 and", t"so on"))
+
+      test(m"an unbreakable span wider than the width runs on"):
+        protecting(t"a verbatim run here", 6, 2.z thru 13.u)
+
+      . assert(_ == List(t"a", t"verbatim run", t"here"))
+
     suite(m"Flow.fit"):
       test(m"short content pads to the right under Left alignment"):
         Flow.fit(t"abc", 6)
