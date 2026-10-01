@@ -30,94 +30,79 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package coaxial
+package stratiform
 
-import java.net as jn
-import javax.net.ssl as jns
+import soundness.*
 
-import anticipation.*
-import contingency.*
-import gigantism.*
-import prepositional.*
-import spectacular.*
-import urticose.*
-import vacuous.*
-import zephyrine.*
+import strategies.throwUnsafely
+import errorDiagnostics.stackTracesDiagnostics
+import Tel.given
 
-import denominative.nil
+// `Framed` over an in-process `Duplex.pair()`, so no socket is opened: a request and its reply
+// crossing between a `Framed from Reply to Request` and its mirror image, messages queued before
+// any is read, and the two ways a record can be unreadable.
+object FramedTests extends Suite(m"Stratiform framed duplex tests"):
+  case class Request(id: Int, text: Text) derives CanEqual
+  case class Reply(id: Int, length: Int) derives CanEqual
 
-// A TLS-secured listening TCP port — the server-side counterpart of `SecureEndpoint`, as
-// `Tcp.Port` is of `Endpoint[Tcp.Port]`. Its `Bindable` opens an `SSLServerSocket` from the
-// contextual `Tls`, whose `context` MUST carry the server's key material (see `Tls.keyed`): the
-// JVM's default context has no private key, and a server bound with it would fail every
-// handshake. Each accepted connection completes its handshake before it is lent to the
-// handler, so a client that fails authentication or negotiation is reported as a
-// `Socket.Error` with the `Handshake` reason — ending only that connection's task, as any
-// other per-connection failure does — rather than surfacing as a truncated read in the handler.
-// `Tls.protocols` (ALPN) and `Tls.versions` are applied as on the client side.
-object SecurePort:
-  given bindable: (options: Every[Socket.Option.Tcp], tls: Tls) => SecurePort is Bindable:
-    type Binding = jns.SSLServerSocket
-    type Input = Duplex
-    type Output = Data
+  def run(): Unit =
+    test(m"a request and its reply cross a framed duplex"):
+      val (near, far) = Duplex.pair()
+      val client = near.framed[Reply, Request]
+      val server = far.framed[Request, Reply]
 
-    def bind(port: SecurePort, interface: Optional[MacAddress]): Binding =
-      val context = tls.context.or(jns.SSLContext.getDefault.nn)
-      val factory = context.getServerSocketFactory.nn
+      client.send(Request(1, t"hello"))
+      val request = server.messages.next()
+      server.send(Reply(request.id, request.text.length))
+      (request, client.messages.next())
+    . assert(_ == (Request(1, t"hello"), Reply(1, 5)))
 
-      val address: Optional[jn.InetAddress] =
-        interface.let(interfaceFor(_)).let(bindAddress(_))
+    test(m"messages sent before any is read arrive in order"):
+      val (near, far) = Duplex.pair()
+      val client = near.framed[Reply, Request]
+      val server = far.framed[Request, Reply]
 
-      val socket: jns.SSLServerSocket =
-        address.let(factory.createServerSocket(port.port.number, 50, _))
-        . or(factory.createServerSocket(port.port.number))
-        . nn
-        . asInstanceOf[jns.SSLServerSocket]
+      client.send(Request(1, t"one"))
+      client.send(Request(2, t"two"))
+      client.send(Request(3, t"three"))
+      client.close()
 
-      configure(socket, options.values.to(List))
+      server.messages.to(List)
+    . assert(_ == List(Request(1, t"one"), Request(2, t"two"), Request(3, t"three")))
 
-      val parameters = socket.getSSLParameters.nn
+    test(m"a symmetric protocol frames the same type both ways"):
+      val (near, far) = Duplex.pair()
+      val left = near.framed[Request, Request]
+      val right = far.framed[Request, Request]
 
-      // stdlib bridge: the SSL parameter setters take Java arrays of *nullable* `String`, and no
-      // `ClassTag` witnesses a union element, so the native `to[Array]` cannot build them.
-      if !tls.protocols.nil
-      then parameters.setApplicationProtocols(tls.protocols.stdlib.map(_.s).toArray)
+      left.send(Request(1, t"ping"))
+      right.send(right.messages.next().copy(text = t"pong"))
+      left.messages.next()
+    . assert(_ == Request(1, t"pong"))
 
-      if !tls.versions.nil then parameters.setProtocols(tls.versions.stdlib.map(_.s).toArray)
+    test(m"a truncated record raises a framing error"):
+      val (near, far) = Duplex.pair()
+      val server = far.framed[Request, Reply]
 
-      // A mutually-authenticated listener demands a certificate of every client; whether the
-      // one presented is accepted is the context's trust manager's decision, so a `Tls` from a
-      // pinning `TlsAcceptance#keyed` admits exactly the pinned client.
-      if tls.mutual then parameters.setNeedClientAuth(true)
+      // A length prefix promising nine bytes, followed by two and the end of the stream.
+      near.send(zephyrine.Stream(Data(0, 0, 0, 9, 1, 2)))
+      near.close()
 
-      socket.setSSLParameters(parameters)
-      socket
+      capture[Framing.Error](server.messages.next()).reason
+    . assert(_ == Framing.Error.Reason.ShortRead)
 
-    def connect(binding: Binding): Duplex raises Socket.Error =
-      val client: jns.SSLSocket =
-        try binding.accept().nn.asInstanceOf[jns.SSLSocket]
-        catch case _: java.io.IOException => abort(Socket.Error(Socket.Error.Reason.Accept))
+    test(m"a record that is not the expected message raises a decoding error"):
+      val (near, far) = Duplex.pair()
+      val server = far.framed[Request, Reply]
 
-      // The handshake is forced here so that its failure is this connection's, reported once,
-      // and never mistaken for an empty request by the handler.
-      try client.startHandshake()
-      catch case _: java.io.IOException =>
-        try client.close() catch case _: java.io.IOException => ()
-        abort(Socket.Error(Socket.Error.Reason.Handshake))
+      // A well-framed record whose body is not a BinTEL `Request`.
+      near.send(zephyrine.Stream(LengthPrefix.encode(Data(-1, -1, -1, -1))))
+      near.close()
 
-      val negotiated: Optional[Text] = client.getApplicationProtocol match
-        case null | "" => Unset
-        case protocol  => protocol.tt
-
-      streamsDuplex(client.getInputStream.nn, client.getOutputStream.nn, negotiated): () =>
-        client.close()
-
-    def transmit(binding: Binding, input: Duplex, bytes: Data): Unit raises Socket.Error =
-      input.send(Stream(bytes))
-
-    def close(connection: Duplex): Unit raises Socket.Error = connection.close()
-    def stop(binding: Binding): Unit = binding.close()
-
-  given showable: SecurePort is Showable = port => Text(s"tls:${port.port.number}")
-
-case class SecurePort(port: Tcp.Port)
+      try
+        server.messages.next()
+        t"decoded"
+      catch
+        case error: Bintel.Error => t"bintel"
+        case error: Tel.Error    => t"tel"
+    . assert(_ != t"decoded")

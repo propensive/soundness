@@ -30,94 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package coaxial
+package stratiform
 
-import java.net as jn
-import javax.net.ssl as jns
-
-import anticipation.*
+import coaxial.*
 import contingency.*
-import gigantism.*
+import obligatory.*
 import prepositional.*
-import spectacular.*
-import urticose.*
-import vacuous.*
 import zephyrine.*
 
-import denominative.nil
+extension (duplex: Duplex)
+  // Frame this connection for BinTEL messages, reading `inbound` values and sending `outbound`
+  // ones: `duplex.framed[Reply, Request]` is a `Framed from Reply to Request`.
+  def framed[inbound: Tel.Decodable, outbound: Tel.Encodable]
+    ( using inbound is TelSchematic over Tels.Type, outbound is TelSchematic over Tels.Type )
+    ( using buffering: Buffering,
+            framing:   Tactic[Framing.Error],
+            bintel:    Tactic[Bintel.Error],
+            tel:       Tactic[Tel.Error] )
+  :   (Framed from inbound to outbound)^{framing, bintel, tel} =
 
-// A TLS-secured listening TCP port — the server-side counterpart of `SecureEndpoint`, as
-// `Tcp.Port` is of `Endpoint[Tcp.Port]`. Its `Bindable` opens an `SSLServerSocket` from the
-// contextual `Tls`, whose `context` MUST carry the server's key material (see `Tls.keyed`): the
-// JVM's default context has no private key, and a server bound with it would fail every
-// handshake. Each accepted connection completes its handshake before it is lent to the
-// handler, so a client that fails authentication or negotiation is reported as a
-// `Socket.Error` with the `Handshake` reason — ending only that connection's task, as any
-// other per-connection failure does — rather than surfacing as a truncated read in the handler.
-// `Tls.protocols` (ALPN) and `Tls.versions` are applied as on the client side.
-object SecurePort:
-  given bindable: (options: Every[Socket.Option.Tcp], tls: Tls) => SecurePort is Bindable:
-    type Binding = jns.SSLServerSocket
-    type Input = Duplex
-    type Output = Data
-
-    def bind(port: SecurePort, interface: Optional[MacAddress]): Binding =
-      val context = tls.context.or(jns.SSLContext.getDefault.nn)
-      val factory = context.getServerSocketFactory.nn
-
-      val address: Optional[jn.InetAddress] =
-        interface.let(interfaceFor(_)).let(bindAddress(_))
-
-      val socket: jns.SSLServerSocket =
-        address.let(factory.createServerSocket(port.port.number, 50, _))
-        . or(factory.createServerSocket(port.port.number))
-        . nn
-        . asInstanceOf[jns.SSLServerSocket]
-
-      configure(socket, options.values.to(List))
-
-      val parameters = socket.getSSLParameters.nn
-
-      // stdlib bridge: the SSL parameter setters take Java arrays of *nullable* `String`, and no
-      // `ClassTag` witnesses a union element, so the native `to[Array]` cannot build them.
-      if !tls.protocols.nil
-      then parameters.setApplicationProtocols(tls.protocols.stdlib.map(_.s).toArray)
-
-      if !tls.versions.nil then parameters.setProtocols(tls.versions.stdlib.map(_.s).toArray)
-
-      // A mutually-authenticated listener demands a certificate of every client; whether the
-      // one presented is accepted is the context's trust manager's decision, so a `Tls` from a
-      // pinning `TlsAcceptance#keyed` admits exactly the pinned client.
-      if tls.mutual then parameters.setNeedClientAuth(true)
-
-      socket.setSSLParameters(parameters)
-      socket
-
-    def connect(binding: Binding): Duplex raises Socket.Error =
-      val client: jns.SSLSocket =
-        try binding.accept().nn.asInstanceOf[jns.SSLSocket]
-        catch case _: java.io.IOException => abort(Socket.Error(Socket.Error.Reason.Accept))
-
-      // The handshake is forced here so that its failure is this connection's, reported once,
-      // and never mistaken for an empty request by the handler.
-      try client.startHandshake()
-      catch case _: java.io.IOException =>
-        try client.close() catch case _: java.io.IOException => ()
-        abort(Socket.Error(Socket.Error.Reason.Handshake))
-
-      val negotiated: Optional[Text] = client.getApplicationProtocol match
-        case null | "" => Unset
-        case protocol  => protocol.tt
-
-      streamsDuplex(client.getInputStream.nn, client.getOutputStream.nn, negotiated): () =>
-        client.close()
-
-    def transmit(binding: Binding, input: Duplex, bytes: Data): Unit raises Socket.Error =
-      input.send(Stream(bytes))
-
-    def close(connection: Duplex): Unit raises Socket.Error = connection.close()
-    def stop(binding: Binding): Unit = binding.close()
-
-  given showable: SecurePort is Showable = port => Text(s"tls:${port.port.number}")
-
-case class SecurePort(port: Tcp.Port)
+    Framed[inbound, outbound](duplex)
