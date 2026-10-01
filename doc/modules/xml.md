@@ -55,6 +55,16 @@ supervise:
 // Document(elem(t"root", TextNode(t"content")), Header(t"1.0", Unset, Unset))
 ```
 
+Both `read` and `load` take a byte source as readily as text — a file path, an HTTP response
+body, a classpath resource — and parse the bytes directly, with no character decoding and no
+`Charset` in scope, since the parser reads UTF-8 itself:
+
+<!-- doccheck: skip -->
+```scala
+val feed: Path on Linux = temporaryDirectory[Path on Linux] / "feed.xml"
+val document = feed.load[Xml]
+```
+
 Anything in the prolog — a comment, a processing instruction, a `<!DOCTYPE>` — is kept as a node
 before the root rather than discarded, so a stylesheet instruction survives a read and a write.
 

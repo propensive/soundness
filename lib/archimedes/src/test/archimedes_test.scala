@@ -97,6 +97,11 @@ object Tests extends Suite(m"Archimedes tests"):
         stretchy.xml.show.read[Math]
       .assert(_ == stretchy)
 
+      test(m"Load a document from bytes"):
+        val bytes: Data = Array.unsafeFrozen(nested.xml.show.s.getBytes("UTF-8").nn)
+        bytes.load[Math].root.xml.show
+      .assert(_ == nested.xml.show)
+
       test(m"Reject a non-math root element"):
         capture[Mathml.Error](t"<svg><rect/></svg>".read[Math]).reason
       .assert(_ == Mathml.Error.Reason.NotMathml(t"svg"))

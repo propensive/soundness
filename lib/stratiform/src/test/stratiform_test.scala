@@ -2117,6 +2117,13 @@ object Tests extends Suite(m"Stratiform Tests"):
         doc.root.childCompounds.readable.headOption.map(_.keyword).getOrElse(t"")
       . assert(_ == t"name")
 
+      test(m"bytes load as a document, with the pragma"):
+        val bytes: Data = Array.unsafeFrozen("tel 1.0\nname Alice\n".getBytes("UTF-8").nn)
+        val doc = bytes.load[Tel]
+        ( doc.metadata.pragma.let(_.version).or((0, 0)),
+          doc.root.childCompounds.readable.headOption.map(_.keyword).getOrElse(t"") )
+      . assert(_ == ((1, 0), t"name"))
+
     suite(m"LIRA-based pragma grammar (§8)"):
       def pragmaOf(source: Text): Optional[Tel.Pragma] = source.load[Tel].metadata.pragma
 

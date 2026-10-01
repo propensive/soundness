@@ -2016,6 +2016,28 @@ object Xml extends Tag.Container
       case PositionTracking.On  => XmlParser.fromChainTracked(chunks)
       case PositionTracking.Off => XmlParser.fromChain(chunks)
 
+    loaded(parser, tracking)
+
+  // The byte form, the parser's own input: a byte source — a file, an HTTP body — is parsed
+  // as it arrives, with no decoding. Positions count bytes (see `XmlParser`).
+  given loadableData: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
+  =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking, buffering: Buffering)
+  =>  ((Xml is Loadable by Data)^{tactic}) = stream =>
+    // The non-consume `load` crosses to the consuming cursor as a neutral reference.
+    val bytes = stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]
+
+    val parser = tracking match
+      case PositionTracking.On  => XmlParser.fromStreamTracked(bytes)
+      case PositionTracking.Off => XmlParser.fromStream(bytes)
+
+    loaded(parser, tracking)
+
+  // The document a parser yields: a leading declaration is lifted into the metadata
+  // `Header` and dropped from the tree, with the `PositionIndex` when tracking is on.
+  private def loaded(parser: XmlParser^, tracking: PositionTracking)
+    ( using Tactic[Parse.Error] )
+  :   Document[Xml] =
+
     val parsed = parser.parseXml(headers0 = true)
 
     val positionIndex: Optional[PositionIndex] = tracking match

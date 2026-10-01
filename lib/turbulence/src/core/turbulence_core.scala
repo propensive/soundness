@@ -33,7 +33,7 @@
 package turbulence
 
 import scala.caps
-
+import scala.compiletime
 import scala.language.adhocExtensions
 
 import java.io as ji
@@ -82,11 +82,28 @@ extension [value](value: value)
     writable.write(target, streamable.stream(value))
 
 extension [value](value: value)
-  def load[result <: Documentary]
-    ( using streamable: (value is Streamable by Text over Credit)^,
-            loadable:   (result is Loadable by Text)^ )
-  :   Document[result] =
-    loadable.load(streamable.stream(value))
+  // Loads a document from a source, preferring bytes as `read` does: a byte-streamable source
+  // feeds a byte-native `Loadable` directly, or a text one through a `Charset`; a text source
+  // feeds a text `Loadable` directly, or a byte one through a `Codepage`; and a source that is
+  // not streamable but readable whole as `Data` (a filesystem path) is loaded from its bytes.
+  // The cases are tried in that order, so no source-side typeclass is needed: `Loadable` is
+  // the only one.
+  inline def load[result <: Documentary]: Document[result] = compiletime.summonFrom:
+    case streamable: ((`value` is Streamable by Data over Credit)^) =>
+      Loadable.fromData[result](streamable.stream(value))
+
+    case streamable: ((`value` is Streamable by Text over Credit)^) =>
+      Loadable.fromText[result](streamable.stream(value))
+
+    // A source that is not streamable is read whole as bytes, exactly as `value.read[Data]`
+    // (galilei's `pathReadable`); a source with no such instance fails here with `read`'s
+    // own missing-instance diagnostic. The one-chunk stream crosses to the consuming loader
+    // as a neutral reference (the `accept` convention).
+    case _ =>
+      // The instance is summoned here, at the expansion site, and handed over as a parameter:
+      // a local binding of it would hide `value` from the separation checker.
+      Loadable.fromData[result]
+        ( Loadable.whole(value)(using compiletime.summonInline[((`value` is Readable to Data)^)]) )
 
 extension (consume stream: (Stream[Text] over Credit)^)
   // Split a character stream into a record stream of its lines (each `Text`,
