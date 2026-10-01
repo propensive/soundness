@@ -3356,8 +3356,9 @@ object turbulence extends Library:
       settings.sep(super.scalacOptions())
   // Comparative streaming benchmarks against the effect-based streaming libraries. External,
   // benchmark-only deps (resolved from Maven Central) exactly as `jacinta.bench` pulls circe/jsoniter.
+  // `async` holds `Confluence`/`Divergence` (#2082), which the fan-in/fan-out rows exercise.
   object bench
-  extends Benchmarks(core, pneumatic.flate, pneumatic.brotli, quantitative.units, monotonous.core, enigmatic.core):
+  extends Benchmarks(core, async, pneumatic.flate, pneumatic.brotli, quantitative.units, monotonous.core, enigmatic.core):
     def mvnDeps = Seq(
       mvn"dev.zio::zio-streams:2.1.26",
       mvn"co.fs2::fs2-core:3.13.0",
