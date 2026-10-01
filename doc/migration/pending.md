@@ -237,7 +237,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   context arguments explicitly must drop them; code that summoned `load`'s instances by hand
   is unaffected (`Loadable` is unchanged). The new helpers `turbulence.Loadable.fromData[result](consume stream: (Stream[Data] over Credit)^): Document[result]`
   and `Loadable.fromText[result](consume stream: (Stream[Text] over Credit)^): Document[result]`
-  are the per-operand halves of that dispatch. (#TBD)
+  are the per-operand halves of that dispatch. (#2118)
 
 ## xenophile
 
