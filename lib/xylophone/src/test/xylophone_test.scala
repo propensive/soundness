@@ -1323,6 +1323,30 @@ object Tests extends Suite(m"Xylophone tests"):
             elem(t"root", elem(t"child")),
             Header(t"1.0", Unset, Unset))
 
+      // The byte routes of `load`: a byte source feeds the byte parser directly, with no
+      // `Charset` in scope; a text source with a `Codepage` in scope streams as bytes too.
+      def bytesOf(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
+
+      test(m"Bytes load as a document"):
+        bytesOf(t"""<?xml version="1.0"?><root>é</root>""").load[Xml]
+      . assert(_ == Document(elem(t"root", TextNode(t"é")), Header(t"1.0", Unset, Unset)))
+
+      test(m"Chunked bytes load as a document"):
+        val chunks: Chain[Data] =
+          Chain(bytesOf(t"""<?xml version="1.0"?><ro"""), bytesOf(t"""ot>é</root>"""))
+
+        chunks.load[Xml]
+      . assert(_ == Document(elem(t"root", TextNode(t"é")), Header(t"1.0", Unset, Unset)))
+
+      test(m"Text loads as bytes when a codepage is in scope"):
+        import codepages.utf8Codepage
+        t"""<?xml version="1.0"?><root>é</root>""".load[Xml]
+      . assert(_ == Document(elem(t"root", TextNode(t"é")), Header(t"1.0", Unset, Unset)))
+
+      test(m"Bytes load a header-less document"):
+        bytesOf(t"<root/>").load[Xml]
+      . assert(_ == Document(elem(t"root"), Xml.header))
+
     suite(m"xp\"...\" interpolator"):
       test(m"an absolute path with ordinals parses"):
         xp"/root[1]/child[2]".encode

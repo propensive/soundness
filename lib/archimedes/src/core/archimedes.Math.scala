@@ -80,17 +80,28 @@ object Math:
   =>  (xmlTactic: Tactic[Xml.Error])
   =>  (mathmlTactic: Tactic[Mathml.Error])
   =>  ((Math is Loadable by Text)^{parseTactic, xmlTactic, mathmlTactic}) =
+    source => fromXml(summon[(Xml is Loadable by Text)^].load(source))
 
-    source =>
-      val xmlDoc: Document[Xml] = summon[(Xml is Loadable by Text)^].load(source)
-      val mathElement = Mathml.Parser.rootElement(xmlDoc.root)
-      val parsedMath: Math = Mathml.Parser.decodeMath(mathElement)
+  // The byte form: the XML is parsed from the bytes directly.
+  given loadableData: (XmlSchema)
+  =>  (parseTactic: Tactic[Parse.Error])
+  =>  (xmlTactic: Tactic[Xml.Error])
+  =>  (mathmlTactic: Tactic[Mathml.Error])
+  =>  (buffering: zephyrine.Buffering)
+  =>  ((Math is Loadable by Data)^{parseTactic, xmlTactic, mathmlTactic}) =
+    source => fromXml(summon[(Xml is Loadable by Data)^].load(source))
 
-      val encoding: Encoding =
-        xmlDoc.metadata.encoding.let: name => Encoding.unapply(name).getOrElse(enc"UTF-8")
-        . or(enc"UTF-8")
+  private def fromXml(xmlDoc: Document[Xml])(using Tactic[Xml.Error], Tactic[Mathml.Error])
+  :   Document[Math] =
 
-      Document[Math](parsedMath, encoding)
+    val mathElement = Mathml.Parser.rootElement(xmlDoc.root)
+    val parsedMath: Math = Mathml.Parser.decodeMath(mathElement)
+
+    val encoding: Encoding =
+      xmlDoc.metadata.encoding.let: name => Encoding.unapply(name).getOrElse(enc"UTF-8")
+      . or(enc"UTF-8")
+
+    Document[Math](parsedMath, encoding)
 
   given showable: [doc <: Document[Math]] => doc is Showable =
     document =>

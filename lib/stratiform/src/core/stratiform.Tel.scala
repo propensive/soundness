@@ -3365,6 +3365,21 @@ object Tel extends Tel2:
       . asInstanceOf[(zephyrine.Stream[Data] over zephyrine.Credit)^]
       . memoize
 
+    loaded(bytes)
+
+  // The byte form, the parser's own input: the stream memoizes straight to the whole
+  // document's bytes, with no transcoding.
+  given loadableData: (tactic: Tactic[Tel.Error], buffering: Buffering, tracking: PositionTracking)
+  =>  ((Tel is Loadable by Data)^{tactic}) = stream =>
+    val bytes: Data =
+      stream.asInstanceOf[AnyRef].asInstanceOf[(zephyrine.Stream[Data] over zephyrine.Credit)^]
+      . memoize
+
+    loaded(bytes)
+
+  private def loaded(bytes: Data)(using Tactic[Tel.Error], PositionTracking)
+  :   turbulence.Document[Tel] =
+
     // The metadata comes off the parsed `Tel`'s own subtree rather than from a
     // second, untracked `Tel.Parser.parse`, so that under `parsing.trackPositions`
     // the loaded document keeps its `positionIndex`.

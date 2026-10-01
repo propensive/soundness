@@ -325,6 +325,11 @@ object Tests extends Suite(m"Honeycombd Tests"):
             <p>body""".load[Html]
       . assert(_ == Document(example, htmlDoms.whatwg))
 
+      test(m"Parse Document from chunks"):
+        val chunks: Chain[Text] = Chain(t"<title>Heading</title>", t"\n<p>body")
+        chunks.load[Html]
+      . assert(_ == Document(example, htmlDoms.whatwg))
+
       test(m"Parse RCDATA with an entity"):
         t"""<title>Push &amp; Pull</title>""".read[Html of Metadata]
       . assert(_ == Title("Push & Pull"))

@@ -221,6 +221,24 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `zephyrine.Region[Data]` with its branded extent, valid only for the duration of the call;
   `emit[Data]` is defined over it and materializes each block. (#2109)
 
+## turbulence
+
+- `turbulence.load` (the extension `value.load[result <: Documentary]`) no longer takes context
+  parameters. It was `def load[result <: Documentary](using streamable: (value is Streamable by
+  Text over Credit)^, loadable: (result is Loadable by Text)^): Document[result]`; it is now
+  `inline def load[result <: Documentary]: Document[result]`, resolving its instances with
+  `summonFrom` in this order: `value is Streamable by Data over Credit` with `result is Loadable
+  by Data`, else with `result is Loadable by Text` through a `hieroglyph.Charset` and a
+  `zephyrine.Buffering`; then `value is Streamable by Text over Credit` with `Loadable by Text`,
+  else with `Loadable by Data` through a `hieroglyph.Codepage` and a `Buffering`; then `value is
+  Readable to Data` (a whole-value source such as a `galilei.Path`) with the same two `Loadable`
+  alternatives. A text source whose `Streamable by Data` instance applies (a `Text` with a
+  `Codepage` in scope) therefore now takes the byte route, as `read` does. Code that passed the
+  context arguments explicitly must drop them; code that summoned `load`'s instances by hand
+  is unaffected (`Loadable` is unchanged). The new helpers `turbulence.Loadable.fromData[result](consume stream: (Stream[Data] over Credit)^): Document[result]`
+  and `Loadable.fromText[result](consume stream: (Stream[Text] over Credit)^): Document[result]`
+  are the per-operand halves of that dispatch. (#2118)
+
 ## xenophile
 
 - Component `xenophile.lira` (artifact `xenophile-lira`) removed; it moved to the propensive/lira

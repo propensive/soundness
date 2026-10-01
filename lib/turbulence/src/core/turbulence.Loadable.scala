@@ -32,11 +32,50 @@
                                                                                                   */
 package turbulence
 
-import zephyrine.{stream as _, *}
-
+import scala.compiletime
 import scala.language.experimental.captureChecking
 
+import anticipation.*
+import hieroglyph.*
 import prepositional.*
+import zephyrine.{stream as _, *}
+
+object Loadable:
+  // The dispatch behind `load`, one method per stream operand: the instance of the same
+  // operand is preferred, and the other is reached through the charset bridge, with the
+  // `Charset`/`Codepage` and `Buffering` resolved only on that path.
+  inline def fromData[result <: Documentary](consume stream: (Stream[Data] over Credit)^)
+  :   Document[result] =
+
+    compiletime.summonFrom:
+      case loadable: ((`result` is Loadable by Data)^) => loadable.load(stream)
+
+      case loadable: ((`result` is Loadable by Text)^) =>
+        given Buffering = compiletime.summonInline[Buffering]
+        loadable.load(stream.via(compiletime.summonInline[Charset]))
+
+      case _ =>
+        compiletime.error("turbulence: the result type has no `Loadable` instance")
+
+  // A whole-value source's bytes as a one-chunk stream, crossing to the consuming loader as a
+  // neutral reference (the `accept` convention).
+  def whole[source](source: source)(using readable: (source is Readable to Data)^)
+  :   (Stream[Data] over Credit)^ =
+
+    Stream(readable.read(source)).asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]
+
+  inline def fromText[result <: Documentary](consume stream: (Stream[Text] over Credit)^)
+  :   Document[result] =
+
+    compiletime.summonFrom:
+      case loadable: ((`result` is Loadable by Text)^) => loadable.load(stream)
+
+      case loadable: ((`result` is Loadable by Data)^) =>
+        given Buffering = compiletime.summonInline[Buffering]
+        loadable.load(stream.via(compiletime.summonInline[Codepage]))
+
+      case _ =>
+        compiletime.error("turbulence: the result type has no `Loadable` instance")
 
 trait Loadable extends Typeclass:
   type Self <: Documentary

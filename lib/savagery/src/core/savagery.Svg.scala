@@ -68,17 +68,28 @@ object Svg:
   =>  (xmlTactic: Tactic[Xml.Error])
   =>  (svgTactic: Tactic[Svg.Error])
   =>  ((Svg is Loadable by Text)^{parseTactic, xmlTactic, svgTactic}) =
+    source => fromXml(summon[(Xml is Loadable by Text)^].load(source))
 
-    source =>
-      val xmlDoc: Document[Xml] = summon[(Xml is Loadable by Text)^].load(source)
-      val svgElement = Svg.Parser.rootElement(xmlDoc.root)
-      val parsedSvg: Svg = Svg.Parser.decodeSvg(svgElement)
+  // The byte form: the XML is parsed from the bytes directly.
+  given loadableData: (XmlSchema)
+  =>  (parseTactic: Tactic[Parse.Error])
+  =>  (xmlTactic: Tactic[Xml.Error])
+  =>  (svgTactic: Tactic[Svg.Error])
+  =>  (buffering: Buffering)
+  =>  ((Svg is Loadable by Data)^{parseTactic, xmlTactic, svgTactic}) =
+    source => fromXml(summon[(Xml is Loadable by Data)^].load(source))
 
-      val encoding: Encoding =
-        xmlDoc.metadata.encoding.let: name => Encoding.unapply(name).getOrElse(enc"UTF-8")
-        . or(enc"UTF-8")
+  private def fromXml(xmlDoc: Document[Xml])(using Tactic[Xml.Error], Tactic[Svg.Error])
+  :   Document[Svg] =
 
-      Document[Svg](parsedSvg, encoding)
+    val svgElement = Svg.Parser.rootElement(xmlDoc.root)
+    val parsedSvg: Svg = Svg.Parser.decodeSvg(svgElement)
+
+    val encoding: Encoding =
+      xmlDoc.metadata.encoding.let: name => Encoding.unapply(name).getOrElse(enc"UTF-8")
+      . or(enc"UTF-8")
+
+    Document[Svg](parsedSvg, encoding)
 
   given showable: [doc <: Document[Svg]] => doc is Showable =
     document =>
