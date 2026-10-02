@@ -86,6 +86,8 @@ object Launcher:
                             |  variant verify Verify
                             |  variant verdict Verdict
                             |  variant shutdown Shutdown
+                            |  variant run Run
+                            |  variant exited Exited
                             |
                             |scalar Bytes
                             |  description
@@ -196,8 +198,12 @@ object Launcher:
                             |record Mode
                             |  description
                             |      Asks the launcher to put the client's terminal into canonical
-                            |      (cooked) mode, or back into raw mode when the flag is absent.
+                            |      (cooked) mode, or back into raw mode when the flag is absent,
+                            |      and to echo what is typed, or not when that flag is absent:
+                            |      canonical without echo is how a password is read. The launcher
+                            |      answers nothing; a terminal it does not own is left as it is.
                             |  field canonical Flag optional
+                            |  field echo Flag optional
                             |
                             |record Closed
                             |  description
@@ -233,6 +239,26 @@ object Launcher:
                             |      connection is closed. A launcher whose daemon is gone starts a
                             |      fresh one, so this reclaims a warm JVM without leaving anything
                             |      broken.
+                            |
+                            |record Run
+                            |  description
+                            |      Asks the launcher to run a command on the client's terminal:
+                            |      an editor, a pager, ssh or sudo, which the daemon's own process
+                            |      cannot reach. The launcher stops carrying the terminal's input
+                            |      and holds the invocation's output, restores the terminal's
+                            |      saved state, runs the command with the client's environment
+                            |      and standard streams — in pwd, if given — and, when it ends,
+                            |      puts the terminal back as it was and answers with exited. A
+                            |      client whose stdin is not a terminal it owns answers exited
+                            |      with 127 at once. One command runs at a time.
+                            |  field command String required
+                            |  field argument String optional repeatable
+                            |  field pwd String optional
+                            |
+                            |record Exited
+                            |  description
+                            |      The status the command the daemon asked to run ended with.
+                            |  field code String required
                             |""".stripMargin)
 
   // A file descriptor the client holds, as `init` advertises it: its number, `r`/`w`/`rw`,
@@ -271,12 +297,14 @@ object Launcher:
         deadline: Optional[Long] = Unset )
 
     case SignalAck(accept: Boolean)
-    case Mode(canonical: Boolean)
+    case Mode(canonical: Boolean, echo: Boolean = false)
     case Closed(stream: Text)
     case ExitStatus(code: Int)
     case Verify
     case Verdict(fresh: Boolean)
     case Shutdown
+    case Run(command: Text, arguments: List[Text] = Nil, pwd: Optional[Text] = Unset)
+    case Exited(code: Int)
 
   // Parsed once; a malformed schema text is a programming error, not a runtime condition.
   lazy val schema: Tels =
@@ -290,11 +318,11 @@ object Launcher:
     SchemaSignature.fromDocument(schemaText.read[Tel], Tels.Axiom.tels)
 
   // The variant indices of `Message` in the document root's keyword order — a single
-  // `SelectRef`, so its variants occupy indices 0 to 12 in declaration order.
+  // `SelectRef`, so its variants occupy indices 0 to 14 in declaration order.
   private object Variant:
     val init = 0; val data = 1; val end = 2; val credit = 3; val open = 4; val signal = 5
     val signalAck = 6; val mode = 7; val closed = 8; val exitStatus = 9; val verify = 10
-    val verdict = 11; val shutdown = 12
+    val verdict = 11; val shutdown = 12; val run = 13; val exited = 14
 
   private val scalar: Tels.Scalar = Tels.Scalar(Array.empty)
 
@@ -380,8 +408,24 @@ object Launcher:
     case Message.Verdict(fresh) =>
       node(Variant.verdict, t"Verdict", if fresh then Array(flag(0)) else Array.empty)
 
-    case Message.Mode(canonical) =>
-      node(Variant.mode, t"Mode", if canonical then Array(flag(0)) else Array.empty)
+    case Message.Mode(canonical, echo) =>
+      val children = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      if canonical then children += flag(0)
+      if echo then children += flag(1)
+      node(Variant.mode, t"Mode", Array.from(children))
+
+    case Message.Exited(code) => node(Variant.exited, t"Exited", Array(value(0, code.show)))
+
+    case Message.Run(command, arguments, pwd) =>
+      val children = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      children += value(0, command)
+      arguments.each { argument => children += value(1, argument) }
+
+      pwd match
+        case pwd: Text => children += value(2, pwd)
+        case _         => ()
+
+      node(Variant.run, t"Run", Array.from(children))
 
   // A message as one framed BinTEL document (§6.1): magic, length, signature, body. A `data`
   // document is framed by hand: its bytes go straight into the frame, with no BASE-256 text
@@ -474,7 +518,9 @@ object Launcher:
           case Variant.credit     => Message.Credit(text(0), long(1))
           case Variant.open       => Message.Open(text(0))
           case Variant.signalAck  => Message.SignalAck(flag(0))
-          case Variant.mode       => Message.Mode(flag(0))
+          case Variant.mode       => Message.Mode(flag(0), flag(1))
+          case Variant.run        => Message.Run(text(0), texts(1), optional(2))
+          case Variant.exited     => Message.Exited(int(0))
           case Variant.closed     => Message.Closed(text(0))
           case Variant.exitStatus => Message.ExitStatus(int(0))
           case Variant.verify     => Message.Verify

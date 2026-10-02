@@ -62,6 +62,7 @@ case class DaemonService[bus <: Matchable]
     startTime:  Long,
     helpThunk:  () => Optional[Help],
     setMode:    Tty => Unit,
+    run:        (Text, List[Text], Optional[Text]) => Int,
     invokedAs:  Optional[Text],
     sizeThunk:  () => Optional[(Int, Int)],
     umask:      Optional[Umask],
@@ -84,10 +85,24 @@ extends Entrypoint, Umask.Provider, Fdtable.Provider, caps.ExclusiveCapability:
   // back into the raw mode the launcher established. A no-op unless stdin is a terminal, and
   // silently ineffective (leaving today's raw-mode behaviour) if the launcher is too old to
   // offer a control channel.
-  def cooked[result](block: => result): result =
+  def cooked[result](block: => result): result = mode(Tty.Canonical)(block)
+
+  // As `cooked`, with nothing echoed: the driver's line editing, for a password.
+  def concealed[result](block: => result): result = mode(Tty.Concealed)(block)
+
+  private def mode[result](tty: Tty)(block: => result): result =
     if cliInput != Terminus.Terminal then block else
-      setMode(Tty.Canonical)
+      setMode(tty)
       try block finally setMode(Tty.Raw)
+
+  // Runs a command on the client's terminal — an editor, a pager, `ssh`, `sudo` — which this
+  // process, detached from any terminal, cannot do itself. The launcher runs it with the
+  // client's streams and environment, in `pwd` if given, and reports the status it ended with:
+  // its exit code, 128 plus the signal it died of, or 127 if it could not be run, which is
+  // also the answer when the client's stdin is not a terminal. Output goes to the terminal; to
+  // capture a program's output, run it in this process.
+  def terminal(command: Text, arguments: List[Text] = Nil, pwd: Optional[Text] = Unset): Int =
+    run(command, arguments, pwd)
 
   // The structured help tree for this command, generated lazily by re-running the application
   // in tab-completion mode. Falls back to a name-only root if the executive cannot generate it.
