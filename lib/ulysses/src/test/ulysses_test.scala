@@ -114,13 +114,29 @@ object Tests extends Suite(m"Ulysses tests"):
     // 256-bit digest supplies — so a single element must still land on 18 distinct positions.
     test(m"A demanding filter draws every position from fresh hash bits"):
       val filter = BloomFilter[Text](5000, 0.00000001) + t"Hello world"
-      filter.bits.readable.map(java.lang.Long.bitCount(_)).sum == filter.hashCount
+      filter.population == filter.hashCount
 
     . assert(identity(_))
 
     test(m"Adding elements one at a time equals adding them together"):
-      val empty = BloomFilter[Text](1000, 0.01)
+      val empty = BloomFilter.freeze(BloomFilter[Text](1000, 0.01))
       keys.take(500).foldLeft(empty)(_ + _) == empty ++ keys.take(500)
+
+    . assert(identity(_))
+
+    test(m"Adding in place then freezing equals adding by copying"):
+      val filter = BloomFilter[Text](1000, 0.01)
+      filter.add(t"one")
+      filter.addAll(keys.take(500))
+      BloomFilter.freeze(filter) == BloomFilter[Text](1000, 0.01) + t"one" ++ keys.take(500)
+
+    . assert(identity(_))
+
+    test(m"A frozen filter answers for everything added before it was frozen"):
+      val filter = BloomFilter[Text](1000, 0.01)
+      filter.addAll(keys.take(500))
+      val frozen = BloomFilter.freeze(filter)
+      keys.take(500).all(frozen.hits(_)) && !frozen.hits(t"other-1")
 
     . assert(identity(_))
 

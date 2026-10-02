@@ -285,13 +285,26 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `((h₁ + i·h₂) & Long.MaxValue) % bitSize`. For the same elements, `bits` therefore differs from
   the previous version's; a filter whose `bits` were persisted or exchanged with code built
   against the old version must be rebuilt. (#NNNN)
-- `ulysses.BloomFilter`'s third parameter, `bits: scala.collection.immutable.BitSet`, is now
-  `bits: proscenium.Array[Long]^{}` (a frozen array), of length `(bitSize + 63)/64` from
-  construction, bit `i` of the filter being bit `i % 64` of word `i / 64` — the layout of
-  `BitSet#toBitMask`, so `scala.collection.immutable.BitSet.fromBitMaskNoCopy(filter.bits.readable.asInstanceOf[scala.Array[Long]])`
-  recovers the old view. `BloomFilter#equals` and `#hashCode` compare `bitSize`, `hashCount` and
-  the words' contents, as the `BitSet`-based case-class equality did. The `BloomFilter(bitSize, hashCount, bits)`
-  constructor and `copy` take the array. (#NNNN)
+- `ulysses.BloomFilter[element, algorithm]` is no longer a `case class`; it is
+  `class BloomFilter[element: Digestible, algorithm <: Algorithm] extends caps.Mutable` with a
+  private constructor. Removed with the case class: the public constructor
+  `BloomFilter(bitSize: Int, hashCount: Int, bits: scala.collection.immutable.BitSet)`, `copy`,
+  `unapply`, the field `bits: scala.collection.immutable.BitSet`, and `productElement`/
+  `productArity`. `bitSize: Int` and `hashCount: Int` remain as `val`s. `equals`/`hashCode`
+  compare `bitSize`, `hashCount` and the bits. New: `def population: Int`, the number of set
+  bits. (#NNNN)
+- `ulysses.BloomFilter.apply[element: Digestible](approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)[algorithm <: Algorithm](using Hash in algorithm, Permit[HashWeakness[algorithm]])`
+  now returns `BloomFilter[element, algorithm]^` (an exclusive, mutable filter) where it returned
+  `BloomFilter[element, algorithm]`. New: `update def add(value: element): Unit` and
+  `update def addAll[collection: murmuration.Traversable by element](elements: collection): Unit`,
+  which set bits in place and are callable only on an exclusive filter, and
+  `ulysses.BloomFilter.freeze[element, algorithm <: Algorithm](consume filter: BloomFilter[element, algorithm]^): BloomFilter[element, algorithm]^{}`,
+  which consumes the exclusive filter and yields the frozen (shareable, read-only) form without
+  copying. `+` and `++` now return `BloomFilter[element, algorithm]^{}` and copy the bits once;
+  `hits` is unchanged. Under capture checking, code that used one `BloomFilter[…]` value from
+  `apply` in several places (as a shared immutable value) must `freeze` it first, since an
+  exclusive value may not be aliased; code that only chains `apply(…) + x ++ xs` is unchanged.
+  Outside capture-checked code, nothing changes but the result types. (#NNNN)
 - `ulysses.BloomFilter#++(elements: Iterable[element]): BloomFilter[element, algorithm]` is now
   `ulysses.BloomFilter#++[collection: murmuration.Traversable by element](elements: collection): BloomFilter[element, algorithm]`.
   A `scala.Iterable` argument is still accepted (through `Traversable.iterable`); the opaque

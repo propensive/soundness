@@ -60,6 +60,9 @@ import Blake3.hash
 enum Engine:
   case UlyssesBlake3, UlyssesCrc32, Guava, Alexandrnikitin, CommonsCollections
 
+enum Growth:
+  case InPlace, Copying
+
 object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
   given decimalizer: Decimalizer     = Decimalizer(2)
   given device:      BenchmarkDevice = LocalhostDevice
@@ -93,16 +96,26 @@ object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
 
   def keys(size: Int): List[Text] = List.tabulate(size)(present(_))
 
-  // Ulysses, built in one pass with `++`, under the default (BLAKE3) and a 32-bit checksum hash.
+  // Ulysses, filled in place and frozen, under the default (BLAKE3) and a 32-bit checksum hash.
   def buildUlyssesBlake3(size: Int): BloomFilter[Text, Blake3] =
-    BloomFilter[Text](size, errorRate) ++ keys(size)
+    val filter = BloomFilter[Text](size, errorRate)
+    filter.addAll(keys(size))
+    BloomFilter.freeze(filter)
 
   def buildUlyssesCrc32(size: Int): BloomFilter[Text, Crc32] =
-    BloomFilter[Text](size, errorRate)[Crc32] ++ keys(size)
+    val filter = BloomFilter[Text](size, errorRate)[Crc32]
+    filter.addAll(keys(size))
+    BloomFilter.freeze(filter)
 
-  // Element by element, which an immutable filter pays for with a copy per `+`.
-  def buildUlyssesIncrementally(size: Int): BloomFilter[Text, Blake3] =
-    keys(size).fuse(BloomFilter[Text](size, errorRate))(state + next)
+  // Element by element: in place through `add`, or by copying through `+` on a frozen filter.
+  def addInPlace(size: Int): BloomFilter[Text, Blake3] =
+    val filter = BloomFilter[Text](size, errorRate)
+    keys(size).each(filter.add(_))
+    BloomFilter.freeze(filter)
+
+  def addByCopying(size: Int): BloomFilter[Text, Blake3] =
+    val empty: BloomFilter[Text, Blake3] = BloomFilter.freeze(BloomFilter[Text](size, errorRate))
+    keys(size).fuse(empty)(state + next)
 
   // The rivals, each written as its own users would write it.
   def buildGuava(size: Int): com.google.common.hash.BloomFilter[CharSequence] =
@@ -243,7 +256,9 @@ object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
         case Engine.Alexandrnikitin    => '{ ulysses.Benchmarks.alexandrnikitinAbsent() }
         case Engine.CommonsCollections => '{ ulysses.Benchmarks.commonsAbsent() }
 
-    // What `+` costs against `++`: the same keys into the same filter, one copy per element.
-    bench(m"Add elements one at a time with +")(target = 1*Second)
-    . over(Axis(t"size")(1_000, 10_000)): size =>
-        '{ ulysses.Benchmarks.buildUlyssesIncrementally($size) }
+    // What growing a frozen filter costs: the same keys one at a time, in place through `add`
+    // or at one copy of the bits per `+`.
+    bench(m"Add elements one at a time")(target = 1*Second, baseline = Growth.InPlace)
+    . over(Growth, Axis(t"size")(1_000, 10_000)):
+        case (Growth.InPlace, size) => '{ ulysses.Benchmarks.addInPlace($size) }
+        case (Growth.Copying, size) => '{ ulysses.Benchmarks.addByCopying($size) }

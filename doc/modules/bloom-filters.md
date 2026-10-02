@@ -86,8 +86,28 @@ Because elements enter through the ordinary [hashing](hashing.md) machinery, a c
 usable as an element with no preparation, and a filter over a structured key needs no
 serialization step written for it.
 
+### Filling a filter in place
+
+A filter fresh from `BloomFilter[Text](n, p)` is *exclusive*: it belongs to the code that made
+it, which fills it in place with `add` and `addAll`, with no copying at all, and then freezes it:
+
+```scala
+val filter = BloomFilter[Text](10_000, 0.01)
+filter.add(t"first")
+filter.addAll(List(t"second", t"third"))
+val frozen = BloomFilter.freeze(filter)
+```
+
+`freeze` consumes the exclusive filter — the compiler's separation checking rejects any later use
+of `filter` — and yields the frozen form, which may be shared across threads, held in a data
+structure and queried from anywhere, but never written to: `add` on a frozen filter does not
+compile. This is the same discipline as freezing an [array](collections.md), and it is what makes the
+immutability below free rather than copied.
+
 ### Immutability
 
-`+` and `++` return new filters rather than mutating in place, so a filter is safe to share across
-threads and to hold in a data structure. Building one from a large collection with `++` is a
-single pass, rather than the sequence of copies that repeated `+` would suggest.
+`+` and `++` return new filters rather than mutating in place, at the price of one copy of the
+bits each, so a frozen filter grows into another frozen filter without the original changing.
+Building one from a large collection with `++` is a single pass and a single copy, rather than
+the sequence of copies that repeated `+` would suggest — and filling an exclusive filter with
+`addAll` before freezing it is no copy at all.
