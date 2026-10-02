@@ -63,6 +63,8 @@ extends Error(m"${items.size} validation issues"):
   def +(focus: Text, error: Json.Error): Issues = Issues(items :+ (focus, error))
 
 
+case class VOptionalAge(name: Text, age: Optional[Int])
+
 object ValidationTests extends Suite(m"Jacinta validation tests"):
 
   // Inline, with a directly-constructed `Validate`: a `raises … tracks …` function VALUE
@@ -110,6 +112,24 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
         validateJson(json)(_.as[VPerson]).items.all:
           case (_, err) => err.reason == Json.Error.Reason.Absent
       . assert(identity)
+
+    suite(m"Optionality policies under accrual"):
+      test(m"A wrong-typed Optional field accrues one error by default"):
+        val json = t"""{"name": "Alice", "age": "thirty"}""".read[Json]
+        validateJson(json)(_.as[VOptionalAge]).items.map(_(0).s)
+      . assert(_ == List("#/age"))
+
+      test(m"Lenient faults accrue nothing for a wrong-typed Optional field"):
+        import optionalityOptions.lenientJsonFaults
+        val json = t"""{"name": "Alice", "age": "thirty"}""".read[Json]
+        validateJson(json)(_.as[VOptionalAge]).items.size
+      . assert(_ == 0)
+
+      test(m"Strict absence accrues an Absent error with the field's pointer"):
+        import optionalityOptions.strictJsonAbsence
+        val json = t"""{"name": "Alice"}""".read[Json]
+        validateJson(json)(_.as[VOptionalAge]).items.map(_(0).s)
+      . assert(_ == List("#/age"))
 
       test(m"Three missing fields: three errors accrued"):
         val json = t"""{}""".read[Json]

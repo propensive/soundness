@@ -139,7 +139,16 @@ trait Json2 extends Json3:
     Json.Encodable(shape): value =>
       value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Json.ast(Json.Ast(Unset)))
 
-  given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[Json.Error]
+  // The `Optional` and `Option` decoders consult the three `optionalityOptions` policies,
+  // captured here at resolution (a lexically-imported given outranks the companion defaults).
+  // Lenient faults run the inner decoder under `tactic.tolerate`, which discards whatever it
+  // raises — the inner decoder is bound to the ambient tactic at the summon site, so the tactic
+  // itself is the only place a fault can be intercepted, under accrual as much as fail-fast.
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  ( absence: distillate.Decodable.Absence in Json,
+        nullity: distillate.Decodable.Nullity in Json,
+        fault:   distillate.Decodable.Fault in Json,
+        tactic:  Tactic[Json.Error] )
   =>  ( decodable: => (inner is Json.Decodable)^ )
   =>  value is Json.Decodable =
 
@@ -154,11 +163,15 @@ trait Json2 extends Json3:
         caps.unsafe.unsafeAssumePure(() => Morphology.Opt(decodable.shape()))
 
       Json.Decodable(shape()): json =>
-        // An `Optional` field reads `Unset` from an absent key *and* from an
-        // explicit JSON `null`: both mean "no value" on the wire. (Missing keys
-        // arrive here as `Unset`; a present `null` arrives as the `JsonNull`
-        // sentinel.)
-        if json.root.isAbsent || json.root.isNull then Unset else decodable.decoded(json)
+        // Missing keys arrive here as `Unset`; a present `null` arrives as the `JsonNull`
+        // sentinel. By default both read as `Unset`; a strict absence raises `Absent`, and a
+        // strict null is handed to the inner decoder, which rejects it as any other field would.
+        if json.root.isAbsent then
+          if absence.strict then abort(Json.Error(Reason.Absent)) else Unset
+        else if json.root.isNull && !nullity.strict then
+          Unset
+        else if fault.strict then decodable.decoded(json)
+        else tactic.tolerate(decodable.decoded(json)).or(Unset)
 
   // An honest capability: the instance retains the resolution-scoped tactic
   // (every given that includes a tactic is a capability; Jon, 2026-07-12).
@@ -172,12 +185,20 @@ trait Json2 extends Json3:
   // types never reach its `Reflection` case (a `List`'s own `Mirror` would
   // otherwise derive it as a sum).
   given fieldOptional: [inner <: value, value >: Unset.type: Mandatable to inner]
-  =>  Tactic[Json.Error]
+  =>  ( absence: distillate.Decodable.Absence in Json,
+        nullity: distillate.Decodable.Nullity in Json,
+        fault:   distillate.Decodable.Fault in Json,
+        tactic:  Tactic[Json.Error] )
   =>  ( field: => (inner is Json.Field)^ )
   =>  value is Json.Field =
     Json.Field(Json.Parsable.optionality[inner, value](field))
 
-  given fieldOption: [value] => (field: => (value is Json.Field)^)
+  given fieldOption: [value]
+  =>  ( absence: distillate.Decodable.Absence in Json,
+        nullity: distillate.Decodable.Nullity in Json,
+        fault:   distillate.Decodable.Fault in Json,
+        tactic:  Tactic[Json.Error] )
+  =>  ( field: => (value is Json.Field)^ )
   =>  Option[value] is Json.Field =
     Json.Field(Json.Parsable.boxed(field))
 
@@ -225,7 +246,10 @@ trait Json2 extends Json3:
   // The nominal counterpart of `fieldOptional`: an `Optional` reads
   // directly only when its element has opted in.
   given optionalParsable: [inner <: value, value >: Unset.type: Mandatable to inner]
-  =>  Tactic[Json.Error]
+  =>  ( absence: distillate.Decodable.Absence in Json,
+        nullity: distillate.Decodable.Nullity in Json,
+        fault:   distillate.Decodable.Fault in Json,
+        tactic:  Tactic[Json.Error] )
   =>  ( parsable: => (inner is Json.Parsable)^ )
   =>  value is Json.Parsable =
     Json.Parsable.optionality[inner, value](parsable)
@@ -819,7 +843,10 @@ object Json extends Json2, Dynamic:
     // named in a capture set (see `Json2.optional`).
     def optionality[inner <: value, value >: Unset.type]
       ( field: => (inner is Json.Parsing)^ )
-      ( using tactic: Tactic[Json.Error] )
+      ( using absence: distillate.Decodable.Absence in Json,
+              nullity: distillate.Decodable.Nullity in Json,
+              fault:   distillate.Decodable.Fault in Json,
+              tactic:  Tactic[Json.Error] )
     :   value is Json.Parsable =
 
       caps.unsafe.unsafeAssumePure:
@@ -827,17 +854,27 @@ object Json extends Json2, Dynamic:
           type Self = value
           def shape(): Morphology = Morphology.Opt(field.shape())
 
-          // A wire `null` reads as `Unset`, and so does an absent key: both
-          // mean "no value", exactly as the AST decoder's `optional`.
+          // A wire `null` reads as `Unset`, and so does an absent key: both mean "no value",
+          // exactly as the AST decoder's `optional`; the `optionalityOptions` policies vary
+          // either. A strict null is left for the field's own parser to reject.
           def parse(reader: Json.Reader^): value =
-            if reader.hasNull then
+            if reader.hasNull && !nullity.strict then
               reader.nullValue()
               Unset
-            else field.parse(reader)
+            else if Json.Parsable.mismatched(fault, field, reader) then
+              reader.skipValue()
+              Unset
+            else
+              field.parse(reader)
 
-          override def absent()(using Tactic[Json.Error]): value = Unset
+          override def absent()(using Tactic[Json.Error]): value =
+            if absence.strict then abort(Json.Error(Reason.Absent)) else Unset
 
     def boxed[value](field: => (value is Json.Parsing)^)
+      ( using absence: distillate.Decodable.Absence in Json,
+              nullity: distillate.Decodable.Nullity in Json,
+              fault:   distillate.Decodable.Fault in Json,
+              tactic:  Tactic[Json.Error] )
     :   Option[value] is Json.Parsable =
 
       caps.unsafe.unsafeAssumePure:
@@ -845,11 +882,35 @@ object Json extends Json2, Dynamic:
           type Self = Option[value]
           def shape(): Morphology = Morphology.Opt(field.shape())
 
-          // A present key always reads the value — a wire `null` flows to
-          // the element, preserving the AST decoder's `Option` asymmetry —
-          // while an absent key yields `None`.
-          def parse(reader: Json.Reader^): Option[value] = Some(field.parse(reader))
-          override def absent()(using Tactic[Json.Error]): Option[value] = None
+          // As `optionality`, yielding `None`: an absent key or a wire `null` is `None` unless
+          // the policy is strict, and a value of the wrong kind is `None` under lenient faults.
+          def parse(reader: Json.Reader^): Option[value] =
+            if reader.hasNull && !nullity.strict then
+              reader.nullValue()
+              None
+            else if Json.Parsable.mismatched(fault, field, reader) then
+              reader.skipValue()
+              None
+            else
+              Some(field.parse(reader))
+
+          override def absent()(using Tactic[Json.Error]): Option[value] =
+            if absence.strict then abort(Json.Error(Reason.Absent)) else None
+
+    // Whether, under lenient faults, the next value on the wire is of a different kind from
+    // the one `field` reads, so the wrapper may skip it whole and yield its absent value. Only
+    // a kind mismatch can be tolerated: a value that fails *within* its kind (a number too
+    // large for an `Int`, say) has already been partly consumed, and the stream cannot be
+    // resynchronized, so it still raises. A field whose shape admits several kinds (`Any`, a
+    // disjunction) is never skipped.
+    private[jacinta] def mismatched
+      ( fault: distillate.Decodable.Fault in Json, field: Json.Parsing^, reader: Json.Reader^ )
+    :   Boolean =
+
+      !fault.strict && Json.primitiveOf(field.shape()).let: expected =>
+        reader.primitive.let(_.ordinal != expected.ordinal).or(false)
+
+      . or(false)
 
     def iterable[collection <: Iterable, element]
       ( field: => (element is Json.Parsing)^ )
@@ -2526,7 +2587,12 @@ object Json extends Json2, Dynamic:
 
   // Nominal counterparts of the `Json.Field` element-wise givens:
   // a collection reads directly only when its element type has opted in.
-  given optionParsable: [value] => (parsable: => (value is Json.Parsable)^)
+  given optionParsable: [value]
+  =>  ( absence: distillate.Decodable.Absence in Json,
+        nullity: distillate.Decodable.Nullity in Json,
+        fault:   distillate.Decodable.Fault in Json,
+        tactic:  Tactic[Json.Error] )
+  =>  ( parsable: => (value is Json.Parsable)^ )
   =>  Option[value] is Json.Parsable =
     Json.Parsable.boxed(parsable)
 
@@ -2569,16 +2635,29 @@ object Json extends Json2, Dynamic:
   =>  Map[key, element] is Json.Parsable =
     Json.Parsable.dictionary[key, element](parsable)
 
-  given option: [value: Json.Decodable] => Tactic[Json.Error]
+  given option: [value]
+  =>  ( absence: distillate.Decodable.Absence in Json,
+        nullity: distillate.Decodable.Nullity in Json,
+        fault:   distillate.Decodable.Fault in Json,
+        tactic:  Tactic[Json.Error] )
+  =>  ( decodable: => (value is Json.Decodable)^ )
   =>  Option[value] is Json.Decodable =
 
-    // Sealed lazily: the shape must stay by-name (recursive derivation
-    // depends on deferral), and its thunk may not capture the evidence.
-    val shape: () -> Morphology =
-      caps.unsafe.unsafeAssumePure(() => Morphology.Opt(value.shape()))
+    // Sealed as `optional` is: the by-name parameter cannot be named in a capture set, and
+    // the shape thunk must stay deferred for recursive derivation.
+    caps.unsafe.unsafeAssumePure:
+      val shape: () -> Morphology =
+        caps.unsafe.unsafeAssumePure(() => Morphology.Opt(decodable.shape()))
 
-    Json.Decodable(shape()): json =>
-      if json.root.isAbsent then None else Some(value.decoded(json))
+      // The same three policies as `optional`, yielding `None`: an absent key or a wire `null`
+      // is `None` unless strict; a rejected value is `None` only under lenient faults.
+      Json.Decodable(shape()): json =>
+        if json.root.isAbsent then
+          if absence.strict then abort(Json.Error(Reason.Absent)) else None
+        else if json.root.isNull && !nullity.strict then
+          None
+        else if fault.strict then Some(decodable.decoded(json))
+        else tactic.tolerate(decodable.decoded(json)).let(Some(_)).or(None)
 
   given optionEncodable: [value] => (encodable: value is Json.Encodable)
   =>  Option[value] is Json.Encodable =
@@ -3019,6 +3098,20 @@ object Json extends Json2, Dynamic:
   enum Primitive:
     case Array, Object, Number, Null, Boolean, String
 
+  // The one primitive a morphology reads, or `Unset` where it admits several
+  private[jacinta] def primitiveOf(shape: Morphology): Optional[Json.Primitive] = shape match
+    case Morphology.Str          => Json.Primitive.String
+    case Morphology.Whole        => Json.Primitive.Number
+    case Morphology.Real         => Json.Primitive.Number
+    case Morphology.Bool         => Json.Primitive.Boolean
+    case Morphology.Empty        => Json.Primitive.Null
+    case Morphology.Arr(_)       => Json.Primitive.Array
+    case Morphology.Dict(_, _)   => Json.Primitive.Object
+    case Morphology.Obj(_, _)    => Json.Primitive.Object
+    case Morphology.Opt(inner)   => primitiveOf(inner)
+    case Morphology.Any          => Unset
+    case Morphology.OneOf(_)     => Unset
+
   // JsonReader → Json.Reader
   object Reader:
     // Sentinels of `keyWord()`; impossible as packed keys, whose bytes are
@@ -3072,6 +3165,11 @@ object Json extends Json2, Dynamic:
     // ── Null handling: `hasNull` peeks without consuming, for optional
     // wrappers that map a wire `null` to an absent value. ──
     update def hasNull: Boolean = parser.directIsNull()
+
+    // The kind of the next value, from its first byte, without consuming it; `Unset` at the
+    // end of input or on a byte that begins no value. For optional wrappers that compare the
+    // wire against the field's shape before parsing.
+    update def primitive: Optional[Json.Primitive] = parser.directPrimitive()
     update def nullValue(): Unit = parser.directNull()(using tactic)
 
     // ── Structure. After `openObject()`, `key()` yields each key in turn

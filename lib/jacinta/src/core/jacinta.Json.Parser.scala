@@ -2311,6 +2311,19 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     skip()
     more && peek == LowerN
 
+  // The kind of the next value, from its first byte, without consuming it.
+  private[jacinta] update def directPrimitive(): Optional[Json.Primitive] =
+    skip()
+
+    if !more then Unset
+    else if peek == Quote then Json.Primitive.String
+    else if peek == OpenBrace then Json.Primitive.Object
+    else if peek == OpenBracket then Json.Primitive.Array
+    else if peek == LowerT || peek == LowerF then Json.Primitive.Boolean
+    else if peek == LowerN then Json.Primitive.Null
+    else if peek == Minus || (peek >= Num0 && peek <= Num9) then Json.Primitive.Number
+    else Unset
+
   // One number token, in the same `Raw` forms the AST parser produces for a
   // top-level number (`Long`, `Double` or `Bcd` under `bcdOnly = false`).
   private update def directNumber()(using Tactic[Parse.Error]): Raw =
