@@ -34,6 +34,7 @@ package ethereal
 
 import java.lang as jl
 import java.io as ji
+import java.nio.file as jnf
 import java.util.concurrent as juc
 
 import soundness.*
@@ -61,6 +62,13 @@ object Readers:
     import charsets.utf8Charset
     import textSanitizers.skipSanitizer
     safely(path.as[Path on Linux].read[Text])
+
+  // The bytes of argument `index` as the client gave them, in hex, or `(text)` when the text
+  // carried them exactly; compiled here for the same reason.
+  def rawArgument[bus <: Matchable](index: Int)(using service: DaemonService[bus]): Text =
+    service.rawArgument(index) match
+      case bytes: Data => Text(bytes.readable.map(b => f"${b & 0xff}%02x").mkString)
+      case _           => t"(text)"
 
   // Runs `script` with `sh -c` on the client's terminal; compiled here for the same reason.
   def terminal[bus <: Matchable](script: Text)(using service: DaemonService[bus]): Int =
@@ -188,6 +196,10 @@ object Tests extends Suite(m"Ethereal Tests"):
                       Out.print(t"[$line]")
 
                     Exit.Ok
+
+                // The bytes of the argument after `raw`, where its text could not carry them.
+                case Argument("raw") :: _ =>
+                  execute(Out.print(Readers.rawArgument(1)) yet Exit.Ok)
 
                 // A command run on the client's terminal, and the status it ended with.
                 case Argument("terminal") :: rest =>
@@ -718,6 +730,21 @@ object Tests extends Suite(m"Ethereal Tests"):
               sh"$tool args /dev/stdin".exec[Text]()
             . check(_ == t"/dev/stdin")
 
+            // An argument that is not UTF-8 arrives with U+FFFD in its text, and its bytes
+            // beside it; one the text carries exactly has no bytes beside it.
+            // The byte 0xff cannot be spelled in a command line of `Text`, so a script spells it.
+            val rawScript = temporaryDirectory[Path on Linux]/t"raw-$name.sh"
+
+            test(m"a non-UTF-8 argument's bytes reach the daemon"):
+              import codepages.utf8Codepage
+              rawScript.write("exec \"$1\" raw $'a\\xffb'\n".tt)
+              sh"bash $rawScript $tool".exec[Text]()
+            . check(_ == t"61ff62")
+
+            test(m"a UTF-8 argument has no raw form"):
+              sh"$tool raw plain".exec[Text]()
+            . check(_ == t"(text)")
+
             test(m"a descriptor the client does not hold names nothing, whatever the daemon holds"):
               sh"$tool read /dev/fd/38".exec[Exit]()
             . check(_ == Exit.Fail(1))
@@ -1099,7 +1126,7 @@ object Tests extends Suite(m"Ethereal Tests"):
         // The wire contract shared with the Rust runner: `bintel.rs` pins the same
         // signature and frames, so the two implementations cannot drift apart silently.
         val signatureHex =
-          t"3cb134104ab97c0cf5ac17839307699eea72846ca31c0c7a755f5c91c2a4480d80"
+          t"55d18c247b88db8fc6af7a197c56ee2b680084d1800afe8947a2f613c70492e563"
 
         def hex(data: Data): Text = Text(data.readable.map(b => f"${b & 0xff}%02x").mkString)
         def bytes(values: Int*): Data = Array.unsafeFrozen(values.map(_.toByte).toArray)
@@ -1229,6 +1256,16 @@ object Tests extends Suite(m"Ethereal Tests"):
             Launcher.Message.Run(t"less"),
             Launcher.Message.Run(t"vi", List(t"-R", t"notes.txt"), t"/home/jon"),
             Launcher.Message.Exited(3) ))
+
+        // A raw record round-trips with its bytes, which no text could carry.
+        test(m"a raw record round-trips, bytes and all"):
+          val raw = Launcher.Raw(t"argument", 1, bytes(0x61, 0xff, 0x62))
+          Launcher.decode(Launcher.encode(init.copy(raws = List(raw)))) match
+            case init2: Launcher.Message.Init => init2.raws.prim match
+              case raw2: Launcher.Raw => (raw2.kind, raw2.index, raw2.bytes.readable.map(_ & 0xff).toList)
+              case _                  => (t"", Unset, Nil)
+            case _ => (t"", Unset, Nil)
+        . check(_ == (t"argument", 1, List(0x61, 0xff, 0x62)))
 
         // A chunk has no structural equality: its bytes are compared.
         test(m"a data document round-trips, bytes and all"):

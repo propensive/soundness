@@ -41,8 +41,10 @@ import java.lang as jl
 
 import anticipation.*
 import exoskeleton.*
+import gossamer.*
 import guillotine.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
 import vacuous.*
 
@@ -68,7 +70,10 @@ case class DaemonService[bus <: Matchable]
     umask:      Optional[Umask],
     // The client's descriptors, for galilei: a path naming one (`/dev/stdin`, `/dev/fd/63`)
     // opens the client's, carried over the session, rather than the daemon's own.
-    fdtable: Optional[Fdtable] = Unset )
+    fdtable: Optional[Fdtable] = Unset,
+    // The native bytes of each argument, environment entry or working directory whose text
+    // form lost something (`Launcher.Raw`); empty in the ordinary case.
+    raws:    List[Launcher.Raw] = Nil )
 extends Entrypoint, Umask.Provider, Fdtable.Provider, caps.ExclusiveCapability:
   def broadcast(message: bus): Unit = deliver(message)
 
@@ -103,6 +108,25 @@ extends Entrypoint, Umask.Provider, Fdtable.Provider, caps.ExclusiveCapability:
   // capture a program's output, run it in this process.
   def terminal(command: Text, arguments: List[Text] = Nil, pwd: Optional[Text] = Unset): Int =
     run(command, arguments, pwd)
+
+  // The bytes of the argument at `index`, as the operating system gave them, where its text
+  // (`arguments`) could not carry them: a name that is not valid UTF-8, say. `Unset` for an
+  // argument its text carries exactly — the ordinary case — so a caller falls back to the text.
+  def rawArgument(index: Int): Optional[anticipation.Data] = raw(t"argument", index)
+
+  // As `rawArgument`, for the environment entry at `index` (`NAME=value`).
+  def rawEnvironment(index: Int): Optional[anticipation.Data] = raw(t"environment", index)
+
+  // The working directory's bytes, where its text could not carry them.
+  def rawWorkingDirectory: Optional[anticipation.Data] =
+    raws.seek(_.kind == t"pwd").let(_.bytes)
+
+  private def raw(kind: Text, index: Int): Optional[anticipation.Data] =
+    raws.seek: raw =>
+      raw.kind == kind && (raw.index match
+        case position: Int => position == index
+        case _             => false)
+    . let(_.bytes)
 
   // The structured help tree for this command, generated lazily by re-running the application
   // in tab-completion mode. Falls back to a name-only root if the executive cannot generate it.

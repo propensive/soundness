@@ -306,7 +306,7 @@ def cli[bus <: Matchable](using executive: Executive)
       // is not this daemon's is refused (#18). Either way the session ends at once with the
       // exit status, rather than closing on a launcher that would read that as a daemon of
       // another protocol.
-      case Launcher.Message.Init(pid0, uid, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)
+      case Launcher.Message.Init(pid0, uid, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)
           if draining() || userId.let(_ != UserId(uid)).or(false) =>
         val pid = Pid(pid0)
         if draining() then Log.warn(DaemonLogEvent.Refused(pid))
@@ -316,7 +316,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
       case Launcher.Message.Init(pid0, uid, username, script, directory, stdinTty, stdoutTty,
                                  stderrTty, textArguments, env, invokedAs, umask, columns, rows,
-                                 inputCodepage, outputCodepage, descriptors) =>
+                                 inputCodepage, outputCodepage, descriptors, raws) =>
         val pid = Pid(pid0)
         val login = Login(username, UserId(uid))
 
@@ -439,7 +439,8 @@ def cli[bus <: Matchable](using executive: Executive)
                invokedAs,
                () => windowSize0(),
                umask.let(Umask.parse(_)),
-               session.fdtable )
+               session.fdtable,
+               raws )
 
         Log.fine(DaemonLogEvent.NewCli)
 
