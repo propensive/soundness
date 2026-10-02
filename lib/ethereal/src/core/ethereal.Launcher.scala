@@ -109,7 +109,9 @@ object Launcher:
                             |      octal; columns and rows are the terminal's size when stdout is
                             |      a terminal; the code pages are the Windows console's input and
                             |      output code pages. Each descriptor is a file descriptor the
-                            |      client holds, which the daemon may open as a stream.
+                            |      client holds, which the daemon may open as a stream. Each raw
+                            |      is the native bytes of an argument, environment entry or the
+                            |      working directory whose text form could not carry them.
                             |  field pid String required
                             |  field uid String required
                             |  field username String required
@@ -127,6 +129,21 @@ object Launcher:
                             |  field input-codepage String optional
                             |  field output-codepage String optional
                             |  field descriptor Descriptor optional repeatable
+                            |  field raw Raw optional repeatable
+                            |
+                            |record Raw
+                            |  description
+                            |      A value of the init document as the operating system gave it,
+                            |      for one whose text form lost something: an argument or an
+                            |      environment entry that is not valid UTF-8, or on Windows holds
+                            |      an unpaired surrogate, or the working directory. The kind is
+                            |      argument, environment or pwd; the index is the position among
+                            |      the arguments or environment entries, from 0, and absent for
+                            |      pwd. The bytes are the platform's own: bytes on Unix, UTF-16
+                            |      code units, little-endian, on Windows.
+                            |  field kind String required
+                            |  field index String optional
+                            |  field bytes Bytes required
                             |
                             |record Descriptor
                             |  description
@@ -265,6 +282,11 @@ object Launcher:
   // its kind (`file`, `pipe`, `tty`, `socket`, `other`) and, for a regular file, its real path.
   case class Descriptor(fd: Int, direction: Text, kind: Text, path: Optional[Text] = Unset)
 
+  // A value of `init` as the operating system gave it, where its text form lost something:
+  // `argument`, `environment` or `pwd`; the position among the arguments or entries, from 0,
+  // or none for the working directory; and the platform's own bytes.
+  case class Raw(kind: Text, index: Optional[Int], bytes: anticipation.Data)
+
   enum Message:
     case Init
       ( pid:            Int,
@@ -283,7 +305,8 @@ object Launcher:
         rows:           Optional[Int]  = Unset,
         inputCodepage:  Optional[Int]  = Unset,
         outputCodepage: Optional[Int]  = Unset,
-        descriptors:    List[Descriptor] = Nil )
+        descriptors:    List[Descriptor] = Nil,
+        raws:           List[Raw] = Nil )
 
     case Data(stream: Text, bytes: anticipation.Data)
     case End(stream: Text)
@@ -348,7 +371,7 @@ object Launcher:
   private def element(message: Message): Tel.Element = message match
     case Message.Init(pid, uid, username, script, pwd, stdinTty, stdoutTty, stderrTty,
                       arguments, environment, invokedAs, umask, columns, rows, inputCodepage,
-                      outputCodepage, descriptors) =>
+                      outputCodepage, descriptors, raws) =>
       val children = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       children += value(0, pid.show)
       children += value(1, uid)
@@ -378,6 +401,17 @@ object Launcher:
           case _          => ()
 
         children += Tel.Element.Node(16, record(t"Descriptor"), Array.from(fields))
+
+      raws.each: raw =>
+        val fields = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+        fields += value(0, raw.kind)
+
+        raw.index match
+          case index: Int => fields += value(1, index.show)
+          case _          => ()
+
+        fields += this.raw(2, Base256.encode(raw.bytes))
+        children += Tel.Element.Node(17, record(t"Raw"), Array.from(fields))
 
       node(Variant.init, t"Init", Array.from(children))
 
@@ -506,12 +540,25 @@ object Launcher:
                   field(3) )
           . to(List)
 
+        def raws: List[Raw] =
+          children.readable.toList.collect:
+            case Tel.Element.Node(17, _, fields) =>
+              def field(index: Int): Optional[Text] = fields.readable.collectFirst:
+                case Tel.Element.Value(`index`, _, text) => text
+              . getOrElse(Unset)
+
+              Raw
+                ( field(0).or(abort(Launcher.Mismatch())),
+                  field(1).let(_.as[Int]),
+                  Base256.decodeStrict(field(2).or(abort(Launcher.Mismatch()))) )
+          . to(List)
+
         index.or(-1) match
           case Variant.init =>
             Message.Init
               ( int(0), text(1), text(2), text(3), text(4), flag(5), flag(6), flag(7),
                 texts(8), texts(9), optional(10), optional(11), optionalInt(12), optionalInt(13),
-                optionalInt(14), optionalInt(15), descriptors )
+                optionalInt(14), optionalInt(15), descriptors, raws )
 
           case Variant.data       => Message.Data(text(0), Base256.decodeStrict(text(1)))
           case Variant.end        => Message.End(text(0))
