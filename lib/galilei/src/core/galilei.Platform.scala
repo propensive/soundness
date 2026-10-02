@@ -39,6 +39,7 @@ import java.nio.file as jnf
 import anticipation.*
 import aperture.*
 import contingency.*
+import gigantism.Every
 import inimitable.*
 import prepositional.*
 import rudiments.*
@@ -48,6 +49,7 @@ import turbulence.Eof
 import turbulence.Readable
 import turbulence.Writable
 import vacuous.*
+import zephyrine.Stream
 
 import Io.Error.Operation
 
@@ -69,13 +71,26 @@ object Platform:
   // otherwise falls back to composing `Streamable` with `Aggregable`. Placing it here (rather than
   // as a `read` extension, which would be ambiguous with turbulence's generic one) makes
   // `path.read[…]` resolve through turbulence's `read` with no extra import for any `Path on …`.
+  // A path the process context governs (`ProcessContext`) is read through its descriptor
+  // rather than from this process's filesystem.
   given pathReadable: [plane <: Platform: Filesystem, result]
   =>  ( readable: (Data is Readable to result)^ )
-  =>  ( tactic: Tactic[Io.Error] )
+  =>  ( tactic: Tactic[Io.Error], contexts: Every[ProcessContext] )
   =>  (((Path on plane) is Readable to result)^{readable, tactic}) =
     path =>
-      val bytes: Data = path.protect(Operation.Read):
-        Array.unsafeFrozen(jnf.Files.readAllBytes(path.nioPath).nn)
+      val encoded: Text = summon[Path on plane is Encodable in Text].encode(path)
+
+      val bytes: Data = ProcessContext.resolve(contexts, encoded) match
+        case descriptor: ProcessContext.Descriptor =>
+          try
+            descriptor.open(List(OpenFlag.Read)): handle =>
+              summon[Data is Aggregable by Data].accept(Stream(handle.reader()))
+          catch case refusal: ProcessContext.Refusal =>
+            abort(Io.Error(path, Operation.Read, refusal.reason))
+
+        case _ =>
+          path.protect(Operation.Read):
+            Array.unsafeFrozen(jnf.Files.readAllBytes(path.nioPath).nn)
 
       readable.read(bytes)
 
@@ -84,19 +99,29 @@ object Platform:
   // generic writers — such as the write-back of `open[Tel]` — resolve for any
   // `Path on <platform>` with no import.
   given pathWritable: [plane <: Platform: Filesystem]
-  =>  ( tactic: Tactic[Io.Error] )
+  =>  ( tactic: Tactic[Io.Error], contexts: Every[ProcessContext] )
   =>  (((Path on plane) is Writable by Data)^{tactic}) =
     (path, stream) =>
       val bytes: Data = summon[Data is Aggregable by Data].accept(stream)
-      path.protect(Operation.Write)(jnf.Files.write(path.nioPath, Array.unsafeJvm(bytes)))
+      val encoded: Text = summon[Path on plane is Encodable in Text].encode(path)
+
+      ProcessContext.resolve(contexts, encoded) match
+        case descriptor: ProcessContext.Descriptor =>
+          try descriptor.open(List(OpenFlag.Write)) { handle => handle.writer(Chain(bytes)) }
+          catch case refusal: ProcessContext.Refusal =>
+            abort(Io.Error(path, Operation.Write, refusal.reason))
+
+        case _ =>
+          path.protect(Operation.Write)(jnf.Files.write(path.nioPath, Array.unsafeJvm(bytes)))
 
   // The `Openable` instance for the `File` form. Placed here (rather than in `File`'s
   // companion) so that it is anchored by the *path* type: `path.open[File](...)` resolves with
   // no import, and while `File` is a path's only form, `path.open(...)` can infer it.
   given openable: [filesystem: Filesystem, path <: Path on filesystem]
-  =>  ( backend: FilesystemBackend on filesystem,
-        tactic:  Tactic[Io.Error],
-        umask:   Umask )
+  =>  ( backend:  FilesystemBackend on filesystem,
+        tactic:   Tactic[Io.Error],
+        umask:    Umask,
+        contexts: Every[ProcessContext] )
   =>  ( FileOpenable[filesystem, path]^{tactic} ) =
     FileOpenable[filesystem, path]
 

@@ -77,6 +77,63 @@ object Tests extends Suite(m"Galilei tests"):
           (document.root.text, document.metadata)
       . assert(_ == (t"Hello world", 11))
 
+    // A context governing one path, `/virtual/input`, backed by a buffer in memory: what a
+    // daemon supplies for the client's descriptors, here in miniature.
+    suite(m"Process context"):
+      import scala.unsafeExceptions.canThrowAny
+      import errorDiagnostics.emptyDiagnostics
+      val virtual: Path on Linux = unsafely((% / "virtual" / "input").on[Linux])
+      val other: Path on Linux = unsafely((% / "virtual" / "other").on[Linux])
+      val buffer: java.io.ByteArrayOutputStream = java.io.ByteArrayOutputStream()
+      buffer.write(Array.unsafeJvm(t"from the context".in[Data]))
+
+      val descriptor: ProcessContext.Descriptor = new ProcessContext.Descriptor:
+        def open[result](flags: List[OpenFlag])(lambda: Handle => result): result =
+          val reader: () -> Chain[Data] = () => Chain(Array.unsafeFrozen(buffer.toByteArray.nn))
+          val writer: Chain[Data] -> Unit = chain =>
+            buffer.reset()
+            chain.each { data => buffer.write(Array.unsafeJvm(data)) }
+
+          lambda(Handle.whole(reader, writer))
+
+      val missing: ProcessContext.Descriptor = new ProcessContext.Descriptor:
+        def open[result](flags: List[OpenFlag])(lambda: Handle => result): result =
+          throw ProcessContext.Refusal(Io.Error.Reason.Nonexistent)
+
+      given context: ProcessContext = path =>
+        if path == t"/virtual/input" then descriptor
+        else if path == t"/virtual/other" then missing
+        else Unset
+
+      test(m"A governed path exists without a filesystem entry"):
+        virtual
+      . assert(_.existent())
+
+      test(m"A governed path is read through its descriptor"):
+        unsafely(virtual.read[Text])
+      . assert(_ == t"from the context")
+
+      test(m"A governed path is opened through its descriptor"):
+        unsafely(virtual.open[File]()(file.stream.read[Data]).utf8)
+      . assert(_ == t"from the context")
+
+      test(m"A governed path is written through its descriptor"):
+        unsafely:
+          virtual.write(t"replaced")
+          virtual.read[Text]
+      . assert(_ == t"replaced")
+
+      test(m"A descriptor's refusal is the path's Io.Error"):
+        unsafely:
+          capture[Io.Error](other.read[Text]).reason
+      . assert(_ == Io.Error.Reason.Nonexistent)
+
+      val fresh: Text = Uuid().show
+
+      test(m"An ungoverned path goes to the filesystem"):
+        unsafely((% / "tmp" / fresh).on[Linux])
+      . assert(!_.existent())
+
     suite(m"Opening files"):
       val openLeaf: Text = Uuid().show
       val dest: Path on Linux = unsafely((% / "tmp" / openLeaf).on[Linux])

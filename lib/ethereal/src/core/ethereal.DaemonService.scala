@@ -64,8 +64,11 @@ case class DaemonService[bus <: Matchable]
     setMode:    Tty => Unit,
     invokedAs:  Optional[Text],
     sizeThunk:  () => Optional[(Int, Int)],
-    umask:      Optional[Umask] )
-extends Entrypoint, Umask.Provider, caps.ExclusiveCapability:
+    umask:      Optional[Umask],
+    // The client's descriptors, for galilei: a path naming one (`/dev/stdin`, `/dev/fd/63`)
+    // opens the client's, carried over the session, rather than the daemon's own.
+    processContext: Optional[ProcessContext] = Unset )
+extends Entrypoint, Umask.Provider, ProcessContext.Provider, caps.ExclusiveCapability:
   def broadcast(message: bus): Unit = deliver(message)
 
   // `{admin} shutdown`, and any invocation that wants the daemon gone once it has finished.

@@ -55,15 +55,12 @@ object DaemonLogEvent:
       case unix: UnixSignal       => m"received signal $unix"
       case windows: WindowsSignal => m"received signal $windows"
 
-    case ExitStatusRequest(pid)    => m"exit status requested from $pid"
     case CloseConnection(pid)      => m"closing the connection from $pid"
-    case StderrRequest(pid)        => m"stderr requested from $pid"
-    case ControlRequest(pid)       => m"terminal control requested from $pid"
     case Init(pid)                 => m"initialising $pid"
     case PeerRefused(user)         => m"refusing a connection from another user: $user"
     case Draining                  => m"accepting no further invocations; exiting when those in flight end"
     case Refused(pid)              => m"refusing invocation $pid: the daemon is shutting down"
-    case Closed(pid, stream)       => m"the $stream of $pid has no reader"
+    case Closed(stream)            => m"the invocation's $stream has no reader"
 
 enum DaemonLogEvent:
   case WriteExecutable(location: Text) extends DaemonLogEvent, Log.Filesystem
@@ -75,12 +72,9 @@ enum DaemonLogEvent:
   case UnrecognizedMessage extends DaemonLogEvent, Log.Protocol
   case ProtocolMismatch extends DaemonLogEvent, Log.Protocol
   case ReceivedSignal(signal: UnixSignal | WindowsSignal) extends DaemonLogEvent, Log.Process
-  case ExitStatusRequest(pid: Pid) extends DaemonLogEvent, Log.Process
   case CloseConnection(pid: Pid) extends DaemonLogEvent, Log.Network
-  case StderrRequest(pid: Pid) extends DaemonLogEvent, Log.Process
-  case ControlRequest(pid: Pid) extends DaemonLogEvent, Log.Process
   case Init(pid: Pid) extends DaemonLogEvent, Log.Process
   case PeerRefused(user: Text) extends DaemonLogEvent, Log.Network
   case Draining extends DaemonLogEvent, Log.Process
   case Refused(pid: Pid) extends DaemonLogEvent, Log.Process
-  case Closed(pid: Pid, stream: Text) extends DaemonLogEvent, Log.Network
+  case Closed(stream: Text) extends DaemonLogEvent, Log.Network
