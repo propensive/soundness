@@ -94,15 +94,17 @@ object Blake3:
     mix(state, 2, 7,  8, 13, m(12), m(13))
     mix(state, 3, 4,  9, 14, m(14), m(15))
 
+  // Interior scratch, as `compress`'s state is: the generic `Array.allocate`/`update` would
+  // allocate reflectively and box every word, seven times per compression.
   private def permute(m: scala.Array[Int]^): Unit =
-    val out = Array.allocate[Int](16)
+    val out = new scala.Array[Int](16)
     var i = 0
 
     while i < 16 do
       out(i) = m(MsgPermutation.readable(i))
       i += 1
 
-    System.arraycopy(out.raw, 0, m, 0, 16)
+    System.arraycopy(out, 0, m, 0, 16)
 
   private def compress
     ( chainingValue: scala.Array[Int],
@@ -171,8 +173,10 @@ object Blake3:
       // freshness is asserted here, exactly as proscenium's `Array` does.
       scala.caps.unsafe.unsafeAssumePure(cv)
 
+    // Interior scratch, as the block buffers are: the generic `Array.allocate`/`update` would
+    // allocate reflectively and box every byte, which costs more than the hash itself.
     def rootOutputBytes(outLen: Int): Array[Byte]^{} =
-      val result = Array.allocate[Byte](outLen)
+      val result = new scala.Array[Byte](outLen)
       var blockCounter = 0L
       var pos = 0
 
@@ -190,7 +194,8 @@ object Blake3:
         pos += take
         blockCounter += 1
 
-      Array.freeze(result)
+      // Fresh and never escaping before this point, so no writer can alias it.
+      Array.unsafeFrozen(result)
 
   private def parentOutput
     ( leftCv: scala.Array[Int], rightCv: scala.Array[Int], keyWords: scala.Array[Int], flags: Int )
