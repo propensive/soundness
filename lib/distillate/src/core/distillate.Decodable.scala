@@ -103,6 +103,50 @@ object Decodable extends Decodable2:
         val names = enumeration.values.to[List].map(enumeration.name(_)).map(enumeration.encode(_))
         abort(Enumerable.Error(value, enumeration.name, names))
 
+  // The three policies an `Optional` (or `Option`) decoder in a format consults, each indexed
+  // by the format (`Decodable.Absence in Json`) so one format can be strict while another is
+  // lenient in the same scope. The companion defaults are generic over the form; a format's
+  // `optionalityOptions` given, imported by name, outranks them. They are traits with a factory
+  // rather than enums because an enum case cannot carry a per-format `Form` member.
+
+  // How a key the document omits reads: lenient yields `Unset`/`None`, strict raises the
+  // format's absence error
+  trait Absence extends Formal:
+    def strict: Boolean
+
+  object Absence:
+    def apply[form](strict0: Boolean): Absence in form =
+      new Absence:
+        type Form = form
+        def strict: Boolean = strict0
+
+    given default: [form] => Absence in form = Absence(false)
+
+  // How the format's explicit null reads; only formats with a null literal consult it
+  trait Nullity extends Formal:
+    def strict: Boolean
+
+  object Nullity:
+    def apply[form](strict0: Boolean): Nullity in form =
+      new Nullity:
+        type Form = form
+        def strict: Boolean = strict0
+
+    given default: [form] => Nullity in form = Nullity(false)
+
+  // How a value that is present but rejected by the inner decoder reads: strict (the default)
+  // lets the error through, lenient yields `Unset`/`None`
+  trait Fault extends Formal:
+    def strict: Boolean
+
+  object Fault:
+    def apply[form](strict0: Boolean): Fault in form =
+      new Fault:
+        type Form = form
+        def strict: Boolean = strict0
+
+    given default: [form] => Fault in form = Fault(true)
+
 trait Decodable extends Typeclass, Formal, Locative:
   inline def decodable: this.type = this
   def decoded(value: Form): Self
