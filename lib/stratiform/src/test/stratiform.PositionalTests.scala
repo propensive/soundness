@@ -91,6 +91,27 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
         t"active false\n".read[Tel].as[PFlags]
       . assert(_ == PFlags(false, Unset))
 
+      test(m"strict absence raises Absent for a missing Optional keyword"):
+        import optionalityOptions.strictTelAbsence
+        capture[Tel.Error](t"active false\n".read[Tel].as[PFlags]).reason
+      . assert(_ == Tel.Error.Reason.Absent)
+
+      test(m"strict absence raises Absent for an Optional keyword with no atom"):
+        import optionalityOptions.strictTelAbsence
+        capture[Tel.Error](t"active false\nverbose\n".read[Tel].as[PFlags]).reason
+      . assert(_ == Tel.Error.Reason.Absent)
+
+      test(m"a malformed Optional atom raises by default"):
+        capture[Tel.Error](t"active false\nverbose maybe\n".read[Tel].as[PFlags]).reason
+      . assert(_ match
+          case Tel.Error.Reason.NotScalar(_, _) => true
+          case _                                => false)
+
+      test(m"lenient faults read a malformed Optional atom as Unset"):
+        import optionalityOptions.lenientTelFaults
+        t"active false\nverbose maybe\n".read[Tel].as[PFlags]
+      . assert(_ == PFlags(false, Unset))
+
       test(m"only the first optional scalar fills positionally (§20.8)"):
         t"pair hello\n".read[Tel].as[PPairBox]
       . assert(_ == PPairBox(PPair(t"hello", Unset)))

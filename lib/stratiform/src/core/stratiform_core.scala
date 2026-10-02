@@ -40,6 +40,15 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
+// How an `Optional` field reads a missing keyword (or one with neither atoms nor children), or a
+// value its inner decoder rejects: lenient yields `Unset`, strict raises `Tel.Error`. Absence is
+// lenient by default; faults are strict. TEL has no null, so there is no nullity option.
+package optionalityOptions:
+  given strictTelAbsence:  distillate.Decodable.Absence in Tel = distillate.Decodable.Absence(true)
+  given lenientTelAbsence: distillate.Decodable.Absence in Tel = distillate.Decodable.Absence(false)
+  given strictTelFaults:   distillate.Decodable.Fault in Tel   = distillate.Decodable.Fault(true)
+  given lenientTelFaults:  distillate.Decodable.Fault in Tel   = distillate.Decodable.Fault(false)
+
 // Encodes any value with an `Encodable in Tel` instance to its `Tel` form.
 // Mirrors jacinta's `.json`, xylophone's `.xml`, ypsiloid's `.yaml`, etc.
 extension [entity: Encodable in Tel](value: entity) def tel: Tel = value.encode

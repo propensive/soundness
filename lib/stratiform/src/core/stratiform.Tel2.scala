@@ -182,7 +182,9 @@ trait Tel2 extends Tel3:
   // the same specificity preference the AST derivation's `Tel.Decodable`
   // summon exhibits.
   given fieldOptional: [inner <: value, value >: Unset.type: Mandatable to inner]
-  =>  ( tactic: Tactic[Tel.Error] )
+  =>  ( absence: distillate.Decodable.Absence in Tel,
+        fault:   distillate.Decodable.Fault in Tel,
+        tactic:  Tactic[Tel.Error] )
   =>  ( field: => (inner is Tel.Field)^ )
   =>  value is Tel.Field =
     Tel.Field(Tel.Parsable.optionality[inner, value](field))
@@ -725,20 +727,35 @@ trait Tel2 extends Tel3:
       override def constructed(opt: value): Tel =
         opt.let(_.asInstanceOf[inner]).lay(emptyDocument)(encodable.constructed(_))
 
+  // The `optionalityOptions` policies, captured at resolution. A missing keyword and a keyword
+  // with neither atoms nor children are both TEL's spelling of absence: `Unset` unless strict,
+  // which also makes the field required in the derived schema. A value the inner decoder
+  // rejects reads as `Unset` only under lenient faults, through `tactic.tolerate`.
   given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
-  =>  Tactic[Tel.Error]
+  =>  ( absence: distillate.Decodable.Absence in Tel,
+        fault:   distillate.Decodable.Fault in Tel,
+        tactic:  Tactic[Tel.Error] )
   =>  ( decodable0: -> (inner is Tel.Decodable) )
   =>  value is Tel.Decodable =
-    new Tel.Decodable:
-      type Self = value
-      def shape(): Morphology = Morphology.Opt(decodable0.shape())
-      override def nature: Tel.Nature = decodable0.nature
-      override def optional: Boolean = true
-      override def absent()(using Tactic[Tel.Error]): value = Unset
+    // Sealed per the codec-thunk pattern: the instance retains the resolution-scoped tactic
+    // for the lenient-faults path, as every other format's `optional` does.
+    caps.unsafe.unsafeAssumePure:
+      new Tel.Decodable:
+        type Self = value
+        def shape(): Morphology = Morphology.Opt(decodable0.shape())
+        override def nature: Tel.Nature = decodable0.nature
+        override def optional: Boolean = !absence.strict
 
-      def decoded(telVal: Tel): value =
-        if telVal.childCompounds.nil && telVal.atomTexts.nil then Unset
-        else decodable0.decoded(telVal)
+        override def absent()(using Tactic[Tel.Error]): value =
+          if absence.strict then abort(Tel.Error(Tel.Error.Reason.Absent)) else Unset
+
+        def decoded(telVal: Tel): value =
+          if telVal.childCompounds.nil && telVal.atomTexts.nil then
+            if absence.strict then tactic.abort(Tel.Error(Tel.Error.Reason.Absent)) else Unset
+          else if fault.strict then
+            decodable0.decoded(telVal)
+          else
+            tactic.tolerate(decodable0.decoded(telVal)).or(Unset)
 
   // Collection support (aligned with `#1291`) — a `List`/`Set` encodes to a
   // Document-rooted Tel whose children are the elements' compounds; the product

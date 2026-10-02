@@ -366,6 +366,41 @@ object Tests extends Suite(m"Caesura tests"):
         t"hello".read[Greeting in Dsv]
       . assert(_ == Greeting(t"hello", Unset))
 
+      // These assert through the suite's ambient throwing tactic rather than `capture`: a derived
+      // row decoder is a fresh capability (its field decoders take the tactic), which may not
+      // close over `capture`'s tracked block parameter.
+      test(m"a wrong-typed Optional cell raises Unparseable by default"):
+        import dsvFormats.csvFormat
+        try t"hello,abc".read[Sheet].rows.readable.head.as[Tally].count
+        catch case error: Dsv.Error => error.reason
+      . assert(_ == Dsv.Error.Reason.Unparseable(t"abc", t"Int"))
+
+      test(m"strict absence raises Absent for a short row's trailing Optional"):
+        import dsvFormats.csvFormat
+        import optionalityOptions.strictDsvAbsence
+        try t"hello".read[Sheet].rows.readable.head.as[Tally].count
+        catch case error: Dsv.Error => error.reason
+      . assert(_ == Dsv.Error.Reason.Absent)
+
+      test(m"lenient faults read a wrong-typed Optional cell as Unset"):
+        import dsvFormats.csvFormat
+        import optionalityOptions.lenientDsvFaults
+        t"hello,abc".read[Sheet].rows.readable.head.as[Tally]
+      . assert(_ == Tally(t"hello", Unset))
+
+      test(m"strict absence raises Absent on the direct path"):
+        import dsvFormats.csvFormat
+        import optionalityOptions.strictDsvAbsence
+        try t"hello".read[Tally in Dsv].count
+        catch case error: Dsv.Error => error.reason
+      . assert(_ == Dsv.Error.Reason.Absent)
+
+      test(m"lenient faults read a wrong-typed Optional cell as Unset on the direct path"):
+        import dsvFormats.csvFormat
+        import optionalityOptions.lenientDsvFaults
+        t"hello,abc".read[Tally in Dsv]
+      . assert(_ == Tally(t"hello", Unset))
+
       test(m"decode a present Optional column by heading"):
         import dsvFormats.csvWithHeaderFormat
         t"word,name\nhello,world".read[Greeting in Dsv]
@@ -417,3 +452,4 @@ object DirectStat:
 case class Bar(one: Double, foo1: Foo, four: Int, foo2: Foo)
 case class Quux(name: Text, greeting: Text)
 case class Greeting(word: Text, name: Optional[Text])
+case class Tally(name: Text, count: Optional[Int])

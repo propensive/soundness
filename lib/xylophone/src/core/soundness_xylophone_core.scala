@@ -49,6 +49,10 @@ type attribute = xylophone.Xml.attribute
 package namespaceOptions:
   export xylophone.namespaceOptions.{lenientNamespaces, strictNamespaces}
 
+package optionalityOptions:
+  export xylophone.optionalityOptions.{strictXmlAbsence, lenientXmlAbsence, strictXmlFaults,
+      lenientXmlFaults}
+
 package formatting:
   export xylophone.formatting.{compactXmlFormatting, indentedXmlFormatting}
 

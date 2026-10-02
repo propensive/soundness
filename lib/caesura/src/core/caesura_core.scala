@@ -44,6 +44,15 @@ import rudiments.*
 import vacuous.*
 import zephyrine.*
 
+// How an `Optional` field reads an absent cell (a short row, or a heading the row lacks), or a
+// cell its inner decoder rejects: lenient yields `Unset`, strict raises `Dsv.Error`. Absence is
+// lenient by default; faults are strict. An empty cell is a present value, not a null.
+package optionalityOptions:
+  given strictDsvAbsence:  distillate.Decodable.Absence in Dsv = distillate.Decodable.Absence(true)
+  given lenientDsvAbsence: distillate.Decodable.Absence in Dsv = distillate.Decodable.Absence(false)
+  given strictDsvFaults:   distillate.Decodable.Fault in Dsv   = distillate.Decodable.Fault(true)
+  given lenientDsvFaults:  distillate.Decodable.Fault in Dsv   = distillate.Decodable.Fault(false)
+
 package dsvFormats:
   given csvFormat: Dsv.Format = Dsv.Format(false, ',', '"', '"')
   given csvWithHeaderFormat: Dsv.Format = Dsv.Format(true, ',', '"', '"')

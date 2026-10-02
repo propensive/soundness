@@ -389,12 +389,17 @@ object Xml extends Tag.Container
     . asInstanceOf[sequence[element] is Encodable in Xml]
 
   // An `Optional[value]` field: the `Absent` sentinel — a missing child
-  // element or attribute — decodes to `Unset`, never an error; anything
-  // present decodes as the inner type. Not `Repeatable`: a present optional
-  // is the first matching child, exactly as a mandatory field is, so
-  // `Optional[List[element]]` is not a supported shape (a `List` field is
+  // element or attribute — decodes to `Unset` (or raises `Missing` under
+  // `optionalityOptions.strictXmlAbsence`); anything present decodes as the
+  // inner type, under `tactic.tolerate` when faults are lenient. XML has no
+  // null: an empty element is a present value. Not `Repeatable`: a present
+  // optional is the first matching child, exactly as a mandatory field is,
+  // so `Optional[List[element]]` is not a supported shape (a `List` field is
   // already empty when absent).
   given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  ( absence: Decodable.Absence in Xml,
+        fault:   Decodable.Fault in Xml,
+        tactic:  Tactic[Xml.Error] )
   =>  ( decodable0: => (inner is Decodable in Xml)^ )
   =>  value is Decodable in Xml =
 
@@ -405,7 +410,12 @@ object Xml extends Tag.Container
         type Form = Xml
 
         def decoded(xml: Xml): value =
-          if xml eq Absent then Unset else decodable0.decoded(xml)
+          if xml eq Absent then
+            if absence.strict then abort(Xml.Error(Reason.Missing)) else Unset
+          else if fault.strict then
+            decodable0.decoded(xml)
+          else
+            tactic.tolerate(decodable0.decoded(xml)).or(Unset)
 
   // The mirror of `optionalDecodable`. `Unset` encodes to an *empty*
   // `Fragment`, and a present value to a one-node `Fragment`: the encoder is
