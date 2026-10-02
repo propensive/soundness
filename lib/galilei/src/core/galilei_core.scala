@@ -86,16 +86,16 @@ extension [plane: Filesystem](path: Path on plane)
   def write[content](content: content)
     ( using streamable: (content is Streamable by Data over Credit)^ )
     ( using Tactic[Io.Error]^ )
-    ( using contexts: Every[ProcessContext] )
+    ( using fdtables: Every[Fdtable] )
   :   Unit =
     val bytes: Data = summon[Data is Aggregable by Data].accept(streamable.stream(content))
 
-    // A path the process context governs is written through its descriptor, not to this
+    // A path the fd table governs is written through its descriptor, not to this
     // process's filesystem.
-    ProcessContext.resolve(contexts, Path.encodable.encode(path)) match
-      case descriptor: ProcessContext.Descriptor =>
+    Fdtable.resolve(fdtables, Path.encodable.encode(path)) match
+      case descriptor: Fdtable.Descriptor =>
         try descriptor.open(List(OpenFlag.Write)) { handle => handle.writer(Chain(bytes)) }
-        catch case refusal: ProcessContext.Refusal =>
+        catch case refusal: Fdtable.Refusal =>
           abort(Io.Error(path, Operation.Write, refusal.reason))
 
       case _ =>

@@ -71,21 +71,21 @@ object Platform:
   // otherwise falls back to composing `Streamable` with `Aggregable`. Placing it here (rather than
   // as a `read` extension, which would be ambiguous with turbulence's generic one) makes
   // `path.read[…]` resolve through turbulence's `read` with no extra import for any `Path on …`.
-  // A path the process context governs (`ProcessContext`) is read through its descriptor
+  // A path the fd table governs (`Fdtable`) is read through its descriptor
   // rather than from this process's filesystem.
   given pathReadable: [plane <: Platform: Filesystem, result]
   =>  ( readable: (Data is Readable to result)^ )
-  =>  ( tactic: Tactic[Io.Error], contexts: Every[ProcessContext] )
+  =>  ( tactic: Tactic[Io.Error], fdtables: Every[Fdtable] )
   =>  (((Path on plane) is Readable to result)^{readable, tactic}) =
     path =>
       val encoded: Text = summon[Path on plane is Encodable in Text].encode(path)
 
-      val bytes: Data = ProcessContext.resolve(contexts, encoded) match
-        case descriptor: ProcessContext.Descriptor =>
+      val bytes: Data = Fdtable.resolve(fdtables, encoded) match
+        case descriptor: Fdtable.Descriptor =>
           try
             descriptor.open(List(OpenFlag.Read)): handle =>
               summon[Data is Aggregable by Data].accept(Stream(handle.reader()))
-          catch case refusal: ProcessContext.Refusal =>
+          catch case refusal: Fdtable.Refusal =>
             abort(Io.Error(path, Operation.Read, refusal.reason))
 
         case _ =>
@@ -99,16 +99,16 @@ object Platform:
   // generic writers — such as the write-back of `open[Tel]` — resolve for any
   // `Path on <platform>` with no import.
   given pathWritable: [plane <: Platform: Filesystem]
-  =>  ( tactic: Tactic[Io.Error], contexts: Every[ProcessContext] )
+  =>  ( tactic: Tactic[Io.Error], fdtables: Every[Fdtable] )
   =>  (((Path on plane) is Writable by Data)^{tactic}) =
     (path, stream) =>
       val bytes: Data = summon[Data is Aggregable by Data].accept(stream)
       val encoded: Text = summon[Path on plane is Encodable in Text].encode(path)
 
-      ProcessContext.resolve(contexts, encoded) match
-        case descriptor: ProcessContext.Descriptor =>
+      Fdtable.resolve(fdtables, encoded) match
+        case descriptor: Fdtable.Descriptor =>
           try descriptor.open(List(OpenFlag.Write)) { handle => handle.writer(Chain(bytes)) }
-          catch case refusal: ProcessContext.Refusal =>
+          catch case refusal: Fdtable.Refusal =>
             abort(Io.Error(path, Operation.Write, refusal.reason))
 
         case _ =>
@@ -121,7 +121,7 @@ object Platform:
   =>  ( backend:  FilesystemBackend on filesystem,
         tactic:   Tactic[Io.Error],
         umask:    Umask,
-        contexts: Every[ProcessContext] )
+        fdtables: Every[Fdtable] )
   =>  ( FileOpenable[filesystem, path]^{tactic} ) =
     FileOpenable[filesystem, path]
 

@@ -39,15 +39,15 @@ import serpentine.*
 import vacuous.*
 
 object Substantiable:
-  // A path the process context governs (`ProcessContext`) exists as far as this process is
-  // concerned: it is the context's to open, and the filesystem is not asked.
+  // A path the fd table governs (`Fdtable`) exists as far as this process is
+  // concerned: it is the table's to open, and the filesystem is not asked.
   given substantiable: [filesystem: Filesystem, path <: Path on filesystem]
-  =>  ( backend: FilesystemBackend on filesystem, contexts: Every[ProcessContext] )
+  =>  ( backend: FilesystemBackend on filesystem, fdtables: Every[Fdtable] )
   =>  path is Substantiable =
 
     path =>
       val encoded = summon[Path on filesystem is Encodable in Text].encode(path)
-      ProcessContext.resolve(contexts, encoded).present || backend.exists(path, true)
+      Fdtable.resolve(fdtables, encoded).present || backend.exists(path, true)
 
 trait Substantiable extends Typeclass:
   def existence(value: Self): Boolean

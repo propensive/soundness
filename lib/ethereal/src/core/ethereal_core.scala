@@ -438,7 +438,7 @@ def cli[bus <: Matchable](using executive: Executive)
                invokedAs,
                () => windowSize0(),
                umask.let(Umask.parse(_)),
-               session.processContext )
+               session.fdtable )
 
         Log.fine(DaemonLogEvent.NewCli)
 

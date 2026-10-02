@@ -77,17 +77,17 @@ object Tests extends Suite(m"Galilei tests"):
           (document.root.text, document.metadata)
       . assert(_ == (t"Hello world", 11))
 
-    // A context governing one path, `/virtual/input`, backed by a buffer in memory: what a
+    // A table governing one path, `/virtual/input`, backed by a buffer in memory: what a
     // daemon supplies for the client's descriptors, here in miniature.
-    suite(m"Process context"):
+    suite(m"Descriptor table"):
       import scala.unsafeExceptions.canThrowAny
       import errorDiagnostics.emptyDiagnostics
       val virtual: Path on Linux = unsafely((% / "virtual" / "input").on[Linux])
       val other: Path on Linux = unsafely((% / "virtual" / "other").on[Linux])
       val buffer: java.io.ByteArrayOutputStream = java.io.ByteArrayOutputStream()
-      buffer.write(Array.unsafeJvm(t"from the context".in[Data]))
+      buffer.write(Array.unsafeJvm(t"from the table".in[Data]))
 
-      val descriptor: ProcessContext.Descriptor = new ProcessContext.Descriptor:
+      val descriptor: Fdtable.Descriptor = new Fdtable.Descriptor:
         def open[result](flags: List[OpenFlag])(lambda: Handle => result): result =
           val reader: () -> Chain[Data] = () => Chain(Array.unsafeFrozen(buffer.toByteArray.nn))
           val writer: Chain[Data] -> Unit = chain =>
@@ -96,11 +96,11 @@ object Tests extends Suite(m"Galilei tests"):
 
           lambda(Handle.whole(reader, writer))
 
-      val missing: ProcessContext.Descriptor = new ProcessContext.Descriptor:
+      val missing: Fdtable.Descriptor = new Fdtable.Descriptor:
         def open[result](flags: List[OpenFlag])(lambda: Handle => result): result =
-          throw ProcessContext.Refusal(Io.Error.Reason.Nonexistent)
+          throw Fdtable.Refusal(Io.Error.Reason.Nonexistent)
 
-      given context: ProcessContext = path =>
+      given table: Fdtable = path =>
         if path == t"/virtual/input" then descriptor
         else if path == t"/virtual/other" then missing
         else Unset
@@ -111,11 +111,11 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"A governed path is read through its descriptor"):
         unsafely(virtual.read[Text])
-      . assert(_ == t"from the context")
+      . assert(_ == t"from the table")
 
       test(m"A governed path is opened through its descriptor"):
         unsafely(virtual.open[File]()(file.stream.read[Data]).utf8)
-      . assert(_ == t"from the context")
+      . assert(_ == t"from the table")
 
       test(m"A governed path is written through its descriptor"):
         unsafely:

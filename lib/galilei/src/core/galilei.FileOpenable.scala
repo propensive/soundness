@@ -52,7 +52,7 @@ class FileOpenable[filesystem: Filesystem, path <: Path on filesystem]
   ( using backend:  FilesystemBackend on filesystem,
           ioError:  Tactic[Io.Error],
           umask:    Umask,
-          contexts: Every[ProcessContext] )
+          fdtables: Every[Fdtable] )
 extends Openable:
 
   type Self = path
@@ -78,17 +78,17 @@ extends Openable:
          else if mode.atoms.has(Shared) then List(OpenFlag.LockShared)
          else Nil)
 
-    // A path the process context governs — a client's `/dev/fd/N`, say — is not a file of
-    // this process at all: it is opened through the context, before the filesystem, the
+    // A path the fd table governs — a client's `/dev/fd/N`, say — is not a file of
+    // this process at all: it is opened through the table, before the filesystem, the
     // access register or the backend is consulted.
     val encoded: Text = summon[Path on filesystem is Encodable in Text].encode(value)
 
-    ProcessContext.resolve(contexts, encoded) match
-      case descriptor: ProcessContext.Descriptor =>
+    Fdtable.resolve(fdtables, encoded) match
+      case descriptor: Fdtable.Descriptor =>
         try
           descriptor.open(modeFlags + flags): handle =>
             block(using handle.asInstanceOf[Handle & Granting[grants]])
-        catch case refusal: ProcessContext.Refusal =>
+        catch case refusal: Fdtable.Refusal =>
           abort(Io.Error(value, Operation.Open, refusal.reason))
 
       case _ =>
