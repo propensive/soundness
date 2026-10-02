@@ -53,6 +53,7 @@ object Foci:
 
 
     def supplement(count: Int, transform: Optional[focus] => Optional[focus]): Unit = ()
+    def truncate(length: Int): Unit = ()
 
 trait Foci[focus] extends Findable:
   // False only for the inert default instance, whose `register` and
@@ -70,6 +71,10 @@ trait Foci[focus] extends Findable:
   // The transform returns `Optional`: the slots are themselves `Optional`, so demanding a
   // bare focus forced partial callers to assert presence they could not prove.
   def supplement(count: Int, transform: Optional[focus] => Optional[focus]): Unit
+
+  // Drops every error registered after the first `length`: how a tracking tactic's `tolerate`
+  // rolls back what its block recorded.
+  def truncate(length: Int): Unit
   def tainted: Boolean = length > 0
 
 class TrackFoci[focus]() extends Foci[focus]:
@@ -92,3 +97,7 @@ class TrackFoci[focus]() extends Foci[focus]:
 
   def supplement(count: Int, transform: Optional[focus] => Optional[focus]): Unit =
     for i <- (errors.length - count) until errors.length do focuses(i) = transform(focuses(i))
+
+  def truncate(length: Int): Unit =
+    errors.remove(length, errors.length - length)
+    focuses.remove(length, focuses.length - length)

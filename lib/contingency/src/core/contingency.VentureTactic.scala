@@ -36,6 +36,7 @@ import scala.language.experimental.pureFunctions
 
 import fulminate.*
 import rudiments.*
+import vacuous.*
 
 // The tactic interposed by `venture(…)` between its block and the ambient tactic. `record`
 // forwards to the ambient tactic — errors accrue exactly as they would outside the venture, and
@@ -75,5 +76,13 @@ extends Tactic[error], Guard:
     boundary.break(Venture.failed)
 
   def certify(): Unit = if failed then boundary.break(Venture.failed)
+
+  // The ambient tactic rolls back what the block forwarded to it; this venture's own count, which
+  // the forwarding bumped, is restored so a tolerated fault does not fail the venture.
+  override def tolerate[result](block: => result): Optional[result] =
+    val mark = count()
+    val result = outer.tolerate(block)
+    count() = mark
+    result
 
   def escape(): Nothing = boundary.break(Venture.failed)
