@@ -32,15 +32,22 @@
                                                                                                   */
 package galilei
 
+import anticipation.*
+import gigantism.Every
 import prepositional.*
 import serpentine.*
+import vacuous.*
 
 object Substantiable:
+  // A path the process context governs (`ProcessContext`) exists as far as this process is
+  // concerned: it is the context's to open, and the filesystem is not asked.
   given substantiable: [filesystem: Filesystem, path <: Path on filesystem]
-  =>  ( backend: FilesystemBackend on filesystem )
+  =>  ( backend: FilesystemBackend on filesystem, contexts: Every[ProcessContext] )
   =>  path is Substantiable =
 
-    path => backend.exists(path, true)
+    path =>
+      val encoded = summon[Path on filesystem is Encodable in Text].encode(path)
+      ProcessContext.resolve(contexts, encoded).present || backend.exists(path, true)
 
 trait Substantiable extends Typeclass:
   def existence(value: Self): Boolean
