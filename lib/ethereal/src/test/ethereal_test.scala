@@ -51,7 +51,7 @@ import threading.platformThreading
 import strategies.throwUnsafely
 import backstops.silentBackstop
 
-// Reads a path as the invocation sees it: through galilei, with the service's process context
+// Reads a path as the invocation sees it: through galilei, with the service's fd table
 // in scope, so a path naming one of the client's descriptors reaches the client's. Compiled
 // here rather than staged in the fixture, whose quoted body cannot carry galilei's
 // capture-annotated types.

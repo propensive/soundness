@@ -70,7 +70,7 @@ object Session:
   val chunk: Int = Launcher.maximumChunk
 
   // Which of the client's descriptors a path names, where it names one: the forms by which a
-  // process refers to its own descriptor table. Any such path is the context's to answer
+  // process refers to its own descriptor table. Any such path is the table's to answer
   // for, whether or not the client holds the descriptor, so that the daemon's own table is
   // never reached through it.
   def governed(path: Text): Optional[Int] = path.s match
@@ -391,17 +391,17 @@ class Session
   // `mytool <(…)` is carried as a stream once the launcher is asked for it, and a regular
   // file behind a descriptor is opened by its real path. A descriptor the client did not
   // advertise names nothing, whatever the daemon's own table holds at that number.
-  val processContext: ProcessContext = path => Session.governed(path).let(descriptor(_))
+  val fdtable: Fdtable = path => Session.governed(path).let(descriptor(_))
 
-  private def descriptor(fd: Int): ProcessContext.Descriptor = new ProcessContext.Descriptor:
+  private def descriptor(fd: Int): Fdtable.Descriptor = new Fdtable.Descriptor:
     def open[result](flags: List[OpenFlag])(lambda: Handle => result): result =
       val advertised: Launcher.Descriptor =
-        descriptors.seek(_.fd == fd).or(throw ProcessContext.Refusal(Reason.Nonexistent))
+        descriptors.seek(_.fd == fd).or(throw Fdtable.Refusal(Reason.Nonexistent))
 
       val reading = flags.has(OpenFlag.Read)
       val writing = flags.has(OpenFlag.Write) || flags.has(OpenFlag.Append)
-      if reading && !advertised.direction.contains('r') then throw ProcessContext.Refusal(Reason.PermissionDenied)
-      if writing && !advertised.direction.contains('w') then throw ProcessContext.Refusal(Reason.PermissionDenied)
+      if reading && !advertised.direction.contains('r') then throw Fdtable.Refusal(Reason.PermissionDenied)
+      if writing && !advertised.direction.contains('w') then throw Fdtable.Refusal(Reason.PermissionDenied)
 
       advertised.path match
         case real: Text if advertised.kind == t"file" => file(real)(lambda)
