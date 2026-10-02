@@ -40,6 +40,10 @@ export
 package formatting:
   export ypsiloid.formatting.blockYamlFormatting
 
+package optionalityOptions:
+  export ypsiloid.optionalityOptions.{strictYamlAbsence, lenientYamlAbsence, strictYamlNulls,
+      lenientYamlNulls, strictYamlFaults, lenientYamlFaults}
+
 package discriminables:
   export ypsiloid.discriminables.{yamlByTypeDiscriminable, yamlByKindDiscriminable}
 

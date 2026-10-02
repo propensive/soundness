@@ -39,3 +39,7 @@ package dynamicAccess:
 
 package conversions:
   export breviloquence.conversions.encodableToCbor
+
+package optionalityOptions:
+  export breviloquence.optionalityOptions.{strictCborAbsence, lenientCborAbsence, strictCborNulls,
+      lenientCborNulls, strictCborFaults, lenientCborFaults}
