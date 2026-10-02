@@ -404,7 +404,7 @@ def cli[bus <: Matchable](using executive: Executive)
         // over the session; a launcher whose stdin is not a terminal it owns ignores it, and
         // the command runs with the raw mode it would have had anyway.
         def setMode(mode: Tty): Unit =
-          session.send(Launcher.Message.Mode(mode == Tty.Canonical))
+          session.send(Launcher.Message.Mode(mode.canonical, mode.echo))
 
         def deliver(sourcePid: Pid, message: bus): Unit =
           clients.each: (pid, client) =>
@@ -435,6 +435,7 @@ def cli[bus <: Matchable](using executive: Executive)
                startTime,
                () => helpValue,
                setMode,
+               session.terminal,
                invokedAs,
                () => windowSize0(),
                umask.let(Umask.parse(_)),

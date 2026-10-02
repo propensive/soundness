@@ -34,7 +34,11 @@ package ethereal
 
 // The mode of the client's terminal. The Ethereal launcher raw-modes a terminal stdin so it
 // can forward individual keypresses to an interactive session; a command that wants ordinary
-// line input asks, through the control channel, for `Canonical` instead — and the terminal
-// driver then provides echo and line editing itself.
+// line input asks, over the session, for `Canonical` instead — and the terminal driver then
+// provides echo and line editing itself — or for `Concealed`, canonical mode with nothing
+// echoed, which is how a password is read.
 enum Tty:
-  case Raw, Canonical
+  case Raw, Canonical, Concealed
+
+  def canonical: Boolean = this != Raw
+  def echo: Boolean = this == Canonical

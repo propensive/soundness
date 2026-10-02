@@ -313,6 +313,25 @@ class Session
   // with every `WINCH` and `CONT`.
   val windowSize: Atomic.Ref[Optional[(Int, Int)]] = Atomic.Ref(Unset)
 
+  // ── A command on the client's terminal ──────────────────────────────────────────────────
+
+  // One at a time: `run`, then the launcher's `exited`, which the reader delivers here. A
+  // launcher that is gone, or that never answers because it has gone, yields 127.
+  private val terminalLock: Object = Object()
+  private val exited: ju.ArrayDeque[Int] = ju.ArrayDeque()
+
+  def terminal(command: Text, arguments: List[Text], pwd: Optional[Text]): Int = terminalLock.synchronized:
+    exited.synchronized(exited.clear())
+    send(Message.Run(command, arguments, pwd))
+
+    exited.synchronized:
+      while exited.isEmpty && !launcherGone do exited.wait(250L)
+      if exited.isEmpty then 127 else exited.pollFirst().nn
+
+  private def exitedWith(code: Int): Unit = exited.synchronized:
+    exited.addLast(code)
+    exited.notifyAll()
+
   // ── The reader ───────────────────────────────────────────────────────────────────────────
 
   // The launcher closed the connection, or it failed: every stream from the client ends,
@@ -328,6 +347,7 @@ class Session
 
     inputs.values.foreach(_.end())
     outputs.values.foreach(_.severed() = true)
+    exited.synchronized(exited.notifyAll())
 
   def start(): Unit =
     writer
@@ -352,6 +372,9 @@ class Session
 
         case Message.Credit(stream, bytes) =>
           grant(stream, bytes)
+
+        case Message.Exited(code) =>
+          exitedWith(code)
 
         case Message.Closed(stream) =>
           log(DaemonLogEvent.Closed(stream))

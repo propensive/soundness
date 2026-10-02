@@ -62,6 +62,10 @@ object Readers:
     import textSanitizers.skipSanitizer
     safely(path.as[Path on Linux].read[Text])
 
+  // Runs `script` with `sh -c` on the client's terminal; compiled here for the same reason.
+  def terminal[bus <: Matchable](script: Text)(using service: DaemonService[bus]): Int =
+    service.terminal(t"sh", List(t"-c", script))
+
 object Tests extends Suite(m"Ethereal Tests"):
   def run(): Unit =
     supervise:
@@ -173,6 +177,23 @@ object Tests extends Suite(m"Ethereal Tests"):
                       Out.print(t"[$line]")
 
                     Exit.Ok
+
+                // A line read with nothing echoed, as a password is: the driver's line editing
+                // without the driver's echo.
+                case Argument("concealed") :: Nil =>
+                  execute:
+                    service.concealed:
+                      val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
+                      val line: Text = reader.readLine().nn.tt
+                      Out.print(t"[$line]")
+
+                    Exit.Ok
+
+                // A command run on the client's terminal, and the status it ended with.
+                case Argument("terminal") :: rest =>
+                  execute:
+                    val code = Readers.terminal(rest.map(_()).join(t" "))
+                    Out.print(t"exit=$code") yet Exit.Ok
 
                 case Argument("signal") :: Nil =>
                   execute:
@@ -669,6 +690,11 @@ object Tests extends Suite(m"Ethereal Tests"):
 
             . check(_ == t"piped input")
 
+            // No terminal: the launcher refuses to run anything, with 127, at once.
+            test(m"a command on the terminal is refused without one"):
+              (sh"echo" | sh"$tool terminal true").exec[Text]()
+            . check(_ == t"exit=127")
+
           suite(m"Client descriptors"):
             val file = temporaryDirectory[Path on Linux]/t"input-$name"
 
@@ -765,6 +791,53 @@ object Tests extends Suite(m"Ethereal Tests"):
                   Tmux.enter(t"n")
                   Tmux.enter('\r')
                   awaitScreen(_.contains(t"[merlin]"))
+
+            . check(_ == true)
+
+            test(m"a concealed line is delivered but not echoed"):
+              sh"$tool echo probe".exec[Unit]()
+
+              // Overlap false positive: the action closure mentions the enclosing
+              // tool/command capabilities alongside the fresh tmux session.
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                Shell.Bash.tmux():
+                  Tmux.enter(t"$command concealed")
+                  Tmux.enter('\r')
+                  snooze(0.5*Second)
+                  Tmux.enter(t"kittiwake")
+                  Tmux.enter('\r')
+                  val delivered = awaitScreen(_.contains(t"[kittiwake]"))
+                  val echoed = Tmux.screenshot().screen.filter(_.contains(t"kittiwake")).readable.length > 1
+                  (delivered, echoed)
+
+            . check(_ == (true, false))
+
+            // The daemon has the launcher run `sh -c` on the terminal: its output lands on the
+            // screen, and its exit status comes back to the application.
+            test(m"a command runs on the client's terminal and its status comes back"):
+              sh"$tool echo probe".exec[Unit]()
+
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                Shell.Bash.tmux():
+                  Tmux.enter(t"$command terminal 'echo from-child; exit 3'")
+                  Tmux.enter('\r')
+                  val shown = awaitScreen(_.contains(t"from-child"))
+                  val status = awaitScreen(_.contains(t"exit=3"))
+                  (shown, status)
+
+            . check(_ == (true, true))
+
+            test(m"a command on the terminal reads the terminal, not the session"):
+              sh"$tool echo probe".exec[Unit]()
+
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                Shell.Bash.tmux():
+                  Tmux.enter(t"$command terminal 'read word; echo got-$$word'")
+                  Tmux.enter('\r')
+                  snooze(1*Second)
+                  Tmux.enter(t"gannet")
+                  Tmux.enter('\r')
+                  awaitScreen(_.contains(t"got-gannet"))
 
             . check(_ == true)
 
@@ -1026,7 +1099,7 @@ object Tests extends Suite(m"Ethereal Tests"):
         // The wire contract shared with the Rust runner: `bintel.rs` pins the same
         // signature and frames, so the two implementations cannot drift apart silently.
         val signatureHex =
-          t"a772bce70db951b957bec1cb86ada5517228cc11f5e6cc0d2c9f3a52281bdc9365"
+          t"3cb134104ab97c0cf5ac17839307699eea72846ca31c0c7a755f5c91c2a4480d80"
 
         def hex(data: Data): Text = Text(data.readable.map(b => f"${b & 0xff}%02x").mkString)
         def bytes(values: Int*): Data = Array.unsafeFrozen(values.map(_.toByte).toArray)
@@ -1046,6 +1119,19 @@ object Tests extends Suite(m"Ethereal Tests"):
         test(m"a mode document carries the canonical flag"):
           hex(Launcher.encode(Launcher.Message.Mode(true)))
         . check(_ == t"b2c4b5bb2621${signatureHex}01070100")
+
+        test(m"a mode document carries the echo flag after the canonical one"):
+          hex(Launcher.encode(Launcher.Message.Mode(true, true)))
+        . check(_ == t"b2c4b5bb2721${signatureHex}0107020001")
+
+        // run: a command, two arguments, a directory. Body: 01 0d 04, then the four scalars.
+        test(m"a run document frames as the pinned bytes"):
+          hex(Launcher.encode(Launcher.Message.Run(t"vi", List(t"-R", t"notes.txt"), t"/home/jon")))
+        . check(_ == t"b2c4b5bb4321${signatureHex}010d040002766901022d5201096e6f7465732e74787402092f686f6d652f6a6f6e")
+
+        test(m"an exited document frames as the pinned bytes"):
+          hex(Launcher.encode(Launcher.Message.Exited(127)))
+        . check(_ == t"b2c4b5bb2a21${signatureHex}010e010003313237")
 
         // A chunk's bytes go on the wire as they are: 0x00 and 0xff, which no UTF-8 text holds.
         test(m"a data document frames as the pinned bytes"):
@@ -1109,11 +1195,16 @@ object Tests extends Suite(m"Ethereal Tests"):
                 Launcher.Message.SignalAck(true),
                 Launcher.Message.SignalAck(false),
                 Launcher.Message.Mode(false),
+                Launcher.Message.Mode(true, false),
+                Launcher.Message.Mode(true, true),
                 Launcher.Message.Closed(t"stderr"),
                 Launcher.Message.ExitStatus(3),
                 Launcher.Message.Verify,
                 Launcher.Message.Verdict(true),
-                Launcher.Message.Shutdown )
+                Launcher.Message.Shutdown,
+                Launcher.Message.Run(t"less"),
+                Launcher.Message.Run(t"vi", List(t"-R", t"notes.txt"), t"/home/jon"),
+                Launcher.Message.Exited(3) )
 
           messages.map { message => Launcher.decode(Launcher.encode(message)) }
         . check(_ == List
@@ -1128,11 +1219,16 @@ object Tests extends Suite(m"Ethereal Tests"):
             Launcher.Message.SignalAck(true),
             Launcher.Message.SignalAck(false),
             Launcher.Message.Mode(false),
+            Launcher.Message.Mode(true, false),
+            Launcher.Message.Mode(true, true),
             Launcher.Message.Closed(t"stderr"),
             Launcher.Message.ExitStatus(3),
             Launcher.Message.Verify,
             Launcher.Message.Verdict(true),
-            Launcher.Message.Shutdown ))
+            Launcher.Message.Shutdown,
+            Launcher.Message.Run(t"less"),
+            Launcher.Message.Run(t"vi", List(t"-R", t"notes.txt"), t"/home/jon"),
+            Launcher.Message.Exited(3) ))
 
         // A chunk has no structural equality: its bytes are compared.
         test(m"a data document round-trips, bytes and all"):
