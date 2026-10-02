@@ -68,6 +68,16 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `soundness.postables.cborPostable` and `soundness.servables.cborServable`. The `breviloquence.http`
   module now depends on `telekinesis.core` and, like `jacinta.http`, is JVM-only, so
   `breviloquence.construables.cborConstruable` is no longer available on Scala.js. (#2104)
+- `breviloquence.Cbor.optional` and `Cbor.option` gain a leading `using` clause
+  `(absence: distillate.Decodable.Absence in Cbor, nullity: distillate.Decodable.Nullity in Cbor,
+  fault: distillate.Decodable.Fault in Cbor, tactic: contingency.Tactic[Cbor.Error])` (previously
+  `optional` took `(tactic: Tactic[Cbor.Error])` and `option` an anonymous `Tactic[Cbor.Error]`);
+  `Cbor.option`'s result type is now `(Option[value] is Decodable in Cbor)^{tactic}`. A CBOR
+  `null` (0xF6) in an `Optional[T]` field now reads as `Unset`, and in an `Option[T]` field as
+  `None`, where it was previously passed to the inner decoder (`Cbor.Error(Reason.NotType(Null,
+  …))`); `undefined` (0xF7) is unchanged. New givens `breviloquence.optionalityOptions.{strictCborAbsence,
+  lenientCborAbsence, strictCborNulls, lenientCborNulls, strictCborFaults, lenientCborFaults}`
+  (exported to `soundness.optionalityOptions`). (#XXXX)
 
 ## caesura
 
@@ -78,6 +88,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   context parameter of the `caesura.dsvCellLens` given, are now `(? >: Dsv) is Dynamical`.
   `dynamicDsv` satisfies it, and so does a `rudiments.dynamically[Dsv]` or `dynamically`
   block. (#2102)
+- `caesura.Dsv.optionalDecodable` gains a leading `using` clause
+  `(absence: distillate.Decodable.Absence in Dsv, fault: distillate.Decodable.Fault in Dsv,
+  format: Dsv.Format, tactic: contingency.Tactic[Dsv.Error])` and takes its inner decoder by
+  value, `(decodable: (inner is Decodable in Dsv)^)`, where it was by name;
+  `Dsv.Field.optional` gains `(absence: distillate.Decodable.Absence in Dsv, fault:
+  distillate.Decodable.Fault in Dsv)`. Behaviour under the companion defaults is unchanged. New
+  givens `caesura.optionalityOptions.{strictDsvAbsence, lenientDsvAbsence, strictDsvFaults,
+  lenientDsvFaults}` (exported to `soundness.optionalityOptions`). (#XXXX)
 
 ## coaxial
 
@@ -96,6 +114,17 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `CertificateException`), and its `getAcceptedIssuers` returns an empty array while pinned.
   Observable only from a listener requiring client certificates, which was not previously
   possible. (#2120)
+
+## contingency
+
+- `contingency.Foci[focus]` gains an abstract member `def truncate(length: Int): Unit` (drops
+  every registered error after the first `length`); `contingency.TrackFoci` implements it and
+  the `Foci.default` given has it as a no-op. Any other implementation of `Foci` must define it.
+  `contingency.Tactic[error]` gains `def tolerate[result](block: => result): Optional[result]`
+  with a default implementation (`try block catch case _: Exception => Unset`), overridden by
+  `Accrual.AccrueTactic`, `TrackTactic`, `VentureTactic` and the tactic `Tactic#contramap`
+  builds to roll back what the block recorded. A subclass of `Tactic` that already defines a
+  member named `tolerate` must add `override`. (#XXXX)
 
 ## degustation
 
@@ -163,6 +192,19 @@ format. Entries are grouped by module, most-recently-added last within a module.
   now defined over it and materializes each block. Numbers parsed as BCD are rendered by the
   byte-level writer directly from their nibbles, with no `String` round trip; the text of every
   form is unchanged. (#2109)
+- `jacinta.Json.optional`, `Json.option`, `Json.fieldOptional`, `Json.fieldOption`,
+  `Json.optionalParsable` and `Json.optionParsable` gain a leading `using` clause
+  `(absence: distillate.Decodable.Absence in Json, nullity: distillate.Decodable.Nullity in Json,
+  fault: distillate.Decodable.Fault in Json, tactic: contingency.Tactic[Json.Error])`;
+  `Json.option` no longer has the context bound `[value: Json.Decodable]` but takes
+  `(decodable: => (value is Json.Decodable)^)` by name. `Json.Parsable.optionality` and
+  `Json.Parsable.boxed` take the same four givens in their `using` clause (previously
+  `optionality` took only `tactic` and `boxed` none). Semantics under the companion defaults are
+  unchanged for `Optional`; `Option[T]` now reads an explicit JSON `null` as `None` where it
+  previously passed it to the inner decoder (`Json.Error(Reason.NotType(Null, …))` for a
+  primitive). New givens `jacinta.optionalityOptions.{strictJsonAbsence, lenientJsonAbsence,
+  strictJsonNulls, lenientJsonNulls, strictJsonFaults, lenientJsonFaults}` (exported to
+  `soundness.optionalityOptions`) vary each policy. (#XXXX)
 
 ## locomotion
 
@@ -238,6 +280,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   the borrowing form of the push `emit`: each filled block of UTF-8 is lent as a
   `zephyrine.Region[Data]` with its branded extent, valid only for the duration of the call;
   `emit[Data]` is defined over it and materializes each block. (#2109)
+- `stratiform.Tel.optionalDecodable` and `Tel.fieldOptional` gain a leading `using` clause
+  `(absence: distillate.Decodable.Absence in Tel, fault: distillate.Decodable.Fault in Tel,
+  tactic: contingency.Tactic[Tel.Error])` (previously an anonymous `Tactic[Tel.Error]` and
+  `(tactic: Tactic[Tel.Error])` respectively); `Tel.Parsable.optionality`'s `using` clause is
+  likewise `(absence, fault, tactic)` instead of `(tactic)`. Behaviour under the companion
+  defaults is unchanged. New givens `stratiform.optionalityOptions.{strictTelAbsence,
+  lenientTelAbsence, strictTelFaults, lenientTelFaults}` (exported to
+  `soundness.optionalityOptions`). (#XXXX)
 
 ## tessellate
 
@@ -337,6 +387,11 @@ format. Entries are grouped by module, most-recently-added last within a module.
   are byte lengths. `column` counts code points (previously UTF-16 chars: an astral character
   now advances it by one, not two). For a `Text` source, `offset` and `length` remain char
   offsets into the text. All are unchanged for ASCII input. (#2116)
+- `xylophone.Xml.optionalDecodable` gains a leading `using` clause
+  `(absence: distillate.Decodable.Absence in Xml, fault: distillate.Decodable.Fault in Xml,
+  tactic: contingency.Tactic[Xml.Error])`. Behaviour under the companion defaults is unchanged.
+  New givens `xylophone.optionalityOptions.{strictXmlAbsence, lenientXmlAbsence, strictXmlFaults,
+  lenientXmlFaults}` (exported to `soundness.optionalityOptions`). (#XXXX)
 
 ## ypsiloid
 
@@ -354,6 +409,16 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `soundness.postables.yamlPostable` and `soundness.servables.yamlServable`. The `ypsiloid.http`
   module now depends on `telekinesis.core` and, like `jacinta.http`, is JVM-only, so
   `ypsiloid.construables.yamlConstruable` is no longer available on Scala.js. (#2104)
+- `ypsiloid.Yaml.optional` and `Yaml.option` gain a leading `using` clause
+  `(absence: distillate.Decodable.Absence in Yaml, nullity: distillate.Decodable.Nullity in Yaml,
+  fault: distillate.Decodable.Fault in Yaml, tactic: contingency.Tactic[Yaml.Error])` (previously
+  `optional` took `(tactic: Tactic[Yaml.Error])` and `option` nothing); `Yaml.option`'s result
+  type is now `(Option[value] is Decodable in Yaml)^{tactic}`. A YAML `null` in an
+  `Optional[T]` field now reads as `Unset` where it was previously passed to the inner decoder
+  (`Yaml.Error(Reason.NotType(Null, …))`); `Option[T]` already read it as `None`. New givens
+  `ypsiloid.optionalityOptions.{strictYamlAbsence, lenientYamlAbsence, strictYamlNulls,
+  lenientYamlNulls, strictYamlFaults, lenientYamlFaults}` (exported to
+  `soundness.optionalityOptions`). (#XXXX)
 
 ## zephyrine
 

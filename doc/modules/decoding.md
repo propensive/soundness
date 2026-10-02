@@ -77,6 +77,27 @@ with a default, rather than raising, is a matter of changing the strategy:
 safely(t"hello".as[Int]).or(0)   // 0
 ```
 
+### Policies for optional fields
+
+Every data format that decodes an `Optional` field — JSON, CBOR, YAML, XML, TEL and delimited
+text — answers the same three questions, and answers them the same way by default: a key the
+document *omits* reads as `Unset`; the format's explicit *null*, where it has one, reads as
+`Unset`; and a value that is present but which the inner decoder *rejects* is an error. Each
+answer is a policy, indexed by the format, with a default in its companion:
+
+```scala
+summon[Decodable.Absence in Text].strict   // false
+summon[Decodable.Nullity in Text].strict   // false
+summon[Decodable.Fault in Text].strict     // true
+```
+
+A format's `optionalityOptions` package offers the other answer to each question, named for the
+format — `strictJsonAbsence`, `lenientYamlFaults`, `strictCborNulls` — so one axis can be varied
+without touching the others, and JSON can be strict where, in the same scope, CSV stays lenient.
+A lenient *fault* decodes the value under the ambient tactic's `tolerate`, so nothing accrues
+under an accumulating tactic either. `Option` fields follow the same policies, yielding `None`.
+The format tutorials show each in use.
+
 ### Extracting in patterns
 
 Pattern matching needs a conversion that declines to match instead of raising an

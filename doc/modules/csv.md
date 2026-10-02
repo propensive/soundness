@@ -136,6 +136,19 @@ t"hello,world".read[Greeting in Dsv]   // Greeting(t"hello", t"world")
 t"hello".read[Greeting in Dsv]         // Greeting(t"hello", Unset)
 ```
 
+Both answers can be changed through the `optionalityOptions` package, as
+[decoding](decoding.md) describes: `strictDsvAbsence` makes a short row an error
+(`Dsv.Error.Reason.Absent`), and `lenientDsvFaults` reads a cell the inner decoder rejects as
+`Unset` rather than raising. An empty cell is a present value, not a null:
+
+```scala
+case class Tally(name: Text, count: Optional[Int])
+
+val tolerant =
+  import optionalityOptions.lenientDsvFaults
+  t"hello,many".read[Tally in Dsv]   // Tally(t"hello", Unset)
+```
+
 ### Header names
 
 Where a format carries a header, the column names in the file rarely match Scala's field names.
