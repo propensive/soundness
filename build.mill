@@ -372,8 +372,10 @@ object xeqRelease extends Module:
       if !(os.exists(pinned) && sha(pinned) == want) then
         os.makeDir.all(dir)
         val tmp = dir / "xek.part"
-        val url = s"https://github.com/propensive/xek/releases/download/xek-$version/xek"
-        val fetched =
+        // Releases from 1.0.0 are tagged with the bare version; those up to 0.10, `xek-<version>`.
+        val base = "https://github.com/propensive/xek/releases/download"
+        val urls = Seq(s"$base/$version/xek", s"$base/xek-$version/xek")
+        val fetched = urls.exists: url =>
           os.proc("curl", "-fsSL", "-o", tmp.toString, url).call(check = false, stderr = os.Pipe)
             .exitCode == 0
         if !fetched then throw new Exception(s"no xek builder published for version $version")
