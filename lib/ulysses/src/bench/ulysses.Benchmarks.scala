@@ -95,10 +95,10 @@ object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
 
   // Ulysses, built in one pass with `++`, under the default (BLAKE3) and a 32-bit checksum hash.
   def buildUlyssesBlake3(size: Int): BloomFilter[Text, Blake3] =
-    BloomFilter[Text](size, errorRate) ++ keys(size).stdlib
+    BloomFilter[Text](size, errorRate) ++ keys(size)
 
   def buildUlyssesCrc32(size: Int): BloomFilter[Text, Crc32] =
-    BloomFilter[Text](size, errorRate)[Crc32] ++ keys(size).stdlib
+    BloomFilter[Text](size, errorRate)[Crc32] ++ keys(size)
 
   // Element by element, which an immutable filter pays for with a copy per `+`.
   def buildUlyssesIncrementally(size: Int): BloomFilter[Text, Blake3] =
@@ -183,13 +183,18 @@ object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
       assert(commonsPresent(), "commons-collections lost a key")
       index += 1
 
-    // A rate of 1% over 1024 queries is ~10 false positives; anything over 50 means the filter
-    // is not delivering the rate it was asked for.
-    assert(falsePositives(() => ulyssesBlake3Absent()) < 50, "Ulysses (BLAKE3) FPR is too high")
-    assert(falsePositives(() => ulyssesCrc32Absent()) < 50, "Ulysses (CRC32) FPR is too high")
-    assert(falsePositives(() => guavaAbsent()) < 50, "Guava FPR is too high")
-    assert(falsePositives(() => alexandrnikitinAbsent()) < 50, "alexandrnikitin FPR is too high")
-    assert(falsePositives(() => commonsAbsent()) < 50, "commons-collections FPR is too high")
+    // A rate of 1% over 1024 queries is ~10 false positives; over 50 means the filter is not
+    // delivering the rate it was asked for. (fume's `--bench` mode skips `test` blocks, so
+    // these are plain assertions, which name the count.)
+    def rate(name: String, query: () => Boolean): Unit =
+      val count = falsePositives(query)
+      assert(count < 50, name+" gave "+count+" false positives in 1024 absent queries")
+
+    rate("Ulysses (BLAKE3)", () => ulyssesBlake3Absent())
+    rate("Ulysses (CRC32)", () => ulyssesCrc32Absent())
+    rate("Guava", () => guavaAbsent())
+    rate("alexandrnikitin", () => alexandrnikitinAbsent())
+    rate("commons-collections", () => commonsAbsent())
 
     val bench = Bench()
 

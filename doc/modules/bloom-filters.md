@@ -74,10 +74,13 @@ intended, not a guarantee that holds however it is filled.
 
 ### Where the bits come from
 
-The hash algorithm is part of the filter's type, and the bit positions are derived from a single
-digest, extended by rehashing where more bits are needed than one digest provides. That means the
-algorithm in scope decides the filter's behavior, and two filters over the same elements agree
-only if they agree on the algorithm.
+The hash algorithm is part of the filter's type, and every bit position is derived from a single
+digest of the element: its first two 64-bit words, `h₁` and `h₂`, give position *i* as
+`h₁ + i·h₂` modulo the bit-array size — the double-hashing scheme Guava also uses, which costs one
+digest per element however many positions are needed. An algorithm whose digest is shorter than
+sixteen bytes, such as a CRC, is applied again under a counter until enough bytes are gathered.
+That means the algorithm in scope decides the filter's behavior, and two filters over the same
+elements agree only if they agree on the algorithm.
 
 Because elements enter through the ordinary [hashing](hashing.md) machinery, a case class is
 usable as an element with no preparation, and a filter over a structured key needs no

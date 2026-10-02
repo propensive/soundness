@@ -265,6 +265,44 @@ format. Entries are grouped by module, most-recently-added last within a module.
   and `Loadable.fromText[result](consume stream: (Stream[Text] over Credit)^): Document[result]`
   are the per-operand halves of that dispatch. (#2118)
 
+## ulysses
+
+- `ulysses.BloomFilter.apply[element: Digestible](approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)[algorithm <: Algorithm](using Hash in algorithm, Permit[HashWeakness[algorithm]]): BloomFilter[element, algorithm]`
+  sizes the filter differently. Old: `bitSize = (-1.44·approximateSize·ln targetErrorRate).toInt`,
+  `hashCount = (bitSize/approximateSize·ln 2 + 0.5).toInt`. New: with `n = max(1, approximateSize)`
+  and `p = max(targetErrorRate, 2⁻⁵³)`, `bitSize = max(1, ceil(-n·ln p/(ln 2)²))` and
+  `hashCount = max(1, round(bitSize/n·ln 2))`. So `BloomFilter[Text](100, 0.01).bitSize` is 959
+  where it was 663, `(1000, 0.01)` gives 9586 where it was 6631, `(100, 0.001)` gives 1438 where
+  it was 994, and `hashCount` for `(10_000, 0.01)` is 7 where it was 5. The old sizing delivered
+  about four times the requested false-positive rate; the new one delivers the requested rate.
+  (#NNNN)
+- `ulysses.BloomFilter#+`, `#++` and `#hits` derive an element's bit positions differently. Old:
+  the digests of `(0, value)`, `(1, value)`, … (as a `Digestible` tuple) were concatenated into a
+  `BigInt` whose successive remainders modulo `bitSize` were the positions. New: `h₁` and `h₂` are
+  the first and second big-endian 64-bit words of the element's digest (of the element alone; an
+  algorithm yielding fewer than 16 bytes is re-digested with a big-endian `Int` prefix of 1, 2, …
+  until 16 bytes are gathered), and position `i` for `i` in `0 until hashCount` is
+  `((h₁ + i·h₂) & Long.MaxValue) % bitSize`. For the same elements, `bits` therefore differs from
+  the previous version's; a filter whose `bits` were persisted or exchanged with code built
+  against the old version must be rebuilt. (#NNNN)
+- `ulysses.BloomFilter`'s third parameter, `bits: scala.collection.immutable.BitSet`, is now
+  `bits: proscenium.Array[Long]^{}` (a frozen array), of length `(bitSize + 63)/64` from
+  construction, bit `i` of the filter being bit `i % 64` of word `i / 64` — the layout of
+  `BitSet#toBitMask`, so `scala.collection.immutable.BitSet.fromBitMaskNoCopy(filter.bits.readable.asInstanceOf[scala.Array[Long]])`
+  recovers the old view. `BloomFilter#equals` and `#hashCode` compare `bitSize`, `hashCount` and
+  the words' contents, as the `BitSet`-based case-class equality did. The `BloomFilter(bitSize, hashCount, bits)`
+  constructor and `copy` take the array. (#NNNN)
+- `ulysses.BloomFilter#++(elements: Iterable[element]): BloomFilter[element, algorithm]` is now
+  `ulysses.BloomFilter#++[collection: murmuration.Traversable by element](elements: collection): BloomFilter[element, algorithm]`.
+  A `scala.Iterable` argument is still accepted (through `Traversable.iterable`); the opaque
+  `proscenium.List`, `Sequence`, `Set`, `Chain` and a frozen `Array` are now accepted directly,
+  where previously they had to cross via `.stdlib`. (#NNNN)
+- `ulysses.BloomFilter.apply` with `approximateSize <= 0` or `targetErrorRate` of `0.0` or `1.0`
+  now yields a working filter (`bitSize >= 1`, `hashCount >= 1`; see the sizing entry). Old:
+  `approximateSize = 0` gave `hashCount = 0`, so `hits` was `true` for every element;
+  `targetErrorRate = 1.0` gave `bitSize = 0`, so `+`, `++` and `hits` threw
+  `java.lang.ArithmeticException`; `targetErrorRate = 0.0` gave `bitSize = Int.MaxValue`. (#NNNN)
+
 ## xenophile
 
 - Component `xenophile.lira` (artifact `xenophile-lira`) removed; it moved to the propensive/lira
