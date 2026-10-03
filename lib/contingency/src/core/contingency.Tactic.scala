@@ -35,6 +35,7 @@ package contingency
 import scala.language.experimental.pureFunctions
 
 import fulminate.*
+import vacuous.*
 
 // A `Tactic` is an `Emit` that can additionally `abort`: a value-replacing abnormal exit. `raises
 // error` (`Tactic[error] ?=>`) is therefore the stronger obligation than `emits error`; code with a
@@ -54,6 +55,13 @@ trait Tactic[-error <: Hazard] extends Emit[error]:
   // so that taint is visible across `mitigate`d library boundaries.
   def tainted: Boolean = false
 
+  // Runs `block` and discards whatever it raises: its result, or `Unset` once an error has been
+  // recorded or the block aborts. The lever for a codec that tolerates a fault in an optional
+  // slot. The default catches the escape every fail-fast tactic makes (a thrown error or a
+  // boundary break); an accruing tactic overrides it to roll its accrual back as well.
+  def tolerate[result](block: => result): Optional[result] =
+    try block catch case _: Exception => Unset
+
   override def contramap[error2 <: Hazard](lambda: error2 => error)
   :   Tactic[error2]^ =
 
@@ -64,3 +72,4 @@ trait Tactic[-error <: Hazard] extends Emit[error]:
         def abort(error: Diagnostics ?=> error2): Nothing = tactic.abort(lambda(error))
         def certify(): Unit = tactic.certify()
         override def tainted: Boolean = tactic.tainted
+        override def tolerate[result](block: => result): Optional[result] = tactic.tolerate(block)

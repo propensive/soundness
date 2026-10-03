@@ -541,7 +541,9 @@ object Tel extends Tel2:
     // pattern: a by-name parameter cannot be named in a capture set.
     def optionality[inner <: value, value >: Unset.type]
       ( field: => (inner is Tel.Parsing)^ )
-      ( using tactic: Tactic[Tel.Error] )
+      ( using absence: distillate.Decodable.Absence in Tel,
+              fault:   distillate.Decodable.Fault in Tel,
+              tactic:  Tactic[Tel.Error] )
     :   value is Tel.Parsable =
 
       caps.unsafe.unsafeAssumePure:
@@ -549,15 +551,18 @@ object Tel extends Tel2:
           type Self = value
           def shape(): Morphology = Morphology.Opt(field.shape())
           override def nature: Tel.Nature = field.nature
-          override def optional: Boolean = true
+          override def optional: Boolean = !absence.strict
 
+          // Only absence is policed here: a fault surfaces mid-stream, where the entry has
+          // been partly consumed and cannot be skipped whole, so it raises as it always has.
           def parse(reader: TelReader^, indent: Int): value =
             if reader.hasSubstance then field.parse(reader, indent)
             else
               reader.skipEntry(indent)
-              Unset
+              if absence.strict then tactic.abort(Tel.Error(Tel.Error.Reason.Absent)) else Unset
 
-          override def absent()(using Tactic[Tel.Error]): value = Unset
+          override def absent()(using Tactic[Tel.Error]): value =
+            if absence.strict then abort(Tel.Error(Tel.Error.Reason.Absent)) else Unset
 
           override def parseAtom(text: Text)(using Tactic[Tel.Error]): value =
             field.parseAtom(text)

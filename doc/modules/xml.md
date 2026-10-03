@@ -226,6 +226,20 @@ Where a nested value is missing altogether, a `Default` for its type turns what 
 of sub-field errors into a single error at the point the value should have been, with the default
 used to carry on — which is what a validation pass reporting to a human wants.
 
+An `Optional` field has two further policies, from the `optionalityOptions` package as
+[decoding](decoding.md) describes: `strictXmlAbsence` makes a missing element or attribute an
+error (`Xml.Error.Reason.Missing`) rather than `Unset`, and `lenientXmlFaults` reads a present
+element the inner decoder rejects as `Unset` rather than raising. XML has no null: an empty
+element is a present value, so there is no nullity policy.
+
+```scala
+case class Tally(name: Text, count: Optional[Int])
+
+val tolerant =
+  import optionalityOptions.lenientXmlFaults
+  x"<root><name>Ann</name><count>many</count></root>".as[Tally]   // Tally(t"Ann", Unset)
+```
+
 ### Writing XML literally
 
 The `x"…"` interpolator writes XML directly and checks it as the code compiles. Holes substitute

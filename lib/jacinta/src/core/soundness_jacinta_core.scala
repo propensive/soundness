@@ -43,6 +43,10 @@ package formatting:
 package numberModes:
   export jacinta.numberModes.{fullNumberMode, bcdNumberMode, doubleNumberMode}
 
+package optionalityOptions:
+  export jacinta.optionalityOptions.{strictJsonAbsence, lenientJsonAbsence, strictJsonNulls,
+      lenientJsonNulls, strictJsonFaults, lenientJsonFaults}
+
 package discriminables:
   export jacinta.discriminables.jsonByTypeDiscriminable
   export jacinta.discriminables.jsonByKindDiscriminable

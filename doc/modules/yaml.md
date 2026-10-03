@@ -43,6 +43,22 @@ t"{name: Alice, age: 30}".read[Yaml].as[Person]   // Person(t"Alice", 30)
 t"name: Alice\nage: 30".read[Person in Yaml]      // block style, same result
 ```
 
+An `Optional` field reads as `Unset` when the mapping omits it or gives `null`, and a value the
+inner decoder rejects is an error; the `optionalityOptions` package varies each answer —
+`strictYamlAbsence`, `strictYamlNulls`, `lenientYamlFaults` — as [decoding](decoding.md)
+describes:
+
+```scala
+case class Member(name: Text, age: Optional[Int])
+
+t"name: Eve\nage: null".read[Yaml].as[Member]   // Member(t"Eve", Unset)
+
+val strict =
+  import optionalityOptions.strictYamlNulls
+  capture[Yaml.Error](t"name: Eve\nage: null".read[Yaml].as[Member]).reason
+  // Yaml.Error.Reason.NotType(Yaml.Primitive.Null, Yaml.Primitive.Integer)
+```
+
 A multi-document stream — documents separated by `---` — reads as a list:
 
 ```scala

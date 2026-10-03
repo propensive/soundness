@@ -42,5 +42,9 @@ export
 package dynamicAccess:
   export stratiform.dynamicAccess.dynamicTel
 
+package optionalityOptions:
+  export stratiform.optionalityOptions.{strictTelAbsence, lenientTelAbsence, strictTelFaults,
+      lenientTelFaults}
+
 package conversions:
   export stratiform.conversions.encodableToTel

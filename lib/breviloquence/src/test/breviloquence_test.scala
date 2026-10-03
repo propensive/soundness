@@ -60,6 +60,7 @@ case class Tree(value: Text, children: List[Tree]) derives CanEqual
 case class Boxed[value](value: value) derives CanEqual
 case class Team(lead: Person, size: Int) derives CanEqual
 case class OptPerson(name: Text, age: Optional[Int]) derives CanEqual
+case class OptionPerson(name: Text, age: Option[Int]) derives CanEqual
 case class Renamed
    (@name[Cbor](t"data_files")  dataFiles:  List[Long],
     @name[Cbor](t"index_files") indexFiles: List[Long])
@@ -453,6 +454,46 @@ object Tests extends Suite(m"Breviloquence Tests"):
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(OptPerson(t"Eve", Unset).in[Cbor]))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[OptPerson]
       . assert(_ == OptPerson(t"Eve", Unset))
+
+    suite(m"Optionality policies"):
+      // {"name": "Eve", "age": null}
+      val nullAge = hex("a2 646e616d65 63457665 63616765 f6")
+      // {"name": "Eve", "age": "x"}
+      val textAge = hex("a2 646e616d65 63457665 63616765 6178")
+      // {"name": "Eve"}
+      val noAge = hex("a1 646e616d65 63457665")
+
+      test(m"a null Optional field reads as Unset by default"):
+        Cbor.ast(Cbor.Ast.parse(nullAge)).as[OptPerson]
+      . assert(_ == OptPerson(t"Eve", Unset))
+
+      test(m"a null Option field reads as None by default"):
+        Cbor.ast(Cbor.Ast.parse(nullAge)).as[OptionPerson]
+      . assert(_ == OptionPerson(t"Eve", None))
+
+      test(m"a wrong-typed Optional field raises NotType by default"):
+        capture[Cbor.Error](Cbor.ast(Cbor.Ast.parse(textAge)).as[OptPerson]).reason
+      . assert(_ == Cbor.Error.Reason.NotType(Cbor.Error.Primitive.TextString, Cbor.Error.Primitive.Integer))
+
+      test(m"strict nulls hand a null Optional field to the inner decoder"):
+        import optionalityOptions.strictCborNulls
+        capture[Cbor.Error](Cbor.ast(Cbor.Ast.parse(nullAge)).as[OptPerson]).reason
+      . assert(_ == Cbor.Error.Reason.NotType(Cbor.Error.Primitive.Null, Cbor.Error.Primitive.Integer))
+
+      test(m"strict absence raises Absent for an absent Optional field"):
+        import optionalityOptions.strictCborAbsence
+        capture[Cbor.Error](Cbor.ast(Cbor.Ast.parse(noAge)).as[OptPerson]).reason
+      . assert(_ == Cbor.Error.Reason.Absent)
+
+      test(m"lenient faults read a wrong-typed Optional field as Unset"):
+        import optionalityOptions.lenientCborFaults
+        Cbor.ast(Cbor.Ast.parse(textAge)).as[OptPerson]
+      . assert(_ == OptPerson(t"Eve", Unset))
+
+      test(m"lenient faults read a wrong-typed Option field as None"):
+        import optionalityOptions.lenientCborFaults
+        Cbor.ast(Cbor.Ast.parse(textAge)).as[OptionPerson]
+      . assert(_ == OptionPerson(t"Eve", None))
 
     suite(m"Direct parsing (Inlinable)"):
       given (Point is Cbor.Parsable) = Inlinable.parsable[Point]

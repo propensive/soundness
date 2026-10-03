@@ -70,3 +70,20 @@ object Tests extends Suite(m"Distillate Tests"):
         case _                       => email"something@else.com"
 
     . assert(_ == email"something@else.com")
+
+    test(m"Optional-decoding policies default to lenient absence"):
+      summon[Decodable.Absence in Text].strict
+    . assert(_ == false)
+
+    test(m"Optional-decoding policies default to lenient nulls"):
+      summon[Decodable.Nullity in Text].strict
+    . assert(_ == false)
+
+    test(m"Optional-decoding policies default to strict faults"):
+      summon[Decodable.Fault in Text].strict
+    . assert(_ == true)
+
+    test(m"A lexically-scoped policy outranks the companion default"):
+      given Decodable.Absence in Text = Decodable.Absence(true)
+      summon[Decodable.Absence in Text].strict
+    . assert(_ == true)

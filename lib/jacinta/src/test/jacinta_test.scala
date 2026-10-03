@@ -356,6 +356,78 @@ object Tests extends Suite(m"Jacinta Tests"):
         t"""{"name": "Eve", "age": 30}""".read[Json].as[WithDefault]
       . assert(_ == WithDefault(t"Eve", 30))
 
+    suite(m"Optionality policy tests"):
+      test(m"An absent Option field is None by default"):
+        t"""{"y": 1}""".read[Json].as[OptFoo].x
+      . assert(_ == None)
+
+      test(m"An explicit null Option field is None by default"):
+        t"""{"x": null}""".read[Json].as[OptFoo].x
+      . assert(_ == None)
+
+      test(m"A wrong-typed Optional field raises NotType by default"):
+        capture[Json.Error](t"""{"x": "one"}""".read[Json].as[OptionalFoo]).reason
+      . assert(_ == Json.Error.Reason.NotType(Json.Primitive.String, Json.Primitive.Number))
+
+      test(m"A wrong-typed Option field raises NotType by default"):
+        capture[Json.Error](t"""{"x": "one"}""".read[Json].as[OptFoo]).reason
+      . assert(_ == Json.Error.Reason.NotType(Json.Primitive.String, Json.Primitive.Number))
+
+      test(m"Strict absence raises Absent for an absent Optional field"):
+        import optionalityOptions.strictJsonAbsence
+        capture[Json.Error](t"""{"y": 1}""".read[Json].as[OptionalFoo]).reason
+      . assert(_ == Json.Error.Reason.Absent)
+
+      test(m"Strict absence raises Absent for an absent Option field"):
+        import optionalityOptions.strictJsonAbsence
+        capture[Json.Error](t"""{"y": 1}""".read[Json].as[OptFoo]).reason
+      . assert(_ == Json.Error.Reason.Absent)
+
+      test(m"Strict absence still reads an explicit null as Unset"):
+        import optionalityOptions.strictJsonAbsence
+        t"""{"x": null}""".read[Json].as[OptionalFoo].x
+      . assert(_ == Unset)
+
+      test(m"Strict nulls hand a null Optional field to the inner decoder"):
+        import optionalityOptions.strictJsonNulls
+        capture[Json.Error](t"""{"x": null}""".read[Json].as[OptionalFoo]).reason
+      . assert(_ == Json.Error.Reason.NotType(Json.Primitive.Null, Json.Primitive.Number))
+
+      test(m"Strict nulls hand a null Option field to the inner decoder"):
+        import optionalityOptions.strictJsonNulls
+        capture[Json.Error](t"""{"x": null}""".read[Json].as[OptFoo]).reason
+      . assert(_ == Json.Error.Reason.NotType(Json.Primitive.Null, Json.Primitive.Number))
+
+      test(m"Strict nulls still read an absent Optional field as Unset"):
+        import optionalityOptions.strictJsonNulls
+        t"""{"y": 1}""".read[Json].as[OptionalFoo].x
+      . assert(_ == Unset)
+
+      test(m"Lenient faults read a wrong-typed Optional field as Unset"):
+        import optionalityOptions.lenientJsonFaults
+        t"""{"x": "one"}""".read[Json].as[OptionalFoo].x
+      . assert(_ == Unset)
+
+      test(m"Lenient faults read a wrong-typed Option field as None"):
+        import optionalityOptions.lenientJsonFaults
+        t"""{"x": "one"}""".read[Json].as[OptFoo].x
+      . assert(_ == None)
+
+      test(m"Lenient faults read a malformed Optional product field as Unset"):
+        import optionalityOptions.lenientJsonFaults
+        t"""{"inner": {"n": "zero"}}""".read[Json].as[OptInner].inner
+      . assert(_ == Unset)
+
+      test(m"Lenient faults leave a well-typed Optional field alone"):
+        import optionalityOptions.lenientJsonFaults
+        t"""{"x": 7}""".read[Json].as[OptionalFoo].x
+      . assert(_ == 7)
+
+      test(m"Policies apply per format: a strict JSON absence leaves a lenient default elsewhere"):
+        import optionalityOptions.strictJsonAbsence
+        summon[Decodable.Absence in Text].strict
+      . assert(_ == false)
+
     suite(m"Generic derivation tests"):
       val paul =
         test(m"Serialize a simple case class"):
@@ -964,6 +1036,36 @@ object Tests extends Suite(m"Jacinta Tests"):
           t"""{"x": 1, "y": 2}""".read[FooOptional in Json] )
       . assert(_ == (FooOptional(1, Unset), FooOptional(1, Unset), FooOptional(1, 2)))
 
+      test(m"A direct parser reads a null Option field as None by default"):
+        t"""{"x": 1, "y": null}""".read[FooOption in Json]
+      . assert(_ == FooOption(1, None))
+
+      test(m"A direct parser raises Absent for an absent Optional field under strict absence"):
+        import optionalityOptions.strictJsonAbsence
+        given FooOptional is Json.Parsable = Json.Parsable.derived
+        capture[Json.Error](t"""{"x": 1}""".read[FooOptional in Json]).reason
+      . assert(_ == Json.Error.Reason.Absent)
+
+      test(m"A direct parser rejects a null Optional field under strict nulls"):
+        import optionalityOptions.strictJsonNulls
+        given FooOptional is Json.Parsable = Json.Parsable.derived
+        capture[Parse.Error](t"""{"x": 1, "y": null}""".read[FooOptional in Json])
+      . assert(_.issue match
+          case Json.Ast.Issue.ExpectedNumber(_) => true
+          case _                                => false)
+
+      test(m"A direct parser skips a wrong-kinded Optional field under lenient faults"):
+        import optionalityOptions.lenientJsonFaults
+        given FooOptional is Json.Parsable = Json.Parsable.derived
+        t"""{"x": 1, "y": {"deep": [1, 2]}, "z": 3}""".read[FooOptional in Json]
+      . assert(_ == FooOptional(1, Unset))
+
+      test(m"A direct parser skips a wrong-kinded Option field under lenient faults"):
+        import optionalityOptions.lenientJsonFaults
+        given FooOption is Json.Parsable = Json.Parsable.derived
+        t"""{"x": 1, "y": "two"}""".read[FooOption in Json]
+      . assert(_ == FooOption(1, None))
+
       test(m"Nested products and collections parse directly"):
         val json = t"""{"name": "Acme", "leader":
             {"name": "Bob", "age": 40, "roles": [{"name": "CEO"}, {"name": "CTO"}]}}"""
@@ -1103,6 +1205,18 @@ object Tests extends Suite(m"Jacinta Tests"):
           t"""{"x": 1, "y": null}""".read[FooOptional in Json],
           t"""{"x": 1, "y": 2}""".read[FooOptional in Json] )
       . assert(_ == (FooOptional(1, Unset), FooOptional(1, Unset), FooOptional(1, 2)))
+
+      test(m"A staged parser raises Absent for an absent Optional field under strict absence"):
+        import optionalityOptions.strictJsonAbsence
+        given FooOptional is Json.Parsable = Json.Parsable.staged
+        capture[Json.Error](t"""{"x": 1}""".read[FooOptional in Json]).reason
+      . assert(_ == Json.Error.Reason.Absent)
+
+      test(m"A staged parser skips a wrong-kinded Optional field under lenient faults"):
+        import optionalityOptions.lenientJsonFaults
+        given FooOptional is Json.Parsable = Json.Parsable.staged
+        t"""{"x": 1, "y": "two"}""".read[FooOptional in Json]
+      . assert(_ == FooOptional(1, Unset))
 
       test(m"A staged parser reads collection and option fields"):
         val json = t"""{"guitarists": [{"name": "John", "age": 40}], "drummer":

@@ -126,6 +126,15 @@ package optics:
   given xmlEachOptical: Each.type is Optical from Xml onto Xml = _ =>
     Optic: (origin, lambda) => updateChildElements(origin, _ => true, lambda)
 
+// How an `Optional` field reads a missing element or attribute, or a value its inner decoder
+// rejects: lenient yields `Unset`, strict raises `Xml.Error`. Absence is lenient by default;
+// faults are strict. XML has no null, so there is no nullity option.
+package optionalityOptions:
+  given strictXmlAbsence:  distillate.Decodable.Absence in Xml = distillate.Decodable.Absence(true)
+  given lenientXmlAbsence: distillate.Decodable.Absence in Xml = distillate.Decodable.Absence(false)
+  given strictXmlFaults:   distillate.Decodable.Fault in Xml   = distillate.Decodable.Fault(true)
+  given lenientXmlFaults:  distillate.Decodable.Fault in Xml   = distillate.Decodable.Fault(false)
+
 // Whether a parse treats a prefix with no binding as an error (the default) or as no namespace
 package namespaceOptions:
   inline given strictNamespaces: Xml.Namespacing = Xml.Namespacing.Strict
