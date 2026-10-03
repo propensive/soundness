@@ -58,7 +58,7 @@ import vacuous.*
 import Blake3.hash
 
 enum Engine:
-  case UlyssesBlake3, UlyssesCrc32, Guava, Alexandrnikitin, CommonsCollections
+  case UlyssesBlake3, UlyssesMurmur3, UlyssesCrc32, Guava, Alexandrnikitin, CommonsCollections
 
 enum Growth:
   case InPlace, Copying
@@ -99,6 +99,11 @@ object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
   // Ulysses, filled in place and frozen, under the default (BLAKE3) and a 32-bit checksum hash.
   def buildUlyssesBlake3(size: Int): BloomFilter[Text, Blake3] =
     val filter = BloomFilter[Text](size, errorRate)
+    filter.addAll(keys(size))
+    BloomFilter.freeze(filter)
+
+  def buildUlyssesMurmur3(size: Int): BloomFilter[Text, Murmur3] =
+    val filter = BloomFilter[Text](size, errorRate)[Murmur3]
     filter.addAll(keys(size))
     BloomFilter.freeze(filter)
 
@@ -151,6 +156,7 @@ object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
     filter
 
   lazy val ulyssesBlake3: BloomFilter[Text, Blake3] = buildUlyssesBlake3(filled)
+  lazy val ulyssesMurmur3: BloomFilter[Text, Murmur3] = buildUlyssesMurmur3(filled)
   lazy val ulyssesCrc32: BloomFilter[Text, Crc32] = buildUlyssesCrc32(filled)
   lazy val guava: com.google.common.hash.BloomFilter[CharSequence] = buildGuava(filled)
   lazy val alexandrnikitin: bloomfilter.mutable.BloomFilter[String] = buildAlexandrnikitin(filled)
@@ -160,6 +166,8 @@ object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
 
   def ulyssesBlake3Present(): Boolean = ulyssesBlake3.hits(present(advance()))
   def ulyssesBlake3Absent(): Boolean = ulyssesBlake3.hits(absent(advance()))
+  def ulyssesMurmur3Present(): Boolean = ulyssesMurmur3.hits(present(advance()))
+  def ulyssesMurmur3Absent(): Boolean = ulyssesMurmur3.hits(absent(advance()))
   def ulyssesCrc32Present(): Boolean = ulyssesCrc32.hits(present(advance()))
   def ulyssesCrc32Absent(): Boolean = ulyssesCrc32.hits(absent(advance()))
   def guavaPresent(): Boolean = guava.mightContain(presentStrings(advance()))
@@ -190,6 +198,7 @@ object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
 
     while index < ring do
       assert(ulyssesBlake3Present(), "Ulysses (BLAKE3) lost a key")
+      assert(ulyssesMurmur3Present(), "Ulysses (Murmur3) lost a key")
       assert(ulyssesCrc32Present(), "Ulysses (CRC32) lost a key")
       assert(guavaPresent(), "Guava lost a key")
       assert(alexandrnikitinPresent(), "alexandrnikitin lost a key")
@@ -204,6 +213,7 @@ object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
       assert(count < 50, name+" gave "+count+" false positives in 1024 absent queries")
 
     rate("Ulysses (BLAKE3)", () => ulyssesBlake3Absent())
+    rate("Ulysses (Murmur3)", () => ulyssesMurmur3Absent())
     rate("Ulysses (CRC32)", () => ulyssesCrc32Absent())
     rate("Guava", () => guavaAbsent())
     rate("alexandrnikitin", () => alexandrnikitinAbsent())
@@ -219,6 +229,9 @@ object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
     . over(Engine, Axis(t"size")(1_000, 100_000)):
         case (Engine.UlyssesBlake3, size) =>
           '{ ulysses.Benchmarks.buildUlyssesBlake3($size) }
+
+        case (Engine.UlyssesMurmur3, size) =>
+          '{ ulysses.Benchmarks.buildUlyssesMurmur3($size) }
 
         case (Engine.UlyssesCrc32, size) =>
           '{ ulysses.Benchmarks.buildUlyssesCrc32($size) }
@@ -239,6 +252,7 @@ object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
 
     . over(Engine):
         case Engine.UlyssesBlake3      => '{ ulysses.Benchmarks.ulyssesBlake3Present() }
+        case Engine.UlyssesMurmur3     => '{ ulysses.Benchmarks.ulyssesMurmur3Present() }
         case Engine.UlyssesCrc32       => '{ ulysses.Benchmarks.ulyssesCrc32Present() }
         case Engine.Guava              => '{ ulysses.Benchmarks.guavaPresent() }
         case Engine.Alexandrnikitin    => '{ ulysses.Benchmarks.alexandrnikitinPresent() }
@@ -251,6 +265,7 @@ object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
 
     . over(Engine):
         case Engine.UlyssesBlake3      => '{ ulysses.Benchmarks.ulyssesBlake3Absent() }
+        case Engine.UlyssesMurmur3     => '{ ulysses.Benchmarks.ulyssesMurmur3Absent() }
         case Engine.UlyssesCrc32       => '{ ulysses.Benchmarks.ulyssesCrc32Absent() }
         case Engine.Guava              => '{ ulysses.Benchmarks.guavaAbsent() }
         case Engine.Alexandrnikitin    => '{ ulysses.Benchmarks.alexandrnikitinAbsent() }

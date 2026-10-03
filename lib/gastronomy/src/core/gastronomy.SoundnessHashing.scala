@@ -44,6 +44,9 @@ object SoundnessHashing extends Hashing:
   def blake3: Hashing.Function = new Hashing.Function:
     def digestion(): Digestion^ = Blake3.digestion()
 
+  def murmur3: Hashing.Function = new Hashing.Function:
+    def digestion(): Digestion^ = Murmur3.digestion()
+
   def md5: Hashing.Function = new Hashing.Function:
     def digestion(): Digestion^ = PureHashes.md5
 

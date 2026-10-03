@@ -185,4 +185,5 @@ type HashWeakness[algorithm] = algorithm match
   case Crc32   => Concession.NonCryptographic
   case Crc64   => Concession.NonCryptographic
   case Adler32 => Concession.NonCryptographic
+  case Murmur3 => Concession.NonCryptographic
   case _       => Concession.Acceptable
