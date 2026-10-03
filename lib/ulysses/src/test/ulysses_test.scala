@@ -36,6 +36,7 @@ import soundness.*
 
 import providers.soundnessProvider
 import Blake3.hash   // a concrete `Hash in Blake3` in scope, so BloomFilter infers BLAKE3
+import alphabets.hexUpperCase
 import cryptoPermits.permitNonCryptographicHashes
 
 case class Point(x: Int, y: Int)
@@ -164,6 +165,38 @@ object Tests extends Suite(m"Ulysses tests"):
       Palimpsest(Sequence.from((1 to 3).map(numbers(_)))).resolve
 
     . assert(_ == (1 to 3).map(numbers(_)))
+
+    def bytes(values: Int*): Data = Array.frozen(scala.IArray.from(values.map(_.toByte)))
+
+    val shelf = Bibliography:
+      proscenium.List(bytes(0x80, 1), bytes(0x10, 2), bytes(0x80, 0), bytes(0x7f, 9), bytes(0x81))
+
+    def found(prefix: Data): List[Text] = List.from(shelf.lookup(prefix).map(_.serialize[Hex]))
+
+    test(m"A prefix lookup finds every hash sharing the prefix"):
+      found(bytes(0x80))
+
+    . assert(_ == List(t"8000", t"8001"))
+
+    test(m"A prefix lookup orders bytes as unsigned"):
+      (found(bytes(0x7f)), found(bytes(0x81)))
+
+    . assert(_ == (List(t"7F09"), List(t"81")))
+
+    test(m"A prefix matching no hash finds nothing"):
+      found(bytes(0x11))
+
+    . assert(_ == Nil)
+
+    test(m"A prefix longer than a hash does not match it"):
+      found(bytes(0x81, 0))
+
+    . assert(_ == Nil)
+
+    test(m"An empty prefix finds every hash"):
+      found(bytes())
+
+    . assert(_ == List(t"1002", t"7F09", t"8000", t"8001", t"81"))
 
     val letters = List(t"alpha", t"beta", t"gamma", t"delta").map(_.digest[Blake3].data)
 

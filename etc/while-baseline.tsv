@@ -222,7 +222,6 @@ lib/ultimatum/src/core/ultimatum.InlineRoot.scala	7	0	0
 lib/ultimatum/src/core/ultimatum.ScreenRoot.scala	1	0	0
 lib/ultimatum/src/core/ultimatum.ScrollFixture.scala	1	0	0
 lib/ultimatum/src/core/ultimatum_core.scala	2	0	0
-lib/ulysses/src/core/ulysses.Bibliography.scala	1	0	0
 lib/ulysses/src/core/ulysses.Palimpsest.scala	7	0	0
 lib/vexillology/src/core/vexillology.internal.scala	1	0	0
 lib/vivisection/src/core/vivisection.Jdwp.scala	8	6	1
