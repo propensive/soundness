@@ -35,6 +35,8 @@ package bitumen
 
 import java.nio.file as jnf
 
+import scala.collection.mutable as scm
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -90,8 +92,13 @@ private[bitumen] object TarFilesystem:
         raise(Tar.Error(Tar.Error.Reason.DeviceCreationUnsupported(path.show)))
         Tar.Entry.Fifo(ref, mode, user, group, mtime)
 
+  // `created` holds the directories this extraction has made so far, so that the parent of each
+  // entry is created only once: `createDirectories` stats every component of the chain, which a
+  // tarball of many files in one directory would otherwise repeat for every file. The set must be
+  // exact, since a skipped `mkdir` would fail the write that follows, and it must not outlive the
+  // extraction, since the disk may change between runs.
   def applyEntry[plane <: Posix: Filesystem]
-    ( root: Path on plane, entry: Tar.Entry )
+    ( root: Path on plane, entry: Tar.Entry, created: scm.HashSet[jnf.Path] )
     ( using CreateNonexistentParents on plane,
             OverwritePreexisting on plane,
             Tactic[Io.Error],
@@ -101,7 +108,7 @@ private[bitumen] object TarFilesystem:
     (entry: @scala.unchecked) match
       case f: Tar.Entry.File =>
         val path = absolutize(root, f.path)
-        jnf.Files.createDirectories(path.javaPath.getParent)
+        createParent(path.javaPath, created)
         val bytes: scala.Array[Byte] = Array.unsafeJvm(f.data.memoize)
         jnf.Files.write(path.javaPath, bytes)
         applyPermissions(path.javaPath, f.mode)
@@ -110,11 +117,12 @@ private[bitumen] object TarFilesystem:
       case d: Tar.Entry.Directory =>
         val path = absolutize(root, d.path)
         jnf.Files.createDirectories(path.javaPath)
+        created += path.javaPath
         applyPermissions(path.javaPath, d.mode)
 
       case s: Tar.Entry.Symlink =>
         val path = absolutize(root, s.path)
-        jnf.Files.createDirectories(path.javaPath.getParent)
+        createParent(path.javaPath, created)
 
         if jnf.Files.exists(path.javaPath, jnf.LinkOption.NOFOLLOW_LINKS) then
           jnf.Files.delete(path.javaPath)
@@ -124,13 +132,20 @@ private[bitumen] object TarFilesystem:
       case l: Tar.Entry.Link =>
         val path = absolutize(root, l.path)
         val target = absolutize(root, decodePath(l.target))
-        jnf.Files.createDirectories(path.javaPath.getParent)
+        createParent(path.javaPath, created)
         jnf.Files.createLink(path.javaPath, target.javaPath)
 
       case _: Tar.Entry.Fifo | _: Tar.Entry.CharSpecial | _: Tar.Entry.BlockSpecial =>
         raise(Tar.Error(Tar.Error.Reason.DeviceCreationUnsupported(entry.entryName)))
 
       case _: Tar.Entry.Pax | _: Tar.Entry.GnuLong => ()
+
+  private def createParent(path: jnf.Path, created: scm.HashSet[jnf.Path]): Unit =
+    val parent = path.getParent.nn
+
+    if !created.contains(parent) then
+      jnf.Files.createDirectories(parent)
+      created += parent
 
   private def relativize[plane <: Posix: Filesystem]
     ( root: Path on plane, child: Path on plane )

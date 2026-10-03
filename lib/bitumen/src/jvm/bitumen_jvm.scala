@@ -33,6 +33,8 @@
 package bitumen
 
 
+import scala.collection.mutable as scm
+
 import anticipation.*
 import contingency.*
 import galilei.*
@@ -86,5 +88,7 @@ extension (tarfile: Tarfile)
             Tactic[Tar.Error] )
   :   Unit =
 
+    val created: scm.HashSet[java.nio.file.Path] = scm.HashSet()
+
     tarfile.entries.each: entry =>
-      TarFilesystem.applyEntry(root, entry)
+      TarFilesystem.applyEntry(root, entry, created)
