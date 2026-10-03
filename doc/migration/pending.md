@@ -77,7 +77,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `None`, where it was previously passed to the inner decoder (`Cbor.Error(Reason.NotType(Null,
   …))`); `undefined` (0xF7) is unchanged. New givens `breviloquence.optionalityOptions.{strictCborAbsence,
   lenientCborAbsence, strictCborNulls, lenientCborNulls, strictCborFaults, lenientCborFaults}`
-  (exported to `soundness.optionalityOptions`). (#XXXX)
+  (exported to `soundness.optionalityOptions`). (#2130)
 
 ## caesura
 
@@ -95,7 +95,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `Dsv.Field.optional` gains `(absence: distillate.Decodable.Absence in Dsv, fault:
   distillate.Decodable.Fault in Dsv)`. Behaviour under the companion defaults is unchanged. New
   givens `caesura.optionalityOptions.{strictDsvAbsence, lenientDsvAbsence, strictDsvFaults,
-  lenientDsvFaults}` (exported to `soundness.optionalityOptions`). (#XXXX)
+  lenientDsvFaults}` (exported to `soundness.optionalityOptions`). (#2130)
 
 ## coaxial
 
@@ -124,7 +124,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   with a default implementation (`try block catch case _: Exception => Unset`), overridden by
   `Accrual.AccrueTactic`, `TrackTactic`, `VentureTactic` and the tactic `Tactic#contramap`
   builds to roll back what the block recorded. A subclass of `Tactic` that already defines a
-  member named `tolerate` must add `override`. (#XXXX)
+  member named `tolerate` must add `override`. (#2130)
 
 ## degustation
 
@@ -204,7 +204,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   previously passed it to the inner decoder (`Json.Error(Reason.NotType(Null, …))` for a
   primitive). New givens `jacinta.optionalityOptions.{strictJsonAbsence, lenientJsonAbsence,
   strictJsonNulls, lenientJsonNulls, strictJsonFaults, lenientJsonFaults}` (exported to
-  `soundness.optionalityOptions`) vary each policy. (#XXXX)
+  `soundness.optionalityOptions`) vary each policy. (#2130)
 
 ## locomotion
 
@@ -287,7 +287,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   likewise `(absence, fault, tactic)` instead of `(tactic)`. Behaviour under the companion
   defaults is unchanged. New givens `stratiform.optionalityOptions.{strictTelAbsence,
   lenientTelAbsence, strictTelFaults, lenientTelFaults}` (exported to
-  `soundness.optionalityOptions`). (#XXXX)
+  `soundness.optionalityOptions`). (#2130)
 
 ## tessellate
 
@@ -391,7 +391,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `(absence: distillate.Decodable.Absence in Xml, fault: distillate.Decodable.Fault in Xml,
   tactic: contingency.Tactic[Xml.Error])`. Behaviour under the companion defaults is unchanged.
   New givens `xylophone.optionalityOptions.{strictXmlAbsence, lenientXmlAbsence, strictXmlFaults,
-  lenientXmlFaults}` (exported to `soundness.optionalityOptions`). (#XXXX)
+  lenientXmlFaults}` (exported to `soundness.optionalityOptions`). (#2130)
 
 ## ypsiloid
 
@@ -418,7 +418,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   (`Yaml.Error(Reason.NotType(Null, …))`); `Option[T]` already read it as `None`. New givens
   `ypsiloid.optionalityOptions.{strictYamlAbsence, lenientYamlAbsence, strictYamlNulls,
   lenientYamlNulls, strictYamlFaults, lenientYamlFaults}` (exported to
-  `soundness.optionalityOptions`). (#XXXX)
+  `soundness.optionalityOptions`). (#2130)
 
 ## zephyrine
 
