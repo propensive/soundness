@@ -50,7 +50,7 @@ import scala.reflect.ClassTag
 object Array:
   // Named `allocate`, not `apply`: the companion's `apply` is the frozen element-wise
   // literal, and a single-`Int` application must mean the one-element array, never a size.
-  def allocate[element: ClassTag](size: Int): Array[element]^ = new scala.Array[element](size)
+  inline def allocate[element: ClassTag](size: Int): Array[element]^ = new scala.Array[element](size)
 
   // The frozen literal: builds a fresh array no writer can ever alias, so the purity
   // launder is discharged by construction -- the same argument as `freeze`. It can be
@@ -128,21 +128,25 @@ object Array:
     bigger
 
   extension [element, C^](buffer: Array[element]^{C})
-    def length: Int = buffer.length
+    inline def length: Int = buffer.length
 
     // The bounds-partial shared read: exists for layering (`vacuous`'s total `at` wraps
     // it in a bounds check), not for use at call sites, which should prefer `at` or an
     // exclusive reference's `apply`. Reading through a shared reference is sound because
     // separation excludes live writers wherever readers alias.
-    def readUnchecked(index: Int): element = buffer(index)
+    inline def readUnchecked(index: Int): element = buffer(index)
+
+  // An exclusive reference has sole ownership, so it may also read without the `Optional`
+  // guard: nobody else can have resized or replaced the content. Inline, with an inline
+  // receiver, so that a call with a concrete element type compiles to the JVM's own array
+  // access rather than the reflective, boxing `ScalaRunTime` path: an inline method with an
+  // ordinary receiver would bind it to a proxy whose capture set is read-only, which cannot be
+  // written through — the reason these two live apart from the block below.
+  extension [element](inline buffer: Array[element]^)
+    inline def apply(index: Int): element = buffer(index)
+    inline def update(index: Int, value: element): Unit = buffer(index) = value
 
   extension [element](buffer: Array[element]^)
-    // An exclusive reference has sole ownership, so it may also read without the
-    // `Optional` guard: nobody else can have resized or replaced the content.
-    def apply(index: Int): element = buffer(index)
-
-    def update(index: Int, value: element): Unit = buffer(index) = value
-
     def fill(value: element): Unit =
       var index = 0
 
