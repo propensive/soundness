@@ -123,13 +123,6 @@ object Mcp:
                   mcpSessionId       = id )
                 (  )
 
-            case Http.Delete =>
-              Http.Response
-                ( Http.Accepted,
-                  mcpProtocolVersion = version,
-                  mcpSessionId       = id )
-                (  )
-
             case Http.Get =>
               Http.Response
                 ( Http.Ok,
@@ -158,8 +151,12 @@ object Mcp:
                       mcpSessionId       = id )
                     (  )
 
-            case method =>
-              ???
+            case _ =>
+              Http.Response
+                ( Http.MethodNotAllowed,
+                  mcpProtocolVersion = version,
+                  mcpSessionId       = id )
+                (  )
         catch
           case error: Throwable =>
             Http.Response(Http.Ok):
@@ -684,8 +681,20 @@ object Mcp:
       ( using spec: server.type is Mcp.Specification )
     :   Interface =
 
-      cache.establish(sessionId):
-        new Interface(sessionId, server, spec)
+      cache.synchronized:
+        cache.establish(sessionId):
+          new Interface(sessionId, server, spec)
+
+    // Forgets the interface of a terminated session, ending its event stream so that an open
+    // `GET` finishes. Answers whether there was one.
+    private[synesthesia] def evict(sessionId: Text): Boolean =
+      cache.synchronized(cache.remove(sessionId)) match
+        case Some(interface) =>
+          interface.stop()
+          true
+
+        case None =>
+          false
 
   class Interface
     (     sessionId: Text,
@@ -890,7 +899,13 @@ object Mcp:
     type Session <: Mcp.Session
     type Origin = Mcp.Client
 
-    def session(id: Text): Session = sessions.establish(id)(initialize())
+    def session(id: Text): Session = sessions.synchronized(sessions.establish(id)(initialize()))
+
+    // Ends a session, forgetting its state and its interface together, since an interface is only
+    // meaningful while its session exists. Answers whether the session was known.
+    def terminate(id: Text): Boolean =
+      val interface = Mcp.Interface.evict(id)
+      sessions.synchronized(sessions.remove(id)).isDefined || interface
     def initialize(): Session
 
     private given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
@@ -904,9 +919,19 @@ object Mcp:
           Http.Response(Unfulfilled(t"JSON-RPC error: ${error.message.text}"))
 
       . protect:
-          val sessionId = request.headers.mcpSessionId.prim.or(Uuid().encode)
-          val interface: Mcp.Interface = Mcp.Interface(sessionId, this)
-          Mcp.send(sessionId, this, interface)(JsonRpc.serve(interface))
+          request.method match
+            // A client ends its session with `DELETE` (MCP's Streamable HTTP transport), and
+            // nothing else would ever evict it: 204 for a session that existed, 404 for one that
+            // did not, and 400 for a request that names none.
+            case Http.Delete =>
+              request.headers.mcpSessionId.prim.lay(Http.Response(Http.BadRequest)()): id =>
+                if terminate(id) then Http.Response(Http.NoContent)()
+                else Http.Response(Http.NotFound)()
+
+            case _ =>
+              val sessionId = request.headers.mcpSessionId.prim.or(Uuid().encode)
+              val interface: Mcp.Interface = Mcp.Interface(sessionId, this)
+              Mcp.send(sessionId, this, interface)(JsonRpc.serve(interface))
 
     def name: Text
     def description: Text

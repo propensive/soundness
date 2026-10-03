@@ -255,6 +255,14 @@ format. Entries are grouped by module, most-recently-added last within a module.
   unchanged in name and signature, and are no longer exported into `soundness`. Depend on
   `dev.propensive:lira-classfile` instead. (#2111)
 
+## obligatory
+
+- New concrete member `obligatory.JsonRpc#stop(): Unit`, which stops the instance's outgoing
+  channel, so that `outgoing` and `stream` end once drained. A subclass of `JsonRpc` (including
+  `synesthesia.Mcp.Api`, `exegesis` and `espionage` interfaces) that already defines a member named
+  `stop` with an empty parameter list must rename it, or add `override` if it has this signature.
+  (#2144)
+
 ## reliquary
 
 - Library `reliquary` removed, with its components `reliquary.core` (artifact `reliquary-core`)
@@ -319,6 +327,23 @@ format. Entries are grouped by module, most-recently-added last within a module.
   defaults is unchanged. New givens `stratiform.optionalityOptions.{strictTelAbsence,
   lenientTelAbsence, strictTelFaults, lenientTelFaults}` (exported to
   `soundness.optionalityOptions`). (#2130)
+
+## synesthesia
+
+- `synesthesia.Mcp.Server#serve` handles a `DELETE` request itself, before creating any
+  `synesthesia.Mcp.Interface`. With an `Mcp-Session-Id` header naming a session that exists (in
+  the table behind `Mcp.Server#session`, or as a cached `Mcp.Interface`), it removes both, ends
+  the interface's outgoing event stream, and answers `204 No Content`; an unknown id answers
+  `404 Not Found`, and a request with no `Mcp-Session-Id` answers `400 Bad Request`. None of these
+  responses carries `Mcp-Protocol-Version` or `Mcp-Session-Id` headers. Previously every `DELETE`
+  answered `202 Accepted` with both headers and retained the session and interface. (#2144)
+- `synesthesia.Mcp.send` no longer handles `DELETE`. Any method other than `OPTIONS`, `GET` and
+  `POST` (including `DELETE`) answers `405 Method Not Allowed` with the `Mcp-Protocol-Version` and
+  `Mcp-Session-Id` headers. Previously `DELETE` answered `202 Accepted`, and any other method threw
+  `scala.NotImplementedError`, answered as `200 OK` with a JSON-RPC `-32603` error body. (#2144)
+- New member `synesthesia.Mcp.Server#terminate(id: Text): Boolean`. A subclass of `Mcp.Server`
+  that already defines a member named `terminate` taking one `Text` must rename it, or add
+  `override` if it has this signature. (#2144)
 
 ## tessellate
 

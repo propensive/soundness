@@ -235,6 +235,10 @@ trait JsonRpc extends Original:
   def put(json: Json): Unit =
     channel.put(json)
 
+  // Ends the outgoing channel: a reader of `outgoing` or `stream` finishes once it has drained
+  // what was already put, rather than waiting for more.
+  def stop(): Unit = channel.stop()
+
   // Each accessor drains the shared queue through a fresh single-owner view
   // (the audited bridge); use one or the other per instance, as before.
   def outgoing: Chain[Json] = Chain.from(channel.stream.records)
