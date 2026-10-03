@@ -45,6 +45,7 @@ import parasite.*
 import prepositional.*
 import spectacular.show
 import turbulence.*
+import vacuous.*
 import zephyrine.Credit
 
 object Archetype:
@@ -75,7 +76,8 @@ object Archetype:
 // content (`verso`, `menu`, …), configuration (`versoWidth`, `menuGap`, …) and a self-contained
 // `…Styles` rule set — that are overridden directly, with no `super` call. The seams stay
 // `protected` (feature traits chain through them); the page assembly (`html`/`css`) is `final`, so
-// a page can't override it and silently lose the inline stylesheet or the direction.
+// a page can't override it and silently lose its stylesheet or the direction. A page that links
+// its stylesheet instead of embedding it overrides `stylesheetUrl`.
 trait Archetype:
   // The central content of the page; supplied by the concrete template.
   def content: Html of (? <: Flow)
@@ -96,13 +98,24 @@ trait Archetype:
   // The stylesheet rendered to text for inline embedding in a `<style>` element.
   private def stylesheet: Text = styles.show
 
-  // The page stylesheet, as structured CSS (for serving separately, later).
+  // Where the page's stylesheet is served, if the page links it rather than embedding it: when
+  // set, `html` refers to it with `<link rel="stylesheet">` in place of an inline `<style>`, and
+  // the application serves `css` at that address, so that restyling it means serving another
+  // sheet.
+  def stylesheetUrl: Optional[Text] = Unset
+
+  // The page stylesheet, as structured CSS, for serving at `stylesheetUrl`.
   final def css: Css = styles
 
-  // The complete single-document page: inline `<style>`, accumulated `<head>` metadata, and `dir`
-  // set on `<body>` from `direction` (the `<html>` element admits no Whatwg global attributes).
+  // The complete single-document page: the stylesheet (inline in `<style>`, or linked from
+  // `stylesheetUrl`), accumulated `<head>` metadata, and `dir` set on `<body>` from `direction`
+  // (the `<html>` element admits no Whatwg global attributes).
   final def html: Html of "html" =
-    Html(Head(Title(pageTitle), Style(stylesheet), head), Body(dir = direction)(frame))
+    val sheet: Html of (? <: Metadata) =
+      stylesheetUrl.lay(Style(stylesheet)): url =>
+        Link.Stylesheet(href = url)
+
+    Html(Head(Title(pageTitle), sheet, head), Body(dir = direction)(frame))
 
   // The page as a `Document[Html]` with a leading doctype — the form that is served over HTTP.
   final def document: Document[Html] =
