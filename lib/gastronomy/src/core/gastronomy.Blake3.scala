@@ -71,6 +71,21 @@ object Blake3:
   private final val MsgPermutation: Array[Int]^{} =
     scala.Array(2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8).asInstanceOf[Array[Int]^{}]
 
+  // The message schedule, flattened: entry 16r + i is the permutation applied r times to i, so
+  // each round reads its words straight from the block through its row, and the block is never
+  // permuted or copied. Frozen, like `Iv` and `MsgPermutation`, so the object stays pure.
+  private final val Schedule: Array[Int]^{} =
+    @tailrec
+    def permuted(times: Int, index: Int): Int =
+      if times == 0 then index else permuted(times - 1, MsgPermutation.readable(index))
+
+    scala.Array.tabulate(112) { entry => permuted(entry/16, entry%16) }.asInstanceOf[Array[Int]^{}]
+
+  // The schedule as the JVM array, read natively in `round`; `Array.unsafeJvm` asserts only that
+  // the rounds do not write to it. A `def`, as `ivWords` is, since a JVM-array field would make
+  // the object impure.
+  private def schedule: scala.Array[Int] = Array.unsafeJvm(Schedule)
+
   private def mix(state: scala.Array[Int]^, a: Int, b: Int, c: Int, d: Int, mx: Int, my: Int): Unit =
     state(a) = state(a) + state(b) + mx
     state(d) = Integer.rotateRight(state(d) ^ state(a), 16)
@@ -81,30 +96,20 @@ object Blake3:
     state(c) = state(c) + state(d)
     state(b) = Integer.rotateRight(state(b) ^ state(c), 7)
 
-  private def round(state: scala.Array[Int]^, m: scala.Array[Int]): Unit =
+  private def round(state: scala.Array[Int]^, m: scala.Array[Int], row: Int): Unit =
+    val s = schedule
+    val o = 16*row
     // SIMD: these four column mixes operate on disjoint quadruples of state and would be
     //       issued as a single 4-lane vector instruction by an SSE/NEON backend.
-    mix(state, 0, 4,  8, 12, m(0), m(1))
-    mix(state, 1, 5,  9, 13, m(2), m(3))
-    mix(state, 2, 6, 10, 14, m(4), m(5))
-    mix(state, 3, 7, 11, 15, m(6), m(7))
+    mix(state, 0, 4,  8, 12, m(s(o)), m(s(o + 1)))
+    mix(state, 1, 5,  9, 13, m(s(o + 2)), m(s(o + 3)))
+    mix(state, 2, 6, 10, 14, m(s(o + 4)), m(s(o + 5)))
+    mix(state, 3, 7, 11, 15, m(s(o + 6)), m(s(o + 7)))
     // SIMD: the diagonal mixes form the second 4-lane batch, with the same shape.
-    mix(state, 0, 5, 10, 15, m(8), m(9))
-    mix(state, 1, 6, 11, 12, m(10), m(11))
-    mix(state, 2, 7,  8, 13, m(12), m(13))
-    mix(state, 3, 4,  9, 14, m(14), m(15))
-
-  // Interior scratch, as `compress`'s state is: the generic `Array.allocate`/`update` would
-  // allocate reflectively and box every word, seven times per compression.
-  private def permute(m: scala.Array[Int]^): Unit =
-    val out = new scala.Array[Int](16)
-    var i = 0
-
-    while i < 16 do
-      out(i) = m(MsgPermutation.readable(i))
-      i += 1
-
-    System.arraycopy(out, 0, m, 0, 16)
+    mix(state, 0, 5, 10, 15, m(s(o + 8)), m(s(o + 9)))
+    mix(state, 1, 6, 11, 12, m(s(o + 10)), m(s(o + 11)))
+    mix(state, 2, 7,  8, 13, m(s(o + 12)), m(s(o + 13)))
+    mix(state, 3, 4,  9, 14, m(s(o + 14)), m(s(o + 15)))
 
   private def compress
     ( chainingValue: scala.Array[Int],
@@ -122,15 +127,13 @@ object Blake3:
     state(14) = blockLen
     state(15) = flags
 
-    val block: scala.Array[Int]^ = blockWords.clone()
-
-    round(state, block); permute(block)
-    round(state, block); permute(block)
-    round(state, block); permute(block)
-    round(state, block); permute(block)
-    round(state, block); permute(block)
-    round(state, block); permute(block)
-    round(state, block)
+    round(state, blockWords, 0)
+    round(state, blockWords, 1)
+    round(state, blockWords, 2)
+    round(state, blockWords, 3)
+    round(state, blockWords, 4)
+    round(state, blockWords, 5)
+    round(state, blockWords, 6)
 
     var i = 0
 
@@ -229,11 +232,12 @@ object Blake3:
     update def update(input: Array[Byte]^{caps.any.rd}, start: Int, end: Int): Unit =
       // The window is copied out of, never into, so one named JVM view covers the whole call.
       val source = Array.unsafeJvm(input)
-      val blockWords = new scala.Array[Int](16)
       var pos = start
 
       while pos < end do
         if blockLen == BlockLen then
+          // Allocated only when a block actually compresses: a short input never does.
+          val blockWords = new scala.Array[Int](16)
           wordsFromBytes(block, 0, blockWords)
 
           val out =
@@ -266,10 +270,17 @@ object Blake3:
   private final class Hasher(keyWordsInit: scala.Array[Int], val flags: Int) extends caps.Mutable:
     private val keyWords: scala.Array[Int] = keyWordsInit.clone()
     private var chunkState: ChunkState^ = ChunkState(keyWords, 0L, flags)
-    private var cvStack: scala.Array[scala.Array[Int]^{}]^ = new scala.Array[scala.Array[Int]^{}](54)
+    // The stack of chaining values, one per level of the tree, so at most 54 deep; grown on
+    // demand, since an input of one chunk — a key, a path, a short message — never pushes.
+    private var cvStack: scala.Array[scala.Array[Int]^{}]^ = new scala.Array[scala.Array[Int]^{}](0)
     private var cvStackLen: Int = 0
 
     private update def pushStack(cv: scala.Array[Int]^{}): Unit =
+      if cvStackLen == cvStack.length then
+        val bigger = new scala.Array[scala.Array[Int]^{}]((cvStack.length*2).max(8).min(54))
+        System.arraycopy(cvStack, 0, bigger, 0, cvStackLen)
+        cvStack = bigger
+
       cvStack(cvStackLen) = cv
       cvStackLen += 1
 
