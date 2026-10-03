@@ -48,6 +48,9 @@ case class ErrorC(value: Int)(using Diagnostics) extends Error(m"error c: $value
 case class Accumulated(values: List[Int])(using Diagnostics)
 extends Error(m"accumulated ${values.size} errors")
 
+// A validation accumulator need not be an error: it is only ever returned, never raised.
+case class Count(values: List[Int])
+
 object Tests extends Suite(m"Contingency"):
 
   def action(): Unit raises VarargsError = ()
@@ -488,6 +491,15 @@ object Tests extends Suite(m"Contingency"):
             raise(ErrorA(8))
         v.values
       . assert(_ == List(7, 8))
+
+      test(m"validate accrues into a value that is not an error"):
+        val count: Count = validate[Pointer](Count(Nil)):
+          case ErrorA(n) => Count(accrual.values :+ n)
+        . protect:
+            raise(ErrorA(3))
+            raise(ErrorA(4))
+        count.values
+      . assert(_ == List(3, 4))
 
     suite(m"tolerate"):
       test(m"tolerate yields the block's value when nothing is raised"):

@@ -37,7 +37,7 @@ import fulminate.*
 import vacuous.*
 
 object Validate:
-  extension [accrual <: Hazard, lambda[_],
+  extension [accrual, lambda[_],
     focus](inline validate: Validate[accrual, lambda, focus])
 
     inline def protect(inline lambda: Foci[focus] ?=> lambda[Any])(using diagnostics: Diagnostics)
