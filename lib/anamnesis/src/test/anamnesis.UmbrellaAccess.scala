@@ -30,7 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anamnesisConsumer
 
-export anamnesis.{-<, >-, Database, Entity, enumerate, Listable, Referenceable, assign, lookup,
-    reference, store, unassign}
+import soundness.*
+
+import strategies.throwUnsafely
+
+case class Drawer(name: Text)
+case class Folder(name: Text)
+
+// A database declared with the relation operators from outside `anamnesis`, with only the
+// umbrella import, as the database tutorial does (#1945).
+object UmbrellaAccess:
+  def folders(): Int =
+    given db: Database of (Drawer -< Folder, Text >- Folder) = Database()
+
+    val drawer = Drawer(t"top").store()
+    drawer.assign(Folder(t"letters").store())
+    drawer.lookup[Folder].size
