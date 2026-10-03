@@ -35,6 +35,7 @@ package hellenism
 import soundness.*
 
 import classloaders.threadContextClassloader
+import soundness.classpathSubstantiable
 import logging.silentLogging
 
 trait TestService:
@@ -60,6 +61,16 @@ object Tests extends Suite(m"Hellenism Tests"):
     test(m"check that a classpath file is streamable"):
       cp"/scala/Option.class".read[Data]
     . assert(_.readable.length > 0)
+
+    test(m"a classpath file on the classpath exists"):
+      val path: Path on Classpath = Classpath / "scala" / "Option.class"
+      path.existent()
+    . assert(identity(_))
+
+    test(m"a classpath file absent from the classpath does not exist"):
+      val path: Path on Classpath = Classpath / "scala" / "Missing.class"
+      path.existent()
+    . assert(!_)
 
     test(m"check that a nonexistent classpath file is an error"):
       demilitarize(cp"/missing.txt").map(_.message)
