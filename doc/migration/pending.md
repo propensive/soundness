@@ -153,7 +153,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   Text)`: the script was written to `path`, but the shell could not be shown to load it from
   there. An exhaustive `match` on `InstallResult` must handle it. `InstallResult#pathname` yields
   its `path`, so `Installation#paths` (and the output of `{admin} install` and
-  `Completions.ensure(force = true)`) includes it. (#PRNUM)
+  `Completions.ensure(force = true)`) includes it. (#2148)
 - `exoskeleton.Completions.install(force: Boolean)` chooses each shell's directory by asking the
   shell, with standard input closed, standard error discarded, the invocation's `HOME`,
   `ZDOTDIR`, `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_DATA_DIRS` and `BASH_COMPLETION_USER_DIR`,
@@ -169,7 +169,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `$fish_complete_path`; previously the last `XDG_DATA_DIRS` entry's `fish/vendor_completions.d`,
   else `$XDG_CONFIG_HOME/fish/completions`, only if it already existed. PowerShell: unchanged
   except for the time limit. A shell that does not answer within the limit is killed, and its
-  script is still written to the default directory with result `Unconfirmed`. (#PRNUM)
+  script is still written to the default directory with result `Unconfirmed`. (#2148)
 
 ## gesticulate
 
