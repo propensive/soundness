@@ -86,7 +86,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   Signatures and behaviour are unchanged; they now resolve through implicit scope wherever a
   `Cbor.Ast` is used, including with `import soundness.*` alone. Remove any by-name import of
   them from `breviloquence` (`import breviloquence.isTag`), and rewrite a prefix call such as
-  `breviloquence.long(ast)` as `ast.long`. (#PRNUM)
+  `breviloquence.long(ast)` as `ast.long`. (#2153)
 
 ## caesura
 
