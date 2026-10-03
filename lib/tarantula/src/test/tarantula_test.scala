@@ -114,6 +114,8 @@ object Tests extends Suite(m"Tarantula tests"):
       else if method == Http.Delete && path == t"/session/$sessionId" then none
       else route(method, path, attempt)
 
+  // A free port for a WebDriver process to bind. The driver chooses no port of its own, so this
+  // one is released before the driver takes it, and another process could take it in between.
   def freePort(): Int =
     val socket = java.net.ServerSocket(0)
     val port = socket.getLocalPort
@@ -497,10 +499,10 @@ object Tests extends Suite(m"Tarantula tests"):
       import httpBackends.javaNetHttp
 
       supervise:
-        val port = freePort()
-
         val server = scala.caps.unsafe.unsafeAssumeSeparate:
-          SocketServer(port).handle(Http.Response(Http.Ok, contentType = media"text/html")(page))
+          SocketServer(0).handle(Http.Response(Http.Ok, contentType = media"text/html")(page))
+
+        val port = server.port
 
         try
           val address: HttpUrl = url"http://localhost:$port/"

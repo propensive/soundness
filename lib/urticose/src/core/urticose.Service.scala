@@ -32,4 +32,7 @@
                                                                                                   */
 package urticose
 
-case class Service(cancel: () => Unit)
+// A running server: `cancel` stops it, and `port` is the port it is bound to, which is the one
+// the system chose when the server was asked for port 0. Asking for port 0 and reading `port`
+// afterwards is the race-free way to run a server on a free port.
+case class Service(cancel: () => Unit, port: Int)

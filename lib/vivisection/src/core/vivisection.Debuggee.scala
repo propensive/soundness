@@ -32,6 +32,7 @@
                                                                                                   */
 package vivisection
 
+import java.lang as jl
 import java.net as jn
 
 import scala.caps
@@ -70,6 +71,17 @@ object Debuggee:
       true
     catch case _: Throwable => false
 
+  // The port in the agent's "Listening for transport dt_socket at address: N" line, once the
+  // line is complete.
+  private def announcement(output: String): Optional[Int] =
+    val banner = "Listening for transport dt_socket at address: "
+    val start = output.indexOf(banner)
+
+    if start < 0 then Unset else
+      val rest = output.substring(start + banner.length).nn
+      val digits = rest.takeWhile(_.isDigit)
+      if digits.isEmpty || digits.length == rest.length then Unset else digits.toInt
+
   class Sessional
     ( using online:     Online,
             monitor:    Monitor,
@@ -106,8 +118,22 @@ object Debuggee:
       // dies, whether by running to completion or by the `abort` below. `chunks` is the stream
       // kernel's own terminal — one materialized chunk per refill, closing the pipe at its end —
       // so a long-running debuggee's output is relayed and released, never accumulated.
+      //
+      // Asked for port 0, the agent binds a port of the system's choosing and announces it on
+      // standard output before the program runs; the drain watches for that announcement, which
+      // may arrive split across chunks, until it is heard.
+      val announced: Promise[Int] = Promise()
+      val heard = jl.StringBuilder()
+
       val outDrain: Task[Unit] = async:
-        safely(job.stdout().chunks.each { chunk => console.out.put(chunk) })
+        safely:
+          job.stdout().chunks.each: chunk =>
+            if target.port == 0 && !announced.ready then
+              heard.append(chunk.readable.map(_.toChar).mkString)
+              Debuggee.announcement(heard.toString).let(announced.offer(_))
+
+            console.out.put(chunk)
+
         console.out.stop()
 
       val errDrain: Task[Unit] = async:
@@ -117,8 +143,12 @@ object Debuggee:
       val exitWatch: Task[Unit] = async(console.exited.offer(job.exitStatus()))
 
       try
+        val port: Int =
+          if target.port != 0 then target.port
+          else safely(announced.await(interval*attempts)).or(abort(unresponsive))
+
         def waitFor(remaining: Int): Unit =
-          if listening(target.port) then ()
+          if listening(port) then ()
           else if remaining <= 0 then abort(unresponsive)
           else
             snooze(interval)
@@ -129,7 +159,7 @@ object Debuggee:
         // Connected directly (not via `Debugger(endpoint).session`): delegating would rebuild the
         // socket `Connectable` from the captured `online`, whose capture set `.duplex` rejects.
         // `connect` returns a plain `Duplex`, so `online` never has to flow into an empty set.
-        val endpoint = Endpoint(t"localhost", Port[Tcp](target.port))
+        val endpoint = Endpoint(t"localhost", Port[Tcp](port))
         val duplex = summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset)
 
         try
@@ -155,6 +185,8 @@ object Debuggee:
                      note:       Diagnostics )
   =>  ( Sessional^{online, monitor, asyncError, loggable, exec, tactic, caps.any} ) = Sessional()
 
+// A `port` of 0 lets the agent bind a free port of its own choosing, which the session learns
+// from the agent's announcement; no other process can take it in between.
 case class Debuggee(command: Command, port: Int = 5005, suspended: Boolean = true):
   // The command with the jdwp agent option inserted just after the executable.
   private[vivisection] def agented: Command =

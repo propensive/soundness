@@ -186,11 +186,6 @@ private[vivisection] class DapSession(emit: Json => Unit)
             threads(id) = thread
             id
 
-  // An ephemeral port for the forked debuggee's agent, mirroring the test harness.
-  private def freePort(): Int =
-    val socket = java.net.ServerSocket(0)
-    try socket.getLocalPort finally socket.close()
-
   // Holds a freshly-opened session for the adapter's lifetime: the field is read by every
   // subsequent request, and the session task parks here until `disconnect`. A launch session's
   // console is relayed as `output` events, and its exit as `exited` and `terminated` — the
@@ -276,7 +271,8 @@ private[vivisection] class DapSession(emit: Json => Unit)
               val command: Command =
                 sh"java -classpath ${arguments.classpath} ${arguments.mainClass}"
 
-              val debuggee: Debuggee = Debuggee(command, self.freePort())
+              // Port 0: the agent binds a free port of its own choosing and announces it.
+              val debuggee: Debuggee = Debuggee(command, 0)
 
               debuggee.session: debug ?=> self.opened(debug)
 
