@@ -273,7 +273,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   receiver expression is now evaluated after the index (and, for `update`, the value) rather than
   before them: code whose receiver expression and arguments have interacting side effects, for
   example `buffer(index) = grow()` where `grow()` reassigns the `var` named `buffer`, now writes to
-  the array the receiver denotes after the arguments are evaluated. (#PRNUM)
+  the array the receiver denotes after the arguments are evaluated. (#2147)
 
 ## reliquary
 
