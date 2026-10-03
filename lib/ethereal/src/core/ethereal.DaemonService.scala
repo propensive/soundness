@@ -41,8 +41,10 @@ import java.lang as jl
 
 import anticipation.*
 import exoskeleton.*
+import gossamer.*
 import guillotine.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
 import vacuous.*
 
@@ -62,10 +64,17 @@ case class DaemonService[bus <: Matchable]
     startTime:  Long,
     helpThunk:  () => Optional[Help],
     setMode:    Tty => Unit,
+    run:        (Text, List[Text], Optional[Text]) => Int,
     invokedAs:  Optional[Text],
     sizeThunk:  () => Optional[(Int, Int)],
-    umask:      Optional[Umask] )
-extends Entrypoint, Umask.Provider, caps.ExclusiveCapability:
+    umask:      Optional[Umask],
+    // The client's descriptors, for galilei: a path naming one (`/dev/stdin`, `/dev/fd/63`)
+    // opens the client's, carried over the session, rather than the daemon's own.
+    fdtable: Optional[Fdtable] = Unset,
+    // The native bytes of each argument, environment entry or working directory whose text
+    // form lost something (`Launcher.Raw`); empty in the ordinary case.
+    raws:    List[Launcher.Raw] = Nil )
+extends Entrypoint, Umask.Provider, Fdtable.Provider, caps.ExclusiveCapability:
   def broadcast(message: bus): Unit = deliver(message)
 
   // `{admin} shutdown`, and any invocation that wants the daemon gone once it has finished.
@@ -81,10 +90,43 @@ extends Entrypoint, Umask.Provider, caps.ExclusiveCapability:
   // back into the raw mode the launcher established. A no-op unless stdin is a terminal, and
   // silently ineffective (leaving today's raw-mode behaviour) if the launcher is too old to
   // offer a control channel.
-  def cooked[result](block: => result): result =
+  def cooked[result](block: => result): result = mode(Tty.Canonical)(block)
+
+  // As `cooked`, with nothing echoed: the driver's line editing, for a password.
+  def concealed[result](block: => result): result = mode(Tty.Concealed)(block)
+
+  private def mode[result](tty: Tty)(block: => result): result =
     if cliInput != Terminus.Terminal then block else
-      setMode(Tty.Canonical)
+      setMode(tty)
       try block finally setMode(Tty.Raw)
+
+  // Runs a command on the client's terminal — an editor, a pager, `ssh`, `sudo` — which this
+  // process, detached from any terminal, cannot do itself. The launcher runs it with the
+  // client's streams and environment, in `pwd` if given, and reports the status it ended with:
+  // its exit code, 128 plus the signal it died of, or 127 if it could not be run, which is
+  // also the answer when the client's stdin is not a terminal. Output goes to the terminal; to
+  // capture a program's output, run it in this process.
+  def terminal(command: Text, arguments: List[Text] = Nil, pwd: Optional[Text] = Unset): Int =
+    run(command, arguments, pwd)
+
+  // The bytes of the argument at `index`, as the operating system gave them, where its text
+  // (`arguments`) could not carry them: a name that is not valid UTF-8, say. `Unset` for an
+  // argument its text carries exactly — the ordinary case — so a caller falls back to the text.
+  def rawArgument(index: Int): Optional[anticipation.Data] = raw(t"argument", index)
+
+  // As `rawArgument`, for the environment entry at `index` (`NAME=value`).
+  def rawEnvironment(index: Int): Optional[anticipation.Data] = raw(t"environment", index)
+
+  // The working directory's bytes, where its text could not carry them.
+  def rawWorkingDirectory: Optional[anticipation.Data] =
+    raws.seek(_.kind == t"pwd").let(_.bytes)
+
+  private def raw(kind: Text, index: Int): Optional[anticipation.Data] =
+    raws.seek: raw =>
+      raw.kind == kind && (raw.index match
+        case position: Int => position == index
+        case _             => false)
+    . let(_.bytes)
 
   // The structured help tree for this command, generated lazily by re-running the application
   // in tab-completion mode. Falls back to a name-only root if the executive cannot generate it.

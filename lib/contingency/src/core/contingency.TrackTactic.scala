@@ -35,6 +35,7 @@ package contingency
 import scala.language.experimental.pureFunctions
 
 import fulminate.*
+import vacuous.*
 
 class TrackTactic[error <: Hazard, accrual, result, supplement]
   ( label: boundary.Label[Option[result]], initial: accrual, foci: Foci[supplement] )
@@ -47,6 +48,18 @@ extends Tactic[error]:
   def finish(): Unit = ()
   def certify(): Unit = if foci.tainted then boundary.break(None)
   override def tainted: Boolean = foci.tainted
+
+  // Errors the block registered are dropped from the foci; its `abort` breaks, which the catch
+  // absorbs.
+  override def tolerate[result](block: => result): Optional[result] =
+    val mark = foci.length
+    val result = try block catch case _: Exception => Unset
+
+    if foci.length > mark then
+      foci.truncate(mark)
+      Unset
+    else
+      result
 
   def abort(error: Diagnostics ?=> error): Nothing =
     foci.register(error)

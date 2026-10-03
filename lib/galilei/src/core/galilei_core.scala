@@ -38,6 +38,7 @@ import java.nio.file as jnf
 import anticipation.*
 import contingency.*
 import denominative.*
+import gigantism.Every
 import kaleidoscope.*
 import prepositional.*
 import rudiments.*
@@ -85,9 +86,20 @@ extension [plane: Filesystem](path: Path on plane)
   def write[content](content: content)
     ( using streamable: (content is Streamable by Data over Credit)^ )
     ( using Tactic[Io.Error]^ )
+    ( using fdtables: Every[Fdtable] )
   :   Unit =
     val bytes: Data = summon[Data is Aggregable by Data].accept(streamable.stream(content))
-    protect(Operation.Write)(jnf.Files.write(nioPath, Array.unsafeJvm(bytes)))
+
+    // A path the fd table governs is written through its descriptor, not to this
+    // process's filesystem.
+    Fdtable.resolve(fdtables, Path.encodable.encode(path)) match
+      case descriptor: Fdtable.Descriptor =>
+        try descriptor.open(List(OpenFlag.Write)) { handle => handle.writer(Chain(bytes)) }
+        catch case refusal: Fdtable.Refusal =>
+          abort(Io.Error(path, Operation.Write, refusal.reason))
+
+      case _ =>
+        protect(Operation.Write)(jnf.Files.write(nioPath, Array.unsafeJvm(bytes)))
 
   // Inline, so the thunk never crosses a checked context-function boundary (which would
   // hide the `block` parameter); the body is checked at each expansion site instead.

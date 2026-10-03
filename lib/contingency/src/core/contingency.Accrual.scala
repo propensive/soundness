@@ -36,6 +36,7 @@ import scala.language.experimental.pureFunctions
 
 import fulminate.*
 import rudiments.*
+import vacuous.*
 
 // Captures an `accrue` handler together with its initial accrual and combining function. Unlike
 // `recover`/`mitigate`, the block may raise *several* covered errors; each is folded into the
@@ -76,6 +77,18 @@ object Accrual:
         throw accumulated
 
     override def tainted: Boolean = changed
+
+    // Anything the block folded into the accrual is rolled back to the snapshot taken before it
+    // ran; its own `abort` throws the accumulation, which the catch absorbs.
+    override def tolerate[result](block: => result): Optional[result] =
+      val before = accumulated
+      val result = try block catch case _: Exception => Unset
+
+      if accumulated != before then
+        accrued() = before
+        Unset
+      else
+        result
 
     def accumulated: accrual = accrued()
     def changed: Boolean = accumulated != initial

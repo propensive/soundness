@@ -42,6 +42,19 @@ import turbulence.*
 import zephyrine.*
 
 object Handle:
+  // A handle over whole-chunk endpoints alone — a `reader` that yields the whole content and
+  // a `writer` that takes it — for a source that is not a file of this process: a client's
+  // descriptor, carried to the daemon that serves it (`Fdtable`). The streaming
+  // endpoints are spelled out rather than defaulted, as the WASI backend spells them: the
+  // defaults' thunks carry root capabilities that are not visible from a downstream site.
+  inline def whole(reader: () -> Chain[Data], writer: Chain[Data] -> Unit): Handle =
+    def read(): Chain[Data] = reader()
+    def write(data: Chain[Data]): Unit = writer(data)
+
+    Handle(() => read(), write(_))
+      ( () => Stream(read()),
+        () => Sink.buffered((), (_, stream) => write(stream)) )
+
   // Polymorphic over the handle's (scoped, capturing) singleton type: `Openable.open`
   // hands the block a capability-refined `Handle^{...}`, and a `Self = Handle` instance
   // would not be summonable for it under capture checking. The `Granting` bounds gate each

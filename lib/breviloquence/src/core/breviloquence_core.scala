@@ -35,6 +35,7 @@ package breviloquence
 
 import anticipation.*
 import contingency.*
+import distillate.Decodable.{Absence, Fault, Nullity}
 import prepositional.*
 import rudiments.*
 
@@ -156,3 +157,14 @@ extension (cbor: Cbor.Ast)
     else
       expected(Primitive.Array)
       Array.empty[Cbor.Ast]
+
+// How an `Optional` or `Option` field reads an absent key, a CBOR `null`, or a value its inner
+// decoder rejects: lenient yields `Unset`/`None`, strict raises `Cbor.Error`. Absent keys and
+// nulls are lenient by default; faults are strict.
+package optionalityOptions:
+  given strictCborAbsence:  Absence in Cbor = Absence(true)
+  given lenientCborAbsence: Absence in Cbor = Absence(false)
+  given strictCborNulls:    Nullity in Cbor = Nullity(true)
+  given lenientCborNulls:   Nullity in Cbor = Nullity(false)
+  given strictCborFaults:   Fault in Cbor   = Fault(true)
+  given lenientCborFaults:  Fault in Cbor   = Fault(false)

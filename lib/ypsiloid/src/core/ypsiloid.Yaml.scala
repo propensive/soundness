@@ -85,14 +85,29 @@ trait Yaml2:
         value.let(_.asInstanceOf[inner]).let(encodable.encode(_))
         . or(Yaml.ast(Yaml.Ast(Unset)))
 
+  // The `optionalityOptions` policies, captured at resolution: an absent key and a YAML
+  // `null` read as `Unset` unless strict, and a value the inner decoder rejects reads as
+  // `Unset` only under lenient faults, which decode under `tactic.tolerate`. A strict null
+  // is handed to the inner decoder.
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
-  =>  ( tactic: Tactic[Yaml.Error] )
+  =>  ( absence: Decodable.Absence in Yaml,
+        nullity: Decodable.Nullity in Yaml,
+        fault:   Decodable.Fault in Yaml,
+        tactic:  Tactic[Yaml.Error] )
   =>  ( decodable: => (inner is Decodable in Yaml)^ )
   =>  ((value is Decodable in Yaml)^{tactic, decodable}) =
     // An honest capability: the instance retains the resolution-scoped tactic and
     // the by-name inner codec (every given that includes a tactic is a capability;
     // Jon, 2026-07-12).
-    yaml => if yaml.root == Unset then Unset else decodable.decoded(yaml)
+    yaml =>
+      if yaml.root.isAbsent then
+        if absence.strict then abort(Yaml.Error(Yaml.Error.Reason.Absent)) else Unset
+      else if yaml.root.isNull && !nullity.strict then
+        Unset
+      else if fault.strict then
+        decodable.decoded(yaml)
+      else
+        tactic.tolerate(decodable.decoded(yaml)).or(Unset)
 
   // See `decodeMapping`: the `Tactic` is summoned at the SAM and passed to a stable helper, rather
   // than re-summoned via `provide` inside the SAM (which would capture the `yaml` parameter).
@@ -1471,8 +1486,23 @@ object Yaml extends Yaml2, Dynamic:
 
           Map.empty
 
-  given option: [value: Decodable in Yaml] => Option[value] is Decodable in Yaml = yaml =>
-    if yaml.root.isAbsent || yaml.root.isNull then None else Some(value.decoded(yaml))
+  // The same three policies as `optional`, yielding `None`.
+  given option: [value: Decodable in Yaml]
+  =>  ( absence: Decodable.Absence in Yaml,
+        nullity: Decodable.Nullity in Yaml,
+        fault:   Decodable.Fault in Yaml,
+        tactic:  Tactic[Yaml.Error] )
+  =>  ((Option[value] is Decodable in Yaml)^{tactic}) =
+
+    yaml =>
+      if yaml.root.isAbsent then
+        if absence.strict then abort(Yaml.Error(Yaml.Error.Reason.Absent)) else None
+      else if yaml.root.isNull && !nullity.strict then
+        None
+      else if fault.strict then
+        Some(value.decoded(yaml))
+      else
+        tactic.tolerate(value.decoded(yaml)).let(Some(_)).or(None)
 
   // ── Encodable givens ────────────────────────────────────────────────────
 

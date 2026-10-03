@@ -34,17 +34,10 @@ package ethereal
 
 import scala.language.experimental.pureFunctions
 
-import java.io as ji
-
-import coaxial.*
-import contingency.*
-import exoskeleton.*
 import guillotine.*
 import parasite.*
 import prepositional.*
-import quantitative.*
 import rudiments.*
-import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -54,37 +47,16 @@ object Client:
     new Client(pid):
       type Topic = bus
 
+// What the daemon keeps of an invocation outside its session: its place on the bus, and the
+// `Cli` a signal is dispatched to, which the session's reader may need before the invocation
+// has made it.
 case class Client(pid: Pid) extends Topical:
   type Topic <: Matchable
 
-  val stderr: Promise[ji.OutputStream] = Promise()
-
-  // The launcher's control channel, on which the daemon asks for the client's terminal to be
-  // put into a different mode. Absent for a piped stdin, and for launchers predating it.
-  val control: Promise[ji.OutputStream] = Promise()
-
   // An `AnyRef` rim: the `Cli` capability crosses the promise between the signal-dispatch
-  // fiber and the invocation fiber, and a capability type argument cannot (the
-  // fiber-crossing recipe; cast at both ends).
+  // thread and the invocation, and a capability type argument cannot (the fiber-crossing
+  // recipe; cast at both ends).
   val invocation: Promise[AnyRef] = Promise()
   val bus: Relay[Topic] = Relay()
-  val terminatePid: Promise[Pid] = Promise()
-  val exitPromise: Promise[Exit] = Promise()
 
   def receive(message: Topic): Unit = bus.put(message)
-
-  val socket: Promise[Connection] = Promise()
-
-  // Set when the launcher reports (`closed`) that the client's stdout or stderr can no
-  // longer be written; the invocation's writes to that stream then raise.
-  val stdoutSevered: Atomic.Bool = Atomic(false)
-  val stderrSevered: Atomic.Bool = Atomic(false)
-
-  // The client terminal's size as (columns, rows): reported by the launcher in the `init`
-  // document and again with every `WINCH` and `CONT`, since the daemon holds no terminal to
-  // measure. `Unset` when no stream is a terminal, or its size is unknown.
-  // `Atomic.Ref`, not `Atomic[…]`: the match type does not reduce over a union such as
-  // `Optional[(Int, Int)]`.
-  val windowSize: Atomic.Ref[Optional[(Int, Int)]] = Atomic.Ref(Unset)
-
-  def close()(using Monitor^): Unit = safely(socket.await(1.0*Second).close())

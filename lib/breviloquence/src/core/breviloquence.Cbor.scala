@@ -76,14 +76,29 @@ trait Cbor2:
       def encoded(value: value): Cbor =
         value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(ast(Ast(Unset)))
 
+  // The `optionalityOptions` policies, captured at resolution: an absent key (or a wire
+  // `undefined`, which is literally `Unset`) and a wire `null` read as `Unset` unless strict,
+  // and a value the inner decoder rejects reads as `Unset` only under lenient faults, which
+  // decode under `tactic.tolerate`. A strict null is handed to the inner decoder.
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
-  =>  ( tactic: Tactic[Cbor.Error] )
+  =>  ( absence: Decodable.Absence in Cbor,
+        nullity: Decodable.Nullity in Cbor,
+        fault:   Decodable.Fault in Cbor,
+        tactic:  Tactic[Cbor.Error] )
   =>  ( decodable: => (inner is Decodable in Cbor)^ )
   =>  ((value is Decodable in Cbor)^{tactic, decodable}) =
     // An honest capability: the instance retains the resolution-scoped tactic and
     // the by-name inner codec (every given that includes a tactic is a capability;
     // Jon, 2026-07-12).
-    cbor => if cbor.root.unset then Unset else decodable.decoded(cbor)
+    cbor =>
+      if cbor.root.unset then
+        if absence.strict then abort(Cbor.Error(Reason.Absent)) else Unset
+      else if cbor.root.nullary && !nullity.strict then
+        Unset
+      else if fault.strict then
+        decodable.decoded(cbor)
+      else
+        tactic.tolerate(decodable.decoded(cbor)).or(Unset)
 
   inline given decodable: [value] => value is Decodable in Cbor = summonFrom:
     case given (`value` is Decodable in Text) =>
@@ -773,10 +788,23 @@ object Cbor extends Cbor2, Dynamic:
 
         abort(Cbor.Error(reason))
 
-  given option: [value: Decodable in Cbor] => Tactic[Cbor.Error]
-  =>  Option[value] is Decodable in Cbor =
+  // The same three policies as `optional`, yielding `None`.
+  given option: [value: Decodable in Cbor]
+  =>  ( absence: Decodable.Absence in Cbor,
+        nullity: Decodable.Nullity in Cbor,
+        fault:   Decodable.Fault in Cbor,
+        tactic:  Tactic[Cbor.Error] )
+  =>  ((Option[value] is Decodable in Cbor)^{tactic}) =
 
-    cbor => if cbor.root.unset then None else Some(value.decoded(cbor))
+    cbor =>
+      if cbor.root.unset then
+        if absence.strict then abort(Cbor.Error(Reason.Absent)) else None
+      else if cbor.root.nullary && !nullity.strict then
+        None
+      else if fault.strict then
+        Some(value.decoded(cbor))
+      else
+        tactic.tolerate(value.decoded(cbor)).let(Some(_)).or(None)
 
   given optionEncodable: [value] => (encodable: value is Encodable in Cbor)
   =>  Option[value] is Encodable in Cbor =

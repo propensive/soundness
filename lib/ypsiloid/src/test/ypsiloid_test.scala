@@ -45,6 +45,7 @@ case class Outer(inner: Inner) derives CanEqual
 case class NamedOuter(name: Text, inner: Inner) derives CanEqual
 case class WithDefault(name: Text, age: Int = 18) derives CanEqual
 case class WithOption(name: Text, age: Option[Int]) derives CanEqual
+case class WithOptional(name: Text, age: Optional[Int]) derives CanEqual
 case class YRenamed(@name[Yaml](t"full_name") fullName: Text, @name(t"yob") year: Int)
 derives CanEqual
 
@@ -400,6 +401,39 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       test(m"Decode Option[Int] from null"):
         t"null".read[Yaml].as[Option[Int]]
       . assert(_ == None)
+
+    suite(m"Optionality policies"):
+      test(m"a null Optional field reads as Unset by default"):
+        t"name: Eve\nage: null".read[Yaml].as[WithOptional]
+      . assert(_ == WithOptional(t"Eve", Unset))
+
+      test(m"a null Option field reads as None by default"):
+        t"name: Eve\nage: null".read[Yaml].as[WithOption]
+      . assert(_ == WithOption(t"Eve", None))
+
+      test(m"a wrong-typed Optional field raises NotType by default"):
+        capture[Yaml.Error](t"name: Eve\nage: abc".read[Yaml].as[WithOptional]).reason
+      . assert(_ == Yaml.Error.Reason.NotType(Yaml.Primitive.Str, Yaml.Primitive.Integer))
+
+      test(m"strict nulls hand a null Optional field to the inner decoder"):
+        import optionalityOptions.strictYamlNulls
+        capture[Yaml.Error](t"name: Eve\nage: null".read[Yaml].as[WithOptional]).reason
+      . assert(_ == Yaml.Error.Reason.NotType(Yaml.Primitive.Null, Yaml.Primitive.Integer))
+
+      test(m"strict absence raises Absent for an absent Optional field"):
+        import optionalityOptions.strictYamlAbsence
+        capture[Yaml.Error](t"name: Eve".read[Yaml].as[WithOptional]).reason
+      . assert(_ == Yaml.Error.Reason.Absent)
+
+      test(m"lenient faults read a wrong-typed Optional field as Unset"):
+        import optionalityOptions.lenientYamlFaults
+        t"name: Eve\nage: abc".read[Yaml].as[WithOptional]
+      . assert(_ == WithOptional(t"Eve", Unset))
+
+      test(m"lenient faults read a wrong-typed Option field as None"):
+        import optionalityOptions.lenientYamlFaults
+        t"name: Eve\nage: abc".read[Yaml].as[WithOption]
+      . assert(_ == WithOption(t"Eve", None))
 
     suite(m"Block sequences"):
       test(m"Parse a block sequence of integers"):

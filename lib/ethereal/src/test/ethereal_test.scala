@@ -34,6 +34,7 @@ package ethereal
 
 import java.lang as jl
 import java.io as ji
+import java.nio.file as jnf
 import java.util.concurrent as juc
 
 import soundness.*
@@ -50,6 +51,28 @@ import threading.platformThreading
 
 import strategies.throwUnsafely
 import backstops.silentBackstop
+
+// Reads a path as the invocation sees it: through galilei, with the service's fd table
+// in scope, so a path naming one of the client's descriptors reaches the client's. Compiled
+// here rather than staged in the fixture, whose quoted body cannot carry galilei's
+// capture-annotated types.
+object Readers:
+  def read[bus <: Matchable](path: Text)(using service: DaemonService[bus]): Optional[Text] =
+    import filesystemBackends.javaBaseFilesystem
+    import charsets.utf8Charset
+    import textSanitizers.skipSanitizer
+    safely(path.as[Path on Linux].read[Text])
+
+  // The bytes of argument `index` as the client gave them, in hex, or `(text)` when the text
+  // carried them exactly; compiled here for the same reason.
+  def rawArgument[bus <: Matchable](index: Int)(using service: DaemonService[bus]): Text =
+    service.rawArgument(index) match
+      case bytes: Data => Text(bytes.readable.map(b => f"${b & 0xff}%02x").mkString)
+      case _           => t"(text)"
+
+  // Runs `script` with `sh -c` on the client's terminal; compiled here for the same reason.
+  def terminal[bus <: Matchable](script: Text)(using service: DaemonService[bus]): Int =
+    service.terminal(t"sh", List(t"-c", script))
 
 object Tests extends Suite(m"Ethereal Tests"):
   def run(): Unit =
@@ -163,6 +186,27 @@ object Tests extends Suite(m"Ethereal Tests"):
 
                     Exit.Ok
 
+                // A line read with nothing echoed, as a password is: the driver's line editing
+                // without the driver's echo.
+                case Argument("concealed") :: Nil =>
+                  execute:
+                    service.concealed:
+                      val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
+                      val line: Text = reader.readLine().nn.tt
+                      Out.print(t"[$line]")
+
+                    Exit.Ok
+
+                // The bytes of the argument after `raw`, where its text could not carry them.
+                case Argument("raw") :: _ =>
+                  execute(Out.print(Readers.rawArgument(1)) yet Exit.Ok)
+
+                // A command run on the client's terminal, and the status it ended with.
+                case Argument("terminal") :: rest =>
+                  execute:
+                    val code = Readers.terminal(rest.map(_()).join(t" "))
+                    Out.print(t"exit=$code") yet Exit.Ok
+
                 case Argument("signal") :: Nil =>
                   execute:
                     val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
@@ -213,6 +257,15 @@ object Tests extends Suite(m"Ethereal Tests"):
                         SignalResponse.Accept
 
                     snooze(5*Second) yet Exit.Ok
+
+                // The file named by the argument, copied to standard output: a path naming
+                // one of the *client's* descriptors (`/dev/stdin`, `<(…)`) reaches the
+                // client's, through the session, rather than the daemon's own.
+                case Argument("read") :: path :: Nil =>
+                  execute:
+                    Readers.read(path()) match
+                      case text: Text => Out.print(text) yet Exit.Ok
+                      case _          => Err.println(t"cannot read ${path()}") yet Exit.Fail(1)
 
                 case Argument("install") :: dir :: Nil =>
                   execute:
@@ -649,6 +702,57 @@ object Tests extends Suite(m"Ethereal Tests"):
 
             . check(_ == t"piped input")
 
+            // No terminal: the launcher refuses to run anything, with 127, at once.
+            test(m"a command on the terminal is refused without one"):
+              (sh"echo" | sh"$tool terminal true").exec[Text]()
+            . check(_ == t"exit=127")
+
+          suite(m"Client descriptors"):
+            val file = temporaryDirectory[Path on Linux]/t"input-$name"
+
+            test(m"a process substitution is readable in the daemon"):
+              sh"bash -c '$tool read <(printf substituted)'".exec[Text]()
+            . check(_ == t"substituted")
+
+            test(m"/dev/stdin on a pipe is readable in the daemon"):
+              (sh"printf piped" | sh"$tool read /dev/stdin").exec[Text]()
+            . check(_ == t"piped")
+
+            test(m"/dev/stdin on a regular file is readable in the daemon"):
+              sh"sh -c 'printf fromfile > $file; $tool read /dev/stdin < $file'".exec[Text]()
+            . check(_ == t"fromfile")
+
+            test(m"a literal /dev/fd/38 is an ordinary argument"):
+              sh"$tool args /dev/fd/38".exec[Text]()
+            . check(_ == t"/dev/fd/38")
+
+            test(m"a literal /dev/stdin is an ordinary argument"):
+              sh"$tool args /dev/stdin".exec[Text]()
+            . check(_ == t"/dev/stdin")
+
+            // An argument that is not UTF-8 arrives with U+FFFD in its text, and its bytes
+            // beside it; one the text carries exactly has no bytes beside it.
+            // The byte 0xff cannot be spelled in a command line of `Text`, so a script spells it.
+            val rawScript = temporaryDirectory[Path on Linux]/t"raw-$name.sh"
+
+            test(m"a non-UTF-8 argument's bytes reach the daemon"):
+              import codepages.utf8Codepage
+              rawScript.write("exec \"$1\" raw $'a\\xffb'\n".tt)
+              sh"bash $rawScript $tool".exec[Text]()
+            . check(_ == t"61ff62")
+
+            test(m"a UTF-8 argument has no raw form"):
+              sh"$tool raw plain".exec[Text]()
+            . check(_ == t"(text)")
+
+            test(m"a descriptor the client does not hold names nothing, whatever the daemon holds"):
+              sh"$tool read /dev/fd/38".exec[Exit]()
+            . check(_ == Exit.Fail(1))
+
+            test(m"a megabyte of stdin round-trips through the session"):
+              sh"sh -c 'head -c 1000000 /dev/zero | tr \\\\0 a | $tool read /dev/stdin | wc -c'".exec[Text]().trim
+            . check(_ == t"1000000")
+
           suite(m"Cooked terminal mode"):
             // These need a real terminal, so they run inside a tmux pane. The launcher
             // raw-modes any terminal stdin; `service.cooked` asks it, over the control
@@ -714,6 +818,53 @@ object Tests extends Suite(m"Ethereal Tests"):
                   Tmux.enter(t"n")
                   Tmux.enter('\r')
                   awaitScreen(_.contains(t"[merlin]"))
+
+            . check(_ == true)
+
+            test(m"a concealed line is delivered but not echoed"):
+              sh"$tool echo probe".exec[Unit]()
+
+              // Overlap false positive: the action closure mentions the enclosing
+              // tool/command capabilities alongside the fresh tmux session.
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                Shell.Bash.tmux():
+                  Tmux.enter(t"$command concealed")
+                  Tmux.enter('\r')
+                  snooze(0.5*Second)
+                  Tmux.enter(t"kittiwake")
+                  Tmux.enter('\r')
+                  val delivered = awaitScreen(_.contains(t"[kittiwake]"))
+                  val echoed = Tmux.screenshot().screen.filter(_.contains(t"kittiwake")).readable.length > 1
+                  (delivered, echoed)
+
+            . check(_ == (true, false))
+
+            // The daemon has the launcher run `sh -c` on the terminal: its output lands on the
+            // screen, and its exit status comes back to the application.
+            test(m"a command runs on the client's terminal and its status comes back"):
+              sh"$tool echo probe".exec[Unit]()
+
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                Shell.Bash.tmux():
+                  Tmux.enter(t"$command terminal 'echo from-child; exit 3'")
+                  Tmux.enter('\r')
+                  val shown = awaitScreen(_.contains(t"from-child"))
+                  val status = awaitScreen(_.contains(t"exit=3"))
+                  (shown, status)
+
+            . check(_ == (true, true))
+
+            test(m"a command on the terminal reads the terminal, not the session"):
+              sh"$tool echo probe".exec[Unit]()
+
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                Shell.Bash.tmux():
+                  Tmux.enter(t"$command terminal 'read word; echo got-$$word'")
+                  Tmux.enter('\r')
+                  snooze(1*Second)
+                  Tmux.enter(t"gannet")
+                  Tmux.enter('\r')
+                  awaitScreen(_.contains(t"got-gannet"))
 
             . check(_ == true)
 
@@ -975,109 +1126,167 @@ object Tests extends Suite(m"Ethereal Tests"):
         // The wire contract shared with the Rust runner: `bintel.rs` pins the same
         // signature and frames, so the two implementations cannot drift apart silently.
         val signatureHex =
-          t"e50b7e82c11b06783dafa8a2ecc4e35f7ba31044ecd38fc5d9fe9e47a7c11e59e5"
+          t"55d18c247b88db8fc6af7a197c56ee2b680084d1800afe8947a2f613c70492e563"
 
         def hex(data: Data): Text = Text(data.readable.map(b => f"${b & 0xff}%02x").mkString)
+        def bytes(values: Int*): Data = Array.unsafeFrozen(values.map(_.toByte).toArray)
 
         test(m"the schema signature is pinned"):
           hex(Launcher.signature)
         . check(_ == signatureHex)
 
-        test(m"an exit request frames as the pinned bytes"):
-          hex(Launcher.encode(Launcher.Message.Exit(42)))
-        . check(_ == t"b2c4b5bb2921${signatureHex}01040100023432")
+        test(m"an exit status frames as the pinned bytes"):
+          hex(Launcher.encode(Launcher.Message.ExitStatus(42)))
+        . check(_ == t"b2c4b5bb2921${signatureHex}01090100023432")
 
         test(m"a verify request is a variant with no fields"):
           hex(Launcher.encode(Launcher.Message.Verify))
-        . check(_ == t"b2c4b5bb2521${signatureHex}010500")
+        . check(_ == t"b2c4b5bb2521${signatureHex}010a00")
 
         test(m"a mode document carries the canonical flag"):
           hex(Launcher.encode(Launcher.Message.Mode(true)))
-        . check(_ == t"b2c4b5bb2621${signatureHex}01080100")
+        . check(_ == t"b2c4b5bb2621${signatureHex}01070100")
+
+        test(m"a mode document carries the echo flag after the canonical one"):
+          hex(Launcher.encode(Launcher.Message.Mode(true, true)))
+        . check(_ == t"b2c4b5bb2721${signatureHex}0107020001")
+
+        // run: a command, two arguments, a directory. Body: 01 0d 04, then the four scalars.
+        test(m"a run document frames as the pinned bytes"):
+          hex(Launcher.encode(Launcher.Message.Run(t"vi", List(t"-R", t"notes.txt"), t"/home/jon")))
+        . check(_ == t"b2c4b5bb4321${signatureHex}010d040002766901022d5201096e6f7465732e74787402092f686f6d652f6a6f6e")
+
+        test(m"an exited document frames as the pinned bytes"):
+          hex(Launcher.encode(Launcher.Message.Exited(127)))
+        . check(_ == t"b2c4b5bb2a21${signatureHex}010e010003313237")
+
+        // A chunk's bytes go on the wire as they are: 0x00 and 0xff, which no UTF-8 text holds.
+        test(m"a data document frames as the pinned bytes"):
+          hex(Launcher.encode(Launcher.Message.Data(t"stdin", bytes(0x00, 0xff))))
+        . check(_ == t"b2c4b5bb3021${signatureHex}0101020005737464696e010200ff")
+
+        test(m"an end document frames as the pinned bytes"):
+          hex(Launcher.encode(Launcher.Message.End(t"stdin")))
+        . check(_ == t"b2c4b5bb2c21${signatureHex}0102010005737464696e")
+
+        test(m"a credit document frames as the pinned bytes"):
+          hex(Launcher.encode(Launcher.Message.Credit(t"stdout", 65536L)))
+        . check(_ == t"b2c4b5bb3421${signatureHex}01030200067374646f757401053635353336")
+
+        test(m"a closed document frames as the pinned bytes"):
+          hex(Launcher.encode(Launcher.Message.Closed(t"stdout")))
+        . check(_ == t"b2c4b5bb2d21${signatureHex}01080100067374646f7574")
+
+        // A WINCH carries the terminal's size (fields 1 and 2); a Windows close, its deadline.
+        test(m"a sized signal frames as the pinned bytes"):
+          hex(Launcher.encode(Launcher.Message.Signal(t"WINCH", 80, 24)))
+        . check(_ == t"b2c4b5bb3421${signatureHex}010503000557494e43480102383002023234")
+
+        test(m"a signal with a deadline frames as the pinned bytes"):
+          hex(Launcher.encode(Launcher.Message.Signal(t"CTRL_CLOSE", deadline = 5000L)))
+        . check(_ == t"b2c4b5bb3721${signatureHex}010502000a4354524c5f434c4f5345030435303030")
 
         // stdout deliberately not a terminal while stdin and stderr are: `command > file`
         // run from a terminal. An all-true fixture would not catch the three flags being
-        // written in the wrong order or under the wrong indices.
+        // written in the wrong order or under the wrong indices. Two descriptors: a regular
+        // file with its path, and a pipe without.
         val init =
           Launcher.Message.Init
             ( 7, t"501", t"jon", t"/usr/bin/x", t"/tmp", true, false, true, List(t"a", t"b c"),
-              List(t"K=V"), invokedAs = t"x", umask = t"022" )
+              List(t"K=V"), invokedAs = t"x", umask = t"022",
+              descriptors = List
+                ( Launcher.Descriptor(0, t"r", t"file", t"/in"),
+                  Launcher.Descriptor(63, t"r", t"pipe") ) )
 
         test(m"an init message frames as the pinned bytes"):
           hex(Launcher.encode(init))
-        . check(_ == t"b2c4b5bb5b21${signatureHex}01000c000137010335303102036a6f6e030a2f7573722f62696e2f7804042f746d700507080161080362206309034b3d560a01780b03303232")
-
-        // A WINCH carries the terminal's size (fields 2 and 3); a Windows close, its deadline.
-        test(m"a sized signal frames as the pinned bytes"):
-          hex(Launcher.encode(Launcher.Message.Signal(7, t"WINCH", 80, 24)))
-        . check(_ == t"b2c4b5bb3721${signatureHex}010304000137010557494e43480202383003023234")
-
-        test(m"a signal with a deadline frames as the pinned bytes"):
-          hex(Launcher.encode(Launcher.Message.Signal(7, t"CTRL_CLOSE", deadline = 5000L)))
-        . check(_ == t"b2c4b5bb3a21${signatureHex}010303000137010a4354524c5f434c4f5345040435303030")
-
-        test(m"a closed document frames as the pinned bytes"):
-          hex(Launcher.encode(Launcher.Message.Closed(7, t"stdout")))
-        . check(_ == t"b2c4b5bb3021${signatureHex}010a0200013701067374646f7574")
+        . check(_ == t"b2c4b5bb7d21${signatureHex}01000e000137010335303102036a6f6e030a2f7573722f62696e2f7804042f746d700507080161080362206309034b3d560a01780b033032321004000130010172020466696c6503032f696e100300023633010172020470697065")
 
         // Every optional field of `Init` set, so a field decoded under the wrong index shows.
         val fullInit =
           Launcher.Message.Init
             ( 7, t"S-1-5-21-1", t"jon", t"C:\\x.exe", t"C:\\", false, true, false, Nil, Nil,
-              t"x", Unset, 132, 43, 437, 65001 )
+              t"x", Unset, 132, 43, 437, 65001, Nil )
 
         test(m"every message round-trips"):
           val messages: List[Launcher.Message] =
             List
               ( init,
                 fullInit,
-                Launcher.Message.Stderr(7),
-                Launcher.Message.Control(7),
-                Launcher.Message.Signal(7, t"INT"),
-                Launcher.Message.Signal(7, t"CONT", 80, 24),
-                Launcher.Message.Signal(7, t"CTRL_LOGOFF", deadline = 5000L),
-                Launcher.Message.Exit(7),
-                Launcher.Message.Verify,
+                Launcher.Message.End(t"stdin"),
+                Launcher.Message.Credit(t"63", 12345L),
+                Launcher.Message.Open(t"63"),
+                Launcher.Message.Signal(t"INT"),
+                Launcher.Message.Signal(t"CONT", 80, 24),
+                Launcher.Message.Signal(t"CTRL_LOGOFF", deadline = 5000L),
                 Launcher.Message.SignalAck(true),
                 Launcher.Message.SignalAck(false),
-                Launcher.Message.Verdict(true),
                 Launcher.Message.Mode(false),
+                Launcher.Message.Mode(true, false),
+                Launcher.Message.Mode(true, true),
+                Launcher.Message.Closed(t"stderr"),
                 Launcher.Message.ExitStatus(3),
-                Launcher.Message.Closed(7, t"stderr"),
-                Launcher.Message.Shutdown )
+                Launcher.Message.Verify,
+                Launcher.Message.Verdict(true),
+                Launcher.Message.Shutdown,
+                Launcher.Message.Run(t"less"),
+                Launcher.Message.Run(t"vi", List(t"-R", t"notes.txt"), t"/home/jon"),
+                Launcher.Message.Exited(3) )
 
           messages.map { message => Launcher.decode(Launcher.encode(message)) }
         . check(_ == List
           ( init,
             fullInit,
-            Launcher.Message.Stderr(7),
-            Launcher.Message.Control(7),
-            Launcher.Message.Signal(7, t"INT"),
-            Launcher.Message.Signal(7, t"CONT", 80, 24),
-            Launcher.Message.Signal(7, t"CTRL_LOGOFF", deadline = 5000L),
-            Launcher.Message.Exit(7),
-            Launcher.Message.Verify,
+            Launcher.Message.End(t"stdin"),
+            Launcher.Message.Credit(t"63", 12345L),
+            Launcher.Message.Open(t"63"),
+            Launcher.Message.Signal(t"INT"),
+            Launcher.Message.Signal(t"CONT", 80, 24),
+            Launcher.Message.Signal(t"CTRL_LOGOFF", deadline = 5000L),
             Launcher.Message.SignalAck(true),
             Launcher.Message.SignalAck(false),
-            Launcher.Message.Verdict(true),
             Launcher.Message.Mode(false),
+            Launcher.Message.Mode(true, false),
+            Launcher.Message.Mode(true, true),
+            Launcher.Message.Closed(t"stderr"),
             Launcher.Message.ExitStatus(3),
-            Launcher.Message.Closed(7, t"stderr"),
-            Launcher.Message.Shutdown ))
+            Launcher.Message.Verify,
+            Launcher.Message.Verdict(true),
+            Launcher.Message.Shutdown,
+            Launcher.Message.Run(t"less"),
+            Launcher.Message.Run(t"vi", List(t"-R", t"notes.txt"), t"/home/jon"),
+            Launcher.Message.Exited(3) ))
+
+        // A raw record round-trips with its bytes, which no text could carry.
+        test(m"a raw record round-trips, bytes and all"):
+          val raw = Launcher.Raw(t"argument", 1, bytes(0x61, 0xff, 0x62))
+          Launcher.decode(Launcher.encode(init.copy(raws = List(raw)))) match
+            case init2: Launcher.Message.Init => init2.raws.prim match
+              case raw2: Launcher.Raw => (raw2.kind, raw2.index, raw2.bytes.readable.map(_ & 0xff).toList)
+              case _                  => (t"", Unset, Nil)
+            case _ => (t"", Unset, Nil)
+        . check(_ == (t"argument", 1, List(0x61, 0xff, 0x62)))
+
+        // A chunk has no structural equality: its bytes are compared.
+        test(m"a data document round-trips, bytes and all"):
+          Launcher.decode(Launcher.encode(Launcher.Message.Data(t"7", bytes(0, 1, 127, 128, 255)))) match
+            case Launcher.Message.Data(stream, chunk) => (stream, chunk.readable.map(_ & 0xff).toList)
+            case other                                => (t"", Nil)
+        . check(_ == (t"7", List(0, 1, 127, 128, 255)))
 
         test(m"a document of another schema is rejected"):
-          val bytes = Launcher.encode(Launcher.Message.Exit(7)).readable.toList.toArray
+          val bytes = Launcher.encode(Launcher.Message.ExitStatus(7)).readable.toList.toArray
           bytes(6) = (bytes(6) ^ 0x01).toByte
           Launcher.decode(bytes.asInstanceOf[Array[Byte]]).absent
         . check(_ == true)
 
         test(m"readDocument takes exactly one document from a stream"):
-          val document = Launcher.encode(Launcher.Message.Exit(7))
+          val document = Launcher.encode(Launcher.Message.ExitStatus(7))
           val stream = document.readable.toList ++ scala.List[Byte](1, 2, 3)
           val in = ji.ByteArrayInputStream(stream.toArray)
           val read = Launcher.readDocument(in)
           (read.let(hex(_)), in.available())
-        . check(_ == (hex(Launcher.encode(Launcher.Message.Exit(7))), 3))
+        . check(_ == (hex(Launcher.encode(Launcher.Message.ExitStatus(7))), 3))
 
       val brokenStateDir: Path on Local =
         Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / t"brokn"

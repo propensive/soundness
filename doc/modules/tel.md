@@ -56,6 +56,21 @@ t"name Alice\nage 30\n".read[Tel].as[Person]   // Person(t"Alice", 30)
 t"name Alice\nage 30\n".read[Person in Tel]    // the same, in one step
 ```
 
+An `Optional` field reads as `Unset` when its keyword is missing, or present with neither an atom
+nor a child — TEL's two spellings of absence — and a value the inner decoder rejects is an error.
+The `optionalityOptions` package varies each: `strictTelAbsence` makes absence an error
+(`Tel.Error.Reason.Absent`) and marks the field required in the derived schema, and
+`lenientTelFaults` reads a rejected value as `Unset`. The direct parser polices absence only,
+since a fault surfaces mid-entry.
+
+```scala
+case class Flags(active: Boolean, verbose: Optional[Boolean])
+
+val tolerant =
+  import optionalityOptions.lenientTelFaults
+  t"active false\nverbose maybe\n".read[Tel].as[Flags]   // Flags(false, Unset)
+```
+
 Encoding runs the other way: `in[Tel]` produces a `Tel` from a value, a compound per field, ready
 to render or to embed in a larger document. `show` renders a `Tel` into one `Text`; a large
 document need not be held in memory before it is sent. The push form of `Tel.emit` serializes on

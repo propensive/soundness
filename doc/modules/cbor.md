@@ -65,7 +65,19 @@ Status.Active(2020).in[Cbor].as[Status]   // Status.Active(2020)
 
 An `Optional` field is omitted from the map when it is unset and supplied as `Unset` when the map
 lacks it, and a field with a default takes that default — so a message may gain fields without
-breaking readers that predate them.
+breaking readers that predate them. A CBOR `null` reads as `Unset` too (`undefined` is `Unset`
+on the wire already), and a value the inner decoder rejects is an error. The
+`optionalityOptions` package varies each answer separately — `strictCborAbsence`,
+`strictCborNulls` and `lenientCborFaults` — as [decoding](decoding.md) describes:
+
+```scala
+case class Reading(sensor: Text, value: Optional[Int])
+
+val tolerant =
+  import dynamicAccess.dynamicCbor
+  import optionalityOptions.lenientCborFaults
+  (Reading(t"a", 1).in[Cbor].value = t"x").as[Reading]   // Reading(t"a", Unset)
+```
 
 ### Parsing directly
 

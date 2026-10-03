@@ -489,6 +489,54 @@ object Tests extends Suite(m"Contingency"):
         v.values
       . assert(_ == List(7, 8))
 
+    suite(m"tolerate"):
+      test(m"tolerate yields the block's value when nothing is raised"):
+        summon[Tactic[ErrorA]].tolerate(42)
+      . assert(_ == 42)
+
+      test(m"tolerate discards an error thrown by a fail-fast tactic"):
+        summon[Tactic[ErrorA]].tolerate(failA(1))
+      . assert(_ == Unset)
+
+      test(m"tolerate under accrue returns Unset and accrues nothing"):
+        accrue(Accumulated(Nil)) { (sum, ex) => ex match
+          case ErrorA(n) => Accumulated(sum.values :+ n)
+          case _         => sum
+        } { case ErrorA(_) => () }
+        . protect:
+            summon[Tactic[ErrorA]].tolerate:
+              raise(ErrorA(2))
+              5
+      . assert(_ == Unset)
+
+      test(m"tolerate under accrue keeps the raises outside the block"):
+        capture[Accumulated]:
+          accrue(Accumulated(Nil)) { (sum, ex) => ex match
+            case ErrorA(n) => Accumulated(sum.values :+ n)
+            case _         => sum
+          } { case ErrorA(_) => () }
+          . protect:
+              raise(ErrorA(1))
+              summon[Tactic[ErrorA]].tolerate(raise(ErrorA(2)))
+              raise(ErrorA(3))
+              ()
+
+        . values
+      . assert(_ == List(1, 3))
+
+      test(m"tolerate under track drops the errors the block registered"):
+        recover:
+          case Accumulated(values) => values
+        . protect:
+            track[Pointer](Accumulated(Nil)):
+              case ErrorA(n) => Accumulated(accrual.values :+ n)
+            . protect:
+                raise(ErrorA(1))
+                summon[Tactic[ErrorA]].tolerate(raise(ErrorA(2)))
+                raise(ErrorA(3))
+                List.empty[Int]
+      . assert(_ == List(1, 3))
+
     suite(m"Errors / Validation / Expectation.Error"):
       test(m"Errors with no entries communicates the count"):
         Errors().message.text.starts(t"0 accrued errors")

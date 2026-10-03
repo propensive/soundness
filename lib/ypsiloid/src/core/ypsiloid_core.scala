@@ -202,6 +202,19 @@ extension (inline context: StringContext)
   transparent inline def y: Interpolation = interpolation[Yaml](context)
   transparent inline def yp: Interpolation = interpolation[YamlPath](context)
 
+// How an `Optional` or `Option` field reads an absent key, a YAML `null`, or a value its inner
+// decoder rejects: lenient yields `Unset`/`None`, strict raises `Yaml.Error`. Absent keys and
+// nulls are lenient by default; faults are strict.
+package optionalityOptions:
+  import distillate.Decodable.{Absence, Nullity, Fault}
+
+  given strictYamlAbsence:  Absence in Yaml = Absence(true)
+  given lenientYamlAbsence: Absence in Yaml = Absence(false)
+  given strictYamlNulls:    Nullity in Yaml = Nullity(true)
+  given lenientYamlNulls:   Nullity in Yaml = Nullity(false)
+  given strictYamlFaults:   Fault in Yaml   = Fault(true)
+  given lenientYamlFaults:  Fault in Yaml   = Fault(false)
+
 package formatting:
   // Block-style serializer. The default (and currently only) printer; flow
   // style may be added later. Mirrors jacinta's `formatting.indentedJsonFormatting`.

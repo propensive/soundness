@@ -128,6 +128,7 @@ def cli[bus <: Matchable](using executive: Executive)
   val buildFile: Path on Local = baseDir/name/"build"
   val pidFile: Path on Local = baseDir/name/"pid"
   val socketFile: Path on Local = baseDir/name/"socket"
+  val acceptanceFile: Path on Local = baseDir/name/"acceptance"
   val clients: scc.TrieMap[Pid, Client of bus] = scc.TrieMap()
   val idleTimeout = Quantity[Hours[1]](6.0)
 
@@ -162,6 +163,7 @@ def cli[bus <: Matchable](using executive: Executive)
       safely(socketFile.wipe())
       safely(buildFile.wipe())
       safely(pidFile.wipe())
+      safely(acceptanceFile.wipe())
 
   // If the daemon's own jar has been clobbered, cleanup may fail to load classes
   // mid-flight; exit must happen regardless, or the broken daemon lingers and
@@ -271,39 +273,6 @@ def cli[bus <: Matchable](using executive: Executive)
         connection.close()
         drain()
 
-      // The client's side of the stream can no longer be written: the invocation's further
-      // writes to it raise, as writing a broken pipe would end a process.
-      case Launcher.Message.Closed(pid0, stream) =>
-        val pid = Pid(pid0)
-        Log.info(DaemonLogEvent.Closed(pid, stream))
-        if stream == t"stderr" then client(pid).stderrSevered() = true
-        else client(pid).stdoutSevered() = true
-        connection.close()
-
-      case Launcher.Message.Signal(pid0, name, columns, rows, deadline) =>
-        val pid = Pid(pid0)
-        val interrupt: UnixSignal | WindowsSignal =
-          safely(name.as[UnixSignal]).or(name.as[WindowsSignal])
-
-        Log.info(DaemonLogEvent.ReceivedSignal(interrupt))
-
-        // A `WINCH` or `CONT` carries the terminal's size, recorded before the signal is
-        // dispatched so that a trap, or the termcap, reads the new size and not the old.
-        columns.let { columns => rows.let { rows => client(pid).windowSize() = (columns, rows) } }
-
-        val signal: Signal =
-          Signal(interrupt, columns, rows, deadline.let(_.toDouble*Milli(Second)))
-
-        val response: SignalResponse =
-          safely:
-            val invocation = client(pid).invocation.await(250.0*Milli(Second))
-            invocation.asInstanceOf[Cli].dispatchSignal(signal)
-
-          . or(SignalResponse.Reject)
-
-        reply(Launcher.Message.SignalAck(response == SignalResponse.Accept))
-        connection.close()
-
       // The launcher asks whether this daemon's launcher file still has the content
       // it was started from — sent when the file's mtime disagrees with the build
       // file. The verdict is a document: fresh (a metadata-only change, remembered so
@@ -324,53 +293,30 @@ def cli[bus <: Matchable](using executive: Executive)
         finally
           if !fresh then drain()
 
-      case Launcher.Message.Exit(pid0) =>
-        val pid = Pid(pid0)
-        Log.fine(DaemonLogEvent.ExitStatusRequest(pid))
-        val exitStatus: Exit = client(pid).exitPromise.await()
-
-        reply(Launcher.Message.ExitStatus(exitStatus()))
-        connection.close()
-        clients.remove(pid)
-        if draining() && clients.isEmpty then termination
-
-      case Launcher.Message.Stderr(pid0) =>
-        val pid = Pid(pid0)
-        Log.fine(DaemonLogEvent.StderrRequest(pid))
-        val stderrClient = client(pid)
-        stderrClient.stderr.offer(rawOut)
-        safely(stderrClient.exitPromise.await())
-        safely(connection.close())
-
-      case Launcher.Message.Control(pid0) =>
-        val pid = Pid(pid0)
-        Log.fine(DaemonLogEvent.ControlRequest(pid))
-        val controlClient = client(pid)
-        controlClient.control.offer(rawOut)
-        safely(controlClient.exitPromise.await())
-        safely(connection.close())
-
       case _: (Launcher.Message.SignalAck | Launcher.Message.Verdict | Launcher.Message.Mode
-               | Launcher.Message.ExitStatus) =>
-        // Replies travel from the daemon to the launcher, never the other way.
+               | Launcher.Message.ExitStatus | Launcher.Message.Open | Launcher.Message.Data
+               | Launcher.Message.End | Launcher.Message.Credit | Launcher.Message.Closed
+               | Launcher.Message.Signal) =>
+        // Replies travel from the daemon to the launcher, never the other way, and the rest
+        // belong inside a session, after `init`.
         Log.warn(DaemonLogEvent.UnrecognizedMessage)
         connection.close()
 
       // A daemon that is draining serves no new invocation, and a client whose claimed user
-      // is not this daemon's is refused (#18). Either way the client's exit status is settled
-      // now, so that the launcher's `exit` request that follows is answered rather than left
-      // to its timeout.
-      case Launcher.Message.Init(pid0, uid, _, _, _, _, _, _, _, _, _, _, _, _, _, _)
+      // is not this daemon's is refused (#18). Either way the session ends at once with the
+      // exit status, rather than closing on a launcher that would read that as a daemon of
+      // another protocol.
+      case Launcher.Message.Init(pid0, uid, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)
           if draining() || userId.let(_ != UserId(uid)).or(false) =>
         val pid = Pid(pid0)
         if draining() then Log.warn(DaemonLogEvent.Refused(pid))
         else Log.warn(DaemonLogEvent.PeerRefused(uid))
-        client(pid).exitPromise.offer(Exit(2))
+        reply(Launcher.Message.ExitStatus(2))
         connection.close()
 
       case Launcher.Message.Init(pid0, uid, username, script, directory, stdinTty, stdoutTty,
                                  stderrTty, textArguments, env, invokedAs, umask, columns, rows,
-                                 inputCodepage, outputCodepage) =>
+                                 inputCodepage, outputCodepage, descriptors, raws) =>
         val pid = Pid(pid0)
         val login = Login(username, UserId(uid))
 
@@ -383,37 +329,29 @@ def cli[bus <: Matchable](using executive: Executive)
         val shellError = terminus(stderrTty)
         Log.fine(DaemonLogEvent.Init(pid))
         val clientState = client(pid)
-        clientState.socket.fulfill(connection)
-        columns.let { columns => rows.let { rows => clientState.windowSize() = (columns, rows) } }
 
-        // The stream crosses the capability-erasing `java.io.OutputStream` interface, so the
-        // monitor its first write suspends on cannot stay tracked; laundered to pure, sound
-        // because it is the daemon-lifetime connection monitor, which outlives the stream.
+        // The signal's trap runs on the invocation's `Cli`, which the session's reader may
+        // be asked for before the invocation has made it: a brief wait, then a rejection.
         val monitor0: Monitor^{} = caps.unsafe.unsafeAssumePure(summon[Monitor])
 
-        val lazyStderr: ji.OutputStream = new ji.OutputStream():
-          private val stderrOut: Atomic[Optional[ji.OutputStream]] = Atomic(Unset)
+        def dispatch(signal: Signal): SignalResponse =
+          safely:
+            val invocation = clientState.invocation.await(250.0*Milli(Second))
+            invocation.asInstanceOf[Cli].dispatchSignal(signal)
 
-          private def connected(): ji.OutputStream = stderrOut().or:
-            val stream = clientState.stderr.await()(using monitor0)
-            stderrOut() = stream
+          . or(SignalResponse.Reject)
 
-            stream
-
-          def write(i: Int): Unit = connected().write(i)
-          override def write(bytes: scala.Array[Byte] | Null): Unit = connected().write(bytes)
-
-          override def write(bytes: scala.Array[Byte] | Null, offset: Int, length: Int): Unit =
-            connected().write(bytes, offset, length)
-
-          override def close(): Unit = stderrOut().let: stream =>
-            safely(stream.close())
+        val dispatch0: Signal -> SignalResponse = caps.unsafe.unsafeAssumePure(dispatch)
+        val log0: DaemonLogEvent -> Unit = caps.unsafe.unsafeAssumePure(event => Log.info(event))
+        val session: Session = Session(connection, in, descriptors, dispatch0, log0)
+        columns.let { columns => rows.let { rows => session.windowSize() = (columns, rows) } }
+        session.start()
 
         given environment: Environment = LazyEnvironment(env)
 
-        // The size is read through a block local, not through `clientState`, so the termcap
+        // The size is read through a block local, not through `session`, so the termcap
         // — and the stdio built on it — stay pure, as `Stdio`'s `termcap` member requires.
-        val windowSize0 = clientState.windowSize
+        val windowSize0 = session.windowSize
 
         val termcap: Termcap = new Termcap:
           def ansi: Boolean = true
@@ -444,15 +382,16 @@ def cli[bus <: Matchable](using executive: Executive)
           if page == 65001 then jnc.StandardCharsets.UTF_8.nn
           else Encoding.unapply(t"cp$page").map(_.charset).getOrElse(Unset)
 
-        val stdout: ji.OutputStream = Outlet(t"stdout", rawOut, clientState.stdoutSevered)
-        val stderr: ji.OutputStream = Outlet(t"stderr", lazyStderr, clientState.stderrSevered)
+        val stdout: ji.OutputStream = Outlet(t"stdout", session.stdout, session.stdout.severed)
+        val stderr: ji.OutputStream = Outlet(t"stderr", session.stderr, session.stderr.severed)
 
         def printStream(out: ji.OutputStream, page: Optional[Int]): ji.PrintStream =
           charset(page).lay(ji.PrintStream(out, true)) { charset => ji.PrintStream(out, true, charset) }
 
         val input: ji.InputStream =
-          charset(inputCodepage).lay(in): charset =>
-            if charset == jnc.StandardCharsets.UTF_8 then in else Transcoder(in, charset)
+          charset(inputCodepage).lay(session.stdin): charset =>
+            if charset == jnc.StandardCharsets.UTF_8 then session.stdin
+            else Transcoder(session.stdin, charset)
 
         val stdio: Stdio =
           Stdio
@@ -462,13 +401,10 @@ def cli[bus <: Matchable](using executive: Executive)
               termcap )
 
         // Only the launcher can change the client's terminal mode, so the request travels back
-        // over its control channel. A launcher that never opened one (a pipe, or a stub built
-        // before the channel existed) leaves the promise unfulfilled: the brief await expires
-        // and the command runs with the raw mode it would have had anyway.
+        // over the session; a launcher whose stdin is not a terminal it owns ignores it, and
+        // the command runs with the raw mode it would have had anyway.
         def setMode(mode: Tty): Unit =
-          safely(clientState.control.await(0.1*Second)(using monitor = monitor0)).let: out =>
-            out.write(Array.unsafeJvm(Launcher.encode(Launcher.Message.Mode(mode == Tty.Canonical))))
-            out.flush()
+          session.send(Launcher.Message.Mode(mode.canonical, mode.echo))
 
         def deliver(sourcePid: Pid, message: bus): Unit =
           clients.each: (pid, client) =>
@@ -499,11 +435,18 @@ def cli[bus <: Matchable](using executive: Executive)
                startTime,
                () => helpValue,
                setMode,
+               session.terminal,
                invokedAs,
                () => windowSize0(),
-               umask.let(Umask.parse(_)) )
+               umask.let(Umask.parse(_)),
+               session.fdtable,
+               raws )
 
         Log.fine(DaemonLogEvent.NewCli)
+
+        // Whatever happens below — even the backstop itself throwing — the session must end
+        // with a status, or the launcher waits forever (#2033).
+        var exitStatus: Exit = Exit(2)
 
         try
           val cli: executive.Interface =
@@ -522,35 +465,34 @@ def cli[bus <: Matchable](using executive: Executive)
             val result = scala.caps.unsafe.unsafeAssumeSeparate:
               block(using service, cli, environment, summon[Monitor])
 
-            val exitStatus: Exit =
-              scala.caps.unsafe.unsafeAssumeSeparate(executive.process(cli)(result))
-
-            clientState.exitPromise.fulfill(exitStatus)
-          else
-            clientState.exitPromise.fulfill(Exit.Ok)
+            exitStatus = scala.caps.unsafe.unsafeAssumeSeparate(executive.process(cli)(result))
+          else exitStatus = Exit.Ok
 
         // `Throwable`, not `Exception`: a `java.lang.Error` (a linkage error from a stale class
-        // file, say) would otherwise escape, and an unfulfilled exit promise parks the client's
-        // stderr and control connections, and so the launcher, forever (#2033). The backstop
-        // already distinguishes the two, exiting with status 2 for a non-exception throwable.
+        // file, say) would otherwise escape. The backstop already distinguishes the two,
+        // exiting with status 2 for a non-exception throwable.
         catch
           // A write to a stream whose reader is gone ends the invocation as `SIGPIPE` would
           // end a process, with the status a shell reports for that death (128 + 13). The
           // backstop is not consulted: it would write to the same stream.
           case error: Outlet.Error =>
-            clientState.exitPromise.fulfill(Exit(141))
+            exitStatus = Exit(141)
 
           case throwable: Throwable =>
             Log.fail(DaemonLogEvent.Failure(throwable.toString.tt))
-            clientState.exitPromise.fulfill(handler.handle(throwable)(using stdio))
+            exitStatus = handler.handle(throwable)(using stdio)
 
         finally
-          // Whatever happened above — even the backstop itself throwing — the promise must be
-          // settled, or every awaiter of it parks forever. `offer` is a no-op if it already is.
-          clientState.exitPromise.offer(Exit(2))
-          lazyStderr.close()
+          // The outputs' last chunks go behind everything the invocation wrote, and the exit
+          // status behind them; the connection closes once the launcher has it all.
+          safely(stdout.flush())
+          safely(stderr.flush())
+          session.finish(exitStatus())
+          session.awaitWritten()
           connection.close()
           Log.info(DaemonLogEvent.CloseConnection(pid))
+          clients.remove(pid)
+          if draining() && clients.isEmpty then termination
 
   // `application` takes a stdlib `Iterable` of arguments, which the opaque `Nil` is not.
   application(using executives.directExecutive(using backstops.silentBackstop))(Nil):
@@ -567,6 +509,17 @@ def cli[bus <: Matchable](using executive: Executive)
       given syslog: Logger[DaemonLogEvent, Message] = Logger(Syslog(t"ethereal"))
 
       safely(socketFile.wipe())
+
+      // What this daemon reads, for the launcher to consult before it connects (xek's
+      // `spec/layout.md`, *Negotiating the composition*): a BinTEL §8.4 acceptance in its bare
+      // form, with one alternative, the base schema alone — one root child, the `accept`
+      // member with one child, its 33-byte `schema`. Written before the socket exists, so a
+      // launcher that has found the socket may rely on it.
+      safely:
+        val acceptance: Data =
+          Array.unsafeFrozen(scala.Array[Byte](1, 0, 1, 0, 33) ++ Array.unsafeJvm(Launcher.signature))
+
+        acceptanceFile.open[File](Write, OpenFlag.Create, OpenFlag.Truncate)(file.write(Chain(acceptance)))
 
       val domainSocket: DomainSocket = DomainSocket(socketFile.encode)
 

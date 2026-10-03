@@ -80,3 +80,16 @@ package numberModes:
   given fullNumberMode:   NumberMode = NumberMode.Full
   given bcdNumberMode:    NumberMode = NumberMode.Bcd
   given doubleNumberMode: NumberMode = NumberMode.Double
+
+// How an `Optional` or `Option` field reads an absent key, a JSON `null`, or a value its inner
+// decoder rejects: lenient yields `Unset`/`None`, strict raises `Json.Error`. Absent keys and
+// nulls are lenient by default; faults are strict.
+package optionalityOptions:
+  import distillate.Decodable.{Absence, Nullity, Fault}
+
+  given strictJsonAbsence:  Absence in Json = Absence(true)
+  given lenientJsonAbsence: Absence in Json = Absence(false)
+  given strictJsonNulls:    Nullity in Json = Nullity(true)
+  given lenientJsonNulls:   Nullity in Json = Nullity(false)
+  given strictJsonFaults:   Fault in Json   = Fault(true)
+  given lenientJsonFaults:  Fault in Json   = Fault(false)

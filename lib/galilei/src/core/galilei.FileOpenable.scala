@@ -34,6 +34,7 @@ package galilei
 
 import anticipation.*
 import aperture.*
+import gigantism.Every
 import gossamer.*
 import contingency.*
 import prepositional.*
@@ -48,7 +49,10 @@ import Io.Error.{Operation, Reason}
 // freshens `Handle`'s (capability) field types in the inferred `Result` member, which then
 // fails to conform to the declared `to Handle` refinement.
 class FileOpenable[filesystem: Filesystem, path <: Path on filesystem]
-  ( using backend: FilesystemBackend on filesystem, ioError: Tactic[Io.Error], umask: Umask )
+  ( using backend:  FilesystemBackend on filesystem,
+          ioError:  Tactic[Io.Error],
+          umask:    Umask,
+          fdtables: Every[Fdtable] )
 extends Openable:
 
   type Self = path
@@ -74,26 +78,40 @@ extends Openable:
          else if mode.atoms.has(Shared) then List(OpenFlag.LockShared)
          else Nil)
 
-    val locking = mode.atoms.has(Exclusive) || mode.atoms.has(Shared)
+    // A path the fd table governs — a client's `/dev/fd/N`, say — is not a file of
+    // this process at all: it is opened through the table, before the filesystem, the
+    // access register or the backend is consulted.
+    val encoded: Text = summon[Path on filesystem is Encodable in Text].encode(value)
 
-    // The register works on real paths, so two routes to one file register as the same file
-    // and overlap correctly with enclosing directory scopes; a file which is about to be
-    // created cannot be resolved, so it falls back to its normalized absolute form.
-    val real: Text =
-      if !locking then t"" else
-        try value.nioPath.toRealPath().nn.toString.tt
-        catch case _: Exception => value.nioPath.toAbsolutePath.nn.normalize.nn.toString.tt
+    Fdtable.resolve(fdtables, encoded) match
+      case descriptor: Fdtable.Descriptor =>
+        try
+          descriptor.open(modeFlags + flags): handle =>
+            block(using handle.asInstanceOf[Handle & Granting[grants]])
+        catch case refusal: Fdtable.Refusal =>
+          abort(Io.Error(value, Operation.Open, refusal.reason))
 
-    val awaiting = flags.has(OpenFlag.Await)
+      case _ =>
+        val locking = mode.atoms.has(Exclusive) || mode.atoms.has(Shared)
 
-    if locking then
-      if awaiting then AccessRegister.acquireAwait(real, mode.atoms)
-      else if !AccessRegister.acquire(real, mode.atoms)
-      then abort(Io.Error(value, Operation.Open, Reason.Busy))
+        // The register works on real paths, so two routes to one file register as the same
+        // file and overlap correctly with enclosing directory scopes; a file which is about
+        // to be created cannot be resolved, so it falls back to its normalized absolute form.
+        val real: Text =
+          if !locking then t"" else
+            try value.nioPath.toRealPath().nn.toString.tt
+            catch case _: Exception => value.nioPath.toAbsolutePath.nn.normalize.nn.toString.tt
 
-    try
-      backend.open(value, modeFlags + flags, umask.mode(Umask.fileBits)): handle =>
-        // `Granting` is a phantom marker, so the cast only refines the static type with the
-        // grants that `modeFlags` has just made true operationally.
-        block(using handle.asInstanceOf[Handle & Granting[grants]])
-    finally if locking then AccessRegister.release(real, mode.atoms)
+        val awaiting = flags.has(OpenFlag.Await)
+
+        if locking then
+          if awaiting then AccessRegister.acquireAwait(real, mode.atoms)
+          else if !AccessRegister.acquire(real, mode.atoms)
+          then abort(Io.Error(value, Operation.Open, Reason.Busy))
+
+        try
+          backend.open(value, modeFlags + flags, umask.mode(Umask.fileBits)): handle =>
+            // `Granting` is a phantom marker, so the cast only refines the static type with
+            // the grants that `modeFlags` has just made true operationally.
+            block(using handle.asInstanceOf[Handle & Granting[grants]])
+        finally if locking then AccessRegister.release(real, mode.atoms)

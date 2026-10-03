@@ -133,6 +133,33 @@ case class Account(name: Text, age: Int = 18)
 t"""{"name": "Eve"}""".read[Json].as[Account]   // Account(t"Eve", 18)
 ```
 
+#### Controlling optionality
+
+An `Optional` field answers three questions, each with a default that the `optionalityOptions`
+package can override: an *absent* key reads as `Unset` (`strictJsonAbsence` raises `Absent`
+instead); an explicit `null` reads as `Unset` (`strictJsonNulls` hands it to the inner decoder,
+which rejects it as it would for any other field); and a value the inner decoder *rejects* is
+an error (`lenientJsonFaults` reads it as `Unset`, under the ambient tactic's `tolerate`, so
+nothing accrues). Each is a separate given, so one can be varied alone:
+
+```scala
+val strict =
+  import optionalityOptions.strictJsonAbsence
+  capture[Json.Error](t"""{"name": "Eve"}""".read[Json].as[Profile]).reason
+  // Json.Error.Reason.Absent
+
+val lenient =
+  import optionalityOptions.lenientJsonFaults
+  t"""{"name": "Eve", "age": "old"}""".read[Json].as[Profile].age   // Unset
+```
+
+`Option` fields follow the same three policies, yielding `None`. The direct and staged parsers
+honour them too, with one limit: a lenient fault is tolerated only when the value on the wire is
+of the wrong *kind* — a string where a number was expected — which the parser sees before reading
+it and skips whole. A value of the right kind that fails within it, such as a number too large
+for an `Int`, has already been partly consumed, so it still raises. A declared default of
+`Unset` is indistinguishable from no default, so it does not satisfy a strict absence.
+
 ### Renaming fields
 
 A field name in Scala need not match the key in JSON. The `@name` annotation gives

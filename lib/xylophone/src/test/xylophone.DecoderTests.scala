@@ -159,6 +159,21 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
         validateXml(x"<root><name>Ann</name><age>old</age></root>")(_.as[Profile]).items.map(_(0).s)
       . assert(_ == List("/age[1]"))
 
+      test(m"Strict absence raises Missing for a missing Optional field"):
+        import optionalityOptions.strictXmlAbsence
+        capture[Xml.Error](x"<root><name>Ann</name><age>30</age></root>".as[Profile]).reason
+      . assert(_ == Xml.Error.Reason.Missing)
+
+      test(m"Lenient faults read a malformed Optional field as Unset"):
+        import optionalityOptions.lenientXmlFaults
+        x"<root><name>Ann</name><age>old</age></root>".as[Profile]
+      . assert(_ == Profile(t"Ann", Unset, Unset))
+
+      test(m"Lenient faults accrue nothing for a malformed Optional field"):
+        import optionalityOptions.lenientXmlFaults
+        validateXml(x"<root><name>Ann</name><age>old</age></root>")(_.as[Profile]).items.size
+      . assert(_ == 0)
+
     suite(m"Map fields"):
       test(m"Entry elements decode as mappings"):
         x"""<root><name>shop</name>

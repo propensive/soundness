@@ -265,6 +265,23 @@ errors it has already gathered.
 None of this costs anything when accrual is not in play: under a fail-fast tactic any error has
 already escaped, so `guard` is the identity and `venture` is transparent eager evaluation.
 
+### Tolerating a failure
+
+A tactic can also run a block and discard whatever it raises. `tolerate` yields the block's
+value, or `Unset` if the block recorded an error or aborted — and, unlike `safely`, it does so
+*within* the ambient tactic rather than installing a new one, so an accruing tactic rolls back
+what the block recorded instead of keeping it:
+
+<!-- doccheck: skip -->
+```scala
+def tolerant(json: Json): Optional[Int] raises Json.Error =
+  summon[Tactic[Json.Error]].tolerate(json.as[Int])
+```
+
+This is the lever a codec uses to decode an optional field leniently: the field's decoder was
+bound to the ambient tactic when it was resolved, so the tactic itself is the only place a fault
+in it can be intercepted.
+
 ### Saying where a failure was
 
 An accumulated list of errors is only useful if each one says where it came from. A *focus* is the

@@ -37,6 +37,10 @@ export
   . { CellRef, Dsv, dsv,
       rows, rowsOf, Sheet, Spannable }
 
+package optionalityOptions:
+  export caesura.optionalityOptions.{strictDsvAbsence, lenientDsvAbsence, strictDsvFaults,
+      lenientDsvFaults}
+
 package dsvFormats:
   export caesura.dsvFormats.{csvFormat, csvWithHeaderFormat, ssvFormat, ssvWithHeaderFormat,
       tsvFormat, tsvWithHeaderFormat}

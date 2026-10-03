@@ -102,12 +102,27 @@ object Dsv extends Dsv2:
   // the same priority as the primitive cell decoders (above the generic `decoder` in `Dsv2`),
   // and short-circuits an absent cell to `Unset` before the inner decoder would `raise` Absent.
   given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
-  =>  ( decodable: => inner is Decodable in Dsv )
+  =>  ( absence: Decodable.Absence in Dsv,
+        fault:   Decodable.Fault in Dsv,
+        format:  Dsv.Format,
+        tactic:  Tactic[Dsv.Error] )
+  =>  ( decodable: (inner is Decodable in Dsv)^ )
   =>  value is Decodable in Dsv =
-    // The by-name inner decoder shares this instance's given-resolution lifetime; laundered
-    // pure per the codec-thunk seal pattern (see rep/DECISIONS.md).
+    // Laundered pure per the codec-thunk seal pattern, like the cell decoders above (see
+    // rep/DECISIONS.md). The inner decoder is by value, not by name: a row's fields are flat
+    // (a recursive product would have infinite width), so nothing needs deferring, and a
+    // deferred thunk would alias the tactic it closes over with the `tactic` parameter — a
+    // separation failure under a tracked tactic. The `optionalityOptions` policies vary
+    // either side: a strict absence raises `Absent`, and lenient faults decode the cell under
+    // `tactic.tolerate`.
     caps.unsafe.unsafeAssumePure:
-      row => if row.data.length == 0 then Unset else decodable.decoded(row)
+      row =>
+        if row.data.length == 0 then
+          if absence.strict then abort(Dsv.Error(format, Dsv.Error.Reason.Absent)) else Unset
+        else if fault.strict then
+          decodable.decoded(row)
+        else
+          tactic.tolerate(decodable.decoded(row)).or(Unset)
 
   given encoder: [encodable: Encodable in Text] => encodable is Encodable in Dsv =
     value => Dsv(encodable.encode(value))
@@ -302,6 +317,7 @@ object Dsv extends Dsv2:
             reader.cell(offset).lay(reader.absent()): cell => decodable.decoded(cell)
 
     given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
+    =>  ( absence: Decodable.Absence in Dsv, fault: Decodable.Fault in Dsv )
     =>  ( field: => inner is Dsv.Field )
     =>  value is Dsv.Field =
       caps.unsafe.unsafeAssumePure:
@@ -309,8 +325,15 @@ object Dsv extends Dsv2:
           type Self = value
           override def width: Int = field.width
 
+          // As the AST decoder's `optionalDecodable`; a cell is fixed-width, so a lenient
+          // fault can be tolerated whole through the reader's tactic.
           def parse(reader: DsvReader^, offset: Int): value =
-            if reader.cell(offset).absent then Unset else field.parse(reader, offset)
+            if reader.cell(offset).absent then
+              if absence.strict then reader.absent() else Unset
+            else if fault.strict then
+              field.parse(reader, offset)
+            else
+              reader.tactic.tolerate(field.parse(reader, offset)).or(Unset)
 
   object ParsableDerivation extends ProductDerivable[Dsv.Field]:
     // The generated parse lambda takes the reader as a neutral `AnyRef`
