@@ -275,7 +275,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   where it was 663, `(1000, 0.01)` gives 9586 where it was 6631, `(100, 0.001)` gives 1438 where
   it was 994, and `hashCount` for `(10_000, 0.01)` is 7 where it was 5. The old sizing delivered
   about four times the requested false-positive rate; the new one delivers the requested rate.
-  (#NNNN)
+  (#2126)
 - `ulysses.BloomFilter#+`, `#++` and `#hits` derive an element's bit positions differently. Old:
   the digests of `(0, value)`, `(1, value)`, … (as a `Digestible` tuple) were concatenated into a
   `BigInt` whose successive remainders modulo `bitSize` were the positions. New: `h₁` and `h₂` are
@@ -284,7 +284,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   until 16 bytes are gathered), and position `i` for `i` in `0 until hashCount` is
   `((h₁ + i·h₂) & Long.MaxValue) % bitSize`. For the same elements, `bits` therefore differs from
   the previous version's; a filter whose `bits` were persisted or exchanged with code built
-  against the old version must be rebuilt. (#NNNN)
+  against the old version must be rebuilt. (#2126)
 - `ulysses.BloomFilter[element, algorithm]` is no longer a `case class`; it is
   `class BloomFilter[element: Digestible, algorithm <: Algorithm] extends caps.Mutable` with a
   private constructor. Removed with the case class: the public constructor
@@ -292,7 +292,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `unapply`, the field `bits: scala.collection.immutable.BitSet`, and `productElement`/
   `productArity`. `bitSize: Int` and `hashCount: Int` remain as `val`s. `equals`/`hashCode`
   compare `bitSize`, `hashCount` and the bits. New: `def population: Int`, the number of set
-  bits. (#NNNN)
+  bits. (#2126)
 - `ulysses.BloomFilter.apply[element: Digestible](approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)[algorithm <: Algorithm](using Hash in algorithm, Permit[HashWeakness[algorithm]])`
   now returns `BloomFilter[element, algorithm]^` (an exclusive, mutable filter) where it returned
   `BloomFilter[element, algorithm]`. New: `update def add(value: element): Unit` and
@@ -304,17 +304,17 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `hits` is unchanged. Under capture checking, code that used one `BloomFilter[…]` value from
   `apply` in several places (as a shared immutable value) must `freeze` it first, since an
   exclusive value may not be aliased; code that only chains `apply(…) + x ++ xs` is unchanged.
-  Outside capture-checked code, nothing changes but the result types. (#NNNN)
+  Outside capture-checked code, nothing changes but the result types. (#2126)
 - `ulysses.BloomFilter#++(elements: Iterable[element]): BloomFilter[element, algorithm]` is now
   `ulysses.BloomFilter#++[collection: murmuration.Traversable by element](elements: collection): BloomFilter[element, algorithm]`.
   A `scala.Iterable` argument is still accepted (through `Traversable.iterable`); the opaque
   `proscenium.List`, `Sequence`, `Set`, `Chain` and a frozen `Array` are now accepted directly,
-  where previously they had to cross via `.stdlib`. (#NNNN)
+  where previously they had to cross via `.stdlib`. (#2126)
 - `ulysses.BloomFilter.apply` with `approximateSize <= 0` or `targetErrorRate` of `0.0` or `1.0`
   now yields a working filter (`bitSize >= 1`, `hashCount >= 1`; see the sizing entry). Old:
   `approximateSize = 0` gave `hashCount = 0`, so `hits` was `true` for every element;
   `targetErrorRate = 1.0` gave `bitSize = 0`, so `+`, `++` and `hits` threw
-  `java.lang.ArithmeticException`; `targetErrorRate = 0.0` gave `bitSize = Int.MaxValue`. (#NNNN)
+  `java.lang.ArithmeticException`; `targetErrorRate = 0.0` gave `bitSize = Int.MaxValue`. (#2126)
 
 ## xenophile
 
