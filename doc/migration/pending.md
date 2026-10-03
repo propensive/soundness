@@ -396,6 +396,12 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `approximateSize = 0` gave `hashCount = 0`, so `hits` was `true` for every element;
   `targetErrorRate = 1.0` gave `bitSize = 0`, so `+`, `++` and `hits` threw
   `java.lang.ArithmeticException`; `targetErrorRate = 0.0` gave `bitSize = Int.MaxValue`. (#2126)
+- `ulysses.Bibliography#lookup(prefix: Data): Iterator[Data]` yields the matching hashes in
+  ascending unsigned lexicographic byte order, where it previously yielded them in the order of
+  `Bibliography#hashes` (the order given to `Bibliography.apply(data: List[Data])`). The set
+  yielded is unchanged. `ulysses.Palimpsest#resolve` tries candidates in this order, so where a
+  signature decodes ambiguously against a library it may now resolve to a different sequence of
+  hashes. (#2141)
 
 ## xenophile
 
