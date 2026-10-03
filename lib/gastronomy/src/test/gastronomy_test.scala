@@ -271,6 +271,65 @@ object Tests extends Suite(m"Gastronomy tests"):
         payload.checksum[Sha2[256]].serialize[Hex]
       . assert(_ == payload.digest[Sha2[256]].serialize[Hex])
 
+    // Vectors from Guava's `Hashing.murmur3_128()`, whose byte order (h₁ then h₂, each
+    // little-endian) the implementation matches exactly; the lengths 16, 17 and 100 cover a whole
+    // block, a block and a byte over, and a tail of four bytes after six blocks.
+    suite(m"MurmurHash3, 128-bit"):
+      import cryptoPermits.permitNonCryptographicHashes
+      import providers.soundnessProvider
+
+      val fox = t"The quick brown fox jumps over the lazy dog. "
+      val hundred = fox+fox+t"0123456789"
+
+      test(m"Empty input"):
+        t"".digest[Murmur3].serialize[Hex].lower
+      . assert(_ == t"00000000000000000000000000000000")
+
+      test(m"One byte"):
+        t"a".digest[Murmur3].serialize[Hex].lower
+      . assert(_ == t"897859f6655555855a890e51483ab5e6")
+
+      test(m"Five bytes"):
+        t"hello".digest[Murmur3].serialize[Hex].lower
+      . assert(_ == t"029bbd41b3a7d8cb191dae486a901e5b")
+
+      test(m"Forty-three bytes"):
+        t"The quick brown fox jumps over the lazy dog".digest[Murmur3].serialize[Hex].lower
+      . assert(_ == t"6c1b07bc7bbc4be347939ac4a93c437a")
+
+      test(m"Exactly one block"):
+        t"0123456789abcdef".digest[Murmur3].serialize[Hex].lower
+      . assert(_ == t"a7d14acf946de04bda08a7635c5bc387")
+
+      test(m"One block and a byte"):
+        t"0123456789abcdef0".digest[Murmur3].serialize[Hex].lower
+      . assert(_ == t"75c0a58587ae24ebca283131b368fb73")
+
+      test(m"A hundred bytes"):
+        hundred.digest[Murmur3].serialize[Hex].lower
+      . assert(_ == t"7cb21b1fb994474dd6bf036a4dd6ef8c")
+
+      test(m"A thousand zero bytes"):
+        Array.fill[Byte](1000)(0.toByte).digest[Murmur3].serialize[Hex].lower
+      . assert(_ == t"567bc8933cbaf22f95fc9e8a894740a9")
+
+      test(m"Digesting in pieces equals digesting whole"):
+        Digester(_ => ()).digest(fox).digest(fox).digest(t"0123456789").apply[Murmur3]
+        . serialize[Hex].lower
+      . assert(_ == t"7cb21b1fb994474dd6bf036a4dd6ef8c")
+
+      test(m"Pieces that straddle the block boundaries"):
+        Digester(_ => ()).digest(t"The qui").digest(t"ck brown fox jumps o")
+        . digest(t"ver the lazy dog. The quick brown fox jumps over the lazy dog. 0123456789")
+        . apply[Murmur3].serialize[Hex].lower
+      . assert(_ == t"7cb21b1fb994474dd6bf036a4dd6ef8c")
+
+      test(m"A seeded digestion"):
+        val digestion = Murmur3.digestion(42L)
+        summon[Text is Digestible].digest(digestion, t"hello")
+        digestion.digest().serialize[Hex].lower
+      . assert(_ == t"086faf60c9b3b8c47abcefb075b83423")
+
     // The point of corpuscular hosting the checksum algorithms: a checksum is digested through
     // exactly the same `.digest[…]` surface as a cryptographic hash, and provider selection is
     // the same single import. `123456789` has the published CRC-32 check value 0xcbf43926.

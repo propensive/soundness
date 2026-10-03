@@ -80,7 +80,7 @@ lib/fulminate/src/core/fulminate.TextEscapes.scala	0	0	1
 lib/fulminate/src/core/fulminate.internal.scala	0	0	2
 lib/galilei/src/core/galilei.AccessRegister.scala	1	0	0
 lib/galilei/src/core/galilei.Local.scala	0	0	3
-lib/gastronomy/src/core/gastronomy.Blake3.scala	9	0	0
+lib/gastronomy/src/core/gastronomy.Blake3.scala	8	0	0
 lib/gastronomy/src/core/gastronomy.Digest.scala	1	0	2
 lib/gastronomy/src/core/gastronomy.PureHashes.scala	23	0	0
 lib/geodesy/src/core/geodesy.Compass.scala	0	3	0

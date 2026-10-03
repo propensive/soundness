@@ -32,6 +32,7 @@
                                                                                                   */
 package corpuscular
 
+import scala.annotation.tailrec
 import scala.caps
 
 import anticipation.*
@@ -50,6 +51,21 @@ import anticipation.*
 // feeds a reusable window with no copy. `value` reads the checksum as the integer the
 // compressed-container formats write into their trailers; `digest` reads it as the big-endian
 // bytes the digest framework expects.
+// The big-endian bytes of a checksum's value, written into fresh scratch and frozen without a
+// copy: the one allocation a checksum's `digest` makes.
+private[corpuscular] object Checksum:
+  @tailrec
+  private def write(target: scala.Array[Byte]^, value: Long, count: Int, index: Int): Unit =
+    if index < count then
+      target(index) = (value >>> (8*(count - 1 - index))).toByte
+      write(target, value, count, index + 1)
+
+  def bytes(value: Long, count: Int): Data =
+    val result = new scala.Array[Byte](count)
+    write(result, value, count, 0)
+    // Fresh and never escaping before this point, so no writer can alias it.
+    Array.unsafeFrozen(result)
+
 sealed trait Crc32 extends Algorithm:
   type Bits = 32
 
@@ -114,11 +130,8 @@ object Crc32:
     update def reset(): Unit = v = 0
     def value: Long = v.toLong & 0xffffffffL
 
-    update def digest(): Data =
-      val v0 = v
-
-      Array(((v0 >>> 24) & 0xff).toByte, ((v0 >>> 16) & 0xff).toByte,
-            ((v0 >>> 8) & 0xff).toByte, (v0 & 0xff).toByte)
+    // Written into fresh scratch and frozen, so the digest allocates nothing but its result.
+    update def digest(): Data = Checksum.bytes(v.toLong, 4)
 
 // CRC-64, in the ECMA-182 form XZ uses (polynomial 0xc96c5795d7870f42, reflected). The JDK has
 // no CRC-64, so only the Soundness provider offers it.
@@ -217,13 +230,7 @@ object Crc64:
     update def reset(): Unit = v = -1L
     def value: Long = ~v
 
-    update def digest(): Data =
-      val v0 = ~v
-
-      Array(((v0 >>> 56) & 0xff).toByte, ((v0 >>> 48) & 0xff).toByte,
-            ((v0 >>> 40) & 0xff).toByte, ((v0 >>> 32) & 0xff).toByte,
-            ((v0 >>> 24) & 0xff).toByte, ((v0 >>> 16) & 0xff).toByte,
-            ((v0 >>> 8) & 0xff).toByte, (v0 & 0xff).toByte)
+    update def digest(): Data = Checksum.bytes(~v, 8)
 
 // Adler-32, the zlib wrapper's checksum.
 sealed trait Adler32 extends Algorithm:
@@ -264,8 +271,4 @@ object Adler32:
 
     def value: Long = (s2 << 16) | s1
 
-    update def digest(): Data =
-      val v0 = (s2 << 16) | s1
-
-      Array(((v0 >>> 24) & 0xff).toByte, ((v0 >>> 16) & 0xff).toByte,
-            ((v0 >>> 8) & 0xff).toByte, (v0 & 0xff).toByte)
+    update def digest(): Data = Checksum.bytes(((s2 << 16) | s1).toLong, 4)

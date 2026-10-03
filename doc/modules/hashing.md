@@ -166,6 +166,21 @@ import cryptoPermits.permitNonCryptographicHashes
 t"123456789".digest[Crc32].serialize[Hex]   // t"cbf43926"
 ```
 
+### Fast hashing
+
+`Murmur3` is MurmurHash3 in its 128-bit form: not a checksum, but not cryptographic either — a
+hash made for hash tables, [Bloom filters](bloom-filters.md) and sharding, where the input is not
+adversarial and a cryptographic digest's rounds would be several times the work for no benefit. It
+sits behind the same permit as the checksums, and its output is byte-for-byte what Guava's
+`murmur3_128()` produces:
+
+```scala
+import cryptoPermits.permitNonCryptographicHashes
+import providers.soundnessProvider
+
+t"hello".digest[Murmur3].serialize[Hex]   // t"029bbd41b3a7d8cb191dae486a901e5b"
+```
+
 A source of bytes — a file, a download — is checksummed without holding it all in memory, by
 digesting its stream as it flows, exactly as `checksum` did above, and a digest of any algorithm
 is a value: comparable, showable, and usable as a key.

@@ -82,6 +82,17 @@ sixteen bytes, such as a CRC, is applied again under a counter until enough byte
 That means the algorithm in scope decides the filter's behavior, and two filters over the same
 elements agree only if they agree on the algorithm.
 
+A Bloom filter has no adversary to resist, only a distribution to spread, so the cryptographic
+BLAKE3 is more hash than it needs: `Murmur3`, the 128-bit MurmurHash3, costs about a fifth as
+much per element and is the algorithm Guava's filters use. It is chosen by naming it, behind the
+same permit as the checksums:
+
+```scala
+import cryptoPermits.permitNonCryptographicHashes
+
+val fast = BloomFilter[Text](10_000, 0.01)[Murmur3]
+```
+
 Because elements enter through the ordinary [hashing](hashing.md) machinery, a case class is
 usable as an element with no preparation, and a filter over a structured key needs no
 serialization step written for it.
