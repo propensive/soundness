@@ -136,19 +136,17 @@ object Array:
     // separation excludes live writers wherever readers alias.
     inline def readUnchecked(index: Int): element = buffer(index)
 
+  // An exclusive reference has sole ownership, so it may also read without the `Optional`
+  // guard: nobody else can have resized or replaced the content. Inline, so that a call with a
+  // concrete element type compiles to the JVM's own array access rather than the boxing
+  // `ScalaRunTime` path; with an inline receiver, because an inline method with an ordinary
+  // receiver binds it to a proxy whose capture set is read-only, which cannot be written through.
+  // An inline receiver is evaluated where it is used, after the index and value arguments.
+  extension [element](inline buffer: Array[element]^)
+    inline def apply(index: Int): element = buffer(index)
+    inline def update(index: Int, value: element): Unit = buffer(index) = value
+
   extension [element](buffer: Array[element]^)
-    // An exclusive reference has sole ownership, so it may also read without the
-    // `Optional` guard: nobody else can have resized or replaced the content.
-    //
-    // Not `inline`, unlike `allocate` and `readUnchecked` above, though an erased element
-    // type costs a boxing `ScalaRunTime` access here. An inline method with an ordinary
-    // receiver binds it to a proxy whose capture set is read-only, which `update` cannot write
-    // through; with an `inline` receiver instead, every module compiles, but a tool launched
-    // by `ethereal.Tests` misbehaves (issue #2128 has the recipe), so they stay as they are.
-    def apply(index: Int): element = buffer(index)
-
-    def update(index: Int, value: element): Unit = buffer(index) = value
-
     def fill(value: element): Unit =
       var index = 0
 
