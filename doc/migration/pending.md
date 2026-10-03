@@ -320,11 +320,11 @@ format. Entries are grouped by module, most-recently-added last within a module.
   parameter), where it was `val port: Int`; `Reactor#port: Int` remains, but is now the port the
   listener is bound to, which differs from the argument when that is `0` (the system then
   chooses a free port). A call passing the port by name, `Reactor(port = …)`, must use
-  `requested = …`. (#PRNUM)
+  `requested = …`. (#2151)
 - `scintillate.SocketServer(0, …).handle(…)` and `scintillate.Httpd(0, …).handle(…)` bind a free
   port chosen by the system, reported as the returned `urticose.Service#port`; an
   `Http.Connection` served by such a `SocketServer` reports that bound port, where it previously
-  reported `0`. (#PRNUM)
+  reported `0`. (#2151)
 
 ## sibylline
 
@@ -483,7 +483,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
 - `urticose.Service` is now `case class Service(cancel: () => Unit, port: Int)`, where it was
   `case class Service(cancel: () => Unit)`; `port` is the port the server is bound to.
   Construction must supply it (the form `Service: () => …` no longer compiles), and an extractor
-  pattern `Service(cancel)` must become `Service(cancel, _)`. (#PRNUM)
+  pattern `Service(cancel)` must become `Service(cancel, _)`. (#2151)
 
 ## vivisection
 
@@ -492,7 +492,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   session reads from the agent's `Listening for transport dt_socket at address: N` line on the
   debuggee's standard output before attaching; previously a `port` of `0` attached to port 0 and
   failed. The DAP adapter's `launch` request now uses this, rather than choosing a port by binding
-  and releasing a probe socket. (#PRNUM)
+  and releasing a probe socket. (#2151)
 
 ## xenophile
 
