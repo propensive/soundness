@@ -884,6 +884,11 @@ object Tests extends Suite(m"Jacinta Tests"):
         Json.unseal(t"null".read[Json]).primitive
       . assert(_ == Json.Primitive.Null)
 
+// A second suite object: the first grew past the JVM's constant-pool limit for one class
+// (`Class too large: jacinta/Tests$`), so the direct-parsing, rendering, schema and
+// interpolator suites live here. The split is by class file, not by subject.
+object DirectTests extends Suite(m"Jacinta direct parsing and format tests"):
+  def run(): Unit =
     suite(m"Direct parsing tests"):
       test(m"an inlined recursive type ties through its own nominal Parsable"):
         given (Tree is Json.Parsable) = Inlinable.parsable[Tree]
