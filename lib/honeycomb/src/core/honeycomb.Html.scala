@@ -369,7 +369,9 @@ object Html extends Tag.Container
 
   // The single, spec-correct HTML serializer, shared by streaming `emit` and synchronous
   // `showable` so the two cannot drift. Void elements omit their close tag; raw-text elements
-  // suppress escaping; whitespace-mode elements are indented when `block` is set.
+  // suppress escaping; whitespace-mode elements are indented when `block` is set. Voidness is
+  // looked up in the DOM by name, but only decides how an *empty* element is closed: an element
+  // which has children, from a tag defined at odds with the DOM, is written with them.
   private def writeHtml
     ( producer: Producer[Text]^,
       dom:      Dom,
@@ -423,7 +425,7 @@ object Html extends Tag.Container
           (mode == Mode.Whitespace || !nodes.exists(_.isInstanceOf[TextNode])) &&
             block
 
-        if !dom.elements(label).lay(false)(_.void) then
+        if nodes.length > 0 || !dom.elements(label).lay(false)(_.void) then
           nodes.each(writeHtml(producer, dom, _, indent + 1, whitespace, mode))
 
           if block && whitespace

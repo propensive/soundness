@@ -635,7 +635,18 @@ class Whatwg() extends Dom:
     Whatwg](autoclose = true, mode = Html.Mode.Whitespace, insertable = true)
 
   val Td = Tag.container["td", Flow, Whatwg](autoclose = true, boundary = true)
-  val Template = Tag.void["template", Whatwg](boundary = true)
+
+  // A template's contents are an inert fragment, so besides flow and metadata content it admits
+  // the children of a list, a table, a row or a `select`, which are otherwise only valid in situ
+  val Template =
+    Tag.container
+      [ "template",
+        Flow | Metadata | "caption" | "colgroup" | "col" | "thead" | "tbody" | "tfoot" | "tr" |
+          "td" | "th" | "li" | "dt" | "dd" | "option" | "optgroup" | "legend" | "summary" |
+          "figcaption" | "source" | "track" | "rt" | "rp",
+        Whatwg ]
+      ( boundary = true )
+
   val Textarea = Tag.container["textarea", "#text", Whatwg](mode = Html.Mode.Rcdata)
 
   val Tfoot = Tag.container["tfoot", "tr", Whatwg](autoclose = true, mode = Html.Mode.Whitespace)
