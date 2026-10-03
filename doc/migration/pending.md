@@ -194,7 +194,7 @@ format. Entries are grouped by module, most-recently-added last within a module.
   overrides it with a URL, `Archetype#html` (and so `document`) writes `<link rel="stylesheet"
   href="…">` in place of the inline `<style>`. A page or feature trait that already defines a
   member named `stylesheetUrl` must rename it, or override this one if it has its type.
-  (#PRNUM)
+  (#2150)
 
 ## honeycomb
 
