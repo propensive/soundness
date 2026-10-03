@@ -672,6 +672,32 @@ object Tests extends Suite(m"Bitumen Tests"):
           b.utf8.s )
       . assert(_ == ("A", "B"))
 
+      test(m"files sharing directories extract without directory entries"):
+        def file(path: Text, content: Text): Tar.Entry.File =
+          Tar.Entry.File
+            ( path  = path.as[Relative on Tar],
+              mode  = UnixMode(),
+              user  = UnixUser(0),
+              group = UnixGroup(0),
+              mtime = 0.bits.u32,
+              data  = Archive.Body(content.in[Data]) )
+
+        val tar = Tarfile
+                   ( List
+                      ( file(t"deep/a.txt", t"A"),
+                        file(t"deep/b.txt", t"B"),
+                        file(t"deep/er/c.txt", t"C"),
+                        file(t"deep/d.txt", t"D") ) )
+
+        val dest = freshDir()
+        tar.extractTo(dest)
+
+        val deep: Path on Linux = dest/"deep"
+        val paths: List[Path on Linux] =
+          List(deep/"a.txt", deep/"b.txt", deep/"er"/"c.txt", deep/"d.txt")
+        paths.map(_.read[Data].utf8)
+      . assert(_ == List(t"A", t"B", t"C", t"D"))
+
       test(m"symlink round-trips"):
         val source = freshDir()
         (source / "real.txt").create[File]()
