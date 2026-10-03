@@ -116,8 +116,12 @@ object Enclave:
       finally
         safely(sh"$path '{admin}' kill".exec[Exit]())
 
-        completionScripts.trim.lines.map(_.as[Path on Linux]).foreach: (item: Path on Linux) =>
-          safely(item.delete())
+        // Parsed under `safely`, like the deletion: an `install` that printed nothing (as when the
+        // launcher and daemon disagree on the protocol) must not raise here, over the error that
+        // is already propagating.
+        completionScripts.trim.lines.each: line =>
+          safely(line.as[Path on Linux]).let: (item: Path on Linux) =>
+            safely(item.delete())
 
 
 case class Enclave(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment)

@@ -263,6 +263,18 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `stop` with an empty parameter list must rename it, or add `override` if it has this signature.
   (#2144)
 
+## proscenium
+
+- `proscenium.Array`'s extensions `apply(index: Int): element` and `update(index: Int, value:
+  element): Unit` on an exclusive `Array[element]^` are now `inline def`s in an extension with an
+  `inline` receiver, `extension [element](inline buffer: Array[element]^)`, where they were
+  ordinary methods of `extension [element](buffer: Array[element]^)`. With a concrete element type
+  they compile to the JVM's array instructions instead of boxing `ScalaRunTime` access. The
+  receiver expression is now evaluated after the index (and, for `update`, the value) rather than
+  before them: code whose receiver expression and arguments have interacting side effects, for
+  example `buffer(index) = grow()` where `grow()` reassigns the `var` named `buffer`, now writes to
+  the array the receiver denotes after the arguments are evaluated. (#2147)
+
 ## reliquary
 
 - Library `reliquary` removed, with its components `reliquary.core` (artifact `reliquary-core`)
