@@ -266,7 +266,7 @@ object internal:
       }
 
 
-  def validateWithin[accrual <: Hazard: Type, context[_]: Type, focus: Type]
+  def validateWithin[accrual: Type, context[_]: Type, focus: Type]
     ( validate:    Expr[Validate[accrual, context, focus]],
       lambda:      Expr[Foci[focus] ?=> context[Any]],
       diagnostics: Expr[Diagnostics] )
