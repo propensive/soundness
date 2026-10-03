@@ -47,7 +47,7 @@ import vacuous.*
 // both of which are JVM-only.
 
 given classpathSubstantiable: (classloader: Classloader) => (Path on Classpath) is Substantiable =
-  path => classloader.java.getResourceAsStream(path.encode.s) != null
+  path => classloader.java.getResource(path.encode.s) != null
 
 extension (classloader: Classloader)
   def classpath: Optional[Classpath] = classloader.urlClassloader.let(Classpath.of(_))
