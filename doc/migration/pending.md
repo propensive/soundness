@@ -149,6 +149,27 @@ format. Entries are grouped by module, most-recently-added last within a module.
   line of `xek` 0.10 and later, instead of `<builder> build --jar <jar> --out <target>
   [--build-id <id>]`. `$XEQ`, or `dist/xeq`, must therefore be an `xek` from the `xek-0.10`
   release or later; the `xeq` script of 0.9 and earlier fails to package. (#2113)
+- New case `exoskeleton.Completions.Installation.InstallResult.Unconfirmed(shell: Shell, path:
+  Text)`: the script was written to `path`, but the shell could not be shown to load it from
+  there. An exhaustive `match` on `InstallResult` must handle it. `InstallResult#pathname` yields
+  its `path`, so `Installation#paths` (and the output of `{admin} install` and
+  `Completions.ensure(force = true)`) includes it. (#2148)
+- `exoskeleton.Completions.install(force: Boolean)` chooses each shell's directory by asking the
+  shell, with standard input closed, standard error discarded, the invocation's `HOME`,
+  `ZDOTDIR`, `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_DATA_DIRS` and `BASH_COMPLETION_USER_DIR`,
+  and five seconds for all shells together. zsh: `zsh -i -c` reports `$fpath` (it previously ran
+  `zsh -c 'source ~/.zshrc; …'`); the first existing writable `fpath` directory under `$HOME` is
+  used, else the first existing writable one, else `$XDG_DATA_HOME/zsh/site-functions` (created)
+  with result `Unconfirmed`. bash: always `${BASH_COMPLETION_USER_DIR:-$XDG_DATA_HOME/bash-completion}/completions`
+  (created), with result `Unconfirmed` unless an interactive bash defines bash-completion's loader
+  (`_comp_load`, `__load_completion` or `_completion_loader`); previously the last
+  `XDG_DATA_DIRS` entry's `bash-completion/completions`, else `$XDG_DATA_HOME`'s, and only if it
+  already existed. fish: `$__fish_config_dir/completions` as fish reports it (created, default
+  `$XDG_CONFIG_HOME/fish/completions`), with result `Unconfirmed` unless it is on
+  `$fish_complete_path`; previously the last `XDG_DATA_DIRS` entry's `fish/vendor_completions.d`,
+  else `$XDG_CONFIG_HOME/fish/completions`, only if it already existed. PowerShell: unchanged
+  except for the time limit. A shell that does not answer within the limit is killed, and its
+  script is still written to the default directory with result `Unconfirmed`. (#2148)
 
 ## gesticulate
 

@@ -186,11 +186,14 @@ extension (shell: Shell)
             sh"""tmux send-keys -t ${tmux.id} '_init_completion() { return 0; }' C-m"""
             . exec[Unit]()
 
+            // `BASH_COMPLETION_USER_DIR` first, as `Completions.install` writes there when set.
             val sourceScript =
-              t"""for d in "$$XDG_DATA_HOME" "$$HOME/.local/share" /usr/local/share """ +
-                t"""/usr/share; do [ -n "$$d" ] && """ +
-                t"""[ -r "$$d/bash-completion/completions/$cmd" ] && """ +
-                t""". "$$d/bash-completion/completions/$cmd" && break; done"""
+              t"""for d in "$${BASH_COMPLETION_USER_DIR:+$$BASH_COMPLETION_USER_DIR/completions}" """ +
+                t""""$$XDG_DATA_HOME/bash-completion/completions" """ +
+                t""""$$HOME/.local/share/bash-completion/completions" """ +
+                t"""/usr/local/share/bash-completion/completions """ +
+                t"""/usr/share/bash-completion/completions; do [ -n "$$d" ] && """ +
+                t"""[ -r "$$d/$cmd" ] && . "$$d/$cmd" && break; done"""
 
             sh"""tmux send-keys -t ${tmux.id} '$sourceScript' C-m""".exec[Unit]()
 
