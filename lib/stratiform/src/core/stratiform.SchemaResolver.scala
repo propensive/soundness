@@ -32,8 +32,10 @@
                                                                                                   */
 package stratiform
 
+import java.util as ju
+
 import anticipation.*
-import rudiments.{each, map, prim}
+import rudiments.{each, exists, map, prim}
 import contingency.*
 import distillate.*
 import gossamer.*
@@ -85,6 +87,42 @@ object SchemaResolver:
   // the signature identity under which it was matched and is cached;
   // and the step that answered.
   case class Resolved(schema: Tels, document: Optional[Tel], signature: Data, step: Step)
+
+  // What resolution needs of a library document: its base hash, and each layer's name and hash,
+  // under the axiom they were computed with. They are pure functions of the document, which is
+  // immutable, so they are computed once per document rather than on every resolution. Only
+  // names and hashes are kept, nothing referring back to the document, so the document remains
+  // collectable as the weak key it is memoised under.
+  private case class Fingerprint(axiom: Tels, base: Data, layers: List[(Text, Data)]):
+    // Hash 0 alone occupies the first `cadence.initial` bytes of a palimpsest body, so a document
+    // none of whose hashes begins with those bytes of `signature` cannot decode it.
+    def admits(signature: Data): Boolean =
+      val initial = SchemaSignature.cadence.initial
+
+      signature.length < initial || (base :: layers.map(_(1))).exists: (hash: Data) =>
+        hash.length >= initial && (0 until initial).forall: index =>
+          hash.readable(index) == signature.readable(index)
+
+  // Keyed by identity, since `Tel` does not override `equals`.
+  private val fingerprints: ju.WeakHashMap[Tel, Fingerprint] = ju.WeakHashMap()
+
+  private def fingerprint(document: Tel, axiom: Tels)
+    ( using Tactic[Bintel.Error], Tactic[Tel.Error] )
+  :   Fingerprint =
+
+    val cached = fingerprints.synchronized(fingerprints.get(document))
+
+    if cached != null && (cached.nn.axiom eq axiom) then cached.nn else
+      val schema = Tels.Reconstructor.fromTel(document)
+      val components = SchemaSignature.componentHashes(document, axiom)
+
+      // The frozen hashes are paired on the stdlib view, as in `accept` below.
+      val layers =
+        schema.layers.readable.toList.map(_.name).zip(components(1).stdlib).to(List)
+
+      val result = Fingerprint(axiom, components(0), layers)
+      fingerprints.synchronized(fingerprints.put(document, result))
+      result
 
   def resolve
     ( pragma:   Tel.Pragma,
@@ -171,17 +209,13 @@ object SchemaResolver:
       // resolution rather than being skipped silently.
       library.each: candidate =>
         if result.absent then
-          val schema = Tels.Reconstructor.fromTel(candidate)
-          val components = SchemaSignature.componentHashes(candidate, axiom)
+          val known = fingerprint(candidate, axiom)
 
-          // As above: the frozen hashes are paired on the stdlib view.
-          val named =
-            schema.layers.readable.toList.map(_.name).zip(components(1).stdlib).to(List)
+          if known.admits(signature) then
+            val decomposed =
+              SchemaSignature.decodeHinted(signature, known.base, known.layers, selection)
 
-          val decomposed =
-            SchemaSignature.decodeHinted(signature, components(0), named, selection)
-
-          if decomposed.present then result = accept(candidate, Step.Library)
+            if decomposed.present then result = accept(candidate, Step.Library)
 
     // Steps 2–3, bare reference (no selector, no signature): the local
     // schema cache only — the developer's working copy. Never the

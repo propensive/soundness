@@ -256,6 +256,21 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
         (resolved.step, memberKeywords(resolved.schema))
       . assert(_ == (Tels.Resolution.Step.Library, t"email,name"))
 
+      test(m"a library document answers past a non-matching one"):
+        val decoy = Text("tel 1.0\n\nname other\n\ndocument\n  field other String\n").read[Tel]
+        val signature = signatureFor(List(t"alpha"))
+        val library = List(decoy, layeredDoc)
+
+        def resolved: SchemaResolver.Resolved = SchemaResolver.resolve
+         ( pragma(layers = List(t"alpha"), signature = Base256.encode(signature)),
+           library = library )
+
+        val first = resolved
+        val second = resolved
+
+        (first.step, memberKeywords(first.schema), memberKeywords(second.schema))
+      . assert(_ == (Tels.Resolution.Step.Library, t"email,name", t"email,name"))
+
       test(m"a bare reference resolves from the local store only"):
         val store = Tels.Resolution.Store.Memory()
         store.install(t"example.com", t"layered", layeredBytes)
