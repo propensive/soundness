@@ -70,6 +70,11 @@ extends Archetype, Mainstay, Masthead, Colophon, Hero(t"Big Headline"), Headline
   override def masthead: Html of (? <: Flow) = P("Site name")
   override def colophon: Html of (? <: Flow) = P("Copyright")
 
+// A page that links its stylesheet from where the application serves it.
+class LinkedPage extends Archetype, VersoPanel:
+  def content: Html of (? <: Flow) = P("body")
+  override def stylesheetUrl: Optional[Text] = t"/site.css"
+
 // A page carrying only the aggregated standard metadata.
 class MetaPage extends Archetype, StandardMetadata(t"Just a description"):
   def content: Html of (? <: Flow) = P("x")
@@ -132,6 +137,21 @@ object Tests extends Suite(m"Graffiti tests"):
 
       test(m"the layout grids are real grids"):
         css.contains(t"display: grid")
+      . assert(_ == true)
+
+    suite(m"Stylesheet delivery"):
+      test(m"a page embeds its stylesheet by default"):
+        html.contains(t"<style>") && !html.contains(t"stylesheet")
+      . assert(_ == true)
+
+      test(m"a page with a stylesheet URL links it instead of embedding it"):
+        val linked = LinkedPage().html.show
+        linked.contains(t"""<link rel="stylesheet" href="/site.css">""")
+        && !linked.contains(t"<style")
+      . assert(_ == true)
+
+      test(m"a linked page still provides its stylesheet for serving"):
+        LinkedPage().css.show.contains(t".graffiti-verso-layout")
       . assert(_ == true)
 
     suite(m"Direction is logical, never left/right"):

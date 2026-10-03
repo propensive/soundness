@@ -190,6 +190,11 @@ format. Entries are grouped by module, most-recently-added last within a module.
   `soundness.hdir`) removed. Its replacement is `honeycomb.HDir.attributive`, of the same type
   and behaviour, in the companion of `honeycomb.HDir`, so it is found through implicit scope
   with no import. Delete any import of `graffiti.hdir` or `soundness.hdir`. (#2139)
+- New member `graffiti.Archetype#stylesheetUrl: Optional[Text]`, default `Unset`; when a page
+  overrides it with a URL, `Archetype#html` (and so `document`) writes `<link rel="stylesheet"
+  href="…">` in place of the inline `<style>`. A page or feature trait that already defines a
+  member named `stylesheetUrl` must rename it, or override this one if it has its type.
+  (#2150)
 
 ## honeycomb
 
