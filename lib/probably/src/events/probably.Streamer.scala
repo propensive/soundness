@@ -40,7 +40,6 @@ import gastronomy.*
 import gossamer.*
 import rudiments.*
 import stratiform.*
-import ulysses.*
 import vacuous.*
 
 // Writes a test run's `TestEvent`s as length-prefixed BinTEL frames to a host's
