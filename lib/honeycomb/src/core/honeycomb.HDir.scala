@@ -33,10 +33,12 @@
 package honeycomb
 
 import gossamer.*
+import prepositional.*
 import spectacular.*
 
 object HDir:
   given showable: HDir is Showable = _.toString.show.lower
+  given attributive: HDir is Attributive to Whatwg.Dir = (key, value) => (key, value.show)
 
 enum HDir:
   case Ltr, Rtl, Auto

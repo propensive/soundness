@@ -817,7 +817,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
           Div(Br).show
         . assert(_ == t"<div><br></div>")
 
-      suite(m"Attribute omission"):
+      suite(m"Attribute omission and direction"):
         test(m"an empty list of classes omits the attribute"):
           Div(`class` = List[Name[CssClass]]())(P("x")).show
         . assert(_ == t"<div><p>x</p></div>")
@@ -834,6 +834,10 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"an empty list of IDs omits the attribute"):
           Td(headers = List[Name[DomId]]())("x").show
         . assert(_ == t"<td>x</td>")
+
+        test(m"a direction is an attribute value without an import"):
+          Body(dir = HDir.Rtl)(P("x")).show
+        . assert(_ == t"""<body dir="rtl"><p>x</p></body>""")
 
       suite(m"Adoption agency algorithm"):
         test(m"unclosed b at end of p"):
