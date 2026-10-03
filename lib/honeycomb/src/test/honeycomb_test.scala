@@ -817,6 +817,24 @@ object Tests extends Suite(m"Honeycombd Tests"):
           Div(Br).show
         . assert(_ == t"<div><br></div>")
 
+      suite(m"Attribute omission"):
+        test(m"an empty list of classes omits the attribute"):
+          Div(`class` = List[Name[CssClass]]())(P("x")).show
+        . assert(_ == t"<div><p>x</p></div>")
+
+        test(m"a list of classes is joined with spaces"):
+          import nomenclature.CssClass.nominative
+          Div(`class` = List[Name[CssClass]](n"one", n"two"))(P("x")).show
+        . assert(_ == t"""<div class="one two"><p>x</p></div>""")
+
+        test(m"an empty class list omits the attribute"):
+          Div(`class` = ClassList(Set[Name[CssClass]]()))(P("x")).show
+        . assert(_ == t"<div><p>x</p></div>")
+
+        test(m"an empty list of IDs omits the attribute"):
+          Td(headers = List[Name[DomId]]())("x").show
+        . assert(_ == t"<td>x</td>")
+
       suite(m"Adoption agency algorithm"):
         test(m"unclosed b at end of p"):
           t"""<div><p><b>X</p></div>""".read[Html of "div"]

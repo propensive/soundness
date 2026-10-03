@@ -33,6 +33,7 @@
 package honeycomb
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
@@ -58,8 +59,9 @@ object Attributive:
   given double: Double is Attributive to Whatwg.Decimal = _ -> _.toString.tt
   given domId: (Name[DomId] is Attributive to Whatwg.Id) = _ -> _
   given cssClass: (Name[CssClass] is Attributive to Whatwg.CssClassList) = _ -> _
-  given classList: ClassList is Attributive to Whatwg.CssClassList =
-    _ -> _.classes.to[List].join(t" ")
+  // An empty list of classes or IDs omits the attribute, as `boolean` does for `false`
+  given classList: ClassList is Attributive to Whatwg.CssClassList = (key, value) =>
+    if value.classes.nil then Unset else (key, value.classes.to[List].join(t" "))
 
   given url: [url: Abstractable across Urls to Text] => url is Attributive to Whatwg.Url =
     (key, value) => (key, value.generic)
@@ -67,10 +69,10 @@ object Attributive:
   given style: Text is Attributive to Whatwg.Css = (key, value) => (key, value)
 
   given cssClassList: List[Name[CssClass]] is Attributive to Whatwg.CssClassList =
-    (key, value) => (key, value.join(t" "))
+    (key, value) => if value.nil then Unset else (key, value.join(t" "))
 
   given domIds: List[Name[DomId]] is Attributive to Whatwg.Ids =
-    (key, value) => (key, value.join(t" "))
+    (key, value) => if value.nil then Unset else (key, value.join(t" "))
 
 trait Attributive extends Typeclass, Resultant:
   def attribute(key: Text, value: Self): Optional[(Text, Optional[Text])]
