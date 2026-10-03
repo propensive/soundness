@@ -30,22 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package breviloquence
+package breviloquenceConsumer
 
+import soundness.*
 
-import anticipation.*
-import contingency.*
-import distillate.Decodable.{Absence, Fault, Nullity}
-import prepositional.*
-import rudiments.*
+import strategies.throwUnsafely
+import errorDiagnostics.stackTracesDiagnostics
 
-// How an `Optional` or `Option` field reads an absent key, a CBOR `null`, or a value its inner
-// decoder rejects: lenient yields `Unset`/`None`, strict raises `Cbor.Error`. Absent keys and
-// nulls are lenient by default; faults are strict.
-package optionalityOptions:
-  given strictCborAbsence:  Absence in Cbor = Absence(true)
-  given lenientCborAbsence: Absence in Cbor = Absence(false)
-  given strictCborNulls:    Nullity in Cbor = Nullity(true)
-  given lenientCborNulls:   Nullity in Cbor = Nullity(false)
-  given strictCborFaults:   Fault in Cbor   = Fault(true)
-  given lenientCborFaults:  Fault in Cbor   = Fault(false)
+// The `Cbor.Ast` accessors, reached from outside `breviloquence` with only the umbrella import,
+// as a consumer would reach them (#1946).
+object UmbrellaAccess:
+  def tagged(bytes: Data): Boolean =
+    val ast = Cbor.unseal(Cbor.ast(Cbor.Ast.parse(bytes)))
+    ast.isTag && ast.tag.tag == 1L && ast.tag.value == 1363896240L

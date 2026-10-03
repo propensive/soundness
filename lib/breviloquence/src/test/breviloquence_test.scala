@@ -219,6 +219,10 @@ object Tests extends Suite(m"Breviloquence Tests"):
         ast.isTag && ast.tag.tag == 1L
       . assert(identity)
 
+      test(m"The AST accessors are reached through the umbrella import alone"):
+        breviloquenceConsumer.UmbrellaAccess.tagged(hex("c11a514b67b0"))
+      . assert(identity)
+
     suite(m"Encoder"):
       test(m"Round-trip integer 42"):
         val original = hex("182a")
