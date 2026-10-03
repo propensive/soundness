@@ -33,7 +33,7 @@
 package embarcadero
 
 import aperture.*
-import rudiments.{reap, prim}
+import rudiments.{each, prim}
 import murmuration.has
 import fulminate.*
 import jacinta.*
@@ -50,6 +50,7 @@ import hypotenuse.*
 import prepositional.*
 import rudiments.map
 import scala.caps
+import scala.collection.mutable as scm
 import serpentine.*
 import spectacular.*
 import turbulence.*
@@ -166,11 +167,23 @@ object Image:
   // ImageHandle → Image.Handle
   // The scoped capability provided by opening an oci-archive as `Image`:
   // `path.open[Image]()`. The entries are materialized from bitumen's sequential reader,
-  // so blobs are found by name over the entry list; their memoized bodies are retained
-  // for the scope's duration, the flat cost of TAR's sequentiality. Archives written by
-  // `Image.archive` place `index.json` before the blobs, so the metadata path is cheap.
+  // and blobs are found by name through an index of them; their memoized bodies are
+  // retained for the scope's duration, the flat cost of TAR's sequentiality. Archives written
+  // by `Image.archive` place `index.json` before the blobs, so the metadata path is cheap.
   class Handle private[embarcadero] (entries: List[Tar.Entry])
   extends caps.ExclusiveCapability:
+
+    // Each file entry's body by name, indexed once: the entries are held for the handle's
+    // lifetime anyway, so a lookup need not walk them. Where a name recurs, the first entry wins,
+    // as a search of the list would find it.
+    private val bodies: scm.HashMap[Text, Archive.Body] = scm.HashMap()
+
+    entries.each:
+      case file: Tar.Entry.File =>
+        if !bodies.contains(file.entryName) then bodies(file.entryName) = file.data
+
+      case _ =>
+        ()
 
     // The body of the blob addressed by a canonical `sha256:<hex>` digest: its stored
     // (for layers: compressed) chunks — undecoded and unverified.
@@ -180,8 +193,8 @@ object Image:
 
       val name = t"blobs/sha256/${digest.s.stripPrefix("sha256:").tt}"
 
-      entries.reap { case file: Tar.Entry.File if file.entryName == name => file.data }
-      . or(abort(Oci.Error(Oci.Error.Reason.MissingBlob(digest))))
+      if bodies.contains(name) then bodies(name)
+      else abort(Oci.Error(Oci.Error.Reason.MissingBlob(digest)))
 
     // The blob addressed by a canonical `sha256:<hex>` digest, as a stream of its stored
     // (for layers: compressed) chunks — undecoded and unverified. (An explicit `Tactic`
@@ -284,9 +297,8 @@ object Image:
 
     // The gathered bytes of a named top-level document (`oci-layout` or `index.json`).
     private def document(name: Text, reason: Oci.Error.Reason)(using Tactic[Oci.Error]): Data =
-      entries.reap { case file: Tar.Entry.File if file.entryName == name => file.data }
-      . or(abort(Oci.Error(reason)))
-      . memoize
+      val body = if bodies.contains(name) then bodies(name) else abort(Oci.Error(reason))
+      body.memoize
 
     // Runs a JSON decode, translating any failure — parse, JSON or media-type errors,
     // thrown under the call site's `throwUnsafely` — to an `InvalidBlob` on the given
