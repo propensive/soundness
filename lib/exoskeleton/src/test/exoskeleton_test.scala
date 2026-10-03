@@ -1028,6 +1028,34 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             List(first, second).map { dir => (dir/t"man"/t"man1"/t"demo.1").encode }
         . check(_ == true)
 
+      suite(m"Asking shells where completions live"):
+        val marker = Completions.marker
+
+        test(m"An answer is read from between its marker lines"):
+          Completions.sections(t"noise\n$marker\n/a\n/b\n$marker\nc\n$marker\ntrailing\n")
+        . assert(_ == List(List(t"/a", t"/b"), List(t"c")))
+
+        test(m"Output with no marker lines is no answer"):
+          Completions.sections(t"noise\nmore noise\n")
+        . assert(_ == Unset)
+
+        test(m"A shell that does not answer in time is abandoned"):
+          given Environment = _ => Unset
+          val start = java.lang.System.nanoTime
+          val query = Completions.ask(List(t"sleep", t"30"))
+          val answer = Completions.answer(query, start + 500_000_000L)
+          (answer, java.lang.System.nanoTime - start < 10_000_000_000L)
+        . assert(_ == (Unset, true))
+
+        test(m"A shell is asked under the invocation's variables"):
+          given Environment = name =>
+            if name == t"XDG_CONFIG_HOME" then t"/elsewhere/config" else Unset
+
+          val script = t"echo $marker; echo $$XDG_CONFIG_HOME; echo $marker"
+          val query = Completions.ask(List(t"sh", t"-c", script))
+          Completions.answer(query, java.lang.System.nanoTime + 10_000_000_000L)
+        . assert(_ == List(List(t"/elsewhere/config")))
+
       // A missing `Inspectable` is never a compile error — `derived` always succeeds and
       // substitutes a marked `toString`, `Showable` or `Encodable` rendering — so coverage can
       // only be held in place by asserting on the renderings themselves.
