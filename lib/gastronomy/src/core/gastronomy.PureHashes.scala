@@ -321,15 +321,20 @@ private[gastronomy] abstract class BlockDigestion(blockSize: Int) extends Digest
     // does not fit in the final block, the padding spills into a second block. The remaining
     // bytes stay zero (a freshly-allocated array).
     val twoBlocks = filled + 1 + bitLengthBytes > blockSize
-    val padded = if twoBlocks then blockSize*2 else blockSize
-    val pad: scala.Array[Byte]^ = new scala.Array[Byte](padded)
-    var i = 0
 
-    while i < filled do { pad(i) = block(i); i += 1 }
-    pad(filled) = 0x80.toByte
-    writeLength(pad, padded - bitLengthBytes, bits)
-
-    compress(pad, 0)
-    if twoBlocks then compress(pad, blockSize)
+    if twoBlocks then
+      val pad: scala.Array[Byte]^ = new scala.Array[Byte](blockSize*2)
+      System.arraycopy(block, 0, pad, 0, filled)
+      pad(filled) = 0x80.toByte
+      writeLength(pad, blockSize*2 - bitLengthBytes, bits)
+      compress(pad, 0)
+      compress(pad, blockSize)
+    else
+      // The padding fits the block the digestion already owns, so it is padded in place: the
+      // digest allocates nothing but its result.
+      java.util.Arrays.fill(block, filled, blockSize, 0.toByte)
+      block(filled) = 0x80.toByte
+      writeLength(block, blockSize - bitLengthBytes, bits)
+      compress(block, 0)
 
     result()
