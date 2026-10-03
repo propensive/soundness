@@ -163,6 +163,37 @@ format. Entries are grouped by module, most-recently-added last within a module.
   both when parsed and as `media"…"` literals, are now accepted. A `match` over `Media.Group`
   that was exhaustive needs a `Haptics` case. (#2107)
 
+## graffiti
+
+- `graffiti.hdir` (`given hdir: HDir is Attributive to Whatwg.Dir`, also exported as
+  `soundness.hdir`) removed. Its replacement is `honeycomb.HDir.attributive`, of the same type
+  and behaviour, in the companion of `honeycomb.HDir`, so it is found through implicit scope
+  with no import. Delete any import of `graffiti.hdir` or `soundness.hdir`. (#2139)
+
+## honeycomb
+
+- `honeycomb.Whatwg#Template` changed from a void tag,
+  `Tag.Void of "template" in Whatwg`, to a container,
+  `Tag.Container of "template" over (Flow | Metadata | "caption" | "colgroup" | "col" | "thead" | "tbody" | "tfoot" | "tr" | "td" | "th" | "li" | "dt" | "dd" | "option" | "optgroup" | "legend" | "summary" | "figcaption" | "source" | "track" | "rt" | "rp") in Whatwg`.
+  `Template(children*)` and `Template(attribute = value)(children*)` now compile. An empty
+  template is serialized as `<template></template>` where it was `<template>`. Parsing
+  `<template>` now reads child nodes up to a required `</template>`: input with an unclosed
+  `<template>`, which parsed as an empty element, is now `Html.Issue.Incomplete("template")`
+  (or `InadmissibleTag`/`MismatchedTag`, as for any unclosed container), and
+  `<template>…</template>`, whose close tag was previously `UnopenedTag`/`MismatchedTag`, now
+  parses. (#2139)
+- Serializing (`Html is Showable`, `Html is Inspectable`, `Document is Streamable`) an
+  `Element` that has children, and whose label names a void tag in the DOM, now writes the
+  children and a closing tag (`<br>x</br>`); previously the children were dropped and no
+  closing tag was written. Such an element arises only from a `Tag` defined with the label of
+  one of the DOM's void tags, or from constructing `Element` directly. Childless elements are
+  unaffected. (#2139)
+- `honeycomb.Attributive.cssClassList` (`List[Name[CssClass]] is Attributive to Whatwg.CssClassList`),
+  `honeycomb.Attributive.classList` (`ClassList is Attributive to Whatwg.CssClassList`) and
+  `honeycomb.Attributive.domIds` (`List[Name[DomId]] is Attributive to Whatwg.Ids`) now yield
+  `Unset` for an empty value, omitting the attribute; previously they yielded the attribute
+  with an empty value, e.g. `class=""`. (#2139)
+
 ## jacinta
 
 - `jacinta.DynamicJsonEnabler` (and its `soundness` export) removed. Its replacement is

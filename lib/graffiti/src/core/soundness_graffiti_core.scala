@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export graffiti.{Archetype, Headline, hdir, TopMenu, urlText, VersoPanel, RectoPanel,
+export graffiti.{Archetype, Headline, TopMenu, urlText, VersoPanel, RectoPanel,
     FoldableRectoPanel,
     Breadcrumbs, Logo, Masthead, Colophon, Mainstay, Hero, Description, Viewport, Keywords, Author,
     ThemeColor, Favicon, Canonical, StandardMetadata, Dashboard}

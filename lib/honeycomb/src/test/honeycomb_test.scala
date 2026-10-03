@@ -781,6 +781,64 @@ object Tests extends Suite(m"Honeycombd Tests"):
           A(href = url"https://example.com/a?b=c#d")(TextNode(t"link")).show
         . assert(_ == t"""<a href="https://example.com/a?b=c#d">link</a>""")
 
+      suite(m"Template content"):
+        test(m"a template shows its children"):
+          Template(P("x")).show
+        . assert(_ == t"<template><p>x</p></template>")
+
+        test(m"a template admits table rows"):
+          Template(Tr(Td("x"))).show
+        . assert(_ == t"<template><tr><td>x</td></tr></template>")
+
+        test(m"an empty template has a closing tag"):
+          Template.show
+        . assert(_ == t"<template></template>")
+
+        test(m"a template's children are parsed"):
+          t"<template><p>x</p></template>".read[Html of "template"]
+        . assert(_ == Template(P("x")))
+
+        test(m"a template round-trips with its attributes"):
+          t"""<template id="row"><tr><td>x</td></tr></template>""".read[Html of "template"].show
+        . assert(_ == t"""<template id="row"><tr><td>x</td></tr></template>""")
+
+        test(m"a template inside a table is not fostered"):
+          t"<table><template><tr><td>x</td></tr></template></table>".read[Html of "table"]
+        . assert(_ == Table(Template(Tr(Td("x")))))
+
+        // The serializer looks voidness up in the DOM by name, so a tag defined at odds with it
+        // must not lose the children it was given.
+        test(m"a container named as a void tag keeps its children"):
+          val Break = Tag.container["br", Phrasing, Whatwg]()
+          Break("x").show
+        . assert(_ == t"<br>x</br>")
+
+        test(m"a void tag still has no closing tag"):
+          Div(Br).show
+        . assert(_ == t"<div><br></div>")
+
+      suite(m"Attribute omission and direction"):
+        test(m"an empty list of classes omits the attribute"):
+          Div(`class` = List[Name[CssClass]]())(P("x")).show
+        . assert(_ == t"<div><p>x</p></div>")
+
+        test(m"a list of classes is joined with spaces"):
+          import nomenclature.CssClass.nominative
+          Div(`class` = List[Name[CssClass]](n"one", n"two"))(P("x")).show
+        . assert(_ == t"""<div class="one two"><p>x</p></div>""")
+
+        test(m"an empty class list omits the attribute"):
+          Div(`class` = ClassList(Set[Name[CssClass]]()))(P("x")).show
+        . assert(_ == t"<div><p>x</p></div>")
+
+        test(m"an empty list of IDs omits the attribute"):
+          Td(headers = List[Name[DomId]]())("x").show
+        . assert(_ == t"<td>x</td>")
+
+        test(m"a direction is an attribute value without an import"):
+          Body(dir = HDir.Rtl)(P("x")).show
+        . assert(_ == t"""<body dir="rtl"><p>x</p></body>""")
+
       suite(m"Adoption agency algorithm"):
         test(m"unclosed b at end of p"):
           t"""<div><p><b>X</p></div>""".read[Html of "div"]
