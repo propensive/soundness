@@ -59,6 +59,63 @@ object Tests extends Suite(m"Synesthesia Tests"):
            Mcp.TextInt(42).inspect )
       . assert(_ == Nil)
 
+    suite(m"Session termination"):
+      import internetAccess.online
+      import supervisors.globalSupervisor
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+      import threading.platformThreading
+      import codepages.utf8Codepage
+      import logging.silentLogging
+      import classloaders.threadContextClassloader
+
+      // No tool, resource or prompt is reached by these requests, so a stub stands in for the
+      // derived specification.
+      given specification: (TestMcpServer.type is Mcp.Specification) = new Mcp.Specification:
+        type Self = TestMcpServer.type
+        def tools(): List[Mcp.Tool] = Nil
+        def resources(): List[Mcp.Resource] = Nil
+        def prompts(): List[Mcp.Prompt] = Nil
+        def invokeTool(target: Self, client: Mcp.Client, method: Text, params: Json): Json = ???
+        def invokeResource(target: Self, method: Text): Mcp.Contents = ???
+
+        def invokePrompt
+          ( target: Self, client: Mcp.Client, method: Text, params: Map[Text, Text] )
+        :   List[Discourse] =
+          ???
+
+      def respond(method: Http.Method, session: Optional[Text]): Http.Status =
+        val headers: proscenium.List[Http.Header] =
+          session.lay(proscenium.List())(id => proscenium.List(Http.Header(t"Mcp-Session-Id", id)))
+
+        given request: Http.Request =
+          Http.Request(method, 1.1, t"localhost".as[Host], t"/mcp", headers, () => Http.emptyBody())
+
+        supervise(TestMcpServer.serve.status)
+
+      test(m"Deleting an open session answers No Content"):
+        respond(Http.Options, t"session-1")
+        respond(Http.Delete, t"session-1")
+      . assert(_ == Http.NoContent)
+
+      test(m"Deleting a session twice answers Not Found the second time"):
+        respond(Http.Options, t"session-2")
+        respond(Http.Delete, t"session-2")
+        respond(Http.Delete, t"session-2")
+      . assert(_ == Http.NotFound)
+
+      test(m"Deleting an unknown session answers Not Found"):
+        respond(Http.Delete, t"session-unknown")
+      . assert(_ == Http.NotFound)
+
+      test(m"Deleting without a session id answers Bad Request"):
+        respond(Http.Delete, Unset)
+      . assert(_ == Http.BadRequest)
+
+      test(m"An unsupported method answers Method Not Allowed"):
+        respond(Http.Put, t"session-3")
+      . assert(_ == Http.MethodNotAllowed)
+
     // Manual-only MCP server runner — NOT an automated test. It serves MCP on :8080
     // and `Thread.sleep`s to keep the server alive for an external MCP client to
     // connect to; it asserts nothing and blocked CI for ~16 minutes. Disabled here;
