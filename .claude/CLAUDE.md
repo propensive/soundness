@@ -57,7 +57,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   (`etc/doccheck.py`; needs the `flame` binary and the release installed into `~/.ivy2/local`, which pinning it in a consumer's `etc/refs` and running `make sync-deps` there does) and
   checks the names they use against the source (`etc/doccheck-names.py`). Run it after changing a
   tutorial or an API a tutorial documents. flame is built against the latest *release*, so a
-  failure that names something renamed since (listed in `doc/migration/pending.md`) is reported
+  failure that names something renamed since (listed in the unreleased `doc/migration/<version>.md`) is reported
   as TOLERATED, not STALE. The conventions the checker relies on — the `// does not compile`
   marker, `<!-- doccheck: skip -->` before a fence that cannot run in a REPL, the
   `<!-- doccheck: language … -->` request, and `doc/fixtures/<tutorial>.scala` preambles — are
@@ -150,7 +150,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Open as **ready for review** (not draft). Enable auto-merge so the PR merges as soon as the `Build` check passes.
 - Immediately before opening the PR, make sure the branch is based upon the current `origin/main`, and rebase if necessary.
 - When several PRs are in flight, stack them: base each new PR branch on the previous open PR's branch and merge bottom-up, so each is attested once. `AGENTS.md` explains why and the rules.
-- Every PR that changes what a consumer of a Soundness library could observe (renames, moves, signatures, removals, behaviour) adds an entry to `doc/migration/pending.md`, written for an LLM to apply. `AGENTS.md` specifies the format; `doc/migration.md` explains the scheme.
+- Every PR that changes what a consumer of a Soundness library could observe (renames, moves, signatures, removals, behaviour) adds an entry to the next release's `doc/migration/<version>.md` (the one whose version has no tag yet; create it, for the next minor version, if every file there is released), written for an LLM to apply. `AGENTS.md` specifies the format; `doc/migration.md` explains the scheme.
 - Title is a clear one-line description of the work.
 - Body follows the PR template (shared by every propensive repository from `propensive/.github`'s `pull_request_template.md`): a single summary paragraph, a blank line, then Markdown release notes for users (with code examples if useful).
 - Whenever a new commit is added to a PR, re-read the PR description and update it if it no longer accurately describes the full set of commits. Each new commit also requires a fresh `make attest && make push` before the `Build` check can pass.

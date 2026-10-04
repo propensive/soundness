@@ -11,7 +11,7 @@ doc/standards/style.md promises they do, and nothing leaks between tutorials.
 
 flame is built against the latest Soundness *release*, while the tutorials document `main`, so
 a rejection can be honest drift rather than a stale example: a diagnostic that names an
-identifier recorded in doc/migration/pending.md is reported as TOLERATED; one whose only
+identifier recorded in the unreleased migration notes is reported as TOLERATED; one whose only
 complaints are `Not found` names — a placeholder the prose introduced but no fence defined —
 as UNDEFINED; and everything else as STALE. A line carrying a `// does not compile` comment is
 submitted on its own and must be rejected; one that compiles is reported as NEGATIVE-FAILED. A
@@ -75,14 +75,27 @@ RENAMED = re.compile(r'`(?:[a-z]\w*\.)?([a-z]\w*)\.([A-Za-z]\w*)`(?:\s*\([^)]*\)
 RENAMED_GROUP = re.compile(r'`(?:[a-z]\w*\.)?([a-z]\w*)\.\{([^}]*)\}`(?:\s*\([^)]*\))?\s+renamed\s+to\s+`\{([^}]*)\}`')
 FLATTENED = re.compile(r'`([a-z]\w*)\.([a-z]\w*)\.([A-Za-z]\w*)` → `([A-Za-z]\w*)`')
 
+def unreleased_notes():
+    """The text of the unreleased migration notes: the newest doc/migration/<version>.md, unless
+    its version is already tagged, when nothing has changed since the release."""
+    versions = [tuple(map(int, os.path.basename(path)[:-3].split('.')))
+                for path in glob.glob('doc/migration/*.md')
+                if re.fullmatch(r'\d+\.\d+\.\d+\.md', os.path.basename(path))]
+    if not versions:
+        return ''
+    version = '.'.join(map(str, max(versions)))
+    tagged = subprocess.run(['git', 'rev-parse', '-q', '--verify', f'refs/tags/{version}'],
+                            capture_output=True).returncode == 0
+    if tagged:
+        return ''
+    with open(f'doc/migration/{version}.md', encoding='utf-8') as file:
+        return file.read()
+
 def release_names():
     """(family, new name) → old name, for every given the migration notes say was renamed since
     the last release; the driver retries a failed import under the old name."""
     older = {}
-    try:
-        text = open('doc/migration/pending.md', encoding='utf-8').read().replace('\n', ' ')
-    except OSError:
-        return older
+    text = unreleased_notes().replace('\n', ' ')
     for family, old, new in RENAMED.findall(text):
         older[(family, new)] = old
     for family, olds, news in RENAMED_GROUP.findall(text):
@@ -119,13 +132,10 @@ def release_names():
     return older
 
 def migration_names():
-    """Every identifier mentioned in doc/migration/pending.md: a diagnostic naming one of them
+    """Every identifier mentioned in the unreleased migration notes: a diagnostic naming one of them
     is drift between the release and `main`, not a stale example."""
     names = set()
-    try:
-        text = open('doc/migration/pending.md', encoding='utf-8').read()
-    except OSError:
-        return names
+    text = unreleased_notes()
     for code in IDENT.findall(text):
         for word in WORD.findall(code):
             if CAMEL.fullmatch(word):

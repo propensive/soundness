@@ -51,11 +51,13 @@ attestation.
 5. Keep each PR's own diff reviewable: the PR base is the branch beneath it, so the diff shows
    only that PR's changes.
 
-## Record every material change in `doc/migration/pending.md`
+## Record every material change in the next release's migration notes
 
 Downstream code is upgraded across Soundness releases by an LLM agent that reads one file per
 release, `doc/migration/<version>.md`, and applies what it describes. `doc/migration.md`
-explains the scheme. Since the 0.64.0 release, every PR contributes to the next file.
+explains the scheme. Since the 0.64.0 release, every PR contributes to the next file: the
+unreleased `doc/migration/<version>.md`, named from the start after the release it will be part
+of, which is the one file in `doc/migration/` whose version has no tag.
 
 ### When an entry is required
 
@@ -110,18 +112,18 @@ A representative entry:
 
 ### Rules
 
-1. Write only to `doc/migration/pending.md`. Never edit a released `doc/migration/<version>.md`
-   except to correct an error in it.
+1. Write only to the unreleased `doc/migration/<version>.md`. Never edit a released one
+   except to correct an error in it. If every file there has been released, create the next,
+   for the next minor version (`0.71.0.md` after 0.70.0), headed `# Changes since <previous>`.
 2. Add the entry in the same PR as the change, in the same commit as the change or a later one.
    `doc/migration/**` is outside the CI input set, so adding or amending an entry does not
    invalidate the PR's attestation.
-3. On release, the release PR renames `doc/migration/pending.md` to
-   `doc/migration/<version>.md` (`git mv`) and does **not** create a new `pending.md`.
-   The release refuses to run while `pending.md` exists or `<version>.md` is missing, so this
-   PR must merge before the tag is pushed. The first PR after the release creates a
-   fresh `pending.md` with a header naming the version it follows.
-4. Reviewing a PR includes checking that `pending.md` covers every observable change the diff
-   makes.
+3. A release needs no preparatory PR: tagging `X.Y.Z` releases `doc/migration/X.Y.Z.md` as it
+   stands. The release refuses to run if `X.Y.Z.md` is missing or another version's notes are
+   unreleased, so to release under a different version than the file names (1.0.0 rather than
+   0.71.0, say), rename it with `git mv` in any PR and merge that before tagging.
+4. Reviewing a PR includes checking that the unreleased notes cover every observable change the
+   diff makes.
 
 ## Dependencies in `etc/refs`, tools in `etc/tools`
 
@@ -168,8 +170,9 @@ git tag -s X.Y.Z && git push --tags
 ```
 
 There is no version to bump: `publishVersion` is driven from the tag through
-`SOUNDNESS_RELEASE_VERSION`. What must merge first is the pull request that renames
-`doc/migration/pending.md` to `doc/migration/<version>.md` (above). The tag then fires
+`SOUNDNESS_RELEASE_VERSION`, and nothing must merge first: the migration notes are already
+named `doc/migration/<version>.md` (above), so any green commit on `main` can be tagged with the
+version its notes name. The tag fires
 `.github/workflows/release.yml`, which runs the shared `release.sh` in propensive/.github.
 Never publish by hand, and never create a release or upload an asset with `gh`.
 
