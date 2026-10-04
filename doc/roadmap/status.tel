@@ -385,7 +385,7 @@ item
   horizon near
   status open
   baseline  doc/migration.md and 0.65.0.md–0.68.0.md exist; the migration directive in etc/release gates the release; no pull-request check (2026-09-25)
-  criterion  doc/migration.md exists; the release (the migration directive in etc/release) refuses to tag without doc/migration/<version>.md; a CI check fails any pull request that changes lib/**/src without touching doc/migration/pending.md
+  criterion  doc/migration.md exists; the release (the migration directive in etc/release) refuses to tag without doc/migration/<version>.md; a CI check fails any pull request that changes lib/**/src without touching the unreleased doc/migration/<version>.md
 
 item
   id dist-3

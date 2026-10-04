@@ -49,12 +49,12 @@ in that format. Several tracks terminate here: it is what `api-6` flows through 
 
 Done when: `doc/migration.md` defines the convention, the release refuses to run without
 `doc/migration/<version>.md`, and a CI check fails any pull request that changes `lib/**/src`
-without touching `doc/migration/pending.md`. The first two hold: the convention is written,
-`0.65.0.md` through `0.68.0.md` exist, and the `migration` directive in `etc/release` refuses
-a tag while `pending.md` survives or the version's notes are missing. The pull-request check
-is what remains: `main.yml` verifies the attestation and nothing else. The convention is not
-label-based: every material change records itself in `pending.md`, and the release renames
-the file.
+without touching the unreleased migration notes. The first two hold: the convention is
+written, `0.65.0.md` onwards exist, and the `migration` directive in `etc/release` refuses a tag
+while the version's notes are missing or another version's are unreleased. The pull-request
+check is what remains: `main.yml` verifies the attestation and nothing else. The convention is
+not label-based: every material change records itself in the next release's
+`doc/migration/<version>.md`, named after that release from the start.
 
 ## dist-3: LIRA exists
 

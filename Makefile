@@ -83,11 +83,11 @@ push:
 	git push origin refs/notes/ci-attestation
 
 # Releases are cut by tagging, not by make. There is no version to bump — `publishVersion` comes
-# from the tag — so the release PR is the one that renames doc/migration/pending.md to
-# doc/migration/<version>.md; merge that, then `git tag -s X.Y.Z && git push --tags`. The tag
+# from the tag — and nothing to merge first, since the notes accumulate in
+# doc/migration/<version>.md from the start: `git tag -s X.Y.Z && git push --tags`. The tag
 # fires .github/workflows/release.yml, which runs the shared release.sh in propensive/.github: it
 # gates on a signed tag, on CI already being green on that commit (which verifies the attestation
-# note), on the migration notes being finalised, on groupCheck, and on every pin being a release;
+# note), on the migration notes for that version, on groupCheck, and on every pin being a release;
 # then drafts the release, uploads six hundred jars in batches, checks every digest, and
 # publishes. If anything fails, the release and the tag are both deleted. See etc/release. This
 # target survives only to say so.

@@ -6,14 +6,14 @@ release onwards every release ships a machine-oriented record of what changed.
 
 ## How it works
 
-- `doc/migration/pending.md` accumulates the changes since the last release. Every PR that
-  makes a material change to the public API or observable behaviour adds an entry to it.
-- Before a release is cut, `pending.md` is renamed to `doc/migration/<version>.md`
-  (for example `doc/migration/0.65.0.md` for Soundness 0.65.0), in the pull request that
-  precedes the tag. The release refuses to run while `pending.md` still exists, or while
-  `<version>.md` is missing, so the rename cannot be skipped. The first change
-  after the release starts a new `pending.md`. Released files are not edited afterwards
-  except to correct mistakes.
+- The changes since the last release accumulate in `doc/migration/<version>.md`, named from
+  the start after the release they will be part of (for example `doc/migration/0.71.0.md`
+  after Soundness 0.70.0). Every PR that makes a material change to the public API or
+  observable behaviour adds an entry to it; the first such change after a release creates it.
+- Tagging the release publishes the file as it stands, so no change has to merge first. The
+  release refuses to run while `<version>.md` is missing, or while another version's notes are
+  unreleased, so the notes cannot be skipped or stranded under the wrong version. Released
+  files are not edited afterwards except to correct mistakes.
 - The result is one file per release, each describing exactly the changes between the
   previous release and that one.
 

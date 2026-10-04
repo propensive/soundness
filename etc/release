@@ -20,9 +20,9 @@ build      soundness.all.compile soundness.js.compile
 # crosses; the environment makes all modules resolve identically, so a few suffice.
 probes     beneficence.plugin larceny.plugin rudiments.core rudiments.core.js rudiments.core.native
 
-# The migration notes must be finalised: the release PR renames pending.md to <version>.md, and
-# the first change after the release starts a new pending.md. A surviving pending.md means that
-# PR has not merged, so the tag names a commit whose notes are still unreleased.
+# The migration notes accumulate in <version>.md, named after the next release from the first
+# change after the last; the release refuses to run while that file is missing, or while another
+# version's notes are unreleased.
 migration  doc/migration
 
 # The trust boundary is the signed attestation note on refs/notes/ci-attestation, not the runner.
