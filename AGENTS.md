@@ -131,7 +131,7 @@ Soundness sits at the bottom of the stack and depends on nothing propensive: `et
 a repository pins the libraries its jars are compiled against, is empty here. What Soundness
 *runs* is pinned in `etc/tools`: the flair compiler plugin, `dev.propensive:flair-plugin`, which
 every library compiles with (`-P:flair:` options in `flairToolchain`), and fume, which runs the
-tests. The `xek` *builder* is pinned separately, by version and SHA-256, in `etc/xeq.tsv`.
+tests. The `xek` *builder* is pinned separately, by version and SHA-256, in `etc/xek.tsv`.
 Downstream — Pyrocosm, then fume, flame and flair — pins Soundness in its `etc/refs`.
 
 A tool is always a **release**, never a snapshot. A tool appears in no POM, so it is not part
