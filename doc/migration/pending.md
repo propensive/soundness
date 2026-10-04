@@ -78,6 +78,15 @@ format. Entries are grouped by module, most-recently-added last within a module.
   …))`); `undefined` (0xF7) is unchanged. New givens `breviloquence.optionalityOptions.{strictCborAbsence,
   lenientCborAbsence, strictCborNulls, lenientCborNulls, strictCborFaults, lenientCborFaults}`
   (exported to `soundness.optionalityOptions`). (#2130)
+- The extension methods on `breviloquence.Cbor.Ast` moved from the top level of package
+  `breviloquence` (where they were `@unexported`) into the companion `breviloquence.Cbor.Ast`:
+  `unset`, `isInteger`, `isFloat`, `isTextString`, `isBoolean`, `nullary`, `isTag`,
+  `isByteString`, `isMap`, `isArray`, `primitive`, `elements`, `entries`, `element`, `key`,
+  `value`, `index`, `long`, `double`, `string`, `byteString`, `boolean`, `tag` and `array`.
+  Signatures and behaviour are unchanged; they now resolve through implicit scope wherever a
+  `Cbor.Ast` is used, including with `import soundness.*` alone. Remove any by-name import of
+  them from `breviloquence` (`import breviloquence.isTag`), and rewrite a prefix call such as
+  `breviloquence.long(ast)` as `ast.long`. (#2153)
 
 ## caesura
 

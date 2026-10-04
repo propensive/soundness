@@ -551,6 +551,103 @@ object Cbor extends Cbor2, Dynamic:
       append(builder, cbor)
       builder.toString.tt
 
+    // Accessors over the opaque AST representation, in the companion so that they are in
+    // implicit scope wherever a `Cbor.Ast` is used, including through `soundness`, without
+    // being top-level names whose generic spellings (`long`, `string`, `array`, `index`) would
+    // clash in the umbrella.
+    extension (cbor: Cbor.Ast)
+      inline def unset: Boolean = cbor == vacuous.Unset
+      inline def isInteger: Boolean = cbor.isInstanceOf[Long]
+      inline def isFloat: Boolean = cbor.isInstanceOf[Double]
+      inline def isTextString: Boolean = cbor.isInstanceOf[String]
+      inline def isBoolean: Boolean = cbor.isInstanceOf[Boolean]
+      inline def nullary: Boolean = cbor.asInstanceOf[AnyRef] eq Cbor.CborNull
+      inline def isTag: Boolean = cbor.isInstanceOf[Cbor.Tag]
+
+      // Byte strings have runtime class `[B`; arrays/maps have `[Ljava/lang/Object;`.
+      inline def isByteString: Boolean = cbor.isInstanceOf[scala.Array[Byte]]
+
+      // Maps and arrays share the `Array[AnyRef]` runtime layout. Maps have an
+      // even-length backing array; arrays are odd-length (with sentinel padding
+      // when the logical element count is even).
+      inline def isMap: Boolean =
+        cbor.isInstanceOf[scala.Array[AnyRef]] && (cbor.asInstanceOf[scala.Array[?]].length & 1) == 0
+
+      inline def isArray: Boolean =
+        cbor.isInstanceOf[scala.Array[AnyRef]] && (cbor.asInstanceOf[scala.Array[?]].length & 1) == 1
+
+      def primitive: Primitive =
+        if isInteger then Primitive.Integer
+        else if isFloat then Primitive.Float
+        else if isTextString then Primitive.TextString
+        else if isByteString then Primitive.ByteString
+        else if isBoolean then Primitive.Boolean
+        else if isMap then Primitive.Map
+        else if isArray then Primitive.Array
+        else if isTag then Primitive.Tag
+        else if unset then Primitive.Undefined
+        else Primitive.Null
+
+      // `raise`, not `abort` (jacinta's leaf pattern): under an accruing scope every mistyped or
+      // absent leaf registers its own error and continues with its caller's inconsequential `yet`
+      // fallback — the derived record decoder detects the failure by foci delta and never lets the
+      // fallback reach construction. Under a fail-fast tactic, the `raise` escapes identically.
+      private def expected(expected: Primitive): Unit raises Cbor.Error =
+        if unset then raise(Cbor.Error(Reason.Absent))
+        else raise(Cbor.Error(Reason.NotType(primitive, expected)))
+
+      inline def elements: Int = Cbor.Ast.length(cbor)
+      inline def entries: Int = Cbor.Ast.size(cbor)
+
+      def element(index: Int): Cbor.Ast = cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index)
+
+      inline def key(index: Int): Cbor.Ast = cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index*2)
+      inline def value(index: Int): Cbor.Ast = cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index*2 + 1)
+
+      def index(key: String): Int =
+        val array = cbor.asInstanceOf[Array[Any]^{}]
+        val count = array.length
+        var index = 0
+
+        while index < count do
+          if array.readUnchecked(index) == key then return index/2
+          index += 2
+
+        -1
+
+      def long: Long raises Cbor.Error =
+        if isInteger then cbor.asInstanceOf[Long] else if isFloat then cbor.asInstanceOf[Double].toLong
+        else expected(Primitive.Integer) yet 0L
+
+      def double: Double raises Cbor.Error =
+        if isFloat then cbor.asInstanceOf[Double]
+        else if isInteger then cbor.asInstanceOf[Long].toDouble
+        else expected(Primitive.Float) yet 0.0
+
+      def string: String raises Cbor.Error =
+        if isTextString then cbor.asInstanceOf[String] else expected(Primitive.TextString) yet ""
+
+      def byteString: Array[Byte]^{} raises Cbor.Error =
+        if isByteString then cbor.asInstanceOf[Array[Byte]^{}]
+        else expected(Primitive.ByteString) yet Array.empty[Byte]
+
+      def boolean: Boolean raises Cbor.Error =
+        if isBoolean then cbor.asInstanceOf[Boolean] else expected(Primitive.Boolean) yet false
+
+      def tag: Cbor.Tag raises Cbor.Error =
+        if isTag then cbor.asInstanceOf[Cbor.Tag]
+        else expected(Primitive.Tag) yet Cbor.Tag(0L, vacuous.Unset)
+
+      def array: Array[Cbor.Ast]^{} raises Cbor.Error =
+        if isArray then
+          val full = cbor.asInstanceOf[Array[Cbor.Ast]^{}]
+          val count = elements
+
+          if count == full.length then full else Array.tabulate(count)(full.readable(_))
+        else
+          expected(Primitive.Array)
+          Array.empty[Cbor.Ast]
+
   final class Tag(val tag: Long, val value: Any):
     override def hashCode: Int = (tag.hashCode*31)^value.hashCode
 
