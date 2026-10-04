@@ -467,8 +467,12 @@ trait Tel2 extends Tel3:
                   val variant: Tel = Tel.make(compounds.readable.head)
                   val variantKeyword: Text = labels(variant.keyword).or(variant.keyword)
 
+                  // Each variant's result is widened to `derivation`, so that `delegate`
+                  // folds over one type rather than the union of every variant's: a
+                  // singleton variant's type normalises differently from the others', and
+                  // an anchored derivation then fails capture checking (#1972).
                   delegate(variantKeyword): [variant <: derivation] =>
-                    ctx => ctx.decoded(variant)
+                    ctx => (ctx.decoded(variant): derivation)
 
   object EncodableDerivation extends Derivable[Tel.Encodable]:
     inline def conjunction[derivation <: Product: ProductReflection]

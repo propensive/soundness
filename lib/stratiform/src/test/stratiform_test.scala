@@ -439,6 +439,16 @@ object Tests extends Suite(m"Stratiform Tests"):
         shape.encode.as[Tests.Shape2]
       . assert(_ == Tests.Shape2.Dot)
 
+      test(m"an anchored decoder reads a singleton variant"):
+        val value: Anchored = Anchored.Blank
+        value.encode.as[Anchored]
+      . assert(_ == Anchored.Blank)
+
+      test(m"an anchored decoder reads a product variant"):
+        val value: Anchored = Anchored.Measure(2.5)
+        value.encode.as[Anchored]
+      . assert(_ == Anchored.Measure(2.5))
+
       test(m"decoding a sum from an empty node raises Absent, not a crash"):
         capture[Tel.Error](t"\n".read[Tel].as[Tests.Shape2]).reason
       . assert(_ == Tel.Error.Reason.Absent)
