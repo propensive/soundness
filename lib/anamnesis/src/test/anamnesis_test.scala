@@ -60,6 +60,11 @@ object Tests extends Suite(m"Anamnesis tests"):
     val alpha: Ref of Box in db.type = Box(t"Alpha").store()
     val beta: Ref of Box in db.type = Box(t"Beta").store()
 
+    test(m"A database is declared with the umbrella import alone"):
+      anamnesisConsumer.UmbrellaAccess.folders()
+
+    . assert(_ == 1)
+
     test(m"Database is initally empty"):
       alpha.lookup[Pencil]
 
