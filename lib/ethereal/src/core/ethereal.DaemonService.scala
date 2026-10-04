@@ -51,31 +51,37 @@ import vacuous.*
 // A `DaemonService` is a *capability*: it holds the daemon's shutdown and broadcast sinks
 // and the client's live stdin, scoped to one daemon-client invocation (the 2026-07-06
 // service-class ruling; see rep/DECISIONS.md).
-case class DaemonService[bus <: Matchable]
-  ( pid:        Pid,
-    shutdown:   () => Unit,
-    cliInput:   Terminus,
-    cliOutput:  Terminus,
-    cliError:   Terminus,
-    executable: Path on Local,
-    deliver:    bus => Unit,
-    bus:        Chain[bus],
-    script:     Text,
-    startTime:  Long,
-    helpThunk:  () => Optional[Help],
-    setMode:    Tty => Unit,
-    run:        (Text, List[Text], Optional[Text]) => Int,
-    invokedAs:  Optional[Text],
-    sizeThunk:  () => Optional[(Int, Int)],
-    umask:      Optional[Umask],
+abstract class DaemonService
+  ( val pid:        Pid,
+    val shutdown:   () => Unit,
+    val cliInput:   Terminus,
+    val cliOutput:  Terminus,
+    val cliError:   Terminus,
+    val executable: Path on Local,
+    val script:     Text,
+    val startTime:  Long,
+    val helpThunk:  () => Optional[Help],
+    val setMode:    Tty => Unit,
+    val run:        (Text, List[Text], Optional[Text]) => Int,
+    val invokedAs:  Optional[Text],
+    val sizeThunk:  () => Optional[(Int, Int)],
+    val umask:      Optional[Umask],
     // The client's descriptors, for galilei: a path naming one (`/dev/stdin`, `/dev/fd/63`)
     // opens the client's, carried over the session, rather than the daemon's own.
-    fdtable: Optional[Fdtable] = Unset,
+    val fdtable: Optional[Fdtable] = Unset,
     // The native bytes of each argument, environment entry or working directory whose text
     // form lost something (`Launcher.Raw`); empty in the ordinary case.
-    raws:    List[Launcher.Raw] = Nil )
+    val raws:    List[Launcher.Raw] = Nil )
 extends Entrypoint, Umask.Provider, Fdtable.Provider, caps.ExclusiveCapability:
-  def broadcast(message: bus): Unit = deliver(message)
+  // The type of the messages this daemon's clients exchange (`DaemonService over bus`); left
+  // abstract where a daemon exchanges none.
+  type Transport <: Matchable
+
+  // Messages broadcast by the daemon's other clients, as they arrive.
+  def bus: Chain[Transport]
+
+  // Sends a message to every other client of the daemon.
+  def broadcast(message: Transport): Unit
 
   // `{admin} shutdown`, and any invocation that wants the daemon gone once it has finished.
   override def retire(): Unit = shutdown()

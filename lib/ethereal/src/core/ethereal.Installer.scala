@@ -78,7 +78,7 @@ object Installer:
     case PathNotWritable
 
 
-  def candidateTargets()(using service: DaemonService[?], diagnostics: Diagnostics)
+  def candidateTargets()(using service: DaemonService, diagnostics: Diagnostics)
     ( using Environment, System )
     ( using Tactic[Install.Error], (DaemonLogEvent is Loggable)^ )
   :   List[Path on Linux] =
@@ -108,7 +108,7 @@ object Installer:
 
 
   def install(force: Boolean = false, target: Optional[Path on Linux] = Unset)
-    ( using service: DaemonService[?], environment: Environment )
+    ( using service: DaemonService, environment: Environment )
     ( using erased effectful: Effectful )
     ( using Diagnostics )
     ( using Tactic[Install.Error], (DaemonLogEvent is Loggable)^ )

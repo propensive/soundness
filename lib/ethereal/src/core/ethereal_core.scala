@@ -76,11 +76,13 @@ import filesystemOptions.deleteRecursively
 
 import filesystemBackends.javaBaseFilesystem
 
-def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus]^{service} =
+def service[bus <: Matchable](using service: DaemonService over bus)
+:   (DaemonService over bus)^{service} =
+
   service
 
 def cli[bus <: Matchable](using executive: Executive)
-  ( block: (DaemonService[bus], executive.Interface, Environment, Monitor) ?=> executive.Return )
+  ( block: (DaemonService over bus, executive.Interface, Environment, Monitor) ?=> executive.Return )
   ( using interpreter: Interpreter,
           threading:   Threading,
           handler:     Backstop )
@@ -420,17 +422,15 @@ def cli[bus <: Matchable](using executive: Executive)
            executive.help(name, environment, () => directory, stdio, login):
              (interface: executive.Interface) ?=> block(using service, interface, environment, summon[Monitor])
 
-        lazy val service: DaemonService[bus] =
+        lazy val service: DaemonService over bus =
           scala.caps.unsafe.unsafeAssumeSeparate:
-           DaemonService[bus]
+           new DaemonService
              ( pid,
                () => drain(),
                shellInput,
                shellOutput,
                shellError,
                script.as[Path on Local],
-               deliver(pid, _),
-               clientState.bus.chain,
                name,
                startTime,
                () => helpValue,
@@ -440,7 +440,10 @@ def cli[bus <: Matchable](using executive: Executive)
                () => windowSize0(),
                umask.let(Umask.parse(_)),
                session.fdtable,
-               raws )
+               raws ):
+             type Transport = bus
+             def bus: Chain[Transport] = clientState.bus.chain
+             def broadcast(message: Transport): Unit = deliver(this.pid, message)
 
         Log.fine(DaemonLogEvent.NewCli)
 

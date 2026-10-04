@@ -57,7 +57,7 @@ import backstops.silentBackstop
 // here rather than staged in the fixture, whose quoted body cannot carry galilei's
 // capture-annotated types.
 object Readers:
-  def read[bus <: Matchable](path: Text)(using service: DaemonService[bus]): Optional[Text] =
+  def read(path: Text)(using service: DaemonService): Optional[Text] =
     import filesystemBackends.javaBaseFilesystem
     import charsets.utf8Charset
     import textSanitizers.skipSanitizer
@@ -65,13 +65,19 @@ object Readers:
 
   // The bytes of argument `index` as the client gave them, in hex, or `(text)` when the text
   // carried them exactly; compiled here for the same reason.
-  def rawArgument[bus <: Matchable](index: Int)(using service: DaemonService[bus]): Text =
+  def rawArgument(index: Int)(using service: DaemonService): Text =
     service.rawArgument(index) match
       case bytes: Data => Text(bytes.readable.map(b => f"${b & 0xff}%02x").mkString)
       case _           => t"(text)"
 
+  // A service whose clients exchange `Text` messages: `over` fixes the type `broadcast` takes and
+  // `bus` yields (#2161).
+  def announce(message: Text)(using service: DaemonService over Text): Chain[Text] =
+    service.broadcast(message)
+    service.bus
+
   // Runs `script` with `sh -c` on the client's terminal; compiled here for the same reason.
-  def terminal[bus <: Matchable](script: Text)(using service: DaemonService[bus]): Int =
+  def terminal(script: Text)(using service: DaemonService): Int =
     service.terminal(t"sh", List(t"-c", script))
 
 object Tests extends Suite(m"Ethereal Tests"):
