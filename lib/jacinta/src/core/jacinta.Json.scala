@@ -2303,6 +2303,17 @@ object Json extends Json2, Dynamic:
   // `object Json` extends `Dynamic`, which suppresses the universal-apply
   // synthesis for `Json(...)`; these forward to the constructor manually.
   def apply(value: Any): Json = new Json(value)
+
+  // A raw `Int` in the AST is a packed small decimal, not an integer (see `Ast.isSmallBcd`), so
+  // the narrower primitives are widened to the AST's own number forms, never stored as they are.
+  // `Long` and `Double` have overloads of their own, which store them as they are, so that numeric
+  // widening never selects the `Float` overload for a `Long`.
+  def apply(value: Long): Json = new Json(value)
+  def apply(value: Double): Json = new Json(value)
+  def apply(value: Int): Json = new Json(value.toLong)
+  def apply(value: Short): Json = new Json(value.toLong)
+  def apply(value: Byte): Json = new Json(value.toLong)
+  def apply(value: Float): Json = new Json(value.toDouble)
   def apply(value: Any, positions: Optional[Json.PositionIndex]): Json = new Json(value, positions)
 
   // Defined on the companion directly (not as a `Json.type` extension) because
