@@ -314,6 +314,18 @@ format. Entries are grouped by module, most-recently-added last within a module.
   propensive/lira and versioned with lira, not with Soundness. The `soundness-tool` bundle no
   longer contains them. (#2111)
 
+## scintillate
+
+- `scintillate.Reactor`'s first constructor parameter is now `requested: Int` (a plain
+  parameter), where it was `val port: Int`; `Reactor#port: Int` remains, but is now the port the
+  listener is bound to, which differs from the argument when that is `0` (the system then
+  chooses a free port). A call passing the port by name, `Reactor(port = …)`, must use
+  `requested = …`. (#2151)
+- `scintillate.SocketServer(0, …).handle(…)` and `scintillate.Httpd(0, …).handle(…)` bind a free
+  port chosen by the system, reported as the returned `urticose.Service#port`; an
+  `Http.Connection` served by such a `SocketServer` reports that bound port, where it previously
+  reported `0`. (#2151)
+
 ## sibylline
 
 - `sibylline.Anthropic` now sends a structured-output schema (`elicit`, `elicitAll`) as the JSON
@@ -465,6 +477,22 @@ format. Entries are grouped by module, most-recently-added last within a module.
   yielded is unchanged. `ulysses.Palimpsest#resolve` tries candidates in this order, so where a
   signature decodes ambiguously against a library it may now resolve to a different sequence of
   hashes. (#2141)
+
+## urticose
+
+- `urticose.Service` is now `case class Service(cancel: () => Unit, port: Int)`, where it was
+  `case class Service(cancel: () => Unit)`; `port` is the port the server is bound to.
+  Construction must supply it (the form `Service: () => …` no longer compiles), and an extractor
+  pattern `Service(cancel)` must become `Service(cancel, _)`. (#2151)
+
+## vivisection
+
+- `vivisection.Debuggee(command, port = 0)` launches the debuggee with
+  `-agentlib:jdwp=…,address=*:0`, so the agent binds a free port of its own choosing, which the
+  session reads from the agent's `Listening for transport dt_socket at address: N` line on the
+  debuggee's standard output before attaching; previously a `port` of `0` attached to port 0 and
+  failed. The DAP adapter's `launch` request now uses this, rather than choosing a port by binding
+  and releasing a probe socket. (#2151)
 
 ## xenophile
 

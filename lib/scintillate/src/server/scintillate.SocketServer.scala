@@ -376,8 +376,9 @@ extends RequestServable:
         // crosses into the service's cancel thunk as a neutral carrier, so the fresh
         // `Service^` does not hide the method's parameters — the same boundary idiom
         // as the per-request `bodyRef`.
-        val reactor0: AnyRef = Reactor(port, local)(handler).asInstanceOf[AnyRef]
-        Service(() => reactor0.asInstanceOf[Reactor].stop())
+        val reactor = Reactor(port, local)(handler)
+        val reactor0: AnyRef = reactor.asInstanceOf[AnyRef]
+        Service(() => reactor0.asInstanceOf[Reactor].stop(), reactor.port)
 
       case _ =>
         handleSession: session ?=>
@@ -424,6 +425,11 @@ extends RequestServable:
 
     val serverSocket = startServer()
 
+    // The server as bound: for a request of port 0, the system chose the port, and it is that
+    // port which each connection reports.
+    val bound: SocketServer =
+      if port == 0 then copy(port = serverSocket.getLocalPort)(using errorPage) else this
+
     // A failure in a per-connection daemon (anything not already turned into an HTTP
     // response) is logged and accepted, isolating it to that connection: the server
     // keeps accepting, and the error neither escalates nor is dumped to stderr.
@@ -436,7 +442,7 @@ extends RequestServable:
      . protect:
         // Daemon bodies must be pure context functions, so the server, the handler and each
         // socket cross into them as `AnyRef` rims (the `AnyRef`-rim recipe).
-        val self: AnyRef = this
+        val self: AnyRef = bound
         // Eta-wrapped into a capture-neutral `AnyRef => Unit` (capability-typed function
         // types re-hide when crossed through a rim; the kernel-module-sep finding), since a
         // context-function value applies itself in any non-context-function position.
@@ -478,7 +484,7 @@ extends RequestServable:
                   case _ =>
                     t""
 
-                if protocol == t"h2" then Http2Serve.serveSession(scope0, in, out, port)
+                if protocol == t"h2" then Http2Serve.serveSession(scope0, in, out, self1.port)
                 else
                   // An HTTP/1.1 keep-alive connection is also a per-connection
                   // scope; its session `handle` serves the connection's requests.
@@ -502,6 +508,5 @@ extends RequestServable:
           acceptLoop.stop()
           safely(serverSocket.close())
 
-        Service: () =>
-          safely(cancel.fulfill(()))
+        Service(() => safely(cancel.fulfill(())), serverSocket.getLocalPort)
 

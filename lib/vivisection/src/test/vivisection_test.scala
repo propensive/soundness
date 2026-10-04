@@ -56,13 +56,6 @@ object Attach:
   given showable: Attach is Showable = _ => t"attach"
 
 object Tests extends Suite(m"Vivisection tests"):
-  // An ephemeral free port, so live cases never collide on a fixed number and can run alongside
-  // one another. The brief gap between closing the probe socket and the debuggee binding is a
-  // negligible race for a test.
-  def freePort(): Int =
-    val socket = java.net.ServerSocket(0)
-    try socket.getLocalPort finally socket.close()
-
   // The debuggee's classpath — the one this suite's classes were loaded from, which under a
   // test-running host is not the JVM's — for launching it and for opening evaluations against.
   def fixtureClasspath: LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
@@ -85,7 +78,7 @@ object Tests extends Suite(m"Vivisection tests"):
     val classpathText = fixtureClasspath()
     val outcome = Promise[result]()
     val command: Command = sh"java -classpath $classpathText $fixtureClass"
-    val debuggee: Debuggee = Debuggee(command, freePort())
+    val debuggee: Debuggee = Debuggee(command, 0)
 
     debuggee.session:
       // The breakpoint is set by source position while the VM stands suspended at startup, before
@@ -116,7 +109,7 @@ object Tests extends Suite(m"Vivisection tests"):
 
     val classpathText = fixtureClasspath()
     val command: Command = sh"java -classpath $classpathText $fixtureClass"
-    val debuggee: Debuggee = Debuggee(command, freePort())
+    val debuggee: Debuggee = Debuggee(command, 0)
 
     debuggee.session:
       val stopped = Promise[ThreadId]()
@@ -283,7 +276,7 @@ object Tests extends Suite(m"Vivisection tests"):
     val classpathText = fixtureClasspath()
     val outcome = Promise[result]()
     val command: Command = sh"java -classpath $classpathText $fixtureClass"
-    val debuggee: Debuggee = Debuggee(command, freePort())
+    val debuggee: Debuggee = Debuggee(command, 0)
 
     debuggee.session:
       debug.exceptions(uncaught, caught, within = t"vivisection.*"): stop ?=>
@@ -1278,7 +1271,7 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpathText = fixtureClasspath()
         val command: Command = sh"java -classpath $classpathText vivisection.Paced"
-        val debuggee: Debuggee = Debuggee(command, freePort())
+        val debuggee: Debuggee = Debuggee(command, 0)
 
         debuggee.session:
           val stopped = Promise[ThreadId]()
@@ -1323,7 +1316,7 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpathText = fixtureClasspath()
         val command: Command = sh"java -classpath $classpathText vivisection.Paced"
-        val debuggee: Debuggee = Debuggee(command, freePort())
+        val debuggee: Debuggee = Debuggee(command, 0)
 
         debuggee.session:
           val stopped = Promise[ThreadId]()
@@ -1524,7 +1517,7 @@ object Tests extends Suite(m"Vivisection tests"):
       supervise:
         val classpathText = fixtureClasspath()
         val command: Command = sh"java -classpath $classpathText vivisection.Recount"
-        val debuggee: Debuggee = Debuggee(command, freePort())
+        val debuggee: Debuggee = Debuggee(command, 0)
 
         debuggee.session:
           debug.resume()
@@ -1591,7 +1584,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val classpathText = fixtureClasspath()
         val outcome = Promise[Jdwp.Value]()
         val command: Command = sh"java -classpath $classpathText vivisection.Ledger"
-        val debuggee: Debuggee = Debuggee(command, freePort())
+        val debuggee: Debuggee = Debuggee(command, 0)
 
         debuggee.session:
           // The watch needs `Account` loaded, so a deferred function breakpoint holds the VM at
@@ -1629,7 +1622,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val classpathText = fixtureClasspath()
         val outcome = Promise[Boolean]()
         val command: Command = sh"java -classpath $classpathText vivisection.Recount"
-        val debuggee: Debuggee = Debuggee(command, freePort())
+        val debuggee: Debuggee = Debuggee(command, 0)
 
         debuggee.session:
           debug.breakpoint(t"vivisection.Recount$$", t"tally"): stop ?=>
@@ -1649,7 +1642,7 @@ object Tests extends Suite(m"Vivisection tests"):
         val outcome = Promise[Int]()
         val hits = java.util.concurrent.atomic.AtomicInteger(0)
         val command: Command = sh"java -classpath $classpathText vivisection.Recount"
-        val debuggee: Debuggee = Debuggee(command, freePort())
+        val debuggee: Debuggee = Debuggee(command, 0)
 
         debuggee.session:
           debug.breakpoint(t"vivisection.Recount.scala", Ordinal.uniary(43)): stop ?=>

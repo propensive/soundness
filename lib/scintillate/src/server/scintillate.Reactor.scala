@@ -437,7 +437,7 @@ object Reactor:
 // at construction; `stop()` closes the listener, wakes every lane, and joins the
 // threads. Serves cleartext HTTP/1.1 with the handler run inline on the lane.
 final class Reactor
-  ( val port: Int, local: Boolean = true, loops: Int = 0 )
+  ( requested: Int, local: Boolean = true, loops: Int = 0 )
   ( handler: (connection: Http.Connection) ?=> Http.Response^{connection} )
   ( using errorPage: WebserverErrorPage, loggable: (Httpd.Event is Loggable)^ ):
 
@@ -447,6 +447,17 @@ final class Reactor
     handler(using connection)
 
   private[Reactor] def errors: WebserverErrorPage = errorPage
+
+  private val listener: jnc.ServerSocketChannel =
+    val channel = jnc.ServerSocketChannel.open().nn
+    channel.configureBlocking(true)
+    val address = jn.InetAddress.getByName(if local then "localhost" else "0.0.0.0").nn
+    // The listen backlog, as `SocketServer`'s: the kernel caps it (128 on a default macOS).
+    channel.bind(jn.InetSocketAddress(address, requested), 1024)
+    channel
+
+  // The port the reactor is bound to: `requested`, or the one the system chose if that was 0.
+  val port: Int = listener.socket.nn.getLocalPort
 
   // The thread-per-connection twin, for connections the fast path cannot serve inline;
   // constructing it opens no socket — `serveConnection` is its in-process seam.
@@ -480,14 +491,6 @@ final class Reactor
   // An untracked JDK atomic rather than a `var` needing a `Stateful` classification:
   // the flag is read by every lane thread and written once by `stop()`.
   private val running: Atomic[Boolean] = Atomic(true)
-
-  private val listener: jnc.ServerSocketChannel =
-    val channel = jnc.ServerSocketChannel.open().nn
-    channel.configureBlocking(true)
-    val address = jn.InetAddress.getByName(if local then "localhost" else "0.0.0.0").nn
-    // The listen backlog, as `SocketServer`'s: the kernel caps it (128 on a default macOS).
-    channel.bind(jn.InetSocketAddress(address, port), 1024)
-    channel
 
   private val fleet: scala.IArray[Lane] =
     scala.IArray.tabulate(count): index =>

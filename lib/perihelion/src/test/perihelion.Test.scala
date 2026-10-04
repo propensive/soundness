@@ -53,12 +53,6 @@ case class Ping(value: Int) derives CanEqual
 
 object Tests extends Suite(m"Perihelion tests"):
   def run(): Unit =
-    def freePort(): Int =
-      val socket = java.net.ServerSocket(0)
-      val port = socket.getLocalPort
-      socket.close()
-      port
-
     // A throwaway self-signed `CN=localhost` certificate (via the JDK's keytool) and the
     // matching contexts: a server context that presents it, and a trust-all client context
     // (used with `verify = false`, since the cert carries no SAN). Mirrors the scintillate
@@ -346,11 +340,11 @@ object Tests extends Suite(m"Perihelion tests"):
     supervise:
       suite(m"WebSocket echo"):
         test(m"A text message is echoed back, and the handshake is accepted"):
-          val port = freePort()
-
-          val server = SocketServer(port).handle:
+          val server = SocketServer(0).handle:
             webSocket(): (message: perihelion.Message) =>
               Reply(message, ())
+
+          val port = server.port
 
           val socket = java.net.Socket("localhost", port)
           socket.setSoTimeout(5000)
@@ -383,11 +377,11 @@ object Tests extends Suite(m"Perihelion tests"):
 
       suite(m"Typed echo"):
         test(m"A Ping message round-trips over the wire as JSON"):
-          val port = freePort()
-
-          val server = SocketServer(port).handle:
+          val server = SocketServer(0).handle:
             webSocket(): (ping: Ping over Json) =>
               Reply(Ping(ping.value + 1).over[Json], ())
+
+          val port = server.port
 
           val socket = java.net.Socket("localhost", port)
           socket.setSoTimeout(5000)
@@ -422,12 +416,12 @@ object Tests extends Suite(m"Perihelion tests"):
         // is reactive (it acts on inbound messages), so the server greets on connect via
         // its `Channel`, and the client decodes the typed greeting and concludes.
         test(m"A client handshakes and decodes a server-pushed typed message"):
-          val port = freePort()
-
-          val server = SocketServer(port).handle:
+          val server = SocketServer(0).handle:
             val websocket = webSocket(): (message: perihelion.Message) => Continue(())
             websocket.channel.send(perihelion.Message.Text(Ping(7).in[Json].show))
             websocket
+
+          val port = server.port
 
           val url = t"ws://localhost:$port/".as[Websocket.Url]
 
@@ -442,11 +436,11 @@ object Tests extends Suite(m"Perihelion tests"):
         // The full-duplex `exchange` gives the caller a `Transmitter` before the loop, so
         // the client speaks first: it sends `Ping(7)`, the server replies `Ping(8)`.
         test(m"A client sends proactively, then reacts to the reply"):
-          val port = freePort()
-
-          val server = SocketServer(port).handle:
+          val server = SocketServer(0).handle:
             webSocket(): (ping: Ping over Json) =>
               Reply(Ping(ping.value + 1).over[Json], ())
+
+          val port = server.port
 
           val url = t"ws://localhost:$port/".as[Websocket.Url]
 
@@ -465,11 +459,11 @@ object Tests extends Suite(m"Perihelion tests"):
         // `Duplex` carries the handshake and framed, masked messages.
         test(m"A wss:// client completes a TLS handshake and round-trips a message"):
           val (serverContext, clientContext) = tlsContexts()
-          val port = freePort()
-
-          val server = SocketServer(port, ssl = serverContext).handle:
+          val server = SocketServer(0, ssl = serverContext).handle:
             webSocket(): (ping: Ping over Json) =>
               Reply(Ping(ping.value + 1).over[Json], ())
+
+          val port = server.port
 
           given Tls = Tls(clientContext, verify = false)
           val url = t"wss://localhost:$port/".as[Websocket.Url]

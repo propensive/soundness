@@ -252,9 +252,12 @@ object internal:
         if 1 <= value <= 65535 then value.asInstanceOf[Port over transport]
         else abort(Port.Error())
 
-      // An unused port supplied by the OS: bind an ephemeral probe socket of the
-      // right kind for the transport, then release it so the caller can rebind.
-      // Subject to a benign TOCTOU race.
+      // A port that was unused a moment ago: an ephemeral probe socket of the right kind for
+      // the transport is bound and then released, so that the caller can bind the port itself.
+      // Nothing reserves it in between, so another process may take it first, and the caller's
+      // bind then fails. Where the caller binds the port itself, binding port 0 and asking the
+      // bound socket which port it got is free of this race; scintillate's servers report it as
+      // `Service#port`.
       def apply[transport]()(using allocatable: transport is Allocatable): Port over transport =
         allocatable.unused().asInstanceOf[Port over transport]
 
