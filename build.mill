@@ -347,23 +347,23 @@ object toolchain extends Module:
 // compiler internals, so it is published per *exact* compiler version (the `CrossVersion.full`
 // convention); no artifact exists for the fork, so the coordinate is pinned to the stock
 // Fetches the pinned `xek` builder from the `propensive/xek` GitHub release named in
-// `etc/xeq.tsv`, verifies it against the recorded SHA-256, caches it outside `out/`, and returns
+// `etc/xek.tsv`, verifies it against the recorded SHA-256, caches it outside `out/`, and returns
 // the path of a copy to run. `xek` is the single implementation of the ETHRCFG executable format;
 // the Soundness build shells out to it (example/demo packaging, and `exoskeleton.Enclave` at test
-// time) rather than carrying its own copy. Override with the `XEQ` environment variable for a
+// time) rather than carrying its own copy. Override with the `XEK` environment variable for a
 // local build.
 //
 // The pinned asset is `xek` itself: an XEK executable, published as a polyglot file for every
 // platform, which on its first run replaces itself with the native executable for the platform
 // it finds. So the verified download is kept as it is, as `xek.pinned`, and a copy of it is what
 // runs: the copy becomes native once, and the pin is checked against bytes that never change.
-object xeqRelease extends Module:
+object xekRelease extends Module:
   def script(root: os.Path): os.Path =
-    sys.env.get("XEQ").map(os.Path(_)).getOrElse:
-      val pin = root / "etc" / "xeq.tsv"
+    sys.env.get("XEK").map(os.Path(_)).getOrElse:
+      val pin = root / "etc" / "xek.tsv"
       val rows = os.read.lines(pin).map(_.split("\t", 2)).collect { case Array(k, v) => k -> v }.toMap
       val version = rows.getOrElse("version", throw new Exception(s"no `version` in $pin"))
-      val want = rows.getOrElse("xeq", throw new Exception(s"no `xeq` hash in $pin"))
+      val want = rows.getOrElse("xek", throw new Exception(s"no `xek` hash in $pin"))
       val dir = os.home / ".cache" / "soundness" / "xek" / version
       val pinned = dir / "xek.pinned"
       val path = dir / "xek"
@@ -2032,13 +2032,13 @@ object ethereal extends Library:
     override def mainClass: Task.Simple[Option[String]] = Some("ethereal.run")
 
     // Package the example around a runner stub with the published `xek` builder (fetched and
-    // pinned by `xeqRelease`), exactly as a shell user runs `xek --polyglot`. It fetches the
+    // pinned by `xekRelease`), exactly as a shell user runs `xek --polyglot`. It fetches the
     // stubs it needs from the `xek-<version>` release.
     def bin(): Command[PathRef] = Task.Command:
       val jar = assembly().path
       val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "hello"
       os.makeDir.all(target / os.up)
-      os.proc(xeqRelease.script(moduleDir / ".." / ".." / ".." / "..").toString, "--polyglot", jar.toString, target.toString)
+      os.proc(xekRelease.script(moduleDir / ".." / ".." / ".." / "..").toString, "--polyglot", jar.toString, target.toString)
         .call(stdout = os.Inherit, stderr = os.Inherit)
       new java.io.File(target.toString).setExecutable(true)
       PathRef(target)
@@ -2050,7 +2050,7 @@ object ethereal extends Library:
       val dist = moduleDir / ".." / ".." / ".." / ".." / "dist"
       os.makeDir.all(dist)
       os.remove.all(dist / "hello")
-      os.proc(xeqRelease.script(moduleDir / ".." / ".." / ".." / "..").toString, "--download", jar.toString, (dist / "hello").toString)
+      os.proc(xekRelease.script(moduleDir / ".." / ".." / ".." / "..").toString, "--download", jar.toString, (dist / "hello").toString)
         .call(stdout = os.Inherit, stderr = os.Inherit)
       PathRef(dist / "hello")
 
@@ -3415,13 +3415,13 @@ object ultimatum extends Library:
     override def mainClass: Task.Simple[Option[String]] = Some("ultimatum.demo")
 
     // Build the demo as a self-contained Ethereal application with the published `xek` builder
-    // (fetched and pinned by `xeqRelease`): `xek --polyglot` fuses every platform's runner and
+    // (fetched and pinned by `xekRelease`): `xek --polyglot` fuses every platform's runner and
     // the JAR into `bin/demo`, which unpacks the right one where it runs.
     def bin(): Command[PathRef] = Task.Command:
       val jar = assembly().path
       val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "demo"
       os.makeDir.all(target / os.up)
-      os.proc(xeqRelease.script(moduleDir / ".." / ".." / ".." / "..").toString, "--polyglot", jar.toString, target.toString)
+      os.proc(xekRelease.script(moduleDir / ".." / ".." / ".." / "..").toString, "--polyglot", jar.toString, target.toString)
         .call(stdout = os.Inherit, stderr = os.Inherit)
       new java.io.File(target.toString).setExecutable(true)
       PathRef(target)

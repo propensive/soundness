@@ -120,10 +120,10 @@ snapshot:
 snapshot-prune:
 	./etc/shared snapshot-prune.sh soundness $(DAYS)
 
-# Fetch the pinned `xek` builder (etc/xeq.tsv) from the propensive/xek release into dist/xeq,
+# Fetch the pinned `xek` builder (etc/xek.tsv) from the propensive/xek release into dist/xek,
 # verified against its SHA-256. The build shells out to it for packaging.
-xeq-fetch:
-	./etc/ci/xeq-fetch.sh
+xek-fetch:
+	./etc/ci/xek-fetch.sh
 
 scala/%:
 	TAG=$(word 1, $(subst :, ,$*)); \
@@ -150,4 +150,4 @@ matrix:
 	    $(foreach scala,3.6.1 3.6.2 3.6.3 3.6.4 3.7.0 3.7.1 3.7.1 main, \
 			    $(MAKE) bootstrap/$(scala):$(jdk);))
 
-.PHONY: publishLocal build dev ci check-givens check-stdlib check-while unsafety wasm-e2e doccheck test bench matrix attest verify-attest push release sync-deps tools snapshot snapshot-prune xeq-fetch
+.PHONY: publishLocal build dev ci check-givens check-stdlib check-while unsafety wasm-e2e doccheck test bench matrix attest verify-attest push release sync-deps tools snapshot snapshot-prune xek-fetch

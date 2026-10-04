@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Fetch the pinned `xek` builder into dist/xeq, verified against etc/xeq.tsv.
+# Fetch the pinned `xek` builder into dist/xek, verified against etc/xek.tsv.
 #
 # `xek` is the single implementation of the XEK executable format, published from
 # propensive/xek with the runner stubs. Soundness shells out to it (build.mill packaging tasks
@@ -11,10 +11,10 @@
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
-PIN=etc/xeq.tsv
+PIN=etc/xek.tsv
 VERSION=$(awk -F'\t' '$1=="version"{print $2}' "$PIN")
-WANT=$(awk -F'\t' '$1=="xeq"{print $2}' "$PIN")
-[[ -n "$VERSION" && -n "$WANT" ]] || { echo "xeq-fetch: bad pin $PIN" >&2; exit 1; }
+WANT=$(awk -F'\t' '$1=="xek"{print $2}' "$PIN")
+[[ -n "$VERSION" && -n "$WANT" ]] || { echo "xek-fetch: bad pin $PIN" >&2; exit 1; }
 
 # propensive/xeq is now propensive/xek: releases from 1.0.0 are tagged with the bare version,
 # with the command as `xek`; those from the rename up to 0.10, `xek-<version>`, also as `xek`;
@@ -22,15 +22,15 @@ WANT=$(awk -F'\t' '$1=="xeq"{print $2}' "$PIN")
 # SHA-256 decides what is accepted.
 BASE="https://github.com/propensive/xek/releases/download"
 mkdir -p dist
-TMP=dist/.xeq.part
+TMP=dist/.xek.part
 fetch() { if command -v curl >/dev/null 2>&1; then curl -fsSL "$1" -o "$TMP"; else wget -qO "$TMP" "$1"; fi; }
 fetch "$BASE/$VERSION/xek" 2>/dev/null || fetch "$BASE/xek-$VERSION/xek" 2>/dev/null ||
   fetch "$BASE/xeq-$VERSION/xeq" ||
-  { echo "xeq-fetch: no builder script published for version $VERSION" >&2; rm -f "$TMP"; exit 1; }
+  { echo "xek-fetch: no builder published for version $VERSION" >&2; rm -f "$TMP"; exit 1; }
 GOT=$( { sha256sum "$TMP" 2>/dev/null || shasum -a 256 "$TMP"; } | cut -d' ' -f1)
 if [[ "$GOT" != "$WANT" ]]; then
-  echo "xeq-fetch: SHA-256 mismatch for xeq (got $GOT, want $WANT)" >&2; rm -f "$TMP"; exit 1
+  echo "xek-fetch: SHA-256 mismatch for xek (got $GOT, want $WANT)" >&2; rm -f "$TMP"; exit 1
 fi
-mv -f "$TMP" dist/xeq
-chmod +x dist/xeq
-echo "xeq-fetch: dist/xeq ($VERSION) verified"
+mv -f "$TMP" dist/xek
+chmod +x dist/xek
+echo "xek-fetch: dist/xek ($VERSION) verified"

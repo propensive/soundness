@@ -1,5 +1,5 @@
 
-# The native runner stubs this crate once also built now live in the `propensive/xeq`
+# The native runner stubs this crate once also built now live in the `propensive/xek`
 # repository, which publishes them; only the signing tool is still built here.
 [package]
 name = "ethereal-sign"

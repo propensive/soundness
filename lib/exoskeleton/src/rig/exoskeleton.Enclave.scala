@@ -74,7 +74,7 @@ object Enclave:
   extends fulminate.Error(347, 0)
     (m"""
       the tool $tool did not report a process ID; its launcher and its daemon may disagree on the
-      launcher protocol schema, in which case the `xek` version pinned in `etc/xeq.tsv` needs to
+      launcher protocol schema, in which case the `xek` version pinned in `etc/xek.tsv` needs to
       be one whose runner carries the signature in `ethereal.Launcher`
     """)
 
@@ -155,12 +155,12 @@ extends Rig:
               List(EntryPoint(executor)) )
 
       // Package the staged jar into an executable for this platform with the published `xek`
-      // builder (spec lives in the `propensive/xek` repo). Resolve it from `$XEQ`, else
-      // `dist/xeq` under the working directory; it fetches the runner stub it needs.
-      val xeq: Text = safely(Environment.xeq[Text]).or(t"dist/xeq")
+      // builder (spec lives in the `propensive/xek` repo). Resolve it from `$XEK`, else
+      // `dist/xek` under the working directory; it fetches the runner stub it needs.
+      val xek: Text = safely(Environment.xek[Text]).or(t"dist/xek")
       val cmd = (buildId: @unchecked) match
-        case id: Int => sh"$xeq --build-id $id $jarfile $target"
-        case Unset   => sh"$xeq $jarfile $target"
+        case id: Int => sh"$xek --build-id $id $jarfile $target"
+        case Unset   => sh"$xek $jarfile $target"
 
       cmd.exec[Exit]() match
         case Exit.Ok         => target
