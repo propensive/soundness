@@ -229,9 +229,9 @@ extension [value: Tel.Encodable](value: value)
 
 extension [value: Tel.Encodable](value: value)
   // Fulfils an acceptance from this value (§8.4, writer obligations): the value is held under
-  // its type's derived schema — base, layers and optional-member atoms — and the first
-  // alternative that composition can serve is answered with the richest permitted composition,
-  // as a framed document. `Unset` when no alternative can be served. (`fulfil`, as `serve` is
+  // its type's derived schema — base, layers and optional-member atoms, less any layer which
+  // retracts a case the value uses — and the first alternative that composition can serve is
+  // answered with the richest permitted composition, as a framed document. `Unset` when no alternative can be served. (`fulfil`, as `serve` is
   // urticose's.)
   inline def fulfil
     ( acceptance: Tel.Acceptance, codecs: Tel.Codec.Bindings = Tel.Codec.Bindings.builtins )
@@ -241,8 +241,14 @@ extension [value: Tel.Encodable](value: value)
   :   Optional[Tel.Acceptance.Served] =
 
     val held = Tel.Acceptance.lineage[value](Tel.Acceptance.nameOf[value])
-    val composition = held.base :: held.offered.map(_.hash)
-    val element = Tel.Type.assign(value.encode, held.compose(composition))
+    val encoded = value.encode
+
+    // A layer retracting a case the value uses is left out, so that the value is served without
+    // it and the document stays valid under the composition it names.
+    val used = Tel.Acceptance.keywords(encoded)
+    val offered = held.offered.filter(!Tel.Acceptance.breaks(_, used))
+    val composition = held.base :: offered.map(_.hash)
+    val element = Tel.Type.assign(encoded, held.compose(composition))
     Tel.Acceptance.serve(acceptance, held, composition, element, codecs)
 
 extension (acceptance: Tel.Acceptance)

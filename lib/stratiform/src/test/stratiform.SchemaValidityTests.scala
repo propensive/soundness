@@ -245,6 +245,19 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
                                                    |""".stripMargin)))
       . assert(_ == 211)
 
+      test(m"two layers excluding the same variant compose"):
+        val composed = Tels.Validation.validate:
+          schemaOf(menagerie(required = false, Text("""|layer no-foxes
+                                                   |  select Pet
+                                                   |    exclude fox
+                                                   |
+                                                   |layer tame
+                                                   |  select Pet
+                                                   |    exclude fox
+                                                   |""".stripMargin)))
+        composed.selects.readable.find(_.name == t"Pet").get.variants.readable.map(_.keyword.s).toList
+      . assert(_ == List("cat", "dog"))
+
       test(m"E211: exclude in a layer-introduced fresh select"):
         schemaCode(Text("""|tel 1.0
                        |name t

@@ -63,6 +63,102 @@ import symbolism.*
 // this commit (and tracked in doc/spec-notes.md).
 
 object internal:
+  // The layer an `@assign` or `@retract` annotation names, read from the annotation's tree: its
+  // argument must be a reference to a singleton object extending `Tel.Layer` with a literal name.
+  // Anything else is a compile error at the argument, since only an object's type carries the
+  // name statically, and only an object is one stable definition of the layer.
+  private def layerName(using Quotes)(annotation: quotes.reflect.Term): String =
+    import quotes.reflect.*
+
+    def unwrap(term: Term): Term = term match
+      case Inlined(_, Nil, inner) => unwrap(inner)
+      case Typed(inner, _)        => unwrap(inner)
+      case other                  => other
+
+    annotation match
+      case Apply(_, scala.List(argument0)) =>
+        val argument = unwrap(argument0)
+
+        if !argument.symbol.exists || !argument.symbol.flags.is(Flags.Module)
+        then halt
+          ( m"""a layer must be named by its singleton object, declared as
+                `object <name> extends Tel.Layer("<name>")`""",
+            argument0.pos )
+
+        argument.tpe.widen.baseType(TypeRepr.of[Tel.Layer[?]].typeSymbol) match
+          case AppliedType(_, scala.List(ConstantType(StringConstant(name)))) => name
+
+          case _ =>
+            halt(m"the layer's name must be a string literal, as in `Tel.Layer(\"<name>\")`",
+                argument0.pos)
+
+      case _ =>
+        halt(m"a layer annotation takes exactly one layer", annotation.pos)
+
+  private def annotated(using Quotes)
+    ( symbols: scala.List[quotes.reflect.Symbol], annotation: quotes.reflect.TypeRepr )
+  :   scala.List[quotes.reflect.Term] =
+
+    symbols.flatMap(_.annotations).filter(_.tpe <:< annotation)
+
+  // The `@assign` layer of each field of `product` that has one, as (field, layer) pairs. A
+  // field's annotation may sit on the constructor parameter or on the field, so both are read.
+  def assignments[product: Type](using Quotes): Expr[scala.List[(Text, Text)]] =
+    import quotes.reflect.*
+
+    // A product may be derived at an intersection or refinement of its class (a sum's variant is
+    // derived as `variant & sum`), whose own `typeSymbol` is not the class.
+    def classOf(tpe: TypeRepr): Symbol = tpe.dealias.simplified match
+      case AndType(left, right) =>
+        val symbol = classOf(left)
+        if symbol.isClassDef then symbol else classOf(right)
+
+      case Refinement(parent, _, _) => classOf(parent)
+      case other                    => other.classSymbol.getOrElse(other.typeSymbol)
+
+    val symbol = classOf(TypeRepr.of[product])
+    val parameters = symbol.primaryConstructor.paramSymss.flatten.filter(_.isTerm)
+
+    val pairs = parameters.flatMap: parameter =>
+      val field = symbol.caseFields.find(_.name == parameter.name).toList
+
+      annotated(parameter :: field, TypeRepr.of[assign]).map(layerName(_)).distinct.map: layer =>
+        (parameter.name, layer)
+
+    Expr.ofList(pairs.map { (field, layer) => '{(${Expr(field)}.tt, ${Expr(layer)}.tt)} })
+
+  // The `@retract` layers of each case of the sum `sum`, as (case, layer) pairs. Retracting every
+  // case of a sum from one layer would leave its `select` empty under that layer, so that a
+  // required member of the type could never be written (E212); that is a compile error at the
+  // last such annotation.
+  def retractions[sum: Type](using Quotes): Expr[scala.List[(Text, Text)]] =
+    import quotes.reflect.*
+
+    val sum = TypeRepr.of[sum].typeSymbol
+    val cases = sum.children
+
+    // An enum's singleton case and a case object are each a term and a module class, and the
+    // annotation may sit on either.
+    def symbols(symbol: Symbol): scala.List[Symbol] =
+      if symbol.isTerm then scala.List(symbol, symbol.moduleClass).filter(_.exists)
+      else scala.List(symbol, symbol.companionModule).filter(_.exists)
+
+    val annotations: scala.List[(String, Term)] = cases.flatMap: child =>
+      annotated(symbols(child), TypeRepr.of[retract]).map(child.name.stripSuffix("$") -> _)
+
+    val pairs = annotations.map((label, annotation) => (label, layerName(annotation))).distinct
+
+    pairs.groupBy(_(1)).foreach: (layer, retracted) =>
+      if cases.nonEmpty && retracted.map(_(0)).distinct.length == cases.length then
+        val last = annotations.filter((label, _) => retracted.exists(_(0) == label)).last(1)
+
+        halt
+          ( m"""the layer $layer retracts every case of ${sum.name}, which would leave nothing a
+                member of type ${sum.name} could hold under that layer (E212)""",
+            last.pos )
+
+    Expr.ofList(pairs.map { (label, layer) => '{(${Expr(label)}.tt, ${Expr(layer)}.tt)} })
+
   // The marker character interleaved between the static parts. Chosen so
   // it never appears in legitimate TEL source (U+0001 SOH is not a valid
   // sigil and is unlikely to occur in human-authored TEL).

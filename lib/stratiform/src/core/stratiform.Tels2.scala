@@ -112,7 +112,7 @@ object TelSchematic:
 
           val records = Array.frozen(existing.records.readable ++ layer.records.readable)
           val scalars = Array.frozen(existing.scalars.readable ++ layer.scalars.readable)
-          val selects = Array.frozen(existing.selects.readable ++ layer.selects.readable)
+          val selects = combine(existing.selects.readable.toList ++ layer.selects.readable.toList)
           val overlay = Tels.Struct(members, validators)
           buffer(layer.name) = Tels.Layer(layer.name, overlay, records, scalars, selects)
 
@@ -120,6 +120,26 @@ object TelSchematic:
           buffer(layer.name) = layer
 
     proscenium.List.from(buffer.values)
+
+  // A layer's `select` definitions with those of the same name combined: a sum reached through
+  // several members contributes its layer's excludes once each, since the second `exclude` of a
+  // keyword would name a variant the first had already removed.
+  private def combine(selects: scala.List[Tels.SelectDefinition])
+  :   Array[Tels.SelectDefinition]^{} =
+
+    val names = selects.map(_.name).distinct
+
+    val combined = names.map: name =>
+      val same = selects.filter(_.name == name)
+
+      Tels.SelectDefinition
+        ( name,
+          Array.from(same.flatMap(_.variants.readable.toList).distinctBy(_.keyword)),
+          Array.from(same.flatMap(_.validators.readable.toList).distinct),
+          same.map(_.description).find(_ != Unset).getOrElse(Unset),
+          Array.from(same.flatMap(_.excludes.readable.toList).distinct) )
+
+    Array.from(combined)
 
   // The first definition of each name.
   def distinct[definition](definitions: List[definition], name: definition => Text)
@@ -411,7 +431,7 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
     Tels.Layer(group.name, structOf(group.members), Array.empty, Array.empty, Array.empty)
 
   // The schematic of a product, whose `schema()` is the struct of its unlayered fields, whose
-  // `fieldType` is a reference to its record, and whose `@layer`-annotated fields form layers.
+  // `fieldType` is a reference to its record, and whose `@assign`-annotated fields form layers.
   // A plain `def` (not the inline body) so the anonymous class is compiled once.
   private def productSchematic(name: Text, members0: () -> List[Member])
   :   TelSchematic over Tels.Type =
@@ -454,10 +474,20 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
         val nested = members.bind(_.schematic.layers(scala.collection.immutable.Set(name)))
         TelSchematic.merge(own.reverse.unwind(nested))
 
-  // The layer a field's `@layer` annotation names, if it carries one. A plain method, so the
+  // The layer a field's `@assign` annotation names, if it carries one. A plain method, so the
   // lookups happen outside the polymorphic lambda `contexts` types the fields under.
-  private def layerOf(grouping: Map[Text, Set[layer]], label: Text): Optional[Text] =
-    grouping(label).let(_.occupied.let(_.head.name))
+  private def layerOf(assignments: scala.List[(Text, Text)], label: Text): Optional[Text] =
+    assignments.find(_(0) == label) match
+      case scala.Some((_, layer)) => layer
+      case scala.None             => Unset
+
+  // The layers named by the fields' `@assign` annotations, and by the cases' `@retract`
+  // annotations, read and checked at compile time.
+  private[stratiform] inline def assignments[product]: scala.List[(Text, Text)] =
+    ${stratiform.internal.assignments[product]}
+
+  private[stratiform] inline def retractions[sum]: scala.List[(Text, Text)] =
+    ${stratiform.internal.retractions[sum]}
 
   // One field's `Member`, built outside the polymorphic lambda `contexts` types the fields
   // under, where the closures it holds would be typed against live type variables.
@@ -475,7 +505,7 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
 
     val name: Text = wisteria.internal.sumName[derivation]
     val renames: Map[Text, Text] = relabelling[derivation, Tel]
-    val grouping: Map[Text, Set[layer]] = fieldAnnotations[derivation, layer]
+    val grouping: scala.List[(Text, Text)] = TelsDerivation.assignments[derivation]
 
     def members: List[Member] =
       val array =
@@ -492,12 +522,20 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
   // itself is surfaced through `selectDefinitions` for registration, and the
   // definitions of its variants' types through `definitions`. A plain `def`
   // (not the inline body) so the anonymous class is compiled once, not per call site.
-  private def selectSchematic(select: Tels.SelectDefinition, nested: List[TelSchematic])
+  private def selectSchematic
+    ( select: Tels.SelectDefinition, nested: List[TelSchematic], own: List[Tels.Layer] )
   :   TelSchematic over Tels.Type =
 
     new TelSchematic:
       def schema(): Tels.Type = Tels.Reference(select.name)
       override def selectDefinitions: List[Tels.SelectDefinition] = List(select)
+
+      // The layers that retract this sum's cases, and those its variants' types contribute.
+      override def layers(seen: scala.collection.immutable.Set[Text]): List[Tels.Layer] =
+        if seen.contains(select.name) then Nil
+        else
+          val below = nested.bind(_.layers(seen + select.name))
+          TelSchematic.merge(own.reverse.unwind(below))
 
       override def definitions(seen: scala.collection.immutable.Set[Text]) =
         if seen.contains(select.name) then TelSchematic.Definitions(Nil, Nil)
@@ -514,6 +552,24 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
   private def variant(schematic: TelSchematic, keyword: Text): (Tels.Variant, TelSchematic) =
     (Tels.Variant(keyword, schematic.fieldType), schematic)
 
+  // The layers a sum's `@retract` annotations form, in order of first appearance: each a `select`
+  // of the sum's name which excludes the variants retracted from that layer.
+  private def retractionLayers(select: Text, retractions: scala.List[(Text, Text)])
+  :   List[Tels.Layer] =
+
+    val layers: List[Text] =
+      TelSchematic.distinct[Text](proscenium.List.from(retractions.map(_(1))), identity)
+
+    layers.map: layer =>
+      val excludes: scala.List[Text] =
+        retractions.filter(_(1) == layer).map { (label, _) => Tel.camelToKebab(label.s) }
+
+      val definition =
+        Tels.SelectDefinition(select, Array.empty, Array.empty, excludes = Array.from(excludes))
+
+      val selects: Array[Tels.SelectDefinition]^{} = Array(definition)
+      Tels.Layer(layer, Tels.Struct(Array.empty, Array.empty), Array.empty, Array.empty, selects)
+
   inline def disjunction[derivation: SumReflection]
   :   derivation is TelSchematic over Tels.Type =
 
@@ -528,5 +584,6 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
       proscenium.List.from(array.readable.toList)
 
     val select = Tels.SelectDefinition(name, variants.map(_(0)).to[Array], Array.empty)
-    selectSchematic(select, variants.map(_(1)))
+    val layers = retractionLayers(name, TelsDerivation.retractions[derivation])
+    selectSchematic(select, variants.map(_(1)), layers)
     . asInstanceOf[derivation is TelSchematic over Tels.Type]
