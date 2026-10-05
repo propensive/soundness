@@ -107,12 +107,7 @@ object Slice:
       val locking = !lockFlags.nil
       val range: (Long, Long) = (value.offset, value.extent)
 
-      // As in `FileOpenable`: the register works on real paths.
-      val real: Text =
-        if !locking then t"" else
-          try value.path.nioPath.toRealPath().nn.toString.tt
-          catch case _: Exception =>
-            value.path.nioPath.toAbsolutePath.nn.normalize.nn.toString.tt
+      val real: Text = if locking then AccessRegister.key(value.path.nioPath) else t""
 
       val awaiting = flags.has(OpenFlag.Await)
 
