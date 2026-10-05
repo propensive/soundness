@@ -38,9 +38,6 @@ import javax.sound.sampled as jss
 
 import anticipation.*
 import contingency.*
-import quantitative.*
-import symbolism.*
-import vacuous.*
 import fulminate.*
 
 object Outlet:
@@ -73,48 +70,8 @@ object Outlet:
   case class Error(outlet: Text, reason: Outlet.Error.Reason)(using Diagnostics)
   extends fulminate.Error(374, reason.number)(m"could not play to outlet $outlet because $reason")
 
-case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info):
-  def name:        Text = mixerInfo.getName.nn.tt
-  def vendor:      Text = mixerInfo.getVendor.nn.tt
-  def description: Text = mixerInfo.getDescription.nn.tt
-
-  def configurations: List[Configuration] =
-    val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
-
-
-     mixer.getSourceLineInfo.nn.iterator.toList.flatMap:
-      case dli: jss.DataLine.Info if dli.getLineClass == classOf[jss.SourceDataLine] =>
-        dli.getFormats.nn.iterator.toList.map: f0 =>
-          val f = f0.nn
-
-          val encoding =
-            if f.getEncoding == jss.AudioFormat.Encoding.PCM_UNSIGNED then Sonation.PcmUnsigned
-            else Sonation.PcmSigned
-
-          val rate: Optional[Quantity[Seconds[-1]]] =
-            if f.getSampleRate < 0 then Unset else f.getSampleRate.toDouble*Hertz
-
-          Configuration(f.getChannels, rate, f.getSampleSizeInBits, encoding, f.isBigEndian)
-
-      case _ => scala.collection.immutable.Nil
-     . to(List)
-
-  def supports[layout: ChannelLayout as cl](rate: Quantity[Seconds[-1]], bits: Int): Boolean =
-    val sampleRate = rate.value.toFloat
-    val bytesPerFrame = cl.channels*(bits/8)
-
-    val format =
-      jss.AudioFormat
-        ( jss.AudioFormat.Encoding.PCM_SIGNED,
-          sampleRate,
-          bits,
-          cl.channels,
-          bytesPerFrame,
-          sampleRate,
-          false )
-
-    val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
-    mixer.isLineSupported(jss.DataLine.Info(classOf[jss.SourceDataLine], format))
+case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info) extends Device:
+  protected def lineClass: Class[? <: jss.DataLine] = classOf[jss.SourceDataLine]
 
   def play(audio: Audio, chunkBytes: Int = 65536): Playback raises Outlet.Error =
     val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
