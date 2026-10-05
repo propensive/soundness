@@ -1466,10 +1466,8 @@ object Yaml extends Yaml2, Dynamic:
             val keyText: Text =
               if rawKey.isNull then t"null"
               else rawKey.asMatchable match
-                case s: String  => s.tt
-                case k: Long    => k.toString.tt
-                case k: Double  => k.toString.tt
-                case k: Boolean => k.toString.tt
+                case s: String                    => s.tt
+                case k: (Long | Double | Boolean) => k.toString.tt
 
                 case other =>
                   abort(Yaml.Error(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
@@ -2093,7 +2091,8 @@ object Yaml extends Yaml2, Dynamic:
     private var blockParentIndent: Int = -1
 
     update def resetText(input: Text): Unit =
-      val data: Data = Array.unsafeFrozen(input.s.getBytes(StandardCharsets.UTF_8).nn)
+      import hieroglyph.codepages.utf8Codepage
+      val data: Data = input.in[Data]
       val cursor0 = makeCursor(data)
       cursor1 = cursor0.asInstanceOf[AnyRef]
       resetParserState()
@@ -4742,27 +4741,14 @@ object Yaml extends Yaml2, Dynamic:
     :   Yaml.Ast =
 
       tag.s match
-        case "!" | "!!" =>
-          // Non-specific tags. `!` forces the string type for plain
-          // scalars (preventing implicit type resolution into int/bool/etc).
+        case "!" | "!!" | "!!str" =>
+          // Non-specific tags, and `!!str`, force the string type for plain scalars (preventing
+          // implicit type resolution into int/bool/etc). A bare tag with no scalar content is the
+          // empty string, not the literal text "null".
           if value.asInstanceOf[AnyRef] == null then Yaml.Ast.Str(t"")
           else value.asInstanceOf[Matchable] match
-            case _: String  => value
-            case n: Long    => Yaml.Ast.Str(n.toString.tt)
-            case d: Double  => Yaml.Ast.Str(d.toString.tt)
-            case b: Boolean => Yaml.Ast.Str(b.toString.tt)
-            case _          => value
-
-        case "!!str" =>
-          // A bare `!!str` with no scalar content is the empty string,
-          // not the literal text "null".
-          if value.asInstanceOf[AnyRef] == null then Yaml.Ast.Str(t"")
-          else value.asInstanceOf[Matchable] match
-            case _: String  => value
-            case n: Long    => Yaml.Ast.Str(n.toString.tt)
-            case d: Double  => Yaml.Ast.Str(d.toString.tt)
-            case b: Boolean => Yaml.Ast.Str(b.toString.tt)
-            case _          => value
+            case scalar: (Long | Double | Boolean) => Yaml.Ast.Str(scalar.toString.tt)
+            case _                                 => value
 
         case "!!int" =>
           value.asInstanceOf[Matchable] match

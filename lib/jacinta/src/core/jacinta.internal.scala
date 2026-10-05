@@ -349,7 +349,8 @@ object internal:
     val (parts2, spreads) = preprocess(parts)
     // The parts are `String`s, so `join` (which is `Text`-only) does not apply.
     val source: String = parts2.stdlib.mkString(MarkerString)
-    val data: Array[Byte]^{} = Array.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[Array[Byte]^{}]
+    import hieroglyph.codepages.utf8Codepage
+    val data: Array[Byte]^{} = source.tt.in[Data]
 
     // Map a parser char-offset (within the joined input) back to a source-file
     // Position. The cleaned parts (parts2) are what the parser sees; the
@@ -660,7 +661,8 @@ object internal:
       val (parts2, spreads) = preprocess(parts)
       // The parts are `String`s, so `join` (which is `Text`-only) does not apply.
       val source: String = parts2.stdlib.mkString(MarkerString)
-      val data: Array[Byte]^{} = Array.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[Array[Byte]^{}]
+      import hieroglyph.codepages.utf8Codepage
+      val data: Array[Byte]^{} = source.tt.in[Data]
       val ast: Json.Ast = Json.Ast.parse(data, true)
 
       var nextHole: Int = 0

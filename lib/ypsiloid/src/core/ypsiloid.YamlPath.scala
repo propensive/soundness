@@ -43,6 +43,7 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
+import spectacular.*
 import symbolism.*
 import vacuous.*
 
@@ -56,7 +57,7 @@ object YamlPath extends Root(""):
 
   given navigable: [ordinal <: Ordinal] => ordinal is Navigable on YamlPath =
     // `(ordinal: Ordinal)` widens the singleton-bounded parameter (case-2 pure-value box).
-    ordinal => (ordinal: Ordinal).n0.toString.tt
+    ordinal => (ordinal: Ordinal).n0.show
   given admissible: [ordinal <: Ordinal] => ordinal is Admissible on YamlPath = _ => ()
   given admissible2: [text <: Text] => text is Admissible on YamlPath = _ => ()
 
@@ -161,4 +162,4 @@ case class YamlPath(path: Path on YamlPath = YamlPath):
     YamlPath(Path[YamlPath, YamlPath.type, Tuple]("/", (path.descent :+ segment).to(List)))
 
   private[ypsiloid] def prepend(ordinal: Ordinal): YamlPath =
-    YamlPath(Path[YamlPath, YamlPath.type, Tuple]("/", (path.descent :+ ordinal.n0.toString.tt).to(List)))
+    YamlPath(Path[YamlPath, YamlPath.type, Tuple]("/", (path.descent :+ ordinal.n0.show).to(List)))
