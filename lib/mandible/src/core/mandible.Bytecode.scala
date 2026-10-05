@@ -184,6 +184,10 @@ object Bytecode:
   case class Linearized(depth: Int, source: Text, instruction: Instruction)
 
   object Opcode:
+    // A class's binary name, `java.lang.String`, from the internal form a class file stores it in.
+    private def binaryName(entry: jlc.constantpool.ClassEntry): Text =
+      entry.name.nn.stringValue.nn.replace('/', '.').nn.tt
+
     private def typeKindToFrame(kind: jlc.TypeKind): Frame = kind match
       case jlc.TypeKind.BOOLEAN   => Frame.Z
       case jlc.TypeKind.BYTE      => Frame.B
@@ -203,7 +207,7 @@ object Bytecode:
 
       source match
         case invocation: jlci.InvokeInstruction =>
-          val classname = invocation.owner.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+          val classname = binaryName(invocation.owner.nn)
           val method = invocation.name.nn.stringValue.nn.tt
           val descriptor = invocation.`type`.nn.stringValue.nn.tt
 
@@ -219,7 +223,7 @@ object Bytecode:
           Invokedynamic(method, descriptor)
 
         case field: jlci.FieldInstruction =>
-          val classname = field.owner.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+          val classname = binaryName(field.owner.nn)
           val name = field.name.nn.stringValue.nn.tt
           val descriptor = field.`type`.nn.stringValue.nn.tt
 
@@ -230,24 +234,21 @@ object Bytecode:
             case 181 => Putfield(classname, name, descriptor)
 
         case typeCheck: jlci.TypeCheckInstruction =>
-          val classname = typeCheck.`type`.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+          val classname = binaryName(typeCheck.`type`.nn)
 
           source.opcode.nn.bytecode.absolve match
             case 192 => Checkcast(classname)
             case 193 => Instanceof(classname)
 
         case newObject: jlci.NewObjectInstruction =>
-          val classname = newObject.className.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+          val classname = binaryName(newObject.className.nn)
           New(classname)
 
         case newRefArray: jlci.NewReferenceArrayInstruction =>
-          val classname =
-            newRefArray.componentType.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
-
-          Anewarray(classname)
+          Anewarray(binaryName(newRefArray.componentType.nn))
 
         case newMultiArray: jlci.NewMultiArrayInstruction =>
-          val classname = newMultiArray.arrayType.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+          val classname = binaryName(newMultiArray.arrayType.nn)
           Multianewarray(classname, newMultiArray.dimensions)
 
         case newPrimArray: jlci.NewPrimitiveArrayInstruction =>
