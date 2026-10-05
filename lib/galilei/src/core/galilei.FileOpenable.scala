@@ -94,13 +94,8 @@ extends Openable:
       case _ =>
         val locking = mode.atoms.has(Exclusive) || mode.atoms.has(Shared)
 
-        // The register works on real paths, so two routes to one file register as the same
-        // file and overlap correctly with enclosing directory scopes; a file which is about
-        // to be created cannot be resolved, so it falls back to its normalized absolute form.
-        val real: Text =
-          if !locking then t"" else
-            try value.nioPath.toRealPath().nn.toString.tt
-            catch case _: Exception => value.nioPath.toAbsolutePath.nn.normalize.nn.toString.tt
+        // Keyed on the real path, so it overlaps correctly with enclosing directory scopes.
+        val real: Text = if locking then AccessRegister.key(value.nioPath) else t""
 
         val awaiting = flags.has(OpenFlag.Await)
 

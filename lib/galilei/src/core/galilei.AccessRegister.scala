@@ -56,6 +56,13 @@ object AccessRegister:
   @scala.caps.unsafe.untrackedCaptures
   private var registrations: List[Registration] = Nil
 
+  // The registered form of a file's path: its real path, so that two routes to one file register
+  // as the same file; a file about to be created cannot be resolved, so it falls back to its
+  // normalized absolute form.
+  private[galilei] def key(path: java.nio.file.Path): Text =
+    try path.toRealPath().nn.toString.tt
+    catch case _: Exception => path.toAbsolutePath.nn.normalize.nn.toString.tt
+
   // The filesystem root would defeat the `+ "/"` prefix test, so it is normalized to empty.
   private def normalize(real: Text): Text = if real == t"/" then t"" else real
 
