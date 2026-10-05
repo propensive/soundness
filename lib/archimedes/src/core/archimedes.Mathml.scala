@@ -392,7 +392,7 @@ object Mathml:
       nodes.stdlib.lift(index).getOrElse(Mrow(Nil))
 
     def decodeMath(elem: Element)(using Tactic[Mathml.Error]): Math =
-      val kept = elem.attributes.iterator.to(List).filter: (key, _) =>
+      val kept = elem.attributes.to[List].filter: (key, _) =>
         key != t"xmlns" && key != t"display"
 
       val display: Optional[Display] = elem.attributes(t"display").let: text =>
@@ -401,7 +401,7 @@ object Mathml:
       Math(children(elem), display, kept)
 
     def decodeNode(elem: Element)(using Tactic[Mathml.Error]): Mathml =
-      val attrs = elem.attributes.iterator.to(List)
+      val attrs = elem.attributes.to[List]
       val cs = children(elem)
 
       elem.label match
@@ -513,6 +513,6 @@ trait Mathml:
   def html: Html of "#foreign" =
     val children: List[Html of "#foreign"] =
       text.lay(contents.map(_.html)): value =>
-        List(honeycomb.Html.string2(value.s))
+        List(honeycomb.TextNode.foreign(value))
 
     honeycomb.Element.foreign(label, honeycomb.Attributes(attributes*), children*)

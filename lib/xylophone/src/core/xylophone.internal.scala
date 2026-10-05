@@ -178,7 +178,7 @@ object internal:
 
               '{$expr && $boolean}
 
-        val attributesChecked = attributes(Attributes.toList(pattern.attributes).map(_(0)))('{true})
+        val attributesChecked = attributes(Attributes.keys(pattern.attributes).toList)('{true})
 
         // The children access is quoted in one piece: splicing a `val children` Expr gives
         // the frozen array a reach capture (`children*.rd`) that cannot subsume into the
@@ -833,7 +833,7 @@ object internal:
           val (prefix, _) = Xml.Name.split(element.label)
           val used: SSet[Text] = prefix.let(SSet(_)).or(SSet())
 
-          val attributePrefixes = Attributes.toList(element.attributes).flatMap: (key, _) =>
+          val attributePrefixes = Attributes.keys(element.attributes).toList.flatMap: key =>
             val (prefix, _) = Xml.Name.split(key)
             prefix.let(scala.collection.immutable.List(_)).or(scala.collection.immutable.Nil)
 
@@ -870,7 +870,7 @@ object internal:
           List('{Header(${Expr(version)}, $encoding2, $standalone2)})
 
         case Element(label, attributes, children) =>
-          val exprs = Attributes.toList(attributes).map: (key, value) =>
+          val exprs = Attributes.iterator(attributes).toList.map: (key, value) =>
             ' {
                 ( ${Expr(key)},
                   $ {
@@ -1049,6 +1049,10 @@ object internal:
 
   object Attributes:
     val empty: Attributes = scala.IArray.empty[String]
+
+    // The pairs in document order, so `attributes.to[List]` (and `[Ledger]`, …) need no
+    // hand-written conversion.
+    given traversable: Attributes is Traversable by (Text, Text) = _.iterator
 
     // The attributes render as they would appear in an element's start tag, braced and prefixed
     // `xml`: distinct from a `Map`'s `{k → v}` (whose keys and values would show as `t"…"`
@@ -1249,17 +1253,6 @@ object internal:
             i += 2
 
           Map.from(b.result())
-
-      def toList: List[(Text, Text)] =
-        val a = storage(attrs)
-        val b = List.newBuilder[(Text, Text)]
-        var i = 0
-
-        while i < a.length do
-          b += ((a(i).asInstanceOf[Text], a(i + 1).asInstanceOf[Text]))
-          i += 2
-
-        b.result()
 
       // Named `eachPair` (not `each`): rudiments' generic one-parameter `each` extension
       // otherwise wins resolution and rejects the two-parameter lambda.
@@ -1508,9 +1501,8 @@ object internal:
 
     // Bindings from attribute pairs keyed by prefix, the empty prefix for the default namespace
     private[xylophone] def fromAttributes(attributes: Attributes): Scope =
-      import Attributes.toList
-      val pairs = attributes.toList
-      Scope(pairs*)
+      import Attributes.iterator
+      Scope(attributes.iterator.toSeq*)
 
     // The parent scope extended by the `xmlns` and `xmlns:prefix` declarations among the
     // attributes, in their order

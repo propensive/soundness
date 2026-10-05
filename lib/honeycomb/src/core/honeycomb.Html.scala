@@ -1850,6 +1850,10 @@ case class Comment(text: Text) extends Node:
   def body: Fragment of Topic over Transport in Form = Fragment[Topic]().over[Transport].in[Form]
   override def toString(): String = this.show.s
 
+object TextNode:
+  // Character data inside foreign content (MathML, SVG), as `Element.foreign` builds its elements.
+  def foreign(text: Text): Html of "#foreign" = TextNode(text).of["#foreign"]
+
 case class TextNode(text: Text) extends Node:
   type Topic = "#text"
 

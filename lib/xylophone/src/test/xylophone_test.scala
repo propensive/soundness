@@ -1108,7 +1108,7 @@ object Tests extends Suite(m"Xylophone tests"):
     suite(m"Additional element tests"):
       test(m"Element with multiple attributes preserves order"):
         t"""<a x="1" y="2" z="3"/>""".read[Xml].absolve match
-          case Element(_, attributes, _) => attributes.toList.map(_(0))
+          case Element(_, attributes, _) => attributes.to[List].map(_(0))
       . assert(_ == List(t"x", t"y", t"z"))
 
       test(m"Tab and newline allowed in attribute value (normalized)"):
