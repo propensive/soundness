@@ -769,6 +769,10 @@ object Tests extends Suite(m"Exoskeleton Tests"):
         HelpApp.invoke(t"distribution", t"ubuntu").matches
       . check(_ == List(t"distribution", t"ubuntu"))
 
+      test(m"A hidden subcommand still matches when typed"):
+        HelpApp.invoke(t"gamma").matches
+      . check(_ == List(t"gamma"))
+
       test(m"An unrecognized subcommand records no matches"):
         HelpApp.invoke(t"bogus").matches
       . check(_ == Nil)
@@ -975,6 +979,11 @@ object Tests extends Suite(m"Exoskeleton Tests"):
               && page.contains(t"\\fB\\-\\-verbose <value>\\fP")
               && page.contains(t".SS \"Admin commands\"")
               && page.contains(t"\\fBuseradd\\fP")
+
+        test(m"A hidden subcommand is omitted from the manual page"):
+          HelpApp.tree.roff.serialize
+        . assert: page =>
+            !page.contains(t"gamma") && !page.contains(t"a hidden command")
 
         test(m"Discovered statuses render as an EXIT STATUS section"):
           HelpApp.tree.roff.serialize
@@ -1415,4 +1424,44 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           completing(Shell.Bash, List(t"list", t"--suite", t"su", t"-c", t"x"), 2, Unset)(suites)
           . cursorSuggestions.map(_.core)
         . check(_ == List(t"[su]"))
+
+        // A subcommand which is accepted but not suggested, as an `upgrade` is until there is
+        // something to upgrade to.
+        val Secret = Subcommand(t"secret", t"kept quiet", hidden = true)
+
+        def hiding(using cli: Cli): Unit = cli.arguments match
+          case Run() :: _    => ()
+          case Secret() :: _ => ()
+          case _             => Flag[Text](t"verbose")() yet ()
+
+        test(m"A hidden subcommand is omitted from bash completions"):
+          completing(Shell.Bash, List(t""), 0, Unset)(hiding).serialize
+        . check(_ == List(t"run"))
+
+        test(m"A hidden subcommand is omitted from fish completions"):
+          completing(Shell.Fish, List(t""), 0, Unset)(hiding).serialize
+        . check(_ == List(t"run\trun it"))
+
+        test(m"A hidden subcommand is omitted from PowerShell completions"):
+          completing(Shell.Powershell, List(t""), 0, Unset)(hiding).serialize
+        . check(_ == List(t"run\trun it"))
+
+        test(m"A hidden subcommand is offered to zsh only to match, not to list"):
+          completing(Shell.Zsh, List(t""), 0, 0)(hiding).serialize
+          . filter(_.contains(t"secret"))
+          . map(_.cut(t"\u0000").has(t"-n"))
+        . check(_ == List(true))
+
+        test(m"A hidden subcommand is not completed from a typed prefix in bash"):
+          completing(Shell.Bash, List(t"sec"), 0, Unset)(hiding).serialize
+        . check(_ == Nil)
+
+        // Where every candidate is hidden, the flags are what is left to offer.
+        def hidden(using cli: Cli): Unit = cli.arguments match
+          case Secret() :: _ => ()
+          case _             => Flag[Text](t"verbose")() yet ()
+
+        test(m"Flags are offered where every subcommand candidate is hidden"):
+          completing(Shell.Bash, List(t""), 0, Unset)(hidden).serialize
+        . check(_ == List(t"--verbose"))
 
