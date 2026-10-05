@@ -61,40 +61,12 @@ import environments.javaBaseEnvironment
 import termcaps.environmentTermcap
 
 package backstops:
-  given silentBackstop: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception => Exit(1)
-      case error: Throwable => Exit(2)
+  given silentBackstop: Backstop = Backstop(_ => ())
+  given exceptionMessageBackstop: Backstop = Backstop: error => Out.println(error.toString.tt)
+  given stackTraceBackstop: Backstop = Backstop: error => Out.println(StackTrace(error).teletype)
 
-  given genericErrorMessageBackstop: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception =>
-        Out.println(t"An unexpected error occurred.")
-        Exit(1)
-
-      case error: Throwable =>
-        Out.println(t"An unexpected error occurred.")
-        Exit(2)
-
-  given exceptionMessageBackstop: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception =>
-        Out.println(error.toString.tt)
-        Exit(1)
-
-      case error: Throwable =>
-        Out.println(error.toString.tt)
-        Exit(2)
-
-  given stackTraceBackstop: Backstop:
-    def handle(error: Throwable)(using Stdio): Exit = error match
-      case error: Exception =>
-        Out.println(StackTrace(error).teletype)
-        Exit(1)
-
-      case error: Throwable =>
-        Out.println(StackTrace(error).teletype)
-        Exit(2)
+  given genericErrorMessageBackstop: Backstop =
+    Backstop(_ => Out.println(t"An unexpected error occurred."))
 
 package executives:
   given directExecutive: (backstop: Backstop) => Executive:
