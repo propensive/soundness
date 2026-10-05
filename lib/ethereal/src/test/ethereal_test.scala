@@ -80,6 +80,27 @@ object Readers:
   def terminal(script: Text)(using resident: Resident): Int =
     resident.terminal(t"sh", List(t"-c", script))
 
+// Self-upgrade, as an application drives it; compiled here for the same reason.
+object Upgrades:
+  import errorDiagnostics.emptyDiagnostics
+
+  // Reports whether the upgrade is pending once staged: it is only until the next invocation,
+  // whose launcher handles it before the daemon hears of it.
+  def stage(path: Text): Text =
+    safely:
+      Upgrade.stage(path.as[Path on Linux])
+      if Upgrade.pending then t"pending" else t"absent"
+
+    . or(t"failed")
+
+  def outcome: Text = Upgrade.outcome.lay(t"none"): outcome =>
+    t"${outcome.result.toString.tt} ${outcome.candidate} ${outcome.previous}"
+
+  def pending: Text = Upgrade.pending.toString.tt
+  def enabled: Text = Upgrade.enabled.toString.tt
+  def build(using resident: Resident): Text = resident.buildId.toString.tt
+  def acknowledge(): Unit = Upgrade.acknowledge()
+
 object Tests extends Suite(m"Ethereal Tests"):
   def run(): Unit =
     supervise:
@@ -1068,19 +1089,41 @@ object Tests extends Suite(m"Ethereal Tests"):
       val selfuStateDir: Path on Local =
         Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / selfuName
       val selfuDataDir: Path on Local = Xdg.dataHome[Path on Local] / selfuName
-      sh"rm -rf $selfuStateDir $selfuDataDir".exec[Unit]()
+      val selfuWork: Path on Linux = temporaryDirectory[Path on Linux]/t"selfu-$selfuName"
+      sh"rm -rf $selfuStateDir $selfuDataDir $selfuWork".exec[Unit]()
+      sh"mkdir -p $selfuWork".exec[Unit]()
       safely(sh"pkill $selfuName".exec[Exit]())
       snooze(0.1*Second)
 
-      val selfuV1 = Enclave(selfuName, buildId = 1).dispatch:
+      // Two key pairs the executables carry, and a third neither does.
+      val (releaseSeed, releaseKey) = Enclave.keygen(selfuWork/t"release")
+      val (recoverySeed, recoveryKey) = Enclave.keygen(selfuWork/t"recovery")
+      val (strangerSeed, _) = Enclave.keygen(selfuWork/t"stranger")
+      val selfuApp: Text = t"soundness/selfu"
+
+      def selfu(build: Long, appId: Optional[Text]): Enclave =
+        if appId.absent then Enclave(selfuName, buildId = build)
+        else Enclave(selfuName, build, releaseKey, recoveryKey, appId)
+
+      // Each build's commands are the same but for the version it prints; the upgrade
+      // operations go through `Upgrades`, so that they are the application's own.
+      val selfuV1 = selfu(1L, selfuApp).dispatch:
         ' {
             import executives.completionsExecutive
             import interpreters.posixInterpreter
 
             cli:
               arguments match
-                case Argument("version") :: Nil =>
-                  execute(Out.print(t"v1") yet Exit.Ok)
+                case Argument("version") :: Nil => execute(Out.print(t"v1") yet Exit.Ok)
+                case Argument("stage") :: path :: Nil =>
+                  execute(Out.print(Upgrades.stage(path())) yet Exit.Ok)
+
+                case Argument("outcome") :: Nil => execute(Out.print(Upgrades.outcome) yet Exit.Ok)
+                case Argument("pending") :: Nil => execute(Out.print(Upgrades.pending) yet Exit.Ok)
+                case Argument("enabled") :: Nil => execute(Out.print(Upgrades.enabled) yet Exit.Ok)
+                case Argument("build") :: Nil   => execute(Out.print(Upgrades.build) yet Exit.Ok)
+                case Argument("acknowledge") :: Nil =>
+                  execute(Upgrades.acknowledge() yet Exit.Ok)
 
                 case _ =>
                   execute(Exit.Fail(1))
@@ -1088,45 +1131,180 @@ object Tests extends Suite(m"Ethereal Tests"):
             t"finished"
           }
 
-      val selfuV2 = Enclave(selfuName, buildId = 2).dispatch:
+      val selfuV2 = selfu(2L, selfuApp).dispatch:
         ' {
             import executives.completionsExecutive
             import interpreters.posixInterpreter
 
             cli:
               arguments match
-                case Argument("version") :: Nil =>
-                  execute(Out.print(t"v2") yet Exit.Ok)
+                case Argument("version") :: Nil => execute(Out.print(t"v2") yet Exit.Ok)
+                case Argument("stage") :: path :: Nil =>
+                  execute(Out.print(Upgrades.stage(path())) yet Exit.Ok)
+
+                case Argument("outcome") :: Nil => execute(Out.print(Upgrades.outcome) yet Exit.Ok)
+                case Argument("pending") :: Nil => execute(Out.print(Upgrades.pending) yet Exit.Ok)
+                case Argument("enabled") :: Nil => execute(Out.print(Upgrades.enabled) yet Exit.Ok)
+                case Argument("build") :: Nil   => execute(Out.print(Upgrades.build) yet Exit.Ok)
+                case Argument("acknowledge") :: Nil =>
+                  execute(Upgrades.acknowledge() yet Exit.Ok)
 
                 case _ =>
                   execute(Exit.Fail(1))
 
             t"finished"
           }
+
+      // Build 2 of another application, signed with the same key.
+      val selfuOther = selfu(2L, t"soundness/other").dispatch:
+        ' {
+            import executives.completionsExecutive
+            import interpreters.posixInterpreter
+
+            cli:
+              arguments match
+                case Argument("version") :: Nil => execute(Out.print(t"v2") yet Exit.Ok)
+                case _                          => execute(Exit.Fail(1))
+
+            t"finished"
+          }
+
+      // Build 1 with no key, as a development build is.
+      val selfuPlain = selfu(1L, Unset).dispatch:
+        ' {
+            import executives.completionsExecutive
+            import interpreters.posixInterpreter
+
+            cli:
+              arguments match
+                case Argument("version") :: Nil => execute(Out.print(t"v1") yet Exit.Ok)
+                case Argument("stage") :: path :: Nil =>
+                  execute(Out.print(Upgrades.stage(path())) yet Exit.Ok)
+
+                case Argument("outcome") :: Nil => execute(Out.print(Upgrades.outcome) yet Exit.Ok)
+                case Argument("enabled") :: Nil => execute(Out.print(Upgrades.enabled) yet Exit.Ok)
+                case _                          => execute(Exit.Fail(1))
+
+            t"finished"
+          }
+
+      val signedV1 = selfuV1.sign(releaseSeed, selfuWork/t"v1.signed")
+      val signedV2 = selfuV2.sign(releaseSeed, selfuWork/t"v2.signed")
+      val recoveredV2 = selfuV2.sign(recoverySeed, selfuWork/t"v2.recovered")
+      val otherV2 = selfuOther.sign(releaseSeed, selfuWork/t"other.signed")
+      val strangeV2 = selfuV2.sign(strangerSeed, selfuWork/t"v2.strange", foreign = true)
+
+      // Signed, then lengthened by a byte, which the signature covers.
+      val tamperedV2: Path on Linux = selfuWork/t"v2.tampered"
+      sh"cp $signedV2 $tamperedV2".exec[Unit]()
+      sh"sh -c ${t"printf x >> '${tamperedV2.encode}'"}".exec[Unit]()
+
+      // The swap replaces an executable in place, so every case installs its own copy, under
+      // the one name, so that all share a state and a data directory; they therefore run one
+      // after another, each from a clean slate.
+      def install(label: Text, executable: Path on Linux): Path on Linux =
+        safely(sh"pkill $selfuName".exec[Exit]())
+        snooze(0.2*Second)
+        sh"rm -rf $selfuStateDir $selfuDataDir".exec[Unit]()
+        val directory: Path on Linux = selfuWork/label
+        sh"mkdir -p $directory".exec[Unit]()
+        sh"cp $executable $directory/$selfuName".exec[Unit]()
+        sh"chmod +x $directory/$selfuName".exec[Unit]()
+        directory/selfuName
+
+      // Stages `candidate` from the installed executable's own daemon, then runs it once, which
+      // is when its launcher handles the candidate; returns the version that run served and
+      // the outcome it reported.
+      def upgrade(tool: Path on Linux, candidate: Path on Linux): (Text, Text) =
+        val staged = sh"$tool stage $candidate".exec[Text]()
+        if staged != t"pending" then (t"not staged: $staged", t"none") else
+          val version = sh"$tool version".exec[Text]()
+          (version, sh"$tool outcome".exec[Text]())
 
       suite(m"Self-update"):
-        // The Enclave-built runner has no public key baked in (its config
-        // block's pubkey slot is all zero), so `update::check_updates` rejects
-        // every candidate .pending file. Once the Enclave test rig grows a
-        // way to bake in a test public key the pair of "valid signed upgrade
-        // applies / tampered upgrade rejected" end-to-end tests can be added
-        // here; for now the cryptographic verifier is covered by the Rust
-        // unit tests in `propensive/xek`'s src/runner/src/verify.rs.
+        test(m"a keyed executable may be upgraded"):
+          sh"${install(t"enabled", selfuV1.path)} enabled".exec[Text]()
 
-        test(m"launcher rejects unsigned pending binary"):
-          sh"mkdir -p $selfuDataDir".exec[Unit]()
-          sh"cp ${selfuV2.path} $selfuDataDir/.pending".exec[Unit]()
-          sh"${selfuV1.path} version".exec[Text]()
+        . check(_ == t"true")
 
-        . check(_ == t"v1")
+        test(m"a staged upgrade is pending until the next run"):
+          sh"${install(t"pending", selfuV1.path)} stage $signedV2".exec[Text]()
 
-        test(m"rejected pending binary is deleted"):
-          sh"test ! -e $selfuDataDir/.pending".exec[Exit]()
+        . check(_ == t"pending")
+
+        test(m"a signed build 2 replaces build 1, under a new daemon"):
+          val tool = install(t"applied", selfuV1.path)
+          val before = sh"$tool '{admin}' pid".exec[Text]().trim
+          val (version, outcome) = upgrade(tool, signedV2)
+          val after = sh"$tool '{admin}' pid".exec[Text]().trim
+          (version, outcome, before != after)
+
+        . check(_ == (t"v2", t"Applied 2 1", true))
+
+        test(m"the upgraded daemon reports its new build id"):
+          sh"${selfuWork/t"applied"/selfuName} build".exec[Text]()
+
+        . check(_ == t"2")
+
+        test(m"the replaced executable is kept beside the new one"):
+          sh"test -f ${selfuWork/t"applied"}/.$selfuName.old".exec[Exit]()
 
         . check(_ == Exit.Ok)
 
+        test(m"nothing is pending once an upgrade is applied"):
+          sh"${selfuWork/t"applied"/selfuName} pending".exec[Text]()
+
+        . check(_ == t"false")
+
+        test(m"an acknowledged outcome is not reported again"):
+          val tool = selfuWork/t"applied"/selfuName
+          sh"$tool acknowledge".exec[Text]()
+          sh"$tool outcome".exec[Text]()
+
+        . check(_ == t"none")
+
+        test(m"a tampered build 2 is rejected, and build 1 still runs"):
+          upgrade(install(t"tampered", selfuV1.path), tamperedV2)
+
+        . check(_ == (t"v1", t"BadSignature 2 1"))
+
+        test(m"an unsigned build 2 is rejected"):
+          upgrade(install(t"unsigned", selfuV1.path), selfuV2.path)
+
+        . check(_ == (t"v1", t"BadSignature 2 1"))
+
+        test(m"a build 2 signed with a key build 1 lacks is rejected"):
+          upgrade(install(t"stranger", selfuV1.path), strangeV2)
+
+        . check(_ == (t"v1", t"BadSignature 2 1"))
+
+        test(m"a build 2 for another application is rejected"):
+          upgrade(install(t"other", selfuV1.path), otherV2)
+
+        . check(_ == (t"v1", t"WrongApplication 2 1"))
+
+        test(m"a build 2 signed with the recovery key is applied"):
+          upgrade(install(t"recovered", selfuV1.path), recoveredV2)
+
+        . check(_ == (t"v2", t"Applied 2 1"))
+
+        test(m"a signed build 1 offered to build 2 is rejected"):
+          upgrade(install(t"older", signedV2), signedV1)
+
+        . check(_ == (t"v2", t"NotNewer 1 2"))
+
+        test(m"an executable built without a key may not be upgraded"):
+          sh"${install(t"plain", selfuPlain.path)} enabled".exec[Text]()
+
+        . check(_ == t"false")
+
+        test(m"an executable built without a key refuses a signed build 2"):
+          upgrade(install(t"disabled", selfuPlain.path), signedV2)
+
+        . check(_ == (t"v1", t"Disabled 2 1"))
+
       safely(sh"pkill $selfuName".exec[Exit]())
-      sh"rm -rf $selfuStateDir $selfuDataDir".exec[Unit]()
+      sh"rm -rf $selfuStateDir $selfuDataDir $selfuWork".exec[Unit]()
 
       suite(m"Launcher protocol"):
         // The wire contract shared with the Rust runner: `bintel.rs` pins the same
