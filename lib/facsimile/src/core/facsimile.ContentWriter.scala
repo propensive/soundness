@@ -41,6 +41,7 @@ import hieroglyph.*
 import hypotenuse.*
 import iridescence.*
 import rudiments.*
+import spectacular.*
 import vacuous.*
 
 // Serialises a content-stream operator list back to its byte form, the inverse of
@@ -59,13 +60,10 @@ private[facsimile] object ContentWriter:
   private def line(builder: DataBuilder, operator: Pdf.Operator)
   :   Unit =
 
-    def out(text: Text): Unit =
-      val raw = codepages.iso88591Codepage.encoded(text)
-      var i = 0
-      while i < raw.length do { builder += raw.readUnchecked(i); i += 1 }
+    def out(text: Text): Unit = builder.addAll(codepages.iso88591Codepage.encoded(text))
 
     def num(value: Double): Text =
-      if value == value.toLong.toDouble then value.toLong.toString.tt
+      if value == value.toLong.toDouble then value.toLong.show
       else safely(Decimal(value).text).or(t"0")
 
     def nums(values: Double*): Text = values.map(num).join(t" ")

@@ -51,26 +51,22 @@ private[facsimile] object StandardFonts:
       if baseFont.s.length > 7 && baseFont.s.charAt(6) == '+' then baseFont.s.substring(7).nn
       else baseFont.s
 
-    name match
-      case "Helvetica" | "Arial" | "ArialMT"           => Standard.Helvetica
-      case "Helvetica-Bold" | "Arial-BoldMT"           => Standard.HelveticaBold
-      case "Helvetica-Oblique" | "Arial-ItalicMT"      => Standard.HelveticaOblique
-      case "Helvetica-BoldOblique"                     => Standard.HelveticaBoldOblique
-      case "Arial-BoldItalicMT"                        => Standard.HelveticaBoldOblique
-      case "Times-Roman" | "TimesNewRomanPSMT"         => Standard.TimesRoman
-      case "Times-Bold" | "TimesNewRomanPS-BoldMT"     => Standard.TimesBold
-      case "Times-Italic"                              => Standard.TimesItalic
-      case "TimesNewRomanPS-ItalicMT"                  => Standard.TimesItalic
-      case "Times-BoldItalic"                          => Standard.TimesBoldItalic
-      case "TimesNewRomanPS-BoldItalicMT"              => Standard.TimesBoldItalic
-      case "Courier" | "CourierNew" | "CourierNewPSMT" => Standard.Courier
-      case "Courier-Bold" | "CourierNewPS-BoldMT"      => Standard.CourierBold
-      case "Courier-Oblique" | "CourierNewPS-ItalicMT" => Standard.CourierOblique
-      case "Courier-BoldOblique"                       => Standard.CourierBoldOblique
-      case "CourierNewPS-BoldItalicMT"                 => Standard.CourierBoldOblique
-      case "Symbol"                                    => Standard.Symbol
-      case "ZapfDingbats"                              => Standard.ZapfDingbats
-      case _                                           => Unset
+    // The canonical names are the fonts' own; these are the metric-compatible aliases.
+    Standard.values.find(_.baseFont.s == name).optional.or:
+      name match
+        case "Arial" | "ArialMT"             => Standard.Helvetica
+        case "Arial-BoldMT"                  => Standard.HelveticaBold
+        case "Arial-ItalicMT"                => Standard.HelveticaOblique
+        case "Arial-BoldItalicMT"            => Standard.HelveticaBoldOblique
+        case "TimesNewRomanPSMT"             => Standard.TimesRoman
+        case "TimesNewRomanPS-BoldMT"        => Standard.TimesBold
+        case "TimesNewRomanPS-ItalicMT"      => Standard.TimesItalic
+        case "TimesNewRomanPS-BoldItalicMT"  => Standard.TimesBoldItalic
+        case "CourierNew" | "CourierNewPSMT" => Standard.Courier
+        case "CourierNewPS-BoldMT"           => Standard.CourierBold
+        case "CourierNewPS-ItalicMT"         => Standard.CourierOblique
+        case "CourierNewPS-BoldItalicMT"     => Standard.CourierBoldOblique
+        case _                               => Unset
 
   // The width of a code in thousandths of an em.
   def width(standard: Standard, code: Int): Double = standard match

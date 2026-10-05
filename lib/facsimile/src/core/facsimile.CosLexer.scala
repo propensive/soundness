@@ -174,13 +174,13 @@ private[facsimile] class CosLexer(scan: Scan):
       then bytes += ((hexadecimal(scan.take()) << 4) + hexadecimal(scan.take())).toByte
       else bytes += byte.toByte
 
-    CosToken.Name(decode(bytes.result()))
+    CosToken.Name(charsets.utf8Charset.decoded(bytes.result()))
 
   private def keyword(first: Int): CosToken =
     val bytes = DataBuilder()
     bytes += first.toByte
     while regular(scan.peek) do bytes += scan.take().toByte
-    CosToken.Keyword(decode(bytes.result()))
+    CosToken.Keyword(charsets.utf8Charset.decoded(bytes.result()))
 
   private def literal(start: Long)(using Tactic[Pdf.Error]): CosToken =
     val bytes = DataBuilder()
@@ -256,5 +256,3 @@ private[facsimile] class CosLexer(scan: Scan):
     scan.take()
     if high >= 0 then bytes += (high << 4).toByte // an odd final digit implies a trailing zero
     CosToken.Chars(bytes.result())
-
-  private def decode(bytes: Data): Text = charsets.utf8Charset.decoded(bytes)
