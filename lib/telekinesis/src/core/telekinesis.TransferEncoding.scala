@@ -35,9 +35,10 @@ package telekinesis
 import anticipation.*
 import gossamer.*
 import prepositional.*
+import spectacular.*
 
 object TransferEncoding:
-  given encodable: TransferEncoding is Encodable in Text = _.toString.tt.lower
+  given encodable: TransferEncoding is Encodable in Text = _.show.lower
 
 enum TransferEncoding:
   case Chunked, Compress, Deflate, Gzip

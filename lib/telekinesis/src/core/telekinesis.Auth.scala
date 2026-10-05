@@ -79,9 +79,9 @@ object Auth:
       val decoded: Optional[Text] = safely(encoded.deserialize[Base64].utf8)
 
       decoded.let: text =>
-        text.s.indexOf(':') match
-          case -1    => Unset
-          case colon => Basic(text.s.substring(0, colon).nn.tt, text.s.substring(colon + 1).nn.tt)
+        text.cut(t":", 2) match
+          case List(user, password) => Basic(user, password)
+          case _                    => Unset
 
       . lest(Auth.Error(value))
 

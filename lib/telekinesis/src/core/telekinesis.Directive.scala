@@ -54,7 +54,7 @@ object Directive:
   given connection: ("connection" is Directive of Text) = identity(_)
   given contentMd5: ("contentMd5" is Directive of Text) = identity(_)
   given contentType: ("contentType" is Directive of MediaType) = _.basic
-  given contentLength: ("contentLength" is Directive of Bytes) = _.long.toString.tt
+  given contentLength: ("contentLength" is Directive of Bytes) = _.long.show
   given cookie: ("cookie" is Directive of List[Cookie.Value]) = _.map(_.show).join(t"; ")
   given date: ("date" is Directive of Text) = identity(_)
   given expect: ("expect" is Directive of Text) = identity(_)
@@ -67,7 +67,7 @@ object Directive:
   given ifNoneMatch: ("ifNoneMatch" is Directive of Text) = identity(_)
   given ifRange: ("ifRange" is Directive of Text) = identity(_)
   given ifUnmodifiedSince: ("ifUnmodifiedSince" is Directive of Text) = identity(_)
-  given maxForwards: ("maxForwards" is Directive of Int) = _.toString.tt
+  given maxForwards: ("maxForwards" is Directive of Int) = _.show
 
   given origin: [url: Abstractable across Urls to Text] => ("origin" is Directive of url) =
     _.generic
