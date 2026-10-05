@@ -39,10 +39,9 @@ import gossamer.*
 // universes its compiler can emit are provided by that compiler's component. Unexported:
 // `soundness` already exports cosmopolite's `Language`.
 @unexported
-enum Language extends Format.Source:
-  case Scala, Java, Kotlin
-
-  def id: Text = this match
-    case Scala  => t"scala"
-    case Java   => t"java"
-    case Kotlin => t"kotlin"
+// The `id` is a parameter rather than a match on the case: matching a case compares formats with
+// `equals`, which compares their `id`s.
+enum Language(val id: Text) extends Format.Source:
+  case Scala extends Language(t"scala")
+  case Java extends Language(t"java")
+  case Kotlin extends Language(t"kotlin")
