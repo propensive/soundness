@@ -32,109 +32,163 @@
                                                                                                   */
 package ethereal
 
-import java.lang as jl
-
 import ambience.*, systems.javaBaseSystem
 import anticipation.*
-import contingency.*
 import aperture.*
+import contingency.*
+import distillate.*
 import fulminate.*
 import galilei.*
 import gossamer.*
+import hieroglyph.*, charsets.utf8Charset
+import textSanitizers.strictSanitizer
 import nomenclature.*
 import prepositional.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
 
+import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 import filesystemOptions.deleteOnlyEmpty
 import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.moveAtomically
 import filesystemOptions.overwritePreexisting
 
-import filesystemBackends.javaBaseFilesystem
-
-// Apply an upgrade to the running ethereal application. The given `source`
-// must yield the bytes of a complete signed runner+JAR binary — exactly
-// what `ethereal-sign` produces. The Scala side performs no verification;
-// the freshly-spawned launcher's `check_updates` (in `update.rs`) verifies
-// the ML-DSA-44 signature against the public key baked into the running
-// launcher before swapping anything into place.
-//
-// On success this function does not return — it spawns a new launcher and
-// `System.exit(0)`s the current JVM. The new launcher picks up `.pending`,
-// verifies, swaps, and re-execs into the upgraded binary.
-//
-// If the signature is bad, the new launcher silently deletes `.pending` and
-// continues with the existing binary. The caller's exit was still effective.
-// There is no synchronous success/failure signal because the verifying
-// process is, by design, not the calling one.
+// Self-upgrade, from the daemon's side. An application stages the bytes of a complete signed
+// executable as `<data>/<name>/.pending`, and the XEK launcher does the rest at the start of
+// its next invocation: it verifies the candidate against the keys and application id in the
+// *running* executable's record, swaps it into place, re-execs, and records what it did in
+// `<data>/<name>/.upgrade-result`. Its staleness check then displaces this daemon by itself,
+// so nothing here needs to exit or respawn anything: the clients this daemon is serving carry
+// on undisturbed. The layout is xek's `spec/layout.md`, and the verification rule its
+// `spec/ethrcfg.md`; the Scala side verifies nothing.
 object Upgrade:
-  inline def apply[source]
+  // Staged by writing a temporary file beside `.pending` and renaming it into place, so a
+  // launcher starting concurrently never reads a partial candidate.
+  inline def stage[source]
     ( source: source )
     ( using environment: Environment,
             system:      System,
             diagnostics: Diagnostics,
             readable:    source is Readable to Data )
-  :   Nothing raises Upgrade.Error =
+  :   Unit raises Upgrade.Error =
 
-    applyBytes(source.read[Data])
+    stageBytes(source.read[Data])
 
 
-  def applyBytes(bytes: Data)
-    ( using environment: Environment,
-            system:      System,
-            diagnostics: Diagnostics )
-  :   Nothing raises Upgrade.Error =
+  private def stageBytes(bytes: Data)
+    ( using environment: Environment, system: System, diagnostics: Diagnostics )
+  :   Unit raises Upgrade.Error =
 
     mitigate:
-      case Path.Error(_, _)     => Upgrade.Error(Upgrade.Error.Reason.CannotResolveLauncher)
-      case Property.Error(_)    => Upgrade.Error(Upgrade.Error.Reason.CannotResolveLauncher)
+      case Path.Error(_, _)     => Upgrade.Error(Upgrade.Error.Reason.CannotResolveName)
+      case Property.Error(_)    => Upgrade.Error(Upgrade.Error.Reason.CannotResolveName)
       case Io.Error(_, _, _, _) => Upgrade.Error(Upgrade.Error.Reason.CannotWritePending)
       case Name.Error(_, _, _)  => Upgrade.Error(Upgrade.Error.Reason.CannotWritePending)
-      case Truncation.Error(_)      => Upgrade.Error(Upgrade.Error.Reason.CannotReadSource)
+      case Truncation.Error(_)  => Upgrade.Error(Upgrade.Error.Reason.CannotReadSource)
 
     . protect:
-        val name: Text = System.properties.ethereal.name[Text]()
+        val target: Path on Linux = directory()
+        if !target.existent() then target.create[Directory](CreateFlag.Parents)
+        val partial: Path on Linux = target/t".pending.tmp"
 
-        val dataHome: Path on Linux =
-          if isWindows then Directories.cacheHome[Path on Linux] else Xdg.dataHome[Path on Linux]
-
-        val pendingDir: Path on Linux = dataHome/name
-        pendingDir.create[Directory](CreateFlag.Parents, CreateFlag.Replace)
-        val pendingPath: Path on Linux = pendingDir/t".pending"
-
-        pendingPath.open[File](Write, OpenFlag.Create): file ?=>
+        partial.open[File](Write, OpenFlag.Create, OpenFlag.Truncate): file ?=>
           file.write(Chain(bytes))
 
-        val launcher: Text = System.properties.ethereal.script[Text]()
-
-        try new jl.ProcessBuilder(launcher.s).inheritIO().nn.start()
-        catch case _: jl.Throwable =>
-          abort(Upgrade.Error(Upgrade.Error.Reason.CannotRespawnLauncher))
-
-        jl.System.exit(0)
-        throw new jl.AssertionError("unreachable: System.exit returned")
+        partial.moveTo(target/t".pending")
 
 
-  private def isWindows(using system: System): Boolean =
-    safely(System.properties.os.name[Text]().lower.contains(t"win")).or(false)
+  // Whether a staged upgrade is waiting for the launcher, which applies it the next time the
+  // command is run.
+  def pending(using Environment, System): Boolean =
+    safely((directory()/t".pending").existent()).or(false)
 
-  // UpgradeError → Upgrade.Error
+  // What the launcher last did with a staged upgrade, until it is acknowledged. A missing or
+  // unreadable file, and an outcome this version does not know, are all `Unset`.
+  def outcome(using Environment, System): Optional[Upgrade.Outcome] =
+    safely:
+      val result: Path on Linux = directory()/t".upgrade-result"
+
+      if !result.existent() then Unset else result.read[Text].trim.cut(t" ") match
+        case List(word, candidate, previous, time) =>
+          Outcome.Result.parse(word).let: result =>
+            Outcome(result, candidate.as[Long], previous.as[Long], time.as[Long])
+
+        case _ =>
+          Unset
+
+    . or(Unset)
+
+  // Forgets the last outcome, so that an application reports each one once.
+  def acknowledge()(using Environment, System): Unit =
+    safely((directory()/t".upgrade-result").wipe())
+
+  // Whether the running executable's launcher would accept a signed upgrade at all: false for
+  // one built without a release key and application id, such as a development build, and
+  // false when the property is absent (an older launcher, or no launcher).
+  def enabled(using System): Boolean =
+    safely(System.properties.ethereal.upgradable[Text]()).let(_ == t"true").or(false)
+
+  // The data directory the launcher reads (xek `spec/layout.md`): `$XDG_DATA_HOME`, or
+  // `~/.local/share`, on Unix; `%LOCALAPPDATA%` on Windows, which is what
+  // `Directories.cacheHome` resolves to there (`Directories.dataHome` would be the roaming
+  // `%APPDATA%`, which the launcher does not look at).
+  private def directory()(using Environment, System)
+  :   Path on Linux raises Path.Error raises Property.Error raises Name.Error =
+
+    val name: Text = System.properties.ethereal.name[Text]()
+
+    val root: Path on Linux =
+      if windows then Directories.cacheHome[Path on Linux] else Xdg.dataHome[Path on Linux]
+
+    root/name
+
+
+  private def windows(using System): Boolean =
+    safely(System.properties.os.name[Text]().lower.starts(t"windows")).or(false)
+
+  object Outcome:
+    object Result:
+      given communicable: Result is Communicable =
+        case Applied          => m"the upgrade was applied"
+        case Disabled         => m"the running executable does not accept upgrades"
+        case NoRecord         => m"the candidate is not an XEK executable"
+        case WrongApplication => m"the candidate was built for another application"
+        case BadSignature     => m"the candidate's signature does not verify"
+        case NotNewer         => m"the candidate is not newer than the running executable"
+        case SwapFailed       => m"the candidate could not be swapped into place"
+
+      // The word the launcher writes for each outcome.
+      def parse(word: Text): Optional[Result] = word match
+        case t"applied"           => Applied
+        case t"disabled"          => Disabled
+        case t"no-record"         => NoRecord
+        case t"wrong-application" => WrongApplication
+        case t"bad-signature"     => BadSignature
+        case t"not-newer"         => NotNewer
+        case t"swap-failed"       => SwapFailed
+        case _                    => Unset
+
+    enum Result:
+      case Applied, Disabled, NoRecord, WrongApplication, BadSignature, NotNewer, SwapFailed
+
+  // What the launcher did with a staged upgrade: `candidate` is the staged executable's build
+  // id (zero if it had no record), and `previous` that of the executable which checked it.
+  case class Outcome(result: Outcome.Result, candidate: Long, previous: Long, time: Long):
+    def when[instant: Instantiable across Instants from Long]: instant = instant(time)
+
   object Error:
     object Reason:
       given communicable: Reason is Communicable =
-        case CannotReadSource      => m"the upgrade source could not be read"
-        case CannotWritePending    => m"the .pending file could not be written"
-        case CannotResolveLauncher => m"the running launcher's path is not available"
-        case CannotRespawnLauncher => m"the launcher could not be relaunched"
+        case CannotReadSource   => m"the upgrade source could not be read"
+        case CannotWritePending => m"the .pending file could not be written"
+        case CannotResolveName  => m"the running application's name is not available"
 
     enum Reason(val number: Int) extends Clarification:
-      case CannotReadSource      extends Reason(1)
-      case CannotWritePending    extends Reason(2)
-      case CannotResolveLauncher extends Reason(3)
-      case CannotRespawnLauncher extends Reason(4)
+      case CannotReadSource   extends Reason(1)
+      case CannotWritePending extends Reason(2)
+      case CannotResolveName  extends Reason(3)
 
   case class Error(reason: Upgrade.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(631, reason.number)(m"could not apply the upgrade because $reason")
-
+  extends fulminate.Error(631, reason.number)(m"could not stage the upgrade because $reason")

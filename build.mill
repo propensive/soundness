@@ -2032,25 +2032,25 @@ object ethereal extends Library:
     override def mainClass: Task.Simple[Option[String]] = Some("ethereal.run")
 
     // Package the example around a runner stub with the published `xek` builder (fetched and
-    // pinned by `xekRelease`), exactly as a shell user runs `xek --polyglot`. It fetches the
+    // pinned by `xekRelease`), exactly as a shell user runs `xek build --polyglot`. It fetches the
     // stubs it needs from the `xek-<version>` release.
     def bin(): Command[PathRef] = Task.Command:
       val jar = assembly().path
       val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "hello"
       os.makeDir.all(target / os.up)
-      os.proc(xekRelease.script(moduleDir / ".." / ".." / ".." / "..").toString, "--polyglot", jar.toString, target.toString)
+      os.proc(xekRelease.script(moduleDir / ".." / ".." / ".." / "..").toString, "build", "--polyglot", jar.toString, target.toString)
         .call(stdout = os.Inherit, stderr = os.Inherit)
       new java.io.File(target.toString).setExecutable(true)
       PathRef(target)
 
-    // The download-on-demand counterpart of `bin()`: `xek --download` embeds the JAR once and
+    // The download-on-demand counterpart of `bin()`: `xek build --download` embeds the JAR once and
     // emits a launcher that fetches the one stub it needs at first run. Output: `./dist/hello`.
     def distributable(): Command[PathRef] = Task.Command:
       val jar = assembly().path
       val dist = moduleDir / ".." / ".." / ".." / ".." / "dist"
       os.makeDir.all(dist)
       os.remove.all(dist / "hello")
-      os.proc(xekRelease.script(moduleDir / ".." / ".." / ".." / "..").toString, "--download", jar.toString, (dist / "hello").toString)
+      os.proc(xekRelease.script(moduleDir / ".." / ".." / ".." / "..").toString, "build", "--download", jar.toString, (dist / "hello").toString)
         .call(stdout = os.Inherit, stderr = os.Inherit)
       PathRef(dist / "hello")
 
@@ -3415,13 +3415,13 @@ object ultimatum extends Library:
     override def mainClass: Task.Simple[Option[String]] = Some("ultimatum.demo")
 
     // Build the demo as a self-contained Ethereal application with the published `xek` builder
-    // (fetched and pinned by `xekRelease`): `xek --polyglot` fuses every platform's runner and
+    // (fetched and pinned by `xekRelease`): `xek build --polyglot` fuses every platform's runner and
     // the JAR into `bin/demo`, which unpacks the right one where it runs.
     def bin(): Command[PathRef] = Task.Command:
       val jar = assembly().path
       val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "demo"
       os.makeDir.all(target / os.up)
-      os.proc(xekRelease.script(moduleDir / ".." / ".." / ".." / "..").toString, "--polyglot", jar.toString, target.toString)
+      os.proc(xekRelease.script(moduleDir / ".." / ".." / ".." / "..").toString, "build", "--polyglot", jar.toString, target.toString)
         .call(stdout = os.Inherit, stderr = os.Inherit)
       new java.io.File(target.toString).setExecutable(true)
       PathRef(target)

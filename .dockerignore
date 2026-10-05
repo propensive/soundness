@@ -27,7 +27,6 @@ out
 boot
 bin
 **/target
-lib/ethereal/target
 
 # Bootstrap docker image build path — not a test input.
 img

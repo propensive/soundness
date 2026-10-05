@@ -76,6 +76,15 @@ import filesystemOptions.deleteRecursively
 
 import filesystemBackends.javaBaseFilesystem
 
+// The `build_id` of the executable's record, which the launcher passes as `build.id`: a 64-bit
+// value, which releases derive from their version. A `build.id` resource stands in for it when
+// there is no launcher; zero when there is neither.
+private[ethereal] def launcherBuildId(): Long =
+  // As `startTime`: the decoder and the tactic are both fresh, under one `safely`.
+  scala.caps.unsafe.unsafeAssumeSeparate:
+    safely(System.properties.build.id[Long]()).or:
+      safely((Classpath/"build.id").read[Text].trim.as[Long]).or(0L)
+
 def resident[bus <: Matchable](using resident: Resident over bus)
 :   (Resident over bus)^{resident} =
 
@@ -106,7 +115,7 @@ def cli[bus <: Matchable](using executive: Executive)
         val relativeJar: Relative on Linux = work.toward(jarFile)
         Out.println(e"$Bold(This application must be invoked through its XEK launcher.)")
         Out.println(e"Build one with:")
-        Out.println(e"    xek $Italic($relativeJar) $Italic(<name>)")
+        Out.println(e"    xek build $Italic($relativeJar) $Italic(<name>)")
         Out.println()
         Out.println(e"Install `xek` with $Italic(curl -fsSL https://propensive.dev/xek | sh); see $Italic(https://github.com/propensive/xek)")
         Exit.Fail(1).terminate()
@@ -550,8 +559,7 @@ def cli[bus <: Matchable](using executive: Executive)
       scala.caps.unsafe.unsafeAssumeSeparate:
        safely:
         domainSocket.listenConnections(acceptor, ownerOnly = true):
-          val buildId = safely(System.properties.build.id[Int]()).or:
-            safely((Classpath/"build.id").read[Text].trim.as[Int]).or(0)
+          val buildId = launcherBuildId()
 
           scriptPath.let: script =>
             safely:

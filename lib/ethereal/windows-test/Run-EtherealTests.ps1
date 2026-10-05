@@ -25,6 +25,13 @@
   the same daemon name as -Tool. When supplied, the daemon-upgrade and
   self-update suites run; when omitted they are skipped.
 
+.PARAMETER SignedV2
+  Optional. ToolV2, built with the same release key and application id as
+  -Tool (xek build --public-key/--app-id) and signed with `xek sign`. When
+  supplied, the self-update suite stages it and expects it to be applied,
+  which replaces -Tool in place; when omitted, it stages the unsigned ToolV2
+  and expects it to be refused.
+
 .PARAMETER Name
   Daemon name, must match the value used by the fixture's cli call.
   Default: abcde.
@@ -34,8 +41,9 @@
   $env:TEMP\ethereal-tests-state. The directory is wiped before each run.
 
 .PARAMETER DataRoot
-  Directory used as XDG_DATA_HOME during the run (used by self-update).
-  Default: $env:TEMP\ethereal-tests-data. Wiped before each run.
+  Directory used as XDG_DATA_HOME during the run. Default:
+  $env:TEMP\ethereal-tests-data. Wiped before each run. The launcher does not
+  read it for self-update: on Windows its data directory is %LOCALAPPDATA%.
 
 .PARAMETER Only
   Optional list of suite names to run (others are skipped).
@@ -58,6 +66,7 @@
 param(
   [Parameter(Mandatory = $true)] [string] $Tool,
   [string] $ToolV2,
+  [string] $SignedV2,
   [string] $Name = 'abcde',
   [string] $StateRoot,
   [string] $DataRoot,
@@ -78,6 +87,12 @@ if ($ToolV2) {
   $script:ToolV2 = (Resolve-Path -LiteralPath $ToolV2).Path
 } else {
   $script:ToolV2 = $null
+}
+if ($SignedV2) {
+  if (-not (Test-Path -LiteralPath $SignedV2)) { throw "SignedV2 not found: $SignedV2" }
+  $script:SignedV2 = (Resolve-Path -LiteralPath $SignedV2).Path
+} else {
+  $script:SignedV2 = $null
 }
 
 if (-not $StateRoot) { $StateRoot = Join-Path $env:TEMP 'ethereal-tests-state' }
@@ -570,22 +585,50 @@ if ($script:ToolV2) {
     }
   }
 
+  # The launcher's data directory on Windows is %LOCALAPPDATA% (xek spec/layout.md), not
+  # XDG_DATA_HOME: it reads {data}\{name}\.pending, and records what it did with it in
+  # {data}\{name}\.upgrade-result as `<outcome> <candidate> <running> <time-ms>`.
   Suite 'Self-update' {
-    It 'launcher swaps in pending binary before next invocation' {
-      Stop-DaemonHard
-      Start-Sleep -Milliseconds 200
-      $dataNameDir = Join-Path $DataRoot $Name
-      New-Item -ItemType Directory -Force -Path $dataNameDir | Out-Null
-      # update.rs reads {data_home}/{name}/.pending and renames the running
-      # script to {data_home}/{name}.old before re-exec.
-      Copy-Item -LiteralPath $script:ToolV2 -Destination (Join-Path $dataNameDir '.pending') -Force
-      $r = Invoke-Tool -ToolArgs 'version'
-      Should-Equal $r.Stdout 'v2' 'stdout after self-update'
+    $dataNameDir = Join-Path $env:LOCALAPPDATA $Name
+    $resultPath = Join-Path $dataNameDir '.upgrade-result'
+
+    if ($script:SignedV2) {
+      It 'launcher swaps in a signed pending binary before next invocation' {
+        Stop-DaemonHard
+        Start-Sleep -Milliseconds 200
+        New-Item -ItemType Directory -Force -Path $dataNameDir | Out-Null
+        Remove-Item -LiteralPath $resultPath -Force -ErrorAction SilentlyContinue
+        # update.rs verifies .pending against the running binary's keys, writes it beside the
+        # executable as .{name}.new, and renames the running executable to .{name}.old.
+        Copy-Item -LiteralPath $script:SignedV2 -Destination (Join-Path $dataNameDir '.pending') -Force
+        $r = Invoke-Tool -ToolArgs 'version'
+        Should-Equal $r.Stdout 'v2' 'stdout after self-update'
+        $outcome = (Get-Content -LiteralPath $resultPath -Raw).Split(' ')[0]
+        Should-Equal $outcome 'applied' 'recorded outcome'
+      }
+      It 'old binary is preserved after upgrade' {
+        $exe = $script:Tool
+        $oldPath = Join-Path (Split-Path -Parent $exe) ('.' + (Split-Path -Leaf $exe) + '.old')
+        Should-Be-True (Test-Path -LiteralPath $oldPath) "$oldPath should exist"
+      }
+    } else {
+      It 'launcher refuses an unsigned pending binary' {
+        Stop-DaemonHard
+        Start-Sleep -Milliseconds 200
+        New-Item -ItemType Directory -Force -Path $dataNameDir | Out-Null
+        Remove-Item -LiteralPath $resultPath -Force -ErrorAction SilentlyContinue
+        $pending = Join-Path $dataNameDir '.pending'
+        Copy-Item -LiteralPath $script:ToolV2 -Destination $pending -Force
+        $r = Invoke-Tool -ToolArgs 'version'
+        Should-Equal $r.Stdout 'v1' 'stdout after a refused upgrade'
+        Should-Be-True (-not (Test-Path -LiteralPath $pending)) "$pending should be deleted"
+        # `disabled` for a Tool built without a key, `bad-signature` for one built with one.
+        $outcome = (Get-Content -LiteralPath $resultPath -Raw).Split(' ')[0]
+        Should-Be-True ($outcome -in @('disabled', 'bad-signature')) "unexpected outcome $outcome"
+      }
     }
-    It 'old binary is preserved after upgrade' {
-      $oldPath = Join-Path $DataRoot ($Name + '.old')
-      Should-Be-True (Test-Path -LiteralPath $oldPath) "$oldPath should exist"
-    }
+
+    Remove-Item -LiteralPath $dataNameDir -Recurse -Force -ErrorAction SilentlyContinue
   }
 }
 

@@ -194,7 +194,11 @@ extends Cli:
       if typed.starts(t"-") then cursorSuggestions.filter(_.core.starts(t"-"))
       else cursorSuggestions
 
-    val items0 = if extending.nil then flagSuggestions(typed.starts(t"--")) else extending
+    // Hidden candidates still go to zsh, which matches but does not list them; but where they
+    // are all there is, the flags are offered too, or no shell would list anything.
+    val items0 =
+      if extending.all(_.hidden) then flagSuggestions(typed.starts(t"--")) + extending
+      else extending
 
     // Wrapping reshapes a candidate for the piece of the *focused word* it extends; a focus on
     // the flag preceding that word has nothing to wrap.
