@@ -168,7 +168,6 @@ case class Rectangle
 extends Figure:
 
   def xml: Xml =
-    given showable: Float is Showable = _.toString.tt
     val attrs = VectorMap.newBuilder[Text, Text]
     attrs += t"x" -> position.x.show
     attrs += t"y" -> position.y.show
@@ -238,7 +237,6 @@ extends Figure:
   def circle: Boolean = xRadius == yRadius
 
   def xml: Xml =
-    given showable: Float is Showable = _.toString.tt
     val attrs = VectorMap.newBuilder[Text, Text]
     attrs += t"cx" -> center.x.show
     attrs += t"cy" -> center.y.show
@@ -328,7 +326,6 @@ extends Figure:
   override def fonts: List[Font in Web] = font.lay(Nil)(List(_))
 
   def xml: Xml =
-    given showable: Float is Showable = _.toString.tt
     val attrs = VectorMap.newBuilder[Text, Text]
     attrs += t"x" -> position.x.show
     attrs += t"y" -> position.y.show
