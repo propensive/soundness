@@ -98,7 +98,7 @@ def fixture(): Unit = cli:
 
     case Argument("cooked") :: Nil =>
       execute:
-        service.cooked:
+        resident.cooked:
           val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
           val line: Text = reader.readLine().nn.tt
           Out.print(t"[$line]")

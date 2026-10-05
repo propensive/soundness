@@ -76,7 +76,7 @@ def app(): Unit = cli:
     case error: InitError => execute:
       Out.println(t"An error occurred during initialization:")
       Out.println(error.message)
-      service.shutdown()
+      resident.shutdown()
       Exit.Fail(2)
 
   . within:

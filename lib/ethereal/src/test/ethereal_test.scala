@@ -52,12 +52,12 @@ import threading.platformThreading
 import strategies.throwUnsafely
 import backstops.silentBackstop
 
-// Reads a path as the invocation sees it: through galilei, with the service's fd table
+// Reads a path as the invocation sees it: through galilei, with the resident's fd table
 // in scope, so a path naming one of the client's descriptors reaches the client's. Compiled
 // here rather than staged in the fixture, whose quoted body cannot carry galilei's
 // capture-annotated types.
 object Readers:
-  def read(path: Text)(using service: DaemonService): Optional[Text] =
+  def read(path: Text)(using resident: Resident): Optional[Text] =
     import filesystemBackends.javaBaseFilesystem
     import charsets.utf8Charset
     import textSanitizers.skipSanitizer
@@ -65,20 +65,20 @@ object Readers:
 
   // The bytes of argument `index` as the client gave them, in hex, or `(text)` when the text
   // carried them exactly; compiled here for the same reason.
-  def rawArgument(index: Int)(using service: DaemonService): Text =
-    service.rawArgument(index) match
+  def rawArgument(index: Int)(using resident: Resident): Text =
+    resident.rawArgument(index) match
       case bytes: Data => Text(bytes.readable.map(b => f"${b & 0xff}%02x").mkString)
       case _           => t"(text)"
 
-  // A service whose clients exchange `Text` messages: `over` fixes the type `broadcast` takes and
+  // A resident whose clients exchange `Text` messages: `over` fixes the type `broadcast` takes and
   // `bus` yields (#2161).
-  def announce(message: Text)(using service: DaemonService over Text): Chain[Text] =
-    service.broadcast(message)
-    service.bus
+  def announce(message: Text)(using resident: Resident over Text): Chain[Text] =
+    resident.broadcast(message)
+    resident.bus
 
   // Runs `script` with `sh -c` on the client's terminal; compiled here for the same reason.
-  def terminal(script: Text)(using service: DaemonService): Int =
-    service.terminal(t"sh", List(t"-c", script))
+  def terminal(script: Text)(using resident: Resident): Int =
+    resident.terminal(t"sh", List(t"-c", script))
 
 object Tests extends Suite(m"Ethereal Tests"):
   def run(): Unit =
@@ -151,14 +151,14 @@ object Tests extends Suite(m"Ethereal Tests"):
                     spew(0)
 
                 case Argument("invoked") :: Nil =>
-                  execute(Out.print(service.invokedAs.or(t"(unset)")) yet Exit.Ok)
+                  execute(Out.print(resident.invokedAs.or(t"(unset)")) yet Exit.Ok)
 
                 case Argument("umask") :: Nil =>
-                  execute(Out.print(service.umask.let(_.octal).or(t"(unset)")) yet Exit.Ok)
+                  execute(Out.print(resident.umask.let(_.octal).or(t"(unset)")) yet Exit.Ok)
 
                 case Argument("size") :: Nil =>
                   execute:
-                    Out.print(service.windowSize.let(size => t"${size(0)}x${size(1)}").or(t"(unset)"))
+                    Out.print(resident.windowSize.let(size => t"${size(0)}x${size(1)}").or(t"(unset)"))
                     Exit.Ok
 
                 case Argument("sleep") :: Argument(As[Int](seconds)) :: Nil =>
@@ -185,7 +185,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
                 case Argument("cooked") :: Nil =>
                   execute:
-                    service.cooked:
+                    resident.cooked:
                       val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
                       val line: Text = reader.readLine().nn.tt
                       Out.print(t"[$line]")
@@ -196,7 +196,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                 // without the driver's echo.
                 case Argument("concealed") :: Nil =>
                   execute:
-                    service.concealed:
+                    resident.concealed:
                       val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
                       val line: Text = reader.readLine().nn.tt
                       Out.print(t"[$line]")
@@ -761,7 +761,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
           suite(m"Cooked terminal mode"):
             // These need a real terminal, so they run inside a tmux pane. The launcher
-            // raw-modes any terminal stdin; `service.cooked` asks it, over the control
+            // raw-modes any terminal stdin; `resident.cooked` asks it, over the control
             // channel, to hand canonical mode back for the duration of the block, which is
             // observable as the driver's own echo and line editing.
             val command: Text = summon[Enclave.Tool].command

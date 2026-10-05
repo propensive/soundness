@@ -79,23 +79,24 @@ for its own argument vector, so an application sees what it would have seen if r
 ### What the invocation knows about its client
 
 The daemon holds a socket, not the client's process, so everything it knows about the
-invocation is what the launcher told it, and `service` is where that knowledge is read.
-`service.cliInput`, `cliOutput` and `cliError` say whether each standard stream is a terminal.
-`service.invokedAs` is the name the executable was invoked by — `argv[0]` as the caller
+invocation is what the launcher told it, and the invocation's `resident` (a `Resident`, its
+handle on the daemon) is where that knowledge is read.
+`resident.cliInput`, `cliOutput` and `cliError` say whether each standard stream is a terminal.
+`resident.invokedAs` is the name the executable was invoked by — `argv[0]` as the caller
 supplied it — so one executable installed under several names by symbolic links can dispatch
 on the name, while every alias shares one warm daemon:
 
 ```scala
 def multicall(): Unit = cli:
   execute:
-    service.invokedAs.let(_.cut(t"/").last) match
+    resident.invokedAs.let(_.cut(t"/").last) match
       case t"gunzip" => Out.println(t"decompressing")
       case _         => Out.println(t"compressing")
     Exit.Ok
 ```
 
-`service.umask` is the invocation's file-creation mask, which the [filesystem](filesystem.md)
-library applies to whatever the invocation creates; and `service.windowSize` is the client
+`resident.umask` is the invocation's file-creation mask, which the [filesystem](filesystem.md)
+library applies to whatever the invocation creates; and `resident.windowSize` is the client
 terminal's size, measured by the launcher when the invocation began and again on every resize.
 The invocation's `Termcap` reads the same measurement, so tables and wrapped text fit the
 terminal as it is now.
@@ -144,7 +145,7 @@ raw mode is restored afterwards:
 ```scala
 def ask(): Unit = cli:
   execute:
-    val name = service.cooked:
+    val name = resident.cooked:
       Out.println(t"Name?")
       In.read[Text]
     Out.println(t"Hello, $name")
@@ -154,7 +155,7 @@ def ask(): Unit = cli:
 Echo and line editing then come from the terminal driver itself. A launcher with no such channel
 — a pipe, or an older stub — leaves the request to expire harmlessly.
 
-### The service bus
+### The message bus
 
 Concurrent invocations of one daemon share a typed *bus*: an invocation broadcasts a message and
 others observe the stream, which is how "the running watch command notices that another invocation
@@ -167,8 +168,8 @@ enum Message:
 
 def configure(): Unit = cli[Message]:
   execute:
-    service.broadcast(Message.ConfigChanged)
-    service.bus.each:
+    resident.broadcast(Message.ConfigChanged)
+    resident.bus.each:
       case Message.ConfigChanged => Out.println(t"another invocation changed the configuration")
     Exit.Ok
 ```

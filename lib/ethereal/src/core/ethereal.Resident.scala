@@ -48,10 +48,10 @@ import rudiments.*
 import serpentine.*
 import vacuous.*
 
-// A `DaemonService` is a *capability*: it holds the daemon's shutdown and broadcast sinks
+// A `Resident` is a *capability*: it holds the daemon's shutdown and broadcast sinks
 // and the client's live stdin, scoped to one daemon-client invocation (the 2026-07-06
 // service-class ruling; see rep/DECISIONS.md).
-abstract class DaemonService
+abstract class Resident
   ( val pid:        Pid,
     val shutdown:   () => Unit,
     val cliInput:   Terminus,
@@ -73,7 +73,7 @@ abstract class DaemonService
     // form lost something (`Launcher.Raw`); empty in the ordinary case.
     val raws:    List[Launcher.Raw] = Nil )
 extends Entrypoint, Umask.Provider, Fdtable.Provider, caps.ExclusiveCapability:
-  // The type of the messages this daemon's clients exchange (`DaemonService over bus`); left
+  // The type of the messages this daemon's clients exchange (`Resident over bus`); left
   // abstract where a daemon exchanges none.
   type Transport <: Matchable
 
