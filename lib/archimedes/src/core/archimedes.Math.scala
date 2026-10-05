@@ -66,7 +66,7 @@ import Mathml.*
 //     HTML wherever `<math>` is admissible (embedded/phrasing/flow content),
 //     reusing honeycomb's own serializer.
 
-object Math:
+object Math extends Mathml.Container(new Math(_)):
   given aggregable: (schema: XmlSchema)
   =>  (parseTactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], mathmlTactic: Tactic[Mathml.Error])
   =>  ((Math is Aggregable by Text)^{parseTactic, xmlTactic, mathmlTactic}) =
@@ -114,11 +114,8 @@ object Math:
       full.show
 
   given renderable: (Math is Renderable { type Form = "math" }) = math =>
-    val pairs = math.attributePairs.map { case (key, value) => (key, value: Optional[Text]) }
     val children = math.contents.map(_.html)
-    honeycomb.htmlDoms.whatwg.Math.node(honeycomb.Attributes(pairs*))(children*)
-
-  def apply(children: Mathml*): Math = Math(children.to(List))
+    honeycomb.htmlDoms.whatwg.Math.node(honeycomb.Attributes(math.attributePairs*))(children*)
 
   // Only a `Document[Math]` has a `Showable`, and it produces multi-line serialized MathML with an
   // XML header. Inspection instead writes the node tree in a bracketed prefix form — each node as
@@ -147,10 +144,10 @@ object Math:
   // `Encodable in Math` instances: any value encodes to a `<math>` document, just
   // as `Encodable in Xml` yields an `Xml`. `Mathml.atom` collapses a root back to a
   // single node where one is needed (the `.mathml` extension, the `ergo""` macro).
-  given int:        Int is Encodable in Math        = value => Math(Mn(value.toString.tt))
-  given long:       Long is Encodable in Math       = value => Math(Mn(value.toString.tt))
-  given short:      Short is Encodable in Math      = value => Math(Mn(value.toString.tt))
-  given byte:       Byte is Encodable in Math       = value => Math(Mn(value.toString.tt))
+  given int:        Int is Encodable in Math        = value => Math(Mn(value.show))
+  given long:       Long is Encodable in Math       = value => Math(Mn(value.show))
+  given short:      Short is Encodable in Math      = value => Math(Mn(value.show))
+  given byte:       Byte is Encodable in Math       = value => Math(Mn(value.show))
   given double:     Double is Encodable in Math     = value => Math(Mn(value.toString.tt))
   given float:      Float is Encodable in Math      = value => Math(Mn(value.toString.tt))
   given bigInt:     BigInt is Encodable in Math     = value => Math(Mn(value.toString.tt))
@@ -167,8 +164,8 @@ object Math:
   private def rationalMathml(numerator: Long, denominator: Long): Math =
     if denominator == 0L then Math(Mtext(t"NaR")) else
       val body =
-        if denominator == 1L then Mn(math.abs(numerator).toString.tt)
-        else Mfrac(Mn(math.abs(numerator).toString.tt), Mn(denominator.toString.tt))
+        if denominator == 1L then Mn(math.abs(numerator).show)
+        else Mfrac(Mn(math.abs(numerator).show), Mn(denominator.show))
 
       if numerator < 0L then Math(Mrow(List(Mo(t"−"), body))) else Math(body)
 
@@ -207,7 +204,7 @@ object Math:
   private def quantityMathml(value: Double, units: Map[Text, Int]): Mathml =
     val unitNodes: List[Mathml] =
       units.order(_(0).s).remap: (symbol, power) =>
-        if power == 1 then Mi(symbol) else Msup(Mi(symbol), Mn(power.toString.tt))
+        if power == 1 then Mi(symbol) else Msup(Mi(symbol), Mn(power.show))
 
     product(Mn(value.toString.tt) :: unitNodes)
 

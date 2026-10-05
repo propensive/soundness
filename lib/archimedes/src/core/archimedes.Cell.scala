@@ -75,8 +75,6 @@ object Cell:
   private def max(left: Int, right: Int): Int = if left > right then left else right
   private def min(left: Int, right: Int): Int = if left < right then left else right
 
-  private def graphemeWidth(writing: Writing): Int = summon[Writing is Measurable].width(writing)
-
   private def spaces(count: Int): Writing = Writing(Text.fill(max(count, 0))(_ => ' '))
   private def repeat(char: Char, count: Int): Writing = Writing(Text.fill(max(count, 0))(_ => char))
 
@@ -96,7 +94,7 @@ object Cell:
 
   def line(text: Text): Cell =
     val writing = Writing(text)
-    Cell(Sequence(writing), graphemeWidth(writing), 0)
+    Cell(Sequence(writing), summon[Writing is Measurable].width(writing), 0)
 
   def blank(width: Int, height: Int, baseline: Int): Cell =
     Cell(Sequence.from(Iterator.fill(max(height, 1))(spaces(width))), max(width, 0), baseline)
@@ -308,11 +306,11 @@ object Cell:
   // A stretchy bracket sized to `height`, built from box-drawing pieces; for a
   // single-line cell it degrades to the literal bracket character.
   def bracket(char: Char, height: Int, baseline: Int, opening: Boolean): Cell =
-    if height <= 1 then line(char.toString.tt) else
+    if height <= 1 then line(char.show) else
       val glyphs =
         Sequence.from:
           (0 until height).map: row =>
-            Writing(bracketGlyph(char, row, height, baseline, opening).toString.tt)
+            Writing(bracketGlyph(char, row, height, baseline, opening).show)
       Cell(glyphs, 1, baseline)
 
   private def bracketGlyph(char: Char, row: Int, height: Int, axis: Int, opening: Boolean): Char =
@@ -345,20 +343,17 @@ object Cell:
   // stroke, and contour integrals overlay a `○` on the axis row. A blank column of
   // padding follows, separating the sign from its operand.
   def integral(char: Char, height: Int, axis: Int): Cell =
-    if height <= 1 then line(char.toString.tt) else
+    if height <= 1 then line(char.show) else
       val (strokes, circle) = integralShape(char)
 
       val lines =
         Sequence.from:
           (0 until height).map: row =>
             val glyphs = (0 until strokes).map: column =>
-              val glyph =
-                if row == 0 then '╭'
-                else if row == height - 1 then '╯'
-                else if circle && column == 0 && row == axis then '○'
-                else Stem
-
-              glyph.toString.tt
+              if row == 0 then t"╭"
+              else if row == height - 1 then t"╯"
+              else if circle && column == 0 && row == axis then t"○"
+              else Stem.show
 
             Writing(t"${glyphs.join} ")
       Cell(lines, strokes + 1, axis)
@@ -439,7 +434,7 @@ object Cell:
       stretchyChar(node).lay(of(node)): char =>
         // A one-line subject keeps the plain glyph; taller subjects grow the art.
         if bigOperators.contains(char) then
-          if height <= 1 then line(char.toString.tt)
+          if height <= 1 then line(char.show)
           else bigOperator(char, bigOperatorHeight(char, height))
         else if integrals.contains(char) then
           integral(char, height, ascent)
