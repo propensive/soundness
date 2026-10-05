@@ -32,11 +32,10 @@
                                                                                                   */
 package stratiform
 
-import anticipation.*
-
-// Groups a case-class field into a named schema layer (§20.3 of the TEL specification): the
-// derived schema's base omits the field, and a layer of that name declares it — refining the
-// record the field belongs to, or the document root's overlay — so that the field is a component
-// a reader can accept or decline by the layer's hash. Fields of one product annotated with the
-// same name form one layer; the annotation composes with `@name`.
-case class layer(name: Text) extends StaticAnnotation
+// Assigns a case-class field to a schema layer (§20.3 of the TEL specification): the derived
+// schema's base omits the field, and the layer declares it, refining the record the field
+// belongs to, or the document root's overlay, so that the field is a component a reader can
+// accept or decline by the layer's hash. Fields of one product assigned to the same layer form
+// one layer; the annotation composes with `@name`. The layer must be named by its singleton
+// object, `object phone extends Tel.Layer("phone")`, which the derivation checks.
+final class assign(layer: Tel.Layer[?]) extends StaticAnnotation

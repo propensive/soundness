@@ -353,8 +353,34 @@ accepting.read(reply) match
 
 Each type's required fields form the base a reader requires; its optional fields are offered as
 atoms, so two types that agree on their required fields interoperate however their optional
-fields differ, and a field annotated `@layer(t"with-phone")` is offered as a named layer instead.
-A writer answers from a value with `contact.fulfil(accepting.acceptance)`.
+fields differ. A field can instead be offered as part of a named layer. A layer is declared once,
+as an object whose name is part of its type, and a field is assigned to it with `@assign`:
+
+<!-- doccheck: skip -->
+```scala
+object withPhone extends Tel.Layer("with-phone")
+
+case class Contact(name: Text, email: Optional[Text], @assign(withPhone) phone: Optional[Text])
+```
+
+A layer can never add a case to a sum, but it can take cases away. A case of an `enum`, or of a
+sealed trait, annotated `@retract` remains a variant of the base, and the named layer excludes it,
+so a reader accepting that layer says it will never receive the case. A case may be retracted
+from several layers, though a layer cannot retract every case of a sum:
+
+<!-- doccheck: skip -->
+```scala
+object lean extends Tel.Layer("lean")
+
+enum Message:
+  @retract(lean) case Ping
+  @retract(lean) case Data(payload: Text)
+  case Stop
+```
+
+A writer answers from a value with `contact.fulfil(accepting.acceptance)`, leaving out any layer
+that retracts a case the value uses, so that what it serves is always valid under the layers it
+names.
 
 Numbers in BinTEL are varint-encoded and values are typed by the schema rather than tagged in the
 stream, which is where the compactness comes from. Every framed document also declares its own

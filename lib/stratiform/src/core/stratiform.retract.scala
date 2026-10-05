@@ -30,25 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package stratiform
 
-export
-  stratiform
-  . { Bintel, Revision, Mutation, SchemaResolver, SchemaSignature,
-      Stratiform, Tel, Telp, Tel2, Tel3, Tel4, TelReader, Tels, Tels2, Varint, bintel,
-      bintelDocument,
-      fulfil, retract, tel, telp, valueHash }
-
-// The `@assign` annotation as a type alone: an export of the class would also export its
-// constructor proxy, a term `assign`, which would hide anamnesis's `assign` method in `soundness`.
-type assign = stratiform.assign
-
-package dynamicAccess:
-  export stratiform.dynamicAccess.dynamicTel
-
-package optionalityOptions:
-  export stratiform.optionalityOptions.{strictTelAbsence, lenientTelAbsence, strictTelFaults,
-      lenientTelFaults}
-
-package conversions:
-  export stratiform.conversions.encodableToTel
+// Retracts a case of a sum type (an `enum` case, or a case class or case object extending a
+// sealed trait) from a schema layer (§20.3 of the TEL specification): the case remains a variant
+// of the base `select`, and the layer's `select` of the same name excludes it, so that a reader
+// accepting the layer says it will never receive that case. A case may be retracted from several
+// layers, and several cases from one, though never every case of a sum (E212), which the
+// derivation checks. A layer cannot add a variant (E213), so this is the only way a case of a
+// sum is associated with a layer.
+final class retract(layer: Tel.Layer[?]) extends StaticAnnotation

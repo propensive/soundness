@@ -528,7 +528,7 @@ object Tels extends Tels2:
       var composed = schema.copy(layers = Array.empty)
 
       chosen.each: layer =>
-        composed = applyLayer(composed, layer)
+        composed = applyLayer(composed, layer, schema)
 
       composed
 
@@ -572,7 +572,7 @@ object Tels extends Tels2:
         while i < schema.layers.readable.length do
           val layer = schema.layers.readable(i)
           if !seenLayerNames.add(layer.name) then abort(Tel.Error(Reason.DuplicateLayerName))
-          composed = applyLayer(composed, layer)
+          composed = applyLayer(composed, layer, schema)
           i += 1
 
         composed
@@ -584,13 +584,20 @@ object Tels extends Tels2:
     // listed twice applies twice, harmlessly.
     def composeComponents(base: Tels, components: List[Layer]): Tels raises Tel.Error =
       var composed = base.copy(layers = Array.empty)
-      components.each { layer => composed = applyLayer(composed, layer) }
+      components.each { layer => composed = applyLayer(composed, layer, base) }
       Validation.checkComposed(composed)
 
-    private[stratiform] def applyLayer(base: Tels, layer: Layer): Tels raises Tel.Error =
+    // `origin` is the schema before any layer was applied, against whose selects a layer's
+    // excludes are checked (§20.3).
+    private[stratiform] def applyLayer(base: Tels, layer: Layer, origin: Tels)
+    :   Tels raises Tel.Error =
+
       val mergedRecords = mergeRecordList(base.records, layer.records, base.scalars, base.selects)
       val mergedScalars = mergeScalarList(base.scalars, layer.scalars, mergedRecords, base.selects)
-      val mergedSelects = mergeSelectList(base.selects, layer.selects, mergedRecords, mergedScalars)
+
+      val mergedSelects =
+        mergeSelectList(base.selects, layer.selects, mergedRecords, mergedScalars, origin.selects)
+
       val mergedDocument = mergeStruct(base.document, layer.overlay, mergedSelects)
 
       base.copy
@@ -870,7 +877,8 @@ object Tels extends Tels2:
       ( base:    Array[SelectDefinition]^{},
        layer:   Array[SelectDefinition]^{},
        records: Array[RecordDefinition]^{},
-       scalars: Array[ScalarDefinition]^{} )
+       scalars: Array[ScalarDefinition]^{},
+       origin:  Array[SelectDefinition]^{} )
     :   Array[SelectDefinition]^{} raises Tel.Error =
 
       val out = scala.collection.mutable.ArrayBuffer.from(base.readable)
@@ -881,7 +889,8 @@ object Tels extends Tels2:
         val existing = out.indexWhere(_.name == newDef.name)
 
         if existing >= 0 then
-          out(existing) = mergeSelect(out(existing), newDef)
+          val original = origin.readable.find(_.name == newDef.name)
+          out(existing) = mergeSelect(out(existing), newDef, original.getOrElse(out(existing)))
         else
           if records.exists(_.name == newDef.name) || scalars.exists(_.name == newDef.name)
           then abort(Tel.Error(Reason.DuplicateDefinition))
@@ -895,7 +904,8 @@ object Tels extends Tels2:
 
       Array.from(out)
 
-    private def mergeSelect(base: SelectDefinition, layer: SelectDefinition)
+    private def mergeSelect
+      ( base: SelectDefinition, layer: SelectDefinition, origin: SelectDefinition )
     :   SelectDefinition raises Tel.Error =
 
       val variants = scala.collection.mutable.ArrayBuffer.from(base.variants.readable)
@@ -908,14 +918,19 @@ object Tels extends Tels2:
         i += 1
 
       // §20.3: apply the layer's excludes, removing each named variant
-      // from the merged SelectDefinition. An exclude naming no variant of
-      // the base is E211; whether the removals empty a SelectDefinition
-      // that a required SelectRef references (E212) is checked against
-      // the composed schema, where the referencing members are known.
+      // from the merged SelectDefinition. An exclude naming a variant of
+      // the base which an earlier layer has already excluded is a no-op,
+      // so that layers excluding the same variant compose; one naming no
+      // variant of the base (`origin`, before any layer) is E211. Whether
+      // the removals empty a SelectDefinition that a required SelectRef
+      // references (E212) is checked against the composed schema, where
+      // the referencing members are known.
       layer.excludes.each: keyword =>
         val idx = variants.indexWhere(_.keyword == keyword)
-        if idx < 0 then abort(Tel.Error(Reason.ExcludeMissingVariant))
-        variants.remove(idx)
+
+        if idx >= 0 then variants.remove(idx)
+        else if !origin.variants.readable.exists(_.keyword == keyword)
+        then abort(Tel.Error(Reason.ExcludeMissingVariant))
 
       val mergedValidators = Array.frozen((base.validators.readable ++ layer.validators.readable).distinct)
 

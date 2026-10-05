@@ -72,6 +72,15 @@ import denominative.dysasymptotics.linearSize
 // without case analysis.
 
 object Tel extends Tel2:
+  // A schema layer (§20.3 of the TEL specification), declared once as a singleton object whose
+  // name is part of its type, `object foo extends Tel.Layer("foo")`, so that the name can be
+  // read from the type alone: `Tel.Name[foo.type]` is `"foo"`. `@assign` and `@retract` refer to
+  // a layer by its object, so a misspelt layer is a compile error rather than a second layer.
+  open class Layer[name <: String & Singleton](val name: name)
+
+  // The name of a layer, from its type.
+  type Name[layer <: Layer[?]] <: String = layer match
+    case Layer[name] => name
 
   // Consolidated names for the schema-related types. `Tel.Error` lives
   // at the top level by design (the other types are defined inline in
@@ -2305,6 +2314,23 @@ object Tel extends Tel2:
 
       val (base, atoms) = Tels.Atoms.split(Tels.tels[value](name))
       SchemaSignature.Lineage(base).including(atoms)
+
+    // Every compound keyword of a document, at any depth.
+    private[stratiform] def keywords(document: Tel): scala.collection.immutable.Set[Text] =
+      document.childCompounds.readable.toList.flatMap: compound =>
+        val child = Tel.make(compound)
+        keywords(child) + child.keyword
+      . toSet
+
+    // Whether serving a document under `component` would break it: a layer which excludes a
+    // variant whose keyword the document uses (a case its type retracts from the layer). The
+    // check is by keyword alone, so it may leave out a layer the document would in fact satisfy,
+    // but never includes one it breaks.
+    private[stratiform] def breaks
+      ( component: SchemaSignature.Lineage.Component, used: scala.collection.immutable.Set[Text] )
+    :   Boolean =
+
+      component.layer.selects.readable.exists(_.excludes.readable.exists(used.contains))
 
     // One alternative for a lineage: its base alone as the requirement, and every layer and
     // atom it holds offered by the shortest prefix that denotes it.

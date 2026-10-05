@@ -40,10 +40,28 @@ import codepages.utf8Codepage
 import denominative.dysasymptotics.linearSize
 
 // Acceptances from Scala types (`Tel.Acceptance[(A, B)]`): the derived schema's shape —
-// nested products as named records, optional members as atoms, `@layer` groups as layers — the
+// nested products as named records, optional members as atoms, `@assign` groups and `@retract`ed
+// cases as layers — the
 // alternatives it yields, a writer serving a typed value, and a reader decoding what arrives into
 // the union of its formats.
+object withPhone extends Tel.Layer("with-phone")
+object lean extends Tel.Layer("lean")
+object quiet extends Tel.Layer("quiet")
+
 object TypedAcceptanceTests extends Suite(m"Stratiform typed acceptance tests"):
+  // A protocol whose messages are a sum, some of which layers retract: `lean` excludes `ping` and
+  // `data`, and `quiet` excludes `data` too.
+  enum Message derives CanEqual:
+    @retract(lean) case Ping
+    @retract(lean) @retract(quiet) case Data(payload: Text)
+    case Stop
+
+  sealed trait Shape
+  @retract(lean) case class Square(side: Int) extends Shape
+  @retract(lean) case object Dot extends Shape
+  case class Circle(radius: Int) extends Shape
+
+  case class Envelope(id: Text, message: Message)
 
   case class Address(street: Text, city: Text)
   case class ContactV1(name: Text, email: Optional[Text])
@@ -52,7 +70,7 @@ object TypedAcceptanceTests extends Suite(m"Stratiform typed acceptance tests"):
     ( name:    Text,
       email:   Optional[Text],
       address: Optional[Address],
-      @layer(t"with-phone") phone: Optional[Text] )
+      @assign(withPhone) phone: Optional[Text] )
 
   case class Invoice(number: Text, total: Int)
   case class Node(label: Text, child: Optional[Node])
@@ -62,6 +80,23 @@ object TypedAcceptanceTests extends Suite(m"Stratiform typed acceptance tests"):
       case field: Tels.Field      => field.keyword
       case select: Tels.SelectRef => select.reference
       case _: Tels.Exclude        => t""
+
+  private def retractions(schema: Tels): List[(Text, Text, List[Text])] =
+    proscenium.List.from(schema.layers.readable.toList).bind: layer =>
+      proscenium.List.from(layer.selects.readable.toList).map: select =>
+        (layer.name, select.name, proscenium.List.from(select.excludes.readable.toList))
+
+  private def variants(schema: Tels, name: Text): List[Text] =
+    proscenium.List.from(schema.selects.readable.toList).bind: select =>
+      if select.name != name then Nil
+      else proscenium.List.from(select.variants.readable.toList).map(_.keyword)
+
+  // The names of the lineage's layers whose hashes a served document carries.
+  private def servedLayers(lineage: SchemaSignature.Lineage, served: Tel.Acceptance.Served)
+  :   List[Text] =
+
+    lineage.layers.filter { layer => served.hashes.exists(hex(_) == hex(layer.hash)) }
+    . map(_.layer.name)
 
   private def hex(data: Data): String =
     data.readable.toSeq.map { byte => f"${byte & 0xff}%02x" }.mkString
@@ -113,6 +148,96 @@ object TypedAcceptanceTests extends Suite(m"Stratiform typed acceptance tests"):
         val (base2, layers2) = SchemaSignature.componentHashes(schema, Tels.Axiom.tels)
         hex(base) == hex(base2) && layers.map(hex) == layers2.map(hex)
       . assert(identity)
+
+    suite(m"Layers named by objects"):
+      test(m"a layer's name is read from its type"):
+        scala.compiletime.constValue[Tel.Name[withPhone.type]]
+      . assert(_ == "with-phone")
+
+      test(m"retracted enum cases form layers which exclude them"):
+        retractions(Tels.tels[Message](t"messages"))
+      . assert(_ == List((t"lean", t"Message", List(t"ping", t"data")),
+                         (t"quiet", t"Message", List(t"data"))))
+
+      test(m"retracted cases stay variants of the base select"):
+        variants(Tels.tels[Message](t"messages"), t"Message")
+      . assert(_ == List(t"ping", t"data", t"stop"))
+
+      test(m"case classes and case objects of a sealed trait can be retracted"):
+        retractions(Tels.tels[Shape](t"shapes"))
+      . assert(_ == List((t"lean", t"Shape", List(t"square", t"dot"))))
+
+      test(m"a nested sum's retractions are layers of the enclosing schema"):
+        retractions(Tels.tels[Envelope](t"envelope"))
+      . assert(_ == List((t"lean", t"Message", List(t"ping", t"data")),
+                         (t"quiet", t"Message", List(t"data"))))
+
+      test(m"composing a retracting layer removes its cases"):
+        variants(Tels.Layers.compose(Tels.tels[Envelope](t"envelope"), List(t"lean")), t"Message")
+      . assert(_ == List(t"stop"))
+
+      test(m"a retracting layer hashes as its hand-written equivalent"):
+        val source = Text("""|tel 1.0
+          |
+          |name shapes
+          |
+          |record Square
+          |  field side String
+          |
+          |record Dot
+          |
+          |record Circle
+          |  field radius String
+          |
+          |select Shape
+          |  variant square Square
+          |  variant dot Dot
+          |  variant circle Circle
+          |
+          |document
+          |  select Shape
+          |
+          |layer
+          |  name lean
+          |  select Shape
+          |    exclude square
+          |    exclude dot
+          |""".stripMargin)
+
+        val (base, layers) = SchemaSignature.componentHashes(source.read[Tel], Tels.Axiom.tels)
+
+        val (base2, layers2) =
+          SchemaSignature.componentHashes(Tels.tels[Shape](t"shapes"), Tels.Axiom.tels)
+
+        (hex(base) == hex(base2), layers.map(hex) == layers2.map(hex))
+      . assert(_ == (true, true))
+
+      test(m"a layer named by a val is rejected"):
+        demilitarize:
+          val alias: withPhone.type = withPhone
+          case class Contact(@assign(alias) phone: Text)
+          Tels.tels[Contact](t"contact")
+        . map(_.message)
+      . assert(_.exists(_.contains("singleton object")))
+
+      test(m"a layer whose name is not a literal is rejected"):
+        demilitarize:
+          val label: String = "unnamed"
+          object unnamed extends Tel.Layer(label)
+          case class Contact(@assign(unnamed) phone: Text)
+          Tels.tels[Contact](t"contact")
+        . map(_.message)
+      . assert(_.exists(_.contains("string literal")))
+
+      test(m"a layer retracting every case of a sum is rejected"):
+        demilitarize:
+          enum Gone:
+            @retract(lean) case First
+            @retract(lean) case Second
+
+          Tels.tels[Gone](t"gone")
+        . map(_.message)
+      . assert(_.exists(_.contains("retracts every case")))
 
     suite(m"Lineages of derived schemas"):
       lazy val v2 = Tel.Acceptance.lineage[ContactV2](t"contact-v2")
@@ -204,6 +329,45 @@ object TypedAcceptanceTests extends Suite(m"Stratiform typed acceptance tests"):
             case contact: ContactV2 => contact.email
             case _: ContactV1       => Unset)
       . assert(_ == (2, t"bea@example.com"))
+
+      test(m"retracting layers are components of a sum's lineage"):
+        Tel.Acceptance.lineage[Envelope](t"envelope").layers.map(_.name)
+      . assert(_ == List(t"lean", t"quiet"))
+
+      test(m"a case no layer retracts is served under the retracting layer"):
+        val shapes = Tel.Acceptance[Tuple1[Shape]]()
+        val circle: Shape = Circle(3)
+        circle.fulfil(shapes.acceptance).let: served =>
+          (servedLayers(shapes.lineages.stdlib.head, served), shapes.read(served.document) == circle)
+      . assert(_ == (List(t"lean"), true))
+
+      test(m"a retracted case is served without the layer retracting it"):
+        val shapes = Tel.Acceptance[Tuple1[Shape]]()
+        val square: Shape = Square(4)
+        square.fulfil(shapes.acceptance).let: served =>
+          (servedLayers(shapes.lineages.stdlib.head, served), shapes.read(served.document) == square)
+      . assert(_ == (Nil, true))
+
+      test(m"a case retracted from one of two layers is served under the other"):
+        val messages = Tel.Acceptance[Tuple1[Message]]()
+        val ping: Message = Message.Ping
+        ping.fulfil(messages.acceptance).let: served =>
+          (servedLayers(messages.lineages.stdlib.head, served), messages.read(served.document) == ping)
+      . assert(_ == (List(t"quiet"), true))
+
+      test(m"two layers retracting the same case are served together"):
+        val messages = Tel.Acceptance[Tuple1[Message]]()
+        val stop: Message = Message.Stop
+        stop.fulfil(messages.acceptance).let: served =>
+          (servedLayers(messages.lineages.stdlib.head, served), messages.read(served.document) == stop)
+      . assert(_ == (List(t"lean", t"quiet"), true))
+
+      test(m"a case retracted from both layers is served under neither"):
+        val messages = Tel.Acceptance[Tuple1[Message]]()
+        val data: Message = Message.Data(t"payload")
+        data.fulfil(messages.acceptance).let: served =>
+          (servedLayers(messages.lineages.stdlib.head, served), messages.read(served.document) == data)
+      . assert(_ == (Nil, true))
 
       test(m"a document of no accepted format is unread"):
         val other = Tel.Acceptance[Tuple1[Node]]()
