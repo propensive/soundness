@@ -182,11 +182,11 @@ The distributable is assembled by the `xek` builder, published with the runner s
 small configuration record and the application JAR into one executable file:
 
 ```sh
-xek mytool.jar
+xek build mytool.jar
 ```
 
-That writes `mytool`, for the platform `xek` runs on. `xek -p linux-x64 -p windows-x64
-mytool.jar` builds for other platforms, and `xek --polyglot mytool.jar` builds one file for all
+That writes `mytool`, for the platform `xek` runs on. `xek build -p linux-x64 -p
+windows-x64 mytool.jar` builds for other platforms, and `xek build --polyglot mytool.jar` builds one file for all
 of them, which runs in `sh` (and in PowerShell and `cmd.exe` once renamed) and unpacks the right
 launcher where it runs; `xek --help` lists the rest.
 
@@ -196,40 +196,49 @@ public key was built in — accepts only signed binaries when the application
 
 ### Signing a release
 
-An application can ship with a public key baked in, which the launcher uses to verify any
-candidate upgrade before swapping it into place. Verification happens in the launcher, before the
-JVM starts, so no Scala code in the running application sits on the trust boundary.
+An application can ship with a public key and an application identifier built in, which the
+launcher uses to verify any candidate upgrade before swapping it into place. Verification
+happens in the launcher, before the JVM starts, so no Scala code in the running application sits
+on the trust boundary.
 
-The `ethereal-sign` tool generates the keypair, once:
+`xek` also signs releases (its signing subcommands need Java 24 or later). It generates a key
+pair:
 
 ```sh
-ethereal-sign keygen --out release-keys/myapp
+xek keygen --out release-keys/myapp
+xek keygen --out release-keys/myapp-recovery
 ```
 
-This writes a 32-byte FIPS-204 signing-key seed and a 1312-byte ML-DSA-44 public key. **The seed
-belongs offline.** Anyone holding it can ship a binary that users' launchers will accept, and
-there is no revocation at the launcher level: the public key is baked into every shipped binary,
-and only a further release replaces it.
+Each writes a 32-byte FIPS-204 signing-key seed, `<prefix>.seed`, and a 1312-byte ML-DSA-44
+public key, `<prefix>.pub`. **The seeds belong offline**, the recovery seed most of all. Anyone
+holding the release seed can ship a binary that users' launchers will accept; the recovery key
+exists so that losing or leaking it does not strand every install.
 
-Each release is then built and signed in two steps. The build bakes in the public key and a build
-identifier:
+Each release is then built and signed in two steps. The build bakes in a build identifier, both
+public keys and the application's identifier:
 
 ```sh
-xek --build-id 42 --public-key release-keys/myapp.pub dist/myapp.jar dist/myapp
+xek build --build-id 42 --public-key release-keys/myapp.pub \
+  --recovery-key release-keys/myapp-recovery.pub --app-id example/myapp \
+  dist/myapp.jar dist/myapp
 ```
 
-`--build-id` must increase monotonically; the verifier compares it against the running launcher's
-own and rejects downgrades. Omitting `--public-key` leaves the key slot zeroed, producing a
-binary whose launcher rejects *every* upgrade — the right default for a local build where the
-upgrade path is never exercised. Signing then produces the file to distribute:
+`--build-id` is a 64-bit number which must increase from release to release; the launcher
+rejects a candidate that is not newer than itself. A candidate built for another application
+identifier is rejected even when it is signed with the same key. Omitting `--public-key` and
+`--app-id` produces a binary whose launcher rejects *every* upgrade — the right default for a
+local build where the upgrade path is never exercised. Signing then produces the file to
+distribute:
 
 ```sh
-ethereal-sign sign --key release-keys/myapp.seed --in dist/myapp --out dist/myapp.signed
+xek sign --key release-keys/myapp.seed --in dist/myapp --out dist/myapp.signed
 ```
 
 That output is simultaneously a valid executable and a valid upgrade candidate. The application
-applies one by pointing `Upgrade` at any source of bytes — a URL, a file, a response body — and
-`Upgrade` does not return, because on success the running process is replaced:
+stages one by passing `Upgrade.stage` any source of bytes — a URL, a file, a response body. It
+writes the candidate as `.pending` in the application's data directory and returns; the launcher
+verifies it at the start of the next invocation, swaps it into place, and starts a new daemon in
+place of the old one, so nothing is interrupted:
 
 ```scala
 import environments.javaBaseEnvironment
@@ -237,21 +246,44 @@ import systems.javaBaseSystem
 import errorDiagnostics.stackTracesDiagnostics
 import internetAccess.online
 
-def upgrade(): Nothing = Upgrade(url"https://releases.example.com/myapp.signed")
+def upgrade(): Text raises Upgrade.Error =
+  if !Upgrade.enabled then t"this build cannot be upgraded"
+  else if Upgrade.pending then t"the upgrade will be applied the next time the command is run"
+  else
+    Upgrade.stage(url"https://releases.example.com/myapp.signed")
+    t"the upgrade will be applied the next time the command is run"
 ```
 
-The bytes are written aside, a fresh launcher starts and the old process exits; the new launcher
-verifies the signature against its baked-in key, checks the build identifier, and either swaps the
-binary into place or discards the candidate and carries on with the existing one.
+`Upgrade.enabled` is false in a build with no key or no application identifier, whose launcher
+would refuse any candidate, and `resident.buildId` is the running build's identifier, to compare
+with that of a release on offer.
+
+The launcher records what it did with a candidate, and `Upgrade.outcome` reads it back: the
+`result` (`Applied`, or why the candidate was refused — `Disabled`, `NoRecord`,
+`WrongApplication`, `BadSignature`, `NotNewer` or `SwapFailed`), the `candidate` and `previous`
+build identifiers, and `when` it happened. `Upgrade.acknowledge()` clears it, so that each
+outcome is reported once:
+
+```scala
+import environments.javaBaseEnvironment
+import systems.javaBaseSystem
+
+def report(): Optional[Message] =
+  Upgrade.outcome.let: outcome =>
+    Upgrade.acknowledge()
+    m"${outcome.result} (build ${outcome.candidate.show})"
+```
 
 What the signature covers is chosen so that each part of it defeats a specific attack: the
 launcher's own code, the bundled JAR, the build identifier (so an older legitimately-signed
-release cannot be replayed), the flag byte permitting a downgrade (so it cannot be turned on
-after the fact), and the baked-in public key itself (so a different release key cannot be
-substituted into an otherwise-legitimate binary). A deliberate rollback — shipping 42 over a
-broken 43 — is signed with `--allow-downgrade`, which sets that flag inside the signed payload.
+release cannot be replayed), the application identifier (so another application's release cannot
+be installed in its place), the flag byte permitting a downgrade (so it cannot be turned on after
+the fact), and the keys themselves (so a different release key cannot be substituted into an
+otherwise-legitimate binary). A deliberate rollback — shipping 42 over a broken 43 — is signed
+with `--allow-downgrade`, which sets that flag inside the signed payload.
 
-Rotating keys needs one bridging release: sign it with the **old** seed but bake in the **new**
-public key, so existing installs accept it through the normal upgrade path and trust the new key
-from then on. Skip that step and existing installs are stranded, holding a key that will reject
-everything signed thereafter.
+The keys a candidate is checked against are always those of the *running* binary, so rotation
+works as a chain. A release signed with the old key may carry a new key as its `--public-key`,
+after which releases are signed with the new one (`xek sign` asks for `--foreign-key` to sign
+with a key the binary does not carry, since that is otherwise almost always a mistake). A release
+signed with the recovery key is accepted too, and may replace either key.
