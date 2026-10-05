@@ -354,7 +354,7 @@ object Whatwg:
   given writingsuggestions: ("writingsuggestions" is Attribute of Truth) = globalAttribute()
 
 class Whatwg() extends Dom:
-  def doctype: Doctype = Doctype("html")
+  def doctype: Html.Doctype = Html.Doctype("html")
 
   private type InteractivePhrasing =
     "a" | "audio" | "button" | "embed" | "iframe" | "img" | "input" | "label" | "select" |

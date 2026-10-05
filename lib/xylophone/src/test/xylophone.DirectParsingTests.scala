@@ -197,7 +197,7 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
       . assert(_ == (PWorker(t"", 1), true))
 
       test(m"CDATA in a leaf is wrong-shape on both paths"):
-        // `textOf` accepts only a single `TextNode` child, so a CDATA leaf
+        // `textOf` accepts only a single `Xml.Text` child, so a CDATA leaf
         // raises (and continues with the empty sentinel) on the AST path;
         // the direct path must accrue the same focus.
         val input = t"<root><name><![CDATA[A]]></name><age>1</age></root>"

@@ -37,9 +37,6 @@ import contingency.*
 import gossamer.*
 import harlequin.*
 import honeycomb.*
-// By name because `harlequin.Fragment` (fragment analysis) makes the bare name ambiguous; the
-// HTML fragment is meant here.
-import honeycomb.Fragment
 import nomenclature.*
 import prepositional.*
 import punctuation.*
@@ -64,11 +61,11 @@ trait CommonFormattable extends Formattable:
 
     ClassList(roleClass.lay(Set(accentClass))(Set(accentClass, _)))
 
-  def element(accent: Accent, role: Optional[Role], text: Text): Element of "code" =
+  def element(accent: Accent, role: Optional[Role], text: Text): Html.Element of "code" =
     whatwg.Code(`class` = classes(accent, role))(text)
 
   protected def postprocess(source: SourceCode): Html of Flow =
     val code = source.lines.remap: line =>
       Span.line(line.map { case Token(text, accent, _, _, role) => element(accent, role, text) }*)
 
-    Fragment(Div.amok(Pre(code*)))
+    Html.Fragment(Div.amok(Pre(code*)))

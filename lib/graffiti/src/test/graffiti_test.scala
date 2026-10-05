@@ -82,10 +82,10 @@ class MetaPage extends Archetype, StandardMetadata(t"Just a description"):
 // Two features that each introduce a `sidebar` slot of their own — a genuinely incompatible pair:
 // the two independent definitions collide, and a page must say which it means to keep.
 trait LeftRail extends Archetype:
-  def sidebar: Html of (? <: Flow) = Fragment[Flow]()
+  def sidebar: Html of (? <: Flow) = Html.Fragment[Flow]()
 
 trait RightRail extends Archetype:
-  def sidebar: Html of (? <: Flow) = Fragment[Flow]()
+  def sidebar: Html of (? <: Flow) = Html.Fragment[Flow]()
 
 // A concrete dashboard, supplying only the details `Dashboard` leaves abstract.
 class AdminDashboard extends Dashboard:

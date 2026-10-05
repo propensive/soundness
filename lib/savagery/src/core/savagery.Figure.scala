@@ -176,7 +176,7 @@ extends Figure:
     attrs += t"height" -> height.show
     Figure.decorate(attrs, id, transforms, style)
 
-    Element(t"rect", Attributes.from(attrs.result().to(Map)), Array())
+    Xml.Element(t"rect", Attributes.from(attrs.result().to(Map)), Array())
 
 case class Outline
   ( ops:        List[Stroke]        = Nil,
@@ -193,7 +193,7 @@ extends Figure:
     attrs += t"d" -> d
     Figure.decorate(attrs, id, transforms, style)
 
-    Element(t"path", Attributes.from(attrs.result().to(Map)), Array())
+    Xml.Element(t"path", Attributes.from(attrs.result().to(Map)), Array())
 
   def moveTo(point: Point): Outline = copy(ops = MoveTo(point) :: ops)
   def lineTo(point: Point): Outline = copy(ops = DrawTo(point) :: ops)
@@ -251,7 +251,7 @@ extends Figure:
     Figure.decorate(attrs, id, transforms, style)
 
     val label = if circle then t"circle" else t"ellipse"
-    Element(label, Attributes.from(attrs.result().to(Map)), Array())
+    Xml.Element(label, Attributes.from(attrs.result().to(Map)), Array())
 
 // A `<g>` element: figures that move, style and identify together. A chart's axes or one of its
 // series is a group, so that the whole part can be replaced by its identifier when it changes.
@@ -268,7 +268,7 @@ extends Figure:
     val attrs = VectorMap.newBuilder[Text, Text]
     Figure.decorate(attrs, id, transforms, style)
 
-    Element(t"g", Attributes.from(attrs.result().to(Map)), figures.map(_.xml).nodes)
+    Xml.Element(t"g", Attributes.from(attrs.result().to(Map)), figures.map(_.xml).nodes)
 
 // A `<polyline>` through absolute points, or a `<polygon>` when `closed`: the shape of a plotted
 // line, an area under it, or a bar's outline, without a path operation per vertex.
@@ -287,7 +287,7 @@ extends Figure:
     Figure.decorate(attrs, id, transforms, style)
     val label = if closed then t"polygon" else t"polyline"
 
-    Element(label, Attributes.from(attrs.result().to(Map)), Array())
+    Xml.Element(label, Attributes.from(attrs.result().to(Map)), Array())
 
 object Lettering:
   // Where the text sits relative to its position: `text-anchor`.
@@ -339,4 +339,4 @@ extends Figure:
 
     Figure.decorate(attrs, id, transforms, styled)
 
-    Element(t"text", Attributes.from(attrs.result().to(Map)), List[Xml](TextNode(text)).nodes)
+    Xml.Element(t"text", Attributes.from(attrs.result().to(Map)), List[Xml](Xml.Text(text)).nodes)

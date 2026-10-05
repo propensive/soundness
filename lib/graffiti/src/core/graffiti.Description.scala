@@ -40,4 +40,4 @@ import prepositional.*
 // Adds a `<meta name="description">` to the document head, from the trait parameter.
 trait Description(text: Text) extends Archetype:
   protected override def head: Html of (? <: Metadata) =
-    Fragment[Metadata](Meta.Description(content = text), super.head)
+    Html.Fragment[Metadata](Meta.Description(content = text), super.head)

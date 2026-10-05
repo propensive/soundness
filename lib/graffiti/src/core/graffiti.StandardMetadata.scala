@@ -46,4 +46,4 @@ import prepositional.*
 // inheritance and contributes the description `<meta>` directly.
 trait StandardMetadata(description: Text) extends Viewport:
   protected override def head: Html of (? <: Metadata) =
-    Fragment[Metadata](Meta.Description(content = description), super.head)
+    Html.Fragment[Metadata](Meta.Description(content = description), super.head)

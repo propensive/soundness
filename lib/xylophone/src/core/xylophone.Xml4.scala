@@ -92,20 +92,20 @@ trait Xml4:
 
   object Provider extends Provider2:
     // The text content of a leaf: an element's text nodes concatenated, or an attribute's value
-    // as a `TextNode`; `Unset` for the absent sentinel
+    // as a `Xml.Text`; `Unset` for the absent sentinel
     private def text(xml: Xml): Optional[Text] = xml match
-      case _ if xml eq Xml.Absent  => Unset
-      case TextNode(text)          => text
-      case Fragment(node: Node)    => text(node)
+      case _ if xml eq Xml.Absent       => Unset
+      case Xml.Text(text)               => text
+      case Xml.Fragment(node: Xml.Node) => text(node)
 
-      case element: Element =>
+      case element: Xml.Element =>
         val builder = StringBuilder()
 
         element.children.extent.each: index =>
           element.children(index) match
-            case TextNode(text) => builder.append(text.s)
-            case Cdata(text)    => builder.append(text.s)
-            case _              => ()
+            case Xml.Text(text)  => builder.append(text.s)
+            case Xml.Cdata(text) => builder.append(text.s)
+            case _               => ()
 
         builder.toString.tt
 
@@ -760,35 +760,35 @@ trait Xml4:
     def fields: List[(Text, Member)] = layout.fields
 
     // The element a value stands for: the document element of a parse result, or the element
-    private def elementOf(xml: Xml): Optional[Element] = xml match
-      case element: Element           => element
-      case Fragment(element: Element) => element
+    private def elementOf(xml: Xml): Optional[Xml.Element] = xml match
+      case element: Xml.Element               => element
+      case Xml.Fragment(element: Xml.Element) => element
 
-      case Fragment(nodes*) =>
-        nodes.collectFirst { case element: Element => element } match
+      case Xml.Fragment(nodes*) =>
+        nodes.collectFirst { case element: Xml.Element => element } match
           case Some(element) => element
           case None          => Unset
 
       case _ =>
         Unset
 
-    private def nil(element: Element): Boolean =
+    private def nil(element: Xml.Element): Boolean =
       element.attribute(Xml.Name(Xsd.instance, t"nil")).lay(false): value =>
         value.s == "true" || value.s == "1"
 
     // The children of `parent` the field selects: by resolved name in the namespace the schema
     // expects of that child, or by local name alone where the schema says nothing about the
     // parent (a root reached through a reference the walk did not follow)
-    private def children(parent: Element, name: Text): List[Element] =
+    private def children(parent: Xml.Element, name: Text): List[Xml.Element] =
       // `Option`, since an expected namespace may itself be absent
       val expected: Option[Xml.Name] =
         layout.elements.stdlib.get((parent.localName, name)).map(Xml.Name(_, name))
 
-      val buffer = scm.ArrayBuffer[Element]()
+      val buffer = scm.ArrayBuffer[Xml.Element]()
 
       parent.children.extent.each: index =>
         parent.children(index) match
-          case child: Element =>
+          case child: Xml.Element =>
             val matches = expected match
               case Some(expected) => child.qualified == expected
               case None           => child.localName == name
@@ -800,33 +800,33 @@ trait Xml4:
 
       List.from(buffer)
 
-    private def attributeOf(parent: Element, name: Text): Optional[Text] =
+    private def attributeOf(parent: Xml.Element, name: Text): Optional[Text] =
       layout.attributes.stdlib.get((parent.localName, name)) match
         case Some(namespace) => parent.attribute(Xml.Name(namespace, name))
         case None            => parent.attributes.fetch(name)
 
-    private def ownText(element: Element): Xml =
+    private def ownText(element: Xml.Element): Xml =
       val builder = StringBuilder()
 
       element.children.extent.each: index =>
         element.children(index) match
-          case TextNode(text) => builder.append(text.s)
-          case Cdata(text)    => builder.append(text.s)
-          case _              => ()
+          case Xml.Text(text)  => builder.append(text.s)
+          case Xml.Cdata(text) => builder.append(text.s)
+          case _               => ()
 
-      TextNode(builder.toString.tt)
+      Xml.Text(builder.toString.tt)
 
     def access(name: Text, xml: Xml): Xml = elementOf(xml).lay(Xml.Absent): parent =>
       if name.s.startsWith("#") then ownText(parent)
       else if name.s.startsWith("@") then
-        attributeOf(parent, name.s.substring(1).nn.tt).lay(Xml.Absent)(TextNode(_))
+        attributeOf(parent, name.s.substring(1).nn.tt).lay(Xml.Absent)(Xml.Text(_))
       else
         children(parent, name).prim match
-          case child: Element => if nil(child) then Xml.Absent else child
+          case child: Xml.Element => if nil(child) then Xml.Absent else child
 
           case _ =>
             val fallback = if name == t"text" then ownText(parent) else Xml.Absent
-            attributeOf(parent, name).lay(fallback)(TextNode(_))
+            attributeOf(parent, name).lay(fallback)(Xml.Text(_))
 
     def absent(xml: Xml): Boolean = xml eq Xml.Absent
 

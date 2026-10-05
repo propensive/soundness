@@ -364,34 +364,34 @@ object Mathml:
 
   object Parser:
     def labelOf(xml: Xml): Text = xml match
-      case element: Element => element.label
+      case element: Xml.Element => element.label
       case _                => t"<unknown>"
 
-    def findMath(nodes: List[Node])(using Tactic[Mathml.Error]): Element =
-      nodes.reap { case element: Element if element.label == t"math" => element }
+    def findMath(nodes: List[Xml.Node])(using Tactic[Mathml.Error]): Xml.Element =
+      nodes.reap { case element: Xml.Element if element.label == t"math" => element }
       . or:
         abort(Mathml.Error(Mathml.Error.Reason.NotMathml(t"<missing>")))
 
-    def rootElement(xml: Xml)(using Tactic[Mathml.Error]): Element = xml match
-      case element: Element if element.label == t"math" => element
-      case Fragment(nodes*)                             => findMath(nodes.to(List))
+    def rootElement(xml: Xml)(using Tactic[Mathml.Error]): Xml.Element = xml match
+      case element: Xml.Element if element.label == t"math" => element
+      case Xml.Fragment(nodes*)                             => findMath(nodes.to(List))
 
       case other =>
         abort(Mathml.Error(Mathml.Error.Reason.NotMathml(labelOf(other))))
 
-    private def childElements(elem: Element): List[Element] =
-      (elem.children.readable.toList.collect { case element: Element => element }).to(List)
+    private def childElements(elem: Xml.Element): List[Xml.Element] =
+      (elem.children.readable.toList.collect { case element: Xml.Element => element }).to(List)
 
-    private def textOf(elem: Element): Text =
-      (elem.children.readable.toList.collect { case TextNode(text) => text }).to(List).join
+    private def textOf(elem: Xml.Element): Text =
+      (elem.children.readable.toList.collect { case Xml.Text(text) => text }).to(List).join
 
-    private def children(elem: Element)(using Tactic[Mathml.Error]): List[Mathml] =
+    private def children(elem: Xml.Element)(using Tactic[Mathml.Error]): List[Mathml] =
       childElements(elem).map(decodeNode)
 
     private def at(nodes: List[Mathml], index: Int): Mathml =
       nodes.stdlib.lift(index).getOrElse(Mrow(Nil))
 
-    def decodeMath(elem: Element)(using Tactic[Mathml.Error]): Math =
+    def decodeMath(elem: Xml.Element)(using Tactic[Mathml.Error]): Math =
       val kept = elem.attributes.to[List].filter: (key, _) =>
         key != t"xmlns" && key != t"display"
 
@@ -400,7 +400,7 @@ object Mathml:
 
       Math(children(elem), display, kept)
 
-    def decodeNode(elem: Element)(using Tactic[Mathml.Error]): Mathml =
+    def decodeNode(elem: Xml.Element)(using Tactic[Mathml.Error]): Mathml =
       val attrs = elem.attributes.to[List]
       val cs = children(elem)
 
@@ -468,15 +468,17 @@ object Mathml:
       findMath(html).lay(abort(Mathml.Error(Mathml.Error.Reason.NotMathml(t"<missing>")))): element =>
         Mathml.Parser.decodeMath(toXmlElement(element))
 
-    def findMath(html: Html): Optional[honeycomb.Element] = html match
-      case element: honeycomb.Element =>
+    def findMath(html: Html): Optional[honeycomb.Html.Element] = html match
+      case element: honeycomb.Html.Element =>
         if element.label == t"math" then element else searchNodes(element.children)
 
-      case fragment: honeycomb.Fragment => searchNodes(Array.from(fragment.nodes))
-      case _                            => Unset
+      case fragment: honeycomb.Html.Fragment => searchNodes(Array.from(fragment.nodes))
+      case _                                 => Unset
 
-    private def searchNodes(nodes: Array[honeycomb.Node]^{}): Optional[honeycomb.Element] =
-      var result: Optional[honeycomb.Element] = Unset
+    private def searchNodes(nodes: Array[honeycomb.Html.Node]^{})
+    :   Optional[honeycomb.Html.Element] =
+
+      var result: Optional[honeycomb.Html.Element] = Unset
       var index = 0
 
       while index < nodes.length && result.absent do
@@ -485,18 +487,18 @@ object Mathml:
 
       result
 
-    private def toXmlElement(element: honeycomb.Element): Element =
+    private def toXmlElement(element: honeycomb.Html.Element): Xml.Element =
       val pairs: List[(Text, Text)] =
         element.attributes.keys.map { key => (key, element.attributes(key).or(t"")) }.to(List)
 
-      val nodes: Array[Node]^{} = element.children.remap(toXmlNode)
-      Element(element.label, Attributes(pairs*), nodes)
+      val nodes: Array[Xml.Node]^{} = element.children.remap(toXmlNode)
+      Xml.Element(element.label, Attributes(pairs*), nodes)
 
-    private def toXmlNode(node: honeycomb.Node): Node = node match
-      case element: honeycomb.Element   => toXmlElement(element)
-      case textNode: honeycomb.TextNode => TextNode(textNode.text)
-      case comment: honeycomb.Comment   => Comment(comment.text)
-      case _                            => TextNode(t"")
+    private def toXmlNode(node: honeycomb.Html.Node): Xml.Node = node match
+      case element: honeycomb.Html.Element => toXmlElement(element)
+      case textNode: honeycomb.Html.Text   => Xml.Text(textNode.text)
+      case comment: honeycomb.Html.Comment => Xml.Comment(comment.text)
+      case _                               => Xml.Text(t"")
 
 trait Mathml:
   def label: Text
@@ -506,13 +508,13 @@ trait Mathml:
 
   def xml: Xml =
     val children: List[Xml] = text.lay(contents.map(_.xml)): value =>
-      List(TextNode(value))
+      List(Xml.Text(value))
 
-    Element(label, Attributes(attributes*), children.nodes)
+    Xml.Element(label, Attributes(attributes*), children.nodes)
 
   def html: Html of "#foreign" =
     val children: List[Html of "#foreign"] =
       text.lay(contents.map(_.html)): value =>
-        List(honeycomb.TextNode.foreign(value))
+        List(honeycomb.Html.Text.foreign(value))
 
-    honeycomb.Element.foreign(label, honeycomb.Attributes(attributes*), children*)
+    honeycomb.Html.Element.foreign(label, honeycomb.Attributes(attributes*), children*)

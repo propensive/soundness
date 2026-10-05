@@ -96,30 +96,34 @@ object internal:
 
       var types: List[TypeRepr] = Nil
 
-      def checkText(array: Expr[scala.Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
+      def checkText
+        ( array: Expr[scala.Array[Any]], pattern: Xml.Text, scrutinee: Expr[Xml.Text] )
       :   Expr[Boolean] =
 
         '{${Expr(pattern.text)} == $scrutinee.text}
 
-      def checkComment(array: Expr[scala.Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
+      def checkComment
+        ( array: Expr[scala.Array[Any]], pattern: Xml.Comment, scrutinee: Expr[Xml.Comment] )
       :   Expr[Boolean] =
 
         '{${Expr(pattern.text)} == $scrutinee.text}
 
-      def checkCdata(array: Expr[scala.Array[Any]], pattern: Cdata, scrutinee: Expr[Cdata])
+      def checkCdata
+        ( array: Expr[scala.Array[Any]], pattern: Xml.Cdata, scrutinee: Expr[Xml.Cdata] )
       :   Expr[Boolean] =
 
         '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkPi
         ( array:     Expr[scala.Array[Any]],
-          pattern:   ProcessingInstruction,
-          scrutinee: Expr[ProcessingInstruction] )
+          pattern:   Xml.ProcessingInstruction,
+          scrutinee: Expr[Xml.ProcessingInstruction] )
       :   Expr[Boolean] =
 
         '{${Expr(pattern.target)} == $scrutinee.target && ${Expr(pattern.data)} == $scrutinee.data}
 
-      def checkHeader(array: Expr[scala.Array[Any]], pattern: Header, scrutinee: Expr[Header])
+      def checkHeader
+        ( array: Expr[scala.Array[Any]], pattern: Xml.Header, scrutinee: Expr[Xml.Header] )
       :   Expr[Boolean] =
 
         val encoding: Expr[Boolean] =
@@ -132,7 +136,8 @@ object internal:
 
         '{${Expr(pattern.version)} == $scrutinee.version && $encoding && $standalone}
 
-      def checkFragment(array: Expr[scala.Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
+      def checkFragment
+        ( array: Expr[scala.Array[Any]], pattern: Xml.Fragment, scrutinee: Expr[Xml.Fragment] )
       :   Expr[Boolean] =
 
         val children = '{$scrutinee.nodes}
@@ -147,7 +152,8 @@ object internal:
         elements(0):
           '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
 
-      def checkElement(array: Expr[scala.Array[Any]], pattern: Element, scrutinee: Expr[Element])
+      def checkElement
+        ( array: Expr[scala.Array[Any]], pattern: Xml.Element, scrutinee: Expr[Xml.Element] )
       :   Expr[Boolean] =
 
         def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
@@ -203,7 +209,7 @@ object internal:
       :   Expr[Boolean] =
 
         pattern match
-          case Comment("\u0000") =>
+          case Xml.Comment("\u0000") =>
             // Comment, CDATA and processing-instruction holes are not emitted
             // by the parser's callback, so they have no `holes`/`iterator`
             // entry; only `index` advances to address the `extracts` slot.
@@ -211,101 +217,101 @@ object internal:
             types ::= TypeRepr.of[Text]
 
             ' {
-                $expr && $scrutinee.isInstanceOf[Comment] &&
+                $expr && $scrutinee.isInstanceOf[Xml.Comment] &&
                   {
-                    $array(${Expr(index)}) = $scrutinee.asInstanceOf[Comment].text
+                    $array(${Expr(index)}) = $scrutinee.asInstanceOf[Xml.Comment].text
                     true
                   }
               }
 
-          case ProcessingInstruction("\u0000", t"") =>
+          case Xml.ProcessingInstruction("\u0000", t"") =>
             index += 1
-            types ::= TypeRepr.of[ProcessingInstruction]
+            types ::= TypeRepr.of[Xml.ProcessingInstruction]
 
             ' {
-                $expr && $scrutinee.isInstanceOf[ProcessingInstruction] &&
+                $expr && $scrutinee.isInstanceOf[Xml.ProcessingInstruction] &&
                   { $array(${Expr(index)}) = $scrutinee; true }
               }
 
-          case Cdata("\u0000") =>
+          case Xml.Cdata("\u0000") =>
             index += 1
             types ::= TypeRepr.of[Text]
 
             ' {
-                $expr && $scrutinee.isInstanceOf[Cdata] &&
-                  { $array(${Expr(index)}) = $scrutinee.asInstanceOf[Cdata].text; true }
+                $expr && $scrutinee.isInstanceOf[Xml.Cdata] &&
+                  { $array(${Expr(index)}) = $scrutinee.asInstanceOf[Xml.Cdata].text; true }
               }
 
-          case TextNode("\u0000") =>
+          case Xml.Text("\u0000") =>
             index += 1
 
             iterator.next() match
               case Xml.Hole.Node(label) =>
-                types ::= TypeRepr.of[Node]
+                types ::= TypeRepr.of[Xml.Node]
 
               case _ =>
                 panic(m"unexpected hole type")
 
             '{$expr && { $array(${Expr(index)}) = $scrutinee; true }}
 
-          case textual@TextNode(text) =>
-            val checked = checkText(array, textual, '{$scrutinee.asInstanceOf[TextNode]})
-            '{$expr && $scrutinee.isInstanceOf[TextNode] && $checked}
+          case textual@Xml.Text(text) =>
+            val checked = checkText(array, textual, '{$scrutinee.asInstanceOf[Xml.Text]})
+            '{$expr && $scrutinee.isInstanceOf[Xml.Text] && $checked}
 
-          case comment@Comment(text) =>
+          case comment@Xml.Comment(text) =>
             if text.contains("\u0000") then halt:
               m"""
                 only the entire comment text can be matched; write the extractor as
                 ${t"<!--$$text-->"}
               """
 
-            val checked = checkComment(array, comment, '{$scrutinee.asInstanceOf[Comment]})
+            val checked = checkComment(array, comment, '{$scrutinee.asInstanceOf[Xml.Comment]})
 
-            '{$expr && $scrutinee.isInstanceOf[Comment] && $checked}
+            '{$expr && $scrutinee.isInstanceOf[Xml.Comment] && $checked}
 
-          case cdata@Cdata(content) =>
+          case cdata@Xml.Cdata(content) =>
             if content.contains("\u0000") then halt:
               m"""
                 only the entire CDATA content can be matched; write the extractor as
                 ${t"<![CDATA[$$text]]>"}
               """
 
-            val checked = checkCdata(array, cdata, '{$scrutinee.asInstanceOf[Cdata]})
+            val checked = checkCdata(array, cdata, '{$scrutinee.asInstanceOf[Xml.Cdata]})
 
-            '{$expr && $scrutinee.isInstanceOf[Cdata] && $checked}
+            '{$expr && $scrutinee.isInstanceOf[Xml.Cdata] && $checked}
 
-          case pi@ProcessingInstruction(target, data) =>
+          case pi@Xml.ProcessingInstruction(target, data) =>
             if data.contains("\u0000") || target.contains("\u0000")
             then halt(m"only the entire data part of a processing instruction can be matched")
 
-            val checked = checkPi(array, pi, '{$scrutinee.asInstanceOf[ProcessingInstruction]})
-            '{$expr && $scrutinee.isInstanceOf[ProcessingInstruction] && $checked}
+            val checked = checkPi(array, pi, '{$scrutinee.asInstanceOf[Xml.ProcessingInstruction]})
+            '{$expr && $scrutinee.isInstanceOf[Xml.ProcessingInstruction] && $checked}
 
-          case Element("\u0000", _, _) =>
+          case Xml.Element("\u0000", _, _) =>
             index += 1
 
             iterator.next() match
               case Xml.Hole.Element(label) =>
-                types ::= TypeRepr.of[Element]
+                types ::= TypeRepr.of[Xml.Element]
 
               case _ =>
                 halt(m"unexpected hole type")
 
             '{$expr && { $array(${Expr(index)}) = $scrutinee; true }}
 
-          case element: Element =>
-            def checked = checkElement(array, element, '{$scrutinee.asInstanceOf[Element]})
-            '{$expr && $scrutinee.isInstanceOf[Element] && $checked}
+          case element: Xml.Element =>
+            def checked = checkElement(array, element, '{$scrutinee.asInstanceOf[Xml.Element]})
+            '{$expr && $scrutinee.isInstanceOf[Xml.Element] && $checked}
 
-          case header: Header =>
-            def checked = checkHeader(array, header, '{$scrutinee.asInstanceOf[Header]})
-            '{$expr && $scrutinee.isInstanceOf[Header] && $checked}
+          case header: Xml.Header =>
+            def checked = checkHeader(array, header, '{$scrutinee.asInstanceOf[Xml.Header]})
+            '{$expr && $scrutinee.isInstanceOf[Xml.Header] && $checked}
 
-          case fragment@Fragment(nodes*) =>
-            val checked = checkFragment(array, fragment, '{$scrutinee.asInstanceOf[Fragment]})
-            '{$expr && $scrutinee.isInstanceOf[Fragment] && $checked}
+          case fragment@Xml.Fragment(nodes*) =>
+            val checked = checkFragment(array, fragment, '{$scrutinee.asInstanceOf[Xml.Fragment]})
+            '{$expr && $scrutinee.isInstanceOf[Xml.Fragment] && $checked}
 
-          case Doctype(_) =>
+          case Xml.Doctype(_) =>
             halt(m"DOCTYPE patterns are not supported in extractors")
 
       // Every `$`-substitution in the pattern is one captured value, whether or
@@ -780,7 +786,7 @@ object internal:
                     case _ =>
                       Expr.summon[(? >: value) is Showable] match
                         case Some('{$showable: Showable}) =>
-                          '{TextNode($showable.text($expr))}
+                          '{Xml.Text($showable.text($expr))}
 
                         case _ =>
                           halt
@@ -822,10 +828,10 @@ object internal:
       import Scope.{binds, bindings}
 
       def undeclaredPrefixes(node: Xml, scope: Scope): SSet[Text] = node match
-        case fragment: Fragment =>
+        case fragment: Xml.Fragment =>
           fragment.nodes.toList.flatMap(undeclaredPrefixes(_, scope)).toSet
 
-        case element: Element =>
+        case element: Xml.Element =>
           val inner =
             if element.attributes.declaresNamespace then Scope.declared(scope, element.attributes)
             else scope
@@ -841,7 +847,7 @@ object internal:
             prefix != t"xmlns" && !inner.binds(prefix)
 
           val children = scala.collection.immutable.ArraySeq
-          . unsafeWrapArray(element.children.asInstanceOf[scala.Array[Node]]).toList
+          . unsafeWrapArray(element.children.asInstanceOf[scala.Array[Xml.Node]]).toList
 
           here ++ children.flatMap(undeclaredPrefixes(_, inner))
 
@@ -857,19 +863,19 @@ object internal:
 
       val literalScope: Scope = Scope.xml ++ Scope(bindings*)
 
-      def serialize(xml: Xml, scope: Scope = literalScope): Seq[Expr[Node]] = xml match
-        case fragment: Fragment => fragment.nodes.flatMap(serialize(_, scope))
+      def serialize(xml: Xml, scope: Scope = literalScope): Seq[Expr[Xml.Node]] = xml match
+        case fragment: Xml.Fragment => fragment.nodes.flatMap(serialize(_, scope))
 
-        case Header(version, encoding, standalone, _) =>
+        case Xml.Header(version, encoding, standalone, _) =>
           val encoding2: Expr[Optional[Text]] =
             if encoding == Unset then '{Unset} else Expr(encoding.asInstanceOf[Text])
 
           val standalone2: Expr[Optional[Boolean]] =
             if standalone == Unset then '{Unset} else Expr(encoding.asInstanceOf[Boolean])
 
-          List('{Header(${Expr(version)}, $encoding2, $standalone2)})
+          List('{Xml.Header(${Expr(version)}, $encoding2, $standalone2)})
 
-        case Element(label, attributes, children) =>
+        case Xml.Element(label, attributes, children) =>
           val exprs = Attributes.iterator(attributes).toList.map: (key, value) =>
             ' {
                 ( ${Expr(key)},
@@ -890,7 +896,8 @@ object internal:
 
           val elements =
             val serialized = scala.collection.immutable.ArraySeq
-            . unsafeWrapArray(children.asInstanceOf[scala.Array[Node]]).flatMap(serialize(_, own))
+            . unsafeWrapArray(children.asInstanceOf[scala.Array[Xml.Node]])
+            . flatMap(serialize(_, own))
             . toList
 
             '{Array.frozen(scala.IArray(${Expr.ofList(serialized)}*))}
@@ -899,9 +906,9 @@ object internal:
             if own.bindings.isEmpty then '{Scope.empty}
             else liftScope(own.bindings.map { (prefix, uri) => (prefix.or(t""), uri) })
 
-          List('{Element(${Expr(label)}, Attributes.from($map), $elements, $scopeExpr)})
+          List('{Xml.Element(${Expr(label)}, Attributes.from($map), $elements, $scopeExpr)})
 
-        case Comment(text) =>
+        case Xml.Comment(text) =>
           val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
@@ -912,9 +919,9 @@ object internal:
 
           val content = recur(parts.tail, Expr(parts.head))
 
-          List('{Comment($content.tt)})
+          List('{Xml.Comment($content.tt)})
 
-        case Cdata(text) =>
+        case Xml.Cdata(text) =>
           val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
@@ -925,9 +932,9 @@ object internal:
 
           val content = recur(parts.tail, Expr(parts.head))
 
-          List('{Cdata($content.tt)})
+          List('{Xml.Cdata($content.tt)})
 
-        case ProcessingInstruction(target, data0) =>
+        case Xml.ProcessingInstruction(target, data0) =>
           val parts = data0.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
@@ -938,12 +945,12 @@ object internal:
 
           val data = recur(parts.tail, Expr(parts.head))
 
-          List('{ProcessingInstruction(${Expr(target)}, $data.tt)})
+          List('{Xml.ProcessingInstruction(${Expr(target)}, $data.tt)})
 
-        case TextNode("\u0000") =>
-          List(iterator.next().asExprOf[Node])
+        case Xml.Text("\u0000") =>
+          List(iterator.next().asExprOf[Xml.Node])
 
-        case TextNode(text) =>
+        case Xml.Text(text) =>
           val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
@@ -954,16 +961,16 @@ object internal:
 
           val content = recur(parts.tail, Expr(parts.head))
 
-          List('{TextNode($content.tt)})
+          List('{Xml.Text($content.tt)})
 
-        case Doctype(text) =>
-          List('{Doctype(${Expr(text)})})
+        case Xml.Doctype(text) =>
+          List('{Xml.Doctype(${Expr(text)})})
 
       def resultType(xml: Xml): scala.collection.immutable.Set[String] = xml match
-        case TextNode(_)        => scala.collection.immutable.Set("#text")
-        case Element(tag, _, _) => scala.collection.immutable.Set(tag.s)
-        case Fragment(values*)  => values.toSet.flatMap(resultType(_))
-        case _                  => scala.collection.immutable.Set()
+        case Xml.Text(_)            => scala.collection.immutable.Set("#text")
+        case Xml.Element(tag, _, _) => scala.collection.immutable.Set(tag.s)
+        case Xml.Fragment(values*)  => values.toSet.flatMap(resultType(_))
+        case _                      => scala.collection.immutable.Set()
 
       resultType(xml)
       . map: label => ConstantType(StringConstant(label))
@@ -975,7 +982,7 @@ object internal:
               $ {
                   serialize(xml).absolve match
                     case List(one: Expr[?]) => one.asExprOf[Xml]
-                    case many               => '{Fragment(${Expr.ofList(many)}*)}
+                    case many               => '{Xml.Fragment(${Expr.ofList(many)}*)}
                 }
 
               . of[topic]

@@ -105,11 +105,11 @@ object Math extends Mathml.Container(new Math(_)):
 
   given showable: [doc <: Document[Math]] => doc is Showable =
     document =>
-      val header = Header(t"1.0", document.metadata.name, Unset)
+      val header = Xml.Header(t"1.0", document.metadata.name, Unset)
 
       val full: Xml = document.root.xml.absolve match
-        case node: Node       => Fragment(header, node)
-        case Fragment(nodes*) => Fragment((header +: nodes)*)
+        case node: Xml.Node       => Xml.Fragment(header, node)
+        case Xml.Fragment(nodes*) => Xml.Fragment((header +: nodes)*)
 
       full.show
 
@@ -244,7 +244,7 @@ extends Documentary:
     (t"xmlns" -> mathmlNamespace) :: displayPairs + attributes
 
   def xml: Xml =
-    val children: Array[Node]^{} = contents.map(_.xml).nodes
-    Element(t"math", Attributes(attributePairs*), children)
+    val children: Array[Xml.Node]^{} = contents.map(_.xml).nodes
+    Xml.Element(t"math", Attributes(attributePairs*), children)
 
   def html: Html of "math" = Math.renderable.render(this)

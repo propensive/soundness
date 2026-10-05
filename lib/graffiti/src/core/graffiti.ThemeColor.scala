@@ -40,4 +40,4 @@ import prepositional.*
 // Adds a `<meta name="theme-color">`, from the trait parameter (a CSS colour string).
 trait ThemeColor(color: Text) extends Archetype:
   protected override def head: Html of (? <: Metadata) =
-    Fragment[Metadata](Meta.ThemeColor(content = color), super.head)
+    Html.Fragment[Metadata](Meta.ThemeColor(content = color), super.head)

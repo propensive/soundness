@@ -54,7 +54,7 @@ object VersoPanel:
 // the writing direction, no `left`/`right` ever appears and `direction = Rtl` mirrors it for free.
 trait VersoPanel extends Archetype:
   // The panel's content; empty by default (the slot renders nothing until filled).
-  def verso: Html of (? <: Flow) = Fragment[Flow]()
+  def verso: Html of (? <: Flow) = Html.Fragment[Flow]()
 
   // The panel's inline size, and the gap between panel and content.
   def versoWidth: Quantity[Rems[1]] = 16.0*Rem
@@ -65,7 +65,7 @@ trait VersoPanel extends Archetype:
     ( panel: Html of (? <: Flow), content: Html of (? <: Flow) )
   :   Html of (? <: Flow) =
 
-    Fragment[Flow](Div(`class` = VersoPanel.layoutClass)(panel, content))
+    Html.Fragment[Flow](Div(`class` = VersoPanel.layoutClass)(panel, content))
 
   // This feature's own rules; override to restyle the panel and its grid.
   protected def versoStyles: Css =

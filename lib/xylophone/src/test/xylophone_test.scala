@@ -56,16 +56,16 @@ case class Pixel(x: Int, y: Int, color: ColorVal)
 object Tests extends Suite(m"Xylophone tests"):
 
   // The document element of a parse result
-  def root(xml: Xml): Element = xml match
-    case element: Element             => element
-    case Fragment(element: Element)   => element
+  def root(xml: Xml): Xml.Element = xml match
+    case element: Xml.Element             => element
+    case Xml.Fragment(element: Xml.Element)   => element
     case _                            => elem(t"none")
 
-  def elem(label: Text, children: Node*): Element =
-    Element(label, Attributes.empty, Array.from(children))
+  def elem(label: Text, children: Xml.Node*): Xml.Element =
+    Xml.Element(label, Attributes.empty, Array.from(children))
 
-  def elem(label: Text, attrs: Map[Text, Text], children: Node*): Element =
-    Element(label, Attributes.from(attrs), Array.from(children))
+  def elem(label: Text, attrs: Map[Text, Text], children: Xml.Node*): Xml.Element =
+    Xml.Element(label, Attributes.from(attrs), Array.from(children))
 
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
@@ -84,12 +84,12 @@ object Tests extends Suite(m"Xylophone tests"):
       test(m"xylophone's types inspect natively"):
         Inspectable.fallbacks
          ( x"<message>hello</message>".inspect,
-           elem(t"item", Map(t"id" -> t"1"), TextNode(t"hi")).inspect,
-           TextNode(t"hi").inspect,
-           Comment(t"hi").inspect,
-           Cdata(t"hi").inspect,
-           Doctype(t"html").inspect,
-           ProcessingInstruction(t"foo", t"bar").inspect,
+           elem(t"item", Map(t"id" -> t"1"), Xml.Text(t"hi")).inspect,
+           Xml.Text(t"hi").inspect,
+           Xml.Comment(t"hi").inspect,
+           Xml.Cdata(t"hi").inspect,
+           Xml.Doctype(t"html").inspect,
+           Xml.ProcessingInstruction(t"foo", t"bar").inspect,
            Attributes(t"id" -> t"x").inspect )
       . assert(_ == Nil)
 
@@ -149,7 +149,7 @@ object Tests extends Suite(m"Xylophone tests"):
 
       test(m"Element with text"):
         t"<a>hello</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"hello")))
+      . assert(_ == elem(t"a", Xml.Text(t"hello")))
 
       test(m"Nested element"):
         t"<a><b/></a>".read[Xml]
@@ -161,7 +161,7 @@ object Tests extends Suite(m"Xylophone tests"):
 
       test(m"Mixed content (text and elements)"):
         t"<a>text<b/>more</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"text"), elem(t"b"), TextNode(t"more")))
+      . assert(_ == elem(t"a", Xml.Text(t"text"), elem(t"b"), Xml.Text(t"more")))
 
       test(m"Self-closing element with whitespace before slash"):
         t"<a />".read[Xml]
@@ -197,7 +197,7 @@ object Tests extends Suite(m"Xylophone tests"):
 
       test(m"Whitespace between elements is preserved"):
         t"<a> <b/> </a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t" "), elem(t"b"), TextNode(t" ")))
+      . assert(_ == elem(t"a", Xml.Text(t" "), elem(t"b"), Xml.Text(t" ")))
 
       test(m"Multiple sibling elements"):
         t"<a><b/><c/><d/></a>".read[Xml]
@@ -315,23 +315,23 @@ object Tests extends Suite(m"Xylophone tests"):
     suite(m"Comments"):
       test(m"Simple comment inside element"):
         t"<a><!-- hello --></a>".read[Xml]
-      . assert(_ == elem(t"a", Comment(t" hello ")))
+      . assert(_ == elem(t"a", Xml.Comment(t" hello ")))
 
       test(m"Empty comment"):
         t"<a><!----></a>".read[Xml]
-      . assert(_ == elem(t"a", Comment(t"")))
+      . assert(_ == elem(t"a", Xml.Comment(t"")))
 
       test(m"Comment with single hyphen"):
         t"<a><!-- a-b --></a>".read[Xml]
-      . assert(_ == elem(t"a", Comment(t" a-b ")))
+      . assert(_ == elem(t"a", Xml.Comment(t" a-b ")))
 
       test(m"Comment containing entity-like text"):
         t"<a><!-- &amp; --></a>".read[Xml]
-      . assert(_ == elem(t"a", Comment(t" &amp; ")))
+      . assert(_ == elem(t"a", Xml.Comment(t" &amp; ")))
 
       test(m"Comment containing tag-like text"):
         t"<a><!-- <foo/> --></a>".read[Xml]
-      . assert(_ == elem(t"a", Comment(t" <foo/> ")))
+      . assert(_ == elem(t"a", Xml.Comment(t" <foo/> ")))
 
       test(m"Comment with double-hyphen is rejected"):
         capture[Parse.Error](t"<a><!-- a -- b --></a>".read[Xml])
@@ -341,43 +341,43 @@ object Tests extends Suite(m"Xylophone tests"):
     suite(m"CDATA sections"):
       test(m"Simple CDATA section"):
         t"<a><![CDATA[hello]]></a>".read[Xml]
-      . assert(_ == elem(t"a", Cdata(t"hello")))
+      . assert(_ == elem(t"a", Xml.Cdata(t"hello")))
 
       test(m"Empty CDATA section"):
         t"<a><![CDATA[]]></a>".read[Xml]
-      . assert(_ == elem(t"a", Cdata(t"")))
+      . assert(_ == elem(t"a", Xml.Cdata(t"")))
 
       test(m"CDATA containing tag-like text"):
         t"<a><![CDATA[<not a tag>]]></a>".read[Xml]
-      . assert(_ == elem(t"a", Cdata(t"<not a tag>")))
+      . assert(_ == elem(t"a", Xml.Cdata(t"<not a tag>")))
 
       test(m"CDATA containing entity-like text"):
         t"<a><![CDATA[&not;]]></a>".read[Xml]
-      . assert(_ == elem(t"a", Cdata(t"&not;")))
+      . assert(_ == elem(t"a", Xml.Cdata(t"&not;")))
 
       test(m"CDATA with single closing bracket"):
         t"<a><![CDATA[a]b]]></a>".read[Xml]
-      . assert(_ == elem(t"a", Cdata(t"a]b")))
+      . assert(_ == elem(t"a", Xml.Cdata(t"a]b")))
 
 
     suite(m"Processing instructions"):
       test(m"Simple processing instruction"):
         t"<a><?target data?></a>".read[Xml]
-      . assert(_ == elem(t"a", ProcessingInstruction(t"target", t"data")))
+      . assert(_ == elem(t"a", Xml.ProcessingInstruction(t"target", t"data")))
 
       test(m"Processing instruction with no data"):
         t"<a><?target?></a>".read[Xml]
-      . assert(_ == elem(t"a", ProcessingInstruction(t"target", t"")))
+      . assert(_ == elem(t"a", Xml.ProcessingInstruction(t"target", t"")))
 
       test(m"Processing instruction with multi-word data"):
         t"<a><?target one two three?></a>".read[Xml]
-      . assert(_ == elem(t"a", ProcessingInstruction(t"target", t"one two three")))
+      . assert(_ == elem(t"a", Xml.ProcessingInstruction(t"target", t"one two three")))
 
       test(m"Processing instruction at root level"):
         t"<?xml-stylesheet href='style.xsl'?><a/>".read[Xml]
       . assert: result =>
-          result == Fragment(
-            ProcessingInstruction(t"xml-stylesheet", t"href='style.xsl'"),
+          result == Xml.Fragment(
+            Xml.ProcessingInstruction(t"xml-stylesheet", t"href='style.xsl'"),
             elem(t"a"))
 
       test(m"Processing instruction target cannot be xml"):
@@ -392,101 +392,101 @@ object Tests extends Suite(m"Xylophone tests"):
     suite(m"Character and entity references"):
       test(m"Built-in entity &amp;"):
         t"<a>&amp;</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"&")))
+      . assert(_ == elem(t"a", Xml.Text(t"&")))
 
       test(m"Built-in entity &lt;"):
         t"<a>&lt;</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"<")))
+      . assert(_ == elem(t"a", Xml.Text(t"<")))
 
       test(m"Built-in entity &gt;"):
         t"<a>&gt;</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t">")))
+      . assert(_ == elem(t"a", Xml.Text(t">")))
 
       test(m"Built-in entity &quot;"):
         t"""<a>&quot;</a>""".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"\"")))
+      . assert(_ == elem(t"a", Xml.Text(t"\"")))
 
       test(m"Built-in entity &apos;"):
         t"<a>&apos;</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"'")))
+      . assert(_ == elem(t"a", Xml.Text(t"'")))
 
       test(m"Decimal character reference"):
         t"<a>&#65;</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"A")))
+      . assert(_ == elem(t"a", Xml.Text(t"A")))
 
       test(m"Hex character reference (lowercase)"):
         t"<a>&#x41;</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"A")))
+      . assert(_ == elem(t"a", Xml.Text(t"A")))
 
       test(m"Hex character reference (uppercase X)"):
         t"<a>&#X41;</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"A")))
+      . assert(_ == elem(t"a", Xml.Text(t"A")))
 
       test(m"Mixed text and entities"):
         t"<a>foo &amp; bar</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"foo & bar")))
+      . assert(_ == elem(t"a", Xml.Text(t"foo & bar")))
 
       test(m"Multiple entities in sequence"):
         t"<a>&lt;&gt;&amp;</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"<>&")))
+      . assert(_ == elem(t"a", Xml.Text(t"<>&")))
 
       test(m"Hex char ref for emoji"):
         t"<a>&#x1f600;</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"😀")))
+      . assert(_ == elem(t"a", Xml.Text(t"😀")))
 
 
     suite(m"Whitespace handling"):
       test(m"Leading whitespace inside element"):
         t"<a>  hello</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"  hello")))
+      . assert(_ == elem(t"a", Xml.Text(t"  hello")))
 
       test(m"Trailing whitespace inside element"):
         t"<a>hello  </a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"hello  ")))
+      . assert(_ == elem(t"a", Xml.Text(t"hello  ")))
 
       test(m"Internal whitespace preserved"):
         t"<a>one  two</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"one  two")))
+      . assert(_ == elem(t"a", Xml.Text(t"one  two")))
 
       test(m"Newlines preserved"):
         t"<a>one\ntwo</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"one\ntwo")))
+      . assert(_ == elem(t"a", Xml.Text(t"one\ntwo")))
 
       test(m"Tab preserved"):
         t"<a>one\ttwo</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"one\ttwo")))
+      . assert(_ == elem(t"a", Xml.Text(t"one\ttwo")))
 
 
     suite(m"XML declarations"):
       test(m"Simple XML declaration"):
         supervise:
           t"""<?xml version="1.0"?><a/>""".load[Xml]
-      . assert(_ == Document(elem(t"a"), Header(t"1.0", Unset, Unset)))
+      . assert(_ == Document(elem(t"a"), Xml.Header(t"1.0", Unset, Unset)))
 
       test(m"XML declaration with encoding"):
         supervise:
           t"""<?xml version="1.0" encoding="UTF-8"?><a/>""".load[Xml]
-      . assert(_ == Document(elem(t"a"), Header(t"1.0", t"UTF-8", Unset)))
+      . assert(_ == Document(elem(t"a"), Xml.Header(t"1.0", t"UTF-8", Unset)))
 
       test(m"XML declaration with standalone yes"):
         supervise:
           t"""<?xml version="1.0" standalone="yes"?><a/>""".load[Xml]
-      . assert(_ == Document(elem(t"a"), Header(t"1.0", Unset, true)))
+      . assert(_ == Document(elem(t"a"), Xml.Header(t"1.0", Unset, true)))
 
       test(m"XML declaration with standalone no"):
         supervise:
           t"""<?xml version="1.0" standalone="no"?><a/>""".load[Xml]
-      . assert(_ == Document(elem(t"a"), Header(t"1.0", Unset, false)))
+      . assert(_ == Document(elem(t"a"), Xml.Header(t"1.0", Unset, false)))
 
       test(m"XML declaration with encoding and standalone"):
         supervise:
           t"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?><a/>""".load[Xml]
-      . assert(_ == Document(elem(t"a"), Header(t"1.0", t"UTF-8", true)))
+      . assert(_ == Document(elem(t"a"), Xml.Header(t"1.0", t"UTF-8", true)))
 
       test(m"XML declaration with single-quoted version"):
         supervise:
           t"""<?xml version='1.0'?><a/>""".load[Xml]
-      . assert(_ == Document(elem(t"a"), Header(t"1.0", Unset, Unset)))
+      . assert(_ == Document(elem(t"a"), Xml.Header(t"1.0", Unset, Unset)))
 
 
     suite(m"Document errors"):
@@ -656,7 +656,7 @@ object Tests extends Suite(m"Xylophone tests"):
         val scrutinee: Xml = x"<message>hello</message>"
         scrutinee.absolve match
           case x"<message>$text</message>" => text
-      . assert(_ == TextNode(t"hello"))
+      . assert(_ == Xml.Text(t"hello"))
 
       test(m"Capture a whole child element"):
         val scrutinee: Xml = x"<a><b>1</b></a>"
@@ -713,7 +713,7 @@ object Tests extends Suite(m"Xylophone tests"):
         val scrutinee: Xml = x"""<a><b id="9">deep</b></a>"""
         scrutinee.absolve match
           case x"<a><b id=$value>$child</b></a>" => (value, child)
-      . assert(_ == (t"9", TextNode(t"deep")))
+      . assert(_ == (t"9", Xml.Text(t"deep")))
 
       test(m"A child-count mismatch falls through"):
         val scrutinee: Xml = x"<a><b/><c/></a>"
@@ -726,13 +726,13 @@ object Tests extends Suite(m"Xylophone tests"):
         val scrutinee: Xml = x"<a><?foo bar?>hi</a>"
         scrutinee.absolve match
           case x"<a><?foo bar?>$node</a>" => node
-      . assert(_ == TextNode(t"hi"))
+      . assert(_ == Xml.Text(t"hi"))
 
       test(m"Capture the remaining attributes as a map"):
         val scrutinee: Xml = x"""<a x="1" y="2">t</a>"""
         scrutinee.absolve match
           case x"<a $attrs>$body</a>" => (attrs, body)
-      . assert(_ == (Map(t"x" -> t"1", t"y" -> t"2"), TextNode(t"t")))
+      . assert(_ == (Map(t"x" -> t"1", t"y" -> t"2"), Xml.Text(t"t")))
 
       test(m"A literal attribute value that differs falls through"):
         val scrutinee: Xml = x"""<a id="5">x</a>"""
@@ -823,19 +823,19 @@ object Tests extends Suite(m"Xylophone tests"):
 
       test(m"A declared prefix resolves in a child's scope"):
         root(t"""<a xmlns:p="http://example.com"><p:b/></a>""".read[Xml]) match
-          case Element(_, _, Array(child: Element)) => child.scope.resolve(t"p")
+          case Xml.Element(_, _, Array(child: Xml.Element)) => child.scope.resolve(t"p")
           case _                                    => Unset
       . assert(_ == t"http://example.com")
 
       test(m"The default namespace is in a child's scope"):
         root(t"""<a xmlns="http://example.com"><b/></a>""".read[Xml]) match
-          case Element(_, _, Array(child: Element)) => child.scope.resolve(Unset)
+          case Xml.Element(_, _, Array(child: Xml.Element)) => child.scope.resolve(Unset)
           case _                                    => t"none"
       . assert(_ == t"http://example.com")
 
       test(m"An empty declaration undeclares the default namespace"):
         root(t"""<a xmlns="http://example.com"><b xmlns=""/></a>""".read[Xml]) match
-          case Element(_, _, Array(child: Element)) => child.scope.resolve(Unset)
+          case Xml.Element(_, _, Array(child: Xml.Element)) => child.scope.resolve(Unset)
           case _                                    => t"none"
       . assert(_ == Unset)
 
@@ -858,16 +858,16 @@ object Tests extends Suite(m"Xylophone tests"):
           result == elem(t"root", Map(t"xmlns:h" -> t"http://example.com"),
             elem(t"h:table",
               elem(t"h:tr",
-                elem(t"h:td", TextNode(t"cell")))))
+                elem(t"h:td", Xml.Text(t"cell")))))
 
 
     suite(m"DOCTYPE"):
       test(m"Simple DOCTYPE is preserved as a node"):
         t"""<!DOCTYPE root><root/>""".read[Xml]
-      . assert(_ == Fragment(Doctype(t"root"), elem(t"root")))
+      . assert(_ == Xml.Fragment(Xml.Doctype(t"root"), elem(t"root")))
 
       test(m"DOCTYPE roundtrip"):
-        Doctype(t"root").show
+        Xml.Doctype(t"root").show
       . assert(_ == t"<!DOCTYPE root>")
 
 
@@ -885,7 +885,7 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert(_ == t"""<a x="1"/>""")
 
       test(m"Element escapes special characters in text"):
-        elem(t"a", TextNode(t"<&>")).show
+        elem(t"a", Xml.Text(t"<&>")).show
       . assert(_ == t"<a>&lt;&amp;&gt;</a>")
 
       test(m"Element escapes special characters in attribute"):
@@ -893,31 +893,31 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert(_ == t"""<a x="&quot;&amp;'&lt;"/>""")
 
       test(m"Comment roundtrip"):
-        elem(t"a", Comment(t" hello ")).show
+        elem(t"a", Xml.Comment(t" hello ")).show
       . assert(_ == t"<a><!-- hello --></a>")
 
       test(m"CDATA roundtrip"):
-        elem(t"a", Cdata(t"raw <data>")).show
+        elem(t"a", Xml.Cdata(t"raw <data>")).show
       . assert(_ == t"<a><![CDATA[raw <data>]]></a>")
 
       test(m"Processing instruction roundtrip"):
-        elem(t"a", ProcessingInstruction(t"target", t"data")).show
+        elem(t"a", Xml.ProcessingInstruction(t"target", t"data")).show
       . assert(_ == t"<a><?target data?></a>")
 
       test(m"Empty PI roundtrip"):
-        elem(t"a", ProcessingInstruction(t"target", t"")).show
+        elem(t"a", Xml.ProcessingInstruction(t"target", t"")).show
       . assert(_ == t"<a><?target?></a>")
 
       test(m"Header without encoding or standalone roundtrips"):
-        Header(t"1.0", Unset, Unset).show
+        Xml.Header(t"1.0", Unset, Unset).show
       . assert(_ == t"""<?xml version="1.0"?>""")
 
       test(m"Header with encoding roundtrips"):
-        Header(t"1.0", t"UTF-8", Unset).show
+        Xml.Header(t"1.0", t"UTF-8", Unset).show
       . assert(_ == t"""<?xml version="1.0" encoding="UTF-8"?>""")
 
       test(m"Header with standalone roundtrips"):
-        Header(t"1.0", Unset, true).show
+        Xml.Header(t"1.0", Unset, true).show
       . assert(_ == t"""<?xml version="1.0" standalone="yes"?>""")
 
     suite(m"Serializer formatting"):
@@ -937,12 +937,12 @@ object Tests extends Suite(m"Xylophone tests"):
 
       test(m"Indented formatting keeps character data inline"):
         import formatting.indentedXmlFormatting
-        elem(t"a", TextNode(t"hello")).show
+        elem(t"a", Xml.Text(t"hello")).show
       . assert(_ == t"<a>hello</a>\n")
 
       test(m"emit indents a document and adds the header and trailing newlines"):
         import formatting.indentedXmlFormatting
-        val document = Document[Xml](elem(t"a", elem(t"b")), Header(t"1.0", Unset, Unset))
+        val document = Document[Xml](elem(t"a", elem(t"b")), Xml.Header(t"1.0", Unset, Unset))
         supervise(Xml.emit(document).to(List).mkString.tt)
       . assert(_ == t"<?xml version=\"1.0\"?>\n<a>\n  <b/>\n</a>\n")
 
@@ -1006,11 +1006,11 @@ object Tests extends Suite(m"Xylophone tests"):
 
       // The item, cut from its envelope, carries a scope binding prefixes that nothing above it
       // declares, so the writer must declare them itself.
-      val item: Element = root(document.root) match
-        case Element(_, _, Array(Element(_, _, Array(item: Element, _*)))) => item
+      val item: Xml.Element = root(document.root) match
+        case Xml.Element(_, _, Array(Xml.Element(_, _, Array(item: Xml.Element, _*)))) => item
         case _                                                            => elem(t"none")
 
-      val cut = Document[Xml](item, Header(t"1.0", Unset, Unset))
+      val cut = Document[Xml](item, Xml.Header(t"1.0", Unset, Unset))
 
       test(m"lend declares the namespaces a subtree cut from a document needs"):
         import formatting.compactXmlFormatting
@@ -1027,7 +1027,7 @@ object Tests extends Suite(m"Xylophone tests"):
       test(m"lend writes a document spanning many blocks exactly"):
         import formatting.compactXmlFormatting
         val text = t"a😀&<é"*40000
-        val large = Document[Xml](elem(t"big", TextNode(text)), Header(t"1.0", Unset, Unset))
+        val large = Document[Xml](elem(t"big", Xml.Text(text)), Xml.Header(t"1.0", Unset, Unset))
         java.util.Arrays.equals(lent(large), utf8(reference(large)))
       . assert(identity)
 
@@ -1038,22 +1038,22 @@ object Tests extends Suite(m"Xylophone tests"):
           t"""<?xml version="1.0"?><!--prolog comment--><a/>""".load[Xml]
       . assert: doc =>
           doc == Document(
-            Fragment(Comment(t"prolog comment"), elem(t"a")),
-            Header(t"1.0", Unset, Unset))
+            Xml.Fragment(Xml.Comment(t"prolog comment"), elem(t"a")),
+            Xml.Header(t"1.0", Unset, Unset))
 
       test(m"Document with PI in prolog"):
         supervise:
           t"""<?xml version="1.0"?><?stylesheet href="x"?><a/>""".load[Xml]
       . assert: doc =>
           doc == Document(
-            Fragment(ProcessingInstruction(t"stylesheet", t"""href="x""""), elem(t"a")),
-            Header(t"1.0", Unset, Unset))
+            Xml.Fragment(Xml.ProcessingInstruction(t"stylesheet", t"""href="x""""), elem(t"a")),
+            Xml.Header(t"1.0", Unset, Unset))
 
       test(m"Document with whitespace in prolog"):
         supervise:
           t"""<?xml version="1.0"?>\n<a/>""".load[Xml]
       . assert: doc =>
-          doc == Document(elem(t"a"), Header(t"1.0", Unset, Unset))
+          doc == Document(elem(t"a"), Xml.Header(t"1.0", Unset, Unset))
 
 
     suite(m"Headerless documents"):
@@ -1065,7 +1065,7 @@ object Tests extends Suite(m"Xylophone tests"):
       test(m"Root element with content but no XML declaration"):
         supervise:
           t"<a>hello</a>".load[Xml]
-      . assert(_ == Document(elem(t"a", TextNode(t"hello")), Xml.header))
+      . assert(_ == Document(elem(t"a", Xml.Text(t"hello")), Xml.header))
 
       test(m"Nested elements without XML declaration"):
         supervise:
@@ -1077,7 +1077,7 @@ object Tests extends Suite(m"Xylophone tests"):
           t"<!--prolog comment--><a/>".load[Xml]
       . assert: doc =>
           doc == Document(
-            Fragment(Comment(t"prolog comment"), elem(t"a")),
+            Xml.Fragment(Xml.Comment(t"prolog comment"), elem(t"a")),
             Xml.header)
 
       test(m"Headerless document with prolog PI"):
@@ -1085,7 +1085,7 @@ object Tests extends Suite(m"Xylophone tests"):
           t"""<?stylesheet href="x"?><a/>""".load[Xml]
       . assert: doc =>
           doc == Document(
-            Fragment(ProcessingInstruction(t"stylesheet", t"""href="x""""), elem(t"a")),
+            Xml.Fragment(Xml.ProcessingInstruction(t"stylesheet", t"""href="x""""), elem(t"a")),
             Xml.header)
 
       test(m"Headerless document with DOCTYPE"):
@@ -1093,7 +1093,7 @@ object Tests extends Suite(m"Xylophone tests"):
           t"<!DOCTYPE a><a/>".load[Xml]
       . assert: doc =>
           doc == Document(
-            Fragment(Doctype(t"a"), elem(t"a")),
+            Xml.Fragment(Xml.Doctype(t"a"), elem(t"a")),
             Xml.header)
 
       test(m"Lone XML declaration is rejected"):
@@ -1108,7 +1108,7 @@ object Tests extends Suite(m"Xylophone tests"):
     suite(m"Additional element tests"):
       test(m"Element with multiple attributes preserves order"):
         t"""<a x="1" y="2" z="3"/>""".read[Xml].absolve match
-          case Element(_, attributes, _) => attributes.to[List].map(_(0))
+          case Xml.Element(_, attributes, _) => attributes.to[List].map(_(0))
       . assert(_ == List(t"x", t"y", t"z"))
 
       test(m"Tab and newline allowed in attribute value (normalized)"):
@@ -1121,11 +1121,11 @@ object Tests extends Suite(m"Xylophone tests"):
 
       test(m"Multiple comments inside element"):
         t"<a><!--c1--><!--c2--></a>".read[Xml]
-      . assert(_ == elem(t"a", Comment(t"c1"), Comment(t"c2")))
+      . assert(_ == elem(t"a", Xml.Comment(t"c1"), Xml.Comment(t"c2")))
 
       test(m"Comment inside nested element"):
         t"<a><b><!--c--></b></a>".read[Xml]
-      . assert(_ == elem(t"a", elem(t"b", Comment(t"c"))))
+      . assert(_ == elem(t"a", elem(t"b", Xml.Comment(t"c"))))
 
 
     suite(m"Additional attribute tests"):
@@ -1145,37 +1145,37 @@ object Tests extends Suite(m"Xylophone tests"):
     suite(m"Additional CDATA tests"):
       test(m"Multiple CDATA sections"):
         t"<a><![CDATA[one]]><![CDATA[two]]></a>".read[Xml]
-      . assert(_ == elem(t"a", Cdata(t"one"), Cdata(t"two")))
+      . assert(_ == elem(t"a", Xml.Cdata(t"one"), Xml.Cdata(t"two")))
 
       test(m"CDATA next to text"):
         t"<a>before<![CDATA[mid]]>after</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"before"), Cdata(t"mid"), TextNode(t"after")))
+      . assert(_ == elem(t"a", Xml.Text(t"before"), Xml.Cdata(t"mid"), Xml.Text(t"after")))
 
 
     suite(m"Additional entity tests"):
       test(m"Decimal char ref for newline"):
         t"<a>&#10;</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"\n")))
+      . assert(_ == elem(t"a", Xml.Text(t"\n")))
 
       test(m"Hex char ref for tab"):
         t"<a>&#x9;</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"\t")))
+      . assert(_ == elem(t"a", Xml.Text(t"\t")))
 
       test(m"Entity at start of text"):
         t"<a>&amp;rest</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"&rest")))
+      . assert(_ == elem(t"a", Xml.Text(t"&rest")))
 
       test(m"Entity at end of text"):
         t"<a>start&amp;</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"start&")))
+      . assert(_ == elem(t"a", Xml.Text(t"start&")))
 
       test(m"Only an entity in text"):
         t"<a>&amp;</a>".read[Xml]
-      . assert(_ == elem(t"a", TextNode(t"&")))
+      . assert(_ == elem(t"a", Xml.Text(t"&")))
 
       test(m"Entity in nested element"):
         t"<a><b>&lt;</b></a>".read[Xml]
-      . assert(_ == elem(t"a", elem(t"b", TextNode(t"<"))))
+      . assert(_ == elem(t"a", elem(t"b", Xml.Text(t"<"))))
 
 
     suite(m"Additional namespace tests"):
@@ -1212,15 +1212,15 @@ object Tests extends Suite(m"Xylophone tests"):
     suite(m"Additional DOCTYPE tests"):
       test(m"DOCTYPE with system identifier"):
         t"""<!DOCTYPE root SYSTEM "url"><root/>""".read[Xml]
-      . assert(_ == Fragment(Doctype(t"""root SYSTEM "url""""), elem(t"root")))
+      . assert(_ == Xml.Fragment(Xml.Doctype(t"""root SYSTEM "url""""), elem(t"root")))
 
       test(m"DOCTYPE before XML declaration not present"):
         supervise:
           t"""<?xml version="1.0"?><!DOCTYPE root><root/>""".load[Xml]
       . assert: doc =>
           doc == Document(
-            Fragment(Doctype(t"root"), elem(t"root")),
-            Header(t"1.0", Unset, Unset))
+            Xml.Fragment(Xml.Doctype(t"root"), elem(t"root")),
+            Xml.Header(t"1.0", Unset, Unset))
 
 
     suite(m"Byte input"):
@@ -1240,11 +1240,11 @@ object Tests extends Suite(m"Xylophone tests"):
 
       test(m"Non-ASCII character data is decoded"):
         root(utf8(t"<a>héllo wörld</a>").read[Xml])
-      . assert(_ == elem(t"a", TextNode(t"héllo wörld")))
+      . assert(_ == elem(t"a", Xml.Text(t"héllo wörld")))
 
       test(m"Astral character data becomes a surrogate pair"):
         root(utf8(t"<a>😀</a>").read[Xml])
-      . assert(_ == elem(t"a", TextNode(t"😀")))
+      . assert(_ == elem(t"a", Xml.Text(t"😀")))
 
       test(m"Non-ASCII element and attribute names"):
         root(utf8(t"""<résumé lang="fr" ñ="1"/>""").read[Xml])
@@ -1260,11 +1260,11 @@ object Tests extends Suite(m"Xylophone tests"):
 
       test(m"Entities among non-ASCII text"):
         root(utf8(t"<a>é&amp;ü&#233;</a>").read[Xml])
-      . assert(_ == elem(t"a", TextNode(t"é&üé")))
+      . assert(_ == elem(t"a", Xml.Text(t"é&üé")))
 
       test(m"Non-ASCII comment, CDATA and processing instruction"):
         root(utf8(t"<a><!-- café --><![CDATA[naïve]]><?pi über?></a>").read[Xml])
-      . assert(_ == elem(t"a", Comment(t" café "), Cdata(t"naïve"), ProcessingInstruction(t"pi", t"über")))
+      . assert(_ == elem(t"a", Xml.Comment(t" café "), Xml.Cdata(t"naïve"), Xml.ProcessingInstruction(t"pi", t"über")))
 
       test(m"Malformed UTF-8 in text is a parse error"):
         val bytes: Data =
@@ -1283,15 +1283,15 @@ object Tests extends Suite(m"Xylophone tests"):
 
       test(m"A multi-byte sequence split across chunks in a name"):
         root(split(utf8(t"<résumé>x</résumé>"), 3).read[Xml])
-      . assert(_ == elem(t"résumé", TextNode(t"x")))
+      . assert(_ == elem(t"résumé", Xml.Text(t"x")))
 
       test(m"A multi-byte sequence split across chunks in text"):
         root(split(utf8(t"<a>é😀</a>"), 4).read[Xml])
-      . assert(_ == elem(t"a", TextNode(t"é😀")))
+      . assert(_ == elem(t"a", Xml.Text(t"é😀")))
 
       test(m"An astral sequence split across chunks in text"):
         root(split(utf8(t"<a>é😀</a>"), 7).read[Xml])
-      . assert(_ == elem(t"a", TextNode(t"é😀")))
+      . assert(_ == elem(t"a", Xml.Text(t"é😀")))
 
       test(m"Text-source error offsets are char offsets"):
         val input = t"<a>é😀</b>"
@@ -1312,8 +1312,8 @@ object Tests extends Suite(m"Xylophone tests"):
           t"""<?xml version="1.0"?><root>content</root>""".load[Xml]
       . assert: doc =>
           doc == Document(
-            elem(t"root", TextNode(t"content")),
-            Header(t"1.0", Unset, Unset))
+            elem(t"root", Xml.Text(t"content")),
+            Xml.Header(t"1.0", Unset, Unset))
 
       test(m"Document with nested root"):
         supervise:
@@ -1321,7 +1321,7 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert: doc =>
           doc == Document(
             elem(t"root", elem(t"child")),
-            Header(t"1.0", Unset, Unset))
+            Xml.Header(t"1.0", Unset, Unset))
 
       // The byte routes of `load`: a byte source feeds the byte parser directly, with no
       // `Charset` in scope; a text source with a `Codepage` in scope streams as bytes too.
@@ -1329,19 +1329,19 @@ object Tests extends Suite(m"Xylophone tests"):
 
       test(m"Bytes load as a document"):
         bytesOf(t"""<?xml version="1.0"?><root>é</root>""").load[Xml]
-      . assert(_ == Document(elem(t"root", TextNode(t"é")), Header(t"1.0", Unset, Unset)))
+      . assert(_ == Document(elem(t"root", Xml.Text(t"é")), Xml.Header(t"1.0", Unset, Unset)))
 
       test(m"Chunked bytes load as a document"):
         val chunks: Chain[Data] =
           Chain(bytesOf(t"""<?xml version="1.0"?><ro"""), bytesOf(t"""ot>é</root>"""))
 
         chunks.load[Xml]
-      . assert(_ == Document(elem(t"root", TextNode(t"é")), Header(t"1.0", Unset, Unset)))
+      . assert(_ == Document(elem(t"root", Xml.Text(t"é")), Xml.Header(t"1.0", Unset, Unset)))
 
       test(m"Text loads as bytes when a codepage is in scope"):
         import codepages.utf8Codepage
         t"""<?xml version="1.0"?><root>é</root>""".load[Xml]
-      . assert(_ == Document(elem(t"root", TextNode(t"é")), Header(t"1.0", Unset, Unset)))
+      . assert(_ == Document(elem(t"root", Xml.Text(t"é")), Xml.Header(t"1.0", Unset, Unset)))
 
       test(m"Bytes load a header-less document"):
         bytesOf(t"<root/>").load[Xml]

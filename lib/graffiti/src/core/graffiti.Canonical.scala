@@ -40,4 +40,4 @@ import prepositional.*
 // Adds a `<link rel="canonical">` to the head, from the trait parameter (the canonical URL).
 trait Canonical(href: Text) extends Archetype:
   protected override def head: Html of (? <: Metadata) =
-    Fragment[Metadata](Link.Canonical(href = href), super.head)
+    Html.Fragment[Metadata](Link.Canonical(href = href), super.head)
