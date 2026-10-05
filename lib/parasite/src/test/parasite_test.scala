@@ -49,7 +49,7 @@ import Async.nominative
 case class FooError(value: Int)(using Diagnostics) extends Error(m"foo failed with $value")
 case class BarError(label: Text)(using Diagnostics) extends Error(m"bar failed: $label")
 
-object Tests extends Suite(m"Parasite tests"):
+object Tests extends Suite("parasite", m"Parasite tests"):
 
   // Every behavioural suite runs twice: under the thread-per-task supervisor and under the
   // pooling one, since the pool must be indistinguishable from a thread per task in every
@@ -62,7 +62,7 @@ object Tests extends Suite(m"Parasite tests"):
       exercise()(using threading.pooledThreading)
       pooled()(using threading.pooledThreading)
 
-  def pooled()(using Threading, Testable): Unit =
+  def pooled()(using Threading, Testable of "parasite"): Unit =
     supervise:
       suite(m"Carrier reuse"):
         test(m"Sequential tasks share a small number of carriers"):
@@ -237,7 +237,7 @@ object Tests extends Suite(m"Parasite tests"):
           tasks.map(_.await()).sum
         . assert(_ == 450)
 
-  def exercise()(using Threading, Testable): Unit =
+  def exercise()(using Threading, Testable of "parasite"): Unit =
     supervise:
 
       suite(m"Promise basic state"):

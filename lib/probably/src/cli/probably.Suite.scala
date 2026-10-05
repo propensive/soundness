@@ -38,6 +38,7 @@ import java.lang as jl
 import anticipation.*
 import fulminate.*
 import gossamer.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 
@@ -46,7 +47,43 @@ import vacuous.*
 // runner — discovers suites from that index and drives each one through `invoke`, receiving
 // its results as a stream of `TestEvent`s (`probably.Streamer` in the `events` module carries
 // them across a classloader boundary as BinTEL frames). Nothing is rendered here.
-abstract class Suite(suiteName: Message) extends Testable(suiteName):
+//
+// A suite has a title and an ID. The id is what a selection and a path know it by — `fume run
+// html` runs `object Tests extends Suite("html", m"Honeycomb Tests")` — and it is either given,
+// as a string literal, or derived from the title (`Suite(m"Honeycomb Tests")` has the id
+// `honeycomb-tests`: see `Suite.derive`). A given id is also the suite's `Topic`, so that a
+// method which declares tests for the suite can say so (`using Testable of "html"`); a suite
+// with a derived id has the topic `Derived`, and the beneficence plugin attributes the tests in
+// its body to it by where they are written (see `Testable`). The plugin's index of tests,
+// `META-INF/probably/tests`, is built from that.
+object Suite:
+  // What gives a suite declared by its title alone the topic `Derived`: the one instance fixes
+  // the type parameter which nothing else in `Suite(title)` constrains.
+  final class Derivation[topic]
+  given derivation: Derivation[Derived] = Derivation()
+
+  // The id derived from a title: its letters and digits in lower case, with each run of
+  // anything else as one `-`, and none at either end; `suite` if that leaves nothing.
+  def derive(title: Text): Text =
+    val builder: StringBuilder = StringBuilder()
+
+    title.s.toLowerCase.nn.foreach: char =>
+      if Character.isLetterOrDigit(char) then builder.append(char)
+      else if builder.length > 0 && builder.charAt(builder.length - 1) != '-'
+      then builder.append('-')
+
+    if builder.length > 0 && builder.charAt(builder.length - 1) == '-'
+    then builder.setLength(builder.length - 1)
+
+    if builder.length == 0 then t"suite" else builder.toString.tt
+
+abstract class Suite[topic <: Label] private (key0: Text, suiteName: Message, unit: Unit)
+extends Testable(suiteName, Nil, Unset, key0):
+  type Topic = topic
+
+  def this(id: topic, title: Message) = this(id.tt, title, ())
+  def this(title: Message)(using Suite.Derivation[topic]) = this(Suite.derive(title.text), title, ())
+
   // A `Reporter[Report]` whose report emits every datum as a `TestEvent` through the sink,
   // with execution brackets becoming progress events — the consumer owns all presentation.
   private def eventReporter(sink: TestEvent -> Unit): Reporter[Report] =
@@ -108,8 +145,8 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
   // runner and deferred test blocks, so it is a capability, which `Testable`'s pure type
   // (rightly) forbids. `Testable` equality is structural (name and parent), so the view is
   // interchangeable with the suite wherever tests are grouped or reported.
-  private val testableView: Testable = Testable(suiteName)
-  given testable: Testable = testableView
+  private val testableView: Testable of topic = Testable.of[topic](suiteName, Unset, Unset, key0)
+  given testable: Testable of topic = testableView
 
   def run(): Unit
 

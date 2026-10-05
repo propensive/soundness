@@ -298,12 +298,13 @@ object Bench:
       comparison:    Baseline ):
 
     // A single measurement: the plan applied directly to a quoted body.
-    inline def apply[report]
+    inline def apply[report, topic <: Label]
       ( body0: (References over Json) ?=> Quotes ?=> Expr[Any] )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Benchmark],
-              suite:     Testable,
+              @missingContext(Testable.orphan)
+              suite:     Testable of topic,
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
 
@@ -323,13 +324,14 @@ object Bench:
     // One measurement per defined axis value, each a fresh dispatch: cells whose staged
     // trees coincide share one compilation (values carried by `References`), while each
     // distinct implementation compiles once. A partial body leaves gaps.
-    inline def over[value, report](axis: Axis[value])
+    inline def over[value, report, topic <: Label](axis: Axis[value])
       ( inline body: (References over Json) ?=> Quotes ?=> (value ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Benchmark],
               anchors:   Inclusion[report, Anchor],
-              suite:     Testable,
+              @missingContext(Testable.orphan)
+              suite:     Testable of topic,
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
 
@@ -372,27 +374,29 @@ object Bench:
           anchors.include
             ( runner.report, testId, Nil, Anchor(axis.spec, axis.point(value), comparison) )
 
-    inline def over[value <: reflect.Enum: Enumerable, report]
+    inline def over[value <: reflect.Enum: Enumerable, report, topic <: Label]
       ( companion: { def values: scala.Array[value] } )
       ( inline body: (References over Json) ?=> Quotes ?=> (value ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Benchmark],
               anchors:   Inclusion[report, Anchor],
-              suite:     Testable,
+              @missingContext(Testable.orphan)
+              suite:     Testable of topic,
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
 
       over(Axis(companion))(body)
 
     // One measurement per defined combination of two axes, rendered as a crosstab.
-    inline def over[left, right, report](first: Axis[left], second: Axis[right])
+    inline def over[left, right, report, topic <: Label](first: Axis[left], second: Axis[right])
       ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Benchmark],
               anchors:   Inclusion[report, Anchor],
-              suite:     Testable,
+              @missingContext(Testable.orphan)
+              suite:     Testable of topic,
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
 
@@ -446,40 +450,44 @@ object Bench:
           anchors.include
             ( runner.report, testId, Nil, Anchor(first.spec, first.point(value), comparison) )
 
-    inline def over[left <: reflect.Enum: Enumerable, right, report]
+    inline def over[left <: reflect.Enum: Enumerable, right, report, topic <: Label]
       ( first: { def values: scala.Array[left] }, second: Axis[right] )
       ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Benchmark],
               anchors:   Inclusion[report, Anchor],
-              suite:     Testable,
+              @missingContext(Testable.orphan)
+              suite:     Testable of topic,
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
 
       over(Axis(first), second)(body)
 
-    inline def over[left, right <: reflect.Enum: Enumerable, report]
+    inline def over[left, right <: reflect.Enum: Enumerable, report, topic <: Label]
       ( first: Axis[left], second: { def values: scala.Array[right] } )
       ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Benchmark],
               anchors:   Inclusion[report, Anchor],
-              suite:     Testable,
+              @missingContext(Testable.orphan)
+              suite:     Testable of topic,
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
 
       over(first, Axis(second))(body)
 
-    inline def over[left <: reflect.Enum: Enumerable, right <: reflect.Enum: Enumerable, report]
+    inline def over
+      [ left <: reflect.Enum: Enumerable, right <: reflect.Enum: Enumerable, report, topic <: Label ]
       ( first: { def values: scala.Array[left] }, second: { def values: scala.Array[right] } )
       ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
               inclusion: Inclusion[report, Benchmark],
               anchors:   Inclusion[report, Anchor],
-              suite:     Testable,
+              @missingContext(Testable.orphan)
+              suite:     Testable of topic,
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
 

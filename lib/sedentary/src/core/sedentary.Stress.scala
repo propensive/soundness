@@ -117,7 +117,7 @@ extends Rig:
   type Transport = Json
 
 
-  inline def apply[duration: Abstractable across Durations to Long, report]
+  inline def apply[duration: Abstractable across Durations to Long, report, topic <: Label]
     ( name: Message, tags: Tag* )
     ( target:      duration,
       concurrency: Optional[Int]      = Unset,
@@ -130,7 +130,8 @@ extends Rig:
     ( using runner:    Runner[report],
             inclusion: Inclusion[report, Strain],
             threading: Threading,
-            suite:     Testable,
+            @missingContext(Testable.orphan)
+            suite:     Testable of topic,
             codepoint: Codepoint )
   :   Unit raises Compiler.Error raises Rig.Error =
 

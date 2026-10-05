@@ -15,7 +15,11 @@ object Tests extends Suite(m"Eucalyptus tests"):
   def run(): Unit = ...
 ```
 
-The suite name is a `Message`, naming the module under test. Where a module has
+The suite's title is a `Message`, naming the module under test. Its id, by which
+a selection addresses it, is derived from the title (`eucalyptus-tests`) unless one
+is given first, as a string literal: `Suite("logging", m"Eucalyptus tests")`. Give
+a suite an id when a method outside `run()` declares tests for it, since the
+method names the suite by it: `(using Testable of "logging")`. Where a module has
 several distinct areas, each may have its own file (`<module>.<Area>Tests.scala`)
 with its own `Suite`.
 

@@ -42,6 +42,7 @@ import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
 import hieroglyph.*, codepages.utf8Codepage
+import prepositional.*
 import probably.*
 import proscenium.*
 import quantitative.*
@@ -60,7 +61,8 @@ import webserverErrorPages.minimalErrorPage
 // serialize) and the full-pipeline benchmark all run entirely in memory — no
 // socket and no threads — so they measure the per-request CPU cost of the HTTP
 // machinery, isolated from OS-socket and Loom-scheduling overhead.
-object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
+object Benchmarks
+extends Suite("scintillate-bench", m"Scintillate socket-server benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
@@ -144,12 +146,17 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
 
   // Kept out of `run` as separate methods: two iterations in one method body trip a
   // compiler crash (wildApprox).
-  private def sweep(stress: Stress)(using Testable): Unit =
+  private def sweep(stress: Stress)(using Testable of "scintillate-bench")
+  :   Unit =
+
     servers.each: (name, server) =>
       stress(name)(target = 1*Second, sweep = 256, refine = true):
         roundtrip(server, HttpWorkload.Plaintext)
 
-  private def capacity(stress: Stress, workload: Int, slo: Int)(using Testable): Unit =
+  private def capacity(stress: Stress, workload: Int, slo: Int)
+    ( using Testable of "scintillate-bench" )
+  :   Unit =
+
     servers.each: (name, server) =>
       stress(name)
         ( target = 1*Second, threshold = slo*Milli(Second), compliance = 99, refine = true ):

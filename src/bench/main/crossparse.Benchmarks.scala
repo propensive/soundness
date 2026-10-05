@@ -100,7 +100,7 @@ derives io.circe.derivation.ConfiguredDecoder
 given io.circe.derivation.Configuration =
   io.circe.derivation.Configuration.default.withDiscriminator("kind")
 
-object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
+object Benchmarks extends Suite("crossparse", m"Cross-format direct-parsing benchmarks"):
   given decimalizer: Decimalizer = Decimalizer(2)
   given device: BenchmarkDevice = LocalhostDevice
   given schema: XmlSchema = XmlSchema.Freeform

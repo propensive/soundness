@@ -80,6 +80,48 @@ object GivensWriter:
 
     mergeOne(new File(servicesDir, "probably.Suite"), collected, recompiledSources)
 
+  // The index of tests, one file per source file under `META-INF/probably/tests`, named from
+  // the source so that no two modules of an assembly write the same entry: unlike the indexes
+  // above it needs no rule to merge it. A source which declares nothing has no file.
+  def writeTests(collected: collection.Map[String, List[String]])(using Context): Unit =
+    val outputRoot = outputRootOrNull
+    if outputRoot == null then return
+
+    val testsDir = new File(new File(new File(outputRoot, "META-INF"), "probably"), "tests")
+
+    collected.foreach: (source, lines) =>
+      val digest = java.security.MessageDigest.getInstance("SHA-256").nn
+      val hash = digest.digest(source.getBytes(StandardCharsets.UTF_8)).nn
+      val hex = hash.take(6).map { byte => String.format("%02x", Byte.box(byte)).nn }.mkString
+      val target = new File(testsDir, new File(source).getName.nn + "-" + hex)
+
+      if lines.isEmpty then (if target.exists then target.delete(): @annotation.nowarn)
+      else
+        if !testsDir.exists then testsDir.mkdirs(): @annotation.nowarn
+        val tmp = new File(testsDir, target.getName.nn + ".tmp")
+
+        val writer = new
+          BufferedWriter
+            ( new OutputStreamWriter
+                   ( new FileOutputStream(tmp), StandardCharsets.UTF_8 ) )
+
+        try
+          writer.write("# probably tests " + TestsIndex.version)
+          writer.newLine()
+          writer.write(SourcePrefix + source)
+          writer.newLine()
+          lines.foreach: line =>
+            writer.write(line)
+            writer.newLine()
+        finally writer.close()
+
+        Files.move
+          ( tmp.toPath,
+            target.toPath,
+            StandardCopyOption.REPLACE_EXISTING,
+            StandardCopyOption.ATOMIC_MOVE )
+        ()
+
   private def outputRootOrNull(using Context): File | Null =
     ctx.settings.outputDir.value.file
 

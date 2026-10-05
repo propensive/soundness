@@ -66,8 +66,10 @@ export hypotenuse.{!==, +/-, ===, Checkable, Tolerance, ±}
 
 
 // Declares a test by its description, optionally with tags (`test(m"…", n"slow", n"network")`)
-// by which a selection can admit or exclude it.
-def test[report](name: Message, tags: Tag*)(using suite: Testable, codepoint: Codepoint)
+// by which a selection can admit or exclude it. The contextual `Testable` must say where the
+// test belongs: a `Suite`'s literal name, or `Impromptu` (see `Testable`).
+def test[topic <: Label](name: Message, tags: Tag*)
+  ( using @missingContext(Testable.orphan) suite: Testable of topic, codepoint: Codepoint )
 :   Test.Id =
 
   Test.Id(name, suite, codepoint, Unset, tags.to(List))
@@ -75,26 +77,39 @@ def test[report](name: Message, tags: Tag*)(using suite: Testable, codepoint: Co
 // Declares a test with a stable moniker (a compile-time-checked Java identifier) alongside
 // its description. The moniker addresses the test in selections and charts, independently
 // of edits to the description.
-def test[report](name: Name[Probing], description: Message, tags: Tag*)
-  ( using suite: Testable, codepoint: Codepoint )
+def test[topic <: Label](name: Name[Probing], description: Message, tags: Tag*)
+  ( using @missingContext(Testable.orphan) suite: Testable of topic, codepoint: Codepoint )
 :   Test.Id =
 
   Test.Id(description, suite, codepoint, name, tags.to(List))
 
 
-def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
-  ( block: Testable ?=> Unit )
+def suite[topic <: Label, report](name: Message)
+  ( using @missingContext(Testable.orphan) suite: Testable of topic, runner: Runner[report], codepoint: Codepoint )
+  ( block: (Testable of topic) ?=> Unit )
 :   Unit =
 
-  runner.suite(Testable(name, suite), block)
+  runner.suite(Testable.of[topic](name, suite), block)
 
 
-def suite[report](name: Name[Probing], description: Message)
-  ( using suite: Testable, runner: Runner[report] )
-  ( block: Testable ?=> Unit )
+def suite[topic <: Label, report](name: Name[Probing], description: Message)
+  ( using @missingContext(Testable.orphan) suite: Testable of topic, runner: Runner[report], codepoint: Codepoint )
+  ( block: (Testable of topic) ?=> Unit )
 :   Unit =
 
-  runner.suite(Testable(description, suite, name), block)
+  runner.suite(Testable.of[topic](description, suite, name), block)
+
+
+// Admits tests which no `Suite` declares statically: those a program makes up as it runs — one
+// per file of a conformance corpus, say — or those run on a `Runner` of the caller's own,
+// outside any suite. Within the block, `test`, `suite` and the rest are declared as usual, at
+// the position of the surrounding `Testable` if there is one, but the beneficence plugin
+// leaves them out of the index of tests it writes, so a host learns of them only as they run.
+def impromptu[result](using parent: Testable = Testable.detached)
+  ( block: (Testable of Impromptu) ?=> result )
+:   result =
+
+  block(using Testable.impromptu(parent))
 
 
 // Marks every test within the block as an aspiration: it is written like any other test, but

@@ -63,7 +63,7 @@ enum YStatus derives CanEqual:
 case class Tree(value: Text, children: List[Tree]) derives CanEqual
 case class Boxed[value](value: value) derives CanEqual
 
-object Tests extends Suite(m"Ypsiloid Tests"):
+object Tests extends Suite("ypsiloid", m"Ypsiloid Tests"):
   def run(): Unit =
     // A missing `Inspectable` is never a compile error, so coverage is held in place by
     // asserting on the renderings: `fallbacks` returns those which used a marked fallback.
