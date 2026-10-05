@@ -280,7 +280,7 @@ launch matters. Packaging the server's JAR with the `xek` builder (from
 starts, or connects to, the daemon and forwards standard input, output and signals to it:
 
 ```sh
-xek demo-server.jar
+xek build demo-server.jar
 ```
 
 ### A thin launcher
