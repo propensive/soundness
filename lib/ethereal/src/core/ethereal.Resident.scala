@@ -143,6 +143,10 @@ extends Entrypoint, Umask.Provider, Fdtable.Provider, caps.ExclusiveCapability:
   // full tree when nothing has been matched, or the matched path is absent from it.
   def localHelp()(using cli: Cli): Help = help().local(cli.matches).or(help())
 
+  // The build id of the executable this daemon was started from, to compare with that of a
+  // release the application is offered; zero when it was not started by a launcher.
+  def buildId: Long = launcherBuildId()
+
   def started[instant: Instantiable across Instants from Long]: instant =
     instant(startTime)
 

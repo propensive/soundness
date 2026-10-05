@@ -124,7 +124,7 @@ object Enclave:
             safely(item.delete())
 
 
-case class Enclave(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment)
+case class Enclave(name: Text, buildId: Optional[Long] = Unset)(using Classloader, Environment)
 extends Rig:
   type Result[output] = Enclave.Launcher
   type Form = Text
@@ -159,7 +159,7 @@ extends Rig:
       // `dist/xek` under the working directory; it fetches the runner stub it needs.
       val xek: Text = safely(Environment.xek[Text]).or(t"dist/xek")
       val cmd = (buildId: @unchecked) match
-        case id: Int => sh"$xek --build-id $id $jarfile $target"
+        case id: Long => sh"$xek --build-id $id $jarfile $target"
         case Unset   => sh"$xek $jarfile $target"
 
       cmd.exec[Exit]() match
