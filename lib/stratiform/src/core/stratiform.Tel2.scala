@@ -772,142 +772,44 @@ trait Tel2 extends Tel3:
   // Re-keys an encoded value's compound (or wraps a document) under `keyword`.
   given listEncodable: [list <: List, element] => (encodable: -> (element is Tel.Encodable))
   =>  list[element] is Tel.Encodable =
-    new Tel.Encodable:
-      type Self = list[element]
-      def shape(): Morphology = Morphology.Arr(encodable.shape())
-      override def nature: Tel.Nature = encodable.nature
-      override def optional: Boolean = true
-      def encoded(values: list[element]): Tel = collectionDocument(values)(using encodable)
-
-      override def constructed(values: list[element]): Tel =
-        constructedDocument(values)(using encodable)
+    RepeatedEncodable[list[element], element](encodable)
 
   given setEncodable: [set <: Set, element] => (encodable: -> (element is Tel.Encodable))
   =>  set[element] is Tel.Encodable =
-    new Tel.Encodable:
-      type Self = set[element]
-      def shape(): Morphology = Morphology.Arr(encodable.shape())
-      override def nature: Tel.Nature = encodable.nature
-      override def optional: Boolean = true
-      def encoded(values: set[element]): Tel = collectionDocument(values)(using encodable)
-
-      override def constructed(values: set[element]): Tel =
-        constructedDocument(values)(using encodable)
+    RepeatedEncodable[set[element], element](encodable)
 
   given seriesEncodable: [sequence <: Sequence, element] => (encodable: -> (element is Tel.Encodable))
   =>  sequence[element] is Tel.Encodable =
-    new Tel.Encodable:
-      type Self = sequence[element]
-      def shape(): Morphology = Morphology.Arr(encodable.shape())
-      override def nature: Tel.Nature = encodable.nature
-      override def optional: Boolean = true
-
-      def encoded(values: sequence[element]): Tel =
-        collectionDocument(values)(using encodable)
-
-      override def constructed(values: sequence[element]): Tel =
-        constructedDocument(values)(using encodable)
+    RepeatedEncodable[sequence[element], element](encodable)
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
         element0:  -> (element is Tel.Decodable) )
   =>  Tactic[Tel.Error]
   =>  collection[element] is Tel.Decodable =
-    new Tel.Decodable:
-      type Self = collection[element]
-      def shape(): Morphology = Morphology.Arr(element0.shape())
-      override def repeatable: Boolean = true
-      override def nature: Tel.Nature = element0.nature
-      override def optional: Boolean = true
+    RepeatedDecodable[collection[element], element](element0, () => factory.newBuilder)
 
-      def decoded(telVal: Tel): collection[element] =
-        val builder = factory.newBuilder
-
-        telVal.subtree.absolve match
-          case document: Tel.Document =>
-            document.children.bind(_.compounds).each: compound =>
-              builder += element0.decoded(Tel.make(compound))
-
-          case compound: Tel.Compound =>
-            builder += element0.decoded(telVal)
-
-        builder.result()
-
-  // Alias counterparts: the opaque prelude collections do not conform to
-  // `Iterable`, so each decodes at the underlying stdlib type and casts. The
-  // loop is inlined (rather than delegating to a shared helper) so nothing
-  // captures `Tel2.this`, mirroring `collectionDecodable` above.
+  // Alias counterparts: the opaque prelude collections do not conform to `Iterable`, so each
+  // decodes at the underlying stdlib type and casts.
   given listDecodable: [list <: List, element]
   =>  ( element0: -> (element is Tel.Decodable) )
   =>  Tactic[Tel.Error]
   =>  list[element] is Tel.Decodable =
-    new Tel.Decodable:
-      type Self = list[element]
-      def shape(): Morphology = Morphology.Arr(element0.shape())
-      override def repeatable: Boolean = true
-      override def nature: Tel.Nature = element0.nature
-      override def optional: Boolean = true
-
-      def decoded(telVal: Tel): list[element] =
-        val builder = scala.collection.immutable.List.newBuilder[element]
-
-        telVal.subtree.absolve match
-          case document: Tel.Document =>
-            document.children.bind(_.compounds).each: compound =>
-              builder += element0.decoded(Tel.make(compound))
-
-          case compound: Tel.Compound =>
-            builder += element0.decoded(telVal)
-
-        builder.result().asInstanceOf[list[element]]
+    RepeatedDecodable[list[element], element]
+      ( element0, () => scala.collection.immutable.List.newBuilder[element] )
 
   given setDecodable: [set <: Set, element]
   =>  ( element0: -> (element is Tel.Decodable) )
   =>  Tactic[Tel.Error]
   =>  set[element] is Tel.Decodable =
-    new Tel.Decodable:
-      type Self = set[element]
-      def shape(): Morphology = Morphology.Arr(element0.shape())
-      override def repeatable: Boolean = true
-      override def nature: Tel.Nature = element0.nature
-      override def optional: Boolean = true
-
-      def decoded(telVal: Tel): set[element] =
-        val builder = scala.collection.immutable.Set.newBuilder[element]
-
-        telVal.subtree.absolve match
-          case document: Tel.Document =>
-            document.children.bind(_.compounds).each: compound =>
-              builder += element0.decoded(Tel.make(compound))
-
-          case compound: Tel.Compound =>
-            builder += element0.decoded(telVal)
-
-        builder.result().asInstanceOf[set[element]]
+    RepeatedDecodable[set[element], element]
+      ( element0, () => scala.collection.immutable.Set.newBuilder[element] )
 
   given seriesDecodable: [sequence <: Sequence, element]
   =>  ( element0: -> (element is Tel.Decodable) )
   =>  Tactic[Tel.Error]
   =>  sequence[element] is Tel.Decodable =
-    new Tel.Decodable:
-      type Self = sequence[element]
-      def shape(): Morphology = Morphology.Arr(element0.shape())
-      override def repeatable: Boolean = true
-      override def nature: Tel.Nature = element0.nature
-      override def optional: Boolean = true
-
-      def decoded(telVal: Tel): sequence[element] =
-        val builder = Vector.newBuilder[element]
-
-        telVal.subtree.absolve match
-          case document: Tel.Document =>
-            document.children.bind(_.compounds).each: compound =>
-              builder += element0.decoded(Tel.make(compound))
-
-          case compound: Tel.Compound =>
-            builder += element0.decoded(telVal)
-
-        builder.result().asInstanceOf[sequence[element]]
+    RepeatedDecodable[sequence[element], element](element0, () => Vector.newBuilder[element])
 
   // A `Map` encodes as a sequence of `entries` compounds, each carrying a `key`
   // and a `value` child field. As with other collections the product encoder
@@ -968,3 +870,42 @@ trait Tel2 extends Tel3:
 // anticipation) is the idiomatic call site producing a Tel from any
 // encodable value. A `.tel` alias may be added later for symmetry with
 // jacinta's `.json`.
+
+// A repeated value — each compound of a document, or the one compound it is — decoded element by
+// element into a fresh builder, then cast to the collection it stands for. A top-level class, so
+// no instance captures the `Tel2` that builds it.
+private[stratiform] class RepeatedDecodable[result, element]
+  ( element0:   -> (element is Tel.Decodable),
+    newBuilder: () -> scala.collection.mutable.Builder[element, Any] )
+extends Tel.Decodable:
+  type Self = result
+  def shape(): Morphology = Morphology.Arr(element0.shape())
+  override def repeatable: Boolean = true
+  override def nature: Tel.Nature = element0.nature
+  override def optional: Boolean = true
+
+  def decoded(telVal: Tel): result =
+    val builder = newBuilder()
+
+    telVal.subtree.absolve match
+      case document: Tel.Document =>
+        document.children.bind(_.compounds).each: compound =>
+          builder += element0.decoded(Tel.make(compound))
+
+      case compound: Tel.Compound =>
+        builder += element0.decoded(telVal)
+
+    builder.result().asInstanceOf[result]
+
+// The encoding counterpart of `RepeatedDecodable`: a collection written as a document of its
+// elements' compounds.
+private[stratiform] class RepeatedEncodable[collection, element]
+  ( encodable: -> (element is Tel.Encodable) )
+  ( using collection is Traversable by element )
+extends Tel.Encodable:
+  type Self = collection
+  def shape(): Morphology = Morphology.Arr(encodable.shape())
+  override def nature: Tel.Nature = encodable.nature
+  override def optional: Boolean = true
+  def encoded(values: collection): Tel = collectionDocument(values)(using encodable)
+  override def constructed(values: collection): Tel = constructedDocument(values)(using encodable)
