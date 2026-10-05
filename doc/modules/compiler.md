@@ -135,14 +135,26 @@ Edges whose tools have prerequisites come from providers that demand evidence of
 whose tooling is absent cannot be built: `sjsEdges.wasi()` needs a probed `WasiToolchain` and a
 `Wasi.World`, and `nativeEdges()` probes for `clang`.
 
-Formats are values, and their identity is value equality, so wherever a parameter changes what a
-user receives, it is a constructor parameter and each parameterization is a distinct node: the
-module system a JavaScript host imports through, the WASI generation an artifact's ABI follows,
-the target triple a binary runs on, the delivery mode of a bundle. A binary for
-`Triple.Arm64MacOs` is as distinct from one for `Triple.X64Linux` as a JAR is from a JavaScript
-bundle; that they share a linker does not make them interchangeable. The node set is open, too —
-`Format`, `Tool` and `Edge` are ordinary public types, so registering an edge for a format
-Soundness has never heard of extends the graph.
+A format's identity is its kind — a source, an intermediate representation or an application —
+and its `id`, so wherever a parameter changes what a user receives, it is part of the `id` and
+each parameterization is a distinct node: the module system a JavaScript host imports through, the
+WASI generation an artifact's ABI follows, the target triple a binary runs on, the delivery mode of
+a bundle. A binary for `Triple.Arm64MacOs` is as distinct from one for `Triple.X64Linux` as a JAR
+is from a JavaScript bundle; that they share a linker does not make them interchangeable.
+
+The node set is open, too. `Format`, `Tool` and `Edge` are ordinary public types, so registering an
+edge for a format Soundness has never heard of extends the graph, and a format can be declared as
+data, by its kind and name, as a registry read at run time declares it:
+
+<!-- doccheck: skip -->
+```scala
+val proto = anthology.Format.source(t"proto")
+val descriptor = anthology.Format(anthology.Format.Kind.Ir, t"descriptor")
+```
+
+(`Format` is qualified because `soundness` exports another type of that name.) A declared format
+is the same node as the built-in format of its kind and name, so `anthology.Format.ir(t"classfile")`
+reaches every edge registered for `Universe.Classfile`.
 
 ### Deliverables and paths
 

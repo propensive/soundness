@@ -176,6 +176,42 @@ object Tests extends Suite(m"Anthology Tests"):
       Binary(Triple.Arm64MacOs) == Binary(Triple.X64Linux)
     . assert(_ == false)
 
+    // Formats declared as data, as a registry declares them, alongside the built-in ones.
+    test(m"A declared format is the built-in format of its kind and name"):
+      ( anthology.Format.ir(t"classfile") == Universe.Classfile,
+        anthology.Format.source(t"scala") == Language.Scala,
+        anthology.Format(anthology.Format.Kind.Application, t"apk") == Apk,
+        anthology.Format.application(t"js-es") == Js(Js.Module.Es) )
+    . assert(_ == (true, true, true, true))
+
+    test(m"A declared format hashes as the built-in format it equals"):
+      anthology.Format.ir(t"classfile").hashCode == Universe.Classfile.hashCode
+    . assert(identity)
+
+    test(m"Formats of different kinds are distinct though their names agree"):
+      anthology.Format.source(t"wasm") == anthology.Format.application(t"wasm")
+    . assert(_ == false)
+
+    test(m"Declared formats are equal when their names are"):
+      (anthology.Format.source(t"proto") == anthology.Format.source(t"proto"), anthology.Format.source(t"proto").kind)
+    . assert(_ == (true, anthology.Format.Kind.Source))
+
+    test(m"A toolchain routes through declared formats"):
+      val proto = anthology.Format.source(t"proto")
+      val descriptor = anthology.Format.ir(t"descriptor")
+
+      val edges =
+        List
+          ( Edge(proto, descriptor, passTool(t"protoc")),
+            Edge(descriptor, anthology.Format.application(t"bundle"), passTool(t"bundle")) )
+
+      Toolchain(edges).path(anthology.Format.source(t"proto"), anthology.Format.application(t"bundle")).map(_.tool.name)
+    . assert(_ == List(t"protoc", t"bundle"))
+
+    test(m"A declared format reaches the edges registered for its built-in"):
+      android.path(anthology.Format.ir(t"classfile"), anthology.Format.application(t"apk")).map(_.target.id)
+    . assert(_ == List(t"dex", t"apk"))
+
     supervise:
       val a = TestIr(t"a")
       val b = TestIr(t"b")

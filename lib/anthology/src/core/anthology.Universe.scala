@@ -62,13 +62,12 @@ object Universe:
 // Scala.js IR, whose linked representation (JavaScript, browser Wasm or a WASI component) is
 // chosen at link time; `Nir` is Scala Native IR, linked to machine code through LLVM. Each
 // universe is an intermediate-representation node of a `Toolchain`.
-enum Universe extends Format.Ir:
-  case Classfile, Sjsir, Nir
-
-  def id: Text = this match
-    case Classfile => t"classfile"
-    case Sjsir     => t"sjsir"
-    case Nir       => t"nir"
+// The `id` is a parameter rather than a match on the case: matching a case compares formats with
+// `equals`, which compares their `id`s.
+enum Universe(val id: Text) extends Format.Ir:
+  case Classfile extends Universe(t"classfile")
+  case Sjsir extends Universe(t"sjsir")
+  case Nir extends Universe(t"nir")
 
   // The label of the LIRA section holding this universe's content.
   def section: Text = this match
