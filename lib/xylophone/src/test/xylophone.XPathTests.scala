@@ -60,7 +60,7 @@ object XPathTests extends Suite(m"Xylophone XPath evaluation tests"):
 
       test(m"a parent step reaches the enclosing element"):
         document.select(xp"//span[@id='x']/..") match
-          case Fragment(element: Element) => element.attributes.fetch(t"id")
+          case Xml.Fragment(element: Xml.Element) => element.attributes.fetch(t"id")
           case _                          => Unset
       . assert(_ == t"main")
 
@@ -112,9 +112,9 @@ object XPathTests extends Suite(m"Xylophone XPath evaluation tests"):
     suite(m"Node-set semantics"):
       test(m"union results arrive in document order"):
         document.select(xp"//span | //button") match
-          case Fragment(nodes*) =>
+          case Xml.Fragment(nodes*) =>
             nodes.map:
-              case element: Element => element.label.s
+              case element: Xml.Element => element.label.s
               case _                => "?"
             . mkString(",").tt
       . assert(_ == t"button,button,span")

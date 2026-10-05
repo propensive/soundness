@@ -48,7 +48,7 @@ object Hero:
 // any further banner material supplied through the `hero` slot.
 trait Hero(headline: Text) extends Archetype:
   // Additional banner content, beneath the headline; empty by default.
-  def hero: Html of (? <: Flow) = Fragment[Flow]()
+  def hero: Html of (? <: Flow) = Html.Fragment[Flow]()
 
   // The rendered banner; override to restructure it.
   protected def heroBanner: Html of (? <: Flow) =
@@ -58,5 +58,5 @@ trait Hero(headline: Text) extends Archetype:
   protected def heroStyles: Css =
     css"${Hero.heroClass} { padding-block: 3rem; text-align: center }"
 
-  protected override def frame: Html of (? <: Flow) = Fragment[Flow](heroBanner, super.frame)
+  protected override def frame: Html of (? <: Flow) = Html.Fragment[Flow](heroBanner, super.frame)
   protected override def styles: Css = super.styles + heroStyles

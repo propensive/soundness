@@ -50,7 +50,7 @@ object Combobox:
 
     val id = unsafely(Name[DomId](combobox.name))
 
-    Fragment
+    Html.Fragment
       ( Input(name = combobox.name, list = id, value = combobox.value),
         Datalist(id = id)(items*) )
 

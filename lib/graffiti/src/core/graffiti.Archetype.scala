@@ -93,7 +93,7 @@ trait Archetype:
   // customises through the per-feature hooks instead and need not touch them.
   protected def frame: Html of (? <: Flow) = content
   protected def styles: Css = Css(Nil)
-  protected def head: Html of (? <: Metadata) = Fragment[Metadata]()
+  protected def head: Html of (? <: Metadata) = Html.Fragment[Metadata]()
 
   // The stylesheet rendered to text for inline embedding in a `<style>` element.
   private def stylesheet: Text = styles.show
@@ -119,4 +119,4 @@ trait Archetype:
 
   // The page as a `Document[Html]` with a leading doctype — the form that is served over HTTP.
   final def document: Document[Html] =
-    Document[Html](Fragment(Html.doctype, html), htmlDoms.whatwg)
+    Document[Html](Html.Fragment(Html.doctype, html), htmlDoms.whatwg)

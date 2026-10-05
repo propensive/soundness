@@ -54,7 +54,7 @@ object RectoPanel:
 // verso counterpart it uses only logical properties, so `direction = Rtl` mirrors it for free.
 trait RectoPanel extends Archetype:
   // The panel's content; empty by default (the slot renders nothing until filled).
-  def recto: Html of (? <: Flow) = Fragment[Flow]()
+  def recto: Html of (? <: Flow) = Html.Fragment[Flow]()
 
   // The panel's inline size, and the gap between content and panel.
   def rectoWidth: Quantity[Rems[1]] = 16.0*Rem
@@ -65,7 +65,7 @@ trait RectoPanel extends Archetype:
     ( content: Html of (? <: Flow), panel: Html of (? <: Flow) )
   :   Html of (? <: Flow) =
 
-    Fragment[Flow](Div(`class` = RectoPanel.layoutClass)(content, panel))
+    Html.Fragment[Flow](Div(`class` = RectoPanel.layoutClass)(content, panel))
 
   // This feature's own rules; override to restyle the panel and its grid.
   protected def rectoStyles: Css =

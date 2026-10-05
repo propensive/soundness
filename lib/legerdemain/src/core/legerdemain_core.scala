@@ -66,7 +66,7 @@ package formulations:
     def form(content: List[Html of Flow], submit: Optional[Text]): Html of Flow =
       Form
         ( action = t".", method = t"post" )
-        ( Fragment(content*), Input.Submit(value = submit.or(t"Submit")) )
+        ( Html.Fragment(content*), Input.Submit(value = submit.or(t"Submit")) )
 
 
     def element

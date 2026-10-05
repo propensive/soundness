@@ -42,9 +42,10 @@ import strategies.throwUnsafely
 import attributives.textAttributive
 ```
 
-An HTML value has the general type `Html`. Its nodes are `Element`s, `Comment`s,
-`TextNode`s, a `Doctype`, or a `Fragment` — a sequence of several nodes. Every node
-is immutable, so transforming one yields a new value rather than altering the old.
+An HTML value has the general type `Html`. Its nodes are elements, comments, text, a doctype,
+or a fragment — a sequence of several nodes — whose types live in the `Html` companion:
+`Html.Element`, `Html.Comment`, `Html.Text`, `Html.Doctype` and `Html.Fragment`. Every node is
+immutable, so transforming one yields a new value rather than altering the old.
 
 ### Constructing elements
 
@@ -145,10 +146,10 @@ and a name the stylesheet declares as an id renders as one.
 
 ### Fragments
 
-An `Html` value is either a `Node` — exactly one element, comment, or text — or a
-`Fragment`, an arbitrary sequence of nodes. Because HTML is a text format, insisting
+An `Html` value is either an `Html.Node` — exactly one element, comment, or text — or an
+`Html.Fragment`, an arbitrary sequence of nodes. Because HTML is a text format, insisting
 on exactly one node is usually an artificial constraint, so `Html` admits sequences
-everywhere; the `Node` type marks the few places where a single node is genuinely
+everywhere; the `Html.Node` type marks the few places where a single node is genuinely
 required. Fragments behave intuitively: one is unwrapped when supplied as children,
 and a fragment of a single node equals that node.
 
@@ -160,7 +161,7 @@ list items declares itself to produce `"li"` content:
 
 ```scala
 given (List[Text] is Renderable in "li") =
-  list => Fragment(list.map(Li(_)).nodes*)
+  list => Html.Fragment(list.map(Li(_)).nodes*)
 ```
 
 With that in scope a `List[Text]` can be rendered directly, placed inside a `<ul>`, or
@@ -175,7 +176,7 @@ h"<ol>$items</ol>"
 ### Transforming
 
 Two values join with `+`, producing a fragment. A value statically known to be an
-`Element` accepts a new child at its start with `^+` or its end with `+^` — the caret
+`Html.Element` accepts a new child at its start with `^+` or its end with `+^` — the caret
 marks which end — and an attribute is added, or replaced, by assignment:
 
 ```scala
@@ -190,15 +191,15 @@ Since values are immutable, `image` is unchanged and `described` is the new valu
 
 HTML is read from any textual source — a `Text`, a file path, a URL, a classpath
 resource — with `read` or `load`. `load` reads a whole document, returning a
-`Document[Html]` with a `Doctype` header and a root `<html>` node:
+`Document[Html]` with an `Html.Doctype` header and a root `<html>` node:
 
 ```scala
 val document = t"<html><head><title>Hello</title></head><body><p>Hello</p></body></html>".load[Html]
 ```
 
 `read` is for fragments. Called as `read[Html]`, it accepts anything from a single
-node to several, returning whichever of `Element`, `Comment`, `TextNode`, or
-`Fragment` the source yields:
+node to several, returning whichever of `Html.Element`, `Html.Comment`, `Html.Text`, or
+`Html.Fragment` the source yields:
 
 ```scala
 val text = t"This is some <em>important</em> text"
@@ -255,8 +256,8 @@ a captured body is itself `Html`, matched in turn:
 ```scala
 html match
   case h"<li>$value</li>" => value match
-    case TextNode("one")  => 1
-    case TextNode("two")  => 2
+    case Html.Text("one") => 1
+    case Html.Text("two") => 2
     case _                => Unset
   case _                  => Unset
 ```
@@ -279,7 +280,7 @@ val nodes: List[Html of Flow] = List(Hr, P("Hello"), Br)
 ```
 
 What an element may contain is recorded with `over`, so a `<ul>` is an
-`Element of "ul" over "li"`, and the specification in force is recorded with `in`, so
+`Html.Element of "ul" over "li"`, and the specification in force is recorded with `in`, so
 ordinary values are `Html in Whatwg`. These combine into types as exact as
 `Container of "em" | "i" | "b" over Phrasing in Whatwg`. The library uses this
 precision internally; applications rarely need more than `Html of Flow`.

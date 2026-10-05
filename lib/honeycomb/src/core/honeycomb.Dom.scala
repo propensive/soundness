@@ -51,6 +51,6 @@ trait Dom extends Findable:
   val attributes: Dictionary[Attribute]
   val entities: Dictionary[Text]
 
-  def doctype: Doctype
+  def doctype: Html.Doctype
   def infer(parent: Tag, child: Tag): Optional[Tag]
   def generic: Tag = Tag.root(elements.iterator.map(_.label).to(Set))

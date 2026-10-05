@@ -72,6 +72,10 @@ object Mathml:
     case List(node) => node
     case nodes      => Mrow(nodes)
 
+  // The varargs constructor shared by every element whose children are a plain list.
+  trait Container[node](make: List[Mathml] -> node):
+    def apply(children: Mathml*): node = make(children.to(List))
+
   // Token (leaf) elements: the elements whose content is character data rather
   // than child elements. `Mspace` and `Mglyph` carry no text at all (they are
   // controlled entirely by their attributes), so their `text` is `Unset`.
@@ -115,8 +119,7 @@ object Mathml:
   sealed trait Layout extends Mathml:
     def text: Optional[Text] = Unset
 
-  object Mrow:
-    def apply(children: Mathml*): Mrow = Mrow(children.to(List))
+  object Mrow extends Container(new Mrow(_))
 
   case class Mrow(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
     def label: Text = t"mrow"
@@ -126,8 +129,7 @@ object Mathml:
     def label: Text = t"mfrac"
     def contents: List[Mathml] = List(numerator, denominator)
 
-  object Msqrt:
-    def apply(children: Mathml*): Msqrt = Msqrt(children.to(List))
+  object Msqrt extends Container(new Msqrt(_))
 
   case class Msqrt(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
     def label: Text = t"msqrt"
@@ -136,38 +138,32 @@ object Mathml:
     def label: Text = t"mroot"
     def contents: List[Mathml] = List(base, index)
 
-  object Mstyle:
-    def apply(children: Mathml*): Mstyle = Mstyle(children.to(List))
+  object Mstyle extends Container(new Mstyle(_))
 
   case class Mstyle(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
     def label: Text = t"mstyle"
 
-  object Merror:
-    def apply(children: Mathml*): Merror = Merror(children.to(List))
+  object Merror extends Container(new Merror(_))
 
   case class Merror(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
     def label: Text = t"merror"
 
-  object Mpadded:
-    def apply(children: Mathml*): Mpadded = Mpadded(children.to(List))
+  object Mpadded extends Container(new Mpadded(_))
 
   case class Mpadded(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
     def label: Text = t"mpadded"
 
-  object Mphantom:
-    def apply(children: Mathml*): Mphantom = Mphantom(children.to(List))
+  object Mphantom extends Container(new Mphantom(_))
 
   case class Mphantom(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
     def label: Text = t"mphantom"
 
-  object Menclose:
-    def apply(children: Mathml*): Menclose = Menclose(children.to(List))
+  object Menclose extends Container(new Menclose(_))
 
   case class Menclose(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
     def label: Text = t"menclose"
 
-  object Mfenced:
-    def apply(children: Mathml*): Mfenced = Mfenced(children.to(List))
+  object Mfenced extends Container(new Mfenced(_))
 
   case class Mfenced(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
     def label: Text = t"mfenced"
@@ -218,8 +214,7 @@ object Mathml:
     def label: Text = t"munderover"
     def contents: List[Mathml] = List(base, underscript, overscript)
 
-  object Mmultiscripts:
-    def apply(children: Mathml*): Mmultiscripts = Mmultiscripts(children.to(List))
+  object Mmultiscripts extends Container(new Mmultiscripts(_))
 
   case class Mmultiscripts(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Script:
@@ -239,27 +234,23 @@ object Mathml:
   sealed trait Tabular extends Mathml:
     def text: Optional[Text] = Unset
 
-  object Mtable:
-    def apply(rows: Mathml*): Mtable = Mtable(rows.to(List))
+  object Mtable extends Container(new Mtable(_))
 
   case class Mtable(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Tabular:
     def label: Text = t"mtable"
 
-  object Mtr:
-    def apply(cells: Mathml*): Mtr = Mtr(cells.to(List))
+  object Mtr extends Container(new Mtr(_))
 
   case class Mtr(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Tabular:
     def label: Text = t"mtr"
 
-  object Mlabeledtr:
-    def apply(cells: Mathml*): Mlabeledtr = Mlabeledtr(cells.to(List))
+  object Mlabeledtr extends Container(new Mlabeledtr(_))
 
   case class Mlabeledtr(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Tabular:
     def label: Text = t"mlabeledtr"
 
-  object Mtd:
-    def apply(children: Mathml*): Mtd = Mtd(children.to(List))
+  object Mtd extends Container(new Mtd(_))
 
   case class Mtd(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Tabular:
     def label: Text = t"mtd"
@@ -279,43 +270,37 @@ object Mathml:
   sealed trait Elementary extends Mathml:
     def text: Optional[Text] = Unset
 
-  object Mstack:
-    def apply(children: Mathml*): Mstack = Mstack(children.to(List))
+  object Mstack extends Container(new Mstack(_))
 
   case class Mstack(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Elementary:
     def label: Text = t"mstack"
 
-  object Mlongdiv:
-    def apply(children: Mathml*): Mlongdiv = Mlongdiv(children.to(List))
+  object Mlongdiv extends Container(new Mlongdiv(_))
 
   case class Mlongdiv(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Elementary:
     def label: Text = t"mlongdiv"
 
-  object Msgroup:
-    def apply(children: Mathml*): Msgroup = Msgroup(children.to(List))
+  object Msgroup extends Container(new Msgroup(_))
 
   case class Msgroup(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Elementary:
     def label: Text = t"msgroup"
 
-  object Msrow:
-    def apply(children: Mathml*): Msrow = Msrow(children.to(List))
+  object Msrow extends Container(new Msrow(_))
 
   case class Msrow(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Elementary:
     def label: Text = t"msrow"
 
-  object Mscarries:
-    def apply(children: Mathml*): Mscarries = Mscarries(children.to(List))
+  object Mscarries extends Container(new Mscarries(_))
 
   case class Mscarries(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Elementary:
     def label: Text = t"mscarries"
 
-  object Mscarry:
-    def apply(children: Mathml*): Mscarry = Mscarry(children.to(List))
+  object Mscarry extends Container(new Mscarry(_))
 
   case class Mscarry(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Elementary:
@@ -332,16 +317,14 @@ object Mathml:
 
   sealed trait Semantic extends Mathml
 
-  object Maction:
-    def apply(children: Mathml*): Maction = Maction(children.to(List))
+  object Maction extends Container(new Maction(_))
 
   case class Maction(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Semantic:
     def label: Text = t"maction"
     def text: Optional[Text] = Unset
 
-  object Semantics:
-    def apply(children: Mathml*): Semantics = Semantics(children.to(List))
+  object Semantics extends Container(new Semantics(_))
 
   case class Semantics(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Semantic:
@@ -353,8 +336,7 @@ object Mathml:
     def contents: List[Mathml] = Nil
     def text: Optional[Text] = value
 
-  object AnnotationXml:
-    def apply(children: Mathml*): AnnotationXml = AnnotationXml(children.to(List))
+  object AnnotationXml extends Container(new AnnotationXml(_))
 
   case class AnnotationXml(contents: List[Mathml], attributes: List[(Text, Text)] = Nil)
   extends Semantic:
@@ -382,46 +364,44 @@ object Mathml:
 
   object Parser:
     def labelOf(xml: Xml): Text = xml match
-      case element: Element => element.label
+      case element: Xml.Element => element.label
       case _                => t"<unknown>"
 
-    def findMath(nodes: List[Node])(using Tactic[Mathml.Error]): Element =
-      nodes.reap { case element: Element if element.label == t"math" => element }
+    def findMath(nodes: List[Xml.Node])(using Tactic[Mathml.Error]): Xml.Element =
+      nodes.reap { case element: Xml.Element if element.label == t"math" => element }
       . or:
         abort(Mathml.Error(Mathml.Error.Reason.NotMathml(t"<missing>")))
 
-    def rootElement(xml: Xml)(using Tactic[Mathml.Error]): Element = xml match
-      case element: Element if element.label == t"math" => element
-      case Fragment(nodes*)                             => findMath(nodes.to(List))
+    def rootElement(xml: Xml)(using Tactic[Mathml.Error]): Xml.Element = xml match
+      case element: Xml.Element if element.label == t"math" => element
+      case Xml.Fragment(nodes*)                             => findMath(nodes.to(List))
 
       case other =>
         abort(Mathml.Error(Mathml.Error.Reason.NotMathml(labelOf(other))))
 
-    private def childElements(elem: Element): List[Element] =
-      (elem.children.readable.toList.collect { case element: Element => element }).to(List)
+    private def childElements(elem: Xml.Element): List[Xml.Element] =
+      (elem.children.readable.toList.collect { case element: Xml.Element => element }).to(List)
 
-    private def attributesOf(elem: Element): List[(Text, Text)] =
-      (elem.attributes.keys.map { key => (key, elem.attributes(key).or(t"")) }.toList).to(List)
+    private def textOf(elem: Xml.Element): Text =
+      (elem.children.readable.toList.collect { case Xml.Text(text) => text }).to(List).join
 
-    private def textOf(elem: Element): Text =
-      (elem.children.readable.toList.collect { case TextNode(text) => text }).to(List).join
-
-    private def children(elem: Element)(using Tactic[Mathml.Error]): List[Mathml] =
+    private def children(elem: Xml.Element)(using Tactic[Mathml.Error]): List[Mathml] =
       childElements(elem).map(decodeNode)
 
     private def at(nodes: List[Mathml], index: Int): Mathml =
       nodes.stdlib.lift(index).getOrElse(Mrow(Nil))
 
-    def decodeMath(elem: Element)(using Tactic[Mathml.Error]): Math =
-      val kept = attributesOf(elem).filter { case (key, _) => key != t"xmlns" && key != t"display" }
+    def decodeMath(elem: Xml.Element)(using Tactic[Mathml.Error]): Math =
+      val kept = elem.attributes.to[List].filter: (key, _) =>
+        key != t"xmlns" && key != t"display"
 
       val display: Optional[Display] = elem.attributes(t"display").let: text =>
         Display.unapply(text).getOrElse(Display.Inline)
 
       Math(children(elem), display, kept)
 
-    def decodeNode(elem: Element)(using Tactic[Mathml.Error]): Mathml =
-      val attrs = attributesOf(elem)
+    def decodeNode(elem: Xml.Element)(using Tactic[Mathml.Error]): Mathml =
+      val attrs = elem.attributes.to[List]
       val cs = children(elem)
 
       elem.label match
@@ -488,15 +468,17 @@ object Mathml:
       findMath(html).lay(abort(Mathml.Error(Mathml.Error.Reason.NotMathml(t"<missing>")))): element =>
         Mathml.Parser.decodeMath(toXmlElement(element))
 
-    def findMath(html: Html): Optional[honeycomb.Element] = html match
-      case element: honeycomb.Element =>
+    def findMath(html: Html): Optional[honeycomb.Html.Element] = html match
+      case element: honeycomb.Html.Element =>
         if element.label == t"math" then element else searchNodes(element.children)
 
-      case fragment: honeycomb.Fragment => searchNodes(Array.from(fragment.nodes))
-      case _                            => Unset
+      case fragment: honeycomb.Html.Fragment => searchNodes(Array.from(fragment.nodes))
+      case _                                 => Unset
 
-    private def searchNodes(nodes: Array[honeycomb.Node]^{}): Optional[honeycomb.Element] =
-      var result: Optional[honeycomb.Element] = Unset
+    private def searchNodes(nodes: Array[honeycomb.Html.Node]^{})
+    :   Optional[honeycomb.Html.Element] =
+
+      var result: Optional[honeycomb.Html.Element] = Unset
       var index = 0
 
       while index < nodes.length && result.absent do
@@ -505,18 +487,18 @@ object Mathml:
 
       result
 
-    private def toXmlElement(element: honeycomb.Element): Element =
+    private def toXmlElement(element: honeycomb.Html.Element): Xml.Element =
       val pairs: List[(Text, Text)] =
         element.attributes.keys.map { key => (key, element.attributes(key).or(t"")) }.to(List)
 
-      val nodes: Array[Node]^{} = element.children.remap(toXmlNode)
-      Element(element.label, Attributes(pairs*), nodes)
+      val nodes: Array[Xml.Node]^{} = element.children.remap(toXmlNode)
+      Xml.Element(element.label, Attributes(pairs*), nodes)
 
-    private def toXmlNode(node: honeycomb.Node): Node = node match
-      case element: honeycomb.Element   => toXmlElement(element)
-      case textNode: honeycomb.TextNode => TextNode(textNode.text)
-      case comment: honeycomb.Comment   => Comment(comment.text)
-      case _                            => TextNode(t"")
+    private def toXmlNode(node: honeycomb.Html.Node): Xml.Node = node match
+      case element: honeycomb.Html.Element => toXmlElement(element)
+      case textNode: honeycomb.Html.Text   => Xml.Text(textNode.text)
+      case comment: honeycomb.Html.Comment => Xml.Comment(comment.text)
+      case _                               => Xml.Text(t"")
 
 trait Mathml:
   def label: Text
@@ -524,18 +506,15 @@ trait Mathml:
   def contents: List[Mathml]
   def text: Optional[Text]
 
-  def htmlAttributes: List[(Text, Optional[Text])] =
-    attributes.map { case (key, value) => (key, value: Optional[Text]) }
-
   def xml: Xml =
     val children: List[Xml] = text.lay(contents.map(_.xml)): value =>
-      List(TextNode(value))
+      List(Xml.Text(value))
 
-    Element(label, Attributes(attributes*), children.nodes)
+    Xml.Element(label, Attributes(attributes*), children.nodes)
 
   def html: Html of "#foreign" =
     val children: List[Html of "#foreign"] =
       text.lay(contents.map(_.html)): value =>
-        List(honeycomb.Html.string2(value.s))
+        List(honeycomb.Html.Text.foreign(value))
 
-    honeycomb.Element.foreign(label, honeycomb.Attributes(htmlAttributes*), children*)
+    honeycomb.Html.Element.foreign(label, honeycomb.Attributes(attributes*), children*)

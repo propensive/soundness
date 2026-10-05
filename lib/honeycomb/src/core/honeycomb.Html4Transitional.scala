@@ -312,9 +312,9 @@ object Html4Transitional:
 class Html4Transitional() extends Dom:
   import Html4Transitional.*
 
-  def doctype: Doctype =
+  def doctype: Html.Doctype =
     val dtd = t""""-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd""""
-    Doctype(t"HTML PUBLIC $dtd")
+    Html.Doctype(t"HTML PUBLIC $dtd")
 
   // Content categories
   type Heading = "h1" | "h2" | "h3" | "h4" | "h5" | "h6"

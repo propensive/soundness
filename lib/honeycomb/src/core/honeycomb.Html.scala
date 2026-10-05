@@ -72,6 +72,8 @@ object Html extends Tag.Container
     insertable  = true,
     foreign     = false,
     boundary    = true ), Format:
+  private type BaseText = anticipation.Text
+
   // Controls how an `Html` document is serialized by `emit`. `indented` lays whitespace-mode
   // elements out one per indented line (the default); `compactHtmlFormatting` keeps it on one line.
   // (`.show` of a bare node is always compact.) Bundled as `formatting.indentedHtmlFormatting`
@@ -165,42 +167,42 @@ object Html extends Tag.Container
   =>  ( dom:    Dom,
         tactic: Tactic[Parse.Error],
         strict: NotGiven[Html.Recovery.Permissive] )
-  =>  (((Html of content) is Aggregable by Text)^{tactic, caps.any}) =
+  =>  (((Html of content) is Aggregable by BaseText)^{tactic, caps.any}) =
 
     new Aggregable:
       type Self = Html of content
-      type Operand = Text
+      type Operand = BaseText
 
-      def aggregate(input: Chain[Text]): Html of content =
+      def aggregate(input: Chain[BaseText]): Html of content =
         val root = Tag.root(content.reify.map(_.tt).to[Set])
         HtmlParser.fromChain(input, permissive = false).parseHtml(root).of[content]
 
-      override def accept(stream: (Stream[Text] over Credit)^): Html of content =
+      override def accept(stream: (Stream[BaseText] over Credit)^): Html of content =
         val root = Tag.root(content.reify.map(_.tt).to[Set])
         HtmlParser.fromStream(stream, permissive = false).parseHtml(root).of[content]
 
   given strictAggregable2: (dom: Dom, tactic: Tactic[Parse.Error])
   =>  ( strict: NotGiven[Html.Recovery.Permissive] )
-  =>  ((Html is Aggregable by Text)^{tactic, caps.any}) =
+  =>  ((Html is Aggregable by BaseText)^{tactic, caps.any}) =
     new Aggregable:
       type Self = Html
-      type Operand = Text
+      type Operand = BaseText
 
-      def aggregate(input: Chain[Text]): Html =
+      def aggregate(input: Chain[BaseText]): Html =
         HtmlParser.fromChain(input, permissive = false)
         . parseHtml(dom.generic, doctypes = false)
 
-      override def accept(stream: (Stream[Text] over Credit)^): Html =
+      override def accept(stream: (Stream[BaseText] over Credit)^): Html =
         HtmlParser.fromStream(stream, permissive = false)
         . parseHtml(dom.generic, doctypes = false)
 
   given strictLoadable: (dom: Dom, tactic: Tactic[Parse.Error])
   =>  ( strict: NotGiven[Html.Recovery.Permissive] )
-  =>  ((Html is Loadable by Text)^{tactic, caps.any}) = stream =>
+  =>  ((Html is Loadable by BaseText)^{tactic, caps.any}) = stream =>
     val root = Tag.root(Set(t"html"))
 
     HtmlParser.fromStream
-      ( stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^],
+      ( stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[BaseText] over Credit)^],
         permissive = false )
     . parseHtml(root, doctypes = true) match
       case Fragment(Doctype(doctype), content) => Document(content, dom)
@@ -221,20 +223,20 @@ object Html extends Tag.Container
   given permissiveAggregable: [content <: Label: Reifiable to List[String]]
   =>  ( dom: Dom )
   =>  Html.Recovery.Permissive
-  =>  (Html of content) is Aggregable by Text =
+  =>  (Html of content) is Aggregable by BaseText =
 
     new Aggregable:
       type Self = Html of content
-      type Operand = Text
+      type Operand = BaseText
 
-      def aggregate(input: Chain[Text]): Html of content =
+      def aggregate(input: Chain[BaseText]): Html of content =
         given Tactic[Parse.Error] = lenientTactic
         val root = Tag.root(content.reify.map(_.tt).to[Set])
 
         lenient(Fragment().of[content]):
           HtmlParser.fromChain(input, permissive = true).parseHtml(root).of[content]
 
-      override def accept(stream: (Stream[Text] over Credit)^): Html of content =
+      override def accept(stream: (Stream[BaseText] over Credit)^): Html of content =
         given Tactic[Parse.Error] = lenientTactic
         val root = Tag.root(content.reify.map(_.tt).to[Set])
 
@@ -243,19 +245,19 @@ object Html extends Tag.Container
 
   given permissiveAggregable2: (dom: Dom)
   =>  Html.Recovery.Permissive
-  =>  Html is Aggregable by Text =
+  =>  Html is Aggregable by BaseText =
     new Aggregable:
       type Self = Html
-      type Operand = Text
+      type Operand = BaseText
 
-      def aggregate(input: Chain[Text]): Html =
+      def aggregate(input: Chain[BaseText]): Html =
         given Tactic[Parse.Error] = lenientTactic
 
         lenient(Fragment()):
           HtmlParser.fromChain(input, permissive = true)
           . parseHtml(dom.generic, doctypes = false)
 
-      override def accept(stream: (Stream[Text] over Credit)^): Html =
+      override def accept(stream: (Stream[BaseText] over Credit)^): Html =
         given Tactic[Parse.Error] = lenientTactic
 
         lenient(Fragment()):
@@ -264,13 +266,13 @@ object Html extends Tag.Container
 
   given permissiveLoadable: (dom: Dom)
   =>  Html.Recovery.Permissive
-  =>  Html is Loadable by Text = stream =>
+  =>  Html is Loadable by BaseText = stream =>
     given Tactic[Parse.Error] = lenientTactic
     val root = Tag.root(Set(t"html"))
 
     lenient(Document(Fragment(), dom)):
       HtmlParser.fromStream
-        ( stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^],
+        ( stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[BaseText] over Credit)^],
           permissive = true )
       . parseHtml(root, doctypes = true) match
         case Fragment(Doctype(doctype), content) => Document(content, dom)
@@ -278,17 +280,17 @@ object Html extends Tag.Container
         case other                               => Document(other, dom)
 
   // Up to 32 levels of two-space indentation
-  private val indentation: Text =
+  private val indentation: BaseText =
     "\n                                                                "
 
   // Streams a document's HTML source, using the document's own DOM and the indentation from the
   // contextual `Formatting`. The whole emission lives in this instance so `.stream` is the single
   // route to streamed HTML; the producing code runs on a separate fiber.
   given streamable: (monitor: Monitor, probate: Probate)
-  =>  ((Document[Html] is Streamable by Text over Credit)^{monitor, caps.any}) = document =>
+  =>  ((Document[Html] is Streamable by BaseText over Credit)^{monitor, caps.any}) = document =>
     val formatting = summon[Formatting]
     val dom = document.metadata
-    val producer = Producer[Text]()
+    val producer = Producer[BaseText]()
     val block = formatting.indented
 
     async:
@@ -302,17 +304,17 @@ object Html extends Tag.Container
   // node renders correctly (void elements, escaping) even outside a `Document`. The `Streamable`
   // instance above uses the document's own DOM and indents.
   given showable: [html <: Html] => html is Showable = node =>
-    Producer.collect[Text](): producer =>
+    Producer.collect[BaseText](): producer =>
       writeHtml(producer, htmlDoms.whatwg, node, 0, false, Mode.Whitespace)
 
-  // `Element`, `Fragment`, `TextNode`, `Comment` and `Doctype` are all covered here, in the
+  // `Element`, `Fragment`, `Html.Text`, `Comment` and `Doctype` are all covered here, in the
   // companion of the trait they share, exactly as `showable` above covers them: the bound admits
   // every node type and every topic- or DOM-refined form of one. The rendering is the node's own
   // un-indented HTML source, escaped into an `html"…"` literal — compact, on one line, and
   // showing the tag, its attributes and its children. It is distinguishable both from the `Text`
   // holding the same markup and from xylophone's `xml"…"`, following ypsiloid's `yaml"…"`.
   given inspectable: [html <: Html] => html is Inspectable = node =>
-    val markup: Text = Producer.collect[Text](): producer =>
+    val markup: BaseText = Producer.collect[BaseText](): producer =>
       writeHtml(producer, htmlDoms.whatwg, node, 0, false, Mode.Whitespace)
 
     val builder: StringBuilder = new StringBuilder()
@@ -322,13 +324,13 @@ object Html extends Tag.Container
 
   // HTML5 text-content escaping: `&`, `<` and `>`. Raw-text elements such as `script` and `style`
   // use `Mode.Raw` and are written verbatim by `writeHtml`.
-  private def writeEscapedText(producer: Producer[Text]^, text: Text): Unit =
+  private def writeEscapedText(producer: Producer[BaseText]^, text: BaseText): Unit =
     val source = text.s
     val length = source.length
     var start = 0
     var index = 0
 
-    inline def escape(entity: Text): Unit =
+    inline def escape(entity: BaseText): Unit =
       if index > start then producer.put(text, start.z, index - start)
       producer.put(entity)
       start = index + 1
@@ -346,13 +348,13 @@ object Html extends Tag.Container
 
   // HTML5 escaping for a double-quoted attribute value: `&` and the `"` delimiter. `<` and `>` are
   // permitted literally in attribute values.
-  private def writeEscapedAttribute(producer: Producer[Text]^, text: Text): Unit =
+  private def writeEscapedAttribute(producer: Producer[BaseText]^, text: BaseText): Unit =
     val source = text.s
     val length = source.length
     var start = 0
     var index = 0
 
-    inline def escape(entity: Text): Unit =
+    inline def escape(entity: BaseText): Unit =
       if index > start then producer.put(text, start.z, index - start)
       producer.put(entity)
       start = index + 1
@@ -373,7 +375,7 @@ object Html extends Tag.Container
   // looked up in the DOM by name, but only decides how an *empty* element is closed: an element
   // which has children, from a tag defined at odds with the DOM, is written with them.
   private def writeHtml
-    ( producer: Producer[Text]^,
+    ( producer: Producer[BaseText]^,
       dom:      Dom,
       node:     Html,
       indent:   Int,
@@ -395,7 +397,7 @@ object Html extends Tag.Container
         producer.put(text) // FIXME: entities
         producer.put(">")
 
-      case TextNode(text) =>
+      case Text(text) =>
         mode match
           case Mode.Raw => producer.put(text)
           case _        => writeEscapedText(producer, text)
@@ -422,7 +424,7 @@ object Html extends Tag.Container
         val mode = dom.elements(label).lay(Mode.Normal)(_.mode)
 
         val whitespace =
-          (mode == Mode.Whitespace || !nodes.exists(_.isInstanceOf[TextNode])) &&
+          (mode == Mode.Whitespace || !nodes.exists(_.isInstanceOf[Text])) &&
             block
 
         if nodes.length > 0 || !dom.elements(label).lay(false)(_.void) then
@@ -442,7 +444,7 @@ object Html extends Tag.Container
   private enum Level:
     case Ascend, Descend, Peer, Skip
 
-  private val formattingTags: Set[Text] = Set(
+  private val formattingTags: Set[BaseText] = Set(
     t"a", t"b", t"big", t"code", t"em", t"font", t"i", t"nobr",
     t"s", t"small", t"strike", t"strong", t"tt", t"u" )
 
@@ -467,13 +469,13 @@ object Html extends Tag.Container
 
 
   import Issue.*
-  def name: Text = t"HTML"
+  def name: BaseText = t"HTML"
 
-  given text: [label >: "#text" <: Label] => Conversion[Text, Html of label] =
-    TextNode(_).of[label]
+  given text: [label >: "#text" <: Label] => Conversion[BaseText, Html of label] =
+    Text(_).of[label]
 
   given string: [label >: "#text" <: Label] => Conversion[String, Html of label] =
-    string => TextNode(string.tt).of[label]
+    string => Text(string.tt).of[label]
 
   given conversion3: [label <: Label, content >: label <: Label]
   =>  Conversion[Html of label, Html of content] =
@@ -484,7 +486,7 @@ object Html extends Tag.Container
     _.of[content]
 
   given string2: Conversion[String, Html of "#foreign"] =
-    string => TextNode(string.tt).of["#foreign"]
+    string => Text(string.tt).of["#foreign"]
 
   given renderable: [content <: Label, value: Renderable in content]
   =>  Conversion[value, Html of content] =
@@ -503,20 +505,20 @@ object Html extends Tag.Container
     case UnexpectedDoctype
     case BadDocument
     case InvalidCdata
-    case InvalidTag(name: Text)
-    case InvalidTagStart(prefix: Text)
-    case DuplicateAttribute(name: Text)
-    case InadmissibleTag(name: Text, parent: Text)
+    case InvalidTag(name: BaseText)
+    case InvalidTagStart(prefix: BaseText)
+    case DuplicateAttribute(name: BaseText)
+    case InadmissibleTag(name: BaseText, parent: BaseText)
     case OnlyWhitespace(char: Char)
     case Unexpected(char: Char)
-    case UnknownEntity(name: Text)
+    case UnknownEntity(name: BaseText)
     case ForbiddenUnquoted(char: Char)
-    case MismatchedTag(open: Text, close: Text)
-    case UnopenedTag(close: Text)
-    case Incomplete(tag: Text)
-    case UnknownAttribute(name: Text)
-    case UnknownAttributeStart(name: Text)
-    case InvalidAttributeUse(attribute: Text, element: Text)
+    case MismatchedTag(open: BaseText, close: BaseText)
+    case UnopenedTag(close: BaseText)
+    case Incomplete(tag: BaseText)
+    case UnknownAttribute(name: BaseText)
+    case UnknownAttributeStart(name: BaseText)
+    case InvalidAttributeUse(attribute: BaseText, element: BaseText)
 
     def describe: Message = this match
       case BadInsertion                   => m"a value cannot be inserted into HTML at this point"
@@ -553,7 +555,7 @@ object Html extends Tag.Container
       override val offset: Optional[Int] = Unset,
       override val length: Optional[Int] = Unset )
   extends Format.Position:
-    def describe: Text = t"line ${line.n1}, column ${column.n1}"
+    def describe: BaseText = t"line ${line.n1}, column ${column.n1}"
     override def span: Span = Span.line(line, column, length.or(0))
 
   enum Mode:
@@ -568,9 +570,9 @@ object Html extends Tag.Container
 
   enum Hole:
     case Text, Tagbody, Comment
-    case Element(tag: Text)
-    case Attribute(tag: Text, attribute: Text)
-    case Node(parent: Text)
+    case Element(tag: BaseText)
+    case Attribute(tag: BaseText, attribute: BaseText)
+    case Node(parent: BaseText)
 
   // Direct parser: bypasses Cursor entirely. Operates directly on the
   // underlying String with a `var pos`. Currently handles a focused subset
@@ -617,7 +619,7 @@ object Html extends Tag.Container
     // O(N) (and allocates a `Tuple2` per append), and even though valid
     // HTML rarely populates this list, malformed-input handling can append
     // multiple entries at once. Capacity grows geometrically when filled.
-    var pendingFormattingLabels: scala.Array[Text]^ = new scala.Array[Text](4)
+    var pendingFormattingLabels: scala.Array[BaseText]^ = new scala.Array[BaseText](4)
     var pendingFormattingAttrs:  scala.Array[Attributes]^ = new scala.Array[Attributes](4)
     var pendingFormattingSize: Int = 0
     // Foster-parented children awaiting placement around the next `<table>`
@@ -630,7 +632,7 @@ object Html extends Tag.Container
     var fosteredAfter: scala.Array[Node]^ = new scala.Array[Node](4)
     var fosteredAfterSize: Int = 0
 
-    def findAncestorIndex(label: Text): Int =
+    def findAncestorIndex(label: BaseText): Int =
       var i = 0
       val end = depth - 1
 
@@ -639,7 +641,7 @@ object Html extends Tag.Container
         i += 1
       -1
 
-    def stackContainsAncestor(label: Text): Boolean = findAncestorIndex(label) >= 0
+    def stackContainsAncestor(label: BaseText): Boolean = findAncestorIndex(label) >= 0
 
     update def append(node: Node): Unit =
       if index >= nodes.length then
@@ -678,10 +680,10 @@ object Html extends Tag.Container
       attrInterleaved(2*n) = key
       attrInterleaved(2*n + 1) = value
 
-    update def pushPendingFormatting(label: Text, attrs: Attributes): Unit =
+    update def pushPendingFormatting(label: BaseText, attrs: Attributes): Unit =
       if pendingFormattingSize >= pendingFormattingLabels.length then
         val newCap = pendingFormattingLabels.length*2
-        val nl = new scala.Array[Text](newCap)
+        val nl = new scala.Array[BaseText](newCap)
         val na = new scala.Array[Attributes](newCap)
         val sz = pendingFormattingSize
         jl.System.arraycopy(pendingFormattingLabels, 0, nl, 0, sz)
@@ -746,19 +748,21 @@ object Html extends Tag.Container
     // scanning the currently-buffered chars from offset 0 to the error
     // position — an O(buffer) cost paid only on the failure path.
 
-    def fromText(text: Text, permissive: Boolean = false)(using Dom): HtmlParser^ =
-      new HtmlParser(Cursor[Text](text), permissive)
+    def fromText(text: BaseText, permissive: Boolean = false)(using Dom): HtmlParser^ =
+      new HtmlParser(Cursor[BaseText](text), permissive)
 
     // Native `Chain` sibling of `fromIterator`: same cursor construction, no
     // stdlib hop.
-    def fromChain(input: Chain[Text], permissive: Boolean = false)(using Dom): HtmlParser^ =
-      new HtmlParser(Cursor[Text](input), permissive)
+    def fromChain(input: Chain[BaseText], permissive: Boolean = false)(using Dom): HtmlParser^ =
+      new HtmlParser(Cursor[BaseText](input), permissive)
 
     // The legacy interoperation shape: a stdlib `Iterator` of chunks.
-    def fromIterator(input: Iterator[Text], permissive: Boolean = false)(using Dom): HtmlParser^ =
-      new HtmlParser(Cursor[Text](input), permissive)
+    def fromIterator(input: Iterator[BaseText], permissive: Boolean = false)(using Dom)
+    :   HtmlParser^ =
 
-    def fromStream(input: (Stream[Text] over Credit)^, permissive: Boolean = false)(using Dom)
+      new HtmlParser(Cursor[BaseText](input), permissive)
+
+    def fromStream(input: (Stream[BaseText] over Credit)^, permissive: Boolean = false)(using Dom)
     :   HtmlParser^ =
 
       // Ownership moves through a neutral carrier: `Aggregable.accept` (this
@@ -766,20 +770,21 @@ object Html extends Tag.Container
       // the endpoint's single-ownership transfer is by convention here.
       val inputRef: AnyRef = input.asInstanceOf[AnyRef]
 
-      new HtmlParser(Cursor[Text](inputRef.asInstanceOf[(Stream[Text] over Credit)^]), permissive)
+      val stream = inputRef.asInstanceOf[(Stream[BaseText] over Credit)^]
+      new HtmlParser(Cursor[BaseText](stream), permissive)
 
   // An exclusive, stateful capability, like `caesura`'s parser: it CONSUMES its
   // cursor — single ownership moves into the parser — which is what entitles the
   // buffer-snapshot fields below to hold parameter-derived references.
   private[honeycomb] final class HtmlParser
-    ( consume cursor1:  Cursor[Text, ?]^,
+    ( consume cursor1:  Cursor[BaseText, ?]^,
       val permissive: Boolean      = false )
     ( using dom: Dom )
   extends caps.ExclusiveCapability, caps.Stateful:
     // A neutral carrier with an inline accessor (the `perihelion.Reader` pattern):
     // an exclusive-typed field would hide the cursor from the parser's own methods.
     private val cursor0: AnyRef = cursor1.asInstanceOf[AnyRef]
-    private inline def cursor: Cursor[Text, ?]^ = cursor0.asInstanceOf[Cursor[Text, ?]^]
+    private inline def cursor: Cursor[BaseText, ?]^ = cursor0.asInstanceOf[Cursor[BaseText, ?]^]
     private var heldToken: Cursor.Held | Null = null
 
     type Anchor = Cursor.Mark
@@ -847,8 +852,8 @@ object Html extends Tag.Container
       syncTo()
       cursor.mark(using heldToken.nn)
 
-    protected def slice(start: Cursor.Mark, end: Cursor.Mark): Text =
-      cursor.grab(start, end).asInstanceOf[Text]
+    protected def slice(start: Cursor.Mark, end: Cursor.Mark): BaseText =
+      cursor.grab(start, end).asInstanceOf[BaseText]
 
     // ASCII-range character predicates and case fold. Lower the per-character
     // overhead from `Character.isLetter`/`Character.isDigit`/`Character.toLowerCase`
@@ -876,7 +881,7 @@ object Html extends Tag.Container
 
       // A stable binding: the inline `cursor` accessor is not a valid prefix for
       // the path-dependent `addressable.Target`.
-      val cursor1: Cursor[Text, ?]^ = cursor
+      val cursor1: Cursor[BaseText, ?]^ = cursor
       cursor1.clone(start, end)(target.asInstanceOf[cursor1.addressable.Target])
 
     protected def computePosition
@@ -964,8 +969,8 @@ object Html extends Tag.Container
       ( using Tactic[Parse.Error] )
     :   Html =
       val buffer: jl.StringBuilder = jl.StringBuilder()
-      def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
-      var content: Text = t""
+      def result(): BaseText = buffer.toString.tt.also(buffer.setLength(0))
+      var content: BaseText = t""
       var extra: Attributes = Attributes.empty
       // Resolved `Tag` for the current opening token. `tag()` already walks
       // `dom.elements` to look up the tag definition; stash the result so that
@@ -1064,7 +1069,7 @@ object Html extends Tag.Container
             fail(Unexpected(char), mark)
 
       @tailrec
-      def foreignTag(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
+      def foreignTag(mark: Mark): BaseText = lay(fail(ExpectedMore, mark)):
         case char if asciiLetter(char)                   => next() yet foreignTag(mark)
         case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' => slice(mark, begin()).lower
         case '\u0000'                                    => fail(BadInsertion, mark)
@@ -1120,14 +1125,14 @@ object Html extends Tag.Container
               fail(Unexpected(char), mark)
 
       @tailrec
-      def foreignKey(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
+      def foreignKey(mark: Mark): BaseText = lay(fail(ExpectedMore, mark)):
         case char if asciiLetter(char) || char == '-'    => next() yet foreignKey(mark)
         case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' => slice(mark, begin())
         case '\u0000'                                    => fail(BadInsertion, mark)
         case char                                        => fail(Unexpected(char), mark)
 
       @tailrec
-      def value(mark: Mark): Text = lay(fail(ExpectedMore)):
+      def value(mark: Mark): BaseText = lay(fail(ExpectedMore)):
         case '\u0000' => callback.let(_(position.z, Hole.Text)) yet next() yet value(mark)
 
         case '"' =>
@@ -1149,12 +1154,12 @@ object Html extends Tag.Container
           next() yet value(mark)
 
       @tailrec
-      def singleQuoted(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
+      def singleQuoted(mark: Mark): BaseText = lay(fail(ExpectedMore, mark)):
         case '\'' => slice(mark, begin()).also(next())
         case char => next() yet singleQuoted(mark)
 
       @tailrec
-      def unquoted(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
+      def unquoted(mark: Mark): BaseText = lay(fail(ExpectedMore, mark)):
         case '>' | ' ' | '\f' | '\n' | '\r' | '\t' => slice(mark, begin())
         case '\u0000'                              => fail(BadInsertion, mark)
 
@@ -1174,7 +1179,7 @@ object Html extends Tag.Container
         case '\u0000'                              => fail(BadInsertion)
         case char                                  => fail(Unexpected(char))
 
-      def attributes(tag: Text, foreign: Boolean): Attributes =
+      def attributes(tag: BaseText, foreign: Boolean): Attributes =
         // Append into the parser-shared interleaved scratch buffer (laid out
         // as `[k0, v0, k1, v1, ...]`); on close, snapshot the populated prefix
         // into a freshly-sized `Array[String | Null]^{}` and wrap it as the
@@ -1243,7 +1248,7 @@ object Html extends Tag.Container
 
               hashOr |= h
 
-              val assignment: Optional[Text] =
+              val assignment: Optional[BaseText] =
                 if !equality() then Unset else lay(fail(ExpectedMore)):
                   case '"'  => next() yet value(begin())
                   case '\'' => next() yet singleQuoted(begin())
@@ -1265,17 +1270,17 @@ object Html extends Tag.Container
           jl.System.arraycopy(state.attrInterleaved, 0, arr.raw, 0, 2*n)
           Attributes.fromInterleaved(Array.freeze(arr))
 
-      def entity(mark: Mark): Optional[Text] = lay(fail(ExpectedMore, mark)):
+      def entity(mark: Mark): Optional[BaseText] = lay(fail(ExpectedMore, mark)):
         case '#'   => next() yet numericEntity(mark)
         case other => textEntity(mark, 0)
 
-      def numericEntity(mark: Mark): Optional[Text] =
+      def numericEntity(mark: Mark): Optional[BaseText] =
         lay(fail(ExpectedMore, mark)):
           case 'x' => next() yet hexEntity(mark, 0)
           case _   => decimalEntity(mark, 0)
 
       @tailrec
-      def hexEntity(mark: Mark, value: Int): Optional[Text] =
+      def hexEntity(mark: Mark, value: Int): Optional[BaseText] =
         lay(fail(ExpectedMore, mark)):
           case digit if asciiDigit(digit) =>
             advance() yet hexEntity(mark, 16*value + (digit - '0'))
@@ -1293,13 +1298,13 @@ object Html extends Tag.Container
             Unset
 
       @tailrec
-      def decimalEntity(mark: Mark, value: Int): Optional[Text] = lay(fail(ExpectedMore, mark)):
+      def decimalEntity(mark: Mark, value: Int): Optional[BaseText] = lay(fail(ExpectedMore, mark)):
         case digit if asciiDigit(digit) => next() yet decimalEntity(mark, 10*value + (digit - '0'))
         case ';'                        => next() yet value.unicode
         case char                       => Unset
 
       @tailrec
-      def textEntity(mark: Mark, node: Int): Optional[Text] =
+      def textEntity(mark: Mark, node: Int): Optional[BaseText] =
         lay(fail(ExpectedMore, mark)):
           case char if asciiLetter(char) || asciiDigit(char) =>
             val step = dom.entities.step(node, char)
@@ -1328,7 +1333,7 @@ object Html extends Tag.Container
       // Slow path: an entity reference or RCDATA close-tag check forced us to
       // switch to the buffer. Identical to the original textual() body.
       @tailrec
-      def textualSlow(mark: Mark, close: Optional[Text], entities: Boolean): Text =
+      def textualSlow(mark: Mark, close: Optional[BaseText], entities: Boolean): BaseText =
         lay(cloneTo(mark, begin())(buffer) yet result()):
           case '<' | '\u0000' =>
             close.lay(cloneTo(mark, begin())(buffer) yet result()): tag =>
@@ -1379,10 +1384,10 @@ object Html extends Tag.Container
       // call, so the JIT can keep all three in registers across the
       // whole text-node walk. After scanning, `pos` already holds the
       // new position — no `cursor.unsafeBumpPos` reconciliation needed.
-      def textual(mark: Mark, close: Optional[Text], entities: Boolean): Text =
+      def textual(mark: Mark, close: Optional[BaseText], entities: Boolean): BaseText =
         if close.present then textualSlow(mark, close, entities) else
           @tailrec
-          def fast(): Text =
+          def fast(): BaseText =
             if !more then slice(mark, begin())
             else
               var p = pos
@@ -1406,7 +1411,7 @@ object Html extends Tag.Container
 
           fast()
 
-      def comment(mark: Mark): Text = lay(fail(ExpectedMore)):
+      def comment(mark: Mark): BaseText = lay(fail(ExpectedMore)):
         case '-' =>
           val end = begin()
           next()
@@ -1422,7 +1427,7 @@ object Html extends Tag.Container
         case char =>
           next() yet comment(mark)
 
-      def cdata(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
+      def cdata(mark: Mark): BaseText = lay(fail(ExpectedMore, mark)):
         case ']' =>
           val end = begin()
           next()
@@ -1434,7 +1439,7 @@ object Html extends Tag.Container
         case char =>
           next() yet cdata(mark)
 
-      def doctype(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
+      def doctype(mark: Mark): BaseText = lay(fail(ExpectedMore, mark)):
         case '>'   => slice(mark, begin()).also(next())
         case other => next() yet doctype(mark)
 
@@ -1527,14 +1532,14 @@ object Html extends Tag.Container
           if count > 1 then fragment = state.array(count)
           state.nodes(state.index - 1)
 
-      def descend(parent: Tag, admissible: Set[Text], attrs: Attributes): Node =
+      def descend(parent: Tag, admissible: Set[BaseText], attrs: Attributes): Node =
         val admissible2 = if parent.transparent then admissible else parent.admissible
         read(parent, admissible2, attrs, 0)
 
       @tailrec
-      def read(parent: Tag, admissible: Set[Text], map: Attributes, count: Int): Node =
+      def read(parent: Tag, admissible: Set[BaseText], map: Attributes, count: Int): Node =
 
-        def admit(child: Text): Boolean =
+        def admit(child: BaseText): Boolean =
           parent.foreign || parent.admissible.has(child)
           || parent.transparent && admissible.has(child)
 
@@ -1542,7 +1547,7 @@ object Html extends Tag.Container
           case '\u0000' =>
             callback.let(_(position.z, Hole.Node(parent.label)))
             next()
-            state.append(TextNode("\u0000"))
+            state.append(Text("\u0000"))
             read(parent, admissible, map, count + 1)
 
           case '<' if parent.mode != Mode.Raw && parent.mode != Mode.Rcdata =>
@@ -1597,7 +1602,7 @@ object Html extends Tag.Container
 
                 case Token.Cdata =>
                   current =
-                    if parent.foreign then TextNode(content)
+                    if parent.foreign then Text(content)
                     else if permissive then
                       warn(InvalidCdata)
                       Comment(t"[CDATA[${content}]]")
@@ -1761,7 +1766,7 @@ object Html extends Tag.Container
                 val trimmed = text.trim
 
                 if trimmed.length > 0
-                then state.foster(TextNode(trimmed), inTableContent)
+                then state.foster(Text(trimmed), inTableContent)
 
                 read(parent, admissible, map, count)
               else
@@ -1774,7 +1779,7 @@ object Html extends Tag.Container
               then Element(parent.label, parent.attributes, Array(), parent.foreign)
               else
                 Element(parent.label, parent.attributes,
-                  Array(TextNode(text)), parent.foreign)
+                  Array(Text(text)), parent.foreign)
 
             case Mode.Rcdata =>
               val text = textual(begin(), parent.label, true)
@@ -1783,13 +1788,13 @@ object Html extends Tag.Container
               then Element(parent.label, parent.attributes, Array(), parent.foreign)
               else
                 Element(parent.label, parent.attributes,
-                  Array(TextNode(text)), parent.foreign)
+                  Array(Text(text)), parent.foreign)
 
             case Mode.Normal =>
               val text = textual(begin(), Unset, true)
 
               if text.length == 0 then read(parent, admissible, map, count + 1)
-              else state.append(TextNode(text)) yet read(parent, admissible, map, count + 1)
+              else state.append(Text(text)) yet read(parent, admissible, map, count + 1)
 
       if !more then Fragment() else locally:
         skip()
@@ -1809,7 +1814,7 @@ object Html extends Tag.Container
   // Public entry points.
 
   private[honeycomb] def parse[dom <: Dom]
-    ( input:       Iterator[Text],
+    ( input:       Iterator[BaseText],
       root:        Tag,
       callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
       fastforward: Int                               = 0,
@@ -1822,6 +1827,188 @@ object Html extends Tag.Container
     // Sealed into the untracked field: the callback lives only for this parse.
     parser.callback = caps.unsafe.unsafeAssumePure(callback)
     parser.parseHtml(root, doctypes)
+
+  // `this.` throughout the nodes: `object Html` is itself a `Tag.Container`, so its own `Topic`,
+  // `Transport` and `Form` would otherwise be ambiguous with each node's inherited members.
+  sealed trait Node extends Html:
+    def body: Fragment of this.Topic over this.Transport in this.Form =
+      Fragment[this.Topic]().over[this.Transport].in[this.Form]
+
+  case class Comment(text: BaseText) extends Node:
+    override def equals(that: Any): Boolean = that match
+      case Comment(text0)           => text0 == text
+      case Fragment(Comment(text0)) => text0 == text
+      case _                        => false
+
+    override def toString(): String = this.show.s
+
+  object Text:
+    // Character data inside foreign content (MathML, SVG), as `Element.foreign` builds elements.
+    def foreign(text: BaseText): Html of "#foreign" = Text(text).of["#foreign"]
+
+  case class Text(text: BaseText) extends Node:
+    type Topic = "#text"
+
+    override def toString(): String = this.show.s
+
+    override def equals(that: Any): Boolean = that match
+      case Fragment(textual: Text) => this == textual
+      case Text(text0)             => text0 == text
+      case _                       => false
+
+
+  object Element:
+    def foreign(label: BaseText, attributes: Attributes, children: Html of "#foreign"*)
+    :   Element of "#foreign" =
+
+      Element(label, attributes, children.to(List).nodes, true).of["#foreign"]
+
+    // Convenience for callers that still hold a Map.
+    def foreign
+      ( label:      BaseText,
+        attributes: Map[BaseText, Optional[BaseText]],
+        children:   Html of "#foreign"* )
+    :   Element of "#foreign" =
+
+      Element(label, Attributes.from(attributes), children.to(List).nodes, true).of["#foreign"]
+
+  case class Element
+    ( label:      BaseText,
+      attributes: Attributes,
+      children:   Array[Node]^{},
+      foreign:    Boolean )
+  extends Node, Topical, Transportive, Dynamic:
+    override def toString(): String = this.show.s
+
+    override def / (tag: Tag): Fragment of tag.Topic in tag.Form =
+      val children2 = children.sweep:
+        case element@Element(tag.label, _, _, _) => element.of[tag.Topic].in[tag.Form]
+
+      // Cast-erased: the vararg splat wants an exclusive array of the refined
+      // element type; the per-element decorations defeat an outer seal.
+      Fragment[tag.Topic]
+        ( caps.unsafe.unsafeAssumePure
+            (Array.unsafeJvm(children2).asInstanceOf[scala.Array[(Element of tag.Topic) { type Form = tag.Form }]])* )
+      . in[tag.Form]
+
+    override def body: Fragment of this.Topic over this.Transport in this.Form =
+      val nodes = children.remap(_.of[this.Topic]).asInstanceOf[Array[Node of this.Topic]^{}]
+      Fragment[this.Topic](nodes*)
+      . over[this.Transport].in[this.Form]
+
+    def ^+ (html: Html of this.Transport): Element of this.Topic over this.Transport in this.Form =
+      (html: Html).match
+        case fragment: Fragment =>
+          Element
+            ( label, attributes,
+              Array.frozen(Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}].readable ++ children.readable)
+              . asInstanceOf[Array[Node]^{}],
+              foreign )
+
+        case node: Node =>
+          Element(label, attributes, Array.frozen(children.readable.prepended(node)), foreign)
+
+      . of[this.Topic]
+      . over[this.Transport]
+      . in[this.Form]
+
+    def +^ (html: Html of this.Transport): Element of this.Topic over this.Transport in this.Form =
+      (html: Html).match
+        case fragment: Fragment =>
+          Element(label, attributes, Array.frozen(children.readable ++ fragment.nodes), foreign)
+
+        case node: Node =>
+          Element(label, attributes, children :+ node, foreign)
+
+      . of[this.Topic]
+      . over[this.Transport]
+      . in[this.Form]
+
+    override def equals(that: Any): Boolean = that match
+      case Fragment(node: Element) => this == node
+
+      case Element(label, attributes, children, foreign) =>
+        label == this.label && attributes.equalsAttributes(this.attributes) &&
+          foreign == this.foreign &&
+          ju.Arrays.equals(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]], Array.unsafeJvm(this.children).asInstanceOf[scala.Array[Object | Null]])
+
+      case _ =>
+        false
+
+    override def hashCode: Int =
+      ju.Arrays.hashCode(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]]) ^ attributes.hashAttributes ^ label.hashCode
+
+    transparent inline def selectDynamic(name: Label): Any =
+
+      compiletime.summonFrom:
+        case attribute: (name.type is Attribute on (? >: this.Topic) in this.Form) =>
+          compiletime.summonFrom:
+            case unattributive: (attribute.Topic is Unattributive) =>
+              unattributive.unattribute(attributes(name.tt))
+
+        case attribute: (name.type is Attribute in this.Form) =>
+          compiletime.summonFrom:
+            case unattributive: (attribute.Topic is Unattributive) =>
+              unattributive.unattribute(attributes(name.tt))
+
+
+    inline def updateDynamic[value](name: Label)(value: value)
+    :   Element of this.Topic over this.Transport in this.Form =
+
+      compiletime.summonFrom:
+        case attribute: (name.type is Attribute on (? >: this.Topic) in this.Form) =>
+          val attributive = infer[value is Attributive to attribute.Topic]
+
+          attributive.attribute(name, value).match
+            case Unset => Element(label, attributes.removed(name.tt), children, foreign)
+
+            case pair =>
+              val (key, value) = pair.asInstanceOf[(BaseText, Optional[BaseText])]
+              Element(label, attributes.updated(key, value), children, foreign)
+
+          . of[this.Topic]
+          . over[this.Transport]
+          . in[this.Form]
+
+        case attribute: (name.type is Attribute in this.Form) =>
+          val attributive = infer[value is Attributive to attribute.Topic]
+
+          attributive.attribute(name, value).match
+            case Unset => Element(label, attributes.removed(name.tt), children, foreign)
+
+            case pair =>
+              val (key, value) = pair.asInstanceOf[(BaseText, Optional[BaseText])]
+              Element(label, attributes.updated(key, value), children, foreign)
+
+          . of[this.Topic]
+          . over[this.Transport]
+          . in[this.Form]
+
+  object Fragment:
+    @targetName("make")
+    def apply[topic <: Label](nodes: Html of (? <: topic)*): Fragment of topic =
+      new Fragment(nodes.to(List).nodes*).of[topic]
+
+  case class Fragment(nodes: Node*) extends Html:
+    override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode
+    override def toString(): String = this.show.s
+
+    override def equals(that: Any): Boolean = that match
+      case Fragment(nodes0*) => nodes0 == nodes
+      case node: Html        => nodes.length == 1 && nodes(0) == node
+      case _                 => false
+
+    override def / (tag: Tag): Fragment of tag.Topic in tag.Form =
+      Fragment(nodes.flatMap { html => (html / tag).nodes }*).of[tag.Topic].in[tag.Form]
+
+    def body: Fragment of this.Topic over this.Transport in this.Form = this
+
+  case class Doctype(text: BaseText) extends Node:
+    override def equals(that: Any): Boolean = that match
+      case Doctype(text0)           => text0 == text
+      case Fragment(Doctype(text0)) => text0 == text
+      case _                        => false
+
 
 sealed into trait Html extends Topical, Documentary, Formal:
   type Topic <: Label
@@ -1836,178 +2023,7 @@ sealed into trait Html extends Topical, Documentary, Formal:
   private[honeycomb] def over[transport <: Label]: this.type over transport =
     asInstanceOf[this.type over transport]
 
-  def / (tag: Tag): Fragment of tag.Topic in tag.Form = Fragment().of[tag.Topic].in[tag.Form]
-  def body: Fragment of Topic over Transport in Form
+  def / (tag: Tag): Html.Fragment of tag.Topic in tag.Form =
+    Html.Fragment().of[tag.Topic].in[tag.Form]
 
-sealed trait Node extends Html
-
-case class Comment(text: Text) extends Node:
-  override def equals(that: Any): Boolean = that match
-    case Comment(text0)           => text0 == text
-    case Fragment(Comment(text0)) => text0 == text
-    case _                        => false
-
-  def body: Fragment of Topic over Transport in Form = Fragment[Topic]().over[Transport].in[Form]
-  override def toString(): String = this.show.s
-
-case class TextNode(text: Text) extends Node:
-  type Topic = "#text"
-
-  override def toString(): String = this.show.s
-
-  override def equals(that: Any): Boolean = that match
-    case Fragment(textual: TextNode) => this == textual
-    case TextNode(text0)             => text0 == text
-    case _                           => false
-
-  def body: Fragment of Topic over Transport in Form = Fragment[Topic]().over[Transport].in[Form]
-
-object Element:
-  def foreign(label: Text, attributes: Attributes, children: Html of "#foreign"*)
-  :   Element of "#foreign" =
-
-    Element(label, attributes, children.to(List).nodes, true).of["#foreign"]
-
-  // Convenience for callers that still hold a Map.
-  def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
-  :   Element of "#foreign" =
-
-    Element(label, Attributes.from(attributes), children.to(List).nodes, true).of["#foreign"]
-
-case class Element
-  ( label:      Text,
-    attributes: Attributes,
-    children:   Array[Node]^{},
-    foreign:    Boolean )
-extends Node, Topical, Transportive, Dynamic:
-  override def toString(): String = this.show.s
-
-  override def / (tag: Tag): Fragment of tag.Topic in tag.Form =
-    val children2 = children.sweep:
-      case element@Element(tag.label, _, _, _) => element.of[tag.Topic].in[tag.Form]
-
-    // Cast-erased: the vararg splat wants an exclusive array of the refined
-    // element type; the per-element decorations defeat an outer seal.
-    Fragment[tag.Topic]
-      ( caps.unsafe.unsafeAssumePure
-          (Array.unsafeJvm(children2).asInstanceOf[scala.Array[(Element of tag.Topic) { type Form = tag.Form }]])* )
-    . in[tag.Form]
-
-  def body: Fragment of Topic over Transport in Form =
-    Fragment[Topic](children.remap(_.of[Topic]).asInstanceOf[Array[Node of Topic]^{}]*)
-    . over[Transport].in[Form]
-
-  def ^+ (html: Html of Transport): Element of Topic over Transport in Form =
-    (html: Html).match
-      case fragment: Fragment =>
-        Element
-          ( label, attributes,
-            Array.frozen(Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}].readable ++ children.readable)
-            . asInstanceOf[Array[Node]^{}],
-            foreign )
-
-      case node: Node =>
-        Element(label, attributes, Array.frozen(children.readable.prepended(node)), foreign)
-
-    . of[Topic]
-    . over[Transport]
-    . in[Form]
-
-  def +^ (html: Html of Transport): Element of Topic over Transport in Form =
-    (html: Html).match
-      case fragment: Fragment =>
-        Element(label, attributes, Array.frozen(children.readable ++ fragment.nodes), foreign)
-
-      case node: Node =>
-        Element(label, attributes, children :+ node, foreign)
-
-    . of[Topic]
-    . over[Transport]
-    . in[Form]
-
-  override def equals(that: Any): Boolean = that match
-    case Fragment(node: Element) => this == node
-
-    case Element(label, attributes, children, foreign) =>
-      label == this.label && attributes.equalsAttributes(this.attributes) &&
-        foreign == this.foreign &&
-        ju.Arrays.equals(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]], Array.unsafeJvm(this.children).asInstanceOf[scala.Array[Object | Null]])
-
-    case _ =>
-      false
-
-  override def hashCode: Int =
-    ju.Arrays.hashCode(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]]) ^ attributes.hashAttributes ^ label.hashCode
-
-  transparent inline def selectDynamic(name: Label): Any =
-
-    compiletime.summonFrom:
-      case attribute: (name.type is Attribute on (? >: Topic) in Form) =>
-        compiletime.summonFrom:
-          case unattributive: (attribute.Topic is Unattributive) =>
-            unattributive.unattribute(attributes(name.tt))
-
-      case attribute: (name.type is Attribute in Form) =>
-        compiletime.summonFrom:
-          case unattributive: (attribute.Topic is Unattributive) =>
-            unattributive.unattribute(attributes(name.tt))
-
-
-  inline def updateDynamic[value](name: Label)(value: value)
-  :   Element of Topic over Transport in Form =
-
-    compiletime.summonFrom:
-      case attribute: (name.type is Attribute on (? >: Topic) in Form) =>
-        val attributive = infer[value is Attributive to attribute.Topic]
-
-        attributive.attribute(name, value).match
-          case Unset => Element(label, attributes.removed(name.tt), children, foreign)
-
-          case pair =>
-            val (key, value) = pair.asInstanceOf[(Text, Optional[Text])]
-            Element(label, attributes.updated(key, value), children, foreign)
-
-        . of[Topic]
-        . over[Transport]
-        . in[Form]
-
-      case attribute: (name.type is Attribute in Form) =>
-        val attributive = infer[value is Attributive to attribute.Topic]
-
-        attributive.attribute(name, value).match
-          case Unset => Element(label, attributes.removed(name.tt), children, foreign)
-
-          case pair =>
-            val (key, value) = pair.asInstanceOf[(Text, Optional[Text])]
-            Element(label, attributes.updated(key, value), children, foreign)
-
-        . of[Topic]
-        . over[Transport]
-        . in[Form]
-
-object Fragment:
-  @targetName("make")
-  def apply[topic <: Label](nodes: Html of (? <: topic)*): Fragment of topic =
-    new Fragment(nodes.to(List).nodes*).of[topic]
-
-case class Fragment(nodes: Node*) extends Html:
-  override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode
-  override def toString(): String = this.show.s
-
-  override def equals(that: Any): Boolean = that match
-    case Fragment(nodes0*) => nodes0 == nodes
-    case node: Html        => nodes.length == 1 && nodes(0) == node
-    case _                 => false
-
-  override def / (tag: Tag): Fragment of tag.Topic in tag.Form =
-    Fragment(nodes.flatMap { html => (html / tag).nodes }*).of[tag.Topic].in[tag.Form]
-
-  def body: Fragment of Topic over Transport in Form = this
-
-case class Doctype(text: Text) extends Node:
-  override def equals(that: Any): Boolean = that match
-    case Doctype(text0)           => text0 == text
-    case Fragment(Doctype(text0)) => text0 == text
-    case _                        => false
-
-  def body: Fragment of Topic over Transport in Form = Fragment[Topic]().over[Transport].in[Form]
+  def body: Html.Fragment of Topic over Transport in Form

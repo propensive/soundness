@@ -55,14 +55,14 @@ object NamespaceTests extends Suite(m"Xylophone namespace tests"):
   given svg: ("svg" is Namespace of "http://www.w3.org/2000/svg") = Namespace()
 
   // The document element of a parse result
-  def root(xml: Xml): Element = xml match
-    case element: Element           => element
-    case Fragment(element: Element) => element
-    case _                          => Element(t"none", Attributes.empty, Array())
+  def root(xml: Xml): Xml.Element = xml match
+    case element: Xml.Element           => element
+    case Xml.Fragment(element: Xml.Element) => element
+    case _                          => Xml.Element(t"none", Attributes.empty, Array())
 
-  def child(xml: Xml): Element = root(xml) match
-    case Element(_, _, Array(child: Element)) => child
-    case _                                    => Element(t"none", Attributes.empty, Array())
+  def child(xml: Xml): Xml.Element = root(xml) match
+    case Xml.Element(_, _, Array(child: Xml.Element)) => child
+    case _                                    => Xml.Element(t"none", Attributes.empty, Array())
 
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
@@ -105,7 +105,7 @@ object NamespaceTests extends Suite(m"Xylophone namespace tests"):
       . assert(_ == t"c")
 
       test(m"A hand-built element resolves its own declarations"):
-        Element(t"p:a", Attributes(t"xmlns:p" -> t"urn:p"), Array()).namespace
+        Xml.Element(t"p:a", Attributes(t"xmlns:p" -> t"urn:p"), Array()).namespace
       . assert(_ == t"urn:p")
 
       test(m"A qualified name shows in Clark notation"):
@@ -148,21 +148,21 @@ object NamespaceTests extends Suite(m"Xylophone namespace tests"):
       . assert(_ == t"""<r xmlns:a="urn:a"><a:x>1</a:x></r>""")
 
       test(m"A scoped element built in code declares its namespace"):
-        Element(t"p:a", Attributes.empty, Array(), Xml.Scope(t"p" -> t"urn:p")).show
+        Xml.Element(t"p:a", Attributes.empty, Array(), Xml.Scope(t"p" -> t"urn:p")).show
       . assert(_ == t"""<p:a xmlns:p="urn:p"/>""")
 
       test(m"A child does not redeclare what its parent declared"):
         val scope = Xml.Scope(t"p" -> t"urn:p")
-        val inner = Element(t"p:b", Attributes.empty, Array(), scope)
-        Element(t"p:a", Attributes.empty, Array(inner), scope).show
+        val inner = Xml.Element(t"p:b", Attributes.empty, Array(), scope)
+        Xml.Element(t"p:a", Attributes.empty, Array(inner), scope).show
       . assert(_ == t"""<p:a xmlns:p="urn:p"><p:b/></p:a>""")
 
       test(m"A default namespace in scope is declared"):
-        Element(t"a", Attributes.empty, Array(), Xml.Scope(t"" -> t"urn:d")).show
+        Xml.Element(t"a", Attributes.empty, Array(), Xml.Scope(t"" -> t"urn:d")).show
       . assert(_ == t"""<a xmlns="urn:d"/>""")
 
       test(m"An element with no scope is written as it is"):
-        Element(t"p:a", Attributes.empty, Array()).show
+        Xml.Element(t"p:a", Attributes.empty, Array()).show
       . assert(_ == t"<p:a/>")
 
     suite(m"Literals"):

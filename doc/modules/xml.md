@@ -52,7 +52,7 @@ import threading.platformThreading
 
 supervise:
   t"""<?xml version="1.0"?><root>content</root>""".load[Xml]
-// Document(elem(t"root", TextNode(t"content")), Header(t"1.0", Unset, Unset))
+// Document(elem(t"root", Xml.Text(t"content")), Xml.Header(t"1.0", Unset, Unset))
 ```
 
 Both `read` and `load` take a byte source as readily as text — a file path, an HTTP response
@@ -70,17 +70,19 @@ before the root rather than discarded, so a stylesheet instruction survives a re
 
 ### The node types
 
-An `Xml` value is one of the node kinds the specification defines, and each is a distinct type
-rather than a tagged string. `Element` holds a name, attributes and children; `TextNode` holds
-character data; and the rest carry what other libraries tend to flatten away:
+An `Xml` value is one of the node kinds the specification defines, and each is a distinct type,
+in the `Xml` companion, rather than a tagged string. `Xml.Element` holds a name, attributes and
+children; `Xml.Text` holds character data; and the rest carry what other libraries tend to flatten
+away:
 
-- `Cdata` keeps a `<![CDATA[…]]>` section as a section, so text that contains `<not a tag>`
+- `Xml.Cdata` keeps a `<![CDATA[…]]>` section as a section, so text that contains `<not a tag>`
   survives a round trip without being escaped into something else.
-- `Comment` keeps `<!-- … -->`, wherever it appears.
-- `ProcessingInstruction` keeps a target and its data, including the empty-data case `<?target?>`.
-- `Doctype` keeps a `<!DOCTYPE>` declaration, which serializes back verbatim.
-- `Fragment` holds a sequence of nodes with no single parent, which is what a prolog plus a root
-  amounts to.
+- `Xml.Comment` keeps `<!-- … -->`, wherever it appears.
+- `Xml.ProcessingInstruction` keeps a target and its data, including the empty-data case
+  `<?target?>`.
+- `Xml.Doctype` keeps a `<!DOCTYPE>` declaration, which serializes back verbatim.
+- `Xml.Fragment` holds a sequence of nodes with no single parent, which is what a prolog plus a
+  root amounts to.
 
 The five predefined entities — `&amp;`, `&lt;`, `&gt;`, `&quot;` and `&apos;` — resolve on the way
 in and are re-escaped on the way out, as are numeric character references in both decimal and
@@ -90,7 +92,7 @@ hexadecimal.
 
 The parser resolves namespaces as it reads. A declaration, `xmlns="…"` or `xmlns:p="…"`, is kept
 as an attribute, so a document writes back exactly as it was read, and it also binds the prefix for
-the element and its descendants. Every `Element` carries the bindings in force at it as its
+the element and its descendants. Every `Xml.Element` carries the bindings in force at it as its
 `scope`, and resolves its own name through them:
 
 ```scala

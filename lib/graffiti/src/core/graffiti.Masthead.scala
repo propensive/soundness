@@ -47,13 +47,13 @@ object Masthead:
 // with a logo, headline and menu); a layout feature contributing a sibling before the content.
 trait Masthead extends Archetype:
   // The masthead's content; empty by default.
-  def masthead: Html of (? <: Flow) = Fragment[Flow]()
+  def masthead: Html of (? <: Flow) = Html.Fragment[Flow]()
 
   // This feature's own rules; override to restyle the banner.
   protected def mastheadStyles: Css =
     css"${Masthead.mastheadClass} { display: flex; gap: 1rem; align-items: center }"
 
   protected override def frame: Html of (? <: Flow) =
-    Fragment[Flow](Header(`class` = Masthead.mastheadClass)(masthead), super.frame)
+    Html.Fragment[Flow](Header(`class` = Masthead.mastheadClass)(masthead), super.frame)
 
   protected override def styles: Css = super.styles + mastheadStyles

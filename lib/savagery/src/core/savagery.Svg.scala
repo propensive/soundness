@@ -93,11 +93,11 @@ object Svg:
 
   given showable: [doc <: Document[Svg]] => doc is Showable =
     document =>
-      val header = Header(t"1.0", document.metadata.name, Unset)
+      val header = Xml.Header(t"1.0", document.metadata.name, Unset)
 
       val full: Xml = document.root.xml.absolve match
-        case node: Node       => Fragment(header, node)
-        case Fragment(nodes*) => Fragment((header +: nodes)*)
+        case node: Xml.Node       => Xml.Fragment(header, node)
+        case Xml.Fragment(nodes*) => Xml.Fragment((header +: nodes)*)
 
       full.show
 
@@ -119,26 +119,26 @@ object Svg:
   // SvgParser → Svg.Parser
   object Parser:
     def labelOf(xml: Xml): Text = xml match
-      case e: Element => e.label
+      case e: Xml.Element => e.label
       case _          => t"<unknown>"
 
 
-    def findSvg(nodes: List[Node])(using Tactic[Svg.Error]): Element =
-      nodes.reap { case e: Element if e.label == t"svg" => e }.or:
+    def findSvg(nodes: List[Xml.Node])(using Tactic[Svg.Error]): Xml.Element =
+      nodes.reap { case e: Xml.Element if e.label == t"svg" => e }.or:
         abort(Svg.Error(Svg.Error.Reason.NotAnSvg(t"<missing>")))
 
-    def rootElement(xml: Xml)(using Tactic[Svg.Error]): Element = xml match
-      case e: Element if e.label == t"svg" => e
-      case Fragment(nodes*)                => findSvg(nodes.to(List))
+    def rootElement(xml: Xml)(using Tactic[Svg.Error]): Xml.Element = xml match
+      case e: Xml.Element if e.label == t"svg" => e
+      case Xml.Fragment(nodes*)                => findSvg(nodes.to(List))
 
       case other =>
         abort(Svg.Error(Svg.Error.Reason.NotAnSvg(labelOf(other))))
 
-    private def numAttr(elem: Element, name: Text, default: Float = 0.0f): Float =
+    private def numAttr(elem: Xml.Element, name: Text, default: Float = 0.0f): Float =
       elem.attributes(name).let: text => safely(text.as[Double].toFloat).or(default)
       . or(default)
 
-    def decodeSvg(elem: Element)(using Tactic[Svg.Error]): Svg =
+    def decodeSvg(elem: Xml.Element)(using Tactic[Svg.Error]): Svg =
       val width = numAttr(elem, t"width")
       val height = numAttr(elem, t"height")
 
@@ -146,9 +146,9 @@ object Svg:
       val figures = ListBuffer[Figure]()
 
       elem.children.each:
-        case child: Element => child.label match
+        case child: Xml.Element => child.label match
           case t"defs" => child.children.each:
-            case dd: Element => decodeSvgDef(dd).let: svgDef => defs += svgDef
+            case dd: Xml.Element => decodeSvgDef(dd).let: svgDef => defs += svgDef
             case _           => ()
 
           case _ =>
@@ -159,7 +159,7 @@ object Svg:
 
       Svg(width, height, defs.toList.to(List), figures.toList.to(List))
 
-    private def decodeFigure(elem: Element)(using Tactic[Svg.Error]): Optional[Figure] =
+    private def decodeFigure(elem: Xml.Element)(using Tactic[Svg.Error]): Optional[Figure] =
       elem.label match
         case t"rect"     => decodeRectangle(elem)
         case t"circle"   => decodeCircle(elem)
@@ -173,14 +173,14 @@ object Svg:
 
     // The attributes any figure may carry: read by every decoder, so that a figure's identifier,
     // transform list and inline style survive a round trip whatever its shape.
-    private def idAttr(elem: Element): Optional[Id] = elem.attributes(t"id").let(Id(_))
+    private def idAttr(elem: Xml.Element): Optional[Id] = elem.attributes(t"id").let(Id(_))
 
-    private def transformsAttr(elem: Element): List[Transform] =
+    private def transformsAttr(elem: Xml.Element): List[Transform] =
       elem.attributes(t"transform").let(parseTransforms).or(Nil)
 
     // An inline `style` attribute is `name: value` declarations separated by semicolons; each is
     // split at its first colon, and a declaration without one is dropped.
-    private def styleAttr(elem: Element): Optional[Css.Style] =
+    private def styleAttr(elem: Xml.Element): Optional[Css.Style] =
       elem.attributes(t"style").let: text =>
         val declarations = ListBuffer[(Text, Text)]()
 
@@ -194,7 +194,7 @@ object Svg:
 
         if declarations.isEmpty then Unset else Css.Style.of(declarations.toList.to(List))
 
-    private def decodeRectangle(elem: Element): Rectangle =
+    private def decodeRectangle(elem: Xml.Element): Rectangle =
       Rectangle
         ( Point(numAttr(elem, t"x"), numAttr(elem, t"y")),
           numAttr(elem, t"width"),
@@ -203,13 +203,13 @@ object Svg:
           styleAttr(elem),
           idAttr(elem) )
 
-    private def decodeCircle(elem: Element): Ellipse =
+    private def decodeCircle(elem: Xml.Element): Ellipse =
       val cx = numAttr(elem, t"cx")
       val cy = numAttr(elem, t"cy")
       val r = numAttr(elem, t"r")
       Ellipse(Point(cx, cy), r, r, Angle(0), transformsAttr(elem), styleAttr(elem), idAttr(elem))
 
-    private def decodeEllipse(elem: Element): Ellipse =
+    private def decodeEllipse(elem: Xml.Element): Ellipse =
       val cx = numAttr(elem, t"cx")
       val cy = numAttr(elem, t"cy")
       val rx = numAttr(elem, t"rx")
@@ -217,23 +217,23 @@ object Svg:
       Ellipse
         ( Point(cx, cy), rx, ry, Angle(0), transformsAttr(elem), styleAttr(elem), idAttr(elem) )
 
-    private def decodePath(elem: Element)(using Tactic[Svg.Error]): Outline =
+    private def decodePath(elem: Xml.Element)(using Tactic[Svg.Error]): Outline =
       val d = elem.attributes(t"d").or(t"")
       val ops = parsePathData(d)
       Outline(ops.reverse, styleAttr(elem), idAttr(elem), transformsAttr(elem))
 
-    private def decodeGroup(elem: Element)(using Tactic[Svg.Error]): Group =
+    private def decodeGroup(elem: Xml.Element)(using Tactic[Svg.Error]): Group =
       val figures = ListBuffer[Figure]()
 
       elem.children.each:
-        case child: Element => decodeFigure(child).let: figure => figures += figure
+        case child: Xml.Element => decodeFigure(child).let: figure => figures += figure
         case _              => ()
 
       Group(figures.toList.to(List), idAttr(elem), styleAttr(elem), transformsAttr(elem))
 
     // A `points` attribute is pairs of numbers, separated by whitespace or commas within and
     // between pairs alike; an odd trailing number is dropped.
-    private def decodePolyline(elem: Element, closed: Boolean): Polyline =
+    private def decodePolyline(elem: Xml.Element, closed: Boolean): Polyline =
       val numbers = ListBuffer[Float]()
 
       elem.attributes(t"points").or(t"").s.split("[\\s,]+").nn.iterator.map(_.nn).foreach: number =>
@@ -249,8 +249,8 @@ object Svg:
 
       Polyline(points.toList.to(List), closed, idAttr(elem), styleAttr(elem), transformsAttr(elem))
 
-    private def decodeLettering(elem: Element): Lettering =
-      val text: Text = elem.children.readable.toList.collect { case TextNode(text) => text }
+    private def decodeLettering(elem: Xml.Element): Lettering =
+      val text: Text = elem.children.readable.toList.collect { case Xml.Text(text) => text }
         . to(List).join
 
       val anchor: Lettering.Anchor = elem.attributes(t"text-anchor") match
@@ -274,7 +274,7 @@ object Svg:
           transforms = transformsAttr(elem) )
 
 
-    private def decodeSvgDef(elem: Element)
+    private def decodeSvgDef(elem: Xml.Element)
       ( using Tactic[Svg.Error] )
     :   Optional[Def] =
 
@@ -283,7 +283,7 @@ object Svg:
         case _                 => Unset
 
 
-    private def decodeLinearGradient(elem: Element)
+    private def decodeLinearGradient(elem: Xml.Element)
       ( using Tactic[Svg.Error] )
     :   LinearGradient[Color in Srgb] =
 
@@ -292,13 +292,13 @@ object Svg:
       val stops: List[Stop[Color in Srgb]] =
 
           elem.children.readable.toList.collect:
-            case e: Element if e.label == t"stop" => decodeStop(e)
+            case e: Xml.Element if e.label == t"stop" => decodeStop(e)
           . to(List)
 
       LinearGradient(id, stops*)
 
 
-    private def decodeStop(elem: Element)(using Tactic[Svg.Error]): Stop[Color in Srgb] =
+    private def decodeStop(elem: Xml.Element)(using Tactic[Svg.Error]): Stop[Color in Srgb] =
       val rawOffset = elem.attributes(t"offset")
         . let: text => safely(text.as[Double]).or(0.0)
         . or(0.0)
@@ -571,7 +571,8 @@ object Svg:
 
   case class LinearGradient[color](id: Id, stops: Stop[color]*) extends Def:
     def xml: Xml =
-      Element(t"linearGradient", Attributes(t"id" -> Id.text(id)), List.from(stops.map(_.xml)).nodes)
+      val nodes = List.from(stops.map(_.xml)).nodes
+      Xml.Element(t"linearGradient", Attributes(t"id" -> Id.text(id)), nodes)
 
 case class Svg
   ( width:      Float,
@@ -600,11 +601,11 @@ extends Documentary:
 
     val styleElement: List[Xml] =
       if css == t"" then Nil
-      else List(Element(t"style", Attributes.empty, List[Xml](TextNode(css)).nodes))
+      else List(Xml.Element(t"style", Attributes.empty, List[Xml](Xml.Text(css)).nodes))
 
     val defsElement: List[Xml] =
       if defs.nil && styleElement.nil then Nil
-      else List(Element(t"defs", Attributes.empty, (styleElement + defs.map(_.xml)).nodes))
+      else List(Xml.Element(t"defs", Attributes.empty, (styleElement + defs.map(_.xml)).nodes))
 
     val figureNodes: List[Xml] =
       if transforms.nil then figures.map(_.xml)
@@ -612,7 +613,7 @@ extends Documentary:
         val groupAttrs =
           Ledger(t"transform" -> transforms.map(_.encode).join(t" "))
 
-        List(Element(t"g", Attributes.from(groupAttrs.to[Map]), figures.map(_.xml).nodes))
+        List(Xml.Element(t"g", Attributes.from(groupAttrs.to[Map]), figures.map(_.xml).nodes))
 
-    val children: Array[Node]^{} = (defsElement + figureNodes).nodes
-    Element(t"svg", Attributes.from(attrs.to[Map]), children)
+    val children: Array[Xml.Node]^{} = (defsElement + figureNodes).nodes
+    Xml.Element(t"svg", Attributes.from(attrs.to[Map]), children)

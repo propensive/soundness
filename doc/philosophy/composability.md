@@ -31,7 +31,7 @@ type is built up the way an English description is:
 Path on Linux
 Raster by Rgba in Png
 Text is Decodable in Json
-Element of "ul" over "li" in Whatwg
+Html.Element of "ul" over "li" in Whatwg
 ```
 
 Each preposition means the same thing wherever it appears, so a reader who has understood

@@ -72,18 +72,18 @@ object Tag:
       admissible: Set[Text]  = Set() )
   extends Tag(label, presets, admissible):
 
-    type Result = Element & Xml.Vacuiscible of Topic over Transport in Form
+    type Result = Xml.Element & Xml.Vacuiscible of Topic over Transport in Form
 
     def node(attributes: Attributes): Result =
-      new Element(label, presets ++ attributes, Array()) with Xml.Vacuiscible()
+      new Xml.Element(label, presets ++ attributes, Array()) with Xml.Vacuiscible()
       . of[Topic]
       . over[Transport]
       . in[Form]
 
 sealed abstract class Tag
   ( label: Text, val presets: Attributes = Attributes.empty, val admissible:  Set[Text] = Set() )
-extends Element(label, presets, Array()), Formal, Dynamic:
-  type Result <: Element
+extends Xml.Element(label, presets, Array()), Formal, Dynamic:
+  type Result <: Xml.Element
 
   inline def applyDynamicNamed(method: "apply")(inline attributes: (String, Any)*): Result =
     ${xylophone.internal.attributes[Result, this.type]('this, 'attributes)}

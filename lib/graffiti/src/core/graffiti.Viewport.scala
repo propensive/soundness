@@ -43,4 +43,4 @@ trait Viewport extends Archetype:
   def viewport: Text = t"width=device-width, initial-scale=1"
 
   protected override def head: Html of (? <: Metadata) =
-    Fragment[Metadata](Meta.Viewport(content = viewport), super.head)
+    Html.Fragment[Metadata](Meta.Viewport(content = viewport), super.head)

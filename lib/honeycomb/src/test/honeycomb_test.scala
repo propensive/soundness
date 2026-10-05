@@ -57,15 +57,15 @@ object Tests extends Suite(m"Honeycombd Tests"):
       test(m"honeycomb's types inspect natively"):
         Inspectable.fallbacks
          ( Div(style = t"bar")("hello").inspect,
-           Fragment(Div("content"), P("more content")).inspect,
-           Comment(t"hi").inspect,
-           Doctype(t"html").inspect,
-           TextNode(t"hi").inspect,
+           Html.Fragment(Div("content"), P("more content")).inspect,
+           Html.Comment(t"hi").inspect,
+           Html.Doctype(t"html").inspect,
+           Html.Text(t"hi").inspect,
            internal.Attributes(t"class" -> t"a", t"hidden" -> Unset).inspect )
       . assert(_ == Nil)
 
     test(m"show comment"):
-      Comment("hello world").show
+      Html.Comment("hello world").show
     . assert(_ == t"<!--hello world-->")
 
     suite(m"HTML parsing tests"):
@@ -86,11 +86,11 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
       test(m"more than one node"):
         t"""<div>content</div><p>more content</p>""".read[Html of Flow]
-      . assert(_ == Fragment(Div("content"), P("more content")))
+      . assert(_ == Html.Fragment(Div("content"), P("more content")))
 
       test(m"more than one node with comment"):
         t"""<div>content</div><!-- comment --><div>more content</div>""".read[Html of "div"]
-      . assert(_ == Fragment(Div("content"), Comment(" comment "), Div("more content")))
+      . assert(_ == Html.Fragment(Div("content"), Html.Comment(" comment "), Div("more content")))
 
       test(m"simple self-closing tag"):
         t"""<div />""".read[Html of "div"]
@@ -106,7 +106,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
       test(m"simple comment tag"):
         t"""<!--This is a comment-->""".read[Html of Flow]
-      . assert(_ == Comment("This is a comment"))
+      . assert(_ == Html.Comment("This is a comment"))
 
       test(m"simple void tag"):
         t"""<br>""".read[Html of Flow]
@@ -134,15 +134,15 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
       test(m"just text"):
         t"""hello world""".read[Html of Flow]
-      . assert(_ == TextNode("hello world"))
+      . assert(_ == Html.Text("hello world"))
 
       test(m"just text with entity"):
         t"""to &amp; fro""".read[Html of Flow]
-      . assert(_ == TextNode("to & fro"))
+      . assert(_ == Html.Text("to & fro"))
 
       test(m"just an entity"):
         t"""&amp;""".read[Html of Flow]
-      . assert(_ == TextNode("&"))
+      . assert(_ == Html.Text("&"))
 
       test(m"misnested formatting (adoption agency)"):
         t"""<em><b></em></b>""".read[Html of Phrasing]
@@ -190,15 +190,15 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
       test(m"follow-on whitespace"):
         t"""<p>para</p>\n""".read[Html of Flow]
-      . assert(_ == Fragment(P("para"), t"\n"))
+      . assert(_ == Html.Fragment(P("para"), t"\n"))
 
       test(m"empty content"):
         t"".read[Html of Flow]
-      . assert(_ == Fragment())
+      . assert(_ == Html.Fragment())
 
       test(m"failing example"):
         t"""<p>x<img></p>\n""".read[Html of Flow]
-      . assert(_ == Fragment(P("x", Img), t"\n"))
+      . assert(_ == Html.Fragment(P("x", Img), t"\n"))
 
       test(m"autoclosing adjacent tags"):
         t"""<ul><li>First item<li>Second item</ul>""".read[Html of Flow]
@@ -272,12 +272,12 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
       test(m"Foreign SVG tag"):
         t"""<div><svg><circle r="1"/></svg></div>""".read[Html of Flow]
-      . assert(_ == Div(Svg(Element.foreign("circle", proscenium.Map[Text, Optional[Text]](t"r" -> t"1")))))
+      . assert(_ == Div(Svg(Html.Element.foreign("circle", proscenium.Map[Text, Optional[Text]](t"r" -> t"1")))))
 
       test(m"Nontrivial MathML example"):
         t"""<div>The equation is <math><mfrac><msup><mi>π</mi><mn>2</mn></msup><mn>6</mn></mfrac></math>.</div>"""
         . read[Html of Flow]
-      . assert(_ == Div("The equation is ", Math(Element.foreign("mfrac", proscenium.Map[Text, Optional[Text]](), Element.foreign("msup", proscenium.Map[Text, Optional[Text]](), Element.foreign("mi", proscenium.Map[Text, Optional[Text]](), "π"), Element.foreign("mn", proscenium.Map[Text, Optional[Text]](), "2")), Element.foreign("mn", proscenium.Map[Text, Optional[Text]](), "6"))), "."))
+      . assert(_ == Div("The equation is ", Math(Html.Element.foreign("mfrac", proscenium.Map[Text, Optional[Text]](), Html.Element.foreign("msup", proscenium.Map[Text, Optional[Text]](), Html.Element.foreign("mi", proscenium.Map[Text, Optional[Text]](), "π"), Html.Element.foreign("mn", proscenium.Map[Text, Optional[Text]](), "2")), Html.Element.foreign("mn", proscenium.Map[Text, Optional[Text]](), "6"))), "."))
 
       test(m"transparent tag with text"):
         t"""<p>Go <a href="https://example.com">home</a>.</p>""".read[Html of "p"]
@@ -367,7 +367,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
       . assert(_ == Img(alt = "To & fro"))
 
       test(m"Modify attribute"):
-        val img: Element of "img" in Whatwg = Img(alt = "alternative")
+        val img: Html.Element of "img" in Whatwg = Img(alt = "alternative")
         img.alt = t"different"
       . assert(_ == Img(alt = "different"))
 
@@ -394,19 +394,19 @@ object Tests extends Suite(m"Honeycombd Tests"):
       suite(m"Tokenization edge cases"):
         test(m"empty comment"):
           t"""<!---->""".read[Html of Flow]
-        . assert(_ == Comment(""))
+        . assert(_ == Html.Comment(""))
 
         test(m"comment with newline"):
           t"<!--line1\nline2-->".read[Html of Flow]
-        . assert(_ == Comment("line1\nline2"))
+        . assert(_ == Html.Comment("line1\nline2"))
 
         test(m"multiple consecutive comments"):
           t"""<!--a--><!--b-->""".read[Html of Flow]
-        . assert(_ == Fragment(Comment("a"), Comment("b")))
+        . assert(_ == Html.Fragment(Html.Comment("a"), Html.Comment("b")))
 
         test(m"comment with hyphen inside"):
           t"""<!-- - -->""".read[Html of Flow]
-        . assert(_ == Comment(" - "))
+        . assert(_ == Html.Comment(" - "))
 
         test(m"decimal entity for ASCII"):
           t"""<p>&#65;</p>""".read[Html of Flow]
@@ -647,7 +647,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
       suite(m"Whitespace handling"):
         test(m"whitespace-only input"):
           t"   \n  ".read[Html of Flow]
-        . assert(_ == Fragment())
+        . assert(_ == Html.Fragment())
 
         test(m"pre preserves internal whitespace"):
           t"<pre>line1\n  line2</pre>".read[Html of "pre"]
@@ -665,7 +665,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"SVG with multiple attributes preserves case"):
           val parsed = t"""<svg viewBox="0 0 10 10" width="50"></svg>""".read[Html of Flow]
           parsed match
-            case Element(t"svg", attrs, _, true) =>
+            case Html.Element(t"svg", attrs, _, true) =>
               attrs.toList.map(_._1) == List(t"viewBox", t"width")
             case _ => false
         . assert(_ == true)
@@ -673,15 +673,15 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"nested SVG content"):
           t"""<svg><g><circle/></g></svg>""".read[Html of Flow]
         . assert: result =>
-            result == Svg(Element.foreign(t"g", proscenium.Map[Text, Optional[Text]](),
-              Element.foreign(t"circle", proscenium.Map[Text, Optional[Text]]())))
+            result == Svg(Html.Element.foreign(t"g", proscenium.Map[Text, Optional[Text]](),
+              Html.Element.foreign(t"circle", proscenium.Map[Text, Optional[Text]]())))
 
         test(m"CDATA inside SVG"):
           val parsed = t"""<svg><![CDATA[raw <text>]]></svg>""".read[Html of Flow]
           parsed match
-            case Element(t"svg", _, children, true) if children.length == 1 =>
+            case Html.Element(t"svg", _, children, true) if children.length == 1 =>
               children.readUnchecked(0) match
-                case TextNode(text) => text == t"raw <text>"
+                case Html.Text(text) => text == t"raw <text>"
                 case _              => false
             case _ => false
         . assert(_ == true)
@@ -696,7 +696,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         test(m"SVG self-closing rect"):
           t"""<svg><rect/></svg>""".read[Html of Flow]
-        . assert(_ == Svg(Element.foreign(t"rect", proscenium.Map[Text, Optional[Text]]())))
+        . assert(_ == Svg(Html.Element.foreign(t"rect", proscenium.Map[Text, Optional[Text]]())))
 
       suite(m"Error position reporting"):
         test(m"EOF inside open tag"):
@@ -778,7 +778,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
         // which routes through `HttpUrl`'s `abstractable = _.show`; honeycomb no longer carries
         // a specific `HttpUrl is Attributive` given of its own.
         test(m"element with an HttpUrl attribute"):
-          A(href = url"https://example.com/a?b=c#d")(TextNode(t"link")).show
+          A(href = url"https://example.com/a?b=c#d")(Html.Text(t"link")).show
         . assert(_ == t"""<a href="https://example.com/a?b=c#d">link</a>""")
 
       suite(m"Template content"):
@@ -859,20 +859,20 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"a inside a closes outer"):
           t"""<div><a href="https://x/">1<a href="https://y/">2</a>3</a></div>""".read[Html of "div"]
         . assert: result =>
-            result == Div(A(href = url"https://x/")("1"), A(href = url"https://y/")("2"), TextNode("3"))
+            result == Div(A(href = url"https://x/")("1"), A(href = url"https://y/")("2"), Html.Text("3"))
 
       suite(m"Foster parenting"):
         test(m"stray text before tr"):
           t"""<table>x<tr><td>y</td></tr></table>""".read[Html of Flow]
-        . assert(_ == Fragment(TextNode("x"), Table(Tbody(Tr(Td("y"))))))
+        . assert(_ == Html.Fragment(Html.Text("x"), Table(Tbody(Tr(Td("y"))))))
 
         test(m"stray div in table"):
           t"""<table><div>z</div><tr><td>y</td></tr></table>""".read[Html of Flow]
-        . assert(_ == Fragment(Div("z"), Table(Tbody(Tr(Td("y"))))))
+        . assert(_ == Html.Fragment(Div("z"), Table(Tbody(Tr(Td("y"))))))
 
         test(m"trailing text in table"):
           t"""<table><tr><td>cell</td></tr>extra</table>""".read[Html of Flow]
-        . assert(_ == Fragment(Table(Tbody(Tr(Td("cell")))), TextNode("extra")))
+        . assert(_ == Html.Fragment(Table(Tbody(Tr(Td("cell")))), Html.Text("extra")))
 
         test(m"whitespace inside table is ignored"):
           t"""<table>\n  <tr><td>cell</td></tr></table>""".read[Html of Flow]
@@ -880,19 +880,19 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         test(m"formatting element fostered"):
           t"""<table><b>x</b><tr><td>y</td></tr></table>""".read[Html of Flow]
-        . assert(_ == Fragment(B("x"), Table(Tbody(Tr(Td("y"))))))
+        . assert(_ == Html.Fragment(B("x"), Table(Tbody(Tr(Td("y"))))))
 
         test(m"multiple fostered elements maintain order"):
           t"""<table>a<b>c</b><tr><td>y</td></tr></table>""".read[Html of Flow]
-        . assert(_ == Fragment(TextNode("a"), B("c"), Table(Tbody(Tr(Td("y"))))))
+        . assert(_ == Html.Fragment(Html.Text("a"), B("c"), Table(Tbody(Tr(Td("y"))))))
 
         test(m"mixed before and after fostering"):
           t"""<table>before<tr><td>x</td></tr>after</table>""".read[Html of Flow]
-        . assert(_ == Fragment(TextNode("before"), Table(Tbody(Tr(Td("x")))), TextNode("after")))
+        . assert(_ == Html.Fragment(Html.Text("before"), Table(Tbody(Tr(Td("x")))), Html.Text("after")))
 
         test(m"fostered element with attributes preserved"):
           t"""<table><div style="color:red">x</div><tr><td>y</td></tr></table>""".read[Html of Flow]
-        . assert(_ == Fragment(Div(style = t"color:red")("x"), Table(Tbody(Tr(Td("y"))))))
+        . assert(_ == Html.Fragment(Div(style = t"color:red")("x"), Table(Tbody(Tr(Td("y"))))))
 
         test(m"fostering inside nested context"):
           t"""<div><table><b>x</b><tr><td>y</td></tr></table></div>""".read[Html of "div"]
@@ -908,7 +908,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         test(m"fostered element after fostered text"):
           t"""<table>x<b>y</b>z<tr><td>w</td></tr></table>""".read[Html of Flow]
-        . assert(_ == Fragment(TextNode("x"), B("y"), TextNode("z"), Table(Tbody(Tr(Td("w"))))))
+        . assert(_ == Html.Fragment(Html.Text("x"), B("y"), Html.Text("z"), Table(Tbody(Tr(Td("w"))))))
 
       suite(m"Optics"):
         test(m"Tag optic transforms every matching child element"):
@@ -939,7 +939,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
           val attribute = "attribute"
           def more: Int = 42
           h"""<p title=$attribute><!-- inner:$comment:outer -->This is some $more HTML.</p>"""
-        . assert(_ == P(title = "attribute")(Comment(" inner:comment:outer "), "This is some ", "42", " HTML."))
+        . assert(_ == P(title = "attribute")(Html.Comment(" inner:comment:outer "), "This is some ", "42", " HTML."))
 
         test(m"modify attribute"):
           val img = Img(alt = "hello")
@@ -968,7 +968,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"single extraction"):
           P("whole text").absolve match
             case h"""<p>$whole</p>""" => whole
-        . assert(_ == TextNode(t"whole text"))
+        . assert(_ == Html.Text(t"whole text"))
 
         test(m"pattern matcher"):
           Div(title = "text")(Ul(Li("hello")), P("more")).absolve match
@@ -994,20 +994,20 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"extractor of text"):
           P("whole text").absolve match
             case h"""<p $atts>$whole</p>""" => whole
-        . assert(_ == TextNode(t"whole text"))
+        . assert(_ == Html.Text(t"whole text"))
 
         test(m"extractor of comment"):
-          P(Comment("this is the comment")).absolve match
+          P(Html.Comment("this is the comment")).absolve match
             case h"""<p $atts><!--$comment--></p>""" => comment
         . assert(_ == t"this is the comment")
 
         test(m"zero-hole extractor of comment"):
-          P(Comment("this is the comment")).absolve match
+          P(Html.Comment("this is the comment")).absolve match
             case h"""<p><!--this is the comment--></p>""" => 1
         . assert(_ == 1)
 
         test(m"zero-hole non-matching extractor"):
-          P(Comment("this is the comment")).absolve match
+          P(Html.Comment("this is the comment")).absolve match
             case h"""<p><!--this is not the comment--></p>""" => 1
             case _ => 2
         . assert(_ == 2)
@@ -1031,7 +1031,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"Collecting accessor"):
           val html = Div(Ul(Li("one"), Li("two"), Li("three")))
           html / Ul / Li
-        . assert(_ == Fragment(Li("one"), Li("two"), Li("three")))
+        . assert(_ == Html.Fragment(Li("one"), Li("two"), Li("three")))
 
         test(m"Joining HTML"):
           H1("title") + P("Hello world")
@@ -1059,13 +1059,13 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"unknown attribute is accepted"):
           t"""<div bogus="x"></div>""".read[Html of "div"]
         . assert:
-            case Element("div", _, _, _) => true
+            case Html.Element("div", _, _, _) => true
             case _                       => false
 
         test(m"unknown attribute on void tag is accepted"):
           t"""<img mystery="y">""".read[Html of "img"]
         . assert:
-            case Element("img", _, _, _) => true
+            case Html.Element("img", _, _, _) => true
             case _                       => false
 
         test(m"duplicate attribute keeps first value"):
@@ -1075,7 +1075,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"valid attribute used on wrong tag is accepted"):
           t"""<div alt="caption"></div>""".read[Html of "div"]
         . assert:
-            case Element("div", _, _, _) => true
+            case Html.Element("div", _, _, _) => true
             case _                       => false
 
         test(m"forbidden char in unquoted value is absorbed (per WHATWG)"):
@@ -1084,7 +1084,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         test(m"CDATA outside foreign content becomes a comment"):
           t"""<div><![CDATA[xyz]]></div>""".read[Html of "div"]
-        . assert(_ == Div(Comment("[CDATA[xyz]]")))
+        . assert(_ == Div(Html.Comment("[CDATA[xyz]]")))
 
         test(m"unclosed element recovers via implicit close"):
           t"""<ul><li>First item""".read[Html of Flow]
@@ -1092,7 +1092,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         test(m"stray close tag at root is ignored"):
           t"""</br>""".read[Html of Flow]
-        . assert(_ == Fragment())
+        . assert(_ == Html.Fragment())
 
         test(m"close tag with no matching open is ignored"):
           t"""<div>x</p></div>""".read[Html of "div"]
@@ -1206,11 +1206,11 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
 
       test(m"more than one node"):
         t"""<div>content</div><p>more content</p>""".read[Html of Flow]
-      . assert(_ == Fragment(Div("content"), P("more content")))
+      . assert(_ == Html.Fragment(Div("content"), P("more content")))
 
       test(m"more than one node with comment"):
         t"""<div>content</div><!-- comment --><div>more content</div>""".read[Html of "div"]
-      . assert(_ == Fragment(Div("content"), Comment(" comment "), Div("more content")))
+      . assert(_ == Html.Fragment(Div("content"), Html.Comment(" comment "), Div("more content")))
 
       test(m"simple self-closing tag"):
         t"""<div />""".read[Html of "div"]
@@ -1226,7 +1226,7 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
 
       test(m"simple comment tag"):
         t"""<!--This is a comment-->""".read[Html of Flow]
-      . assert(_ == Comment("This is a comment"))
+      . assert(_ == Html.Comment("This is a comment"))
 
       test(m"simple void tag"):
         t"""<br>""".read[Html of Flow]
@@ -1254,15 +1254,15 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
 
       test(m"just text"):
         t"""hello world""".read[Html of Flow]
-      . assert(_ == TextNode("hello world"))
+      . assert(_ == Html.Text("hello world"))
 
       test(m"just text with entity"):
         t"""to &amp; fro""".read[Html of Flow]
-      . assert(_ == TextNode("to & fro"))
+      . assert(_ == Html.Text("to & fro"))
 
       test(m"just an entity"):
         t"""&amp;""".read[Html of Flow]
-      . assert(_ == TextNode("&"))
+      . assert(_ == Html.Text("&"))
 
       test(m"misnested formatting (adoption agency)"):
         t"""<em><b></em></b>""".read[Html of Inline]
@@ -1298,11 +1298,11 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
 
       test(m"empty content"):
         t"".read[Html of Flow]
-      . assert(_ == Fragment())
+      . assert(_ == Html.Fragment())
 
       test(m"failing example"):
         t"""<p>x<img></p>\n""".read[Html of Flow]
-      . assert(_ == Fragment(P("x", Img), t"\n"))
+      . assert(_ == Html.Fragment(P("x", Img), t"\n"))
 
       test(m"autoclosing adjacent tags"):
         t"""<ul><li>First item<li>Second item</ul>""".read[Html of Flow]
@@ -1414,19 +1414,19 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
       suite(m"Tokenization edge cases"):
         test(m"empty comment"):
           t"""<!---->""".read[Html of Flow]
-        . assert(_ == Comment(""))
+        . assert(_ == Html.Comment(""))
 
         test(m"comment with newline"):
           t"<!--line1\nline2-->".read[Html of Flow]
-        . assert(_ == Comment("line1\nline2"))
+        . assert(_ == Html.Comment("line1\nline2"))
 
         test(m"multiple consecutive comments"):
           t"""<!--a--><!--b-->""".read[Html of Flow]
-        . assert(_ == Fragment(Comment("a"), Comment("b")))
+        . assert(_ == Html.Fragment(Html.Comment("a"), Html.Comment("b")))
 
         test(m"comment with hyphen inside"):
           t"""<!-- - -->""".read[Html of Flow]
-        . assert(_ == Comment(" - "))
+        . assert(_ == Html.Comment(" - "))
 
         test(m"decimal entity for ASCII"):
           t"""<p>&#65;</p>""".read[Html of Flow]
@@ -1585,7 +1585,7 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
       suite(m"Whitespace handling"):
         test(m"whitespace-only input"):
           t"   \n  ".read[Html of Flow]
-        . assert(_ == Fragment())
+        . assert(_ == Html.Fragment())
 
         test(m"pre preserves internal whitespace"):
           t"<pre>line1\n  line2</pre>".read[Html of "pre"]
@@ -1665,20 +1665,20 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
         test(m"a inside a closes outer"):
           t"""<div><a href="https://x/">1<a href="https://y/">2</a>3</a></div>""".read[Html of "div"]
         . assert: result =>
-            result == Div(A(href = url"https://x/")("1"), A(href = url"https://y/")("2"), TextNode("3"))
+            result == Div(A(href = url"https://x/")("1"), A(href = url"https://y/")("2"), Html.Text("3"))
 
       suite(m"Foster parenting"):
         test(m"stray text before tr"):
           t"""<table>x<tr><td>y</td></tr></table>""".read[Html of Flow]
-        . assert(_ == Fragment(TextNode("x"), Table(Tbody(Tr(Td("y"))))))
+        . assert(_ == Html.Fragment(Html.Text("x"), Table(Tbody(Tr(Td("y"))))))
 
         test(m"stray div in table"):
           t"""<table><div>z</div><tr><td>y</td></tr></table>""".read[Html of Flow]
-        . assert(_ == Fragment(Div("z"), Table(Tbody(Tr(Td("y"))))))
+        . assert(_ == Html.Fragment(Div("z"), Table(Tbody(Tr(Td("y"))))))
 
         test(m"trailing text in table"):
           t"""<table><tr><td>cell</td></tr>extra</table>""".read[Html of Flow]
-        . assert(_ == Fragment(Table(Tbody(Tr(Td("cell")))), TextNode("extra")))
+        . assert(_ == Html.Fragment(Table(Tbody(Tr(Td("cell")))), Html.Text("extra")))
 
         test(m"whitespace inside table is ignored"):
           t"""<table>\n  <tr><td>cell</td></tr></table>""".read[Html of Flow]
@@ -1686,19 +1686,19 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
 
         test(m"formatting element fostered"):
           t"""<table><b>x</b><tr><td>y</td></tr></table>""".read[Html of Flow]
-        . assert(_ == Fragment(B("x"), Table(Tbody(Tr(Td("y"))))))
+        . assert(_ == Html.Fragment(B("x"), Table(Tbody(Tr(Td("y"))))))
 
         test(m"multiple fostered elements maintain order"):
           t"""<table>a<b>c</b><tr><td>y</td></tr></table>""".read[Html of Flow]
-        . assert(_ == Fragment(TextNode("a"), B("c"), Table(Tbody(Tr(Td("y"))))))
+        . assert(_ == Html.Fragment(Html.Text("a"), B("c"), Table(Tbody(Tr(Td("y"))))))
 
         test(m"mixed before and after fostering"):
           t"""<table>before<tr><td>x</td></tr>after</table>""".read[Html of Flow]
-        . assert(_ == Fragment(TextNode("before"), Table(Tbody(Tr(Td("x")))), TextNode("after")))
+        . assert(_ == Html.Fragment(Html.Text("before"), Table(Tbody(Tr(Td("x")))), Html.Text("after")))
 
         test(m"fostered element with attributes preserved"):
           t"""<table><div style="color:red">x</div><tr><td>y</td></tr></table>""".read[Html of Flow]
-        . assert(_ == Fragment(Div(style = t"color:red")("x"), Table(Tbody(Tr(Td("y"))))))
+        . assert(_ == Html.Fragment(Div(style = t"color:red")("x"), Table(Tbody(Tr(Td("y"))))))
 
         test(m"fostering inside nested context"):
           t"""<div><table><b>x</b><tr><td>y</td></tr></table></div>""".read[Html of "div"]

@@ -40,4 +40,4 @@ import prepositional.*
 // Adds a `<link rel="icon">` favicon to the head, from the trait parameter (a URL or path).
 trait Favicon(href: Text) extends Archetype:
   protected override def head: Html of (? <: Metadata) =
-    Fragment[Metadata](Link.Icon(href = href), super.head)
+    Html.Fragment[Metadata](Link.Icon(href = href), super.head)

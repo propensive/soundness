@@ -224,13 +224,13 @@ object XPath extends Format:
     // The string-value (§5) of a single node: elements concatenate every
     // descendant text and CDATA node; the character-carrying kinds are their
     // own content.
-    private[xylophone] def textOf(node: Node): Text = node match
-      case TextNode(text)                 => text
-      case Cdata(text)                    => text
-      case Comment(text)                  => text
-      case ProcessingInstruction(_, data) => data
+    private[xylophone] def textOf(node: Xml.Node): Text = node match
+      case Xml.Text(text)                     => text
+      case Xml.Cdata(text)                    => text
+      case Xml.Comment(text)                  => text
+      case Xml.ProcessingInstruction(_, data) => data
 
-      case element: Element =>
+      case element: Xml.Element =>
         val builder = StringBuilder()
         accumulate(element, builder)
         builder.toString.nn.tt
@@ -238,14 +238,14 @@ object XPath extends Format:
       case _ =>
         t""
 
-    private def accumulate(element: Element, builder: StringBuilder): Unit =
+    private def accumulate(element: Xml.Element, builder: StringBuilder): Unit =
       val children = element.children
       children.extent.each: i =>
         children(i) match
-          case TextNode(text)   => builder.append(text.s)
-          case Cdata(text)      => builder.append(text.s)
-          case child: Element   => accumulate(child, builder)
-          case _                => ()
+          case Xml.Text(text)     => builder.append(text.s)
+          case Xml.Cdata(text)    => builder.append(text.s)
+          case child: Xml.Element => accumulate(child, builder)
+          case _                  => ()
 
   // A located node: the evaluation subject plus the child-index path from the
   // virtual root (XPath's `/`, the node *above* the root element) down to the
@@ -258,12 +258,12 @@ object XPath extends Format:
   case class Locus
     ( document:       Xml,
       path:           List[Int],
-      subject:        Optional[Node],
+      subject:        Optional[Xml.Node],
       attributeIndex: Optional[Int] ):
 
     private[xylophone] def attributeName: Optional[Text] = attributeIndex match
       case index: Int => subject match
-        case element: Element =>
+        case element: Xml.Element =>
           val keys = element.attributes.keys.drop(index)
           if keys.hasNext then keys.next() else Unset
 
@@ -275,7 +275,7 @@ object XPath extends Format:
 
     def stringValue: Text = attributeIndex match
       case index: Int => subject match
-        case element: Element =>
+        case element: Xml.Element =>
           val values = element.attributes.values.drop(index)
           if values.hasNext then values.next() else t""
 
@@ -283,15 +283,15 @@ object XPath extends Format:
           t""
 
       case _ => subject match
-        case node: Node => Locus.textOf(node)
+        case node: Xml.Node => Locus.textOf(node)
 
         case _ => document match
-          case Fragment(nodes*) =>
+          case Xml.Fragment(nodes*) =>
             val builder = StringBuilder()
             nodes.foreach { node => builder.append(Locus.textOf(node).s) }
             builder.toString.nn.tt
 
-          case node: Node =>
+          case node: Xml.Node =>
             Locus.textOf(node)
 
   // The four XPath 1.0 value types (§1), with the conversion rules of §3.2,

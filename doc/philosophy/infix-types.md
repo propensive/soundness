@@ -7,7 +7,7 @@ that `raises HttpError` or `logs ExecEvent` — they let a signature say in plai
 what a value is and what an operation needs, which is part of making code read like
 [elegant prose](elegant-prose.md). Their real power is that they
 [compose](composability.md): each adds one more clause to a type without nesting, so
-`Element of "ul" over "li" in Whatwg` builds up exactly as an English description
+`Html.Element of "ul" over "li" in Whatwg` builds up exactly as an English description
 would, and the same `of`, `in`, `by`, or `over` carries the same meaning wherever it
 appears. A reader who has understood one such type can read the next by analogy, and a
 writer can describe a precise type by naming its parts in turn rather than assembling a
@@ -31,7 +31,7 @@ applied in succession without nesting, and the order does not matter:
 ```scala
 Text is Decodable in Json
 value is Streamable by Data over Credit
-Element of "ul" over "li" in Whatwg
+Html.Element of "ul" over "li" in Whatwg
 ```
 
 The set is small and fixed — `in`, `on`, `of`, `by`, `to`, `from`, `over`, `across`,
@@ -52,7 +52,7 @@ Three problems, each of which the infix form avoids.
 
 **Position carries the meaning.** In `Element["ul", "li", Whatwg]` a reader must know
 that the first parameter is the tag, the second the permitted children and the third the
-specification. In `Element of "ul" over "li" in Whatwg` the prepositions say so.
+specification. In `Html.Element of "ul" over "li" in Whatwg` the prepositions say so.
 
 **Every parameter must be supplied.** A conventional type constructor takes all its
 arguments or none, so a partially-specified type needs a wildcard for each unmentioned

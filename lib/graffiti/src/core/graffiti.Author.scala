@@ -40,4 +40,4 @@ import prepositional.*
 // Adds a `<meta name="author">`, from the trait parameter.
 trait Author(name: Text) extends Archetype:
   protected override def head: Html of (? <: Metadata) =
-    Fragment[Metadata](Meta.Author(content = name), super.head)
+    Html.Fragment[Metadata](Meta.Author(content = name), super.head)

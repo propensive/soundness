@@ -254,68 +254,68 @@ object Xsd:
 
     parse(xml)
 
-  private def root(xml: Xml): Element = xml match
-    case element: Element           => element
-    case Fragment(element: Element) => element
+  private def root(xml: Xml): Xml.Element = xml match
+    case element: Xml.Element               => element
+    case Xml.Fragment(element: Xml.Element) => element
 
-    case Fragment(nodes*) =>
-      nodes.collectFirst { case element: Element => element }
-      . getOrElse(Element(t"", Attributes.empty, Array()))
+    case Xml.Fragment(nodes*) =>
+      nodes.collectFirst { case element: Xml.Element => element }
+      . getOrElse(Xml.Element(t"", Attributes.empty, Array()))
 
     case _ =>
-      Element(t"", Attributes.empty, Array())
+      Xml.Element(t"", Attributes.empty, Array())
 
   // A single pass over the schema document, dispatching every element by its resolved name,
   // so `xs:`, `xsd:` and a default XSD namespace are all read alike
-  private class Reader(document: Element)(using Tactic[Error]):
+  private class Reader(document: Xml.Element)(using Tactic[Error]):
     private def fail(reason: Error.Reason): Nothing = abort(Error(reason))
 
     private def name(local: String): Xml.Name = Xml.Name(namespace, local.tt)
 
-    private def children(element: Element): List[Element] =
-      val buffer = scm.ArrayBuffer[Element]()
+    private def children(element: Xml.Element): List[Xml.Element] =
+      val buffer = scm.ArrayBuffer[Xml.Element]()
 
       element.children.extent.each: index =>
         element.children(index) match
-          case child: Element => buffer += child
-          case _              => ()
+          case child: Xml.Element => buffer += child
+          case _                  => ()
 
       List.from(buffer)
 
-    private def text(element: Element): Text =
+    private def text(element: Xml.Element): Text =
       val builder = StringBuilder()
 
       element.children.extent.each: index =>
         element.children(index) match
-          case TextNode(text) => builder.append(text.s)
-          case Cdata(text)    => builder.append(text.s)
-          case _              => ()
+          case Xml.Text(text)  => builder.append(text.s)
+          case Xml.Cdata(text) => builder.append(text.s)
+          case _               => ()
 
       builder.toString.tt
 
-    private def attribute(element: Element, key: String): Optional[Text] =
+    private def attribute(element: Xml.Element, key: String): Optional[Text] =
       element.attributes.fetch(key.tt)
 
-    private def required(element: Element, key: String): Text =
+    private def required(element: Xml.Element, key: String): Text =
       attribute(element, key).or(fail(Error.Reason.MissingAttribute(element.localName, key.tt)))
 
-    private def flag(element: Element, key: String): Boolean =
+    private def flag(element: Xml.Element, key: String): Boolean =
       attribute(element, key).lay(false): value => value.s == "true" || value.s == "1"
 
     // A QName-valued attribute, resolved through the element's bindings; an unprefixed name
     // takes the default namespace, as XML Schema reads it
-    private def qname(element: Element, value: Text): Xml.Name =
+    private def qname(element: Xml.Element, value: Text): Xml.Name =
       val (prefix, local) = Xml.Name.split(value)
 
       prefix.lay(Xml.Name(element.resolve(Unset), local)): prefix =>
         element.resolve(prefix).lay(fail(Error.Reason.UnknownPrefix(prefix))): uri =>
           Xml.Name(uri, local)
 
-    private def form(element: Element, key: String): Optional[Form] =
+    private def form(element: Xml.Element, key: String): Optional[Form] =
       attribute(element, key).let: value =>
         if value.s == "qualified" then Form.Qualified else Form.Unqualified
 
-    private def occurs(element: Element): Occurs =
+    private def occurs(element: Xml.Element): Occurs =
       def count(value: Text): Int =
         try Integer.parseInt(value.s)
         catch case _: NumberFormatException => fail(Error.Reason.BadOccurs(value))
@@ -328,22 +328,22 @@ object Xsd:
 
       Occurs(min, max)
 
-    private def integer(element: Element, facet: String): Int =
+    private def integer(element: Xml.Element, facet: String): Int =
       val value = required(element, "value")
 
       try Integer.parseInt(value.s)
       catch case _: NumberFormatException => fail(Error.Reason.BadFacet(facet.tt, value))
 
-    private def documentation(element: Element): List[Text] =
+    private def documentation(element: Xml.Element): List[Text] =
       children(element).bind: child =>
         if child.qualified == name("annotation")
         then children(child).filter(_.qualified == name("documentation")).map(text(_))
         else Nil
 
-    private def unexpected(child: Element, within: String): Nothing =
+    private def unexpected(child: Xml.Element, within: String): Nothing =
       fail(Error.Reason.Unexpected(child.qualified, within.tt))
 
-    private def isAnnotation(child: Element): Boolean = child.qualified == name("annotation")
+    private def isAnnotation(child: Xml.Element): Boolean = child.qualified == name("annotation")
 
     def schema(): Xsd =
       if document.qualified != name("schema") then fail(Error.Reason.NotSchema(document.qualified))
@@ -420,9 +420,9 @@ object Xsd:
       map.foreach: (key, value) => builder += ((key, value))
       Map.from(builder.result())
 
-    private def isXsd(element: Element): Boolean = element.namespace == namespace
+    private def isXsd(element: Xml.Element): Boolean = element.namespace == namespace
 
-    private def elementDecl(element: Element): ElementDecl =
+    private def elementDecl(element: Xml.Element): ElementDecl =
       var inline: Optional[TypeRef] = Unset
 
       children(element).each: child =>
@@ -449,7 +449,7 @@ object Xsd:
           flag(element, "abstract"),
           documentation(element) )
 
-    private def attributeDecl(element: Element): AttributeDecl =
+    private def attributeDecl(element: Xml.Element): AttributeDecl =
       var inline: Optional[TypeRef] = Unset
 
       children(element).each: child =>
@@ -479,7 +479,7 @@ object Xsd:
 
     // The attribute uses among an element's children: attributes, attribute group references
     // and `anyAttribute`
-    private def attributeUses(element: Element): List[AttributeUse] =
+    private def attributeUses(element: Xml.Element): List[AttributeUse] =
       children(element).bind: child =>
         child.qualified.local.s match
           case "attribute" if isXsd(child)    => List(AttributeUse.Attribute(attributeDecl(child)))
@@ -491,12 +491,12 @@ object Xsd:
           case _ =>
             Nil
 
-    private def isAttributeUse(child: Element): Boolean =
+    private def isAttributeUse(child: Xml.Element): Boolean =
       isXsd(child) && (child.qualified.local.s match
         case "attribute" | "attributeGroup" | "anyAttribute" => true
         case _                                               => false)
 
-    private def compositor(child: Element): Optional[Particle] = child.qualified.local.s match
+    private def compositor(child: Xml.Element): Optional[Particle] = child.qualified.local.s match
       case "sequence" if isXsd(child) => Particle.Sequence(particles(child), occurs(child))
       case "choice" if isXsd(child)   => Particle.Choice(particles(child), occurs(child))
       case "all" if isXsd(child)      => Particle.All(particles(child), occurs(child))
@@ -505,18 +505,18 @@ object Xsd:
       case "any" if isXsd(child)      => Particle.Any(occurs(child))
       case _                          => Unset
 
-    private def particles(element: Element): List[Particle] =
+    private def particles(element: Xml.Element): List[Particle] =
       children(element).bind: child =>
         if isAnnotation(child) then Nil
         else compositor(child).lay(unexpected(child, element.localName.s))(List(_))
 
     // A `group`: a reference, or a named definition whose single compositor is the particle
-    private def groupParticle(element: Element): Particle =
+    private def groupParticle(element: Xml.Element): Particle =
       attribute(element, "ref") match
         case ref: Text => Particle.Group(qname(element, ref), occurs(element))
         case _         => particles(element).prim.or(Particle.Sequence(Nil, occurs(element)))
 
-    private def complexType(element: Element): ComplexType =
+    private def complexType(element: Xml.Element): ComplexType =
       var content: Content = Content.Empty
       var anyAttribute = false
 
@@ -544,7 +544,7 @@ object Xsd:
           documentation(element) )
 
     // The `extension` or `restriction` inside `simpleContent` or `complexContent`
-    private def derivedContent(element: Element, simple: Boolean): Content =
+    private def derivedContent(element: Xml.Element, simple: Boolean): Content =
       val derivation = children(element).filter(!isAnnotation(_)).prim.or:
         unexpected(element, element.localName.s)
 
@@ -570,7 +570,7 @@ object Xsd:
         case _ =>
           unexpected(derivation, element.localName.s)
 
-    private def facets(element: Element): List[Facet] =
+    private def facets(element: Xml.Element): List[Facet] =
       val enumeration = scm.ArrayBuffer[Text]()
       val others = scm.ArrayBuffer[Facet]()
 
@@ -608,14 +608,14 @@ object Xsd:
 
       List.from(all)
 
-    private def simpleDecl(element: Element): SimpleDecl =
+    private def simpleDecl(element: Xml.Element): SimpleDecl =
       val definition = children(element).filter(!isAnnotation(_)).prim match
-        case child: Element => simpleType(child)
-        case _              => unexpected(element, "simpleType")
+        case child: Xml.Element => simpleType(child)
+        case _                  => unexpected(element, "simpleType")
 
       SimpleDecl(attribute(element, "name"), definition, documentation(element))
 
-    private def simpleType(child: Element): SimpleType = child.qualified.local.s match
+    private def simpleType(child: Xml.Element): SimpleType = child.qualified.local.s match
       case "restriction" if isXsd(child) =>
         val base: TypeRef = attribute(child, "base").lay(inlineType(child, "restriction")): value =>
           TypeRef.Named(qname(child, value))
@@ -643,10 +643,10 @@ object Xsd:
         unexpected(child, "simpleType")
 
     // The inline `simpleType` a `restriction` or `list` without a `base`/`itemType` carries
-    private def inlineType(element: Element, within: String): TypeRef =
+    private def inlineType(element: Xml.Element, within: String): TypeRef =
       children(element).filter(_.qualified == name("simpleType")).prim match
-        case child: Element => TypeRef.Inline(simpleDecl(child).definition)
-        case _              => unexpected(element, within)
+        case child: Xml.Element => TypeRef.Inline(simpleDecl(child).definition)
+        case _                  => unexpected(element, within)
 
 // An XML Schema (XSD 1.0) as an immutable model of its declarations, read from the schema
 // document with `Xsd.parse`. References — a `type="tns:Order"`, a `ref="tns:item"`, a `base` — are

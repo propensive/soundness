@@ -51,15 +51,15 @@ object Tag:
   // `Self` member is invariant, so an instance fixed at `Tag` matches no actual tag.
   given focusable: [tag <: Tag] => tag is Focusable = Focusable(t"tag name", _.label)
 
-  given optical: [html <: Html] => Tag is Optical from html onto Node = tag =>
+  given optical: [html <: Html] => Tag is Optical from html onto Html.Node = tag =>
     Optic: (origin, lambda) =>
       origin match
-        case Element(label, attributes, children, boundary) =>
+        case Html.Element(label, attributes, children, boundary) =>
           val children2 = children.remap:
-            case element@Element(tag.label, _, _, _) => lambda(element)
-            case other                               => other
+            case element@Html.Element(tag.label, _, _, _) => lambda(element)
+            case other                                    => other
 
-          new Element(label, attributes, children2, boundary)
+          new Html.Element(label, attributes, children2, boundary)
           . asInstanceOf[html]
 
         case other =>
@@ -141,12 +141,12 @@ object Tag:
       boundary:   Boolean                   = false )
   extends Tag
     ( label, autoclose, mode, presets, admissible, insertable, foreign, false, false, boundary ):
-    type Result = Element & Html.Vacuiscible of Topic over Transport in Form
+    type Result = Html.Element & Html.Vacuiscible of Topic over Transport in Form
 
     def applyDynamic[className <: Label: ValueOf](method: className)
       ( children: Optional[Html of (? <: Transport)]* )
       ( using attribution: Attribution of (? >: className) )
-    :   Element of Topic over Transport in Form =
+    :   Html.Element of Topic over Transport in Form =
 
       val nodes = children.compact.to(List).nodes
 
@@ -162,10 +162,11 @@ object Tag:
 
           presets.define(attribution.attribute, value)
 
-      Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].over[Transport].in[Form]
+      Html.Element(label, Attributes.from(presets2), nodes, foreign)
+      . of[Topic].over[Transport].in[Form]
 
     def node(attributes: Attributes): Result =
-      new Element(label, Attributes.from(presets) ++ attributes, Array(), foreign)
+      new Html.Element(label, Attributes.from(presets) ++ attributes, Array(), foreign)
       with Html.Vacuiscible()
       . of[Topic]
       . over[Transport]
@@ -188,13 +189,13 @@ object Tag:
       transparent = true,
       boundary    = boundary ):
 
-    type Result = Element & Html.Transparent of Topic over Transport in Form
+    type Result = Html.Element & Html.Transparent of Topic over Transport in Form
 
 
     def applyDynamic[className <: Label: ValueOf](method: className)
       ( children: Optional[Html of (? <: Transport)]* )
       ( using attribution: Attribution of (? >: className) )
-    :   Element of Topic in Form =
+    :   Html.Element of Topic in Form =
 
       val presets2 =
         if attribution.attribute == t"" then presets
@@ -208,12 +209,12 @@ object Tag:
 
           presets.define(attribution.attribute, value)
 
-      val nodes: Array[Node]^{} = children.compact.to(List).nodes
-      Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].in[Form]
+      val nodes: Array[Html.Node]^{} = children.compact.to(List).nodes
+      Html.Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].in[Form]
 
 
     def node(attributes: Attributes): Result =
-      new Element(label, Attributes.from(presets) ++ attributes, Array(), foreign)
+      new Html.Element(label, Attributes.from(presets) ++ attributes, Array(), foreign)
       with Html.Transparent()
       . of[Topic]
       . over[Transport]
@@ -221,10 +222,10 @@ object Tag:
 
   class Void(label: Text, presets: Map[Text, Optional[Text]], boundary: Boolean)
   extends Tag(label, presets = presets, void = true, boundary = boundary):
-    type Result = Element of Topic in Form
+    type Result = Html.Element of Topic in Form
 
     def node(attributes: Attributes): Result =
-      new Element
+      new Html.Element
         ( label, Attributes.from(presets) ++ attributes,
           Array(), this.foreign )
       . of[Topic]
@@ -243,9 +244,9 @@ abstract class Tag
     val boundary:    Boolean                   = false )
 // The empty-children `Array()` is sealed: a fresh frozen array in the parent
 // constructor call would otherwise decorate `Tag`'s self type, which must stay
-extends Element(label, Attributes.from(presets), Array(), foreign),
+extends Html.Element(label, Attributes.from(presets), Array(), foreign),
   Formal, Dynamic, caps.Pure:
-  type Result <: Element
+  type Result <: Html.Element
 
   // Pre-computed "is this a table-context tag" flag, evaluated once per Tag
   // instance at construction time. Replaces a five-way `Text` equality check

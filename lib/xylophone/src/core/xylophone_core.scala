@@ -59,24 +59,24 @@ extension (inline context: StringContext)
 // absent — so `xml.lens(_.book.title = …)` works. `ordinalOptical` and `eachOptical`
 // address the n-th, or every, child element of a node. All rebuild the element
 // immutably; non-element nodes (text, comments) are preserved in place.
-private def xmlNodes(xml: Xml): Array[Node]^{} = xml match
-  case Fragment(nodes*) => Array.from(nodes)
-  case node: Node       => Array(node)
+private def xmlNodes(xml: Xml): Array[Xml.Node]^{} = xml match
+  case Xml.Fragment(nodes*) => Array.from(nodes)
+  case node: Xml.Node       => Array(node)
 
-private def firstNode(xml: Xml, fallback: Node): Node =
+private def firstNode(xml: Xml, fallback: Xml.Node): Xml.Node =
   val nodes = xmlNodes(xml)
   nodes.prim.or(fallback)
 
 private def replaceNamedChild(xml: Xml, name: String, value: Xml)(using Xml.Scope): Xml =
   xml match
-  case parent @ Element(label, attributes, children) =>
+  case parent @ Xml.Element(label, attributes, children) =>
     val replacement = xmlNodes(value)
-    val buffer = scm.ArrayBuffer[Node]()
+    val buffer = scm.ArrayBuffer[Xml.Node]()
     var done = false
 
     children.iterate: index =>
       children.at(index) match
-        case element: Element if !done && parent.selects(element, name.tt) =>
+        case element: Xml.Element if !done && parent.selects(element, name.tt) =>
           buffer ++= replacement.readable.toSeq
           done = true
 
@@ -84,21 +84,21 @@ private def replaceNamedChild(xml: Xml, name: String, value: Xml)(using Xml.Scop
           buffer += other
 
     if !done then buffer ++= replacement.readable.toSeq
-    Element(label, attributes, Array.from(buffer))
+    Xml.Element(label, attributes, Array.from(buffer))
 
-  case Fragment(node: Element) =>
-    Fragment(replaceNamedChild(node, name, value).asInstanceOf[Node])
+  case Xml.Fragment(node: Xml.Element) =>
+    Xml.Fragment(replaceNamedChild(node, name, value).asInstanceOf[Xml.Node])
 
   case other =>
     other
 
 private def updateChildElements(xml: Xml, select: Int => Boolean, lambda: Xml => Xml): Xml =
   xml match
-    case Element(label, attributes, children) =>
+    case Xml.Element(label, attributes, children) =>
       var index = 0
 
       val out = children.remap:
-        case element: Element =>
+        case element: Xml.Element =>
           val here = index
           index += 1
           if select(here) then firstNode(lambda(element), element) else element
@@ -106,10 +106,10 @@ private def updateChildElements(xml: Xml, select: Int => Boolean, lambda: Xml =>
         case other =>
           other
 
-      Element(label, attributes, out)
+      Xml.Element(label, attributes, out)
 
-    case Fragment(node: Element) =>
-      Fragment(updateChildElements(node, select, lambda).asInstanceOf[Node])
+    case Xml.Fragment(node: Xml.Element) =>
+      Xml.Fragment(updateChildElements(node, select, lambda).asInstanceOf[Xml.Node])
 
     case other =>
       other

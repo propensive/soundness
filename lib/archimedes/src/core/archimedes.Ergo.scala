@@ -47,6 +47,7 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import rudiments.*
+import spectacular.*
 import symbolism.*
 import vacuous.*
 
@@ -249,11 +250,9 @@ object Ergo:
   private def accentless(attributes: List[(Text, Text)], script: Mathml, name: Text)
   :   List[(Text, Text)] =
 
-    val accent = script match
-      case _: Mo => true
-      case _     => false
-
-    if accent then attributes.filter { pair => pair != (name, t"true") } else attributes
+    script match
+      case _: Mo => attributes.filter(_ != (name, t"true"))
+      case _     => attributes
 
   private def serializeTable(table: Mtable)(using Tactic[Ergo.Error]): Text =
     val rows: List[List[Text]] =
@@ -263,14 +262,14 @@ object Ergo:
     if rows.size == 1 then
       // The guard makes the row present; the default is unreachable.
       val row = rows.prim.lay(t"")(_.join)
-      t"${RowVec.toString.tt}($row)"
+      t"$RowVec($row)"
     else if rows.all(_.size == 1) then
       // Likewise, each row is known to hold exactly one cell.
       val column = rows.map(_.prim.or(t"")).join
-      t"${ColVec.toString.tt}($column)"
+      t"$ColVec($column)"
     else
       val body = rows.map { cells => group(cells.join) }.join
-      t"${Matrix.toString.tt}($body)"
+      t"$Matrix($body)"
 
   private def cellText(node: Mathml)(using Tactic[Ergo.Error]): Text = node match
     case Mtd(contents, _) => group(sequence(contents))
@@ -284,11 +283,8 @@ object Ergo:
   // otherwise a `Param` glyph for the attribute, with the value in brackets.
   private def directiveText(name: Text, value: Text): Optional[Text] =
     directives.reap:
-      case (glyph, Directive.Fixed(n, v)) if n == name && v == value =>
-        glyph.toString.tt
-
-      case (glyph, Directive.Param(n)) if n == name =>
-        t"${glyph.toString.tt}($value)"
+      case (glyph, Directive.Fixed(n, v)) if n == name && v == value => glyph.show
+      case (glyph, Directive.Param(n)) if n == name                  => t"$glyph($value)"
 
   private class Parser(s: String, holes: Iterator[Mathml])(using Tactic[Ergo.Error]):
     @scala.caps.unsafe.untrackedCaptures
@@ -310,15 +306,23 @@ object Ergo:
 
     private def skipSpaces(): Unit = while pos < s.length && s.charAt(pos) == ' ' do pos += 1
 
-    private def letter(c: Char): Boolean = Character.isLetter(c)
-    private def digit(c: Char): Boolean = Character.isDigit(c)
+    private def fail(reason: Ergo.Error.Reason): Nothing =
+      scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(reason, pos)))
+
+    // Consumes the closing bracket of a group, which must be next.
+    private def closeGroup(): Unit =
+      if peek != close then fail(Ergo.Error.Reason.Unclosed(close))
+      advance()
+
+    // Consumes the opening bracket of the body that must follow `introducer`.
+    private def openBody(introducer: Char): Unit =
+      if peek != open then fail(Ergo.Error.Reason.MissingBody(introducer))
+      advance()
 
     def parseTop(): Math =
-      if s.isEmpty then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.Empty, pos)))
+      if s.isEmpty then fail(Ergo.Error.Reason.Empty)
       open = s.charAt(0)
-
-      if !pairs.contains(open)
-      then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.BadOpener(open.toString.tt), pos)))
+      if !pairs.contains(open) then fail(Ergo.Error.Reason.BadOpener(open))
 
       close = pairs(open)
 
@@ -331,8 +335,7 @@ object Ergo:
       advance()
       val inner = parseSequence()
       skipSpaces()
-      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.Unclosed(close.toString.tt), pos)))
-      advance()
+      closeGroup()
       inner
 
     // Juxtaposition — the loosest binding; a run of fraction-level terms → Mrow.
@@ -418,8 +421,7 @@ object Ergo:
         if depth > 0 then pos += 1
 
       val raw = s.substring(start, pos).nn.tt
-      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.Unclosed(close.toString.tt), pos)))
-      advance() // close
+      closeGroup()
       raw
 
     private def withDirectives(unit: Mathml): Mathml =
@@ -469,24 +471,23 @@ object Ergo:
       else if c == Matrix then parseMatrix()
       else if c == RowVec then parseVector(row = true)
       else if c == ColVec then parseVector(row = false)
-      else if letter(c) then
+      else if Character.isLetter(c) then
         val start = pos
-        while pos < s.length && letter(s.charAt(pos)) do pos += 1
+        while pos < s.length && Character.isLetter(s.charAt(pos)) do pos += 1
         rooted(Mi(s.substring(start, pos).nn.tt))
-      else if digit(c) then
+      else if Character.isDigit(c) then
         val start = pos
 
-        while pos < s.length && (digit(s.charAt(pos)) ||
-          s.charAt(pos) == '.' && pos + 1 < s.length && digit(s.charAt(pos + 1)))
+        while pos < s.length && (Character.isDigit(s.charAt(pos)) ||
+          s.charAt(pos) == '.' && pos + 1 < s.length && Character.isDigit(s.charAt(pos + 1)))
         do pos += 1
 
         rooted(Mn(s.substring(start, pos).nn.tt))
-      else if c == '\u0000' then
-        scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.UnexpectedEnd, pos)))
+      else if c == '\u0000' then fail(Ergo.Error.Reason.UnexpectedEnd)
       else
         // a content glyph, or an operator glyph degraded for want of an operand
         advance()
-        Mo(c.toString.tt)
+        Mo(c.show)
 
     // If a `√` immediately follows an atom/group (no space), that atom is the
     // index of a root: `3√x` = Mroot(x, 3).
@@ -497,14 +498,12 @@ object Ergo:
     // introducer, returning the parsed child groups. A body with no nested
     // groups is treated as a single element (so `⋯(a)` is a one-cell vector).
     private def parseBody(introducer: Char): List[Mathml] =
-      if peek != open then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.MissingBody(introducer.toString.tt), pos)))
-      advance() // body open
+      openBody(introducer)
       val items = ListBuffer[Mathml]()
       while peek == open do items += parseGroup()
       if items.isEmpty && peek != close then items += parseSequence()
       skipSpaces()
-      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.Unclosed(close.toString.tt), pos)))
-      advance() // body close
+      closeGroup()
       items.to(List)
 
     private def parseVector(row: Boolean): Mathml =
@@ -514,8 +513,7 @@ object Ergo:
 
     private def parseMatrix(): Mathml =
       val introducer = advance()
-      if peek != open then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.MissingBody(introducer.toString.tt), pos)))
-      advance() // body open
+      openBody(introducer)
       val rows = ListBuffer[Mathml]()
 
       while peek == open do
@@ -526,23 +524,21 @@ object Ergo:
         // A row group with no nested cell-groups is a single-cell row.
         if cells.isEmpty && peek != close then cells += parseSequence()
         skipSpaces()
-        if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.Unclosed(close.toString.tt), pos)))
-        advance() // row-group close
+        closeGroup()
         rows += Mtr(cells.toList.map { cell => Mtd(cell) }*)
 
       skipSpaces()
-      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.Unclosed(close.toString.tt), pos)))
-      advance() // body close
+      closeGroup()
       Mtable(rows.to(List)*)
 
   // Ergo.Error → Ergo.Error
   object Error:
     enum Reason(val number: Int) extends Clarification:
       case Empty                    extends Reason(1)
-      case BadOpener(char: Text)    extends Reason(2)
-      case Unclosed(expected: Text) extends Reason(3)
+      case BadOpener(char: Char)    extends Reason(2)
+      case Unclosed(expected: Char) extends Reason(3)
       case UnexpectedEnd            extends Reason(4)
-      case MissingBody(char: Text)  extends Reason(5)
+      case MissingBody(char: Char)  extends Reason(5)
       case Unsupported(label: Text) extends Reason(6)
 
     given communicable: Reason is Communicable =

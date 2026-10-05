@@ -52,7 +52,7 @@ object Renderable:
           case text: Text       => List[Html of Phrasing](text)
           case _                => List[Html of Phrasing]()
 
-        Fragment(elements*)
+        Html.Fragment(elements*)
 
   given stackTrace: StackTrace is Renderable in Flow = stackTrace =>
     type Topic = "at" | "class" | "stack" | "method" | "file" | "line" | "code"

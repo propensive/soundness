@@ -117,8 +117,8 @@ object Markdown:
     case Prose.Code(code)          => Code(code)
     case Prose.Strong(children*)   => Strong(children.map(phrasing(_))*)
     case Prose.Softbreak           => "\n"
-    case Prose.Linebreak           => Fragment(Br, "\n")
-    case Prose.HtmlInline(content) => Comment(t"[CDATA[$content]]")
+    case Prose.Linebreak           => Html.Fragment(Br, "\n")
+    case Prose.HtmlInline(content) => Html.Comment(t"[CDATA[$content]]")
 
     case Prose.Link(destination, title, content*) =>
       val destination2 = url(destination)
@@ -215,7 +215,7 @@ object Markdown:
     type Form = Phrasing
 
     def render(markdown: Markdown of Prose): Html of Phrasing =
-      Fragment(markdown.children.map(phrasing(_))*)
+      Html.Fragment(markdown.children.map(phrasing(_))*)
 
   given layout: Every[Formattable] => (Markdown of Layout) is Renderable:
     type Form = htmlDoms.whatwg.Flow
@@ -224,8 +224,8 @@ object Markdown:
       import htmlDoms.whatwg.*
 
       def tightItem(node: Layout): Html of Flow = node match
-        case Layout.Paragraph(_, content*) => Fragment(content.map(phrasing(_))*)
-        case node                          => Fragment("\n", layout(node))
+        case Layout.Paragraph(_, content*) => Html.Fragment(content.map(phrasing(_))*)
+        case node                          => Html.Fragment("\n", layout(node))
 
       @tailrec
       def merge(block: Boolean, nodes: List[Layout], done: List[Html of Flow], tight: Boolean)
@@ -233,20 +233,20 @@ object Markdown:
 
         nodes match
           case Nil =>
-            if block then ((TextNode("\n"): Html of Flow) :: done).reverse
+            if block then ((Html.Text("\n"): Html of Flow) :: done).reverse
             else done.reverse
 
           case Layout.Paragraph(_, contents*) :: tail if tight =>
-            val content = Fragment(contents.map(phrasing(_))*)
+            val content = Html.Fragment(contents.map(phrasing(_))*)
 
             merge
               ( false,
                 tail,
-                (if block then Fragment("\n", content) else content) :: done,
+                (if block then Html.Fragment("\n", content) else content) :: done,
                 tight )
 
           case head :: tail =>
-            merge(true, tail, Fragment("\n", layout(head)) :: done, tight)
+            merge(true, tail, Html.Fragment("\n", layout(head)) :: done, tight)
 
 
       def block(node: Layout): Boolean = node match
@@ -255,7 +255,9 @@ object Markdown:
 
       def layout(node: Layout): Html of Flow = node match
         case Layout.BlockQuote(line, children*) =>
-          val fragment = Fragment(children.map { node => Fragment(TextNode("\n"), layout(node)) }*)
+          val fragment =
+            Html.Fragment(children.map { node => Html.Fragment(Html.Text("\n"), layout(node)) }*)
+
           Blockquote(fragment, "\n")
 
         case Layout.Paragraph(line, children*) =>
@@ -281,7 +283,7 @@ object Markdown:
           Hr
 
         case Layout.HtmlBlock(line, content) =>
-          Comment(t"[CDATA[$content]]")
+          Html.Comment(t"[CDATA[$content]]")
 
         case Layout.Heading(line, level, content*) =>
           // Matched at `Int`: capture checking's re-check types the literal patterns' synthesized
@@ -303,7 +305,7 @@ object Markdown:
           formatted.or:
             Pre(info.prim.lay(Code(code)) { info => Code(`class` = t"language-$info")(code) })
 
-      Fragment(markdown.children.map { node => Fragment(layout(node), "\n") }*)
+      Html.Fragment(markdown.children.map { node => Html.Fragment(layout(node), "\n") }*)
 
   def apply(linkRefs0: List[Markdown.LinkRef], layout: Layout*): Markdown of Layout = new Markdown:
     type Topic = Layout

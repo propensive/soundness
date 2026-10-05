@@ -69,7 +69,7 @@ private[xylophone] object XPathEngine:
   // scope and declarations; one built in code under ancestors declaring namespaces only as
   // attributes resolves through them.
   private def qualifiedName(locus: Locus): Optional[Xml.Name] = locus.subject match
-    case element: Element =>
+    case element: Xml.Element =>
       val (prefix, local) = Xml.Name.split(element.label)
 
       element.bindings.resolve(prefix).lay(Xml.Name(ancestralScope(locus).resolve(prefix), local)):
@@ -81,8 +81,8 @@ private[xylophone] object XPathEngine:
   private def ancestralScope(locus: Locus): Scope =
     ancestorLoci(locus).reverse.fold(Scope.xml): (scope, ancestor) =>
       ancestor.subject match
-        case element: Element => scope ++ element.bindings
-        case _                => scope
+        case element: Xml.Element => scope ++ element.bindings
+        case _                    => scope
 
   // The namespace of an attribute locus: an unprefixed attribute is in none
   private def attributeNamespace(locus: Locus): Optional[Text] = locus.attributeName.let: key =>
@@ -90,7 +90,7 @@ private[xylophone] object XPathEngine:
 
     prefix.let: prefix =>
       locus.subject match
-        case element: Element =>
+        case element: Xml.Element =>
           element.bindings.resolve(prefix).or(ancestralScope(locus).resolve(prefix))
 
         case _ =>
@@ -254,15 +254,15 @@ private[xylophone] object XPathEngine:
 
     buffer.to(List)
 
-  private def treeNode(node: Node): Boolean = node match
-    case _: Header | _: Doctype => false
-    case _                      => true
+  private def treeNode(node: Xml.Node): Boolean = node match
+    case _: Xml.Header | _: Xml.Doctype => false
+    case _                              => true
 
   private def appendIndex(path: List[Int], index: Int): List[Int] = path + List(index)
 
   private def childLoci(locus: Locus): List[Locus] =
     if attributeIndexOf(locus) >= 0 then Nil else locus.subject match
-      case element: Element =>
+      case element: Xml.Element =>
         val children = element.children
         val buffer = scm.ListBuffer[Locus]()
         var i = 0
@@ -275,17 +275,17 @@ private[xylophone] object XPathEngine:
 
         buffer.to(List)
 
-      case _: Node =>
+      case _: Xml.Node =>
         Nil
 
       case _ => locus.document match
-        case Fragment(nodes*) =>
+        case Xml.Fragment(nodes*) =>
           nodes.zipWithIndex.collect:
             case (node, index) if treeNode(node) =>
               Locus(locus.document, appendIndex(locus.path, index), node, Unset)
           . to(List)
 
-        case node: Node =>
+        case node: Xml.Node =>
           if treeNode(node)
           then List(Locus(locus.document, appendIndex(locus.path, 0), node, Unset))
           else Nil
@@ -293,12 +293,12 @@ private[xylophone] object XPathEngine:
   private def descendantLoci(locus: Locus): List[Locus] =
     childLoci(locus).flatMap { child => child :: descendantLoci(child) }
 
-  private def nodeAt(locus: Locus, index: Int): Node = locus.subject match
-    case element: Element => element.children.readUnchecked(index)
+  private def nodeAt(locus: Locus, index: Int): Xml.Node = locus.subject match
+    case element: Xml.Element => element.children.readUnchecked(index)
 
     case _ => locus.document match
-      case Fragment(nodes*) => nodes(index)
-      case node: Node       => node
+      case Xml.Fragment(nodes*) => nodes(index)
+      case node: Xml.Node       => node
 
   private def resolve(document: Xml, path: List[Int]): Locus =
     path.fold(Locus.root(document)): (locus, index) =>
@@ -353,7 +353,7 @@ private[xylophone] object XPathEngine:
 
   private def attributeLoci(locus: Locus): List[Locus] =
     if attributeIndexOf(locus) >= 0 then Nil else locus.subject match
-      case element: Element =>
+      case element: Xml.Element =>
         val buffer = scm.ListBuffer[Locus]()
         var i = 0
 
@@ -409,7 +409,7 @@ private[xylophone] object XPathEngine:
             false
         else if isAttribute then false
         else locus.subject match
-          case element: Element =>
+          case element: Xml.Element =>
             uri.lay(element.label.s == qname.s): uri => qualifiedName(locus) == Xml.Name(uri, local)
 
           case _ =>
@@ -419,8 +419,8 @@ private[xylophone] object XPathEngine:
         if attributeAxis then isAttribute
         else
           !isAttribute && (locus.subject match
-            case _: Element => true
-            case _          => false)
+            case _: Xml.Element => true
+            case _              => false)
 
       case NodeTest.PrefixWildcard(prefix) =>
         val start = t"$prefix:"
@@ -430,25 +430,25 @@ private[xylophone] object XPathEngine:
           case _          => false
         else if isAttribute then false
         else locus.subject match
-          case element: Element => element.label.s.startsWith(start.s)
-          case _                => false
+          case element: Xml.Element => element.label.s.startsWith(start.s)
+          case _                    => false
 
       case NodeTest.Node =>
         true
 
       case NodeTest.Textual =>
         !isAttribute && (locus.subject match
-          case _: TextNode | _: Cdata => true
-          case _                      => false)
+          case _: Xml.Text | _: Xml.Cdata => true
+          case _                          => false)
 
       case NodeTest.Comment =>
         !isAttribute && (locus.subject match
-          case _: Comment => true
-          case _          => false)
+          case _: Xml.Comment => true
+          case _              => false)
 
       case NodeTest.Instruction(target) =>
         !isAttribute && (locus.subject match
-          case ProcessingInstruction(target0, _) => target match
+          case Xml.ProcessingInstruction(target0, _) => target match
             case target: Text => target0.s == target.s
             case _            => true
 
@@ -514,8 +514,8 @@ private[xylophone] object XPathEngine:
     case name: Text => name
 
     case _ => locus.subject match
-      case element: Element                     => element.label
-      case ProcessingInstruction(target, _)     => target
+      case element: Xml.Element                 => element.label
+      case Xml.ProcessingInstruction(target, _) => target
       case _                                    => t""
 
   // The rounding used by `round()` and `substring()` (§4.2, §4.4):
@@ -698,7 +698,7 @@ private[xylophone] object XPathEngine:
 
         val declared = (context.locus :: ancestorLoci(context.locus)).flatMap: locus =>
           locus.subject match
-            case element: Element if attributeIndexOf(locus) < 0 =>
+            case element: Xml.Element if attributeIndexOf(locus) < 0 =>
               element.attributes.fetch(t"xml:lang") match
                 case value: Text => List(value.s.toLowerCase.nn)
                 case _           => Nil
