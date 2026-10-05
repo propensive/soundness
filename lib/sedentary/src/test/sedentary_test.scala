@@ -108,9 +108,10 @@ object Tests extends Suite(m"Sedentary Tests"):
       given benchmarks: Inclusion[Unit, Benchmark] = (_, _, _, _) => ()
       given anchors: Inclusion[Unit, Anchor] = (_, _, _, _) => ()
 
-      bench(m"grid", n"slow")(target = 50*Milli(Second))
-      . over(Axis(t"x")(1, 2), Axis(t"y")(10, 20)):
-          case (x, y) => '{$x + $y}
+      impromptu:
+        bench(m"grid", n"slow")(target = 50*Milli(Second))
+        . over(Axis(t"x")(1, 2), Axis(t"y")(10, 20)):
+            case (x, y) => '{$x + $y}
 
       runner.listed.map: row =>
         ( row.kind,
@@ -126,8 +127,9 @@ object Tests extends Suite(m"Sedentary Tests"):
       given runner: Runner[Unit] = listing()
       given strains: Inclusion[Unit, Strain] = (_, _, _, _) => ()
 
-      Stress()(m"sweep", n"heavy")(target = 50*Milli(Second), concurrency = 2, sweep = 16):
-        '{1 + 1}
+      impromptu:
+        Stress()(m"sweep", n"heavy")(target = 50*Milli(Second), concurrency = 2, sweep = 16):
+          '{1 + 1}
 
       runner.listed.map: row =>
         ( row.kind,

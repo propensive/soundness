@@ -83,14 +83,15 @@ extends Rig:
   type Transport = Json
 
 
-  inline def apply[duration: Abstractable across Durations to Long, report]
+  inline def apply[duration: Abstractable across Durations to Long, report, topic <: Label]
     ( name: Message, tags: Tag* )
     ( target: duration, frames: Optional[Int] = Unset )
     ( body0: (References over Transport) ?=> Quotes ?=> Expr[Any] )
     ( using System, TemporaryDirectory, Stageable over Transport in Form )
     ( using runner:    Runner[report],
             inclusion: Inclusion[report, Hotspots],
-            suite:     Testable,
+            @missingContext(Testable.orphan)
+            suite:     Testable of topic,
             codepoint: Codepoint )
   :   Unit raises Compiler.Error raises Rig.Error =
 

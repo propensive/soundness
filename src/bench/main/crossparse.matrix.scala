@@ -144,7 +144,9 @@ object matrixConfig:
     assert(snakeyamlRival() == mirror, "config: snakeyaml decode disagrees")
 
   def suites[report](bench: Bench)
-    (using Runner[report], Inclusion[report, Benchmark], Testable)
+    ( using Runner[report],
+            Inclusion[report, Benchmark],
+            Testable of "crossparse" )
   :   Unit =
 
     suite(m"Decode the config corpus to case classes"):
@@ -277,7 +279,9 @@ object matrixMenu:
     assert(snakeyamlRival() == mirror, "menu: snakeyaml decode disagrees")
 
   def suites[report](bench: Bench)
-    (using Runner[report], Inclusion[report, Benchmark], Testable)
+    ( using Runner[report],
+            Inclusion[report, Benchmark],
+            Testable of "crossparse" )
   :   Unit =
 
     suite(m"Decode the menu corpus to case classes"):
@@ -410,7 +414,9 @@ object matrixUsers:
     assert(snakeyamlRival() == mirror, "users: snakeyaml decode disagrees")
 
   def suites[report](bench: Bench)
-    (using Runner[report], Inclusion[report, Benchmark], Testable)
+    ( using Runner[report],
+            Inclusion[report, Benchmark],
+            Testable of "crossparse" )
   :   Unit =
 
     suite(m"Decode the users corpus to case classes"):
@@ -543,7 +549,9 @@ object matrixLogs:
     assert(snakeyamlRival() == mirror, "logs: snakeyaml decode disagrees")
 
   def suites[report](bench: Bench)
-    (using Runner[report], Inclusion[report, Benchmark], Testable)
+    ( using Runner[report],
+            Inclusion[report, Benchmark],
+            Testable of "crossparse" )
   :   Unit =
 
     suite(m"Decode the logs corpus to case classes"):
@@ -676,7 +684,9 @@ object matrixTransactions:
     assert(snakeyamlRival() == mirror, "transactions: snakeyaml decode disagrees")
 
   def suites[report](bench: Bench)
-    (using Runner[report], Inclusion[report, Benchmark], Testable)
+    ( using Runner[report],
+            Inclusion[report, Benchmark],
+            Testable of "crossparse" )
   :   Unit =
 
     suite(m"Decode the transactions corpus to case classes"):
@@ -809,7 +819,9 @@ object matrixInts:
     assert(snakeyamlRival() == mirror, "ints: snakeyaml decode disagrees")
 
   def suites[report](bench: Bench)
-    (using Runner[report], Inclusion[report, Benchmark], Testable)
+    ( using Runner[report],
+            Inclusion[report, Benchmark],
+            Testable of "crossparse" )
   :   Unit =
 
     suite(m"Decode the ints corpus to case classes"):
@@ -942,7 +954,9 @@ object matrixDecimals:
     assert(snakeyamlRival() == mirror, "decimals: snakeyaml decode disagrees")
 
   def suites[report](bench: Bench)
-    (using Runner[report], Inclusion[report, Benchmark], Testable)
+    ( using Runner[report],
+            Inclusion[report, Benchmark],
+            Testable of "crossparse" )
   :   Unit =
 
     suite(m"Decode the decimals corpus to case classes"):

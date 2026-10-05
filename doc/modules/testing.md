@@ -69,6 +69,57 @@ selection or a chart can address it even after its description is reworded:
 test(n"square", m"square a number")(3*3).assert(_ == 9)
 ```
 
+### Where a test belongs
+
+A suite has a title and an *id*. The id is what a selection and a path know the suite by, and
+it is either given, as a string literal before the title, or derived from the title: its
+letters and digits in lower case, with a `-` for each run of anything else.
+
+```scala
+object Tests extends Suite("parser", m"Parser tests")   // `fume run parser`
+object Tests extends Suite(m"Parser tests")             // `fume run parser-tests`
+```
+
+A given id is also a *type*: within the body of `Suite("parser", m"Parser tests")`, the
+contextual value which `test` and `suite` take is a `Testable of "parser"`, and each `suite`
+block passes the same topic on. So the compiler knows, of every test it compiles, which suite it
+is declared for, and it refuses a `test` which is declared for none. Tests written in a method
+of their own name the suite, by its id, in the method's signature:
+
+```scala
+object Tests extends Suite("parser", m"Parser tests"):
+  def run(): Unit =
+    suite(m"Numbers")(numbers())
+
+  def numbers()(using Testable of "parser"): Unit =
+    test(m"a decimal integer parses"):
+      t"42".as[Int]
+    . assert(_ == 42)
+```
+
+A suite whose id is derived has no literal to name it by, so its tests are written in its
+body, or in a method which is generic in the suite, `[topic <: Label](using Testable of topic)`.
+
+The beneficence plugin reads this from the typed trees and writes an index of the tests beside
+the index of suites, in `META-INF/probably/tests`: every test's place in the hierarchy, its
+kind, moniker, tags and declaration site. A host can therefore list a classpath's tests, complete
+their names, and arrange them into suites without running anything — whereas a listing made by
+running a suite executes every statement around its tests.
+
+Some tests cannot be known that way: one per file of a corpus, say, or tests run on a `Runner`
+of the program's own which belong to no suite at all. They are declared inside an `impromptu`
+block, which admits `test` and `suite` as a `Suite` does, at the position of the surrounding
+suite if there is one, but leaves them out of the index; a host learns of them as they run.
+
+```scala
+impromptu:
+  List(t"1", t"22", t"333").each: digits =>
+    test(m"$digits parses")(digits.as[Int]).assert(_ > 0)
+```
+
+A test with a computed name which is *not* in an `impromptu` block is still indexed, by the
+fixed parts of its name.
+
 ### Spreading a test over axes
 
 A test is a name and zero or more *axes*. Given an axis, the body runs once per value and each
@@ -208,7 +259,8 @@ the `META-INF/services/probably.Suite` index of the jar it compiles, and the
 classpath, runs each one in-process, and renders the stream of `TestEvent`s a suite emits: live
 progress on a terminal, plain output on CI, each failure with its contrast, and a nonzero exit if
 any test failed — all a build needs to gate on. A project names its classpath once in
-`.fume/config.tel`, so a bare `fume run` runs everything.
+`.fume/config.tel`, so a bare `fume run` runs everything. `fume list`, and the completion of test
+names in a shell, read the index of tests, and so run nothing.
 
 fume also accepts selection terms, so a subset can be run without editing the code. Hashes,
 monikers and name globs identify tests and union with each other; the `--test`, `--bench`,

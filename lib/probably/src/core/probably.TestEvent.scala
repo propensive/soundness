@@ -68,9 +68,9 @@ object TestEvent:
   object Ref:
     def of(id: Test.Id): Ref =
       def names(id: Test.Id): List[Text] =
-        id.suite.let { suite => names(suite.id) }.or(Nil) :+ id.moniker.or(id.name.text)
+        id.suite.let { suite => names(suite.id) }.or(Nil) :+ id.label.or(id.name.text)
 
-      Ref(id.id, id.name.text, id.moniker, names(id), id.codepoint.source, id.codepoint.line)
+      Ref(id.id, id.name.text, id.label, names(id), id.codepoint.source, id.codepoint.line)
 
   case class Frame(className: Text, method: Text, file: Text, line: Optional[Int])
 

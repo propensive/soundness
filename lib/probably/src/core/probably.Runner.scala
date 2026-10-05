@@ -36,6 +36,7 @@ import java.util as ju
 import java.util.concurrent as juc
 
 import anticipation.*
+import prepositional.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
@@ -96,7 +97,8 @@ object Runner:
     def listed: List[Runner.Scheduled] = base.listed
     def admitted: Int = base.admitted
     def run[result](test: Test[result]^): Trial[result] = base.run[result](test)
-    def suite(suite: Testable, block: Testable ?=> Unit): Unit = base.suite(suite, block)
+    def suite[topic](suite: Testable of topic, block: (Testable of topic) ?=> Unit): Unit =
+      base.suite(suite, block)
     def terminate(error: Throwable): Unit = base.terminate(error)
     def complete(): Unit = base.complete()
 
@@ -320,7 +322,7 @@ object Runner:
 
     // Suites are always entered, whatever the selection: their bodies are cheap, and pruning
     // by name would defeat hash- and moniker-based selection of the tests within them.
-    def suite(suite: Testable, block: Testable ?=> Unit): Unit =
+    def suite[topic](suite: Testable of topic, block: (Testable of topic) ?=> Unit): Unit =
       mutex { active ::= suite.id }
       suites ::= suite.id
 
@@ -380,7 +382,7 @@ trait Runner[report] extends Findable:
   def listed: List[Runner.Scheduled]
   def admitted: Int
   def run[result](test: Test[result]^): Trial[result]
-  def suite(suite: Testable, block: Testable ?=> Unit): Unit
+  def suite[topic](suite: Testable of topic, block: (Testable of topic) ?=> Unit): Unit
   def terminate(error: Throwable): Unit
   def complete(): Unit
 

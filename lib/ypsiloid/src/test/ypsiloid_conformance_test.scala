@@ -42,7 +42,7 @@ object ConformanceTests:
   // within `aspirationally`, which keeps the build green during iterative
   // improvement and surfaces an `aspire-pass` signal when a
   // previously-failing case starts working.
-  def all()(using Testable, Runner[Report]): Unit =
+  def all()(using Testable of "ypsiloid", Runner[Report]): Unit =
     suite(m"YAML test suite conformance"):
       if !Conformance.available() then ()
       else

@@ -35,7 +35,7 @@ package soundness
 export
   probably
   . { Anchor, Arithmetic, aspirationally, Autopsy, Axable, Axis, Baseline, Benchmark, Cadential,
-      Geometric, Harness, Hotspots, Inclusion,
+      Derived, Geometric, Harness, Hotspots, impromptu, Impromptu, Inclusion,
       Max, Mean, Metric, Min, nominative, Probing, Report, Reporter, Run, Runner, Spread,
       Spread2, Strain, suite, Tagging, taggingNominative, Tally, Temporal, Test, test,
       Testable, Trial, Value, Verdict }

@@ -206,11 +206,11 @@ case class Selection
 
     // A path of monikers where declared, falling back to names, so that mixed selections
     // like `jacinta/parseJson` work even when only some links are named.
-    val monikerPath = chain.reverse.map { link => link.moniker.or(link.name.text) }.join(t"/")
+    val monikerPath = chain.reverse.map { link => link.label.or(link.name.text) }.join(t"/")
 
     terms.exists:
       case Selection.Term.Identifier(name) =>
-        chain.exists: link => link.id == name || link.moniker.lay(false)(_ == name)
+        chain.exists: link => link.id == name || link.label.lay(false)(_ == name)
 
       // Kaleidoscope glob semantics (`?`, `[a-z]`, `[!a-z]` now work): `*` matches within one
       // `/`-joined link, so spanning a suite path takes `**`, e.g. `jacinta/**` or
@@ -218,7 +218,9 @@ case class Selection
       case Selection.Term.Glob(pattern) =>
         val glob = kaleidoscope.Glob.parse(pattern)
 
+        // A suite's id may hold a `-`, which makes it a glob rather than an identifier here.
         names.exists(glob.matches(_))
+        || chain.exists { link => link.key.lay(false)(glob.matches(_)) }
         || glob.matches(path)
         || glob.matches(monikerPath)
 

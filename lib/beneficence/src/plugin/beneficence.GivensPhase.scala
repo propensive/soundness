@@ -53,6 +53,8 @@ class GivensPhase() extends PluginPhase:
         mutable.LinkedHashMap.empty
 
       val collectedSuites: mutable.Buffer[Entry] = mutable.Buffer.empty
+      val collectedTests: mutable.LinkedHashMap[String, List[String]] = mutable.LinkedHashMap.empty
+      val testable = Symbols.getClassIfDefined("probably.Testable")
 
       val sources: mutable.LinkedHashSet[String] = mutable.LinkedHashSet.empty
 
@@ -60,8 +62,12 @@ class GivensPhase() extends PluginPhase:
         sources += unit.source.path
         collect(unit, collectedGivens, collectedSuites, findable, suite)
 
+        if suite.exists && testable.exists then
+          collectedTests(unit.source.path) = TestsIndex.index(unit, testable, suite)
+
       GivensWriter.merge(collectedGivens, sources.toSet)
       if suite.exists then GivensWriter.mergeSuites(collectedSuites, sources.toSet)
+      GivensWriter.writeTests(collectedTests)
       units
 
   private def collect

@@ -144,7 +144,7 @@ object Streamer:
         val instance = moduleClass.getField("MODULE$").nn.get(null).nn
 
         instance.absolve match
-          case suite: Suite =>
+          case suite: Suite[?] =>
             suite.invoke(arguments, { (event: TestEvent) => send(encode(event)) })
 
       . or(2)

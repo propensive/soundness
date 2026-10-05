@@ -91,12 +91,29 @@ object Test:
       moniker:   Optional[Name[Probing]] = Unset,
       // The declaration's tags, in declaration order; a selection admits and excludes by
       // them, and a listing reports them.
-      tags:      List[Tag] = Nil ):
+      tags:      List[Tag] = Nil,
+      // A suite's id (see `Suite`): what a selection, and a path, know it by. Unlike a
+      // moniker it need not be a Java identifier, so it is plain text.
+      key:       Optional[Text] = Unset ):
     val timestamp: Long = System.currentTimeMillis
 
     import textMetrics.uniformMetric
-    lazy val id: Text = (suite.lay(0)(_.hashCode) ^ name.hashCode).hex.pad(6, Rtl, '0').keep(6, Rtl)
+
+    // The six hex digits a test is known by: a function of the TEXT of its name and of the
+    // names of the suites it is within, and of nothing else, so that whatever knows those
+    // names — the index of tests the beneficence plugin writes, a host reading it — arrives at
+    // the same id without the test ever being constructed. With `h(suite)` the sum of the
+    // `String#hashCode`s of the texts of the suite's name and its ancestors' names, the id is
+    // the low 24 bits of `h(suite) ^ name.text.hashCode`, in hex.
+    lazy val id: Text =
+      (suite.lay(0)(_.hashCode) ^ name.text.s.hashCode).hex.pad(6, Rtl, '0').keep(6, Rtl)
     lazy val ids: List[Text] = id :: suite.let(_.id.ids).or(Nil)
+
+    // What addresses this entry in a selection or a path, other than its hash and its name:
+    // a test's or group's moniker, or a suite's id.
+    def label: Optional[Text] =
+      val moniker0: Optional[Text] = moniker
+      moniker0.or(key)
 
     // The test block may capture a capability (e.g. an error tactic, a decoder); that capture
     // lands on the returned `Test` (`^{context}`), NOT on `result` — so a test that asserts a
