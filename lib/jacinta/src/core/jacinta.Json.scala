@@ -934,7 +934,7 @@ object Json extends Json2, Dynamic:
             while reader.element() do
               builder +=
                 ( if focused
-                  then focus(descend(prior, index.toString.tt))(field.parse(reader))
+                  then focus(descend(prior, index.show))(field.parse(reader))
                   else field.parse(reader) )
               index += 1
 
@@ -1545,7 +1545,7 @@ object Json extends Json2, Dynamic:
     extends Out:
       update def ascii(text: String): Unit = producer.put(text.tt)
       update def raw(text: String): Unit = producer.put(text.tt)
-      update def long(value: Long): Unit = producer.put(value.toString.tt)
+      update def long(value: Long): Unit = producer.put(value.show)
       update def bcdInt(value: Int): Unit = producer.put(Bcd.bcdIntText(value).tt)
       update def bcdLong(value: Long): Unit = producer.put(Bcd.bcdLongText(value).tt)
       update def bcd(value: Bcd): Unit = producer.put(value.text.tt)
@@ -2783,7 +2783,7 @@ object Json extends Json2, Dynamic:
             val newPointer =
               JsonPointer
                 ( Path[JsonPointer, JsonPointer.type, Tuple]
-                    ( base.path.root, (base.path.descent :+ ordinal.n0.toString.tt).to(List) ) )
+                    ( base.path.root, (base.path.descent :+ ordinal.n0.show).to(List) ) )
 
             Json.Focus(newPointer)
           }):

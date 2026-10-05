@@ -44,6 +44,7 @@ import polyvinyl.*
 import prepositional.*
 import rudiments.*
 import turbulence.read
+import spectacular.*
 import vacuous.*
 
 import strategies.throwUnsafely
@@ -579,7 +580,7 @@ trait Json4:
           if values.present then value(t"enum", values.or(SNil))
           else if pattern.present then value(t"pattern", Sl(pattern.or(t"")))
           else if minimum.present || maximum.present then
-            value(t"string!", Sl(minimum, maximum).map(_.let(_.toInt.toString.tt).or(t"")))
+            value(t"string!", Sl(minimum, maximum).map(_.let(_.toInt.show).or(t"")))
           else if format.let(formats.contains(_)).or(false) then
             value(format.or(t"string"))
           else
