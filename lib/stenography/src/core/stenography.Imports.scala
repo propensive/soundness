@@ -41,6 +41,11 @@ import vacuous.*
 object Imports:
   val empty: Imports = Imports(sci.Set(), sci.Set())
 
+  // A designator's fully-qualified dotted name, as the compiler's denotations look it up.
+  private def path(designator: Designator): String =
+    designator.parent.lay(designator.name.s): parent =>
+      s"${path(parent)}.${designator.name}"
+
   // The designators reachable by their leaf name through the `export` aliases declared in
   // `scope`, a package or object such as `soundness`: each alias's target type, and its
   // companion. This is the non-macro counterpart of the harvest `internal.name` performs for
@@ -55,9 +60,6 @@ object Imports:
 
     import dotty.tools.dotc.core.Denotations
     import dotty.tools.dotc.core.Names.termName
-
-    def path(designator: Designator): String = designator.parent.lay(designator.name.s): parent =>
-      s"${path(parent)}.${designator.name}"
 
     try
       val denotation = Denotations.staticRef(termName(path(scope)), generateStubs = false)
@@ -79,9 +81,6 @@ object Imports:
 
     import dotty.tools.dotc.core.Denotations
     import dotty.tools.dotc.core.Names.termName
-
-    def path(designator: Designator): String = designator.parent.lay(designator.name.s): parent =>
-      s"${path(parent)}.${designator.name}"
 
     try
       val denotation = Denotations.staticRef(termName(path(scope)), generateStubs = false)
