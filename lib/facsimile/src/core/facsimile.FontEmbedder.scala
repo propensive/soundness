@@ -138,7 +138,7 @@ private[facsimile] object FontEmbedder:
 
   // A PostScript name contains no spaces, though some fonts' naming tables do.
   private def postScriptName(font: Sfnt): Optional[Text] =
-    font.fontName.let(_.s.replace(" ", "").nn.tt)
+    font.fontName.let(_.sub(t" ", t""))
 
   // The conventional six-uppercase-letter subset tag, derived deterministically from the
   // name and subset text, so identical subsets embed identically.
