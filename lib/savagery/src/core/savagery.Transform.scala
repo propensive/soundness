@@ -57,8 +57,6 @@ object Transform:
       case Skew(angle, orientation) => form(t"Skew", angle.inspect, orientation.inspect)
       case Matrix(affine)           => form(t"Matrix", affine.inspect)
 
-  private given floatShowable: Float is Showable = _.toString.tt
-
   given encodable: Transform is Encodable in Text =
     _.absolve match
       case Translate(delta)                    => t"translate(${delta.dx},${delta.dy})"
