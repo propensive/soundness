@@ -290,7 +290,6 @@ trait Vernacular:
 
   final def rrule(rule: Rrule[?])(using Months, Weekdays): Text =
     def dayEntry(entry: WeekdayOrdinal): (Optional[Int], Text) = (entry.ordinal, entry.weekday.show)
-    def monthName(month: Month): Text = month.show
 
     val cadence = everyUnit(rule.interval, Vernacular.unitOf(rule.frequency))
 
@@ -300,7 +299,7 @@ trait Vernacular:
       else Unset
 
     val monthClause: Optional[Text] =
-      if rule.byMonth.nil then Unset else inMonths(rule.byMonth.map(monthName), onClause.present)
+      if rule.byMonth.nil then Unset else inMonths(rule.byMonth.map(_.show), onClause.present)
 
     val setPosClause: Optional[Text] =
       if rule.bySetPos.nil then Unset else takingPositions(rule.bySetPos)

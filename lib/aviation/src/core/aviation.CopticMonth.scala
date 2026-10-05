@@ -41,8 +41,6 @@ import symbolism.*
 // month `Nasie` (5 days, or 6 in a leap year). `CopticMonth` is a distinct `MonthRadix`, so a span
 // counted in Coptic months can only be added to a date read in the Coptic calendar.
 object CopticMonth extends MonthRadix:
-  given showable: CopticMonth is Showable = _.toString.tt
-
   given multiplicable: Int is Multiplicable by CopticMonth.type to (Timespan of CopticMonth.type) =
     Multiplicable: (n, _) => Timespan(CopticMonth, n)
 

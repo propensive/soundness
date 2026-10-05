@@ -42,15 +42,12 @@ import gossamer.*
 // as a deterministic approximation of the official, observational calendar (true vernal equinox at
 // the 52.5°E meridian); the two can differ by a day around some equinoxes. Months 1–6 have 31 days,
 // 7–11 have 30, and Esfand has 29 (30 in a leap year). Epoch: 1 Farvardin 1 = JDN 1948321.
-class PersianCalendar() extends Calendar:
-  type Mensual = PersianMonth
+class PersianCalendar() extends Enumerated[PersianMonth](PersianMonth.fromOrdinal):
   type MonthUnit = PersianMonth.type
 
   private val epoch: Int = 1948321
   val name: Text = t"Persian"
   def monthsInYear(year: Year): Int = 12
-  def monthOrdinal(year: Year, month: PersianMonth): Int = month.ordinal
-  def monthOfOrdinal(year: Year, ordinal: Int): PersianMonth = PersianMonth.fromOrdinal(ordinal)
 
   def leapYear(year: Year): Boolean = ((floorMod(year() - 474, 2820) + 512)*682)%2816 < 682
   def daysInYear(year: Year): Int = if leapYear(year) then 366 else 365

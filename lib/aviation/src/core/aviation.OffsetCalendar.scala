@@ -38,13 +38,11 @@ import contingency.*
 // A calendar that shares another's months and days but renumbers its years by a constant offset —
 // e.g. the Thai/Buddhist calendar (Gregorian + 543) or the Minguo/Republic-of-China calendar
 // (Gregorian − 1911), sharing the base's `Month` radix and differing only in the year number.
-class OffsetCalendar(base: RomanCalendar, offset: Int, val name: Text) extends Calendar:
-  type Mensual = Month
+class OffsetCalendar(base: RomanCalendar, offset: Int, val name: Text)
+extends Enumerated[Month](Month.fromOrdinal):
   type MonthUnit = Month.type
 
   def monthsInYear(year: Year): Int = 12
-  def monthOrdinal(year: Year, month: Month): Int = month.ordinal
-  def monthOfOrdinal(year: Year, ordinal: Int): Month = Month.fromOrdinal(ordinal)
 
   def daysInYear(year: Year): Int = base.daysInYear(Year(year() - offset))
   def daysInMonth(month: Month, year: Year): Int = base.daysInMonth(month, Year(year() - offset))

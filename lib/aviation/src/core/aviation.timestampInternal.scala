@@ -75,11 +75,9 @@ object timestampInternal:
   // Zero-padding for the ISO renderings below; a negative number keeps its sign in front of the
   // padded digits, so a year before the epoch is still legible.
   private def pad(value: Int, digits: Int): Text =
-    val body = Math.abs(value).toString
-    val builder: StringBuilder = new StringBuilder(if value < 0 then "-" else "")
-    while builder.length + body.length < digits do builder.append('0')
-
-    builder.append(body).toString.tt
+    import textMetrics.uniformMetric
+    val sign = if value < 0 then t"-" else t""
+    t"$sign${Math.abs(value.toLong).show.pad(digits - sign.length, Rtl, '0')}"
 
   // The shape of a `Timestamp - Timestamp` difference: a regular span of days/hours/mins/seconds.
   type Difference =
@@ -215,9 +213,9 @@ object timestampInternal:
       import hieroglyph.textMetrics.uniformMetric
 
       List
-        ( date.year().toString.tt,
-          date.month.numerical.toString.tt.pad(2, Rtl, '0'),
-          date.day().toString.tt.pad(2, Rtl, '0') )
+        ( date.year().show,
+          date.month.numerical.show.pad(2, Rtl, '0'),
+          date.day().show.pad(2, Rtl, '0') )
 
       . join(t"-")
 

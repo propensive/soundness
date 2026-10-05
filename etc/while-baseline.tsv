@@ -7,8 +7,7 @@ lib/archimedes/src/core/archimedes.Mathml.scala	1	1	0
 lib/aviation/src/core/aviation.HebrewCalendar.scala	5	0	0
 lib/aviation/src/core/aviation.LeapSeconds.scala	3	0	0
 lib/aviation/src/core/aviation.Timespan.scala	2	0	0
-lib/aviation/src/core/aviation.internal.scala	1	0	1
-lib/aviation/src/core/aviation.timestampInternal.scala	1	0	0
+lib/aviation/src/core/aviation.internal.scala	0	0	1
 lib/bitumen/src/core/bitumen.Archive.scala	1	0	0
 lib/bitumen/src/core/bitumen.Pax.scala	3	4	0
 lib/bitumen/src/core/bitumen.Tar.scala	2	0	0
