@@ -225,6 +225,29 @@ object Tests extends Suite(m"Jacinta Tests"):
         false.in[Json].show
       . assert(_ == t"false")
 
+      test(m"A Json constructed from an Int holds that Int"):
+        val number: Int = 1234
+        (Json(number).show, Json(number).as[Int])
+      . assert(_ == (t"1234", 1234))
+
+      test(m"A Json constructed from a negative Short holds it"):
+        val number: Short = -7
+        Json(number).show
+      . assert(_ == t"-7")
+
+      test(m"A Json constructed from a Byte holds it"):
+        val number: Byte = 99
+        Json(number).show
+      . assert(_ == t"99")
+
+      test(m"A Json constructed from a large Long keeps every digit"):
+        Json(1_791_057_911_278L).show
+      . assert(_ == t"1791057911278")
+
+      test(m"A Json constructed from a Float holds it"):
+        Json(1.5f).show
+      . assert(_ == t"1.5")
+
       test(m"Serialize Int"):
         42.in[Json].show
       . assert(_ == t"42")
