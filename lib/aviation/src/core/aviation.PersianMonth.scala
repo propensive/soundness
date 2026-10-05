@@ -40,8 +40,6 @@ import symbolism.*
 // The twelve months of the Persian (Solar Hijri) calendar: the first six of 31 days, the next five
 // of 30, and `Esfand` of 29 days (30 in a leap year). A distinct `MonthRadix`.
 object PersianMonth extends MonthRadix:
-  given showable: PersianMonth is Showable = _.toString.tt
-
   given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =
     Multiplicable: (n, _) => Timespan(this, n)
 

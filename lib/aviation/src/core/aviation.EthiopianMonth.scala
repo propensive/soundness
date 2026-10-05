@@ -41,8 +41,6 @@ import symbolism.*
 // `Pagume` (5 days, or 6 in a leap year). Structurally identical to the Coptic calendar but with a
 // distinct epoch and month names, and a distinct `MonthRadix`.
 object EthiopianMonth extends MonthRadix:
-  given showable: EthiopianMonth is Showable = _.toString.tt
-
   given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =
     Multiplicable: (n, _) => Timespan(this, n)
 

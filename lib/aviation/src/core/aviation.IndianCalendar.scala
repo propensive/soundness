@@ -40,14 +40,11 @@ import gossamer.*
 // `Gregorian − 78`, beginning on 1 Chaitra = 22 March (21 March when the Gregorian year is a leap
 // year). Chaitra then has 30 days (31 in a leap year), the next five months 31, and the last six
 // 30. Adopted by India in 1957 (1 Chaitra 1879 Saka = 22 March 1957).
-class IndianCalendar() extends Calendar:
-  type Mensual = IndianMonth
+class IndianCalendar() extends Enumerated[IndianMonth](IndianMonth.fromOrdinal):
   type MonthUnit = IndianMonth.type
 
   val name: Text = t"Indian National"
   def monthsInYear(year: Year): Int = 12
-  def monthOrdinal(year: Year, month: IndianMonth): Int = month.ordinal
-  def monthOfOrdinal(year: Year, ordinal: Int): IndianMonth = IndianMonth.fromOrdinal(ordinal)
 
   private def gregorianLeap(gregorian: Int): Boolean =
     gregorian%4 == 0 && gregorian%100 != 0 || gregorian%400 == 0

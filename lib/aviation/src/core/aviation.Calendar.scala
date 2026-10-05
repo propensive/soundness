@@ -44,7 +44,7 @@ trait Calendar extends Findable:
   // used to dispatch calendar arithmetic to the right calendar at compile time.
   type Annual = Year
   type Diurnal = Day
-  type Mensual
+  type Mensual: Showable
   type MonthUnit <: MonthRadix
 
   def name: Text
@@ -78,10 +78,16 @@ trait Calendar extends Findable:
 
     computeJdn(year, month, day)
 
-  // The display name of a month. By default this is the month value's own name (the enum case name,
-  // which is already the conventional name in most calendars); calendars override it where the name
-  // needs polishing.
-  def monthName(month: Mensual): Text = month.toString.tt
+  // The display name of a month: its `Showable` rendering, which for an enum month is the case name
+  // unless the month's companion polishes it (`HebrewMonth`, `IslamicMonth`).
+  def monthName(month: Mensual): Text = month.show
 
   // A date rendered in this calendar, as "day month-name year", e.g. "15 Ramadan 1445".
   def format(date: Date): Text = t"${diurnal(date)()} ${monthName(mensual(date))} ${annual(date)()}"
+
+// A calendar whose months are the cases of one enum, numbered the same way in every year.
+trait Enumerated[month <: scala.reflect.Enum: Showable](fromOrdinal: Int => month)
+extends Calendar:
+  type Mensual = month
+  def monthOrdinal(year: Year, month: month): Int = month.ordinal
+  def monthOfOrdinal(year: Year, ordinal: Int): month = fromOrdinal(ordinal)
