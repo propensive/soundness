@@ -76,11 +76,13 @@ import filesystemOptions.deleteRecursively
 
 import filesystemBackends.javaBaseFilesystem
 
-def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus]^{service} =
-  service
+def resident[bus <: Matchable](using resident: Resident over bus)
+:   (Resident over bus)^{resident} =
+
+  resident
 
 def cli[bus <: Matchable](using executive: Executive)
-  ( block: (DaemonService[bus], executive.Interface, Environment, Monitor) ?=> executive.Return )
+  ( block: (Resident over bus, executive.Interface, Environment, Monitor) ?=> executive.Return )
   ( using interpreter: Interpreter,
           threading:   Threading,
           handler:     Backstop )
@@ -412,25 +414,23 @@ def cli[bus <: Matchable](using executive: Executive)
 
         // Generated lazily and memoized: re-runs the application's pure portion in
         // tab-completion mode to discover its subcommand/flag tree. Only the completions
-        // executive can produce a tree; others yield `Unset` and `service.help()` falls back.
-        // The help view, the service handle and each client invocation all share the same
+        // executive can produce a tree; others yield `Unset` and `resident.help()` falls back.
+        // The help view, the resident handle and each client invocation all share the same
         // single-owner daemon state; none is an aliased writer.
         lazy val helpValue: Optional[Help] =
           scala.caps.unsafe.unsafeAssumeSeparate:
            executive.help(name, environment, () => directory, stdio, login):
-             (interface: executive.Interface) ?=> block(using service, interface, environment, summon[Monitor])
+             (interface: executive.Interface) ?=> block(using resident, interface, environment, summon[Monitor])
 
-        lazy val service: DaemonService[bus] =
+        lazy val resident: Resident over bus =
           scala.caps.unsafe.unsafeAssumeSeparate:
-           DaemonService[bus]
+           new Resident
              ( pid,
                () => drain(),
                shellInput,
                shellOutput,
                shellError,
                script.as[Path on Local],
-               deliver(pid, _),
-               clientState.bus.chain,
                name,
                startTime,
                () => helpValue,
@@ -440,7 +440,10 @@ def cli[bus <: Matchable](using executive: Executive)
                () => windowSize0(),
                umask.let(Umask.parse(_)),
                session.fdtable,
-               raws )
+               raws ):
+             type Transport = bus
+             def bus: Chain[Transport] = clientState.bus.chain
+             def broadcast(message: Transport): Unit = deliver(this.pid, message)
 
         Log.fine(DaemonLogEvent.NewCli)
 
@@ -456,14 +459,14 @@ def cli[bus <: Matchable](using executive: Executive)
                  environment,
                  () => directory,
                  stdio,
-                 service,
+                 resident,
                  login )
 
           clientState.invocation.offer(cli.asInstanceOf[AnyRef])
 
           if cli.proceed then
             val result = scala.caps.unsafe.unsafeAssumeSeparate:
-              block(using service, cli, environment, summon[Monitor])
+              block(using resident, cli, environment, summon[Monitor])
 
             exitStatus = scala.caps.unsafe.unsafeAssumeSeparate(executive.process(cli)(result))
           else exitStatus = Exit.Ok

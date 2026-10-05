@@ -78,7 +78,7 @@ object Installer:
     case PathNotWritable
 
 
-  def candidateTargets()(using service: DaemonService[?], diagnostics: Diagnostics)
+  def candidateTargets()(using resident: Resident, diagnostics: Diagnostics)
     ( using Environment, System )
     ( using Tactic[Install.Error], (DaemonLogEvent is Loggable)^ )
   :   List[Path on Linux] =
@@ -108,7 +108,7 @@ object Installer:
 
 
   def install(force: Boolean = false, target: Optional[Path on Linux] = Unset)
-    ( using service: DaemonService[?], environment: Environment )
+    ( using resident: Resident, environment: Environment )
     ( using erased effectful: Effectful )
     ( using Diagnostics )
     ( using Tactic[Install.Error], (DaemonLogEvent is Loggable)^ )
@@ -128,15 +128,15 @@ object Installer:
       case Zip.Error(_)          => Install.Error(Install.Error.Reason.Io)
 
     . protect:
-        val command: Text = service.script
+        val command: Text = resident.script
         val scriptPath = mute[guillotine.Exec.Event](sh"sh -c 'command -v $command'".exec[Text]())
 
-        if safely(scriptPath.as[Path on Linux]) == service.executable && !force
-        then Result.AlreadyOnPath(command, service.executable.encode)
+        if safely(scriptPath.as[Path on Linux]) == resident.executable && !force
+        then Result.AlreadyOnPath(command, resident.executable.encode)
         else
           val payloadSize: Bytes = Bytes(System.properties.ethereal.payloadSize[Int]())
           val jarSize: Bytes = Bytes(System.properties.ethereal.jarSize[Int]())
-          val fileSize = service.executable.filesize()
+          val fileSize = resident.executable.filesize()
           val prefixSize = fileSize - payloadSize - jarSize
 
           val installDirectory: Path on Linux = target.or(candidateTargets().prim).or:
@@ -159,7 +159,7 @@ object Installer:
             // inner open's evidence would mint fresh roots that cannot unify with the
             // outer handle's; see `Assembler.assemble`). The read is strict, so nothing
             // reads the closed handle.
-            val chunks: List[Data] = service.executable.open[File]():
+            val chunks: List[Data] = resident.executable.open[File]():
               source ?=> source.reader().to[List]
 
             tempFile.open[File](Write, OpenFlag.Create): target ?=>
