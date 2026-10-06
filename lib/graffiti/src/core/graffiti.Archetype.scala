@@ -60,7 +60,10 @@ object Archetype:
   // The complete single-document page, as `page.html`: the stylesheet (inline in `<style>`, or
   // linked from `stylesheetUrl`), accumulated `<head>` metadata, and `dir` set on `<body>` from
   // `direction` (the `<html>` element admits no Whatwg global attributes).
-  given renderable: [page <: Archetype] => page is Renderable in "html" = page =>
+  given renderable: [page <: Archetype] => page is Renderable in ("html") = render(_)
+
+  // Takes the page as a capability, so that a page can also render itself (`document`).
+  private[graffiti] def render(page: Archetype^): Html of "html" =
     val sheet: Html of (? <: Metadata) =
       page.stylesheetUrl.lay(Style(page.stylesheet)): url =>
         Link.Stylesheet(href = url)
@@ -119,4 +122,4 @@ trait Archetype:
 
   // The page as a `Document[Html]` with a leading doctype — the form that is served over HTTP.
   final def document: Document[Html] =
-    Document[Html](Html.Fragment(Html.doctype, html), htmlDoms.whatwg)
+    Document[Html](Html.Fragment(Html.doctype, Archetype.render(this)), htmlDoms.whatwg)
