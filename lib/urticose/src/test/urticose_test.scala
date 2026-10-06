@@ -37,6 +37,7 @@ import fulminate.errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import urticose.teletypeables.urlTeletype
 import denominative.dysasymptotics.linearSize
+import alphabets.hexUpperCase
 
 object Tests extends Suite(m"Urticose tests"):
   given palette: UrlPalette = new Palette:
@@ -951,6 +952,192 @@ object Tests extends Suite(m"Urticose tests"):
       test(m"localhost resolves through the platform resolver"):
         Dns.resolve(Dns.Name.parse(t"localhost"))
       . assert(!_.nil)
+
+    suite(m"DNS wire format tests"):
+      val query = Dns.Message.query(0x1234, List(Dns.Question(Dns.Name(t"example", t"com"), Dns.Type.A)))
+
+      val queryBytes =
+        hex"""1234 0100 0001 0000 0000 0000
+              07 6578616d706c65 03 636f6d 00 0001 0001"""
+
+      val responseBytes =
+        hex"""1234 8180 0001 0001 0000 0000
+              07 6578616d706c65 03 636f6d 00 0001 0001
+              c00c 0001 0001 00000e10 0004 5db8d822"""
+
+      val instance = Dns.Name(t"Gondor", t"_fury", t"_tcp", t"local")
+      val service = Dns.Name(t"_fury", t"_tcp", t"local")
+      val host = Dns.Name(t"gondor", t"local")
+
+      val announcement =
+        Dns.Message
+          ( 0,
+            Dns.Flags(response = true, authoritative = true),
+            Nil,
+            List
+              ( Dns.Record(service, 4500, Dns.Rdata.Ptr(instance)),
+                Dns.Record(instance, 120, Dns.Rdata.Srv(0, 0, 8080, host), flush = true),
+                Dns.Record(instance, 4500, Dns.Rdata.Txt(t"txtvers=1", t""), flush = true),
+                Dns.Record(host, 120, Dns.Rdata.A(ip"192.168.1.2"), flush = true) ) )
+
+      // Owner names and the PTR target compress; the SRV target does not (RFC 2782).
+      val announcementBytes =
+        hex"""0000 8400 0000 0004 0000 0000
+              05 5f66757279 04 5f746370 05 6c6f63616c 00 000c 0001 00001194 0009 06 476f6e646f72 c00c
+              c028 0021 8001 00000078 0014 0000 0000 1f90 06 676f6e646f72 05 6c6f63616c 00
+              c028 0010 8001 00001194 000b 09 747874766572733d31 00
+              c043 0001 8001 00000078 0004 c0a80102"""
+
+      def roundtrip(rdata: Dns.Rdata): Dns.Rdata =
+        val record = Dns.Record(Dns.Name(t"example", t"com"), 60, rdata)
+        val message = Dns.Message(1, Dns.Flags(), Nil, List(record))
+        message.in[Data].as[Dns.Message].answers.stdlib.head.rdata
+
+      test(m"A query encodes to its wire form"):
+        query.in[Data].serialize[Hex]
+      . assert(_ == queryBytes.serialize[Hex])
+
+      test(m"A query decodes from its wire form"):
+        queryBytes.as[Dns.Message]
+      . assert(_ == query)
+
+      test(m"A compressed response decodes"):
+        responseBytes.as[Dns.Message].answers
+      . assert(_ == List(Dns.Record(Dns.Name(t"example", t"com"), 3600, Dns.Rdata.A(ip"93.184.216.34"))))
+
+      test(m"Re-encoding a compressed response reproduces its bytes"):
+        responseBytes.as[Dns.Message].in[Data].serialize[Hex]
+      . assert(_ == responseBytes.serialize[Hex])
+
+      test(m"A DNS-SD announcement encodes with compression and flush bits"):
+        announcement.in[Data].serialize[Hex]
+      . assert(_ == announcementBytes.serialize[Hex])
+
+      test(m"A DNS-SD announcement decodes to an equal message"):
+        announcementBytes.as[Dns.Message]
+      . assert(_ == announcement)
+
+      test(m"The cache-flush bit is read from the class field"):
+        announcementBytes.as[Dns.Message].answers.map(_.flush)
+      . assert(_ == List(false, true, true, true))
+
+      test(m"The class field without its flush bit is the record's class"):
+        announcementBytes.as[Dns.Message].answers.map(_.netClass)
+      . assert(_ == List.fill(4)(Dns.NetClass.Internet))
+
+      test(m"A compressed SRV target is accepted on input"):
+        val bytes =
+          hex"""0000 8400 0000 0001 0000 0000
+                06 676f6e646f72 05 6c6f63616c 00 0021 0001 00000078 0008 0000 0000 1f90 c00c"""
+        bytes.as[Dns.Message].answers.stdlib.head.rdata
+      . assert(_ == Dns.Rdata.Srv(0, 0, 8080, host))
+
+      test(m"A pointer to itself is rejected"):
+        capture[Dns.Error](hex"0000 0100 0001 0000 0000 0000 c00c 0001 0001".as[Dns.Message]).reason
+      . assert(_ == Dns.Error.Reason.BadPointer(12))
+
+      test(m"A forward pointer is rejected"):
+        capture[Dns.Error](hex"0000 0100 0001 0000 0000 0000 c00e 0001 0001".as[Dns.Message]).reason
+      . assert(_ == Dns.Error.Reason.BadPointer(12))
+
+      test(m"A message cut short in a question is rejected"):
+        capture[Dns.Error](hex"0000 0100 0001 0000 0000 0000".as[Dns.Message]).reason
+      . assert(_ == Dns.Error.Reason.Truncated(12))
+
+      test(m"Trailing bytes are rejected"):
+        capture[Dns.Error](hex"1234 0100 0000 0000 0000 0000 00".as[Dns.Message]).reason
+      . assert(_ == Dns.Error.Reason.Trailing(12))
+
+      test(m"Record data of the wrong length is rejected"):
+        val bytes = hex"0000 8400 0000 0001 0000 0000 00 0001 0001 00000078 0003 c0a801"
+        capture[Dns.Error](bytes.as[Dns.Message]).reason
+      . assert(_ == Dns.Error.Reason.BadRdata(Dns.Type.A, 23))
+
+      test(m"Every record type round-trips"):
+        val name = Dns.Name(t"ns", t"example", t"com")
+        List
+          ( Dns.Rdata.A(ip"10.0.0.1"),
+            Dns.Rdata.Aaaa(ip"2001:db8::1"),
+            Dns.Rdata.Ptr(name),
+            Dns.Rdata.Cname(name),
+            Dns.Rdata.Ns(name),
+            Dns.Rdata.Mx(10, name),
+            Dns.Rdata.Srv(1, 2, 443, name),
+            Dns.Rdata.Txt(t"a=1", t"b"),
+            Dns.Rdata.Soa(name, Dns.Name(t"hostmaster", t"example", t"com"), 2026100601L, 7200, 900, 1209600, 300),
+            Dns.Rdata.Opt(List((10, hex"0102"))),
+            Dns.Rdata.Unknown(Dns.Type(99), hex"deadbeef") )
+        . map(rdata => roundtrip(rdata) == rdata)
+      . assert(_.all(_ == true))
+
+      test(m"An empty TXT record encodes as one empty string"):
+        val record = Dns.Record(host, 60, Dns.Rdata.Txt(Nil))
+        Dns.Message(1, Dns.Flags(), Nil, List(record)).in[Data].serialize[Hex]
+      . assert(_.ends(hex"0001 00".serialize[Hex]))
+
+      test(m"A 255-byte TXT string is accepted"):
+        roundtrip(Dns.Rdata.Txt(t"a"*255))
+      . assert(_ == Dns.Rdata.Txt(t"a"*255))
+
+      test(m"A 256-byte TXT string is rejected at construction"):
+        capture[Dns.Error](Dns.Rdata.Txt(t"a"*256)).reason
+      . assert(_ == Dns.Error.Reason.LongString(256))
+
+      test(m"An overlong label is rejected at construction"):
+        capture[Dns.Error](Dns.Name(t"a"*64, t"local")).reason
+      . assert(_ == Dns.Error.Reason.LongLabel(t"a"*64))
+
+      test(m"Concatenation beyond 255 octets is rejected"):
+        val long = Dns.Name(t"a"*63, t"a"*63, t"a"*63)
+        capture[Dns.Error](long + long).reason match
+          case Dns.Error.Reason.LongName(_) => true
+          case _                            => false
+      . assert(_ == true)
+
+      test(m"The dns interpolator yields a name at compile time"):
+        dns"_fury._tcp.local"
+      . assert(_ == Dns.Name(t"_fury", t"_tcp", t"local"))
+
+      test(m"The dns interpolator rejects an invalid name at compile time"):
+        demilitarize(dns"a..b").map(_.message).nonEmpty
+      . assert(_ == true)
+
+      val unicastQuestion = Dns.Question(service, Dns.Type.Ptr, unicast = true)
+
+      test(m"A unicast-response question sets the top bit of its class"):
+        Dns.Message.query(0, List(unicastQuestion), false).in[Data].serialize[Hex]
+      . assert(_.ends(hex"000c 8001".serialize[Hex]))
+
+      test(m"A unicast-response question decodes with its class intact"):
+        Dns.Message.query(0, List(unicastQuestion), false).in[Data].as[Dns.Message].questions
+      . assert(_ == List(unicastQuestion))
+
+      test(m"An OPT record keeps its payload size and flags through the wire"):
+        val message = Dns.Message(1, Dns.Flags(), Nil, Nil, Nil, List(Dns.Record.opt(4096, true)))
+        message.in[Data].as[Dns.Message].additional.stdlib.head
+      . assert: record =>
+          record.udpPayload == 4096 && record.dnssecOk == true && record.flush == false
+
+      test(m"A TTL with its top bit set reads as zero"):
+        hex"0000 8400 0000 0001 0000 0000 00 0001 0001 ffffffff 0004 c0a80102".as[Dns.Message]
+        . answers.stdlib.head.ttl
+      . assert(_ == 0)
+
+      test(m"Record data in canonical form is uncompressed"):
+        Dns.Record(instance, 120, Dns.Rdata.Srv(0, 0, 8080, host)).rdataBytes.serialize[Hex]
+      . assert(_ == hex"0000 0000 1f90 06 676f6e646f72 05 6c6f63616c 00".serialize[Hex])
+
+      val allFlags =
+        Dns.Flags(true, Dns.Opcode.Notify, true, true, true, true, true, true, Dns.Rcode.Refused)
+
+      test(m"Flags round-trip"):
+        Dns.Message(0xffff, allFlags).in[Data].as[Dns.Message].flags
+      . assert(_ == allFlags)
+
+      test(m"A response echoes the query's ID and questions"):
+        Dns.Message.response(query, Nil)
+      . assert: response =>
+          response.id == 0x1234 && response.questions == query.questions && response.flags.response
 
 object example:
   val com = Hostname(DnsLabel(t"example"), DnsLabel(t"com"))

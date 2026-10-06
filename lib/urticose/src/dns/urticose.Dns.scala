@@ -34,20 +34,26 @@ package urticose
 
 import java.net as jn
 
+import scala.caps
+import scala.collection.mutable as scm
 import scala.compiletime.asMatchable
+import scala.quoted.*
 
 import anticipation.*
 import contingency.*
-import denominative.*
+import denominative.*, dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
+import gigantism.Lifts
 import gossamer.*
 import hieroglyph.*, codepages.utf8Codepage
+import hypotenuse.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
+import zephyrine.*
 
 import Dns.Error.Reason.*
 
@@ -56,20 +62,49 @@ import Dns.Error.Reason.*
 // and the message that carries them. mDNS (RFC 6762) adds two bits to the wire format — a
 // question's unicast-response request and a record's cache-flush flag — which surface as plain
 // `Boolean` fields defaulting to `false`, so unicast use never sees them. The wire codec lives in
-// `DnsWire`; this file is the pure vocabulary.
+// `Wire`, at the end.
 object Dns:
   private[urticose] def utf8(text: Text): Data = text.in[Data]
 
   // ── Names ───────────────────────────────────────────────────────────────────────────────────
   object Name:
-    val Root: Name = Name(Nil)
-    val local: Name = Name(List(t"local"))
+    val Root: Name = new Name(Nil)
+    val local: Name = new Name(List(t"local"))
 
     // Labels are taken verbatim: a DNS-SD instance label may contain dots, spaces and any UTF-8
-    // (RFC 6763 §4.1.1), so only `parse` splits on dots. Length limits are enforced by `parse`
-    // and by the encoder, not here, so a `Name` is total to construct.
-    def apply(labels: Text*): Name = Name(List.from(labels))
-    def apply(hostname: Hostname): Name = Name(List.from(hostname.dnsLabels.map(_.text)))
+    // (RFC 6763 §4.1.1), so only `parse` splits on dots. The limits — 63 octets to a label, 255
+    // to the name — hold from construction, so that encoding a name is total.
+    def apply(labels: Text*): Name raises Dns.Error = checked(List.from(labels))
+
+    // A hostname's labels already satisfy the limits.
+    def apply(hostname: Hostname): Name = new Name(List.from(hostname.dnsLabels.map(_.text)))
+
+    private[urticose] def checked(labels: List[Text]): Name raises Dns.Error =
+      def check(labels: List[Text]): Unit = labels match
+        case Nil => ()
+
+        case label :: tail =>
+          if label.nil then abort(Dns.Error(EmptyLabel(labels.map(_.show).join(t"."))))
+          if utf8(label).length > 63 then abort(Dns.Error(LongLabel(label)))
+          check(tail)
+
+      check(labels)
+      val name = new Name(labels)
+      if name.octets > 255 then abort(Dns.Error(LongName(name.show)))
+      name
+
+    given toExpr: ToExpr[Name]:
+      def apply(name: Name)(using Quotes): Expr[Name] =
+        // Hoisted from the `map` below: a quote (with its implicit `ToExpr` search) inside a
+        // combinator lambda in a macro risks the `wildApprox` crash.
+        def liftLabel(label: Text): Expr[Text] = '{${Expr(label.s)}.tt}
+
+        val labels = Lifts.varargs(name.labels.map(liftLabel))
+        '{Name.unchecked(List($labels*))}
+
+    // For names whose labels are known to satisfy the limits: the wire parser's and the
+    // interpolator's, which checked them already.
+    private[urticose] def unchecked(labels: List[Text]): Name = new Name(labels)
 
     // RFC 4343: only ASCII letters fold; every other character compares exactly.
     private[urticose] def fold(label: Text): Text =
@@ -100,14 +135,10 @@ object Dns:
         def finish(labels: List[Text]): List[Text] =
           val label = builder()
           if label.nil then abort(Dns.Error(EmptyLabel(text)))
-          if utf8(label).length > 63 then abort(Dns.Error(LongLabel(label)))
           builder.clear()
           label :: labels
 
-        def complete(labels: List[Text]): Name =
-          val name = Name(labels.reverse)
-          if name.octets > 255 then abort(Dns.Error(LongName(name.show)))
-          name
+        def complete(labels: List[Text]): Name = checked(labels.reverse)
 
         // `open` is whether the builder holds a label still to be finished at the end: it does
         // not after a dot, so a trailing dot adds no empty label.
@@ -148,16 +179,18 @@ object Dns:
       parse(_)
 
   // Equality folds ASCII case (RFC 4343), as DNS compares names, while `labels` keeps the case
-  // a name was written with, which mDNS asks to be preserved (RFC 6762 §16).
-  case class Name(labels: List[Text]):
+  // a name was written with, which mDNS asks to be preserved (RFC 6762 §16). Constructed only
+  // through the companion, which holds the length limits.
+  case class Name private[urticose] (labels: List[Text]):
     private[urticose] lazy val folded: List[Text] = labels.map(Name.fold)
 
-    def + (suffix: Name): Name = Name(List.concat(labels, suffix.labels))
-    def prefix(label: Text): Name = Name(label :: labels)
+    // Composition can breach the 255-octet limit, so it is checked like construction.
+    def + (suffix: Name): Name raises Dns.Error = Name.checked(List.concat(labels, suffix.labels))
+    def prefix(label: Text): Name raises Dns.Error = Name.checked(label :: labels)
 
     def parent: Optional[Name] = labels match
       case Nil       => Unset
-      case _ :: tail => Name(tail)
+      case _ :: tail => Name.unchecked(tail)
 
     def endsWith(suffix: Name): Boolean =
       def recur(name: List[Text], suffix: List[Text]): Boolean = suffix match
@@ -291,11 +324,20 @@ object Dns:
     extends Rdata
 
     object Txt:
-      def apply(strings: Text*): Txt = Txt(List.from(strings.map(utf8(_))))
+      def apply(strings: Text*): Txt raises Dns.Error = Txt(List.from(strings.map(utf8(_))))
+
+      // The limit holds from construction, so that encoding is total.
+      def apply(strings: List[Data]): Txt raises Dns.Error =
+        strings.each: string =>
+          if string.length > 255 then abort(Dns.Error(LongString(string.length)))
+
+        new Txt(strings)
+
+      private[urticose] def unchecked(strings: List[Data]): Txt = new Txt(strings)
 
     // The character-strings of RFC 1035 §3.3.14, each at most 255 octets; DNS-SD reads them as
     // `key=value` pairs (RFC 6763 §6). An empty list encodes as one empty string.
-    case class Txt(strings: List[Data]) extends Rdata:
+    final class Txt private (val strings: List[Data]) extends Rdata:
       def texts: List[Text] = strings.map(_.utf8)
 
       override def equals(that: Any): Boolean = that.asMatchable match
@@ -303,6 +345,7 @@ object Dns:
         case _         => false
 
       override def hashCode: Int = strings.map(octets).hashCode
+      override def toString: String = s"Txt(${strings.map(_.utf8).join(t", ")})"
 
     // The EDNS(0) options of RFC 6891 §6.1.2, as `(code, data)` pairs; the record's other
     // fields are reinterpreted, see `Record.opt`.
@@ -331,7 +374,7 @@ object Dns:
       case Ns(target)              => target.show
       case Mx(pref, name)          => t"${pref.show} ${name.show}"
       case Srv(p, w, port, target) => t"${p.show} ${w.show} ${port.show} ${target.show}"
-      case Txt(strings)            => strings.map { string => t"\"${string.utf8}\"" }.join(t" ")
+      case txt: Txt                => txt.strings.map { string => t"\"${string.utf8}\"" }.join(t" ")
       case Opt(options)            => options.map { option => option(0).show }.join(t"OPT ", t" ")
       case Unknown(_, data)        => t"\\# ${data.length.show}"
 
@@ -379,6 +422,10 @@ object Dns:
 
     // The identity of a record in a cache: everything but its TTL and flush bit.
     def key: (Name, Type, Rdata) = (name, rtype, rdata)
+
+    // The data in its uncompressed wire form, which RFC 6762 §8.2.1 compares lexicographically
+    // to break a tie between two hosts probing the same name at once.
+    def rdataBytes: Data = Wire.rdata(rdata)
 
     def udpPayload: Optional[Int] = rdata match
       case _: Rdata.Opt => netClass.number
@@ -428,6 +475,14 @@ object Dns:
 
       Message(query.id, flags, query.questions, answers, authority, additional)
 
+    // Encoding is total: the limits a message could breach are held by `Name` and `Txt` from
+    // construction. Decoding fails through a resolution-scoped tactic, as `Asn1`'s does.
+    given encodable: Message is Encodable in Data = Wire.write(_)
+
+    given decodable: (tactic: Tactic[Dns.Error]^)
+    =>  ( (Message is Decodable in Data)^{tactic, caps.any} ) =
+      Wire.parse(_)
+
     given showable: Message is Showable = message =>
       val kind = if message.flags.response then t"response" else t"query"
       val questions = message.questions.map(_.show).join(t"[", t", ", t"]")
@@ -457,6 +512,374 @@ object Dns:
 
   def resolve(hostname: Hostname): List[Ipv4 | Ipv6] raises Dns.Error = resolve(Name(hostname))
 
+  // ── The wire format ──────────────────────────────────────────────────────────────────────────
+  // The RFC 1035 wire format: a strict reader and an append-only writer. The reader follows name
+  // compression pointers only backwards, which is what the RFC allows and what proves that a walk
+  // terminates; the writer compresses the owner names and the names inside the well-known types
+  // of RFC 1035 §4.1.4, and never inside `SRV`, `TXT`, `OPT` or an unknown type (RFC 2782, RFC
+  // 3597), though the reader accepts a compressed `SRV` target as mDNS senders emit (RFC 6762
+  // §18.14). Writing is total: the limits are held by `Name` and `Rdata.Txt`.
+  private[urticose] object Wire:
+    def parse(data: Data): Message raises Error =
+      val parser = new Parser(data)
+      val message = parser.message()
+      if parser.offset < data.length then abort(Error(Error.Reason.Trailing(parser.offset)))
+      message
+
+    def write(message: Message): Data =
+      Producer.collect[Data](512): out => Writer(0, scm.HashMap(), true).message(message)(using out)
+
+    // A record's data in its uncompressed form: the bytes RFC 6762 §8.2.1 compares to break a
+    // tie between simultaneous probes.
+    def rdata(rdata: Rdata): Data =
+      Producer.collect[Data](64): out => Writer(0, scm.HashMap(), false).rdata(rdata)(using out)
+
+    final class Parser private[urticose] (data: Data) extends caps.Mutable:
+      // Exposed to the `parse` entry point only, so that it can detect trailing bytes.
+      var offset: Int = 0
+
+      private inline def need(count: Int)(using Tactic[Error]): Unit =
+        if data.length - offset < count then abort(Error(Error.Reason.Truncated(offset)))
+
+      // Proof: `need(1)` on the line above.
+      private inline update def u8()(using Tactic[Error]): Int =
+        need(1)
+        (data.readUnchecked(offset) & 0xff).also(offset += 1)
+
+      private update def u16()(using Tactic[Error]): Int =
+        need(2)
+        B16(data, offset).u16.int.also(offset += 2)
+
+      private update def u32()(using Tactic[Error]): Long =
+        val high = u16().toLong
+        (high << 16) | u16().toLong
+
+      private update def u64()(using Tactic[Error]): Long =
+        val high = u32()
+        (high << 32) | u32()
+
+      private def copy(from: Int, count: Int): Data =
+        val result = new scala.Array[Byte](count)
+        System.arraycopy(Array.unsafeJvm(data), from, result, 0, count)
+        Array.unsafeFrozen(result)
+
+      private update def bytes(count: Int)(using Tactic[Error]): Data =
+        need(count)
+        copy(offset, count).also(offset += count)
+
+      // Labels are read from `offset`. The first pointer met records where the name's caller
+      // resumes, and reading continues at the pointer's target; each target must precede the
+      // pointer that names it (RFC 1035 §4.1.4: a "prior occurrence"), so every hop moves
+      // strictly backwards and the walk terminates. A state-terminated loop; every read is
+      // bounds-checked on the line before it.
+      update def name()(using Tactic[Error]): Name =
+        var labels: List[Text] = Nil
+        var position: Int = offset
+        var resume: Int = -1
+        var octets: Int = 1
+        var done: Boolean = false
+
+        while !done do
+          if position >= data.length then abort(Error(Error.Reason.Truncated(position)))
+          val head = data.readUnchecked(position) & 0xff
+
+          if head == 0 then
+            position += 1
+            done = true
+          else if (head & 0xc0) == 0xc0 then
+            if position + 1 >= data.length then abort(Error(Error.Reason.Truncated(position)))
+            val target = ((head & 0x3f) << 8) | (data.readUnchecked(position + 1) & 0xff)
+            if target >= position then abort(Error(Error.Reason.BadPointer(position)))
+            if resume < 0 then resume = position + 2
+            position = target
+          else if (head & 0xc0) != 0 then
+            abort(Error(Error.Reason.BadLabel(position, head & 0xc0)))
+          else
+            octets += head + 1
+
+            if octets > 255 then
+              abort(Error(Error.Reason.LongName(Name.unchecked(labels.reverse).show)))
+
+            if position + 1 + head > data.length then abort(Error(Error.Reason.Truncated(position)))
+            labels = copy(position + 1, head).utf8 :: labels
+            position += 1 + head
+
+        offset = if resume < 0 then position else resume
+        Name.unchecked(labels.reverse)
+
+      update def question()(using Tactic[Error]): Question =
+        val name = this.name()
+        val rtype = Type(u16())
+        val classField = u16()
+        Question(name, rtype, NetClass(classField & 0x7fff), (classField & 0x8000) != 0)
+
+      update def record()(using Tactic[Error]): Record =
+        val name = this.name()
+        val rtype = Type(u16())
+        val classField = u16()
+        val ttl = u32()
+        val length = u16()
+        need(length)
+        val start = offset
+        val end = offset + length
+        val rdata = this.rdata(rtype, start, end)
+        if offset != end then abort(Error(Error.Reason.BadRdata(rtype, start)))
+
+        // An `OPT` record's class field is its UDP payload size, so its top bit is not a flag.
+        val flush = rtype != Type.Opt && (classField & 0x8000) != 0
+        val netClass = NetClass(if rtype == Type.Opt then classField else classField & 0x7fff)
+
+        // A TTL with the top bit set is treated as zero (RFC 2181 §8).
+        Record(name, if ttl > Int.MaxValue then 0 else ttl.toInt, rdata, netClass, flush)
+
+      private update def rdata(rtype: Type, start: Int, end: Int)(using Tactic[Error])
+      :   Rdata =
+
+        val length = end - start
+
+        def strings(acc: List[Data]): List[Data] =
+          if offset >= end then acc.reverse else
+            val count = u8()
+            if offset + count > end then abort(Error(Error.Reason.BadRdata(rtype, start)))
+            strings(bytes(count) :: acc)
+
+        def options(acc: List[(Int, Data)]): List[(Int, Data)] =
+          if offset >= end then acc.reverse else
+            val code = u16()
+            val count = u16()
+            if offset + count > end then abort(Error(Error.Reason.BadRdata(rtype, start)))
+            options((code, bytes(count)) :: acc)
+
+        rtype.number match
+          case 1 =>
+            if length != 4 then abort(Error(Error.Reason.BadRdata(rtype, start)))
+            Rdata.A(Ipv4(u8(), u8(), u8(), u8()))
+
+          case 28 =>
+            if length != 16 then abort(Error(Error.Reason.BadRdata(rtype, start)))
+            val high = u64()
+            Rdata.Aaaa(Ipv6(high, u64()))
+
+          case 12 => Rdata.Ptr(name())
+          case 5  => Rdata.Cname(name())
+          case 2  => Rdata.Ns(name())
+
+          case 15 =>
+            val preference = u16()
+            Rdata.Mx(preference, name())
+
+          case 33 =>
+            val priority = u16()
+            val weight = u16()
+            val port = u16()
+            Rdata.Srv(priority, weight, port, name())
+
+          case 6 =>
+            val mname = name()
+            val rname = name()
+            val serial = u32()
+            val refresh = u32().toInt
+            val retry = u32().toInt
+            val expire = u32().toInt
+            Rdata.Soa(mname, rname, serial, refresh, retry, expire, u32().toInt)
+
+          case 16 => Rdata.Txt.unchecked(strings(Nil))
+          case 41 => Rdata.Opt(options(Nil))
+          case _  => Rdata.Unknown(rtype, bytes(length))
+
+      update def message()(using Tactic[Error]): Message =
+        val id = u16()
+        val bits = u16()
+        val questionCount = u16()
+        val answerCount = u16()
+        val authorityCount = u16()
+        val additionalCount = u16()
+
+        val flags =
+          Flags
+            ( response           = (bits & 0x8000) != 0,
+              opcode             = Opcode((bits >>> 11) & 0xf),
+              authoritative      = (bits & 0x0400) != 0,
+              truncated          = (bits & 0x0200) != 0,
+              recursionDesired   = (bits & 0x0100) != 0,
+              recursionAvailable = (bits & 0x0080) != 0,
+              authentic          = (bits & 0x0020) != 0,
+              checkingDisabled   = (bits & 0x0010) != 0,
+              rcode              = Rcode(bits & 0xf) )
+
+        def questions(count: Int): List[Question] =
+          if count == 0 then Nil else
+            val head = question()
+            head :: questions(count - 1)
+
+        def records(count: Int): List[Record] =
+          if count == 0 then Nil else
+            val head = record()
+            head :: records(count - 1)
+
+        val questions2 = questions(questionCount)
+        val answers = records(answerCount)
+        val authority = records(authorityCount)
+        Message(id, flags, questions2, answers, authority, records(additionalCount))
+
+    // Writes through the producer each method is given (a mutable class may not hold one),
+    // tracking the position itself (the producer has no count) from `start`, so that a record's
+    // data, written through a producer of its own, shares the message's compression `table` of
+    // absolute offsets. `compressing` is off for the canonical uncompressed form.
+    final class Writer private[urticose]
+      ( start: Int, table: scm.HashMap[List[Text], Int], compressing: Boolean )
+    extends caps.Mutable:
+
+      private var written: Int = start
+
+      private update def u8(value: Int)(using out: Producer.Bytes^): Unit =
+        out.push((value & 0xff).toByte)
+        written += 1
+
+      private update def u16(value: Int)(using out: Producer.Bytes^): Unit =
+        u8(value >>> 8)
+        u8(value)
+
+      private update def u32(value: Long)(using out: Producer.Bytes^): Unit =
+        u8((value >>> 24).toInt)
+        u8((value >>> 16).toInt)
+        u8((value >>> 8).toInt)
+        u8(value.toInt)
+
+      private update def data(data: Data)(using out: Producer.Bytes^): Unit =
+        out.put(data)
+        written += data.length
+
+      // Each suffix already written (and within pointer range) is replaced by a pointer to it;
+      // every suffix written here is recorded for later names, pointer range permitting.
+      private update def name(name: Name, compress: Boolean)(using out: Producer.Bytes^)
+      :   Unit =
+
+        def recur(labels: List[Text], folded: List[Text]): Unit = (labels, folded) match
+          case (label :: tail, key :: keys) =>
+            val known = if compressing && compress then table.getOrElse(folded, -1) else -1
+
+            if known >= 0 then u16(0xc000 | known) else
+              if written < 0x4000 && !table.contains(folded) then table(folded) = written
+              val bytes = utf8(label)
+              u8(bytes.length)
+              data(bytes)
+              recur(tail, keys)
+
+          case _ => u8(0)
+
+        recur(name.labels, name.folded)
+
+      update def question(question: Question)(using out: Producer.Bytes^): Unit =
+
+        name(question.name, true)
+        u16(question.rtype.number)
+        u16(question.netClass.number | (if question.unicast then 0x8000 else 0))
+
+      update def record(record: Record)(using out: Producer.Bytes^): Unit =
+
+        name(record.name, true)
+        u16(record.rtype.number)
+
+        val classField =
+          if record.rtype == Type.Opt then record.netClass.number
+          else record.netClass.number | (if record.flush then 0x8000 else 0)
+
+        u16(classField)
+        u32(record.ttl.toLong & 0xffffffffL)
+
+        // The data goes through its own producer, continuing this one's offsets after the length
+        // field it is then written behind, so the message's compression table stays absolute.
+        val body = Producer.collect[Data](64): out2 =>
+          Writer(written + 2, table, compressing).rdata(record.rdata)(using out2)
+
+        u16(body.length)
+        data(body)
+
+      update def rdata(rdata: Rdata)(using out: Producer.Bytes^): Unit =
+
+        def strings(list: List[Data]): Unit = list match
+          case Nil => ()
+
+          case string :: tail =>
+            u8(string.length)
+            data(string)
+            strings(tail)
+
+        def options(list: List[(Int, Data)]): Unit = list match
+          case Nil => ()
+
+          case (code, payload) :: tail =>
+            u16(code)
+            u16(payload.length)
+            data(payload)
+            options(tail)
+
+        rdata match
+          case Rdata.A(address)    => data(address.in[Data])
+          case Rdata.Aaaa(address) => data(address.in[Data])
+          case Rdata.Ptr(target)   => name(target, true)
+          case Rdata.Cname(target) => name(target, true)
+          case Rdata.Ns(target)    => name(target, true)
+          case Rdata.Unknown(_, d) => data(d)
+          case Rdata.Opt(list)     => options(list)
+          case txt: Rdata.Txt      => if txt.strings == Nil then u8(0) else strings(txt.strings)
+
+          case Rdata.Mx(preference, exchange) =>
+            u16(preference)
+            name(exchange, true)
+
+          case Rdata.Srv(priority, weight, port, target) =>
+            u16(priority)
+            u16(weight)
+            u16(port)
+            name(target, false)
+
+          case Rdata.Soa(mname, rname, serial, refresh, retry, expire, minimum) =>
+            name(mname, true)
+            name(rname, true)
+            u32(serial)
+            u32(refresh.toLong & 0xffffffffL)
+            u32(retry.toLong & 0xffffffffL)
+            u32(expire.toLong & 0xffffffffL)
+            u32(minimum.toLong & 0xffffffffL)
+
+      // A section's count is written modulo 2^16: a longer section is not representable, and a
+      // message carrying one already exceeds what any DNS transport can carry.
+      update def message(message: Message)(using out: Producer.Bytes^): Unit =
+
+        val flags = message.flags
+
+        val bits =
+          (if flags.response then 0x8000 else 0) |
+            ((flags.opcode.number & 0xf) << 11) |
+            (if flags.authoritative then 0x0400 else 0) |
+            (if flags.truncated then 0x0200 else 0) |
+            (if flags.recursionDesired then 0x0100 else 0) |
+            (if flags.recursionAvailable then 0x0080 else 0) |
+            (if flags.authentic then 0x0020 else 0) |
+            (if flags.checkingDisabled then 0x0010 else 0) |
+            (flags.rcode.number & 0xf)
+
+        def questions(list: List[Question]): Unit = list match
+          case Nil          => ()
+          case head :: tail => question(head).also(questions(tail))
+
+        def records(list: List[Record]): Unit = list match
+          case Nil          => ()
+          case head :: tail => record(head).also(records(tail))
+
+        u16(message.id)
+        u16(bits)
+        u16(message.questions.size & 0xffff)
+        u16(message.answers.size & 0xffff)
+        u16(message.authority.size & 0xffff)
+        u16(message.additional.size & 0xffff)
+        questions(message.questions)
+        records(message.answers)
+        records(message.authority)
+        records(message.additional)
+
   // ── Errors ──────────────────────────────────────────────────────────────────────────────────
   object Error:
     object Reason:
@@ -471,7 +894,6 @@ object Dns:
         case BadRdata(rtype, offset) => m"the $rtype record data at offset $offset is malformed"
         case LongString(length)      => m"a character-string of $length octets exceeds 255"
         case Trailing(offset)        => m"the message has trailing bytes from offset $offset"
-        case Oversize(count)         => m"the count $count does not fit in a 16-bit field"
         case Unresolved(name)        => m"the name $name could not be resolved"
         case Timeout                 => m"no response arrived before the timeout"
         case Mismatch(id)            => m"the response with ID $id does not answer the query"
@@ -487,10 +909,9 @@ object Dns:
       case BadRdata(rtype: Type, offset: Int) extends Reason(8)
       case LongString(length: Int)            extends Reason(9)
       case Trailing(offset: Int)              extends Reason(10)
-      case Oversize(count: Int)               extends Reason(11)
-      case Unresolved(name: Text)             extends Reason(12)
-      case Timeout                            extends Reason(13)
-      case Mismatch(id: Int)                  extends Reason(14)
+      case Unresolved(name: Text)             extends Reason(11)
+      case Timeout                            extends Reason(12)
+      case Mismatch(id: Int)                  extends Reason(13)
 
   case class Error(reason: Dns.Error.Reason)(using Diagnostics)
   extends fulminate.Error(53, reason.number)(m"the DNS message is not valid because $reason")

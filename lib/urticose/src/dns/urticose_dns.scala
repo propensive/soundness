@@ -37,6 +37,10 @@ import gossamer.*
 import rudiments.*
 import spectacular.*
 
+// A DNS name in presentation form, checked at compile time: `dns"_fury._tcp.local"`.
+extension (inline context: StringContext)
+  transparent inline def dns(): Dns.Name = ${urticose.dnsMacros.name('context)}
+
 extension (hostname: Hostname)
   def dnsName: Dns.Name = Dns.Name(hostname)
 
@@ -46,8 +50,8 @@ extension (hostname: Hostname)
 extension (address: Ipv4 | Ipv6)
   def reverseName: Dns.Name = address.absolve match
     case ipv4: (Ipv4 @unchecked) =>
-      Dns.Name
-        ( ipv4.byte3.show, ipv4.byte2.show, ipv4.byte1.show, ipv4.byte0.show, t"in-addr", t"arpa" )
+      val octets = List(ipv4.byte3.show, ipv4.byte2.show, ipv4.byte1.show, ipv4.byte0.show)
+      Dns.Name.unchecked(List.concat(octets, List(t"in-addr", t"arpa")))
 
     case ipv6: Ipv6 =>
       def nibble(long: Long, index: Int): Text =
@@ -56,4 +60,5 @@ extension (address: Ipv4 | Ipv6)
       def nibbles(long: Long): List[Text] = List.from((0 until 16).map(nibble(long, _)))
 
       val reversed = List.concat(nibbles(ipv6.highBits), nibbles(ipv6.lowBits)).reverse
-      Dns.Name(List.concat(reversed, List(t"ip6", t"arpa")))
+      // Thirty-two single-character labels and two short ones: within the limits by construction.
+      Dns.Name.unchecked(List.concat(reversed, List(t"ip6", t"arpa")))

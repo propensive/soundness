@@ -30,6 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package urticose
 
-export urticose.{Dns, dns, dnsName, reverseName}
+
+import anticipation.*
+import contingency.*
+
+private[urticose] object dnsMacros:
+  import scala.quoted.*
+  import gigantism.*
+
+  def name(context: Expr[StringContext]): Macro[Dns.Name] = abortive:
+    Expr(Dns.Name.parse(context.valueOrAbort.parts.head.tt))
