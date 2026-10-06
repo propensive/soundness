@@ -55,6 +55,27 @@ object Tests extends Suite(m"Frontier Tests"):
     def explicit: Int = every[Plug].values.length
     def viaSummon: Int = summon[Every[Plug]].values.length
 
+  // A pair of givens told apart by a `NotGiven` guard, resolved at the test's
+  // own compilation under the umbrella's catch-all (`import soundness.*` above).
+  object Guarded:
+    trait Policy
+
+    trait Choice:
+      def name: Text
+
+    object Choice:
+      given withPolicy: (Policy) => Choice = new Choice { def name = t"with" }
+
+      given withoutPolicy: scala.util.NotGiven[Policy] => Choice =
+        new Choice { def name = t"without" }
+
+    object WithPolicy:
+      given policy: Policy = new Policy {}
+      val chosen: Choice = summon[Choice]
+
+    object WithoutPolicy:
+      val chosen: Choice = summon[Choice]
+
   def run(): Unit =
     test(m"every[X] returns empty Every when no givens in scope"):
       NoPlugs.explicit
@@ -179,6 +200,57 @@ object Tests extends Suite(m"Frontier Tests"):
         summon[scala.util.NotGiven[Absent]]
       . filter(_.error).map(_.message)
     . assert(_ == Nil)
+
+    // `NotGiven[X]` is resolved by inverting each candidate's result, so a
+    // catch-all that *failed* for `NotGiven[X]` would be inverted into a success
+    // regardless of whether `X` exists (#2123). The negative side above passes
+    // either way; these check the positive side and that a guarded pair of
+    // givens is still told apart.
+
+    test(m"explainMissingContext does not make NotGiven hold for a present type"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        summon[scala.util.NotGiven[Ordering[Int]]]
+      . filter(_.error).map(_.message)
+    . assert(_ != Nil)
+
+    test(m"NotGiven of a present instance fails under import soundness.*"):
+      demilitarize:
+        import soundness.*
+        summon[scala.util.NotGiven[Ordering[Int]]]
+      . filter(_.error).map(_.message)
+    . assert(_ != Nil)
+
+    test(m"NotGiven of a present local given fails with the catch-all in scope"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        trait Present
+        given Present = new Present {}
+        summon[scala.util.NotGiven[Present]]
+      . filter(_.error).map(_.message)
+    . assert(_ != Nil)
+
+    test(m"a NotGiven guard tells two givens apart with the catch-all in scope"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        trait Policy
+        trait Choice:
+          def name: Text
+        given policy: Policy = new Policy {}
+        given withPolicy: (Policy) => Choice = new Choice { def name = t"with" }
+        given withoutPolicy: scala.util.NotGiven[Policy] => Choice =
+          new Choice { def name = t"without" }
+        val chosen: Choice = summon[Choice]
+      . filter(_.error).map(_.message)
+    . assert(_ == Nil)
+
+    test(m"a NotGiven guard picks the guarded given when its subject is present"):
+      Guarded.WithPolicy.chosen.name
+    . assert(_ == t"with")
+
+    test(m"a NotGiven guard picks the unguarded given when its subject is absent"):
+      Guarded.WithoutPolicy.chosen.name
+    . assert(_ == t"without")
 
     test(m"explainMissingContext does not defeat default using arguments"):
       demilitarize:
