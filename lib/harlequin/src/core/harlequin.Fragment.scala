@@ -87,7 +87,7 @@ object Fragment:
     val source = Scala.highlight(text)(using highlighting.tokenizedScala)
 
     def significant(token: Token): Boolean =
-      token.accent != Accent.Unparsed && token.text.s.trim.nn != ""
+      token.accent != Accent.Unparsed && !token.text.blank
 
     val lines: List[List[Token]] = source.lines.to[List]
     val all:   List[Token]       = lines.flat

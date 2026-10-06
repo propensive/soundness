@@ -125,12 +125,12 @@ object Sheet:
   // by the column headings and the format, if either is set.
   given inspectable: [sheet <: Sheet] => sheet is Inspectable = sheet =>
     def cells(row: Array[Text]^{}): Text =
-      row.readable.map(_.inspect.s).mkString("⟨ ", " ", " ⟩").tt
+      row.to[List].map(_.inspect).join(t"⟨ ", t" ", t" ⟩")
 
-    val rows = sheet.rows.readable.map { row => cells(row.data).s }.mkString("⟦", ", ", "⟧")
+    val rows = sheet.rows.to[List].map { row => cells(row.data) }.join(t"⟦", t", ", t"⟧")
     val columns = sheet.columns.lay(t"○")(cells(_))
 
-    t"Sheet(format:${sheet.format.lay(t"○")(_.inspect)} ╱ columns:$columns ╱ rows:${rows.tt})"
+    t"Sheet(format:${sheet.format.lay(t"○")(_.inspect)} ╱ columns:$columns ╱ rows:$rows)"
   given streamable: Dsv.Format => Sheet is Streamable by Text over Credit = sheet =>
     Stream(sheet.rows.readable.iterator.map(_.show+t"\n"))
 

@@ -215,9 +215,7 @@ trait Xml4:
           then fail(Xml.Provider.Error.Reason.PatternMismatch(value, pattern))
 
         apply("enum").let: enumeration =>
-          val alternatives = enumeration.s.split("\\|", -1).nn
-          val parts = scala.collection.immutable.ArraySeq.unsafeWrapArray(alternatives)
-          val permitted = List.from(parts.toList.map(_.nn.tt))
+          val permitted = enumeration.cut(t"|")
 
           if !permitted.has(value)
           then fail(Xml.Provider.Error.Reason.NotPermitted(value, permitted))

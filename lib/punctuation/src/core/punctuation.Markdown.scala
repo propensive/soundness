@@ -209,7 +209,7 @@ object Markdown:
       t"“${node.toString.tt}”"
 
   private def inspectItems(items: scala.collection.immutable.List[List[Layout]]): Text =
-    items.map(inspectNodes(_).s).mkString("[", ", ", "]").tt
+    items.map(inspectNodes(_)).join(t"[", t", ", t"]")
 
   given prose: (Markdown of Prose) is Renderable:
     type Form = Phrasing
