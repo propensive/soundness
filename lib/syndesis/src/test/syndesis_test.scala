@@ -236,6 +236,76 @@ object Tests extends Suite(m"Syndesis tests"):
         capture[Socket.Error](member.receive()).reason
       . assert(_ == Socket.Error.Reason.Accept)
 
+    suite(m"Discovery over the bus"):
+      import threading.platformThreading
+      import probates.awaitProbate
+      import abstractables.millisecondsAbstractable
+
+      val gondor = Discovery.Instance(t"Gondor", fury)
+      val description = Discovery.Description(t"Gondor", tcp"8443", Discovery.Txt(t"fp" -> t"abc"))
+
+      test(m"An advertised instance is found by a browser"):
+        supervise:
+            val bus = Mdns.Transport.Bus()
+            val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
+            val b = Mdns.Responder(() => bus.join(dns"b.local", List(ip"10.0.0.2")))
+
+            fury.advertise(description)(using a):
+              fury.browse(using b):
+                summon[Discovery.Browser].events.stdlib.head
+      . assert(_ == Discovery.Event.Found(gondor))
+
+      test(m"A found instance resolves to its port, TXT and addresses"):
+        supervise:
+            val bus = Mdns.Transport.Bus()
+            val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
+            val b = Mdns.Responder(() => bus.join(dns"b.local", List(ip"10.0.0.2")))
+
+            fury.advertise(description)(using a):
+              val resolution = gondor.resolve(5000L)(using b)
+              (resolution.port.number, resolution.txt(t"fp"), resolution.addresses, resolution.host)
+      . assert(_ == (8443, t"abc", List(ip"10.0.0.1"), dns"a.local"))
+
+      test(m"A withdrawn instance is lost by a browser"):
+        supervise:
+            val bus = Mdns.Transport.Bus()
+            val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
+            val b = Mdns.Responder(() => bus.join(dns"b.local", List(ip"10.0.0.2")))
+
+            fury.browse(using b):
+              val events = summon[Discovery.Browser].events.stdlib
+              fury.advertise(description)(using a)(events.head)
+              events(1)
+      . assert(_ == Discovery.Event.Lost(gondor))
+
+      test(m"A name another host holds is renamed after probing"):
+        supervise:
+            val bus = Mdns.Transport.Bus()
+            val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
+            val b = Mdns.Responder(() => bus.join(dns"b.local", List(ip"10.0.0.2")))
+
+            fury.advertise(description)(using a):
+              fury.advertise(description.copy(port = tcp"8444"))(using b):
+                summon[Discovery.Advertisement].instance.label
+      . assert(_ == t"Gondor (2)")
+
+      test(m"A name this responder holds is renamed without probing"):
+        supervise:
+            val bus = Mdns.Transport.Bus()
+            val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
+
+            fury.advertise(description)(using a):
+              fury.advertise(description.copy(port = tcp"8444"))(using a):
+                summon[Discovery.Advertisement].instance.label
+      . assert(_ == t"Gondor (2)")
+
+      test(m"An instance that never existed does not resolve"):
+        supervise:
+            val bus = Mdns.Transport.Bus()
+            val b = Mdns.Responder(() => bus.join(dns"b.local", List(ip"10.0.0.2")))
+            capture[Discovery.Error](Discovery.Instance(t"Nowhere", fury).resolve(300L)(using b)).reason
+      . assert(_ == Discovery.Error.Reason.Timeout(t"Nowhere._fury._tcp.local"))
+
     suite(m"Resolutions"):
       test(m"A resolution's endpoints pair each address with the port"):
         val gondor = Discovery.Instance(t"Gondor", fury)

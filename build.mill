@@ -3270,7 +3270,7 @@ object syndesis extends Library:
     override def scalaJs = false // multicast sockets and a background responder thread
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, coaxial.jvm):
+  object test extends Tests(core, coaxial.jvm, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

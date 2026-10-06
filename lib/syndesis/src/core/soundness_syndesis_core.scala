@@ -33,3 +33,6 @@
 package soundness
 
 export syndesis.{advertise, browse, Discovery, Mdns, resolve}
+
+package discoveryBackends:
+  export syndesis.discoveryBackends.mdnsSockets

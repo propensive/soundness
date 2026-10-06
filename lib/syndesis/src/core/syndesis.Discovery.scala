@@ -32,8 +32,6 @@
                                                                                                   */
 package syndesis
 
-import scala.caps
-
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -41,6 +39,7 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
+import parasite.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -62,7 +61,7 @@ object Discovery:
 
   // A name from validated parts; a DNS limit breached in the process is reported in DNS-SD
   // terms, naming the offending text.
-  private def named(text: Text, labels: List[Text]): Dns.Name raises Discovery.Error =
+  private[syndesis] def named(text: Text, labels: List[Text]): Dns.Name raises Discovery.Error =
     recover:
       case error: Dns.Error =>
         given diagnostics: Diagnostics = error.diagnostics
@@ -239,28 +238,44 @@ object Discovery:
     case Lost(instance: Instance)
 
   // ── The seam ────────────────────────────────────────────────────────────────────────────────
-  // Each operation is a loan: the advertisement or browser lives for the block, and ends with
-  // it — or with the `Monitor` the backend runs under, whose cancellation unwinds the block.
+  // What a backend does, as starts and stops: the loans (`service.advertise(…) { … }`) are built
+  // on these once, in `syndesis_core`, as `listen` is built on `Bindable`. Each start takes the
+  // `Monitor` under which the backend runs whatever it needs in the background, so cancelling
+  // the monitor ends that too. A backend holds no capabilities of its own, which is what lets
+  // loans nest (an advertisement, and a browse inside it). The tactic is an explicit parameter
+  // rather than `raises`, since a context-function result type would hide the capability
+  // parameters from the separation checker.
   trait Backend:
-    def advertise[result](service: Service, description: Description)
-      ( block: Advertisement ?=> result )
-    :   result raises Discovery.Error
+    // Claims a name for the instance and announces it, yielding the instance finally claimed.
+    def advertise(service: Service, description: Description)
+      ( using Monitor^, Probate^, Tactic[Discovery.Error] )
+    :   Instance
 
-    def browse[result](service: Service)(block: Browser ?=> result): result raises Discovery.Error
+    def withdraw(instance: Instance)(using Monitor^): Unit
+    def browse(service: Service)(using Monitor^, Probate^, Tactic[Discovery.Error]): Browsing
+    def dismiss(browsing: Browsing)(using Monitor^): Unit
 
     def resolve[duration: Abstractable across Durations to Long]
       ( instance: Instance, timeout: duration )
-    :   Resolution raises Discovery.Error
+      ( using Monitor^, Probate^, Tactic[Discovery.Error] )
+    :   Resolution
+
+  // A browse in progress, as a backend hands it over: the events it will relay, and a view of
+  // the instances it currently knows. A plain value; the loan wraps it in the `Browser`
+  // capability it lends.
+  class Browsing private[syndesis] (val relay: Relay[Event], snapshot: () -> Set[Instance]):
+    def instances: Set[Instance] = snapshot()
 
   // A running advertisement: `instance` is the name finally claimed, after any renaming a
-  // conflict forced.
-  class Advertisement private[syndesis] (val instance: Instance) extends caps.ExclusiveCapability
+  // conflict forced. The handles a loan lends are plain values rather than capabilities: the
+  // socket and the background tasks are the `Monitor`'s, and a fresh-capability handle would
+  // not pass through nested loans (a browse inside an advertisement) under capture checking.
+  class Advertisement(val instance: Instance)
 
   // A running browse: its events, as they happen, and the instances it currently knows of.
-  class Browser private[syndesis] (relay: Relay[Event], snapshot: () => Set[Instance])
-  extends caps.ExclusiveCapability:
-    def events: Chain[Event] = relay.chain
-    def instances: Set[Instance] = snapshot()
+  class Browser(browsing: Browsing):
+    def events: Chain[Event] = browsing.relay.chain
+    def instances: Set[Instance] = browsing.instances
 
   // ── Errors ──────────────────────────────────────────────────────────────────────────────────
   object Error:
