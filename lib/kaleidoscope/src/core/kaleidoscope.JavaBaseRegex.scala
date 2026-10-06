@@ -103,7 +103,7 @@ object JavaBaseRegex:
                 if group.charMatcher then
                   if group.quantifier.unitary then matchedText.head :: matches
                   else if group.quantifier == Regex.Quantifier.Between(0, 1)
-                  then matchedText.headOption.getOrElse(Unset) :: matches
+                  then matchedText.headOption.optional :: matches
                   else matchedText.toCharArray.nn.iterator.to(List) :: matches
                 else
 

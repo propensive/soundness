@@ -2473,7 +2473,7 @@ object Lsp:
 
           // A response is retyped by the method it answers, a notification by its own name.
           val answered: Optional[Text] =
-            if method.absent then id.let { id => pending.remove(id.encode).getOrElse(Unset) }
+            if method.absent then id.let { id => pending.remove(id.encode).optional }
             else Unset
 
           // A response the proxy never forwarded a request for, answering under an id of the form

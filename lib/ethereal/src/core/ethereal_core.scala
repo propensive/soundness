@@ -393,7 +393,7 @@ def cli[bus <: Matchable](using executive: Executive)
         // applies.
         def charset(page: Optional[Int]): Optional[jnc.Charset] = page.let: page =>
           if page == 65001 then jnc.StandardCharsets.UTF_8.nn
-          else Encoding.unapply(t"cp$page").map(_.charset).getOrElse(Unset)
+          else Encoding.unapply(t"cp$page").map(_.charset).optional
 
         val stdout: ji.OutputStream = Outlet(t"stdout", session.stdout, session.stdout.severed)
         val stderr: ji.OutputStream = Outlet(t"stderr", session.stderr, session.stderr.severed)

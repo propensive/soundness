@@ -228,5 +228,5 @@ object internal:
           def names(entity: Self): proscenium.List[Text] = (${namesList}).to(proscenium.List)
           def select(entity: entity, name: Text): Result = lambdas(name)(entity)
           override def lens(name: Text): Optional[Lens from Self onto Result] =
-            lenses.get(name).getOrElse(Unset)
+            lenses.get(name).optional
       }

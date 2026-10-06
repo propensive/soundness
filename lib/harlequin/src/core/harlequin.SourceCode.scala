@@ -274,9 +274,7 @@ object SourceCode:
 
     private val trees: scm.HashMap[(Int, Int), TokenTag] = scm.HashMap()
 
-    def apply(start: Int, end: Int): Optional[TokenTag] = trees.get((start, end)) match
-      case Some(tag) => tag
-      case None      => Unset
+    def apply(start: Int, end: Int): Optional[TokenTag] = trees.get((start, end)).optional
 
     private def tag(span: Spans.Span, accent: Accent, role: Role): Unit =
       if span.exists then trees += (span.start, span.end) -> TokenTag(accent, role)
@@ -638,7 +636,7 @@ object SourceCode:
 
             catch case scala.util.control.NonFatal(_) => Unset
 
-          provided.collectFirst { case completions: Completions => completions }.getOrElse(Unset)
+          provided.collectFirst { case completions: Completions => completions }.optional
 
   private def collectTypes(run: Run): Map[(Int, Int), Syntax] =
     // Use the run's own context: the compilation advanced the compiler's periods,

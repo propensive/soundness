@@ -1736,9 +1736,9 @@ object Xml extends Tag.Container
     case _ =>
       summonInline[derivation is Annotated by xmlns] match
         case fields: Annotated.AnnotatedFields[Xml.xmlns, ?, ?, ?] @unchecked =>
-          fields.annotations.stdlib.headOption match
-            case Some(annotation) => (annotation.uri, annotation.qualified)
-            case None             => Unset
+          fields.annotations.stdlib.headOption
+          . map { annotation => (annotation.uri, annotation.qualified) }
+          . optional
 
         case _ =>
           Unset

@@ -446,10 +446,10 @@ object Tels extends Tels2:
         private val byReference = scala.collection.concurrent.TrieMap.empty[Text, Data]
 
         def apply(signature: Data): Optional[Data] =
-          bySignature.get(Base256.encode(signature)).getOrElse(Unset)
+          bySignature.get(Base256.encode(signature)).optional
 
         def reference(domain: Text, name: Text): Optional[Data] =
-          byReference.get(t"$domain/$name").getOrElse(Unset)
+          byReference.get(t"$domain/$name").optional
 
         def cache(signature: Data, body: Data): Unit =
           bySignature(Base256.encode(signature)) = body

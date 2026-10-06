@@ -765,9 +765,7 @@ trait Xml4:
       case Xml.Fragment(element: Xml.Element) => element
 
       case Xml.Fragment(nodes*) =>
-        nodes.collectFirst { case element: Xml.Element => element } match
-          case Some(element) => element
-          case None          => Unset
+        nodes.collectFirst { case element: Xml.Element => element }.optional
 
       case _ =>
         Unset

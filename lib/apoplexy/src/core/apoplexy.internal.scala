@@ -243,9 +243,7 @@ object Apoplexy:
 
     Implicits.search(target) match
       case success: ImplicitSearchSuccess =>
-        refinements(success.tree.tpe.widen).get(t"Result") match
-          case Some(result) => (success.tree.asExpr, result)
-          case None         => Unset
+        refinements(success.tree.tpe.widen).get(t"Result").map((success.tree.asExpr, _)).optional
 
       case _ =>
         Unset
@@ -502,9 +500,7 @@ object Apoplexy:
 
       Implicits.search(target) match
         case success: ImplicitSearchSuccess =>
-          refinements(success.tree.tpe.widen).get(t"Result") match
-            case Some(result) => result
-            case None         => Unset
+          refinements(success.tree.tpe.widen).get(t"Result").optional
 
         case _ =>
           Unset
@@ -552,9 +548,8 @@ object Apoplexy:
 
   private def statusOf(key: Text): Optional[Http.Status] =
     scala.collection.immutable.ArraySeq.unsafeWrapArray(Http.Status.values)
-    . find(_.code.toString == key.s) match
-      case Some(status) => status
-      case None         => Unset
+    . find(_.code.toString == key.s)
+    . optional
 
   // The declared error responses of an operation, each with the payload its body construes: a
   // record for a JSON object schema, the carrier of its media type otherwise, `Text` where
