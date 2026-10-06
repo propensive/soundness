@@ -429,6 +429,16 @@ object flairToolchain extends mill.javalib.CoursierModule:
   override def repositories: T[Seq[String]] = Task:
     super.repositories() :+ s"file://${toolchain.repo().path}"
 
+  // The plugin's descriptor names the fork's standard library at the version it was built with
+  // (a release of the 3.9 stream). The toolchain repository serves the fork's artifacts only at
+  // `scalaVersion`, so force every `org.scala-lang` dependency to that coordinate; the fork stays
+  // TASTy-compatible across its patch releases and streams, as the plugin's own options assume.
+  override def mapDependencies: Task[coursier.Dependency => coursier.Dependency] = Task.Anon:
+    (dependency: coursier.Dependency) =>
+      if dependency.module.organization.value == "org.scala-lang"
+      then dependency.withVersionConstraint(coursier.version.VersionConstraint(settings.scalaVersion))
+      else dependency
+
   def plugin: T[PathRef] = Task:
     defaultResolver().classpath(Seq(mvn"dev.propensive:flair-plugin:${deps.flair()}"), false).head
 
