@@ -2713,37 +2713,21 @@ object Json extends Json2, Dynamic:
 
   given listEncodable: [list <: List, element] => (encodable: => (element is Json.Encodable))
   =>  list[element] is Json.Encodable =
-
-    // Laundered pure per the codec-thunk seal pattern; see `optional`'s comment above.
-    caps.unsafe.unsafeAssumePure:
-      // Sealed lazily: the shape must stay by-name (recursive derivation
-      // depends on deferral), and its thunk may not capture the evidence.
-      val shape: () -> Morphology =
-        caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
-
-      Json.Encodable(shape):
-        values =>
-          // `Array.from` takes an `IterableOnce`, so the mapping stays on the stdlib view.
-          val roots = Array.from(values.stdlib.map(encodable.encoded(_).root))
-          Json.ast(Json.Ast.arr(roots.asInstanceOf[Array[Any]^{}]))
+    arrayEncodable[list[element], element](encodable)
 
   given setEncodable: [set <: Set, element] => (encodable: => (element is Json.Encodable))
   =>  set[element] is Json.Encodable =
-
-    // Laundered pure per the codec-thunk seal pattern; see `optional`'s comment above.
-    caps.unsafe.unsafeAssumePure:
-      // Sealed lazily: the shape must stay by-name (recursive derivation
-      // depends on deferral), and its thunk may not capture the evidence.
-      val shape: () -> Morphology =
-        caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
-
-      Json.Encodable(shape):
-        // `Array.from` takes an `IterableOnce`, so the mapping stays on the stdlib view.
-        values => Json.ast(Json.Ast.arr(Array.from(values.stdlib.map(encodable.encoded(_).root)).asInstanceOf[Array[Any]^{}]))
-
+    arrayEncodable[set[element], element](encodable)
 
   given seriesEncodable: [sequence <: Sequence, element] => (encodable: => (element is Json.Encodable))
   =>  sequence[element] is Json.Encodable =
+    arrayEncodable[sequence[element], element](encodable)
+
+  // A collection as a JSON array of its elements, for each collection type above.
+  private def arrayEncodable[collection, element]
+    ( encodable: => (element is Json.Encodable) )
+    ( using traversable: collection is Traversable by element )
+  :   collection is Json.Encodable =
 
     // Laundered pure per the codec-thunk seal pattern; see `optional`'s comment above.
     caps.unsafe.unsafeAssumePure:
@@ -2752,9 +2736,9 @@ object Json extends Json2, Dynamic:
       val shape: () -> Morphology =
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
 
-      Json.Encodable(shape):
-        // `Array.from` takes an `IterableOnce`, so the mapping stays on the stdlib view.
-        values => Json.ast(Json.Ast.arr(Array.from(values.stdlib.map(encodable.encoded(_).root)).asInstanceOf[Array[Any]^{}]))
+      Json.Encodable(shape): values =>
+        val roots = Array.from(traversable.traverse(values).map(encodable.encoded(_).root))
+        Json.ast(Json.Ast.arr(roots.asInstanceOf[Array[Any]^{}]))
 
   given array: [collection <: Iterable, element]
   =>  ( factory: Factory[element, collection[element]],
