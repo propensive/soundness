@@ -138,7 +138,7 @@ object Css:
 
     if formatter.newlines then put(t"\n")
 
-  private def indentText(indent: Int): Text = ("\n" + " ".repeat(2*indent).nn).tt
+  private def indentText(indent: Int): Text = t"\n${Text.fill(2*indent)(_ => ' ')}"
 
   // The `css"…"` interpolator: substitutions are checked against the property they
   // sit in (see `internal.expand`). Wired through `contextual` like `x"…"`/`h"…"`.
@@ -279,36 +279,25 @@ object Css:
   // `Css.Value`) lifts any such type into a `Css.Value of Topic`, so a new
   // convertible type costs one instance here, not one given per CSS property.
   object Convertible:
-    given pixels: (Quantity[Pixels[1]] is Css.Convertible of "length") = q => t"${number(q.value)}px"
-    given ems: (Quantity[Ems[1]] is Css.Convertible of "length") = q => t"${number(q.value)}em"
-    given rems: (Quantity[Rems[1]] is Css.Convertible of "length") = q => t"${number(q.value)}rem"
-    given exs: (Quantity[Exs[1]] is Css.Convertible of "length") = q => t"${number(q.value)}ex"
-    given chs: (Quantity[Chs[1]] is Css.Convertible of "length") = q => t"${number(q.value)}ch"
-
-    given vws: (Quantity[ViewportWidths[1]] is Css.Convertible of "length") =
-      q => t"${number(q.value)}vw"
-
-    given vhs: (Quantity[ViewportHeights[1]] is Css.Convertible of "length") =
-      q => t"${number(q.value)}vh"
-
-    given vmins: (Quantity[ViewportMins[1]] is Css.Convertible of "length") =
-      q => t"${number(q.value)}vmin"
-
-    given vmaxes: (Quantity[ViewportMaxes[1]] is Css.Convertible of "length") =
-      q => t"${number(q.value)}vmax"
+    given pixels: (Quantity[Pixels[1]] is Css.Convertible of "length") = dimension(t"px")
+    given ems: (Quantity[Ems[1]] is Css.Convertible of "length") = dimension(t"em")
+    given rems: (Quantity[Rems[1]] is Css.Convertible of "length") = dimension(t"rem")
+    given exs: (Quantity[Exs[1]] is Css.Convertible of "length") = dimension(t"ex")
+    given chs: (Quantity[Chs[1]] is Css.Convertible of "length") = dimension(t"ch")
+    given vws: (Quantity[ViewportWidths[1]] is Css.Convertible of "length") = dimension(t"vw")
+    given vhs: (Quantity[ViewportHeights[1]] is Css.Convertible of "length") = dimension(t"vh")
+    given vmins: (Quantity[ViewportMins[1]] is Css.Convertible of "length") = dimension(t"vmin")
+    given vmaxes: (Quantity[ViewportMaxes[1]] is Css.Convertible of "length") = dimension(t"vmax")
 
     // Any physical length (Quantitative's `Distance` dimension) renders in `mm`; CSS
     // reads `cm`/`mm`/etc. consistently, so the rendered unit need not match how the
-    // value was written. `q.value` is in metres, hence the factor of 1000.
-    given metres: (Quantity[Metres[1]] is Css.Convertible of "length") =
-      q => t"${number(q.value*1000)}mm"
+    // value was written. The value is in metres, hence the factor of 1000.
+    given metres: (Quantity[Metres[1]] is Css.Convertible of "length") = dimension(t"mm", 1000)
 
-    given inches: (Quantity[Inches[1]] is Css.Convertible of "length") = q => t"${number(q.value)}in"
-    given points: (Quantity[Points[1]] is Css.Convertible of "length") = q => t"${number(q.value)}pt"
-    given picas: (Quantity[Picas[1]] is Css.Convertible of "length") = q => t"${number(q.value)}pc"
-
-    given percents: (Quantity[Percents[1]] is Css.Convertible of "percentage") =
-      q => t"${number(q.value)}%"
+    given inches: (Quantity[Inches[1]] is Css.Convertible of "length") = dimension(t"in")
+    given points: (Quantity[Points[1]] is Css.Convertible of "length") = dimension(t"pt")
+    given picas: (Quantity[Picas[1]] is Css.Convertible of "length") = dimension(t"pc")
+    given percents: (Quantity[Percents[1]] is Css.Convertible of "percentage") = dimension(t"%")
 
     // Any colour with a `Chromatic` instance (anticipation's own `Chroma`, and every iridescence
     // colour form through `Color.chromatic`) renders as a hex triplet. The instance is sought for
@@ -319,18 +308,14 @@ object Css:
     =>  (color is Css.Convertible of "color") =
       color => hex(chromatic.red(color), chromatic.green(color), chromatic.blue(color))
 
-    // Likewise any time (Quantitative's `Seconds`) renders in `ms`; `q.value` is in
-    // seconds, hence the factor of 1000.
-    given seconds: (Quantity[Seconds[1]] is Css.Convertible of "time") =
-      q => t"${number(q.value*1000)}ms"
+    // Likewise any time (Quantitative's `Seconds`) renders in `ms`; the value is in seconds,
+    // hence the factor of 1000.
+    given seconds: (Quantity[Seconds[1]] is Css.Convertible of "time") = dimension(t"ms", 1000)
 
-    given degrees: (Quantity[Degrees[1]] is Css.Convertible of "angle") = q => t"${number(q.value)}deg"
-    given radians: (Quantity[Radians[1]] is Css.Convertible of "angle") = q => t"${number(q.value)}rad"
-
-    given turns: (Quantity[Turns[1]] is Css.Convertible of "angle") =
-      q => t"${number(q.value)}turn"
-
-    given flexes: (Quantity[Flexes[1]] is Css.Convertible of "flex") = q => t"${number(q.value)}fr"
+    given degrees: (Quantity[Degrees[1]] is Css.Convertible of "angle") = dimension(t"deg")
+    given radians: (Quantity[Radians[1]] is Css.Convertible of "angle") = dimension(t"rad")
+    given turns: (Quantity[Turns[1]] is Css.Convertible of "angle") = dimension(t"turn")
+    given flexes: (Quantity[Flexes[1]] is Css.Convertible of "flex") = dimension(t"fr")
 
     given integer: (Int is Css.Convertible of "integer") = _.show
     given decimal: (Double is Css.Convertible of "number") = Css.number(_)
@@ -346,7 +331,11 @@ object Css:
       case Css.ColorKeyword.Transparent  => t"transparent"
       case Css.ColorKeyword.CurrentColor => t"currentcolor"
 
-    private def number(value: Double): Text = Css.number(value)
+    // A quantity rendered as a CSS dimension: its value, scaled, then the unit.
+    private def dimension[units <: Measure, topic](unit: Text, scale: Double = 1.0)
+    :   (Quantity[units] is Css.Convertible of topic) =
+
+      quantity => t"${Css.number(quantity.value*scale)}$unit"
 
     private def hex(red: Int, green: Int, blue: Int): Text =
       def channel(value: Int): Text = String.format("%02x", value.max(0).min(255)).nn.tt

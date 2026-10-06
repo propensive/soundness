@@ -41,16 +41,12 @@ import spectacular.*
 // with a 30th day added to the final month in the eleven leap years of each 30-year cycle (the
 // "Kuwaiti" leap rule). Its civil epoch, 1 Muharram 1 AH, is JDN 1948440 (16 July 622 CE, Julian).
 // Dates are the same Julian-day-number as in every other calendar; only the labelling differs.
-class IslamicCalendar() extends Calendar:
-  type Mensual = IslamicMonth
+class IslamicCalendar() extends Enumerated[IslamicMonth](IslamicMonth.fromOrdinal):
   type MonthUnit = IslamicMonth.type
 
   private val epoch: Int = 1948440 // JDN of 1 Muharram 1 AH (civil)
   val name: Text = t"Islamic"
   def monthsInYear(year: Year): Int = 12
-  def monthOrdinal(year: Year, month: IslamicMonth): Int = month.ordinal
-  def monthOfOrdinal(year: Year, ordinal: Int): IslamicMonth = IslamicMonth.fromOrdinal(ordinal)
-  override def monthName(month: IslamicMonth): Text = month.show
 
   def leapYear(year: Year): Boolean = (11*year() + 14)%30 < 11
   def daysInYear(year: Year): Int = if leapYear(year) then 355 else 354

@@ -35,12 +35,14 @@ package aviation
 import anticipation.*
 import contingency.*
 import gossamer.*
+import spectacular.*
 
 // A calendar with no months: a date is a year plus a day-of-year (1–366) — the ISO-8601 "ordinal
 // date" form, e.g. day 247 of 2024. Year boundaries are delegated to the Gregorian calendar; the
 // single vestigial "month" (`Annus`) spans the whole year, so `diurnal` is the day-of-year.
 object OrdinalCalendar extends Calendar:
   object Annus extends MonthRadix
+  given annusShowable: Annus.type is Showable = _ => t"Annus"
   type Mensual = Annus.type
   type MonthUnit = Annus.type
 

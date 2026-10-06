@@ -7,8 +7,7 @@ lib/archimedes/src/core/archimedes.Mathml.scala	1	1	0
 lib/aviation/src/core/aviation.HebrewCalendar.scala	5	0	0
 lib/aviation/src/core/aviation.LeapSeconds.scala	3	0	0
 lib/aviation/src/core/aviation.Timespan.scala	2	0	0
-lib/aviation/src/core/aviation.internal.scala	1	0	1
-lib/aviation/src/core/aviation.timestampInternal.scala	1	0	0
+lib/aviation/src/core/aviation.internal.scala	0	0	1
 lib/bitumen/src/core/bitumen.Archive.scala	1	0	0
 lib/bitumen/src/core/bitumen.Pax.scala	3	4	0
 lib/bitumen/src/core/bitumen.Tar.scala	2	0	0
@@ -58,7 +57,7 @@ lib/exegesis/src/core/exegesis.Lsp.scala	6	0	5
 lib/facsimile/src/core/facsimile.Ascii85.scala	3	0	0
 lib/facsimile/src/core/facsimile.CharMap.scala	3	0	1
 lib/facsimile/src/core/facsimile.ContentTokens.scala	1	0	0
-lib/facsimile/src/core/facsimile.ContentWriter.scala	2	2	0
+lib/facsimile/src/core/facsimile.ContentWriter.scala	1	1	0
 lib/facsimile/src/core/facsimile.Cos.scala	1	0	1
 lib/facsimile/src/core/facsimile.CosLexer.scala	9	0	0
 lib/facsimile/src/core/facsimile.CosParser.scala	2	0	0
@@ -101,7 +100,6 @@ lib/hieroglyph/src/core/hieroglyph.CollationTable.scala	16	0	1
 lib/hieroglyph/src/core/hieroglyph.GraphemeBreak.scala	2	0	0
 lib/hieroglyph/src/core/hieroglyph.Normalization.scala	7	0	0
 lib/hieroglyph/src/core/hieroglyph.Unicode.scala	0	0	1
-lib/honeycomb/src/core/honeycomb.Honeycomb.scala	0	2	0
 lib/honeycomb/src/core/honeycomb.Html.scala	12	0	2
 lib/honeycomb/src/core/honeycomb.Tag.scala	0	0	1
 lib/honeycomb/src/core/honeycomb.internal.scala	20	0	1

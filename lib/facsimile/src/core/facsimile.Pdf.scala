@@ -55,6 +55,7 @@ import pneumatic.*
 import prepositional.*
 import quantitative.*
 import rudiments.*
+import spectacular.*
 import symbolism.*
 import vacuous.*
 import zephyrine.*
@@ -227,10 +228,22 @@ object Pdf:
 
   // PdfFont → Pdf.Font
   object Font:
-    enum Standard:
-      case Helvetica, HelveticaBold, HelveticaOblique, HelveticaBoldOblique,
-          TimesRoman, TimesBold, TimesItalic, TimesBoldItalic,
-          Courier, CourierBold, CourierOblique, CourierBoldOblique, Symbol, ZapfDingbats
+    // The standard fourteen, each with the PostScript name a `/BaseFont` entry gives it.
+    enum Standard(val baseFont: Text):
+      case Helvetica            extends Standard(t"Helvetica")
+      case HelveticaBold        extends Standard(t"Helvetica-Bold")
+      case HelveticaOblique     extends Standard(t"Helvetica-Oblique")
+      case HelveticaBoldOblique extends Standard(t"Helvetica-BoldOblique")
+      case TimesRoman           extends Standard(t"Times-Roman")
+      case TimesBold            extends Standard(t"Times-Bold")
+      case TimesItalic          extends Standard(t"Times-Italic")
+      case TimesBoldItalic      extends Standard(t"Times-BoldItalic")
+      case Courier              extends Standard(t"Courier")
+      case CourierBold          extends Standard(t"Courier-Bold")
+      case CourierOblique       extends Standard(t"Courier-Oblique")
+      case CourierBoldOblique   extends Standard(t"Courier-BoldOblique")
+      case Symbol               extends Standard(t"Symbol")
+      case ZapfDingbats         extends Standard(t"ZapfDingbats")
 
     // Everything the variants share, materialized at load time so a `Font` is a pure value
     // that outlives the `open` scope.
@@ -310,7 +323,7 @@ object Pdf:
                     code = value.toInt
 
                   case Cos.Name(name) =>
-                    builder += code -> PdfEncoding.glyph(name).lay(t"�")(_.toString.tt)
+                    builder += code -> PdfEncoding.glyph(name).lay(t"�")(_.show)
                     code += 1
 
                   case _ =>
@@ -456,10 +469,10 @@ object Pdf:
         val mapped: Optional[Text] = common.toUnicode.let(_(code)).or:
           common.differences(code).or:
             common.encoding.let: table =>
-              if code >= 0 && code < table.length then table.readable(code).toString.tt else Unset
+              if code >= 0 && code < table.length then table.readable(code).show else Unset
 
         val fallback: Text =
-          if !common.twoByte && code >= 32 && code <= 126 then code.toChar.toString.tt else t"�"
+          if !common.twoByte && code >= 32 && code <= 126 then code.toChar.show else t"�"
 
         builder.append(mapped.or(fallback).s)
 
@@ -1170,22 +1183,22 @@ extends caps.ExclusiveCapability:
   // The label a viewer displays for a page (ISO 32000-2 §12.4.2): styled and prefixed by
   // the `/PageLabels` number tree, or the plain one-based page number when absent.
   def pageLabel(index: Ordinal)(using Tactic[Pdf.Error]): Text =
-    catalog(t"PageLabels").lay(index.n1.toString.tt): tree =>
+    catalog(t"PageLabels").lay(index.n1.show): tree =>
       val ranges = Trees.numbers(tree)(using this).filter(_(0) <= index.n0)
 
       // `maximize` is `Unset` on an empty list, which is exactly the missing-range case.
-      ranges.maximize(_(0)).lay(index.n1.toString.tt): (start, value) =>
+      ranges.maximize(_(0)).lay(index.n1.show): (start, value) =>
         val entries = resolved(value).dictionary.or(Map[Text, Cos]())
         val prefix = entries(t"P").let(resolved(_).text).or(t"")
         val first = entries(t"St").let(resolved(_).long).or(1L)
         val number = first + (index.n0 - start)
 
         val formatted = entries(t"S").let(resolved(_).name).lay(t""):
-          case t"D" => number.toString.tt
+          case t"D" => number.show
           case t"R" => roman(number)
-          case t"r" => roman(number).s.toLowerCase.nn.tt
+          case t"r" => roman(number).lower
           case t"A" => alphabetic(number)
-          case t"a" => alphabetic(number).s.toLowerCase.nn.tt
+          case t"a" => alphabetic(number).lower
           case _    => t""
 
         t"$prefix$formatted"

@@ -45,6 +45,7 @@ import denominative.dysasymptotics.linearSize
 import gossamer.*
 import proscenium.*
 import rudiments.*
+import spectacular.*
 import symbolism.*
 import vacuous.*
 
@@ -133,7 +134,7 @@ extends caps.ExclusiveCapability:
           // The `ScalaClass` stratum records binary-ish names with `$u002E` escapes; failing
           // that, the origin's file names the frame. The raw name rides along, for a caller
           // holding the classpath to resolve the definition through TASTy.
-          val cls = origin.cls.lay(origin.file): cls => cls.s.replace("$u002E", ".").nn.tt
+          val cls = origin.cls.lay(origin.file): cls => cls.sub(t"$$u002E", t".")
           Halt.Position(cls, origin.file, origin.path, origin.line, true, origin.cls)
 
         val real = Halt.Position(name, source, path, expansion.line.or(line), false)
@@ -242,7 +243,7 @@ extends caps.ExclusiveCapability:
 
         // `indexed` numbers from `Prim`, so the element's own index is the zero-based `n0`.
         values.indexed.map: (value, index) =>
-          Variable(index.n0.toString.tt, Unset, Variable.tagName(component), snapshot(value),
+          Variable(index.n0.show, Unset, Variable.tagName(component), snapshot(value),
               Variable.Provenance.Element(id, index.n0), true, Variable.State.Forced)
 
       case _ =>
@@ -329,7 +330,7 @@ extends caps.ExclusiveCapability:
           case Jdwp.Tag.ArrayTag =>
             val (_, cls) = connection.referenceType(id)
             val signature = connection.signature(cls)
-            val component = Variable.tag(signature.s.substring(1).nn.tt)
+            val component = Variable.tag(signature.skip(1))
             val length = connection.arrayLength(id)
             val count = if length < Halt.prefixLength then length else Halt.prefixLength
 

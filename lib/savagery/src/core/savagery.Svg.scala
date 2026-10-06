@@ -586,8 +586,6 @@ extends Documentary:
   type Metadata = Encoding
 
   def xml: Xml =
-    given showable: Float is Showable = _.toString.tt
-
     val attrs: Ledger[Text, Text] =
       Ledger
         ( t"xmlns"   -> t"http://www.w3.org/2000/svg",

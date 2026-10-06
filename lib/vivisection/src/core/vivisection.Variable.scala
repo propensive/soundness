@@ -141,12 +141,12 @@ object Variable:
     case 'S' => t"Short"
     case 'Z' => t"Boolean"
     case 'V' => t"Unit"
-    case '[' => t"Array[${demangle(signature.s.substring(1).nn.tt)}]"
+    case '[' => t"Array[${demangle(signature.skip(1))}]"
 
     case 'L' =>
-      val name = signature.s.substring(1, signature.s.length - 1).nn
-      val stripped = if name.endsWith("$") then name.substring(0, name.length - 1).nn else name
-      stripped.replace('/', '.').nn.replace('$', '.').nn.tt
+      val name = signature.skip(1).skip(1, Rtl)
+      val stripped = if name.ends(t"$$") then name.skip(1, Rtl) else name
+      stripped.sub(t"/", t".").sub(t"$$", t".")
 
     case _ =>
       signature
@@ -171,7 +171,7 @@ object Variable:
   // separates the mangled owner path from the written name. Names without `$$` are returned as-is.
   private[vivisection] def fieldName(name: Text): Text =
     val index = name.s.lastIndexOf("$$")
-    if index < 0 then name else name.s.substring(index + 2).nn.tt
+    if index < 0 then name else name.skip(index + 2)
 
   // Recovers the written name from a compiler-mangled capture field: `x$3` was `x`. `Unset` for
   // any name which does not carry a purely numeric suffix.
@@ -182,8 +182,7 @@ object Variable:
     if dollar <= 0 then Unset else
       val suffix = string.substring(dollar + 1).nn
 
-      if suffix.length > 0 && suffix.forall(_.isDigit) then string.substring(0, dollar).nn.tt
-      else Unset
+      if suffix.length > 0 && suffix.forall(_.isDigit) then name.keep(dollar) else Unset
 
   // Recovers the written name from a lazy val's backing field: `x$lzy2` was `x`.
   private[vivisection] def lazyField(name: Text): Optional[Text] =
@@ -193,8 +192,7 @@ object Variable:
     if index <= 0 then Unset else
       val suffix = string.substring(index + 4).nn
 
-      if suffix.length > 0 && suffix.forall(_.isDigit) then string.substring(0, index).nn.tt
-      else Unset
+      if suffix.length > 0 && suffix.forall(_.isDigit) then name.keep(index) else Unset
 
 // A logical variable visible at a suspended frame: the name and form the programmer wrote,
 // recovered from the JVM's storage form before anything downstream sees it — captures

@@ -102,23 +102,6 @@ object Print:
       case "ZapfDingbats" => Standard.ZapfDingbats
       case _              => Unset
 
-  // A standard font's PostScript name, as a `/BaseFont` entry gives it.
-  def baseFont(standard: Pdf.Font.Standard): Text = standard match
-    case Pdf.Font.Standard.Helvetica             => t"Helvetica"
-    case Pdf.Font.Standard.HelveticaBold         => t"Helvetica-Bold"
-    case Pdf.Font.Standard.HelveticaOblique      => t"Helvetica-Oblique"
-    case Pdf.Font.Standard.HelveticaBoldOblique  => t"Helvetica-BoldOblique"
-    case Pdf.Font.Standard.TimesRoman            => t"Times-Roman"
-    case Pdf.Font.Standard.TimesBold             => t"Times-Bold"
-    case Pdf.Font.Standard.TimesItalic           => t"Times-Italic"
-    case Pdf.Font.Standard.TimesBoldItalic       => t"Times-BoldItalic"
-    case Pdf.Font.Standard.Courier               => t"Courier"
-    case Pdf.Font.Standard.CourierBold           => t"Courier-Bold"
-    case Pdf.Font.Standard.CourierOblique        => t"Courier-Oblique"
-    case Pdf.Font.Standard.CourierBoldOblique    => t"Courier-BoldOblique"
-    case Pdf.Font.Standard.Symbol                => t"Symbol"
-    case Pdf.Font.Standard.ZapfDingbats          => t"ZapfDingbats"
-
   // The file of an embedded provision to embed for a font: the first whose coverage admits the
   // face, else the first file, else nothing for a provision without files.
   def embedded(font: Font): Optional[Sfnt] =

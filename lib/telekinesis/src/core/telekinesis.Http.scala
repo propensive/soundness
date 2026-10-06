@@ -261,6 +261,11 @@ object Http:
 
   export Status.*
 
+  // One chunk of a chunked body (RFC 9112 §7.1): its size in hex, the data, and a line end.
+  private def frame(data: Data): Iterator[Data] =
+    import codepages.asciiCodepage
+    Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
+
   object Request:
     given showable: Request is Showable = request =>
       val bodySample: Text =
@@ -353,9 +358,6 @@ object Http:
 
         newline()
         newline()
-
-      def frame(data: Data): Iterator[Data] =
-        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
 
       (first, second) match
         case (first: Data, second: Data) =>
@@ -874,8 +876,6 @@ object Http:
           result
 
         . takeWhile(_.present).flatMap(_.lay(Iterator())(Iterator(_)))
-      def frame(data: Data): Iterator[Data] =
-        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
 
       def bodyBytes: Iterator[Data]^ =
         if !includeBody then Iterator.empty
@@ -1086,7 +1086,7 @@ object Http:
       cursor.expect(' ')(expected(' '))
 
       val status = Http.Status.unapply(code).optional.or:
-        abort(Http.Response.Error(Http.Response.Error.Reason.Status(code.toString.tt)))
+        abort(Http.Response.Error(Http.Response.Error.Reason.Status(code.show)))
 
       cursor.seek('\r'.toByte.asInstanceOf[cursor.addressable.Operand])
       cursor.next()
@@ -1157,8 +1157,7 @@ object Http:
 
       val length: Optional[Int] =
         headerList.filter(_.key.lower == t"content-length").prim.let(_.value)
-        . lay(Unset: Optional[Int]): text =>
-            safely(Integer.parseInt(text.s.trim.nn))
+        . lay(Unset: Optional[Int]): text => safely(text.trim.as[Int])
 
       // The body spring lends the framed view as a SINGLE-OWNER stream: each
       // mint resumes where the previous reader stopped. A chunked or fixed
