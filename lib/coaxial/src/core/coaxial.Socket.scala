@@ -103,6 +103,17 @@ object Socket:
 
     def unbind(socket: DatagramSocket): Unit
 
+    //── One-shot datagram exchange ───────────────────────────────────────────────────────────────
+    // Send one datagram from an ephemeral port and block for one reply: the shape of a DNS, NTP
+    // or STUN query. `Option.Timeout` bounds the wait, surfacing as `Socket.Error(Timeout)`; the
+    // reply carries its sender, so a caller can check it came from the right place.
+    def exchangeUdp
+      ( endpoint:  Endpoint[Udp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Option],
+        data:      Data )
+    :   Packet raises Socket.Error
+
     //── Request/response exchange (`Serviceable`) ────────────────────────────────────────────────
     type Exchange
 
@@ -185,6 +196,12 @@ object Socket:
     case class  TrafficClass(value: Int)       extends Tcp, Udp         // IP_TOS
 
     case object Broadcast                      extends Udp              // SO_BROADCAST
+    case object MulticastLoop                  extends Udp              // IP_MULTICAST_LOOP
+    case class  MulticastHops(count: Int)      extends Udp              // IP_MULTICAST_TTL
+
+    // The size of the buffer a datagram is received into, and so the largest datagram that
+    // arrives whole: 1472 bytes (one Ethernet frame) unless set, though mDNS allows 9000.
+    case class  DatagramSize(bytes: Int)       extends Udp
 
   sealed trait Option
 
@@ -202,12 +219,14 @@ object Socket:
       case Transmit extends Reason(2)
       case Close    extends Reason(3)
       case Handshake extends Reason(4)
+      case Timeout  extends Reason(5)
 
     given communicable: Reason is Communicable =
       case Reason.Accept    => m"a new connection could not be accepted"
       case Reason.Transmit  => m"data could not be transmitted to the connection"
       case Reason.Close     => m"the connection could not be closed cleanly"
       case Reason.Handshake => m"the TLS handshake with the peer failed"
+      case Reason.Timeout   => m"no response arrived before the timeout"
 
   case class Error(reason: Socket.Error.Reason)(using Diagnostics)
   extends fulminate.Error(266, reason.number)(m"the connection failed because $reason")

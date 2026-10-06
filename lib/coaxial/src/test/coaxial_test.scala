@@ -399,6 +399,54 @@ object Tests extends Suite(m"Coaxial tests"):
               TlsAcceptance().pinning(fingerprint).tls() )
         . assert(_ == t"connected")
 
+    supervise:
+      suite(m"Datagram sockets"):
+        val backend = summon[Socket.Backend]
+
+        test(m"Reuse options let two UDP sockets share a port"):
+          import socketOptions.reuseAddressSocketOption, socketOptions.reusePortSocketOption
+          val port = Port[Udp]()
+          val options = summon[Every[Socket.Option.Udp]].values.to(List)
+          val first = backend.listenUdp(port, Unset, options)
+          val second = try backend.listenUdp(port, Unset, options) finally backend.unbind(first)
+          backend.unbind(second)
+          true
+        . assert(_ == true)
+
+        test(m"A datagram larger than the default buffer arrives whole with DatagramSize set"):
+          given Socket.Option.DatagramSize = socketOptions.datagramSize(4096)
+          val port = Port[Udp]()
+          val received: Promise[Int] = Promise()
+
+          val handler = (packet: Packet) =>
+            received.fulfill(packet.data.length)
+            UdpResponse.Ignore
+
+          port.listen[Data](handler):
+            val routable = summon[Udp.Port is Routable]
+            routable.transmit(routable.connect(port, Unset), zephyrine.Stream(Data.fill(3000)(_.toByte)))
+            received.await()
+        . assert(_ == 3000)
+
+        test(m"A datagram exchange returns the server's reply"):
+          val port = Port[Udp]()
+          val handler = (packet: Packet) => UdpResponse.Reply(ascii(t"pong"))
+
+          port.listen[Data](handler):
+            backend.exchangeUdp(Localhost on port, Unset, List(Socket.Option.Timeout(2000)), ascii(t"ping"))
+            . data.utf8
+        . assert(_ == t"pong")
+
+        test(m"A datagram exchange times out when no reply arrives"):
+          val port = Port[Udp]()
+          val handler = (packet: Packet) => UdpResponse.Ignore
+
+          port.listen[Data](handler):
+            capture[Socket.Error]:
+              backend.exchangeUdp(Localhost on port, Unset, List(Socket.Option.Timeout(200)), ascii(t"ping"))
+            . reason
+        . assert(_ == Socket.Error.Reason.Timeout)
+
     suite(m"Socket options"):
       test(m"reuseAddress sets SO_REUSEADDR on a configured TCP server socket"):
         import socketOptions.reuseAddressSocketOption

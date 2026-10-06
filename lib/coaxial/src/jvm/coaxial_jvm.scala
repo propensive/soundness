@@ -74,10 +74,19 @@ private enum ClientExchange:
 // A fire-and-forget datagram destination.
 private case class UdpCourier(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
 
+// A bound datagram socket with the size of the buffer each datagram is received into.
+private case class UdpBinding(socket: jn.DatagramSocket, datagramSize: Int)
+
+// The `DatagramSize` option, consumed by the backend rather than set on the socket.
+private def datagramSize(options: List[Socket.Option]): Int = options match
+  case Nil                                      => 1472
+  case Socket.Option.DatagramSize(bytes) :: _   => bytes
+  case _ :: tail                                => datagramSize(tail)
+
 package socketBackends:
   given javaBaseSockets: Socket.Backend = new Socket.Backend:
     type ServerSocket = ServerBinding
-    type DatagramSocket = jn.DatagramSocket
+    type DatagramSocket = UdpBinding
     type Exchange = ClientExchange
     type Courier = UdpCourier
 
@@ -178,22 +187,31 @@ package socketBackends:
 
     //── Datagram server (`Bindable` over UDP) ──────────────────────────────────────────────────
     def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
-    :   jn.DatagramSocket =
+    :   UdpBinding =
 
-      val socket = jn.DatagramSocket(port.number)
+      // Unbound at first, so that `ReuseAddress`/`ReusePort` take effect before the bind.
+      val socket = jn.DatagramSocket(null: jn.SocketAddress | Null)
       configure(socket, options)
 
       interface.let(interfaceFor(_)).let: nic =>
         socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
 
-      socket
+      socket.bind(jn.InetSocketAddress(port.number))
+      UdpBinding(socket, datagramSize(options))
 
-    def receive(socket: jn.DatagramSocket): Packet raises Socket.Error =
-      val array = new scala.Array[Byte](1472)
-      val packet = jn.DatagramPacket(array, 1472)
+    def receive(binding: UdpBinding): Packet raises Socket.Error =
+      receiveFrom(binding.socket, binding.datagramSize)
+
+    // Block for one datagram of up to `size` bytes; a timeout set on the socket is reported
+    // apart from the other failures, as the one a caller may expect.
+    private def receiveFrom(socket: jn.DatagramSocket, size: Int): Packet raises Socket.Error =
+      val array = new scala.Array[Byte](size)
+      val packet = jn.DatagramPacket(array, size)
 
       try socket.receive(packet)
-      catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Accept))
+      catch
+        case _: jn.SocketTimeoutException => abort(Socket.Error(Socket.Error.Reason.Timeout))
+        case _: ji.IOException            => abort(Socket.Error(Socket.Error.Reason.Accept))
 
       val address = packet.getSocketAddress.nn.asInstanceOf[jn.InetSocketAddress]
 
@@ -206,17 +224,38 @@ package socketBackends:
           ip,
           Port.unsafe[Udp](address.getPort) )
 
-    def reply(socket: jn.DatagramSocket, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
+    def reply(binding: UdpBinding, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
     :   Unit raises Socket.Error =
 
       val ip: jn.InetAddress = jn.InetAddress.getByAddress(Array.unsafeJvm(sender.bytes)).nn
 
       val packet = jn.DatagramPacket(Array.unsafeJvm(data), data.length, ip, port.number)
 
-      try socket.send(packet)
+      try binding.socket.send(packet)
       catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
 
-    def unbind(socket: jn.DatagramSocket): Unit = socket.close()
+    def unbind(binding: UdpBinding): Unit = binding.socket.close()
+
+    //── One-shot datagram exchange ─────────────────────────────────────────────────────────────
+    def exchangeUdp
+      ( endpoint:  Endpoint[Udp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option],
+        data:      Data )
+    :   Packet raises Socket.Error =
+
+      val courier = routeUdp(endpoint, interface, options)
+
+      try
+        val packet =
+          jn.DatagramPacket(Array.unsafeJvm(data), data.length, courier.address, courier.port)
+
+        try courier.socket.send(packet)
+        catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
+
+        receiveFrom(courier.socket, datagramSize(options))
+
+      finally courier.socket.close()
 
     //── Request/response exchange (`Serviceable`) ──────────────────────────────────────────────
     def dialTcp
@@ -371,6 +410,9 @@ private[coaxial] def applyOptions(options: List[Socket.Option])(target: Configur
     case Socket.Option.NoDelay               => target.set(TCP_NODELAY.nn, yes)
     case Socket.Option.KeepAlive             => target.set(SO_KEEPALIVE.nn, yes)
     case Socket.Option.Broadcast             => target.set(SO_BROADCAST.nn, yes)
+    case Socket.Option.MulticastLoop         => target.set(IP_MULTICAST_LOOP.nn, yes)
+    case Socket.Option.MulticastHops(n)      => target.set(IP_MULTICAST_TTL.nn, Int.box(n))
+    case Socket.Option.DatagramSize(_)       => ()  // consumed by the backend's receive
     case Socket.Option.ReceiveBuffer(n)      => target.set(SO_RCVBUF.nn, Int.box(n))
     case Socket.Option.SendBuffer(n)         => target.set(SO_SNDBUF.nn, Int.box(n))
     case Socket.Option.TrafficClass(n)       => target.set(IP_TOS.nn, Int.box(n))

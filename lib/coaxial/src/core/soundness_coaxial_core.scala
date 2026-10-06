@@ -43,4 +43,5 @@ package socketOptions:
   export
     coaxial.socketOptions
     . { reuseAddressSocketOption, reusePortSocketOption, noDelaySocketOption, keepAliveSocketOption,
-        broadcastSocketOption, receiveBuffer, sendBuffer, linger, trafficClass, timeout }
+        broadcastSocketOption, multicastLoopSocketOption, receiveBuffer, sendBuffer, linger,
+        trafficClass, timeout, multicastHops, datagramSize }

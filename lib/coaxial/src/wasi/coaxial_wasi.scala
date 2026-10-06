@@ -259,6 +259,14 @@ package socketBackends:
 
     def unbind(socket: Unit): Unit = ()
 
+    def exchangeUdp
+      ( endpoint:  Endpoint[Udp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option],
+        data:      Data )
+    :   Packet raises Socket.Error =
+      abort(Socket.Error(Socket.Error.Reason.Transmit))
+
     //── Request/response exchange (TCP; Unix-domain unsupported) ──────────────────────────────────
     def dialTcp
       ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )

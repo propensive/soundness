@@ -272,9 +272,12 @@ package socketOptions:
   given noDelaySocketOption:      Socket.Option.NoDelay.type      = Socket.Option.NoDelay
   given keepAliveSocketOption:    Socket.Option.KeepAlive.type    = Socket.Option.KeepAlive
   given broadcastSocketOption:    Socket.Option.Broadcast.type    = Socket.Option.Broadcast
+  given multicastLoopSocketOption: Socket.Option.MulticastLoop.type = Socket.Option.MulticastLoop
 
   def receiveBuffer(bytes: Int): Socket.Option.ReceiveBuffer = Socket.Option.ReceiveBuffer(bytes)
   def sendBuffer(bytes: Int): Socket.Option.SendBuffer = Socket.Option.SendBuffer(bytes)
   def linger(seconds: Optional[Int] = Unset): Socket.Option.Linger = Socket.Option.Linger(seconds)
   def trafficClass(value: Int): Socket.Option.TrafficClass = Socket.Option.TrafficClass(value)
   def timeout(milliseconds: Int): Socket.Option.Timeout = Socket.Option.Timeout(milliseconds)
+  def multicastHops(count: Int): Socket.Option.MulticastHops = Socket.Option.MulticastHops(count)
+  def datagramSize(bytes: Int): Socket.Option.DatagramSize = Socket.Option.DatagramSize(bytes)
