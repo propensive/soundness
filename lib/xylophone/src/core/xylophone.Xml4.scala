@@ -537,8 +537,7 @@ trait Xml4:
                 complexMember(parent, local, seen + t"type:${name.local}") match
                   case Member.Record(parentFields, _) =>
                     parentFields.each: (name, member) =>
-                      if name.s.startsWith("@")
-                      then merge(attributes, name.s.substring(1).nn.tt, member)
+                      if name.starts(t"@") then merge(attributes, name.skip(1), member)
                       else if name == t"text" || name == t"#text" then textMember = member
                       else merge(fields, name, member)
 
@@ -815,9 +814,9 @@ trait Xml4:
       Xml.Text(builder.toString.tt)
 
     def access(name: Text, xml: Xml): Xml = elementOf(xml).lay(Xml.Absent): parent =>
-      if name.s.startsWith("#") then ownText(parent)
-      else if name.s.startsWith("@") then
-        attributeOf(parent, name.s.substring(1).nn.tt).lay(Xml.Absent)(Xml.Text(_))
+      if name.starts(t"#") then ownText(parent)
+      else if name.starts(t"@") then
+        attributeOf(parent, name.skip(1)).lay(Xml.Absent)(Xml.Text(_))
       else
         children(parent, name).prim match
           case child: Xml.Element => if nil(child) then Xml.Absent else child

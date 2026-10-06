@@ -578,10 +578,8 @@ private[xylophone] object XPathEngine:
         else
           val qualified = loci.prim.let(nodeNameOf(_)).or(t"")
 
-          if name.s == "name" then Value.Textual(qualified) else
-            val colon = qualified.s.indexOf(':')
-            if colon < 0 then Value.Textual(qualified)
-            else Value.Textual(qualified.s.substring(colon + 1).nn.tt)
+          if name.s == "name" then Value.Textual(qualified)
+          else Value.Textual(Xml.Name.split(qualified)(1))
 
       case "string" =>
         arity(0, 1)

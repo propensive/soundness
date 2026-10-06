@@ -34,6 +34,7 @@ package delicious
 
 import anticipation.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 object Placeholder:
@@ -54,9 +55,7 @@ object Placeholder:
   /** The original string literal, if the text is an escaped genuine literal. */
   def escaped(text: Text): Optional[Text] =
     val prefix = t"${Prefix}esc:"
-    if text.s.startsWith(prefix.s) && text.s.endsWith("⟩")
-    then text.s.substring(prefix.s.length, text.s.length - 1).nn.tt
-    else Unset
+    if text.starts(prefix) && text.ends(t"⟩") then text.skip(prefix.length).skip(1, Rtl) else Unset
 
   def decode(text: Text): Optional[Placeholder] =
     text.cut(t"|") match

@@ -306,7 +306,7 @@ object Zipfile:
 
       val nameText = decodeText(nameBytes)
       val directory = nameText.ends(t"/")
-      val cleanName = if directory then nameText.s.stripSuffix("/").nn.tt else nameText
+      val cleanName = if directory then nameText.skip(1, Rtl) else nameText
 
       val method = methodId match
         case 0     => Zip.Method.Stored

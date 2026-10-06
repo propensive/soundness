@@ -1764,7 +1764,7 @@ object Xml extends Tag.Container
       val colon = label.s.indexOf(':')
 
       if colon < 0 then (Unset, label)
-      else (label.s.substring(0, colon).nn.tt, label.s.substring(colon + 1).nn.tt)
+      else (label.keep(colon), label.skip(colon + 1))
 
     // Clark notation, `{uri}local`, or the bare local part
     given showable: Name is Showable = name =>
