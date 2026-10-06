@@ -1604,6 +1604,7 @@ object Lsp:
                       probate:     Probate,
                       diagnostics: Diagnostics,
                       working:     WorkingDirectory,
+                      environment: Environment,
                       listener:    Lsp.Listener^,
                       observer:    Lsp.Observer^)
     =>  (LspSessional^{monitor}) =
@@ -1644,7 +1645,7 @@ object Lsp:
   // monitor, which a hook needs to await an answer of its own; see `Lsp.Proxy`.
   def proxy[capture^](upstream: Server, observer: Observer = Observer.Silent)
      ( register: (proxy: Lsp.Proxy^) ?->{capture} Unit )
-     ( using Stdio^, Monitor^{capture}, Probate, WorkingDirectory, Diagnostics )
+     ( using Stdio^, Monitor^{capture}, Probate, WorkingDirectory, Environment, Diagnostics )
   :   Unit =
 
     Lsp.Proxy.run[capture](upstream, observer)(register)
@@ -2411,7 +2412,7 @@ object Lsp:
        ( upstream: Lsp.Server, observer: Lsp.Observer = Lsp.Observer.Silent )
        ( register: (proxy: Lsp.Proxy^) ?->{capture} Unit )
        ( using stdio: Stdio^, monitor: Monitor^{capture}, probate: Probate, working: WorkingDirectory,
-               diagnostics: Diagnostics )
+               environment: Environment, diagnostics: Diagnostics )
     :   Unit =
 
       import strategies.throwUnsafely

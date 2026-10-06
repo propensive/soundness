@@ -34,7 +34,7 @@ package vivisection
 
 import scala.caps
 
-import ambience.{System, WorkingDirectory}
+import ambience.{Environment, System, WorkingDirectory}
 import anthology.*
 import anticipation.*
 import rudiments.each
@@ -67,19 +67,20 @@ object Dap:
   // writer task, so responses and events never interleave, and each request is handled in
   // arrival order on this thread. The observer sees every message's raw text, both directions.
   def listen(observer: Text => Unit = { _ => () })
-    ( using online:     Online,
-            monitor:    Monitor,
-            probate:    Probate,
-            backend:    Socket.Backend,
-            options:    Every[Socket.Option.Tcp],
-            system:     System,
-            asyncError: Tactic[Async.Error],
-            working:    WorkingDirectory,
-            stdio:      Stdio^,
-            loggable:   (Socket.Event is Loggable)^,
-            exec:       (Exec.Event is Loggable)^,
-            compile:    (CompileEvent is Loggable)^,
-            note:       Diagnostics )
+    ( using online:       Online,
+            monitor:      Monitor,
+            probate:      Probate,
+            backend:      Socket.Backend,
+            options:      Every[Socket.Option.Tcp],
+            system:       System,
+            asyncError:   Tactic[Async.Error],
+            working:      WorkingDirectory,
+            environment:  Environment,
+            stdio:        Stdio^,
+            loggable:     (Socket.Event is Loggable)^,
+            exec:         (Exec.Event is Loggable)^,
+            compile:      (CompileEvent is Loggable)^,
+            note:         Diagnostics )
   :   Unit =
 
     import strategies.throwUnsafely

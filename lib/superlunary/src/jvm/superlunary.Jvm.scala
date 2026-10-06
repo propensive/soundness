@@ -61,6 +61,7 @@ object Jvm extends Rig(using Classloader[Jvm.type]):
 
   protected def invoke[output](stage: Stage[output, Form, Target]): output =
     import workingDirectories.systemWorkingDirectory
+    import environments.javaBaseEnvironment
     import logging.silentLogging
 
     stage.remote: input =>

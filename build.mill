@@ -389,6 +389,36 @@ object xekRelease extends Module:
       os.perms.set(path, "rwxr-xr-x")
       path
 
+// The checkout a test module was built from, compiled into it as `<package>.Workspace` for the
+// suites which need its files: `root`, the workspace's absolute path, and with `xek`, the
+// absolute path of the builder `xekRelease` resolves. fume runs suites inside its daemon, which
+// starts in `/` with a sanitized environment, so neither the working directory nor an
+// environment variable can say where the checkout is.
+//
+// A task which records `xek` must depend on `xekPin.file` and `xekPin.requested`, so that it reads
+// the pin as a declared source and is rerun when the pin or an `XEK` override changes.
+object xekPin extends Module:
+  def file = Task.Source(mill.api.BuildCtx.workspaceRoot / "etc" / "xek.tsv")
+  def requested = Task.Input(sys.env.get("XEK"))
+
+def workspaceSource(dest: os.Path, packageName: String, xek: Boolean): PathRef =
+  val root = mill.api.BuildCtx.workspaceRoot
+  def literal(path: os.Path): String = "\"" + path.toString.flatMap {
+    case '"'  => "\\\""
+    case '\\' => "\\\\"
+    case char => char.toString
+  } + "\""
+  val xekValue = if xek then s"\n  val xek: String = ${literal(xekRelease.script(root))}" else ""
+  os.write.over(
+    dest / "workspace" / "Workspace.scala",
+    s"""package $packageName
+       |
+       |object Workspace:
+       |  val root: String = ${literal(root)}$xekValue
+       |""".stripMargin,
+    createFolders = true)
+  PathRef(dest)
+
 // The propensive libraries this build depends on, pinned in etc/refs, and the propensive tools
 // it runs, pinned in etc/tools (both documented in propensive/.github). Soundness sits at the
 // bottom of the stack: it depends on nothing propensive, so etc/refs is empty; the one tool is
@@ -1442,7 +1472,7 @@ object apoplexy extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  object test extends Tests(core, eucalyptus.core, hallucination.png):
+  object test extends Tests(core, eucalyptus.core, hallucination.png, ethereal.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -1824,6 +1854,8 @@ object degustation extends Library:
     def mvnDeps = Seq(
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-tasty-inspector_3:${scalaVersion()}")
+    def generatedSources = Task:
+      super.generatedSources() :+ workspaceSource(Task.dest, "degustation", xek = false)
 
 object delicious extends Library:
   object core extends Component(gossamer.core, vacuous.core):
@@ -2074,6 +2106,11 @@ object ethereal extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
+    def generatedSources = Task:
+      xekPin.file()
+      xekPin.requested()
+      super.generatedSources() :+ workspaceSource(Task.dest, "ethereal", xek = true)
+
 object eucalyptus extends Library:
   object core extends Component(turbulence.core, gossamer.core, digression.core, parasite.core):
     override def scalacOptions = Task:
@@ -2139,6 +2176,11 @@ object exoskeleton extends Library:
   object test extends Tests(rig):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
+
+    def generatedSources = Task:
+      xekPin.file()
+      xekPin.requested()
+      super.generatedSources() :+ workspaceSource(Task.dest, "exoskeleton", xek = true)
 
 object facsimile extends Library:
   object core extends Component(aperture.core, turbulence.core,
@@ -2517,6 +2559,8 @@ object hyperbole extends Library:
   object test extends Tests(core, stacks, quantitative.units, mandible.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
+    def generatedSources = Task:
+      super.generatedSources() :+ workspaceSource(Task.dest, "hyperbole", xek = false)
 
 object hypotenuse extends Library:
   object core extends Component(anticipation.opaque, contingency.core):
@@ -2989,6 +3033,11 @@ object profanity extends Library:
   object test extends Tests(core, exoskeleton.rig):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
+
+    def generatedSources = Task:
+      xekPin.file()
+      xekPin.requested()
+      super.generatedSources() :+ workspaceSource(Task.dest, "profanity", xek = true)
 
 object punctuation extends Library:
   object core extends Component(honeycomb.core):

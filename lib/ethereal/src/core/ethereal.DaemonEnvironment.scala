@@ -30,40 +30,45 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package apoplexy
+package ethereal
 
-import soundness.*
+import java.lang as jl
+import java.nio.charset as jnc
 
-import errorDiagnostics.emptyDiagnostics
-import internetAccess.online
-import logging.silentLogging
-import strategies.throwUnsafely
+import ambience.*
+import anticipation.*
+import contingency.*
+import gossamer.*
+import rudiments.*
+import vacuous.*
 
-// The descriptions too large to check in, fetched at a pinned commit. Attestation runs offline,
-// so the suite runs only when `SOUNDNESS_CI_ONLINE=1` was set for the daemon running it — read
-// from the environment the daemon was started with, since its own is sanitized.
-object CorpusOnlineTests extends Suite(m"OpenAPI online corpus tests"):
-  case class Remote(name: Text, url: HttpUrl, paths: Int)
+// The environment of the invocation which started this daemon. The launcher starts a daemon
+// with a sanitized environment of its own — so that the daemon's state does not depend on who
+// happened to start it — and sends the environment it was itself started with on the daemon's
+// standard input, as the `ethereal.environment` property (set to `stdin`) announces: each entry
+// `NAME=value`, ended by a NUL byte. It is held in memory, never written anywhere. Without the
+// property (an older launcher, or a JVM run directly) this is the JVM's own environment, which is
+// then the launching one.
+//
+// Few things want this rather than the invocation's environment, which arrives with each
+// invocation; it is chosen explicitly, through `environments.daemonEnvironment`.
+object DaemonEnvironment extends Environment:
+  private lazy val map: Map[Text, Text] =
+    val sent: Boolean = jl.System.getProperty("ethereal.environment") == "stdin"
 
-  val remotes: List[Remote] = List
-    ( Remote
-        ( t"GitHub",
-          url"https://raw.githubusercontent.com/github/rest-api-description/c6721f32a17a71397ae46be21be90d7f1a173b6e/descriptions/api.github.com/api.github.com.json",
-          800 ),
-      Remote
-        ( t"OpenAI",
-          url"https://raw.githubusercontent.com/openai/openai-openapi/bafb6ade833cc313d354c64644996537f5db5af5/openapi.json",
-          30 ),
-      Remote
-        ( t"Cloudflare",
-          url"https://raw.githubusercontent.com/cloudflare/api-schemas/6b0fb3cd63aca815f1667a8fa908114886867dc6/openapi.json",
-          1000 ) )
+    val content: Optional[Text] =
+      if !sent then Unset
+      else safely(String(jl.System.in.nn.readAllBytes().nn, jnc.StandardCharsets.UTF_8).tt)
 
-  def run(): Unit =
-    if DaemonEnvironment.variable(t"SOUNDNESS_CI_ONLINE") == t"1" then
-      import httpBackends.javaNetHttp
+    content.lay(environments.javaBaseEnvironment.entries.or(Map())): content =>
+      content.cut(t"\u0000").map(_.cut(t"=", 2)).sweep:
+        case List(name, value) => (name, value)
 
-      remotes.each: remote =>
-        test(m"the ${remote.name} API description loads"):
-          remote.url.fetch().receive[Text].read[OpenApi].paths.size
-        . assert(_ >= remote.paths)
+      . to[Map]
+
+  // Reads the environment the launcher sent, if it has not been read already; the daemon does
+  // this as it starts, since the launcher sends it only then.
+  def capture(): Unit = map
+
+  def variable(name: Text): Optional[Text] = map.at(name)
+  override def entries: Optional[Map[Text, Text]] = map

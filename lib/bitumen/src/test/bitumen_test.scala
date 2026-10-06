@@ -544,6 +544,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
       import workingDirectories.javaBaseWorkingDirectory
+      import environments.javaBaseEnvironment
       import logging.silentLogging
       import filesystemOptions.dereferenceSymlinks
       import filesystemOptions.overwritePreexisting

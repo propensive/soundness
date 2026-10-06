@@ -130,6 +130,10 @@ def cli[bus <: Matchable](using executive: Executive)
     scala.caps.unsafe.unsafeAssumeSeparate:
       safely(System.properties.ethereal.startTime[Long]()).or(jl.System.currentTimeMillis())
 
+  // Read now, before the socket is bound: the launcher sends the environment it was started with
+  // only while it waits for the socket to appear.
+  DaemonEnvironment.capture()
+
   // Use `Directories.*` rather than `Xdg.*` so Windows resolves to a native
   // location (`%LOCALAPPDATA%\Temp`) instead of `%USERPROFILE%\.local\state`,
   // which the Rust launcher in `state.rs` does not look at.

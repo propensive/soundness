@@ -43,6 +43,7 @@ import logging.silentLogging
 import strategies.throwUnsafely
 import internetAccess.online
 import workingDirectories.javaBaseWorkingDirectory
+import environments.javaBaseEnvironment
 import socketBackends.javaBaseSockets
 import systems.javaBaseSystem
 

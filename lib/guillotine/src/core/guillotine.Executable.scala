@@ -46,6 +46,7 @@ import gossamer.*
 import kaleidoscope.*
 import rudiments.*
 import spectacular.*
+import vacuous.*
 
 sealed trait Executable:
   type Exec <: Label
@@ -53,14 +54,20 @@ sealed trait Executable:
   // Explicit `using` evidence instead of `raises`/`logs` sugar, and a fresh (`^`) result:
   // the freshly-minted `Job` capability cannot cross the nested context-function results the
   // sugar desugars to (the stacked-raises convention; see rep/DECISIONS.md).
-  def fork[result]()(using working: WorkingDirectory)
+  //
+  // The process runs in the given working directory, with the given environment: exactly its
+  // variables, where it can enumerate them, and otherwise the JVM's own.
+  def fork[result]()(using working: WorkingDirectory, environment: Environment)
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   Job[Exec, result]^
 
 
   // Real `using` clauses rather than the `raises`/`logs` sugar: a context-function result
   // would hide the `computable` parameter, which the separation checker rejects.
-  def exec[result]()(using computable: (result is Computable)^, working: WorkingDirectory)
+  def exec[result]()
+    ( using computable:  (result is Computable)^,
+            working:     WorkingDirectory,
+            environment: Environment )
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   result =
 
@@ -72,6 +79,7 @@ sealed trait Executable:
   inline def apply()
     ( using erased intelligible: Exec is Intelligible,
             working:             WorkingDirectory,
+            environment:         Environment,
             computable:          (intelligible.Result is Computable)^ )
   :   intelligible.Result raises Exec.Error logs Exec.Event =
 
@@ -113,17 +121,53 @@ object Command:
 
   given showable: Command is Showable = command => formattedArguments(command.arguments.to(List))
 
-case class Command(arguments: Text*) extends Executable:
-  def fork[result]()(using working: WorkingDirectory)
-    ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
-  :   Job[Exec, result]^ =
+  // A process builder for the arguments, in the working directory and with the environment. An
+  // environment which can enumerate its variables replaces the JVM's in the child, and since the
+  // JDK finds a command named without a directory on the JVM's own `PATH`, not the child's, such a
+  // command is first looked up on the environment's `PATH`; one not found there is left to the
+  // JDK.
+  private[guillotine] def builder(arguments: List[Text])
+    ( using working: WorkingDirectory, environment: Environment )
+  :   ProcessBuilder =
 
     // The `java.util.List` overload, not the varargs one: a Java varargs splice of an array
     // value is rejected under separation checking.
     val javaArguments = java.util.ArrayList[String]()
-    arguments.ss.foreach(javaArguments.add(_))
+    arguments.map(_.s).each(javaArguments.add(_))
     val processBuilder = ProcessBuilder(javaArguments)
     processBuilder.directory(ji.File(working.directory().s))
+
+    environment.entries.let: entries =>
+      if !javaArguments.isEmpty then javaArguments.set(0, locate(javaArguments.get(0).nn.tt).s)
+      val variables = processBuilder.environment().nn
+      variables.clear()
+      entries.stdlib.foreach { (name, value) => variables.put(name.s, value.s) }
+
+    processBuilder
+
+  // The executable a command name refers to on the environment's `PATH`: the name itself if it
+  // contains a directory, or if no directory on the `PATH` holds an executable of that name.
+  private def locate(name: Text)(using environment: Environment): Text =
+    if name.contains(t"/") || name.contains(t"\\") then name else
+      val extensions: List[Text] =
+        if ji.File.separatorChar == '\\'
+        then t"" :: environment.variable(t"PATHEXT").or(t".EXE").cut(t";")
+        else List(t"")
+
+      val candidates: List[ji.File] =
+        environment.variable(t"PATH").or(t"").cut(ji.File.pathSeparator.nn.tt).bind: directory =>
+          if directory == t"" then Nil
+          else extensions.map { extension => ji.File(directory.s, t"$name$extension".s) }
+
+      val found: Optional[ji.File] = candidates.seek { file => file.isFile && file.canExecute }
+      found.lay(name)(_.getAbsolutePath.nn.tt)
+
+case class Command(arguments: Text*) extends Executable:
+  def fork[result]()(using working: WorkingDirectory, environment: Environment)
+    ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
+  :   Job[Exec, result]^ =
+
+    val processBuilder = Command.builder(arguments.to(List))
 
     Log.info(Exec.Event.ProcessStart(this))
 
@@ -148,19 +192,11 @@ object Pipeline:
   given showable: Pipeline is Showable = _.commands.map(_.show).join(t" | ")
 
 case class Pipeline(commands: Command*) extends Executable:
-  def fork[result]()(using working: WorkingDirectory)
+  def fork[result]()(using working: WorkingDirectory, environment: Environment)
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   Job[Exec, result]^ =
 
-    val processBuilders = commands.map: command =>
-      // As above: the `java.util.List` overload, not the varargs one.
-      val javaArguments = java.util.ArrayList[String]()
-      command.arguments.ss.foreach(javaArguments.add(_))
-      val processBuilder = ProcessBuilder(javaArguments)
-
-      processBuilder.directory(ji.File(working.directory().s))
-
-      processBuilder.nn
+    val processBuilders = commands.map(_.arguments.to(List)).map(Command.builder(_))
 
     Log.info(Exec.Event.PipelineStart(commands.to(List)))
 

@@ -44,12 +44,12 @@ import rudiments.*
 // scala-wasm fork of `wit-bindgen`) are present. Instances exist only via the probing `apply`,
 // so linking for `Backend.Wasi` cannot discover a missing tool at link time.
 object WasiToolchain:
-  def apply()(using WorkingDirectory): WasiToolchain raises Toolchain.Error =
+  def apply()(using WorkingDirectory, Environment): WasiToolchain raises Toolchain.Error =
     probe(t"wasm-tools")
     probe(t"wit-bindgen")
     new WasiToolchain()
 
-  private def probe(tool: Text)(using WorkingDirectory): Unit raises Toolchain.Error =
+  private def probe(tool: Text)(using WorkingDirectory, Environment): Unit raises Toolchain.Error =
     if safely(mute[Exec.Event](sh"$tool --version".exec[Exit]())) != Exit.Ok
     then raise(Toolchain.Error(tool))
 

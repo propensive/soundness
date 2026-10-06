@@ -64,9 +64,17 @@ package workingDirectories:
 package environments:
   given emptyEnvironment: Environment:
     def variable(name: Text): Unset.type = Unset
+    override def entries: Optional[Map[Text, Text]] = Map()
 
+  // The environment the JVM was started with. In a daemon this is not any invocation's: the
+  // launcher starts the daemon with a sanitized environment, and each invocation's own arrives
+  // with it.
   given javaBaseEnvironment: Environment:
     def variable(name: Text): Optional[Text] = Optional(jl.System.getenv(name.s)).let(_.tt)
+
+    override def entries: Optional[Map[Text, Text]] =
+      import scala.jdk.CollectionConverters.MapHasAsScala
+      Map.from(jl.System.getenv().nn.asScala.map { (name, value) => name.tt -> value.tt })
 
 package temporaryDirectories:
   given javaBaseTemporaryDirectory: TemporaryDirectory = () =>
@@ -76,10 +84,13 @@ package temporaryDirectories:
   given systemTemporaryDirectory: (system: System) => TemporaryDirectory =
     () => jl.System.getProperty("java.io.tmpdir").nn.tt
 
-  given environmentTemporaryDirectory: Environment => TemporaryDirectory = () =>
-    List("TMPDIR", "TMP", "TEMP").map(jl.System.getenv(_)).seek(_ != null)
-    . let(_.nn.tt)
-    . or(panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set"))
+  // The first of `TMPDIR`, `TMP` and `TEMP` in the given environment.
+  given environmentTemporaryDirectory: (environment: Environment) => TemporaryDirectory = () =>
+    def first(names: List[Text]): Text = names match
+      case name :: more => environment.variable(name).or(first(more))
+      case Nil          => panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set")
+
+    first(List(t"TMPDIR", t"TMP", t"TEMP"))
 
 // Resolution goes through `Paths.Resolver` (ordinary implicit search) rather than an inline
 // `summonFrom`: the latter cannot be reduced when `temporaryDirectory`/`workingDirectory` is expanded

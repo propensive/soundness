@@ -43,7 +43,7 @@ extension (shell: Shell)
   // Explicit `using` evidence instead of `raises`/`logs` sugar: a context-function result
   // would hide the parameters, which the separation checker rejects.
   def tmux(width: Int = 80, height: Int = 24)[result](action: (tmux: Tmux) ?=> result)
-    ( using WorkingDirectory, Enclave.Tool, Monitor, TemporaryDirectory )
+    ( using WorkingDirectory, Environment, Enclave.Tool, Monitor, TemporaryDirectory )
     ( using Tactic[Tmux.Error], (guillotine.Exec.Event is Loggable)^ )
   :   result =
 
@@ -54,7 +54,8 @@ extension (shell: Shell)
       case Truncation.Error(_)       => Tmux.Error(Tmux.Error.Reason.ExecFailed)
 
     . protect:
-        given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)
+        given tmux: Tmux =
+          Tmux(Uuid().show, summon[WorkingDirectory], summon[Environment], width, height, shell)
 
         val path =
           summon[Enclave.Tool].path.parent

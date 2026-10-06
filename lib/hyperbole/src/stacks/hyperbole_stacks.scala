@@ -32,6 +32,7 @@
                                                                                                   */
 package hyperbole
 
+import ambience.*
 import digression.*
 import hellenism.*
 import rudiments.map
@@ -40,13 +41,15 @@ import vacuous.*
 package stackResolutions:
   // Importing this makes every `StackTrace` captured in the enclosing scope name the source
   // definitions its frames were compiled from, at the cost of reading one TASTy file per
-  // top-level class named in the trace.
-  given tastyStackResolution: Classloader => StackTrace.Resolver = StackResolver()
+  // top-level class named in the trace. Source files recorded relative to `-sourceroot` are
+  // read from the working directory in scope.
+  given tastyStackResolution: (Classloader, WorkingDirectory) => StackTrace.Resolver =
+    StackResolver()
 
 extension (stackTrace: StackTrace)
   // Resolves an existing trace, for callers which hold a `Classloader` and would rather ask
   // explicitly than import a resolver into scope.
-  def resolved(using Classloader): StackTrace =
+  def resolved(using Classloader, WorkingDirectory): StackTrace =
     val resolver = StackResolver()
 
     def recur(stackTrace: StackTrace): StackTrace =

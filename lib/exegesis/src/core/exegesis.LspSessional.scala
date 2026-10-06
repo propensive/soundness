@@ -149,7 +149,7 @@ object LspSessional:
 class LspSessional
    ( listener: Lsp.Listener = Lsp.Listener.Quiet,
      observer: Lsp.Observer = Lsp.Observer.Silent )
-   ( using Monitor, Probate, Diagnostics, WorkingDirectory )
+   ( using Monitor, Probate, Diagnostics, WorkingDirectory, Environment )
 extends Sessional:
   type Self = Lsp.Server
   type Result = Lsp.Connection^

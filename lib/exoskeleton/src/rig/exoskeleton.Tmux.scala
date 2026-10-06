@@ -41,6 +41,7 @@ import errorDiagnostics.stackTracesDiagnostics
 object Tmux:
   def enter(keypresses: (Text | Char)*)(using tmux: Tmux): Unit raises Tmux.Error =
     given WorkingDirectory = tmux.workingDirectory
+    given Environment = tmux.environment
 
     import logging.silentLogging
 
@@ -58,7 +59,7 @@ object Tmux:
   // `-x`/`-y`, i.e. manually sized, which is exactly the case `resize-window`
   // controls. Note `Tmux.width`/`height` record the CREATION size; after a resize,
   // read the live size from tmux itself if it matters.
-  def resize(width: Int, height: Int)(using tmux: Tmux)(using WorkingDirectory)
+  def resize(width: Int, height: Int)(using tmux: Tmux)(using WorkingDirectory, Environment)
   :   Unit raises Tmux.Error =
 
     import logging.silentLogging
@@ -69,7 +70,9 @@ object Tmux:
     . protect:
         sh"tmux resize-window -t ${tmux.id} -x $width -y $height".exec[Unit]()
 
-  def screenshot()(using tmux: Tmux)(using WorkingDirectory): Screenshot raises Tmux.Error =
+  def screenshot()(using tmux: Tmux)(using WorkingDirectory, Environment)
+  :   Screenshot raises Tmux.Error =
+
     import logging.silentLogging
 
     mitigate:
@@ -88,7 +91,7 @@ object Tmux:
   // Explicit `using` evidence instead of `raises` sugar: a context-function result would
   // hide the parameters, which the separation checker rejects.
   def attend(using tmux: Tmux)[result](block: => result)
-    ( using Monitor, WorkingDirectory, Tactic[Tmux.Error] )
+    ( using Monitor, WorkingDirectory, Environment, Tactic[Tmux.Error] )
   :   result =
 
     val init = screenshot().screen
@@ -100,7 +103,7 @@ object Tmux:
 
 
   def completions(text: Text)(using tool: Enclave.Tool, tmux: Tmux)
-    ( using Monitor, WorkingDirectory, Tactic[Tmux.Error] )
+    ( using Monitor, WorkingDirectory, Environment, Tactic[Tmux.Error] )
   :   Text =
 
     tmux.shell match
@@ -136,7 +139,7 @@ object Tmux:
 
   def progress(text: Text, decorate: Char => Text = char => t"^")
     ( using tool: Enclave.Tool, tmux: Tmux )
-    ( using Monitor, WorkingDirectory, Tactic[Tmux.Error] )
+    ( using Monitor, WorkingDirectory, Environment, Tactic[Tmux.Error] )
   :   Text =
 
     enter(tool.command)
@@ -190,7 +193,13 @@ object Tmux:
 // A `Tmux` is a *capability*: it identifies a live external tmux session whose lifetime is
 // the `tmux` block that creates it (killed after the block). `Exclusive` because a session
 // is driven by one test at a time.
-case class Tmux(id: Text, workingDirectory: WorkingDirectory, width: Int, height: Int, shell: Shell)
+case class Tmux
+  ( id:               Text,
+    workingDirectory: WorkingDirectory,
+    environment:      Environment,
+    width:            Int,
+    height:           Int,
+    shell:            Shell )
 extends Findable, caps.ExclusiveCapability
 
 case class Screenshot(screen: Array[Text]^{}, size: (Int, Int), cursor: (Ordinal, Ordinal)):

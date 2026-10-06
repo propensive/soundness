@@ -42,7 +42,9 @@ import soundness.*
 // The suite's own classloader for the `Enclave` rig: under fume the suite lives in an
 // isolating classloader, and the system loader knows only fume.
 given testClassloader: Classloader = Classloader[Tests.type]
-import environments.javaBaseEnvironment
+// The JVM's environment, with `XEK` naming the builder this checkout pins: under fume, the suite
+// runs in a daemon whose environment is sanitized and whose working directory is `/`.
+given testEnvironment: Environment = Enclave.environment(Workspace.xek.tt)
 import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
 import workingDirectories.javaBaseWorkingDirectory
@@ -193,6 +195,30 @@ object Tests extends Suite(m"Ethereal Tests"):
                 case Argument("pid") :: Nil =>
                   execute:
                     Out.print(Process().pid.value.show) yet Exit.Ok
+
+                // The daemon's own process state, which no invocation's should leak into: the
+                // directory it runs in, a variable of its own environment and of the one it was
+                // launched with, and the permissions a file it creates is given.
+                case Argument("daemon-pwd") :: Nil =>
+                  execute(Out.print(jl.System.getProperty("user.dir").nn.tt) yet Exit.Ok)
+
+                case Argument("daemon-env") :: Argument(variable) :: Nil =>
+                  execute:
+                    val value: Optional[Text] = Optional(jl.System.getenv(variable.s)).let(_.tt)
+                    Out.print(value.or(t"(unset)")) yet Exit.Ok
+
+                case Argument("launch-env") :: Argument(variable) :: Nil =>
+                  execute:
+                    Out.print(DaemonEnvironment.variable(variable).or(t"(unset)")) yet Exit.Ok
+
+                case Argument("daemon-umask") :: Nil =>
+                  execute:
+                    val directory = jnf.Files.createTempDirectory("umask").nn
+                    val file = jnf.Files.createFile(directory.resolve("file")).nn
+                    val mode = jnf.Files.getPosixFilePermissions(file).nn
+                    jnf.Files.delete(file)
+                    jnf.Files.delete(directory)
+                    Out.print(jnf.attribute.PosixFilePermissions.toString(mode).nn.tt) yet Exit.Ok
 
                 case Argument("pwd") :: Nil =>
                   execute:
@@ -376,6 +402,28 @@ object Tests extends Suite(m"Ethereal Tests"):
             test(m"working directory is forwarded"):
               sh"$tool pwd".exec[Text]()
             .check(_.length > 0)
+
+          // The launcher starts the daemon in fixed process state, whichever invocation starts it.
+          suite(m"Daemon process state"):
+            test(m"the daemon runs in the root directory"):
+              sh"$tool daemon-pwd".exec[Text]()
+            . check(_ == t"/")
+
+            test(m"the daemon's own environment keeps PATH"):
+              sh"$tool daemon-env PATH".exec[Text]()
+            . check(_ != t"(unset)")
+
+            test(m"the daemon's own environment drops the launching variables"):
+              sh"$tool daemon-env XEK".exec[Text]()
+            . check(_ == t"(unset)")
+
+            test(m"the launching environment is recorded for the daemon"):
+              sh"$tool launch-env XEK".exec[Text]()
+            . check(_ == Workspace.xek.tt)
+
+            test(m"the daemon creates files under a umask of 077"):
+              sh"$tool daemon-umask".exec[Text]()
+            . check(_ == t"rw-------")
 
           suite(m"Stderr forwarding"):
             test(m"stderr output is forwarded"):

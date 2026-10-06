@@ -83,17 +83,18 @@ object Debuggee:
       if digits.isEmpty || digits.length == rest.length then Unset else digits.toInt
 
   class Sessional
-    ( using online:     Online,
-            monitor:    Monitor,
-            probate:    Probate,
-            backend:    Socket.Backend,
-            options:    Every[Socket.Option.Tcp],
-            asyncError: Tactic[Async.Error],
-            working:    WorkingDirectory,
-            loggable:   (Socket.Event is Loggable)^,
-            exec:       (Exec.Event is Loggable)^,
-            tactic:     Tactic[Debugger.Error],
-            note:       Diagnostics )
+    ( using online:      Online,
+            monitor:     Monitor,
+            probate:     Probate,
+            backend:     Socket.Backend,
+            options:     Every[Socket.Option.Tcp],
+            asyncError:  Tactic[Async.Error],
+            working:     WorkingDirectory,
+            environment: Environment,
+            loggable:    (Socket.Event is Loggable)^,
+            exec:        (Exec.Event is Loggable)^,
+            tactic:      Tactic[Debugger.Error],
+            note:        Diagnostics )
   extends aperture.Sessional:
     type Self = Debuggee
     type Result = Debug^
@@ -172,17 +173,18 @@ object Debuggee:
         errDrain.attend()
         exitWatch.attend()
 
-  given sessional: ( online:     Online,
-                     monitor:    Monitor,
-                     probate:    Probate,
-                     backend:    Socket.Backend,
-                     options:    Every[Socket.Option.Tcp],
-                     asyncError: Tactic[Async.Error],
-                     working:    WorkingDirectory,
-                     loggable:   (Socket.Event is Loggable)^,
-                     exec:       (Exec.Event is Loggable)^,
-                     tactic:     Tactic[Debugger.Error],
-                     note:       Diagnostics )
+  given sessional: ( online:      Online,
+                     monitor:     Monitor,
+                     probate:     Probate,
+                     backend:     Socket.Backend,
+                     options:     Every[Socket.Option.Tcp],
+                     asyncError:  Tactic[Async.Error],
+                     working:     WorkingDirectory,
+                     environment: Environment,
+                     loggable:    (Socket.Event is Loggable)^,
+                     exec:        (Exec.Event is Loggable)^,
+                     tactic:      Tactic[Debugger.Error],
+                     note:        Diagnostics )
   =>  ( Sessional^{online, monitor, asyncError, loggable, exec, tactic, caps.any} ) = Sessional()
 
 // A `port` of 0 lets the agent bind a free port of its own choosing, which the session learns

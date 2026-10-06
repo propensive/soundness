@@ -83,7 +83,7 @@ object Enclave:
   case class Tool(path: Path on Linux, pid: Pid) extends caps.ExclusiveCapability:
     def command: Text = path.name
 
-    def completions(using Monitor)[result](block: => Unit): Optional[Text] =
+    def completions(using Monitor, Environment)[result](block: => Unit): Optional[Text] =
       val promise = Promise[Text]()
 
       async:
@@ -95,6 +95,17 @@ object Enclave:
   // The published `xek` builder, which also signs, resolved from `$XEK`, else `dist/xek` under
   // the working directory, where `make xek-fetch` puts the one pinned in `etc/xek.tsv`.
   private def xek(using Environment): Text = safely(Environment.xek[Text]).or(t"dist/xek")
+
+  // The JVM's own environment, but with `XEK` naming `builder`, for a suite which knows where its
+  // builder is: run inside a daemon, whose environment is sanitized and whose working directory
+  // is `/`, a suite can rely on neither `$XEK` nor `dist/xek`.
+  def environment(builder: Text): Environment = new Environment:
+    private val base: Environment = environments.javaBaseEnvironment
+
+    def variable(name: Text): Optional[Text] =
+      if name == t"XEK" then builder else base.variable(name)
+
+    override def entries: Optional[Map[Text, Text]] = base.entries.let(_ + Map(t"XEK" -> builder))
 
   // Generates an ML-DSA-44 key pair with `xek keygen`, as `<prefix>.seed` and `<prefix>.pub`,
   // returning the seed, to sign with, and the public key, to build an `Enclave` with. Signing
@@ -126,7 +137,8 @@ object Enclave:
     // Explicit `using` evidence instead of `raises` sugar: a context-function result would
     // hide the `block` parameter, which the separation checker rejects.
     def sandbox[result](block: (tool: Tool) ?=> result)
-      ( using Tactic[Enclave.Error],
+      ( using Environment,
+              Tactic[Enclave.Error],
               Tactic[Exec.Error],
               Tactic[Number.Error],
               Tactic[Path.Error] )

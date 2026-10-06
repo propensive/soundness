@@ -39,7 +39,9 @@ import soundness.*
 // The suite's own classloader for the `Enclave` rig: under fume the suite lives in an
 // isolating classloader, and the system loader knows only fume.
 given testClassloader: Classloader = Classloader[Tests.type]
-import environments.javaBaseEnvironment
+// The JVM's environment, with `XEK` naming the builder this checkout pins: under fume, the suite
+// runs in a daemon whose environment is sanitized and whose working directory is `/`.
+given testEnvironment: Environment = Enclave.environment(Workspace.xek.tt)
 import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
 import workingDirectories.javaBaseWorkingDirectory

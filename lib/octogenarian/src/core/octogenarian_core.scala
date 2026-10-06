@@ -45,8 +45,9 @@ import rudiments.*
 import serpentine.*
 
 package gitCommands:
-  given searchpathGitCommand: ( WorkingDirectory, Git.Event is Loggable, Tactic[Name.Error],
-                                        Tactic[Path.Error], Tactic[Io.Error], Tactic[Exec.Error] )
+  given searchpathGitCommand: ( WorkingDirectory, Environment, Git.Event is Loggable,
+                                Tactic[Name.Error], Tactic[Path.Error], Tactic[Io.Error],
+                                Tactic[Exec.Error] )
   =>  (((Path on Linux) is Instantiable across Paths from Text)^)
   =>  Git.Command =
 
@@ -83,6 +84,7 @@ extension (noteRef: NoteRef)
     ( using repo:    Git.Repo,
             command: Git.Command,
             wd:      WorkingDirectory,
+            env:     Environment,
             gitErr:  Tactic[Git.Error],
             refErr:  Tactic[Git.RefError],
             exec:    Tactic[Exec.Error] )

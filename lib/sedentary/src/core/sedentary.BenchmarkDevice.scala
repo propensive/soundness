@@ -49,6 +49,7 @@ import vacuous.*
 
 import logging.silentLogging
 import workingDirectories.javaBaseWorkingDirectory
+import environments.javaBaseEnvironment
 import beneficence.*
 
 trait BenchmarkDevice extends Findable:

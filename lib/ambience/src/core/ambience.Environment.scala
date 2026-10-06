@@ -74,3 +74,8 @@ object Environment extends Dynamic:
 
 trait Environment extends Findable:
   def variable(name: Text): Optional[Text]
+
+  // Every variable, where the environment can enumerate them; `Unset` for one which can only
+  // answer for a name it is asked about, such as a lambda. A child process started under an
+  // environment which can be enumerated is given exactly these variables.
+  def entries: Optional[Map[Text, Text]] = Unset
