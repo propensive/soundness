@@ -141,6 +141,32 @@ A MAC address is written with `mac"…"` and decoded from text, validated as six
 mac"01-23-45-ab-cd-ef"
 ```
 
+### DNS names and messages
+
+The DNS has names of its own: any label may hold any UTF-8, including dots and spaces, which is
+what DNS-SD service instances (`Jon's Printer._ipp._tcp.local`) rely on. A `Dns.Name` is
+written with `dns"…"`, checked at compile time; equality folds ASCII case, as the DNS compares
+names, while the labels keep their spelling:
+
+```scala
+dns"Example.COM" == dns"example.com"
+dns"_fury._tcp.local".labels
+```
+
+The messages of RFC 1035 — questions, and records with typed data over the addresses above —
+encode to and decode from `Data` with the usual `in` and `as`, with name compression on the
+way out and strictly validated on the way in. A record's data is one of the recognised types,
+or an `Unknown` carrying its bytes:
+
+```scala
+val record = Dns.Record(dns"example.com", 3600, Dns.Rdata.A(ip"93.184.216.34"))
+Dns.Message.query(1, List(Dns.Question(dns"example.com", Dns.Type.A))).in[Data]
+```
+
+mDNS adds two bits — a question that accepts a unicast response and a record that flushes a
+receiver's cache — which are plain fields, `unicast` and `flush`, defaulting to off. Exchanging
+messages with a nameserver is `coaxial.dns`'s job; `Dns.resolve` reaches the platform resolver.
+
 ### Parsing at runtime
 
 Every identifier that has a literal form also decodes from text with `as`, naming the target type.

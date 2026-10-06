@@ -471,6 +471,51 @@ object Tests extends Suite(m"Coaxial tests"):
               received.await()
         . assert(_ == t"pong")
 
+        val example = dns"example.com"
+        val question = Dns.Question(example, Dns.Type.A)
+        val answer = Dns.Record(example, 60, Dns.Rdata.A(ip"10.0.0.1"))
+
+        test(m"A DNS query returns the nameserver's answer"):
+          val port = Port[Udp]()
+
+          val nameserver = (packet: Packet) =>
+            val query = packet.data.as[Dns.Message]
+            UdpResponse.Reply(Dns.Message.response(query, List(answer)).in[Data])
+
+          port.listen[Data](nameserver):
+            (Localhost on port).query(Dns.Message.query(7, List(question))).answers
+        . assert(_ == List(answer))
+
+        test(m"A lookup returns the answering records"):
+          val port = Port[Udp]()
+
+          val nameserver = (packet: Packet) =>
+            val query = packet.data.as[Dns.Message]
+            UdpResponse.Reply(Dns.Message.response(query, List(answer)).in[Data])
+
+          port.listen[Data](nameserver):
+            (Localhost on port).lookup(example)
+        . assert(_ == List(answer))
+
+        test(m"A reply with the wrong ID is rejected"):
+          val port = Port[Udp]()
+
+          val nameserver = (packet: Packet) =>
+            val query = packet.data.as[Dns.Message]
+            UdpResponse.Reply(Dns.Message.response(query, List(answer)).copy(id = 8).in[Data])
+
+          port.listen[Data](nameserver):
+            capture[Dns.Error]((Localhost on port).query(Dns.Message.query(7, List(question)))).reason
+        . assert(_ == Dns.Error.Reason.Mismatch(8))
+
+        test(m"A query with no reply times out"):
+          given Socket.Option.Timeout = socketOptions.timeout(200)
+          val port = Port[Udp]()
+
+          port.listen[Data]((packet: Packet) => UdpResponse.Ignore):
+            capture[Dns.Error]((Localhost on port).query(Dns.Message.query(7, List(question)))).reason
+        . assert(_ == Dns.Error.Reason.Timeout)
+
         test(m"A datagram exchange times out when no reply arrives"):
           val port = Port[Udp]()
           val handler = (packet: Packet) => UdpResponse.Ignore

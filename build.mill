@@ -993,7 +993,7 @@ object soundness extends Toolchain:
     vivisection.core, vivisection.eval, vivisection.dap):
     def summary = "Developer tools: compilers, build tooling, source analysis and version control"
 
-  object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, cataclysm.fonts, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
+  object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, cataclysm.fonts, coaxial.core, coaxial.jvm, coaxial.dns, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, urticose.ansi, urticose.dns, hallucination.core,
     phoenicia.core,
     punctuation.core, savagery.core, cartouche.core, tasseomancy.core, scintillate.server,
@@ -1717,7 +1717,12 @@ object coaxial extends Library:
     override def scalaNative = false // declares its WIT `Interface` with hellenism's JVM/JS-only `cp"…"`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, jvm)
+  // Unicast DNS over UDP: a `Dns.Message` exchange with a nameserver, built on the backend's
+  // one-shot `exchangeUdp`; `urticose.dns` supplies the codec.
+  object dns extends Component(core, urticose.dns):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, jvm, dns)
 
 object prophesy extends Library:
   object core extends Component(stenography.core, gossamer.core):

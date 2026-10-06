@@ -43,7 +43,7 @@ cataclysm	yes	yes	no	js
 charisma	yes	yes	yes	js	
 chiaroscuro	yes	yes	yes	js	
 clavichord	yes	yes	yes	js	
-coaxial	yes	core	core	wasi	backends: core+jvm+wasi; JVM-only submodule(s): jvm
+coaxial	yes	core	core	wasi	backends: core+jvm+wasi; JVM-only submodule(s): jvm; multicast JVM-only (native/wasi raise); dns: core
 concordance	yes	yes	yes	js	
 contextual	yes	yes	yes	js	
 contingency	yes	yes	yes	js	
@@ -145,7 +145,7 @@ typonym	yes	yes	yes	js
 ultimatum	yes	yes	yes	js	
 ulysses	yes	no	no	no	transitively JVM-only (networking/crypto/fs/process)
 umbrageous	yes	no	no	no	compiler plugin: uses the JVM-only dotty compiler API
-urticose	yes	yes	yes	js	
+urticose	yes	yes	yes	js	dns component cross-compiles
 vacuous	yes	yes	yes	js	
 vexillology	yes	yes	yes	js	
 vicarious	yes	yes	yes	js	
