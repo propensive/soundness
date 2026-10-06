@@ -375,10 +375,10 @@ def cli[bus <: Matchable](using executive: Executive)
           // no size. Absent when the client's output is not a terminal, in which case the
           // width stays unbounded and nothing wraps.
           override def width: Int =
-            windowSize0().let(_(0)).or(safely(Environment.columns[Text].s.toInt).or(Int.MaxValue))
+            windowSize0().let(_(0)).or(safely(Environment.columns[Text].as[Int]).or(Int.MaxValue))
 
           override def height: Int =
-            windowSize0().let(_(1)).or(safely(Environment.lines[Text].s.toInt).or(Int.MaxValue))
+            windowSize0().let(_(1)).or(safely(Environment.lines[Text].as[Int]).or(Int.MaxValue))
 
           lazy val color: ColorDepth =
             import workingDirectories.systemWorkingDirectory

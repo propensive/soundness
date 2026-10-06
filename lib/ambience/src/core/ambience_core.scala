@@ -38,6 +38,7 @@ import java.lang as jl
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
@@ -115,7 +116,7 @@ package termcaps:
     // The terminal width forwarded in `COLUMNS`, where the invoking context set it. When it is
     // absent or malformed — output redirected to a file or a pipe, say — the width stays
     // unbounded, and nothing wraps (#1789).
-    override lazy val width: Int = safely(Environment.columns[Text].s.toInt).or(Int.MaxValue)
+    override lazy val width: Int = safely(Environment.columns[Text].as[Int]).or(Int.MaxValue)
 
     lazy val color: ColorDepth =
       if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor else
