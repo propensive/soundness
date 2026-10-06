@@ -935,30 +935,29 @@ object Cbor extends Cbor2, Dynamic:
   given listEncodable: [list <: List, element]
   =>  ( encodable: => (element is Encodable in Cbor)^ )
   =>  ((list[element] is Encodable in Cbor)^{encodable}) =
-    values =>
-      val roots: Array[Any]^{} =
-        values.map { value => encodable.encoded(value).root: Any }.to[Array]
-
-      ast(Ast.array(roots))
+    arrayEncodable[list[element], element](encodable)
 
   given setEncodable: [set <: Set, element]
   =>  ( encodable: => (element is Encodable in Cbor)^ )
   =>  ((set[element] is Encodable in Cbor)^{encodable}) =
-    values =>
-      val roots: Array[Any]^{} =
-        values.map { value => encodable.encoded(value).root: Any }.to[Array]
-
-      ast(Ast.array(roots))
-
+    arrayEncodable[set[element], element](encodable)
 
   given seriesEncodable: [sequence <: Sequence, element]
   =>  ( encodable: => (element is Encodable in Cbor)^ )
   =>  ((sequence[element] is Encodable in Cbor)^{encodable}) =
-    values =>
-      val roots: Array[Any]^{} =
-        values.map { value => encodable.encoded(value).root: Any }.to[Array]
+    arrayEncodable[sequence[element], element](encodable)
 
-      ast(Ast.array(roots))
+  // A collection as a CBOR array of its elements, for each collection type above.
+  private def arrayEncodable[collection, element]
+    ( encodable: => (element is Encodable in Cbor)^ )
+    ( using traversable: collection is Traversable by element )
+  :   ((collection is Encodable in Cbor)^{encodable}) =
+
+    values =>
+      val roots = traversable.traverse(values).map: value =>
+        encodable.encoded(value).root: Any
+
+      ast(Ast.array(Array.from(roots).asInstanceOf[Array[Any]^{}]))
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory: sc.Factory[element, collection[element]], tactic:  Tactic[Cbor.Error] )
@@ -973,37 +972,29 @@ object Cbor extends Cbor2, Dynamic:
         builder.result()
 
 
-  // Alias counterparts: the opaque prelude collections do not conform to
-  // `Iterable`, so each inlines `collectionDecodable`'s loop at the underlying
-  // stdlib type (using the by-name `decodable` directly, so a recursive
-  // derivation — `List[Tree]` inside `Tree` — ties the knot exactly as the
-  // Iterable instance did before the flip) and casts.
+  // Alias counterparts: the opaque prelude collections do not conform to `Iterable`, so each
+  // decodes at the underlying stdlib type and casts, passing the by-name `decodable` straight
+  // through so that a recursive derivation (`List[Tree]` inside `Tree`) still ties the knot.
   given listDecodable: [list <: List, element]
   =>  ( tactic: Tactic[Cbor.Error] )
   =>  ( decodable: => (element is Decodable in Cbor)^ )
   =>  ((list[element] is Decodable in Cbor)^{tactic, decodable}) =
-    value =>
-      val builder = scala.collection.immutable.List.newBuilder[element]
-      value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
-      builder.result().asInstanceOf[list[element]]
+    collectionDecodable[scala.collection.immutable.List, element]
+    . asInstanceOf[(list[element] is Decodable in Cbor)^{tactic, decodable}]
 
   given setDecodable: [set <: Set, element]
   =>  ( tactic: Tactic[Cbor.Error] )
   =>  ( decodable: => (element is Decodable in Cbor)^ )
   =>  ((set[element] is Decodable in Cbor)^{tactic, decodable}) =
-    value =>
-      val builder = scala.collection.immutable.Set.newBuilder[element]
-      value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
-      builder.result().asInstanceOf[set[element]]
+    collectionDecodable[scala.collection.immutable.Set, element]
+    . asInstanceOf[(set[element] is Decodable in Cbor)^{tactic, decodable}]
 
   given seriesDecodable: [sequence <: Sequence, element]
   =>  ( tactic: Tactic[Cbor.Error] )
   =>  ( decodable: => (element is Decodable in Cbor)^ )
   =>  ((sequence[element] is Decodable in Cbor)^{tactic, decodable}) =
-    value =>
-      val builder = Vector.newBuilder[element]
-      value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
-      builder.result().asInstanceOf[sequence[element]]
+    collectionDecodable[Vector, element]
+    . asInstanceOf[(sequence[element] is Decodable in Cbor)^{tactic, decodable}]
 
   given mapDecodable: [key: Decodable in Text, element]
   =>  ( decodable: => (element is Decodable in Cbor)^ )
