@@ -102,7 +102,7 @@ lib/hieroglyph/src/core/hieroglyph.Normalization.scala	7	0	0
 lib/hieroglyph/src/core/hieroglyph.Unicode.scala	0	0	1
 lib/honeycomb/src/core/honeycomb.Html.scala	12	0	2
 lib/honeycomb/src/core/honeycomb.Tag.scala	0	0	1
-lib/honeycomb/src/core/honeycomb.internal.scala	20	0	1
+lib/honeycomb/src/core/honeycomb.internal.scala	17	0	1
 lib/hyperbole/src/core/hyperbole.internal.scala	0	1	0
 lib/hypotenuse/src/core/hypotenuse.Bcd.scala	7	0	3
 lib/hypotenuse/src/core/hypotenuse.Decimal.scala	35	1	18

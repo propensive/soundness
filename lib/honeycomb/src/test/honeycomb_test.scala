@@ -666,7 +666,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
           val parsed = t"""<svg viewBox="0 0 10 10" width="50"></svg>""".read[Html of Flow]
           parsed match
             case Html.Element(t"svg", attrs, _, true) =>
-              attrs.toList.map(_._1) == List(t"viewBox", t"width")
+              attrs.to[List].map(_._1) == List(t"viewBox", t"width")
             case _ => false
         . assert(_ == true)
 
