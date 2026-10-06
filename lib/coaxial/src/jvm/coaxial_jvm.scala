@@ -44,8 +44,9 @@ import java.util as ju
 import anticipation.*
 import contingency.*
 import denominative.*
-
+import distillate.*
 import hypotenuse.*
+import murmuration.filter
 import prepositional.*
 import rudiments.*
 import turbulence.*
@@ -73,10 +74,46 @@ private enum ClientExchange:
 // A fire-and-forget datagram destination.
 private case class UdpCourier(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
 
+// A bound datagram socket with the size of the buffer each datagram is received into.
+private case class UdpBinding(socket: jn.DatagramSocket, datagramSize: Int)
+
+// A channel joined to a multicast group on each of `interfaces`. Sends to the group select the
+// outgoing interface on the channel, so they are serialised through the binding's monitor.
+private case class MulticastBinding
+  ( channel:      jnc.DatagramChannel,
+    group:        jn.InetAddress,
+    port:         Int,
+    interfaces:   List[jn.NetworkInterface],
+    datagramSize: Int )
+
+// The local interfaces behind urticose's descriptions, by index; one no longer present is
+// skipped.
+private def interfacesOf(interfaces: List[NetworkInterface]): List[jn.NetworkInterface] =
+  interfaces match
+    case Nil => Nil
+
+    case head :: tail =>
+      Optional(jn.NetworkInterface.getByIndex(head.index)) match
+        case nic: jn.NetworkInterface => nic :: interfacesOf(tail)
+        case _                        => interfacesOf(tail)
+
+// The address of a received datagram's sender; every `InetAddress` is four or sixteen bytes, so
+// one decoder accepts it.
+private def senderOf(address: jn.InetSocketAddress): Ipv4 | Ipv6 =
+  val bytes = Array.unsafeFrozen(address.getAddress.nn.getAddress.nn)
+  safely(bytes.as[Ipv4]).or(safely(bytes.as[Ipv6])).or(Ipv4.Localhost)
+
+// The `DatagramSize` option, consumed by the backend rather than set on the socket.
+private def datagramSize(options: List[Socket.Option]): Int = options match
+  case Nil                                      => 1472
+  case Socket.Option.DatagramSize(bytes) :: _   => bytes
+  case _ :: tail                                => datagramSize(tail)
+
 package socketBackends:
   given javaBaseSockets: Socket.Backend = new Socket.Backend:
     type ServerSocket = ServerBinding
-    type DatagramSocket = jn.DatagramSocket
+    type DatagramSocket = UdpBinding
+    type MulticastSocket = MulticastBinding
     type Exchange = ClientExchange
     type Courier = UdpCourier
 
@@ -177,78 +214,150 @@ package socketBackends:
 
     //── Datagram server (`Bindable` over UDP) ──────────────────────────────────────────────────
     def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
-    :   jn.DatagramSocket =
+    :   UdpBinding =
 
-      val socket = jn.DatagramSocket(port.number)
+      // Unbound at first, so that `ReuseAddress`/`ReusePort` take effect before the bind.
+      val socket = jn.DatagramSocket(null: jn.SocketAddress | Null)
       configure(socket, options)
 
       interface.let(interfaceFor(_)).let: nic =>
         socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
 
-      socket
+      socket.bind(jn.InetSocketAddress(port.number))
+      UdpBinding(socket, datagramSize(options))
 
-    def receive(socket: jn.DatagramSocket): Packet raises Socket.Error =
-      val array = new scala.Array[Byte](1472)
-      val packet = jn.DatagramPacket(array, 1472)
+    def receive(binding: UdpBinding): Packet raises Socket.Error =
+      receiveFrom(binding.socket, binding.datagramSize)
+
+    // Block for one datagram of up to `size` bytes; a timeout set on the socket is reported
+    // apart from the other failures, as the one a caller may expect.
+    private def receiveFrom(socket: jn.DatagramSocket, size: Int): Packet raises Socket.Error =
+      val array = new scala.Array[Byte](size)
+      val packet = jn.DatagramPacket(array, size)
 
       try socket.receive(packet)
-      catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Accept))
+      catch
+        case _: jn.SocketTimeoutException => abort(Socket.Error(Socket.Error.Reason.Timeout))
+        case _: ji.IOException            => abort(Socket.Error(Socket.Error.Reason.Accept))
 
       val address = packet.getSocketAddress.nn.asInstanceOf[jn.InetSocketAddress]
 
-      val ip = address.getAddress.nn.absolve match
-        case ip: jn.Inet4Address =>
-          val bytes: scala.Array[Byte] = ip.getAddress.nn
-          Ipv4(bytes(0), bytes(1), bytes(2), bytes(3))
-
-        case ip: jn.Inet6Address =>
-          val bytes: scala.Array[Byte] = ip.getAddress.nn
-
-          Ipv6
-            ( Long(Array.unsafeFrozen(bytes.take(8))),
-              Long(Array.unsafeFrozen(bytes.drop(8))) )
-
       Packet
         ( Array.unsafeFrozen(array.take(packet.getLength)),
-          ip,
+          senderOf(address),
           Port.unsafe[Udp](address.getPort) )
 
-    def reply(socket: jn.DatagramSocket, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
+    def reply(binding: UdpBinding, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
     :   Unit raises Socket.Error =
 
-      val ip: jn.InetAddress = sender.absolve match
-        case ip: (Ipv4 @unchecked) =>
-          val array =
-            scala.Array[Byte](ip.byte0.toByte, ip.byte1.toByte, ip.byte2.toByte, ip.byte3.toByte)
-
-          jn.InetAddress.getByAddress(array).nn
-
-        case ip: Ipv6 =>
-          val array: scala.Array[Byte]^ =
-            val high = ip.highBits.bits.bytes
-            val bytes = new scala.Array[Byte](16)
-            var index = 0
-
-            while index < 8 do
-              bytes(index) = high.readable(index)
-              index += 1
-
-            val low = ip.lowBits.bits.bytes
-
-            while index < 16 do
-              bytes(index) = low.readable(index - 8)
-              index += 1
-
-            bytes
-
-          jn.InetAddress.getByAddress(array).nn
+      val ip: jn.InetAddress = jn.InetAddress.getByAddress(Array.unsafeJvm(sender.bytes)).nn
 
       val packet = jn.DatagramPacket(Array.unsafeJvm(data), data.length, ip, port.number)
 
-      try socket.send(packet)
+      try binding.socket.send(packet)
       catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
 
-    def unbind(socket: jn.DatagramSocket): Unit = socket.close()
+    def unbind(binding: UdpBinding): Unit = binding.socket.close()
+
+    //── Multicast group membership (`Multicast`) ───────────────────────────────────────────────
+    def joinMulticast
+      ( multicast: Multicast, interfaces: List[NetworkInterface], options: List[Socket.Option] )
+    :   MulticastBinding =
+
+      val group = jn.InetAddress.getByAddress(Array.unsafeJvm(multicast.group.bytes)).nn
+
+      val family =
+        if group.isInstanceOf[jn.Inet4Address] then jn.StandardProtocolFamily.INET
+        else jn.StandardProtocolFamily.INET6
+
+      val channel = jnc.DatagramChannel.open(family).nn
+      val yes: java.lang.Boolean = Boolean.box(true)
+
+      // Reuse is the design, not an option: several subscribers on one host share the port.
+      channel.setOption(jn.StandardSocketOptions.SO_REUSEADDR, yes)
+
+      if channel.supportedOptions.nn.contains(jn.StandardSocketOptions.SO_REUSEPORT)
+      then channel.setOption(jn.StandardSocketOptions.SO_REUSEPORT, yes)
+
+      configure(channel, options)
+      channel.bind(jn.InetSocketAddress(multicast.port.number))
+
+      // The wildcard join picks one interface arbitrarily (and unreliably on macOS), so the
+      // group is joined on each interface by name — each interface that has an address of the
+      // group's family, since the OS refuses the others; one it refuses anyway is left out.
+      val suitable = interfaces.filter: nic =>
+        if group.isInstanceOf[jn.Inet4Address] then nic.ipv4 != Nil else nic.ipv6 != Nil
+
+      val nics = interfacesOf(suitable).filter: nic =>
+        try
+          channel.join(group, nic)
+          true
+        catch case _: ji.IOException => false
+
+      MulticastBinding(channel, group, multicast.port.number, nics, datagramSize(options))
+
+    def receiveMulticast(binding: MulticastBinding): Packet raises Socket.Error =
+      val buffer = ByteBuffer.allocate(binding.datagramSize).nn
+
+      // The channel is blocking, so `receive` yields a sender rather than `null`.
+      val source =
+        try binding.channel.receive(buffer).nn.asInstanceOf[jn.InetSocketAddress]
+        catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Accept))
+
+      buffer.flip()
+      val array = new scala.Array[Byte](buffer.remaining)
+      buffer.get(array)
+      Packet(Array.unsafeFrozen(array), senderOf(source), Port.unsafe[Udp](source.getPort))
+
+    def sendGroup(binding: MulticastBinding, data: Data): Unit raises Socket.Error =
+      val bytes = Array.unsafeJvm(data)
+
+      // An IPv6 link-local group needs the interface as its scope, or there is no route to it.
+      def destination(nic: jn.NetworkInterface): jn.InetSocketAddress =
+        val address = binding.group.absolve match
+          case ipv6: jn.Inet6Address => jn.Inet6Address.getByAddress(null, ipv6.getAddress, nic).nn
+          case other                 => other
+
+        jn.InetSocketAddress(address, binding.port)
+
+      try binding.synchronized:
+        binding.interfaces.each: nic =>
+          binding.channel.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
+          binding.channel.send(ByteBuffer.wrap(bytes), destination(nic))
+      catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
+
+    def sendTo(binding: MulticastBinding, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
+    :   Unit raises Socket.Error =
+
+      val address = jn.InetAddress.getByAddress(Array.unsafeJvm(destination.bytes)).nn
+      val target = jn.InetSocketAddress(address, port.number)
+
+      try binding.synchronized(binding.channel.send(ByteBuffer.wrap(Array.unsafeJvm(data)), target))
+      catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
+
+    // Closing the channel drops its memberships and unblocks a pending receive.
+    def leaveMulticast(binding: MulticastBinding): Unit = binding.channel.close()
+
+    //── One-shot datagram exchange ─────────────────────────────────────────────────────────────
+    def exchangeUdp
+      ( endpoint:  Endpoint[Udp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option],
+        data:      Data )
+    :   Packet raises Socket.Error =
+
+      val courier = routeUdp(endpoint, interface, options)
+
+      try
+        val packet =
+          jn.DatagramPacket(Array.unsafeJvm(data), data.length, courier.address, courier.port)
+
+        try courier.socket.send(packet)
+        catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
+
+        receiveFrom(courier.socket, datagramSize(options))
+
+      finally courier.socket.close()
 
     //── Request/response exchange (`Serviceable`) ──────────────────────────────────────────────
     def dialTcp
@@ -403,6 +512,9 @@ private[coaxial] def applyOptions(options: List[Socket.Option])(target: Configur
     case Socket.Option.NoDelay               => target.set(TCP_NODELAY.nn, yes)
     case Socket.Option.KeepAlive             => target.set(SO_KEEPALIVE.nn, yes)
     case Socket.Option.Broadcast             => target.set(SO_BROADCAST.nn, yes)
+    case Socket.Option.MulticastLoop         => target.set(IP_MULTICAST_LOOP.nn, yes)
+    case Socket.Option.MulticastHops(n)      => target.set(IP_MULTICAST_TTL.nn, Int.box(n))
+    case Socket.Option.DatagramSize(_)       => ()  // consumed by the backend's receive
     case Socket.Option.ReceiveBuffer(n)      => target.set(SO_RCVBUF.nn, Int.box(n))
     case Socket.Option.SendBuffer(n)         => target.set(SO_SNDBUF.nn, Int.box(n))
     case Socket.Option.TrafficClass(n)       => target.set(IP_TOS.nn, Int.box(n))

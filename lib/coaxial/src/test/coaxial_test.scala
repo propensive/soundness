@@ -399,6 +399,133 @@ object Tests extends Suite(m"Coaxial tests"):
               TlsAcceptance().pinning(fingerprint).tls() )
         . assert(_ == t"connected")
 
+    supervise:
+      suite(m"Datagram sockets"):
+        val backend = summon[Socket.Backend]
+
+        test(m"Reuse options let two UDP sockets share a port"):
+          import socketOptions.reuseAddressSocketOption, socketOptions.reusePortSocketOption
+          val port = Port[Udp]()
+          val options = summon[Every[Socket.Option.Udp]].values.to(List)
+          val first = backend.listenUdp(port, Unset, options)
+          val second = try backend.listenUdp(port, Unset, options) finally backend.unbind(first)
+          backend.unbind(second)
+          true
+        . assert(_ == true)
+
+        test(m"A datagram larger than the default buffer arrives whole with DatagramSize set"):
+          given Socket.Option.DatagramSize = socketOptions.datagramSize(4096)
+          val port = Port[Udp]()
+          val received: Promise[Int] = Promise()
+
+          val handler = (packet: Packet) =>
+            received.fulfill(packet.data.length)
+            UdpResponse.Ignore
+
+          port.listen[Data](handler):
+            val routable = summon[Udp.Port is Routable]
+            routable.transmit(routable.connect(port, Unset), zephyrine.Stream(Data.fill(3000)(_.toByte)))
+            received.await()
+        . assert(_ == 3000)
+
+        test(m"A datagram exchange returns the server's reply"):
+          val port = Port[Udp]()
+          val handler = (packet: Packet) => UdpResponse.Reply(ascii(t"pong"))
+
+          port.listen[Data](handler):
+            backend.exchangeUdp(Localhost on port, Unset, List(Socket.Option.Timeout(2000)), ascii(t"ping"))
+            . data.utf8
+        . assert(_ == t"pong")
+
+        test(m"A multicast subscription receives what it sends to the group"):
+          import socketOptions.multicastLoopSocketOption
+          val received: Promise[Text] = Promise()
+          val multicast = Multicast(ip"239.255.77.77", Port[Udp]())
+
+          // Vacuous on a host with no multicast-capable interface.
+          if Multicast.interfaces(Unset) == Nil then t"hello" else
+            val handler = (packet: Packet) =>
+              received.fulfill(packet.data.utf8)
+              Multicast.Reply.Ignore
+
+            multicast.subscribe(handler):
+              summon[Multicast.Subscription].send(ascii(t"hello"))
+              received.await()
+        . assert(_ == t"hello")
+
+        test(m"A multicast subscription can answer one sender by unicast"):
+          import socketOptions.multicastLoopSocketOption
+          val received: Promise[Text] = Promise()
+          val multicast = Multicast(ip"239.255.77.78", Port[Udp]())
+
+          // The subscription's own looped-back "ping" is answered by unicast to its sender, which
+          // is the subscription itself, so the "pong" arrives as a second packet.
+          if Multicast.interfaces(Unset) == Nil then t"pong" else
+            val handler = (packet: Packet) =>
+              if packet.data.utf8 == t"ping" then Multicast.Reply.Unicast(ascii(t"pong")) else
+                received.fulfill(packet.data.utf8)
+                Multicast.Reply.Ignore
+
+            multicast.subscribe(handler):
+              summon[Multicast.Subscription].send(ascii(t"ping"))
+              received.await()
+        . assert(_ == t"pong")
+
+        val example = dns"example.com"
+        val question = Dns.Question(example, Dns.Type.A)
+        val answer = Dns.Record(example, 60, Dns.Rdata.A(ip"10.0.0.1"))
+
+        test(m"A DNS query returns the nameserver's answer"):
+          val port = Port[Udp]()
+
+          val nameserver = (packet: Packet) =>
+            val query = packet.data.as[Dns.Message]
+            UdpResponse.Reply(Dns.Message.response(query, List(answer)).in[Data])
+
+          port.listen[Data](nameserver):
+            (Localhost on port).query(Dns.Message.query(7, List(question))).answers
+        . assert(_ == List(answer))
+
+        test(m"A lookup returns the answering records"):
+          val port = Port[Udp]()
+
+          val nameserver = (packet: Packet) =>
+            val query = packet.data.as[Dns.Message]
+            UdpResponse.Reply(Dns.Message.response(query, List(answer)).in[Data])
+
+          port.listen[Data](nameserver):
+            (Localhost on port).lookup(example)
+        . assert(_ == List(answer))
+
+        test(m"A reply with the wrong ID is rejected"):
+          val port = Port[Udp]()
+
+          val nameserver = (packet: Packet) =>
+            val query = packet.data.as[Dns.Message]
+            UdpResponse.Reply(Dns.Message.response(query, List(answer)).copy(id = 8).in[Data])
+
+          port.listen[Data](nameserver):
+            capture[Dns.Error]((Localhost on port).query(Dns.Message.query(7, List(question)))).reason
+        . assert(_ == Dns.Error.Reason.Mismatch(8))
+
+        test(m"A query with no reply times out"):
+          given Socket.Option.Timeout = socketOptions.timeout(200)
+          val port = Port[Udp]()
+
+          port.listen[Data]((packet: Packet) => UdpResponse.Ignore):
+            capture[Dns.Error]((Localhost on port).query(Dns.Message.query(7, List(question)))).reason
+        . assert(_ == Dns.Error.Reason.Timeout)
+
+        test(m"A datagram exchange times out when no reply arrives"):
+          val port = Port[Udp]()
+          val handler = (packet: Packet) => UdpResponse.Ignore
+
+          port.listen[Data](handler):
+            capture[Socket.Error]:
+              backend.exchangeUdp(Localhost on port, Unset, List(Socket.Option.Timeout(200)), ascii(t"ping"))
+            . reason
+        . assert(_ == Socket.Error.Reason.Timeout)
+
     suite(m"Socket options"):
       test(m"reuseAddress sets SO_REUSEADDR on a configured TCP server socket"):
         import socketOptions.reuseAddressSocketOption

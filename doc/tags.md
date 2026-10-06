@@ -25,7 +25,7 @@ cataclysm: css stylesheet selectors keyframes media-queries fonts typesafe-css
 charisma: chemistry periodic-table chemical-equation molecule chemical-formula
 chiaroscuro: diff comparison contrast similarity test-assertions decomposition
 clavichord: keyboard keypress keys modifiers input
-coaxial: socket tcp udp networking domain-socket bindable connection
+coaxial: socket tcp udp multicast dns networking domain-socket bindable connection
 concordance: collections concatenation appendable prependable joining
 contextual: string-interpolation interpolator typesafe-interpolation custom-interpolators
 contingency: error-handling exceptions tactics recovery validation effects
@@ -117,6 +117,7 @@ stratiform: tel configuration-language records schema binary-tel
 superlunary: staging remote-execution multi-stage-programming distributed-computing
 surveillance: file-watcher filesystem file-events directory-monitoring nio
 symbolism: operators arithmetic typeclass operator-overloading algebra
+syndesis: mdns dns-sd zeroconf bonjour service-discovery multicast
 synesthesia: mcp model-context-protocol llm ai-protocol
 tarantula: webdriver browser-automation chrome firefox safari edge selenium headless
 tasseomancy: charts graphs plotting data-visualization svg benchmarks bar-chart line-chart pie-chart histogram
@@ -127,7 +128,7 @@ typonym: type-level type-list type-map heterogeneous reflection
 ultimatum: terminal-layout panes progress-bar spinner gauge sparkline tui
 ulysses: bloom-filter probabilistic-data-structures palimpsest
 umbrageous: compiler-plugin shading namespace-isolation
-urticose: hostname email-address ip-address mac-address port network-identifiers endpoint
+urticose: hostname email-address ip-address mac-address port network-identifiers endpoint dns
 vacuous: optional null-safety option maybe nullable
 vexillology: bit-flags flags enumeration bitfield
 vicarious: catalog proxy type-indexed records

@@ -64,6 +64,10 @@ object IpAddress:
 
         case SubnetWrongFormat(count) =>
           m"the subnet contains $count slash-separated parts instead of 2"
+        case Ipv4WrongNumberOfBytes(count) =>
+          m"the address is $count bytes long instead of 4"
+        case Ipv6WrongNumberOfBytes(count) =>
+          m"the address is $count bytes long instead of 16"
 
     enum Reason(val number: Int) extends Clarification:
       case Ipv4ByteOutOfRange(byte: Int)            extends Reason(1)
@@ -78,6 +82,8 @@ object IpAddress:
       case Ipv6SubnetPrefixOutOfRange(prefix: Int)  extends Reason(10)
       case SubnetPrefixNotNumeric(prefix: Text)     extends Reason(11)
       case SubnetWrongFormat(count: Int)            extends Reason(12)
+      case Ipv4WrongNumberOfBytes(count: Int)       extends Reason(13)
+      case Ipv6WrongNumberOfBytes(count: Int)       extends Reason(14)
 
   case class Error(reason: IpAddress.Error.Reason)(using Diagnostics)
   extends fulminate.Error(77, reason.number)(m"the IP address is not valid because $reason")

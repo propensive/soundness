@@ -32,16 +32,4 @@
                                                                                                   */
 package soundness
 
-export
-  coaxial
-  . { Bindable, Bind, Connectable, connectableSessional, Control,
-      DomainSocket, duplex, Duplex, Duplexable, exchange, Ingressive,
-      listen, Multicast, Packet, react, Routable, Subscribable, subscribe, Transmitter,
-      Serviceable, Socket, Transmissible, transmit, UdpResponse }
-
-package socketOptions:
-  export
-    coaxial.socketOptions
-    . { reuseAddressSocketOption, reusePortSocketOption, noDelaySocketOption, keepAliveSocketOption,
-        broadcastSocketOption, multicastLoopSocketOption, receiveBuffer, sendBuffer, linger,
-        trafficClass, timeout, multicastHops, datagramSize }
+export urticose.{Dns, dns, dnsName, reverseName}

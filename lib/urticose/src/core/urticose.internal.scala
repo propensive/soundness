@@ -133,6 +133,14 @@ object internal:
       def apply(byte0: Int, byte1: Int, byte2: Int, byte3: Int): Ipv4 =
         ((byte0 & 255) << 24) + ((byte1 & 255) << 16) + ((byte2 & 255) << 8) + (byte3 & 255)
 
+      // The four octets in network order, as a resolver or a DNS `A` record carries them.
+      given dataEncodable: Ipv4 is Encodable in Data = _.bytes
+
+      given dataDecodable: (tactic: Tactic[IpAddress.Error])
+      =>  ((Ipv4 is Decodable in Data)^{tactic}) = data =>
+        if data.length != 4 then abort(IpAddress.Error(Ipv4WrongNumberOfBytes(data.length)))
+        else Int(data)
+
       def parse(text: Text): Ipv4 raises IpAddress.Error =
         val bytes: List[Text] = text.cut(t".")
 
@@ -195,8 +203,9 @@ object internal:
       def apply(byte0: Byte, byte1: Byte, byte2: Byte, byte3: Byte, byte4: Byte, byte5: Byte)
       :   MacAddress =
 
+        // Masked: a `Byte` of 0x80 or above would otherwise sign-extend into the accumulator.
         def recur(todo: List[Byte], done: Long): Long = todo match
-          case head :: tail => recur(tail, (done << 8) + head)
+          case head :: tail => recur(tail, (done << 8) + (head & 0xff))
           case Nil          => done
 
         recur(List(byte0, byte1, byte2, byte3, byte4, byte5), 0L)
@@ -339,6 +348,15 @@ object internal:
   object Ipv6:
     lazy val Localhost: Ipv6 = apply(0, 0, 0, 0, 0, 0, 0, 1)
 
+    // The sixteen octets in network order, as a resolver or a DNS `AAAA` record carries them;
+    // the high eight are `highBits`, as `Ipv6.apply`'s groups are packed.
+    given dataEncodable: Ipv6 is Encodable in Data = _.bytes
+
+    given dataDecodable: (tactic: Tactic[IpAddress.Error])
+    =>  ((Ipv6 is Decodable in Data)^{tactic}) = data =>
+      if data.length != 16 then abort(IpAddress.Error(Ipv6WrongNumberOfBytes(data.length)))
+      else Ipv6(Long(B64(data, 0)), Long(B64(data, 8)))
+
     given hostShowable: urticose.Host is Showable =
       case host: Hostname          => host.show
       case ipv6: Ipv6              => t"[${ipv6.show}]"
@@ -420,6 +438,19 @@ object internal:
           pack(groups.skip(4).map(parseGroup)) )
 
   case class Ipv6(highBits: Long, lowBits: Long)
+
+  // The octets in network order, four or sixteen: what each address's `Encodable in Data`
+  // produces, as one extension over the union (a given cannot target a union), here in the
+  // prefix of both types so it resolves for either address alone and for a `Host`-like union.
+  extension (address: Ipv4 | Ipv6)
+    def bytes: Data = address.absolve match
+      case ipv4: (Ipv4 @unchecked) =>
+        Array[Byte](ipv4.byte0.toByte, ipv4.byte1.toByte, ipv4.byte2.toByte, ipv4.byte3.toByte)
+
+      case ipv6: Ipv6 =>
+        Array.collect[Byte](16): scribe =>
+          scribe.append(ipv6.highBits.bits.bytes)
+          scribe.append(ipv6.lowBits.bits.bytes)
 
   extension (ip: Ipv6)
     def subnet(size: Int): Ipv6Subnet =

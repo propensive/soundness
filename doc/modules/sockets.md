@@ -65,6 +65,48 @@ supervise:
     ()
 ```
 
+### Multicast
+
+A multicast group is subscribed to rather than listened on: `subscribe` joins the group on every
+interface that is up and multicast-capable, runs the handler for each datagram the group
+delivers, and lends a `Multicast.Subscription` that can also send to the group unprompted — the
+shape of a service announcing itself, as mDNS does. A handler answers to the group, to the one
+sender, or not at all:
+
+<!-- doccheck: skip -->
+```scala
+import socketOptions.multicastLoopSocketOption   // see our own announcements too
+
+supervise:
+  val group = Multicast(ip"224.0.0.251", udp"mdns")
+
+  group.subscribe(packet => Multicast.Reply.Group(packet.data)):
+    summon[Multicast.Subscription].send(ascii(t"hello, group"))
+```
+
+The group's port is bound with address and port reuse, so several programs on one host — ours
+and the system's own mDNS responder, say — subscribe side by side. A group is one address, so
+a protocol spoken over both IPv4 and IPv6 multicast subscribes to two.
+
+### Datagram exchanges
+
+Some protocols over UDP are one datagram out and one back — a DNS query, an NTP request. The
+backend's `exchangeUdp` does exactly that from an ephemeral port, bounded by a
+`Socket.Option.Timeout` in scope; `coaxial.dns` builds a typed DNS client on it. A nameserver is
+an `Endpoint` of a UDP port, and `query` sends a `Dns.Message` and returns the reply that
+answers it, while `lookup` asks the common question directly:
+
+<!-- doccheck: skip -->
+```scala
+import socketBackends.javaBaseSockets
+
+val resolver = ip"9.9.9.9" on udp"domain"
+val addresses = resolver.lookup(dns"example.com").map(_.rdata)
+```
+
+A reply whose ID or question differ from the query's — a stray datagram — is a
+`Dns.Error(Mismatch)`, and a reply that never comes a `Dns.Error(Timeout)`.
+
 ### Clients
 
 A request–response client sends a message and reads the reply stream with `transmit`; a message is

@@ -30,126 +30,60 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package urticose
+package coaxial
 
-import java.net as jn
-import java.util as ju
-
-import scala.jdk.CollectionConverters.*
+import java.util.concurrent as juc
 
 import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
-import gossamer.*
+import gigantism.*
 import rudiments.*
-import spectacular.*
+import urticose.*
 import vacuous.*
 
-import NetworkInterface.Error.Reason.*
+import Dns.Error.Reason
 
-object NetworkInterface:
-  given showable: NetworkInterface is Showable = _.name
+extension (endpoint: Endpoint[Udp.Port])
+  // One query to a nameserver, one reply, over UDP: the reply must carry the query's ID and
+  // its first question, or it is some other exchange's. The wait is bounded by a
+  // `Socket.Option.Timeout` in scope, or five seconds. No retransmission in this first cut:
+  // a lost datagram is a `Dns.Error(Timeout)`, and the caller decides whether to ask again.
+  def query(message: Dns.Message)
+    ( using backend: Socket.Backend, options: Every[Socket.Option.Udp] )
+  :   Dns.Message raises Dns.Error raises Socket.Error =
 
-  def all(): List[NetworkInterface] raises NetworkInterface.Error = enumerated:
-    def recur(interfaces: ju.Enumeration[jn.NetworkInterface], acc: List[NetworkInterface])
-    :   List[NetworkInterface] =
+    val supplied = options.values.to(List)
 
-      if !interfaces.hasMoreElements then acc.reverse
-      else recur(interfaces, read(interfaces.nextElement.nn) :: acc)
+    val timed =
+      if supplied.exists(_.isInstanceOf[Socket.Option.Timeout]) then supplied
+      else Socket.Option.Timeout(5000) :: supplied
 
-    Optional(jn.NetworkInterface.getNetworkInterfaces).lay(Nil)(recur(_, Nil))
+    // A timeout is reported in DNS terms; any other socket failure passes through.
+    val packet =
+      recover:
+        case error: Socket.Error =>
+          given diagnostics: Diagnostics = error.diagnostics
 
-  def byName(name: Text): Optional[NetworkInterface] raises NetworkInterface.Error = enumerated:
-    Optional(jn.NetworkInterface.getByName(name.s)).let(read(_))
+          if error.reason == Socket.Error.Reason.Timeout then abort(Dns.Error(Reason.Timeout))
+          else abort(error)
 
-  def byIndex(index: Int): Optional[NetworkInterface] raises NetworkInterface.Error = enumerated:
-    Optional(jn.NetworkInterface.getByIndex(index)).let(read(_))
+      . protect:
+        backend.exchangeUdp(endpoint, Unset, timed, message.in[Data])
 
-  def byAddress(address: Ipv4 | Ipv6): Optional[NetworkInterface] raises NetworkInterface.Error =
-    enumerated:
-      val inet = jn.InetAddress.getByAddress(Array.unsafeJvm(address.bytes)).nn
-      Optional(jn.NetworkInterface.getByInetAddress(inet)).let(read(_))
+    val reply = packet.data.as[Dns.Message]
 
-  // Inline, so the thunk never crosses a checked function boundary: a context-function
-  // result would hide the caller's thunk, which the separation checker rejects.
-  private inline def enumerated[result](inline block: result)
-    ( using Tactic[NetworkInterface.Error]^ )
-  :   result =
+    if reply.id != message.id || reply.questions.prim != message.questions.prim
+    then abort(Dns.Error(Reason.Mismatch(reply.id)))
 
-    try block catch case error: jn.SocketException =>
-      abort(NetworkInterface.Error(Enumeration(message(error))))
+    reply
 
-  private def message(error: jn.SocketException): Text =
-    Optional(error.getMessage).lay(t"of a socket error")(_.tt)
+  // The records answering a question for `name`'s `rtype`, through the nameserver, with
+  // recursion requested, under a fresh ID.
+  def lookup(name: Dns.Name, rtype: Dns.Type = Dns.Type.A)
+    ( using backend: Socket.Backend, options: Every[Socket.Option.Udp] )
+  :   List[Dns.Record] raises Dns.Error raises Socket.Error =
 
-  private def read(nic: jn.NetworkInterface): NetworkInterface raises NetworkInterface.Error =
-    val name = nic.getName.nn.tt
-
-    try
-      val hardware = Optional(nic.getHardwareAddress).let: bytes =>
-        MacAddress(bytes(0), bytes(1), bytes(2), bytes(3), bytes(4), bytes(5))
-
-      val addresses = nic.getInterfaceAddresses.nn.to[List].map: entry =>
-        val broadcast = Optional(entry.getBroadcast).let(inet(_)).let(_.absolve match
-          case ipv4: (Ipv4 @unchecked) => ipv4
-          case _: Ipv6                 => Unset)
-
-        InterfaceAddress(inet(entry.getAddress.nn), entry.getNetworkPrefixLength.toInt, broadcast)
-
-      NetworkInterface
-        ( name,
-          nic.getDisplayName.nn.tt,
-          nic.getIndex,
-          hardware,
-          addresses,
-          nic.getMTU,
-          nic.isUp,
-          nic.isLoopback,
-          nic.isPointToPoint,
-          nic.supportsMulticast,
-          nic.isVirtual )
-
-    catch case error: jn.SocketException =>
-      abort(NetworkInterface.Error(Inspection(name, message(error))))
-
-  // Every `InetAddress` is an `Inet4Address` or an `Inet6Address`, so one of the two decoders
-  // accepts its bytes; the `Ipv4.Localhost` fallback is unreachable.
-  private def inet(address: jn.InetAddress): Ipv4 | Ipv6 =
-    val data = Array.unsafeFrozen(address.getAddress.nn)
-    safely(data.as[Ipv4]).or(safely(data.as[Ipv6])).or(Ipv4.Localhost)
-
-  // NetworkInterfaceError → NetworkInterface.Error
-  object Error:
-    object Reason:
-      given communicable: Reason is Communicable =
-        case Enumeration(message) =>
-          m"the network interfaces could not be enumerated because $message"
-
-        case Inspection(name, message) =>
-          m"the interface $name could not be inspected because $message"
-
-    enum Reason(val number: Int) extends Clarification:
-      case Enumeration(message: Text)             extends Reason(1)
-      case Inspection(name: Text, message: Text)  extends Reason(2)
-
-  case class Error(reason: NetworkInterface.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(418, reason.number)(m"the network interface could not be read because $reason")
-
-case class NetworkInterface
-  ( name:         Text,
-    displayName:  Text,
-    index:        Int,
-    hardware:     Optional[MacAddress],
-    addresses:    List[InterfaceAddress],
-    mtu:          Int,
-    up:           Boolean,
-    loopback:     Boolean,
-    pointToPoint: Boolean,
-    multicast:    Boolean,
-    virtual:      Boolean ):
-
-  def ipv4: List[Ipv4] =
-    addresses.map(_.address).sweep { case ip: (Ipv4 @unchecked) => ip }
-  def ipv6: List[Ipv6] =
-    addresses.map(_.address).sweep { case ip: Ipv6 => ip }
+    val id = juc.ThreadLocalRandom.current.nn.nextInt(0x10000)
+    query(Dns.Message.query(id, List(Dns.Question(name, rtype)))).answers
