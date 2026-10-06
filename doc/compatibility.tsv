@@ -135,6 +135,7 @@ stratiform	yes	yes	yes	js	JVM-only submodule(s): binary, binaryStaged, http, sta
 superlunary	yes	no	no	no	backends: core+jvm; JVM runtime staging backend
 surveillance	yes	no	no	no	file watching (`java.nio.file` WatchService)
 symbolism	yes	yes	yes	js	
+syndesis	yes	no	no	no	mDNS over multicast UDP sockets and a background responder
 synesthesia	yes	no	no	no	transitively JVM-only (networking/crypto/fs/process)
 tarantula	yes	no	no	no	browser automation; depends on JVM-only `guillotine`/`telekinesis.jvm`
 tasseomancy	yes	yes	no	js	

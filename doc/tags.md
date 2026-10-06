@@ -117,6 +117,7 @@ stratiform: tel configuration-language records schema binary-tel
 superlunary: staging remote-execution multi-stage-programming distributed-computing
 surveillance: file-watcher filesystem file-events directory-monitoring nio
 symbolism: operators arithmetic typeclass operator-overloading algebra
+syndesis: mdns dns-sd zeroconf bonjour service-discovery multicast
 synesthesia: mcp model-context-protocol llm ai-protocol
 tarantula: webdriver browser-automation chrome firefox safari edge selenium headless
 tasseomancy: charts graphs plotting data-visualization svg benchmarks bar-chart line-chart pie-chart histogram
