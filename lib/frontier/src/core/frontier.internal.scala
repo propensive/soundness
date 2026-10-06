@@ -526,34 +526,52 @@ object internal:
       Diagnostic.Resolving(missing.name, Unset, children.to(proscenium.List))
 
     // The catch-all is marked `@internal.diagnostic`, so aborting here makes
-    // the candidate fail the search normally (`NotGiven`, `summonFrom` and
-    // default `using` arguments all behave), while the rendered tree becomes
-    // the authoritative message if the overall search fails.
+    // the candidate fail the search normally (`summonFrom` and default `using`
+    // arguments behave; `NotGiven` needs the special case below), while the
+    // rendered tree becomes the authoritative message if the overall search
+    // fails.
     def emit(missing: Missing): Expr[target] =
       report.errorAndAbort(Diagnostic.render(buildDiagnostic(missing)).s)
 
-    seek(TypeRepr.of[target], Nil, 1).absolve match
-      case Found(name, _) =>
-        // The search resolves without the catch-all, so the catch-all must fail
-        // rather than return the found term: the inliner instantiated every open
-        // type variable of the searched type (to `Any`, via `flipBottom`) before
-        // this macro ran, and a successful candidate would commit those
-        // instantiations to the caller — which mis-inferred `join`'s `element`
-        // as `Any` (#1942). Failing discards the candidate's typer state, and the
-        // compiler then finds the same instance itself, in the implicit scope,
-        // with inference intact. The catch-all thus never contributes a term; it
-        // is purely diagnostic. This message can surface only if the overall
-        // search fails for a reason the re-search did not see.
-        val found = Diagnostic.Found(name, Unset, proscenium.Nil)
-        val tree = Diagnostic.Resolving(name, Unset, proscenium.List(found))
-        val headline = t"contextual value resolves without the catch-all"
-        report.errorAndAbort(Diagnostic.render(tree, headline).s)
+    // `NotGiven[X]` is resolved by inverting every candidate's result
+    // (`negateIfNot` in `Implicits.rank`): a failing candidate becomes
+    // `NotGiven.value`, a succeeding one a failure. The catch-all is itself a
+    // candidate for `NotGiven[X]`, so if it aborted here the compiler would
+    // invert the abort into a spurious success and never reach `NotGiven`'s own
+    // instances, so `NotGiven[X]` would hold even with an `X` in scope (#2123).
+    // It must *succeed* instead: the inversion then fails the candidate
+    // (discarding its typer state, so nothing is committed) and the search
+    // falls through to `NotGiven.amb1`/`amb2`/`default`, which implement the
+    // negation correctly in both directions.
+    val notGiven = TypeRepr.of[scala.util.NotGiven[?]].typeSymbol
 
-      case m: Missing =>
-        emit(m)
+    TypeRepr.of[target].dealias match
+      case AppliedType(tycon, _) if tycon.typeSymbol == notGiven =>
+        '{scala.util.NotGiven.value}.asExprOf[target]
 
-      case c: Candidate =>
-        emit(Missing(stenography.internal.name[target], Nil, List(c)))
+      case _ =>
+        seek(TypeRepr.of[target], Nil, 1).absolve match
+          case Found(name, _) =>
+            // The search resolves without the catch-all, so the catch-all must fail
+            // rather than return the found term: the inliner instantiated every open
+            // type variable of the searched type (to `Any`, via `flipBottom`) before
+            // this macro ran, and a successful candidate would commit those
+            // instantiations to the caller — which mis-inferred `join`'s `element`
+            // as `Any` (#1942). Failing discards the candidate's typer state, and the
+            // compiler then finds the same instance itself, in the implicit scope,
+            // with inference intact. The catch-all thus never contributes a term; it
+            // is purely diagnostic. This message can surface only if the overall
+            // search fails for a reason the re-search did not see.
+            val found = Diagnostic.Found(name, Unset, proscenium.Nil)
+            val tree = Diagnostic.Resolving(name, Unset, proscenium.List(found))
+            val headline = t"contextual value resolves without the catch-all"
+            report.errorAndAbort(Diagnostic.render(tree, headline).s)
 
-      case a: Available =>
-        emit(Missing(stenography.internal.name[target], List(a), Nil))
+          case m: Missing =>
+            emit(m)
+
+          case c: Candidate =>
+            emit(Missing(stenography.internal.name[target], Nil, List(c)))
+
+          case a: Available =>
+            emit(Missing(stenography.internal.name[target], List(a), Nil))
