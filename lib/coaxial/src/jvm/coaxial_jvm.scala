@@ -44,6 +44,7 @@ import java.util as ju
 import anticipation.*
 import contingency.*
 import denominative.*
+import distillate.*
 
 import hypotenuse.*
 import prepositional.*
@@ -196,17 +197,9 @@ package socketBackends:
 
       val address = packet.getSocketAddress.nn.asInstanceOf[jn.InetSocketAddress]
 
-      val ip = address.getAddress.nn.absolve match
-        case ip: jn.Inet4Address =>
-          val bytes: scala.Array[Byte] = ip.getAddress.nn
-          Ipv4(bytes(0), bytes(1), bytes(2), bytes(3))
-
-        case ip: jn.Inet6Address =>
-          val bytes: scala.Array[Byte] = ip.getAddress.nn
-
-          Ipv6
-            ( Long(Array.unsafeFrozen(bytes.take(8))),
-              Long(Array.unsafeFrozen(bytes.drop(8))) )
+      // Every `InetAddress` is four or sixteen bytes, so one decoder accepts it.
+      val bytes = Array.unsafeFrozen(address.getAddress.nn.getAddress.nn)
+      val ip: Ipv4 | Ipv6 = safely(bytes.as[Ipv4]).or(safely(bytes.as[Ipv6])).or(Ipv4.Localhost)
 
       Packet
         ( Array.unsafeFrozen(array.take(packet.getLength)),
@@ -216,32 +209,7 @@ package socketBackends:
     def reply(socket: jn.DatagramSocket, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
     :   Unit raises Socket.Error =
 
-      val ip: jn.InetAddress = sender.absolve match
-        case ip: (Ipv4 @unchecked) =>
-          val array =
-            scala.Array[Byte](ip.byte0.toByte, ip.byte1.toByte, ip.byte2.toByte, ip.byte3.toByte)
-
-          jn.InetAddress.getByAddress(array).nn
-
-        case ip: Ipv6 =>
-          val array: scala.Array[Byte]^ =
-            val high = ip.highBits.bits.bytes
-            val bytes = new scala.Array[Byte](16)
-            var index = 0
-
-            while index < 8 do
-              bytes(index) = high.readable(index)
-              index += 1
-
-            val low = ip.lowBits.bits.bytes
-
-            while index < 16 do
-              bytes(index) = low.readable(index - 8)
-              index += 1
-
-            bytes
-
-          jn.InetAddress.getByAddress(array).nn
+      val ip: jn.InetAddress = jn.InetAddress.getByAddress(Array.unsafeJvm(sender.bytes)).nn
 
       val packet = jn.DatagramPacket(Array.unsafeJvm(data), data.length, ip, port.number)
 

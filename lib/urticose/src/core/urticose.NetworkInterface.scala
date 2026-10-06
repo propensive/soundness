@@ -39,6 +39,7 @@ import scala.jdk.CollectionConverters.*
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import rudiments.*
@@ -67,7 +68,7 @@ object NetworkInterface:
 
   def byAddress(address: Ipv4 | Ipv6): Optional[NetworkInterface] raises NetworkInterface.Error =
     enumerated:
-      val inet = jn.InetAddress.getByAddress(bytes(address)).nn
+      val inet = jn.InetAddress.getByAddress(Array.unsafeJvm(address.bytes)).nn
       Optional(jn.NetworkInterface.getByInetAddress(inet)).let(read(_))
 
   // Inline, so the thunk never crosses a checked function boundary: a context-function
@@ -90,7 +91,10 @@ object NetworkInterface:
         MacAddress(bytes(0), bytes(1), bytes(2), bytes(3), bytes(4), bytes(5))
 
       val addresses = nic.getInterfaceAddresses.nn.to[List].map: entry =>
-        val broadcast = Optional(entry.getBroadcast).let(ipv4(_))
+        val broadcast = Optional(entry.getBroadcast).let(inet(_)).let(_.absolve match
+          case ipv4: (Ipv4 @unchecked) => ipv4
+          case _: Ipv6                 => Unset)
+
         InterfaceAddress(inet(entry.getAddress.nn), entry.getNetworkPrefixLength.toInt, broadcast)
 
       NetworkInterface
@@ -109,28 +113,11 @@ object NetworkInterface:
     catch case error: jn.SocketException =>
       abort(NetworkInterface.Error(Inspection(name, message(error))))
 
+  // Every `InetAddress` is an `Inet4Address` or an `Inet6Address`, so one of the two decoders
+  // accepts its bytes; the `Ipv4.Localhost` fallback is unreachable.
   private def inet(address: jn.InetAddress): Ipv4 | Ipv6 =
-    val bytes = address.getAddress.nn
-
-    if bytes.length == 4 then ipv4(address) else Ipv6(longOf(bytes, 0), longOf(bytes, 8))
-
-  private def ipv4(address: jn.InetAddress): Ipv4 =
-    val bytes = address.getAddress.nn
-    Ipv4(bytes(0).toInt, bytes(1).toInt, bytes(2).toInt, bytes(3).toInt)
-
-  private def longOf(bytes: scala.Array[Byte], offset: Int): Long =
-    (0 until 8).foldLeft(0L): (acc, index) =>
-      (acc << 8) | (bytes(offset + index) & 0xff).toLong
-
-  private def bytes(address: Ipv4 | Ipv6): scala.Array[Byte] = address match
-    case ipv6: Ipv6 =>
-      val array = new scala.Array[Byte](16)
-      for index <- 0 until 8 do array(index) = (ipv6.highBits >>> (56 - index*8)).toByte
-      for index <- 0 until 8 do array(index + 8) = (ipv6.lowBits >>> (56 - index*8)).toByte
-      array
-
-    case ipv4: (Ipv4 @unchecked) =>
-      scala.Array(ipv4.byte0.toByte, ipv4.byte1.toByte, ipv4.byte2.toByte, ipv4.byte3.toByte)
+    val data = Array.unsafeFrozen(address.getAddress.nn)
+    safely(data.as[Ipv4]).or(safely(data.as[Ipv6])).or(Ipv4.Localhost)
 
   // NetworkInterfaceError → NetworkInterface.Error
   object Error:
