@@ -101,7 +101,8 @@ object Rrule:
   private def renderDay(entry: WeekdayOrdinal): Text =
     entry.ordinal.lay(code(entry.weekday)): ordinal => t"$ordinal${code(entry.weekday)}"
 
-  given encodable: [point: Encodable in Text] => Rrule[point] is Encodable in Text = rule =>
+  // The RFC 5545 rule text, rendering an `UNTIL` bound with `render`.
+  private def rfc5545[point](rule: Rrule[point], render: point => Text): Text =
     def part(condition: Boolean, text: => Text): List[Text] =
       if condition then List(text) else List()
 
@@ -109,10 +110,10 @@ object Rrule:
       optional.lay(List())(value => List(text(value)))
 
     val parts =
-      part(true, t"FREQ=${rule.frequency.toString.tt.upper}") +
+      part(true, t"FREQ=${rule.frequency.show.upper}") +
         part(rule.interval != 1, t"INTERVAL=${rule.interval}") +
         partOf(rule.count) { count => t"COUNT=$count" } +
-        partOf(rule.until) { until => t"UNTIL=${until.encode}" } +
+        partOf(rule.until) { until => t"UNTIL=${render(until)}" } +
         part(!rule.byMonth.nil, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") +
         part(!rule.byWeekNo.nil, t"BYWEEKNO=${rule.byWeekNo.map(_.show).join(t",")}") +
         part(!rule.byYearDay.nil, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") +
@@ -126,34 +127,15 @@ object Rrule:
 
     parts.join(t";")
 
+  given encodable: [point: Encodable in Text] => Rrule[point] is Encodable in Text =
+    rfc5545(_, _.encode)
+
   // The RFC 5545 rule text, with the `DTSTART` which the wire form deliberately leaves out written
   // in front of it — a rule and its start are one value here. Unlike `encodable` this asks only
   // for an `Inspectable` point (an `UNTIL` bound is a point too), and unlike the `Showable`s it
   // needs no `Locale`, `Months` or `Weekdays`, so it is available wherever the rule is.
   given inspectable: [point: Inspectable, rrule <: Rrule[point]] => rrule is Inspectable = rule =>
-    def part(condition: Boolean, text: => Text): List[Text] =
-      if condition then List(text) else List()
-
-    def partOf[value](optional: Optional[value])(text: value => Text): List[Text] =
-      optional.lay(List())(value => List(text(value)))
-
-    val parts =
-      part(true, t"FREQ=${rule.frequency.toString.tt.upper}") +
-        part(rule.interval != 1, t"INTERVAL=${rule.interval}") +
-        partOf(rule.count) { count => t"COUNT=$count" } +
-        partOf(rule.until) { until => t"UNTIL=${until.inspect}" } +
-        part(!rule.byMonth.nil, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") +
-        part(!rule.byWeekNo.nil, t"BYWEEKNO=${rule.byWeekNo.map(_.show).join(t",")}") +
-        part(!rule.byYearDay.nil, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") +
-        part(!rule.byMonthDay.nil, t"BYMONTHDAY=${rule.byMonthDay.map(_.show).join(t",")}") +
-        part(!rule.byDay.nil, t"BYDAY=${rule.byDay.map(renderDay).join(t",")}") +
-        part(!rule.byHour.nil, t"BYHOUR=${rule.byHour.map(_.show).join(t",")}") +
-        part(!rule.byMinute.nil, t"BYMINUTE=${rule.byMinute.map(_.show).join(t",")}") +
-        part(!rule.bySecond.nil, t"BYSECOND=${rule.bySecond.map(_.show).join(t",")}") +
-        part(!rule.bySetPos.nil, t"BYSETPOS=${rule.bySetPos.map(_.show).join(t",")}") +
-        part(rule.weekStart != Weekday.Mon, t"WKST=${code(rule.weekStart)}")
-
-    t"Rrule(${rule.start.inspect} ╱ ${parts.join(t";")})"
+    t"Rrule(${rule.start.inspect} ╱ ${rfc5545(rule, _.inspect)})"
 
   def parse[point: Decodable in Text](text: Text, start: point)(using Tactic[Rrule.Error])
   :   Rrule[point] =

@@ -38,11 +38,9 @@ import gossamer.*
 // The Ethiopian calendar — Alexandrian in structure (see `AlexandrianCalendar`), with its epoch,
 // 1 Mäskäräm 1 (Amete Mihret), at JDN 1724221 (29 August 8 CE in the Julian calendar), roughly
 // seven to eight years behind the Coptic reckoning.
-class EthiopianCalendar() extends AlexandrianCalendar:
-  type Mensual = EthiopianMonth
+class EthiopianCalendar()
+extends AlexandrianCalendar, Enumerated[EthiopianMonth](EthiopianMonth.fromOrdinal):
   type MonthUnit = EthiopianMonth.type
 
   def epoch: Int = 1724221
   val name: Text = t"Ethiopian"
-  def monthOrdinal(year: Year, month: EthiopianMonth): Int = month.ordinal
-  def monthOfOrdinal(year: Year, ordinal: Int): EthiopianMonth = EthiopianMonth.fromOrdinal(ordinal)

@@ -35,5 +35,16 @@ package exoskeleton
 import rudiments.*
 import turbulence.*
 
+object Backstop:
+  // A backstop which reports a failure with `report`, then exits with status 1 for an exception,
+  // or 2 for any more serious error.
+  def apply(report: Throwable -> (Stdio ?=> Unit)): Backstop = new Backstop:
+    def handle(error: Throwable)(using Stdio): Exit =
+      report(error)
+
+      error match
+        case _: Exception => Exit(1)
+        case _            => Exit(2)
+
 trait Backstop:
   def handle(block: Throwable)(using Stdio): Exit

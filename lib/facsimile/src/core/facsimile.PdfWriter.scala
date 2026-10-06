@@ -41,6 +41,7 @@ import contingency.*
 import gossamer.*
 import hieroglyph.*
 import rudiments.*
+import spectacular.*
 import symbolism.*
 import vacuous.*
 import denominative.*
@@ -86,7 +87,7 @@ private[facsimile] object PdfWriter:
 
     (1 to maxNumber).each: number =>
       offsets.at(number) match
-        case offset: Long => ascii(t"${pad10(offset)} 00000 n \n")
+        case offset: Long => ascii(t"${pad(offset, 10)} 00000 n \n")
         case _            => ascii(t"0000000000 00000 f \n")
 
     ascii(t"trailer\n<< /Size ${maxNumber + 1}")
@@ -176,13 +177,13 @@ private[facsimile] object PdfWriter:
               case Xref.Entry.Direct(_, gen) => gen + 1
               case _                         => 1
 
-            ascii(t"0000000000 ${pad5(generation)} f \n")
+            ascii(t"0000000000 ${pad(generation, 5)} f \n")
           else
             val generation = pdf.xref.entries(number) match
               case Xref.Entry.Direct(_, gen) => gen
               case _                         => 0
 
-            ascii(t"${pad10(offsets(number))} ${pad5(generation)} n \n")
+            ascii(t"${pad(offsets(number), 10)} ${pad(generation, 5)} n \n")
 
       ascii(t"trailer\n<< /Size ${pdf.nextNumber}")
 
@@ -230,7 +231,7 @@ private[facsimile] object PdfWriter:
     val index = subsections(rows).flatMap((first, run) => List(first, run.size))
 
     ascii(t"$number 0 obj\n<< /Type /XRef /Size ${number + 1} /W [1 4 2] /Index [")
-    ascii(index.map(_.toString.tt).join(t" "))
+    ascii(index.map(_.show).join(t" "))
     ascii(t"] /Length ${rows.size*7}")
 
     entries.each: (key, value) =>
@@ -327,10 +328,6 @@ private[facsimile] object PdfWriter:
         runs += ((first, run.result().to(List)))
         runs.result().to(List)
 
-  private def pad10(value: Long): Text =
-    val digits = value.toString
-    ("0".repeat(10 - digits.length).nn + digits).tt
-
-  private def pad5(value: Int): Text =
-    val digits = value.toString
-    ("0".repeat(5 - digits.length).nn + digits).tt
+  private def pad(value: Long, width: Int): Text =
+    import hieroglyph.textMetrics.uniformMetric
+    value.show.pad(width, Rtl, '0')

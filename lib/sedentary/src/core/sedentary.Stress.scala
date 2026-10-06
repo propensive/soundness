@@ -468,20 +468,7 @@ extends Rig:
         inclusion.include(runner.report, testId, strain)
 
 
-  def stage(out: Path on Linux): Path on Linux = unsafely:
-    val uuid = Uuid()
-
-    val jarfile = supervise:
-      Toolchain(jarEdges()).produce
-        ( Deliverable.Emission(out, Bundler.applicationClasspath),
-          Universe.Classfile,
-          Jar,
-          out,
-          List(jarOptions.name(t"$uuid.jar")),
-          List(EntryPoint(fqcn"superlunary.Executor")) )
-
-    device.deploy(jarfile, uuid)
-    jarfile
+  def stage(out: Path on Linux): Path on Linux = stageOn(device, out)
 
   protected val scalac: Scalac[3.7, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 

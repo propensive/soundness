@@ -139,7 +139,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
 
       case _ =>
         val standard = Print.standard(font)
-        val baseFont = standard.lay(font.typeface.name)(Print.baseFont(_))
+        val baseFont = standard.lay(font.typeface.name)(_.baseFont)
 
         // Symbol and ZapfDingbats have built-in encodings; the text fonts take WinAnsi.
         val symbolic = standard match

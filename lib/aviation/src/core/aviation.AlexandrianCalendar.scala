@@ -38,7 +38,7 @@ import contingency.*
 // Republican calendar: twelve months of 30 days followed by a short thirteenth month of 5 days (6
 // in a leap year), with a leap year every fourth year (those with `year % 4 == 3`). Subclasses
 // supply only the epoch (the JDN of their year 1, month 1, day 1), the name, and the month type.
-abstract class AlexandrianCalendar() extends Calendar:
+trait AlexandrianCalendar extends Calendar:
   def epoch: Int
 
   def monthsInYear(year: Year): Int = 13

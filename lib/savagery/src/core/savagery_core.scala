@@ -34,9 +34,11 @@ package savagery
 
 import scala.math.Numeric
 
+import anticipation.*
 import geodesy.*
 import gesticulate.*
 import prepositional.*
+import spectacular.*
 import symbolism.*
 import vacuous.*
 
@@ -59,6 +61,11 @@ extension [numeric: Numeric, numeric2: Numeric](tuple: (numeric, numeric2))
 given negatableTuple: [numeric: Numeric, numeric2: Numeric]
 =>  (numeric, numeric2) is Negatable to Delta =
   Negatable: tuple => Delta(-numeric.toFloat(tuple(0)), -numeric2.toFloat(tuple(1)))
+
+// SVG attributes write a coordinate as its shortest `Float` form. `Float`'s companion is out of
+// reach and spectacular gives no policy-free `Float` instance (its `Double` takes a
+// `DecimalConverter`), so the instance is savagery's own, at top level so every figure sees it.
+private[savagery] given savageryFloatShowable: Float is Showable = _.toString.tt
 
 extension [figure: Transformable as transformable](figure: figure)
   private def appended(transform: Transform): figure =

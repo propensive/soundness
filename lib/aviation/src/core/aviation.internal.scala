@@ -57,11 +57,8 @@ import vacuous.*
 object internal:
   // Zero-padding for the ISO rendering of an `Anniversary`, below.
   private def pad(value: Int, digits: Int): Text =
-    val body = value.toString
-    val builder: StringBuilder = new StringBuilder()
-    while builder.length + body.length < digits do builder.append('0')
-
-    builder.append(body).toString.tt
+    import hieroglyph.textMetrics.uniformMetric
+    value.show.pad(digits, Rtl, '0')
 
   opaque type Year = Int
   opaque type Day = Int

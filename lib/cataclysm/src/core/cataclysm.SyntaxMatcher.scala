@@ -299,19 +299,19 @@ object SyntaxMatcher:
           numeric(tokens)(numberLeaf)
 
         case "angle" =>
-          numeric(tokens)(angleLeaf)
+          numeric(tokens)(unitLeaf(angleUnits))
 
         case "time" =>
-          numeric(tokens)(timeLeaf)
+          numeric(tokens)(unitLeaf(timeUnits))
 
         case "resolution" =>
-          numeric(tokens)(resolutionLeaf)
+          numeric(tokens)(unitLeaf(resolutionUnits))
 
         case "frequency" =>
-          numeric(tokens)(frequencyLeaf)
+          numeric(tokens)(unitLeaf(frequencyUnits))
 
         case "flex" =>
-          flexLeaf(tokens)
+          unitLeaf(flexUnits)(tokens)
 
         case "ratio" =>
           ratioLeaf(tokens)
@@ -363,31 +363,11 @@ object SyntaxMatcher:
       case ValueToken.Number(_, _, _) :: tail => List(tail)
       case _                                  => Nil
 
-    private def angleLeaf(tokens: List[ValueToken]): List[List[ValueToken]] = tokens match
-      case ValueToken.Dimension(_, unit, _) :: tail if angleUnits(lower(unit)) => List(tail)
-      case _                                                                   => Nil
-
-    private def timeLeaf(tokens: List[ValueToken]): List[List[ValueToken]] = tokens match
-      case ValueToken.Dimension(_, unit, _) :: tail if timeUnits(lower(unit)) => List(tail)
-      case _                                                                  => Nil
-
-    private def resolutionLeaf(tokens: List[ValueToken]): List[List[ValueToken]] = tokens match
-      case ValueToken.Dimension(_, unit, _) :: tail if resolutionUnits(lower(unit)) =>
-        List(tail)
-
-      case _ =>
-        Nil
-
-    private def frequencyLeaf(tokens: List[ValueToken]): List[List[ValueToken]] = tokens match
-      case ValueToken.Dimension(_, unit, _) :: tail if frequencyUnits(lower(unit)) =>
-        List(tail)
-
-      case _ =>
-        Nil
-
-    private def flexLeaf(tokens: List[ValueToken]): List[List[ValueToken]] = tokens match
-      case ValueToken.Dimension(_, unit, _) :: tail if flexUnits(lower(unit)) => List(tail)
-      case _                                                                  => Nil
+    // A dimension whose unit is one of `units`: an angle, a time, a resolution, and so on.
+    private def unitLeaf(units: Set[String])(tokens: List[ValueToken]): List[List[ValueToken]] =
+      tokens match
+        case ValueToken.Dimension(_, unit, _) :: tail if units(lower(unit)) => List(tail)
+        case _                                                              => Nil
 
     // `<ratio> = <number> [ / <number> ]?`
     private def ratioLeaf(tokens: List[ValueToken]): List[List[ValueToken]] =

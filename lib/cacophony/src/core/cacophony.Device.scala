@@ -30,76 +30,58 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package telekinesis
+package cacophony
+
+import javax.sound.sampled as jss
 
 import anticipation.*
-import contingency.*
-import distillate.*
-import fulminate.*
-import gossamer.*
-import hieroglyph.*, codepages.utf8Codepage
-import kaleidoscope.*
-import monotonous.*
-import prepositional.*
-import spectacular.*
+import quantitative.*
+import symbolism.*
 import vacuous.*
 
-object Auth:
-  import alphabets.base64Standard
+// What a `Feed` and an `Outlet` share: a mixer the system describes, and the lines of one kind it
+// offers — target lines to record from, or source lines to play to.
+trait Device:
+  private[cacophony] val mixerInfo: jss.Mixer.Info
+  protected def lineClass: Class[? <: jss.DataLine]
 
-  // Over any subtype, so that a value typed as a case (`Auth.Bearer`) renders as the header
-  // value rather than through the generic enumeration instance
-  given showable: [auth <: Auth] => auth is Showable =
-    case Basic(username, password) => t"Basic ${t"$username:$password".in[Data].serialize[Base64]}"
-    case Bearer(token)             => t"Bearer $token"
-    case Digest(digest)            => t"Digest $digest"
-    case Hoba(text)                => t"HOBA $text"
-    case Mutual(text)              => t"Mutual $text"
-    case Negotiate(text)           => t"Negotiate $text"
-    case OAuth(text)               => t"OAuth $text"
-    case ScramSha1(text)           => t"SCRAM-SHA-1 $text"
-    case ScramSha256(text)         => t"SCRAM-SHA-256 $text"
-    case Vapid(text)               => t"vapid $text"
+  def name:        Text = mixerInfo.getName.nn.tt
+  def vendor:      Text = mixerInfo.getVendor.nn.tt
+  def description: Text = mixerInfo.getDescription.nn.tt
 
-  given decodable: (tactic: Tactic[Auth.Error])
-  =>  ( (Auth is Decodable in Text)^{tactic} ) = value => value match
-    case r"Bearer $token(.*)"        => Bearer(token)
-    case r"Digest $digest(.*)"       => Digest(digest)
-    case r"HOBA $value(.*)"          => Hoba(value)
-    case r"Mutual $value(.*)"        => Mutual(value)
-    case r"Negotiate $value(.*)"     => Negotiate(value)
-    case r"OAuth $value(.*)"         => OAuth(value)
-    case r"SCRAM-SHA-1 $value(.*)"   => ScramSha1(value)
-    case r"SCRAM-SHA-256 $value(.*)" => ScramSha256(value)
-    case r"vapid $value(.*)"         => Vapid(value)
+  private def lineInfos(mixer: jss.Mixer): scala.Array[jss.Line.Info | Null] =
+    if lineClass == classOf[jss.TargetDataLine] then mixer.getTargetLineInfo.nn
+    else mixer.getSourceLineInfo.nn
 
-    // The credentials are one base64 text, `username:password`, split at the first colon after
-    // decoding (a password may itself contain colons; a username may not)
-    case r"Basic $encoded(.*)" =>
-      val decoded: Optional[Text] = safely(encoded.deserialize[Base64].utf8)
+  def configurations: List[Configuration] =
+    val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
 
-      decoded.let: text =>
-        text.cut(t":", 2) match
-          case List(user, password) => Basic(user, password)
-          case _                    => Unset
+    lineInfos(mixer).iterator.toList.flatMap:
+      case dli: jss.DataLine.Info if dli.getLineClass == lineClass =>
+        dli.getFormats.nn.iterator.toList.map: f0 =>
+          val f = f0.nn
 
-      . lest(Auth.Error(value))
+          val encoding =
+            if f.getEncoding == jss.AudioFormat.Encoding.PCM_UNSIGNED then Sonation.PcmUnsigned
+            else Sonation.PcmSigned
 
-    case value =>
-      abort(Auth.Error(value))
+          val rate: Optional[Quantity[Seconds[-1]]] =
+            if f.getSampleRate < 0 then Unset else f.getSampleRate.toDouble*Hertz
 
-  // AuthError → Auth.Error
-  case class Error(value: Text)(using Diagnostics)
-  extends fulminate.Error(570, 0)(m"the authentication value $value is not valid")
+          Configuration(f.getChannels, rate, f.getSampleSizeInBits, encoding, f.isBigEndian)
 
-enum Auth:
-  case Basic(username: Text, password: Text)
-  case Bearer(token: Text)
-  case Digest(digest: Text)
-  case Hoba(text: Text)
-  case Mutual(text: Text)
-  case Negotiate(text: Text)
-  case OAuth(text: Text)
-  case ScramSha1(text: Text)
-  case ScramSha256(text: Text)
-  case Vapid(text: Text)
+      case _ => scala.collection.immutable.Nil
+
+    . to(List)
+
+  def supports[layout: ChannelLayout](rate: Quantity[Seconds[-1]], bits: Int): Boolean =
+    val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
+    mixer.isLineSupported(jss.DataLine.Info(lineClass, pcm[layout](rate, bits)))
+
+  // Signed little-endian PCM at `rate` with `bits` per sample, in `layout`'s channels.
+  protected def pcm[layout: ChannelLayout as cl](rate: Quantity[Seconds[-1]], bits: Int)
+  :   jss.AudioFormat =
+
+    val sampleRate = rate.value.toFloat
+    val format = jss.AudioFormat.Encoding.PCM_SIGNED
+    jss.AudioFormat(format, sampleRate, bits, cl.channels, cl.channels*(bits/8), sampleRate, false)
