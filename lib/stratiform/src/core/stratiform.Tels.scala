@@ -556,7 +556,7 @@ object Tels extends Tels2:
 
           if !found then abort(Tel.Error(Reason.LayerOrderMismatch))
 
-      chosen.toList.to(List)
+      chosen.to(List)
 
     // Top-level entry: applies every layer in `schema.layers` to the
     // schema's base, returning a composed Schema with empty `layers`.
@@ -1901,7 +1901,7 @@ object Tels extends Tels2:
 
     // The schema's groups: the base, then each layer in declaration order.
     def decompose(schema: Tels): List[Group] =
-      base(schema) :: schema.layers.readable.toList.to(List).map(layer)
+      base(schema) :: schema.layers.readable.to(List).map(layer)
 
     def base(schema: Tels): Group =
       val head = Atom.Head(schema.name, schema.sigil)
@@ -2100,7 +2100,7 @@ object Tels extends Tels2:
       body.validators.each: validator =>
         buffer += part(Path.Body, overlay = Struct(Array.empty, Array(validator)))
 
-      buffer.toList.to(List)
+      buffer.to(List)
 
   // The subtype relation of §24.3, which §8.2 makes normative for compatibility: a document
   // composed under `sub` can be read by a consumer expecting `sup` when `sub <: sup`. Records

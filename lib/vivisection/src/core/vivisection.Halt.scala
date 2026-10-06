@@ -179,7 +179,7 @@ extends caps.ExclusiveCapability:
             case _ =>
               Unset
 
-      Halt.ExceptionInfo(className, message, catchLocation != Unset)
+      Halt.ExceptionInfo(className, message, catchLocation.present)
 
     case _ =>
       Unset

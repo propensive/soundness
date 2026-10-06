@@ -57,7 +57,7 @@ enum Layout extends Markdown.Node:
   def line: Ordinal
 
   def children: List[Prose] = this match
-    case Paragraph(_, children*)  => children.toList.to(List)
-    case BlockQuote(_, children*) => children.toList.to(List).bind(_.children)
-    case Heading(_, _, children*) => children.toList.to(List)
+    case Paragraph(_, children*)  => children.to(List)
+    case BlockQuote(_, children*) => children.to(List).bind(_.children)
+    case Heading(_, _, children*) => children.to(List)
     case _                        => Nil

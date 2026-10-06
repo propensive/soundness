@@ -1179,7 +1179,7 @@ object Http:
         var stream0: Optional[AnyRef] = Unset
 
         val spring: Spring[Data]^ = () =>
-          if stream0 == Unset then
+          if stream0.absent then
             stream0 =
               fixed.lay(Request.chunkedBody(cursorRef.asInstanceOf[Cursor[Data, {}]^])):
                 length => Request.fixedBody(cursorRef.asInstanceOf[Cursor[Data, {}]^], length)

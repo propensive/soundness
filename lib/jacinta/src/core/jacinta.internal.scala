@@ -526,7 +526,7 @@ object internal:
 
         val indexed = elements.readable.zipWithIndex
 
-        val pieces = indexed.toList.to(List).map: (elem, idx) =>
+        val pieces = indexed.to(List).map: (elem, idx) =>
             elem.asMatchable match
               case Unset =>
                 if spreads.has(holeIndex) then

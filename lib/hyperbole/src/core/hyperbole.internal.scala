@@ -649,7 +649,7 @@ object internal:
             (symbol.paramSymss.map(_.map(_.name.tt).join(t"(", t" ", t")"))).to(List),
 
           t"All overridden symbols" ->
-            symbol.allOverriddenSymbols.map(_.name.tt).toList.to(List),
+            symbol.allOverriddenSymbols.map(_.name.tt).to(List),
 
           t"Primary constructor" -> symbol.primaryConstructor.name.tt,
 

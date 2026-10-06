@@ -319,7 +319,7 @@ trait Json2 extends Json3:
       Json.Decodable({
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . pipe { array => array.readable.toList.to(List) } // freshens the array
+          . pipe { array => array.readable.to(List) } // freshens the array
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -597,7 +597,7 @@ trait Json2 extends Json3:
       Json.Encodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . pipe { array => array.readable.toList.to(List) } // freshens the array
+          . pipe { array => array.readable.to(List) } // freshens the array
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -2053,7 +2053,7 @@ object Json extends Json2, Dynamic:
     // umbrella, where their generic names would clash).
     extension (json: Ast)
       inline def isNumber: Boolean = isDouble || isLong || isBcd || isSmallBcd
-      inline def isAbsent: Boolean = json == Unset
+      inline def isAbsent: Boolean = json.absent
       inline def isLong: Boolean = json.isInstanceOf[Long]
       inline def isDouble: Boolean = json.isInstanceOf[Double]
 

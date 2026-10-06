@@ -287,9 +287,9 @@ private[punctuation] object InlineParser:
         // Replace bracket node with the link/image wrapper
         list.remove(entry.node)
 
-        if entry.isImage then list.append(ImageData(lm.dest, lm.title, children.toList.to(List)))
+        if entry.isImage then list.append(ImageData(lm.dest, lm.title, children.to(List)))
         else
-          list.append(LinkData(lm.dest, lm.title, children.toList.to(List)))
+          list.append(LinkData(lm.dest, lm.title, children.to(List)))
           // Deactivate any earlier `[` link markers (no nested links). Image
           // markers stay active — images can contain links.
           brackets.each: b => if !b.isImage then b.active = false

@@ -136,7 +136,7 @@ object TelSchematic:
         ( name,
           Array.from(same.flatMap(_.variants.readable.toList).distinctBy(_.keyword)),
           Array.from(same.flatMap(_.validators.readable.toList).distinct),
-          same.map(_.description).find(_ != Unset).optional,
+          same.map(_.description).find(_.present).optional,
           Array.from(same.flatMap(_.excludes.readable.toList).distinct) )
 
     Array.from(combined)

@@ -1392,7 +1392,7 @@ object Xml extends Tag.Container
                 // zero occurrences build the empty collection, exactly as
                 // the AST derivation decodes an empty synthetic fragment.
                 val elements: List[Any] = values.readable(index) match
-                  case buffer: scm.ListBuffer[?] => buffer.toList.to(List)
+                  case buffer: scm.ListBuffer[?] => buffer.to(List)
                   case _                         => Nil
 
                 values(index) =
@@ -2585,7 +2585,7 @@ object Xml extends Tag.Container
       var seen = 0
       var found: Optional[Int] = Unset
 
-      while i < children.length && found == Unset do
+      while i < children.length && found.absent do
         children.readUnchecked(i) match
           case child: Element =>
             if child.label == name then
@@ -2606,7 +2606,7 @@ object Xml extends Tag.Container
       var seen = 0
       var found: Optional[Element] = Unset
 
-      while i < children.length && found == Unset do
+      while i < children.length && found.absent do
         children.readUnchecked(i) match
           case child: Element if child.label == name =>
             seen += 1

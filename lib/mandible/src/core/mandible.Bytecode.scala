@@ -161,7 +161,7 @@ object Bytecode:
       val result: Optional[Frame] =
         if s.charAt(cursor) == 'V' then Unset else Frame.parseOne(descriptor, cursor)._1
 
-      Descriptor(argsBuf.toList.to(List), result)
+      Descriptor(argsBuf.to(List), result)
 
   case class Descriptor(args: List[Frame], result: Optional[Frame])
 
@@ -1529,7 +1529,7 @@ case class Bytecode
             . or(results += Bytecode.Linearized(depth, source, instr))
 
     expand(this, 0, t"")
-    results.toList.to(List)
+    results.to(List)
 
   def effectivelyStaticCalls: Set[Int] = effectivelyStaticCalls0
 

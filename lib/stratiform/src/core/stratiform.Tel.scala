@@ -979,7 +979,7 @@ object Tel extends Tel2:
 
             if parsing.repeatable then
               val elements: List[Any] = values(index) match
-                case buffer: scala.collection.mutable.ListBuffer[?] => buffer.toList.to(List)
+                case buffer: scala.collection.mutable.ListBuffer[?] => buffer.to(List)
                 case _                                              => Nil
 
               parsing match
@@ -2053,7 +2053,7 @@ object Tel extends Tel2:
     // (3), every scalar carrying BASE-256 text.
     def apply(element: Tel.Element)(using Tactic[Error]): Acceptance = element match
       case Tel.Element.Node(_, _, children) =>
-        Acceptance(children.readable.toList.to(List).map(alternative))
+        Acceptance(children.readable.to(List).map(alternative))
 
       case _ =>
         abort(Error(Error.Reason.Malformed))
@@ -5192,7 +5192,7 @@ object Tel extends Tel2:
         recoverAt(Reason.MisplacedPragmaPhrase, line, firstLayerColumn, firstLayerLength):
           layerBuffer.clear()
 
-      Tel.Pragma(version, reference, layerBuffer.toList.to(List), signatureText, pragmaSigil)
+      Tel.Pragma(version, reference, layerBuffer.to(List), signatureText, pragmaSigil)
 
     // `column` is the 1-indexed column of the version phrase within the pragma
     // line, so a malformed version is spanned at the phrase itself.
@@ -5262,7 +5262,7 @@ object Tel extends Tel2:
         parts += builder.toString
         offsets += start
 
-      (parts.toList.to(List), offsets.toList.to(List))
+      (parts.to(List), offsets.to(List))
 
     // ── Margin determination ─────────────────────────────────────────────────
 

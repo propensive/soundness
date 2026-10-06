@@ -109,4 +109,4 @@ class ClasspathIndex private (local: Map[Text, ClassSurface], classloader: jn.UR
 
     apply(name).let: surface => recur(surface.supertypes)
 
-    (seen.toList.to(List), missing.toList.to(List))
+    (seen.to(List), missing.to(List))

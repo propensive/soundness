@@ -255,4 +255,4 @@ trait Tel4:
       if absent(tel) && !flags.contains(name) then abort(Tel.Error(Tel.Error.Reason.Absent))
       else tel
 
-    def repeated(name: Text, tel: Tel): List[Tel] = tel.fields(name).readable.toList.to(List)
+    def repeated(name: Text, tel: Tel): List[Tel] = tel.fields(name).readable.to(List)

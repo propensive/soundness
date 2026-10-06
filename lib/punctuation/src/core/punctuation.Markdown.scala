@@ -170,27 +170,27 @@ object Markdown:
     case Prose.Linebreak        => t"Linebreak"
     case Prose.Code(code)       => t"Code(${code.inspect})"
     case Prose.HtmlInline(html) => t"HtmlInline(${html.inspect})"
-    case Prose.Emphasis(prose*) => t"Emphasis(${inspectNodes(prose.toList.to(List))})"
-    case Prose.Strong(prose*)   => t"Strong(${inspectNodes(prose.toList.to(List))})"
+    case Prose.Emphasis(prose*) => t"Emphasis(${inspectNodes(prose.to(List))})"
+    case Prose.Strong(prose*)   => t"Strong(${inspectNodes(prose.to(List))})"
     case Layout.ThematicBreak(line)  => t"ThematicBreak(${line.inspect})"
     case Layout.HtmlBlock(line, html) => t"HtmlBlock(${line.inspect} ╱ ${html.inspect})"
 
     case Prose.Link(destination, title, prose*) =>
-      val nodes = inspectNodes(prose.toList.to(List))
+      val nodes = inspectNodes(prose.to(List))
       t"Link(${destination.inspect} ╱ ${title.lay(t"○")(_.inspect)} ╱ $nodes)"
 
     case Prose.Image(destination, title, prose*) =>
-      val nodes = inspectNodes(prose.toList.to(List))
+      val nodes = inspectNodes(prose.to(List))
       t"Image(${destination.inspect} ╱ ${title.lay(t"○")(_.inspect)} ╱ $nodes)"
 
     case Layout.BlockQuote(line, layout*) =>
-      t"BlockQuote(${line.inspect} ╱ ${inspectNodes(layout.toList.to(List))})"
+      t"BlockQuote(${line.inspect} ╱ ${inspectNodes(layout.to(List))})"
 
     case Layout.Paragraph(line, prose*) =>
-      t"Paragraph(${line.inspect} ╱ ${inspectNodes(prose.toList.to(List))})"
+      t"Paragraph(${line.inspect} ╱ ${inspectNodes(prose.to(List))})"
 
     case Layout.Heading(line, level, prose*) =>
-      t"Heading(${line.inspect} ╱ ${level.inspect} ╱ ${inspectNodes(prose.toList.to(List))})"
+      t"Heading(${line.inspect} ╱ ${level.inspect} ╱ ${inspectNodes(prose.to(List))})"
 
     case Layout.CodeBlock(line, info, content) =>
       t"CodeBlock(${line.inspect} ╱ ${info.inspect} ╱ ${content.inspect})"
@@ -311,14 +311,14 @@ object Markdown:
     type Topic = Layout
 
     val linkRefs: List[Markdown.LinkRef] = linkRefs0
-    val children: List[Layout] = layout.toList.to(List)
+    val children: List[Layout] = layout.to(List)
 
   @targetName("applyProse")
   def apply(prose: Prose*): Markdown of Prose = new Markdown:
     type Topic = Prose
 
     val linkRefs: List[Markdown.LinkRef] = Nil
-    val children: List[Prose] = prose.toList.to(List)
+    val children: List[Prose] = prose.to(List)
 
   extension (markdown: Markdown of Layout)
     def sections: List[Markdown of Layout] =

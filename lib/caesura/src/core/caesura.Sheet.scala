@@ -414,7 +414,7 @@ case class Sheet
   override def equals(that: Any): Boolean = that.asMatchable match
     case dsv: Sheet =>
       dsv.rows.readable.sameElements(rows.readable) && dsv.format == format
-      && columns.lay(dsv.columns == Unset): columns =>
+      && columns.lay(dsv.columns.absent): columns =>
            dsv.columns.lay(false)(other => columns.readable.sameElements(other.readable))
 
     case _ =>

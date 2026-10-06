@@ -572,7 +572,7 @@ trait Tel2 extends Tel3:
                             ( if child.atoms.length == 0 then t""
                               else Positional.text(child.atoms.readUnchecked(0)) )
 
-                        members += Mutation.Member.Value(keyword, texts.toList.to(List))
+                        members += Mutation.Member.Value(keyword, texts.to(List))
 
                 case Tel.Nature.Struct =>
                   val encoded = contextual.constructed(fieldValue)
