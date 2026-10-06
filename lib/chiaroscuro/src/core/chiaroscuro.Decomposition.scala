@@ -93,7 +93,7 @@ enum Decomposition:
     val space = t"  "
 
     this match
-      case Primitive(typeName, text, _) => append(t"$text")
+      case Primitive(typeName, text, _) => append(text)
 
       case Sum(name, value, _) =>
         if newline then

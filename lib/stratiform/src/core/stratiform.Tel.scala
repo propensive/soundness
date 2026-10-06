@@ -1487,7 +1487,7 @@ object Tel extends Tel2:
         // `supplementKeyPositions`) instead of the bare document root.
         focus({
           val base = prior.let(_.pointer).or(Telp.Root)
-          val indexed = occurrence.lay(base) { index => base.prepend(t"$index") }
+          val indexed = occurrence.lay(base) { index => base.prepend(index.show) }
           Tel.Focus(indexed.prepend(compound.keyword))
         }):
           // An unrecognised keyword is skipped (`IgnoreErroneousNode`): record it and

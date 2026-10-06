@@ -580,7 +580,7 @@ def cli[bus <: Matchable](using executive: Executive)
           // repeating it. Without a launcher (plain `java -jar`) there is nothing
           // to compare, so only the build id is written.
           val buildLine: Text =
-            scriptIdentity().lay(t"$buildId"): recorded =>
+            scriptIdentity().lay(buildId.show): recorded =>
               t"$buildId ${recorded.size} ${recorded.mtime}"
 
           buildFile.open[File](Write, OpenFlag.Create)(file.write(buildLine))

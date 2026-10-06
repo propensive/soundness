@@ -1076,7 +1076,7 @@ object Json extends Json2, Dynamic:
           val identical = named.spot(index => named(index) eq key)
 
           val found =
-            if identical.present then identical else named.spot(index => named(index) == key)
+            identical.or(named.spot(index => named(index) == key))
 
           found.lay(-1) { ordinal => (ordinal: Ordinal).n0 }
 
@@ -1291,7 +1291,7 @@ object Json extends Json2, Dynamic:
       val identical = keys.spot(index => keys(index) eq name)
 
       val found =
-        if identical.present then identical else keys.spot(index => keys(index) == name)
+        identical.or(keys.spot(index => keys(index) == name))
 
       found.lay(KeyTable.Unknown) { ordinal => (ordinal: Ordinal).n0 }
 
