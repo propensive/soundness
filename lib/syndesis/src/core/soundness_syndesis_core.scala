@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export syndesis.{advertise, browse, Discovery, resolve}
+export syndesis.{advertise, browse, Discovery, Mdns, resolve}

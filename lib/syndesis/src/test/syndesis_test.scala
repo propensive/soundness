@@ -151,6 +151,91 @@ object Tests extends Suite(m"Syndesis tests"):
         capture[Discovery.Error](Discovery.Txt(t"k" -> t"v"*254)).reason
       . assert(_ == Discovery.Error.Reason.InvalidTxt(t"k"))
 
+    suite(m"The mDNS cache"):
+      val second = 1_000_000_000L
+      val name = dns"gondor.local"
+      def a(ttl: Int, flush: Boolean = false) = Dns.Record(name, ttl, Dns.Rdata.A(ip"10.0.0.1"), flush = flush)
+      def other(ttl: Int, flush: Boolean = false) = Dns.Record(name, ttl, Dns.Rdata.A(ip"10.0.0.2"), flush = flush)
+
+      test(m"A new record is added"):
+        Mdns.Cache().absorb(List(a(120)), 0L)
+      . assert(_ == List(Mdns.Cache.Transition.Added(a(120))))
+
+      test(m"A record heard again is refreshed"):
+        val cache = Mdns.Cache()
+        cache.absorb(List(a(120)), 0L)
+        cache.absorb(List(a(120)), second)
+      . assert(_ == List(Mdns.Cache.Transition.Refreshed(a(120))))
+
+      test(m"A record lapses when its TTL has elapsed"):
+        val cache = Mdns.Cache()
+        cache.absorb(List(a(120)), 0L)
+        cache.sweep(121*second)
+      . assert(_ == List(Mdns.Cache.Transition.Removed(a(120))))
+
+      test(m"A record does not lapse before its TTL"):
+        val cache = Mdns.Cache()
+        cache.absorb(List(a(120)), 0L)
+        cache.sweep(119*second)
+      . assert(_ == Nil)
+
+      test(m"A goodbye lapses the record a second later"):
+        val cache = Mdns.Cache()
+        cache.absorb(List(a(120)), 0L)
+        cache.absorb(List(a(0)), 10*second)
+        (cache.sweep(10*second + second/2), cache.sweep(12*second))
+      . assert(_ == (Nil, List(Mdns.Cache.Transition.Removed(a(120)))))
+
+      test(m"A cache-flush record retires older records of its name and type"):
+        val cache = Mdns.Cache()
+        cache.absorb(List(a(120)), 0L)
+        cache.absorb(List(other(120, flush = true)), 10*second)
+        cache.sweep(12*second).map(_.record.rdata)
+      . assert(_ == List(Dns.Rdata.A(ip"10.0.0.1")))
+
+      test(m"A cache-flush record spares records heard within the last second"):
+        val cache = Mdns.Cache()
+        cache.absorb(List(a(120)), 0L)
+        cache.absorb(List(other(120, flush = true)), second/2)
+        cache.sweep(12*second)
+      . assert(_ == Nil)
+
+      test(m"Known answers are those with over half their TTL left, with the TTL remaining"):
+        val cache = Mdns.Cache()
+        cache.absorb(List(a(120)), 0L)
+        (cache.knownAnswers(name, Dns.Type.A, 50*second), cache.knownAnswers(name, Dns.Type.A, 70*second))
+      . assert(_ == (List(a(70)), Nil))
+
+      test(m"Lookup yields the unexpired records of a name and type"):
+        val cache = Mdns.Cache()
+        cache.absorb(List(a(120), other(10)), 0L)
+        cache.lookup(name, Dns.Type.A, 20*second)
+      . assert(_ == List(a(120)))
+
+    suite(m"The in-memory bus"):
+      test(m"Every member receives what one sends, the sender included"):
+        val bus = Mdns.Transport.Bus()
+        val first = bus.join(dns"first.local", List(ip"10.0.0.1"))
+        val second = bus.join(dns"second.local", List(ip"10.0.0.2"))
+        first.send(Data(1, 2, 3))
+        (first.receive().sender, second.receive().sender)
+      . assert(_ == (ip"10.0.0.1", ip"10.0.0.1"))
+
+      test(m"A reply reaches the member with the address"):
+        val bus = Mdns.Transport.Bus()
+        val first = bus.join(dns"first.local", List(ip"10.0.0.1"))
+        val second = bus.join(dns"second.local", List(ip"10.0.0.2"))
+        first.reply(ip"10.0.0.2", udp"mdns", Data(9))
+        second.receive().data.length
+      . assert(_ == 1)
+
+      test(m"A closed member's receive fails"):
+        val bus = Mdns.Transport.Bus()
+        val member = bus.join(dns"first.local", List(ip"10.0.0.1"))
+        member.close()
+        capture[Socket.Error](member.receive()).reason
+      . assert(_ == Socket.Error.Reason.Accept)
+
     suite(m"Resolutions"):
       test(m"A resolution's endpoints pair each address with the port"):
         val gondor = Discovery.Instance(t"Gondor", fury)

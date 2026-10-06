@@ -124,7 +124,7 @@ object Multicast:
   // The interfaces to join on: the one with the given hardware address, or every interface that
   // is up and multicast-capable other than loopback (which cannot carry multicast on Linux; a
   // program's own datagrams come back through `Socket.Option.MulticastLoop` instead).
-  private[coaxial] def interfaces(interface: Optional[MacAddress]): List[NetworkInterface] =
+  def interfaces(interface: Optional[MacAddress]): List[NetworkInterface] =
     val all = safely(NetworkInterface.all()).or(Nil)
 
     val suitable = all.filter: nic => nic.up && nic.multicast && !nic.loopback
