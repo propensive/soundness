@@ -44,7 +44,7 @@ import denominative.dysasymptotics.linearSize
 // Field record, §20.5), and instance-level key uniqueness (E314, §21.6).
 object KeyTests extends Suite(m"Stratiform key field tests"):
 
-  private def schemaOf(text: Text): Tels = Tels.Reconstructor.fromTel(text.read[Tel])
+  private def schemaOf(text: Text): Tels = text.read[Tel].as[Tels]
 
   // The schema-validity code raised by composing and checking `text`, or 0.
   private def schemaCode(text: Text): Int =

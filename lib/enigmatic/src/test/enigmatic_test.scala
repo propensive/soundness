@@ -459,23 +459,23 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"Cose(payload, key) round-trips through authenticate[Cose](key)"):
         val cose = Cose(payload, key)
-        cose.bytes.authenticate[Cose](key)
+        cose.in[Data].authenticate[Cose](key)
       . assert(identity)
 
       test(m"Cose envelope is tagged with CBOR tag 17 (Mac0)"):
-        val wire = Cose(payload, key).bytes
+        val wire = Cose(payload, key).in[Data]
         wire.readable(0).toInt & 0xFF
       . assert(_ == 0xD1)   // major type 6 (tag) | tag value 17 = 0xC0 | 17 = 0xD1
 
       test(m"Verification fails with the wrong key"):
-        val wire = Cose(payload, key).bytes
+        val wire = Cose(payload, key).in[Data]
         val wrongKey: SymmetricKey[HmacCipher[Sha2[256]]] =
           SymmetricKey(t"this-is-a-different-key-bytes!!!".in[Data])
         wire.authenticate[Cose](wrongKey)
       . assert(!_)
 
       test(m"Verification fails after tampering the wire bytes"):
-        val wire = Cose(payload, key).bytes
+        val wire = Cose(payload, key).in[Data]
         val tampered = Array.allocate[Byte](wire.length)
         tampered.place(wire)
         // Flip a bit in the MAC tag near the end of the envelope.

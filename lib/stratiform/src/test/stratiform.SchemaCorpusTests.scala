@@ -90,14 +90,14 @@ object SchemaCorpusTests extends Suite(m"Stratiform schema corpus tests"):
 
         val constructed: scala.List[Int] =
           try
-            Tels.Validation.validate(Tels.Reconstructor.fromTel(tel))
+            Tels.Validation.validate(tel.as[Tels])
             scala.Nil
           catch case error: Tel.Error => scala.List(error.reason.number)
 
         (assigned.stdlib ::: constructed).to(proscenium.List)
       else
         CorpusLoader.auxiliarySchema(category, tail).let: aux =>
-          try assignCodes(tel, Tels.Validation.validate(Tels.Reconstructor.fromTel(aux.read[Tel])))
+          try assignCodes(tel, Tels.Validation.validate(aux.read[Tel].as[Tels]))
           catch case error: Tel.Error => proscenium.List(error.reason.number)
         . or(proscenium.List.empty[Int])
     . or(proscenium.List.empty[Int])

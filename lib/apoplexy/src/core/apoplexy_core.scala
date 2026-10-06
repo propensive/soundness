@@ -30,10 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package bitumen
-
+package apoplexy
 
 import anticipation.*
-import vacuous.*
+import jacinta.*
+import prepositional.*
+import ypsiloid.*
 
-case class UnixGroup(value: Int, name: Optional[Text] = Unset)
+// A YAML document as JSON, as `yaml.in[Json]`: the translation an OpenAPI document written as
+// YAML passes through on its way to the model's one decoder. At the package's top level with a
+// library-qualified name, not in a companion: neither jacinta nor ypsiloid depends on the other,
+// so neither `Yaml` nor `Json` can anchor it.
+given yamlEncodableInJson: Yaml is Encodable in Json =
+  yaml => Json.ast(OpenApi.translate(yaml.root))

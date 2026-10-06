@@ -52,7 +52,7 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
   extends Error(m"${codes.size} accrued codes"):
     def +(code: Int): Accrued = Accrued(code :: codes)
 
-  private def schemaOf(text: Text): Tels = Tels.Reconstructor.fromTel(text.read[Tel])
+  private def schemaOf(text: Text): Tels = text.read[Tel].as[Tels]
 
   // The schema-validity code raised by composing and checking `schema`, or 0.
   private def codeOf(schema: Tels): Int =
@@ -318,7 +318,7 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
                                                   |""".stripMargin)).read[Tel]
         val body = doc.bintel(Tels.Axiom.tels)
         val element = Bintel.decode(body, Tels.Axiom.tels)
-        val composed = Tels.Validation.validate(Tels.SemanticReconstructor.fromElement(element))
+        val composed = Tels.Validation.validate(element.as[Tels])
         composed.selects.readable.find(_.name == t"Pet").get.variants.readable.map(_.keyword.s).toList
       . assert(_ == List("cat", "dog"))
 
@@ -406,7 +406,7 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
       test(m"patterns survive a BinTEL round-trip of the schema document"):
         val doc = coded(pattern(t"[A-Z]{2}-[0-9]{4}"), t"").read[Tel]
         val element = Bintel.decode(doc.bintel(Tels.Axiom.tels), Tels.Axiom.tels)
-        val composed = Tels.Validation.validate(Tels.SemanticReconstructor.fromElement(element))
+        val composed = Tels.Validation.validate(element.as[Tels])
         composed.scalars.readable.find(_.name == t"Code").get.patterns.readable.map(_.s).toList
       . assert(_ == List("[A-Z]{2}-[0-9]{4}"))
 

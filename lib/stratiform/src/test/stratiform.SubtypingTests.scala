@@ -47,13 +47,13 @@ object SubtypingTests extends Suite(m"Stratiform subtyping tests"):
     val stream = getClass.getResourceAsStream(s"/stratiform/corpus/$name").nn
     try Array.unsafeFrozen(stream.readAllBytes().nn) finally stream.close()
 
-  private def schema(source: Text): Tels = Tels.Reconstructor.fromTel(source.read[Tel])
+  private def schema(source: Text): Tels = source.read[Tel].as[Tels]
 
   private def composed(source: Text, selection: List[Text]): Tels =
     Tels.Layers.compose(schema(source), selection)
 
   private lazy val contact: Tels =
-    Tels.Reconstructor.fromTel(resource("contact-layered-schema.tel").read[Tel])
+    resource("contact-layered-schema.tel").read[Tel].as[Tels]
 
   // The remark of §24.4: `loose` declares `note` optional, `strict` declares it required, and
   // `[base, loose, strict]` leaves it optional, so the longer composition is not a subtype of

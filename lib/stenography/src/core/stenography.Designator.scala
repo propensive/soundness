@@ -41,7 +41,6 @@ import symbolism.*
 import vacuous.*
 
 object Designator:
-  def fromUrl(text: Text): Designator = apply(text.s.replaceAll("~", "#").nn.tt)
 
   def apply(text: Text): Designator =
     def recur(i: Ordinal, start: Ordinal, designator: Optional[Designator]): Designator =
@@ -92,14 +91,6 @@ enum Designator:
     case Top(name)          => name
     case Type(parent, name) => s"${parent.render}${symbol("⌗")}$name".tt
     case Term(parent, name) => s"${parent.render}${symbol("⌗")}$name".tt
-
-  def url: Text =
-    val name2 = java.net.URLEncoder.encode(name.s, jnc.StandardCharsets.UTF_8).nn.tt
-
-    this match
-      case Top(_)          => name2
-      case Type(parent, _) => s"${parent.url}${symbol("~")}$name2".tt
-      case Term(parent, _) => s"${parent.url}${symbol("~")}$name2".tt
 
   def text(using imports: Imports): Text =
     if imports.hasDirect(this) then name else parent.lay(name): parent =>

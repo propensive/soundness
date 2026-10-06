@@ -35,6 +35,7 @@ package savagery
 import anticipation.*
 import cardinality.*
 import gossamer.*
+import prepositional.*
 import spectacular.*
 import xylophone.*
 
@@ -45,13 +46,16 @@ object Stop:
     val hex = Integer.toHexString(n & 0xff).nn
     if hex.length == 1 then t"0${hex.tt}" else hex.tt
 
-case class Stop[color](offset: 0.0 ~ 1.0, color: color)(using val chromatic: color is Chromatic):
-
-  def xml: Xml =
-    val red = chromatic.red(color)
-    val green = chromatic.green(color)
-    val blue = chromatic.blue(color)
-    val hex = t"#${Stop.hex2(red)}${Stop.hex2(green)}${Stop.hex2(blue)}"
-    val off = offset.double.show
+  // A `<stop>` element, as `stop.in[Xml]`, with its colour as six hexadecimal digits. Bounded
+  // rather than `Stop[color]`: an instance over a bare type parameter ties with xylophone's
+  // catch-all `Encodable in Xml`, while a bounded one is the more specific.
+  given encodable: [color, stop <: Stop[color]] => stop is Encodable in Xml = stop =>
+    val red = stop.chromatic.red(stop.color)
+    val green = stop.chromatic.green(stop.color)
+    val blue = stop.chromatic.blue(stop.color)
+    val hex = t"#${hex2(red)}${hex2(green)}${hex2(blue)}"
+    val off = stop.offset.double.show
 
     x"""<stop offset=$off stop-color=$hex/>"""
+
+case class Stop[color](offset: 0.0 ~ 1.0, color: color)(using val chromatic: color is Chromatic)

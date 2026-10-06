@@ -30,13 +30,13 @@ Figures as typed values, with coordinates that are quantities, follow [impossibl
 ### Shapes
 
 Rectangles, circles and ellipses are values, positioned by points — a pair of numbers converts
-where a point is expected — and rendered to XML with `xml`:
+where a point is expected — and rendered to XML with `in[Xml]`:
 
 ```scala
-Rectangle((0, 0), 10, 5).xml.show
+Rectangle((0, 0), 10, 5).in[Xml].show
 // <rect x="0.0" y="0.0" width="10.0" height="5.0"/>
 
-Circle((0, 0), 5).xml.show
+Circle((0, 0), 5).in[Xml].show
 // <circle cx="0.0" cy="0.0" r="5.0"/>
 ```
 
@@ -46,7 +46,7 @@ An `Outline` is a path built step by step — absolute steps suffixed `To`, rela
 with curves, quadratics and a `closed` end:
 
 ```scala
-Outline().moveTo((0, 0)).curveTo((1, 1), (2, 1), (3, 0)).xml.show
+Outline().moveTo((0, 0)).curveTo((1, 1), (2, 1), (3, 0)).in[Xml].show
 // <path d="M 0.0 0.0 C 1.0 1.0, 2.0 1.0, 3.0 0.0"/>
 
 val plus = Outline().moveTo((0, 0))
@@ -79,7 +79,7 @@ figure was defined with is the geometry it keeps, and the rendered element carri
 attribute — which is what makes the output editable in a drawing program afterwards:
 
 ```scala
-Rectangle((0, 0), 10, 5).translate(Delta(3, 4)).xml.show
+Rectangle((0, 0), 10, 5).translate(Delta(3, 4)).in[Xml].show
 // <rect x="0.0" y="0.0" width="10.0" height="5.0" transform="translate(3.0,4.0)"/>
 ```
 

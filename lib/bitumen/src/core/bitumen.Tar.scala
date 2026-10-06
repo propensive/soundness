@@ -406,6 +406,9 @@ object Tar:
     def format(number: U32, width: Int): Data =
       number.octal.pad(width - 1).in[Data]
 
+    // A USTAR mode, uid or gid field: seven zero-padded octal digits.
+    private def octal(number: Int): Data = number.octal.pad(7, Rtl, '0').in[Data]
+
     def formatLong(number: Long, width: Int): Data =
       val str: String = java.lang.Long.toOctalString(number).nn
       val pad: Int = (width - 1 - str.length).max(0)
@@ -418,9 +421,9 @@ object Tar:
     private[bitumen] def headerWith(size0: U32): Data = Data.build(512): array =>
       val nameData = entryName.in[Data]
       array.place(if nameData.length > 100 then nameData.segment((0).z till (100).z) else nameData, Prim)
-      array.place(mode.bytes, 100.z)
-      array.place(user.bytes, 108.z)
-      array.place(group.bytes, 116.z)
+      array.place(octal(mode.int), 100.z)
+      array.place(octal(user.value), 108.z)
+      array.place(octal(group.value), 116.z)
       array.place(format(size0, 12), 124.z)
       array.place(format(mtime, 12), 136.z)
       array.place(t"        ".in[Data], 148.z)

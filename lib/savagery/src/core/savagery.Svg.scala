@@ -55,6 +55,9 @@ import iridescence.*
 import symbolism.*
 
 object Svg:
+  // The `<svg>` document element, with its definitions and figures, as `svg.in[Xml]`.
+  given encodable: Svg is Encodable in Xml = _.markup
+
   given aggregable: (schema: XmlSchema)
   =>  (parseTactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], svgTactic: Tactic[Svg.Error])
   =>  ((Svg is Aggregable by Text)^{parseTactic, xmlTactic, svgTactic}) =
@@ -95,7 +98,7 @@ object Svg:
     document =>
       val header = Xml.Header(t"1.0", document.metadata.name, Unset)
 
-      val full: Xml = document.root.xml.absolve match
+      val full: Xml = document.root.in[Xml].absolve match
         case node: Xml.Node       => Xml.Fragment(header, node)
         case Xml.Fragment(nodes*) => Xml.Fragment((header +: nodes)*)
 
@@ -566,12 +569,15 @@ object Svg:
 
   // SvgDef → Svg.Def, with LinearGradient, its only subtype: a sealed trait pins its
   // subtypes to its file, so they nest together or not at all.
+  object Def:
+    given encodable: [definition <: Def] => definition is Encodable in Xml = _.markup
+
   sealed trait Def:
-    def xml: Xml
+    private[savagery] def markup: Xml
 
   case class LinearGradient[color](id: Id, stops: Stop[color]*) extends Def:
-    def xml: Xml =
-      val nodes = List.from(stops.map(_.xml)).nodes
+    private[savagery] def markup: Xml =
+      val nodes = List.from(stops.map(_.in[Xml])).nodes
       Xml.Element(t"linearGradient", Attributes(t"id" -> Id.text(id)), nodes)
 
 case class Svg
@@ -585,7 +591,7 @@ extends Documentary:
   type Self = Svg
   type Metadata = Encoding
 
-  def xml: Xml =
+  private[savagery] def markup: Xml =
     val attrs: Ledger[Text, Text] =
       Ledger
         ( t"xmlns"   -> t"http://www.w3.org/2000/svg",
@@ -603,15 +609,15 @@ extends Documentary:
 
     val defsElement: List[Xml] =
       if defs.nil && styleElement.nil then Nil
-      else List(Xml.Element(t"defs", Attributes.empty, (styleElement + defs.map(_.xml)).nodes))
+      else List(Xml.Element(t"defs", Attributes.empty, (styleElement + defs.map(_.markup)).nodes))
 
     val figureNodes: List[Xml] =
-      if transforms.nil then figures.map(_.xml)
+      if transforms.nil then figures.map(_.markup)
       else
         val groupAttrs =
           Ledger(t"transform" -> transforms.map(_.encode).join(t" "))
 
-        List(Xml.Element(t"g", Attributes.from(groupAttrs.to[Map]), figures.map(_.xml).nodes))
+        List(Xml.Element(t"g", Attributes.from(groupAttrs.to[Map]), figures.map(_.markup).nodes))
 
     val children: Array[Xml.Node]^{} = (defsElement + figureNodes).nodes
     Xml.Element(t"svg", Attributes.from(attrs.to[Map]), children)

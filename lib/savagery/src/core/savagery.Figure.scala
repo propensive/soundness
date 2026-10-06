@@ -69,7 +69,11 @@ object Figure:
     if !transforms.nil then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
     style.let: css => attrs += t"style" -> css.text
 
-  // A figure's `xml` is its serialized form: multi-line, and (for an `Outline`) with every path
+  // A figure's SVG element, as `figure.in[Xml]`. Bounded by `Figure`: `is` fixes `Self`
+  // exactly, so an unbounded instance would not apply to a `Rectangle`.
+  given encodable: [figure <: Figure] => figure is Encodable in Xml = _.markup
+
+  // A figure's XML is its serialized form: multi-line, and (for an `Outline`) with every path
   // operation compressed into one `d` attribute. Inspection names the case and labels each field
   // instead, so the strokes and the transform list — the state a misplaced figure is debugged
   // from — stay individually legible. A `Css.Style` has no inspection of its own, so its property
@@ -155,7 +159,9 @@ object Figure:
     case _            => Nil
 
 sealed trait Figure:
-  def xml: Xml
+  // The figure's SVG element; public API reaches it as `figure.in[Xml]`, through the
+  // `Encodable` in the companion, while the member keeps the dispatch virtual.
+  private[savagery] def markup: Xml
   def fonts: List[Font in Web] = Nil
 
 case class Rectangle
@@ -167,7 +173,7 @@ case class Rectangle
     id:         Optional[Svg.Id]    = Unset )
 extends Figure:
 
-  def xml: Xml =
+  private[savagery] def markup: Xml =
     val attrs = VectorMap.newBuilder[Text, Text]
     attrs += t"x" -> position.x.show
     attrs += t"y" -> position.y.show
@@ -186,7 +192,7 @@ extends Figure:
 
   import Stroke.*
 
-  def xml: Xml =
+  private[savagery] def markup: Xml =
     val d: Text = ops.reverse.map(_.encode).join(t" ")
     val attrs = VectorMap.newBuilder[Text, Text]
     attrs += t"d" -> d
@@ -236,7 +242,7 @@ extends Figure:
 
   def circle: Boolean = xRadius == yRadius
 
-  def xml: Xml =
+  private[savagery] def markup: Xml =
     val attrs = VectorMap.newBuilder[Text, Text]
     attrs += t"cx" -> center.x.show
     attrs += t"cy" -> center.y.show
@@ -262,11 +268,11 @@ extends Figure:
 
   override def fonts: List[Font in Web] = Figure.fonts(figures)
 
-  def xml: Xml =
+  private[savagery] def markup: Xml =
     val attrs = VectorMap.newBuilder[Text, Text]
     Figure.decorate(attrs, id, transforms, style)
 
-    Xml.Element(t"g", Attributes.from(attrs.result().to(Map)), figures.map(_.xml).nodes)
+    Xml.Element(t"g", Attributes.from(attrs.result().to(Map)), figures.map(_.markup).nodes)
 
 // A `<polyline>` through absolute points, or a `<polygon>` when `closed`: the shape of a plotted
 // line, an area under it, or a bar's outline, without a path operation per vertex.
@@ -278,7 +284,7 @@ case class Polyline
     transforms: List[Transform]     = Nil )
 extends Figure:
 
-  def xml: Xml =
+  private[savagery] def markup: Xml =
     val attrs = VectorMap.newBuilder[Text, Text]
     def pair(point: Point): Text = t"${point.x.toString},${point.y.toString}"
     attrs += t"points" -> points.map(pair).join(t" ")
@@ -325,7 +331,7 @@ extends Figure:
 
   override def fonts: List[Font in Web] = font.lay(Nil)(List(_))
 
-  def xml: Xml =
+  private[savagery] def markup: Xml =
     val attrs = VectorMap.newBuilder[Text, Text]
     attrs += t"x" -> position.x.show
     attrs += t"y" -> position.y.show

@@ -691,6 +691,17 @@ trait Tel2 extends Tel3:
 
   given telDecodable: Tel is Tel.Decodable = Tel.Decodable(() => Morphology.Any)(identity(_))
 
+  // A schema from its TEL document (the §20.5 schema-of-schemas surface), as `tel.as[Tels]`.
+  // Here rather than in `Tels`'s companion so that it accompanies `decodable`, the derived
+  // fallback above, wherever that is visible: a file that has imported `Tel.given` would
+  // otherwise see only the fallback, which outranks a companion's given and derives `Tels` as
+  // a record. Inline, inferring the tactic where it is used, as the fallback does: a given
+  // taking the tactic as a parameter fails separation checking at a call site whose tactic is
+  // an untracked `using` parameter.
+  inline given telsDecodable: ((Tels is Tel.Decodable)^) =
+    Tel.Decodable(() => Morphology.Any): tel =>
+      provide[Tactic[Tel.Error]](Tels.Reconstructor.reconstruct(tel))
+
   given textEncodable: Text is Tel.Encodable =
     Tel.Encodable(() => Morphology.Str, Tel.Nature.Scalar): text => Tel.scalar(text)
 

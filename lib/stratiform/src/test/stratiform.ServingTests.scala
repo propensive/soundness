@@ -78,7 +78,7 @@ object ServingTests extends Suite(m"Stratiform acceptance serving tests"):
     |""".stripMargin)
 
   private lazy val people: SchemaSignature.Lineage =
-    SchemaSignature.Lineage(Tels.Reconstructor.fromTel(peopleSource.read[Tel]))
+    SchemaSignature.Lineage(peopleSource.read[Tel].as[Tels])
 
   private def hashOf(lineage: SchemaSignature.Lineage, name: Text): Data =
     lineage.layers.seek(_.name == name).or(panic(m"no layer $name")).hash

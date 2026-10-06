@@ -100,7 +100,7 @@ object AcceptanceTests extends Suite(m"Stratiform acceptance tests"):
       . assert(_ == 1)
 
       test(m"the hand-written axiom is equivalent to the reconstructed canonical schema"):
-        Tels.Reconstructor.equivalent(Tels.Reconstructor.fromTel(schemaDoc), Tels.Axiom.acceptance)
+        Tels.Reconstructor.equivalent(schemaDoc.as[Tels], Tels.Axiom.acceptance)
       . assert(identity)
 
       test(m"the axiom validates as a schema"):

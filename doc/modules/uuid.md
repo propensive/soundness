@@ -64,9 +64,9 @@ A UUID renders to its canonical text with `text`, and exposes its sixteen bytes 
 64-bit halves:
 
 ```scala
-id.text    // t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"
-id.bytes   // a 16-byte Data value
-id.msb     // the most-significant 64 bits
+id.text      // t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"
+id.in[Data]  // a 16-byte Data value
+id.msb       // the most-significant 64 bits
 ```
 
 ### Combining

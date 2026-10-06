@@ -81,7 +81,7 @@ object CodecTests extends Suite(m"Stratiform codec tests"):
     if name == t"decimal-varint" then DecimalVarint else Unset
 
   private def schemaOf(text: Text): Tels =
-    Tels.Validation.validate(Tels.Reconstructor.fromTel(text.read[Tel]))
+    Tels.Validation.validate(text.read[Tel].as[Tels])
 
   private val amountSchema: Text =
     Text("""|tel 1.0
@@ -293,7 +293,7 @@ object CodecTests extends Suite(m"Stratiform codec tests"):
         val schemaDoc = amountSchema.read[Tel]
         val body = schemaDoc.bintel(Tels.Axiom.tels)
         val element = Bintel.decode(body, Tels.Axiom.tels)
-        val reconstructed = Tels.SemanticReconstructor.fromElement(element)
+        val reconstructed = element.as[Tels]
         reconstructed.scalars.readable.find(_.name == t"Amount").map(_.encoding).getOrElse(Unset)
       . assert(_ == t"decimal-varint")
 

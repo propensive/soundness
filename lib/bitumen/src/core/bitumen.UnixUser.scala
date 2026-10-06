@@ -34,10 +34,6 @@ package bitumen
 
 
 import anticipation.*
-import gossamer.*
-import hieroglyph.*, codepages.asciiCodepage, textMetrics.uniformMetric
-import hypotenuse.*, arithmeticOptions.uncheckedOverflow
 import vacuous.*
 
-case class UnixUser(value: Int, name: Optional[Text] = Unset):
-  def bytes: Data = value.octal.pad(7, Rtl, '0').in[Data]
+case class UnixUser(value: Int, name: Optional[Text] = Unset)

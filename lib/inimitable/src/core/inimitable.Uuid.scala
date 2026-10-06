@@ -74,6 +74,16 @@ object Uuid extends Extractor[Text, Uuid]:
   given communicable: Uuid is Communicable = uuid => Message(uuid.text)
   given encodable: Uuid is Encodable in Text = _.text
 
+  // The sixteen bytes of the UUID, most significant half first, each half big-endian; obtained
+  // as `uuid.in[Data]`, since `.encode` would be ambiguous with the `Text` form.
+  given encodableInData: Uuid is Encodable in Data = uuid =>
+    val high = uuid.msb.bytestream
+    val low = uuid.lsb.bytestream
+    val buffer = Array.allocate[Byte](high.length + low.length)
+    buffer.place(high)
+    buffer.place(low, 0, high.length, low.length)
+    Array.freeze(buffer)
+
   // UuidError → Uuid.Error
   case class Error(badUuid: Text)(using Diagnostics)
   extends fulminate.Error(349, 0)(m"$badUuid is not a valid UUID")
@@ -81,14 +91,6 @@ object Uuid extends Extractor[Text, Uuid]:
 case class Uuid(msb: Long, lsb: Long):
   def java: ju.UUID = ju.UUID(msb, lsb)
   def text: Text = this.java.toString.tt
-
-  def bytes: Data =
-    val high = msb.bytestream
-    val low = lsb.bytestream
-    val buffer = Array.allocate[Byte](high.length + low.length)
-    buffer.place(high)
-    buffer.place(low, 0, high.length, low.length)
-    Array.freeze(buffer)
 
   @targetName("invert")
   def `unary_~`: Uuid = Uuid(~msb, ~lsb)

@@ -107,14 +107,20 @@ object Math extends Mathml.Container(new Math(_)):
     document =>
       val header = Xml.Header(t"1.0", document.metadata.name, Unset)
 
-      val full: Xml = document.root.xml.absolve match
+      val full: Xml = document.root.in[Xml].absolve match
         case node: Xml.Node       => Xml.Fragment(header, node)
         case Xml.Fragment(nodes*) => Xml.Fragment((header +: nodes)*)
 
       full.show
 
+  // The `<math>` element as MathML, as `math.in[Xml]`; `.encode` would be ambiguous with
+  // `self`, the identity `Encodable in Math`.
+  given encodableInXml: Math is Encodable in Xml = math =>
+    val children: Array[Xml.Node]^{} = math.contents.map(_.in[Xml]).nodes
+    Xml.Element(t"math", Attributes(math.attributePairs*), children)
+
   given renderable: (Math is Renderable { type Form = "math" }) = math =>
-    val children = math.contents.map(_.html)
+    val children = math.contents.map(Mathml.renderable.render(_))
     honeycomb.htmlDoms.whatwg.Math.node(honeycomb.Attributes(math.attributePairs*))(children*)
 
   // Only a `Document[Math]` has a `Showable`, and it produces multi-line serialized MathML with an
@@ -243,8 +249,3 @@ extends Documentary:
 
     (t"xmlns" -> mathmlNamespace) :: displayPairs + attributes
 
-  def xml: Xml =
-    val children: Array[Xml.Node]^{} = contents.map(_.xml).nodes
-    Xml.Element(t"math", Attributes(attributePairs*), children)
-
-  def html: Html of "math" = Math.renderable.render(this)

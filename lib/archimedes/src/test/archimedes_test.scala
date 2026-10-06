@@ -45,37 +45,37 @@ object Tests extends Suite(m"Archimedes tests"):
 
     suite(m"Rendering to XML"):
       test(m"Render a superscript"):
-        Msup(Mi(t"x"), Mn(t"2")).xml.show
+        Msup(Mi(t"x"), Mn(t"2")).in[Xml].show
       .assert(_ == t"<msup><mi>x</mi><mn>2</mn></msup>")
 
       test(m"Render a fraction"):
-        Mfrac(Mn(t"1"), Mn(t"2")).xml.show
+        Mfrac(Mn(t"1"), Mn(t"2")).in[Xml].show
       .assert(_ == t"<mfrac><mn>1</mn><mn>2</mn></mfrac>")
 
       test(m"Render a rational as a fraction"):
-        Q64(-3, 4).math.xml.show
+        Q64(-3, 4).math.in[Xml].show
       .assert(_ == t"""<math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mo>−</mo>"""
           + t"<mfrac><mn>3</mn><mn>4</mn></mfrac></mrow></math>")
 
       test(m"Render a whole rational as a number"):
-        Q32(7).math.xml.show
+        Q32(7).math.in[Xml].show
       .assert(_ == t"""<math xmlns="http://www.w3.org/1998/Math/MathML"><mn>7</mn></math>""")
 
       test(m"Render a token with an attribute"):
-        Mi(t"x", List(t"mathvariant" -> t"italic")).xml.show
+        Mi(t"x", List(t"mathvariant" -> t"italic")).in[Xml].show
       .assert(_ == t"""<mi mathvariant="italic">x</mi>""")
 
       test(m"Render an empty mspace"):
-        Mspace(List(t"width" -> t"1em")).xml.show
+        Mspace(List(t"width" -> t"1em")).in[Xml].show
       .assert(_ == t"""<mspace width="1em"/>""")
 
       test(m"Render the root math element with namespace"):
-        Math(Msup(Mi(t"x"), Mn(t"2"))).xml.show
+        Math(Msup(Mi(t"x"), Mn(t"2"))).in[Xml].show
       .assert(_ == t"""<math xmlns="http://www.w3.org/1998/Math/MathML"><msup><mi>x</mi><mn>2"""
           + t"</mn></msup></math>")
 
       test(m"Render the display attribute"):
-        Math(List(Mn(t"1")), Display.Block).xml.show
+        Math(List(Mn(t"1")), Display.Block).in[Xml].show
       .assert(_.contains(t"""display="block""""))
 
     suite(m"Parsing from XML"):
@@ -90,17 +90,17 @@ object Tests extends Suite(m"Archimedes tests"):
       .assert(_ == List(Msup(Mi(t"x"), Mn(t"2"))))
 
       test(m"Round-trip a nested expression"):
-        nested.xml.show.read[Math].xml.show
-      .assert(_ == nested.xml.show)
+        nested.in[Xml].show.read[Math].in[Xml].show
+      .assert(_ == nested.in[Xml].show)
 
       test(m"Preserve unknown attributes on round-trip"):
-        stretchy.xml.show.read[Math]
+        stretchy.in[Xml].show.read[Math]
       .assert(_ == stretchy)
 
       test(m"Load a document from bytes"):
-        val bytes: Data = Array.unsafeFrozen(nested.xml.show.s.getBytes("UTF-8").nn)
-        bytes.load[Math].root.xml.show
-      .assert(_ == nested.xml.show)
+        val bytes: Data = Array.unsafeFrozen(nested.in[Xml].show.s.getBytes("UTF-8").nn)
+        bytes.load[Math].root.in[Xml].show
+      .assert(_ == nested.in[Xml].show)
 
       test(m"Reject a non-math root element"):
         capture[Mathml.Error](t"<svg><rect/></svg>".read[Math]).reason
@@ -118,7 +118,8 @@ object Tests extends Suite(m"Archimedes tests"):
       .assert(_ == expression)
 
     def body(ergo: Text): Text =
-      Ergo.parse(ergo).xml.show.sub(t"""<math xmlns="http://www.w3.org/1998/Math/MathML">""", t"")
+      Ergo.parse(ergo).in[Xml].show
+      . sub(t"""<math xmlns="http://www.w3.org/1998/Math/MathML">""", t"")
       . sub(t"</math>", t"")
 
     suite(m"Scripts and fractions"):
@@ -292,62 +293,62 @@ object Tests extends Suite(m"Archimedes tests"):
       .assert(_ == Ergo.parse(t"(x↗(y + 1))"))
 
       test(m"an interpolated matrix renders"):
-        ergo"(⋱(((1)(2))((3)(4))))".xml.show.contains(t"<mtable>")
+        ergo"(⋱(((1)(2))((3)(4))))".in[Xml].show.contains(t"<mtable>")
       .assert(_ == true)
 
     suite(m"Interpolator substitutions"):
       test(m"an integer substitution is a single atom"):
         val exponent = 2
-        ergo"(x↗$exponent)".xml.show
+        ergo"(x↗$exponent)".in[Xml].show
       .assert(_ == t"""<math xmlns="http://www.w3.org/1998/Math/MathML"><msup><mi>x</mi>"""
           + t"<mn>2</mn></msup></math>")
 
       test(m"two substitutions in sequence"):
         val left = 1
         val right = 2
-        ergo"($left + $right)".xml.show.contains(t"<mn>1</mn><mo>+</mo><mn>2</mn>")
+        ergo"($left + $right)".in[Xml].show.contains(t"<mn>1</mn><mo>+</mo><mn>2</mn>")
       .assert(_ == true)
 
       test(m"a directive binds to a substituted atom"):
         val value = 3
-        ergo"($value●(red))".xml.show.contains(t"""<mn mathcolor="red">3</mn>""")
+        ergo"($value●(red))".in[Xml].show.contains(t"""<mn mathcolor="red">3</mn>""")
       .assert(_ == true)
 
       test(m"an Encodable value is embedded as an atom"):
         val vector = Vector(1, 2, 3)
-        ergo"($vector)".xml.show.contains(t"<mtable>")
+        ergo"($vector)".in[Xml].show.contains(t"<mtable>")
       .assert(_ == true)
 
     suite(m"Encoding values as MathML"):
       test(m"an integer becomes a math root"):
-        42.math.xml.show
+        42.math.in[Xml].show
       .assert(_ == t"""<math xmlns="http://www.w3.org/1998/Math/MathML"><mn>42</mn></math>""")
 
       test(m"a double becomes mn"):
-        3.14.mathml.xml.show
+        3.14.mathml.in[Xml].show
       .assert(_ == t"<mn>3.14</mn>")
 
       test(m"text becomes mtext"):
-        t"speed".mathml.xml.show
+        t"speed".mathml.in[Xml].show
       .assert(_ == t"<mtext>speed</mtext>")
 
       test(m"a complex number"):
-        Complex(3, 4).mathml.xml.show
+        Complex(3, 4).mathml.in[Xml].show
       .assert(_ == t"<mrow><mn>3</mn><mo>+</mo><mn>4</mn><mi>i</mi></mrow>")
 
       test(m"a quantity renders its units"):
-        (5*Metre/Second).mathml.xml.show
+        (5*Metre/Second).mathml.in[Xml].show
       .assert: result =>
         result.contains(t"<mn>5.0</mn>") && result.contains(t"<mi>m</mi>")
             && result.contains(t"<msup><mi>s</mi><mn>-1</mn></msup>")
 
       test(m"a vector is a bracketed column"):
-        Vector(1, 2, 3).mathml.xml.show
+        Vector(1, 2, 3).mathml.in[Xml].show
       .assert: result =>
         result.contains(t"<mtable>") && result.contains(t"<mtr><mtd><mn>1</mn></mtd></mtr>")
 
       test(m"a matrix is a bracketed table"):
-        Matrix[2, 2]((1, 2), (3, 4)).mathml.xml.show
+        Matrix[2, 2]((1, 2), (3, 4)).mathml.in[Xml].show
       .assert: result =>
         result.contains(t"<mtable>")
             && result.contains(t"<mtr><mtd><mn>1</mn></mtd><mtd><mn>2</mn></mtd></mtr>")

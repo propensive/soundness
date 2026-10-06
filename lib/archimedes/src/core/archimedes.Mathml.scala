@@ -68,6 +68,23 @@ import xylophone.*
 // `Encodable in Xml`); `atom` collapses an encoded `<math>` root back to a single
 // node for callers — the `.mathml` extension and the `ergo""` macro — that want one.
 object Mathml:
+  // An element's MathML as XML, as `element.in[Xml]`, and as foreign HTML content for
+  // embedding in a page, as `element.html`. Both range over every `node <: Mathml`, since `is`
+  // fixes `Self` exactly and an element is always a concrete subtype.
+  given encodable: [node <: Mathml] => node is Encodable in Xml = node =>
+    val children: List[Xml] = node.text.lay(node.contents.map(_.in[Xml])): value =>
+      List(Xml.Text(value))
+
+    Xml.Element(node.label, Attributes(node.attributes*), children.nodes)
+
+  given renderable: [node <: Mathml] => (node is honeycomb.Renderable { type Form = "#foreign" }) =
+    node =>
+      val children: List[Html of "#foreign"] =
+        node.text.lay(node.contents.map(renderable.render(_))): value =>
+          List(honeycomb.Html.Text.foreign(value))
+
+      honeycomb.Html.Element.foreign(node.label, honeycomb.Attributes(node.attributes*), children*)
+
   def atom(math: Math): Mathml = math.contents match
     case List(node) => node
     case nodes      => Mrow(nodes)
@@ -506,15 +523,3 @@ trait Mathml:
   def contents: List[Mathml]
   def text: Optional[Text]
 
-  def xml: Xml =
-    val children: List[Xml] = text.lay(contents.map(_.xml)): value =>
-      List(Xml.Text(value))
-
-    Xml.Element(label, Attributes(attributes*), children.nodes)
-
-  def html: Html of "#foreign" =
-    val children: List[Html of "#foreign"] =
-      text.lay(contents.map(_.html)): value =>
-        List(honeycomb.Html.Text.foreign(value))
-
-    honeycomb.Html.Element.foreign(label, honeycomb.Attributes(attributes*), children*)

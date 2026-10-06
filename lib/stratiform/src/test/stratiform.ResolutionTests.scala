@@ -68,7 +68,7 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
     |""".stripMargin)
 
   private def layeredDoc: Tel = layeredSource.read[Tel]
-  private def layeredSchema: Tels = Tels.Reconstructor.fromTel(layeredDoc)
+  private def layeredSchema: Tels = layeredDoc.as[Tels]
   private def layeredBytes: Data = summon[Codepage].encoded(layeredSource)
 
   // The composed document's field keywords, sorted, as one Text.

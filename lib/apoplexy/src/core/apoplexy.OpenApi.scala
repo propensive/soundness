@@ -340,13 +340,12 @@ object OpenApi:
       case other =>
         other
 
-  // A YAML document as JSON. The model has one decoder, over `Json`; a document written as
-  // YAML reaches it by translating the tree, so the two forms cannot drift apart. Both ASTs are
-  // flat arrays of the same shape, so the walk is shallow. A mapping key which YAML wrote as a
-  // number or boolean (`200:`, `default:` is already a string) becomes the string JSON requires.
-  def json(yaml: Yaml): Json = Json.ast(translate(yaml.root))
-
-  private def translate(node: Yaml.Ast): Json.Ast =
+  // A YAML document as JSON, as `yaml.in[Json]`, through `yamlEncodableInJson`. The model has
+  // one decoder, over `Json`; a document written as YAML reaches it by translating the tree, so
+  // the two forms cannot drift apart. Both ASTs are flat arrays of the same shape, so the walk
+  // is shallow. A mapping key which YAML wrote as a number or boolean (`200:`, `default:` is
+  // already a string) becomes the string JSON requires.
+  private[apoplexy] def translate(node: Yaml.Ast): Json.Ast =
     if node.isNull || node.isAbsent then Json.Ast(Json.JsonNull)
     else if node.isBoolean then Json.Ast(node.asInstanceOf[Boolean])
     else if node.isLong then Json.Ast(node.asInstanceOf[Long])
@@ -378,7 +377,7 @@ object OpenApi:
     ( using Tactic[Parse.Error], Tactic[Yaml.Error], Yaml.Tracking )
   :   Json =
 
-    if text.trim.starts(t"{") then text.as[Json] else json(text.as[Yaml])
+    if text.trim.starts(t"{") then text.as[Json] else text.as[Yaml].in[Json]
 
   // Anchor the top-level model so `as[OpenApi]` (below) materialises its decoder
   // once — with each nested type resolving to its own anchor — rather than inlining

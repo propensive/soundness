@@ -60,6 +60,11 @@ import Tel.Error.Reason
 //   TypeName identifiers, also Text at the data level.
 
 object Tels extends Tels2:
+  // A schema from the semantic element BinTEL embeds (§6.2), as `element.as[Tels]`; its
+  // counterpart from a TEL document, `tel.as[Tels]`, is `Tel.telsDecodable`.
+  given elementDecodable: (tactic: Tactic[Tel.Error])
+  =>  ((Tels is Decodable in Tel.Element)^{tactic}) =
+    SemanticReconstructor.reconstruct(_)
 
   // Per-axis polarity tristate from §20: "default" means no flag was
   // declared, "loose" means a loosening flag (optional / repeatable)
@@ -1210,7 +1215,9 @@ object Tels extends Tels2:
         seqEq(a.scalars, b.scalars, scalarEq) &&
         seqEq(a.selects, b.selects, selectEq)
 
-    def fromTel(tel: Tel): Tels raises Tel.Error =
+    // A real `using` clause, not `raises`: the sugar hides the tactic from the separation
+    // checker where `Tels.decodable` captures it.
+    private[stratiform] def reconstruct(tel: Tel)(using Tactic[Tel.Error]): Tels =
       val compounds: Array[Tel.Compound]^{} = tel.subtree.children.bind(_.compounds)
 
       var name: Optional[Text] = Unset
@@ -1469,7 +1476,7 @@ object Tels extends Tels2:
   // the member layout of `Tels.Axiom` (the schema-of-schemas).
   object SemanticReconstructor:
 
-    def fromElement(root: Tel.Element): Tels raises Tel.Error =
+    private[stratiform] def reconstruct(root: Tel.Element)(using Tactic[Tel.Error]): Tels =
       val ch = childrenOf(root)
       // Document struct: name=0, sigil=1, record=2, scalar=3, select=4,
       // document=5, layer=6.
@@ -1645,9 +1652,9 @@ object Tels extends Tels2:
           selects = nodesAt(ch, 3).remap(selectFromElement) )
 
   // Renders a schema value as the typed semantic model of its schema document under the `tels`
-  // axiom — the inverse of `SemanticReconstructor.fromElement` — so that a schema built in Scala
-  // (derived from a type, composed, or decomposed into atoms) is encoded, hashed and signed
-  // exactly as a parsed `.tel` document is. The keyword indices are the flat indices of the
+  // axiom — the inverse of `SemanticReconstructor.reconstruct` — so that a schema built in
+  // Scala (derived from a type, composed, or decomposed into atoms) is encoded, hashed and
+  // signed exactly as a parsed `.tel` document is. The keyword indices are the flat indices of the
   // axiom's member layout, the same ones the reconstructor reads; `Bintel.encode` puts the
   // children into §7.2 canonical order itself.
   object Renderer:

@@ -172,7 +172,7 @@ else in Soundness. A title given in the style replaces the name but keeps the un
 
 ```scala
 val tides = Series(t"tide")((0.0, 1.2*Metre), (6.0, 4.6*Metre), (12.0, 1.1*Metre))
-tides.chart(Lines()).svg.xml.show.contains(t"distance / m")   // true
+tides.chart(Lines()).in[Svg].in[Xml].show.contains(t"distance / m")   // true
 ```
 
 A `Duration` axis is titled `time`, and its gradations carry their own units — `250ms`,
@@ -207,8 +207,8 @@ right side of it, and `leader` draws the line from a moved label back to its poi
 A chart renders to a savagery `Svg`, which serializes to XML text like any other:
 
 ```scala
-val drawing = sales.svg
-drawing.xml.show.keep(60)   // <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" …
+val drawing = sales.in[Svg]
+drawing.in[Xml].show.keep(60)   // <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" …
 ```
 
 Every part of the drawing is a group with a stable identifier — `grid`, `abscissa`, `ordinate`,

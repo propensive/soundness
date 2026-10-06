@@ -41,10 +41,15 @@ import denominative.*
 import rudiments.*
 import vacuous.*
 import fulminate.*
+import prepositional.*
 import symbolism.*
 import denominative.dysasymptotics.linearSize
 
 object Permutation:
+  // The big-endian two's-complement bytes of the permutation's factoradic number.
+  given encodable: Permutation is Encodable in Data = permutation =>
+    unsafely(permutation.factoradic.number.toByteArray.unsafeImmutable)
+
   def bySize(n: Int): Chain[Permutation] = Chain.range[BigInt](0, Factorial(n)).map: i =>
     Permutation(Factoradic(i))
 
@@ -98,7 +103,6 @@ case class Permutation(factoradic: Factoradic):
   lazy val lehmer: List[Int] = factoradic.expand
   lazy val expansion: List[Int] = unsafely(apply[Int](List.range(0, lehmer.size)))
 
-  def bytes: Data = unsafely(factoradic.number.toByteArray.unsafeImmutable)
   def apply(n: Int): Int =
     // A permutation fixes every point outside its domain; `List` positional access is
     // O(n), accepted here explicitly through the asymptotic gate.
