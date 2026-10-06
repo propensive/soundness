@@ -40,6 +40,7 @@ import anticipation.*
 import rudiments.*
 import contingency.*
 import denominative.*
+import distillate.*
 import fulminate.*
 import prepositional.*
 import ulysses.*
@@ -404,7 +405,7 @@ object Bintel:
   :   Data =
 
     val axiom      = Tels.Axiom.tels
-    val schema     = Tels.Layers.compose(Tels.Reconstructor.fromTel(schemaDoc))
+    val schema     = Tels.Layers.compose(schemaDoc.as[Tels])
     val signature  = SchemaSignature.fromDocument(schemaDoc, axiom)
     val schemaBody = schemaDoc.bintel(axiom)
     frameSelfContained(signature, schemaBody, tel.bintel(schema))
@@ -482,7 +483,7 @@ object Bintel:
 
       . protect:
           val schemaRoot = decode(schemaBody, axiom).asInstanceOf[Tel.Element.Node]
-          val baseTels   = Tels.SemanticReconstructor.fromElement(schemaRoot)
+          val baseTels   = (schemaRoot: Tel.Element).as[Tels]
           val sig        = SchemaSignature.fromElement(schemaRoot, axiom)
           (Tels.Layers.compose(baseTels), sig)
 

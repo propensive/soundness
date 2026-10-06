@@ -45,6 +45,32 @@ import vacuous.*
 import fulminate.*
 
 object Cose:
+  // Serialises a COSE message to its CBOR-tagged wire form, as `cose.in[Data]`. Bounded by
+  // `Cose` so that the refined `Cose in structure by cipher` a constructor returns resolves it.
+  given encodable: [cose <: Cose] => cose is Encodable in Data = cose =>
+    import cose.*
+    val unprotectedAst: Cbor.Ast = Cose.unsealOrEmpty(unprotectedHeader)
+
+    val envelope = cborTag match
+      case Cose.Tag.Sign1 | Cose.Tag.Mac0 =>
+        // Sign1/Mac0 messages carry exactly one recipient by construction; the empty
+        // fallback is unreachable.
+        val auth = recipients.prim.let(_.authentication).or(Array.empty[Byte])
+        Cbor.Ast.array(Array[Any](protectedHeader, unprotectedAst, payload, auth))
+
+      case _ =>
+        val recipList: List[Any] = recipients.map[Any]: r =>
+          Cbor.Ast.array(Array[Any](r.protectedHeader, Cose.unsealOrEmpty(r.unprotectedHeader),
+            r.authentication))
+
+        val recipAst: Array[Any]^{} = recipList.to[Array]
+
+        Cbor.Ast.array(Array[Any](protectedHeader, unprotectedAst, payload,
+          Cbor.Ast.array(recipAst)))
+
+    // Named, not `.encode`: this given's own `encode` extension is in scope here.
+    Cbor.Ast.encodable.encoded(Cbor.Ast(Cbor.Tag(cborTag, envelope)))
+
   private def emptyMapAst: Cbor.Ast =
     Cbor.Ast.map(Array.empty[Any], Array.empty[Any])
 
@@ -346,30 +372,6 @@ class Cose
    val recipients:        List[Cose.Recipient] ):
   type Form    <: Cose.Structure
   type Operand <: Cipher
-
-  // Serialise this COSE message to its CBOR-tagged wire form.
-  def bytes: Data =
-    val unprotectedAst: Cbor.Ast = Cose.unsealOrEmpty(unprotectedHeader)
-
-    val envelope = cborTag match
-      case Cose.Tag.Sign1 | Cose.Tag.Mac0 =>
-        // Sign1/Mac0 messages carry exactly one recipient by construction; the empty
-        // fallback is unreachable.
-        val auth = recipients.prim.let(_.authentication).or(Array.empty[Byte])
-        Cbor.Ast.array(Array[Any](protectedHeader, unprotectedAst, payload, auth))
-
-      case _ =>
-        val recipList: List[Any] = recipients.map[Any]: r =>
-          Cbor.Ast.array(Array[Any](r.protectedHeader, Cose.unsealOrEmpty(r.unprotectedHeader),
-            r.authentication))
-
-        val recipAst: Array[Any]^{} = recipList.to[Array]
-
-        Cbor.Ast.array(Array[Any](protectedHeader, unprotectedAst, payload,
-          Cbor.Ast.array(recipAst)))
-
-    Cbor.Ast(Cbor.Tag(cborTag, envelope)).encode
-
 
   def verifyWith[key]
     ( key: key )

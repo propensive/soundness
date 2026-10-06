@@ -103,7 +103,7 @@ object Tests extends Suite(m"Tasseomancy tests"):
   def rendered[data, form, fit, style <: Chart.Style](chart: Chart[data, form, fit, style])
     ( using style, ChartPalette, FontMetric )
   :   Text =
-    chart.svg.xml.show
+    chart.in[Svg].in[Xml].show
 
   def describe(revision: Chart.Revision): Text = revision match
     case Chart.Revision.Redraw(_)      => t"redraw"

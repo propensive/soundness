@@ -118,7 +118,7 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
   private def loadSchema(name: String): Tels =
     val bytes = loadBytes(name)
     val tel = Tel.parse(bytes)
-    Tels.Reconstructor.fromTel(tel)
+    tel.as[Tels]
 
   // Pre-load every example: the bench harness re-runs each `bench`
   // block thousands of times, so loading the resource per iteration

@@ -291,7 +291,7 @@ object SchemaSignature:
       ( using Tactic[Tel.Error], Tactic[Bintel.Error], Tactic[Tels.Renderer.Error] )
     :   Lineage =
 
-      apply(Tels.Reconstructor.fromTel(document), axiom)
+      apply(document.as[Tels], axiom)
 
   // A base schema with every component of its lineage (§8.2, decoding step 3): its layers, and
   // the atoms of the base and of each layer, each with its hash. A signature naming the base is

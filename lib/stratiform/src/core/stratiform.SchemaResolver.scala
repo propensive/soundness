@@ -113,7 +113,7 @@ object SchemaResolver:
     val cached = fingerprints.synchronized(fingerprints.get(document))
 
     if cached != null && (cached.nn.axiom eq axiom) then cached.nn else
-      val schema = Tels.Reconstructor.fromTel(document)
+      val schema = document.as[Tels]
       val components = SchemaSignature.componentHashes(document, axiom)
 
       // The frozen hashes are paired on the stdlib view, as in `accept` below.
@@ -141,7 +141,7 @@ object SchemaResolver:
     // recomputed signature over the base plus the selected layers is
     // the candidate's identity; a claimed pragma signature must agree.
     def accept(tel: Tel, step: Step): Resolved =
-      val schema = Tels.Reconstructor.fromTel(tel)
+      val schema = tel.as[Tels]
       val composed = Tels.Validation.validate(schema, selection)
 
       claimed.let: signature =>

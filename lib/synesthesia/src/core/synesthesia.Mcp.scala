@@ -929,7 +929,7 @@ object Mcp:
                 else Http.Response(Http.NotFound)()
 
             case _ =>
-              val sessionId = request.headers.mcpSessionId.prim.or(Uuid().encode)
+              val sessionId = request.headers.mcpSessionId.prim.or(Uuid().in[Text])
               val interface: Mcp.Interface = Mcp.Interface(sessionId, this)
               Mcp.send(sessionId, this, interface)(JsonRpc.serve(interface))
 

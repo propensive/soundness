@@ -90,7 +90,7 @@ object TelpTests extends Suite(m"Stratiform TELP tests"):
         |""".stripMargin)
 
   private lazy val schema: Tels =
-    Tels.Validation.validate(Tels.Reconstructor.fromTel(menagerie.read[Tel]))
+    Tels.Validation.validate(menagerie.read[Tel].as[Tels])
 
   private lazy val root: Tel.Element = Tel.Type.assign(document.read[Tel], schema)
 
@@ -258,7 +258,7 @@ object TelpTests extends Suite(m"Stratiform TELP tests"):
                         |  field person Person optional repeatable
                         |""".stripMargin)
 
-        val schema = Tels.Validation.validate(Tels.Reconstructor.fromTel(extra.read[Tel]))
+        val schema = Tels.Validation.validate(extra.read[Tel].as[Tels])
         val element = Tel.Type.assign(t"tel 1.0\n\nperson amy\n".read[Tel], schema)
         given Tels = schema
         capture[Telp.Error](Telp.parse(t"/person/amy/nickname").resolve(element)).reason

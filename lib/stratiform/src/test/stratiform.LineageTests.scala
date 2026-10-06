@@ -60,7 +60,7 @@ object LineageTests extends Suite(m"Stratiform lineage tests"):
   private val axiom: Tels = Tels.Axiom.tels
 
   private lazy val contactDoc: Tel = resource("contact-layered-schema.tel").read[Tel]
-  private lazy val contact: Tels = Tels.Reconstructor.fromTel(contactDoc)
+  private lazy val contact: Tels = contactDoc.as[Tels]
 
   private val layeredSource: Text = Text("""|tel 1.0
     |
@@ -85,7 +85,7 @@ object LineageTests extends Suite(m"Stratiform lineage tests"):
     |    field email String
     |""".stripMargin)
 
-  private lazy val layered: Tels = Tels.Reconstructor.fromTel(layeredSource.read[Tel])
+  private lazy val layered: Tels = layeredSource.read[Tel].as[Tels]
 
   private def layerNamed(schema: Tels, name: Text): Tels.Layer =
     schema.layers.seek(_.name == name).or(panic(m"no layer $name"))

@@ -57,6 +57,19 @@ object Archetype:
     extension (value: page)
       def mediaType: MediaType = media"text/html"(charset = "UTF-8")
 
+  // The complete single-document page, as `page.html`: the stylesheet (inline in `<style>`, or
+  // linked from `stylesheetUrl`), accumulated `<head>` metadata, and `dir` set on `<body>` from
+  // `direction` (the `<html>` element admits no Whatwg global attributes).
+  given renderable: [page <: Archetype] => page is Renderable in ("html") = render(_)
+
+  // Takes the page as a capability, so that a page can also render itself (`document`).
+  private[graffiti] def render(page: Archetype^): Html of "html" =
+    val sheet: Html of (? <: Metadata) =
+      page.stylesheetUrl.lay(Style(page.stylesheet)): url =>
+        Link.Stylesheet(href = url)
+
+    Html(Head(Title(page.pageTitle), sheet, page.head), Body(dir = page.direction)(page.frame))
+
   // `^{monitor}` only: `Probate` is not capture-tracked.
   given streamable: [page <: Archetype] => (monitor: Monitor, probate: Probate)
   =>  ((page is Streamable by Text over Credit)^{monitor, caps.any}) =
@@ -96,7 +109,7 @@ trait Archetype:
   protected def head: Html of (? <: Metadata) = Html.Fragment[Metadata]()
 
   // The stylesheet rendered to text for inline embedding in a `<style>` element.
-  private def stylesheet: Text = styles.show
+  private[graffiti] def stylesheet: Text = styles.show
 
   // Where the page's stylesheet is served, if the page links it rather than embedding it: when
   // set, `html` refers to it with `<link rel="stylesheet">` in place of an inline `<style>`, and
@@ -107,16 +120,6 @@ trait Archetype:
   // The page stylesheet, as structured CSS, for serving at `stylesheetUrl`.
   final def css: Css = styles
 
-  // The complete single-document page: the stylesheet (inline in `<style>`, or linked from
-  // `stylesheetUrl`), accumulated `<head>` metadata, and `dir` set on `<body>` from `direction`
-  // (the `<html>` element admits no Whatwg global attributes).
-  final def html: Html of "html" =
-    val sheet: Html of (? <: Metadata) =
-      stylesheetUrl.lay(Style(stylesheet)): url =>
-        Link.Stylesheet(href = url)
-
-    Html(Head(Title(pageTitle), sheet, head), Body(dir = direction)(frame))
-
   // The page as a `Document[Html]` with a leading doctype — the form that is served over HTTP.
   final def document: Document[Html] =
-    Document[Html](Html.Fragment(Html.doctype, html), htmlDoms.whatwg)
+    Document[Html](Html.Fragment(Html.doctype, Archetype.render(this)), htmlDoms.whatwg)

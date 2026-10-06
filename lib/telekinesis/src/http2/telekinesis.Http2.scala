@@ -119,16 +119,6 @@ object Http2:
     case InadequateSecurity   extends ErrorCode(0xc)
     case Http11Required       extends ErrorCode(0xd)
 
-  object SettingId:
-    def fromId(id: Int): Optional[SettingId] = id match
-      case 0x1 => SettingId.HeaderTableSize
-      case 0x2 => SettingId.EnablePush
-      case 0x3 => SettingId.MaxConcurrentStreams
-      case 0x4 => SettingId.InitialWindowSize
-      case 0x5 => SettingId.MaxFrameSize
-      case 0x6 => SettingId.MaxHeaderListSize
-      case _   => Unset
-
   // An HTTP/2 SETTINGS parameter identifier (RFC 7540 §6.5.2). Unknown identifiers
   // must be ignored, so `Setting` keeps the raw id rather than rejecting it.
   enum SettingId(val id: Int):

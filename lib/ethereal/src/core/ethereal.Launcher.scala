@@ -332,7 +332,7 @@ object Launcher:
   // Parsed once; a malformed schema text is a programming error, not a runtime condition.
   lazy val schema: Tels =
     import strategies.throwUnsafely
-    Tels.Validation.validate(Tels.Reconstructor.fromTel(schemaText.read[Tel]))
+    Tels.Validation.validate(schemaText.read[Tel].as[Tels])
 
   // The §8 palimpsest signature of the schema, carried by every document on the wire and
   // compared byte-for-byte on receipt.

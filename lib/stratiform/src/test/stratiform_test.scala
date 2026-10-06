@@ -841,7 +841,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           Array.unsafeFrozen(arr)
 
         val doc = bytes.read[Tel]
-        val reconstructed = Tels.Reconstructor.fromTel(doc)
+        val reconstructed = doc.as[Tels]
         Tels.Reconstructor.equivalent(reconstructed, Tels.Axiom.tels)
       . assert(identity)
 
@@ -1509,7 +1509,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
     suite(m"TEL specification conformance (upstream 8380ef7)"):
       def schemaOf(source: Text): Tels =
-        Tels.Validation.validate(Tels.Reconstructor.fromTel(source.read[Tel]))
+        Tels.Validation.validate(source.read[Tel].as[Tels])
 
       def indices(root: Tel.Element): scala.collection.immutable.List[Int] = root match
         case Tel.Element.Node(_, _, children) =>
@@ -1557,7 +1557,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                             |  overlay
                             |    select Status
                             |""".stripMargin)
-        capture[Tel.Error](Tels.Layers.compose(Tels.Reconstructor.fromTel(source.read[Tel]))).reason
+        capture[Tel.Error](Tels.Layers.compose(source.read[Tel].as[Tels])).reason
       . assert(_ == Tel.Error.Reason.LayerKeywordCollision)
 
       test(m"§20.3: a layer field restating a variant keyword is E205"):
@@ -1575,7 +1575,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                             |  overlay
                             |    field active String
                             |""".stripMargin)
-        capture[Tel.Error](Tels.Layers.compose(Tels.Reconstructor.fromTel(source.read[Tel]))).reason
+        capture[Tel.Error](Tels.Layers.compose(source.read[Tel].as[Tels])).reason
       . assert(_ == Tel.Error.Reason.LayerKeywordCollision)
 
       test(m"§20.3: a layer field restating a field with another type is E206"):
@@ -1589,7 +1589,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                             |  overlay
                             |    field foo Identifier
                             |""".stripMargin)
-        capture[Tel.Error](Tels.Layers.compose(Tels.Reconstructor.fromTel(source.read[Tel]))).reason
+        capture[Tel.Error](Tels.Layers.compose(source.read[Tel].as[Tels])).reason
       . assert(_ == Tel.Error.Reason.LayerFieldTypeMismatch)
 
       test(m"§20.1: a select declared empty in a layer is E202"):
@@ -3355,7 +3355,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"self-contained and external documents may share a stream"):
         val axiom     = Tels.Axiom.tels
         val sd        = schemaDoc.read[Tel]
-        val schema    = Tels.Layers.compose(Tels.Reconstructor.fromTel(sd))
+        val schema    = Tels.Layers.compose(sd.as[Tels])
         val signature = SchemaSignature.fromDocument(sd, axiom)
         val external  = dataDoc.read[Tel].bintelDocument(schema, signature)
         val self      = selfContained()
@@ -3363,7 +3363,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         Bintel.decodeStream(stream.asInstanceOf[Array[Byte]], schema).map(_.continuation)
       . assert(_ == List(selfContained().readable.length,
                         selfContained().readable.length + dataDoc.read[Tel].bintelDocument(
-                          Tels.Layers.compose(Tels.Reconstructor.fromTel(schemaDoc.read[Tel])),
+                          Tels.Layers.compose(schemaDoc.read[Tel].as[Tels]),
                           SchemaSignature.fromDocument(schemaDoc.read[Tel], Tels.Axiom.tels))
                           .readable.length))
 
@@ -3375,12 +3375,12 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == Bintel.Error.Reason.TrailingBytes)
 
       test(m"decodeDocument on a self-contained document is B01"):
-        val schema = Tels.Layers.compose(Tels.Reconstructor.fromTel(schemaDoc.read[Tel]))
+        val schema = Tels.Layers.compose(schemaDoc.read[Tel].as[Tels])
         capture[Bintel.Error](Bintel.decodeDocument(selfContained(), schema)).reason
       . assert(_ == Bintel.Error.Reason.BadMagic)
 
       test(m"value hash is mode-independent (external == self-contained)"):
-        val schema = Tels.Layers.compose(Tels.Reconstructor.fromTel(schemaDoc.read[Tel]))
+        val schema = Tels.Layers.compose(schemaDoc.read[Tel].as[Tels])
         val external = dataDoc.read[Tel].bintel(schema)
         val recovered = Bintel.decodeDocumentSelfContained(selfContained()).root.bintel(schema)
         recovered.readable.toSeq == external.readable.toSeq
@@ -3390,7 +3390,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val axiom      = Tels.Axiom.tels
         val sd         = schemaDoc.read[Tel]
         val schemaBody = sd.bintel(axiom)
-        val schema     = Tels.Layers.compose(Tels.Reconstructor.fromTel(sd))
+        val schema     = Tels.Layers.compose(sd.as[Tels])
         val docBody    = dataDoc.read[Tel].bintel(schema)
         // A valid-length but wrong signature: flip the first body byte and
         // the trailing cadence byte so the XOR-fold length check still passes.
@@ -3404,7 +3404,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"undecodable embedded schema raises B12"):
         val axiom   = Tels.Axiom.tels
         val sd      = schemaDoc.read[Tel]
-        val schema  = Tels.Layers.compose(Tels.Reconstructor.fromTel(sd))
+        val schema  = Tels.Layers.compose(sd.as[Tels])
         val docBody = dataDoc.read[Tel].bintel(schema)
         val sig     = SchemaSignature.fromDocument(sd, axiom)
         val garbage: Data = Array[Byte](0x7f, 0x7f, 0x7f, 0x7f)

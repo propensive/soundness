@@ -30,14 +30,14 @@ import soundness.*
 
 The elements are values named after the tags: `Mi` for an identifier, `Mn` for a number, `Mo` for
 an operator, `Mrow` for a group, and `Msup`, `Msub`, `Mfrac`, `Msqrt` and the rest for the
-structures. `Math` is the root, and `xml` renders it:
+structures. `Math` is the root, and `in[Xml]` renders it:
 
 ```scala
 import Mathml.*
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 
-Math(Msup(Mi(t"x"), Mn(t"2"))).xml.show
+Math(Msup(Mi(t"x"), Mn(t"2"))).in[Xml].show
 // <math xmlns="http://www.w3.org/1998/Math/MathML"><msup><mi>x</mi><mn>2</mn></msup></math>
 ```
 

@@ -45,6 +45,7 @@ import rudiments.*
 import savagery.*
 import spectacular.*
 import vacuous.*
+import xylophone.Xml
 
 object Chart:
   enum Legend:
@@ -245,8 +246,18 @@ object Chart:
   // `abscissa`, `ordinate`, `legend`, `series-0`, `series-1`, … — in drawing order. The
   // identifiers are what a revision names.
   case class Drawing
-    ( width: Double, height: Double, defs: List[Svg.Def], parts: Ledger[Svg.Id, Figure] ):
-    def svg: Svg = Svg(width.toFloat, height.toFloat, defs, parts.values)
+    ( width: Double, height: Double, defs: List[Svg.Def], parts: Ledger[Svg.Id, Figure] )
+
+  object Drawing:
+    // The whole drawing as one SVG, as `drawing.in[Svg]`.
+    given encodable: Drawing is Encodable in Svg = drawing =>
+      Svg(drawing.width.toFloat, drawing.height.toFloat, drawing.defs, drawing.parts.values)
+
+  // A chart drawn with the components it asks for, as `chart.in[Svg]`.
+  given encodable: [data, form, fit, style <: Chart.Style]
+  =>    (style, ChartPalette, FontMetric, Arranger)
+  =>    Chart[data, form, fit, style] is Encodable in Svg =
+    _.drawing.in[Svg]
 
   // What changed between one drawing of a chart and the next: either the whole chart, because
   // the axes moved to fit the new data, or only the identified parts that differ. A page holding
@@ -265,8 +276,6 @@ class Chart[data, form, fit, style <: Chart.Style](val data: data, val form: for
   def drawing(using style, ChartPalette, FontMetric, Arranger): Chart.Drawing =
     plottable.draw(form, data, fit)
 
-  def svg(using style, ChartPalette, FontMetric, Arranger): Svg = drawing.svg
-
   def revise(data2: data)(using style, ChartPalette, FontMetric, Arranger)
   :   (Chart[data, form, fit, style], List[Chart.Revision]) =
 
@@ -274,14 +283,14 @@ class Chart[data, form, fit, style <: Chart.Style](val data: data, val form: for
       val next = Chart(data2, form, fit)
 
       val before: List[(Svg.Id, Text)] = drawing.parts.fold(List[(Svg.Id, Text)]()): (acc, pair) =>
-        (pair(0), pair(1).xml.show) :: acc
+        (pair(0), pair(1).in[Xml].show) :: acc
 
       val revisions = next.drawing.parts.fold(List[Chart.Revision]()): (acc, pair) =>
-        val rendered = pair(1).xml.show
+        val rendered = pair(1).in[Xml].show
         val unchanged = before.exists: (id, text) => id == pair(0) && text == rendered
         if unchanged then acc else Chart.Revision.Replace(pair(0), pair(1)) :: acc
 
       (next, revisions.reverse)
     else
       val next = Chart(data2, form, plottable.fit(form, data2))
-      (next, List(Chart.Revision.Redraw(next.svg)))
+      (next, List(Chart.Revision.Redraw(next.in[Svg])))

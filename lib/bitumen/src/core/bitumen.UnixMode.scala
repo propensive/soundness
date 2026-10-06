@@ -80,5 +80,3 @@ case class UnixMode
     if otherWrite then sum += 2
     if otherExec then sum += 1
     sum
-
-  def bytes: Data = int.octal.pad(7, Rtl, '0').in[Data]
