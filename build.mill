@@ -394,6 +394,13 @@ object xekRelease extends Module:
 // absolute path of the builder `xekRelease` resolves. fume runs suites inside its daemon, which
 // starts in `/` with a sanitized environment, so neither the working directory nor an
 // environment variable can say where the checkout is.
+//
+// A task which records `xek` must depend on `xekPin.file` and `xekPin.requested`, so that it reads
+// the pin as a declared source and is rerun when the pin or an `XEK` override changes.
+object xekPin extends Module:
+  def file = Task.Source(mill.api.BuildCtx.workspaceRoot / "etc" / "xek.tsv")
+  def requested = Task.Input(sys.env.get("XEK"))
+
 def workspaceSource(dest: os.Path, packageName: String, xek: Boolean): PathRef =
   val root = mill.api.BuildCtx.workspaceRoot
   def literal(path: os.Path): String = "\"" + path.toString.flatMap {
@@ -2100,6 +2107,8 @@ object ethereal extends Library:
       settings.sep(super.scalacOptions())
 
     def generatedSources = Task:
+      xekPin.file()
+      xekPin.requested()
       super.generatedSources() :+ workspaceSource(Task.dest, "ethereal", xek = true)
 
 object eucalyptus extends Library:
@@ -2169,6 +2178,8 @@ object exoskeleton extends Library:
       settings.sep(super.scalacOptions())
 
     def generatedSources = Task:
+      xekPin.file()
+      xekPin.requested()
       super.generatedSources() :+ workspaceSource(Task.dest, "exoskeleton", xek = true)
 
 object facsimile extends Library:
@@ -3024,6 +3035,8 @@ object profanity extends Library:
       settings.sep(super.scalacOptions())
 
     def generatedSources = Task:
+      xekPin.file()
+      xekPin.requested()
       super.generatedSources() :+ workspaceSource(Task.dest, "profanity", xek = true)
 
 object punctuation extends Library:
