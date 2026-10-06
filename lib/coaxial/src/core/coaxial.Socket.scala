@@ -67,7 +67,9 @@ object Socket:
   //     half-closing its output, then reads the response to peer half-close;
   //   - a persistent *duplex* (`Connectable`) connects and hands back a `Duplex`, whose reads and
   //     writes are independent and never half-close;
-  //   - a fire-and-forget datagram *courier* (`Routable`) connects and dispatches one datagram.
+  //   - a fire-and-forget datagram *courier* (`Routable`) connects and dispatches one datagram;
+  //   - a multicast *subscription* (`Multicast`) joins a group on each interface, receives the
+  //     group's datagrams, and sends to the group or back to one sender.
   //
   // The higher-level loops (`listen`/`react`/`exchange`/`duplex`) compose these in coaxial's
   // user-facing API and stay platform-neutral. Each opaque handle type is threaded back to the
@@ -113,6 +115,27 @@ object Socket:
         options:   List[Option],
         data:      Data )
     :   Packet raises Socket.Error
+
+    //── Multicast group membership (`Multicast`) ─────────────────────────────────────────────────
+    type MulticastSocket
+
+    // Bind the group's port — with address and port reuse, since several programs on one host
+    // may subscribe to one group — then join the group on each of `interfaces`, which should
+    // be up and multicast-capable, and hold the memberships until `leaveMulticast`.
+    def joinMulticast
+      ( multicast: Multicast, interfaces: List[NetworkInterface], options: List[Option] )
+    :   MulticastSocket
+
+    def receiveMulticast(socket: MulticastSocket): Packet raises Socket.Error
+
+    // Send to the group itself, once through each joined interface, or to one unicast
+    // destination (a response to a sender that asked for one).
+    def sendGroup(socket: MulticastSocket, data: Data): Unit raises Socket.Error
+
+    def sendTo(socket: MulticastSocket, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
+    :   Unit raises Socket.Error
+
+    def leaveMulticast(socket: MulticastSocket): Unit
 
     //── Request/response exchange (`Serviceable`) ────────────────────────────────────────────────
     type Exchange

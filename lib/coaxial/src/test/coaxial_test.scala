@@ -437,6 +437,40 @@ object Tests extends Suite(m"Coaxial tests"):
             . data.utf8
         . assert(_ == t"pong")
 
+        test(m"A multicast subscription receives what it sends to the group"):
+          import socketOptions.multicastLoopSocketOption
+          val received: Promise[Text] = Promise()
+          val multicast = Multicast(ip"239.255.77.77", Port[Udp]())
+
+          // Vacuous on a host with no multicast-capable interface.
+          if Multicast.interfaces(Unset) == Nil then t"hello" else
+            val handler = (packet: Packet) =>
+              received.fulfill(packet.data.utf8)
+              Multicast.Reply.Ignore
+
+            multicast.subscribe(handler):
+              summon[Multicast.Subscription].send(ascii(t"hello"))
+              received.await()
+        . assert(_ == t"hello")
+
+        test(m"A multicast subscription can answer one sender by unicast"):
+          import socketOptions.multicastLoopSocketOption
+          val received: Promise[Text] = Promise()
+          val multicast = Multicast(ip"239.255.77.78", Port[Udp]())
+
+          // The subscription's own looped-back "ping" is answered by unicast to its sender, which
+          // is the subscription itself, so the "pong" arrives as a second packet.
+          if Multicast.interfaces(Unset) == Nil then t"pong" else
+            val handler = (packet: Packet) =>
+              if packet.data.utf8 == t"ping" then Multicast.Reply.Unicast(ascii(t"pong")) else
+                received.fulfill(packet.data.utf8)
+                Multicast.Reply.Ignore
+
+            multicast.subscribe(handler):
+              summon[Multicast.Subscription].send(ascii(t"ping"))
+              received.await()
+        . assert(_ == t"pong")
+
         test(m"A datagram exchange times out when no reply arrives"):
           val port = Port[Udp]()
           val handler = (packet: Packet) => UdpResponse.Ignore

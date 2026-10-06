@@ -85,6 +85,7 @@ package socketBackends:
   given scalaNativeSockets: Socket.Backend = new Socket.Backend:
     type ServerSocket = ServerBinding
     type DatagramSocket = UdpBinding
+    type MulticastSocket = Unit
     type Exchange = ClientExchange
     type Courier = UdpCourier
 
@@ -255,6 +256,24 @@ package socketBackends:
       catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
 
     def unbind(binding: UdpBinding): Unit = binding.socket.close()
+
+    //── Multicast (unsupported: javalib has no `MulticastSocket` or `DatagramChannel`) ─────────
+    def joinMulticast
+      ( multicast: Multicast, interfaces: List[NetworkInterface], options: List[Socket.Option] )
+    :   Unit =
+      ()
+
+    def receiveMulticast(socket: Unit): Packet raises Socket.Error =
+      abort(Socket.Error(Socket.Error.Reason.Accept))
+
+    def sendGroup(socket: Unit, data: Data): Unit raises Socket.Error =
+      abort(Socket.Error(Socket.Error.Reason.Transmit))
+
+    def sendTo(socket: Unit, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
+    :   Unit raises Socket.Error =
+      abort(Socket.Error(Socket.Error.Reason.Transmit))
+
+    def leaveMulticast(socket: Unit): Unit = ()
 
     //── One-shot datagram exchange ─────────────────────────────────────────────────────────────
     def exchangeUdp

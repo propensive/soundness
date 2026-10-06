@@ -80,6 +80,7 @@ package socketBackends:
   inline given wasiSockets: Socket.Backend = new Socket.Backend:
     type ServerSocket = Wasm.Handle of "tcp-socket"
     type DatagramSocket = Unit
+    type MulticastSocket = Unit
     type Exchange = WasiExchange
     type Courier = Unit
 
@@ -266,6 +267,23 @@ package socketBackends:
         data:      Data )
     :   Packet raises Socket.Error =
       abort(Socket.Error(Socket.Error.Reason.Transmit))
+
+    def joinMulticast
+      ( multicast: Multicast, interfaces: List[NetworkInterface], options: List[Socket.Option] )
+    :   Unit =
+      ()
+
+    def receiveMulticast(socket: Unit): Packet raises Socket.Error =
+      abort(Socket.Error(Socket.Error.Reason.Accept))
+
+    def sendGroup(socket: Unit, data: Data): Unit raises Socket.Error =
+      abort(Socket.Error(Socket.Error.Reason.Transmit))
+
+    def sendTo(socket: Unit, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
+    :   Unit raises Socket.Error =
+      abort(Socket.Error(Socket.Error.Reason.Transmit))
+
+    def leaveMulticast(socket: Unit): Unit = ()
 
     //── Request/response exchange (TCP; Unix-domain unsupported) ──────────────────────────────────
     def dialTcp

@@ -30,18 +30,29 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package coaxial
 
-export
-  coaxial
-  . { Bindable, Bind, Connectable, connectableSessional, Control,
-      DomainSocket, duplex, Duplex, Duplexable, exchange, Ingressive,
-      listen, Multicast, Packet, react, Routable, Subscribable, subscribe, Transmitter,
-      Serviceable, Socket, Transmissible, transmit, UdpResponse }
+import anticipation.*
+import contingency.*
+import prepositional.*
+import urticose.*
+import vacuous.*
 
-package socketOptions:
-  export
-    coaxial.socketOptions
-    . { reuseAddressSocketOption, reusePortSocketOption, noDelaySocketOption, keepAliveSocketOption,
-        broadcastSocketOption, multicastLoopSocketOption, receiveBuffer, sendBuffer, linger,
-        trafficClass, timeout, multicastHops, datagramSize }
+// What `subscribe` needs of a multicast group: joining and leaving it, receiving its datagrams,
+// and the two sends — to the whole group, or to one member. The `Bindable` shape (one reply per
+// arrival) cannot express an unprompted send, which is why a group has a typeclass of its own.
+trait Subscribable extends Typeclass:
+  type Binding
+
+  def join(group: Self, interface: Optional[MacAddress]): Binding
+  def receive(binding: Binding): Packet raises Socket.Error
+  def sendGroup(binding: Binding, data: Data): Unit raises Socket.Error
+
+  def sendTo(binding: Binding, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
+  :   Unit raises Socket.Error
+
+  def leave(binding: Binding): Unit
+
+  // A handler's verdict on a received datagram, carried out.
+  def transmit(binding: Binding, packet: Packet, reply: Multicast.Reply)
+  :   Unit raises Socket.Error
