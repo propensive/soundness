@@ -113,20 +113,7 @@ extends Rig:
         comparison )
 
 
-  def stage(out: Path on Linux): Path on Linux = unsafely:
-    val uuid = Uuid()
-
-    val jarfile = supervise:
-      Toolchain(jarEdges()).produce
-        ( Deliverable.Emission(out, Bundler.applicationClasspath),
-          Universe.Classfile,
-          Jar,
-          out,
-          List(jarOptions.name(t"$uuid.jar")),
-          List(EntryPoint(fqcn"superlunary.Executor")) )
-
-    device.deploy(jarfile, uuid)
-    jarfile
+  def stage(out: Path on Linux): Path on Linux = stageOn(device, out)
 
   protected val scalac: Scalac[3.7, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
@@ -489,3 +476,22 @@ object Bench:
   case class Error()(using Diagnostics)
   extends fulminate.Error(794, 0)(m"unable to run benchmarks")
 
+// Builds a jar of the code under measurement, with superlunary's executor as its entry point,
+// and deploys it to `device`: the staging which `Bench`, `Stress` and `Profile` share.
+private[sedentary] def stageOn(device: BenchmarkDevice, out: Path on Linux)(using Environment)
+:   Path on Linux =
+
+  unsafely:
+    val uuid = Uuid()
+
+    val jarfile = supervise:
+      Toolchain(jarEdges()).produce
+        ( Deliverable.Emission(out, Bundler.applicationClasspath),
+          Universe.Classfile,
+          Jar,
+          out,
+          List(jarOptions.name(t"$uuid.jar")),
+          List(EntryPoint(fqcn"superlunary.Executor")) )
+
+    device.deploy(jarfile, uuid)
+    jarfile
