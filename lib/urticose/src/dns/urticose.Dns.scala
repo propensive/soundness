@@ -106,8 +106,9 @@ object Dns:
     // interpolator's, which checked them already.
     private[urticose] def unchecked(labels: List[Text]): Name = new Name(labels)
 
-    // RFC 4343: only ASCII letters fold; every other character compares exactly.
-    private[urticose] def fold(label: Text): Text =
+    // A label as the DNS compares it (RFC 4343): only ASCII letters fold; every other character
+    // compares exactly. Also the comparison DNS-SD applies to TXT keys.
+    def fold(label: Text): Text =
       label.s.map { char => if 'A' <= char && char <= 'Z' then (char + 32).toChar else char }.tt
 
     // Character by character rather than by `sub`, whose regex-backed replacement would read
