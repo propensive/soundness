@@ -102,16 +102,16 @@ object internal:
 
     extension (tastyTree: Tasty.Tree)
       def children(nodes2: Tree*): Tasty.Tree =
-        tastyTree.copy(nodes = tastyTree.nodes + nodes2.toList.map(TreeBuilder.expand(' ', _)).to(List))
+        tastyTree.copy(nodes = tastyTree.nodes + nodes2.map(TreeBuilder.expand(' ', _)).to(List))
 
       def typeChildren(nodes2: TypeRepr*): Tasty.Tree =
-        tastyTree.copy(nodes = tastyTree.nodes + nodes2.toList.map(TreeBuilder.expandType(_)).to(List))
+        tastyTree.copy(nodes = tastyTree.nodes + nodes2.map(TreeBuilder.expandType(_)).to(List))
 
       def typed(nodes2: Tree*): Tasty.Tree =
-        tastyTree.copy(nodes = tastyTree.nodes + nodes2.toList.map(TreeBuilder.expand('t', _)).to(List))
+        tastyTree.copy(nodes = tastyTree.nodes + nodes2.map(TreeBuilder.expand('t', _)).to(List))
 
       def add(tag: Char, nodes2: Tree*): Tasty.Tree =
-        tastyTree.copy(nodes = tastyTree.nodes + nodes2.toList.map(TreeBuilder.expand(tag, _)).to(List))
+        tastyTree.copy(nodes = tastyTree.nodes + nodes2.map(TreeBuilder.expand(tag, _)).to(List))
 
     object TreeBuilder:
       def apply

@@ -1275,7 +1275,7 @@ object Tel extends Tel2:
 
         idx += 1
 
-      builder.toMap.to(Map)
+      builder.to(Map)
 
     private def atomAssignable(member: Tels.Member, schema: Tels): Boolean raises Tel.Error =
       member match

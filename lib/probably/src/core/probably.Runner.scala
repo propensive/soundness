@@ -303,7 +303,7 @@ object Runner:
         try
           val result: result = test.action(context)
           val ns: Long = System.nanoTime - ns0
-          Trial.Returns(result, ns, context.captured.toMap.to(Map))
+          Trial.Returns(result, ns, context.captured.to(Map))
 
         catch case error: Exception =>
           val ns: Long = System.nanoTime - ns0
@@ -312,7 +312,7 @@ object Runner:
             given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
             throw error
 
-          Trial.Throws(lazyException, ns, context.captured.toMap.to(Map))
+          Trial.Throws(lazyException, ns, context.captured.to(Map))
 
         // The bracket closes whatever escaped — an `Error` in the body must not leave the test
         // among the active ones that a termination reports.

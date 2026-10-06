@@ -118,7 +118,7 @@ object SchemaResolver:
 
       // The frozen hashes are paired on the stdlib view, as in `accept` below.
       val layers =
-        schema.layers.readable.toList.map(_.name).zip(components(1).stdlib).to(List)
+        schema.layers.readable.map(_.name).zip(components(1).stdlib).to(List)
 
       val result = Fingerprint(axiom, components(0), layers)
       fingerprints.synchronized(fingerprints.put(document, result))
@@ -149,7 +149,7 @@ object SchemaResolver:
 
       val components = SchemaSignature.componentHashes(tel, axiom)
       val chosen = Tels.Layers.select(schema, selection)
-      val names = schema.layers.readable.toList.map(_.name)
+      val names = schema.layers.readable.map(_.name)
 
       // Frozen `Data` elements do not survive the generic `zip`/`to[Map]` pair (the
       // rebuilt element type loses its `^{}`), so the name-to-hash index is built on

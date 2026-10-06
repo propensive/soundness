@@ -397,10 +397,10 @@ object Mathml:
         abort(Mathml.Error(Mathml.Error.Reason.NotMathml(labelOf(other))))
 
     private def childElements(elem: Xml.Element): List[Xml.Element] =
-      (elem.children.readable.toList.collect { case element: Xml.Element => element }).to(List)
+      elem.children.readable.collect { case element: Xml.Element => element }.to(List)
 
     private def textOf(elem: Xml.Element): Text =
-      (elem.children.readable.toList.collect { case Xml.Text(text) => text }).to(List).join
+      elem.children.readable.collect { case Xml.Text(text) => text }.to(List).join
 
     private def children(elem: Xml.Element)(using Tactic[Mathml.Error]): List[Mathml] =
       childElements(elem).map(decodeNode)

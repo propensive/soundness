@@ -366,7 +366,7 @@ trait Tels2:
       case _                         => Unset
 
     def referenced(struct: Tels.Struct): List[Text] =
-      proscenium.List.from(struct.members.readable.toList).bind:
+      struct.members.to[proscenium.List].bind:
         case Tels.Field(_, _, _, Tels.Reference(reference), _, _, _) => List(reference)
         case Tels.Field(_, _, _, nested: Tels.Struct, _, _, _)       => referenced(nested)
         case _                                                        => Nil
@@ -375,7 +375,7 @@ trait Tels2:
       records0.bind: record => referenced(Tels.Struct(record.members, record.validators))
 
     val fromSelects: List[Text] = selects.bind: select =>
-      proscenium.List.from(select.variants.readable.toList).bind: variant =>
+      select.variants.to[proscenium.List].bind: variant =>
         variant.variantType match
           case Tels.Reference(reference) => List(reference)
           case _                         => Nil
@@ -514,7 +514,7 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
             val keyword: Text = renames(label).or(Tel.camelToKebab(label.s))
             TelsDerivation.member(schematic, keyword, TelsDerivation.layerOf(grouping, label))
 
-      proscenium.List.from(array.readable.toList)
+      array.to[proscenium.List]
 
     productSchematic(name, () => members).asInstanceOf[derivation is TelSchematic over Tels.Type]
 
@@ -581,7 +581,7 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
           [variant <: derivation] => schematic =>
             TelsDerivation.variant(schematic, Tel.camelToKebab(label.s))
 
-      proscenium.List.from(array.readable.toList)
+      array.to[proscenium.List]
 
     val select = Tels.SelectDefinition(name, variants.map(_(0)).to[Array], Array.empty)
     val layers = retractionLayers(name, TelsDerivation.retractions[derivation])

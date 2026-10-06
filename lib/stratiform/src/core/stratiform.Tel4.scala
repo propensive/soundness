@@ -194,7 +194,7 @@ trait Tel4:
     // The layers whose root members a document carries — the layers a value built from it was
     // composed with, for a writer serving an acceptance.
     def layersOf(tel: Tel): List[Text] =
-      proscenium.List.from(tels.layers.readable.toList).filter: layer =>
+      tels.layers.to[proscenium.List].filter: layer =>
         layer.overlay.members.readable.exists:
           case field: Tels.Field => tel.field(field.keyword).present
           case _                 => false

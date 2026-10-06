@@ -1929,13 +1929,13 @@ object Tels extends Tels2:
       def declared(name: Text): List[Type] =
         val fromRecord: List[Type] = schema.records.seek(_.name == name) match
           case record: RecordDefinition =>
-            proscenium.List.from(record.members.readable.toList).bind(memberType)
+            record.members.to[proscenium.List].bind(memberType)
 
           case _ => Nil
 
         val fromSelect: List[Type] = schema.selects.seek(_.name == name) match
           case select: SelectDefinition =>
-            proscenium.List.from(select.variants.readable.toList).map(_.variantType)
+            select.variants.to[proscenium.List].map(_.variantType)
 
           case _ => Nil
 
@@ -1948,18 +1948,18 @@ object Tels extends Tels2:
           else reachable(declared(name).reverse.unwind(rest), seen + name)
 
         case (nested: Struct) :: rest =>
-          val inner = proscenium.List.from(nested.members.readable.toList).bind(memberType)
+          val inner = nested.members.to[proscenium.List].bind(memberType)
           reachable(inner.reverse.unwind(rest), seen)
 
         case _ :: rest => reachable(rest, seen)
         case _         => seen
 
       val fromLayers: List[Type] =
-        proscenium.List.from(schema.layers.readable.toList).bind: layer =>
-          val overlay = proscenium.List.from(layer.overlay.members.readable.toList).bind(memberType)
+        schema.layers.to[proscenium.List].bind: layer =>
+          val overlay = layer.overlay.members.to[proscenium.List].bind(memberType)
 
-          val records = proscenium.List.from(layer.records.readable.toList).bind: record =>
-            proscenium.List.from(record.members.readable.toList).bind(memberType)
+          val records = layer.records.to[proscenium.List].bind: record =>
+            record.members.to[proscenium.List].bind(memberType)
 
           overlay.reverse.unwind(records)
 
