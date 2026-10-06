@@ -994,7 +994,8 @@ object soundness extends Toolchain:
     def summary = "Developer tools: compilers, build tooling, source analysis and version control"
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, cataclysm.fonts, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
-    honeycomb.core, urticose.core, urticose.url, urticose.ansi, hallucination.core, phoenicia.core,
+    honeycomb.core, urticose.core, urticose.url, urticose.ansi, urticose.dns, hallucination.core,
+    phoenicia.core,
     punctuation.core, savagery.core, cartouche.core, tasseomancy.core, scintillate.server,
     scintillate.servlet,
     telekinesis.jvm, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
@@ -2704,7 +2705,13 @@ object urticose extends Library:
   object ansi extends Component(escapade.core, url):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(ansi, core, url):
+  // Typed DNS: the RFC 1035 vocabulary (names, questions, records, messages) and its wire codec,
+  // with the mDNS/DNS-SD bits of RFC 6762/6763. Pure `Data` in and out, so it cross-compiles;
+  // `zephyrine` supplies the `Producer` the encoder writes through.
+  object dns extends Component(core, zephyrine.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(ansi, core, url, dns):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

@@ -833,5 +833,124 @@ object Tests extends Suite(m"Urticose tests"):
         NetworkInterface.byAddress(loopback.addresses.stdlib.head.address).let(_.loopback)
       . assert(_ == true)
 
+    suite(m"DNS name tests"):
+      test(m"Parse a simple name"):
+        Dns.Name.parse(t"www.example.com").labels
+      . assert(_ == List(t"www", t"example", t"com"))
+
+      test(m"A trailing dot denotes the root and adds no label"):
+        Dns.Name.parse(t"example.com.").labels
+      . assert(_ == List(t"example", t"com"))
+
+      test(m"A lone dot is the root"):
+        Dns.Name.parse(t".")
+      . assert(_ == Dns.Name.Root)
+
+      test(m"Names compare without regard to ASCII case"):
+        Dns.Name.parse(t"Example.COM") == Dns.Name.parse(t"example.com")
+      . assert(_ == true)
+
+      test(m"Case-insensitive names hash alike"):
+        Dns.Name.parse(t"Example.COM").hashCode == Dns.Name.parse(t"example.com").hashCode
+      . assert(_ == true)
+
+      test(m"Labels keep the case they were written with"):
+        Dns.Name.parse(t"Example.COM").labels
+      . assert(_ == List(t"Example", t"COM"))
+
+      test(m"An empty label is rejected"):
+        capture[Dns.Error](Dns.Name.parse(t"a..b")).reason
+      . assert(_ == Dns.Error.Reason.EmptyLabel(t"a..b"))
+
+      test(m"A label of 64 characters is rejected"):
+        val label = t"a"*64
+        capture[Dns.Error](Dns.Name.parse(t"$label.com")).reason
+      . assert(_ == Dns.Error.Reason.LongLabel(t"a"*64))
+
+      test(m"A name of more than 255 octets is rejected"):
+        val label = t"a"*63
+        capture[Dns.Error](Dns.Name.parse(t"$label.$label.$label.$label.a")).reason
+          match
+            case Dns.Error.Reason.LongName(_) => true
+            case _                            => false
+      . assert(_ == true)
+
+      test(m"An escaped dot is part of its label"):
+        Dns.Name.parse(t"Jon\\.Printer._ipp._tcp.local").labels.stdlib.head
+      . assert(_ == t"Jon.Printer")
+
+      test(m"Showing a name re-escapes dots and backslashes"):
+        Dns.Name(t"Jon.Printer\\", t"_ipp", t"_tcp", t"local").show
+      . assert(_ == t"Jon\\.Printer\\\\._ipp._tcp.local")
+
+      test(m"A decimal escape yields its character"):
+        Dns.Name.parse(t"a\\032b.c").labels.stdlib.head
+      . assert(_ == t"a b")
+
+      test(m"A malformed escape is rejected"):
+        capture[Dns.Error](Dns.Name.parse(t"a\\9b.c")).reason
+      . assert(_ == Dns.Error.Reason.BadEscape(t"a\\9b.c"))
+
+      test(m"Names concatenate with +"):
+        (Dns.Name(t"_fury", t"_tcp") + Dns.Name.local).show
+      . assert(_ == t"_fury._tcp.local")
+
+      test(m"A label can be prefixed to a name"):
+        Dns.Name(t"_fury", t"_tcp", t"local").prefix(t"Gondor").labels
+      . assert(_ == List(t"Gondor", t"_fury", t"_tcp", t"local"))
+
+      test(m"A name's parent drops its first label"):
+        Dns.Name(t"Gondor", t"_fury", t"_tcp", t"local").parent.let(_.show)
+      . assert(_ == t"_fury._tcp.local")
+
+      test(m"The root has no parent"):
+        Dns.Name.Root.parent
+      . assert(_ == Unset)
+
+      test(m"endsWith folds case"):
+        Dns.Name.parse(t"Gondor._fury._tcp.LOCAL").endsWith(Dns.Name.local)
+      . assert(_ == true)
+
+      test(m"endsWith rejects a non-suffix"):
+        Dns.Name.parse(t"gondor.local").endsWith(Dns.Name(t"example", t"local"))
+      . assert(_ == false)
+
+      test(m"The octet length counts each label's length byte and the terminator"):
+        Dns.Name.parse(t"example.com").octets
+      . assert(_ == 13)
+
+      test(m"A hostname converts to a name"):
+        host"example.com".dnsName
+      . assert(_ == Dns.Name.parse(t"example.com"))
+
+      test(m"An IPv4 address has a reverse name under in-addr.arpa"):
+        ip"192.0.2.1".reverseName.show
+      . assert(_ == t"1.2.0.192.in-addr.arpa")
+
+      test(m"An IPv6 address has a reverse name under ip6.arpa"):
+        ip"2001:db8::1".reverseName.show
+      . assert(_ == t"1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa")
+
+      test(m"A name decodes from text"):
+        t"example.com".as[Dns.Name]
+      . assert(_ == Dns.Name(t"example", t"com"))
+
+      test(m"Record data carrying octets compares structurally"):
+        Dns.Rdata.Txt(t"a", t"b") == Dns.Rdata.Txt(t"a", t"b")
+      . assert(_ == true)
+
+      test(m"An unknown record type shows generically"):
+        Dns.Type(99).show
+      . assert(_ == t"TYPE99")
+
+      test(m"An OPT pseudo-record carries the UDP payload size in its class field"):
+        Dns.Record.opt(udpPayload = 4096, dnssecOk = true)
+      . assert: record =>
+          record.udpPayload == 4096 && record.dnssecOk == true && record.rtype == Dns.Type.Opt
+
+      test(m"localhost resolves through the platform resolver"):
+        Dns.resolve(Dns.Name.parse(t"localhost"))
+      . assert(!_.nil)
+
 object example:
   val com = Hostname(DnsLabel(t"example"), DnsLabel(t"com"))
