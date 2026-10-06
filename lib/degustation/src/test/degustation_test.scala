@@ -300,8 +300,10 @@ object Tests extends Suite(m"Degustation Tests"):
     . assert(identity)
 
     // A corpus soak: the build's own compiled output for a foundational module, atomized twice.
-    // Skipped when the build output is not present (e.g. a partial checkout).
-    val corpus = Paths.get("out", "vacuous", "core", "compile.dest", "classes").nn
+    // Skipped when the build output is not present (e.g. a partial checkout). Found in the
+    // checkout the suite was built in, not the working directory: under fume the suite runs in a
+    // daemon whose working directory is `/`.
+    val corpus = Paths.get(Workspace.root, "out", "vacuous", "core", "compile.dest", "classes").nn
 
     if Files.isDirectory(corpus) then
       val corpusTasty = Files.walk(corpus).nn.iterator.nn.asScala.to(scala.List)

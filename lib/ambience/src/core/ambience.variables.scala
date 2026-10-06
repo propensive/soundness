@@ -37,6 +37,7 @@ import scala.language.dynamics
 import anticipation.*
 import gossamer.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 object variables extends Dynamic:
@@ -46,5 +47,11 @@ object variables extends Dynamic:
   :   result =
 
     val map = variables.map(_.tt.uncamel.snake.upper -> _).to(Map)
-    val environment: Environment = name => map(name).or(environment0.variable(name))
+
+    val environment: Environment = new Environment:
+      def variable(name: Text): Optional[Text] = map(name).or(environment0.variable(name))
+
+      override def entries: Optional[Map[Text, Text]] =
+        environment0.entries.let(_ + map)
+
     block(using environment)

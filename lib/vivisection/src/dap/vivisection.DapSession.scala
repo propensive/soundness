@@ -38,7 +38,7 @@ import scala.collection.concurrent as scc
 
 // `ambience` is imported selectively: its wildcard would publish `ambience.Variable` (an
 // environment variable) over this package's `vivisection.Variable`.
-import ambience.{System, WorkingDirectory}
+import ambience.{Environment, System, WorkingDirectory}
 import anthology.*
 import anticipation.*
 import aperture.*
@@ -88,18 +88,19 @@ private[vivisection] object DapSession:
 // to the request that caused it). Requests are handled sequentially on the transport loop; the
 // backend serialises on the session anyway.
 private[vivisection] class DapSession(emit: Json => Unit)
-  ( using online:     Online,
-          monitor:    Monitor,
-          probate:    Probate,
-          backend:    Socket.Backend,
-          options:    Every[Socket.Option.Tcp],
-          system:     System,
-          asyncError: Tactic[Async.Error],
-          working:    WorkingDirectory,
-          loggable:   (Socket.Event is Loggable)^,
-          exec:       (Exec.Event is Loggable)^,
-          compile:    (CompileEvent is Loggable)^,
-          note:       Diagnostics ):
+  ( using online:      Online,
+          monitor:     Monitor,
+          probate:     Probate,
+          backend:     Socket.Backend,
+          options:     Every[Socket.Option.Tcp],
+          system:      System,
+          asyncError:  Tactic[Async.Error],
+          working:     WorkingDirectory,
+          environment: Environment,
+          loggable:    (Socket.Event is Loggable)^,
+          exec:        (Exec.Event is Loggable)^,
+          compile:     (CompileEvent is Loggable)^,
+          note:        Diagnostics ):
 
   import strategies.throwUnsafely
   import dynamicAccess.dynamicJson

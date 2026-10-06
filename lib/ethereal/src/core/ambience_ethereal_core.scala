@@ -36,3 +36,8 @@ import exoskeleton.*
 
 package workingDirectories:
   given daemonClientWorkingDirectory(using cli: Cli): WorkingDirectory = cli.workingDirectory
+
+package environments:
+  // The environment of the invocation which started the daemon, not the current invocation's:
+  // see `ethereal.DaemonEnvironment`.
+  given daemonEnvironment: Environment = ethereal.DaemonEnvironment

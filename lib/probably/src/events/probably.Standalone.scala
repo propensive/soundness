@@ -30,40 +30,32 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package apoplexy
+package probably
 
-import soundness.*
+import java.io as ji
+import java.lang as jl
 
-import errorDiagnostics.emptyDiagnostics
-import internetAccess.online
-import logging.silentLogging
-import strategies.throwUnsafely
+import anticipation.*
 
-// The descriptions too large to check in, fetched at a pinned commit. Attestation runs offline,
-// so the suite runs only when `SOUNDNESS_CI_ONLINE=1` was set for the daemon running it — read
-// from the environment the daemon was started with, since its own is sanitized.
-object CorpusOnlineTests extends Suite(m"OpenAPI online corpus tests"):
-  case class Remote(name: Text, url: HttpUrl, paths: Int)
+// The entry point for running one suite in a JVM of its own, as a host does when a suite must
+// not share the host's process: `java -cp <classpath> probably.Standalone <suite> <term>…`. A
+// suite is not a main class, so this is the one a host launches, in whatever directory and
+// environment it wants the suite to see.
+//
+// The run is streamed exactly as `Streamer.stream` streams it in-process: the fingerprint and
+// then one length-prefixed BinTEL frame per `TestEvent`, on standard output, which is reserved
+// for them. Whatever the suite itself prints to standard output is sent to standard error
+// instead, so that it cannot corrupt the frames. The JVM exits with the suite's status (0
+// passed, 1 failures, 2 the suite or the machinery threw).
+object Standalone:
+  def main(arguments: scala.Array[String]): Unit =
+    val frames: ji.OutputStream = ji.FileOutputStream(ji.FileDescriptor.out)
+    jl.System.setOut(jl.System.err)
 
-  val remotes: List[Remote] = List
-    ( Remote
-        ( t"GitHub",
-          url"https://raw.githubusercontent.com/github/rest-api-description/c6721f32a17a71397ae46be21be90d7f1a173b6e/descriptions/api.github.com/api.github.com.json",
-          800 ),
-      Remote
-        ( t"OpenAI",
-          url"https://raw.githubusercontent.com/openai/openai-openapi/bafb6ade833cc313d354c64644996537f5db5af5/openapi.json",
-          30 ),
-      Remote
-        ( t"Cloudflare",
-          url"https://raw.githubusercontent.com/cloudflare/api-schemas/6b0fb3cd63aca815f1667a8fa908114886867dc6/openapi.json",
-          1000 ) )
+    val status: Int =
+      if arguments.length == 0 then 2 else
+        val rest = java.util.Arrays.asList(arguments*).nn.subList(1, arguments.length)
+        val terms: Text = jl.String.join("\n", rest).nn.tt
+        scala.Console.withOut(jl.System.err.nn)(Streamer.stream(arguments(0).tt, terms, frames))
 
-  def run(): Unit =
-    if DaemonEnvironment.variable(t"SOUNDNESS_CI_ONLINE") == t"1" then
-      import httpBackends.javaNetHttp
-
-      remotes.each: remote =>
-        test(m"the ${remote.name} API description loads"):
-          remote.url.fetch().receive[Text].read[OpenApi].paths.size
-        . assert(_ >= remote.paths)
+    jl.System.exit(status)

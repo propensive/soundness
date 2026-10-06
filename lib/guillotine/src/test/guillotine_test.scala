@@ -35,6 +35,7 @@ package guillotine
 import soundness.*
 
 import workingDirectories.javaBaseWorkingDirectory
+import environments.javaBaseEnvironment
 import abstractables.millisecondsAbstractable
 import strategies.throwUnsafely
 import errorDiagnostics.emptyDiagnostics

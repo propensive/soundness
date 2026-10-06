@@ -53,7 +53,6 @@ import vacuous.*
 import StackTrace.Frame.Kind
 import charsets.utf8Charset
 import textSanitizers.skipSanitizer
-import workingDirectories.javaBaseWorkingDirectory
 import denominative.z
 import denominative.dysasymptotics.linearSize
 
@@ -102,7 +101,11 @@ object StackResolver:
 // compiler wrote beside the classfile. TASTy records source names, not compiled ones, so the two
 // cannot be matched up by name; but it also records the extent of every definition, and a line
 // table for the source file, so the line the frame already carries is enough to find it.
-class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
+//
+// A source path TASTy records relative to `-sourceroot` is resolved against the working
+// directory in scope, which is therefore the root the code was compiled under.
+class StackResolver(using classloader: Classloader, working: WorkingDirectory)
+extends StackTrace.Resolver:
   private val tastyFiles: mutable.HashMap[Text, Optional[Tasty.File]] = mutable.HashMap()
   private val sourceFiles: mutable.HashMap[Text, Optional[Sequence[Text]]] = mutable.HashMap()
   private val smaps: mutable.HashMap[Text, Optional[Smap]] = mutable.HashMap()

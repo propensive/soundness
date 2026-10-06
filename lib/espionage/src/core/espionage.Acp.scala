@@ -701,7 +701,8 @@ object Acp:
   def connect[result, capture^](agent: Agent, observer: Observer = Observer.Silent)
     ( register: (registry: Acp.Registry^) ?=> Unit )
     ( lambda: (connection: Acp.Connection) ?->{capture} result )
-    ( using Monitor^{capture}, Probate, Diagnostics, WorkingDirectory, Tactic[Acp.Error] )
+    ( using Monitor^{capture}, Probate, Diagnostics, WorkingDirectory, Environment,
+            Tactic[Acp.Error] )
   :   result =
 
     import strategies.throwUnsafely

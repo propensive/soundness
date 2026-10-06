@@ -45,6 +45,7 @@ import probates.awaitProbate
 import strategies.throwUnsafely
 import threading.virtualThreading
 import workingDirectories.javaBaseWorkingDirectory
+import environments.javaBaseEnvironment
 
 // Kept as a top-level object (its own class) rather than nested in `Tests` so the ACP codecs the
 // dispatchers inline do not add to the `Tests` class, which would otherwise exceed the JVM

@@ -47,6 +47,7 @@ import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
 import threading.platformThreading
 import workingDirectories.javaBaseWorkingDirectory
+import environments.javaBaseEnvironment
 
 private type JnfPath = java.nio.file.Path
 

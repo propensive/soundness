@@ -83,7 +83,9 @@ object nativeOptions:
 // the build host's own triple is the single target; targets beyond the host require a C
 // toolchain (and sysroot) capable of cross-compilation.
 object nativeEdges:
-  def apply(triples: Triple*)(using WorkingDirectory): List[Edge] raises Toolchain.Error =
+  def apply(triples: Triple*)(using WorkingDirectory, Environment)
+  :   List[Edge] raises Toolchain.Error =
+
     val clang = probe(t"clang")
     val clangpp = probe(t"clang++")
 
@@ -96,7 +98,7 @@ object nativeEdges:
 
     targets.map: triple => Edge(Universe.Nir, Binary(triple), NativeTool(triple, clang, clangpp))
 
-  private def probe(tool: Text)(using WorkingDirectory): Text raises Toolchain.Error =
+  private def probe(tool: Text)(using WorkingDirectory, Environment): Text raises Toolchain.Error =
     safely(mute[Exec.Event](sh"which $tool".exec[Text]())).let(_.trim)
     . or(abort(Toolchain.Error(tool)))
 

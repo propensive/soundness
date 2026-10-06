@@ -45,3 +45,4 @@ class LazyEnvironment(variables: List[Text]) extends Environment:
     . to[Map]
 
   def variable(key: Text): Optional[Text] = map.at(key)
+  override def entries: Optional[Map[Text, Text]] = map
