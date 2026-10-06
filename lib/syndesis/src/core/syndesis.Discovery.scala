@@ -230,8 +230,8 @@ object Discovery:
   // records expiring). A change to an instance's details shows up by resolving it again.
   object Event:
     given showable: Event is Showable =
-      case Found(instance) => t"found ${instance.show}"
-      case Lost(instance)  => t"lost ${instance.show}"
+      case Found(instance) => t"found $instance"
+      case Lost(instance)  => t"lost $instance"
 
   enum Event:
     case Found(instance: Instance)

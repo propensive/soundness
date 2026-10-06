@@ -106,7 +106,7 @@ object SourceCode:
           val words = prefix.lay(found.keywords): p => found.keywords.filter(_.starts(p))
 
           val prefixLength = prefix.lay(0)(_.length)
-          val replace = Span.offset((caret.n0 - prefixLength).z, prefixLength)
+          val replace = Span.offset(caret - prefixLength, prefixLength)
 
           val wordList: List[Text] = words.to[List]
           val sorted:   List[Text] = wordList.order(_.s)

@@ -37,6 +37,7 @@ import javax.sound.sampled as jss
 
 import anticipation.*
 import contingency.*
+import gossamer.*
 import prepositional.*
 import quantitative.*
 import rudiments.*
@@ -140,7 +141,7 @@ object Audio:
   // AudioError → Audio.Error
   case class Error(audible: Optional[Audible])(using Diagnostics)
   extends
-    fulminate.Error(m"unable to read the audio in ${audible.lay("unspecified".tt)(_.name)} format")
+    fulminate.Error(m"unable to read the audio in ${audible.lay(t"unspecified")(_.name)} format")
 
 case class Audio
   ( private[cacophony] val format: jss.AudioFormat,

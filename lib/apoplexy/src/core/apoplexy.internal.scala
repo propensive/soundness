@@ -833,7 +833,7 @@ object Apoplexy:
           case '[carrier] =>
             val postable = Expr.summon[carrier is Postable].getOrElse:
               val advice = t"import its entry from `postables`"
-              val body = t"the ${carrierRepr.show} request body of $verb $locus"
+              val body = t"the $carrierRepr request body of $verb $locus"
               halt(m"apoplexy: no `Postable` for $body is in scope; $advice")
 
             if actual <:< carrierRepr then

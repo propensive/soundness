@@ -655,7 +655,7 @@ object internal:
 
           t"Case fields" ->
             symbol.caseFields.map: field =>
-              t"${field.name}: ${field.info.show}"
+              t"${field.name}: ${field.info}"
 
             . join(t"\n"),
 

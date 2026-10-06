@@ -2220,7 +2220,7 @@ object Json extends Json2, Dynamic:
 
       def string: Text raises Json.Error =
         if isString then json.asInstanceOf[Text]
-        else expected(Json.Primitive.String) yet "".tt
+        else expected(Json.Primitive.String) yet t""
 
       def boolean: Boolean raises Json.Error =
         if isBoolean then json.asInstanceOf[Boolean]

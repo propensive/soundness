@@ -41,6 +41,7 @@ import phoenicia.*
 import prepositional.*
 import quantitative.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 // `linearAccess`: linking outline siblings reads the neighbouring `refs` by position, exactly
 // as the stdlib-indexed form it replaces did.
@@ -338,7 +339,7 @@ private def buildOutline
 
       // `at` is total: a sibling off either end of the list is simply `Unset`, so no bounds
       // guard is needed. (`(ordinal.n0 - 1).z` rather than `previous`, which clamps at `Prim`.)
-      refs.at((ordinal.n0 - 1).z).let: previous => dict = dict.define(t"Prev", previous)
+      refs.at(ordinal - 1).let: previous => dict = dict.define(t"Prev", previous)
 
       refs.at(ordinal.next).let: following => dict = dict.define(t"Next", following)
 

@@ -86,7 +86,7 @@ object Face:
     def characterVariant(number: Int): Feature of Runtime = Feature(t"cv${twoDigits(number)}")
 
     private def twoDigits(number: Int): Text =
-      if number < 10 then t"0${number.show}" else number.show
+      if number < 10 then t"0$number" else number.show
 
     // A feature with the value it is set to: 0 disables it, 1 enables it, and some features
     // (character variants, for example) select among alternates by higher values.
@@ -127,8 +127,8 @@ object Face:
       type Enabled = Runtime
 
   given showable: [face <: Face] => face is Showable = face =>
-    val slant = if face.slant.upright then t"" else t" ${face.slant.show}"
-    t"${face.typeface.name} ${face.weight.show}$slant"
+    val slant = if face.slant.upright then t"" else t" ${face.slant}"
+    t"${face.typeface.name} ${face.weight}$slant"
 
   given inspectable: [face <: Face] => face is Inspectable = face =>
     t"Face(${face.typeface.name.inspect}, ${face.weight.inspect}, ${face.slant.inspect})"

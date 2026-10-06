@@ -159,7 +159,7 @@ object OpenAI:
     case Llm.Content.Source.Remote(url) => url.show
 
     case Llm.Content.Source.Inline(data, mediaType) =>
-      t"data:${mediaType.show};base64,${data.serialize[Base64]}"
+      t"data:$mediaType;base64,${data.serialize[Base64]}"
 
   // One user-side content block as a Chat content *part*. Documents and another provider's
   // opaque blocks have no Chat form, and are dropped.

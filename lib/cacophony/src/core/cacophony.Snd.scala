@@ -34,12 +34,13 @@ package cacophony
 
 import anticipation.*
 import gesticulate.*
+import gossamer.*
 
 object Snd:
   def apply(): Audible = audibility
 
   given audibility: Snd is Audible:
-    def name: Text           = "SND".tt
+    def name: Text           = t"SND"
     def mediaType: MediaType = media"audio/basic"
 
 sealed trait Snd

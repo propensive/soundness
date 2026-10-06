@@ -34,12 +34,13 @@ package cacophony
 
 import anticipation.*
 import gesticulate.*
+import gossamer.*
 
 object Wave:
   def apply(): Audible = audibility
 
   given audibility: Wave is Audible:
-    def name: Text           = "WAVE".tt
+    def name: Text           = t"WAVE"
     def mediaType: MediaType = media"audio/x-wav"
 
 sealed trait Wave

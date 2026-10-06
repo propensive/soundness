@@ -112,7 +112,7 @@ object timestampInternal:
 
     // Date-time display (any precision): "time, date".
     given timestampShowable: (Clockface is Showable, Date is Showable) => Timestamp is Showable =
-      timestamp => t"${timestamp.time.show}, ${timestamp.date.show}"
+      timestamp => t"${timestamp.time}, ${timestamp.date}"
 
     // The civil difference of two timestamps, decomposed into days/hours/minutes/seconds by
     // truncated (sign-consistent) division. Nominal, calendar-free.

@@ -595,7 +595,7 @@ extends Documentary:
     val attrs: Ledger[Text, Text] =
       Ledger
         ( t"xmlns"   -> t"http://www.w3.org/2000/svg",
-          t"viewBox" -> t"0 0 ${width.show} ${height.show}",
+          t"viewBox" -> t"0 0 $width $height",
           t"width"   -> width.show,
           t"height"  -> height.show )
 

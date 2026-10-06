@@ -81,7 +81,7 @@ object internal:
       def range: Range = Range(weight, weight)
 
     given showable: Weight is Showable = _.value.show
-    given inspectable: Weight is Inspectable = weight => t"Weight(${weight.value.show})"
+    given inspectable: Weight is Inspectable = weight => t"Weight(${weight.value})"
 
   opaque type Weight = Int
 

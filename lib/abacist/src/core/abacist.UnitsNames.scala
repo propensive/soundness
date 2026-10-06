@@ -33,8 +33,9 @@
 package abacist
 
 import anticipation.*
+import gossamer.*
 
 trait UnitsNames[quanta]:
-  def prefix: Text = "".tt
-  def separator: Text = " ".tt
+  def prefix: Text = t""
+  def separator: Text = t" "
   def units(): List[Text]
