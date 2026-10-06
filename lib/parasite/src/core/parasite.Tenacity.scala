@@ -66,4 +66,4 @@ trait Tenacity extends scala.caps.Pure:
 
   def limit(n: Int): Tenacity = new:
     def delay(attempt: Ordinal): Optional[Long] raises Tenacity.Error =
-      if attempt.n1 > n then abort(Tenacity.Error(attempt.n1 - 1)) else tenacity.delay(attempt)
+      if attempt.n1 > n then abort(Tenacity.Error(attempt.n0)) else tenacity.delay(attempt)

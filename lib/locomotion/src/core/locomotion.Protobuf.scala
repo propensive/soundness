@@ -279,7 +279,7 @@ object Protobuf extends Protobuf2:
   // unchanged. This is the only optic Protobuf affords — there are no field labels.
   given fieldOptical: [element] => Ordinal is Optical from Protobuf onto Protobuf = ordinal =>
     Optic: (origin, lambda) =>
-      val number = ordinal.n0 + 1
+      val number = ordinal.n1
 
       safely:
         val fields = ProtobufParser(origin.payload).fields()

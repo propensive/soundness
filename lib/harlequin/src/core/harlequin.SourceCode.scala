@@ -224,7 +224,7 @@ object SourceCode:
 
         case xs =>
           xs.where(_ == Token.Newline).lay(xs :: acc): ordinal =>
-            lines(xs.skip(ordinal.n0 + 1), xs.keep(ordinal.n0) :: acc)
+            lines(xs.skip(ordinal.n1), xs.keep(ordinal.n0) :: acc)
 
     def quoted(text: Text): Boolean =
       text.length > 0 &&
