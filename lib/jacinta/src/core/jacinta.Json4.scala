@@ -36,6 +36,7 @@ import scala.language.experimental.into
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -170,7 +171,7 @@ trait Json4:
       abort(Json.Provider.Error(reason))
 
     private def bound(param: Text): Optional[Double] =
-      if param.s.isEmpty then Unset else param.s.toDouble
+      if param.nil then Unset else param.s.toDouble
 
     // The fallible readers are named classes, with their givens declared at the classes' own
     // types: an instance declared at the refined `Intensional.Fallible` type would be a field
@@ -241,7 +242,7 @@ trait Json4:
 
       def transform(json: Json, params: List[Text])(using Tactic[Json.Provider.Error]): Text =
         val text = json.as[Text]
-        val length = text.s.length
+        val length = text.length
 
         params.absolve match
           case min :: max :: Nil =>
@@ -329,7 +330,7 @@ trait Json4:
       override def entries(name: Text, json: Json): List[(Text, Json)] = pairs(json(name))
 
       def repeated(name: Text, json: Json): List[Json] =
-        val value = if name.s.isEmpty then json else json(name)
+        val value = if name.nil then json else json(name)
         if absent(value) then List() else value.as[List[Json]]
 
     // The fields of a schema's root object, as the provider's specification. The root must
@@ -590,13 +591,13 @@ trait Json4:
           val limits = bounds(node)
           val wide = text(node, t"format") == t"int64"
 
-          if !limits.forall(_.s.isEmpty) then value(t"integer!", limits)
+          if !limits.forall(_.nil) then value(t"integer!", limits)
           else if wide then value(t"long")
           else value(t"integer")
 
         case "number" =>
           val limits = bounds(node)
-          if limits.forall(_.s.isEmpty) then value(t"number") else value(t"number!", limits)
+          if limits.forall(_.nil) then value(t"number") else value(t"number!", limits)
 
         case "boolean" => value(t"boolean")
         case _         => any
@@ -705,7 +706,7 @@ trait Json4:
 
       // The member a `$ref` reads: its target's, for a local reference not already on the path
       private def referenced(target: Text, seen: SSet[Text]): Member =
-        if !target.s.startsWith("#") then
+        if !target.starts(t"#") then
           externalRefs.set(true)
           any
         else if seen.contains(target) || seen.size >= limit then

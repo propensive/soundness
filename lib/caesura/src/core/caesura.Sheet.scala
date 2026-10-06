@@ -87,7 +87,7 @@ object Sheet:
       val columns: List[Text] =
         dsv.columns.let(_.to[List]).or:
           dsv.rows.prim.let: head =>
-            (1 to head.data.length).to(List).map(_.toString.tt)
+            (1 to head.data.length).to(List).map(_.show)
 
         . or(Nil)
 

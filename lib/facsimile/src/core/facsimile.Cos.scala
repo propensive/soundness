@@ -34,6 +34,7 @@ package facsimile
 
 import anticipation.*
 import denominative.*
+import gossamer.*
 import hieroglyph.*
 import rudiments.*
 import vacuous.*
@@ -55,7 +56,7 @@ object Cos:
   // character fits, otherwise UTF-16BE with a byte-order mark, matching `decodeText`.
   private[facsimile] def encodeText(text: Text): Data =
     if text.s.forall(_ < 0x100) then
-      Array.scribe[Byte](text.s.length): scribe => extent =>
+      Array.scribe[Byte](text.length): scribe => extent =>
         extent.each: i =>
           scribe(i) = text.s.charAt((i: Ordinal).n0).toByte
     else

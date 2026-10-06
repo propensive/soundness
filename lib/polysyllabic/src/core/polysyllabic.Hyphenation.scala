@@ -98,7 +98,7 @@ object Hyphenation:
   def breakPoints(word: Text, hyphenation: Hyphenation, leftMin: Int, rightMin: Int)
   :   Array[Int]^{} =
 
-    breakPoints(word.s, 0, word.s.length, hyphenation, leftMin, rightMin)
+    breakPoints(word.s, 0, word.length, hyphenation, leftMin, rightMin)
 
   // Slice variant: operate on `source[offset, offset + length)` without
   // allocating a substring. Allocates fresh scratch buffers internally; hot

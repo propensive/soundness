@@ -32,6 +32,7 @@
                                                                                                   */
 package stratiform
 
+import denominative.*
 import murmuration.*
 
 import anticipation.*
@@ -618,7 +619,7 @@ object Mutation:
   // code points. (The parser records marker offsets in bytes and the
   // serializer pads in UTF-16 units, so the three agree only within
   // ASCII; the spec's unit is the most defensible of the three here.)
-  private def codePoints(text: Text): Int = text.s.codePointCount(0, text.s.length)
+  private def codePoints(text: Text): Int = text.s.codePointCount(0, text.length)
 
   // Column widths of an *existing* (parsed, column-aligned) row: column 0
   // is the keyword-and-pre-column portion, extended by soft-space atoms;
@@ -995,7 +996,7 @@ object Mutation:
   // empty values are dropped. The canonical sigil is `#`.
   def construct(keyword: Text, atoms: Text*): Tel.Compound =
     val atomNodes =
-      Array.from(atoms.collect { case value if value.s.nonEmpty => chooseAtomForm(value, '#') })
+      Array.from(atoms.collect { case value if !value.nil => chooseAtomForm(value, '#') })
 
     Tel.Compound(keyword, atomNodes, Unset, Array.empty)
 
@@ -1033,7 +1034,7 @@ object Mutation:
     var inRun = true
 
     def scalarChild(kw: Text, value: Text): Tel.Compound =
-      if value.s.isEmpty then Tel.Compound(kw, Array.empty, Unset, Array.empty)
+      if value.nil then Tel.Compound(kw, Array.empty, Unset, Array.empty)
       else Tel.Compound(kw, Array(chooseAtomForm(value, sigil)), Unset, Array.empty)
 
     members.each:
@@ -1056,8 +1057,8 @@ object Mutation:
         val second: Optional[Text] = occurrences.sec
 
         // Local `def`s, so each scan still happens only on the branch that needs it.
-        def soleInlineable = first.let { o => o.s.nonEmpty && inlineSafe(o, sigil) }.or(false)
-        def allInlineable = occurrences.all { o => o.s.nonEmpty && inlineSafe(o, sigil) }
+        def soleInlineable = first.let { o => !o.nil && inlineSafe(o, sigil) }.or(false)
+        def allInlineable = occurrences.all { o => !o.nil && inlineSafe(o, sigil) }
 
         if inRun && second.absent && soleInlineable
         then first.let { o => inlineTexts += o }

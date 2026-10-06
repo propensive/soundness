@@ -3700,7 +3700,7 @@ object Xml extends Tag.Container
       val target = readName()
 
       val isXmlName =
-        target.s.length == 3 &&
+        target.length == 3 &&
           (target.s.charAt(0) == 'x' || target.s.charAt(0) == 'X') &&
           (target.s.charAt(1) == 'm' || target.s.charAt(1) == 'M') &&
           (target.s.charAt(2) == 'l' || target.s.charAt(2) == 'L')

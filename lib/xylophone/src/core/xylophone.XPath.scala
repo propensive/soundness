@@ -306,7 +306,7 @@ object XPath extends Format:
     def truth: Boolean = this match
       case Truth(value)   => value
       case Numeric(value) => value == value && value != 0.0
-      case Textual(value) => value.s.length > 0
+      case Textual(value) => value.length > 0
       case NodeSet(loci)  => !loci.nil
 
     def number: Double = this match

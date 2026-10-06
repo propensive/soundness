@@ -41,6 +41,7 @@ import denominative.*
 import gossamer.*
 
 import rudiments.*
+import spectacular.*
 import symbolism.*
 import vacuous.*
 
@@ -213,7 +214,7 @@ object SyntaxMatcher:
     private def literal(token: Text, tokens: List[ValueToken]): List[List[ValueToken]] =
       if token == t"," then comma(tokens)
       else tokens match
-        case ValueToken.Delim(char) :: tail if token == char.toString.tt =>
+        case ValueToken.Delim(char) :: tail if token == char.show =>
           List(tail)
 
         case _ =>

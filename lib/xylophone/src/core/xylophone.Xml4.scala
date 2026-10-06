@@ -196,7 +196,7 @@ trait Xml4:
 
       // The checks every restricted type shares: length, pattern and enumeration on the text
       def textual(value: Text)(using Tactic[Xml.Provider.Error]): Unit =
-        val length = value.s.length
+        val length = value.length
 
         def badLength(minimum: Optional[Text], maximum: Optional[Text]): Nothing =
           fail(Xml.Provider.Error.Reason.LengthOutOfRange(value, minimum, maximum))
@@ -489,7 +489,7 @@ trait Xml4:
             case "decimal" | "double" | "float" | "double!" => t"double!"
             case _                                          => label
 
-          if restricted == label && !label.s.endsWith("!") then Member.Value(label)
+          if restricted == label && !label.ends(t"!") then Member.Value(label)
           else Member.Value(restricted, params)
 
       private def facetParams(facets: List[Facet]): List[Text] = facets.map:

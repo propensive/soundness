@@ -37,6 +37,7 @@ import scala.collection.mutable as scm
 
 import anticipation.*
 import contingency.*
+import gossamer.*
 import vacuous.*
 import zephyrine.*
 import denominative.*
@@ -301,7 +302,7 @@ private[xylophone] object XPathReader:
 
   def parse(text: Text, holes: Boolean)(using Tactic[Parse.Error]): Expression =
     val tokens = tokenize(text.s, holes)
-    val end = text.s.length
+    val end = text.length
     var index = 0
 
     def more: Boolean = index < tokens.length

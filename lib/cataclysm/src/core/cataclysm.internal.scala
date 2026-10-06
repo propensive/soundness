@@ -55,7 +55,7 @@ object internal:
   // A private-use sentinel marks each substitution. NUL would be removed by the
   // parser's `.trim` (it is ≤ space), so a non-whitespace char is needed.
   private val sentinel: Char = 0xe000.toChar
-  private val placeholder: Text = sentinel.toString.tt
+  private val placeholder: Text = sentinel.show
 
   // The macro behind the `css"…"` interpolator. The literal parts are joined with a
   // sentinel char at each `$substitution`, parsed at compile time, and the parsed
@@ -111,7 +111,7 @@ object internal:
 
           val offset =
             (lineStart(cssError.line.n0, 0) + cssError.column.n0)
-            . min(joined.s.length - 1)
+            . min(joined.length - 1)
             . max(0)
 
           val position =

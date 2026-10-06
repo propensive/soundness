@@ -35,6 +35,7 @@ package punctuation
 import scala.collection.mutable
 
 import anticipation.*
+import denominative.*
 import rudiments.*
 import gossamer.*
 import vacuous.*
@@ -326,7 +327,7 @@ private[punctuation] object InlineParser:
     if after < end && s.charAt(after) == '[' then
       InlineSupport.parseRefLabel(s, after, end) match
         case r: InlineSupport.RefLabelMatch =>
-          val label = if r.label.s.isEmpty then bracketContent else r.label
+          val label = if r.label.nil then bracketContent else r.label
 
           // Per spec: when the `[label]` parses but the label doesn't
           // resolve, the link attempt fails entirely — don't fall back to

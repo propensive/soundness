@@ -149,7 +149,7 @@ object Apoplexy:
   // --- path utilities ------------------------------------------------------
 
   private def segments(path: Text): List[Text] = path.cut(t"/").filter(_ != t"")
-  private def isTemplate(segment: Text): Boolean = segment.starts(t"{") && segment.s.endsWith("}")
+  private def isTemplate(segment: Text): Boolean = segment.starts(t"{") && segment.ends(t"}")
   private def templateName(segment: Text): Text = segment.skip(1).keep(segment.length - 2)
 
   private def isPrefix(short: List[Text], long: List[Text]): Boolean =
@@ -303,7 +303,7 @@ object Apoplexy:
 
           case kind =>
             val shown = result.show
-            val kindName = kind.toString.tt
+            val kindName = kind.show
             val advice = t"an API key is a `Credential to Text`, HTTP authentication a `Credential to Auth`, a token a `Credential to Authorization`"
             halt(m"apoplexy: the credential for $scheme (a $kindName scheme) has the type $shown; $advice")
 

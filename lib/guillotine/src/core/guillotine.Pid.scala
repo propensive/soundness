@@ -42,7 +42,7 @@ import spectacular.*
 
 object Pid:
   given showable: Pid is Showable = _.toString.tt
-  given encodable: Pid is Encodable in Text = _.toString.tt
+  given encodable: Pid is Encodable in Text = _.show
 
   // `Pid`'s `toString` already prefixes the number with `↯`, which distinguishes it from a plain
   // number, so the debug rendering is the same text as `showable`'s; it takes no context, so it

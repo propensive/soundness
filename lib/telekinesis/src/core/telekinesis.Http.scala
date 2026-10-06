@@ -921,7 +921,7 @@ object Http:
     @scala.annotation.tailrec
     private def headersSize(headers: List[Header], size: Int): Int = headers match
       case header :: rest =>
-        headersSize(rest, size + header.key.s.length + header.value.s.length + 4)
+        headersSize(rest, size + header.key.length + header.value.length + 4)
 
       case _ =>
         size

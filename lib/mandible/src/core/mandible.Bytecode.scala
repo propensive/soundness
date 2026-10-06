@@ -108,7 +108,7 @@ object Bytecode:
           (L(name), end + 1)
 
         case other =>
-          panic(m"unexpected character '${other.toString.tt}' in descriptor")
+          panic(m"unexpected character '$other' in descriptor")
 
     def fromFieldDescriptor(descriptor: Text): Frame = parseOne(descriptor, 0)._1
 

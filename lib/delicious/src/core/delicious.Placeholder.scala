@@ -33,6 +33,7 @@
 package delicious
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
@@ -47,8 +48,8 @@ object Placeholder:
 
   /** The placeholder id, if the text is a placeholder reference. */
   def reference(text: Text): Optional[Int] =
-    if text.s.startsWith(Prefix.s) && text.s.endsWith("⟩") then
-      val body = text.s.substring(Prefix.s.length, text.s.length - 1).nn
+    if text.starts(Prefix) && text.ends(t"⟩") then
+      val body = text.s.substring(Prefix.length, text.length - 1).nn
       if body.nonEmpty && body.forall(_.isDigit) then body.toInt else Unset
     else Unset
 
@@ -68,7 +69,7 @@ object Placeholder:
               PlaceholderKind(field(kind)),
               field(name),
               field(arity).s.toInt,
-              if definedAt.s.isEmpty then Unset else field(definedAt),
+              if definedAt.nil then Unset else field(definedAt),
               field(printed) )
         catch case _: NumberFormatException => Unset
 

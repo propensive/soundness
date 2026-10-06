@@ -181,11 +181,11 @@ object Ergo:
   // Joins a juxtaposed run, inserting a space only where two tokens would
   // otherwise merge (letter+letter into one `<mi>`, or digit+digit into one `<mn>`).
   private def sequence(nodes: List[Mathml])(using Tactic[Ergo.Error]): Text =
-    val parts: List[Text] = nodes.map(emit(_, false)).filter(!_.s.isEmpty)
+    val parts: List[Text] = nodes.map(emit(_, false)).filter(!_.nil)
 
     parts.fold[Text](t""): (acc: Text, next: Text) =>
-      if acc.s.isEmpty then next
-      else if merges(acc.s.charAt(acc.s.length - 1), next.s.charAt(0)) then t"$acc $next"
+      if acc.nil then next
+      else if merges(acc.s.charAt(acc.length - 1), next.s.charAt(0)) then t"$acc $next"
       else t"$acc$next"
 
   private def merges(left: Char, right: Char): Boolean =
@@ -202,7 +202,7 @@ object Ergo:
     else core
 
   private def emit(node: Mathml, asOperand: Boolean)(using Tactic[Ergo.Error]): Text = node match
-    case Mo(value, attributes) if value.s.length == 1 && special(value.s.charAt(0)) =>
+    case Mo(value, attributes) if value.length == 1 && special(value.s.charAt(0)) =>
       t"${group(value)}${directivesFor(attributes)}"
 
     case Mi(value, attributes) => t"$value${directivesFor(attributes)}"

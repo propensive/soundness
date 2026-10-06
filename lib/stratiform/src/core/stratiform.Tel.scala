@@ -1788,7 +1788,7 @@ object Tel extends Tel2:
             case other                                                => other
 
       private def isUnknown(d: Diagnostic): Boolean = d match
-        case Diagnostic.Scalar(m, _) => m.s.startsWith("unknown validator")
+        case Diagnostic.Scalar(m, _) => m.starts(t"unknown validator")
         case _                       => false
 
       private def identifier(value: Text): Response =
@@ -5627,7 +5627,7 @@ object Tel extends Tel2:
           if tracking then
             positionRecords += compoundLine
             positionRecords += compoundLeadingSpaces + 1
-            positionRecords += compoundKeyword.s.length
+            positionRecords += compoundKeyword.length
             positionRecords += lineValueColumn
             positionRecords += lineValueLength
 
@@ -6349,11 +6349,11 @@ object Tel extends Tel2:
       // §19.5 RestartFromPragma: record the misplaced pragma but parse the line as
       // an ordinary compound (the keyword is already read; the rest follows).
       if mayBeMisplacedPragma && keyword == t"tel" then
-        recoverAt(Reason.PragmaNotFirst, lineNumber, 1, keyword.s.length)(())
+        recoverAt(Reason.PragmaNotFirst, lineNumber, 1, keyword.length)(())
 
       hasConsumedNonBlankLine = true
       // The value run starts just past the keyword; the scan advances from here.
-      if spanTracking then lineValueOrigin = head.leadingSpaces + 1 + keyword.s.length
+      if spanTracking then lineValueOrigin = head.leadingSpaces + 1 + keyword.length
       parseCompoundLineRest(lineNumber)
       compoundLineKeyword = keyword
 
@@ -6890,11 +6890,11 @@ object Tel extends Tel2:
 
               // E102 / §19.5 RestartFromPragma, as in `parseCompoundLine`.
               if mayBeMisplacedPragma && keyword == t"tel" then
-                recoverAt(Reason.PragmaNotFirst, directEntryLine, 1, keyword.s.length)(())
+                recoverAt(Reason.PragmaNotFirst, directEntryLine, 1, keyword.length)(())
 
               directEntryKeyword = keyword
               directEntryKeywordLazy = false
-              directEntryKeywordLen = keyword.s.length
+              directEntryKeywordLen = keyword.length
             else
               readKeywordFast()
 

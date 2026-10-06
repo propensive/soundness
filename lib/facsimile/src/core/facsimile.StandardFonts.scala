@@ -48,7 +48,7 @@ private[facsimile] object StandardFonts:
   def recognize(baseFont: Text): Optional[Standard] =
     // Subsetted fonts carry a six-letter prefix, e.g. `ABCDEF+Helvetica`.
     val name =
-      if baseFont.s.length > 7 && baseFont.s.charAt(6) == '+' then baseFont.s.substring(7).nn
+      if baseFont.length > 7 && baseFont.s.charAt(6) == '+' then baseFont.s.substring(7).nn
       else baseFont.s
 
     // The canonical names are the fonts' own; these are the metric-compatible aliases.

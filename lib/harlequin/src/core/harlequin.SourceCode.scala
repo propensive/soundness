@@ -626,7 +626,7 @@ object SourceCode:
               module match
                 case completable: prophesy.Completable =>
                   val items =
-                    completable.completions(repr, prefix).filter(_.name.s.startsWith(prefix.s))
+                    completable.completions(repr, prefix).filter(_.name.starts(prefix))
 
                   if items.nil then Unset
                   else Completions(Span.offset(start.z, prefix.length), items)

@@ -34,6 +34,7 @@ package stratiform
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import polyvinyl.*
 import prepositional.*
@@ -67,7 +68,7 @@ trait Tel4:
     // A Tel returned from `access` is "absent" iff its wrapped Compound has an empty keyword —
     // `Tel.empty` is the sentinel returned when a field is missing. Concrete present-but-no-value
     // cases (e.g. a Flag) have a non-empty keyword.
-    private def absent(tel: Tel): Boolean = tel.keyword.s.isEmpty
+    private def absent(tel: Tel): Boolean = tel.keyword.nil
 
     given string: ("string" is Intensional in Tel.Provider from Tel to Text) =
       Intensional(_.primaryAtom)
@@ -229,7 +230,7 @@ trait Tel4:
         Bintel.present(element, reading.document)
 
     def access(name: Text, tel: Tel): Tel = tel.field(name).or(Tel.empty)
-    def absent(tel: Tel): Boolean = tel.keyword.s.isEmpty
+    def absent(tel: Tel): Boolean = tel.keyword.nil
 
     // Every keyword the composed schema declares as a flag, anywhere: a flag is never absent,
     // since its absence reads as `false`

@@ -55,7 +55,7 @@ object Alphabet:
   // Bits per serialized character: alphabets have 2^bits characters, plus
   // one for padding.
   private def bits(alphabet: Alphabet[?]): Int =
-    31 - Integer.numberOfLeadingZeros(alphabet.chars.s.length)
+    31 - Integer.numberOfLeadingZeros(alphabet.chars.length)
 
   given serialization: [encoding <: Serialization]
   =>  Ductile.Instance[Alphabet[encoding], Data, Text, Credit, Credit] =

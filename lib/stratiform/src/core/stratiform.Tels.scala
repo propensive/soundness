@@ -1236,7 +1236,7 @@ object Tels extends Tels2:
 
           case "sigil" =>
             val s = firstAtomText(c)
-            sigil = s.let { text => if text.s.isEmpty then Unset else text.s.charAt(0) }
+            sigil = s.let { text => if text.nil then Unset else text.s.charAt(0) }
 
           case "record"   => records  += parseRecord(c)
           case "scalar"   => scalars  += parseScalar(c)
@@ -1483,7 +1483,7 @@ object Tels extends Tels2:
       val name = textAt(ch, 0).or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
 
       val sigil: Optional[Char] = textAt(ch, 1) match
-        case t: Text => if t.s.isEmpty then Unset else Optional(t.s.charAt(0))
+        case t: Text => if t.nil then Unset else Optional(t.s.charAt(0))
         case _       => Unset
 
       val records  = nodesAt(ch, 2).remap(recordFromElement)

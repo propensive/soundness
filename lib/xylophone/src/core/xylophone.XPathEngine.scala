@@ -426,11 +426,11 @@ private[xylophone] object XPathEngine:
         val start = t"$prefix:"
 
         if attributeAxis then locus.attributeName match
-          case name: Text => name.s.startsWith(start.s)
+          case name: Text => name.starts(start)
           case _          => false
         else if isAttribute then false
         else locus.subject match
-          case element: Xml.Element => element.label.s.startsWith(start.s)
+          case element: Xml.Element => element.label.starts(start)
           case _                    => false
 
       case NodeTest.Node =>
@@ -593,11 +593,11 @@ private[xylophone] object XPathEngine:
 
       case "starts-with" =>
         arity(2, 2)
-        Value.Truth(args(0).text.s.startsWith(args(1).text.s))
+        Value.Truth(args(0).text.starts(args(1).text))
 
       case "contains" =>
         arity(2, 2)
-        Value.Truth(args(0).text.s.contains(args(1).text.s))
+        Value.Truth(args(0).text.contains(args(1).text))
 
       case "substring-before" =>
         arity(2, 2)
@@ -632,7 +632,7 @@ private[xylophone] object XPathEngine:
 
       case "string-length" =>
         arity(0, 1)
-        Value.Numeric(defaulted.text.s.length)
+        Value.Numeric(defaulted.text.length)
 
       case "normalize-space" =>
         arity(0, 1)

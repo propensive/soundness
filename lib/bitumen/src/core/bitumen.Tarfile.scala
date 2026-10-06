@@ -138,8 +138,8 @@ object Tarfile:
                   paxOverlay.at("gname".tt).or(globalOverlay.at("gname".tt))
                   . or(Tar.Header.decodeNulText(header.gname))
 
-                val user = UnixUser(uid, if unameText.s.isEmpty then Unset else unameText)
-                val group = UnixGroup(gid, if gnameText.s.isEmpty then Unset else gnameText)
+                val user = UnixUser(uid, unameText.puncture(t""))
+                val group = UnixGroup(gid, gnameText.puncture(t""))
 
                 header.typeFlag.toInt & 0xff match
                   case 'x' =>
@@ -338,7 +338,7 @@ object Tarfile:
       paxOverlay.at("path".tt).or(globalOverlay.at("path".tt)).lay:
         val name = Tar.Header.decodeNulText(header.name)
         val prefix = Tar.Header.decodeNulText(header.prefix)
-        stripTrailingSlash(if prefix.s.isEmpty then name else t"$prefix/$name")
+        stripTrailingSlash(if prefix.nil then name else t"$prefix/$name")
       . apply: text =>
         stripTrailingSlash(text)
 
@@ -354,7 +354,7 @@ object Tarfile:
       . or(Tar.Header.decodeNulText(header.linkName))
 
   private def stripTrailingSlash(text: Text): Text =
-    if text.s.endsWith("/") then text.s.dropRight(1).nn.tt else text
+    if text.ends(t"/") then text.skip(1, Rtl) else text
 
   private def decodePath(text: Text): Tar.Ref raises Tar.Error =
     import errorDiagnostics.emptyDiagnostics
