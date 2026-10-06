@@ -72,10 +72,20 @@ private enum ClientExchange:
 // A fire-and-forget datagram destination.
 private case class UdpCourier(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
 
+// A bound datagram socket with the size of the buffer each datagram is received into.
+private case class UdpBinding(socket: jn.DatagramSocket, datagramSize: Int)
+
+// The `DatagramSize` option, consumed by the backend rather than set on the socket.
+private def datagramSize(options: List[Socket.Option]): Int = options match
+  case Nil                                      => 1472
+  case Socket.Option.DatagramSize(bytes) :: _   => bytes
+  case _ :: tail                                => datagramSize(tail)
+
 package socketBackends:
   given scalaNativeSockets: Socket.Backend = new Socket.Backend:
     type ServerSocket = ServerBinding
-    type DatagramSocket = jn.DatagramSocket
+    type DatagramSocket = UdpBinding
+    type MulticastSocket = Unit
     type Exchange = ClientExchange
     type Courier = UdpCourier
 
@@ -167,22 +177,29 @@ package socketBackends:
 
     //── Datagram server (`Bindable` over UDP) ──────────────────────────────────────────────────
     def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
-    :   jn.DatagramSocket =
+    :   UdpBinding =
 
-      val socket = jn.DatagramSocket(port.number)
+      // Unbound at first, so that `ReuseAddress` takes effect before the bind.
+      val socket = jn.DatagramSocket(null: jn.SocketAddress | Null)
       configure(socket, options)
 
       // (Selecting the multicast interface needs `DatagramSocket.setOption`, absent from Scala
       // Native's javalib; unsupported for now — `interface` is ignored for UDP.)
 
-      socket
+      socket.bind(jn.InetSocketAddress(port.number))
+      UdpBinding(socket, datagramSize(options))
 
-    def receive(socket: jn.DatagramSocket): Packet raises Socket.Error =
-      val array = new scala.Array[Byte](1472)
-      val packet = jn.DatagramPacket(array, 1472)
+    def receive(binding: UdpBinding): Packet raises Socket.Error =
+      receiveFrom(binding.socket, binding.datagramSize)
+
+    private def receiveFrom(socket: jn.DatagramSocket, size: Int): Packet raises Socket.Error =
+      val array = new scala.Array[Byte](size)
+      val packet = jn.DatagramPacket(array, size)
 
       try socket.receive(packet)
-      catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Accept))
+      catch
+        case _: jn.SocketTimeoutException => abort(Socket.Error(Socket.Error.Reason.Timeout))
+        case _: ji.IOException            => abort(Socket.Error(Socket.Error.Reason.Accept))
 
       val address = packet.getSocketAddress.nn.asInstanceOf[jn.InetSocketAddress]
 
@@ -203,7 +220,7 @@ package socketBackends:
           ip,
           Port.unsafe[Udp](address.getPort) )
 
-    def reply(socket: jn.DatagramSocket, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
+    def reply(binding: UdpBinding, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
     :   Unit raises Socket.Error =
 
       val ip: jn.InetAddress = sender.absolve match
@@ -235,10 +252,49 @@ package socketBackends:
 
       val packet = jn.DatagramPacket(Array.unsafeJvm(data), data.length, ip, port.number)
 
-      try socket.send(packet)
+      try binding.socket.send(packet)
       catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
 
-    def unbind(socket: jn.DatagramSocket): Unit = socket.close()
+    def unbind(binding: UdpBinding): Unit = binding.socket.close()
+
+    //── Multicast (unsupported: javalib has no `MulticastSocket` or `DatagramChannel`) ─────────
+    def joinMulticast
+      ( multicast: Multicast, interfaces: List[NetworkInterface], options: List[Socket.Option] )
+    :   Unit =
+      ()
+
+    def receiveMulticast(socket: Unit): Packet raises Socket.Error =
+      abort(Socket.Error(Socket.Error.Reason.Accept))
+
+    def sendGroup(socket: Unit, data: Data): Unit raises Socket.Error =
+      abort(Socket.Error(Socket.Error.Reason.Transmit))
+
+    def sendTo(socket: Unit, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
+    :   Unit raises Socket.Error =
+      abort(Socket.Error(Socket.Error.Reason.Transmit))
+
+    def leaveMulticast(socket: Unit): Unit = ()
+
+    //── One-shot datagram exchange ─────────────────────────────────────────────────────────────
+    def exchangeUdp
+      ( endpoint:  Endpoint[Udp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option],
+        data:      Data )
+    :   Packet raises Socket.Error =
+
+      val courier = routeUdp(endpoint, interface, options)
+
+      try
+        val packet =
+          jn.DatagramPacket(Array.unsafeJvm(data), data.length, courier.address, courier.port)
+
+        try courier.socket.send(packet)
+        catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
+
+        receiveFrom(courier.socket, datagramSize(options))
+
+      finally courier.socket.close()
 
     //── Request/response exchange (`Serviceable`) ──────────────────────────────────────────────
     def dialTcp
@@ -378,6 +434,9 @@ private[coaxial] def applyOptions(options: List[Socket.Option])(target: Configur
     case Socket.Option.NoDelay               => target.noDelay()
     case Socket.Option.KeepAlive             => target.keepAlive()
     case Socket.Option.Broadcast             => target.broadcast()
+    case Socket.Option.MulticastLoop         => ()
+    case Socket.Option.MulticastHops(_)      => ()
+    case Socket.Option.DatagramSize(_)       => ()  // consumed by the backend's receive
     case Socket.Option.ReceiveBuffer(n)      => target.receiveBuffer(n)
     case Socket.Option.SendBuffer(n)         => target.sendBuffer(n)
     case Socket.Option.TrafficClass(n)       => target.trafficClass(n)

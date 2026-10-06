@@ -67,7 +67,9 @@ object Socket:
   //     half-closing its output, then reads the response to peer half-close;
   //   - a persistent *duplex* (`Connectable`) connects and hands back a `Duplex`, whose reads and
   //     writes are independent and never half-close;
-  //   - a fire-and-forget datagram *courier* (`Routable`) connects and dispatches one datagram.
+  //   - a fire-and-forget datagram *courier* (`Routable`) connects and dispatches one datagram;
+  //   - a multicast *subscription* (`Multicast`) joins a group on each interface, receives the
+  //     group's datagrams, and sends to the group or back to one sender.
   //
   // The higher-level loops (`listen`/`react`/`exchange`/`duplex`) compose these in coaxial's
   // user-facing API and stay platform-neutral. Each opaque handle type is threaded back to the
@@ -102,6 +104,38 @@ object Socket:
     :   Unit raises Socket.Error
 
     def unbind(socket: DatagramSocket): Unit
+
+    //── One-shot datagram exchange ───────────────────────────────────────────────────────────────
+    // Send one datagram from an ephemeral port and block for one reply: the shape of a DNS, NTP
+    // or STUN query. `Option.Timeout` bounds the wait, surfacing as `Socket.Error(Timeout)`; the
+    // reply carries its sender, so a caller can check it came from the right place.
+    def exchangeUdp
+      ( endpoint:  Endpoint[Udp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Option],
+        data:      Data )
+    :   Packet raises Socket.Error
+
+    //── Multicast group membership (`Multicast`) ─────────────────────────────────────────────────
+    type MulticastSocket
+
+    // Bind the group's port — with address and port reuse, since several programs on one host
+    // may subscribe to one group — then join the group on each of `interfaces`, which should
+    // be up and multicast-capable, and hold the memberships until `leaveMulticast`.
+    def joinMulticast
+      ( multicast: Multicast, interfaces: List[NetworkInterface], options: List[Option] )
+    :   MulticastSocket
+
+    def receiveMulticast(socket: MulticastSocket): Packet raises Socket.Error
+
+    // Send to the group itself, once through each joined interface, or to one unicast
+    // destination (a response to a sender that asked for one).
+    def sendGroup(socket: MulticastSocket, data: Data): Unit raises Socket.Error
+
+    def sendTo(socket: MulticastSocket, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
+    :   Unit raises Socket.Error
+
+    def leaveMulticast(socket: MulticastSocket): Unit
 
     //── Request/response exchange (`Serviceable`) ────────────────────────────────────────────────
     type Exchange
@@ -185,6 +219,12 @@ object Socket:
     case class  TrafficClass(value: Int)       extends Tcp, Udp         // IP_TOS
 
     case object Broadcast                      extends Udp              // SO_BROADCAST
+    case object MulticastLoop                  extends Udp              // IP_MULTICAST_LOOP
+    case class  MulticastHops(count: Int)      extends Udp              // IP_MULTICAST_TTL
+
+    // The size of the buffer a datagram is received into, and so the largest datagram that
+    // arrives whole: 1472 bytes (one Ethernet frame) unless set, though mDNS allows 9000.
+    case class  DatagramSize(bytes: Int)       extends Udp
 
   sealed trait Option
 
@@ -202,12 +242,14 @@ object Socket:
       case Transmit extends Reason(2)
       case Close    extends Reason(3)
       case Handshake extends Reason(4)
+      case Timeout  extends Reason(5)
 
     given communicable: Reason is Communicable =
       case Reason.Accept    => m"a new connection could not be accepted"
       case Reason.Transmit  => m"data could not be transmitted to the connection"
       case Reason.Close     => m"the connection could not be closed cleanly"
       case Reason.Handshake => m"the TLS handshake with the peer failed"
+      case Reason.Timeout   => m"no response arrived before the timeout"
 
   case class Error(reason: Socket.Error.Reason)(using Diagnostics)
   extends fulminate.Error(266, reason.number)(m"the connection failed because $reason")

@@ -104,6 +104,36 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
 
     try block(using service) finally service.stop()
 
+extension [multicast: {Subscribable as subscribable, Showable}](group: multicast)
+  // `listen`'s loan for a multicast group, lending a `Subscription` that can also send to the
+  // group unprompted — an announcement, a goodbye — which `Bindable`'s request/response shape
+  // has no place for. The receive loop and its stop follow `listenOn` exactly: closing the
+  // socket is what unblocks the receive.
+  transparent inline def subscribe[result](using Monitor, Probate)
+    ( handler: Packet => Multicast.Reply )
+    ( block: Multicast.Subscription ?=> result )
+  :   result raises Bind.Error logs Socket.Event =
+
+    val binding = subscribable.join(group, Unset)
+    Log.info(Socket.Event.Listening(group.show))
+
+    val receiveLoop = loop:
+      safely(subscribable.receive(binding)).let: packet =>
+        async:
+          safely(subscribable.transmit(binding, packet, handler(packet)))
+
+        ()
+
+    val task = async(receiveLoop.run())
+
+    val stop: () => Unit = () =>
+      receiveLoop.stop()
+      subscribable.leave(binding)
+      safely(task.await())
+      Log.fine(Socket.Event.Closed(group.show))
+
+    val subscription = Multicast.Joined(subscribable)(binding, stop)
+    try block(using subscription) finally subscription.stop()
 
 // `Serviceable` instances are capabilities (their givens retain tactics and socket options), so
 // the evidence is an explicit capturing using-parameter rather than a context bound, which would
@@ -272,9 +302,12 @@ package socketOptions:
   given noDelaySocketOption:      Socket.Option.NoDelay.type      = Socket.Option.NoDelay
   given keepAliveSocketOption:    Socket.Option.KeepAlive.type    = Socket.Option.KeepAlive
   given broadcastSocketOption:    Socket.Option.Broadcast.type    = Socket.Option.Broadcast
+  given multicastLoopSocketOption: Socket.Option.MulticastLoop.type = Socket.Option.MulticastLoop
 
   def receiveBuffer(bytes: Int): Socket.Option.ReceiveBuffer = Socket.Option.ReceiveBuffer(bytes)
   def sendBuffer(bytes: Int): Socket.Option.SendBuffer = Socket.Option.SendBuffer(bytes)
   def linger(seconds: Optional[Int] = Unset): Socket.Option.Linger = Socket.Option.Linger(seconds)
   def trafficClass(value: Int): Socket.Option.TrafficClass = Socket.Option.TrafficClass(value)
   def timeout(milliseconds: Int): Socket.Option.Timeout = Socket.Option.Timeout(milliseconds)
+  def multicastHops(count: Int): Socket.Option.MulticastHops = Socket.Option.MulticastHops(count)
+  def datagramSize(bytes: Int): Socket.Option.DatagramSize = Socket.Option.DatagramSize(bytes)

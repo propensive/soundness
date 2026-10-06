@@ -30,126 +30,60 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package urticose
-
-import java.net as jn
-import java.util as ju
-
-import scala.jdk.CollectionConverters.*
+package syndesis
 
 import anticipation.*
+import coaxial.*
 import contingency.*
-import distillate.*
-import fulminate.*
-import gossamer.*
-import rudiments.*
-import spectacular.*
-import vacuous.*
+import gigantism.*
+import parasite.*
+import prepositional.*
 
-import NetworkInterface.Error.Reason.*
-
-object NetworkInterface:
-  given showable: NetworkInterface is Showable = _.name
-
-  def all(): List[NetworkInterface] raises NetworkInterface.Error = enumerated:
-    def recur(interfaces: ju.Enumeration[jn.NetworkInterface], acc: List[NetworkInterface])
-    :   List[NetworkInterface] =
-
-      if !interfaces.hasMoreElements then acc.reverse
-      else recur(interfaces, read(interfaces.nextElement.nn) :: acc)
-
-    Optional(jn.NetworkInterface.getNetworkInterfaces).lay(Nil)(recur(_, Nil))
-
-  def byName(name: Text): Optional[NetworkInterface] raises NetworkInterface.Error = enumerated:
-    Optional(jn.NetworkInterface.getByName(name.s)).let(read(_))
-
-  def byIndex(index: Int): Optional[NetworkInterface] raises NetworkInterface.Error = enumerated:
-    Optional(jn.NetworkInterface.getByIndex(index)).let(read(_))
-
-  def byAddress(address: Ipv4 | Ipv6): Optional[NetworkInterface] raises NetworkInterface.Error =
-    enumerated:
-      val inet = jn.InetAddress.getByAddress(Array.unsafeJvm(address.bytes)).nn
-      Optional(jn.NetworkInterface.getByInetAddress(inet)).let(read(_))
-
-  // Inline, so the thunk never crosses a checked function boundary: a context-function
-  // result would hide the caller's thunk, which the separation checker rejects.
-  private inline def enumerated[result](inline block: result)
-    ( using Tactic[NetworkInterface.Error]^ )
+// The loans: an advertisement or a browse lives for its block, and ends with it — or with the
+// `Monitor`, whose cancellation unwinds the block. `transparent inline`, as `listen` is, so the
+// block is not an argument that could hide the capabilities it shares with the monitor; the
+// backend is an explicit using-parameter (a system responder's may be a capability), in a
+// clause of its own so that one other than the given can be named: `(using other)`.
+extension (service: Discovery.Service)
+  transparent inline def advertise[result](description: Discovery.Description)
+    ( using backend: Discovery.Backend^ )
+    ( block: Discovery.Advertisement ?=> result )
+    ( using Monitor^, Probate^, Tactic[Discovery.Error] )
   :   result =
 
-    try block catch case error: jn.SocketException =>
-      abort(NetworkInterface.Error(Enumeration(message(error))))
+    val instance = backend.advertise(service, description)
+    val advertisement = Discovery.Advertisement(instance)
+    try block(using advertisement) finally backend.withdraw(instance)
 
-  private def message(error: jn.SocketException): Text =
-    Optional(error.getMessage).lay(t"of a socket error")(_.tt)
+  transparent inline def browse[result](using backend: Discovery.Backend^)
+    ( block: Discovery.Browser ?=> result )
+    ( using Monitor^, Probate^, Tactic[Discovery.Error] )
+  :   result =
 
-  private def read(nic: jn.NetworkInterface): NetworkInterface raises NetworkInterface.Error =
-    val name = nic.getName.nn.tt
+    val browsing = backend.browse(service)
+    val browser = Discovery.Browser(browsing)
+    try block(using browser) finally backend.dismiss(browsing)
 
-    try
-      val hardware = Optional(nic.getHardwareAddress).let: bytes =>
-        MacAddress(bytes(0), bytes(1), bytes(2), bytes(3), bytes(4), bytes(5))
+extension (instance: Discovery.Instance)
+  def resolve[duration: Abstractable across Durations to Long](timeout: duration)
+    ( using backend: Discovery.Backend^ )
+    ( using Monitor^, Probate^, Tactic[Discovery.Error] )
+  :   Discovery.Resolution =
 
-      val addresses = nic.getInterfaceAddresses.nn.to[List].map: entry =>
-        val broadcast = Optional(entry.getBroadcast).let(inet(_)).let(_.absolve match
-          case ipv4: (Ipv4 @unchecked) => ipv4
-          case _: Ipv6                 => Unset)
+    backend.resolve(instance, timeout)
 
-        InterfaceAddress(inet(entry.getAddress.nn), entry.getNetworkPrefixLength.toInt, broadcast)
+// The backend selection: the socket-based mDNS responder, over the `Socket.Backend` in scope.
+// A single responder per program is the intent, so bind it once (`given backend:
+// Discovery.Backend = discoveryBackends.mdnsSockets`) rather than summoning it afresh at each
+// use, which would open a socket per summons.
+package discoveryBackends:
+  given mdnsSockets: (sockets: Socket.Backend, options: Every[Socket.Option.Udp])
+  =>  Discovery.Backend =
 
-      NetworkInterface
-        ( name,
-          nic.getDisplayName.nn.tt,
-          nic.getIndex,
-          hardware,
-          addresses,
-          nic.getMTU,
-          nic.isUp,
-          nic.isLoopback,
-          nic.isPointToPoint,
-          nic.supportsMulticast,
-          nic.isVirtual )
+    val options2 =
+      Socket.Option.MulticastLoop ::
+        Socket.Option.MulticastHops(255) ::
+        Socket.Option.DatagramSize(9000) ::
+        options.values.to(List)
 
-    catch case error: jn.SocketException =>
-      abort(NetworkInterface.Error(Inspection(name, message(error))))
-
-  // Every `InetAddress` is an `Inet4Address` or an `Inet6Address`, so one of the two decoders
-  // accepts its bytes; the `Ipv4.Localhost` fallback is unreachable.
-  private def inet(address: jn.InetAddress): Ipv4 | Ipv6 =
-    val data = Array.unsafeFrozen(address.getAddress.nn)
-    safely(data.as[Ipv4]).or(safely(data.as[Ipv6])).or(Ipv4.Localhost)
-
-  // NetworkInterfaceError → NetworkInterface.Error
-  object Error:
-    object Reason:
-      given communicable: Reason is Communicable =
-        case Enumeration(message) =>
-          m"the network interfaces could not be enumerated because $message"
-
-        case Inspection(name, message) =>
-          m"the interface $name could not be inspected because $message"
-
-    enum Reason(val number: Int) extends Clarification:
-      case Enumeration(message: Text)             extends Reason(1)
-      case Inspection(name: Text, message: Text)  extends Reason(2)
-
-  case class Error(reason: NetworkInterface.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(418, reason.number)(m"the network interface could not be read because $reason")
-
-case class NetworkInterface
-  ( name:         Text,
-    displayName:  Text,
-    index:        Int,
-    hardware:     Optional[MacAddress],
-    addresses:    List[InterfaceAddress],
-    mtu:          Int,
-    up:           Boolean,
-    loopback:     Boolean,
-    pointToPoint: Boolean,
-    multicast:    Boolean,
-    virtual:      Boolean ):
-
-  def ipv4: List[Ipv4] =
-    addresses.map(_.address).sweep { case ip: (Ipv4 @unchecked) => ip }
-  def ipv6: List[Ipv6] =
-    addresses.map(_.address).sweep { case ip: Ipv6 => ip }
+    Mdns.Responder: () => Mdns.Transport.sockets(sockets, options2)

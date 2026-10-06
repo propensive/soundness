@@ -30,126 +30,104 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package urticose
-
-import java.net as jn
-import java.util as ju
-
-import scala.jdk.CollectionConverters.*
+package coaxial
 
 import anticipation.*
 import contingency.*
-import distillate.*
-import fulminate.*
+import gigantism.*
 import gossamer.*
-import rudiments.*
+import murmuration.filter
 import spectacular.*
+import urticose.*
 import vacuous.*
 
-import NetworkInterface.Error.Reason.*
+// A multicast group and port, which a program `subscribe`s to: it joins the group on each
+// suitable interface, receives the group's datagrams, and may send to the group (an
+// announcement) or back to one sender (a response it asked for by unicast). The group is one
+// address, hence one address family: a protocol spoken over both IPv4 and IPv6 multicast, such
+// as mDNS, subscribes to two groups.
+object Multicast:
+  given showable: Multicast is Showable = multicast =>
+    val group = multicast.group.absolve match
+      case ipv4: (Ipv4 @unchecked) => ipv4.show
+      case ipv6: Ipv6              => t"[${ipv6.show}]"
 
-object NetworkInterface:
-  given showable: NetworkInterface is Showable = _.name
+    t"$group:${multicast.port.show}"
 
-  def all(): List[NetworkInterface] raises NetworkInterface.Error = enumerated:
-    def recur(interfaces: ju.Enumeration[jn.NetworkInterface], acc: List[NetworkInterface])
-    :   List[NetworkInterface] =
+  // The handler's verdict on a received datagram: a response to the group (the multicast
+  // norm, so that every member learns the answer), one to the sender alone, or nothing.
+  enum Reply:
+    case Ignore
+    case Group(data: Data)
+    case Unicast(data: Data)
 
-      if !interfaces.hasMoreElements then acc.reverse
-      else recur(interfaces, read(interfaces.nextElement.nn) :: acc)
+  // The loaned handle on a joined group: `Socket.Service`'s `stop`, plus sends that the receive
+  // loop did not prompt, from inside or outside the handler.
+  abstract class Subscription(stopServer: () => Unit) extends Socket.Service(stopServer):
+    def send(data: Data): Unit raises Socket.Error
+    def send(data: Data, destination: Ipv4 | Ipv6, port: Udp.Port): Unit raises Socket.Error
 
-    Optional(jn.NetworkInterface.getNetworkInterfaces).lay(Nil)(recur(_, Nil))
+  // The subscription `subscribe` lends: a named class rather than an anonymous one, so the
+  // `transparent inline` loan does not duplicate it at each call site.
+  private[coaxial] final class Joined(subscribable: Subscribable)
+    ( binding: subscribable.Binding, stopServer: () => Unit )
+  extends Subscription(stopServer):
 
-  def byName(name: Text): Optional[NetworkInterface] raises NetworkInterface.Error = enumerated:
-    Optional(jn.NetworkInterface.getByName(name.s)).let(read(_))
+    def send(data: Data): Unit raises Socket.Error = subscribable.sendGroup(binding, data)
 
-  def byIndex(index: Int): Optional[NetworkInterface] raises NetworkInterface.Error = enumerated:
-    Optional(jn.NetworkInterface.getByIndex(index)).let(read(_))
+    def send(data: Data, destination: Ipv4 | Ipv6, port: Udp.Port): Unit raises Socket.Error =
+      subscribable.sendTo(binding, destination, port, data)
 
-  def byAddress(address: Ipv4 | Ipv6): Optional[NetworkInterface] raises NetworkInterface.Error =
-    enumerated:
-      val inet = jn.InetAddress.getByAddress(Array.unsafeJvm(address.bytes)).nn
-      Optional(jn.NetworkInterface.getByInetAddress(inet)).let(read(_))
+  given subscribable: (backend: Socket.Backend, options: Every[Socket.Option.Udp])
+  =>  Multicast is Subscribable:
+    type Binding = backend.MulticastSocket
 
-  // Inline, so the thunk never crosses a checked function boundary: a context-function
-  // result would hide the caller's thunk, which the separation checker rejects.
-  private inline def enumerated[result](inline block: result)
-    ( using Tactic[NetworkInterface.Error]^ )
-  :   result =
+    def join(multicast: Multicast, interface: Optional[MacAddress]): Binding =
+      backend.joinMulticast(multicast, interfaces(interface), options.values.to(List))
 
-    try block catch case error: jn.SocketException =>
-      abort(NetworkInterface.Error(Enumeration(message(error))))
+    def receive(binding: Binding): Packet raises Socket.Error = backend.receiveMulticast(binding)
 
-  private def message(error: jn.SocketException): Text =
-    Optional(error.getMessage).lay(t"of a socket error")(_.tt)
+    def sendGroup(binding: Binding, data: Data): Unit raises Socket.Error =
+      backend.sendGroup(binding, data)
 
-  private def read(nic: jn.NetworkInterface): NetworkInterface raises NetworkInterface.Error =
-    val name = nic.getName.nn.tt
+    def sendTo(binding: Binding, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
+    :   Unit raises Socket.Error =
 
-    try
-      val hardware = Optional(nic.getHardwareAddress).let: bytes =>
-        MacAddress(bytes(0), bytes(1), bytes(2), bytes(3), bytes(4), bytes(5))
+      backend.sendTo(binding, destination, port, data)
 
-      val addresses = nic.getInterfaceAddresses.nn.to[List].map: entry =>
-        val broadcast = Optional(entry.getBroadcast).let(inet(_)).let(_.absolve match
-          case ipv4: (Ipv4 @unchecked) => ipv4
-          case _: Ipv6                 => Unset)
+    def leave(binding: Binding): Unit = backend.leaveMulticast(binding)
 
-        InterfaceAddress(inet(entry.getAddress.nn), entry.getNetworkPrefixLength.toInt, broadcast)
+    def transmit(binding: Binding, packet: Packet, reply: Reply): Unit raises Socket.Error =
+      reply match
+        case Reply.Ignore        => ()
+        case Reply.Group(data)   => backend.sendGroup(binding, data)
+        case Reply.Unicast(data) => backend.sendTo(binding, packet.sender, packet.port, data)
 
-      NetworkInterface
-        ( name,
-          nic.getDisplayName.nn.tt,
-          nic.getIndex,
-          hardware,
-          addresses,
-          nic.getMTU,
-          nic.isUp,
-          nic.isLoopback,
-          nic.isPointToPoint,
-          nic.supportsMulticast,
-          nic.isVirtual )
+  // `listen`'s loan form for a group, for a subscriber that only responds; `subscribe` adds the
+  // unprompted sends.
+  given bindable: (subscribable: Multicast is Subscribable) => Multicast is Bindable:
+    type Binding = subscribable.Binding
+    type Input = Packet
+    type Output = Reply
 
-    catch case error: jn.SocketException =>
-      abort(NetworkInterface.Error(Inspection(name, message(error))))
+    def bind(multicast: Multicast, interface: Optional[MacAddress]): Binding =
+      subscribable.join(multicast, interface)
 
-  // Every `InetAddress` is an `Inet4Address` or an `Inet6Address`, so one of the two decoders
-  // accepts its bytes; the `Ipv4.Localhost` fallback is unreachable.
-  private def inet(address: jn.InetAddress): Ipv4 | Ipv6 =
-    val data = Array.unsafeFrozen(address.getAddress.nn)
-    safely(data.as[Ipv4]).or(safely(data.as[Ipv6])).or(Ipv4.Localhost)
+    def connect(binding: Binding): Packet raises Socket.Error = subscribable.receive(binding)
 
-  // NetworkInterfaceError → NetworkInterface.Error
-  object Error:
-    object Reason:
-      given communicable: Reason is Communicable =
-        case Enumeration(message) =>
-          m"the network interfaces could not be enumerated because $message"
+    def transmit(binding: Binding, input: Packet, reply: Reply): Unit raises Socket.Error =
+      subscribable.transmit(binding, input, reply)
 
-        case Inspection(name, message) =>
-          m"the interface $name could not be inspected because $message"
+    def stop(binding: Binding): Unit = subscribable.leave(binding)
+    def close(input: Packet): Unit raises Socket.Error = ()
 
-    enum Reason(val number: Int) extends Clarification:
-      case Enumeration(message: Text)             extends Reason(1)
-      case Inspection(name: Text, message: Text)  extends Reason(2)
+  // The interfaces to join on: the one with the given hardware address, or every interface that
+  // is up and multicast-capable other than loopback (which cannot carry multicast on Linux; a
+  // program's own datagrams come back through `Socket.Option.MulticastLoop` instead).
+  def interfaces(interface: Optional[MacAddress]): List[NetworkInterface] =
+    val all = safely(NetworkInterface.all()).or(Nil)
 
-  case class Error(reason: NetworkInterface.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(418, reason.number)(m"the network interface could not be read because $reason")
+    val suitable = all.filter: nic => nic.up && nic.multicast && !nic.loopback
+    interface.let { mac => all.filter(_.hardware == mac) }.or(suitable)
 
-case class NetworkInterface
-  ( name:         Text,
-    displayName:  Text,
-    index:        Int,
-    hardware:     Optional[MacAddress],
-    addresses:    List[InterfaceAddress],
-    mtu:          Int,
-    up:           Boolean,
-    loopback:     Boolean,
-    pointToPoint: Boolean,
-    multicast:    Boolean,
-    virtual:      Boolean ):
-
-  def ipv4: List[Ipv4] =
-    addresses.map(_.address).sweep { case ip: (Ipv4 @unchecked) => ip }
-  def ipv6: List[Ipv6] =
-    addresses.map(_.address).sweep { case ip: Ipv6 => ip }
+case class Multicast(group: Ipv4 | Ipv6, port: Udp.Port)

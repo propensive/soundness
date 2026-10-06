@@ -1003,8 +1003,9 @@ object soundness extends Toolchain:
     vivisection.core, vivisection.eval, vivisection.dap):
     def summary = "Developer tools: compilers, build tooling, source analysis and version control"
 
-  object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, cataclysm.fonts, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
-    honeycomb.core, urticose.core, urticose.url, urticose.ansi, hallucination.core, phoenicia.core,
+  object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, cataclysm.fonts, coaxial.core, coaxial.jvm, coaxial.dns, syndesis.core, cosmopolite.core, gesticulate.core,
+    honeycomb.core, urticose.core, urticose.url, urticose.ansi, urticose.dns, hallucination.core,
+    phoenicia.core,
     punctuation.core, savagery.core, cartouche.core, tasseomancy.core, scintillate.server,
     scintillate.servlet,
     telekinesis.jvm, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
@@ -1726,7 +1727,12 @@ object coaxial extends Library:
     override def scalaNative = false // declares its WIT `Interface` with hellenism's JVM/JS-only `cp"…"`
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, jvm)
+  // Unicast DNS over UDP: a `Dns.Message` exchange with a nameserver, built on the backend's
+  // one-shot `exchangeUdp`; `urticose.dns` supplies the codec.
+  object dns extends Component(core, urticose.dns):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, jvm, dns)
 
 object prophesy extends Library:
   object core extends Component(stenography.core, gossamer.core):
@@ -2714,7 +2720,13 @@ object urticose extends Library:
   object ansi extends Component(escapade.core, url):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(ansi, core, url):
+  // Typed DNS: the RFC 1035 vocabulary (names, questions, records, messages) and its wire codec,
+  // with the mDNS/DNS-SD bits of RFC 6762/6763. Pure `Data` in and out, so it cross-compiles;
+  // `zephyrine` supplies the `Producer` the encoder writes through.
+  object dns extends Component(core, zephyrine.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(ansi, core, url, dns):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -3259,6 +3271,19 @@ object symbolism extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
+// DNS-based service discovery (RFC 6763) over multicast DNS (RFC 6762): advertise a service on
+// the local network, browse for others', and resolve one to its host, port and addresses. The
+// socket responder runs under a `Monitor` and needs the JVM's multicast channels.
+object syndesis extends Library:
+  object core extends Component(urticose.dns, coaxial.core, parasite.core, turbulence.core,
+      capricious.core):
+    override def scalaJs = false // multicast sockets and a background responder thread
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, coaxial.jvm, eucalyptus.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
+
 object synesthesia extends Library:
   // The MCP/ACP-shared content-block vocabulary, deliberately free of `core`'s HTTP-server
   // closure so that `espionage.core` (which spawns agent subprocesses) can depend on it.
@@ -3754,7 +3779,7 @@ val allLibraries: Seq[Library] = Seq(
   probably, profanity, prophesy,
   proscenium, punctuation, quantitative, querencia, revolution, rudiments, savagery,
   scintillate, sedentary, serpentine, sibylline, spectacular, stenography, stratiform, superlunary,
-  surveillance, symbolism, synesthesia, tarantula, tasseomancy, telekinesis, tessellate, turbulence,
+  surveillance, symbolism, syndesis, synesthesia, tarantula, tasseomancy, telekinesis, tessellate, turbulence,
   typonym,
   ultimatum, ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, virility,
   vivisection,
