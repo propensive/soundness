@@ -210,7 +210,12 @@ result type is a member of the instance rather than a parameter of the operator,
 
 `Negatable` and `Rootable` do the same for unary negation and for square and cube roots, and
 `Zeroic` and `Unital` supply the additive and multiplicative identities where an algorithm needs
-to start from one. This is the machinery beneath [quantities](quantities.md), where dimensional
+to start from one. Addition collapses its operands' structure; joining two values while keeping
+it — two texts, two lists, two stylesheets — is *concatenation*, a different operation with its
+own typeclass, `Concatenable`, and its own operator, `++`. A `Text` is concatenable but not
+addable, so `t"a" + t"b"` does not compile where `t"a" ++ t"b"` does, unless
+`arithmeticOptions.concatenativeAddition` is imported to make every concatenable value addable
+too. This is the machinery beneath [quantities](quantities.md), where dimensional
 analysis is exactly the computation of the result type; beneath [complex numbers and
 matrices](mathematics.md), which are generic in an element type they only ever combine through
 these operators; and beneath the arithmetic that [derivation](derivation.md) can produce for a

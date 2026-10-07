@@ -323,15 +323,17 @@ product field by field:
 
 ```scala
 import arithmetic.addable
+import arithmeticOptions.concatenativeAddition
 
 case class Pair(label: Text, count: Int)
 
 Pair(t"foo", 10) + Pair(t"bar", 15)   // Pair(t"foobar", 25)
 ```
 
-Addition on `Pair` is addition on each field, so `Text` concatenates while `Int` sums, with no
-instance written for `Pair` at all. `Subtractable`, `Multiplicable` and their siblings follow the
-same rule.
+Addition on `Pair` is addition on each field, with no instance written for `Pair` at all: `Int`
+sums, and `Text` — which concatenates with `++` and is not addable by default — is admitted by
+`concatenativeAddition`, which makes every concatenable value addable. `Subtractable`,
+`Multiplicable` and their siblings follow the same rule.
 
 ### When derivation fails
 

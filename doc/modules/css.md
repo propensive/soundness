@@ -99,7 +99,7 @@ locally:
   t"a { color: red }".read[Css].show   // t"a{color:red;}"
 ```
 
-Stylesheets concatenate with `+`, and a stylesheet reports the classes and ids it defines — the
+Stylesheets concatenate with `++`, and a stylesheet reports the classes and ids it defines — the
 hook by which [HTML](html.md) class attributes are checked against the styles that exist.
 
 ### Selectors

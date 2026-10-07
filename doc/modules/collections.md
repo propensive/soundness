@@ -205,7 +205,7 @@ already.
 
 ### Sets and maps
 
-A `Set` supports the operations of set theory — `insert`, `except`, `intersect` and `concat` for
+A `Set` supports the operations of set theory — `insert`, `except`, `intersect` and `++` for
 union — and membership with `has`. A `Map` reads a value by key with `at`, as an `Optional`
 since the key may be absent, tests a key with `defines`, updates or adds with `define`, removes
 with `omit`, and exposes its `keys` and `values`:

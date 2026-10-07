@@ -35,11 +35,11 @@ import Blake3.hash
 
 ### Creating and adding
 
-A filter is created for an element type, an expected size, and an error rate, and grows with `+`
+A filter is created for an element type, an expected size, and an error rate, and grows with `:+`
 for one element or `++` for many:
 
 ```scala
-val bloom = BloomFilter[Text](100, 0.001) + t"Hello world"
+val bloom = BloomFilter[Text](100, 0.001) :+ t"Hello world"
 
 val fuller = bloom ++ List(t"hello", t"world")
 ```
@@ -120,5 +120,5 @@ immutability below free rather than copied.
 `+` and `++` return new filters rather than mutating in place, at the price of one copy of the
 bits each, so a frozen filter grows into another frozen filter without the original changing.
 Building one from a large collection with `++` is a single pass and a single copy, rather than
-the sequence of copies that repeated `+` would suggest — and filling an exclusive filter with
+the sequence of copies that repeated `:+` would suggest — and filling an exclusive filter with
 `addAll` before freezing it is no copy at all.
