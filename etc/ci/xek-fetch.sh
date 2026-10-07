@@ -16,16 +16,13 @@ VERSION=$(awk -F'\t' '$1=="version"{print $2}' "$PIN")
 WANT=$(awk -F'\t' '$1=="xek"{print $2}' "$PIN")
 [[ -n "$VERSION" && -n "$WANT" ]] || { echo "xek-fetch: bad pin $PIN" >&2; exit 1; }
 
-# propensive/xeq is now propensive/xek: releases from 1.0.0 are tagged with the bare version,
-# with the command as `xek`; those from the rename up to 0.10, `xek-<version>`, also as `xek`;
-# those before it, `xeq-<version>`, as `xeq`. All are tried, newest naming first, and the pinned
-# SHA-256 decides what is accepted.
+# The pin names a release from 1.0.0, tagged with the bare version, and the pinned SHA-256
+# decides what is accepted.
 BASE="https://github.com/propensive/xek/releases/download"
 mkdir -p dist
 TMP=dist/.xek.part
 fetch() { if command -v curl >/dev/null 2>&1; then curl -fsSL "$1" -o "$TMP"; else wget -qO "$TMP" "$1"; fi; }
-fetch "$BASE/$VERSION/xek" 2>/dev/null || fetch "$BASE/xek-$VERSION/xek" 2>/dev/null ||
-  fetch "$BASE/xeq-$VERSION/xeq" ||
+fetch "$BASE/$VERSION/xek" ||
   { echo "xek-fetch: no builder published for version $VERSION" >&2; rm -f "$TMP"; exit 1; }
 GOT=$( { sha256sum "$TMP" 2>/dev/null || shasum -a 256 "$TMP"; } | cut -d' ' -f1)
 if [[ "$GOT" != "$WANT" ]]; then

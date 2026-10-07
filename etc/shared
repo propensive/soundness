@@ -2,7 +2,7 @@
 #
 # Run a script shared from propensive/.github, at the commit pinned in etc/github-ref.
 #
-# Usage: etc/shared <script> [argument …]    for example `etc/shared xeq-fetch.sh`
+# Usage: etc/shared <script> [argument …]    for example `etc/shared xek-fetch.sh`
 #
 # The pin is a full commit SHA, so what runs is exactly what was reviewed when the pin was bumped;
 # a bump is a one-line commit. Scripts are fetched on first use and cached, per commit, under
