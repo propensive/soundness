@@ -99,7 +99,7 @@ object Mdns:
       val binding6 = join(group6, interfaces.exists(_.ipv6 != Nil))
 
       val bindings: List[backend.MulticastSocket] =
-        List.concat(binding4.let(List(_)).or(Nil), binding6.let(List(_)).or(Nil))
+        binding4.let(List(_)).or(Nil) ++ binding6.let(List(_)).or(Nil)
 
       if bindings == Nil then abort(Mdns.Error(Join(group4.show)))
 
@@ -510,7 +510,7 @@ object Mdns:
     private def defer(answers: List[Dns.Record])(using Monitor^, Probate^): Unit =
       val first = mutex:
         val first = deferred == Nil
-        deferred = List.concat(deferred, answers)
+        deferred = deferred ++ answers
         first
 
       if first then
