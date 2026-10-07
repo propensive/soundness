@@ -77,11 +77,28 @@ object Deployer extends Mcp.Server():
     t"deployed to $target"
 ```
 
+A parameter is required unless its type is an `Optional` or it has a default argument; a client
+may omit those, and the tool sees `Unset` or the default. An `@about` on a parameter describes it
+in the tool's input schema:
+
+```scala
+@tool
+@about(t"Lists recent runs")
+def runs(@about(t"only runs in this workspace") workspace: Optional[Text], limit: Int = 20)
+:   List[Text] =
+  Nil
+```
+
+A tool that throws answers the client with a result marked `isError`, carrying the exception's
+message, which the model can read and act on; calling an unknown tool, or omitting a required
+parameter, is a JSON-RPC error.
+
 ### Resources and prompts
 
-`@resource` serves content at a URI — anything streamable as text or bytes, an
-[HTML](html.md) document included — and `@prompt` returns a conversation written with the `human`
-and `agent` interpolators:
+`@resource` serves content at a URI — anything streamable as text or bytes — and `@prompt` returns
+a conversation written with the `human` and `agent` interpolators. A resource's MIME type may be
+given with the annotation, and is otherwise `text/plain` or `application/octet-stream` (or
+`text/html;profile=mcp-app` for a resource a tool's `@ui` names):
 
 ```scala
 object Documentation extends Mcp.Server():
@@ -92,7 +109,7 @@ object Documentation extends Mcp.Server():
   def version: Semver = v"1.0.0"
   def prompts: List[Mcp.Prompt] = Nil
 
-  @resource("docs://readme")
+  @resource("docs://readme", mimeType = t"text/markdown")
   @about("The project readme")
   def readme: Text = t"# Readme\n\nStart with `make build`."
 

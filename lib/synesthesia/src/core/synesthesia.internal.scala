@@ -120,7 +120,25 @@ object internal:
       allAnnotations.exists(_.tpe.typeSymbol == resourceType)
 
     val jsonErrors = Expr.summon[Tactic[Json.Error]].getOrElse:
+      halt(m"could not find a contextual `Tactic[Json.Error]` instance")
+
+    val mcpErrors = Expr.summon[Tactic[Mcp.Error]].getOrElse:
       halt(m"could not find a contextual `Tactic[Mcp.Error]` instance")
+
+    // A parameter is required in the input schema unless its type admits `Unset` or it has a
+    // default argument; a missing one is then `Unset` or the default, rather than an error.
+    def admitsUnset(param: Symbol): Boolean = TypeRepr.of[Unset.type] <:< param.info
+
+    def defaultGetter(method: Symbol, index: Int): Option[Symbol] =
+      if !method.paramSymss.head(index).flags.is(Flags.HasDefault) then None
+      else interface.typeSymbol.methodMember(method.name+"$default$"+(index + 1)).headOption
+
+    // The URIs that `@ui` annotations on tools name: a resource at one of them is the app's
+    // user interface, and is served with the MCP-app profile unless its MIME type is given.
+    val uiUris: scala.collection.immutable.List[Expr[Text]] = toolMethods.flatMap: method =>
+      val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
+      allAnnotations.filter(_.tpe.typeSymbol == uiType).map: annotation =>
+        '{${annotation.asExprOf[ui]}.uri}
 
     // This has been written as a partial function because the more natural way of writing it,
     // by including `target` as a lambda variable, causes the compiler to emit bad bytecode.
@@ -139,13 +157,24 @@ object internal:
                         case MethodType(_, _, MethodType(_, _, result)) => result
                         case MethodType(_, _, result)                   => result
 
-                      val params = method.paramSymss.head.map: param =>
+                      val params = method.paramSymss.head.zipWithIndex.map: (param, index) =>
                         param.info.asType.absolve match
                           case '[param] => Expr.summon[param is Json.Decodable] match
                             case Some(decodable) =>
+                              val fallback: Expr[param] = defaultGetter(method, index) match
+                                case Some(getter) => Select('target.asTerm, getter).asExprOf[param]
+
+                                case None =>
+                                  if admitsUnset(param) then '{Unset}.asExprOf[param] else
+                                    ' {
+                                        abort(Mcp.Error(Mcp.Error.Reason.MissingParameter))
+                                          ( using $mcpErrors )
+                                      }
+
                               ' {
-                                  given param is Json.Decodable = $decodable
-                                  request.stdlib(${Expr(param.name)}).as[param]
+                                  request.at(${Expr(param.name)}.tt) match
+                                    case Unset      => $fallback
+                                    case json: Json => $decodable.decoded(json)
                                 }
 
                               . asTerm
@@ -162,7 +191,9 @@ object internal:
                         case 1 => Apply(Select('target.asTerm, method), params)
 
                         case 2 =>
-                          Apply(Apply(Select('target.asTerm, method), params), scala.collection.immutable.List('client.asTerm))
+                          Apply
+                            ( Apply(Select('target.asTerm, method), params),
+                              scala.collection.immutable.List('client.asTerm) )
 
                         case _ =>
                           halt:
@@ -192,13 +223,11 @@ object internal:
 
                       CaseDef(Literal(StringConstant(method.name)), None, rhs.asTerm)
 
-                    val wildcard = Expr.summon[Tactic[Mcp.Error]] match
-                      case Some(tactic) =>
-                        val rhs = '{abort(Mcp.Error(Mcp.Error.Reason.UnknownMethod))(using $tactic)}
-                        CaseDef(Wildcard(), None, rhs.asTerm)
+                    val wildcard =
+                      val rhs =
+                        '{abort(Mcp.Error(Mcp.Error.Reason.UnknownMethod))(using $mcpErrors)}
 
-                      case None =>
-                        halt(m"could not find a contextual `Tactic[Mcp.Error]` instance")
+                      CaseDef(Wildcard(), None, rhs.asTerm)
 
                     Match('method.asTerm, cases :+ wildcard).asExprOf[Json]
                   }
@@ -229,12 +258,12 @@ object internal:
                             case '[param] => Expr.summon[param is Decodable in Text] match
                               case Some(decodable) =>
                                 ' {
-                                    given param is Decodable in Text = $decodable
-                                    val key = ${Expr(param.name)}.tt
+                                    input.at(${Expr(param.name)}.tt) match
+                                      case text: Text => $decodable.decoded(text)
 
-                                    input.at(key).let(_.as[param]).or:
-                                      provide[Tactic[Mcp.Error]]:
+                                      case Unset =>
                                         abort(Mcp.Error(Mcp.Error.Reason.MissingParameter))
+                                          ( using $mcpErrors )
                                   }
 
                                 . asTerm
@@ -271,7 +300,7 @@ object internal:
 
                     val wildcard =
                       val rhs =
-                        '{provide[Tactic[Mcp.Error]](abort(Mcp.Error(Mcp.Error.Reason.UnknownMethod)))}
+                        '{abort(Mcp.Error(Mcp.Error.Reason.UnknownMethod))(using $mcpErrors)}
 
                       CaseDef(Wildcard(), None, rhs.asTerm)
 
@@ -295,37 +324,56 @@ object internal:
                           val result: TypeRepr = method.info.widen
                           val value = Select('target.asTerm, method).asExprOf[result]
 
-                          val uri: Expr[Text] =
-                            ' {
-                                $ {
-                                    allAnnotations.find(_.tpe.typeSymbol == resourceType).get
-                                    . asExprOf[resource]
-                                  }
+                          val annotation =
+                            allAnnotations.find(_.tpe.typeSymbol == resourceType).get
+                            . asExprOf[resource]
 
-                                . uri
+                          val uri: Expr[Text] = '{$annotation.uri}
+
+                          // The resource's own MIME type, or the MCP-app profile for a tool's
+                          // user interface, or the plainest type for its form.
+                          def mimeType(plain: Expr[Text]): Expr[Text] =
+                            ' {
+                                $annotation.mimeType match
+                                  case mimeType: Text => mimeType
+
+                                  case Unset =>
+                                    if List(${Varargs(uiUris)}*).exists(_ == $uri)
+                                    then t"text/html;profile=mcp-app"
+                                    else $plain
                               }
 
+                          // The aggregation is spelled out rather than bound as a given for
+                          // `read`: the streamable captures the expansion site's tactic, which a
+                          // pure given binding would reject under capture checking.
                           val rhs = Expr.summon[result is Streamable by Text over Credit] match
                             case Some(streamable) =>
-                              ' {
-                                  given result is Streamable by Text over Credit = $streamable
+                              val aggregable = Expr.summon[Text is Aggregable by Text].getOrElse:
+                                halt(m"could not find a contextual `Text is Aggregable by Text`")
 
+                              ' {
                                   Mcp.Contents:
                                     Mcp.TextResourceContents
                                       ( $uri,
-                                        mimeType = t"text/html;profile=mcp-app", // FIXME
-                                        text = $value.read[Text] )
+                                        mimeType = ${mimeType('{t"text/plain"})},
+                                        text     = $aggregable.accept($streamable.stream($value)) )
                                 }
 
                             case None => Expr.summon[result is Streamable by Data over Credit] match
                               case Some(streamable) =>
+                                val aggregable = Expr.summon[Data is Aggregable by Data].getOrElse:
+                                  halt(m"could not find a contextual `Data is Aggregable by Data`")
+
                                 ' {
                                     import alphabets.base64Standard
-                                    given result is Streamable by Data over Credit = $streamable
 
                                     Mcp.Contents:
                                       Mcp.BlobResourceContents
-                                        ( $uri, Unset, blob = $value.read[Data].serialize[Base64] )
+                                        ( $uri,
+                                          mimeType = ${mimeType('{t"application/octet-stream"})},
+                                          blob     =
+                                            $aggregable.accept($streamable.stream($value))
+                                            . serialize[Base64] )
                                   }
 
                               case None => halt:
@@ -334,14 +382,8 @@ object internal:
                                   instance for the return type of ${method.name}
                                 """
 
-                          val application = method.paramSymss.length match
-                            case 0 => Select('target.asTerm, method)
-
-                            case _ => halt:
-                              m"""
-                                MCP resource definitions should have exactly one explicit parameter
-                                block and optionally one contextual parameter block
-                              """
+                          if method.paramSymss.nonEmpty
+                          then halt(m"MCP resource methods cannot have any parameters")
 
                           (uri, rhs)
 
@@ -369,19 +411,38 @@ object internal:
 
         . getOrElse('{Unset})
 
-      val ui: Expr[Optional[Text]] =
+      // The tool's `_meta`, naming the resource that is its user interface, if it has one. The
+      // list literal is ascribed: its own type is populated, which no JSON encoder covers.
+      val uiJson: Expr[Optional[Json]] =
         allAnnotations.find(_.tpe.typeSymbol == uiType).map: annotation =>
-          '{${annotation.asExprOf[ui]}.uri}
+          ' {
+              val ui =
+                Map
+                  ( t"visibility"  -> (List(t"model", t"app"): List[Text]).in[Json],
+                    t"resourceUri" -> ${annotation.asExprOf[ui]}.uri.in[Json] )
+
+              Map(t"ui" -> ui.in[Json]).in[Json]
+            }
 
         . getOrElse('{Unset})
 
-      val paramNames = method.paramSymss.head.map: param => Expr(param.name.tt)
+      val required = method.paramSymss.head.zipWithIndex.collect:
+        case (param, index) if !admitsUnset(param) && defaultGetter(method, index).isEmpty =>
+          '{${Expr(param.name)}.tt}
 
       val params = method.paramSymss.head.map: param =>
         param.info.asType.absolve match
           case '[param] => Expr.summon[param is Schematic over JsonSchema] match
             case Some(schematic) =>
-              '{(${Expr(param.name)}.tt, $schematic.schema())}
+              val schema: Expr[JsonSchema] =
+                param.annotations.find(_.tpe.typeSymbol == aboutType) match
+                  case Some(annotation) =>
+                    '{$schematic.schema().`description_=`(${annotation.asExprOf[about]}.text)}
+
+                  case None =>
+                    '{$schematic.schema()}
+
+              '{(${Expr(param.name)}.tt, $schema)}
 
             case None =>
               halt(m"There was no JSON schema for ${param.name}")
@@ -398,20 +459,12 @@ object internal:
             ' {
                 val inputSchema =
                   JsonSchema.Object
-                    ( properties = $properties, required = List.from(${Expr.ofList(paramNames)}) )
+                    ( properties = $properties, required = List(${Varargs(required)}*) )
 
                 val outputSchema =
                   JsonSchema.Object
                     ( properties = Map(t"result" -> $schematic.schema()),
                       required   = List(t"result") )
-
-                val uiJson: Optional[Json] = $ui.let: resource =>
-                  val ui =
-                    Map
-                      ( t"visibility"  -> List(t"model", t"app").in[Json],
-                        t"resourceUri" -> resource.in[Json] )
-
-                  Map(t"ui" -> ui.in[Json]).in[Json]
 
                 Mcp.Tool
                   ( name         = ${Expr(method.name)},
@@ -419,7 +472,7 @@ object internal:
                     description  = $about,
                     inputSchema  = inputSchema,
                     outputSchema = outputSchema,
-                    _meta        = uiJson )
+                    _meta        = $uiJson )
               }
 
           case None => halt:
@@ -455,21 +508,21 @@ object internal:
               . getOrElse('{Unset})
 
             val about: Expr[Optional[Text]] =
-              allAnnotations.find(_.tpe.typeSymbol == aboutType).map: annotation =>
+              annotations.find(_.tpe.typeSymbol == aboutType).map: annotation =>
                 '{${annotation.asExprOf[about]}.text}
 
               . getOrElse('{Unset})
 
-            '{Mcp.PromptArgument(${Expr(param.name.tt)}, $title, $about)}
+            '{Mcp.PromptArgument(${Expr(param.name)}.tt, $title, $about)}
 
         . getOrElse(scala.collection.immutable.Nil)
 
       ' {
           Mcp.Prompt
-            ( name         = ${Expr(method.name.tt)},
+            ( name         = ${Expr(method.name)}.tt,
               title        = $title,
               description  = $about,
-              arguments    = ${if params.isEmpty then 'Unset else '{List.from(${Expr.ofList(params)})}} )
+              arguments    = ${if params.isEmpty then 'Unset else '{List(${Varargs(params)}*)}} )
         }
 
     val resourceEntries = resourceMethods.map: method =>
@@ -493,29 +546,34 @@ object internal:
 
       if method.paramSymss.length > 0 then halt(m"MCP resource methods cannot have any parameters")
 
+      val annotation = allAnnotations.find(_.tpe.typeSymbol == resourceType).get.asExprOf[resource]
+
+      def entry(plain: Expr[Text]): Expr[Mcp.Resource] =
+        ' {
+            Mcp.Resource
+              ( name        = ${Expr(method.name)},
+                uri         = $uri,
+                title       = $title,
+                description = $about,
+                mimeType    =
+                  $annotation.mimeType match
+                    case mimeType: Text => mimeType
+
+                    case Unset =>
+                      if List(${Varargs(uiUris)}*).exists(_ == $uri)
+                      then t"text/html;profile=mcp-app"
+                      else $plain )
+          }
+
       val result: TypeRepr = method.info.widen
 
       result.asType.absolve match
         case '[result] =>
           Expr.summon[result is Streamable by Text] match
-            case Some(streamable) =>
-              ' {
-                  Mcp.Resource
-                    ( name        = ${Expr(method.name)},
-                      uri         = $uri,
-                      title       = $title,
-                      description = $about )
-                }
+            case Some(streamable) => entry('{t"text/plain"})
 
             case None => Expr.summon[result is Streamable by Data] match
-              case Some(streamable) =>
-                ' {
-                    Mcp.Resource
-                      ( name        = ${Expr(method.name)},
-                        uri         = $uri,
-                        title       = $title,
-                        description = $about )
-                  }
+              case Some(streamable) => entry('{t"application/octet-stream"})
 
               case None => halt:
                 m"""
@@ -526,9 +584,9 @@ object internal:
     ' {
         new Mcp.Specification:
           type Self = interface
-          def tools(): List[Mcp.Tool] = List.from(${Expr.ofList(toolEntries)})
-          def resources(): List[Mcp.Resource] = List.from(${Expr.ofList(resourceEntries)})
-          def prompts(): List[Mcp.Prompt] = List.from(${Expr.ofList(promptEntries)})
+          def tools(): List[Mcp.Tool] = List(${Varargs(toolEntries)}*)
+          def resources(): List[Mcp.Resource] = List(${Varargs(resourceEntries)}*)
+          def prompts(): List[Mcp.Prompt] = List(${Varargs(promptEntries)}*)
 
           def invokeTool(server: interface, client: Mcp.Client, method: Text, input: Json): Json =
             $toolInvocation(server)(method, input, client)

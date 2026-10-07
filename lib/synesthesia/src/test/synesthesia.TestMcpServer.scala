@@ -49,7 +49,26 @@ object TestMcpServer extends Mcp.Server():
   def color(name: Text): Text = "purple"
 
   @tool
-  // @ui("ui://html/content")
+  @about("Greets someone")
+  def greet
+    ( @about("whom to greet") name: Text, greeting: Optional[Text], punctuation: Text = "!" )
+  :   Text =
+
+    t"${greeting.or(t"Hello")}, $name$punctuation"
+
+  @tool
+  def explode(reason: Text): Text =
+    import unsafeExceptions.canThrowAny
+    throw Exception(reason.s)
+
+  @resource("doc://schema", mimeType = t"application/schema+json")
+  def schema: Text = t"{}"
+
+  @resource("doc://notes")
+  def notes: Text = t"# Notes"
+
+  @tool
+  @ui("ui://html/content")
   def encodeMagic(text: Text)(using client: Mcp.Client): Text =
     Thread.sleep(1500)
     client.log(t"Searching for $text in the magic book")
@@ -71,8 +90,7 @@ object TestMcpServer extends Mcp.Server():
   @resource("ui://html/content")
   @about("Displays the app user interface")
   @title("User interface")
-  def content: Document[Html] =
+  def content: Text =
     import htmlDoms.whatwg
     import htmlDoms.whatwg.*
-    val html = Html(Head(Title("MCP App")), Body(H1("Hello world")))
-    Document(html, htmlDoms.whatwg)
+    Html(Head(Title("MCP App")), Body(H1("Hello world"))).show

@@ -69,21 +69,6 @@ object Tests extends Suite(m"Synesthesia Tests"):
       import logging.silentLogging
       import classloaders.threadContextClassloader
 
-      // No tool, resource or prompt is reached by these requests, so a stub stands in for the
-      // derived specification.
-      given specification: (TestMcpServer.type is Mcp.Specification) = new Mcp.Specification:
-        type Self = TestMcpServer.type
-        def tools(): List[Mcp.Tool] = Nil
-        def resources(): List[Mcp.Resource] = Nil
-        def prompts(): List[Mcp.Prompt] = Nil
-        def invokeTool(target: Self, client: Mcp.Client, method: Text, params: Json): Json = ???
-        def invokeResource(target: Self, method: Text): Mcp.Contents = ???
-
-        def invokePrompt
-          ( target: Self, client: Mcp.Client, method: Text, params: Map[Text, Text] )
-        :   List[Discourse] =
-          ???
-
       def respond(method: Http.Method, session: Optional[Text]): Http.Status =
         val headers: proscenium.List[Http.Header] =
           session.lay(proscenium.List())(id => proscenium.List(Http.Header(t"Mcp-Session-Id", id)))
@@ -115,6 +100,94 @@ object Tests extends Suite(m"Synesthesia Tests"):
       test(m"An unsupported method answers Method Not Allowed"):
         respond(Http.Put, t"session-3")
       . assert(_ == Http.MethodNotAllowed)
+
+    // The specification is derived here, in a module compiled with capture checking, which
+    // pins the derivation to being capture-clean.
+    suite(m"Derived specification"):
+      import internetAccess.online
+      import supervisors.globalSupervisor
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+      import threading.platformThreading
+      import logging.silentLogging
+      import codepages.utf8Codepage
+
+      val spec = summon[TestMcpServer.type is Mcp.Specification]
+      val interface = Mcp.Interface(t"session-spec", TestMcpServer)
+
+      def schema(name: Text): Optional[JsonSchema.Object] =
+        spec.tools().seek(_.name == name).let(_.inputSchema).let:
+          case schema: JsonSchema.Object => schema
+          case _                         => Unset
+
+      def call(name: Text, arguments: Text): Mcp.CallTool =
+        interface.`tools/call`(name, arguments.read[Json], Unset)
+
+      test(m"An Optional parameter and one with a default are not required"):
+        schema(t"greet").let(_.required)
+      . assert(_ == List(t"name"))
+
+      test(m"A parameter with no default or Optional type is required"):
+        schema(t"color").let(_.required)
+      . assert(_ == List(t"name"))
+
+      test(m"A parameter's description comes from its own @about"):
+        schema(t"greet").let(_.properties.at(t"name")).let(_.description)
+      . assert(_ == t"whom to greet")
+
+      test(m"An omitted Optional parameter is Unset and the default argument applies"):
+        call(t"greet", t"""{"name": "Jon"}""").structuredContent
+      . assert(_ == t"""{"result": "Hello, Jon!"}""".read[Json])
+
+      test(m"Supplied Optional and defaulted parameters are decoded"):
+        call(t"greet", t"""{"name": "Jon", "greeting": "Hi", "punctuation": "?"}""")
+        . structuredContent
+      . assert(_ == t"""{"result": "Hi, Jon?"}""".read[Json])
+
+      test(m"A missing required parameter is a protocol error"):
+        try
+          call(t"greet", t"""{"greeting": "Hi"}""")
+          Unset
+        catch case error: Mcp.Error => error.reason
+      . assert(_ == Mcp.Error.Reason.MissingParameter)
+
+      test(m"An unknown tool is a protocol error"):
+        try
+          call(t"vanish", t"{}")
+          Unset
+        catch case error: Mcp.Error => error.reason
+      . assert(_ == Mcp.Error.Reason.UnknownMethod)
+
+      test(m"A tool that throws answers a result marked isError"):
+        call(t"explode", t"""{"reason": "boom"}""")
+      . assert(_ == Mcp.CallTool(List(Mcp.TextContent(t"boom")), isError = true))
+
+      def mimeType(uri: Text): Optional[Text] =
+        interface.`resources/read`(uri, Unset).contents.prim.let(_.contents).let:
+          case contents: Mcp.TextResourceContents => contents.mimeType
+          case contents: Mcp.BlobResourceContents => contents.mimeType
+
+      test(m"A resource is read with the MIME type its annotation gives"):
+        mimeType(t"doc://schema")
+      . assert(_ == t"application/schema+json")
+
+      test(m"A text resource with no MIME type is read as text/plain"):
+        mimeType(t"doc://notes")
+      . assert(_ == t"text/plain")
+
+      test(m"A resource a tool's @ui names is read with the MCP app profile"):
+        mimeType(t"ui://html/content")
+      . assert(_ == t"text/html;profile=mcp-app")
+
+      test(m"The resource listing carries the MIME type"):
+        spec.resources().seek(_.uri == t"doc://schema").let(_.mimeType)
+      . assert(_ == t"application/schema+json")
+
+      test(m"A tool's @ui becomes its visibility metadata"):
+        spec.tools().seek(_.name == t"encodeMagic").let(_._meta)
+      . assert:
+          _ == t"""{"ui": {"visibility": ["model", "app"], "resourceUri": "ui://html/content"}}"""
+                . read[Json]
 
     // Manual-only MCP server runner — NOT an automated test. It serves MCP on :8080
     // and `Thread.sleep`s to keep the server alive for an external MCP client to
