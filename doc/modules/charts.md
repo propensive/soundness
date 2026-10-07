@@ -208,7 +208,7 @@ A chart renders to a savagery `Svg`, which serializes to XML text like any other
 
 ```scala
 val drawing = sales.in[Svg]
-drawing.in[Xml].show.keep(60)   // <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" …
+drawing.in[Xml].show.keep(70)   // <svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 800.0 …
 ```
 
 Every part of the drawing is a group with a stable identifier — `grid`, `abscissa`, `ordinate`,

@@ -179,6 +179,15 @@ val svg = t"""<svg width="50" height="50"><rect x="0" y="0" width="10" height="1
 (svg.width, svg.height, svg.figures.size)   // (50.0f, 50.0f, 1)
 ```
 
+The root element's `width` and `height` may carry a unit, as a drawing tool writes them, and a
+`viewBox` names the user-space rectangle the viewport shows; both are kept, and written back as
+they were read:
+
+```scala
+val sized = t"""<svg width="48.5mm" height="20mm" viewBox="0 0 48.5 20"/>""".read[Svg]
+(sized.width, sized.unit, sized.viewBox)   // (48.5f, Svg.Units.Mm, Svg.ViewBox(0, 0, 48.5f, 20))
+```
+
 Because an `Svg` is an [XML](xml.md) value underneath, a drawing embeds directly into an
 [HTML](html.md) page with no serialization step between, and the same drawing serves as a
 standalone `.svg` file when wrapped in a `Document`.
