@@ -2699,10 +2699,16 @@ object Tel extends Tel2:
   // loaded via `text.load[Tel]`. The `Document[Tel]` pair lets callers
   // read the schema identifier, interpreter directive, and chosen line
   // endings without inspecting the presentation AST directly.
+  // `continuation` is the §6.1 continuation: the 1-indexed source line on
+  // which the content after the document separator begins, when a `##`
+  // line ended the document, or `Unset` when it ended at end of input. It
+  // is how a caller reaches content a TEL header prefixes — the separator
+  // is the only framing, and the parser does not read past it.
   case class Metadata
     ( interpreterDirective: Optional[Text],
       pragma:               Optional[Pragma],
-      lineEndings:          LineEndings )
+      lineEndings:          LineEndings,
+      continuation:         Optional[Int] = Unset )
 
   sealed trait Subtree:
     def children: Array[Block]^{}
@@ -3419,7 +3425,9 @@ object Tel extends Tel2:
     tel.subtree match
       case doc: Tel.Document =>
         turbulence.Document
-         ( tel, Tel.Metadata(doc.interpreterDirective, doc.pragma, doc.lineEndings) )
+         ( tel,
+           Tel.Metadata
+            (doc.interpreterDirective, doc.pragma, doc.lineEndings, doc.continuation) )
 
       case _ =>
         turbulence.Document(tel, Tel.Metadata(Unset, Unset, Tel.LineEndings.Lf))
@@ -7916,7 +7924,11 @@ object Tel extends Tel2:
 
     def metadata0: Optional[Tel.Metadata] = current0.subtree match
       case document: Tel.Document =>
-        Tel.Metadata(document.interpreterDirective, document.pragma, document.lineEndings)
+        Tel.Metadata
+         ( document.interpreterDirective,
+           document.pragma,
+           document.lineEndings,
+           document.continuation )
 
       case _ =>
         Unset
