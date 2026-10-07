@@ -724,11 +724,6 @@ object internal:
         ("stratiform: staged parsing requires a single parameter list; use " +
           "`Tel.Parsable.derived`")
 
-    val fields = classSymbol.caseFields
-    val arity = fields.length
-    val fieldNames: List[String] = fields.map(_.name)
-    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
-
     def kindOf(fieldType: TypeRepr): StagedKind =
       if fieldType =:= TypeRepr.of[Int] then IntK
       else if fieldType =:= TypeRepr.of[Long] then LongK
@@ -736,8 +731,6 @@ object internal:
       else if fieldType =:= TypeRepr.of[Text] then TextK
       else if fieldType =:= TypeRepr.of[String] then StringK
       else InstanceK
-
-    val kinds: List[StagedKind] = fieldTypes.map(kindOf)
 
     // Keywords compile to literal packed-word comparisons when no `@name`
     // annotation can rename them (renames resolve at runtime, so annotated
@@ -748,14 +741,11 @@ object internal:
     // general text step, which matches all fields by string.
     val literalKeys: Boolean =
       val annotated = ctor.paramSymss.flatten.filterNot(_.isTypeParam).flatMap(_.annotations)
-        ++ fields.flatMap(_.annotations)
+        ++ classSymbol.caseFields.flatMap(_.annotations)
 
       !annotated.exists { annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
 
-    val wireNames: List[String] = fieldNames.map { name => Tel.camelToKebab(name).s }
-
-    def packedKeyword(index: Int): Option[Long] =
-      val name = wireNames(index)
+    def packedKeyword(name: String): Option[Long] =
       val length = name.length
 
       val packs = length > 0 && length <= 8 && name.forall: char => char >= '!' && char <= '~'
@@ -770,20 +760,34 @@ object internal:
 
         Some(word)
 
-    val packedKeywords: List[Option[Long]] = List.range(0, arity).map(packedKeyword)
+    // Everything generation needs about one field, so that each step maps over the fields rather
+    // than lining up parallel lists by position. `index` is the field's position in the
+    // constructor, which the generated code carries as a literal; `packed` is its wire keyword
+    // as a literal word, when it packs.
+    case class Field
+      ( index:     Int,
+        name:      String,
+        fieldType: TypeRepr,
+        kind:      StagedKind,
+        packed:    Option[Long] )
 
-    def summonField(index: Int): Expr[Tel.Field | Null] =
-      if kinds(index) != InstanceK then '{null}
-      else fieldTypes(index).asType match
+    val fields: List[Field] = classSymbol.caseFields.zipWithIndex.map: (symbol, index) =>
+      val fieldType = tpe.memberType(symbol).dealias
+      val packed = packedKeyword(Tel.camelToKebab(symbol.name).s)
+      Field(index, symbol.name, fieldType, kindOf(fieldType), packed)
+
+    def summonField(field: Field): Expr[Tel.Field | Null] =
+      if field.kind != InstanceK then '{null}
+      else field.fieldType.asType match
         case '[fieldType] =>
           Expr.summon[fieldType is Tel.Field].getOrElse:
             report.errorAndAbort
-              (s"stratiform: no Tel.Field instance for field ${fieldNames(index)}: " +
-                fieldTypes(index).show)
+              (s"stratiform: no Tel.Field instance for field ${field.name}: " +
+                field.fieldType.show)
 
-    def declaredDefault(index: Int): Expr[Any] = fieldTypes(index).asType match
+    def declaredDefault(field: Field): Expr[Any] = field.fieldType.asType match
       case '[fieldType] =>
-        '{ wisteria.internal.default[value, fieldType](${Expr(index)}): Any }
+        '{ wisteria.internal.default[value, fieldType](${Expr(field.index)}): Any }
 
     def zero(fieldType: TypeRepr): Term =
       if fieldType =:= TypeRepr.of[Int] then Literal(IntConstant(0))
@@ -808,35 +812,42 @@ object internal:
       val owner = Symbol.spliceOwner
       val bufferType = TypeRepr.of[scala.collection.mutable.ListBuffer[Any] | Null]
 
-      val slots = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "slot"+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
+      // A field's mutable locals in the generated reader: its value; whether it has been
+      // filled; whether a positionally-assigned atom filled it rather than a keyword child — a
+      // later same-keyword child then fills a non-repeatable member twice (§20.2 step 5c); and,
+      // for a field that may gather (a repeatable instance), its occurrence buffer, allocated
+      // lazily on the first occurrence.
+      case class Local
+        ( field:      Field,
+          slot:       Symbol,
+          seen:       Symbol,
+          atomFilled: Symbol,
+          buffer:     Option[Symbol] )
 
-      val seens = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "seen"+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+      val locals: List[Local] = fields.map: field =>
+        def local(prefix: String, typeRepr: TypeRepr): Symbol =
+          Symbol.newVal
+            ( owner, prefix+field.index, typeRepr, Flags.Mutable, Symbol.noSymbol )
 
-      // Whether a field's slot was filled by a positionally-assigned atom
-      // rather than a keyword child — a later same-keyword child then fills
-      // a non-repeatable member twice (§20.2 step 5c).
-      val atomFilleds = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "atom"+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+        val buffer =
+          if field.kind != InstanceK then None else Some(local("gather", bufferType))
 
-      // Occurrence buffers for the fields that may gather (repeatable
-      // instances), allocated lazily on the first occurrence.
-      val buffers: List[Option[Symbol]] = List.range(0, arity).map: index =>
-        if kinds(index) != InstanceK then None else
-          Some(Symbol.newVal(owner, "gather"+index, bufferType, Flags.Mutable, Symbol.noSymbol))
+        Local
+          ( field,
+            local("slot", field.fieldType),
+            local("seen", TypeRepr.of[Boolean]),
+            local("atom", TypeRepr.of[Boolean]),
+            buffer )
 
-      val slotDefs = List.range(0, arity).map: index =>
-        ValDef(slots(index), Some(zero(fieldTypes(index))))
+      val slotDefs = locals.map: local => ValDef(local.slot, Some(zero(local.field.fieldType)))
 
-      val seenDefs = List.range(0, arity).map: index =>
-        ValDef(seens(index), Some(Literal(BooleanConstant(false))))
+      val seenDefs = locals.map: local => ValDef(local.seen, Some(Literal(BooleanConstant(false))))
 
-      val atomFilledDefs = List.range(0, arity).map: index =>
-        ValDef(atomFilleds(index), Some(Literal(BooleanConstant(false))))
+      val atomFilledDefs = locals.map: local =>
+        ValDef(local.atomFilled, Some(Literal(BooleanConstant(false))))
 
-      val bufferDefs = List.range(0, arity).flatMap: index =>
-        buffers(index).map: symbol => ValDef(symbol, Some('{ null }.asTerm))
+      val bufferDefs = locals.flatMap: local =>
+        local.buffer.map: symbol => ValDef(symbol, Some('{ null }.asTerm))
 
       val unit = Literal(UnitConstant())
 
@@ -844,28 +855,30 @@ object internal:
       // honoring the derived engine's semantics — a repeatable field gathers
       // every occurrence, a non-repeatable one keeps its first and skips the
       // rest.
-      val arms = List.range(0, arity).map: index =>
+      val arms = locals.map: local =>
+        val index = local.field.index
+
         val keyText: Expr[Text] = '{ $keys.readable(${Expr(index)}).tt }
 
         def firstWins(read: Term): Term =
           If
-            ( Ref(seens(index)),
+            ( Ref(local.seen),
               Block
                 ( List
                     ( If
-                        ( Ref(atomFilleds(index)),
+                        ( Ref(local.atomFilled),
                           '{ Tel.Parsable.duplicateFill()(using $tactic) }.asTerm,
                           unit ) ),
                   '{ $reader.skipEntry($indent) }.asTerm ),
               Block
                 ( List
-                    ( Assign(Ref(slots(index)), read),
-                      Assign(Ref(seens(index)), Literal(BooleanConstant(true))) ),
+                    ( Assign(Ref(local.slot), read),
+                      Assign(Ref(local.seen), Literal(BooleanConstant(true))) ),
                   unit ) )
 
-        val rhs: Term = fieldTypes(index).asType match
+        val rhs: Term = local.field.fieldType.asType match
           case '[fieldType] =>
-            kinds(index) match
+            local.field.kind match
               case IntK =>
                 firstWins:
                   '{
@@ -905,7 +918,7 @@ object internal:
                   }.asTerm
 
               case InstanceK =>
-                val bufferRef = Ref(buffers(index).get)
+                val bufferRef = Ref(local.buffer.get)
 
                 val bufferExpr =
                   bufferRef.asExprOf[scala.collection.mutable.ListBuffer[Any] | Null]
@@ -955,7 +968,9 @@ object internal:
 
         val assignmentExpr = Ref(assignment).asExprOf[AnyRef]
 
-        val deliveries: List[Statement] = List.range(0, arity).map: index =>
+        val deliveries: List[Statement] = locals.map: local =>
+          val index = local.field.index
+
           val keyText: Expr[Text] = '{ $keys.readable(${Expr(index)}).tt }
           val count: Expr[Int] = '{ Tel.Parsable.positionalCount($assignmentExpr, ${Expr(index)}) }
 
@@ -968,14 +983,14 @@ object internal:
           def fill(value: Term): Term =
             Block
               ( List
-                  ( Assign(Ref(slots(index)), value),
-                    Assign(Ref(seens(index)), Literal(BooleanConstant(true))),
-                    Assign(Ref(atomFilleds(index)), Literal(BooleanConstant(true))) ),
+                  ( Assign(Ref(local.slot), value),
+                    Assign(Ref(local.seen), Literal(BooleanConstant(true))),
+                    Assign(Ref(local.atomFilled), Literal(BooleanConstant(true))) ),
                 unit )
 
-          val deliver: Term = fieldTypes(index).asType match
+          val deliver: Term = local.field.fieldType.asType match
             case '[fieldType] =>
-              kinds(index) match
+              local.field.kind match
                 case IntK =>
                   fill:
                     '{
@@ -1002,7 +1017,7 @@ object internal:
                 case StringK => fill('{ $first.s }.asTerm)
 
                 case InstanceK =>
-                  val bufferRef = Ref(buffers(index).get)
+                  val bufferRef = Ref(local.buffer.get)
 
                   val bufferExpr =
                     bufferRef.asExprOf[scala.collection.mutable.ListBuffer[Any] | Null]
@@ -1071,22 +1086,23 @@ object internal:
       val found = Symbol.newVal(owner, "found", TypeRepr.of[Int], Flags.EmptyFlags, Symbol.noSymbol)
       val wordRef = Ref(word).asExprOf[Long]
 
-      def chain(index: Int): Term =
-        if index == arity then Literal(IntConstant(-1))
-        else packedKeywords(index) match
-          case None => chain(index + 1)
+      def chain(remaining: List[Field]): Term = remaining match
+        case Nil => Literal(IntConstant(-1))
+
+        case field :: rest => field.packed match
+          case None => chain(rest)
 
           case Some(packed) =>
             If
               ( '{ $wordRef == ${Expr(packed)} }.asTerm,
-                Literal(IntConstant(index)),
-                chain(index + 1) )
+                Literal(IntConstant(field.index)),
+                chain(rest) )
 
       val textStep: Term = '{ Tel.Parsable.keywordIndex($keys, $reader.keywordText) }.asTerm
 
       val resolve: Term =
         if literalKeys then
-          If('{ $wordRef == TelReader.KeywordOpaque }.asTerm, textStep, chain(0))
+          If('{ $wordRef == TelReader.KeywordOpaque }.asTerm, textStep, chain(fields))
         else textStep
 
       val step: Term =
@@ -1106,12 +1122,14 @@ object internal:
       // collection is always built from the gathered occurrences (zero
       // occurrences build the empty collection; a repeatable field never
       // consults the declared default), exactly as the derived engine does.
-      val absents: List[Term] = List.range(0, arity).map: index =>
-        fieldTypes(index).asType match
+      val absents: List[Term] = locals.map: local =>
+        val index = local.field.index
+
+        local.field.fieldType.asType match
           case '[fieldType] =>
             val keyText: Expr[Text] = '{ $keys.readable(${Expr(index)}).tt }
 
-            val onAbsent: Expr[fieldType] = kinds(index) match
+            val onAbsent: Expr[fieldType] = local.field.kind match
               case InstanceK =>
                 '{
                   $instances.readable(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
@@ -1128,7 +1146,7 @@ object internal:
 
             val resolveAbsent: Term =
               Assign
-                ( Ref(slots(index)),
+                ( Ref(local.slot),
                   '{
                     val declared = $fallbacks.readable(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
@@ -1137,17 +1155,17 @@ object internal:
                   }.asTerm )
 
             val whenUnseen: Term =
-              If('{ !${Ref(seens(index)).asExprOf[Boolean]} }.asTerm, resolveAbsent, unit)
+              If('{ !${Ref(local.seen).asExprOf[Boolean]} }.asTerm, resolveAbsent, unit)
 
-            kinds(index) match
+            local.field.kind match
               case InstanceK =>
                 val bufferExpr =
-                  Ref(buffers(index).get)
+                  Ref(local.buffer.get)
                   . asExprOf[scala.collection.mutable.ListBuffer[Any] | Null]
 
                 val gatherFinish: Term =
                   Assign
-                    ( Ref(slots(index)),
+                    ( Ref(local.slot),
                       '{
                         Tel.Parsable.focusingUnlocated($foci, $keyText):
                           Tel.Parsable.gathered[fieldType]
@@ -1174,7 +1192,7 @@ object internal:
           if typeArguments.isEmpty then newTerm
           else TypeApply(newTerm, typeArguments.map { argument => Inferred(argument) })
 
-        Apply(applied, slots.map { slot => Ref(slot) })
+        Apply(applied, locals.map { local => Ref(local.slot) })
 
       Block
         ( slotDefs ::: seenDefs ::: atomFilledDefs ::: bufferDefs ::: prepass ::: loop ::: absents,
@@ -1187,14 +1205,14 @@ object internal:
 
     val fociExpr = summonOrAbort[Foci[Tel.Focus]]("Foci[Tel.Focus]")
     val tacticExpr = summonOrAbort[Tactic[Tel.Error]]("Tactic[Tel.Error]")
-    val nameExprs = fieldNames.map { name => Expr(name) }
-    val instanceExprs = List.range(0, arity).map(summonField)
-    val fallbackExprs = List.range(0, arity).map(declaredDefault)
+    val nameExprs = fields.map { field => Expr(field.name) }
+    val instanceExprs = fields.map(summonField)
+    val fallbackExprs = fields.map(declaredDefault)
 
     // A primitive field's §20.2 nature is fixed by its type here; an
     // instance-backed field's is read from the instance when the positional
     // table is built, so its entry is only a placeholder.
-    val natureExprs: List[Expr[Tel.Nature]] = kinds.map:
+    val natureExprs: List[Expr[Tel.Nature]] = fields.map(_.kind).map:
       case BooleanK  => '{ Tel.Nature.Flag }
       case InstanceK => '{ Tel.Nature.Struct }
       case _         => '{ Tel.Nature.Scalar }
