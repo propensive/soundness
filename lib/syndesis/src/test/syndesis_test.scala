@@ -212,6 +212,33 @@ object Tests extends Suite(m"Syndesis tests"):
         cache.lookup(name, Dns.Type.A, 20*second)
       . assert(_ == List(a(120)))
 
+    suite(m"Tiebreaking"):
+      val name = dns"Gondor._fury._tcp.local"
+      def a(address: Ipv4) = Dns.Record(dns"host.local", 120, Dns.Rdata.A(address), flush = true)
+
+      def srv(port: Int) =
+        Dns.Record(name, 120, Dns.Rdata.Srv(0, 0, port, dns"host.local"), flush = true)
+
+      test(m"Records order by type before data"):
+        Mdns.Tiebreak.compare(a(ip"10.0.0.9"), srv(1))
+      . assert(_ == Comparison.Less)
+
+      test(m"Records of one type order by their data bytes"):
+        Mdns.Tiebreak.compare(a(ip"10.0.0.2"), a(ip"10.0.0.1"))
+      . assert(_ == Comparison.More)
+
+      test(m"Identical record sets are the same, whatever their order"):
+        Mdns.Tiebreak.compare(List(srv(8443), a(ip"10.0.0.1")), List(a(ip"10.0.0.1"), srv(8443)))
+      . assert(_ == Comparison.Same)
+
+      test(m"The set whose first difference is lower loses"):
+        Mdns.Tiebreak.compare(List(srv(8443), a(ip"10.0.0.1")), List(srv(8444), a(ip"10.0.0.2")))
+      . assert(_ == Comparison.Less)
+
+      test(m"A set that runs out first loses"):
+        Mdns.Tiebreak.compare(List(a(ip"10.0.0.1")), List(a(ip"10.0.0.1"), srv(8443)))
+      . assert(_ == Comparison.Less)
+
     suite(m"The in-memory bus"):
       test(m"Every member receives what one sends, the sender included"):
         val bus = Mdns.Transport.Bus()
@@ -305,6 +332,106 @@ object Tests extends Suite(m"Syndesis tests"):
             val b = Mdns.Responder(() => bus.join(dns"b.local", List(ip"10.0.0.2")))
             capture[Discovery.Error](Discovery.Instance(t"Nowhere", fury).resolve(300L)(using b)).reason
       . assert(_ == Discovery.Error.Reason.Timeout(t"Nowhere._fury._tcp.local"))
+
+      // The rival's claim on Gondor's name, as a host that never probed would assert it.
+      val rival =
+        Dns.Record(gondor.dnsName, 120, Dns.Rdata.Srv(0, 0, 9999, dns"rogue.local"), flush = true)
+
+      val rivalClaim = Dns.Message(7, Dns.Flags(response = true, authoritative = true), Nil, List(rival))
+
+      def isProbe(message: Dns.Message): Boolean =
+        !message.flags.response && message.authority.exists(_.name == gondor.dnsName)
+
+      // An announcement from `a` of an SRV record on port 8443, and the name it is for.
+      def announced(message: Dns.Message): Optional[Dns.Name] =
+        message.answers.filter: record =>
+          record.ttl > 0 && record.rdata == Dns.Rdata.Srv(0, 0, 8443, dns"a.local")
+        . prim.let(_.name)
+
+      // Reads the rogue's packets until one satisfies `lambda`.
+      def awaitPacket[result](rogue: Mdns.Transport & Mdns.Transport.Inlet)(lambda: Dns.Message => Optional[result]): result =
+        lambda(rogue.receive().data.as[Dns.Message]).or(awaitPacket(rogue)(lambda))
+
+      test(m"Simultaneous probes for one name are settled by the lower records yielding"):
+        supervise:
+            val bus = Mdns.Transport.Bus()
+            val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
+            val b = Mdns.Responder(() => bus.join(dns"b.local", List(ip"10.0.0.2")))
+            val settled: Promise[Text] = Promise()
+            val held: Promise[Text] = Promise()
+
+            // `b` holds its name until `a` has settled, so that `a`'s second probe is defended.
+            async:
+              fury.advertise(description.copy(port = tcp"8444"))(using b):
+                held.offer(summon[Discovery.Advertisement].instance.label)
+                safely(settled.await(15000L))
+
+            fury.advertise(description)(using a):
+              settled.offer(summon[Discovery.Advertisement].instance.label)
+
+            (settled.await(15000L), held.await(15000L))
+      . assert(_ == (t"Gondor (2)", t"Gondor"))
+
+      test(m"A conflicting response makes an established name probe again"):
+        supervise:
+            val bus = Mdns.Transport.Bus()
+            val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
+
+            fury.advertise(description)(using a):
+              val rogue = bus.join(dns"rogue.local", List(ip"10.0.0.9"))
+              rogue.send(rivalClaim.in[Data])
+              val probed = awaitPacket(rogue) { message => if isProbe(message) then true else Unset }
+              val reannounced = awaitPacket(rogue)(announced(_))
+              (probed, reannounced, summon[Discovery.Advertisement].instance.label)
+      . assert(_ == (true, gondor.dnsName, t"Gondor"))
+
+      test(m"An established name whose rival defends it is renamed"):
+        supervise:
+            val bus = Mdns.Transport.Bus()
+            val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
+
+            fury.advertise(description)(using a):
+              val rogue = bus.join(dns"rogue.local", List(ip"10.0.0.9"))
+              rogue.send(rivalClaim.in[Data])
+              awaitPacket(rogue) { message => if isProbe(message) then true else Unset }
+              rogue.send(rivalClaim.in[Data])
+              val reannounced = awaitPacket(rogue)(announced(_))
+              (reannounced.labels.prim, summon[Discovery.Advertisement].instance.label)
+      . assert(_ == (t"Gondor (2)", t"Gondor (2)"))
+
+      test(m"Advertising reports its activity to the loan's loggable"):
+        val activity = scala.collection.mutable.ListBuffer[Discovery.Activity]()
+        given loggable: Discovery.Activity is Loggable = (_, _, event) => activity += event
+
+
+        supervise:
+            val bus = Mdns.Transport.Bus()
+            val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
+            fury.advertise(description)(using a)(())
+
+        List.from(activity)
+      . assert: events =>
+          import Discovery.Activity.*
+          events == List(Probing(gondor.dnsName), Claimed(gondor), Withdrawn(gondor))
+
+      test(m"Answers falling due together are aggregated into one response"):
+        supervise:
+            val bus = Mdns.Transport.Bus()
+            val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
+
+            fury.advertise(description)(using a):
+              val rogue = bus.join(dns"rogue.local", List(ip"10.0.0.9"))
+              val flags = Dns.Flags()
+              rogue.send(Dns.Message(7, flags, List(Dns.Question(fury.dnsName, Dns.Type.Ptr))).in[Data])
+
+              rogue.send:
+                Dns.Message(8, flags, List(Dns.Question(Discovery.Service.enumeration, Dns.Type.Ptr)))
+                . in[Data]
+
+              awaitPacket(rogue): message =>
+                val ptrs = message.flags.response && message.answers.all(_.rtype == Dns.Type.Ptr)
+                if ptrs then message.answers.map(_.rdata) else Unset
+      . assert(_ == List(Dns.Rdata.Ptr(gondor.dnsName), Dns.Rdata.Ptr(fury.dnsName)))
 
     suite(m"Discovery over the sockets"):
       import threading.platformThreading
