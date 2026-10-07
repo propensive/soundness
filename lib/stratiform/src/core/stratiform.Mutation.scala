@@ -537,7 +537,7 @@ object Mutation:
         val separation = if last.tabulation.present then 1 else 0
         Array.frozen
          ( blocks.readable.updated(lastIdx, last.copy(trailingBlankLines = separation))
-           :+ fresh )
+           . appended(fresh) )
     else
       val block = blocks.readable(lastB)
 
@@ -612,7 +612,8 @@ object Mutation:
 
     Array.frozen
      ( blocks.readable.updated
-        (blockIndex, block.copy(compounds = Array.frozen(block.compounds.readable :+ padded))) )
+        ( blockIndex,
+          block.copy(compounds = Array.frozen(block.compounds.readable.appended(padded))) ) )
 
   // Width of `text` in code points: the spec measures column geometry in
   // code points. (The parser records marker offsets in bytes and the

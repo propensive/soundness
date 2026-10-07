@@ -67,7 +67,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       // The whole-value forms (`Duct.feed` over the format ducts) must
       // interoperate with the stream forms in both directions, per format.
       val wholeData: Data =
-        Array.frozen(Array.from((0 to 255).map(_.toByte)).readable ++ Data(1, 1, 2, 3, 5, 8, 13).readable)
+        Array.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
 
       for format <- List(t"Gzip", t"Zlib", t"Deflate") do
         test(m"whole-value compress roundtrips through whole-value decompress ($format)"):
@@ -309,7 +309,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       val brotliLong: Chain[Data] =
         (proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000)).to(proscenium.Chain)
-      val brotliWhole: Data = Array.frozen(Array.from((0 to 255).map(_.toByte)).readable ++ Data(1, 1, 2, 3, 5, 8, 13).readable)
+      val brotliWhole: Data = Array.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
       val brotliVaried: Data =
         Array.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
 
@@ -370,7 +370,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       def pattern(length: Int, seed: Int): Data =
         Data.fill(length)(i => ((i*seed + (i >> 4)) & 0xff).toByte)
 
-      def join(left: Data, right: Data): Data = Array.frozen(left.readable ++ right.readable)
+      def join(left: Data, right: Data): Data = left ++ right
 
       // A successor differing from its predecessor by two edits and an insertion.
       val base = pattern(4096, 7)
@@ -520,7 +520,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         emptyXz.decompress[Xz].to[List]
       . assert(_ == Nil)
 
-      val xzWhole: Data = Array.frozen(Array.from((0 to 255).map(_.toByte)).readable ++ Data(1, 1, 2, 3, 5, 8, 13).readable)
+      val xzWhole: Data = Array.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
       val xzLong: Chain[Data] =
         (proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000)).to(proscenium.Chain)
       val xzVaried: Data =
@@ -625,7 +625,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_ == true)
 
     suite(m"LZMA2 tests"):
-      val lzma2Whole: Data = Array.frozen(Array.from((0 to 255).map(_.toByte)).readable ++ Data(1, 1, 2, 3, 5, 8, 13).readable)
+      val lzma2Whole: Data = Array.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
       val lzma2Long: Chain[Data] =
         (proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000)).to(proscenium.Chain)
       val lzma2Varied: Data =
@@ -670,9 +670,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
     suite(m"Compression duct tests"):
       val mixed: Data =
-        Array.frozen:
-          Data.fill(50000) { index => (index%251).toByte }.readable
-          ++ (t"repetition "*500).in[Data].readable
+        Data.fill(50000) { index => (index%251).toByte } ++ (t"repetition "*500).in[Data]
 
       test(m"gzip duct roundtrips a byte stream"):
         val gather = Gather2()

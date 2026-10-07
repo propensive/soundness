@@ -62,7 +62,7 @@ object Tests extends Suite(m"Ulysses tests"):
     . assert(_ == 1438)
 
     val bloom = test(m"Add an element to a Bloom filter"):
-      BloomFilter[Text](100, 0.001) + t"Hello world"
+      BloomFilter[Text](100, 0.001) :+ t"Hello world"
 
     . check(_.hits(t"Hello world"))
 
@@ -114,14 +114,14 @@ object Tests extends Suite(m"Ulysses tests"):
     // A one-in-a-hundred-million filter needs 18 positions of 17 bits each — more than one
     // 256-bit digest supplies — so a single element must still land on 18 distinct positions.
     test(m"A demanding filter draws every position from fresh hash bits"):
-      val filter = BloomFilter[Text](5000, 0.00000001) + t"Hello world"
+      val filter = BloomFilter[Text](5000, 0.00000001) :+ t"Hello world"
       filter.population == filter.hashCount
 
     . assert(identity(_))
 
     test(m"Adding elements one at a time equals adding them together"):
       val empty = BloomFilter.freeze(BloomFilter[Text](1000, 0.01))
-      keys.take(500).foldLeft(empty)(_ + _) == empty ++ keys.take(500)
+      keys.take(500).foldLeft(empty)(_ :+ _) == empty ++ keys.take(500)
 
     . assert(identity(_))
 
@@ -129,7 +129,7 @@ object Tests extends Suite(m"Ulysses tests"):
       val filter = BloomFilter[Text](1000, 0.01)
       filter.add(t"one")
       filter.addAll(keys.take(500))
-      BloomFilter.freeze(filter) == BloomFilter[Text](1000, 0.01) + t"one" ++ keys.take(500)
+      BloomFilter.freeze(filter) == (BloomFilter[Text](1000, 0.01) :+ t"one") ++ keys.take(500)
 
     . assert(identity(_))
 
@@ -142,18 +142,18 @@ object Tests extends Suite(m"Ulysses tests"):
     . assert(identity(_))
 
     test(m"A case class can be an element"):
-      val filter = BloomFilter[Point](100, 0.01) + Point(1, 2)
+      val filter = BloomFilter[Point](100, 0.01) :+ Point(1, 2)
       filter.hits(Point(1, 2)) && !filter.hits(Point(2, 1))
 
     . assert(identity(_))
 
     test(m"A filter sized for no elements can still hold one"):
-      (BloomFilter[Text](0, 0.01) + t"x").hits(t"x")
+      (BloomFilter[Text](0, 0.01) :+ t"x").hits(t"x")
 
     . assert(identity(_))
 
     test(m"A filter tolerating every false positive does not fail"):
-      (BloomFilter[Text](100, 1.0) + t"x").hits(t"x")
+      (BloomFilter[Text](100, 1.0) :+ t"x").hits(t"x")
 
     . assert(identity(_))
 

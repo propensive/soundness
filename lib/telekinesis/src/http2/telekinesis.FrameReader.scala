@@ -128,5 +128,5 @@ extends caps.ExclusiveCapability, caps.Stateful:
       val header = slice(9)
       val length = Frame.uint24(header, 0)
       if !ensure(length) then abort(Http2.Error(Reason.Truncated))
-      val whole: Bytes = Array.frozen(header.readable ++ slice(length).readable)
+      val whole: Bytes = header ++ slice(length)
       Frame.decode(whole, 0)(0)

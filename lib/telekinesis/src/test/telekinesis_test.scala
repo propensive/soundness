@@ -532,7 +532,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       . assert(_ == true)
 
       test(m"Set-Cookie is repeatable, so both values are kept"):
-        val served = Http.Response(Http.Ok, setCookie = t"a=1")(t"hello") + Cookie.Value(t"b", t"2")
+        val served = Http.Response(Http.Ok, setCookie = t"a=1")(t"hello") :+ Cookie.Value(t"b", t"2")
         served.textHeaders.stdlib.count(_.key.lower == t"set-cookie")
 
       . assert(_ == 2)

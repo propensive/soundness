@@ -46,8 +46,10 @@ import rudiments.*
 // A Bloom filter whose access rights are tracked by separation checking, as an `Array`'s are:
 // `apply` yields an exclusive (`^`) filter, into which `add` and `addAll` set bits in place;
 // `freeze` consumes it to yield the frozen form, `BloomFilter^{}`, without copying, which any
-// reference can query but none can write to. The copying `+` and `++` remain for growing a
-// frozen filter, at one copy of the bits each.
+// reference can query but none can write to. The copying `:+` and `++` remain for growing a
+// frozen filter, at one copy of the bits each. They are members rather than `Appendable` and
+// `Concatenable` instances: the receiver may be exclusive or frozen, and the result is always
+// fresh, which an instance's single `Self` cannot say under separation checking.
 object BloomFilter:
   private val ln2: Double = ln(2.0).double
 
@@ -77,7 +79,7 @@ object BloomFilter:
     caps.unsafe.unsafeAssumePure(filter)
 
   // Sets the k positions, (h₁ + i·h₂) mod bitSize, in a word array: the one loop behind `add`,
-  // `+` and `++`, over a parameter rather than a field so that it may write into a fresh copy as
+  // `:+` and `++`, over a parameter rather than a field so that it may write into a fresh copy as
   // readily as into an exclusive filter's own words.
   @tailrec
   private def setting(words: scala.Array[Long]^, bitSize: Int, count: Int, combined: Long, h2: Long)
@@ -160,8 +162,8 @@ extends caps.Mutable:
   // Growing by copying, for a frozen filter: a fresh filter with the bits and the new elements,
   // at one copy of the bits. The copy is made here rather than by a method, so that the fresh
   // filter is separate from `this` and may be written to from this read-only method.
-  @targetName("add")
-  infix def + (value: element): BloomFilter[element, algorithm]^{} =
+  @targetName("append")
+  infix def :+ (value: element): BloomFilter[element, algorithm]^{} =
     val copy: scala.Array[Long]^ = new scala.Array[Long](words.length)
     java.lang.System.arraycopy(words, 0, copy, 0, words.length)
     val filter = new BloomFilter(bitSize, hashCount, copy)

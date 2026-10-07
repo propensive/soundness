@@ -36,7 +36,7 @@ import prepositional.*
 
 // Set algebra over abstract receivers: `intersect` keeps the elements present in both, and
 // `except` removes the other's elements (the stdlib's `diff`). Union is not here: it is plain
-// concatenation for an unordered unique shape, so `left + right` (symbolism's `Concatenable`)
+// concatenation for an unordered unique shape, so `left ++ right` (symbolism's `Concatenable`)
 // already provides it.
 object Intersectable:
   // NOT subtype-parametric: intersection can empty a non-empty receiver, so a branded `Self`

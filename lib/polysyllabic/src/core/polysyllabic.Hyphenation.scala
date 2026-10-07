@@ -38,6 +38,7 @@ import anticipation.*
 import denominative.*
 import gossamer.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 import fulminate.*
 
@@ -334,7 +335,8 @@ trait Hyphenation:
     val newPatterns =
       Dictionary.aho[Array[Byte]^{}](Hyphenation.alphabet, (this.patterns.entries.toSeq ++ newPatternPairs)*)
 
-    val newExceptions = this.exceptions ++ newExceptionPairs
+    val newExceptions =
+      Dictionary[Array[Int]^{}]((this.exceptions.entries.toSeq ++ newExceptionPairs)*)
     val effectiveLeft = leftMin.or(this.leftMin)
     val effectiveRight = rightMin.or(this.rightMin)
     Hyphenation.make(newPatterns, newExceptions, effectiveLeft, effectiveRight)

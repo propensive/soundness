@@ -50,7 +50,31 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-object Path:
+// The lower-priority join, for a path or relative whose topic is not statically known (an
+// unresolved `Path on Linux`, say): the result is a plain `Path on plane`. A typeclass instance
+// for the path's type cannot see the path's own type members, so it cannot do better.
+transparent trait PathUntyped:
+  given concatenableUntyped: [plane, path <: Path on plane, relative <: Relative]
+  =>  path is Concatenable by relative to (Path on plane) =
+    (left, right) =>
+      Path[plane, Nothing, Tuple]
+        ( left.root, right.descent ++ left.descent.drop(right.ascent).to(List) )
+
+object Path extends PathUntyped:
+  // `path ++ relative`: the relative's ascent is applied to the path's descent, then the
+  // relative's own descent is appended, and the same computation types the result when both
+  // topics are statically known. Being declared in the companion itself, it outranks
+  // `PathUntyped`'s join.
+  given concatenable
+  : [ plane, limit, topic <: Tuple, path <: Path of topic on plane under limit,
+      ascent <: Int, descent <: Tuple, relative <: Relative of descent under ascent ]
+  =>  path is Concatenable by relative to
+        ( Path of Tuple.Concat[descent, Tuple.Reverse[Tuple.Take[Tuple.Reverse[topic], ascent]]]
+          on plane under limit ) =
+    (left, right) =>
+      Path[plane, limit, Tuple.Concat[descent, Tuple.Reverse[Tuple.Take[Tuple.Reverse[topic], ascent]]]]
+        ( left.root, right.descent ++ left.descent.drop(right.ascent).to(List) )
+
   // Platform `Representative` instances (`Path on Linux`, …) live with the OS platform types in
   // galilei; the generic `Path` algebra stays here.
 
@@ -227,7 +251,11 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
             relativeDecodable: ((Relative on Plane) is Decodable in Text)^ )
   :   (Tactic[Path.Error]^) ?->{this, pathDecodable, relativeDecodable} (Path on Plane) =
 
-    safely(text.as[Path on Plane]).or(safely(this + text.as[Relative on Plane])).or:
+    safely(text.as[Path on Plane]).or:
+      safely:
+        val relative = text.as[Relative on Plane]
+        Path[Plane, Limit, Tuple](root, relative.descent ++ descent.drop(relative.ascent).to(List))
+    . or:
       abort(Path.Error(_.InvalidRoot))
 
 
@@ -359,9 +387,3 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
           ( root, (infer[child.type is Navigable on Plane].follow(child) +: descent.drop(1)).to(List) )
 
 
-  transparent inline def + (relative: Relative): Path =
-    type Base = Tuple.Reverse[Tuple.Take[Tuple.Reverse[Topic], relative.Limit]]
-    type Topic2 = Tuple.Concat[relative.Topic, Base]
-
-    Path[Plane, Limit, Topic2]
-      ( root, relative.descent + descent.drop(relative.ascent).to(List) )

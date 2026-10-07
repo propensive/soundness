@@ -475,6 +475,7 @@ object Tests extends Suite(m"Wisteria tests"):
 
       test(m"Addable composes products field-wise"):
         import arithmetic.addable
+        import arithmeticOptions.concatenativeAddition
         Pair(t"foo", 10) + Pair(t"bar", 15)
       . assert(_ == Pair(t"foobar", 25))
 

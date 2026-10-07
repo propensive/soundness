@@ -565,7 +565,7 @@ object Tests extends Suite(m"Contingency"):
       . assert(_ == Unset)
 
       test(m"Errors + adds a focus/error pair"):
-        val errs = Errors() + (t"field", ErrorA(7))
+        val errs = Errors() :+ (t"field", ErrorA(7))
 
         errs(t"field").lay(-1): error =>
           (error: @unchecked) match
@@ -577,7 +577,7 @@ object Tests extends Suite(m"Contingency"):
       . assert(_ == "no messages")
 
       test(m"Validation with one message renders 'one message'"):
-        (Validation() + (Pointer(t"f"), m"bad")).text.text.starts(t"one message")
+        (Validation() :+ (Pointer(t"f"), m"bad")).text.text.starts(t"one message")
       . assert(_ == true)
 
       test(m"Validation.apply returns Unset when pointer absent"):
@@ -585,7 +585,7 @@ object Tests extends Suite(m"Contingency"):
       . assert(_ == Unset)
 
       test(m"Validation.apply returns the message when present"):
-        val v = Validation() + (Pointer(t"f"), m"bad")
+        val v = Validation() :+ (Pointer(t"f"), m"bad")
         v(Pointer(t"f")).let { case m: Message => m.text }.or(t"")
       . assert(_ == t"bad")
 

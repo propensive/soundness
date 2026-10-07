@@ -533,7 +533,8 @@ def cli[bus <: Matchable](using executive: Executive)
       // launcher that has found the socket may rely on it.
       safely:
         val acceptance: Data =
-          Array.unsafeFrozen(scala.Array[Byte](1, 0, 1, 0, 33) ++ Array.unsafeJvm(Launcher.signature))
+          Array.unsafeFrozen:
+            scala.Array.concat(scala.Array[Byte](1, 0, 1, 0, 33), Array.unsafeJvm(Launcher.signature))
 
         acceptanceFile.open[File](Write, OpenFlag.Create, OpenFlag.Truncate)(file.write(Chain(acceptance)))
 

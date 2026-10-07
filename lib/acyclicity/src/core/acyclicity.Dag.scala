@@ -42,12 +42,19 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import nomenclature.*
+import prepositional.*
+import symbolism.*
 import rudiments.*
 
 import Dot.*
 import fulminate.*
 
 object Dag:
+  given concatenable: [node] => Dag[node] is Concatenable by Dag[node] to Dag[node] =
+    (left, right) =>
+      val joined = left.edgeMap.to(List) ++ right.edgeMap.to(List)
+      Dag(joined.groupBy(_._1).view.mapValues(_.flatMap(_._2).to(Set)).to(Map))
+
   @targetName("apply2")
   def apply[node](keys: Set[node])(dependencies: node => Set[node]): Dag[node] =
     Dag(keys.map { key => (key, dependencies(key)) }.to(Map))
@@ -119,11 +126,6 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
 
     sorted.fuse(Map[node, node2]()):
       state.updated(next, lambda(apply(next).map(state), next))
-
-  @targetName("addAll")
-  infix def ++ (dag: Dag[node]): Dag[node] =
-    val joined = edgeMap.to(List) ++ dag.edgeMap.to(List)
-    Dag(joined.groupBy(_._1).view.mapValues(_.flatMap(_._2).to(Set)).to(Map))
 
   def add(key: node, value: node): Dag[node] = this ++ Dag(key -> value)
 

@@ -200,8 +200,8 @@ object Query extends Dynamic:
 
   def apply(parameters: List[(Text, Text)]): Query = new Query(parameters)
 
-  given addable: Query is Addable by Query to Query =
-    Addable: (left, right) => new Query(left.values + right.values)
+  given concatenable: Query is Concatenable by Query to Query =
+    (left, right) => new Query(left.values ++ right.values)
 
   // QueryError → Query.Error
   object Error:
@@ -216,12 +216,7 @@ object Query extends Dynamic:
 
 case class Query private (values: List[(Text, Text)]) extends Dynamic:
   // private lazy val map: Map[Text, Text | List[Text]] = values.groupMap(_(0))(_(1))
-  def append(more: Query): Query = new Query(values + more.values)
   def nil: Boolean = values.nil
-
-  @targetName("appendAll")
-  infix def ++ (query: Query) = Query(values + query.values)
-
 
   def selectDynamic[result](label: String)(using erased parametric: label.type is Parametric to result)
     ( using decodable: result is Decodable in Query )

@@ -36,6 +36,9 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.{ArrayBuffer, HashMap as MutMap, LinkedHashSet}
 
 import anticipation.*
+import prepositional.*
+import rudiments.Appendable
+import symbolism.Concatenable
 import vacuous.*
 
 // Dense flat-array trie keyed on chars from an `Alphabet`. Each node owns a
@@ -59,6 +62,15 @@ import vacuous.*
 // Aho-Corasick walk; the default builders leave them empty so callers
 // that only do exact-key lookups don't pay the BFS build cost.
 object Dictionary:
+  given appendable: [value: ClassTag] => Dictionary[value] is Appendable by (Text, value) =
+    (dictionary, entry) => dictionary.add(entry(0), entry(1))
+
+  given concatenable: [value, value2 >: value: ClassTag, extras <: Iterable[(Text, value2)]]
+  =>  Dictionary[value] is Concatenable by extras to Dictionary[value2] =
+    (dictionary, extras) =>
+      val entries = dictionary.entries.asInstanceOf[Iterable[(Text, value2)]]
+      Dictionary[value2]((entries ++ extras).toSeq*)
+
   object Alphabet:
     // Build an Alphabet from a string of supported chars. Slot index of
     // each char is its position in the string. Unsupported chars return
@@ -422,13 +434,7 @@ final class Dictionary[+value]
 
   // Add an entry, returning a new Dictionary. Widens the value type to
   // include the new entry's value type via the standard `[v2 >: value]`
-  // bound (`+`/`++` follow the same pattern).
+  // bound (`++` with a collection of entries, through `Concatenable`, is the same).
   def add[value2 >: value: ClassTag](key: Text, value: value2): Dictionary[value2] =
-    this + (key -> value)
-
-  def + [value2 >: value: ClassTag](entry: (Text, value2)): Dictionary[value2] =
-    this ++ Iterable(entry)
-
-  def ++ [value2 >: value: ClassTag](extras: Iterable[(Text, value2)]): Dictionary[value2] =
-    val combined = entries.asInstanceOf[Iterable[(Text, value2)]] ++ extras
-    Dictionary[value2](combined.toSeq*)
+    val widened = entries.asInstanceOf[Iterable[(Text, value2)]]
+    Dictionary[value2]((widened ++ Iterable(key -> value)).toSeq*)

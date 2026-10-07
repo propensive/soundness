@@ -257,7 +257,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       key.uncloak:
         val plain = t"Hello world".in[Data]
         val chunks = plain.readable.grouped(1).map { chunk => Array.frozen(chunk) }.to(Chain)
-        Array.frozen(chunks.encrypt(InitializationVector.random).stdlib.map(_.readable).reduce(_ ++ _)).decrypt.as[Text]
+        chunks.encrypt(InitializationVector.random).stdlib.reduce(_ ++ _).decrypt.as[Text]
     . assert(_ == t"Hello world")
 
     test(m"CBC encryption of the same plaintext differs run-to-run (random IV)"):
@@ -403,7 +403,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
         val chunks = Chain(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
-        Array.frozen(chunks.encrypt(InitializationVector.random).stdlib.map(_.readable).reduce(_ ++ _)).decrypt.as[Text]
+        chunks.encrypt(InitializationVector.random).stdlib.reduce(_ ++ _).decrypt.as[Text]
     . assert(_ == t"Hello, streaming world!")
 
     test(m"Streaming and one-shot encryption agree for a fixed IV"):
@@ -411,7 +411,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
         val streamed =
-          Array.frozen(Chain(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data]).encrypt(iv).stdlib.map(_.readable).reduce(_ ++ _))
+          Chain(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data]).encrypt(iv).stdlib.reduce(_ ++ _)
 
         streamed.serialize[Hex] == t"Hello, streaming world!".in[Data].encrypt(iv).serialize[Hex]
     . assert(_ == true)
@@ -543,7 +543,7 @@ object Tests extends Suite(m"Enigmatic tests"):
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         key.uncloak:
           val chunks = Chain(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
-          Array.frozen(chunks.encrypt(InitializationVector.random).stdlib.map(_.readable).reduce(_ ++ _)).decrypt.as[Text]
+          chunks.encrypt(InitializationVector.random).stdlib.reduce(_ ++ _).decrypt.as[Text]
       . assert(_ == t"Hello, streaming world!")
 
     suite(m"Keystores"):

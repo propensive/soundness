@@ -140,15 +140,14 @@ object Html extends Tag.Container
       ${honeycomb.internal.extractor[parts, origins]('scrutinee)}
 
 
-  given addable: [dom        <: Dom,
-                  leftTopic  <: Label,
-                  rightTopic <: Label,
-                  left       <: Html of leftTopic in dom,
-                  right      <: Html of rightTopic in dom]
-  =>  left is Addable by right to (Fragment of leftTopic | rightTopic in dom) =
+  given concatenable: [dom        <: Dom,
+                       leftTopic  <: Label,
+                       rightTopic <: Label,
+                       left       <: Html of leftTopic in dom,
+                       right      <: Html of rightTopic in dom]
+  =>  left is Concatenable by right to (Fragment of leftTopic | rightTopic in dom) =
 
-    Addable: (left, right) =>
-      Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
+    (left, right) => Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
 
   // Internal Tactic used by the permissive-variant givens. Recovery warnings
   // (`raise`) are discarded; truly unrecoverable conditions (`abort`) still
@@ -1899,11 +1898,7 @@ object Html extends Tag.Container
     def ^+ (html: Html of this.Transport): Element of this.Topic over this.Transport in this.Form =
       (html: Html).match
         case fragment: Fragment =>
-          Element
-            ( label, attributes,
-              Array.frozen(Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}].readable ++ children.readable)
-              . asInstanceOf[Array[Node]^{}],
-              foreign )
+          Element(label, attributes, Array.from(fragment.nodes) ++ children, foreign)
 
         case node: Node =>
           Element(label, attributes, Array.frozen(children.readable.prepended(node)), foreign)
@@ -1915,7 +1910,7 @@ object Html extends Tag.Container
     def +^ (html: Html of this.Transport): Element of this.Topic over this.Transport in this.Form =
       (html: Html).match
         case fragment: Fragment =>
-          Element(label, attributes, Array.frozen(children.readable ++ fragment.nodes), foreign)
+          Element(label, attributes, children ++ Array.from(fragment.nodes), foreign)
 
         case node: Node =>
           Element(label, attributes, children :+ node, foreign)

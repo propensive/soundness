@@ -39,13 +39,6 @@ import soundness.*
 
 import strategies.throwUnsafely
 
-// These fixtures assemble SFNT/TrueType tables from many small pieces. A `Concatenable`
-// result is fresh, so joining two `Data` values means freezing once at the join; the operator
-// is defined here once for the fixtures.
-extension (left: Data)
-  @targetName("concatData")
-  def ++ (right: Data): Data = Array.frozen(left.readable ++ right.readable)
-
 object Tests extends Suite(m"Phoenicia Tests"):
 
   // Big-endian byte assembly for hand-built font fixtures.

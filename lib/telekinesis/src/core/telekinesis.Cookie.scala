@@ -95,15 +95,6 @@ object Cookie:
     given encodable: Cookie.Value is Encodable in Http.Header = cookie =>
       Http.Header("Set-Cookie", cookie.show)
 
-    given addable: Http.Response is Addable by Cookie.Value to Http.Response =
-      Addable: (response, cookie) =>
-        val header = Http.Header(t"set-cookie", cookie.show)
-
-        // `response` is pure here, so its body is pure; the seal only discharges
-        // the field's capture-polymorphic declared type (see `Protoresponse`).
-        val body = caps.unsafe.unsafeAssumePure(response.body)
-        response.status(header :: response.textHeaders, body)
-
     given decodable: List[Cookie.Value] is Decodable in Text = value =>
       value.cut(t"; ").bind:
         _.cut(t"=", 2) match
@@ -122,7 +113,7 @@ object Cookie:
   extension (cookie: Cookie[Session])
     def session(lambda: Session ?=> Http.Response)(using Http.Request): Http.Response =
       val session = cookie().or(Session(Uuid().show))
-      lambda(using session) + cookie(session)
+      lambda(using session) :+ cookie(session)
 
 case class Cookie[value: {Encodable in Text, Decodable in Text}]
   ( name:     Text,

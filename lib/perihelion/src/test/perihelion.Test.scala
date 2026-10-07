@@ -103,7 +103,7 @@ object Tests extends Suite(m"Perihelion tests"):
         if length <= 125 then scala.Array[Byte]((0x80|opcode).toByte, (0x80|length).toByte)
         else scala.Array[Byte]((0x80|opcode).toByte, (0x80|126).toByte, (length >> 8).toByte, length.toByte)
 
-      header ++ mask ++ masked
+      scala.Array.concat(header, mask, masked)
 
     // Read one unmasked server frame: (opcode, payload).
     def serverFrame(in: java.io.InputStream): (Int, scala.Array[Byte]) =
@@ -146,7 +146,7 @@ object Tests extends Suite(m"Perihelion tests"):
            ( first, (maskBit | 127).toByte, 0, 0, 0, 0, (length >> 24).toByte,
              (length >> 16).toByte, (length >> 8).toByte, length.toByte )
 
-      if !masked then header ++ payload else
+      if !masked then scala.Array.concat(header, payload) else
         val key = scala.Array[Byte](0x12, 0x34, 0x56, 0x78)
         val coded = new scala.Array[Byte](length)
         var i = 0
@@ -155,10 +155,10 @@ object Tests extends Suite(m"Perihelion tests"):
           coded(i) = (payload(i)^key(i%4)).toByte
           i += 1
 
-        header ++ key ++ coded
+        scala.Array.concat(header, key, coded)
 
     def closeBytes(code: Int, reason: String): scala.Array[Byte] =
-      scala.Array[Byte]((code >> 8).toByte, code.toByte) ++ octets(reason)
+      scala.Array.concat(scala.Array[Byte]((code >> 8).toByte, code.toByte), octets(reason))
 
     def parseFrame(bytes: scala.Array[Byte]): Optional[Websocket.Frame] =
       Websocket.Frame.parse(Cursor[Data](Chain(Array.unsafeFrozen(bytes)).iterator))

@@ -120,7 +120,7 @@ object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
 
   def addByCopying(size: Int): BloomFilter[Text, Blake3] =
     val empty: BloomFilter[Text, Blake3] = BloomFilter.freeze(BloomFilter[Text](size, errorRate))
-    keys(size).fuse(empty)(state + next)
+    keys(size).fuse(empty)(state :+ next)
 
   // The rivals, each written as its own users would write it.
   def buildGuava(size: Int): com.google.common.hash.BloomFilter[CharSequence] =

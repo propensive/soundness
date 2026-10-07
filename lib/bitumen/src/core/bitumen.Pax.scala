@@ -54,7 +54,8 @@ object Pax:
     // cannot instantiate the fold's accumulator type.
     val empty = scala.IArray.empty[Byte]
 
-    Array.frozen(pairs.fold(empty) { (bytes, pair) => bytes ++ record(pair(0), pair(1)).readable })
+    Array.frozen:
+      pairs.fold(empty) { (bytes, pair) => bytes.appendedAll(record(pair(0), pair(1)).readable) }
 
   def parse(data: Data): Map[Text, Text] raises Tar.Error =
     val builder = scala.collection.immutable.Map.newBuilder[Text, Text]

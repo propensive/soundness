@@ -40,6 +40,8 @@ import contextual.*
 import rudiments.each
 import rudiments.all
 import rudiments.map
+import rudiments.Appendable
+import rudiments.`:+`
 import contingency.*
 import fulminate.*
 import gesticulate.*
@@ -63,7 +65,7 @@ object Css:
   // the companion, so aggregation resolves through implicit scope with no import.
   given aggregable: (Tactic[Css.Errors], Diagnostics) => Css is Aggregable by Text = source =>
     track[Text](Css.Errors(Nil)):
-      case error: Css.Error => accrual + error
+      case error: Css.Error => accrual :+ error
 
     . protect:
         CssParser.parse(source, validating = true)
@@ -151,10 +153,10 @@ object Css:
 
       ${cataclysm.internal.expand[parts, origins]('insertions)}
 
-  // Stylesheets concatenate their rule lists, so `css"a { … }" + css"b { … }"` is one
+  // Stylesheets concatenate their rule lists, so `css"a { … }" ++ css"b { … }"` is one
   // stylesheet of both rules.
-  given addable: Css is Addable by Css to Css =
-    Addable: (left, right) => Css(left.rules + right.rules)
+  given concatenable: Css is Concatenable by Css to Css =
+    (left, right) => Css(left.rules ++ right.rules)
 
   // Serve a stylesheet as an HTTP `text/css` response body (paired with the
   // `Streamable` instance above).
@@ -178,8 +180,8 @@ object Css:
 
     // Inline-style sets concatenate their property lists, so two `Css.Style`s (or two
     // bare `css"…"`s) join into one.
-    given addable: Style is Addable by Style to Style =
-      Addable: (left, right) => Style.of(left.properties + right.properties)
+    given concatenable: Style is Concatenable by Style to Style =
+      (left, right) => Style.of(left.properties ++ right.properties)
 
   class Style private (val properties: List[(Text, Text)]):
     // `declaration` is a named method rather than a lambda: an interpolation inside a lambda
@@ -270,8 +272,11 @@ object Css:
   // Counting the errors is O(n) on a `List` (hence `linearSize`, imported above), and is only
   // paid when this aggregate error's message is built.
   case class Errors(errors: List[Css.Error])(using Diagnostics)
-  extends fulminate.Error(m"the CSS contained ${errors.size} errors"):
-    def + (error: Css.Error): Css.Errors = Css.Errors(errors + List(error))
+  extends fulminate.Error(m"the CSS contained ${errors.size} errors")
+
+  object Errors:
+    given appendable: Css.Errors is Appendable by Css.Error = (errors, error) =>
+      Css.Errors(errors.errors ++ List(error))(using errors.diagnostics)
 
   // CssConvertible → Css.Convertible
   // Records that a native Scala type renders to a CSS value of the value-definition

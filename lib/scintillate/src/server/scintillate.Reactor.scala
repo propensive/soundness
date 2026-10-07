@@ -277,7 +277,7 @@ object Reactor:
 
       val respond: Http.Connection.Respond^{this} = new Http.Connection.Respond:
         def apply(response: Http.Response^)(using Tactic[Truncation.Error]): Unit =
-          val response2 = if keep0 then response else response + closeHeader
+          val response2 = if keep0 then response else response :+ closeHeader
           val includeBody = head.method != Http.Head
           val upgrade = response2.status == Http.SwitchingProtocols
 
@@ -318,7 +318,7 @@ object Reactor:
 
     // Queue an error response and close once it drains.
     private update def refuse(status: Http.Status): Unit =
-      val response = Http.Response(status)() + closeHeader
+      val response = Http.Response(status)() :+ closeHeader
       enqueue(Http.Response.serialize(response).memoize)
       closing = true
 

@@ -200,21 +200,3 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
           ( ascent, infer[child.type is Navigable].follow(child) :: descent* )
 
         . unqualified
-
-// case class Relative(ascent: Int, descent: Text*):
-//   type Plane
-//   type Topic <: Tuple
-//   type Limit <: Int
-
-// object Relative:
-
-//   given [ElementType] => (Relative by ElementType) is Addable by (Relative by ElementType) into
-//           (Relative by ElementType) =
-//     (left, right) =>
-//       def recur(ascent: Int, descent: List[Text], ascent2: Int): Relative by ElementType =
-//         if ascent2 > 0 then
-//           if descent.nil then recur(ascent + 1, Nil, ascent - 1)
-//           else recur(ascent, descent.tail, ascent - 1)
-//         else Relative.from(ascent, right.textDescent ++ descent, left.separator)
-
-//       recur(left.ascent, left.textDescent, right.ascent)

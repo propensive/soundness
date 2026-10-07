@@ -46,6 +46,7 @@ import prepositional.*
 import rudiments.*
 import revolution.*
 import serpentine.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 import zeppelin.*
@@ -90,7 +91,7 @@ object Bundler:
 
             root.descendants.filter { entry => !omissions.has(entry.name) }.bind: file =>
               if file.entry() == Directory then Nil else
-                val ref = %.on[Zip] + root.toward(file).on[Zip]
+                val ref = %.on[Zip] ++ root.toward(file).on[Zip]
                 List(Zip.Entry(ref, file.read[Data]))
 
             . to[List]

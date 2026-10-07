@@ -40,10 +40,6 @@ import denominative.dysasymptotics.{linearAccess, linearSize}
 // A minimal TrueType font, assembled the way phoenicia's own fixtures are: enough tables for the
 // character map and the horizontal metrics, which is all a width measurement reads.
 object TestFont:
-  extension (left: Data)
-    @targetName("concatData")
-    def ++ (right: Data): Data = Array.frozen(left.readable ++ right.readable)
-
   def u16(values: Int*): Data =
     Array.from(values.flatMap { value => scala.Seq((value >> 8).toByte, value.toByte) })
 

@@ -241,14 +241,14 @@ extends RequestServable:
     def serveRequest(cursor: Cursor[Data, {}]^): Boolean =
       recover:
         case error: Http.Request.Error =>
-          val response = Http.Response(errorStatus(error.reason))() + closeHeader
+          val response = Http.Response(errorStatus(error.reason))() :+ closeHeader
           safely(writeAll(out, Http.Response.serialize(response)))
           false
 
         case Truncation.Error(_) =>
           // A read error or timeout while a request is in flight: best-effort 408
           // (the socket may still be writable on a read timeout), then close.
-          val response = Http.Response(Http.RequestTimeout)() + closeHeader
+          val response = Http.Response(Http.RequestTimeout)() :+ closeHeader
           safely(writeAll(out, Http.Response.serialize(response)))
           false
 
@@ -299,7 +299,7 @@ extends RequestServable:
                 // A streaming body to a pre-1.1 client can't be chunked, so it must
                 // be delimited by closing the connection.
                 if head.version != 1.1 && streaming(response) then keep = false
-                val response2 = if keep then response else response + closeHeader
+                val response2 = if keep then response else response :+ closeHeader
                 val bytes = Http.Response.serialize(response2, head.method != Http.Head, head.version)
 
                 writeAll(out, bytes, flushEach = streaming(response))

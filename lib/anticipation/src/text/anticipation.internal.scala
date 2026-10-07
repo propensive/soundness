@@ -68,12 +68,12 @@ object internal:
 
       def concat(left: text, right: Text): Text = make(left.s+right.s)
 
-    given addableString: [text <: Text] => text is Addable:
+    given concatenableString: [text <: Text] => text is Concatenable:
       type Self = text
       type Operand = String
       type Result = Text
 
-      def add(left: text, right: String): Text = (left.s+right).tt
+      def concat(left: text, right: String): Text = (left.s+right).tt
 
     private def recur(text: Text, n: Int, acc: Text): Text =
       if n == 0 then acc else recur(text, n - 1, make(acc.s + text.s))

@@ -55,12 +55,6 @@ object Teletype:
   // (i.e., text is at least ~SparseThreshold× longer than the run count)
   inline val SparseThreshold = 2
 
-  given add: NotGiven[Teletype is Textual] => Teletype is Addable:
-    type Operand = Teletype
-    type Result = Teletype
-
-    inline def add(left: Teletype, right: Teletype): Teletype = left.append(right)
-
   given concatenable: Teletype is Concatenable:
     type Result = Teletype
     type Operand = Teletype

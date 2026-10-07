@@ -790,6 +790,19 @@ object Http:
 
     given conversion: [servable: Servable] => Conversion[servable, Response] = servable.serve(_)
 
+    // Appending a header-encodable value: `response :+ cookie`, `response :+ closeHeader`. The
+    // instance is polymorphic in the response's type so that a server-side response retaining
+    // its connection keeps that capture, which the cast restates: the new response's body is
+    // the old one's. Explicit construction rather than `copy`: see `updateDynamic`.
+    given appendable: [response <: Http.Response^, value: Encodable in Http.Header]
+    =>  response is Appendable by value =
+      (response, value) =>
+        val header: Http.Header = value.encode
+
+        new Response
+          ( response.version, response.status, header :: response.textHeaders, response.body )
+        . asInstanceOf[response]
+
     transparent inline def applyDynamic(id: "apply")(inline headers: Any*)
     :   Protoresponse | Response =
 
@@ -1258,12 +1271,6 @@ object Http:
         textHeaders.filter(_.key.lower == name2).map(_.value.as)
 
 
-    @targetName("add")
-    infix def + [value: Encodable in Http.Header](value: value): Response^{this} =
-      val header: Http.Header = value.encode
-
-      // Explicit construction rather than `copy`: see `updateDynamic`.
-      new Response(version, status, header :: textHeaders, body)
 
   case class Submit[target](originForm: Text, target: target, host: Host)
   extends Dynamic:

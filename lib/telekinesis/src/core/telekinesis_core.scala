@@ -40,6 +40,7 @@ import gesticulate.*
 import legerdemain.*
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import urticose.*
 import vacuous.*
 

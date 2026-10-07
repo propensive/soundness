@@ -37,7 +37,7 @@ import prepositional.*
 
 // Single-element growth for the opaque collections: `:+` incorporates one element (at the end,
 // for ordered shapes), the counterpart of `Prependable`'s `+:`. Collection-with-collection
-// concatenation is symbolism's `Concatenable` (`+`). Instances whose append rebuilds the whole
+// concatenation is symbolism's `Concatenable` (`++`). Instances whose append rebuilds the whole
 // collection are gated on the acknowledgement of that linear cost, like `Countable`.
 object Appendable:
   // Appending to a `List` copies all of it: O(n), so the instance demands the marker.
@@ -59,10 +59,16 @@ object Appendable:
   // The frozen array is rebuilt in full: O(n), so the instance demands the marker.
   given frozenArray: [element: scala.reflect.ClassTag] => (complexity: Dysasymptotic.LinearSize)
   =>  (Array[element]^{}) is Appendable by element =
-    (array, element) => Array.frozen(array.readable :+ element)
+    (array, element) => Array.frozen(array.readable.appended(element))
 
 trait Appendable extends Typeclass.Pure, Operable:
   def append(self: Self, element: Operand): Self
 
-extension [self, operand](value: self)(using appendable: self is Appendable by operand)
-  infix def :+ (element: operand): self = appendable.append(value, element)
+// The element's type fixes `operand` before the instance is sought, so an instance polymorphic
+// in its operand (a response appended with anything header-encodable) resolves from the
+// argument; the instance may declare a wider operand than the element (`List[Any] :+ 1`).
+extension [self](value: self)
+  infix def :+ [operand](element: operand)
+    ( using appendable: (self is Appendable) { type Operand >: operand } )
+  :   self =
+    appendable.append(value, element)

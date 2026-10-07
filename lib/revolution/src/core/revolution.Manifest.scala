@@ -67,7 +67,7 @@ object Manifest:
       entries.map: entry =>
         (entry.key, entry.value)
 
-  given addable: Manifest is Addable by Manifest.Entry to Manifest = Addable: (manifest, entry) =>
+  given appendable: Manifest is Appendable by Manifest.Entry = (manifest, entry) =>
     Manifest(manifest.entries.define(entry.key, entry.value))
 
   given subtractable: [key <: Label, attribute <: Manifest.Attribute[key]]

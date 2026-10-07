@@ -96,7 +96,7 @@ object Tests extends Suite(m"Turbulence tests"):
         . assert(_ == 1000)
 
         test(m"correct content after shredding"):
-          Array.frozen(stream.stdlib.map(_.readable).reduce(_ ++ _))
+          stream.stdlib.reduce(_ ++ _)
         . assert(_ === data)
 
     suite(m"Streaming Unicode tests"):
@@ -175,7 +175,7 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_ == qbf)
 
       test(m"Bridge Data source to Chain"):
-        Array.frozen(qbf.source[Data].chain.stdlib.map(_.readable).reduce(_ ++ _)).to[List]
+        qbf.source[Data].chain.stdlib.reduce(_ ++ _).to[List]
       . assert(_ == qbfData.to[List])
 
       test(m"Read Text as Text"):
@@ -216,7 +216,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read Text as Chain[Data]"):
         qbf.read[Chain[Data]]
-      . assert(stream => Array.frozen(stream.stdlib.map(_.readable).reduce(_ ++ _)).to[List] == qbfData.to[List])
+      . assert(stream => stream.stdlib.reduce(_ ++ _).to[List] == qbfData.to[List])
 
       test(m"Read Data as Text"):
         qbfData.read[Text].s
@@ -232,7 +232,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read Data as Chain[Data]"):
         qbfData.read[Chain[Data]]
-      . assert(stream => Array.frozen(stream.stdlib.map(_.readable).reduce(_ ++ _)).to[List] == qbfData.to[List])
+      . assert(stream => stream.stdlib.reduce(_ ++ _).to[List] == qbfData.to[List])
 
       // test(m"Read Text as Lines"):
       //   qbf.read[Chain[Line]]
@@ -844,7 +844,7 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_ == List.fill(3)(payload.to[List]))
 
       val mixed: Data =
-        Array.frozen(Data.fill(50000) { index => (index%251).toByte }.readable ++ (t"repetition "*500).in[Data].readable)
+        Data.fill(50000) { index => (index%251).toByte } ++ (t"repetition "*500).in[Data]
 
       // A duct-chain source has a transient window (its buffer is reused between
       // refills), so the fan-out must snapshot each chunk rather than share it.

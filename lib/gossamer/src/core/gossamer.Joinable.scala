@@ -38,6 +38,7 @@ import scala.language.experimental.pureFunctions
 import fulminate.*
 import prepositional.*
 import rudiments.*
+import symbolism.*
 
 object Joinable:
   given textual: [textual: Textual] => textual is Joinable = elements =>
@@ -45,7 +46,7 @@ object Joinable:
     elements.each(builder.append(_))
     builder()
 
-  given message: Message is Joinable = _.fuse(m"")(state+next)
+  given message: Message is Joinable = _.fuse(m"")(state ++ next)
 
   // The ordered native shapes join by concatenation, and a `Set` by union, so a collection
   // of collections joins with a separator collection interleaved: `List(List(1), List(2))

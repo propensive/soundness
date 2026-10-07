@@ -32,10 +32,10 @@
                                                                                                   */
 package fulminate
 
-import scala.annotation.targetName
 import scala.compiletime.*
 
 import anticipation.*
+import prepositional.*
 import symbolism.*
 
 object Message:
@@ -44,6 +44,15 @@ object Message:
   // In `Message`'s own companion (not `Communicable`'s) so it is in implicit scope when resolving
   // `Message is Transcribable to carrier` — letting `Loggable.fanOut` log a bare `Message`.
   given communicable: Message is Communicable = identity(_)
+
+  // Two messages join at their boundary texts, so the interleaving of texts and messages is
+  // kept: `texts` has one more element than `messages` before and after.
+  given concatenable: Message is Concatenable by Message to Message = (left, right) =>
+    val bridged = List.last(left.texts) ++ List.head(right.texts)
+
+    Message
+      ( List.lead(left.texts) ++ (bridged :: List.tail(right.texts)),
+        left.messages ++ right.messages )
 
 
   // The accumulator is `sci.List` internally: inline proxies are judged by their underlying
@@ -65,14 +74,6 @@ object Message:
 
 
 case class Message(texts: List[Text], messages: List[Message] = Nil):
-  @targetName("append")
-  infix def + (right: Message): Message =
-    val bridged = List.last(texts) + List.head(right.texts)
-
-    Message
-      ( List.concat(List.lead(texts), bridged :: List.tail(right.texts)),
-        messages + right.messages )
-
   def segments: List[Text | Message] =
     def recur(parts: List[Text], messages: List[Message]): List[Text | Message] = parts match
       case head :: tail => List.head(messages) :: head :: recur(tail, List.tail(messages))

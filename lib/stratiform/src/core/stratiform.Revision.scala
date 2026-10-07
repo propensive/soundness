@@ -33,6 +33,8 @@
 package stratiform
 
 import anticipation.*
+import prepositional.*
+import symbolism.*
 import rudiments.*
 import contingency.*
 import vacuous.*
@@ -45,6 +47,8 @@ import vacuous.*
 // document produced by the preceding operations.
 
 object Revision:
+  given concatenable: Revision is Concatenable by Revision to Revision =
+    (left, right) => new Revision(left.ops ++ right.ops)
 
   val noop: Revision = new Revision(Array.empty)
 
@@ -141,7 +145,5 @@ object Revision:
 
 
 case class Revision private[stratiform] (ops: Array[Mutation.Op]^{}):
-  def ++ (next: Revision): Revision =
-    new Revision(Array.frozen(ops.readable ++ next.ops.readable))
 
   def apply(tel: Tel): Tel raises Mutation.Error = Mutation(tel, ops.to[List])

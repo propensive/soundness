@@ -244,8 +244,8 @@ object Repackager:
           manifest(MainClass).lest(RepackageError(m"the JAR manifest has no Main-Class"))
 
         val manifest2: Manifest =
-          manifest - MainClass + BurdockRequire(requirements) + BurdockMain(originalMain) +
-            BurdockVerbosity(t"silent") + MainClass(fqcn"burdock.Bootstrap")
+          manifest - MainClass :+ BurdockRequire(requirements) :+ BurdockMain(originalMain)
+          :+ BurdockVerbosity(t"silent") :+ MainClass(fqcn"burdock.Bootstrap")
 
         // The freshly-built entries — the rewritten manifest and the force-included bootstrap class
         // — are the only two that are compressed here; everything else is a verbatim copy.

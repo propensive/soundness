@@ -34,14 +34,17 @@ package contingency
 
 import scala.language.experimental.pureFunctions
 
-import scala.annotation.*
-
 import anticipation.*
 import fulminate.*
+import prepositional.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 object Errors:
+  given appendable: Errors is Appendable by (Text, Error) = (errors, entry) =>
+    Errors((entry +: errors.errors)*)(using errors.diagnostics)
+
   private def format(errors: List[(Text, Error)]): Message =
     // An `Iterator`-level `mkString`: `join` lives in `gossamer`, above this module.
     val joined =
@@ -54,9 +57,6 @@ object Errors:
 case class Errors(errors: (Text, Error)*)(using Diagnostics)
 extends Error(218, 0)(Errors.format(errors.to(List))):
   private lazy val errorMap: Map[Text, Error] = errors.to(Map)
-
-  @targetName("add")
-  infix def + (focus: Text, error: Error): Errors = Errors((focus, error) +: errors*)
 
   def apply(focus: Text): Optional[Error] =
     errorMap.at(focus)

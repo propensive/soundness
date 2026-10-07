@@ -47,6 +47,7 @@ import mandible.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -223,4 +224,4 @@ extends StackTrace.Resolver:
   private def file(path: Text): Optional[Path on Linux] =
     safely(path.as[Path on Linux]).or:
       val base: Path on Linux = workingDirectory[Path on Linux]
-      safely(base + path.as[Relative on Linux])
+      safely(base ++ path.as[Relative on Linux])

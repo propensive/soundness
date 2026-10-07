@@ -58,6 +58,7 @@ import prepositional.*
 import probably.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
@@ -2610,7 +2611,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"decode rejects a value wider than 64 bits"):
         val data: Data =
-          scala.Array.fill[Byte](9)(0xff.toByte).:+(0x02.toByte).asInstanceOf[Array[Byte]]
+          scala.Array.fill[Byte](9)(0xff.toByte).appended(0x02.toByte).asInstanceOf[Array[Byte]]
         capture[Varint.Error](Varint.decode(data, 0)).reason
       . assert(_ == Varint.Error.Reason.Overflow)
 

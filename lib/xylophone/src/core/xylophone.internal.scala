@@ -861,7 +861,7 @@ object internal:
       if !lenient then (undeclared -- bound).toList.sortBy(_.s).headOption.foreach: prefix =>
         halt(m"the prefix $prefix is not bound to a namespace here", macroPos)
 
-      val literalScope: Scope = Scope.xml ++ Scope(bindings*)
+      val literalScope: Scope = Scope(((t"xml", Scope.xmlNamespace) +: bindings)*)
 
       def serialize(xml: Xml, scope: Scope = literalScope): Seq[Expr[Xml.Node]] = xml match
         case fragment: Xml.Fragment => fragment.nodes.flatMap(serialize(_, scope))
@@ -1468,6 +1468,18 @@ object internal:
     // another is in scope: only the reserved binding.
     given default: Scope = xml
 
+    // `scope ++ other`: this scope with the other's bindings appended, so the other's shadow
+    // this one's.
+    given concatenable: [left <: Scope, right <: Scope] => left is Concatenable by right to Scope =
+      (scope, that) =>
+        if that.isEmpty then scope else if scope.isEmpty then that else
+          val left = storage(scope)
+          val right = storage(that)
+          val buffer = Array.allocate[String](left.length + right.length)
+          buffer.place(Array.frozen(scope), 0, 0, left.length)
+          buffer.place(Array.frozen(that), 0, left.length, right.length)
+          Array.freeze(buffer).readable
+
     given inspectable: [scope <: Scope] => scope is Inspectable = scope =>
       val array = storage(scope)
       val builder: StringBuilder = new StringBuilder("xmlns{")
@@ -1613,16 +1625,6 @@ object internal:
         buffer(array.length) = prefix.let(_.s).or("")
         buffer(array.length + 1) = uri.s
         Array.freeze(buffer).readable
-
-      // This scope with the other's bindings appended, so the other's shadow this one's
-      def ++(that: Scope): Scope =
-        if that.isEmpty then scope else if scope.isEmpty then that else
-          val left = storage(scope)
-          val right = storage(that)
-          val buffer = Array.allocate[String](left.length + right.length)
-          buffer.place(Array.frozen(scope), 0, 0, left.length)
-          buffer.place(Array.frozen(that), 0, left.length, right.length)
-          Array.freeze(buffer).readable
 
       // The bindings in order, later bindings shadowing earlier ones of the same prefix
       def bindings: List[(Optional[Text], Text)] =

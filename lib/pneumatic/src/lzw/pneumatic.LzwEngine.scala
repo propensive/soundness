@@ -176,12 +176,12 @@ private[pneumatic] class LzwDecoder(earlyChange: Boolean) extends LzwEngine:
       case code =>
         val entry: scala.Array[Byte] =
           if code < table.length then table(code).nn
-          else if code == table.length && previous.length > 0 then previous :+ previous(0)
+          else if code == table.length && previous.length > 0 then previous.appended(previous(0))
           else throw IllegalStateException("the LZW data is corrupt")
 
         pending.append(entry, 0, entry.length)
 
-        if previous.length > 0 then table += previous :+ entry(0)
+        if previous.length > 0 then table += previous.appended(entry(0))
         previous = entry
         if table.length >= (1 << width) - early && width < 12 then width += 1
 

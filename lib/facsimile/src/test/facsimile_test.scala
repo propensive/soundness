@@ -58,12 +58,12 @@ import _root_.javax.crypto.spec as jcs
 import pneumatic.*
 import denominative.dysasymptotics.linearSize
 
-// These fixtures assemble PDF and font byte streams from many small pieces. A `Concatenable`
-// result is fresh, so joining two `Data` values means freezing once at the join; this keeps the
-// fixtures readable.
+// The fixtures join `Data` values read through `each`'s lambda parameters, whose read-only
+// capture the generic `Concatenable.frozenArray` instance (a pure `Self`) cannot take; this
+// local join, over the readable views, can. It outranks the imported `++` by lexical scope.
 extension (left: Data)
   @targetName("concatData")
-  def ++ (right: Data): Data = Array.frozen(left.readable ++ right.readable)
+  def ++ (right: Data): Data = Array.frozen(scala.IArray.concat(left.readable, right.readable))
 
 object Tests extends Suite(m"Facsimile tests"):
   val noParms: Map[Text, Cos] = Map()
@@ -1468,8 +1468,7 @@ object Tests extends Suite(m"Facsimile tests"):
           else
             def stir(value: scala.Array[Byte], i: Int): scala.Array[Byte] =
               if i > 19 then value else stir(rc4(xor(fileKey, i), value), i + 1)
-            stir(rc4(fileKey, md5(padding, id)), 1)
-            ++ new scala.Array[Byte](16)
+            scala.Array.concat(stir(rc4(fileKey, md5(padding, id)), 1), new scala.Array[Byte](16))
 
         def objectKey(number: Int, generation: Int): scala.Array[Byte] =
           md5(Array.unsafeFrozen(fileKey), Array((number & 0xff).toByte,
@@ -1566,7 +1565,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val fileKey = new scala.Array[Byte](32)
         random.nextBytes(fileKey)
 
-        val userEntry = hash6(pw, userSalt) ++ userSalt ++ userKeySalt
+        val userEntry = scala.Array.concat(hash6(pw, userSalt), userSalt, userKeySalt)
         val intermediate = hash6(pw, userKeySalt)
 
         val wrap = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
@@ -1580,11 +1579,11 @@ object Tests extends Suite(m"Facsimile tests"):
           val iv = new scala.Array[Byte](16)
           random.nextBytes(iv)
           val padLength = 16 - plain.length%16
-          val padded = plain ++ scala.Array.fill(padLength)(padLength.toByte)
+          val padded = scala.Array.concat(plain, scala.Array.fill(padLength)(padLength.toByte))
           val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
           cipher.init(jc.Cipher.ENCRYPT_MODE, jcs.SecretKeySpec(fileKey, "AES"),
               jcs.IvParameterSpec(iv))
-          iv ++ cipher.doFinal(padded).nn
+          scala.Array.concat(iv, cipher.doFinal(padded).nn)
 
         val secret = encryptStream(2, t"Secret".s.getBytes("UTF-8").nn)
         val streamCipher = encryptStream(3, t"encrypted stream".s.getBytes("UTF-8").nn)

@@ -106,6 +106,12 @@ object Dns:
     // interpolator's, which checked them already.
     private[urticose] def unchecked(labels: List[Text]): Name = new Name(labels)
 
+    // Composition can breach the 255-octet limit, so it is checked like construction. The
+    // check raises, and `Concatenable` is pure, so this is the one join spelt `+`: `Addable`
+    // instances may capture the tactic.
+    given addable: (tactic: Tactic[Dns.Error]) => ((Name is Addable by Name to Name)^{tactic}) =
+      (name, suffix) => Name.checked(name.labels ++ suffix.labels)
+
     // A label as the DNS compares it (RFC 4343): only ASCII letters fold; every other character
     // compares exactly. Also the comparison DNS-SD applies to TXT keys.
     def fold(label: Text): Text =
@@ -185,8 +191,6 @@ object Dns:
   case class Name private[urticose] (labels: List[Text]):
     private[urticose] lazy val folded: List[Text] = labels.map(Name.fold)
 
-    // Composition can breach the 255-octet limit, so it is checked like construction.
-    def + (suffix: Name): Name raises Dns.Error = Name.checked(List.concat(labels, suffix.labels))
     def prefix(label: Text): Name raises Dns.Error = Name.checked(label :: labels)
 
     def parent: Optional[Name] = labels match

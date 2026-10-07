@@ -41,6 +41,7 @@ import jacinta.*
 import legerdemain.*
 import prepositional.*
 import spectacular.*
+import symbolism.*
 import telekinesis.*
 import urticose.*
 import vacuous.*

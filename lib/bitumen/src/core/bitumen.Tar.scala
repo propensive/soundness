@@ -369,7 +369,7 @@ object Tar:
       case pax: Pax        => Entry.blocks512(Iterator(pax.records))
 
       case long: GnuLong =>
-        Entry.blocks512(Iterator(Array.frozen(long.content.in[Data].readable :+ 0.toByte)))
+        Entry.blocks512(Iterator(Array.frozen(long.content.in[Data].readable.appended(0.toByte))))
 
       case sparse: Sparse =>
         Entry.blocks512(sparse.data.chunks)

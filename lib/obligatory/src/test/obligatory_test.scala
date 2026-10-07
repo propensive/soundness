@@ -172,7 +172,7 @@ object Tests extends Suite(m"Obligatory Tests"):
 
       test(m"encode prefixes a flag byte and 4-byte length"):
         Grpc.Framing.encode(ascii(t"hi")).to[List]
-      . assert(_ == Array.frozen(Data(0, 0, 0, 0, 2).readable ++ ascii(t"hi").readable).to[List])
+      . assert(_ == (Data(0, 0, 0, 0, 2) ++ ascii(t"hi")).to[List])
 
       test(m"round-trip a single message"):
         val framed = Grpc.Framing.encode(ascii(t"hello"))
@@ -180,7 +180,7 @@ object Tests extends Suite(m"Obligatory Tests"):
       . assert(_ == List(ascii(t"hello").to[List]))
 
       test(m"split two concatenated messages"):
-        val framed = Array.frozen(Grpc.Framing.encode(ascii(t"one")).readable ++ Grpc.Framing.encode(ascii(t"two")).readable)
+        val framed = Grpc.Framing.encode(ascii(t"one")) ++ Grpc.Framing.encode(ascii(t"two"))
         Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.readable.to(List))
       . assert(_ == List(ascii(t"one").to[List], ascii(t"two").to[List]))
 
@@ -309,10 +309,9 @@ object Tests extends Suite(m"Obligatory Tests"):
           val (clientSide, serverSide) = pair()
 
           val body =
-            Array.frozen
-             ( Grpc.Framing.encode(Pong(t"a").in[Protobuf].encode).readable
-               ++ Grpc.Framing.encode(Pong(t"b").in[Protobuf].encode).readable
-               ++ Grpc.Framing.encode(Pong(t"c").in[Protobuf].encode).readable )
+            Grpc.Framing.encode(Pong(t"a").in[Protobuf].encode)
+            ++ Grpc.Framing.encode(Pong(t"b").in[Protobuf].encode)
+            ++ Grpc.Framing.encode(Pong(t"c").in[Protobuf].encode)
 
           runServer(serverSide, (hpack, id) =>
             List

@@ -33,15 +33,19 @@
 package charisma
 
 import rudiments.*
+import prepositional.*
+import symbolism.*
 import vacuous.*
+
+object Formulable:
+  given addable: [left <: Formulable, right <: Formulable]
+  =>  left is Addable by right to Chemical.Formula =
+    (left, right) => Chemical.Formula:
+      right.formula.molecules.fuse(left.formula.molecules):
+        state.define(next(0), left.formula.molecules(next(0)).or(0) + next(1))
 
 trait Formulable:
   def formula: Chemical.Formula
-
-  @targetName("plus")
-  infix def + (formulable: Formulable): Chemical.Formula = Chemical.Formula:
-    formulable.formula.molecules.fuse(formula.molecules):
-      state.define(next(0), formula.molecules(next(0)).or(0) + next(1))
 
   @targetName("netForward")
   infix def --> (rhs: Formulable): Chemical.Equation =

@@ -34,16 +34,19 @@ package contingency
 
 import scala.language.experimental.pureFunctions
 
-import scala.annotation.*
-
 import anticipation.*
 import fulminate.*
+import prepositional.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 import errorDiagnostics.stackTracesDiagnostics
 
 object Validation:
+  given appendable: Validation is Appendable by (Pointer, Message) = (validation, entry) =>
+    Validation(entry :: validation.messages)
+
   def text(messages: List[(Pointer, Message)] = Nil): Message =
     val joined: Message =
       messages.map:
@@ -51,7 +54,7 @@ object Validation:
         case (pointer, message)      => m"$message at $pointer"
 
       . reverse
-      . fuse(m"")(state+next)
+      . fuse(m"")(state ++ next)
 
     List.size(messages) match
       case 0 => m"no messages"
@@ -64,10 +67,6 @@ object Validation:
 case class Validation(messages: List[(Pointer, Message)] = Nil)
 extends Error(59, 0)(Validation.text(messages)):
   private lazy val map: Map[Pointer, Message] = messages.to[Map]
-
-  @targetName("add")
-  infix def + (pointer: Pointer, message: Message): Validation =
-    Validation((pointer, message) :: messages)
 
   def apply(pointer: Pointer): Optional[Message] =
     map.at(pointer)

@@ -48,6 +48,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 import filesystemBackends.javaBaseFilesystem
@@ -176,7 +177,7 @@ private[bitumen] object TarFilesystem:
 
     import errorDiagnostics.emptyDiagnostics
     val rel = relativeFromPath(base.encode.s, text)
-    base + rel
+    base ++ rel
 
   private def relativeFromPath(rootText: String, fullText: String)
     ( using Tactic[Tar.Error] )

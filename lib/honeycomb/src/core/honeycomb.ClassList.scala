@@ -57,8 +57,8 @@ object ClassList:
     val classes = name.reify.map(cssClass).to[Set]
     new ClassList(classes) { type Topic = name }
 
-  given addable: ClassList is Addable by ClassList to ClassList =
-    Addable: (classes, additions) => ClassList(classes.classes + additions.classes)
+  given concatenable: ClassList is Concatenable by ClassList to ClassList =
+    (classes, additions) => ClassList(classes.classes ++ additions.classes)
 
   given subtractable: ClassList is Subtractable by ClassList to ClassList =
     Subtractable: (classes, subtractions) => ClassList(classes.classes.except(subtractions.classes))
