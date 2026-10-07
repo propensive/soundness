@@ -109,9 +109,9 @@ object LspSessional:
     val inbound: Lsp.Client = LspInbound(listener)
 
     // As in `Lsp.listen`, the dispatch closure is a local of this method and its target is
-    // confined to it, so sealing the reference the generated dispatcher holds is sound.
+    // confined to it.
     val dispatch: Json => Optional[Json] =
-      caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[Lsp.Client](inbound))
+      JsonRpc.serve[Lsp.Client](inbound)
 
     val notifications: List[Text] = JsonRpc.methods[Lsp.Client]
 

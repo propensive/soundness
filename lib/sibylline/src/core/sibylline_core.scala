@@ -67,5 +67,4 @@ extension (session: Llm.Session^)
         val answer = Llm.Tool(t"answer", t"The structured answer to the question.", schema)
         session.arguments(session.forced(message, answer))
 
-    caps.unsafe.unsafeAssumeSeparate:
-      safely(document.as[value]).or(session.malformed())
+    safely(document.as[value]).or(session.malformed())

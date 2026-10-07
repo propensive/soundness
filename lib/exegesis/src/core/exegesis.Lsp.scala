@@ -76,7 +76,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: Range is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
     def from(span: Span): Optional[Range] = span.startLine.let: startLine =>
@@ -96,7 +96,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: Location is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class Location(uri: Text, range: Range)
@@ -108,7 +108,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: Envelope is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   // Any JSON-RPC message, read only for the two members that decide how it is handled: the method
@@ -191,7 +191,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: InitializeResult is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class InitializeResult
@@ -209,11 +209,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: CompletionItem is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class CompletionItem
@@ -231,7 +232,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: CompletionList is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class CompletionList(isIncomplete: Boolean = false, items: List[CompletionItem] = Nil)
@@ -243,7 +244,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: Hover is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class Hover(contents: MarkupContent, range: Optional[Range] = Unset)
@@ -257,7 +258,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: DocumentSymbol is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class DocumentSymbol
@@ -276,7 +277,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: TextEdit is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class TextEdit(range: Range, newText: Text)
@@ -287,11 +288,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: WorkspaceEdit is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class WorkspaceEdit(changes: Optional[Map[Text, List[TextEdit]]] = Unset)
@@ -304,11 +306,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: CodeAction is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class CodeAction
@@ -331,7 +334,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: SignatureHelp is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class SignatureHelp
@@ -346,7 +349,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: DocumentHighlight is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class DocumentHighlight(range: Range, kind: Optional[DocumentHighlightKind] = Unset)
@@ -358,7 +361,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: FoldingRange is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class FoldingRange
@@ -376,7 +379,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: SelectionRange is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class SelectionRange(range: Range, parent: Optional[SelectionRange] = Unset)
@@ -393,11 +396,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: CodeLens is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class CodeLens
@@ -409,11 +413,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: DocumentLink is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class DocumentLink
@@ -432,7 +437,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: ColorInformation is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class ColorInformation(range: Range, color: Color)
@@ -444,7 +449,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: ColorPresentation is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class ColorPresentation
@@ -460,11 +465,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: CallHierarchyItem is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class CallHierarchyItem
@@ -484,7 +490,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: CallHierarchyIncomingCall is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class CallHierarchyIncomingCall(from: CallHierarchyItem, fromRanges: List[Range])
@@ -495,7 +501,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: CallHierarchyOutgoingCall is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class CallHierarchyOutgoingCall(to: CallHierarchyItem, fromRanges: List[Range])
@@ -506,11 +512,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: TypeHierarchyItem is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class TypeHierarchyItem
@@ -533,7 +540,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: SemanticTokens is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class SemanticTokens(resultId: Optional[Text] = Unset, data: List[Int] = Nil)
@@ -546,7 +553,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: SemanticTokensDelta is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class SemanticTokensDelta
@@ -560,11 +567,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: InlayHint is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class InlayHint
@@ -582,11 +590,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: InlineValueContext is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class InlineValueContext(frameId: Int, stoppedLocation: Range)
@@ -597,7 +606,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: InlineValueText is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class InlineValueText(range: Range, text: Text)
@@ -609,7 +618,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: LinkedEditingRanges is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class LinkedEditingRanges(ranges: List[Range], wordPattern: Optional[Text] = Unset)
@@ -620,7 +629,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: Moniker is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class Moniker(scheme: Text, identifier: Text, unique: Text, kind: Optional[Text] = Unset)
@@ -634,7 +643,7 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: DocumentDiagnosticReport is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class DocumentDiagnosticReport
@@ -648,11 +657,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: WorkspaceSymbol is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class WorkspaceSymbol
@@ -669,11 +679,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: FileEvent is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class FileEvent(uri: Text, `type`: FileChangeType)
@@ -684,11 +695,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: WorkspaceFoldersChangeEvent is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class WorkspaceFoldersChangeEvent(added: List[Folder], removed: List[Folder])
@@ -699,11 +711,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: FileCreate is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class FileCreate(uri: Text)
@@ -714,11 +727,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: FileRename is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class FileRename(oldUri: Text, newUri: Text)
@@ -729,11 +743,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: FileDelete is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class FileDelete(uri: Text)
@@ -746,11 +761,12 @@ object Lsp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: Diagnostic is Json.Decodable =
-      // A pure, throwing instance: each internal summon of the derivation mints its own
-      // throwing tactic, and a decode failure surfaces as a `Json.Error` handled at the
-      // transport. Threading a caller's tactic through the capture-polymorphic derivation
-      // is rejected by separation checking; sealed per jacinta's codec-thunk pattern.
-      import strategies.throwUnsafely
+      // A pure, throwing instance: the derivation runs under one local throwing tactic (a
+      // local `given`, not the polymorphic `strategies.throwUnsafely`, whose per-summon mint
+      // inside the derivation's field thunks cannot flow into their capture roots), and a
+      // decode failure surfaces as a `Json.Error` handled at the transport. Sealed pure so the
+      // instance can live in this object: a tracked field would make the object a capability.
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class Diagnostic
@@ -1955,7 +1971,7 @@ object Lsp:
     private object lifecycleRoute:
       def apply(server: Lsp): Json => Optional[Json] =
         import strategies.throwUnsafely
-        scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspLifecycle](server))
+        JsonRpc.serve[LspLifecycle](server)
 
     // Materialized here because the `JsonRpc.serve` macro's `Expr.summon` cannot
     // expand jacinta's inline `encodable` given for the opaque `List` alias.
@@ -1968,32 +1984,32 @@ object Lsp:
     private object languageRoute:
       def apply(server: Lsp): Json => Optional[Json] =
         import strategies.throwUnsafely
-        scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspLanguage](server))
+        JsonRpc.serve[LspLanguage](server)
 
     private object navigationRoute:
       def apply(server: Lsp): Json => Optional[Json] =
         import strategies.throwUnsafely
-        scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspNavigation](server))
+        JsonRpc.serve[LspNavigation](server)
 
     private object editingRoute:
       def apply(server: Lsp): Json => Optional[Json] =
         import strategies.throwUnsafely
-        scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspEditing](server))
+        JsonRpc.serve[LspEditing](server)
 
     private object advancedRoute:
       def apply(server: Lsp): Json => Optional[Json] =
         import strategies.throwUnsafely
-        scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspAdvanced](server))
+        JsonRpc.serve[LspAdvanced](server)
 
     private object workspaceRoute:
       def apply(server: Lsp): Json => Optional[Json] =
         import strategies.throwUnsafely
-        scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspWorkspace](server))
+        JsonRpc.serve[LspWorkspace](server)
 
     private object resolveRoute:
       def apply(server: Lsp): Json => Optional[Json] =
         import strategies.throwUnsafely
-        scala.caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[LspResolve](server))
+        JsonRpc.serve[LspResolve](server)
 
     def apply(server: Lsp): Json => Optional[Json] =
       import dynamicAccess.dynamicJson

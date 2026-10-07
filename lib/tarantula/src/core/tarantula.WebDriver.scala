@@ -494,28 +494,22 @@ object WebDriver:
     private[tarantula] def malformed(detail: Text)(using Diagnostics): Error =
       Error(Error.Reason.UnknownError, detail, Nil)
 
-    // Every decode of a driver's reply goes through one of these five, and each is sealed with
-    // `unsafeAssumeSeparate` for the same reason: `Json#as` takes the `Tactic[Json.Error]` both
-    // directly and inside the capture set of the decodable it summons, so a *capability* tactic —
-    // which is what `raises` and `contramap` produce — reads as two overlapping uses. This is the
-    // Foci/tracks cluster recorded in rep/DECISIONS.md, and the reason the module previously
-    // imported `strategies.throwUnsafely`, whose tactic is pure and so never overlaps. Each body
-    // here is a single decode of a single value against a single tactic: there is no second use to
-    // interleave with, and confining the assertion to these five lines keeps every caller honest.
+    // Every decode of a driver's reply goes through one of these five, each a single decode of a
+    // single value against the tactic in scope.
     private[tarantula] def text(json: Json): Text raises Json.Error =
-      caps.unsafe.unsafeAssumeSeparate(json.as[Text])
+      json.as[Text]
 
     private[tarantula] def boolean(json: Json): Boolean raises Json.Error =
-      caps.unsafe.unsafeAssumeSeparate(json.as[Boolean])
+      json.as[Boolean]
 
     private[tarantula] def rect(json: Json): Rect raises Json.Error =
-      caps.unsafe.unsafeAssumeSeparate(json.as[Rect])
+      json.as[Rect]
 
     private[tarantula] def list(json: Json): List[Json] raises Json.Error =
-      caps.unsafe.unsafeAssumeSeparate(json.as[List[Json]])
+      json.as[List[Json]]
 
     private[tarantula] def failure(json: Json): Failure raises Json.Error =
-      caps.unsafe.unsafeAssumeSeparate(json.as[Failure])
+      json.as[Failure]
 
     object Action:
       // The two kinds of input source the specification defines that carry actions. (A "none"
@@ -664,16 +658,16 @@ object WebDriver:
                            right  = cm(print.margin.right) ) )
 
     private[tarantula] def texts(json: Json): List[Text] raises Json.Error =
-      caps.unsafe.unsafeAssumeSeparate(json.as[List[Text]])
+      json.as[List[Text]]
 
     private[tarantula] def cookie(json: Json): Cookie.Value raises Json.Error =
-      caps.unsafe.unsafeAssumeSeparate(json.as[Cookie.Value])
+      json.as[Cookie.Value]
 
     private[tarantula] def cookies(json: Json): List[Cookie.Value] raises Json.Error =
-      caps.unsafe.unsafeAssumeSeparate(json.as[List[Cookie.Value]])
+      json.as[List[Cookie.Value]]
 
     private[tarantula] def timeouts(json: Json): Timeouts raises Json.Error =
-      caps.unsafe.unsafeAssumeSeparate(json.as[Timeouts])
+      json.as[Timeouts]
 
     // Whether a driver is listening yet. Every failure is swallowed: during startup a refused
     // connection is the expected outcome, not something to report. The `ready` flag in the reply

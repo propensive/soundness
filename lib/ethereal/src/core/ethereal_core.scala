@@ -81,9 +81,8 @@ import filesystemBackends.javaBaseFilesystem
 // there is no launcher; zero when there is neither.
 private[ethereal] def launcherBuildId(): Long =
   // As `startTime`: the decoder and the tactic are both fresh, under one `safely`.
-  scala.caps.unsafe.unsafeAssumeSeparate:
-    safely(System.properties.build.id[Long]()).or:
-      safely((Classpath/"build.id").read[Text].trim.as[Long]).or(0L)
+  safely(System.properties.build.id[Long]()).or:
+    safely((Classpath/"build.id").read[Text].trim.as[Long]).or(0L)
 
 def resident[bus <: Matchable](using resident: Resident over bus)
 :   (Resident over bus)^{resident} =
@@ -122,13 +121,12 @@ def cli[bus <: Matchable](using executive: Executive)
 
     . protect(System.properties.ethereal.name[Text]())
 
-  val userId: Optional[UserId] = scala.caps.unsafe.unsafeAssumeSeparate:
+  val userId: Optional[UserId] =
     safely(System.properties.ethereal.user.id[Text]()).let(UserId(_))
   val userName: Optional[Text] = safely(System.properties.ethereal.user.name[Text]())
 
   val startTime: Long =
-    scala.caps.unsafe.unsafeAssumeSeparate:
-      safely(System.properties.ethereal.startTime[Long]()).or(jl.System.currentTimeMillis())
+    safely(System.properties.ethereal.startTime[Long]()).or(jl.System.currentTimeMillis())
 
   // Read now, before the socket is bound: the launcher sends the environment it was started with
   // only while it waits for the socket to appear.

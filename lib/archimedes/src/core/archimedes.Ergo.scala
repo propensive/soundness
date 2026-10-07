@@ -243,7 +243,7 @@ object Ergo:
       val kept = accentless(accentless(attributes, under, t"accentunder"), over, t"accent")
       finish(t"${operand(base)}↓${operand(under)}↑${operand(over)}", kept, asOperand, false)
 
-    case other => scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(Ergo.Error.Reason.Unsupported(other.label))))
+    case other => abort(Ergo.Error(Ergo.Error.Reason.Unsupported(other.label)))
 
   // A `↑`/`↓` script that is a single `<mo>` re-acquires its accent on parsing, so
   // the corresponding accent attribute is implied and not emitted.
@@ -307,7 +307,7 @@ object Ergo:
     private def skipSpaces(): Unit = while pos < s.length && s.charAt(pos) == ' ' do pos += 1
 
     private def fail(reason: Ergo.Error.Reason): Nothing =
-      scala.caps.unsafe.unsafeAssumeSeparate(abort(Ergo.Error(reason, pos)))
+      abort(Ergo.Error(reason, pos))
 
     // Consumes the closing bracket of a group, which must be next.
     private def closeGroup(): Unit =

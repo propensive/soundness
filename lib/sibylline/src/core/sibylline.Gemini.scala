@@ -93,21 +93,21 @@ object Gemini:
         loggable:    (Http.Event is Loggable)^,
         tactic:      Tactic[Llm.Error],
         diagnostics: Diagnostics )
-  =>  ( Sessional^{online, loggable, tactic, caps.any} ) =
+  =>  ( Sessional^{online, loggable, caps.any} ) =
 
     Sessional()
 
   private def text(json: Json): Text raises Json.Error =
-    caps.unsafe.unsafeAssumeSeparate(json.as[Text])
+    json.as[Text]
 
   private def integer(json: Json): Int raises Json.Error =
-    caps.unsafe.unsafeAssumeSeparate(json.as[Int])
+    json.as[Int]
 
   private def list(json: Json): List[Json] raises Json.Error =
-    caps.unsafe.unsafeAssumeSeparate(json.as[List[Json]])
+    json.as[List[Json]]
 
   private[sibylline] def frame(text: Text): Sse raises Sse.Error =
-    caps.unsafe.unsafeAssumeSeparate(text.as[Sse])
+    text.as[Sse]
 
   // Gemini reports finish reasons in upper snake case. A reply containing a function call is
   // `ToolCall` regardless: the API says `STOP` for those too.
@@ -385,17 +385,15 @@ extends Llm.Dialect, caps.ExclusiveCapability:
   def exchange(turn: Llm.Exchange): Llm.Reply =
     // The send thunk captures the tactic `fetch` raises through, as in `AnthropicDialect`.
     val response =
-      caps.unsafe.unsafeAssumeSeparate:
-        Llm.fetch(Gemini.failure(_, _)):
-          target.submit(target.address(streaming = false), Gemini.payload(turn))
+      Llm.fetch(Gemini.failure(_, _)):
+        target.submit(target.address(streaming = false), Gemini.payload(turn))
 
     Gemini.reply(Llm.receive(response))
 
   def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
     val response =
-      caps.unsafe.unsafeAssumeSeparate:
-        Llm.fetch(Gemini.failure(_, _)):
-          target.submit(target.address(streaming = true), Gemini.payload(turn))
+      Llm.fetch(Gemini.failure(_, _)):
+        target.submit(target.address(streaming = true), Gemini.payload(turn))
 
     val progress = Llm.Progress()
 

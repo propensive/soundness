@@ -666,10 +666,9 @@ object Cbor extends Cbor2, Dynamic:
   given lens: [name <: Label: ValueOf] => (erased dynamical: (? >: Cbor) is Dynamical) => (tactic: Tactic[Cbor.Error])
   =>  ((name is Lens from Cbor onto Cbor)^{tactic}) =
     // Both lambdas only read through the same resolution-scoped tactic; no aliased writer.
-    scala.caps.unsafe.unsafeAssumeSeparate:
-      Lens[name, Cbor, Cbor]
-       ( (cbor: Cbor) => cbor.selectDynamic(valueOf[name]),
-         (cbor: Cbor, value: Cbor) => cbor.modify(valueOf[name], value) )
+    Lens[name, Cbor, Cbor]
+     ( (cbor: Cbor) => cbor.selectDynamic(valueOf[name]),
+       (cbor: Cbor, value: Cbor) => cbor.modify(valueOf[name], value) )
 
   given ordinalOptical: [element] => Ordinal is Optical from Cbor onto Cbor = ordinal =>
     Optic: (origin, lambda) =>
@@ -1047,7 +1046,7 @@ object Cbor extends Cbor2, Dynamic:
     def rewrite(kind: Text, cbor: Cbor): Cbor = unsafely(cbor.updateDynamic(key.s)(kind))
     def discriminate(cbor: Cbor): Optional[Text] =
       // The optional tactic is created and consumed here; no aliased writer.
-      scala.caps.unsafe.unsafeAssumeSeparate(safely(cbor.selectDynamic(key.s).as[Text]))
+      safely(cbor.selectDynamic(key.s).as[Text])
     def variant(cbor: Cbor): Cbor = unsafely(cbor.updateDynamic(key.s)(Unset))
 
   def discriminatedUnion[value](label: Text): value is Discriminable in Cbor =
@@ -1441,8 +1440,7 @@ object Cbor extends Cbor2, Dynamic:
             case 24 =>
               // The error message reads this parser only to render its diagnostic detail.
               val value = readUInt8()
-              scala.caps.unsafe.unsafeAssumeSeparate:
-                abort(Cbor.Error(Reason.BadSimpleValue(headOffset, value)))
+              abort(Cbor.Error(Reason.BadSimpleValue(headOffset, value)))
             case 31 => abort(Cbor.Error(Reason.UnexpectedBreak(headOffset)))
             case _  => abort(Cbor.Error(Reason.BadSimpleValue(headOffset, info)))
 
@@ -1761,8 +1759,7 @@ object Cbor extends Cbor2, Dynamic:
             case 24 =>
               // As above.
               val value = readUInt8()
-              scala.caps.unsafe.unsafeAssumeSeparate:
-                abort(Cbor.Error(Reason.BadSimpleValue(pos.toLong, value)))
+              abort(Cbor.Error(Reason.BadSimpleValue(pos.toLong, value)))
             case 31 => abort(Cbor.Error(Reason.UnexpectedBreak(pos.toLong)))
             case _  => abort(Cbor.Error(Reason.BadSimpleValue(pos.toLong, info)))
 

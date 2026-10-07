@@ -208,7 +208,7 @@ object Image:
       val layoutBytes = document(t"oci-layout", Oci.Error.Reason.MissingLayout)
 
       val layout = decode(t"oci-layout"):
-        import strategies.throwUnsafely
+        given tactic: Tactic[Hazard] = ThrowTactic()
         layoutBytes.read[Json].as[OciLayout]
 
       if !layout.imageLayoutVersion.s.startsWith("1.")
@@ -217,7 +217,7 @@ object Image:
       val indexBytes = document(t"index.json", Oci.Error.Reason.MissingIndex)
 
       decode(t"index.json"):
-        import strategies.throwUnsafely
+        given tactic: Tactic[Hazard] = ThrowTactic()
         indexBytes.read[Json].as[Index]
 
     // The index's first manifest, or the one a descriptor selects; the manifest blob is
@@ -232,7 +232,7 @@ object Image:
       val bytes = verified(descriptor)
 
       decode(descriptor.digest):
-        import strategies.throwUnsafely
+        given tactic: Tactic[Hazard] = ThrowTactic()
         bytes.read[Json].as[Oci.Manifest]
 
     // The decoded image config for a manifest (by default, the first).
@@ -242,7 +242,7 @@ object Image:
       val bytes = verified(manifest.config)
 
       decode(manifest.config.digest):
-        import strategies.throwUnsafely
+        given tactic: Tactic[Hazard] = ThrowTactic()
         bytes.read[Json].as[Image.Config]
 
     // The decoded Wasm artifact config for a manifest (by default, the first).
@@ -252,7 +252,7 @@ object Image:
       val bytes = verified(manifest.config)
 
       decode(manifest.config.digest):
-        import strategies.throwUnsafely
+        given tactic: Tactic[Hazard] = ThrowTactic()
         bytes.read[Json].as[WasmConfig]
 
     // The decoded config blob for a manifest (by default, the first), in whichever form the

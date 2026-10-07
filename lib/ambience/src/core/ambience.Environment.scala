@@ -66,7 +66,7 @@ object Environment extends Dynamic:
 
     environment.variable(reader.defaultName).let(reader.read(_)).or:
       // The error message reads only the reader's name; no aliased writer.
-      scala.caps.unsafe.unsafeAssumeSeparate(abort(Environment.Error(reader.defaultName)))
+      abort(Environment.Error(reader.defaultName))
 
   // EnvironmentError → Environment.Error
   case class Error(variable: Text)(using Diagnostics)

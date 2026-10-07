@@ -40,9 +40,10 @@ import fulminate.*
 
 // A tactic that throws its error unchecked, evidenced at the summon site by `error is Unchecked`
 // (an erased obligation carried by `strategies.uncheckedErrors`, not retained here: even an erased
-// constructor parameter is a capture under capture checking). `caps.Unscoped`, like `ThrowTactic`:
-// it captures no scoped capability, so it may satisfy a `raises` requirement at any level.
-class UncheckedTactic[error <: Hazard]() extends Tactic[error], caps.Unscoped:
+// constructor parameter is a capture under capture checking). `caps.SharedUnscoped`, like
+// `ThrowTactic`: it captures no scoped capability, so it may satisfy a `raises` requirement at
+// any level.
+class UncheckedTactic[error <: Hazard]() extends Tactic[error], caps.SharedUnscoped:
   given diagnostics: Diagnostics = errorDiagnostics.stackTracesDiagnostics
 
   def record(error: Diagnostics ?=> error): Unit =
@@ -57,9 +58,9 @@ class UncheckedTactic[error <: Hazard]() extends Tactic[error], caps.Unscoped:
 
 // A tactic that terminates the process with the error's exit status, for errors marked `Fatal`.
 // The `Fatal` evidence is an ordinary (untracked) typeclass instance, so retaining it does not
-// conflict with the `caps.Unscoped` classification.
+// conflict with the `caps.SharedUnscoped` classification.
 class FatalTactic[exception <: Hazard]()(using fatal: exception is Fatal)
-extends Tactic[exception], caps.Unscoped:
+extends Tactic[exception], caps.SharedUnscoped:
   given diagnostics: Diagnostics = errorDiagnostics.stackTracesDiagnostics
 
   def record(error: Diagnostics ?=> exception): Unit = fatal.status(error).terminate()

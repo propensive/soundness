@@ -2440,3 +2440,96 @@ from a census of the residue — 1485 visible hatches in `lib/` plus the named w
   (CURRENT)" section above says RC1-p1); `rudiments.unsafeMutable`'s "three call sites remain"
   comment undercounts by an order of magnitude (~40); `build.mill`'s nativelink.suite comment
   says `settings.cc` where the module uses `sep`.
+
+## safety-8: `Emit` is a `SharedCapability`; the ambient strategies drop `Unscoped` (2026-10-07)
+
+Source-side, no fork change. `contingency.Emit extends Findable, caps.SharedCapability`;
+`ThrowTactic`, `UncheckedTactic`, `FatalTactic` are plain `Tactic` subclasses. Consequences,
+each forced by the classifier (a shared instance may retain only shared capabilities and pure
+values; rep/sepcheck-probes/p15, p16):
+
+- `Emit#contramap`/`Tactic#contramap` take a PURE `error2 -> error` and return `^{this}`
+  (every caller's lambda was an error constructor already). `Accrual.AccrueTactic`'s `combine`
+  (and `accrue`'s) is `(accrual, Exception) -> accrual` — its contract said pure.
+- `Emit.apply(consume handler: error ->{caps.any.only[caps.SharedCapability]} Unit)`: a
+  `handle` case body may raise into outer tactics but may not use an exclusive capability.
+  Probe (/tmp/p17 at the time): the variant with explicit `^{this, lambda}` and an impure
+  lambda is rejected; the shared-only arrow with a fresh `^` result accepts an outer emitter
+  and rejects an exclusive one.
+- The three seals in contingency (`Emit.contramap`, `Tactic.contramap`, `strategies.mitigation`)
+  are gone, and 69 `unsafeAssumeSeparate` sites in sibylline, tarantula, exegesis, espionage,
+  orthodoxy, archimedes, breviloquence, ambience and ethereal unwrapped cleanly (419 → 350 in
+  `lib/`). Two seals the sweep touched were NOT tactic overlaps and went back: sibylline
+  `Session.stream` (the session self-aliases its dialect's iterator) and ethereal's
+  `cli`/`resident`/`executive` rims (Cli/Interface exclusives).
+- `Json#as` KEEPS its `(using Tactic[Json.Error])` even though it never uses it: the explicit
+  demand anchors `safely`/`capture`'s error-type inference before the derivation summons its
+  list codec (dropping it broke burdock `DepsDev` with "cannot reduce summonFrom"). It is the
+  declared effect, not a seal.
+- The level wall came back in ONE shape: `import strategies.throwUnsafely` inside a derivation
+  whose fields are `Optional`/collections — the polymorphic given mints a fresh tactic INSIDE the
+  synthesised field thunk, which cannot flow into the by-name's root ("not visible from any² in
+  value wisteria$field$0"); 29 sites in exegesis, espionage, vivisection, embarcadero.oci. Fix at
+  source: a local `given tactic: Tactic[Json.Error] = ThrowTactic()` in the enclosing given/
+  block, so the thunk captures a stable local one level up. The fork `SharedUnscoped` classifier
+  (rep/shared-unscoped) is therefore NOT needed; the case stays as calibration.
+- Gates: `rep/compile.sh capturing-raises` GREEN; `rep/compile.sh capability-escape` keeps only
+  its by-design "needs to extend Capability" error — the P15 overlap inside `JsonRpc.serve` is
+  gone; `./mill -k soundness.all` clean; contingency 122/0.
+
+## safety-8, continued: the full shape needs the fork after all (2026-10-07, later)
+
+The minimal `raises` shape was green with a Shared-only strategy, but two things surfaced once
+the whole tree and its tests compiled:
+
+- **The level wall, in one shape.** `import strategies.throwUnsafely` + a derived codec with an
+  `Optional`/collection field: the polymorphic given mints its fresh tactic INSIDE the thunk
+  given resolution synthesises for the by-name element codec, and that root cannot flow into
+  the by-name's own (`rep/sepcheck-probes/p17`: Unscoped control PASS, Shared FAIL — on 3.9
+  AND 3.10). 29 library sites (hoisted to a local `given tactic = ThrowTactic()`, which is
+  fine for library code) and 17 test sites, but it is user-facing, so a source-side fix is not
+  enough. Jon's two checks before touching the compiler: **3.10 does not help** (p17 fails
+  identically on 3.10.1-dev-p16); **`uses` cannot help** — `CaptureOps.useSet` gives a
+  non-local class an EMPTY use set unless declared, so any class body referencing a global
+  strategy value would need its own `uses` clause (the cascade of 2026-07-06).
+- **A compiler crash**: `assertion failed: attempting to add any to {any} of value
+  sessional$proxyN` (CaptureSet.VarInTypeTree.hideIn) in sibylline, tarantula, telekinesis and
+  vivisection tests — `normalizeLocalCaps` asserts that every fresh capability in an inferred
+  val type can be classified like the declaration root; a Shared strategy beside an Unscoped
+  log sink in one inlined `Sessional` proxy cannot. Reduced to 14 lines (an inline given of one
+  classifier + a polymorphic given of another, summoned into one proxy). Same assertion on
+  upstream main.
+
+Fork patches (proscala, 3.9 stream; worktree `scratch/sharedunscoped`, features
+`feature/3.9/sharedunscoped` + `feature/3.9/rootclassify`, docs on `main`):
+- `sharedunscoped`: `caps.SharedUnscoped extends SharedCapability, Classifier`; one
+  `isUnscopedClassifier` predicate at the five `Unscoped` sites (Capability ×3, SepCheck,
+  CheckCaptures). `ThrowTactic`/`UncheckedTactic`/`FatalTactic` extend it.
+- `rootclassify`: `hideIn`'s assertion becomes "cannot hide here → own root" (always on).
+- GOTCHA that cost a build: a fewer-braces lambda in an `&& … exists: elem => …` chain swallows
+  the following `&&` clauses — 133 stdlib type mismatches with no mention of my change.
+  Parenthesise. Attribute by re-running the exact `.args` file with the released jars.
+- GOTCHA: a mill daemon freezes `sys.env`; after switching `SOUNDNESS_SCALA_HOME`/
+  `SOUNDNESS_SCALA_VERSION` run `./mill shutdown` (and `rm -rf out` in a throwaway), or it
+  silently keeps the previous toolchain (two "clean" rebuilds here used the 3.10 jar).
+Verification: probes 36/36 as expected (p17 Shared-only FAIL by design), telekinesis test
+GREEN under the patched compiler, both repros compile; full tree + tests and the upstream
+captures corpus before/after running at the time of writing.
+- Shipped: proscala PR #57 (`trunk/3.9` → `release/3.9`) published `3.9.1-dev-p18`; build.mill
+  pins it. Corpus gate: identical pass/fail (268/4/361/0) and byte-identical neg diagnostics
+  against p17. Full tree + every test module compile on p18; probes 36/36 with P17's Shared-only
+  variant as a `.neg`.
+- Considered and REJECTED (Jon's question, 2026-10-07): a single shared global strategy value
+  instead of the `SharedUnscoped` classifier. It compiles when the value and its users sit in
+  one package, but: a package-level definition (a given, a method-shaped given, an export
+  forwarder) may not reference a global capability at all ("should be wrapped in an object with
+  a uses clause"), so a package `strategies` cannot export it; held in an `object strategies`,
+  every use-site object in another package must declare `uses soundness.strategies` (the July
+  cascade, reproduced on p18 and 3.10.1-dev-p16); `uses … initially` covers initialisation
+  only, not a method's summon; and a capability-class instance cannot be typed pure
+  (`ThrowTactic^{}`: "any cannot flow into {}"), so the only seal-free way to reach an ambient
+  tactic from any level is an Unscoped-style classifier. Probes in /tmp/p20 at the time
+  (V1–V10); conclusions in doc/roadmap/safety.md safety-8. Fork follow-up: move
+  `caps.SharedUnscoped` from `scala/caps/package.scala` into `library-proscala` (beside
+  `Spreadable`, which Soundness already references), keeping `scala-library` byte-identical to
+  upstream.

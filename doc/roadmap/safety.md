@@ -109,6 +109,12 @@ readability — every published artifact remains consumable from a project built
 mainline Scala compiler — and a rebase onto each upstream release whose cost is known rather
 than feared.
 
+Soundness's published artifacts reference two fork-only library symbols — `scala.Spreadable`
+(proscenium's `multiSpreads` givens) and, since `safety-8`, `scala.caps.SharedUnscoped` on the
+ambient tactics — both shipped in the fork's supplementary `proscala-library` jar. A mainline
+consumer therefore needs that jar on its classpath; the readability test below must say so or
+make it unnecessary.
+
 Done when: a CI test consumes published Soundness artifacts from a mainline-Scala project, and
 `rep/` documents the rebase procedure and the measured cost of the two most recent rebases.
 
@@ -191,6 +197,17 @@ Soundness-backed `capturing-raises` case as the gate; if the full shape hits a l
 fork adds a classifier that is shared and level-exempt before the flip proceeds. Then jacinta
 (`as` drops its unused tactic parameter), the consumer sweep (sibylline, tarantula, orthodoxy,
 breviloquence, ethereal, the `abort`-thunk seals), and the anchors.
+
+Status: `Emit` is shared and the strategies are plain `Tactic`s; the overlap seals in nine
+modules are gone (`unsafeAssumeSeparate` 419 → 350). The level wall survived in one shape —
+`strategies.throwUnsafely` summoned inside a derivation's field thunk (`rep/sepcheck-probes/p17`,
+the same on 3.10) — user-facing, so the fork grew `caps.SharedUnscoped` (proscala
+`sharedunscoped`) for the ambient strategies, and `rootclassify` for the `normalizeLocalCaps`
+crash the shared tactics exposed in every `Sessional` loan; both shipped in 3.9.1-dev-p18. A
+shared *global* strategy value was tried instead and rejected: a package may not export a
+capability, an `object strategies` forces `uses soundness.strategies` onto every user object,
+and a capability-class instance cannot be typed pure (`rep/DECISIONS.md`). The derivation
+anchors (now `[field-purity]`) remain.
 
 Done when: `Emit extends caps.SharedCapability`; `git grep -c 'unsafeAssumeSeparate' -- lib/contingency` is 0; no `[tactic-overlap]` tag remains.
 
