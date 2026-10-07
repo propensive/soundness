@@ -35,6 +35,7 @@ package fulminate
 import scala.quoted.*
 
 import anticipation.*
+import symbolism.*
 
 object Communicable:
   given text: Text is Communicable = text =>
@@ -58,10 +59,8 @@ object Communicable:
 
   given listMessage: List[Message] is Communicable =
     messages =>
-      // The `List.concat` primitive rather than symbolism's `+`: plain list plumbing needs no
-      // typeclass here.
       val bullets = List.fill(List.size(messages))("\n - ".tt)
-      Message(List.concat(bullets, List("".tt)), messages)
+      Message(bullets ++ List("".tt), messages)
 
 // A `Communicable` is a `Transcribable to Message`: converting a value to a `Message` is exactly
 // how a loggable event is transcribed onto the common carrier. This lets `Loggable.fanOut` resolve

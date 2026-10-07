@@ -51,6 +51,7 @@ import polyvinyl.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
@@ -160,7 +161,7 @@ object Api:
     val others = request.headers.filter(_.key != t"cookie")
 
     val headers: List[Http.Header] =
-      List.concat(acceptHeader, List.concat(contentTypeHeader, List.concat(others, cookieHeader)))
+      acceptHeader ++ contentTypeHeader ++ others ++ cookieHeader
 
     val httpRequest =
       Http.Request

@@ -53,6 +53,7 @@ import polyvinyl.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
@@ -228,7 +229,7 @@ object Apoplexy:
     def overridden(parameter: OpenApi.Parameter): Boolean =
       own.exists: param => param.name == parameter.name && param.`in` == parameter.`in`
 
-    List.concat(own, shared.filter(!overridden(_)))
+    own ++ shared.filter(!overridden(_))
 
   // --- security ----------------------------------------------------------------
 
@@ -521,7 +522,7 @@ object Apoplexy:
     val names = content.keys.to[List].map(normalise).order(_.s)
 
     if names.has(t"application/json")
-    then List.concat(List(t"application/json"), names.filter(_ != t"application/json"))
+    then List(t"application/json") ++ names.filter(_ != t"application/json")
     else names
 
   // The media type of a body among those the specification offers: the first for which a
@@ -779,7 +780,7 @@ object Apoplexy:
       if !queryParams.exists(_.name == name) && !headerParams.exists(_.name == name)
       then halt(m"apoplexy: $verb $locus has no query or header parameter $name")
 
-    List.concat(queryParams, headerParams).filter(_.required.or(false)).each: param =>
+    (queryParams ++ headerParams).filter(_.required.or(false)).each: param =>
       if !named.exists(_(0) == param.name)
       then halt(m"apoplexy: required parameter ${param.name} is missing")
 
@@ -792,13 +793,13 @@ object Apoplexy:
       List.from(presented.collect { case Right(entry) => entry })
 
     val queryExpr: Expr[Query] =
-      '{Query(${Lifts.list(List.concat(queryEntries, credentialQueries))})}
+      '{Query(${Lifts.list(queryEntries ++ credentialQueries)})}
 
     val paramHeaders: List[Expr[Http.Header]] =
       headerEntries.map { entry => '{Http.Header($entry(0), $entry(1))} }
 
     val headersExpr: Expr[List[Http.Header]] =
-      Lifts.list(List.concat(paramHeaders, credentialHeaders))
+      Lifts.list(paramHeaders ++ credentialHeaders)
 
     val status = successStatus(operation).or(t"200")
 

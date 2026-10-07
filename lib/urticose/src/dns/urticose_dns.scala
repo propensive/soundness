@@ -36,6 +36,7 @@ import anticipation.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 
 // A DNS name in presentation form, checked at compile time: `dns"_fury._tcp.local"`.
 extension (inline context: StringContext)
@@ -51,7 +52,7 @@ extension (address: Ipv4 | Ipv6)
   def reverseName: Dns.Name = address.absolve match
     case ipv4: (Ipv4 @unchecked) =>
       val octets = List(ipv4.byte3.show, ipv4.byte2.show, ipv4.byte1.show, ipv4.byte0.show)
-      Dns.Name.unchecked(List.concat(octets, List(t"in-addr", t"arpa")))
+      Dns.Name.unchecked(octets ++ List(t"in-addr", t"arpa"))
 
     case ipv6: Ipv6 =>
       def nibble(long: Long, index: Int): Text =
@@ -59,6 +60,6 @@ extension (address: Ipv4 | Ipv6)
 
       def nibbles(long: Long): List[Text] = List.from((0 until 16).map(nibble(long, _)))
 
-      val reversed = List.concat(nibbles(ipv6.highBits), nibbles(ipv6.lowBits)).reverse
+      val reversed = (nibbles(ipv6.highBits) ++ nibbles(ipv6.lowBits)).reverse
       // Thirty-two single-character labels and two short ones: within the limits by construction.
-      Dns.Name.unchecked(List.concat(reversed, List(t"ip6", t"arpa")))
+      Dns.Name.unchecked(reversed ++ List(t"ip6", t"arpa"))

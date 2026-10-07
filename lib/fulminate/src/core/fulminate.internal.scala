@@ -40,6 +40,7 @@ import scala.quoted.*
 import anticipation.*
 import gigantism.*
 import murmuration.*
+import symbolism.*
 
 object internal:
   opaque type Diagnostics = Boolean
@@ -155,7 +156,7 @@ object internal:
           val addition: List[String | Expr[Message]] =
             if i % 2 == 0 then groups else List(toMessage(groups))
 
-          (List.concat(accumulator, addition), nextIndex)
+          (accumulator ++ addition, nextIndex)
 
       toMessage(items)
 

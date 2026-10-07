@@ -51,6 +51,7 @@ import parasite.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import urticose.*
 import vacuous.*
@@ -530,7 +531,7 @@ object Mdns:
     // complete a resolution; for a name we are probing, a conflict if its records differ from
     // ours; and for a name we hold, a contest.
     private def absorb(message: Dns.Message)(using Monitor^, Probate^): Unit =
-      val records = List.concat(message.answers, message.additional)
+      val records = message.answers ++ message.additional
       notify(cache.absorb(records, now))
 
       if message.id != tag then
@@ -618,7 +619,7 @@ object Mdns:
               val ipv6 = cache.lookup(target, Dns.Type.Aaaa, time)
 
               val addresses: List[Ipv4 | Ipv6] =
-                List.concat(ipv4, ipv6)
+                (ipv4 ++ ipv6)
                 . map(_.rdata)
                 . map:
                     case Dns.Rdata.A(address)    => address
@@ -646,7 +647,7 @@ object Mdns:
 
       val host: Dns.Name =
         description.host.let: hostname =>
-          val labels = List.concat(Dns.Name(hostname).labels, Discovery.local.labels)
+          val labels = Dns.Name(hostname).labels ++ Discovery.local.labels
           Discovery.named(hostname.show, labels)
 
         . or(transport.host)
@@ -670,7 +671,7 @@ object Mdns:
               Dns.Record(service.dnsName, 4500, Dns.Rdata.Ptr(name)),
               Dns.Record(name, 120, srv, flush = true),
               Dns.Record(name, 4500, txt, flush = true) ),
-          List.concat(subtypes, addresses) )
+          subtypes ++ addresses )
 
     def advertise(service: Discovery.Service, description: Discovery.Description)
       ( using Monitor^, Probate^, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
