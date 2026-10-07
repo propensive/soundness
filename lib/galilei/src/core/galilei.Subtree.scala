@@ -108,7 +108,7 @@ object Subtree:
     ( using filesystem: under is Filesystem )
     ( using readable: (Data is Readable to result)^, tactic: Tactic[Io.Error] )
   :   result =
-    Platform.pathReadable[under, result].read(path)
+    Platform.pathReadable[under, Path on under, result].read(path)
 
   def writeResolved[under, content](path: Path on under, content: content)
     ( using filesystem: under is Filesystem )
