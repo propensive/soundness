@@ -62,7 +62,7 @@ object MediaType:
   =>  MediaType is Decodable in Text =
     caps.unsafe.unsafeAssumePure(Media.parse(_))
 
-  def unapply(value: Text): Option[MediaType] = safely(Media.parse(value)).let(Some(_)).or(None)
+  def unapply(value: Text): Option[MediaType] = safely(Media.parse(value)).option
 
   inline given interpolable: MediaType is Interpolable:
     transparent inline def interpolate[parts <: Tuple, origins <: Tuple]

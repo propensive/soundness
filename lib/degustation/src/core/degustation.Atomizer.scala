@@ -281,10 +281,10 @@ object Atomizer:
       if atoms.contains(key) then throw Unencodable(s"duplicate key $key")
 
       val listed =
-        references.map: reference => ScalaReference.Own(Text(reference))
+        references.map: reference => ScalaReference.Own(reference.tt)
         . to(List)
 
-      atoms(key) = ScalaAtom(Text(key), replaceable, data, listed)
+      atoms(key) = ScalaAtom(key.tt, replaceable, data, listed)
 
     // --- members ------------------------------------------------------------------------------
 

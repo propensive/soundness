@@ -135,13 +135,13 @@ object Discovery:
 
     // The next name to try after a conflict (RFC 6762 §9): `Foo` → `Foo (2)` → `Foo (3)`.
     private[syndesis] def next(label: Text): Text =
-      val open = label.s.lastIndexOf(" (")
+      val open: Optional[Ordinal] = label.offsetOf(t" (", Rtl)
 
       val counted: Optional[Int] =
-        if open < 0 || !label.ends(t")") then Unset
-        else safely(label.s.substring(open + 2, label.s.length - 1).nn.tt.as[Int])
+        open.let: open =>
+          if label.ends(t")") then safely(label.skip(open.n0 + 2).skip(1, Rtl).as[Int]) else Unset
 
-      val base: Text = if open < 0 then label else label.s.substring(0, open).nn.tt
+      val base: Text = open.lay(label)(label.before(_))
       counted.let { count => t"$base (${(count + 1).show})" }.or(t"$label (2)")
 
     // The presentation form of RFC 6763 §4.3: the DNS name, with the label's dots escaped.
@@ -230,8 +230,8 @@ object Discovery:
   // records expiring). A change to an instance's details shows up by resolving it again.
   object Event:
     given showable: Event is Showable =
-      case Found(instance) => t"found ${instance.show}"
-      case Lost(instance)  => t"lost ${instance.show}"
+      case Found(instance) => t"found $instance"
+      case Lost(instance)  => t"lost $instance"
 
   enum Event:
     case Found(instance: Instance)

@@ -572,7 +572,7 @@ trait Tel2 extends Tel3:
                             ( if child.atoms.length == 0 then t""
                               else Positional.text(child.atoms.readUnchecked(0)) )
 
-                        members += Mutation.Member.Value(keyword, texts.toList.to(List))
+                        members += Mutation.Member.Value(keyword, texts.to(List))
 
                 case Tel.Nature.Struct =>
                   val encoded = contextual.constructed(fieldValue)
@@ -664,17 +664,17 @@ trait Tel2 extends Tel3:
   given intDecodable: (tactic: Tactic[Tel.Error]) => ((Int is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Whole, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Int", 0): atom =>
-        try atom.s.toInt catch case _: NumberFormatException => Unset
+        safely(atom.as[Int])
 
   given longDecodable: (tactic: Tactic[Tel.Error]) => ((Long is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Whole, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Long", 0L): atom =>
-        try atom.s.toLong catch case _: NumberFormatException => Unset
+        safely(atom.as[Long])
 
   given doubleDecodable: (tactic: Tactic[Tel.Error]) => ((Double is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Real, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Double", 0.0): atom =>
-        try atom.s.toDouble catch case _: NumberFormatException => Unset
+        safely(atom.as[Double])
 
   // A Scala `Boolean` is a value, not a TEL flag (§20 flags are keyword
   // presence alone), so it reads and writes the explicit `true`/`false` atom
@@ -706,19 +706,19 @@ trait Tel2 extends Tel3:
     Tel.Encodable(() => Morphology.Str, Tel.Nature.Scalar): text => Tel.scalar(text)
 
   given stringEncodable: String is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Str, Tel.Nature.Scalar): s => Tel.scalar(Text(s))
+    Tel.Encodable(() => Morphology.Str, Tel.Nature.Scalar): s => Tel.scalar(s.tt)
 
   given intEncodable: Int is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Whole, Tel.Nature.Scalar): i => Tel.scalar(Text(i.toString))
+    Tel.Encodable(() => Morphology.Whole, Tel.Nature.Scalar): i => Tel.scalar(i.toString.tt)
 
   given longEncodable: Long is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Whole, Tel.Nature.Scalar): l => Tel.scalar(Text(l.toString))
+    Tel.Encodable(() => Morphology.Whole, Tel.Nature.Scalar): l => Tel.scalar(l.toString.tt)
 
   given doubleEncodable: Double is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Real, Tel.Nature.Scalar): d => Tel.scalar(Text(d.toString))
+    Tel.Encodable(() => Morphology.Real, Tel.Nature.Scalar): d => Tel.scalar(d.toString.tt)
 
   given booleanEncodable: Boolean is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Bool, Tel.Nature.Scalar): b => Tel.scalar(Text(b.toString))
+    Tel.Encodable(() => Morphology.Bool, Tel.Nature.Scalar): b => Tel.scalar(b.toString.tt)
 
   given telEncodable: Tel is Tel.Encodable = Tel.Encodable(() => Morphology.Any)(identity(_))
 

@@ -72,8 +72,8 @@ object Keypress:
 
       case CharKey(' ')      => key(t"␣")
       case CharKey(char)     => key(char.show)
-      case FunctionKey(n)    => key(t"F${n.show}")
-      case EscapeSeq(id, _*) => key(t"⎋${id.show}")
+      case FunctionKey(n)    => key(t"F$n")
+      case EscapeSeq(id, _*) => key(t"⎋$id")
 
       case Tab       => key(t"⇥")
       case Enter     => key(t"↵")

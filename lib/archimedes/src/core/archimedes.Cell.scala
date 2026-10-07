@@ -176,7 +176,7 @@ object Cell:
 
   // The script rewritten in `glyphs`, or `Unset` if any character has no glyph.
   private def transcribe(text: Text, glyphs: Map[Char, Char]): Optional[Text] =
-    val length = text.s.length
+    val length = text.length
 
     def recur(index: Int, done: Text): Optional[Text] =
       if index == length then done else
@@ -407,14 +407,14 @@ object Cell:
     Cell(lines, width, height/2)
 
   private def stretchyChar(node: Mathml): Optional[Char] = node match
-    case Mo(value, _) if value.s.length == 1 && stretchable(value.s.charAt(0)) => value.s.charAt(0)
-    case _                                                                     => Unset
+    case Mo(value, _) if value.length == 1 && stretchable(value.s.charAt(0)) => value.s.charAt(0)
+    case _                                                                   => Unset
 
   private def stretchable(char: Char): Boolean =
     brackets.contains(char) || integrals.contains(char) || bigOperators.contains(char)
 
   private def operator(value: Text): Text =
-    if value.s.length == 1 && value.s.charAt(0) >= '⁡' && value.s.charAt(0) <= '⁤' then t""
+    if value.length == 1 && value.s.charAt(0) >= '⁡' && value.s.charAt(0) <= '⁤' then t""
     else if binaryOperators.contains(value) then t" $value "
     else value
 

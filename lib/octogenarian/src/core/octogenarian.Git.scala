@@ -89,15 +89,15 @@ object Git:
       val lines = caps.unsafe.unsafeAssumePure(process.stderr().delineate.records)
 
       lines.collect:
-        case r"Receiving objects: *$pc(\d*)\%.*" => Progress.Receiving(pc.s.toInt/100.0)
-        case r"Resolving deltas: *$pc(\d+)\%.*"  => Progress.Resolving(pc.s.toInt/100.0)
-        case r"Unpacking objects: *$pc(\d+)\%.*" => Progress.Unpacking(pc.s.toInt/100.0)
+        case r"Receiving objects: *$pc(\d*)\%.*" => Progress.Receiving(safely(pc.as[Int]).or(0)/100.0)
+        case r"Resolving deltas: *$pc(\d+)\%.*"  => Progress.Resolving(safely(pc.as[Int]).or(0)/100.0)
+        case r"Unpacking objects: *$pc(\d+)\%.*" => Progress.Unpacking(safely(pc.as[Int]).or(0)/100.0)
 
         case r"remote: *Counting objects: *$pc(\d+)\%.*" =>
-          Progress.RemoteCounting(pc.s.toInt/100.0)
+          Progress.RemoteCounting(safely(pc.as[Int]).or(0)/100.0)
 
         case r"remote: *Compressing objects: *$pc(\d+)\%.*" =>
-          Progress.RemoteCompressing(pc.s.toInt/100.0)
+          Progress.RemoteCompressing(safely(pc.as[Int]).or(0)/100.0)
 
     . or(Iterator.empty[Progress])
 
@@ -721,7 +721,7 @@ object Git:
 
       sh"$git $repoOptions reflog show $format $refArg".exec[Iterator[Text]]().collect:
         case r"$hash([a-f0-9]{40}) $selector(\S+) $time([0-9]+) $message(.*)" =>
-          ReflogEntry(Git.Hash.unsafe(hash), selector, time.s.toLong, message)
+          ReflogEntry(Git.Hash.unsafe(hash), selector, safely(time.as[Long]).or(0L), message)
       . to(List)
 
 

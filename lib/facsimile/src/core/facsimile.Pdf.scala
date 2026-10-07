@@ -532,7 +532,7 @@ object Pdf:
     // `D:YYYYMMDDHHmmSS±HH'mm'`, everything after the year optional; a malformed date is
     // `Unset`, never an error, since real files abound with slightly-wrong dates.
     private[facsimile] def parseDate(value: Text): Optional[Timing] =
-      val content = if value.s.startsWith("D:") then value.s.substring(2).nn else value.s
+      val content = if value.starts(t"D:") then value.s.substring(2).nn else value.s
 
       def digits(start: Int, length: Int, minimum: Int, maximum: Int): Optional[Int] =
         if start + length > content.length then Unset else

@@ -33,6 +33,7 @@
 package facsimile
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import mosquito.*
 import quantitative.*
@@ -85,7 +86,7 @@ private[facsimile] object TextExtractor:
       val effective = size*scala.math.hypot(combined.c, combined.d)
       val width = advance*scala.math.hypot(combined.a, combined.b)
 
-      if decoded.s.nonEmpty then
+      if !decoded.nil then
         // Plain text: newline on a baseline change, space across a gap on the same line.
         lastY.let: previous =>
           if (y - previous).abs > effective*0.3 then text.append('\n')

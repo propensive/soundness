@@ -286,12 +286,9 @@ object Xenophile:
     val interfaceType = Refinement(TypeRepr.of[Interface], "Form", TypeBounds(origin, origin))
 
     interfaceType.asType.absolve match
-      case '[interface] => Expr.summon[interface] match
-        case None => Unset
-
-        case Some(found) =>
-          val members = (refinements(found.asTerm.tpe) ++ refinements(found.asTerm.tpe.widen)).to(Map)
-          members(t"Locus")
+      case '[interface] => Expr.summon[interface].optional.let: found =>
+        val members = (refinements(found.asTerm.tpe) ++ refinements(found.asTerm.tpe.widen)).to(Map)
+        members(t"Locus")
 
   // The definitions path carried by a `Locus` singleton type.
   private[xenophile] def locusText(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Text =

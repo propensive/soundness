@@ -149,10 +149,10 @@ object Sh:
           State(Quotes1, false, arguments :+ t"")
 
         case (State(Awaiting, _, arguments, _, _), char) =>
-          State(Unquoted, false, arguments :+ t"$char")
+          State(Unquoted, false, arguments :+ char.show)
 
         case (State(context, _, sci.Nil, _, _), char) =>
-          State(context, false, sci.List(t"$char"))
+          State(context, false, sci.List(char.show))
 
         case (State(context, _, more :+ current, _, _), char) =>
           State(context, false, more :+ t"$current$char")

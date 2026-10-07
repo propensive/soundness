@@ -66,7 +66,7 @@ object Selection:
       text.s.forall(Character.isJavaIdentifierPart(_))
 
   private def number(text: Text): Optional[Double] =
-    if text.s.matches("-?[0-9]+(\\.[0-9]+)?") then text.s.toDouble else Unset
+    if text.s.matches("-?[0-9]+(\\.[0-9]+)?") then safely(text.as[Double]) else Unset
 
   // Parses command-line selection terms. Identity terms (hashes, monikers, name globs) are
   // unioned; `kind:` terms, `tag:` terms and axis constraints (`parser=jacinta`, `N<32`,
@@ -123,8 +123,9 @@ object Selection:
 
   private def constraint(argument: Text): Optional[Constraint] =
     def split(operator: Text): Optional[(Text, Text)] =
-      val index = argument.s.indexOf(operator.s)
-      if index <= 0 then Unset else (argument.keep(index), argument.skip(index + operator.length))
+      argument.offsetOf(operator).let: index =>
+        if index == Prim then Unset
+        else (argument.before(index), argument.skip(index.n0 + operator.length))
 
     def bound(operator: Text)(make: (Text, Double) => Constraint): Optional[Constraint] =
       split(operator).let: (axis, value) => number(value).let(make(axis, _))
@@ -135,10 +136,9 @@ object Selection:
     . or(bound(t">")(Constraint.Least(_, _, false)))
     . or:
         split(t"=").let: (axis, value) =>
-          if value.contains(t"..") then
-            val index = value.s.indexOf("..")
-            val least: Text = value.keep(index)
-            val most: Text = value.skip(index + 2)
+          value.offsetOf(t"..").lay(Constraint.Membership(axis, value.cut(t",").to[Set])): index =>
+            val least: Text = value.before(index)
+            val most: Text = value.skip(index.n0 + 2)
 
             // A range may be open at either end: `N=4..` means at least 4 and `N=..64` at
             // most 64 (both inclusive), spellings which need no shell quoting, unlike `>=`.
@@ -146,7 +146,6 @@ object Selection:
             else if least == t"" then number(most).let(Constraint.Most(axis, _, true))
             else if most == t"" then number(least).let(Constraint.Least(axis, _, true))
             else number(least).let { least => number(most).let(Constraint.Interval(axis, least, _)) }
-          else Constraint.Membership(axis, value.cut(t",").to[Set])
 
 
 // A subset of a suite's tests, parsed from command-line terms: which tests run (and, for

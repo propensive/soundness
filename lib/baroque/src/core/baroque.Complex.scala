@@ -64,10 +64,10 @@ object Complex:
 
         case _ =>
           if complex.imaginary == zero[part] then complex.real.show
-          else if complex.real == zero[part] then t"${complex.imaginary.show}ℐ"
+          else if complex.real == zero[part] then t"${complex.imaginary}ℐ"
           else if complex.imaginary < zero[part]
-          then t"${complex.real.show} - ${(-complex.imaginary).show}ℐ"
-          else t"${complex.real.show} + ${complex.imaginary.show}ℐ"
+          then t"${complex.real} - ${(-complex.imaginary)}ℐ"
+          else t"${complex.real} + ${complex.imaginary}ℐ"
 
   private inline def showDistributive[part]
     ( complex: Complex[part], distributive: part is Distributive )

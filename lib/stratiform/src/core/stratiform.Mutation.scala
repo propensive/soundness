@@ -32,6 +32,7 @@
                                                                                                   */
 package stratiform
 
+import denominative.*
 import murmuration.*
 
 import anticipation.*
@@ -383,7 +384,7 @@ object Mutation:
 
         if inlinePlaceable then
           val hard = target.atoms.exists:
-            case Tel.Atom.Inline(text, spaces) => spaces >= 2 || text.s.indexOf(' ') >= 0
+            case Tel.Atom.Inline(text, spaces) => spaces >= 2 || text.contains(' ')
             case _                             => false
 
           val flagAtom = Tel.Atom.Inline(keyword, if hard then 2 else 1)
@@ -484,7 +485,7 @@ object Mutation:
           // identity update leaves tabulation padding intact. The count
           // only escalates to a hard space when the new value introduces
           // an internal space.
-          val kept = if value.s.indexOf(' ') >= 0 && spaces < 2 then 2 else spaces
+          val kept = if value.contains(' ') && spaces < 2 then 2 else spaces
           Tel.Atom.Inline(value, kept)
         else if sourceSafe(value) then Tel.Atom.Source(value)
         else Tel.Atom.Literal(literalDelimiter(value, t"---"), value)
@@ -618,7 +619,7 @@ object Mutation:
   // code points. (The parser records marker offsets in bytes and the
   // serializer pads in UTF-16 units, so the three agree only within
   // ASCII; the spec's unit is the most defensible of the three here.)
-  private def codePoints(text: Text): Int = text.s.codePointCount(0, text.s.length)
+  private def codePoints(text: Text): Int = text.s.codePointCount(0, text.length)
 
   // Column widths of an *existing* (parsed, column-aligned) row: column 0
   // is the keyword-and-pre-column portion, extended by soft-space atoms;
@@ -995,7 +996,7 @@ object Mutation:
   // empty values are dropped. The canonical sigil is `#`.
   def construct(keyword: Text, atoms: Text*): Tel.Compound =
     val atomNodes =
-      Array.from(atoms.collect { case value if value.s.nonEmpty => chooseAtomForm(value, '#') })
+      Array.from(atoms.collect { case value if !value.nil => chooseAtomForm(value, '#') })
 
     Tel.Compound(keyword, atomNodes, Unset, Array.empty)
 
@@ -1033,7 +1034,7 @@ object Mutation:
     var inRun = true
 
     def scalarChild(kw: Text, value: Text): Tel.Compound =
-      if value.s.isEmpty then Tel.Compound(kw, Array.empty, Unset, Array.empty)
+      if value.nil then Tel.Compound(kw, Array.empty, Unset, Array.empty)
       else Tel.Compound(kw, Array(chooseAtomForm(value, sigil)), Unset, Array.empty)
 
     members.each:
@@ -1056,8 +1057,8 @@ object Mutation:
         val second: Optional[Text] = occurrences.sec
 
         // Local `def`s, so each scan still happens only on the branch that needs it.
-        def soleInlineable = first.let { o => o.s.nonEmpty && inlineSafe(o, sigil) }.or(false)
-        def allInlineable = occurrences.all { o => o.s.nonEmpty && inlineSafe(o, sigil) }
+        def soleInlineable = first.let { o => !o.nil && inlineSafe(o, sigil) }.or(false)
+        def allInlineable = occurrences.all { o => !o.nil && inlineSafe(o, sigil) }
 
         if inRun && second.absent && soleInlineable
         then first.let { o => inlineTexts += o }
@@ -1073,7 +1074,7 @@ object Mutation:
 
     val atoms = Array.from[Tel.Atom]:
       inlineTexts.map: text =>
-        if text.s.indexOf(' ') >= 0 then hard = true
+        if text.contains(' ') then hard = true
         Tel.Atom.Inline(text, if hard then 2 else 1)
 
     val childBlocks: Array[Tel.Block]^{} =
@@ -1095,7 +1096,7 @@ object Mutation:
   // (hard-space) separator so the parser keeps the soft spaces as content
   // (§10.3); a space-free value uses a single space.
   private def inlinePrecedingSpaces(value: Text): Int =
-    if value.s.indexOf(' ') >= 0 then 2 else 1
+    if value.contains(' ') then 2 else 1
 
   // §22.2 inline-safe: no LF; no leading/trailing space; no run of two or
   // more spaces; and the value does not begin with the sigil immediately
@@ -1162,7 +1163,7 @@ object Mutation:
   private def literalDelimiter(value: Text, initial: Text): Text =
     var delimiter = initial.s
     while collidesWithDelimiterLine(value.s, delimiter) do delimiter = delimiter+"-"
-    Text(delimiter)
+    delimiter.tt
 
   // True if `s` contains a line consisting of zero-or-more spaces followed
   // exactly by `delimiter`. A trailing CR is stripped before the comparison

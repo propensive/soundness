@@ -71,7 +71,7 @@ object Serializable:
         // Every alphabet character is ASCII, so decoding the output as Latin-1
         // yields identical text while letting the JVM adopt the byte array as the
         // compact-string backing directly, with no validating charset scan.
-        Text(String(Array.unsafeJvm(out), StandardCharsets.ISO_8859_1))
+        String(Array.unsafeJvm(out), StandardCharsets.ISO_8859_1).tt
 
       // Hex: each byte is a self-contained group of two characters, so there is
       // no bit carry and never any padding. Both output bytes for a given input

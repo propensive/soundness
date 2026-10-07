@@ -90,7 +90,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   update def varint(): Long = parser.directVarint()(using tactic)
   update def fixed32(): Int = parser.directFixed32()(using tactic)
   update def fixed64(): Long = parser.directFixed64()(using tactic)
-  update def text(): Text = Text(parser.directStringWindow())
+  update def text(): Text = parser.directStringWindow().tt
   update def data(): Data = parser.directDataWindow()
 
   // ── The fallback seam: one field's wire value (for gathered occurrences

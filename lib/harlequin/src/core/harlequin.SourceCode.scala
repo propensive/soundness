@@ -106,7 +106,7 @@ object SourceCode:
           val words = prefix.lay(found.keywords): p => found.keywords.filter(_.starts(p))
 
           val prefixLength = prefix.lay(0)(_.length)
-          val replace = Span.offset((caret.n0 - prefixLength).z, prefixLength)
+          val replace = Span.offset(caret - prefixLength, prefixLength)
 
           val wordList: List[Text] = words.to[List]
           val sorted:   List[Text] = wordList.order(_.s)
@@ -224,7 +224,7 @@ object SourceCode:
 
         case xs =>
           xs.where(_ == Token.Newline).lay(xs :: acc): ordinal =>
-            lines(xs.skip(ordinal.n0 + 1), xs.keep(ordinal.n0) :: acc)
+            lines(xs.skip(ordinal.n1), xs.keep(ordinal.n0) :: acc)
 
     def quoted(text: Text): Boolean =
       text.length > 0 &&
@@ -274,9 +274,7 @@ object SourceCode:
 
     private val trees: scm.HashMap[(Int, Int), TokenTag] = scm.HashMap()
 
-    def apply(start: Int, end: Int): Optional[TokenTag] = trees.get((start, end)) match
-      case Some(tag) => tag
-      case None      => Unset
+    def apply(start: Int, end: Int): Optional[TokenTag] = trees.get((start, end)).optional
 
     private def tag(span: Spans.Span, accent: Accent, role: Role): Unit =
       if span.exists then trees += (span.start, span.end) -> TokenTag(accent, role)
@@ -628,7 +626,7 @@ object SourceCode:
               module match
                 case completable: prophesy.Completable =>
                   val items =
-                    completable.completions(repr, prefix).filter(_.name.s.startsWith(prefix.s))
+                    completable.completions(repr, prefix).filter(_.name.starts(prefix))
 
                   if items.nil then Unset
                   else Completions(Span.offset(start.z, prefix.length), items)
@@ -638,7 +636,7 @@ object SourceCode:
 
             catch case scala.util.control.NonFatal(_) => Unset
 
-          provided.collectFirst { case completions: Completions => completions }.getOrElse(Unset)
+          provided.collectFirst { case completions: Completions => completions }.optional
 
   private def collectTypes(run: Run): Map[(Int, Int), Syntax] =
     // Use the run's own context: the compilation advanced the compiler's periods,

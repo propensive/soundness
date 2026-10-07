@@ -737,7 +737,7 @@ object Tel extends Tel2:
         // absence reads `false`), so the skip rule may pass over it.
         profiles(index) =
           Positional.Profile
-            ( Text(keys.readUnchecked(index)),
+            ( keys.readUnchecked(index).tt,
               nature,
               repeatable,
               required =
@@ -787,11 +787,11 @@ object Tel extends Tel2:
     // parser's positionally-assigned atom: an unparseable value is
     // `NotScalar` with the offending text, as on both other paths.
     def atomInt(text: Text)(using Tactic[Tel.Error]): Int =
-      val parsed = try Optional(text.s.toInt) catch case _: NumberFormatException => Unset
+      val parsed = safely(text.as[Int])
       parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Int"))) yet 0)
 
     def atomLong(text: Text)(using Tactic[Tel.Error]): Long =
-      val parsed = try Optional(text.s.toLong) catch case _: NumberFormatException => Unset
+      val parsed = safely(text.as[Long])
       parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Long"))) yet 0L)
 
     def atomBoolean(text: Text)(using Tactic[Tel.Error]): Boolean =
@@ -832,7 +832,7 @@ object Tel extends Tel2:
             val actual = unwrap(parsing)
 
             Positional.Profile
-              ( Text(key),
+              ( key.tt,
                 actual.nature,
                 actual.repeatable,
                 required = actual.nature != Tel.Nature.Flag
@@ -840,7 +840,7 @@ object Tel extends Tel2:
 
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
-            fields.remap { (key, parser, _) => (Text(key), parser.shape()) }.to[List]
+            fields.remap { (key, parser, _) => (key.tt, parser.shape()) }.to[List]
 
           Morphology.Obj
             ( entries, entries.sweep { case (key, shape) if !shape.optional => key } )
@@ -896,7 +896,7 @@ object Tel extends Tel2:
                   val parsing = unwrap(entries.readUnchecked(slot)(1))
 
                   inline def positioned[result](inline block: => result): result =
-                    focusing(foci, reader, Text(keys.readUnchecked(slot)))(block)
+                    focusing(foci, reader, keys.readUnchecked(slot).tt)(block)
 
                   parsing match
                     case gathering: Gathering if parsing.repeatable =>
@@ -951,7 +951,7 @@ object Tel extends Tel2:
 
                     buffer +=
                       ( if focused
-                        then focusing(foci, reader, Text(keys.readUnchecked(found))):
+                        then focusing(foci, reader, keys.readUnchecked(found).tt):
                           gathering.parseElement(reader, indent)
                         else gathering.parseElement(reader, indent) )
 
@@ -967,7 +967,7 @@ object Tel extends Tel2:
                       reader.skipEntry(indent)
                     else values(found) =
                       if focused
-                      then focusing(foci, reader, Text(keys.readUnchecked(found))):
+                      then focusing(foci, reader, keys.readUnchecked(found).tt):
                         entries.readUnchecked(found)(1).parse(reader, indent)
                       else entries.readUnchecked(found)(1).parse(reader, indent)
 
@@ -979,7 +979,7 @@ object Tel extends Tel2:
 
             if parsing.repeatable then
               val elements: List[Any] = values(index) match
-                case buffer: scala.collection.mutable.ListBuffer[?] => buffer.toList.to(List)
+                case buffer: scala.collection.mutable.ListBuffer[?] => buffer.to(List)
                 case _                                              => Nil
 
               parsing match
@@ -989,7 +989,7 @@ object Tel extends Tel2:
                   // derivation decodes an empty synthetic document.
                   values(index) =
                     if focused
-                    then focus(descend(prior, Text(keys.readUnchecked(index))))(gathering.gathered(elements))
+                    then focus(descend(prior, keys.readUnchecked(index).tt))(gathering.gathered(elements))
                     else gathering.gathered(elements)
 
                 case _ => ()
@@ -1002,7 +1002,7 @@ object Tel extends Tel2:
                 // consumed, so EVERY missing field can accrue: the venture delimits
                 // `absent()`'s abort (the `Tactic` is a call-time parameter, not
                 // resolution-captured), records it at this field's focus, and continues.
-                focus(descend(prior, Text(keys.readUnchecked(index)))):
+                focus(descend(prior, keys.readUnchecked(index).tt)):
                   val ventured = venture(entries.readUnchecked(index)(1).absent())
                   if ventured.ready then values(index) = ventured.vouch else failedSlots = true
               else values(index) = entries.readUnchecked(index)(1).absent()
@@ -1275,7 +1275,7 @@ object Tel extends Tel2:
 
         idx += 1
 
-      builder.toMap.to(Map)
+      builder.to(Map)
 
     private def atomAssignable(member: Tels.Member, schema: Tels): Boolean raises Tel.Error =
       member match
@@ -1487,7 +1487,7 @@ object Tel extends Tel2:
         // `supplementKeyPositions`) instead of the bare document root.
         focus({
           val base = prior.let(_.pointer).or(Telp.Root)
-          val indexed = occurrence.lay(base) { index => base.prepend(t"$index") }
+          val indexed = occurrence.lay(base) { index => base.prepend(index.show) }
           Tel.Focus(indexed.prepend(compound.keyword))
         }):
           // An unrecognised keyword is skipped (`IgnoreErroneousNode`): record it and
@@ -1788,7 +1788,7 @@ object Tel extends Tel2:
             case other                                                => other
 
       private def isUnknown(d: Diagnostic): Boolean = d match
-        case Diagnostic.Scalar(m, _) => m.s.startsWith("unknown validator")
+        case Diagnostic.Scalar(m, _) => m.starts(t"unknown validator")
         case _                       => false
 
       private def identifier(value: Text): Response =
@@ -2053,7 +2053,7 @@ object Tel extends Tel2:
     // (3), every scalar carrying BASE-256 text.
     def apply(element: Tel.Element)(using Tactic[Error]): Acceptance = element match
       case Tel.Element.Node(_, _, children) =>
-        Acceptance(children.readable.toList.to(List).map(alternative))
+        Acceptance(children.readable.to(List).map(alternative))
 
       case _ =>
         abort(Error(Error.Reason.Malformed))
@@ -2677,7 +2677,7 @@ object Tel extends Tel2:
                 Unset
           else if selector.charAt(0).isLetter
                   && selector.forall { ch => ch.isLetterOrDigit || ch == '-' || ch == '.' }
-          then Selector.Tag(Text(selector))
+          then Selector.Tag(selector.tt)
           else Unset
 
         val colon = s.indexOf(':')
@@ -2691,9 +2691,9 @@ object Tel extends Tel2:
             val name = base.substring(slash + 1).nn
 
             if !domainValid(domain) || !nameValid(name) then Unset
-            else if colon < 0 then Reference(Text(domain), Text(name), Unset)
+            else if colon < 0 then Reference(domain.tt, name.tt, Unset)
             else selectorOf(s.substring(colon + 1).nn).let: selector =>
-              Reference(Text(domain), Text(name), selector)
+              Reference(domain.tt, name.tt, selector)
 
   // Document-level prologue carried alongside a `Tel` value when it is
   // loaded via `text.load[Tel]`. The `Document[Tel]` pair lets callers
@@ -2799,9 +2799,9 @@ object Tel extends Tel2:
           val b = bytes.nn
           val s = new String(b, byteOff, byteLen, java.nio.charset.StandardCharsets.UTF_8)
           _text = s
-          Text(s)
+          s.tt
         else
-          Text(t)
+          t.tt
 
       // The parser's UTF-8 slice, so a byte-level serializer can copy it without decoding it:
       // the arena (null for an atom built from text), and the slice's offset and length in it.
@@ -3283,7 +3283,7 @@ object Tel extends Tel2:
         raise(Tel.Error(Tel.Error.Reason.Absent)) yet 0
 
       override def parseAtom(text: Text)(using Tactic[Tel.Error]): Int =
-        val parsed = try Optional(text.s.toInt) catch case _: NumberFormatException => Unset
+        val parsed = safely(text.as[Int])
         parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Int"))) yet 0)
 
   given longParsable: Long is Tel.Parsable =
@@ -3299,12 +3299,12 @@ object Tel extends Tel2:
         raise(Tel.Error(Tel.Error.Reason.Absent)) yet 0L
 
       override def parseAtom(text: Text)(using Tactic[Tel.Error]): Long =
-        val parsed = try Optional(text.s.toLong) catch case _: NumberFormatException => Unset
+        val parsed = safely(text.as[Long])
         parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Long"))) yet 0L)
 
   given doubleParsable: Double is Tel.Parsable =
     primitiveParsable(Morphology.Real, t"Double", 0.0): atom =>
-      try atom.s.toDouble catch case _: NumberFormatException => Unset
+      safely(atom.as[Double])
 
   given booleanParsable: Boolean is Tel.Parsable =
     new Tel.Parsable:
@@ -3740,7 +3740,7 @@ object Tel extends Tel2:
 
       i += 1
 
-    Text(sb.toString)
+    sb.toString.tt
 
   // Replace the first compound with the given keyword across all
   // blocks; if no compound matches, append the new compound to the
@@ -4923,7 +4923,7 @@ object Tel extends Tel2:
           consumeLineEnding()
           prevLineWasBoundary = true
           hasConsumedNonBlankLine = true
-          Text(payload)
+          payload.tt
 
     // Reads a pragma line ("tel ..." or "tel") if present as the first
     // non-blank line. Marks before consuming any blanks; if the first
@@ -5145,14 +5145,14 @@ object Tel extends Tel2:
               firstLayerColumn = column
               firstLayerLength = s.length
 
-            layerBuffer += Text(s.substring(1).nn)
+            layerBuffer += s.substring(1).nn.tt
             stage = 2
 
         else if s.indexOf('/') >= 0 then
           // Schema reference: any `/`-carrying phrase is of the
           // reference family; one that fails the reference grammar —
           // including the deleted URL form — matches no form (E121).
-          Tel.Pragma.Reference.parse(Text(s)) match
+          Tel.Pragma.Reference.parse(s.tt) match
             case parsed: Tel.Pragma.Reference =>
               if stage >= 1
               then misplaced(column, s.length)
@@ -5171,7 +5171,7 @@ object Tel extends Tel2:
           if stage >= 3
           then misplaced(column, s.length)
           else
-            signatureText = Text(s)
+            signatureText = s.tt
             stage = 3
 
         else if s.length == 1 then
@@ -5200,7 +5200,7 @@ object Tel extends Tel2:
         recoverAt(Reason.MisplacedPragmaPhrase, line, firstLayerColumn, firstLayerLength):
           layerBuffer.clear()
 
-      Tel.Pragma(version, reference, layerBuffer.toList.to(List), signatureText, pragmaSigil)
+      Tel.Pragma(version, reference, layerBuffer.to(List), signatureText, pragmaSigil)
 
     // `column` is the 1-indexed column of the version phrase within the pragma
     // line, so a malformed version is spanned at the phrase itself.
@@ -5270,7 +5270,7 @@ object Tel extends Tel2:
         parts += builder.toString
         offsets += start
 
-      (parts.toList.to(List), offsets.toList.to(List))
+      (parts.to(List), offsets.to(List))
 
     // ── Margin determination ─────────────────────────────────────────────────
 
@@ -5635,7 +5635,7 @@ object Tel extends Tel2:
           if tracking then
             positionRecords += compoundLine
             positionRecords += compoundLeadingSpaces + 1
-            positionRecords += compoundKeyword.s.length
+            positionRecords += compoundKeyword.length
             positionRecords += lineValueColumn
             positionRecords += lineValueLength
 
@@ -5882,7 +5882,7 @@ object Tel extends Tel2:
         while more && peek != LF && peek != CR do advance()
         val payload = sliceText(mk)
         consumeLineEnding()
-        Text(payload)
+        payload.tt
       else
         // `#foo` — but we already classified this as a comment, so this
         // shouldn't happen. Treat as bare-content.
@@ -5890,7 +5890,7 @@ object Tel extends Tel2:
         while more && peek != LF && peek != CR do advance()
         val payload = sliceText(mk)
         consumeLineEnding()
-        Text(payload)
+        payload.tt
 
     // ── Tabulation line parsing ──────────────────────────────────────────────
 
@@ -5971,7 +5971,7 @@ object Tel extends Tel2:
               else
                 advance(); lineCol += 1
 
-            headings += Text(sliceText(mk))
+            headings += sliceText(mk).tt
             // Now we're either at LF/CR/EOF or at a hard-space run before a
             // marker.
             if !more || peek == LF || peek == CR then done = true
@@ -6220,7 +6220,7 @@ object Tel extends Tel2:
         else
           done = true
 
-      Tel.Atom.Source(Text(sb.toString))
+      Tel.Atom.Source(sb.toString.tt)
 
     // ── Literal atom ─────────────────────────────────────────────────────────
 
@@ -6317,7 +6317,7 @@ object Tel extends Tel2:
       fillHead()
       // §15: the payload is the verbatim bytes between structural LFs — CR is
       // preserved (only the LF before the closing delimiter is dropped, above).
-      Tel.Atom.Literal(Text(delimiter), Text(sb.toString))
+      Tel.Atom.Literal(delimiter.tt, sb.toString.tt)
 
     // The length, in the UTF-16 units a `Text` counts, of an arena byte range.
     // Every lead byte contributes one unit, except a four-byte sequence, which
@@ -6357,11 +6357,11 @@ object Tel extends Tel2:
       // §19.5 RestartFromPragma: record the misplaced pragma but parse the line as
       // an ordinary compound (the keyword is already read; the rest follows).
       if mayBeMisplacedPragma && keyword == t"tel" then
-        recoverAt(Reason.PragmaNotFirst, lineNumber, 1, keyword.s.length)(())
+        recoverAt(Reason.PragmaNotFirst, lineNumber, 1, keyword.length)(())
 
       hasConsumedNonBlankLine = true
       // The value run starts just past the keyword; the scan advances from here.
-      if spanTracking then lineValueOrigin = head.leadingSpaces + 1 + keyword.s.length
+      if spanTracking then lineValueOrigin = head.leadingSpaces + 1 + keyword.length
       parseCompoundLineRest(lineNumber)
       compoundLineKeyword = keyword
 
@@ -6488,7 +6488,7 @@ object Tel extends Tel2:
               advance()  // space
               val mk = beginMark()
               while more && peek != LF && peek != CR do advance()
-              remark = Text(sliceText(mk))
+              remark = sliceText(mk).tt
             else
               beginInFlightAtom()
               appendToArena(ch)
@@ -6585,7 +6585,7 @@ object Tel extends Tel2:
 
       if len == 0 then t""
       else if len > 8 then
-        Text(sliceText(startMark))
+        sliceText(startMark).tt
       else
         val hash = ((low ^ (low >>> 32)) ^ (high ^ (high >>> 17))).toInt
         var slot = hash & 0x3F
@@ -6607,7 +6607,7 @@ object Tel extends Tel2:
             slot = (slot + 1) & 0x3F
             probes += 1
 
-        if result != null then Text(result) else Text(sliceText(startMark))
+        if result != null then result.tt else sliceText(startMark).tt
 
     // As `readKeyword`, but for the packed-dispatch step: the keyword is
     // *not* interned or sliced when it packs — the fingerprint the scan
@@ -6691,7 +6691,7 @@ object Tel extends Tel2:
       else
         directKeywordPacked = TelReader.KeywordOpaque
         directEntryKeywordLazy = false
-        directEntryKeyword = if len == 0 then t"" else Text(sliceText(startMark))
+        directEntryKeyword = if len == 0 then t"" else sliceText(startMark).tt
 
     // The lazily-materialized text of a fast-stepped keyword: rebuilt from
     // the fingerprint (byte-exact — the packed bytes are printable ASCII)
@@ -6720,7 +6720,7 @@ object Tel extends Tel2:
           probes += 1
 
       if result == null then result = fingerprintString()
-      Text(result)
+      result.tt
 
     private update def fingerprintString(): String =
       val len = directKeywordLen
@@ -6898,11 +6898,11 @@ object Tel extends Tel2:
 
               // E102 / §19.5 RestartFromPragma, as in `parseCompoundLine`.
               if mayBeMisplacedPragma && keyword == t"tel" then
-                recoverAt(Reason.PragmaNotFirst, directEntryLine, 1, keyword.s.length)(())
+                recoverAt(Reason.PragmaNotFirst, directEntryLine, 1, keyword.length)(())
 
               directEntryKeyword = keyword
               directEntryKeywordLazy = false
-              directEntryKeywordLen = keyword.s.length
+              directEntryKeywordLen = keyword.length
             else
               readKeywordFast()
 
@@ -7270,7 +7270,7 @@ object Tel extends Tel2:
     private[stratiform] update def directAtomText()(using Tactic[Tel.Error]): Optional[Text] =
       consumeDirectEntry(PrimaryText)
       val captured = directPrimaryText
-      if captured == null then Unset else Optional(Text(captured))
+      if captured == null then Unset else Optional(captured.tt)
 
     // The entry's primary atom parsed straight from its bytes as an integer, or
     // Unset for a missing / non-integer atom — the `Int`/`Long` readers, saving
@@ -7449,8 +7449,8 @@ object Tel extends Tel2:
       val column = span.startColumn.lay(1)(_.n1)
       val length = span.length.or(0)
 
-      if length > 1 then Text("line "+line+", columns "+column+"-"+(column + length - 1))
-      else Text("line "+line+", column "+column)
+      if length > 1 then t"line $line, columns $column-${column + length - 1}"
+      else t"line $line, column $column"
 
     // The `Line`-mode `Span` for a token of `length` characters starting at the
     // parser's 1-indexed `line`/`column`. `Span`'s own coordinates are 0-based, and
@@ -7485,7 +7485,7 @@ object Tel extends Tel2:
         override val offset: Optional[Int] = Unset,
         override val length: Optional[Int] = Unset )
     extends Format.Position derives CanEqual:
-      def describe: Text = Text("line "+line+", column "+column)
+      def describe: Text = t"line $line, column $column"
 
       override def span: Span =
         Span.line((line - 1).max(0).z, (column - 1).max(0).z, length.or(0))

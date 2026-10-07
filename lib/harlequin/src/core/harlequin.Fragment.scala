@@ -80,14 +80,14 @@ object Fragment:
   // treats it, and a closing bracket as a symbol — so accent alone cannot tell an operator
   // (after which an expression is expected) from a value; text distinguishes them.
   private def symbolic(text: Text): Boolean =
-    text.s.length > 0 && text.s.forall { char => !identifierChar(char) && !char.isWhitespace }
+    text.length > 0 && text.s.forall { char => !identifierChar(char) && !char.isWhitespace }
 
   // The standalone lexer's view of the fragment, flattened and stripped of noise.
   private def tokens(text: Text): List[Token] =
     val source = Scala.highlight(text)(using highlighting.tokenizedScala)
 
     def significant(token: Token): Boolean =
-      token.accent != Accent.Unparsed && token.text.s.trim.nn != ""
+      token.accent != Accent.Unparsed && !token.text.blank
 
     val lines: List[List[Token]] = source.lines.to[List]
     val all:   List[Token]       = lines.flat

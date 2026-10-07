@@ -35,6 +35,7 @@ package abacist
 import scala.compiletime.*
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import prepositional.*
 import quantitative.*
@@ -118,10 +119,12 @@ object protointernal extends anteprotointernal:
     inline def showQuanta[base <: AnyUnit, quanta <: Quanta[base]]: quanta is Showable = summonFrom:
       case names: UnitsNames[quanta] =>
         count =>
+        // A quantity has few units, so counting them is cheap.
+        import denominative.dysasymptotics.linearSize
         val nonzeroComponents = count.components.stdlib.filter(_(1) != 0)
         val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
         val units = nonzeroUnits.stdlib.head :: nonzeroUnits.stdlib.tail.map(names.separator+_)
-        units.weave(names.units().stdlib.takeRight(nonzeroUnits.stdlib.length)).mkString.tt
+        units.weave(names.units().stdlib.takeRight(nonzeroUnits.size)).mkString.tt
 
       case _ =>
         count =>

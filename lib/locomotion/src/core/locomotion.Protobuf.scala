@@ -279,7 +279,7 @@ object Protobuf extends Protobuf2:
   // unchanged. This is the only optic Protobuf affords — there are no field labels.
   given fieldOptical: [element] => Ordinal is Optical from Protobuf onto Protobuf = ordinal =>
     Optic: (origin, lambda) =>
-      val number = ordinal.n0 + 1
+      val number = ordinal.n1
 
       safely:
         val fields = ProtobufParser(origin.payload).fields()
@@ -370,7 +370,7 @@ object Protobuf extends Protobuf2:
       else jl.Float.intBitsToFloat(ProtobufParser(protobuf.payload).fixed32())
 
   given textDecodable: Text is Decodable in Protobuf =
-    protobuf => Text(jl.String(Array.unsafeJvm(protobuf.payload), UTF_8).nn)
+    protobuf => jl.String(Array.unsafeJvm(protobuf.payload), UTF_8).nn.tt
 
   given dataDecodable: Data is Decodable in Protobuf = _.payload
 
@@ -617,13 +617,13 @@ object Protobuf extends Protobuf2:
             val map = ProtobufParser(protobuf.payload).fields()
             val labels = variantLabels
 
-            var index = 0
-            while index < labels.size && !map.defines(index + 1) do index += 1
-            if index >= labels.size then abort(Protobuf.Error(Reason.MissingField(0)))
+            val (label, index) =
+              labels.indexed.seek { (_, ordinal) => map.defines(ordinal.n1) }.or:
+                abort(Protobuf.Error(Reason.MissingField(0)))
 
-            delegate(labels.stdlib(index)):
+            delegate(label):
               [variant <: derivation] => context =>
-                map(index + 1).lay(abort(Protobuf.Error(Reason.MissingField(index + 1)))): values =>
+                map(index.n1).lay(abort(Protobuf.Error(Reason.MissingField(index.n1)))): values =>
                   context.decoded(Protobuf.Repeated(values)) }
 
   // ProtobufError → Protobuf.Error

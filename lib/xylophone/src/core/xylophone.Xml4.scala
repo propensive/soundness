@@ -176,48 +176,43 @@ trait Xml4:
     // and `xmax` (exclusive) bounds, `minLength`, `maxLength`, `length`, `pattern`, `enum`
     // (alternatives separated by `|`), `totalDigits` and `fractionDigits`.
     private class Facets(params: List[Text]):
-      private val pairs: scm.HashMap[String, scm.ArrayBuffer[String]] = scm.HashMap()
+      private val pairs: scm.HashMap[Text, scm.ArrayBuffer[Text]] = scm.HashMap()
 
       params.each: param =>
-        val equals = param.s.indexOf('=')
+        param.offsetOf(t"=").let: equals =>
+          if equals != Prim
+          then pairs.getOrElseUpdate(param.before(equals), scm.ArrayBuffer()) += param.after(equals)
 
-        if equals > 0 then
-          val key = param.s.substring(0, equals).nn
-          val value = param.s.substring(equals + 1).nn
-          pairs.getOrElseUpdate(key, scm.ArrayBuffer()) += value
-
-      def apply(key: String): Optional[Text] = pairs.get(key) match
-        case Some(values) if values.nonEmpty => values.head.tt
+      def apply(key: Text): Optional[Text] = pairs.get(key) match
+        case Some(values) if values.nonEmpty => values.head
         case _                               => Unset
 
-      def all(key: String): List[Text] = pairs.get(key) match
-        case Some(values) => List.from(values.map(_.tt))
+      def all(key: Text): List[Text] = pairs.get(key) match
+        case Some(values) => List.from(values)
         case None         => Nil
 
       // The checks every restricted type shares: length, pattern and enumeration on the text
       def textual(value: Text)(using Tactic[Xml.Provider.Error]): Unit =
-        val length = value.s.length
+        val length = value.length
 
         def badLength(minimum: Optional[Text], maximum: Optional[Text]): Nothing =
           fail(Xml.Provider.Error.Reason.LengthOutOfRange(value, minimum, maximum))
 
-        apply("minLength").let: minimum =>
-          if length < Integer.parseInt(minimum.s) then badLength(minimum, apply("maxLength"))
+        apply(t"minLength").let: minimum =>
+          if length < Integer.parseInt(minimum.s) then badLength(minimum, apply(t"maxLength"))
 
-        apply("maxLength").let: maximum =>
-          if length > Integer.parseInt(maximum.s) then badLength(apply("minLength"), maximum)
+        apply(t"maxLength").let: maximum =>
+          if length > Integer.parseInt(maximum.s) then badLength(apply(t"minLength"), maximum)
 
-        apply("length").let: exact =>
+        apply(t"length").let: exact =>
           if length != Integer.parseInt(exact.s) then badLength(exact, exact)
 
-        all("pattern").each: pattern =>
+        all(t"pattern").each: pattern =>
           if !java.util.regex.Pattern.matches(pattern.s, value.s)
           then fail(Xml.Provider.Error.Reason.PatternMismatch(value, pattern))
 
-        apply("enum").let: enumeration =>
-          val alternatives = enumeration.s.split("\\|", -1).nn
-          val parts = scala.collection.immutable.ArraySeq.unsafeWrapArray(alternatives)
-          val permitted = List.from(parts.toList.map(_.nn.tt))
+        apply(t"enum").let: enumeration =>
+          val permitted = enumeration.cut(t"|")
 
           if !permitted.has(value)
           then fail(Xml.Provider.Error.Reason.NotPermitted(value, permitted))
@@ -229,14 +224,14 @@ trait Xml4:
         import scala.math.Ordering.Implicits.infixOrderingOps
 
         def outside: Nothing =
-          val minimum = apply("min").or(apply("xmin"))
-          val maximum = apply("max").or(apply("xmax"))
+          val minimum = apply(t"min").or(apply(t"xmin"))
+          val maximum = apply(t"max").or(apply(t"xmax"))
           fail(Xml.Provider.Error.Reason.OutOfRange(value, minimum, maximum))
 
-        apply("min").let: minimum => if number < parse(minimum) then outside
-        apply("max").let: maximum => if number > parse(maximum) then outside
-        apply("xmin").let: minimum => if number <= parse(minimum) then outside
-        apply("xmax").let: maximum => if number >= parse(maximum) then outside
+        apply(t"min").let: minimum => if number < parse(minimum) then outside
+        apply(t"max").let: maximum => if number > parse(maximum) then outside
+        apply(t"xmin").let: minimum => if number <= parse(minimum) then outside
+        apply(t"xmax").let: maximum => if number >= parse(maximum) then outside
 
       def digits(value: Text)(using Tactic[Xml.Provider.Error]): Unit =
         val text = value.s.trim.nn.stripPrefix("-").stripPrefix("+")
@@ -246,13 +241,13 @@ trait Xml4:
         val total = integral.count(_.isDigit) + fraction.count(_.isDigit)
 
         def tooMany: Nothing =
-          val total = apply("totalDigits")
-          val fraction = apply("fractionDigits")
+          val total = apply(t"totalDigits")
+          val fraction = apply(t"fractionDigits")
           fail(Xml.Provider.Error.Reason.TooManyDigits(value, total, fraction))
 
-        apply("totalDigits").let: limit => if total > Integer.parseInt(limit.s) then tooMany
+        apply(t"totalDigits").let: limit => if total > Integer.parseInt(limit.s) then tooMany
 
-        apply("fractionDigits").let: limit =>
+        apply(t"fractionDigits").let: limit =>
           if fraction.count(_.isDigit) > Integer.parseInt(limit.s) then tooMany
 
     // The fallible readers are named classes with class-typed givens: a given typed with a
@@ -347,22 +342,24 @@ trait Xml4:
       private type Seen = scala.collection.immutable.Set[Text]
 
       def layout(root: Optional[Text]): Layout =
-        val names = List.from(Map.keys(xsd.elements).stdlib)
+        val names = Map.keys(xsd.elements).to[List]
 
         // The root is the sole global element, or the sole one with complex content — a
         // schema often also declares the simple elements its types refer to
         val rootName: Text = root.or:
           val complex = names.filter: name => xsd.element(name).lay(false)(hasComplexContent(_))
 
-          if names.stdlib.length == 1 then names.stdlib.head
-          else if complex.stdlib.length == 1 then complex.stdlib.head
-          else if names.nil then panic(m"the XML Schema declares no global element")
-          else
-            panic:
-              m"""
-                the XML Schema declares the global elements ${names.join(t", ")}; pass `root =` to
-                choose one
-              """
+          (names, complex) match
+            case (List(name), _) => name
+            case (_, List(name)) => name
+            case _ if names.nil  => panic(m"the XML Schema declares no global element")
+
+            case _ =>
+              panic:
+                m"""
+                  the XML Schema declares the global elements ${names.join(t", ")}; pass `root =`
+                  to choose one
+                """
 
         val declaration = xsd.element(rootName).or:
           panic(m"the XML Schema declares no global element $rootName")
@@ -425,7 +422,7 @@ trait Xml4:
           case SimpleType.Builtin(base) => builtin(base, facets)
 
           case SimpleType.Restriction(base, own) =>
-            val combined = List.from(own.stdlib ++ facets.stdlib)
+            val combined = List.concat(own, facets)
 
             base match
               case TypeRef.Inline(simple: SimpleType) => simpleMember(simple, combined, seen)
@@ -478,7 +475,7 @@ trait Xml4:
           case _                          => (t"string", Nil)
 
         val (label, implied) = labelled
-        val params = List.from(implied.stdlib ++ facetParams(facets).stdlib)
+        val params = List.concat(implied, facetParams(facets))
 
         if params.nil then Member.Value(label)
         else
@@ -489,7 +486,7 @@ trait Xml4:
             case "decimal" | "double" | "float" | "double!" => t"double!"
             case _                                          => label
 
-          if restricted == label && !label.s.endsWith("!") then Member.Value(label)
+          if restricted == label && !label.ends(t"!") then Member.Value(label)
           else Member.Value(restricted, params)
 
       private def facetParams(facets: List[Facet]): List[Text] = facets.map:
@@ -537,8 +534,7 @@ trait Xml4:
                 complexMember(parent, local, seen + t"type:${name.local}") match
                   case Member.Record(parentFields, _) =>
                     parentFields.each: (name, member) =>
-                      if name.s.startsWith("@")
-                      then merge(attributes, name.s.substring(1).nn.tt, member)
+                      if name.starts(t"@") then merge(attributes, name.skip(1), member)
                       else if name == t"text" || name == t"#text" then textMember = member
                       else merge(fields, name, member)
 
@@ -765,9 +761,7 @@ trait Xml4:
       case Xml.Fragment(element: Xml.Element) => element
 
       case Xml.Fragment(nodes*) =>
-        nodes.collectFirst { case element: Xml.Element => element } match
-          case Some(element) => element
-          case None          => Unset
+        nodes.collectFirst { case element: Xml.Element => element }.optional
 
       case _ =>
         Unset
@@ -817,9 +811,9 @@ trait Xml4:
       Xml.Text(builder.toString.tt)
 
     def access(name: Text, xml: Xml): Xml = elementOf(xml).lay(Xml.Absent): parent =>
-      if name.s.startsWith("#") then ownText(parent)
-      else if name.s.startsWith("@") then
-        attributeOf(parent, name.s.substring(1).nn.tt).lay(Xml.Absent)(Xml.Text(_))
+      if name.starts(t"#") then ownText(parent)
+      else if name.starts(t"@") then
+        attributeOf(parent, name.skip(1)).lay(Xml.Absent)(Xml.Text(_))
       else
         children(parent, name).prim match
           case child: Xml.Element => if nil(child) then Xml.Absent else child

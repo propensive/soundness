@@ -526,7 +526,7 @@ object internal:
 
         val indexed = elements.readable.zipWithIndex
 
-        val pieces = indexed.toList.to(List).map: (elem, idx) =>
+        val pieces = indexed.to(List).map: (elem, idx) =>
             elem.asMatchable match
               case Unset =>
                 if spreads.has(holeIndex) then
@@ -1065,11 +1065,6 @@ object internal:
         ("jacinta: staged parsing requires a single parameter list; use " +
           "`Json.Parsable.derived`")
 
-    val fields = classSymbol.caseFields
-    val arity = fields.length
-    val fieldNames = fields.map(_.name)
-    val fieldTypes = fields.map { field => tpe.memberType(field).dealias }
-
     def kindOf(fieldType: TypeRepr): StagedKind =
       if fieldType =:= TypeRepr.of[Int] then IntK
       else if fieldType =:= TypeRepr.of[Long] then LongK
@@ -1080,8 +1075,6 @@ object internal:
       else if fieldType =:= TypeRepr.of[String] then StringK
       else InstanceK
 
-    val kinds = fieldTypes.map(kindOf)
-
     // Keys compile to literal packed-word comparisons when no `@name`
     // annotation can rename them (renames resolve at runtime, so annotated
     // classes keep the table-resolving step). A field whose name itself
@@ -1089,12 +1082,11 @@ object internal:
     // general `keyIndex` step, which matches all fields by string.
     val literalKeys: Boolean =
       val annotated = ctor.paramSymss.flatten.filterNot(_.isTypeParam).flatMap(_.annotations)
-        ++ fields.flatMap(_.annotations)
+        ++ classSymbol.caseFields.flatMap(_.annotations)
 
       !annotated.exists { annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
 
-    def packedName(index: Int): Option[(Long, Long)] =
-      val name = fieldNames(index)
+    def packedName(name: String): Option[(Long, Long)] =
       val length = name.length
 
       val packs = length > 0 && length <= 16 && name.forall: char => char >= ' ' && char < 127
@@ -1111,20 +1103,35 @@ object internal:
 
         Some((low, high))
 
-    val packedNames: List[Option[(Long, Long)]] = List.range(0, arity).map(packedName)
+    // Everything generation needs about one field, so that each step maps over the fields rather
+    // than lining up parallel lists by position. `index` is the field's position in the
+    // constructor, which the generated code carries as a literal.
+    case class Field
+      ( index:     Int,
+        name:      String,
+        fieldType: TypeRepr,
+        kind:      StagedKind,
+        packed:    Option[(Long, Long)] )
 
-    def summonField(index: Int): Expr[Json.Field | Null] =
-      if kinds(index) != InstanceK then '{null}
-      else fieldTypes(index).asType match
+    val fields: List[Field] =
+      // `caseFields` is a stdlib list, as `quotes.reflect` returns it.
+      List.from:
+        classSymbol.caseFields.zipWithIndex.map: (symbol, index) =>
+          val fieldType = tpe.memberType(symbol).dealias
+          Field(index, symbol.name, fieldType, kindOf(fieldType), packedName(symbol.name))
+
+    def summonField(field: Field): Expr[Json.Field | Null] =
+      if field.kind != InstanceK then '{null}
+      else field.fieldType.asType match
         case '[fieldType] =>
           Expr.summon[fieldType is Json.Field].getOrElse:
             report.errorAndAbort
-              (s"jacinta: no Json.Field instance for field ${fieldNames(index)}: " +
-                fieldTypes(index).show)
+              (s"jacinta: no Json.Field instance for field ${field.name}: " +
+                field.fieldType.show)
 
-    def declaredDefault(index: Int): Expr[Any] = fieldTypes(index).asType match
+    def declaredDefault(field: Field): Expr[Any] = field.fieldType.asType match
       case '[fieldType] =>
-        '{ wisteria.internal.default[value, fieldType](${Expr(index)}): Any }
+        '{ wisteria.internal.default[value, fieldType](${Expr(field.index)}): Any }
 
     def zero(fieldType: TypeRepr): Term =
       if fieldType =:= TypeRepr.of[Int] then Literal(IntConstant(0))
@@ -1151,28 +1158,37 @@ object internal:
 
       val owner = Symbol.spliceOwner
 
-      val slots = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "slot"+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
+      // A field's two mutable locals in the generated reader: its value, and whether its key
+      // arrived.
+      case class Local(field: Field, slot: Symbol, seen: Symbol)
 
-      val seens = List.range(0, arity).map: index =>
-        Symbol.newVal(owner, "seen"+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+      val locals: List[Local] = fields.map: field =>
+        val slot =
+          Symbol.newVal
+            ( owner, "slot"+field.index, field.fieldType, Flags.Mutable, Symbol.noSymbol )
+
+        val seen =
+          Symbol.newVal
+            ( owner, "seen"+field.index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol )
+
+        Local(field, slot, seen)
 
       val cursor = Symbol.newVal(owner, "index", TypeRepr.of[Int], Flags.Mutable, Symbol.noSymbol)
 
-      // `slots`, `seens` and `packedNames` are read positionally by an index the generated
-      // code carries; `quotes.reflect` symbols have no total `Optional` fallback.
-      val slotDefs = List.range(0, arity).map: index =>
-        ValDef(slots.stdlib(index), Some(zero(fieldTypes(index))))
+      val slotDefs = locals.map: local =>
+        ValDef(local.slot, Some(zero(local.field.fieldType)))
 
-      val seenDefs = List.range(0, arity).map: index =>
-        ValDef(seens.stdlib(index), Some(Literal(BooleanConstant(false))))
+      val seenDefs = locals.map: local =>
+        ValDef(local.seen, Some(Literal(BooleanConstant(false))))
 
       // One switch arm per field: read the value (with focus bookkeeping),
       // assign it and mark it seen.
-      val arms = List.range(0, arity).map: index =>
-        val read: Term = fieldTypes(index).asType match
+      val arms = locals.map: local =>
+        val index = local.field.index
+
+        val read: Term = local.field.fieldType.asType match
           case '[fieldType] =>
-            val raw: Expr[fieldType] = kinds(index) match
+            val raw: Expr[fieldType] = local.field.kind match
               case IntK     => '{ $reader.long().toInt }.asExprOf[fieldType]
               case LongK    => '{ $reader.long() }.asExprOf[fieldType]
               case DoubleK  => '{ $reader.double() }.asExprOf[fieldType]
@@ -1189,12 +1205,11 @@ object internal:
 
             '{ Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)($raw) }.asTerm
 
-        // `slots`/`seens` are read positionally; see `slotDefs` above.
         val rhs =
           Block
             ( scala.collection.immutable.List
-                ( Assign(Ref(slots.stdlib(index)), read),
-                  Assign(Ref(seens.stdlib(index)), Literal(BooleanConstant(true))) ),
+                ( Assign(Ref(local.slot), read),
+                  Assign(Ref(local.seen), Literal(BooleanConstant(true))) ),
               Literal(UnitConstant()) )
 
         CaseDef(Literal(IntConstant(index)), None, rhs)
@@ -1223,23 +1238,23 @@ object internal:
           val wordRef = Ref(word).asExprOf[Long]
           val highRef = Ref(high).asExprOf[Long]
 
-          def chain(index: Int): Term =
-            if index == arity then '{ Json.KeyTable.Unknown }.asTerm
-            // Positional read; see `slotDefs` above.
-            else packedNames.stdlib(index) match
-              case None => chain(index + 1)
+          def chain(remaining: List[Field]): Term = remaining match
+            case Nil => '{ Json.KeyTable.Unknown }.asTerm
+
+            case field :: rest => field.packed match
+              case None => chain(rest)
 
               case Some((low, highWord)) =>
                 If
                   ( '{ $wordRef == ${Expr(low)} && $highRef == ${Expr(highWord)} }.asTerm,
-                    Literal(IntConstant(index)),
-                    chain(index + 1) )
+                    Literal(IntConstant(field.index)),
+                    chain(rest) )
 
           val resolve: Term =
             If
               ( '{ $wordRef == Json.Reader.KeyOpaque }.asTerm,
                 '{ $reader.keyIndex($table) }.asTerm,
-                Block(scala.collection.immutable.List(ValDef(high, Some('{ $reader.keyWordHigh }.asTerm))), chain(0)) )
+                Block(scala.collection.immutable.List(ValDef(high, Some('{ $reader.keyWordHigh }.asTerm))), chain(fields)) )
 
           val step: Term =
             Block
@@ -1270,10 +1285,12 @@ object internal:
       // Fields whose keys never arrived: the declared default, else the
       // field's absent value (`Unset`/`None` for optional shapes, an
       // `Absent` error otherwise).
-      val absents: List[Term] = List.range(0, arity).map: index =>
-        fieldTypes(index).asType match
+      val absents: List[Term] = locals.map: local =>
+        val index = local.field.index
+
+        local.field.fieldType.asType match
           case '[fieldType] =>
-            val onAbsent: Expr[fieldType] = kinds(index) match
+            val onAbsent: Expr[fieldType] = local.field.kind match
               case InstanceK =>
                 '{
                   $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
@@ -1290,10 +1307,9 @@ object internal:
                 else Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)($onAbsent)
               }.asTerm
 
-            // `slots`/`seens` are read positionally; see `slotDefs` above.
             If
-              ( '{ !${Ref(seens.stdlib(index)).asExprOf[Boolean]} }.asTerm,
-                Assign(Ref(slots.stdlib(index)), resolve),
+              ( '{ !${Ref(local.seen).asExprOf[Boolean]} }.asTerm,
+                Assign(Ref(local.slot), resolve),
                 Literal(UnitConstant()) )
 
       val construct: Term =
@@ -1309,7 +1325,7 @@ object internal:
           else TypeApply(newTerm, typeArguments.map { argument => Inferred(argument) })
 
         // `Apply` takes a stdlib list of argument terms.
-        Apply(applied, slots.stdlib.map { slot => Ref(slot) })
+        Apply(applied, locals.map { local => Ref(local.slot) }.stdlib)
 
       Block
         // The element types differ (`ValDef` and `Statement`), and `Concatenable` is invariant
@@ -1326,9 +1342,9 @@ object internal:
 
     val fociExpr = summonOrAbort[Foci[Json.Focus]]("Foci[Json.Focus]")
     val tacticExpr = summonOrAbort[Tactic[Json.Error]]("Tactic[Json.Error]")
-    val nameExprs = fieldNames.map { name => Expr(name) }
-    val instanceExprs = List.range(0, arity).map(summonField)
-    val fallbackExprs = List.range(0, arity).map(declaredDefault)
+    val nameExprs = fields.map { field => Expr(field.name) }
+    val instanceExprs = fields.map(summonField)
+    val fallbackExprs = fields.map(declaredDefault)
 
     '{
       // Sealed per the codec-thunk pattern, like the derived instances: the
@@ -1340,7 +1356,7 @@ object internal:
         val tactic: Tactic[Json.Error] = $tacticExpr
 
         val keys: Array[String]^{} =
-          Json.Parsable.wireKeys(Array[String](${Varargs[String](nameExprs)}*), $renames)
+          Json.Parsable.wireKeys(Array[String](${Varargs[String](nameExprs.stdlib)}*), $renames)
 
         val table: Json.KeyTable = Json.KeyTable(keys)
         lazy val instances: Array[Json.Field | Null]^{} =

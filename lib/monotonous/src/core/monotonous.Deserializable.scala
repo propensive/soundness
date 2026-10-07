@@ -58,7 +58,7 @@ object Deserializable:
         val padding: Char = if alphabet.padding then alphabet(1 << base) else '\u0000'
 
         val length =
-          if last then text.pinpoint(_ != padding, bidi = Rtl).let(_.n0 + 1).or(text.length)*base/8
+          if last then text.pinpoint(_ != padding, bidi = Rtl).let(_.n1).or(text.length)*base/8
           else ((text.length - index0)/atomicity)*atomicity*base/8
 
         Array.build[Byte](length): array =>

@@ -985,12 +985,12 @@ object Lsp:
         val starts = lineStarts
 
         if position.line < 0 then 0
-        else if position.line >= starts.length then text.s.length
+        else if position.line >= starts.length then text.length
         else
           val start = starts(position.line)
 
           val limit =
-            if position.line + 1 < starts.length then starts(position.line + 1) else text.s.length
+            if position.line + 1 < starts.length then starts(position.line + 1) else text.length
 
           java.lang.Math.min(start + java.lang.Math.max(position.character, 0), limit)
 
@@ -1051,7 +1051,7 @@ object Lsp:
     def apply(range: Range): Text =
       val start = state.offset(range.start)
       val end = java.lang.Math.max(state.offset(range.end), start)
-      state.text.s.substring(start, end).nn.tt
+      state.text.segment(start.z till end.z)
 
     def offset(position: Position): Ordinal = state.offset(position).z
     def position(offset: Ordinal): Position = state.position(offset.n0)
@@ -1067,7 +1067,7 @@ object Lsp:
       while end < string.length && wordChar(string.charAt(end)) do end += 1
       if start == end then Unset else string.substring(start, end).nn.tt
 
-    def fullRange: Range = Range(Position(0, 0), state.position(state.text.s.length))
+    def fullRange: Range = Range(Position(0, 0), state.position(state.text.length))
 
   // The workspace facade lent to every handler: read access to the open-document store and to
   // the details the client reported at initialization, plus the client handle for sending
@@ -2473,7 +2473,7 @@ object Lsp:
 
           // A response is retyped by the method it answers, a notification by its own name.
           val answered: Optional[Text] =
-            if method.absent then id.let { id => pending.remove(id.encode).getOrElse(Unset) }
+            if method.absent then id.let { id => pending.remove(id.encode).optional }
             else Unset
 
           // A response the proxy never forwarded a request for, answering under an id of the form

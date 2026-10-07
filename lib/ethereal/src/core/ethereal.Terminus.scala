@@ -36,10 +36,11 @@ import anticipation.*
 import distillate.*
 import gossamer.*
 import prepositional.*
+import spectacular.*
 
 object Terminus:
   given decoder: Terminus is Decodable in Text = text => valueOf(text.lower.capitalize.s)
-  given encodable: Terminus is Encodable in Text = _.toString.tt.lower
+  given encodable: Terminus is Encodable in Text = _.show.lower
 
 // What one of the invocation's standard streams is attached to. The daemon cannot tell:
 // its streams are the launcher's socket, not the client's terminal, so this is whatever

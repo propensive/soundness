@@ -131,15 +131,15 @@ object Tarfile:
                 val gid = Tar.Header.decodeOctal(header.gid, t"gid").long.toInt
 
                 val unameText =
-                  paxOverlay.at("uname".tt).or(globalOverlay.at("uname".tt))
+                  paxOverlay.at(t"uname").or(globalOverlay.at(t"uname"))
                   . or(Tar.Header.decodeNulText(header.uname))
 
                 val gnameText =
-                  paxOverlay.at("gname".tt).or(globalOverlay.at("gname".tt))
+                  paxOverlay.at(t"gname").or(globalOverlay.at(t"gname"))
                   . or(Tar.Header.decodeNulText(header.gname))
 
-                val user = UnixUser(uid, if unameText.s.isEmpty then Unset else unameText)
-                val group = UnixGroup(gid, if gnameText.s.isEmpty then Unset else gnameText)
+                val user = UnixUser(uid, unameText.puncture(t""))
+                val group = UnixGroup(gid, gnameText.puncture(t""))
 
                 header.typeFlag.toInt & 0xff match
                   case 'x' =>
@@ -335,10 +335,10 @@ object Tarfile:
   :   Text =
 
     longName.or:
-      paxOverlay.at("path".tt).or(globalOverlay.at("path".tt)).lay:
+      paxOverlay.at(t"path").or(globalOverlay.at(t"path")).lay:
         val name = Tar.Header.decodeNulText(header.name)
         val prefix = Tar.Header.decodeNulText(header.prefix)
-        stripTrailingSlash(if prefix.s.isEmpty then name else t"$prefix/$name")
+        stripTrailingSlash(if prefix.nil then name else t"$prefix/$name")
       . apply: text =>
         stripTrailingSlash(text)
 
@@ -350,11 +350,11 @@ object Tarfile:
   :   Text =
 
     longLink.or:
-      paxOverlay.at("linkpath".tt).or(globalOverlay.at("linkpath".tt))
+      paxOverlay.at(t"linkpath").or(globalOverlay.at(t"linkpath"))
       . or(Tar.Header.decodeNulText(header.linkName))
 
   private def stripTrailingSlash(text: Text): Text =
-    if text.s.endsWith("/") then text.s.dropRight(1).nn.tt else text
+    if text.ends(t"/") then text.skip(1, Rtl) else text
 
   private def decodePath(text: Text): Tar.Ref raises Tar.Error =
     import errorDiagnostics.emptyDiagnostics

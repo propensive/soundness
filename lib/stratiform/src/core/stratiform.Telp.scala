@@ -107,7 +107,7 @@ object Telp:
     val s = text.s
     if s.isEmpty then abort(Telp.Error(Error.Reason.Syntax, 0))
     val delimiter = s.charAt(0)
-    if delimiters.s.indexOf(delimiter.toInt) < 0 then abort(Telp.Error(Error.Reason.Syntax, 0))
+    if !delimiters.contains(delimiter) then abort(Telp.Error(Error.Reason.Syntax, 0))
 
     if s.length == 1 then Root else
       val components = scala.collection.mutable.ListBuffer.empty[Text]
@@ -120,7 +120,7 @@ object Telp:
           val component = s.substring(start, i).nn
           if component.contains("\n") || component.contains("\r")
           then abort(Telp.Error(Error.Reason.Syntax, components.length))
-          components += Text(component)
+          components += component.tt
           start = i + 1
 
         i += 1
@@ -147,10 +147,10 @@ object Telp:
   // components exhaust all twenty-two delimiters is unaddressable (§8);
   // rendering falls back to `/` rather than failing.
   given encodable: Telp is Encodable in Text = path =>
-    def free(delimiter: Char): Boolean = !path.components.exists(_.s.indexOf(delimiter.toInt) >= 0)
-    val candidates = t"/.".s + delimiters.s.filterNot { ch => ch == '/' || ch == '.' }
-    val delimiter = Text(candidates).s.find(free(_)).getOrElse('/')
-    Text(s"$delimiter${path.components.join(Text(delimiter.toString))}")
+    def free(delimiter: Char): Boolean = !path.components.exists(_.contains(delimiter))
+    // `/` and `.` are preferred; failing both, any other free delimiter
+    val delimiter: Char = t"/.".seek(free).or(delimiters.seek(free)).or('/')
+    t"$delimiter${path.components.join(t"$delimiter")}"
 
   // A member keyword's slot in the flat keyword order of a Struct: for
   // a Field, the field itself; for a SelectRef, one slot per variant of
@@ -264,11 +264,11 @@ object Telp:
   private[stratiform] def allDigits(component: Text): Boolean =
     component.s.forall { ch => ch >= '0' && ch <= '9' }
 
-  // The occurrence an all-digit component selects, saturating rather than
-  // wrapping on a run of digits too long for an `Int`: no occurrence sequence
-  // is that long, so the selection misses, as it should.
+  // The occurrence an all-digit component selects, saturating on a run of digits
+  // too long for an `Int`: no occurrence sequence is that long, so the selection
+  // misses, as it should.
   private[stratiform] def indexOf(component: Text): Int =
-    if component.s.length > 9 then Int.MaxValue else component.s.toInt
+    safely(component.as[Int]).or(Int.MaxValue)
 
   private def childrenAt(node: Tel.Element.Node, flatIndex: Int): List[Tel.Element] =
 
@@ -307,7 +307,8 @@ case class Telp(components: List[Text]) derives CanEqual:
         // must be a key-carrying Struct, and the component selects the
         // first occurrence with that key value, code point for code point.
         if Telp.allDigits(component) then
-          val index = component.s.toLong
+          // Saturating, like `indexOf`, so an overlong index is out of range.
+          val index = safely(component.as[Long]).or(Long.MaxValue)
 
           // Occurrence lists are linked, so both the bounds test and the positional
           // read are linear walks; `linearSize`/`linearAccess` acknowledge that. The

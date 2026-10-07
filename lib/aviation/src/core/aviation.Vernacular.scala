@@ -123,7 +123,7 @@ object Vernacular:
       case TimeUnit.Seconds => (t"seconde", t"secondes", false)
 
     private def ordinal(n: Int): Text = if n == 1 then t"1er" else t"${n}e"
-    private def monthDay(n: Int): Text = if n == -1 then t"dernier jour" else t"$n"
+    private def monthDay(n: Int): Text = if n == -1 then t"dernier jour" else n.show
     private def article(unit: TimeUnit): Text = if word(unit)(2) then t"tous les" else t"toutes les"
 
     def conjunction: Text = t"et"

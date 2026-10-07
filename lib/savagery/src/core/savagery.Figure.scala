@@ -50,7 +50,7 @@ import xylophone.*
 
 object Figure:
   private def fields(pairs: (Text, Text)*): Text =
-    pairs.map { (label, value) => s"${label.s}:${value.s}" }.mkString(" ╱ ").tt
+    pairs.map { (label, value) => t"$label:$value" }.join(t" ╱ ")
 
   private def optional[value: Inspectable](value: Optional[value]): Text =
     value.lay(t"○"): value => t"｢${value.inspect}｣"

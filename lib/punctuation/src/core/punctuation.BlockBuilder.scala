@@ -96,7 +96,7 @@ final class BlockQuoteBuilder(val line: Ordinal) extends ContainerBuilder:
         case _ => ()
 
     val rest = if i >= n then "" else s.substring(i, n).nn
-    Text(ParserSupport.buildResidual(rest, startCol, leftover))
+    ParserSupport.buildResidual(rest, startCol, leftover).tt
 
   def finish(refs: LinkRefs): Optional[Layout] =
     Layout.BlockQuote(line, children.toSeq*)
@@ -113,7 +113,7 @@ final class ListItemBuilder(val line: Ordinal, val indent: Int) extends Containe
       // a blank line continues the item; pass through empty. The dispatcher
       // sets `hadBlank` after determining the blank wasn't absorbed by a
       // nested code block.
-      return Text("")
+      return t""
     // CommonMark §5.2: an empty list item that has seen a blank line cannot
     // accept further content. Returning Unset causes the dispatcher to close
     // the item; the residual then becomes content outside the list.
@@ -135,7 +135,7 @@ final class ListItemBuilder(val line: Ordinal, val indent: Int) extends Containe
     if col < indent then return Unset
     val leftover = col - indent
     val tail = if i >= n then "" else s.substring(i, n).nn
-    Text(ParserSupport.buildResidual(tail, col, leftover))
+    ParserSupport.buildResidual(tail, col, leftover).tt
 
   def finish(refs: LinkRefs): Optional[Layout] =
     Layout.Paragraph(line)  // placeholder; lists assemble items, not Paragraph
@@ -190,7 +190,7 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
     val n = s.length
     var i = 0
     while i < n && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
-    val stripped = if i == 0 then text else Text(s.substring(i, n).nn)
+    val stripped = if i == 0 then text else s.substring(i, n).nn.tt
     lines += stripped
 
   def isEmpty: Boolean = lines.nil
@@ -203,7 +203,7 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
   private var joinedText: String = ""
 
   private def joined: Text =
-    if linkRefEnd >= joinedText.length then t"" else Text(joinedText.substring(linkRefEnd).nn)
+    if linkRefEnd >= joinedText.length then t"" else joinedText.substring(linkRefEnd).nn.tt
 
   // Try to consume leading link reference definitions from the joined
   // paragraph text. CommonMark allows LRDs to span multiple lines, so the
@@ -271,7 +271,7 @@ extends LeafBuilder:
       builder.append(line.s)
       builder.append('\n')
 
-    Layout.CodeBlock(line, info, Text(builder.toString))
+    Layout.CodeBlock(line, info, builder.toString.tt)
 
 final class IndentedCodeBlockBuilder(val line: Ordinal) extends LeafBuilder:
   // Holds raw content lines after stripping the 4-column indent. Trailing
@@ -289,4 +289,4 @@ final class IndentedCodeBlockBuilder(val line: Ordinal) extends LeafBuilder:
       builder.append(line.s)
       builder.append('\n')
 
-    Layout.CodeBlock(line, Nil, Text(builder.toString))
+    Layout.CodeBlock(line, Nil, builder.toString.tt)

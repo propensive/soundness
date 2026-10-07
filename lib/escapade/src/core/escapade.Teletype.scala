@@ -254,7 +254,7 @@ object Teletype:
       Teletype
         ( plainText,
           newStyles,
-          hyperlinks.toMap.to(Map),
+          hyperlinks.to(Map),
           insertions.to(TreeMap),
           newBoundaries )
 

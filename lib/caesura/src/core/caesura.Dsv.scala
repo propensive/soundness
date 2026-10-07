@@ -154,25 +154,25 @@ object Dsv extends Dsv2:
   =>  Int is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv =>
       decodeCell(dsv, t"Int", 0): cell =>
-        try Integer.parseInt(cell.s) catch case _: NumberFormatException => Unset
+        safely(cell.as[Int])
 
   given long: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Long is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv =>
       decodeCell(dsv, t"Long", 0L): cell =>
-        try java.lang.Long.parseLong(cell.s) catch case _: NumberFormatException => Unset
+        safely(cell.as[Long])
 
   given double: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Double is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv =>
       decodeCell(dsv, t"Double", 0.0): cell =>
-        try java.lang.Double.parseDouble(cell.s) catch case _: NumberFormatException => Unset
+        safely(cell.as[Double])
 
   given float: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Float is Decodable in Dsv =
     caps.unsafe.unsafeAssumePure: dsv =>
       decodeCell(dsv, t"Float", 0.0f): cell =>
-        try java.lang.Float.parseFloat(cell.s) catch case _: NumberFormatException => Unset
+        safely(cell.as[Float])
 
   given boolean: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Boolean is Decodable in Dsv =

@@ -177,7 +177,7 @@ object PeriodicTable:
   def apply(number: Int): Optional[Chemical.Element] =
     elements.at(Ordinal.zerary(number - 1))
 
-  def apply(symbol: Text): Optional[Chemical.Element] = symbols(symbol).or(Unset)
+  def apply(symbol: Text): Optional[Chemical.Element] = symbols(symbol)
 
   private val prefixes: Array[Text]^{} =
     Array(t"nil", t"un", t"bi", t"tri", t"quad", t"pent", t"hex", t"sept", t"oct", t"enn")

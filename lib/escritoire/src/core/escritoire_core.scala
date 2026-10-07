@@ -173,4 +173,4 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   Sequence[text] =
 
-      Sequence.from(lines.readable.toVector)
+      lines.to[Sequence]

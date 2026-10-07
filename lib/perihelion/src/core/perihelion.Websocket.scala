@@ -46,6 +46,7 @@ import monotonous.*
 import parasite.*
 import prepositional.*
 import rudiments.*
+import spectacular.*
 import telekinesis.*
 import turbulence.*
 import vacuous.*
@@ -208,7 +209,7 @@ object Websocket:
   given servable: [message, state] => Websocket[message, state] is Servable:
     def serve(websocket: Websocket[message, state]): Http.Response =
       given accept: ("secWebsocketAccept" is Directive of Text) = identity(_)
-      given version: ("secWebsocketVersion" is Directive of Int) = _.toString.tt
+      given version: ("secWebsocketVersion" is Directive of Int) = _.show
 
       val acceptKey: Text =
         t"${websocket.key}${Websocket.magic}".digest[Sha1].serialize[Base64].keep(28)

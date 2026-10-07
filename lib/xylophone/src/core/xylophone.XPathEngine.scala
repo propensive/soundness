@@ -426,11 +426,11 @@ private[xylophone] object XPathEngine:
         val start = t"$prefix:"
 
         if attributeAxis then locus.attributeName match
-          case name: Text => name.s.startsWith(start.s)
+          case name: Text => name.starts(start)
           case _          => false
         else if isAttribute then false
         else locus.subject match
-          case element: Xml.Element => element.label.s.startsWith(start.s)
+          case element: Xml.Element => element.label.starts(start)
           case _                    => false
 
       case NodeTest.Node =>
@@ -578,10 +578,8 @@ private[xylophone] object XPathEngine:
         else
           val qualified = loci.prim.let(nodeNameOf(_)).or(t"")
 
-          if name.s == "name" then Value.Textual(qualified) else
-            val colon = qualified.s.indexOf(':')
-            if colon < 0 then Value.Textual(qualified)
-            else Value.Textual(qualified.s.substring(colon + 1).nn.tt)
+          if name.s == "name" then Value.Textual(qualified)
+          else Value.Textual(Xml.Name.split(qualified)(1))
 
       case "string" =>
         arity(0, 1)
@@ -595,11 +593,11 @@ private[xylophone] object XPathEngine:
 
       case "starts-with" =>
         arity(2, 2)
-        Value.Truth(args(0).text.s.startsWith(args(1).text.s))
+        Value.Truth(args(0).text.starts(args(1).text))
 
       case "contains" =>
         arity(2, 2)
-        Value.Truth(args(0).text.s.contains(args(1).text.s))
+        Value.Truth(args(0).text.contains(args(1).text))
 
       case "substring-before" =>
         arity(2, 2)
@@ -634,7 +632,7 @@ private[xylophone] object XPathEngine:
 
       case "string-length" =>
         arity(0, 1)
-        Value.Numeric(defaulted.text.s.length)
+        Value.Numeric(defaulted.text.length)
 
       case "normalize-space" =>
         arity(0, 1)
@@ -694,13 +692,13 @@ private[xylophone] object XPathEngine:
 
       case "lang" =>
         arity(1, 1)
-        val wanted = args.head.text.s.toLowerCase.nn
+        val wanted = args.head.text.lower
 
         val declared = (context.locus :: ancestorLoci(context.locus)).flatMap: locus =>
           locus.subject match
             case element: Xml.Element if attributeIndexOf(locus) < 0 =>
               element.attributes.fetch(t"xml:lang") match
-                case value: Text => List(value.s.toLowerCase.nn)
+                case value: Text => List(value.lower)
                 case _           => Nil
 
             case _ =>
@@ -708,7 +706,7 @@ private[xylophone] object XPathEngine:
 
         Value.Truth:
           declared.prim.let: language =>
-            language == wanted || language.startsWith(wanted + "-")
+            language == wanted || language.starts(t"$wanted-")
 
           . or(false)
 

@@ -74,7 +74,7 @@ object Hostname:
     def recur(index: Ordinal, dnsLabels: List[DnsLabel]): Hostname = text(index) match
       case char: Char if char != '.' =>
         if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit
-        then builder.append(char.toString.tt)
+        then builder.append(char.show)
         else raise(Hostname.Error(text, InvalidChar(char)))
 
         recur(index + 1, dnsLabels)

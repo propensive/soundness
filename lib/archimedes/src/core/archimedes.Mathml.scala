@@ -36,6 +36,7 @@ import scala.math
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gossamer.*
 import honeycomb.Html
@@ -397,23 +398,26 @@ object Mathml:
         abort(Mathml.Error(Mathml.Error.Reason.NotMathml(labelOf(other))))
 
     private def childElements(elem: Xml.Element): List[Xml.Element] =
-      (elem.children.readable.toList.collect { case element: Xml.Element => element }).to(List)
+      elem.children.readable.collect { case element: Xml.Element => element }.to(List)
 
     private def textOf(elem: Xml.Element): Text =
-      (elem.children.readable.toList.collect { case Xml.Text(text) => text }).to(List).join
+      elem.children.readable.collect { case Xml.Text(text) => text }.to(List).join
 
     private def children(elem: Xml.Element)(using Tactic[Mathml.Error]): List[Mathml] =
       childElements(elem).map(decodeNode)
 
+    // A MathML element has few children, so reading one by position is cheap.
     private def at(nodes: List[Mathml], index: Int): Mathml =
-      nodes.stdlib.lift(index).getOrElse(Mrow(Nil))
+      import denominative.dysasymptotics.linearAccess
+      nodes.at(index.z).or(Mrow(Nil))
 
     def decodeMath(elem: Xml.Element)(using Tactic[Mathml.Error]): Math =
       val kept = elem.attributes.to[List].filter: (key, _) =>
         key != t"xmlns" && key != t"display"
 
-      val display: Optional[Display] = elem.attributes(t"display").let: text =>
-        Display.unapply(text).getOrElse(Display.Inline)
+      val display: Optional[Display] = elem.attributes(t"display").let:
+        case Display(display) => display
+        case _                => Display.Inline
 
       Math(children(elem), display, kept)
 

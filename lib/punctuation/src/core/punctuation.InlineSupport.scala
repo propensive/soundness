@@ -135,7 +135,7 @@ private[punctuation] object InlineSupport:
         val stripped =
           if needsTrim then noNewlines.substring(1, noNewlines.length - 1).nn else noNewlines
 
-        return CodeSpanMatch(Text(stripped), i)
+        return CodeSpanMatch(stripped.tt, i)
 
     Unset
 
@@ -165,12 +165,12 @@ private[punctuation] object InlineSupport:
     val content = s.substring(start + 1, i).nn
 
     if isUriAutolink(content) then
-      val text = Text(content)
+      val text = content.tt
       val link = Prose.Link(text, Unset, Prose.Textual(text))
       AutolinkMatch(link, i + 1)
     else if EmailRegex.matcher(content).nn.matches then
-      val text = Text(content)
-      val mailto = Text("mailto:" + content)
+      val text = content.tt
+      val mailto = t"mailto:$content"
       val link = Prose.Link(mailto, Unset, Prose.Textual(text))
       AutolinkMatch(link, i + 1)
     else
@@ -234,7 +234,7 @@ private[punctuation] object InlineSupport:
 
     if !labelDone then return Unset
     if i == labelStart then return Unset
-    val label = Text(s.substring(labelStart, i).nn)
+    val label = s.substring(labelStart, i).nn.tt
     i += 1
 
     if i >= n || s.charAt(i) != ':' then return Unset
@@ -262,7 +262,7 @@ private[punctuation] object InlineSupport:
           i = beforeWs
 
         case t: TitleMatch =>
-          title = Text(t.title)
+          title = t.title.tt
           i = t.end
 
     while i < n && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1
@@ -287,7 +287,7 @@ private[punctuation] object InlineSupport:
       while i < end do
         val c = s.charAt(i)
 
-        if c == '>' then return DestMatch(Text(buf.toString), i + 1)
+        if c == '>' then return DestMatch(buf.toString.tt, i + 1)
         else if c == '<' || c == '\n' then return Unset
         else if c == '\\' && i + 1 < end && isAsciiPunctuation(s.charAt(i + 1)) then
           buf.append(s.charAt(i + 1))
@@ -314,7 +314,7 @@ private[punctuation] object InlineSupport:
 
         if c <= 0x20 then
           if i == start then return Unset
-          return DestMatch(Text(buf.toString), i)
+          return DestMatch(buf.toString.tt, i)
         else if c == '\\' && i + 1 < end && isAsciiPunctuation(s.charAt(i + 1)) then
           buf.append(s.charAt(i + 1))
           i += 2
@@ -328,14 +328,14 @@ private[punctuation] object InlineSupport:
         else if c == '(' then
           depth += 1; buf.append(c); i += 1
         else if c == ')' then
-          if depth == 0 then return DestMatch(Text(buf.toString), i)
+          if depth == 0 then return DestMatch(buf.toString.tt, i)
           depth -= 1; buf.append(c); i += 1
         else
           buf.append(c)
           i += 1
 
       if depth != 0 then return Unset
-      if i == start then Unset else DestMatch(Text(buf.toString), i)
+      if i == start then Unset else DestMatch(buf.toString.tt, i)
 
   // Link title: `"..."`, `'...'`, or `(...)` with backslash-escapes and
   // HTML entity references decoded inline.
@@ -395,7 +395,7 @@ private[punctuation] object InlineSupport:
         out.append(c)
         i += 1
 
-    Text(out.toString)
+    out.toString.tt
 
   case class HtmlInlineMatch(html: Text, end: Int)
 
@@ -416,7 +416,7 @@ private[punctuation] object InlineSupport:
       else -1
 
     if matchedEnd < 0 then Unset
-    else HtmlInlineMatch(Text(s.substring(start, matchedEnd).nn), matchedEnd)
+    else HtmlInlineMatch(s.substring(start, matchedEnd).nn.tt, matchedEnd)
 
   private def parseHtmlBangForm(s: String, start: Int, end: Int): Int =
     // <!-- ... -->  /  <![CDATA[ ... ]]>  /  <! ... >  (declaration)
@@ -563,7 +563,7 @@ private[punctuation] object InlineSupport:
     if i > beforeWs && i < end then
       (parseLinkTitle(s, i, end): @unchecked) match
         case t: TitleMatch =>
-          title = Text(t.title)
+          title = t.title.tt
           i = t.end
 
         case Unset =>
@@ -614,7 +614,7 @@ private[punctuation] object InlineSupport:
 
     if !labelDone then return Unset
     if !sawContent then return Unset
-    val label = Text(s.substring(labelStart, i).nn)
+    val label = s.substring(labelStart, i).nn.tt
     i += 1  // skip ]
 
     if i >= end || s.charAt(i) != ':' then return Unset
@@ -651,7 +651,7 @@ private[punctuation] object InlineSupport:
           val titleTrailEnd = checkLrdTrailing(s, t.end, end)
 
           if titleTrailEnd >= 0 then
-            resultTitle = Text(t.title)
+            resultTitle = t.title.tt
             resultEnd = titleTrailEnd
 
         case Unset => ()
@@ -688,7 +688,7 @@ private[punctuation] object InlineSupport:
       else i += 1
 
     if !done then return Unset
-    val label = if i == labelStart then t"" else Text(s.substring(labelStart, i).nn)
+    val label = if i == labelStart then t"" else s.substring(labelStart, i).nn.tt
     RefLabelMatch(label, i + 1)
 
   // Skip whitespace allowed in link bodies — spaces, tabs, and up to one

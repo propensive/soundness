@@ -205,11 +205,9 @@ final class Report():
   def passed: Boolean = failure0.absent && pass
 
   def resolve(suite: Optional[Testable]): ReportLine.Suite =
-    suite.option.map: suite =>
+    suite.lay(lines): suite =>
       resolve(suite.parent).tests(suite.id).absolve match
         case suite@ReportLine.Suite(_, _) => suite
-
-    . getOrElse(lines)
 
   // Non-destructive: a suite is declared once per run, but two distinct suites can share a
   // `Test.Id` — `Testable`'s identity is its name and parent, and `Suite`'s own `Testable` is

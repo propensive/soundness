@@ -49,6 +49,7 @@ import gossamer.*
 import hieroglyph.*
 import iridescence.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 import columnAttenuation.ignoreAttenuation
@@ -108,7 +109,7 @@ object Bytecode:
           (L(name), end + 1)
 
         case other =>
-          panic(m"unexpected character '${other.toString.tt}' in descriptor")
+          panic(m"unexpected character '$other' in descriptor")
 
     def fromFieldDescriptor(descriptor: Text): Frame = parseOne(descriptor, 0)._1
 
@@ -161,7 +162,7 @@ object Bytecode:
       val result: Optional[Frame] =
         if s.charAt(cursor) == 'V' then Unset else Frame.parseOne(descriptor, cursor)._1
 
-      Descriptor(argsBuf.toList.to(List), result)
+      Descriptor(argsBuf.to(List), result)
 
   case class Descriptor(args: List[Frame], result: Optional[Frame])
 
@@ -171,7 +172,7 @@ object Bytecode:
   object Linearized:
     given teletypeable: (palette: BytecodePalette) => List[Linearized] is Teletypeable = lines =>
       lines.map: (line: Linearized) =>
-        val indent: Text = Text("  ".repeat(line.depth).nn)
+        val indent: Text = t"  "*line.depth
 
         val src: Teletype =
           if line.source == t"" then e""
@@ -1529,7 +1530,7 @@ case class Bytecode
             . or(results += Bytecode.Linearized(depth, source, instr))
 
     expand(this, 0, t"")
-    results.toList.to(List)
+    results.to(List)
 
   def effectivelyStaticCalls: Set[Int] = effectivelyStaticCalls0
 

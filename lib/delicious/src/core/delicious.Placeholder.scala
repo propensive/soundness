@@ -33,7 +33,11 @@
 package delicious
 
 import anticipation.*
+import contingency.*
+import denominative.*
+import distillate.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 object Placeholder:
@@ -46,32 +50,29 @@ object Placeholder:
 
   /** The placeholder id, if the text is a placeholder reference. */
   def reference(text: Text): Optional[Int] =
-    if text.s.startsWith(Prefix.s) && text.s.endsWith("⟩") then
-      val body = text.s.substring(Prefix.s.length, text.s.length - 1).nn
-      if body.nonEmpty && body.forall(_.isDigit) then body.toInt else Unset
+    if text.starts(Prefix) && text.ends(t"⟩") then
+      val body: Text = text.skip(Prefix.length).skip(1, Rtl)
+      if !body.nil && body.s.forall(_.isDigit) then safely(body.as[Int]) else Unset
     else Unset
 
   /** The original string literal, if the text is an escaped genuine literal. */
   def escaped(text: Text): Optional[Text] =
     val prefix = t"${Prefix}esc:"
-    if text.s.startsWith(prefix.s) && text.s.endsWith("⟩")
-    then text.s.substring(prefix.s.length, text.s.length - 1).nn.tt
-    else Unset
+    if text.starts(prefix) && text.ends(t"⟩") then text.skip(prefix.length).skip(1, Rtl) else Unset
 
   def decode(text: Text): Optional[Placeholder] =
     text.cut(t"|") match
       case List(id, kind, name, arity, definedAt, printed) =>
         def field(value: Text): Text = Markup.decode(value)
 
-        try
+        safely:
           Placeholder
-            ( field(id).s.toInt,
+            ( field(id).as[Int],
               PlaceholderKind(field(kind)),
               field(name),
-              field(arity).s.toInt,
-              if definedAt.s.isEmpty then Unset else field(definedAt),
+              field(arity).as[Int],
+              if definedAt.nil then Unset else field(definedAt),
               field(printed) )
-        catch case _: NumberFormatException => Unset
 
       case _ => Unset
 

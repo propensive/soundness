@@ -38,6 +38,7 @@ import javax.net.ssl as jns
 import anticipation.*
 import contingency.*
 import gigantism.*
+import gossamer.*
 import prepositional.*
 import spectacular.*
 import urticose.*
@@ -118,6 +119,6 @@ object SecurePort:
     def close(connection: Duplex): Unit raises Socket.Error = connection.close()
     def stop(binding: Binding): Unit = binding.close()
 
-  given showable: SecurePort is Showable = port => Text(s"tls:${port.port.number}")
+  given showable: SecurePort is Showable = port => t"tls:${port.port.number}"
 
 case class SecurePort(port: Tcp.Port)

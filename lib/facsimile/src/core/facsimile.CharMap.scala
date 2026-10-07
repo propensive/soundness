@@ -34,6 +34,7 @@ package facsimile
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import hieroglyph.*
 import rudiments.*
@@ -65,9 +66,9 @@ private[facsimile] object CharMap:
       charsets.utf16BeCharset.decoded(bytes)
 
     def increment(text: Text, by: Int): Text =
-      if text.s.isEmpty then text
-      else (text.s.substring(0, text.s.length - 1).nn
-          + (text.s.charAt(text.s.length - 1) + by).toChar).tt
+      if text.nil then text
+      else (text.s.substring(0, text.length - 1).nn
+          + (text.s.charAt(text.length - 1) + by).toChar).tt
 
     while !done do
       parser.instruction().let: (operands, operator) =>

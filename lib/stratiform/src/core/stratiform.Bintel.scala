@@ -37,6 +37,7 @@ import java.nio.charset.StandardCharsets
 import scala.language.unsafeNulls
 
 import anticipation.*
+import gossamer.*
 import rudiments.*
 import contingency.*
 import denominative.*
@@ -744,7 +745,7 @@ object Bintel:
         Tel.Compound(flat.readable(kidx)._1, Array(Tel.Atom.Inline(text, 1)), Unset, Array.empty)
 
       case Tel.Element.Node(kidx, struct: Tels.Struct, children) =>
-        val keyword   = kidx.let(flat.readable(_)._1).or(Text(""))
+        val keyword   = kidx.let(flat.readable(_)._1).or(t"")
         val childFlat = flattenKeywordsLenient(struct, schema)
 
         Tel.Compound
@@ -754,7 +755,7 @@ object Bintel:
             blocks(children.remap(presentCompound(_, childFlat, schema))) )
 
       case Tel.Element.Node(kidx, _, _) =>
-        Tel.Compound(kidx.let(flat.readable(_)._1).or(Text("")), Array.empty, Unset, Array.empty)
+        Tel.Compound(kidx.let(flat.readable(_)._1).or(t""), Array.empty, Unset, Array.empty)
 
   private def blocks(compounds: Array[Tel.Compound]^{}): Array[Tel.Block]^{} =
     if compounds.nil then Array.empty
@@ -818,7 +819,7 @@ object Bintel:
     ( using Tactic[Bintel.Error], Tactic[Tel.Error] )
   :   value =
 
-    val schema = Tels.tels[value](Text("root"))
+    val schema = Tels.tels[value](t"root")
     present(decode(data, schema), schema).as[value]
 
   // As above, decoding scalars whose derived schema declares a §21.7
@@ -829,7 +830,7 @@ object Bintel:
     ( using Tactic[Bintel.Error], Tactic[Tel.Error] )
   :   value =
 
-    val schema = Tels.tels[value](Text("root"))
+    val schema = Tels.tels[value](t"root")
     present(decode(data, schema, codecs, checkCanonical), schema).as[value]
 
   private def resolveType(t: Tels.Type, schema: Tels): Tels.Type = t match
