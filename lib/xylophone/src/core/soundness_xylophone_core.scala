@@ -53,6 +53,9 @@ package optionalityOptions:
   export xylophone.optionalityOptions.{strictXmlAbsence, lenientXmlAbsence, strictXmlFaults,
       lenientXmlFaults}
 
+package xmlSchemas:
+  export xylophone.xmlSchemas.freeformXmlSchema
+
 package formatting:
   export xylophone.formatting.{compactXmlFormatting, indentedXmlFormatting}
 

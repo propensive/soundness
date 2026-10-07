@@ -58,29 +58,36 @@ object Svg:
   // The `<svg>` document element, with its definitions and figures, as `svg.in[Xml]`.
   given encodable: Svg is Encodable in Xml = _.markup
 
-  given aggregable: (schema: XmlSchema)
-  =>  (parseTactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], svgTactic: Tactic[Svg.Error])
+  // SVG's vocabulary is fixed and validated by the figure types, so the XML beneath is parsed
+  // against the free-form schema; no `XmlSchema` is asked of the caller.
+  given aggregable
+  :   (parseTactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], svgTactic: Tactic[Svg.Error])
   =>  ((Svg is Aggregable by Text)^{parseTactic, xmlTactic, svgTactic}) =
 
     source =>
+      given XmlSchema = XmlSchema.Freeform
       val xml: Xml = summon[Xml is Aggregable by Text].aggregate(source)
       Svg.Parser.decodeSvg(Svg.Parser.rootElement(xml))
 
-  given loadable: (XmlSchema)
-  =>  (parseTactic: Tactic[Parse.Error])
+  given loadable
+  :   (parseTactic: Tactic[Parse.Error])
   =>  (xmlTactic: Tactic[Xml.Error])
   =>  (svgTactic: Tactic[Svg.Error])
   =>  ((Svg is Loadable by Text)^{parseTactic, xmlTactic, svgTactic}) =
-    source => fromXml(summon[(Xml is Loadable by Text)^].load(source))
+    source =>
+      given XmlSchema = XmlSchema.Freeform
+      fromXml(summon[(Xml is Loadable by Text)^].load(source))
 
   // The byte form: the XML is parsed from the bytes directly.
-  given loadableData: (XmlSchema)
-  =>  (parseTactic: Tactic[Parse.Error])
+  given loadableData
+  :   (parseTactic: Tactic[Parse.Error])
   =>  (xmlTactic: Tactic[Xml.Error])
   =>  (svgTactic: Tactic[Svg.Error])
   =>  (buffering: Buffering)
   =>  ((Svg is Loadable by Data)^{parseTactic, xmlTactic, svgTactic}) =
-    source => fromXml(summon[(Xml is Loadable by Data)^].load(source))
+    source =>
+      given XmlSchema = XmlSchema.Freeform
+      fromXml(summon[(Xml is Loadable by Data)^].load(source))
 
   private def fromXml(xmlDoc: Document[Xml])(using Tactic[Xml.Error], Tactic[Svg.Error])
   :   Document[Svg] =

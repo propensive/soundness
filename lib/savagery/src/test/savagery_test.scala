@@ -37,7 +37,6 @@ import soundness.*
 import errorDiagnostics.stackTracesDiagnostics
 import iridescence.WebColors.{Red, Blue, Green, Black, White}
 import strategies.throwUnsafely
-import xylophone.XmlSchema
 import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Savagery tests"):
@@ -423,8 +422,6 @@ object Tests extends Suite(m"Savagery tests"):
           result == t"""<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50.0 50.0" width="50.0" height="50.0"><circle cx="25.0" cy="25.0" r="10.0"/></svg>"""
 
     suite(m"SVG parsing"):
-      given XmlSchema = XmlSchema.Freeform
-
       test(m"Parse empty SVG"):
         val svg = t"""<svg width="100" height="100"/>""".read[Svg]
         (svg.width, svg.height, svg.figures.size, svg.defs.size)
