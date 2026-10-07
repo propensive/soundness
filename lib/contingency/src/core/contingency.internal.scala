@@ -339,7 +339,7 @@ object internal:
 
   def accrueBuild[accrual <: Hazard: Type]
     ( initial: Expr[accrual],
-      combine: Expr[(accrual, Exception) => accrual],
+      combine: Expr[(accrual, Exception) -> accrual],
       handler: Expr[PartialFunction[Exception, Any]] )
     ( using Quotes )
   :   Expr[Accrual[accrual, ?]] =
@@ -465,7 +465,7 @@ object internal:
   def accrueBody[accrual <: Hazard: Type, context[_]: Type, result: Type]
     ( w:           Expr[Any],
       initial:     Expr[accrual],
-      combine:     Expr[(accrual, Exception) => accrual],
+      combine:     Expr[(accrual, Exception) -> accrual],
       body:        Expr[context[result]],
       outer:       Expr[Tactic[accrual]],
       diagnostics: Expr[Diagnostics] )

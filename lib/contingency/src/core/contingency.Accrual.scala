@@ -46,7 +46,7 @@ object Accrual:
   // The `Tactic` injected into an `accrue` block: each covered error is folded into the accrual
   // rather than escaping; `accumulated`/`changed` report the result to `.protect`.
   class AccrueTactic[error <: Hazard, accrual <: Hazard]
-    ( initial: accrual, combine: (accrual, Exception) => accrual )
+    ( initial: accrual, combine: (accrual, Exception) -> accrual )
     ( using val diagnostics: Diagnostics )
   extends Tactic[error]:
 
@@ -111,4 +111,4 @@ object Accrual:
 class Accrual[accrual <: Hazard, lambda[_]]
   ( val handler: PartialFunction[Exception, Any],
     val initial: accrual,
-    val combine: (accrual, Exception) => accrual )
+    val combine: (accrual, Exception) -> accrual )

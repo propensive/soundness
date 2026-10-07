@@ -133,6 +133,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == true)
 
       test(m"manifest JSON round-trips through jacinta"):
+        given tactic: Tactic[Hazard] = ThrowTactic()
         image.manifest.in[Json].as[Oci.Manifest]
       . assert(_ == image.manifest)
 
@@ -204,6 +205,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == layer.blob.to[List])
 
       test(m"index JSON round-trips through jacinta"):
+        given tactic: Tactic[Hazard] = ThrowTactic()
         image.index.in[Json].as[Index]
       . assert(_ == image.index)
 

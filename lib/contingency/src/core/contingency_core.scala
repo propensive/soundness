@@ -54,11 +54,11 @@ package strategies:
   =>  (tactic: Tactic[error]^)
   =>  ( Tactic[error2]^ ) =
 
-    scala.caps.unsafe.unsafeAssumeSeparate(tactic.contramap(error2.mitigate(_)))
+    tactic.contramap(error2.mitigate(_))
 
-  // Like `ThrowTactic`, these ambient strategies are `caps.Unscoped`: they capture no scoped
-  // capability (they throw or terminate in place), so a use-site instantiation may flow into the
-  // `raises` existential of a non-inline method result.
+  // Like `ThrowTactic`, these ambient strategies are `caps.SharedUnscoped`: they capture no
+  // scoped capability (they throw or terminate in place), so a use-site instantiation may flow
+  // into the `raises` existential of a non-inline method result.
   given fatalErrors: [exception <: Hazard: Fatal] => (FatalTactic[exception]^) = FatalTactic()
 
   given uncheckedErrors: [error <: Hazard] => (erased unchecked: error is Unchecked)
@@ -298,7 +298,7 @@ transparent inline def mitigate(inline handler: PartialFunction[Exception, Any])
 
 
 transparent inline def accrue[accrual <: Hazard](initial: accrual)
-  ( combine: (accrual, Exception) => accrual )
+  ( combine: (accrual, Exception) -> accrual )
   ( inline handler: PartialFunction[Exception, Any] )
 :   Accrual[accrual, ?] =
 

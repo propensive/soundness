@@ -93,7 +93,7 @@ object OpenAI:
         loggable:    (Http.Event is Loggable)^,
         tactic:      Tactic[Llm.Error],
         diagnostics: Diagnostics )
-  =>  ( Sessional^{online, loggable, tactic, caps.any} ) =
+  =>  ( Sessional^{online, loggable, caps.any} ) =
 
     Sessional()
 
@@ -122,23 +122,23 @@ object OpenAI:
           loggable:    (Http.Event is Loggable)^,
           tactic:      Tactic[Llm.Error],
           diagnostics: Diagnostics )
-    =>  ( Sessional^{online, loggable, tactic, caps.any} ) =
+    =>  ( Sessional^{online, loggable, caps.any} ) =
 
       Sessional()
 
   class Responses private[sibylline] (private[sibylline] val chat: OpenAI)
 
   private def text(json: Json): Text raises Json.Error =
-    caps.unsafe.unsafeAssumeSeparate(json.as[Text])
+    json.as[Text]
 
   private def integer(json: Json): Int raises Json.Error =
-    caps.unsafe.unsafeAssumeSeparate(json.as[Int])
+    json.as[Int]
 
   private def list(json: Json): List[Json] raises Json.Error =
-    caps.unsafe.unsafeAssumeSeparate(json.as[List[Json]])
+    json.as[List[Json]]
 
   private[sibylline] def frame(text: Text): Sse raises Sse.Error =
-    caps.unsafe.unsafeAssumeSeparate(text.as[Sse])
+    text.as[Sse]
 
   private[sibylline] def stop(code: Text): Llm.Stop = code match
     case t"stop"           => Llm.Stop.Ended
@@ -457,17 +457,15 @@ extends Llm.Dialect, caps.ExclusiveCapability:
   def exchange(turn: Llm.Exchange): Llm.Reply =
     // The send thunk captures the tactic `fetch` raises through, as in `AnthropicDialect`.
     val response =
-      caps.unsafe.unsafeAssumeSeparate:
-        Llm.fetch(OpenAI.failure(_, _)):
-          target.submit(endpoint, target.payload(turn, streaming = false))
+      Llm.fetch(OpenAI.failure(_, _)):
+        target.submit(endpoint, target.payload(turn, streaming = false))
 
     OpenAI.reply(Llm.receive(response))
 
   def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
     val response =
-      caps.unsafe.unsafeAssumeSeparate:
-        Llm.fetch(OpenAI.failure(_, _)):
-          target.submit(endpoint, target.payload(turn, streaming = true))
+      Llm.fetch(OpenAI.failure(_, _)):
+        target.submit(endpoint, target.payload(turn, streaming = true))
 
     val progress = Llm.Progress()
 
@@ -481,13 +479,13 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
 private[sibylline] object ResponsesDialect:
   private def text(json: Json): Text raises Json.Error =
-    caps.unsafe.unsafeAssumeSeparate(json.as[Text])
+    json.as[Text]
 
   private def integer(json: Json): Int raises Json.Error =
-    caps.unsafe.unsafeAssumeSeparate(json.as[Int])
+    json.as[Int]
 
   private def list(json: Json): List[Json] raises Json.Error =
-    caps.unsafe.unsafeAssumeSeparate(json.as[List[Json]])
+    json.as[List[Json]]
 
   private def usage(json: Json)(using Diagnostics): Optional[Llm.Usage] =
     safely:
@@ -742,17 +740,15 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
   def exchange(turn: Llm.Exchange): Llm.Reply =
     val response =
-      caps.unsafe.unsafeAssumeSeparate:
-        Llm.fetch(OpenAI.failure(_, _)):
-          target.submit(endpoint, ResponsesDialect.payload(target, turn, streaming = false))
+      Llm.fetch(OpenAI.failure(_, _)):
+        target.submit(endpoint, ResponsesDialect.payload(target, turn, streaming = false))
 
     ResponsesDialect.reply(Llm.receive(response))
 
   def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
     val response =
-      caps.unsafe.unsafeAssumeSeparate:
-        Llm.fetch(OpenAI.failure(_, _)):
-          target.submit(endpoint, ResponsesDialect.payload(target, turn, streaming = true))
+      Llm.fetch(OpenAI.failure(_, _)):
+        target.submit(endpoint, ResponsesDialect.payload(target, turn, streaming = true))
 
     val progress = Llm.Progress()
 

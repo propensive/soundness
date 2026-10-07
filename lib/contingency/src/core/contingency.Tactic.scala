@@ -62,14 +62,13 @@ trait Tactic[-error <: Hazard] extends Emit[error]:
   def tolerate[result](block: => result): Optional[result] =
     try block catch case _: Exception => Unset
 
-  override def contramap[error2 <: Hazard](lambda: error2 => error)
-  :   Tactic[error2]^ =
+  override def contramap[error2 <: Hazard](lambda: error2 -> error)
+  :   Tactic[error2]^{this} =
 
-    scala.caps.unsafe.unsafeAssumeSeparate:
-      new Tactic[error2]:
-        def diagnostics: Diagnostics = tactic.diagnostics
-        def record(error: Diagnostics ?=> error2): Unit = tactic.record(lambda(error))
-        def abort(error: Diagnostics ?=> error2): Nothing = tactic.abort(lambda(error))
-        def certify(): Unit = tactic.certify()
-        override def tainted: Boolean = tactic.tainted
-        override def tolerate[result](block: => result): Optional[result] = tactic.tolerate(block)
+    new Tactic[error2]:
+      def diagnostics: Diagnostics = tactic.diagnostics
+      def record(error: Diagnostics ?=> error2): Unit = tactic.record(lambda(error))
+      def abort(error: Diagnostics ?=> error2): Nothing = tactic.abort(lambda(error))
+      def certify(): Unit = tactic.certify()
+      override def tainted: Boolean = tactic.tainted
+      override def tolerate[result](block: => result): Optional[result] = tactic.tolerate(block)

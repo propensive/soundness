@@ -78,7 +78,7 @@ object Acp:
       caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
 
     given decodable: Envelope is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   // Any JSON-RPC message, read only for the two members that decide how it is handled: the method
@@ -111,12 +111,13 @@ object Acp:
   case class AuthMethod(id: Text, name: Text, description: Optional[Text] = Unset)
 
   object InitializeResult:
-    // Pure and throwing: each internal summon mints its own throwing tactic; a decode failure
-    // surfaces as `Json.Error` handled at the transport. Threading a caller's tactic through the
-    // capture-polymorphic derivation is rejected by separation checking. The other decoder
-    // anchors below follow the same shape.
+    // Pure and throwing: the derivation runs under one local throwing tactic (a local `given`,
+    // not the polymorphic `strategies.throwUnsafely`, whose per-summon mint inside the
+    // derivation's field thunks cannot flow into their capture roots); a decode failure
+    // surfaces as `Json.Error` handled at the transport. Sealed pure so the instance can live
+    // in this object. The other decoder anchors below follow the same shape.
     given decodable: InitializeResult is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class InitializeResult
@@ -143,7 +144,7 @@ object Acp:
 
   object NewSessionResult:
     given decodable: NewSessionResult is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class NewSessionResult
@@ -182,7 +183,7 @@ object Acp:
 
   object PromptResult:
     given decodable: PromptResult is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class PromptResult(stopReason: StopReason, _meta: Optional[Json] = Unset)
@@ -279,7 +280,7 @@ object Acp:
 
   object ToolContent:
     given decodable: ToolContent is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
     given encodable: ToolContent is Json.Encodable =
@@ -289,7 +290,7 @@ object Acp:
 
   object ToolDiff:
     given decodable: ToolDiff is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
     given encodable: ToolDiff is Json.Encodable =
@@ -300,7 +301,7 @@ object Acp:
 
   object ToolTerminal:
     given decodable: ToolTerminal is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
     given encodable: ToolTerminal is Json.Encodable =
@@ -310,7 +311,7 @@ object Acp:
 
   object ToolCall:
     given decodable: ToolCall is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   // A tool call as first reported (the `tool_call` update): only the id and title are required.
@@ -327,7 +328,7 @@ object Acp:
 
   object ToolCallUpdate:
     given decodable: ToolCallUpdate is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   // A later report about an existing tool call (the `tool_call_update` update): every member but
@@ -438,7 +439,7 @@ object Acp:
 
   object UserMessageChunk:
     given decodable: UserMessageChunk is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
     given encodable: UserMessageChunk is Json.Encodable =
@@ -448,7 +449,7 @@ object Acp:
 
   object AgentMessageChunk:
     given decodable: AgentMessageChunk is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
     given encodable: AgentMessageChunk is Json.Encodable =
@@ -458,7 +459,7 @@ object Acp:
 
   object AgentThoughtChunk:
     given decodable: AgentThoughtChunk is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
     given encodable: AgentThoughtChunk is Json.Encodable =
@@ -468,7 +469,7 @@ object Acp:
 
   object Plan:
     given decodable: Plan is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
     given encodable: Plan is Json.Encodable =
@@ -478,7 +479,7 @@ object Acp:
 
   object AvailableCommandsUpdate:
     given decodable: AvailableCommandsUpdate is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
     given encodable: AvailableCommandsUpdate is Json.Encodable =
@@ -489,7 +490,7 @@ object Acp:
 
   object CurrentModeUpdate:
     given decodable: CurrentModeUpdate is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
     given encodable: CurrentModeUpdate is Json.Encodable =
@@ -525,7 +526,7 @@ object Acp:
 
   object PermissionOption:
     given decodable: PermissionOption is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
     given encodable: PermissionOption is Json.Encodable =
@@ -1272,13 +1273,13 @@ object Acp:
       val serving: AcpClient = caps.unsafe.unsafeAssumePure(service)
 
       val sessionDispatch: Json => Optional[Json] =
-        caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[AcpClientSession](serving))
+        JsonRpc.serve[AcpClientSession](serving)
 
       val fsDispatch: Json => Optional[Json] =
-        caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[AcpClientFs](serving))
+        JsonRpc.serve[AcpClientFs](serving)
 
       val terminalDispatch: Json => Optional[Json] =
-        caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[AcpClientTerminal](serving))
+        JsonRpc.serve[AcpClientTerminal](serving)
 
       val sessionMethods: List[Text] = JsonRpc.methods[AcpClientSession]
       val fsMethods: List[Text] = JsonRpc.methods[AcpClientFs]

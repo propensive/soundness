@@ -104,7 +104,7 @@ object Anthropic:
         loggable:    (Http.Event is Loggable)^,
         tactic:      Tactic[Llm.Error],
         diagnostics: Diagnostics )
-  =>  ( Sessional^{online, loggable, tactic, caps.any} ) =
+  =>  ( Sessional^{online, loggable, caps.any} ) =
 
     Sessional()
 
@@ -130,10 +130,8 @@ object Anthropic:
       output_config:  Optional[Json]       = Unset )
 
   private[sibylline] object Tokens:
-    // Sealed: the optional-field decodable takes the tactic both directly and inside its
-    // decodable thunk, which separation checking reads as overlapping uses of one capability.
     given decodable: Tactic[Json.Error] => Tokens is Json.Decodable =
-      caps.unsafe.unsafeAssumeSeparate(Json.DecodableDerivation.derived[Tokens])
+      Json.DecodableDerivation.derived[Tokens]
 
     def usage(tokens: Tokens): Llm.Usage =
       Llm.Usage
@@ -148,24 +146,22 @@ object Anthropic:
       cache_read_input_tokens:     Optional[Int] = Unset,
       cache_creation_input_tokens: Optional[Int] = Unset )
 
-  // Free functions of the companion, each a single decode of a single value against a single
-  // tactic, sealed with `unsafeAssumeSeparate`: `Json#as` takes the `Tactic[Json.Error]` both
-  // directly and inside the capture set of the decodable it summons, so a *capability* tactic —
-  // which is what `contramap` produces — reads as two overlapping uses.
+  // Free functions of the companion, each a single decode of a single value against the
+  // tactic in scope.
   private def text(json: Json): Text raises Json.Error =
-    caps.unsafe.unsafeAssumeSeparate(json.as[Text])
+    json.as[Text]
 
   private def integer(json: Json): Int raises Json.Error =
-    caps.unsafe.unsafeAssumeSeparate(json.as[Int])
+    json.as[Int]
 
   private def list(json: Json): List[Json] raises Json.Error =
-    caps.unsafe.unsafeAssumeSeparate(json.as[List[Json]])
+    json.as[List[Json]]
 
   private def tokens(json: Json): Tokens raises Json.Error =
-    caps.unsafe.unsafeAssumeSeparate(json.as[Tokens])
+    json.as[Tokens]
 
   private[sibylline] def frame(text: Text): Sse raises Sse.Error =
-    caps.unsafe.unsafeAssumeSeparate(text.as[Sse])
+    text.as[Sse]
 
   // How the wire spells each neutral stop reason, decoded totally: an unrecognized reason
   // becomes `Other` and the code the API sent is never lost.
@@ -474,7 +470,7 @@ object Anthropic:
         case t"succeeded" =>
           val document: Json = Llm.parsed(reply(json.result.message).text)
 
-          caps.unsafe.unsafeAssumeSeparate(safely(document.as[value])).or:
+          safely(document.as[value]).or:
             Llm.Error(Llm.Error.Reason.Malformed, t"the answer did not match its schema")
 
         case t"errored" =>
@@ -514,9 +510,8 @@ object Anthropic:
 
       // As in `countTokens`: the send thunk captures the tactic `fetch` raises through.
       val response =
-        caps.unsafe.unsafeAssumeSeparate:
-          Llm.fetch(Anthropic.failure(_, _)):
-            target.consult(t"v1/messages/batches/${id.text}")
+        Llm.fetch(Anthropic.failure(_, _)):
+          target.consult(t"v1/messages/batches/${id.text}")
 
       Anthropic.Batch.parse[value](target, Llm.receive(response))
 
@@ -553,9 +548,8 @@ object Anthropic:
         Llm.Error(Llm.Error.Reason.Unreachable, t"the provider could not be reached")
 
       val response =
-        caps.unsafe.unsafeAssumeSeparate:
-          Llm.fetch(Anthropic.failure(_, _)):
-            target.consult(t"v1/messages/batches/${id.text}/results")
+        Llm.fetch(Anthropic.failure(_, _)):
+          target.consult(t"v1/messages/batches/${id.text}/results")
 
       Llm.lines(response).map: line => Anthropic.Batch.outcome[value](Llm.parsed(line))
 
@@ -683,9 +677,8 @@ class Anthropic private
 
     // As in `countTokens`: the send thunk captures the tactic `fetch` raises through.
     val response =
-      caps.unsafe.unsafeAssumeSeparate:
-        Llm.fetch(Anthropic.failure(_, _)):
-          submit(address(t"v1/messages/batches"), body)
+      Llm.fetch(Anthropic.failure(_, _)):
+        submit(address(t"v1/messages/batches"), body)
 
     Anthropic.Batch.parse[value](this, Llm.receive(response))
 
@@ -728,9 +721,8 @@ class Anthropic private
     // The send thunk captures the same tactic `fetch` raises through — the one overlap every
     // retrying call shares; each is a single synchronous round trip.
     val response =
-      caps.unsafe.unsafeAssumeSeparate:
-        Llm.fetch(Anthropic.failure(_, _)):
-          submit(address(t"v1/messages/count_tokens"), body)
+      Llm.fetch(Anthropic.failure(_, _)):
+        submit(address(t"v1/messages/count_tokens"), body)
 
     safely(Anthropic.integer(Llm.receive(response).input_tokens)).lest:
       Llm.Error(Llm.Error.Reason.Malformed, t"the token count was missing from the reply")
@@ -788,18 +780,16 @@ extends Llm.Dialect, caps.ExclusiveCapability:
   def exchange(turn: Llm.Exchange): Llm.Reply =
     // As in `countTokens`: the send thunk captures the tactic `fetch` raises through.
     val response =
-      caps.unsafe.unsafeAssumeSeparate:
-        Llm.fetch(Anthropic.failure(_, _)):
-          target.submit(endpoint, target.payload(turn, streaming = false))
+      Llm.fetch(Anthropic.failure(_, _)):
+        target.submit(endpoint, target.payload(turn, streaming = false))
 
     Anthropic.reply(Llm.receive(response))
 
   def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
     // As in `exchange`: the send thunk captures the tactic `fetch` raises through.
     val response =
-      caps.unsafe.unsafeAssumeSeparate:
-        Llm.fetch(Anthropic.failure(_, _)):
-          target.submit(endpoint, target.payload(turn, streaming = true))
+      Llm.fetch(Anthropic.failure(_, _)):
+        target.submit(endpoint, target.payload(turn, streaming = true))
 
     // stdlib bridge: this method's contract is a stdlib `Iterator`, which the native `List`
     // has no accessor for — the boundary is the return type, not the interior.

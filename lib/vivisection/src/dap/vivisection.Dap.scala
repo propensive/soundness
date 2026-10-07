@@ -106,12 +106,13 @@ object Dap:
       writer.cancel()
 
   object Envelope:
-    // Pure and throwing: each internal summon mints its own throwing tactic; a decode failure
-    // surfaces as `Json.Error` handled at the transport. Threading a caller's tactic through
-    // the capture-polymorphic derivation is rejected by separation checking. The other codec
-    // anchors below follow the same shape.
+    // Pure and throwing: the derivation runs under one local throwing tactic (a local `given`,
+    // not the polymorphic `strategies.throwUnsafely`, whose per-summon mint inside the
+    // derivation's field thunks cannot flow into their capture roots); a decode failure
+    // surfaces as `Json.Error` handled at the transport. Sealed pure so the instance can live
+    // in this object. The other codec anchors below follow the same shape.
     given decodable: Envelope is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   // Any DAP message, read only for the members that decide how it is handled. All optional, so
@@ -193,7 +194,7 @@ object Dap:
 
   object LaunchArguments:
     given decodable: LaunchArguments is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   // `launch` arguments are adapter-defined by the specification; this adapter asks for a main
@@ -202,14 +203,14 @@ object Dap:
 
   object AttachArguments:
     given decodable: AttachArguments is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class AttachArguments(port: Int, hostName: Optional[Text] = Unset)
 
   object Source:
     given decodable: Source is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
     given encodable: Source is Json.Encodable =
@@ -219,70 +220,70 @@ object Dap:
 
   object SourceBreakpointSpec:
     given decodable: SourceBreakpointSpec is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class SourceBreakpointSpec(line: Int)
 
   object SetBreakpointsArguments:
     given decodable: SetBreakpointsArguments is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class SetBreakpointsArguments(source: Source, breakpoints: List[SourceBreakpointSpec] = Nil)
 
   object SetExceptionBreakpointsArguments:
     given decodable: SetExceptionBreakpointsArguments is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class SetExceptionBreakpointsArguments(filters: List[Text] = Nil)
 
   object FunctionBreakpointSpec:
     given decodable: FunctionBreakpointSpec is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class FunctionBreakpointSpec(name: Text)
 
   object SetFunctionBreakpointsArguments:
     given decodable: SetFunctionBreakpointsArguments is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class SetFunctionBreakpointsArguments(breakpoints: List[FunctionBreakpointSpec] = Nil)
 
   object DataBreakpointInfoArguments:
     given decodable: DataBreakpointInfoArguments is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class DataBreakpointInfoArguments(name: Text, variablesReference: Optional[Int] = Unset)
 
   object DataBreakpointSpec:
     given decodable: DataBreakpointSpec is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class DataBreakpointSpec(dataId: Text)
 
   object SetDataBreakpointsArguments:
     given decodable: SetDataBreakpointsArguments is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class SetDataBreakpointsArguments(breakpoints: List[DataBreakpointSpec] = Nil)
 
   object ThreadArguments:
     given decodable: ThreadArguments is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class ThreadArguments(threadId: Int)
 
   object StackTraceArguments:
     given decodable: StackTraceArguments is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class StackTraceArguments
@@ -290,28 +291,28 @@ object Dap:
 
   object FrameArguments:
     given decodable: FrameArguments is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class FrameArguments(frameId: Int)
 
   object VariablesArguments:
     given decodable: VariablesArguments is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class VariablesArguments(variablesReference: Int)
 
   object SetVariableArguments:
     given decodable: SetVariableArguments is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class SetVariableArguments(variablesReference: Int, name: Text, value: Text)
 
   object EvaluateArguments:
     given decodable: EvaluateArguments is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class EvaluateArguments
@@ -319,7 +320,7 @@ object Dap:
 
   object CompletionsArguments:
     given decodable: CompletionsArguments is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   // `column` is a 1-based character position within `text`, per the specification's default
@@ -330,7 +331,7 @@ object Dap:
 
   object SetExpressionArguments:
     given decodable: SetExpressionArguments is Json.Decodable =
-      import strategies.throwUnsafely
+      given tactic: Tactic[Json.Error] = ThrowTactic()
       caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
 
   case class SetExpressionArguments(expression: Text, value: Text, frameId: Optional[Int] = Unset)

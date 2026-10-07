@@ -595,7 +595,7 @@ object Llm:
           val result: Json = toolkit.invoke(call.tool, call.arguments)
 
           val rendered: Text =
-            caps.unsafe.unsafeAssumeSeparate(safely(result.as[Text])).or(result.encode)
+            safely(result.as[Text]).or(result.encode)
 
           Content.ToolResult(call.id, List(Content.Textual(rendered)))
 

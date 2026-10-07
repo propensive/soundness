@@ -63,16 +63,16 @@ object Authorization:
     import dynamicAccess.dynamicJson
 
     // The field decodings share only the resolution-scoped tactic; no aliased writer.
-    val key = scala.caps.unsafe.unsafeAssumeSeparate(json.access_token.as[Text])
+    val key = json.access_token.as[Text]
 
-    val scopes: List[Text] = scala.caps.unsafe.unsafeAssumeSeparate:
+    val scopes: List[Text] =
       safely(json.scope.as[Text]).let(_.cut(t" ")).or(Nil)
 
-    val expiry: Optional[Long] = scala.caps.unsafe.unsafeAssumeSeparate:
+    val expiry: Optional[Long] =
       safely(System.currentTimeMillis + json.expires_in.as[Long]*1000L)
 
     val refresh: Optional[Text] =
-      scala.caps.unsafe.unsafeAssumeSeparate(safely(json.refresh_token.as[Text]))
+      safely(json.refresh_token.as[Text])
 
     Authorization(key, scopes, expiry, refresh)
 

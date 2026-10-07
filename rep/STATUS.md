@@ -7,7 +7,7 @@ fixed by a flag-gated fork repair is RED again without the flag (`REP_STOCK=1`),
 cases are the ones that can be filed as they stand. Diagnoses and decisions are in
 `DECISIONS.md`; the roadmap track is `doc/roadmap/safety.md`.
 
-Measured 2026-10-07 on `3.9.1-dev-p17`.
+Measured 2026-10-07 on `3.9.1-dev-p17`; re-run on `3.9.1-dev-p18` (the `sharedunscoped` and `rootclassify` patches) with the same verdicts, plus P17's `SharedUnscoped` twin GREEN.
 
 ## Self-contained and calibrated
 
@@ -19,8 +19,8 @@ Measured 2026-10-07 on `3.9.1-dev-p17`.
 | `stacked-raises` | stacked context-function results (`X logs E raises F`) level-block the outer parameter | GREEN | no | fork `ctxresult` | red on upstream main (2026-07); unreported |
 | `handler-raises` | a non-capture-checked module between capture-checked ones breaks the `raises` alias (mixed compilation) | GREEN | `-Zalias-captures` | fork `aliascap` | red on upstream main (2026-07); unreported |
 | `splicealias-repro` | quote type holes in an anonymous class's members lose their binder | GREEN | no | fork `splicealias` | fixed upstream in 3.10 (#26307) |
-| `shared-unscoped` | a shared (non-exclusive) tactic as the ambient `raises` strategy | `SharedTactic` GREEN · `ExclusiveUnscoped` GREEN · `SharedUnscoped` RED (correct) | no | nothing needed on this release for the minimal shape | n/a — design calibration for `safety-8` |
-| `sepcheck-probes` P1–P16 | separation-checking characterisation | 33/33 as expected | no | — | P7 (member order), P9 (no field move), P5 (abstract storage) still reportable |
+| `shared-unscoped` | a shared (non-exclusive) tactic as the ambient `raises` strategy | `SharedTactic` GREEN · `ExclusiveUnscoped` GREEN · `SharedUnscoped` RED (correct) | no | the minimal shape needs nothing; the derivation-thunk shape (`sepcheck-probes/p17`) needs the fork's `caps.SharedUnscoped` (proscala `feature/3.9/sharedunscoped`) | n/a — design calibration |
+| `sepcheck-probes` P1–P17 | separation-checking characterisation | 36/36 on p18 (P17's Shared-only variant is a `.neg`; its `SharedUnscoped` twin needs p18) | no | — | P7 (member order), P9 (no field move), P5 (abstract storage) still reportable |
 
 ## Soundness-backed
 
@@ -33,11 +33,18 @@ not apply here. Four of these had rotted against API renames since July and were
 |---|---|---|---|---|---|
 | `capturing-raises` | zeppelin | ambient `throwUnsafely` tactic cannot flow into a `raises` existential | GREEN | source: ambient tactics are `caps.Unscoped` (2026-07-06) | the `safety-8` gate: must stay GREEN when `Emit` becomes shared and the strategies drop `Unscoped` |
 | `capturing-derivation` | austronesian | a derived codec captures a tactic | GREEN | source: capture-polymorphic `conjunction`/`disjunction` (Phase 7) | |
-| `capability-escape` | exegesis | the generated RPC dispatcher kept in an object field retains the codecs' tactic | RED, by design | source: the dispatcher is a local of the serving method (`Lsp.listen`, `LspSessional`) | also shows the P15 overlap inside `JsonRpc.serve`'s codec summons — the second gate for `safety-8` |
+| `capability-escape` | exegesis | the generated RPC dispatcher kept in an object field retains the codecs' tactic | RED, by design | source: the dispatcher is a local of the serving method (`Lsp.listen`, `LspSessional`) | showed the P15 overlap inside `JsonRpc.serve`'s codec summons until `Emit` became shared (`safety-8`); now only the field error |
 | `path-dependent-self` | plutocrat | opaque `Money` seen through `Eur.Self` vs `internal.Money` | GREEN | never explicitly closed; compiles on the pinned release | |
 | `macro-under-cc` | quantitative | macros break on the `@caps.internal.inferred` annotations capture checking adds | GREEN | source: annotation strips in the macros (2026-07-06) | the general quote-wall class stays open |
 | `case2-real` | chiaroscuro | case-2 in situ | GREEN | fork `unboxedpure` | |
 | `case2-spectacular` | spectacular | case-2 in situ | GREEN | fork `unboxedpure` | |
+
+## Fork patches (proscala 3.9 stream, released as 3.9.1-dev-p18 on 2026-10-07, PR propensive/proscala#57)
+
+| Patch | Repro | What it fixes | Soundness consumer |
+|---|---|---|---|
+| `sharedunscoped` | `doc/sharedunscoped/repro` (= `sepcheck-probes/p17-sharedunscoped-ambient-byname`) | a classifier that is shared AND level-exempt, so a `SharedCapability` tactic can be the ambient `raises` strategy inside a derivation's by-name thunk | contingency's `ThrowTactic`/`UncheckedTactic`/`FatalTactic` (`safety-8`) |
+| `rootclassify` | `doc/rootclassify/repro` | `normalizeLocalCaps` asserted that every fresh capability in an inferred val type can take the declaration root's classifier; two unrelated classifiers in one inlined proxy crashed the compiler (`attempting to add any to {any} of value sessional$proxyN`) | every `Sessional` loan test (sibylline, tarantula, telekinesis, vivisection) once tactics are shared |
 
 ## Open classes without a case yet
 
@@ -46,7 +53,6 @@ before its fork leg can start (`doc/roadmap/safety.md`).
 
 | Class | Tag | Where it bites | Roadmap |
 |---|---|---|---|
-| exclusive-tactic overlap | `[tactic-overlap]` | every `unsafeAssumeSeparate(json.as[…])`; contingency's own three seals | `safety-8` (case: `sepcheck-probes/p15`) |
 | by-name parameter unnameable in a capture set | `[by-name-capture]` | jacinta `optional`/`array`/`map`, spectacular `Inspectable`, gastronomy `Digestible`, turbulence `Streamable` | `safety-10` (case to write: `byname-capture`) |
 | quote wall: `^` types do not survive `'{ }` (`?1` illegal capture) | `[quote-wall]` | wisteria `Derivation.scala:44`, legerdemain Query decoder (two telekinesis tests disabled), xenophile `WasmInvoke` | open; `safety-11` checks the 3.10 row |
 | curried dependent context functions unsupported | `[curried-cft]` | contingency `dare` (⚑7), Foci/`tracks` ergonomics (⚑8) | open |
