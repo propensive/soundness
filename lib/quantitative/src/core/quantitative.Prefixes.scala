@@ -35,7 +35,7 @@ package quantitative
 import scala.math
 
 import prepositional.*
-import rudiments.{order, seek}
+import rudiments.{last, order, seek}
 import vacuous.or
 import rudiments.sortingAlgorithms.timsort
 
@@ -47,10 +47,14 @@ object Prefixes:
 class Prefixes(val prefixes: List[MetricPrefix], val minimum: Double) extends Planar:
   def select(value: Double): MetricPrefix =
     if value == 0.0 then NoPrefix else
+      // A dozen prefixes at most, so walking the list for its last is cheap.
+      import denominative.dysasymptotics.linearSize
+
       val abs = math.abs(value)
       val candidates = (NoPrefix :: prefixes).order(-_.exponent)
 
       candidates.seek: prefix =>
         abs/math.pow(prefix.base.toDouble, prefix.exponent.toDouble) >= minimum
 
-      . or(candidates.stdlib.last)
+      . or(candidates.last)
+      . or(NoPrefix)

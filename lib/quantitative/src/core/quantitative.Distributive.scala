@@ -35,6 +35,8 @@ package quantitative
 import anticipation.*
 import gossamer.*
 import prepositional.*
+import rudiments.prim
+import vacuous.or
 
 object Distributive:
   def apply[measure <: Measure](units: Text): Quantity[measure] is Distributive by Double =
@@ -43,7 +45,7 @@ object Distributive:
       type Operand = Double
 
       def parts(value: Quantity[measure]): List[Double] = List(value.value)
-      def place(value: Quantity[measure], parts: List[Text]): Text = t"${parts.stdlib(0)} $units"
+      def place(value: Quantity[measure], parts: List[Text]): Text = t"${parts.prim.or(t"")} $units"
 
   inline given distributive: [measure <: Measure] => Quantity[measure] is Distributive by Double =
     Distributive[measure](Quantity.units[measure])

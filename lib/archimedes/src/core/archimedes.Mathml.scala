@@ -36,6 +36,7 @@ import scala.math
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gossamer.*
 import honeycomb.Html
@@ -405,8 +406,10 @@ object Mathml:
     private def children(elem: Xml.Element)(using Tactic[Mathml.Error]): List[Mathml] =
       childElements(elem).map(decodeNode)
 
+    // A MathML element has few children, so reading one by position is cheap.
     private def at(nodes: List[Mathml], index: Int): Mathml =
-      nodes.stdlib.lift(index).getOrElse(Mrow(Nil))
+      import denominative.dysasymptotics.linearAccess
+      nodes.at(index.z).or(Mrow(Nil))
 
     def decodeMath(elem: Xml.Element)(using Tactic[Mathml.Error]): Math =
       val kept = elem.attributes.to[List].filter: (key, _) =>

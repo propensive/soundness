@@ -617,13 +617,13 @@ object Protobuf extends Protobuf2:
             val map = ProtobufParser(protobuf.payload).fields()
             val labels = variantLabels
 
-            var index = 0
-            while index < labels.size && !map.defines(index + 1) do index += 1
-            if index >= labels.size then abort(Protobuf.Error(Reason.MissingField(0)))
+            val (label, index) =
+              labels.indexed.seek { (_, ordinal) => map.defines(ordinal.n1) }.or:
+                abort(Protobuf.Error(Reason.MissingField(0)))
 
-            delegate(labels.stdlib(index)):
+            delegate(label):
               [variant <: derivation] => context =>
-                map(index + 1).lay(abort(Protobuf.Error(Reason.MissingField(index + 1)))): values =>
+                map(index.n1).lay(abort(Protobuf.Error(Reason.MissingField(index.n1)))): values =>
                   context.decoded(Protobuf.Repeated(values)) }
 
   // ProtobufError → Protobuf.Error

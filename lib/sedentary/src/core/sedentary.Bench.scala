@@ -248,9 +248,10 @@ object Bench:
       operationSize: Optional[OperationSize] )
   :   Benchmark =
 
-    val sample: Long = results0.stdlib(0)
+    // The sample size, then `runs` timings, then the bytes allocated.
+    val sample: Long = results0.prim.or(0L)
     val results = results0.stdlib.drop(1).take(runs)
-    val allocated: Long = results0.stdlib(runs + 1)
+    val allocated: Long = results0.last.or(0L)
     val total = results.sum
     val count = sample*runs
     // Bytes per operation, rounded to the nearest byte; a body allocating nothing reports 0.
@@ -333,10 +334,11 @@ object Bench:
         given staging.Compiler = bench.compiler2
         staging.withQuotes(body(using References[Json]()))
 
-      var index = 0
+      // An iterator rather than `each`: a lambda cannot capture the inline `body`.
+      val iterator = List.iterator(values)
 
-      while index < values.size do
-        val value = values.stdlib(index)
+      while iterator.hasNext do
+        val value = iterator.next()
 
         val coordinates = List(axis.coordinate(value))
 
@@ -353,8 +355,6 @@ object Bench:
               testId,
               coordinates,
               Bench.statistics(results0, iterations, confidence, operationSize) )
-
-        index += 1
 
       anchor.let: anchorValue =>
         values.seek(_ == anchorValue).let: value =>
@@ -397,14 +397,15 @@ object Bench:
         given staging.Compiler = bench.compiler2
         staging.withQuotes(body(using References[Json]()))
 
-      var leftIndex = 0
+      // Iterators rather than `each`; see the uniaxial `over`.
+      val leftIterator = List.iterator(lefts)
 
-      while leftIndex < lefts.size do
-        val left = lefts.stdlib(leftIndex)
-        var rightIndex = 0
+      while leftIterator.hasNext do
+        val left = leftIterator.next()
+        val rightIterator = List.iterator(rights)
 
-        while rightIndex < rights.size do
-          val right = rights.stdlib(rightIndex)
+        while rightIterator.hasNext do
+          val right = rightIterator.next()
 
           val coordinates = List(first.coordinate(left), second.coordinate(right))
 
@@ -420,10 +421,6 @@ object Bench:
                 testId,
                 coordinates,
                 Bench.statistics(results0, iterations, confidence, operationSize) )
-
-          rightIndex += 1
-
-        leftIndex += 1
 
       anchor.let: anchorValue =>
         lefts.seek(_ == anchorValue).lay:
