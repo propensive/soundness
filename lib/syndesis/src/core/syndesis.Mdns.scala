@@ -410,7 +410,8 @@ object Mdns:
                   try dispatch(packet) catch case _: Exception => ()
 
               val receiver = caps.unsafe.unsafeAssumeSeparate(async(receiving.run()))
-              start(rest, (receiving.asInstanceOf[AnyRef], receiver.asInstanceOf[AnyRef]) :: started)
+              val handle = (receiving.asInstanceOf[AnyRef], receiver.asInstanceOf[AnyRef])
+              start(rest, handle :: started)
 
         val receivers = start(transport.inlets, Nil)
 
@@ -672,7 +673,7 @@ object Mdns:
           List.concat(subtypes, addresses) )
 
     def advertise(service: Discovery.Service, description: Discovery.Description)
-      ( using Monitor^, Probate^, Tactic[Discovery.Error] )
+      ( using Monitor^, Probate^, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
     :   Discovery.Advertising =
 
       val transport = acquire()
@@ -698,7 +699,10 @@ object Mdns:
 
     // A goodbye: every record with a TTL of zero (§10.1). A claim mid-way through re-probing
     // has nothing established to say goodbye to, and its re-probe stops at the flag.
-    def withdraw(advertising: Discovery.Advertising)(using Monitor^): Unit =
+    def withdraw(advertising: Discovery.Advertising)
+      ( using Monitor^, (Discovery.Activity is Loggable)^ )
+    :   Unit =
+
       val claimed = mutex:
         val found = owned.filter(_ eq advertising)
         owned = owned.filter(!_.eq(advertising))
@@ -708,7 +712,10 @@ object Mdns:
         case claim: Claim => claim.withdrawn = true
         case _            => ()
 
-      claimed.each: claim => send(respond(claim.records.map(_.copy(ttl = 0, flush = false))))
+      claimed.each: claim =>
+        send(respond(claim.records.map(_.copy(ttl = 0, flush = false))))
+        Log.info(Discovery.Activity.Withdrawn(claim.instance))
+
       release()
 
     // Probes for the claim's name three times, 250 ms apart (§8.1), after a random wait of up
@@ -717,7 +724,7 @@ object Mdns:
     // (§8.2.1) waits a second and probes for the same name again; success is announced twice,
     // a second apart (§8.3).
     private def establish(claim: Claim, transport: Transport, attempts: Int)
-      ( using Monitor^, Probate^, Tactic[Discovery.Error] )
+      ( using Monitor^, Probate^, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
     :   Unit =
 
       if attempts >= 100
@@ -731,6 +738,7 @@ object Mdns:
       if taken then rename(claim, transport, attempts) else
         val probe = Probing(name, claim.records.filter(unique))
         mutex { probing = probe :: probing }
+        Log.fine(Discovery.Activity.Probing(name))
         safely(snooze(jitter(250L)))
 
         def probes(remaining: Int): Verdict =
@@ -744,9 +752,12 @@ object Mdns:
         mutex { probing = probing.filter(_ != probe) }
 
         verdict match
-          case Verdict.Conflict => rename(claim, transport, attempts)
+          case Verdict.Conflict =>
+            Log.info(Discovery.Activity.Conflicted(name))
+            rename(claim, transport, attempts)
 
           case Verdict.Yield =>
+            Log.info(Discovery.Activity.Yielded(name))
             safely(snooze(1000L))
             establish(claim, transport, attempts + 1)
 
@@ -754,6 +765,7 @@ object Mdns:
             if !claim.withdrawn then
               mutex { owned = claim :: owned }
               send(respond(claim.records))
+              Log.info(Discovery.Activity.Claimed(claim.instance))
 
               // The second announcement, unless the advertisement was withdrawn or contested
               // in the meantime.
@@ -766,7 +778,7 @@ object Mdns:
 
     // The next name (RFC 6762 §9: `Gondor` → `Gondor (2)`), with its records rebuilt.
     private def rename(claim: Claim, transport: Transport, attempts: Int)
-      ( using Monitor^, Probate^, Tactic[Discovery.Error] )
+      ( using Monitor^, Probate^, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
     :   Unit =
 
       claim.instance = claim.instance.renamed
@@ -774,17 +786,24 @@ object Mdns:
       establish(claim, transport, attempts + 1)
 
     // After a conflict with an established claim: back through probing, unless the loan ended.
-    private def reclaim(claim: Claim)(using Monitor^, Probate^, Tactic[Discovery.Error]): Unit =
-      if !claim.withdrawn then establish(claim, transport, 0)
+    // This runs in the background, where no loan's `Loggable` is at hand.
+    private def reclaim(claim: Claim)
+      ( using monitor: Monitor^, probate: Probate^, tactic: Tactic[Discovery.Error] )
+    :   Unit =
+
+      if !claim.withdrawn
+      then establish(claim, transport, 0)(using monitor, probate, tactic, Discovery.Activity.silent)
 
     // ── Browsing ──────────────────────────────────────────────────────────────────────────────
     // Instances already known are reported at once; then the service type is queried, and
     // queried again at intervals doubling from a second to an hour (§5.2), each time telling
     // responders what we already know.
-    def browse(service: Discovery.Service)(using Monitor^, Probate^, Tactic[Discovery.Error])
+    def browse(service: Discovery.Service)
+      ( using Monitor^, Probate^, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
     :   Discovery.Browsing =
 
       acquire()
+      Log.info(Discovery.Activity.Browsing(service))
       val relay: Relay[Discovery.Event] = Relay()
       val name = service.dnsName
 
@@ -832,7 +851,7 @@ object Mdns:
     // ── Resolving ─────────────────────────────────────────────────────────────────────────────
     def resolve[duration: Abstractable across Durations to Long]
       ( instance: Discovery.Instance, timeout: duration )
-      ( using Monitor^, Probate^, Tactic[Discovery.Error] )
+      ( using Monitor^, Probate^, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
     :   Discovery.Resolution =
 
       acquire()
@@ -860,6 +879,8 @@ object Mdns:
           . protect(promise.await(timeout))
 
         finally mutex { pending = pending.filter(_ != pend) }
+
+      . also(Log.info(Discovery.Activity.Resolved(instance)))
 
       finally release()
 

@@ -399,6 +399,21 @@ object Tests extends Suite(m"Syndesis tests"):
               (reannounced.labels.prim, summon[Discovery.Advertisement].instance.label)
       . assert(_ == (t"Gondor (2)", t"Gondor (2)"))
 
+      test(m"Advertising reports its activity to the loan's loggable"):
+        val activity = scala.collection.mutable.ListBuffer[Discovery.Activity]()
+        given loggable: Discovery.Activity is Loggable = (_, _, event) => activity += event
+
+
+        supervise:
+            val bus = Mdns.Transport.Bus()
+            val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
+            fury.advertise(description)(using a)(())
+
+        List.from(activity)
+      . assert: events =>
+          import Discovery.Activity.*
+          events == List(Probing(gondor.dnsName), Claimed(gondor), Withdrawn(gondor))
+
       test(m"Answers falling due together are aggregated into one response"):
         supervise:
             val bus = Mdns.Transport.Bus()

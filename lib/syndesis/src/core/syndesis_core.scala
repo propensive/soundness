@@ -43,12 +43,13 @@ import prepositional.*
 // `Monitor`, whose cancellation unwinds the block. `transparent inline`, as `listen` is, so the
 // block is not an argument that could hide the capabilities it shares with the monitor; the
 // backend is an explicit using-parameter (a system responder's may be a capability), in a
-// clause of its own so that one other than the given can be named: `(using other)`.
+// clause of its own so that one other than the given can be named: `(using other)`. What the
+// backend does for the loan is reported as `Discovery.Activity` to the `Loggable` in scope.
 extension (service: Discovery.Service)
   transparent inline def advertise[result](description: Discovery.Description)
     ( using backend: Discovery.Backend^ )
     ( block: Discovery.Advertisement ?=> result )
-    ( using Monitor^, Probate^, Tactic[Discovery.Error] )
+    ( using Monitor^, Probate^, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
   :   result =
 
     val advertising = backend.advertise(service, description)
@@ -57,7 +58,7 @@ extension (service: Discovery.Service)
 
   transparent inline def browse[result](using backend: Discovery.Backend^)
     ( block: Discovery.Browser ?=> result )
-    ( using Monitor^, Probate^, Tactic[Discovery.Error] )
+    ( using Monitor^, Probate^, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
   :   result =
 
     val browsing = backend.browse(service)
@@ -67,7 +68,7 @@ extension (service: Discovery.Service)
 extension (instance: Discovery.Instance)
   def resolve[duration: Abstractable across Durations to Long](timeout: duration)
     ( using backend: Discovery.Backend^ )
-    ( using Monitor^, Probate^, Tactic[Discovery.Error] )
+    ( using Monitor^, Probate^, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
   :   Discovery.Resolution =
 
     backend.resolve(instance, timeout)

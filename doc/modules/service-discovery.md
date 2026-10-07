@@ -84,6 +84,10 @@ asserting a name this responder has established makes it probe for the name afre
 if the probe is answered — which is why `Advertisement.instance` is read live rather than
 copied.
 
+What the responder does for a loan — probing, yielding, a conflict, claiming, withdrawing,
+browsing, resolving — is logged as `Discovery.Activity` events through the `Loggable` in scope at
+the loan, which is silent unless a log sink is; its background work between loans is not.
+
 For a program under test, `Mdns.Transport.Bus` is an in-memory link: responders joined to one
 bus hear one another and nothing else, so the protocol — probing, renaming, goodbyes — runs
 deterministically without a network.

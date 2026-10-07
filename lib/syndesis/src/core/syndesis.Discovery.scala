@@ -237,29 +237,60 @@ object Discovery:
     case Found(instance: Instance)
     case Lost(instance: Instance)
 
+  // ── Activity ────────────────────────────────────────────────────────────────────────────────
+  // What a backend reports as it works, to the `Loggable` each loan supplies: a backend holds
+  // no logger of its own (which would make two backends' loans overlap under separation
+  // checking), so what it does in the background between loans goes unreported.
+  object Activity:
+    // For a backend's background work, which has no loan to report to.
+    val silent: Activity is Loggable = (_, _, _) => ()
+
+    given communicable: Activity is Communicable =
+      case Probing(name)       => m"probing for the name $name"
+      case Yielded(name)       => m"yielded the name $name to a simultaneous probe"
+      case Conflicted(name)    => m"the name $name is held by another host"
+      case Claimed(instance)   => m"claimed and announced $instance"
+      case Withdrawn(instance) => m"withdrew $instance"
+      case Browsing(service)   => m"browsing for $service"
+      case Resolved(instance)  => m"resolved $instance"
+
+  enum Activity:
+    case Probing(name: Dns.Name) extends Activity, Log.Network, Log.Protocol
+    case Yielded(name: Dns.Name) extends Activity, Log.Network, Log.Protocol
+    case Conflicted(name: Dns.Name) extends Activity, Log.Network, Log.Protocol
+    case Claimed(instance: Instance) extends Activity, Log.Network
+    case Withdrawn(instance: Instance) extends Activity, Log.Network
+    case Browsing(service: Service) extends Activity, Log.Network
+    case Resolved(instance: Instance) extends Activity, Log.Network
+
   // ── The seam ────────────────────────────────────────────────────────────────────────────────
   // What a backend does, as starts and stops: the loans (`service.advertise(…) { … }`) are built
   // on these once, in `syndesis_core`, as `listen` is built on `Bindable`. Each start takes the
   // `Monitor` under which the backend runs whatever it needs in the background, so cancelling
-  // the monitor ends that too. A backend holds no capabilities of its own, which is what lets
-  // loans nest (an advertisement, and a browse inside it). The tactic is an explicit parameter
-  // rather than `raises`, since a context-function result type would hide the capability
-  // parameters from the separation checker.
+  // the monitor ends that too, and the `Loggable` its `Activity` is reported to. A backend
+  // holds no capabilities of its own, which is what lets loans nest (an advertisement, and a
+  // browse inside it). The tactic is an explicit parameter rather than `raises`, since a
+  // context-function result type would hide the capability parameters from the separation
+  // checker.
   trait Backend:
     // Claims a name for the instance and announces it, yielding the running advertisement,
     // whose `instance` is the name claimed — and later renamed, if a conflict after
     // establishment (RFC 6762 §9) forces it.
     def advertise(service: Service, description: Description)
-      ( using Monitor^, Probate^, Tactic[Discovery.Error] )
+      ( using Monitor^, Probate^, Tactic[Discovery.Error], (Activity is Loggable)^ )
     :   Advertising
 
-    def withdraw(advertising: Advertising)(using Monitor^): Unit
-    def browse(service: Service)(using Monitor^, Probate^, Tactic[Discovery.Error]): Browsing
+    def withdraw(advertising: Advertising)(using Monitor^, (Activity is Loggable)^): Unit
+
+    def browse(service: Service)
+      ( using Monitor^, Probate^, Tactic[Discovery.Error], (Activity is Loggable)^ )
+    :   Browsing
+
     def dismiss(browsing: Browsing)(using Monitor^): Unit
 
     def resolve[duration: Abstractable across Durations to Long]
       ( instance: Instance, timeout: duration )
-      ( using Monitor^, Probate^, Tactic[Discovery.Error] )
+      ( using Monitor^, Probate^, Tactic[Discovery.Error], (Activity is Loggable)^ )
     :   Resolution
 
   // A browse in progress, as a backend hands it over: the events it will relay, and a view of
