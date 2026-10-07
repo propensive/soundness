@@ -72,8 +72,8 @@ extends Openable:
     // backend for an OS advisory lock (`OpenFlag.Lock`) to cover the cross-process case
     // (issue #566).
     val modeFlags: List[OpenFlag] =
-      (if mode.atoms.has(Read) then List(OpenFlag.Read) else Nil) +
-        (if mode.atoms.has(Write) then List(OpenFlag.Write) else Nil) +
+      (if mode.atoms.has(Read) then List(OpenFlag.Read) else Nil) ++
+        (if mode.atoms.has(Write) then List(OpenFlag.Write) else Nil) ++
         (if mode.atoms.has(Exclusive) then List(OpenFlag.Lock)
          else if mode.atoms.has(Shared) then List(OpenFlag.LockShared)
          else Nil)
@@ -86,7 +86,7 @@ extends Openable:
     Fdtable.resolve(fdtables, encoded) match
       case descriptor: Fdtable.Descriptor =>
         try
-          descriptor.open(modeFlags + flags): handle =>
+          descriptor.open(modeFlags ++ flags): handle =>
             block(using handle.asInstanceOf[Handle & Granting[grants]])
         catch case refusal: Fdtable.Refusal =>
           abort(Io.Error(value, Operation.Open, refusal.reason))
@@ -105,7 +105,7 @@ extends Openable:
           then abort(Io.Error(value, Operation.Open, Reason.Busy))
 
         try
-          backend.open(value, modeFlags + flags, umask.mode(Umask.fileBits)): handle =>
+          backend.open(value, modeFlags ++ flags, umask.mode(Umask.fileBits)): handle =>
             // `Granting` is a phantom marker, so the cast only refines the static type with
             // the grants that `modeFlags` has just made true operationally.
             block(using handle.asInstanceOf[Handle & Granting[grants]])

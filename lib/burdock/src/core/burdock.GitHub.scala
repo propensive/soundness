@@ -134,7 +134,7 @@ object GitHub:
               url.fetch(accept = jsonMedia, authorization = Auth.Bearer(token))
 
           val batch: List[Release] = mute[Http.Event](response.receive[Json]).as[List[Release]]
-          if batch.nil then Nil else batch + page(number + 1)
+          if batch.nil then Nil else batch ++ page(number + 1)
 
         Log.fine(DepsEvent.Indexing(repository.text))
         page(1)

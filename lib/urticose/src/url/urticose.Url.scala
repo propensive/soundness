@@ -52,8 +52,8 @@ object Url:
   given abstractable: HttpUrl is Abstractable across Urls to Text = _.show
 
   given showable: [scheme <: Label] => Url[scheme] is Showable = url =>
-    val auth = url.authority.lay(t"")(t"//"+_.show)
-    val rest = t"${url.query.lay(t"")(t"?"+_)}${url.fragment.lay(t"")(t"#"+_)}"
+    val auth = url.authority.lay(t"")(t"//" ++ _.show)
+    val rest = t"${url.query.lay(t"")(t"?" ++ _)}${url.fragment.lay(t"")(t"#" ++ _)}"
     t"${url.scheme}:$auth${url.location}$rest"
 
   given encodable: [scheme <: Label] => Url[scheme] is Encodable in Text = _.show
@@ -179,14 +179,14 @@ class Url[+scheme <: Label]
     val location: Text,
     val query:    Optional[Text] = Unset,
     val fragment: Optional[Text] = Unset )
-extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}$location"):
+extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//" ++ _.show)}$location"):
 
   type Plane = Www
   type Topic = Zero
 
   def scheme: Scheme[scheme] = origin.scheme
   def authority: Optional[Authority] = origin.authority
-  def requestTarget: Text = location+query.lay(t"")(t"?"+_)
+  def requestTarget: Text = location ++ query.lay(t"")(t"?" ++ _)
   def host: Optional[Host] = authority.let(_.host)
   // `Www`'s `Radical` always succeeds, so decoding the path cannot fail.
   def path: Path on Www = unsafely(location.as[Path on Www])

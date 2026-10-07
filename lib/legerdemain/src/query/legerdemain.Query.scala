@@ -239,7 +239,7 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
       case _ =>
         val prefixed: List[(Text, Text)] = updates.map: (key, value) => (t"$label.$key", value)
 
-        values + prefixed
+        values ++ prefixed
 
     new Query(values2)
 
@@ -252,7 +252,7 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
     case other              => Unset
 
   def apply(label: Text): Query =
-    val prefix = label+t"."
+    val prefix = label ++ t"."
 
     Query:
       values.sweep:

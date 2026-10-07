@@ -66,7 +66,7 @@ object WebIdlDialect extends Dialect:
     var typedefs = Map[Text, Foreign.Type]()
 
     def record(name: Text, parent: Optional[Text], members: Map[Text, Prototype]): Unit =
-      val merged = types.at(name).lay(members)(_ + members)
+      val merged = types.at(name).lay(members)(_ ++ members)
       types = types.define(name, merged)
       parent.let: base => parents = parents.define(name, base)
 
@@ -109,7 +109,7 @@ object WebIdlDialect extends Dialect:
         typedefs = typedefs.define(name, typed)
 
       case WebIdl.Definition.Includes(target, mixin) =>
-        includes = includes.define(target, includes.at(target).or(Nil) + List(mixin))
+        includes = includes.define(target, includes.at(target).or(Nil) ++ List(mixin))
 
       case WebIdl.Definition.CallbackFunction(_, _, _) => ()
 
@@ -135,9 +135,9 @@ object WebIdlDialect extends Dialect:
         val inherited = parents.at(name).lay(empty): base => collect(base, visiting2)
 
         val mixedIn = includes.at(name).or(Nil).fold(inherited): (acc, mixin) =>
-          acc + collect(mixin, visiting2)
+          acc ++ collect(mixin, visiting2)
 
-        mixedIn + own
+        mixedIn ++ own
 
     // The key is needed here, and `Map#map` maps values alone, so this goes through the pairs.
     types.to[List].map { (name, _) => (name, collect(name, Set())) }.to[Map]

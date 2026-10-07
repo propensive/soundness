@@ -199,19 +199,19 @@ extends Topical:
   def expanded: Face.Shape[Topic, Weights, Slanting, Enabled] = stretched(Stretch.Expanded)
 
   def varying(axis: Variation.Axis, value: Double): Face.Shape[Topic, Weights, Slanting, Enabled] =
-    retyped(variations = variations + List(Variation(axis, value)))
+    retyped(variations = variations ++ List(Variation(axis, value)))
 
   // A setting made at runtime may enable anything, so the enabled features are no longer all known.
   def featuring(setting: Face.Feature.Setting)
   :   Face.Shape[Topic, Weights, Slanting, Enabled | Face.Runtime] =
 
-    retyped(features = features + List(setting))
+    retyped(features = features ++ List(setting))
 
   def enabling[tag](feature: Face.Feature of tag)
   :   Face.Shape[Topic, Weights, Slanting, tag | Enabled] =
 
-    retyped(features = features + List(feature.enabled))
+    retyped(features = features ++ List(feature.enabled))
 
   // Disabling a feature the font lacks changes nothing, so it adds no requirement.
   def disabling(feature: Face.Feature): Face.Shape[Topic, Weights, Slanting, Enabled] =
-    retyped(features = features + List(feature.disabled))
+    retyped(features = features ++ List(feature.disabled))

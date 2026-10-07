@@ -143,10 +143,10 @@ object Tarfile:
 
                 header.typeFlag.toInt & 0xff match
                   case 'x' =>
-                    paxOverlay = paxOverlay + Pax.parse(takeData(cursor, size))
+                    paxOverlay = paxOverlay ++ Pax.parse(takeData(cursor, size))
 
                   case 'g' =>
-                    globalOverlay = globalOverlay + Pax.parse(takeData(cursor, size))
+                    globalOverlay = globalOverlay ++ Pax.parse(takeData(cursor, size))
 
                   case 'L' =>
                     longName = Tar.Header.decodeNulText(takeData(cursor, size))
@@ -167,9 +167,9 @@ object Tarfile:
                     val extSegments = readSparseExtensions(cursor, isExtended)
                     val data = takeData(cursor, size)
 
-                    val allSegments = (inlineSegments + extSegments).filter(_.length > 0)
+                    val allSegments = (inlineSegments ++ extSegments).filter(_.length > 0)
 
-                    val overlay: Map[Text, Text] = globalOverlay + paxOverlay
+                    val overlay: Map[Text, Text] = globalOverlay ++ paxOverlay
 
                     val extras: Map[Text, Text] = overlay.filter: (k, _) =>
                       !structuralPaxKeys.has(k)
@@ -183,7 +183,7 @@ object Tarfile:
                     val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
                     val path = decodePath(nameText)
 
-                    val overlay: Map[Text, Text] = globalOverlay + paxOverlay
+                    val overlay: Map[Text, Text] = globalOverlay ++ paxOverlay
 
                     val extras: Map[Text, Text] = overlay.filter: (k, _) =>
                       !structuralPaxKeys.has(k)
@@ -204,7 +204,7 @@ object Tarfile:
                     val linkText = resolveLink(header, paxOverlay, globalOverlay, longLink)
                     val path = decodePath(nameText)
 
-                    val overlay: Map[Text, Text] = globalOverlay + paxOverlay
+                    val overlay: Map[Text, Text] = globalOverlay ++ paxOverlay
 
                     val extras: Map[Text, Text] = overlay.filter: (k, _) =>
                       !structuralPaxKeys.has(k)
@@ -325,7 +325,7 @@ object Tarfile:
           i = i + 1
 
         val moreExtended = head.readUnchecked(504) != 0.toByte
-        builder.result().to(List) + readSparseExtensions(cursor, moreExtended)
+        builder.result().to(List) ++ readSparseExtensions(cursor, moreExtended)
 
   private def resolveName
     ( header:        Tar.Header,

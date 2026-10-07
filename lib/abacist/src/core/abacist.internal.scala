@@ -137,7 +137,8 @@ object internal:
             ( tail,
               ' {
                   ( $expr.define
-                      ( ${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value ) )
+                      ( ${unitPower.ref.designation} ++ ${Expr(power)}.asInstanceOf[Text],
+                        $value ) )
                 } )
 
     recur(multipliers[quanta], '{Ledger()})

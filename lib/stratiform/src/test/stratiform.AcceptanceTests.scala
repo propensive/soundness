@@ -170,7 +170,7 @@ object AcceptanceTests extends Suite(m"Stratiform acceptance tests"):
       . assert(_ == 33)
 
       test(m"schema-signature rejects a 34-byte value"):
-        Tel.Codec.schemaSignature.encode(Tel.Acceptance.signature+t"Ḁ") match
+        Tel.Codec.schemaSignature.encode(Tel.Acceptance.signature ++ t"Ḁ") match
           case Tel.Codec.Encoded.Invalid(_) => true
           case _                            => false
       . assert(identity)

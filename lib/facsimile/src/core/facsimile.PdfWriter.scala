@@ -154,7 +154,7 @@ private[facsimile] object PdfWriter:
     // Through a `Map` so a write-scope override replaces the carried-forward entry of the same
     // key rather than joining it.
     val entries: List[(Text, Cos)] =
-      (carried + List.from(pdf.trailerOverrides)).to[Map].to[List]
+      (carried ++ List.from(pdf.trailerOverrides)).to[Map].to[List]
 
     // A file whose newest cross-reference section is a stream takes a stream for its update too.
     // The two forms cannot be chained through `/Prev`, which is defined to address a section of

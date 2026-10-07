@@ -56,6 +56,7 @@ import quantitative.*
 import rudiments.*
 import spectacular.*
 import symbolism.`+`
+import symbolism.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
@@ -223,8 +224,8 @@ object WebDriver:
       requested: Optional[Json] = Unset ):
 
     def on(port: Int): Local = copy(port = port)
-    def headless: Local = copy(arguments = arguments + driver.headless)
-    def arguing(more: Text*): Local = copy(arguments = arguments + more.to(List))
+    def headless: Local = copy(arguments = arguments ++ driver.headless)
+    def arguing(more: Text*): Local = copy(arguments = arguments ++ more.to(List))
 
     // Replaces the generated capabilities wholesale, for the cases this type does not model:
     // proxies, timeouts, mobile emulation, a Selenium grid's own extensions.
@@ -598,7 +599,7 @@ object WebDriver:
             case ctrl: Keypress.Ctrl => steps(within(ctrl))
             case other               => inner(other).lay(Nil)(steps(_))
 
-          (Action.KeyDown(held) :: nested) + List(Action.KeyUp(held))
+          (Action.KeyDown(held) :: nested) ++ List(Action.KeyUp(held))
 
       // Written by hand rather than derived: the discriminator is a `type` field whose values are
       // the specification's camel-cased names, and each variant carries a different set of keys.

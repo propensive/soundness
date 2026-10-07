@@ -134,7 +134,7 @@ object SourceCode:
             else
               resolvedCompletions.lay(Nil)(_.items)
 
-          val merged = items + resolvedItems
+          val merged = items ++ resolvedItems
 
           if binding then Completions(replace, items)
           else if merged.nil then resolvedCompletions
@@ -410,7 +410,7 @@ object SourceCode:
         interactiveCompletions(text, compilation, caret).or(collectCompletions(typerRun, caret))
 
       dynamicCompletions(text, compilation, caret).lay(standard): dynamic =>
-        Completions(dynamic.replace, dynamic.items + standard.items)
+        Completions(dynamic.replace, dynamic.items ++ standard.items)
 
     // `Compiled` runs the post-typer phases (stopping before bytecode generation,
     // so nothing is written to disk) purely to surface later diagnostics.
@@ -453,7 +453,7 @@ object SourceCode:
         // carries a read capability the pure formal rejects.
         val args = java.util.ArrayList[String]()
 
-        (t"-classpath" :: compilation.classpath :: compilation.arguments + List(t"")).each: argument =>
+        (t"-classpath" :: compilation.classpath :: compilation.arguments ++ List(t"")).each: argument =>
           args.add(argument.s)
           ()
 

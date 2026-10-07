@@ -149,7 +149,7 @@ object Tzdb:
 
         def f(string: Text) = format.cut(t"%s", 2).absolve match
           case value :: Nil           => value
-          case before :: after :: Nil => before+string+after
+          case before :: after :: Nil => before ++ string ++ after
 
         ZoneInfo(s, rules, f, if until.nil then None else Some(until.join(t" ")))
 
@@ -201,16 +201,16 @@ object Tzdb:
 
           line.cut(unsafely(r"\s+")) match
             case t"Rule" :: tail =>
-              recur(lineNo + 1, rest, parseRule(lineNo, tail) :: (pending(zone) + entries))
+              recur(lineNo + 1, rest, parseRule(lineNo, tail) :: (pending(zone) ++ entries))
 
             case t"Link" :: tail =>
-              recur(lineNo + 1, rest, parseLink(lineNo, tail) :: (pending(zone) + entries))
+              recur(lineNo + 1, rest, parseLink(lineNo, tail) :: (pending(zone) ++ entries))
 
             case t"Zone" :: tail =>
-              recur(lineNo + 1, rest, entries + pending(zone), parseZone(lineNo, tail))
+              recur(lineNo + 1, rest, entries ++ pending(zone), parseZone(lineNo, tail))
 
             case t"Leap" :: tail =>
-              recur(lineNo + 1, rest, parseLeap(lineNo, tail) :: (pending(zone) + entries))
+              recur(lineNo + 1, rest, parseLeap(lineNo, tail) :: (pending(zone) ++ entries))
 
             case t"" :: Nil =>
               recur(lineNo + 1, rest, entries, zone)
@@ -223,7 +223,7 @@ object Tzdb:
               recur(lineNo + 1, rest, entries, zone)
 
         case _ =>
-          entries + pending(zone)
+          entries ++ pending(zone)
 
     recur(1, lines)
 

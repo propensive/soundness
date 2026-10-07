@@ -75,7 +75,7 @@ object Chemical:
 
     given showable: Formula is Showable = formula =>
       formula.molecules.to[List].map: (molecule, count) =>
-        (if count == 1 then t"" else count.show)+molecule.show
+        (if count == 1 then t"" else count.show) ++ molecule.show
 
       . join(t" + ")
 

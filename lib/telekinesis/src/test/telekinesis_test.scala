@@ -244,7 +244,7 @@ object Tests extends Suite(m"Telekinesis tests"):
           . assert(_ == t"line1\r\nline2\r\n")
 
           test(m"Long body at block size $blockSize"):
-            val payload = (0 until 1000).map(i => (i%10).toString.tt).reduce(_ + _)
+            val payload = (0 until 1000).map(i => (i%10).toString.tt).reduce(_ ++ _)
             val fixture = t"HTTP/1.1 200 OK\r\n\r\n$payload"
             bodyText(Http.Response.parse(chunks(fixture, blockSize)))
 

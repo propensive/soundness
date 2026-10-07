@@ -109,7 +109,7 @@ def cli[bus <: Matchable](using executive: Executive)
         val jarFile: Path on Linux = System.properties.java.`class`.path[Text]().pipe: jarFile =>
           safely(jarFile.as[Path on Linux]).or:
             val work: Path on Linux = workingDirectory
-            work + jarFile.as[Relative on Linux]
+            work ++ jarFile.as[Relative on Linux]
 
         val work: Path on Linux = workingDirectory
         val relativeJar: Relative on Linux = work.toward(jarFile)

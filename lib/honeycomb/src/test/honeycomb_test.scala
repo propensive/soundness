@@ -943,7 +943,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         test(m"modify attribute"):
           val img = Img(alt = "hello")
-          img.alt = img.alt+" world"
+          img.alt = img.alt ++ " world"
         . assert(_ == Img(alt = "hello world"))
 
         test(m"class can be added to element with children"):
@@ -1034,7 +1034,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
         . assert(_ == Html.Fragment(Li("one"), Li("two"), Li("three")))
 
         test(m"Joining HTML"):
-          H1("title") + P("Hello world")
+          H1("title") ++ P("Hello world")
         . assert(_ == h"<h1>title</h1><p>Hello world</p>")
 
         test(m"Insert prefix child"):
@@ -1046,11 +1046,11 @@ object Tests extends Suite(m"Honeycombd Tests"):
         . assert(_ == h"<div><h1>title</h1><p>body</p></div>")
 
         test(m"Insert prefix children"):
-          Div(P("body")) ^+ (H1("title") + H2("subtitle"))
+          Div(P("body")) ^+ (H1("title") ++ H2("subtitle"))
         . assert(_ == h"<div><h1>title</h1><h2>subtitle</h2><p>body</p></div>")
 
         test(m"Insert suffix children"):
-          Div(H1("title")) +^ (P("body") + P("more"))
+          Div(H1("title")) +^ (P("body") ++ P("more"))
         . assert(_ == h"<div><h1>title</h1><p>body</p><p>more</p></div>")
 
       suite(m"Permissive parsing"):

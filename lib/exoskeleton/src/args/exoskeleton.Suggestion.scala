@@ -83,4 +83,4 @@ case class Suggestion
     // `compadd`'s display array; elsewhere the whole word is shown, as those shells do anyway.
     display:     Optional[Text] = Unset ):
 
-  def text: Text = prefix+core+suffix
+  def text: Text = prefix ++ core ++ suffix

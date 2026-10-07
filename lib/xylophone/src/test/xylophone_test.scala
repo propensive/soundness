@@ -976,10 +976,10 @@ object Tests extends Suite(m"Xylophone tests"):
       def utf8(text: Text): scala.Array[Byte] = text.s.getBytes("UTF-8").nn
 
       val soap: Text =
-        t"""<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:soap="http://""" +
-          t"""www.w3.org/2003/05/soap-envelope" xmlns:ord="urn:orders"><soap:Body>""" +
-          t"""<ord:Item ord:code="A&amp;B" note="&lt;tab&#x9;line&#xA;cr&#xD;&quot;">""" +
-          t"""Zoë ☃ 😀 &amp; &lt;b&gt; cr&#xD;</ord:Item><!-- a comment --><![CDATA[""" +
+        t"""<?xml version="1.0" encoding="UTF-8"?><soap:Envelope xmlns:soap="http://""" ++
+          t"""www.w3.org/2003/05/soap-envelope" xmlns:ord="urn:orders"><soap:Body>""" ++ 
+          t"""<ord:Item ord:code="A&amp;B" note="&lt;tab&#x9;line&#xA;cr&#xD;&quot;">""" ++
+          t"""Zoë ☃ 😀 &amp; &lt;b&gt; cr&#xD;</ord:Item><!-- a comment --><![CDATA[""" ++ 
           t"""<raw & text>]]><?target data?></soap:Body></soap:Envelope>"""
 
       val document = unsafely(soap.load[Xml])

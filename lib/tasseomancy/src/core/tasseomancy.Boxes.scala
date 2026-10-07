@@ -185,14 +185,14 @@ object Boxes:
                   box,
                   style.median(point(x0, y(summary.median)), point(x1, y(summary.median)), axis) )
 
-            val figures: List[Figure] = parts.fold(List[Figure]())(_ + _)
+            val figures: List[Figure] = parts.fold(List[Figure]())(_ ++ _)
 
             val part = seriesId(index) -> Group(figures, id = seriesId(index))
             index += 1
             part
 
           val legend = legendPart(layout.legend, names)
-          Framing.drawing(axesParts + seriesParts + legend)
+          Framing.drawing(axesParts ++ seriesParts ++ legend)
 
 // A box per set of samples: the box spans the quartiles with the median across it, and the
 // whiskers reach the least and greatest sample. Each set is a category on the abscissa.

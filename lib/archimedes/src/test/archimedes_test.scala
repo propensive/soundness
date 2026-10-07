@@ -55,7 +55,7 @@ object Tests extends Suite(m"Archimedes tests"):
       test(m"Render a rational as a fraction"):
         Q64(-3, 4).math.in[Xml].show
       .assert(_ == t"""<math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mo>−</mo>"""
-          + t"<mfrac><mn>3</mn><mn>4</mn></mfrac></mrow></math>")
+          ++ t"<mfrac><mn>3</mn><mn>4</mn></mfrac></mrow></math>")
 
       test(m"Render a whole rational as a number"):
         Q32(7).math.in[Xml].show
@@ -72,7 +72,7 @@ object Tests extends Suite(m"Archimedes tests"):
       test(m"Render the root math element with namespace"):
         Math(Msup(Mi(t"x"), Mn(t"2"))).in[Xml].show
       .assert(_ == t"""<math xmlns="http://www.w3.org/1998/Math/MathML"><msup><mi>x</mi><mn>2"""
-          + t"</mn></msup></math>")
+          ++ t"</mn></msup></math>")
 
       test(m"Render the display attribute"):
         Math(List(Mn(t"1")), Display.Block).in[Xml].show
@@ -84,7 +84,7 @@ object Tests extends Suite(m"Archimedes tests"):
 
       test(m"Parse a superscript from MathML text"):
         val source = t"""<math xmlns="http://www.w3.org/1998/Math/MathML"><msup><mi>x</mi>"""
-            + t"<mn>2</mn></msup></math>"
+            ++ t"<mn>2</mn></msup></math>"
 
         source.read[Math].contents
       .assert(_ == List(Msup(Mi(t"x"), Mn(t"2"))))
@@ -161,7 +161,7 @@ object Tests extends Suite(m"Archimedes tests"):
         body(t"(∑↓(i = 1)↑n x)")
       .assert: result =>
         result == t"<munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow>"
-            + t"<mi>n</mi></munderover><mi>x</mi>"
+            ++ t"<mi>n</mi></munderover><mi>x</mi>"
 
     suite(m"Accents"):
       test(m"an mo over a base is an accent"):
@@ -176,30 +176,30 @@ object Tests extends Suite(m"Archimedes tests"):
       test(m"row vector"):
         body(t"(⋯((1)(2)(3)))")
       .assert(_ == t"<mtable><mtr><mtd><mn>1</mn></mtd><mtd><mn>2</mn></mtd>"
-          + t"<mtd><mn>3</mn></mtd></mtr></mtable>")
+          ++ t"<mtd><mn>3</mn></mtd></mtr></mtable>")
 
       test(m"column vector"):
         body(t"(⋮((a)(b)))")
       .assert(_ == t"<mtable><mtr><mtd><mi>a</mi></mtd></mtr><mtr><mtd><mi>b</mi></mtd></mtr>"
-          + t"</mtable>")
+          ++ t"</mtable>")
 
       test(m"2x2 matrix"):
         body(t"(⋱(((1)(2))((3)(4))))")
       .assert(_ == t"<mtable><mtr><mtd><mn>1</mn></mtd><mtd><mn>2</mn></mtd></mtr><mtr>"
-          + t"<mtd><mn>3</mn></mtd><mtd><mn>4</mn></mtd></mtr></mtable>")
+          ++ t"<mtd><mn>3</mn></mtd><mtd><mn>4</mn></mtd></mtr></mtable>")
 
       test(m"a single-cell row keeps a multi-token expression together"):
         body(t"(⋱(((a b))((c))))")
       .assert(_ == t"<mtable><mtr><mtd><mrow><mi>a</mi><mi>b</mi></mrow></mtd></mtr><mtr>"
-          + t"<mtd><mi>c</mi></mtd></mtr></mtable>")
+          ++ t"<mtd><mi>c</mi></mtd></mtr></mtable>")
 
     suite(m"A whole formula"):
       test(m"the quadratic formula"):
         body(t"(x = (-b ± √(b↗2 - 4 a c))/(2 a))")
       .assert: result =>
         result == t"<mi>x</mi><mo>=</mo><mfrac><mrow><mo>-</mo><mi>b</mi><mo>±</mo><msqrt>"
-            + t"<mrow><msup><mi>b</mi><mn>2</mn></msup><mo>-</mo><mn>4</mn><mi>a</mi><mi>c</mi>"
-            + t"</mrow></msqrt></mrow><mrow><mn>2</mn><mi>a</mi></mrow></mfrac>"
+            ++ t"<mrow><msup><mi>b</mi><mn>2</mn></msup><mo>-</mo><mn>4</mn><mi>a</mi><mi>c</mi>"
+            ++ t"</mrow></msqrt></mrow><mrow><mn>2</mn><mi>a</mi></mrow></mfrac>"
 
     suite(m"Escaping"):
       test(m"a lone operator glyph is a literal mo"):
@@ -301,7 +301,7 @@ object Tests extends Suite(m"Archimedes tests"):
         val exponent = 2
         ergo"(x↗$exponent)".in[Xml].show
       .assert(_ == t"""<math xmlns="http://www.w3.org/1998/Math/MathML"><msup><mi>x</mi>"""
-          + t"<mn>2</mn></msup></math>")
+          ++ t"<mn>2</mn></msup></math>")
 
       test(m"two substitutions in sequence"):
         val left = 1

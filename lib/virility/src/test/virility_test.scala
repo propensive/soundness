@@ -110,4 +110,4 @@ object Tests extends Suite(m"Virility Tests"):
                  (List(Roff.Block.Paragraph(Roff.Inline.plain(t"indented"))))))))
         . serialize
       . assert(_ == t".TH \"DEMO\" \"1\" \"2026-08-17\" \"demo 1.0\" \"User Commands\"\n"
-                    + t".SH \"Name\"\ndemo \\- a demonstration\n.RS\n.P\nindented\n.RE\n")
+                    ++ t".SH \"Name\"\ndemo \\- a demonstration\n.RS\n.P\nindented\n.RE\n")

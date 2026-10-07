@@ -143,11 +143,11 @@ object Tests extends Suite(m"Burdock Tests"):
 
       test(m"a half bar is twenty blocks then twenty spaces"):
         ProgressBar.render(0.5).plain
-      .assert(_ == t"█"*20 + t" "*20)
+      .assert(_ == t"█"*20 ++ t" "*20)
 
       test(m"a sub-cell fraction renders one partial block"):
         ProgressBar.render(4.0/320).plain
-      .assert(_ == t"▌" + t" "*39)
+      .assert(_ == t"▌" ++ t" "*39)
 
       test(m"the bar is always forty cells wide"):
         List(0.0, 0.1, 0.333, 0.5, 0.9, 1.0).all(ProgressBar.render(_).plain.length == 40)

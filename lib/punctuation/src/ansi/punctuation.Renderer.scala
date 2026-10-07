@@ -148,11 +148,11 @@ object Renderer:
       level match
         case 1 =>
           val rule = e"${Fg(palette.heading)}(${t"━"*width})"
-          wrapped + List(rule)
+          wrapped ++ List(rule)
 
         case 2 =>
           val rule = e"${Fg(palette.heading)}(${t"─"*width})"
-          wrapped + List(rule)
+          wrapped ++ List(rule)
 
         case _ =>
           val prefix = e"${Fg(palette.subdued)}(${t"#"*level} )"
@@ -162,7 +162,7 @@ object Renderer:
               List(prefix)
 
             case head :: tail =>
-              (prefix + head) :: tail.map(indent(_, t" "*(level + 1)))
+              (prefix ++ head) :: tail.map(indent(_, t" "*(level + 1)))
 
     case Layout.Paragraph(_, children*) =>
       val styled = children.map(inlineProse(_)).to(List).join
@@ -177,7 +177,7 @@ object Renderer:
       val innerBlocks = children.map(layoutLines(_, innerWidth)).filter(!_.nil)
       val joined = interleaveBlanks(innerBlocks.to(List))
 
-      joined.map: line => if line.plain.length == 0 then bar else bar + Space + line
+      joined.map: line => if line.plain.length == 0 then bar else bar ++ Space ++ line
 
     case Layout.BulletList(_, tight, items*) =>
       renderList(items.to(List), tight, width, _ => bullet(palette))
@@ -241,7 +241,7 @@ object Renderer:
           case Nil            => List(mk)
 
           case head :: tail =>
-            (mk + Space + head) :: tail.map(indent(_, hang))
+            (mk ++ Space ++ head) :: tail.map(indent(_, hang))
 
       if tight then rendered.flat
       else interleaveBlanks(rendered)
@@ -258,12 +258,12 @@ object Renderer:
     blocks match
       case Nil          => Nil
       case head :: Nil  => head
-      case head :: tail => head + (Teletype.empty :: interleaveBlanks(tail))
+      case head :: tail => head ++ (Teletype.empty :: interleaveBlanks(tail))
 
   // Prefix a single line's content with `prefix` (no newlines should appear
   // in `line`).
   private def indent(line: Teletype, prefix: Text): Teletype =
-    if line.plain.length == 0 then Teletype(prefix) else Teletype(prefix)+line
+    if line.plain.length == 0 then Teletype(prefix) else Teletype(prefix) ++ line
 
   // Join a list of lines into one Teletype with embedded newlines.
   private def joinLines(lines: List[Teletype]): Teletype =

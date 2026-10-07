@@ -70,7 +70,7 @@ trait RectoPanel extends Archetype:
   // This feature's own rules; override to restyle the panel and its grid.
   protected def rectoStyles: Css =
     val layout = RectoPanel.layoutClass
-    css"$layout { display: grid; grid-template-columns: 1fr auto; gap: ${rectoGap} }" +
+    css"$layout { display: grid; grid-template-columns: 1fr auto; gap: ${rectoGap} }" ++
       css"${RectoPanel.rectoClass} { inline-size: ${rectoWidth} }"
 
   protected override def frame: Html of (? <: Flow) =
@@ -78,4 +78,4 @@ trait RectoPanel extends Archetype:
     val panel = Aside(`class` = RectoPanel.rectoClass)(recto)
     rectoArrangement(content, panel)
 
-  protected override def styles: Css = super.styles + rectoStyles
+  protected override def styles: Css = super.styles ++ rectoStyles

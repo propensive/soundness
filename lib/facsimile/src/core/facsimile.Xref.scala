@@ -81,11 +81,11 @@ private[facsimile] object Xref:
           val (hybridEntries, _) = stream(source, hybrid)
 
 
-          hybridEntries + classicEntries.filter: (number, entry) =>
+          hybridEntries ++ classicEntries.filter: (number, entry) =>
             entry != Entry.Free || !hybridEntries.defines(number)
 
-      val mergedEntries = sectionEntries + entries
-      val mergedTrailer = sectionTrailer + trailer
+      val mergedEntries = sectionEntries ++ entries
+      val mergedTrailer = sectionTrailer ++ trailer
 
       sectionTrailer(t"Prev").let(_.long)
       . lay(Xref(mergedEntries, mergedTrailer, head, streamed(source, head))): previous =>

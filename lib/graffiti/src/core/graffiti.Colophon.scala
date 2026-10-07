@@ -56,4 +56,4 @@ trait Colophon extends Archetype:
   protected override def frame: Html of (? <: Flow) =
     Html.Fragment[Flow](super.frame, Footer(`class` = Colophon.colophonClass)(colophon))
 
-  protected override def styles: Css = super.styles + colophonStyles
+  protected override def styles: Css = super.styles ++ colophonStyles

@@ -159,7 +159,7 @@ object Tests extends Suite(m"Punctuation tests"):
     suite(m"Serializer wrapping"):
       def squash(text: Text): Text = text.cut(t"\n").join(t"").cut(t" ").join(t"")
       val src = t"alpha beta gamma delta epsilon zeta eta theta iota kappa"
-      val document = Parser.parse(src+t"\n")
+      val document = Parser.parse(src ++ t"\n")
 
       test(m"bounded width keeps every line within the limit"):
         given Markdown.Formatting = Markdown.Formatting.bounded(20)

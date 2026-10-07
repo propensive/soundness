@@ -676,7 +676,7 @@ class Anthropic private
 
     val entries: List[Json] = requests.map: request =>
       val message = Llm.Message(Llm.Role.User, request.prompt)
-      val turn = Llm.Exchange(system, priming + List(message), List(), settings, schema)
+      val turn = Llm.Exchange(system, priming ++ List(message), List(), settings, schema)
       Json.make(custom_id = request.id.in[Json], params = payload(turn, streaming = false))
 
     val body = Json.make(requests = entries.in[Json])

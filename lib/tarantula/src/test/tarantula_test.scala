@@ -346,7 +346,7 @@ object Tests extends Suite(m"Tarantula tests"):
           if method == Http.Post && path == t"/session"
           then
             value:
-              t"""{"sessionId":"$sessionId","capabilities":""" +
+              t"""{"sessionId":"$sessionId","capabilities":""" ++
                   t"""{"browserName":"firefox","browserVersion":"153.0"}}"""
           else none
 
@@ -359,7 +359,7 @@ object Tests extends Suite(m"Tarantula tests"):
       test(m"the error object's data member is kept"):
         val fake = driver: (_, _) =>
           Http.Response(Http.BadRequest):
-            t"""{"value":{"error":"unexpected alert open","message":"open","stacktrace":"",""" +
+            t"""{"value":{"error":"unexpected alert open","message":"open","stacktrace":"",""" ++
                 t""""data":{"text":"Are you sure?"}}}"""
 
         given Http.Backend = fake
@@ -437,7 +437,7 @@ object Tests extends Suite(m"Tarantula tests"):
       test(m"a keypress is one keyboard source with two steps"):
         performed(List(WebDriver.Session.Action.KeyDown(t"a"), WebDriver.Session.Action.KeyUp(t"a")))
       . assert:
-          _ == t"""{"actions":[{"id":"keyboard","type":"key","actions":""" +
+          _ == t"""{"actions":[{"id":"keyboard","type":"key","actions":""" ++
               t"""[{"type":"keyDown","value":"a"},{"type":"keyUp","value":"a"}]}]}"""
 
       test(m"a pause carries its duration"):
@@ -456,7 +456,7 @@ object Tests extends Suite(m"Tarantula tests"):
         performed2(Keypress.Ctrl('A'))
       . assert:
           _.contains
-           ( t"""[{"type":"keyDown","value":"\uE009"},{"type":"keyDown","value":"A"},""" +
+           ( t"""[{"type":"keyDown","value":"\uE009"},{"type":"keyDown","value":"A"},""" ++
              t"""{"type":"keyUp","value":"A"},{"type":"keyUp","value":"\uE009"}]""" )
 
       test(m"nested modifiers nest their held keys"):
@@ -491,8 +491,8 @@ object Tests extends Suite(m"Tarantula tests"):
 
       val page: Text =
         t"""<!DOCTYPE html><html><head><title>Tarantula</title></head><body>"""
-        + t"""<h1 id="greeting">Hello</h1><p class="note">A paragraph.</p>"""
-        + t"""<input id="field" value=""></body></html>"""
+        ++ t"""<h1 id="greeting">Hello</h1><p class="note">A paragraph.</p>"""
+        ++ t"""<input id="field" value=""></body></html>"""
 
       // The real transport, only for this block: everything above deliberately runs against a
       // fake backend, and summoning both at once would be ambiguous.

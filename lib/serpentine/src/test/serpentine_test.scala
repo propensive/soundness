@@ -531,28 +531,28 @@ object Tests extends Suite(m"internal Benchmarks"):
 
       test(m"Add relative parent"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
-        path1 + (? / ^)
+        path1 ++ (? / ^)
 
       . assert(_ == % / "home" / "work" / "data")
 
 
       test(m"Add relative grandparent"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
-        path1 + (? / ^ / ^)
+        path1 ++ (? / ^ / ^)
 
       . assert(_ == % / "home" / "work")
 
 
       test(m"Add relative cousin"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
-        path1 + (? / ^ / ^ / "baz" / "quux")
+        path1 ++ (? / ^ / ^ / "baz" / "quux")
 
       . assert(_ == % / "home" / "work" / "baz" / "quux")
 
 
       test(m"Add relative cousin, statically"):
         val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
-        val p2: Path of ("quux", "baz", "work", "home") = path1 + (? / ^ / ^ / "baz" / "quux")
+        val p2: Path of ("quux", "baz", "work", "home") = path1 ++ (? / ^ / ^ / "baz" / "quux")
         p2
 
       . assert(_ == % / "home" / "work" / "baz" / "quux")

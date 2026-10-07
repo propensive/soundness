@@ -58,7 +58,7 @@ object Pie:
     def labelThreshold: Double = 0.04
 
     def wedge(ops: List[Stroke], color: Color in Srgb, index: Int): List[Figure] =
-      List(Outline(ops, style = filled(color) + Css.Style.of(List(t"fill-rule" -> t"evenodd"))))
+      List(Outline(ops, style = filled(color) ++ Css.Style.of(List(t"fill-rule" -> t"evenodd"))))
 
     // A wedge's percentage, centred in the wedge when that is clear of other labels, or moved
     // outward with a leader when it is not.
@@ -143,7 +143,7 @@ object Pie:
                   arc(hole, true, Sweep.Counterclockwise, 0.0),
                   Stroke.MoveTo(rim(π, hole)) )
 
-            inner + outer
+            inner ++ outer
 
         arrange:
           canvas(page)
@@ -176,7 +176,7 @@ object Pie:
 
             start = end
             index += 1
-            label.reverse + (shape.reverse + acc)
+            label.reverse ++ (shape.reverse ++ acc)
 
           val wedges = Svg.Id(t"wedges") -> Group(figures.reverse, id = Svg.Id(t"wedges"))
           Framing.drawing(wedges :: legendPart(legendFrame(names), names))

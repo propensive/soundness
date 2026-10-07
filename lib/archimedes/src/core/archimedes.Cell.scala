@@ -122,7 +122,7 @@ object Cell:
     val width = max(numerator.width, denominator.width) + 2
     val top = numerator.hcenter(width)
     val bottom = denominator.hcenter(width)
-    Cell((top.lines :+ repeat(Bar, width)) + bottom.lines, width, top.height)
+    Cell((top.lines :+ repeat(Bar, width)) ++ bottom.lines, width, top.height)
 
   // Unicode already provides ready-made superscript and subscript glyphs for the
   // digits, the sign and bracket operators, and much (but not all) of the Latin
@@ -254,16 +254,16 @@ object Cell:
 
   def overscript(base: Cell, over: Cell): Cell =
     val width = max(base.width, over.width)
-    Cell(over.hcenter(width).lines + base.hcenter(width).lines, width, over.height + base.baseline)
+    Cell(over.hcenter(width).lines ++ base.hcenter(width).lines, width, over.height + base.baseline)
 
   def underscript(base: Cell, under: Cell): Cell =
     val width = max(base.width, under.width)
-    Cell(base.hcenter(width).lines + under.hcenter(width).lines, width, base.baseline)
+    Cell(base.hcenter(width).lines ++ under.hcenter(width).lines, width, base.baseline)
 
   def underover(base: Cell, under: Cell, over: Cell): Cell =
     val width = max(max(base.width, under.width), over.width)
 
-    val lines = over.hcenter(width).lines + base.hcenter(width).lines + under.hcenter(width).lines
+    val lines = over.hcenter(width).lines ++ base.hcenter(width).lines ++ under.hcenter(width).lines
     Cell(lines, width, over.height + base.baseline)
 
   // A square root. Over a single line the compact `√` glyph suffices; over taller
@@ -284,7 +284,7 @@ object Cell:
       val foot = if ordinal.n0 == inner.height - 1 then Tick else ' '
       Writing(t"$foot$Stem${line.text}")
 
-    Cell(Sequence(overline) + body, inner.width + 2, inner.baseline + 1)
+    Cell(Sequence(overline) ++ body, inner.width + 2, inner.baseline + 1)
 
   // An nth root always uses the tall sign so the `index` can sit one line above,
   // to the left of the corner.
@@ -490,4 +490,4 @@ case class Cell(lines: Sequence[Writing], width: Int, baseline: Int):
     val above = Cell.max(ascent - baseline, 0)
     val below = Cell.max(descent - (height - 1 - baseline), 0)
     val blank = Cell.spaces(width)
-    Cell(Sequence.from(Iterator.fill(above)(blank)) + lines + Sequence.from(Iterator.fill(below)(blank)), width, ascent)
+    Cell(Sequence.from(Iterator.fill(above)(blank)) ++ lines ++ Sequence.from(Iterator.fill(below)(blank)), width, ascent)

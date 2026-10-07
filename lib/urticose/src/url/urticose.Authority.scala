@@ -48,7 +48,7 @@ import vacuous.*
 
 object Authority:
   given showable: Authority is Showable = auth =>
-    t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host.show}${auth.port.let(_.show).lay(t"")(t":"+_)}"
+    t"${auth.userInfo.lay(t"")(_ ++ t"@")}${auth.host.show}${auth.port.let(_.show).lay(t"")(t":" ++ _)}"
 
   // The authority as it appears in a URL, with the `//` which introduces it: that prefix says
   // which part of a URL the value is, and keeps the rendering from being mistaken for a bare

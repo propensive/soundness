@@ -76,11 +76,11 @@ object Tests extends Suite(m"Fulminate Tests"):
       . assert(_ == ((3, 2)))
 
       test(m"Append concatenates texts at the boundary"):
-        (m"hello " + m"world").text
+        (m"hello " ++ m"world").text
       . assert(_ == t"hello world")
 
       test(m"Append yields one continuous text segment when boundary merges"):
-        (m"hello " + m"world").texts.size
+        (m"hello " ++ m"world").texts.size
       . assert(_ == 1)
 
       test(m"Embedded message renders italics at depth 1 in colorText"):

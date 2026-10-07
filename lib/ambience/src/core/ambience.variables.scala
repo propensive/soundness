@@ -52,6 +52,6 @@ object variables extends Dynamic:
       def variable(name: Text): Optional[Text] = map(name).or(environment0.variable(name))
 
       override def entries: Optional[Map[Text, Text]] =
-        environment0.entries.let(_ + map)
+        environment0.entries.let(_ ++ map)
 
     block(using environment)

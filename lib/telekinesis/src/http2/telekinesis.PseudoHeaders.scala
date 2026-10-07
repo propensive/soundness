@@ -66,7 +66,7 @@ object PseudoHeaders:
 
     val regular = request.textHeaders.map: header => Hpack.Entry(header.key.lower, header.value)
 
-    pseudo + regular
+    pseudo ++ regular
 
   // Reconstruct an `Http.Response` from a decoded HEADERS block and the body stream.
   // `:status` selects the `Http.Status`; other fields become response headers.

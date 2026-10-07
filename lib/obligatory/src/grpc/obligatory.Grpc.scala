@@ -47,6 +47,7 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.`+`
+import symbolism.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
@@ -148,7 +149,7 @@ object Grpc:
     private def httpRequest(method: Grpc.Method, metadata: Grpc.Metadata, message: Data)
     :   Http.Request =
 
-      val metadataHeaders = (defaults.entries + metadata.entries).map: (key, value) =>
+      val metadataHeaders = (defaults.entries ++ metadata.entries).map: (key, value) =>
         Http.Header(key, value)
 
       val headers =
@@ -175,7 +176,7 @@ object Grpc:
       ( using Monitor^, Tactic[Error], Tactic[Async.Error] )
     :   Unit =
 
-      val fields = stream.trailers.await() + stream.headers.await()
+      val fields = stream.trailers.await() ++ stream.headers.await()
       val codeText = fields.seek(_.name == t"grpc-status").let(_.value)
       val message = fields.seek(_.name == t"grpc-message").let(_.value).or(t"")
 
@@ -280,7 +281,7 @@ object Grpc:
             (length >>> 8).toByte,
             length.toByte )
 
-      Array.frozen(header.readable ++ payload.readable)
+      header ++ payload
 
     given framable: (tactic: Tactic[Error])
     =>  ((Data is Framable by Framing)^{tactic}) = input =>

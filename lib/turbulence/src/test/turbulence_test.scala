@@ -110,7 +110,7 @@ object Tests extends Suite(m"Turbulence tests"):
         asc2 <- List(t"", t"a", t"ab", t"abc") // 256
         cp4  <- List(t"", t"𐍈")                // 512
         asc3 <- List(t"", t"a", t"ab", t"abc") // 2048
-      yield asc0+cp2+asc1+cp3+asc2+cp4
+      yield asc0 ++ cp2 ++ asc1 ++ cp3 ++ asc2 ++ cp4
 
       for
         string <- strings
@@ -277,7 +277,7 @@ object Tests extends Suite(m"Turbulence tests"):
       object TextStore:
         given TextStore is Writable by Text = (store, stream) =>
           zephyrine.chain(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]).each: text =>
-            store.text = store.text + text
+            store.text = store.text ++ text
 
       test(m"Write Text to some reference with Text and Data instances"):
         val store = GeneralStore()
@@ -701,7 +701,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
         test(m"a line spanning many windows is reassembled"):
           val long = Text(String(scala.Array.fill(10000)('x')))
-          val input = long + t"\ny"
+          val input = long ++ t"\ny"
           input.s.grouped(7).map(_.tt).stream.delineate.records.to(List)
         . assert(_ == List(Text(String(scala.Array.fill(10000)('x'))), t"y"))
 
@@ -724,7 +724,7 @@ object Tests extends Suite(m"Turbulence tests"):
         for size <- List(10, 100, 700, 1000, 4000) do
           test(m"a long line of multi-byte characters is decoded whole, $size chars"):
             val long = Text(String(scala.Array.fill(size)('数')))
-            splitBytes(long + t"\n" + long, 3) == List(long, long)
+            splitBytes(long ++ t"\n" ++ long, 3) == List(long, long)
           . assert(_ == true)
 
         test(m"lines of an empty byte stream is empty"):

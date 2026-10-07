@@ -381,7 +381,7 @@ object internal:
       def hex(values: List[Int]): Text =
         values.map(_.hex).join(t":")
 
-      val groups = unpack(ip.highBits) + unpack(ip.lowBits)
+      val groups = unpack(ip.highBits) ++ unpack(ip.lowBits)
       // `longestTrain` is defined on `Iterable`, which the opaque `List` is not.
       val (middleIndex, middleLength) = groups.stdlib.longestTrain(_ == 0)
 
@@ -420,7 +420,7 @@ object internal:
           then
             raise(IpAddress.Error(Ipv6TooManyNonzeroGroups(leftGroups.size + rightGroups.size)))
 
-          leftGroups + List.fill(8 - leftGroups.size - rightGroups.size)(t"0") +
+          leftGroups ++ List.fill(8 - leftGroups.size - rightGroups.size)(t"0") ++ 
             rightGroups
 
         case List(whole) =>

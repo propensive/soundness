@@ -129,7 +129,7 @@ package teletypeables:
             val sameClass = frame.displayClass == lastClass
             val sameFile = frame.file == lastFile
             val subRows = frame.inlined.map(Row(frame, true, false, _)).reverse
-            (subRows + (Row(frame, sameClass, sameFile) :: acc), frame.displayClass, frame.file)
+            (subRows ++ (Row(frame, sameClass, sameFile) :: acc), frame.displayClass, frame.file)
 
         . _1.reverse
 

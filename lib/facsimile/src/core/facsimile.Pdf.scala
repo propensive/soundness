@@ -217,7 +217,7 @@ object Pdf:
         m"an I/O operation failed: $detail"
 
       case Reason.WriteUnsupported =>
-        m"this document cannot be written (only an unencrypted, on-disk file with a valid " +
+        m"this document cannot be written (only an unencrypted, on-disk file with a valid " ++
             m"cross-reference table can be edited in place)"
 
       case Reason.MissingPage(page) =>
@@ -1116,7 +1116,7 @@ extends caps.ExclusiveCapability:
       resolved(catalog(t"Names").or(Cos.Nil))(t"Dests")
       . let(Trees.names(_)(using this).to[Map]).or(Map[Text, Cos]())
 
-    old + tree
+    old ++ tree
 
   def destinations(using Tactic[Pdf.Error]): Map[Text, Destination] =
     val pages = pageNumbers

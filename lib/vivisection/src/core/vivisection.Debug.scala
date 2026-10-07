@@ -153,7 +153,7 @@ extends caps.ExclusiveCapability:
     val exclusions: List[Jdwp.Modifier] = excluding.map(Jdwp.Modifier.ClassExclude(_))
 
     val modifiers: List[Jdwp.Modifier] =
-      Jdwp.Modifier.Step(thread, size, depth) :: exclusions + List(Jdwp.Modifier.Count(1))
+      Jdwp.Modifier.Step(thread, size, depth) :: exclusions ++ List(Jdwp.Modifier.Count(1))
 
     connection.eventRequestSet(Jdwp.EventKind.SingleStep, Jdwp.SuspendPolicy.EventThread, modifiers)
 
@@ -616,5 +616,5 @@ extends caps.ExclusiveCapability:
     // search never runs against an uninstantiated result variable (the wildApprox hazard).
     def key(location: Jdwp.Location): (Long, Long) = (location.method.long, location.index)
 
-    val all: List[Jdwp.Location] = exact + inlined
+    val all: List[Jdwp.Location] = exact ++ inlined
     all.deduplicate(key(_))

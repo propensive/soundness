@@ -90,7 +90,7 @@ object internal:
           // each group in front of the accumulator restores the parameters' source order.
           val combined: Expr[List[(Text, Text)]] =
             done.fold('{List.empty[(Text, Text)]}): (accumulator, group) =>
-              '{$group + $accumulator}
+              '{$group ++ $accumulator}
 
           '{Query($combined)}
 

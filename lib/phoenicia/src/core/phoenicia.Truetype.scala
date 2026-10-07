@@ -137,7 +137,7 @@ case class Truetype(data: Data) extends Sfnt:
 
       case head :: tail =>
         val fresh = table(head).components.filter(!seen.has(_))
-        expand(fresh + tail, seen + fresh.to[Set])
+        expand(fresh ++ tail, seen ++ fresh.to[Set])
 
     expand(glyphIds.to[List], glyphIds)
 

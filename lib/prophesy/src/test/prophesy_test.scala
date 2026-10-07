@@ -68,7 +68,7 @@ object Tests extends Suite(m"Prophesy tests"):
 
       test(m"the full set is the union of hard and soft"):
         ScalaKeywords.all
-      . assert(_ == ScalaKeywords.hard + ScalaKeywords.soft)
+      . assert(_ == ScalaKeywords.hard ++ ScalaKeywords.soft)
 
       test(m"soft keywords are included"):
         List(t"inline", t"using", t"extension", t"end").all { (word: Text) => ScalaKeywords.all.has(word) }

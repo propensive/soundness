@@ -106,7 +106,7 @@ object Print:
   // face, else the first file, else nothing for a provision without files.
   def embedded(font: Font): Optional[Sfnt] =
     def files(sources: List[Typesettable.Source]): List[Sfnt] = sources match
-      case Typesettable.Source.Embedded(sfnt) :: tail => List(sfnt) + files(tail)
+      case Typesettable.Source.Embedded(sfnt) :: tail => List(sfnt) ++ files(tail)
       case _ :: tail                                  => files(tail)
       case _                                          => Nil
 

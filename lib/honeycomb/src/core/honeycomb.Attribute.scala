@@ -45,4 +45,4 @@ case class Attribute(label: Text, elements: Set[Text], global: Boolean):
   def targets(tag: Text): Boolean = global || elements.has(tag)
 
   def merge(that: Attribute): Attribute =
-    Attribute(label, elements + that.elements, global || that.global)
+    Attribute(label, elements ++ that.elements, global || that.global)

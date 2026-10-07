@@ -81,8 +81,8 @@ extension (face: Face)
         List(t"font-feature-settings" -> face.features.map(setting).join(t", "))
 
     Css.Style.of
-      ( List(t"font-family" -> family, t"font-weight" -> face.weight.show) + slant + stretch +
-        variations + features )
+      ( List(t"font-family" -> family, t"font-weight" -> face.weight.show) ++ slant ++ stretch ++
+        variations ++ features )
 
 extension (font: Font) def style: Css.Style = font.face.style
 

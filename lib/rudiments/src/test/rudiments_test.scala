@@ -295,7 +295,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       test(m"maps concatenate right-biased"):
         val left: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
         val right: Map[Text, Int] = Map(t"b" -> 20, t"c" -> 3)
-        left + right
+        left ++ right
       . assert(_ == Map(t"a" -> 1, t"b" -> 20, t"c" -> 3))
 
     suite(m"Set algebra tests"):
@@ -312,7 +312,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       test(m"union is concatenation"):
         val xs: Set[Int] = Set(1, 2)
         val ys: Set[Int] = Set(2, 3)
-        xs + ys
+        xs ++ ys
       . assert(_ == Set(1, 2, 3))
 
     suite(m"Keyed tests"):
@@ -371,7 +371,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_.nonEmpty)
 
       test(m"a branded literal compares with its unbranded self"):
-        proscenium.List(1, 2, 3) == (proscenium.List(1) + proscenium.List(2, 3)
+        proscenium.List(1, 2, 3) == (proscenium.List(1) ++ proscenium.List(2, 3)
             : proscenium.List[Int])
       . assert(_ == true)
 
@@ -1068,7 +1068,7 @@ object Tests extends Suite(m"Rudiments Tests"):
         val map1: Map[Int, List[String]] = Map(1 -> List("one"), 2 -> List("two"))
         val map2: Map[Int, List[String]] = Map(2 -> List("deux"), 3 -> List("trois"))
         map1.collate(map2): (left, right) =>
-          left + right
+          left ++ right
       . assert(_ == (Map(1 -> List("one"), 2 -> List("two", "deux"), 3 -> List("trois"))
             : Map[Int, List[String]]))
 

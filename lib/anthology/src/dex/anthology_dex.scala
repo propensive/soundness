@@ -53,6 +53,7 @@ import rudiments.{bind, partition, to}
 import murmuration.map
 import symbolism.`+`
 import serpentine.*
+import symbolism.*
 import vacuous.*
 
 // The dexing configuration `dexEdges`' tool folds settings into: the lowest Android API level
@@ -156,7 +157,7 @@ object dexEdges:
       jnf.Files.createDirectories(outPath)
 
       val builder = D8Command.builder(handler).nn
-      builder.addProgramFiles((archives + classfiles).to[java.util.List])
+      builder.addProgramFiles((archives ++ classfiles).to[java.util.List])
       builder.setMinApiLevel(form.minApi)
       builder.setMode(form.mode)
       builder.setOutput(outPath.resolve("main.dex.jar").nn, OutputMode.DexIndexed)

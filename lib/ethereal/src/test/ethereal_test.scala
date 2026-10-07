@@ -145,7 +145,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
                 case Argument("lines") :: arguments =>
                   execute:
-                    Out.print(arguments.map(_()).join(t"\n") + t"\n") yet Exit.Ok
+                    Out.print(arguments.map(_()).join(t"\n") ++ t"\n") yet Exit.Ok
 
                 case Argument("echo") :: text :: Nil =>
                   execute(Out.print(text()) yet Exit.Ok)

@@ -168,7 +168,7 @@ object Ansi extends Ansi2:
     def addInsertion(position: Int, content: Text): Unit =
       insertions.updateWith(position):
         case None             => Some(content)
-        case Some(existing)   => Some(existing+content)
+        case Some(existing)   => Some(existing ++ content)
 
     def pushStyleFrame(bracket: Char, transform: Transform): Unit =
       stack = Frame.Style(bracket) :: stack
@@ -182,7 +182,7 @@ object Ansi extends Ansi2:
 
     def pushEscapeFrame(bracket: Char, on: Text, off: Text): Unit =
       stack = Frame.Escape(bracket, off) :: stack
-      addInsertion(plain.length, t"\e"+on)
+      addInsertion(plain.length, t"\e" ++ on)
 
     def popFrame(): Unit = stack match
       case (_: Frame.Style) :: tail =>
@@ -202,7 +202,7 @@ object Ansi extends Ansi2:
 
       case (escape: Frame.Escape) :: tail =>
         stack = tail
-        addInsertion(plain.length, t"\e"+escape.off)
+        addInsertion(plain.length, t"\e" ++ escape.off)
 
       case Nil =>
         ()
@@ -271,7 +271,7 @@ object Ansi extends Ansi2:
               closures(state, text.skip(1))
 
             case _ =>
-              state.addInsertion(state.plain.length, t"\e"+on)
+              state.addInsertion(state.plain.length, t"\e" ++ on)
               state.last = Unset
               closures(state, text)
 

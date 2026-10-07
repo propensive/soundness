@@ -280,7 +280,7 @@ trait Sfnt:
         val record = list + 2 + index*6
         String(Array.unsafeJvm(data), record, 4, StandardCharsets.US_ASCII).tt
 
-    (featureTags(Sfnt.Table.Otf.Gsub) + featureTags(Sfnt.Table.Otf.Gpos)).distinct.map:
+    (featureTags(Sfnt.Table.Otf.Gsub) ++ featureTags(Sfnt.Table.Otf.Gpos)).distinct.map:
       tag => Face.Feature(tag)
 
   // The font variations table: the axes along which a variable font's outlines move, each with

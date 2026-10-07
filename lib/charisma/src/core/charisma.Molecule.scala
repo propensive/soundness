@@ -65,7 +65,7 @@ object Molecule:
           molecule.elements.omit(PeriodicTable.C).omit(PeriodicTable.H)
           . to[List].order(_(0).symbol)
 
-        carbon :: hydrogen + rest
+        carbon :: hydrogen ++ rest
 
     val suffix =
       val polarity =
@@ -82,7 +82,7 @@ object Molecule:
 
       t"${element.symbol}$number"
 
-    . join +
+    . join ++
       suffix
 
   // The chemical formula which `Showable` builds — element symbols with subscript counts, then the

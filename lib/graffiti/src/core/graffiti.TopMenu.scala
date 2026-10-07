@@ -61,4 +61,4 @@ trait TopMenu extends Archetype:
   protected def menuStyles: Css = css"${TopMenu.menuClass} { display: flex; gap: ${menuGap} }"
 
   protected override def frame: Html of (? <: Flow) = Html.Fragment[Flow](menu, super.frame)
-  protected override def styles: Css = super.styles + menuStyles
+  protected override def styles: Css = super.styles ++ menuStyles

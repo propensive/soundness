@@ -247,5 +247,5 @@ extends Documentary:
     val displayPairs: List[(Text, Text)] = display.lay(Nil): value =>
       List(t"display" -> value.encode)
 
-    (t"xmlns" -> mathmlNamespace) :: displayPairs + attributes
+    (t"xmlns" -> mathmlNamespace) :: displayPairs ++ attributes
 

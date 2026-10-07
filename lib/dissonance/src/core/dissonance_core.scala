@@ -79,7 +79,7 @@ def evolve[element: ClassTag]
                   case Del(index, _)    => left.readable(index)
                   case Par(index, _, _) => left.readable(index).add(iteration)
 
-            updates + done
+            updates ++ done
 
           edits match
             case Nil => atoms match
@@ -161,7 +161,7 @@ def diff[element]
     if best == left.length && (best - deletes + inserts) == right.length
     then Diff(backtrack(left.length - 1, deletes, rows, Nil)*).retained
     else if inserts > 0 then trace(deletes + 1, inserts - 1, best :: focus, rows)
-    else trace(0, deletes + 1, Nil, (focus.reverse + List(best)).to[Array] :: rows)
+    else trace(0, deletes + 1, Nil, (focus.reverse ++ List(best)).to[Array] :: rows)
 
   @tailrec
   def backtrack(position: Int, deletes: Int, rows: List[Array[Int]^{}], edits: Edits): Edits =

@@ -269,7 +269,7 @@ class Form
 
         // An animated fixture is dirty by definition: its appearance depends on the clock, not on
         // its rectangle or its state, so nothing else in `dirtyCells` would notice it changing.
-        val dirty = dirtyCells(previousRects, updated.entries.map(_.rect), changed + animated)
+        val dirty = dirtyCells(previousRects, updated.entries.map(_.rect), changed ++ animated)
         dirty.each { index => updated.entries.confine(index.z).let(paint(updated)(_)) }
 
     updated.focusables.confine(focusPosition(updated).z).let: position =>
@@ -312,7 +312,7 @@ class Form
   // Repaint immediately, folding in any coalesced or pending-resize work. Used for
   // typing, focus changes and application redraws, which must stay responsive.
   private def requestRefresh(changed: Set[Int]): Unit =
-    deferred = deferred.lay(changed)(_ + changed)
+    deferred = deferred.lay(changed)(_ ++ changed)
     flushDeferred()
 
   // Milliseconds until a coalesced resize may repaint: `debounce` ms after the last
@@ -460,7 +460,7 @@ class Form
               // repaint coalesces into the debounced resize flush: presenting now would
               // draw against stale geometry and move the parked cursor out from under
               // the anchor recovery. (A wake is always scheduled while `resizePending`.)
-              if resizePending then deferred = deferred.lay(changed)(_ + changed)
+              if resizePending then deferred = deferred.lay(changed)(_ ++ changed)
               else requestRefresh(changed)
 
     root match

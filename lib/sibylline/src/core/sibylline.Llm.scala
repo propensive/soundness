@@ -546,12 +546,12 @@ object Llm:
     def usage: Usage = usage0
 
     private def exchange(message: Message, extra: List[Tool] = List()): Exchange =
-      Exchange(system, history0 + List(message), tools + extra, settings)
+      Exchange(system, history0 ++ List(message), tools ++ extra, settings)
 
     // Seed or amend the history without a round trip: replaying a transcript, or a tool loop
     // recording synthesized turns.
     update def record(message: Message): Unit =
-      history0 = history0 + List(message)
+      history0 = history0 ++ List(message)
 
     update def ask(text: Text)(using toolkit: Toolkit^): Reply = ask(Message(Role.User, text))
 
@@ -605,7 +605,7 @@ object Llm:
     private[sibylline] update def forced(message: Message, answer: Tool): Reply =
       val turn =
         Exchange
-          ( system, history0 + List(message), List(answer),
+          ( system, history0 ++ List(message), List(answer),
             settings.copy(toolChoice = ToolChoice.Named(answer.name)) )
 
       val reply = dialect.exchange(turn)
@@ -622,7 +622,7 @@ object Llm:
     // One turn whose reply must conform to `schema`: the native counterpart of `forced`, for a
     // dialect that is `structured`. No tools are offered, so the reply is the document itself.
     private[sibylline] update def shaped(message: Message, schema: JsonSchema): Reply =
-      val turn = Exchange(system, history0 + List(message), List(), settings, schema)
+      val turn = Exchange(system, history0 ++ List(message), List(), settings, schema)
       val reply = dialect.exchange(turn)
       commit(message, reply)
       reply
@@ -646,5 +646,5 @@ object Llm:
         Response(this, message, dialect.stream(exchange(message)))
 
     private[sibylline] update def commit(message: Message, reply: Reply): Unit =
-      history0 = history0 + List(message, reply.message)
+      history0 = history0 ++ List(message, reply.message)
       usage0 = usage0 + reply.usage

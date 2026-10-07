@@ -93,7 +93,7 @@ object Help:
         t" [$plural]"
 
   private[exoskeleton] def descendants(node: Help): List[Param] =
-    node.parameters + node.subcommands.flatMap(descendants)
+    node.parameters ++ node.subcommands.flatMap(descendants)
 
   private def paramItems(params: List[Param], depth: Int): List[Row] =
     params.map: param =>
@@ -116,10 +116,10 @@ object Help:
 
       val block =
         Row.Item(depth, sub.command, true, description) ::
-          (paramItems(sub.parameters, depth + 1) + commandRows(sub.subcommands, depth + 1))
+          (paramItems(sub.parameters, depth + 1) ++ commandRows(sub.subcommands, depth + 1))
 
       if sub.parameters.nil && sub.subcommands.nil then block
-      else (Row.Blank :: block) + List(Row.Blank)
+      else (Row.Blank :: block) ++ List(Row.Blank)
 
   // Collapse runs of consecutive spacers and strip them from either end of a section.
   private def compact(rows: List[Row]): List[Row] =
@@ -182,7 +182,7 @@ case class Help
 
         case name :: rest =>
           node.subcommands.seek(_.command == name).let: child =>
-            recur(child, rest, t"$command $name", inherited + node.parameters)
+            recur(child, rest, t"$command $name", inherited ++ node.parameters)
 
     if prefix == Nil then this else recur(this, prefix, command, Nil)
 
@@ -252,9 +252,9 @@ case class Help
       val indented: List[Teletype] = explanation.map(indent)
 
       val heading: List[Teletype] =
-        if indented.nil then List(e"$Bold($title)") else e"$Bold($title)" :: (indented + List(e""))
+        if indented.nil then List(e"$Bold($title)") else e"$Bold($title)" :: (indented ++ List(e""))
 
-      (heading, Help.compact(Help.commandRows(factored, 1) + commonRows))
+      (heading, Help.compact(Help.commandRows(factored, 1) ++ commonRows))
 
     val groupSections: List[(List[Teletype], List[Help.Row])] = groupList.map(groupSection)
 
@@ -291,7 +291,7 @@ case class Help
     // means the same thing wherever it comes from, so the reader wants the whole table in one
     // place rather than scattered through the command listing.
     def reachableStatuses(help: Help): List[Status] =
-      help.statuses + help.subcommands.flatMap(reachableStatuses)
+      help.statuses ++ help.subcommands.flatMap(reachableStatuses)
 
     // Ordering first and then dropping later repeats of a code keeps, for each code, the first
     // status in tree order — the same choice a deduplication before a stable sort would make.
@@ -310,7 +310,7 @@ case class Help
       if statusRows.nil then Nil else List((List(e"$Bold(Exit statuses:)"), statusRows))
 
     val sections: List[(List[Teletype], List[Help.Row])] =
-      standard.filter(!_._2.nil) + groupSections + statusSection
+      standard.filter(!_._2.nil) ++ groupSections ++ statusSection
 
     // The column at which every description starts: two spaces after the widest label.
     val column: Int =
@@ -363,7 +363,7 @@ case class Help
         val globals: Text = Help.summarize(globalParams, t"global options")
 
         val posterior: List[Help.Param] =
-          (localParams + subcommands.flatMap(Help.descendants)).distinct
+          (localParams ++ subcommands.flatMap(Help.descendants)).distinct
 
         val locals: Text = Help.summarize(posterior, t"options")
 
@@ -375,6 +375,6 @@ case class Help
       case teletype: Teletype => usage :: e"" :: wrap(teletype, width)
 
     val body: List[Teletype] =
-      header + sections.flatMap: (heading, rows) => e"" :: (heading + rows.flatMap(render))
+      header ++ sections.flatMap: (heading, rows) => e"" :: (heading ++ rows.flatMap(render))
 
     body.join(e"\n")

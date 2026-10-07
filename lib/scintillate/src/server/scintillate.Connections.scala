@@ -65,7 +65,7 @@ private[scintillate] object Connections:
 
     val uri = exchange.getRequestURI.nn
     val query = Optional(uri.getQuery)
-    val target = uri.getPath.nn.tt+query.let(t"?"+_.tt).or(t"")
+    val target = uri.getPath.nn.tt ++ query.let(t"?" ++ _.tt).or(t"")
     val method = exchange.getRequestMethod.nn.show.as[Http.Method]
 
     val headers: List[Http.Header] =

@@ -151,14 +151,14 @@ object StackedBars:
                 val y1 = frame.y(fit.ordinate.unit(to))
                 avoid(Obstacle.Box(x0, y0.min(y1), barWidth, (y1 - y0).abs))
                 val bar = style.bar(point(x0, y0.min(y1)), barWidth, (y1 - y0).abs, color, index)
-                bar.reverse + acc
+                bar.reverse ++ acc
 
             val part = seriesId(index) -> Group(figures.reverse, id = seriesId(index))
             index += 1
             part
 
           val legend = legendPart(layout.legend, names)
-          Framing.drawing(axesParts + seriesParts + legend)
+          Framing.drawing(axesParts ++ seriesParts ++ legend)
 
 // Bars stacked by category: each series' value sits on the total of those before it, so that a
 // bar's full height is the category's total. Positive and negative values stack apart, in

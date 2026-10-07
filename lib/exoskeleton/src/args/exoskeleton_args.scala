@@ -116,7 +116,7 @@ package interpreters:
             then
               val key2 = key.copy(format = Argument.Format.EqualityPrefix)
               val value = key.copy(format = Argument.Format.EqualitySuffix)
-              List(key2 -> (List(value) + values))
+              List(key2 -> (List(value) ++ values))
             else if flag.starts(t"-") && !flag.starts(t"--") && flag.length > 2
             then
               if clustering then
@@ -128,7 +128,7 @@ package interpreters:
               else
                 List:
                   key.copy(format = Argument.Format.CharFlag(Prim)) ->
-                    (List(key.copy(format = Argument.Format.FlagSuffix)) + values)
+                    (List(key.copy(format = Argument.Format.FlagSuffix)) ++ values)
 
             else
               List(key -> values)
@@ -147,7 +147,7 @@ package interpreters:
         val focus2: Optional[Argument] = anchor.absolve match
           case anchor: Argument =>
             val focusCursor: Ordinal = anchor.cursor.or(anchor.value.length).z
-            val candidates: Set[Argument] = parameters2.keys + parameters2.values.flat.to[Set]
+            val candidates: Set[Argument] = parameters2.keys ++ parameters2.values.flat.to[Set]
 
             candidates.seek: argument =>
               anchor.position == argument.position && argument.contains(focusCursor)

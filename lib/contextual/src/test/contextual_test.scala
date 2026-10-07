@@ -49,7 +49,7 @@ object Slug:
     val head = values.head.toString.tt
 
     val rest = values.tail.zip(insertions.stdlib).map: (part, insertion) =>
-      insertion.toString.tt+part.toString.tt
+      insertion.toString.tt ++ part.toString.tt
 
     (head :: rest).join
 

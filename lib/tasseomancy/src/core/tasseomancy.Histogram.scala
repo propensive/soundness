@@ -176,7 +176,7 @@ object Histogram:
                 val y = frame.y(fit.ordinate.unit(height.toDouble))
                 avoid(Obstacle.Box(x0, y, barWidth, zero - y))
                 val bar = style.bar(point(x0, y), barWidth, zero - y, color, index)
-                figures = bar.reverse + figures
+                figures = bar.reverse ++ figures
 
               bin += 1
 
@@ -185,7 +185,7 @@ object Histogram:
             part
 
           val legend = legendPart(layout.legend, names)
-          Framing.drawing(axesParts + seriesParts + legend)
+          Framing.drawing(axesParts ++ seriesParts ++ legend)
 
 // The distribution of samples: the range is cut into equal bins, and a bar per series in each
 // bin counts the samples that fall in it. Without a bin count, Sturges' rule chooses one.

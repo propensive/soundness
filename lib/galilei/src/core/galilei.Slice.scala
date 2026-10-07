@@ -101,7 +101,7 @@ object Slice:
         else List()
 
       val modeFlags: List[OpenFlag] =
-        (if mode.atoms.has(Read) then List(OpenFlag.Read) else Nil) +
+        (if mode.atoms.has(Read) then List(OpenFlag.Read) else Nil) ++
           (if mode.atoms.has(Write) then List(OpenFlag.Write) else Nil)
 
       val locking = !lockFlags.nil
@@ -118,7 +118,7 @@ object Slice:
 
       try
         backend.slice(value.path, value.offset, value.extent,
-            modeFlags + lockFlags + flags): window =>
+            modeFlags ++ lockFlags ++ flags): window =>
           // Mixed in rather than cast: `Window & Granting` is a trait intersection, whose
           // erased cast is to `Granting`, which the backend's window does not implement.
           val granted = new Window with Granting[grants]:

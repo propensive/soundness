@@ -86,7 +86,7 @@ object Lexicon:
         . flatMap(_.stdlib)
         . to(Set)
 
-      descendants + (if distance <= radius then Set(value) else Set[element]())
+      descendants ++ (if distance <= radius then Set(value) else Set[element]())
 
 trait Lexicon[element]:
   def update(key: Text, value: element): Unit

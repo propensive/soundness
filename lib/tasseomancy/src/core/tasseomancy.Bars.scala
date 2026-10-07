@@ -131,14 +131,14 @@ object Bars:
                   val bottom = frame.y(fit.ordinate.unit(low))
                   style.errorBar(x0 + barWidth/2.0, top, bottom, barWidth/4.0, palette.axis)
 
-                errors.reverse + (bar.reverse + acc)
+                errors.reverse ++ (bar.reverse ++ acc)
 
             val part = seriesId(index) -> Group(figures.reverse, id = seriesId(index))
             index += 1
             part
 
           val legend = legendPart(layout.legend, names)
-          Framing.drawing(axesParts + seriesParts + legend)
+          Framing.drawing(axesParts ++ seriesParts ++ legend)
 
 // Bars grouped by category: one bar per series within each category's band, from zero to the
 // value, with error bars where the value carries an interval. The ordinate is anchored at zero,

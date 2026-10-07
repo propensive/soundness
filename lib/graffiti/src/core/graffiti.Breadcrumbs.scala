@@ -55,4 +55,4 @@ trait Breadcrumbs(path: Text*) extends Archetype:
   protected def breadcrumbStyles: Css = css"${Breadcrumbs.crumbsClass} { display: flex }"
 
   protected override def frame: Html of (? <: Flow) = Html.Fragment[Flow](breadcrumbs, super.frame)
-  protected override def styles: Css = super.styles + breadcrumbStyles
+  protected override def styles: Css = super.styles ++ breadcrumbStyles

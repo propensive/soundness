@@ -355,7 +355,7 @@ object Tests extends Suite(m"Perihelion tests"):
 
           val upgrade =
             t"GET / HTTP/1.1\r\nHost: x\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n"
-            + t"Sec-WebSocket-Key: $key\r\nSec-WebSocket-Version: 13\r\n\r\n"
+            ++ t"Sec-WebSocket-Key: $key\r\nSec-WebSocket-Version: 13\r\n\r\n"
 
           out.write(upgrade.s.getBytes("US-ASCII").nn)
           out.flush()
@@ -392,7 +392,7 @@ object Tests extends Suite(m"Perihelion tests"):
 
           val upgrade =
             t"GET / HTTP/1.1\r\nHost: x\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n"
-            + t"Sec-WebSocket-Key: $key\r\nSec-WebSocket-Version: 13\r\n\r\n"
+            ++ t"Sec-WebSocket-Key: $key\r\nSec-WebSocket-Version: 13\r\n\r\n"
 
           out.write(upgrade.s.getBytes("US-ASCII").nn)
           out.flush()

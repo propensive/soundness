@@ -241,7 +241,7 @@ object Flow:
           val breakAt = hyphenationBreak(lineStart, wordStart, wordEnd0)
 
           if breakAt > lineStart then
-            recur(breakAt, breakAt, breakAt, (segment(lineStart, breakAt) + hyphenText) :: acc)
+            recur(breakAt, breakAt, breakAt, (segment(lineStart, breakAt) ++ hyphenText) :: acc)
           else if lastSpace > lineStart then
             recur(lastSpace + 1, lastSpace + 1, lastSpace + 1, line(lineStart, lastSpace) :: acc)
           else
@@ -273,7 +273,7 @@ object Flow:
       val kept =
         if keep == 0 then textual(t"") else content.segment(0.z thru boundaries.readable(keep).u)
 
-      kept + textual(ellipsis)
+      kept ++ textual(ellipsis)
 
   // Confine a single line of content to exactly `width` cells: content wider than `width` is
   // truncated with `shorten`; anything narrower is padded per `alignment`.

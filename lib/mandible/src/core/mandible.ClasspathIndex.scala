@@ -101,7 +101,7 @@ class ClasspathIndex private (local: Map[Text, ClassSurface], classloader: jn.UR
         if seen.contains(next) || missing.contains(next) then recur(rest) else apply(next) match
           case surface: ClassSurface =>
             seen += next
-            recur(rest + surface.supertypes)
+            recur(rest ++ surface.supertypes)
 
           case _ =>
             missing += next

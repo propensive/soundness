@@ -570,7 +570,7 @@ object Typescript:
           expect(t"{")
           // The namespace's own visibility becomes its contents': an unexported namespace exports
           // nothing, however its members are written.
-          block(scope + List(name), module, into, ambient = visible)
+          block(scope ++ List(name), module, into, ambient = visible)
           expect(t"}")
         else if at(t"interface") then into += interfaceDeclaration(scope, visible)
         else if at(t"class") || at(t"abstract") then into += classDeclaration(scope, visible)
@@ -698,7 +698,7 @@ object Typescript:
           merged.get(selector) match
             case scala.Some(existing) =>
               val signatures: List[Typescript.Type] =
-                existing.signatures + member.signatures
+                existing.signatures ++ member.signatures
 
               merged.put(selector, existing.copy(signatures = signatures))
 

@@ -210,7 +210,7 @@ object internal:
     import quotes.reflect.*
 
     strip(repr).asMatchable match
-      case OrType(left, right)               => tags(left) + tags(right)
+      case OrType(left, right)               => tags(left) ++ tags(right)
       case ConstantType(StringConstant(tag)) => List(tag.tt)
       case _                                 => Nil
 

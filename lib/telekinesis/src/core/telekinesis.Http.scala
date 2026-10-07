@@ -829,7 +829,7 @@ object Http:
         Response
           ( 1.1,
             status0.or(response.status),
-            headers + derived,
+            headers ++ derived,
             // `serve` returns a pure `Response`, so its body is pure; the seal only
             // discharges the field's capture-polymorphic declared type.
             caps.unsafe.unsafeAssumePure(response.body) )

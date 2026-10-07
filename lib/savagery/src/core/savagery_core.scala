@@ -69,7 +69,7 @@ private[savagery] given savageryFloatShowable: Float is Showable = _.toString.tt
 
 extension [figure: Transformable as transformable](figure: figure)
   private def appended(transform: Transform): figure =
-    transformable.withTransforms(figure, transformable.transforms(figure) + List(transform))
+    transformable.withTransforms(figure, transformable.transforms(figure) ++ List(transform))
 
   def transform(transform: Transform): figure = appended(transform)
   def translate(delta: Delta): figure = appended(Transform.Translate(delta))

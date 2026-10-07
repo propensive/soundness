@@ -321,7 +321,7 @@ object Tests extends Suite(m"Cataclysm Tests"):
       test(m"Variations and features are low-level settings"):
         inter.face.varying(Variation.Axis.OpticalSize, 14.0).disabling(Face.Feature.Ligatures)
         . style.text
-      . assert(_ == t"font-family: \"Inter\"; font-weight: 400; font-variation-settings: "+
+      . assert(_ == t"font-family: \"Inter\"; font-weight: 400; font-variation-settings: " ++
             t"\"opsz\" 14.0; font-feature-settings: \"liga\" 0")
 
       test(m"A linked provision is a @font-face with its declared coverage"):
@@ -890,11 +890,11 @@ object Tests extends Suite(m"Cataclysm Tests"):
       val width = 4.0*Px
 
       test(m"two stylesheets join into one"):
-        (css"a { color: red }" + css"b { color: blue }").rules
+        (css"a { color: red }" ++ css"b { color: blue }").rules
       . assert(_ == t"a { color: red } b { color: blue }".read[Css].rules)
 
       test(m"two inline style sets join into one"):
-        (css"color: red" + css"width: $width").text
+        (css"color: red" ++ css"width: $width").text
       . assert(_ == t"color: red; width: 4px")
 
     suite(m"Compile-time error positioning"):

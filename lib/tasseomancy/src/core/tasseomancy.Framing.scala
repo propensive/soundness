@@ -123,7 +123,7 @@ private[tasseomancy] object Framing:
   def filled(color: Color in Srgb, opacity: Optional[Double] = Unset): Css.Style =
     val base = List(t"fill" -> hexOf(color), t"stroke" -> t"none")
     val alpha = opacity.lay(Nil): value => List(t"fill-opacity" -> value.toString.tt)
-    Css.Style.of(base + alpha)
+    Css.Style.of(base ++ alpha)
 
   def stroked(color: Color in Srgb, width: Double): Css.Style =
     css
@@ -178,7 +178,7 @@ private[tasseomancy] object Framing:
       val leader = placed.leader.lay(Nil): leader =>
         style.leader(point(leader.x1, leader.y1), point(leader.x2, leader.y2), color)
 
-      leader + draw(Chart.Anchoring.of(placed))
+      leader ++ draw(Chart.Anchoring.of(placed))
 
   // The note beside a marker at (`x`, `y`): to the right when that is clear, otherwise on
   // another side, or moved off with a leader.
@@ -334,7 +334,7 @@ private[tasseomancy] object Framing:
       val horizontal = ys.fold(List[Figure]()): (acc, mark) =>
         if !mark.major then acc else
           val y = frame.y(mark.position)
-          style.gridLine(point(frame.left, y), point(frame.right, y), Ordinate, palette.grid) + acc
+          style.gridLine(point(frame.left, y), point(frame.right, y), Ordinate, palette.grid) ++ acc
 
       abscissa match
         case scale: Scale =>
@@ -342,7 +342,7 @@ private[tasseomancy] object Framing:
             if !mark.major then acc else
               val x = frame.x(mark.position)
               val top = point(x, frame.top)
-              style.gridLine(top, point(x, frame.bottom), Abscissa, palette.grid) + acc
+              style.gridLine(top, point(x, frame.bottom), Abscissa, palette.grid) ++ acc
 
         case _ => horizontal
 
@@ -370,14 +370,14 @@ private[tasseomancy] object Framing:
             labelled(placed, palette.text): anchoring =>
               style.tickLabel(anchoring, mark.label, axis, palette.text)
 
-        label.reverse + (tick.reverse + acc)
+        label.reverse ++ (tick.reverse ++ acc)
 
       figures.reverse
 
     // The far-end arrowhead and the origin-end break mark of one axis, if the style draws them.
     def ends(ruler: Ruler, axis: Chart.Axis, tip: Point): List[Figure] =
       val break = if broken(ruler) then style.axisBreak(origin, axis, axisColor) else Nil
-      style.arrowhead(tip, axis, axisColor) + break
+      style.arrowhead(tip, axis, axisColor) ++ break
 
     avoid
       ( Obstacle.Line(frame.left, frame.bottom, frame.right, frame.bottom),
@@ -393,7 +393,7 @@ private[tasseomancy] object Framing:
         fixture(text, at.x, at.y, Caption.Attachment.South)
         style.axisTitle(at, text, Abscissa, palette.text)
 
-      line + marks + titleFigures + ends(abscissa, Abscissa, point(frame.right, frame.bottom))
+      line ++ marks ++ titleFigures ++ ends(abscissa, Abscissa, point(frame.right, frame.bottom))
 
     val ordinateFigures: List[Figure] =
       val line = style.axisLine(point(frame.left, frame.top), origin, Ordinate, axisColor)
@@ -411,7 +411,7 @@ private[tasseomancy] object Framing:
 
         style.axisTitle(at, text, Ordinate, palette.text)
 
-      line + marks + titleFigures + ends(ordinate, Ordinate, point(frame.left, frame.top))
+      line ++ marks ++ titleFigures ++ ends(ordinate, Ordinate, point(frame.left, frame.top))
 
     List
       ( Svg.Id(t"grid") -> Group(gridLines.reverse, id = Svg.Id(t"grid")),
@@ -436,8 +436,8 @@ private[tasseomancy] object Framing:
       val swatch = style.swatch(corner, palette.color(index), index)
       avoid(Obstacle.Box(corner.x, corner.y, style.swatchSize, style.swatchSize))
       fixture(name, position.x, position.y, Caption.Attachment.East)
-      val entry = swatch + style.legendLabel(position, name, palette.text)
-      figures = entry.reverse + figures
+      val entry = swatch ++ style.legendLabel(position, name, palette.text)
+      figures = entry.reverse ++ figures
       if !vertical then x += style.swatchSize + style.gap + textWidth(name) + style.gap*3
       index += 1
 

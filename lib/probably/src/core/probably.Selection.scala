@@ -100,7 +100,7 @@ object Selection:
           case t"profile" => List(Entry.Kind.Profile)
           case _          => Nil
 
-        selection.copy(kinds = selection.kinds + kinds)
+        selection.copy(kinds = selection.kinds ++ kinds)
       // `tag:a,b` admits a test carrying ANY of the listed tags; a second `tag:` term
       // intersects with the first, so `tag:slow tag:network` means slow AND network.
       else if argument.starts(t"tag:") then

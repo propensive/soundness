@@ -110,19 +110,19 @@ object Rrule:
       optional.lay(List())(value => List(text(value)))
 
     val parts =
-      part(true, t"FREQ=${rule.frequency.show.upper}") +
-        part(rule.interval != 1, t"INTERVAL=${rule.interval}") +
-        partOf(rule.count) { count => t"COUNT=$count" } +
-        partOf(rule.until) { until => t"UNTIL=${render(until)}" } +
-        part(!rule.byMonth.nil, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") +
-        part(!rule.byWeekNo.nil, t"BYWEEKNO=${rule.byWeekNo.map(_.show).join(t",")}") +
-        part(!rule.byYearDay.nil, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") +
-        part(!rule.byMonthDay.nil, t"BYMONTHDAY=${rule.byMonthDay.map(_.show).join(t",")}") +
-        part(!rule.byDay.nil, t"BYDAY=${rule.byDay.map(renderDay).join(t",")}") +
-        part(!rule.byHour.nil, t"BYHOUR=${rule.byHour.map(_.show).join(t",")}") +
-        part(!rule.byMinute.nil, t"BYMINUTE=${rule.byMinute.map(_.show).join(t",")}") +
-        part(!rule.bySecond.nil, t"BYSECOND=${rule.bySecond.map(_.show).join(t",")}") +
-        part(!rule.bySetPos.nil, t"BYSETPOS=${rule.bySetPos.map(_.show).join(t",")}") +
+      part(true, t"FREQ=${rule.frequency.show.upper}") ++
+        part(rule.interval != 1, t"INTERVAL=${rule.interval}") ++ 
+        partOf(rule.count) { count => t"COUNT=$count" } ++
+        partOf(rule.until) { until => t"UNTIL=${render(until)}" } ++ 
+        part(!rule.byMonth.nil, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") ++
+        part(!rule.byWeekNo.nil, t"BYWEEKNO=${rule.byWeekNo.map(_.show).join(t",")}") ++ 
+        part(!rule.byYearDay.nil, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") ++
+        part(!rule.byMonthDay.nil, t"BYMONTHDAY=${rule.byMonthDay.map(_.show).join(t",")}") ++ 
+        part(!rule.byDay.nil, t"BYDAY=${rule.byDay.map(renderDay).join(t",")}") ++
+        part(!rule.byHour.nil, t"BYHOUR=${rule.byHour.map(_.show).join(t",")}") ++ 
+        part(!rule.byMinute.nil, t"BYMINUTE=${rule.byMinute.map(_.show).join(t",")}") ++
+        part(!rule.bySecond.nil, t"BYSECOND=${rule.bySecond.map(_.show).join(t",")}") ++ 
+        part(!rule.bySetPos.nil, t"BYSETPOS=${rule.bySetPos.map(_.show).join(t",")}") ++
         part(rule.weekStart != Weekday.Mon, t"WKST=${code(rule.weekStart)}")
 
     parts.join(t";")

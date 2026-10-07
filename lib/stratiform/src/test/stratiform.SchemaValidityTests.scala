@@ -399,7 +399,7 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
       // intersection is: the n-ary containment decision is what accepts this.
       test(m"a multi-pattern replacement is decided as an intersection"):
         schemaCode(coded(pattern(t"[A-Z]{2}-[0-9]{4}"),
-            t"layer l\n  scalar Code\n    pattern [A-Z]{2}-[0-9]{4}|[A-Z]{2}-[0-9]{2}\n" +
+            t"layer l\n  scalar Code\n    pattern [A-Z]{2}-[0-9]{4}|[A-Z]{2}-[0-9]{2}\n" ++
             t"    pattern [A-Z]{2}-[0-9]{4}|[A-Z]{2}-[0-9]{6}\n"))
       . assert(_ == 0)
 
@@ -435,7 +435,7 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
       . assert(_ == 315)
 
       test(m"multiple patterns AND-conjoin"):
-        val both = Tels.Validation.validate(schemaOf(t"tel 1.0\n\nname coded\n\nscalar Code\n" +
+        val both = Tels.Validation.validate(schemaOf(t"tel 1.0\n\nname coded\n\nscalar Code\n" ++
             t"  pattern [0-9]+\n  pattern ..\n\ndocument\n  field code Code\n"))
 
         def code(text: Text): Int =
@@ -451,7 +451,7 @@ object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
       // value may accumulate several. Under an accrual boundary both are seen,
       // in the §21.7 order — validators first, then patterns.
       test(m"a value failing both a validator and a pattern accrues 310 then 315"):
-        val schema = Tels.Validation.validate(schemaOf(t"tel 1.0\n\nname coded\n\nscalar Code\n" +
+        val schema = Tels.Validation.validate(schemaOf(t"tel 1.0\n\nname coded\n\nscalar Code\n" ++
             t"  validate identifier\n  pattern [0-9]+\n\ndocument\n  field code Code\n"))
 
         validate[Tel.Focus](Accrued()):

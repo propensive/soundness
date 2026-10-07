@@ -203,11 +203,11 @@ def parseArguments(arguments: List[Text]): List[GitHub.Repository] raises UserEr
     operand.cut(t",").filter(_ != t"").map(GitHub.Repository.parse(_))
 
   def recur(arguments: List[Text]): List[GitHub.Repository] = arguments match
-    case t"--github" :: operand :: rest => repositories(operand) + recur(rest)
+    case t"--github" :: operand :: rest => repositories(operand) ++ recur(rest)
     case t"--github" :: Nil             => abort(UserError(m"--github needs a repository; $usage"))
 
     case argument :: rest =>
-      if argument.starts(t"--github=") then repositories(argument.skip(9)) + recur(rest)
+      if argument.starts(t"--github=") then repositories(argument.skip(9)) ++ recur(rest)
       else abort(UserError(m"unrecognized argument $argument; $usage"))
 
     case _ => Nil

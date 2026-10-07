@@ -56,4 +56,4 @@ trait Masthead extends Archetype:
   protected override def frame: Html of (? <: Flow) =
     Html.Fragment[Flow](Header(`class` = Masthead.mastheadClass)(masthead), super.frame)
 
-  protected override def styles: Css = super.styles + mastheadStyles
+  protected override def styles: Css = super.styles ++ mastheadStyles

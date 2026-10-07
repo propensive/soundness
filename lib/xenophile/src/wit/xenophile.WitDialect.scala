@@ -167,7 +167,7 @@ object WitDialect extends Dialect:
       // under this key, which a plain overwrite with the interface's (possibly empty)
       // functions would discard.
       val declared: Map[Text, Prototype] = functions.to(Map)
-      val merged = types.at(interface.name).lay(declared)(_ + declared)
+      val merged = types.at(interface.name).lay(declared)(_ ++ declared)
       types = types.define(interface.name, merged)
 
     resolve(types, typedefs)
@@ -196,7 +196,7 @@ object WitDialect extends Dialect:
 
   private def padded(args: List[Foreign.Type]): Foreign.Type =
     val unit = Foreign.Type.Named(t"_")
-    Foreign.Type.Applied(t"result", (args + List(unit, unit)).keep(2))
+    Foreign.Type.Applied(t"result", (args ++ List(unit, unit)).keep(2))
 
   // The pseudo-member recording, for a memberless type declaration, the module that defines it.
   private def declaration(name: Text, module: Optional[Text]): Map[Text, Prototype] =

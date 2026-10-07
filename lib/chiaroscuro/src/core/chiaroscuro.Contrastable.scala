@@ -174,7 +174,7 @@ object Contrastable:
         // Products of different types may have differing field sets; a field absent on one
         // side is compared against a blank placeholder (as in the sum case below), so it
         // registers as a difference.
-        val keys = left.keys + right.keys
+        val keys = left.keys ++ right.keys
         val missing = Decomposition.Primitive(t"", t"", Unset)
 
         Juxtaposition.Collation
@@ -187,7 +187,7 @@ object Contrastable:
       case (Decomposition.Sum(lname0, left, _), Decomposition.Sum(rname0, right, _)) =>
         (left, right) match
           case (Decomposition.Product(lname, left, _), Decomposition.Product(rname, right, _)) =>
-            val keys = left.keys + right.keys
+            val keys = left.keys ++ right.keys
             val missing = Decomposition.Primitive(t"", t"", Unset)
 
             val entries =

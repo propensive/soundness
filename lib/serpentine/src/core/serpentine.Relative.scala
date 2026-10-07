@@ -90,7 +90,7 @@ object Relative:
         if relative.ascent == 0 then filesystem.self
         else List.fill(relative.ascent)(filesystem.parent).join(filesystem.separator)
       else
-        val ascender = filesystem.parent+filesystem.separator
+        val ascender = filesystem.parent ++ filesystem.separator
         relative
         . descent
         . stdlib

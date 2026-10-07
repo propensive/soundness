@@ -171,7 +171,7 @@ object Apk extends Format.Application:
             ( Axml.Attribute(Unset, t"package", Unset, Axml.Value.Str(packageName)),
               android(t"versionCode", Apk.Manifest.versionCode, Axml.Value.Num(versionCode)),
               android(t"versionName", Apk.Manifest.versionName, Axml.Value.Str(versionName)) ),
-          usesSdk :: permissionElements + List(application) )
+          usesSdk :: permissionElements ++ List(application) )
 
   // ApkSigner → Apk.Signer
   // APK Signature Scheme v2: signs a finished (aligned, unsigned) ZIP by inserting an "APK Signing
@@ -262,8 +262,8 @@ object Apk extends Format.Application:
       // end-of-central-directory record. The unsigned EOCD already points at `cdOffset` — which is
       // exactly where the signing block will begin — so it is digested as-is.
       val digests =
-        chunkDigests(unsigned, 0, cdOffset) +
-          chunkDigests(unsigned, cdOffset, eocdOffset) +
+        chunkDigests(unsigned, 0, cdOffset) ++
+          chunkDigests(unsigned, cdOffset, eocdOffset) ++ 
           chunkDigests(unsigned, eocdOffset, unsigned.length)
 
       val count = digests.size

@@ -185,7 +185,7 @@ extension [plane: Filesystem](path: Path on plane)
             // here and, with the `**` retained, in every subdirectory.
             val deeper = dirs.bind { dir => recur(dir.children.to[List].filter(directory), todo) }
 
-            recur(dirs, rest) + deeper
+            recur(dirs, rest) ++ deeper
           else
             val matcher = Glob(segment*)
 

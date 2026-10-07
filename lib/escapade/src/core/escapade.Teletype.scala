@@ -116,7 +116,7 @@ object Teletype:
   val empty: Teletype =
     new Teletype(t"", Array(0L), Map.empty, TreeMap.empty, Array.empty[Int])
 
-  given joinable: Teletype is Joinable = _.fold(empty)(_ + _)
+  given joinable: Teletype is Joinable = _.fold(empty)(_ ++ _)
   given printable: Teletype is Printable = _.render(_)
 
   given cuttable: Teletype is Cuttable by Text = (text, delimiter, limit) =>
@@ -384,11 +384,11 @@ case class Teletype
   def append(that: Teletype): Teletype =
     if that.plain.length == 0 then this else if plain.length == 0 then that else
       val aN = plain.length
-      val combinedPlain = plain+that.plain
+      val combinedPlain = plain ++ that.plain
 
       val shiftedLinks = if that.hyperlinks.nil then hyperlinks else
         val moved: Map[Int, Text] = that.hyperlinks.remap { (k, v) => (k + aN) -> v }
-        hyperlinks + moved
+        hyperlinks ++ moved
 
       val shiftedInsertions = if that.insertions.isEmpty then insertions else
         insertions ++ that.insertions.map: (k, v) => (k + aN) -> v

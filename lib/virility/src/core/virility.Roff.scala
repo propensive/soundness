@@ -113,7 +113,7 @@ object Roff:
       case Paragraph(prose) => List(t".P", line(prose.map(_.serialize).join))
 
       case Example(lines) =>
-        t".EX" :: (lines.map { text => line(escape(text)) } + List(t".EE"))
+        t".EX" :: (lines.map { text => line(escape(text)) } ++ List(t".EE"))
 
       // A tagged paragraph with nothing to say still names its subject; emitting an empty body
       // line would leave a stray blank line in the rendered page.
@@ -123,7 +123,7 @@ object Roff:
         if body.nil then List(t".TP", label)
         else List(t".TP", label, line(body.map(_.serialize).join))
 
-      case Indented(blocks) => t".RS" :: (blocks.flatMap(_.serialize) + List(t".RE"))
+      case Indented(blocks) => t".RS" :: (blocks.flatMap(_.serialize) ++ List(t".RE"))
 
 case class Roff
   ( title:   Text,

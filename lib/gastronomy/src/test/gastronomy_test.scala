@@ -145,13 +145,13 @@ object Tests extends Suite(m"Gastronomy tests"):
         hex(PureHashes.sha2(384), t"abc")
       . assert: digest =>
           digest == t"CB00753F45A35E8BB5A03D699AC65007272C32AB0EDED1631A8B605A43FF5BED"
-              + t"8086072BA1E7CC2358BAECA134C825A7"
+              ++ t"8086072BA1E7CC2358BAECA134C825A7"
 
       test(m"pure SHA-512 of \"abc\""):
         hex(PureHashes.sha2(512), t"abc")
       . assert: digest =>
           digest == t"DDAF35A193617ABACC417349AE20413112E6FA4E89A97EA20A9EEEE64B55D39A"
-              + t"2192992A274FC1A836BA3C23A3FEEBBD454D4423643CE80E2A9AC94FA54CA49F"
+              ++ t"2192992A274FC1A836BA3C23A3FEEBBD454D4423643CE80E2A9AC94FA54CA49F"
 
       test(m"pure SHA-1 of \"abc\""):
         hex(PureHashes.sha1, t"abc")
@@ -279,7 +279,7 @@ object Tests extends Suite(m"Gastronomy tests"):
       import providers.soundnessProvider
 
       val fox = t"The quick brown fox jumps over the lazy dog. "
-      val hundred = fox+fox+t"0123456789"
+      val hundred = fox ++ fox ++ t"0123456789"
 
       test(m"Empty input"):
         t"".digest[Murmur3].serialize[Hex].lower
@@ -467,7 +467,7 @@ object Tests extends Suite(m"Gastronomy tests"):
 
       val sha512Vector =
         t"1340abffa1926b038a2f1833092d93859ba2ee56e07a86b158200fc7d4d5d1eaf350b0f0e51"
-        + t"1ea6f5043a9f4a7c7886f93355652114709d75b2db4c33741124fd4fe"
+        ++ t"1ea6f5043a9f4a7c7886f93355652114709d75b2db4c33741124fd4fe"
 
       test(m"SHA-2-512 envelope matches the published vector"):
         rendered(Multihash(input.digest[Sha2[512]]))

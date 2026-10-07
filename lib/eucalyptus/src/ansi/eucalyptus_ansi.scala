@@ -65,10 +65,10 @@ package logFormats:
             val color = palette.subdued
             val first = e"$color($date) $level > $head"
 
-            (first :: tail.map(indent+_)).join(e"\n").render:
+            (first :: tail.map(indent ++ _)).join(e"\n").render:
               termcapDefinitions.xterm256Termcap
 
-            (first :: tail.map(indent+_)).join(e"\n")
+            (first :: tail.map(indent ++ _)).join(e"\n")
       catch case error: Throwable => e"${error.stackTrace.show}"
 
 type LogPalette = Palette:

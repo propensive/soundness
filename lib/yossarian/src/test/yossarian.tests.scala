@@ -315,18 +315,18 @@ object Tests extends Suite(m"Yossarian Tests"):
       . assert(_ == 'X')
 
       test(m"LF at bottom row scrolls the screen"):
-        val pty = Pty24x80().consume(t"top\n" + (t"\n"*23) + t"bot")
+        val pty = Pty24x80().consume(t"top\n" ++ (t"\n"*23) ++ t"bot")
         (trim(row(pty, Prim)), trim(row(pty, 23.z)))
       . assert(_ == (t"", t"bot"))
 
     suite(m"vttest §2: Screen features"):
       test(m"ED 0 from middle clears to end of screen"):
-        val pty = Pty24x80().consume(t"$Esc[1;1H" + (t"X"*80*5) + t"$Esc[3;1H$Esc[0J")
+        val pty = Pty24x80().consume(t"$Esc[1;1H" ++ (t"X"*80*5) ++ t"$Esc[3;1H$Esc[0J")
         (row(pty, Sec), trim(row(pty, 4.z)))
       . assert(_ == (t"X"*80, t""))
 
       test(m"ED 1 from middle clears from start of screen"):
-        val pty = Pty24x80().consume(t"$Esc[1;1H" + (t"X"*80*5) + t"$Esc[3;40H$Esc[1J")
+        val pty = Pty24x80().consume(t"$Esc[1;1H" ++ (t"X"*80*5) ++ t"$Esc[3;40H$Esc[1J")
         (trim(row(pty, Sec)), row(pty, 4.z))
       . assert(_ == (t"", t"X"*80))
 

@@ -206,7 +206,7 @@ object Syntax:
 
       val uppered = captureBound(upper).lay(Nil)(bound(" <: ", _))
 
-      Compound(Capturing(sub, Unset) :: (lowered + uppered))
+      Compound(Capturing(sub, Unset) :: (lowered ++ uppered))
 
 
   def typeBounds(using Quotes, Bindings)
@@ -757,10 +757,10 @@ enum Syntax:
         if infix && (imports.has(parent) || imports.hasDirect(Designator.Type(parent, name))) =>
           elements match
             case List(first, second) => Infix(first, name, second).text
-            case _ => left.text+joined(elements.map(_.text), ", ", "[", "]").tt
+            case _ => left.text ++ joined(elements.map(_.text), ", ", "[", "]").tt
 
         case _ =>
-          left.text+joined(elements.map(_.text), ", ", "[", "]").tt
+          left.text ++ joined(elements.map(_.text), ", ", "[", "]").tt
 
     // A refinement of type members which are each aliased by an infix type alias in scope
     // (`imports.aliases`, harvested by `Imports.resolve`) is written with those aliases:
@@ -782,7 +782,7 @@ enum Syntax:
       else
         val members2: List[Text] = members.remap: (name, syntax) => s"type $name = ${syntax.text}".tt
         val defs2: List[Text] = defs.remap: (name, syntax) => s"def $name${syntax.text}".tt
-        s"${base.text} { ${joined(members2 + defs2, "; ")} }".tt
+        s"${base.text} { ${joined(members2 ++ defs2, "; ")} }".tt
 
     case Infix(left: Syntax, middle, right: Syntax) =>
       val left2 = if left.precedence < precedence then Sequence('(', List(left)) else left

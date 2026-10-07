@@ -74,7 +74,7 @@ inline def relabelling[self, format]: Map[Text, Text] =
     fieldAnnotations[self, name[format]].remap: (field, set) =>
       field -> set.occupied.lay(field)(_.head.name)
 
-  general + specific
+  general ++ specific
 
 // Like `fieldAnnotations`, but reads the `annotation`-typed annotations on the
 // subtypes (enum cases / sealed variants) of `self`, keyed by variant name,
@@ -99,4 +99,4 @@ inline def variantRelabelling[self, format]: Map[Text, Text] =
     subtypeAnnotations[self, name[format]].remap: (variant, set) =>
       variant -> set.occupied.lay(variant)(_.head.name)
 
-  general + specific
+  general ++ specific

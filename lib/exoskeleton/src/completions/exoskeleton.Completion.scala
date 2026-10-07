@@ -151,7 +151,7 @@ extends Cli:
       dispatchSuggested = true
       cursorSuggestions = update(using cursorSuggestions.aka["prior"]).map: suggestion =>
         if suggestion.expanded then suggestion
-        else suggestion.copy(core = prefix+suggestion.core+suffix, expanded = true)
+        else suggestion.copy(core = prefix ++ suggestion.core ++ suffix, expanded = true)
 
       . order(_.core)
 
@@ -197,7 +197,7 @@ extends Cli:
     // Hidden candidates still go to zsh, which matches but does not list them; but where they
     // are all there is, the flags are offered too, or no shell would list anything.
     val items0 =
-      if extending.all(_.hidden) then flagSuggestions(typed.starts(t"--")) + extending
+      if extending.all(_.hidden) then flagSuggestions(typed.starts(t"--")) ++ extending
       else extending
 
     // Wrapping reshapes a candidate for the piece of the *focused word* it extends; a focus on
@@ -256,9 +256,9 @@ extends Cli:
               if !incomplete then List()
               else List(sh"'' $prefix2 $suffix2 -S '' -- $core")
 
-            (List(mainLine): List[Command]) + duplicateLine
+            (List(mainLine): List[Command]) ++ duplicateLine
 
-        val lines: List[Command] = title + itemLines
+        val lines: List[Command] = title ++ itemLines
         lines.map(_.arguments.join(t"\u0000"))
 
       case Shell.Bash =>
@@ -293,7 +293,7 @@ extends Cli:
               val mainLines: List[Text] = (suggestion.text :: aliases).map(line)
 
               if !incomplete || !sole || suggestion.text.ends(t"/") then mainLines
-              else mainLines + (suggestion.text :: aliases).map(spaced)
+              else mainLines ++ (suggestion.text :: aliases).map(spaced)
 
       case Shell.Powershell =>
         // PowerShell inserts a `CompletionResult` verbatim, so a trailing-space twin is

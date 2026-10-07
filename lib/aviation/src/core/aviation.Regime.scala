@@ -60,7 +60,7 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
   // one and the first day of the next share a Julian day number (Julian 1582-10-04 and Gregorian
   // 1582-10-15 are the same day), so that shared day is valid under both — the bound is inclusive.
   private val bounded: List[(Segment, Int)] =
-    segments.zip(segments.skip(1).map(_.from.jdn) + List(Int.MaxValue))
+    segments.zip(segments.skip(1).map(_.from.jdn) ++ List(Int.MaxValue))
 
   // The calendar governing a Julian day number: the latest segment to have taken effect by then.
   private def at(date: Date): RomanCalendar =

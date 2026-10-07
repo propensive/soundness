@@ -87,7 +87,7 @@ class BinOpenable extends Openable:
     ( block: ((DocHandle & Granting[grants])^) ?=> result )
   :   result =
 
-    block(using new DocHandle(t"bin:"+value.name, flags) with Granting[grants] {})
+    block(using new DocHandle(t"bin:" ++ value.name, flags) with Granting[grants] {})
 
 class SoleOpenable extends Openable:
   type Self = Sole

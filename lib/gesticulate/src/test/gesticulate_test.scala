@@ -61,29 +61,29 @@ object Tests extends Suite(m"Gesticulate tests"):
       val blockSizes = List(1, 2, 3, 7, 13, 32, 4096)
 
       val singlePart =
-        t"--xyz\r\n" +
-        t"Content-Disposition: form-data; name=\"field1\"\r\n" +
-        t"\r\n" +
-        t"value1\r\n" +
+        t"--xyz\r\n" ++
+        t"Content-Disposition: form-data; name=\"field1\"\r\n" ++
+        t"\r\n" ++
+        t"value1\r\n" ++
         t"--xyz--\r\n"
 
       val twoParts =
-        t"--xyz\r\n" +
-        t"Content-Disposition: form-data; name=\"field1\"\r\n" +
-        t"\r\n" +
-        t"value1\r\n" +
-        t"--xyz\r\n" +
-        t"Content-Disposition: form-data; name=\"field2\"\r\n" +
-        t"\r\n" +
-        t"value2\r\n" +
+        t"--xyz\r\n" ++
+        t"Content-Disposition: form-data; name=\"field1\"\r\n" ++
+        t"\r\n" ++
+        t"value1\r\n" ++
+        t"--xyz\r\n" ++
+        t"Content-Disposition: form-data; name=\"field2\"\r\n" ++
+        t"\r\n" ++
+        t"value2\r\n" ++
         t"--xyz--\r\n"
 
       val partsWithFilename =
-        t"--xyz\r\n" +
-        t"Content-Disposition: form-data; name=\"file\"; filename=\"hello.txt\"\r\n" +
-        t"Content-Type: text/plain\r\n" +
-        t"\r\n" +
-        t"file content\r\n" +
+        t"--xyz\r\n" ++
+        t"Content-Disposition: form-data; name=\"file\"; filename=\"hello.txt\"\r\n" ++
+        t"Content-Type: text/plain\r\n" ++
+        t"\r\n" ++
+        t"file content\r\n" ++
         t"--xyz--\r\n"
 
       for blockSize <- blockSizes do
@@ -134,10 +134,10 @@ object Tests extends Suite(m"Gesticulate tests"):
 
       test(m"Body containing CR but not boundary"):
         val body =
-          t"--xyz\r\n" +
-          t"Content-Disposition: form-data; name=\"field\"\r\n" +
-          t"\r\n" +
-          t"line1\rline2\r\n" +
+          t"--xyz\r\n" ++
+          t"Content-Disposition: form-data; name=\"field\"\r\n" ++
+          t"\r\n" ++
+          t"line1\rline2\r\n" ++
           t"--xyz--\r\n"
         bodyText(Multipart.parse(chunks(body, 4096)).parts.stdlib.head)
 
@@ -145,10 +145,10 @@ object Tests extends Suite(m"Gesticulate tests"):
 
       test(m"Body containing CRLF but not boundary"):
         val body =
-          t"--xyz\r\n" +
-          t"Content-Disposition: form-data; name=\"field\"\r\n" +
-          t"\r\n" +
-          t"line1\r\nstill body\r\n" +
+          t"--xyz\r\n" ++
+          t"Content-Disposition: form-data; name=\"field\"\r\n" ++
+          t"\r\n" ++
+          t"line1\r\nstill body\r\n" ++
           t"--xyz--\r\n"
         bodyText(Multipart.parse(chunks(body, 4096)).parts.stdlib.head)
 
@@ -156,10 +156,10 @@ object Tests extends Suite(m"Gesticulate tests"):
 
       test(m"Body containing partial boundary prefix"):
         val body =
-          t"--xyz\r\n" +
-          t"Content-Disposition: form-data; name=\"field\"\r\n" +
-          t"\r\n" +
-          t"--xy not the boundary\r\n" +
+          t"--xyz\r\n" ++
+          t"Content-Disposition: form-data; name=\"field\"\r\n" ++
+          t"\r\n" ++
+          t"--xy not the boundary\r\n" ++
           t"--xyz--\r\n"
         bodyText(Multipart.parse(chunks(body, 4096)).parts.stdlib.head)
 
@@ -205,7 +205,7 @@ object Tests extends Suite(m"Gesticulate tests"):
           t"--xyz\r\nContent-Disposition: form-data; name=\"file\"; filename=\"f.bin\"\r\n\r\n"
           . in[Data]
 
-        val tail = (t"\r\n" + rest).in[Data]
+        val tail = (t"\r\n" ++ rest).in[Data]
         val wire = new scala.Array[Byte](head.length + body.length + tail.length)
         System.arraycopy(Array.unsafeJvm(head), 0, wire, 0, head.length)
         System.arraycopy(Array.unsafeJvm(body), 0, wire, head.length, body.length)

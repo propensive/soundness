@@ -79,9 +79,9 @@ object Alignment:
         val spare = width - words.sumBy(_.plain.metrics)
 
         def recur(spare: Int, count: Int, done: textual): textual =
-          if count == 0 then done+Textual(t" "*spare) else
+          if count == 0 then done ++ Textual(t" "*spare) else
             val space = spare/count
-            recur(spare - space, count - 1, done + Textual(t" "*space) + words(wordCount - count))
+            recur(spare - space, count - 1, done ++ Textual(t" "*space) ++ words(wordCount - count))
 
         recur(spare, wordCount - 1, words.head)
 

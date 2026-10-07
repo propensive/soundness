@@ -76,7 +76,7 @@ object Strain:
             Metric.GcCount    -> strain.gcCount.toDouble,
             Metric.GcTime     -> strain.gcTime.toDouble*1000000.0 )
 
-      val metrics = (counters + latencies + slo).to[Ledger]
+      val metrics = (counters ++ latencies ++ slo).to[Ledger]
 
       // Concurrency is a coordinate, not a metric: every strain lands on the emergent `N`
       // axis, so a sweep's steps accumulate as cells of one entry. If the producer already

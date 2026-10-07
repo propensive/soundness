@@ -38,6 +38,7 @@ import anticipation.*
 import denominative.*
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 import contingency.*
 import gossamer.*
@@ -320,7 +321,7 @@ case class Alphabet[encoding <: Serialization]
     else abort(Serialization.Error(position, char))
 
   lazy val inverse: Map[Char, Int] =
-    tolerance + Map.from(chars.chars.readable.zipWithIndex)
+    tolerance ++ Map.from(chars.chars.readable.zipWithIndex)
 
   // Dense decode table, indexed directly by character code (-1 = invalid), so the
   // per-character hot path avoids boxed `Map` lookups.

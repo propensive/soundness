@@ -55,33 +55,33 @@ object protointernal:
 
     def initial: Text = t""
 
-    def parse(state: Text, next: Text): Text = state+next
+    def parse(state: Text, next: Text): Text = state ++ next
 
-    def skip(state: Text): Text = state+t"1"
+    def skip(state: Text): Text = state ++ t"1"
 
-    def substitute(state: Text, sub: Text): Text = state+sub
+    def substitute(state: Text, sub: Text): Text = state ++ sub
 
     def insert(state: Text, value: Url.Fragment): Text = value match
       case Url.Fragment.Integral(port) =>
         if !state.ends(t":")
         then throw UrlInterpolatorError(m"a port number must be specified after a colon")
 
-        try throwErrors((state+port.show).as[HttpUrl]) catch
+        try throwErrors((state ++ port.show).as[HttpUrl]) catch
           case error: Url.Error => throw UrlInterpolatorError(Message(error.message.text))
 
-        state+port.show
+        state ++ port.show
 
       case Url.Fragment.Textual(text) =>
-        try throwErrors((state+text.urlEncode).as[HttpUrl]) catch
+        try throwErrors((state ++ text.urlEncode).as[HttpUrl]) catch
           case error: Url.Error => throw UrlInterpolatorError(Message(error.message.text))
 
-        state+text.urlEncode
+        state ++ text.urlEncode
 
       case Url.Fragment.RawTextual(text) =>
-        try throwErrors((state+text.urlEncode).as[HttpUrl]) catch
+        try throwErrors((state ++ text.urlEncode).as[HttpUrl]) catch
           case error: Url.Error => throw UrlInterpolatorError(Message(error.message.text))
 
-        state+text
+        state ++ text
 
     def complete(value: Text): Url[Label] =
       try throwErrors(value.as[Url[Label]]) catch

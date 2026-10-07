@@ -206,8 +206,8 @@ extension [textual: Textual as instance](text: textual)
       if word == Prim then result else
         val gap = ((spaces.toDouble/word.n0) + 0.5).toInt
 
-        recur(word - 1, spaces - gap,
-              result+instance.apply(t" "*(gap + 1))+List.at(words, List.size(words) - word.n0))
+        val next = List.at(words, List.size(words) - word.n0)
+        recur(word - 1, spaces - gap, result ++ instance.apply(t" "*(gap + 1)) ++ next)
 
     recur(Prim, extra, List.at(words, 0))
 

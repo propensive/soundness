@@ -358,8 +358,8 @@ object Tests extends Suite(m"Escritoire tests"):
       val cells: List[Cells[Text]] = data.map(scaffold.cells(_))
       val layout = cells.fold(scaffold.layout(width)) { (layout, cells) => layout.extend(cells) }
       val body: List[Text] = cells.bind { (cells: Cells[Text]) => layout.lines(cells, Nil) }
-      (layout.topRule.let(List(_)).or(Nil) + layout.titleLines + List(layout.titleRule) + body
-          + layout.bottomRule.let(List(_)).or(Nil))
+      (layout.topRule.let(List(_)).or(Nil) ++ layout.titleLines ++ List(layout.titleRule) ++ body
+          ++ layout.bottomRule.let(List(_)).or(Nil))
 
     test(m"the metrics of lines are the widest word and the widest line"):
       Columnar.metrics(Array(t"hello world", t"hi"))

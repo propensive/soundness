@@ -145,7 +145,7 @@ private[xylophone] object XPathEngine:
       case Expression.Union(left, right) =>
         (evaluate(left, context), evaluate(right, context)) match
           case (Value.NodeSet(left), Value.NodeSet(right)) =>
-            Value.NodeSet(sortDedup(left + right))
+            Value.NodeSet(sortDedup(left ++ right))
 
           case _ =>
             abort(Error(Reason.NotNodeSet))
@@ -258,7 +258,7 @@ private[xylophone] object XPathEngine:
     case _: Xml.Header | _: Xml.Doctype => false
     case _                              => true
 
-  private def appendIndex(path: List[Int], index: Int): List[Int] = path + List(index)
+  private def appendIndex(path: List[Int], index: Int): List[Int] = path ++ List(index)
 
   private def childLoci(locus: Locus): List[Locus] =
     if attributeIndexOf(locus) >= 0 then Nil else locus.subject match

@@ -132,7 +132,7 @@ object Sheet:
 
     t"Sheet(format:${sheet.format.lay(t"○")(_.inspect)} ╱ columns:$columns ╱ rows:${rows.tt})"
   given streamable: Dsv.Format => Sheet is Streamable by Text over Credit = sheet =>
-    Stream(sheet.rows.readable.iterator.map(_.show+t"\n"))
+    Stream(sheet.rows.readable.iterator.map(_.show ++ t"\n"))
 
   // Parse rows from a pull endpoint as a single-consumer iterator, one
   // block-credit refill per chunk. Each call builds a fresh parser over the

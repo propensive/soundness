@@ -120,7 +120,7 @@ object protointernal extends anteprotointernal:
         count =>
         val nonzeroComponents = count.components.stdlib.filter(_(1) != 0)
         val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
-        val units = nonzeroUnits.stdlib.head :: nonzeroUnits.stdlib.tail.map(names.separator+_)
+        val units = nonzeroUnits.stdlib.head :: nonzeroUnits.stdlib.tail.map(names.separator ++ _)
         units.weave(names.units().stdlib.takeRight(nonzeroUnits.stdlib.length)).mkString.tt
 
       case _ =>

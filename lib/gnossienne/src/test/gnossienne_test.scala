@@ -133,5 +133,5 @@ object Tests extends Suite(m"Gnossienne Tests"):
       test(m"A reference error explains what could not be found"):
         val error = Reference.Error(t"nobody@example.com", Reference.Error.Reason.NotFound)
         error.message.text
-      . assert(_ == t"the reference nobody@example.com could not be resolved because no target "+
+      . assert(_ == t"the reference nobody@example.com could not be resolved because no target " ++
           t"with that reference was found in the store")

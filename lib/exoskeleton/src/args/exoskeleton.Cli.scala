@@ -75,7 +75,7 @@ object Cli:
 
     val padded =
       if textArguments.size >= target then textArguments
-      else textArguments + List.fill(target - textArguments.size)(t"")
+      else textArguments ++ List.fill(target - textArguments.size)(t"")
 
     // The focused word always carries a cursor, so the interpreter can tell which word is being
     // completed: at the end of the word when the shell does not say where (bash passes no

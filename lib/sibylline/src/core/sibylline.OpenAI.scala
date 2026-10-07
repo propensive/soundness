@@ -232,7 +232,7 @@ object OpenAI:
         case content: Json => List(Json.make(role = t"user".in[Json], content = content))
         case _             => List()
 
-      results + turn
+      results ++ turn
 
   private[sibylline] def tool(tool: Llm.Tool): Json =
     Json.make
@@ -267,7 +267,7 @@ object OpenAI:
         ( text(call.id), text(call.function.name), Llm.parsed(text(call.function.arguments)) )
 
     Llm.Reply
-      ( Llm.Message(Llm.Role.Assistant, texts + calls),
+      ( Llm.Message(Llm.Role.Assistant, texts ++ calls),
         safely(text(json.choices(0).finish_reason)).let(stop(_)).or(Llm.Stop.Ended),
         usage(json.usage).or(Llm.Usage(0, 0)),
         safely(text(json.model)),
@@ -303,7 +303,7 @@ object OpenAI:
           val opened: List[Llm.Event] =
             if progress.open(0) then List(Llm.Event.Opened(0, Llm.Content.Textual(t""))) else List()
 
-          opened + List(Llm.Event.Delta(0, Llm.Event.Increment.Textual(content)))
+          opened ++ List(Llm.Event.Delta(0, Llm.Event.Increment.Textual(content)))
 
       . or(List())
 
@@ -329,11 +329,11 @@ object OpenAI:
 
             . or(List())
 
-          opened + fragment
+          opened ++ fragment
 
       . or(List())
 
-      started + texts + calls
+      started ++ texts ++ calls
 
   // The OpenAI error envelope, `{"error": {"message": …, "type": …, "code": …}}`, mapped
   // through the status first: the codes vary by deployment, the statuses do not.
@@ -413,7 +413,7 @@ class OpenAI private
 
     . or(List())
 
-    val messages = system + turn.history.bind(OpenAI.messages(_))
+    val messages = system ++ turn.history.bind(OpenAI.messages(_))
     val tools = turn.tools.map(OpenAI.tool(_))
     val stops = turn.settings.stopSequences
 
@@ -527,7 +527,7 @@ private[sibylline] object ResponsesDialect:
                 role    = t"assistant".in[Json],
                 content = (List(part): List[Json]).in[Json] )
 
-      turn + calls
+      turn ++ calls
 
     case Llm.Role.User =>
       val results: List[Json] = message.content.bind:
@@ -565,7 +565,7 @@ private[sibylline] object ResponsesDialect:
                 role    = t"user".in[Json],
                 content = parts.in[Json] )
 
-      results + turn
+      results ++ turn
 
   private def tool(tool: Llm.Tool): Json =
     Json.make

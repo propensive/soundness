@@ -54,7 +54,7 @@ case class TextualDagStyle[line: Textual as textual]
     junction:   Text )
 extends DagStyle[line]:
   def serialize(tiles: List[DagTile], node: line): line =
-    textual(tiles.map(text(_)).join)+node
+    textual(tiles.map(text(_)).join) ++ node
 
   def text(tile: DagTile): Text = tile match
     case Space      => space

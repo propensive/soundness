@@ -138,7 +138,7 @@ object Tests extends Suite(m"Obligatory Tests"):
 
       test(m"Content-Length counts bytes, not characters"):
         val body = t"""{"text":"café"}"""
-        val input = t"Content-Length: ${body.in[Data].readable.length}\r\n\r\n"+body
+        val input = t"Content-Length: ${body.in[Data].readable.length}\r\n\r\n" ++ body
 
         Iterator(input.in[Data]).frames[ContentLength].map(_.utf8).to(List)
       . assert(_ == List(t"""{"text":"café"}"""))

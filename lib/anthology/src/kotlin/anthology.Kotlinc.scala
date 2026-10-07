@@ -141,8 +141,8 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
     // The Kotlin standard library is never implied: like every other classpath entry it is the
     // caller's to provide, which is what `-no-stdlib` makes so.
     val arguments: List[Text] =
-      List(t"-no-stdlib", t"-classpath", classpath(), t"-d", out.generic) +
-        commandLineArguments +
+      List(t"-no-stdlib", t"-classpath", classpath(), t"-d", out.generic) ++
+        commandLineArguments ++ 
         names.keys.to[List]
 
     Log.info(CompileEvent.Running(t"kotlinc" :: arguments))

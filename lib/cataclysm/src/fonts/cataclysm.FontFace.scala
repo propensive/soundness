@@ -54,13 +54,13 @@ object FontFace:
     def recur(remaining: List[font], seen: List[Text]): List[Css.Node] = remaining match
       case head :: tail =>
         val name = head.typeface.name
-        if seen.has(name) then recur(tail, seen) else rules(head) + recur(tail, List(name) + seen)
+        if seen.has(name) then recur(tail, seen) else rules(head) ++ recur(tail, List(name) ++ seen)
 
       case _ =>
         Nil
 
     val nodes = recur(fonts, Nil)
-    Css(select(nodes, imported = true) + select(nodes, imported = false))
+    Css(select(nodes, imported = true) ++ select(nodes, imported = false))
 
   private def select(nodes: List[Css.Node], imported: Boolean): List[Css.Node] = nodes match
     case head :: tail =>
@@ -68,14 +68,14 @@ object FontFace:
         case Css.Node.At(t"import", _, _) => true
         case _                            => false
 
-      if isImport == imported then List(head) + select(tail, imported) else select(tail, imported)
+      if isImport == imported then List(head) ++ select(tail, imported) else select(tail, imported)
 
     case _ =>
       Nil
 
   private def sources(typeface: Text, provision: Typesettable): List[Css.Node] =
     def recur(remaining: List[Typesettable.Source]): List[Css.Node] = remaining match
-      case head :: tail => source(typeface, head, provision.coverage) + recur(tail)
+      case head :: tail => source(typeface, head, provision.coverage) ++ recur(tail)
       case _            => Nil
 
     recur(provision.sources)
@@ -120,7 +120,7 @@ object FontFace:
         ( Css.Node.Declaration(t"font-family", t"\"$typeface\""),
           Css.Node.Declaration(t"src", src) )
 
-    Css.Node.At(t"font-face", t"", declarations + descriptors(coverage))
+    Css.Node.At(t"font-face", t"", declarations ++ descriptors(coverage))
 
   // The faces a `@font-face` covers, as its `font-weight`, `font-style` and `font-stretch`
   // descriptors, merged across the coverage's entries. A browser matches a requested face
@@ -143,7 +143,7 @@ object FontFace:
           val range = t"${span.stretches.lower.show} ${span.stretches.upper.show}"
           List(Css.Node.Declaration(t"font-stretch", range))
 
-      List(Css.Node.Declaration(t"font-weight", weight)) + style + stretch
+      List(Css.Node.Declaration(t"font-weight", weight)) ++ style ++ stretch
 
   private case class Span
     ( weights: Weight.Range, upright: Boolean, italic: Boolean, stretches: Stretch.Range )

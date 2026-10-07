@@ -555,7 +555,7 @@ extension [key, value](map: Map[key, List[value]])
     map.define(key, value :: map.at(key).or(Nil))
 
 extension [value](list: List[value])
-  def unwind(tail: List[value]): List[value] = list.reverse + tail
+  def unwind(tail: List[value]): List[value] = list.reverse ++ tail
 
 // The first name in the series `base`, `base2`, `base3`, ... that `taken` does not reject. The
 // suffixes start at 2: an unadorned `base` is the first candidate, so `base1` is never produced.

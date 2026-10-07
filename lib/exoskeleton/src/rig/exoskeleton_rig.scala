@@ -189,11 +189,11 @@ extension (shell: Shell)
 
             // `BASH_COMPLETION_USER_DIR` first, as `Completions.install` writes there when set.
             val sourceScript =
-              t"""for d in "$${BASH_COMPLETION_USER_DIR:+$$BASH_COMPLETION_USER_DIR/completions}" """ +
-                t""""$$XDG_DATA_HOME/bash-completion/completions" """ +
-                t""""$$HOME/.local/share/bash-completion/completions" """ +
-                t"""/usr/local/share/bash-completion/completions """ +
-                t"""/usr/share/bash-completion/completions; do [ -n "$$d" ] && """ +
+              t"""for d in "$${BASH_COMPLETION_USER_DIR:+$$BASH_COMPLETION_USER_DIR/completions}" """ ++
+                t""""$$XDG_DATA_HOME/bash-completion/completions" """ ++ 
+                t""""$$HOME/.local/share/bash-completion/completions" """ ++
+                t"""/usr/local/share/bash-completion/completions """ ++ 
+                t"""/usr/share/bash-completion/completions; do [ -n "$$d" ] && """ ++
                 t"""[ -r "$$d/$cmd" ] && . "$$d/$cmd" && break; done"""
 
             sh"""tmux send-keys -t ${tmux.id} '$sourceScript' C-m""".exec[Unit]()
@@ -240,8 +240,8 @@ extension (shell: Shell)
             // fish has parsed the file. Source the installed script explicitly
             // so it's registered before the first test key is sent.
             val sourceFish =
-              t"""for d in $$XDG_CONFIG_HOME $$HOME/.config; """ +
-                t"""test -r "$$d/fish/completions/$cmd.fish"; """ +
+              t"""for d in $$XDG_CONFIG_HOME $$HOME/.config; """ ++
+                t"""test -r "$$d/fish/completions/$cmd.fish"; """ ++ 
                 t"""and source "$$d/fish/completions/$cmd.fish"; and break; end"""
 
             sh"""tmux send-keys -t ${tmux.id} '$sourceFish' C-m""".exec[Unit]()

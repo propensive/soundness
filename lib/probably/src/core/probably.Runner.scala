@@ -285,7 +285,7 @@ object Runner:
           declared.filter { entry => !specs.has(entry(2)) }.map: entry =>
             Axis.Schedule(entry(2), Nil, entry(3), entry(4))
 
-        Runner.Scheduled(id, kind, expected, seen + emergent)
+        Runner.Scheduled(id, kind, expected, seen ++ emergent)
 
     def admitted: Int = mutex(admitted0)
 

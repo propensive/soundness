@@ -59,7 +59,7 @@ def fixture(): Unit = cli:
       execute(Out.print(rest.map(_()).join(t"\n")) yet Exit.Ok)
 
     case Argument("lines") :: rest =>
-      execute(Out.print(rest.map(_()).join(t"\n") + t"\n") yet Exit.Ok)
+      execute(Out.print(rest.map(_()).join(t"\n") ++ t"\n") yet Exit.Ok)
 
     case Argument("echo") :: text :: Nil =>
       execute(Out.print(text()) yet Exit.Ok)

@@ -168,7 +168,7 @@ object Lines:
                 (at(datum, high) :: acc(0), at(datum, low) :: acc(1))
 
             val band: List[Figure] =
-              if highs.nil then Nil else style.band(highs.reverse + lows, color, index)
+              if highs.nil then Nil else style.band(highs.reverse ++ lows, color, index)
 
             val line = style.line(path, color, index)
 
@@ -177,15 +177,15 @@ object Lines:
               val marker = style.lineMarker(position, color, index)
               if style.markers then avoid(Obstacle.Disc(position.x, position.y, style.markerRadius))
               val note = datum.note.lay(Nil): text => pointLabel(position.x, position.y, text)
-              note.reverse + (marker.reverse + acc)
+              note.reverse ++ (marker.reverse ++ acc)
 
-            val figures = band + line + decorations.reverse
+            val figures = band ++ line ++ decorations.reverse
             val part = seriesId(index) -> Group(figures, id = seriesId(index))
             index += 1
             part
 
           val legend = legendPart(layout.legend, names)
-          Framing.drawing(axesParts + seriesParts + legend)
+          Framing.drawing(axesParts ++ seriesParts ++ legend)
 
 // A line per series through its points in abscissa order — or, when the style smooths, through
 // their Kalman-smoothed values — with a translucent band where the values carry intervals, and

@@ -105,7 +105,7 @@ object Enclave:
     def variable(name: Text): Optional[Text] =
       if name == t"XEK" then builder else base.variable(name)
 
-    override def entries: Optional[Map[Text, Text]] = base.entries.let(_ + Map(t"XEK" -> builder))
+    override def entries: Optional[Map[Text, Text]] = base.entries.let(_ ++ Map(t"XEK" -> builder))
 
   // Generates an ML-DSA-44 key pair with `xek keygen`, as `<prefix>.seed` and `<prefix>.pub`,
   // returning the seed, to sign with, and the public key, to build an `Enclave` with. Signing
@@ -212,7 +212,7 @@ extends Rig:
       val release: List[Text] = releaseKey.lay(Nil): key => List(t"--public-key", key.encode)
       val recovery: List[Text] = recoveryKey.lay(Nil): key => List(t"--recovery-key", key.encode)
       val application: List[Text] = appId.lay(Nil): id => List(t"--app-id", id)
-      val options: List[Text] = build + release + recovery + application
+      val options: List[Text] = build ++ release ++ recovery ++ application
 
       sh"${Enclave.xek} build $options $jarfile $target".exec[Exit]() match
         case Exit.Ok         => target

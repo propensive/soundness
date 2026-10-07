@@ -76,7 +76,7 @@ extends LaneDagStyle[line]:
       case ((Node, w), i) =>
         val g = glyphs.getOrElse(i.n0, line(node))
         val gw = width(g)
-        if gw >= w then g else g+line(Text(" ".repeat(w - gw).nn))
+        if gw >= w then g else g ++ line(Text(" ".repeat(w - gw).nn))
 
       case ((t, w), _) =>
         val base = text(t)
@@ -90,7 +90,7 @@ extends LaneDagStyle[line]:
         val padding = if w > 1 then filler.repeat(w - 1).nn else ""
         line(Text(cell + padding))
 
-    parts.fold(line(t""))(_+_)+label.or(line(t""))
+    parts.fold(line(t""))(_ ++ _) ++ label.or(line(t""))
 
   def text(tile: DagTile): Text = tile match
     case Space      => space

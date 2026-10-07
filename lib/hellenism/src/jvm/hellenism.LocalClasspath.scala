@@ -117,7 +117,7 @@ object LocalClasspath:
         else
           // `Set` is invariant, so the singleton is built at the wider element type.
           new LocalClasspath
-            ( entry :: classpath.entries, classpath.entrySet + Set[Classpath.Entry](entry) )
+            ( entry :: classpath.entries, classpath.entrySet ++ Set[Classpath.Entry](entry) )
 
 class LocalClasspath private
   ( val entries

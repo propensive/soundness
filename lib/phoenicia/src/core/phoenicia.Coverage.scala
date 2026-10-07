@@ -74,7 +74,7 @@ object Coverage:
       val axisComplaints: List[Optional[Font.Error.Reason]] = variations.map(axisComplaint)
       val featureComplaints: List[Optional[Font.Error.Reason]] = settings.map(featureComplaint)
 
-      first(axisComplaints + featureComplaints)
+      first(axisComplaints ++ featureComplaints)
 
   // A declared coverage, for a source whose files are not to hand: a URL or an installed font.
   // Only what is declared is admitted, so a linked font declared at one weight rejects a request
@@ -127,7 +127,7 @@ object Coverage:
   def combine(coverages: List[Coverage]): Coverage =
     def recur(remaining: List[Coverage]): Optional[List[Entry]] = remaining match
       case Unknown :: _             => Unset
-      case Entries(entries) :: tail => recur(tail).let(entries + _)
+      case Entries(entries) :: tail => recur(tail).let(entries ++ _)
       case _                        => List()
 
     recur(coverages).lay(Unknown)(Entries(_))
@@ -137,7 +137,7 @@ object Coverage:
   private def rangesOf(axis: Variation.Axis, ranges: List[Variation.Range]): List[Variation.Range] =
     ranges match
       case head :: tail =>
-        if head.axis.tag == axis.tag then List(head) + rangesOf(axis, tail)
+        if head.axis.tag == axis.tag then List(head) ++ rangesOf(axis, tail)
         else rangesOf(axis, tail)
 
       case _ =>
@@ -154,7 +154,7 @@ object Coverage:
   private def select(entries: List[Entry], predicate: Entry => Boolean): List[Entry] =
     entries match
       case head :: tail =>
-        if predicate(head) then List(head) + select(tail, predicate) else select(tail, predicate)
+        if predicate(head) then List(head) ++ select(tail, predicate) else select(tail, predicate)
 
       case _ =>
         Nil

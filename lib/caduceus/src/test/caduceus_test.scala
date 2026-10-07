@@ -231,5 +231,5 @@ object Tests extends Suite(m"Caduceus tests"):
       test(m"A courier error names both parties and the subject"):
         val error = Courier.Error(jack, jill, t"Greetings")
         error.message.text
-      . assert(_ == t"unable to send email from jack@example.com to jill@example.com with "+
+      . assert(_ == t"unable to send email from jack@example.com to jill@example.com with " ++
           t"subject Greetings")

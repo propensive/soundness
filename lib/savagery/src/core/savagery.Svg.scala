@@ -609,7 +609,7 @@ extends Documentary:
 
     val defsElement: List[Xml] =
       if defs.nil && styleElement.nil then Nil
-      else List(Xml.Element(t"defs", Attributes.empty, (styleElement + defs.map(_.markup)).nodes))
+      else List(Xml.Element(t"defs", Attributes.empty, (styleElement ++ defs.map(_.markup)).nodes))
 
     val figureNodes: List[Xml] =
       if transforms.nil then figures.map(_.markup)
@@ -619,5 +619,5 @@ extends Documentary:
 
         List(Xml.Element(t"g", Attributes.from(groupAttrs.to[Map]), figures.map(_.markup).nodes))
 
-    val children: Array[Xml.Node]^{} = (defsElement + figureNodes).nodes
+    val children: Array[Xml.Node]^{} = (defsElement ++ figureNodes).nodes
     Xml.Element(t"svg", Attributes.from(attrs.to[Map]), children)

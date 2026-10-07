@@ -439,7 +439,7 @@ object StackTrace:
     val root = stack.frames.fuse(init):
       val obj = next.method.className.s.endsWith("#")
       val drop = if next.source.absent && obj then 1 else 0
-      val file = (nbsp*(fileWidth - next.file.s.length))+next.file
+      val file = (nbsp*(fileWidth - next.file.s.length)) ++ next.file
       val dot = if next.source.present || obj then ".".tt else "#".tt
       val className = next.displayClass.s.dropRight(drop)
       val classPad = (nbsp*(classWidth - className.length))

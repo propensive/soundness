@@ -107,7 +107,7 @@ object Benchmarks extends Suite(m"Escapade benchmarks"):
 
   def buildInterpolation(): Teletype =
     e"${Bold}(${Fg(Chroma(0xffaa00))}(header)): the ${Italic}(quick) ${Bold}(brown)"
-    + e" ${Fg(Chroma(0x55aaff))}(fox) jumps over the ${Underline}(lazy ${Strike}(dog))"
+    ++ e" ${Fg(Chroma(0x55aaff))}(fox) jumps over the ${Underline}(lazy ${Strike}(dog))"
 
   def renderTrueColor(t: Teletype): Text =
     t.render(termcapDefinitions.xtermTrueColorTermcap)

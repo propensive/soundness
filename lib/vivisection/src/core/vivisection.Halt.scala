@@ -138,7 +138,7 @@ extends caps.ExclusiveCapability:
           Halt.Position(cls, origin.file, origin.path, origin.line, true, origin.cls)
 
         val real = Halt.Position(name, source, path, expansion.line.or(line), false)
-        inlined + List(real)
+        inlined ++ List(real)
 
   // A human-readable position for a frame — `pkg.Cls.method` and its source line, resolved from
   // the class's method and line tables; line 0 where no line information exists.
@@ -221,7 +221,7 @@ extends caps.ExclusiveCapability:
 
     val captures = thisObject(frame).lay(List[Variable]())(capturesOf(_, List()))
 
-    locals + captures
+    locals ++ captures
 
   // Expands a snapshot into its next level: an object's instance fields, or an array's elements.
   def children(snapshot0: Variable.Snapshot): List[Variable] =
@@ -368,7 +368,7 @@ extends caps.ExclusiveCapability:
 
         if name == t"$$outer" then value match
           case Jdwp.Value.Reference(_, outer) if !outer.empty =>
-            capturesOf(outer, path + List(name))
+            capturesOf(outer, path ++ List(name))
 
           case _ =>
             List()
@@ -390,7 +390,7 @@ extends caps.ExclusiveCapability:
           val base = capture.or(name)
 
           List(variable(base, field.signature, value,
-              Variable.Provenance.Captured(path + List(name), obj, field.field)))
+              Variable.Provenance.Captured(path ++ List(name), obj, field.field)))
 
         else
           List(variable(name, field.signature, value,

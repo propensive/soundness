@@ -159,7 +159,8 @@ package teletypeables:
             case class Row(treeLine: Text, left: Teletype, right: Teletype, memo: Teletype)
 
             given treeStyle: (Text is Textual) => TreeStyle[Row] = (tiles, row) =>
-              row.copy(treeLine = tiles.map(treeStyles.squareTreeStyle.text(_)).join+row.treeLine)
+              val prefix = tiles.map(treeStyles.squareTreeStyle.text(_)).join
+              row.copy(treeLine = prefix ++ row.treeLine)
 
             def line(data: (Text, Juxtaposition)): Row =
               def line(bullet: Text): Text = t"$bullet ${data(0)}"

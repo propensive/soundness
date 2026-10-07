@@ -296,7 +296,7 @@ object Tests extends Suite(m"Scintillate tests"):
             rawRequest
               ( port,
                 t"POST / HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n"
-                + t"5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n" )
+                ++ t"5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n" )
 
           server.cancel()
           response
@@ -728,7 +728,7 @@ object Tests extends Suite(m"Scintillate tests"):
       test(m"A large unconsumed body closes the connection instead of draining"):
         val request =
           t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 70000\r\n\r\n${t"a"*70000}"
-          + t"GET /second HTTP/1.1\r\nHost: x\r\n\r\n"
+          ++ t"GET /second HTTP/1.1\r\nHost: x\r\n\r\n"
 
         inProcess(Http.Response(Http.Ok)(t"ok"), request).cut(t"HTTP/1.1 200 OK").size - 1
 

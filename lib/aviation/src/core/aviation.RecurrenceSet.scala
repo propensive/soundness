@@ -49,7 +49,7 @@ object RecurrenceSet:
 
     set =>
       val excluded: Set[point] = set.exdates.to[Set]
-      val streams: List[Chain[point]] = set.include + List(set.rdates.sort.to[Chain])
+      val streams: List[Chain[point]] = set.include ++ List(set.rdates.sort.to[Chain])
       dedup(streams.occupied.lay(Chain.empty[point])(_.reduce(merge))).filter(!excluded.has(_))
 
   // Lazily merge two ascending streams into one ascending stream (emit the lesser head first).

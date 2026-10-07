@@ -208,7 +208,7 @@ object Tests extends Suite(m"Coaxial tests"):
 
       test(m"A Bind.Error incorporates its reason"):
         Bind.Error(Bind.Error.Reason.PortInUse).message.text
-      . assert(_ == t"the socket could not be bound because another process is already "+
+      . assert(_ == t"the socket could not be bound because another process is already " ++
           t"bound to the port")
 
     supervise:

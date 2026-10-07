@@ -82,13 +82,13 @@ object TypescriptDialect extends Dialect:
                 // The `Optional` base class is bound to a typed local before it is read
                 // (`wildApprox`).
                 val base: Optional[Typescript.Type] = extending
-                base.lay(implements) { value => List(value) + implements }
+                base.lay(implements) { value => List(value) ++ implements }
 
               case _ => Nil
 
             val inherited = bases.fold(Map[Text, Prototype]()): (accumulated, base) =>
               base match
-                case Typescript.Type.Named(name, _) => accumulated + members(name, seen :+ key)
+                case Typescript.Type.Named(name, _) => accumulated ++ members(name, seen :+ key)
                 case _                              => accumulated
 
             declaration.declaredMembers.fold(inherited): (accumulated, member) =>

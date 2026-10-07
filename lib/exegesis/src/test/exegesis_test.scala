@@ -132,7 +132,7 @@ object TrafficFixture:
         log.synchronized(log.append((t"send", message)))
         answered.countDown()
 
-    val framed: Text = t"Content-Length: ${request.in[Data].readable.length}\r\n\r\n"+request
+    val framed: Text = t"Content-Length: ${request.in[Data].readable.length}\r\n\r\n" ++ request
 
     val in: ji.InputStream = new ji.ByteArrayInputStream(framed.s.getBytes("UTF-8").nn):
       override def read(array: scala.Array[Byte] | Null, offset: Int, length: Int): Int =
@@ -319,7 +319,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
       test(m"a multi-byte UTF-8 body is framed by byte length, not character count"):
         val body = t"""{"k":"café"}"""
-        val message = t"Content-Length: ${body.in[Data].readable.length}\r\n\r\n"+body
+        val message = t"Content-Length: ${body.in[Data].readable.length}\r\n\r\n" ++ body
         Iterator(message.in[Data]).frames[ContentLength].map(_.utf8).to(List)
       . assert(_ == List(t"""{"k":"café"}"""))
 

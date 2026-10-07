@@ -66,7 +66,7 @@ object Benchmark:
       val memory: List[(Metric, Double)] =
         allocation.lay(List[(Metric, Double)]()): bytes => List(Metric.Allocation -> bytes.toDouble)
 
-      val metrics = (timings + memory).to[Ledger]
+      val metrics = (timings ++ memory).to[Ledger]
 
       val payload: Optional[Run.Payload] =
         if benchmark.operationSize.absent && benchmark.operationRate.absent then Unset

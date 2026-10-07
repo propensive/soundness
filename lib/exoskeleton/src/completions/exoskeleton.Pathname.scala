@@ -60,12 +60,12 @@ object Pathname:
   // A shell expands `~` before exec, but a quoted argument and every partial word handed to
   // the completion script arrive with the tilde intact, so it is expanded here too.
   private def expand(text: Text)(using System): Text = home.lay(text): home =>
-    if text == t"~" then home else if text.starts(t"~/") then home+text.skip(1) else text
+    if text == t"~" then home else if text.starts(t"~/") then home ++ text.skip(1) else text
 
   // The inverse, so a completion under a tilde stays short and keeps its tilde.
   private def abbreviate(text: Text)(using System): Text = home.lay(text): home =>
     if text == home then t"~"
-    else if text.starts(home+t"/") then t"~"+text.skip(home.length)
+    else if text.starts(home ++ t"/") then t"~" ++ text.skip(home.length)
     else text
 
   // The pathname completion candidates for the partially-typed `operand` — expanding `~`,
@@ -92,7 +92,7 @@ object Pathname:
         suggest(t"../") ::
           children0.filter(_.name.starts(t".")).map: path =>
             val directory = safely(path.entry() == galilei.Directory).or(false)
-            suggest(if directory then path.name+t"/" else path.name)
+            suggest(if directory then path.name ++ t"/" else path.name)
 
       else if operand == t".." then
         val children0: List[Path on Local] = workingDirectory.children.to[List]
@@ -100,7 +100,7 @@ object Pathname:
         suggest(t"../") ::
           children0.filter(_.name.starts(t"..")).map: path =>
             val directory = safely(path.entry() == galilei.Directory).or(false)
-            suggest(if directory then path.name+t"/" else path.name)
+            suggest(if directory then path.name ++ t"/" else path.name)
 
       else if operand.nil then
         val children0: List[Path on Local] = workingDirectory.children.to[List]
@@ -110,7 +110,7 @@ object Pathname:
 
         children.map: path =>
           val directory = safely(path.entry() == galilei.Directory).or(false)
-          suggest(if directory then path.name+t"/" else path.name)
+          suggest(if directory then path.name ++ t"/" else path.name)
 
       else
         val tilde = home.present && (operand == t"~" || operand.starts(t"~/"))
@@ -137,9 +137,9 @@ object Pathname:
           val slash = if directory then t"/" else t""
 
           suggest:
-            if tilde then abbreviate(path.encode)+slash
-            else if absolute then path.encode+slash
-            else workingDirectory.toward(path).encode+slash
+            if tilde then abbreviate(path.encode) ++ slash
+            else if absolute then path.encode ++ slash
+            else workingDirectory.toward(path).encode ++ slash
 
     . or(List())
 
@@ -147,7 +147,7 @@ object Pathname:
   def unapply(argument: Argument)(using WorkingDirectory, Cli, System): Option[Path on Local] =
     // The candidates add to `prior` rather than replacing it: another extractor evaluated
     // against the same argument (typically a `Subcommand`) must keep its suggestions.
-    argument.suggest(Pathname.complete(argument(), argument.tab.or(Prim)) + prior)
+    argument.suggest(Pathname.complete(argument(), argument.tab.or(Prim)) ++ prior)
 
     scala.caps.unsafe.unsafeAssumeSeparate:
       safely(workingDirectory.resolve(expand(argument()))).option

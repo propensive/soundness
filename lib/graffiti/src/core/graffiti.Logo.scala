@@ -58,4 +58,4 @@ trait Logo extends Archetype:
   // This feature's own rules; override to restyle the logo.
   protected def logoStyles: Css = css"${Logo.logoClass} { font-weight: bold }"
 
-  protected override def styles: Css = super.styles + logoStyles
+  protected override def styles: Css = super.styles ++ logoStyles

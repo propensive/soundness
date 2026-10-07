@@ -251,10 +251,10 @@ object Completions:
   :   Job[?, Text]^ =
 
     val variables = consulted.bind: name =>
-      safely(Environment[Text](name)).lay(Nil) { (value: Text) => List(name+t"="+value) }
+      safely(Environment[Text](name)).lay(Nil) { (value: Text) => List(name ++ t"=" ++ value) }
 
     val prefix = List(t"sh", t"-c", t"exec \"$$@\" </dev/null 2>/dev/null", t"sh", t"env")
-    Command((prefix + variables + question)*).fork[Text]()
+    Command((prefix ++ variables ++ question)*).fork[Text]()
 
   // A shell's answer, as the parts between its marker lines, or `Unset` if it gave none before
   // `deadline` (a `System.nanoTime` value), in which case it is killed.
@@ -330,7 +330,7 @@ object Completions:
     val scriptName = unsafely(Name[Linux](t"_$command"))
     val zshFallback: Path on Linux = Xdg.dataHome[Path on Linux]/"zsh"/"site-functions"
 
-    (own + writable).prim.lay(place(Shell.Zsh, command, scriptName, zshFallback, false)): dir =>
+    (own ++ writable).prim.lay(place(Shell.Zsh, command, scriptName, zshFallback, false)): dir =>
       place(Shell.Zsh, command, scriptName, dir, true)
 
   // Into bash-completion's user directory, which is never on a path the user must configure, but

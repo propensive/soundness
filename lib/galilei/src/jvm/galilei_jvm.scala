@@ -237,7 +237,7 @@ package filesystemBackends:
           val atomically: List[jnf.CopyOption] =
             if atomic then List(jnf.StandardCopyOption.ATOMIC_MOVE) else Nil
 
-          val options: List[jnf.CopyOption] = dereferenceOptions(dereference) + atomically
+          val options: List[jnf.CopyOption] = dereferenceOptions(dereference) ++ atomically
 
           jnf.Files.move(javaPath(source), javaPath(destination), options*)
 

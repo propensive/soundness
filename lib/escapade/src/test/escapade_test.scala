@@ -458,7 +458,7 @@ object Tests extends Suite(m"Escapade tests"):
       . assert(identity(_))
 
       test(m"+ operator behaves as append"):
-        (e"a" + e"b").plain
+        (e"a" ++ e"b").plain
       . assert(_ == t"ab")
 
     suite(m"Teletype: dropChars and takeChars"):

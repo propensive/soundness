@@ -261,7 +261,7 @@ object Repackager:
         // Without this, `Zipfile.write` rejects the duplicate entry.
         // The concatenation is bound first so `deduplicate`'s implicit search never runs
         // against an uninstantiated result variable (the wildApprox hazard).
-        val combined: List[Zip.Entry] = bootstrap :: keptEntries + inlined
+        val combined: List[Zip.Entry] = bootstrap :: keptEntries ++ inlined
         val entries: List[Zip.Entry] = combined.deduplicate(_.ref.show)
 
         Zipfile.write(outputJar)(manifestEntry :: entries)

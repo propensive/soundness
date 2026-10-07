@@ -1751,7 +1751,7 @@ object Xml extends Tag.Container
     def targets(tag: BaseText): Boolean = global || elements.has(tag)
 
     def merge(that: XmlAttribute): XmlAttribute =
-      XmlAttribute(label, elements + that.elements, global || that.global)
+      XmlAttribute(label, elements ++ that.elements, global || that.global)
 
   // A resolved name: the namespace URI, if any, and the local part, as the pair by which
   // elements and attributes are identified once prefixes have been resolved. `Name("a")` is

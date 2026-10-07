@@ -243,7 +243,7 @@ object Tests extends Suite(m"Harlequin Tests"):
       test(m"explicit arguments are never recorded"):
         val explicit =
           t"def pick[element](x: element)(using Ordering[element]): element = x\n"
-          + t"val chosen = pick[Int](9)(using Ordering.Int)"
+          ++ t"val chosen = pick[Int](9)(using Ordering.Int)"
 
         elaborationsOf(explicit, t"pick")
       . assert(_.isEmpty)

@@ -79,10 +79,10 @@ case class Argument
            incomplete = true )
 
     case Argument.Format.EqualityPrefix =>
-      suggestion.copy(core = suggestion.core+t"="+value.after(value.offsetOf("=").or(Prim)))
+      suggestion.copy(core = suggestion.core ++ t"=" ++ value.after(value.offsetOf("=").or(Prim)))
 
     case Argument.Format.EqualitySuffix =>
-      val suggestion2 = suggestion.copy(prefix = value.before(value.offsetOf("=").or(Prim))+t"=")
+      val suggestion2 = suggestion.copy(prefix = value.before(value.offsetOf("=").or(Prim)) ++ t"=")
       suggestion2
 
   def apply(): Text = format match

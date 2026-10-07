@@ -398,7 +398,7 @@ object Ergo:
           val below = u.or(base)
           val above = o.or(base)
           Munderover(base, below, above,
-            accent(below, t"accentunder") + accent(above, t"accent"))
+            accent(below, t"accentunder") ++ accent(above, t"accent"))
 
       (sub, sup) match
         case (Unset, Unset) => limited
@@ -445,20 +445,20 @@ object Ergo:
 
     private def applyAttributes(node: Mathml, extra: List[(Text, Text)]): Mathml =
       if extra.nil then node else node match
-        case n: Mi         => n.copy(attributes = n.attributes + extra)
-        case n: Mn         => n.copy(attributes = n.attributes + extra)
-        case n: Mo         => n.copy(attributes = n.attributes + extra)
-        case n: Mrow       => n.copy(attributes = n.attributes + extra)
-        case n: Mfrac      => n.copy(attributes = n.attributes + extra)
-        case n: Msqrt      => n.copy(attributes = n.attributes + extra)
-        case n: Mroot      => n.copy(attributes = n.attributes + extra)
-        case n: Msub       => n.copy(attributes = n.attributes + extra)
-        case n: Msup       => n.copy(attributes = n.attributes + extra)
-        case n: Msubsup    => n.copy(attributes = n.attributes + extra)
-        case n: Munder     => n.copy(attributes = n.attributes + extra)
-        case n: Mover      => n.copy(attributes = n.attributes + extra)
-        case n: Munderover => n.copy(attributes = n.attributes + extra)
-        case n: Mtable     => n.copy(attributes = n.attributes + extra)
+        case n: Mi         => n.copy(attributes = n.attributes ++ extra)
+        case n: Mn         => n.copy(attributes = n.attributes ++ extra)
+        case n: Mo         => n.copy(attributes = n.attributes ++ extra)
+        case n: Mrow       => n.copy(attributes = n.attributes ++ extra)
+        case n: Mfrac      => n.copy(attributes = n.attributes ++ extra)
+        case n: Msqrt      => n.copy(attributes = n.attributes ++ extra)
+        case n: Mroot      => n.copy(attributes = n.attributes ++ extra)
+        case n: Msub       => n.copy(attributes = n.attributes ++ extra)
+        case n: Msup       => n.copy(attributes = n.attributes ++ extra)
+        case n: Msubsup    => n.copy(attributes = n.attributes ++ extra)
+        case n: Munder     => n.copy(attributes = n.attributes ++ extra)
+        case n: Mover      => n.copy(attributes = n.attributes ++ extra)
+        case n: Munderover => n.copy(attributes = n.attributes ++ extra)
+        case n: Mtable     => n.copy(attributes = n.attributes ++ extra)
         case other         => Mrow(List(other), extra)
 
     private def parseUnit(): Mathml =

@@ -139,7 +139,7 @@ case class Permutation(factoradic: Factoradic):
 
 
     val prefix = sequence.size - lehmer.size
-    sequence.keep(prefix) + recur(lehmer, Nil, sequence.skip(prefix), 0, Nil)
+    sequence.keep(prefix) ++ recur(lehmer, Nil, sequence.skip(prefix), 0, Nil)
 
   def inverse: Permutation = if lehmer.nil then this else
     val length = lehmer.size

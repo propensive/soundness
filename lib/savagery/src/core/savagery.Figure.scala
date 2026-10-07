@@ -155,7 +155,7 @@ object Figure:
   // The fonts a list of figures sets text in, groups included, so that an `Svg` can carry the
   // `@font-face` rules for every typeface its lettering names.
   def fonts(figures: List[Figure]): List[Font in Web] = figures match
-    case head :: tail => head.fonts + fonts(tail)
+    case head :: tail => head.fonts ++ fonts(tail)
     case _            => Nil
 
 sealed trait Figure:
@@ -338,7 +338,8 @@ extends Figure:
     if anchor != Lettering.Anchor.Start then attrs += t"text-anchor" -> anchor.text
     baseline.let: baseline => attrs += t"dominant-baseline" -> baseline.text
 
-    val styled: Optional[Css.Style] = font.lay(style): font => style.lay(font.style)(font.style + _)
+    val styled: Optional[Css.Style] =
+      font.lay(style): font => style.lay(font.style)(font.style ++ _)
 
     Figure.decorate(attrs, id, transforms, styled)
 

@@ -80,7 +80,7 @@ abstract class Tabulation[text: ClassTag]():
 
     val titleCells: List[Cells[text]] = titles.map(Cells.of(_))
     val rowCells: List[Cells[text]] = rows.map(Cells.of(_))
-    val aggregates = (titleCells + rowCells).fold(Layout.nothing(columns))(Layout.aggregate(_, _))
+    val aggregates = (titleCells ++ rowCells).fold(Layout.nothing(columns))(Layout.aggregate(_, _))
     Layout.solve(columns, titleCells, aggregates, width, style)
 
   def grid(width: Int)
@@ -91,7 +91,7 @@ abstract class Tabulation[text: ClassTag]():
 
     val titleCells: List[Cells[text]] = titles.map(Cells.of(_))
     val rowCells: List[Cells[text]] = rows.map(Cells.of(_))
-    val aggregates = (titleCells + rowCells).fold(Layout.nothing(columns))(Layout.aggregate(_, _))
+    val aggregates = (titleCells ++ rowCells).fold(Layout.nothing(columns))(Layout.aggregate(_, _))
     val layout = Layout.solve(columns, titleCells, aggregates, width, style)
 
     def lines(data: List[Cells[text]], decorations2: List[List[Optional[text -> text]]])

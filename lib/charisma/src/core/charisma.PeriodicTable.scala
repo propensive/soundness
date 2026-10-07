@@ -188,6 +188,6 @@ object PeriodicTable:
       then Chemical.Element(number, symbol.capitalize, name.capitalize.sub(t"ii", t"i"))
       else
         val prefix = prefixes.readUnchecked(digits%10)
-        recur(prefix+name, t"${prefix.s.charAt(0)}$symbol", digits/10)
+        recur(prefix ++ name, t"${prefix.s.charAt(0)}$symbol", digits/10)
 
     recur(t"ium", t"", number)

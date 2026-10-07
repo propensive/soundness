@@ -59,4 +59,4 @@ trait Hero(headline: Text) extends Archetype:
     css"${Hero.heroClass} { padding-block: 3rem; text-align: center }"
 
   protected override def frame: Html of (? <: Flow) = Html.Fragment[Flow](heroBanner, super.frame)
-  protected override def styles: Css = super.styles + heroStyles
+  protected override def styles: Css = super.styles ++ heroStyles

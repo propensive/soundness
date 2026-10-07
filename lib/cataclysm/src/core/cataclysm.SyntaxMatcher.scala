@@ -195,7 +195,7 @@ object SyntaxMatcher:
         if !more then stop
         else
           val starts = if count > 0 && separated then comma(toks) else List(toks)
-          stop + starts.bind(consume(term, _)).bind(go(count + 1, _))
+          stop ++ starts.bind(consume(term, _)).bind(go(count + 1, _))
 
       go(0, tokens)
 

@@ -142,6 +142,7 @@ object DerivationTutorial:
   LenientParsing.derived[Settings].parse(t"primary")   // Settings(t"primary", 3)
 
   import arithmetic.addable
+  import arithmeticOptions.concatenativeAddition
 
   case class Pair(label: Text, count: Int)
 

@@ -69,7 +69,7 @@ extension (css: Css)
 private def simples(nodes: List[Css.Node]): List[Simple] =
   nodes.bind:
     case Css.Node.Rule(selector, body) =>
-      listSimples(selector) + simples(body)
+      listSimples(selector) ++ simples(body)
     case Css.Node.At(_, _, body)       => body.lay(Nil)(simples)
     case Css.Node.Declaration(_, _)    => Nil
 

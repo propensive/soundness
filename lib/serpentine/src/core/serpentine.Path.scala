@@ -218,7 +218,7 @@ object Path extends PathUntyped:
 
   case class Error(reason: Path.Error.Reason, path: Optional[Text])(using Diagnostics)
   extends fulminate.Error(831, reason.number)
-    ( m"the path ${path.lay(t"")(_+t" ")}was invalid because $reason" )
+    ( m"the path ${path.lay(t"")(_ ++ t" ")}was invalid because $reason" )
 
 case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   type Topic <: Tuple

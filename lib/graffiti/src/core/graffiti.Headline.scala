@@ -56,4 +56,4 @@ trait Headline(title: Text) extends Archetype:
   protected def headlineStyles: Css = css"${Headline.headlineClass} { margin-block: 0 0.5rem }"
 
   protected override def frame: Html of (? <: Flow) = Html.Fragment[Flow](heading, super.frame)
-  protected override def styles: Css = super.styles + headlineStyles
+  protected override def styles: Css = super.styles ++ headlineStyles

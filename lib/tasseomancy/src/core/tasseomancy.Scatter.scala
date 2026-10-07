@@ -112,14 +112,14 @@ object Scatter:
                 style.errorBar(x, top, bottom, style.markerRadius, palette.axis)
 
               val note = datum.note.lay(Nil): text => pointLabel(x, y, text)
-              note.reverse + (errors.reverse + (marker.reverse + acc))
+              note.reverse ++ (errors.reverse ++ (marker.reverse ++ acc))
 
             val part = seriesId(index) -> Group(figures.reverse, id = seriesId(index))
             index += 1
             part
 
           val legend = legendPart(layout.legend, names)
-          Framing.drawing(axesParts + seriesParts + legend)
+          Framing.drawing(axesParts ++ seriesParts ++ legend)
 
 // A marker per point, in no particular order, with error bars where the values carry intervals
 // and a label where a point carries a note. The same fit as a line chart; only the drawing
