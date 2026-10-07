@@ -114,7 +114,7 @@ object Flow:
     -1
 
   private def charMetric(using metric: Text is Measurable): Char is Measurable =
-    char => metric.width(char.toString.tt)
+    char => metric.width(t"$char")
 
   // Flow `content` into lines no wider than `width`. Hard breaks (`\n`, `\r\n`) always force a
   // new line. When a soft break is needed, the latest hyphenation point of the overflowing

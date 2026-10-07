@@ -129,7 +129,7 @@ object internal:
 
         case (slice@Multiplier(unitPower, subdivision, max)) :: tail =>
           val power: Text = if unitPower.power == 1 then t"" else
-            unitPower.power.toString.tt.tr(_.superscript.or(' '))
+            t"${unitPower.power}".tr(_.superscript.or(' '))
 
           val value = '{(($count.asInstanceOf[Long]/${Expr(subdivision)})%(${Expr(max)}))}
 

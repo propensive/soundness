@@ -148,9 +148,9 @@ object Telp:
   // rendering falls back to `/` rather than failing.
   given encodable: Telp is Encodable in Text = path =>
     def free(delimiter: Char): Boolean = !path.components.exists(_.contains(delimiter))
-    val candidates = t"/.".s + delimiters.s.filterNot { ch => ch == '/' || ch == '.' }
-    val delimiter = candidates.tt.s.find(free(_)).getOrElse('/')
-    Text(s"$delimiter${path.components.join(delimiter.toString.tt)}")
+    // `/` and `.` are preferred; failing both, any other free delimiter
+    val delimiter: Char = t"/.".seek(free).or(delimiters.seek(free)).or('/')
+    t"$delimiter${path.components.join(t"$delimiter")}"
 
   // A member keyword's slot in the flat keyword order of a Struct: for
   // a Field, the field itself; for a SelectRef, one slot per variant of
