@@ -103,4 +103,26 @@ trait Hellenism2:
   def makeClass[template <: AnyKind: Type]: Macro[ClassRef] =
     import quotes.reflect.*
 
-    '{ClassRef(Class.forName(${Expr(TypeRepr.of[template].classSymbol.get.fullName)}).nn)}
+    val repr = TypeRepr.of[template]
+
+    val symbol = repr.classSymbol.getOrElse:
+      halt(m"hellenism: the type ${repr.show} does not have a class")
+
+    // The JVM binary name: a nested member joins its owner with `$`, where `fullName` (the
+    // source name) joins with `.`; a module class's own name already ends in `$`.
+    def binaryName(symbol: Symbol): String =
+      val owner = symbol.owner
+
+      if owner.isPackageDef then
+        if owner == defn.RootPackage || owner == defn.EmptyPackageClass then symbol.name
+        else owner.fullName+"."+symbol.name
+      else if owner.flags.is(Flags.Module) then
+        binaryName(owner)+symbol.name
+      else
+        binaryName(owner)+"$"+symbol.name
+
+    // A proper type is linked with `classOf`, binding the class the caller itself links
+    // against; only an unapplied type constructor needs a lookup by name.
+    repr.asType match
+      case '[proper] => '{ClassRef(${Literal(ClassOfConstant(repr)).asExprOf[Class[?]]})}
+      case _         => '{ClassRef(Class.forName(${Expr(binaryName(symbol))}).nn)}
