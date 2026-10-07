@@ -41,6 +41,7 @@ import anthology.*
 import anticipation.*
 import contingency.*
 import digression.*
+import distillate.*
 import fulminate.*
 import galilei.*
 import gossamer.*
@@ -181,14 +182,14 @@ extends Rig:
 
       val hotspots =
         Hotspots
-          ( results.prim.let(_.s.toLong).or(0L),
+          ( results.prim.let(line => safely(line.as[Long])).or(0L),
             results.skip(1).map: line =>
               line.cut(t"\t") match
                 case count :: className :: method :: Nil =>
                   Hotspots.Frame
                     ( StackTrace.rewrite(className.s),
                       StackTrace.rewrite(method.s, method = true),
-                      count.s.toLong )
+                      safely(count.as[Long]).or(0L) )
 
                 case other =>
                   Hotspots.Frame(t"?", line, 0L) )

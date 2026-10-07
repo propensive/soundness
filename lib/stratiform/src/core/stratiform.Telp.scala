@@ -264,11 +264,11 @@ object Telp:
   private[stratiform] def allDigits(component: Text): Boolean =
     component.s.forall { ch => ch >= '0' && ch <= '9' }
 
-  // The occurrence an all-digit component selects, saturating rather than
-  // wrapping on a run of digits too long for an `Int`: no occurrence sequence
-  // is that long, so the selection misses, as it should.
+  // The occurrence an all-digit component selects, saturating on a run of digits
+  // too long for an `Int`: no occurrence sequence is that long, so the selection
+  // misses, as it should.
   private[stratiform] def indexOf(component: Text): Int =
-    if component.length > 9 then Int.MaxValue else component.s.toInt
+    safely(component.as[Int]).or(Int.MaxValue)
 
   private def childrenAt(node: Tel.Element.Node, flatIndex: Int): List[Tel.Element] =
 
@@ -307,7 +307,8 @@ case class Telp(components: List[Text]) derives CanEqual:
         // must be a key-carrying Struct, and the component selects the
         // first occurrence with that key value, code point for code point.
         if Telp.allDigits(component) then
-          val index = component.s.toLong
+          // Saturating, like `indexOf`, so an overlong index is out of range.
+          val index = safely(component.as[Long]).or(Long.MaxValue)
 
           // Occurrence lists are linked, so both the bounds test and the positional
           // read are linear walks; `linearSize`/`linearAccess` acknowledge that. The

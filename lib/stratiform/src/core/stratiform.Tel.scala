@@ -787,11 +787,11 @@ object Tel extends Tel2:
     // parser's positionally-assigned atom: an unparseable value is
     // `NotScalar` with the offending text, as on both other paths.
     def atomInt(text: Text)(using Tactic[Tel.Error]): Int =
-      val parsed = try Optional(text.s.toInt) catch case _: NumberFormatException => Unset
+      val parsed = safely(text.as[Int])
       parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Int"))) yet 0)
 
     def atomLong(text: Text)(using Tactic[Tel.Error]): Long =
-      val parsed = try Optional(text.s.toLong) catch case _: NumberFormatException => Unset
+      val parsed = safely(text.as[Long])
       parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Long"))) yet 0L)
 
     def atomBoolean(text: Text)(using Tactic[Tel.Error]): Boolean =
@@ -3277,7 +3277,7 @@ object Tel extends Tel2:
         raise(Tel.Error(Tel.Error.Reason.Absent)) yet 0
 
       override def parseAtom(text: Text)(using Tactic[Tel.Error]): Int =
-        val parsed = try Optional(text.s.toInt) catch case _: NumberFormatException => Unset
+        val parsed = safely(text.as[Int])
         parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Int"))) yet 0)
 
   given longParsable: Long is Tel.Parsable =
@@ -3293,12 +3293,12 @@ object Tel extends Tel2:
         raise(Tel.Error(Tel.Error.Reason.Absent)) yet 0L
 
       override def parseAtom(text: Text)(using Tactic[Tel.Error]): Long =
-        val parsed = try Optional(text.s.toLong) catch case _: NumberFormatException => Unset
+        val parsed = safely(text.as[Long])
         parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Long"))) yet 0L)
 
   given doubleParsable: Double is Tel.Parsable =
     primitiveParsable(Morphology.Real, t"Double", 0.0): atom =>
-      try atom.s.toDouble catch case _: NumberFormatException => Unset
+      safely(atom.as[Double])
 
   given booleanParsable: Boolean is Tel.Parsable =
     new Tel.Parsable:

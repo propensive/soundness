@@ -33,7 +33,9 @@
 package delicious
 
 import anticipation.*
+import contingency.*
 import denominative.*
+import distillate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
@@ -49,8 +51,8 @@ object Placeholder:
   /** The placeholder id, if the text is a placeholder reference. */
   def reference(text: Text): Optional[Int] =
     if text.starts(Prefix) && text.ends(t"⟩") then
-      val body = text.s.substring(Prefix.length, text.length - 1).nn
-      if body.nonEmpty && body.forall(_.isDigit) then body.toInt else Unset
+      val body: Text = text.skip(Prefix.length).skip(1, Rtl)
+      if !body.nil && body.s.forall(_.isDigit) then safely(body.as[Int]) else Unset
     else Unset
 
   /** The original string literal, if the text is an escaped genuine literal. */
@@ -63,15 +65,14 @@ object Placeholder:
       case List(id, kind, name, arity, definedAt, printed) =>
         def field(value: Text): Text = Markup.decode(value)
 
-        try
+        safely:
           Placeholder
-            ( field(id).s.toInt,
+            ( field(id).as[Int],
               PlaceholderKind(field(kind)),
               field(name),
-              field(arity).s.toInt,
+              field(arity).as[Int],
               if definedAt.nil then Unset else field(definedAt),
               field(printed) )
-        catch case _: NumberFormatException => Unset
 
       case _ => Unset
 

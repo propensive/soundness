@@ -53,8 +53,7 @@ object Pid:
     text => Pid(text.as[Int])
 
   given decodable: (tactic: Tactic[Number.Error]) => ((Pid is Decodable in Text)^{tactic}) = text =>
-    try Pid(text.s.toLong) catch case error: Exception =>
-      abort(Number.Error(text, Int, Number.Error.Reason.Unparseable))
+    Pid(text.as[Long])
 
   // PidError → Pid.Error
   case class Error(pid: Pid)(using Diagnostics)

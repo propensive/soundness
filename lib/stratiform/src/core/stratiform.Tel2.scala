@@ -664,17 +664,17 @@ trait Tel2 extends Tel3:
   given intDecodable: (tactic: Tactic[Tel.Error]) => ((Int is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Whole, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Int", 0): atom =>
-        try atom.s.toInt catch case _: NumberFormatException => Unset
+        safely(atom.as[Int])
 
   given longDecodable: (tactic: Tactic[Tel.Error]) => ((Long is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Whole, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Long", 0L): atom =>
-        try atom.s.toLong catch case _: NumberFormatException => Unset
+        safely(atom.as[Long])
 
   given doubleDecodable: (tactic: Tactic[Tel.Error]) => ((Double is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Real, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Double", 0.0): atom =>
-        try atom.s.toDouble catch case _: NumberFormatException => Unset
+        safely(atom.as[Double])
 
   // A Scala `Boolean` is a value, not a TEL flag (§20 flags are keyword
   // presence alone), so it reads and writes the explicit `true`/`false` atom

@@ -66,7 +66,7 @@ object Selection:
       text.s.forall(Character.isJavaIdentifierPart(_))
 
   private def number(text: Text): Optional[Double] =
-    if text.s.matches("-?[0-9]+(\\.[0-9]+)?") then text.s.toDouble else Unset
+    if text.s.matches("-?[0-9]+(\\.[0-9]+)?") then safely(text.as[Double]) else Unset
 
   // Parses command-line selection terms. Identity terms (hashes, monikers, name globs) are
   // unioned; `kind:` terms, `tag:` terms and axis constraints (`parser=jacinta`, `N<32`,

@@ -170,8 +170,7 @@ trait Json4:
     private def fail(reason: Json.Provider.Error.Reason): Nothing =
       abort(Json.Provider.Error(reason))
 
-    private def bound(param: Text): Optional[Double] =
-      if param.nil then Unset else param.s.toDouble
+    private def bound(param: Text): Optional[Double] = safely(param.as[Double])
 
     // The fallible readers are named classes, with their givens declared at the classes' own
     // types: an instance declared at the refined `Intensional.Fallible` type would be a field
