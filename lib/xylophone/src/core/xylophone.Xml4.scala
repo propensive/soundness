@@ -345,22 +345,24 @@ trait Xml4:
       private type Seen = scala.collection.immutable.Set[Text]
 
       def layout(root: Optional[Text]): Layout =
-        val names = List.from(Map.keys(xsd.elements).stdlib)
+        val names = Map.keys(xsd.elements).to[List]
 
         // The root is the sole global element, or the sole one with complex content — a
         // schema often also declares the simple elements its types refer to
         val rootName: Text = root.or:
           val complex = names.filter: name => xsd.element(name).lay(false)(hasComplexContent(_))
 
-          if names.stdlib.length == 1 then names.stdlib.head
-          else if complex.stdlib.length == 1 then complex.stdlib.head
-          else if names.nil then panic(m"the XML Schema declares no global element")
-          else
-            panic:
-              m"""
-                the XML Schema declares the global elements ${names.join(t", ")}; pass `root =` to
-                choose one
-              """
+          (names, complex) match
+            case (List(name), _) => name
+            case (_, List(name)) => name
+            case _ if names.nil  => panic(m"the XML Schema declares no global element")
+
+            case _ =>
+              panic:
+                m"""
+                  the XML Schema declares the global elements ${names.join(t", ")}; pass `root =`
+                  to choose one
+                """
 
         val declaration = xsd.element(rootName).or:
           panic(m"the XML Schema declares no global element $rootName")
@@ -423,7 +425,7 @@ trait Xml4:
           case SimpleType.Builtin(base) => builtin(base, facets)
 
           case SimpleType.Restriction(base, own) =>
-            val combined = List.from(own.stdlib ++ facets.stdlib)
+            val combined = List.concat(own, facets)
 
             base match
               case TypeRef.Inline(simple: SimpleType) => simpleMember(simple, combined, seen)
@@ -476,7 +478,7 @@ trait Xml4:
           case _                          => (t"string", Nil)
 
         val (label, implied) = labelled
-        val params = List.from(implied.stdlib ++ facetParams(facets).stdlib)
+        val params = List.concat(implied, facetParams(facets))
 
         if params.nil then Member.Value(label)
         else

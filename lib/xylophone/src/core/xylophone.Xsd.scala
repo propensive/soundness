@@ -637,7 +637,7 @@ object Xsd:
           then List(TypeRef.Inline(simpleDecl(member).definition))
           else Nil
 
-        SimpleType.Union(List.from(named.stdlib ++ inline.stdlib))
+        SimpleType.Union(List.concat(named, inline))
 
       case _ =>
         unexpected(child, "simpleType")

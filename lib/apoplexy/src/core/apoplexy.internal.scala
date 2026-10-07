@@ -360,7 +360,7 @@ object Apoplexy:
           case found: Presentations @unchecked => found
 
   private def empty(requirement: OpenApi.Requirement): Boolean =
-    Map.keys(requirement).to[List].stdlib.isEmpty
+    Map.keys(requirement).to[List].nil
 
   // The presentations of the first requirement alternative every scheme of which has a
   // credential in scope; none when the operation requires no credentials (or offers an empty
@@ -1392,7 +1392,7 @@ object Apoplexy:
       case AppliedType(_, scala.collection.immutable.List(element)) if repr <:< TypeRepr.of[List[Any]] => element
       case _                                                                => Unset
 
-    def componentName(pointer: JsonPointer): Text = pointer.encode.cut(t"/").stdlib.last
+    def componentName(pointer: JsonPointer): Text = pointer.encode.cut(t"/").last.or(t"")
 
     def ok(value: TypeRepr, schema: JsonSchema): Boolean = schema match
       case ref: JsonSchema.Ref   => simpleName(value) == componentName(ref.pointer)
