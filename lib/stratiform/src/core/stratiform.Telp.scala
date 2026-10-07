@@ -107,7 +107,7 @@ object Telp:
     val s = text.s
     if s.isEmpty then abort(Telp.Error(Error.Reason.Syntax, 0))
     val delimiter = s.charAt(0)
-    if delimiters.s.indexOf(delimiter.toInt) < 0 then abort(Telp.Error(Error.Reason.Syntax, 0))
+    if !delimiters.contains(delimiter) then abort(Telp.Error(Error.Reason.Syntax, 0))
 
     if s.length == 1 then Root else
       val components = scala.collection.mutable.ListBuffer.empty[Text]
@@ -147,7 +147,7 @@ object Telp:
   // components exhaust all twenty-two delimiters is unaddressable (§8);
   // rendering falls back to `/` rather than failing.
   given encodable: Telp is Encodable in Text = path =>
-    def free(delimiter: Char): Boolean = !path.components.exists(_.s.indexOf(delimiter.toInt) >= 0)
+    def free(delimiter: Char): Boolean = !path.components.exists(_.contains(delimiter))
     val candidates = t"/.".s + delimiters.s.filterNot { ch => ch == '/' || ch == '.' }
     val delimiter = candidates.tt.s.find(free(_)).getOrElse('/')
     Text(s"$delimiter${path.components.join(delimiter.toString.tt)}")

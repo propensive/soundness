@@ -89,8 +89,8 @@ object Variable:
         items.join(t"⦋${letter(component).tt}", t"∣", t"$ellipsis⦌＠${id.long}")
 
       case Obj(id, cls) =>
-        val simple = cls.s.substring(cls.s.lastIndexOf('.') + 1).nn
-        (simple+"＠"+id.long).tt
+        val simple: Text = cls.offsetOf(t".", Rtl).lay(cls)(cls.after(_))
+        t"$simple＠${id.long}"
 
       case Null =>
         t"null"

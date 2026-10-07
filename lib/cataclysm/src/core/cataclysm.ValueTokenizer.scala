@@ -212,7 +212,7 @@ private[cataclysm] object ValueTokenizer:
       val name = readName()
 
       if cursor.peek == '(' then
-        if name.s.toLowerCase.nn == "url" then url()
+        if name.lower == t"url" then url()
         else
           cursor.advance()
           ValueToken.Function(name)

@@ -176,22 +176,19 @@ trait Xml4:
     // and `xmax` (exclusive) bounds, `minLength`, `maxLength`, `length`, `pattern`, `enum`
     // (alternatives separated by `|`), `totalDigits` and `fractionDigits`.
     private class Facets(params: List[Text]):
-      private val pairs: scm.HashMap[String, scm.ArrayBuffer[String]] = scm.HashMap()
+      private val pairs: scm.HashMap[Text, scm.ArrayBuffer[Text]] = scm.HashMap()
 
       params.each: param =>
-        val equals = param.s.indexOf('=')
+        param.offsetOf(t"=").let: equals =>
+          if equals != Prim
+          then pairs.getOrElseUpdate(param.before(equals), scm.ArrayBuffer()) += param.after(equals)
 
-        if equals > 0 then
-          val key = param.s.substring(0, equals).nn
-          val value = param.s.substring(equals + 1).nn
-          pairs.getOrElseUpdate(key, scm.ArrayBuffer()) += value
-
-      def apply(key: String): Optional[Text] = pairs.get(key) match
-        case Some(values) if values.nonEmpty => values.head.tt
+      def apply(key: Text): Optional[Text] = pairs.get(key) match
+        case Some(values) if values.nonEmpty => values.head
         case _                               => Unset
 
-      def all(key: String): List[Text] = pairs.get(key) match
-        case Some(values) => List.from(values.map(_.tt))
+      def all(key: Text): List[Text] = pairs.get(key) match
+        case Some(values) => List.from(values)
         case None         => Nil
 
       // The checks every restricted type shares: length, pattern and enumeration on the text
@@ -201,20 +198,20 @@ trait Xml4:
         def badLength(minimum: Optional[Text], maximum: Optional[Text]): Nothing =
           fail(Xml.Provider.Error.Reason.LengthOutOfRange(value, minimum, maximum))
 
-        apply("minLength").let: minimum =>
-          if length < Integer.parseInt(minimum.s) then badLength(minimum, apply("maxLength"))
+        apply(t"minLength").let: minimum =>
+          if length < Integer.parseInt(minimum.s) then badLength(minimum, apply(t"maxLength"))
 
-        apply("maxLength").let: maximum =>
-          if length > Integer.parseInt(maximum.s) then badLength(apply("minLength"), maximum)
+        apply(t"maxLength").let: maximum =>
+          if length > Integer.parseInt(maximum.s) then badLength(apply(t"minLength"), maximum)
 
-        apply("length").let: exact =>
+        apply(t"length").let: exact =>
           if length != Integer.parseInt(exact.s) then badLength(exact, exact)
 
-        all("pattern").each: pattern =>
+        all(t"pattern").each: pattern =>
           if !java.util.regex.Pattern.matches(pattern.s, value.s)
           then fail(Xml.Provider.Error.Reason.PatternMismatch(value, pattern))
 
-        apply("enum").let: enumeration =>
+        apply(t"enum").let: enumeration =>
           val permitted = enumeration.cut(t"|")
 
           if !permitted.has(value)
@@ -227,14 +224,14 @@ trait Xml4:
         import scala.math.Ordering.Implicits.infixOrderingOps
 
         def outside: Nothing =
-          val minimum = apply("min").or(apply("xmin"))
-          val maximum = apply("max").or(apply("xmax"))
+          val minimum = apply(t"min").or(apply(t"xmin"))
+          val maximum = apply(t"max").or(apply(t"xmax"))
           fail(Xml.Provider.Error.Reason.OutOfRange(value, minimum, maximum))
 
-        apply("min").let: minimum => if number < parse(minimum) then outside
-        apply("max").let: maximum => if number > parse(maximum) then outside
-        apply("xmin").let: minimum => if number <= parse(minimum) then outside
-        apply("xmax").let: maximum => if number >= parse(maximum) then outside
+        apply(t"min").let: minimum => if number < parse(minimum) then outside
+        apply(t"max").let: maximum => if number > parse(maximum) then outside
+        apply(t"xmin").let: minimum => if number <= parse(minimum) then outside
+        apply(t"xmax").let: maximum => if number >= parse(maximum) then outside
 
       def digits(value: Text)(using Tactic[Xml.Provider.Error]): Unit =
         val text = value.s.trim.nn.stripPrefix("-").stripPrefix("+")
@@ -244,13 +241,13 @@ trait Xml4:
         val total = integral.count(_.isDigit) + fraction.count(_.isDigit)
 
         def tooMany: Nothing =
-          val total = apply("totalDigits")
-          val fraction = apply("fractionDigits")
+          val total = apply(t"totalDigits")
+          val fraction = apply(t"fractionDigits")
           fail(Xml.Provider.Error.Reason.TooManyDigits(value, total, fraction))
 
-        apply("totalDigits").let: limit => if total > Integer.parseInt(limit.s) then tooMany
+        apply(t"totalDigits").let: limit => if total > Integer.parseInt(limit.s) then tooMany
 
-        apply("fractionDigits").let: limit =>
+        apply(t"fractionDigits").let: limit =>
           if fraction.count(_.isDigit) > Integer.parseInt(limit.s) then tooMany
 
     // The fallible readers are named classes with class-typed givens: a given typed with a

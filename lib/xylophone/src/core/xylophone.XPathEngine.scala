@@ -692,13 +692,13 @@ private[xylophone] object XPathEngine:
 
       case "lang" =>
         arity(1, 1)
-        val wanted = args.head.text.s.toLowerCase.nn
+        val wanted = args.head.text.lower
 
         val declared = (context.locus :: ancestorLoci(context.locus)).flatMap: locus =>
           locus.subject match
             case element: Xml.Element if attributeIndexOf(locus) < 0 =>
               element.attributes.fetch(t"xml:lang") match
-                case value: Text => List(value.s.toLowerCase.nn)
+                case value: Text => List(value.lower)
                 case _           => Nil
 
             case _ =>
@@ -706,7 +706,7 @@ private[xylophone] object XPathEngine:
 
         Value.Truth:
           declared.prim.let: language =>
-            language == wanted || language.startsWith(wanted + "-")
+            language == wanted || language.starts(t"$wanted-")
 
           . or(false)
 

@@ -50,7 +50,7 @@ object Markup:
   def marked(text: Text): Boolean = text.s.exists { char => char >= Start && char <= TextSep }
 
   private[delicious] def decode(text: Text): Text =
-    if text.s.indexOf('%') < 0 then text else
+    if !text.contains('%') then text else
       val builder = new StringBuilder
       var index = 0
 

@@ -187,13 +187,11 @@ object Svg:
       elem.attributes(t"style").let: text =>
         val declarations = ListBuffer[(Text, Text)]()
 
-        text.s.split(";").nn.iterator.map(_.nn).foreach: declaration =>
-          val colon = declaration.indexOf(':')
-
-          if colon > 0 then
-            val name = declaration.substring(0, colon).nn.trim.nn
-            val value = declaration.substring(colon + 1).nn.trim.nn
-            if !name.isEmpty then declarations += ((name.tt, value.tt))
+        text.cut(t";").each: declaration =>
+          declaration.offsetOf(t":").let: colon =>
+            if colon != Prim then
+              val name = declaration.before(colon).trim
+              if !name.nil then declarations += ((name, declaration.after(colon).trim))
 
         if declarations.isEmpty then Unset else Css.Style.of(declarations.to(List))
 

@@ -1051,7 +1051,7 @@ object Lsp:
     def apply(range: Range): Text =
       val start = state.offset(range.start)
       val end = java.lang.Math.max(state.offset(range.end), start)
-      state.text.s.substring(start, end).nn.tt
+      state.text.segment(start.z till end.z)
 
     def offset(position: Position): Ordinal = state.offset(position).z
     def position(offset: Ordinal): Position = state.position(offset.n0)

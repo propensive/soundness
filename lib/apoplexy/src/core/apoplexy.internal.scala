@@ -506,10 +506,8 @@ object Apoplexy:
           Unset
 
     search(media).or:
-      val plus = media.s.lastIndexOf('+')
       val group = media.cut(t"/").prim.or(t"application")
-
-      if plus < 0 then Unset else search(t"$group/${media.s.substring(plus + 1).nn}")
+      media.offsetOf(t"+", Rtl).let { plus => search(t"$group/${media.after(plus)}") }
 
   // The media types a body may take, in order of preference: `application/json` first, then by
   // name

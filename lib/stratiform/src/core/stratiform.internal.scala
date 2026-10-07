@@ -223,7 +223,7 @@ object internal:
     def offsetOf(index: Int): Int =
       val delimiter: String = raw.take(1)
 
-      if raw.isEmpty || !Telp.delimiters.s.contains(delimiter) then 0 else
+      if raw.isEmpty || !Telp.delimiters.contains(delimiter) then 0 else
         @annotation.tailrec
         def advance(remaining: Int, from: Int): Int =
           if remaining == 0 then from else

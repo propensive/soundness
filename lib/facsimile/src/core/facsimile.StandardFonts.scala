@@ -47,26 +47,25 @@ private[facsimile] object StandardFonts:
 
   def recognize(baseFont: Text): Optional[Standard] =
     // Subsetted fonts carry a six-letter prefix, e.g. `ABCDEF+Helvetica`.
-    val name =
-      if baseFont.length > 7 && baseFont.s.charAt(6) == '+' then baseFont.s.substring(7).nn
-      else baseFont.s
+    val name: Text =
+      if baseFont.length > 7 && baseFont.skip(6).starts(t"+") then baseFont.skip(7) else baseFont
 
     // The canonical names are the fonts' own; these are the metric-compatible aliases.
-    Standard.values.find(_.baseFont.s == name).optional.or:
+    Standard.values.find(_.baseFont == name).optional.or:
       name match
-        case "Arial" | "ArialMT"             => Standard.Helvetica
-        case "Arial-BoldMT"                  => Standard.HelveticaBold
-        case "Arial-ItalicMT"                => Standard.HelveticaOblique
-        case "Arial-BoldItalicMT"            => Standard.HelveticaBoldOblique
-        case "TimesNewRomanPSMT"             => Standard.TimesRoman
-        case "TimesNewRomanPS-BoldMT"        => Standard.TimesBold
-        case "TimesNewRomanPS-ItalicMT"      => Standard.TimesItalic
-        case "TimesNewRomanPS-BoldItalicMT"  => Standard.TimesBoldItalic
-        case "CourierNew" | "CourierNewPSMT" => Standard.Courier
-        case "CourierNewPS-BoldMT"           => Standard.CourierBold
-        case "CourierNewPS-ItalicMT"         => Standard.CourierOblique
-        case "CourierNewPS-BoldItalicMT"     => Standard.CourierBoldOblique
-        case _                               => Unset
+        case t"Arial" | t"ArialMT"             => Standard.Helvetica
+        case t"Arial-BoldMT"                   => Standard.HelveticaBold
+        case t"Arial-ItalicMT"                 => Standard.HelveticaOblique
+        case t"Arial-BoldItalicMT"             => Standard.HelveticaBoldOblique
+        case t"TimesNewRomanPSMT"              => Standard.TimesRoman
+        case t"TimesNewRomanPS-BoldMT"         => Standard.TimesBold
+        case t"TimesNewRomanPS-ItalicMT"       => Standard.TimesItalic
+        case t"TimesNewRomanPS-BoldItalicMT"   => Standard.TimesBoldItalic
+        case t"CourierNew" | t"CourierNewPSMT" => Standard.Courier
+        case t"CourierNewPS-BoldMT"            => Standard.CourierBold
+        case t"CourierNewPS-ItalicMT"          => Standard.CourierOblique
+        case t"CourierNewPS-BoldItalicMT"      => Standard.CourierBoldOblique
+        case _                                 => Unset
 
   // The width of a code in thousandths of an em.
   def width(standard: Standard, code: Int): Double = standard match

@@ -122,7 +122,7 @@ object internal:
 
       CssParser.parse(Iterator(joined), validating = false)
 
-    def has(text: Text): Boolean = text.s.contains(sentinel.toString)
+    def has(text: Text): Boolean = text.contains(sentinel)
     def lift(value: Text): Expr[Text] = '{${Expr(value.s)}.tt}
 
     var holeIndex = 0

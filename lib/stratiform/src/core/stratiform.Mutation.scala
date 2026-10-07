@@ -384,7 +384,7 @@ object Mutation:
 
         if inlinePlaceable then
           val hard = target.atoms.exists:
-            case Tel.Atom.Inline(text, spaces) => spaces >= 2 || text.s.indexOf(' ') >= 0
+            case Tel.Atom.Inline(text, spaces) => spaces >= 2 || text.contains(' ')
             case _                             => false
 
           val flagAtom = Tel.Atom.Inline(keyword, if hard then 2 else 1)
@@ -485,7 +485,7 @@ object Mutation:
           // identity update leaves tabulation padding intact. The count
           // only escalates to a hard space when the new value introduces
           // an internal space.
-          val kept = if value.s.indexOf(' ') >= 0 && spaces < 2 then 2 else spaces
+          val kept = if value.contains(' ') && spaces < 2 then 2 else spaces
           Tel.Atom.Inline(value, kept)
         else if sourceSafe(value) then Tel.Atom.Source(value)
         else Tel.Atom.Literal(literalDelimiter(value, t"---"), value)
@@ -1074,7 +1074,7 @@ object Mutation:
 
     val atoms = Array.from[Tel.Atom]:
       inlineTexts.map: text =>
-        if text.s.indexOf(' ') >= 0 then hard = true
+        if text.contains(' ') then hard = true
         Tel.Atom.Inline(text, if hard then 2 else 1)
 
     val childBlocks: Array[Tel.Block]^{} =
@@ -1096,7 +1096,7 @@ object Mutation:
   // (hard-space) separator so the parser keeps the soft spaces as content
   // (§10.3); a space-free value uses a single space.
   private def inlinePrecedingSpaces(value: Text): Int =
-    if value.s.indexOf(' ') >= 0 then 2 else 1
+    if value.contains(' ') then 2 else 1
 
   // §22.2 inline-safe: no LF; no leading/trailing space; no run of two or
   // more spaces; and the value does not begin with the sigil immediately

@@ -271,7 +271,7 @@ private[punctuation] object ParserSupport:
     if count < 3 then return Unset
 
     val info = s.substring(end, n).nn.tt.trim
-    if ch == '`' && info.s.indexOf('`') >= 0 then return Unset
+    if ch == '`' && info.contains('`') then return Unset
     (ch, count, indent.z, info)
 
   // Fence closer: ^ {0,3}(`{minCount,}|~{minCount,}) *$
