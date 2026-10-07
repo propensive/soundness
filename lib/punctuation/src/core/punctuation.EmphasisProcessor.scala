@@ -35,7 +35,9 @@ package punctuation
 import scala.collection.mutable
 
 import anticipation.*
+import gossamer.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 // Working representation for inline parsing. The inline parser builds a
@@ -272,7 +274,7 @@ private[punctuation] object EmphasisProcessor:
             if !closer.canOpen then
               // Remove from the delimiter "stack" but keep its characters as
               // literal text in the inline list.
-              val asText = TextData(Text(closer.char.toString * closer.length))
+              val asText = TextData(t"${closer.char}"*closer.length)
               curNode.data = asText
               current = curNode.next
             else
@@ -304,7 +306,7 @@ private[punctuation] object EmphasisProcessor:
       case ImageData(d, t, ch) => builder += Prose.Image(d, t, childProse(ch)*)
       case EmphasisData(ch)    => builder += Prose.Emphasis(childProse(ch)*)
       case StrongData(ch)      => builder += Prose.Strong(childProse(ch)*)
-      case b: BracketData      => builder += Prose.Textual(Text(if b.isImage then "![" else "["))
+      case b: BracketData      => builder += Prose.Textual(if b.isImage then t"![" else t"[")
       case d: DelimData        => appendUnmatchedDelim(d, builder)
 
   private def appendUnmatchedDelim(d: DelimData, builder: mutable.ListBuffer[Prose]): Unit =

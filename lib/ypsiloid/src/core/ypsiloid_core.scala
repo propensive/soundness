@@ -41,6 +41,7 @@ import gossamer.*
 import hypotenuse.Bcd
 import prepositional.*
 import spectacular.{Showable, show}
+import symbolism.*
 import wisteria.*
 import zephyrine.*
 
@@ -92,8 +93,8 @@ private[ypsiloid] def renderAst(yaml: Yaml.Ast)(using formatting: Yaml.Formattin
             true
 
   def unicode(char: Char): Text =
-    val hex = Integer.toHexString(char.toInt).nn
-    Text("\\u" + "0"*(4 - hex.length) + hex)
+    val hex: Text = Integer.toHexString(char.toInt).nn.tt
+    t"\\u${t"0"*(4 - hex.length)}$hex"
 
   Producer.collect[Text](): producer =>
     def indent(count: Int): Unit =

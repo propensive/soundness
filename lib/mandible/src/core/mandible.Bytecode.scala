@@ -49,6 +49,7 @@ import gossamer.*
 import hieroglyph.*
 import iridescence.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 import columnAttenuation.ignoreAttenuation
@@ -171,7 +172,7 @@ object Bytecode:
   object Linearized:
     given teletypeable: (palette: BytecodePalette) => List[Linearized] is Teletypeable = lines =>
       lines.map: (line: Linearized) =>
-        val indent: Text = Text("  ".repeat(line.depth).nn)
+        val indent: Text = t"  "*line.depth
 
         val src: Teletype =
           if line.source == t"" then e""

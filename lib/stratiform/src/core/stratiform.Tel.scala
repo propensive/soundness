@@ -7441,8 +7441,8 @@ object Tel extends Tel2:
       val column = span.startColumn.lay(1)(_.n1)
       val length = span.length.or(0)
 
-      if length > 1 then Text("line "+line+", columns "+column+"-"+(column + length - 1))
-      else Text("line "+line+", column "+column)
+      if length > 1 then t"line $line, columns $column-${column + length - 1}"
+      else t"line $line, column $column"
 
     // The `Line`-mode `Span` for a token of `length` characters starting at the
     // parser's 1-indexed `line`/`column`. `Span`'s own coordinates are 0-based, and
@@ -7477,7 +7477,7 @@ object Tel extends Tel2:
         override val offset: Optional[Int] = Unset,
         override val length: Optional[Int] = Unset )
     extends Format.Position derives CanEqual:
-      def describe: Text = Text("line "+line+", column "+column)
+      def describe: Text = t"line $line, column $column"
 
       override def span: Span =
         Span.line((line - 1).max(0).z, (column - 1).max(0).z, length.or(0))

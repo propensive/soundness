@@ -170,7 +170,7 @@ private[punctuation] object InlineSupport:
       AutolinkMatch(link, i + 1)
     else if EmailRegex.matcher(content).nn.matches then
       val text = content.tt
-      val mailto = Text("mailto:" + content)
+      val mailto = t"mailto:$content"
       val link = Prose.Link(mailto, Unset, Prose.Textual(text))
       AutolinkMatch(link, i + 1)
     else
