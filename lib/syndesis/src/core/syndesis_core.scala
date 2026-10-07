@@ -51,9 +51,9 @@ extension (service: Discovery.Service)
     ( using Monitor^, Probate^, Tactic[Discovery.Error] )
   :   result =
 
-    val instance = backend.advertise(service, description)
-    val advertisement = Discovery.Advertisement(instance)
-    try block(using advertisement) finally backend.withdraw(instance)
+    val advertising = backend.advertise(service, description)
+    val advertisement = Discovery.Advertisement(advertising)
+    try block(using advertisement) finally backend.withdraw(advertising)
 
   transparent inline def browse[result](using backend: Discovery.Backend^)
     ( block: Discovery.Browser ?=> result )

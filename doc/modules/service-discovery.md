@@ -71,10 +71,18 @@ supervise:
 ### The responder
 
 `discoveryBackends.mdnsSockets` is the mDNS responder over the multicast sockets of `coaxial`:
-it joins `224.0.0.251:5353` on every interface that is up and multicast-capable, with address
-and port reuse, so it runs beside the system's own responder. One responder per program is the
-intent, so bind the given once rather than summoning it at each use; it opens its socket at the
-first loan and closes it after the last.
+it joins `224.0.0.251:5353` and `[ff02::fb]:5353` on every interface that is up,
+multicast-capable and has an address of the group's family, with address and port reuse, so it
+runs beside the system's own responder. One responder per program is the intent, so bind the
+given once rather than summoning it at each use; it opens its sockets at the first loan and
+closes them after the last.
+
+Two hosts claiming one name at once is settled as RFC 6762 prescribes: each sees the other's
+probe, the one proposing the lexicographically lower records yields, and when it probes again a
+second later the winner defends the name, so the loser is renamed. A host that turns up later
+asserting a name this responder has established makes it probe for the name afresh, and rename
+if the probe is answered — which is why `Advertisement.instance` is read live rather than
+copied.
 
 For a program under test, `Mdns.Transport.Bus` is an in-memory link: responders joined to one
 bus hear one another and nothing else, so the protocol — probing, renaming, goodbyes — runs

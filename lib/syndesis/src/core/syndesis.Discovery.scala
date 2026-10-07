@@ -246,12 +246,14 @@ object Discovery:
   // rather than `raises`, since a context-function result type would hide the capability
   // parameters from the separation checker.
   trait Backend:
-    // Claims a name for the instance and announces it, yielding the instance finally claimed.
+    // Claims a name for the instance and announces it, yielding the running advertisement,
+    // whose `instance` is the name claimed — and later renamed, if a conflict after
+    // establishment (RFC 6762 §9) forces it.
     def advertise(service: Service, description: Description)
       ( using Monitor^, Probate^, Tactic[Discovery.Error] )
-    :   Instance
+    :   Advertising
 
-    def withdraw(instance: Instance)(using Monitor^): Unit
+    def withdraw(advertising: Advertising)(using Monitor^): Unit
     def browse(service: Service)(using Monitor^, Probate^, Tactic[Discovery.Error]): Browsing
     def dismiss(browsing: Browsing)(using Monitor^): Unit
 
@@ -266,11 +268,18 @@ object Discovery:
   class Browsing private[syndesis] (val relay: Relay[Event], snapshot: () -> Set[Instance]):
     def instances: Set[Instance] = snapshot()
 
-  // A running advertisement: `instance` is the name finally claimed, after any renaming a
-  // conflict forced. The handles a loan lends are plain values rather than capabilities: the
-  // socket and the background tasks are the `Monitor`'s, and a fresh-capability handle would
-  // not pass through nested loans (a browse inside an advertisement) under capture checking.
-  class Advertisement(val instance: Instance)
+  // An advertisement in progress, as a backend hands it over: the instance currently claimed,
+  // which a conflict after establishment may rename. A plain value, as `Browsing` is.
+  trait Advertising:
+    def instance: Instance
+
+  // A running advertisement: `instance` is the name currently claimed, after any renaming a
+  // conflict forced — before the block began, or during it. The handles a loan lends are plain
+  // values rather than capabilities: the socket and the background tasks are the `Monitor`'s,
+  // and a fresh-capability handle would not pass through nested loans (a browse inside an
+  // advertisement) under capture checking.
+  class Advertisement(advertising: Advertising):
+    def instance: Instance = advertising.instance
 
   // A running browse: its events, as they happen, and the instances it currently knows of.
   class Browser(browsing: Browsing):

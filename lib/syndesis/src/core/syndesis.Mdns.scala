@@ -46,6 +46,7 @@ import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import murmuration.deduplicate
 import parasite.*
 import prepositional.*
 import rudiments.*
@@ -73,18 +74,33 @@ object Mdns:
 
   // ── Transport ───────────────────────────────────────────────────────────────────────────────
   object Transport:
-    // Over the sockets: the IPv4 group, joined on every suitable interface. (The IPv6 group
-    // awaits a receive that multiplexes two sockets.) This host's name is its first label under
-    // `.local`, and its addresses are those of the joined interfaces.
+    // One source of packets, received one at a time by a blocking call: a joined socket. A
+    // transport over both groups has two, and the responder reads each in a loop of its own.
+    trait Inlet:
+      def receive(): Packet raises Socket.Error
+
+    // Over the sockets: each group joined on every suitable interface that has an address of
+    // its family — the IPv6 group is left out on an IPv4-only host, and it is an error only if
+    // neither group can be joined. This host's name is its first label under `.local`, and its
+    // addresses are those of the joined interfaces.
     def sockets(backend: Socket.Backend, options: List[Socket.Option])
     :   Transport raises Mdns.Error =
 
       val interfaces = Multicast.interfaces(Unset)
       if interfaces == Nil then abort(Mdns.Error(NoInterface))
 
-      val binding =
-        try backend.joinMulticast(group4, interfaces, options)
-        catch case error: java.io.IOException => abort(Mdns.Error(Join(group4.show)))
+      def join(group: Multicast, suitable: Boolean): Optional[backend.MulticastSocket] =
+        if !suitable then Unset else
+          try backend.joinMulticast(group, interfaces, options)
+          catch case error: java.io.IOException => Unset
+
+      val binding4 = join(group4, interfaces.exists(_.ipv4 != Nil))
+      val binding6 = join(group6, interfaces.exists(_.ipv6 != Nil))
+
+      val bindings: List[backend.MulticastSocket] =
+        List.concat(binding4.let(List(_)).or(Nil), binding6.let(List(_)).or(Nil))
+
+      if bindings == Nil then abort(Mdns.Error(Join(group4.show)))
 
       val addresses2: List[Ipv4 | Ipv6] =
         List.from(interfaces.stdlib.flatMap(_.addresses.stdlib.map(_.address)))
@@ -98,21 +114,31 @@ object Mdns:
       new Transport:
         def host: Dns.Name = host2
         def addresses: List[Ipv4 | Ipv6] = addresses2
-        def send(data: Data): Unit raises Socket.Error = backend.sendGroup(binding, data)
 
+        def send(data: Data): Unit raises Socket.Error =
+          bindings.each: binding => backend.sendGroup(binding, data)
+
+        // A unicast reply leaves through the socket of the destination's family.
         def reply(to: Ipv4 | Ipv6, port: Udp.Port, data: Data): Unit raises Socket.Error =
-          backend.sendTo(binding, to, port, data)
+          val binding = to.absolve match
+            case _: (Ipv4 @unchecked) => binding4.or(binding6)
+            case _: Ipv6              => binding6.or(binding4)
 
-        def receive(): Packet raises Socket.Error = backend.receiveMulticast(binding)
-        def close(): Unit = backend.leaveMulticast(binding)
+          binding.let: binding => backend.sendTo(binding, to, port, data)
+
+        def inlets: List[Inlet] = bindings.map: binding =>
+          new Inlet:
+            def receive(): Packet raises Socket.Error = backend.receiveMulticast(binding)
+
+        def close(): Unit = bindings.each: binding => backend.leaveMulticast(binding)
 
     // An in-memory network: every transport joined to a bus receives what any of them sends,
     // itself included (as multicast loopback delivers), and a reply reaches the member whose
-    // address it names.
+    // address it names. A member is its own single inlet, which a test may receive from directly.
     class Bus():
       private val members: juc.CopyOnWriteArrayList[Member] = juc.CopyOnWriteArrayList()
 
-      def join(host: Dns.Name, addresses: List[Ipv4 | Ipv6]): Transport =
+      def join(host: Dns.Name, addresses: List[Ipv4 | Ipv6]): Transport & Inlet =
         val member = Member(host, addresses)
         members.add(member)
         member
@@ -120,7 +146,7 @@ object Mdns:
       private object Termination
 
       private class Member(val host: Dns.Name, val addresses: List[Ipv4 | Ipv6])
-      extends Transport:
+      extends Transport, Inlet:
         private val queue: juc.LinkedBlockingQueue[Packet | Termination.type] =
           juc.LinkedBlockingQueue()
 
@@ -138,19 +164,21 @@ object Mdns:
           case Termination    => abort(Socket.Error(Socket.Error.Reason.Accept))
           case packet: Packet => packet
 
+        def inlets: List[Inlet] = List(this)
+
         def close(): Unit =
           members.remove(this)
           queue.put(Termination)
 
   // What the responder needs of the network: this host's name and addresses (what it publishes
-  // for itself), a send to the group, a unicast reply, a blocking receive, and closing, which
-  // makes a pending receive fail.
+  // for itself), a send to the group, a unicast reply, the inlets to receive from, and closing,
+  // which makes a pending receive fail.
   trait Transport:
     def host: Dns.Name
     def addresses: List[Ipv4 | Ipv6]
     def send(data: Data): Unit raises Socket.Error
     def reply(to: Ipv4 | Ipv6, port: Udp.Port, data: Data): Unit raises Socket.Error
-    def receive(): Packet raises Socket.Error
+    def inlets: List[Transport.Inlet]
     def close(): Unit
 
   // ── Cache ───────────────────────────────────────────────────────────────────────────────────
@@ -231,13 +259,74 @@ object Mdns:
 
     def size: Int = mutex(entries.size)
 
-  // ── The responder ───────────────────────────────────────────────────────────────────────────
-  // What this responder has claimed on the network, with the records that say so.
-  private case class Owned(instance: Discovery.Instance, records: List[Dns.Record])
+  // ── Tiebreaking ─────────────────────────────────────────────────────────────────────────────
+  // The order RFC 6762 §8.2.1 puts records in to break a tie between two hosts probing for one
+  // name at once: class, then type, then the uncompressed rdata compared as unsigned bytes, a
+  // prefix ranking below what extends it.
+  object Tiebreak:
+    def compare(left: Dns.Record, right: Dns.Record): Comparison =
+      Comparison(left.netClass.number - right.netClass.number)
+      . also(Comparison(left.rtype.number - right.rtype.number))
+      . also(compareBytes(left.rdataBytes, right.rdataBytes, 0))
 
-  // A name being probed for (RFC 6762 §8.1), and whether another host has objected.
+    private def compareBytes(left: Data, right: Data, index: Int): Comparison =
+      if index == left.length || index == right.length then Comparison(left.length - right.length)
+      else
+        val difference = (left.readable(index) & 0xff) - (right.readable(index) & 0xff)
+        if difference == 0 then compareBytes(left, right, index + 1) else Comparison(difference)
+
+    // Each host's proposed records in order, compared pairwise; the first difference decides,
+    // and a set that runs out first loses. `Same` is two hosts proposing identical records,
+    // which is no conflict at all.
+    def compare(ours: List[Dns.Record], theirs: List[Dns.Record]): Comparison =
+      def compareSorted(ours: List[Dns.Record], theirs: List[Dns.Record]): Comparison =
+        (ours, theirs) match
+          case (Nil, Nil)                       => Comparison.Same
+          case (Nil, _)                         => Comparison.Less
+          case (_, Nil)                         => Comparison.More
+
+          case (our :: ours2, their :: theirs2) =>
+            compare(our, their).also(compareSorted(ours2, theirs2))
+
+      compareSorted(sorted(ours), sorted(theirs))
+
+    // The handful of records a probe proposes, in `compare` order; a small insertion sort
+    // rather than `order`, which would need a sorting algorithm chosen in scope.
+    private def sorted(records: List[Dns.Record]): List[Dns.Record] =
+      def insert(record: Dns.Record, sorted: List[Dns.Record]): List[Dns.Record] = sorted match
+        case head :: tail if compare(head, record).less => head :: insert(record, tail)
+        case _                                          => record :: sorted
+
+      records match
+        case Nil          => Nil
+        case head :: tail => insert(head, sorted(tail))
+
+  // ── The responder ───────────────────────────────────────────────────────────────────────────
+  // How probing for a name has gone so far: nothing heard against it; another host answered
+  // for it (a conflict, §8.1), so it must be renamed; or another host probed for it at the
+  // same time and won the tiebreak (§8.2.1), so we yield and probe for the same name again a
+  // second later.
+  private enum Verdict:
+    case Clear, Conflict, Yield
+
+  // A name being probed for (RFC 6762 §8.1), with the records proposed for it.
   private class Probing(val name: Dns.Name, val records: List[Dns.Record]):
-    @caps.unsafe.untrackedCaptures @volatile var conflicted: Boolean = false
+    @caps.unsafe.untrackedCaptures @volatile var verdict: Verdict = Verdict.Clear
+
+  // What this responder has claimed on the network: the instance (renamed if a conflict forces
+  // it, before or after establishment), the records that say so, what they were built from (to
+  // rebuild them under a new name), and whether its loan has ended, which stops a re-probe in
+  // flight. It is the handle a loan holds, and reads its `instance` live.
+  private final class Claim
+    ( instance0:       Discovery.Instance,
+      val description: Discovery.Description,
+      val txt:         Dns.Rdata.Txt,
+      records0:        List[Dns.Record] )
+  extends Discovery.Advertising:
+
+    @caps.unsafe.untrackedCaptures @volatile var instance: Discovery.Instance = instance0
+    @caps.unsafe.untrackedCaptures @volatile var records: List[Dns.Record] = records0
+    @caps.unsafe.untrackedCaptures @volatile var withdrawn: Boolean = false
 
   // A running browse, with its re-query loop and task smuggled past tracking as `Handles` are.
   private case class Browse
@@ -248,19 +337,23 @@ object Mdns:
 
     def channel: Relay[Discovery.Event] = browsing.relay
 
-  private case class Handles(receiving: AnyRef, sweeping: AnyRef, receiver: AnyRef, sweeper: AnyRef)
+  // The live transport's loops and tasks: a receive loop and its task per inlet, and the cache
+  // sweeper's.
+  private case class Handles(receivers: List[(AnyRef, AnyRef)], sweeping: AnyRef, sweeper: AnyRef)
+
   private case class Pending(instance: Discovery.Instance, promise: Promise[Discovery.Resolution])
 
   // The mDNS responder behind `Discovery`: one per program, serving every advertisement, browse
   // and resolution through one transport, which it opens at the first loan and closes when the
-  // last ends. Its receive loop and cache sweeper run as tasks under the `Monitor` it was given,
-  // so cancelling that monitor ends them with everything else.
+  // last ends. Its receive loops and cache sweeper run as tasks under the `Monitor` it was
+  // given, so cancelling that monitor ends them with everything else.
   //
-  // Of RFC 6762 this first cut does: probing with renaming on conflict, announcing, answering
-  // (with known-answer suppression, a random delay for shared records, and legacy unicast
-  // replies), goodbyes, TTL-honouring browsing with exponential re-query, and resolving. It
-  // does not yet break a tie between simultaneous probes (§8.2.1) or re-probe an established
-  // name on a later conflict (§9); a message's own echo is recognised by its ID.
+  // Of RFC 6762 it does: probing with renaming on conflict and tiebreaking between simultaneous
+  // probes (§8.2.1), announcing, defending an established name and re-probing it when a later
+  // response conflicts with it (§9), answering (with known-answer suppression, a random delay
+  // for shared records with answers falling due together aggregated into one message (§6.4),
+  // and legacy unicast replies), goodbyes, TTL-honouring browsing with exponential re-query,
+  // and resolving. A message's own echo is recognised by its ID.
   class Responder(open: () -> (Transport raises Mdns.Error)) extends Discovery.Backend:
     // A random count below `bound`, for the protocol's jitter.
     private def jitter(bound: Long): Long = (Random.global.long() & 0x7fffffffL) % bound
@@ -275,10 +368,12 @@ object Mdns:
     // scintillate's server does with its loops), to be stopped and awaited at release.
     @caps.unsafe.untrackedCaptures private var handles: Optional[Handles] = Unset
     @caps.unsafe.untrackedCaptures private var loans: Int = 0
-    @caps.unsafe.untrackedCaptures private var owned: List[Owned] = Nil
+    @caps.unsafe.untrackedCaptures private var owned: List[Claim] = Nil
     @caps.unsafe.untrackedCaptures private var probing: List[Probing] = Nil
     @caps.unsafe.untrackedCaptures private var browses: List[Browse] = Nil
     @caps.unsafe.untrackedCaptures private var pending: List[Pending] = Nil
+    // Answers to shared records awaiting the one delayed response that carries them all.
+    @caps.unsafe.untrackedCaptures private var deferred: List[Dns.Record] = Nil
 
     // Our messages carry this ID (receivers ignore it, §18.1), which is how our own echoes are
     // told from another responder on this host.
@@ -299,27 +394,33 @@ object Mdns:
 
           . protect(open())
 
-        // A surprising message must not end the loop; what fails is that one dispatch.
-        val receiving = loop:
-          safely(transport.receive()).let: packet =>
-            try dispatch(packet) catch case _: Exception => ()
+        // A receive loop per inlet. A surprising message must not end a loop; what fails is
+        // that one dispatch. The loops are created and awaited under the same monitor (no
+        // aliased writer), and handed on erased: a recursion rather than a `map`, whose
+        // capture-polymorphic lambda cannot return a fresh loop.
+        def start(inlets: List[Transport.Inlet], started: List[(AnyRef, AnyRef)])
+        :   List[(AnyRef, AnyRef)] =
+
+          inlets match
+            case Nil => started
+
+            case inlet :: rest =>
+              val receiving = loop:
+                safely(inlet.receive()).let: packet =>
+                  try dispatch(packet) catch case _: Exception => ()
+
+              val receiver = caps.unsafe.unsafeAssumeSeparate(async(receiving.run()))
+              start(rest, (receiving.asInstanceOf[AnyRef], receiver.asInstanceOf[AnyRef]) :: started)
+
+        val receivers = start(transport.inlets, Nil)
 
         val sweeping = loop:
           safely(snooze(250L))
           sweep()
 
-        // The loops are created and awaited under the same monitor; no aliased writer.
-        val receiver = caps.unsafe.unsafeAssumeSeparate(async(receiving.run()))
         val sweeper = caps.unsafe.unsafeAssumeSeparate(async(sweeping.run()))
         live = transport
-
-        handles =
-          Handles
-            ( receiving.asInstanceOf[AnyRef],
-              sweeping.asInstanceOf[AnyRef],
-              receiver.asInstanceOf[AnyRef],
-              sweeper.asInstanceOf[AnyRef] )
-
+        handles = Handles(receivers, sweeping.asInstanceOf[AnyRef], sweeper.asInstanceOf[AnyRef])
         transport
 
     // The last loan's release stops the tasks and waits for them — outside the mutex, which the
@@ -335,10 +436,10 @@ object Mdns:
           ending
 
       ending.let: (transport, handles2) =>
-        handles2.receiving.asInstanceOf[Loop].stop()
+        handles2.receivers.each: (receiving, _) => receiving.asInstanceOf[Loop].stop()
         handles2.sweeping.asInstanceOf[Loop].stop()
         transport.close()
-        handles2.receiver.asInstanceOf[Task[Unit]].attend()
+        handles2.receivers.each: (_, receiver) => receiver.asInstanceOf[Task[Unit]].attend()
         handles2.sweeper.asInstanceOf[Task[Unit]].attend()
 
     // The transport, for a send within a loan, which is when one is always open.
@@ -356,13 +457,27 @@ object Mdns:
     private def dispatch(packet: Packet)(using Monitor^, Probate^): Unit =
       safely(packet.data.as[Dns.Message]).let: message =>
         if message.flags.response then absorb(message)
-        else if message.id != tag then answer(message, packet)
+        else if message.id != tag then
+          tiebreak(message)
+          answer(message, packet)
 
     private def unique(record: Dns.Record): Boolean = record.rtype != Dns.Type.Ptr
 
     private def matches(question: Dns.Question, record: Dns.Record): Boolean =
       question.name == record.name &&
         (question.rtype == Dns.Type.Any || question.rtype == record.rtype)
+
+    // A probe from another host (a query proposing records in its authority section) for a name
+    // we are probing for too (§8.2.1): the host whose proposed records for that name compare
+    // lower yields. If ours compare higher it is the other host's turn to yield, and nothing is
+    // done here.
+    private def tiebreak(message: Dns.Message): Unit =
+      if message.authority != Nil then mutex(probing).each: probe =>
+        val theirs = message.authority.filter(_.name == probe.name)
+        val ours = probe.records.filter(_.name == probe.name)
+
+        if theirs != Nil && probe.verdict == Verdict.Clear && Tiebreak.compare(ours, theirs).less
+        then probe.verdict = Verdict.Yield
 
     // A query from another responder: answer with the records we own that it asks for, minus
     // those it already knows with at least half their TTL left (§7.1). A probe (a query with
@@ -380,31 +495,75 @@ object Mdns:
         val legacy = packet.port != port
         val defence = message.authority != Nil
 
-        def reply(): Unit =
-          val response = if legacy then respond(answers).copy(id = message.id) else respond(answers)
+        if legacy then
+          val response = respond(answers).copy(id = message.id)
+          safely(transport.reply(packet.sender, packet.port, response.in[Data]))
+        else if defence || answers.all(unique) then
+          send(respond(answers))
+        else
+          defer(answers)
 
-          if legacy then safely(transport.reply(packet.sender, packet.port, response.in[Data]))
-          else send(response)
+    // Delayed answers falling due together go out as one message (§6.4): the first to be
+    // deferred schedules the response, and those deferred before it is sent join it.
+    private def defer(answers: List[Dns.Record])(using Monitor^, Probate^): Unit =
+      val first = mutex:
+        val first = deferred == Nil
+        deferred = List.concat(deferred, answers)
+        first
 
-        if defence || legacy || answers.all(unique) then reply() else
-          val wait = 20 + jitter(100L)
-          caps.unsafe.unsafeAssumeSeparate(async(safely(snooze(wait)).also(reply())))
-          ()
+      if first then
+        caps.unsafe.unsafeAssumeSeparate:
+          async:
+            safely(snooze(20 + jitter(100L)))
+
+            val answers2 = mutex:
+              val answers2 = deferred
+              deferred = Nil
+              answers2
+
+            send(respond(answers2.deduplicate(_.key)))
+
+        ()
 
     // A response from the link: into the cache, whose changes are the browsers' events and may
-    // complete a resolution; and, for a name we are probing, a conflict if its records differ
-    // from ours.
-    private def absorb(message: Dns.Message): Unit =
+    // complete a resolution; for a name we are probing, a conflict if its records differ from
+    // ours; and for a name we hold, a contest.
+    private def absorb(message: Dns.Message)(using Monitor^, Probate^): Unit =
       val records = List.concat(message.answers, message.additional)
       notify(cache.absorb(records, now))
 
-      if message.id != tag then mutex(probing).each: probe =>
-        records.each: record =>
-          if record.name == probe.name && unique(record) &&
-            !probe.records.exists(_.key == record.key)
-          then probe.conflicted = true
+      if message.id != tag then
+        mutex(probing).each: probe =>
+          records.each: record =>
+            if record.name == probe.name && unique(record) &&
+              !probe.records.exists(_.key == record.key)
+            then probe.verdict = Verdict.Conflict
+
+        contest(records)
 
       settle()
+
+    // Another host's record with the name and type of one of our established unique records,
+    // but other data, is a conflict (§9): the claim stops being defended and is probed for
+    // afresh, under a new name if the probe is answered. A goodbye (TTL 0) is a stale record
+    // retiring, not a rival. No goodbye is sent for the name given up: the shared PTR pointing
+    // to it is the rival's too, and its unique records were never ours to retire.
+    private def contest(records: List[Dns.Record])(using Monitor^, Probate^): Unit =
+      val contested = mutex:
+        val found = owned.filter: claim =>
+          records.exists: record =>
+            def sameSet(ours: Dns.Record): Boolean =
+              ours.name == record.name && ours.rtype == record.rtype
+
+            record.ttl > 0 && unique(record) && claim.records.exists(sameSet) &&
+              !claim.records.exists(_.key == record.key)
+
+        owned = owned.filter: claim => !found.exists(_ eq claim)
+        found
+
+      contested.each: claim =>
+        caps.unsafe.unsafeAssumeSeparate(async(safely(reclaim(claim))))
+        ()
 
     private def sweep(): Unit = notify(cache.sweep(now))
 
@@ -514,82 +673,109 @@ object Mdns:
 
     def advertise(service: Discovery.Service, description: Discovery.Description)
       ( using Monitor^, Probate^, Tactic[Discovery.Error] )
-    :   Discovery.Instance =
+    :   Discovery.Advertising =
 
       val transport = acquire()
 
-      val claimed =
-        try
-          val txt =
-            recover:
-              case error: Dns.Error =>
-                given diagnostics: Diagnostics = error.diagnostics
-                abort(Discovery.Error(Discovery.Error.Reason.InvalidTxt(description.txt.show)))
+      try
+        val txt =
+          recover:
+            case error: Dns.Error =>
+              given diagnostics: Diagnostics = error.diagnostics
+              abort(Discovery.Error(Discovery.Error.Reason.InvalidTxt(description.txt.show)))
 
-            . protect(Dns.Rdata.Txt(description.txt.strings*))
+          . protect(Dns.Rdata.Txt(description.txt.strings*))
 
-          claim(Discovery.Instance(description.instance, service), description, txt, transport, 0)
+        val instance = Discovery.Instance(description.instance, service)
+        val records2 = records(instance, description, txt, transport)
+        val claim = Claim(instance, description, txt, records2)
+        establish(claim, transport, 0)
+        claim
 
-        catch case error: Throwable =>
-          release()
-          throw error
+      catch case error: Throwable =>
+        release()
+        throw error
 
-      claimed.instance
+    // A goodbye: every record with a TTL of zero (§10.1). A claim mid-way through re-probing
+    // has nothing established to say goodbye to, and its re-probe stops at the flag.
+    def withdraw(advertising: Discovery.Advertising)(using Monitor^): Unit =
+      val claimed = mutex:
+        val found = owned.filter(_ eq advertising)
+        owned = owned.filter(!_.eq(advertising))
+        found
 
-    // A goodbye: every record with a TTL of zero (§10.1).
-    def withdraw(instance: Discovery.Instance)(using Monitor^): Unit =
-      val claimed = mutex(owned.filter(_.instance == instance))
-      mutex { owned = owned.filter(_.instance != instance) }
+      advertising match
+        case claim: Claim => claim.withdrawn = true
+        case _            => ()
 
-      claimed.each: claimed2 => send(respond(claimed2.records.map(_.copy(ttl = 0, flush = false))))
-
+      claimed.each: claim => send(respond(claim.records.map(_.copy(ttl = 0, flush = false))))
       release()
 
-    // Probes for the instance's name three times, 250 ms apart (§8.1), after a random wait of
-    // up to 250 ms; an objection — ours, if we hold the name already, or another host's — renames
-    // it and tries again, up to a limit; success is announced twice, a second apart (§8.3).
-    private def claim
-      ( instance: Discovery.Instance,
-        description: Discovery.Description,
-        txt: Dns.Rdata.Txt,
-        transport: Transport,
-        attempts: Int )
+    // Probes for the claim's name three times, 250 ms apart (§8.1), after a random wait of up
+    // to 250 ms. An objection — ours, if we hold the name already, or another host's answer —
+    // renames it and tries again, up to a limit; losing a tiebreak against a simultaneous probe
+    // (§8.2.1) waits a second and probes for the same name again; success is announced twice,
+    // a second apart (§8.3).
+    private def establish(claim: Claim, transport: Transport, attempts: Int)
       ( using Monitor^, Probate^, Tactic[Discovery.Error] )
-    :   Owned =
+    :   Unit =
 
-      if attempts >= 100 then abort(Discovery.Error(Discovery.Error.Reason.Conflict(instance.show)))
-      val name = instance.dnsName
-      val taken = mutex(owned.exists(_.instance.dnsName == name))
+      if attempts >= 100
+      then abort(Discovery.Error(Discovery.Error.Reason.Conflict(claim.instance.show)))
 
-      if taken then claim(instance.renamed, description, txt, transport, attempts + 1) else
-        val records2 = records(instance, description, txt, transport)
-        val probe = Probing(name, records2.filter(unique))
+      val name = claim.instance.dnsName
+
+      val taken = mutex:
+        owned.exists: claim2 => !(claim2 eq claim) && claim2.instance.dnsName == name
+
+      if taken then rename(claim, transport, attempts) else
+        val probe = Probing(name, claim.records.filter(unique))
         mutex { probing = probe :: probing }
         safely(snooze(jitter(250L)))
 
-        def probes(remaining: Int): Boolean =
-          if remaining == 0 then true else
+        def probes(remaining: Int): Verdict =
+          if remaining == 0 then probe.verdict else
             val questions = List(Dns.Question(name, Dns.Type.Any))
             send(Dns.Message(tag, Dns.Flags(), questions, Nil, probe.records))
             safely(snooze(250L))
-            !probe.conflicted && probes(remaining - 1)
+            if probe.verdict == Verdict.Clear then probes(remaining - 1) else probe.verdict
 
-        val won = probes(3)
+        val verdict = probes(3)
         mutex { probing = probing.filter(_ != probe) }
 
-        if !won then
-          claim(instance.renamed, description, txt, transport, attempts + 1)
-        else
-          val claimed = Owned(instance, records2)
-          mutex { owned = claimed :: owned }
-          send(respond(records2))
-          // The second announcement, unless the advertisement was withdrawn in the meantime.
-          caps.unsafe.unsafeAssumeSeparate:
-            async:
-              safely(snooze(1000L))
-              if mutex(owned.exists(_ eq claimed)) then send(respond(records2))
+        verdict match
+          case Verdict.Conflict => rename(claim, transport, attempts)
 
-          claimed
+          case Verdict.Yield =>
+            safely(snooze(1000L))
+            establish(claim, transport, attempts + 1)
+
+          case Verdict.Clear =>
+            if !claim.withdrawn then
+              mutex { owned = claim :: owned }
+              send(respond(claim.records))
+
+              // The second announcement, unless the advertisement was withdrawn or contested
+              // in the meantime.
+              caps.unsafe.unsafeAssumeSeparate:
+                async:
+                  safely(snooze(1000L))
+                  if mutex(owned.exists(_ eq claim)) then send(respond(claim.records))
+
+              ()
+
+    // The next name (RFC 6762 §9: `Gondor` → `Gondor (2)`), with its records rebuilt.
+    private def rename(claim: Claim, transport: Transport, attempts: Int)
+      ( using Monitor^, Probate^, Tactic[Discovery.Error] )
+    :   Unit =
+
+      claim.instance = claim.instance.renamed
+      claim.records = records(claim.instance, claim.description, claim.txt, transport)
+      establish(claim, transport, attempts + 1)
+
+    // After a conflict with an established claim: back through probing, unless the loan ended.
+    private def reclaim(claim: Claim)(using Monitor^, Probate^, Tactic[Discovery.Error]): Unit =
+      if !claim.withdrawn then establish(claim, transport, 0)
 
     // ── Browsing ──────────────────────────────────────────────────────────────────────────────
     // Instances already known are reported at once; then the service type is queried, and
