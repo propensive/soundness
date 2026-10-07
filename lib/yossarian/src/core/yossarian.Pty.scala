@@ -35,6 +35,7 @@ package yossarian
 import anticipation.*
 import contingency.*
 import denominative.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.wideCharacterWidthMetric
@@ -483,8 +484,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
 
     def parseInt(text: Text, default: Int): Int =
       if text.nil then default
-      else text.s.toIntOption.getOrElse:
-        abort(Pty.Error(NonintegerSgrParameter(text)))
+      else safely(text.as[Int]).or(abort(Pty.Error(NonintegerSgrParameter(text))))
 
     def parseInts(text: Text): List[Int] =
       if text.nil then Nil

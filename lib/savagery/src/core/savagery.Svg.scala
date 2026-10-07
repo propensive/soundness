@@ -88,9 +88,11 @@ object Svg:
     val svgElement = Svg.Parser.rootElement(xmlDoc.root)
     val parsedSvg: Svg = Svg.Parser.decodeSvg(svgElement)
 
-    val encoding: Encoding =
-      xmlDoc.metadata.encoding.let: name => Encoding.unapply(name).getOrElse(enc"UTF-8")
-      . or(enc"UTF-8")
+    val encoding: Encoding = xmlDoc.metadata.encoding.let:
+      case Encoding(encoding) => encoding
+      case _                  => enc"UTF-8"
+
+    . or(enc"UTF-8")
 
     Document[Svg](parsedSvg, encoding)
 

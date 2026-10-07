@@ -415,8 +415,9 @@ object Mathml:
       val kept = elem.attributes.to[List].filter: (key, _) =>
         key != t"xmlns" && key != t"display"
 
-      val display: Optional[Display] = elem.attributes(t"display").let: text =>
-        Display.unapply(text).getOrElse(Display.Inline)
+      val display: Optional[Display] = elem.attributes(t"display").let:
+        case Display(display) => display
+        case _                => Display.Inline
 
       Math(children(elem), display, kept)
 

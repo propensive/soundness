@@ -176,27 +176,23 @@ object internal:
           coverages.getOrElseUpdate(path.tt, read(path.tt)).let: coverage =>
             val request = refinements(face.asTerm.tpe) ++ refinements(face.asTerm.tpe.widen)
 
-            val weight: Optional[Weight] = request.get(t"Weights").map(strip).flatMap:
-              case ConstantType(IntConstant(value)) => Some(Weight(value))
-              case _                                => None
+            val weight: Optional[Weight] = request.get(t"Weights").map(strip).optional.let:
+              case ConstantType(IntConstant(value)) => Weight(value)
+              case _                                => Unset
 
-            . getOrElse(Unset)
-
-            val slant: Optional[Slant] = request.get(t"Slanting").map(strip).flatMap:
-              case ConstantType(StringConstant("italic"))  => Some(Slant.Italic)
-              case ConstantType(StringConstant("upright")) => Some(Slant.Upright)
-              case _                                       => None
-
-            . getOrElse(Unset)
+            val slant: Optional[Slant] = request.get(t"Slanting").map(strip).optional.let:
+              case ConstantType(StringConstant("italic"))  => Slant.Italic
+              case ConstantType(StringConstant("upright")) => Slant.Upright
+              case _                                       => Unset
 
             val enabled: List[Face.Feature.Setting] =
               request.get(t"Enabled").map(tags).getOrElse(Nil).map(Face.Feature(_).enabled)
 
-            val name = refinements(face.asTerm.tpe.widen).get(t"Topic").map(strip).flatMap:
-              case ConstantType(StringConstant(family)) => Some(family.tt)
-              case _                                    => None
+            val name = refinements(face.asTerm.tpe.widen).get(t"Topic").map(strip).optional.let:
+              case ConstantType(StringConstant(family)) => family.tt
+              case _                                    => Unset
 
-            . getOrElse(t"the typeface")
+            . or(t"the typeface")
 
             coverage.complaint(name, weight, slant, Unset, Nil, enabled).let: reason =>
               halt(m"phoenicia: the font at $path cannot set this face: $reason")

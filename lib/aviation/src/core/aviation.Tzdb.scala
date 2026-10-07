@@ -61,14 +61,14 @@ object Tzdb:
         change:  MonthDate,
         time:    Time,
         save:    Duration,
-        letters: Option[Text] )
+        letters: Optional[Text] )
 
     case Leap(year: Int, month: Month, day: Int, time: Time, addition: Boolean)
-    case Zone(area: Text, location: Option[Text], info: Sequence[ZoneInfo])
+    case Zone(area: Text, location: Optional[Text], info: Sequence[ZoneInfo])
     case Link(from: Text, to: Text)
 
   case class ZoneInfo
-    ( stdoff: into[Duration], rules: Text, format: Text => Text, until: Option[Text] )
+    ( stdoff: into[Duration], rules: Text, format: Text => Text, until: Optional[Text] )
 
   enum MonthDate:
     case Last(month: Month, day: Weekday)
@@ -132,10 +132,10 @@ object Tzdb:
       case name :: rest =>
         name.cut(t"/", 2) match
           case area :: location :: Nil =>
-            Tzdb.Entry.Zone(area, Some(location), Sequence(parseZoneInfo(lineNo, rest)))
+            Tzdb.Entry.Zone(area, location, Sequence(parseZoneInfo(lineNo, rest)))
 
           case simple :: Nil =>
-            Tzdb.Entry.Zone(simple, None, Sequence(parseZoneInfo(lineNo, rest)))
+            Tzdb.Entry.Zone(simple, Unset, Sequence(parseZoneInfo(lineNo, rest)))
 
           case _ =>
             abort(Tzdb.Error(Tzdb.Error.Reason.BadName(name), lineNo))
@@ -151,12 +151,12 @@ object Tzdb:
           case value :: Nil           => value
           case before :: after :: Nil => before+string+after
 
-        ZoneInfo(s, rules, f, if until.nil then None else Some(until.join(t" ")))
+        ZoneInfo(s, rules, f, if until.nil then Unset else until.join(t" "))
 
       case other =>
         abort(Tzdb.Error(Tzdb.Error.Reason.BadZoneInfo(other), lineNo))
 
-    def parseLetters(string: Text): Option[Text] = if string == t"-" then None else Some(string)
+    def parseLetters(string: Text): Optional[Text] = if string == t"-" then Unset else string
 
     def parseRule(lineNo: Int, arguments: List[Text]): Tzdb.Entry.Rule = arguments match
       case name :: from :: to :: _ :: month :: day :: time :: save :: letters :: _ =>

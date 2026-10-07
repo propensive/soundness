@@ -97,9 +97,11 @@ object Math extends Mathml.Container(new Math(_)):
     val mathElement = Mathml.Parser.rootElement(xmlDoc.root)
     val parsedMath: Math = Mathml.Parser.decodeMath(mathElement)
 
-    val encoding: Encoding =
-      xmlDoc.metadata.encoding.let: name => Encoding.unapply(name).getOrElse(enc"UTF-8")
-      . or(enc"UTF-8")
+    val encoding: Encoding = xmlDoc.metadata.encoding.let:
+      case Encoding(encoding) => encoding
+      case _                  => enc"UTF-8"
+
+    . or(enc"UTF-8")
 
     Document[Math](parsedMath, encoding)
 
