@@ -521,6 +521,26 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       . assert(_ == t"momofoo")
 
+      test(m"Backslash in a literal replacement is inserted verbatim"):
+        t"a.b".sub(t".", t"\\.")
+
+      . assert(_ == t"a\\.b")
+
+      test(m"Doubled backslash in a literal replacement stays doubled"):
+        t"a\\b".sub(t"\\", t"\\\\")
+
+      . assert(_ == t"a\\\\b")
+
+      test(m"Dollar in a literal replacement is not a group reference"):
+        t"x".sub(t"x", t"$$1")
+
+      . assert(_ == t"$$1")
+
+      test(m"Group reference in a regex replacement still works"):
+        t"ab".sub(r"(a)b", t"$$1c")
+
+      . assert(_ == t"ac")
+
       test(m"Get camel-case words"):
         t"oneTwoThree".uncamel
 
