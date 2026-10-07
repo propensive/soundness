@@ -10,15 +10,13 @@
 # (how the two-unit cascade probes model separate-module compilation), and extra flags
 # with `//FLAGS: ...`.
 #
-#   rep/sepcheck-probes/check.sh                 # both fork rows (3.9 + 3.10)
-#   rep/sepcheck-probes/check.sh <scalac...>     # a specific toolchain
+#   rep/sepcheck-probes/check.sh                 # the pinned toolchain (rep/toolchain.sh)
+#   rep/sepcheck-probes/check.sh <scalac...>     # specific compilers, one row each
+#   SOUNDNESS_SCALA_RELEASE=3.10.1-dev-p17 rep/sepcheck-probes/check.sh   # the other stream
 set -uo pipefail
 cd "$(dirname "$0")"
 
-if [[ $# -gt 0 ]]; then rows=("$@"); else rows=(
-  /Users/propensive/work/worktrees/scala/soundness-390/release/bin/scalac
-  /Users/propensive/work/worktrees/scala/all-main/release/bin/scalac
-); fi
+if [[ $# -gt 0 ]]; then rows=("$@"); else rows=(../toolchain.sh); fi
 
 strip() { sed -e $'s/\x1b\\[[0-9;]*m//g'; }
 

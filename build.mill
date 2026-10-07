@@ -3025,8 +3025,8 @@ object probably extends Library:
   object events extends Component(cli, stratiform.core, stratiform.base256):
     override def scalaJs = false
     // Not `sep`-checked: the module's whole job is driving stratiform's inline schema/codec
-    // derivations, whose generated code is not separation-clean (the same reason the `Tests`
-    // trait, which exercises them, compiles without `sep`).
+    // derivations, whose generated code is not separation-clean (the same reason
+    // `stratiform.test`, which exercises them, stays off `sep`). Tracked by `safety-6`.
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   object test extends Tests(cli):
@@ -4064,7 +4064,7 @@ object nativelink extends Module:
   object suite extends Cross[NativeSuite]("hypotenuse", "denominative", "monotonous")
 
   // The JVM test module's sources compiled with the same `Tests`-trait flags (larceny and
-  // beneficence plugins, `settings.cc`) plus `nscplugin` for NIR, against the `.native` variants
+  // beneficence plugins, `settings.sep`) plus `nscplugin` for NIR, against the `.native` variants
   // of its dependency graph (`nativeDeps` maps them; JVM-only components like `larceny.plugin`
   // drop out).
   trait NativeSuite extends ScalaModule, Toolchain, Cross.Module[String]:

@@ -1,5 +1,12 @@
 # Handover — capture-checking (CC) reproductions
 
+> **Historical (July 2026).** This is the handover written when the first seven failure classes
+> were isolated, before capture checking was enabled on every module (#1498) and before the fork
+> fixes that closed most of them. The counts and the "fix this first" ordering below are of that
+> time. The current state of every case is `STATUS.md`; the mechanics are `README.md`; the
+> diagnosis log is `DECISIONS.md`. The scripts named here now run the pinned toolchain
+> (`rep/toolchain.sh`) rather than a locally-built 3.8.4.
+
 > **2026-07-04 update:** the case-2 compiler fix is DEPLOYED — the build now pins the
 > locally-published `3.8.4-cc1` (see `build.mill:48` and `rep/DECISIONS.md`). §4's experiment is
 > resolved: both self-contained repros are green under the patch, red on stock. The suite triage

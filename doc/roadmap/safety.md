@@ -2,67 +2,96 @@
 
 Honest signatures are only as honest as their enforcement. Capture checking makes a signature's
 promises about effects verifiable; separation checking makes mutation safe by construction; the
-`raises` mechanism makes failure visible in types. All three are already the default — nearly
-every build component compiles with separation checking enabled — but defaults are not the same
-as guarantees. Every `caps.unsafe` call is a place where the checker was overruled by hand, and
+`raises` mechanism makes failure visible in types. All three are already the default — 370 of
+the build's 464 modules compile with separation checking — but defaults are not the same as
+guarantees. Every `caps.unsafe` call is a place where the checker was overruled by hand, and
 each one is a standing IOU against the safety claim.
 
 The escape hatches are therefore this track's central measure. Some are genuine debt with a
-known retirement recipe; others are blocked on defects in the capture checker itself — and
-those defects are ours to fix, because Soundness is built with the Proscala compiler by
-design. The compiler is modifiable whenever capability or effect checking demands it; the
-`rep/` directory maintains minimal reproductions of each blocker class as the queue of fixes.
-The one constraint is compatibility outward: whatever Proscala does, the artifacts Soundness
-publishes must remain readable by the mainline Scala compiler. The track ends when the grep
-for `caps.unsafe` returns nothing, and that readability guarantee is enforced rather than
-assumed.
+known retirement recipe; others are blocked on defects or gaps in the capture checker itself —
+and those are ours to fix, because Soundness is built with the Proscala compiler by design. The
+compiler is modifiable whenever capability or effect checking demands it; the `rep/` directory
+holds a minimal reproduction of each blocker class, and `rep/STATUS.md` says which are fixed,
+which are open, and which have been reported upstream. The one constraint is compatibility
+outward: whatever Proscala does, the artifacts Soundness publishes must remain readable by the
+mainline Scala compiler. The track ends when the grep for `caps.unsafe` returns nothing, and
+that readability guarantee is enforced rather than assumed.
+
+The residue is not one problem but seven, and they are not equally hard. Measured on
+2026-10-07 over `lib/` — 1485 visible hatches (505 `untrackedCaptures`, 511 `unsafeAssumePure`,
+419 `unsafeAssumeSeparate`, 50 `unsafeErasedValue`), with roughly as many again hidden behind
+the named wrappers (`Array.unsafeFrozen` 283, `Array.unsafeJvm` 205, `Array.frozen` 151,
+`unsafeMutable`/`unsafeImmutable` ~40, `!!` 30) — the clusters by root cause are:
+
+| Cluster | Count | Retired by |
+|---|---|---|
+| `@untrackedCaptures` on `var`/`val` fields (437 vars; ~270 of them primitive, `Optional` or immutable-collection typed) | 505 | `safety-1`'s recipe, module by module |
+| test-harness `unsafeAssumeSeparate` (tmux drivers, `await`, `recur`) | 236 | one loan-shaped helper per harness (`safety-9`) |
+| derivation anchors `unsafeAssumePure(Json.…Derivation.derived)` in the JSON-RPC bindings | 103 | the field-purity rule, once tactics are shared (`safety-8`) |
+| sealed codec givens whose SAM closes over a tactic | ~125 | the honest `^{tactic}` given form, unblocked by `safety-8` |
+| exclusive-tactic overlap `unsafeAssumeSeparate(json.as[…])` and the three seals in contingency itself | ~60 | `safety-8` |
+| self/callback/handle launders (`unsafeAssumePure(this)`, RPC proxies, stored callbacks) | ~60 | per-site design |
+| by-name element-codec thunks laundered to `() -> …` | ~46 | nameable by-name captures (`safety-10`) |
+| `unsafeErasedValue` for erased evidence | 50 | mechanical, if `compiletime.erasedValue` suffices |
+| staging, quotes and macros (the quote wall) | ~27 | compiler-side |
 
 ## safety-1: retire `untrackedCaptures`
 
 Horizon: near
-Baseline: 468 occurrences (measured 2026-09-25; 288 on 2026-08-01)
+Baseline: 505 occurrences (measured 2026-10-07; 468 on 2026-09-25; 288 on 2026-08-01)
 
 The retirement recipe is documented and mechanical: the annotated class becomes `caps.Mutable`,
 mutating methods become `update def`, consumers hold `X^`, and mutual back-references are
-flattened.
+flattened. 437 of the annotations are on `var`s, and about 270 of those are primitives,
+`Optional`s or immutable collections in classes that are not yet `Mutable` — pure data behind a
+missing classifier. The first modules are the ones already partly migrated (xylophone's `Xml`
+parser, sibylline's `Llm`, stratiform's `Tel`, zephyrine's core), then the others by size. The
+88 `AnyRef | Null` fields are different: each is a capability handle smuggled past the checker,
+and each is a design case, not a sweep.
 
 Done when:
 
     git grep -o untrackedCaptures -- lib | wc -l    # 0
 
-## safety-2: triage the remaining unsafes
+## safety-2: every remaining hatch names its reason
 
 Horizon: near
-Baseline: 416 `unsafeAssumeSeparate`, 502 `unsafeAssumePure`, 50 `unsafeErasedValue` (measured 2026-09-25; 323, 273 and 45 on 2026-08-01)
+Baseline: 419 `unsafeAssumeSeparate`, 511 `unsafeAssumePure`, 50 `unsafeErasedValue` (measured 2026-10-07; 416, 502 and 50 on 2026-09-25; 323, 273 and 45 on 2026-08-01); 37 of them cite `rep/` at all, 2 by case
 
-Each occurrence is either fixable now or blocked on a known compiler defect. The triage makes
-the distinction explicit: every surviving occurrence carries a comment naming its `rep/`
-blocker case, so the residue is exactly the blocked set and nothing hides in it. No script
-checks the annotations yet; the flair census (`safety-7`) counts the occurrences but does not
-read the comments.
+Each occurrence is either fixable now or blocked on something named. The triage makes the
+distinction explicit with a closed vocabulary of reason tags, defined in the capabilities
+standard (`safety-12`) and each mapped to a `rep/` case or a section of the standard —
+`[tactic-overlap]`, `[field-purity]`, `[by-name-capture]`, `[quote-wall]`, `[curried-cft]`,
+`[js-expandsams]`, `[iarray-opacity]`, `[fresh-in-lambda]`, `[registry-lifetime]`,
+`[test-harness]` and so on. A hatch carries its tag in an adjacent comment; the census
+(`safety-7`) counts the residue per tag, which is what decides the fork queue, and fails on an
+untagged site once the untagged count has been ratcheted to zero.
 
-Done when: every remaining `caps.unsafe` occurrence in `lib/` names a `rep/` case in an
-adjacent comment, verified by a checked-in script reporting zero unannotated occurrences.
+Done when: every remaining `caps.unsafe` occurrence in `lib/` carries a reason tag, verified by
+the census script reporting zero untagged occurrences.
 
-## safety-3: resolve the `capturing-raises` blocker
+## safety-3: `rep/` runs on the pinned toolchain
 
-Horizon: mid
+Horizon: near
 
-The dominant remaining class of capture-checking failure, reproduced minimally in `rep/`, is
-fixed in the proscala fork, unblocking the annotated portion of the unsafe residue.
-`rep/DECISIONS.md` records the fix at source — the ambient tactics classified as
-`caps.Unscoped` (2026-07-06) — and the canonical reproduction green, but the recipe that
-compiles `rep/` (`rep/compile.sh`) still fetches a `3.8.4` compiler rather than the pinned
-proscala toolchain, so the criterion has not been re-run under the current one.
+The queue is only a queue if its entries can be run. Until 2026-10-07 `rep/compile.sh` fetched
+a stock 3.8.4 compiler and the probe scripts named locally-built worktrees, so no case had been
+re-run under the fork release the build actually uses — and the fork's opt-in repairs (`-Z…`)
+were never passed, so a fixed case could still show red. `rep/toolchain.sh` now runs `dotc`
+from the cached release with the `-Z` flags read from `build.mill`; every case and the probe
+suite re-run under it, and `rep/STATUS.md` records the verdicts. The `capturing-raises` class
+this item used to name was fixed at source on 2026-07-06 (ambient tactics as `caps.Unscoped`)
+and compiles; the dominant classes now are the exclusive-tactic overlap (`safety-8`) and the
+by-name capture gap (`safety-10`).
 
-Done when: the `rep/` reproduction for `capturing-raises` compiles cleanly under the current
-toolchain, and its `rep/DECISIONS.md` entry records the fix.
+Done when: `rep/STATUS.md` records a verdict for every case under the pinned release, and the
+probe suite and every calibrated case run green-as-expected from a clean checkout.
 
 ## safety-4: zero escape hatches
 
 Horizon: mid → long
-Needs: safety-3
-Baseline: 1436 occurrences in total (measured 2026-09-25; 929 on 2026-08-01)
+Needs: safety-8, safety-10
+Baseline: 1485 occurrences in total (measured 2026-10-07; 1436 on 2026-09-25; 929 on 2026-08-01)
 
 With the blockers fixed, the residue burns down to nothing. The grep is the signal.
 
@@ -86,16 +115,20 @@ Done when: a CI test consumes published Soundness artifacts from a mainline-Scal
 ## safety-6: separation checking without exemption
 
 Horizon: long
-Baseline: 87 of 424 modules compile without separation checking — 40 components, 27 test
-suites and all 20 benchmark modules — and 2 opt for `settings.cc` alone (measured 2026-09-25;
-"3 components" on 2026-08-01)
+Baseline: 93 of 464 modules compile without separation checking — 40 components, 26 test
+suites, 22 of the 23 benchmark modules and 4 internal modules — and 1 opts for `settings.cc`
+alone (measured 2026-10-07; 87 of 424 on 2026-09-25)
 
-The August figure counted the modules that *override* their options downward — the wasm guest
-and one benchmark, both justified in comments. It missed that separation checking is opted
-*into*: `Component`, `Tests` and `Benchmarks` default to plain `settings.scalaOptions`, so a
-module that never mentions `settings.sep` is not checked at all, and eighty-odd never do
-(among them the anthology formats, synesthesia, telekinesis's JVM backend and every
-benchmark). The end-state has no such module: every one compiles with separation checking.
+Separation checking is opted *into*: `Component`, `Tests` and `Benchmarks` default to plain
+`settings.scalaOptions`, so a module that never mentions `settings.sep` is not checked at all.
+Of the 93, only nine say why (praxinoscope's Pike VM, probably's event bridge, the wasm guest,
+polyvinyl's record selection, enigmatic's padding given, four benchmarks that compile against
+rival libraries which cannot take explicit nulls); the rest — every other benchmark, 22 test
+suites, the staged and compiler-tooling components, the WASI backends, the JVM backends of
+galilei and telekinesis — are unchecked by omission. The end-state has no such module: the
+`Benchmarks` trait defaults to `settings.sep` like a library, every unreasoned module is flipped
+in a single-shot probe (`rep/probe-suite.sh`, `rep/probe-core.sh`), and each one that stays red
+carries a comment in `build.mill` naming its reason tag and a `rep/` case for the class.
 
 Done when: no component in `build.mill` compiles with anything weaker than `settings.sep`.
 
@@ -110,23 +143,120 @@ file and enforced — `etc/check-while-count.py` for `while`, `readUnchecked` an
 `etc/check-stdlib-count.sh` for the `.stdlib` bridge — and the rest is unmeasured.
 
 The flair plugin (pinned in `etc/tools`, configured by `.pyrocosm/flair/config.tel`, enabled
-on every checked component by the `-P:flair:` options in `flairToolchain`) now provides the
+on every checked component by the `-P:flair:` options in `flairToolchain`) provides the
 census: every rule in the configuration counted over the sources — the declared escapes
 (`unsafely`, the `caps.unsafe` family, every `unsafe`-prefixed name, every method gated by the
 token), the compiler-trust bypasses (`asInstanceOf`, `.nn`, `@unchecked`, `???`, catch-all
 clauses), the partial reads, and the imperative constructs the streaming kernel is meant to
 confine. `make unsafety` runs `flair metrics --dry-run` and prints it; `flair metrics` records
 it in git notes, commit by commit, so the trend lives in git rather than in a roadmap
-paragraph. (`etc/unsafety-history.tsv` is the earlier, hand-appended form of the same record,
-unwritten since #1995.) One rule already gates: `S1.1`, a method taking `(using Unsafe)` must
-be named `unsafe…`, fails the build; its converse `S1.2` is advisory, with the ten definitions
-that break it listed in `doc/standards/naming.md`.
+paragraph. One rule already gates: `S1.1`, a method taking `(using Unsafe)` must be named
+`unsafe…`, fails the build; its converse `S1.2` is advisory, with the ten definitions that
+break it listed in `doc/standards/naming.md`.
 
-It reports and does not gate: the counts must settle across a few clean builds before a
-number is worth failing a build over. The gate is the follow-up, and it should subsume the two
-existing ratchets rather than sit beside them — one per-file baseline covering every
-indicator, not a script per construct.
+The gate is the follow-up: one per-file baseline covering every indicator — the two ratchets'
+constructs, the four `caps.unsafe` hatches, and the named wrappers that hide them
+(`Array.unsafeFrozen`, `Array.frozen`, `Array.unsafeJvm`, `unsafeMutable`, `unsafeImmutable`,
+`!!`) — with the same `--update`/`--totals` semantics as `check-while-count.py`, counting the
+residue per reason tag (`safety-2`), run by `make build`. It subsumes the two existing ratchets
+rather than sitting beside them.
 
 Done when: the census is recorded on every release, `safety-1`, `safety-2` and `safety-4` read
 their baselines from it rather than from a hand-run grep, and the per-file gate has replaced
 `etc/check-while-count.py` and `etc/check-stdlib-count.sh`.
+
+## safety-8: tactics are shared capabilities
+
+Horizon: near
+Needs: safety-3
+Baseline: ~60 exclusive-tactic overlap seals in `lib/*/src/core`, 3 of them in contingency; 103 derivation anchors and ~125 sealed codec givens downstream (measured 2026-10-07)
+
+`contingency.Emit` — and so `Tactic`, the capability behind `raises` — is a
+`caps.ExclusiveCapability`, chosen in July as "the conservative classification". It is the
+single largest root cause in the residue. A codec summoned for `Json#as` captures the ambient
+tactic, and `as` takes the same tactic as a using-parameter: two uses of one *exclusive*
+capability in one call, which separation checking rejects (`rep/sepcheck-probes/p15`). Every
+`unsafeAssumeSeparate(json.as[…])` is that error, and the derivation anchors in the JSON-RPC
+bindings abandoned the honest tactic-parameterised form for the same reason inside the
+derivation.
+
+A tactic is shared by nature — many codecs legitimately alias one — and raising an error is a
+non-consuming effect. `caps.SharedCapability` keeps every `raises`/`emits` capture tracked and
+only exempts aliases of one tactic from the overlap check; a tactic that mutates (accrual,
+`Foci`) must then be internally sequential, the position already taken for `Monitor` and the
+parasite queues. The ambient strategies drop `caps.Unscoped` (unrelated classifiers cannot
+combine, `p16`); on the pinned release the minimal `raises` shape no longer needs it
+(`rep/shared-unscoped`, GREEN). The flip is probe-gated: contingency first, with the
+Soundness-backed `capturing-raises` case as the gate; if the full shape hits a level wall, the
+fork adds a classifier that is shared and level-exempt before the flip proceeds. Then jacinta
+(`as` drops its unused tactic parameter), the consumer sweep (sibylline, tarantula, orthodoxy,
+breviloquence, ethereal, the `abort`-thunk seals), and the anchors.
+
+Done when: `Emit extends caps.SharedCapability`; `git grep -c 'unsafeAssumeSeparate' -- lib/contingency` is 0; no `[tactic-overlap]` tag remains.
+
+## safety-9: test harnesses do not seal
+
+Horizon: near-mid
+Baseline: 236 `unsafeAssumeSeparate` in `lib/*/src/test` (measured 2026-10-07): exoskeleton 63, zephyrine 50, facsimile 38, galilei 29, turbulence 19
+
+More than half of all `unsafeAssumeSeparate` sites are in test suites, almost none commented,
+in a handful of shapes: the tmux completion drivers (`Bash.tmux()(Tmux.completions(…))`),
+`async(…).await()`, `recur()`, and `gather.data`. Tests are capture-checked like libraries, so
+this is real residue, and it is the most mechanical batch: one loan-shaped helper per harness
+(the coaxial seam — a start/stop trait and a `transparent inline` loan — proven in syndesis), a
+`Task#await` that does not alias the `Monitor` with the handle, after a probe per shape
+characterises what the checker objects to.
+
+Done when: `git grep -c unsafeAssumeSeparate -- 'lib/*/src/test'` is 0.
+
+## safety-10: by-name parameters can be named in capture sets
+
+Horizon: mid
+Needs: safety-3
+Baseline: ~46 pure-thunk seals (jacinta, spectacular, gastronomy, turbulence; measured 2026-10-07)
+
+A by-name parameter (`inner: => (X is Codec)^`) is not a stable reference, so a given whose
+instance retains it cannot declare `^{inner}` and is sealed to a pure `() -> …` thunk instead —
+the Phase-6 form, truthfully commented but a seal all the same. The shape is load-bearing:
+given resolution synthesises the thunk, and recursive derivation depends on its deferral, so no
+source-side form preserves both. This is a compiler gap ("upstream candidate #5" in
+`rep/DECISIONS.md`): a by-name parameter should be nameable as the capture set of its
+synthesised thunk. A self-contained `rep/byname-capture` case first; the fork change second;
+an upstream report with the case.
+
+Done when: `rep/byname-capture` compiles under the pinned release and no `[by-name-capture]` tag remains.
+
+## safety-11: the 3.10 stream is evaluated for what it fixes
+
+Horizon: near-mid
+Needs: safety-3
+
+The fork keeps a 3.10 row alongside 3.9, and upstream's capture checker has moved since the 3.9
+branch point — 65 commits to `cc/` and `scala/caps` by August 2026: `consume` on overrides and
+case classes and in method application, classifier `only`/`except` and classifiers in result
+capabilities, LocalCap leak detection, boxed-status healing. Some of that may dissolve clusters
+here without a fork change (the harness shapes, a finer tactic classification, the `?1` quote
+leak in legerdemain's Query decoder); some of it touches exactly what Soundness relies on (the
+`Unscoped` tightening; reach capabilities dropped). The evaluation is measured, not guessed: a
+clean gate of the tree on the 3.10 release, the whole `rep/` corpus and probe suite on both
+rows recorded as a second column of `rep/STATUS.md`, and one un-sealed sentinel per cluster
+compiled on 3.10 only. The decision — switch the attested row, or backport the specific
+commits onto 3.9 — follows from that table.
+
+Done when: `rep/STATUS.md` carries a 3.10 column for every case and probe, and the roadmap
+records the row decision.
+
+## safety-12: a capabilities standard
+
+Horizon: near
+
+The recipes that make capture and separation checking workable — when a type is Exclusive,
+Shared, Unscoped, Mutable or Pure and the lattice traps between them; the honest-given playbook
+(`(tactic: Tactic[E]) => ((X is TC)^{tactic})`, explicit capturing evidence instead of context
+bounds); where a fresh result may and may not be minted; the `consume` and loan seams; what a
+test may and may not do — exist only as entries in `rep/DECISIONS.md`, a 2400-line log. They
+belong in `doc/standards/capabilities.md`, with the tag vocabulary `safety-2` relies on and the
+one sanctioned hatch form for each tag, and a pointer from `doc/philosophy/capture-checking.md`.
+
+Done when: `doc/standards/capabilities.md` exists, defines every tag the census recognises, and
+`rep/DECISIONS.md`'s recipe sections link to it rather than restating.

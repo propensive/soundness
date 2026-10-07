@@ -1,3 +1,15 @@
+//> using scala 3.8.4
+//> using options -language:experimental.captureChecking -Ycc-new -experimental
+
+// ── proxy-tagged — SELF-CONTAINED (no Soundness dependency) ───────────────────────────────────
+// The "inliner-proxy / aka-Tagged" class (rep/DECISIONS.md, compiler fix #5 `castbox`): Setup
+// boxes the type arguments of an undealiasable opaque application via `normalizeCaptures`, but
+// skipped the `asInstanceOf`/type-test special case, so the cast inside the opaque companion's
+// `apply` produced an UNBOXED spelling that could not compare with the boxed declaration-side
+// one ("is boxed but ... is not"; with a singleton argument, the
+// `Tagged[(any$proxy : ...)^{any$proxy}]` mismatch). FIXED in the fork (`castbox`); RED on stock.
+// Compile with:  rep/compile.sh proxy-tagged      (or --stock for the upstream status)
+
 import language.experimental.captureChecking
 import scala.caps
 

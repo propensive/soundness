@@ -1,34 +1,55 @@
 #!/usr/bin/env bash
-# Compile a reproduction and show its capture-checking error.
+# Compile a reproduction with the pinned toolchain and show its capture-checking error.
 #
-#   rep/compile.sh <class>
+#   rep/compile.sh <case>            # the build's compiler and -Z repairs (rep/toolchain.sh)
+#   rep/compile.sh --stock <case>    # a self-contained case under the stock compiler its
+#                                    # `//> using scala` header names, via scala-cli — what an
+#                                    # upstream report shows
 #
 # Two kinds of reproduction:
-#  • SELF-CONTAINED (source starts with `//> using`): no Soundness dependency at all — compiled with
-#    `scala-cli`. These are the gold standard (e.g. the two case-2 classes).
-#  • SOUNDNESS-BACKED (has cp.txt/opts.txt from `rep/capture-classpath.sh`): the box only arises from
-#    the real Soundness type-graph, so we compile the minimal source with `dotc` DIRECTLY against the
-#    module's captured classpath. (Direct dotc is essential — Mill's incremental compilation
-#    manufactures false-greens for these boxes.)
+#  • SELF-CONTAINED (source starts with `//> using`): no Soundness dependency at all. The header's
+#    `//> using options` line supplies the flags. These are the gold standard (the case-2 classes,
+#    proxy-tagged) and the ones to hand upstream.
+#  • SOUNDNESS-BACKED (has cp.txt/opts.txt from `rep/capture-classpath.sh`): the error only arises
+#    from the real Soundness type-graph, so the minimal source is compiled with `dotc` DIRECTLY
+#    against the module's captured classpath and options. (Direct dotc is essential — Mill's
+#    incremental compilation manufactures false-greens for these.)
+# A case directory with its own `check.sh` (a calibrated multi-pass repro) is run through that.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+stock=0
+if [[ "${1:-}" == --stock ]]; then stock=1; shift; fi
 cls="$1"; dir="rep/$cls"
+
+if [[ -x "$dir/check.sh" ]]; then
+  echo "▶ $cls — calibrated (rep/$cls/check.sh)"
+  exec "$dir/check.sh"
+fi
+
 src=$(ls "$dir"/*.scala | head -1)
 
 if head -1 "$src" | grep -q '//> using'; then
-  echo "▶ $cls — self-contained (scala-cli, no Soundness)"
-  scala-cli compile "$src" 2>&1 | grep -viE 'SN-[0-9]|Compiling|Compiled' || true
+  if [[ $stock == 1 ]]; then
+    echo "▶ $cls — self-contained, stock compiler (scala-cli)"
+    scala-cli compile "$src" 2>&1 | grep -viE 'SN-[0-9]|Compiling|Compiled' || true
+  else
+    echo "▶ $cls — self-contained ($(rep/toolchain.sh -version 2>&1 | sed 's/ --.*//'))"
+    opts=$(sed -n 's_^//> using options __p' "$src")
+    out=$(mktemp -d); trap 'rm -rf "$out"' EXIT
+    rep/toolchain.sh $opts -d "$out" "$src" 2>&1 | grep -viE 'SN-[0-9]|warning' || true
+  fi
 else
   echo "▶ $cls — Soundness-backed (dotc + captured classpath)"
   [[ -f "$dir/cp.txt" ]] || { echo "run: rep/capture-classpath.sh $cls <module>  first"; exit 2; }
-  compiler_cp=$(cs fetch --classpath org.scala-lang:scala3-compiler_3:3.8.4 2>/dev/null)
-  python3 - "$src" "$dir" <<'PY'
+  out=$(mktemp -d); trap 'rm -rf "$out"' EXIT
+  python3 - "$src" "$dir" "$out" <<'PY'
 import sys
-src,dir=sys.argv[1:3]
+src,dir,out=sys.argv[1:4]
 opts=open(f'{dir}/opts.txt').read().splitlines()
 cp=open(f'{dir}/cp.txt').read().strip()
-args=opts+['-classpath',cp,src]
+args=opts+['-classpath',cp,'-d',out,src]
 open('/tmp/_repargs','w').write('\n'.join('"%s"'%a.replace('"','\\"') for a in args)+'\n')
 PY
-  java -cp "$compiler_cp" dotty.tools.dotc.Main @/tmp/_repargs 2>&1 | grep -viE 'SN-[0-9]|warning' || true
+  rep/toolchain.sh @/tmp/_repargs 2>&1 | grep -viE 'SN-[0-9]|warning' || true
 fi

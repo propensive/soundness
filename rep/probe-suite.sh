@@ -2,13 +2,13 @@
 # Probe one test suite under CC with a single-shot compile of its test sources against a
 # freshly-captured CC classpath (the only trustworthy compile signal — see rep/DECISIONS.md).
 #
-#   rep/probe-suite.sh <module> [scalac]
+#   rep/probe-suite.sh <module> [scalac]        (default: rep/toolchain.sh)
 #
 # Prints "<module> GREEN" or "<module> RED" (first errors to rep/_probe/<module>.log).
 set -uo pipefail
 cd "$(dirname "$0")/.."
 mod="$1"
-scalac="${2:-/Users/propensive/work/worktrees/scala/soundness-384/release/bin/scalac}"
+scalac="${2:-rep/toolchain.sh}"
 dir="rep/_probe/$mod"
 mkdir -p "$dir"
 

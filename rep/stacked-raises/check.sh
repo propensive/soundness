@@ -11,8 +11,9 @@
 # method-result fresh, even though erasure flattens them into the method's own
 # parameter list. SingleLayerControl.scala shows the single-layer case is accepted.
 #
+#   rep/stacked-raises/check.sh                 # the pinned toolchain (rep/toolchain.sh)
 #   rep/stacked-raises/check.sh <scalac-command...>
-#   rep/stacked-raises/check.sh stock:3.8.4
+#   rep/stacked-raises/check.sh stock:3.8.4     # stock scalac via coursier (upstream status)
 #
 # Prints GREEN or RED (both files compile / stacked fails).
 set -uo pipefail
@@ -21,6 +22,7 @@ cd "$(dirname "$0")"
 out=$(mktemp -d)
 trap 'rm -rf "$out"' EXIT
 
+if [[ $# -eq 0 ]]; then set -- ../toolchain.sh; fi
 if [[ "$1" == stock:* ]]; then
   v="${1#stock:}"
   cp=$(cs fetch --classpath "org.scala-lang:scala3-compiler_3:$v")

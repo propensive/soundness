@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 # Like capture-classpath.sh, but for a non-test target (e.g. anthology.bundle): captures the
-# CC-enabled compile classpath + scalac options into rep/<cls>/{cp,opts}.txt, plus the target's
-# source directory into src.txt (from mill's allSourceFiles).
+# compile classpath + scalac options into rep/<cls>/{cp,opts}.txt, plus the target's source
+# files into src.txt (from mill's allSourceFiles).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 cls="$1"; target="$2"
-python3 rep/enable_cc_target.py "$target" >/dev/null
-trap 'git checkout build.mill >/dev/null 2>&1 || true' EXIT INT TERM
 ./mill "$target.compileClasspath" >/dev/null 2>&1 || true
 ./mill show "$target.compileClasspath" > "rep/$cls/_cp.json" 2>/dev/null
 ./mill show "$target.scalacOptions"    > "rep/$cls/_opts.json" 2>/dev/null

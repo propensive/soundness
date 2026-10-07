@@ -7,10 +7,9 @@
 #
 # at calls to `T raises E` methods inside `capture[E]{...}`'s block.
 #
+#   rep/handler-raises/check.sh                 # the pinned toolchain (rep/toolchain.sh)
 #   rep/handler-raises/check.sh <scalac-command...> [cczip]
-#
-# e.g.  rep/handler-raises/check.sh /Users/propensive/work/worktrees/scala/soundness-384/release/bin/scalac
-#       rep/handler-raises/check.sh stock:3.8.4
+#   rep/handler-raises/check.sh stock:3.8.4     # stock scalac via coursier (upstream status)
 #
 # Three passes mirroring the real module mix: Contingency.scala (CC on), Zip.scala (CC OFF, as
 # zeppelin.core is not CC-enabled; pass `cczip` as the last arg to compile it with CC too),
@@ -24,6 +23,7 @@ if [[ "${!#}" == cczip ]]; then cczip=1; set -- "${@:1:$(($#-1))}"; fi
 out=$(mktemp -d)
 trap 'rm -rf "$out"' EXIT
 
+if [[ $# -eq 0 ]]; then set -- ../toolchain.sh; fi
 if [[ "$1" == stock:* ]]; then
   v="${1#stock:}"
   cp=$(cs fetch --classpath "org.scala-lang:scala3-compiler_3:$v")

@@ -70,7 +70,7 @@ item
   track safety
   horizon near
   status open
-  baseline  468 untrackedCaptures occurrences (2026-09-25; 288 on 2026-08-01)
+  baseline  505 untrackedCaptures occurrences (2026-10-07; 468 on 2026-09-25; 288 on 2026-08-01)
   criterion  git grep -o untrackedCaptures -- lib | wc -l == 0
 
 item
@@ -78,23 +78,24 @@ item
   track safety
   horizon near
   status open
-  baseline  416 unsafeAssumeSeparate, 502 unsafeAssumePure, 50 unsafeErasedValue (2026-09-25; 323, 273, 45 on 2026-08-01)
-  criterion  every remaining caps.unsafe occurrence names a rep/ case; script reports zero unannotated
+  baseline  419 unsafeAssumeSeparate, 511 unsafeAssumePure, 50 unsafeErasedValue; 37 cite rep/, 2 by case (2026-10-07; 416, 502, 50 on 2026-09-25; 323, 273, 45 on 2026-08-01)
+  criterion  every remaining caps.unsafe occurrence carries a reason tag; the census reports zero untagged
 
 item
   id safety-3
   track safety
-  horizon mid
+  horizon near
   status open
-  criterion  the rep/ capturing-raises reproduction compiles cleanly under the current toolchain
+  criterion  rep/STATUS.md records a verdict for every case under the pinned release; the probe suite and every calibrated case run green-as-expected from a clean checkout
 
 item
   id safety-4
   track safety
   horizon mid-long
   status open
-  needs safety-3
-  baseline  1436 caps.unsafe occurrences in total (2026-09-25; 929 on 2026-08-01)
+  needs safety-8
+  needs safety-10
+  baseline  1485 caps.unsafe occurrences in total (2026-10-07; 1436 on 2026-09-25; 929 on 2026-08-01)
   criterion  git grep -oE 'unsafeAssumeSeparate|untrackedCaptures|unsafeAssumePure|unsafeErasedValue' -- lib | wc -l == 0
 
 item
@@ -109,7 +110,7 @@ item
   track safety
   horizon long
   status open
-  baseline  87 of 424 modules compile without separation checking: 40 components, 27 test suites, 20 benchmark modules; 2 opt for settings.cc alone (2026-09-25; "3 components" on 2026-08-01 counted only downward overrides)
+  baseline  93 of 464 modules compile without separation checking: 40 components, 26 test suites, 22 of 23 benchmark modules, 4 internal modules; 1 opts for settings.cc alone (2026-10-07; 87 of 424 on 2026-09-25; "3 components" on 2026-08-01 counted only downward overrides)
   criterion  no component in build.mill compiles with anything weaker than settings.sep
 
 item
@@ -118,6 +119,47 @@ item
   horizon near
   status open
   criterion  the census is recorded per release and one per-file gate replaces check-while-count.py and check-stdlib-count.sh
+
+item
+  id safety-8
+  track safety
+  horizon near
+  status open
+  needs safety-3
+  baseline  ~60 exclusive-tactic overlap seals in lib/*/src/core, 3 in contingency; 103 derivation anchors and ~125 sealed codec givens downstream (2026-10-07)
+  criterion  Emit extends caps.SharedCapability; git grep -c unsafeAssumeSeparate -- lib/contingency == 0; no [tactic-overlap] tag remains
+
+item
+  id safety-9
+  track safety
+  horizon near-mid
+  status open
+  baseline  236 unsafeAssumeSeparate in lib/*/src/test: exoskeleton 63, zephyrine 50, facsimile 38, galilei 29, turbulence 19 (2026-10-07)
+  criterion  git grep -c unsafeAssumeSeparate -- 'lib/*/src/test' == 0
+
+item
+  id safety-10
+  track safety
+  horizon mid
+  status open
+  needs safety-3
+  baseline  ~46 pure-thunk seals for by-name codec parameters (2026-10-07)
+  criterion  rep/byname-capture compiles under the pinned release and no [by-name-capture] tag remains
+
+item
+  id safety-11
+  track safety
+  horizon near-mid
+  status open
+  needs safety-3
+  criterion  rep/STATUS.md carries a 3.10 column for every case and probe, and the roadmap records the row decision
+
+item
+  id safety-12
+  track safety
+  horizon near
+  status open
+  criterion  doc/standards/capabilities.md exists, defines every tag the census recognises, and rep/DECISIONS.md's recipe sections link to it
 
 item
   id plat-1

@@ -3,12 +3,13 @@ package zeppelin
 import soundness.*
 
 import strategies.throwUnsafely
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
-import filesystemOptions.createNonexistent.enabled
-import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemBackends.javaBaseFilesystem
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.overwritePreexisting
 import logging.silentLogging
-import systems.javaSystem
+import systems.javaBaseSystem
 
 // ── capturing-raises ───────────────────────────────────────────────────────────────────────────
 // `Zipfile.write` is `… raises ZipError` = `Tactic[ZipError]^ ?=> …` (contingency). Calling it inside
