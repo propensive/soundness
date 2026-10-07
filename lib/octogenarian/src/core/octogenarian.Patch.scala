@@ -33,10 +33,12 @@
 package octogenarian
 
 import anticipation.*
-import rudiments.*
+import contingency.*
 import dissonance.*
+import distillate.*
 import gossamer.*
 import kaleidoscope.*
+import rudiments.*
 import vacuous.*
 
 object Patch:
@@ -62,8 +64,8 @@ object Patch:
     Diff(file.hunks.bind(_.edits).stdlib*).retained
 
   private def parseHunkRange(text: Text): (Int, Int) = text.cut(t",") match
-    case List(start)        => (start.s.toInt, 1)
-    case List(start, count) => (start.s.toInt, count.s.toInt)
+    case List(start)        => (safely(start.as[Int]).or(0), 1)
+    case List(start, count) => (safely(start.as[Int]).or(0), safely(count.as[Int]).or(0))
     case _                  => (0, 0)
 
   private def parseFile(header: Text, body: List[Text]): FileDiff =
