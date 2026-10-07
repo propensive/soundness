@@ -77,7 +77,7 @@ object Multiplicable:
 
       while i < count do
         i += 1
-        result = result+text
+        result = textual.concat(result, text)
 
       result
 

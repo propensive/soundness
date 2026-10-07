@@ -59,6 +59,16 @@ extension [augend](left: augend)
         addable.add(left, right)
 
 
+// Concatenation retains the structure of both operands (`Text`, the collections, `Css`),
+// where addition collapses it; the two are distinct typeclasses and distinct operators, and
+// a `Concatenable` is NOT `Addable` unless `arithmeticOptions.concatenativeAddition` is
+// imported.
+extension [left](left: left)
+  inline infix def ++ [right](right: right)(using concatenable: left is Concatenable by right)
+  :   concatenable.Result =
+    concatenable.concat(left, right)
+
+
 extension [minuend](left: minuend)
   inline infix def - [subtrahend](right: subtrahend)
     ( using subtractable: minuend is Subtractable by subtrahend )
@@ -103,3 +113,11 @@ object `/:`:
     entity.decompose(value)
 
 inline def zero[value: Zeroic]: value = value.zero
+
+package arithmeticOptions:
+  // Opt-in: every `Concatenable` value is also `Addable`, so `text + text` and `list + list`
+  // concatenate with `+` as well as `++`. Deliberately not the default: addition collapses
+  // structure and concatenation keeps it, and the operator should say which.
+  given concatenativeAddition: [left, right] => (concatenable: left is Concatenable by right)
+  =>  left is Addable by right to concatenable.Result =
+    (left, right) => concatenable.concat(left, right)

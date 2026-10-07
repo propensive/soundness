@@ -36,10 +36,11 @@ import scala.reflect.ClassTag
 
 import prepositional.*
 
-// The opaque collections concatenate with `+`, through `Addable`'s `concatenable` bridge:
-// these instances are what retire the stdlib spellings (`:::`, `++`). They live here in the
-// typeclass companion because proscenium sits below symbolism, so the collections' own
-// companions cannot host them.
+// The opaque collections concatenate with `++`, through these instances, which are what
+// retire the stdlib spellings (`:::`, the stdlib `++`). They live here in the typeclass
+// companion because proscenium sits below symbolism, so the collections' own companions
+// cannot host them. Concatenation is not addition: a `Concatenable` is only `Addable` under
+// `import arithmeticOptions.concatenativeAddition`.
 object Concatenable:
   // `Self` AND `Operand` are subtype-parametric so branded values (`List[T] & Populated`, from
   // `occupied` or a non-empty literal) match on either side; the declared `Result` is the
@@ -71,7 +72,7 @@ object Concatenable:
 
   given frozenArray: [element: ClassTag]
   =>  (Array[element]^{}) is Concatenable by (Array[element]^{}) to (Array[element]^{}) =
-    (left, right) => Array.frozen(left.readable ++ right.readable)
+    (left, right) => Array.frozen(scala.IArray.concat(left.readable, right.readable))
 
 trait Concatenable extends Typeclass.Pure, Operable, Resultant:
   def concat(left: Self, right: Operand): Result

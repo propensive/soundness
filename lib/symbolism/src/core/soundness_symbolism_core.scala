@@ -34,6 +34,9 @@ package soundness
 
 export
   symbolism
-  . { +, -, /, /:, `*`, `unary_-`, Addable, AddOp, cbrt, Comparable, Concatenable, Divisible,
+  . { +, ++, -, /, /:, `*`, `unary_-`, Addable, AddOp, cbrt, Comparable, Concatenable, Divisible,
       DivOp, Multiplicable, MulOp, Negatable, Quotient, Rootable, sqrt, Subtractable, SubOp,
       Unital, zero, Zeroic }
+
+package arithmeticOptions:
+  export symbolism.arithmeticOptions.concatenativeAddition

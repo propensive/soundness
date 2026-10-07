@@ -62,7 +62,7 @@ case class Chunk(text: Text)
 
 object Chunk:
   given concatenable: Chunk is Concatenable by Chunk to Chunk =
-    (left, right) => Chunk(left.text+right.text)
+    (left, right) => Chunk(left.text ++ right.text)
 
   given zeroic: Chunk is Zeroic:
     def zero: Chunk = Chunk(t"")
@@ -113,7 +113,12 @@ object Tests extends Suite(m"Symbolism Tests"):
         Vector2(1, 2) + Vector2(10, 20)
       . assert(_ == Vector2(11, 22))
 
-      test(m"A Concatenable value is Addable"):
+      test(m"A Concatenable value concatenates with `++`"):
+        Chunk(t"one") ++ Chunk(t"two")
+      . assert(_ == Chunk(t"onetwo"))
+
+      test(m"A Concatenable value is Addable under `concatenativeAddition`"):
+        import arithmeticOptions.concatenativeAddition
         Chunk(t"one") + Chunk(t"two")
       . assert(_ == Chunk(t"onetwo"))
 
