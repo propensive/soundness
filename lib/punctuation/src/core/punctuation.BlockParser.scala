@@ -72,7 +72,7 @@ private[punctuation] final class BlockParser:
     while pos < len do
       val nlPos = s.indexOf('\n', pos)
       val end = if nlPos < 0 then len else nlPos
-      val line = if pos == 0 && end == len then text else Text(s.substring(pos, end).nn)
+      val line = if pos == 0 && end == len then text else s.substring(pos, end).nn.tt
       processLine(line, lineNum.z)
 
       if nlPos < 0 then pos = len
@@ -288,7 +288,7 @@ private[punctuation] final class BlockParser:
       val bq = BlockQuoteBuilder(ln)
       openStack += bq
       val tail = if i >= n then "" else s.substring(i, n).nn
-      val rest = Text(ParserSupport.buildResidual(tail, startCol, leftover))
+      val rest = ParserSupport.buildResidual(tail, startCol, leftover).tt
       return (rest, true)
 
     // Thematic break has higher priority than bullet/ordered list markers

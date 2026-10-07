@@ -1420,7 +1420,7 @@ object Tels extends Tels2:
           case "repeatable"   => repeatable = Polarity.Loose
           case "irrepeatable" => repeatable = Polarity.Tight
           case "key"          => key        = true
-          case text           => if default.absent then default = Text(text)
+          case text           => if default.absent then default = text.tt
 
         j += 1
 
@@ -1669,7 +1669,7 @@ object Tels extends Tels2:
 
       val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       buffer += value(0, "Identifier", schema.name)
-      schema.sigil.let: sigil => buffer += value(1, "Sigil", Text(sigil.toString))
+      schema.sigil.let: sigil => buffer += value(1, "Sigil", sigil.toString.tt)
       schema.records.each: record => buffer += node(2, "Record", recordChildren(context, record))
 
       schema.scalars.each: scalar =>
@@ -1691,14 +1691,14 @@ object Tels extends Tels2:
     // and a scalar for the values.
     private class Context(axiom: Tels):
       def structOf(name: String): Struct =
-        val record = axiom.records.seek(_.name == Text(name)).or:
-          panic(m"the axiom declares no record ${Text(name)}")
+        val record = axiom.records.seek(_.name == name.tt).or:
+          panic(m"the axiom declares no record ${name.tt}")
 
         Struct(record.members, record.validators)
 
       def scalarOf(name: String): Scalar =
-        val definition = axiom.scalars.seek(_.name == Text(name)).or:
-          panic(m"the axiom declares no scalar ${Text(name)}")
+        val definition = axiom.scalars.seek(_.name == name.tt).or:
+          panic(m"the axiom declares no scalar ${name.tt}")
 
         Scalar(definition.validators, definition.encoding, definition.patterns)
 

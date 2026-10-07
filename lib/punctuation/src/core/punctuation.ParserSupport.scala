@@ -138,12 +138,12 @@ private[punctuation] object ParserSupport:
             var k = 0
             while k < leftover do { builder.append(' '); k += 1 }
             builder.append(s.substring(i + 1, len))
-            return Text(builder.toString)
+            return builder.toString.tt
 
         case _ =>
-          return Text(s.substring(i, len).nn)
+          return s.substring(i, len).nn.tt
 
-    if i == 0 then line else if i >= len then t"" else Text(s.substring(i, len).nn)
+    if i == 0 then line else if i >= len then t"" else s.substring(i, len).nn.tt
 
   // After stripping a container's marker and follow-space (which may have
   // partially consumed a tab character), build a self-contained residual:
@@ -181,7 +181,7 @@ private[punctuation] object ParserSupport:
       i = walk(s, i)(isSpaceTab)
       val start = i
       i = walk(s, i): c => !isSpaceTab(c)
-      if i > start then result += Text(s.substring(start, i).nn)
+      if i > start then result += s.substring(start, i).nn.tt
 
     result.to(List)
 
@@ -212,7 +212,7 @@ private[punctuation] object ParserSupport:
       contentEnd = walkBack(s, contentStart, hashesEnd)(isSpaceTab)
 
     val content =
-      if contentEnd > contentStart then Text(s.substring(contentStart, contentEnd).nn) else t""
+      if contentEnd > contentStart then s.substring(contentStart, contentEnd).nn.tt else t""
 
     val level: 1 | 2 | 3 | 4 | 5 | 6 = (hashes: @unchecked) match
       case 1 => 1; case 2 => 2; case 3 => 3; case 4 => 4; case 5 => 5; case 6 => 6
@@ -270,7 +270,7 @@ private[punctuation] object ParserSupport:
     val count = end - indent
     if count < 3 then return Unset
 
-    val info = Text(s.substring(end, n).nn).trim
+    val info = s.substring(end, n).nn.tt.trim
     if ch == '`' && info.s.indexOf('`') >= 0 then return Unset
     (ch, count, indent.z, info)
 
@@ -312,7 +312,7 @@ private[punctuation] object ParserSupport:
       markerColEnd: Int )
   :   (Ordinal, Text) =
 
-    if markerEnd >= n || isBlank(Text(s.substring(markerEnd, n).nn)) then
+    if markerEnd >= n || isBlank(s.substring(markerEnd, n).nn.tt) then
       ((markerColEnd + 1).z, t"")
     else if postCol >= 5 then
       // 5+ rule: consume only the first post-marker char as follow-space;
@@ -321,11 +321,11 @@ private[punctuation] object ParserSupport:
       val firstAdvance = if firstCh == ' ' then 1 else 4 - (markerColEnd & 3)
       val nextCol = markerColEnd + firstAdvance
       val tail = if markerEnd + 1 >= n then "" else s.substring(markerEnd + 1, n).nn
-      ((markerColEnd + 1).z, Text(buildResidual(tail, nextCol, firstAdvance - 1)))
+      ((markerColEnd + 1).z, buildResidual(tail, nextCol, firstAdvance - 1).tt)
     else
       // 1–4 cols of follow consume all post-marker whitespace.
       val tail = if j >= n then "" else s.substring(j, n).nn
-      ((markerColEnd + postCol).z, Text(buildResidual(tail, markerColEnd + postCol, 0)))
+      ((markerColEnd + postCol).z, buildResidual(tail, markerColEnd + postCol, 0).tt)
 
   // Bullet list marker: ^ {0,3}([-*+])( +|\t|$)(.*)$. `contentIndent` is the
   // visual column at which the item's content begins (used by `ListItemBuilder`

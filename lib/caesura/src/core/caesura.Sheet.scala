@@ -243,7 +243,7 @@ object Sheet:
         result
 
     private def closeCell(): Unit =
-      cellsBuf += Text(builder.toString.nn)
+      cellsBuf += builder.toString.nn.tt
       builder.setLength(0)
 
     // The completed row's cells remain in `cellsBuf` (reused across rows):

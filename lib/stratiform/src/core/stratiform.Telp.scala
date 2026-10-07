@@ -120,7 +120,7 @@ object Telp:
           val component = s.substring(start, i).nn
           if component.contains("\n") || component.contains("\r")
           then abort(Telp.Error(Error.Reason.Syntax, components.length))
-          components += Text(component)
+          components += component.tt
           start = i + 1
 
         i += 1
@@ -149,8 +149,8 @@ object Telp:
   given encodable: Telp is Encodable in Text = path =>
     def free(delimiter: Char): Boolean = !path.components.exists(_.s.indexOf(delimiter.toInt) >= 0)
     val candidates = t"/.".s + delimiters.s.filterNot { ch => ch == '/' || ch == '.' }
-    val delimiter = Text(candidates).s.find(free(_)).getOrElse('/')
-    Text(s"$delimiter${path.components.join(Text(delimiter.toString))}")
+    val delimiter = candidates.tt.s.find(free(_)).getOrElse('/')
+    Text(s"$delimiter${path.components.join(delimiter.toString.tt)}")
 
   // A member keyword's slot in the flat keyword order of a Struct: for
   // a Field, the field itself; for a SelectRef, one slot per variant of

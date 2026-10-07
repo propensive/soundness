@@ -668,13 +668,13 @@ object internal:
 
           if found < 0 || found > end then ok = false
           else
-            local += Tel.scalar(Text(s.substring(pos, found).nn))
+            local += Tel.scalar(s.substring(pos, found).nn.tt)
             pos = found + seg.length
             idx += 1
 
         if !ok then false
         else
-          local += Tel.scalar(Text(s.substring(pos, end).nn))
+          local += Tel.scalar(s.substring(pos, end).nn.tt)
           out ++= local
           true
 

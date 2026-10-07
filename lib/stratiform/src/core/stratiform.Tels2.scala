@@ -244,7 +244,7 @@ trait Tels2:
   =>  (marker: value is Tel.Encoded[name])
   =>  (name0: ValueOf[name])
   =>  value is TelSchematic over Tels.Type =
-    () => Tels.Scalar(Array.empty, Text(name0.value))
+    () => Tels.Scalar(Array.empty, name0.value.tt)
 
   given text: Text is TelSchematic over Tels.Type = () => Tels.Scalar(Array.empty)
   given string: String is TelSchematic over Tels.Type = () => Tels.Scalar(Array.empty)

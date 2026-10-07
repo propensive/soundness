@@ -87,5 +87,5 @@ extends caps.ExclusiveCapability, caps.Stateful:
 
   // ── One scalar payload, as text: BinTEL scalars are the TEL atom's
   // UTF-8 bytes, so a leaf's value semantics are the text format's. ──
-  update def scalar(): Text = Text(parser.directScalar()(using tactic))
+  update def scalar(): Text = parser.directScalar()(using tactic).tt
   update def skipScalar(): Unit = parser.directSkipScalar()(using tactic)

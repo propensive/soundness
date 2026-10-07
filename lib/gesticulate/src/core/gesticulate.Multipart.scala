@@ -177,7 +177,7 @@ object Multipart:
 
             params
               ( if next < 0 then -1 else next + 1,
-                (Text(param.substring(0, equals).nn), Text(unquoted)) :: list )
+                (param.substring(0, equals).nn.tt, unquoted.tt) :: list )
 
         val dispositionValue = token match
           case t"inline"     => Multipart.Disposition.Inline

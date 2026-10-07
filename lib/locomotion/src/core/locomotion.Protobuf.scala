@@ -370,7 +370,7 @@ object Protobuf extends Protobuf2:
       else jl.Float.intBitsToFloat(ProtobufParser(protobuf.payload).fixed32())
 
   given textDecodable: Text is Decodable in Protobuf =
-    protobuf => Text(jl.String(Array.unsafeJvm(protobuf.payload), UTF_8).nn)
+    protobuf => jl.String(Array.unsafeJvm(protobuf.payload), UTF_8).nn.tt
 
   given dataDecodable: Data is Decodable in Protobuf = _.payload
 

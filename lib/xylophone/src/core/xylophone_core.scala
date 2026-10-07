@@ -41,6 +41,7 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contextual.*
 import denominative.*
+import gossamer.*
 import panopticon.*
 import prepositional.*
 import rudiments.*
@@ -144,4 +145,4 @@ package formatting:
   given compactXmlFormatting: Xml.Formatting = Xml.Formatting(Unset, trailingNewline = false)
 
   given indentedXmlFormatting: Xml.Formatting =
-    Xml.Formatting(Text("  "), trailingNewline = true)
+    Xml.Formatting(t"  ", trailingNewline = true)

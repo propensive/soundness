@@ -1163,7 +1163,7 @@ object Mutation:
   private def literalDelimiter(value: Text, initial: Text): Text =
     var delimiter = initial.s
     while collidesWithDelimiterLine(value.s, delimiter) do delimiter = delimiter+"-"
-    Text(delimiter)
+    delimiter.tt
 
   // True if `s` contains a line consisting of zero-or-more spaces followed
   // exactly by `delimiter`. A trailing CR is stripped before the comparison

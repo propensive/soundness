@@ -308,7 +308,7 @@ private[punctuation] object EmphasisProcessor:
       case d: DelimData        => appendUnmatchedDelim(d, builder)
 
   private def appendUnmatchedDelim(d: DelimData, builder: mutable.ListBuffer[Prose]): Unit =
-    if d.length > 0 then builder += Prose.Textual(Text(d.char.toString.repeat(d.length).nn))
+    if d.length > 0 then builder += Prose.Textual(d.char.toString.repeat(d.length).nn.tt)
 
   private def childProse(children: List[InlineNode]): List[Prose] =
     val builder = mutable.ListBuffer[Prose]()

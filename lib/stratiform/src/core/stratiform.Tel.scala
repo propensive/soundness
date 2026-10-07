@@ -737,7 +737,7 @@ object Tel extends Tel2:
         // absence reads `false`), so the skip rule may pass over it.
         profiles(index) =
           Positional.Profile
-            ( Text(keys.readUnchecked(index)),
+            ( keys.readUnchecked(index).tt,
               nature,
               repeatable,
               required =
@@ -832,7 +832,7 @@ object Tel extends Tel2:
             val actual = unwrap(parsing)
 
             Positional.Profile
-              ( Text(key),
+              ( key.tt,
                 actual.nature,
                 actual.repeatable,
                 required = actual.nature != Tel.Nature.Flag
@@ -840,7 +840,7 @@ object Tel extends Tel2:
 
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
-            fields.remap { (key, parser, _) => (Text(key), parser.shape()) }.to[List]
+            fields.remap { (key, parser, _) => (key.tt, parser.shape()) }.to[List]
 
           Morphology.Obj
             ( entries, entries.sweep { case (key, shape) if !shape.optional => key } )
@@ -896,7 +896,7 @@ object Tel extends Tel2:
                   val parsing = unwrap(entries.readUnchecked(slot)(1))
 
                   inline def positioned[result](inline block: => result): result =
-                    focusing(foci, reader, Text(keys.readUnchecked(slot)))(block)
+                    focusing(foci, reader, keys.readUnchecked(slot).tt)(block)
 
                   parsing match
                     case gathering: Gathering if parsing.repeatable =>
@@ -951,7 +951,7 @@ object Tel extends Tel2:
 
                     buffer +=
                       ( if focused
-                        then focusing(foci, reader, Text(keys.readUnchecked(found))):
+                        then focusing(foci, reader, keys.readUnchecked(found).tt):
                           gathering.parseElement(reader, indent)
                         else gathering.parseElement(reader, indent) )
 
@@ -967,7 +967,7 @@ object Tel extends Tel2:
                       reader.skipEntry(indent)
                     else values(found) =
                       if focused
-                      then focusing(foci, reader, Text(keys.readUnchecked(found))):
+                      then focusing(foci, reader, keys.readUnchecked(found).tt):
                         entries.readUnchecked(found)(1).parse(reader, indent)
                       else entries.readUnchecked(found)(1).parse(reader, indent)
 
@@ -989,7 +989,7 @@ object Tel extends Tel2:
                   // derivation decodes an empty synthetic document.
                   values(index) =
                     if focused
-                    then focus(descend(prior, Text(keys.readUnchecked(index))))(gathering.gathered(elements))
+                    then focus(descend(prior, keys.readUnchecked(index).tt))(gathering.gathered(elements))
                     else gathering.gathered(elements)
 
                 case _ => ()
@@ -1002,7 +1002,7 @@ object Tel extends Tel2:
                 // consumed, so EVERY missing field can accrue: the venture delimits
                 // `absent()`'s abort (the `Tactic` is a call-time parameter, not
                 // resolution-captured), records it at this field's focus, and continues.
-                focus(descend(prior, Text(keys.readUnchecked(index)))):
+                focus(descend(prior, keys.readUnchecked(index).tt)):
                   val ventured = venture(entries.readUnchecked(index)(1).absent())
                   if ventured.ready then values(index) = ventured.vouch else failedSlots = true
               else values(index) = entries.readUnchecked(index)(1).absent()
@@ -2677,7 +2677,7 @@ object Tel extends Tel2:
                 Unset
           else if selector.charAt(0).isLetter
                   && selector.forall { ch => ch.isLetterOrDigit || ch == '-' || ch == '.' }
-          then Selector.Tag(Text(selector))
+          then Selector.Tag(selector.tt)
           else Unset
 
         val colon = s.indexOf(':')
@@ -2691,9 +2691,9 @@ object Tel extends Tel2:
             val name = base.substring(slash + 1).nn
 
             if !domainValid(domain) || !nameValid(name) then Unset
-            else if colon < 0 then Reference(Text(domain), Text(name), Unset)
+            else if colon < 0 then Reference(domain.tt, name.tt, Unset)
             else selectorOf(s.substring(colon + 1).nn).let: selector =>
-              Reference(Text(domain), Text(name), selector)
+              Reference(domain.tt, name.tt, selector)
 
   // Document-level prologue carried alongside a `Tel` value when it is
   // loaded via `text.load[Tel]`. The `Document[Tel]` pair lets callers
@@ -2793,9 +2793,9 @@ object Tel extends Tel2:
           val b = bytes.nn
           val s = new String(b, byteOff, byteLen, java.nio.charset.StandardCharsets.UTF_8)
           _text = s
-          Text(s)
+          s.tt
         else
-          Text(t)
+          t.tt
 
       // The parser's UTF-8 slice, so a byte-level serializer can copy it without decoding it:
       // the arena (null for an atom built from text), and the slice's offset and length in it.
@@ -3732,7 +3732,7 @@ object Tel extends Tel2:
 
       i += 1
 
-    Text(sb.toString)
+    sb.toString.tt
 
   // Replace the first compound with the given keyword across all
   // blocks; if no compound matches, append the new compound to the
@@ -4915,7 +4915,7 @@ object Tel extends Tel2:
           consumeLineEnding()
           prevLineWasBoundary = true
           hasConsumedNonBlankLine = true
-          Text(payload)
+          payload.tt
 
     // Reads a pragma line ("tel ..." or "tel") if present as the first
     // non-blank line. Marks before consuming any blanks; if the first
@@ -5137,14 +5137,14 @@ object Tel extends Tel2:
               firstLayerColumn = column
               firstLayerLength = s.length
 
-            layerBuffer += Text(s.substring(1).nn)
+            layerBuffer += s.substring(1).nn.tt
             stage = 2
 
         else if s.indexOf('/') >= 0 then
           // Schema reference: any `/`-carrying phrase is of the
           // reference family; one that fails the reference grammar —
           // including the deleted URL form — matches no form (E121).
-          Tel.Pragma.Reference.parse(Text(s)) match
+          Tel.Pragma.Reference.parse(s.tt) match
             case parsed: Tel.Pragma.Reference =>
               if stage >= 1
               then misplaced(column, s.length)
@@ -5163,7 +5163,7 @@ object Tel extends Tel2:
           if stage >= 3
           then misplaced(column, s.length)
           else
-            signatureText = Text(s)
+            signatureText = s.tt
             stage = 3
 
         else if s.length == 1 then
@@ -5874,7 +5874,7 @@ object Tel extends Tel2:
         while more && peek != LF && peek != CR do advance()
         val payload = sliceText(mk)
         consumeLineEnding()
-        Text(payload)
+        payload.tt
       else
         // `#foo` — but we already classified this as a comment, so this
         // shouldn't happen. Treat as bare-content.
@@ -5882,7 +5882,7 @@ object Tel extends Tel2:
         while more && peek != LF && peek != CR do advance()
         val payload = sliceText(mk)
         consumeLineEnding()
-        Text(payload)
+        payload.tt
 
     // ── Tabulation line parsing ──────────────────────────────────────────────
 
@@ -5963,7 +5963,7 @@ object Tel extends Tel2:
               else
                 advance(); lineCol += 1
 
-            headings += Text(sliceText(mk))
+            headings += sliceText(mk).tt
             // Now we're either at LF/CR/EOF or at a hard-space run before a
             // marker.
             if !more || peek == LF || peek == CR then done = true
@@ -6212,7 +6212,7 @@ object Tel extends Tel2:
         else
           done = true
 
-      Tel.Atom.Source(Text(sb.toString))
+      Tel.Atom.Source(sb.toString.tt)
 
     // ── Literal atom ─────────────────────────────────────────────────────────
 
@@ -6309,7 +6309,7 @@ object Tel extends Tel2:
       fillHead()
       // §15: the payload is the verbatim bytes between structural LFs — CR is
       // preserved (only the LF before the closing delimiter is dropped, above).
-      Tel.Atom.Literal(Text(delimiter), Text(sb.toString))
+      Tel.Atom.Literal(delimiter.tt, sb.toString.tt)
 
     // The length, in the UTF-16 units a `Text` counts, of an arena byte range.
     // Every lead byte contributes one unit, except a four-byte sequence, which
@@ -6480,7 +6480,7 @@ object Tel extends Tel2:
               advance()  // space
               val mk = beginMark()
               while more && peek != LF && peek != CR do advance()
-              remark = Text(sliceText(mk))
+              remark = sliceText(mk).tt
             else
               beginInFlightAtom()
               appendToArena(ch)
@@ -6577,7 +6577,7 @@ object Tel extends Tel2:
 
       if len == 0 then t""
       else if len > 8 then
-        Text(sliceText(startMark))
+        sliceText(startMark).tt
       else
         val hash = ((low ^ (low >>> 32)) ^ (high ^ (high >>> 17))).toInt
         var slot = hash & 0x3F
@@ -6599,7 +6599,7 @@ object Tel extends Tel2:
             slot = (slot + 1) & 0x3F
             probes += 1
 
-        if result != null then Text(result) else Text(sliceText(startMark))
+        if result != null then result.tt else sliceText(startMark).tt
 
     // As `readKeyword`, but for the packed-dispatch step: the keyword is
     // *not* interned or sliced when it packs — the fingerprint the scan
@@ -6683,7 +6683,7 @@ object Tel extends Tel2:
       else
         directKeywordPacked = TelReader.KeywordOpaque
         directEntryKeywordLazy = false
-        directEntryKeyword = if len == 0 then t"" else Text(sliceText(startMark))
+        directEntryKeyword = if len == 0 then t"" else sliceText(startMark).tt
 
     // The lazily-materialized text of a fast-stepped keyword: rebuilt from
     // the fingerprint (byte-exact — the packed bytes are printable ASCII)
@@ -6712,7 +6712,7 @@ object Tel extends Tel2:
           probes += 1
 
       if result == null then result = fingerprintString()
-      Text(result)
+      result.tt
 
     private update def fingerprintString(): String =
       val len = directKeywordLen
@@ -7262,7 +7262,7 @@ object Tel extends Tel2:
     private[stratiform] update def directAtomText()(using Tactic[Tel.Error]): Optional[Text] =
       consumeDirectEntry(PrimaryText)
       val captured = directPrimaryText
-      if captured == null then Unset else Optional(Text(captured))
+      if captured == null then Unset else Optional(captured.tt)
 
     // The entry's primary atom parsed straight from its bytes as an integer, or
     // Unset for a missing / non-integer atom — the `Int`/`Long` readers, saving

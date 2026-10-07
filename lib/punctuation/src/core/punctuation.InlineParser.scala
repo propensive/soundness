@@ -95,7 +95,7 @@ private[punctuation] object InlineParser:
 
     def flushPending(): Unit =
       if pending.length > 0 then
-        list.append(TextData(Text(pending.toString)))
+        list.append(TextData(pending.toString.tt))
         pending.setLength(0)
 
     var i = 0
@@ -167,7 +167,7 @@ private[punctuation] object InlineParser:
                     list.append(LinkData(link.destination, link.title, List(child)))
 
                   case _ =>
-                    list.append(TextData(Text(al.link.toString)))
+                    list.append(TextData(al.link.toString.tt))
 
                 i = al.end
 
@@ -322,7 +322,7 @@ private[punctuation] object InlineParser:
         case _                               => ()  // fall through
 
     // 2. Reference forms
-    val bracketContent = Text(s.substring(entry.sourceStart, after - 1).nn)
+    val bracketContent = s.substring(entry.sourceStart, after - 1).nn.tt
 
     if after < end && s.charAt(after) == '[' then
       InlineSupport.parseRefLabel(s, after, end) match

@@ -36,6 +36,7 @@ import anticipation.*
 import contextual.*
 import contingency.*
 import gastronomy.*, providers.soundnessProvider
+import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -225,7 +226,7 @@ extension [value: Tel.Encodable](value: value)
     ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
   :   Data =
 
-    value.encode.bintel(Tels.tels[value](Text("root")))
+    value.encode.bintel(Tels.tels[value](t"root"))
 
 extension [value: Tel.Encodable](value: value)
   // Fulfils an acceptance from this value (§8.4, writer obligations): the value is held under

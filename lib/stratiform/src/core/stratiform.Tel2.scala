@@ -706,19 +706,19 @@ trait Tel2 extends Tel3:
     Tel.Encodable(() => Morphology.Str, Tel.Nature.Scalar): text => Tel.scalar(text)
 
   given stringEncodable: String is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Str, Tel.Nature.Scalar): s => Tel.scalar(Text(s))
+    Tel.Encodable(() => Morphology.Str, Tel.Nature.Scalar): s => Tel.scalar(s.tt)
 
   given intEncodable: Int is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Whole, Tel.Nature.Scalar): i => Tel.scalar(Text(i.toString))
+    Tel.Encodable(() => Morphology.Whole, Tel.Nature.Scalar): i => Tel.scalar(i.toString.tt)
 
   given longEncodable: Long is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Whole, Tel.Nature.Scalar): l => Tel.scalar(Text(l.toString))
+    Tel.Encodable(() => Morphology.Whole, Tel.Nature.Scalar): l => Tel.scalar(l.toString.tt)
 
   given doubleEncodable: Double is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Real, Tel.Nature.Scalar): d => Tel.scalar(Text(d.toString))
+    Tel.Encodable(() => Morphology.Real, Tel.Nature.Scalar): d => Tel.scalar(d.toString.tt)
 
   given booleanEncodable: Boolean is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Bool, Tel.Nature.Scalar): b => Tel.scalar(Text(b.toString))
+    Tel.Encodable(() => Morphology.Bool, Tel.Nature.Scalar): b => Tel.scalar(b.toString.tt)
 
   given telEncodable: Tel is Tel.Encodable = Tel.Encodable(() => Morphology.Any)(identity(_))
 
