@@ -369,24 +369,32 @@ object xekRelease extends Module:
       val path = dir / "xek"
       def sha(f: os.Path) = java.security.MessageDigest.getInstance("SHA-256")
         .digest(os.read.bytes(f)).map("%02x".format(_)).mkString
+      // Several tasks resolve the builder at once — every test module recording it in its
+      // `Workspace` — so on a cold cache several fetch it together. Each downloads to a file of
+      // its own, and the pin and the copy are put in place by atomic moves, so that no task reads
+      // a file another is writing or has just moved away.
       if !(os.exists(pinned) && sha(pinned) == want) then
         os.makeDir.all(dir)
-        val tmp = dir / "xek.part"
-        // Releases from 1.0.0 are tagged with the bare version; those up to 0.10, `xek-<version>`.
-        val base = "https://github.com/propensive/xek/releases/download"
-        val urls = Seq(s"$base/$version/xek", s"$base/xek-$version/xek")
-        val fetched = urls.exists: url =>
+        val tmp = os.temp(dir = dir, prefix = "xek.", suffix = ".part", deleteOnExit = false)
+        // The pin names a release from 1.0.0, tagged with the bare version.
+        val url = s"https://github.com/propensive/xek/releases/download/$version/xek"
+        val fetched =
           os.proc("curl", "-fsSL", "-o", tmp.toString, url).call(check = false, stderr = os.Pipe)
             .exitCode == 0
-        if !fetched then throw new Exception(s"no xek builder published for version $version")
+        if !fetched then
+          os.remove(tmp)
+          throw new Exception(s"no xek builder published for version $version")
         val got = sha(tmp)
         if got != want then
           os.remove(tmp)
           throw new Exception(s"xek SHA-256 mismatch (expected $want, got $got)")
-        os.move.over(tmp, pinned)
+        os.move.over(tmp, pinned, atomicMove = true)
         os.remove(path)
-      if !os.exists(path) then os.copy(pinned, path)
-      os.perms.set(path, "rwxr-xr-x")
+      if !os.exists(path) then
+        val copy = os.temp(dir = dir, prefix = "xek.", suffix = ".copy", deleteOnExit = false)
+        os.copy.over(pinned, copy)
+        os.perms.set(copy, "rwxr-xr-x")
+        os.move.over(copy, path, atomicMove = true)
       path
 
 // The checkout a test module was built from, compiled into it as `<package>.Workspace` for the
