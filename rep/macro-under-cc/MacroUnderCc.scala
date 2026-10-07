@@ -2,8 +2,8 @@ package quantitative
 
 import soundness.*
 
-import language.strictEquality
-import language.experimental.into
+import scala.language.strictEquality
+import scala.language.experimental.into
 
 // ── macro breakage under CC ──────────────────────────────────────────────────────────────────────
 // Enabling CC changes the shape of the operand trees a macro sees. quantitative's `checkable` macro

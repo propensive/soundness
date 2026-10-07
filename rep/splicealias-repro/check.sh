@@ -4,8 +4,9 @@
 #
 #   rep/splicealias-repro/check.sh <scalac-command...>
 #
-# e.g.  rep/splicealias-repro/check.sh /Users/propensive/work/worktrees/scala/soundness-384/release/bin/scalac
-#       rep/splicealias-repro/check.sh stock:3.8.4     (resolve stock scalac via coursier)
+#   rep/splicealias-repro/check.sh                 # the pinned toolchain (rep/toolchain.sh)
+#   rep/splicealias-repro/check.sh <scalac-command...>
+#   rep/splicealias-repro/check.sh stock:3.8.4     # stock scalac via coursier (upstream status)
 #
 # Compiles Macro.scala (no CC), then Use.scala under CC against it. Prints GREEN or RED.
 set -uo pipefail
@@ -14,6 +15,7 @@ cd "$(dirname "$0")"
 out=$(mktemp -d)
 trap 'rm -rf "$out"' EXIT
 
+if [[ $# -eq 0 ]]; then set -- ../toolchain.sh; fi
 if [[ "$1" == stock:* ]]; then
   v="${1#stock:}"
   cp=$(cs fetch --classpath "org.scala-lang:scala3-compiler_3:$v")

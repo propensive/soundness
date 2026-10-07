@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# One-time: capture the CC-enabled compile classpath + scalac options for a module's test target,
-# so the reproduction can then be compiled with `dotc` directly (no Mill). Writes cp.txt / opts.txt
-# into the given rep class directory.
+# One-time: capture the compile classpath + scalac options for a module's test target (every
+# module is capture-checked, so these are the build's own), so the reproduction can then be
+# compiled with `dotc` directly (no Mill). Writes cp.txt / opts.txt into the given rep class
+# directory. The paths are absolute and machine-specific (gitignored); re-run after `mill clean`.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 cls="$1"; mod="$2"
-python3 rep/enable_cc.py "$mod" >/dev/null
-trap 'git checkout build.mill >/dev/null 2>&1 || true' EXIT INT TERM
 ./mill "$mod.test.compileClasspath" >/dev/null 2>&1
 ./mill show "$mod.test.compileClasspath" > "rep/$cls/_cp.json" 2>/dev/null
 ./mill show "$mod.test.scalacOptions"    > "rep/$cls/_opts.json" 2>/dev/null

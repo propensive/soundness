@@ -515,13 +515,18 @@ extension [value](iterable: Iterable[value])
 // named forms in `Array`'s companion, which say what is being asserted and to whom:
 // `freeze` (sound, `consume`-gated), `unsafeFrozen` (this array is fresh and unaliased),
 // `unsafeJvm` (this Java callee reads but cannot say so), and `raw` (exclusive interop).
-// Three call sites remain, each for a reason the named forms cannot express:
+// Forty-odd call sites remain (2026-10-07: eighteen in library code, the rest in tests), of
+// which only a few are for reasons the named forms cannot express:
 //   - `wisteria.SumDerivation` freezes an array a closure filled, so freshness is not evident;
-//   - `enigmatic.PrivateKey` and `SymmetricKey` hand key material to `Cloak.cloak`, which
-//     *zeroes* what it is given -- a write, so `unsafeJvm` would be a false claim. Fixing
-//     those properly means `cloak(consume Array[Byte]^)` and a `Crypto` provider contract
-//     that returns exclusive key material.
-// When those three go, so should these two.
+//   - enigmatic (`PrivateKey`, `SymmetricKey`, `JavaBaseCrypto`, `Asn1`) hands key material to
+//     `Cloak.cloak` and the JDK providers, which *zero* what they are given -- a write, so
+//     `unsafeJvm` would be a false claim. Fixing those properly means
+//     `cloak(consume Array[Byte]^)` and a `Crypto` provider contract that returns exclusive
+//     key material.
+// The tail (probably's `Streamer`, stratiform, metamorphose, coaxial's `Tls`, anthology's OCI
+// writer, and the corpuscular/enigmatic/facsimile/vivisection tests) should migrate to the
+// named forms. The escape census (doc/roadmap/safety.md, `safety-7`) counts every site; when
+// the last goes, so should these two.
 extension [element](value: Array[element]^{})
   inline def unsafeMutable(using erased unsafe: Unsafe): scala.Array[element] =
     value.asInstanceOf[scala.Array[element]]

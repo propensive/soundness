@@ -1,76 +1,76 @@
-# `rep/` — capture-checking (CC) failure reproductions
+# `rep/` — capture-checking reproductions: the compiler-fix queue
 
-Isolated, **verified** reproductions of the distinct capture-checking failure classes found by
-characterising all 50 deferred test suites on `capture-checking-capabilities`. One subdirectory per
-class: a **minimal** source (real Soundness types, in the module's own package) with a header comment
-explaining the pattern and what we want to happen.
+Isolated, **verified** reproductions of each class of capture-checking or separation-checking
+failure that Soundness has hit. Soundness is built with the Proscala fork by design, so a class
+that cannot be fixed at source is fixed in the compiler — and its reproduction here is the
+queue entry, the regression test, and (for the self-contained ones) the upstream report.
+`STATUS.md` is the current state of every case; `DECISIONS.md` is the running log of how each
+was diagnosed and what was decided.
 
-## Two kinds of reproduction
+## The one rule: never trust Mill for capture checking
 
-**Never use Mill to check these.** Mill's incremental compilation manufactures false-greens (it
-under-runs CC's multi-pass capture estimation). A single-shot compile is authoritative.
-
-**① Self-contained (no Soundness at all).** The two case-2 classes — 68% of all the failures — are
-reduced to standalone files with a `//> using` header and *zero* dependencies. Just:
-
-```bash
-scala-cli compile rep/case2-directmint     # or:  rep/compile.sh case2-directmint
-```
-
-Reducing them needed the right ingredients (each verified load-bearing by bisection): a pure OPAQUE
-type over a real type (a plain `class T extends caps.Pure` is not enough), the `is`/`Self` typeclass
-sugar (`-language:experimental.modularity`), an INLINE given, and an INLINE extension that summons it.
-With those, `case2-directmint` is 26 lines and `case2-freshvar` is 22.
-
-**② Soundness-backed (dotc + real classpath).** The other five need machinery that does not reduce to
-synthetic form — I tried and they compile clean without it (the real `Emit`/`Tactic` `raises` encoding,
-Wisteria derivation, the opaque `Money` in `plutocrat.internal` behind a `Currency` typeclass, or a
-macro that actually crashes). For these the minimal source lives in the module's own package with
-`import soundness.*`, and is compiled with `dotc` directly against the module's real classpath:
+Mill's incremental compilation manufactures false greens (and false reds) under capture
+checking: it under-runs the checker's multi-pass capture estimation, so a module that fails a
+clean build can compile incrementally. Every reproduction here is therefore checked with a
+**single-shot** compile of the pinned toolchain:
 
 ```bash
-rep/capture-classpath.sh <class> <module>   # once: Mill builds cores + writes cp.txt/opts.txt
-rep/compile.sh <class>                       # dotc directly — reliable, no Mill false-greens
+rep/toolchain.sh -version                 # the compiler build.mill compiles with
+rep/compile.sh <case>                     # compile one case and show its error
+rep/sepcheck-probes/check.sh              # the probe suite (every .pos green, every .neg red)
 ```
 
-`capture-classpath.sh` is the only Mill step (build cores + read back classpath/options).
-`compile.sh` auto-detects the mode. (`cp.txt`/`opts.txt` hold absolute machine paths and are
-gitignored — regenerate with `capture-classpath.sh`.)
+`rep/toolchain.sh` runs `dotc` from the release `build.mill` pins (`settings.scalaRelease`, cached
+under `~/.cache/soundness/proscala/<tag>/lib` by any build), with the fork's opt-in repairs — the
+`-Z` flags of `settings.scalaOptions`, read from `build.mill` so the two cannot drift. A fix that
+is opt-in shows RED without its flag, so the flags are never left to the caller:
 
-## The classes
+```bash
+REP_STOCK=1 rep/compile.sh <case>                            # the same compiler, no -Z repairs
+SOUNDNESS_SCALA_RELEASE=3.10.1-dev-p17 rep/compile.sh <case> # the other stream
+rep/compile.sh --stock <case>                                # a self-contained case under the
+                                                             # stock compiler its header names
+```
 
-| Class | dir | mode | module | error |
-|---|---|---|---|---|
-| case-2 direct-mint | `case2-directmint/` | **self-contained** | (chiaroscuro) | `Text is a pure type, it makes no sense to add a capture set` |
-| case-2 fresh-var | `case2-freshvar/` | **self-contained** | (abacist) | override `text`: `(Pounds,Stones)^'s1` incompatible |
-| capturing-raises | `capturing-raises/` | soundness-backed | zeppelin | `any` cannot flow into `{any²}` … in type `raises` |
-| capturing-derivation | `capturing-derivation/` | soundness-backed | austronesian | derived `Decodable{… Matchable^'s24}` mismatch |
-| capability-escape | `capability-escape/` | soundness-backed | exegesis | `needs to extend Capability` (`given_Tactic_JsonError`) |
-| path-dependent `Self` | `path-dependent-self/` | soundness-backed | plutocrat | `Money in Eur.Self` vs `internal$_this.Money` |
-| macro breakage under CC | `macro-under-cc/` | soundness-backed | quantitative | `scala.MatchError: None` in `checkable` macro |
+## Three kinds of case
 
-### Distribution across the 50 deferred suites
-- **case-2 (compiler boxes a pure value): 34 (68%)** — 23 fresh-var + 11 direct-mint. Dominant blocker.
-- capturing-raises: 7 · capturing-derivation: 1 · capability-escape: 1 · path-dependent-self: 1 ·
-  macro-under-cc: 2 · compile-clean (attest-unverified): 4 (anticipation, probably; larceny/vacuous
-  fail at runtime).
+**Self-contained** (the source starts with `//> using`): no Soundness dependency; the header's
+`//> using options` line carries the flags. These are the gold standard and the ones to hand
+upstream: `case2-directmint`, `case2-freshvar`, `proxy-tagged`.
 
-## What we want (summary)
+**Calibrated** (the directory has a `check.sh`): several single files compiled in a fixed order
+to model separate compilation or to pair a failing shape with a passing control — `handler-raises`
+(three passes, one of them not capture-checked), `stacked-raises`, `splicealias-repro`,
+`shared-unscoped`. Each prints GREEN/RED per file with the header's expectation.
 
-- **case-2 (68%)**: a pure value (`Text`, a Tuple of pure elements) must not acquire a capture set.
-  Almost certainly a compiler issue in CC's capture estimation — not addressable in Soundness source
-  (see `case2-*/`).
-- **capturing-raises / -derivation / -escape**: the instance *legitimately* captures a `Tactic`; CC
-  must let that flow. capturing-raises is blocked in `contingency`'s `raises = Tactic[error]^ ?=>
-  success` encoding (tested: not fixable at the call site — see `capturing-raises/`). capturing-
-  derivation & -escape have a source fix (self-`provide` the tactic).
-- **path-dependent-self / macro-under-cc**: narrower compiler interactions (opaque-`Self` identity
-  across paths; macro tree-shape assumptions broken by CC nodes).
+**Soundness-backed** (`cp.txt`/`opts.txt` present): the error only arises from the real
+Soundness type graph — the `raises` encoding, Wisteria derivation, an opaque behind a
+typeclass, a macro — so the minimal source lives in the module's own package and is compiled
+with `dotc` directly against the module's captured classpath:
 
-## Verifying a newer compiler
+```bash
+rep/capture-classpath.sh <case> <module>   # once per machine: Mill builds the module's test
+                                           # classpath and writes cp.txt/opts.txt (gitignored)
+rep/compile.sh <case>
+```
 
-Published `3.9.0-RC1` cannot parse Soundness (lacks `subCases`/`multiSpreads`/`relaxedLambdaSyntax`).
-The only newer compiler that can is upstream `scala/scala3` `main` (`~/pub/scala3`). To test whether it
-fixes case-2, build that dotc and point `compile.sh`'s `cs fetch` at the locally-published compiler
-instead of `3.8.4` — the classpath capture and everything else stays the same. This is the natural next
-experiment now that the reproductions compile with `dotc` directly.
+`rep/probe-suite.sh <module>` and `rep/probe-core.sh <module.target>` do the same for a whole
+test suite or component — a single-shot compile of its sources against a freshly-captured
+classpath — which is how a module is judged before `build.mill` flips it.
+
+## The probe suite
+
+`sepcheck-probes/` characterises what the separation checker can and cannot express
+(`Mutable`/`update`, borrows, `consume`, fresh results, untracked fields, pure typeclasses,
+and — P15/P16 — shared versus exclusive tactics and the classifier lattice). Its `README.md`
+records the finding each probe establishes. A `.pos` probe must compile; a `.neg` probe must
+fail with every `//EXPECT:` regex matched.
+
+## Adding a case
+
+One directory per class. The source's header comment says what the pattern is, which error it
+produces, where in Soundness it bites, and **what we want** to happen. Reduce to self-contained
+form if the class survives reduction (bisect the ingredients; the case-2 headers show the
+method); otherwise capture a classpath. Record the outcome in `STATUS.md` and the diagnosis in
+`DECISIONS.md`. A hatch left in `lib/` for this class cites the case by directory name in its
+comment, which is how the escape census groups the residue by blocker.

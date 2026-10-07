@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Probe one non-test target under CC with a single-shot compile of its sources against a
-# freshly-captured CC classpath. Usage: rep/probe-core.sh <module.target> [scalac]
+# Probe one non-test target with a single-shot compile of its sources against a freshly-captured
+# classpath (the only trustworthy compile signal under capture checking — see rep/DECISIONS.md).
+# Usage: rep/probe-core.sh <module.target> [scalac]   (default: rep/toolchain.sh)
 set -uo pipefail
 cd "$(dirname "$0")/.."
 target="$1"
-scalac="${2:-/Users/propensive/work/worktrees/scala/soundness-384/release/bin/scalac}"
+scalac="${2:-rep/toolchain.sh}"
 cls="_probe/${target/./_}"
 dir="rep/$cls"
 mkdir -p "$dir"

@@ -95,7 +95,10 @@ exoskeleton.rig RED (1×E007, Enclave.scala:105), anthology.bundle RED (1×E007,
 No macro-wall or quote-wall shapes at first depth — all seven look like ordinary conversion legs;
 rig and bundle look trivial.
 
-## Toolchain (CURRENT: downloaded from the propensive/proscala releases)
+## Toolchain (2026-07-13: downloaded from the propensive/proscala releases)
+
+(The release named below was current when written; `build.mill`'s `settings.scalaRelease` is
+the authority — `3.9.1-dev-p17` as of 2026-10-07 — and `rep/toolchain.sh` reads it from there.)
 
 Since 2026-07-13 the build downloads the compiler from the `propensive/proscala` GitHub releases
 instead of reading a locally-built `release/` directory — so no local compiler build (or fork
@@ -2398,3 +2401,42 @@ Gates: JVM 10301/10301, JS 8006/8006; suites parasite 148/0, turbulence 73/0, ze
   convention); coaxial's per-connection fire-and-forget `async` calls discard the handle
   explicitly (`()` — a lambda result may not carry a fresh); the turbulence manifold test
   seals its collected handles (the `sequence` shape).
+
+## The queue runs on the pinned toolchain; tactics can be shared (2026-10-07)
+
+The capabilities roadmap (`doc/roadmap/safety.md`, items safety-8 … safety-12) was rewritten
+from a census of the residue — 1485 visible hatches in `lib/` plus the named wrappers, 93 of
+464 modules unchecked — and the blocker queue was brought back into service:
+
+- `rep/toolchain.sh` runs `dotc` from the release `build.mill` pins (cached under
+  `~/.cache/soundness/proscala/<tag>/lib`; the sbt interfaces and ASM resolved with coursier per
+  stream, as `trait Toolchain` does) with the fork's `-Z` repairs read from `build.mill`.
+  `compile.sh`, the probe scripts and every calibrated `check.sh` default to it; `REP_STOCK=1`
+  drops the `-Z` flags, `SOUNDNESS_SCALA_RELEASE` selects the other stream. `enable_cc.py` and
+  its `git checkout build.mill` trap are gone (every module is capture-checked). Verdicts are
+  in `rep/STATUS.md`.
+- Re-run on `3.9.1-dev-p17`: every self-contained and calibrated case GREEN; case-2 and
+  handler-raises are flag-gated (`-Zunboxed-pure-types`, `-Zalias-captures`), the rest are
+  unconditional. Probe suite 33/33.
+- **P15** (`sepcheck-probes`): a `SharedCapability` tactic may be captured by a summoned codec
+  AND passed as a using-argument to one call; the identical program with
+  `ExclusiveCapability` is a separation failure. This is the `Json#as` shape behind every
+  `unsafeAssumeSeparate(json.as[…])` — ~60 sites in main code — and, inside the derivation,
+  the reason the 103 JSON-RPC derivation anchors abandoned the honest form. Jon (2026-10-07):
+  tactics "can be shared"; correctness and honesty first; separation on a tactic's own
+  methods may still be appropriate (a mutating tactic must be internally sequential).
+- **P16**: Shared and Unscoped are unrelated classifiers and the compiler now says so
+  ("inherits two unrelated classifier traits") — the 2026-07-15 lattice note stands, with a
+  diagnostic instead of a silent `Nothing` classifier.
+- **`rep/shared-unscoped`** (three single-file variants): the Shared-only ambient strategy with
+  a polymorphic given and a `raises` result is GREEN on p17 — the level wall that forced
+  `Unscoped` on 2026-07-06 no longer bites the minimal shape (the result-capability rule admits
+  Shared). So safety-8 is first a SOURCE flip: `Emit extends caps.SharedCapability`, the
+  ambient strategies drop `Unscoped`, gated by the Soundness-backed `capturing-raises` case
+  and the contingency/zeppelin/burdock cones. Only if that full shape is red does the fork
+  grow a shared-and-level-exempt classifier (`SharedUnscoped`; `isUnscopedClassifier` in
+  cc/Capability, SepCheck, CheckCaptures) — the case is already calibrated for it.
+- Corrections to the record: the pinned compiler is `3.9.1-dev-p17` (the "Toolchain
+  (CURRENT)" section above says RC1-p1); `rudiments.unsafeMutable`'s "three call sites remain"
+  comment undercounts by an order of magnitude (~40); `build.mill`'s nativelink.suite comment
+  says `settings.cc` where the module uses `sep`.
