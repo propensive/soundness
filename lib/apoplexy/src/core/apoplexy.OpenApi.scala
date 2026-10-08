@@ -48,7 +48,7 @@ import vacuous.*
 import ypsiloid.*
 
 import errorDiagnostics.emptyDiagnostics
-import zephyrine.Parse
+import zephyrine.{Parse, PositionTracking}
 
 object OpenApi:
   case class Info(title: Text, version: Text, description: Optional[Text] = Unset)
@@ -374,7 +374,7 @@ object OpenApi:
 
   // The document's JSON, whether it was written as JSON or YAML: JSON begins with `{`
   private[apoplexy] def sourceJson(text: Text)
-    ( using Tactic[Parse.Error], Tactic[Yaml.Error], Yaml.Tracking )
+    ( using Tactic[Parse.Error], Tactic[Yaml.Error], PositionTracking )
   :   Json =
 
     if text.trim.starts(t"{") then text.as[Json] else text.as[Yaml].in[Json]

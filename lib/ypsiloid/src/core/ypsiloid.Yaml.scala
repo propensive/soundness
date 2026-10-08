@@ -432,19 +432,6 @@ object Yaml extends Yaml2, Dynamic:
     (YamlString | YamlInteger | YamlDecimal | YamlBoolean | YamlNull | YamlSequence | YamlMapping |
       Unset) & caps.Pure
 
-  // Whether `Yaml.Parser` captures line/column/length descriptors
-  // alongside the AST. The default is `Off`, matching the historic
-  // behaviour. Bring `Yaml.Tracking.On` into scope before calling
-  // `.read[Yaml]` / `.load[Yaml]` / `Yaml.parseAll(...)` to get a
-  // `Yaml` with `positionIndex` populated and `locate(pointer)`
-  // returning concrete `Position`s. Mirrors the precedent set by
-  // `jacinta.NumberMode`.
-  object Tracking:
-    given default: Tracking = Off
-
-  enum Tracking:
-    case On, Off
-
   // A flat `Array[Int]^{}` of position descriptors, produced alongside the AST
   // when a `Yaml` is parsed with `Tracking.On`. All internal offsets are
   // stored relative to the start of the containing descriptor, so any slice
@@ -1667,68 +1654,68 @@ object Yaml extends Yaml2, Dynamic:
 
   // ── Parser entry-points ─────────────────────────────────────────────────
 
-  // Whether parsing captures line/column/length descriptors alongside the
-  // AST is controlled by the contextual `Tracking` mode in scope —
-  // mirrors `jacinta.NumberMode`. Default is `Tracking.Off` (no
-  // descriptor capture). Callers wanting position-aware `Yaml.locate`
-  // (and, in subsequent PRs, focus-aware decoding) bring
-  // `Tracking.On` into scope before calling `.read[Yaml]` / `.load[Yaml]`
-  // / `Yaml.parseAll(...)`.
+  // Whether parsing captures line/column/length descriptors alongside the AST is
+  // controlled by the shared `zephyrine.PositionTracking` toggle in scope (default `Off`,
+  // no descriptor capture): `import parsing.trackPositions` before `.read[Yaml]` /
+  // `.load[Yaml]` yields a `Yaml` with `positionIndex` populated, so `locate(path)` returns
+  // concrete `Position`s and decoding is focus-aware.
 
-  given decodable: (tactic: Tactic[Parse.Error], tracking: Yaml.Tracking)
+  given decodable: (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  ((Yaml is Decodable in Text)^{tactic}) =
     text => tracking match
-      case Yaml.Tracking.On =>
+      case PositionTracking.On =>
         val (ast, ints) = Yaml.Parser.parseTracked(text)
         new Yaml(ast, Yaml.PositionIndex(ints))
 
-      case Yaml.Tracking.Off =>
+      case PositionTracking.Off =>
         Yaml(Yaml.Parser.parse(text))
 
-  def parseAll(input: Text)(using Tactic[Parse.Error], Yaml.Tracking): List[Yaml] =
-    summon[Yaml.Tracking] match
-      case Yaml.Tracking.On =>
+  private[ypsiloid] def parseAll(input: Text)(using Tactic[Parse.Error], PositionTracking)
+  :   List[Yaml] =
+
+    summon[PositionTracking] match
+      case PositionTracking.On =>
         Yaml.Parser.parseAllTracked(input).map: (ast, ints) =>
           new Yaml(ast, Yaml.PositionIndex(ints))
 
-      case Yaml.Tracking.Off =>
+      case PositionTracking.Off =>
         Yaml.Parser.parseAll(input).map(Yaml(_))
 
   // Parse a whole in-memory document (the honest one-shot transcode path).
-  private def fromText(text: Text)(using Tactic[Parse.Error], Yaml.Tracking): Yaml =
-    summon[Yaml.Tracking] match
-      case Yaml.Tracking.On =>
+  private def fromText(text: Text)(using Tactic[Parse.Error], PositionTracking): Yaml =
+    summon[PositionTracking] match
+      case PositionTracking.On =>
         val (ast, ints) = Yaml.Parser.parseTracked(text)
         new Yaml(ast, Yaml.PositionIndex(ints))
 
-      case Yaml.Tracking.Off =>
+      case PositionTracking.Off =>
         Yaml(Yaml.Parser.parse(text))
 
   // Parse a byte pull-endpoint under the ambient tracking mode: the parser's
   // cursor refills straight from the stream, so the input is never
   // concatenated or copied through `getBytes`.
   private def fromStream(consume stream: (Stream[Data] over Credit)^)
-    ( using Tactic[Parse.Error], Yaml.Tracking, Buffering )
+    ( using Tactic[Parse.Error], PositionTracking, Buffering )
   :   Yaml =
 
-    summon[Yaml.Tracking] match
-      case Yaml.Tracking.On =>
+    summon[PositionTracking] match
+      case PositionTracking.On =>
         val (ast, ints) = Yaml.Parser.parseTracked(stream)
         new Yaml(ast, Yaml.PositionIndex(ints))
 
-      case Yaml.Tracking.Off =>
+      case PositionTracking.Off =>
         Yaml(Yaml.Parser.parse(stream))
 
   private def fromStreamAll(consume stream: (Stream[Data] over Credit)^)
-    ( using Tactic[Parse.Error], Yaml.Tracking, Buffering )
+    ( using Tactic[Parse.Error], PositionTracking, Buffering )
   :   List[Yaml] =
 
-    summon[Yaml.Tracking] match
-      case Yaml.Tracking.On =>
+    summon[PositionTracking] match
+      case PositionTracking.On =>
         Yaml.Parser.parseAllTracked(stream).map: (ast, ints) =>
           new Yaml(ast, Yaml.PositionIndex(ints))
 
-      case Yaml.Tracking.Off =>
+      case PositionTracking.Off =>
         Yaml.Parser.parseAll(stream).map(Yaml(_))
 
   // The parser is UTF-8-byte-based, so a character stream transcodes through
@@ -1737,7 +1724,7 @@ object Yaml extends Yaml2, Dynamic:
   :   (Stream[Data] over Credit)^ =
     stream.via(hieroglyph.codepages.utf8Codepage).asInstanceOf[(Stream[Data] over Credit)^]
 
-  given aggregable: (tactic: Tactic[Parse.Error], tracking: Yaml.Tracking)
+  given aggregable: (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  ((Yaml is Aggregable by Text)^{tactic}) =
     new Aggregable:
       type Self = Yaml
@@ -1754,7 +1741,7 @@ object Yaml extends Yaml2, Dynamic:
 
   // Byte sources (files, HTTP bodies) skip transcoding entirely: the parser
   // reads the bytes as delivered, and `skipBom()` already absorbs a UTF-8 BOM.
-  given aggregableData: (tactic: Tactic[Parse.Error], tracking: Yaml.Tracking)
+  given aggregableData: (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  ((Yaml is Aggregable by Data)^{tactic}) =
     new Aggregable:
       type Self = Yaml
@@ -1769,7 +1756,7 @@ object Yaml extends Yaml2, Dynamic:
   // Multi-document reads (`---`-separated YAML) through the uniform `.read`
   // API: `text.read[List[Yaml]]` yields one `Yaml` per document. Backed by
   // `parseAll`, this replaces the former bespoke `Text.readAll` extension.
-  given aggregableAll: (tactic: Tactic[Parse.Error], tracking: Yaml.Tracking)
+  given aggregableAll: (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  ((List[Yaml] is Aggregable by Text)^{tactic}) =
     new Aggregable:
       type Self = List[Yaml]
@@ -1800,7 +1787,7 @@ object Yaml extends Yaml2, Dynamic:
         ( t"application/yaml; charset=${encoder.encoding.name}",
           HttpStreams.Body(Yaml.unseal(value).show.in[Data]) )
 
-  given instantiable: (tactic: Tactic[Parse.Error], tracking: Yaml.Tracking)
+  given instantiable: (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  ((Yaml is Instantiable across HttpRequests from Text)^{tactic}) =
 
     text => Chain(text).read[Yaml]
@@ -1811,7 +1798,7 @@ object Yaml extends Yaml2, Dynamic:
   // `asInstanceOf` cast — `value in Yaml` is just `value { type
   // Form = Yaml }` so the cast is a no-op at runtime.
   given aggregableIn: [value: Decodable in Yaml]
-  =>  ( tactic: Tactic[Parse.Error], yamlTactic: Tactic[Yaml.Error], tracking: Yaml.Tracking )
+  =>  ( tactic: Tactic[Parse.Error], yamlTactic: Tactic[Yaml.Error], tracking: PositionTracking )
   =>  (((value in Yaml) is Aggregable by Text)^{tactic, yamlTactic}) =
 
     new Aggregable:
@@ -1928,7 +1915,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Tracked entry points — produce the AST plus a flat `Array[Int]^{}`
     // descriptor index. Used by the tracking-aware `Decodable`/`Aggregable`
-    // givens in `object Yaml` when `Yaml.Tracking.On` is in scope.
+    // givens in `object Yaml` when `PositionTracking.On` is in scope.
     def parseTracked(input: Text)(using Tactic[Parse.Error]): (Yaml.Ast, Array[Int]^{}) =
       val parser = borrow()
       parser.tracking = true
@@ -6052,7 +6039,7 @@ extends Dynamic derives CanEqual:
   def root: Yaml.Ast = rootValue
 
   // The flat position-descriptor index produced alongside the AST when this
-  // `Yaml` was parsed under `Tracking.On`. `Unset` for non-tracking parses
+  // `Yaml` was parsed under `PositionTracking.On`. `Unset` for non-tracking parses
   // and for any `Yaml` built from a decoded/computed value.
   def positionIndex: Optional[Yaml.PositionIndex] = positions
 
