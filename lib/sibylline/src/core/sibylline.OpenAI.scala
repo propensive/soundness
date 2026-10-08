@@ -276,7 +276,7 @@ object OpenAI:
   // One Chat streaming chunk as neutral events. Text deltas live at index 0; each tool call
   // occupies `1 + `its wire index. The terminal `[DONE]` frame yields nothing here — the
   // stream's `Progress` closes out the message when the frames end.
-  private[sibylline] def events(progress: Llm.Progress, sse: Sse)
+  private[sibylline] def events(progress: Llm.Progress^, sse: Sse)
     ( using Tactic[Llm.Error], Diagnostics )
   :   List[Llm.Event] =
 
@@ -462,12 +462,12 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
     OpenAI.reply(Llm.receive(response))
 
-  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
+  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this, caps.any} =
     val response =
       Llm.fetch(OpenAI.failure(_, _)):
         target.submit(endpoint, target.payload(turn, streaming = true))
 
-    val progress = Llm.Progress()
+    val progress: Llm.Progress^ = Llm.Progress()
 
     // The frames are followed by one sentinel, on whose arrival the translation closes out
     // the message — chunk streams end at `[DONE]` with no closing events of their own.
@@ -645,7 +645,7 @@ private[sibylline] object ResponsesDialect:
         safely(text(json.id)).let(Llm.Id(_)) )
 
   // One semantic streaming event as neutral events, dispatched on the SSE `event:` field.
-  private[sibylline] def events(progress: Llm.Progress, sse: Sse)
+  private[sibylline] def events(progress: Llm.Progress^, sse: Sse)
     ( using Tactic[Llm.Error], Diagnostics )
   :   List[Llm.Event] =
 
@@ -745,12 +745,12 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
     ResponsesDialect.reply(Llm.receive(response))
 
-  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
+  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this, caps.any} =
     val response =
       Llm.fetch(OpenAI.failure(_, _)):
         target.submit(endpoint, ResponsesDialect.payload(target, turn, streaming = true))
 
-    val progress = Llm.Progress()
+    val progress: Llm.Progress^ = Llm.Progress()
 
     // As in `ChatDialect.stream`: a sentinel closes out the message after the last frame, and
     // the stdlib bridge yields the stdlib `Iterator` this method's contract returns.

@@ -2625,3 +2625,30 @@ Three traps, all new:
 
 Verified: clean rebuild, 566/566 tests, bench compiles. `untrackedCaptures` in
 `xylophone.Xml.scala` 25 → 1; `unsafeAssumePure` 16 (derivation anchors, untouched).
+
+## sibylline `Llm`: the helper classes become `Stateful` (2026-10-08)
+
+`untrackedCaptures` 14 → 1 in `sibylline.Llm.scala`. `Session` was already `Stateful` and its
+two annotations simply dropped (the sweep's "already Stateful" case). `Accumulator` and
+`Progress` become `caps.Stateful` with `update def absorb`/`next`; `Accumulator.Block` loses
+its `var`s instead (its `content` was never reassigned, and "open" is now a `closed` index set
+on the accumulator). Holders are declared exclusive (`val progress: Llm.Progress^`, parameters
+`Llm.Progress^`), which the streaming `flatMap` closures capture, so `Dialect.stream`'s result
+widens from `Iterator[Event]^{this}` to `^{this, caps.any}` in the trait and every dialect.
+
+Two things did not go:
+
+- **`Response` stays a plain `ExclusiveCapability`** (one annotation, `reply0`). As a `Stateful`,
+  `new Response(session, …)` inside `Session.stream` is typed by its arguments' *read-only*
+  captures, `{any.rd, Session.this.rd, any.rd}`, and the declared `Response^{this, caps.any}`
+  — the type the confinement tests rely on to forbid a new turn while a stream is undrained —
+  "cannot subsume a read-only capture set of a stateful type". Binding it first
+  (`val response: Response^ = new …; response`) reads back as `{any.rd}` (a `val` alias is
+  read-only), and a bare `Response^` compiles but LOSES the guarantee: the test "a streamed
+  response cannot be stashed" went red. So: a stateful instance that must be typed as
+  borrowing an enclosing `this` cannot be minted from `new` in the current checker. Probe
+  worth writing (`p19`); until then this is the `[borrowing-stateful]` tag.
+- **`Accumulator.reply`'s `raises Error`** became `(using Diagnostics, Tactic[Error])`: a
+  context-function result "hides non-local this of class Accumulator", which only a `consume`
+  method may do. Same lesson as `reference_contextual_default_summon_site`: on a stateful
+  class, take the tactic as a parameter.

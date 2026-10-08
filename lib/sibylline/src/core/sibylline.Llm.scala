@@ -237,7 +237,7 @@ object Llm:
   trait Dialect:
     def name: Text
     def exchange(turn: Exchange): Reply
-    def stream(turn: Exchange): Iterator[Event]^{this}
+    def stream(turn: Exchange): Iterator[Event]^{this, caps.any}
 
     // Whether the wire can constrain a reply to a JSON schema natively. When it cannot, a
     // structured answer is obtained through a forced tool call instead; the caller sees no
@@ -361,24 +361,17 @@ object Llm:
   // The streaming translation's working state: which block indexes are open, and whether the
   // message-level `Started` event has been emitted. Plain and single-owner, confined to one
   // stream's iterator.
-  private[sibylline] class Progress():
+  private[sibylline] class Progress() extends caps.Stateful:
     val opened: scm.TreeSet[Int] = scm.TreeSet()
-
-    @scala.caps.unsafe.untrackedCaptures
     var begun: Boolean = false
-
-    @scala.caps.unsafe.untrackedCaptures
     var usage: Optional[Usage] = Unset
-
-    @scala.caps.unsafe.untrackedCaptures
     var stop: Optional[Stop] = Unset
 
     // Complete blocks (a whole function call in one frame) take the next free index above
     // the text block at zero.
-    @scala.caps.unsafe.untrackedCaptures
     var count: Int = 0
 
-    def next(): Int =
+    update def next(): Int =
       count += 1
       count
 
@@ -393,38 +386,23 @@ object Llm:
   private[sibylline] object Accumulator:
     // The in-progress form of one content block: the block as it was opened, the text it has
     // accumulated, and any auxiliary text (a thinking signature, or partial JSON arguments).
-    private[sibylline] class Block(content0: Content):
-      @scala.caps.unsafe.untrackedCaptures
-      var content: Content = content0
-
+    private[sibylline] class Block(val content: Content):
       val text: StringBuilder = StringBuilder()
       val extra: StringBuilder = StringBuilder()
-
-      @scala.caps.unsafe.untrackedCaptures
-      var open: Boolean = true
 
   // The fold from a stream of events to a completed `Reply`. Every event the `Response` yields
   // passes through `absorb` exactly once, so partial consumption never loses the final message.
   // Mutable and single-owner: confined to its `Response`.
-  private[sibylline] class Accumulator():
+  private[sibylline] class Accumulator() extends caps.Stateful:
     private val blocks: scm.TreeMap[Int, Accumulator.Block] = scm.TreeMap()
-
-    @scala.caps.unsafe.untrackedCaptures
+    private val closed: scm.TreeSet[Int] = scm.TreeSet()
     private var stop0: Optional[Stop] = Unset
-
-    @scala.caps.unsafe.untrackedCaptures
     private var usage0: Optional[Usage] = Unset
-
-    @scala.caps.unsafe.untrackedCaptures
     private var model0: Optional[Text] = Unset
-
-    @scala.caps.unsafe.untrackedCaptures
     private var id0: Optional[Id[Reply]] = Unset
-
-    @scala.caps.unsafe.untrackedCaptures
     private var finished0: Boolean = false
 
-    def absorb(event: Event): Unit = event match
+    update def absorb(event: Event): Unit = event match
       case Event.Started(id, model) =>
         id0 = id
         model0 = model
@@ -442,7 +420,7 @@ object Llm:
           case Event.Increment.Arguments(json) => block.extra.append(json.s)
 
       case Event.Closed(index) =>
-        blocks.get(index).foreach(_.open = false)
+        closed += index
 
       case Event.Update(stop, usage) =>
         stop.let(stop0 = _)
@@ -453,12 +431,14 @@ object Llm:
 
     // Folds the accumulated blocks into the completed assistant message. An unclosed block or a
     // stream that ended without finishing raises `Interrupted`: the message would be a lie.
-    def reply()(using Diagnostics): Reply raises Error =
+    // The tactic is a parameter, not `raises`: a context-function result would capture this
+    // accumulator, which a read-only method may not let escape.
+    def reply()(using Diagnostics, Tactic[Error]): Reply =
       if !finished0 then abort(Error(Error.Reason.Interrupted, t"the stream ended early"))
 
       val content: List[Content] =
-        blocks.values.toList.map: block =>
-          if block.open
+        blocks.toList.map: (index, block) =>
+          if !closed.contains(index)
           then abort(Error(Error.Reason.Interrupted, t"a content block was never closed"))
 
           val accumulated: Text = block.text.toString.tt
@@ -494,12 +474,14 @@ object Llm:
     ( using tactic: Tactic[Error], diagnostics: Diagnostics )
   extends caps.ExclusiveCapability:
 
-    private val accumulator: Accumulator = Accumulator()
+    private val accumulator: Accumulator^ = Accumulator()
 
+    // Not `Stateful`: a stateful `Response` minted by `new` is typed by its arguments' read-only
+    // captures, which the `^{this, caps.any}` result of `Session.stream` cannot subsume.
     @scala.caps.unsafe.untrackedCaptures
     private var reply0: Optional[Reply] = Unset
 
-    private val tracked: Iterator[Event]^{source} =
+    private val tracked: Iterator[Event]^{source, accumulator} =
       source.map: event =>
         accumulator.absorb(event)
         event
@@ -534,11 +516,7 @@ object Llm:
       priming:  List[Message] )
     ( using tactic: Tactic[Error], diagnostics: Diagnostics )
   extends caps.ExclusiveCapability, caps.Stateful:
-
-    @scala.caps.unsafe.untrackedCaptures
     private var history0: List[Message] = priming
-
-    @scala.caps.unsafe.untrackedCaptures
     private var usage0: Usage = Usage(0, 0)
 
     // Pure reads: their results may leave the session block.

@@ -252,7 +252,7 @@ object Gemini:
   // Text fragments grow block zero; a function call arrives whole, as its own block, opened
   // and closed in one frame. Usage is cumulative on this wire, so the running total *replaces*
   // the progress state and lands once, when the frames end: there is no terminal sentinel.
-  private[sibylline] def events(progress: Llm.Progress, sse: Sse)
+  private[sibylline] def events(progress: Llm.Progress^, sse: Sse)
     ( using Tactic[Llm.Error], Diagnostics )
   :   List[Llm.Event] =
 
@@ -390,12 +390,12 @@ extends Llm.Dialect, caps.ExclusiveCapability:
 
     Gemini.reply(Llm.receive(response))
 
-  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
+  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this, caps.any} =
     val response =
       Llm.fetch(Gemini.failure(_, _)):
         target.submit(target.address(streaming = true), Gemini.payload(turn))
 
-    val progress = Llm.Progress()
+    val progress: Llm.Progress^ = Llm.Progress()
 
     // A sentinel closes out the message after the last frame: this wire has no terminal event.
     // stdlib bridge: this method's contract is a stdlib `Iterator`, which the native `List`

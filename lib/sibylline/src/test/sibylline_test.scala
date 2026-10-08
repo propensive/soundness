@@ -59,7 +59,7 @@ extends Llm.Dialect:
     calls.append(turn)
     replies.dequeue()
 
-  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this} =
+  def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this, scala.caps.any} =
     calls.append(turn)
     streams.dequeue().stdlib.iterator
 
