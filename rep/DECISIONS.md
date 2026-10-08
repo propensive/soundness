@@ -2847,7 +2847,6 @@ coaxial 2). The decision is Jon's, as `Emit`'s was: a `Monitor` is used from man
 once by design and is internally synchronised; sharing it removes only the overlap check
 between two aliases, not its tracking.
 
-
 ## The parasite task model under a shared `Monitor` (2026-10-08, Jon's go-ahead)
 
 Flipping `Monitor` to `SharedCapability` is not a one-line change, because a `Worker` (every
@@ -3011,3 +3010,4 @@ their task bodies, and the rule drew the same lines there:
   behind the Monitor one: `Enclave.Tool` (the built tool's path and pid, driven by every tmux
   session of a suite) was `ExclusiveCapability`, captured by each `completions` action AND
   passed to the `tmux` loan as a using-argument. It is `SharedCapability` now.
+
