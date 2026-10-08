@@ -63,8 +63,8 @@ import pneumatic.*
 // Comparative streaming benchmarks: Soundness's pull `Stream` kernel against the
 // effect-based streaming libraries ZIO-Streams, FS2 and Kyo. Each benchmark's
 // implementation is written inline in its `bench` block; the shared data corpora
-// and the `runZio` / `buffering` run helpers below are the only members the
-// staged bodies reference (by fully-qualified name).
+// and the instruments below (`runZio`, `buffering`, `burn`, `freshChunk`) are the
+// only members the staged bodies reference (by fully-qualified name).
 //
 // The comparison is informative but NOT algorithm-symmetric — read it with these
 // architectural differences in mind:
@@ -179,83 +179,17 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   lazy val jdkKeyBytes: scala.Array[Byte] = scala.Array.tabulate(32)(i => (i*7 + 1).toByte)
   lazy val jdkIvBytes:  scala.Array[Byte] = scala.Array.tabulate(16)(i => (i*13 + 3).toByte)
 
-  // ── Separator-scan variants (see the "Separator scan" suite) ───────────────
+  // ── Shared instruments (referenced from the staged bodies) ──────────────────
   //
-  // Each mimics the byte duct's real call pattern — scan to the next separator,
-  // step over it, resume — rather than one pass over the corpus, since entering
-  // and leaving the loop once per line is part of what is being measured. All
-  // three return the line count, so a variant that mis-detects shows up as a
-  // different result.
-
-  // What the duct does today: two comparisons and, because `&&` short-circuits,
-  // two branches per byte.
-  def scanPairwise(bytes: scala.Array[Byte]): Int =
-    var position = 0
-    var lines = 0
-
-    while position < bytes.length do
-      var index = position
-
-      while index < bytes.length && { val byte = bytes(index); byte != 10 && byte != 13 }
-      do index += 1
-
-      lines += 1
-      position = index + 1
-
-    lines
-
-  // 10 and 13 share their top five bits, so one mask-and-compare rejects every
-  // byte outside 8-15 with a single branch; only that range takes the exact
-  // test. Sign extension needs no masking away — the mask clears those bits.
-  // Admits tab (9) as a false positive, which is common in real text.
-  def scanMasked(bytes: scala.Array[Byte]): Int =
-    var position = 0
-    var lines = 0
-
-    while position < bytes.length do
-      var index = position
-
-      while index < bytes.length
-          && { val byte = bytes(index)
-               (byte & 0xf8) != 0x08 || (byte != 10 && byte != 13) }
-      do index += 1
-
-      lines += 1
-      position = index + 1
-
-    lines
-
-  // Adding two maps 10 and 13 onto 12 and 15, which share six bits, so the mask
-  // admits only 10-13: one more operation per byte, but no false positive on
-  // tab — only on VT and FF, which are vanishingly rare.
-  def scanBiased(bytes: scala.Array[Byte]): Int =
-    var position = 0
-    var lines = 0
-
-    while position < bytes.length do
-      var index = position
-
-      while index < bytes.length
-          && { val byte = bytes(index) + 2
-               (byte & 0xfc) != 0x0c || (byte != 12 && byte != 15) }
-      do index += 1
-
-      lines += 1
-      position = index + 1
-
-    lines
-
-  // ── Shared run helpers (referenced from the staged bodies) ──────────────────
+  // Every Soundness row that drains a stream ends in the same counting terminal, written out in
+  // its body: the stream is pulled to its end and its length summed, never materialised, as the
+  // rival rows' `compile.count`, `runCount` and read loops are. `memoize` would concatenate the
+  // whole output — about three times its size in allocation for a 4 MB result, through a doubling
+  // builder and a final copy — which no rival row does. The helpers below are the instruments the
+  // rows share rather than the work they measure: running a ZIO effect, a fixed `Buffering`, and
+  // the slow-consumer rows' CPU drag and fresh producer data.
 
   // ZIO's unsafe-run entry point, wrapping each ZIO benchmark's effect.
-  // The counting terminal the rival rows end in (`compile.count`, `runCount`, a read loop): the
-  // stream is pulled to its end and its length summed, never materialised. `memoize` would
-  // concatenate the whole output — about three times its size in allocation for a 4 MB result,
-  // through a doubling builder and a final copy — which no rival row does, so a row that ended
-  // in `memoize.length` was charged for a materialisation its rivals were not asked for.
-  def count[medium](stream: Stream[medium] over Credit)(using Buffering): Long =
-    stream.gather(0L)(_ => (total, range) => total + (range: Interval).size)
-
   def runZio[A](effect: zio.ZIO[Any, Throwable, A]): A =
     zio.Unsafe.unsafe: (unsafe: zio.Unsafe) ?=>
       zio.Runtime.default.unsafe.run(effect).getOrThrow()
@@ -314,7 +248,10 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     suite(m"Gzip compression (4 MB)"):
       bench(m"Soundness  Stream.compress[Gzip]")
         ( target = 1*Second, operationSize = size ):
-        '{ turbulence.Benchmarks.count(turbulence.Benchmarks.input.stream.compress[Gzip]) }
+        '{
+            turbulence.Benchmarks.input.stream.compress[Gzip]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"FS2  Compression[IO].gzip")(target = 1*Second, operationSize = size):
         '{
@@ -339,7 +276,10 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     suite(m"Gzip decompression (4 MB)"):
       bench(m"Soundness  Stream.decompress[Gzip]")
         ( target = 1*Second, operationSize = size ):
-        '{ turbulence.Benchmarks.count(turbulence.Benchmarks.gzippedInput.stream.decompress[Gzip]) }
+        '{
+            turbulence.Benchmarks.gzippedInput.stream.decompress[Gzip]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"FS2  Compression[IO].gunzip")(target = 1*Second, operationSize = size):
         '{
@@ -381,10 +321,16 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     suite(m"Brotli compression (4 MB)"):
       bench(m"Soundness  Stream.compress[Brotli]")
         ( target = 1*Second, operationSize = size ):
-        '{ turbulence.Benchmarks.count(turbulence.Benchmarks.input.stream.compress[Brotli]) }
+        '{
+            turbulence.Benchmarks.input.stream.compress[Brotli]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"Soundness  Stream.compress[Gzip]")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.count(turbulence.Benchmarks.input.stream.compress[Gzip]) }
+        '{
+            turbulence.Benchmarks.input.stream.compress[Gzip]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
     // Example 1d: Brotli decompression alone, on the pre-Brotli'd corpus. The reference pure-Java
     // decoder `org.brotli.dec.BrotliInputStream` is the "competitive-with-Java" baseline — our port
@@ -392,7 +338,10 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     suite(m"Brotli decompression (4 MB)"):
       bench(m"Soundness  Stream.decompress[Brotli]")
         ( target = 1*Second, operationSize = size ):
-        '{ turbulence.Benchmarks.count(turbulence.Benchmarks.brotliInput.stream.decompress[Brotli]) }
+        '{
+            turbulence.Benchmarks.brotliInput.stream.decompress[Brotli]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"Java  org.brotli.dec.BrotliInputStream")(target = 1*Second, operationSize = size):
         '{
@@ -510,7 +459,10 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     suite(m"Chained: gzip -> gunzip roundtrip (4 MB)"):
       bench(m"Soundness  compress[Gzip].decompress[Gzip]")
         ( target = 1*Second, operationSize = size ):
-        '{ turbulence.Benchmarks.count(turbulence.Benchmarks.input.stream.compress[Gzip].decompress[Gzip]) }
+        '{
+            turbulence.Benchmarks.input.stream.compress[Gzip].decompress[Gzip]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"FS2  gzip.gunzip")(target = 1*Second, operationSize = size):
         '{
@@ -534,9 +486,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Soundness  via(dec).via(enc)")
         ( target = 1*Second, operationSize = textSize ):
         '{
-            turbulence.Benchmarks.count:
-              turbulence.Benchmarks.textData.stream
-              . via(summon[Charset]).via(summon[Codepage])
+            turbulence.Benchmarks.textData.stream
+            . via(summon[Charset]).via(summon[Codepage])
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
         }
 
       bench(m"FS2  utf8.decode.encode")(target = 1*Second, operationSize = textSize):
@@ -560,9 +512,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Soundness  decompress.via(summon[Charset])")
         ( target = 1*Second, operationSize = textSize ):
         '{
-            turbulence.Benchmarks.count:
-              turbulence.Benchmarks.gzippedText.stream.decompress[Gzip]
-              . via(summon[Charset])
+            turbulence.Benchmarks.gzippedText.stream.decompress[Gzip]
+            . via(summon[Charset])
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
         }
 
       bench(m"FS2  gunzip.utf8.decode")(target = 1*Second, operationSize = textSize):
@@ -590,11 +542,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Soundness  compress.b64.b64.decompress")
         ( target = 1*Second, operationSize = size ):
         '{
-            turbulence.Benchmarks.count:
-              turbulence.Benchmarks.input.stream.compress[Gzip]
-              . serialize[Base64]
-              . deserialize[Base64]
-              . decompress[Gzip]
+            turbulence.Benchmarks.input.stream.compress[Gzip]
+            . serialize[Base64]
+            . deserialize[Base64]
+            . decompress[Gzip]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
         }
 
       bench(m"FS2  gzip.base64.base64.gunzip")(target = 1*Second, operationSize = size):
@@ -650,7 +602,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
                 . memoize
 
               val decrypted: Data = recovered.decrypt[Data, Aes[256] over Cbc against Pkcs7]
-              turbulence.Benchmarks.count(decrypted.stream.decompress[Gzip])
+              decrypted.stream.decompress[Gzip]
+              . gather(0L)(_ => (total, range) => total + (range: Interval).size)
         }
 
       bench(m"JDK  GZIP/Cipher/Base64 composition")(target = 1*Second, operationSize = size):
@@ -698,11 +651,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Soundness  dec.enc.dec.enc.dec")
         ( target = 1*Second, operationSize = textSize ):
         '{
-            turbulence.Benchmarks.count:
-              turbulence.Benchmarks.textData.stream
-              . via(summon[Charset]).via(summon[Codepage])
-              . via(summon[Charset]).via(summon[Codepage])
-              . via(summon[Charset])
+            turbulence.Benchmarks.textData.stream
+            . via(summon[Charset]).via(summon[Codepage])
+            . via(summon[Charset]).via(summon[Codepage])
+            . via(summon[Charset])
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
         }
 
       bench(m"FS2  utf8 decode/encode x2.5")(target = 1*Second, operationSize = textSize):
@@ -732,11 +685,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Soundness  dec.enc.b64.b64.dec")
         ( target = 1*Second, operationSize = textSize ):
         '{
-            turbulence.Benchmarks.count:
-              turbulence.Benchmarks.textData.stream
-              . via(summon[Charset]).via(summon[Codepage])
-              . serialize[Base64].deserialize[Base64]
-              . via(summon[Charset])
+            turbulence.Benchmarks.textData.stream
+            . via(summon[Charset]).via(summon[Codepage])
+            . serialize[Base64].deserialize[Base64]
+            . via(summon[Charset])
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
         }
 
       bench(m"FS2  utf8/base64 chain")(target = 1*Second, operationSize = textSize):
@@ -807,9 +760,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Soundness  serialize.deserialize")
         ( target = 1*Second, operationSize = size ):
         '{
-            turbulence.Benchmarks.count:
-              turbulence.Benchmarks.input.stream
-              . serialize[Base64].deserialize[Base64]
+            turbulence.Benchmarks.input.stream
+            . serialize[Base64].deserialize[Base64]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
         }
 
       bench(m"FS2  base64.encode.decode")(target = 1*Second, operationSize = size):
@@ -2349,16 +2302,78 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             Abort.run(KyoApp.Unsafe.runAndBlock(Duration.Infinity)(program)).eval.getOrThrow
         }
 
+    // Each variant mimics the byte duct's real call pattern — scan to the next separator, step
+    // over it, resume — rather than one pass over the corpus, since entering and leaving the loop
+    // once per line is part of what is being measured. All three return the line count, so a
+    // variant that mis-detects shows up as a different result.
     suite(m"Separator scan variants (4 MB)"):
       bench(m"Two comparisons per byte")(target = 1*Second, operationSize = textSize):
-        '{ turbulence.Benchmarks.scanPairwise(turbulence.Benchmarks.textArray) }
+        // What the duct does today: two comparisons and, because `&&` short-circuits, two
+        // branches per byte.
+        '{
+            val bytes = turbulence.Benchmarks.textArray
+            var position = 0
+            var lines = 0
+
+            while position < bytes.length do
+              var index = position
+
+              while index < bytes.length && { val byte = bytes(index); byte != 10 && byte != 13 }
+              do index += 1
+
+              lines += 1
+              position = index + 1
+
+            lines
+        }
 
       bench(m"Mask and compare (admits 8-15)")(target = 1*Second, operationSize = textSize):
-        '{ turbulence.Benchmarks.scanMasked(turbulence.Benchmarks.textArray) }
+        // 10 and 13 share their top five bits, so one mask-and-compare rejects every byte outside
+        // 8-15 with a single branch; only that range takes the exact test. Sign extension needs no
+        // masking away — the mask clears those bits. Admits tab (9) as a false positive, which is
+        // common in real text.
+        '{
+            val bytes = turbulence.Benchmarks.textArray
+            var position = 0
+            var lines = 0
+
+            while position < bytes.length do
+              var index = position
+
+              while index < bytes.length
+                  && { val byte = bytes(index)
+                       (byte & 0xf8) != 0x08 || (byte != 10 && byte != 13) }
+              do index += 1
+
+              lines += 1
+              position = index + 1
+
+            lines
+        }
 
       bench(m"Bias by two, mask and compare (admits 10-13)")
         ( target = 1*Second, operationSize = textSize ):
-        '{ turbulence.Benchmarks.scanBiased(turbulence.Benchmarks.textArray) }
+        // Adding two maps 10 and 13 onto 12 and 15, which share six bits, so the mask admits only
+        // 10-13: one more operation per byte, but no false positive on tab — only on VT and FF,
+        // which are vanishingly rare.
+        '{
+            val bytes = turbulence.Benchmarks.textArray
+            var position = 0
+            var lines = 0
+
+            while position < bytes.length do
+              var index = position
+
+              while index < bytes.length
+                  && { val byte = bytes(index) + 2
+                       (byte & 0xfc) != 0x0c || (byte != 12 && byte != 15) }
+              do index += 1
+
+              lines += 1
+              position = index + 1
+
+            lines
+        }
 
     // Example T: profiles — where the time actually goes in the pipelines the
     // stress suites measure. Each renders as a histogram of the hottest methods
