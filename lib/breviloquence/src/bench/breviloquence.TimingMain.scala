@@ -72,24 +72,27 @@ object TimingMain:
       f"${"Corpus 1: small object (3 fields)"}%-40s   payload=${Benchmarks.cborBytes1.length} bytes"
     time("  Breviloquence", Benchmarks.cborBytes1, iterations)(Cbor.Ast.parse)
     time("  Jackson", Benchmarks.cborBytes1, iterations): bytes =>
-      Benchmarks.parseWithJackson(bytes.asInstanceOf[scala.Array[Byte]])
+      Benchmarks.jacksonMapper.readTree(bytes.asInstanceOf[scala.Array[Byte]]).nn
     time("  borer", Benchmarks.cborBytes1, iterations): bytes =>
-      Benchmarks.parseWithBorer(bytes.asInstanceOf[scala.Array[Byte]])
+      val raw = bytes.asInstanceOf[scala.Array[Byte]]
+      io.bullet.borer.Cbor.decode(raw).to[io.bullet.borer.Dom.Element].value
     println()
 
     println(f"${"Corpus 2: 100 user records"}%-40s   payload=${Benchmarks.cborBytes2.length} bytes")
     time("  Breviloquence", Benchmarks.cborBytes2, iterations/10)(Cbor.Ast.parse)
     time("  Jackson", Benchmarks.cborBytes2, iterations/10): bytes =>
-      Benchmarks.parseWithJackson(bytes.asInstanceOf[scala.Array[Byte]])
+      Benchmarks.jacksonMapper.readTree(bytes.asInstanceOf[scala.Array[Byte]]).nn
     time("  borer", Benchmarks.cborBytes2, iterations/10): bytes =>
-      Benchmarks.parseWithBorer(bytes.asInstanceOf[scala.Array[Byte]])
+      val raw = bytes.asInstanceOf[scala.Array[Byte]]
+      io.bullet.borer.Cbor.decode(raw).to[io.bullet.borer.Dom.Element].value
     println()
 
     println:
       f"${"Corpus 4: 1000 small integers"}%-40s   payload=${Benchmarks.cborBytes4.length} bytes"
     time("  Breviloquence", Benchmarks.cborBytes4, iterations/10)(Cbor.Ast.parse)
     time("  Jackson", Benchmarks.cborBytes4, iterations/10): bytes =>
-      Benchmarks.parseWithJackson(bytes.asInstanceOf[scala.Array[Byte]])
+      Benchmarks.jacksonMapper.readTree(bytes.asInstanceOf[scala.Array[Byte]]).nn
     time("  borer", Benchmarks.cborBytes4, iterations/10): bytes =>
-      Benchmarks.parseWithBorer(bytes.asInstanceOf[scala.Array[Byte]])
+      val raw = bytes.asInstanceOf[scala.Array[Byte]]
+      io.bullet.borer.Cbor.decode(raw).to[io.bullet.borer.Dom.Element].value
     println()
