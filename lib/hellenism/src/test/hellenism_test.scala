@@ -47,6 +47,12 @@ class TestServiceA extends TestService:
 class TestServiceB extends TestService:
   def name: Text = t"B"
 
+object Outer:
+  class Nested
+
+class Enclosing:
+  class Inner
+
 object Tests extends Suite(m"Hellenism Tests"):
   def run(): Unit =
     test(m"check that a classpath file is accessible"):
@@ -121,6 +127,31 @@ object Tests extends Suite(m"Hellenism Tests"):
       test(m"the platform loader is the default parent"):
         classpath.classloader(Classloader.Delegation.Preferential).parent.let(_.java)
       . assert(_ == ClassLoader.getPlatformClassLoader.nn)
+
+    suite(m"Class references"):
+      test(m"a top-level class is referenced by its own class"):
+        ClassRef[TestServiceA] == classOf[TestServiceA]
+      . assert(_ == true)
+
+      test(m"an object is referenced by its module class"):
+        ClassRef[Outer.type].getName.nn.tt
+      . assert(_ == t"hellenism.Outer$$")
+
+      test(m"a class nested in an object is referenced by its binary name"):
+        ClassRef[Outer.Nested].getName.nn.tt
+      . assert(_ == t"hellenism.Outer$$Nested")
+
+      test(m"a class nested in a class is referenced by its binary name"):
+        ClassRef[Enclosing#Inner].getName.nn.tt
+      . assert(_ == t"hellenism.Enclosing$$Inner")
+
+      test(m"a type constructor is referenced by its binary name"):
+        ClassRef[scala.Option].getName.nn.tt
+      . assert(_ == t"scala.Option")
+
+      test(m"a nested type's classloader is the one that loaded it"):
+        Classloader[Outer.Nested].java
+      . assert(_ == classOf[Outer.Nested].getClassLoader)
 
     suite(m"Native-rendering coverage"):
       val classpath = LocalClasspath(Classpath.Entry.Jar(t"/x.jar"),
