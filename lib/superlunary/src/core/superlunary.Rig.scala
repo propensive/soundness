@@ -123,17 +123,22 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
       val probe: References over Transport = References[Transport]()
       given staging.Compiler = compiler2
 
-      staging.withQuotes:
-        ' {
-            (array: scala.Array[Object]) =>
-              $ {
-                  // As with `incoming` below: launder the reach `.rd` capability off
-                  // the quoted array reference.
-                  probe() = ('array).asInstanceOf[Expr[scala.Array[Object]]]
-                  body(using probe)
-                }
-          }
-        . show.tt
+      staging.withQuotes: quotes ?=>
+        val expr =
+          ' {
+              (array: scala.Array[Object]) =>
+                $ {
+                    // As with `incoming` below: launder the reach `.rd` capability off
+                    // the quoted array reference.
+                    probe() = ('array).asInstanceOf[Expr[scala.Array[Object]]]
+                    body(using probe)
+                  }
+            }
+
+        // The tree's structure, not its source: the source-code printer behind `show` fails on
+        // the capture annotations which inline code from a capture-checked library carries.
+        import quotes.reflect.*
+        Printer.TreeStructure.show(expr.asTerm).tt
 
     val key: (Codepoint, Text) = (codepoint, fingerprint)
 
