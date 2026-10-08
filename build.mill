@@ -54,7 +54,7 @@ object settings:
   //      https://github.com/propensive/proscala/releases; each release ships a single
   //      `proscala-<tag>.tar.gz` asset whose contents are a `lib` directory (the unversioned core
   //      jars plus the versioned third-party jars). The `toolchain` module below downloads
-  //      `SOUNDNESS_SCALA_RELEASE` (default `3.9.1-dev-p18`, the latest in the 3.9 stream) and
+  //      `SOUNDNESS_SCALA_RELEASE` (default `3.9.1-dev-p19`, the latest in the 3.9 stream) and
   //      extracts it into a shared cache, exposing its jars to every coursier resolution — no
   //      local compiler build and no publishing step needed. Switch streams by setting
   //      `SOUNDNESS_SCALA_RELEASE` (e.g. `3.10.1-dev-p17`).
@@ -71,14 +71,14 @@ object settings:
   // (`SOUNDNESS_SCALA_RELEASE`) is a separate concept, though from `3.9.0-RC4-p1` on the two
   // coincide (earlier releases shipped jars built as e.g. `3.9.0-RC1-propensive`). Override the
   // coordinate with `SOUNDNESS_SCALA_VERSION`.
-  val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION", "3.9.1-dev-p18")
+  val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION", "3.9.1-dev-p19")
 
   // The compiler *stream* — the major Scala version, without the patch level — which is what
   // decides the shape of the compiler-internal APIs a handful of modules wrap. Everything else
   // in Soundness is written once and compiles on every stream; where an API genuinely differs
   // (see the `Shim` component trait), this selects the sources that bridge it.
   val scalaStream = if scalaVersion.startsWith("3.10") then "3.10" else "3.9"
-  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "3.9.1-dev-p18")
+  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "3.9.1-dev-p19")
   // Empty by default → download `scalaRelease`. Set to a local `release` directory to use its
   // `release/lib` jars directly (fork-developer mode).
   val scalaHome = sys.env.getOrElse("SOUNDNESS_SCALA_HOME", "")
@@ -807,11 +807,16 @@ trait Benchmarks(dependencies: PublishModule*) extends BaseScalaModule:
   def sources = Task.Sources(moduleDir)
   def consoleScalacOptions = scalacOptions()
 
-  // The beneficence plugin writes the `META-INF/services/probably.Suite` index, which is the
-  // ONLY way fume discovers suites: without it a benchmark assembly is invisible to
+  // Separation-checked like a library: a benchmark is Soundness code measuring Soundness code,
+  // and an unchecked module is a place a capability can leak unnoticed (`safety-6`). A bench
+  // whose sources are not yet clean opts down by overriding `checking` (to `identity` for no
+  // checking, or `settings.cc` for capture checking alone), each with its reason. The
+  // beneficence plugin writes the `META-INF/services/probably.Suite` index, which is the ONLY
+  // way fume discovers suites: without it a benchmark assembly is invisible to
   // `fume run`/`fume list`, and there is no main class to fall back on.
+  def checking: Seq[String] => Seq[String] = settings.sep
   override def scalacOptions = Task:
-    super.scalacOptions() :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
+    checking(super.scalacOptions()) :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
 
 // ------------------------ BUNDLES ------------------------
 
@@ -1562,10 +1567,11 @@ object breviloquence extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, staged, sedentary.core, eucalyptus.core)
   object bench extends Benchmarks(core, quantitative.units):
-    // The benchmark sources annotate the `Array[Byte]^{}` payloads they hold, matching the
-    // capture-checked `core` they measure, so they need capture checking enabled too.
-    override def scalacOptions = Task:
-      settings.cc(super.scalacOptions())
+    // Capture-checked but not separation-checked: the benchmark sources annotate the
+    // `Array[Byte]^{}` payloads they hold, matching the capture-checked `core` they measure, but
+    // under separation checking the suite object's payload fields read as exclusive state
+    // ("needs to extend Capability"); the `Mutable`-object conversion is pending (`safety-6`).
+    override def checking: Seq[String] => Seq[String] = settings.cc
     def mvnDeps = Seq(
       mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.18.2",
       mvn"io.bullet::borer-core:1.16.0"
@@ -2326,6 +2332,10 @@ object gesticulate extends Library:
   // The rivals: Jetty's push-style `MultiPart.Parser` (the version `scintillate.bench` pins) and
   // commons-fileupload's pull-style `MultipartInput`.
   object bench extends Benchmarks(core, quantitative.units):
+    // Not yet checked: the suite object holds its exclusive payload arrays as fields, which
+    // capture checking rejects ("needs to extend Capability since it has fields … with `any`");
+    // the fix is breviloquence.bench's — frozen `^{}` payloads — and is pending (`safety-6`).
+    override def checking: Seq[String] => Seq[String] = identity
     def mvnDeps = Seq(
       mvn"org.eclipse.jetty:jetty-http:12.1.13",
       mvn"org.apache.commons:commons-fileupload2-core:2.0.0-M5" )
@@ -2643,6 +2653,10 @@ object jacinta extends Library:
   object test extends Tests(time, http, schema, staged, optics, sedentary.core,
     diuretic.core, galilei.jvm, octogenarian.core, eucalyptus.core, hellenism.core)
   object bench extends Benchmarks(core, quantitative.units):
+    // Not yet checked: the suite object holds its exclusive payload arrays as fields, which
+    // capture checking rejects ("needs to extend Capability since it has fields … with `any`");
+    // the fix is breviloquence.bench's — frozen `^{}` payloads — and is pending (`safety-6`).
+    override def checking: Seq[String] => Seq[String] = identity
     def mvnDeps = Seq(
       mvn"org.typelevel::jawn-ast:1.6.0",
       mvn"io.circe::circe-parser:0.14.13",
@@ -2727,6 +2741,10 @@ object locomotion extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
   object bench extends Benchmarks(core, quantitative.units):
+    // Not yet checked: the suite object holds its exclusive payload arrays as fields, which
+    // capture checking rejects ("needs to extend Capability since it has fields … with `any`");
+    // the fix is breviloquence.bench's — frozen `^{}` payloads — and is pending (`safety-6`).
+    override def checking: Seq[String] => Seq[String] = identity
     def mvnDeps = Seq(mvn"com.google.protobuf:protobuf-java:4.29.3")
 
 object mercator extends Library:
@@ -2861,6 +2879,10 @@ object parasite extends Library:
   // github.com/stasimus/scala-effect-bench, each measured beside its direct-style Soundness
   // idiom. `zephyrine.core` supplies `Handoff`, the bounded hand-off ring the queue rows use.
   object bench extends Benchmarks(core, jvm, quantitative.units, zephyrine.core):
+    // Not yet checked: the Kyo rows' effect types (`kyo.Abort`, `Safepoint`, `Frame`) do not
+    // elaborate under capture checking; the Soundness rows would, but the module is one
+    // compilation unit (`safety-6`).
+    override def checking: Seq[String] => Seq[String] = identity
     def mvnDeps = Seq(
       mvn"org.typelevel::cats-effect:3.7.1",
       mvn"co.fs2::fs2-core:3.13.0",
@@ -2932,6 +2954,10 @@ object pneumatic extends Library:
   // Every codec on the same corpora, with xz-java (the reference Java XZ implementation) as
   // the rival for the XZ rows. Run with `make bench.pneumatic`.
   object bench extends Benchmarks(core, flate, brotli, lzma, lzw, quantitative.units):
+    // Not yet checked: the suite object holds its exclusive payload arrays as fields, which
+    // capture checking rejects ("needs to extend Capability since it has fields … with `any`");
+    // the fix is breviloquence.bench's — frozen `^{}` payloads — and is pending (`safety-6`).
+    override def checking: Seq[String] => Seq[String] = identity
     def mvnDeps = Seq(mvn"org.tukaani:xz:1.10")
 
 object polaris extends Library:
@@ -3096,7 +3122,11 @@ object murmuration extends Library:
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
-  object bench extends Benchmarks(core, quantitative.units)
+  object bench extends Benchmarks(core, quantitative.units):
+    // Not yet checked: the suite object holds its exclusive payload arrays as fields, which
+    // capture checking rejects ("needs to extend Capability since it has fields … with `any`");
+    // the fix is breviloquence.bench's — frozen `^{}` payloads — and is pending (`safety-6`).
+    override def checking: Seq[String] => Seq[String] = identity
 
 object rudiments extends Library:
   object core extends Component(
@@ -3154,6 +3184,10 @@ object scintillate extends Library:
   // its own users would reach for. Netty is pinned to the 4.2 line that both zio-http and
   // Vert.x 5 build against, and Undertow to the 2.3 line Cask builds against.
   object bench extends Benchmarks(server, eucalyptus.core, quantitative.units, jacinta.http):
+    // Not yet checked: the suite object holds its exclusive payload arrays as fields, which
+    // capture checking rejects ("needs to extend Capability since it has fields … with `any`");
+    // the fix is breviloquence.bench's — frozen `^{}` payloads — and is pending (`safety-6`).
+    override def checking: Seq[String] => Seq[String] = identity
     def mvnDeps = Seq(
       mvn"org.http4s::http4s-ember-server:0.23.30",
       mvn"org.http4s::http4s-dsl:0.23.30",
@@ -3286,7 +3320,11 @@ object stratiform extends Library:
   object test extends Tests(core, base256, binaryStaged, staged, optics, time, http, duplex,
       eucalyptus.core, galilei.jvm)
   object bench extends Benchmarks(core, base256, binaryStaged, quantitative.units,
-      hellenism.core, ambience.core)
+      hellenism.core, ambience.core):
+    // Not yet checked: the suite object holds its exclusive payload arrays as fields, which
+    // capture checking rejects ("needs to extend Capability since it has fields … with `any`");
+    // the fix is breviloquence.bench's — frozen `^{}` payloads — and is pending (`safety-6`).
+    override def checking: Seq[String] => Seq[String] = identity
 
 object superlunary extends Library:
   object core
@@ -3475,6 +3513,10 @@ object turbulence extends Library:
     // no-flexible-types; drop just those two for the benchmark sources (which don't rely on them).
     override def scalacOptions = Task:
       super.scalacOptions().filterNot(Set("-Yexplicit-nulls", "-Yno-flexible-types"))
+    // Not yet checked: the suite object holds its exclusive payload arrays as fields, which
+    // capture checking rejects ("needs to extend Capability since it has fields … with `any`");
+    // the fix is breviloquence.bench's — frozen `^{}` payloads — and is pending (`safety-6`).
+    override def checking: Seq[String] => Seq[String] = identity
 
 object typonym extends Library:
   object core extends Component(proscenium.core, gigantism.core, prepositional.core,
@@ -3529,6 +3571,10 @@ object ulysses extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
   object bench extends Benchmarks(core, gastronomy.core, quantitative.units):
+    // Not yet checked: the suite object holds its exclusive payload arrays as fields, which
+    // capture checking rejects ("needs to extend Capability since it has fields … with `any`");
+    // the fix is breviloquence.bench's — frozen `^{}` payloads — and is pending (`safety-6`).
+    override def checking: Seq[String] => Seq[String] = identity
     def mvnDeps = Seq
       ( mvn"com.google.guava:guava:33.4.8-jre",
         // A Scala 2.13 artifact used from Scala 3; `::` would ask for a `_3` suffix it lacks.
@@ -3794,7 +3840,11 @@ object zephyrine extends Library:
   object test extends Tests(core, capricious.core, parasite.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
-  object bench extends Benchmarks(core, quantitative.units)
+  object bench extends Benchmarks(core, quantitative.units):
+    // Not yet checked: a bench row calls an `update` method through a read-only `Cursor`
+    // prefix, which capture checking's mutability rules reject; converting the row is pending
+    // (`safety-6`).
+    override def checking: Seq[String] => Seq[String] = identity
 
 object zeppelin extends Library:
   object core extends Component(galilei.jvm, zephyrine.core, turbulence.core, pneumatic.flate):
