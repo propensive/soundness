@@ -54,8 +54,10 @@ import zephyrine.*
 // reference Java implementation of the format and the library the JVM ecosystem otherwise
 // reaches for; raw LZMA2 and LZW have no comparable rival, and Gzip (native zlib) and Brotli sit
 // alongside as in-module reference points. Each benchmark's body is written inline in its
-// `bench` block; the corpora and the `count` terminal are the only members the staged bodies
-// reference, by fully-qualified name.
+// `bench` block; the corpora and xz-java's counting sink are the only members the staged bodies
+// reference, by fully-qualified name. Every Soundness row ends in the same counting terminal: the
+// stream is pulled to its end and its length summed, never materialised, so the rows measure the
+// codec and not a final concatenation.
 //
 // Two corpora, because LZMA behaves very differently on each: the *pattern* corpus is a
 // low-period arithmetic sequence that decodes almost entirely as long matches, so it measures
@@ -132,32 +134,8 @@ object Benchmarks extends Suite(m"Pneumatic benchmarks: XZ, LZMA2, LZW, Gzip and
   lazy val brotliPattern: Data = pattern.stream.compress[Brotli].memoize
   lazy val brotliText: Data = text.stream.compress[Brotli].memoize
 
-  // The counting terminal every row ends in: the stream is pulled to its end and its length
-  // summed, never materialised, so the rows measure the codec and not a final concatenation.
-  def count[medium](stream: Stream[medium] over Credit)(using Buffering): Long =
-    stream.gather(0L)(_ => (total, range) => total + (range: Interval).size)
-
-  // xz-java's whole-value compress, counted the same way: the bytes are written to a
-  // counting sink rather than accumulated.
-  def xzJavaCompress(bytes: scala.Array[Byte]): Long =
-    val sink = CountingOutputStream()
-    val out = org.tukaani.xz.XZOutputStream(sink, org.tukaani.xz.LZMA2Options(6))
-    out.write(bytes)
-    out.close()
-    sink.total
-
-  def xzJavaDecompress(bytes: scala.Array[Byte]): Long =
-    val in = org.tukaani.xz.XZInputStream(java.io.ByteArrayInputStream(bytes))
-    val buffer = new scala.Array[Byte](65536)
-    var total = 0L
-    var count = in.read(buffer)
-
-    while count >= 0 do
-      total += count
-      count = in.read(buffer)
-
-    total
-
+  // xz-java's compressor writes to this sink, which counts the bytes rather than accumulating
+  // them, as the Soundness rows' `gather` does.
   class CountingOutputStream extends java.io.OutputStream:
     var total: Long = 0L
     def write(byte: Int): Unit = total += 1
@@ -175,86 +153,185 @@ object Benchmarks extends Suite(m"Pneumatic benchmarks: XZ, LZMA2, LZW, Gzip and
 
     suite(m"XZ compression (4 MB pattern)"):
       bench(m"Soundness  Stream.compress[Xz]")(target = 2*Second, operationSize = patternSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.pattern.stream.compress[Xz]) }
+        '{
+            pneumatic.Benchmarks.pattern.stream.compress[Xz]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"xz-java  XZOutputStream")(target = 2*Second, operationSize = patternSize):
-        '{ pneumatic.Benchmarks.xzJavaCompress(pneumatic.Benchmarks.patternArray) }
+        '{
+            val sink = pneumatic.Benchmarks.CountingOutputStream()
+            val out = org.tukaani.xz.XZOutputStream(sink, org.tukaani.xz.LZMA2Options(6))
+            out.write(pneumatic.Benchmarks.patternArray)
+            out.close()
+            sink.total
+        }
 
     suite(m"XZ compression (4 MB text)"):
       bench(m"Soundness  Stream.compress[Xz]")(target = 2*Second, operationSize = textSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.text.stream.compress[Xz]) }
+        '{
+            pneumatic.Benchmarks.text.stream.compress[Xz]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"xz-java  XZOutputStream")(target = 2*Second, operationSize = textSize):
-        '{ pneumatic.Benchmarks.xzJavaCompress(pneumatic.Benchmarks.textArray) }
+        '{
+            val sink = pneumatic.Benchmarks.CountingOutputStream()
+            val out = org.tukaani.xz.XZOutputStream(sink, org.tukaani.xz.LZMA2Options(6))
+            out.write(pneumatic.Benchmarks.textArray)
+            out.close()
+            sink.total
+        }
 
     suite(m"XZ decompression (4 MB pattern)"):
       bench(m"Soundness  Stream.decompress[Xz]")(target = 2*Second, operationSize = patternSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.xzPattern.stream.decompress[Xz]) }
+        '{
+            pneumatic.Benchmarks.xzPattern.stream.decompress[Xz]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"xz-java  XZInputStream")(target = 2*Second, operationSize = patternSize):
-        '{ pneumatic.Benchmarks.xzJavaDecompress(pneumatic.Benchmarks.xzPatternArray) }
+        '{
+            val input = java.io.ByteArrayInputStream(pneumatic.Benchmarks.xzPatternArray)
+            val in = org.tukaani.xz.XZInputStream(input)
+            val buffer = new scala.Array[Byte](65536)
+            var total = 0L
+            var count = in.read(buffer)
+
+            while count >= 0 do
+              total += count
+              count = in.read(buffer)
+
+            total
+        }
 
       bench(m"Soundness  Stream.decompress[Xz], no check")
         ( target = 2*Second, operationSize = patternSize ):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.xzPatternUnchecked.stream.decompress[Xz]) }
+        '{
+            pneumatic.Benchmarks.xzPatternUnchecked.stream.decompress[Xz]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
     suite(m"XZ decompression (4 MB text)"):
       bench(m"Soundness  Stream.decompress[Xz]")(target = 2*Second, operationSize = textSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.xzText.stream.decompress[Xz]) }
+        '{
+            pneumatic.Benchmarks.xzText.stream.decompress[Xz]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"xz-java  XZInputStream")(target = 2*Second, operationSize = textSize):
-        '{ pneumatic.Benchmarks.xzJavaDecompress(pneumatic.Benchmarks.xzTextArray) }
+        '{
+            val input = java.io.ByteArrayInputStream(pneumatic.Benchmarks.xzTextArray)
+            val in = org.tukaani.xz.XZInputStream(input)
+            val buffer = new scala.Array[Byte](65536)
+            var total = 0L
+            var count = in.read(buffer)
+
+            while count >= 0 do
+              total += count
+              count = in.read(buffer)
+
+            total
+        }
 
     suite(m"Raw LZMA2 (4 MB pattern)"):
       bench(m"Soundness  Stream.compress[Lzma2]")(target = 2*Second, operationSize = patternSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.pattern.stream.compress[Lzma2]) }
+        '{
+            pneumatic.Benchmarks.pattern.stream.compress[Lzma2]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"Soundness  Stream.decompress[Lzma2]")(target = 2*Second, operationSize = patternSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.lzma2Pattern.stream.decompress[Lzma2]) }
+        '{
+            pneumatic.Benchmarks.lzma2Pattern.stream.decompress[Lzma2]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
     suite(m"Raw LZMA2 (4 MB text)"):
       bench(m"Soundness  Stream.compress[Lzma2]")(target = 2*Second, operationSize = textSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.text.stream.compress[Lzma2]) }
+        '{
+            pneumatic.Benchmarks.text.stream.compress[Lzma2]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"Soundness  Stream.decompress[Lzma2]")(target = 2*Second, operationSize = textSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.lzma2Text.stream.decompress[Lzma2]) }
+        '{
+            pneumatic.Benchmarks.lzma2Text.stream.decompress[Lzma2]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
     suite(m"LZW (4 MB pattern)"):
       bench(m"Soundness  Stream.compress[Lzw]")(target = 2*Second, operationSize = patternSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.pattern.stream.compress[Lzw]) }
+        '{
+            pneumatic.Benchmarks.pattern.stream.compress[Lzw]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"Soundness  Stream.decompress[Lzw]")(target = 2*Second, operationSize = patternSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.lzwPattern.stream.decompress[Lzw]) }
+        '{
+            pneumatic.Benchmarks.lzwPattern.stream.decompress[Lzw]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
     suite(m"LZW (4 MB text)"):
       bench(m"Soundness  Stream.compress[Lzw]")(target = 2*Second, operationSize = textSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.text.stream.compress[Lzw]) }
+        '{
+            pneumatic.Benchmarks.text.stream.compress[Lzw]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"Soundness  Stream.decompress[Lzw]")(target = 2*Second, operationSize = textSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.lzwText.stream.decompress[Lzw]) }
+        '{
+            pneumatic.Benchmarks.lzwText.stream.decompress[Lzw]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
     suite(m"Gzip and Brotli, for reference (4 MB pattern)"):
       bench(m"Soundness  Stream.compress[Gzip]")(target = 2*Second, operationSize = patternSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.pattern.stream.compress[Gzip]) }
+        '{
+            pneumatic.Benchmarks.pattern.stream.compress[Gzip]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"Soundness  Stream.decompress[Gzip]")(target = 2*Second, operationSize = patternSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.gzipPattern.stream.decompress[Gzip]) }
+        '{
+            pneumatic.Benchmarks.gzipPattern.stream.decompress[Gzip]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"Soundness  Stream.compress[Brotli]")(target = 2*Second, operationSize = patternSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.pattern.stream.compress[Brotli]) }
+        '{
+            pneumatic.Benchmarks.pattern.stream.compress[Brotli]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"Soundness  Stream.decompress[Brotli]")(target = 2*Second, operationSize = patternSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.brotliPattern.stream.decompress[Brotli]) }
+        '{
+            pneumatic.Benchmarks.brotliPattern.stream.decompress[Brotli]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
     suite(m"Gzip and Brotli, for reference (4 MB text)"):
       bench(m"Soundness  Stream.compress[Gzip]")(target = 2*Second, operationSize = textSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.text.stream.compress[Gzip]) }
+        '{
+            pneumatic.Benchmarks.text.stream.compress[Gzip]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"Soundness  Stream.decompress[Gzip]")(target = 2*Second, operationSize = textSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.gzipText.stream.decompress[Gzip]) }
+        '{
+            pneumatic.Benchmarks.gzipText.stream.decompress[Gzip]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"Soundness  Stream.compress[Brotli]")(target = 2*Second, operationSize = textSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.text.stream.compress[Brotli]) }
+        '{
+            pneumatic.Benchmarks.text.stream.compress[Brotli]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
 
       bench(m"Soundness  Stream.decompress[Brotli]")(target = 2*Second, operationSize = textSize):
-        '{ pneumatic.Benchmarks.count(pneumatic.Benchmarks.brotliText.stream.decompress[Brotli]) }
+        '{
+            pneumatic.Benchmarks.brotliText.stream.decompress[Brotli]
+            . gather(0L)(_ => (total, range) => total + (range: Interval).size)
+        }
