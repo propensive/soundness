@@ -2920,12 +2920,13 @@ object Json extends Json2, Dynamic:
   :   Iterator[Text] =
 
     val producer = Producer[Text]()
+    val output = producer.iterator
 
-    async:
-      Json.Ast.write(new Json.Ast.Textual(producer), formatting, json.root)
-      producer.finish()
+    Task.owning(producer): (producer, _, _) ?=>
+      Json.Ast.write(new Json.Ast.Textual(producer()), formatting, json.root)
+      producer().finish()
 
-    producer.iterator
+    output
 
   // The push form: serializes on the caller's thread, handing each block to `deliver` as it
   // fills, so no fiber is involved — the right shape for writing to a file, a socket or an

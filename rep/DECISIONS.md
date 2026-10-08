@@ -2829,3 +2829,185 @@ metrics are stateful the view captures `metrics0.rd` where a pure `Termcap` is r
 the form drives through `wakeForm`/`onChange` callbacks and that user code mutates from event
 handlers — `[closure-capture]` by design. The test file's 13 are closure-captured locals.
 
+## P3: the harness seals are the Monitor overlap (2026-10-08)
+
+The 236 test-harness `unsafeAssumeSeparate` were planned as "one loan helper per harness". The
+probes say otherwise: `rep/sepcheck-probes/p19-*` reduce zephyrine's `task.await()` seals and
+exoskeleton's `Shell.tmux()(Tmux.completions(…))` seals to one shape — a handle (the task; the
+loan's context-function action) captures the `Monitor` it was spawned under, and the join
+(`await`; `completions`/`attend`) takes the same monitor as a using-argument. `Monitor` is an
+`ExclusiveCapability`, so that is the P15 Tactic overlap for the supervisor, and the same
+lever applies: classified `SharedCapability`, the join passes
+(`p19-shared-monitor.pos`) and the handle still cannot leave `supervise`
+(`p19-shared-monitor-escape.neg`: "Capability `monitor` outlives its scope"). A grep for seals
+naming `await`/`tmux`/`attend`/`async`/`pump`/`Monitor` on the same line finds 94 of the 347
+(exoskeleton 54, zephyrine 16 — its `recur()`/`gather`/`writer` seals are the same overlap one
+expression up — turbulence 7, telekinesis 5, syndesis `Mdns` 4, the `Tmux` rig 3, parasite 2,
+coaxial 2). The decision is Jon's, as `Emit`'s was: a `Monitor` is used from many tasks at
+once by design and is internally synchronised; sharing it removes only the overlap check
+between two aliases, not its tracking.
+
+
+## The parasite task model under a shared `Monitor` (2026-10-08, Jon's go-ahead)
+
+Flipping `Monitor` to `SharedCapability` is not a one-line change, because a `Worker` (every
+task handle IS a `Monitor`) retains its body and its probate, and the checker requires that
+everything a shared object retains be shared itself ("value probate's type `Probate^` is
+unclassified, but it is a field of class Worker which is classified as SharedCapability"). The
+consequences, checked one by one:
+
+- **Task bodies** (`async`, `task`, `Task.apply`, `Task#map`/`bind`, `Timeout`'s action,
+  `concurrently`'s job) are typed `->{caps.any.only[caps.SharedCapability]}`: a body may close
+  over shared capabilities — a `Monitor`, another task handle, a `Tactic`/`Emit` — and over
+  plain values, but NOT over an exclusive capability (a `Producer^`, a stateful parser, a
+  file handle). That is the honest rule: an exclusive capability belongs to one thread, and
+  the seals in zephyrine's tests (`async(producer.iterator…)` beside `producer.put` on the main
+  thread) were hiding exactly this. Jon's tactic concern — a body must not let a stack-confined
+  tactic escape — is met by lifetime: a task completes or is cancelled before its `supervise`
+  block closes, so a captured tactic outlives nothing. (Cross-thread `abort` through a captured
+  outer tactic throws on the worker's thread and fails the task; the body's own errors go
+  through its `AsyncTactic`, as before.)
+- **Daemon bodies** were already pure (`?->{} Unit`, enforced at `daemon`): a daemon lives
+  until cancelled, so it may capture no outer capability at all, tactics included. Unchanged;
+  `Daemon.apply`'s laundered `evaluate0: Worker -> Unit` is pure and conforms. Probe
+  `p20-durable-classifier.neg` shows a finer classifier (`Durable extends SharedCapability,
+  Classifier`) would exclude tactics from a shared-only arrow if that were ever needed; it is
+  not, today.
+- **Probates**: `type SharedProbate = Probate^{caps.any.only[caps.SharedCapability]}` is what a
+  worker retains and what every `(using Monitor^, Probate^)` becomes (parasite, syndesis).
+  Pure probates conform; `failProbate` captures a tactic (shared); `Containment`'s handler is
+  shared-only too.
+- **`concurrently`**: its output was an exclusive `Array[result]^` written from every worker —
+  the rule's textbook violation. Now a `java.util.concurrent.atomic.AtomicReferenceArray`, which
+  the checker sees as a plain value and which is thread-safe by construction; the per-task
+  `unsafeAssumePure` on the handles (the `sequence` façade pattern) stays.
+- **`Task.monad`** (mercator's façade): `Monad`'s lambdas are unrestricted, so the façade now
+  asserts shared-only of the lambda as it already asserted purity of the handle (+2
+  `unsafeAssumePure`, in the one place that was already a declared lie).
+- **`Promise`/`Producer`** need no classification: they are plain (non-capability) classes, so a
+  body capturing one captures nothing in the checker's eyes — their thread-safety is their own
+  contract, as the `Handoff` comment says.
+
+### `Task.owning`: transferring an exclusive resource into a task (2026-10-08)
+
+The tree compile under the shared-only body rule failed in nine libraries, all the same shape:
+a task body closing over an exclusive resource it is the sole user of — a `Producer^` to feed
+(honeycomb, jacinta, xylophone, stratiform, locomotion `emit`), a `Stream^` to pump
+(turbulence `Divergence`), a compiler context (anthology), a `Loop` to run (coaxial,
+syndesis). The honest construct is ownership transfer: `Task.owning(resource)(body)` CONSUMES
+the resource from the spawner, which can no longer touch it, and hands it to the body as its
+first context parameter, a pure carrier `Task.Owned[resource]` whose `apply()` yields the
+exclusive reference afresh: `Task.owning(producer): (producer, _, _) ?=> producer().put(…)`.
+The worker's retention of the resource is asserted inside `owning`, once — the one place a
+`[transfer]` launder belongs. The reader side of a `Producer` (`iterator`, already typed pure
+as "the reader-side view") is taken BEFORE the transfer.
+
+Four shapes were tried before the carrier, each dead for a reason worth keeping:
+- `object async { def apply; def owning }` — `async$.class` and `Async$.class` collide on the
+  case-insensitive filesystem ("Not found: Async" everywhere). Objects may not differ from a
+  sibling class by case alone; hence `Task.owning`.
+- A function of the resource, `resource^ -> ((Worker, Tactic) ?->{resource} result)` — a
+  curried dependent context function type: "Implementation restriction" (⚑7).
+- A body parameter typed `resource^` (function or context parameter) — the `^` on an abstract
+  type references the root capability and the uses check rejects it ("External uses should be
+  declared explicitly with a uses clause"); typed `resource` instead, inference names the
+  consumed term in the type and the checker counts it as a capture of the lambda.
+- The carrier, invariant — with an ascribed argument (`context: Context^`) the type argument's
+  fresh differs from the method's and the lambda "leaks" it; `Owned[+resource]` resolves it.
+
+Alongside: `rudiments.Loop` is a `SharedCapability` (run on one task, stopped from another,
+`stop` synchronised), so `loop`'s block is shared-only and `loop` returns `Loop^{block, any}`;
+a `@volatile var` or a mutated local captured by a body becomes an `Atomic` cell (turbulence
+`error`, syndesis `interval`); `coaxial.listenConnections`'s per-connection handler is
+shared-only, since it runs on a task; anthology's compile task owns its `Context` (which
+retains the reporter, which retains the logger) and asserts purity once for dotty's
+pure-typed `using Context` API.
+
+### The second and third passes: what else the rule found (2026-10-08)
+
+- **guillotine `Process` and `Job` are `SharedCapability`**: a job's stdout and stderr are each
+  drained by a task while a third awaits its exit and the caller may abort it (vivisection's
+  debuggee session), and `java.lang.Process`/`ProcessHandle` are thread-safe. Same reasoning as
+  `Monitor`; previously `ExclusiveCapability`, which three concurrent drains contradicted.
+- **vivisection `Jdwp.Connection` is `SharedCapability`**: driven by its writer, reader and
+  dispatcher tasks and the session's thread at once; its state is a counter, a `TrieMap` and
+  relays. (Its `unsafeAssumePure` at construction was a no-op: a bare capability-class type is
+  `^`.)
+- **`rudiments.loop` launders the instance's fresh** at construction, as `Task.apply` does:
+  `Loop^{block}`, so a loop over pure state (surveillance's poll loop, stored in an
+  `Optional`) is a pure value; a `Loop` typed bare is `Loop^`, so a field or result that
+  means "pure loop" says `Loop^{}`.
+- **telekinesis `ServerConnection`'s containment handler** closes over the pure-typed state it
+  tears down (`started`, `streams`, `outbound`, `accepted`) rather than over `this`, which
+  retains the duplex.
+- **`[logger-capture]`** (1, vivisection): a task body may not capture a logger — a `Loggable`
+  instance is unclassified and captures its sink — yet `job.exitStatus()` logs. Loggers are
+  shared by nature; classifying `Loggable` is a migration of its own, so this one task asserts
+  its logger pure. The follow-up: `Loggable extends SharedCapability`?
+- **`[pump-overlap]`** (zephyrine/turbulence tests): `stream.pump(gather)` consumes the intake
+  and pumps a fresh stream into it; the reads of `gather.data` after, and the recursive
+  `recur()` pumps, were sealed before and stay sealed — they are not Monitor overlaps. The
+  test's task now OWNS the stream (`Task.owning(stream)`), and only the pump itself is sealed.
+
+### Ambient capabilities under the task rule: loggers, sinks, the network, timeouts (2026-10-08)
+
+The fourth pass left three sites capturing a *logger* in a task body (scintillate's containment
+handler, obligatory's JSON-RPC request, vivisection's exit watch) and one capturing `Online`.
+Jon's ruling: classify honestly. A `LogSink` was `caps.Unscoped` (the D4 ambient-strategy
+classification), which is exclusive-classified — so a logger, which captures its sinks, read
+as an exclusive resource although servers log from every daemon at once. Now:
+- `LogSink extends caps.SharedUnscoped` (ambient AND shared, as the tactics since #2195), and
+  `Loggable extends Typeclass, caps.SharedCapability`: a logger is a shared capability whose
+  instance captures shared sinks. The `[logger-capture]` assertion in vivisection goes.
+- `urticose.Internet` (`Online`) `extends caps.SharedUnscoped` for the same reason: ambient,
+  stateless, used from any task.
+- `parasite.Timeout extends caps.SharedCapability`: nudged from whichever task sees activity
+  (every connection handler of ethereal's daemon), state an atomic deadline.
+The vivisection DAP: the writer task owns the standard streams (`consume stdio` on `listen`,
+`Task.owning(stdio)`), the observer callback is shared-only, and the laundered thunks
+(`out`/`err`/`exit`, `body`) are typed as the pure functions their launder makes them.
+
+### The servers, and what `shared` means at the edges (2026-10-08, passes 7–8)
+
+With loggers shared, exegesis's and espionage's JSON-RPC servers compiled far enough to show
+their task bodies, and the rule drew the same lines there:
+- Objects driven by the writer task, the reader task and the caller's thread at once are
+  shared: `Lsp.Connection`/`Acp.Connection` (a `Relay` and a `ConcurrentHashMap` of promises),
+  the `Registry`s (filled before serving, read after), `Acp.Service`, the `Observer`s (called
+  from both tasks), `Stdio` (a daemon's streams are written to from every connection task; the
+  JVM's streams are synchronised), `Timeout` (nudged from every handler).
+- The single-owner resources at the edges are TRANSFERRED: the output sink to the writer task
+  and the read loop to the reader task (`consume sink`, `consume read` on `exchange`,
+  `Task.owning` inside), and the sink is finished by its owner (`try … finally sink().finish()`
+  in the writer) rather than by the caller after the exchange. A relay taken off a session
+  before the task (`val outgoing = session.outgoing`) lets the task capture the relay (plain)
+  rather than the session.
+- Functions that run on a task are shared-only: `JsonRpc.serve`'s dispatcher, the registries'
+  `adjust0`, `ethereal.cli`'s per-connection block.
+- Pure instances of capability classes are minted by one laundering factory each
+  (`Loggable.silent`, `Stdio.apply`, `Observer.Silent`), never by `new` at a package-level
+  `given`: "a field with `any` in its type need to be put in an object that extends Capability".
+- `Acp.connect`'s `capture^` parameter — there so the block could capture the monitor — is
+  gone: a shared monitor needs no such threading. (`Lsp.proxy` keeps its own `capture^` for
+  now; it compiled.)
+
+- **`Stdio` is NOT a capability trait** (tried and reverted in pass 8): it is mixed into
+  exclusive types as an interface (`ultimatum.Extent extends Board, Stdio`,
+  `exoskeleton.Invocation extends Cli, Stdio`), and a shared classifier there collides with
+  `Board`'s exclusive one. A standard-streams value built from the JVM's own, thread-safe
+  streams captures nothing and is a plain value; one that retains a terminal or a flow is typed
+  `Stdio^{…}` and stays single-owner. `Lsp.listen` therefore takes `using Stdio` (the process's
+  own), and the DAP's `consume stdio: Stdio^` + `Task.owning(stdio)` is the shape for a server
+  handed a capturing one.
+- **`Observer` is `SharedUnscoped`, not merely shared**: a default argument of a shared
+  capability type (`observer: Observer^ = Observer.Silent`) is a method whose result mints a
+  fresh root, and a call inside any lambda then fails the level check ("`any` in method
+  `proxy$default$2` is not visible from `any²` in an enclosing function"); level exemption is
+  exactly what the ambient tactics needed, for the same reason.
+- **exoskeleton's `Tmux` rig keeps its three `attend(enter(…))` seals**: `attend(using tmux)(block)`
+  takes the `Tmux` record as its receiver while the by-name block captures the same record —
+  the `[by-name-receiver]` overlap on a plain class, not a Monitor overlap; the unwrapping of
+  pass 1 was wrong there and is reverted. The 57 test sites, though, were a second overlap
+  behind the Monitor one: `Enclave.Tool` (the built tool's path and pid, driven by every tmux
+  session of a suite) was `ExclusiveCapability`, captured by each `completions` action AND
+  passed to the `tmux` loan as a using-argument. It is `SharedCapability` now.

@@ -821,8 +821,11 @@ object Jdwp:
         connection.disconnect()
         dispatcher.cancel()
 
+  // A shared capability: the connection is driven by its writer, reader and dispatcher tasks
+  // and by the session's own thread at once, and every piece of its state is synchronised
+  // (the counter, the pending map, the relays).
   class Connection private[vivisection] (monitor: Monitor, note: Diagnostics)
-  extends caps.ExclusiveCapability:
+  extends caps.SharedCapability:
     private val counter: Atomic[Int] = Atomic(0)
     private val pending: scc.TrieMap[Int, Promise[Connection.Reply]] = scc.TrieMap()
     private[vivisection] val outgoing: Relay[Data] = Relay()

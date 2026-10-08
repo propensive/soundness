@@ -73,7 +73,9 @@ object JsonRpc:
     case null                   => Unset
     case promise: Promise[Json] => promise
 
-  inline def serve[interface](interface: interface): Json => Optional[Json] =
+  // The dispatcher closes over the interface alone, so it may be called from a task when the
+  // interface is pure or shared.
+  inline def serve[interface](interface: interface): Json ->{scala.caps.any.only[scala.caps.SharedCapability]} Optional[Json] =
     ${obligatory.internal.dispatcher[interface]('interface)}
 
   // The JSON-RPC method names an interface declares (its `@rpc` members). Used to route a

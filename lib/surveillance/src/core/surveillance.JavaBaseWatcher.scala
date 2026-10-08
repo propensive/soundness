@@ -54,7 +54,7 @@ import vacuous.*
 // registration; keys are reference-counted so the service is closed only once nothing is being
 // watched.
 object JavaBaseWatcher extends Watcher:
-  private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop):
+  private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop^{}):
     import probates.awaitProbate
 
     def stop(): Unit =
@@ -82,7 +82,7 @@ object JavaBaseWatcher extends Watcher:
   private val watches: scm.HashMap[jnf.WatchKey, scala.collection.immutable.Set[PathWatch]] =
     scm.HashMap()
 
-  private def pollLoop(service: jnf.WatchService): Loop = loop:
+  private def pollLoop(service: jnf.WatchService): Loop^{} = loop:
     try
       service.take().nn match
         case key: jnf.WatchKey =>

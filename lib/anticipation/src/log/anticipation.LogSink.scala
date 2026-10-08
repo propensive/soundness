@@ -43,11 +43,13 @@ import scala.caps
 // so that when no sink accepts — in particular when there are no sinks at all — the logged value is
 // never even constructed, and logging a disabled event costs nothing.
 // A `LogSink` is a *capability*: submitting a log event is an effect on the sink's
-// destination. `caps.Unscoped` (the ambient-strategy classification, per the 2026-07-16
-// D4 ruling): sinks are deliberately ambient — importable package givens and
-// application-lifetime registries — so they must be storable statically; the tracking is
-// effect-visibility, not scope-confinement.
-trait LogSink[-eventType, carrier] extends caps.Unscoped:
+// destination. `caps.SharedUnscoped` (the ambient-strategy classification, as the error
+// tactics): sinks are deliberately ambient — importable package givens and
+// application-lifetime registries — so they must be storable statically, and they are written
+// to from every task at once, so they are shared and synchronised; the tracking is
+// effect-visibility, not scope-confinement. (`Unscoped` alone would classify a sink exclusive,
+// and a logger that captures one could then not be used from a task body.)
+trait LogSink[-eventType, carrier] extends caps.SharedUnscoped:
   def accepts(level: Level): Boolean
 
   // Reports whether this sink records events of the given (concrete) type. Takes the *original*

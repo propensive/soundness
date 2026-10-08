@@ -75,7 +75,7 @@ final class Promise[value]():
 
   // The promise's completion, reified as a `Task`: the monadic form of `await`, composable with
   // `bind`/`map` without suspending the calling strand.
-  def task(using monitor: Monitor^, probate: Probate^, codepoint: Codepoint)
+  def task(using monitor: Monitor^, probate: SharedProbate, codepoint: Codepoint)
   :   (Task[value] emits Async.Error)^{monitor, probate} =
     async(await())
 

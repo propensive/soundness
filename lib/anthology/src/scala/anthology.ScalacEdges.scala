@@ -92,7 +92,7 @@ object scalacEdges:
 
       // The compiler's diagnostics are relayed onto the toolchain's own event channel, so a
       // build watching one path sees compilation and linking alike.
-      given compileEvents: ((CompileEvent is Loggable)^{linkEvents}) =
+      given compileEvents: ((CompileEvent is Loggable)^{linkEvents, scala.caps.any}) =
         CompileEvents.relay(using linkEvents)
 
       mitigate:

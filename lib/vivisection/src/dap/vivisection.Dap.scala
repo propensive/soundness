@@ -66,7 +66,7 @@ object Dap:
   // canonical stdio transport a frontend launches. All outgoing traffic flows through a single
   // writer task, so responses and events never interleave, and each request is handled in
   // arrival order on this thread. The observer sees every message's raw text, both directions.
-  def listen(observer: Text => Unit = { _ => () })
+  def listen(observer: Text ->{caps.any.only[caps.SharedCapability]} Unit = { _ => () })
     ( using online:       Online,
             monitor:      Monitor,
             probate:      Probate,
@@ -76,7 +76,7 @@ object Dap:
             asyncError:   Tactic[Async.Error],
             working:      WorkingDirectory,
             environment:  Environment,
-            stdio:        Stdio^,
+            consume stdio: Stdio^,
             loggable:     (Socket.Event is Loggable)^,
             exec:         (Exec.Event is Loggable)^,
             compile:      (CompileEvent is Loggable)^,
@@ -88,12 +88,13 @@ object Dap:
 
     val outgoing: Relay[Json] = Relay()
 
-    val writer: Task[Unit] = async:
+    // The writer task owns the standard streams it frames the messages onto.
+    val writer: Task[Unit] = Task.owning(stdio): (stdio, _, _) ?=>
       outgoing.chain.each: json =>
         val body: Text = json.encode
         observer(body)
-        stdio.write(DapTransport.frame(body))
-        stdio.out.flush()
+        stdio().write(DapTransport.frame(body))
+        stdio().out.flush()
 
     val session = DapSession(outgoing.put(_))
 

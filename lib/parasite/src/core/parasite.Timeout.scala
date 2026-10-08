@@ -47,8 +47,11 @@ import Async.nominative
 import abstractables.epochMillisecondsAbstractable
 
 object Timeout:
-  def apply[duration: Abstractable across Durations to Long](timeout0: duration)(action: => Unit)
-    ( using monitor: Monitor^, probate: Probate^ )
+  // The action runs on the watchdog task, so, like any task body, it may capture only shared
+  // capabilities.
+  def apply[duration: Abstractable across Durations to Long](timeout0: duration)
+    ( action: ->{caps.any.only[caps.SharedCapability]} Unit )
+    ( using monitor: Monitor^, probate: SharedProbate )
   :   Timeout^{action, monitor, probate} =
 
     val timeout = timeout0.generic/1_000_000L
@@ -69,8 +72,12 @@ object Timeout:
     caps.unsafe.unsafeAssumePure(new Timeout(timeout, process))
 
 
-class Timeout private(duration: Long, makeProcess: Atomic[Long] => Task[Unit])
-extends caps.ExclusiveCapability:
+// A shared capability: a timeout is nudged from whichever task sees activity — every
+// connection handler of a server, say — and its state is an atomic deadline.
+class Timeout private
+  ( duration: Long,
+    makeProcess: Atomic[Long] ->{caps.any.only[caps.SharedCapability]} Task[Unit] )
+extends caps.SharedCapability:
   private val expiry: Atomic[Long] = Atomic(jl.System.currentTimeMillis + duration)
 
   @scala.caps.unsafe.untrackedCaptures

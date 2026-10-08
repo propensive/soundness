@@ -90,7 +90,10 @@ def resident[bus <: Matchable](using resident: Resident over bus)
   resident
 
 def cli[bus <: Matchable](using executive: Executive)
-  ( block: (Resident over bus, executive.Interface, Environment, Monitor) ?=> executive.Return )
+  // The block runs once per client connection, on that connection's task, so it may capture
+  // only shared capabilities — the daemon's monitor, its logger, its standard streams.
+  ( block: (Resident over bus, executive.Interface, Environment, Monitor)
+             ?->{scala.caps.any.only[scala.caps.SharedCapability]} executive.Return )
   ( using interpreter: Interpreter,
           threading:   Threading,
           handler:     Backstop )

@@ -222,7 +222,7 @@ object Tests extends Suite(m"Profanity Tests"):
                 Tmux.enter(tool, ' ', t"line-editor-sized 20 10")
                 Tmux.enter('\r')
                 if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-                scala.caps.unsafe.unsafeAssumeSeparate(Tmux.attend(Tmux.enter(t"X"*25)))
+                Tmux.attend(Tmux.enter(t"X"*25))
                 sleep(0.1*Second)
                 Tmux.attend:
                   Tmux.enter('', '', '', '', '')

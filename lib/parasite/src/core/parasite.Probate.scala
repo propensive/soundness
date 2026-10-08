@@ -40,7 +40,7 @@ import fulminate.*
 // `Probate` is an ordinary trait, NOT a capability: most probates (`awaitProbate`, …) capture nothing,
 // so a `given … : Probate` stays pure and `import probates.…` does not capture a global. A `Probate`
 // instance may still capture a capability where needed (e.g. `failProbate` closes over a `Tactic`),
-// written `Probate^` — exactly as any ordinary class captures (`Logger^{fs}`).
+// written `SharedProbate` — exactly as any ordinary class captures (`Logger^{fs}`).
 trait Probate:
   // The fate of an unfinished child when its parent completes (await it, cancel it, …).
   def cleanup(worker: Worker): Unit
@@ -50,3 +50,9 @@ trait Probate:
   // (never silently dropped). `trap { … }.within { … }` (see `Trap`) overrides this to intercept
   // errors near where work is spawned, and chains back to here for anything it rejects.
   def trap(worker: Worker, error: Error): Remedy = Remedy.Escalate(error)
+
+// A probate as a worker retains it: a `Worker` is a shared capability (it is a `Monitor`), so
+// everything it holds — its probate included — may capture only shared capabilities. Pure
+// probates (`awaitProbate`, …) conform trivially; `failProbate` closes over a tactic, which is
+// shared; a probate closing over an exclusive resource cannot be handed to a task.
+type SharedProbate = Probate^{scala.caps.any.only[scala.caps.SharedCapability]}

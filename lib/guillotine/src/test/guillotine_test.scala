@@ -40,10 +40,7 @@ import abstractables.millisecondsAbstractable
 import strategies.throwUnsafely
 import errorDiagnostics.emptyDiagnostics
 
-given silentExecEvent: Exec.Event is Loggable =
-  new Loggable:
-    type Self = Exec.Event
-    def log(level: Level, timestamp: Long, event: => Exec.Event): Unit = ()
+given silentExecEvent: ((Exec.Event is Loggable)^{}) = Loggable.silent[Exec.Event]
 
 
 object Tests extends Suite(m"Guillotine tests"):
@@ -519,9 +516,7 @@ object Tests extends Suite(m"Guillotine tests"):
       test(m"current process has a parent"):
         // A direct match rather than `let`/`or`: the `Optionality` evidence cannot span the
         // capability-typed element.
-        Process().parent match
-          case parent: Process => parent.pid
-          case _               => Pid(0L)
+        Process().parent.lay(Pid(0L))(_.pid)
       . assert(_ != Pid(0L))
 
     suite(m"Job-as-Process"):

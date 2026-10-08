@@ -75,7 +75,7 @@ object Divergence:
     val queues: IndexedSeq[Handoff] =
       IndexedSeq.fill(count)(caps.unsafe.unsafeAssumePure(Handoff(buffering.depth)))
 
-    @volatile var error: Throwable | Null = null
+    val error: Atomic.Ref[Throwable | Null] = Atomic(null)
 
     val stable: Boolean = source.regionStable
 
@@ -84,8 +84,8 @@ object Divergence:
     // count. A copied (transient) block stays transfer-bounded.
     val pull: Int = if stable then Int.MaxValue else block
 
-    async:
-      def loop(): Unit = source.refill(Credit(pull)) match
+    Task.owning(source): (source, _, _) ?=>
+      def loop(): Unit = source().refill(Credit(pull)) match
         case size: Int =>
           // A stable source (a fixed in-memory buffer) is shared by reference,
           // exactly as ZIO/FS2 pass immutable chunks: every subscriber reads
@@ -93,20 +93,20 @@ object Divergence:
           // source is snapshotted once into fresh storage — still shared
           // read-only between all subscribers, but copied out of the window
           // before the next refill reuses it.
-          val start = source.start
+          val start = source().start
 
           val storage =
-            if stable then source.unsafeStorage(using Unsafe)
+            if stable then source().unsafeStorage(using Unsafe)
             else
               val fresh = addressable0.allocate(size)
 
               addressable0.transfer
-                ( source.unsafeStorage(using Unsafe).asInstanceOf[addressable0.Storage],
-                  source.start, fresh, 0, size )
+                ( source().unsafeStorage(using Unsafe).asInstanceOf[addressable0.Storage],
+                  source().start, fresh, 0, size )
 
               fresh
 
-          source.skip(size)
+          source().skip(size)
           val handoff = Block(storage.asInstanceOf[AnyRef], if stable then start else 0, size)
 
           // While-loops rather than `each`: a closure over the rings would
@@ -127,7 +127,7 @@ object Divergence:
             index += 1
 
       try loop() catch case exception: Exception =>
-        error = exception
+        error() = exception
         var index = 0
 
         while index < queues.length do
@@ -174,7 +174,7 @@ object Divergence:
                 queue.take() match
                   case null =>
                     ended = true
-                    val error0 = error
+                    val error0 = error()
                     if error0 == null then Unset else throw error0
 
                   case received: Block =>

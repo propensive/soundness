@@ -72,7 +72,7 @@ object Confluence:
       juc.ArrayBlockingQueue(buffering.depth.max(sources.length))
 
     val remaining: Atomic[Int] = Atomic(sources.length)
-    @volatile var error: Throwable | Null = null
+    val error: Atomic.Ref[Throwable | Null] = Atomic(null)
 
     def finish(): Unit = if remaining.since(_ - 1) == 0 then queue.put(End)
 
@@ -132,7 +132,7 @@ object Confluence:
               finish()
 
         catch case exception: Exception =>
-          error = exception
+          error() = exception
           finish()
 
       index += 1
@@ -168,7 +168,7 @@ object Confluence:
             (queue.take().nn: @unchecked) match
               case End =>
                 ended = true
-                val error0 = error
+                val error0 = error()
                 if error0 == null then Unset else throw error0
 
               case received: Block =>

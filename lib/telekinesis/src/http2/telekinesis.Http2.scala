@@ -1055,10 +1055,23 @@ object Http2:
       accepted.stop()
 
     private val (writer, reader) =
+      // The containment's handler runs from a failing daemon, so it may capture only shared
+      // capabilities: the state it tears down is pure-typed, but `this` retains the duplex,
+      // so the handler closes over that state rather than over the connection.
+      val started0 = started
+      val streams0 = streams
+      val outbound0 = outbound
+      val accepted0 = accepted
+
       // As `Http2.Connection`: no aliased writer between containment and body.
       scala.caps.unsafe.unsafeAssumeSeparate:
        contain:
-        case _ => tearDown(); Remedy.Accept
+        case _ =>
+          started0.cancel()
+          streams0.values.foreach(_.end())
+          outbound0.stop()
+          accepted0.stop()
+          Remedy.Accept
 
        . protect:
           // Everything the fibers touch is bound to locals (or neutral carriers)

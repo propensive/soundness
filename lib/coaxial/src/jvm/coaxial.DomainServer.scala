@@ -60,7 +60,7 @@ extension (domainSocket: DomainSocket)
   // a filesystem without POSIX permissions (Windows) is left as it is. Each accepted
   // connection carries the peer's user, where the platform reports one, in `Connection.peer`.
   def listenConnections[result](using Monitor, Probate)
-    ( handler: Connection => Unit, ownerOnly: Boolean = false )
+    ( handler: Connection ->{scala.caps.any.only[scala.caps.SharedCapability]} Unit, ownerOnly: Boolean = false )
     ( using (Socket.Event is Loggable)^ )
     ( block: Socket.Service ?=> result )
   :   result =
@@ -98,12 +98,12 @@ extension (domainSocket: DomainSocket)
           ()
 
     // The loop is created and awaited under the same monitor; no aliased writer.
-    val task = scala.caps.unsafe.unsafeAssumeSeparate(async(bindLoop.run()))
+    val task = async(bindLoop.run())
 
     val service = Socket.Service: () =>
       bindLoop.stop()
       channel.close()
-      scala.caps.unsafe.unsafeAssumeSeparate(safely(task.await()))
+      safely(task.await())
       Log.fine(Socket.Event.Closed(domainSocket.address))
 
     try block(using service) finally service.stop()

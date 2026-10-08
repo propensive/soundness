@@ -127,6 +127,10 @@ object Stdio:
     override def close(): Unit = ()
     override def available(): Int = 0
 
+// Not a capability trait: `Stdio` is mixed into exclusive types (`ultimatum.Extent`,
+// `exoskeleton.Invocation`) as an interface, and a standard-streams value built from the JVM's
+// own, thread-safe streams captures nothing, so it is a plain value; one that retains something
+// (a terminal, a flow) says so with `Stdio^{…}`.
 trait Stdio extends Findable:
   val termcap: Termcap
   val out: ji.PrintStream

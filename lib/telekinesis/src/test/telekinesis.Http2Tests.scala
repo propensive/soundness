@@ -346,7 +346,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
                   server0.sendData(stream.id, response.body.stream.memoize, true)
 
           val client = Http2.Connection(clientSide)
-          val serverStarted = scala.caps.unsafe.unsafeAssumeSeparate(async(server.start()))
+          val serverStarted = async(server.start())
           client.start()
           scala.caps.unsafe.unsafeAssumeSeparate:
             serverStarted.await()
@@ -385,7 +385,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
                   server0.sendTrailers(stream.id, List(Hpack.Entry(t"grpc-status", t"0")))
 
           val client = Http2.Connection(clientSide)
-          val serverStarted = scala.caps.unsafe.unsafeAssumeSeparate(async(server.start()))
+          val serverStarted = async(server.start())
           client.start()
           scala.caps.unsafe.unsafeAssumeSeparate:
             serverStarted.await()
@@ -460,7 +460,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
                   server0.sendData(stream.id, body, endStream = true)
 
           val client = Http2.Connection(clientSide)
-          val serverStarted = scala.caps.unsafe.unsafeAssumeSeparate(async(server.start()))
+          val serverStarted = async(server.start())
           client.start()
           scala.caps.unsafe.unsafeAssumeSeparate:
             serverStarted.await()
@@ -505,7 +505,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
                     index += 1
 
           val client = Http2.Connection(clientSide, window = 4096)
-          val serverStarted = scala.caps.unsafe.unsafeAssumeSeparate(async(server.start()))
+          val serverStarted = async(server.start())
           client.start()
           scala.caps.unsafe.unsafeAssumeSeparate:
             serverStarted.await()
@@ -625,7 +625,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
           serverSide.send:
             zephyrine.Stream(Frame.Headers(streamId.get, respHeaders, true, true).serialize)
 
-          val status = scala.caps.unsafe.unsafeAssumeSeparate(fetched.await())
+          val status = fetched.await()
           client.close()
           (frozen, received.get(), status)
 
