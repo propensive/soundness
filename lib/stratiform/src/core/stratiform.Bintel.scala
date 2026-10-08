@@ -793,7 +793,7 @@ object Bintel:
     ( using tactic: Tactic[Bintel.Error] )
   :   value =
 
-    val parser = BintelParser(data)
+    val parser: BintelParser^ = BintelParser(data)
     val result = parsable.parse(BintelReader(parser, tactic))
     if parser.offset != data.length then abort(Bintel.Error(Bintel.Error.Reason.TrailingBytes))
     result
@@ -807,7 +807,7 @@ object Bintel:
     ( using tactic: Tactic[Bintel.Error] )
   :   value =
 
-    val parser = BintelParser(data, Tel.Codec.Resolver(codecs), checkCanonical)
+    val parser: BintelParser^ = BintelParser(data, Tel.Codec.Resolver(codecs), checkCanonical)
     val result = parsable.parse(BintelReader(parser, tactic))
     if parser.offset != data.length then abort(Bintel.Error(Bintel.Error.Reason.TrailingBytes))
     result

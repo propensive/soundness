@@ -52,30 +52,23 @@ import DagTile.*
 object LaneDagDiagram:
   private case class Lane[node](source: node, target: node, col: Int)
 
-  private final class Cell:
-    @scala.caps.unsafe.untrackedCaptures
-    var top: Boolean = false
+  // A cell's edges and crossings as bit flags in an `Int`, so a row is a plain array built in
+  // place: there is no mutable cell object for the checker to track. `VerticalPassThrough` and
+  // `HorizontalPassThrough` distinguish a pure crossing (a horizontal lane passing over a
+  // continuing vertical lane without sharing a node) from a junction where lanes meet.
+  private object Cell:
+    inline val Top                   = 1
+    inline val Down                  = 2
+    inline val Left                  = 4
+    inline val Right                 = 8
+    inline val VerticalPassThrough   = 16
+    inline val HorizontalPassThrough = 32
 
-    @scala.caps.unsafe.untrackedCaptures
-    var down: Boolean = false
+    def tile(cell: Int): DagTile =
+      inline def has(inline flag: Int): Boolean = (cell & flag) != 0
 
-    @scala.caps.unsafe.untrackedCaptures
-    var left: Boolean = false
-
-    @scala.caps.unsafe.untrackedCaptures
-    var right: Boolean = false
-
-    // Distinguish pure crossings (where a horizontal lane passes over a continuing
-    // vertical lane without sharing a node) from real junctions where lanes meet.
-    @scala.caps.unsafe.untrackedCaptures
-    var verticalPassThrough: Boolean = false
-
-    @scala.caps.unsafe.untrackedCaptures
-    var horizontalPassThrough: Boolean = false
-
-    def tile: DagTile =
-      if verticalPassThrough && horizontalPassThrough then Crossing
-      else (top, down, left, right) match
+      if has(VerticalPassThrough) && has(HorizontalPassThrough) then Crossing
+      else (has(Top), has(Down), has(Left), has(Right)) match
         case (false, false, false, false) => Space
         case (true, true, false, false)   => Vertical
         case (false, false, true, true)   => Horizontal
@@ -191,40 +184,40 @@ object LaneDagDiagram:
       width:        Int )
   :   List[DagTile] =
 
-    val cells = scala.Array.fill(width)(LaneDagDiagram.Cell())
+    val cells = new scala.Array[Int](width)
     val startedCols = justStarted.iterator.map(_.col).to(Set)
 
     def drawBend(topEntry: Int, bottomExit: Int, continuing: Boolean): Unit =
       if topEntry == bottomExit then
-        cells(topEntry).top = true
-        cells(topEntry).down = true
-        if continuing then cells(topEntry).verticalPassThrough = true
+        cells(topEntry) |= Cell.Top
+        cells(topEntry) |= Cell.Down
+        if continuing then cells(topEntry) |= Cell.VerticalPassThrough
       else if topEntry < bottomExit then
-        cells(topEntry).top = true
-        cells(topEntry).right = true
+        cells(topEntry) |= Cell.Top
+        cells(topEntry) |= Cell.Right
         var c = topEntry + 1
 
         while c < bottomExit do
-          cells(c).left = true
-          cells(c).right = true
-          cells(c).horizontalPassThrough = true
+          cells(c) |= Cell.Left
+          cells(c) |= Cell.Right
+          cells(c) |= Cell.HorizontalPassThrough
           c += 1
 
-        cells(bottomExit).left = true
-        cells(bottomExit).down = true
+        cells(bottomExit) |= Cell.Left
+        cells(bottomExit) |= Cell.Down
       else
-        cells(topEntry).top = true
-        cells(topEntry).left = true
+        cells(topEntry) |= Cell.Top
+        cells(topEntry) |= Cell.Left
         var c = bottomExit + 1
 
         while c < topEntry do
-          cells(c).left = true
-          cells(c).right = true
-          cells(c).horizontalPassThrough = true
+          cells(c) |= Cell.Left
+          cells(c) |= Cell.Right
+          cells(c) |= Cell.HorizontalPassThrough
           c += 1
 
-        cells(bottomExit).right = true
-        cells(bottomExit).down = true
+        cells(bottomExit) |= Cell.Right
+        cells(bottomExit) |= Cell.Down
 
     state.foreach: (col, lane) =>
       if lane.target == currentNode then drawBend(col, curNodeCol, false)
@@ -233,7 +226,7 @@ object LaneDagDiagram:
 
     if directEdge then drawBend(prevNodeCol, curNodeCol, false)
 
-    cells.iterator.map(_.tile).to(List)
+    cells.iterator.map(Cell.tile).to(List)
 
   private def nodeRow[node]
     ( state:    Map[Int, Lane[node]],

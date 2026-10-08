@@ -125,9 +125,7 @@ class Relay[record]():
       // Untracked, cast-erased: reached only through this endpoint. All
       // `Substrate.Boxes` media store records erased (`boxed`, `texts`), so
       // the window storage is written directly.
-      @caps.unsafe.untrackedCaptures
-      private val storage: scala.Array[AnyRef] =
-        new scala.Array[AnyRef](capacity).asInstanceOf[scala.Array[AnyRef]]
+      private val storage: scala.Array[AnyRef]^ = new scala.Array[AnyRef](capacity)
 
       private var start0: Int = 0
       private var limit0: Int = 0

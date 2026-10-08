@@ -2613,3 +2613,219 @@ implementations across profanity and ultimatum). Recipe as it actually went:
   `given (Stdio^{flow}) = flow`; the resize test's iterator shrank the root it does not own
   (`Form` holds it exclusively) — the size now lives in a plain cell the iterator writes.
 - Net: `untrackedCaptures` 506 → 484, `unsafeAssumeSeparate` 350 → 347, `unsafeAssumePure` +1.
+## xylophone `XmlParser` becomes `Stateful` (2026-10-08)
+
+The second per-class `safety-1` conversion after profanity's `Board`: `Xml.XmlParser` (the
+byte parser, ~2,000 lines) goes from `caps.ExclusiveCapability` with 25 `@untrackedCaptures`
+fields to `caps.ExclusiveCapability, caps.Stateful` with one — the cursor-buffer snapshot
+`bytes0: AnyRef`, the same residue stratiform's `Tel.Parser` keeps (a typed array field
+holding the cursor's buffer trips the classifier and the consume checks). The recipe held:
+
+- Primitive, `Optional`, `Scope`, `Attributes` and `BaseText` `var`s: annotation dropped, no
+  other change. The scratch arrays (`attrBuf`, `tagCache*`) become `scala.Array[T]^` fields
+  (hallucination's `Vp8Decoder` shape), which retires the four `…Target` cast views.
+- Mutators become `update def`: 66 of 81 methods, found by a transitive write analysis
+  (writes a `var`, or calls a method that does) plus three compiler rounds for the methods
+  whose only mutation is a *cursor* call (`syncTo`, `cursor.mark`, `cursor.hold`): the
+  analysis sees no field write there, the checker does.
+- Factories return a fresh `XmlParser^`, and the two `loadable` holders are declared
+  `val parser: XmlParser^ = …` (a plain `val` is a read-only alias).
+- The constructor's `callback: (Ordinal, Hole) => Unit` field is typed
+  `->{caps.any} Unit` — Board's `widthFn: () ->{caps.any.rd} Int` move, exclusive here because
+  update methods call it.
+- `Mutable` vs `Stateful`: the first attempt used `caps.Mutable` and every error mentioned
+  "`any` classified as Unscoped in the type of class XmlParser"; `Stateful` (jacinta's `Parser`,
+  `Board`) is the right classifier for a parser that is created and consumed in one scope.
+
+Three traps, all new:
+
+- **A nested inline update is bound read-only.** `position` (`inline`, calls `syncTo`, itself
+  `inline update`) fails at its first expansion with "capture set {} of value `XmlParser_this`
+  … is read-only": the outer expansion binds `this` as a proxy `val` and the inner update
+  through it is rejected. The error is reported ONCE (at the first expansion in file order),
+  which made it look site-specific. One inline level is fine; `position` is now a plain
+  `update def`. Candidate fork patch (`inlineupdate` covers accessors, not `this` proxies).
+- **Inline update forwarders over a cast receiver.** `Reader`'s two `inline update def`s
+  (`nextChild`, `element`) over `parser0.asInstanceOf[XmlParser^]` fail with "update method
+  … of x$0 since its capture set {x$0} is read-only" once the target is an update method;
+  jacinta's identical forwarders compile, so the difference is not yet understood. Both are
+  now non-inline like the rest of `Reader`'s forwarders. Follow-up: a probe (`p18`) and, if it
+  is the same proxy issue as above, the same fork leg.
+- **`parseWith`'s seal stays** (`[by-name-receiver]`): the session body captures the parser
+  that is also `directSession`'s receiver; the companion-helper restructuring only moves the
+  same overlap down to `cursor.hold`. The by-name capture leg (`safety-10`) is what retires it.
+
+Verified: clean rebuild, 566/566 tests, bench compiles. `untrackedCaptures` in
+`xylophone.Xml.scala` 25 → 1; `unsafeAssumePure` 16 (derivation anchors, untouched).
+
+## sibylline `Llm`: the helper classes become `Stateful` (2026-10-08)
+
+`untrackedCaptures` 14 → 1 in `sibylline.Llm.scala`. `Session` was already `Stateful` and its
+two annotations simply dropped (the sweep's "already Stateful" case). `Accumulator` and
+`Progress` become `caps.Stateful` with `update def absorb`/`next`; `Accumulator.Block` loses
+its `var`s instead (its `content` was never reassigned, and "open" is now a `closed` index set
+on the accumulator). Holders are declared exclusive (`val progress: Llm.Progress^`, parameters
+`Llm.Progress^`), which the streaming `flatMap` closures capture, so `Dialect.stream`'s result
+widens from `Iterator[Event]^{this}` to `^{this, caps.any}` in the trait and every dialect.
+
+Two things did not go:
+
+- **`Response` stays a plain `ExclusiveCapability`** (one annotation, `reply0`). As a `Stateful`,
+  `new Response(session, …)` inside `Session.stream` is typed by its arguments' *read-only*
+  captures, `{any.rd, Session.this.rd, any.rd}`, and the declared `Response^{this, caps.any}`
+  — the type the confinement tests rely on to forbid a new turn while a stream is undrained —
+  "cannot subsume a read-only capture set of a stateful type". Binding it first
+  (`val response: Response^ = new …; response`) reads back as `{any.rd}` (a `val` alias is
+  read-only), and a bare `Response^` compiles but LOSES the guarantee: the test "a streamed
+  response cannot be stashed" went red. So: a stateful instance that must be typed as
+  borrowing an enclosing `this` cannot be minted from `new` in the current checker. Probe
+  worth writing (`p19`); until then this is the `[borrowing-stateful]` tag.
+- **`Accumulator.reply`'s `raises Error`** became `(using Diagnostics, Tactic[Error])`: a
+  context-function result "hides non-local this of class Accumulator", which only a `consume`
+  method may do. Same lesson as `reference_contextual_default_summon_site`: on a stateful
+  class, take the tactic as a parameter.
+
+## stratiform `Tel.Parser`: scratch arrays as `Array[T]^` fields (2026-10-08)
+
+`untrackedCaptures` 13 → 6 in `stratiform.Tel.scala`. The parser was already `Mutable`; its
+four scratch stacks (`scratchAtoms0: AnyRef` + an `inline` cast view each) and the three
+`keyCache*` arrays (+ three `…Target` views) become plain `scala.Array[T]^` fields, as in
+xylophone. One trap: a **private** `Array[T]^` field read from an `inline` method gets a
+synthesized `inline$field` accessor whose fresh result "hides `Parser.this`", and every later
+field definition then fails with "Illegal access to {Parser.this} which is hidden by the
+previous definition". The fields are non-private (`var scratchAtoms`), like the parser's other
+state, and no accessor is synthesized. What stays: `cursor0`/`bytes0` (the cursor snapshot),
+`Inline._text` (a lazily-filled cache on a plain atom class), and the serializer's `first`.
+
+## Exclusive array fields in already-stateful classes (2026-10-08)
+
+A census pass over the 21 `@untrackedCaptures` whose enclosing class is already `Stateful`
+or `Mutable`. Seven retired, by the xylophone move (field typed `scala.Array[T]^`, cast views
+deleted): zephyrine `Producer` (`current`, `scratch`), telekinesis `ByteBuf.storage` and
+`FrameReader.buffer`, ypsiloid `Yaml.Parser` (`chars`, `rootIndex: Array[Int]^{} | Null`),
+scintillate `Reactor.gather`. Three more shapes learned:
+
+- **Growth inside an inline method or a loop**: "`newArr` appears in a loop, therefore it
+  cannot be consumed in an assignment to variable `chars`" — the fresh array is minted in a
+  loop (`FrameReader.ensure`) or in an `inline` method that expands into its callers' loops
+  (`Yaml.appendChar`/`ensureSpace`). Put the mint-copy-assign in one non-inline
+  `private update def grow…()`; the hot path keeps its inline bounds check.
+- **Alias of an exclusive field**: `val slots = gather` then `channel.write(gather, …)` fails
+  with "Illegal access to {any of value gather} which is hidden by the previous definition";
+  use the field directly (the Java callee's parameter is pure, so passing it is fine).
+- **`private`/`protected` exclusive fields read from inline methods** get an `inline$field`
+  accessor whose fresh result hides `this` (stratiform, ypsiloid): plain `var`.
+
+What stays, and why (the `[cursor-snapshot]` and `[aliased-read]` tags): the cursor-buffer
+snapshots (`bytes0`/`bytes1`/`cursor0`/`cursor1` in Tel, Yaml, Xml; honeycomb `HtmlParser.bytes`
+is the same thing by another name — `cursor.unsafeTextBuffer` returns `^{any.rd}`),
+hallucination `Vp8Decoder.segmentProbs`/`tokenProbs` (read by `bool.tree` while `bool`, held
+by `this`, is the exclusive receiver), zephyrine's reader-side `Iterator.ready` (stdlib
+`Iterator` methods cannot be `update`), gesticulate `Multipart.stream` and anthology's
+compiler objects (cast-erased handles), honeycomb's macro callback.
+
+## Small single-owner parsers and the dendrology cells (2026-10-08)
+
+`untrackedCaptures` −17: dendrology's two `Cell` classes (12) are gone — a cell is six bit
+flags in an `Int`, so a diagram row is a plain `Array[Int]` built in place and there is no
+mutable object to classify; archimedes `Ergo.Parser` (3) and stratiform `BintelParser` (2)
+become `Stateful` by the compiler-driven loop (`/tmp/loop.py`: add the trait, drop the
+annotations, mark whichever methods the next compile names, repeat; four to six rounds each).
+Two more rules, both already met once:
+
+- **`raises` on a stateful class's methods** → `(using Tactic[E])`: the context-function result
+  "hides non-local this", which only a `consume` method may do.
+- **A constructor proxy mints a read-only instance** (`ProtobufParser(x).fields()` cannot call
+  an update method on `^{any.rd}`): give the class a companion `apply(…): C^ = new C(…)`.
+  The `Reader` wrappers (locomotion, stratiform) take `C^` and cast to their `AnyRef` carrier
+  exactly as xylophone's `Reader.apply` does, their `inline def parser` reads back as `C^`, and
+  the staged splices bind `val parser: C^ = reader.rawParser.asInstanceOf[C^]`.
+- `BintelParser` additionally needs `ExclusiveCapability`: "needs to extend Capability since
+  it has a field `data` with `any` in its type" — the cached raw `scala.Array[Byte]` view of its
+  frozen input (the same cast `Cbor.Parser` uses; that one is the next of this shape).
+- **REVERTED: locomotion `ProtobufParser`.** The same conversion compiles (core and the staged
+  module) but every user of a staged `Protobuf.Parsable` then fails with "Cannot call update
+  method directLong of parser since its capture set {parser} is read-only": the generated
+  record loop is assembled by reflection (`Symbol.newVal(owner, …)`, `Block`/`Match` terms
+  under `Symbol.spliceOwner`), and the `val parser = reader.rawParser.asInstanceOf[ProtobufParser]`
+  bound by the quote reads back as a read-only alias inside it, where jacinta's and stratiform's
+  quote-built bodies read it as exclusive. A staged-parser (`project_staged_parsers`) question:
+  either emit the loop as a quote, or hand the generated body `reader` and let it call the
+  `update` forwarders. Also learned: a bare `C` in a quote is `C^` only if `C` is a `Capability`
+  class — a `Stateful`-only class is pure there, so parsers spliced by name need
+  `ExclusiveCapability` too (which `BintelParser` now has).
+
+## telekinesis `Hpack` and its dynamic table (2026-10-08)
+
+`untrackedCaptures` −3. `Hpack.Table` becomes `Stateful` (`resize`/`evict`/`add` update) and
+`Hpack` an exclusive stateful capability holding `table: Table^`; `encode`/`decode` are update
+methods, `decode`'s `raises` is a tactic parameter, the companion mints `Hpack^`, and
+`Http2.dispatch` takes `Hpack^`. The daemons already held their codec in a local and passed it
+down, so the library side was mechanical; the test side was not: `Http2Tests` built a codec in
+a suite body and fed it from a local `def fields` called inside `test` closures, and a
+closure-captured exclusive is read-only ("Cannot call update method decode of hpack since its
+capture set {hpack} is read-only"). The two RFC-appendix suites now decode their blocks in
+sequence in the suite body and the tests assert on the pure results — the shape every
+stateful-under-test needs, and the same reason facsimile's `DataBuilder` (held by local
+`def out`/`string`/`name` helpers in `ContentWriter`) was tried and reverted: the
+`[closure-capture]` tag, next to `[cursor-snapshot]` and `[aliased-read]`.
+
+## The derivation anchors were already honest (2026-10-08)
+
+Cluster B2 — `given x: T is Json.Encodable = caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)`
+and the `Decodable` twin under a local `ThrowTactic` — was 148 seals in exegesis (76), vivisection
+(45) and espionage (27). The plan's suspicion (`wisteria.Derivation.derived` is declared bare and
+`derivedOne` narrows once) was right: removing every one of them compiles clean from scratch on
+3.9.1-dev-p19, with all three suites green. The seals dated from the fresh-`conjunction` /
+Unscoped-`ThrowTactic` era (`DECISIONS.md` "a fresh-capturing object field forces the owner to
+extend Capability"); with `Emit` shared and the tactics `SharedUnscoped` (#2195) and the
+derivation's result typed by `derivedOne`, a companion `given` of a derived codec is a plain
+pure value. `unsafeAssumePure` 509 → 361. The `[field-purity]` tag is retired before it was
+ever applied; the remaining `unsafeAssumePure` in these files are the RPC proxies
+(`channel.proxy[T]`), `this`-launders and the `JsonRpc` dispatch — cluster G.
+
+The registries themselves stay erased. `rep/sepcheck-probes/p18-registry-slot.neg.scala` tests
+the comment on `Lsp.Registry` ("a union mentioning a context-function type freshens its
+capture sets at every adaptation") with a typed slot, `var ready: Slot[Handler] | Null` on a
+stateful registry where `Handler = (workspace: Workspace^) ?=> Unit`: the `^` on the handler's
+*parameter* becomes a per-instance `registry.any` once the type sits in a field, so no handler
+can be assigned ("capability `any` cannot flow into capture set {registry.any}") and no
+workspace can be passed to one read back. Not a leftover from an older checker, and not a
+`Stateful` question: a field whose type mentions a fresh parameter capability has no
+expressible type. Tag `[field-fresh-param]`; 69 + 6 + 7 sites (exegesis `Registry`,
+espionage `Registry`, `LspSession`'s initialisation record is the same shape one level up).
+
+## State inside anonymous instances (2026-10-08)
+
+The 40 `@untrackedCaptures` inside `new Iterator`/`new Stream`/`new Intake`/`new Cursor`
+bodies, by what blocks them:
+
+- **`[stdlib-iterator]` (19 + bitumen's `Lookahead` 3):** a `scala.Iterator`'s `hasNext`/`next`
+  cannot be `update`, so an iterator that advances a buffer or a lookahead has nowhere honest
+  to put the write. Retiring these means a Soundness iterator trait (or the `Stream`
+  interface everywhere a stdlib iterator is returned today) — a design leg, not a sweep.
+- **`[abstract-storage]` (`p5-abstract-storage.neg`, 9):** `storage: addressable0.Storage`
+  fields in `Stream`/`Intake` instances — an abstract storage type cannot carry `^`.
+- **`[anon-fresh-field]` (2, new):** a *concrete* `val carry: scala.Array[Byte]^` in an
+  anonymous `new Stream[Data]` body fails where the same field in a named class passes:
+  "Illegal access to {`any` of value joined} which is hidden by the previous definition of
+  value joined" from every later method that touches it — the anonymous template's fields are
+  checked like the vals of the enclosing block, so a fresh-typed one hides its capability from
+  what follows. `zephyrine.streamOf`'s `carry`/`joined` stay annotated; turbulence `Relay`'s
+  `storage: scala.Array[AnyRef]^` (touched only in `refill`) passes, −1.
+
+## ultimatum after `Board` (2026-10-08, with #2206 merged in)
+
+`Form` (11) becomes an exclusive stateful capability: the loop marked eight mutators, plus
+`paint` by hand (its symptom was not an "update" message but "`Board^{Form.this.root.rd}` cannot
+subsume `Board^{any}`" when passing the root to `FlowExtent` from a read-only method). The
+companion `apply` mints `Form^`; `run` is update. 181/181.
+
+Not done, and why: `Terminal.Metrics` (3) — `Terminal` builds live `Termcap` views over an alias
+of its metrics (`val metrics0 = metrics; new Termcap { … metrics0.rows … }`), and once the
+metrics are stateful the view captures `metrics0.rd` where a pure `Termcap` is required: a
+`[live-view]`, retired only by a capability-typed `Termcap`. The fixtures (`ScrollFixture`,
+`TableFixture`, `Reading`, `Inlay`, `EditorField`, `Panes`, 17) are user-held model objects
+the form drives through `wakeForm`/`onChange` callbacks and that user code mutates from event
+handlers — `[closure-capture]` by design. The test file's 13 are closure-captured locals.
+

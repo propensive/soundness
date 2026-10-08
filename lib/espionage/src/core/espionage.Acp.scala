@@ -74,12 +74,11 @@ object Acp:
 
   object Envelope:
     // Pure and throwing, like the other derivation anchors; see `InitializeResult.decodable`.
-    given encodable: Envelope is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: Envelope is Json.Encodable = Json.EncodableDerivation.derived
 
     given decodable: Envelope is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   // Any JSON-RPC message, read only for the two members that decide how it is handled: the method
   // it names — which a response does not — and the id it correlates on, which a notification does
@@ -118,7 +117,7 @@ object Acp:
     // in this object. The other decoder anchors below follow the same shape.
     given decodable: InitializeResult is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class InitializeResult
     ( protocolVersion:   Int,
@@ -145,7 +144,7 @@ object Acp:
   object NewSessionResult:
     given decodable: NewSessionResult is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class NewSessionResult
     ( sessionId: Text,
@@ -184,7 +183,7 @@ object Acp:
   object PromptResult:
     given decodable: PromptResult is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class PromptResult(stopReason: StopReason, _meta: Optional[Json] = Unset)
 
@@ -281,20 +280,18 @@ object Acp:
   object ToolContent:
     given decodable: ToolContent is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
-    given encodable: ToolContent is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: ToolContent is Json.Encodable = Json.EncodableDerivation.derived
 
   case class ToolContent(content: ContentBlock) extends ToolCallContent
 
   object ToolDiff:
     given decodable: ToolDiff is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
-    given encodable: ToolDiff is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: ToolDiff is Json.Encodable = Json.EncodableDerivation.derived
 
   case class ToolDiff(path: Text, oldText: Optional[Text] = Unset, newText: Text)
   extends ToolCallContent
@@ -302,17 +299,16 @@ object Acp:
   object ToolTerminal:
     given decodable: ToolTerminal is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
-    given encodable: ToolTerminal is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: ToolTerminal is Json.Encodable = Json.EncodableDerivation.derived
 
   case class ToolTerminal(terminalId: Text) extends ToolCallContent
 
   object ToolCall:
     given decodable: ToolCall is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   // A tool call as first reported (the `tool_call` update): only the id and title are required.
   case class ToolCall
@@ -329,7 +325,7 @@ object Acp:
   object ToolCallUpdate:
     given decodable: ToolCallUpdate is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   // A later report about an existing tool call (the `tool_call_update` update): every member but
   // the id is optional, and a present member replaces what was previously reported. The same
@@ -440,50 +436,45 @@ object Acp:
   object UserMessageChunk:
     given decodable: UserMessageChunk is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
-    given encodable: UserMessageChunk is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: UserMessageChunk is Json.Encodable = Json.EncodableDerivation.derived
 
   case class UserMessageChunk(content: ContentBlock) extends SessionUpdate
 
   object AgentMessageChunk:
     given decodable: AgentMessageChunk is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
-    given encodable: AgentMessageChunk is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: AgentMessageChunk is Json.Encodable = Json.EncodableDerivation.derived
 
   case class AgentMessageChunk(content: ContentBlock) extends SessionUpdate
 
   object AgentThoughtChunk:
     given decodable: AgentThoughtChunk is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
-    given encodable: AgentThoughtChunk is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: AgentThoughtChunk is Json.Encodable = Json.EncodableDerivation.derived
 
   case class AgentThoughtChunk(content: ContentBlock) extends SessionUpdate
 
   object Plan:
     given decodable: Plan is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
-    given encodable: Plan is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: Plan is Json.Encodable = Json.EncodableDerivation.derived
 
   case class Plan(entries: List[PlanEntry] = Nil) extends SessionUpdate
 
   object AvailableCommandsUpdate:
     given decodable: AvailableCommandsUpdate is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
-    given encodable: AvailableCommandsUpdate is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: AvailableCommandsUpdate is Json.Encodable = Json.EncodableDerivation.derived
 
   case class AvailableCommandsUpdate(availableCommands: List[AvailableCommand] = Nil)
   extends SessionUpdate
@@ -491,10 +482,9 @@ object Acp:
   object CurrentModeUpdate:
     given decodable: CurrentModeUpdate is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
-    given encodable: CurrentModeUpdate is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: CurrentModeUpdate is Json.Encodable = Json.EncodableDerivation.derived
 
   case class CurrentModeUpdate(currentModeId: Text) extends SessionUpdate
 
@@ -527,10 +517,9 @@ object Acp:
   object PermissionOption:
     given decodable: PermissionOption is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
-    given encodable: PermissionOption is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: PermissionOption is Json.Encodable = Json.EncodableDerivation.derived
 
   case class PermissionOption(optionId: Text, name: Text, kind: PermissionOptionKind)
 

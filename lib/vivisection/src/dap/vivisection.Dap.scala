@@ -113,7 +113,7 @@ object Dap:
     // in this object. The other codec anchors below follow the same shape.
     given decodable: Envelope is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   // Any DAP message, read only for the members that decide how it is handled. All optional, so
   // every message decodes.
@@ -164,8 +164,7 @@ object Dap:
     body.lay(typed): body => typed.updateDynamic("body")(body)
 
   object ExceptionFilter:
-    given encodable: ExceptionFilter is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: ExceptionFilter is Json.Encodable = Json.EncodableDerivation.derived
 
   case class ExceptionFilter(filter: Text, label: Text, default: Boolean = false)
 
@@ -175,8 +174,7 @@ object Dap:
         ExceptionFilter(t"caught", t"Caught exceptions") )
 
   object Capabilities:
-    given encodable: Capabilities is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: Capabilities is Json.Encodable = Json.EncodableDerivation.derived
 
   // What this adapter advertises in its `initialize` response; absent flags read as false.
   case class Capabilities
@@ -195,7 +193,7 @@ object Dap:
   object LaunchArguments:
     given decodable: LaunchArguments is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   // `launch` arguments are adapter-defined by the specification; this adapter asks for a main
   // class and a classpath, mirroring `Debuggee`.
@@ -204,87 +202,86 @@ object Dap:
   object AttachArguments:
     given decodable: AttachArguments is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class AttachArguments(port: Int, hostName: Optional[Text] = Unset)
 
   object Source:
     given decodable: Source is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
-    given encodable: Source is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: Source is Json.Encodable = Json.EncodableDerivation.derived
 
   case class Source(name: Optional[Text] = Unset, path: Optional[Text] = Unset)
 
   object SourceBreakpointSpec:
     given decodable: SourceBreakpointSpec is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class SourceBreakpointSpec(line: Int)
 
   object SetBreakpointsArguments:
     given decodable: SetBreakpointsArguments is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class SetBreakpointsArguments(source: Source, breakpoints: List[SourceBreakpointSpec] = Nil)
 
   object SetExceptionBreakpointsArguments:
     given decodable: SetExceptionBreakpointsArguments is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class SetExceptionBreakpointsArguments(filters: List[Text] = Nil)
 
   object FunctionBreakpointSpec:
     given decodable: FunctionBreakpointSpec is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class FunctionBreakpointSpec(name: Text)
 
   object SetFunctionBreakpointsArguments:
     given decodable: SetFunctionBreakpointsArguments is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class SetFunctionBreakpointsArguments(breakpoints: List[FunctionBreakpointSpec] = Nil)
 
   object DataBreakpointInfoArguments:
     given decodable: DataBreakpointInfoArguments is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class DataBreakpointInfoArguments(name: Text, variablesReference: Optional[Int] = Unset)
 
   object DataBreakpointSpec:
     given decodable: DataBreakpointSpec is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class DataBreakpointSpec(dataId: Text)
 
   object SetDataBreakpointsArguments:
     given decodable: SetDataBreakpointsArguments is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class SetDataBreakpointsArguments(breakpoints: List[DataBreakpointSpec] = Nil)
 
   object ThreadArguments:
     given decodable: ThreadArguments is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class ThreadArguments(threadId: Int)
 
   object StackTraceArguments:
     given decodable: StackTraceArguments is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class StackTraceArguments
     ( threadId: Int, startFrame: Optional[Int] = Unset, levels: Optional[Int] = Unset )
@@ -292,28 +289,28 @@ object Dap:
   object FrameArguments:
     given decodable: FrameArguments is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class FrameArguments(frameId: Int)
 
   object VariablesArguments:
     given decodable: VariablesArguments is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class VariablesArguments(variablesReference: Int)
 
   object SetVariableArguments:
     given decodable: SetVariableArguments is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class SetVariableArguments(variablesReference: Int, name: Text, value: Text)
 
   object EvaluateArguments:
     given decodable: EvaluateArguments is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class EvaluateArguments
     ( expression: Text, frameId: Optional[Int] = Unset, context: Optional[Text] = Unset )
@@ -321,7 +318,7 @@ object Dap:
   object CompletionsArguments:
     given decodable: CompletionsArguments is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   // `column` is a 1-based character position within `text`, per the specification's default
   // units; `line` is accepted but unused, since this adapter completes single-line console
@@ -332,13 +329,12 @@ object Dap:
   object SetExpressionArguments:
     given decodable: SetExpressionArguments is Json.Decodable =
       given tactic: Tactic[Json.Error] = ThrowTactic()
-      caps.unsafe.unsafeAssumePure(Json.DecodableDerivation.derived)
+      Json.DecodableDerivation.derived
 
   case class SetExpressionArguments(expression: Text, value: Text, frameId: Optional[Int] = Unset)
 
   object Breakpoint:
-    given encodable: Breakpoint is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: Breakpoint is Json.Encodable = Json.EncodableDerivation.derived
 
   // Response bodies and the structures they carry.
   case class Breakpoint
@@ -348,33 +344,28 @@ object Dap:
       message:  Optional[Text] = Unset )
 
   object BreakpointsBody:
-    given encodable: BreakpointsBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: BreakpointsBody is Json.Encodable = Json.EncodableDerivation.derived
 
   case class BreakpointsBody(breakpoints: List[Breakpoint])
 
   object DataBreakpointInfoBody:
-    given encodable: DataBreakpointInfoBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: DataBreakpointInfoBody is Json.Encodable = Json.EncodableDerivation.derived
 
   case class DataBreakpointInfoBody
     ( dataId: Optional[Text], description: Text, accessTypes: List[Text] = Nil )
 
   object ThreadInfo:
-    given encodable: ThreadInfo is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: ThreadInfo is Json.Encodable = Json.EncodableDerivation.derived
 
   case class ThreadInfo(id: Int, name: Text)
 
   object ThreadsBody:
-    given encodable: ThreadsBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: ThreadsBody is Json.Encodable = Json.EncodableDerivation.derived
 
   case class ThreadsBody(threads: List[ThreadInfo])
 
   object StackFrame:
-    given encodable: StackFrame is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: StackFrame is Json.Encodable = Json.EncodableDerivation.derived
 
   case class StackFrame
     ( id:               Int,
@@ -385,26 +376,22 @@ object Dap:
       presentationHint: Optional[Text] = Unset )
 
   object StackTraceBody:
-    given encodable: StackTraceBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: StackTraceBody is Json.Encodable = Json.EncodableDerivation.derived
 
   case class StackTraceBody(stackFrames: List[StackFrame], totalFrames: Optional[Int] = Unset)
 
   object Scope:
-    given encodable: Scope is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: Scope is Json.Encodable = Json.EncodableDerivation.derived
 
   case class Scope(name: Text, variablesReference: Int, expensive: Boolean = false)
 
   object ScopesBody:
-    given encodable: ScopesBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: ScopesBody is Json.Encodable = Json.EncodableDerivation.derived
 
   case class ScopesBody(scopes: List[Scope])
 
   object VariableInfo:
-    given encodable: VariableInfo is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: VariableInfo is Json.Encodable = Json.EncodableDerivation.derived
 
   case class VariableInfo
     ( name:               Text,
@@ -413,26 +400,22 @@ object Dap:
       `type`:             Optional[Text] = Unset )
 
   object VariablesBody:
-    given encodable: VariablesBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: VariablesBody is Json.Encodable = Json.EncodableDerivation.derived
 
   case class VariablesBody(variables: List[VariableInfo])
 
   object SetVariableBody:
-    given encodable: SetVariableBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: SetVariableBody is Json.Encodable = Json.EncodableDerivation.derived
 
   case class SetVariableBody(value: Text)
 
   object EvaluateBody:
-    given encodable: EvaluateBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: EvaluateBody is Json.Encodable = Json.EncodableDerivation.derived
 
   case class EvaluateBody(result: Text, variablesReference: Int = 0)
 
   object CompletionItem:
-    given encodable: CompletionItem is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: CompletionItem is Json.Encodable = Json.EncodableDerivation.derived
 
   // `start` and `length` delimit the region of the request's `text` the completion replaces, in
   // the same 1-based units as the request's `column`; when omitted, the client inserts `label`
@@ -444,27 +427,23 @@ object Dap:
       length: Optional[Int]  = Unset )
 
   object CompletionsBody:
-    given encodable: CompletionsBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: CompletionsBody is Json.Encodable = Json.EncodableDerivation.derived
 
   case class CompletionsBody(targets: List[CompletionItem])
 
   object ExceptionInfoBody:
-    given encodable: ExceptionInfoBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: ExceptionInfoBody is Json.Encodable = Json.EncodableDerivation.derived
 
   case class ExceptionInfoBody
     ( exceptionId: Text, breakMode: Text, description: Optional[Text] = Unset )
 
   object ContinueBody:
-    given encodable: ContinueBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: ContinueBody is Json.Encodable = Json.EncodableDerivation.derived
 
   case class ContinueBody(allThreadsContinued: Boolean = true)
 
   object StoppedBody:
-    given encodable: StoppedBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: StoppedBody is Json.Encodable = Json.EncodableDerivation.derived
 
   // Event bodies.
   case class StoppedBody
@@ -474,25 +453,21 @@ object Dap:
       hitBreakpointIds:  List[Int] = Nil )
 
   object ContinuedBody:
-    given encodable: ContinuedBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: ContinuedBody is Json.Encodable = Json.EncodableDerivation.derived
 
   case class ContinuedBody(threadId: Int, allThreadsContinued: Boolean = true)
 
   object OutputBody:
-    given encodable: OutputBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: OutputBody is Json.Encodable = Json.EncodableDerivation.derived
 
   case class OutputBody(output: Text, category: Optional[Text] = Unset)
 
   object ExitedBody:
-    given encodable: ExitedBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: ExitedBody is Json.Encodable = Json.EncodableDerivation.derived
 
   case class ExitedBody(exitCode: Int)
 
   object BreakpointEventBody:
-    given encodable: BreakpointEventBody is Json.Encodable =
-      caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)
+    given encodable: BreakpointEventBody is Json.Encodable = Json.EncodableDerivation.derived
 
   case class BreakpointEventBody(reason: Text, breakpoint: Breakpoint)

@@ -43,6 +43,19 @@ import vacuous.*
 import denominative.dysasymptotics.linearSize
 
 object Form:
+  // Minted fresh: the constructor proxy's result would be read-only, and `run` is an update.
+  def apply
+    ( root:         Board^,
+      mode:         Occupancy,
+      pane:         Pane,
+      wake:         () => Unit   = () => (),
+      throttle:     Long         = 0,
+      debounce:     Long         = 0,
+      scheduleWake: Long => Unit = _ => () )
+  :   Form^{root, wake, scheduleWake, scala.caps.any} =
+
+    new Form(root, mode, pane, wake, throttle, debounce, scheduleWake)
+
   // One derived leaf of the live pane tree: the pane itself, the rectangle the last solve
   // assigned it, and its live element (present only for a `Pane.Widget`). Every
   // per-leaf datum lives together, so per-entry access needs no agreement between
@@ -86,48 +99,41 @@ class Form
     wake:         () => Unit   = () => (),
     throttle:     Long         = 0,
     debounce:     Long         = 0,
-    scheduleWake: Long => Unit = _ => () ):
+    scheduleWake: Long => Unit = _ => () )
+// A stateful, exclusive capability: `run` drives the form's layout, focus and redraw state, so
+// a form is owned by the one call that runs it. The tactic-free constructor is private to the
+// companion's `apply`, which mints the fresh `Form^`.
+extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
   // The one immutable snapshot of the derived layout, re-assigned atomically by `refresh`.
-  @scala.caps.unsafe.untrackedCaptures
   private var layout: Form.Layout = Form.Layout(Sequence())
-  @scala.caps.unsafe.untrackedCaptures
   private var focused: Optional[Focus] = Unset
 
   // Whether `layout`'s geometry no longer describes the terminal (set by a resize): the
   // next refresh must re-measure at the root width and repaint in full.
-  @scala.caps.unsafe.untrackedCaptures
   private var staleGeometry: Boolean = false
-  @scala.caps.unsafe.untrackedCaptures
   private var lastRedraw: Long = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var lastWinch: Long = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var deferred: Optional[Set[Int]] = Unset
-  @scala.caps.unsafe.untrackedCaptures
   private var wakePending: Boolean = false
-  @scala.caps.unsafe.untrackedCaptures
   private var resizePending: Boolean = false
 
   // Whether an animation wake is already scheduled. One timer serves every animated fixture in the
   // layout (armed at the shortest period any of them asks for), and it is re-armed by each
   // repaint, so an animation costs exactly one pending wake however many spinners are on screen.
-  @scala.caps.unsafe.untrackedCaptures
   private var animationPending: Boolean = false
 
   // The anchor reply (the parked cursor's position after the resize's reflow),
   // stashed when it decodes and handed to the inline root at the resize repaint;
   // dropped on every new WINCH so it can only describe the latest reflow.
-  @scala.caps.unsafe.untrackedCaptures
   private var anchor: Optional[(Int, Int)] = Unset
 
   // Whether the resize repaint has already been deferred once to await a late
   // anchor reply; a single grace keeps a reply-less terminal from stalling.
-  @scala.caps.unsafe.untrackedCaptures
   private var resizeGrace: Boolean = false
 
   // Bind every container and every live element to the wake function, so a mutation — whether of
   // the tree's shape or of an element's own state — requests a repaint.
-  private def bind(node: Pane): Unit = node match
+  private update def bind(node: Pane): Unit = node match
     case Pane.Branch(_, _, panes) =>
       panes.bindWake(wake)
       panes.contents.each(bind(_))
@@ -140,7 +146,7 @@ class Form
 
   // Snapshot the live tree's leaves; keep focus on the same widget if it still
   // exists, else fall back to the first focusable.
-  private def rederive(): Sequence[Pane] =
+  private update def rederive(): Sequence[Pane] =
     bind(pane)
     val panes = pane.leaves.to[Sequence]
 
@@ -226,7 +232,7 @@ class Form
   // Paint one leaf of a solved layout. The index is confined to `layout.entries`, so
   // callers prove it in bounds (via `iterate`, `confine` or `focusables`) before it
   // crosses this boundary; both accesses below are then total.
-  private def paint(layout: Form.Layout)(index: Ordinal in layout.entries.type): Unit =
+  private update def paint(layout: Form.Layout)(index: Ordinal in layout.entries.type): Unit =
     val entry = layout.entries(index)
     val extent = FlowExtent(root, entry.rect)
 
@@ -246,7 +252,7 @@ class Form
   // full repaint, clearing the screen in fullscreen so a removed panel leaves no
   // residue; otherwise fullscreen repaints only the dirty cells and inline
   // re-presents the block.
-  private def refresh(changed: Set[Int]): Unit =
+  private update def refresh(changed: Set[Int]): Unit =
     val panes = rederive()
     val previous = layout
     val stale = staleGeometry || panes.size != previous.entries.size
@@ -292,7 +298,7 @@ class Form
   // Arm the animation timer, unless one is already armed or a resize wake already covers it (that
   // wake will repaint, and the repaint re-arms). Armed after every refresh, so the timer stops of
   // its own accord the moment the last animated fixture leaves the layout.
-  private def rearm(): Unit =
+  private update def rearm(): Unit =
     if !animationPending && !wakePending then animationPeriod.let: period =>
       animationPending = true
       scheduleWake(period.toLong)
@@ -311,7 +317,7 @@ class Form
 
   // Repaint immediately, folding in any coalesced or pending-resize work. Used for
   // typing, focus changes and application redraws, which must stay responsive.
-  private def requestRefresh(changed: Set[Int]): Unit =
+  private update def requestRefresh(changed: Set[Int]): Unit =
     deferred = deferred.lay(changed)(_ + changed)
     flushDeferred()
 
@@ -327,7 +333,7 @@ class Form
   // drag is quiet — no mid-drag redraws to ghost or flicker. The (blocking) cursor
   // query is deferred to that repaint, so a whole drag costs one query. Typing is
   // unaffected and stays immediate.
-  private def requestResizeRefresh(): Unit =
+  private update def requestResizeRefresh(): Unit =
     deferred = deferred.or(Set())
     lastWinch = System.currentTimeMillis
 
@@ -336,7 +342,7 @@ class Form
       wakePending = true
       scheduleWake(resizeDelay)
 
-  private def flushDeferred(): Unit = deferred.let: changed =>
+  private update def flushDeferred(): Unit = deferred.let: changed =>
     // A resize repaint whose anchor reply hasn't decoded yet defers once more, a few
     // milliseconds: the reply usually sits in the input buffer already, and waiting
     // for it is the difference between recovering the block's position and falling
@@ -375,7 +381,7 @@ class Form
 
       refresh(changed)
 
-  def run(events: Iterator[Terminal.Event]): Unit =
+  update def run(events: Iterator[Terminal.Event]): Unit =
     requestRefresh(Set())
     var running = true
 

@@ -4252,65 +4252,41 @@ object Tel extends Tel2:
     // per non-empty scope. For typical workloads (deep nesting, many siblings)
     // it eliminates several thousand allocations per parse.
 
-    @scala.caps.unsafe.untrackedCaptures
-    var scratchAtoms0: AnyRef = (new scala.Array[Tel.Atom](16)).asInstanceOf[AnyRef]
-
-    // An exclusive view of the scratch stack: the untracked `AnyRef` field
-    // keeps the mutable array's capture out of the parser's fields.
-    private inline def scratchAtoms: scala.Array[Tel.Atom]^ =
-      scratchAtoms0.asInstanceOf[scala.Array[Tel.Atom]^]
+    var scratchAtoms: scala.Array[Tel.Atom]^ = new scala.Array[Tel.Atom](16)
     var atomScratchIx:    Int = 0
 
-    @scala.caps.unsafe.untrackedCaptures
-    var scratchComments0: AnyRef = (new scala.Array[Tel.Comment](8)).asInstanceOf[AnyRef]
-
-    // An exclusive view of the scratch stack: the untracked `AnyRef` field
-    // keeps the mutable array's capture out of the parser's fields.
-    private inline def scratchComments: scala.Array[Tel.Comment]^ =
-      scratchComments0.asInstanceOf[scala.Array[Tel.Comment]^]
+    var scratchComments: scala.Array[Tel.Comment]^ = new scala.Array[Tel.Comment](8)
     var commentScratchIx: Int = 0
 
-    @scala.caps.unsafe.untrackedCaptures
-    var scratchCompounds0: AnyRef = (new scala.Array[Tel.Compound](8)).asInstanceOf[AnyRef]
-
-    // An exclusive view of the scratch stack: the untracked `AnyRef` field
-    // keeps the mutable array's capture out of the parser's fields.
-    private inline def scratchCompounds: scala.Array[Tel.Compound]^ =
-      scratchCompounds0.asInstanceOf[scala.Array[Tel.Compound]^]
+    var scratchCompounds: scala.Array[Tel.Compound]^ = new scala.Array[Tel.Compound](8)
     var compoundScratchIx: Int = 0
 
-    @scala.caps.unsafe.untrackedCaptures
-    var scratchBlocks0: AnyRef = (new scala.Array[Tel.Block](16)).asInstanceOf[AnyRef]
-
-    // An exclusive view of the scratch stack: the untracked `AnyRef` field
-    // keeps the mutable array's capture out of the parser's fields.
-    private inline def scratchBlocks: scala.Array[Tel.Block]^ =
-      scratchBlocks0.asInstanceOf[scala.Array[Tel.Block]^]
+    var scratchBlocks: scala.Array[Tel.Block]^ = new scala.Array[Tel.Block](16)
     var blockScratchIx:   Int = 0
 
     private update def reserveAtom(): Unit =
       if atomScratchIx >= scratchAtoms.length then
         val grown = new scala.Array[Tel.Atom](scratchAtoms.length*2)
         System.arraycopy(scratchAtoms, 0, grown, 0, atomScratchIx)
-        scratchAtoms0 = grown.asInstanceOf[AnyRef]
+        scratchAtoms = grown
 
     private update def reserveComment(): Unit =
       if commentScratchIx >= scratchComments.length then
         val grown = new scala.Array[Tel.Comment](scratchComments.length*2)
         System.arraycopy(scratchComments, 0, grown, 0, commentScratchIx)
-        scratchComments0 = grown.asInstanceOf[AnyRef]
+        scratchComments = grown
 
     private update def reserveCompound(): Unit =
       if compoundScratchIx >= scratchCompounds.length then
         val grown = new scala.Array[Tel.Compound](scratchCompounds.length*2)
         System.arraycopy(scratchCompounds, 0, grown, 0, compoundScratchIx)
-        scratchCompounds0 = grown.asInstanceOf[AnyRef]
+        scratchCompounds = grown
 
     private update def reserveBlock(): Unit =
       if blockScratchIx >= scratchBlocks.length then
         val grown = new scala.Array[Tel.Block](scratchBlocks.length*2)
         System.arraycopy(scratchBlocks, 0, grown, 0, blockScratchIx)
-        scratchBlocks0 = grown.asInstanceOf[AnyRef]
+        scratchBlocks = grown
 
     // Exclusive views for writes: the untracked fields read as read-only.
     private inline def atomsTarget: scala.Array[Tel.Atom]^ =
@@ -4396,21 +4372,10 @@ object Tel extends Tel2:
     // four bytes pack into `low` and the next four into `high`. ASCII keywords
     // fingerprint injectively; multibyte UTF-8 keywords fingerprint by raw
     // bytes (still injective for ≤8 bytes).
-    @scala.caps.unsafe.untrackedCaptures
-    val keyCache:     scala.Array[String] = new scala.Array[String](64)
-    @scala.caps.unsafe.untrackedCaptures
-    val keyCacheLow:  scala.Array[Long]   = new scala.Array[Long](64)
-    @scala.caps.unsafe.untrackedCaptures
-    val keyCacheHigh: scala.Array[Long]   = new scala.Array[Long](64)
+    val keyCache:     scala.Array[String]^ = new scala.Array[String](64)
+    val keyCacheLow:  scala.Array[Long]^   = new scala.Array[Long](64)
+    val keyCacheHigh: scala.Array[Long]^   = new scala.Array[Long](64)
 
-    // Exclusive views for writes: the untracked fields read as read-only.
-    private inline def keyCacheTarget: scala.Array[String]^ = keyCache.asInstanceOf[scala.Array[String]^]
-
-    private inline def keyCacheLowTarget: scala.Array[Long]^ =
-      keyCacheLow.asInstanceOf[scala.Array[Long]^]
-
-    private inline def keyCacheHighTarget: scala.Array[Long]^ =
-      keyCacheHigh.asInstanceOf[scala.Array[Long]^]
 
     // ── Substrate ─────────────────────────────────────────────────────────────
 
@@ -6597,9 +6562,9 @@ object Tel extends Tel2:
 
           if existing == null then
             val s = sliceText(startMark)
-            keyCacheTarget(slot) = s
-            keyCacheLowTarget(slot) = low
-            keyCacheHighTarget(slot) = high
+            keyCache(slot) = s
+            keyCacheLow(slot) = low
+            keyCacheHigh(slot) = high
             result = s
           else if keyCacheLow(slot) == low && keyCacheHigh(slot) == high then
             result = existing
@@ -6709,9 +6674,9 @@ object Tel extends Tel2:
 
         if existing == null then
           val s = fingerprintString()
-          keyCacheTarget(slot) = s
-          keyCacheLowTarget(slot) = low
-          keyCacheHighTarget(slot) = high
+          keyCache(slot) = s
+          keyCacheLow(slot) = low
+          keyCacheHigh(slot) = high
           result = s
         else if keyCacheLow(slot) == low && keyCacheHigh(slot) == high then
           result = existing

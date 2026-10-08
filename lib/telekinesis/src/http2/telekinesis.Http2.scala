@@ -517,7 +517,7 @@ object Http2:
     // Dispatch one decoded frame. Lives on the companion — taking the connection as a
     // plain parameter — so the reader daemon's body stays free of `this` captures.
     // The tactic is a plain using-parameter: a context-function result may not hide it.
-    private def dispatch(conn: Http2.Connection, frame: Frame, decoder: Hpack)
+    private def dispatch(conn: Http2.Connection, frame: Frame, decoder: Hpack^)
       ( using Tactic[Http2.Error] )
     :   Boolean =
       frame match
@@ -905,7 +905,7 @@ object Http2:
     // known stream carries request trailers. Lives on the companion — taking the
     // connection as a plain parameter — so the reader daemon's body stays free of
     // `this` captures. Returns false to stop the reader.
-    private def dispatch(conn: Http2.ServerConnection, frame: Frame, decoder: Hpack)
+    private def dispatch(conn: Http2.ServerConnection, frame: Frame, decoder: Hpack^)
       ( using Tactic[Http2.Error] )
     :   Boolean =
       frame match

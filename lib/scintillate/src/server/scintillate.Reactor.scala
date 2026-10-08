@@ -340,9 +340,7 @@ object Reactor:
     // The buffers of one gathering write: a head and its body, or several pipelined
     // responses, in one syscall. Cleared after each write so that an idle keep-alive
     // connection does not pin its last response's body.
-    // Untracked, as `Stream`'s storage: written only through the exclusive view below.
-    @scala.caps.unsafe.untrackedCaptures
-    private val gather: scala.Array[jnio.ByteBuffer | Null] =
+    private val gather: scala.Array[jnio.ByteBuffer | Null]^ =
       new scala.Array[jnio.ByteBuffer | Null](16)
 
     private update def write(): Unit =
@@ -350,12 +348,11 @@ object Reactor:
 
       try
         while !blocked && !outbound.isEmpty do
-          val slots = gather.asInstanceOf[scala.Array[jnio.ByteBuffer | Null]^]
           var count = 0
           val pending = outbound.iterator.nn
 
-          while count < slots.length && pending.hasNext do
-            slots(count) = pending.next()
+          while count < gather.length && pending.hasNext do
+            gather(count) = pending.next()
             count += 1
 
           queued -= channel.write(gather, 0, count)
@@ -364,9 +361,9 @@ object Reactor:
           var index = 0
 
           while index < count do
-            if !blocked && slots(index).nn.hasRemaining then blocked = true
+            if !blocked && gather(index).nn.hasRemaining then blocked = true
             if !blocked then outbound.poll()
-            slots(index) = null
+            gather(index) = null
             index += 1
       catch case _: java.io.IOException =>
         outbound.clear()

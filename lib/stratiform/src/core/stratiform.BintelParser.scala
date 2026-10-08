@@ -46,20 +46,27 @@ import vacuous.*
 // The class is public — generated parsers, spliced into user modules, bind
 // it once per read and step through its direct rim — but only stratiform's
 // read path can construct one.
+private[stratiform] object BintelParser:
+  // Minted fresh: the constructor proxy's result would be read-only.
+  def apply
+    ( input: Data, codecs: Optional[Tel.Codec.Resolver] = Unset, checkCanonical: Boolean = false )
+  :   BintelParser^ =
+
+    new BintelParser(input, codecs, checkCanonical)
+
 final class BintelParser private[stratiform]
   ( input: Data,
     codecs: Optional[Tel.Codec.Resolver] = Unset,
-    checkCanonical: Boolean = false ):
+    checkCanonical: Boolean = false )
+extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
 
-  @scala.caps.unsafe.untrackedCaptures
   private[stratiform] val data: scala.Array[Byte] = input.asInstanceOf[scala.Array[Byte]]
 
-  @scala.caps.unsafe.untrackedCaptures
   private[stratiform] var offset: Int = 0
 
   // §4 and §10: a varint that is truncated (including one with no bytes
   // available at all), wider than 64 bits, or overlong is B02.
-  def directVarint()(using Tactic[Bintel.Error]): Long =
+  update def directVarint()(using Tactic[Bintel.Error]): Long =
     val start = offset
     var result = 0L
     var shift = 0
@@ -85,7 +92,7 @@ final class BintelParser private[stratiform]
     result
 
   // A child count or keyword index, bounded to `Int`.
-  def directCount()(using Tactic[Bintel.Error]): Int =
+  update def directCount()(using Tactic[Bintel.Error]): Int =
     val value = directVarint()
 
     if value < 0 || value > Int.MaxValue then abort(Bintel.Error(Bintel.Error.Reason.VarintError))
@@ -94,7 +101,7 @@ final class BintelParser private[stratiform]
 
   // One scalar payload: `length` varint then UTF-8 bytes, exactly as
   // `decodeElement`'s Scalar case reads it.
-  def directScalar()(using Tactic[Bintel.Error]): String =
+  update def directScalar()(using Tactic[Bintel.Error]): String =
     val length = directCount()
 
     if offset + length > data.length then abort(Bintel.Error(Bintel.Error.Reason.ValueTruncated))
@@ -109,7 +116,7 @@ final class BintelParser private[stratiform]
   // when the codec rejects the bytes, and B15 under the OPTIONAL
   // re-encode canonicality check. Generated parsers call this at leaves
   // whose type declares an encoding via the `Tel.Encoded` marker.
-  def directEncodedScalar(encoding: String)(using Tactic[Bintel.Error]): String =
+  update def directEncodedScalar(encoding: String)(using Tactic[Bintel.Error]): String =
     val bytes = directScalarBytes()
 
     val codec = codecs.let(_(encoding.tt))
@@ -136,7 +143,7 @@ final class BintelParser private[stratiform]
   // `directEncodedScalar` reads before applying its codec. Framing is
   // codec-independent, so `directSkipScalar` skips encoded scalars
   // correctly too.
-  def directScalarBytes()(using Tactic[Bintel.Error]): scala.Array[Byte] =
+  update def directScalarBytes()(using Tactic[Bintel.Error]): scala.Array[Byte] =
     val length = directCount()
 
     if offset + length > data.length then abort(Bintel.Error(Bintel.Error.Reason.ValueTruncated))
@@ -146,7 +153,7 @@ final class BintelParser private[stratiform]
     result
 
   // Skips one scalar payload without materializing it.
-  def directSkipScalar()(using Tactic[Bintel.Error]): Unit =
+  update def directSkipScalar()(using Tactic[Bintel.Error]): Unit =
     val length = directCount()
 
     if offset + length > data.length then abort(Bintel.Error(Bintel.Error.Reason.ValueTruncated))

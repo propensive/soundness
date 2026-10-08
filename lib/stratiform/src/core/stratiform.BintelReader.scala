@@ -45,10 +45,10 @@ object BintelReader:
   // travels as a neutral carrier (jacinta's `Json.Reader` pattern): the
   // field stays pure, and each accessor reasserts the type at the rim —
   // the audited point.
-  private[stratiform] def apply(parser: BintelParser, tactic: Tactic[Bintel.Error])
+  private[stratiform] def apply(parser: BintelParser^, tactic: Tactic[Bintel.Error])
   :   BintelReader^ =
 
-    new BintelReader(parser, tactic.asInstanceOf[AnyRef])
+    new BintelReader(parser.asInstanceOf[AnyRef], tactic.asInstanceOf[AnyRef])
 
 // The public, restricted rim of the BinTEL body parser, handed to
 // `Bintel.Parsable` instances so they can consume elements straight off the
@@ -67,7 +67,7 @@ object BintelReader:
 // call, and nothing of it may be retained afterwards.
 final class BintelReader private (parser0: AnyRef, tactic0: AnyRef)
 extends caps.ExclusiveCapability, caps.Stateful:
-  private inline def parser: BintelParser = parser0.asInstanceOf[BintelParser]
+  private inline def parser: BintelParser^ = parser0.asInstanceOf[BintelParser^]
 
   // The sealed conduit for generated parsers: package-private, so the only
   // path to the wrapped capabilities from outside stratiform is through the
