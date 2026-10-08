@@ -194,7 +194,7 @@ case class Help
 
     val ungrouped: List[Help] = subcommands.filter: sub =>
       val group: Optional[CommandGroup] = sub.group
-      group == Unset
+      group.absent
 
     val groupList: List[CommandGroup] =
       subcommands.bind: sub =>

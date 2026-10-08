@@ -43,8 +43,8 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import hellenism.*
 import hieroglyph.*, codepages.utf8Codepage
-import prepositional.*
 import rudiments.*
 import spectacular.*
 import stratiform.*
@@ -62,221 +62,19 @@ import vacuous.*
 // The schema is the specification: the runner's `bintel.rs` encodes and decodes exactly its
 // keyword order, and carries the schema's 33-byte signature as a constant, so a launcher and
 // a daemon built against different schemas refuse each other at the first document rather
-// than misreading fields. The TEL text is the source of truth — byte for byte xek's
-// `spec/ethereal-launcher.tel` — and the enum mirrors it member for member; the tests pin
-// the signature and the wire bytes of a sample of messages against the values the runner's
-// unit tests pin.
+// than misreading fields. The TEL text is the source of truth — the resource
+// `ethereal/ethereal-launcher.tel`, byte for byte xek's `spec/ethereal-launcher.tel` — and the
+// enum mirrors it member for member; the tests pin the signature and the wire bytes of a sample
+// of messages against the values the runner's unit tests pin.
 object Launcher:
-  val schemaText: Text = Text("""|name ethereal-launcher
-                            |
-                            |document
-                            |  select Message required
-                            |
-                            |select Message
-                            |  variant init Init
-                            |  variant data Data
-                            |  variant end End
-                            |  variant credit Credit
-                            |  variant open Open
-                            |  variant signal Signal
-                            |  variant signal-ack SignalAck
-                            |  variant mode Mode
-                            |  variant closed Closed
-                            |  variant exit-status ExitStatus
-                            |  variant verify Verify
-                            |  variant verdict Verdict
-                            |  variant shutdown Shutdown
-                            |  variant run Run
-                            |  variant exited Exited
-                            |
-                            |scalar Bytes
-                            |  description
-                            |      Raw bytes: one chunk of a stream.
-                            |  encoding base-256
-                            |
-                            |record Init
-                            |  description
-                            |      A new invocation, opening the session that carries it: the
-                            |      connection then carries data, end, credit, open, signal,
-                            |      signal-ack, mode and closed documents in either direction,
-                            |      until the daemon ends it with exit-status. The three tty
-                            |      flags say which of the client's streams are attached to a
-                            |      terminal; the daemon sees only sockets and cannot determine
-                            |      this for itself. The uid is the platform's identifier for the
-                            |      user: numeric on Unix, a SID on Windows. The invoked-as field
-                            |      is argv[0] as the caller supplied it, for a multi-call binary
-                            |      to dispatch on; script is the canonical path. The umask is
-                            |      octal; columns and rows are the terminal's size when stdout is
-                            |      a terminal; the code pages are the Windows console's input and
-                            |      output code pages. Each descriptor is a file descriptor the
-                            |      client holds, which the daemon may open as a stream. Each raw
-                            |      is the native bytes of an argument, environment entry or the
-                            |      working directory whose text form could not carry them.
-                            |  field pid String required
-                            |  field uid String required
-                            |  field username String required
-                            |  field script String required
-                            |  field pwd String required
-                            |  field stdin-tty Flag optional
-                            |  field stdout-tty Flag optional
-                            |  field stderr-tty Flag optional
-                            |  field argument String optional repeatable
-                            |  field environment String optional repeatable
-                            |  field invoked-as String optional
-                            |  field umask String optional
-                            |  field columns String optional
-                            |  field rows String optional
-                            |  field input-codepage String optional
-                            |  field output-codepage String optional
-                            |  field descriptor Descriptor optional repeatable
-                            |  field raw Raw optional repeatable
-                            |
-                            |record Raw
-                            |  description
-                            |      A value of the init document as the operating system gave it,
-                            |      for one whose text form lost something: an argument or an
-                            |      environment entry that is not valid UTF-8, or on Windows holds
-                            |      an unpaired surrogate, or the working directory. The kind is
-                            |      argument, environment or pwd; the index is the position among
-                            |      the arguments or environment entries, from 0, and absent for
-                            |      pwd. The bytes are the platform's own: bytes on Unix, UTF-16
-                            |      code units, little-endian, on Windows.
-                            |  field kind String required
-                            |  field index String optional
-                            |  field bytes Bytes required
-                            |
-                            |record Descriptor
-                            |  description
-                            |      A file descriptor open in the client when it connected,
-                            |      numbered as the client sees it; 0, 1 and 2 are among them.
-                            |      The direction is r, w or rw, as the descriptor was opened.
-                            |      The kind is file, pipe, tty, socket or other; for a file the
-                            |      path is its real path, which the daemon may open directly.
-                            |      Anything else is reached by opening the descriptor as a
-                            |      stream named by its number.
-                            |  field fd String required
-                            |  field direction String required
-                            |  field kind String required
-                            |  field path String optional
-                            |
-                            |record Data
-                            |  description
-                            |      One chunk of a stream, of at most 65536 bytes. The stream is
-                            |      stdin, stdout, stderr or the number of an open descriptor.
-                            |      A sender never has more bytes outstanding on a stream than
-                            |      the credit it holds for it.
-                            |  field stream String required
-                            |  field bytes Bytes required
-                            |
-                            |record End
-                            |  description
-                            |      The named stream has ended, after every chunk sent before
-                            |      this: end-of-file for the daemon's reader of stdin or of a
-                            |      descriptor opened to read, or the daemon's close of a
-                            |      descriptor opened to write. Nothing more is sent on it.
-                            |  field stream String required
-                            |
-                            |record Credit
-                            |  description
-                            |      The receiver of a stream can take this many more bytes of it,
-                            |      in addition to any credit it granted before. The session opens
-                            |      with 65536 bytes of credit on every stream in each direction.
-                            |  field stream String required
-                            |  field bytes String required
-                            |
-                            |record Open
-                            |  description
-                            |      Asks the launcher to start carrying the named descriptor: as
-                            |      data documents from the client if it was opened to read, or
-                            |      by writing data documents the daemon sends to it if it was
-                            |      opened to write. Not answered; the stream simply begins. A
-                            |      descriptor the daemon did not advertise, or opens again
-                            |      while it is open, is ignored.
-                            |  field stream String required
-                            |
-                            |record Signal
-                            |  description
-                            |      A signal the client received, named without its SIG prefix,
-                            |      or a Windows console control event. WINCH and CONT carry the
-                            |      terminal's current size; a Windows close, logoff or shutdown
-                            |      carries the milliseconds the system allows before it ends
-                            |      the client regardless. Answered with signal-ack; the launcher
-                            |      sends no further signal until it has the answer.
-                            |  field name String required
-                            |  field columns String optional
-                            |  field rows String optional
-                            |  field deadline String optional
-                            |
-                            |record SignalAck
-                            |  description
-                            |      Whether the invocation accepted the signal last sent.
-                            |  field accept Flag optional
-                            |
-                            |record Mode
-                            |  description
-                            |      Asks the launcher to put the client's terminal into canonical
-                            |      (cooked) mode, or back into raw mode when the flag is absent,
-                            |      and to echo what is typed, or not when that flag is absent:
-                            |      canonical without echo is how a password is read. The launcher
-                            |      answers nothing; a terminal it does not own is left as it is.
-                            |  field canonical Flag optional
-                            |  field echo Flag optional
-                            |
-                            |record Closed
-                            |  description
-                            |      The named stream has lost its reader at the client: stdout or
-                            |      stderr could not be written, or a descriptor opened to write
-                            |      could not be. The daemon should fail the invocation's further
-                            |      writes to that stream, as a broken pipe would. Sent by the
-                            |      daemon, it says the invocation has closed a descriptor it
-                            |      opened to read before reading it to its end, and the launcher
-                            |      stops carrying it.
-                            |  field stream String required
-                            |
-                            |record ExitStatus
-                            |  description
-                            |      The invocation's exit status, ending the session: the last
-                            |      document the daemon writes, after every chunk of every stream.
-                            |  field code String required
-                            |
-                            |record Verify
-                            |  description
-                            |      Asks, on a connection of its own, whether the launcher file
-                            |      the daemon started from still has the content it remembers;
-                            |      answered with a verdict.
-                            |  field launcher String optional
-                            |
-                            |record Verdict
-                            |  field fresh Flag optional
-                            |
-                            |record Shutdown
-                            |  description
-                            |      Asks the daemon to exit: to accept no further invocations, to
-                            |      let those in flight finish, and then to end. Not answered; the
-                            |      connection is closed. A launcher whose daemon is gone starts a
-                            |      fresh one, so this reclaims a warm JVM without leaving anything
-                            |      broken.
-                            |
-                            |record Run
-                            |  description
-                            |      Asks the launcher to run a command on the client's terminal:
-                            |      an editor, a pager, ssh or sudo, which the daemon's own process
-                            |      cannot reach. The launcher stops carrying the terminal's input
-                            |      and holds the invocation's output, restores the terminal's
-                            |      saved state, runs the command with the client's environment
-                            |      and standard streams — in pwd, if given — and, when it ends,
-                            |      puts the terminal back as it was and answers with exited. A
-                            |      client whose stdin is not a terminal it owns answers exited
-                            |      with 127 at once. One command runs at a time.
-                            |  field command String required
-                            |  field argument String optional repeatable
-                            |  field pwd String optional
-                            |
-                            |record Exited
-                            |  description
-                            |      The status the command the daemon asked to run ended with.
-                            |  field code String required
-                            |""".stripMargin)
+  // Read through ethereal's own classloader, since the resource is in its jar and the first
+  // thread to need the schema may carry any context classloader.
+  lazy val schemaText: Text =
+    import strategies.throwUnsafely
+    import charsets.utf8Charset
+    import textSanitizers.strictSanitizer
+    given classloader: Classloader = Classloader[Launcher.type]
+    cp"/ethereal/ethereal-launcher.tel".read[Text]
 
   // A file descriptor the client holds, as `init` advertises it: its number, `r`/`w`/`rw`,
   // its kind (`file`, `pipe`, `tty`, `socket`, `other`) and, for a regular file, its real path.
@@ -509,7 +307,7 @@ object Launcher:
       case Tel.Element.Node(_, _, Array(Tel.Element.Node(index, _, children))) =>
         def optional(field: Int): Optional[Text] = children.readable.collectFirst:
           case Tel.Element.Value(`field`, _, text) => text
-        . getOrElse(Unset)
+        . optional
 
         def text(field: Int): Text = optional(field).or(abort(Launcher.Mismatch()))
 
@@ -531,7 +329,7 @@ object Launcher:
             case Tel.Element.Node(16, _, fields) =>
               def field(index: Int): Optional[Text] = fields.readable.collectFirst:
                 case Tel.Element.Value(`index`, _, text) => text
-              . getOrElse(Unset)
+              . optional
 
               Descriptor
                 ( field(0).or(abort(Launcher.Mismatch())).as[Int],
@@ -545,7 +343,7 @@ object Launcher:
             case Tel.Element.Node(17, _, fields) =>
               def field(index: Int): Optional[Text] = fields.readable.collectFirst:
                 case Tel.Element.Value(`index`, _, text) => text
-              . getOrElse(Unset)
+              . optional
 
               Raw
                 ( field(0).or(abort(Launcher.Mismatch())),

@@ -330,7 +330,7 @@ object Ansi extends Ansi2:
       Teletype
         ( plainText,
           newStyles,
-          state.hyperlinks.toMap.to(Map),
+          state.hyperlinks.to(Map),
           state.insertions.to(TreeMap),
           newBoundaries )
 

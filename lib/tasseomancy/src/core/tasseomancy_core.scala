@@ -62,42 +62,40 @@ package calibrations:
   given tightCalibration: [value] => value is Calibration = Calibration(Calibration.Policy.Tight)
 
 package palettes:
-  private def rgb(red: Double, green: Double, blue: Double): Color in Srgb = Srgb(red, green, blue)
-
   given slateChartPalette: ChartPalette = new ChartPalette:
     val series: Sequence[Color in Srgb] =
       Sequence
-        ( rgb(0.306, 0.475, 0.655), rgb(0.949, 0.557, 0.169), rgb(0.882, 0.341, 0.349),
-          rgb(0.463, 0.718, 0.698), rgb(0.349, 0.631, 0.310), rgb(0.929, 0.788, 0.282),
-          rgb(0.690, 0.478, 0.631), rgb(1.000, 0.616, 0.655) )
+        ( Srgb(0.306, 0.475, 0.655), Srgb(0.949, 0.557, 0.169), Srgb(0.882, 0.341, 0.349),
+          Srgb(0.463, 0.718, 0.698), Srgb(0.349, 0.631, 0.310), Srgb(0.929, 0.788, 0.282),
+          Srgb(0.690, 0.478, 0.631), Srgb(1.000, 0.616, 0.655) )
 
-    def background: Color in Srgb = rgb(1.0, 1.0, 1.0)
-    def foreground: Color in Srgb = rgb(0.2, 0.2, 0.2)
-    def axis: Color in Srgb = rgb(0.4, 0.4, 0.4)
-    def grid: Color in Srgb = rgb(0.87, 0.87, 0.87)
-    def text: Color in Srgb = rgb(0.2, 0.2, 0.2)
+    def background: Color in Srgb = Srgb(1.0, 1.0, 1.0)
+    def foreground: Color in Srgb = Srgb(0.2, 0.2, 0.2)
+    def axis: Color in Srgb = Srgb(0.4, 0.4, 0.4)
+    def grid: Color in Srgb = Srgb(0.87, 0.87, 0.87)
+    def text: Color in Srgb = Srgb(0.2, 0.2, 0.2)
 
   private val solarizedSeries: Sequence[Color in Srgb] =
     Sequence
-      ( rgb(0.149, 0.545, 0.824), rgb(0.796, 0.294, 0.086), rgb(0.522, 0.600, 0.000),
-        rgb(0.827, 0.212, 0.510), rgb(0.165, 0.631, 0.596), rgb(0.710, 0.537, 0.000),
-        rgb(0.424, 0.443, 0.769), rgb(0.863, 0.196, 0.184) )
+      ( Srgb(0.149, 0.545, 0.824), Srgb(0.796, 0.294, 0.086), Srgb(0.522, 0.600, 0.000),
+        Srgb(0.827, 0.212, 0.510), Srgb(0.165, 0.631, 0.596), Srgb(0.710, 0.537, 0.000),
+        Srgb(0.424, 0.443, 0.769), Srgb(0.863, 0.196, 0.184) )
 
   given solarizedDarkChartPalette: ChartPalette = new ChartPalette:
     val series: Sequence[Color in Srgb] = solarizedSeries
-    def background: Color in Srgb = rgb(0.000, 0.169, 0.212)
-    def foreground: Color in Srgb = rgb(0.514, 0.580, 0.588)
-    def axis: Color in Srgb = rgb(0.345, 0.431, 0.459)
-    def grid: Color in Srgb = rgb(0.027, 0.212, 0.259)
-    def text: Color in Srgb = rgb(0.576, 0.631, 0.631)
+    def background: Color in Srgb = Srgb(0.000, 0.169, 0.212)
+    def foreground: Color in Srgb = Srgb(0.514, 0.580, 0.588)
+    def axis: Color in Srgb = Srgb(0.345, 0.431, 0.459)
+    def grid: Color in Srgb = Srgb(0.027, 0.212, 0.259)
+    def text: Color in Srgb = Srgb(0.576, 0.631, 0.631)
 
   given solarizedLightChartPalette: ChartPalette = new ChartPalette:
     val series: Sequence[Color in Srgb] = solarizedSeries
-    def background: Color in Srgb = rgb(0.992, 0.965, 0.890)
-    def foreground: Color in Srgb = rgb(0.396, 0.482, 0.514)
-    def axis: Color in Srgb = rgb(0.576, 0.631, 0.631)
-    def grid: Color in Srgb = rgb(0.933, 0.910, 0.835)
-    def text: Color in Srgb = rgb(0.345, 0.431, 0.459)
+    def background: Color in Srgb = Srgb(0.992, 0.965, 0.890)
+    def foreground: Color in Srgb = Srgb(0.396, 0.482, 0.514)
+    def axis: Color in Srgb = Srgb(0.576, 0.631, 0.631)
+    def grid: Color in Srgb = Srgb(0.933, 0.910, 0.835)
+    def text: Color in Srgb = Srgb(0.345, 0.431, 0.459)
 
 package fontMetrics:
   // Six tenths of an em per character: the width of an average proportional face.

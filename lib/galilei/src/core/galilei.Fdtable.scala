@@ -75,7 +75,7 @@ object Fdtable extends FdtablePriority:
   // The first answer among every table in scope, if any answers: a `Provider`'s, where there
   // is one, since the fallback never answers.
   def resolve(fdtables: Every[Fdtable], path: Text): Optional[Descriptor] =
-    fdtables.values.iterator.map(_.descriptor(path)).find(_.present).getOrElse(Unset)
+    fdtables.values.iterator.map(_.descriptor(path)).find(_.present).optional
 
 // Lower priority than the companion's `provided` (a class's givens take precedence over its
 // parent's), so a `Provider` in scope wins and, absent one, nothing changes.

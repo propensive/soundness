@@ -126,7 +126,7 @@ object Lexis:
     val start = Fragment.identifierStart(text, point)
 
     val prefix: Optional[Text] =
-      if start == point then Unset else text.s.substring(start, point).nn.tt
+      if start == point then Unset else text.segment(start.z till point.z)
 
     val truncated: Text = text.keep(start)
 

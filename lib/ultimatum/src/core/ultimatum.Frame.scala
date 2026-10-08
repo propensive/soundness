@@ -182,7 +182,7 @@ enum Frame:
         val height = rowHeights(row).min((rect.top + rect.height - top).max(0))
         childList(index).arrange(Rect(xs(column), top, colWidths(column), height))
 
-      Placement.Split(rect, placements.to(scala.List).to(List))
+      Placement.Split(rect, placements.to(List))
 
     case Split(_, arrangement, children) =>
       val available = arrangement match

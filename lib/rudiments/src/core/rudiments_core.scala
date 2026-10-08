@@ -204,23 +204,19 @@ extension [value <: Matchable](iterable: Iterable[value])
 // idiom for locating a specific element.)
 extension [self](self: self)(using traversable: self is Traversable)
   def seek(predicate: traversable.Operand => Boolean): Optional[traversable.Operand] =
-    traversable.traverse(self).find(predicate) match
-      case Some(element) => element
-      case None          => Unset
+    traversable.traverse(self).find(predicate).optional
 
   // The first element the partial function is defined at, transformed by it: the total
   // counterpart of `collectFirst`, and the single-result sibling of `sweep`. A distinct name
   // rather than a `seek` overload, because a case-literal closure matches both the predicate
   // and the partial-function shapes, making every call site ambiguous.
   def reap[element2](lambda: PartialFunction[traversable.Operand, element2]): Optional[element2] =
-    traversable.traverse(self).collectFirst(lambda) match
-      case Some(element) => element
-      case None          => Unset
+    traversable.traverse(self).collectFirst(lambda).optional
 
   def where(predicate: traversable.Operand => Boolean): Optional[Ordinal] =
-    traversable.traverse(self).zipWithIndex.find { (element, _) => predicate(element) } match
-      case Some((_, index)) => index.z
-      case None             => Unset
+    traversable.traverse(self).zipWithIndex.find { (element, _) => predicate(element) }
+    . map(_(1).z)
+    . optional
 
   // Each element paired with its `Ordinal` position, in the source's own (stable) shape:
   // the total counterpart of `zipWithIndex`.

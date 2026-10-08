@@ -35,6 +35,7 @@ package cataclysm
 import anticipation.*
 import contingency.*
 import gossamer.*
+import rudiments.{after, before, skip}
 import vacuous.*
 import zephyrine.*
 
@@ -197,11 +198,9 @@ private[cataclysm] object CssParser:
 
     // Split an `@…` prelude into its identifier and the remaining prelude text.
     private def atRule(text: Text): (Text, Text) =
-      val body = text.s.substring(1).nn
-      val space = body.indexOf(' ')
+      val body: Text = text.skip(1)
 
-      if space < 0 then (body.tt, t"")
-      else (body.substring(0, space).nn.tt, body.substring(space + 1).nn.tt.trim)
+      body.offsetOf(t" ").lay((body, t"")): space => (body.before(space), body.after(space).trim)
 
     // Consume the body of a `/* … */` comment; the opening `/*` is already read.
     private def comment(): Unit =

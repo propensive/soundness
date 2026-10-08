@@ -533,7 +533,7 @@ object internal:
 
 
   def ip(context: Expr[StringContext]): Macro[Ipv4 | Ipv6] =
-    val text = Text(context.valueOrAbort.parts.head)
+    val text = context.valueOrAbort.parts.head.tt
 
     abortive:
       if text.contains(t".") then
@@ -545,7 +545,7 @@ object internal:
         '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
 
   def subnet(context: Expr[StringContext]): Macro[Ipv4Subnet | Ipv6Subnet] =
-    val text = Text(context.valueOrAbort.parts.head)
+    val text = context.valueOrAbort.parts.head.tt
 
     abortive:
       val dotted = text.cut(t"/").absolve match

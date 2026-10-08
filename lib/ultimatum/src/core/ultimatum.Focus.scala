@@ -97,7 +97,7 @@ class MenuField[item: Showable](initial: SelectMenu[item]) extends Focus:
       val marker =
         if option != menu.current then t"   " else if focused then t" > " else t" · "
 
-      val line = t"$marker${option.show}"
+      val line = t"$marker$option"
       canvas.put(line)
       row += (line.length - 1)/cols + 1
 

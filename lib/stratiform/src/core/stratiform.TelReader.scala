@@ -137,7 +137,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
 
   update def primaryText: Optional[Text] =
     val text = parser.directPrimaryText
-    if text == null then Unset else Optional(Text(text))
+    if text == null then Unset else Optional(text.tt)
 
   // Consumes only the entry's own line (and any source/literal
   // continuation), leaving its children for the caller to parse one level

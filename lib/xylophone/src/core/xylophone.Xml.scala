@@ -1392,7 +1392,7 @@ object Xml extends Tag.Container
                 // zero occurrences build the empty collection, exactly as
                 // the AST derivation decodes an empty synthetic fragment.
                 val elements: List[Any] = values.readable(index) match
-                  case buffer: scm.ListBuffer[?] => buffer.toList.to(List)
+                  case buffer: scm.ListBuffer[?] => buffer.to(List)
                   case _                         => Nil
 
                 values(index) =
@@ -1736,9 +1736,9 @@ object Xml extends Tag.Container
     case _ =>
       summonInline[derivation is Annotated by xmlns] match
         case fields: Annotated.AnnotatedFields[Xml.xmlns, ?, ?, ?] @unchecked =>
-          fields.annotations.stdlib.headOption match
-            case Some(annotation) => (annotation.uri, annotation.qualified)
-            case None             => Unset
+          fields.annotations.stdlib.headOption
+          . map { annotation => (annotation.uri, annotation.qualified) }
+          . optional
 
         case _ =>
           Unset
@@ -1764,7 +1764,7 @@ object Xml extends Tag.Container
       val colon = label.s.indexOf(':')
 
       if colon < 0 then (Unset, label)
-      else (label.s.substring(0, colon).nn.tt, label.s.substring(colon + 1).nn.tt)
+      else (label.keep(colon), label.skip(colon + 1))
 
     // Clark notation, `{uri}local`, or the bare local part
     given showable: Name is Showable = name =>
@@ -2585,7 +2585,7 @@ object Xml extends Tag.Container
       var seen = 0
       var found: Optional[Int] = Unset
 
-      while i < children.length && found == Unset do
+      while i < children.length && found.absent do
         children.readUnchecked(i) match
           case child: Element =>
             if child.label == name then
@@ -2606,7 +2606,7 @@ object Xml extends Tag.Container
       var seen = 0
       var found: Optional[Element] = Unset
 
-      while i < children.length && found == Unset do
+      while i < children.length && found.absent do
         children.readUnchecked(i) match
           case child: Element if child.label == name =>
             seen += 1
@@ -3700,7 +3700,7 @@ object Xml extends Tag.Container
       val target = readName()
 
       val isXmlName =
-        target.s.length == 3 &&
+        target.length == 3 &&
           (target.s.charAt(0) == 'x' || target.s.charAt(0) == 'X') &&
           (target.s.charAt(1) == 'm' || target.s.charAt(1) == 'M') &&
           (target.s.charAt(2) == 'l' || target.s.charAt(2) == 'L')

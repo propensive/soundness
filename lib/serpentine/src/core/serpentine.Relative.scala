@@ -141,7 +141,11 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
   type Topic <: Tuple
   type Limit <: Int
 
-  def delta: Int = descent.stdlib.length - ascent
+  // Paths are shallow, so counting the descent by walking it is cheap.
+  def delta: Int =
+    import denominative.dysasymptotics.linearSize
+    descent.size - ascent
+
   def name: Optional[Text] = descent.prim
   def self: Boolean = ascent == 0 && descent == Nil
 

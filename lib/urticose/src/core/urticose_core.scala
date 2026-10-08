@@ -34,6 +34,7 @@ package urticose
 
 import anticipation.*
 import contingency.*
+import gossamer.*
 import prepositional.*
 
 export urticose.internal.Ipv6
@@ -71,7 +72,7 @@ def internet[result](online: Boolean)(block: Internet ?=> result): result =
 
 def online(using internet: Internet): Boolean = internet.online
 
-val Localhost: Hostname = Hostname(DnsLabel("localhost".tt))
+val Localhost: Hostname = Hostname(DnsLabel(t"localhost"))
 
 type Host = Hostname | Ipv4 | Ipv6
 

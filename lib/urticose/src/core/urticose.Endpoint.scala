@@ -38,7 +38,7 @@ import spectacular.*
 
 object Endpoint:
   given showable: [port: Showable] => Endpoint[port] is Showable = endpoint =>
-    t"${endpoint.remote}:${endpoint.port.show}"
+    t"${endpoint.remote}:${endpoint.port}"
 
   // `showable` needs a `Showable` for the port type, so it is not delegated to; the port is
   // inspected instead, which is always available. Both fields are rendered in their own

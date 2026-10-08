@@ -56,7 +56,7 @@ extension (inline context: StringContext)
 
 package formatting:
   given indentedJsonFormatting: Json.Formatting =
-    Json.Formatting(Text("  "), trailingNewline = false)
+    Json.Formatting(t"  ", trailingNewline = false)
 
   given compactJsonFormatting: Json.Formatting = Json.Formatting(Unset, trailingNewline = false)
 

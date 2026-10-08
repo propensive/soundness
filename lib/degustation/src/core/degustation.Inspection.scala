@@ -59,7 +59,7 @@ object Inspection:
       def inspect(using quotes: Quotes)(tastys: scala.List[sti.Tasty[quotes.type]]): Unit =
         try result = Atomizer.atomize(tastys.map(_.ast))
         catch case error: Exception =>
-          failure = Text(error.getMessage.nn)
+          failure = error.getMessage.nn.tt
 
     val ok =
       try
@@ -67,7 +67,7 @@ object Inspection:
           (tastyFiles.stdlib.map(_.s), scala.Nil, classpath.stdlib.map(_.s))(inspector)
 
       catch case error: Exception =>
-        abort(Inspection.Error(Reason.InspectionFailed(Text(error.getMessage.nn))))
+        abort(Inspection.Error(Reason.InspectionFailed(error.getMessage.nn.tt)))
 
     failure.let: detail => abort(Inspection.Error(Reason.Unencodable(detail)))
     if !ok then abort(Inspection.Error(Reason.InspectionFailed(t"the compiler reported errors")))

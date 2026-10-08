@@ -34,6 +34,7 @@ package stratiform
 
 import scala.language.unsafeNulls
 
+import gossamer.*
 import murmuration.*
 import rudiments.{bind, each, seek, segment, to, unwind}
 
@@ -120,12 +121,12 @@ object SchemaSignature:
     val layerChildren = root.children.filter: child => keywordIndexOf(child) == layerIdx
 
     val layerStruct: Optional[Tels.Struct] =
-      axiom.records.seek(_.name == Text("Layer")).let: rec =>
+      axiom.records.seek(_.name == t"Layer").let: rec =>
         Tels.Struct(rec.members, rec.validators)
 
     val layerHashes: List[Data] =
       layerStruct.let: ls =>
-        val hashes = layerChildren.readable.toList.to(List).map: layer =>
+        val hashes = layerChildren.readable.to(List).map: layer =>
           val layerChildren = layer.asInstanceOf[Tel.Element.Node].children
           val layerRoot     = Tel.Element.Node(Unset, ls, layerChildren)
           Blake3.hashOf(layerRoot.bintel(axiom), cadence.hashSize)
@@ -151,14 +152,14 @@ object SchemaSignature:
     while i < struct.members.length && found < 0 do
       struct.members.readable(i) match
         case f: Tels.Field =>
-          if f.keyword == Text("layer") then found = idx else idx += 1
+          if f.keyword == t"layer" then found = idx else idx += 1
 
         case s: Tels.SelectRef =>
           schema.selects.seek(_.name == s.reference).let: sd =>
             var v = 0
 
             while v < sd.variants.length && found < 0 do
-              if sd.variants.readable(v).keyword == Text("layer") then found = idx + v
+              if sd.variants.readable(v).keyword == t"layer" then found = idx + v
               v += 1
 
             if found < 0 then idx += sd.variants.length
@@ -243,7 +244,7 @@ object SchemaSignature:
 
     val base = hash(Tels.Renderer.element(schema.copy(layers = Array.empty), axiom), axiom)
 
-    val layers = schema.layers.readable.toList.to(List).map: layer =>
+    val layers = schema.layers.readable.to(List).map: layer =>
       hash(Tels.Renderer.layer(layer, axiom), axiom)
 
     (base, layers)
@@ -268,7 +269,7 @@ object SchemaSignature:
 
       val base = hash(Tels.Renderer.element(schema.copy(layers = Array.empty), axiom), axiom)
 
-      val layers = schema.layers.readable.toList.to(List).map: layer =>
+      val layers = schema.layers.readable.to(List).map: layer =>
         Component(hash(Tels.Renderer.layer(layer, axiom), axiom), layer.name, layer)
 
       // Atoms are deduplicated by hash: an atom that occurs in two groups, or twice in one, is
@@ -284,7 +285,7 @@ object SchemaSignature:
             val hash = atomHash(atom, axiom)
             if seen.add(Base256.encode(hash)) then buffer += Component(hash, Unset, layer)
 
-      Lineage(schema, base, layers, buffer.toList.to(List), Nil)
+      Lineage(schema, base, layers, buffer.to(List), Nil)
 
     // A lineage from a schema document, as parsed.
     def of(document: Tel, axiom: Tels = Tels.Axiom.tels)
@@ -502,10 +503,10 @@ object SchemaSignature:
               idx += 1
 
             layerReason.or(Reason.Unverified(
-              Text("the signature does not match the base and selected layers")))
+              t"the signature does not match the base and selected layers"))
 
         case _ =>
           Reason.Unverified(
-            Text("the signature does not decompose over the schema's component hashes"))
+            t"the signature does not decompose over the schema's component hashes")
 
       abort(Tels.Resolution.Error(reason))

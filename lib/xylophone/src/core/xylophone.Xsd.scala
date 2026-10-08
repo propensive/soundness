@@ -630,14 +630,14 @@ object Xsd:
 
       case "union" if isXsd(child) =>
         val named: List[TypeRef] = attribute(child, "memberTypes").lay(Nil): value =>
-          value.cut(t" ").filter(_.s.nonEmpty).map: member => TypeRef.Named(qname(child, member))
+          value.cut(t" ").filter(!_.nil).map: member => TypeRef.Named(qname(child, member))
 
         val inline: List[TypeRef] = children(child).bind: member =>
           if member.qualified == name("simpleType")
           then List(TypeRef.Inline(simpleDecl(member).definition))
           else Nil
 
-        SimpleType.Union(List.from(named.stdlib ++ inline.stdlib))
+        SimpleType.Union(List.concat(named, inline))
 
       case _ =>
         unexpected(child, "simpleType")

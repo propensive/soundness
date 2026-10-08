@@ -192,8 +192,6 @@ object Tels extends Tels2:
   object Axiom:
     import Polarity.*
 
-    private inline def kebab(s: String): Text = Text(s)
-
     private inline def field
       ( keyword:    String,
         fieldType:  Type,
@@ -203,7 +201,7 @@ object Tels extends Tels2:
         key:        Boolean = false )
     :   Field =
 
-      Field(required, repeatable, kebab(keyword), fieldType, default, key = key)
+      Field(required, repeatable, keyword.tt, fieldType, default, key = key)
 
     private inline def selectRef
       ( reference:  String,
@@ -211,34 +209,29 @@ object Tels extends Tels2:
         repeatable: Polarity = Implicit )
     :   SelectRef =
 
-      SelectRef(required, repeatable, kebab(reference))
+      SelectRef(required, repeatable, reference.tt)
 
     private inline def variant(keyword: String, variantType: Type): Variant =
-      Variant(kebab(keyword), variantType)
-
-    // A Definition's `description` mirrors a single-line source atom in
-    // the canonical document. Under §14 "Convention A" a source atom's text
-    // carries no trailing LF, so the description is stored verbatim.
-    private inline def describe(text: String): Text = Text(text)
+      Variant(keyword.tt, variantType)
 
     private inline def record(name: String, description: String, members: Member*)
     :   RecordDefinition =
 
-      RecordDefinition(kebab(name), Array.from(members), Array.empty, describe(description))
+      RecordDefinition(name.tt, Array.from(members), Array.empty, description.tt)
 
     private inline def scalar(name: String, validators: String*): ScalarDefinition =
-      ScalarDefinition(kebab(name), Array.from(validators.map(kebab)))
+      ScalarDefinition(name.tt, Array.from(validators.map(_.tt)))
 
     private inline def select(name: String, description: String, variants: Variant*)
     :   SelectDefinition =
 
-      SelectDefinition(kebab(name), Array.from(variants), Array.empty, describe(description))
+      SelectDefinition(name.tt, Array.from(variants), Array.empty, description.tt)
 
     // Built-in scalar types referenced from member declarations.
-    private val identifierRef: Type = Reference(kebab("Identifier"))
-    private val typeNameRef:   Type = Reference(kebab("TypeName"))
-    private val sigilRef:      Type = Reference(kebab("Sigil"))
-    private val stringRef:     Type = Reference(kebab("String"))
+    private val identifierRef: Type = Reference(t"Identifier")
+    private val typeNameRef:   Type = Reference(t"TypeName")
+    private val sigilRef:      Type = Reference(t"Sigil")
+    private val stringRef:     Type = Reference(t"String")
 
     // The schema's root struct, mirroring the `document` block in the
     // canonical tels.tel.
@@ -246,15 +239,15 @@ object Tels extends Tels2:
       members = Array(
         field("name",     identifierRef),
         field("sigil",    sigilRef,                              required = Loose),
-        field("record",   Reference(kebab("Record")), required = Loose, repeatable = Loose),
-        field("scalar",   Reference(kebab("Scalar")), required = Loose, repeatable = Loose),
-        field("select",   Reference(kebab("Select")), required = Loose, repeatable = Loose),
-        field("document", Reference(kebab("Body"))),
-        field("layer", Reference(kebab("Layer")), required = Loose, repeatable = Loose)),
+        field("record",   Reference(t"Record"), required = Loose, repeatable = Loose),
+        field("scalar",   Reference(t"Scalar"), required = Loose, repeatable = Loose),
+        field("select",   Reference(t"Select"), required = Loose, repeatable = Loose),
+        field("document", Reference(t"Body")),
+        field("layer", Reference(t"Layer"), required = Loose, repeatable = Loose)),
       validators = Array.empty)
 
     val tels: Tels = Tels(
-      name     = kebab("tels"),
+      name     = t"tels",
       document = documentStruct,
       layers   = Array.empty,
       sigil    = Unset,
@@ -316,10 +309,10 @@ object Tels extends Tels2:
         record("Layer",
           "A layer declaration: per-layer definitions and an optional overlay.",
           field("name",    identifierRef),
-          field("record",  Reference(kebab("Record")), required = Loose, repeatable = Loose),
-          field("scalar",  Reference(kebab("Scalar")), required = Loose, repeatable = Loose),
-          field("select",  Reference(kebab("Select")), required = Loose, repeatable = Loose),
-          field("overlay", Reference(kebab("Body")), required = Loose))),
+          field("record",  Reference(t"Record"), required = Loose, repeatable = Loose),
+          field("scalar",  Reference(t"Scalar"), required = Loose, repeatable = Loose),
+          field("select",  Reference(t"Select"), required = Loose, repeatable = Loose),
+          field("overlay", Reference(t"Body"), required = Loose))),
       scalars  = Array(
         scalar("Identifier", "identifier"),
         scalar("TypeName",   "type-name"),
@@ -328,12 +321,12 @@ object Tels extends Tels2:
       selects  = Array(
         select("Member",
           "Members admissible inside a struct-shaped body: a field, select, or validator.",
-          variant("field",    Reference(kebab("Field"))),
-          variant("select",   Reference(kebab("SelectRef"))),
+          variant("field",    Reference(t"Field")),
+          variant("select",   Reference(t"SelectRef")),
           variant("validate", identifierRef)),
         select("SelectChild",
           "Children admissible inside a Select body: a variant, exclude, or validator.",
-          variant("variant",  Reference(kebab("Variant"))),
+          variant("variant",  Reference(t"Variant")),
           variant("exclude",  identifierRef),
           variant("validate", identifierRef))))
 
@@ -353,32 +346,32 @@ object Tels extends Tels2:
     // a peer can parse an acceptance before any schema has been exchanged;
     // its two encodings are bound by `Tel.Codec.Bindings.builtins`.
     val acceptance: Tels = Tels(
-      name     = kebab("acceptance"),
+      name     = t"acceptance",
       document = Struct(
-        members    = Array(field("accept", Reference(kebab("Alternative")), repeatable = Loose)),
+        members    = Array(field("accept", Reference(t"Alternative"), repeatable = Loose)),
         validators = Array.empty),
       layers   = Array.empty,
       sigil    = Unset,
       records  = Array(
         record("Alternative",
           "One composition the reader accepts, with the further components it can resolve.",
-          field("schema",         Reference(kebab("Signature"))),
+          field("schema",         Reference(t"Signature")),
           field("self-contained", Flag, required = Loose),
           field("any-published",  Flag, required = Loose),
-          field("component",      Reference(kebab("Component")), required = Loose,
+          field("component",      Reference(t"Component"), required = Loose,
             repeatable = Loose))),
       scalars  = Array.frozen(builtinScalars.readable ++ Array(
         ScalarDefinition
-          ( kebab("Signature"),
+          ( t"Signature",
             Array.empty,
-            describe("A schema signature (BinTEL §8.2): a palimpsest of component hashes at the pinned parameters."),
-            encoding = kebab("schema-signature") ),
+            t"A schema signature (BinTEL §8.2): a palimpsest of component hashes at the pinned parameters.",
+            encoding = t"schema-signature" ),
         ScalarDefinition
-          ( kebab("Component"),
+          ( t"Component",
             Array.empty,
-            describe("A component hash, or a prefix of one at least four bytes long."),
-            encoding = kebab("base-256"),
-            patterns = Array(kebab(".{4,32}")) )).readable),
+            t"A component hash, or a prefix of one at least four bytes long.",
+            encoding = t"base-256",
+            patterns = Array(t".{4,32}") )).readable),
       selects  = Array.empty)
 
   // Bridges the schema-aware semantic model into the existing
@@ -446,10 +439,10 @@ object Tels extends Tels2:
         private val byReference = scala.collection.concurrent.TrieMap.empty[Text, Data]
 
         def apply(signature: Data): Optional[Data] =
-          bySignature.get(Base256.encode(signature)).getOrElse(Unset)
+          bySignature.get(Base256.encode(signature)).optional
 
         def reference(domain: Text, name: Text): Optional[Data] =
-          byReference.get(t"$domain/$name").getOrElse(Unset)
+          byReference.get(t"$domain/$name").optional
 
         def cache(signature: Data, body: Data): Unit =
           bySignature(Base256.encode(signature)) = body
@@ -563,7 +556,7 @@ object Tels extends Tels2:
 
           if !found then abort(Tel.Error(Reason.LayerOrderMismatch))
 
-      chosen.toList.to(List)
+      chosen.to(List)
 
     // Top-level entry: applies every layer in `schema.layers` to the
     // schema's base, returning a composed Schema with empty `layers`.
@@ -1236,7 +1229,7 @@ object Tels extends Tels2:
 
           case "sigil" =>
             val s = firstAtomText(c)
-            sigil = s.let { text => if text.s.isEmpty then Unset else text.s.charAt(0) }
+            sigil = s.let { text => if text.nil then Unset else text.s.charAt(0) }
 
           case "record"   => records  += parseRecord(c)
           case "scalar"   => scalars  += parseScalar(c)
@@ -1427,7 +1420,7 @@ object Tels extends Tels2:
           case "repeatable"   => repeatable = Polarity.Loose
           case "irrepeatable" => repeatable = Polarity.Tight
           case "key"          => key        = true
-          case text           => if default.absent then default = Text(text)
+          case text           => if default.absent then default = text.tt
 
         j += 1
 
@@ -1483,7 +1476,7 @@ object Tels extends Tels2:
       val name = textAt(ch, 0).or(abort(Tel.Error(Reason.RequiredMemberAbsent)))
 
       val sigil: Optional[Char] = textAt(ch, 1) match
-        case t: Text => if t.s.isEmpty then Unset else Optional(t.s.charAt(0))
+        case t: Text => if t.nil then Unset else Optional(t.s.charAt(0))
         case _       => Unset
 
       val records  = nodesAt(ch, 2).remap(recordFromElement)
@@ -1676,7 +1669,7 @@ object Tels extends Tels2:
 
       val buffer = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       buffer += value(0, "Identifier", schema.name)
-      schema.sigil.let: sigil => buffer += value(1, "Sigil", Text(sigil.toString))
+      schema.sigil.let: sigil => buffer += value(1, "Sigil", sigil.toString.tt)
       schema.records.each: record => buffer += node(2, "Record", recordChildren(context, record))
 
       schema.scalars.each: scalar =>
@@ -1698,14 +1691,14 @@ object Tels extends Tels2:
     // and a scalar for the values.
     private class Context(axiom: Tels):
       def structOf(name: String): Struct =
-        val record = axiom.records.seek(_.name == Text(name)).or:
-          panic(m"the axiom declares no record ${Text(name)}")
+        val record = axiom.records.seek(_.name == name.tt).or:
+          panic(m"the axiom declares no record ${name.tt}")
 
         Struct(record.members, record.validators)
 
       def scalarOf(name: String): Scalar =
-        val definition = axiom.scalars.seek(_.name == Text(name)).or:
-          panic(m"the axiom declares no scalar ${Text(name)}")
+        val definition = axiom.scalars.seek(_.name == name.tt).or:
+          panic(m"the axiom declares no scalar ${name.tt}")
 
         Scalar(definition.validators, definition.encoding, definition.patterns)
 
@@ -1908,7 +1901,7 @@ object Tels extends Tels2:
 
     // The schema's groups: the base, then each layer in declaration order.
     def decompose(schema: Tels): List[Group] =
-      base(schema) :: schema.layers.readable.toList.to(List).map(layer)
+      base(schema) :: schema.layers.readable.to(List).map(layer)
 
     def base(schema: Tels): Group =
       val head = Atom.Head(schema.name, schema.sigil)
@@ -1936,13 +1929,13 @@ object Tels extends Tels2:
       def declared(name: Text): List[Type] =
         val fromRecord: List[Type] = schema.records.seek(_.name == name) match
           case record: RecordDefinition =>
-            proscenium.List.from(record.members.readable.toList).bind(memberType)
+            record.members.to[proscenium.List].bind(memberType)
 
           case _ => Nil
 
         val fromSelect: List[Type] = schema.selects.seek(_.name == name) match
           case select: SelectDefinition =>
-            proscenium.List.from(select.variants.readable.toList).map(_.variantType)
+            select.variants.to[proscenium.List].map(_.variantType)
 
           case _ => Nil
 
@@ -1955,18 +1948,18 @@ object Tels extends Tels2:
           else reachable(declared(name).reverse.unwind(rest), seen + name)
 
         case (nested: Struct) :: rest =>
-          val inner = proscenium.List.from(nested.members.readable.toList).bind(memberType)
+          val inner = nested.members.to[proscenium.List].bind(memberType)
           reachable(inner.reverse.unwind(rest), seen)
 
         case _ :: rest => reachable(rest, seen)
         case _         => seen
 
       val fromLayers: List[Type] =
-        proscenium.List.from(schema.layers.readable.toList).bind: layer =>
-          val overlay = proscenium.List.from(layer.overlay.members.readable.toList).bind(memberType)
+        schema.layers.to[proscenium.List].bind: layer =>
+          val overlay = layer.overlay.members.to[proscenium.List].bind(memberType)
 
-          val records = proscenium.List.from(layer.records.readable.toList).bind: record =>
-            proscenium.List.from(record.members.readable.toList).bind(memberType)
+          val records = layer.records.to[proscenium.List].bind: record =>
+            record.members.to[proscenium.List].bind(memberType)
 
           overlay.reverse.unwind(records)
 
@@ -2107,7 +2100,7 @@ object Tels extends Tels2:
       body.validators.each: validator =>
         buffer += part(Path.Body, overlay = Struct(Array.empty, Array(validator)))
 
-      buffer.toList.to(List)
+      buffer.to(List)
 
   // The subtype relation of §24.3, which §8.2 makes normative for compatibility: a document
   // composed under `sub` can be read by a consumer expecting `sup` when `sub <: sup`. Records

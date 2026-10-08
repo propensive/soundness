@@ -298,8 +298,8 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   private[serpentine] def calculate(right: Path): Path =
     val difference = depth - right.depth
-    val left0 = descent.drop(difference).toList.to(List)
-    val right0 = right.descent.drop(-difference).toList.to(List)
+    val left0 = descent.drop(difference).to(List)
+    val right0 = right.descent.drop(-difference).to(List)
 
 
     def recur(left: List[Text], right: List[Text], size: Int, count: Int)

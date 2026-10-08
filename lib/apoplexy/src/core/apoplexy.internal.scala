@@ -149,7 +149,7 @@ object Apoplexy:
   // --- path utilities ------------------------------------------------------
 
   private def segments(path: Text): List[Text] = path.cut(t"/").filter(_ != t"")
-  private def isTemplate(segment: Text): Boolean = segment.starts(t"{") && segment.s.endsWith("}")
+  private def isTemplate(segment: Text): Boolean = segment.starts(t"{") && segment.ends(t"}")
   private def templateName(segment: Text): Text = segment.skip(1).keep(segment.length - 2)
 
   private def isPrefix(short: List[Text], long: List[Text]): Boolean =
@@ -243,9 +243,7 @@ object Apoplexy:
 
     Implicits.search(target) match
       case success: ImplicitSearchSuccess =>
-        refinements(success.tree.tpe.widen).get(t"Result") match
-          case Some(result) => (success.tree.asExpr, result)
-          case None         => Unset
+        refinements(success.tree.tpe.widen).get(t"Result").map((success.tree.asExpr, _)).optional
 
       case _ =>
         Unset
@@ -305,7 +303,7 @@ object Apoplexy:
 
           case kind =>
             val shown = result.show
-            val kindName = kind.toString.tt
+            val kindName = kind.show
             val advice = t"an API key is a `Credential to Text`, HTTP authentication a `Credential to Auth`, a token a `Credential to Authorization`"
             halt(m"apoplexy: the credential for $scheme (a $kindName scheme) has the type $shown; $advice")
 
@@ -362,7 +360,7 @@ object Apoplexy:
           case found: Presentations @unchecked => found
 
   private def empty(requirement: OpenApi.Requirement): Boolean =
-    Map.keys(requirement).to[List].stdlib.isEmpty
+    Map.keys(requirement).to[List].nil
 
   // The presentations of the first requirement alternative every scheme of which has a
   // credential in scope; none when the operation requires no credentials (or offers an empty
@@ -502,18 +500,14 @@ object Apoplexy:
 
       Implicits.search(target) match
         case success: ImplicitSearchSuccess =>
-          refinements(success.tree.tpe.widen).get(t"Result") match
-            case Some(result) => result
-            case None         => Unset
+          refinements(success.tree.tpe.widen).get(t"Result").optional
 
         case _ =>
           Unset
 
     search(media).or:
-      val plus = media.s.lastIndexOf('+')
       val group = media.cut(t"/").prim.or(t"application")
-
-      if plus < 0 then Unset else search(t"$group/${media.s.substring(plus + 1).nn}")
+      media.offsetOf(t"+", Rtl).let { plus => search(t"$group/${media.after(plus)}") }
 
   // The media types a body may take, in order of preference: `application/json` first, then by
   // name
@@ -552,9 +546,8 @@ object Apoplexy:
 
   private def statusOf(key: Text): Optional[Http.Status] =
     scala.collection.immutable.ArraySeq.unsafeWrapArray(Http.Status.values)
-    . find(_.code.toString == key.s) match
-      case Some(status) => status
-      case None         => Unset
+    . find(_.code.toString == key.s)
+    . optional
 
   // The declared error responses of an operation, each with the payload its body construes: a
   // record for a JSON object schema, the carrier of its media type otherwise, `Text` where
@@ -838,7 +831,7 @@ object Apoplexy:
           case '[carrier] =>
             val postable = Expr.summon[carrier is Postable].getOrElse:
               val advice = t"import its entry from `postables`"
-              val body = t"the ${carrierRepr.show} request body of $verb $locus"
+              val body = t"the $carrierRepr request body of $verb $locus"
               halt(m"apoplexy: no `Postable` for $body is in scope; $advice")
 
             if actual <:< carrierRepr then
@@ -1397,7 +1390,7 @@ object Apoplexy:
       case AppliedType(_, scala.collection.immutable.List(element)) if repr <:< TypeRepr.of[List[Any]] => element
       case _                                                                => Unset
 
-    def componentName(pointer: JsonPointer): Text = pointer.encode.cut(t"/").stdlib.last
+    def componentName(pointer: JsonPointer): Text = pointer.encode.cut(t"/").last.or(t"")
 
     def ok(value: TypeRepr, schema: JsonSchema): Boolean = schema match
       case ref: JsonSchema.Ref   => simpleName(value) == componentName(ref.pointer)

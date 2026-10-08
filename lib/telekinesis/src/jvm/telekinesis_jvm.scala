@@ -133,8 +133,9 @@ private def send(request: jnh.HttpRequest)(using Tactic[Connect.Error], TlsAccep
 private def buildResponse(response: jnh.HttpResponse[ji.InputStream])(using Tactic[Connect.Error])
 :   Http.Response =
 
-  val status: Http.Status = Http.Status.unapply(response.statusCode()).getOrElse:
-    abort(Connect.Error(Connect.Error.Reason.Unknown))
+  val status: Http.Status = response.statusCode() match
+    case Http.Status(status) => status
+    case _                   => abort(Connect.Error(Connect.Error.Reason.Unknown))
 
   val headers: List[Http.Header] = response.headers.nn.map().nn.to[List].bind:
     (key, values) => values.to[List].map: value => Http.Header(key.tt, value.tt)

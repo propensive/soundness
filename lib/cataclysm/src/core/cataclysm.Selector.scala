@@ -62,18 +62,18 @@ object Selector:
   given showable: Selector is Showable = selector =>
     val lead = selector.lead.lay(t""):
       case Combinator.Descendant => t""
-      case other                 => t"${other.show} "
+      case other                 => t"$other "
 
     // `step` is a named method rather than a lambda: an interpolation inside a lambda passed to
     // a collection combinator runs its implicit search while the combinator's element type is
     // still uninstantiated, tripping dotc's `wildApprox` assertion (scala/scala3#24824).
     def step(combinator: Combinator, compound: Compound): Text = combinator match
-      case Combinator.Descendant => t" ${compound.show}"
-      case other                 => t" ${other.show} ${compound.show}"
+      case Combinator.Descendant => t" $compound"
+      case other                 => t" $other $compound"
 
     val rest = selector.rest.map: (combinator, compound) => step(combinator, compound)
 
-    t"$lead${selector.head.show}${rest.join}"
+    t"$lead${selector.head}${rest.join}"
 
 // A complex selector: a head compound followed by combinator/compound steps.
 // `lead` is set only for a relative selector (e.g. the `>` in `:has(> img)`).
@@ -137,7 +137,7 @@ object Simple:
     case Prefix.Named(name) => t"$name|"
 
   private def attributeTest(test: Optional[AttributeTest]): Text = test.lay(t""): test =>
-    val modifier = test.modifier.lay(t""): char => t" ${char.show}"
+    val modifier = test.modifier.lay(t""): char => t" $char"
     t"${matcherSymbol(test.matcher)}${test.value}$modifier"
 
   private def matcherSymbol(matcher: AttributeMatcher): Text = matcher match
@@ -149,11 +149,11 @@ object Simple:
     case AttributeMatcher.Substring => t"*="
 
   private def pseudoArgument(argument: Optional[PseudoArgument]): Text = argument.lay(t""):
-    case PseudoArgument.Selectors(list) => t"(${list.show})"
+    case PseudoArgument.Selectors(list) => t"($list)"
     case PseudoArgument.Nth(a, b, of)   => t"(${nth(a, b)}${ofClause(of)})"
     case PseudoArgument.Raw(text)       => t"($text)"
 
-  private def ofClause(of: Optional[SelectorList]): Text = of.lay(t""): list => t" of ${list.show}"
+  private def ofClause(of: Optional[SelectorList]): Text = of.lay(t""): list => t" of $list"
 
   // Render an `An+B` micro-syntax, canonicalising `1n`→`n`, `-1n`→`-n` and `a==0`→`b`.
   private def nth(a: Int, b: Int): Text =

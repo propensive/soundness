@@ -300,7 +300,7 @@ object internal:
       val secondValue = second.nn.toInt
       val monthName = month.nn
       // As with `indexOf`, an unrecognised name yields `0`, which `jdnOf` rejects.
-      val monthValue = monthNames.where(_ == monthName).let(_.n0 + 1).or(0)
+      val monthValue = monthNames.where(_ == monthName).let(_.n1).or(0)
 
       val parsed = jdnOf(calendars.gregorianCalendar, year.nn.toInt, monthValue, day.nn.toInt)
 

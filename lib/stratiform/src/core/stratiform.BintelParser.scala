@@ -112,7 +112,7 @@ final class BintelParser private[stratiform]
   def directEncodedScalar(encoding: String)(using Tactic[Bintel.Error]): String =
     val bytes = directScalarBytes()
 
-    val codec = codecs.let(_(Text(encoding)))
+    val codec = codecs.let(_(encoding.tt))
     . or(abort(Bintel.Error(Bintel.Error.Reason.CodecUnresolved)))
 
     val frozen = bytes.asInstanceOf[Data]

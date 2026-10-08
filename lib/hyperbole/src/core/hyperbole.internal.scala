@@ -102,16 +102,16 @@ object internal:
 
     extension (tastyTree: Tasty.Tree)
       def children(nodes2: Tree*): Tasty.Tree =
-        tastyTree.copy(nodes = tastyTree.nodes + nodes2.toList.map(TreeBuilder.expand(' ', _)).to(List))
+        tastyTree.copy(nodes = tastyTree.nodes + nodes2.map(TreeBuilder.expand(' ', _)).to(List))
 
       def typeChildren(nodes2: TypeRepr*): Tasty.Tree =
-        tastyTree.copy(nodes = tastyTree.nodes + nodes2.toList.map(TreeBuilder.expandType(_)).to(List))
+        tastyTree.copy(nodes = tastyTree.nodes + nodes2.map(TreeBuilder.expandType(_)).to(List))
 
       def typed(nodes2: Tree*): Tasty.Tree =
-        tastyTree.copy(nodes = tastyTree.nodes + nodes2.toList.map(TreeBuilder.expand('t', _)).to(List))
+        tastyTree.copy(nodes = tastyTree.nodes + nodes2.map(TreeBuilder.expand('t', _)).to(List))
 
       def add(tag: Char, nodes2: Tree*): Tasty.Tree =
-        tastyTree.copy(nodes = tastyTree.nodes + nodes2.toList.map(TreeBuilder.expand(tag, _)).to(List))
+        tastyTree.copy(nodes = tastyTree.nodes + nodes2.map(TreeBuilder.expand(tag, _)).to(List))
 
     object TreeBuilder:
       def apply
@@ -649,13 +649,13 @@ object internal:
             (symbol.paramSymss.map(_.map(_.name.tt).join(t"(", t" ", t")"))).to(List),
 
           t"All overridden symbols" ->
-            symbol.allOverriddenSymbols.map(_.name.tt).toList.to(List),
+            symbol.allOverriddenSymbols.map(_.name.tt).to(List),
 
           t"Primary constructor" -> symbol.primaryConstructor.name.tt,
 
           t"Case fields" ->
             symbol.caseFields.map: field =>
-              t"${field.name}: ${field.info.show}"
+              t"${field.name}: ${field.info}"
 
             . join(t"\n"),
 

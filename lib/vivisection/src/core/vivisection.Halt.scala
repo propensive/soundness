@@ -179,7 +179,7 @@ extends caps.ExclusiveCapability:
             case _ =>
               Unset
 
-      Halt.ExceptionInfo(className, message, catchLocation != Unset)
+      Halt.ExceptionInfo(className, message, catchLocation.present)
 
     case _ =>
       Unset
@@ -304,7 +304,7 @@ extends caps.ExclusiveCapability:
         val (_, cls) = connection.referenceType(id)
         val signature = connection.signature(cls)
 
-        if signature.s.startsWith("Lscala/runtime/") && signature.s.endsWith("Ref;") then
+        if signature.starts(t"Lscala/runtime/") && signature.ends(t"Ref;") then
           val elem = connection.fields(cls).seek(_.name == t"elem")
 
           elem.let: field =>

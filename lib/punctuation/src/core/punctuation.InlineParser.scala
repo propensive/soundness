@@ -35,6 +35,7 @@ package punctuation
 import scala.collection.mutable
 
 import anticipation.*
+import denominative.*
 import rudiments.*
 import gossamer.*
 import vacuous.*
@@ -94,7 +95,7 @@ private[punctuation] object InlineParser:
 
     def flushPending(): Unit =
       if pending.length > 0 then
-        list.append(TextData(Text(pending.toString)))
+        list.append(TextData(pending.toString.tt))
         pending.setLength(0)
 
     var i = 0
@@ -166,7 +167,7 @@ private[punctuation] object InlineParser:
                     list.append(LinkData(link.destination, link.title, List(child)))
 
                   case _ =>
-                    list.append(TextData(Text(al.link.toString)))
+                    list.append(TextData(al.link.toString.tt))
 
                 i = al.end
 
@@ -286,9 +287,9 @@ private[punctuation] object InlineParser:
         // Replace bracket node with the link/image wrapper
         list.remove(entry.node)
 
-        if entry.isImage then list.append(ImageData(lm.dest, lm.title, children.toList.to(List)))
+        if entry.isImage then list.append(ImageData(lm.dest, lm.title, children.to(List)))
         else
-          list.append(LinkData(lm.dest, lm.title, children.toList.to(List)))
+          list.append(LinkData(lm.dest, lm.title, children.to(List)))
           // Deactivate any earlier `[` link markers (no nested links). Image
           // markers stay active — images can contain links.
           brackets.each: b => if !b.isImage then b.active = false
@@ -321,12 +322,12 @@ private[punctuation] object InlineParser:
         case _                               => ()  // fall through
 
     // 2. Reference forms
-    val bracketContent = Text(s.substring(entry.sourceStart, after - 1).nn)
+    val bracketContent = s.substring(entry.sourceStart, after - 1).nn.tt
 
     if after < end && s.charAt(after) == '[' then
       InlineSupport.parseRefLabel(s, after, end) match
         case r: InlineSupport.RefLabelMatch =>
-          val label = if r.label.s.isEmpty then bracketContent else r.label
+          val label = if r.label.nil then bracketContent else r.label
 
           // Per spec: when the `[label]` parses but the label doesn't
           // resolve, the link attempt fails entirely — don't fall back to

@@ -197,6 +197,6 @@ private[facsimile] object PdfEncoding:
   // Encodes text as bytes for a simple WinAnsi font; an unrepresentable character becomes a
   // question mark, as viewers do.
   private[facsimile] def winAnsiEncode(text: Text): Data =
-    Array.scribe[Byte](text.s.length): scribe => extent =>
+    Array.scribe[Byte](text.length): scribe => extent =>
       extent.each: i =>
         scribe(i) = winAnsiCodes.at(text.s.charAt((i: Ordinal).n0)).or('?'.toInt).toByte

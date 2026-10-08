@@ -50,8 +50,8 @@ object Framable:
       private var ready: Optional[data] = Unset
 
       def hasNext: Boolean =
-        if ready == Unset then ready = frame
-        ready != Unset
+        if ready.absent then ready = frame
+        ready.present
 
       // `hasNext` is what pulls a frame, so it is called here too: `next()` alone would otherwise
       // hand back the unset cache — a null — rather than the next frame, and a caller following

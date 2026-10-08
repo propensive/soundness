@@ -51,7 +51,7 @@ private[cataclysm] object ValueTokenizer:
     def all(): List[ValueToken] =
       val acc = scala.collection.mutable.ListBuffer[ValueToken]()
       while !cursor.peek.isEnd do acc.append(next())
-      acc.toList.to(List)
+      acc.to(List)
 
     // ── primitives ──────────────────────────────────────────────────────────
 
@@ -212,7 +212,7 @@ private[cataclysm] object ValueTokenizer:
       val name = readName()
 
       if cursor.peek == '(' then
-        if name.s.toLowerCase.nn == "url" then url()
+        if name.lower == t"url" then url()
         else
           cursor.advance()
           ValueToken.Function(name)

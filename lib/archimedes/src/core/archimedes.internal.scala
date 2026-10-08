@@ -39,6 +39,7 @@ import scala.quoted.*
 import anticipation.*
 import contextual.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
@@ -79,14 +80,16 @@ object internal:
             halt(m"a $kind cannot be embedded in ergo: it is not Encodable in Math", position)
 
     locally:
+      // An interpolation has few substitutions, so counting them is cheap.
+      import denominative.dysasymptotics.linearSize
       import strategies.throwUnsafely
       import errorDiagnostics.emptyDiagnostics
 
-      try Ergo.interpolate(parts.stdlib.map(_.tt), List.fill(atoms.stdlib.length)(Mi(t"?")).stdlib)
+      try Ergo.interpolate(parts.stdlib.map(_.tt), List.fill(atoms.size)(Mi(t"?")).stdlib)
       catch case error: Ergo.Error =>
         // The parser's offset refers to the parts joined with a one-character hole sentinel
         // per substitution; clamp end-of-input errors onto the last character.
-        val joinedLength = parts.map(_.length).total + atoms.stdlib.length
+        val joinedLength = parts.map(_.length).total + atoms.size
         val offset = error.offset.min(joinedLength - 1).max(0)
 
         halt

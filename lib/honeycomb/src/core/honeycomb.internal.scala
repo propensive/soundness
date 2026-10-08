@@ -156,7 +156,7 @@ object internal:
 
               '{$expr && $boolean}
 
-        val attributesChecked = attributes(pattern.attributes.toList.map(_(0)))('{true})
+        val attributesChecked = attributes(pattern.attributes.keys.toList)('{true})
 
         // The children access is quoted in one piece: splicing a `val children` Expr gives
         // the frozen array a reach capture (`children*.rd`) that cannot subsume into the
@@ -498,7 +498,7 @@ object internal:
         case Html.Fragment(children*) => children.flatMap(serialize(_))
 
         case Html.Element(label, attributes, children, foreign) =>
-          val exprs = attributes.toList.map: (key, value) =>
+          val exprs = attributes.iterator.toList.map: (key, value) =>
             ' {
                 ( ${Expr(key)},
                   $ {
@@ -725,6 +725,10 @@ object internal:
     private[honeycomb] inline def storage(attrs: Attributes): scala.Array[String | Null] =
       attrs.asInstanceOf[scala.Array[String | Null]]
 
+    // The pairs in document order, so `attributes.to[List]` (and `[Ledger]`, …) need no
+    // hand-written conversion; a valueless attribute pairs its name with `Unset`.
+    given traversable: Attributes is Traversable by (Text, Optional[Text]) = _.iterator
+
     extension (attrs: Attributes)
       // Not `inline`: expansion outside this file re-typechecks the body where the opaque
       // is abstract, so the array operations no longer resolve.
@@ -776,22 +780,6 @@ object internal:
               i += 2
               k
 
-      def values: Iterator[Optional[Text]] =
-        val a = storage(attrs)
-
-        // Sealed: the iterator reads immutable storage through a read-only view.
-        caps.unsafe.unsafeAssumePure:
-          new Iterator[Optional[Text]]:
-            // Untracked: a plain index over immutable storage.
-            @caps.unsafe.untrackedCaptures
-            private var i: Int = 1
-            def hasNext: Boolean = i < a.length
-
-            def next(): Optional[Text] =
-              val v = a(i)
-              i += 2
-              if v == null then Unset else v.asInstanceOf[Text]
-
       def iterator: Iterator[(Text, Optional[Text])] =
         val a = storage(attrs)
 
@@ -809,18 +797,6 @@ object internal:
               i += 2
               (k, if v == null then Unset else v.asInstanceOf[Text])
 
-      def toList: List[(Text, Optional[Text])] =
-        val a = storage(attrs)
-        val b = List.newBuilder[(Text, Optional[Text])]
-        var i = 0
-
-        while i < a.length do
-          val v = a(i + 1)
-          b += ((a(i).asInstanceOf[Text], if v == null then Unset else v.asInstanceOf[Text]))
-          i += 2
-
-        b.result()
-
       def toMap: Map[Text, Optional[Text]] =
         val a = storage(attrs)
 
@@ -836,27 +812,6 @@ object internal:
             i += 2
 
           Map.from(b.result())
-
-      def map[B](f: ((Text, Optional[Text])) => B): Iterable[B] =
-        val a = storage(attrs)
-        val b = List.newBuilder[B]
-        var i = 0
-
-        while i < a.length do
-          val v = a(i + 1)
-          b += f((a(i).asInstanceOf[Text], if v == null then Unset else v.asInstanceOf[Text]))
-          i += 2
-
-        b.result()
-
-      def foreach[U](f: ((Text, Optional[Text])) => U): Unit =
-        val a = storage(attrs)
-        var i = 0
-
-        while i < a.length do
-          val v = a(i + 1)
-          f((a(i).asInstanceOf[Text], if v == null then Unset else v.asInstanceOf[Text]))
-          i += 2
 
       def each(action: (Text, Optional[Text]) => Unit): Unit =
         val a = storage(attrs)

@@ -306,7 +306,7 @@ object XPath extends Format:
     def truth: Boolean = this match
       case Truth(value)   => value
       case Numeric(value) => value == value && value != 0.0
-      case Textual(value) => value.s.length > 0
+      case Textual(value) => value.length > 0
       case NodeSet(loci)  => !loci.nil
 
     def number: Double = this match
@@ -417,8 +417,8 @@ object XPath extends Format:
   // unrepresentable directly, so it decomposes into a `concat(…)` call over
   // single-quoted pieces joined by double-quoted apostrophes.
   private def renderLiteral(text: Text): Text =
-    if text.s.indexOf('\'') < 0 then t"'$text'"
-    else if text.s.indexOf('"') < 0 then t"\"$text\""
+    if !text.contains('\'') then t"'$text'"
+    else if !text.contains('"') then t"\"$text\""
     else
       val pieces = text.cut(t"'").map { (piece: Text) => t"'$piece'" }
       t"concat(${pieces.join(t",\"'\",")})"

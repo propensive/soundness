@@ -37,6 +37,7 @@ import scala.collection.mutable as scm
 
 import anticipation.*
 import contingency.*
+import gossamer.*
 import vacuous.*
 import zephyrine.*
 import denominative.*
@@ -182,7 +183,7 @@ private[xylophone] object XPathReader:
 
         if ahead + 1 < length && string.charAt(ahead) == ':' && string.charAt(ahead + 1) == ':'
         then
-          if prefix != Unset then abort(Parse.Error(XPath, XPath.Position.at(start), XPath.Issue.UnknownAxis))
+          if prefix.present then abort(Parse.Error(XPath, XPath.Position.at(start), XPath.Issue.UnknownAxis))
 
           axisFor(local) match
             case axis: Axis => push(Token.AxisToken(axis), start)
@@ -190,7 +191,7 @@ private[xylophone] object XPathReader:
 
           offset = ahead + 2
         else if ahead < length && string.charAt(ahead) == '(' then
-          if prefix == Unset
+          if prefix.absent
              && (local == "node" || local == "text" || local == "comment"
                  || local == "processing-instruction")
           then push(Token.NodeTypeToken(local.tt), start)
@@ -301,7 +302,7 @@ private[xylophone] object XPathReader:
 
   def parse(text: Text, holes: Boolean)(using Tactic[Parse.Error]): Expression =
     val tokens = tokenize(text.s, holes)
-    val end = text.s.length
+    val end = text.length
     var index = 0
 
     def more: Boolean = index < tokens.length
@@ -450,7 +451,7 @@ private[xylophone] object XPathReader:
         advance()
         steps += parseStep()
 
-      steps.toList.to(List)
+      steps.to(List)
 
     def parseStep(): Step =
       if !more then abort(Parse.Error(XPath, XPath.Position.at(here), XPath.Issue.ExpectedNodeTest))
@@ -537,7 +538,7 @@ private[xylophone] object XPathReader:
         predicates += parseOr()
         expect(Token.CloseBracket, XPath.Issue.ExpectedCloseBracket)
 
-      predicates.toList.to(List)
+      predicates.to(List)
 
     def parseFilter(): Expression =
       val primary = parsePrimary()
@@ -594,7 +595,7 @@ private[xylophone] object XPathReader:
               arguments += parseOr()
 
             expect(Token.CloseParen, XPath.Issue.ExpectedCloseParen)
-            Expression.Call(prefix, local, arguments.toList.to(List))
+            Expression.Call(prefix, local, arguments.to(List))
 
         case _ =>
           abort(Parse.Error(XPath, XPath.Position.at(here), XPath.Issue.ExpectedExpression))

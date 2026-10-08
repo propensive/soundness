@@ -319,7 +319,7 @@ trait Json2 extends Json3:
       Json.Decodable({
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . pipe { array => array.readable.toList.to(List) } // freshens the array
+          . pipe { array => array.readable.to(List) } // freshens the array
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -597,7 +597,7 @@ trait Json2 extends Json3:
       Json.Encodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . pipe { array => array.readable.toList.to(List) } // freshens the array
+          . pipe { array => array.readable.to(List) } // freshens the array
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -1076,7 +1076,7 @@ object Json extends Json2, Dynamic:
           val identical = named.spot(index => named(index) eq key)
 
           val found =
-            if identical.present then identical else named.spot(index => named(index) == key)
+            identical.or(named.spot(index => named(index) == key))
 
           found.lay(-1) { ordinal => (ordinal: Ordinal).n0 }
 
@@ -1291,7 +1291,7 @@ object Json extends Json2, Dynamic:
       val identical = keys.spot(index => keys(index) eq name)
 
       val found =
-        if identical.present then identical else keys.spot(index => keys(index) == name)
+        identical.or(keys.spot(index => keys(index) == name))
 
       found.lay(KeyTable.Unknown) { ordinal => (ordinal: Ordinal).n0 }
 
@@ -2053,7 +2053,7 @@ object Json extends Json2, Dynamic:
     // umbrella, where their generic names would clash).
     extension (json: Ast)
       inline def isNumber: Boolean = isDouble || isLong || isBcd || isSmallBcd
-      inline def isAbsent: Boolean = json == Unset
+      inline def isAbsent: Boolean = json.absent
       inline def isLong: Boolean = json.isInstanceOf[Long]
       inline def isDouble: Boolean = json.isInstanceOf[Double]
 
@@ -2220,7 +2220,7 @@ object Json extends Json2, Dynamic:
 
       def string: Text raises Json.Error =
         if isString then json.asInstanceOf[Text]
-        else expected(Json.Primitive.String) yet "".tt
+        else expected(Json.Primitive.String) yet t""
 
       def boolean: Boolean raises Json.Error =
         if isBoolean then json.asInstanceOf[Boolean]

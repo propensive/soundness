@@ -33,6 +33,8 @@
 package honeycomb
 
 import anticipation.*
+import contingency.*
+import distillate.*
 import gossamer.*
 import prepositional.*
 import vacuous.*
@@ -50,12 +52,10 @@ object Unattributive:
   //   (key, if value then t"true" else t"false")
 
   given int: Whatwg.Integral is Unattributive to Optional[Int] =
-    _.lay(Unset): text =>
-      try text.s.toInt catch case _: NumberFormatException => Unset
+    _.lay(Unset): text => safely(text.as[Int])
 
   given positiveInt: Whatwg.PositiveInt is Unattributive to Optional[Int] =
-    _.lay(Unset): text =>
-      try text.s.toInt catch case _: NumberFormatException => Unset
+    _.lay(Unset): text => safely(text.as[Int])
 
   given cssClassList: Whatwg.CssClassList is Unattributive to List[Text] =
     _.let(_.cut(t" ")).or(Nil)

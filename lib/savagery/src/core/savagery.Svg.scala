@@ -88,9 +88,11 @@ object Svg:
     val svgElement = Svg.Parser.rootElement(xmlDoc.root)
     val parsedSvg: Svg = Svg.Parser.decodeSvg(svgElement)
 
-    val encoding: Encoding =
-      xmlDoc.metadata.encoding.let: name => Encoding.unapply(name).getOrElse(enc"UTF-8")
-      . or(enc"UTF-8")
+    val encoding: Encoding = xmlDoc.metadata.encoding.let:
+      case Encoding(encoding) => encoding
+      case _                  => enc"UTF-8"
+
+    . or(enc"UTF-8")
 
     Document[Svg](parsedSvg, encoding)
 
@@ -160,7 +162,7 @@ object Svg:
         case _ =>
           ()
 
-      Svg(width, height, defs.toList.to(List), figures.toList.to(List))
+      Svg(width, height, defs.to(List), figures.to(List))
 
     private def decodeFigure(elem: Xml.Element)(using Tactic[Svg.Error]): Optional[Figure] =
       elem.label match
@@ -187,15 +189,13 @@ object Svg:
       elem.attributes(t"style").let: text =>
         val declarations = ListBuffer[(Text, Text)]()
 
-        text.s.split(";").nn.iterator.map(_.nn).foreach: declaration =>
-          val colon = declaration.indexOf(':')
+        text.cut(t";").each: declaration =>
+          declaration.offsetOf(t":").let: colon =>
+            if colon != Prim then
+              val name = declaration.before(colon).trim
+              if !name.nil then declarations += ((name, declaration.after(colon).trim))
 
-          if colon > 0 then
-            val name = declaration.substring(0, colon).nn.trim.nn
-            val value = declaration.substring(colon + 1).nn.trim.nn
-            if !name.isEmpty then declarations += ((name.tt, value.tt))
-
-        if declarations.isEmpty then Unset else Css.Style.of(declarations.toList.to(List))
+        if declarations.isEmpty then Unset else Css.Style.of(declarations.to(List))
 
     private def decodeRectangle(elem: Xml.Element): Rectangle =
       Rectangle
@@ -232,7 +232,7 @@ object Svg:
         case child: Xml.Element => decodeFigure(child).let: figure => figures += figure
         case _              => ()
 
-      Group(figures.toList.to(List), idAttr(elem), styleAttr(elem), transformsAttr(elem))
+      Group(figures.to(List), idAttr(elem), styleAttr(elem), transformsAttr(elem))
 
     // A `points` attribute is pairs of numbers, separated by whitespace or commas within and
     // between pairs alike; an odd trailing number is dropped.
@@ -250,7 +250,7 @@ object Svg:
         points += Point(numbers(index), numbers(index + 1))
         index += 2
 
-      Polyline(points.toList.to(List), closed, idAttr(elem), styleAttr(elem), transformsAttr(elem))
+      Polyline(points.to(List), closed, idAttr(elem), styleAttr(elem), transformsAttr(elem))
 
     private def decodeLettering(elem: Xml.Element): Lettering =
       val text: Text = elem.children.readable.toList.collect { case Xml.Text(text) => text }
@@ -430,7 +430,7 @@ object Svg:
 
         skipWs()
 
-      ops.toList.to(List)
+      ops.to(List)
 
     // Transform list parser. Recognises translate/scale/rotate/skewX/skewY/matrix.
     // Unknown function names are silently skipped.
@@ -507,7 +507,7 @@ object Svg:
           else
             if pos == nameStart then pos += 1 // avoid infinite loop on stray punctuation
 
-      xs.toList.to(List)
+      xs.to(List)
 
     // Color parser: handles #rgb, #rrggbb, rgb(r,g,b), and a few named colours.
     private def parseColor(c: Text)(using Tactic[Svg.Error]): Color in Srgb =
@@ -595,7 +595,7 @@ extends Documentary:
     val attrs: Ledger[Text, Text] =
       Ledger
         ( t"xmlns"   -> t"http://www.w3.org/2000/svg",
-          t"viewBox" -> t"0 0 ${width.show} ${height.show}",
+          t"viewBox" -> t"0 0 $width $height",
           t"width"   -> width.show,
           t"height"  -> height.show )
 

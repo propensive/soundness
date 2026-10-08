@@ -115,7 +115,7 @@ private[cataclysm] object SelectorParser:
         else
           continue = false
 
-      SelectorList(acc.toList.to(List))
+      SelectorList(acc.to(List))
 
     private def complex(relative: Boolean): Selector =
       ws()
@@ -130,7 +130,7 @@ private[cataclysm] object SelectorParser:
           case comb: Combinator => rest.append((comb, compound()))
           case _                => continue = false
 
-      Selector(lead, head, rest.toList.to(List))
+      Selector(lead, head, rest.to(List))
 
     private def combinator(kind: Combinator): Combinator =
       cursor.advance()
@@ -184,7 +184,7 @@ private[cataclysm] object SelectorParser:
         else continue = false
 
       if parts.isEmpty then fail(Css.Error.Reason.EmptySelector)
-      Compound(parts.toList.to(List))
+      Compound(parts.to(List))
 
     private def nesting(parts: scala.collection.mutable.ListBuffer[Simple]): Unit =
       cursor.advance()
@@ -367,19 +367,17 @@ private[cataclysm] object SelectorParser:
       if element then Simple.PseudoElement(name, argument) else Simple.PseudoClass(name, argument)
 
     private def pseudoArgument(name: Text): PseudoArgument =
-      val key: String = name.s.toLowerCase.nn
-
-      key match
-        case "is" | "where" | "not" | "matches" =>
+      name.lower match
+        case t"is" | t"where" | t"not" | t"matches" =>
           PseudoArgument.Selectors(selectorList(relative = false))
 
-        case "has" =>
+        case t"has" =>
           PseudoArgument.Selectors(selectorList(relative = true))
 
-        case "nth-child" | "nth-last-child" | "nth-of-type" =>
+        case t"nth-child" | t"nth-last-child" | t"nth-of-type" =>
           nth()
 
-        case "nth-last-of-type" | "nth-col" | "nth-last-col" =>
+        case t"nth-last-of-type" | t"nth-col" | t"nth-last-col" =>
           nth()
 
         case _ =>

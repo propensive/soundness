@@ -736,7 +736,7 @@ object Http:
       Url[scheme](origin, target)
 
     private lazy val queryText: Text =
-      target.offsetOf(t"?").lay(t""): ordinal => target.skip(ordinal.n0 + 1)
+      target.offsetOf(t"?").lay(t""): ordinal => target.skip(ordinal.n1)
 
     lazy val query: Query =
       contentType.let(_.base.show) match
@@ -921,7 +921,7 @@ object Http:
     @scala.annotation.tailrec
     private def headersSize(headers: List[Header], size: Int): Int = headers match
       case header :: rest =>
-        headersSize(rest, size + header.key.s.length + header.value.s.length + 4)
+        headersSize(rest, size + header.key.length + header.value.length + 4)
 
       case _ =>
         size
@@ -1179,7 +1179,7 @@ object Http:
         var stream0: Optional[AnyRef] = Unset
 
         val spring: Spring[Data]^ = () =>
-          if stream0 == Unset then
+          if stream0.absent then
             stream0 =
               fixed.lay(Request.chunkedBody(cursorRef.asInstanceOf[Cursor[Data, {}]^])):
                 length => Request.fixedBody(cursorRef.asInstanceOf[Cursor[Data, {}]^], length)

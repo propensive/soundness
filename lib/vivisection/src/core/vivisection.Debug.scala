@@ -542,11 +542,8 @@ extends caps.ExclusiveCapability:
   // source-breakpoint form defers to their preparation — and each resolved class is also checked
   // for inlined copies of the position through its SMAP (see `locateIn`).
   def locate(source: Text, line: Ordinal)(using Tactic[Debugger.Error]): List[Jdwp.Location] =
-    val base = source.s.indexOf('.') match
-      case -1    => source.s
-      case index => source.s.substring(0, index).nn
-
-    val (likely, rest) = connection.allClasses().partition(_.signature.s.contains(base))
+    val base: Text = source.offsetOf(t".").lay(source)(source.before(_))
+    val (likely, rest) = connection.allClasses().partition(_.signature.contains(base))
 
     def resolve(info: Jdwp.ClassInfo): List[Jdwp.Location] =
       locateIn(info.tag, info.cls, source, line)

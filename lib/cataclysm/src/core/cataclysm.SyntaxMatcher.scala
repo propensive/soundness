@@ -41,6 +41,7 @@ import denominative.*
 import gossamer.*
 
 import rudiments.*
+import spectacular.*
 import symbolism.*
 import vacuous.*
 
@@ -70,35 +71,37 @@ object SyntaxMatcher:
 
   private def parsed(raw: Text): Optional[Css.Syntax] = safely(SyntaxParser.parse(raw))
 
-  private val lengthUnits: Set[String] =
-    Set("px", "em", "rem", "ex", "ch", "cap", "ic", "lh", "rlh", "vw", "vh", "vi", "vb", "vmin",
-        "vmax", "svw", "svh", "lvw", "lvh", "dvw", "dvh", "cm", "mm", "q", "in", "pt", "pc")
+  private val lengthUnits: Set[Text] =
+    Set
+      ( t"px", t"em", t"rem", t"ex", t"ch", t"cap", t"ic", t"lh", t"rlh", t"vw", t"vh", t"vi",
+        t"vb", t"vmin", t"vmax", t"svw", t"svh", t"lvw", t"lvh", t"dvw", t"dvh", t"cm", t"mm", t"q",
+        t"in", t"pt", t"pc" )
 
-  private val angleUnits: Set[String] = Set("deg", "grad", "rad", "turn")
-  private val timeUnits: Set[String] = Set("s", "ms")
-  private val resolutionUnits: Set[String] = Set("dpi", "dpcm", "dppx", "x")
-  private val frequencyUnits: Set[String] = Set("hz", "khz")
-  private val flexUnits: Set[String] = Set("fr")
-  private val substitutions: Set[String] = Set("var", "env")
+  private val angleUnits: Set[Text] = Set(t"deg", t"grad", t"rad", t"turn")
+  private val timeUnits: Set[Text] = Set(t"s", t"ms")
+  private val resolutionUnits: Set[Text] = Set(t"dpi", t"dpcm", t"dppx", t"x")
+  private val frequencyUnits: Set[Text] = Set(t"hz", t"khz")
+  private val flexUnits: Set[Text] = Set(t"fr")
+  private val substitutions: Set[Text] = Set(t"var", t"env")
 
   // The CSS-wide keywords are valid as the sole value of every property, but appear
   // in no property's grammar, so they are accepted before grammar matching.
-  private val globalKeywords: Set[String] = Set("inherit", "initial", "unset", "revert",
-      "revert-layer")
+  private val globalKeywords: Set[Text] = Set(t"inherit", t"initial", t"unset", t"revert",
+      t"revert-layer")
 
-  private val mathFunctions: Set[String] =
-    Set("calc", "min", "max", "clamp", "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "pow",
-        "sqrt", "hypot", "log", "exp", "abs", "sign", "mod", "rem", "round")
+  private val mathFunctions: Set[Text] =
+    Set
+      ( t"calc", t"min", t"max", t"clamp", t"sin", t"cos", t"tan", t"asin", t"acos", t"atan",
+        t"atan2", t"pow", t"sqrt", t"hypot", t"log", t"exp", t"abs", t"sign", t"mod", t"rem",
+        t"round" )
 
-  private def lower(text: Text): String = text.s.toLowerCase.nn
-  private def same(a: Text, b: Text): Boolean = lower(a) == lower(b)
 
   private def substitution(token: ValueToken): Boolean = token match
-    case ValueToken.Function(name) => substitutions(lower(name))
+    case ValueToken.Function(name) => substitutions(name.lower)
     case _                         => false
 
   private def globalKeyword(tokens: List[ValueToken]): Boolean = tokens match
-    case List(ValueToken.Ident(value)) => globalKeywords(lower(value))
+    case List(ValueToken.Ident(value)) => globalKeywords(value.lower)
     case _                             => false
 
   def check(property: PropertyDef, value: Text)(using Tactic[Css.Error]): Outcome =
@@ -204,7 +207,7 @@ object SyntaxMatcher:
       case _                        => Nil
 
     private def keyword(name: Text, tokens: List[ValueToken]): List[List[ValueToken]] = tokens match
-      case ValueToken.Ident(value) :: tail if same(value, name) =>
+      case ValueToken.Ident(value) :: tail if value.lower == name.lower =>
         List(tail)
 
       case _ =>
@@ -213,7 +216,7 @@ object SyntaxMatcher:
     private def literal(token: Text, tokens: List[ValueToken]): List[List[ValueToken]] =
       if token == t"," then comma(tokens)
       else tokens match
-        case ValueToken.Delim(char) :: tail if token == char.toString.tt =>
+        case ValueToken.Delim(char) :: tail if token == char.show =>
           List(tail)
 
         case _ =>
@@ -250,7 +253,7 @@ object SyntaxMatcher:
     :   List[List[ValueToken]] =
 
       tokens match
-        case ValueToken.Function(fname) :: tail if same(fname, name) =>
+        case ValueToken.Function(fname) :: tail if fname.lower == name.lower =>
           val (inner, after) = split(tail)
 
           after.lay(Nil): rest => if consume(body, inner).exists(_.nil) then List(rest) else Nil
@@ -288,50 +291,51 @@ object SyntaxMatcher:
     // ── leaf primitives ──────────────────────────────────────────────────────
 
     private def primitive(name: Text, tokens: List[ValueToken]): List[List[ValueToken]] =
-      lower(name) match
-        case "length" =>
+      name.lower match
+        case t"length" =>
           numeric(tokens)(lengthLeaf)
 
-        case "percentage" =>
+        case t"percentage" =>
           numeric(tokens)(percentageLeaf)
 
-        case "number" | "number-token" | "integer" =>
+        case t"number" | t"number-token" | t"integer" =>
           numeric(tokens)(numberLeaf)
 
-        case "angle" =>
+        case t"angle" =>
           numeric(tokens)(unitLeaf(angleUnits))
 
-        case "time" =>
+        case t"time" =>
           numeric(tokens)(unitLeaf(timeUnits))
 
-        case "resolution" =>
+        case t"resolution" =>
           numeric(tokens)(unitLeaf(resolutionUnits))
 
-        case "frequency" =>
+        case t"frequency" =>
           numeric(tokens)(unitLeaf(frequencyUnits))
 
-        case "flex" =>
+        case t"flex" =>
           unitLeaf(flexUnits)(tokens)
 
-        case "ratio" =>
+        case t"ratio" =>
           ratioLeaf(tokens)
 
-        case "declaration-value" | "any-value" =>
+        case t"declaration-value" | t"any-value" =>
           List(Nil)
 
-        case "dimension" | "dimension-token" =>
+        case t"dimension" | t"dimension-token" =>
           dimensionLeaf(tokens)
 
-        case "string" | "string-token" =>
+        case t"string" | t"string-token" =>
           stringLeaf(tokens)
 
-        case "url" | "url-token" =>
+        case t"url" | t"url-token" =>
           urlLeaf(tokens)
 
-        case "hex-color" | "hash-token" =>
+        case t"hex-color" | t"hash-token" =>
           hashLeaf(tokens)
 
-        case "custom-ident" | "ident" | "ident-token" | "dashed-ident" | "custom-property-name" =>
+        case t"custom-ident" | t"ident" | t"ident-token" | t"dashed-ident"
+        | t"custom-property-name" =>
           identLeaf(tokens)
 
         case _ =>
@@ -344,16 +348,16 @@ object SyntaxMatcher:
     :   List[List[ValueToken]] =
 
       tokens match
-        case ValueToken.Function(name) :: tail if mathFunctions(lower(name)) =>
+        case ValueToken.Function(name) :: tail if mathFunctions(name.lower) =>
           afterFunction(tail)
 
         case _ =>
           leaf(tokens)
 
     private def lengthLeaf(tokens: List[ValueToken]): List[List[ValueToken]] = tokens match
-      case ValueToken.Dimension(_, unit, _) :: tail if lengthUnits(lower(unit)) => List(tail)
-      case ValueToken.Number(value, _, _) :: tail if value == 0.0               => List(tail)
-      case _                                                                    => Nil
+      case ValueToken.Dimension(_, unit, _) :: tail if lengthUnits(unit.lower) => List(tail)
+      case ValueToken.Number(value, _, _) :: tail if value == 0.0              => List(tail)
+      case _                                                                   => Nil
 
     private def percentageLeaf(tokens: List[ValueToken]): List[List[ValueToken]] = tokens match
       case ValueToken.Percentage(_, _) :: tail => List(tail)
@@ -364,10 +368,10 @@ object SyntaxMatcher:
       case _                                  => Nil
 
     // A dimension whose unit is one of `units`: an angle, a time, a resolution, and so on.
-    private def unitLeaf(units: Set[String])(tokens: List[ValueToken]): List[List[ValueToken]] =
+    private def unitLeaf(units: Set[Text])(tokens: List[ValueToken]): List[List[ValueToken]] =
       tokens match
-        case ValueToken.Dimension(_, unit, _) :: tail if units(lower(unit)) => List(tail)
-        case _                                                              => Nil
+        case ValueToken.Dimension(_, unit, _) :: tail if units(unit.lower) => List(tail)
+        case _                                                             => Nil
 
     // `<ratio> = <number> [ / <number> ]?`
     private def ratioLeaf(tokens: List[ValueToken]): List[List[ValueToken]] =
@@ -396,7 +400,7 @@ object SyntaxMatcher:
       case ValueToken.Url(_) :: tail =>
         List(tail)
 
-      case ValueToken.Function(name) :: tail if same(name, t"url") =>
+      case ValueToken.Function(name) :: tail if name.lower == t"url".lower =>
         afterFunction(tail)
 
       case _ =>
