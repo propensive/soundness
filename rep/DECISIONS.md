@@ -2814,3 +2814,18 @@ bodies, by what blocks them:
   checked like the vals of the enclosing block, so a fresh-typed one hides its capability from
   what follows. `zephyrine.streamOf`'s `carry`/`joined` stay annotated; turbulence `Relay`'s
   `storage: scala.Array[AnyRef]^` (touched only in `refill`) passes, −1.
+
+## ultimatum after `Board` (2026-10-08, with #2206 merged in)
+
+`Form` (11) becomes an exclusive stateful capability: the loop marked eight mutators, plus
+`paint` by hand (its symptom was not an "update" message but "`Board^{Form.this.root.rd}` cannot
+subsume `Board^{any}`" when passing the root to `FlowExtent` from a read-only method). The
+companion `apply` mints `Form^`; `run` is update. 181/181.
+
+Not done, and why: `Terminal.Metrics` (3) — `Terminal` builds live `Termcap` views over an alias
+of its metrics (`val metrics0 = metrics; new Termcap { … metrics0.rows … }`), and once the
+metrics are stateful the view captures `metrics0.rd` where a pure `Termcap` is required: a
+`[live-view]`, retired only by a capability-typed `Termcap`. The fixtures (`ScrollFixture`,
+`TableFixture`, `Reading`, `Inlay`, `EditorField`, `Panes`, 17) are user-held model objects
+the form drives through `wakeForm`/`onChange` callbacks and that user code mutates from event
+handlers — `[closure-capture]` by design. The test file's 13 are closure-captured locals.
