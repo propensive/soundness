@@ -2580,3 +2580,48 @@ the classpath", and random test failures. Two fixes:
   `systemTemporaryDirectory` resolves — the JVM ignores `TMPDIR` on macOS — plus `TMPDIR` for
   subprocesses), runs `fume quit` and removes both when the run ends, however it ends. Nothing
   a suite forgets can outlive the run, and no daemon is left behind.
+
+## xylophone `XmlParser` becomes `Stateful` (2026-10-08)
+
+The second per-class `safety-1` conversion after profanity's `Board`: `Xml.XmlParser` (the
+byte parser, ~2,000 lines) goes from `caps.ExclusiveCapability` with 25 `@untrackedCaptures`
+fields to `caps.ExclusiveCapability, caps.Stateful` with one — the cursor-buffer snapshot
+`bytes0: AnyRef`, the same residue stratiform's `Tel.Parser` keeps (a typed array field
+holding the cursor's buffer trips the classifier and the consume checks). The recipe held:
+
+- Primitive, `Optional`, `Scope`, `Attributes` and `BaseText` `var`s: annotation dropped, no
+  other change. The scratch arrays (`attrBuf`, `tagCache*`) become `scala.Array[T]^` fields
+  (hallucination's `Vp8Decoder` shape), which retires the four `…Target` cast views.
+- Mutators become `update def`: 66 of 81 methods, found by a transitive write analysis
+  (writes a `var`, or calls a method that does) plus three compiler rounds for the methods
+  whose only mutation is a *cursor* call (`syncTo`, `cursor.mark`, `cursor.hold`): the
+  analysis sees no field write there, the checker does.
+- Factories return a fresh `XmlParser^`, and the two `loadable` holders are declared
+  `val parser: XmlParser^ = …` (a plain `val` is a read-only alias).
+- The constructor's `callback: (Ordinal, Hole) => Unit` field is typed
+  `->{caps.any} Unit` — Board's `widthFn: () ->{caps.any.rd} Int` move, exclusive here because
+  update methods call it.
+- `Mutable` vs `Stateful`: the first attempt used `caps.Mutable` and every error mentioned
+  "`any` classified as Unscoped in the type of class XmlParser"; `Stateful` (jacinta's `Parser`,
+  `Board`) is the right classifier for a parser that is created and consumed in one scope.
+
+Three traps, all new:
+
+- **A nested inline update is bound read-only.** `position` (`inline`, calls `syncTo`, itself
+  `inline update`) fails at its first expansion with "capture set {} of value `XmlParser_this`
+  … is read-only": the outer expansion binds `this` as a proxy `val` and the inner update
+  through it is rejected. The error is reported ONCE (at the first expansion in file order),
+  which made it look site-specific. One inline level is fine; `position` is now a plain
+  `update def`. Candidate fork patch (`inlineupdate` covers accessors, not `this` proxies).
+- **Inline update forwarders over a cast receiver.** `Reader`'s two `inline update def`s
+  (`nextChild`, `element`) over `parser0.asInstanceOf[XmlParser^]` fail with "update method
+  … of x$0 since its capture set {x$0} is read-only" once the target is an update method;
+  jacinta's identical forwarders compile, so the difference is not yet understood. Both are
+  now non-inline like the rest of `Reader`'s forwarders. Follow-up: a probe (`p18`) and, if it
+  is the same proxy issue as above, the same fork leg.
+- **`parseWith`'s seal stays** (`[by-name-receiver]`): the session body captures the parser
+  that is also `directSession`'s receiver; the companion-helper restructuring only moves the
+  same overlap down to `cursor.hold`. The by-name capture leg (`safety-10`) is what retires it.
+
+Verified: clean rebuild, 566/566 tests, bench compiles. `untrackedCaptures` in
+`xylophone.Xml.scala` 25 → 1; `unsafeAssumePure` 16 (derivation anchors, untouched).
