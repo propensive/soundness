@@ -2652,3 +2652,15 @@ Two things did not go:
   context-function result "hides non-local this of class Accumulator", which only a `consume`
   method may do. Same lesson as `reference_contextual_default_summon_site`: on a stateful
   class, take the tactic as a parameter.
+
+## stratiform `Tel.Parser`: scratch arrays as `Array[T]^` fields (2026-10-08)
+
+`untrackedCaptures` 13 → 6 in `stratiform.Tel.scala`. The parser was already `Mutable`; its
+four scratch stacks (`scratchAtoms0: AnyRef` + an `inline` cast view each) and the three
+`keyCache*` arrays (+ three `…Target` views) become plain `scala.Array[T]^` fields, as in
+xylophone. One trap: a **private** `Array[T]^` field read from an `inline` method gets a
+synthesized `inline$field` accessor whose fresh result "hides `Parser.this`", and every later
+field definition then fails with "Illegal access to {Parser.this} which is hidden by the
+previous definition". The fields are non-private (`var scratchAtoms`), like the parser's other
+state, and no accessor is synthesized. What stays: `cursor0`/`bytes0` (the cursor snapshot),
+`Inline._text` (a lazily-filled cache on a plain atom class), and the serializer's `first`.
