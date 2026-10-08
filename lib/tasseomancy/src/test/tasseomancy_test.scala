@@ -466,7 +466,7 @@ object Tests extends Suite(m"Tasseomancy tests"):
 
       test(m"a style shared by every kind still resolves for each"):
         given Chart.Standard = Chart.Standard(width = 320.0, height = 200.0)
-        rendered(Series(t"share")((t"a", 1.0), (t"b", 3.0)).chart(Pie())).contains(t"viewBox=\"0 0 320.0 200.0\"")
+        rendered(Series(t"share")((t"a", 1.0), (t"b", 3.0)).chart(Pie())).contains(t"viewBox=\"0.0 0.0 320.0 200.0\"")
       . assert(_ == true)
 
       test(m"an annotated point is labelled beside its marker"):

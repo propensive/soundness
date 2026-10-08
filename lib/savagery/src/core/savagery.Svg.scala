@@ -52,6 +52,7 @@ import cataclysm.{Css, FontFace}
 import distillate.*
 import geodesy.*
 import iridescence.*
+import kaleidoscope.*
 import symbolism.*
 
 object Svg:
@@ -116,14 +117,42 @@ object Svg:
   // SvgError → Svg.Error
   object Error:
     enum Reason(val number: Int) extends Clarification:
-      case NotAnSvg(label: Text)            extends Reason(1)
-      case MalformedPathData(data: Text)    extends Reason(2)
-      case MalformedColor(color: Text)      extends Reason(3)
+      case NotAnSvg(label: Text)                   extends Reason(1)
+      case MalformedPathData(data: Text)           extends Reason(2)
+      case MalformedColor(color: Text)             extends Reason(3)
+      case MalformedLength(length: Text)           extends Reason(4)
+      case MismatchedUnits(width: Text, height: Text) extends Reason(5)
+      case MalformedViewBox(viewBox: Text)         extends Reason(6)
 
     given communicable: Reason is Communicable =
       case Reason.NotAnSvg(label)         => m"the root element was <$label> instead of <svg>"
       case Reason.MalformedPathData(data) => m"the path data $data could not be parsed"
       case Reason.MalformedColor(color)   => m"the color $color could not be parsed"
+      case Reason.MalformedLength(length) => m"the length $length is not a number with a unit"
+      case Reason.MalformedViewBox(box)   => m"the viewBox $box is not four numbers"
+
+      case Reason.MismatchedUnits(width, height) =>
+        m"the width $width and height $height have different units"
+
+  // The units an `<svg>` element's `width` and `height` may carry; a bare number is user units.
+  // (`Units`, not `Unit`, which would shadow `scala.Unit` throughout this object.)
+  enum Units(val suffix: Text):
+    case Em      extends Units(t"em")
+    case Ex      extends Units(t"ex")
+    case Px      extends Units(t"px")
+    case In      extends Units(t"in")
+    case Cm      extends Units(t"cm")
+    case Mm      extends Units(t"mm")
+    case Pt      extends Units(t"pt")
+    case Pc      extends Units(t"pc")
+    case Percent extends Units(t"%")
+
+  // The `viewBox` attribute: the user-space rectangle the viewport shows.
+  object ViewBox:
+    given showable: ViewBox is Showable = box =>
+      t"${box.x.show} ${box.y.show} ${box.width.show} ${box.height.show}"
+
+  case class ViewBox(x: Float, y: Float, width: Float, height: Float)
 
   case class Error(reason: Svg.Error.Reason)(using Diagnostics)
   extends fulminate.Error(122, reason.number)(m"the SVG could not be parsed because $reason")
@@ -150,9 +179,52 @@ object Svg:
       elem.attributes(name).let: text => safely(text.as[Double].toFloat).or(default)
       . or(default)
 
+    // An SVG `<length>`: a number with an optional unit suffix. The suffix is matched first,
+    // since `em` and `ex` would otherwise read as a malformed exponent.
+    private def lengthAttr(elem: Xml.Element, name: Text)(using Tactic[Svg.Error])
+    :   (Float, Optional[Units]) =
+
+      elem.attributes(name).lay((0.0f, Unset)): text =>
+        val trimmed = text.trim
+
+        val unit: Optional[Units] =
+          Units.values.find(unit => trimmed.ends(unit.suffix)).getOrElse(Unset)
+
+        val number = unit.lay(trimmed)(unit => trimmed.skip(unit.suffix.length, Rtl))
+
+        safely(number.as[Double].toFloat).let((_, unit)).or:
+          abort(Svg.Error(Svg.Error.Reason.MalformedLength(text)))
+
+    // Four numbers, separated by whitespace and/or a comma.
+    private def viewBoxAttr(elem: Xml.Element)(using Tactic[Svg.Error]): Optional[ViewBox] =
+      elem.attributes(t"viewBox").let: text =>
+        def number(part: Text): Float =
+          safely(part.as[Double].toFloat).or:
+            abort(Svg.Error(Svg.Error.Reason.MalformedViewBox(text)))
+
+        text.trim match
+          case r"$x([^\s,]+)[\s,]+$y([^\s,]+)[\s,]+$width([^\s,]+)[\s,]+$height([^\s,]+)" =>
+            ViewBox(number(x), number(y), number(width), number(height))
+
+          case _ =>
+            abort(Svg.Error(Svg.Error.Reason.MalformedViewBox(text)))
+
     def decodeSvg(elem: Xml.Element)(using Tactic[Svg.Error]): Svg =
-      val width = numAttr(elem, t"width")
-      val height = numAttr(elem, t"height")
+      val (width, widthUnit) = lengthAttr(elem, t"width")
+      val (height, heightUnit) = lengthAttr(elem, t"height")
+
+      // One unit serves both dimensions; a viewport that mixes them is not representable.
+      val unit: Optional[Units] =
+        if widthUnit == heightUnit then widthUnit
+        else if elem.attributes(t"width").absent then heightUnit
+        else if elem.attributes(t"height").absent then widthUnit
+        else
+          abort:
+            Svg.Error:
+              Svg.Error.Reason.MismatchedUnits
+                ( elem.attributes(t"width").or(t""), elem.attributes(t"height").or(t"") )
+
+      val viewBox = viewBoxAttr(elem)
 
       val defs = ListBuffer[Def]()
       val figures = ListBuffer[Figure]()
@@ -169,7 +241,7 @@ object Svg:
         case _ =>
           ()
 
-      Svg(width, height, defs.to(List), figures.to(List))
+      Svg(width, height, defs.to(List), figures.to(List), unit = unit, viewBox = viewBox)
 
     private def decodeFigure(elem: Xml.Element)(using Tactic[Svg.Error]): Optional[Figure] =
       elem.label match
@@ -587,24 +659,33 @@ object Svg:
       val nodes = List.from(stops.map(_.in[Xml])).nodes
       Xml.Element(t"linearGradient", Attributes(t"id" -> Id.text(id)), nodes)
 
+// `width` and `height` are the viewport's size in `unit`, or in user units when it is unset;
+// `viewBox` is the user-space rectangle the viewport shows, which defaults to the viewport's
+// own size from the origin.
 case class Svg
   ( width:      Float,
     height:     Float,
-    defs:       List[Svg.Def]    = Nil,
-    figures:    List[Figure]    = Nil,
-    transforms: List[Transform] = Nil )
+    defs:       List[Svg.Def]         = Nil,
+    figures:    List[Figure]          = Nil,
+    transforms: List[Transform]       = Nil,
+    unit:       Optional[Svg.Units]   = Unset,
+    viewBox:    Optional[Svg.ViewBox] = Unset )
 extends Documentary:
 
   type Self = Svg
   type Metadata = Encoding
 
   private[savagery] def markup: Xml =
+    val suffix: Text = unit.lay(t"")(_.suffix)
+
+    val box: Svg.ViewBox = viewBox.or(Svg.ViewBox(0, 0, width, height))
+
     val attrs: Ledger[Text, Text] =
       Ledger
         ( t"xmlns"   -> t"http://www.w3.org/2000/svg",
-          t"viewBox" -> t"0 0 $width $height",
-          t"width"   -> width.show,
-          t"height"  -> height.show )
+          t"viewBox" -> box.show,
+          t"width"   -> t"${width.show}$suffix",
+          t"height"  -> t"${height.show}$suffix" )
 
     // The `@font-face` rules for every typeface the lettering names, as a `<style>` among the
     // definitions, so the SVG carries the fonts it uses and renders alike wherever it is shown.
