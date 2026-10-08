@@ -180,23 +180,23 @@ def relent[result]()(using Worker): Unit = monitor.relent()
 def cancel[result]()(using Monitor^): Unit = monitor.cancel()
 
 
-def snooze[duration: Abstractable across Durations to Long](duration: duration)(using Monitor^)
-:   Unit =
-
-  monitor.snooze(duration)
-
-
-def delay[generic: Abstractable across Durations to Long](duration: generic)(using Monitor^): Unit =
-  hibernate(jl.System.currentTimeMillis + duration.generic/1_000_000L)
-
-def sleep[instant: Abstractable across Instants to Long](instant: instant)(using Monitor^): Unit =
-  monitor.snooze((instant.generic - jl.System.currentTimeMillis)*1_000_000L)
+// Pauses the current strand until a duration has elapsed or an instant has arrived, whichever
+// kind of value is given (`Schedulable`). A snooze is a cancellation point: a cancelled task wakes
+// from it at once.
+def snooze[time: Schedulable](time: time)(using Monitor^): Unit = monitor.snooze(time.remaining)
 
 
-def hibernate[instant: Abstractable across Instants to Long](instant: instant)(using Monitor^)
-:   Unit =
+// As `snooze`, but waits out its whole deadline. It parks through the supervisor rather than
+// the monitor, whose `snooze` would refuse a cancelled task at once, and an early wakeup —
+// spurious, or the interrupt a cancellation delivers — re-parks for the time still remaining,
+// consuming the interrupt so that the next park is not cut short by it. The task's cancelled
+// state persists, so it still stops at its next `snooze` or `relent()`.
+def sleep[time: Schedulable](time: time)(using Monitor^): Unit =
+  val deadline = jl.System.nanoTime + time.remaining
 
-  while instant.generic > jl.System.currentTimeMillis do sleep(instant.generic)
+  while deadline > jl.System.nanoTime do
+    monitor.supervisor.sleep(deadline - jl.System.nanoTime)
+    if monitor.supervisor.interrupted() then ()
 
 
 extension [result](stream: Chain[result])

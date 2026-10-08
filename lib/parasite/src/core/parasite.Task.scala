@@ -100,11 +100,11 @@ object Task:
 
   // The monadic form of `snooze`: a task which completes after the duration, for composition
   // with `bind`/`map` without suspending the calling strand.
-  def sleep[duration: Abstractable across Durations to Long](duration: duration)
+  def sleep[time: Schedulable](time: time)
     ( using monitor: Monitor^, probate: Probate^, codepoint: Codepoint )
   :   (Task[Unit] emits Async.Error)^{monitor, probate} =
 
-    async(snooze(duration))
+    async(snooze(time))
 
 
   extension [result](tasks: List[Task[result]])

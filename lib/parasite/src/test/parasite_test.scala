@@ -1295,7 +1295,7 @@ object Tests extends Suite("parasite", m"Parasite tests"):
           finished.get()
         . assert(_ == 0)
 
-      suite(m"Snooze and delay"):
+      suite(m"Snooze and sleep"):
         test(m"Snooze sleeps for approximately the given duration"):
           val gate = Promise[Long]()
           val task = async:
@@ -1320,14 +1320,51 @@ object Tests extends Suite("parasite", m"Parasite tests"):
           gate.apply().or(0L) >= 40L
         . assert(_ == true)
 
-        test(m"Delay sleeps for relative duration"):
+        test(m"Sleep waits out a duration"):
           val gate = Promise[Long]()
           val task = async:
             val start = jl.System.currentTimeMillis
-            delay(50.0*Milli(Second))
+            sleep(50.0*Milli(Second))
             gate.fulfill(jl.System.currentTimeMillis - start)
           task.await()
           gate.apply().or(0L) >= 40L
+        . assert(_ == true)
+
+        test(m"Sleep waits until an instant"):
+          import abstractables.epochMillisecondsAbstractable
+          val gate = Promise[Long]()
+          val task = async:
+            val start = jl.System.currentTimeMillis
+            sleep(start + 50L)
+            gate.fulfill(jl.System.currentTimeMillis - start)
+          task.await()
+          gate.apply().or(0L) >= 40L
+        . assert(_ == true)
+
+        test(m"Snooze until an instant is interrupted by cancel"):
+          import abstractables.epochMillisecondsAbstractable
+          val started = Promise[Unit]()
+          val task = async:
+            started.fulfill(())
+            snooze(jl.System.currentTimeMillis + 10_000L)
+            42
+          started.await()
+          task.cancel()
+          safely(task.await())
+        . assert(_ == Unset)
+
+        test(m"Sleep is not cut short by cancel"):
+          val started = Promise[Unit]()
+          val gate = Promise[Long]()
+          val task = async:
+            started.fulfill(())
+            val start = jl.System.currentTimeMillis
+            sleep(100.0*Milli(Second))
+            gate.fulfill(jl.System.currentTimeMillis - start)
+          started.await()
+          task.cancel()
+          safely(task.await())
+          gate.apply().or(0L) >= 80L
         . assert(_ == true)
 
         test(m"Snooze inside cancelled task throws"):
