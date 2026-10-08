@@ -182,11 +182,15 @@ extends Rig:
           // escape-analysis from scalarising the writes away.
           val sink = new java.util.concurrent.atomic.AtomicReference[Any](null)
 
+          // The body, bound once as a method of its own, exactly as in `Bench`: spliced into the
+          // loops of this run-once method, it could only be JIT-compiled by on-stack replacement.
+          def operation(): Any = $body0
+
           // Run 10 times initially as untimed, single-threaded warmup
           var w = 0
 
           while w < 10 do
-            sink.lazySet($body0)
+            sink.lazySet(operation())
             w += 1
 
           val pools = java.lang.management.ManagementFactory.getMemoryPoolMXBeans.nn
@@ -266,7 +270,7 @@ extends Rig:
                   var before = jl.System.nanoTime
 
                   while before < deadline do
-                    sink.lazySet($body0)
+                    sink.lazySet(operation())
                     val after = jl.System.nanoTime
 
                     // Log-linear bucketing with 16 sub-buckets per power of two, in the style

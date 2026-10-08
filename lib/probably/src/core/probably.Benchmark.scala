@@ -111,6 +111,10 @@ case class Benchmark
     confidence:     Benchmark.Percentiles,
     operationSize:  Optional[Text] = Unset,
     operationRate:  Optional[Text] = Unset,
+    // The size of one operation as a number, in the unit `operationSize` names, when declared.
+    // Not yet streamed to a host: adding it to `TestEvent.BenchmarkRecorded` changes the wire
+    // layout, which waits on a host release decoding it (fume#45).
+    operationQuantity: Optional[Double] = Unset,
     allocation:     Optional[Long] = Unset ):
 
   // One-sided quantiles of Student's t-distribution, used for CI half-widths

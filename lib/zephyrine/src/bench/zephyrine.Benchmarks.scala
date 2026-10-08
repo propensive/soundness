@@ -99,116 +99,6 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
   // `Cursor.consume` — measures the inline `consume` macro on a hit.
   lazy val xmlInput: Text = Text("xml...........................................")
 
-  // ─── helpers (called from quoted bench bodies) ────────────────────────────
-
-  def stringCharAtSum(text: Text): Int =
-    val s = text.s
-    val n = s.length
-    var i = 0
-    var acc = 0
-    while i < n do { acc ^= s.charAt(i); i += 1 }
-    acc
-
-  def cursorNextSingleBlock(text: Text): Int =
-    val c = Cursor(Iterator(text))
-    var n = 0
-    while c.next() do n += 1
-    n
-
-  def cursorNextWithLinefeeds(text: Text): Int =
-    import zephyrine.lineation.linefeedChar
-    val c = Cursor(Iterator(text))
-    var n = 0
-    while c.next() do n += 1
-    n
-
-  def cursorNextFragmented(blocks: List[Text]): Int =
-    val c = Cursor(blocks.stdlib.iterator)
-    var n = 0
-    while c.next() do n += 1
-    n
-
-  def cursorNextData(data: Data): Int =
-    val c = Cursor[Data](Iterator(data))
-    var n = 0
-    while c.next() do n += 1
-    n
-
-  // Cursor over a pull endpoint — exercises the stream-backed factory's refill
-  // path (window transferred into the cursor's buffer once per fill).
-  def cursorNextStreamed(blocks: List[Data]): Int =
-    val c = Cursor[Data](blocks.stdlib.iterator.stream)
-    var n = 0
-    while c.next() do n += 1
-    n
-
-  def cursorEmptyHoldLoop(text: Text, count: Int): Int =
-    val c = Cursor(Iterator(text))
-    var i = 0
-    while i < count do { c.hold(()); i += 1 }
-    i
-
-  def cursorHoldMarkGrabInBlock(text: Text, repeats: Int, span: Int): Int =
-    val c = Cursor(Iterator(text))
-    var acc = 0
-    var i = 0
-    while i < repeats do
-      c.hold:
-        val mk = c.mark
-        var k = 0
-        while k < span do { c.next(); k += 1 }
-        acc ^= c.grab(mk, c.mark).s.length
-
-      i += 1
-    acc
-
-  def cursorHoldMarkGrabCrossBlock(blocks: List[Text], span: Int): Int =
-    val c = Cursor(blocks.stdlib.iterator)
-    c.hold:
-      val mk = c.mark
-      var k = 0
-      while k < span do { c.next(); k += 1 }
-      c.grab(mk, c.mark).s.length
-
-  def cursorConsumeXml(text: Text): Int =
-    val c: Cursor[Text, ?] = Cursor(Iterator(text))
-    var matched = 0
-    c.consume({ matched = -1 })("xml")
-    matched
-
-  def cursorSeekSpace(text: Text): Boolean =
-    val c = Cursor(Iterator(text))
-    c.seek(' '.asInstanceOf[c.addressable.Operand])
-
-  def cursorTake64(text: Text): Int =
-    val c = Cursor(Iterator(text))
-    c.take(t"")(64).s.length
-
-  // Walks `data10k` peeking each byte then advancing. Measures the safe
-  // `peek` extension against the hand-rolled `if finished then -1 else
-  // unsafeDatum(using Unsafe) & 0xff` pattern in `dataDatumLoop`; both should
-  // produce the same inner loop.
-  def dataPeekByteLoop(data: Data): Int =
-    val c = Cursor[Data](Iterator(data))
-    var acc = 0
-    while !c.finished do { acc ^= c.peek.asInt; c.advance() }
-    acc
-
-  def dataDatumLoop(data: Data): Int =
-    val c = Cursor[Data](Iterator(data))
-    var acc = 0
-    while !c.finished do
-      val b = c.unsafeDatum(using Unsafe).asInstanceOf[Byte] & 0xff
-      acc ^= b
-      c.advance()
-    acc
-
-  def textPeekCharLoop(text: Text): Int =
-    val c = Cursor[Text](Iterator(text))
-    var acc = 0
-    while !c.finished do { acc ^= c.peek.asInt; c.advance() }
-    acc
-
   // ─── benchmarks ───────────────────────────────────────────────────────────
 
   def run(): Unit =
@@ -221,65 +111,158 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
     suite(m"Linear iteration"):
       bench(m"java.lang.String charAt loop (baseline)")
         ( target = 1*Second, operationSize = text10kSize ):
-        '{ zephyrine.Benchmarks.stringCharAtSum(zephyrine.Benchmarks.text10k) }
+        '{
+            val s = zephyrine.Benchmarks.text10k.s
+            val n = s.length
+            var i = 0
+            var acc = 0
+            while i < n do { acc ^= s.charAt(i); i += 1 }
+            acc
+        }
 
       bench(m"Cursor.next, single 10 KB block")
         ( target = 1*Second, operationSize = text10kSize ):
-        '{ zephyrine.Benchmarks.cursorNextSingleBlock(zephyrine.Benchmarks.text10k) }
+        '{
+            val c = Cursor(Iterator(zephyrine.Benchmarks.text10k))
+            var n = 0
+            while c.next() do n += 1
+            n
+        }
 
       bench(m"Cursor.next + linefeed tracking, single 10 KB block")
         ( target = 1*Second, operationSize = text10kSize ):
-        '{ zephyrine.Benchmarks.cursorNextWithLinefeeds(zephyrine.Benchmarks.text10k) }
+        '{
+            import zephyrine.lineation.linefeedChar
+            val c = Cursor(Iterator(zephyrine.Benchmarks.text10k))
+            var n = 0
+            while c.next() do n += 1
+            n
+        }
 
       bench(m"Cursor.next, 100 × 100-char fragmented blocks")
         ( target = 1*Second, operationSize = text10kSize ):
-        '{ zephyrine.Benchmarks.cursorNextFragmented(zephyrine.Benchmarks.text10kFragments) }
+        '{
+            val c = Cursor(zephyrine.Benchmarks.text10kFragments.stdlib.iterator)
+            var n = 0
+            while c.next() do n += 1
+            n
+        }
 
       bench(m"Cursor[Data].next, 10 KB single block")
         ( target = 1*Second, operationSize = text10kSize ):
-        '{ zephyrine.Benchmarks.cursorNextData(zephyrine.Benchmarks.data10k) }
+        '{
+            val c = Cursor[Data](Iterator(zephyrine.Benchmarks.data10k))
+            var n = 0
+            while c.next() do n += 1
+            n
+        }
 
+      // A cursor over a pull endpoint exercises the stream-backed factory's refill path (the
+      // window is transferred into the cursor's buffer once per fill).
       bench(m"Cursor[Data].next over Stream, 100 × 100-byte blocks")
         ( target = 1*Second, operationSize = text10kSize ):
-        '{ zephyrine.Benchmarks.cursorNextStreamed(zephyrine.Benchmarks.data10kFragments) }
+        '{
+            val c = Cursor[Data](zephyrine.Benchmarks.data10kFragments.stdlib.iterator.stream)
+            var n = 0
+            while c.next() do n += 1
+            n
+        }
 
     suite(m"Hold and capture"):
       bench(m"empty hold {} × 1000 (Held alloc)")
         ( target = 1*Second ):
-        '{ zephyrine.Benchmarks.cursorEmptyHoldLoop(zephyrine.Benchmarks.text10k, 1000) }
+        '{
+            val c = Cursor(Iterator(zephyrine.Benchmarks.text10k))
+            var i = 0
+            while i < 1000 do { c.hold(()); i += 1 }
+            i
+        }
 
       bench(m"hold + mark + grab 16 chars in-block × 100")
         (target = 1*Second):
-        '{ zephyrine.Benchmarks.cursorHoldMarkGrabInBlock(zephyrine.Benchmarks.text10k, 100, 16) }
+        '{
+            val c = Cursor(Iterator(zephyrine.Benchmarks.text10k))
+            var acc = 0
+            var i = 0
+
+            while i < 100 do
+              c.hold:
+                val mk = c.mark
+                var k = 0
+                while k < 16 do { c.next(); k += 1 }
+                acc ^= c.grab(mk, c.mark).s.length
+
+              i += 1
+
+            acc
+        }
 
       bench(m"hold + mark + grab cross-block (350 chars across 4 blocks)")
         (target = 1*Second):
-        ' {
-            zephyrine.Benchmarks.cursorHoldMarkGrabCrossBlock
-              ( zephyrine.Benchmarks.text10kFragments, 350 )
-          }
+        '{
+            val c = Cursor(zephyrine.Benchmarks.text10kFragments.stdlib.iterator)
+
+            c.hold:
+              val mk = c.mark
+              var k = 0
+              while k < 350 do { c.next(); k += 1 }
+              c.grab(mk, c.mark).s.length
+        }
 
     suite(m"Primitives"):
       bench(m"consume(\"xml\") match")
         ( target = 1*Second, operationSize = xmlInputSize ):
-        '{ zephyrine.Benchmarks.cursorConsumeXml(zephyrine.Benchmarks.xmlInput) }
+        '{
+            val c: Cursor[Text, ?] = Cursor(Iterator(zephyrine.Benchmarks.xmlInput))
+            var matched = 0
+            c.consume({ matched = -1 })("xml")
+            matched
+        }
 
       bench(m"seek to delimiter at offset 9000")
         ( target = 1*Second, operationSize = textWithSpaceSize ):
-        '{ zephyrine.Benchmarks.cursorSeekSpace(zephyrine.Benchmarks.textWithSpace) }
+        '{
+            val c = Cursor(Iterator(zephyrine.Benchmarks.textWithSpace))
+            c.seek(' '.asInstanceOf[c.addressable.Operand])
+        }
 
       bench(m"take(64)")(target = 1*Second):
-        '{ zephyrine.Benchmarks.cursorTake64(zephyrine.Benchmarks.text10k) }
+        '{
+            val c = Cursor(Iterator(zephyrine.Benchmarks.text10k))
+            c.take(t"")(64).s.length
+        }
 
+    // The safe `peek` extension against the hand-rolled `if finished then -1 else
+    // unsafeDatum(using Unsafe) & 0xff` pattern; both should produce the same inner loop.
     suite(m"Safe peek"):
       bench(m"datum + manual sentinel loop, 10 KB bytes (baseline)")
         ( target = 1*Second, operationSize = text10kSize ):
-        '{ zephyrine.Benchmarks.dataDatumLoop(zephyrine.Benchmarks.data10k) }
+        '{
+            val c = Cursor[Data](Iterator(zephyrine.Benchmarks.data10k))
+            var acc = 0
+
+            while !c.finished do
+              val b = c.unsafeDatum(using Unsafe).asInstanceOf[Byte] & 0xff
+              acc ^= b
+              c.advance()
+
+            acc
+        }
 
       bench(m"peek loop, 10 KB bytes")
         ( target = 1*Second, operationSize = text10kSize ):
-        '{ zephyrine.Benchmarks.dataPeekByteLoop(zephyrine.Benchmarks.data10k) }
+        '{
+            val c = Cursor[Data](Iterator(zephyrine.Benchmarks.data10k))
+            var acc = 0
+            while !c.finished do { acc ^= c.peek.asInt; c.advance() }
+            acc
+        }
 
       bench(m"peek loop, 10 KB chars")
         ( target = 1*Second, operationSize = text10kSize ):
-        '{ zephyrine.Benchmarks.textPeekCharLoop(zephyrine.Benchmarks.text10k) }
+        '{
+            val c = Cursor[Text](Iterator(zephyrine.Benchmarks.text10k))
+            var acc = 0
+            while !c.finished do { acc ^= c.peek.asInt; c.advance() }
+            acc
+        }

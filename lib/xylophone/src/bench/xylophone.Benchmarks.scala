@@ -66,14 +66,6 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
   // table prints "1.3 MB·s¯¹" instead of "1.3×10⁶ B·s¯¹".
   given prefixes: Prefixes = Prefixes(List(Kilo, Mega, Giga, Tera))
 
-  def parseXylophone(text: Text): Document[Xml] = unsafely(text.load[Xml])
-
-  def parseXylophoneTracked(text: Text): Document[Xml] =
-    import zephyrine.parsing.trackPositions
-    unsafely(text.load[Xml])
-
-  def parseScalaXml(text: String): scala.xml.Elem = scala.xml.XML.loadString(text)
-
   // ── Byte input ─────────────────────────────────────────────────────────
   //
   // A document arrives as UTF-8 bytes (a file, an HTTP body), so the parse that matters is
@@ -81,11 +73,8 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
   // through an `InputStream`. Aalto is the fastest StAX parser on the JVM, and its pull scan
   // — every event visited, nothing built — is the floor for any tree-building parse; the
   // JDK's DOM builder is the tree-building rival an application gets with no dependency.
-  // Through the parser directly, as `load` does for text, so that a document's leading
-  // declaration is accepted: `read[Xml]` parses a fragment, which has none.
-  def parseXylophoneBytes(bytes: Data): Xml =
-    unsafely(Xml.XmlParser.fromData(bytes).parseXml(headers0 = true))
-
+  // Xylophone parses bytes through the parser directly, as `load` does for text, so that a
+  // document's leading declaration is accepted: `read[Xml]` parses a fragment, which has none.
   lazy val aaltoInput: javax.xml.stream.XMLInputFactory =
     new com.fasterxml.aalto.stax.InputFactoryImpl()
 
@@ -93,22 +82,6 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
     val factory = javax.xml.parsers.DocumentBuilderFactory.newDefaultInstance().nn
     factory.setNamespaceAware(true)
     factory.newDocumentBuilder().nn
-
-  private def inputStream(bytes: Data): java.io.InputStream =
-    java.io.ByteArrayInputStream(bytes.asInstanceOf[scala.Array[Byte]])
-
-  def scanAalto(bytes: Data): Int =
-    val reader = aaltoInput.createXMLStreamReader(inputStream(bytes)).nn
-    var events = 0
-
-    while reader.hasNext do
-      reader.next()
-      events += 1
-
-    reader.close()
-    events
-
-  def parseDomBytes(bytes: Data): org.w3c.dom.Document = domBuilder.parse(inputStream(bytes)).nn
 
   // ── Streaming output ───────────────────────────────────────────────────
   //
@@ -121,11 +94,6 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
   // the JDK's own is what an application gets with no dependency. The JDK's `Transformer`
   // is the classic DOM-to-stream serializer, and scala-xml's `toString` builds the whole
   // text, the non-streaming baseline.
-  private val compact: Xml.Formatting = Xml.Formatting(Unset, false)
-  private val utf8Charset: java.nio.charset.Charset = java.nio.charset.StandardCharsets.UTF_8.nn
-
-  private def sink(): java.io.OutputStream = java.io.OutputStream.nullOutputStream().nn
-
   lazy val aaltoOutput: javax.xml.stream.XMLOutputFactory =
     new com.fasterxml.aalto.stax.OutputFactoryImpl()
 
@@ -138,44 +106,12 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
   def parseDom(text: String): org.w3c.dom.Document =
     val factory = javax.xml.parsers.DocumentBuilderFactory.newDefaultInstance().nn
     factory.setNamespaceAware(true)
-    val input = java.io.ByteArrayInputStream(text.getBytes(utf8Charset).nn)
+    val input = java.io.ByteArrayInputStream(text.getBytes("UTF-8").nn)
     factory.newDocumentBuilder().nn.parse(input).nn
-
-  def writeXylophoneWhole(document: Document[Xml]): Unit =
-    given Xml.Formatting = compact
-    sink().write(document.root.show.s.getBytes(utf8Charset).nn)
-
-  def streamXylophone(document: Document[Xml]): Unit =
-    given Xml.Formatting = compact
-    val out = sink()
-
-    supervise:
-      Xml.emit(document).foreach: chunk =>
-        out.write(chunk.s.getBytes(utf8Charset).nn)
-
-  def pushXylophone(document: Document[Xml]): Unit =
-    given Xml.Formatting = compact
-    val out = sink()
-    Xml.emit[Text](document, chunk => out.write(chunk.s.getBytes(utf8Charset).nn))
-
-  def pushBytesXylophone(document: Document[Xml]): Unit =
-    given Xml.Formatting = compact
-    val out = sink()
-    Xml.emit[Data](document, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
-
-  def lendXylophone(document: Document[Xml]): Unit =
-    given Xml.Formatting = compact
-    val out = sink()
-
-    Xml.lend(document): region =>
-      interval =>
-        val extent: Interval = interval
-        val raw = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
-        out.write(raw, extent.start.n0, extent.size)
 
   // Walks the DOM, writing each node through the StAX writer; attributes are written with
   // their qualified names, as the parser saw them.
-  private def walk(writer: javax.xml.stream.XMLStreamWriter, node: org.w3c.dom.Node): Unit =
+  def walk(writer: javax.xml.stream.XMLStreamWriter, node: org.w3c.dom.Node): Unit =
     node.getNodeType match
       case org.w3c.dom.Node.ELEMENT_NODE =>
         writer.writeStartElement(node.getNodeName.nn)
@@ -208,40 +144,20 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
       case _ =>
         ()
 
-  def streamStax(factory: javax.xml.stream.XMLOutputFactory, document: org.w3c.dom.Document)
-  :   Unit =
-
-    val writer = factory.createXMLStreamWriter(sink(), "UTF-8").nn
-    writer.writeStartDocument("UTF-8", "1.0")
-    walk(writer, document.getDocumentElement.nn)
-    writer.writeEndDocument()
-    writer.close()
-
-  def streamAalto(document: org.w3c.dom.Document): Unit = streamStax(aaltoOutput, document)
-  def streamJdk(document: org.w3c.dom.Document): Unit = streamStax(jdkOutput, document)
-
-  def streamTransformer(document: org.w3c.dom.Document): Unit =
-    transformer.transform
-      ( javax.xml.transform.dom.DOMSource(document),
-        javax.xml.transform.stream.StreamResult(sink()) )
-
-  def writeScalaXmlWhole(element: scala.xml.Elem): Unit =
-    sink().write(element.toString.getBytes(utf8Charset).nn)
-
-  lazy val document3: Document[Xml] = parseXylophone(xml3)
-  lazy val document4: Document[Xml] = parseXylophone(xml4)
-  lazy val document5: Document[Xml] = parseXylophone(xml5)
-  lazy val xmlBytes1: Data = Array.unsafeFrozen(xmlText1.getBytes(utf8Charset).nn)
-  lazy val xmlBytes2: Data = Array.unsafeFrozen(xmlText2.getBytes(utf8Charset).nn)
-  lazy val xmlBytes3: Data = Array.unsafeFrozen(xmlText3.getBytes(utf8Charset).nn)
-  lazy val xmlBytes4: Data = Array.unsafeFrozen(xmlText4.getBytes(utf8Charset).nn)
-  lazy val xmlBytes5: Data = Array.unsafeFrozen(xmlText5.getBytes(utf8Charset).nn)
+  lazy val document3: Document[Xml] = unsafely(xml3.load[Xml])
+  lazy val document4: Document[Xml] = unsafely(xml4.load[Xml])
+  lazy val document5: Document[Xml] = unsafely(xml5.load[Xml])
+  lazy val xmlBytes1: Data = Array.unsafeFrozen(xmlText1.getBytes("UTF-8").nn)
+  lazy val xmlBytes2: Data = Array.unsafeFrozen(xmlText2.getBytes("UTF-8").nn)
+  lazy val xmlBytes3: Data = Array.unsafeFrozen(xmlText3.getBytes("UTF-8").nn)
+  lazy val xmlBytes4: Data = Array.unsafeFrozen(xmlText4.getBytes("UTF-8").nn)
+  lazy val xmlBytes5: Data = Array.unsafeFrozen(xmlText5.getBytes("UTF-8").nn)
   lazy val dom3: org.w3c.dom.Document = parseDom(xmlText3)
   lazy val dom4: org.w3c.dom.Document = parseDom(xmlText4)
   lazy val dom5: org.w3c.dom.Document = parseDom(xmlText5)
-  lazy val elem3: scala.xml.Elem = parseScalaXml(xmlText3)
-  lazy val elem4: scala.xml.Elem = parseScalaXml(xmlText4)
-  lazy val elem5: scala.xml.Elem = parseScalaXml(xmlText5)
+  lazy val elem3: scala.xml.Elem = scala.xml.XML.loadString(xmlText3)
+  lazy val elem4: scala.xml.Elem = scala.xml.XML.loadString(xmlText4)
+  lazy val elem5: scala.xml.Elem = scala.xml.XML.loadString(xmlText5)
 
   def run(): Unit =
     val bench = Bench()
@@ -255,213 +171,519 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
     suite(m"Parse example 1 (RSS feed)"):
       bench(m"Parse file with Xylophone")
         ( target = 1*Second, operationSize = size1 ):
-        '{ xylophone.Benchmarks.parseXylophone(xylophone.Benchmarks.xml1) }
+        '{
+            given XmlSchema = XmlSchema.Freeform
+            unsafely(xylophone.Benchmarks.xml1.load[Xml])
+        }
 
       bench(m"Parse file with Xylophone (tracked)")(target = 1*Second, operationSize = size1):
-        '{ xylophone.Benchmarks.parseXylophoneTracked(xylophone.Benchmarks.xml1) }
+        '{
+            import zephyrine.parsing.trackPositions
+            given XmlSchema = XmlSchema.Freeform
+            unsafely(xylophone.Benchmarks.xml1.load[Xml])
+        }
 
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size1):
-        '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText1) }
+        '{ scala.xml.XML.loadString(xylophone.Benchmarks.xmlText1) }
 
       bench(m"Parse bytes with Xylophone")(target = 1*Second, operationSize = size1):
-        '{ xylophone.Benchmarks.parseXylophoneBytes(xylophone.Benchmarks.xmlBytes1) }
+        '{
+            val bytes = xylophone.Benchmarks.xmlBytes1
+            unsafely(Xml.XmlParser.fromData(bytes).parseXml(headers0 = true))
+        }
 
       bench(m"Parse bytes with JDK DOM")(target = 1*Second, operationSize = size1):
-        '{ xylophone.Benchmarks.parseDomBytes(xylophone.Benchmarks.xmlBytes1) }
+        '{
+            val bytes = xylophone.Benchmarks.xmlBytes1.asInstanceOf[scala.Array[Byte]]
+            xylophone.Benchmarks.domBuilder.parse(java.io.ByteArrayInputStream(bytes)).nn
+        }
 
       bench(m"Scan bytes with Aalto (no tree)")(target = 1*Second, operationSize = size1):
-        '{ xylophone.Benchmarks.scanAalto(xylophone.Benchmarks.xmlBytes1) }
+        '{
+            val bytes = xylophone.Benchmarks.xmlBytes1.asInstanceOf[scala.Array[Byte]]
+
+            val input = java.io.ByteArrayInputStream(bytes)
+            val reader = xylophone.Benchmarks.aaltoInput.createXMLStreamReader(input).nn
+
+            var events = 0
+
+            while reader.hasNext do
+              reader.next()
+              events += 1
+
+            reader.close()
+            events
+        }
 
     suite(m"Parse example 2 (SOAP envelope)"):
       bench(m"Parse file with Xylophone")
         ( target = 1*Second, operationSize = size2 ):
-        '{ xylophone.Benchmarks.parseXylophone(xylophone.Benchmarks.xml2) }
+        '{
+            given XmlSchema = XmlSchema.Freeform
+            unsafely(xylophone.Benchmarks.xml2.load[Xml])
+        }
 
       bench(m"Parse file with Xylophone (tracked)")(target = 1*Second, operationSize = size2):
-        '{ xylophone.Benchmarks.parseXylophoneTracked(xylophone.Benchmarks.xml2) }
+        '{
+            import zephyrine.parsing.trackPositions
+            given XmlSchema = XmlSchema.Freeform
+            unsafely(xylophone.Benchmarks.xml2.load[Xml])
+        }
 
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size2):
-        '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText2) }
+        '{ scala.xml.XML.loadString(xylophone.Benchmarks.xmlText2) }
 
       bench(m"Parse bytes with Xylophone")(target = 1*Second, operationSize = size2):
-        '{ xylophone.Benchmarks.parseXylophoneBytes(xylophone.Benchmarks.xmlBytes2) }
+        '{
+            val bytes = xylophone.Benchmarks.xmlBytes2
+            unsafely(Xml.XmlParser.fromData(bytes).parseXml(headers0 = true))
+        }
 
       bench(m"Parse bytes with JDK DOM")(target = 1*Second, operationSize = size2):
-        '{ xylophone.Benchmarks.parseDomBytes(xylophone.Benchmarks.xmlBytes2) }
+        '{
+            val bytes = xylophone.Benchmarks.xmlBytes2.asInstanceOf[scala.Array[Byte]]
+            xylophone.Benchmarks.domBuilder.parse(java.io.ByteArrayInputStream(bytes)).nn
+        }
 
       bench(m"Scan bytes with Aalto (no tree)")(target = 1*Second, operationSize = size2):
-        '{ xylophone.Benchmarks.scanAalto(xylophone.Benchmarks.xmlBytes2) }
+        '{
+            val bytes = xylophone.Benchmarks.xmlBytes2.asInstanceOf[scala.Array[Byte]]
+
+            val input = java.io.ByteArrayInputStream(bytes)
+            val reader = xylophone.Benchmarks.aaltoInput.createXMLStreamReader(input).nn
+
+            var events = 0
+
+            while reader.hasNext do
+              reader.next()
+              events += 1
+
+            reader.close()
+            events
+        }
 
     suite(m"Parse example 3 (Atom feed)"):
       bench(m"Parse file with Xylophone")
         ( target = 1*Second, operationSize = size3 ):
-        '{ xylophone.Benchmarks.parseXylophone(xylophone.Benchmarks.xml3) }
+        '{
+            given XmlSchema = XmlSchema.Freeform
+            unsafely(xylophone.Benchmarks.xml3.load[Xml])
+        }
 
       bench(m"Parse file with Xylophone (tracked)")(target = 1*Second, operationSize = size3):
-        '{ xylophone.Benchmarks.parseXylophoneTracked(xylophone.Benchmarks.xml3) }
+        '{
+            import zephyrine.parsing.trackPositions
+            given XmlSchema = XmlSchema.Freeform
+            unsafely(xylophone.Benchmarks.xml3.load[Xml])
+        }
 
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size3):
-        '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText3) }
+        '{ scala.xml.XML.loadString(xylophone.Benchmarks.xmlText3) }
 
       bench(m"Parse bytes with Xylophone")(target = 1*Second, operationSize = size3):
-        '{ xylophone.Benchmarks.parseXylophoneBytes(xylophone.Benchmarks.xmlBytes3) }
+        '{
+            val bytes = xylophone.Benchmarks.xmlBytes3
+            unsafely(Xml.XmlParser.fromData(bytes).parseXml(headers0 = true))
+        }
 
       bench(m"Parse bytes with JDK DOM")(target = 1*Second, operationSize = size3):
-        '{ xylophone.Benchmarks.parseDomBytes(xylophone.Benchmarks.xmlBytes3) }
+        '{
+            val bytes = xylophone.Benchmarks.xmlBytes3.asInstanceOf[scala.Array[Byte]]
+            xylophone.Benchmarks.domBuilder.parse(java.io.ByteArrayInputStream(bytes)).nn
+        }
 
       bench(m"Scan bytes with Aalto (no tree)")(target = 1*Second, operationSize = size3):
-        '{ xylophone.Benchmarks.scanAalto(xylophone.Benchmarks.xmlBytes3) }
+        '{
+            val bytes = xylophone.Benchmarks.xmlBytes3.asInstanceOf[scala.Array[Byte]]
+
+            val input = java.io.ByteArrayInputStream(bytes)
+            val reader = xylophone.Benchmarks.aaltoInput.createXMLStreamReader(input).nn
+
+            var events = 0
+
+            while reader.hasNext do
+              reader.next()
+              events += 1
+
+            reader.close()
+            events
+        }
 
     suite(m"Parse example 4 (100 book records)"):
       bench(m"Parse file with Xylophone")
         ( target = 1*Second, operationSize = size4 ):
-        '{ xylophone.Benchmarks.parseXylophone(xylophone.Benchmarks.xml4) }
+        '{
+            given XmlSchema = XmlSchema.Freeform
+            unsafely(xylophone.Benchmarks.xml4.load[Xml])
+        }
 
       bench(m"Parse file with Xylophone (tracked)")(target = 1*Second, operationSize = size4):
-        '{ xylophone.Benchmarks.parseXylophoneTracked(xylophone.Benchmarks.xml4) }
+        '{
+            import zephyrine.parsing.trackPositions
+            given XmlSchema = XmlSchema.Freeform
+            unsafely(xylophone.Benchmarks.xml4.load[Xml])
+        }
 
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size4):
-        '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText4) }
+        '{ scala.xml.XML.loadString(xylophone.Benchmarks.xmlText4) }
 
       bench(m"Parse bytes with Xylophone")(target = 1*Second, operationSize = size4):
-        '{ xylophone.Benchmarks.parseXylophoneBytes(xylophone.Benchmarks.xmlBytes4) }
+        '{
+            val bytes = xylophone.Benchmarks.xmlBytes4
+            unsafely(Xml.XmlParser.fromData(bytes).parseXml(headers0 = true))
+        }
 
       bench(m"Parse bytes with JDK DOM")(target = 1*Second, operationSize = size4):
-        '{ xylophone.Benchmarks.parseDomBytes(xylophone.Benchmarks.xmlBytes4) }
+        '{
+            val bytes = xylophone.Benchmarks.xmlBytes4.asInstanceOf[scala.Array[Byte]]
+            xylophone.Benchmarks.domBuilder.parse(java.io.ByteArrayInputStream(bytes)).nn
+        }
 
       bench(m"Scan bytes with Aalto (no tree)")(target = 1*Second, operationSize = size4):
-        '{ xylophone.Benchmarks.scanAalto(xylophone.Benchmarks.xmlBytes4) }
+        '{
+            val bytes = xylophone.Benchmarks.xmlBytes4.asInstanceOf[scala.Array[Byte]]
+
+            val input = java.io.ByteArrayInputStream(bytes)
+            val reader = xylophone.Benchmarks.aaltoInput.createXMLStreamReader(input).nn
+
+            var events = 0
+
+            while reader.hasNext do
+              reader.next()
+              events += 1
+
+            reader.close()
+            events
+        }
 
     suite(m"Parse example 5 (500 log entries)"):
       bench(m"Parse file with Xylophone")
         ( target = 1*Second, operationSize = size5 ):
-        '{ xylophone.Benchmarks.parseXylophone(xylophone.Benchmarks.xml5) }
+        '{
+            given XmlSchema = XmlSchema.Freeform
+            unsafely(xylophone.Benchmarks.xml5.load[Xml])
+        }
 
       bench(m"Parse file with Xylophone (tracked)")(target = 1*Second, operationSize = size5):
-        '{ xylophone.Benchmarks.parseXylophoneTracked(xylophone.Benchmarks.xml5) }
+        '{
+            import zephyrine.parsing.trackPositions
+            given XmlSchema = XmlSchema.Freeform
+            unsafely(xylophone.Benchmarks.xml5.load[Xml])
+        }
 
       bench(m"Parse file with scala-xml")(target = 1*Second, operationSize = size5):
-        '{ xylophone.Benchmarks.parseScalaXml(xylophone.Benchmarks.xmlText5) }
+        '{ scala.xml.XML.loadString(xylophone.Benchmarks.xmlText5) }
 
       bench(m"Parse bytes with Xylophone")(target = 1*Second, operationSize = size5):
-        '{ xylophone.Benchmarks.parseXylophoneBytes(xylophone.Benchmarks.xmlBytes5) }
+        '{
+            val bytes = xylophone.Benchmarks.xmlBytes5
+            unsafely(Xml.XmlParser.fromData(bytes).parseXml(headers0 = true))
+        }
 
       bench(m"Parse bytes with JDK DOM")(target = 1*Second, operationSize = size5):
-        '{ xylophone.Benchmarks.parseDomBytes(xylophone.Benchmarks.xmlBytes5) }
+        '{
+            val bytes = xylophone.Benchmarks.xmlBytes5.asInstanceOf[scala.Array[Byte]]
+            xylophone.Benchmarks.domBuilder.parse(java.io.ByteArrayInputStream(bytes)).nn
+        }
 
       bench(m"Scan bytes with Aalto (no tree)")(target = 1*Second, operationSize = size5):
-        '{ xylophone.Benchmarks.scanAalto(xylophone.Benchmarks.xmlBytes5) }
+        '{
+            val bytes = xylophone.Benchmarks.xmlBytes5.asInstanceOf[scala.Array[Byte]]
+
+            val input = java.io.ByteArrayInputStream(bytes)
+            val reader = xylophone.Benchmarks.aaltoInput.createXMLStreamReader(input).nn
+
+            var events = 0
+
+            while reader.hasNext do
+              reader.next()
+              events += 1
+
+            reader.close()
+            events
+        }
 
     suite(m"Stream example 3 (Atom feed) to an output stream"):
       bench(m"Xylophone: emit, streamed chunk by chunk")
         ( target = 1*Second, operationSize = size3 ):
-        '{ xylophone.Benchmarks.streamXylophone(xylophone.Benchmarks.document3) }
+        '{
+            given Xml.Formatting = Xml.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+
+            supervise:
+              Xml.emit(xylophone.Benchmarks.document3).foreach: chunk =>
+                out.write(chunk.s.getBytes(utf8).nn)
+        }
 
       bench(m"Xylophone: emit, pushed synchronously")
         ( target = 1*Second, operationSize = size3 ):
-        '{ xylophone.Benchmarks.pushXylophone(xylophone.Benchmarks.document3) }
+        '{
+            given Xml.Formatting = Xml.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val document = xylophone.Benchmarks.document3
+            Xml.emit[Text](document, chunk => out.write(chunk.s.getBytes(utf8).nn))
+        }
 
       bench(m"Xylophone: emit, pushed as UTF-8 bytes")
         ( target = 1*Second, operationSize = size3 ):
-        '{ xylophone.Benchmarks.pushBytesXylophone(xylophone.Benchmarks.document3) }
+        '{
+            given Xml.Formatting = Xml.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val document = xylophone.Benchmarks.document3
+            Xml.emit[Data](document, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+        }
 
       bench(m"Xylophone: lend, borrowed UTF-8 blocks")
         ( target = 1*Second, operationSize = size3 ):
-        '{ xylophone.Benchmarks.lendXylophone(xylophone.Benchmarks.document3) }
+        '{
+            given Xml.Formatting = Xml.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+
+            Xml.lend(xylophone.Benchmarks.document3): region =>
+              interval =>
+                val extent: Interval = interval
+                val raw = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+                out.write(raw, extent.start.n0, extent.size)
+        }
 
       bench(m"Xylophone: show, then write the whole text")
         ( target = 1*Second, operationSize = size3 ):
-        '{ xylophone.Benchmarks.writeXylophoneWhole(xylophone.Benchmarks.document3) }
+        '{
+            given Xml.Formatting = Xml.Formatting(Unset, false)
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val text = xylophone.Benchmarks.document3.root.show.s
+            java.io.OutputStream.nullOutputStream().nn.write(text.getBytes(utf8).nn)
+        }
 
       bench(m"Aalto: StAX writer over a DOM, streamed")
         ( target = 1*Second, operationSize = size3 ):
-        '{ xylophone.Benchmarks.streamAalto(xylophone.Benchmarks.dom3) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val writer = xylophone.Benchmarks.aaltoOutput.createXMLStreamWriter(out, "UTF-8").nn
+            writer.writeStartDocument("UTF-8", "1.0")
+            xylophone.Benchmarks.walk(writer, xylophone.Benchmarks.dom3.getDocumentElement.nn)
+            writer.writeEndDocument()
+            writer.close()
+        }
 
       bench(m"JDK: StAX writer over a DOM, streamed")
         ( target = 1*Second, operationSize = size3 ):
-        '{ xylophone.Benchmarks.streamJdk(xylophone.Benchmarks.dom3) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val writer = xylophone.Benchmarks.jdkOutput.createXMLStreamWriter(out, "UTF-8").nn
+            writer.writeStartDocument("UTF-8", "1.0")
+            xylophone.Benchmarks.walk(writer, xylophone.Benchmarks.dom3.getDocumentElement.nn)
+            writer.writeEndDocument()
+            writer.close()
+        }
 
       bench(m"JDK: Transformer over a DOM, streamed")
         ( target = 1*Second, operationSize = size3 ):
-        '{ xylophone.Benchmarks.streamTransformer(xylophone.Benchmarks.dom3) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+
+            xylophone.Benchmarks.transformer.transform
+              ( javax.xml.transform.dom.DOMSource(xylophone.Benchmarks.dom3),
+                javax.xml.transform.stream.StreamResult(out) )
+        }
 
       bench(m"scala-xml: toString, then write the whole text")
         ( target = 1*Second, operationSize = size3 ):
-        '{ xylophone.Benchmarks.writeScalaXmlWhole(xylophone.Benchmarks.elem3) }
+        '{
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val text = xylophone.Benchmarks.elem3.toString
+            java.io.OutputStream.nullOutputStream().nn.write(text.getBytes(utf8).nn)
+        }
 
     suite(m"Stream example 4 (100 book records) to an output stream"):
       bench(m"Xylophone: emit, streamed chunk by chunk")
         ( target = 1*Second, operationSize = size4 ):
-        '{ xylophone.Benchmarks.streamXylophone(xylophone.Benchmarks.document4) }
+        '{
+            given Xml.Formatting = Xml.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+
+            supervise:
+              Xml.emit(xylophone.Benchmarks.document4).foreach: chunk =>
+                out.write(chunk.s.getBytes(utf8).nn)
+        }
 
       bench(m"Xylophone: emit, pushed synchronously")
         ( target = 1*Second, operationSize = size4 ):
-        '{ xylophone.Benchmarks.pushXylophone(xylophone.Benchmarks.document4) }
+        '{
+            given Xml.Formatting = Xml.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val document = xylophone.Benchmarks.document4
+            Xml.emit[Text](document, chunk => out.write(chunk.s.getBytes(utf8).nn))
+        }
 
       bench(m"Xylophone: emit, pushed as UTF-8 bytes")
         ( target = 1*Second, operationSize = size4 ):
-        '{ xylophone.Benchmarks.pushBytesXylophone(xylophone.Benchmarks.document4) }
+        '{
+            given Xml.Formatting = Xml.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val document = xylophone.Benchmarks.document4
+            Xml.emit[Data](document, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+        }
 
       bench(m"Xylophone: lend, borrowed UTF-8 blocks")
         ( target = 1*Second, operationSize = size4 ):
-        '{ xylophone.Benchmarks.lendXylophone(xylophone.Benchmarks.document4) }
+        '{
+            given Xml.Formatting = Xml.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+
+            Xml.lend(xylophone.Benchmarks.document4): region =>
+              interval =>
+                val extent: Interval = interval
+                val raw = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+                out.write(raw, extent.start.n0, extent.size)
+        }
 
       bench(m"Xylophone: show, then write the whole text")
         ( target = 1*Second, operationSize = size4 ):
-        '{ xylophone.Benchmarks.writeXylophoneWhole(xylophone.Benchmarks.document4) }
+        '{
+            given Xml.Formatting = Xml.Formatting(Unset, false)
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val text = xylophone.Benchmarks.document4.root.show.s
+            java.io.OutputStream.nullOutputStream().nn.write(text.getBytes(utf8).nn)
+        }
 
       bench(m"Aalto: StAX writer over a DOM, streamed")
         ( target = 1*Second, operationSize = size4 ):
-        '{ xylophone.Benchmarks.streamAalto(xylophone.Benchmarks.dom4) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val writer = xylophone.Benchmarks.aaltoOutput.createXMLStreamWriter(out, "UTF-8").nn
+            writer.writeStartDocument("UTF-8", "1.0")
+            xylophone.Benchmarks.walk(writer, xylophone.Benchmarks.dom4.getDocumentElement.nn)
+            writer.writeEndDocument()
+            writer.close()
+        }
 
       bench(m"JDK: StAX writer over a DOM, streamed")
         ( target = 1*Second, operationSize = size4 ):
-        '{ xylophone.Benchmarks.streamJdk(xylophone.Benchmarks.dom4) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val writer = xylophone.Benchmarks.jdkOutput.createXMLStreamWriter(out, "UTF-8").nn
+            writer.writeStartDocument("UTF-8", "1.0")
+            xylophone.Benchmarks.walk(writer, xylophone.Benchmarks.dom4.getDocumentElement.nn)
+            writer.writeEndDocument()
+            writer.close()
+        }
 
       bench(m"JDK: Transformer over a DOM, streamed")
         ( target = 1*Second, operationSize = size4 ):
-        '{ xylophone.Benchmarks.streamTransformer(xylophone.Benchmarks.dom4) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+
+            xylophone.Benchmarks.transformer.transform
+              ( javax.xml.transform.dom.DOMSource(xylophone.Benchmarks.dom4),
+                javax.xml.transform.stream.StreamResult(out) )
+        }
 
       bench(m"scala-xml: toString, then write the whole text")
         ( target = 1*Second, operationSize = size4 ):
-        '{ xylophone.Benchmarks.writeScalaXmlWhole(xylophone.Benchmarks.elem4) }
+        '{
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val text = xylophone.Benchmarks.elem4.toString
+            java.io.OutputStream.nullOutputStream().nn.write(text.getBytes(utf8).nn)
+        }
 
     suite(m"Stream example 5 (500 log entries) to an output stream"):
       bench(m"Xylophone: emit, streamed chunk by chunk")
         ( target = 1*Second, operationSize = size5 ):
-        '{ xylophone.Benchmarks.streamXylophone(xylophone.Benchmarks.document5) }
+        '{
+            given Xml.Formatting = Xml.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+
+            supervise:
+              Xml.emit(xylophone.Benchmarks.document5).foreach: chunk =>
+                out.write(chunk.s.getBytes(utf8).nn)
+        }
 
       bench(m"Xylophone: emit, pushed synchronously")
         ( target = 1*Second, operationSize = size5 ):
-        '{ xylophone.Benchmarks.pushXylophone(xylophone.Benchmarks.document5) }
+        '{
+            given Xml.Formatting = Xml.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val document = xylophone.Benchmarks.document5
+            Xml.emit[Text](document, chunk => out.write(chunk.s.getBytes(utf8).nn))
+        }
 
       bench(m"Xylophone: emit, pushed as UTF-8 bytes")
         ( target = 1*Second, operationSize = size5 ):
-        '{ xylophone.Benchmarks.pushBytesXylophone(xylophone.Benchmarks.document5) }
+        '{
+            given Xml.Formatting = Xml.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val document = xylophone.Benchmarks.document5
+            Xml.emit[Data](document, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+        }
 
       bench(m"Xylophone: lend, borrowed UTF-8 blocks")
         ( target = 1*Second, operationSize = size5 ):
-        '{ xylophone.Benchmarks.lendXylophone(xylophone.Benchmarks.document5) }
+        '{
+            given Xml.Formatting = Xml.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+
+            Xml.lend(xylophone.Benchmarks.document5): region =>
+              interval =>
+                val extent: Interval = interval
+                val raw = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+                out.write(raw, extent.start.n0, extent.size)
+        }
 
       bench(m"Xylophone: show, then write the whole text")
         ( target = 1*Second, operationSize = size5 ):
-        '{ xylophone.Benchmarks.writeXylophoneWhole(xylophone.Benchmarks.document5) }
+        '{
+            given Xml.Formatting = Xml.Formatting(Unset, false)
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val text = xylophone.Benchmarks.document5.root.show.s
+            java.io.OutputStream.nullOutputStream().nn.write(text.getBytes(utf8).nn)
+        }
 
       bench(m"Aalto: StAX writer over a DOM, streamed")
         ( target = 1*Second, operationSize = size5 ):
-        '{ xylophone.Benchmarks.streamAalto(xylophone.Benchmarks.dom5) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val writer = xylophone.Benchmarks.aaltoOutput.createXMLStreamWriter(out, "UTF-8").nn
+            writer.writeStartDocument("UTF-8", "1.0")
+            xylophone.Benchmarks.walk(writer, xylophone.Benchmarks.dom5.getDocumentElement.nn)
+            writer.writeEndDocument()
+            writer.close()
+        }
 
       bench(m"JDK: StAX writer over a DOM, streamed")
         ( target = 1*Second, operationSize = size5 ):
-        '{ xylophone.Benchmarks.streamJdk(xylophone.Benchmarks.dom5) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val writer = xylophone.Benchmarks.jdkOutput.createXMLStreamWriter(out, "UTF-8").nn
+            writer.writeStartDocument("UTF-8", "1.0")
+            xylophone.Benchmarks.walk(writer, xylophone.Benchmarks.dom5.getDocumentElement.nn)
+            writer.writeEndDocument()
+            writer.close()
+        }
 
       bench(m"JDK: Transformer over a DOM, streamed")
         ( target = 1*Second, operationSize = size5 ):
-        '{ xylophone.Benchmarks.streamTransformer(xylophone.Benchmarks.dom5) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+
+            xylophone.Benchmarks.transformer.transform
+              ( javax.xml.transform.dom.DOMSource(xylophone.Benchmarks.dom5),
+                javax.xml.transform.stream.StreamResult(out) )
+        }
 
       bench(m"scala-xml: toString, then write the whole text")
         ( target = 1*Second, operationSize = size5 ):
-        '{ xylophone.Benchmarks.writeScalaXmlWhole(xylophone.Benchmarks.elem5) }
+        '{
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val text = xylophone.Benchmarks.elem5.toString
+            java.io.OutputStream.nullOutputStream().nn.write(text.getBytes(utf8).nn)
+        }
 
   lazy val xmlText1: String = xmlExample1.s
   lazy val xmlText2: String = xmlExample2.s

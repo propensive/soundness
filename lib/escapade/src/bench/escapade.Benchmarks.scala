@@ -95,28 +95,6 @@ object Benchmarks extends Suite(m"Escapade benchmarks"):
       i += 1
     built
 
-  // ─── helpers used inside quoted bench bodies ──────────────────────────────
-
-  def appendN(base: Teletype, suffix: Teletype, n: Int): Teletype =
-    var acc = base
-    var i = 0
-    while i < n do
-      acc = acc.append(suffix)
-      i += 1
-    acc
-
-  def buildInterpolation(): Teletype =
-    e"${Bold}(${Fg(Chroma(0xffaa00))}(header)): the ${Italic}(quick) ${Bold}(brown)"
-    + e" ${Fg(Chroma(0x55aaff))}(fox) jumps over the ${Underline}(lazy ${Strike}(dog))"
-
-  def renderTrueColor(t: Teletype): Text =
-    t.render(termcapDefinitions.xtermTrueColorTermcap)
-
-  def renderXterm256(t: Teletype): Text =
-    t.render(termcapDefinitions.xterm256Termcap)
-
-  def render(input: Teletype): Text = renderTrueColor(input)
-
   def run(): Unit =
     val bench = Bench()
 
@@ -129,26 +107,47 @@ object Benchmarks extends Suite(m"Escapade benchmarks"):
     suite(m"Concatenate 10 fragments"):
       bench(m"append Teletype × 10")
         ( target = 1*Second, operationSize = fragSize*10 ):
-        ' {
-            val f = escapade.Benchmarks.fragment
-            escapade.Benchmarks.appendN(f, f, 10)
-          }
+        '{
+            val fragment = escapade.Benchmarks.fragment
+            var teletype = fragment
+            var i = 0
+
+            while i < 10 do
+              teletype = teletype.append(fragment)
+              i += 1
+
+            teletype
+        }
 
     suite(m"Concatenate 100 fragments"):
       bench(m"append Teletype × 100")
         ( target = 1*Second, operationSize = fragSize*100 ):
-        ' {
-            val f = escapade.Benchmarks.fragment
-            escapade.Benchmarks.appendN(f, f, 100)
-          }
+        '{
+            val fragment = escapade.Benchmarks.fragment
+            var teletype = fragment
+            var i = 0
+
+            while i < 100 do
+              teletype = teletype.append(fragment)
+              i += 1
+
+            teletype
+        }
 
     suite(m"Concatenate 1000 fragments"):
       bench(m"append Teletype × 1000")
         ( target = 1*Second, operationSize = fragSize*1000 ):
-        ' {
-            val f = escapade.Benchmarks.fragment
-            escapade.Benchmarks.appendN(f, f, 1000)
-          }
+        '{
+            val fragment = escapade.Benchmarks.fragment
+            var teletype = fragment
+            var i = 0
+
+            while i < 1000 do
+              teletype = teletype.append(fragment)
+              i += 1
+
+            teletype
+        }
 
     // ─── slice ──────────────────────────────────────────────────────────────
 
@@ -170,18 +169,21 @@ object Benchmarks extends Suite(m"Escapade benchmarks"):
     suite(m"Render (Teletype → Text)"):
       bench(m"render long paragraph (true colour)")
         ( target = 1*Second, operationSize = paraSize ):
-        '{ escapade.Benchmarks.renderTrueColor(escapade.Benchmarks.paragraph) }
+        '{ escapade.Benchmarks.paragraph.render(termcapDefinitions.xtermTrueColorTermcap) }
 
       bench(m"render long paragraph (xterm-256)")(target = 1*Second, operationSize = paraSize):
-        '{ escapade.Benchmarks.renderXterm256(escapade.Benchmarks.paragraph) }
+        '{ escapade.Benchmarks.paragraph.render(termcapDefinitions.xterm256Termcap) }
 
       bench(m"render 200-coloured-words rainbow (true colour)")
         ( target = 1*Second, operationSize = rainSize ):
-        '{ escapade.Benchmarks.renderTrueColor(escapade.Benchmarks.rainbow) }
+        '{ escapade.Benchmarks.rainbow.render(termcapDefinitions.xtermTrueColorTermcap) }
 
     // ─── build (interpolator) ───────────────────────────────────────────────
 
     suite(m"Build (e\"...\" interpolation)"):
       bench(m"interpolate a nested-markup expression")
         ( target = 1*Second ):
-        '{ escapade.Benchmarks.buildInterpolation() }
+        '{
+            e"${Bold}(${Fg(Chroma(0xffaa00))}(header)): the ${Italic}(quick) ${Bold}(brown)"
+            + e" ${Fg(Chroma(0x55aaff))}(fox) jumps over the ${Underline}(lazy ${Strike}(dog))"
+        }

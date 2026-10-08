@@ -102,18 +102,11 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   val jsoniterCodec: com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[io.circe.Json] =
     com.github.plokhotnyuk.jsoniter_scala.circe.JsoniterScalaCodec.jsonCodec()
 
-  def parseWithJsoniter(text: String): io.circe.Json =
-    com.github.plokhotnyuk.jsoniter_scala.core.readFromString[io.circe.Json](text)
-      ( using jsoniterCodec )
-
   // Jackson tree-model parser (closest analog to the other parsers' AST
   // outputs). The `ObjectMapper` is shared across iterations because
   // construction is expensive and is intended to be amortised in production.
   val jacksonMapper: com.fasterxml.jackson.databind.ObjectMapper =
     new com.fasterxml.jackson.databind.ObjectMapper()
-
-  def parseWithJackson(text: String): com.fasterxml.jackson.databind.JsonNode =
-    jacksonMapper.readTree(text).nn
 
   // ── Streaming output ───────────────────────────────────────────────────
   //
@@ -126,59 +119,21 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   // each side pays today: Merino's `show` and circe's `noSpaces`. The Merino
   // streaming arm includes the cost of a `supervise` scope per operation,
   // which is what a caller without an ambient `Monitor` pays.
-  private val utf8Charset: java.nio.charset.Charset = java.nio.charset.StandardCharsets.UTF_8.nn
-  private val compact: Json.Formatting = Json.Formatting(Unset, false)
-
   lazy val logsJson: Json = Chain(jsonBytes5).read[Json]
-  lazy val logsCirce: io.circe.Json = parseWithJsoniter(jsonText5)
-  lazy val logsJackson: com.fasterxml.jackson.databind.JsonNode = parseWithJackson(jsonText5)
 
-  private def sink(): java.io.OutputStream = java.io.OutputStream.nullOutputStream().nn
+  lazy val logsCirce: io.circe.Json =
+    com.github.plokhotnyuk.jsoniter_scala.core.readFromString[io.circe.Json](jsonText5)
+      ( using jsoniterCodec )
 
-  def writeLogsMerinoWhole(): Unit =
-    given Json.Formatting = compact
-    sink().write(logsJson.show.s.getBytes(utf8Charset).nn)
-
-  def streamLogsMerino(): Unit =
-    given Json.Formatting = compact
-    val out = sink()
-
-    supervise:
-      Json.emit(logsJson).foreach: chunk =>
-        out.write(chunk.s.getBytes(utf8Charset).nn)
-
-  def pushLogsMerino(): Unit =
-    given Json.Formatting = compact
-    val out = sink()
-    Json.emit[Text](logsJson, chunk => out.write(chunk.s.getBytes(utf8Charset).nn))
-
-  def pushBytesLogsMerino(): Unit =
-    given Json.Formatting = compact
-    val out = sink()
-    Json.emit[Data](logsJson, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
-
-  def lendLogsMerino(): Unit =
-    given Json.Formatting = compact
-    val out = sink()
-
-    Json.lend(logsJson): region =>
-      interval =>
-        val extent: Interval = interval
-        out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), extent.start.n0, extent.size)
-
-  def streamLogsJackson(): Unit = jacksonMapper.writeValue(sink(), logsJackson)
-
-  def streamLogsJsoniter(): Unit =
-    com.github.plokhotnyuk.jsoniter_scala.core.writeToStream(logsCirce, sink())(using jsoniterCodec)
-
-  def writeLogsCirceWhole(): Unit = sink().write(logsCirce.noSpaces.getBytes(utf8Charset).nn)
+  lazy val logsJackson: com.fasterxml.jackson.databind.JsonNode =
+    jacksonMapper.readTree(jsonText5).nn
 
   // The decode arms: materialize the AST and walk it with `Decodable`;
   // parse tokens straight into the records with `Parsable`; or use
   // Jsoniter's macro-generated direct codec (the state of the art for
   // direct-to-case-class parsing on the JVM).
-  def decodeUsersAst(): BenchUsers = Chain(jsonBytes4).read[Json].as[BenchUsers]
-  def decodeUsersDirect(): BenchUsers = Chain(jsonBytes4).read[BenchUsers in Json]
+  //
+  // `decodeUsersDirectData` is also the production decoder the fused spike is checked against.
   def decodeUsersDirectData(): BenchUsers = jsonBytes4.read[BenchUsers in Json]
 
   // A hand-written parser over the public reader API: the "ceiling" for
@@ -229,18 +184,11 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   val skimParsable: Unit is Json.Parsable =
     Json.Parsable(Morphology.Any)(_.skipValue())
 
-  def skimUsers(): Unit =
-    given Unit is Json.Parsable = skimParsable
-    jsonBytes4.read[Unit in Json]
-
-  def decodeUsersHand(): BenchUsers =
-    given BenchUsers is Json.Parsable = handUsersParsable
-    jsonBytes4.read[BenchUsers in Json]
-
-  def decodeUsersStaged(): BenchUsers =
-    given BenchUser is Json.Parsable = Json.Parsable.staged
-    given BenchUsers is Json.Parsable = Json.Parsable.staged
-    jsonBytes4.read[BenchUsers in Json]
+  // The derived and staged instances, generated here rather than in a benchmark body, so that
+  // each macro expands once, at its definition.
+  val usersDecodable: BenchUsers is Json.Decodable = summon[BenchUsers is Json.Decodable]
+  val stagedUserParsable: BenchUser is Json.Parsable = Json.Parsable.staged
+  val stagedUsersParsable: BenchUsers is Json.Parsable = Json.Parsable.staged
 
   // ── Fused-tokenizer spike ─────────────────────────────────────────────────
   // Hand-written approximation of what a builder-parameterized staged
@@ -482,14 +430,11 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
   lazy val jsonArray4: scala.Array[Byte] = jsonText4.getBytes("UTF-8").nn
 
+  // Also called by `run()`, to check the spike against the production decoder.
   def decodeUsersFused(): BenchUsers = FusedSpike.decode(jsonArray4)
 
   val jsoniterUsersCodec: com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[JsoniterUsers] =
     com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
-
-  def decodeUsersJsoniter(): JsoniterUsers =
-    com.github.plokhotnyuk.jsoniter_scala.core.readFromArray[JsoniterUsers]
-      ( Array.unsafeJvm(jsonBytes4) )(using jsoniterUsersCodec)
 
   def textFor(document: Document): String = document match
     case Document.Example1 => jsonText1
@@ -526,12 +471,18 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     // One benchmark, two axes: six parsers against seven documents, anchored to Merino.
     // Each document rides `References` as a spliced value: ONE staged tree per parser,
     // with seven dispatches each carrying a different document, extracted once per run.
-    // operationSize is dropped: sizes vary per document and per-cell sizing isn't
-    // supported yet.
+    // Each cell is sized by its document, so the rates are comparable across documents of
+    // very different lengths, where the times are not.
     bench(m"Parse JSON documents")
       ( target = 1*Second, baseline = JsonParser.Merino, comparison = Baseline(compare = Min) )
 
-    . over(JsonParser, Document):
+    . sized: (_: JsonParser, document: Document) =>
+        val size: OperationSize =
+          jacinta.Benchmarks.textFor(document).getBytes("UTF-8").nn.length*Byte
+
+        size
+
+    . over(Axis(JsonParser), Axis(Document)):
         case (parser, document) =>
           val text: String = jacinta.Benchmarks.textFor(document)
 
@@ -552,37 +503,57 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
               '{ io.circe.parser.parse($text) }
 
             case JsonParser.Jsoniter =>
-              '{ jacinta.Benchmarks.parseWithJsoniter($text) }
+              '{
+                  com.github.plokhotnyuk.jsoniter_scala.core.readFromString[io.circe.Json]($text)
+                    ( using jacinta.Benchmarks.jsoniterCodec )
+              }
 
             case JsonParser.Jackson =>
-              '{ jacinta.Benchmarks.parseWithJackson($text) }
+              '{ jacinta.Benchmarks.jacksonMapper.readTree($text).nn }
 
     suite(m"Decode example 4 into records (100 user records)"):
       bench(m"Decode via the Json AST")(target = 1*Second, operationSize = size4):
-        '{ jacinta.Benchmarks.decodeUsersAst() }
+        '{
+            given BenchUsers is Json.Decodable = jacinta.Benchmarks.usersDecodable
+            Chain(jacinta.Benchmarks.jsonBytes4).read[Json].as[BenchUsers]
+        }
 
       bench(m"Decode directly with Parsable")(target = 1*Second, operationSize = size4):
-        '{ jacinta.Benchmarks.decodeUsersDirect() }
+        '{ Chain(jacinta.Benchmarks.jsonBytes4).read[BenchUsers in Json] }
 
       bench(m"Decode directly with Parsable (whole Data)")
         ( target = 1*Second, operationSize = size4 ):
         '{ jacinta.Benchmarks.decodeUsersDirectData() }
 
       bench(m"Scan all tokens, materialize nothing")(target = 1*Second, operationSize = size4):
-        '{ jacinta.Benchmarks.skimUsers() }
+        '{
+            given Unit is Json.Parsable = jacinta.Benchmarks.skimParsable
+            jacinta.Benchmarks.jsonBytes4.read[Unit in Json]
+        }
 
       bench(m"Decode with a hand-written Parsable")(target = 1*Second, operationSize = size4):
-        '{ jacinta.Benchmarks.decodeUsersHand() }
+        '{
+            given BenchUsers is Json.Parsable = jacinta.Benchmarks.handUsersParsable
+            jacinta.Benchmarks.jsonBytes4.read[BenchUsers in Json]
+        }
 
       bench(m"Decode with a staged Parsable")(target = 1*Second, operationSize = size4):
-        '{ jacinta.Benchmarks.decodeUsersStaged() }
+        '{
+            given BenchUser is Json.Parsable = jacinta.Benchmarks.stagedUserParsable
+            given BenchUsers is Json.Parsable = jacinta.Benchmarks.stagedUsersParsable
+            jacinta.Benchmarks.jsonBytes4.read[BenchUsers in Json]
+        }
 
       bench(m"Decode with a hand-fused parser (spike)")
         ( target = 1*Second, operationSize = size4 ):
         '{ jacinta.Benchmarks.decodeUsersFused() }
 
       bench(m"Decode directly with Jsoniter")(target = 1*Second, operationSize = size4):
-        '{ jacinta.Benchmarks.decodeUsersJsoniter() }
+        '{
+            com.github.plokhotnyuk.jsoniter_scala.core.readFromArray[JsoniterUsers]
+              ( Array.unsafeJvm(jacinta.Benchmarks.jsonBytes4) )
+              ( using jacinta.Benchmarks.jsoniterUsersCodec )
+        }
 
     suite(m"Parse example 6 (50 high-precision blockchain transactions)"):
       // Three Merino rows exercising each `NumberMode` to visualise the
@@ -614,41 +585,92 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
         '{ io.circe.parser.parse(jacinta.Benchmarks.jsonText6) }
 
       bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size6):
-        '{ jacinta.Benchmarks.parseWithJsoniter(jacinta.Benchmarks.jsonText6) }
+        '{
+            com.github.plokhotnyuk.jsoniter_scala.core.readFromString[io.circe.Json]
+              ( jacinta.Benchmarks.jsonText6 )
+              ( using jacinta.Benchmarks.jsoniterCodec )
+        }
 
       bench(m"Parse file with Jackson")(target = 1*Second, operationSize = size6):
-        '{ jacinta.Benchmarks.parseWithJackson(jacinta.Benchmarks.jsonText6) }
+        '{ jacinta.Benchmarks.jacksonMapper.readTree(jacinta.Benchmarks.jsonText6).nn }
 
     suite(m"Print high-precision-number AST"):
       bench(m"Print blockchain example (50 transactions)")(target = 1*Second):
-        '{ jacinta.Benchmarks.printBlockchain() }
+        '{
+            given Json.Formatting = Json.Formatting(Unset, false)
+            jacinta.Benchmarks.blockchainAst.show
+        }
 
     suite(m"Stream example 5 (500 log entries) to an output stream"):
       val size5 = jsonBytes5.length*Byte
 
       bench(m"Merino: emit, streamed chunk by chunk")(target = 1*Second, operationSize = size5):
-        '{ jacinta.Benchmarks.streamLogsMerino() }
+        '{
+            given Json.Formatting = Json.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+
+            supervise:
+              Json.emit(jacinta.Benchmarks.logsJson).foreach: chunk =>
+                out.write(chunk.s.getBytes(utf8).nn)
+        }
 
       bench(m"Merino: emit, pushed synchronously")(target = 1*Second, operationSize = size5):
-        '{ jacinta.Benchmarks.pushLogsMerino() }
+        '{
+            given Json.Formatting = Json.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val json = jacinta.Benchmarks.logsJson
+            Json.emit[Text](json, chunk => out.write(chunk.s.getBytes(utf8).nn))
+        }
 
       bench(m"Merino: emit, pushed as UTF-8 bytes")(target = 1*Second, operationSize = size5):
-        '{ jacinta.Benchmarks.pushBytesLogsMerino() }
+        '{
+            given Json.Formatting = Json.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val json = jacinta.Benchmarks.logsJson
+            Json.emit[Data](json, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+        }
 
       bench(m"Merino: lend, borrowed UTF-8 blocks")(target = 1*Second, operationSize = size5):
-        '{ jacinta.Benchmarks.lendLogsMerino() }
+        '{
+            given Json.Formatting = Json.Formatting(Unset, false)
+            val out = java.io.OutputStream.nullOutputStream().nn
+
+            Json.lend(jacinta.Benchmarks.logsJson): region =>
+              interval =>
+                val extent: Interval = interval
+                val raw = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+                out.write(raw, extent.start.n0, extent.size)
+        }
 
       bench(m"Merino: show, then write the whole text")(target = 1*Second, operationSize = size5):
-        '{ jacinta.Benchmarks.writeLogsMerinoWhole() }
+        '{
+            given Json.Formatting = Json.Formatting(Unset, false)
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val text = jacinta.Benchmarks.logsJson.show.s
+            java.io.OutputStream.nullOutputStream().nn.write(text.getBytes(utf8).nn)
+        }
 
       bench(m"Jackson: generator, streamed")(target = 1*Second, operationSize = size5):
-        '{ jacinta.Benchmarks.streamLogsJackson() }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+            jacinta.Benchmarks.jacksonMapper.writeValue(out, jacinta.Benchmarks.logsJackson)
+        }
 
       bench(m"Jsoniter: writeToStream, streamed")(target = 1*Second, operationSize = size5):
-        '{ jacinta.Benchmarks.streamLogsJsoniter() }
+        '{
+            com.github.plokhotnyuk.jsoniter_scala.core.writeToStream
+              ( jacinta.Benchmarks.logsCirce, java.io.OutputStream.nullOutputStream().nn )
+              ( using jacinta.Benchmarks.jsoniterCodec )
+        }
 
       bench(m"Circe: noSpaces, then write the whole text")(target = 1*Second, operationSize = size5):
-        '{ jacinta.Benchmarks.writeLogsCirceWhole() }
+        '{
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val text = jacinta.Benchmarks.logsCirce.noSpaces
+            java.io.OutputStream.nullOutputStream().nn.write(text.getBytes(utf8).nn)
+        }
 
   lazy val jsonText1: String = jsonExample1.s
   lazy val jsonText2: String = jsonExample2.s
@@ -734,10 +756,6 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   // `JsonBcd` values, so this exercises the printer's high-precision
   // number path on a realistic input rather than a microcase.
   lazy val blockchainAst: Json.Ast = unsafely(Json.Ast.parse(jsonBytes6))
-
-  def printBlockchain(): Text =
-    given Json.Formatting = Json.Formatting(Unset, false)
-    blockchainAst.show
 
   // Example 7: a 1000-element array of small integers — the workload the
   // unboxed `Array[Long]` AST node was designed to accelerate (no per-
