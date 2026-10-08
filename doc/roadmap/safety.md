@@ -38,7 +38,7 @@ the named wrappers (`Array.unsafeFrozen` 283, `Array.unsafeJvm` 205, `Array.froz
 ## safety-1: retire `untrackedCaptures`
 
 Horizon: near
-Baseline: 505 occurrences (measured 2026-10-07; 468 on 2026-09-25; 288 on 2026-08-01)
+Baseline: 507 occurrences (measured 2026-10-07 after the first sweep; 509 that morning; 468 on 2026-09-25; 288 on 2026-08-01)
 
 The retirement recipe is documented and mechanical: the annotated class becomes `caps.Mutable`,
 mutating methods become `update def`, consumers hold `X^`, and mutual back-references are
@@ -47,7 +47,11 @@ flattened. 437 of the annotations are on `var`s, and about 270 of those are prim
 missing classifier. The first modules are the ones already partly migrated (xylophone's `Xml`
 parser, sibylline's `Llm`, stratiform's `Tel`, zephyrine's core), then the others by size. The
 88 `AnyRef | Null` fields are different: each is a capability handle smuggled past the checker,
-and each is a design case, not a sweep.
+and each is a design case, not a sweep. The first sweep (stripping every primitive-typed
+annotation and letting the compiler object) found only 2 of 140 removable: the rest guard
+`var`s in classes that are not `Stateful`, or locals captured by closures, and making a class
+`Stateful` brings the read-only and `update def` discipline to it and its callers — so the
+recipe is one class per change.
 
 Done when:
 
@@ -121,9 +125,10 @@ Done when: a CI test consumes published Soundness artifacts from a mainline-Scal
 ## safety-6: separation checking without exemption
 
 Horizon: long
-Baseline: 93 of 464 modules compile without separation checking — 40 components, 26 test
-suites, 22 of the 23 benchmark modules and 4 internal modules — and 1 opts for `settings.cc`
-alone (measured 2026-10-07; 87 of 424 on 2026-09-25)
+Baseline: 81 of 464 modules compile without separation checking — 40 components, 26 test
+suites, 11 of the 23 benchmark modules and 4 internal modules — and 2 benches opt for
+`settings.cc` alone (measured 2026-10-07 after `Benchmarks` defaulted to `settings.sep`; 93 that
+morning; 87 of 424 on 2026-09-25)
 
 Separation checking is opted *into*: `Component`, `Tests` and `Benchmarks` default to plain
 `settings.scalaOptions`, so a module that never mentions `settings.sep` is not checked at all.
@@ -131,10 +136,12 @@ Of the 93, only nine say why (praxinoscope's Pike VM, probably's event bridge, t
 polyvinyl's record selection, enigmatic's padding given, four benchmarks that compile against
 rival libraries which cannot take explicit nulls); the rest — every other benchmark, 22 test
 suites, the staged and compiler-tooling components, the WASI backends, the JVM backends of
-galilei and telekinesis — are unchecked by omission. The end-state has no such module: the
-`Benchmarks` trait defaults to `settings.sep` like a library, every unreasoned module is flipped
-in a single-shot probe (`rep/probe-suite.sh`, `rep/probe-core.sh`), and each one that stays red
-carries a comment in `build.mill` naming its reason tag and a `rep/` case for the class.
+galilei and telekinesis — are unchecked by omission. The end-state has no such module. `Benchmarks` now
+defaults to `settings.sep` like a library (nine benches opt down, each naming the one shape —
+a suite object holding exclusive payload arrays as fields — that blocks them); every other
+unreasoned module is to be flipped in a single-shot probe (`rep/probe-suite.sh`,
+`rep/probe-core.sh`), and each one that stays red carries a comment in `build.mill` naming its
+reason tag and a `rep/` case for the class.
 
 Done when: no component in `build.mill` compiles with anything weaker than `settings.sep`.
 
