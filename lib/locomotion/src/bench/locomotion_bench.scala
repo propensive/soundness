@@ -91,3 +91,21 @@ given deep5Decodable: Deep5 is Decodable in Protobuf = Protobuf.DecodableDerivat
 given deep4Decodable: Deep4 is Decodable in Protobuf = Protobuf.DecodableDerivation.derived
 given deep3Decodable: Deep3 is Decodable in Protobuf = Protobuf.DecodableDerivation.derived
 given deep2Decodable: Deep2 is Decodable in Protobuf = Protobuf.DecodableDerivation.derived
+
+// Each message type's codec, derived once, here, rather than wherever it is used: the staged
+// benchmark bodies, the corpora and `TimingMain` share these instances, so an operation measures
+// encoding or decoding and never the expansion or allocation of its codec.
+given smallEncodable:      Small is Encodable in Protobuf = Protobuf.EncodableDerivation.derived
+given usersEncodable:      Users is Encodable in Protobuf = Protobuf.EncodableDerivation.derived
+given logsEncodable:       Logs is Encodable in Protobuf = Protobuf.EncodableDerivation.derived
+given intsEncodable:       Ints is Encodable in Protobuf = Protobuf.EncodableDerivation.derived
+given attributesEncodable: Attributes is Encodable in Protobuf =
+  Protobuf.EncodableDerivation.derived
+given deep1Encodable:      Deep1 is Encodable in Protobuf = Protobuf.EncodableDerivation.derived
+given smallDecodable:      Small is Decodable in Protobuf = Protobuf.DecodableDerivation.derived
+given usersDecodable:      Users is Decodable in Protobuf = Protobuf.DecodableDerivation.derived
+given logsDecodable:       Logs is Decodable in Protobuf = Protobuf.DecodableDerivation.derived
+given intsDecodable:       Ints is Decodable in Protobuf = Protobuf.DecodableDerivation.derived
+given attributesDecodable: Attributes is Decodable in Protobuf =
+  Protobuf.DecodableDerivation.derived
+given deep1Decodable:      Deep1 is Decodable in Protobuf = Protobuf.DecodableDerivation.derived

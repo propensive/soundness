@@ -32,9 +32,15 @@
                                                                                                   */
 package locomotion
 
+import anticipation.*
+import contingency.*, strategies.throwUnsafely
+import prepositional.*
+import proscenium.*
+import turbulence.*
+
 // A plain `System.nanoTime` harness for quick, dependency-free local timing of
 // the Locomotion codec — a lighter alternative to the staged `Benchmarks` suite.
-// It reuses the corpora and operations defined on `Benchmarks`.
+// It reuses the corpora defined on `Benchmarks`.
 object TimingMain:
   def time(label: String, bytes: Int, iterations: Int)(operation: () => Any): Unit =
     var warmup = 0
@@ -58,22 +64,28 @@ object TimingMain:
     println()
 
     println(f"${"Corpus 1: small message (3 fields)"}%-40s   payload=${Benchmarks.bytes1.length} bytes")
-    time("  Decode", Benchmarks.bytes1.length, iterations)(() => Benchmarks.decodeSmall)
-    time("  Encode", Benchmarks.bytes1.length, iterations)(() => Benchmarks.encodeSmall)
+    time("  Decode", Benchmarks.bytes1.length, iterations):
+      () => Chain(Benchmarks.bytes1).read[Small in Protobuf]
+    time("  Encode", Benchmarks.bytes1.length, iterations):
+      () => Benchmarks.value1.in[Protobuf].encode
     time("  Walk (protobuf-java)", Benchmarks.bytes1.length, iterations):
       () => Benchmarks.walkWithProtobufJava(Benchmarks.raw1)
     println()
 
     println(f"${"Corpus 2: 100 user records"}%-40s   payload=${Benchmarks.bytes2.length} bytes")
-    time("  Decode", Benchmarks.bytes2.length, iterations/100)(() => Benchmarks.decodeUsers)
-    time("  Encode", Benchmarks.bytes2.length, iterations/100)(() => Benchmarks.encodeUsers)
+    time("  Decode", Benchmarks.bytes2.length, iterations/100):
+      () => Chain(Benchmarks.bytes2).read[Users in Protobuf]
+    time("  Encode", Benchmarks.bytes2.length, iterations/100):
+      () => Benchmarks.value2.in[Protobuf].encode
     time("  Walk (protobuf-java)", Benchmarks.bytes2.length, iterations/100):
       () => Benchmarks.walkWithProtobufJava(Benchmarks.raw2)
     println()
 
     println(f"${"Corpus 4: 1000 packed integers"}%-40s   payload=${Benchmarks.bytes4.length} bytes")
-    time("  Decode", Benchmarks.bytes4.length, iterations/100)(() => Benchmarks.decodeInts)
-    time("  Encode", Benchmarks.bytes4.length, iterations/100)(() => Benchmarks.encodeInts)
+    time("  Decode", Benchmarks.bytes4.length, iterations/100):
+      () => Chain(Benchmarks.bytes4).read[Ints in Protobuf]
+    time("  Encode", Benchmarks.bytes4.length, iterations/100):
+      () => Benchmarks.value4.in[Protobuf].encode
     time("  Walk (protobuf-java)", Benchmarks.bytes4.length, iterations/100):
       () => Benchmarks.walkWithProtobufJava(Benchmarks.raw4)
     println()
