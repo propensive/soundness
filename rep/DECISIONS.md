@@ -2722,3 +2722,18 @@ Two more rules, both already met once:
   `update` forwarders. Also learned: a bare `C` in a quote is `C^` only if `C` is a `Capability`
   class — a `Stateful`-only class is pure there, so parsers spliced by name need
   `ExclusiveCapability` too (which `BintelParser` now has).
+
+## telekinesis `Hpack` and its dynamic table (2026-10-08)
+
+`untrackedCaptures` −3. `Hpack.Table` becomes `Stateful` (`resize`/`evict`/`add` update) and
+`Hpack` an exclusive stateful capability holding `table: Table^`; `encode`/`decode` are update
+methods, `decode`'s `raises` is a tactic parameter, the companion mints `Hpack^`, and
+`Http2.dispatch` takes `Hpack^`. The daemons already held their codec in a local and passed it
+down, so the library side was mechanical; the test side was not: `Http2Tests` built a codec in
+a suite body and fed it from a local `def fields` called inside `test` closures, and a
+closure-captured exclusive is read-only ("Cannot call update method decode of hpack since its
+capture set {hpack} is read-only"). The two RFC-appendix suites now decode their blocks in
+sequence in the suite body and the tests assert on the pure results — the shape every
+stateful-under-test needs, and the same reason facsimile's `DataBuilder` (held by local
+`def out`/`string`/`name` helpers in `ContentWriter`) was tried and reverted: the
+`[closure-capture]` tag, next to `[cursor-snapshot]` and `[aliased-read]`.

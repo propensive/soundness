@@ -50,9 +50,12 @@ import scala.caps
 // header blocks and one for encoding outbound ones, since the tables evolve
 // independently as fields are added.
 object Hpack:
+  // Minted fresh: the constructor proxy's result would be read-only.
+  def apply(maxTableSize: Int = 4096): Hpack^ = new Hpack(maxTableSize)
+
   // Builder mutation lives here rather than in class methods, which would force a
   // `uses` clause onto the class itself.
-  private[telekinesis] def encodeEntries(headers: List[Entry], table: Table): Data =
+  private[telekinesis] def encodeEntries(headers: List[Entry], table: Table^): Data =
     val buf: ByteBuf^ = ByteBuf()
 
     // A while-loop rather than `each` (or a local recursion): neither a closure nor a local
@@ -176,30 +179,27 @@ object Hpack:
   // byte-size limit, with oldest-first eviction. Combined with the static table it
   // forms the HPACK address space: index 1..61 is static; 62.. is the dynamic table,
   // most-recently-inserted first (RFC 7541 §2.3.3).
-  class Table(initialMaxSize: Int = 4096):
-    // Untracked: the dynamic table is confined to its owning `Hpack` codec, which
-    // is itself confined to one connection's reader or writer daemon.
-    @caps.unsafe.untrackedCaptures
+  // The dynamic table is confined to its owning `Hpack` codec, which is itself confined to one
+  // connection's reader or writer daemon.
+  class Table(initialMaxSize: Int = 4096) extends scala.caps.Stateful:
     private val entries: scm.ArrayDeque[Entry] = scm.ArrayDeque.empty[Entry]
-    @caps.unsafe.untrackedCaptures
     private var maxSize: Int = initialMaxSize
-    @caps.unsafe.untrackedCaptures
     private var currentSize: Int = 0
 
     def size: Int = currentSize
     def capacity: Int = maxSize
 
     // Resize (HPACK dynamic-table-size-update); evicts to fit the new bound.
-    def resize(newMax: Int): Unit =
+    update def resize(newMax: Int): Unit =
       maxSize = newMax
       evict()
 
-    private def evict(): Unit =
+    private update def evict(): Unit =
       while currentSize > maxSize && entries.nonEmpty do currentSize -= entries.removeLast().size
 
     // Insert at the front (most recent). An entry larger than the whole table
     // clears it and is itself not stored (RFC 7541 §4.4).
-    def add(entry: Entry): Unit =
+    update def add(entry: Entry): Unit =
       currentSize += entry.size
       entries.prepend(entry)
       evict()
@@ -212,15 +212,19 @@ object Hpack:
 
         if dynamicIndex >= 0 && dynamicIndex < entries.length then entries(dynamicIndex) else Unset
 
-class Hpack(maxTableSize: Int = 4096):
-  private val table = Hpack.Table(maxTableSize)
+// A stateful capability: its dynamic table changes with every block it encodes or decodes, so
+// a codec is owned by one daemon. The tactic is a parameter rather than `raises`: on a stateful
+// class a context-function result would capture `this`, which an update method may not let
+// escape.
+class Hpack(maxTableSize: Int = 4096) extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
+  private val table: Hpack.Table^ = new Hpack.Table(maxTableSize)
 
   // ─── integer representation (RFC 7541 §5.1) ───────────────────────────────
   //
   // An integer uses the low `prefix` bits of the byte at `data(offset)`; if those
   // are all 1 it continues in subsequent 7-bit groups (low 7 bits, high bit =
   // continuation). Returns the value and the index just past the integer.
-  private def readInteger(data: Data, offset: Int, prefix: Int): (Int, Int) raises Http2.Error =
+  private def readInteger(data: Data, offset: Int, prefix: Int)(using Tactic[Http2.Error]): (Int, Int) =
     val mask = (1 << prefix) - 1
     val first = data.readUnchecked(offset) & mask
 
@@ -244,7 +248,7 @@ class Hpack(maxTableSize: Int = 4096):
   // ─── string literal (RFC 7541 §5.2) ───────────────────────────────────────
   //
   // A length-prefixed octet sequence; the prefix's high bit flags Huffman coding.
-  private def readString(data: Data, offset: Int): (Text, Int) raises Http2.Error =
+  private def readString(data: Data, offset: Int)(using Tactic[Http2.Error]): (Text, Int) =
     val huffman = (data.readUnchecked(offset) & 0x80) != 0
     val (length, start) = readInteger(data, offset, 7)
     if start + length > data.length then abort(Http2.Error(Reason.Truncated))
@@ -255,7 +259,7 @@ class Hpack(maxTableSize: Int = 4096):
 
   // ─── decode a complete header block ────────────────────────────────────────
 
-  def decode(data: Data): List[Hpack.Entry] raises Http2.Error =
+  update def decode(data: Data)(using Tactic[Http2.Error]): List[Hpack.Entry] =
     val builder = scala.collection.immutable.List.newBuilder[Hpack.Entry]
     var pos = 0
 
@@ -306,4 +310,4 @@ class Hpack(maxTableSize: Int = 4096):
   // ahead of regular headers by the caller (RFC 7540 §8.1.2.1).
   // Delegates to the companion: builder mutation inside a class method would
   // force a `uses` clause onto the class itself.
-  def encode(headers: List[Hpack.Entry]): Data = Hpack.encodeEntries(headers, table)
+  update def encode(headers: List[Hpack.Entry]): Data = Hpack.encodeEntries(headers, table)

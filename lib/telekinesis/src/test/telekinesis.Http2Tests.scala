@@ -103,39 +103,43 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
     suite(m"HPACK decode (RFC 7541 Appendix C.3 — without Huffman)"):
       // A single decoder fed the three successive request header blocks from C.3,
       // sharing one dynamic table across requests (the point of the example).
-      val hpack = Hpack()
+      // Decoded in sequence here rather than inside the tests: the codec is an exclusive
+      // capability, which a test's closure could only hold read-only.
+      val hpack: Hpack^ = Hpack()
+      val first = hpack.decode(bytes(t"828684410f7777772e6578616d706c652e636f6d")).map(e => (e.name, e.value))
+      val second = hpack.decode(bytes(t"828684be58086e6f2d6361636865")).map(e => (e.name, e.value))
 
-      def fields(hex: Text): List[(Text, Text)] =
-        hpack.decode(bytes(hex)).map(e => (e.name, e.value))
+      val third =
+        hpack.decode(bytes(t"828785bf400a637573746f6d2d6b65790c637573746f6d2d76616c7565"))
+        . map(e => (e.name, e.value))
 
       test(m"C.3.1 first request"):
-        fields(t"828684410f7777772e6578616d706c652e636f6d")
+        first
       . assert(_ == List((t":method", t"GET"), (t":scheme", t"http"), (t":path", t"/"),
           (t":authority", t"www.example.com")))
 
       test(m"C.3.2 second request (uses dynamic table + new header)"):
-        fields(t"828684be58086e6f2d6361636865")
+        second
       . assert(_ == List((t":method", t"GET"), (t":scheme", t"http"), (t":path", t"/"),
           (t":authority", t"www.example.com"), (t"cache-control", t"no-cache")))
 
       test(m"C.3.3 third request (custom header)"):
-        fields(t"828785bf400a637573746f6d2d6b65790c637573746f6d2d76616c7565")
+        third
       . assert(_ == List((t":method", t"GET"), (t":scheme", t"https"), (t":path", t"/index.html"),
           (t":authority", t"www.example.com"), (t"custom-key", t"custom-value")))
 
     suite(m"HPACK decode (RFC 7541 Appendix C.4 — with Huffman)"):
-      val hpack = Hpack()
-
-      def fields(hex: Text): List[(Text, Text)] =
-        hpack.decode(bytes(hex)).map(e => (e.name, e.value))
+      val hpack: Hpack^ = Hpack()
+      val first = hpack.decode(bytes(t"828684418cf1e3c2e5f23a6ba0ab90f4ff")).map(e => (e.name, e.value))
+      val second = hpack.decode(bytes(t"828684be5886a8eb10649cbf")).map(e => (e.name, e.value))
 
       test(m"C.4.1 first request, Huffman-coded authority"):
-        fields(t"828684418cf1e3c2e5f23a6ba0ab90f4ff")
+        first
       . assert(_ == List((t":method", t"GET"), (t":scheme", t"http"), (t":path", t"/"),
           (t":authority", t"www.example.com")))
 
       test(m"C.4.2 second request, Huffman-coded no-cache"):
-        fields(t"828684be5886a8eb10649cbf")
+        second
       . assert(_ == List((t":method", t"GET"), (t":scheme", t"http"), (t":path", t"/"),
           (t":authority", t"www.example.com"), (t"cache-control", t"no-cache")))
 
