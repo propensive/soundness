@@ -104,21 +104,6 @@ extends Suite("scintillate-bench", m"Scintillate socket-server benchmarks"):
 
     total
 
-  // Parse the request-line and headers of a single request.
-  def parseRequest(bytes: Data): Http.Method = Http.Request.parse(Chain(bytes)).method
-
-  // Serialise a fixed response to bytes, forcing the whole stream.
-  def serializeResponse(response: Http.Response): Int =
-    Http.Response.serialize(response).memoize.length
-
-  // Drive every pipelined request through the full connection loop into a null
-  // sink: parse, frame body, dispatch, serialize, write, keep-alive bookkeeping.
-  def drivePipeline(): Int =
-    val in = _root_.java.io.ByteArrayInputStream(pipelineBuffer)
-    val out = _root_.java.io.OutputStream.nullOutputStream.nn
-    SocketServer(0).serveConnection(handler)(in, out)
-    pipelineCount
-
   // Every server in the socket comparison, by row name. The rows are generated from this
   // table, so each suite holds exactly one row per server; `HttpRivals.ensure` starts the
   // named server inside the measurement JVM.
@@ -171,14 +156,14 @@ extends Suite("scintillate-bench", m"Scintillate socket-server benchmarks"):
     val profile = Profile(heap = t"2g")
 
     val requestSize  = getRequest.length*Byte
-    val responseSize = serializeResponse(okResponse)*Byte
+    val responseSize = Http.Response.serialize(okResponse).memoize.length*Byte
     val pipelineSize = getRequest.length*pipelineCount*Byte
 
     // The rival rows run each codec's own parser or encoder over the same bytes; see
     // `RivalCodecs`.
     suite(m"Wire codec (no socket, no threads)"):
       bench(m"Parse a request head")(target = 1*Second, operationSize = requestSize):
-        '{ scintillate.Benchmarks.parseRequest(scintillate.Benchmarks.getRequest) }
+        '{ Http.Request.parse(Chain(scintillate.Benchmarks.getRequest)).method }
 
       bench(m"Netty  parse a request head")(target = 1*Second, operationSize = requestSize):
         '{ scintillate.RivalCodecs.nettyParse() }
@@ -187,7 +172,7 @@ extends Suite("scintillate-bench", m"Scintillate socket-server benchmarks"):
         '{ scintillate.RivalCodecs.jettyParse() }
 
       bench(m"Serialize a fixed response")(target = 1*Second, operationSize = responseSize):
-        '{ scintillate.Benchmarks.serializeResponse(scintillate.Benchmarks.okResponse) }
+        '{ Http.Response.serialize(scintillate.Benchmarks.okResponse).memoize.length }
 
       bench(m"Netty  serialize a fixed response")
         ( target = 1*Second, operationSize = responseSize ):
@@ -197,10 +182,17 @@ extends Suite("scintillate-bench", m"Scintillate socket-server benchmarks"):
         ( target = 1*Second, operationSize = responseSize ):
         '{ scintillate.RivalCodecs.jettySerialize() }
 
+    // Every pipelined request is driven through the full connection loop into a null sink:
+    // parse, frame body, dispatch, serialize, write, keep-alive bookkeeping.
     suite(m"Full pipeline (in-process, no socket)"):
       bench(m"1000 pipelined GETs through serveConnection")
         ( target = 1*Second, operationSize = pipelineSize ):
-        '{ scintillate.Benchmarks.drivePipeline() }
+        '{
+            val in = _root_.java.io.ByteArrayInputStream(scintillate.Benchmarks.pipelineBuffer)
+            val out = _root_.java.io.OutputStream.nullOutputStream.nn
+            SocketServer(0).serveConnection(scintillate.Benchmarks.handler)(in, out)
+            scintillate.Benchmarks.pipelineCount
+        }
 
     // Real-socket requests per second: see `HttpRivals` for the client, the servers,
     // the workloads and the colocation caveats. The harness workers (the clients) run on
@@ -244,7 +236,12 @@ extends Suite("scintillate-bench", m"Scintillate socket-server benchmarks"):
       // every sample inside the HTTP stack itself. The right instrument for
       // asking where a request's CPU and allocation actually go.
       profile(m"1000 pipelined GETs through serveConnection")(target = 5*Second):
-        '{ scintillate.Benchmarks.drivePipeline() }
+        '{
+            val in = _root_.java.io.ByteArrayInputStream(scintillate.Benchmarks.pipelineBuffer)
+            val out = _root_.java.io.OutputStream.nullOutputStream.nn
+            SocketServer(0).serveConnection(scintillate.Benchmarks.handler)(in, out)
+            scintillate.Benchmarks.pipelineCount
+        }
 
       profile(m"Scintillate  socket round-trip")(target = 5*Second):
         '{
