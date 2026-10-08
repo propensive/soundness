@@ -158,36 +158,43 @@ cannot be canceled at all, and must run to completion.
 supervise:
   val task = async:
     for i <- 0 to 10 do
-      delay(0.1*Second)
+      sleep(0.1*Second)
       relent()
       written += 1
   task.cancel()
 ```
 
 Cancelled at the `relent()`, this task never reaches the increment on the next line. It does
-still wait out the delay first, because `delay` is uninterruptible — which is the
-distinction the next section is about.
+still wait out the pause first, because `sleep` is uninterruptible — which is the distinction
+the next section is about.
 
 ### Pausing
 
-Four methods stop the current strand temporarily, spanning two independent choices: whether the
-pause can end early because the task was canceled, and whether it is expressed as a duration or
-as the instant to wake at.
+Two methods stop the current strand temporarily, and they differ in one way: whether the pause
+can end early because the task was canceled. A `snooze` is a cancellation point, and a canceled
+task wakes from it at once; a `sleep` is not, and an early wakeup — spurious, or from
+cancellation — re-parks for the time still remaining, so the pause always lasts its full length.
+The names are chosen to be remembered rather than looked up: a *snooze* is the alarm clock's
+button, and can be cut short by a second alarm, while a *sleep* is slept through.
 
-|                     | duration   | instant      |
-|---------------------|------------|--------------|
-| **interruptible**   | `snooze`   | `sleep`      |
-| **uninterruptible** | `delay`    | `hibernate`  |
+Each takes either a *duration* or an *instant*, and the type of the argument says which is
+meant: a duration pauses for that long, and an instant pauses until it arrives.
 
-The names are chosen to be remembered rather than looked up. A *snooze* is the few extra minutes
-— a fixed duration — that an alarm clock's snooze button offers. A *sleep* ends at a particular
-time in the morning whatever time it began, but one can still be woken in the night. An animal
-*hibernates* until a particular time in the spring and cannot easily be roused. And a train's
-*delay* is quoted as a duration, but once it has one, nothing cancels it.
+```scala
+supervise:
+  snooze(2.0*Second)             // for two seconds, unless canceled
+  snooze(now() + 2.0*Second)     // until two seconds from now, unless canceled
+  sleep(2.0*Second)              // for two seconds, whatever happens
+  sleep(now() + 2.0*Second)      // until two seconds from now, whatever happens
+```
+
+The bound both share is `Schedulable`, which any `Abstractable across Durations` or
+`Abstractable across Instants` type satisfies, so a `quantitative` quantity of time, an
+`aviation.Timespan` and an `aviation.Instant` are all accepted without conversion.
 
 #### Units
 
-All four take a *typed* duration or instant — `0.2*Second`, `10*Minute`, an `aviation.Instant` —
+Both take a *typed* duration or instant — `0.2*Second`, `10*Minute`, an `aviation.Instant` —
 and a typed value cannot be misread. A bare `Long` can, so no given interprets one until a unit
 is chosen by name:
 
@@ -202,6 +209,17 @@ The alternatives are `nanosecondsAbstractable` and `microsecondsAbstractable`; t
 type, so exactly one may be imported into a file. Instants have a single reading,
 `epochMillisecondsAbstractable`, which takes a `Long` as milliseconds since the epoch. (The
 `instantiables` package mirrors all four for the opposite direction.)
+
+A duration reading and the instant reading may not both be in scope where a bare `Long` is
+passed, because nothing at the call site could then say which was meant, and the two givens
+for `Schedulable` are reported as ambiguous:
+
+```scala
+import abstractables.epochMillisecondsAbstractable
+
+supervise:
+  snooze(200L)  // does not compile: a Long is both a duration and an instant here
+```
 
 The distinction matters because the underlying representation of a duration is *nanoseconds* —
 an unqualified `snooze(200L)` under the nanosecond given returns almost immediately, and a loop
@@ -309,7 +327,7 @@ on, so a task that has taken too long is abandoned at a point the code chooses:
 
 ```scala
 supervise:
-  val slow = async(delay(10.0*Second))
+  val slow = async(sleep(10.0*Second))
   safely(slow.await(0.1*Second))   // Unset: the deadline passed
 ```
 

@@ -132,7 +132,7 @@ object Tests extends Suite(m"Profanity Tests"):
         val deadline = jl.System.currentTimeMillis + ms
         var found = matches
         while !found && jl.System.currentTimeMillis < deadline do
-          delay(0.05*Second)
+          sleep(0.05*Second)
           found = matches
         found
 
@@ -223,10 +223,10 @@ object Tests extends Suite(m"Profanity Tests"):
                 Tmux.enter('\r')
                 if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
                 scala.caps.unsafe.unsafeAssumeSeparate(Tmux.attend(Tmux.enter(t"X"*25)))
-                delay(0.1*Second)
+                sleep(0.1*Second)
                 Tmux.attend:
                   Tmux.enter('', '', '', '', '')
-                delay(0.2*Second)
+                sleep(0.2*Second)
                 val mid = Tmux.screenshot()
                 Tmux.enter('\r')
                 waitFor(t"RESULT:")
@@ -247,7 +247,7 @@ object Tests extends Suite(m"Profanity Tests"):
                 Tmux.enter(tool, ' ', t"select-menu-long-sized 20 12")
                 Tmux.enter('\r')
                 if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-                delay(0.3*Second)
+                sleep(0.3*Second)
                 val mid = Tmux.screenshot()
                 Tmux.enter('\r')
                 waitFor(t"RESULT:")

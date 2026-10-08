@@ -99,7 +99,7 @@ object Tmux:
     var count = 0
 
     block.also:
-      while init === screenshot().screen && count < 60 do delay(0.01*Second) yet (count += 1)
+      while init === screenshot().screen && count < 60 do sleep(0.01*Second) yet (count += 1)
 
 
   def completions(text: Text)(using tool: Enclave.Tool, tmux: Tmux)
@@ -113,7 +113,7 @@ object Tmux:
         var count = 0
 
         while Tmux.screenshot().screen.filter(_ == t">").readable.length == 0 && count < 333 do
-          delay(0.03*Second)
+          sleep(0.03*Second)
           count += 1
         // A named method, not a lambda: interpolating inside a lambda passed to a collection
         // combinator runs the interpolator's implicit search while the combinator's element type
@@ -148,19 +148,19 @@ object Tmux:
 
     tmux.shell match
       case Shell.Powershell =>
-        delay(0.05*Second)
+        sleep(0.05*Second)
         val init = screenshot().screen
         enter(Ht)
         var count = 0
 
-        while init === screenshot().screen && count < 150 do delay(0.01*Second) yet (count += 1)
+        while init === screenshot().screen && count < 150 do sleep(0.01*Second) yet (count += 1)
 
         if init !== screenshot().screen then
           var prev = screenshot().screen
           var stable = 0
 
           while stable < 3 && count < 200 do
-            delay(0.01*Second)
+            sleep(0.01*Second)
             val current = screenshot().screen
 
             if current === prev then stable += 1 else
