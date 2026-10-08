@@ -45,6 +45,7 @@ import probates.cancelProbate
 import strategies.throwUnsafely
 import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
+import filesystemBackends.javaBaseFilesystem
 import threading.platformThreading
 import workingDirectories.javaBaseWorkingDirectory
 
@@ -281,45 +282,45 @@ object Tests extends Suite(m"Delicious Tests"):
       // without semdiag (releases up to p5) produces no markup, and only the
       // fallback invariants are asserted.
       supervise:
-        val out: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
-        Files.createDirectories(Paths.get(out.encode.s))
+        temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+          val out: soundness.Path on Linux = handle.stem
 
-        val source: Text =
-          t"""|object Bad:
-              |  class Local
-              |  val xs: List[String] = List(new Local)
-              |""".s.stripMargin.tt
+          val source: Text =
+            t"""|object Bad:
+                |  class Local
+                |  val xs: List[String] = List(new Local)
+                |""".s.stripMargin.tt
 
-        val process =
-          Scalac[3.9](List(scalacOptions.semanticDiagnostics))
-            (classpath)(Map(t"bad.scala" -> source), out)
+          val process =
+            Scalac[3.9](List(scalacOptions.semanticDiagnostics))
+              (classpath)(Map(t"bad.scala" -> source), out)
 
-        process.complete()
-        val notices = process.notices.to[List]
+          process.complete()
+          val notices = process.notices.to[List]
 
-        test(m"A failed compilation produces at least one error notice"):
-          notices.count(_.importance == Importance.Error)
-        . assert(_ > 0)
+          test(m"A failed compilation produces at least one error notice"):
+            notices.count(_.importance == Importance.Error)
+          . assert(_ > 0)
 
-        val marked = notices.filter(_.markup.present)
+          val marked = notices.filter(_.markup.present)
 
-        if marked.nil then
-          test(m"Without semdiag support, messages are plain and unmarked"):
-            notices.all { notice => !SemanticMessage.marked(notice.message) }
-          . assert(_ == true)
-        else
-          test(m"Semantic notices strip markers from the plain message"):
-            marked.all { notice => !SemanticMessage.marked(notice.message) }
-          . assert(_ == true)
+          if marked.nil then
+            test(m"Without semdiag support, messages are plain and unmarked"):
+              notices.all { notice => !SemanticMessage.marked(notice.message) }
+            . assert(_ == true)
+          else
+            test(m"Semantic notices strip markers from the plain message"):
+              marked.all { notice => !SemanticMessage.marked(notice.message) }
+            . assert(_ == true)
 
-          test(m"A semantic notice renders its types through stenography"):
-            marked.map { notice => notice.markup.let(SemanticMessage.parse(_)).let(_.render(reifier)).or(t"") }
-            . join(t"\n")
-          . assert { rendered =>
-              // `java.lang.String` (not the compiler-printed `String`) proves the type
-              // came through stenography; `Bad.Local` proves placeholder substitution.
-              rendered.subsumes(t"java.lang.String") && rendered.subsumes(t"Bad.Local")
-            }
+            test(m"A semantic notice renders its types through stenography"):
+              marked.map { notice => notice.markup.let(SemanticMessage.parse(_)).let(_.render(reifier)).or(t"") }
+              . join(t"\n")
+            . assert { rendered =>
+                // `java.lang.String` (not the compiler-printed `String`) proves the type
+                // came through stenography; `Bad.Local` proves placeholder substitution.
+                rendered.subsumes(t"java.lang.String") && rendered.subsumes(t"Bad.Local")
+              }
 
     // The running JVM's own classpath carries stenography's classes together with its
     // `soundness` export file, so under `import soundness.*` the alias `soundness.Syntax`

@@ -4,23 +4,25 @@ publishLocal:
 # Tests and benchmarks are run by `fume` (https://github.com/propensive/fume), which discovers
 # every suite in a built assembly from its META-INF/services/probably.Suite index. The classpath
 # for `make test`/`make ci` comes from `.pyrocosm/fume/config.tel`; `$(TESTS)` are fume selection terms
-# (test ids, name globs, axis constraints such as `N<=64`).
+# (test ids, name globs, axis constraints such as `N<=64`). Every run goes through
+# `etc/ci/fume-run.sh`, which gives it a private daemon and a private temporary directory and
+# removes both afterwards, so a suite's forgotten scratch files never outlive the run.
 test:
 	./mill test.assembly
-	fume run -c out/test/assembly.dest/out.jar $(TESTS)
+	./etc/ci/fume-run.sh -c out/test/assembly.dest/out.jar $(TESTS)
 
 test.%:
 	./mill clean $*.test
 	./mill $*.test.assembly
-	fume run -c out/$*/test/assembly.dest/out.jar $(TESTS)
+	./etc/ci/fume-run.sh -c out/$*/test/assembly.dest/out.jar $(TESTS)
 
 bench:
 	./mill bench.assembly
-	fume run --bench -c out/bench/assembly.dest/out.jar $(TESTS)
+	./etc/ci/fume-run.sh --bench -c out/bench/assembly.dest/out.jar $(TESTS)
 
 bench.%:
 	./mill $*.bench.assembly
-	fume run --bench -c out/$*/bench/assembly.dest/out.jar $(TESTS)
+	./etc/ci/fume-run.sh --bench -c out/$*/bench/assembly.dest/out.jar $(TESTS)
 
 keywords:
 	./mill keywords.assembly
@@ -60,7 +62,7 @@ dev:
 	./mill -w soundness.all
 
 ci:
-	fume run -c out/test/assembly.dest/out.jar
+	./etc/ci/fume-run.sh -c out/test/assembly.dest/out.jar
 
 wasm-e2e:
 	./etc/ci/wasm-e2e.sh
