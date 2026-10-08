@@ -45,6 +45,7 @@ import probates.cancelProbate
 import strategies.throwUnsafely
 import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
+import filesystemBackends.javaBaseFilesystem
 import threading.platformThreading
 import workingDirectories.javaBaseWorkingDirectory
 import environments.javaBaseEnvironment
@@ -221,54 +222,55 @@ object Tests extends Suite(m"Anthology Tests"):
       val chain =
         Toolchain(List(Edge(a, b, passTool(t"first")), Edge(b, c, passTool(t"second"))))
 
-      val scratch: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+      temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+        val scratch: soundness.Path on Linux = handle.stem
 
-      test(m"Producing a format runs each path edge's tool in order"):
-        supervise:
-          executionLog.entries = Nil
-          chain.produce(Deliverable.Product(scratch), a, c, scratch)
-          executionLog.entries
-      . assert(_ == List(t"second", t"first"))
+        test(m"Producing a format runs each path edge's tool in order"):
+          supervise:
+            executionLog.entries = Nil
+            chain.produce(Deliverable.Product(scratch), a, c, scratch)
+            executionLog.entries
+        . assert(_ == List(t"second", t"first"))
 
-      test(m"A setting applying to no path format is rejected"):
-        supervise:
-          val inapplicable = Toolchain.Setting[Unit](_ => false)(settings => settings)
-          val production = Deliverable.Product(scratch)
-          capture[Link.Error](chain.produce(production, a, c, scratch, List(inapplicable))).reason
-      . assert(_ == Link.Error.Reason.InapplicableSetting)
+        test(m"A setting applying to no path format is rejected"):
+          supervise:
+            val inapplicable = Toolchain.Setting[Unit](_ => false)(settings => settings)
+            val production = Deliverable.Product(scratch)
+            capture[Link.Error](chain.produce(production, a, c, scratch, List(inapplicable))).reason
+        . assert(_ == Link.Error.Reason.InapplicableSetting)
 
-      // Cross-family settings are rejected before any tool runs, so these paths are checkable
-      // without invoking D8, the Scala.js linker or the bundler.
-      val emission = Deliverable.Emission(scratch, LocalClasspath())
+        // Cross-family settings are rejected before any tool runs, so these paths are checkable
+        // without invoking D8, the Scala.js linker or the bundler.
+        val emission = Deliverable.Emission(scratch, LocalClasspath())
 
-      test(m"A dex setting is not applicable on a JAR path"):
-        supervise:
-          val settings = List(dexOptions.minApi(24))
-          val toolchain = Toolchain(jarEdges())
+        test(m"A dex setting is not applicable on a JAR path"):
+          supervise:
+            val settings = List(dexOptions.minApi(24))
+            val toolchain = Toolchain(jarEdges())
 
-          capture[Link.Error]
-            ( toolchain.produce(emission, Universe.Classfile, anthology.Jar, scratch, settings) )
-          . reason
-      . assert(_ == Link.Error.Reason.InapplicableSetting)
+            capture[Link.Error]
+              ( toolchain.produce(emission, Universe.Classfile, anthology.Jar, scratch, settings) )
+            . reason
+        . assert(_ == Link.Error.Reason.InapplicableSetting)
 
-      test(m"An sjs setting is not applicable on a dex path"):
-        supervise:
-          val settings = List(linkerOptions.optimize.fast)
-          val toolchain = Toolchain(dexEdges())
+        test(m"An sjs setting is not applicable on a dex path"):
+          supervise:
+            val settings = List(linkerOptions.optimize.fast)
+            val toolchain = Toolchain(dexEdges())
 
-          capture[Link.Error](toolchain.produce(emission, Universe.Classfile, Dex, scratch, settings))
-          . reason
-      . assert(_ == Link.Error.Reason.InapplicableSetting)
+            capture[Link.Error](toolchain.produce(emission, Universe.Classfile, Dex, scratch, settings))
+            . reason
+        . assert(_ == Link.Error.Reason.InapplicableSetting)
 
-      test(m"A native setting is not applicable on a JavaScript path"):
-        supervise:
-          val settings = List(nativeOptions.gc.immix)
-          val target = anthology.Js(anthology.Js.Module.Es)
-          val toolchain = Toolchain(sjsEdges())
+        test(m"A native setting is not applicable on a JavaScript path"):
+          supervise:
+            val settings = List(nativeOptions.gc.immix)
+            val target = anthology.Js(anthology.Js.Module.Es)
+            val toolchain = Toolchain(sjsEdges())
 
-          capture[Link.Error](toolchain.produce(emission, Universe.Sjsir, target, scratch, settings))
-          . reason
-      . assert(_ == Link.Error.Reason.InapplicableSetting)
+            capture[Link.Error](toolchain.produce(emission, Universe.Sjsir, target, scratch, settings))
+            . reason
+        . assert(_ == Link.Error.Reason.InapplicableSetting)
 
     test(m"JAR and library packaging edges need no evidence"):
       jarEdges().map(_.target.id)
@@ -410,45 +412,46 @@ object Tests extends Suite(m"Anthology Tests"):
 
     sjsClasspath().let: classpath =>
       supervise:
-        val out: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
-        Files.createDirectories(Paths.get(out.encode.s))
+        temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+          val out: soundness.Path on Linux = handle.stem
 
-        val process =
-          Scalac[3.8](Nil).targeting[Universe.Sjsir]
-            (classpath)(Map(t"hello.scala" -> source), out)
+          val process =
+            Scalac[3.8](Nil).targeting[Universe.Sjsir]
+              (classpath)(Map(t"hello.scala" -> source), out)
 
-        test(m"A portable compilation succeeds"):
-          process.complete()
-        . check(_ == CompileResult.Success)
+          test(m"A portable compilation succeeds"):
+            process.complete()
+          . check(_ == CompileResult.Success)
 
-        test(m"A portable compilation emits sjsir"):
-          Files.list(Paths.get(out.encode.s)).nn.iterator.nn.asScala
-          . exists(_.getFileName.nn.toString.endsWith(".sjsir"))
-        . check(_ == true)
+          test(m"A portable compilation emits sjsir"):
+            Files.list(Paths.get(out.encode.s)).nn.iterator.nn.asScala
+            . exists(_.getFileName.nn.toString.endsWith(".sjsir"))
+          . check(_ == true)
 
-        val linked: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+          temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+            val linked: soundness.Path on Linux = handle.stem
 
-        test(m"Linking as JavaScript produces a nonempty main.js"):
-          Toolchain(sjsEdges()).produce
-            ( Deliverable.Emission(out, classpath),
-              Universe.Sjsir,
-              anthology.Js(anthology.Js.Module.Es),
-              linked,
-              Nil,
-              List(EntryPoint(Fqcn(t"Main"))) )
-          . pipe: artifact =>
-              Files.size(Paths.get(artifact.encode.s))
-        . check(_ > 100L)
+            test(m"Linking as JavaScript produces a nonempty main.js"):
+              Toolchain(sjsEdges()).produce
+                ( Deliverable.Emission(out, classpath),
+                  Universe.Sjsir,
+                  anthology.Js(anthology.Js.Module.Es),
+                  linked,
+                  Nil,
+                  List(EntryPoint(Fqcn(t"Main"))) )
+              . pipe: artifact =>
+                  Files.size(Paths.get(artifact.encode.s))
+            . check(_ > 100L)
 
-        test(m"Packaging an sjsir library JAR produces a nonempty archive"):
-          Toolchain(jarEdges()).produce
-            ( Deliverable.Emission(out, classpath),
-              Universe.Sjsir,
-              Library(Universe.Sjsir),
-              linked )
-          . pipe: artifact =>
-              Files.size(Paths.get(artifact.encode.s))
-        . check(_ > 100L)
+            test(m"Packaging an sjsir library JAR produces a nonempty archive"):
+              Toolchain(jarEdges()).produce
+                ( Deliverable.Emission(out, classpath),
+                  Universe.Sjsir,
+                  Library(Universe.Sjsir),
+                  linked )
+              . pipe: artifact =>
+                  Files.size(Paths.get(artifact.encode.s))
+            . check(_ > 100L)
 
     // The packaging pipeline: compile against the fork standard library alone, link an
     // executable JAR, and run it under `java -jar`.
@@ -456,198 +459,202 @@ object Tests extends Suite(m"Anthology Tests"):
       supervise:
         val jars = List("scala-library.jar", "scala3-library.jar").map(lib.resolve(_).nn)
         val classpath = LocalClasspath(jars.map { jar => Classpath.Entry.Jar(jar.toString.tt) }*)
-        val out: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
-        Files.createDirectories(Paths.get(out.encode.s))
+        temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+          val out: soundness.Path on Linux = handle.stem
 
-        val process = Scalac[3.8](Nil)(classpath)(Map(t"hello.scala" -> source), out)
+          val process = Scalac[3.8](Nil)(classpath)(Map(t"hello.scala" -> source), out)
 
-        test(m"A classfile compilation succeeds"):
-          process.complete()
-        . check(_ == CompileResult.Success)
+          test(m"A classfile compilation succeeds"):
+            process.complete()
+          . check(_ == CompileResult.Success)
 
-        test(m"The compiler reports its version"):
-          Scalac[3.8](Nil).version
-        . assert(_.starts(t"3."))
+          test(m"The compiler reports its version"):
+            Scalac[3.8](Nil).version
+          . assert(_.starts(t"3."))
 
-        test(m"A compilation reports the version of the compiler that ran it"):
-          process.version
-        . assert(_ == Scalac.version)
+          test(m"A compilation reports the version of the compiler that ran it"):
+            process.version
+          . assert(_ == Scalac.version)
 
-        test(m"The Java compiler reports the runtime's version"):
-          Javac(Nil).version
-        . assert(_ == Runtime.version().nn.toString.tt)
+          test(m"The Java compiler reports the runtime's version"):
+            Javac(Nil).version
+          . assert(_ == Runtime.version().nn.toString.tt)
 
-        // Byte determinism (LIRA §17): the same sources under the same compiler yield the same
-        // bytes, which a build tool relies on to check a rebuild by comparison. The TASTy UUID
-        // is a hash of the file's own sections, and virtual sources carry the names they were
-        // given, so neither the run nor the output directory leaves a trace.
-        test(m"Compiling the same sources twice yields byte-identical output"):
-          val again: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
-          Files.createDirectories(Paths.get(again.encode.s))
-          Scalac[3.8](Nil)(classpath)(Map(t"hello.scala" -> source), again).complete()
+          // Byte determinism (LIRA §17): the same sources under the same compiler yield the same
+          // bytes, which a build tool relies on to check a rebuild by comparison. The TASTy UUID
+          // is a hash of the file's own sections, and virtual sources carry the names they were
+          // given, so neither the run nor the output directory leaves a trace.
+          test(m"Compiling the same sources twice yields byte-identical output"):
+            temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+              val again: soundness.Path on Linux = handle.stem
+              Scalac[3.8](Nil)(classpath)(Map(t"hello.scala" -> source), again).complete()
 
-          def emitted(root: JnfPath): scala.List[(String, String)] =
-            Files.walk(root).nn.iterator.nn.asScala.to(scala.List)
-            . filter(Files.isRegularFile(_))
-            . map: file =>
-                val hex = java.util.HexFormat.of().nn.formatHex(Files.readAllBytes(file)).nn
-                (root.relativize(file).nn.toString, hex)
-            . sortBy(_(0))
+              def emitted(root: JnfPath): scala.List[(String, String)] =
+                Files.walk(root).nn.iterator.nn.asScala.to(scala.List)
+                . filter(Files.isRegularFile(_))
+                . map: file =>
+                    val hex = java.util.HexFormat.of().nn.formatHex(Files.readAllBytes(file)).nn
+                    (root.relativize(file).nn.toString, hex)
+                . sortBy(_(0))
 
-          val first = emitted(Paths.get(out.encode.s).nn)
-          (first.length > 1, first == emitted(Paths.get(again.encode.s).nn))
-        . check(_ == (true, true))
+              val first = emitted(Paths.get(out.encode.s).nn)
+              (first.length > 1, first == emitted(Paths.get(again.encode.s).nn))
+          . check(_ == (true, true))
 
-        val linked: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+          temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+            val linked: soundness.Path on Linux = handle.stem
 
-        test(m"Linking a JAR produces a runnable artifact"):
-          Toolchain(jarEdges()).produce
-            ( Deliverable.Emission(out, classpath),
-              Universe.Classfile,
-              anthology.Jar,
-              linked,
-              List(jarOptions.name(t"app.jar")),
-              List(EntryPoint(Fqcn(t"Main"))) )
-          . pipe: artifact =>
-              mute[Exec.Event](sh"java -jar $artifact".exec[Text]()).trim
-        . check(_ == t"hello")
-
-        // The whole point of source nodes: one path from `.scala` text to a runnable JAR, with
-        // the compiler and the bundler both selected by the path rather than named by the caller.
-        test(m"One path compiles Scala source and runs the JAR it produces"):
-          val toolchain = Toolchain(List(scalacEdges.classfile(Scalac[3.8](Nil))), jarEdges())
-          val staged: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
-
-          toolchain.produce
-            ( Deliverable.Sources(Map(t"hello.scala" -> source), classpath),
-              Language.Scala,
-              anthology.Jar,
-              staged,
-              List(jarOptions.name(t"whole.jar")),
-              List(EntryPoint(Fqcn(t"Main"))) )
-
-          . pipe: artifact =>
-              mute[Exec.Event](sh"java -jar $artifact".exec[Text]()).trim
-        . check(_ == t"hello")
-
-        test(m"A compile edge reports a failing compilation with its diagnostics"):
-          val toolchain = Toolchain(List(scalacEdges.classfile(Scalac[3.8](Nil))))
-          val staged: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
-          val bad = Map(t"bad.scala" -> t"class Bad:\n  def x: Int = \"nope\"\n")
-
-          capture[Link.Error]
-            ( toolchain.produce
-                ( Deliverable.Sources(bad, classpath),
-                  Language.Scala,
+            test(m"Linking a JAR produces a runnable artifact"):
+              Toolchain(jarEdges()).produce
+                ( Deliverable.Emission(out, classpath),
                   Universe.Classfile,
-                  staged ) )
+                  anthology.Jar,
+                  linked,
+                  List(jarOptions.name(t"app.jar")),
+                  List(EntryPoint(Fqcn(t"Main"))) )
+              . pipe: artifact =>
+                  mute[Exec.Event](sh"java -jar $artifact".exec[Text]()).trim
+            . check(_ == t"hello")
 
-          . reason match
-              case Link.Error.Reason.CompilationFailed(notices) =>
-                notices.filter(_.importance == Importance.Error).map(_.file).to[List]
+            // The whole point of source nodes: one path from `.scala` text to a runnable JAR, with
+            // the compiler and the bundler both selected by the path rather than named by the caller.
+            test(m"One path compiles Scala source and runs the JAR it produces"):
+              val toolchain = Toolchain(List(scalacEdges.classfile(Scalac[3.8](Nil))), jarEdges())
+              temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+                val staged: soundness.Path on Linux = handle.stem
 
-              case _ => List()
-        . check(_ == List(t"bad.scala"))
+                toolchain.produce
+                  ( Deliverable.Sources(Map(t"hello.scala" -> source), classpath),
+                    Language.Scala,
+                    anthology.Jar,
+                    staged,
+                    List(jarOptions.name(t"whole.jar")),
+                    List(EntryPoint(Fqcn(t"Main"))) )
 
-        test(m"Linking as DEX produces an archive containing classes.dex"):
-          Toolchain(dexEdges()).produce
-            ( Deliverable.Emission(out, classpath), Universe.Classfile, Dex, linked )
-          . pipe: artifact =>
-              val zipfile = java.util.zip.ZipFile(artifact.encode.s)
+                . pipe: artifact =>
+                    mute[Exec.Event](sh"java -jar $artifact".exec[Text]()).trim
+            . check(_ == t"hello")
 
-              try zipfile.entries.nn.asScala.exists(_.getName == "classes.dex")
-              finally zipfile.close()
-        . check(_ == true)
+            test(m"A compile edge reports a failing compilation with its diagnostics"):
+              val toolchain = Toolchain(List(scalacEdges.classfile(Scalac[3.8](Nil))))
+              temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+                val staged: soundness.Path on Linux = handle.stem
+                val bad = Map(t"bad.scala" -> t"class Bad:\n  def x: Int = \"nope\"\n")
 
-        // Warm-session compilations: one retained compiler context across several compiles.
-        val alpha = Map(t"alpha.scala" -> t"class Alpha:\n  def x: Int = 42\n")
-        val beta = Map(t"beta.scala" -> t"class Beta:\n  def alpha: Alpha = Alpha()\n")
+                capture[Link.Error]
+                  ( toolchain.produce
+                      ( Deliverable.Sources(bad, classpath),
+                        Language.Scala,
+                        Universe.Classfile,
+                        staged ) )
 
-        test(m"A session's second compile sees the first compile's symbols"):
-          Scalac[3.8](Nil).on(classpath).session:
-            alpha.compile().complete()
-            compilation.compile(beta).complete()
-        . check(_ == CompileResult.Success)
+                . reason match
+                    case Link.Error.Reason.CompilationFailed(notices) =>
+                      notices.filter(_.importance == Importance.Error).map(_.file).to[List]
 
-        test(m"A failed compile leaves the session usable"):
-          Scalac[3.8](Nil).on(classpath).session:
-            val bad = Map(t"gamma.scala" -> t"class Gamma:\n  def x: Int = \"nope\"\n")
-            val failure = bad.compile().complete()
-            (failure, alpha.compile().complete())
-        . check(_ == (CompileResult.Failure, CompileResult.Success))
+                    case _ => List()
+            . check(_ == List(t"bad.scala"))
 
-        test(m"A session compile exposes its classfiles in memory"):
-          Scalac[3.8](Nil).on(classpath).session:
-            val process = alpha.compile()
-            process.complete()
-            process.classfiles.stdlib.contains(t"/Alpha.class".as[Path on Classpath])
-        . check(_ == true)
+            test(m"Linking as DEX produces an archive containing classes.dex"):
+              Toolchain(dexEdges()).produce
+                ( Deliverable.Emission(out, classpath), Universe.Classfile, Dex, linked )
+              . pipe: artifact =>
+                  val zipfile = java.util.zip.ZipFile(artifact.encode.s)
 
-        test(m"A session compile's updates report progress and completion"):
-          Scalac[3.8](Nil).on(classpath).session:
-            val process = alpha.compile()
-            process.complete()
+                  try zipfile.entries.nn.asScala.exists(_.getName == "classes.dex")
+                  finally zipfile.close()
+            . check(_ == true)
 
-            var progressed: Int = 0
+            // Warm-session compilations: one retained compiler context across several compiles.
+            val alpha = Map(t"alpha.scala" -> t"class Alpha:\n  def x: Int = 42\n")
+            val beta = Map(t"beta.scala" -> t"class Beta:\n  def alpha: Alpha = Alpha()\n")
 
-            process.updates.records.each:
-              case CompileProcess.Update.Progressed(_) => progressed += 1
-              case CompileProcess.Update.Noticed(_)    => ()
+            test(m"A session's second compile sees the first compile's symbols"):
+              Scalac[3.8](Nil).on(classpath).session:
+                alpha.compile().complete()
+                compilation.compile(beta).complete()
+            . check(_ == CompileResult.Success)
 
-            progressed > 0
-        . check(_ == true)
+            test(m"A failed compile leaves the session usable"):
+              Scalac[3.8](Nil).on(classpath).session:
+                val bad = Map(t"gamma.scala" -> t"class Gamma:\n  def x: Int = \"nope\"\n")
+                val failure = bad.compile().complete()
+                (failure, alpha.compile().complete())
+            . check(_ == (CompileResult.Failure, CompileResult.Success))
 
-        val saved: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
-        Files.createDirectories(Paths.get(saved.encode.s))
+            test(m"A session compile exposes its classfiles in memory"):
+              Scalac[3.8](Nil).on(classpath).session:
+                val process = alpha.compile()
+                process.complete()
+                process.classfiles.stdlib.contains(t"/Alpha.class".as[Path on Classpath])
+            . check(_ == true)
 
-        test(m"Saved session output appears on disk"):
-          Scalac[3.8](Nil).on(classpath).session:
-            alpha.compile().complete()
-            val process = beta.compile()
-            process.complete()
-            process.save(saved)
+            test(m"A session compile's updates report progress and completion"):
+              Scalac[3.8](Nil).on(classpath).session:
+                val process = alpha.compile()
+                process.complete()
 
-          Files.exists(Paths.get(saved.encode.s).nn.resolve("Beta.class"))
-        . check(_ == true)
+                var progressed: Int = 0
+
+                process.updates.records.each:
+                  case CompileProcess.Update.Progressed(_) => progressed += 1
+                  case CompileProcess.Update.Noticed(_)    => ()
+
+                progressed > 0
+            . check(_ == true)
+
+            temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+              val saved: soundness.Path on Linux = handle.stem
+
+              test(m"Saved session output appears on disk"):
+                Scalac[3.8](Nil).on(classpath).session:
+                  alpha.compile().complete()
+                  val process = beta.compile()
+                  process.complete()
+                  process.save(saved)
+
+                Files.exists(Paths.get(saved.encode.s).nn.resolve("Beta.class"))
+              . check(_ == true)
 
     // The native counterpart—compile with the Scala Native plugin, link with clang, and run the
     // binary—which runs only when the plugin and runtime JARs are cached and clang is present.
     nativeSetup().let: (plugin, classpath) =>
       supervise:
         given NirPlugin = plugin
-        val out: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
-        Files.createDirectories(Paths.get(out.encode.s))
+        temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+          val out: soundness.Path on Linux = handle.stem
 
-        val process =
-          Scalac[3.8](Nil).targeting[Universe.Nir]
-            (classpath)(Map(t"hello.scala" -> source), out)
+          val process =
+            Scalac[3.8](Nil).targeting[Universe.Nir]
+              (classpath)(Map(t"hello.scala" -> source), out)
 
-        test(m"A native compilation succeeds"):
-          process.complete()
-        . check(_ == CompileResult.Success)
+          test(m"A native compilation succeeds"):
+            process.complete()
+          . check(_ == CompileResult.Success)
 
-        test(m"A native compilation emits nir"):
-          Files.list(Paths.get(out.encode.s)).nn.iterator.nn.asScala
-          . exists(_.getFileName.nn.toString.endsWith(".nir"))
-        . assert(_ == true)
+          test(m"A native compilation emits nir"):
+            Files.list(Paths.get(out.encode.s)).nn.iterator.nn.asScala
+            . exists(_.getFileName.nn.toString.endsWith(".nir"))
+          . assert(_ == true)
 
-        safely(nativeEdges()).let: edges =>
-          val linked: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+          safely(nativeEdges()).let: edges =>
+            temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+              val linked: soundness.Path on Linux = handle.stem
 
-          test(m"Linking natively produces a runnable binary"):
-            val host =
-              Triple.host.or(panic(m"the host triple always resolves on a supported platform"))
+              test(m"Linking natively produces a runnable binary"):
+                val host =
+                  Triple.host.or(panic(m"the host triple always resolves on a supported platform"))
 
-            Toolchain(edges).produce
-              ( Deliverable.Emission(out, classpath),
-                Universe.Nir,
-                Binary(host),
-                linked,
-                Nil,
-                List(EntryPoint(Fqcn(t"Main"))) )
-            . pipe: artifact =>
-                mute[Exec.Event](sh"$artifact".exec[Text]()).trim
-          . check(_ == t"hello")
+                Toolchain(edges).produce
+                  ( Deliverable.Emission(out, classpath),
+                    Universe.Nir,
+                    Binary(host),
+                    linked,
+                    Nil,
+                    List(EntryPoint(Fqcn(t"Main"))) )
+                . pipe: artifact =>
+                    mute[Exec.Event](sh"$artifact".exec[Text]()).trim
+              . check(_ == t"hello")
 
     // `Kotlinc` itself is not constructed here: linking it resolves the compiler classes, which
     // are a compile-only dependency, so the options are checked through the flags they carry.
@@ -667,45 +674,47 @@ object Tests extends Suite(m"Anthology Tests"):
     kotlinToolchain().let: stdlib =>
       supervise:
         val classpath = LocalClasspath(List(Classpath.Entry.Jar(stdlib))*)
-        val out: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+        temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+          val out: soundness.Path on Linux = handle.stem
 
-        val greeting: Text =
-          t"""|package demo
-              |
-              |fun greet(): String = "hello"
-              |""".s.stripMargin.tt
+          val greeting: Text =
+            t"""|package demo
+                |
+                |fun greet(): String = "hello"
+                |""".s.stripMargin.tt
 
-        val process = Kotlinc[2.4](Nil)(classpath)(Map(t"demo/Greeting.kt" -> greeting), out)
+          val process = Kotlinc[2.4](Nil)(classpath)(Map(t"demo/Greeting.kt" -> greeting), out)
 
-        test(m"A Kotlin compilation succeeds"):
-          process.complete()
-        . check(_ == CompileResult.Success)
+          test(m"A Kotlin compilation succeeds"):
+            process.complete()
+          . check(_ == CompileResult.Success)
 
-        test(m"A Kotlin compilation emits classfiles"):
-          Files.list(Paths.get(out.encode.s, "demo")).nn.iterator.nn.asScala
-          . exists(_.getFileName.nn.toString == "GreetingKt.class")
-        . assert(_ == true)
+          test(m"A Kotlin compilation emits classfiles"):
+            Files.list(Paths.get(out.encode.s, "demo")).nn.iterator.nn.asScala
+            . exists(_.getFileName.nn.toString == "GreetingKt.class")
+          . assert(_ == true)
 
-        val broken: Text =
-          t"""|package demo
-              |
-              |fun broken(): Int = "not an integer"
-              |""".s.stripMargin.tt
+          val broken: Text =
+            t"""|package demo
+                |
+                |fun broken(): Int = "not an integer"
+                |""".s.stripMargin.tt
 
-        val out2: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
-        val failing = Kotlinc[2.4](Nil)(classpath)(Map(t"demo/Broken.kt" -> broken), out2)
+          temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+            val out2: soundness.Path on Linux = handle.stem
+            val failing = Kotlinc[2.4](Nil)(classpath)(Map(t"demo/Broken.kt" -> broken), out2)
 
-        test(m"A Kotlin compilation with a type error fails"):
-          failing.complete()
-        . check(_ == CompileResult.Failure)
+            test(m"A Kotlin compilation with a type error fails"):
+              failing.complete()
+            . check(_ == CompileResult.Failure)
 
-        test(m"A Kotlin error is counted"):
-          failing.errors
-        . assert(_ > 0)
+            test(m"A Kotlin error is counted"):
+              failing.errors
+            . assert(_ > 0)
 
-        test(m"A Kotlin notice names the source it was given"):
-          failing.notices.map(_.file).to[List]
-        . assert(_ == List(t"demo/Broken.kt"))
+            test(m"A Kotlin notice names the source it was given"):
+              failing.notices.map(_.file).to[List]
+            . assert(_ == List(t"demo/Broken.kt"))
 
   // Locates the Kotlin standard library on this suite's classpath, when the Kotlin compiler is
   // there to be driven. The compiler never implies the standard library, so a compilation must be

@@ -45,6 +45,7 @@ import probates.cancelProbate
 import strategies.throwUnsafely
 import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
+import filesystemBackends.javaBaseFilesystem
 import threading.platformThreading
 
 object Tests extends Suite(m"Degustation Tests"):
@@ -86,36 +87,38 @@ object Tests extends Suite(m"Degustation Tests"):
     val classpath = LocalClasspath(jars.map { jar => Classpath.Entry.Jar(jar.toString.tt) }*)
     val libraryPaths = jars.map { jar => Text(jar.toString) }
 
-    def compileWith(source: Text, deps: LocalClasspath, libs: scala.List[Text], sjs: Boolean)
-    :   (List[Text], List[Text], Text) =
+    // The fixture is compiled into a scratch directory that lives only as long as the loan, so
+    // whatever reads the TASTy files does so inside `use`; only the result escapes.
+    def compileWith[result]
+        (source: Text, deps: LocalClasspath, libs: scala.List[Text], sjs: Boolean)
+        (use: (List[Text], List[Text]) => result)
+    :   result =
 
       supervise:
-        val out: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
-        Files.createDirectories(Paths.get(out.encode.s))
+        temporaryDirectory[soundness.Path on Linux].open[Scratch](Read & Write): handle ?=>
+          val out: soundness.Path on Linux = handle.stem
 
-        val process =
-          if sjs then
-            Scalac[3.9](List()).targeting[Universe.Sjsir]
-              (deps)(Map(t"fixture.scala" -> source), out)
-          else Scalac[3.9](List())(deps)(Map(t"fixture.scala" -> source), out)
+          val process =
+            if sjs then
+              Scalac[3.9](List()).targeting[Universe.Sjsir]
+                (deps)(Map(t"fixture.scala" -> source), out)
+            else Scalac[3.9](List())(deps)(Map(t"fixture.scala" -> source), out)
 
-        process.complete()
+          process.complete()
 
-        val tastyFiles = Files.walk(Paths.get(out.encode.s)).nn.iterator.nn.asScala
-          . to(scala.List)
-          . filter { path => path.toString.endsWith(".tasty") }
-          . map { path => Text(path.toString) }
+          val tastyFiles = Files.walk(Paths.get(out.encode.s)).nn.iterator.nn.asScala
+            . to(scala.List)
+            . filter { path => path.toString.endsWith(".tasty") }
+            . map { path => Text(path.toString) }
 
-        (tastyFiles.to(List), (Text(out.encode.s) :: libs).to(List), out.encode)
+          use(tastyFiles.to(List), (Text(out.encode.s) :: libs).to(List))
 
-    def compile(source: Text): (List[Text], List[Text]) =
-      val (tastyFiles, classpath0, _) = compileWith(source, classpath, libraryPaths, false)
-      (tastyFiles, classpath0)
+    def atomize(source: Text): scala.List[ScalaAtom] =
+      compileWith(source, classpath, libraryPaths, false): (tastyFiles, classpath0) =>
+        Inspection.atomize(tastyFiles, classpath0).stdlib
 
     def listing(source: Text): scala.List[(Text, Text)] =
-      val (tastyFiles, classpath0) = compile(source)
-
-      Inspection.atomize(tastyFiles, classpath0).stdlib
+      atomize(source)
       . map { atom => (atom.key, atom.encoding.serialize[Hex]) }
       . sortBy(_(0).s)
 
@@ -269,8 +272,7 @@ object Tests extends Suite(m"Degustation Tests"):
             |inline def nested(n: Int): Int = outer(n) + 1
             |""".s.stripMargin.tt
 
-      val (tastyFiles, classpath0) = compile(source)
-      val atoms = Inspection.atomize(tastyFiles, classpath0).stdlib
+      val atoms = atomize(source)
 
       def refs(prefix: String): scala.collection.immutable.Set[String] =
         atoms
