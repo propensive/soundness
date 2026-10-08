@@ -30,34 +30,30 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package parasite
 
-export
-  parasite
-  . { AdaptiveSupervisor, async, Async, cancel, Probate, Daemon, daemon,
-      Destruction, Fault, Fulfillment, Hook, intercept,
-      Interceptable, JavascriptSupervisor, Monitor, monitor, Observation, Os, Perseverance,
-      PlatformSupervisor, PooledSupervisor, PoolingSupervisor, Promise,
-      relent, retry, Schedulable, Shutdown, sleep, snooze, Strand, supervise, Supervisor, Task,
-      task, Tenacity, Threading, Timeout, Transgression, contain, Containment, VirtualSupervisor,
-      Worker,
-      AsyncTactic, Remedy, concurrent, concurrently }
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
-package threading:
-  export parasite.threading.{adaptiveThreading, javascriptThreading, platformThreading,
-      pooledThreading, virtualThreading}
+import java.lang as jl
 
-package probates:
-  export parasite.probates.{awaitProbate, cancelProbate, failProbate, panicProbate}
+import anticipation.*
+import prepositional.*
 
-package supervisors:
-  export parasite.supervisors.globalSupervisor
+// How long, in nanoseconds from now, a pause expressed as `Self` should last. This is what lets
+// `snooze` and `sleep` take either a duration or an instant: a duration's generic form is already
+// a nanosecond count, and an instant's is the epoch milliseconds at which to wake. A bare `Long`
+// is neither until a unit is chosen by name (`abstractables.millisecondsAbstractable`,
+// `abstractables.epochMillisecondsAbstractable`, ...); with both a duration unit and the
+// instant reading in scope, it satisfies both givens below and is rejected as ambiguous, which
+// is the point: nothing at the call site could say which was meant.
+trait Schedulable extends Typeclass:
+  def nanoseconds(value: Self): Long
 
-object unsupervised:
-  export parasite.unsupervised.orphanMonitor
+  extension (value: Self) def remaining: Long = nanoseconds(value)
 
-package retryTenacities:
-  export
-    parasite.retryTenacities
-    . { exponentialFiveTimesTenacity, exponentialForeverTenacity, exponentialTenTimesTenacity,
-        fixedNoDelayFiveTimesTenacity, fixedNoDelayForeverTenacity, fixedNoDelayTenTimesTenacity }
+object Schedulable:
+  given duration: [time: Abstractable across Durations to Long] => time is Schedulable = _.generic
+
+  given instant: [time: Abstractable across Instants to Long] => time is Schedulable =
+    time => (time.generic - jl.System.currentTimeMillis)*1_000_000L

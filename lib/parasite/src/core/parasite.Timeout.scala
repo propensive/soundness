@@ -59,7 +59,7 @@ object Timeout:
     def process(expiry: Atomic[Long]): Task[Unit] = caps.unsafe.unsafeAssumePure:
       task(n"timeout"):
         while jl.System.currentTimeMillis < expiry()
-        do sleep(expiry())
+        do snooze(expiry())
 
         expiry() = Long.MinValue
         action
