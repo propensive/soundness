@@ -65,9 +65,6 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
     new org.snakeyaml.engine.v2.api.Load(
       org.snakeyaml.engine.v2.api.LoadSettings.builder().nn.build().nn)
 
-  def parseWithSnakeYaml(text: String): Object =
-    snakeYaml.loadFromString(text).nn
-
   def run(): Unit =
     val bench = Bench()
 
@@ -86,7 +83,7 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
         '{ Yaml.Parser.parseTracked(ypsiloid.Benchmarks.yamlText1) }
 
       bench(m"Parse with snakeyaml-engine")(target = 1*Second, operationSize = size1):
-        '{ ypsiloid.Benchmarks.parseWithSnakeYaml(ypsiloid.Benchmarks.yamlText1.s) }
+        '{ ypsiloid.Benchmarks.snakeYaml.loadFromString(ypsiloid.Benchmarks.yamlText1.s).nn }
 
     suite(m"Block-mapping config (~30 keys)"):
       bench(m"Parse with Ypsiloid")
@@ -97,7 +94,7 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
         '{ Yaml.Parser.parseTracked(ypsiloid.Benchmarks.yamlText2) }
 
       bench(m"Parse with snakeyaml-engine")(target = 1*Second, operationSize = size2):
-        '{ ypsiloid.Benchmarks.parseWithSnakeYaml(ypsiloid.Benchmarks.yamlText2.s) }
+        '{ ypsiloid.Benchmarks.snakeYaml.loadFromString(ypsiloid.Benchmarks.yamlText2.s).nn }
 
     suite(m"Block sequence of 100 records"):
       bench(m"Parse with Ypsiloid")
@@ -108,7 +105,7 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
         '{ Yaml.Parser.parseTracked(ypsiloid.Benchmarks.yamlText3) }
 
       bench(m"Parse with snakeyaml-engine")(target = 1*Second, operationSize = size3):
-        '{ ypsiloid.Benchmarks.parseWithSnakeYaml(ypsiloid.Benchmarks.yamlText3.s) }
+        '{ ypsiloid.Benchmarks.snakeYaml.loadFromString(ypsiloid.Benchmarks.yamlText3.s).nn }
 
     suite(m"Deeply nested block structures"):
       bench(m"Parse with Ypsiloid")
@@ -119,7 +116,7 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
         '{ Yaml.Parser.parseTracked(ypsiloid.Benchmarks.yamlText4) }
 
       bench(m"Parse with snakeyaml-engine")(target = 1*Second, operationSize = size4):
-        '{ ypsiloid.Benchmarks.parseWithSnakeYaml(ypsiloid.Benchmarks.yamlText4.s) }
+        '{ ypsiloid.Benchmarks.snakeYaml.loadFromString(ypsiloid.Benchmarks.yamlText4.s).nn }
 
     suite(m"Heavy quoted strings"):
       bench(m"Parse with Ypsiloid")
@@ -130,7 +127,7 @@ object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
         '{ Yaml.Parser.parseTracked(ypsiloid.Benchmarks.yamlText5) }
 
       bench(m"Parse with snakeyaml-engine")(target = 1*Second, operationSize = size5):
-        '{ ypsiloid.Benchmarks.parseWithSnakeYaml(ypsiloid.Benchmarks.yamlText5.s) }
+        '{ ypsiloid.Benchmarks.snakeYaml.loadFromString(ypsiloid.Benchmarks.yamlText5.s).nn }
 
   // Fixture 1: small flow document — measures fixed overhead, dispatch.
   lazy val yamlText1: Text = t"""{name: Alice, age: 30, items: [1, 2, 3]}"""

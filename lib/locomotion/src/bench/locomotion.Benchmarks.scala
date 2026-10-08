@@ -79,7 +79,8 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // ---------------------------------------------------------------------------
 
   // Generic field walk — the analog of `read[Protobuf]`. The accumulated
-  // checksum is returned so the JIT cannot dead-code-eliminate the reads.
+  // checksum is returned so the JIT cannot dead-code-eliminate the reads. A method
+  // rather than a staged body, since `TimingMain` times it too.
   def walkWithProtobufJava(bytes: scala.Array[Byte]): Long =
     import com.google.protobuf.WireFormat
     val in = com.google.protobuf.CodedInputStream.newInstance(bytes).nn
@@ -95,55 +96,6 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
         case _                                    => in.skipField(tag)
       tag = in.readTag()
     checksum
-
-  // protobuf-java encoders for a representative subset of corpora (small scalar
-  // message, repeated nested messages, packed varints). The remaining corpora
-  // (map entries, deep nesting) are omitted on the protobuf-java side because
-  // hand-writing their wire format adds bulk without changing the picture.
-  def encodeSmallWithProtobufJava: scala.Array[Byte] =
-    val out = new _root_.java.io.ByteArrayOutputStream(32)
-    val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
-    cos.writeInt64(1, 42L)
-    cos.writeString(2, "Alice")
-    cos.writeBool(3, true)
-    cos.flush()
-    out.toByteArray.nn
-
-  def encodeUsersWithProtobufJava: scala.Array[Byte] =
-    val out = new _root_.java.io.ByteArrayOutputStream(8192)
-    val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
-    var index = 0
-    while index < 100 do
-      val sub = new _root_.java.io.ByteArrayOutputStream(64)
-      val scos = com.google.protobuf.CodedOutputStream.newInstance(sub).nn
-      scos.writeInt64(1, index.toLong)
-      scos.writeString(2, s"user$index")
-      scos.writeString(3, s"user$index@example.com")
-      scos.writeBool(4, (index & 1) == 0)
-      scos.writeString(5, if index%10 == 0 then "admin" else "user")
-      scos.flush()
-      val message = sub.toByteArray.nn
-      cos.writeTag(1, com.google.protobuf.WireFormat.WIRETYPE_LENGTH_DELIMITED)
-      cos.writeUInt32NoTag(message.length)
-      cos.writeRawBytes(message)
-      index += 1
-    cos.flush()
-    out.toByteArray.nn
-
-  def encodeIntsWithProtobufJava: scala.Array[Byte] =
-    val out = new _root_.java.io.ByteArrayOutputStream(4096)
-    val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
-    val body = new _root_.java.io.ByteArrayOutputStream(4096)
-    val bcos = com.google.protobuf.CodedOutputStream.newInstance(body).nn
-    var index = 0
-    while index < 1000 do { bcos.writeInt64NoTag((index*37 + 1).toLong); index += 1 }
-    bcos.flush()
-    val packed = body.toByteArray.nn
-    cos.writeTag(1, com.google.protobuf.WireFormat.WIRETYPE_LENGTH_DELIMITED)
-    cos.writeUInt32NoTag(packed.length)
-    cos.writeRawBytes(packed)
-    cos.flush()
-    out.toByteArray.nn
 
   // ---------------------------------------------------------------------------
   // Corpora — in-memory values, then their encoded bytes, then plain Array[Byte]
@@ -210,26 +162,6 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   lazy val raw5: scala.Array[Byte] = bytes5.asInstanceOf[scala.Array[Byte]]
   lazy val raw6: scala.Array[Byte] = bytes6.asInstanceOf[scala.Array[Byte]]
 
-  // The benchmark bodies are staged and recompiled by superlunary, so the
-  // contextual `Tactic[Protobuf.Error]` and the derived codec instances must be
-  // resolved here (where the imports are in scope) rather than inside the quoted
-  // body. Each operation therefore goes through a fully-qualified helper method
-  // the quote simply invokes.
-
-  def decodeSmall:      Small      = Chain(bytes1).read[Small in Protobuf]
-  def decodeUsers:      Users      = Chain(bytes2).read[Users in Protobuf]
-  def decodeLogs:       Logs       = Chain(bytes3).read[Logs in Protobuf]
-  def decodeInts:       Ints       = Chain(bytes4).read[Ints in Protobuf]
-  def decodeAttributes: Attributes = Chain(bytes5).read[Attributes in Protobuf]
-  def decodeNested:     Deep1      = Chain(bytes6).read[Deep1 in Protobuf]
-
-  def encodeSmall:      Data = value1.in[Protobuf].encode
-  def encodeUsers:      Data = value2.in[Protobuf].encode
-  def encodeLogs:       Data = value3.in[Protobuf].encode
-  def encodeInts:       Data = value4.in[Protobuf].encode
-  def encodeAttributes: Data = value5.in[Protobuf].encode
-  def encodeNested:     Data = value6.in[Protobuf].encode
-
   def run(): Unit =
     val bench = Bench()
 
@@ -251,7 +183,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     suite(m"Decode small message (3 fields)"):
       bench(m"Decode (typed) with Locomotion")
         ( target = 1*Second, operationSize = size1 ):
-        '{ locomotion.Benchmarks.decodeSmall }
+        '{ Chain(locomotion.Benchmarks.bytes1).read[Small in Protobuf] }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size1):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw1) }
@@ -259,7 +191,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     suite(m"Decode 100 user records"):
       bench(m"Decode (typed) with Locomotion")
         ( target = 1*Second, operationSize = size2 ):
-        '{ locomotion.Benchmarks.decodeUsers }
+        '{ Chain(locomotion.Benchmarks.bytes2).read[Users in Protobuf] }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size2):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw2) }
@@ -267,7 +199,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     suite(m"Decode 500 log entries"):
       bench(m"Decode (typed) with Locomotion")
         ( target = 1*Second, operationSize = size3 ):
-        '{ locomotion.Benchmarks.decodeLogs }
+        '{ Chain(locomotion.Benchmarks.bytes3).read[Logs in Protobuf] }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size3):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw3) }
@@ -275,7 +207,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     suite(m"Decode 1000 packed integers"):
       bench(m"Decode (typed) with Locomotion")
         ( target = 1*Second, operationSize = size4 ):
-        '{ locomotion.Benchmarks.decodeInts }
+        '{ Chain(locomotion.Benchmarks.bytes4).read[Ints in Protobuf] }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size4):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw4) }
@@ -283,7 +215,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     suite(m"Decode 50-entry string map"):
       bench(m"Decode (typed) with Locomotion")
         ( target = 1*Second, operationSize = size5 ):
-        '{ locomotion.Benchmarks.decodeAttributes }
+        '{ Chain(locomotion.Benchmarks.bytes5).read[Attributes in Protobuf] }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size5):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw5) }
@@ -291,14 +223,17 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     suite(m"Decode 5-level nested message"):
       bench(m"Decode (typed) with Locomotion")
         ( target = 1*Second, operationSize = size6 ):
-        '{ locomotion.Benchmarks.decodeNested }
+        '{ Chain(locomotion.Benchmarks.bytes6).read[Deep1 in Protobuf] }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size6):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw6) }
 
     // -------------------------------------------------------------------------
     // Encode. Locomotion encode is the `Min` baseline; protobuf-java rows are
-    // provided for the corpora with a hand-written low-level encoder.
+    // provided for a representative subset of corpora (small scalar message,
+    // repeated nested messages, packed varints), with a hand-written low-level
+    // encoder: hand-writing the wire format of map entries and deep nesting adds
+    // bulk without changing the picture.
     // `operationSize` is the size of the encoded output, the usual throughput
     // denominator for serialisation.
     // -------------------------------------------------------------------------
@@ -306,38 +241,82 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     suite(m"Encode small message (3 fields)"):
       bench(m"Encode with Locomotion")
         ( target = 1*Second, operationSize = size1 ):
-        '{ locomotion.Benchmarks.encodeSmall }
+        '{ locomotion.Benchmarks.value1.in[Protobuf].encode }
 
       bench(m"Encode with protobuf-java")(target = 1*Second, operationSize = size1):
-        '{ locomotion.Benchmarks.encodeSmallWithProtobufJava }
+        '{
+            val out = new _root_.java.io.ByteArrayOutputStream(32)
+            val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
+            cos.writeInt64(1, 42L)
+            cos.writeString(2, "Alice")
+            cos.writeBool(3, true)
+            cos.flush()
+            out.toByteArray.nn
+        }
 
     suite(m"Encode 100 user records"):
       bench(m"Encode with Locomotion")
         ( target = 1*Second, operationSize = size2 ):
-        '{ locomotion.Benchmarks.encodeUsers }
+        '{ locomotion.Benchmarks.value2.in[Protobuf].encode }
 
       bench(m"Encode with protobuf-java")(target = 1*Second, operationSize = size2):
-        '{ locomotion.Benchmarks.encodeUsersWithProtobufJava }
+        '{
+            val out = new _root_.java.io.ByteArrayOutputStream(8192)
+            val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
+            var index = 0
+
+            while index < 100 do
+              val sub = new _root_.java.io.ByteArrayOutputStream(64)
+              val scos = com.google.protobuf.CodedOutputStream.newInstance(sub).nn
+              scos.writeInt64(1, index.toLong)
+              scos.writeString(2, s"user$index")
+              scos.writeString(3, s"user$index@example.com")
+              scos.writeBool(4, (index & 1) == 0)
+              scos.writeString(5, if index%10 == 0 then "admin" else "user")
+              scos.flush()
+              val message = sub.toByteArray.nn
+              cos.writeTag(1, com.google.protobuf.WireFormat.WIRETYPE_LENGTH_DELIMITED)
+              cos.writeUInt32NoTag(message.length)
+              cos.writeRawBytes(message)
+              index += 1
+
+            cos.flush()
+            out.toByteArray.nn
+        }
 
     suite(m"Encode 1000 packed integers"):
       bench(m"Encode with Locomotion")
         ( target = 1*Second, operationSize = size4 ):
-        '{ locomotion.Benchmarks.encodeInts }
+        '{ locomotion.Benchmarks.value4.in[Protobuf].encode }
 
       bench(m"Encode with protobuf-java")(target = 1*Second, operationSize = size4):
-        '{ locomotion.Benchmarks.encodeIntsWithProtobufJava }
+        '{
+            val out = new _root_.java.io.ByteArrayOutputStream(4096)
+            val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
+            val body = new _root_.java.io.ByteArrayOutputStream(4096)
+            val bcos = com.google.protobuf.CodedOutputStream.newInstance(body).nn
+            var index = 0
+            while index < 1000 do { bcos.writeInt64NoTag((index*37 + 1).toLong); index += 1 }
+            bcos.flush()
+            val packed = body.toByteArray.nn
+            cos.writeTag(1, com.google.protobuf.WireFormat.WIRETYPE_LENGTH_DELIMITED)
+            cos.writeUInt32NoTag(packed.length)
+            cos.writeRawBytes(packed)
+            cos.flush()
+            out.toByteArray.nn
+        }
 
     suite(m"Encode 500 log entries (Locomotion only)"):
       bench(m"Encode with Locomotion")
         ( target = 1*Second, operationSize = size3 ):
-        '{ locomotion.Benchmarks.encodeLogs }
+        '{ locomotion.Benchmarks.value3.in[Protobuf].encode }
 
     suite(m"Encode 50-entry string map (Locomotion only)"):
       bench(m"Encode with Locomotion")
         ( target = 1*Second, operationSize = size5 ):
-        '{ locomotion.Benchmarks.encodeAttributes }
+        '{ locomotion.Benchmarks.value5.in[Protobuf].encode }
 
     suite(m"Encode 5-level nested message (Locomotion only)"):
       bench(m"Encode with Locomotion")
         ( target = 1*Second, operationSize = size6 ):
-        '{ locomotion.Benchmarks.encodeNested }
+        '{ locomotion.Benchmarks.value6.in[Protobuf].encode }

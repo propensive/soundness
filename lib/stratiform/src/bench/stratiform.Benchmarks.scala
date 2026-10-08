@@ -175,10 +175,6 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
   // the parser's arena, and once encoded from case classes, whose atoms are strings. `show`
   // renders the whole text first; `emit` streams chunks from a fiber, or pushes them
   // synchronously as text or as UTF-8 bytes; and `lend` lends its own UTF-8 blocks.
-  private val utf8Charset: java.nio.charset.Charset = java.nio.charset.StandardCharsets.UTF_8.nn
-
-  private def sink(): java.io.OutputStream = java.io.OutputStream.nullOutputStream().nn
-
   lazy val logsParsed: Tel = Tel.parse(example5Bytes)
 
   lazy val logsEncoded: Tel =
@@ -193,29 +189,7 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
 
     BLogs(List.tabulate(500)(log(_))).encode
 
-  def writeWhole(tel: Tel): Unit = sink().write(tel.show.s.getBytes(utf8Charset).nn)
-
-  def stream(tel: Tel): Unit =
-    val out = sink()
-    supervise(Tel.emit(tel).foreach(chunk => out.write(chunk.s.getBytes(utf8Charset).nn)))
-
-  def push(tel: Tel): Unit =
-    val out = sink()
-    Tel.emit[Text](tel, chunk => out.write(chunk.s.getBytes(utf8Charset).nn))
-
-  def pushBytes(tel: Tel): Unit =
-    val out = sink()
-    Tel.emit[Data](tel, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
-
-  def lend(tel: Tel): Unit =
-    val out = sink()
-
-    Tel.lend(tel): region =>
-      interval =>
-        val extent: Interval = interval
-        val raw = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
-        out.write(raw, extent.start.n0, extent.size)
-
+  // Called by the agreement checks in `run()` as well as by the staged bodies.
   def decodeBintelAst(): BOrders = Bintel.read[BOrders](bintelData)
   def decodeBintelInlined(): BOrders = Bintel.parse[BOrders](bintelData)
 
@@ -237,37 +211,93 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
       val size = stratiform.Benchmarks.logsParsed.show.s.getBytes("UTF-8").nn.length*Byte
 
       bench(m"show, then write the whole text")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.writeWhole(stratiform.Benchmarks.logsParsed) }
+        '{
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val text = stratiform.Benchmarks.logsParsed.show.s
+            java.io.OutputStream.nullOutputStream().nn.write(text.getBytes(utf8).nn)
+        }
 
       bench(m"emit, streamed chunk by chunk")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.stream(stratiform.Benchmarks.logsParsed) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+
+            supervise:
+              Tel.emit(stratiform.Benchmarks.logsParsed).foreach: chunk =>
+                out.write(chunk.s.getBytes(utf8).nn)
+        }
 
       bench(m"emit, pushed synchronously")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.push(stratiform.Benchmarks.logsParsed) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val tel = stratiform.Benchmarks.logsParsed
+            Tel.emit[Text](tel, chunk => out.write(chunk.s.getBytes(utf8).nn))
+        }
 
       bench(m"emit, pushed as UTF-8 bytes")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.pushBytes(stratiform.Benchmarks.logsParsed) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val tel = stratiform.Benchmarks.logsParsed
+            Tel.emit[Data](tel, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+        }
 
       bench(m"lend, borrowed UTF-8 blocks")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.lend(stratiform.Benchmarks.logsParsed) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+
+            Tel.lend(stratiform.Benchmarks.logsParsed): region =>
+              interval =>
+                val extent: Interval = interval
+                val raw = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+                out.write(raw, extent.start.n0, extent.size)
+        }
 
     suite(m"Write 500 log entries, encoded from case classes, to an output stream"):
       val size = stratiform.Benchmarks.logsEncoded.show.s.getBytes("UTF-8").nn.length*Byte
 
       bench(m"show, then write the whole text")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.writeWhole(stratiform.Benchmarks.logsEncoded) }
+        '{
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val text = stratiform.Benchmarks.logsEncoded.show.s
+            java.io.OutputStream.nullOutputStream().nn.write(text.getBytes(utf8).nn)
+        }
 
       bench(m"emit, streamed chunk by chunk")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.stream(stratiform.Benchmarks.logsEncoded) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+
+            supervise:
+              Tel.emit(stratiform.Benchmarks.logsEncoded).foreach: chunk =>
+                out.write(chunk.s.getBytes(utf8).nn)
+        }
 
       bench(m"emit, pushed synchronously")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.push(stratiform.Benchmarks.logsEncoded) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
+            val tel = stratiform.Benchmarks.logsEncoded
+            Tel.emit[Text](tel, chunk => out.write(chunk.s.getBytes(utf8).nn))
+        }
 
       bench(m"emit, pushed as UTF-8 bytes")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.pushBytes(stratiform.Benchmarks.logsEncoded) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+            val tel = stratiform.Benchmarks.logsEncoded
+            Tel.emit[Data](tel, chunk => out.write(chunk.asInstanceOf[scala.Array[Byte]]))
+        }
 
       bench(m"lend, borrowed UTF-8 blocks")(target = 1*Second, operationSize = size):
-        '{ stratiform.Benchmarks.lend(stratiform.Benchmarks.logsEncoded) }
+        '{
+            val out = java.io.OutputStream.nullOutputStream().nn
+
+            Tel.lend(stratiform.Benchmarks.logsEncoded): region =>
+              interval =>
+                val extent: Interval = interval
+                val raw = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+                out.write(raw, extent.start.n0, extent.size)
+        }
 
     suite(m"Example 1 — web-app servlet config"):
       val size = example1Bytes.length*Byte
