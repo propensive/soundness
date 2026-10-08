@@ -2559,3 +2559,24 @@ captures corpus before/after running at the time of writing.
 - GOTCHA: a long multi-round `-k` build on one `out/` produced a false "Found:
   Addressable.bytes / Required: Array[Byte]^{data} is Addressable" error in galilei after an
   unrelated round; `./mill clean galilei.core` cleared it (stale zinc under cc, again).
+
+## Test runs no longer leak scratch directories (2026-10-08)
+
+Five days of attests and `make test` runs had left 6,859 UUID-named directories (56 GiB) in the
+user's temp directory — the suites create `temporaryDirectory / Uuid()` scratch directories
+(anthology's native-linker tests alone leave ~345 MiB each) and never delete them. A full disk
+then shows up as the beneficence suite-index rename flake, fume's "no test suites were found on
+the classpath", and random test failures. Two fixes:
+
+- At the source: galilei already had the loan — `parent.open[Scratch](Read & Write): handle ?=>`
+  creates a uniquely-named directory, lends a handle, and deletes it when the scope ends — so
+  the 15 sites in anthology, delicious and degustation use it
+  (`temporaryDirectory[Path on Linux].open[Scratch](Read & Write): handle ?=> val out = handle.stem`;
+  the suites need `import filesystemBackends.javaBaseFilesystem` for the openable). No new API.
+- At the harness: every fume invocation in the Makefile (`test`, `test.%`, `ci`, `bench`,
+  `bench.%` — and so `make attest`) goes through `etc/ci/fume-run.sh`, which gives the run a
+  private daemon (`XDG_RUNTIME_DIR`; the recipe formerly applied by hand) and a private
+  temporary directory (`-Djava.io.tmpdir` through `JAVA_TOOL_OPTIONS`, which is what
+  `systemTemporaryDirectory` resolves — the JVM ignores `TMPDIR` on macOS — plus `TMPDIR` for
+  subprocesses), runs `fume quit` and removes both when the run ends, however it ends. Nothing
+  a suite forgets can outlive the run, and no daemon is left behind.
