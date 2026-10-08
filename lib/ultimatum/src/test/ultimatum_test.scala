@@ -70,7 +70,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
     suite(m"FlowExtent"):
       // A standalone extent over a muted parent; mutation tests never flush, so
       // the parent surface is unused.
-      def extent(width: Int, height: Int): FlowExtent =
+      def extent(width: Int, height: Int): FlowExtent^ =
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         FlowExtent(TerminalBoard(width, height), Rect(0, 0, width, height))
 
@@ -113,7 +113,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"Out output through the extent (an Stdio) flows into the grid"):
         val flow = extent(5, 1)
-        given Stdio = flow
+        given (Stdio^{flow}) = flow
         Out.print(t"hi")
         flow.render
       . assert(_ == t"hi   ")
@@ -377,8 +377,11 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // root just before yielding the event, mimicking the live size update.
       test(m"a WindowSize event re-tiles to the new terminal size"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
-        val root = ResizableRoot(10, 4)
+        val rootSize = ResizableRoot.Size(10, 4)
+        val root = ResizableRoot(rootSize)
 
+        // The iterator shrinks the root through its size cell, not the root itself, which
+        // `Form` holds exclusively while it runs.
         val resize = new Iterator[Terminal.Event]:
           @scala.caps.unsafe.untrackedCaptures
           private var pending = true
@@ -386,7 +389,8 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
           def next() =
             pending = false
-            root.resize(10, 2)
+            rootSize.width = 10
+            rootSize.height = 2
             Terminal.Info.WindowSize(2, 10)
 
         Form(root, Occupancy.Fullscreen, stack(panel()(Out.print(t"A")), panel()(Out.print(t"B")))).run(resize)
@@ -1026,7 +1030,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       . assert(_ == t"A         \nB         ")
 
     suite(m"Focus indication"):
-      def grid(): FlowExtent =
+      def grid(): FlowExtent^ =
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         FlowExtent(TerminalBoard(12, 2), Rect(0, 0, 12, 2))
 
@@ -1631,20 +1635,28 @@ object Tests extends Suite(m"Ultimatum Tests"):
 // A test-only root `Board` that paints into a fixed in-memory grid but reports a
 // settable size, so a layout can be re-tiled to a smaller `width`/`height` and
 // the composed screen read back.
-class ResizableRoot(maxWidth: Int, maxHeight: Int)(using Stdio) extends Board:
-  private val flow = FlowExtent(TerminalBoard(maxWidth, maxHeight), Rect(0, 0, maxWidth, maxHeight))
-  @scala.caps.unsafe.untrackedCaptures
-  private var size: (Int, Int) = (maxWidth, maxHeight)
+// A root whose reported size a test can change from outside, as a terminal resize would:
+// the size lives in a plain cell the test's event iterator writes, so the iterator never
+// holds the root, which `Form` holds exclusively while it runs.
+object ResizableRoot:
+  class Size(initialWidth: Int, initialHeight: Int):
+    // Written from the test's iterator while the root is in use: test-fixture state, untracked.
+    @scala.caps.unsafe.untrackedCaptures
+    var width: Int = initialWidth
+    @scala.caps.unsafe.untrackedCaptures
+    var height: Int = initialHeight
 
-  def resize(width: Int, height: Int): Unit = size = (width, height)
-  def width: Int = size._1
-  def height: Int = size._2
-  def move(column: Ordinal, row: Ordinal): Unit = flow.move(column, row)
-  def put(text: Text): Unit = flow.put(text)
-  def put(text: Teletype): Unit = flow.put(text)
-  def clear(): Unit = flow.clear()
-  def clearLine(): Unit = flow.clearLine()
-  def cursor(visible: Boolean): Unit = flow.cursor(visible)
-  def showCaret(column: Ordinal, row: Ordinal): Unit = flow.showCaret(column, row)
-  def flush(): Unit = flow.flush()
+class ResizableRoot(size: ResizableRoot.Size)(using Stdio) extends Board:
+  private val flow = FlowExtent(TerminalBoard(size.width, size.height), Rect(0, 0, size.width, size.height))
+
+  def width: Int = size.width
+  def height: Int = size.height
+  update def move(column: Ordinal, row: Ordinal): Unit = flow.move(column, row)
+  update def put(text: Text): Unit = flow.put(text)
+  update def put(text: Teletype): Unit = flow.put(text)
+  update def clear(): Unit = flow.clear()
+  update def clearLine(): Unit = flow.clearLine()
+  update def cursor(visible: Boolean): Unit = flow.cursor(visible)
+  update def showCaret(column: Ordinal, row: Ordinal): Unit = flow.showCaret(column, row)
+  update def flush(): Unit = flow.flush()
   def render: Text = flow.render

@@ -45,16 +45,16 @@ import turbulence.*
 // `Out.println` in a panel body flows into it.
 class FlowExtent(parent: Board^, val rect: Rect)
 extends GridSurface(rect.width, rect.height), Extent:
-  def cursor(visible: Boolean): Unit = parent.cursor(visible)
+  update def cursor(visible: Boolean): Unit = parent.cursor(visible)
 
-  def showCaret(column: Ordinal, row2: Ordinal): Unit =
+  update def showCaret(column: Ordinal, row2: Ordinal): Unit =
     parent.showCaret((rect.left + column.n0).z, (rect.top + row2.n0).z)
 
   // Paint the whole grid onto the parent surface, one row at a time. The parent
   // is not itself flushed here — the caller presents the root once after every
   // panel has composited, so an inline root emits a complete frame rather than
   // once per panel.
-  def flush(): Unit =
+  update def flush(): Unit =
     var r = 0
 
     while r < height do
@@ -74,4 +74,15 @@ extends GridSurface(rect.width, rect.height), Extent:
   val err = Stdio.MutePrintStream
   val in = Stdio.MuteInputStream
 
-  override def print(text: Text): Unit = put(text)
+  // `Stdio.print` is a read-only method by its interface, yet this extent's `print` draws on
+  // the grid — an update, which a read-only method of a stateful class may not perform. Until
+  // `Stdio` is itself stateful, the write is delegated to a plain (non-stateful) writer that
+  // owns an exclusive reference to this surface, held as a pure field so that `print` is not an
+  // access to that reference. The writer never leaves the object. [stdio-readonly]
+  private val writer: FlowExtent.Writer = scala.caps.unsafe.unsafeAssumePure(FlowExtent.Writer(this))
+
+  override def print(text: Text): Unit = writer.write(text)
+
+object FlowExtent:
+  private[ultimatum] class Writer(board: Board^):
+    def write(text: Text): Unit = board.put(text)

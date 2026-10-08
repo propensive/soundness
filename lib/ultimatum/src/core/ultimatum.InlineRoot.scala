@@ -48,16 +48,14 @@ object InlineRoot:
   // fixed at the caller's site rather than inside the library.
   def apply(terminal: Terminal)
     ( using anchoring: InlineAnchoring, growth: InlineGrowth, shrink: InlineShrink )
-  :   InlineRoot^{terminal} =
+  :   InlineRoot^{terminal.rd, scala.caps.any} =
 
-    // Both thunks only read the same terminal's dimensions; no aliased writer.
-    scala.caps.unsafe.unsafeAssumeSeparate:
-      new InlineRoot(() => terminal.knownColumns, () => terminal.knownRows)
-        ( using terminal.stdio, anchoring, growth, shrink )
+    new InlineRoot(() => terminal.knownColumns, () => terminal.knownRows)
+      ( using terminal.stdio, anchoring, growth, shrink )
 
   def apply(width: Int, height: Int)
     ( using Stdio, InlineAnchoring, InlineGrowth, InlineShrink )
-  :   InlineRoot =
+  :   InlineRoot^ =
 
     new InlineRoot(() => width, () => height)
 
@@ -77,56 +75,48 @@ object InlineRoot:
 // additionally wraps the session in the alternate screen buffer. `widthFn`/`heightFn`
 // supply the live terminal columns and rows, re-read every frame; an oversize block
 // is clamped to the terminal height.
-class InlineRoot(widthFn: () => Int, heightFn: () => Int)
+class InlineRoot(widthFn: () ->{scala.caps.any.rd} Int, heightFn: () ->{scala.caps.any.rd} Int)
   ( using stdio:     Stdio,
           anchoring: InlineAnchoring,
           growth:    InlineGrowth,
           shrink:    InlineShrink )
 extends GridSurface(widthFn(), 0):
-  @scala.caps.unsafe.untrackedCaptures
   private var presentedRows: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var presentedColumns: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var presentedTop: Int = 1
 
   // For `Inline` anchoring: the row offset (from the block's top) at which the cursor was
   // left after the last frame, so the next frame can rise back to the top relatively.
-  @scala.caps.unsafe.untrackedCaptures
   private var flowCursorRow: Int = 0
 
   // Start top-anchored only when the policy pins the block from the first frame;
   // `TopAfterResize` starts bottom-docked and flips on the first `invalidate`.
-  @scala.caps.unsafe.untrackedCaptures
   private var topAnchored: Boolean = anchoring match
     case InlineAnchoring.TopAnchored | InlineAnchoring.Fullscreen      => true
     case InlineAnchoring.BottomDocked | InlineAnchoring.TopAfterResize => false
     case InlineAnchoring.Flow                                        => false
-
-  @scala.caps.unsafe.untrackedCaptures
   private var started: Boolean = false
 
   // Where the terminal reported the parked cursor cell after the last resize's reflow
   // (1-based screen coordinates), stashed by the driver from the anchor query's reply
   // and consumed by the next resized present — so a stale anchor can never inform a
   // later resize it didn't measure.
-  @scala.caps.unsafe.untrackedCaptures
   private var anchorCell: Optional[(Int, Int)] = Unset
 
   // Stash the anchor reply for the next resized present. A reflowing terminal keeps
   // the cursor attached to the logical cell it was on, and every present parks the
   // cursor at the caret cell, so this reveals where that known cell landed.
-  def anchor(row: Int, column: Int): Unit = anchorCell = (row, column)
+  update def anchor(row: Int, column: Int): Unit = anchorCell = (row, column)
 
   override def width: Int = widthFn()
 
   // Resize the grid to the measured block height, clamped to the live terminal
   // height; called by the driver before compositing each frame.
-  def reframe(width: Int, height: Int): Unit = reshape(width, height.min(heightFn()))
+  update def reframe(width: Int, height: Int): Unit = reshape(width, height.min(heightFn()))
 
   // Cursor visibility is deferred like the caret: recorded now, applied by `flush`,
   // so a focused editor shows it and a focused menu keeps it hidden.
-  def cursor(visible: Boolean): Unit = caretVisible = visible
+  update def cursor(visible: Boolean): Unit = caretVisible = visible
 
   // `invalidate()` (inherited) marks the next present as a resize repaint; the driver
   // calls it on every `WindowSize` event (a width-only resize counts too). Under
@@ -139,7 +129,7 @@ extends GridSurface(widthFn(), 0):
   // a prior block. Intended for use after the caller has cleared the screen — e.g. an
   // `Inline` driver that, on a terminal resize, wipes the reflowed screen and restarts
   // the flow from the top rather than trying to reconcile the old, now-garbled layout.
-  def reset(): Unit =
+  update def reset(): Unit =
     started = false
     presentedRows = 0
     presentedColumns = 0
@@ -154,7 +144,7 @@ extends GridSurface(widthFn(), 0):
 
   // Record the caret's block-local target; `flush` positions the hardware cursor at
   // the corresponding absolute screen cell.
-  override def showCaret(column: Ordinal, row2: Ordinal): Unit =
+  override update def showCaret(column: Ordinal, row2: Ordinal): Unit =
     caretColumn = column.n0
     caretRow = row2.n0
 
@@ -165,7 +155,7 @@ extends GridSurface(widthFn(), 0):
   // recorded `flowCursorRow`. Growing scrolls the screen (and the block) naturally as the
   // last row's newline hits the foot; shrinking clears the freed rows below, holding the
   // block's top so the box stays put (freed space becomes blank screen below, not a gap).
-  private def flushInline(): Unit =
+  private update def flushInline(): Unit =
     val columns = gridWidth.min(widthFn())
     val h       = height
     invalidated = false
@@ -224,10 +214,10 @@ extends GridSurface(widthFn(), 0):
 
     Out.print(frame.toString.tt)
 
-  def flush(): Unit =
+  update def flush(): Unit =
     if anchoring == InlineAnchoring.Flow then flushInline() else flushDocked()
 
-  private def flushDocked(): Unit =
+  private update def flushDocked(): Unit =
     val rows    = heightFn()
     val columns = gridWidth.min(widthFn())
     val h       = height
@@ -246,7 +236,7 @@ extends GridSurface(widthFn(), 0):
 
     validated.let(presentDiff(dockTop, columns, h, _)).or(flushDockedFull(rows, columns, h))
 
-  private def flushDockedFull(rows: Int, columns: Int, h: Int): Unit =
+  private update def flushDockedFull(rows: Int, columns: Int, h: Int): Unit =
     val resized = invalidated
     invalidated = false
 
@@ -410,7 +400,7 @@ extends GridSurface(widthFn(), 0):
   // model whose column matches; when both match take the safer (upper) minimum; when
   // neither matches the terminal did something unmodellable, so return `Unset` and let
   // the caller fall back to today's clears. The result is clamped to the screen.
-  private def residueTop(anchorRow: Int, anchorColumn: Int, newColumns: Int, rows: Int)
+  private update def residueTop(anchorRow: Int, anchorColumn: Int, newColumns: Int, rows: Int)
   :   Optional[Int] =
 
     snapshot.let: snap =>
@@ -494,7 +484,7 @@ extends GridSurface(widthFn(), 0):
   // subsequent output continues after the rendered block (like a submitted prompt).
   // A `Fullscreen` session leaves the alternate screen buffer, restoring what was
   // there before it started.
-  def finish(): Unit =
+  update def finish(): Unit =
     // `Inline` drops the cursor onto a fresh line right below the block, RELATIVELY (from
     // the caret down to the block's last row, then a newline that scrolls if at the foot),
     // so the following output — and the next inline block — continues immediately after it.
