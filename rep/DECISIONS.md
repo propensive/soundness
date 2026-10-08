@@ -2737,3 +2737,28 @@ sequence in the suite body and the tests assert on the pure results — the shap
 stateful-under-test needs, and the same reason facsimile's `DataBuilder` (held by local
 `def out`/`string`/`name` helpers in `ContentWriter`) was tried and reverted: the
 `[closure-capture]` tag, next to `[cursor-snapshot]` and `[aliased-read]`.
+
+## The derivation anchors were already honest (2026-10-08)
+
+Cluster B2 — `given x: T is Json.Encodable = caps.unsafe.unsafeAssumePure(Json.EncodableDerivation.derived)`
+and the `Decodable` twin under a local `ThrowTactic` — was 148 seals in exegesis (76), vivisection
+(45) and espionage (27). The plan's suspicion (`wisteria.Derivation.derived` is declared bare and
+`derivedOne` narrows once) was right: removing every one of them compiles clean from scratch on
+3.9.1-dev-p19, with all three suites green. The seals dated from the fresh-`conjunction` /
+Unscoped-`ThrowTactic` era (`DECISIONS.md` "a fresh-capturing object field forces the owner to
+extend Capability"); with `Emit` shared and the tactics `SharedUnscoped` (#2195) and the
+derivation's result typed by `derivedOne`, a companion `given` of a derived codec is a plain
+pure value. `unsafeAssumePure` 509 → 361. The `[field-purity]` tag is retired before it was
+ever applied; the remaining `unsafeAssumePure` in these files are the RPC proxies
+(`channel.proxy[T]`), `this`-launders and the `JsonRpc` dispatch — cluster G.
+
+The registries themselves stay erased. `rep/sepcheck-probes/p18-registry-slot.neg.scala` tests
+the comment on `Lsp.Registry` ("a union mentioning a context-function type freshens its
+capture sets at every adaptation") with a typed slot, `var ready: Slot[Handler] | Null` on a
+stateful registry where `Handler = (workspace: Workspace^) ?=> Unit`: the `^` on the handler's
+*parameter* becomes a per-instance `registry.any` once the type sits in a field, so no handler
+can be assigned ("capability `any` cannot flow into capture set {registry.any}") and no
+workspace can be passed to one read back. Not a leftover from an older checker, and not a
+`Stateful` question: a field whose type mentions a fresh parameter capability has no
+expressible type. Tag `[field-fresh-param]`; 69 + 6 + 7 sites (exegesis `Registry`,
+espionage `Registry`, `LspSession`'s initialisation record is the same shape one level up).
