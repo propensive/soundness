@@ -92,7 +92,6 @@ object Gaugeable:
   class Fixture[status: Gaugeable as design](reading: Reading[status]) extends ultimatum.Fixture:
     // Monotonic, so that a spinner does not jump when the system clock is stepped; and per-gauge,
     // so that two spinners started at different moments stay independently phased.
-    @scala.caps.unsafe.untrackedCaptures
     private val started: Long = System.nanoTime
 
     private def tick: Tick =

@@ -2533,3 +2533,29 @@ captures corpus before/after running at the time of writing.
   `caps.SharedUnscoped` from `scala/caps/package.scala` into `library-proscala` (beside
   `Spreadable`, which Soundness already references), keeping `scala-library` byte-identical to
   upstream.
+
+## Mechanical leg 1: benches checked by default; the `untrackedCaptures` primitives (2026-10-07)
+
+- `trait Benchmarks` routes through `settings.sep` like `Component`/`Tests`, with a `checking`
+  hook a bench overrides to opt down (`identity` or `settings.cc`) with its reason. Of 23
+  benches, 12 compile under separation checking unchanged; `breviloquence` and `zephyrine` are
+  capture-checked only (their suite objects' exclusive payload fields / a read-only `Cursor`
+  prefix); nine (gesticulate, jacinta, locomotion, murmuration, pneumatic, scintillate,
+  stratiform, turbulence, ulysses) stay unchecked for one shape — the suite `object` holds its
+  exclusive payload arrays as fields ("needs to extend Capability since it has fields … with
+  `any`"). The fix is breviloquence.bench's frozen `^{}` payloads, per bench; recorded under
+  `safety-6`.
+- The `@untrackedCaptures` sweep's first probe: stripping the annotation from every
+  primitive-typed `var`/`val` tree-wide (140 sites) and letting the compiler say which it still
+  needs. Only TWO were unnecessary (ultimatum.gauges, classes already `Stateful`); eight
+  more looked removable until the TEST modules compiled — they were locals captured by
+  closures, which the library-only rounds never checked (compile `test.assembly` in every
+  round). The other 130 guard `var`s in classes that are NOT `Stateful`, and adding `Stateful`
+  brings the whole read-only/`update def` discipline (xylophone's `XmlParser`: callers get
+  `^{any.rd}`, ~30 mutators to convert) — the real `safety-1` recipe, one class per PR, not a
+  sweep. `untrackedCaptures` 509 → 507.
+- Proscala pinned at 3.9.1-dev-p19 (`caps.SharedUnscoped` relocated to proscala-library,
+  lenient lookup); the tree, every bench and every test module compile on it.
+- GOTCHA: a long multi-round `-k` build on one `out/` produced a false "Found:
+  Addressable.bytes / Required: Array[Byte]^{data} is Addressable" error in galilei after an
+  unrelated round; `./mill clean galilei.core` cleared it (stale zinc under cc, again).
