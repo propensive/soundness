@@ -73,26 +73,23 @@ object Benchmarks extends Suite(m"Polysyllabic benchmarks"):
   // timing.
   lazy val warAndPeace: Text = cp"/polysyllabic/warandpeace.txt".read[Text]
 
-  // Wrap the whole text to 80 columns with English hyphenation in scope. The
-  // returned line count keeps the JIT honest — anything dead-coded would
-  // collapse this to zero.
-  def wrapAt80(text: Text): Int = Paragraph.fit[Text](Array(text), 80, TextAlignment.Left).size
-
-  // Insert soft-hyphens at every admissible break point in every word. Exercises
-  // the Liang algorithm on every word, regardless of column width — a tighter
-  // signal for changes to the algorithm or its data structure than the wrap-
-  // at-width benchmark, which only triggers hyphenation on overflow words.
-  def hyphenateAll(text: Text): Int = text.hyphenate(hyphen = '-').s.length
-
   def run(): Unit =
     val bench = Bench()
     val size: Quantity[Bytes[1]] = warAndPeace.s.getBytes("UTF-8").nn.length*Byte
 
     suite(m"Hyphenation throughput"):
+      // Wraps the whole text to 80 columns with English hyphenation in scope. The returned line
+      // count keeps the JIT honest — anything dead-coded would collapse this to zero.
       bench(m"wrap War and Peace at 80 cols with English hyphenation")
         ( target = 5*Second, operationSize = size ):
-        '{ polysyllabic.Benchmarks.wrapAt80(polysyllabic.Benchmarks.warAndPeace) }
+        '{
+            Paragraph.fit[Text](Array(polysyllabic.Benchmarks.warAndPeace), 80, TextAlignment.Left)
+            . size
+        }
 
+      // Inserts soft-hyphens at every admissible break point in every word, exercising the Liang
+      // algorithm on every word regardless of column width: a tighter signal for changes to the
+      // algorithm or its data structure than wrapping, which only hyphenates overflow words.
       bench(m"hyphenate every word in War and Peace")
         ( target = 5*Second, operationSize = size ):
-        '{ polysyllabic.Benchmarks.hyphenateAll(polysyllabic.Benchmarks.warAndPeace) }
+        '{ polysyllabic.Benchmarks.warAndPeace.hyphenate(hyphen = '-').s.length }

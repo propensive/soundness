@@ -67,7 +67,11 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
   lazy val dept: Department = Department(t"Eng", emp, List(emp, emp, emp))
   lazy val org:  Org = Org(t"Acme", addr, List(dept, dept, dept))
 
-  // ─── helpers (called from quoted bench bodies) ────────────────────────────
+  // ─── optic applications ───────────────────────────────────────────────────
+
+  // Each `lens` and `lensFold` call is made here rather than inside a quoted bench body: the
+  // optic for each path segment comes from `Optic.deref`, a transparent inline macro given,
+  // which a quote cannot expand.
 
   def singleDepth4(o: Org): Org =
     o.lens(_.depts(Prim).lead.addr.city = t"X")
@@ -114,13 +118,6 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
       ( _.depts(Each).lead.role.name  = t"Boss",
         _.depts(Each).lead.role.count = 0 )
 
-  // Manual map-and-copy: the theoretical optimum for `_.depts(Each).lead.role.…`.
-  def eachTwoLeavesManual(o: Org): Org =
-    o.copy(depts = o.depts.map { d =>
-      val r = d.lead.role
-      d.copy(lead = d.lead.copy(role = r.copy(name = t"Boss", count = 0)))
-    })
-
   // ─── field-only fusion targets (no traversals) ────────────────────────────
 
   // Single field-only update at depth 2 — this exercises the macro on the simplest
@@ -143,18 +140,6 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
       ( _.name  = t"N",
         _.hq    = addr,
         _.depts = Nil )
-
-  // Comparison baselines for the field-only fusion targets above. `Manual` uses direct
-  // `.copy(...)` — the theoretical optimum any optic library should be measured against.
-
-  def singleFieldDepth2Manual(o: Org): Org =
-    o.copy(hq = o.hq.copy(city = t"X"))
-
-  def threeSharedHqManual(o: Org): Org =
-    o.copy(hq = o.hq.copy(street = t"S", city = t"C", postcode = t"P"))
-
-  def threeDisjointTopManual(o: Org): Org =
-    o.copy(name = t"N", hq = addr, depts = Nil)
 
   // True pre-fusion baselines — call `lensFold` (the original `def lens` body),
   // bypassing the macro entirely. Single-call multi-lambda foldLeft semantics.
@@ -197,6 +182,8 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
       bench(m"4 updates, no shared prefix")(target = 1*Second):
         '{ panopticon.Benchmarks.fourDisjoint(panopticon.Benchmarks.org) }
 
+    // The manual rows use direct `.copy(...)`: the optimum any optic library should be measured
+    // against.
     suite(m"Traversal"):
       bench(m"Each ×2 — fused")(target = 1*Second):
         '{ panopticon.Benchmarks.eachTwoLeaves(panopticon.Benchmarks.org) }
@@ -205,7 +192,15 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
         '{ panopticon.Benchmarks.eachTwoLeavesFold(panopticon.Benchmarks.org) }
 
       bench(m"Each ×2 — manual .copy + .map (optimum)")(target = 1*Second):
-        '{ panopticon.Benchmarks.eachTwoLeavesManual(panopticon.Benchmarks.org) }
+        '{
+            val org = panopticon.Benchmarks.org
+
+            org.copy(depts = org.depts.map { department =>
+              val role = department.lead.role
+              val lead = department.lead
+              department.copy(lead = lead.copy(role = role.copy(name = t"Boss", count = 0)))
+            })
+        }
 
     suite(m"Field-only fusion (no traversals)"):
       bench(m"single update — fused")(target = 1*Second):
@@ -215,7 +210,10 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
         '{ panopticon.Benchmarks.singleFieldDepth2Fold(panopticon.Benchmarks.org) }
 
       bench(m"single update — manual .copy (optimum)")(target = 1*Second):
-        '{ panopticon.Benchmarks.singleFieldDepth2Manual(panopticon.Benchmarks.org) }
+        '{
+            val org = panopticon.Benchmarks.org
+            org.copy(hq = org.hq.copy(city = t"X"))
+        }
 
       bench(m"3 shared-prefix — fused")(target = 1*Second):
         '{ panopticon.Benchmarks.threeSharedHq(panopticon.Benchmarks.org) }
@@ -224,7 +222,10 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
         '{ panopticon.Benchmarks.threeSharedHqFold(panopticon.Benchmarks.org) }
 
       bench(m"3 shared-prefix — manual .copy (optimum)")(target = 1*Second):
-        '{ panopticon.Benchmarks.threeSharedHqManual(panopticon.Benchmarks.org) }
+        '{
+            val org = panopticon.Benchmarks.org
+            org.copy(hq = org.hq.copy(street = t"S", city = t"C", postcode = t"P"))
+        }
 
       bench(m"3 disjoint — fused")(target = 1*Second):
         '{ panopticon.Benchmarks.threeDisjointTop(panopticon.Benchmarks.org) }
@@ -233,4 +234,7 @@ object Benchmarks extends Suite(m"Panopticon benchmarks"):
         '{ panopticon.Benchmarks.threeDisjointTopFold(panopticon.Benchmarks.org) }
 
       bench(m"3 disjoint — manual .copy (optimum)")(target = 1*Second):
-        '{ panopticon.Benchmarks.threeDisjointTopManual(panopticon.Benchmarks.org) }
+        '{
+            val org = panopticon.Benchmarks.org
+            org.copy(name = t"N", hq = panopticon.Benchmarks.addr, depts = Nil)
+        }
