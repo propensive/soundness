@@ -118,64 +118,11 @@ object Benchmarks extends Suite(m"Murmuration benchmarks"):
 
     List.from(array)
 
-  // ─── the sorts ────────────────────────────────────────────────────────────
-
-  // One method per algorithm, each with its own selector imported: the choice is made here,
-  // in ordinary code, so that a benchmark body is a plain call and the staged tree it
-  // compiles contains nothing but the sort.
-  def timsorted(data: List[Int]): List[Int] =
-    import sortingAlgorithms.timsort
-    data.sort
-
-  // The same sort with the `List`'s `Countable` available — it is gated behind `linearSize`,
-  // counting a list being a traversal of it — so the scratch array is allocated once at the
-  // right size rather than grown by a builder.
-  def timsortedCounted(data: List[Int]): List[Int] =
-    import sortingAlgorithms.timsort
-    import denominative.dysasymptotics.linearSize
-    data.sort
-
-  def powersorted(data: List[Int]): List[Int] =
-    import sortingAlgorithms.powersort
-    data.sort
-
-  def quicksorted(data: List[Int]): List[Int] =
-    import sortingAlgorithms.quicksort
-    data.sort
-
-  def heapsorted(data: List[Int]): List[Int] =
-    import sortingAlgorithms.heapsort
-    data.sort
-
-  def insertionSorted(data: List[Int]): List[Int] =
-    import sortingAlgorithms.insertionSort
-    data.sort
-
-  def bubbleSorted(data: List[Int]): List[Int] =
-    import sortingAlgorithms.bubbleSort
-    data.sort
-
   // The same data as a `Sequence`, for the question of whether the receiver's shape matters.
   private val sequences: scm.HashMap[(Int, Int), Sequence[Int]] = scm.HashMap()
 
   def sequence(shape: Int, size: Int): Sequence[Int] =
     sequences.getOrElseUpdate((shape, size), Sequence.from(data(shape, size).stdlib))
-
-  def timsortedSequence(data: Sequence[Int]): Sequence[Int] =
-    import sortingAlgorithms.timsort
-    data.sort
-
-  // Sorting an array in place: no copy into scratch, no rebuild afterwards, and no decoration
-  // of elements with their keys — the whole of what a collection's sort pays extra for. The
-  // fresh copy is the measurement's own cost, since sorting in place consumes its input: the
-  // second benchmark below measures that copy alone, so the difference between them is the sort.
-  def sortedInPlace(data: List[Int]): Int =
-    import sortingAlgorithms.timsort
-    val array = copyOf(data)
-    array.sort()
-    array.length
-
-  def copyOnly(data: List[Int]): Int = copyOf(data).length
 
   // The same, over elements that are references rather than primitives.
   private val tickets: scm.HashMap[(Int, Int), List[Ticket]] = scm.HashMap()
@@ -183,46 +130,13 @@ object Benchmarks extends Suite(m"Murmuration benchmarks"):
   def ticketData(shape: Int, size: Int): List[Ticket] =
     tickets.getOrElseUpdate((shape, size), data(shape, size).map(Ticket(_)))
 
-  def sortedTickets(data: List[Ticket]): List[Ticket] =
-    import sortingAlgorithms.timsort
-    data.sort
-
-  def sortedTicketsInPlace(data: List[Ticket]): Int =
-    import sortingAlgorithms.timsort
-    val array = copyOfTickets(data)
-    array.sort()
-    array.length
-
-  def copyTicketsOnly(data: List[Ticket]): Int = copyOfTickets(data).length
-
-  private def copyOfTickets(data: List[Ticket]): Array[Ticket] =
-    val array = Array.allocate[Ticket](data.stdlib.length)
-    val iterator = data.stdlib.iterator
-    var index = 0
-
-    while iterator.hasNext do
-      array(index) = iterator.next()
-      index += 1
-
-    array
-
-  private def copyOf(data: List[Int]): Array[Int] =
-    val array = Array.allocate[Int](data.stdlib.length)
-    val iterator = data.stdlib.iterator
-    var index = 0
-
-    while iterator.hasNext do
-      array(index) = iterator.next()
-      index += 1
-
-    array
 
   // What the inline comparison operators are worth. `Bytes` is opaque over `Long` and has both
   // an inline `Orderable` — through which `<` expands to a primitive comparison — and a runtime
   // `Comparable`, so the same comparison can be made both ways over the same data. An
   // `Array[Bytes]` is a `long[]`, so the operator path never leaves the stack, while the
   // typeclass path boxes both operands and answers with a `Comparison`.
-  private val sizes0: scala.Array[Bytes] =
+  val sizes0: scala.Array[Bytes] =
     val array = new scala.Array[Bytes](10000)
     var state = 12345L
     var index = 0
@@ -234,52 +148,11 @@ object Benchmarks extends Suite(m"Murmuration benchmarks"):
 
     array
 
-  def ascendingByOperator: Int =
-    var count = 0
-    var index = 1
+  // ─── key layouts for `order` ─────────────────────────────────────────────
 
-    while index < sizes0.length do
-      if sizes0(index - 1) < sizes0(index) then count += 1
-      index += 1
-
-    count
-
-  def ascendingByComparable: Int =
-    val comparable = summon[Bytes is Comparable]
-    var count = 0
-    var index = 1
-
-    while index < sizes0.length do
-      if comparable.less(sizes0(index - 1), sizes0(index)) then count += 1
-      index += 1
-
-    count
-
-  // What boxing still costs. Sorting an array of a primitive in place boxes every element into
-  // the scratch the algorithms work on and unboxes it back afterwards, since one algorithm body
-  // serves every element type. The JDK's own primitive sort is the zero-boxing bound — a
-  // different algorithm (dual-pivot quicksort), so ours is the quicksort here too.
-  def quicksortIntArrayInPlace(data: List[Int]): Int =
-    import sortingAlgorithms.quicksort
-    val array = copyOf(data)
-    array.sort()
-    array.length
-
-  def jdkPrimitiveSort(data: List[Int]): Int =
-    val array = copyOf(data)
-    ju.Arrays.sort(array.raw)
-    array.length
-
-  // And what the decoration costs: `order` pairs each element with its key in an `Entry`, which
-  // `sort` does not, since there an element is its own key.
-  def sortWithoutKeys(data: List[Int]): List[Int] =
-    import sortingAlgorithms.timsort
-    data.sort
-
-  def orderByIdentity(data: List[Int]): List[Int] =
-    import sortingAlgorithms.timsort
-    data.order(x => x)
-
+  // Kept as methods rather than written in the staged bodies, since `run` checks that they
+  // agree with one another and with the library before any of them is timed.
+  //
   // Three layouts for what `order` has to do — carry each element's key beside it while the
   // elements are permuted — sorted by one and the same quicksort, so that only the layout
   // differs. The elements are references and the keys primitive, which is the shape `order` is
@@ -540,37 +413,6 @@ object Benchmarks extends Suite(m"Murmuration benchmarks"):
       quicksortParallel(keys, values, from, right + 1)
       quicksortParallel(keys, values, left, to)
 
-  // Everything the library's path does apart from the sort itself: drain the traversal into a
-  // scratch array and rebuild a `List` from it. Subtracting this from the sort leaves the sort.
-  def roundTrip(data: List[Int]): Int =
-    val array =
-      data.stdlib.iterator.map(_.asInstanceOf[AnyRef])
-      . toArray(using scala.reflect.ClassTag.AnyRef)
-
-    List.from(array.iterator.map(_.asInstanceOf[Int])).stdlib.length
-
-  // The same for the standard library's `sorted`, which knows how many elements are coming: one
-  // allocation of exactly the right size, filled by `copyToArray`, and a builder told the size.
-  def stdlibRoundTrip(data: List[Int]): Int =
-    val list = data.stdlib
-    val array = new scala.Array[AnyRef](list.length)
-    list.asInstanceOf[scala.collection.immutable.List[AnyRef]].copyToArray(array)
-    val builder = scala.collection.immutable.List.newBuilder[Int]
-    builder.sizeHint(array.length)
-    var index = 0
-
-    while index < array.length do
-      builder += array(index).asInstanceOf[Int]
-      index += 1
-
-    builder.result().length
-
-  // The stdlib's own sort over the same data, as the outside reference point: it is the
-  // same algorithm as `Timsort` (the JDK's object sort), so the difference between them is
-  // the cost of Soundness's typeclass machinery, not of sorting.
-  def stdlibSorted(data: List[Int]): scala.collection.immutable.List[Int] =
-    data.stdlib.sorted
-
   // ─── benchmarks ───────────────────────────────────────────────────────────
 
   // The sizes each algorithm is measured at. The quadratic sorts are omitted above a
@@ -597,29 +439,48 @@ object Benchmarks extends Suite(m"Murmuration benchmarks"):
 
     // Each suite fixes one input shape and crosstabs algorithm against size, so reading
     // down a column shows how an algorithm scales, and reading the same cell across suites
-    // shows what the input's existing order is worth to it.
+    // shows what the input's existing order is worth to it. Each body imports its own
+    // algorithm, so the staged tree it compiles contains nothing but the sort.
     def sweep(shape: Shape, name: Message): Unit =
       val kind = shape.ordinal
 
       bench(name)(target = 250*Milli(Second), baseline = Algorithm.Choice.Timsort)
       . over(Axis(Algorithm.Choice), Axis(t"size")(sizes*)):
           case (Algorithm.Choice.Timsort, size) =>
-            '{ murmuration.Benchmarks.timsorted(murmuration.Benchmarks.data($kind, $size)) }
+            '{
+                import sortingAlgorithms.timsort
+                murmuration.Benchmarks.data($kind, $size).sort
+            }
 
           case (Algorithm.Choice.Powersort, size) =>
-            '{ murmuration.Benchmarks.powersorted(murmuration.Benchmarks.data($kind, $size)) }
+            '{
+                import sortingAlgorithms.powersort
+                murmuration.Benchmarks.data($kind, $size).sort
+            }
 
           case (Algorithm.Choice.Quicksort, size) =>
-            '{ murmuration.Benchmarks.quicksorted(murmuration.Benchmarks.data($kind, $size)) }
+            '{
+                import sortingAlgorithms.quicksort
+                murmuration.Benchmarks.data($kind, $size).sort
+            }
 
           case (Algorithm.Choice.Heapsort, size) =>
-            '{ murmuration.Benchmarks.heapsorted(murmuration.Benchmarks.data($kind, $size)) }
+            '{
+                import sortingAlgorithms.heapsort
+                murmuration.Benchmarks.data($kind, $size).sort
+            }
 
           case (Algorithm.Choice.InsertionSort, size) if size <= quadraticLimit =>
-            '{ murmuration.Benchmarks.insertionSorted(murmuration.Benchmarks.data($kind, $size)) }
+            '{
+                import sortingAlgorithms.insertionSort
+                murmuration.Benchmarks.data($kind, $size).sort
+            }
 
           case (Algorithm.Choice.BubbleSort, size) if size <= quadraticLimit =>
-            '{ murmuration.Benchmarks.bubbleSorted(murmuration.Benchmarks.data($kind, $size)) }
+            '{
+                import sortingAlgorithms.bubbleSort
+                murmuration.Benchmarks.data($kind, $size).sort
+            }
 
     suite(m"Sorting by input shape"):
       sweep(Shape.Shuffled, m"shuffled")
@@ -636,118 +497,259 @@ object Benchmarks extends Suite(m"Murmuration benchmarks"):
     suite(m"Receiver shape"):
       bench(m"Timsort over a List")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          '{ murmuration.Benchmarks.timsorted(murmuration.Benchmarks.data(${Expr(0)}, $size)) }
+          '{
+              import sortingAlgorithms.timsort
+              murmuration.Benchmarks.data(0, $size).sort
+          }
 
       bench(m"Timsort over a Sequence")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.sequence(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.timsortedSequence($input) }
+          '{
+              import sortingAlgorithms.timsort
+              murmuration.Benchmarks.sequence(0, $size).sort
+          }
 
+      // Sorting an array in place: no copy into scratch, no rebuild afterwards, and no
+      // decoration of elements with their keys — the whole of what a collection's sort pays
+      // extra for. The fresh copy is the measurement's own cost, since sorting in place
+      // consumes its input: the next benchmark measures that copy alone, so the difference
+      // between them is the sort.
       bench(m"Timsort over an array, in place")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.sortedInPlace($input) }
+          '{
+              import sortingAlgorithms.timsort
+              val list = murmuration.Benchmarks.data(0, $size)
+              val array = Array.allocate[Int](list.stdlib.length)
+              val iterator = list.stdlib.iterator
+              var index = 0
 
-      // The copy the benchmark above makes to have something to consume, and nothing else: what
-      // it measures has to be subtracted from that one to leave the sort.
+              while iterator.hasNext do
+                array(index) = iterator.next()
+                index += 1
+
+              array.sort()
+              array.length
+          }
+
       bench(m"the copy that in-place sorting consumes")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.copyOnly($input) }
+          '{
+              val list = murmuration.Benchmarks.data(0, $size)
+              val array = Array.allocate[Int](list.stdlib.length)
+              val iterator = list.stdlib.iterator
+              var index = 0
+
+              while iterator.hasNext do
+                array(index) = iterator.next()
+                index += 1
+
+              array.length
+          }
 
       // The same three over elements that are references: here sorting in place really is the
       // algorithm and nothing else, with no boxing, no scratch array and no rebuild.
       bench(m"Timsort over a List of references")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.sortedTickets($input) }
+          '{
+              import sortingAlgorithms.timsort
+              murmuration.Benchmarks.ticketData(0, $size).sort
+          }
 
       bench(m"Timsort over an array of references, in place")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.sortedTicketsInPlace($input) }
+          '{
+              import sortingAlgorithms.timsort
+              val list = murmuration.Benchmarks.ticketData(0, $size)
+              val array = Array.allocate[Ticket](list.stdlib.length)
+              val iterator = list.stdlib.iterator
+              var index = 0
+
+              while iterator.hasNext do
+                array(index) = iterator.next()
+                index += 1
+
+              array.sort()
+              array.length
+          }
 
       bench(m"the copy that consumes, for references")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.copyTicketsOnly($input) }
+          '{
+              val list = murmuration.Benchmarks.ticketData(0, $size)
+              val array = Array.allocate[Ticket](list.stdlib.length)
+              val iterator = list.stdlib.iterator
+              var index = 0
+
+              while iterator.hasNext do
+                array(index) = iterator.next()
+                index += 1
+
+              array.length
+          }
 
     // What the typeclass machinery costs over calling the standard library directly, on the
     // algorithm the standard library uses.
     suite(m"Against the standard library"):
       bench(m"Timsort through Sortable")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          '{ murmuration.Benchmarks.timsorted(murmuration.Benchmarks.data(${Expr(0)}, $size)) }
+          '{
+              import sortingAlgorithms.timsort
+              murmuration.Benchmarks.data(0, $size).sort
+          }
 
+      // The same sort with the `List`'s `Countable` available — it is gated behind
+      // `linearSize`, counting a list being a traversal of it — so the scratch array is
+      // allocated once at the right size rather than grown by a builder.
       bench(m"Timsort through Sortable, counting first")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.timsortedCounted($input) }
+          '{
+              import sortingAlgorithms.timsort
+              import denominative.dysasymptotics.linearSize
+              murmuration.Benchmarks.data(0, $size).sort
+          }
 
+      // The same algorithm as `Timsort` (the JDK's object sort), so the difference between
+      // them is the cost of Soundness's typeclass machinery, not of sorting.
       bench(m"the standard library's own sort")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          '{ murmuration.Benchmarks.stdlibSorted(murmuration.Benchmarks.data(${Expr(0)}, $size)) }
+          '{ murmuration.Benchmarks.data(0, $size).stdlib.sorted }
 
       bench(m"ten thousand comparisons through the inline operator")(target = 250*Milli(Second)):
-        '{ murmuration.Benchmarks.ascendingByOperator }
+        '{
+            val sizes = murmuration.Benchmarks.sizes0
+            var count = 0
+            var index = 1
+
+            while index < sizes.length do
+              if sizes(index - 1) < sizes(index) then count += 1
+              index += 1
+
+            count
+        }
 
       bench(m"ten thousand comparisons through Comparable")(target = 250*Milli(Second)):
-        '{ murmuration.Benchmarks.ascendingByComparable }
+        '{
+            val sizes = murmuration.Benchmarks.sizes0
+            val comparable = summon[Bytes is Comparable]
+            var count = 0
+            var index = 1
 
-      // What boxing and decoration still cost.
+            while index < sizes.length do
+              if comparable.less(sizes(index - 1), sizes(index)) then count += 1
+              index += 1
+
+            count
+        }
+
+      // What boxing still costs. Sorting an array of a primitive in place boxes every element
+      // into the scratch the algorithms work on and unboxes it back afterwards, since one
+      // algorithm body serves every element type. The JDK's own primitive sort is the
+      // zero-boxing bound — a different algorithm (dual-pivot quicksort), so ours is the
+      // quicksort here too.
       bench(m"an Int array sorted in place, boxing into scratch")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.quicksortIntArrayInPlace($input) }
+          '{
+              import sortingAlgorithms.quicksort
+              val list = murmuration.Benchmarks.data(0, $size)
+              val array = Array.allocate[Int](list.stdlib.length)
+              val iterator = list.stdlib.iterator
+              var index = 0
+
+              while iterator.hasNext do
+                array(index) = iterator.next()
+                index += 1
+
+              array.sort()
+              array.length
+          }
 
       bench(m"the JDK's primitive sort, boxing nothing")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.jdkPrimitiveSort($input) }
+          '{
+              val list = murmuration.Benchmarks.data(0, $size)
+              val array = Array.allocate[Int](list.stdlib.length)
+              val iterator = list.stdlib.iterator
+              var index = 0
 
+              while iterator.hasNext do
+                array(index) = iterator.next()
+                index += 1
+
+              java.util.Arrays.sort(array.raw)
+              array.length
+          }
+
+      // And what the decoration costs: `order` pairs each element with its key in an `Entry`,
+      // which `sort` does not, since there an element is its own key.
       bench(m"sorting by the elements themselves")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.sortWithoutKeys($input) }
+          '{
+              import sortingAlgorithms.timsort
+              murmuration.Benchmarks.data(0, $size).sort
+          }
 
       bench(m"ordering by a projection, which decorates")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.orderByIdentity($input) }
+          '{
+              import sortingAlgorithms.timsort
+              murmuration.Benchmarks.data(0, $size).order(x => x)
+          }
 
       // How `order` might carry its keys.
       bench(m"keys in an object beside each element")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.orderByPairs($input) }
+          '{ murmuration.Benchmarks.orderByPairs(murmuration.Benchmarks.ticketData(0, $size)) }
 
       bench(m"keys interleaved with the elements")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.orderByInterleaving($input) }
+          '{
+              murmuration.Benchmarks.orderByInterleaving
+                ( murmuration.Benchmarks.ticketData(0, $size) )
+          }
 
       bench(m"keys in a primitive array beside the elements")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.orderByParallel($input) }
+          '{ murmuration.Benchmarks.orderByParallel(murmuration.Benchmarks.ticketData(0, $size)) }
 
       bench(m"no keys carried, the projection recomputed")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.orderByRecomputing($input) }
+          '{
+              murmuration.Benchmarks.orderByRecomputing
+                ( murmuration.Benchmarks.ticketData(0, $size) )
+          }
 
       bench(m"the library's order, for scale")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.ticketData(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.orderByLibrary($input) }
+          '{ murmuration.Benchmarks.orderByLibrary(murmuration.Benchmarks.ticketData(0, $size)) }
 
-      // Everything but the sort, on each side, so that the sort can be had by subtraction.
+      // Everything but the sort, on each side, so that the sort can be had by subtraction:
+      // the library's path drains the traversal into a scratch array and rebuilds a `List`
+      // from it; the standard library's `sorted` knows how many elements are coming, so it
+      // makes one allocation of exactly the right size, filled by `copyToArray`, and tells
+      // its builder the size.
       bench(m"the library's path without the sort")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.roundTrip($input) }
+          '{
+              val array =
+                murmuration.Benchmarks.data(0, $size).stdlib.iterator.map(_.asInstanceOf[AnyRef])
+                . toArray(using scala.reflect.ClassTag.AnyRef)
+
+              List.from(array.iterator.map(_.asInstanceOf[Int])).stdlib.length
+          }
 
       bench(m"the standard library's path without the sort")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
-          val input = '{ murmuration.Benchmarks.data(${Expr(0)}, $size) }
-          '{ murmuration.Benchmarks.stdlibRoundTrip($input) }
+          '{
+              val list = murmuration.Benchmarks.data(0, $size).stdlib
+              val array = new scala.Array[AnyRef](list.length)
+              list.asInstanceOf[scala.collection.immutable.List[AnyRef]].copyToArray(array)
+              val builder = scala.collection.immutable.List.newBuilder[Int]
+              builder.sizeHint(array.length)
+              var index = 0
+
+              while index < array.length do
+                builder += array(index).asInstanceOf[Int]
+                index += 1
+
+              builder.result().length
+          }
