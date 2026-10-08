@@ -68,6 +68,27 @@ object Tests extends Suite(m"Galilei tests"):
           dest.read[Text]
       . assert(_ == t"Hello world")
 
+      val unascribed = unsafely((% / "tmp" / leafName).on[Linux])
+
+      test(m"A path bound with `on` reads and writes with no ascription"):
+        unsafely:
+          unascribed.write(t"unascribed")
+          unascribed.read[Text]
+      . assert(_ == t"unascribed")
+
+      test(m"A path literal reads and writes with no ascription"):
+        unsafely:
+          val path = p"/tmp/galilei-literal.txt"
+          path.write(t"literal")
+          path.read[Text]
+      . assert(_ == t"literal")
+
+      test(m"A path literal's elements are its type"):
+        val path = p"/foo/bar/baz"
+        summon[path.Topic =:= ("baz", "bar", "foo")]
+        path.descent.to(List)
+      . assert(_ == List(t"baz", t"bar", t"foo"))
+
       // A path is not streamable, so `load` reads it whole as bytes and hands them to the
       // document type's byte-native `Loadable`.
       test(m"Loading a file hands its bytes to the document's loader"):
