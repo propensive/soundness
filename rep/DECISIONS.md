@@ -2613,7 +2613,6 @@ implementations across profanity and ultimatum). Recipe as it actually went:
   `given (Stdio^{flow}) = flow`; the resize test's iterator shrank the root it does not own
   (`Form` holds it exclusively) — the size now lives in a plain cell the iterator writes.
 - Net: `untrackedCaptures` 506 → 484, `unsafeAssumeSeparate` 350 → 347, `unsafeAssumePure` +1.
-
 ## xylophone `XmlParser` becomes `Stateful` (2026-10-08)
 
 The second per-class `safety-1` conversion after profanity's `Board`: `Xml.XmlParser` (the
@@ -2829,3 +2828,4 @@ metrics are stateful the view captures `metrics0.rd` where a pure `Termcap` is r
 `TableFixture`, `Reading`, `Inlay`, `EditorField`, `Panes`, 17) are user-held model objects
 the form drives through `wakeForm`/`onChange` callbacks and that user code mutates from event
 handlers — `[closure-capture]` by design. The test file's 13 are closure-captured locals.
+
