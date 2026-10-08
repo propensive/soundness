@@ -33,5 +33,8 @@
 package synesthesia
 
 import anticipation.*
+import vacuous.*
 
-case class resource(uri: Text) extends StaticAnnotation
+// A resource's MIME type defaults to `text/html;profile=mcp-app` when a tool's `@ui` names its
+// URI, and otherwise to `text/plain` or `application/octet-stream` by the form it is read in.
+case class resource(uri: Text, mimeType: Optional[Text] = Unset) extends StaticAnnotation

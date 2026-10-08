@@ -135,21 +135,38 @@ object Mcp:
             case Http.Post =>
               val input = request.body().memoize.read[Json]
 
-              dispatch(input).let: json =>
-                import formatting.indentedJsonFormatting
+              // A failure answers under the request's id, so that the client can match it.
+              val requestId: Optional[Json] = safely(input.as[Correlation]).let(_.id)
 
+              def failure(code: Int, message: Text): Http.Response =
                 Http.Response
                   ( Http.Ok,
                     mcpProtocolVersion = version,
                     mcpSessionId       = id )
-                  ( json )
+                  ( JsonRpc.failure(code, message, requestId) )
 
-              . or:
+              try
+                dispatch(input).let: json =>
+                  import formatting.indentedJsonFormatting
+
                   Http.Response
-                    ( Http.Accepted,
+                    ( Http.Ok,
                       mcpProtocolVersion = version,
                       mcpSessionId       = id )
-                    (  )
+                    ( json )
+
+                . or:
+                    Http.Response
+                      ( Http.Accepted,
+                        mcpProtocolVersion = version,
+                        mcpSessionId       = id )
+                      (  )
+              catch
+                case error: Mcp.Error     => failure(InvalidParams, error.message.text)
+                case error: JsonRpc.Error => failure(MethodNotFound, error.message.text)
+
+                case error: Throwable =>
+                  failure(InternalError, t"Internal error: ${error.toString}")
 
             case _ =>
               Http.Response
@@ -159,8 +176,12 @@ object Mcp:
                 (  )
         catch
           case error: Throwable =>
-            Http.Response(Http.Ok):
-              JsonRpc.failure(-32603, t"Internal error: ${error.toString}".show)
+            Http.Response(Http.Ok, mcpSessionId = id):
+              JsonRpc.failure(InternalError, t"Internal error: ${error.toString}")
+
+  // The correlation id of a request, read on its own so that a failure can echo it whatever
+  // else the request lacks.
+  private case class Correlation(id: Optional[Json] = Unset)
 
 
   case class TaskAugmented(task: Optional[TaskMetadata] = Unset)
@@ -767,10 +788,22 @@ object Mcp:
     def `tools/call`(name: Text, arguments: Json, _meta: Optional[Json]): CallTool =
       // The RPC proxy's awaits are scoped to this call, so it runs under its own supervision.
       import threading.platformThreading
-      val result = unsafely(supervise(spec.invokeTool(server, client, name, arguments)))
-
       import formatting.compactJsonFormatting
-      CallTool(content = List(TextContent(result.show)), structuredContent = result)
+
+      // A tool's own failure is a result the model can read (`isError`), distinct from a
+      // protocol failure: an unknown tool or a missing parameter is still a JSON-RPC error.
+      try
+        val result = unsafely(supervise(spec.invokeTool(server, client, name, arguments)))
+        CallTool(content = List(TextContent(result.show)), structuredContent = result)
+      catch
+        case error: Mcp.Error => unsafely(throw error)
+
+        case error: Throwable =>
+          val message = error.getMessage match
+            case null            => error.toString.tt
+            case message: String => message.tt
+
+          CallTool(content = List(TextContent(message)), isError = true)
 
     def `tools/list`(_meta: Optional[Json]): ListTools =
       ListTools(tools = spec.tools())
