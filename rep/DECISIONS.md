@@ -2691,3 +2691,34 @@ hallucination `Vp8Decoder.segmentProbs`/`tokenProbs` (read by `bool.tree` while 
 by `this`, is the exclusive receiver), zephyrine's reader-side `Iterator.ready` (stdlib
 `Iterator` methods cannot be `update`), gesticulate `Multipart.stream` and anthology's
 compiler objects (cast-erased handles), honeycomb's macro callback.
+
+## Small single-owner parsers and the dendrology cells (2026-10-08)
+
+`untrackedCaptures` −17: dendrology's two `Cell` classes (12) are gone — a cell is six bit
+flags in an `Int`, so a diagram row is a plain `Array[Int]` built in place and there is no
+mutable object to classify; archimedes `Ergo.Parser` (3) and stratiform `BintelParser` (2)
+become `Stateful` by the compiler-driven loop (`/tmp/loop.py`: add the trait, drop the
+annotations, mark whichever methods the next compile names, repeat; four to six rounds each).
+Two more rules, both already met once:
+
+- **`raises` on a stateful class's methods** → `(using Tactic[E])`: the context-function result
+  "hides non-local this", which only a `consume` method may do.
+- **A constructor proxy mints a read-only instance** (`ProtobufParser(x).fields()` cannot call
+  an update method on `^{any.rd}`): give the class a companion `apply(…): C^ = new C(…)`.
+  The `Reader` wrappers (locomotion, stratiform) take `C^` and cast to their `AnyRef` carrier
+  exactly as xylophone's `Reader.apply` does, their `inline def parser` reads back as `C^`, and
+  the staged splices bind `val parser: C^ = reader.rawParser.asInstanceOf[C^]`.
+- `BintelParser` additionally needs `ExclusiveCapability`: "needs to extend Capability since
+  it has a field `data` with `any` in its type" — the cached raw `scala.Array[Byte]` view of its
+  frozen input (the same cast `Cbor.Parser` uses; that one is the next of this shape).
+- **REVERTED: locomotion `ProtobufParser`.** The same conversion compiles (core and the staged
+  module) but every user of a staged `Protobuf.Parsable` then fails with "Cannot call update
+  method directLong of parser since its capture set {parser} is read-only": the generated
+  record loop is assembled by reflection (`Symbol.newVal(owner, …)`, `Block`/`Match` terms
+  under `Symbol.spliceOwner`), and the `val parser = reader.rawParser.asInstanceOf[ProtobufParser]`
+  bound by the quote reads back as a read-only alias inside it, where jacinta's and stratiform's
+  quote-built bodies read it as exclusive. A staged-parser (`project_staged_parsers`) question:
+  either emit the loop as a quote, or hand the generated body `reader` and let it call the
+  `update` forwarders. Also learned: a bare `C` in a quote is `C^` only if `C` is a `Capability`
+  class — a `Stateful`-only class is pure there, so parsers spliced by name need
+  `ExclusiveCapability` too (which `BintelParser` now has).

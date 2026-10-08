@@ -286,12 +286,9 @@ object Ergo:
       case (glyph, Directive.Fixed(n, v)) if n == name && v == value => glyph.show
       case (glyph, Directive.Param(n)) if n == name                  => t"$glyph($value)"
 
-  private class Parser(s: String, holes: Iterator[Mathml])(using Tactic[Ergo.Error]):
-    @scala.caps.unsafe.untrackedCaptures
+  private class Parser(s: String, holes: Iterator[Mathml])(using Tactic[Ergo.Error]) extends scala.caps.Stateful:
     private var pos = 0
-    @scala.caps.unsafe.untrackedCaptures
     private var open = '('
-    @scala.caps.unsafe.untrackedCaptures
     private var close = ')'
 
     private def peek: Char = if pos < s.length then s.charAt(pos) else '\u0000'
@@ -299,27 +296,27 @@ object Ergo:
     private def peekAt(offset: Int): Char =
       if pos + offset < s.length then s.charAt(pos + offset) else ' '
 
-    private def advance(): Char =
+    private update def advance(): Char =
       val c = peek
       pos += 1
       c
 
-    private def skipSpaces(): Unit = while pos < s.length && s.charAt(pos) == ' ' do pos += 1
+    private update def skipSpaces(): Unit = while pos < s.length && s.charAt(pos) == ' ' do pos += 1
 
     private def fail(reason: Ergo.Error.Reason): Nothing =
       abort(Ergo.Error(reason, pos))
 
     // Consumes the closing bracket of a group, which must be next.
-    private def closeGroup(): Unit =
+    private update def closeGroup(): Unit =
       if peek != close then fail(Ergo.Error.Reason.Unclosed(close))
       advance()
 
     // Consumes the opening bracket of the body that must follow `introducer`.
-    private def openBody(introducer: Char): Unit =
+    private update def openBody(introducer: Char): Unit =
       if peek != open then fail(Ergo.Error.Reason.MissingBody(introducer))
       advance()
 
-    def parseTop(): Math =
+    update def parseTop(): Math =
       if s.isEmpty then fail(Ergo.Error.Reason.Empty)
       open = s.charAt(0)
       if !pairs.contains(open) then fail(Ergo.Error.Reason.BadOpener(open))
@@ -331,7 +328,7 @@ object Ergo:
         case other          => Math(List(other))
 
     // Consumes `open … close`, returning the inner sequence (unwrapped if single).
-    private def parseGroup(): Mathml =
+    private update def parseGroup(): Mathml =
       advance()
       val inner = parseSequence()
       skipSpaces()
@@ -339,7 +336,7 @@ object Ergo:
       inner
 
     // Juxtaposition — the loosest binding; a run of fraction-level terms → Mrow.
-    private def parseSequence(): Mathml =
+    private update def parseSequence(): Mathml =
       val terms = ListBuffer[Mathml]()
       skipSpaces()
 
@@ -351,7 +348,7 @@ object Ergo:
         case one :: Nil => one
         case many       => Mrow(many)
 
-    private def parseFraction(): Mathml =
+    private update def parseFraction(): Mathml =
       var left = parseScripts()
       skipSpaces()
 
@@ -362,7 +359,7 @@ object Ergo:
 
       left
 
-    private def parseScripts(): Mathml =
+    private update def parseScripts(): Mathml =
       val base = parsePrimary()
       var sub, sup, under, over: Optional[Mathml] = Unset
       var scanning = true
@@ -407,10 +404,10 @@ object Ergo:
         case (b, p)         => Msubsup(limited, b.or(limited), p.or(limited))
 
     // A primary is a unit plus any postfix attribute directives bound to it.
-    private def parsePrimary(): Mathml = withDirectives(parseUnit())
+    private update def parsePrimary(): Mathml = withDirectives(parseUnit())
 
     // Reads `open … close` as a raw attribute value (its content is not parsed).
-    private def readValue(): Text =
+    private update def readValue(): Text =
       advance() // open
       val start = pos
       var depth = 1
@@ -424,7 +421,7 @@ object Ergo:
       closeGroup()
       raw
 
-    private def withDirectives(unit: Mathml): Mathml =
+    private update def withDirectives(unit: Mathml): Mathml =
       val attributes = ListBuffer[(Text, Text)]()
       var scanning = true
 
@@ -461,7 +458,7 @@ object Ergo:
         case n: Mtable     => n.copy(attributes = n.attributes + extra)
         case other         => Mrow(List(other), extra)
 
-    private def parseUnit(): Mathml =
+    private update def parseUnit(): Mathml =
       skipSpaces()
       val c = peek
 
@@ -491,13 +488,13 @@ object Ergo:
 
     // If a `√` immediately follows an atom/group (no space), that atom is the
     // index of a root: `3√x` = Mroot(x, 3).
-    private def rooted(index: Mathml): Mathml =
+    private update def rooted(index: Mathml): Mathml =
       if peek == Radical then { advance(); Mroot(parsePrimary(), index) } else index
 
     // Consumes the self-delimiting body `open <group>… close` that follows an
     // introducer, returning the parsed child groups. A body with no nested
     // groups is treated as a single element (so `⋯(a)` is a one-cell vector).
-    private def parseBody(introducer: Char): List[Mathml] =
+    private update def parseBody(introducer: Char): List[Mathml] =
       openBody(introducer)
       val items = ListBuffer[Mathml]()
       while peek == open do items += parseGroup()
@@ -506,12 +503,12 @@ object Ergo:
       closeGroup()
       items.to(List)
 
-    private def parseVector(row: Boolean): Mathml =
+    private update def parseVector(row: Boolean): Mathml =
       val introducer = advance()
       val tds = parseBody(introducer).map(Mtd(_))
       if row then Mtable(Mtr(tds*)) else Mtable(tds.map(Mtr(_))*)
 
-    private def parseMatrix(): Mathml =
+    private update def parseMatrix(): Mathml =
       val introducer = advance()
       openBody(introducer)
       val rows = ListBuffer[Mathml]()
