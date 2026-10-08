@@ -471,12 +471,18 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     // One benchmark, two axes: six parsers against seven documents, anchored to Merino.
     // Each document rides `References` as a spliced value: ONE staged tree per parser,
     // with seven dispatches each carrying a different document, extracted once per run.
-    // operationSize is dropped: sizes vary per document and per-cell sizing isn't
-    // supported yet.
+    // Each cell is sized by its document, so the rates are comparable across documents of
+    // very different lengths, where the times are not.
     bench(m"Parse JSON documents")
       ( target = 1*Second, baseline = JsonParser.Merino, comparison = Baseline(compare = Min) )
 
-    . over(JsonParser, Document):
+    . sized: (_: JsonParser, document: Document) =>
+        val size: OperationSize =
+          jacinta.Benchmarks.textFor(document).getBytes("UTF-8").nn.length*Byte
+
+        size
+
+    . over(Axis(JsonParser), Axis(Document)):
         case (parser, document) =>
           val text: String = jacinta.Benchmarks.textFor(document)
 

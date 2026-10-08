@@ -173,7 +173,13 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
     bench(m"Parse DSV documents")
       ( target = 1*Second, baseline = Library.Caesura, comparison = Baseline(compare = Min) )
 
-    . over(Library, Corpus):
+    . sized: (_: Library, corpus: Corpus) =>
+        val size: OperationSize =
+          caesura.Benchmarks.documentFor(corpus).getBytes("UTF-8").nn.length*Byte
+
+        size
+
+    . over(Axis(Library), Axis(Corpus)):
         case (library, corpus) =>
           val document: Text = Text(caesura.Benchmarks.documentFor(corpus))
           val tsv: Boolean = corpus == Corpus.Tsv

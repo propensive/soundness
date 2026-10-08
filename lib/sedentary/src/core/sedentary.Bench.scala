@@ -271,13 +271,14 @@ object Bench:
     val max = results.max.toDouble/sample
 
     val operationSizeText: Optional[Text] = operationSize.let(_.sizeText)
+    val operationQuantity: Optional[Double] = operationSize.let(_.value)
 
     val operationRateText: Optional[Text] = operationSize.let: os =>
       os.rateText((total.toDouble/count)/1e9)
 
     Benchmark
       ( total, count, runs, total.toDouble/count, min, max, sd, confidence,
-        operationSizeText, operationRateText, allocation )
+        operationSizeText, operationRateText, operationQuantity, allocation )
 
   case class Plan
     ( bench:         Bench,
@@ -315,9 +316,21 @@ object Bench:
             testId,
             Bench.statistics(results0, iterations, confidence, operationSize) )
 
+    // The size of each cell as a function of its coordinates, where it varies: a parser
+    // measured over documents of different lengths reports each document's size, so that the
+    // cells' rates are comparable where their times are not. A cell for which the function
+    // answers `Unset` falls back to the plan's `operationSize`.
+    def sized[value](size: value => Optional[OperationSize]): Plan.Uniaxial[value] =
+      Plan.Uniaxial(this, size)
+
+    def sized[left, right](size: (left, right) => Optional[OperationSize])
+    :   Plan.Biaxial[left, right] =
+      Plan.Biaxial(this, size)
+
     // One measurement per defined axis value, each a fresh dispatch: cells whose staged
     // trees coincide share one compilation (values carried by `References`), while each
-    // distinct implementation compiles once. A partial body leaves gaps.
+    // distinct implementation compiles once. A partial body leaves gaps. The cells share the
+    // plan's `operationSize`; `sized` gives each its own.
     inline def over[value, report, topic <: Label](axis: Axis[value])
       ( inline body: (References over Json) ?=> Quotes ?=> (value ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
@@ -329,43 +342,7 @@ object Bench:
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
 
-      val testId = Test.Id(name, suite, codepoint, Unset, tags)
-      val target2: Long = Bench.scaled(target, runner.scale)
-      val values = axis.values
-
-      // Definedness may not depend on the staging context, so gaps are probed under a
-      // throwaway quotes context and a discarded References instance; the partial function
-      // is never applied there, only queried.
-      val probe: value ~> Expr[Any] =
-        given staging.Compiler = bench.compiler2
-        staging.withQuotes(body(using References[Json]()))
-
-      // An iterator rather than `each`: a lambda cannot capture the inline `body`.
-      val iterator = List.iterator(values)
-
-      while iterator.hasNext do
-        val value = iterator.next()
-
-        val coordinates = List(axis.coordinate(value))
-
-        // An unselected cell is skipped BEFORE staging: it costs no compilation and no JVM.
-        if probe.isDefinedAt(value)
-            && !runner.skip(testId, Entry.Kind.Bench, coordinates,
-                            Bench.expected(target2, iterations, warmups))
-        then
-          val results0 =
-            bench.dispatch(Bench.measured(iterations, warmups, target2)(body(value)))
-
-          inclusion.include
-            ( runner.report,
-              testId,
-              coordinates,
-              Bench.statistics(results0, iterations, confidence, operationSize) )
-
-      anchor.let: anchorValue =>
-        values.seek(_ == anchorValue).let: value =>
-          anchors.include
-            ( runner.report, testId, Nil, Anchor(axis.spec, axis.point(value), comparison) )
+      sized((_: value) => Unset).over(axis)(body)
 
     inline def over[value <: reflect.Enum: Enumerable, report, topic <: Label]
       ( companion: { def values: scala.Array[value] } )
@@ -393,52 +370,7 @@ object Bench:
               codepoint: Codepoint )
     :   Unit raises Compiler.Error raises Rig.Error =
 
-      val testId = Test.Id(name, suite, codepoint, Unset, tags)
-      val target2: Long = Bench.scaled(target, runner.scale)
-      val lefts = first.values
-      val rights = second.values
-
-      // See the definedness note in the uniaxial `over`.
-      val probe: ((left, right)) ~> Expr[Any] =
-        given staging.Compiler = bench.compiler2
-        staging.withQuotes(body(using References[Json]()))
-
-      // Iterators rather than `each`; see the uniaxial `over`.
-      val leftIterator = List.iterator(lefts)
-
-      while leftIterator.hasNext do
-        val left = leftIterator.next()
-        val rightIterator = List.iterator(rights)
-
-        while rightIterator.hasNext do
-          val right = rightIterator.next()
-
-          val coordinates = List(first.coordinate(left), second.coordinate(right))
-
-          if probe.isDefinedAt((left, right))
-              && !runner.skip(testId, Entry.Kind.Bench, coordinates,
-                              Bench.expected(target2, iterations, warmups))
-          then
-            val results0 =
-              bench.dispatch(Bench.measured(iterations, warmups, target2)(body((left, right))))
-
-            inclusion.include
-              ( runner.report,
-                testId,
-                coordinates,
-                Bench.statistics(results0, iterations, confidence, operationSize) )
-
-      anchor.let: anchorValue =>
-        lefts.seek(_ == anchorValue).lay:
-          rights.seek(_ == anchorValue).let: value =>
-            anchors.include
-              ( runner.report,
-                testId,
-                Nil,
-                Anchor(second.spec, second.point(value), comparison) )
-        . apply: value =>
-          anchors.include
-            ( runner.report, testId, Nil, Anchor(first.spec, first.point(value), comparison) )
+      sized((_: left, _: right) => Unset).over(first, second)(body)
 
     inline def over[left <: reflect.Enum: Enumerable, right, report, topic <: Label]
       ( first: { def values: scala.Array[left] }, second: Axis[right] )
@@ -482,6 +414,126 @@ object Bench:
     :   Unit raises Compiler.Error raises Rig.Error =
 
       over(Axis(first), Axis(second))(body)
+
+
+  object Plan:
+    // A plan whose single-axis cells are each sized by `size`.
+    case class Uniaxial[value](plan: Plan, size: value => Optional[OperationSize]):
+      import plan.*
+
+      // See `Plan#over`: the measurement of every defined axis value.
+      inline def over[report, topic <: Label](axis: Axis[value])
+        ( inline body: (References over Json) ?=> Quotes ?=> (value ~> Expr[Any]) )
+        ( using System, TemporaryDirectory, Stageable over Json in Text )
+        ( using runner:    Runner[report],
+                inclusion: Inclusion[report, Benchmark],
+                anchors:   Inclusion[report, Anchor],
+                @missingContext(Testable.orphan)
+                suite:     Testable of topic,
+                codepoint: Codepoint )
+      :   Unit raises Compiler.Error raises Rig.Error =
+
+        val testId = Test.Id(name, suite, codepoint, Unset, tags)
+        val target2: Long = Bench.scaled(target, runner.scale)
+        val values = axis.values
+
+        // Definedness may not depend on the staging context, so gaps are probed under a
+        // throwaway quotes context and a discarded References instance; the partial function
+        // is never applied there, only queried.
+        val probe: value ~> Expr[Any] =
+          given staging.Compiler = bench.compiler2
+          staging.withQuotes(body(using References[Json]()))
+
+        // An iterator rather than `each`: a lambda cannot capture the inline `body`.
+        val iterator = List.iterator(values)
+
+        while iterator.hasNext do
+          val value = iterator.next()
+
+          val coordinates = List(axis.coordinate(value))
+
+          // An unselected cell is skipped BEFORE staging: it costs no compilation and no JVM.
+          if probe.isDefinedAt(value)
+              && !runner.skip(testId, Entry.Kind.Bench, coordinates,
+                              Bench.expected(target2, iterations, warmups))
+          then
+            val results0 =
+              bench.dispatch(Bench.measured(iterations, warmups, target2)(body(value)))
+
+            inclusion.include
+              ( runner.report,
+                testId,
+                coordinates,
+                Bench.statistics(results0, iterations, confidence, size(value).or(operationSize)) )
+
+        anchor.let: anchorValue =>
+          values.seek(_ == anchorValue).let: value =>
+            anchors.include
+              ( runner.report, testId, Nil, Anchor(axis.spec, axis.point(value), comparison) )
+
+    // A plan whose crosstab cells are each sized by `size`.
+    case class Biaxial[left, right](plan: Plan, size: (left, right) => Optional[OperationSize]):
+      import plan.*
+
+      // See `Plan#over`: the measurement of every defined combination of the two axes.
+      inline def over[report, topic <: Label](first: Axis[left], second: Axis[right])
+        ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
+        ( using System, TemporaryDirectory, Stageable over Json in Text )
+        ( using runner:    Runner[report],
+                inclusion: Inclusion[report, Benchmark],
+                anchors:   Inclusion[report, Anchor],
+                @missingContext(Testable.orphan)
+                suite:     Testable of topic,
+                codepoint: Codepoint )
+      :   Unit raises Compiler.Error raises Rig.Error =
+
+        val testId = Test.Id(name, suite, codepoint, Unset, tags)
+        val target2: Long = Bench.scaled(target, runner.scale)
+        val lefts = first.values
+        val rights = second.values
+
+        // See the definedness note in the uniaxial `over`.
+        val probe: ((left, right)) ~> Expr[Any] =
+          given staging.Compiler = bench.compiler2
+          staging.withQuotes(body(using References[Json]()))
+
+        // Iterators rather than `each`; see the uniaxial `over`.
+        val leftIterator = List.iterator(lefts)
+
+        while leftIterator.hasNext do
+          val left = leftIterator.next()
+          val rightIterator = List.iterator(rights)
+
+          while rightIterator.hasNext do
+            val right = rightIterator.next()
+
+            val coordinates = List(first.coordinate(left), second.coordinate(right))
+
+            if probe.isDefinedAt((left, right))
+                && !runner.skip(testId, Entry.Kind.Bench, coordinates,
+                                Bench.expected(target2, iterations, warmups))
+            then
+              val results0 =
+                bench.dispatch(Bench.measured(iterations, warmups, target2)(body((left, right))))
+
+              inclusion.include
+                ( runner.report,
+                  testId,
+                  coordinates,
+                  Bench.statistics(results0, iterations, confidence, size(left, right).or(operationSize)) )
+
+        anchor.let: anchorValue =>
+          lefts.seek(_ == anchorValue).lay:
+            rights.seek(_ == anchorValue).let: value =>
+              anchors.include
+                ( runner.report,
+                  testId,
+                  Nil,
+                  Anchor(second.spec, second.point(value), comparison) )
+          . apply: value =>
+            anchors.include
+              ( runner.report, testId, Nil, Anchor(first.spec, first.point(value), comparison) )
+
 
   // BenchError → Bench.Error
   case class Error()(using Diagnostics)
