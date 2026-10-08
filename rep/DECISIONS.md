@@ -2762,3 +2762,22 @@ workspace can be passed to one read back. Not a leftover from an older checker, 
 `Stateful` question: a field whose type mentions a fresh parameter capability has no
 expressible type. Tag `[field-fresh-param]`; 69 + 6 + 7 sites (exegesis `Registry`,
 espionage `Registry`, `LspSession`'s initialisation record is the same shape one level up).
+
+## State inside anonymous instances (2026-10-08)
+
+The 40 `@untrackedCaptures` inside `new Iterator`/`new Stream`/`new Intake`/`new Cursor`
+bodies, by what blocks them:
+
+- **`[stdlib-iterator]` (19 + bitumen's `Lookahead` 3):** a `scala.Iterator`'s `hasNext`/`next`
+  cannot be `update`, so an iterator that advances a buffer or a lookahead has nowhere honest
+  to put the write. Retiring these means a Soundness iterator trait (or the `Stream`
+  interface everywhere a stdlib iterator is returned today) — a design leg, not a sweep.
+- **`[abstract-storage]` (`p5-abstract-storage.neg`, 9):** `storage: addressable0.Storage`
+  fields in `Stream`/`Intake` instances — an abstract storage type cannot carry `^`.
+- **`[anon-fresh-field]` (2, new):** a *concrete* `val carry: scala.Array[Byte]^` in an
+  anonymous `new Stream[Data]` body fails where the same field in a named class passes:
+  "Illegal access to {`any` of value joined} which is hidden by the previous definition of
+  value joined" from every later method that touches it — the anonymous template's fields are
+  checked like the vals of the enclosing block, so a fresh-typed one hides its capability from
+  what follows. `zephyrine.streamOf`'s `carry`/`joined` stay annotated; turbulence `Relay`'s
+  `storage: scala.Array[AnyRef]^` (touched only in `refill`) passes, −1.
