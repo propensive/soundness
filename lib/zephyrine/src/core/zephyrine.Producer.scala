@@ -366,7 +366,6 @@ object Producer:
     // back at `finish`, so a writer allocates nothing of its own once the pool is warm. Each is
     // reached only through this writer, and `untrackedCaptures` keeps the block's exclusivity
     // out of the class's own type.
-    @caps.unsafe.untrackedCaptures
     private val current: scala.Array[Byte]^ =
       Blockpool.poll(bytesClass, block) match
         case null   => new scala.Array[Byte](block)
@@ -376,8 +375,7 @@ object Producer:
 
     // Characters are inflated into this scratch a block at a time, so the encoding loop reads a
     // raw array rather than paying `charAt`'s coder check per character.
-    @caps.unsafe.untrackedCaptures
-    private val scratch: scala.Array[Char] =
+    private val scratch: scala.Array[Char]^ =
       Blockpool.poll(charsClass, block) match
         case null   => new scala.Array[Char](block)
         case pooled => pooled.asInstanceOf[scala.Array[Char]]

@@ -67,10 +67,9 @@ extends caps.ExclusiveCapability, caps.Stateful:
 
   private val demand: Credit = Credit(buffering.capacity(Substrate.Bytes))
 
-  // Untracked: the reassembly buffer is reached only through this (exclusive)
-  // reader, and every `slice` copies out of it.
-  @caps.unsafe.untrackedCaptures
-  private var buffer: scala.Array[Byte] = new scala.Array(0)
+  // The reassembly buffer: reached only through this (exclusive) reader, and every `slice`
+  // copies out of it.
+  private var buffer: scala.Array[Byte]^ = new scala.Array(0)
   private var pos: Int = 0
 
   // Ensure at least `n` unread bytes are buffered; false if the stream ends first.
@@ -80,25 +79,28 @@ extends caps.ExclusiveCapability, caps.Stateful:
     while buffer.length - pos < n && !ended do input.refill(demand) match
       case count: Int =>
         if count > 0 then
-          val remaining = buffer.length - pos
-          val grown = new scala.Array[Byte](remaining + count)
-          System.arraycopy(buffer, pos, grown, 0, remaining)
-
-          input.lend: region =>
-            range =>
-              Slate.over[Bytes, Int](grown, remaining, remaining + count): slate =>
-                space => region.transfer(range.capped(count))(slate)(space)
-
+          absorb(count)
           input.skip(count)
-          // The cast erases the fresh array's capture: it is confined to this
-          // (exclusive) reader from here on.
-          buffer = grown.asInstanceOf[scala.Array[Byte]]
           pos = 0
 
       case _ =>
         ended = true
 
     buffer.length - pos >= n
+
+  // Out of line: the fresh array is minted and assigned to the field within one method body,
+  // which the checker cannot allow inside `ensure`'s loop.
+  private update def absorb(count: Int): Unit =
+    val remaining = buffer.length - pos
+    val grown = new scala.Array[Byte](remaining + count)
+    System.arraycopy(buffer, pos, grown, 0, remaining)
+
+    input.lend: region =>
+      range =>
+        Slate.over[Bytes, Int](grown, remaining, remaining + count): slate =>
+          space => region.transfer(range.capped(count))(slate)(space)
+
+    buffer = grown
 
   private update def slice(n: Int): Bytes =
     val out = Array.allocate[Byte](n)

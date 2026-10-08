@@ -2664,3 +2664,30 @@ field definition then fails with "Illegal access to {Parser.this} which is hidde
 previous definition". The fields are non-private (`var scratchAtoms`), like the parser's other
 state, and no accessor is synthesized. What stays: `cursor0`/`bytes0` (the cursor snapshot),
 `Inline._text` (a lazily-filled cache on a plain atom class), and the serializer's `first`.
+
+## Exclusive array fields in already-stateful classes (2026-10-08)
+
+A census pass over the 21 `@untrackedCaptures` whose enclosing class is already `Stateful`
+or `Mutable`. Seven retired, by the xylophone move (field typed `scala.Array[T]^`, cast views
+deleted): zephyrine `Producer` (`current`, `scratch`), telekinesis `ByteBuf.storage` and
+`FrameReader.buffer`, ypsiloid `Yaml.Parser` (`chars`, `rootIndex: Array[Int]^{} | Null`),
+scintillate `Reactor.gather`. Three more shapes learned:
+
+- **Growth inside an inline method or a loop**: "`newArr` appears in a loop, therefore it
+  cannot be consumed in an assignment to variable `chars`" — the fresh array is minted in a
+  loop (`FrameReader.ensure`) or in an `inline` method that expands into its callers' loops
+  (`Yaml.appendChar`/`ensureSpace`). Put the mint-copy-assign in one non-inline
+  `private update def grow…()`; the hot path keeps its inline bounds check.
+- **Alias of an exclusive field**: `val slots = gather` then `channel.write(gather, …)` fails
+  with "Illegal access to {any of value gather} which is hidden by the previous definition";
+  use the field directly (the Java callee's parameter is pure, so passing it is fine).
+- **`private`/`protected` exclusive fields read from inline methods** get an `inline$field`
+  accessor whose fresh result hides `this` (stratiform, ypsiloid): plain `var`.
+
+What stays, and why (the `[cursor-snapshot]` and `[aliased-read]` tags): the cursor-buffer
+snapshots (`bytes0`/`bytes1`/`cursor0`/`cursor1` in Tel, Yaml, Xml; honeycomb `HtmlParser.bytes`
+is the same thing by another name — `cursor.unsafeTextBuffer` returns `^{any.rd}`),
+hallucination `Vp8Decoder.segmentProbs`/`tokenProbs` (read by `bool.tree` while `bool`, held
+by `this`, is the exclusive receiver), zephyrine's reader-side `Iterator.ready` (stdlib
+`Iterator` methods cannot be `update`), gesticulate `Multipart.stream` and anthology's
+compiler objects (cast-erased handles), honeycomb's macro callback.

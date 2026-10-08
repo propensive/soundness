@@ -46,12 +46,9 @@ import rudiments.*
 private[telekinesis] class ByteBuf(initial: Int = 32)
 extends caps.ExclusiveCapability, caps.Stateful:
   // Untracked: reached only through this (exclusive) buffer, and `data` copies out.
-  @caps.unsafe.untrackedCaptures
-  private var storage: scala.Array[Byte] = new scala.Array[Byte](initial.max(8))
+  private var storage: scala.Array[Byte]^ = new scala.Array[Byte](initial.max(8))
   private var size0: Int = 0
 
-  // An exclusive view for writes: the untracked field reads as read-only.
-  private inline def target: scala.Array[Byte]^ = storage.asInstanceOf[scala.Array[Byte]^]
 
   def size: Int = size0
 
@@ -62,16 +59,16 @@ extends caps.ExclusiveCapability, caps.Stateful:
       val grown = new scala.Array[Byte](capacity)
       System.arraycopy(storage, 0, grown, 0, size0)
       // The cast erases the fresh array's capture: it is confined to this buffer.
-      storage = grown.asInstanceOf[scala.Array[Byte]]
+      storage = grown
 
   update def add(byte: Byte): Unit =
     ensure(1)
-    target(size0) = byte
+    storage(size0) = byte
     size0 += 1
 
   update def addAll(bytes: Bytes): Unit =
     ensure(bytes.length)
-    System.arraycopy(Array.unsafeJvm(bytes), 0, target, size0, bytes.length)
+    System.arraycopy(Array.unsafeJvm(bytes), 0, storage, size0, bytes.length)
     size0 += bytes.length
 
   def data: Bytes =

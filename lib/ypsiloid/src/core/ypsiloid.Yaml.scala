@@ -1911,7 +1911,7 @@ object Yaml extends Yaml2, Dynamic:
         val ast = parser.parse()
         // The index array is finished and never written again; assumed separate for the
         // wrap into the frozen form.
-        (ast, parser.rootIndex.asInstanceOf[Array[Int]^{}])
+        (ast, parser.rootIndex.nn)
       finally parser.tracking = false
 
     def parseAllTracked(consume input: (Stream[Data] over Credit)^)
@@ -1938,7 +1938,7 @@ object Yaml extends Yaml2, Dynamic:
         val ast = parser.parse()
         // The index array is finished and never written again; assumed separate for the
         // wrap into the frozen form.
-        (ast, parser.rootIndex.asInstanceOf[Array[Int]^{}])
+        (ast, parser.rootIndex.nn)
       finally parser.tracking = false
 
     def parseTracked(input: Data)(using Tactic[Parse.Error]): (Yaml.Ast, Array[Int]^{}) =
@@ -1950,7 +1950,7 @@ object Yaml extends Yaml2, Dynamic:
         val ast = parser.parse()
         // The index array is finished and never written again; assumed separate for the
         // wrap into the frozen form.
-        (ast, parser.rootIndex.asInstanceOf[Array[Int]^{}])
+        (ast, parser.rootIndex.nn)
       finally parser.tracking = false
 
     def parseAllTracked(input: Text)(using Tactic[Parse.Error])
@@ -2011,10 +2011,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Finalised root-level position index produced by the previous `parse()`
     // call when `tracking` was on. Reset to `null` at the start of every parse.
-    // `AnyRef` field, as `cursor1` above: an `Array[Int] | Null` field type is unclassified
-    // under the class's `Mutable` classification.
-    @scala.caps.unsafe.untrackedCaptures
-    protected[ypsiloid] var rootIndex: AnyRef | Null = null
+    protected[ypsiloid] var rootIndex: Array[Int]^{} | Null = null
 
     // Local-buffer offset up to which `cursor.lineNo` / `cursor.columnNo`
     // have been brought up to date. The hot-loop `syncTo()` bypasses the
@@ -2061,12 +2058,8 @@ object Yaml extends Yaml2, Dynamic:
     // quoted-string unescape and UTF-8 decoded plain scalars). Mirrors
     // Jacinta's `chars`/`stringCursor` to avoid per-string allocation.
     var arraySize: Int        = 64
-    // `AnyRef` field + accessor, as `cursor1` above.
-    @scala.caps.unsafe.untrackedCaptures
-    private var chars1: AnyRef = (new scala.Array[Char](64)).asInstanceOf[AnyRef]
+    var chars: scala.Array[Char]^ = new scala.Array[Char](64)
 
-    private inline def chars: scala.Array[Char]^ = chars1.asInstanceOf[scala.Array[Char]^]
-    private inline def charsTarget: scala.Array[Char]^ = chars1.asInstanceOf[scala.Array[Char]^]
     var stringCursor: Int     = 0
 
     // Pool of buffer instances for nested sequences/mappings so we can
@@ -2306,21 +2299,23 @@ object Yaml extends Yaml2, Dynamic:
     private update inline def appendChar(char: Char): Unit =
       if stringCursor == arraySize then
         arraySize *= 2
-        val newArr = new scala.Array[Char](arraySize)
-        System.arraycopy(chars, 0, newArr, 0, stringCursor)
-        chars1 = newArr.asInstanceOf[AnyRef]
+        growChars()
 
-      charsTarget(stringCursor) = char
+      chars(stringCursor) = char
       stringCursor += 1
 
     // Multi-char append (used for variable-length escapes / surrogate pairs).
     private update inline def ensureSpace(n: Int): Unit =
       while stringCursor + n > arraySize do arraySize *= 2
 
-      if chars.length < arraySize then
-        val newArr = new scala.Array[Char](arraySize)
-        System.arraycopy(chars, 0, newArr, 0, stringCursor)
-        chars1 = newArr.asInstanceOf[AnyRef]
+      if chars.length < arraySize then growChars()
+
+    // The cold path, out of line: a fresh array assigned to a field inside an inline method
+    // expands into its callers' loops, where the checker cannot consume it.
+    private update def growChars(): Unit =
+      val newArr = new scala.Array[Char](arraySize)
+      System.arraycopy(chars, 0, newArr, 0, stringCursor)
+      chars = newArr
 
     private inline def getStringText(): Text = String(chars, 0, stringCursor).tt
 
@@ -2362,7 +2357,7 @@ object Yaml extends Yaml2, Dynamic:
         if tracking then
           val rootBuf = acquireIndexBuffer()
           emitNullHere(rootBuf)
-          rootIndex = rootBuf.toArray.asInstanceOf[AnyRef]
+          rootIndex = Array.from(rootBuf)
           releaseIndexBuffer()
 
         Yaml.Ast.Null
@@ -2373,7 +2368,7 @@ object Yaml extends Yaml2, Dynamic:
           if tracking then
             val rootBuf = acquireIndexBuffer()
             emitNullHere(rootBuf)
-            rootIndex = rootBuf.toArray.asInstanceOf[AnyRef]
+            rootIndex = Array.from(rootBuf)
             releaseIndexBuffer()
 
           Yaml.Ast.Null
@@ -2382,7 +2377,7 @@ object Yaml extends Yaml2, Dynamic:
             if tracking then
               val rootBuf = acquireIndexBuffer()
               val n = parseNodeTracked(indent, rootBuf)
-              rootIndex = rootBuf.toArray.asInstanceOf[AnyRef]
+              rootIndex = Array.from(rootBuf)
               releaseIndexBuffer()
               n
             else
@@ -3152,7 +3147,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            charsTarget(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -3535,7 +3530,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            charsTarget(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -3647,7 +3642,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            charsTarget(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -4027,7 +4022,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            charsTarget(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -4709,7 +4704,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            charsTarget(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
