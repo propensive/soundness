@@ -317,18 +317,18 @@ object Tests extends Suite(m"Honeycombd Tests"):
       test(m"Parse Document without doctype"):
         t"""<title>Heading</title>
             <p>body""".load[Html]
-      . assert(_ == Document(example, htmlDoms.whatwg))
+      . assert(_ == Document(example, Html.Provenance(htmlDoms.whatwg)))
 
       test(m"Parse Document with doctype"):
         t"""<!doctype html>
             <title>Heading</title>
             <p>body""".load[Html]
-      . assert(_ == Document(example, htmlDoms.whatwg))
+      . assert(_ == Document(example, Html.Provenance(htmlDoms.whatwg)))
 
       test(m"Parse Document from chunks"):
         val chunks: Chain[Text] = Chain(t"<title>Heading</title>", t"\n<p>body")
         chunks.load[Html]
-      . assert(_ == Document(example, htmlDoms.whatwg))
+      . assert(_ == Document(example, Html.Provenance(htmlDoms.whatwg)))
 
       test(m"Parse RCDATA with an entity"):
         t"""<title>Push &amp; Pull</title>""".read[Html of Metadata]
@@ -427,13 +427,13 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"DOCTYPE case insensitivity"):
           val parsed = t"<!DocTyPe html>\n<title>x</title>\n<p>y".load[Html]
           val expected = Html(Head(Title("x")), Body(P("y")))
-          parsed == Document(expected, htmlDoms.whatwg)
+          parsed == Document(expected, Html.Provenance(htmlDoms.whatwg))
         . assert(_ == true)
 
         test(m"DOCTYPE with extra whitespace"):
           val parsed = t"<!doctype   html  >\n<title>x</title>\n<p>y".load[Html]
           val expected = Html(Head(Title("x")), Body(P("y")))
-          parsed == Document(expected, htmlDoms.whatwg)
+          parsed == Document(expected, Html.Provenance(htmlDoms.whatwg))
         . assert(_ == true)
 
         test(m"position reporting on later line"):
@@ -1376,7 +1376,7 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
         val parsed = t"""<title>Heading</title>
             <p>body""".load[Html]
         val example = Html(Head(Title("Heading")), Body(P("body")))
-        parsed == Document(example, htmlDoms.html4Transitional)
+        parsed == Document(example, Html.Provenance(htmlDoms.html4Transitional))
       . assert(_ == true)
 
       test(m"Parse Document with HTML4 doctype"):
@@ -1384,7 +1384,7 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
             <title>Heading</title>
             <p>body""".load[Html]
         val example = Html(Head(Title("Heading")), Body(P("body")))
-        parsed == Document(example, htmlDoms.html4Transitional)
+        parsed == Document(example, Html.Provenance(htmlDoms.html4Transitional))
       . assert(_ == true)
 
       test(m"Parse RCDATA with an entity"):
