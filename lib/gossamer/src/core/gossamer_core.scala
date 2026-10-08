@@ -491,25 +491,28 @@ package proximities:
 
 extension (text: Text)
   def sub(from: Text, to: Text): Text =
-    text.subPattern(jur.Pattern.compile(jur.Pattern.quote(from.s)).nn, to, Int.MaxValue)
+    text.subPattern(jur.Pattern.compile(jur.Pattern.quote(from.s)).nn, to, Int.MaxValue, true)
 
   def sub(from: Text, to: Text, count: Int): Text =
-    text.subPattern(jur.Pattern.compile(jur.Pattern.quote(from.s)).nn, to, count)
+    text.subPattern(jur.Pattern.compile(jur.Pattern.quote(from.s)).nn, to, count, true)
 
   def sub(from: Regex, to: Text): Text =
-    text.subPattern(jur.Pattern.compile(from.pattern.s).nn, to, Int.MaxValue)
+    text.subPattern(jur.Pattern.compile(from.pattern.s).nn, to, Int.MaxValue, false)
 
   def sub(from: Regex, to: Text, count: Int): Text =
-    text.subPattern(jur.Pattern.compile(from.pattern.s).nn, to, count)
+    text.subPattern(jur.Pattern.compile(from.pattern.s).nn, to, count, false)
 
-  private def subPattern(pattern: jur.Pattern, to: Text, count: Int): Text =
+  // A literal replacement is quoted so that `\` and `$` are inserted verbatim; a regex
+  // substitution keeps them, so that `$1` refers to the first group.
+  private def subPattern(pattern: jur.Pattern, to: Text, count: Int, literal: Boolean): Text =
     if count <= 0 then text else
       val matcher = pattern.matcher(text.s).nn
       val builder = jl.StringBuilder()
+      val replacement = if literal then jur.Matcher.quoteReplacement(to.s).nn else to.s
       var n = 0
 
       while n < count && matcher.find() do
-        matcher.appendReplacement(builder, to.s)
+        matcher.appendReplacement(builder, replacement)
         n += 1
 
       matcher.appendTail(builder)
