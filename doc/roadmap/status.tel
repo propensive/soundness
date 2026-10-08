@@ -70,7 +70,7 @@ item
   track safety
   horizon near
   status open
-  baseline  507 untrackedCaptures occurrences (2026-10-07 after the first sweep; 509 that morning; 468 on 2026-09-25; 288 on 2026-08-01)
+  baseline  484 untrackedCaptures occurrences (2026-10-08 after the first class conversion; 507 on 2026-10-07; 468 on 2026-09-25; 288 on 2026-08-01)
   criterion  git grep -o untrackedCaptures -- lib | wc -l == 0
 
 item

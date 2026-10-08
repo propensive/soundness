@@ -2580,3 +2580,36 @@ the classpath", and random test failures. Two fixes:
   `systemTemporaryDirectory` resolves — the JVM ignores `TMPDIR` on macOS — plus `TMPDIR` for
   subprocesses), runs `fume quit` and removes both when the run ends, however it ends. Nothing
   a suite forgets can outlive the run, and no daemon is left behind.
+
+## safety-1, class 1: `Board` (profanity) and its surfaces are stateful (2026-10-08)
+
+The first per-class conversion, chosen for its size (one trait, seven mutators, six
+implementations across profanity and ultimatum). Recipe as it actually went:
+
+- `trait Board extends caps.ExclusiveCapability, caps.Stateful` — not `Mutable`: a board captures
+  its `Stdio`/`Terminal`, which `Mutable` (Unscoped) forbids (P4). The seven drawing operations
+  are `update def`s; every implementation marks its overrides and state-changing helpers
+  likewise (`GridSurface` 15, `InlineRoot` 11, `ScreenRoot` 5, the two profanity boards 8 each);
+  their 22 `untrackedCaptures` go.
+- **A read-only method may not use a captured impure thunk.** `TerminalBoard.width = widthFn()`
+  with `widthFn: () => Int` is "accesses exclusive capability". The size thunks only read the
+  terminal, so they are typed `() ->{caps.any.rd} Int` — which needs `Terminal` itself to be
+  `Stateful` (its three setters become `update def`s) so that `() => terminal.knownColumns`
+  captures `terminal.rd`. Terminal's own state stays in the untracked `Metrics` holder (written
+  from the signal thread and the pump daemon: the concurrency idiom, unchanged).
+- **Factories return fresh instances.** `TerminalBoard.apply(terminal)` is
+  `TerminalBoard^{terminal.rd, caps.any}` (the honest set, no seal — three
+  `unsafeAssumeSeparate` deleted); the size-taking factories return `X^`. A plain result type
+  makes every holder a read-only alias ("Cannot call update method … capture set is read-only"),
+  which was 170 of the 174 test errors.
+- **Bind a fresh root to a `val` before passing it** where the callee's parameter is a fresh
+  `Board^` (`Form(InlineRoot(terminal), …)` → `val root = …; Form(root, …)`).
+- **`Stdio.print` is read-only by interface** but `FlowExtent` (a `Board` and a `Stdio`) draws
+  in it; a read-only method of a stateful class can call no update method, through no alias.
+  The write is delegated to a plain `Writer(board: Board^)` held as a pure field
+  (`unsafeAssumePure`, tag `[stdio-readonly]`): one seal for 22 annotations, until `Stdio` is
+  itself stateful.
+- Tests: a helper returning a surface returns `X^`; a `given Stdio = flow` becomes
+  `given (Stdio^{flow}) = flow`; the resize test's iterator shrank the root it does not own
+  (`Form` holds it exclusively) — the size now lives in a plain cell the iterator writes.
+- Net: `untrackedCaptures` 506 → 484, `unsafeAssumeSeparate` 350 → 347, `unsafeAssumePure` +1.

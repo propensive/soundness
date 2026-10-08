@@ -39,7 +39,7 @@ import gossamer.*
 import turbulence.*
 
 object InlineBoard:
-  def apply(terminal: Terminal): InlineBoard =
+  def apply(terminal: Terminal): InlineBoard^ =
     new InlineBoard(terminal.knownColumns, terminal.knownRows)(using terminal.stdio)
 
 // A `Board` that renders a widget "inline" at the terminal's current cursor
@@ -52,12 +52,10 @@ object InlineBoard:
 // column, which is what keeps the widget anchored to the prompt rather than the
 // top-left of the screen.
 class InlineBoard(val width: Int, val height: Int)(using Stdio) extends Board:
-  @scala.caps.unsafe.untrackedCaptures
   private var row: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var column: Int = 0
 
-  def move(column2: Ordinal, row2: Ordinal): Unit =
+  update def move(column2: Ordinal, row2: Ordinal): Unit =
     val targetRow = row2.n0
     val targetColumn = column2.n0
 
@@ -68,7 +66,7 @@ class InlineBoard(val width: Int, val height: Int)(using Stdio) extends Board:
     row = targetRow
     column = targetColumn
 
-  def put(text: Text): Unit =
+  update def put(text: Text): Unit =
     val string = text.s
     var i = 0
 
@@ -89,9 +87,9 @@ class InlineBoard(val width: Int, val height: Int)(using Stdio) extends Board:
 
       i += 1
 
-  def put(text: Teletype): Unit = put(text.plain)
-  def clear(): Unit = Out.print(csi.ed(0))
-  def clearLine(): Unit = Out.print(csi.el(0))
-  def cursor(visible: Boolean): Unit = Out.print(csi.dectcem(visible))
-  def showCaret(column2: Ordinal, row2: Ordinal): Unit = move(column2, row2)
-  def flush(): Unit = ()
+  update def put(text: Teletype): Unit = put(text.plain)
+  update def clear(): Unit = Out.print(csi.ed(0))
+  update def clearLine(): Unit = Out.print(csi.el(0))
+  update def cursor(visible: Boolean): Unit = Out.print(csi.dectcem(visible))
+  update def showCaret(column2: Ordinal, row2: Ordinal): Unit = move(column2, row2)
+  update def flush(): Unit = ()

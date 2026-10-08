@@ -44,12 +44,10 @@ object ScreenRoot:
   // Build a fullscreen root covering the whole terminal, reading its size live (so a
   // resize is reflected the next time the layout is solved) and writing through its
   // `Stdio`. The size thunks retain the terminal, so the root honestly captures it.
-  def apply(terminal: Terminal): ScreenRoot^{terminal} =
-    // Both thunks only read the same terminal's dimensions; no aliased writer.
-    scala.caps.unsafe.unsafeAssumeSeparate:
-      new ScreenRoot(() => terminal.knownColumns, () => terminal.knownRows)(using terminal.stdio)
+  def apply(terminal: Terminal): ScreenRoot^{terminal.rd, scala.caps.any} =
+    new ScreenRoot(() => terminal.knownColumns, () => terminal.knownRows)(using terminal.stdio)
 
-  def apply(width: Int, height: Int)(using Stdio): ScreenRoot =
+  def apply(width: Int, height: Int)(using Stdio): ScreenRoot^ =
     new ScreenRoot(() => width, () => height)
 
 // The root `Board` for FULLSCREEN mode: panels composite into its character grid
@@ -61,7 +59,8 @@ object ScreenRoot:
 // `invalidate` (a resize, when the terminal has reflowed whatever was on screen),
 // redraws every row. It replaces the unbuffered `TerminalBoard` as the fullscreen
 // root, whose immediate per-`put` writes re-emitted every cell a repaint touched.
-class ScreenRoot(widthFn: () => Int, heightFn: () => Int)(using stdio: Stdio)
+class ScreenRoot(widthFn: () ->{scala.caps.any.rd} Int, heightFn: () ->{scala.caps.any.rd} Int)
+  (using stdio: Stdio)
 extends GridSurface(widthFn(), heightFn()):
 
   // The live terminal size, for the layout solver; the grid is re-fitted to it by
@@ -72,21 +71,21 @@ extends GridSurface(widthFn(), heightFn()):
   // Re-fit the grid to the live terminal size. A real change blanks the grid and
   // invalidates the snapshot: the terminal has reflowed whatever was on screen, so
   // the next present must redraw everything.
-  def reframe(): Unit =
+  update def reframe(): Unit =
     if widthFn() != gridWidth || heightFn() != gridHeight then
       reshape(widthFn(), heightFn())
       invalidate()
 
   // Cursor visibility is deferred like the caret: recorded now, applied by `flush`,
   // so a focused editor shows it and a focused menu keeps it hidden.
-  def cursor(visible: Boolean): Unit = caretVisible = visible
+  update def cursor(visible: Boolean): Unit = caretVisible = visible
 
   // Record the caret's target cell; `flush` positions the hardware cursor there.
-  def showCaret(column: Ordinal, row2: Ordinal): Unit =
+  update def showCaret(column: Ordinal, row2: Ordinal): Unit =
     caretColumn = column.n0
     caretRow = row2.n0
 
-  def flush(): Unit =
+  update def flush(): Unit =
     val columns = gridWidth
     val h       = gridHeight
     val validated = if invalidated then Unset else snapshotValid(1, columns, h)
@@ -129,4 +128,4 @@ extends GridSurface(widthFn(), heightFn()):
 
   // On exit, re-show the hardware cursor; the alternate-screen wrapper around the
   // session restores the previous screen contents.
-  def finish(): Unit = Out.print(csi.dectcem(true))
+  update def finish(): Unit = Out.print(csi.dectcem(true))

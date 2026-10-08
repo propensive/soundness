@@ -38,7 +38,7 @@ the named wrappers (`Array.unsafeFrozen` 283, `Array.unsafeJvm` 205, `Array.froz
 ## safety-1: retire `untrackedCaptures`
 
 Horizon: near
-Baseline: 507 occurrences (measured 2026-10-07 after the first sweep; 509 that morning; 468 on 2026-09-25; 288 on 2026-08-01)
+Baseline: 484 occurrences (measured 2026-10-08 after the first class conversion; 507 on 2026-10-07; 468 on 2026-09-25; 288 on 2026-08-01)
 
 The retirement recipe is documented and mechanical: the annotated class becomes `caps.Mutable`,
 mutating methods become `update def`, consumers hold `X^`, and mutual back-references are
@@ -51,7 +51,12 @@ and each is a design case, not a sweep. The first sweep (stripping every primiti
 annotation and letting the compiler object) found only 2 of 140 removable: the rest guard
 `var`s in classes that are not `Stateful`, or locals captured by closures, and making a class
 `Stateful` brings the read-only and `update def` discipline to it and its callers — so the
-recipe is one class per change.
+recipe is one class per change. The first, `profanity.Board` with its six surfaces (and
+`Terminal`, whose size the surfaces read), removed 22 annotations and three separation seals
+for one tagged purity seal (`Stdio.print` is read-only by interface); `rep/DECISIONS.md`
+records the recipe as it actually went, including the two rules that shaped it: a read-only
+method may not use a captured impure thunk, and a factory must return a fresh `X^` or every
+holder becomes a read-only alias.
 
 Done when:
 

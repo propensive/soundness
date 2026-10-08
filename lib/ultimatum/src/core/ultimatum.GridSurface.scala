@@ -52,15 +52,10 @@ import yossarian.*
 // Subclasses supply `cursor`, `showCaret` and `flush`.
 private[ultimatum] abstract class GridSurface(initialWidth: Int, initialHeight: Int)
 extends Board:
-  @scala.caps.unsafe.untrackedCaptures
   protected var gridWidth: Int = initialWidth.max(1)
-  @scala.caps.unsafe.untrackedCaptures
   protected var gridHeight: Int = initialHeight.max(1)
-  @scala.caps.unsafe.untrackedCaptures
   protected var screen: Screen[StyleWord] = Screen(gridWidth, gridHeight, StyleWord.Default)
-  @scala.caps.unsafe.untrackedCaptures
   protected var col: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
   protected var row: Int = 0
 
   // The physical-screen model: a copy of the grid as the last present actually drew it,
@@ -68,13 +63,9 @@ extends Board:
   // present can emit only the cells that differ (an unchanged overprint is a no-op).
   // It models the TERMINAL, not the compose grid: `reshape` and `clear` leave it alone
   // (they only blank what will be composed next).
-  @scala.caps.unsafe.untrackedCaptures
   protected var snapshot: Optional[Screen[StyleWord]] = Unset
-  @scala.caps.unsafe.untrackedCaptures
   protected var snapshotTop: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
   protected var snapshotColumns: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
   protected var invalidated: Boolean = false
 
   // Mark the next present as a full repaint: the screen can no longer be assumed to
@@ -83,23 +74,17 @@ extends Board:
   // (the `invalidated` flag alone gates that path), but it remains the exact record
   // of what the last present drew — which the resize recovery needs, to predict how
   // the terminal re-wrapped those very rows at the new width.
-  def invalidate(): Unit =
+  update def invalidate(): Unit =
     invalidated = true
 
   // The caret (hardware cursor) target and visibility, recorded by a root's `cursor`/
   // `showCaret` and applied when the frame is presented; and where the last present
   // left them, so a diffed present whose caret hasn't moved can omit placing it.
-  @scala.caps.unsafe.untrackedCaptures
   protected var caretColumn: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
   protected var caretRow: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
   protected var caretVisible: Boolean = true
-  @scala.caps.unsafe.untrackedCaptures
   protected var presentedCaretRow: Int = -1
-  @scala.caps.unsafe.untrackedCaptures
   protected var presentedCaretColumn: Int = -1
-  @scala.caps.unsafe.untrackedCaptures
   protected var presentedCaretVisible: Boolean = false
 
   protected val metric: Grapheme is Measurable = summon[Grapheme is Measurable]
@@ -109,16 +94,16 @@ extends Board:
 
   // Reallocate the grid to a new size, blanking it and homing the cursor. Used by
   // `InlineRoot` to resize to the measured block height each frame.
-  protected def reshape(width2: Int, height2: Int): Unit =
+  protected update def reshape(width2: Int, height2: Int): Unit =
     gridWidth = width2.max(1)
     gridHeight = height2.max(1)
     screen = Screen(gridWidth, gridHeight, StyleWord.Default)
     col = 0
     row = 0
 
-  protected def scrollUp(): Unit = screen.scroll(1)
+  protected update def scrollUp(): Unit = screen.scroll(1)
 
-  protected def newline(): Unit =
+  protected update def newline(): Unit =
     col = 0
     if row < gridHeight - 1 then row += 1 else scrollUp()
 
@@ -126,7 +111,7 @@ extends Board:
   // width. A zero-width grapheme is dropped (clustering already folded it into its
   // base); a width-2 grapheme writes an empty trailing sentinel into the next cell and
   // wraps to a new row if it would straddle the right edge.
-  protected def putCell(grapheme: Grapheme, style: StyleWord): Unit =
+  protected update def putCell(grapheme: Grapheme, style: StyleWord): Unit =
     if grapheme.text == t"\n" then newline()
     else
       val cellWidth = metric.width(grapheme)
@@ -145,22 +130,22 @@ extends Board:
         col += cellWidth
 
   // Imprint any styled content cell-by-cell (the seamless entry for all text types).
-  protected def imprint[content: Imprintable](content: content): Unit =
+  protected update def imprint[content: Imprintable](content: content): Unit =
     summon[content is Imprintable].cells(content): (grapheme, style) => putCell(grapheme, style)
 
-  def move(column: Ordinal, row2: Ordinal): Unit =
+  update def move(column: Ordinal, row2: Ordinal): Unit =
     col = column.n0.min(gridWidth - 1).max(0)
     row = row2.n0.min(gridHeight - 1).max(0)
 
-  def put(text: Text): Unit = imprint(text)
-  def put(text: Teletype): Unit = imprint(text)
+  update def put(text: Text): Unit = imprint(text)
+  update def put(text: Teletype): Unit = imprint(text)
 
-  def clear(): Unit =
+  update def clear(): Unit =
     screen = Screen(gridWidth, gridHeight, StyleWord.Default)
     col = 0
     row = 0
 
-  def clearLine(): Unit =
+  update def clearLine(): Unit =
     var c = col
 
     while c < gridWidth do
@@ -227,7 +212,7 @@ extends Board:
   // Record the grid as what is now really on screen, drawn at absolute row `top` and
   // clipped to `columns`. Called by a presenter after every present, on both the full
   // and the diffed path.
-  protected def recordSnapshot(top: Int, columns: Int): Unit =
+  protected update def recordSnapshot(top: Int, columns: Int): Unit =
     snapshot = screen.copy()
     snapshotTop = top
     snapshotColumns = columns
@@ -260,7 +245,7 @@ extends Board:
   // A wide glyph never straddles a run boundary: its trailing sentinel carries the
   // leading cell's style, so the two cells always change (or not) together; backing a
   // run up off a sentinel start is a defensive backstop.
-  protected def emitDiffRuns
+  protected update def emitDiffRuns
     ( frame: StringBuilder, top: Int, columns: Int, h: Int, termcap: Termcap,
       snap: Screen[StyleWord] )
   :   Int =
@@ -293,7 +278,7 @@ extends Board:
   // NOTHING is written — an identical frame is a true no-op. Otherwise the patches
   // land in one single write with the cursor hidden, so it never flashes across the
   // screen between runs (and nothing can interleave mid-frame).
-  protected def presentDiff(top: Int, columns: Int, h: Int, snap: Screen[StyleWord])
+  protected update def presentDiff(top: Int, columns: Int, h: Int, snap: Screen[StyleWord])
     ( using Stdio )
   :   Unit =
 
@@ -330,7 +315,7 @@ extends Board:
   // Record the caret state the present just applied, alongside `recordSnapshot`, so
   // the next diffed present can recognise an unmoved caret. Called on the full path
   // (the diffed path records inline, only when it writes).
-  protected def recordCaret(top: Int, columns: Int, h: Int): Unit =
+  protected update def recordCaret(top: Int, columns: Int, h: Int): Unit =
     presentedCaretRow = (top + caretRow.min(h - 1)).max(1)
     presentedCaretColumn = caretColumn.min(columns - 1).max(0) + 1
     presentedCaretVisible = caretVisible
