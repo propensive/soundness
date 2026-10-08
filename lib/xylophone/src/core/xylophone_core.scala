@@ -141,6 +141,11 @@ package namespaceOptions:
   inline given strictNamespaces: Xml.Namespacing = Xml.Namespacing.Strict
   inline given lenientNamespaces: Xml.Namespacing = Xml.Namespacing.Lenient
 
+// The schema a parse validates against. `Freeform` admits any element, attribute and the five
+// predefined entities, and is the usual choice when no XSD is in play.
+package xmlSchemas:
+  given freeformXmlSchema: XmlSchema = XmlSchema.Freeform
+
 package formatting:
   given compactXmlFormatting: Xml.Formatting = Xml.Formatting(Unset, trailingNewline = false)
 

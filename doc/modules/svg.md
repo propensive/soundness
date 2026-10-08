@@ -169,12 +169,10 @@ Document(drawing, enc"UTF-8").show   // <?xml version="1.0" …?><svg …>
 
 Parsing runs the other way, reading SVG text back into typed figures and definitions, so a drawing
 produced elsewhere can be inspected, measured or altered rather than merely embedded. The
-[XML](xml.md) parser beneath it takes a schema, and SVG's own vocabulary is validated by the
-figure types, so the free-form schema is the one to use:
+[XML](xml.md) parser beneath it is given the free-form schema, since SVG's own vocabulary is
+validated by the figure types, so no `XmlSchema` is needed in scope:
 
 ```scala
-given XmlSchema = XmlSchema.Freeform
-
 val svg = t"""<svg width="50" height="50"><rect x="0" y="0" width="10" height="10"/></svg>"""
         . read[Svg]
 

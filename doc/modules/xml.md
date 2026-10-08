@@ -28,9 +28,12 @@ package, with a schema and an error strategy in scope:
 ```scala
 import soundness.*
 import strategies.throwUnsafely
-
-given XmlSchema = XmlSchema.Freeform
+import xmlSchemas.freeformXmlSchema
 ```
+
+The schema is a choice, imported like a charset or an error strategy: `freeformXmlSchema` admits
+any element and attribute, and an [XSD](#typed-records-from-an-xml-schema) stands in for it when
+a document should be validated.
 
 An XML value that is immutable, with every edit returning a new value, follows [immutability](../philosophy/immutability.md).
 
