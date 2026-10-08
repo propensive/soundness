@@ -73,10 +73,13 @@ object Platform:
   // `path.read[…]` resolve through turbulence's `read` with no extra import for any `Path on …`.
   // A path the fd table governs (`Fdtable`) is read through its descriptor
   // rather than from this process's filesystem.
-  given pathReadable: [plane <: Platform: Filesystem, result]
+  // The subject is a bounded type parameter, `path <: Path on plane`, rather than `Path on
+  // plane` itself: `Self` is invariant, and a `p"…"` literal or an `.on[…]` has the richer type
+  // `Path of … under … on plane`, which would otherwise never match.
+  given pathReadable: [plane <: Platform: Filesystem, path <: Path on plane, result]
   =>  ( readable: (Data is Readable to result)^ )
   =>  ( tactic: Tactic[Io.Error], fdtables: Every[Fdtable] )
-  =>  (((Path on plane) is Readable to result)^{readable, tactic}) =
+  =>  ((path is Readable to result)^{readable, tactic}) =
     path =>
       val encoded: Text = summon[Path on plane is Encodable in Text].encode(path)
 
@@ -98,9 +101,9 @@ object Platform:
   // content: the typeclass counterpart of the eager `path.write(...)` extension, so that
   // generic writers — such as the write-back of `open[Tel]` — resolve for any
   // `Path on <platform>` with no import.
-  given pathWritable: [plane <: Platform: Filesystem]
+  given pathWritable: [plane <: Platform: Filesystem, path <: Path on plane]
   =>  ( tactic: Tactic[Io.Error], fdtables: Every[Fdtable] )
-  =>  (((Path on plane) is Writable by Data)^{tactic}) =
+  =>  ((path is Writable by Data)^{tactic}) =
     (path, stream) =>
       val bytes: Data = summon[Data is Aggregable by Data].accept(stream)
       val encoded: Text = summon[Path on plane is Encodable in Text].encode(path)
