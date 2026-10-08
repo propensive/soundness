@@ -2134,6 +2134,23 @@ object Tests extends Suite(m"Stratiform Tests"):
           doc.root.childCompounds.readable.headOption.map(_.keyword).getOrElse(t"") )
       . assert(_ == ((1, 0), t"name"))
 
+      test(m"a document ending at end of input has no continuation"):
+        t"name Alice\n".load[Tel].metadata.continuation
+      . assert(_ == Unset)
+
+      test(m"the continuation is the line after the document separator"):
+        t"name Alice\n##\nbody text\n".load[Tel].metadata.continuation
+      . assert(_ == 3)
+
+      test(m"the content after the separator is not parsed as TEL"):
+        t"name Alice\n##\n  not: tel ((\n".load[Tel].root.childCompounds.readable.length
+      . assert(_ == 1)
+
+      test(m"an interpreter directive and pragma precede a continued document"):
+        val doc = t"#!/usr/bin/env tool\ntel 1.0\n\nname Alice\n\n##\nbody\n".load[Tel]
+        (doc.metadata.interpreterDirective, doc.metadata.continuation)
+      . assert(_ == (t"/usr/bin/env tool", 7))
+
     suite(m"LIRA-based pragma grammar (§8)"):
       def pragmaOf(source: Text): Optional[Tel.Pragma] = source.load[Tel].metadata.pragma
 
