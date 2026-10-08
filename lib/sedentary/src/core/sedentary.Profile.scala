@@ -109,11 +109,15 @@ extends Rig:
           // escape-analysis from scalarising the writes away.
           val sink = new java.util.concurrent.atomic.AtomicReference[Any](null)
 
+          // The body, bound once as a method of its own, exactly as in `Bench`: spliced into the
+          // loops of this run-once method, it could only be JIT-compiled by on-stack replacement.
+          def operation(): Any = $body0
+
           // Run 10 times initially as untimed warmup
           var w = 0
 
           while w < 10 do
-            sink.lazySet($body0)
+            sink.lazySet(operation())
             w += 1
 
           // An in-process JFR recording of execution samples at a 1 ms period: a few
@@ -131,7 +135,7 @@ extends Rig:
 
           val deadline = jl.System.nanoTime + $target2
 
-          while jl.System.nanoTime < deadline do sink.lazySet($body0)
+          while jl.System.nanoTime < deadline do sink.lazySet(operation())
 
           recording.stop()
 

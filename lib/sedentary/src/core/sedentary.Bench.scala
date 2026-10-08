@@ -156,6 +156,12 @@ object Bench:
         // measuring instrument does not move with the thing measured.
         val sink = new java.util.concurrent.atomic.AtomicReference[Any](null)
 
+        // The body, bound once as a method of its own rather than spliced into each loop below.
+        // This method runs once, so its loops can only be JIT-compiled by on-stack replacement;
+        // a body spliced into them is compiled the same way, and runs tens of times slower than
+        // the same code called as a method, which compiles normally once it is hot.
+        def operation(): Any = $body0
+
         var count: Long = 1L
         var d: Long = 0L
 
@@ -163,7 +169,7 @@ object Bench:
         var w = 0
 
         while w < 10 do
-          sink.lazySet($body0)
+          sink.lazySet(operation())
           w += 1
 
         // Keep doubling the count until we get one run exceeding target
@@ -176,7 +182,7 @@ object Bench:
           count *= 2L
           val t0 = jl.System.nanoTime
           var i = 0L
-          while i < count do { sink.lazySet($body0); i += 1L }
+          while i < count do { sink.lazySet(operation()); i += 1L }
           d = jl.System.nanoTime - t0
 
         var rate: Double = d.toDouble/count
@@ -196,7 +202,7 @@ object Bench:
         while c < ${Expr(warmups)} do
           val t0 = jl.System.nanoTime
           var j = 0L
-          while j < count do { sink.lazySet($body0); j += 1L }
+          while j < count do { sink.lazySet(operation()); j += 1L }
           val t1 = jl.System.nanoTime - t0
           rates(c) = t1.toDouble/count
           count = math.max(1L, (${Expr(batch)}/rates(c)).toLong)
@@ -228,7 +234,7 @@ object Bench:
           jl.System.gc()
           val t0 = jl.System.nanoTime
           var j = 0L
-          while j < count do { sink.lazySet($body0); j += 1L }
+          while j < count do { sink.lazySet(operation()); j += 1L }
           val t1 = jl.System.nanoTime - t0
           result(m) = t1
           m += 1
