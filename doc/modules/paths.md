@@ -46,9 +46,12 @@ The `p"…"` interpolator writes a path literally and checks it as the code comp
 as a POSIX or Windows path by its shape:
 
 ```scala
-p"/home/user/data.csv"                    // Path on Posix
-p"""C:\Windows\System32\file.txt"""       // Path on Windows
+p"/home/user/data.csv"                    // Path of ("data.csv", "user", "home") on Posix
+p"""C:\Windows\System32\file.txt"""       // Path of ("file.txt", "System32", "Windows") on Windows
 ```
+
+The literal's elements are its type, leaf first, just as a path built with `/` carries each
+element it was given.
 
 ### Relative paths
 

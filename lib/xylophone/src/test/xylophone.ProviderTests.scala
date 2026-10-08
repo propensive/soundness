@@ -39,9 +39,9 @@ import classloaders.threadContextClassloader
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import textSanitizers.skipSanitizer
+import xmlSchemas.freeformXmlSchema
 
 object ProviderTests extends Suite(m"Xylophone type provider tests"):
-  given XmlSchema = XmlSchema.Freeform
 
   import Xml.Provider.Error.Reason.*
 

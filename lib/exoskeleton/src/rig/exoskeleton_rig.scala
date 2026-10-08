@@ -165,7 +165,7 @@ extension (shell: Shell)
             var zshAttempts = 0
 
             while !zshReady && zshAttempts < 666 do
-              delay(0.03*Second)
+              sleep(0.03*Second)
               zshReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").readable.length > 0
               zshAttempts += 1
 
@@ -212,7 +212,7 @@ extension (shell: Shell)
             var bashAttempts = 0
 
             while !bashReady && bashAttempts < 666 do
-              delay(0.03*Second)
+              sleep(0.03*Second)
               bashReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").readable.length > 0
               bashAttempts += 1
 
@@ -255,7 +255,7 @@ extension (shell: Shell)
             var fishAttempts = 0
 
             while !fishReady && fishAttempts < 666 do
-              delay(0.03*Second)
+              sleep(0.03*Second)
               fishReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").readable.length > 0
               fishAttempts += 1
 
@@ -267,7 +267,7 @@ extension (shell: Shell)
             var psAttempts = 0
 
             while !psReady && psAttempts < 666 do
-              delay(0.03*Second)
+              sleep(0.03*Second)
               psReady = Tmux.screenshot().screen.filter(_.starts(t">")).readable.length > 0
               psAttempts += 1
 

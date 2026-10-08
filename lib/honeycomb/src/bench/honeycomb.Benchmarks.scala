@@ -63,12 +63,11 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
   // table prints "1.3 MB·s¯¹" instead of "1.3×10⁶ B·s¯¹".
   given prefixes: Prefixes = Prefixes(List(Kilo, Mega, Giga, Tera))
 
-  def parseHoneycomb(text: Text): Document[Html] = unsafely(text.load[Html])
-
-  def parseJsoup(text: String): org.jsoup.nodes.Document = org.jsoup.Jsoup.parse(text).nn
-
   def run(): Unit =
     val bench = Bench()
+
+    // `load` resolves its `Loadable` when the staged body is compiled, which sees none of this
+    // file's imports, so each Honeycomb body imports the DOM it parses into.
 
     val size1 = htmlText1.getBytes("UTF-8").nn.length*Byte
     val size2 = htmlText2.getBytes("UTF-8").nn.length*Byte
@@ -79,42 +78,57 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
     suite(m"Parse example 1 (small page)"):
       bench(m"Parse file with Honeycomb")
         ( target = 1*Second, operationSize = size1 ):
-        '{ honeycomb.Benchmarks.parseHoneycomb(honeycomb.Benchmarks.html1) }
+        '{
+            import htmlDoms.whatwg
+            unsafely(honeycomb.Benchmarks.html1.load[Html])
+        }
 
       bench(m"Parse file with jsoup")(target = 1*Second, operationSize = size1):
-        '{ honeycomb.Benchmarks.parseJsoup(honeycomb.Benchmarks.htmlText1) }
+        '{ org.jsoup.Jsoup.parse(honeycomb.Benchmarks.htmlText1).nn }
 
     suite(m"Parse example 2 (typical layout)"):
       bench(m"Parse file with Honeycomb")
         ( target = 1*Second, operationSize = size2 ):
-        '{ honeycomb.Benchmarks.parseHoneycomb(honeycomb.Benchmarks.html2) }
+        '{
+            import htmlDoms.whatwg
+            unsafely(honeycomb.Benchmarks.html2.load[Html])
+        }
 
       bench(m"Parse file with jsoup")(target = 1*Second, operationSize = size2):
-        '{ honeycomb.Benchmarks.parseJsoup(honeycomb.Benchmarks.htmlText2) }
+        '{ org.jsoup.Jsoup.parse(honeycomb.Benchmarks.htmlText2).nn }
 
     suite(m"Parse example 3 (rich article)"):
       bench(m"Parse file with Honeycomb")
         ( target = 1*Second, operationSize = size3 ):
-        '{ honeycomb.Benchmarks.parseHoneycomb(honeycomb.Benchmarks.html3) }
+        '{
+            import htmlDoms.whatwg
+            unsafely(honeycomb.Benchmarks.html3.load[Html])
+        }
 
       bench(m"Parse file with jsoup")(target = 1*Second, operationSize = size3):
-        '{ honeycomb.Benchmarks.parseJsoup(honeycomb.Benchmarks.htmlText3) }
+        '{ org.jsoup.Jsoup.parse(honeycomb.Benchmarks.htmlText3).nn }
 
     suite(m"Parse example 4 (100 product cards)"):
       bench(m"Parse file with Honeycomb")
         ( target = 1*Second, operationSize = size4 ):
-        '{ honeycomb.Benchmarks.parseHoneycomb(honeycomb.Benchmarks.html4) }
+        '{
+            import htmlDoms.whatwg
+            unsafely(honeycomb.Benchmarks.html4.load[Html])
+        }
 
       bench(m"Parse file with jsoup")(target = 1*Second, operationSize = size4):
-        '{ honeycomb.Benchmarks.parseJsoup(honeycomb.Benchmarks.htmlText4) }
+        '{ org.jsoup.Jsoup.parse(honeycomb.Benchmarks.htmlText4).nn }
 
     suite(m"Parse example 5 (500 table rows)"):
       bench(m"Parse file with Honeycomb")
         ( target = 1*Second, operationSize = size5 ):
-        '{ honeycomb.Benchmarks.parseHoneycomb(honeycomb.Benchmarks.html5) }
+        '{
+            import htmlDoms.whatwg
+            unsafely(honeycomb.Benchmarks.html5.load[Html])
+        }
 
       bench(m"Parse file with jsoup")(target = 1*Second, operationSize = size5):
-        '{ honeycomb.Benchmarks.parseJsoup(honeycomb.Benchmarks.htmlText5) }
+        '{ org.jsoup.Jsoup.parse(honeycomb.Benchmarks.htmlText5).nn }
 
   lazy val html1: Text = htmlExample1.trim
   lazy val html2: Text = htmlExample2.trim

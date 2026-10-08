@@ -49,18 +49,34 @@ object internal:
   // `Radical` givens it needs at expansion time; the generic compile-time path helpers stay in
   // `serpentine.internal`.
   def path(context: Expr[StringContext]): Macro[Path] =
+    import quotes.reflect.*
+
     val name: String = context.valueOrAbort.parts.head
 
     // Lifted as `String`s, reconstructing the `Text`s at runtime (`.tt`): `ToExpr[Text]` would
     // lift a reach capability into the generated code.
     def liftText(text: Text): Expr[Text] = '{${Expr(text.s)}.tt}
 
+    // The literal's `Topic` is the tuple of its elements' literal types, leaf first, as `/`
+    // builds it: `p"/foo/bar/baz"` is a `Path of ("baz", "bar", "foo")`.
+    def topic(descent: scala.Seq[Text]): TypeRepr =
+      descent.foldRight(TypeRepr.of[EmptyTuple]): (element, tail) =>
+        (ConstantType(StringConstant(element.s)).asType, tail.asType) match
+          case ('[element], '[type tail <: Tuple; tail]) => TypeRepr.of[element *: tail]
+
     safely(name.tt.as[Path on Posix]).let: path =>
-      '{Path[Posix, %.type, Tuple](${Expr(path.root)}, ${Lifts.list(List.from(path.descent.map(liftText)))})}
+      val descent = Lifts.list(List.from(path.descent.map(liftText)))
+
+      topic(path.descent).asType.absolve match
+        case '[type topic <: Tuple; topic] =>
+          '{Path[Posix, %.type, topic](${Expr(path.root)}, $descent)}
 
     . or:
         safely(name.tt.as[Path on Windows]).let: path =>
           val descent = Lifts.list(List.from(path.descent.map(liftText)))
-          '{Path[Windows, Drive, Tuple](${Expr(path.root)}, $descent)}
+
+          topic(path.descent).asType.absolve match
+            case '[type topic <: Tuple; topic] =>
+              '{Path[Windows, Drive, topic](${Expr(path.root)}, $descent)}
 
         . or(halt(66, m"The path ${name} is not a valid Windows or POSIX path"))

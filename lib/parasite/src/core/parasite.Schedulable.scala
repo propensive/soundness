@@ -30,62 +30,30 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package locomotion
+package parasite
+
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
+
+import java.lang as jl
 
 import anticipation.*
-import contingency.*, strategies.throwUnsafely
 import prepositional.*
-import proscenium.*
-import turbulence.*
 
-// A plain `System.nanoTime` harness for quick, dependency-free local timing of
-// the Locomotion codec — a lighter alternative to the staged `Benchmarks` suite.
-// It reuses the corpora defined on `Benchmarks`.
-object TimingMain:
-  def time(label: String, bytes: Int, iterations: Int)(operation: () => Any): Unit =
-    var warmup = 0
-    while warmup < iterations/10 do { operation(); warmup += 1 }
+// How long, in nanoseconds from now, a pause expressed as `Self` should last. This is what lets
+// `snooze` and `sleep` take either a duration or an instant: a duration's generic form is already
+// a nanosecond count, and an instant's is the epoch milliseconds at which to wake. A bare `Long`
+// is neither until a unit is chosen by name (`abstractables.millisecondsAbstractable`,
+// `abstractables.epochMillisecondsAbstractable`, ...); with both a duration unit and the
+// instant reading in scope, it satisfies both givens below and is rejected as ambiguous, which
+// is the point: nothing at the call site could say which was meant.
+trait Schedulable extends Typeclass:
+  def nanoseconds(value: Self): Long
 
-    val start = System.nanoTime
-    var index = 0
-    while index < iterations do { operation(); index += 1 }
-    val elapsed = System.nanoTime - start
+  extension (value: Self) def remaining: Long = nanoseconds(value)
 
-    val nsPerOp = elapsed.toDouble/iterations
-    val opsPerSec = 1e9/nsPerOp
-    val mbPerSec = opsPerSec*bytes/(1024.0*1024.0)
-    println:
-      f"$label%-40s ${nsPerOp}%9.1f ns/op  ${opsPerSec.toLong}%14d ops/s  ${mbPerSec}%8.1f MB/s"
+object Schedulable:
+  given duration: [time: Abstractable across Durations to Long] => time is Schedulable = _.generic
 
-  def main(args: scala.Array[String]): Unit =
-    val iterations = if args.length > 0 then args(0).toInt else 1_000_000
-
-    println(s"Timing $iterations iterations per benchmark.")
-    println()
-
-    println(f"${"Corpus 1: small message (3 fields)"}%-40s   payload=${Benchmarks.bytes1.length} bytes")
-    time("  Decode", Benchmarks.bytes1.length, iterations):
-      () => Chain(Benchmarks.bytes1).read[Small in Protobuf]
-    time("  Encode", Benchmarks.bytes1.length, iterations):
-      () => Benchmarks.value1.in[Protobuf].encode
-    time("  Walk (protobuf-java)", Benchmarks.bytes1.length, iterations):
-      () => Benchmarks.walkWithProtobufJava(Benchmarks.raw1)
-    println()
-
-    println(f"${"Corpus 2: 100 user records"}%-40s   payload=${Benchmarks.bytes2.length} bytes")
-    time("  Decode", Benchmarks.bytes2.length, iterations/100):
-      () => Chain(Benchmarks.bytes2).read[Users in Protobuf]
-    time("  Encode", Benchmarks.bytes2.length, iterations/100):
-      () => Benchmarks.value2.in[Protobuf].encode
-    time("  Walk (protobuf-java)", Benchmarks.bytes2.length, iterations/100):
-      () => Benchmarks.walkWithProtobufJava(Benchmarks.raw2)
-    println()
-
-    println(f"${"Corpus 4: 1000 packed integers"}%-40s   payload=${Benchmarks.bytes4.length} bytes")
-    time("  Decode", Benchmarks.bytes4.length, iterations/100):
-      () => Chain(Benchmarks.bytes4).read[Ints in Protobuf]
-    time("  Encode", Benchmarks.bytes4.length, iterations/100):
-      () => Benchmarks.value4.in[Protobuf].encode
-    time("  Walk (protobuf-java)", Benchmarks.bytes4.length, iterations/100):
-      () => Benchmarks.walkWithProtobufJava(Benchmarks.raw4)
-    println()
+  given instant: [time: Abstractable across Instants to Long] => time is Schedulable =
+    time => (time.generic - jl.System.currentTimeMillis)*1_000_000L

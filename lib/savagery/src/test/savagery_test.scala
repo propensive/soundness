@@ -37,7 +37,6 @@ import soundness.*
 import errorDiagnostics.stackTracesDiagnostics
 import iridescence.WebColors.{Red, Blue, Green, Black, White}
 import strategies.throwUnsafely
-import xylophone.XmlSchema
 import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Savagery tests"):
@@ -272,7 +271,7 @@ object Tests extends Suite(m"Savagery tests"):
       test(m"Svg wraps figures in group when transformed"):
         Svg(100, 100, figures = List(Rectangle((0, 0), 10, 10)))
           . rotate(Angle.degrees(45)).in[Xml].show
-      .assert(_ == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><g transform="rotate(45.0)"><rect x="0.0" y="0.0" width="10.0" height="10.0"/></g></svg>""")
+      .assert(_ == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 100.0 100.0" width="100.0" height="100.0"><g transform="rotate(45.0)"><rect x="0.0" y="0.0" width="10.0" height="10.0"/></g></svg>""")
 
     suite(m"Affine arithmetic"):
       test(m"Delta + Delta yields Delta"):
@@ -376,12 +375,12 @@ object Tests extends Suite(m"Savagery tests"):
     suite(m"SVG document"):
       test(m"Empty SVG"):
         Svg(100, 100).in[Xml].show
-      .assert(_ == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"/>""")
+      .assert(_ == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 100.0 100.0" width="100.0" height="100.0"/>""")
 
       test(m"SVG with single rectangle"):
         Svg(50, 50, figures = List(Rectangle((0, 0), 10, 10))).in[Xml].show
       .assert: result =>
-          result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50.0 50.0" width="50.0" height="50.0"><rect x="0.0" y="0.0" width="10.0" height="10.0"/></svg>"""
+          result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 50.0 50.0" width="50.0" height="50.0"><rect x="0.0" y="0.0" width="10.0" height="10.0"/></svg>"""
 
       test(m"SVG with two figures"):
         Svg
@@ -390,7 +389,7 @@ object Tests extends Suite(m"Savagery tests"):
           figures = List(Rectangle((0, 0), 10, 10), Circle((50, 50), 5)))
         . in[Xml].show
       .assert: result =>
-          result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><rect x="0.0" y="0.0" width="10.0" height="10.0"/><circle cx="50.0" cy="50.0" r="5.0"/></svg>"""
+          result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 100.0 100.0" width="100.0" height="100.0"><rect x="0.0" y="0.0" width="10.0" height="10.0"/><circle cx="50.0" cy="50.0" r="5.0"/></svg>"""
 
       test(m"SVG with defs"):
         Svg
@@ -399,7 +398,7 @@ object Tests extends Suite(m"Savagery tests"):
           defs = List(Svg.LinearGradient(Svg.Id(t"g1"), Stop(0.0, Red), Stop(1.0, Blue))))
         . in[Xml].show
       .assert: result =>
-          result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><defs><linearGradient id="g1"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient></defs></svg>"""
+          result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 100.0 100.0" width="100.0" height="100.0"><defs><linearGradient id="g1"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient></defs></svg>"""
 
       test(m"SVG with defs and figures"):
         Svg
@@ -409,26 +408,87 @@ object Tests extends Suite(m"Savagery tests"):
           figures = List(Rectangle((0, 0), 50, 50)))
         . in[Xml].show
       .assert: result =>
-          result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100.0 100.0" width="100.0" height="100.0"><defs><linearGradient id="g1"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient></defs><rect x="0.0" y="0.0" width="50.0" height="50.0"/></svg>"""
+          result == t"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 100.0 100.0" width="100.0" height="100.0"><defs><linearGradient id="g1"><stop offset="0.0" stop-color="#ff0000"/><stop offset="1.0" stop-color="#0000ff"/></linearGradient></defs><rect x="0.0" y="0.0" width="50.0" height="50.0"/></svg>"""
 
     suite(m"SVG document with header"):
       test(m"Document[Svg] with UTF-8 includes XML declaration"):
         Document(Svg(10, 10), enc"UTF-8").show
       .assert: result =>
-          result == t"""<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10.0 10.0" width="10.0" height="10.0"/>"""
+          result == t"""<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 10.0 10.0" width="10.0" height="10.0"/>"""
 
       test(m"Document[Svg] with content"):
         Document(Svg(50, 50, figures = List(Circle((25, 25), 10))), enc"UTF-8").show
       .assert: result =>
-          result == t"""<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50.0 50.0" width="50.0" height="50.0"><circle cx="25.0" cy="25.0" r="10.0"/></svg>"""
+          result == t"""<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 50.0 50.0" width="50.0" height="50.0"><circle cx="25.0" cy="25.0" r="10.0"/></svg>"""
 
     suite(m"SVG parsing"):
-      given XmlSchema = XmlSchema.Freeform
-
       test(m"Parse empty SVG"):
         val svg = t"""<svg width="100" height="100"/>""".read[Svg]
         (svg.width, svg.height, svg.figures.size, svg.defs.size)
       .assert(_ == (100.0f, 100.0f, 0, 0))
+
+      test(m"Parse a width and height with a unit"):
+        val svg = t"""<svg width="48.5mm" height="20.00001mm"/>""".read[Svg]
+        (svg.width, svg.height, svg.unit)
+      .assert(_ == (48.5f, 20.00001f, Svg.Units.Mm))
+
+      test(m"Parse a percentage width and height"):
+        val svg = t"""<svg width="100%" height="50%"/>""".read[Svg]
+        (svg.width, svg.height, svg.unit)
+      .assert(_ == (100.0f, 50.0f, Svg.Units.Percent))
+
+      test(m"A unitless width and height have no unit"):
+        t"""<svg width="100" height="100"/>""".read[Svg].unit
+      .assert(_ == Unset)
+
+      test(m"A width and height with different units is an error"):
+        try
+          t"""<svg width="100%" height="50px"/>""".read[Svg]
+          Unset
+        catch case error: Svg.Error => error.reason
+      .assert(_ == Svg.Error.Reason.MismatchedUnits(t"100%", t"50px"))
+
+      test(m"A malformed length is an error"):
+        try
+          t"""<svg width="wide" height="50"/>""".read[Svg]
+          Unset
+        catch case error: Svg.Error => error.reason
+      .assert(_ == Svg.Error.Reason.MalformedLength(t"wide"))
+
+      test(m"Parse the viewBox independently of the width and height"):
+        t"""<svg width="48.5mm" height="20mm" viewBox="0.0 0.0 48.5 20"/>""".read[Svg].viewBox
+      .assert(_ == Svg.ViewBox(0, 0, 48.5f, 20))
+
+      test(m"A viewBox may be comma-separated"):
+        t"""<svg viewBox="1,2,3,4"/>""".read[Svg].viewBox
+      .assert(_ == Svg.ViewBox(1, 2, 3, 4))
+
+      test(m"An absent viewBox is unset"):
+        t"""<svg width="10" height="10"/>""".read[Svg].viewBox
+      .assert(_ == Unset)
+
+      test(m"A malformed viewBox is an error"):
+        try
+          t"""<svg viewBox="0 0 10"/>""".read[Svg]
+          Unset
+        catch case error: Svg.Error => error.reason
+      .assert(_ == Svg.Error.Reason.MalformedViewBox(t"0 0 10"))
+
+      test(m"Round-trip: stated dimensions with a unit and a viewBox"):
+        val shown = t"""<svg width="48.5mm" height="20mm" viewBox="0 0 48.5 20"/>""".read[Svg]
+                    . in[Xml].show
+
+        ( shown.contains(t"""width="48.5mm""""),
+          shown.contains(t"""height="20.0mm""""),
+          shown.contains(t"""viewBox="0.0 0.0 48.5 20.0"""") )
+      .assert(_ == (true, true, true))
+
+      test(m"Round-trip: a viewBox offset from the origin"):
+        val shown =
+          t"""<svg width="30" height="40" viewBox="10 20 30 40"/>""".read[Svg].in[Xml].show
+
+        shown.read[Svg].in[Xml].show == shown
+      .assert(_ == true)
 
       test(m"Parse SVG with rectangle"):
         val svg =

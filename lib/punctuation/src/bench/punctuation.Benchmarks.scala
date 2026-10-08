@@ -75,19 +75,10 @@ object Benchmarks extends Suite(m"Punctuation benchmarks"):
   lazy val stressMix:       Text = cp"/punctuation/stress-mix.md".read[Text]
   lazy val emphasisStress:  Text = cp"/punctuation/emphasis-stress.md".read[Text]
 
-  // ─── helpers ──────────────────────────────────────────────────────────────
-  // Each helper returns an `Int` derived from the parse result so the JIT
-  // cannot dead-code the call. `children.length` is cheap and structurally
-  // exercises the entire parse — anything elided would zero this out.
-
-  def parseNative(text: Text): Int = Parser.parse(text).children.size
-
   // Parsed once, outside the timed region, so the serialization rows measure
   // `.show` alone rather than a parse-and-show round trip.
   lazy val mediumDoc:    Markdown of Layout = Parser.parse(medium)
   lazy val stressMixDoc: Markdown of Layout = Parser.parse(stressMix)
-
-  def serializeNative(doc: Markdown of Layout): Int = doc.show.s.length
 
   // ─── benchmarks ───────────────────────────────────────────────────────────
 
@@ -106,25 +97,27 @@ object Benchmarks extends Suite(m"Punctuation benchmarks"):
     suite(m"Markdown serialization throughput"):
       bench(m"serialize medium (~19 KB, real README)")
         ( target = 1*Second, operationSize = mediumSize ):
-        '{ punctuation.Benchmarks.serializeNative(punctuation.Benchmarks.mediumDoc) }
+        '{ punctuation.Benchmarks.mediumDoc.show.s.length }
 
       bench(m"serialize stress-mix (~38 KB, every feature)")
         ( target = 1*Second, operationSize = stressMixSize ):
-        '{ punctuation.Benchmarks.serializeNative(punctuation.Benchmarks.stressMixDoc) }
+        '{ punctuation.Benchmarks.stressMixDoc.show.s.length }
 
+    // Each parse row returns the number of top-level children, so the JIT cannot dead-code the
+    // parse: cheap to compute, and anything elided would zero it.
     suite(m"Markdown parsing throughput"):
       bench(m"parse small (~2 KB, mixed prose)")
         ( target = 1*Second, operationSize = smallSize ):
-        '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.small) }
+        '{ Parser.parse(punctuation.Benchmarks.small).children.size }
 
       bench(m"parse medium (~19 KB, real README)")
         ( target = 1*Second, operationSize = mediumSize ):
-        '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.medium) }
+        '{ Parser.parse(punctuation.Benchmarks.medium).children.size }
 
       bench(m"parse stress-mix (~38 KB, every feature)")
         ( target = 1*Second, operationSize = stressMixSize ):
-        '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.stressMix) }
+        '{ Parser.parse(punctuation.Benchmarks.stressMix).children.size }
 
       bench(m"parse emphasis-stress (~4 KB, inline-dense)")
         ( target = 1*Second, operationSize = emphasisStressSize ):
-        '{ punctuation.Benchmarks.parseNative(punctuation.Benchmarks.emphasisStress) }
+        '{ Parser.parse(punctuation.Benchmarks.emphasisStress).children.size }

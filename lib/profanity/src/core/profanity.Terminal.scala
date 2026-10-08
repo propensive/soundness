@@ -150,7 +150,7 @@ object Terminal:
 // retain it past the teardown.
 case class Terminal()
   ( using console: Console, monitor: Monitor, probate: Probate, environment: Environment )
-extends Interactivity[Terminal.Event], caps.ExclusiveCapability:
+extends Interactivity[Terminal.Event], caps.ExclusiveCapability, caps.Stateful:
 
   export console.stdio.{in, out, err}
 
@@ -184,11 +184,11 @@ extends Interactivity[Terminal.Event], caps.ExclusiveCapability:
     else safely(Environment.columns.as[Int])
 
   def mode: Optional[Brightness] = metrics.mode
-  def mode_=(value: Optional[Brightness]): Unit = metrics.mode = value
+  update def mode_=(value: Optional[Brightness]): Unit = metrics.mode = value
   def rows: Optional[Int] = metrics.rows
-  def rows_=(value: Optional[Int]): Unit = metrics.rows = value
+  update def rows_=(value: Optional[Int]): Unit = metrics.rows = value
   def columns: Optional[Int] = metrics.columns
-  def columns_=(value: Optional[Int]): Unit = metrics.columns = value
+  update def columns_=(value: Optional[Int]): Unit = metrics.columns = value
 
   // The fallbacks when the size is not yet known (no `LINES`/`COLUMNS` in the
   // environment and no size-probe reply yet): the classic 80×24. Conservative on

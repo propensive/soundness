@@ -55,6 +55,9 @@ object OperationSize:
       ( quantity.express,
         meanSeconds =>
           val rate: Quantity[size & Seconds[-1]] = Quantity(quantity.value/meanSeconds)
-          rate.express )
+          rate.express,
+        quantity.value )
 
-case class OperationSize(sizeText: Text, rateText: Double => Text)
+// The size as a number, `value`, is the quantity in its base unit (bytes, or characters), so
+// that a report can divide by it: the texts are for reading, the value for charting.
+case class OperationSize(sizeText: Text, rateText: Double => Text, value: Double)

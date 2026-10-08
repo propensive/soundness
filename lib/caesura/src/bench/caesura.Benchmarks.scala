@@ -154,115 +154,6 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
   lazy val csvLargeText:        Text = Text(csvLarge)
   lazy val tsvMediumText:       Text = Text(tsvMedium)
 
-  // ─── Caesura helpers ──────────────────────────────────────────────────────
-
-  def caesuraParseCsv(text: Text): Int =
-    import dsvFormats.csvFormat
-    var n = 0
-    text.read[Sheet].rows.foreach { _ => n += 1 }
-    n
-
-  def caesuraParseTsv(text: Text): Int =
-    import dsvFormats.tsvFormat
-    var n = 0
-    text.read[Sheet].rows.foreach { _ => n += 1 }
-    n
-
-  // ─── Univocity helpers ────────────────────────────────────────────────────
-
-  def univocityParseCsv(text: String): Int =
-    val settings = new com.univocity.parsers.csv.CsvParserSettings()
-    settings.getFormat.setLineSeparator("\n")
-    val parser = new com.univocity.parsers.csv.CsvParser(settings)
-    val reader = new _root_.java.io.StringReader(text)
-    parser.beginParsing(reader)
-    var n = 0
-    var row: scala.Array[String] = parser.parseNext()
-    while row != null do
-      n += 1
-      row = parser.parseNext()
-    parser.stopParsing()
-    n
-
-  def univocityParseTsv(text: String): Int =
-    val settings = new com.univocity.parsers.tsv.TsvParserSettings()
-    settings.getFormat.setLineSeparator("\n")
-    val parser = new com.univocity.parsers.tsv.TsvParser(settings)
-    val reader = new _root_.java.io.StringReader(text)
-    parser.beginParsing(reader)
-    var n = 0
-    var row: scala.Array[String] = parser.parseNext()
-    while row != null do
-      n += 1
-      row = parser.parseNext()
-    parser.stopParsing()
-    n
-
-  // ─── OpenCSV helpers ──────────────────────────────────────────────────────
-
-  def openCsvParseCsv(text: String): Int =
-    val reader = new com.opencsv.CSVReader(new _root_.java.io.StringReader(text))
-    var n = 0
-    var row: scala.Array[String] = reader.readNext()
-    while row != null do
-      n += 1
-      row = reader.readNext()
-    reader.close()
-    n
-
-  def openCsvParseTsv(text: String): Int =
-    val parser = new com.opencsv.CSVParserBuilder().withSeparator('\t').build()
-    val reader = new com.opencsv.CSVReaderBuilder(new _root_.java.io.StringReader(text))
-      .withCSVParser(parser).build()
-    var n = 0
-    var row: scala.Array[String] = reader.readNext()
-    while row != null do
-      n += 1
-      row = reader.readNext()
-    reader.close()
-    n
-
-  // ─── Apache Commons CSV helpers ───────────────────────────────────────────
-
-  def commonsParseCsv(text: String): Int =
-    val records = org.apache.commons.csv.CSVFormat.DEFAULT
-      .parse(new _root_.java.io.StringReader(text))
-    val it = records.iterator()
-    var n = 0
-    while it.hasNext do { it.next(); n += 1 }
-    records.close()
-    n
-
-  def commonsParseTsv(text: String): Int =
-    val records = org.apache.commons.csv.CSVFormat.TDF
-      .parse(new _root_.java.io.StringReader(text))
-    val it = records.iterator()
-    var n = 0
-    while it.hasNext do { it.next(); n += 1 }
-    records.close()
-    n
-
-  // ─── FastCSV helpers ──────────────────────────────────────────────────────
-
-  def fastCsvParseCsv(text: String): Int =
-    val reader = de.siegmar.fastcsv.reader.CsvReader.builder()
-      .ofCsvRecord(new _root_.java.io.StringReader(text))
-    val it = reader.iterator()
-    var n = 0
-    while it.hasNext do { it.next(); n += 1 }
-    reader.close()
-    n
-
-  def fastCsvParseTsv(text: String): Int =
-    val reader = de.siegmar.fastcsv.reader.CsvReader.builder()
-      .fieldSeparator('\t')
-      .ofCsvRecord(new _root_.java.io.StringReader(text))
-    val it = reader.iterator()
-    var n = 0
-    while it.hasNext do { it.next(); n += 1 }
-    reader.close()
-    n
-
   // ─── benchmarks ───────────────────────────────────────────────────────────
 
   def documentFor(corpus: Corpus): String = corpus match
@@ -282,28 +173,151 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
     bench(m"Parse DSV documents")
       ( target = 1*Second, baseline = Library.Caesura, comparison = Baseline(compare = Min) )
 
-    . over(Library, Corpus):
+    . sized: (_: Library, corpus: Corpus) =>
+        val size: OperationSize =
+          caesura.Benchmarks.documentFor(corpus).getBytes("UTF-8").nn.length*Byte
+
+        size
+
+    . over(Axis(Library), Axis(Corpus)):
         case (library, corpus) =>
           val document: Text = Text(caesura.Benchmarks.documentFor(corpus))
           val tsv: Boolean = corpus == Corpus.Tsv
 
           library match
             case Library.Caesura =>
-              if tsv then '{ caesura.Benchmarks.caesuraParseTsv($document) }
-              else '{ caesura.Benchmarks.caesuraParseCsv($document) }
+              if tsv then
+                '{
+                    import dsvFormats.tsvFormat
+                    var n = 0
+                    $document.read[Sheet].rows.foreach { _ => n += 1 }
+                    n
+                }
+              else
+                '{
+                    import dsvFormats.csvFormat
+                    var n = 0
+                    $document.read[Sheet].rows.foreach { _ => n += 1 }
+                    n
+                }
 
             case Library.Univocity =>
-              if tsv then '{ caesura.Benchmarks.univocityParseTsv($document.s) }
-              else '{ caesura.Benchmarks.univocityParseCsv($document.s) }
+              if tsv then
+                '{
+                    val settings = new com.univocity.parsers.tsv.TsvParserSettings()
+                    settings.getFormat.setLineSeparator("\n")
+                    val parser = new com.univocity.parsers.tsv.TsvParser(settings)
+                    parser.beginParsing(new _root_.java.io.StringReader($document.s))
+                    var n = 0
+                    var row: scala.Array[String] = parser.parseNext()
+
+                    while row != null do
+                      n += 1
+                      row = parser.parseNext()
+
+                    parser.stopParsing()
+                    n
+                }
+              else
+                '{
+                    val settings = new com.univocity.parsers.csv.CsvParserSettings()
+                    settings.getFormat.setLineSeparator("\n")
+                    val parser = new com.univocity.parsers.csv.CsvParser(settings)
+                    parser.beginParsing(new _root_.java.io.StringReader($document.s))
+                    var n = 0
+                    var row: scala.Array[String] = parser.parseNext()
+
+                    while row != null do
+                      n += 1
+                      row = parser.parseNext()
+
+                    parser.stopParsing()
+                    n
+                }
 
             case Library.OpenCsv =>
-              if tsv then '{ caesura.Benchmarks.openCsvParseTsv($document.s) }
-              else '{ caesura.Benchmarks.openCsvParseCsv($document.s) }
+              if tsv then
+                '{
+                    val parser = new com.opencsv.CSVParserBuilder().withSeparator('\t').build()
+
+                    val reader =
+                      new com.opencsv.CSVReaderBuilder(new _root_.java.io.StringReader($document.s))
+                        .withCSVParser(parser).build()
+
+                    var n = 0
+                    var row: scala.Array[String] = reader.readNext()
+
+                    while row != null do
+                      n += 1
+                      row = reader.readNext()
+
+                    reader.close()
+                    n
+                }
+              else
+                '{
+                    val input = new _root_.java.io.StringReader($document.s)
+                    val reader = new com.opencsv.CSVReader(input)
+                    var n = 0
+                    var row: scala.Array[String] = reader.readNext()
+
+                    while row != null do
+                      n += 1
+                      row = reader.readNext()
+
+                    reader.close()
+                    n
+                }
 
             case Library.CommonsCsv =>
-              if tsv then '{ caesura.Benchmarks.commonsParseTsv($document.s) }
-              else '{ caesura.Benchmarks.commonsParseCsv($document.s) }
+              if tsv then
+                '{
+                    val records =
+                      org.apache.commons.csv.CSVFormat.TDF
+                        .parse(new _root_.java.io.StringReader($document.s))
+
+                    val it = records.iterator()
+                    var n = 0
+                    while it.hasNext do { it.next(); n += 1 }
+                    records.close()
+                    n
+                }
+              else
+                '{
+                    val records =
+                      org.apache.commons.csv.CSVFormat.DEFAULT
+                        .parse(new _root_.java.io.StringReader($document.s))
+
+                    val it = records.iterator()
+                    var n = 0
+                    while it.hasNext do { it.next(); n += 1 }
+                    records.close()
+                    n
+                }
 
             case Library.FastCsv =>
-              if tsv then '{ caesura.Benchmarks.fastCsvParseTsv($document.s) }
-              else '{ caesura.Benchmarks.fastCsvParseCsv($document.s) }
+              if tsv then
+                '{
+                    val reader =
+                      de.siegmar.fastcsv.reader.CsvReader.builder()
+                        .fieldSeparator('\t')
+                        .ofCsvRecord(new _root_.java.io.StringReader($document.s))
+
+                    val it = reader.iterator()
+                    var n = 0
+                    while it.hasNext do { it.next(); n += 1 }
+                    reader.close()
+                    n
+                }
+              else
+                '{
+                    val reader =
+                      de.siegmar.fastcsv.reader.CsvReader.builder()
+                        .ofCsvRecord(new _root_.java.io.StringReader($document.s))
+
+                    val it = reader.iterator()
+                    var n = 0
+                    while it.hasNext do { it.next(); n += 1 }
+                    reader.close()
+                    n
+                }

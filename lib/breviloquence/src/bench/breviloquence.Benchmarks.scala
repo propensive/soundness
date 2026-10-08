@@ -62,12 +62,6 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
     new com.fasterxml.jackson.databind.ObjectMapper(
       new com.fasterxml.jackson.dataformat.cbor.CBORFactory())
 
-  def parseWithJackson(bytes: scala.Array[Byte]): com.fasterxml.jackson.databind.JsonNode =
-    jacksonMapper.readTree(bytes).nn
-
-  def parseWithBorer(bytes: scala.Array[Byte]): io.bullet.borer.Dom.Element =
-    io.bullet.borer.Cbor.decode(bytes).to[io.bullet.borer.Dom.Element].value
-
   // Helper to build CBOR bytes by hand for the benchmark corpora. Uses the
   // canonical encoder so the inputs are well-formed and deterministic.
   def encode(ast: Cbor.Ast): Array[Byte]^{} = Cbor.Ast.encodable.encoded(ast)
@@ -159,10 +153,14 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
         '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes1) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size1):
-        '{ breviloquence.Benchmarks.parseWithJackson(breviloquence.Benchmarks.raw1) }
+        '{ breviloquence.Benchmarks.jacksonMapper.readTree(breviloquence.Benchmarks.raw1).nn }
 
       bench(m"Parse with borer")(target = 1*Second, operationSize = size1):
-        '{ breviloquence.Benchmarks.parseWithBorer(breviloquence.Benchmarks.raw1) }
+        '{
+            io.bullet.borer.Cbor.decode(breviloquence.Benchmarks.raw1)
+            . to[io.bullet.borer.Dom.Element]
+            . value
+        }
 
     suite(m"Parse 100 user records"):
       bench(m"Parse with Breviloquence")
@@ -170,10 +168,14 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
         '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes2) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size2):
-        '{ breviloquence.Benchmarks.parseWithJackson(breviloquence.Benchmarks.raw2) }
+        '{ breviloquence.Benchmarks.jacksonMapper.readTree(breviloquence.Benchmarks.raw2).nn }
 
       bench(m"Parse with borer")(target = 1*Second, operationSize = size2):
-        '{ breviloquence.Benchmarks.parseWithBorer(breviloquence.Benchmarks.raw2) }
+        '{
+            io.bullet.borer.Cbor.decode(breviloquence.Benchmarks.raw2)
+            . to[io.bullet.borer.Dom.Element]
+            . value
+        }
 
     suite(m"Parse 500 log entries"):
       bench(m"Parse with Breviloquence")
@@ -181,10 +183,14 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
         '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes3) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size3):
-        '{ breviloquence.Benchmarks.parseWithJackson(breviloquence.Benchmarks.raw3) }
+        '{ breviloquence.Benchmarks.jacksonMapper.readTree(breviloquence.Benchmarks.raw3).nn }
 
       bench(m"Parse with borer")(target = 1*Second, operationSize = size3):
-        '{ breviloquence.Benchmarks.parseWithBorer(breviloquence.Benchmarks.raw3) }
+        '{
+            io.bullet.borer.Cbor.decode(breviloquence.Benchmarks.raw3)
+            . to[io.bullet.borer.Dom.Element]
+            . value
+        }
 
     suite(m"Parse 1000 small integers"):
       bench(m"Parse with Breviloquence")
@@ -192,10 +198,14 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
         '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes4) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size4):
-        '{ breviloquence.Benchmarks.parseWithJackson(breviloquence.Benchmarks.raw4) }
+        '{ breviloquence.Benchmarks.jacksonMapper.readTree(breviloquence.Benchmarks.raw4).nn }
 
       bench(m"Parse with borer")(target = 1*Second, operationSize = size4):
-        '{ breviloquence.Benchmarks.parseWithBorer(breviloquence.Benchmarks.raw4) }
+        '{
+            io.bullet.borer.Cbor.decode(breviloquence.Benchmarks.raw4)
+            . to[io.bullet.borer.Dom.Element]
+            . value
+        }
 
     suite(m"Parse 100 byte strings"):
       bench(m"Parse with Breviloquence")
@@ -203,10 +213,14 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
         '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes5) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size5):
-        '{ breviloquence.Benchmarks.parseWithJackson(breviloquence.Benchmarks.raw5) }
+        '{ breviloquence.Benchmarks.jacksonMapper.readTree(breviloquence.Benchmarks.raw5).nn }
 
       bench(m"Parse with borer")(target = 1*Second, operationSize = size5):
-        '{ breviloquence.Benchmarks.parseWithBorer(breviloquence.Benchmarks.raw5) }
+        '{
+            io.bullet.borer.Cbor.decode(breviloquence.Benchmarks.raw5)
+            . to[io.bullet.borer.Dom.Element]
+            . value
+        }
 
     suite(m"Parse 10-level nested map"):
       bench(m"Parse with Breviloquence")
@@ -214,7 +228,11 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
         '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes6) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size6):
-        '{ breviloquence.Benchmarks.parseWithJackson(breviloquence.Benchmarks.raw6) }
+        '{ breviloquence.Benchmarks.jacksonMapper.readTree(breviloquence.Benchmarks.raw6).nn }
 
       bench(m"Parse with borer")(target = 1*Second, operationSize = size6):
-        '{ breviloquence.Benchmarks.parseWithBorer(breviloquence.Benchmarks.raw6) }
+        '{
+            io.bullet.borer.Cbor.decode(breviloquence.Benchmarks.raw6)
+            . to[io.bullet.borer.Dom.Element]
+            . value
+        }

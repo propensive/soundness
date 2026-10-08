@@ -211,8 +211,8 @@ def conduct(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
     case Occupancy.Inline =>
       // Resize repaints are throttled to ~10/second and debounced by 50 ms of quiet,
       // so a drag must pause before the block is redrawn; typing stays immediate.
-      Form(InlineRoot(terminal), mode, pane, wake, 100, 50, scheduleWake)
-      . run(terminal.eventIterator())
+      val root = InlineRoot(terminal)
+      Form(root, mode, pane, wake, 100, 50, scheduleWake).run(terminal.eventIterator())
 
 // The leaf indices that must be repainted: any whose rectangle moved or resized
 // since the last layout, plus any whose content changed this frame. A leaf whose

@@ -34,12 +34,13 @@ package soundness
 
 export
   parasite
-  . { AdaptiveSupervisor, async, Async, cancel, Probate, Daemon, daemon, delay,
-      Destruction, Fault, Fulfillment, hibernate, Hook, intercept,
+  . { AdaptiveSupervisor, async, Async, cancel, Probate, Daemon, daemon,
+      Destruction, Fault, Fulfillment, Hook, intercept,
       Interceptable, JavascriptSupervisor, Monitor, monitor, Observation, Os, Perseverance,
       PlatformSupervisor, PooledSupervisor, PoolingSupervisor, Promise,
-      relent, retry, Shutdown, sleep, snooze, Strand, supervise, Supervisor, Task, task,
-      Tenacity, Threading, Timeout, Transgression, contain, Containment, VirtualSupervisor, Worker,
+      relent, retry, Schedulable, Shutdown, sleep, snooze, Strand, supervise, Supervisor, Task,
+      task, Tenacity, Threading, Timeout, Transgression, contain, Containment, VirtualSupervisor,
+      Worker,
       AsyncTactic, Remedy, concurrent, concurrently }
 
 package threading:

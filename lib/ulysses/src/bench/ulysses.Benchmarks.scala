@@ -112,16 +112,6 @@ object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
     filter.addAll(keys(size))
     BloomFilter.freeze(filter)
 
-  // Element by element: in place through `add`, or by copying through `+` on a frozen filter.
-  def addInPlace(size: Int): BloomFilter[Text, Blake3] =
-    val filter = BloomFilter[Text](size, errorRate)
-    keys(size).each(filter.add(_))
-    BloomFilter.freeze(filter)
-
-  def addByCopying(size: Int): BloomFilter[Text, Blake3] =
-    val empty: BloomFilter[Text, Blake3] = BloomFilter.freeze(BloomFilter[Text](size, errorRate))
-    keys(size).fuse(empty)(state + next)
-
   // The rivals, each written as its own users would write it.
   def buildGuava(size: Int): com.google.common.hash.BloomFilter[CharSequence] =
     val funnel = com.google.common.hash.Funnels.stringFunnel(StandardCharsets.UTF_8).nn
@@ -275,5 +265,17 @@ object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
     // or at one copy of the bits per `+`.
     bench(m"Add elements one at a time")(target = 1*Second, baseline = Growth.InPlace)
     . over(Growth, Axis(t"size")(1_000, 10_000)):
-        case (Growth.InPlace, size) => '{ ulysses.Benchmarks.addInPlace($size) }
-        case (Growth.Copying, size) => '{ ulysses.Benchmarks.addByCopying($size) }
+        case (Growth.InPlace, size) =>
+          '{
+              val filter = BloomFilter[Text]($size, ulysses.Benchmarks.errorRate)
+              ulysses.Benchmarks.keys($size).each(filter.add(_))
+              BloomFilter.freeze(filter)
+          }
+
+        case (Growth.Copying, size) =>
+          '{
+              val empty: BloomFilter[Text, Blake3] =
+                BloomFilter.freeze(BloomFilter[Text]($size, ulysses.Benchmarks.errorRate))
+
+              ulysses.Benchmarks.keys($size).fuse(empty)(state + next)
+          }
