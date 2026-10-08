@@ -524,11 +524,13 @@ jp"#/foo~2bar"   // does not compile: ~2 is not a valid escape
 
 Ordinary parsing keeps no record of where each value sat in the text, since most
 programs do not need it. When they do — to underline the source of an error, for
-instance — `parseTracked` records positions, and `locate` returns the line and column
-of the value a pointer names:
+instance — bringing `parsing.trackPositions` into scope makes `read` record positions, and
+`locate` returns the line and column of the value a pointer names:
 
 ```scala
-val tracked = Json.parseTracked(t"{\n  \"a\": 42\n}")
+import parsing.trackPositions
+
+val tracked = t"{\n  \"a\": 42\n}".read[Json]
 tracked.locate(JsonPointer()(t"a")).let(_.line)   // 2
 ```
 

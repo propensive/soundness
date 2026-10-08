@@ -99,7 +99,7 @@ address:
       . assert(identity)
 
     suite(m"Position-aware focus (tracked Yaml)"):
-      given Yaml.Tracking = Yaml.Tracking.On
+      import parsing.trackPositions
 
       test(m"Tracked root: focus pointers are still correct"):
         // The decoder still aborts on first error (raise+yet is a PR 3

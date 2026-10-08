@@ -196,20 +196,47 @@ object Html extends Tag.Container
         HtmlParser.fromStream(stream, permissive = false)
         . parseHtml(dom.generic, doctypes = false)
 
-  given strictLoadable: (dom: Dom, tactic: Tactic[Parse.Error])
+  given strictLoadable: (dom: Dom, tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  ( strict: NotGiven[Html.Recovery.Permissive] )
   =>  ((Html is Loadable by BaseText)^{tactic, caps.any}) = stream =>
+    loaded(stream.asInstanceOf[AnyRef], permissive = false, tracking)
+
+  // The single place `.load[Html]` branches on position tracking. With
+  // `parsing.trackPositions` in scope the parser records source positions and the resulting
+  // `Document[Html]` carries them in its `Provenance`, locatable via `document.locate(path)`;
+  // otherwise the untracked throughput path is unchanged. The stream arrives as a neutral
+  // carrier: the `Loadable` lambda's parameter cannot be passed on as the consuming parser's
+  // input directly (see `HtmlParser.fromStream`).
+  private def loaded(streamRef: AnyRef, permissive: Boolean, tracking: PositionTracking)
+    ( using dom: Dom, tactic: Tactic[Parse.Error] )
+  :   Document[Html] =
+
     val root = Tag.root(Set(t"html"))
+    val stream = streamRef.asInstanceOf[(Stream[BaseText] over Credit)^]
 
-    HtmlParser.fromStream
-      ( stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[BaseText] over Credit)^],
-        permissive = false )
-    . parseHtml(root, doctypes = true) match
-      case Fragment(Doctype(doctype), content) => Document(content, dom)
-      case html@Element("html", _, _, _)       => Document(html, dom)
+    val parser = tracking match
+      case PositionTracking.On  => HtmlParser.fromStreamTracked(stream, permissive)
+      case PositionTracking.Off => HtmlParser.fromStream(stream, permissive)
 
-      case _ =>
-        abort(Parse.Error(Html, Position(1.u, 1.u), Issue.BadDocument))
+    val parsed = parser.parseHtml(root, doctypes = true)
+
+    val positionIndex: Optional[PositionIndex] = tracking match
+      case PositionTracking.On =>
+        val index = parser.rootIndex
+        PositionIndex(if index == null then scala.IArray.empty[Int] else index)
+
+      case PositionTracking.Off =>
+        Unset
+
+    val metadata = Provenance(dom, positionIndex)
+
+    parsed match
+      case Fragment(Doctype(doctype), content) => Document(content, metadata)
+      case html@Element("html", _, _, _)       => Document(html, metadata)
+
+      case other =>
+        if permissive then Document(other, metadata)
+        else abort(Parse.Error(Html, Position(1.u, 1.u), Issue.BadDocument))
 
   // Last-resort safety net for the permissive variants. Tokenizer-level
   // conditions that haven't been wired into the parser's per-site recovery
@@ -264,20 +291,13 @@ object Html extends Tag.Container
           HtmlParser.fromStream(stream, permissive = true)
           . parseHtml(dom.generic, doctypes = false)
 
-  given permissiveLoadable: (dom: Dom)
+  given permissiveLoadable: (dom: Dom, tracking: PositionTracking)
   =>  Html.Recovery.Permissive
   =>  Html is Loadable by BaseText = stream =>
     given Tactic[Parse.Error] = lenientTactic
-    val root = Tag.root(Set(t"html"))
 
-    lenient(Document(Fragment(), dom)):
-      HtmlParser.fromStream
-        ( stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[BaseText] over Credit)^],
-          permissive = true )
-      . parseHtml(root, doctypes = true) match
-        case Fragment(Doctype(doctype), content) => Document(content, dom)
-        case html@Element("html", _, _, _)       => Document(html, dom)
-        case other                               => Document(other, dom)
+    lenient(Document(Fragment(), Provenance(dom))):
+      loaded(stream.asInstanceOf[AnyRef], permissive = true, tracking)
 
   // Up to 32 levels of two-space indentation
   private val indentation: BaseText =
@@ -289,12 +309,12 @@ object Html extends Tag.Container
   given streamable: (monitor: Monitor, probate: Probate)
   =>  ((Document[Html] is Streamable by BaseText over Credit)^{monitor, caps.any}) = document =>
     val formatting = summon[Formatting]
-    val dom = document.metadata
+    val dom = document.metadata.dom
     val producer = Producer[BaseText]()
     val block = formatting.indented
 
     async:
-      writeHtml(producer, dom, document.metadata.doctype, 0, block, Mode.Whitespace)
+      writeHtml(producer, dom, dom.doctype, 0, block, Mode.Whitespace)
       writeHtml(producer, dom, document.root, 0, block, Mode.Whitespace)
       producer.finish()
 
@@ -558,6 +578,150 @@ object Html extends Tag.Container
     def describe: BaseText = t"line ${line.n1}, column ${column.n1}"
     override def span: Span = Span.line(line, column, length.or(0))
 
+  // The position index is produced when a document is loaded with `parsing.trackPositions`
+  // in scope, and held in the `Document[Html]`'s `Provenance`; untracked loads carry `Unset`.
+  // The layout is `xylophone.Xml.PositionIndex`'s, but it is built by walking the finished
+  // tree (`HtmlParseState#buildIndex`) rather than emitted as the source is read, since HTML
+  // tree construction — inferred ancestors, foster parenting, reconstructed formatting
+  // elements — does not keep the tree in source order.
+  //
+  // Element descriptor layout:
+  //
+  //   [ size, line, column, sourceLength,
+  //     attrCount, elemCount,
+  //     attrOff_0, …, attrOff_{a-1},
+  //     elemOff_0, …, elemOff_{e-1},
+  //     <attribute descriptors>,
+  //     <child element descriptors> ]
+  //
+  // Attribute descriptor layout: [ size=4, line, column, length ]. Lines and columns count
+  // code points; lengths count chars, since the parser reads `Text` (XML's count bytes). All
+  // offsets are relative to the start of the containing element descriptor. An element the
+  // parser inferred or cloned rather than read starts at the token that produced it, and an
+  // element whose attributes it did not read (one closed by its tag's presets) has none.
+  opaque type PositionIndex = scala.IArray[Int]
+
+  object PositionIndex:
+    private[honeycomb] def apply(data: scala.IArray[Int]): PositionIndex = data
+
+  extension (positionIndex: PositionIndex)
+    private[honeycomb] def ints: scala.IArray[Int] = positionIndex
+
+  // A `Document[Html]`'s metadata: the `Dom` it was parsed against, and the position index
+  // when it was loaded with `parsing.trackPositions` in scope. The index is parse provenance,
+  // not part of the document's identity, so it takes no part in equality or hashing: a tracked
+  // and an untracked load of the same source compare equal. (Named `Provenance` rather than
+  // `Metadata`: `object Html` is itself an `Element`, so a nested `Metadata` class would clash
+  // with the trait's `Metadata` type member.)
+  case class Provenance(dom: Dom, positionIndex: Optional[PositionIndex] = Unset):
+    override def hashCode: Int = dom.hashCode
+
+    override def equals(that: Any): Boolean = that match
+      case Provenance(dom0, _) => dom0 == dom
+      case _                   => false
+
+  // A root-first path into a document, for `Document[Html]#locate`. Each element step names a
+  // child element by label and 1-based ordinal among its same-labelled element siblings (text
+  // and comments are not counted), the first step naming the document's root element itself,
+  // and an optional final step names one of the last element's attributes:
+  // `Html.Path().element(t"html").element(t"body").element(t"p", 2).attribute(t"class")`.
+  object Path:
+    enum Step derives CanEqual:
+      case Element(label: BaseText, rank: Int)
+      case Attribute(name: BaseText)
+
+  case class Path(steps: List[Path.Step] = Nil) derives CanEqual:
+    def element(label: BaseText, ordinal: Int = 1): Path =
+      Path(steps :+ Path.Step.Element(label, ordinal))
+
+    def attribute(name: BaseText): Path = Path(steps :+ Path.Step.Attribute(name))
+
+  // Walks a `Document[Html]`'s position index to resolve a `Path` to a source `Position`;
+  // see the descriptor-layout comment on `PositionIndex`.
+  private object Locator:
+    def walk
+      ( html:   Html,
+        data:   scala.IArray[Int],
+        offset: Int,
+        steps:  List[Path.Step],
+        first:  Boolean )
+    :   Optional[Position] =
+
+      steps match
+        case Nil =>
+          Position(data(offset + 1).z, data(offset + 2).z, length = data(offset + 3))
+
+        case Path.Step.Attribute(name) :: _ =>
+          html match
+            case element: Element => attribute(element, data, offset, name)
+            case _                => Unset
+
+        case Path.Step.Element(label, rank) :: rest =>
+          html match
+            case element: Element if first =>
+              // The first step names the document's root element.
+              if element.label == label && rank == 1 then walk(element, data, offset, rest, false)
+              else Unset
+
+            case element: Element =>
+              child(element, label, rank).let: (elementIndex, child) =>
+                val attrCount = data(offset + 4)
+                val childOffset = data(offset + 6 + attrCount + elementIndex)
+                walk(child, data, offset + childOffset, rest, false)
+
+            case _ =>
+              Unset
+
+    // The attribute's position, if the parser read it: an element may carry attributes it did
+    // not read (see `PositionIndex`), so the index is checked against the recorded count.
+    private def attribute(element: Element, data: scala.IArray[Int], offset: Int, name: BaseText)
+    :   Optional[Position] =
+
+      val index = element.attributes.keys.indexOf(name)
+
+      if index < 0 || index >= data(offset + 4) then Unset
+      else
+        val base = offset + data(offset + 6 + index)
+        Position(data(base + 1).z, data(base + 2).z, length = data(base + 3))
+
+    // The `ordinal`-th (1-based) child element labelled `label`, with its index among the
+    // child elements, which is its slot in the parent descriptor's offset table.
+    private def child(element: Element, label: BaseText, ordinal: Int): Optional[(Int, Element)] =
+      var elementIndex = 0
+      var seen = 0
+      var found: Optional[(Int, Element)] = Unset
+
+      element.children.each: node =>
+        node match
+          case child: Element =>
+            if found.absent then
+              if child.label == label then
+                seen += 1
+                if seen == ordinal then found = (elementIndex, child)
+
+              elementIndex += 1
+
+          case _ =>
+            ()
+
+      found
+
+  // Resolves a `Path` to the source `Position` recorded in a tracked `Document[Html]`'s
+  // `PositionIndex`, exposed uniformly as `document.locate(path)` through zephyrine's
+  // `Positionable`; `Unset` for a document loaded without `parsing.trackPositions`.
+  given positionable: Document[Html] is Positionable by Html.Path to Html.Position =
+    new Positionable:
+      type Self    = Document[Html]
+      type Operand = Html.Path
+      type Result  = Html.Position
+
+      def locate(document: Document[Html], path: Html.Path): Optional[Html.Position] =
+        document.metadata.positionIndex.let: index =>
+          Locator.walk(document.root, index.ints, 0, path.steps, true)
+
+      // HTML has no distinct key positions, so there is nothing to locate by key.
+      def locateKey(document: Document[Html], path: Html.Path): Optional[Html.Position] = Unset
+
   enum Mode:
     case Raw, Rcdata, Whitespace, Normal
 
@@ -631,6 +795,154 @@ object Html extends Tag.Container
     var fosteredBeforeSize: Int = 0
     var fosteredAfter: scala.Array[Node]^ = new scala.Array[Node](4)
     var fosteredAfterSize: Int = 0
+
+    // ─── position tracking (tracked parses only; see `Html.PositionIndex`) ──
+    //
+    // HTML tree construction does not keep the tree in source order, so each element's
+    // record — its start line and column, its char span and its attribute positions, as
+    // `[line, column, offset, length, attrCount, (line, column, length)*]` — is keyed by the
+    // element instance as it is built, and `buildIndex` flattens the records into the index
+    // once the tree is complete.
+    val records: ju.IdentityHashMap[Element, scala.IArray[Int]] = ju.IdentityHashMap()
+    // The start of each open element, parallel to `stack`: the char offset, the line and
+    // column of the token that opened (or inferred) it, and its attribute positions.
+    var startOffsets: scala.Array[Int]^ = new scala.Array[Int](4)
+    var startLines:   scala.Array[Int]^ = new scala.Array[Int](4)
+    var startColumns: scala.Array[Int]^ = new scala.Array[Int](4)
+    var startAttrs:   scala.Array[scala.IArray[Int] | Null]^ =
+      new scala.Array[scala.IArray[Int] | Null](4)
+
+    // Scratch for the attribute positions of the tag being read, as `[line, column, length]*`,
+    // parallel to `attrInterleaved`.
+    var attrPositions: scala.Array[Int]^ = new scala.Array[Int](12)
+    // The index under construction.
+    var ints: scala.Array[Int]^ = new scala.Array[Int](64)
+    var intsSize: Int = 0
+
+    // Called just after `push`, so the element's slot is `depth - 1`.
+    update def pushStart(offset: Int, line: Int, column: Int, attrs: scala.IArray[Int] | Null)
+    :   Unit =
+
+      if depth > startOffsets.length then
+        val newCap = stack.length
+        val no = new scala.Array[Int](newCap)
+        val nl = new scala.Array[Int](newCap)
+        val nc = new scala.Array[Int](newCap)
+        val na = new scala.Array[scala.IArray[Int] | Null](newCap)
+        val sz = depth - 1
+        jl.System.arraycopy(startOffsets, 0, no, 0, sz)
+        jl.System.arraycopy(startLines, 0, nl, 0, sz)
+        jl.System.arraycopy(startColumns, 0, nc, 0, sz)
+        jl.System.arraycopy(startAttrs, 0, na, 0, sz)
+        startOffsets = no
+        startLines   = nl
+        startColumns = nc
+        startAttrs   = na
+
+      startOffsets(depth - 1) = offset
+      startLines(depth - 1)   = line
+      startColumns(depth - 1) = column
+      startAttrs(depth - 1)   = attrs
+
+    update def attrPositionAppend(n: Int, line: Int, column: Int, length: Int): Unit =
+      if 3*n + 3 > attrPositions.length then
+        val nu = new scala.Array[Int](attrPositions.length*2)
+        jl.System.arraycopy(attrPositions, 0, nu, 0, 3*n)
+        attrPositions = nu
+
+      attrPositions(3*n)     = line
+      attrPositions(3*n + 1) = column
+      attrPositions(3*n + 2) = length
+
+    // Snapshot the first `n` attribute positions; `null` when the tag had none.
+    def attrPositionsSnapshot(n: Int): scala.IArray[Int] | Null =
+      if n == 0 then null
+      else
+        val result = new scala.Array[Int](3*n)
+        jl.System.arraycopy(attrPositions, 0, result, 0, 3*n)
+        scala.IArray.unsafeFromArray(result)
+
+    // Record `element` as spanning `offset` to `end`, starting at `line`/`column`, with the
+    // attribute positions `attrs` (`null` for none).
+    def record
+      ( element: Element,
+        line:    Int,
+        column:  Int,
+        offset:  Int,
+        end:     Int,
+        attrs:   scala.IArray[Int] | Null )
+    :   Unit =
+
+      val attrCount = if attrs == null then 0 else attrs.length/3
+      val entry = new scala.Array[Int](5 + 3*attrCount)
+      entry(0) = line
+      entry(1) = column
+      entry(2) = offset
+      entry(3) = end - offset
+      entry(4) = attrCount
+      if attrs != null then jl.System.arraycopy(attrs, 0, entry, 5, 3*attrCount)
+      records.put(element, scala.IArray.unsafeFromArray(entry))
+
+    // Record `element`, the innermost open element, as closed at `end`; its attribute
+    // positions are recorded only when it was built from the attributes the parser read.
+    def recordOpen(element: Element, end: Int, withAttributes: Boolean): Unit =
+      if depth > 0 then
+        val slot = depth - 1
+        val attrs = if withAttributes then startAttrs(slot) else null
+        record(element, startLines(slot), startColumns(slot), startOffsets(slot), end, attrs)
+
+    update def emit(value: Int): Unit =
+      if intsSize >= ints.length then
+        val nu = new scala.Array[Int](ints.length*2)
+        jl.System.arraycopy(ints, 0, nu, 0, intsSize)
+        ints = nu
+
+      ints(intsSize) = value
+      intsSize += 1
+
+    // Flatten the records into `Html.PositionIndex`'s layout, from `element` down. An element
+    // with no record (the root sentinel, or one the parser built without recording) gets a
+    // zero descriptor, so the walk stays aligned with the tree.
+    update def buildIndex(element: Element): Unit =
+      val base = intsSize
+      val entry = records.get(element)
+      val attrCount = if entry == null then 0 else entry(4)
+      val elemCount = element.children.count(_.isInstanceOf[Element])
+      emit(0)
+      emit(if entry == null then 0 else entry(0))
+      emit(if entry == null then 0 else entry(1))
+      emit(if entry == null then 0 else entry(3))
+      emit(attrCount)
+      emit(elemCount)
+      val headerSize = 6 + attrCount + elemCount
+      (0.z till attrCount.z).each: i => emit(headerSize + 4*i.n0)
+      val elemSlots = intsSize
+      repeat(elemCount)(emit(0))
+
+      (0.z till attrCount.z).each: i =>
+        emit(4)
+        emit(entry.nn(5 + 3*i.n0))
+        emit(entry.nn(6 + 3*i.n0))
+        emit(entry.nn(7 + 3*i.n0))
+
+      var elementIndex = 0
+
+      element.children.each: node =>
+        node match
+          case child: Element =>
+            ints(elemSlots + elementIndex) = intsSize - base
+            buildIndex(child)
+            elementIndex += 1
+
+          case _ =>
+            ()
+
+      ints(base) = intsSize - base
+
+    def indexSnapshot(): scala.IArray[Int] =
+      val result = new scala.Array[Int](intsSize)
+      jl.System.arraycopy(ints, 0, result, 0, intsSize)
+      scala.IArray.unsafeFromArray(result)
 
     def findAncestorIndex(label: BaseText): Int =
       var i = 0
@@ -773,12 +1085,32 @@ object Html extends Tag.Container
       val stream = inputRef.asInstanceOf[(Stream[BaseText] over Credit)^]
       new HtmlParser(Cursor[BaseText](stream), permissive)
 
+    // Tracked variants, for `.load[Html]` under `parsing.trackPositions`: the cursor keeps
+    // line/column lineation, so a mark records its position and `reset` restores it. The hot
+    // loop still bypasses lineation via `syncTo`; the parser reconciles it at each capture
+    // point (`begin`) and before any refill (`moreSlow`).
+    def fromChainTracked(input: Chain[BaseText], permissive: Boolean = false)(using Dom)
+    :   HtmlParser^ =
+
+      import zephyrine.lineation.linefeedChar
+      new HtmlParser(Cursor[BaseText](input), permissive, tracking = true)
+
+    def fromStreamTracked(input: (Stream[BaseText] over Credit)^, permissive: Boolean = false)
+      ( using Dom )
+    :   HtmlParser^ =
+
+      import zephyrine.lineation.linefeedChar
+      val inputRef: AnyRef = input.asInstanceOf[AnyRef]
+      val stream = inputRef.asInstanceOf[(Stream[BaseText] over Credit)^]
+      new HtmlParser(Cursor[BaseText](stream), permissive, tracking = true)
+
   // An exclusive, stateful capability, like `caesura`'s parser: it CONSUMES its
   // cursor — single ownership moves into the parser — which is what entitles the
   // buffer-snapshot fields below to hold parameter-derived references.
   private[honeycomb] final class HtmlParser
     ( consume cursor1:  Cursor[BaseText, ?]^,
-      val permissive: Boolean      = false )
+      val permissive: Boolean      = false,
+      val tracking:   Boolean      = false )
     ( using dom: Dom )
   extends caps.ExclusiveCapability, caps.Stateful:
     // A neutral carrier with an inline accessor (the `perihelion.Reader` pattern):
@@ -816,6 +1148,15 @@ object Html extends Tag.Container
     private var pos:    Int = 0
     private var bufEnd: Int = 0
 
+    // Buffer offset up to which `cursor.line`/`cursor.column` are current (tracked parses
+    // only). The hot loop advances `pos` without lineation (`syncTo`); `reconcileLineation`
+    // catches the cursor up at every capture point (`begin`) and before a refill discards
+    // consumed chars (`moreSlow`).
+    private var lineationPos: Int = 0
+
+    // The position index produced by a tracked parse, read by the `.load[Html]` given.
+    protected[honeycomb] var rootIndex: scala.IArray[Int] | Null = null
+
     private inline def syncTo(): Unit =
       cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
@@ -826,6 +1167,33 @@ object Html extends Tag.Container
       bytes  = cursor.unsafeTextBuffer(using Unsafe)
       pos    = cursor.unsafePos(using Unsafe)
       bufEnd = cursor.unsafeWriteEnd(using Unsafe)
+      lineationPos = pos
+
+    // Bring the cursor's line and column up to `pos` (tracked parses only).
+    private update def reconcileLineation(): Unit =
+      val end = pos
+
+      if lineationPos < end then
+        var newlines = 0
+        var lastNewlineAt = -1
+        // Columns count code points: the low half of a surrogate pair adds nothing.
+        var lowSurrogates = 0
+
+        (lineationPos.z till end.z).each: i =>
+          val char = bytes(i.n0)
+
+          if char == '\n' then
+            newlines += 1
+            lastNewlineAt = i.n0
+            lowSurrogates = 0
+          else if jl.Character.isLowSurrogate(char) then lowSurrogates += 1
+
+        if newlines > 0 then
+          cursor.unsafeBumpLine(newlines)(using Unsafe)
+          cursor.unsafeSetColumn(end - lastNewlineAt - 1 - lowSurrogates)(using Unsafe)
+        else cursor.unsafeBumpColumn(end - lineationPos - lowSurrogates)(using Unsafe)
+
+        lineationPos = end
 
     protected inline def more: Boolean = pos < bufEnd || moreSlow()
 
@@ -834,7 +1202,13 @@ object Html extends Tag.Container
     // hot loops.
     update private def moreSlow(): Boolean =
       syncTo()
-      if cursor.more then { syncFrom(); true } else false
+      if tracking then reconcileLineation()
+
+      if cursor.more then { syncFrom(); true }
+      else
+        // Re-anchor even at EOF, so a later `position` reflects the compacted buffer.
+        if tracking then syncFrom()
+        false
 
     protected inline def peek: Char = bytes(pos)
     protected inline def advance(): Unit = pos += 1
@@ -848,8 +1222,9 @@ object Html extends Tag.Container
     // keeping `read` / `tag` / `tagname` small enough for the JIT to
     // pick up. The body is still simple enough for the JIT to inline at
     // hot call sites via its own inlining heuristics.
-    protected def begin(): Cursor.Mark =
+    protected update def begin(): Cursor.Mark =
       syncTo()
+      if tracking then reconcileLineation()
       cursor.mark(using heldToken.nn)
 
     protected def slice(start: Cursor.Mark, end: Cursor.Mark): BaseText =
@@ -972,6 +1347,13 @@ object Html extends Tag.Container
       def result(): BaseText = buffer.toString.tt.also(buffer.setLength(0))
       var content: BaseText = t""
       var extra: Attributes = Attributes.empty
+      // The positions of `extra`'s attributes (tracked parses only; `null` for none).
+      var extraPositions: scala.IArray[Int] | Null = null
+
+      // Record `element`, the innermost open element, as closed at the current position.
+      inline def closed(element: Element, withAttributes: Boolean): Element =
+        if tracking then state.recordOpen(element, position, withAttributes)
+        element
       // Resolved `Tag` for the current opening token. `tag()` already walks
       // `dom.elements` to look up the tag definition; stash the result so that
       // `read`'s `Token.Open` / `Token.Empty` arms don't have to repeat the
@@ -1213,9 +1595,14 @@ object Html extends Tag.Container
               next()
               skip()
               state.attrAppend(n, "\u0000", null)
+              if tracking then state.attrPositionAppend(n, 0, 0, 0)
               n += 1
 
             case _ =>
+              val attrMark = if tracking then begin().absolute.toInt else 0
+              val attrLine = if tracking then cursor.line.n0 else 0
+              val attrColumn = if tracking then cursor.column.n0 else 0
+
               val key2 = if foreign then foreignKey(begin()) else
                 key(begin(), 0).tap: key =>
                   if !key.targets(tag) then
@@ -1262,7 +1649,12 @@ object Html extends Tag.Container
 
               if !isDuplicate then
                 state.attrAppend(n, key2Str, assignment.lay(null: String | Null)(_.s))
+                if tracking
+                then state.attrPositionAppend(n, attrLine, attrColumn, position - attrMark)
+
                 n += 1
+
+        extraPositions = if tracking then state.attrPositionsSnapshot(n) else null
 
         if n == 0 then Attributes.empty
         else
@@ -1522,10 +1914,10 @@ object Html extends Tag.Container
       def finish(parent: Tag, map: Attributes, count: Int): Node =
         if parent != root then
           if parent.autoclose
-          then Element(parent.label, parent.attributes, state.array(count), false)
+          then closed(Element(parent.label, parent.attributes, state.array(count), false), false)
           else if permissive then
             warn(Incomplete(parent.label))
-            Element(parent.label, map, state.array(count), parent.foreign)
+            closed(Element(parent.label, map, state.array(count), parent.foreign), true)
           else
             fail(Incomplete(parent.label))
         else
@@ -1554,18 +1946,33 @@ object Html extends Tag.Container
             var level: Level = Level.Peer
             var current: Node = parent
             var focus: Tag = parent
+            val mark = begin()
+            // The line and column at `mark` (tracked parses only), for the element it opens.
+            val markLine = if tracking then cursor.line.n0 else 0
+            val markColumn = if tracking then cursor.column.n0 else 0
 
             locally:
-              val mark = begin()
-
               inline def node(): Unit =
-                current = Element(content, extra, state.array(count), parent.foreign)
+                val element = Element(content, extra, state.array(count), parent.foreign)
+                current = element
+
+                if tracking then
+                  val start = mark.absolute.toInt
+                  state.record(element, markLine, markColumn, start, start, extraPositions)
 
               inline def empty(): Unit =
-                current = Element(content, extra, Array(), parent.foreign)
+                val element = Element(content, extra, Array(), parent.foreign)
+                current = element
 
+                if tracking then
+                  val start = mark.absolute.toInt
+                  state.record(element, markLine, markColumn, start, position, extraPositions)
+
+              // Every caller has `reset(mark)`, so the parent's source ends at the token.
               inline def close(): Unit =
-                current = Element(parent.label, map, state.array(count), parent.foreign)
+                val element = Element(parent.label, map, state.array(count), parent.foreign)
+                current = element
+                if tracking then state.recordOpen(element, mark.absolute.toInt, true)
                 level = Level.Ascend
 
               inline def infer(inline tag: Tag): Unit =
@@ -1690,7 +2097,8 @@ object Html extends Tag.Container
                   else
                     advance()
                     level = Level.Ascend
-                    current = Element(content, map, state.array(count), parent.foreign)
+                    current =
+                      closed(Element(content, map, state.array(count), parent.foreign), true)
 
             def reconstructPending(): Int =
               if state.pendingFormattingSize == 0 || state.depth != pendingAtDepth then 0
@@ -1711,6 +2119,13 @@ object Html extends Tag.Container
 
                   dom.elements(label).let: tag =>
                     state.push(tag)
+
+                    // A clone starts where its content does: it has no tag of its own.
+                    if tracking then
+                      val offset = position
+                      reconcileLineation()
+                      state.pushStart(offset, cursor.line.n0, cursor.column.n0, null)
+
                     val cloneChild = descend(tag, admissible, attrs)
                     state.pop()
 
@@ -1739,6 +2154,10 @@ object Html extends Tag.Container
 
               case Level.Descend =>
                 state.push(focus)
+                // An inferred ancestor starts at the token that produced it.
+                if tracking
+                then state.pushStart(mark.absolute.toInt, markLine, markColumn, extraPositions)
+
                 val savedFosterFlag = pendingFosterDescend
                 pendingFosterDescend = false
                 if parent.isTable && !savedFosterFlag then inTableContent = true
@@ -1776,19 +2195,19 @@ object Html extends Tag.Container
               val text = textual(begin(), parent.label, false)
 
               if text.nil
-              then Element(parent.label, parent.attributes, Array(), parent.foreign)
+              then closed(Element(parent.label, parent.attributes, Array(), parent.foreign), false)
               else
-                Element(parent.label, parent.attributes,
-                  Array(Text(text)), parent.foreign)
+                closed(Element(parent.label, parent.attributes,
+                  Array(Text(text)), parent.foreign), false)
 
             case Mode.Rcdata =>
               val text = textual(begin(), parent.label, true)
 
               if text.nil
-              then Element(parent.label, parent.attributes, Array(), parent.foreign)
+              then closed(Element(parent.label, parent.attributes, Array(), parent.foreign), false)
               else
-                Element(parent.label, parent.attributes,
-                  Array(Text(text)), parent.foreign)
+                closed(Element(parent.label, parent.attributes,
+                  Array(Text(text)), parent.foreign), false)
 
             case Mode.Normal =>
               val text = textual(begin(), Unset, true)
@@ -1802,6 +2221,24 @@ object Html extends Tag.Container
         if !more then Fragment() else
           state.append(root)
           val head = read(root, root.admissible, Attributes.empty, 0)
+
+          // The index is built from the first top-level element, which is the document's
+          // root for `.load[Html]`.
+          if tracking then
+            var rootElement: Element | Null = null
+
+            if fragment.nil then head match
+              case element: Element if element ne root => rootElement = element
+              case _                                   => ()
+            else fragment.each: node =>
+              node match
+                case element: Element => if rootElement == null then rootElement = element
+                case _                => ()
+
+            if rootElement != null then
+              state.buildIndex(rootElement.nn)
+              rootIndex = state.indexSnapshot()
+
           // Permissive recovery can drain the root with no surviving children
           // (e.g. input was all stray close tags), in which case `finish`
           // returns the root sentinel that was appended before `read`. Yield
@@ -1830,7 +2267,10 @@ object Html extends Tag.Container
 
   // `this.` throughout the nodes: `object Html` is itself a `Tag.Container`, so its own `Topic`,
   // `Transport` and `Form` would otherwise be ambiguous with each node's inherited members.
-  sealed trait Node extends Html:
+  // `caps.Pure`, as `Xml.Node` is: nodes are immutable values, and a class nested in an object
+  // otherwise gets an open capture set in its self type once the document's `Metadata` is a
+  // class rather than the bare `Dom`.
+  sealed trait Node extends Html, caps.Pure:
     def body: Fragment of this.Topic over this.Transport in this.Form =
       Fragment[this.Topic]().over[this.Transport].in[this.Form]
 
@@ -2013,7 +2453,7 @@ object Html extends Tag.Container
 sealed into trait Html extends Topical, Documentary, Formal:
   type Topic <: Label
   type Transport <: Label
-  type Metadata = Dom
+  type Metadata = Html.Provenance
   type Chunks = Text
   type Form <: Dom
 

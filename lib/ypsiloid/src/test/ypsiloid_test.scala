@@ -670,7 +670,7 @@ object Tests extends Suite("ypsiloid", m"Ypsiloid Tests"):
         . assert(_ == Person(t"Zoë £€𐍈", 1))
 
         test(m"a tracked parse works over a stream"):
-          given Yaml.Tracking = Yaml.Tracking.On
+          import parsing.trackPositions
           summon[Yaml is Aggregable by Text]
           . accept(personDoc.s.grouped(3).map(_.tt).stream).as[Person]
         . assert(_ == Person(t"Alice", 42))
