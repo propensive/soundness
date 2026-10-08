@@ -50,7 +50,6 @@ class Inlay[status: Gaugeable as design]
   ( reading: Reading[status], width: Optional[Int] = Unset )
   ( using stdio: Stdio, monitor: Monitor, probate: Probate ):
 
-  @scala.caps.unsafe.untrackedCaptures
   private val started: Long = System.nanoTime
 
   // How many rows the last frame occupied, so the next one knows how far to move back up.
