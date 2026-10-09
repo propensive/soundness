@@ -49,50 +49,50 @@ import scala.caps
 //
 // Only the node-to-id dictionary is not an array: it is a persistent `Map`, since a stdlib
 // mutable map passes as pure under separation checking and its mutation would go unchecked.
-object Workspace:
-  def apply[node](): Workspace[node]^ = new Workspace()
+object Topology:
+  def apply[node](): Topology[node]^ = new Topology()
 
-  def apply(count: Int, from: scala.IArray[Int], to: scala.IArray[Int]): Workspace[Int]^ =
-    val workspace: Workspace[Int]^ = new Workspace()
+  def apply(count: Int, from: scala.IArray[Int], to: scala.IArray[Int]): Topology[Int]^ =
+    val topology: Topology[Int]^ = new Topology()
     var index = 0
 
     while index < count do
-      workspace.add(index)
+      topology.add(index)
       index += 1
 
     index = 0
 
     while index < from.length do
-      workspace.add(from(index), to(index))
+      topology.add(from(index), to(index))
       index += 1
 
-    workspace
+    topology
 
   // The same edges in reverse order, so that most arrive before the nodes they depend on are
   // ranked below them, and the order has to be repaired as it goes.
-  def reversed(count: Int, from: scala.IArray[Int], to: scala.IArray[Int]): Workspace[Int]^ =
-    val workspace: Workspace[Int]^ = new Workspace()
+  def reversed(count: Int, from: scala.IArray[Int], to: scala.IArray[Int]): Topology[Int]^ =
+    val topology: Topology[Int]^ = new Topology()
     var index = count - 1
 
     while index >= 0 do
-      workspace.add(index)
+      topology.add(index)
       index -= 1
 
     index = from.length - 1
 
     while index >= 0 do
-      workspace.add(from(index), to(index))
+      topology.add(from(index), to(index))
       index -= 1
 
-    workspace
+    topology
 
   // Thawing a persistent graph: nodes in topological order, so no edge needs reordering.
-  def apply[node](dag: AdjacencyDag[node]): Workspace[node]^ =
-    val workspace: Workspace[node]^ = new Workspace()
+  def apply[node](dag: AdjacencyDag[node]): Topology[node]^ =
+    val topology: Topology[node]^ = new Topology()
     var rest = dag.sorted.get
 
     while rest.nonEmpty do
-      workspace.add(rest.head)
+      topology.add(rest.head)
       rest = rest.tail
 
     val entries = dag.adjacency.iterator
@@ -100,9 +100,9 @@ object Workspace:
     while entries.hasNext do
       val (from, targets) = entries.next()
       val children = targets.iterator
-      while children.hasNext do workspace.add(from, children.next())
+      while children.hasNext do topology.add(from, children.next())
 
-    workspace
+    topology
 
   // State-free helpers live here rather than on the class: passing a field of `this` to a
   // method on `this` is a separation failure, while a companion method sees only its argument.
@@ -126,7 +126,7 @@ object Workspace:
     System.arraycopy(array, 0, bigger, 0, array.length)
     bigger
 
-final class Workspace[node] private[acyclicity]()
+final class Topology[node] private[acyclicity]()
 extends caps.ExclusiveCapability, caps.Stateful:
   private[acyclicity] var index: Map[node, Int] = Map()
   private[acyclicity] var count: Int = 0       // ids allocated, removed ones included
@@ -169,29 +169,29 @@ extends caps.ExclusiveCapability, caps.Stateful:
 
   private[acyclicity] update def growNodes(): Unit =
     val capacity = names.length*2
-    names = Workspace.grownRefs(names, capacity)
-    alive = Workspace.grownFlags(alive, capacity)
-    outHead = Workspace.grown(outHead, capacity)
-    inHead = Workspace.grown(inHead, capacity)
-    outDegree = Workspace.grown(outDegree, capacity)
-    inDegree = Workspace.grown(inDegree, capacity)
-    rank = Workspace.grown(rank, capacity)
-    atRank = Workspace.grown(atRank, capacity)
-    stamp = Workspace.grown(stamp, capacity)
-    sourceList = Workspace.grown(sourceList, capacity)
-    sourceSlot = Workspace.grown(sourceSlot, capacity)
-    sinkList = Workspace.grown(sinkList, capacity)
-    sinkSlot = Workspace.grown(sinkSlot, capacity)
-    stack = Workspace.grown(stack, capacity)
-    forward = Workspace.grownLongs(forward, capacity)
-    backward = Workspace.grownLongs(backward, capacity)
+    names = Topology.grownRefs(names, capacity)
+    alive = Topology.grownFlags(alive, capacity)
+    outHead = Topology.grown(outHead, capacity)
+    inHead = Topology.grown(inHead, capacity)
+    outDegree = Topology.grown(outDegree, capacity)
+    inDegree = Topology.grown(inDegree, capacity)
+    rank = Topology.grown(rank, capacity)
+    atRank = Topology.grown(atRank, capacity)
+    stamp = Topology.grown(stamp, capacity)
+    sourceList = Topology.grown(sourceList, capacity)
+    sourceSlot = Topology.grown(sourceSlot, capacity)
+    sinkList = Topology.grown(sinkList, capacity)
+    sinkSlot = Topology.grown(sinkSlot, capacity)
+    stack = Topology.grown(stack, capacity)
+    forward = Topology.grownLongs(forward, capacity)
+    backward = Topology.grownLongs(backward, capacity)
 
   private[acyclicity] update def growEdges(): Unit =
     val capacity = edgeFrom.length*2
-    edgeFrom = Workspace.grown(edgeFrom, capacity)
-    edgeTo = Workspace.grown(edgeTo, capacity)
-    outNext = Workspace.grown(outNext, capacity)
-    inNext = Workspace.grown(inNext, capacity)
+    edgeFrom = Topology.grown(edgeFrom, capacity)
+    edgeTo = Topology.grown(edgeTo, capacity)
+    outNext = Topology.grown(outNext, capacity)
+    inNext = Topology.grown(inNext, capacity)
 
   private[acyclicity] update def enlistSource(id: Int): Unit =
     if sourceSlot(id) == 0 then

@@ -328,10 +328,10 @@ object FrozenDag:
         reverseTargets.asInstanceOf[scala.IArray[Int]],
         true )
 
-  // Consuming a workspace: the caller gives up its handle, so the frozen graph can never be
-  // edited behind its back. (In core this will move the workspace's arrays; here it reads them.)
-  def apply[node](consume workspace: Workspace[node]^): FrozenDag[node] =
-    val order = workspace.linearized
-    val adjacency = workspace.adjacency
+  // Consuming a topology: the caller gives up its handle, so the frozen graph can never be
+  // edited behind its back. (In core this will move the topology's arrays; here it reads them.)
+  def apply[node](consume topology: Topology[node]^): FrozenDag[node] =
+    val order = topology.linearized
+    val adjacency = topology.adjacency
 
     FrozenDag(order, adjacency.getOrElse(_, Set()))
