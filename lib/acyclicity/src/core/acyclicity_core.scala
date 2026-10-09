@@ -63,3 +63,8 @@ extension [node](start: node)
               done + key )
 
     recur(Map(), Set(start), Set())
+
+// The choice package: `import rankings.balancedRanking` pulls nodes down toward their dependents.
+package rankings:
+  given longestPathRanking: Ranking = Ranking.LongestPath
+  given balancedRanking: Ranking = Ranking.Balanced
