@@ -153,19 +153,24 @@ and error, as it would if a person had typed it:
 sh"stty size".pty(100, 30).exec[Text]().trim   // t"30 100"
 ```
 
-Forking it gives a `Job` like any other, which can also be resized. Its output is everything the
-program writes to the terminal, standard error included, escape sequences and all — what a
-terminal emulator would receive — and its input is what is typed at the terminal. A terminal has
-no end of input of its own, so a program reading a line until the end is sent the end-of-file
-character, `^D`, rather than having its input closed:
+For an interactive program, a `session` lends the running command to a block, as a `Job` which
+can also be resized, and ends it when the block does — hanging up on the program if it is still
+running, as closing a real terminal would. Its output is everything the program writes to the
+terminal, standard error included, escape sequences and all — what a terminal emulator would
+receive — and its input is what is typed at the terminal. A terminal has no end of input of its
+own, so a program reading until the end is sent the end-of-file character, `^D`, rather than
+having its input closed:
 
 <!-- doccheck: skip -->
 ```scala
-val job = sh"sh -c 'read line; stty size'".pty().fork[Text]()
-job.resize(132, 50)                // the program receives SIGWINCH
-job.stdin(Stream(Data(13)))        // press Return
-job.await().trim                   // t"50 132"
+sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
+  terminal.resize(132, 50)         // the program receives SIGWINCH
+  terminal.stdin(Stream(Data(13))) // press Return
+  terminal.text().trim             // t"50 132"
 ```
+
+The value `pty` returns is not itself a terminal: it describes how to run the command, and each
+`session` or `exec` allocates a fresh terminal and releases it again.
 
 Pseudo-terminals are allocated through the JDK's foreign function API, on Linux and macOS, so a
 program using them should be run with `--enable-native-access=ALL-UNNAMED` to keep the JDK from

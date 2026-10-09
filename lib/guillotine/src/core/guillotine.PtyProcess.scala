@@ -45,19 +45,23 @@ import scala.language.experimental.pureFunctions
 // The handful of POSIX calls a pseudo-terminal needs, bound through the foreign function API. The
 // constants which differ between platforms are chosen for macOS or for Linux (glibc) at runtime.
 private[guillotine] object PtyProcess:
-  // The master's descriptor, closed at most once, and only by the pump, once the terminal's output
-  // has ended: a descriptor number is reused as soon as it is closed, so a second `close`, or a
-  // read racing a `close`, could reach some unrelated file.
+  // The master's descriptor, closed at most once, and only by the pump, once it has stopped
+  // reading: a descriptor number is reused as soon as it is closed, so a second `close`, or a read
+  // racing a `close`, could reach some unrelated file.
   class Descriptor(val fd: Int):
     private val done = juca.AtomicBoolean(false)
     def closed: Boolean = done.get
     def close(): Unit = if done.compareAndSet(false, true) then PtyProcess.close(fd)
 
-  val cleaner: java.lang.ref.Cleaner = java.lang.ref.Cleaner.create().nn
   val BufferSize: Int = 8192
   val Chunks: Int = 256
+  val HangUp: Int = 1
   val Terminate: Int = 15
   val Kill: Int = 9
+
+  // How long, in milliseconds, the pump waits for output before checking whether it should stop.
+  private val Patience: Int = 100
+  private val Readable: Short = 1 // `POLLIN`
 
   private val macOs: Boolean = System.getProperty("os.name").nn.startsWith("Mac")
 
@@ -119,6 +123,12 @@ private[guillotine] object PtyProcess:
   private lazy val writeFd = bindErrno("write", transfer)
   private lazy val waitpid = bindErrno("waitpid", waiting)
   private lazy val kill = bind("kill", jlf.FunctionDescriptor.of(int32, int32, int32).nn)
+
+  // `nfds_t` is thirty-two bits wide on macOS, but a narrower argument is read from the low bits
+  // of the register a sixty-four-bit one fills.
+  private lazy val poll =
+    bindErrno("poll", jlf.FunctionDescriptor.of(int32, pointer, int64, int32).nn)
+
   private lazy val sigfillset = bind("sigfillset", pointers)
   private lazy val actionsInit = bind("posix_spawn_file_actions_init", pointers)
   private lazy val actionsDestroy = bind("posix_spawn_file_actions_destroy", pointers)
@@ -174,7 +184,6 @@ private[guillotine] object PtyProcess:
 
   def close(fd: Int): Unit = (closeFd.invokeExact(fd): Int)
   def signal(pid: Int, signal: Int): Unit = (kill.invokeExact(pid, signal): Int)
-  def release(pump: Thread): Runnable = () => pump.interrupt()
 
   @tailrec
   def read(fd: Int, buffer: jlf.MemorySegment, length: Long, state: jlf.MemorySegment): Long =
@@ -203,24 +212,46 @@ private[guillotine] object PtyProcess:
   // stops reading and the child blocks on writing, as it would on a full pipe. Linux reports the
   // end of the output with `EIO`, and macOS with an empty read; either ends the pump, which then
   // queues an empty chunk to say so.
-  def pump(pid: Int, master: Descriptor, chunks: juc.BlockingQueue[scala.IArray[Byte]]): Thread =
+  //
+  // The pump never blocks indefinitely, in `read` or on the queue, so that it notices `stop`
+  // promptly: a background job the child started may hold the terminal open long after the child
+  // has exited, and the master can only be closed safely by the thread which reads it.
+  def pump
+    ( pid:    Int,
+      master: Descriptor,
+      chunks: juc.BlockingQueue[scala.IArray[Byte]],
+      stop:   juca.AtomicBoolean )
+  :   Thread =
+
     Thread.ofPlatform().nn.daemon().nn.name("guillotine-pty-pump-"+pid).nn.start: () =>
       val arena = jlf.Arena.ofConfined().nn
       val buffer = arena.allocate(BufferSize.toLong).nn
       val state = arena.allocate(stateLayout).nn
+      val descriptor = arena.allocate(8L).nn
+      descriptor.set(int32, 0L, master.fd)
+      descriptor.set(int16, 4L, Readable)
 
       @tailrec
-      def recur(): Unit =
-        val count = read(master.fd, buffer, BufferSize.toLong, state)
+      def enqueue(bytes: scala.IArray[Byte]): Unit =
+        if !stop.get && !chunks.offer(bytes, Patience.toLong, juc.TimeUnit.MILLISECONDS)
+        then enqueue(bytes)
 
-        if count > 0 then
-          val bytes = buffer.asSlice(0L, count).nn.toArray(jlf.ValueLayout.JAVA_BYTE)
-          chunks.put(bytes.asInstanceOf[scala.IArray[Byte]])
-          recur()
+      @tailrec
+      def recur(): Unit = if !stop.get then
+        val ready = (poll.invokeExact(state, descriptor, 1L, Patience): Int)
+
+        if ready == 0 || ready < 0 && errorNumber(state) == Interrupted then recur()
+        else if ready > 0 then
+          val count = read(master.fd, buffer, BufferSize.toLong, state)
+
+          if count > 0 then
+            val bytes = buffer.asSlice(0L, count).nn.toArray(jlf.ValueLayout.JAVA_BYTE)
+            enqueue(bytes.asInstanceOf[scala.IArray[Byte]])
+            recur()
 
       try
         recur()
-        chunks.put(scala.IArray[Byte]())
+        enqueue(scala.IArray[Byte]())
       catch case _: InterruptedException => ()
       finally
         master.close()
@@ -364,16 +395,13 @@ private[guillotine] class PtyProcess private (processId: Int, master: PtyProcess
 extends java.lang.Process:
   private val exit: juc.CompletableFuture[Integer] = juc.CompletableFuture[Integer]().nn
   private val chunks = juc.ArrayBlockingQueue[scala.IArray[Byte]](PtyProcess.Chunks)
-  private val pump: Thread = PtyProcess.pump(processId, master, chunks)
+  private val stop = juca.AtomicBoolean(false)
+  private val pump: Thread = PtyProcess.pump(processId, master, chunks, stop)
 
   // `waitpid` blocks, so it runs on a thread of its own rather than on whichever thread first asks
   // for the exit status; reaping the child at once also means it never lingers as a zombie.
   Thread.ofPlatform().nn.daemon().nn.name("guillotine-pty-reaper-"+processId).nn.start: () =>
     exit.complete(Integer.valueOf(PtyProcess.await(processId)))
-
-  // A pump left blocked on a full queue, whose output nobody will now read, is released when this
-  // process is collected; the action must not refer to `this`, or it would never be collected.
-  PtyProcess.cleaner.register(this, PtyProcess.release(pump))
 
   private lazy val input: ji.InputStream = new ji.InputStream:
     // A JDK class cannot extend `Stateful`; its state is confined to this stream, behind its lock.
@@ -417,6 +445,21 @@ extends java.lang.Process:
     // A terminal has no end of input of its own: closing the master would hang up on the child.
     // A cooked-mode read is ended by typing the end-of-file character, `^D`, instead.
     override def close(): Unit = ()
+
+  // Ends the session with the terminal: a child still running is hung up on, as closing a real
+  // terminal would, and killed if it has not exited within a second; then the pump is stopped, and
+  // it closes the master.
+  def close(): Unit =
+    if isAlive() then
+      PtyProcess.signal(processId, PtyProcess.HangUp)
+
+      if !waitFor(1L, juc.TimeUnit.SECONDS) then
+        PtyProcess.signal(processId, PtyProcess.Kill)
+        waitFor()
+
+    stop.set(true)
+
+    try pump.join() catch case _: InterruptedException => Thread.currentThread().nn.interrupt()
 
   def resize(width: Int, height: Int): Unit =
     if !master.closed then PtyProcess.resize(master.fd, width, height)

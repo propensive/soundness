@@ -459,35 +459,63 @@ object Tests extends Suite(m"Guillotine tests"):
       . assert(_ == Exit.Fail(3))
 
       test(m"output written before a quick exit is not lost"):
-        val job = sh"echo hello".pty().fork[Text]()
-        job.attend()
-        job.await().trim
+        sh"echo hello".pty().session: terminal ?=>
+          terminal.attend()
+          terminal.text().trim
       . assert(_ == t"hello")
 
       test(m"input typed at the terminal reaches the command"):
-        val job = sh"head -n 1".pty().fork[Text]()
-        job.stdin(Stream(Data(104, 105, 13)))
-        job.await().s.replace("\r", "").nn.trim.nn.tt
+        sh"head -n 1".pty().session: terminal ?=>
+          terminal.stdin(Stream(Data(104, 105, 13)))
+          terminal.text().s.replace("\r", "").nn.trim.nn.tt
       . assert(_ == t"hi\nhi")
 
       test(m"the end-of-file character ends a read from the terminal"):
-        val job = sh"cat".pty().fork[Exit]()
-        job.stdin(Stream(Data(104, 105, 13, 4)))
-        job.await()
+        sh"cat".pty().session: terminal ?=>
+          terminal.stdin(Stream(Data(104, 105, 13, 4)))
+          terminal.await()
       . assert(_ == Exit.Ok)
 
       test(m"a resized terminal reports its new size"):
-        val job = sh"sh -c 'read line; stty size'".pty().fork[Text]()
-        job.resize(132, 50)
-        job.stdin(Stream(Data(13)))
-        job.await().trim
+        sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
+          terminal.resize(132, 50)
+          terminal.stdin(Stream(Data(13)))
+          terminal.text().trim
       . assert(_ == t"50 132")
 
       test(m"a command on a terminal can be killed"):
-        val job = sh"sleep 10".pty().fork[Exit]()
-        job.kill()
-        job.exitStatus()
+        sh"sleep 10".pty().session: terminal ?=>
+          terminal.kill()
+          terminal.exitStatus()
       . assert(_ == Exit.Fail(137))
+
+      test(m"a session hangs up on a command still running at its end"):
+        val pid: Long = sh"sleep 30".pty().session: terminal ?=>
+          terminal.pid.value
+
+        ProcessHandle.of(pid).nn.isPresent
+      . assert(_ == false)
+
+      test(m"a session ends its command when its block throws"):
+        val pids = scala.collection.mutable.ListBuffer[Long]()
+
+        try sh"sleep 30".pty().session: terminal ?=>
+          pids += terminal.pid.value
+          throw Exception("abandoned")
+        catch case _: Exception => ()
+
+        pids.toList.map(ProcessHandle.of(_).nn.isPresent)
+      . assert(_ == List(false))
+
+      test(m"a session ends though a background job holds the terminal"):
+        // The background `sleep` ignores the hang-up and keeps the terminal open after `sh` exits,
+        // so the terminal's output never ends; the session must end without waiting for it.
+        val start = java.lang.System.nanoTime
+        sh"sh -c '(trap \"\" HUP; sleep 5) & echo started'".pty().session: terminal ?=>
+          terminal.attend()
+
+        (java.lang.System.nanoTime - start)/1_000_000L < 3000L
+      . assert(_ == true)
 
       test(m"a missing command on a terminal raises Exec.Error"):
         capture[Exec.Error](sh"definitely-not-a-binary-xyz".pty().exec[Text]())
