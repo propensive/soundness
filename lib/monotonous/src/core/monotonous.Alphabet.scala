@@ -60,21 +60,18 @@ object Alphabet:
   given serialization: [encoding <: Serialization]
   =>  Ductile.Instance[Alphabet[encoding], Data, Text, Credit, Credit] =
 
-    // Sealed: a Ductile is a stateless stage descriptor; instantiation freshens its
-    // type arguments under capture checking, which the seal discards.
-    caps.unsafe.unsafeAssumePure:
-     new Ductile:
+    new Ductile:
       type Self = Alphabet[encoding]
       type Operand = Data
       type Result = Text
       type Transport = Credit
       type Upstream = Credit
 
-      def duct(consume stage: Alphabet[encoding]^)(using Buffering)
+      def duct(consume stage: Alphabet[encoding])(using Buffering)
       :   (Duct[Data, Text] { type Transport = Credit; type Upstream = Credit })^ =
 
-        // hoisted: a constructor may not read the consumed (exclusive) descriptor
-        val alphabet = caps.unsafe.unsafeAssumePure(stage)
+        // An alphabet is pure, so the duct may read the consumed descriptor freely.
+        val alphabet: Alphabet[encoding] = stage
 
         new Duct[Data, Text]:
           type Transport = Credit
@@ -88,8 +85,7 @@ object Alphabet:
 
           // Character lookup table for the `2^base` data symbols, so the hot
           // loop indexes an array rather than re-reading the alphabet string.
-          private val table: scala.Array[Char] =
-            caps.unsafe.unsafeAssumePure(scala.Array.tabulate(1 << base)(alphabet(_)))
+          private val table: Array[Char]^{} = Array.tabulate(1 << base)(alphabet(_))
 
           private var accumulator: Int = 0
           private var accumulated: Int = 0
@@ -130,17 +126,17 @@ object Alphabet:
                   val b0 = bytes(sourceOffset + consumed) & 0xff
                   val b1 = bytes(sourceOffset + consumed + 1) & 0xff
                   val b2 = bytes(sourceOffset + consumed + 2) & 0xff
-                  chars(targetOffset + produced) = table(b0 >>> 2)
-                  chars(targetOffset + produced + 1) = table(((b0 & 0x3) << 4) | (b1 >>> 4))
-                  chars(targetOffset + produced + 2) = table(((b1 & 0xf) << 2) | (b2 >>> 6))
-                  chars(targetOffset + produced + 3) = table(b2 & 0x3f)
+                  chars(targetOffset + produced) = table.readable(b0 >>> 2)
+                  chars(targetOffset + produced + 1) = table.readable(((b0 & 0x3) << 4) | (b1 >>> 4))
+                  chars(targetOffset + produced + 2) = table.readable(((b1 & 0xf) << 2) | (b2 >>> 6))
+                  chars(targetOffset + produced + 3) = table.readable(b2 & 0x3f)
                   consumed += 3
                   produced += 4
                   written += 4
 
               if accumulated >= base then
                 if produced < targetSpace then
-                  chars(targetOffset + produced) = table((accumulator >>> (accumulated - base)) & mask)
+                  chars(targetOffset + produced) = table.readable((accumulator >>> (accumulated - base)) & mask)
                   produced += 1
                   accumulated -= base
                   written += 1
@@ -184,30 +180,21 @@ object Alphabet:
             produced
 
   given deserialization: [encoding <: Serialization] => (tactic: Tactic[Serialization.Error])
-  =>  Ductile.Instance[Alphabet[encoding], Text, Data, Credit, Credit] =
+  =>  ((Ductile.Instance[Alphabet[encoding], Text, Data, Credit, Credit])^{tactic}) =
 
-    // Sealed: see `serialization` above. The tactic is sealed here too — the duct
-    // raises through the given's resolution-scoped tactic, which shares the
-    // instance's lifetime (the codec-thunk seal pattern); a fresh duct result may
-    // hide only local state, not the enclosing given's parameter.
-    caps.unsafe.unsafeAssumePure:
-     // The tactic crosses into the fresh duct as a neutral reference: the duct
-     // raises through the given's resolution-scoped tactic (the codec-thunk seal
-     // pattern), and a fresh result may hide only local state, so even a sealed
-     // capability-typed binding would trip the hiding rule.
-     val tacticRef: AnyRef = tactic.asInstanceOf[AnyRef]
-     new Ductile:
+    // The ducts raise through the given's tactic, so the instance honestly captures it.
+    new Ductile:
       type Self = Alphabet[encoding]
       type Operand = Text
       type Result = Data
       type Transport = Credit
       type Upstream = Credit
 
-      def duct(consume stage: Alphabet[encoding]^)(using Buffering)
+      def duct(consume stage: Alphabet[encoding])(using Buffering)
       :   (Duct[Text, Data] { type Transport = Credit; type Upstream = Credit })^ =
 
-        // hoisted: a constructor may not read the consumed (exclusive) descriptor
-        val alphabet = caps.unsafe.unsafeAssumePure(stage)
+        // An alphabet is pure, so the duct may read the consumed descriptor freely.
+        val alphabet: Alphabet[encoding] = stage
 
         new Duct[Text, Data]:
           type Transport = Credit
@@ -300,7 +287,7 @@ object Alphabet:
                 else
                   accumulator = (accumulator << base)
                     | stage.invert(position, char)
-                        (using tacticRef.asInstanceOf[Tactic[Serialization.Error]])
+                        (using tactic)
                   accumulated += base
 
                 position += 1
@@ -311,7 +298,8 @@ object Alphabet:
             Duct.Progress(consumed, produced)
 
 case class Alphabet[encoding <: Serialization]
-  ( chars: Text, padding: Boolean, tolerance: Map[Char, Int] = Map() ):
+  ( chars: Text, padding: Boolean, tolerance: Map[Char, Int] = Map() )
+extends caps.Pure:
 
   def apply(index: Int): Char = chars.s.charAt(index)
 

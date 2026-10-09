@@ -82,6 +82,7 @@ object PdfFile:
       case Io.Error(_, _, _, _) => Pdf.Error(Pdf.Error.Reason.Io(t"the file could not be written"))
 
     . protect:
+        // [by-name-receiver] resolve's tactic shared with mitigated receiver path
         val target: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
           workingDirectory[Path on Local].resolve(filename)
 
@@ -211,6 +212,7 @@ class PdfFile private (origin: PdfFile.Origin):
             Pdf.Error(Pdf.Error.Reason.Io(t"the file could not be opened"))
 
         . protect:
+            // [by-name-receiver] resolve's tactic shared with mitigated receiver path
             val path: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
               workingDirectory[Path on Local].resolve(filename)
 

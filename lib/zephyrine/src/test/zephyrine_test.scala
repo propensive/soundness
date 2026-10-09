@@ -599,6 +599,7 @@ object Tests extends Suite(m"Zephyrine tests"):
       // (issue #1301) — on a real socket the pull would deadlock.
       test(m"Cursor[Data].expect on a message's final byte does not refill"):
         class Live() extends Iterator[Data]:
+          // [stdlib-iterator] counter var in test Iterator subclass
           @scala.caps.unsafe.untrackedCaptures
           var pulls: Int = 0
           def hasNext: Boolean = true
@@ -867,27 +868,25 @@ object Tests extends Suite(m"Zephyrine tests"):
       val small = Array[Byte](1, 2, 3, 4, 5)
 
       test(m"pump transfers a single-chunk stream"):
-        val gather = Gather()
-        bytes.stream.pump(gather)
-        scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+        Gather().ingest(bytes.stream).data.to[List]
       . assert(_ == bytes.to[List])
 
       test(m"iterator stream transfers all chunks in order"):
-        val gather = Gather()
-        Stream(Iterator(Array[Byte](1, 2, 3), Array[Byte](), Array[Byte](4, 5))).pump(gather)
-        scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+        val gathered = Gather().ingest:
+          Stream(Iterator(Array[Byte](1, 2, 3), Array[Byte](), Array[Byte](4, 5)))
+        gathered.data.to[List]
       . assert(_.to[List].map(_.toInt) == List(1, 2, 3, 4, 5))
 
       test(m"through doubles each byte"):
-        val gather = Gather()
-        small.stream.viaDuct(Doubler()).pump(gather)
-        scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+        val gathered = Gather().ingest(small.stream.viaDuct(Doubler()))
+        gathered.data.to[List]
       . assert(_ == (small.to[List]: List[Byte]).flatMap { byte => proscenium.List(byte, byte) })
 
       test(m"a duct translates downstream demand for its upstream"):
         val recorder = Recorder(small.stream)
         val gather = Gather()
         gather.credit = 10
+        // [pump-overlap] read after a consuming pump, lend or duct
         scala.caps.unsafe.unsafeAssumeSeparate(recorder.viaDuct(Doubler()).pump(gather))
         recorder.demands.stdlib.last
       . assert(_ == 5L)
@@ -903,6 +902,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         val intake = gather.acceptingDuct(Doubler())
         intake.put(small)
         intake.finish()
+        // [pump-overlap] read after a consuming pump, lend or duct
         scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
       . assert(_ == (small.to[List]: List[Byte]).flatMap { byte => proscenium.List(byte, byte) })
 
@@ -911,13 +911,13 @@ object Tests extends Suite(m"Zephyrine tests"):
         val intake = gather.acceptingDuct(Trailer())
         intake.put(Array[Byte](1, 2))
         intake.finish()
+        // [pump-overlap] read after a consuming pump, lend or duct
         scala.caps.unsafe.unsafeAssumeSeparate(gather.data).readable.to(List)
       . assert(_.map(_.toInt) == List(1, 2, 99))
 
       test(m"duct flush emits terminal state at end of a pulled stream"):
-        val gather = Gather()
-        Stream(Array[Byte](1, 2)).viaDuct(Trailer()).pump(gather)
-        scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+        val gathered = Gather().ingest(Stream(Array[Byte](1, 2)).viaDuct(Trailer()))
+        gathered.data.to[List]
       . assert(_.map(_.toInt) == List(1, 2, 99))
 
       test(m"conduit transfers data across threads"):
@@ -925,9 +925,8 @@ object Tests extends Suite(m"Zephyrine tests"):
           Conduit[Data]() match
            case (intake, stream) =>
             val task = stream.transfer: (stream, _, _) ?=>
-              val gather = Gather()
-              scala.caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
-              scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+              val gathered = Gather().ingest(stream())
+              gathered.data.to[List]
 
             intake.put(bytes)
             intake.finish()
@@ -941,9 +940,8 @@ object Tests extends Suite(m"Zephyrine tests"):
           Conduit[Data]() match
            case (intake, stream) =>
             val task = stream.transfer: (stream, _, _) ?=>
-              val gather = Gather()
-              scala.caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
-              scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+              val gathered = Gather().ingest(stream())
+              gathered.data.to[List]
 
             intake.put(Data(9))
             intake.put(big)
@@ -960,9 +958,8 @@ object Tests extends Suite(m"Zephyrine tests"):
           Conduit[Data]() match
            case (intake, stream) =>
             val task = stream.transfer: (stream, _, _) ?=>
-              val gather = Gather()
-              scala.caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
-              scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+              val gathered = Gather().ingest(stream())
+              gathered.data.to[List]
 
             payload.stream.pump(intake)
             unsafely(task.await()) == payload.to[List]
@@ -978,9 +975,8 @@ object Tests extends Suite(m"Zephyrine tests"):
           Conduit[Data]() match
            case (intake, stream) =>
             val task = stream.transfer: (stream, _, _) ?=>
-              val gather = Gather()
-              scala.caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
-              scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+              val gathered = Gather().ingest(stream())
+              gathered.data.to[List]
 
             intake.put(original)
             extra.stream.pump(intake)
@@ -1041,24 +1037,23 @@ object Tests extends Suite(m"Zephyrine tests"):
         val stream = chunks.iterator.stream.via(summon[Charset])
         val builder = StringBuilder()
 
-        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
+        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:  // [closure-capture]
          stream.refill(Credit(8)) match
           case count: Int =>
             val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[Char]]
             builder.append(String(window, stream.start, count))
             stream.skip(count)
-            scala.caps.unsafe.unsafeAssumeSeparate(recur())
+            scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
 
           case _ => ()
 
-        scala.caps.unsafe.unsafeAssumeSeparate(recur())
+        scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
         builder.toString.tt
       . assert(_ == exotic)
 
       test(m"char encoder duct emits UTF-8 for supplementary characters"):
-        val gather = Gather()
-        exotic.stream.via(summon[Codepage]).pump(gather)
-        scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+        val gathered = Gather().ingest(exotic.stream.via(summon[Codepage]))
+        gathered.data.to[List]
       . assert(_ == Array.unsafeFrozen(exotic.s.getBytes("UTF-8").nn).to[List])
 
       // Malformed input — a stray continuation, an overlong lead, a
@@ -1075,24 +1070,23 @@ object Tests extends Suite(m"Zephyrine tests"):
         val stream = malformed.stream.via(summon[Charset])
         val builder = StringBuilder()
 
-        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
+        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:  // [closure-capture]
          stream.refill(Credit(8)) match
           case count: Int =>
             val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[Char]]
             builder.append(String(window, stream.start, count))
             stream.skip(count)
-            scala.caps.unsafe.unsafeAssumeSeparate(recur())
+            scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
 
           case _ => ()
 
-        scala.caps.unsafe.unsafeAssumeSeparate(recur())
+        scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
         builder.toString.tt
       . assert(_ == summon[Charset].decoded(malformed))
 
       test(m"charset ducts roundtrip through both directions"):
-        val gather = Gather()
-        exotic.stream.via(summon[Codepage]).pump(gather)
-        val decoded = scala.caps.unsafe.unsafeAssumeSeparate(gather.data).stream.via(summon[Charset])
+        val gathered = Gather().ingest(exotic.stream.via(summon[Codepage]))
+        val decoded = gathered.data.stream.via(summon[Charset])
         val builder = StringBuilder()
 
         def recur(): Unit = decoded.refill(Credit(4)) match
@@ -1100,11 +1094,11 @@ object Tests extends Suite(m"Zephyrine tests"):
             val window = unsafely(decoded.unsafeStorage).asInstanceOf[scala.Array[Char]]
             builder.append(String(window, decoded.start, count))
             decoded.skip(count)
-            scala.caps.unsafe.unsafeAssumeSeparate(recur())
+            scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
 
           case _ => ()
 
-        scala.caps.unsafe.unsafeAssumeSeparate(recur())
+        scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
         builder.toString.tt
       . assert(_ == exotic)
 
@@ -1113,7 +1107,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         val stream = Stream[Array[String]^{}](records)
         var collected: List[String] = Nil
 
-        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
+        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:  // [closure-capture]
          stream.refill(Credit(7)) match
           case count: Int =>
             val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[AnyRef]]
@@ -1122,11 +1116,11 @@ object Tests extends Suite(m"Zephyrine tests"):
             do collected = window(stream.start + index).asInstanceOf[String] :: collected
 
             stream.skip(count)
-            scala.caps.unsafe.unsafeAssumeSeparate(recur())
+            scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
 
           case _ => ()
 
-        scala.caps.unsafe.unsafeAssumeSeparate(recur())
+        scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
         collected.reverse
       . assert(_ == (1 to 100).map { index => s"record-$index" }.to(List))
 
@@ -1237,6 +1231,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         var pulled: Int = 0
         val chunks = Iterator(Array[Byte](1.toByte), Array[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
         val list = chunks.stream.chain
+        // [closure-capture] a local def or closure over a fresh stream reads it back read-only
         scala.caps.unsafe.unsafeAssumeSeparate(pulled)
       . assert(_ == 0)
 
@@ -1245,6 +1240,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         val chunks = Iterator(Array[Byte](1.toByte), Array[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
         val list = chunks.stream.chain
         list.stdlib.head
+        // [closure-capture] a local def or closure over a fresh stream reads it back read-only
         scala.caps.unsafe.unsafeAssumeSeparate(pulled)
       . assert(_ == 1)
 
@@ -1273,11 +1269,13 @@ object Tests extends Suite(m"Zephyrine tests"):
 
       test(m"streamOf lends a bounded sub-stream of a cursor"):
         val cursor = Cursor(Data.fill(10)(_.toByte))
+        // [pump-overlap] read after a consuming pump, lend or duct
         scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 4).memoize.to[List])
       . assert(_.to[List].map(_.toInt) == List(0, 1, 2, 3))
 
       test(m"the lent cursor resumes at the boundary"):
         val cursor = Cursor(Data.fill(10)(_.toByte))
+        // [pump-overlap] read after a consuming pump, lend or duct
         scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 4).memoize)
         val remainder: List[Data] = cursor.remainder.to[List]
         remainder.bind(_.to[List])
@@ -1285,16 +1283,19 @@ object Tests extends Suite(m"Zephyrine tests"):
 
       test(m"streamOf without a length lends the whole remainder"):
         val cursor = Cursor(Data.fill(6)(_.toByte))
+        // [pump-overlap] read after a consuming pump, lend or duct
         scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor).memoize.to[List])
       . assert(_.to[List].map(_.toInt) == List(0, 1, 2, 3, 4, 5))
 
       test(m"streamOf spans cursor refills"):
         val cursor = Cursor(Iterator(Array[Byte](0, 1, 2), Array[Byte](3, 4, 5), Array[Byte](6.toByte)))
+        // [pump-overlap] read after a consuming pump, lend or duct
         scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 5).memoize.to[List])
       . assert(_.to[List].map(_.toInt) == List(0, 1, 2, 3, 4))
 
       test(m"a lent sub-stream and the resumed cursor partition the input"):
         val cursor = Cursor(Iterator(Array[Byte](0, 1, 2), Array[Byte](3, 4, 5), Array[Byte](6.toByte)))
+        // [pump-overlap] read after a consuming pump, lend or duct
         val lent = scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 5).memoize.to[List])
         val remainder: List[Data] = cursor.remainder.to[List]
         val rest = remainder.bind(_.to[List])
@@ -1351,6 +1352,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val chunk: Data = Data.fill(16)(_.toByte)
           val written = AtomicInteger(0)
 
+          // [test-harness] a raw thread driving the intake, to exercise the conduit
           val writer = scala.caps.unsafe.unsafeAssumeSeparate:
             onThread: () =>
               for _ <- 1 to 8 do
@@ -1399,6 +1401,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val chunk: Data = Data.fill(8)(_.toByte)
           val produced = AtomicLong(0)
 
+          // [test-harness] a raw thread driving the intake, to exercise the conduit
           val writer = scala.caps.unsafe.unsafeAssumeSeparate:
             onThread: () =>
               for _ <- 1 to 2048 do
@@ -1439,6 +1442,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
           val payload: Data = Data.fill(64)(_.toByte)
 
+          // [test-harness] a raw thread driving the intake, to exercise the conduit
           val writer = scala.caps.unsafe.unsafeAssumeSeparate:
             onThread(() => payload.stream.pump(intake))
 
@@ -1461,6 +1465,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         val gather = Gather()
         gather.credit = 20
 
+        // [pump-overlap] read after a consuming pump, lend or duct
         scala.caps.unsafe.unsafeAssumeSeparate:
           recorder.viaDuct(Doubler()).viaDuct(Doubler()).pump(gather)
 
@@ -1470,6 +1475,7 @@ object Tests extends Suite(m"Zephyrine tests"):
       test(m"a terminal sweep demands the transfer credit from its source"):
         val recorder = Recorder(small.stream)
 
+        // [pump-overlap] read after a consuming pump, lend or duct
         scala.caps.unsafe.unsafeAssumeSeparate:
           recorder.drain: region =>
             range => ()

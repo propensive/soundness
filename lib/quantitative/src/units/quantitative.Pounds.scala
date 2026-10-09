@@ -37,6 +37,7 @@ import rudiments.*
 
 object Pounds:
   given designation: Designation[Pounds[1]] = () => "lb".tt
-  inline given ratio: Ratio[Kilograms[1] & Pounds[-1], 0.453592] = !!
+  erased given ratio: Ratio[Kilograms[1] & Pounds[-1], 0.453592] =
+    Ratio.Evidence[Kilograms[1] & Pounds[-1], 0.453592]()
 
 trait Pounds[Power <: Nat] extends Units[Power, Mass]

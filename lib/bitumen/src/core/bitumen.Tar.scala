@@ -116,7 +116,7 @@ object Tar:
 
       // A short block sums fewer bytes and fails the comparison below, rather than overrunning.
       block.iterate(block.extent.capped(blockSize)): index =>
-        val i: Int = (index: Ordinal).n0
+        val i: Int = index.n0
 
         val byte: Int =
           if i >= checksumOffset && i < checksumOffset + checksumLength then 0x20
@@ -306,8 +306,10 @@ object Tar:
     // zero-padded, without regard to the incoming chunk boundaries.
     private[bitumen] def blocks512(chunks: Iterator[Data]): Iterator[Data] =
       new Iterator[Data]:
+        // [stdlib-iterator] re-blocking state in anonymous Iterator
         @scala.caps.unsafe.untrackedCaptures
         private var chunk: Data = Array.empty[Byte]
+        // [stdlib-iterator]
         @scala.caps.unsafe.untrackedCaptures
         private var offset: Int = 0
 
@@ -622,7 +624,9 @@ object Tar:
     // Reached only through this exclusive handle, which scopes it; its capture
     // of the underlying source is erased here, as the memoizing `LazyList` it
     // replaces erased it implicitly through its pure cells.
+    // [field-fresh-param] handle field erases fresh iterator parameter's capture
     @caps.unsafe.untrackedCaptures
+    // [field-fresh-param]
     val entries: Iterator[Tar.Entry] = caps.unsafe.unsafeAssumePure(entries0)
 
   object Handle:

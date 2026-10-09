@@ -68,6 +68,7 @@ object Scalac:
   case class Option[-version <: Versions](flags: Text*)
 
   private val mutex: Mutex = Mutex()
+  // [field-purity] object-level mutable compiler instance
   @scala.caps.unsafe.untrackedCaptures
   private var Scala3: dtd.Compiler = new dtd.Compiler()
 
@@ -154,9 +155,11 @@ object Scalac:
 
     private val driver: ScalacDriver = ScalacDriver()
 
+    // [field-purity] dotty compiler/context var held untracked in session
     @scala.caps.unsafe.untrackedCaptures
     private var compiler: dtd.Compiler = new dtd.Compiler()
 
+    // [field-purity]
     @scala.caps.unsafe.untrackedCaptures
     private var baseContext: dtdc.Contexts.Context =
       driver.baseContext(arguments).getOrElse(abort(Compiler.Error()))
@@ -278,6 +281,7 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
       (context: dtdc.Contexts.Context^).transfer(n"scalac"): (context, _, _) ?=>
         // dotty's API takes a pure `Context`; this one is the task's own, so the assertion is
         // about the API's signature, not about aliasing.
+        // [transfer] task-owned context passed to dotty's pure-Context API
         given dtdc.Contexts.Context = scala.caps.unsafe.unsafeAssumePure(context())
 
         try

@@ -53,12 +53,14 @@ object Variable extends Protovariable:
     ( instantiable: (path is Instantiable across Paths from Text)^ )
   :   Variable[name, path] =
 
+    // [quote-wall] variable given must stay pure; summoned in staged quotes
     caps.unsafe.unsafeAssumePure(instantiable(_))
 
   private def pathListVariable[name <: Label, path]
     ( instantiable: (path is Instantiable across Paths from Text)^, system: System )
   :   Variable[name, List[path]] =
 
+    // [quote-wall]
     caps.unsafe.unsafeAssumePure:
       _.cut(system(t"path.separator").or(t":")).map(instantiable(_))
 

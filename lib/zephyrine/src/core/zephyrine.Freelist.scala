@@ -55,7 +55,7 @@ import rudiments.*
 // A `SharedCapability`, like `Handoff`: the block ownership transfer is
 // discharged by the ring's volatile publication order (a returned block is one
 // the reader has finished reading and released), not by aliasing analysis.
-final class Freelist(slots0: Int) extends caps.SharedCapability:
+final class Freelist(slots0: Int) extends anticipation.Durable:
   private val capacity: Int = Integer.highestOneBit((slots0.max(1)*2) - 1)
   private val mask: Int = capacity - 1
   // Raw, for the reason given on `Handoff.slots`: `poll` returns `AnyRef | Null` to its caller,

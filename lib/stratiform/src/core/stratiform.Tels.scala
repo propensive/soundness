@@ -840,9 +840,11 @@ object Tels extends Tels2:
       // aborts exactly as the neighbouring E218 check does.
       else raise(Tel.Error(Reason.PatternNotContained)) yet inherited
 
+    // `coextent` is the one size check: inside, an index proven against `left` reads `right`
+    // bare through the transferred brand, and nothing is bounds-checked twice.
     private def sameTexts(left: Array[Text]^{}, right: Array[Text]^{}): Boolean =
-      left.length == right.length && (0 until left.length).forall: index =>
-        left.readUnchecked(index) == right.readUnchecked(index)
+      left.coextent(right).lay(false): shared =>
+        left.spot { index => left(index) != right(shared(index)) }.absent
 
     // `∀ Pᵢ ∈ inherited : L(⋂replacing) ⊆ L(Pᵢ)`, which §20.3 gives as the way
     // to decide `L(⋂new) ⊆ L(⋂old)`.
@@ -1152,7 +1154,7 @@ object Tels extends Tels2:
         seqEq(a.layers, b.layers, layerEq)
 
     private def seqEq[T](a: Array[T]^{}, b: Array[T]^{}, eq: (T, T) => Boolean): Boolean =
-      a.length == b.length && (0 until a.length).forall: i => eq(a.readUnchecked(i), b.readUnchecked(i))
+      a.coextent(b).lay(false) { shared => a.spot { i => !eq(a(i), b(shared(i))) }.absent }
 
     private def structEq(a: Struct, b: Struct): Boolean =
       seqEq(a.members, b.members, memberEq) && seqEq(a.validators, b.validators, textEq)

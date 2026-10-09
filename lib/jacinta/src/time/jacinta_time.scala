@@ -51,11 +51,13 @@ package decodables:
   // field codecs these are summoned against pure expected types.
   given instantJsonDecodable: (tactic: Tactic[Json.Error])
   =>  (Instant over Unix) is Json.Decodable =
+    // [field-purity] given decodable over tactic, codec-thunk seal
     caps.unsafe.unsafeAssumePure:
       Json.Decodable(Morphology.Whole): json => Instant.of[Unix](json.root.long)
 
   given durationJsonDecodable: (tactic: Tactic[Json.Error])
   =>  Duration is Json.Decodable =
+    // [field-purity]
     caps.unsafe.unsafeAssumePure:
       Json.Decodable(Morphology.Whole): json => Duration(json.root.long)
 

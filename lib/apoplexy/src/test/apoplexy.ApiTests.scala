@@ -58,12 +58,16 @@ case class NewItem(name: Text)
 // A test `Http.Backend` that captures the request it is given and replies with a
 // canned response, so `.call` can be exercised without any network access.
 class Recorder(canned: () => Http.Response) extends Http.Backend:
+  // [test-harness] fake HTTP backend records requests in test
   @scala.caps.unsafe.untrackedCaptures
   var lastUrl:     Optional[Text]        = Unset
+  // [test-harness]
   @scala.caps.unsafe.untrackedCaptures
   var lastMethod:  Optional[Http.Method] = Unset
+  // [test-harness]
   @scala.caps.unsafe.untrackedCaptures
   var lastBody:    Optional[Array[Byte]^{}] = Unset
+  // [test-harness]
   @scala.caps.unsafe.untrackedCaptures
   var lastHeaders: List[Http.Header]     = Nil
 

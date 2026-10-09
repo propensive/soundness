@@ -103,6 +103,7 @@ extends Sessional:
             try
               // The session's tactic and the lambda share only the session-scoped
               // connection; no aliased writer.
+              // [by-name-receiver] session tactic and lambda share the connection
               scala.caps.unsafe.unsafeAssumeSeparate:
                unsafely:
                 supervise:

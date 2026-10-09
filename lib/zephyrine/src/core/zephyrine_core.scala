@@ -115,7 +115,7 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
   // the consumer's thread. The stage may be a raw `Duct` or any descriptor
   // value with a `Ductile` instance.
   def via[stage](consume stage: stage^)
-    ( using ductile: (stage is Ductile by in) { type Upstream = transport },
+    ( using ductile: ((stage is Ductile by in) { type Upstream = transport })^,
             buffering: Buffering )
   :   (Stream[ductile.Result] over ductile.Transport)^ =
 
@@ -164,13 +164,42 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
 
     try loop() finally stream.close()
 
+// Takes in a whole stream, as `stream.pump(intake)` does, and returns the intake (typed as the
+// caller's own class) once the stream is exhausted and the intake finished, so what it gathered
+// can be read through the one returned reference: `Gather().ingest(bytes.stream).data`. The
+// intake is consumed and handed back, so there is never a second reference to it. It repeats
+// `pump`'s loop rather than calling it, since `pump` consumes its intake.
+extension [medium, transport, target <: (Intake[medium] over transport)](consume intake: target^)
+  def ingest(consume stream: (Stream[medium] over transport)^): target^ =
+
+    def loop(): Unit =
+      stream.refill(intake.demand) match
+        case Unset =>
+          intake.finish()
+
+        case count: Int =>
+          if count > 0 then
+            intake.absorb
+              ( stream.unsafeStorage(using Unsafe).asInstanceOf[intake.addressable.Storage],
+                stream.start,
+                count )
+
+            stream.skip(count)
+          else
+            intake.reserve(1)
+
+          loop()
+
+    try loop() finally stream.close()
+    intake
+
 extension [out, transport](consume intake: (Intake[out] over transport)^)
   // Push-composition: a differently-typed `Intake` which reports translated
   // demand, and whose commits step synchronously through the stage into
   // this intake's writable region. The same stage value serves `via`
   // and `accepting`; only the attachment differs.
   def accepting[stage](consume stage: stage^)
-    ( using ductile: (stage is Ductile to out) { type Transport = transport },
+    ( using ductile: ((stage is Ductile to out) { type Transport = transport })^,
             buffering: Buffering )
   :   (Intake[ductile.Operand] over ductile.Upstream)^ =
 
@@ -395,9 +424,11 @@ def streamOf(cursor: Cursor[Data, {}]^, delimiter: Cursor.Delimiter)
       // The carried bytes (at most `length - 1`), and the scratch they are joined in with
       // the start of the next region. Both are written only here and reached only through
       // this endpoint.
+      // [anon-fresh-field] fresh carry array in anonymous Stream
       @caps.unsafe.untrackedCaptures
       private val carry: scala.Array[Byte] = new scala.Array[Byte]((length - 1).max(0))
 
+      // [anon-fresh-field] fresh scratch array in anonymous Stream
       @caps.unsafe.untrackedCaptures
       private val joined: scala.Array[Byte] = new scala.Array[Byte]((2*length - 2).max(0))
 
@@ -561,6 +592,7 @@ def streamOf(expanse: Expanse^, offset: Long, length: Long)(using buffering: Buf
       // and reached only through this endpoint; it is never written through, and
       // the next refill replaces it wholesale (hence the pure placeholder
       // initial, as in the cursor-lending factory above).
+      // [abstract-storage] cast-erased storage region in anonymous Stream
       @caps.unsafe.untrackedCaptures
       private var storage: AnyRef = ""
       private var start0: Int = 0
@@ -600,8 +632,10 @@ private def chunkIterator[medium](consume stream: (Stream[medium] over Credit)^)
 
       // A stdlib class cannot extend `Stateful`, so its state is untracked
       // (the record-iterator precedent below).
+      // [stdlib-iterator] state var in anonymous Iterator
       @caps.unsafe.untrackedCaptures
       private var chunk: Optional[medium] = Unset
+      // [stdlib-iterator]
       @caps.unsafe.untrackedCaptures
       private var done: Boolean = false
 
@@ -638,14 +672,19 @@ private def recordIterator[record]
       // the refill contract (an unskipped region is reported, not extended).
       // A stdlib class cannot extend `Stateful`, so its state is untracked
       // (the `inputStream` adapter's precedent).
+      // [stdlib-iterator] storage var in anonymous record Iterator
       @caps.unsafe.untrackedCaptures
       private var storage: scala.Array[AnyRef] = new scala.Array[AnyRef](0)
+      // [stdlib-iterator] state var in anonymous record Iterator
       @caps.unsafe.untrackedCaptures
       private var index: Int = 0
+      // [stdlib-iterator]
       @caps.unsafe.untrackedCaptures
       private var limit: Int = 0
+      // [stdlib-iterator]
       @caps.unsafe.untrackedCaptures
       private var consumed: Int = 0
+      // [stdlib-iterator]
       @caps.unsafe.untrackedCaptures
       private var done: Boolean = false
 
@@ -689,6 +728,7 @@ private def throughDuct[in, out, upTransport, downTransport]
         duct.sizing(buffering).max(duct.quantum)
 
       // Untracked, cast-erased: reached only through this endpoint.
+      // [abstract-storage] abstract duct output Storage in anonymous Stream
       @caps.unsafe.untrackedCaptures
       private val storage: duct.output.Storage =
         duct.output.allocate(capacity).asInstanceOf[duct.output.Storage]
@@ -833,6 +873,7 @@ private def intakeThroughDuct[in, out, upTransport, downTransport]
 
       private val capacity: Int = buffering.capacity(duct.input.substrate)
       // Untracked, cast-erased: reached only through this endpoint.
+      // [abstract-storage] abstract duct input Storage in anonymous Intake
       @caps.unsafe.untrackedCaptures
       private val storage: duct.input.Storage =
         duct.input.allocate(capacity).asInstanceOf[duct.input.Storage]

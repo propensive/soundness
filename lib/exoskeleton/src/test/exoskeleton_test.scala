@@ -229,6 +229,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           . check(_ == t"--one   -- the first one\n--two   -- the second one")
 
           test(m"Test capture 1"):
+            // [test-harness] test drives tmux completion blocks
             scala.caps.unsafe.unsafeAssumeSeparate:
               summon[Enclave.Tool].completions:
                 Zsh.tmux()(Tmux.completions(t"distribution ubuntu "))
@@ -540,6 +541,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             // progressively — inserted without a trailing space, not advancing to the next
             // argument.
             test(m"fish inserts a unique directory without advancing"):
+              // [test-harness] test drives tmux completion blocks
               scala.caps.unsafe.unsafeAssumeSeparate:
                 Fish.tmux():
                   Tmux.enter(t"cd ${fixture.encode}")
@@ -548,6 +550,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             .check(_ == t"files verify src/^")
 
             test(m"fish menu shows each path entry once"):
+              // [test-harness]
               scala.caps.unsafe.unsafeAssumeSeparate:
                 Fish.tmux(width = 120):
                   Tmux.enter(t"cd ${fixture.encode}")

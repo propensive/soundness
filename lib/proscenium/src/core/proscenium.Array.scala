@@ -57,6 +57,7 @@ object Array:
   // `apply` because allocation is `allocate`: a single-`Int` application unambiguously
   // means the one-element array.
   def apply[element: ClassTag](elements: element*): Array[element]^{} =
+    // [construction-fresh] fresh array literal no writer can alias
     caps.unsafe.unsafeAssumePure(elements.toArray)
 
   // Frozen constructors: each builds a fresh array no writer can ever alias, so the purity
@@ -87,6 +88,7 @@ object Array:
   // forgets a capability that is no longer exercisable. This is the only sound producer of
   // `Array[element]^{}` from a mutable array.
   def freeze[element](consume array: Array[element]^): Array[element]^{} =
+    // [transfer] freeze: consume retires writers, drops write capability
     caps.unsafe.unsafeAssumePure(array)
 
   // The trusted boundary cast, successor to `IArray.unsafeFromArray`: asserts that the
@@ -101,6 +103,7 @@ object Array:
   // Not `inline`: inline expansion of the cast inside capturing lambdas crashes the
   // capture checker's boxer (boxDeeply assertion).
   def frozen[element](iarray: scala.IArray[element]): Array[element]^{} =
+    // [construction-fresh] immutable stdlib IArray rehomed as frozen Array
     caps.unsafe.unsafeAssumePure(iarray.asInstanceOf[scala.Array[element]])
 
   // Pattern support for any readable reference: `case Array(a, b)` reads but never writes,

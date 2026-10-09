@@ -50,7 +50,7 @@ object Timeout:
   // The action runs on the watchdog task, so, like any task body, it may capture only shared
   // capabilities.
   def apply[duration: Abstractable across Durations to Long](timeout0: duration)
-    ( action: ->{caps.any.only[caps.SharedCapability]} Unit )
+    ( action: ->{caps.any.only[anticipation.Durable]} Unit )
     ( using monitor: Monitor^, probate: SharedProbate )
   :   Timeout^{action, monitor, probate} =
 
@@ -59,6 +59,7 @@ object Timeout:
     // The timeout's own watchdog task is supervised bookkeeping recreated on each `reset`; its
     // handle is held only to cancel it, never returned, so it is laundered to pure to avoid
     // threading a per-call `fresh` result through the stored `makeProcess` factory.
+    // [construction-fresh] fresh watchdog task handle laundered
     def process(expiry: Atomic[Long]): Task[Unit] = caps.unsafe.unsafeAssumePure:
       task(n"timeout"):
         while jl.System.currentTimeMillis < expiry()
@@ -69,6 +70,7 @@ object Timeout:
 
     // As for `Task.apply`: the declared result tracks the retained capabilities; the
     // instance's own fresh capability is laundered.
+    // [construction-fresh] new Timeout instance laundered at factory
     caps.unsafe.unsafeAssumePure(new Timeout(timeout, process))
 
 
@@ -76,10 +78,11 @@ object Timeout:
 // connection handler of a server, say — and its state is an atomic deadline.
 class Timeout private
   ( duration: Long,
-    makeProcess: Atomic[Long] ->{caps.any.only[caps.SharedCapability]} Task[Unit] )
-extends caps.SharedCapability:
+    makeProcess: Atomic[Long] ->{caps.any.only[anticipation.Durable]} Task[Unit] )
+extends anticipation.Durable:
   private val expiry: Atomic[Long] = Atomic(jl.System.currentTimeMillis + duration)
 
+  // [field-purity] process task var in non-Stateful Timeout
   @scala.caps.unsafe.untrackedCaptures
   private var process: Task[Unit] = makeProcess(expiry)
 

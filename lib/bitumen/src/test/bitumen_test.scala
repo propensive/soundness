@@ -849,6 +849,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       test(m"A created archive round-trips through open"):
         val target: Path on Linux = createDir / "made.tar"
 
+        // [by-name-receiver] create lambda shares ambient tactic with receiver
         scala.caps.unsafe.unsafeAssumeSeparate:
          target.create[Tar](): builder ?=>
           builder.insert(t"hello.txt".as[Relative on Tar], t"hello".in[Data])
@@ -870,6 +871,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       test(m"A scoped entry writer streams an unknown-length body"):
         val target: Path on Linux = createDir / "streamed.tar"
 
+        // [by-name-receiver] create lambda shares ambient tactic with receiver
         scala.caps.unsafe.unsafeAssumeSeparate:
          target.create[Tar](): builder ?=>
           builder.file(t"chunks.bin".as[Relative on Tar]): entry ?=>
@@ -884,6 +886,7 @@ object Tests extends Suite(m"Bitumen Tests"):
       test(m"scoped and whole entries interleave in order"):
         val target: Path on Linux = createDir / "mixed.tar"
 
+        // [by-name-receiver] create lambda shares ambient tactic with receiver
         scala.caps.unsafe.unsafeAssumeSeparate:
          target.create[Tar](): builder ?=>
           builder.insert(t"first.txt".as[Relative on Tar], t"one".in[Data])
@@ -913,6 +916,7 @@ object Tests extends Suite(m"Bitumen Tests"):
         val target: Path on Linux = createDir / "doomed.tar"
 
         capture[Tar.Error]:
+          // [by-name-receiver] create lambda shares ambient tactic with receiver
           scala.caps.unsafe.unsafeAssumeSeparate:
            target.create[Tar](): builder ?=>
             builder.insert(t"x".as[Relative on Tar], t"data".in[Data])

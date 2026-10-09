@@ -49,8 +49,10 @@ import turbulence.Stdio
 import vacuous.*
 
 object Cli:
+  // [field-purity] object-level mutable vars in Cli
   @scala.caps.unsafe.untrackedCaptures
   private var messages: List[Text] = Nil
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   private var trigger: Promise[Unit] = Promise()
 

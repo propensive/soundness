@@ -86,12 +86,15 @@ object TestClient:
   private val dispatch0: AnyRef =
     val serving: AcpClient = fixture.asInstanceOf[Acp.Service]
     val session: Json => Optional[Json] =
+      // [test-harness] test fixture builds dispatchers over cast service
       caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[AcpClientSession](serving))
 
     val fs: Json => Optional[Json] =
+      // [test-harness]
       caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[AcpClientFs](serving))
 
     val terminal: Json => Optional[Json] =
+      // [test-harness]
       caps.unsafe.unsafeAssumeSeparate(JsonRpc.serve[AcpClientTerminal](serving))
     val sessionMethods = JsonRpc.methods[AcpClientSession]
     val fsMethods = JsonRpc.methods[AcpClientFs]
@@ -102,6 +105,7 @@ object TestClient:
         else if fsMethods.has(method) then fs(json)
         else terminal(json)
 
+    // [test-harness] test route closure over dispatchers, cast to AnyRef
     caps.unsafe.unsafeAssumeSeparate(route).asInstanceOf[AnyRef]
 
   def dispatch(json: Json): Optional[Json] =

@@ -391,6 +391,7 @@ object Http:
     // The last successfully-parsed `Host` header, memoized across requests; see the
     // comment at its use in `parseHead`. Untracked: an immutable pair behind a benign
     // read-mostly race, not a capability-bearing state.
+    // [field-purity] volatile host memo var
     @scala.caps.unsafe.untrackedCaptures @volatile
     private var hostMemo: (Text, Host) | Null = null
 
@@ -579,6 +580,7 @@ object Http:
           head.host,
           head.target,
           head.headers,
+          // [live-view] pure Request body spring over live cursor
           caps.unsafe.unsafeAssumePure(spring) )
 
     // Exactly `length` bytes of body, lent zero-copy off `cursor` (which stays
@@ -819,6 +821,7 @@ object Http:
             headers + derived,
             // `serve` returns a pure `Response`, so its body is pure; the seal only
             // discharges the field's capture-polymorphic declared type.
+            // [field-fresh-param] body field's capture-polymorphic declared type
             caps.unsafe.unsafeAssumePure(response.body) )
 
     given streamable: (tactic: Tactic[Http.Error])
@@ -1173,6 +1176,7 @@ object Http:
         val spring: Spring[Data]^ =
           () => streamOf(cursorRef.asInstanceOf[Cursor[Data, {}]^])
 
+        // [live-view] pure client Response body over live cursor
         Http.Body.Flowing(caps.unsafe.unsafeAssumePure(spring))
 
       def framed(fixed: Optional[Int]): Http.Body =
@@ -1188,6 +1192,7 @@ object Http:
 
           stream0.asInstanceOf[(Stream[Data] over Credit)^]
 
+        // [live-view] pure client Response body over live cursor
         Http.Body.Flowing(caps.unsafe.unsafeAssumePure(spring))
 
       val cannotHaveBody: Boolean =

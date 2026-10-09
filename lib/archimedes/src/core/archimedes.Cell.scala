@@ -219,13 +219,13 @@ object Cell:
         (0 until height).map: row =>
           val left = slice(base, row - superscript.height)
 
-          // `confine` makes the branch guard and the bounds proof the same act: a confined
+          // `pick` makes the branch guard and the bounds proof the same act: a confined
           // ordinal indexes its own sequence bare, and an out-of-range row is simply `Unset`.
-          val fromSuperscript = superscript.lines.confine(row.z).let: ord =>
+          val fromSuperscript = superscript.lines.pick(row.z): ord =>
             val pad = spaces(right - superscript.width).text
             t"${superscript.lines(ord).text}$pad"
 
-          val fromSubscript = subscript.lines.confine((row - middle).z).let: ord =>
+          val fromSubscript = subscript.lines.pick((row - middle).z): ord =>
             val pad = spaces(right - subscript.width).text
             t"${subscript.lines(ord).text}$pad"
 

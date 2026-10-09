@@ -106,11 +106,11 @@ object SumDerivation:
                               (Int & Variant.Index[variant]) aka "index" ) ?=> result )
     :   result =
 
-      inline !![variants] match
+      inline scala.compiletime.erasedValue[variants] match
         case _: Zero => accumulator
 
         case _: (variant *: moreVariants) =>
-          inline !![labels] match
+          inline scala.compiletime.erasedValue[labels] match
             case _: (label *: moreLabels) => inline valueOf[label].asMatchable match
               case label: String =>
                 type variant0 = variant & derivation
@@ -148,9 +148,9 @@ object SumDerivation:
       ( predicate: Text => Boolean )
     :   Optional[derivation] =
 
-      inline !![variants] match
+      inline scala.compiletime.erasedValue[variants] match
         case _: (variant *: variants) =>
-          inline !![labels] match
+          inline scala.compiletime.erasedValue[labels] match
             case _: (label *: labelsType) =>
               type variant0 = variant & derivation
 
@@ -218,9 +218,9 @@ object SumDerivation:
                               Int & Variant.Index[variant] aka "index" ) ?=> result )
     :   Optional[result] =
 
-      inline !![variants] match
+      inline scala.compiletime.erasedValue[variants] match
         case _: (variant *: variants) =>
-          inline !![labels] match
+          inline scala.compiletime.erasedValue[labels] match
             case _: (label *: moreLabels) =>
               type variant0 = variant & derivation
 
@@ -266,9 +266,9 @@ object SumDerivation:
                               Int & Variant.Index[variant] aka "index" ) ?=> result )
     :   Optional[result] =
 
-      inline !![variants] match
+      inline scala.compiletime.erasedValue[variants] match
         case _: (variant *: variants) =>
-          inline !![labels] match
+          inline scala.compiletime.erasedValue[labels] match
             case _: (label *: moreLabels) =>
               type variant0 = variant & derivation
 

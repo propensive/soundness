@@ -444,6 +444,7 @@ object Tests extends Suite(m"Urticose tests"):
       . assert(_ == Authority(example.com, t"username:1234", 8080))
 
       test(m"Authority with invalid port fails"):
+        // [test-harness] test capture of parse error
         scala.caps.unsafe.unsafeAssumeSeparate:
           capture(t"username@example.com:no".as[Authority])
       .matches:

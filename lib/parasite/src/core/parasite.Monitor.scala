@@ -58,14 +58,15 @@ import Fulfillment.*
 import beneficence.*
 import unsafeExceptions.canThrowAny
 
-// A `SharedCapability`, as `contingency.Emit` is: a monitor is used from many tasks at once by
-// design — every task spawned under it captures it, and every join passes it again — and its
-// state (the promise, the children, the deadline) is synchronised internally. Shared
-// classification removes only the separation check between two uses of one monitor, which is
-// what a task handle captured under `supervise` and the `await` that joins it with the same
-// monitor are; the capture itself is still tracked, so neither a handle nor the monitor can
-// leave the `supervise` block (`rep/sepcheck-probes/p19-*`).
-sealed trait Monitor extends Resultant, Findable, caps.SharedCapability:
+// A `Durable` capability: a monitor is used from many tasks at once by design — every task
+// spawned under it captures it, and every join passes it again — and its state (the promise, the
+// children, the deadline) is synchronised internally. Shared classification removes only the
+// separation check between two uses of one monitor, which is what a task handle captured under
+// `supervise` and the `await` that joins it with the same monitor are; the capture itself is
+// still tracked, so neither a handle nor the monitor can leave the `supervise` block
+// (`rep/sepcheck-probes/p19-*`). Durable, because a task's body may capture only durable
+// capabilities — never a tactic, whose stack is not the task's own (`p21-*`).
+sealed trait Monitor extends Resultant, Findable, anticipation.Durable:
   self: Monitor^ =>
   val promise: Promise[Result]
 
@@ -98,10 +99,12 @@ sealed trait Monitor extends Resultant, Findable, caps.SharedCapability:
   // the JVM pipeline accepts the direct form. A cast, not an ascription, because no source-level
   // type spells the pipeline's widened element type. (Compiler divergence.)
   protected[parasite] def addWorker(worker: Worker^): Unit =
+    // [registry-lifetime] worker stored in supervision workers set
     val worker0: Worker^{} = caps.unsafe.unsafeAssumePure(worker)
     workersRef.updateAndGet(_.nn.incl(worker0).asInstanceOf[scala.collection.immutable.Set[Worker^{}]])
 
   protected[parasite] def remove(monitor: Worker^): Unit =
+    // [registry-lifetime] worker removed from supervision workers set
     val monitor0: Worker^{} = caps.unsafe.unsafeAssumePure(monitor)
     workersRef.updateAndGet(_.nn.excl(monitor0).asInstanceOf[scala.collection.immutable.Set[Worker^{}]])
 
@@ -277,6 +280,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate
   self: Worker^ =>
   private val state: Atomic[Fulfillment[Result]] = Atomic(Preload.initial)
 
+  // [field-purity] relents counter var in Worker
   @scala.caps.unsafe.untrackedCaptures
   private var relents: Int = 1
 
@@ -321,13 +325,13 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate
     if supervisor.interrupted() || state() == Cancelled then throw new InterruptedException()
 
 
-  def map[result2](lambda: Result ->{caps.any.only[caps.SharedCapability]} result2)(using monitor: Monitor^, probate: SharedProbate)
+  def map[result2](lambda: Result ->{caps.any.only[anticipation.Durable]} result2)(using monitor: Monitor^, probate: SharedProbate)
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate} =
 
     async(lambda(join()))
 
 
-  def bind[result2](lambda: Result ->{caps.any.only[caps.SharedCapability]} Task[result2])(using monitor: Monitor^, probate: SharedProbate)
+  def bind[result2](lambda: Result ->{caps.any.only[anticipation.Durable]} Task[result2])(using monitor: Monitor^, probate: SharedProbate)
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate} =
 
     async(lambda(join()).join())

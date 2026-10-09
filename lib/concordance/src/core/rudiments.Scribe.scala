@@ -67,6 +67,7 @@ object Scribe:
   final class Core private[rudiments] (buffer0: AnyRef, val growable: Boolean):
     // Untracked: the cursor is reached only through the scribe, which the lender confines
     // to one lambda; `Stateful` would force capability typing onto a transient builder.
+    // [field-purity] scribe cursor in transient non-Stateful builder
     @scala.caps.unsafe.untrackedCaptures
     var mark: Int = 0
 
@@ -76,6 +77,7 @@ object Scribe:
     // given is NOT growable — `Array.scribe` promises an array of exactly that size, and its
     // callers rely on it — so `append` and `place` still clamp there, and only the unsized
     // lender extends.
+    // [field-purity] growable AnyRef buffer in non-Stateful scribe core
     @scala.caps.unsafe.untrackedCaptures
     var buffer: AnyRef = buffer0
   // Written out (not a SAM lambda): the lambda form infers a capture-annotated `Self`

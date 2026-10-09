@@ -212,6 +212,7 @@ trait Tel2 extends Tel3:
       // as the AST derivation), its parser (via the `Field` fallback chain)
       // and its declared default; `Tel.Parsable.product` owns the entry loop,
       // so no per-field lambda ever closes over the reader.
+      // [field-purity] codec-thunk seal on derived product instance
       caps.unsafe.unsafeAssumePure:
         val reflection = infer[ProductReflection[derivation]]
 
@@ -235,6 +236,7 @@ trait Tel2 extends Tel3:
       // decoder, keeping the two paths identical by construction. Sealed per
       // the codec-thunk pattern: the instance captures a resolution-scoped
       // decoder.
+      // [field-purity] codec-thunk seal on sum derivation's decoder
       caps.unsafe.unsafeAssumePure:
         Tel.Field(Tel.Parsable.fromDecodable(infer[derivation is Tel.Decodable]))
 
@@ -754,6 +756,7 @@ trait Tel2 extends Tel3:
   =>  value is Tel.Decodable =
     // Sealed per the codec-thunk pattern: the instance retains the resolution-scoped tactic
     // for the lenient-faults path, as every other format's `optional` does.
+    // [field-purity] codec-thunk seal retaining resolution-scoped tactic
     caps.unsafe.unsafeAssumePure:
       new Tel.Decodable:
         type Self = value

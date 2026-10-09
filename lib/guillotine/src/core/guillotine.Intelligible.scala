@@ -34,7 +34,13 @@ package guillotine
 
 import prepositional.*
 
-object Intelligible extends PosixCommands
+object Intelligible extends PosixCommands:
+  // Evidence that a command name implies its result type: a concrete class here, in the trait's
+  // own file (the trait is sealed), whose construction the erased givens in `PosixCommands` use
+  // as their pure right-hand side. Never instantiated at runtime, since every use is erased.
+  private[guillotine] final class Evidence[self <: Label, result]() extends Intelligible:
+    type Self = self
+    type Result = result
 
 sealed trait Intelligible extends Resultant:
   type Self <: Label

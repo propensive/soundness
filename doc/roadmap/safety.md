@@ -172,12 +172,15 @@ paragraph. One rule already gates: `S1.1`, a method taking `(using Unsafe)` must
 `unsafe…`, fails the build; its converse `S1.2` is advisory, with the ten definitions that
 break it listed in `doc/standards/naming.md`.
 
-The gate is the follow-up: one per-file baseline covering every indicator — the two ratchets'
-constructs, the four `caps.unsafe` hatches, and the named wrappers that hide them
-(`Array.unsafeFrozen`, `Array.frozen`, `Array.unsafeJvm`, `unsafeMutable`, `unsafeImmutable`,
-`!!`) — with the same `--update`/`--totals` semantics as `check-while-count.py`, counting the
-residue per reason tag (`safety-2`), run by `make build`. It subsumes the two existing ratchets
-rather than sitting beside them.
+The gate exists: `etc/check-escape-count.py`, run by `make build` (and `make check-escapes`),
+keeps a per-file baseline in `etc/escape-baseline.tsv` of the four `caps.unsafe` hatches, the
+array wrappers that hide a capture (`Array.unsafeFrozen`, `Array.unsafeJvm`, `Array.frozen`,
+`unsafeMutable`/`unsafeImmutable`, the `!!` erased-evidence operator), and the hatches that carry no reason tag — with the same
+`--update`/`--totals` semantics as `check-while-count.py`, plus `--tags` for the residue per
+reason tag (`safety-2`), whose closed vocabulary lives in the script. Seeded 2026-10-09:
+assumePure 366, assumeSeparate 261, untracked 397, erasedValue 50, unsafeFrozen 339, unsafeJvm
+211, frozen 156, mutability 46, erasedEvidence 293; 1068 hatches untagged. What remains of this item is folding the
+`while` and `.stdlib` ratchets into it.
 
 Done when: the census is recorded on every release, `safety-1`, `safety-2` and `safety-4` read
 their baselines from it rather than from a hand-run grep, and the per-file gate has replaced

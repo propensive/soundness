@@ -46,6 +46,7 @@ import Protobuf.Error.Reason
 // fields — the structure the message decoder looks fields up in by number.
 @unexported
 class ProtobufParser(data: Data):
+  // [field-purity] plain position var in non-Stateful parser
   @scala.caps.unsafe.untrackedCaptures
   private var pos: Int = 0
 
@@ -136,6 +137,7 @@ class ProtobufParser(data: Data):
   // window's end; `directEnterField`/`directLeaveField` bracket one field's
   // wire value per its tag's wire code, exactly as `fields()` slices it.
 
+  // [field-purity] plain boundary var in non-Stateful parser
   @scala.caps.unsafe.untrackedCaptures
   private var boundary: Int = data.length
 

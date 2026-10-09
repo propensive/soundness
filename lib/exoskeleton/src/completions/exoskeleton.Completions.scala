@@ -165,6 +165,7 @@ object Completions:
 
     . protect:
         val scriptPath: Optional[Path on Local] =
+          // [by-name-receiver] safely block shares ambient tactic with protect
           scala.caps.unsafe.unsafeAssumeSeparate:
             safely(sh"sh -c 'command -v ${entrypoint.script}'".exec[Path on Local]())
 

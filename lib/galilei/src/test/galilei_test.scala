@@ -199,6 +199,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"An opened directory can write and read back an entry"):
         unsafely:
+          // [by-name-receiver] open lambda shares ambient tactic with receiver
           scala.caps.unsafe.unsafeAssumeSeparate:
            root.open[Directory](Read & Write): dir ?=>
             val target = dir / "greeting.txt"
@@ -214,6 +215,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"The entries of the directory root are listed"):
         unsafely:
+          // [by-name-receiver] open lambda shares ambient tactic with receiver
           scala.caps.unsafe.unsafeAssumeSeparate:
            root.open[Directory](): dir ?=>
             dir.base.entries.to[List].map(_.name)
@@ -221,6 +223,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"A removed entry is no longer extant"):
         unsafely:
+          // [by-name-receiver]
           scala.caps.unsafe.unsafeAssumeSeparate:
            root.open[Directory](Read & Write): dir ?=>
             val doomed = dir / "doomed.txt"
@@ -301,6 +304,7 @@ object Tests extends Suite(m"Galilei tests"):
         unsafely:
           val target: Path on Linux = base / "authored"
 
+          // [by-name-receiver] create lambda shares ambient tactic with receiver
           scala.caps.unsafe.unsafeAssumeSeparate:
            target.create[Directory](): dir ?=>
             (dir / "inner.txt").overwrite(t"hello")
@@ -314,6 +318,7 @@ object Tests extends Suite(m"Galilei tests"):
           val target: Path on Linux = base / "doomed-dir"
 
           capture[Io.Error]:
+            // [by-name-receiver] create lambda shares ambient tactic with receiver
             scala.caps.unsafe.unsafeAssumeSeparate:
              target.create[Directory](): dir ?=>
               (dir / "x.txt").overwrite(t"data")
@@ -337,6 +342,7 @@ object Tests extends Suite(m"Galilei tests"):
           val target: Path on Linux = base / "doomed.txt"
 
           capture[Io.Error]:
+            // [by-name-receiver] create lambda shares ambient tactic with receiver
             scala.caps.unsafe.unsafeAssumeSeparate:
              target.create[File](): handle ?=>
               handle.write(Chain(t"data".in[Data]))
@@ -399,6 +405,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"A scratch directory works within its scope and vanishes afterwards"):
         unsafely:
+          // [by-name-receiver] open lambda shares ambient tactic with receiver
           scala.caps.unsafe.unsafeAssumeSeparate:
             val (written, stem) = base.open[Scratch](Read & Write): scratch ?=>
               (scratch / "file.txt").overwrite(t"data")
@@ -413,6 +420,7 @@ object Tests extends Suite(m"Galilei tests"):
           var stem: Optional[Path on Linux] = Unset
 
           capture[Io.Error]:
+            // [by-name-receiver] open lambda shares ambient tactic with receiver
             scala.caps.unsafe.unsafeAssumeSeparate:
              base.open[Scratch](Read & Write): scratch ?=>
               stem = scratch.stem
@@ -520,6 +528,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"Overlapping Read opens coexist"):
         unsafely:
+          // [test-harness] test nests overlapping opens to exercise locking
           scala.caps.unsafe.unsafeAssumeSeparate:
            outer.open[Directory](): a ?=>
             inner.open[Directory](): b ?=>
@@ -530,6 +539,7 @@ object Tests extends Suite(m"Galilei tests"):
         import errorDiagnostics.emptyDiagnostics
         unsafely:
           capture[Io.Error]:
+            // [test-harness] test nests overlapping opens to exercise locking
             scala.caps.unsafe.unsafeAssumeSeparate:
              outer.open[Directory](): a ?=>
               inner.open[Directory](Read & Exclusive) { () }
@@ -540,6 +550,7 @@ object Tests extends Suite(m"Galilei tests"):
         import errorDiagnostics.emptyDiagnostics
         unsafely:
           capture[Io.Error]:
+            // [test-harness] test nests overlapping opens to exercise locking
             scala.caps.unsafe.unsafeAssumeSeparate:
               outer.open[Directory](Read & Exclusive): a ?=>
                 inner.open[Directory]() { () }
@@ -548,6 +559,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"An Exclusive open of a sibling does not conflict"):
         unsafely:
+          // [test-harness]
           scala.caps.unsafe.unsafeAssumeSeparate:
             outer.open[Directory](Read & Exclusive): a ?=>
               sibling.open[Directory](Read & Exclusive): b ?=>
@@ -632,6 +644,7 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"A second Exclusive open of the same file is Busy"):
         unsafely:
           capture[Io.Error]:
+            // [test-harness] test nests overlapping opens to exercise locking
             scala.caps.unsafe.unsafeAssumeSeparate:
               target.open[File](Read & Exclusive): a ?=>
                 target.open[File](Read & Exclusive) { () }
@@ -640,6 +653,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"Ordinary Read opens of one file coexist"):
         unsafely:
+          // [test-harness]
           scala.caps.unsafe.unsafeAssumeSeparate:
             target.open[File](Read): a ?=>
               target.open[File](Read) { true }
@@ -648,6 +662,7 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"An Exclusive file open conflicts with an enclosing Exclusive directory scope"):
         unsafely:
           capture[Io.Error]:
+            // [test-harness]
             scala.caps.unsafe.unsafeAssumeSeparate:
               lockDir.open[Directory](Read & Exclusive): a ?=>
                 target.open[File](Read & Exclusive) { () }
@@ -789,6 +804,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"Shared opens of one file coexist"):
         unsafely:
+          // [test-harness] test nests overlapping opens to exercise locking
           scala.caps.unsafe.unsafeAssumeSeparate:
             shared.open[File](Read & Shared): a ?=>
               shared.open[File](Read & Shared) { true }
@@ -797,6 +813,7 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"An Exclusive open cannot join a Shared one"):
         unsafely:
           capture[Io.Error]:
+            // [test-harness]
             scala.caps.unsafe.unsafeAssumeSeparate:
               shared.open[File](Read & Shared): a ?=>
                 shared.open[File](Read & Exclusive) { () }
@@ -806,6 +823,7 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"A Shared open cannot join an Exclusive one"):
         unsafely:
           capture[Io.Error]:
+            // [test-harness] test nests overlapping opens to exercise locking
             scala.caps.unsafe.unsafeAssumeSeparate:
               shared.open[File](Read & Exclusive): a ?=>
                 shared.open[File](Read & Shared) { () }
@@ -832,6 +850,7 @@ object Tests extends Suite(m"Galilei tests"):
 
           val waiter = java.lang.Thread(runnable)
 
+          // [test-harness] test races thread against held exclusive open
           scala.caps.unsafe.unsafeAssumeSeparate:
             awaited.open[File](Read & Exclusive): a ?=>
               waiter.start()
@@ -862,6 +881,7 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"Overlapping exclusive slices conflict"):
         unsafely:
           capture[Io.Error]:
+            // [test-harness] test nests overlapping opens to exercise locking
             scala.caps.unsafe.unsafeAssumeSeparate:
               Slice(sliced, 0L, 8L).open[File](Read & Exclusive): a ?=>
                 Slice(sliced, 4L, 8L).open[File](Read & Exclusive) { () }
@@ -870,6 +890,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"Disjoint exclusive slices coexist"):
         unsafely:
+          // [test-harness]
           scala.caps.unsafe.unsafeAssumeSeparate:
             Slice(sliced, 0L, 4L).open[File](Read & Exclusive): a ?=>
               Slice(sliced, 8L, 4L).open[File](Read & Exclusive) { true }
@@ -878,6 +899,7 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"A whole-file Exclusive open conflicts with any slice"):
         unsafely:
           capture[Io.Error]:
+            // [test-harness]
             scala.caps.unsafe.unsafeAssumeSeparate:
               sliced.open[File](Read & Exclusive): a ?=>
                 Slice(sliced, 0L, 4L).open[File](Read & Exclusive) { () }

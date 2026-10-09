@@ -57,6 +57,7 @@ object Composable:
     def composition(left: Self^, right: Operand^): Result^{left, right} =
       // `get` and `set` only read `left` and `right`; the separation checker cannot see
       // that sharing them across the two closures is harmless.
+      // [by-name-receiver] get/set lambda arguments share left and right
       scala.caps.unsafe.unsafeAssumeSeparate:
         Lens[Any, origin, target2]
           ( { origin => right(left(origin)) },

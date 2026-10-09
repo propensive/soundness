@@ -398,6 +398,7 @@ object Inspectable extends Inspectable2:
   // reaching one of these instances would fail the bound check outright rather than fall
   // through to another candidate — a subtype bound here turns a silent miss into a hard error.
   given set: [element] => (inspectable: => element is Inspectable) => Set[element] is Inspectable =
+    // [by-name-capture] by-name inspectable laundered to pure thunk
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
     set => Showable.enclose(set.map(insp().text(_)), "{", ", ", "}")
 
@@ -405,9 +406,11 @@ object Inspectable extends Inspectable2:
   =>  ( inspectableKey: => key is Inspectable, inspectableValue: => value is Inspectable )
   =>  Map[key, value] is Inspectable =
 
+    // [by-name-capture] by-name key inspectable laundered to pure thunk
     val inspKey: () -> (key is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectableKey)
 
     val inspValue: () -> (value is Inspectable) =
+      // [by-name-capture] by-name value inspectable laundered to pure thunk
       caps.unsafe.unsafeAssumePure(() => inspectableValue)
 
     entries =>
@@ -423,9 +426,11 @@ object Inspectable extends Inspectable2:
   =>  ( inspectableKey: => key is Inspectable, inspectableValue: => value is Inspectable )
   =>  Ledger[key, value] is Inspectable =
 
+    // [by-name-capture] by-name key inspectable laundered to pure thunk
     val inspKey: () -> (key is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectableKey)
 
     val inspValue: () -> (value is Inspectable) =
+      // [by-name-capture] by-name value inspectable laundered to pure thunk
       caps.unsafe.unsafeAssumePure(() => inspectableValue)
 
     ledger =>
@@ -439,18 +444,21 @@ object Inspectable extends Inspectable2:
   =>  (inspectable: => element is Inspectable)
   =>  sequence is Inspectable =
 
+    // [by-name-capture] by-name inspectable laundered to pure thunk
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
     sequence => Showable.enclose(sequence.map(insp().text(_)), "⟨ ", " ", " ⟩")
 
   given list: [element] => (inspectable: => element is Inspectable)
   =>  List[element] is Inspectable =
 
+    // [by-name-capture]
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
     list => Showable.enclose(list.map(insp().text(_)), "[", ", ", "]")
 
   given array: [element] => (inspectable: => element is Inspectable)
   =>  scala.Array[element] is Inspectable =
 
+    // [by-name-capture]
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
 
     array =>
@@ -463,6 +471,7 @@ object Inspectable extends Inspectable2:
   given arraySeq: [element, arraySeq <: scm.ArraySeq[element]]
   =>  (inspectable: => element is Inspectable)
   =>  arraySeq is Inspectable =
+    // [by-name-capture] by-name inspectable laundered to pure thunk
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
 
     array =>
@@ -476,6 +485,7 @@ object Inspectable extends Inspectable2:
   given stream: [element] => (inspectable: => element is Inspectable)
   =>  Chain[element] is Inspectable =
 
+    // [by-name-capture] by-name inspectable laundered to pure thunk
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
 
     stream =>
@@ -493,6 +503,7 @@ object Inspectable extends Inspectable2:
   given iarray: [element] => (inspectable: => element is Inspectable)
   =>  (Array[element]^{}) is Inspectable =
 
+    // [by-name-capture] by-name inspectable laundered to pure thunk
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
 
     iarray =>
@@ -523,6 +534,7 @@ object Inspectable extends Inspectable2:
 
   // A pure thunk like the collection instances above; see that comment.
   given option: [value] => (inspectable: => value is Inspectable) => Option[value] is Inspectable =
+    // [by-name-capture] by-name inspectable laundered to pure thunk
     val insp: () -> (value is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
 
     {

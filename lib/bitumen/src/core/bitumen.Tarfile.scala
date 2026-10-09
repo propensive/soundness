@@ -79,12 +79,15 @@ object Tarfile:
 
     // The stream's single ownership passes to the cursor inside the iterator, whose fresh
     // capability is laundered (nothing else can reach it).
+    // [construction-fresh] fresh entry iterator owning consumed stream laundered
     scala.caps.unsafe.unsafeAssumePure:
+      // [pump-overlap] consumed stream fed to cursor in nested call
       scala.caps.unsafe.unsafeAssumeSeparate(entryIterator(Cursor[Data](stream)))
 
   def from(consume stream: (Stream[Data] over Credit)^)(using Tactic[Tar.Error]): Tarfile =
     // The stream's single ownership passes with this call; the checker cannot see through
     // the consumed parameter's re-use in the nested call.
+    // [pump-overlap] consumed stream reused through nested read call
     scala.caps.unsafe.unsafeAssumeSeparate:
       Tarfile(read(stream).to(List).asInstanceOf[List[Tar.Entry]])
 
@@ -95,6 +98,7 @@ object Tarfile:
       abort(Tar.Error(Tar.Error.Reason.TruncatedStream(needed, got)))
 
     new Archive.Lookahead[Tar.Entry]:
+      // [stdlib-iterator] overlay state in anonymous Lookahead iterator
       @caps.unsafe.untrackedCaptures
       private var globalOverlay: Map[Text, Text] = Map.empty
 

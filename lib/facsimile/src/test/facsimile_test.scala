@@ -581,6 +581,7 @@ object Tests extends Suite(m"Facsimile tests"):
               Pdf.Operator.Offset(72, 720), Pdf.Operator.ShowText(t"Written".in[Data]),
               Pdf.Operator.EndText )
 
+          // [by-name-receiver] page argument derived from receiver doc
           scala.caps.unsafe.unsafeAssumeSeparate(doc.setContents(doc.page(Prim), operators))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -591,6 +592,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(onePage)
 
         PdfFile(path).open(Read & Write): doc ?=>
+          // [by-name-receiver] page argument derived from receiver doc
           scala.caps.unsafe.unsafeAssumeSeparate(doc.setRotation(doc.page(Prim), Page.Rotation.Quarter))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -604,6 +606,7 @@ object Tests extends Suite(m"Facsimile tests"):
             Quantity[Points[1]](200.0), Quantity[Points[1]](400.0))
 
         PdfFile(path).open(Read & Write): doc ?=>
+          // [by-name-receiver] page argument derived from receiver doc
           scala.caps.unsafe.unsafeAssumeSeparate(doc.setBox(doc.page(Prim), t"CropBox", target))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -656,6 +659,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(twoPages)
 
         PdfFile(path).open(Read & Write): doc ?=>
+          // [by-name-receiver] page argument derived from receiver doc
           scala.caps.unsafe.unsafeAssumeSeparate(doc.removePage(doc.page(Prim)))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -728,6 +732,7 @@ object Tests extends Suite(m"Facsimile tests"):
             Quantity[Points[1]](50.0), Quantity[Points[1]](20.0))
 
         PdfFile(path).open(Read & Write): doc ?=>
+          // [by-name-receiver] page argument derived from receiver doc
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addLink(doc.page(Prim), rect, uri = t"https://soundness.dev/"))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -752,6 +757,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Truetype(fontProgram), t"MyFont")
+          // [by-name-receiver] page argument derived from receiver doc
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -763,6 +769,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = Print.font(Print.Helvetica.bold)
+          // [by-name-receiver] page argument derived from receiver doc
           scala.caps.unsafe.unsafeAssumeSeparate(doc.useFont(doc.page(Prim), t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -777,6 +784,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = Print.font(Typeface["Pretend"].face)
+          // [by-name-receiver] page argument derived from receiver doc
           scala.caps.unsafe.unsafeAssumeSeparate(doc.useFont(doc.page(Prim), t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -794,6 +802,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Truetype(fontProgram), t"MyFont")
+          // [by-name-receiver] page argument derived from receiver doc
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
           val operators = List
@@ -801,6 +810,7 @@ object Tests extends Suite(m"Facsimile tests"):
               Pdf.Operator.Offset(72, 720), Pdf.Operator.ShowText(winAnsi(t"Embedded text")),
               Pdf.Operator.EndText )
 
+          // [by-name-receiver]
           scala.caps.unsafe.unsafeAssumeSeparate(doc.setContents(doc.page(Prim), operators))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -812,6 +822,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Truetype(fontProgram), t"MyFont")
+          // [by-name-receiver] page argument derived from receiver doc
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -825,6 +836,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Truetype(miniFont))
+          // [by-name-receiver] page argument derived from receiver doc
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -865,6 +877,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Truetype(miniFont), subset = t"AB")
+          // [by-name-receiver] page argument derived from receiver doc
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -876,6 +889,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Truetype(miniFont), subset = t"A")
+          // [by-name-receiver] page argument derived from receiver doc
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -890,6 +904,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Truetype(miniFont), subset = t"C")
+          // [by-name-receiver] page argument derived from receiver doc
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
@@ -965,6 +980,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         capture[Pdf.Error]:
           // Overlap false positive: `doc` is chained through `create`'s own result.
+          // [by-name-receiver] doc block chained through create's own result
           scala.caps.unsafe.unsafeAssumeSeparate(path.create[Pdf]() { doc ?=> doc.appendPage(a4) })
         . reason
       . assert(_ == Pdf.Error.Reason.Io(t"the file already exists"))
@@ -1335,6 +1351,7 @@ object Tests extends Suite(m"Facsimile tests"):
         PdfFile(document(catalog, body)).open():
           pdf(2, 0) match
             case body: Cos.Body =>
+              // [closure-capture] local drain def over spring's stream from document
               scala.caps.unsafe.unsafeAssumeSeparate:
                 drain(pdf.spring(body)()).utf8
 
@@ -1342,6 +1359,7 @@ object Tests extends Suite(m"Facsimile tests"):
               t""
 
       test(m"a raw payload streams in chunks"):
+        // [closure-capture] calls local streamed def over fresh document
         scala.caps.unsafe.unsafeAssumeSeparate:
           streamed(t"<< /Length 11 >>\nstream\nHello world\nendstream".in[Data])
       . assert(_ == t"Hello world")
@@ -1352,10 +1370,12 @@ object Tests extends Suite(m"Facsimile tests"):
         val body = t"<< /Length ${payload.length} /Filter /FlateDecode >>\nstream\n".in[Data]
           ++ payload ++ t"\nendstream".in[Data]
 
+        // [closure-capture] calls local streamed def over fresh document
         scala.caps.unsafe.unsafeAssumeSeparate(streamed(body))
       . assert(_ == t"streamed and inflated")
 
       test(m"a gathered filter delivers through flush"):
+        // [closure-capture]
         scala.caps.unsafe.unsafeAssumeSeparate:
           streamed(t"<< /Length 11 /Filter /ASCIIHexDecode >>\nstream\n48656C6C6F>\nendstream"
             . in[Data])
@@ -1370,6 +1390,7 @@ object Tests extends Suite(m"Facsimile tests"):
         PdfFile(document(catalog, body)).open():
           pdf(2, 0) match
             case body: Cos.Body =>
+              // [pump-overlap] spring reused after first drain consumed its stream
               scala.caps.unsafe.unsafeAssumeSeparate:
                 val spring = pdf.spring(body)
                 val first = drain(spring()).utf8
@@ -1446,6 +1467,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         // The block reads `ownerKey`, whose Unscoped root is conflated with the fresh
         // results minted inside: a false positive, since `ownerKey` is never mutated.
+        // [fresh-in-lambda] ownerKey root conflated with fresh arrays minted inside
         val ownerEntry = scala.caps.unsafe.unsafeAssumeSeparate:
           def stir(value: scala.Array[Byte], i: Int): scala.Array[Byte] =
             if i > 19 then value else stir(rc4(xor(ownerKey, i), value), i + 1)
@@ -1463,6 +1485,7 @@ object Tests extends Suite(m"Facsimile tests"):
           (if revision >= 3 then stir(hash, 0) else hash).take(keyBytes)
 
         // As `ownerEntry`: `fileKey` is read, never mutated.
+        // [fresh-in-lambda] fileKey root conflated with fresh arrays minted inside
         val userEntry = scala.caps.unsafe.unsafeAssumeSeparate:
           if revision == 2 then rc4(fileKey, Array.unsafeJvm(padding))
           else
@@ -1745,6 +1768,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         capture[Pdf.Error]:
           // Overlap false positive: the opened document is chained through `open`'s result.
+          // [by-name-receiver] opened document chained through open's result
           scala.caps.unsafe.unsafeAssumeSeparate(PdfFile(doc).open()(pdf.pageCount))
         . reason
       . assert(_ == Pdf.Error.Reason.CircularPageTree)

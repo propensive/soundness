@@ -358,6 +358,7 @@ object Jdwp:
   // Decodes a JDWP packet payload. Big-endian throughout; identifier reads consult the negotiated
   // `sizes`. Stateful and single-threaded — one reader decodes one reply or one event, in order.
   class Reader(data: Data, sizes: IdSizes):
+    // [field-purity] position var in packet Reader
     @scala.caps.unsafe.untrackedCaptures
     private var position: Int = 0
 
@@ -729,11 +730,13 @@ object Jdwp:
 
     // Holds a breakpoint handler out of the capture-tracked world: the function captures the
     // session, which no `TrieMap` value type can name, but it lives and dies with the session.
+    // [registry-lifetime] breakpoint handler held untracked in TrieMap slot
     class Slot(@scala.caps.unsafe.untrackedCaptures val run: Halt => Unit)
 
     // Likewise for a class-prepare handler, which receives the raw event rather than a `Halt`:
     // the prepared class has no stopped frame to inspect. It carries no error channel; a handler
     // wanting one opens it inline with `safely`.
+    // [registry-lifetime] prepare handler held untracked in TrieMap slot
     class PrepareSlot(@scala.caps.unsafe.untrackedCaptures val run: Event.ClassPrepared => Unit)
 
     // The queue sentinel which ends the dispatcher's pump when the channel closes.
@@ -757,6 +760,7 @@ object Jdwp:
       // Sealed: the connection captures this session's monitor and diagnostics, which an honest
       // `Connection^` would hide from the pumps that serve it. It is a local of this method, lent
       // to `lambda` and dead once `lambda` returns.
+      // [construction-fresh] fresh Connection capturing monitor sealed at creation
       val connection: Connection = caps.unsafe.unsafeAssumePure(Connection(monitor, diagnostics))
 
       // A single writer drains outgoing packets so writes never interleave.
@@ -825,7 +829,7 @@ object Jdwp:
   // and by the session's own thread at once, and every piece of its state is synchronised
   // (the counter, the pending map, the relays).
   class Connection private[vivisection] (monitor: Monitor, note: Diagnostics)
-  extends caps.SharedCapability:
+  extends anticipation.Durable:
     private val counter: Atomic[Int] = Atomic(0)
     private val pending: scc.TrieMap[Int, Promise[Connection.Reply]] = scc.TrieMap()
     private[vivisection] val outgoing: Relay[Data] = Relay()
@@ -849,6 +853,7 @@ object Jdwp:
     private val pools: scc.TrieMap[Long, Plumbing.Pool] = scc.TrieMap()
     private[vivisection] val unclaimed: Relay[Event.Composite] = Relay()
 
+    // [field-purity] negotiated id-sizes var in Connection
     @scala.caps.unsafe.untrackedCaptures
     private var sizes0: IdSizes = IdSizes.bootstrap
 
@@ -912,6 +917,7 @@ object Jdwp:
 
           val outcome: Optional[Unit] = contingency.safely[Debugger.Error]:
             val halt =
+              // [construction-fresh] new Halt instance laundered at construction
               caps.unsafe.unsafeAssumePure(new Halt(this, thread, location, cause, retention))
 
             slot.run(halt)

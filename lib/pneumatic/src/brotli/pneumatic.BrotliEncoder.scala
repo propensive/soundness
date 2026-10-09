@@ -509,6 +509,7 @@ private[pneumatic] object BrotliEncoder:
       if commands == capacity then
         capacity <<= 1
         // The four scratch arrays are pairwise-distinct fresh allocations.
+        // [closure-capture] local push def regrows captured scratch arrays
         scala.caps.unsafe.unsafeAssumeSeparate:
           val ni = new scala.Array[Int](capacity); System.arraycopy(cmdInsert, 0, ni, 0, commands)
           val nl = new scala.Array[Int](capacity); System.arraycopy(cmdLitPos, 0, nl, 0, commands)

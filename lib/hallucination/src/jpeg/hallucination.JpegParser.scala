@@ -354,6 +354,7 @@ private[hallucination] object JpegParser:
 
     if length != 0 then bad()
     // The tables privately own their freshly-built arrays; laundered to the pure result.
+    // [construction-fresh] freshly-built Huffman tables laundered pure
     scala.caps.unsafe.unsafeAssumePure((dcTables, acTables))
 
   // Skips a length-prefixed segment whose contents are not needed (e.g. a comment).

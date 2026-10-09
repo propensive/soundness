@@ -61,6 +61,7 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
 
   // The session terminal retains the ambient monitor; the checker cannot see that the
   // teardown accesses below are not aliased writers.
+  // [closure-capture] fresh terminal used by local session defs
   given terminal: Terminal = scala.caps.unsafe.unsafeAssumeSeparate(Terminal())
 
   // The core session: raw mode, the caller's block, then input/event teardown.
@@ -94,6 +95,7 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
     case Nil             => session
     case feature :: rest =>
       // Each feature wraps the session around the same single-owner terminal.
+      // [closure-capture] local def recursion over single-owner terminal
       scala.caps.unsafe.unsafeAssumeSeparate(feature(applyFeatures(rest)))
 
   applyFeatures(features.values.to(List))

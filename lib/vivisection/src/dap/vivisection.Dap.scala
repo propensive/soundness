@@ -66,7 +66,7 @@ object Dap:
   // canonical stdio transport a frontend launches. All outgoing traffic flows through a single
   // writer task, so responses and events never interleave, and each request is handled in
   // arrival order on this thread. The observer sees every message's raw text, both directions.
-  def listen(observer: Text ->{caps.any.only[caps.SharedCapability]} Unit = { _ => () })
+  def listen(observer: Text ->{caps.any.only[anticipation.Durable]} Unit = { _ => () })
     ( using online:       Online,
             monitor:      Monitor,
             probate:      Probate,

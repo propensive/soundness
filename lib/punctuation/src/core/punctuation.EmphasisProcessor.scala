@@ -75,24 +75,33 @@ final class BracketData(val isImage: Boolean) extends InlineData
 // algorithm consumes characters from the run.
 final class DelimData
   ( val char: Char,
+    // [field-purity] mutable delimiter length in non-Stateful class
     @scala.caps.unsafe.untrackedCaptures
     var length: Int,
     val canOpen: Boolean,
     val canClose: Boolean )
 extends InlineData
 
+// [field-purity] mutable inline-node field in non-Stateful class
 @scala.caps.unsafe.untrackedCaptures
+// [field-purity]
 @scala.caps.unsafe.untrackedCaptures
+// [field-purity]
 @scala.caps.unsafe.untrackedCaptures
+// [field-purity]
 final class InlineNode(@scala.caps.unsafe.untrackedCaptures var data: InlineData):
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   var prev: InlineNode | Null = null
+  // [field-purity] mutable inline-node link in non-Stateful class
   @scala.caps.unsafe.untrackedCaptures
   var next: InlineNode | Null = null
 
 final class InlineList:
+  // [field-purity] mutable list head in non-Stateful class
   @scala.caps.unsafe.untrackedCaptures
   var first: InlineNode | Null = null
+  // [field-purity] mutable list tail in non-Stateful class
   @scala.caps.unsafe.untrackedCaptures
   var last:  InlineNode | Null = null
 
@@ -118,6 +127,7 @@ final class InlineList:
     node.next = null
 
   def iterator: Iterator[InlineNode] = new Iterator[InlineNode]:
+    // [stdlib-iterator] cursor in anonymous Iterator
     @scala.caps.unsafe.untrackedCaptures
     var cur: InlineNode | Null = first
     def hasNext: Boolean = cur != null

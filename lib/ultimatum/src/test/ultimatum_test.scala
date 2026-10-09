@@ -383,6 +383,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         // The iterator shrinks the root through its size cell, not the root itself, which
         // `Form` holds exclusively while it runs.
         val resize = new Iterator[Terminal.Event]:
+          // [stdlib-iterator] pending flag in anonymous test Iterator
           @scala.caps.unsafe.untrackedCaptures
           private var pending = true
           def hasNext = pending
@@ -669,6 +670,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a shrink with an anchor clears from the recovered row and re-docks"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        // [closure-capture] local width var read by root's size closure
         @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
@@ -687,6 +689,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"the anchor column selects the reflow model"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        // [closure-capture] local width var read by root's size closure
         @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
@@ -706,6 +709,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"the anchor column selects the truncate model"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        // [closure-capture] local width var read by root's size closure
         @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
@@ -725,6 +729,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"an unmatchable anchor column falls back to the full clear"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        // [closure-capture] local width var read by root's size closure
         @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
@@ -758,6 +763,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a second resize without a fresh anchor falls back"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        // [closure-capture] local width var read by root's size closure
         @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
@@ -824,11 +830,13 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a resize with an anchor reply recovers the block position"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        // [closure-capture] local width var read by root's size closure
         @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
 
         val events = new Iterator[Terminal.Event]:
+          // [stdlib-iterator] event queue var in anonymous test Iterator
           @scala.caps.unsafe.untrackedCaptures
           // Capture-carrying elements do not flow through the opaque List (boxing), so
           // this event queue deliberately stays a stdlib list.
@@ -943,11 +951,13 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a WindowSize event re-tiles and fully redraws"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        // [closure-capture] local rows var read by root's size closure
         @scala.caps.unsafe.untrackedCaptures
         var liveRows: Int = 4
         val root = new ScreenRoot(() => 10, () => liveRows)
 
         val resize = new Iterator[Terminal.Event]:
+          // [stdlib-iterator] pending flag in anonymous test Iterator
           @scala.caps.unsafe.untrackedCaptures
           private var pending = true
           def hasNext = pending
@@ -1016,6 +1026,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val panes = Panes(panel()(Out.print(t"A")))
 
         val events = new Iterator[Terminal.Event]:
+          // [stdlib-iterator] pending flag in anonymous test Iterator
           @scala.caps.unsafe.untrackedCaptures
           private var pending = true
           def hasNext = pending
@@ -1641,8 +1652,10 @@ object Tests extends Suite(m"Ultimatum Tests"):
 object ResizableRoot:
   class Size(initialWidth: Int, initialHeight: Int):
     // Written from the test's iterator while the root is in use: test-fixture state, untracked.
+    // [test-harness] test resizable root size cell width
     @scala.caps.unsafe.untrackedCaptures
     var width: Int = initialWidth
+    // [test-harness] test resizable root size cell height
     @scala.caps.unsafe.untrackedCaptures
     var height: Int = initialHeight
 

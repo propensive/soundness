@@ -38,6 +38,7 @@ object internal2:
   opaque type Chroma <: Matchable = Int
 
   object Chroma:
+    // [erased-evidence] erased Underlying evidence for opaque Chroma
     erased given underlying: Underlying[Chroma, Int] = caps.unsafe.unsafeErasedValue
 
     // A `Chroma` is the very representation `Chromatic` converts to, so the identity instance
