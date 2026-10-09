@@ -222,6 +222,7 @@ object Redraft:
 
           analyze(directives, original, _ == _)(1).sweep:
             case Anomaly(line, _, Reason.Ambiguous) => line
+
           . to[Set]
 
       if ambiguous.nil then directives
@@ -255,6 +256,7 @@ object Redraft:
     directives.indexed
     . filter: (directive, ordinal) =>
         !directive.isInstanceOf[Directive.Keep] || near(ordinal.n0)
+
     . map(_(0))
 
   private def minimize

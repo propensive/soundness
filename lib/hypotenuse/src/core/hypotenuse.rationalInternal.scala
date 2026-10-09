@@ -32,12 +32,12 @@
                                                                                                   */
 package hypotenuse
 
+import java.lang.{Double as JDouble, Long as JLong}
+
 import scala.caps
 import scala.math
 import scala.reflect.ClassTag
 import scala.util.FromDigits
-
-import java.lang.{Double as JDouble, Long as JLong}
 
 import anticipation.*
 import contingency.*
@@ -212,6 +212,7 @@ object rationalInternal:
   // is canonical without adjustment.
   private def euclidean(numerator: Long, denominator: Long, terms: scala.Array[Long]^, offset: Int)
   :   Int =
+
     var high = numerator
     var low = denominator
     var count = offset
@@ -351,6 +352,7 @@ object rationalInternal:
   // `sqrtMagnitude`; the true product never exceeds the six-limb capacity there.
   private def limbsMultiplyByLong(limbs: scala.Array[Long], value: Long, into: scala.Array[Long]^)
   :   Unit =
+
     limbsClear(into)
     var j = 0
 
@@ -405,6 +407,7 @@ object rationalInternal:
   :   Long =
 
     val excess = limbsBitLength(dividend) - limbsBitLength(divisor)
+
     if excess >= 32 then Cap else
       limbsClear(remainder)
       var quotient = 0L
@@ -525,8 +528,10 @@ object rationalInternal:
   private def doubleMagnitude(value: Double, budget: Int): Long =
     val bits = JDouble.doubleToLongBits(value)
     val rawExponent = (bits >>> 52 & 0x7ffL).toInt
+
     var mantissa = if rawExponent == 0 then bits & 0xfffffffffffffL
                    else bits & 0xfffffffffffffL | (1L << 52)
+
     var exponent = if rawExponent == 0 then -1074 else rawExponent - 1075
     val shift = JLong.numberOfTrailingZeros(mantissa)
     mantissa >>>= shift
@@ -581,10 +586,12 @@ object rationalInternal:
       case order =>
         if order > 0 then
           limbsSubtract(cross, cross2)
+
           ( leftNegative,
             encodeMagnitude(terms, euclideanWide(cross, wideDenominator, terms), budget) )
         else
           limbsSubtract(cross2, cross)
+
           ( rightNegative,
             encodeMagnitude(terms, euclideanWide(cross2, wideDenominator, terms), budget) )
 
@@ -682,6 +689,7 @@ object rationalInternal:
         while scale > 0 do
           if denominator < Saturated/10 then denominator *= 10
           else if numerator > 1L then numerator /= 10
+
           scale -= 1
 
         (negative, numerator, denominator)
@@ -711,6 +719,7 @@ object rationalInternal:
     else
       val (numerator, denominator) = fractionOf(word & Long.MaxValue)
       val magnitude = encodeFraction(numerator, denominator, Budget32)
+
       if magnitude == 0L then q32(0)
       else q32(magnitude.toInt | (if word < 0L then Int.MinValue else 0))
 
@@ -734,6 +743,7 @@ object rationalInternal:
       else if numerator == 0L then q64(0L)
       else
         val magnitude = encodeFraction(numerator, denominator, Budget64)
+
         if magnitude == 0L then q64(0L)
         else if negative then q64(magnitude | Long.MinValue)
         else q64(magnitude)
@@ -752,6 +762,7 @@ object rationalInternal:
       else if value == 0.0 then Zero
       else
         val magnitude = doubleMagnitude(math.abs(value), Budget64)
+
         if magnitude == 0L then q64(0L)
         else if value < 0.0 then q64(magnitude | Long.MinValue)
         else q64(magnitude)
@@ -785,6 +796,7 @@ object rationalInternal:
       inline def compare
           (inline left: Q64, inline right: Q64, inline strict: Boolean, inline greater: Boolean)
       :   Boolean =
+
         if left == Long.MinValue || right == Long.MinValue then false else
           val result = comparison(left, right)
 
@@ -995,6 +1007,7 @@ object rationalInternal:
         if left == Long.MinValue || left == 0L then q64(Long.MinValue) else
           val (numerator, denominator) = fractionOf(left & Long.MaxValue)
           val magnitude = encodeFraction(denominator, numerator, Budget64)
+
           if magnitude == 0L then q64(0L)
           else if left < 0L then q64(magnitude | Long.MinValue)
           else q64(magnitude)
@@ -1060,6 +1073,7 @@ object rationalInternal:
       else if numerator == 0L then q32(0)
       else
         val magnitude = encodeFraction(numerator, denominator, Budget32)
+
         if magnitude == 0L then q32(0)
         else if negative then q32(magnitude.toInt | Int.MinValue)
         else q32(magnitude.toInt)
@@ -1078,6 +1092,7 @@ object rationalInternal:
       else if value == 0.0 then Zero
       else
         val magnitude = doubleMagnitude(math.abs(value), Budget32)
+
         if magnitude == 0L then q32(0)
         else if value < 0.0 then q32(magnitude.toInt | Int.MinValue)
         else q32(magnitude.toInt)
@@ -1108,6 +1123,7 @@ object rationalInternal:
       inline def compare
           (inline left: Q32, inline right: Q32, inline strict: Boolean, inline greater: Boolean)
       :   Boolean =
+
         if left == Int.MinValue || right == Int.MinValue then false else
           val result = comparison(left, right)
 
@@ -1298,6 +1314,7 @@ object rationalInternal:
         if left == Int.MinValue || left == 0 then q32(Int.MinValue) else
           val (numerator, denominator) = fractionOf((left & Int.MaxValue).toLong)
           val magnitude = encodeFraction(denominator, numerator, Budget32)
+
           if magnitude == 0L then q32(0)
           else if left < 0 then q32(magnitude.toInt | Int.MinValue)
           else q32(magnitude.toInt)

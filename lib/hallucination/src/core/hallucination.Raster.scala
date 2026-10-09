@@ -32,8 +32,8 @@
                                                                                                   */
 package hallucination
 
-import scala.compiletime.*
 import scala.annotation.targetName
+import scala.compiletime.*
 
 import anticipation.*
 import contingency.*
@@ -50,6 +50,7 @@ object Raster:
     // layout `apply`, whose expanded closure write the separation checker rejects here.
     build(width, height, Descriptor.of[Rgb]): index =>
       Pixel.value(iridescence.packed(pixel(index%width, index/width)))
+
     . asInstanceOf[Raster by Rgb]
 
   @targetName("applyLayout")
@@ -105,33 +106,41 @@ object Raster:
       case 8 =>
         val buffer = new scala.Array[Byte](length)
         var index = 0
+
         while index < length do
           writable(buffer)(index) = pixel(index).toByte
           index += 1
+
         buffer
 
       case 16 =>
         val buffer = new scala.Array[Short](length)
         var index = 0
+
         while index < length do
           writable(buffer)(index) = pixel(index).toShort
           index += 1
+
         buffer
 
       case 32 =>
         val buffer = new scala.Array[Int](length)
         var index = 0
+
         while index < length do
           writable(buffer)(index) = pixel(index).toInt
           index += 1
+
         buffer
 
       case _ =>
         val buffer = new scala.Array[Long](length)
         var index = 0
+
         while index < length do
           writable(buffer)(index) = pixel(index)
           index += 1
+
         buffer
 
     new Raster(width, height, buffer, descriptor)

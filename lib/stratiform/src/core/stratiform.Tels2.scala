@@ -31,17 +31,15 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package stratiform
-import rudiments.unsafeMutable
-
 import adversaria.*
 import anticipation.*
 import distillate.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
+import rudiments.unsafeMutable
 import vacuous.*
 import wisteria.*
-import rudiments.*
-
 import Tels.Polarity
 
 // Constructors for fused `Encodable & Schematic` / `Decodable & Schematic`

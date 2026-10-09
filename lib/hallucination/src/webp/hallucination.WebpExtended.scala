@@ -32,12 +32,11 @@
                                                                                                   */
 package hallucination
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import vacuous.*
-
-import scala.caps
-
 import Binary.*
 import Raster.Error.Reason
 

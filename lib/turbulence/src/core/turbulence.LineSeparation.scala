@@ -31,18 +31,17 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package turbulence
-import rudiments.reverse
-
 import java.io as ji
 import java.lang as jl
 import java.nio.charset as jnc
 
 import anticipation.*
+import beneficence.*
 import contingency.*
 import denominative.*
-import vacuous.*
-import beneficence.*
 import prepositional.*
+import rudiments.reverse
+import vacuous.*
 import zephyrine.*
 
 object LineSeparation:
@@ -184,8 +183,10 @@ object LineSeparation:
             val targetOffset = targetInterval.start.n0
             val targetSpace = targetInterval.size
             val chars = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Char]])
+
             val slots: scala.Array[AnyRef]^ =
               unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
+
             var consumed: Int = 0
             var produced: Int = 0
 

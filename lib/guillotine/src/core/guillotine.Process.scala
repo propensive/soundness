@@ -33,8 +33,8 @@
 package guillotine
 
 import java.io as ji
-import scala.caps
 
+import scala.caps
 import scala.language.experimental.pureFunctions
 
 import anticipation.*

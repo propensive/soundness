@@ -105,7 +105,6 @@ object Git:
 
     distinctConsecutive(stages)
 
-
   def init
     [ path: Abstractable across Paths to Text ]
     ( targetPath: path, initialBranch: Optional[Git.Branch] = Unset )
@@ -504,7 +503,6 @@ object Git:
   case class Repo(gitDir: Path on Linux):
     val repoOptions = sh"--git-dir=$gitDir"
 
-
     def pushTags()
       ( using Internet, Git.Command, WorkingDirectory, Environment, Tactic[Git.Error],
               Tactic[Exec.Error] )
@@ -554,6 +552,7 @@ object Git:
     def tags()(using Git.Command, WorkingDirectory, Environment, Tactic[Exec.Error])
       ( using (Git.Event is Loggable)^ )
     :   List[Git.Tag] =
+
       sh"$git $repoOptions tag".exec[Iterator[Text]]().to(List).map(Git.Tag.unsafe(_))
 
 
@@ -643,6 +642,7 @@ object Git:
     def log()(using Git.Command, WorkingDirectory, Environment, Tactic[Exec.Error])
       ( using (Git.Event is Loggable)^ )
     :   List[Commit] =
+
       val lines =
         sh"$git $repoOptions log --format=raw --color=never".exec[Iterator[Text]]().buffered
 
@@ -724,6 +724,7 @@ object Git:
       sh"$git $repoOptions reflog show $format $refArg".exec[Iterator[Text]]().collect:
         case r"$hash([a-f0-9]{40}) $selector(\S+) $time([0-9]+) $message(.*)" =>
           ReflogEntry(Git.Hash.unsafe(hash), selector, safely(time.as[Long]).or(0L), message)
+
       . to(List)
 
 
@@ -808,6 +809,7 @@ object Git:
         sh"$git $repoOptions notes $refArg list".exec[Iterator[Text]]().collect:
           case r"$noteHash([a-f0-9]{40}) $target([a-f0-9]{40})" =>
             (Git.Hash.unsafe(noteHash), Git.Hash.unsafe(target))
+
         . to(List)
 
 

@@ -43,4 +43,5 @@ object Shim:
   inline def compilationUnitInfo
      (file: VirtualFile, tastyInfo: dtd.core.TastyInfo)
   :   CompilationUnitInfo =
+
     CompilationUnitInfo(file, Some(tastyInfo))

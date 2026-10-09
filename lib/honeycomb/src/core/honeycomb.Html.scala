@@ -32,22 +32,20 @@
                                                                                                   */
 package honeycomb
 
-
-import scala.{caps, compiletime}
-
-import scala.language.dynamics
-
 import java.lang as jl
 import java.util as ju
 
 import scala.annotation.tailrec
+import scala.language.dynamics
 import scala.quoted.*
 import scala.util.NotGiven
+import scala.{caps, compiletime}
 
 import anticipation.*
 import contextual.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import fulminate.*
 import gesticulate.*
 import gossamer.*
@@ -62,7 +60,6 @@ import turbulence.*
 import typonym.*
 import vacuous.*
 import zephyrine.*
-import denominative.dysasymptotics.linearSize
 
 object Html extends Tag.Container
   ( label       = "html",
@@ -812,6 +809,7 @@ object Html extends Tag.Container
     var startOffsets: scala.Array[Int]^ = new scala.Array[Int](4)
     var startLines:   scala.Array[Int]^ = new scala.Array[Int](4)
     var startColumns: scala.Array[Int]^ = new scala.Array[Int](4)
+
     var startAttrs:   scala.Array[scala.IArray[Int] | Null]^ =
       new scala.Array[scala.IArray[Int] | Null](4)
 
@@ -1149,6 +1147,7 @@ object Html extends Tag.Container
     // [cursor-snapshot] parser's snapshot of cursor buffer
     @caps.unsafe.untrackedCaptures
     private var bytes:  scala.Array[Char] = new scala.Array[Char](0)
+
     private var pos:    Int = 0
     private var bufEnd: Int = 0
 
@@ -1337,6 +1336,7 @@ object Html extends Tag.Container
       // The snapshot fields initialize empty (a constructor may not derive field
       // values from its parameters under the provenance rule); sync them here.
       syncFrom()
+
       cursor.hold:
         heldToken = summon[Cursor.Held]
         try parseHtml0(root, doctypes, HtmlParseState()) finally heldToken = null
@@ -1348,6 +1348,7 @@ object Html extends Tag.Container
       ( root: Tag, doctypes: Boolean, state: HtmlParseState^ )
       ( using Tactic[Parse.Error] )
     :   Html =
+
       val buffer: jl.StringBuilder = jl.StringBuilder()
       def result(): BaseText = buffer.toString.tt.also(buffer.setLength(0))
       var content: BaseText = t""
@@ -1654,6 +1655,7 @@ object Html extends Tag.Container
 
               if !isDuplicate then
                 state.attrAppend(n, key2Str, assignment.lay(null: String | Null)(_.s))
+
                 if tracking
                 then state.attrPositionAppend(n, attrLine, attrColumn, position - attrMark)
 
@@ -2102,6 +2104,7 @@ object Html extends Tag.Container
                   else
                     advance()
                     level = Level.Ascend
+
                     current =
                       closed(Element(content, map, state.array(count), parent.foreign), true)
 
@@ -2302,7 +2305,6 @@ object Html extends Tag.Container
       case Text(text0)             => text0 == text
       case _                       => false
 
-
   object Element:
     def foreign(label: BaseText, attributes: Attributes, children: Html of "#foreign"*)
     :   Element of "#foreign" =
@@ -2336,6 +2338,7 @@ object Html extends Tag.Container
         // [java-boundary] raw array cast for vararg splat
         ( caps.unsafe.unsafeAssumePure
             (Array.unsafeJvm(children2).asInstanceOf[scala.Array[(Element of tag.Topic) { type Form = tag.Form }]])* )
+
       . in[tag.Form]
 
     override def body: Fragment of this.Topic over this.Transport in this.Form =
@@ -2455,7 +2458,6 @@ object Html extends Tag.Container
       case Doctype(text0)           => text0 == text
       case Fragment(Doctype(text0)) => text0 == text
       case _                        => false
-
 
 sealed into trait Html extends Topical, Documentary, Formal:
   type Topic <: Label

@@ -33,19 +33,17 @@
 package serpentine
 
 import scala.caps
-
-
 import scala.compiletime.*
 
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
-import denominative.dysasymptotics.linearSize
 import spectacular.*
 import symbolism.*
 import vacuous.*

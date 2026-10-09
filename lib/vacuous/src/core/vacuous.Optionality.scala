@@ -33,7 +33,6 @@
 package vacuous
 
 import scala.language.experimental.pureFunctions
-
 import scala.quoted.*
 
 object Optionality:

@@ -173,5 +173,6 @@ extension (xdg: Xdg.type)
     new Searchpaths.Stems:
       type Plane = Xdg.Config
       type Target = Linux
+
       val stems: List[Path on Linux] =
         unsafely(Xdg.configHome[Path on Linux] :: Xdg.configDirs[Path on Linux])

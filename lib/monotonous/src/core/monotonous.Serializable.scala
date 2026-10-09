@@ -32,17 +32,16 @@
                                                                                                   */
 package monotonous
 
+import java.nio.charset.StandardCharsets
 
 import scala.caps
 
-import java.nio.charset.StandardCharsets
-
 import anticipation.*
-import denominative.*
-import rudiments.*
 import beneficence.*
+import denominative.*
 import hypotenuse.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 
 object Serializable:

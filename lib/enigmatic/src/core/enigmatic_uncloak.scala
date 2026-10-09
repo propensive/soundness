@@ -119,6 +119,7 @@ extension (data: Data)
         // (`canThrowAny` only relicenses the rethrow of the exceptions this handler does not
         // match.)
         import unsafeExceptions.canThrowAny
+
         if securityException(error, "javax.crypto.BadPaddingException")
         then abort(Crypto.Error(Crypto.Error.Reason.BadPadding, detail(error)))
         else if securityException(error, "javax.crypto.IllegalBlockSizeException")

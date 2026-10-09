@@ -32,7 +32,6 @@
                                                                                                   */
 package facsimile
 
-
 import anticipation.*
 import contingency.*
 import denominative.*

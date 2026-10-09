@@ -36,9 +36,9 @@ import javax.sound.sampled as jss
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import prepositional.*
 import quantitative.*
-import fulminate.*
 
 object Feed:
   def list: List[Feed] =
@@ -53,6 +53,7 @@ object Feed:
 
         if canRecord then scala.collection.immutable.List(Feed(info))
         else scala.collection.immutable.Nil
+
       . to(List)
 
   // FeedError → Feed.Error

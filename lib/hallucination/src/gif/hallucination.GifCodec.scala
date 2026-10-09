@@ -32,16 +32,14 @@
                                                                                                   */
 package hallucination
 
-import rudiments.Scribe.apply
-
 import scala.collection.mutable as scm
 
 import anticipation.*
+import contingency.*
 import denominative.*
 import rudiments.*
+import rudiments.Scribe.apply
 import vacuous.*
-import contingency.*
-
 import Binary.*
 import Raster.Error.Reason
 

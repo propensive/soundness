@@ -39,9 +39,9 @@ import coaxial.*
 import contingency.*
 import fulminate.*
 import gastronomy.*
-import hypotenuse.*
 import gossamer.*
 import hieroglyph.*
+import hypotenuse.*
 import monotonous.*
 import parasite.*
 import prepositional.*
@@ -51,7 +51,6 @@ import telekinesis.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
-
 import Control.*
 import alphabets.base64Standard
 import codepages.utf8Codepage
@@ -344,6 +343,7 @@ object Websocket:
     def parse(cursor: Cursor[Data, {}]^)(using masking: Masking)
       ( using Tactic[Websocket.Error] )
     :   Optional[Frame] =
+
       if cursor.finished then Unset else
         val byte0 = cursor.peek.asInt
         cursor.advance()
@@ -393,6 +393,7 @@ object Websocket:
             // reason; a lone byte is malformed. `1005` is the internal "no code
             // present" sentinel and must never travel on the wire.
             if payload.length == 1 then abort(Websocket.Error(Websocket.Error.Reason.BadClose))
+
             val code =
               if payload.length >= 2 then B16(payload.keep(2)).u16.int else 1005
 

@@ -34,19 +34,17 @@ package coaxial
 
 import scala.caps
 
-
 import anticipation.*
 import contingency.*
+import denominative.capped
 import parasite.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
 import urticose.MacAddress
-import denominative.capped
-import zephyrine.{Stream, Credit, Buffering, Substrate, stream}
 import vacuous.*
-
+import zephyrine.{Stream, Credit, Buffering, Substrate, stream}
 import Control.*
 
 extension [bindable: {Bindable, Showable}](socket: bindable)
@@ -141,6 +139,7 @@ extension [multicast: {Subscribable as subscribable, Showable}](group: multicast
 extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint is Serviceable)^)
   def transmit[message: Transmissible](input: message)(using (Socket.Event is Loggable)^)
   :   (Stream[Data] over Credit)^{serviceable, caps.any} =
+
     val connection = serviceable.connect(endpoint, Unset)
     Log.fine(Socket.Event.Connected(endpoint.show))
 

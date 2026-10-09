@@ -33,6 +33,7 @@
 package distillate
 
 import scala.language.experimental.pureFunctions
+
 import anticipation.*
 import fulminate.*
 

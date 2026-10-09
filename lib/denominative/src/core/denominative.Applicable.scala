@@ -33,10 +33,8 @@
 package denominative
 
 import scala.collection.immutable.IndexedSeq
-
-import scala.language.experimental.pureFunctions
-
 import scala.collection.mutable as scm
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import prepositional.*

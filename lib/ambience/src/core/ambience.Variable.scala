@@ -33,7 +33,6 @@
 package ambience
 
 import scala.caps
-
 import scala.language.dynamics
 
 import anticipation.*
@@ -175,6 +174,7 @@ object Variable extends Protovariable:
   given columns: (decodable: (Int is Decodable in Text)^)
   =>  ((Variable["columns", Int])^{decodable}) =
     _.as[Int]
+
   given lang: Variable["lang", Text] = identity(_)
   given display: Variable["display", Text] = identity(_)
   given term: Variable["term", Text] = identity(_)

@@ -35,13 +35,13 @@ package geodesy
 import anticipation.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import kaleidoscope.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
-import fulminate.*
 
 object Geolocation:
   import Geolocation.Error.Reason.*

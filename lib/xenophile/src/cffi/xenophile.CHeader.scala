@@ -419,6 +419,7 @@ object CHeader:
               case name :: "[" :: size :: "]" :: ";" :: rest =>
                 val array = Foreign.Type.Applied(t"array", List(typed,
                     Foreign.Type.Named(size.tt)))
+
                 recur(rest, (name.tt, array) :: acc)
 
               case _ => fail(t"a field was expected", afterType)

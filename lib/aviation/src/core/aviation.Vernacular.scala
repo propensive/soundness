@@ -33,14 +33,13 @@
 package aviation
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import prepositional.*
-
 import rudiments.*
 import spectacular.*
-import vacuous.*
 import symbolism.*
-import denominative.*
+import vacuous.*
 
 // The time units a duration or frequency is built from, coarsest first.
 enum TimeUnit:
@@ -53,6 +52,7 @@ object Vernacular:
        (span.weeks.toLong, TimeUnit.Weeks), (span.days.toLong, TimeUnit.Days),
        (span.hours.toLong, TimeUnit.Hours), (span.minutes.toLong, TimeUnit.Minutes),
        (span.seconds.value.toLong, TimeUnit.Seconds) )
+
     . filter(_(0) != 0)
 
   def unitOf(frequency: Frequency): TimeUnit = frequency match
@@ -80,6 +80,7 @@ object Vernacular:
       case TimeUnit.Seconds => (t"second", t"seconds")
 
     private def ordinal(n: Int): Text = aviation.internal.englishOrdinal(n)
+
     private def monthDay(n: Int): Text =
       if n == -1 then t"last day" else if n < 0 then t"${ordinal(-n)}-to-last day" else ordinal(n)
 

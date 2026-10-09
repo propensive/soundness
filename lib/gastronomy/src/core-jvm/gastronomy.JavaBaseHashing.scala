@@ -32,10 +32,10 @@
                                                                                                   */
 package gastronomy
 
-import scala.caps
-
 import java.security as js
 import java.util.zip as juz
+
+import scala.caps
 
 import anticipation.*
 import corpuscular.*
@@ -63,6 +63,7 @@ object JavaBaseHashing extends Hashing:
 
       update def digest(): Data =
         val v = state.getValue
+
         Array(((v >>> 24) & 0xff).toByte, ((v >>> 16) & 0xff).toByte, ((v >>> 8) & 0xff).toByte,
               (v & 0xff).toByte)
 

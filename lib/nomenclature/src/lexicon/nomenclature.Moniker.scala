@@ -37,8 +37,8 @@ import scala.caps
 import anticipation.*
 import contingency.*
 import distillate.*
-import prepositional.*
 import fulminate.*
+import prepositional.*
 import spectacular.*
 
 object Moniker:
@@ -91,4 +91,3 @@ object Moniker:
 
   case class Error(reason: Moniker.Error.Reason)(using Diagnostics)
   extends fulminate.Error(80, reason.number)(m"the moniker is not valid because $reason")
-

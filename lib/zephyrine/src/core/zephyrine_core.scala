@@ -595,6 +595,7 @@ def streamOf(expanse: Expanse^, offset: Long, length: Long)(using buffering: Buf
       // [abstract-storage] cast-erased storage region in anonymous Stream
       @caps.unsafe.untrackedCaptures
       private var storage: AnyRef = ""
+
       private var start0: Int = 0
       private var limit0: Int = 0
 
@@ -732,6 +733,7 @@ private def throughDuct[in, out, upTransport, downTransport]
       @caps.unsafe.untrackedCaptures
       private val storage: duct.output.Storage =
         duct.output.allocate(capacity).asInstanceOf[duct.output.Storage]
+
       private var start0: Int = 0
       private var limit0: Int = 0
       private var ended: Boolean = false
@@ -877,6 +879,7 @@ private def intakeThroughDuct[in, out, upTransport, downTransport]
       @caps.unsafe.untrackedCaptures
       private val storage: duct.input.Storage =
         duct.input.allocate(capacity).asInstanceOf[duct.input.Storage]
+
       private var mark0: Int = 0
 
       def demand: upTransport = duct.translate(intake.demand)

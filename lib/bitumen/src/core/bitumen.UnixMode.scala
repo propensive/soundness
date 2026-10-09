@@ -32,7 +32,6 @@
                                                                                                   */
 package bitumen
 
-
 import anticipation.*
 import gossamer.*
 import hieroglyph.*, codepages.asciiCodepage, textMetrics.uniformMetric

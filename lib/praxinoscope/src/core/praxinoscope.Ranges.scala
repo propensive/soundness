@@ -235,6 +235,7 @@ case class Ranges private(spans: List[Int]):
 
       if hit then
         var at = 0
+
         while at < members.length do
           result = result.union(Ranges.point(members(at)))
           at += 1

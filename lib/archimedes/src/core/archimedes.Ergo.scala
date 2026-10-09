@@ -33,7 +33,6 @@
 package archimedes
 
 import scala.collection.immutable.Seq
-
 import scala.math
 
 // Deliberate stdlib opt-out, as in `Cell`.
@@ -394,6 +393,7 @@ object Ergo:
         case (u, o) =>
           val below = u.or(base)
           val above = o.or(base)
+
           Munderover(base, below, above,
             accent(below, t"accentunder") + accent(above, t"accent"))
 

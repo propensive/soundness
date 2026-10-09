@@ -126,6 +126,7 @@ object Markup:
 
           val attrs = input.substring(kindEnd + 1, attrsEnd).nn match
             case ""         => Nil
+
             case attributes =>
               attributes.tt.cut(AttrSep).map: keyValue =>
                 keyValue.cut(t"=", 2) match

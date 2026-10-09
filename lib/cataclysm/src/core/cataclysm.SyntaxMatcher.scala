@@ -39,12 +39,10 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
-
 import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-
 
 // Checks a CSS property value against its `Css.Syntax` grammar. Composite `<type>`s
 // are resolved lazily from the bundled `syntaxes.json` (which expand to keywords,
@@ -94,7 +92,6 @@ object SyntaxMatcher:
       ( t"calc", t"min", t"max", t"clamp", t"sin", t"cos", t"tan", t"asin", t"acos", t"atan",
         t"atan2", t"pow", t"sqrt", t"hypot", t"log", t"exp", t"abs", t"sign", t"mod", t"rem",
         t"round" )
-
 
   private def substitution(token: ValueToken): Boolean = token match
     case ValueToken.Function(name) => substitutions(name.lower)

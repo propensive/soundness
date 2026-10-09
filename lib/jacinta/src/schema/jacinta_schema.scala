@@ -32,19 +32,17 @@
                                                                                                   */
 package jacinta
 
-
 import scala.annotation.*
 
 import anticipation.*
-import murmuration.{exists, foreach}
 import contingency.*
+import murmuration.{exists, foreach}
 import prepositional.*
 import telekinesis.*
 import urticose.*
 import vacuous.*
 import wisteria.*
 import zephyrine.*
-
 import httpBackends.javaNetHttp
 import Json.Error.Reason
 

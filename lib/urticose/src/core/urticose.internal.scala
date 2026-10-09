@@ -34,7 +34,6 @@ package urticose
 
 import java.io as ji
 
-
 import scala.compiletime.asMatchable
 import scala.quoted.*
 

@@ -34,16 +34,16 @@ package stratiform
 import anticipation.*
 import contextual.*
 import contingency.*
+import denominative.dysasymptotics.{linearAccess, linearSize}
+import denominative.{size, z}
 import distillate.*
 import fulminate.*
 import gossamer.*
-import prepositional.*
-import vacuous.*
 import murmuration.exists
+import prepositional.*
 import rudiments.each
 import rudiments.{`:+`, at, prim, seek}
-import denominative.dysasymptotics.{linearAccess, linearSize}
-import denominative.{size, z}
+import vacuous.*
 
 // TELP, the TEL Path companion specification: a schema-aware textual path
 // over the semantic model. The first character of a path selects its
@@ -118,8 +118,10 @@ object Telp:
         if i == s.length || s.charAt(i) == delimiter then
           if i == start then abort(Telp.Error(Error.Reason.Syntax, components.length))
           val component = s.substring(start, i).nn
+
           if component.contains("\n") || component.contains("\r")
           then abort(Telp.Error(Error.Reason.Syntax, components.length))
+
           components += component.tt
           start = i + 1
 
@@ -205,8 +207,10 @@ object Telp:
 
             while v < definition.variants.length && result.absent do
               val variant = definition.variants.readUnchecked(v)
+
               if variant.keyword == component
               then result = Slot(flat + v, s.repeatable == Tels.Polarity.Loose, variant.variantType)
+
               v += 1
 
         case _: Tels.Exclude => ()
@@ -276,6 +280,7 @@ object Telp:
         element match
           case Tel.Element.Node(idx, _, _)  => idx.or(-1) == flatIndex
           case Tel.Element.Value(idx, _, _) => idx == flatIndex
+
       . to(List)
 
 case class Telp(components: List[Text]) derives CanEqual:
@@ -325,10 +330,12 @@ case class Telp(components: List[Text]) derives CanEqual:
 
           current = pendingOccurrences.seek: occurrence =>
             Telp.keyValueOf(occurrence, slotType, schema).let(_ == component).or(false)
+
           . or(abort(Telp.Error(Telp.Error.Reason.KeyNotFound, i)))
 
         pendingType = Unset
         pendingOccurrences = Nil
+
       . or:
           // Keyword step (§4 step 1): `current` must be a Struct-typed
           // Node, and the component must match its keyword order.

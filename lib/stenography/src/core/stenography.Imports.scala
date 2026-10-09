@@ -63,6 +63,7 @@ object Imports:
 
     try
       val denotation = Denotations.staticRef(termName(path(scope)), generateStubs = false)
+
       if !denotation.exists then sci.Set() else
         given quotes: scala.quoted.Quotes = scala.quoted.runtime.impl.QuotesImpl()
         given Bindings = Bindings()
@@ -84,11 +85,14 @@ object Imports:
 
     try
       val denotation = Denotations.staticRef(termName(path(scope)), generateStubs = false)
+
       if !denotation.exists then sci.Map() else
         given quotes: scala.quoted.Quotes = scala.quoted.runtime.impl.QuotesImpl()
         given Bindings = Bindings()
+
         stenography.internal.scopeInfo(denotation.symbol)(1).groupBy(_(0)).view.mapValues: candidates =>
           candidates.map(_(1).s).min.tt
+
         . toMap
     catch case NonFatal(_) => sci.Map()
 
@@ -99,6 +103,7 @@ object Imports:
     val aliases: sci.Map[String, Text] =
       designators.toList.flatMap(infixAliases(_).toList).groupBy(_(0)).view.mapValues: candidates =>
         candidates.map(_(1).s).min.tt
+
       . toMap
 
     Imports(designators, direct ++ designators.flatMap(exports), aliases)

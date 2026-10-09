@@ -206,6 +206,7 @@ extends RequestServable:
   // receiver proxies to read-only).
   private def requestBody(cursor: Cursor[Data, {}]^, facts: HeadFacts^)
   :   (Stream[Data] over Credit)^{cursor} =
+
    // The stream's own fresh capability is laundered into the declared result, which
    // tracks the single-owner cursor.
    // [construction-fresh] stream's fresh capability laundered into declared result
@@ -497,6 +498,7 @@ extends RequestServable:
                   val session: Http2Session^ = new Http2Session:
                     def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
                     :   Unit =
+
                       self1.serveConnection(handler)(in, out)
 
                   scope2(session.asInstanceOf[AnyRef])

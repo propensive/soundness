@@ -35,10 +35,10 @@ package punctuation
 import scala.collection.mutable.ArrayBuffer
 
 import anticipation.*
-import rudiments.*
 import denominative.*
 import fulminate.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 import zephyrine.*
 

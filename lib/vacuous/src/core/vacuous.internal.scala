@@ -33,7 +33,6 @@
 package vacuous
 
 import scala.collection.immutable.{List, Nil, ::}
-
 import scala.quoted.*
 
 import fulminate.*
@@ -113,6 +112,7 @@ object internal:
             case Unset => $anyDefault
             case other => other
         }
+
       . asTerm
 
     def optimize(term: Term): Term = term match

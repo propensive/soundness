@@ -220,6 +220,7 @@ private[pneumatic] class LzwStage(engine0: => LzwEngine^) extends Duct[Data, Dat
     val sourceInterval: Interval = range
     val targetInterval: Interval = space
     val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+
     val out: scala.Array[Byte]^ =
       unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
 
@@ -236,6 +237,8 @@ private[pneumatic] class LzwStage(engine0: => LzwEngine^) extends Duct[Data, Dat
       finishing = true
 
     val targetInterval: Interval = space
+
     val out: scala.Array[Byte]^ =
       unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+
     engine.deliver(out, targetInterval.start.n0, targetInterval.size)

@@ -62,6 +62,7 @@ object Cli:
 
   def done(): Unit = trigger.offer(())
   def log(input: Text): Unit = messages ::= input
+
   def await()(using Monitor^): List[Text] =
     safely(trigger.await(10.0*Second)) yet messages.reverse
 
@@ -132,7 +133,6 @@ extends Console, caps.ExclusiveCapability, WorkingDirectory.Provider, Environmen
 
   override def trap(handler: PartialFunction[Signal, SignalResponse]): Unit =
     signalHandlers.since(handler :: _)
-
 
   def dispatchSignal(signal: Signal): SignalResponse =
     def loop(handlers: List[PartialFunction[Signal, SignalResponse]]): SignalResponse =

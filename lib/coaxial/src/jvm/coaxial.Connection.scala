@@ -32,9 +32,9 @@
                                                                                                   */
 package coaxial
 
-import scala.caps
-
 import java.io as ji
+
+import scala.caps
 
 import anticipation.*
 import contingency.*

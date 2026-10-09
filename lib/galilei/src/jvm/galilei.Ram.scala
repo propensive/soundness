@@ -32,11 +32,11 @@
                                                                                                   */
 package galilei
 
-import scala.caps
-
 import java.nio as jn
 import java.nio.channels as jnc
 import java.nio.file as jnf
+
+import scala.caps
 
 import anticipation.*
 import aperture.*
@@ -46,7 +46,6 @@ import rudiments.*
 import serpentine.*
 import vacuous.*
 import zephyrine.*
-
 import Io.Error.{Operation, Reason}
 
 // The form for random access to a file's bytes through memory mapping:

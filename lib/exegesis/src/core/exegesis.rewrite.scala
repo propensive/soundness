@@ -148,11 +148,13 @@ object rewrite:
   transparent inline def result(method: Text)(inline lambda: Json => Json)
      ( using proxy: Lsp.Proxy^ )
   :   Unit =
+
     proxy.results(method) = Lsp.Registry.Slot[Json => Json](lambda)
 
   transparent inline def notification(method: Text)(inline lambda: Json => Json)
      ( using proxy: Lsp.Proxy^ )
   :   Unit =
+
     proxy.notices(method) = Lsp.Registry.Slot[Json => Json](lambda)
 
   // The whole-message hooks: every message the editor sends, and every message the server sends
@@ -161,6 +163,7 @@ object rewrite:
   // `upstream` documents.
   transparent inline def outbound(inline hook: Lsp.Proxy.OutboundHook)(using proxy: Lsp.Proxy^)
   :   Unit =
+
     proxy.outbound0 = Lsp.Registry.Slot[Lsp.Proxy.OutboundHook](hook)
 
   transparent inline def inbound(inline hook: Lsp.Proxy.InboundHook)(using proxy: Lsp.Proxy^): Unit =

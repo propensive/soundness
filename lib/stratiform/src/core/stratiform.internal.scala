@@ -33,22 +33,20 @@
 package stratiform
 
 import scala.collection.immutable.Seq
-
-import scala.{annotation, caps}
-
 import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
+import scala.{annotation, caps}
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
 import prepositional.*
-import denominative.*
 import rudiments.*
-import vacuous.*
 import symbolism.*
+import vacuous.*
 
 // Compile-time machinery for the `tel"…"` interpolator and extractor.
 // Mirrors jacinta.internal in shape: the static parts of a StringContext
@@ -396,11 +394,13 @@ object internal:
                   case Tel.Pragma.Reference.Selector.Version(major, minor, patch) =>
                     val version: Expr[Tel.Pragma.Reference.Selector] =
                       '{Tel.Pragma.Reference.Selector.Version(${Expr(major)}, ${Expr(minor)}, ${Expr(patch)})}
+
                     '{$version: Optional[Tel.Pragma.Reference.Selector]}
 
                   case Tel.Pragma.Reference.Selector.Tag(name) =>
                     val tag: Expr[Tel.Pragma.Reference.Selector] =
                       '{Tel.Pragma.Reference.Selector.Tag(${Expr(name.s)}.tt)}
+
                     '{$tag: Optional[Tel.Pragma.Reference.Selector]}
 
                   case _ =>
@@ -559,6 +559,7 @@ object internal:
 
       left.spot: index =>
         !right.at(index).lay(false)(matchCompound(left.at(index), _, marker, out))
+
       . absent
 
   private def matchCompound
@@ -576,6 +577,7 @@ object internal:
 
       val atoms = left.spot: index =>
         !right.at(index).lay(false)(matchAtom(left.at(index), _, marker, out))
+
       . absent
 
       atoms && matchBlocks(pattern.children, input.children, marker, out)
@@ -1173,6 +1175,7 @@ object internal:
                               ( $bufferExpr match
                                   case null   => Nil
                                   case buffer => buffer.toList )
+
                               . to(proscenium.List) )
                       }.asTerm )
 
@@ -1197,6 +1200,7 @@ object internal:
       Block
         ( slotDefs ::: seenDefs ::: atomFilledDefs ::: bufferDefs ::: prepass ::: loop ::: absents,
           construct )
+
       . asExprOf[value]
 
     def summonOrAbort[required: Type](role: String): Expr[required] =
@@ -1251,6 +1255,7 @@ object internal:
 
           def parse(reader: TelReader^, indent: Int): value =
             val atoms = reader.lineAtoms()
+
             ${
               body
                 ( '{reader}, '{indent + 1}, '{foci}, '{tactic}, '{keys}, '{instances},

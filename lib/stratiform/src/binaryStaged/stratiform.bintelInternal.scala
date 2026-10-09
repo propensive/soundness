@@ -33,12 +33,10 @@
 package stratiform
 
 import scala.collection.immutable.Vector
-
-import scala.{annotation, caps}
-
 import scala.collection.immutable.{List, Nil, ::}
 import scala.collection.mutable as scm
 import scala.quoted.*
+import scala.{annotation, caps}
 
 import anticipation.*
 import contingency.*
@@ -337,6 +335,7 @@ object bintelInternal:
   // the opaque companion exposes only a `Conversion`, not a direct instance).
   private def aliasCollectionUnderlying(using Quotes)(tpe: quotes.reflect.TypeRepr)
   :   Option[quotes.reflect.TypeRepr] =
+
     import quotes.reflect.*
     val listSym   = TypeRepr.of[proscenium.List[Any]].typeSymbol
     val setSym    = TypeRepr.of[proscenium.Set[Any]].typeSymbol
@@ -345,10 +344,13 @@ object bintelInternal:
     tpe match
       case AppliedType(constructor, List(element)) if constructor.typeSymbol == listSym =>
         Some(TypeRepr.of[scala.collection.immutable.List].appliedTo(element))
+
       case AppliedType(constructor, List(element)) if constructor.typeSymbol == setSym =>
         Some(TypeRepr.of[scala.collection.immutable.Set].appliedTo(element))
+
       case AppliedType(constructor, List(element)) if constructor.typeSymbol == seriesSym =>
         Some(TypeRepr.of[Vector].appliedTo(element))
+
       case _ =>
         None
 
@@ -651,6 +653,7 @@ object bintelInternal:
 
             case _ =>
               None
+
         . toMap
 
       val builderDefs: List[Statement] = List.range(0, arity).flatMap: index =>
@@ -921,6 +924,7 @@ object bintelInternal:
           val instance = resolve[variantType](cache).getOrElse:
             report.errorAndAbort
               (s"stratiform: no BintelInlinable for variant ${variants(index)(0)}")
+
           . asInstanceOf[BintelInlinable { type Self = variantType }]
 
           '{
@@ -938,6 +942,7 @@ object bintelInternal:
           val instance = resolve[variantType](cache).getOrElse:
             report.errorAndAbort
               (s"stratiform: no BintelInlinable for variant ${variants(index)(0)}")
+
           . asInstanceOf[BintelInlinable { type Self = variantType }]
 
           '{
@@ -983,6 +988,7 @@ object bintelInternal:
           report.errorAndAbort
             (s"stratiform: ${tpe.show} is not an inlinable BinTEL struct or sum; use " +
               "`Bintel.read`")
+
         . asInstanceOf[BintelInlinable { type Self = value }]
 
     '{

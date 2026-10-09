@@ -36,8 +36,8 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
-import rudiments.*
 import pneumatic.*
+import rudiments.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
@@ -103,7 +103,6 @@ private[facsimile] object Filter:
       case _ =>
         abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"DecodeParms", t"a dictionary or array")))
 
-
     // Walked in step rather than indexed: positional access on a `List` is O(n), and
     // `/DecodeParms` is permitted to be shorter than `/Filter` (a missing entry is empty).
     def recur(names: List[Text], parameters: List[Map[Text, Cos]])
@@ -136,6 +135,7 @@ private[facsimile] object Filter:
   // input and decode on flush, which is immaterial at their typical sizes.
   def steps(chain: List[(Id, Map[Text, Cos])])(using tactic: Tactic[Pdf.Error])
   :   List[Step^{tactic}] =
+
     // Deliberate stdlib opt-out: the steps capture `tactic`, and capture-carrying elements do
     // not flow through the opaque `List` combinators (boxing), so the interior stays stdlib as
     // far as `.to(List)`.
@@ -160,6 +160,7 @@ private[facsimile] object Filter:
 
           case other =>
             scala.collection.immutable.List(Step.Gather(stage(_, other, parms)))
+
       . to(List)
 
   // Applies a resolved filter chain eagerly, stopping at the first terminal codec.

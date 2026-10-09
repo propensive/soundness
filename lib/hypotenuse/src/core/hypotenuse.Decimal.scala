@@ -33,9 +33,8 @@
 package hypotenuse
 
 import scala.caps
-
-import scala.util.FromDigits
 import scala.math
+import scala.util.FromDigits
 
 import anticipation.*
 import contingency.*
@@ -184,6 +183,7 @@ object decimalInternal:
     // input is copied into a fresh working array, which the strip loops then clobber.
     private[hypotenuse] def compose(signum: Int, magnitude0: scala.Array[Int], count0: Int, scale0: Int)
     :   Decimal =
+
       val magnitude = Array.allocate[Int](count0)
       System.arraycopy(magnitude0, 0, magnitude.raw, 0, count0)
       var count = count0
@@ -699,9 +699,11 @@ object decimalInternal:
           else
             val prefix = StringBuilder("0.")
             var zeros = scale - count
+
             while zeros > 0 do
               prefix.append('0')
               zeros -= 1
+
             digits.insert(start, prefix)
 
           digits.toString.tt

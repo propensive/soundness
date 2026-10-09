@@ -347,6 +347,7 @@ private[hallucination] object JpegParser:
         value += 1
 
       val table = JpegHuffmanTable(counts, values, tableClass == 1)
+
       if tableClass == 0 then dcTables(index) = table
       else acTables(index) = table
 

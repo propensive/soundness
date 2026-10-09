@@ -41,8 +41,8 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
-import zephyrine.*
 import vacuous.*
+import zephyrine.*
 
 object Resource:
   given streamable: [resource <: Resource]

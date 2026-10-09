@@ -33,18 +33,18 @@
 package profanity
 
 import anticipation.*
-import denominative.*
 import clavichord.Keypress
 import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import hypotenuse.*
 import parasite.*
 import quantitative.*
-import spectacular.*
-import turbulence.*
-import symbolism.*
 import rudiments.*
+import spectacular.*
+import symbolism.*
+import turbulence.*
 import vacuous.*
 
 object Keyboard:

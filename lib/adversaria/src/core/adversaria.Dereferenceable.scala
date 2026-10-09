@@ -32,14 +32,13 @@
                                                                                                   */
 package adversaria
 
-import panopticon.*
-import rudiments.*
-import vacuous.*
-
 import scala.quoted.*
 
 import anticipation.*
+import panopticon.*
 import prepositional.*
+import rudiments.*
+import vacuous.*
 
 object Dereferenceable:
   inline given [entity, value] => entity is Dereferenceable to value =

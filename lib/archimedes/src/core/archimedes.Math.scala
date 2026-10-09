@@ -36,25 +36,24 @@ import scala.math
 
 import anticipation.*
 import baroque.*
+import contextual.*
 import contingency.*
 import gossamer.*
 import hieroglyph.*
 import honeycomb.Html
-import hypotenuse.*
 import honeycomb.Renderable
+import hypotenuse.*
 import mosquito.*
 import prepositional.*
 import quantitative.*
 import rudiments.*
+import rudiments.sortingAlgorithms.timsort
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
-import contextual.*
 import xylophone.*
-import rudiments.sortingAlgorithms.timsort
-import symbolism.*
 import zephyrine.Parse
-
 import Mathml.*
 
 // The root `<math>` element and Archimedes' integration points.
@@ -218,8 +217,10 @@ object Math extends Mathml.Container(new Math(_)):
 
   private def product(nodes: List[Mathml]): Mathml = nodes match
     case one :: Nil   => one
+
     case head :: tail =>
       Mrow(head :: tail.flatMap { node => List(Mo(t"⁢"), node) })
+
     case Nil          => Mrow(Nil)
 
   private def fenced(inner: Mathml, open: Text, close: Text): Mathml =
@@ -250,4 +251,3 @@ extends Documentary:
       List(t"display" -> value.encode)
 
     (t"xmlns" -> mathmlNamespace) :: displayPairs + attributes
-

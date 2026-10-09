@@ -32,17 +32,15 @@
                                                                                                   */
 package xylophone
 
-
 import scala.annotation.tailrec
-import scala.math.Ordering
-
 import scala.collection.mutable as scm
+import scala.math.Ordering
 
 import anticipation.*
 import contingency.*
+import denominative.{nil, size}
 import gossamer.*
 import vacuous.*
-import denominative.{nil, size}
 
 // Index paths are tree-depth-short, so the linear `last` and `lead` they need are
 // acknowledged rather than avoided.
@@ -178,6 +176,7 @@ private[xylophone] object XPathEngine:
   private def equalTest(left: Value, right: Value, equal: Boolean): Boolean = (left, right) match
     case (Value.NodeSet(left), Value.NodeSet(right)) =>
       val rights = right.map(_.stringValue.s)
+
       left.exists { locus =>
         val value = locus.stringValue.s
         rights.exists { other => (value == other) == equal }
@@ -269,8 +268,10 @@ private[xylophone] object XPathEngine:
 
         while i < children.length do
           val child = children.readUnchecked(i)
+
           if treeNode(child) then
             buffer += Locus(locus.document, appendIndex(locus.path, i), child, Unset)
+
           i += 1
 
         buffer.to(List)
@@ -283,6 +284,7 @@ private[xylophone] object XPathEngine:
           nodes.zipWithIndex.collect:
             case (node, index) if treeNode(node) =>
               Locus(locus.document, appendIndex(locus.path, index), node, Unset)
+
           . to(List)
 
         case node: Xml.Node =>
@@ -322,6 +324,7 @@ private[xylophone] object XPathEngine:
         // Every child's path ends in its own index, so `last` is present; the
         // absent case cannot arise and excludes the candidate.
         val all = childLoci(parent)
+
         if following then all.filter(_.path.last.let(_ > mine).or(false))
         else all.filter(_.path.last.let(_ < mine).or(false)).reverse
 

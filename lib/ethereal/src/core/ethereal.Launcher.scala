@@ -264,6 +264,7 @@ object Launcher:
   // in between, since every chunk of every stream passes this way.
   def encode(message: Message): Data =
     import strategies.throwUnsafely
+
     message match
       case Message.Data(stream, chunk) => Bintel.frame(dataBody(stream, chunk), signature)
       case other => Bintel.frame(Bintel.encode(element(other), schema, Tel.Codec.Bindings.builtins), signature)
@@ -272,11 +273,14 @@ object Launcher:
   private def dataBody(stream: Text, chunk: Data): Data =
     val name: scala.Array[Byte] = Array.unsafeJvm(stream.in[Data])
     val out = ji.ByteArrayOutputStream(chunk.length + name.length + 16)
+
     def varint(value: Long): Unit =
       var n = value
+
       while n >= 0x80 do
         out.write(((n & 0x7f) | 0x80).toInt)
         n >>= 7
+
       out.write(n.toInt)
 
     varint(1); varint(Variant.data); varint(2)
@@ -307,6 +311,7 @@ object Launcher:
       case Tel.Element.Node(_, _, Array(Tel.Element.Node(index, _, children))) =>
         def optional(field: Int): Optional[Text] = children.readable.collectFirst:
           case Tel.Element.Value(`field`, _, text) => text
+
         . optional
 
         def text(field: Int): Text = optional(field).or(abort(Launcher.Mismatch()))
@@ -329,6 +334,7 @@ object Launcher:
             case Tel.Element.Node(16, _, fields) =>
               def field(index: Int): Optional[Text] = fields.readable.collectFirst:
                 case Tel.Element.Value(`index`, _, text) => text
+
               . optional
 
               Descriptor
@@ -336,6 +342,7 @@ object Launcher:
                   field(1).or(abort(Launcher.Mismatch())),
                   field(2).or(abort(Launcher.Mismatch())),
                   field(3) )
+
           . to(List)
 
         def raws: List[Raw] =
@@ -343,12 +350,14 @@ object Launcher:
             case Tel.Element.Node(17, _, fields) =>
               def field(index: Int): Optional[Text] = fields.readable.collectFirst:
                 case Tel.Element.Value(`index`, _, text) => text
+
               . optional
 
               Raw
                 ( field(0).or(abort(Launcher.Mismatch())),
                   field(1).let(_.as[Int]),
                   Base256.decodeStrict(field(2).or(abort(Launcher.Mismatch()))) )
+
           . to(List)
 
         index.or(-1) match
@@ -409,6 +418,7 @@ object Launcher:
 
       while ok && !done && shift <= 63 do
         val byte = readByte()
+
         if byte < 0 then ok = false
         else
           declared |= (byte & 0x7fL) << shift
@@ -419,6 +429,7 @@ object Launcher:
       else
         in.readNBytes(declared.toInt) match
           case null => Unset
+
           case body: scala.Array[Byte] =>
             if body.length < declared.toInt then Unset else
               val prefix: scala.Array[Byte] = header.toByteArray.nn

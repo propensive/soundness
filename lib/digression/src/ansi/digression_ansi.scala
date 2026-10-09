@@ -43,9 +43,9 @@ import iridescence.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import tessellate.*
 import vacuous.*
-import symbolism.*
 
 trait StackTracePalette extends iridescence.Palette:
   type Form = Srgb
@@ -184,6 +184,7 @@ package teletypeables:
 
     def fileCell(row: Row): Teletype = row.inlined match
       case origin: Inlined => e"${palette.subdue(palette.file, 0.5)}(${origin.file})"
+
       case _ =>
         val color = if row.sameFile then palette.subdue(palette.file, 0.85) else palette.file
         e"$color(${row.frame.file})"
@@ -254,4 +255,3 @@ package teletypeables:
     val className = e"${palette.method}(${method.className})"
     val methodName = e"${palette.method}(${method.method})"
     e"$className${palette.separator}( ⌗ )$methodName"
-

@@ -53,6 +53,7 @@ object Encoding:
       allCharsets.filter(_.canEncode).bind: charset =>
         (charset.aliases.nn.asScala.toSet + charset.displayName.nn).map: name =>
           name.toLowerCase.nn.tt -> Encoding(name.tt, true)
+
       . to[Map]
 
   private[hieroglyph] val decodeOnly: Map[Text, Encoding { type CanEncode = false }] =
@@ -60,6 +61,7 @@ object Encoding:
       allCharsets.filter(!_.canEncode).bind: charset =>
         (charset.aliases.nn.asScala.toSet + charset.displayName.nn).map: name =>
           name.toLowerCase.nn.tt -> Encoding(name.tt, false)
+
       . to[Map]
 
   // For the `enc""` macro's expansion, where the name was already verified against the same

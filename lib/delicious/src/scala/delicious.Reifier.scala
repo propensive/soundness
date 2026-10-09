@@ -32,21 +32,21 @@
                                                                                                   */
 package delicious
 
+import java.util as ju
+
+import scala.collection.immutable as sci
+
 import dotty.tools.dotc as dtd
 import dotty.tools.dotc.ast.tpd.TreeOps
 import dotty.tools.dotc.core.CompilationUnitInfo
 import dotty.tools.dotc.core.Contexts
 import dotty.tools.dotc.core.tasty.DottyUnpickler
 import dotty.tools.dotc.core.tasty.TastyUnpickler
-import dotty.tools.dotc.quoted.QuotesCache
 import dotty.tools.dotc.core.tasty.TreeUnpickler.UnpickleMode
+import dotty.tools.dotc.quoted.QuotesCache
 import dotty.tools.dotc.reporting.Reporter
 import dotty.tools.dotc.util.SourceFile
 import dotty.tools.io.VirtualFile
-
-import java.util as ju
-
-import scala.collection.immutable as sci
 
 import anticipation.*
 import gossamer.*
@@ -192,6 +192,7 @@ class Reifier(classpath: LocalClasspath):
                 ( "<delicious>",
                   ju.Base64.getDecoder.nn.decode(tasty.s).nn.asInstanceOf[scala.Array[Byte]] ),
               dtd.core.TastyInfo(version, attributes) )
+
           . nn
         val positions = unpickler.unpickle(DottyUnpickler.PositionsSectionUnpickler())
         val comments = unpickler.unpickle(DottyUnpickler.CommentsSectionUnpickler())

@@ -224,6 +224,7 @@ object internal:
                 if selected then
                   expectation.let: pair =>
                     val (exp, contrast) = pair
+
                     inc2.include
                       ( runner.report,
                         test.id,

@@ -32,22 +32,19 @@
                                                                                                   */
 package escapade
 
+import scala.collection.mutable as scm
 import scala.compiletime
-
-import beneficence.*
-import prepositional.*
-
 import scala.language.experimental.pureFunctions
 
-import scala.collection.mutable as scm
-
 import anticipation.*
+import beneficence.*
 import contextual.*
 import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

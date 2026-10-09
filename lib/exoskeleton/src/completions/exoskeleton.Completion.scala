@@ -44,12 +44,12 @@ import gossamer.collations.codepointCollation
 import guillotine.*
 import hieroglyph.*, textMetrics.uniformMetric
 import hypotenuse.*
+import rudiments.*
+import rudiments.sortingAlgorithms.timsort
 import spectacular.*
 import symbolism.*
 import turbulence.*
-import rudiments.*
 import vacuous.*
-import rudiments.sortingAlgorithms.timsort
 
 case class Completion
   ( fullArguments:    List[Argument],
@@ -152,6 +152,7 @@ extends Cli:
 
     if focused(argument) then
       dispatchSuggested = true
+
       cursorSuggestions = update(using cursorSuggestions.aka["prior"]).map: suggestion =>
         if suggestion.expanded then suggestion
         else suggestion.copy(core = prefix+suggestion.core+suffix, expanded = true)
@@ -230,6 +231,7 @@ extends Cli:
             // would just print it twice.
             val aliasText =
               if shortFlag && display.absent then core0 else aliases.join(t" ").fit(aliasesWidth)
+
             val prefix2 = if prefix.nil then sh"" else sh"-p $prefix"
             val suffix2 = if suffix.nil then sh"" else sh"-s $suffix"
             val core = if shortFlag then aliases.prim.or(core0) else core0

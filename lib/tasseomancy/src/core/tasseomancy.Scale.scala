@@ -201,6 +201,7 @@ extends Ruler:
     case Transform.Exponential(curvature) =>
       if upper == lower then 0.5 else
         val fraction = (value - lower)/(upper - lower)
+
         if curvature == 0.0 then fraction
         else (scala.math.exp(curvature*fraction) - 1.0)/(scala.math.exp(curvature) - 1.0)
 

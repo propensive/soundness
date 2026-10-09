@@ -198,6 +198,7 @@ object Cell:
       Sequence.from:
         (0 until height).map: row =>
           Writing(t"${slice(base, row - script.height)}${slice(script, row)}")
+
     Cell(lines, base.width + script.width, base.baseline + script.height)
 
   def subscript(base: Cell, script: Cell): Cell =
@@ -207,6 +208,7 @@ object Cell:
       Sequence.from:
         (0 until height).map: row =>
           Writing(t"${slice(base, row)}${slice(script, row - base.height)}")
+
     Cell(lines, base.width + script.width, base.baseline)
 
   def subsup(base: Cell, subscript: Cell, superscript: Cell): Cell =
@@ -232,6 +234,7 @@ object Cell:
           val scripts = fromSuperscript.or(fromSubscript.or(spaces(right).text))
 
           Writing(t"$left$scripts")
+
     Cell(lines, base.width + right, superscript.height + base.baseline)
 
   // Each of the three script schemata prefers the same-line Unicode form, and falls
@@ -311,6 +314,7 @@ object Cell:
         Sequence.from:
           (0 until height).map: row =>
             Writing(bracketGlyph(char, row, height, baseline, opening).show)
+
       Cell(glyphs, 1, baseline)
 
   private def bracketGlyph(char: Char, row: Int, height: Int, axis: Int, opening: Boolean): Char =
@@ -356,6 +360,7 @@ object Cell:
               else Stem.show
 
             Writing(t"${glyphs.join} ")
+
       Cell(lines, strokes + 1, axis)
 
   private def integralShape(char: Char): (Int, Boolean) = char match
@@ -393,6 +398,7 @@ object Cell:
             val column = min(fromTop, fromBottom)
             val glyph = if fromTop <= fromBottom then Tick else '╱'
             Writing(t"${spaces(column).text}$glyph${spaces(width - column - 1).text}")
+
     Cell(lines, width, height/2)
 
   // `∏`: a `┬──┬` lintel over two `│` legs.
@@ -404,6 +410,7 @@ object Cell:
         (0 until height).map: row =>
           if row == 0 then Writing(t"┬${repeat(Bar, width - 2).text}┬")
           else Writing(t"$Stem${spaces(width - 2).text}$Stem")
+
     Cell(lines, width, height/2)
 
   private def stretchyChar(node: Mathml): Optional[Char] = node match

@@ -32,14 +32,13 @@
                                                                                                   */
 package coaxial
 
-import scala.caps
-
 import java.io as ji
 import java.net as jn
 import java.nio.ByteBuffer
 import java.nio.channels as jnc
 import java.util as ju
 
+import scala.caps
 import scala.scalanative.unsafe.*
 
 import anticipation.*
@@ -261,6 +260,7 @@ package socketBackends:
     def joinMulticast
       ( multicast: Multicast, interfaces: List[NetworkInterface], options: List[Socket.Option] )
     :   Unit =
+
       ()
 
     def receiveMulticast(socket: Unit): Packet raises Socket.Error =
@@ -271,6 +271,7 @@ package socketBackends:
 
     def sendTo(socket: Unit, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
     :   Unit raises Socket.Error =
+
       abort(Socket.Error(Socket.Error.Reason.Transmit))
 
     def leaveMulticast(socket: Unit): Unit = ()
@@ -334,8 +335,10 @@ package socketBackends:
         caps.unsafe.unsafeAssumePure(input).drain: region =>
           range =>
             val interval: Interval = range
+
             out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
                 interval.size)
+
             out.flush()
 
     def response(exchange: ClientExchange)(using Buffering, Tactic[Truncation.Error])
@@ -554,8 +557,10 @@ private[coaxial] def streamsDuplex(in: ji.InputStream, out: ji.OutputStream)(shu
       data.drain: region =>
         range =>
           val interval: Interval = range
+
           out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
               interval.size)
+
           out.flush()
 
     def close(): Unit = shutdown()

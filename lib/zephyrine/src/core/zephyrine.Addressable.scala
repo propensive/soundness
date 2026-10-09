@@ -32,11 +32,10 @@
                                                                                                   */
 package zephyrine
 
-import scala.caps
-
 import java.io as ji
 import java.lang as jl
 
+import scala.caps
 import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 import scala.reflect.ClassTag

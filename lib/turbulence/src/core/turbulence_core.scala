@@ -32,12 +32,12 @@
                                                                                                   */
 package turbulence
 
+import java.io as ji
+import java.lang as jl
+
 import scala.caps
 import scala.compiletime
 import scala.language.adhocExtensions
-
-import java.io as ji
-import java.lang as jl
 
 import anticipation.*
 import contingency.*
@@ -49,7 +49,6 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 import zephyrine.*
-
 import LineSeparation.*
 import abstractables.epochMillisecondsAbstractable
 
@@ -173,6 +172,7 @@ extension (consume stream: (Stream[Data] over Credit)^)
       private def ensure(): Int =
         if ended then -1 else stream.refill(Credit(block)) match
           case count: Int => if count == 0 then ensure() else count
+
           case _          =>
             ended = true
             stream.close()

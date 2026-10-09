@@ -32,9 +32,8 @@
                                                                                                   */
 package austronesian
 
-import scala.collection.immutable.Vector
-
 import scala.caps
+import scala.collection.immutable.Vector
 
 import anticipation.*
 import contingency.*
@@ -210,7 +209,6 @@ object internal:
     =>  sequence[element] is Decodable in Pojo =
       collection[Vector, element]
       . asInstanceOf[sequence[element] is Decodable in Pojo]
-
 
     extension (pojo: Pojo)
       inline def as[entity: Decodable in Pojo]: entity = entity.decoded(pojo)

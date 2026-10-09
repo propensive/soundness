@@ -32,11 +32,10 @@
                                                                                                   */
 package jacinta
 
-import scala.{annotation, caps}
-
 import scala.collection.immutable.{List, Nil, ::}
 import scala.collection.mutable as scm
 import scala.quoted.*
+import scala.{annotation, caps}
 
 import anticipation.*
 import contingency.*

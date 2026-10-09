@@ -33,9 +33,7 @@
 package mercator
 
 import scala.annotation
-
 import scala.collection.immutable.{List, Nil, ::}
-
 import scala.compiletime.*
 import scala.quoted.*
 
@@ -126,6 +124,7 @@ object internal:
                     args(0).asInstanceOf[Term].select(mapMethods(0)).appliedToType(TypeRepr.of[value2])
                     . appliedTo(args(1).asInstanceOf[Term])).asExpr
                 }
+
               . asInstanceOf[(functor[value], value => value2) => functor[value2]]
               . apply(value, lambda)
         }
@@ -172,6 +171,7 @@ object internal:
                     args(0).asInstanceOf[Term].select(flatMapMethods(0))
                     . appliedToType(TypeRepr.of[value2]).appliedTo(args(1).asInstanceOf[Term])).asExpr
                 }
+
               . asInstanceOf[(monad[value], value => monad[value2]) => monad[value2]]
               . apply(value, lambda)
 

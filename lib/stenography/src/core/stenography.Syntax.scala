@@ -391,7 +391,6 @@ object Syntax:
     case Value(value) => value
     case _            => panic(m"expected a Value")
 
-
   // A refinement of a single type member can be written with an infix type alias, where one
   // which refines that member is in scope: `Foo { type Form = Bar }` is `Foo in Bar`. Only an
   // alias member qualifies; `Foo { type Form <: Bar }` is not what `Foo in Bar` expands to, so

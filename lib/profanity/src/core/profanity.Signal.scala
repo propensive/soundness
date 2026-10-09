@@ -32,8 +32,8 @@
                                                                                                   */
 package profanity
 
-import beneficence.*
 import anticipation.*
+import beneficence.*
 import quantitative.*
 import spectacular.*
 import vacuous.*

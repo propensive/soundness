@@ -61,6 +61,7 @@ object Face:
     def apply(tag: Text): Feature of Runtime = new Feature(tag) { type Topic = Runtime }
 
     private inline def feature[tag <: Label]: Feature of tag = tagged[tag](constValue[tag].tt)
+
     private def tagged[tag <: Label](tag: Text): Feature of tag =
       new Feature(tag) { type Topic = tag }
 

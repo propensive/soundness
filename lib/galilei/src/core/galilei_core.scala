@@ -88,6 +88,7 @@ extension [plane: Filesystem](path: Path on plane)
     ( using Tactic[Io.Error]^ )
     ( using fdtables: Every[Fdtable] )
   :   Unit =
+
     val bytes: Data = summon[Data is Aggregable by Data].accept(streamable.stream(content))
 
     // A path the fd table governs is written through its descriptor, not to this
@@ -124,7 +125,6 @@ extension [plane: Filesystem](path: Path on plane)
   // `javaFile` are the ones users reach for. This one exists because `core`'s own operations
   // call `jnf.Files` directly and cannot depend on `jvm`.
   private[galilei] def nioPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
-
 
   // Scoped positional (random-access) reading (issue #1608): passes a `zephyrine.Expanse`
   // view of the file — `size` plus pread-style `read(offset, length)` — valid for the scope
@@ -215,6 +215,7 @@ extension [plane: Filesystem](path: Path on plane)
     // [by-name-receiver] by-name operation shares tactic with option receiver
     scala.caps.unsafe.unsafeAssumeSeparate:
       deleteRecursively.conditionally(path)(backend.delete(path))
+
     Log.info(Io.Event.Delete(path.show))
     path
 
@@ -228,6 +229,7 @@ extension [plane: Filesystem](path: Path on plane)
     // [by-name-receiver] by-name operation shares tactic with option receiver
     scala.caps.unsafe.unsafeAssumeSeparate:
       deleteRecursively.conditionally(path)(backend.deleteIfExists(path))
+
     Log.info(Io.Event.Delete(path.show))
     path
 
@@ -390,6 +392,7 @@ extension [plane: Filesystem](path: Path on plane)
   def touch()(using backend: FilesystemBackend on plane)
     ( using Tactic[Io.Error], (Io.Event is Loggable)^ )
   :   Unit =
+
     backend.touch(path)
     Log.fine(Io.Event.Touch(path.show))
 
@@ -443,6 +446,7 @@ package filesystemOptions:
 
     def conditionally[result](path: Path on Plane)(operation: => result)
     :   (Tactic[Io.Error]^) ?->{operation} result =
+
       path.children.each(recur(_)) yet operation
 
   given deleteOnlyEmpty: [plane: {Filesystem, Explorable}] => DeleteRecursively on plane:
@@ -451,6 +455,7 @@ package filesystemOptions:
 
     def conditionally[result](path: Path on Plane)(operation: => result)
     :   (Tactic[Io.Error]^) ?->{operation} result =
+
       if !path.children.nil
       then abort(Io.Error(path, Io.Error.Operation.Delete, Reason.DirectoryNotEmpty))
       else operation
@@ -463,6 +468,7 @@ package filesystemOptions:
 
     def apply[result](path: Path on Plane)(operation: => result)
     :   (Tactic[Io.Error]^) ?->{operation} result =
+
       deleteRecursively.conditionally(path)(operation)
 
   // The backend raises `AlreadyExists` itself when the operation collides with an existing
@@ -473,6 +479,7 @@ package filesystemOptions:
 
     def apply[result](path: Path on Plane)(operation: => result)
     :   (Tactic[Io.Error]^) ?->{operation} result =
+
       operation
 
   given createNonexistentParents: [plane: Filesystem]
@@ -481,6 +488,7 @@ package filesystemOptions:
 
     def apply[result](path: Path on plane)(operation: => result)
     :   (Tactic[Io.Error]^) ?->{operation} result =
+
       def ensure(directory: Path on plane): Unit =
         if !backend.exists(directory, true) then
           safely(directory.parent).let(ensure(_))
@@ -495,6 +503,7 @@ package filesystemOptions:
 
     def apply[result](path: Path on plane)(block: => result)
     :   (Tactic[Io.Error]^) ?->{block} result =
+
       block
 
 
@@ -520,6 +529,7 @@ extension [plane: Filesystem, transport <: Attributed](path: Path on plane over 
 
   def attribute(name: Text, value: Data)(using backend: FilesystemBackend on plane)
   :   Unit raises Io.Error =
+
     backend.attribute(path, name, value)
 
 // Btrfs-specific metadata, gated by the storage-filesystem axis (issue #567). Btrfs gives every

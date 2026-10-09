@@ -79,6 +79,7 @@ object Multihash:
   def apply[algorithm <: Algorithm](digest: Digest in algorithm)
      (using codec: algorithm is Multicodec)
   :   Multihash =
+
     Multihash(codec.code, digest.data)
 
   // Reads an envelope. The declared length must match the bytes that follow exactly: a short

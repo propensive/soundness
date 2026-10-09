@@ -47,9 +47,7 @@ import rudiments.*
 import serpentine.*
 import urticose.*
 import vacuous.*
-
 import Git.Error.Reason.*
-
 import filesystemBackends.javaBaseFilesystem
 
 object Worktree:
@@ -66,7 +64,6 @@ object Worktree:
 
 case class Worktree(repo: Git.Repo, path: Path on Linux):
   val repoOptions = sh"--git-dir=${repo.gitDir} --work-tree=$path"
-
 
   @targetName("checkoutTag")
   def checkout(tag: Git.Tag)
@@ -149,6 +146,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
   def branch()(using Git.Command, WorkingDirectory, Environment, Tactic[Exec.Error])
     ( using (Git.Event is Loggable)^ )
   :   Git.Branch =
+
     Git.Branch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt.trim)
 
 

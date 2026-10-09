@@ -70,11 +70,13 @@ sealed trait Ntfs extends CreationTimed, Attributed
 
 private def storageFormat[plane](path: Path on plane)(using backend: FilesystemBackend on plane)
 :   Optional[Text] =
+
   safely(backend.volume(path).volumeType.lower)
 
 object Btrfs:
   def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
   :   Option[Path on plane over Btrfs] =
+
     if storageFormat(path) == t"btrfs" then Some(path.asInstanceOf[Path on plane over Btrfs])
     else None
 
@@ -92,17 +94,20 @@ object Btrfs:
 object Ext4:
   def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
   :   Option[Path on plane over Ext4] =
+
     if storageFormat(path) == t"ext4" then Some(path.asInstanceOf[Path on plane over Ext4])
     else None
 
 object Apfs:
   def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
   :   Option[Path on plane over Apfs] =
+
     if storageFormat(path) == t"apfs" then Some(path.asInstanceOf[Path on plane over Apfs])
     else None
 
 object Ntfs:
   def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
   :   Option[Path on plane over Ntfs] =
+
     if storageFormat(path) == t"ntfs" then Some(path.asInstanceOf[Path on plane over Ntfs])
     else None

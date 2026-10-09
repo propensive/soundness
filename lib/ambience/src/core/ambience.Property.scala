@@ -32,9 +32,8 @@
                                                                                                   */
 package ambience
 
-import scala.language.dynamics
-
 import scala.compiletime.ops.string.*
+import scala.language.dynamics
 
 import anticipation.*
 import contingency.*

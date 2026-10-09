@@ -37,16 +37,16 @@ import scala.reflect.*
 
 import anticipation.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import dissonance.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
-import symbolism.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 import wisteria.*
-import denominative.dysasymptotics.linearSize
 
 object Contrastable:
   inline given derived: [entity] => entity is Contrastable = summonFrom:

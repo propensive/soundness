@@ -32,11 +32,11 @@
                                                                                                   */
 package aviation
 
-import rudiments.*
 import denominative.*
+import rudiments.*
+import rudiments.sortingAlgorithms.timsort
 import symbolism.*
 import vacuous.*
-import rudiments.sortingAlgorithms.timsort
 
 // An iCalendar recurrence set: the union of one or more recurrences' occurrence streams (`include`,
 // e.g. each `rrule.occurrences`) plus explicit extra dates (`rdates`, RFC 5545 `RDATE`), minus

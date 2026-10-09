@@ -32,9 +32,10 @@
                                                                                                   */
 package turbulence
 
+import java.util.concurrent as juc
+
 import scala.caps
 
-import java.util.concurrent as juc
 import anticipation.*
 import fulminate.*
 import parasite.*
@@ -145,6 +146,7 @@ object Confluence:
       @caps.unsafe.untrackedCaptures
       private var storage: addressable0.Storage =
         addressable0.allocate(0).asInstanceOf[addressable0.Storage]
+
       private var start0: Int = 0
       private var limit0: Int = 0
       private var end0: Int = 0

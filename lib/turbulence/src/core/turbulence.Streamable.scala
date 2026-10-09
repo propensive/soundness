@@ -32,10 +32,10 @@
                                                                                                   */
 package turbulence
 
-import scala.caps
-
 import java.io as ji
 import java.nio as jn
+
+import scala.caps
 
 import anticipation.*
 import contingency.*
@@ -139,6 +139,7 @@ object Streamable:
               catch case error: ji.IOException =>
                 ended = true
                 try value.close() catch case _: Exception => ()
+
                 { val received: Long = total
                 abort(Truncation.Error(received.b))(using t().asInstanceOf[Tactic[Truncation.Error]^]) }
 
@@ -211,4 +212,5 @@ trait Streamable extends Typeclass, Operable:
 
   def contramap[self2](lambda: self2 => Self)
   :   (self2 is Streamable by Operand over Transport)^{this, lambda} =
+
     value => stream(lambda(value))

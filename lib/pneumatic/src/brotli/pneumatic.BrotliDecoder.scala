@@ -444,6 +444,7 @@ extends caps.Mutable:
 
   private update def readHuffmanCode(alphabetSize: Int, table: scala.Array[Int]^{this}, offset: Int)
   :   Unit =
+
     var ok = true
     val codeLengths: scala.Array[Int]^ = new scala.Array[Int](alphabetSize)
     val simpleCodeOrSkip = readBits(2)

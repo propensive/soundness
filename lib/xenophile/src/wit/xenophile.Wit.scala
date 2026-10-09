@@ -183,7 +183,6 @@ object Wit:
     import scala.collection.immutable.List as SList
     import scala.collection.immutable.{::, Nil as SNil}
 
-
     // One `Document` per `package` section: a curated `.wit` file may hold several packages
     // (the WASI subsets the backends carry do), and every interface and world belongs to the
     // package declared above it.

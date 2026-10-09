@@ -129,46 +129,55 @@ object Inlinable:
 
   given int: (Int is Inlinable) = new Inlinable:
     type Self = Int
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Int]): Expr[Int] =
       '{ $reader.int() }
 
   given long: (Long is Inlinable) = new Inlinable:
     type Self = Long
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Long]): Expr[Long] =
       '{ $reader.long() }
 
   given double: (Double is Inlinable) = new Inlinable:
     type Self = Double
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Double]): Expr[Double] =
       '{ $reader.double() }
 
   given float: (Float is Inlinable) = new Inlinable:
     type Self = Float
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Float]): Expr[Float] =
       '{ $reader.double().toFloat }
 
   given boolean: (Boolean is Inlinable) = new Inlinable:
     type Self = Boolean
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Boolean]): Expr[Boolean] =
       '{ $reader.boolean() }
 
   given text: (Text is Inlinable) = new Inlinable:
     type Self = Text
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Text]): Expr[Text] =
       '{ $reader.text() }
 
   given string: (String is Inlinable) = new Inlinable:
     type Self = String
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[String]): Expr[String] =
       '{ $reader.string() }
 
   given byteString: ((Data) is Inlinable) = new Inlinable:
     type Self = Data
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Data]): Expr[Data] =
       '{ $reader.byteString() }
 
   given cbor: (Cbor is Inlinable) = new Inlinable:
     type Self = Cbor
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Cbor]): Expr[Cbor] =
       '{ $reader.value() }
 

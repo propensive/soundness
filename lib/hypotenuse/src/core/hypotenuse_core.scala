@@ -32,24 +32,22 @@
                                                                                                   */
 package hypotenuse
 
-import scala.math
-
-import scala.language.experimental.genericNumberLiterals
-import scala.language.experimental.into
-
 import java.lang.{Integer as JInt, Long as JLong, Double as JDouble, Float as JFloat}
 
 import scala.annotation.*
+import scala.language.experimental.genericNumberLiterals
+import scala.language.experimental.into
+import scala.math
 
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import fulminate.{m, panic}
 import prepositional.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
-import denominative.dysasymptotics.linearSize
 
 export hypotenuse.internal.{B8, B16, B32, B64, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64}
 
@@ -69,6 +67,7 @@ extension [self](self: self)(using traversable: self is Traversable)
 
     if !iterator.hasNext then Unset else
       var current = iterator.next()
+
       while iterator.hasNext do
         val element = iterator.next()
         if element < current then current = element
@@ -83,6 +82,7 @@ extension [self](self: self)(using traversable: self is Traversable)
 
     if !iterator.hasNext then Unset else
       var current = iterator.next()
+
       while iterator.hasNext do
         val element = iterator.next()
         if element > current then current = element

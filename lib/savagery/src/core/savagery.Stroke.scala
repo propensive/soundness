@@ -41,7 +41,6 @@ import vacuous.*
 
 import decimalConverters.javaDecimalConverter
 
-
 object Stroke:
   private def form(name: Text, parts: Text*): Text =
     parts.map(_.s).mkString(s"${name.s}(", " ╱ ", ")").tt

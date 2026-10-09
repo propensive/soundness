@@ -37,19 +37,20 @@ import javax.sound.sampled as jss
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import gossamer.*
 import prepositional.*
 import quantitative.*
 import rudiments.*
 import symbolism.*
 import turbulence.*
-import zephyrine.*
 import vacuous.*
-import fulminate.*
+import zephyrine.*
 
 object Audio:
   def apply[streamable: Streamable by Data over Credit](input: streamable)
   :   Audio raises Audio.Error =
+
     // `ByteArrayInputStream` only reads the array it wraps.
     val rawBytes: scala.Array[Byte] = Array.unsafeJvm(input.read[Data])
 

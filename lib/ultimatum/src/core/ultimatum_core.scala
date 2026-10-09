@@ -256,6 +256,7 @@ def paint(root: Board^, pane: Pane): Unit =
   // over the `root` canvas (a capability), and capture checking rejects that fresh capability
   // leaking out through the `.each` lambda's inferred parameter type.
   val cells = pane.leaves.zip(placement.cells).stdlib.iterator
+
   while cells.hasNext do
     val (leaf, rect) = cells.next()
     val extent = FlowExtent(root, rect)

@@ -49,4 +49,3 @@ type UrlPalette = Palette:
 package teletypeables:
   given urlTeletype: [scheme <: Label] => (palette: UrlPalette) => Url[scheme] is Teletypeable =
     url => e"$Underline(${Fg(palette.link)}(${url.show}))"
-

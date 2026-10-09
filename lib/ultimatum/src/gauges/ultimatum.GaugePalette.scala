@@ -94,6 +94,7 @@ trait GaugePalette extends Palette:
       Sequence.from:
         (0 until count).map: index =>
           lengthwise(if count <= 1 then 0.0 else index.toDouble/(count - 1))
+
   def colorOf(standing: Standing): Color in Srgb = standing match
     case Standing.Succeeded => success
     case Standing.Failed    => danger

@@ -145,6 +145,7 @@ object Reactor:
     @scala.caps.unsafe.untrackedCaptures
     private val cursor0: AnyRef =
       Cursor[Data](new scala.Array[Byte](0).asInstanceOf[Data]).asInstanceOf[AnyRef]
+
     private var queued: Long = 0L
     private var halted: Boolean = false
 
@@ -196,8 +197,10 @@ object Reactor:
 
           // Shift any pipelined remainder to the front and reset per-request state.
           val remainder = end - needed
+
           if remainder > 0
           then java.lang.System.arraycopy(accumulator, needed, accumulator, 0, remainder)
+
           end = remainder
           scanned = 0
           headEnd = -1
@@ -503,6 +506,7 @@ final class Reactor
       // zio-http Netty wedge, avoided); `stop()` still joins for orderly shutdown.
       Thread.ofPlatform.nn.daemon(true).nn.name(s"scintillate-lane-$index").nn.start: () =>
         while running() do lane.iterate(this)
+
       . nn
 
   // The boss thread: a blocking accept loop distributing connections round-robin. A
@@ -517,6 +521,7 @@ final class Reactor
           fleet(next).adopt(channel)
           next = (next + 1)%count
         catch case _: java.io.IOException => ()
+
     . nn
 
   def stop(): Unit =
@@ -524,12 +529,14 @@ final class Reactor
     try listener.close() catch case _: java.io.IOException => ()
 
     var index = 0
+
     while index < count do
       fleet(index).selector.wakeup()
       index += 1
 
     boss.join()
     index = 0
+
     while index < count do
       threads(index).join()
       index += 1

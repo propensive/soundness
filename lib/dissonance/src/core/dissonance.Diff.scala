@@ -32,17 +32,16 @@
                                                                                                   */
 package dissonance
 
-
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import fulminate.*
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
-import symbolism.*
-import denominative.dysasymptotics.linearSize
 
 object Diff:
   given aggregable: (tactic: Tactic[Diff.Error])
@@ -138,8 +137,10 @@ object Diff:
           else s"${range(left + 1, left + dels.size)}c${range(right + 1, right + inss.size)}".tt
 
         val delSeq = dels.map: del => Text("< "+del.value)
+
         val sep =
           if inss.size > 0 && dels.size > 0 then List(Text("---")) else List[Text]()
+
         val insSeq = inss.map: ins => Text("> "+ins.value)
 
         List(command) + delSeq + sep + insSeq

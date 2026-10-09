@@ -62,6 +62,7 @@ object Receivable extends Receivable2:
   // whole-value consumers go through their `Aggregable`'s `accept`.
   def apply[result](lambda: Reader[result]^)(using tactic: Tactic[Http.Error])
   :   ((result is Receivable)^{lambda, tactic}) =
+
     response =>
       if response.status.category != Http.Status.Category.Successful
       then abort(Http.Error(response.status, response.textHeaders))

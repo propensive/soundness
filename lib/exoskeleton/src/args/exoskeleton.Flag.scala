@@ -32,15 +32,14 @@
                                                                                                   */
 package exoskeleton
 
-import scala.language.experimental.pureFunctions
-
 import scala.caps
 import scala.compiletime.*
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
-import fulminate.*
 import denominative.*
+import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -105,7 +104,6 @@ extends Topical:
       then key()(Sec) else Unset
 
     flag == name || aliases.has(flag)
-
 
   // Plain readers for code which cannot use `apply()`: inside another `inline def`, a
   // `transparent inline` call is not expanded when the body is typed, so its result has the
@@ -208,6 +206,7 @@ extends Topical:
       safely[Hazard]:
         summonInline
          [(tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any}]
+
         . operandName
 
     cli.register(this, suggestions, operandName)
@@ -235,9 +234,12 @@ extends Topical:
           attempt[Hazard]:
             summonInline
              [(tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any}]
+
             . interpret(located.or(Nil))
+
           . match
               case Attempt.Success(value) => value.or(throw InvalidFlagError(this, bland))
+
               case Attempt.Failure(error) =>
                 throw InvalidFlagError(this, Error(error).message.text)
 
@@ -252,7 +254,9 @@ extends Topical:
           attempt[Hazard]:
             summonInline
              [(tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any}]
+
             . interpret(located.or(Nil))
+
           . match
               case Attempt.Success(value) =>
                 if value.absent then cli.fault(this, bland)

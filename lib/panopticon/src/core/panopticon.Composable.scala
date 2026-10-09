@@ -46,7 +46,6 @@ object Composable:
       Optic[Any, origin, target]: (origin, lambda) =>
         left.modify(origin)(right.modify(_)(lambda))
 
-
   given lenses: [origin, target, target2]
   =>  ( (Lens from origin onto target) is Composable by (Lens from target onto target2) to
         (Lens from origin onto target2) ) = new Composable:

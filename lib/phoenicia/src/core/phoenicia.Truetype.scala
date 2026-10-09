@@ -33,8 +33,8 @@
 package phoenicia
 
 import anticipation.*
-import denominative.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import hypotenuse.*
 import polaris.*
@@ -45,7 +45,6 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
-
 
 object Truetype:
   def apply[source: Streamable by Data over Credit](source: source): Truetype =

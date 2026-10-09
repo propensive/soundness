@@ -32,11 +32,10 @@
                                                                                                   */
 package eucalyptus
 
-import scala.caps
-
-import scala.language.experimental.pureFunctions
-
 import java.util.concurrent as juc
+
+import scala.caps
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import denominative.*
@@ -45,8 +44,8 @@ import parasite.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
-import zephyrine.*
 import vacuous.*
+import zephyrine.*
 
 object Logger:
   // Every construction site (a `Codepoint`) owns exactly one spool + writer daemon, so a `given`
@@ -73,6 +72,7 @@ object Logger:
       . computeIfAbsent(codepoint, _ =>
           establish[format, target](destination)
             (using writable, addressable, buffering, monitor, codepoint, probate))
+
       . nn
       . asInstanceOf[Relay[format]]
 

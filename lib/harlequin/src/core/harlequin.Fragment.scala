@@ -33,8 +33,8 @@
 package harlequin
 
 import anticipation.*
-import denominative.{Ordinal, nil}
 import denominative.dysasymptotics.linearSize
+import denominative.{Ordinal, nil}
 import gossamer.*
 import prophesy.ScalaKeywords
 import proscenium.*
@@ -139,6 +139,7 @@ object Fragment:
 
     while i >= 0 && scanning do
       val c = str.charAt(i)
+
       if c == ')' || c == ']' || c == '}' then { depth += 1; i -= 1 }
       else if c == '(' || c == '[' || c == '{' then
         if depth == 0 then { i += 1; scanning = false } else { depth -= 1; i -= 1 }

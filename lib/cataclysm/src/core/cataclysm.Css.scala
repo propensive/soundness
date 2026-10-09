@@ -34,26 +34,25 @@ package cataclysm
 
 import scala.language.dynamics
 
-
 import anticipation.*
 import contextual.*
-import rudiments.each
-import rudiments.all
-import rudiments.map
 import contingency.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import fulminate.*
 import gesticulate.*
 import gossamer.*
 import parasite.*
 import prepositional.*
+import quantitative.*
+import rudiments.all
+import rudiments.each
+import rudiments.map
 import spectacular.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
-import denominative.*
-import denominative.dysasymptotics.linearSize
-import quantitative.*
 
 object Css:
   // Reading a stylesheet accumulates every `Css.Error` (unknown property, invalid
@@ -343,7 +342,6 @@ object Css:
 
   trait Convertible extends Typeclass, Topical:
     def value(self: Self): Text
-
 
   // Syntax → Css.Syntax
   // The CSS Value Definition Syntax (VDS) — the grammar notation in which every

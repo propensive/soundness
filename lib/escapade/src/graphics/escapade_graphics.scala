@@ -32,7 +32,6 @@
                                                                                                   */
 package escapade
 
-
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
@@ -54,4 +53,3 @@ package teletypeables:
           append(Teletype(t"▀", Array(styled, 0L)))
 
         append(e"\n")
-

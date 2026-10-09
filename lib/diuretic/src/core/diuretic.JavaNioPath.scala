@@ -32,9 +32,9 @@
                                                                                                   */
 package diuretic
 
-import scala.caps
-
 import java.nio.file as jnf
+
+import scala.caps
 
 import anticipation.*
 import prepositional.*

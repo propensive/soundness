@@ -32,12 +32,11 @@
                                                                                                   */
 package hallucination
 
+import scala.caps
+
 import contingency.*
 import rudiments.foreach
 import vacuous.*
-
-import scala.caps
-
 import Raster.Error.Reason
 
 // The VP8L lossless decoder, ported from image-rs/image-webp (`src/lossless/decoder/mod.rs`,
@@ -82,6 +81,7 @@ private[hallucination] object WebpLossless:
     // [aliased-read] cache array written while reader is exclusive receiver
     @scala.caps.unsafe.untrackedCaptures
     private val entries: scala.Array[Int] = new scala.Array[Int](1 << bits)
+
     def insert(argb: Int): Unit = writable(entries)((0x1e35a7bd*argb) >>> (32 - bits)) = argb
     def lookup(index: Int): Int = entries(index)
 

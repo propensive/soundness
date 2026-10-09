@@ -33,7 +33,6 @@
 package honeycomb
 
 import scala.caps
-
 import scala.language.dynamics
 
 import anticipation.*
@@ -228,6 +227,7 @@ object Tag:
       new Html.Element
         ( label, Attributes.from(presets) ++ attributes,
           Array(), this.foreign )
+
       . of[Topic]
       . in[Form]
 

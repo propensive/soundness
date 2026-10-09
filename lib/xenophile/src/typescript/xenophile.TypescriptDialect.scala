@@ -126,7 +126,6 @@ object TypescriptDialect extends Dialect:
 
             case other => Prototype(Unset, foreign(other))
 
-
   private def optional(foreign: Foreign.Type): Foreign.Type =
     Foreign.Type.Union(List(foreign, Foreign.Type.Named(t"undefined")))
 

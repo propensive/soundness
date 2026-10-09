@@ -52,6 +52,7 @@ object Countable:
   // through any reference, so the instance is ungated.
   given frozenArray: [element] => (Array[element]^{}) is Countable =
     (array: Array[element]^{}) => array.length
+
   given int: Int is Countable = identity(_)
 
   given arrayBuffer: [element] => ArrayBuffer[element] is Countable:

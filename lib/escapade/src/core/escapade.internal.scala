@@ -32,12 +32,9 @@
                                                                                                   */
 package escapade
 
-
 import scala.collection.immutable.Seq
-
-import scala.language.experimental.pureFunctions
-
 import scala.collection.immutable.{List, Nil, ::}
+import scala.language.experimental.pureFunctions
 import scala.quoted.*
 import scala.reflect.*
 
@@ -405,7 +402,6 @@ object internal:
       inline def withoutBit(bit: Long): StyleWord = style & ~bit
 
       inline def applyTransform(mask: Long, bits: Long): StyleWord = (style & ~mask) | bits
-
 
 object Teletype2:
   given addable: Teletype2 is Addable by Teletype2 to Teletype2 = (left, right) =>

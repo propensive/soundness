@@ -32,18 +32,18 @@
                                                                                                   */
 package cacophony
 
-import scala.{caps, math}
-
 import javax.sound.sampled as jss
+
+import scala.{caps, math}
 
 import anticipation.*
 import aperture.*
 import contingency.*
 import prepositional.*
-import rudiments.reap
-import vacuous.or
 import quantitative.*
+import rudiments.reap
 import turbulence.*
+import vacuous.or
 
 // The form for scoped PCM audio-line access. A `Feed` (an input device) opens as
 // `Pcm across layout` for capture -- `feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000))`

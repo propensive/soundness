@@ -43,7 +43,6 @@ import rudiments.*
 import typonym.*
 import vacuous.*
 
-
 object Whatwg:
   // Attribute types
   sealed trait AccessKeys

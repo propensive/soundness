@@ -32,14 +32,12 @@
                                                                                                   */
 package guillotine
 
-import scala.caps
-
-import scala.language.experimental.pureFunctions
-
 import java.io as ji
 import java.util.concurrent as juc
 
+import scala.caps
 import scala.jdk.StreamConverters.StreamHasToScala
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
@@ -117,6 +115,7 @@ extends Subprocess, Process.Ref, anticipation.Durable:
   def stdin[chunk](stream: (Stream[chunk] over Credit)^)
     ( using writable: (Process.Input is Writable by chunk)^ )
   :   Unit =
+
     writable.write(Process.Input(head.getOutputStream.nn), stream)
 
   // Standard input as a push endpoint. `stdin` writes a whole stream and closes the pipe when it

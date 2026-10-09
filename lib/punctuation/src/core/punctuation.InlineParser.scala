@@ -36,8 +36,8 @@ import scala.collection.mutable
 
 import anticipation.*
 import denominative.*
-import rudiments.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 // Inline parser. Two passes:

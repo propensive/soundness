@@ -33,14 +33,13 @@
 package parasite
 
 import scala.caps
-
 import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
-import fulminate.Hazard
 import digression.*
+import fulminate.Hazard
 import mercator.*
 import nomenclature.*
 import prepositional.*
@@ -131,6 +130,7 @@ object Task:
   extension [result](tasks: Iterable[Task[result]])
     def race()(using monitor: Monitor^, probate: SharedProbate)
     :   (Tactic[Async.Error]^) ?->{monitor, probate} result =
+
       val promise: Promise[result] = Promise()
 
       tasks.foreach: task =>

@@ -32,7 +32,6 @@
                                                                                                   */
 package aviation
 
-
 import anticipation.*
 import contingency.*
 import fulminate.*

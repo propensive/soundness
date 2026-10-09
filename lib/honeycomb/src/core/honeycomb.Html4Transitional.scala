@@ -43,7 +43,6 @@ import rudiments.*
 import typonym.*
 import vacuous.*
 
-
 object Html4Transitional:
   // Reuse WHATWG attribute value type markers (Textual, Url, Color, Presence, etc.)
   // to share Attributive instances. HTML4-specific markers added below.
@@ -517,8 +516,10 @@ class Html4Transitional() extends Dom:
       Html4Transitional.membersOfType[honeycomb.Attribute]
       . fold(proscenium.Map[Text, Attribute]()): (map, next) =>
         val coerced = next.asInstanceOf[Attribute]
+
         val merged =
           map.at(coerced.label).let(_.merge(coerced).asInstanceOf[Attribute]).or(coerced)
+
         map.define(coerced.label, merged)
 
       . to[List]

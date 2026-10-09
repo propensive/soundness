@@ -32,19 +32,18 @@
                                                                                                   */
 package xenophile
 
-import scala.quoted.*
 import scala.collection.immutable.Seq
-
+import scala.quoted.*
 
 import anticipation.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import fulminate.*
 import gigantism.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-import denominative.*
-import denominative.dysasymptotics.linearSize
 
 object Xenophile:
 

@@ -33,7 +33,6 @@
 package harlequin
 
 import scala.annotation
-
 import scala.collection.mutable as scm
 
 import dotty.tools.dotc.*, core.*, parsing.*, util.*
@@ -45,13 +44,13 @@ import dotty.tools.dotc.reporting.UniqueMessagePositions
 
 import anticipation.*
 import denominative.*
+import denominative.dysasymptotics.{linearSize, unboundedSize}
 import gossamer.*
 import rudiments.*
-import denominative.dysasymptotics.{linearSize, unboundedSize}
-import stenography.*
-import vacuous.*
-import symbolism.*
 import rudiments.sortingAlgorithms.timsort
+import stenography.*
+import symbolism.*
+import vacuous.*
 
 object SourceCode:
   private def accent(token: Int): Accent =

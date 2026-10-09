@@ -47,8 +47,8 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
-import zephyrine.*
 import vacuous.*
+import zephyrine.*
 
 object Terminal:
   // The escape sequence to query the terminal size; also used by `terminalSize`
@@ -137,7 +137,6 @@ object Terminal:
     // wake the event loop and request a repaint — e.g. after a background task has
     // changed the layout.
     case Redraw
-
 
   // TerminalEvent → Terminal.Event
   // A union rather than a sealed trait: `Keypress` lives in `clavichord`, so that a browser driver

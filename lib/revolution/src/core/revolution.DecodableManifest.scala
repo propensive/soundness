@@ -41,6 +41,7 @@ object DecodableManifest:
   given mainClass: (tactic: Tactic[Fqcn.Error])
   =>  (("Main-Class" is DecodableManifest of Fqcn)^{tactic}) =
     Fqcn(_)
+
   given createdBy: ("Created-By" is DecodableManifest of Text) = identity(_)
 
 trait DecodableManifest extends Typeclass, Topical:

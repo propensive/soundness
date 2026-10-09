@@ -32,8 +32,8 @@
                                                                                                   */
 package escapade
 
+import scala.collection.mutable as scm
 import scala.language.experimental.pureFunctions
-
 import scala.util.*
 
 import anticipation.*
@@ -44,7 +44,6 @@ import gossamer.collations.codepointCollation
 import hieroglyph.*
 import prepositional.*
 import rudiments.*
-import scala.collection.mutable as scm
 import spectacular.*
 import symbolism.*
 import vacuous.*
@@ -94,6 +93,7 @@ object Teletype:
 
     def map(text: Teletype)(lambda: Char => Char): Teletype =
       val plain = text.plain
+
       val array = Array.scribe[Char](plain.length): scribe =>
         _ => plain.iterate { index => scribe.append(lambda(plain(index))) }
 
@@ -258,7 +258,6 @@ object Teletype:
           hyperlinks.to(Map),
           insertions.to(TreeMap),
           newBoundaries )
-
 
 // `boundaries` is the run-start array for the sparse form; empty for the dense form.
 // Dense:  styles.length == plain.length + 1; styles.at(i) is the style for char i (0 ≤ i < length)

@@ -32,16 +32,15 @@
                                                                                                   */
 package probably
 
-
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import gossamer.*
 import rudiments.*
-import vacuous.*
 import symbolism.*
-import denominative.dysasymptotics.linearSize
+import vacuous.*
 
 object Selection:
   enum Term:
@@ -113,6 +112,7 @@ object Selection:
       // as excluding everything could never be what was meant.
       else if argument.starts(t"not:") then
         val exclusion = parse(List(argument.skip(4)))
+
         if exclusion.trivial then selection
         else selection.copy(exclusions = selection.exclusions :+ exclusion)
       else constraint(argument).lay(selection.copy(terms = selection.terms :+ term(argument))):
@@ -146,7 +146,6 @@ object Selection:
             else if least == t"" then number(most).let(Constraint.Most(axis, _, true))
             else if most == t"" then number(least).let(Constraint.Least(axis, _, true))
             else number(least).let { least => number(most).let(Constraint.Interval(axis, least, _)) }
-
 
 // A subset of a suite's tests, parsed from command-line terms: which tests run (and, for
 // axial tests and benchmarks, which of their cells), or — with `--list` — which are only

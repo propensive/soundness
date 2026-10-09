@@ -39,19 +39,18 @@ import javax.crypto as jc
 import javax.crypto.spec as jcs
 
 import anticipation.*
-import denominative.*
 import contingency.*
+import denominative.*
 import enigmatic.*
+import enigmatic.cloaks.heapCloak
 import gastronomy.*
+import gastronomy.cryptoPermits.permitDisallowedCrypto
+import gastronomy.providers.javaBaseProvider
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-
-import enigmatic.cloaks.heapCloak
-import gastronomy.cryptoPermits.permitDisallowedCrypto
-import gastronomy.providers.javaBaseProvider
 
 // The standard security handler (ISO 32000-2 §7.6.4), revisions 2–6. The file key is derived
 // from the user password and the `/Encrypt` dictionary and validated against `/U` at open;
@@ -70,6 +69,7 @@ private[facsimile] object Guard:
   private val padding: Data = scala.Array    ( 0x28, 0xbf, 0x4e, 0x5e, 0x4e, 0x75, 0x8a, 0x41, 0x64, 0x00, 0x4e, 0x56, 0xff, 0xfa,
       0x01, 0x08, 0x2e, 0x2e, 0x00, 0xb6, 0xd0, 0x68, 0x3e, 0x80, 0x2f, 0x0c, 0xa9, 0xfe,
       0x64, 0x53, 0x69, 0x7a )
+
     . map(_.toByte).asInstanceOf[Data]
 
   // MD5 (weak, hence the permit) and SHA-2 digests through gastronomy's cross-platform
@@ -110,8 +110,10 @@ private[facsimile] object Guard:
         def method(selector: Text): Method =
           encrypt(selector).let(pdf.resolved(_).name).or(t"Identity") match
             case t"Identity" => Method.Identity
+
             case name =>
               val cfm = pdf.resolved(filters(name).or(Cos.Nil))(t"CFM").let(_.name).or(t"")
+
               cfm match
                 case t"V2"    => Method.Rc4
                 case t"AESV2" => Method.Aes128
@@ -235,6 +237,7 @@ private[facsimile] object Guard:
 
     while !done do
       val block = DataBuilder()
+
       repeat(64):
         block.addAll(pw)
         block.addAll(k)

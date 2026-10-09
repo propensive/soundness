@@ -58,6 +58,7 @@ object Kalman:
 
   private def invert(m: Matrix): Matrix =
     val determinant = m(0)*m(3) - m(1)*m(2)
+
     if determinant == 0.0 then (0.0, 0.0, 0.0, 0.0)
     else (m(3)/determinant, -m(1)/determinant, -m(2)/determinant, m(0)/determinant)
 
@@ -82,6 +83,7 @@ object Kalman:
           acc match
             case previous :: _ =>
               val predicted = apply(transition, previous.estimate)
+
               val predictedCovariance =
                 add(multiply(multiply(transition, previous.covariance), transpose(transition)), noise)
 

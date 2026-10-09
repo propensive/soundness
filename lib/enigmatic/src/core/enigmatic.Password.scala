@@ -32,11 +32,11 @@
                                                                                                   */
 package enigmatic
 
-import scala.caps
-
 import java.nio as jn
 import java.nio.charset as jnc
 import java.util as ju
+
+import scala.caps
 
 import anticipation.*
 import gossamer.*
@@ -81,6 +81,7 @@ class Password private[enigmatic] (private[enigmatic] val secret: Secret^):
       val chars = new scala.Array[Char](buffer.remaining)
       buffer.get(chars)
       if buffer.hasArray then ju.Arrays.fill(buffer.array.nn, '\u0000')
+
       try block(using Cleartext(chars.asInstanceOf[Array[Char]^{}]))
       finally ju.Arrays.fill(chars, '\u0000')
 

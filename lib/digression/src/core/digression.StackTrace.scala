@@ -33,6 +33,8 @@
 package digression
 
 import anticipation.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import fulminate.*
 import hypotenuse.*
 import prepositional.*
@@ -40,8 +42,6 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-import denominative.*
-import denominative.dysasymptotics.linearSize
 
 object StackTrace:
   case class Method(className: Text, method: Text):
@@ -414,8 +414,10 @@ object StackTrace:
 
     val cause = Option(exception.getCause)
     val fullClassName: Text = rewrite(exception.getClass.nn.getName.nn)
+
     val fullClass: List[Text] =
       (fullClassName.s.split("\\.").nn.iterator.map { part => Text(part.nn) }).to(List)
+
     val className: Text = List.last(fullClass)
 
     val component: Text =

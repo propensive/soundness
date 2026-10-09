@@ -35,13 +35,13 @@ package digression
 import scala.caps
 
 import anticipation.*
-import denominative.*
 import contingency.*
+import denominative.*
 import distillate.*
+import fulminate.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-import fulminate.*
 
 object Fqcn:
   // Decoding a `Fqcn` from `Text`, in `Fqcn`'s own companion rather than distillate's

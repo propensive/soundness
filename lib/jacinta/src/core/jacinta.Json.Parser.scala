@@ -32,22 +32,20 @@
                                                                                                   */
 package jacinta
 
-import scala.{caps, math}
-
+import scala.collection.mutable as scm
+import scala.compiletime.*
 import scala.language.dynamics
 import scala.language.experimental.pureFunctions
 import scala.language.experimental.separationChecking
-
-import scala.collection.mutable as scm
-import scala.compiletime.*
+import scala.{caps, math}
 
 import anticipation.*
 import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.*
-import hypotenuse.Bcd
 import hieroglyph.*
+import hypotenuse.Bcd
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -309,6 +307,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       import Lineation.untrackedData
       val fresh = Cursor[Data](input)
       cursor = fresh
+
     syncFrom()
     stringCursor = 0
     arrayBufferId = -1
@@ -326,6 +325,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       import Lineation.untrackedData
       val fresh = Cursor[Data](input)
       cursor = fresh
+
     syncFrom()
     stringCursor = 0
     arrayBufferId = -1
@@ -343,6 +343,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       import Lineation.untrackedData
       val fresh = Cursor[Data](input)
       cursor = fresh
+
     syncFrom()
     stringCursor = 0
     arrayBufferId = -1
@@ -465,6 +466,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   private update def moreSlow(): Boolean =
     locally:
       syncTo()
+
     if tracking then reconcileLineation()
 
     // Block-scoped for the same reason as in `reconcileLineation` above.
@@ -528,6 +530,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       val copied =
         locally:
           val current = cursor
+
           current.slice(start, end): (storage, off, len2) =>
             val arr = storage.asInstanceOf[scala.Array[Byte]]
             val tmp = new scala.Array[Char](len2)
@@ -586,6 +589,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     val act: Cursor.Held -> result =
       // [by-name-receiver] hold action captures parser owning the held cursor
       caps.unsafe.unsafeAssumePure((held: Cursor.Held) => action(using held))
+
     val current = cursor
     current.hold(act(summon[Cursor.Held]))
 
@@ -650,6 +654,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // misread it (see #1576).
   protected def decodeBcdLongToScalar(value: Long): Any =
     val text = Bcd.bcdLongText(value)
+
     try java.lang.Long.parseLong(text)
     catch case _: NumberFormatException => java.lang.Double.parseDouble(text)
 
@@ -1308,6 +1313,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     locally:
       syncTo()
+
     reconcileLineation()
 
     // Each read is block-scoped: binding the cursor hides the parser for the rest of
@@ -2265,6 +2271,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
   update def directString()(using Tactic[Parse.Error]): String =
     skip()
+
     if must() == Quote then
       advance()
       // Buffer-local fast path: a plain-ASCII string that closes inside the
@@ -2297,6 +2304,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
   update def directBoolean()(using Tactic[Parse.Error]): Boolean =
     skip()
+
     must() match
       case LowerT => parseTrue()
       case LowerF => parseFalse()

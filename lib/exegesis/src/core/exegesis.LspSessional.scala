@@ -32,9 +32,9 @@
                                                                                                   */
 package exegesis
 
-import scala.caps
-
 import java.io as ji
+
+import scala.caps
 
 import ambience.*
 import anticipation.*
@@ -64,6 +64,7 @@ private[exegesis] class LspInbound(listener: Lsp.Listener) extends Lsp.Client:
   def `textDocument/publishDiagnostics`
      ( uri: Text, version: Optional[Int], diagnostics: List[Diagnostic] )
   :   Unit =
+
     listener.diagnostics(uri, version, diagnostics)
 
   def `window/showMessage`(`type`: MessageType, message: Text): Unit =

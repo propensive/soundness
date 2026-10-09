@@ -37,6 +37,7 @@ import rudiments.*
 
 object Ounces:
   given designation: Designation[Ounces[1]] = () => "oz".tt
+
   erased given ratio: Ratio[Kilograms[1] & Ounces[-1], 0.0283495] =
     Ratio.Evidence[Kilograms[1] & Ounces[-1], 0.0283495]()
 

@@ -33,8 +33,8 @@
 package querencia
 
 import anticipation.*
-import rudiments.*
 import gossamer.*
+import rudiments.*
 import xenophile.*
 
 // Renders a `Foreign.Expression` (built by navigating the DOM) to JavaScript source. The output is

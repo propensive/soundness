@@ -32,13 +32,11 @@
                                                                                                   */
 package capricious
 
-import scala.math
-
-import scala.language.experimental.genericNumberLiterals
-
 import java.security as js
 import java.util as ju
 
+import scala.language.experimental.genericNumberLiterals
+import scala.math
 import scala.util as su
 
 import anticipation.*
@@ -57,7 +55,6 @@ package randomization:
   given secureSeededRandomization: (seed: Seed) => Randomization = () =>
     su.Random(js.SecureRandom(seed.value.readable.toArray))
 
-
 package randomTexts:
   given naughtyStringsText: Text is Randomizable:
     val resource = getClass.getResourceAsStream("/capricious/blns.txt").nn
@@ -65,13 +62,13 @@ package randomTexts:
 
     def randomize(random: Random) = blns.readable(random.long().toInt.abs%blns.length)
 
-
 package randomSizes:
   given uniformSizeUpto10: Random.Size = _.long().toInt.abs%10
   given uniformSizeUpto100: Random.Size = _.long().toInt.abs%100
   given uniformSizeUpto1000: Random.Size = _.long().toInt.abs%1000
   given uniformSizeUpto10000: Random.Size = _.long().toInt.abs%10000
   given uniformSizeUpto100000: Random.Size = _.long().toInt.abs%100000
+
 def stochastic[result](using randomization: Randomization)(block: Random ?=> result): result =
   block(using new Random(randomization.initialize()))
 

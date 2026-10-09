@@ -143,36 +143,43 @@ object Inlinable:
 
   given int: (Int is Inlinable) = new Inlinable:
     type Self = Int
+
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Int]): Expr[Int] =
       '{ $reader.varint().toInt }
 
   given long: (Long is Inlinable) = new Inlinable:
     type Self = Long
+
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Long]): Expr[Long] =
       '{ $reader.varint() }
 
   given boolean: (Boolean is Inlinable) = new Inlinable:
     type Self = Boolean
+
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Boolean]): Expr[Boolean] =
       '{ $reader.varint() != 0L }
 
   given double: (Double is Inlinable) = new Inlinable:
     type Self = Double
+
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Double]): Expr[Double] =
       '{ java.lang.Double.longBitsToDouble($reader.fixed64()) }
 
   given float: (Float is Inlinable) = new Inlinable:
     type Self = Float
+
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Float]): Expr[Float] =
       '{ java.lang.Float.intBitsToFloat($reader.fixed32()) }
 
   given text: (Text is Inlinable) = new Inlinable:
     type Self = Text
+
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Text]): Expr[Text] =
       '{ $reader.text() }
 
   given data: (Data is Inlinable) = new Inlinable:
     type Self = Data
+
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Data]): Expr[Data] =
       '{ $reader.data() }
 

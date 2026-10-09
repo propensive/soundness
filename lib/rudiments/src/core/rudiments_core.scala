@@ -32,10 +32,6 @@
                                                                                                   */
 package rudiments
 
-import scala.{caps, compiletime, math}
-
-import scala.language.dynamics
-
 import java.io as ji
 
 import scala.collection as sc
@@ -43,7 +39,9 @@ import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 import scala.compiletime.*
 import scala.deriving.*
+import scala.language.dynamics
 import scala.quoted.*
+import scala.{caps, compiletime, math}
 
 import anticipation.*
 import denominative.*
@@ -108,8 +106,10 @@ inline def next[value](using value: value aka "next"): value =
   // The explicit import outranks the package-scope deindexing `apply`, which would
   // otherwise shadow the `Tagged` unwrapping.
   value()
+
 inline def prior[value](using value: value aka "prior"): value =
   value()
+
 inline def ordinal(using value: Ordinal aka "ordinal"): Ordinal =
   value()
 
@@ -240,6 +240,7 @@ extension [self](self: self)(using traversable: self is Traversable)
 
   transparent inline def each(lambda: Ordinal aka "ordinal" ?=> traversable.Operand => Unit)
   :   Unit =
+
     var ordinal: Ordinal = Prim
 
     traversable.traverse(self).foreach: operand =>
@@ -277,6 +278,7 @@ extension [self](self: self)(using traversable: self is Traversable)
 
       case _ =>
         val iterator = traversable.traverse(self)
+
         if !iterator.hasNext then Unset
         else iterator.foldLeft(iterator.next())(addable.add)
 
@@ -544,7 +546,6 @@ extension [element](array: scala.Array[element])
   inline def place(value: Array[element]^{}, ordinal: Ordinal = Prim): Unit =
     System.arraycopy(value.asInstanceOf[scala.Array[element]], 0, array, ordinal.n0, value.readable.length)
 
-
 extension [key, value](map: Map[key, value])
   def upsert(key: key, optional: Optional[value] => value): Map[key, value] =
     map.define(key, optional(map.at(key)))
@@ -739,8 +740,6 @@ extension (bs: Long)
 
 extension (data: Data)
   def bytes: Bytes = Bytes(data.length)
-
-
 
 extension [product <: Product: Mirror.ProductOf](value: product)
   def tuple: product.MirroredElemTypes = Tuple.fromProductTyped(value)

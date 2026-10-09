@@ -526,4 +526,3 @@ trait Mathml:
   def attributes: List[(Text, Text)]
   def contents: List[Mathml]
   def text: Optional[Text]
-

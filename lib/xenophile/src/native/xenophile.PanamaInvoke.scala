@@ -34,8 +34,8 @@ package xenophile
 
 import java.lang.foreign.*
 
-import scala.quoted.*
 import scala.collection.immutable.{List, Nil, ::}
+import scala.quoted.*
 
 import anticipation.*
 import fulminate.*

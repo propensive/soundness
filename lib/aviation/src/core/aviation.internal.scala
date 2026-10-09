@@ -32,10 +32,9 @@
                                                                                                   */
 package aviation
 
-import scala.collection.immutable.Seq
-
 import java.time as jt
 
+import scala.collection.immutable.Seq
 import scala.quoted.*
 
 import anticipation.*
@@ -526,6 +525,7 @@ object internal:
 
     val owner = Symbol.spliceOwner
     val leftEnv = collector.foldTree(scala.collection.immutable.Map(), leftTree)(owner)
+
     val env: scala.collection.immutable.Map[Symbol, Term] =
       collector.foldTree(leftEnv, rightTree)(owner)
 
@@ -548,8 +548,10 @@ object internal:
     // An `Int` constant, also peering through opaque wrappers like `Year(_)`/`Day(_)`.
     def constInt(term: Term): Optional[Int] = strip(term) match
       case Literal(IntConstant(value))                       => value
+
       case Apply(fn, scala.collection.immutable.List(arg)) if fn.symbol.name == "apply" =>
         constInt(arg)
+
       case _                                                 => Unset
 
     // The zero-based ordinal of a `Month` enum-case reference (e.g. `Mar`).

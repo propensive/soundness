@@ -73,6 +73,7 @@ package httpServers:
 
     def server(port: Tcp.Port of port)(lambda: (request: Request) ?=> Response^{request})
     :   Server^ =
+
       if native then SocketServer(port.number, local).handle(lambda)
       else Httpd(port.number, local).handle(lambda)
 

@@ -32,9 +32,8 @@
                                                                                                   */
 package larceny
 
-import scala.language.adhocExtensions
-
 import scala.collection.mutable as scm
+import scala.language.adhocExtensions
 import scala.util.chaining.*
 
 import dotty.tools.*, dotc.*, util.*, reporting.*, core.*, config.Settings, Contexts.*

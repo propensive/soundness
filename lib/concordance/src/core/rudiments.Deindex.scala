@@ -83,6 +83,7 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
   inline def pick[result](index: applicable.Operand)
     ( inline lambda: (applicable.Operand in value.type) => result )
   :   Optional[result] =
+
     if applicable.contains(value, index)
     then lambda(index.asInstanceOf[applicable.Operand in value.type])
     else Unset
@@ -95,6 +96,7 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
   // second check. Same soundness boundary as `confine`: immutable receivers on stable paths.
   def unsafeAttested(index: applicable.Operand)(using erased Unsafe)
   :   applicable.Operand in value.type =
+
     index.asInstanceOf[applicable.Operand in value.type]
 
   // The block-scoped form: the attestation's extent is the lambda —
@@ -102,8 +104,8 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
   inline def unsafeAttested[result](index: applicable.Operand)
     (inline lambda: (applicable.Operand in value.type) => result)(using erased Unsafe)
   :   result =
-    lambda(index.asInstanceOf[applicable.Operand in value.type])
 
+    lambda(index.asInstanceOf[applicable.Operand in value.type])
 
 
   // A single `at` that dispatches at compile time on the index type: an index statically known to

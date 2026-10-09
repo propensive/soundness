@@ -32,10 +32,10 @@
                                                                                                   */
 package obligatory
 
+import java.util.concurrent as juc
+
 import scala.annotation.*
 import scala.quoted.*
-
-import java.util.concurrent as juc
 
 import anticipation.*
 import contingency.*
@@ -55,7 +55,6 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
-
 import httpBackends.javaNetHttp
 
 object JsonRpc:
@@ -96,6 +95,7 @@ object JsonRpc:
      ( t"jsonrpc" -> t"2.0".in[Json],
        t"error"   -> Failure(code, message).in[Json],
        t"id"      -> id.or(Json.ast(Json.Ast(Json.JsonNull))) )
+
     . in[Json]
 
   def notification(target: JsonRpc, method: Text, payload: Json): Promise[Unit] =

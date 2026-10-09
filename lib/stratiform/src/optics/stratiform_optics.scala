@@ -76,4 +76,3 @@ package optics:
       rebuild
         ( origin,
           Tel.mapChildCompounds(origin.subtree.children, c => rewrap(c, lambda(Tel.make(c)))) )
-

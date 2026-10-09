@@ -265,6 +265,7 @@ object Grpc:
   // `LengthPrefix` does for the JSON-RPC stream framing.
   object Framing:
     private def gzip(message: Data): Data = Gzip.compression.compress(Chain(message)).read[Data]
+
     private def gunzip(message: Data): Data =
       Gzip.compression.decompress(Chain(message)).read[Data]
 

@@ -780,4 +780,3 @@ trait Json4:
     val schema: Json = schema0.json
 
     def fields: List[(Text, Member)] = Json.Provider.fieldsOf(schema)
-

@@ -33,7 +33,6 @@
 package anticipation
 
 import scala.caps
-
 import scala.language.experimental.into
 
 import gigantism.Every

@@ -33,7 +33,6 @@
 package archimedes
 
 import scala.collection.immutable.Seq
-
 import scala.quoted.*
 
 import anticipation.*
@@ -46,7 +45,6 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-
 import Mathml.*
 
 object internal:
@@ -57,6 +55,7 @@ object internal:
   // code that re-parses with the substitutions woven in.
   def ergoInterpolator[parts <: Tuple: Type, origins <: Tuple: Type](insertions: Expr[Seq[Any]])
   :   Macro[Math] =
+
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match

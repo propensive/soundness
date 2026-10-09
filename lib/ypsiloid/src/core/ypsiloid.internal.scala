@@ -32,9 +32,8 @@
                                                                                                   */
 package ypsiloid
 
-import scala.collection.immutable.Seq
 import scala.collection.immutable.IndexedSeq
-
+import scala.collection.immutable.Seq
 
 // Residue: `head` and the frozen-array subscript `apply` are partial; both await the
 // partial-operations tranche.
@@ -118,6 +117,7 @@ object internal:
 
     val raw: String =
       parts.unique.or(halt(m"a YAML path literal cannot have substitutions"))
+
     val start: Int = firstOrigin[origins]
 
     try unsafely(raw.tt.as[YamlPath]) catch
@@ -549,6 +549,7 @@ object internal:
 
                   $array(${Expr(idx)}) =
                     Yaml.ast(Yaml.Ast.seqFromAnyArray(tail.asInstanceOf[Array[Any]^{}]))
+
                   true
                 }
               }
@@ -599,6 +600,7 @@ object internal:
           else
             val elems = stripPad(arr)
             var c = 0
+
             elems.extent.each: k =>
               c += countHolesIn(elems(k))
 
@@ -699,6 +701,7 @@ object internal:
 
                     $array(${Expr(idx)}) =
                       Yaml.ast(Yaml.Ast.mapFromAnyArray(arr.asInstanceOf[Array[Any]^{}]))
+
                     true
                   }
                 }
@@ -719,6 +722,7 @@ object internal:
 
       val numberOfHoles =
         var c = 0
+
         repeat(parts2.size - 1):
           c += 1
 

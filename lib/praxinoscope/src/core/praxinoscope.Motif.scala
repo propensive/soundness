@@ -201,6 +201,7 @@ object Motif:
 
       case '$' =>
         Node.Boundary(if multiline then Node.Anchor.LineEnd else Node.Anchor.End).adv()
+
       case '\\'            => escape()
       case '*' | '+' | '?' => abort(Motif.Error(index, UnexpectedChar))
 

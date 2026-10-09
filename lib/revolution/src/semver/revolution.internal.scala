@@ -33,7 +33,6 @@
 package revolution
 
 import scala.collection.immutable.Seq
-
 import scala.quoted.*
 
 import anticipation.*

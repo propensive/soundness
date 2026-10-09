@@ -32,11 +32,9 @@
                                                                                                   */
 package spectacular
 
-import scala.reflect
-
-import scala.{caps, compiletime}
-
 import scala.collection.mutable as scm
+import scala.reflect
+import scala.{caps, compiletime}
 
 import anticipation.*
 import denominative.*

@@ -32,11 +32,10 @@
                                                                                                   */
 package gesticulate
 
-
 import anticipation.*
+import gossamer.*
 import rudiments.*
 import vacuous.*
-import gossamer.*
 
 object Extensions:
   def guess(ext: Text): MediaType = mediaTypes(ext).or(media"application/octet-stream")

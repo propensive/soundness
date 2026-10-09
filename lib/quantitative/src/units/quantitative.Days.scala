@@ -37,6 +37,7 @@ import rudiments.*
 
 object Days:
   given designation: Designation[Hours[1]] = () => "d".tt
+
   erased given ratio: Ratio[Seconds[1] & Days[-1], 86400.0] =
     Ratio.Evidence[Seconds[1] & Days[-1], 86400.0]()
 

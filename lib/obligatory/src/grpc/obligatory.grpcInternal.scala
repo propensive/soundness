@@ -36,7 +36,6 @@ import scala.quoted.*
 
 import anticipation.*
 import contingency.*
-import telekinesis.*
 import distillate.*
 import fulminate.*
 import gigantism.*
@@ -44,6 +43,7 @@ import locomotion.*
 import parasite.*
 import prepositional.*
 import proscenium.*
+import telekinesis.*
 
 object grpcInternal:
   // Derive a client stub for a service interface of `@rpc`-annotated methods. Each

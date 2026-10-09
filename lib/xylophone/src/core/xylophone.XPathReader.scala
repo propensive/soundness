@@ -32,15 +32,14 @@
                                                                                                   */
 package xylophone
 
-
 import scala.collection.mutable as scm
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import vacuous.*
 import zephyrine.*
-import denominative.*
 
 // A hand-written lexer and recursive-descent parser for the full XPath 1.0
 // grammar (one method per production of the W3C recommendation), reporting
@@ -56,6 +55,7 @@ private[xylophone] object XPathReader:
     case Slash, DoubleSlash, Pipe, Plus, Minus, Equals, Unequals, Less, LessOrEqual, Greater,
          GreaterOrEqual, Star, OrKeyword, AndKeyword, DivKeyword, ModKeyword,
          At, OpenParen, CloseParen, OpenBracket, CloseBracket, Comma, Dot, DotDot
+
     case NameToken(prefix: Optional[Text], local: Text)
     case WildcardTest
     case PrefixWildcardTest(prefix: Text)
@@ -120,6 +120,7 @@ private[xylophone] object XPathReader:
     def scanNumber(start: Int): Unit =
       var end = start
       while digit(end) do end += 1
+
       if end < length && string.charAt(end) == '.' then
         end += 1
         while digit(end) do end += 1
@@ -145,6 +146,7 @@ private[xylophone] object XPathReader:
             && (string.charAt(index) == ' ' || string.charAt(index) == '\t'
                 || string.charAt(index) == '\r' || string.charAt(index) == '\n')
       do index += 1
+
       index
 
     def scanName(start: Int): Unit =
@@ -276,9 +278,11 @@ private[xylophone] object XPathReader:
             if end + 1 < length && string.charAt(end) == ':' && nameStart(string.charAt(end + 1))
             then
               val localEnd = scanNcname(end + 1)
+
               push
                 ( Token.VariableToken(first.tt, string.substring(end + 1, localEnd).nn.tt),
                   start )
+
               offset = localEnd
             else
               push(Token.VariableToken(Unset, first.tt), start)

@@ -32,15 +32,13 @@
                                                                                                   */
 package hallucination
 
-import scala.math
-
 import java.io as ji
+
+import scala.caps
+import scala.math
 
 import anticipation.*
 import vacuous.*
-
-import scala.caps
-
 import Vp8Tables.*
 
 // The VP8 lossy (keyframe) encoder, ported from image-rs/image-webp (`src/lossy/encoder.rs`,
@@ -121,6 +119,7 @@ private[hallucination] object Vp8Encoder:
     
     private inline def topComplexityRows(index: Int): scala.Array[Int] =
       topComplexity.asInstanceOf[scala.Array[scala.Array[Int]]](index)
+
     private var leftComplexity: scala.Array[Int]^ = new scala.Array[Int](9)
 
     update def run(): Data =
@@ -537,4 +536,3 @@ private[hallucination] object Vp8Encoder:
         k += 1
 
       blocks
-

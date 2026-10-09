@@ -224,7 +224,6 @@ object WebIdl:
     import scala.collection.immutable.List as SList
     import scala.collection.immutable.{::, Nil as SNil}
 
-
     def parse(source: Text): List[WebIdl.Definition] raises Error =
       val definitions = scala.collection.mutable.ListBuffer[WebIdl.Definition]()
       var tokens = tokenize(source.s)
@@ -298,6 +297,7 @@ object WebIdl:
 
       def group(tokens: SList[String], depth: Int, acc: SList[Text])
       :   (SList[Text], SList[String]) raises Error =
+
         tokens match
           case "]" :: rest if depth == 0 => (acc, rest)
           case "[" :: rest               => group(rest, depth + 1, acc)

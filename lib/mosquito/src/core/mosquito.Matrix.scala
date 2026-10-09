@@ -32,22 +32,20 @@
                                                                                                   */
 package mosquito
 
-import scala.math
-
 import scala.compiletime.*
 import scala.compiletime.ops.int.-
+import scala.math
 
 import anticipation.*
 import denominative.*
 import gossamer.*
 import hieroglyph.*
+import mosquito.internal.Vector
 import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-
-import mosquito.internal.Vector
 
 object Matrix:
   // The `Showable` sets a matrix as a multi-line grid inside stretched brackets, which inspection
@@ -150,7 +148,6 @@ object Matrix:
           i += 1
 
       new Matrix[result, rows, columns](left.rows, left.columns, arr)
-
 
   // The three shapes of multiplication — by scalar, by matrix and by vector — are separate
   // instances distinguished by `Operand`; the scalar instance's operand is unconstrained, but
@@ -885,12 +882,14 @@ class Matrix[element, rows <: Int, columns <: Int]
     // which is safe across element types.
     case matrix: Matrix[?, ?, ?] =>
       elements.readable.sameElements(matrix.elements.asInstanceOf[Array[element]^{}].readable)
+
     case _                       => false
 
   override def hashCode: Int =
     // Inlined `MurmurHash3.arrayHash`: `arrayHash` demands a pure `Array`, which the
     // capture-checked frozen form cannot supply without an unsafe cast.
     var hash = scala.util.hashing.MurmurHash3.arraySeed
+
     elements.extent.each: index =>
       hash = scala.util.hashing.MurmurHash3.mix(hash, elements(index).##)
 
@@ -910,6 +909,3 @@ class Matrix[element, rows <: Int, columns <: Int]
       index += 1
 
     builder.append("]").toString
-
-
-

@@ -33,11 +33,10 @@
 package prophesy
 
 import anticipation.*
-import symbolism.*
 import gossamer.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
-
 import KeywordPattern.{Element, Expectation}
 import Lexeme.Bracket
 

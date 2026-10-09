@@ -33,7 +33,6 @@
 package panopticon
 
 import scala.language.dynamics
-
 import scala.quoted.*
 
 import beneficence.Findable

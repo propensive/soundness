@@ -56,10 +56,8 @@ import spectacular.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
-
 import charsets.utf8Charset
 import textSanitizers.skipSanitizer
-
 import filesystemBackends.javaBaseFilesystem
 
 object Completions:
@@ -129,7 +127,6 @@ object Completions:
         case Installed(_, path)        => path
         case AlreadyInstalled(_, path) => path
         case Unconfirmed(_, path)      => path
-
 
   // The environment and system are the invocation's, not the daemon JVM's, so the XDG
   // directories are those of the client asking for the install (#2034); a `Cli` in scope
@@ -277,6 +274,7 @@ object Completions:
     val (parts, _, _) = output.cut(t"\n").fold(initial):
       case ((parts, current, open), line) =>
         val trimmed = line.trim
+
         if trimmed == marker then (if open then current.reverse :: parts else parts, Nil, true)
         else if open then (parts, trimmed :: current, open)
         else (parts, current, open)
@@ -480,6 +478,7 @@ object Completions:
     def paths: List[Text] =
       this match
         case CommandNotOnPath(_)              => Nil
+
         case Shells(zsh, bash, fish, pwsh) =>
           List(zsh, bash, fish, pwsh).map(_.pathname).sweep { case text: Text => text }
 

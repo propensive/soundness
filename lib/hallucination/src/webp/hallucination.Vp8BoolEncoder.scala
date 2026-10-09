@@ -32,14 +32,13 @@
                                                                                                   */
 package hallucination
 
-import scala.math
-
 import java.io as ji
+
+import scala.caps
+import scala.math
 
 import anticipation.*
 import vacuous.*
-
-import scala.caps
 
 // The VP8 boolean entropy encoder (RFC 6386 §7), ported from image-rs/image-webp
 // (`src/lossy/arithmetic_encoder.rs`, MIT/Apache-2.0) — the inverse of `Vp8Bool`.

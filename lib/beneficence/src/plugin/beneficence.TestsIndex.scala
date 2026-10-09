@@ -104,6 +104,7 @@ object TestsIndex:
 
   private def escape(text: String): String =
     val builder = new StringBuilder
+
     text.foreach:
       case '\\'   => builder.append("\\\\")
       case '\t'   => builder.append("\\t")
@@ -128,6 +129,7 @@ object TestsIndex:
             case 'u' if index + 6 <= part.length =>
               try builder.append(Integer.parseInt(part.substring(index + 2, index + 6), 16).toChar)
               catch case _: NumberFormatException => ()
+
               index += 6
 
             case char =>
@@ -157,6 +159,7 @@ object TestsIndex:
 
     text.split("\n").nn.foreach: line =>
       val line2 = line.nn
+
       if line2.forall(_.isWhitespace) then builder.append("\n") else
         if builder.nonEmpty then builder.append(" ")
         builder.append(line2.replaceAll("^ *", "").nn.replaceAll(" *$", "").nn.replaceAll("\\s+", " ").nn)
@@ -192,6 +195,7 @@ object TestsIndex:
             while index < body.length && depth > 0 do
               if body.charAt(index) == '{' then depth += 1
               else if body.charAt(index) == '}' then depth -= 1
+
               index += 1
 
             builder.append(hole)
@@ -376,6 +380,7 @@ object TestsIndex:
 
     def kindOf(method: Symbol): String =
       val owner = method.owner.fullName.toString
+
       if owner.startsWith("sedentary.Bench") then "bench"
       else if owner.startsWith("sedentary.Stress") then "stress"
       else if owner.startsWith("sedentary.Profile") then "profile"
@@ -457,6 +462,7 @@ object TestsIndex:
                     parameter.srcPos )
 
               val (topic, impromptu) = topicOf(parameter.info)
+
               within(Some(Frame(topic, impromptu, Some(path(tree.symbol)), Nil))):
                 traverseChildren(tree)
 

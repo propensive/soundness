@@ -32,19 +32,15 @@
                                                                                                   */
 package xylophone
 
-import scala.collection.immutable.Seq
-import scala.collection.immutable.IndexedSeq
-
-import scala.{annotation, caps}
-
-
-import scala.language.dynamics
-
 import java.lang as jl
 
+import scala.collection.immutable.IndexedSeq
+import scala.collection.immutable.Seq
 import scala.collection.immutable.VectorMap
 import scala.collection.immutable.{List, Nil, ::}
+import scala.language.dynamics
 import scala.quoted.*
+import scala.{annotation, caps}
 
 import anticipation.*
 import contextual.*
@@ -58,9 +54,9 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import stenography.*
+import symbolism.*
 import vacuous.*
 import zephyrine.*
-import symbolism.*
 
 object internal:
   def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
@@ -83,6 +79,7 @@ object internal:
     abortive:
       var holes: scala.collection.immutable.Map[Ordinal, Xml.Hole] =
         scala.collection.immutable.Map()
+
       def capture(ordinal: Ordinal, hole: Xml.Hole) = holes = holes.updated(ordinal, hole)
 
       given XmlSchema = XmlSchema.Freeform
@@ -704,6 +701,7 @@ object internal:
 
     var holes: scala.collection.immutable.Map[Ordinal, Xml.Hole] =
         scala.collection.immutable.Map()
+
     def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
 
     given XmlSchema = XmlSchema.Freeform
@@ -1110,6 +1108,7 @@ object internal:
 
     def from(map: Map[Text, Text]): Attributes =
       val entries = map.stdlib
+
       if entries.isEmpty then empty else
         val n = entries.size
         val buffer = Array.allocate[String](n*2)
@@ -1214,6 +1213,7 @@ object internal:
           // [stdlib-iterator] index var in anonymous Iterator
           @scala.caps.unsafe.untrackedCaptures
           private var i: Int = 0
+
           def hasNext: Boolean = i < a.length
 
           def next(): Text =
@@ -1228,6 +1228,7 @@ object internal:
           // [stdlib-iterator] index var in anonymous Iterator
           @scala.caps.unsafe.untrackedCaptures
           private var i: Int = 1
+
           def hasNext: Boolean = i < a.length
 
           def next(): Text =
@@ -1242,6 +1243,7 @@ object internal:
           // [stdlib-iterator] index var in anonymous Iterator
           @scala.caps.unsafe.untrackedCaptures
           private var i: Int = 0
+
           def hasNext: Boolean = i < a.length
 
           def next(): (Text, Text) =
@@ -1857,6 +1859,7 @@ object internal:
                     ( Assign(Ref(slots(index)), focused),
                       Assign(Ref(seens(index)), Literal(BooleanConstant(true))) ),
                   unit )
+
               . asExprOf[Unit]
 
             Some:
@@ -2083,6 +2086,7 @@ object internal:
             ::: loop
             ::: absents,
           construct(slots.map { slot => Ref(slot) }) )
+
       . asExprOf[value]
 
     // The absent-build: what a missing (or wrong-shape) occurrence of this

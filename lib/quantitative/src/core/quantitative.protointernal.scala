@@ -339,6 +339,7 @@ trait protointernal extends caps.Pure:
   def collectUnits[units <: Measure: Type]: Macro[proscenium.Map[Text, Int]] =
     def recur(expr: Expr[proscenium.Map[Text, Int]], todo: List[UnitPower])
     :   Expr[proscenium.Map[Text, Int]] =
+
       todo match
         case Nil => expr
 

@@ -33,7 +33,6 @@
 package capricious
 
 import scala.caps
-
 import scala.language.experimental.genericNumberLiterals
 
 import hypotenuse.*

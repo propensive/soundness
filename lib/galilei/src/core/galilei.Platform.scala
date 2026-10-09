@@ -32,9 +32,9 @@
                                                                                                   */
 package galilei
 
-import scala.caps
-
 import java.nio.file as jnf
+
+import scala.caps
 
 import anticipation.*
 import aperture.*
@@ -50,7 +50,6 @@ import turbulence.Readable
 import turbulence.Writable
 import vacuous.*
 import zephyrine.Stream
-
 import Io.Error.Operation
 
 // `Platform` is the common base of galilei's OS filesystem platform types (`Posix`/`Linux`/`MacOs`/

@@ -32,9 +32,9 @@
                                                                                                   */
 package cacophony
 
-import scala.math
-
 import javax.sound.sampled as jss
+
+import scala.math
 
 import anticipation.*
 import contingency.*
@@ -53,6 +53,7 @@ object Outlet:
 
         if canPlay then scala.collection.immutable.List(Outlet(info))
         else scala.collection.immutable.Nil
+
       . to(List)
 
   // OutletError → Outlet.Error
@@ -95,6 +96,7 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info) extends Devi
       // [field-purity] stopped flag in anonymous Playback
       @scala.caps.unsafe.untrackedCaptures
       private var stopped = false
+
       private val data: Array[Byte]^{} = audio.data
 
       private val worker: Thread =

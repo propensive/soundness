@@ -33,10 +33,10 @@
 package enigmatic
 
 import anticipation.*
-import rudiments.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 import xenophile.*
 
@@ -87,6 +87,7 @@ object OpensslCrypto extends Crypto:
         Foreign["library", Native].HMAC
           ( md, keyBuffer.pointer, key.length, dataBuffer.pointer, data.length.toLong,
             output.pointer, outputLength.pointer )
+
         . call[Address]()
 
         output.data(outputLength.int)

@@ -32,9 +32,8 @@
                                                                                                   */
 package abacist
 
-import scala.collection.immutable.Seq
-
 import scala.collection.immutable.*
+import scala.collection.immutable.Seq
 import scala.quoted.*
 
 import anticipation.*
@@ -268,6 +267,7 @@ object internal:
 
       case head :: tail =>
         val value = ratio(head.ref, cascade.head.ref, head.power).valueOrAbort
+
         val value2 =
           (if tail.isEmpty then Unset else tail.head)
           . let(_.ref).let(ratio(_, head.ref, head.power).valueOrAbort + 0.5)

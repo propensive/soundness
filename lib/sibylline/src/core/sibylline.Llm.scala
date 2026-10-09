@@ -459,6 +459,7 @@ object Llm:
 
             case other =>
               other
+
         . to(List)
 
       Reply(Message(Role.Assistant, content), stop0.or(Stop.Ended), usage0.or(Usage(0, 0)),

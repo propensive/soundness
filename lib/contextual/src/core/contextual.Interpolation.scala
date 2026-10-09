@@ -33,7 +33,6 @@
 package contextual
 
 import scala.language.dynamics
-
 import scala.quoted.*
 
 import gigantism.*
@@ -237,7 +236,6 @@ object Interpolation:
                   type Transport = transport
                   type Origins = origins
               } . asInstanceOf[Expr[Interpolation of topic]]
-
 
 trait Interpolation extends scala.caps.Pure:
   type Topic

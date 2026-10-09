@@ -96,6 +96,7 @@ object Streamer:
 
     val selects =
       schema.selects.to[List].map { (select: Tels.SelectDefinition) => renderSelect(select) }
+
     val rendering: Text = t"${schema.name}|${renderType(schema.document)}|${selects.join(t"|")}"
 
     Blake3.hashOf(rendering.sysData, 32)

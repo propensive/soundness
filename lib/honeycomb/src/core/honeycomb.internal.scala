@@ -32,18 +32,14 @@
                                                                                                   */
 package honeycomb
 
-
-import scala.collection.immutable.Seq
-import scala.collection.immutable.IndexedSeq
-
-import scala.caps
-
-import scala.language.dynamics
-
 import java.lang as jl
 
+import scala.caps
+import scala.collection.immutable.IndexedSeq
+import scala.collection.immutable.Seq
 import scala.collection.immutable.VectorMap
 import scala.collection.immutable.{List, Nil, ::}
+import scala.language.dynamics
 import scala.quoted.*
 
 import anticipation.*
@@ -83,6 +79,7 @@ object internal:
     abortive:
       var holes: scala.collection.immutable.Map[Ordinal, Html.Hole] =
         scala.collection.immutable.Map()
+
       def capture(ordinal: Ordinal, hole: Html.Hole) = holes = holes.updated(ordinal, hole)
 
       val html: Html =
@@ -370,6 +367,7 @@ object internal:
 
     var holes: scala.collection.immutable.Map[Ordinal, Html.Hole] =
         scala.collection.immutable.Map()
+
     def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
 
     // Custom HaltTactic: translate parser Parse.Error positions to source-file ranges.
@@ -773,6 +771,7 @@ object internal:
             // [stdlib-iterator] index var in anonymous Iterator
             @caps.unsafe.untrackedCaptures
             private var i: Int = 0
+
             def hasNext: Boolean = i < a.length
 
             def next(): Text =
@@ -791,6 +790,7 @@ object internal:
             // [stdlib-iterator] index var in anonymous Iterator
             @caps.unsafe.untrackedCaptures
             private var i: Int = 0
+
             def hasNext: Boolean = i < a.length
 
             def next(): (Text, Optional[Text]) =

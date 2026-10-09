@@ -32,14 +32,13 @@
                                                                                                   */
 package parasite
 
-import scala.caps
-
-import scala.language.experimental.into
-import scala.language.experimental.pureFunctions
-
 import java.lang.management as jlm
 import javax.management as jm
 import javax.management.openmbean as jmo
+
+import scala.caps
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 import com.sun.management as csm
 

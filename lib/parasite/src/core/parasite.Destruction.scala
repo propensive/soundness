@@ -32,10 +32,10 @@
                                                                                                   */
 package parasite
 
+import java.lang.ref as jlr
+
 import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
-
-import java.lang.ref as jlr
 
 import rudiments.*
 

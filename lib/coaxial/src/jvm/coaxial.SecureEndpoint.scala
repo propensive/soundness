@@ -32,15 +32,14 @@
                                                                                                   */
 package coaxial
 
-import scala.caps
-
-import denominative.nil
-
 import java.net as jn
 import java.util as ju
 import javax.net.ssl as jns
 
+import scala.caps
+
 import anticipation.*
+import denominative.nil
 import gigantism.*
 import gossamer.*
 import spectacular.*

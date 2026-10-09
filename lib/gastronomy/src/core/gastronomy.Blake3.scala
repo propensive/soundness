@@ -32,11 +32,10 @@
                                                                                                   */
 package gastronomy
 
-import scala.{caps, math}
-
 import java.nio.charset.StandardCharsets
 
 import scala.reflect.Selectable.reflectiveSelectable
+import scala.{caps, math}
 
 import anticipation.*
 import corpuscular.*

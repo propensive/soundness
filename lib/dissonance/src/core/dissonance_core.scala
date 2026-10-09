@@ -34,11 +34,11 @@ package dissonance
 
 import anticipation.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import fulminate.*
+import rudiments.*
 import symbolism.*
 import vacuous.*
-import rudiments.*
-import denominative.dysasymptotics.linearSize
 
 
 def evolve[element: ClassTag]

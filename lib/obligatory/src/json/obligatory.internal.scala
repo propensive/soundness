@@ -265,6 +265,7 @@ object internal:
                                 val response =
                                   JsonRpc.request($url, $methodName, json)
                                     ( using $monitor, $probate, $online )
+
                                   . await()(using $monitor)
 
                                 $decoder.decoded(response)

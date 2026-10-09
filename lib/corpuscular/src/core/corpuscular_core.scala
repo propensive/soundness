@@ -77,6 +77,7 @@ object Crc32:
     while n < 256 do
       var c = n
       var k = 8
+
       while k > 0 do
         k -= 1
         c = if (c & 1) != 0 then 0xedb88320 ^ (c >>> 1) else c >>> 1

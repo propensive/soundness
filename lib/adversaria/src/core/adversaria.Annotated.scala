@@ -37,9 +37,9 @@ import scala.quoted.*
 import anticipation.*
 import denominative.*
 import panopticon.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
-import prepositional.*
 
 object Annotated:
   transparent inline given annotations: [topic <: StaticAnnotation, self, plane, limit]

@@ -36,14 +36,13 @@ import scala.caps
 
 import anticipation.{Data as Bytes, *}
 import contingency.*
-import gossamer.*
-import rudiments.*
-import vacuous.*
-import prepositional.*
-import symbolism.*
 import denominative.capped
+import gossamer.*
+import prepositional.*
+import rudiments.*
+import symbolism.*
+import vacuous.*
 import zephyrine.{Slate, Stream, Credit, Buffering, Substrate}
-
 import Http2.Frame
 import Http2.Error.Reason
 
@@ -121,6 +120,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
     while index < preface.length do
       if read.readUnchecked(index) != preface.readUnchecked(index)
       then abort(Http2.Error(Reason.Protocol(t"bad connection preface")))
+
       index += 1
 
   // Read the next frame, or `Unset` at clean end of stream. The tactic is a plain

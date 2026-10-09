@@ -39,11 +39,10 @@ import scala.collection.mutable as scm
 import scala.math
 
 import anticipation.*
-import denominative.*
 import contingency.*
+import denominative.*
 import pneumatic.*
 import rudiments.*
-
 import Binary.*
 import Raster.Error.Reason
 

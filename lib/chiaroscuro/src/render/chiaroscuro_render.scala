@@ -54,7 +54,6 @@ import denominative.dysasymptotics.linearSize
 // scope unqualified; out here they must be imported.
 import Juxtaposition.*
 
-
 // A real trait, not a structural refinement of `Palette`: structural member selection goes
 // through `iridescence.Palette.selectDynamic` — runtime reflection, which Scala Native does
 // not support — whereas these are ordinary virtual calls.
@@ -145,6 +144,7 @@ package teletypeables:
               e"$line1\n$line2\n"
 
             // The mapped lines only read the two summary buffers; laundered pure.
+
             . asInstanceOf[List[Teletype]]
             . join(topRule, midRule, penultimateRule, bottomRule)
 
@@ -220,4 +220,3 @@ package teletypeables:
 
         case Same(value) =>
           e"The value $subdued($value) was expected"
-

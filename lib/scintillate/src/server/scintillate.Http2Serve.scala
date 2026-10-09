@@ -144,6 +144,7 @@ object Http2Serve:
   // `Http2Session` so it can set up per-connection state first.
   private def open(in: ji.InputStream, out: ji.OutputStream)(using monitor: Monitor)
   :   Http2.ServerConnection^{monitor} =
+
    // The connection is created and used under the same monitor; its fresh capability is
    // laundered into the declared result.
    // [construction-fresh] connection's fresh capability laundered into result
@@ -220,6 +221,7 @@ extends Duplex:
     data.drain: region =>
       range =>
         val interval: Interval = range
+
         out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
             interval.size)
 

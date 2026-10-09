@@ -32,10 +32,8 @@
                                                                                                   */
 package xenophile
 
-
 import scala.collection.immutable.Seq
 import scala.collection.immutable.{List, Nil, ::}
-
 import scala.quoted.*
 
 import anticipation.*
@@ -43,8 +41,8 @@ import denominative.*
 import fulminate.*
 import gossamer.*
 import rudiments.*
-import vacuous.*
 import symbolism.*
+import vacuous.*
 
 // Kotlin metadata declares a member's parameters and default flags as short, declaration-sized
 // lists, read positionally against the arity the metadata itself supplies, so `size`, `skip` and
@@ -547,8 +545,10 @@ object KotlinFacade:
             if propertyNames.contains(property.s) then accumulated else
               samFunctionType(parameter).lay(accumulated): function =>
                 val getter = Refinement(accumulated, property.s, function)
+
                 val signature =
                   MethodType(List("value"))(_ => List(function), _ => TypeRepr.of[Unit])
+
                 Refinement(getter, s"${property.s}_=", signature)
 
           case _ =>

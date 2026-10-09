@@ -53,6 +53,7 @@ object JsonPointer extends Root(""):
 
   given navigable: [ordinal <: Ordinal] => ordinal is Navigable on JsonPointer =
     ordinal => ordinal.n0.show
+
   given admissible: [ordinal <: Ordinal] => ordinal is Admissible on JsonPointer = _ => ()
   given admissible2: [text <: Text] => text is Admissible on JsonPointer = _ => ()
 

@@ -69,6 +69,7 @@ object Isolation extends Rig(using Classloader[Isolation.type]):
       val cls2 = function.getClass
       val method2 = function.getClass.getMethod("apply", classOf[Object]).nn
       method2.setAccessible(true)
+
       val result =
         method2.invoke(function, input.asInstanceOf[scala.Array[AnyRef | Null]])
         . asInstanceOf[scala.Array[AnyRef | Null]]

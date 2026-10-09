@@ -32,9 +32,9 @@
                                                                                                   */
 package zephyrine
 
-import scala.caps
-
 import java.nio as jn, jn.charset as jnc
+
+import scala.caps
 
 import anticipation.*
 import contingency.*

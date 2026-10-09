@@ -37,12 +37,12 @@ import breviloquence.*
 import contingency.*
 import corpuscular.*
 import enigmatic.*
-import prepositional.*
-import turbulence.*
-import gastronomy.*
-import rudiments.*
-import vacuous.*
 import fulminate.*
+import gastronomy.*
+import prepositional.*
+import rudiments.*
+import turbulence.*
+import vacuous.*
 
 object Cose:
   // Serialises a COSE message to its CBOR-tagged wire form, as `cose.in[Data]`. Bounded by

@@ -32,9 +32,9 @@
                                                                                                   */
 package parasite
 
-import scala.language.experimental.pureFunctions
-
 import java.lang as jl
+
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
@@ -42,7 +42,6 @@ import digression.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-
 import unsafeExceptions.canThrowAny
 
 object Promise:
@@ -77,6 +76,7 @@ final class Promise[value]():
   // `bind`/`map` without suspending the calling strand.
   def task(using monitor: Monitor^, probate: SharedProbate, codepoint: Codepoint)
   :   (Task[value] emits Async.Error)^{monitor, probate} =
+
     async(await())
 
   // `ere` may re-run the transition under contention, so `supplied` — a by-name — is forced
@@ -116,6 +116,7 @@ final class Promise[value]():
     state() match
       case Complete(value) => value
       case Cancelled       => abort(Async.Error(Async.Error.Reason.Cancelled))
+
       case Incomplete(_)   =>
         val strand0: Strand = monitor.supervisor.strand()
 
@@ -177,6 +178,7 @@ final class Promise[value]():
     state() match
       case Complete(value) => value
       case Cancelled       => abort(Async.Error(Async.Error.Reason.Cancelled))
+
       case Incomplete(_)   =>
         val deadline = jl.System.nanoTime() + duration.generic
         val strand0: Strand = monitor.supervisor.strand()

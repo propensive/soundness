@@ -32,28 +32,29 @@
                                                                                                   */
 package savagery
 
+import scala.collection.mutable.ListBuffer
+
 import anticipation.*
+import cardinality.*
+import cataclysm.formatting.compactCssFormatting
+import cataclysm.{Css, FontFace}
 import contingency.*
 import denominative.*
+import distillate.*
+import fulminate.*
+import geodesy.*
 import gossamer.*
 import hieroglyph.*
+import iridescence.*
+import kaleidoscope.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 import xylophone.*
 import zephyrine.*
-import fulminate.*
-import scala.collection.mutable.ListBuffer
-import cardinality.*
-import cataclysm.formatting.compactCssFormatting
-import cataclysm.{Css, FontFace}
-import distillate.*
-import geodesy.*
-import iridescence.*
-import kaleidoscope.*
-import symbolism.*
 
 object Svg:
   // The `<svg>` document element, with its definitions and figures, as `svg.in[Xml]`.
@@ -162,7 +163,6 @@ object Svg:
     def labelOf(xml: Xml): Text = xml match
       case e: Xml.Element => e.label
       case _          => t"<unknown>"
-
 
     def findSvg(nodes: List[Xml.Node])(using Tactic[Svg.Error]): Xml.Element =
       nodes.reap { case e: Xml.Element if e.label == t"svg" => e }.or:
@@ -296,6 +296,7 @@ object Svg:
       val cy = numAttr(elem, t"cy")
       val rx = numAttr(elem, t"rx")
       val ry = numAttr(elem, t"ry")
+
       Ellipse
         ( Point(cx, cy), rx, ry, Angle(0), transformsAttr(elem), styleAttr(elem), idAttr(elem) )
 
@@ -375,6 +376,7 @@ object Svg:
 
           elem.children.readable.toList.collect:
             case e: Xml.Element if e.label == t"stop" => decodeStop(e)
+
           . to(List)
 
       LinearGradient(id, stops*)

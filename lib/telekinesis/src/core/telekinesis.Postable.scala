@@ -33,7 +33,6 @@
 package telekinesis
 
 import scala.caps
-
 import scala.language.dynamics
 
 import anticipation.*
@@ -52,7 +51,6 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
-
 import alphabets.hexLowerCase
 
 object Postable:
@@ -108,6 +106,7 @@ object Postable:
 
       def mediaType(content: response): MediaType =
         content.generic(0).as[MediaType](using decoder)
+
       def stream(content: response): (Stream[Data] over Credit)^ = content.generic(1).stream
 
 trait Postable extends Typeclass:

@@ -72,6 +72,7 @@ extends Cipher, Encryption, Symmetric:
   // total length is finally known.
   def encryptStream(stream: Chain[Data], key: Data, vector: InitializationVector)
   :   Chain[Data] =
+
     val blockSize = cipher.blockSize(transformation)
     val iv: Optional[Data] = if mode.usesIv then vector(blockSize) else Unset
     val session = cipher.stream(transformation, key, iv)
@@ -264,6 +265,7 @@ extends Duct[Data, Data]:
     inner match
       case duct0: CipherDuct =>
         val duct = duct0.asInstanceOf[CipherDuct^]
+
         try duct.flush(target)(space)
         catch case error: Exception =>
           // Matched by class name (see `securityException`): `javax.crypto` types cannot be

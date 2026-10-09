@@ -32,16 +32,15 @@
                                                                                                   */
 package bitumen
 
-
 import anticipation.*
-import denominative.*
 import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import hieroglyph.*, codepages.utf8Codepage
 import rudiments.*
-import vacuous.*
 import symbolism.*
+import vacuous.*
 
 object Pax:
   def record(key: Text, value: Text): Data =

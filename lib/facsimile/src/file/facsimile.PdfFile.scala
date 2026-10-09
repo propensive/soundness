@@ -32,7 +32,6 @@
                                                                                                   */
 package facsimile
 
-
 import ambience.*
 import anticipation.*
 import aperture.*
@@ -40,6 +39,7 @@ import contingency.*
 import distillate.*
 import enigmatic.*
 import eucalyptus.*
+import fulminate.errorDiagnostics.stackTracesDiagnostics
 import galilei.*
 import gossamer.*
 import nomenclature.*
@@ -48,8 +48,6 @@ import rudiments.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
-
-import fulminate.errorDiagnostics.stackTracesDiagnostics
 import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 import filesystemOptions.deleteRecursively
@@ -229,6 +227,7 @@ class PdfFile private (origin: PdfFile.Origin):
                   case bytes: (Array[Byte]^{}) @unchecked =>
                     ram.grow(source.size + bytes.length)
                     ram(source.size) = bytes
+
                   case _ => ()
 
                 outcome

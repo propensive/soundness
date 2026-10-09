@@ -35,14 +35,14 @@ package monotonous
 import scala.caps
 
 import anticipation.*
-import denominative.*
-import prepositional.*
-import rudiments.*
-import vacuous.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import hypotenuse.*
+import prepositional.*
+import rudiments.*
 import symbolism.`+`
+import vacuous.*
 import zephyrine.*
 
 // An `Alphabet` is the stage descriptor for streaming serialization in both
@@ -112,6 +112,7 @@ object Alphabet:
             // The stage's own buffer, asserted exclusive at the cast rim.
             val chars: scala.Array[Char]^ =
               unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]]).asInstanceOf[scala.Array[Char]^]
+
             var consumed: Int = 0
             var produced: Int = 0
             var continue: Boolean = true
@@ -158,6 +159,7 @@ object Alphabet:
 
             val chars: scala.Array[Char]^ =
               unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]]).asInstanceOf[scala.Array[Char]^]
+
             var produced: Int = 0
 
             if !flushing then
@@ -234,6 +236,7 @@ object Alphabet:
             // The stage's own buffer, asserted exclusive at the cast rim.
             val bytes: scala.Array[Byte]^ =
               unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+
             var consumed: Int = 0
             var produced: Int = 0
             var continue: Boolean = true
@@ -288,6 +291,7 @@ object Alphabet:
                   accumulator = (accumulator << base)
                     | stage.invert(position, char)
                         (using tactic)
+
                   accumulated += base
 
                 position += 1

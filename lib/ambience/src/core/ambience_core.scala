@@ -32,9 +32,9 @@
                                                                                                   */
 package ambience
 
-import scala.language.experimental.pureFunctions
-
 import java.lang as jl
+
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*

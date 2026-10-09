@@ -32,17 +32,15 @@
                                                                                                   */
 package gossamer
 
-import scala.collection.immutable.IndexedSeq
-
 import java.lang as jl
 
+import scala.collection.immutable.IndexedSeq
 import scala.reflect.*
 
 import anticipation.*
-
 import denominative.*
-import rudiments.*
 import hieroglyph.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*

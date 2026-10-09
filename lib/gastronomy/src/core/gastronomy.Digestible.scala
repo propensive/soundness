@@ -32,9 +32,9 @@
                                                                                                   */
 package gastronomy
 
-import scala.{caps, util}
-
 import java.lang as jl
+
+import scala.{caps, util}
 
 import anticipation.*
 import corpuscular.*
@@ -85,14 +85,12 @@ object Digestible extends Derivable[Digestible]:
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
     (digestion, set) => set.each(dig().digest(digestion, _))
 
-
   given sequence: [sequence <: Sequence, value] => (digestible: => value is Digestible)
   =>  sequence[value] is Digestible =
 
     // [by-name-capture]
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
     (digestion, sequence) => sequence.each(dig().digest(digestion, _))
-
 
   given iarray: [value] => (digestible: => value is Digestible) => (Array[value]^{}) is Digestible =
     // [by-name-capture]
@@ -114,7 +112,6 @@ object Digestible extends Derivable[Digestible]:
       map.each: (key, value) =>
         digKey().digest(digestion, key)
         digValue().digest(digestion, value)
-
 
   given stream: [value] => (digestible: => value is Digestible) => Chain[value] is Digestible =
     // [by-name-capture] by-name Digestible laundered to pure thunk

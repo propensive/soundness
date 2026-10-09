@@ -32,9 +32,9 @@
                                                                                                   */
 package scintillate
 
-import scala.caps
-
 import java.io as ji
+
+import scala.caps
 
 import com.sun.net.httpserver as csnh
 

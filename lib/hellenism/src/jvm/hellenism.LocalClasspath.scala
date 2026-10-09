@@ -77,7 +77,6 @@ object LocalClasspath:
 
       new LocalClasspath(entries, widened.to[Set])
 
-
   // The classpath a classloader loads from, when it is a `URLClassLoader` over local entries —
   // as it is under a host such as fume, which isolates each test suite in one — and otherwise
   // the `java.class.path` property. This, not the property alone, is what a process launched

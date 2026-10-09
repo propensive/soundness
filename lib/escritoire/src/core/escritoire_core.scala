@@ -32,7 +32,6 @@
                                                                                                   */
 package escritoire
 
-
 import scala.collection.immutable.IndexedSeq
 
 import anticipation.*

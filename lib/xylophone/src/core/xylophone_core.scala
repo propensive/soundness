@@ -32,11 +32,9 @@
                                                                                                   */
 package xylophone
 
-
-import scala.language.dynamics
-
 import scala.annotation.*
 import scala.collection.mutable as scm
+import scala.language.dynamics
 
 import anticipation.*
 import contextual.*

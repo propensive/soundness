@@ -33,21 +33,19 @@
 package xenophile
 
 import scala.caps
-
-
 import scala.collection.immutable as sci
 import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-import denominative.*
-import denominative.dysasymptotics.linearSize
 
 // The terminal materializer for the WIT ecosystem: turns a fully-applied `Foreign` invocation into
 // a real Wasm Component Model import call (`scala.scalajs.wit.witImportCall`, lowered by the
@@ -224,6 +222,7 @@ object WasmInvoke extends Materializer:
 
           // The stdlib view provides a stepwise cursor for the imperative loop below.
           val pairs = elements.zip(fields).stdlib.iterator
+
           while pairs.hasNext do
             val (element, field) = pairs.next()
             val (repr, decode) = decodeFor(element, field)
@@ -246,6 +245,7 @@ object WasmInvoke extends Materializer:
             val decodedBuffer = List.newBuilder[Term]
 
             val indexed = derived.zipWithIndex.iterator
+
             while indexed.hasNext do
               val (derivation, index) = indexed.next()
               decodedBuffer +=

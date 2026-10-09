@@ -32,10 +32,10 @@
                                                                                                   */
 package turbulence
 
-import scala.caps
-
 import java.io as ji
 import java.nio as jn
+
+import scala.caps
 
 import anticipation.*
 import contingency.*
@@ -182,6 +182,7 @@ object Sink:
       @caps.unsafe.untrackedCaptures
       private val storage: addressable0.Storage =
         addressable0.allocate(block).asInstanceOf[addressable0.Storage]
+
       private var mark0: Int = 0
       private var chunks: List[medium] = Nil
 
@@ -219,4 +220,5 @@ trait Sink extends Typeclass, Operable:
 
   def contramap[self2](lambda: self2 => Self)
   :   (self2 is Sink by Operand over Transport)^{this, lambda} =
+
     target => intake(lambda(target))

@@ -412,6 +412,7 @@ object Mutation:
         if atomIdx >= 0 then
           val atoms =
             Array.frozen(target.atoms.readable.take(atomIdx) ++ target.atoms.readable.drop(atomIdx + 1))
+
           splice(Array(target.copy(atoms = atoms)))
         else
           var foundBlock = -1
@@ -536,6 +537,7 @@ object Mutation:
         val last = blocks.readable(lastIdx)
         val fresh = Tel.Block(Array.empty, Unset, Array(compound), last.trailingBlankLines)
         val separation = if last.tabulation.present then 1 else 0
+
         Array.frozen
          ( blocks.readable.updated(lastIdx, last.copy(trailingBlankLines = separation))
            :+ fresh )
@@ -545,11 +547,13 @@ object Mutation:
       if block.tabulation.present then
         val separated = block.copy(trailingBlankLines = 1)
         val fresh = Tel.Block(Array.empty, Unset, Array(compound), block.trailingBlankLines)
+
         Array.frozen
          ( blocks.readable.take(lastB) ++ scala.IArray(separated, fresh)
            ++ blocks.readable.drop(lastB + 1) )
       else
         val cs = block.compounds
+
         val compounds =
           Array.frozen
            ( cs.readable.take(lastC + 1) ++ scala.IArray(compound)
@@ -574,6 +578,7 @@ object Mutation:
         then removed.trailingBlankLines else previous.trailingBlankLines
 
       val absorbed = previous.copy(trailingBlankLines = trailing)
+
       Array.frozen
        ( blocks.readable.take(blockIdx - 1) ++ scala.IArray(absorbed)
          ++ blocks.readable.drop(blockIdx + 1) )
@@ -772,8 +777,10 @@ object Mutation:
       while j < positions.length do
         val (bIdx, cIdx) = positions(j)
         val block = out(bIdx)
+
         out(bIdx) =
           block.copy(compounds = Array.frozen(block.compounds.readable.updated(cIdx, newGroup(j))))
+
         j += 1
 
       Array.from(out)
@@ -1207,4 +1214,3 @@ object Mutation:
 
   case class Error(reason: Mutation.Error.Reason)(using Diagnostics)
   extends fulminate.Error(606, reason.ordinal)(m"the mutation failed because $reason")
-

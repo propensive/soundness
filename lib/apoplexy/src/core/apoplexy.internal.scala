@@ -284,6 +284,7 @@ object Apoplexy:
           case OpenApi.SecurityScheme.Kind.Http | OpenApi.SecurityScheme.Kind.OAuth2
               | OpenApi.SecurityScheme.Kind.OpenIdConnect if token =>
             val typed = '{$credential.asInstanceOf[Credential { type Result = Authorization }]}
+
             val strings: Expr[scala.collection.immutable.List[String]] =
               Expr(scopes.map(_.s).stdlib)
 
@@ -396,6 +397,7 @@ object Apoplexy:
 
     schemes match
       case scala.collection.immutable.Nil               => scala.collection.immutable.Nil
+
       case scala.collection.immutable.::(scheme, rest)  =>
         scala.collection.immutable.::(describe(doc, scheme), describeAll(doc, rest))
 
@@ -588,6 +590,7 @@ object Apoplexy:
 
       media match
         case Unset       => Payload.Empty
+
         case media: Text => construable(media) match
           case Unset => Payload.Carrier(t"text/plain")
 
@@ -618,6 +621,7 @@ object Apoplexy:
       Member.Value(plain, Nil, multiplicity)
 
     case Member.Record(fields, multiplicity) => Member.Record(relaxed(fields), multiplicity)
+
     case Member.Union(alternatives, multiplicity) =>
       Member.Union(alternatives.map { (kind, member) => (kind, relax(member)) }, multiplicity)
 
@@ -875,6 +879,7 @@ object Apoplexy:
           ("Verb", bounds(literalType(verb))),
           ("Transport", bounds(transport)),
           ("Failure", bounds(failure)) )
+
       . fold[TypeRepr](TypeRepr.of[Api.Response]): (parent, member) =>
           Refinement(parent, member(0), member(1))
 
@@ -1039,6 +1044,7 @@ object Apoplexy:
 
         keys.filter(deeper).map(_.stdlib(newSegs.size)).seek(isTemplate).lay:
           shortcut(self, doc, source, newLocus, Nil, positional)
+
         . apply: template =>
           fillTemplate(self, source, doc, newLocus, template, positional, wire)
 

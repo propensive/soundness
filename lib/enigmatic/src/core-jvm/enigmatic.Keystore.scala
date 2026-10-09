@@ -32,12 +32,11 @@
                                                                                                   */
 package enigmatic
 
-import scala.caps
-
-
 import java.io as ji
 import java.security as js
 import java.util as ju
+
+import scala.caps
 
 import anticipation.*
 import aperture.*
@@ -111,6 +110,7 @@ object Keystore:
     // wrong password from a corrupt store.
     def loadKeystore(keystore: js.KeyStore, in: ji.InputStream, password: scala.Array[Char] | Null)
     :   Unit =
+
       try keystore.load(in, password)
       catch case error: Exception => abort(Keystore.Error(Keystore.Error.Reason.Unreadable))
 

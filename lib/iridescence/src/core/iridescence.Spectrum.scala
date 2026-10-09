@@ -33,8 +33,8 @@
 package iridescence
 
 import denominative.*
-import rudiments.*
 import prepositional.*
+import rudiments.*
 
 object Spectrum:
   def apply[color <: Color: Perceptual in Srgb](colors0: List[Color in color])

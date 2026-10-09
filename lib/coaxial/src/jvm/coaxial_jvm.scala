@@ -32,14 +32,14 @@
                                                                                                   */
 package coaxial
 
-import scala.caps
-
 import java.io as ji
 import java.net as jn
 import java.nio.ByteBuffer
 import java.nio.channels as jnc
 import java.nio.file as jnf
 import java.util as ju
+
+import scala.caps
 
 import anticipation.*
 import contingency.*
@@ -401,14 +401,17 @@ package socketBackends:
         input.drain: region =>
           range =>
             val interval: Interval = range
+
             out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
                 interval.size)
+
             out.flush()
 
       case ClientExchange.Domain(channel) =>
         input.drain: region =>
           range =>
             val interval: Interval = range
+
             channel.write(ByteBuffer.wrap(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
                 interval.start.n0, interval.size))
 
@@ -640,8 +643,10 @@ private[coaxial] def streamsDuplex
       data.drain: region =>
         range =>
           val interval: Interval = range
+
           out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
               interval.size)
+
           out.flush()
 
     def close(): Unit = shutdown()

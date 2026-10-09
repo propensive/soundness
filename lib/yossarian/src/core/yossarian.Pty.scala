@@ -45,9 +45,8 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import turbulence.*
-import zephyrine.*
 import vacuous.*
-
+import zephyrine.*
 import Pty.Error.Reason, Reason.*
 
 object Pty:
@@ -323,6 +322,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
 
     def rep(n: Int): Unit =
       val count = if n == 0 then 1 else n
+
       repeat(count):
         writeGrapheme(lastGrapheme)
 

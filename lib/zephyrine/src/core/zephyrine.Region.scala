@@ -126,11 +126,13 @@ object Region:
     // `Addressable` primitive with the extent's bounds, so no caller ever re-derives offsets.
     inline def materialize(range: Interval in region.type): medium =
       val interval: Interval = range
+
       addressable.materialize
        (region.asInstanceOf[addressable.Storage], interval.start.n0, interval.size)
 
     inline def cloneTo(range: Interval in region.type)(target: addressable.Target): Unit =
       val interval: Interval = range
+
       addressable.cloneStorage
        (region.asInstanceOf[addressable.Storage], interval.start.n0, interval.size)(target)
 

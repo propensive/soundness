@@ -151,5 +151,6 @@ case class NetworkInterface
 
   def ipv4: List[Ipv4] =
     addresses.map(_.address).sweep { case ip: (Ipv4 @unchecked) => ip }
+
   def ipv6: List[Ipv6] =
     addresses.map(_.address).sweep { case ip: Ipv6 => ip }

@@ -46,12 +46,16 @@ object Amount:
   // base units
   erased given distance: Amount[Units[1, Distance], "distance"] =
     Amount.Evidence[Units[1, Distance], "distance"]()
+
   erased given mass: Amount[Units[1, Mass], "mass"] = Amount.Evidence[Units[1, Mass], "mass"]()
   erased given time: Amount[Units[1, Time], "time"] = Amount.Evidence[Units[1, Time], "time"]()
+
   erased given current: Amount[Units[1, Current], "current"] =
     Amount.Evidence[Units[1, Current], "current"]()
+
   erased given heat: Amount[Units[1, Heat], "temperature"] =
     Amount.Evidence[Units[1, Heat], "temperature"]()
+
   erased given luminosity: Amount[Units[1, Luminosity], "luminosity"] =
     Amount.Evidence[Units[1, Luminosity], "luminosity"]()
 
@@ -149,103 +153,153 @@ object Amount:
     Units[3, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
 
   erased given absement: Amount[Absement, "absement"] = Amount.Evidence[Absement, "absement"]()
+
   erased given absorbedDoseRate: Amount[AbsorbedDoseRate, "absorbed dose rate"] =
     Amount.Evidence[AbsorbedDoseRate, "absorbed dose rate"]()
+
   erased given acceleration: Amount[Acceleration, "acceleration"] =
     Amount.Evidence[Acceleration, "acceleration"]()
+
   erased given area: Amount[Area, "area"] = Amount.Evidence[Area, "area"]()
+
   erased given areaDensity: Amount[AreaDensity, "area density"] =
     Amount.Evidence[AreaDensity, "area density"]()
+
   erased given capacitance: Amount[Capacitance, "capacitance"] =
     Amount.Evidence[Capacitance, "capacitance"]()
+
   erased given crackle: Amount[Crackle, "crackle"] = Amount.Evidence[Crackle, "crackle"]()
+
   erased given currentDensity: Amount[CurrentDensity, "current density"] =
     Amount.Evidence[CurrentDensity, "current density"]()
+
   erased given dynamicViscosity: Amount[DynamicViscosity, "dynamic viscosity"] =
     Amount.Evidence[DynamicViscosity, "dynamic viscosity"]()
+
   erased given electricCharge: Amount[ElectricCharge, "electric charge"] =
     Amount.Evidence[ElectricCharge, "electric charge"]()
+
   erased given energy: Amount[Energy, "energy"] = Amount.Evidence[Energy, "energy"]()
   erased given entropy: Amount[Entropy, "entropy"] = Amount.Evidence[Entropy, "entropy"]()
   erased given force: Amount[Force, "force"] = Amount.Evidence[Force, "force"]()
   erased given frequency: Amount[Frequency, "frequency"] = Amount.Evidence[Frequency, "frequency"]()
+
   erased given substance: Amount[Units[1, AmountOfSubstance], "amount of substance"] =
     Amount.Evidence[Units[1, AmountOfSubstance], "amount of substance"]()
+
   erased given illuminance: Amount[Illuminance, "illuminance"] =
     Amount.Evidence[Illuminance, "illuminance"]()
+
   erased given impedance: Amount[Impedance, "impedance"] = Amount.Evidence[Impedance, "impedance"]()
+
   erased given inductance: Amount[Inductance, "inductance"] =
     Amount.Evidence[Inductance, "inductance"]()
+
   erased given jerk: Amount[Jerk, "jerk"] = Amount.Evidence[Jerk, "jerk"]()
   erased given jounce: Amount[Jounce, "jounce"] = Amount.Evidence[Jounce, "jounce"]()
+
   erased given linearDensity: Amount[LinearDensity, "linear density"] =
     Amount.Evidence[LinearDensity, "linear density"]()
+
   erased given magneticFlux: Amount[MagneticFlux, "magnetic flux"] =
     Amount.Evidence[MagneticFlux, "magnetic flux"]()
+
   erased given magneticMoment: Amount[MagneticMoment, "magnetic moment"] =
     Amount.Evidence[MagneticMoment, "magnetic moment"]()
+
   erased given magnetization: Amount[Magnetization, "magnetization"] =
     Amount.Evidence[Magnetization, "magnetization"]()
+
   erased given massDensity: Amount[MassDensity, "mass density"] =
     Amount.Evidence[MassDensity, "mass density"]()
+
   erased given molarConcentration: Amount[MolarConcentration, "molar concentration"] =
     Amount.Evidence[MolarConcentration, "molar concentration"]()
+
   erased given chemicalPotential: Amount[ChemicalPotential, "chemical potential"] =
     Amount.Evidence[ChemicalPotential, "chemical potential"]()
+
   erased given molarEntropy: Amount[MolarEntropy, "molar entropy"] =
     Amount.Evidence[MolarEntropy, "molar entropy"]()
+
   erased given momentOfInertia: Amount[MomentOfInertia, "moment of inertia"] =
     Amount.Evidence[MomentOfInertia, "moment of inertia"]()
+
   erased given momentum: Amount[Momentum, "momentum"] = Amount.Evidence[Momentum, "momentum"]()
+
   erased given opticalPower: Amount[OpticalPower, "optical power"] =
     Amount.Evidence[OpticalPower, "optical power"]()
+
   erased given permeability: Amount[Permeability, "permeability"] =
     Amount.Evidence[Permeability, "permeability"]()
+
   erased given permittivity: Amount[Permittivity, "permittivity"] =
     Amount.Evidence[Permittivity, "permittivity"]()
+
   erased given power: Amount[Power, "power"] = Amount.Evidence[Power, "power"]()
   erased given pressure: Amount[Pressure, "pressure"] = Amount.Evidence[Pressure, "pressure"]()
   erased given pop: Amount[Pop, "pop"] = Amount.Evidence[Pop, "pop"]()
   erased given radiance: Amount[Radiance, "radiance"] = Amount.Evidence[Radiance, "radiance"]()
+
   erased given reactionRate: Amount[ReactionRate, "reaction rate"] =
     Amount.Evidence[ReactionRate, "reaction rate"]()
+
   erased given reluctance: Amount[Reluctance, "reluctance"] =
     Amount.Evidence[Reluctance, "reluctance"]()
+
   erased given specificEnergy: Amount[SpecificEnergy, "specific energy"] =
     Amount.Evidence[SpecificEnergy, "specific energy"]()
+
   erased given specificVolume: Amount[SpecificVolume, "specific volume"] =
     Amount.Evidence[SpecificVolume, "specific volume"]()
+
   erased given spin: Amount[Spin, "spin"] = Amount.Evidence[Spin, "spin"]()
+
   erased given surfaceTension: Amount[SurfaceTension, "surface tension"] =
     Amount.Evidence[SurfaceTension, "surface tension"]()
+
   erased given thermalConductance: Amount[ThermalConductance, "thermal conductance"] =
     Amount.Evidence[ThermalConductance, "thermal conductance"]()
+
   erased given thermalResistance: Amount[ThermalResistance, "thermal resistance"] =
     Amount.Evidence[ThermalResistance, "thermal resistance"]()
+
   erased given thermalResistivity: Amount[ThermalResistivity, "thermal resistivity"] =
     Amount.Evidence[ThermalResistivity, "thermal resistivity"]()
+
   erased given velocity: Amount[Velocity, "velocity"] = Amount.Evidence[Velocity, "velocity"]()
   erased given volume: Amount[Volume, "volume"] = Amount.Evidence[Volume, "volume"]()
+
   erased given electricChargeDensity: Amount[ElectricChargeDensity, "electric charge density"] =
     Amount.Evidence[ElectricChargeDensity, "electric charge density"]()
+
   erased given electricDipoleMoment: Amount[ElectricDipoleMoment, "electric dipole moment"] =
     Amount.Evidence[ElectricDipoleMoment, "electric dipole moment"]()
+
   erased given electricFieldStrength: Amount[ElectricFieldStrength, "electric field strength"] =
     Amount.Evidence[ElectricFieldStrength, "electric field strength"]()
+
   erased given electricalConductance: Amount[ElectricalConductance, "electric conductance"] =
     Amount.Evidence[ElectricalConductance, "electric conductance"]()
+
   erased given electricalConductivity: Amount[ElectricalConductivity, "electric conductivity"] =
     Amount.Evidence[ElectricalConductivity, "electric conductivity"]()
+
   erased given electricalPotential: Amount[ElectricalPotential, "electric potential"] =
     Amount.Evidence[ElectricalPotential, "electric potential"]()
+
   erased given electricalResistivity: Amount[ElectricalResistivity, "electric resistivity"] =
     Amount.Evidence[ElectricalResistivity, "electric resistivity"]()
+
   erased given magneticFluxDensity: Amount[MagneticFluxDensity, "magnetic flux density"] =
     Amount.Evidence[MagneticFluxDensity, "magnetic flux density"]()
+
   erased given specificHeatCapacity: Amount[SpecificHeatCapacity, "specific heat capacity"] =
     Amount.Evidence[SpecificHeatCapacity, "specific heat capacity"]()
+
   erased given thermalConductivity: Amount[ThermalConductivity, "thermal conductivity"] =
     Amount.Evidence[ThermalConductivity, "thermal conductivity"]()
+
   erased given volumetricFlowRate: Amount[VolumetricFlowRate, "volumetric flow rate"] =
     Amount.Evidence[VolumetricFlowRate, "volumetric flow rate"]()
 

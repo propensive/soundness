@@ -73,12 +73,14 @@ object Normalization:
 
     scala.io.Source.fromInputStream(in).getLines().foreach: line =>
       val fields = line.split(";", -1).nn
+
       if fields.length > 5 then
         val codepoint = Integer.parseInt(fields(0).nn, 16)
         val ccc = Integer.parseInt(fields(3).nn)
         if ccc != 0 then cccPairs += ((codepoint, ccc))
 
         val mapping = fields(5).nn
+
         if !mapping.isEmpty && !mapping.startsWith("<") then
           val decomposition =
             mapping.split(" ").nn.iterator.map { part => Integer.parseInt(part.nn, 16) }

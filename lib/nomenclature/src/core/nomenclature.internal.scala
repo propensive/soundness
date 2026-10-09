@@ -32,13 +32,14 @@
                                                                                                   */
 package nomenclature
 
+import scala.quoted.*
+
 import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
 import prepositional.*
 import spectacular.*
-import scala.quoted.*
 
 object internal:
   opaque type Name[+plane] <: anticipation.Text = anticipation.Text

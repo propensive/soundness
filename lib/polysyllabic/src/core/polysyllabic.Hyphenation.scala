@@ -36,10 +36,10 @@ import scala.collection.mutable.ArrayBuilder
 
 import anticipation.*
 import denominative.*
+import fulminate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
-import fulminate.*
 
 object Hyphenation:
   given fallback: Hyphenation = Unhyphenated

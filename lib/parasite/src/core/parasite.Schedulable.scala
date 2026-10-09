@@ -32,10 +32,10 @@
                                                                                                   */
 package parasite
 
+import java.lang as jl
+
 import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
-
-import java.lang as jl
 
 import anticipation.*
 import prepositional.*

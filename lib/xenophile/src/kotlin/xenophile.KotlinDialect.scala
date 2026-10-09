@@ -32,7 +32,6 @@
                                                                                                   */
 package xenophile
 
-
 import scala.collection.mutable as scm
 import scala.jdk.CollectionConverters.*
 

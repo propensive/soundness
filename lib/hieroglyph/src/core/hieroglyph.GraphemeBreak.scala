@@ -32,11 +32,9 @@
                                                                                                   */
 package hieroglyph
 
-
-import scala.caps
-
 import java.io as ji
 
+import scala.caps
 import scala.collection.mutable.ArrayBuilder
 
 import anticipation.*
@@ -46,8 +44,8 @@ import denominative.dysasymptotics.linearSize
 import fulminate.*
 import kaleidoscope.*
 import rudiments.*
-import vacuous.*
 import rudiments.sortingAlgorithms.timsort
+import vacuous.*
 
 object GraphemeBreak:
   enum Property:
@@ -72,7 +70,6 @@ object GraphemeBreak:
     ( in: ji.InputStream, classify: Text => Optional[Int] )
   :   List[Entry] =
 
-
      scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
       Text(line) match
         case r"${Hex(from)}([0-9A-Fa-f]+)\.\.${Hex(to)}([0-9A-Fa-f]+)\s*;\s*$name([A-Za-z_]+).*" =>
@@ -83,6 +80,7 @@ object GraphemeBreak:
 
         case _ =>
           None
+
      . to(List)
 
   private def gbpClassify(name: Text): Optional[Int] =
@@ -125,6 +123,7 @@ object GraphemeBreak:
 
         case _ =>
           None
+
      . to(List)
 
   private def incbClassify(name: Text): Optional[Int] = name.s match

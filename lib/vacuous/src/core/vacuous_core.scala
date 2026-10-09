@@ -107,7 +107,6 @@ extension [value](optional: Optional[value])(using Optionality[optional.type])
   // since `or`/`let`/`lay` express every honest consumption.
   private inline def unsafeGet: value = optional.asInstanceOf[value]
 
-
   inline def mask(predicate: value => Boolean): Optional[value] =
     optional.let: value => if predicate(value) then Unset else value
 

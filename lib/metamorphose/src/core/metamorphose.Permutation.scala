@@ -38,12 +38,12 @@ import scala.collection.mutable.BitSet
 import anticipation.*
 import contingency.*
 import denominative.*
-import rudiments.*
-import vacuous.*
+import denominative.dysasymptotics.linearSize
 import fulminate.*
 import prepositional.*
+import rudiments.*
 import symbolism.*
-import denominative.dysasymptotics.linearSize
+import vacuous.*
 
 object Permutation:
   // The big-endian two's-complement bytes of the permutation's factoradic number.
@@ -152,6 +152,7 @@ case class Permutation(factoradic: Factoradic):
                              index += 1
                              sequence = tail
                              true
+
         case Nil          => false
     do ()
 

@@ -32,19 +32,18 @@
                                                                                                   */
 package xylophone
 
-
 import anticipation.*
 import contextual.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 import zephyrine.*
-import rudiments.*
-import denominative.dysasymptotics.linearSize
 
 // `XPath` is a `Format`, so a malformed *expression* is a `Parse.Error` like any other
 // parse failure, carrying the offset at which it was detected. `XPath.Error` is reserved
@@ -240,6 +239,7 @@ object XPath extends Format:
 
     private def accumulate(element: Xml.Element, builder: StringBuilder): Unit =
       val children = element.children
+
       children.extent.each: i =>
         children(i) match
           case Xml.Text(text)     => builder.append(text.s)

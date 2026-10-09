@@ -238,6 +238,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
   // terminated it (or -1).
   private update def decodeScan(frame: JpegFrame, scan: JpegScan)(using Tactic[Raster.Error])
   :   Int =
+
     val count = scan.componentIndices.length
     val components = scan.componentIndices.map(frame.components(_))
     var check = 0

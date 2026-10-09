@@ -47,7 +47,6 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-
 object Multipart:
   enum Disposition:
     case Inline, Attachment, FormData
@@ -154,6 +153,7 @@ object Multipart:
 
     def parsePart(headers: Map[Text, Text], stream: Spring[Data])
     :   Part =
+
       headers.at(t"Content-Disposition").let: disposition =>
         // `form-data; name="field"; filename="f.bin"`: the token, then `key=value`
         // parameters, read in place rather than cut, trimmed and mapped. A quoted value loses
@@ -165,6 +165,7 @@ object Multipart:
         def params(from: Int, list: List[(Text, Text)]): Map[Text, Text] =
           if from < 0 then list.to[Map] else
             val next = text.indexOf(';', from)
+
             val param =
               (if next < 0 then text.substring(from).nn else text.substring(from, next).nn).trim.nn
 

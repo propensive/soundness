@@ -45,6 +45,7 @@ sealed trait Dynamical extends Typeclass
 sealed class Dynamically[-data]:
   inline def apply[result](lambda: (erased dynamical: (? >: data) is Dynamical) ?=> result)
   :   result =
+
     lambda(using !![data is Dynamical])
 
 object Dynamically extends Dynamically[Any]

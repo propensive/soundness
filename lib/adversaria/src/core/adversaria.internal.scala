@@ -32,10 +32,9 @@
                                                                                                   */
 package adversaria
 
-import scala.collection.immutable.{List, Nil, ::}
-
 import java.lang as jl
 
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*
@@ -218,15 +217,18 @@ object internal:
         new Dereferenceable:
           type Self = entity
           type Result = value
+
           private val lambdas: scala.collection.immutable.Map[Text, Self => Result] =
             ${lambdaMap}.toMap
 
           private val lenses
           :   scala.collection.immutable.Map[Text, Lens from entity onto value] =
+
             ${lensMap}.toMap
 
           def names(entity: Self): proscenium.List[Text] = (${namesList}).to(proscenium.List)
           def select(entity: entity, name: Text): Result = lambdas(name)(entity)
+
           override def lens(name: Text): Optional[Lens from Self onto Result] =
             lenses.get(name).optional
       }

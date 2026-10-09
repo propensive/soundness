@@ -55,6 +55,7 @@ object Mappable extends Mappable.Fallback:
       type Self = container
       type Operand = element
       type Result[element2] = List[element2]
+
       def map[element2](self: container, lambda: element => element2): List[element2] =
         List.map(self, lambda)
 
@@ -75,6 +76,7 @@ object Mappable extends Mappable.Fallback:
       type Self = container
       type Operand = element
       type Result[element2] = Sequence[element2]
+
       def map[element2](self: container, lambda: element => element2): Sequence[element2] =
         Sequence.map(self, lambda)
 
@@ -85,6 +87,7 @@ object Mappable extends Mappable.Fallback:
       type Self = container
       type Operand = element
       type Result[element2] = Chain[element2]
+
       def map[element2](self: container, lambda: element => element2): Chain[element2] =
         Chain.map(self, lambda)
 
@@ -96,6 +99,7 @@ object Mappable extends Mappable.Fallback:
       type Self = container
       type Operand = value
       type Result[value2] = Map[key, value2]
+
       def map[value2](self: container, lambda: value => value2): Map[key, value2] =
         Map.map(self, lambda)
 
@@ -107,6 +111,7 @@ object Mappable extends Mappable.Fallback:
       type Self = container
       type Operand = value
       type Result[value2] = Ledger[key, value2]
+
       def map[value2](self: container, lambda: value => value2): Ledger[key, value2] =
         Ledger.map(self, lambda)
 

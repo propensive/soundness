@@ -190,7 +190,6 @@ extension [countable: Countable](value: countable)
       lambda(Ordinal.zerary(index).asInstanceOf[Ordinal in value.type])
       index -= 1
 
-
 // Iteration over an interval's ordinals. The two overloads live here, at package level, rather
 // than in `internal` beside `fuse`: inside `internal` the opaque `Interval` is transparently a
 // `Long`, so the refinement `Interval in form` collapses and the brand never reaches a caller

@@ -32,12 +32,11 @@
                                                                                                   */
 package hallucination
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import rudiments.foreach
-
-import scala.caps
-
 import Raster.Error.Reason
 import Vp8Tables.*
 
@@ -115,6 +114,7 @@ private[hallucination] object Vp8Decoder:
     // [aliased-read] probability array read while bool is exclusive receiver
     @scala.caps.unsafe.untrackedCaptures
     private val tokenProbs: scala.Array[Int] = coeffProbs.asInstanceOf[scala.Array[Int]].clone()
+
     private var probSkipFalse = -1 // −1 means no skip probability
 
     private var top: scala.Array[Edge^]^ = scala.Array()
@@ -373,7 +373,6 @@ private[hallucination] object Vp8Decoder:
 
         i += 1
 
-
     private update def readMacroblockHeader(mbx: Int): Macroblock^ =
       val mb = Macroblock()
 
@@ -482,6 +481,7 @@ private[hallucination] object Vp8Decoder:
 
     private update def readResidualData(mb: Macroblock^, mbx: Int, p: Int, blocks: scala.Array[Int]^)
     :   Unit =
+
       val sindex = mb.segmentId
       var plane = if mb.lumaMode == BPred then 3 else 1 // YCoeff0 or Y2
 
@@ -554,6 +554,7 @@ private[hallucination] object Vp8Decoder:
 
     private update def intraPredictLuma(mbx: Int, mby: Int, mb: Macroblock^, resdata: scala.Array[Int]^)
     :   Unit =
+
       val stride = Vp8Predict.LumaStride
       val ws = Vp8Predict.createBorderLuma(mbx, mby, mbWidth, topBorderY, leftBorderY)
 
@@ -602,6 +603,7 @@ private[hallucination] object Vp8Decoder:
 
     private update def intraPredictChroma(mbx: Int, mby: Int, mb: Macroblock^, resdata: scala.Array[Int]^)
     :   Unit =
+
       val stride = Vp8Predict.ChromaStride
       val chromaWidth = bufferWidth/2
       val uws = Vp8Predict.createBorderChroma(mbx, mby, topBorderU, leftBorderU)

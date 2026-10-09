@@ -84,6 +84,7 @@ object Creation:
 
     if backend.stat(path, false).entry == Directory
     then backend.children(path).each { name => wipe(path.unsafeChild(name)(using Unsafe)) }
+
     backend.delete(path)
 
   class DirectoryCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]

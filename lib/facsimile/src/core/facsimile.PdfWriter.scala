@@ -34,19 +34,18 @@ package facsimile
 
 // By name: `contingency.*` would otherwise shadow this package's own `Guard` (the PDF
 // standard-security handler) with contingency's skip-scope capability of the same name.
-import facsimile.Guard
-
 import anticipation.*
 import contingency.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
+import facsimile.Guard
 import gossamer.*
 import hieroglyph.*
 import rudiments.*
+import rudiments.sortingAlgorithms.timsort
 import spectacular.*
 import symbolism.*
 import vacuous.*
-import denominative.*
-import denominative.dysasymptotics.linearSize
-import rudiments.sortingAlgorithms.timsort
 
 // Serialises a write overlay as a PDF incremental update (ISO 32000-2 §7.5.6): the changed
 // and new objects, a cross-reference section covering just them, and a trailer chaining
@@ -75,6 +74,7 @@ private[facsimile] object PdfWriter:
 
     (1 to maxNumber).each: number =>
       val value = pdf.apply(number)
+
       if value != Cos.Nil && !pdf.freed.contains(number) then
         offsets(number) = length
         ascii(t"$number 0 obj\n")
@@ -124,6 +124,7 @@ private[facsimile] object PdfWriter:
 
     changed.each: (number: Int) =>
       offsets(number) = baseOffset + length
+
       val generation = pdf.xref.entries(number) match
         case Xref.Entry.Direct(_, gen) => gen
         case _                         => 0
@@ -133,6 +134,7 @@ private[facsimile] object PdfWriter:
       // In an encrypted document, new and edited objects — held in the overlay as cleartext —
       // are encrypted with their own per-object key as they are written.
       val encryption = pdf.guard.let((_, number, generation))
+
       val value = pdf.guard.lay(pdf.overlay(number)):
         guard => encryptStrings(pdf.overlay(number), guard, number, generation)
 
@@ -278,6 +280,7 @@ private[facsimile] object PdfWriter:
         // A stream: its dictionary, then the payload framed by `stream`/`endstream`, with
         // `/Length` recomputed to the (possibly encrypted) byte count.
         val stored = pdf.raw(body)
+
         val payload = encryption.lay(stored): (guard, number, generation) =>
           guard.encryptStream(stored, number, generation)
 

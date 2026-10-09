@@ -33,7 +33,6 @@
 package chiaroscuro
 
 import scala.caps
-
 import scala.compiletime.*
 import scala.reflect.*
 
@@ -72,7 +71,6 @@ object Decomposable extends Decomposable2:
     // [field-purity] given codec retaining element decomposer; codec-thunk seal
     caps.unsafe.unsafeAssumePure: list =>
         Decomposition.Sequence(t"List", list.map(decomposable.decomposition(_)), list)
-
 
   given sequence: [element, collection <: Sequence[element]]
   =>  ( decomposable: => element is Decomposable )

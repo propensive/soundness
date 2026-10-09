@@ -32,12 +32,10 @@
                                                                                                   */
 package bitumen
 
-
-import scala.caps
-
 import java.io as ji
 import java.nio.file as jnf
 
+import scala.caps
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -47,9 +45,9 @@ import denominative.*
 import galilei.CreateFlag
 import gossamer.*
 import hypotenuse.*
+import pneumatic.*
 import prepositional.*
 import rudiments.*
-import pneumatic.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
@@ -270,6 +268,7 @@ object TarBuilder:
           stream.drain: region =>
             range =>
               val interval: Interval = range
+
               out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
                   interval.size)
         finally out.close()

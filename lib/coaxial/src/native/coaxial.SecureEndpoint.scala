@@ -32,10 +32,9 @@
                                                                                                   */
 package coaxial
 
-import scala.caps
-
 import java.io as ji
 
+import scala.caps
 import scala.scalanative.unsafe.*
 
 // TLS setup failures surface as `IOException`s, matching what the JVM `SecureEndpoint`'s

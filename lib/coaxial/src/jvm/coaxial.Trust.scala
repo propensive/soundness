@@ -263,6 +263,7 @@ object TlsAcceptance:
       acceptance.trust.pinned.let: fingerprint =>
         chain match
           case null => false
+
           case chain =>
             chain.headOption.flatMap(Option(_)).exists: leaf =>
               val digest: Data = Tls.fingerprint(Array.unsafeFrozen(leaf.getEncoded.nn))

@@ -38,16 +38,16 @@ package aviation
 import scala.io.*
 
 import anticipation.*
-import rudiments.*
 import contingency.*
 import denominative.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import kaleidoscope.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-import fulminate.*
 
 object Tzdb:
   case class Time(hours: Int, minutes: Int, seconds: Int, suffix: Optional[Char])
@@ -260,4 +260,3 @@ object Tzdb:
 
   enum Event:
     case ParseTzdb(name: Text) extends Event, Log.Time
-

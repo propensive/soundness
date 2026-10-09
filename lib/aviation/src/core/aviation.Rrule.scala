@@ -35,17 +35,17 @@ package aviation
 import anticipation.*
 import contingency.*
 import cosmopolite.{Locale, en, fr, de, es}
+import denominative.*
+import denominative.dysasymptotics.{linearSize, linearAccess}
 import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
-import spectacular.*
-import vacuous.*
-import denominative.*
-import symbolism.*
-import denominative.dysasymptotics.{linearSize, linearAccess}
 import rudiments.sortingAlgorithms.timsort
+import spectacular.*
+import symbolism.*
+import vacuous.*
 
 // One `BYDAY` entry: a weekday, optionally with an ordinal — `3MO` (3rd Monday), `-1FR` (last
 // Friday), or a bare `TU` (every Tuesday in the period). The ordinal is meaningful only under
@@ -215,9 +215,12 @@ object Rrule:
 
   private def yearOf(date: Date)(using calendar: RomanCalendar): Int =
     date.year(using calendar)()
+
   private def monthOf(date: Date)(using calendar: RomanCalendar): Int = date.month.numerical
+
   private def dayOf(date: Date)(using calendar: RomanCalendar): Int =
     date.day(using calendar)()
+
   private def list(date: Optional[Date]): List[Date] = date.lay(Nil)(List(_))
 
   // The ascending stream of zoneless date-times. A sub-day frequency steps the clock and filters by

@@ -33,7 +33,6 @@
 package escritoire
 
 import scala.collection.immutable.IndexedSeq
-
 import scala.language.experimental.pureFunctions
 
 import anticipation.*

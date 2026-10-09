@@ -32,12 +32,12 @@
                                                                                                   */
 package zephyrine
 
-import scala.caps
-
 import java.util.concurrent as juc
 
-import anticipation.Data
+import scala.caps
+
 import anticipation.*
+import anticipation.Data
 import denominative.*
 import prepositional.*
 import vacuous.*
@@ -126,6 +126,7 @@ object Producer:
     @caps.unsafe.untrackedCaptures
     private val current: addressable.Storage =
       addressable.allocate(block).asInstanceOf[addressable.Storage]
+
     private var index: Ordinal = Prim
 
     private inline def free: Int = block - index.n0
@@ -260,6 +261,7 @@ object Producer:
       Blockpool.poll(charsClass, block) match
         case null   => new scala.Array[Char](block)
         case pooled => pooled.asInstanceOf[scala.Array[Char]]
+
     private val scratchView: java.nio.CharBuffer = java.nio.CharBuffer.wrap(scratch).nn
     private var filled: Int = 0
 

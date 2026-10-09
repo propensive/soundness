@@ -33,7 +33,6 @@
 package contingency
 
 import scala.language.experimental.pureFunctions
-
 import scala.language.unsafeNulls
 import scala.quoted.*
 import scala.util.boundary

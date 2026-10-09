@@ -74,6 +74,7 @@ extension [form](range: prepositional.`in`[denominative.Interval, form])
 extension (interval: denominative.Interval)
   inline def unsafeAttested[within](within: within)(using erased vacuous.Unsafe)
   :   prepositional.`in`[denominative.Interval, within.type] =
+
     interval.asInstanceOf[prepositional.`in`[denominative.Interval, within.type]]
 
 extension [self](value: self)(using applicable: denominative.Applicable { type Self = self })
@@ -84,6 +85,7 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
 
   def confine(index: applicable.Operand)
   :   vacuous.Optional[prepositional.`in`[applicable.Operand, value.type]] =
+
     if applicable.contains(value, index)
     then index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]]
     else vacuous.Unset
@@ -92,6 +94,7 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
   inline def pick[result](index: applicable.Operand)
     ( inline lambda: prepositional.`in`[applicable.Operand, value.type] => result )
   :   vacuous.Optional[result] =
+
     if applicable.contains(value, index)
     then lambda(index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]])
     else vacuous.Unset
@@ -99,14 +102,15 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
   // Re-declared like the rest of the group; see `rudiments.unsafeAttested` for the discipline.
   def unsafeAttested(index: applicable.Operand)(using erased vacuous.Unsafe)
   :   prepositional.`in`[applicable.Operand, value.type] =
+
     index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]]
 
   inline def unsafeAttested[result](index: applicable.Operand)
     (inline lambda: prepositional.`in`[applicable.Operand, value.type] => result)
     (using erased vacuous.Unsafe)
   :   result =
-    lambda(index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]])
 
+    lambda(index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]])
 
 
   // The index parameter is typed directly as `applicable.Operand` (not a bounded type
@@ -121,10 +125,12 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
   // confined/checked dispatch behaves identically here.
   transparent inline def apply[index](ordinal: index)(using sub: index <:< applicable.Operand)
   :   vacuous.Optional[applicable.Result] =
+
     rudiments.apply(value)(ordinal)
 
   transparent inline def at[index](ordinal: index)(using sub: index <:< applicable.Operand)
   :   vacuous.Optional[applicable.Result] =
+
     rudiments.at(value)(ordinal)
 
 // Re-declared for the same reason as the `Deindex` group above: the typeclass evidence is a

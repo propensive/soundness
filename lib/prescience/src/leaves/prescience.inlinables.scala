@@ -41,6 +41,7 @@ import scala.quoted.*
 // the passing tests *prove* the generated code came from `read`.
 object IntInlinable extends Inlinable:
   type Self = Int
+
   def read(input: Expr[String])(using Quotes): Expr[Int] =
     '{ java.lang.Integer.parseInt($input.trim.nn) }
 
@@ -56,6 +57,7 @@ object StringInlinable extends Inlinable:
 
 object BooleanInlinable extends Inlinable:
   type Self = Boolean
+
   def read(input: Expr[String])(using Quotes): Expr[Boolean] =
     '{ java.lang.Boolean.parseBoolean($input.trim.nn) }
 

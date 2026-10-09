@@ -32,12 +32,11 @@
                                                                                                   */
 package guillotine
 
-import scala.caps
-import scala.language.experimental.pureFunctions
-
 import java.io as ji
 
 import scala.annotation.targetName
+import scala.caps
+import scala.language.experimental.pureFunctions
 
 import ambience.*
 import anticipation.*
@@ -63,7 +62,6 @@ sealed trait Executable:
   def fork[result]()(using working: WorkingDirectory, environment: Environment)
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   Job[Exec, result]^
-
 
   // Real `using` clauses rather than the `raises`/`logs` sugar: a context-function result
   // would hide the `computable` parameter, which the separation checker rejects.
@@ -267,6 +265,7 @@ object Pipeline:
   // Subtype-bounded for the same reason as `Command.inspectable`, above.
   given inspectable: [pipeline <: Pipeline] => pipeline is Inspectable =
     _.commands.map(_.inspect).join(t" | ")
+
   given showable: Pipeline is Showable = _.commands.map(_.show).join(t" | ")
 
 case class Pipeline(commands: Command*) extends Executable:

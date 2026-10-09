@@ -32,22 +32,21 @@
                                                                                                   */
 package cataclysm
 
-import scala.collection.immutable.{Seq, ::}
 import scala.collection.`+:`
-
+import scala.collection.immutable.{Seq, ::}
 import scala.quoted.*
 
 import anticipation.*
 import contextual.*
-import gigantism.Lifts
-import murmuration.map
-import rudiments.each
-import rudiments.all
 import contingency.*
 import denominative.*
 import fulminate.*
+import gigantism.Lifts
 import gossamer.*
+import murmuration.map
 import nomenclature.*
+import rudiments.all
+import rudiments.each
 import spectacular.*
 import vacuous.*
 

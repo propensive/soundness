@@ -246,7 +246,6 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
   private var finishing: Boolean = false
   private var streamEnded: Boolean = false
 
-
   private update def lmInit(): Unit =
     var i = 0
     while i < hashSize do { head(i) = 0; i += 1 }
@@ -451,7 +450,6 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
       optLen -= 1
       if stree.length != 0 then staticLen -= stree.readUnchecked(node*2 + 1)
       // node is 0 or 1 so it does not have extra bits
-
 
     // The elements heap(heapLen/2+1 .. heapLen) are leaves of the tree; establish sub-heaps of
     // increasing lengths:

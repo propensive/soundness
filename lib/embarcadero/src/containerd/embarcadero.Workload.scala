@@ -32,16 +32,17 @@
                                                                                                   */
 package embarcadero
 
+import scala.caps
+
 import anticipation.*
 import aperture.*
 import contingency.*
-import telekinesis.*
 import gossamer.*
 import locomotion.*
 import obligatory.*
 import parasite.*
 import rudiments.*
-import scala.caps
+import telekinesis.*
 import vacuous.*
 
 object Workload:

@@ -33,13 +33,13 @@
 package apoplexy
 
 import scala.compiletime
-
 import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
+import fulminate.*
 import gesticulate.*
 import gossamer.*
 import hellenism.*
@@ -54,7 +54,6 @@ import spectacular.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
-import fulminate.*
 import vacuous.*
 import xylophone.*
 import zephyrine.*

@@ -33,7 +33,6 @@
 package aviation
 
 import anticipation.*
-import rudiments.*
 import contextual.*
 import contingency.*
 import cosmopolite.{Locale, en, fr, de, es}
@@ -43,6 +42,7 @@ import gossamer.*
 import hieroglyph.*
 import prepositional.*
 import quantitative.Radix
+import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*

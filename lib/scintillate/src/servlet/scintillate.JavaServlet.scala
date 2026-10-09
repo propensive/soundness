@@ -33,6 +33,7 @@
 package scintillate
 
 import java.io as ji
+
 import jakarta.servlet as js, js.http as jsh
 
 import anticipation.*
@@ -40,11 +41,11 @@ import contingency.*
 import denominative.*
 import distillate.*
 import gossamer.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
 import telekinesis.*
-import prepositional.*
 import turbulence.*
 import urticose.*
 import vacuous.*
@@ -99,6 +100,7 @@ open class JavaServlet(handle: Http.Connection => Http.Response) extends jsh.Htt
           body        = () =>
             Streamable.inputStream
               (using streamError0.asInstanceOf[Tactic[Truncation.Error]])
+
             . stream(in.asInstanceOf[ji.InputStream]),
           textHeaders = headers )
 
@@ -134,6 +136,7 @@ open class JavaServlet(handle: Http.Connection => Http.Response) extends jsh.Htt
                 stream.lend: region =>
                   range =>
                     val interval: Interval = range
+
                     out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
                         interval.start.n0, interval.size)
 

@@ -39,8 +39,8 @@ import guillotine.*
 import parasite.*
 import prepositional.*
 import turbulence.*
-import zephyrine.*
 import vacuous.*
+import zephyrine.*
 
 object Syslog:
   given writable: Monitor => Syslog is Writable by Text = (syslog, stream) =>

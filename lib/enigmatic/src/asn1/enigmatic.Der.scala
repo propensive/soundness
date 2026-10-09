@@ -32,10 +32,9 @@
                                                                                                   */
 package enigmatic
 
-import scala.caps
-
 import java.util as ju
 
+import scala.caps
 import scala.compiletime.*
 
 import anticipation.*

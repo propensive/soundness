@@ -32,9 +32,8 @@
                                                                                                   */
 package distillate
 
-import scala.reflect
-
 import scala.caps
+import scala.reflect
 
 import anticipation.*
 import contingency.*

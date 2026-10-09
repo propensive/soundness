@@ -64,7 +64,6 @@ export Tagging.{nominative as taggingNominative}
 // here so that `import probably.*` still provides it.
 export hypotenuse.{!==, +/-, ===, Checkable, Tolerance, ±}
 
-
 // Declares a test by its description, optionally with tags (`test(m"…", n"slow", n"network")`)
 // by which a selection can admit or exclude it. The contextual `Testable` must say where the
 // test belongs: a `Suite`'s literal name, or `Impromptu` (see `Testable`).

@@ -32,32 +32,32 @@
                                                                                                   */
 package embarcadero
 
-import aperture.*
-import rudiments.{each, prim}
-import murmuration.has
-import fulminate.*
-import jacinta.*
-import pneumatic.*
+import scala.caps
+import scala.collection.mutable as scm
 
 import anticipation.*
+import aperture.*
 import bitumen.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*, codepages.utf8Codepage
 import hypotenuse.*
+import jacinta.*
+import murmuration.has
+import pneumatic.*
 import prepositional.*
 import rudiments.map
-import scala.caps
-import scala.collection.mutable as scm
+import rudiments.{each, prim}
 import serpentine.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 import wisteria.*
 import zephyrine.*
-import symbolism.*
 
 object Image:
   // Anchored here so `data.open[Image]()` resolves with no import. Opening a filesystem

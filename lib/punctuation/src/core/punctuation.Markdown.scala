@@ -75,6 +75,7 @@ object Markdown:
 
       override def accept(stream: (zephyrine.Stream[Text] over zephyrine.Credit)^)
       :   Markdown of Layout =
+
         // The non-consume `accept` crosses to the consuming factory as a
         // neutral reference; each accept delivers a single-use stream.
         Parser.parse:

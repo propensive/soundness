@@ -60,6 +60,7 @@ class servlet extends MacroAnnotation:
 
           val parents0 =
             scala.collection.immutable.List('{new JavaServlet.Fn($ref.asInstanceOf[Http.Connection => Http.Response])}.asTerm)
+
           val parents = scala.collection.immutable.List(TypeTree.of[Http.Connection])
           val newClassName = Symbol.freshName(name)
 

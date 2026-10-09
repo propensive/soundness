@@ -32,10 +32,9 @@
                                                                                                   */
 package rudiments
 
-import scala.collection.immutable.Seq
-
 import scala.collection as sc
 import scala.collection.immutable as sci
+import scala.collection.immutable.Seq
 
 import denominative.*
 import prepositional.*

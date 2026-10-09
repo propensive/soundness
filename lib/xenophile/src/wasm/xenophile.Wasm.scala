@@ -188,6 +188,7 @@ object Wasm:
     class Applier[topic <: Label, name <: Label]():
       transparent inline def apply[payload](payload: payload)
       :   (Variant[payload] of topic) { type Case = name } =
+
         new Variant(payload).asInstanceOf[(Variant[payload] of topic) { type Case = name }]
 
     given interoperable: [topic <: Label, name <: Label, payload]

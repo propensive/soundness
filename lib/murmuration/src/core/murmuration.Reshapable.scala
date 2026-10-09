@@ -33,7 +33,6 @@
 package murmuration
 
 import scala.collection.immutable.IndexedSeq
-
 import scala.reflect.ClassTag
 
 import prepositional.*

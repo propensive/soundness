@@ -95,6 +95,7 @@ class GivensPhase() extends PluginPhase:
 
           case _ =>
             ()
+
         traverseChildren(tree)
 
       private def eligibleGiven(symbol: Symbols.Symbol, tpe: Types.Type)(using Context): Boolean =
@@ -114,14 +115,17 @@ class GivensPhase() extends PluginPhase:
       private def isStablyAccessible(symbol: Symbols.Symbol)(using Context): Boolean =
         var owner = symbol.owner
         var stable = true
+
         while stable && owner.exists && owner != Symbols.defn.RootClass do
           if owner.is(Method) then stable = false
           else if owner.isClass && !owner.is(Module) && !owner.is(Package) then stable = false
           else owner = owner.owner
+
         stable
 
       private def recordGiven(symbol: Symbols.Symbol, tpe: Types.Type)(using Context): Unit =
         val typeclassSymbol = typeclassOf(tpe, symbol)
+
         if typeclassSymbol.exists then
           val typeclassFqn = sourcePath(typeclassSymbol)
           val givenFqn     = sourcePath(symbol)

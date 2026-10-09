@@ -32,10 +32,10 @@
                                                                                                   */
 package escritoire
 
-import gossamer.*
-import vacuous.*
 import anticipation.*
 import beneficence.*
+import gossamer.*
+import vacuous.*
 
 object Column:
   def apply[row, cell, text: Textual]

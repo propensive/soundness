@@ -32,7 +32,6 @@
                                                                                                   */
 package facsimile
 
-
 import scala.caps
 
 // By name: `contingency.*` would otherwise shadow this package's own `Guard` (the PDF
@@ -713,6 +712,7 @@ object Pdf:
         // Text (§9.4)
         case "BT" => BeginText
         case "ET" => EndText
+
         case "Td" => numbers(2) match
           case List(dx, dy) => Offset(dx, dy)
           case _            => malformed
@@ -720,6 +720,7 @@ object Pdf:
         case "TD" => numbers(2) match
           case List(dx, dy) => OffsetLeading(dx, dy)
           case _            => malformed
+
         case "Tm" => SetTextMatrix(matrix)
         case "T*" => NextLine
         case "Tc" => SetCharSpacing(number)
@@ -1436,6 +1437,7 @@ extends caps.ExclusiveCapability:
 
       val name = parms match
         case Cos.Dictionary(entries) => entries(t"Name").let(_.name)
+
         case Cos.Sequence(elements)  =>
           elements.flatMap(_.dictionary.let(_(t"Name")).let(_.name).lay(List())(List(_))).prim
             . or(Unset)

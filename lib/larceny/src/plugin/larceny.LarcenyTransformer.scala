@@ -32,19 +32,17 @@
                                                                                                   */
 package larceny
 
-import scala.language.adhocExtensions
-
 import java.io.{File, FileInputStream}
 import java.util.Properties
 import java.util.jar.JarFile
 
 import scala.collection.mutable as scm
+import scala.language.adhocExtensions
 import scala.util.control.NonFatal
 
 import dotty.tools.*, dotc.*, util.*, ast.Trees.*, core.*
 
 import Constants.Constant, Contexts.*, Decorators.*, StdNames.*
-
 import plugins.*
 
 object LarcenyTransformer:

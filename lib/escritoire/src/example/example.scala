@@ -41,7 +41,6 @@ import iridescence.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
-
 import environments.javaBaseEnvironment
 import stdios.fileDescriptorStdio
 import termcaps.environmentTermcap

@@ -121,4 +121,3 @@ object Varint:
 
   case class Error(reason: Varint.Error.Reason)(using Diagnostics)
   extends fulminate.Error(608, reason.number)(m"the varint is invalid because $reason")
-

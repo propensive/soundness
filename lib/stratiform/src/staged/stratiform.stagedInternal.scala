@@ -33,12 +33,10 @@
 package stratiform
 
 import scala.collection.immutable.Vector
-
-import scala.{annotation, caps}
-
 import scala.collection.immutable.{List, Nil, ::}
 import scala.collection.mutable as scm
 import scala.quoted.*
+import scala.{annotation, caps}
 
 import anticipation.*
 import contingency.*
@@ -325,6 +323,7 @@ object stagedInternal:
   private[stratiform] def aliasCollectionUnderlying(using Quotes)
     (tpe: quotes.reflect.TypeRepr)
   :   Option[quotes.reflect.TypeRepr] =
+
     import quotes.reflect.*
     val listSym   = TypeRepr.of[proscenium.List[Any]].typeSymbol
     val setSym    = TypeRepr.of[proscenium.Set[Any]].typeSymbol
@@ -333,10 +332,13 @@ object stagedInternal:
     tpe.dealias match
       case AppliedType(constructor, args) if constructor.typeSymbol == listSym =>
         Some(TypeRepr.of[scala.collection.immutable.List].appliedTo(args.last))
+
       case AppliedType(constructor, args) if constructor.typeSymbol == setSym =>
         Some(TypeRepr.of[scala.collection.immutable.Set].appliedTo(args.last))
+
       case AppliedType(constructor, args) if constructor.typeSymbol == seriesSym =>
         Some(TypeRepr.of[Vector].appliedTo(args.last))
+
       case _ =>
         None
 
@@ -641,7 +643,9 @@ object stagedInternal:
                                 infer[scala.collection.Factory[element, stdlib]].newBuilder
                                 . asInstanceOf[scm.Builder[element, fieldType]]
                               }
+
                             case _ => report.errorAndAbort("stratiform: unreachable")
+
                           case None =>
                             '{
                               infer[scala.collection.Factory[element, fieldType]].newBuilder
@@ -952,6 +956,7 @@ object stagedInternal:
     Block
       ( slotDefs ::: seenDefs ::: gatherDefs ::: seamDefs ::: nestedDefs ::: loop ::: absents,
         construct )
+
     . asExprOf[product]
 
   // ── The sum generator ──────────────────────────────────────────────────
@@ -1008,6 +1013,7 @@ object stagedInternal:
           val instance = resolve[variantType](cache).getOrElse:
             report.errorAndAbort
               (s"stratiform: no Inlinable for variant ${variants(index)(0)}")
+
           . asInstanceOf[Inlinable { type Self = variantType }]
 
           val name = wireNames(index)

@@ -33,16 +33,15 @@
 package galilei
 
 import anticipation.*
-import denominative.nil
 import aperture.*
 import contingency.*
+import denominative.nil
 import gossamer.*
 import prepositional.*
 import rudiments.*
-import symbolism.*
 import serpentine.*
+import symbolism.*
 import vacuous.*
-
 import Io.Error.{Operation, Reason}
 
 // A byte range of a file, as a subject for `open` (issue #566): opening a `Slice` with an

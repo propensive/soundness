@@ -32,14 +32,14 @@
                                                                                                   */
 package turbulence
 
-import scala.caps
-
 import java.util.concurrent as juc
 
+import scala.caps
+
 import anticipation.*
+import prepositional.*
 import rudiments.reverse
 import vacuous.*
-import prepositional.*
 import zephyrine.*
 
 // The push-side bridge from any number of producer threads to a pull endpoint
@@ -163,10 +163,13 @@ class Relay[record]():
 
                 while draining && limit0 < space do queue.poll() match
                   case null              => draining = false
+
                   case Relay.Termination => ended = true
                                             draining = false
+
                   case record            => storage.asInstanceOf[scala.Array[AnyRef]^](limit0) =
                                               record.asInstanceOf[AnyRef]
+
                                             limit0 += 1
 
                 limit0

@@ -70,6 +70,7 @@ object Stageable:
     inline def extract[entity](json: Json): entity = provide[Tactic[Rig.Error]]:
       given jsonRemote: Rig.Error mitigates Json.Error =
         error => Rig.Error(Rig.Error.Reason.Unknown)
+
       provide[entity is Decodable in Json](json.as[entity])
 
   given pojo: Stageable:

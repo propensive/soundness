@@ -32,9 +32,8 @@
                                                                                                   */
 package ultimatum
 
-import scala.collection.immutable.Vector
-
 import scala.caps
+import scala.collection.immutable.Vector
 
 // A mutable, ordered container of child panes, backed by a `Sequence` for random
 // access. Holding a reference to it lets the layout change while a `form` is

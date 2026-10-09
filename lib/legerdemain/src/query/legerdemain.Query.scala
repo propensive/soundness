@@ -32,14 +32,14 @@
                                                                                                   */
 package legerdemain
 
-import scala.language.dynamics
-
 import scala.compiletime.*
+import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -47,7 +47,6 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 import wisteria.*
-import fulminate.*
 
 object Query extends Dynamic:
   def apply(): Query = new Query(Nil)
@@ -190,6 +189,7 @@ object Query extends Dynamic:
                     raise(Query.Error(Query.Error.Reason.Missing))
                     null.asInstanceOf[value]
                   else abort(Query.Error(Query.Error.Reason.Missing))
+
                 . apply(_.as)
 
       case given ProductReflection[`value` & Product] =>

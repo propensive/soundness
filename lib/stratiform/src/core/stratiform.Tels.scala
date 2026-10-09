@@ -552,6 +552,7 @@ object Tels extends Tels2:
             if declared(cursor).name == name then
               chosen += declared(cursor)
               found = true
+
             cursor += 1
 
           if !found then abort(Tel.Error(Reason.LayerOrderMismatch))
@@ -1108,8 +1109,10 @@ object Tels extends Tels2:
           if field.key then
             keys += 1
             if keys > 1 then abort(Tel.Error(Reason.MultipleKeyFields))
+
             if scalarOf(field.fieldType, schema).absent
             then abort(Tel.Error(Reason.KeyOnNonScalar))
+
             if !required || repeatable then abort(Tel.Error(Reason.KeyOnLooseMember))
 
         case select: SelectRef =>
@@ -1179,6 +1182,7 @@ object Tels extends Tels2:
       case (a: Scalar, b: Scalar) =>
         seqEq(a.validators, b.validators, textEq) && a.encoding == b.encoding &&
           seqEq(a.patterns, b.patterns, textEq)
+
       case (Flag, Flag)                   => true
       case (Reference(n1), Reference(n2)) => n1 == n2
       case _                              => false
@@ -1574,6 +1578,7 @@ object Tels extends Tels2:
 
       val members    = scala.collection.mutable.ArrayBuffer.empty[Member]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
+
       children.extent.each: i =>
         val e = children(i)
 
@@ -1611,6 +1616,7 @@ object Tels extends Tels2:
       val variants   = scala.collection.mutable.ArrayBuffer.empty[Variant]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
       val excludes   = scala.collection.mutable.ArrayBuffer.empty[Text]
+
       ch.extent.each: i =>
         val e = ch(i)
 

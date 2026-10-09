@@ -45,12 +45,14 @@ private[facsimile] object PdfEncoding:
   private def table(differences: (Int, Char)*): Array[Char]^{} =
     val array = Array.allocate[Char](256)
     var i = 32
+
     while i < 256 do
       array(i) = if i == 0x7f || (i >= 0x80 && i <= 0x9f) then '\u0000' else i.toChar
       i += 1
 
     // An indexed loop, not `foreach`: a closure over the exclusive buffer would alias it.
     var j = 0
+
     while j < differences.length do
       array(differences(j)(0)) = differences(j)(1)
       j += 1

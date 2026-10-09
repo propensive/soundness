@@ -32,11 +32,11 @@
                                                                                                   */
 package telekinesis
 
-import scala.caps
-
 import java.io as ji
 import java.net as jn
 import javax.net.ssl as jns
+
+import scala.caps
 
 import anticipation.*
 import coaxial.*

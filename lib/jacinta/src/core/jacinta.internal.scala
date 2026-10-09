@@ -32,20 +32,17 @@
                                                                                                   */
 package jacinta
 
-
-import scala.collection.immutable.Seq
 import scala.collection.immutable.IndexedSeq
-
-import scala.{annotation, caps}
-
-
+import scala.collection.immutable.Seq
 import scala.compiletime.*
 import scala.quoted.*
+import scala.{annotation, caps}
 
 import anticipation.*
 import contextual.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gigantism.*
@@ -53,11 +50,10 @@ import gossamer.*
 import hypotenuse.Bcd
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 import wisteria.{Discriminable, Variant}
 import zephyrine.*
-import symbolism.*
-import denominative.dysasymptotics.linearSize
 
 object internal:
 
@@ -85,6 +81,7 @@ object internal:
 
     val raw: String =
       parts.unique.or(halt(m"a JSON pointer literal cannot have substitutions"))
+
     val start: Int = firstOrigin[origins]
 
     try unsafely(raw.tt.as[JsonPointer]) catch
@@ -451,6 +448,7 @@ object internal:
 
       def spreadIterable[t: Type](value: Expr[Iterable[t]], tpe: TypeRepr, pos: Position)
       :   Expr[Iterable[Json.Ast]] =
+
         Expr.summon[(? >: t) is Encodable in Json] match
           case Some('{$enc: Encodable}) =>
             '{$value.iterator.map($enc.encode(_).root).to(Iterable)}
@@ -867,6 +865,7 @@ object internal:
             // Heterogeneous array (with possible sentinel pad on the end).
             val elems = arrayElements(arr)
             var c = 0
+
             elems.extent.each: k =>
               c += countHolesIn(elems(k))
 
@@ -982,6 +981,7 @@ object internal:
 
       val numberOfHoles =
         var c = 0
+
         repeat(parts2.size - 1):
           c += 1
 
@@ -1223,6 +1223,7 @@ object internal:
       val loop: List[Statement] =
         if literalKeys then
           val owner2 = owner
+
           val run = Symbol.newVal(owner2, "run", TypeRepr.of[Boolean], Flags.Mutable,
             Symbol.noSymbol)
 
@@ -1332,8 +1333,10 @@ object internal:
         // where `:::` widened, so the concatenation happens on the stdlib side.
         ( ('{ $reader.openObject() }.asTerm
             :: (slotDefs.stdlib ::: seenDefs.stdlib ::: loop.stdlib ::: absents.stdlib).to(List))
+
           . stdlib,
           construct )
+
       . asExprOf[value]
 
     def summonOrAbort[required: Type](role: String): Expr[required] =
@@ -1363,6 +1366,7 @@ object internal:
         lazy val instances: Array[Json.Field | Null]^{} =
           // `Varargs` takes a stdlib `Seq`.
           Array[Json.Field | Null](${Varargs[Json.Field | Null](instanceExprs.stdlib)}*)
+
         lazy val fallbacks: Array[Any]^{} = Array[Any](${Varargs[Any](fallbackExprs.stdlib)}*)
 
         new Json.Parsable:

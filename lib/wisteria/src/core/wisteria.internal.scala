@@ -346,6 +346,7 @@ object internal:
 
           (owner.methodMembers ++ owner.fieldMembers)
             . filter(isWrapper(typeclassConstructor, _)).distinct
+
           . to(List)
 
     val run = quotes.asInstanceOf[runtime.impl.QuotesImpl].ctx.run
@@ -1099,6 +1100,7 @@ object internal:
     // term-reference type (a nullary-method `ExprType`, `@uncheckedVariance` included); either
     // hides `Optional`'s underlying type, so the expansion no longer conformed to the
     // dealiased `Optional[field]`.
+
     . map: selection =>
         '{${selection.asExprOf[field]}: Optional[field]}
 

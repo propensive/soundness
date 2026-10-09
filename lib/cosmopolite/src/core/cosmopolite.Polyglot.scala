@@ -34,7 +34,6 @@ package cosmopolite
 
 import scala.compiletime
 
-
 case class Polyglot[+value, language](values: Map[Language, value]):
   @targetName("or")
   transparent inline infix def | [value2 >: value, language2](polyglot: Polyglot[value2, language2])

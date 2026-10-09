@@ -32,21 +32,20 @@
                                                                                                   */
 package revolution
 
-import contingency.*
-import gossamer.*
-
 import java.io as ji
 import java.util.jar as juj
 
 import anticipation.*
+import contingency.*
 import denominative.*
+import gossamer.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
 import turbulence.*
-import zephyrine.Credit
 import vacuous.*
+import zephyrine.Credit
 
 object Manifest:
   protected def parse[streamable: Streamable by Data over Credit](source: streamable): Manifest =
@@ -60,6 +59,7 @@ object Manifest:
 
   given streamable: Manifest is Streamable by Data over Credit = manifest =>
     zephyrine.Stream(manifest.serialize)
+
   given aggregable: Manifest is Aggregable by Data = parse(_)
 
   def apply(entries: Manifest.Entry*): Manifest = Manifest:

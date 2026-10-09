@@ -110,6 +110,7 @@ object GivensWriter:
           writer.newLine()
           writer.write(SourcePrefix + source)
           writer.newLine()
+
           lines.foreach: line =>
             writer.write(line)
             writer.newLine()
@@ -120,6 +121,7 @@ object GivensWriter:
             target.toPath,
             StandardCopyOption.REPLACE_EXISTING,
             StandardCopyOption.ATOMIC_MOVE )
+
         ()
 
   private def outputRootOrNull(using Context): File | Null =
@@ -154,10 +156,13 @@ object GivensWriter:
       BufferedReader
         ( new InputStreamReader
                ( new FileInputStream(file), StandardCharsets.UTF_8 ) )
+
     try
       var line: String | Null = reader.readLine()
+
       while line != null do
         val l: String = line.trim.nn
+
         if l.startsWith(SourcePrefix) then
           val source = l.substring(SourcePrefix.length).nn.trim.nn
           currentSource = source
@@ -167,6 +172,7 @@ object GivensWriter:
         else
           val src = currentSource
           if src != null then builder.getOrElseUpdate(src, mutable.ListBuffer()) += l
+
         line = reader.readLine()
     finally reader.close()
 
@@ -177,20 +183,25 @@ object GivensWriter:
     if parent != null && !parent.exists then parent.mkdirs(): @annotation.nowarn
 
     val tmp = new File(file.getParentFile, file.getName.nn + ".tmp")
+
     val writer = new
       BufferedWriter
         ( new OutputStreamWriter
                ( new FileOutputStream(tmp), StandardCharsets.UTF_8 ) )
+
     try
       var first = true
+
       blocks.foreach: (source, givens) =>
         if givens.nonEmpty then
           if !first then writer.newLine()
           writer.write(SourcePrefix + source)
           writer.newLine()
+
           givens.foreach: fqn =>
             writer.write(fqn)
             writer.newLine()
+
           first = false
     finally writer.close()
 
@@ -199,4 +210,5 @@ object GivensWriter:
         file.toPath,
         StandardCopyOption.REPLACE_EXISTING,
         StandardCopyOption.ATOMIC_MOVE )
+
     ()

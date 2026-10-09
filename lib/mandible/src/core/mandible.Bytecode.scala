@@ -1316,6 +1316,7 @@ object Bytecode:
     // what an under-full stack does.
     private def transform0(stack: scala.collection.immutable.List[Frame])
     :   scala.collection.immutable.List[Frame] =
+
       import scala.collection.immutable.{Nil, ::}
       import Frame.*
 

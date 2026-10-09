@@ -32,9 +32,9 @@
                                                                                                   */
 package hallucination
 
-import anticipation.*
-
 import scala.caps
+
+import anticipation.*
 
 // The VP8 boolean entropy decoder (RFC 6386 §7). This is the canonical bit-exact algorithm; the
 // reference (image-rs/image-webp `src/lossy/arithmetic_decoder.rs`) uses a faster but equivalent
