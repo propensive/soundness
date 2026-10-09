@@ -169,12 +169,7 @@ object Markup:
         // and the stdlib bridge throughout because `Frame^` is a capability element type.
         case top :: rest if !rest.stdlib.isEmpty =>
           top.flush()
-          // `toList` copies into a fresh immutable list sharing nothing with the
-          // buffer, so the inferred `^{top.children}` is spurious; laundering it
-          // lets the orphans outlive `top`. Splicing them into the parent while
-          // they still captured `top.children` is what the checker refused.
-          // [construction-fresh] fresh toList copy spuriously captures top.children
-          val orphans = scala.caps.unsafe.unsafeAssumePure(top.children.toList)
+          val orphans = top.children.toList
           stack = rest
           rest.stdlib.head.children ++= orphans
 

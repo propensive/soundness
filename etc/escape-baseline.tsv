@@ -35,10 +35,11 @@ lib/breviloquence/src/core/breviloquence.Cbor.scala	3	0	3	0	3	1	0	0	0	0
 lib/breviloquence/src/core/breviloquence.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0
 lib/breviloquence/src/staged/breviloquence.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0
 lib/breviloquence/src/test/breviloquence_test.scala	0	0	1	0	0	0	0	0	0	0
-lib/cacophony/src/core/cacophony.Audible.scala	1	0	0	0	0	1	0	0	0	0
-lib/cacophony/src/core/cacophony.Audio.scala	4	0	1	0	0	1	0	0	0	0
+lib/cacophony/src/core/cacophony.Audible.scala	0	0	0	0	1	1	0	0	0	0
+lib/cacophony/src/core/cacophony.Audio.scala	0	0	0	0	1	2	0	0	0	0
 lib/cacophony/src/core/cacophony.Feed.scala	0	0	1	0	0	0	0	0	0	0
-lib/cacophony/src/core/cacophony.Outlet.scala	0	0	2	0	0	0	0	0	0	0
+lib/cacophony/src/core/cacophony.Outlet.scala	0	0	1	0	0	1	0	0	0	0
+lib/cacophony/src/core/cacophony.Pcm.scala	0	0	0	0	0	1	0	0	0	0
 lib/caduceus/src/resend/caduceus_core.scala	1	1	0	0	0	0	0	0	0	0
 lib/caduceus/src/test/caduceus_test.scala	0	0	2	0	0	0	0	0	0	0
 lib/caesura/src/core/caesura.Dsv.scala	12	0	0	0	0	0	0	0	0	0
@@ -65,7 +66,6 @@ lib/contextual/src/core/contextual.Interpolation.scala	0	0	0	0	1	0	0	0	0	0
 lib/corpuscular/src/core/corpuscular_core.scala	0	0	0	0	1	6	0	0	0	0
 lib/corpuscular/src/test/corpuscular_test.scala	0	0	0	0	0	0	0	13	0	0
 lib/degustation/src/core/degustation.Atomizer.scala	0	0	0	0	1	0	0	0	0	0
-lib/delicious/src/core/delicious.Markup.scala	1	0	0	0	0	0	0	0	0	0
 lib/denominative/src/core/denominative.Definable.scala	0	0	0	0	1	0	0	0	0	0
 lib/denominative/src/core/denominative.Terminable.scala	0	0	0	0	0	0	1	0	0	0
 lib/digression/src/core/digression.Fqcn.scala	0	0	0	0	0	0	1	0	0	0
@@ -145,7 +145,7 @@ lib/galilei/src/native/galilei_native.scala	2	1	0	0	0	1	0	0	0	0
 lib/galilei/src/test/galilei_test.scala	0	22	0	0	1	2	1	0	0	0
 lib/galilei/src/wasi/galilei_wasi.scala	0	0	0	0	0	1	0	0	0	0
 lib/gastronomy/src/core-jvm/gastronomy.JavaBaseHashing.scala	0	0	0	0	1	6	0	0	0	0
-lib/gastronomy/src/core/gastronomy.Blake3.scala	3	0	0	0	2	5	0	0	0	0
+lib/gastronomy/src/core/gastronomy.Blake3.scala	0	0	0	0	2	7	0	0	0	0
 lib/gastronomy/src/core/gastronomy.Digest.scala	0	0	0	0	0	1	0	0	0	0
 lib/gastronomy/src/core/gastronomy.Digestible.scala	8	0	0	0	2	0	0	0	0	0
 lib/gastronomy/src/core/gastronomy.Murmur3.scala	0	0	0	0	1	2	0	0	0	0
@@ -162,7 +162,7 @@ lib/gossamer/src/core/gossamer.AsciiBuilder.scala	0	0	0	0	1	0	0	0	0	0
 lib/gossamer/src/core/gossamer.Builder.scala	1	0	0	0	0	0	0	0	0	0
 lib/gossamer/src/core/gossamer.internal.scala	0	0	0	0	0	0	3	0	0	0
 lib/gossamer/src/core/gossamer_core.scala	0	0	0	0	2	6	0	0	0	0
-lib/gossamer/src/lexicon/gossamer.Dictionary.scala	5	1	1	0	0	0	0	0	0	0
+lib/gossamer/src/lexicon/gossamer.Dictionary.scala	0	0	1	0	0	0	0	0	0	0
 lib/gossamer/src/lexicon/gossamer.Lexicon.scala	0	0	1	0	0	0	0	0	0	0
 lib/hallucination/src/bmp/hallucination.BmpCodec.scala	0	0	0	0	1	0	0	0	0	0
 lib/hallucination/src/core-jvm/hallucination.ImageIo.scala	0	0	0	0	1	0	0	0	0	0
@@ -175,7 +175,7 @@ lib/hallucination/src/jpeg/hallucination.JpegUpsampler.scala	0	0	1	0	0	0	0	0	0	0
 lib/hallucination/src/png/hallucination.PngCodec.scala	0	0	0	0	5	4	0	0	0	0
 lib/hallucination/src/test/hallucination_test.scala	0	0	0	0	0	0	1	0	0	0
 lib/hallucination/src/webp/hallucination.Vp8BoolEncoder.scala	0	0	0	0	1	0	0	0	0	0
-lib/hallucination/src/webp/hallucination.Vp8Decoder.scala	1	0	2	0	0	0	0	0	0	0
+lib/hallucination/src/webp/hallucination.Vp8Decoder.scala	0	0	2	0	3	0	0	0	0	0
 lib/hallucination/src/webp/hallucination.Vp8Encoder.scala	0	0	0	0	1	2	0	0	0	0
 lib/hallucination/src/webp/hallucination.WebpBitWriter.scala	0	0	0	0	1	0	0	0	0	0
 lib/hallucination/src/webp/hallucination.WebpCodec.scala	0	0	0	0	1	1	0	0	0	0
@@ -192,7 +192,7 @@ lib/hieroglyph/src/core/hieroglyph.Normalization.scala	0	0	0	0	2	0	0	0	0	0
 lib/hieroglyph/src/core/hieroglyph_core.scala	2	0	0	0	0	0	0	0	0	0
 lib/hieroglyph/src/test/hieroglyph_test.scala	0	0	0	0	4	0	2	0	0	0
 lib/honeycomb/src/core/honeycomb.Html.scala	2	0	2	0	0	4	3	0	0	0
-lib/honeycomb/src/core/honeycomb.internal.scala	3	0	2	0	0	0	4	0	0	0
+lib/honeycomb/src/core/honeycomb.internal.scala	2	0	2	0	0	0	4	0	0	0
 lib/hyperbole/src/tasty/hyperbole.TastyFiles.scala	1	0	0	0	0	1	0	0	0	0
 lib/hyperbole/src/tasty/hyperbole.tastyInternal.scala	0	0	0	0	2	0	0	0	0	0
 lib/hypotenuse/src/core/hypotenuse.Bcd.scala	0	0	0	0	3	0	0	0	0	0
@@ -203,7 +203,7 @@ lib/iridescence/src/core/iridescence.PixelOpaque.scala	0	0	0	0	0	0	0	0	1	0
 lib/iridescence/src/core/iridescence.Rgb12Opaque.scala	0	0	0	0	0	0	0	0	1	0
 lib/iridescence/src/core/iridescence.Rgb32Opaque.scala	0	0	0	0	0	0	0	0	1	0
 lib/jacinta/src/bench/jacinta.Benchmarks.scala	0	0	0	0	9	1	0	0	0	0
-lib/jacinta/src/core/jacinta.Json.Parser.scala	9	0	0	0	4	0	0	0	0	0
+lib/jacinta/src/core/jacinta.Json.Parser.scala	1	0	0	0	4	0	0	0	0	0
 lib/jacinta/src/core/jacinta.Json.scala	29	0	4	0	6	0	1	0	0	0
 lib/jacinta/src/core/jacinta.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0
 lib/jacinta/src/core/jacinta.internal.scala	2	0	0	0	0	0	0	0	0	0
@@ -220,7 +220,6 @@ lib/locomotion/src/staged/locomotion.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0
 lib/locomotion/src/test/locomotion_test.scala	0	3	0	0	0	0	0	0	0	0
 lib/mandible/src/core/mandible.Bytecode.scala	0	1	0	0	0	0	0	0	0	0
 lib/metamorphose/src/core/metamorphose.Permutation.scala	0	0	0	0	0	0	0	1	0	0
-lib/monotonous/src/core/monotonous.Alphabet.scala	5	0	0	0	0	0	0	0	0	0
 lib/monotonous/src/core/monotonous.Serializable.scala	0	0	0	0	0	6	0	0	0	0
 lib/monotonous/src/test/monotonous_test.scala	0	0	0	0	1	0	0	0	0	0
 lib/mosquito/src/core/mosquito.Matrix.scala	0	0	0	0	0	3	0	0	0	0
@@ -396,7 +395,6 @@ lib/xenophile/src/native/xenophile.ForeignLibrary.scala	0	0	0	0	0	1	0	0	0	0
 lib/xenophile/src/nativeruntime/xenophile.ForeignLibrary.scala	0	0	1	0	0	0	0	0	0	0
 lib/xenophile/src/test/xenophile_test.scala	0	1	0	0	0	0	0	0	0	0
 lib/xenophile/src/typescript/xenophile.Typescript.scala	0	0	1	0	0	0	0	0	0	0
-lib/xenophile/src/wasm/xenophile.WasmInvoke.scala	1	0	0	0	0	0	0	0	0	0
 lib/xylophone/src/bench/xylophone.Benchmarks.scala	0	0	0	0	5	0	0	0	0	0
 lib/xylophone/src/core/xylophone.Xml.scala	16	1	1	0	4	3	1	0	0	0
 lib/xylophone/src/core/xylophone.Xml3.scala	2	0	0	0	0	0	0	0	0	0

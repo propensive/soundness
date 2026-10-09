@@ -157,17 +157,17 @@ object WasmInvoke extends Materializer:
       case AppliedType(list, List(_)) => list.typeSymbol == listClass || list.typeSymbol == opaqueListSymbol
       case _                          => false
 
-    def handleDecode(name: Text, scala: TypeRepr): (TypeRepr, Expr[Any] => Expr[Any]) =
+    def handleDecode(name: Text, scala: TypeRepr): (TypeRepr, Expr[Any] -> Expr[Any]) =
       val facade = facadeOf(name)
 
-      val decode: Expr[Any] => Expr[Any] = call => scala.asType.absolve match
+      val decode: Expr[Any] -> Expr[Any] = call => scala.asType.absolve match
         case '[scala] =>
           val handle = '{new Wasm.Handle($call)}.asTerm
           TypeApply(Select.unique(handle, "asInstanceOf"), List(TypeTree.of[scala])).asExprOf[Any]
 
       (facade.typeRef, decode)
 
-    def decodeFor(witType: Foreign.Type, scala: TypeRepr): (TypeRepr, Expr[Any] => Expr[Any]) =
+    def decodeFor(witType: Foreign.Type, scala: TypeRepr): (TypeRepr, Expr[Any] -> Expr[Any]) =
       witType match
         case Foreign.Type.Applied(constructor, arguments) if constructor.s == "result" =>
           val resultClass = Symbol.requiredClass("scala.scalajs.wit.Result")
@@ -195,7 +195,7 @@ object WasmInvoke extends Materializer:
             '{  import _root_.scala.unsafeExceptions.canThrowAny
                 throw new Wasm.Error(${payload(outcome, errType)})  }
 
-          val decode: Expr[Any] => Expr[Any] =
+          val decode: Expr[Any] -> Expr[Any] =
             if scala =:= TypeRepr.of[Unit] then call =>
               '{  val outcome = $call
                   if !${isOk('outcome)} then ${raiseError('outcome)}  }
@@ -227,9 +227,7 @@ object WasmInvoke extends Materializer:
           while pairs.hasNext do
             val (element, field) = pairs.next()
             val (repr, decode) = decodeFor(element, field)
-            // [quote-wall] macro Expr decode function laundered
-            val decode1: Expr[Any] -> Expr[Any] = caps.unsafe.unsafeAssumePure(decode)
-            derivedBuffer += ((repr, decode1))
+            derivedBuffer += ((repr, decode))
 
           val derived = derivedBuffer.result()
           val carriers = derived.map(_(0))
@@ -240,7 +238,7 @@ object WasmInvoke extends Materializer:
           val tupleCarrier = tupleClass.typeRef.appliedTo(carriers)
           val scalaTuple = defn.TupleClass(elements.size).companionModule
 
-          val decode: Expr[Any] => Expr[Any] = call =>
+          val decode: Expr[Any] -> Expr[Any] = call =>
             val cast =
               TypeApply(Select.unique(call.asTerm, "asInstanceOf"), List(Inferred(tupleCarrier)))
 
@@ -274,7 +272,7 @@ object WasmInvoke extends Materializer:
           val (elementCarrier, elementDecode) = decodeFor(element, elementType)
           val arrayCarrier = defn.ArrayClass.typeRef.appliedTo(elementCarrier)
 
-          val decode: Expr[Any] => Expr[Any] = call =>
+          val decode: Expr[Any] -> Expr[Any] = call =>
             val method = MethodType(List("element"))(_ => List(TypeRepr.of[Any]), _ => elementType)
 
             val mapper = Lambda(Symbol.spliceOwner, method,
@@ -296,7 +294,7 @@ object WasmInvoke extends Materializer:
         case _ =>
           // A def, not a closure: the alternative is shared by two absence paths below, and a
           // tuple-resulted lambda here trips capture checking's freshness in the macro context.
-          def opaque(): (TypeRepr, Expr[Any] => Expr[Any]) = witType match
+          def opaque(): (TypeRepr, Expr[Any] -> Expr[Any]) = witType match
               case Foreign.Type.Named(name) if isHandle(scala) =>
                 handleDecode(name, scala)
 
@@ -306,7 +304,7 @@ object WasmInvoke extends Materializer:
               case Foreign.Type.Named(name) if isCase(scala) =>
                 val facade = facadeOf(name)
 
-                val decode: Expr[Any] => Expr[Any] = call => scala.asType.absolve match
+                val decode: Expr[Any] -> Expr[Any] = call => scala.asType.absolve match
                   case '[scala] =>
                     val witCase = '{new Wasm.Case(Wasm.Case.caseName($call))}.asTerm
 
@@ -334,7 +332,7 @@ object WasmInvoke extends Materializer:
 
                 // `java.util.Optional` is nameable here, so ordinary quotes suffice; an absent
                 // value becomes `Unset`.
-                val decode: Expr[Any] => Expr[Any] = call =>
+                val decode: Expr[Any] -> Expr[Any] = call =>
                   '{  val option = $call.asInstanceOf[java.util.Optional[Any]]
                       if option.isPresent then ${innerDecode('{option.get})} else Unset  }
 
@@ -790,7 +788,7 @@ object WasmInvoke extends Materializer:
   // `Decodable in Wasm` codec. Structured shapes (tuples, lists, options, results, resources) are
   // derived recursively — and WIT-driven — by `decodeFor` in `invoke`; this is its base case.
   private def deriveResult[result: Type](using quotes: Quotes)
-  :   (quotes.reflect.TypeRepr, Expr[Any] => Expr[Any]) =
+  :   (quotes.reflect.TypeRepr, Expr[Any] -> Expr[Any]) =
 
     import quotes.reflect.*
 
