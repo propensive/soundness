@@ -40,10 +40,12 @@ import scala.caps
 // The status itself is plain data (a pane tree stays pure); the one effectful field is the
 // installed repaint callback.
 class Reading[status](initial: status):
+  // [field-purity] current status var in non-capability Reading
   @scala.caps.unsafe.untrackedCaptures
   private var current: status = initial
 
   // A no-op until the cell is bound into a running form.
+  // [field-purity] repaint callback var in Reading
   @scala.caps.unsafe.untrackedCaptures
   private var onChange: () -> Unit = () => ()
 
@@ -53,6 +55,7 @@ class Reading[status](initial: status):
   // is re-bound on every `run` (so it never references a finished form) and is only ever called
   // from a mutation while that form is live. Hence the single, localised `unsafeAssumePure`.
   private[ultimatum] def bindWake(wake: () => Unit): Unit =
+    // [field-purity] form wake callback escapes into Reading field
     onChange = caps.unsafe.unsafeAssumePure(wake)
 
   def apply(): status = current
@@ -63,6 +66,7 @@ class Reading[status](initial: status):
     // parameter, so the compiler cannot know that and will not let it into an untracked field.
     // `Reading` is not a capability (a pane tree holding one must stay pure, as `Panes` does), so
     // the alternative would be to make it `caps.Mutable` and lose that.
+    // [field-purity] unbounded status value stored in untracked field
     current = caps.unsafe.unsafeAssumePure(status)
     onChange()
 

@@ -50,6 +50,7 @@ object Extractable:
 
     // Laundered pure: the retained context function shares the instance's given-resolution
     // lifetime (the codec-thunk seal pattern; see rep/DECISIONS.md).
+    // [field-purity] codec-thunk seal on given capturing resolution tactic
     caps.unsafe.unsafeAssumePure:
       value => safely(decodable(using strategies.throwUnsafely).decoded(value))
 

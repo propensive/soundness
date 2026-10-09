@@ -35,6 +35,7 @@ package quantitative
 import rudiments.*
 
 object SiderealDays:
-  inline given ratio: Ratio[Seconds[1] & SiderealDays[-1], 86164.0905] = !!
+  erased given ratio: Ratio[Seconds[1] & SiderealDays[-1], 86164.0905] =
+    Ratio.Evidence[Seconds[1] & SiderealDays[-1], 86164.0905]()
 
 trait SiderealDays[Power <: Nat] extends Units[Power, Time]

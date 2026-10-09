@@ -97,7 +97,9 @@ object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
     try Array.unsafeFrozen(stream.readAllBytes().nn) finally stream.close()
 
   private class RecordingDelegate(answer: Optional[Data]) extends Tels.Resolution.Delegate:
+    // [test-harness] recording delegate's call counter
     @scala.caps.unsafe.untrackedCaptures var signatureCalls: Int = 0
+    // [test-harness]
     @scala.caps.unsafe.untrackedCaptures var selectorCalls: Int = 0
 
     def bySignature(signature: Data, reference: Optional[Tel.Pragma.Reference])

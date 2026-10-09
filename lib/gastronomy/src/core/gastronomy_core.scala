@@ -62,11 +62,13 @@ package providers:
 package cryptoPermits:
   // Unauthenticated (non-AEAD) encryption — every block-cipher mode (enigmatic).
   erased given permitUnauthenticatedCrypto: Permit[Concession.Unauthenticated] =
+    // [erased-evidence] erased crypto permit given
     caps.unsafe.unsafeErasedValue
 
   // "Deprecated": usable but transitional — Triple-DES, and SHA-1 (still common in
   // legacy formats such as Git).
   erased given permitDeprecatedCrypto: Permit[Concession.TripleDes] & Permit[Concession.Sha1] =
+    // [erased-evidence]
     caps.unsafe.unsafeErasedValue
 
   // Deprecated TLS protocol versions, key sizes and cipher families. Note that
@@ -75,6 +77,7 @@ package cryptoPermits:
   :   Permit[Concession.Tls10] & Permit[Concession.Tls11] & Permit[Concession.SmallDh] &
     Permit[Concession.CbcCipher] =
 
+    // [erased-evidence]
     caps.unsafe.unsafeErasedValue
 
   // Certificate-validation relaxations: expired or self-signed peer
@@ -83,22 +86,26 @@ package cryptoPermits:
   :   Permit[Concession.ExpiredCertificate] & Permit[Concession.SelfSignedCertificate] &
     Permit[Concession.UnverifiedHostname] =
 
+    // [erased-evidence]
     caps.unsafe.unsafeErasedValue
 
   // Connections to peers whose certificates' revocation status is not checked.
   erased given permitUncheckedRevocation: Permit[Concession.UncheckedRevocation] =
+    // [erased-evidence]
     caps.unsafe.unsafeErasedValue
 
   // Digesting with a checksum: CRC-32, CRC-64 and Adler-32 detect accidental corruption and
   // nothing more, so `digest[Crc32]` states that no adversary is in the threat model. Named for
   // what it concedes rather than for a weakness, since the algorithms are not defective.
   erased given permitNonCryptographicHashes: Permit[Concession.NonCryptographic] =
+    // [erased-evidence]
     caps.unsafe.unsafeErasedValue
 
   // "Legacy use": processing already-protected data only (decrypt/verify).
   erased given permitLegacyCrypto
   :   ProcessingPermit[Concession.TripleDes] & ProcessingPermit[Concession.Dsa] =
 
+    // [erased-evidence]
     caps.unsafe.unsafeErasedValue
 
   // "Disallowed": broken or non-approved algorithms, key lengths and modes (incl.
@@ -114,6 +121,7 @@ package cryptoPermits:
     Permit[Concession.Md5] &
     Permit[Concession.Sha1] =
 
+    // [erased-evidence] erased crypto permit given
     caps.unsafe.unsafeErasedValue
 
   // Year-based permits: an alternative to the named levels, composed from the same
@@ -127,6 +135,7 @@ package cryptoPermits:
   : Permit[Concession.Des] & Permit[Concession.Md5] & Permit[Concession.Rc2] &
     Permit[Concession.Blowfish] &
     Permit[Concession.SmallRsa] =
+    // [erased-evidence] erased crypto permit given
     caps.unsafe.unsafeErasedValue
 
   // Through 2024: also Triple-DES (encryption disallowed after 2023) and DSA
@@ -137,6 +146,7 @@ package cryptoPermits:
     Permit[Concession.SmallRsa] &
     Permit[Concession.TripleDes] &
     Permit[Concession.Dsa] =
+    // [erased-evidence] erased crypto permit given
     caps.unsafe.unsafeErasedValue
 
   // Through 2030: also SHA-1 (NIST's planned phase-out by 2030).
@@ -147,6 +157,7 @@ package cryptoPermits:
     Permit[Concession.TripleDes] &
     Permit[Concession.Dsa] &
     Permit[Concession.Sha1] =
+    // [erased-evidence] erased crypto permit given
     caps.unsafe.unsafeErasedValue
 
 extension [digestible: Digestible](value: digestible)

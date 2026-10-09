@@ -131,6 +131,7 @@ extends Cipher, Encryption, Symmetric:
 
     // The duct retains the ambient tactic, which the `consume` formal cannot see is not an
     // aliased writer.
+    // [by-name-receiver] duct argument shares ambient tactic with consumed stream
     scala.caps.unsafe.unsafeAssumeSeparate:
       stream.viaDuct(DecipherDuct(start, ivSize, tactic)).asInstanceOf[(Stream[Data] over Credit)^]
 
@@ -228,6 +229,7 @@ extends Duct[Data, Data]:
 
   // Untracked, cast-erased: the inner duct is reached only through this
   // stage's own exclusive methods.
+  // [registry-lifetime] cast-erased inner duct handle field
   @caps.unsafe.untrackedCaptures
   private var inner: CipherDuct | Null = null
 
@@ -271,9 +273,11 @@ extends Duct[Data, Data]:
           // The aborts are assumed separate: the error message closes over this duct only to
           // render the detail text; there is no aliased writer.
           if securityException(error, "javax.crypto.BadPaddingException")
+          // [by-name-receiver] abort message closes over duct holding the tactic
           then scala.caps.unsafe.unsafeAssumeSeparate:
             tactic.abort(Crypto.Error(Crypto.Error.Reason.BadPadding, detail(error)))
           else if securityException(error, "javax.crypto.IllegalBlockSizeException")
+          // [by-name-receiver]
           then scala.caps.unsafe.unsafeAssumeSeparate:
             tactic.abort(Crypto.Error(Crypto.Error.Reason.IllegalBlockSize, detail(error)))
           else throw error

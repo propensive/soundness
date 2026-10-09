@@ -44,8 +44,10 @@ import textSanitizers.skipSanitizer
 
 // A backend which records the token request and answers with a canned response
 class TokenServer(canned: () => Http.Response) extends Http.Backend:
+  // [test-harness] mock backend recorder var
   @scala.caps.unsafe.untrackedCaptures
   var lastUrl: Optional[Text] = Unset
+  // [test-harness]
   @scala.caps.unsafe.untrackedCaptures
   var lastBody: Optional[Text] = Unset
 

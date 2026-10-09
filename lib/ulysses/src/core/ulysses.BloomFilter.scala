@@ -74,6 +74,7 @@ object BloomFilter:
   def freeze[element, algorithm <: Algorithm](consume filter: BloomFilter[element, algorithm]^)
   :   BloomFilter[element, algorithm]^{} =
 
+    // [transfer] freeze: consume retires writers, drops write capability"}
     caps.unsafe.unsafeAssumePure(filter)
 
   // Sets the k positions, (h₁ + i·h₂) mod bitSize, in a word array: the one loop behind `add`,

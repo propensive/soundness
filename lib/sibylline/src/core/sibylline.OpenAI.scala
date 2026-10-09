@@ -84,6 +84,7 @@ object OpenAI:
       // `Anthropic.Sessional`: confinement is the fresh `Result` capability's job.
       lambda
         ( using Llm.Session
+            // [construction-fresh] dialect laundered; confinement by fresh Result
             ( caps.unsafe.unsafeAssumePure(ChatDialect(target)), target.system,
                 target.tools, target.settings, target.priming ) )
 
@@ -113,6 +114,7 @@ object OpenAI:
       def session[result](target: Responses)(lambda: (session: Result) ?=> result): result =
         lambda
           ( using Llm.Session
+              // [construction-fresh] dialect laundered; confinement by fresh Result
               ( caps.unsafe.unsafeAssumePure(ResponsesDialect(target.chat)), target.chat.system,
                   target.chat.tools, target.chat.settings, target.chat.priming ) )
 

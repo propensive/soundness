@@ -402,6 +402,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           val containerd = Containerd(endpoint, t"example")
+          // [test-harness] loopback test drives containerd alongside namespace promise
           scala.caps.unsafe.unsafeAssumeSeparate:
             val response = containerd.version()
             (response.version, response.revision, namespace.await())
@@ -424,6 +425,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           val containerd = Containerd(endpoint, t"example")
+          // [test-harness] loopback test driving containerd client
           scala.caps.unsafe.unsafeAssumeSeparate:
             containerd.containers().map(container => (container.id, container.labels))
       . assert(_ == List((t"alpha", Map(t"tier" -> t"db")), (t"beta", Map())))
@@ -444,6 +446,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          // [test-harness] loopback test driving containerd client
           scala.caps.unsafe.unsafeAssumeSeparate:
             val container = Containerd(endpoint, t"example").container(t"gamma")
             (container.id, container.labels, container.image)
@@ -465,6 +468,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          // [test-harness] loopback test driving containerd client
           scala.caps.unsafe.unsafeAssumeSeparate:
             Containerd(endpoint, t"example").namespaces().map(ns => (ns.name, ns.labels))
       . assert(_ == List((t"default", Map()), (t"k8s.io", Map(t"managed" -> t"true"))))
@@ -489,6 +493,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
 
+          // [test-harness] loopback test driving containerd client
           scala.caps.unsafe.unsafeAssumeSeparate:
             Containerd(endpoint, t"example").images().map: image =>
               (image.name, image.labels, image.target.digest, image.target.size)
@@ -512,6 +517,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          // [test-harness] loopback test driving containerd client
           scala.caps.unsafe.unsafeAssumeSeparate:
             val created = Containerd(endpoint, t"example").createContainer(container)
             (created.id, created.runtime.name, created.spec.typeUrl, created.spec.value.data.to[List])
@@ -530,6 +536,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           val rootfs = List(Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
+          // [test-harness] loopback test driving containerd client
           scala.caps.unsafe.unsafeAssumeSeparate:
             Containerd(endpoint, t"example").createTask(t"web", rootfs).pid
       . assert(_ == 4321)
@@ -550,6 +557,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          // [test-harness] loopback test driving containerd client
           scala.caps.unsafe.unsafeAssumeSeparate:
             Containerd(endpoint, t"example").tasks().map(task => (task.containerId, task.pid, task.state))
       . assert(_ == List((t"web", 4321, ProcessStatus.Running)))
@@ -648,6 +656,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          // [test-harness] loopback test with fresh containerd given and workload
           scala.caps.unsafe.unsafeAssumeSeparate:
             given containerd: (Containerd^) = Containerd(endpoint, t"example")
             val spec = Container(t"web", image = t"img:1")
@@ -667,6 +676,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          // [test-harness] loopback test with fresh containerd given and workload
           scala.caps.unsafe.unsafeAssumeSeparate:
             given containerd: (Containerd^) = Containerd(endpoint, t"example")
             val spec = Container(t"web", image = t"img:1")
@@ -690,6 +700,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          // [test-harness] loopback test with fresh containerd given and workload
           scala.caps.unsafe.unsafeAssumeSeparate:
             given containerd: (Containerd^) = Containerd(endpoint, t"example")
             val spec = Container(t"web", image = t"img:1")
@@ -716,6 +727,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          // [test-harness] loopback test with fresh containerd given and workload
           scala.caps.unsafe.unsafeAssumeSeparate:
             given containerd: (Containerd^) = Containerd(endpoint, t"example")
             val spec = Container(t"web", image = t"img:1")

@@ -214,6 +214,7 @@ object Teletype:
     private val hyperlinks: scm.HashMap[Int, Text] = scm.HashMap()
     private val insertions: scm.TreeMap[Int, Text] = scm.TreeMap()
 
+    // [field-purity] plain offset var in non-Stateful Builder
     @scala.caps.unsafe.untrackedCaptures
     private var offset: Int = 0
 

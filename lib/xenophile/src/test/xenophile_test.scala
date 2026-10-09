@@ -348,6 +348,7 @@ object Tests extends Suite(m"Xenophile tests"):
         // `setUncaughtExceptionHandler(UncaughtExceptionHandler)` reached as a `var`; the lambda's
         // `who`/`error` parameters are inferred. A package-private `uncaughtExceptionHandler(handler)`
         // method of the same name (JDK-internal) no longer shadows the generated setter.
+        // [test-harness] test lambda mutates local var into thread property
         scala.caps.unsafe.unsafeAssumeSeparate:
           thread.uncaughtExceptionHandler = ((who, error) => caught = true)
         val installed = thread.getUncaughtExceptionHandler().k

@@ -59,6 +59,7 @@ trait Xml3 extends Xml4:
       // Laundered pure per the codec-thunk seal pattern (see
       // rep/DECISIONS.md): the parser closes over the resolution-scoped
       // text codec.
+      // [field-purity] given field codec over text codec
       caps.unsafe.unsafeAssumePure:
         Xml.Field(Xml.textCodecParsable[value])
 
@@ -66,5 +67,6 @@ trait Xml3 extends Xml4:
       Xml.ParsableDerivation.derived
 
     case given (`value` is Decodable in Xml) =>
+      // [field-purity] given field codec over decodable
       caps.unsafe.unsafeAssumePure:
         Xml.Field(Xml.Parsable.fromDecodable(infer[`value` is Decodable in Xml]))

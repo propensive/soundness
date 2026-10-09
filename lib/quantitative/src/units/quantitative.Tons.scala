@@ -35,6 +35,7 @@ package quantitative
 import rudiments.*
 
 object Tons:
-  inline given ratio: Ratio[Kilograms[1] & Tons[-1], 1016.0469088] = !!
+  erased given ratio: Ratio[Kilograms[1] & Tons[-1], 1016.0469088] =
+    Ratio.Evidence[Kilograms[1] & Tons[-1], 1016.0469088]()
 
 trait Tons[Power <: Nat] extends Units[Power, Mass]

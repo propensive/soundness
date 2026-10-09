@@ -89,6 +89,7 @@ package textSanitizers:
   // Sealed per the codec-thunk pattern (rep/DECISIONS.md): the resolution-scoped tactic
   // shares the sanitizer's given-resolution lifetime, keeping `Charset` untracked.
   given strictSanitizer: (Tactic[Charset.Error]^) => (TextSanitizer) =
+    // [field-purity] given sanitizer over resolution-scoped tactic
     caps.unsafe.unsafeAssumePure: (position, encoding) => abort(Charset.Error(position, encoding))
 
   given skipSanitizer: TextSanitizer = (position, encoding) => Unset
@@ -98,6 +99,7 @@ package textSanitizers:
   given accrueSanitizer
   :   (Tactic[Charset.Error]^, Foci[Charset.Focus]^) => (TextSanitizer) =
 
+    // [field-purity] given sanitizer over resolution-scoped tactic and foci
     caps.unsafe.unsafeAssumePure: (position, encoding) =>
       focus(Charset.Focus(position)):
         raise(Charset.Error(position, encoding))

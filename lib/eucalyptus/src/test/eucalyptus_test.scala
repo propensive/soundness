@@ -82,6 +82,7 @@ object Tests extends Suite(m"Eucalyptus tests"):
       supervise:
         val capture = Capture()
         // The test logger is this test's single owner; no aliased writer.
+        // [construction-fresh] fresh test Logger instance laundered as given
         given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture, level = Level.Warn))
         Log.fine(m"alpha")
         Log.info(m"beta")
@@ -96,8 +97,10 @@ object Tests extends Suite(m"Eucalyptus tests"):
         val first = Capture()
         val second = Capture()
         // The test logger is this test's single owner; no aliased writer.
+        // [construction-fresh] fresh test Logger instance laundered as given
         given firstLog: Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(first))
         // The test logger is this test's single owner; no aliased writer.
+        // [construction-fresh]
         given secondLog: Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(second))
         Log.info(m"hello")
         List(first.queue.take(), second.queue.take())
@@ -112,6 +115,7 @@ object Tests extends Suite(m"Eucalyptus tests"):
           case Truncation.Error(_) => errors.put(t"cut")
         . protect:
             // The test logger is this test's single owner; no aliased writer.
+            // [construction-fresh] fresh test Logger instance laundered as given
             given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(Failing()))
             Log.info(m"trigger")
             errors.take()
@@ -122,6 +126,7 @@ object Tests extends Suite(m"Eucalyptus tests"):
       supervise:
         val capture = Capture()
         // The test logger is this test's single owner; no aliased writer.
+        // [construction-fresh] fresh test Logger instance laundered as given
         given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture, categories = Set(Log.Network)))
         Log.info(Signal.Net(t"a"))
         Log.info(Signal.Fs(t"b"))
@@ -133,6 +138,7 @@ object Tests extends Suite(m"Eucalyptus tests"):
       supervise:
         val capture = Capture()
         // The test logger is this test's single owner; no aliased writer.
+        // [construction-fresh] fresh test Logger instance laundered as given
         given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture))
         Log.info(Signal.Net(t"a"))
         Log.info(Signal.Fs(t"b"))

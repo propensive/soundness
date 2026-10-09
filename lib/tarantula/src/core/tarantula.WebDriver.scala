@@ -721,9 +721,11 @@ object WebDriver:
     // has minted them, and there is no session to be a method of until then. Both are pure values,
     // so the variables track nothing; the annotation says so, rather than making the whole session
     // `Stateful` for two write-once fields.
+    // [field-purity] write-once session fields, class not Stateful
     @scala.caps.unsafe.untrackedCaptures
     private var id: Text = t""
 
+    // [field-purity]
     @scala.caps.unsafe.untrackedCaptures
     private var negotiated: Optional[Json] = Unset
 

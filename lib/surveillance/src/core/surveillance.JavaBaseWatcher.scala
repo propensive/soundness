@@ -64,10 +64,12 @@ object JavaBaseWatcher extends Watcher:
     // Registry-lifetime storage of the poll task's handle (held only to keep the supervised
     // task alive); sealed inside the block, per the pure-façade convention (D6 ruling).
     val async: Optional[Task[Unit]] =
+      // [registry-lifetime] poll task handle held for registry lifetime
       safely(supervise(caps.unsafe.unsafeAssumePure(task(n"surveillance")(pollLoop.run()))))
 
   private val serviceMutex: Mutex = Mutex()
   private val watchesMutex: Mutex = Mutex()
+  // [field-purity] volatile WatchService var in watcher
   @volatile @scala.caps.unsafe.untrackedCaptures
   private var serviceValue: Optional[WatchService] = Unset
 

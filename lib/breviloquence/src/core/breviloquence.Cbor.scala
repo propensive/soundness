@@ -711,6 +711,7 @@ object Cbor extends Cbor2, Dynamic:
   // pipeline — rejects the `Optic`'s capture of `filter.predicate` against the required
   // pure `Optic` type. (Compiler divergence; see #1520 and `caesura`'s `rowFilter`.)
   given filterOptical: Filter[Cbor] is Optical from Cbor onto Cbor = filter =>
+    // [by-name-capture] filter predicate laundered pure (Scala.js divergence)
     val predicate: Cbor -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
 
     Optic: (origin, lambda) =>
@@ -859,6 +860,7 @@ object Cbor extends Cbor2, Dynamic:
   =>  (tactic: Tactic[Cbor.Error])
   =>  ((value in Cbor) is Aggregable by Data) =
 
+    // [field-purity] given retains resolution-scoped parsable and tactic
     caps.unsafe.unsafeAssumePure:
       bytes => parseDirect(bytes.read[Data], parsable).asInstanceOf[value in Cbor]
 
@@ -871,6 +873,7 @@ object Cbor extends Cbor2, Dynamic:
   =>  (tactic: Tactic[Cbor.Error])
   =>  (Data is Readable to (value in Cbor)) =
 
+    // [field-purity] given retains resolution-scoped parsable and tactic
     caps.unsafe.unsafeAssumePure:
       data => parseDirect(data, parsable).asInstanceOf[value in Cbor]
 
@@ -1091,12 +1094,14 @@ object Cbor extends Cbor2, Dynamic:
     // Cache the underlying primitive array so reads compile to BALOAD rather
     // than going through the frozen-array read shim. `data.length` is constant-folded by
     // the JIT and cheaper than going through a separate `length` accessor.
+    // [field-purity] cached raw input array in non-Stateful parser
     @scala.caps.unsafe.untrackedCaptures
     private[breviloquence] val data: scala.Array[Byte] = input.asInstanceOf[scala.Array[Byte]]
 
     // `offset` is exposed only to the package-private parse() entry point so it
     // can detect trailing bytes after a successful parse. All hot-path reads
     // mutate it directly through the JVM PUTFIELD/GETFIELD.
+    // [field-purity] offset var in non-Stateful parser
     @scala.caps.unsafe.untrackedCaptures
     var offset: Int = 0
 
@@ -1622,6 +1627,7 @@ object Cbor extends Cbor2, Dynamic:
     // 7-bit-clean text key (its high word left in `directKeyHigh`), or
     // `Cbor.Reader.KeyOpaque` without consuming anything — the caller then
     // takes the `directKeyName` step, which consumes the key generally.
+    // [field-purity] packed key state var in non-Stateful parser
     @scala.caps.unsafe.untrackedCaptures
     var directKeyHigh: Long = 0L
 

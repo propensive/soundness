@@ -959,6 +959,7 @@ extends caps.ExclusiveCapability:
 
   // The security handler, installed by `Pdf.unlock` after the document exists (it must read
   // the unencrypted `/Encrypt` dictionary through this same document first).
+  // [field-purity] security guard var installed after construction
   @scala.caps.unsafe.untrackedCaptures
   private[facsimile] var guard: Optional[Guard] = Unset
 
@@ -974,6 +975,7 @@ extends caps.ExclusiveCapability:
     scala.collection.mutable.HashSet()
 
   // The next free object number, one past the largest the original file used.
+  // [field-purity] nextNumber counter var in Pdf
   @scala.caps.unsafe.untrackedCaptures
   private[facsimile] var nextNumber: Int =
     (xref.entries.keys.maximum.or(0).max(trailer(t"Size").let(_.long).or(0L).toInt - 1)) + 1
@@ -984,6 +986,7 @@ extends caps.ExclusiveCapability:
   private[facsimile] val newStreams: scala.collection.mutable.HashMap[Long, Data] =
     scala.collection.mutable.HashMap()
 
+  // [field-purity] nextStreamId counter var in Pdf
   @scala.caps.unsafe.untrackedCaptures
   private var nextStreamId: Long = -1L
 
@@ -1357,6 +1360,7 @@ extends caps.ExclusiveCapability:
     new Spring[Data]:
       def apply(): (Stream[Data] over Credit)^ =
         // Both branches build the pipeline over this document's own single-owner data.
+        // [by-name-receiver] lay lambda builds pipeline over same document's data
         scala.caps.unsafe.unsafeAssumeSeparate:
           decrypted.lay(pipeline(steps, Stream(ranges(start, end)))): data =>
             pipeline(steps, Stream(Iterator(data)))
@@ -1381,6 +1385,7 @@ extends caps.ExclusiveCapability:
 
   // Chunked positional reads over a raw range: the pull side of `spring`.
   private def ranges(start: Long, end: Long): Iterator[Data]^{this} = new Iterator[Data]:
+    // [stdlib-iterator] position var in anonymous Iterator
     @scala.caps.unsafe.untrackedCaptures
     private var position: Long = start
 

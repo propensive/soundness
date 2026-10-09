@@ -93,6 +93,7 @@ private[scintillate] object Connections:
     // rather than leaking out of the per-mint `unsafely` scope through the body thunk.
     val source: ji.InputStream is Streamable by Data over Credit =
       unsafely:
+        // [fresh-in-lambda] source evidence minted inside unsafely block
         caps.unsafe.unsafeAssumePure(summon[ji.InputStream is Streamable by Data over Credit])
 
     val request =
@@ -159,6 +160,7 @@ private[scintillate] object Connections:
 
                 stream.skip(size)
                 // Tail re-entry over the same single-owner stream.
+                // [closure-capture] local def tail re-entry over single-owner stream
                 scala.caps.unsafe.unsafeAssumeSeparate(recur())
 
               case _ => ()

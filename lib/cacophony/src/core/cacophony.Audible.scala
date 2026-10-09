@@ -90,12 +90,10 @@ trait Audible extends Typeclass:
           try jss.AudioSystem.getAudioInputStream(target, raw).nn
           catch case _: IllegalArgumentException => abort(Audio.Error(this))
 
-      val readBytes = pcm.readAllBytes.nn
+      // `readAllBytes` returns a fresh array that nothing else holds.
+      val readBytes: Array[Byte]^{} = Array.unsafeFrozen(pcm.readAllBytes.nn)
       val pcmFormat: jss.AudioFormat = pcm.getFormat.nn
       pcm.close()
 
-      // The audio privately owns its sample array; the inline Java-side copy adapts to the
-      // pure base class (a named array value would charge its read capability against it).
-      scala.caps.unsafe.unsafeAssumePure:
-        new Audio(pcmFormat, java.util.Arrays.copyOf(readBytes, readBytes.length).nn):
-          type Form = audible.Self
+      new Audio(pcmFormat, readBytes):
+        type Form = audible.Self

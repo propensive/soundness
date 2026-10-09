@@ -166,6 +166,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
@@ -206,6 +207,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
@@ -235,6 +237,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
@@ -265,6 +268,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Any): json =>
           json.`type`.as[Text] match
@@ -354,6 +358,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
@@ -376,6 +381,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
@@ -416,6 +422,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Any): json =>
           json.sessionUpdate.as[Text] match
@@ -502,6 +509,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
@@ -541,6 +549,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Any): json =>
           json.outcome.as[Text] match
@@ -752,6 +761,7 @@ object Acp:
     // An `Observer` is a capability class, so an instance is `^`-typed; this one captures
     // nothing, and the fresh capability it constitutes is laundered away once, so the silent
     // observer is a pure value, storable in this object and as a default argument.
+    // [construction-fresh] silent Observer's fresh capability laundered for object storage
     val Silent: Observer^{} = caps.unsafe.unsafeAssumePure:
       new Observer:
         def received(message: Text): Unit = ()
@@ -852,21 +862,27 @@ object Acp:
   // task after.
   class Registry private[espionage] () extends anticipation.Durable:
 
+    // [registry-lifetime] cast-erased AnyRef handler slot in shared registry
     @scala.caps.unsafe.untrackedCaptures
     var updated0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var permission0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var readFile0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var writeFile0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var terminal0: AnyRef | Null = null
 
+    // [registry-lifetime] durable-capturing adjuster function held in shared registry
     @scala.caps.unsafe.untrackedCaptures
     var adjust0: Optional[ClientCapabilities ->{caps.any.only[anticipation.Durable]} ClientCapabilities] = Unset
 
@@ -905,14 +921,18 @@ object Acp:
     // connection is confined by its own type and each proxy is a member of it, so sealing the
     // reference the generated modules hold is sound; the macro cannot take a capability-typed
     // splice.
+    // [quote-wall] proxy macro cannot take a capability-typed splice
     private val channel: JsonRpc = caps.unsafe.unsafeAssumePure(this)
 
     val lifecycle: AcpAgentLifecycle =
+      // [quote-wall] macro-generated proxy over sealed channel
       caps.unsafe.unsafeAssumePure(channel.proxy[AcpAgentLifecycle])
 
+    // [quote-wall]
     val sessions: AcpAgentSession = caps.unsafe.unsafeAssumePure(channel.proxy[AcpAgentSession])
 
     // What the agent reported at initialization: pure data, recorded by `initialize`.
+    // [field-purity] pure-data var on non-Stateful connection
     @scala.caps.unsafe.untrackedCaptures
     private var initialized0: Optional[InitializeResult] = Unset
 
@@ -1265,12 +1285,14 @@ object Acp:
       // Sealed: the connection captures this exchange's monitor and diagnostics, and an honest
       // `Acp.Connection^` would hide them from the writer and reader that serve it. It is a local
       // of this method, lent to `lambda` and dead once `lambda` returns.
+      // [construction-fresh] fresh connection sealed, lent to lambda for method scope
       val connection: Acp.Connection = caps.unsafe.unsafeAssumePure(Acp.Connection(state))
 
       // The service is confined by its own type and the dispatch closures are locals of this
       // method, so sealing the reference the generated dispatchers hold is sound; the macro cannot
       // take a capability-typed splice. One dispatcher per served interface, so each generated
       // class stays within the JVM constant-pool limit.
+      // [quote-wall] dispatch macro cannot take capability-typed splice
       val serving: AcpClient = caps.unsafe.unsafeAssumePure(service)
 
       val sessionDispatch: Json ->{caps.any.only[anticipation.Durable]} Optional[Json] =

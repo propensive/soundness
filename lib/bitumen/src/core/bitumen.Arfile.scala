@@ -57,12 +57,15 @@ object Arfile:
 
     // The stream's single ownership passes to the cursor inside the iterator, whose fresh
     // capability is laundered (nothing else can reach it).
+    // [construction-fresh] fresh entry iterator owning consumed stream laundered
     scala.caps.unsafe.unsafeAssumePure:
+      // [pump-overlap] consumed stream fed to cursor in nested call
       scala.caps.unsafe.unsafeAssumeSeparate(entryIterator(Cursor[Data](stream)))
 
   def from(consume stream: (Stream[Data] over Credit)^)(using Tactic[Ar.Error]): Arfile =
     // The stream's single ownership passes with this call; the checker cannot see through the
     // consumed parameter's re-use in the nested call.
+    // [pump-overlap] consumed stream reused through nested read call
     scala.caps.unsafe.unsafeAssumeSeparate:
       Arfile(read(stream).to(List).asInstanceOf[List[Ar.Entry]])
 
@@ -79,9 +82,11 @@ object Arfile:
       data.segment((0).z till (size.toInt).z)
 
     new Archive.Lookahead[Ar.Entry]:
+      // [stdlib-iterator] state in anonymous Lookahead iterator
       @caps.unsafe.untrackedCaptures
       private var nameTable: Optional[Data] = Unset
 
+      // [stdlib-iterator]
       @caps.unsafe.untrackedCaptures
       private var started: Boolean = false
 

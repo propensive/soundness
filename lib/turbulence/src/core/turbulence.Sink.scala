@@ -56,6 +56,7 @@ object Sink:
     // Laundered for the Scala.js pipeline (see #1520): its pre-capture-checking
     // SAM expansion turns this given into an anonymous class that hides the
     // evidence; the pure thunk empties the capture.
+    // [anon-fresh-field] scala.js SAM anonymous class hides tactic evidence
     val cut: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => streamCut.asInstanceOf[AnyRef] }
 
     value =>
@@ -111,6 +112,7 @@ object Sink:
     // Laundered for the Scala.js pipeline (see #1520): its pre-capture-checking
     // SAM expansion turns this given into an anonymous class that hides the
     // evidence; the pure thunk empties the capture.
+    // [anon-fresh-field] scala.js SAM anonymous class hides tactic evidence
     val cut: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => streamCut.asInstanceOf[AnyRef] }
 
     value =>
@@ -176,6 +178,7 @@ object Sink:
 
       private val block: Int = buffering.capacity(addressable0.substrate)
       // Untracked, cast-erased: reached only through this endpoint.
+      // [abstract-storage] cast-erased abstract Storage field in anonymous Intake
       @caps.unsafe.untrackedCaptures
       private val storage: addressable0.Storage =
         addressable0.allocate(block).asInstanceOf[addressable0.Storage]

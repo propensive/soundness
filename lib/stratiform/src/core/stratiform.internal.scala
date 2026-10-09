@@ -1222,6 +1222,7 @@ object internal:
       // generated parser captures the resolution-scoped tactic and foci.
       // The instance and default arrays are single lazy vals, so recursive
       // self-references stay deferred until the first parse.
+      // [quote-wall] codec seal inside quoted generated parser
       caps.unsafe.unsafeAssumePure:
         val foci: Foci[Tel.Focus] = $fociExpr
         val tactic: Tactic[Tel.Error] = $tacticExpr

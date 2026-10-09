@@ -172,11 +172,11 @@ object Hyphenation:
       scores:       scala.Array[Byte]^ )
   :   Unit =
 
-    val children = trie.children
-    val values = trie.values
-    val fail = trie.fail
-    val dictLink = trie.dictLink
-    val depth = trie.depth
+    val children = trie.children.readable
+    val values = trie.values.readable
+    val fail = trie.fail.readable
+    val dictLink = trie.dictLink.readable
+    val depth = trie.depth.readable
     val alpha = trie.alphabet.size
     var node = 0
     var j = 0

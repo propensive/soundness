@@ -65,6 +65,7 @@ object Optical:
   // (Compiler divergence; the JVM pipeline accepts the direct form.)
   given filter: [key, element] => Filter[key] is Optical from Map[key, element] onto element =
     filter =>
+      // [field-purity] filter predicate laundered for pure Optic (Scala.js)
       val predicate: key -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
 
       Optic: (origin, lambda) =>
@@ -76,6 +77,7 @@ object Optical:
 
   given filter2: [element] => Filter[element] is Optical from List[element] onto element =
     filter =>
+      // [field-purity] filter predicate laundered for pure Optic (Scala.js)
       val predicate: element -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
 
       Optic: (origin, lambda) =>

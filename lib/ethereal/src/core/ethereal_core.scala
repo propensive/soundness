@@ -348,6 +348,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
         // The signal's trap runs on the invocation's `Cli`, which the session's reader may
         // be asked for before the invocation has made it: a brief wait, then a rejection.
+        // [closure-capture] monitor laundered for capture by signal dispatch def
         val monitor0: Monitor^{} = caps.unsafe.unsafeAssumePure(summon[Monitor])
 
         def dispatch(signal: Signal): SignalResponse =
@@ -357,7 +358,9 @@ def cli[bus <: Matchable](using executive: Executive)
 
           . or(SignalResponse.Reject)
 
+        // [closure-capture] local dispatch def laundered to pure function
         val dispatch0: Signal -> SignalResponse = caps.unsafe.unsafeAssumePure(dispatch)
+        // [closure-capture] logging lambda laundered to pure function
         val log0: DaemonLogEvent -> Unit = caps.unsafe.unsafeAssumePure(event => Log.info(event))
         val session: Session = Session(connection, in, descriptors, dispatch0, log0)
         columns.let { columns => rows.let { rows => session.windowSize() = (columns, rows) } }
@@ -432,11 +435,13 @@ def cli[bus <: Matchable](using executive: Executive)
         // The help view, the resident handle and each client invocation all share the same
         // single-owner daemon state; none is an aliased writer.
         lazy val helpValue: Optional[Help] =
+          // [by-name-receiver] help block lambda shares daemon state with other arguments
           scala.caps.unsafe.unsafeAssumeSeparate:
            executive.help(name, environment, () => directory, stdio, login):
              (interface: executive.Interface) ?=> block(using resident, interface, environment, summon[Monitor])
 
         lazy val resident: Resident over bus =
+          // [by-name-receiver] resident constructor lambdas share single-owner daemon state
           scala.caps.unsafe.unsafeAssumeSeparate:
            new Resident
              ( pid,
@@ -467,6 +472,8 @@ def cli[bus <: Matchable](using executive: Executive)
 
         try
           val cli: executive.Interface =
+            // [by-name-receiver] invocation arguments (directory lambda, stdio, resident) share
+            // state
             scala.caps.unsafe.unsafeAssumeSeparate:
              executive.invocation
                ( textArguments,
@@ -479,9 +486,11 @@ def cli[bus <: Matchable](using executive: Executive)
           clientState.invocation.offer(cli.asInstanceOf[AnyRef])
 
           if cli.proceed then
+            // [by-name-receiver] block arguments resident and cli share daemon state
             val result = scala.caps.unsafe.unsafeAssumeSeparate:
               block(using resident, cli, environment, summon[Monitor])
 
+            // [by-name-receiver] process(cli)(result): result derived from cli
             exitStatus = scala.caps.unsafe.unsafeAssumeSeparate(executive.process(cli)(result))
           else exitStatus = Exit.Ok
 
@@ -541,6 +550,7 @@ def cli[bus <: Matchable](using executive: Executive)
       val domainSocket: DomainSocket = DomainSocket(socketFile.encode)
 
       // The timer's callback logs through the same single-owner syslog.
+      // [by-name-receiver] timeout by-name body captures shared syslog
       val inactivityTimer: Timeout^ = scala.caps.unsafe.unsafeAssumeSeparate:
        Timeout(idleTimeout):
         Log.warn(DaemonLogEvent.IdleTimeout)
@@ -556,11 +566,13 @@ def cli[bus <: Matchable](using executive: Executive)
       // ever leaves it via `termination`'s `System.exit`.
       val acceptor = (connection: Connection) =>
         inactivityTimer.nudge()
+        // [closure-capture] acceptor closure calls makeClient over shared daemon state
         scala.caps.unsafe.unsafeAssumeSeparate(safely(makeClient(connection)))
         ()
 
       // Everything under the accept loop shares the daemon's single-owner state (the
       // syslog, timer and monitor); nothing is an aliased writer.
+      // [by-name-receiver] acceptor and serving block share daemon state
       scala.caps.unsafe.unsafeAssumeSeparate:
        safely:
         domainSocket.listenConnections(acceptor, ownerOnly = true):

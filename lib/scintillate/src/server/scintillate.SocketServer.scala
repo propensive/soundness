@@ -208,6 +208,7 @@ extends RequestServable:
   :   (Stream[Data] over Credit)^{cursor} =
    // The stream's own fresh capability is laundered into the declared result, which
    // tracks the single-owner cursor.
+   // [construction-fresh] stream's fresh capability laundered into declared result
    scala.caps.unsafe.unsafeAssumePure:
      if facts.chunked then Http.Request.chunkedBody(cursor)
      else facts.contentLength.lay(Http.emptyBody())(Http.Request.fixedBody(cursor, _))
@@ -267,6 +268,7 @@ extends RequestServable:
           // former Chain view's implicit caching.
           val bodyStream: (Stream[Data] over Credit)^{cursor} =
             // Both branches produce a stream over the same single-owner cursor.
+            // [construction-fresh] body stream's fresh capability laundered
             scala.caps.unsafe.unsafeAssumePure:
               if upgrade then streamOf(cursor) else requestBody(cursor, facts)
 
@@ -286,6 +288,7 @@ extends RequestServable:
           var keep = keepAlive(head, facts)
 
           // The responder retains only per-request locals; no aliased writer.
+          // [closure-capture] anonymous responder closes over per-request locals
           val respond: Http.Connection.Respond^ = scala.caps.unsafe.unsafeAssumeSeparate:
            new Http.Connection.Respond:
             def apply(response: Http.Response^)(using Tactic[Truncation.Error]): Unit =
@@ -309,6 +312,7 @@ extends RequestServable:
           val started = System.currentTimeMillis
 
           // The response is produced and delivered over the same single-owner connection.
+          // [by-name-receiver] response by-name captures connection it is delivered on
           scala.caps.unsafe.unsafeAssumeSeparate:
             connection.respond:
               try handler(using connection)
@@ -352,6 +356,7 @@ extends RequestServable:
         // construction is deferred until the first read (live-socket rule).
         // The recovery tactic and the socket cursor share no writer; the request loop owns
         // the cursor exclusively within this block.
+        // [by-name-receiver] protect body and recovery tactic overlap
         scala.caps.unsafe.unsafeAssumeSeparate:
           val cursor = Cursor[Data](Streamable.inputStream.stream(in))
           var continue = true
@@ -435,6 +440,7 @@ extends RequestServable:
     // keeps accepting, and the error neither escalates nor is dumped to stderr.
     // The containment and its protected body share only this server's own state; no
     // aliased writer.
+    // [by-name-receiver] contain handler and protected body share server state
     scala.caps.unsafe.unsafeAssumeSeparate:
      contain:
       case error => Log.fail(Httpd.Event.ConnectionFailed(error)); Remedy.Accept
@@ -502,6 +508,7 @@ extends RequestServable:
         val cancel: Promise[Unit] = Promise[Unit]()
 
         // The loop and its canceller run under the same supervisor; no aliased writer.
+        // [by-name-receiver] async body shares supervisor with accept loop
         val stopTask = scala.caps.unsafe.unsafeAssumeSeparate:
          async:
           cancel.attend()

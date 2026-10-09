@@ -109,6 +109,7 @@ object Tmux:
     tmux.shell match
       case Shell.Powershell =>
         enter(t"""_completions "$text"""")
+        // [by-name-receiver] attend's by-name block uses the same tmux
         scala.caps.unsafe.unsafeAssumeSeparate(attend(enter('\r')))
         var count = 0
 
@@ -133,6 +134,7 @@ object Tmux:
         enter(tool.command)
         enter(' ')
         enter(text)
+        // [by-name-receiver] attend's by-name block uses the same tmux
         scala.caps.unsafe.unsafeAssumeSeparate(attend(enter(Ht)))
         screenshot().screen.filter(!_.starts(t"> ")).readable.toSeq.join(t"\n").trim
 
@@ -170,6 +172,7 @@ object Tmux:
             count += 1
 
       case _ =>
+        // [by-name-receiver] attend's by-name block uses the same tmux
         scala.caps.unsafe.unsafeAssumeSeparate(attend(enter(Ht)))
 
     screenshot().currentLine(decorate).sub(t"> ${tool.command} ", t"")

@@ -122,6 +122,7 @@ object Producer:
     type Operand = operand
 
     // Untracked, cast-erased: reached only through this producer.
+    // [abstract-storage] abstract Storage block in producer
     @caps.unsafe.untrackedCaptures
     private val current: addressable.Storage =
       addressable.allocate(block).asInstanceOf[addressable.Storage]
@@ -178,9 +179,11 @@ object Producer:
 
     // The reader-side view: like a conduit's stream endpoint, it is owned by the
     // consuming thread and mediated by the queue's happens-before; the seal is that rim.
+    // [stdlib-iterator] reader-side anonymous Iterator sealed pure
     lazy val iterator: Iterator[medium] = caps.unsafe.unsafeAssumePure(new Iterator[medium]:
       // The iterator is the reader-side view of the channel (non-Stateful by design:
       // scala.Iterator's methods cannot be update methods); its staging slot is untracked.
+      // [stdlib-iterator] staging slot var in anonymous Iterator
       @caps.unsafe.untrackedCaptures
       private var ready: medium | Done.type = Done
 
@@ -459,6 +462,7 @@ object Producer:
     // in its slot. The cache holds each slot's name and
     // encoding side by side, and is leased from the `Blockpool` like the block, so it stays
     // warm from one document to the next.
+    // [registry-lifetime] name cache leased from shared Blockpool
     @caps.unsafe.untrackedCaptures
     private val names: scala.Array[AnyRef | Null]^ =
       Blockpool.poll(namesClass, Utf8Writer.NameSlots*2) match

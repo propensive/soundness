@@ -105,6 +105,7 @@ object LspSessional:
     // Sealed: the connection captures this session's monitor and diagnostics, and an honest
     // `Lsp.Connection^` would hide them from the writer and reader that serve it. It is a local of
     // this method, lent to `lambda` and dead once `lambda` returns.
+    // [construction-fresh] fresh connection sealed so writer/reader share it
     val connection: Lsp.Connection = caps.unsafe.unsafeAssumePure(Lsp.Connection())
     val inbound: Lsp.Client = LspInbound(listener)
 

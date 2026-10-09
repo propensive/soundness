@@ -101,6 +101,7 @@ package optics:
   // pipeline — rejects the `Optic`'s capture of `filter.predicate` against the required
   // pure `Optic` type. (Compiler divergence; see #1520 and `caesura`'s `rowFilter`.)
   given jsonFilterOptical: Filter[Json] is Optical from Json onto Json = filter =>
+    // [field-purity] filter predicate laundered for pure Optic (Scala.js)
     val predicate: Json -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
 
     Optic: (origin, lambda) =>
