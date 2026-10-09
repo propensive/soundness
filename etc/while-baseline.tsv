@@ -118,7 +118,7 @@ lib/jacinta/src/core/jacinta.internal.scala	12	20	2
 lib/kaleidoscope/src/core/kaleidoscope.JavaBaseRegex.scala	1	0	0
 lib/kaleidoscope/src/core/kaleidoscope.Regex.scala	0	0	6
 lib/locomotion/src/core/locomotion.Protobuf.scala	1	0	0
-lib/locomotion/src/core/locomotion.ProtobufParser.scala	8	0	0
+lib/locomotion/src/core/locomotion.ProtobufParser.scala	13	0	0
 lib/locomotion/src/core/locomotion.ProtobufPrinter.scala	3	0	0
 lib/mandible/src/core/mandible.Bytecode.scala	1	0	4
 lib/metamorphose/src/core/metamorphose.Permutation.scala	1	0	0
