@@ -37,6 +37,7 @@ import rudiments.*
 
 object Inches:
   given designation: Designation[Inches[1]] = () => "in".tt
-  inline given ratio: Ratio[Inches[-1] & Metres[1], 0.0254] = !!
+  erased given ratio: Ratio[Inches[-1] & Metres[1], 0.0254] =
+    Ratio.Evidence[Inches[-1] & Metres[1], 0.0254]()
 
 trait Inches[Power <: Nat] extends Units[Power, Distance]

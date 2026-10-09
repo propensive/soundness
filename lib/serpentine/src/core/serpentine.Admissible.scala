@@ -48,7 +48,7 @@ object Admissible:
   inline def apply[self, filesystem](fn: Text => Unit): self is Admissible on filesystem = fn(_)
 
   transparent inline given text: [text <: Text, filesystem] => text is Admissible on filesystem =
-    inline !![text] match
+    inline scala.compiletime.erasedValue[text] match
       case _: Name[`filesystem`] => unchecked[text, filesystem]
       case _                     => provide[Tactic[Name.Error]](Name[filesystem](_))
 

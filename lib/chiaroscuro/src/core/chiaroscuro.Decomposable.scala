@@ -107,7 +107,7 @@ trait Decomposable2 extends Decomposable3:
     case given (AnyRef <:< `entity`)                   => any[entity]
 
     case given (Unset.type <:< `entity`) =>
-      inline !![entity] match
+      inline scala.compiletime.erasedValue[entity] match
         case _: Optional[inner] => summonFrom:
           case decomposable: (`inner` is Decomposable) =>
             value =>

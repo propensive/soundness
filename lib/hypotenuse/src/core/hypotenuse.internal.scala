@@ -79,7 +79,7 @@ object internal:
     inline given canEqual: CanEqual
       [ F64, F64 | S64 | S32 | S16 | S8 | Double | Long | Int | Short | Byte ] =
 
-      caps.unsafe.unsafeErasedValue
+      CanEqual.derived
 
     inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B64): F64 = F64:
       (if sign then Long.MinValue else 0L) | ((exponent & 0xffL) << 52) |
@@ -190,7 +190,7 @@ object internal:
     inline given canEqual: CanEqual
       [ F32, F32 | S64 | S32 | S16 | S8 | Float | Long | Int | Short | Byte ] =
 
-      caps.unsafe.unsafeErasedValue
+      CanEqual.derived
 
     inline given orderable: F32 is Orderable:
       inline def compare
@@ -240,7 +240,7 @@ object internal:
     final val Max: U64 = -1L
 
     inline given underlying: Underlying[U64, Long] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[U64, U64] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U64, U64] = CanEqual.derived
 
     given fromDigits: FromDigits[U64]:
       inline def fromDigits(digits: String): U64 = ${hypotenuse.protointernal.parseU64('digits)}
@@ -273,7 +273,7 @@ object internal:
     inline given canEqual: CanEqual[S64, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long |
       Int | Short | Byte] =
 
-      caps.unsafe.unsafeErasedValue
+      CanEqual.derived
 
     given fromDigits: FromDigits[S64]:
       inline def fromDigits(digits: String): S64 = ${hypotenuse.protointernal.parseS64('digits)}
@@ -299,7 +299,7 @@ object internal:
     final val Max: U32 = Int.MaxValue
 
     inline given underlying: Underlying[U32, Int] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[U32, U32] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U32, U32] = CanEqual.derived
 
     given fromDigits: FromDigits[U32]:
       inline def fromDigits(digits: String): U32 = ${hypotenuse.protointernal.parseU32('digits)}
@@ -332,7 +332,7 @@ object internal:
     inline given canEqual: CanEqual[S32, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long |
       Int | Short | Byte] =
 
-      caps.unsafe.unsafeErasedValue
+      CanEqual.derived
 
     given fromDigits: FromDigits[S32]:
       inline def fromDigits(digits: String): S32 = ${hypotenuse.protointernal.parseS32('digits)}
@@ -358,7 +358,7 @@ object internal:
     final val Max: S16 = -1
 
     inline given underlying: Underlying[U16, Short] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[U16, U16] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U16, U16] = CanEqual.derived
 
     given fromDigits: FromDigits[U16]:
       inline def fromDigits(digits: String): U16 = ${hypotenuse.protointernal.parseU16('digits)}
@@ -392,7 +392,7 @@ object internal:
                                     F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int |
                                       Short | Byte] =
 
-      caps.unsafe.unsafeErasedValue
+      CanEqual.derived
 
     given fromDigits: FromDigits[S16]:
       inline def fromDigits(digits: String): S16 = ${hypotenuse.protointernal.parseS16('digits)}
@@ -421,7 +421,7 @@ object internal:
     final val Max: U8 = -1
 
     inline given underlying: Underlying[U8, Byte] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[U8, U8] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U8, U8] = CanEqual.derived
 
     given fromDigits: FromDigits[U8]:
       inline def fromDigits(digits: String): U8 = ${hypotenuse.protointernal.parseU8('digits)}
@@ -454,7 +454,7 @@ object internal:
     inline given canEqual: CanEqual[S8, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long |
       Int | Short | Byte] =
 
-      caps.unsafe.unsafeErasedValue
+      CanEqual.derived
 
     given fromDigits: FromDigits[S8]:
       inline def fromDigits(digits: String): S8 = ${hypotenuse.protointernal.parseS8('digits)}

@@ -123,9 +123,9 @@ object internal:
         '{Text($expr)}
 
     given conversion: Conversion[String, Text] = make(_)
-    inline given canEqual: CanEqual[Text, Text] = caps.unsafe.unsafeErasedValue
-    inline given canEqual2: CanEqual[String, Text] = caps.unsafe.unsafeErasedValue
-    inline given canEqual3: CanEqual[Text, String] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[Text, Text] = CanEqual.derived
+    inline given canEqual2: CanEqual[String, Text] = CanEqual.derived
+    inline given canEqual3: CanEqual[Text, String] = CanEqual.derived
 
     given typeable: Typeable[Text]:
       def unapply(value: Any): Option[value.type & Text] = value.asMatchable match
