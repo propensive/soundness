@@ -94,7 +94,7 @@ object Loggable:
 // A shared capability: a logger is written to from every task and daemon at once, and the
 // sinks it fans out to are shared (`SharedUnscoped`) and synchronised. An instance captures
 // those sinks, and the self type says so.
-trait Loggable extends Typeclass, caps.SharedCapability:
+trait Loggable extends Typeclass, Durable:
   loggable: Loggable^ =>
     def log(level: Level, timestamp: Long, event: => Self): Unit
 
@@ -105,7 +105,7 @@ trait Loggable extends Typeclass, caps.SharedCapability:
     // declares it. (Compiler divergence; the JVM pipeline accepts the direct form.)
     // The transformer is shared-only, since the derived logger (a shared capability) retains it;
     // the result also carries the fresh capability the new instance constitutes.
-    def contramap[self2](lambda: self2 ->{caps.any.only[caps.SharedCapability]} Self)
+    def contramap[self2](lambda: self2 ->{caps.any.only[anticipation.Durable]} Self)
     :   (self2 is Loggable)^{this, lambda, caps.any} =
 
       val lambda0: self2 -> Self = caps.unsafe.unsafeAssumePure(lambda)

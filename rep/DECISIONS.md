@@ -3041,3 +3041,38 @@ in those suites is now tagged: local-def recursions over a fresh stream that the
 their exact refill sizes (`[closure-capture]`), reads after `acceptingDuct`/`streamOf`/a
 recorder's pump (`[pump-overlap]`), a raw writer thread (`[test-harness]`), and a Java
 `GZIPInputStream` over the gathered bytes (`[java-boundary]`).
+
+## Task bodies capture only durable capabilities (2026-10-09, Jon's concern)
+
+#2212 let a task body capture any *shared* capability, which includes a `Tactic`. Jon's
+concern: a tactic belongs to the stack of the code that installed it, and raising through it
+from a worker thread unwinds a stack that is not the task's own (for a boundary-based tactic,
+the break is thrown on the wrong thread). Daemons were already pure; tasks needed a finer
+classifier. Now:
+
+- `anticipation.Durable extends caps.SharedCapability, caps.Classifier` — a shared capability
+  safe to retain across a thread boundary — and `anticipation.DurableUnscoped extends Durable,
+  caps.SharedUnscoped, caps.Classifier` for the ambient, level-exempt ones. Task bodies,
+  probates (`SharedProbate`), `Task#map`/`bind`, `Timeout`'s action, `concurrently`'s job,
+  `loop`'s block, `JsonRpc.serve`'s dispatcher, `listenConnections`' handler, `ethereal.cli`'s
+  block and the DAP observer are `->{caps.any.only[Durable]}`. A tactic is shared but not
+  durable, so a task raises only through its own `AsyncTactic`.
+- `Durable`: `Monitor`, `Timeout`, `Loop`, `Loggable`, `Process`, `Job`, the JDWP, LSP and ACP
+  connections, `Lsp.Client`, the registries, `Acp.Service`, `Enclave.Tool`, zephyrine's
+  `Handoff`, `Freelist` and conduit core. `DurableUnscoped`: `LogSink`, `Internet`, the LSP/ACP
+  `Observer`s.
+- The meet needs the fork: `DurableUnscoped` derives from two unrelated classifiers, which
+  `Setup.checkClassifiedInheritance` rejected outright although `CaptureOps.classifier` (the
+  `leastClassifier` fold) already picks the meet. proscala `classifiermeet` accepts an unrelated
+  pair when a classifier among the base classes derives from both (`rep/classifier-meet/`;
+  probes P21). Two user-level routes were tried first and are dead: separate `Durable` and
+  `DurableUnscoped` classifiers admitted together (`only[Durable], only[DurableUnscoped]`) pass
+  the probe but a durable *holder* (`Loop`, a logger) cannot retain an unrelated-classified one
+  ("Reference `Loop.this.iteration` is not included in the allowed capture set {any} of the
+  self type"); and making `Durable` itself level-exempt would exempt monitors from the level
+  check that keeps a task handle inside `supervise`.
+- `Lsp.proxy` loses its `capture^` type parameter, as `Acp.connect` did in #2212: it existed to
+  let the registration block capture an exclusive monitor, and its `Monitor^{capture}` now
+  classified the variable `Durable` and rejected the block's capture of its own task's tactic.
+- Verified against the scratch fork build before release: the whole tree and every test suite
+  compile, the 635-file upstream captures corpus is unchanged, and the probes pass.

@@ -81,7 +81,7 @@ object Conduit:
   // The synchronized substrate both endpoints capture: a spin-then-park SPSC
   // ring, the failure flag, and a non-blocking pool of spent blocks the reader
   // returns to the writer for reuse.
-  private final class Core(val depth: Int) extends caps.SharedCapability:
+  private final class Core(val depth: Int) extends anticipation.Durable:
     val handoff: Handoff = Handoff(depth)
     val freelist: Freelist = Freelist(depth + 1)
     // A JMM-managed flag: its safety is the volatile publication guarantee, not

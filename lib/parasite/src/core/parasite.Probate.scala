@@ -55,4 +55,4 @@ trait Probate:
 // everything it holds — its probate included — may capture only shared capabilities. Pure
 // probates (`awaitProbate`, …) conform trivially; `failProbate` closes over a tactic, which is
 // shared; a probate closing over an exclusive resource cannot be handed to a task.
-type SharedProbate = Probate^{scala.caps.any.only[scala.caps.SharedCapability]}
+type SharedProbate = Probate^{scala.caps.any.only[anticipation.Durable]}

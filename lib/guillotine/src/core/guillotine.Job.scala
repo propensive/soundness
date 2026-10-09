@@ -83,7 +83,7 @@ object Job:
 // thread-safe.
 class Job[+exec <: Label, result] private[guillotine]
    ( process: java.lang.Process, head: java.lang.Process )
-extends Subprocess, Process.Ref, caps.SharedCapability:
+extends Subprocess, Process.Ref, anticipation.Durable:
 
   private[guillotine] def this(process: java.lang.Process) = this(process, process)
 

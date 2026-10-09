@@ -49,7 +49,7 @@ import scala.caps
 // to from every task at once, so they are shared and synchronised; the tracking is
 // effect-visibility, not scope-confinement. (`Unscoped` alone would classify a sink exclusive,
 // and a logger that captures one could then not be used from a task body.)
-trait LogSink[-eventType, carrier] extends caps.SharedUnscoped:
+trait LogSink[-eventType, carrier] extends DurableUnscoped:
   def accepts(level: Level): Boolean
 
   // Reports whether this sink records events of the given (concrete) type. Takes the *original*

@@ -50,7 +50,7 @@ object Timeout:
   // The action runs on the watchdog task, so, like any task body, it may capture only shared
   // capabilities.
   def apply[duration: Abstractable across Durations to Long](timeout0: duration)
-    ( action: ->{caps.any.only[caps.SharedCapability]} Unit )
+    ( action: ->{caps.any.only[anticipation.Durable]} Unit )
     ( using monitor: Monitor^, probate: SharedProbate )
   :   Timeout^{action, monitor, probate} =
 
@@ -76,8 +76,8 @@ object Timeout:
 // connection handler of a server, say — and its state is an atomic deadline.
 class Timeout private
   ( duration: Long,
-    makeProcess: Atomic[Long] ->{caps.any.only[caps.SharedCapability]} Task[Unit] )
-extends caps.SharedCapability:
+    makeProcess: Atomic[Long] ->{caps.any.only[anticipation.Durable]} Task[Unit] )
+extends anticipation.Durable:
   private val expiry: Atomic[Long] = Atomic(jl.System.currentTimeMillis + duration)
 
   @scala.caps.unsafe.untrackedCaptures

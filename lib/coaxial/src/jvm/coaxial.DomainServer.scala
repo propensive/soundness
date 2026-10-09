@@ -60,7 +60,7 @@ extension (domainSocket: DomainSocket)
   // a filesystem without POSIX permissions (Windows) is left as it is. Each accepted
   // connection carries the peer's user, where the platform reports one, in `Connection.peer`.
   def listenConnections[result](using Monitor, Probate)
-    ( handler: Connection ->{scala.caps.any.only[scala.caps.SharedCapability]} Unit, ownerOnly: Boolean = false )
+    ( handler: Connection ->{scala.caps.any.only[anticipation.Durable]} Unit, ownerOnly: Boolean = false )
     ( using (Socket.Event is Loggable)^ )
     ( block: Socket.Service ?=> result )
   :   result =

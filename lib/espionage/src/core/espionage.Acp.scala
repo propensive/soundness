@@ -761,7 +761,7 @@ object Acp:
 
   // A shared capability: the writer task reports what it sends and the reader task what it
   // receives, so an observer is called from two tasks at once and must be safe to.
-  trait Observer extends caps.SharedUnscoped:
+  trait Observer extends anticipation.DurableUnscoped:
     def received(message: Text): Unit
     def sent(message: Text): Unit
 
@@ -850,7 +850,7 @@ object Acp:
   // there) and the service's invocation helpers, which restore the type by cast.
   // A shared capability, as `exegesis.Lsp.Registry`: registered before serving, read from every
   // task after.
-  class Registry private[espionage] () extends caps.SharedCapability:
+  class Registry private[espionage] () extends anticipation.Durable:
 
     @scala.caps.unsafe.untrackedCaptures
     var updated0: AnyRef | Null = null
@@ -868,7 +868,7 @@ object Acp:
     var terminal0: AnyRef | Null = null
 
     @scala.caps.unsafe.untrackedCaptures
-    var adjust0: Optional[ClientCapabilities ->{caps.any.only[caps.SharedCapability]} ClientCapabilities] = Unset
+    var adjust0: Optional[ClientCapabilities ->{caps.any.only[anticipation.Durable]} ClientCapabilities] = Unset
 
     // The capabilities the client advertises at initialization, derived from what was
     // registered, so the declaration can never disagree with the implementation; `adjust0`, if
@@ -896,7 +896,7 @@ object Acp:
   // A shared capability, as `exegesis.Lsp.Connection`: driven by its writer and reader tasks
   // and by the caller's thread at once, with synchronised state.
   class Connection private[espionage] (state: State)(using Monitor, Diagnostics)
-  extends JsonRpc, caps.SharedCapability:
+  extends JsonRpc, anticipation.Durable:
     type Origin = AcpAgent
 
     import strategies.throwUnsafely
@@ -1033,7 +1033,7 @@ object Acp:
   // A shared capability: the service answers requests from the reader task and the tasks it
   // spawns per request; its registry is shared and its state synchronised.
   private[espionage] class Service private (handlers: Registry^, state: State)
-  extends AcpClient, caps.SharedCapability:
+  extends AcpClient, anticipation.Durable:
     // Confined to this class rather than the file: `Acp.Error`'s constructor needs a
     // `Diagnostics`, and an ambient one would compete with the connection's own.
     import errorDiagnostics.stackTracesDiagnostics
@@ -1273,13 +1273,13 @@ object Acp:
       // class stays within the JVM constant-pool limit.
       val serving: AcpClient = caps.unsafe.unsafeAssumePure(service)
 
-      val sessionDispatch: Json ->{caps.any.only[caps.SharedCapability]} Optional[Json] =
+      val sessionDispatch: Json ->{caps.any.only[anticipation.Durable]} Optional[Json] =
         JsonRpc.serve[AcpClientSession](serving)
 
-      val fsDispatch: Json ->{caps.any.only[caps.SharedCapability]} Optional[Json] =
+      val fsDispatch: Json ->{caps.any.only[anticipation.Durable]} Optional[Json] =
         JsonRpc.serve[AcpClientFs](serving)
 
-      val terminalDispatch: Json ->{caps.any.only[caps.SharedCapability]} Optional[Json] =
+      val terminalDispatch: Json ->{caps.any.only[anticipation.Durable]} Optional[Json] =
         JsonRpc.serve[AcpClientTerminal](serving)
 
       val sessionMethods: List[Text] = JsonRpc.methods[AcpClientSession]
@@ -1304,7 +1304,7 @@ object Acp:
       // Runs one dispatch and sends its conclusion. Faults become error responses; a message the
       // dispatcher cannot decode is answered rather than dropped, so the agent never hangs
       // awaiting an answer.
-      def serve(dispatch: Json ->{caps.any.only[caps.SharedCapability]} Optional[Json])(json: Json): Unit =
+      def serve(dispatch: Json ->{caps.any.only[anticipation.Durable]} Optional[Json])(json: Json): Unit =
         val id: Optional[Json] = Acp.requestId(json)
 
         val response: Optional[Json] =
