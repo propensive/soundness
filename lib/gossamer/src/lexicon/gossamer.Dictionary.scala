@@ -64,36 +64,30 @@ object Dictionary:
     // each char is its position in the string. Unsupported chars return
     // `-1`. Restricted to ASCII (char codes 0..127); higher code points
     // return `-1`.
-    // The table arrays are written only during construction; the finished alphabet is
-    // observationally pure.
     def of(chars: String): Alphabet =
-      val table0 = scala.Array.fill[Int](128)(-1)
+      val table = Array.allocate[Int](128)
+      table.fill(-1)
 
       locally:
         var i = 0
 
         while i < chars.length do
           val c = chars.charAt(i).toInt
-          if c < 128 then table0(c) = i
+          if c < 128 then table(c) = i
           i += 1
 
-      // [construction-fresh] new Alphabet instance laundered at factory
-      scala.caps.unsafe.unsafeAssumePure:
-        // [anon-fresh-field] anonymous Alphabet template holds fresh table array
-        scala.caps.unsafe.unsafeAssumeSeparate:
-          new Alphabet:
-            // [anon-fresh-field] fresh table array stored in anonymous Alphabet field
-            private val table: scala.Array[Int] = scala.caps.unsafe.unsafeAssumePure(table0)
-            private val charTable: scala.Array[Char] = chars.toCharArray.nn
-            private val n = chars.length
+      val slots: Array[Int]^{} = Array.freeze(table)
+      val letters: Array[Char]^{} = Array.from(scala.Predef.wrapString(chars))
+      val count = chars.length
 
-            def size = n
+      new Alphabet:
+        def size = count
 
-            def slot(char: Char): Int =
-              val c = char.toInt
-              if c < 128 then table(c) else -1
+        def slot(char: Char): Int =
+          val c = char.toInt
+          if c < 128 then slots.readable(c) else -1
 
-            def char(slot: Int): Char = charTable(slot)
+        def char(slot: Int): Char = letters.readable(slot)
 
     // An empty alphabet — no chars are recognised. Used by the empty
     // dictionary.
@@ -108,8 +102,9 @@ object Dictionary:
   // for hyphenation, a-z + 0-9 + `-` for HTML attributes, etc.). The
   // default builders (`Dictionary(pairs*)`, `Dictionary.empty`,
   // `Dictionary.aho(pairs*)`) auto-derive an alphabet from the keys'
-  // distinct characters, so most callers never construct one explicitly.
-  trait Alphabet:
+  // distinct characters, so most callers never construct one explicitly. Pure: an alphabet is a
+  // fixed mapping, so it may be shared by every dictionary built over it.
+  trait Alphabet extends scala.caps.Pure:
     def slot(char: Char): Int
     def char(slot: Int): Char
     def size: Int
@@ -117,15 +112,11 @@ object Dictionary:
   // An empty Dictionary with no entries and an empty alphabet. Adds via
   // `+`/`++` rebuild the trie with an alphabet derived from the keys.
   def empty[value: ClassTag]: Dictionary[value] =
-    val emptyInts = new scala.Array[Int](0)
+    val emptyInts: Array[Int]^{} = Array.empty[Int]
+    val emptyValues = Array.empty[AnyRef].asInstanceOf[Array[AnyRef | Null]^{}]
 
-    val emptyValues: scala.Array[AnyRef | Null] =
-      new scala.Array[AnyRef](0).asInstanceOf[scala.Array[AnyRef | Null]]
-
-    // [construction-fresh] new empty Dictionary over fresh arrays laundered
-    scala.caps.unsafe.unsafeAssumePure:
-      new Dictionary[value]
-        ( emptyInts, emptyValues, emptyInts, emptyInts, emptyInts, Alphabet.empty, summon )
+    new Dictionary[value]
+      ( emptyInts, emptyValues, emptyInts, emptyInts, emptyInts, Alphabet.empty, summon )
 
   // Build a Dictionary from `(key -> value)` pairs. The alphabet is
   // auto-derived from the distinct characters appearing in the keys, in
@@ -231,10 +222,9 @@ object Dictionary:
       ids(nodeList(i)) = i
       i += 1
 
-    val childrenArr: scala.Array[Int]^ = scala.Array.fill[Int](nodeCount*alpha)(-1)
-
-    val valuesArr: scala.Array[AnyRef | Null]^ =
-      new scala.Array[AnyRef](nodeCount).asInstanceOf[scala.Array[AnyRef | Null]]
+    val childrenArr = Array.allocate[Int](nodeCount*alpha)
+    childrenArr.fill(-1)
+    val valuesArr = Array.allocate[AnyRef](nodeCount).asInstanceOf[Array[AnyRef | Null]^]
 
     i = 0
 
@@ -246,20 +236,20 @@ object Dictionary:
       while sl < alpha do
         val c = alphabet.char(sl)
 
-        n.children.get(c).foreach: child => childrenArr(i*alpha + sl) = ids(child)
+        n.children.get(c) match
+          case Some(child) => childrenArr(i*alpha + sl) = ids(child)
+          case None        => ()
 
         sl += 1
 
       i += 1
 
     if !ahoCorasick then
-      val emptyInts = new scala.Array[Int](0)
+      val emptyInts: Array[Int]^{} = Array.empty[Int]
 
-      // The arrays are never written after construction; the dictionary is observationally pure.
-      // [construction-fresh] new Dictionary over never-written arrays laundered
-      scala.caps.unsafe.unsafeAssumePure:
-        new Dictionary[value]
-          ( childrenArr, valuesArr, emptyInts, emptyInts, emptyInts, alphabet, summon )
+      new Dictionary[value]
+        ( Array.freeze(childrenArr), Array.freeze(valuesArr), emptyInts, emptyInts, emptyInts,
+          alphabet, summon )
     else
       // Aho-Corasick failure / dictionary-suffix links via BFS. Depth-1
       // nodes get fail = 0; deeper nodes get the longest proper suffix
@@ -309,19 +299,17 @@ object Dictionary:
 
           sl += 1
 
-      // As above: no writes after construction.
-      // [construction-fresh] new Dictionary over never-written arrays laundered
-      scala.caps.unsafe.unsafeAssumePure:
-        new Dictionary[value]
-          ( childrenArr, valuesArr, depthArr.raw, failArr.raw, dictLinkArr.raw, alphabet,
-            summon )
+      new Dictionary[value]
+        ( Array.freeze(childrenArr), Array.freeze(valuesArr), Array.freeze(depthArr),
+          Array.freeze(failArr), Array.freeze(dictLinkArr), alphabet, summon )
 
+// The arrays are frozen: built once, then never written, so a dictionary may be shared freely.
 final class Dictionary[+value]
-  ( val children: scala.Array[Int],
-    val values:   scala.Array[AnyRef | Null],
-    val depth:    scala.Array[Int],
-    val fail:     scala.Array[Int],
-    val dictLink: scala.Array[Int],
+  ( val children: Array[Int]^{},
+    val values:   Array[AnyRef | Null]^{},
+    val depth:    Array[Int]^{},
+    val fail:     Array[Int]^{},
+    val dictLink: Array[Int]^{},
     val alphabet: Dictionary.Alphabet,
     classTag:     ClassTag[value @uncheckedVariance] ):
 
@@ -343,10 +331,10 @@ final class Dictionary[+value]
   // character at `node`.
   def step(node: Int, char: Char): Int =
     val sl = alphabet.slot(char)
-    if sl < 0 then -1 else children(node*alphabet.size + sl)
+    if sl < 0 then -1 else children.readable(node*alphabet.size + sl)
 
   // Value at `node`, or `null` if no key terminates here.
-  inline def value(node: Int): value | Null = values(node).asInstanceOf[value | Null]
+  inline def value(node: Int): value | Null = values.readable(node).asInstanceOf[value | Null]
 
   // Exact lookup of a full key. `Unset` if the key is not in the trie.
   def apply(key: Text): Optional[value] =
@@ -360,7 +348,7 @@ final class Dictionary[+value]
       i += 1
 
     if node < 0 then Unset else
-      val v = values(node)
+      val v = values.readable(node)
       if v == null then Unset else v.asInstanceOf[value]
 
   // Slice variant: lookup against `buffer[offset, offset + length)`
@@ -375,7 +363,7 @@ final class Dictionary[+value]
       i += 1
 
     if node < 0 then Unset else
-      val v = values(node)
+      val v = values.readable(node)
       if v == null then Unset else v.asInstanceOf[value]
 
   // Number of stored entries (nodes whose value is non-null).
@@ -384,7 +372,7 @@ final class Dictionary[+value]
     var i = 0
 
     while i < values.length do
-      if values(i) != null then count += 1
+      if values.readable(i) != null then count += 1
       i += 1
 
     count
@@ -395,7 +383,7 @@ final class Dictionary[+value]
     var i = 0
 
     while i < values.length do
-      val v = values(i)
+      val v = values.readable(i)
       if v != null then buffer += v.asInstanceOf[value]
       i += 1
 
@@ -410,12 +398,12 @@ final class Dictionary[+value]
     val alpha = alphabet.size
 
     def walk(node: Int): Unit =
-      val v = values(node)
+      val v = values.readable(node)
       if v != null then buffer += ((key.toString.nn.tt, v.asInstanceOf[value]))
       var sl = 0
 
       while sl < alpha do
-        val child = children(node*alpha + sl)
+        val child = children.readable(node*alpha + sl)
 
         if child >= 0 then
           key.append(alphabet.char(sl))

@@ -82,32 +82,26 @@ object Audio:
         try jss.AudioSystem.getAudioInputStream(target, raw).nn
         catch case _: IllegalArgumentException => abort(Audio.Error(Unset))
 
-    val pcmBytes: scala.Array[Byte] = pcm.readAllBytes.nn
+    // `readAllBytes` returns a fresh array that nothing else holds.
+    val pcmBytes: Array[Byte]^{} = Array.unsafeFrozen(pcm.readAllBytes.nn)
     val pcmFormat: jss.AudioFormat = pcm.getFormat.nn
     pcm.close()
-    // The audio privately owns its sample array; laundered to the pure class type.
-    // [construction-fresh] new Audio owning sample array laundered pure
-    scala.caps.unsafe.unsafeAssumePure:
-      new Audio(pcmFormat, pcmBytes)
+    new Audio(pcmFormat, pcmBytes)
 
-  def apply[form: Audible as audible](format: jss.AudioFormat, data: scala.Array[Byte]): Audio in form =
-    // The audio privately owns its sample array; laundered to the pure class type.
-    // [construction-fresh]
-    scala.caps.unsafe.unsafeAssumePure:
-      new Audio(format, data):
-        type Form = form
+  def apply[form: Audible as audible](format: jss.AudioFormat, data: Array[Byte]^{}): Audio in form =
+    new Audio(format, data):
+      type Form = form
 
-  private[cacophony] def of[layout](format: jss.AudioFormat, data: scala.Array[Byte])
+  private[cacophony] def of[layout](format: jss.AudioFormat, data: Array[Byte]^{})
   :   Audio across layout =
 
-    // The audio privately owns its sample array; laundered to the pure class type.
-    // [construction-fresh]
-    scala.caps.unsafe.unsafeAssumePure:
-      new Audio(format, data):
-        type Domain = layout
+    new Audio(format, data):
+      type Domain = layout
 
   private def writeAudio(audio: Audio, formatName: Text): Chain[Data] =
-    val ais = jss.AudioInputStream(ji.ByteArrayInputStream(audio.data), audio.format, audio.frames)
+    // `ByteArrayInputStream` only reads the samples.
+    val samples = ji.ByteArrayInputStream(Array.unsafeJvm(audio.data))
+    val ais = jss.AudioInputStream(samples, audio.format, audio.frames)
 
     val fileType = jss.AudioSystem.getAudioFileTypes.nn.find(_.toString == formatName.s).getOrElse:
       throw RuntimeException(s"unregistered audio file format: ${formatName.s}")
@@ -146,11 +140,10 @@ object Audio:
   extends
     fulminate.Error(m"unable to read the audio in ${audible.lay(t"unspecified")(_.name)} format")
 
+// Pure: the samples are frozen, so an audio value is immutable and may be shared freely.
 case class Audio
-  ( private[cacophony] val format: jss.AudioFormat,
-    // [field-purity] sample array field in pure case class
-    @scala.caps.unsafe.untrackedCaptures private[cacophony] val data: scala.Array[Byte] )
-extends Formal, Domainal:
+  ( private[cacophony] val format: jss.AudioFormat, private[cacophony] val data: Array[Byte]^{} )
+extends Formal, Domainal, scala.caps.Pure:
   audio =>
 
   def channels: Int      = format.getChannels
@@ -173,13 +166,13 @@ extends Formal, Domainal:
       var i = 0
 
       while i < bytesPerSample do
-        value = (value << 8) | (data(offset + i) & 0xff)
+        value = (value << 8) | (data.readable(offset + i) & 0xff)
         i += 1
     else
       var i = bytesPerSample - 1
 
       while i >= 0 do
-        value = (value << 8) | (data(offset + i) & 0xff)
+        value = (value << 8) | (data.readable(offset + i) & 0xff)
         i -= 1
 
     if signed && bytesPerSample < 4 then
@@ -189,9 +182,6 @@ extends Formal, Domainal:
       value
 
   def to[form: Audible as audible]: Audio in form across audio.Domain =
-    // The audio privately owns its sample array; laundered to the pure class type.
-    // [construction-fresh] new Audio owning sample array laundered pure
-    scala.caps.unsafe.unsafeAssumePure:
-      new Audio(format, data):
-        type Form   = form
-        type Domain = audio.Domain
+    new Audio(format, data):
+      type Form   = form
+      type Domain = audio.Domain

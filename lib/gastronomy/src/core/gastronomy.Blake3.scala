@@ -64,10 +64,6 @@ object Blake3:
 
     . asInstanceOf[Array[Int]^{}]
 
-  // `Hasher` clones the words it is given before it does anything else, so handing it the
-  // shared frozen `Iv` as a JVM array asserts only that the clone does not write.
-  private def ivWords: scala.Array[Int] = Array.unsafeJvm(Iv)
-
   private final val MsgPermutation: Array[Int]^{} =
     scala.Array(2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8).asInstanceOf[Array[Int]^{}]
 
@@ -111,6 +107,7 @@ object Blake3:
     mix(state, 2, 7,  8, 13, m(s(o + 12)), m(s(o + 13)))
     mix(state, 3, 4,  9, 14, m(s(o + 14)), m(s(o + 15)))
 
+  // Reads `chainingValue` and `blockWords`, and never writes them.
   private def compress
     ( chainingValue: scala.Array[Int],
       blockWords:    scala.Array[Int],
@@ -158,24 +155,27 @@ object Blake3:
 
       i += 1
 
+  // Pure: both word arrays are frozen, so an output is a value, shared freely between the
+  // hasher's stack and the parent nodes built from it.
   private final class Output
-    ( val inputChainingValue: scala.Array[Int],
-      val blockWords:         scala.Array[Int],
+    ( val inputChainingValue: Array[Int]^{},
+      val blockWords:         Array[Int]^{},
       val counter:            Long,
       val blockLen:           Int,
-      val flags:              Int ):
+      val flags:              Int )
+  extends caps.Pure:
 
-    // Freshly allocated and copied into, so no writer can alias it: `^{}` is the
-    // whole story, which is what lets the hasher's stack own these values.
-    def chainingValue(): scala.Array[Int]^{} =
-      val out = compress(inputChainingValue, blockWords, counter, blockLen, flags)
-      val cv = new scala.Array[Int](8)
-      System.arraycopy(out, 0, cv, 0, 8)
-      // `cv` is allocated three lines above and never escapes, so no writer can
-      // alias it; capture checking cannot see that through `arraycopy`, so the
-      // freshness is asserted here, exactly as proscenium's `Array` does.
-      // [java-boundary] fresh array filled via System.arraycopy
-      scala.caps.unsafe.unsafeAssumePure(cv)
+    // `compress` only reads its words, so the frozen arrays may cross as JVM arrays.
+    private def compressed(counter: Long, flags: Int): scala.Array[Int]^ =
+      compress
+        ( Array.unsafeJvm(inputChainingValue), Array.unsafeJvm(blockWords), counter, blockLen,
+          flags )
+
+    def chainingValue(): Array[Int]^{} =
+      val out = compressed(counter, flags)
+      val cv = Array.allocate[Int](8)
+      System.arraycopy(out, 0, cv.raw, 0, 8)
+      Array.freeze(cv)
 
     // Interior scratch, as the block buffers are: the generic `Array.allocate`/`update` would
     // allocate reflectively and box every byte, which costs more than the hash itself.
@@ -185,8 +185,7 @@ object Blake3:
       var pos = 0
 
       while pos < outLen do
-        val words =
-          compress(inputChainingValue, blockWords, blockCounter, blockLen, flags | RootFlag)
+        val words = compressed(blockCounter, flags | RootFlag)
 
         val take = math.min(2*OutLen, outLen - pos)
         var i = 0
@@ -202,26 +201,24 @@ object Blake3:
       Array.unsafeFrozen(result)
 
   private def parentOutput
-    ( leftCv: scala.Array[Int], rightCv: scala.Array[Int], keyWords: scala.Array[Int], flags: Int )
+    ( leftCv: Array[Int]^{}, rightCv: Array[Int]^{}, keyWords: Array[Int]^{}, flags: Int )
   :   Output =
 
-    val blockWords = new scala.Array[Int](16)
-    System.arraycopy(leftCv, 0, blockWords, 0, 8)
-    System.arraycopy(rightCv, 0, blockWords, 8, 8)
-    // The freshly-constructed Output only holds fresh or private arrays.
-    // [construction-fresh] fresh Output holding fresh/private arrays
-    scala.caps.unsafe.unsafeAssumePure
-      ( Output(keyWords.clone(), blockWords, 0L, BlockLen, ParentFlag | flags) )
+    val blockWords = Array.allocate[Int](16)
+    blockWords.place(leftCv, 0, 0, 8)
+    blockWords.place(rightCv, 0, 8, 8)
+    Output(keyWords, Array.freeze(blockWords), 0L, BlockLen, ParentFlag | flags)
 
   private def parentCv
-    ( leftCv: scala.Array[Int], rightCv: scala.Array[Int], keyWords: scala.Array[Int], flags: Int )
-  :   scala.Array[Int]^{} =
+    ( leftCv: Array[Int]^{}, rightCv: Array[Int]^{}, keyWords: Array[Int]^{}, flags: Int )
+  :   Array[Int]^{} =
 
     parentOutput(leftCv, rightCv, keyWords, flags).chainingValue()
 
-  private final class ChunkState(keyWordsInit: scala.Array[Int], var chunkCounter: Long, val flags: Int)
+  private final class ChunkState(keyWordsInit: Array[Int]^{}, var chunkCounter: Long, val flags: Int)
   extends caps.Mutable:
-    private var chainingValue: scala.Array[Int]^  = keyWordsInit.clone()
+    // Cloning only reads the frozen key words.
+    private var chainingValue: scala.Array[Int]^ = Array.unsafeJvm(keyWordsInit).clone()
     private var block:         scala.Array[Byte]^ = new scala.Array[Byte](BlockLen)
 
     var blockLen:         Int = 0
@@ -257,41 +254,41 @@ object Blake3:
         pos += take
 
     def output(): Output =
-      val blockWords = new scala.Array[Int](16)
-      wordsFromBytes(block, 0, blockWords)
+      val blockWords = Array.allocate[Int](16)
+      wordsFromBytes(block, 0, blockWords.raw)
 
-      // The freshly-constructed Output only holds fresh or private arrays.
-      // [construction-fresh] fresh Output holding fresh/private arrays
-      scala.caps.unsafe.unsafeAssumePure
-        ( Output
-            ( chainingValue.clone(),
-              blockWords,
-              chunkCounter,
-              blockLen,
-              flags | startFlag | ChunkEnd ) )
+      val cv = Array.allocate[Int](8)
+      System.arraycopy(chainingValue, 0, cv.raw, 0, 8)
 
-  private final class Hasher(keyWordsInit: scala.Array[Int], val flags: Int) extends caps.Mutable:
-    private val keyWords: scala.Array[Int] = keyWordsInit.clone()
+      Output
+        ( Array.freeze(cv),
+          Array.freeze(blockWords),
+          chunkCounter,
+          blockLen,
+          flags | startFlag | ChunkEnd )
+
+  // The key words are frozen, so the hasher, its chunks and its outputs share them uncopied.
+  private final class Hasher(keyWords: Array[Int]^{}, val flags: Int) extends caps.Mutable:
     private var chunkState: ChunkState^ = ChunkState(keyWords, 0L, flags)
     // The stack of chaining values, one per level of the tree, so at most 54 deep; grown on
     // demand, since an input of one chunk — a key, a path, a short message — never pushes.
-    private var cvStack: scala.Array[scala.Array[Int]^{}]^ = new scala.Array[scala.Array[Int]^{}](0)
+    private var cvStack: scala.Array[Array[Int]^{}]^ = new scala.Array[Array[Int]^{}](0)
     private var cvStackLen: Int = 0
 
-    private update def pushStack(cv: scala.Array[Int]^{}): Unit =
+    private update def pushStack(cv: Array[Int]^{}): Unit =
       if cvStackLen == cvStack.length then
-        val bigger = new scala.Array[scala.Array[Int]^{}]((cvStack.length*2).max(8).min(54))
+        val bigger = new scala.Array[Array[Int]^{}]((cvStack.length*2).max(8).min(54))
         System.arraycopy(cvStack, 0, bigger, 0, cvStackLen)
         cvStack = bigger
 
       cvStack(cvStackLen) = cv
       cvStackLen += 1
 
-    private update def popStack(): scala.Array[Int]^{} =
+    private update def popStack(): Array[Int]^{} =
       cvStackLen -= 1
       cvStack(cvStackLen)
 
-    private update def addChunkCv(initialCv: scala.Array[Int]^{}, initialTotal: Long): Unit =
+    private update def addChunkCv(initialCv: Array[Int]^{}, initialTotal: Long): Unit =
       var cv = initialCv
       var totalChunks = initialTotal
 
@@ -335,7 +332,7 @@ object Blake3:
 
   // The pure-Scala BLAKE3 `Digestion`, used by the Soundness hashing provider.
   def digestion(): Digestion^ = new Digestion:
-    private var hasher: Hasher^ = Hasher(ivWords, 0)
+    private var hasher: Hasher^ = Hasher(Iv, 0)
     update def append(bytes: Data): Unit = hasher.update(bytes)
 
     override update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
@@ -344,7 +341,7 @@ object Blake3:
     update def digest(): Data = hasher.complete(OutLen)
 
   def hashOf(input: Array[Byte]^{}, length: Int = OutLen): Array[Byte]^{} =
-    val hasher: Hasher^ = Hasher(ivWords, 0)
+    val hasher: Hasher^ = Hasher(Iv, 0)
     hasher.update(input)
     hasher.complete(length)
 
@@ -352,24 +349,24 @@ object Blake3:
     if key.length != KeyLen
     then panic(m"BLAKE3 key must be $KeyLen bytes (got ${key.length})")
 
-    val keyWords = new scala.Array[Int](8)
+    val keyWords = Array.allocate[Int](8)
     // `wordsFromBytes` only reads its bytes.
-    wordsFromBytes(Array.unsafeJvm(key), 0, keyWords)
+    wordsFromBytes(Array.unsafeJvm(key), 0, keyWords.raw)
 
-    val hasher: Hasher^ = Hasher(keyWords, KeyedHashFlag)
+    val hasher: Hasher^ = Hasher(Array.freeze(keyWords), KeyedHashFlag)
     hasher.update(input)
     hasher.complete(length)
 
   def deriveKey(context: Text, material: Array[Byte]^{}, length: Int = OutLen): Array[Byte]^{} =
     val ctxBytes = Array.unsafeFrozen(context.s.getBytes(StandardCharsets.UTF_8).nn)
-    val ctxHasher: Hasher^ = Hasher(ivWords, DeriveKeyContext)
+    val ctxHasher: Hasher^ = Hasher(Iv, DeriveKeyContext)
     ctxHasher.update(ctxBytes)
 
     val ctxKey = ctxHasher.complete(KeyLen)
-    val ctxKeyWords = new scala.Array[Int](8)
-    wordsFromBytes(Array.unsafeJvm(ctxKey), 0, ctxKeyWords)
+    val ctxKeyWords = Array.allocate[Int](8)
+    wordsFromBytes(Array.unsafeJvm(ctxKey), 0, ctxKeyWords.raw)
 
-    val matHasher: Hasher^ = Hasher(ctxKeyWords, DeriveKeyMaterial)
+    val matHasher: Hasher^ = Hasher(Array.freeze(ctxKeyWords), DeriveKeyMaterial)
     matHasher.update(material)
     matHasher.complete(length)
 

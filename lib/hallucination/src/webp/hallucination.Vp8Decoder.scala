@@ -181,9 +181,11 @@ private[hallucination] object Vp8Decoder:
 
         mby += 1
 
-      // The frame privately owns the decoder's plane buffers after decode completes.
-      // [construction-fresh] frame takes ownership of decoder plane buffers
-      scala.caps.unsafe.unsafeAssumePure(Vp8Frame(width, height, bufferWidth, ybuf, ubuf, vbuf))
+      // The decoder never writes these planes again: a later `run` allocates fresh ones in
+      // `readFrameHeader` before writing, so the frame may hold them frozen.
+      Vp8Frame
+        ( width, height, bufferWidth, Array.unsafeFrozen(ybuf), Array.unsafeFrozen(ubuf),
+          Array.unsafeFrozen(vbuf) )
 
     private update def readFrameHeader()(using Tactic[Raster.Error]): Unit =
       val tag = u24le(position)

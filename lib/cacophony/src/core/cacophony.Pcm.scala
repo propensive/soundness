@@ -65,14 +65,16 @@ object Pcm:
 
     def stream: Chain[Audio across layout] =
       def recur: Chain[Audio across layout] =
-        val buffer: scala.Array[Byte] = new scala.Array[Byte](chunkBytes)
-        val count = line.read(buffer, 0, buffer.length)
+        val buffer = Array.allocate[Byte](chunkBytes)
+        val count = line.read(buffer.raw, 0, chunkBytes)
 
         if count <= 0 then Chain() else
-          val chunk =
-            if count == buffer.length then buffer else java.util.Arrays.copyOf(buffer, count).nn
+          val audio =
+            Audio.of[layout]
+              ( line.getFormat.nn,
+                if count == chunkBytes then Array.freeze(buffer) else Array.freeze(Array.grow(buffer, count)) )
 
-          Audio.of[layout](line.getFormat.nn, chunk) #:: recur
+          audio #:: recur
 
       Chain.defer(recur)
 
@@ -100,7 +102,8 @@ object Pcm:
 
       try
         line.start()
-        val data = audio.data
+        // `SourceDataLine.write` only reads the samples.
+        val data = Array.unsafeJvm(audio.data)
         var offset = 0
 
         while offset < data.length do

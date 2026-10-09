@@ -115,7 +115,7 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
   // the consumer's thread. The stage may be a raw `Duct` or any descriptor
   // value with a `Ductile` instance.
   def via[stage](consume stage: stage^)
-    ( using ductile: (stage is Ductile by in) { type Upstream = transport },
+    ( using ductile: ((stage is Ductile by in) { type Upstream = transport })^,
             buffering: Buffering )
   :   (Stream[ductile.Result] over ductile.Transport)^ =
 
@@ -199,7 +199,7 @@ extension [out, transport](consume intake: (Intake[out] over transport)^)
   // this intake's writable region. The same stage value serves `via`
   // and `accepting`; only the attachment differs.
   def accepting[stage](consume stage: stage^)
-    ( using ductile: (stage is Ductile to out) { type Transport = transport },
+    ( using ductile: ((stage is Ductile to out) { type Transport = transport })^,
             buffering: Buffering )
   :   (Intake[ductile.Operand] over ductile.Upstream)^ =
 
