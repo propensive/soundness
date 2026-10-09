@@ -1579,3 +1579,14 @@ object Tests extends Suite(m"Xylophone tests"):
         doc.lens(_(Sen) = x"<x>9</x>").show
       . assert(_ == t"<doc><x>1</x><x>2</x><x>3</x></doc>")
 
+      // No import is needed: `Xml.xmlConversion`, in the companion, is what panopticon's
+      // `Coercible` finds for an `Encodable in Xml` value (#1384).
+      test(m"a bare encodable case class is coerced in a lens assignment"):
+        t"<doc><Worker><name>x</name><age>1</age></Worker></doc>".read[Xml]
+         .lens(_.Worker = Worker(t"Alice", 30)).show
+      . assert(_ == t"<doc><Worker><name>Alice</name><age>30</age></Worker></doc>")
+
+      test(m"a bare encodable leaf is coerced through an each optic"):
+        doc.lens(_(Each) = 0).show
+      . assert(_ == t"<doc>000</doc>")
+
