@@ -138,7 +138,10 @@ private[guillotine] object PtyProcess:
   private lazy val setSignalMask = bind("posix_spawnattr_setsigmask", twoPointers)
   private lazy val setSignalDefaults = bind("posix_spawnattr_setsigdefault", twoPointers)
   private lazy val spawnPath = bind("posix_spawn", spawning)
-  private lazy val spawnSearch = bind("posix_spawnp", spawning)
+  private lazy val foreground = bind("tcgetpgrp", ints)
+
+  private lazy val waitid =
+    bind("waitid", jlf.FunctionDescriptor.of(int32, int32, int32, pointer, int32).nn)
 
   private lazy val open =
     val descriptor = jlf.FunctionDescriptor.of(int32, pointer, int32).nn
@@ -308,8 +311,7 @@ private[guillotine] object PtyProcess:
     array
 
   // Starts the command `builder` describes — its arguments, environment and working directory —
-  // on a fresh pseudo-terminal of the given size. A command named without a directory, which
-  // `Command.builder` could not find on the environment's `PATH`, is left to `posix_spawnp`.
+  // on a fresh pseudo-terminal of the given size.
   def apply(builder: ProcessBuilder, width: Int, height: Int): PtyProcess =
     import scala.unsafeExceptions.canThrowAny
     val arena = jlf.Arena.ofConfined().nn
@@ -333,7 +335,9 @@ private[guillotine] object PtyProcess:
 
         try
           check("ioctl", state)((ioctl.invokeExact(state, master, SetWindowSize, size): Int))
-          new PtyProcess(spawn(arena, builder, name), Descriptor(master))
+          val pid = spawn(arena, builder, name)
+          settle(arena, master, pid)
+          new PtyProcess(pid, Descriptor(master))
         finally close(slave)
 
       catch case error: ji.IOException =>
@@ -342,8 +346,80 @@ private[guillotine] object PtyProcess:
 
     finally arena.close()
 
+  // On macOS, `posix_spawn` performs its file actions before `POSIX_SPAWN_SETSID` takes effect, so
+  // the slave, though opened as the child's standard input, is opened before the child leads a
+  // session, and never becomes its controlling terminal: the child has no foreground process
+  // group, so `^C` signals nothing, and a shell which needs job control (fish) refuses to start.
+  // There is no file action which could open the slave later, so the command is started through
+  // `/bin/bash`, present on every Mac, which opens the slave by its path — without `O_NOCTTY`,
+  // making it the controlling terminal of the session it now leads — closes it again, and replaces
+  // itself with the command. The command's arguments are passed through as `"$@"`, so nothing in
+  // them is interpreted, and a command named without a directory is found on the `PATH` as
+  // `posix_spawnp` would find it. Linux opens the slave after `setsid`, and needs none of this.
+  private def command(builder: ProcessBuilder, slave: String): java.util.List[String] =
+    val command = java.util.ArrayList[String](builder.command().nn)
+    command.set(0, executable(builder))
+
+    if !macOs then command else
+      val trampoline = java.util.ArrayList[String]()
+      trampoline.add("/bin/bash")
+      trampoline.add("-c")
+      trampoline.add("exec 3<>\"$0\" 3>&-; exec \"$@\"")
+      trampoline.add(slave)
+      trampoline.addAll(command)
+      trampoline
+
+  // The executable a command names, found on the `PATH` as `posix_spawnp` would find it. It is
+  // resolved here, before spawning, so that a missing command fails to start, as it does on pipes,
+  // rather than failing only once the trampoline has started and exited with status 127.
+  private def executable(builder: ProcessBuilder): String =
+    import scala.unsafeExceptions.canThrowAny
+    val name = builder.command().nn.get(0).nn
+
+    def runnable(path: String): Boolean =
+      val file = ji.File(path)
+      file.isFile && file.canExecute
+
+    if name.contains("/") then
+      if runnable(name) then name else throw ji.IOException("cannot execute "+name)
+    else
+      val search = builder.environment().nn.get("PATH")
+      val directories = (if search == null then "" else search).split(":").nn
+
+      @tailrec
+      def recur(index: Int): String =
+        if index >= directories.length then throw ji.IOException(name+" was not found")
+        else
+          val directory = directories(index).nn
+          val candidate = directory+"/"+name
+          if directory.nonEmpty && runnable(candidate) then candidate else recur(index + 1)
+
+      recur(0)
+
+  // On macOS the trampoline makes the terminal the child's controlling terminal a moment after the
+  // child starts. Until it has, the terminal has no foreground process group, and would discard a
+  // `^C` typed at it, so the terminal is not lent out until the child is its foreground group, the
+  // child has exited, or a second has passed. `WNOWAIT` notices an exit without reaping the child.
+  private def settle(arena: jlf.Arena, master: Int, pid: Int): Unit =
+    val deadline = System.nanoTime + 1_000_000_000L
+    val information = arena.allocate(128L).nn
+
+    def exited: Boolean =
+      information.fill(0.toByte)
+      (waitid.invokeExact(1, pid, information, 0x04 | 0x20 | 0x01): Int)
+      information.get(int32, 12L) != 0
+
+    @tailrec
+    def recur(): Unit =
+      if (foreground.invokeExact(master): Int) != pid && !exited && System.nanoTime < deadline
+      then
+        Thread.sleep(1L)
+        recur()
+
+    if macOs then recur()
+
   private def spawn(arena: jlf.Arena, builder: ProcessBuilder, slave: jlf.MemorySegment): Int =
-    val command = builder.command().nn
+    val command = this.command(builder, slave.getString(0L).nn)
     val variables = java.util.ArrayList[String]()
 
     builder.environment().nn.forEach: (name, value) => variables.add(name.nn+"="+value.nn)
@@ -377,10 +453,9 @@ private[guillotine] object PtyProcess:
         val path = arena.allocateFrom(command.get(0).nn).nn
         val arguments = strings(arena, command)
         val environment = strings(arena, variables)
-        val spawn = if command.get(0).nn.contains("/") then spawnPath else spawnSearch
 
         succeed("posix_spawn"):
-          (spawn.invokeExact(pid, path, actions, attributes, arguments, environment): Int)
+          (spawnPath.invokeExact(pid, path, actions, attributes, arguments, environment): Int)
 
         pid.get(int32, 0L)
 

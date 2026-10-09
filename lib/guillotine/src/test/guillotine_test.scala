@@ -465,7 +465,6 @@ object Tests extends Suite(m"Guillotine tests"):
       . assert(_ == t"hello")
 
       test(m"text typed at the terminal reaches the command"):
-        import codepages.utf8Codepage
         sh"head -n 1".pty().session: terminal ?=>
           t"hi\r".writeTo(terminal)
           terminal.text().s.replace("\r", "").nn.trim.nn.tt
@@ -517,6 +516,14 @@ object Tests extends Suite(m"Guillotine tests"):
 
         (java.lang.System.nanoTime - start)/1_000_000L < 3000L
       . assert(_ == true)
+
+      test(m"interrupting a command run directly on a terminal stops it"):
+        // `^C` reaches a program only through its terminal's foreground process group, which the
+        // terminal has only if it is the program's controlling terminal.
+        sh"cat".pty().session: terminal ?=>
+          Data(3).writeTo(terminal)
+          terminal.exitStatus()
+      . assert(_ == Exit.Fail(130))
 
       test(m"a missing command on a terminal raises Exec.Error"):
         capture[Exec.Error](sh"definitely-not-a-binary-xyz".pty().exec[Text]())

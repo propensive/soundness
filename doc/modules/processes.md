@@ -163,8 +163,6 @@ input closed:
 
 <!-- doccheck: skip -->
 ```scala
-import codepages.utf8Codepage
-
 sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
   terminal.resize(132, 50)   // the program receives SIGWINCH
   t"\r".writeTo(terminal)    // press Return
