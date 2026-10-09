@@ -164,6 +164,35 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
 
     try loop() finally stream.close()
 
+// Takes in a whole stream, as `stream.pump(intake)` does, and returns the intake (typed as the
+// caller's own class) once the stream is exhausted and the intake finished, so what it gathered
+// can be read through the one returned reference: `Gather().ingest(bytes.stream).data`. The
+// intake is consumed and handed back, so there is never a second reference to it. It repeats
+// `pump`'s loop rather than calling it, since `pump` consumes its intake.
+extension [medium, transport, target <: (Intake[medium] over transport)](consume intake: target^)
+  def ingest(consume stream: (Stream[medium] over transport)^): target^ =
+
+    def loop(): Unit =
+      stream.refill(intake.demand) match
+        case Unset =>
+          intake.finish()
+
+        case count: Int =>
+          if count > 0 then
+            intake.absorb
+              ( stream.unsafeStorage(using Unsafe).asInstanceOf[intake.addressable.Storage],
+                stream.start,
+                count )
+
+            stream.skip(count)
+          else
+            intake.reserve(1)
+
+          loop()
+
+    try loop() finally stream.close()
+    intake
+
 extension [out, transport](consume intake: (Intake[out] over transport)^)
   // Push-composition: a differently-typed `Intake` which reports translated
   // demand, and whose commits step synchronously through the stage into

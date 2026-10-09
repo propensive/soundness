@@ -278,7 +278,7 @@ lib/pneumatic/src/lzma/pneumatic.Xz.scala	0	0	0	0	2	2	0	0	0	0
 lib/pneumatic/src/lzma/pneumatic.XzCheck.scala	0	0	0	0	1	0	0	0	0	0
 lib/pneumatic/src/lzma/pneumatic.XzContainer.scala	0	0	0	0	1	1	0	0	0	0
 lib/pneumatic/src/lzw/pneumatic.LzwEngine.scala	0	0	0	0	1	0	0	0	0	0
-lib/pneumatic/src/test/pneumatic_test.scala	0	8	0	0	10	12	7	0	0	8
+lib/pneumatic/src/test/pneumatic_test.scala	0	3	0	0	10	12	7	0	0	0
 lib/polaris/src/core/polaris.Sextant.scala	0	0	1	0	0	0	0	0	0	1
 lib/probably/src/cli/probably.Suite.scala	0	0	1	0	0	0	0	0	0	1
 lib/probably/src/core/probably.Entry.scala	0	0	5	0	0	0	0	0	0	5
@@ -394,7 +394,7 @@ lib/turbulence/src/core/turbulence.StreamOutputStream.scala	0	0	0	0	2	0	0	0	0	0
 lib/turbulence/src/core/turbulence.Streamable.scala	3	0	0	0	0	0	0	0	0	3
 lib/turbulence/src/core/turbulence_core.scala	0	0	4	0	0	0	0	0	0	4
 lib/turbulence/src/stdio/turbulence.Stdio.scala	0	0	0	0	0	2	0	0	0	0
-lib/turbulence/src/test/turbulence_test.scala	5	14	1	0	2	1	7	0	0	16
+lib/turbulence/src/test/turbulence_test.scala	5	3	1	0	2	1	7	0	0	6
 lib/turbulence/src/wasi/turbulence_wasi.scala	0	0	0	0	2	0	0	0	0	0
 lib/ultimatum/src/core/ultimatum.FlowExtent.scala	1	0	0	0	0	0	0	0	0	0
 lib/ultimatum/src/core/ultimatum.Focus.scala	0	0	2	0	0	0	0	0	0	2
@@ -447,7 +447,7 @@ lib/zephyrine/src/core/zephyrine.Producer.scala	1	0	3	0	0	0	0	0	0	4
 lib/zephyrine/src/core/zephyrine.Stream.scala	0	0	2	0	0	0	0	0	0	2
 lib/zephyrine/src/core/zephyrine.internal.scala	0	0	0	0	0	0	0	0	5	0
 lib/zephyrine/src/core/zephyrine_core.scala	0	0	12	0	0	0	0	0	0	12
-lib/zephyrine/src/test/zephyrine_test.scala	0	40	1	0	1	0	0	0	0	41
+lib/zephyrine/src/test/zephyrine_test.scala	0	26	1	0	1	0	0	0	0	1
 lib/zeppelin/src/core/zeppelin.Zip.scala	0	0	0	0	1	2	0	0	3	0
 lib/zeppelin/src/core/zeppelin.Zipfile.scala	0	0	0	0	2	0	0	0	0	0
 lib/zeppelin/src/test/zeppelin_test.scala	0	0	0	0	1	7	0	0	0	0

@@ -3021,3 +3021,23 @@ borrows the resource and surrenders it at the join — would be a separate const
 pumps ever want it. (Delegating the extension to a static with the same signature failed on
 inference — `Owned[resource^{resource}]` named the receiver — so the extension IS the
 implementation, duplicated for the named form.)
+
+## `ingest`: an intake takes in a whole stream and is kept (2026-10-09)
+
+`stream.pump(intake)` consumes the intake, so a test that gathered a stream into an intake and
+then read what it gathered (`gather.data`) needed a separation seal on the read — 33 of them in
+zephyrine, turbulence and pneumatic. `intake.ingest(stream)` takes in the whole stream and hands
+the intake back, typed as the caller's own class (`extension [medium, transport, target <:
+Intake[medium] over transport](consume intake: target^) def ingest(consume stream: (Stream[medium]
+over transport)^): target^`), so the read goes through the one returned reference:
+`Gather().ingest(bytes.stream).data`. The intake leads because it is what the caller keeps;
+`pumpInto`, `pour` and `decant` (stream-first) were considered, and `absorb`/`accept`/`receive`
+are taken. It cannot be written as `pump` followed by a return — `pump` consumes the intake — so
+it repeats `pump`'s loop. Two inference notes: the transport is a type parameter inferred from
+the intake's refinement, not `intake.Transport` (a path-dependent type on a consumed receiver
+breaks the umbrella's export forwarder); and the medium is inferred from `target <:
+Intake[medium]`. Seals 40 → 26 (zephyrine), 14 → 3 (turbulence), 8 → 3 (pneumatic). The residue
+in those suites is now tagged: local-def recursions over a fresh stream that the tests need for
+their exact refill sizes (`[closure-capture]`), reads after `acceptingDuct`/`streamOf`/a
+recorder's pump (`[pump-overlap]`), a raw writer thread (`[test-harness]`), and a Java
+`GZIPInputStream` over the gathered bytes (`[java-boundary]`).
