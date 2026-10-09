@@ -81,7 +81,7 @@ object Streamable:
   =>  ( (input is Streamable by Data over Credit)^{tactic} ) =
     // Laundered for the Scala.js pipeline, as `Sink.outputStream` (see #1520).
     // [anon-fresh-field] scala.js SAM anonymous class hides tactic evidence
-    val t: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => tactic.asInstanceOf[AnyRef] }
+    val t: () -> AnyRef = caps.unsafe.unsafeAssumePure: () => tactic.asInstanceOf[AnyRef]
 
     value =>
       Streamable.stream(jn.channels.Channels.newChannel(value).nn)(using t().asInstanceOf[Tactic[Truncation.Error]^], summon[Buffering])
@@ -90,14 +90,14 @@ object Streamable:
   =>  ( (jn.channels.ReadableByteChannel is Streamable by Data over Credit)^{tactic} ) =
     // Laundered for the Scala.js pipeline, as `Sink.outputStream` (see #1520).
     // [anon-fresh-field]
-    val t: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => tactic.asInstanceOf[AnyRef] }
+    val t: () -> AnyRef = caps.unsafe.unsafeAssumePure: () => tactic.asInstanceOf[AnyRef]
     value => Streamable.stream(value)(using t().asInstanceOf[Tactic[Truncation.Error]^], summon[Buffering])
 
   given reader: [input <: ji.Reader] => (tactic: Tactic[Truncation.Error], buffering: Buffering)
   =>  ( (input is Streamable by Text over Credit)^{tactic} ) =
     // Laundered for the Scala.js pipeline, as `Sink.outputStream` (see #1520).
     // [anon-fresh-field]
-    val t: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => tactic.asInstanceOf[AnyRef] }
+    val t: () -> AnyRef = caps.unsafe.unsafeAssumePure: () => tactic.asInstanceOf[AnyRef]
 
     value =>
       new Stream[Text]:

@@ -124,11 +124,10 @@ object Pathname:
 
         val showAll = tab > Prim || prototype.name.starts(t".")
         val base: Optional[Path on Local] = if directory then prototype else prototype.parent
-        val children0 = base.let(base => base.children.to[List]).or(List[Path on Local]())
+        val children0 = base.let{ base => base.children.to[List] }.or(List[Path on Local]())
 
         val children =
-          if directory then children0
-          else children0.filter(_.name.starts(prototype.name))
+          if directory then children0 else children0.filter(_.name.starts(prototype.name))
 
         val children2 =
           if !showAll then children.filter(!_.name.starts(t".")) else children

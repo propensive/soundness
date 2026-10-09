@@ -142,9 +142,9 @@ private[xylophone] object XPathReader:
 
     def skipSpace(at: Int): Int =
       var index = at
-      while index < length
-        && (string.charAt(index) == ' ' || string.charAt(index) == '\t'
-            || string.charAt(index) == '\r' || string.charAt(index) == '\n')
+      while index < length &&
+        (string.charAt(index) == ' ' || string.charAt(index) == '\t' ||
+            string.charAt(index) == '\r' || string.charAt(index) == '\n')
       do index += 1
 
       index
@@ -166,8 +166,8 @@ private[xylophone] object XPathReader:
         var prefix: Optional[Text] = Unset
         var local = first
 
-        if end < length && string.charAt(end) == ':' && end + 1 < length
-          && string.charAt(end + 1) != ':'
+        if end < length && string.charAt(end) == ':' && end + 1 < length &&
+          string.charAt(end + 1) != ':'
         then
           if string.charAt(end + 1) == '*' then
             push(Token.PrefixWildcardTest(first.tt), start)
@@ -193,9 +193,9 @@ private[xylophone] object XPathReader:
 
           offset = ahead + 2
         else if ahead < length && string.charAt(ahead) == '(' then
-          if prefix.absent
-            && (local == "node" || local == "text" || local == "comment"
-                || local == "processing-instruction")
+          if prefix.absent &&
+            (local == "node" || local == "text" || local == "comment" ||
+                local == "processing-instruction")
           then push(Token.NodeTypeToken(local.tt), start)
           else push(Token.FunctionToken(prefix, local.tt), start)
 
@@ -355,9 +355,9 @@ private[xylophone] object XPathReader:
     def parseRelational(): Expression =
       var left = parseAdditive()
 
-      while more
-        && (current == Token.Less || current == Token.LessOrEqual
-            || current == Token.Greater || current == Token.GreaterOrEqual)
+      while more &&
+        (current == Token.Less || current == Token.LessOrEqual ||
+            current == Token.Greater || current == Token.GreaterOrEqual)
       do
         val operator = current
         advance()
@@ -385,9 +385,8 @@ private[xylophone] object XPathReader:
     def parseMultiplicative(): Expression =
       var left = parseUnary()
 
-      while more
-        && (current == Token.Star || current == Token.DivKeyword
-            || current == Token.ModKeyword)
+      while more &&
+        (current == Token.Star || current == Token.DivKeyword || current == Token.ModKeyword)
       do
         val operator = current
         advance()
@@ -554,8 +553,10 @@ private[xylophone] object XPathReader:
         val rest = parseRelative()
         val steps = if descend then descendantStep :: rest else rest
         Expression.Route(Origin.Filter(primary, predicates), steps)
-      else if predicates.nil then primary
-      else Expression.Route(Origin.Filter(primary, predicates), Nil)
+      else if predicates.nil then
+        primary
+      else
+        Expression.Route(Origin.Filter(primary, predicates), Nil)
 
     def parsePrimary(): Expression =
       if !more then abort(Parse.Error(XPath, XPath.Position.at(here), XPath.Issue.ExpectedExpression))

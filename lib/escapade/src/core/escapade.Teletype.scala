@@ -95,7 +95,7 @@ object Teletype:
       val plain = text.plain
 
       val array = Array.scribe[Char](plain.length): scribe =>
-        _ => plain.iterate { index => scribe.append(lambda(plain(index))) }
+        _ => plain.iterate: index => scribe.append(lambda(plain(index)))
 
       Teletype
         ( new String(Array.unsafeJvm(array)).tt,
@@ -355,7 +355,7 @@ case class Teletype
         // For indexes within the old array this reads the old style (the old trailing style
         // at `plain.length` equals `tail`); beyond it, the default IS the extension.
         val arr = Array.scribe[Long](newLength): scribe =>
-          _ => scribe.iterate { i => scribe(i) = styles.at(i).or(tail) }
+          _ => scribe.iterate: i => scribe(i) = styles.at(i).or(tail)
 
         Teletype(combinedPlain, arr, hyperlinks, insertions, Array.empty[Int])
       else
@@ -393,7 +393,7 @@ case class Teletype
       val combinedPlain = plain+that.plain
 
       val shiftedLinks = if that.hyperlinks.nil then hyperlinks else
-        val moved: Map[Int, Text] = that.hyperlinks.remap { (k, v) => (k + aN) -> v }
+        val moved: Map[Int, Text] = that.hyperlinks.remap: (k, v) => (k + aN) -> v
         hyperlinks + moved
 
       val shiftedInsertions = if that.insertions.isEmpty then insertions else
@@ -462,7 +462,7 @@ case class Teletype
 
         if isDense then
           val arr = Array.scribe[Long](keepLength + 1): scribe =>
-            _ => scribe.iterate { i => scribe(i) = styles.at(Ordinal.zerary(n + i.n0)).or(0L) }
+            _ => scribe.iterate: i => scribe(i) = styles.at(Ordinal.zerary(n + i.n0)).or(0L)
 
           Teletype
             ( plain.skip(n),
@@ -486,7 +486,7 @@ case class Teletype
                   scribe(i) = boundaries.at(Ordinal.zerary(firstRun + i.n0)).or(0) - n
 
           val newStylesArr = Array.scribe[Long](newK + 1): scribe =>
-            _ => scribe.iterate { i => scribe(i) = styles.at(Ordinal.zerary(firstRun + i.n0)).or(0L) }
+            _ => scribe.iterate: i => scribe(i) = styles.at(Ordinal.zerary(firstRun + i.n0)).or(0L)
 
           Teletype
             ( plain.skip(n),
@@ -507,7 +507,7 @@ case class Teletype
 
         if isDense then
           val arr = Array.scribe[Long](n + 1): scribe =>
-            _ => scribe.iterate { i => scribe(i) = if i.n0 == n then 0L else styles.at(i).or(0L) }
+            _ => scribe.iterate: i => scribe(i) = if i.n0 == n then 0L else styles.at(i).or(0L)
 
           Teletype
             ( plain.keep(n),
@@ -521,10 +521,10 @@ case class Teletype
           val newK = lastRun + 1
 
           val newBoundariesArr = Array.scribe[Int](newK): scribe =>
-            _ => scribe.iterate { i => scribe(i) = boundaries.at(i).or(0) }
+            _ => scribe.iterate: i => scribe(i) = boundaries.at(i).or(0)
 
           val newStylesArr = Array.scribe[Long](newK + 1): scribe =>
-            _ => scribe.iterate { i => scribe(i) = if i.n0 == newK then 0L else styles.at(i).or(0L) }
+            _ => scribe.iterate: i => scribe(i) = if i.n0 == newK then 0L else styles.at(i).or(0L)
 
           Teletype
             ( plain.keep(n),

@@ -109,7 +109,7 @@ object Platform:
 
       Fdtable.resolve(fdtables, encoded) match
         case descriptor: Fdtable.Descriptor =>
-          try descriptor.open(List(OpenFlag.Write)) { handle => handle.writer(Chain(bytes)) }
+          try descriptor.open(List(OpenFlag.Write)): handle => handle.writer(Chain(bytes))
           catch case refusal: Fdtable.Refusal =>
             abort(Io.Error(path, Operation.Write, refusal.reason))
 

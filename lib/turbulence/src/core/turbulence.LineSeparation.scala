@@ -218,7 +218,8 @@ object LineSeparation:
                     else act(stage.lf)
 
                     produced += deliver(slots, targetOffset + produced)
-                  else pending = 10
+                  else
+                    pending = 10
                 else if char == '\r' then
                   consumed += 1
 
@@ -228,7 +229,8 @@ object LineSeparation:
                     else act(stage.cr)
 
                     produced += deliver(slots, targetOffset + produced)
-                  else pending = 13
+                  else
+                    pending = 13
                 else
                   // The run of ordinary chars up to the next separator (or the
                   // window's end).
@@ -319,8 +321,8 @@ object LineSeparation:
   // found without decoding first. UTF-16 emphatically is not: `0x0A` occurs
   // inside its code units, and splitting its bytes would cut characters in half.
   def asciiTransparent(charset: jnc.Charset): Boolean =
-    charset == jnc.StandardCharsets.UTF_8 || charset == jnc.StandardCharsets.US_ASCII
-      || charset == jnc.StandardCharsets.ISO_8859_1
+    charset == jnc.StandardCharsets.UTF_8 || charset == jnc.StandardCharsets.US_ASCII ||
+      charset == jnc.StandardCharsets.ISO_8859_1
 
   // The byte-level twin of `lines`, for an ASCII-transparent encoding: it finds
   // terminators in the raw bytes and decodes each completed line in one step
@@ -422,8 +424,8 @@ object LineSeparation:
       private def scan(bytes: scala.Array[Byte], from: Int, stop: Int): Int =
         var index: Int = from
 
-        while index < stop
-          && { val byte = bytes(index)
+        while index < stop &&
+          { val byte = bytes(index)
               (byte & 0xf8) != 0x08 || (byte != 10 && byte != 13) }
         do index += 1
 
@@ -471,7 +473,8 @@ object LineSeparation:
                 else act(policy.lf)
 
                 produced += deliver(slots, targetOffset + produced)
-              else pending = 10
+              else
+                pending = 10
             else if byte == 13 then
               consumed += 1
 
@@ -481,7 +484,8 @@ object LineSeparation:
                 else act(policy.cr)
 
                 produced += deliver(slots, targetOffset + produced)
-              else pending = 13
+              else
+                pending = 13
             else
               val start = sourceOffset + consumed
               val stop = sourceOffset + sourceLength

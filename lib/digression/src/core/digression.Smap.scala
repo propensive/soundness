@@ -69,7 +69,7 @@ object Smap:
 
     // The source position an output line maps to, when the file table knows the entry's file.
     def origin(line: Int): Optional[(File, Int)] =
-      apply(line).let: (fileId, input) => files.at(fileId).let(file => (file, input))
+      apply(line).let: (fileId, input) => files.at(fileId).let: file => (file, input)
 
   // Where a line of inlined code was written: the file's recorded name, its full path, the
   // 1-based line number, and — when the SMAP's writer emitted a `<default>Class` stratum, as the
@@ -185,8 +185,7 @@ case class Smap(generated: Text, default: Text, strata: Map[Text, Smap.Stratum])
   // The file id the generated file itself appears under in the default stratum, against which
   // identity mappings are recognized.
   private lazy val generatedId: Optional[Int] =
-    stratum.let: stratum =>
-      stratum.files.seek { (_, file) => file.name == generated }.let(_(0))
+    stratum.let: stratum => stratum.files.seek { (_, file) => file.name == generated }.let(_(0))
 
   // The generated file's fuller path, when its file table records one.
   lazy val path: Optional[Text] =

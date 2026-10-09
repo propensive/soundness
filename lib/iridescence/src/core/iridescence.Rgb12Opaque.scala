@@ -49,8 +49,8 @@ object Rgb12Opaque:
     // an extension on `Rgb12`.
     given inspectable: [rgb12 <: Rgb12] => rgb12 is Inspectable = rgb12 =>
       val color: Rgb12 = rgb12
-      ( "#"+Integer.toHexString(color.red).nn+Integer.toHexString(color.green).nn
-        + Integer.toHexString(color.blue).nn ).tt
+      ( "#"+Integer.toHexString(color.red).nn+Integer.toHexString(color.green).nn +
+        Integer.toHexString(color.blue).nn ).tt
     given chromatic: Rgb12 is Chromatic = _.chroma
 
     def apply(red: Int, green: Int, blue: Int): Rgb12 =

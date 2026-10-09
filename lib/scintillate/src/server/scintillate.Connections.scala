@@ -72,8 +72,7 @@ private[scintillate] object Connections:
 
       exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.toList).flatMap: pair =>
         pair.absolve match
-          case (key, values) => values.map: value =>
-            Http.Header(key, value.tt)
+          case (key, values) => values.map: value => Http.Header(key, value.tt)
 
       . toList
       . to(List)

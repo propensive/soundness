@@ -110,13 +110,13 @@ object Ranges:
 
   private def compute(name: String): Optional[Ranges] =
     if name == "Any" then anySymbol
-    else if categories.has(name) then where(symbol => categoryName(symbol) == name)
+    else if categories.has(name) then where{ symbol => categoryName(symbol) == name }
     else if categoryGroups.has(name)
-    then where(symbol => categoryName(symbol).startsWith(name))
+    then where: symbol => categoryName(symbol).startsWith(name)
     else
       try
         val script = Character.UnicodeScript.forName(name).nn
-        where(symbol => Character.UnicodeScript.of(symbol) == script)
+        where: symbol => Character.UnicodeScript.of(symbol) == script
       catch case _: IllegalArgumentException => Unset
 
   // The two-letter general-category abbreviation for a codepoint, as Unicode names them.
@@ -170,7 +170,7 @@ object Ranges:
       if folded != symbol then groups(folded) = symbol :: groups.getOrElse(folded, scala.Nil)
       symbol += 1
 
-    groups.map((key, members) => (key, (key :: members).toArray)).toMap
+    groups.map{ (key, members) => (key, (key :: members).toArray) }.toMap
 
 // A set of symbols, represented as a sorted, disjoint, non-adjacent list of inclusive
 // `lo :: hi :: …` bounds. Symbols are `Int`-encoded members of an ordered alphabet: Unicode

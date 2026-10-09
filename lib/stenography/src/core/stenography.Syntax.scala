@@ -242,7 +242,7 @@ object Syntax:
       case _ =>
         sciList()
 
-    . flatMap(elements => elements)
+    . flatMap{ elements => elements }
     . group(_(0).name)
     . stdlib
     . view
@@ -347,8 +347,7 @@ object Syntax:
           else if unnamed && names.length == 1 then apply(types.head)
           else if unnamed then Sequence('(', (types.map(apply(_))).to(List))
           else
-            val parameters2 = names.zip(types).map: (name, typ) =>
-              Named(false, name, apply(typ))
+            val parameters2 = names.zip(types).map: (name, typ) => Named(false, name, apply(typ))
 
             Sequence('(', parameters2.to(List))
 

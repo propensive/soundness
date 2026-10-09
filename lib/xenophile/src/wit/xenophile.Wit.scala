@@ -234,8 +234,10 @@ object Wit:
             recur(index + 1, current + char, tokens)
           else if char == '@' && current.isEmpty && ident(next) then
             recur(index + 1, "@", tokens)
-          else if char.isWhitespace then recur(index + 1, "", flushed)
-          else recur(index + 1, "", char.toString :: flushed)
+          else if char.isWhitespace then
+            recur(index + 1, "", flushed)
+          else
+            recur(index + 1, "", char.toString :: flushed)
 
       recur(0, "", SList())
 
@@ -562,8 +564,7 @@ object Wit:
 
         if pkg.absent && interfaces.isEmpty && worlds.isEmpty then acc
         else
-          Document(pkg, version, interfaces.reverse.to(List), worlds.reverse.to(List))
-            :: acc
+          Document(pkg, version, interfaces.reverse.to(List), worlds.reverse.to(List)) :: acc
 
       def recur
         ( tokens:     SList[String],

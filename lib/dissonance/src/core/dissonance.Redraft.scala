@@ -254,8 +254,7 @@ object Redraft:
         (index - d >= 0 && keep(index - d)) || (index + d < n && keep(index + d))
 
     directives.indexed
-    . filter: (directive, ordinal) =>
-        !directive.isInstanceOf[Directive.Keep] || near(ordinal.n0)
+    . filter: (directive, ordinal) => !directive.isInstanceOf[Directive.Keep] || near(ordinal.n0)
 
     . map(_(0))
 

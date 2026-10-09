@@ -233,8 +233,8 @@ extends GridSurface(widthFn(), 0):
     val dockTop = if topAnchored then 1 else (rows - h + 1).max(1)
 
     val validated =
-      if !invalidated && started && h == presentedRows && columns == presentedColumns
-        && dockTop == presentedTop
+      if !invalidated && started && h == presentedRows && columns == presentedColumns &&
+        dockTop == presentedTop
       then snapshotValid(dockTop, columns, h) else Unset
 
     validated.let(presentDiff(dockTop, columns, h, _)).or(flushDockedFull(rows, columns, h))

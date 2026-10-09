@@ -83,7 +83,7 @@ object Creation:
   :   Unit =
 
     if backend.stat(path, false).entry == Directory
-    then backend.children(path).each { name => wipe(path.unsafeChild(name)(using Unsafe)) }
+    then backend.children(path).each: name => wipe(path.unsafeChild(name)(using Unsafe))
 
     backend.delete(path)
 
@@ -108,8 +108,8 @@ object Creation:
 
     def create[result]
       ( value: path, flags: List[CreateFlag] )
-      ( block: (((Directory.Handle { type Under = filesystem })
-                  & Granting[Grant.Read & Grant.Write])^) ?=> result )
+      ( block: (((Directory.Handle { type Under = filesystem }) &
+                  Granting[Grant.Read & Grant.Write])^) ?=> result )
     :   result =
 
       make(value, flags)

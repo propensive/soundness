@@ -109,8 +109,7 @@ object internal:
     given list: [collection <: Iterable, element: Encodable in Pojo]
     =>  collection[element] is Encodable in Pojo =
 
-      iterable =>
-        scala.Array.from(iterable.map(_.encode.asInstanceOf[Object])).asInstanceOf[Pojo]
+      iterable => scala.Array.from(iterable.map(_.encode.asInstanceOf[Object])).asInstanceOf[Pojo]
 
     // Alias counterparts of `list`/`collection`: the opaque prelude collections
     // do not conform to `Iterable`, so each gets its own instance built at the

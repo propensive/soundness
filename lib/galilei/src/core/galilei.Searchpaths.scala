@@ -88,8 +88,7 @@ object Searchpaths:
     stems.each: stem =>
       val resolved = resolve(stem, path)
 
-      if galilei.existent(resolved)() then resolved.children.each: child =>
-        names.add(child.name)
+      if galilei.existent(resolved)() then resolved.children.each: child => names.add(child.name)
 
     scala.List.from(names).to(List)
 

@@ -196,7 +196,7 @@ object Serializable:
             // `tail` characters rather than another unrolled case analysis.
             if rem > 0 then
               var acc = 0
-              src.iterate(remainder) { index => acc = (acc << 8) | (src.at(index) & 0xff) }
+              src.iterate(remainder): index => acc = (acc << 8) | (src.at(index) & 0xff)
 
               val loaded = rem*8
               var t = 0

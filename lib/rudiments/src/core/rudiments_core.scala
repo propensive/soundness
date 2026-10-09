@@ -231,7 +231,7 @@ extension [self](self: self)(using traversable: self is Traversable)
   :   result =
 
     reshapable.reshape:
-      traversable.traverse(self).zipWithIndex.map { (element, index) => (element, index.z) }
+      traversable.traverse(self).zipWithIndex.map: (element, index) => (element, index.z)
 
   // The extremum operations (`minimum`/`maximum`, the total counterparts of `min`/`max`) live
   // in hypotenuse, driven by `Commensurable` rather than `Comparable` — `Commensurable.orderable`
@@ -279,8 +279,7 @@ extension [self](self: self)(using traversable: self is Traversable)
       case _ =>
         val iterator = traversable.traverse(self)
 
-        if !iterator.hasNext then Unset
-        else iterator.foldLeft(iterator.next())(addable.add)
+        if !iterator.hasNext then Unset else iterator.foldLeft(iterator.next())(addable.add)
 
   def product
     ( using unital:        traversable.Operand is Unital,

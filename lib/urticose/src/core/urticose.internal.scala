@@ -188,8 +188,7 @@ object internal:
           case Nil => acc
 
           case head :: tail =>
-            if head.length != 2
-            then raise(MacAddress.Error(WrongGroupLength(index, head.length)))
+            if head.length != 2 then raise(MacAddress.Error(WrongGroupLength(index, head.length)))
 
             val value = try Integer.parseInt(head.s, 16) catch case error: NumberFormatException =>
               abort(MacAddress.Error(NotHex(index, head)))
@@ -257,8 +256,7 @@ object internal:
       // (`Port[Udp](8237)`) or inferred from the expected type (`Port(8237)` where a
       // `Port over Udp` is wanted).
       def apply[transport](value: Int): (Port over transport) raises Port.Error =
-        if 1 <= value <= 65535 then value.asInstanceOf[Port over transport]
-        else abort(Port.Error())
+        if 1 <= value <= 65535 then value.asInstanceOf[Port over transport] else abort(Port.Error())
 
       // A port that was unused a moment ago: an ephemeral probe socket of the right kind for
       // the transport is bound and then released, so that the caller can bind the port itself.
@@ -419,8 +417,7 @@ object internal:
           then
             raise(IpAddress.Error(Ipv6TooManyNonzeroGroups(leftGroups.size + rightGroups.size)))
 
-          leftGroups + List.fill(8 - leftGroups.size - rightGroups.size)(t"0") +
-            rightGroups
+          leftGroups + List.fill(8 - leftGroups.size - rightGroups.size)(t"0") + rightGroups
 
         case List(whole) =>
           val groups = whole.cut(t":")

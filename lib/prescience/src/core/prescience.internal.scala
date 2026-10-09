@@ -68,7 +68,7 @@ object internal:
         val method = target.getClass.nn.getMethods.nn.find: method =>
           method.nn.getName == name && method.nn.getParameterCount == 0
 
-        method.flatMap { method => Option(method.nn.invoke(target)) }
+        method.flatMap: method => Option(method.nn.invoke(target))
       catch
         case _: ReflectiveOperationException => None
         case _: LinkageError                 => None
@@ -86,7 +86,8 @@ object internal:
         if definedInCurrentRun(select.symbol) then None
         else if select.symbol.flags.is(Flags.Module) then
           loadModule(moduleBinaryName(select.symbol))
-        else eval(qualifier).flatMap(invokeMember(_, name))
+        else
+          eval(qualifier).flatMap(invokeMember(_, name))
 
       case ref: Ref =>
         val symbol = ref.symbol
@@ -95,7 +96,8 @@ object internal:
         else if symbol.flags.is(Flags.Module) then loadModule(moduleBinaryName(symbol))
         else if symbol.owner.flags.is(Flags.Module) then
           loadModule(moduleBinaryName(symbol.owner)).flatMap(invokeMember(_, symbol.name))
-        else None
+        else
+          None
 
       case _ =>
         None
@@ -132,7 +134,7 @@ object internal:
       if run == null then false else
         val sources = run.nn.units.map(_.source.path).toSet
         val position = symbol.pos
-        position.exists { position => sources.contains(position.sourceFile.path) }
+        position.exists: position => sources.contains(position.sourceFile.path)
     catch case _: Exception => false
 
   // The macro classpath minus the current output directory, so the staging
@@ -279,7 +281,7 @@ object internal:
     val ctor = classSymbol.primaryConstructor
     val fields = classSymbol.caseFields
     val arity = fields.length
-    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
+    val fieldTypes: List[TypeRepr] = fields.map: field => tpe.memberType(field).dealias
 
     def readField(index: Int, parts: Expr[scala.Array[String]]): Term =
       fieldTypes(index).asType match
@@ -303,7 +305,8 @@ object internal:
                 summonStaged[fieldType] match
                   case Some(instance) => instance.read(fieldExpr).asExprOf[fieldType].asTerm
                   case None           => runtimeCall
-              else runtimeCall
+              else
+                runtimeCall
 
     def construct(parts: Expr[scala.Array[String]]): Expr[value] =
       Apply(Select(New(Inferred(tpe)), ctor), List.range(0, arity).map(readField(_, parts)))

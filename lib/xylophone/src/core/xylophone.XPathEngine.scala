@@ -179,7 +179,7 @@ private[xylophone] object XPathEngine:
 
       left.exists { locus =>
         val value = locus.stringValue.s
-        rights.exists { other => (value == other) == equal }
+        rights.exists: other => (value == other) == equal
       }
 
     case (Value.NodeSet(loci), other) => nodeSetTest(loci, other, equal)
@@ -195,10 +195,10 @@ private[xylophone] object XPathEngine:
       case Value.Truth(value) => (!loci.nil == value) == equal
 
       case Value.Numeric(value) =>
-        loci.exists { locus => (XPath.parseNumber(locus.stringValue) == value) == equal }
+        loci.exists: locus => (XPath.parseNumber(locus.stringValue) == value) == equal
 
       case Value.Textual(value) =>
-        loci.exists { locus => (locus.stringValue.s == value.s) == equal }
+        loci.exists: locus => (locus.stringValue.s == value.s) == equal
 
       case _ =>
         false
@@ -210,15 +210,15 @@ private[xylophone] object XPathEngine:
 
     (left, right) match
       case (Value.NodeSet(left), Value.NodeSet(right)) =>
-        left.exists { a => right.exists { b => test(numberOf(a), numberOf(b)) } }
+        left.exists: a => right.exists: b => test(numberOf(a), numberOf(b))
 
       case (Value.NodeSet(loci), other) =>
         val number = other.number
-        loci.exists { locus => test(numberOf(locus), number) }
+        loci.exists: locus => test(numberOf(locus), number)
 
       case (other, Value.NodeSet(loci)) =>
         val number = other.number
-        loci.exists { locus => test(number, numberOf(locus)) }
+        loci.exists: locus => test(number, numberOf(locus))
 
       case (left, right) =>
         test(left.number, right.number)
@@ -293,7 +293,7 @@ private[xylophone] object XPathEngine:
           else Nil
 
   private def descendantLoci(locus: Locus): List[Locus] =
-    childLoci(locus).flatMap { child => child :: descendantLoci(child) }
+    childLoci(locus).flatMap: child => child :: descendantLoci(child)
 
   private def nodeAt(locus: Locus, index: Int): Xml.Node = locus.subject match
     case element: Xml.Element => element.children.readUnchecked(index)
@@ -310,8 +310,7 @@ private[xylophone] object XPathEngine:
     if attributeIndexOf(locus) >= 0
     then List(Locus(locus.document, locus.path, locus.subject, Unset))
     else
-      locus.path.occupied.lay(Nil): path =>
-        List(resolve(locus.document, path.lead))
+      locus.path.occupied.lay(Nil): path => List(resolve(locus.document, path.lead))
 
   // Nearest-first, as a reverse axis requires for proximity positions.
   private def ancestorLoci(locus: Locus): List[Locus] = parentLocus(locus) match
@@ -341,16 +340,16 @@ private[xylophone] object XPathEngine:
     val root = Locus.root(locus.document)
 
     descendantLoci(root).filter: candidate =>
-      compareLoci(locus, candidate) < 0
-      && !isPrefix(locus.path, candidate.path)
+      compareLoci(locus, candidate) < 0 &&
+      !isPrefix(locus.path, candidate.path)
 
   // Nearest-first (reverse document order), as a reverse axis requires.
   private def precedingLoci(locus: Locus): List[Locus] =
     val root = Locus.root(locus.document)
 
     descendantLoci(root).filter: candidate =>
-      compareLoci(candidate, locus) < 0
-      && !isPrefix(candidate.path, locus.path)
+      compareLoci(candidate, locus) < 0 &&
+      !isPrefix(candidate.path, locus.path)
 
     . reverse
 
@@ -524,8 +523,7 @@ private[xylophone] object XPathEngine:
   // The rounding used by `round()` and `substring()` (§4.2, §4.4):
   // floor(x + 0.5), with NaN and the infinities passing through.
   private def xpathRound(value: Double): Double =
-    if value != value || java.lang.Double.isInfinite(value) then value
-    else Math.floor(value + 0.5)
+    if value != value || java.lang.Double.isInfinite(value) then value else Math.floor(value + 0.5)
 
   // The core function library (§4). Zero-argument forms of `string`,
   // `number`, `string-length`, `normalize-space`, `name` and friends default
@@ -591,7 +589,7 @@ private[xylophone] object XPathEngine:
       case "concat" =>
         if args.length < 2 then abort(Error(Reason.BadArity(name)))
         val builder = StringBuilder()
-        arguments.each { argument => builder.append(argument.text.s) }
+        arguments.each: argument => builder.append(argument.text.s)
         Value.Textual(builder.toString.nn.tt)
 
       case "starts-with" =>
@@ -621,8 +619,7 @@ private[xylophone] object XPathEngine:
         val start = xpathRound(args(1).number)
 
         val limit =
-          if args.length == 3 then start + xpathRound(args(2).number)
-          else Double.PositiveInfinity
+          if args.length == 3 then start + xpathRound(args(2).number) else Double.PositiveInfinity
 
         val builder = StringBuilder()
         var position = 1
@@ -708,8 +705,7 @@ private[xylophone] object XPathEngine:
               Nil
 
         Value.Truth:
-          declared.prim.let: language =>
-            language == wanted || language.starts(t"$wanted-")
+          declared.prim.let: language => language == wanted || language.starts(t"$wanted-")
 
           . or(false)
 
@@ -721,8 +717,7 @@ private[xylophone] object XPathEngine:
         arity(1, 1)
         var total = 0.0
 
-        nodeSetArgument(args.head).foreach: locus =>
-          total += XPath.parseNumber(locus.stringValue)
+        nodeSetArgument(args.head).foreach: locus => total += XPath.parseNumber(locus.stringValue)
 
         Value.Numeric(total)
 

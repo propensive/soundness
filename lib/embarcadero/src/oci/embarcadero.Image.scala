@@ -350,9 +350,9 @@ case class Image
   def blobs: List[(Text, Data)] =
     val layerBlobs = layers.map: layer => (layer.digest, layer.blob)
 
-    List((configDescriptor.digest, configBytes))
-    + layerBlobs
-    + List((manifestDescriptor.digest, manifestBytes))
+    List((configDescriptor.digest, configBytes)) +
+    layerBlobs +
+    List((manifestDescriptor.digest, manifestBytes))
 
   // The complete image serialised as an OCI image-layout tar (an "oci-archive"):
   // an `oci-layout` marker, the `index.json`, and every blob under

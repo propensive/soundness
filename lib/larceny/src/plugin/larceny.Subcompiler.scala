@@ -165,8 +165,8 @@ object Subcompiler:
         val pluginOptions = plugins.map: plugin => s"-Xplugin:$plugin"
 
         val args =
-          scala.Array[String]("") ++ ccOptions ++ importOptions ++ zflags ++ warnings
-            ++ pluginOptions
+          scala.Array[String]("") ++ ccOptions ++ importOptions ++ zflags ++ warnings ++
+            pluginOptions
 
         setup(args, context2).map(_(1)).get
 

@@ -408,8 +408,7 @@ object internal:
           '{Yaml.Ast.Null}
 
         case arr: (Array[Any]^{}) @unchecked =>
-          if (arr.length & 1) == 0 then serializeObject(arr)
-          else serializeArray(stripPad(arr))
+          if (arr.length & 1) == 0 then serializeObject(arr) else serializeArray(stripPad(arr))
 
         case other =>
           halt(m"unexpected YAML AST node ${other.toString.tt}")
@@ -601,8 +600,7 @@ object internal:
             val elems = stripPad(arr)
             var c = 0
 
-            elems.extent.each: k =>
-              c += countHolesIn(elems(k))
+            elems.extent.each: k => c += countHolesIn(elems(k))
 
             c
 

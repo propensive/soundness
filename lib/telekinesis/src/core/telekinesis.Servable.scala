@@ -65,7 +65,7 @@ object Servable:
     def serve(content: Content): Http.Response =
       val headers = List(Http.Header(t"content-type", content.media.show))
 
-      Http.Ok(headers, Http.Body.Flowing(() => Stream(content.stream)))
+      Http.Ok(headers, Http.Body.Flowing{ () => Stream(content.stream) })
 
   given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]
   =>  response is Servable =
@@ -98,7 +98,7 @@ object Servable:
     case streamable: (`media` is Streamable by Data over Credit) =>
       value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Ok(headers, Http.Body.Flowing(() => streamable.stream(value)))
+        Http.Ok(headers, Http.Body.Flowing{ () => streamable.stream(value) })
 
     case streamable: (`media` is Streamable by Text over Credit) =>
       val encoder0: hieroglyph.Codepage = compiletime.summonInline[hieroglyph.Codepage]

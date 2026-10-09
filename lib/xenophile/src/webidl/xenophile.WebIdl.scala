@@ -276,9 +276,12 @@ object WebIdl:
             recur(end, "", source.substring(index, end).nn :: flushed)
           else if char == '.' && next == '.' && next2 == '.' then
             recur(index + 3, "", "..." :: flushed)
-          else if ident(char) then recur(index + 1, current + char, tokens)
-          else if char.isWhitespace then recur(index + 1, "", flushed)
-          else recur(index + 1, "", char.toString :: flushed)
+          else if ident(char) then
+            recur(index + 1, current + char, tokens)
+          else if char.isWhitespace then
+            recur(index + 1, "", flushed)
+          else
+            recur(index + 1, "", char.toString :: flushed)
 
       recur(0, "", SList())
 

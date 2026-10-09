@@ -188,9 +188,9 @@ object Svg:
         val trimmed = text.trim
 
         val unit: Optional[Units] =
-          Units.values.find(unit => trimmed.ends(unit.suffix)).getOrElse(Unset)
+          Units.values.find{ unit => trimmed.ends(unit.suffix) }.getOrElse(Unset)
 
-        val number = unit.lay(trimmed)(unit => trimmed.skip(unit.suffix.length, Rtl))
+        val number = unit.lay(trimmed): unit => trimmed.skip(unit.suffix.length, Rtl)
 
         safely(number.as[Double].toFloat).let((_, unit)).or:
           abort(Svg.Error(Svg.Error.Reason.MalformedLength(text)))

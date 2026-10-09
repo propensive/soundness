@@ -58,7 +58,7 @@ class Transcoder(in: ji.InputStream, charset: jnc.Charset) extends ji.InputStrea
             case low => String(scala.Array(char.toChar, low.toChar))
           else char.toChar.toString
 
-        text.getBytes(jnc.StandardCharsets.UTF_8).nn.foreach { byte => pending.add(byte & 0xff) }
+        text.getBytes(jnc.StandardCharsets.UTF_8).nn.foreach: byte => pending.add(byte & 0xff)
         read()
 
   override def available(): Int = pending.size

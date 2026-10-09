@@ -135,7 +135,7 @@ object Recurrence:
 
     sequence =>
       val all = Chain.iterate(sequence.start)(addable.add(_, sequence.period))
-      sequence.repetitions.lay(all) { n => all.keep(n) }
+      sequence.repetitions.lay(all): n => all.keep(n)
 
   // RecurrenceError → Recurrence.Error
   case class Error(value: Text)(using Diagnostics)

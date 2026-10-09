@@ -137,8 +137,10 @@ private[facsimile] object PdfEncoding:
         i += 1
 
       if bad then Unset else value.toChar
-    else if string.length == 1 && (string.charAt(0).isLetterOrDigit) then string.charAt(0)
-    else names(name)
+    else if string.length == 1 && (string.charAt(0).isLetterOrDigit) then
+      string.charAt(0)
+    else
+      names(name)
 
   private val names: Map[Text, Char] = Map
     ( t"space" -> ' ', t"exclam" -> '!', t"quotedbl" -> '"', t"numbersign" -> '#',
@@ -200,5 +202,4 @@ private[facsimile] object PdfEncoding:
   // question mark, as viewers do.
   private[facsimile] def winAnsiEncode(text: Text): Data =
     Array.scribe[Byte](text.length): scribe => extent =>
-      extent.each: i =>
-        scribe(i) = winAnsiCodes.at(text.s.charAt(i.n0)).or('?'.toInt).toByte
+      extent.each: i => scribe(i) = winAnsiCodes.at(text.s.charAt(i.n0)).or('?'.toInt).toByte

@@ -43,8 +43,7 @@ object Imports:
 
   // A designator's fully-qualified dotted name, as the compiler's denotations look it up.
   private def path(designator: Designator): String =
-    designator.parent.lay(designator.name.s): parent =>
-      s"${path(parent)}.${designator.name}"
+    designator.parent.lay(designator.name.s): parent => s"${path(parent)}.${designator.name}"
 
   // The designators reachable by their leaf name through the `export` aliases declared in
   // `scope`, a package or object such as `soundness`: each alias's target type, and its

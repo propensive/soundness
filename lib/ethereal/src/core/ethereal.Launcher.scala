@@ -179,14 +179,14 @@ object Launcher:
       if stdinTty then children += flag(5)
       if stdoutTty then children += flag(6)
       if stderrTty then children += flag(7)
-      arguments.each { argument => children += value(8, argument) }
-      environment.each { variable => children += value(9, variable) }
-      invokedAs.let { name => children += value(10, name) }
-      umask.let { mask => children += value(11, mask) }
-      columns.let { count => children += value(12, count.show) }
-      rows.let { count => children += value(13, count.show) }
-      inputCodepage.let { page => children += value(14, page.show) }
-      outputCodepage.let { page => children += value(15, page.show) }
+      arguments.each: argument => children += value(8, argument)
+      environment.each: variable => children += value(9, variable)
+      invokedAs.let: name => children += value(10, name)
+      umask.let: mask => children += value(11, mask)
+      columns.let: count => children += value(12, count.show)
+      rows.let: count => children += value(13, count.show)
+      inputCodepage.let: page => children += value(14, page.show)
+      outputCodepage.let: page => children += value(15, page.show)
 
       descriptors.each: descriptor =>
         val fields = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
@@ -229,9 +229,9 @@ object Launcher:
     case Message.Signal(name, columns, rows, deadline) =>
       val children = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       children += value(0, name)
-      columns.let { count => children += value(1, count.show) }
-      rows.let { count => children += value(2, count.show) }
-      deadline.let { millis => children += value(3, millis.show) }
+      columns.let: count => children += value(1, count.show)
+      rows.let: count => children += value(2, count.show)
+      deadline.let: millis => children += value(3, millis.show)
       node(Variant.signal, t"Signal", Array.from(children))
 
     case Message.SignalAck(accept) =>
@@ -251,7 +251,7 @@ object Launcher:
     case Message.Run(command, arguments, pwd) =>
       val children = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       children += value(0, command)
-      arguments.each { argument => children += value(1, argument) }
+      arguments.each: argument => children += value(1, argument)
 
       pwd match
         case pwd: Text => children += value(2, pwd)

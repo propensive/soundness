@@ -111,8 +111,7 @@ object Xenophile:
 
     var found: Optional[Materializer] = Unset
 
-    names.foreach: name =>
-      if found.absent then found = load(name)
+    names.foreach: name => if found.absent then found = load(name)
 
     found.or:
       halt(m"xenophile: no materializer for this foreign source language is on the classpath")

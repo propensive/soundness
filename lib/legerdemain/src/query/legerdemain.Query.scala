@@ -188,7 +188,8 @@ object Query extends Dynamic:
                   then
                     raise(Query.Error(Query.Error.Reason.Missing))
                     null.asInstanceOf[value]
-                  else abort(Query.Error(Query.Error.Reason.Missing))
+                  else
+                    abort(Query.Error(Query.Error.Reason.Missing))
 
                 . apply(_.as)
 

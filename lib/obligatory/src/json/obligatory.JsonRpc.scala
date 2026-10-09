@@ -150,8 +150,7 @@ object JsonRpc:
     val failure: Optional[Failure] = try json.error.as[Failure] catch case _: Exception => Unset
     val result: Optional[Json] = try json.result catch case _: Exception => Unset
 
-    id.let: id =>
-      failure.lay(result.let(receive(id, _)))(receiveFailure(id, _))
+    id.let: id => failure.lay(result.let(receive(id, _)))(receiveFailure(id, _))
 
 
   def request(target: HttpUrl, method: Text, payload: Json)(using Monitor, Probate, Online)
@@ -246,5 +245,4 @@ trait JsonRpc extends Original:
   def outgoing: Chain[Json] = Chain.from(channel.stream.records)
 
   def stream: Chain[Sse] =
-    Chain.from(channel.stream.records).map: json =>
-      Sse(data = List(json.encode: Text))
+    Chain.from(channel.stream.records).map: json => Sse(data = List(json.encode: Text))

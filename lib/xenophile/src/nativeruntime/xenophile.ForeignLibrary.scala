@@ -91,6 +91,7 @@ object ForeignLibrary:
         if pointer == null then
           val name = fromCString(symbol).tt
           panic(m"xenophile: unresolved native symbol $name (is its library registered?)")
-        else pointer
+        else
+          pointer
 
     search(handles)

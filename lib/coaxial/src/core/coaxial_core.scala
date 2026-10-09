@@ -170,7 +170,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint 
       while !done do input.refill(demand) match
         case count: Int =>
           if count > 0 then
-            val data = input.lend { region => range => region.materialize(range.capped(count)) }
+            val data = input.lend: region => range => region.materialize(range.capped(count))
             input.skip(count)
 
             handle(using state)(message.deserialize(data)) match
@@ -230,7 +230,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
       while !done do input.refill(demand) match
         case count: Int =>
           if count > 0 then
-            val data = input.lend { region => range => region.materialize(range.capped(count)) }
+            val data = input.lend: region => range => region.materialize(range.capped(count))
             input.skip(count)
 
             handle(using state)(message.deserialize(data)) match

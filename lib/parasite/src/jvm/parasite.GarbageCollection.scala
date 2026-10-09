@@ -132,8 +132,7 @@ object GarbageCollection:
           case _ =>
             Nil
 
-      () => listeners.each: (emitter, listener) =>
-        emitter.removeNotificationListener(listener)
+      () => listeners.each: (emitter, listener) => emitter.removeNotificationListener(listener)
 
   enum Cause:
     case

@@ -91,9 +91,9 @@ private[stratiform] object Positional:
         val profile = profiles.readable(position)
 
         val skippable =
-          !profile.required
-          && (profile.nature == Tel.Nature.Struct
-              || (profile.nature == Tel.Nature.Flag && value != profile.keyword))
+          !profile.required &&
+          (profile.nature == Tel.Nature.Struct ||
+              (profile.nature == Tel.Nature.Flag && value != profile.keyword))
 
         if skippable then position += 1 else scanning = false
 

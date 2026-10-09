@@ -68,8 +68,7 @@ object SocketServer:
     var found = false
 
     while !found && index <= max do
-      if value.regionMatches(true, index, token, 0, token.length) then found = true
-      else index += 1
+      if value.regionMatches(true, index, token, 0, token.length) then found = true else index += 1
 
     found
 
@@ -387,8 +386,7 @@ extends RequestServable:
         Service(() => reactor0.asInstanceOf[Reactor].stop(), reactor.port)
 
       case _ =>
-        handleSession: session ?=>
-          session.handle(handler)
+        handleSession: session ?=> session.handle(handler)
 
   // A per-connection session server: `scope` runs once when a connection is
   // established (an HTTP/2 connection, or an HTTP/1.1 keep-alive socket) and may

@@ -184,7 +184,7 @@ object Mutation:
 
   def apply(tel: Tel, ops: List[Op]): Tel raises Mutation.Error =
     var current = tel
-    ops.each { op => current = apply(current, op) }
+    ops.each: op => current = apply(current, op)
 
     current
 
@@ -240,8 +240,8 @@ object Mutation:
         val spliced =
           if replacement.length > 0
           then Array.frozen
-            ( children.readable.take(blockIdx) ++ replacement.readable
-              ++ children.readable.drop(blockIdx + 1) )
+            ( children.readable.take(blockIdx) ++ replacement.readable ++
+              children.readable.drop(blockIdx + 1) )
           else
             // The op emptied the block (§22.2 `delete`): the block and its
             // comments go, but its trailing blank lines — which include a
@@ -316,11 +316,10 @@ object Mutation:
     def splice(replacement: Array[Tel.Compound]^{}): Array[Tel.Block]^{} =
       val compounds =
         Array.frozen
-          ( block.compounds.readable.take(localIdx) ++ replacement.readable
-            ++ block.compounds.readable.drop(localIdx + 1) )
+          ( block.compounds.readable.take(localIdx) ++ replacement.readable ++
+            block.compounds.readable.drop(localIdx + 1) )
 
-      if compounds.length == 0 then Array.empty
-      else Array(block.copy(compounds = compounds))
+      if compounds.length == 0 then Array.empty else Array(block.copy(compounds = compounds))
 
     op match
       case Op.UpdateAtom(_, atomIndex, text) =>
@@ -342,8 +341,7 @@ object Mutation:
       case Op.RemoveRemark(_) =>
         // Removing an absent remark produces an identical document, so it
         // succeeds as the identity (§22.2).
-        if target.remark.absent then Array(block)
-        else splice(Array(target.copy(remark = Unset)))
+        if target.remark.absent then Array(block) else splice(Array(target.copy(remark = Unset)))
 
       case Op.InsertBefore(_, compound) =>
         // §22.2: the same block as the sibling, unless that block is
@@ -426,8 +424,8 @@ object Mutation:
             while foundBlock < 0 && c < cs.length do
               val candidate = cs.readable(c)
 
-              if candidate.keyword == keyword && candidate.atoms.length == 0
-                && candidate.children.length == 0
+              if candidate.keyword == keyword && candidate.atoms.length == 0 &&
+                candidate.children.length == 0
               then
                 foundBlock = b
                 foundLocal = c
@@ -442,8 +440,8 @@ object Mutation:
 
             val remaining =
               Array.frozen
-                ( childBlock.compounds.readable.take(foundLocal)
-                  ++ childBlock.compounds.readable.drop(foundLocal + 1) )
+                ( childBlock.compounds.readable.take(foundLocal) ++
+                  childBlock.compounds.readable.drop(foundLocal + 1) )
 
             val children =
               if remaining.length == 0 then removeBlock(target.children, foundBlock, true)
@@ -488,8 +486,10 @@ object Mutation:
           // an internal space.
           val kept = if value.contains(' ') && spaces < 2 then 2 else spaces
           Tel.Atom.Inline(value, kept)
-        else if sourceSafe(value) then Tel.Atom.Source(value)
-        else Tel.Atom.Literal(literalDelimiter(value, t"---"), value)
+        else if sourceSafe(value) then
+          Tel.Atom.Source(value)
+        else
+          Tel.Atom.Literal(literalDelimiter(value, t"---"), value)
 
       case Tel.Atom.Source(_) =>
         if sourceSafe(value) then Tel.Atom.Source(value)
@@ -539,8 +539,7 @@ object Mutation:
         val separation = if last.tabulation.present then 1 else 0
 
         Array.frozen
-          ( blocks.readable.updated(lastIdx, last.copy(trailingBlankLines = separation))
-            :+ fresh )
+          ( blocks.readable.updated(lastIdx, last.copy(trailingBlankLines = separation)) :+ fresh )
     else
       val block = blocks.readable(lastB)
 
@@ -549,15 +548,14 @@ object Mutation:
         val fresh = Tel.Block(Array.empty, Unset, Array(compound), block.trailingBlankLines)
 
         Array.frozen
-          ( blocks.readable.take(lastB) ++ scala.IArray(separated, fresh)
-            ++ blocks.readable.drop(lastB + 1) )
+          ( blocks.readable.take(lastB) ++ scala.IArray(separated, fresh) ++
+            blocks.readable.drop(lastB + 1) )
       else
         val cs = block.compounds
 
         val compounds =
           Array.frozen
-            ( cs.readable.take(lastC + 1) ++ scala.IArray(compound)
-              ++ cs.readable.drop(lastC + 1) )
+            ( cs.readable.take(lastC + 1) ++ scala.IArray(compound) ++ cs.readable.drop(lastC + 1) )
         Array.frozen(blocks.readable.updated(lastB, block.copy(compounds = compounds)))
 
   // Remove the emptied block at `blockIdx`, discarding its comments
@@ -580,11 +578,12 @@ object Mutation:
       val absorbed = previous.copy(trailingBlankLines = trailing)
 
       Array.frozen
-        ( blocks.readable.take(blockIdx - 1) ++ scala.IArray(absorbed)
-          ++ blocks.readable.drop(blockIdx + 1) )
+        ( blocks.readable.take(blockIdx - 1) ++ scala.IArray(absorbed) ++
+          blocks.readable.drop(blockIdx + 1) )
     else if blocks.length == 1 && nested && removed.trailingBlankLines > 0
     then Array(Tel.Block(Array.empty, Unset, Array.empty, removed.trailingBlankLines))
-    else Array.frozen(blocks.readable.drop(1))
+    else
+      Array.frozen(blocks.readable.drop(1))
 
   // §22.2 `insert-into-block` — append a compound to an existing block's
   // `compounds` list. For a tabulated block, every column value (the
@@ -645,7 +644,8 @@ object Mutation:
             if width > vs(col) then vs(col) = width
             col += 1
             width = codePoints(text)
-          else width += spaces + codePoints(text)
+          else
+            width += spaces + codePoints(text)
 
         case _ => stop = true
 
@@ -670,7 +670,8 @@ object Mutation:
           if col + 1 < columns then
             col += 1
             vs(col) = codePoints(text)
-          else vs(col) += 2 + codePoints(text)
+          else
+            vs(col) += 2 + codePoints(text)
 
         case _ => stop = true
 
@@ -817,7 +818,8 @@ object Mutation:
             if finished then interleaved = true
             present = true
             touches = true
-          else if present then finished = true
+          else if present then
+            finished = true
 
           c += 1
 
@@ -891,9 +893,9 @@ object Mutation:
         case Placement.After  => pruned.lastIndexWhere { (idx, _) => otherBlocks.contains(idx) } + 1
 
       val out = scala.collection.mutable.ArrayBuffer.empty[Tel.Block]
-      pruned.take(anchor).foreach { (_, block) => out += block }
-      moving.foreach { block => out += block }
-      pruned.drop(anchor).foreach { (_, block) => out += block }
+      pruned.take(anchor).foreach: (_, block) => out += block
+      moving.foreach: block => out += block
+      pruned.drop(anchor).foreach: (_, block) => out += block
 
       // Identity: the groups were already in the requested arrangement.
       val unchanged =
@@ -976,8 +978,8 @@ object Mutation:
         if vs(i) > widths(i) then widths(i) = vs(i)
         i += 1
 
-    block.compounds.foreach { compound => fold(existingRowWidths(compound, n)) }
-    plannedRows.foreach { compound => fold(incomingRowWidths(compound, n)) }
+    block.compounds.foreach: compound => fold(existingRowWidths(compound, n))
+    plannedRows.foreach: compound => fold(incomingRowWidths(compound, n))
 
     val newOffsets = new scala.Array[Int](n)
     newOffsets(0) = 2*indent
@@ -1065,17 +1067,17 @@ object Mutation:
 
         // Local `def`s, so each scan still happens only on the branch that needs it.
         def soleInlineable = first.let { o => !o.nil && inlineSafe(o, sigil) }.or(false)
-        def allInlineable = occurrences.all { o => !o.nil && inlineSafe(o, sigil) }
+        def allInlineable = occurrences.all: o => !o.nil && inlineSafe(o, sigil)
 
         if inRun && second.absent && soleInlineable
-        then first.let { o => inlineTexts += o }
+        then first.let: o => inlineTexts += o
         else if inRun && second.present && allInlineable
         then
-          occurrences.each { o => inlineTexts += o }
+          occurrences.each: o => inlineTexts += o
           inRun = false
         else
           inRun = false
-          occurrences.each { o => children += scalarChild(kw, o) }
+          occurrences.each: o => children += scalarChild(kw, o)
 
     var hard = false
 

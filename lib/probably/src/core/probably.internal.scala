@@ -254,4 +254,5 @@ object internal:
     else if discard && verified && runner.queued then
       runner.defer(test.id, () => execute())
       ().asInstanceOf[result]
-    else execute()
+    else
+      execute()

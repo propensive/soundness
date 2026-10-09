@@ -175,8 +175,7 @@ object Bytecode:
         val indent: Text = t"  "*line.depth
 
         val src: Teletype =
-          if line.source == t"" then e""
-          else e"${Fg(palette.bytecode)}(${line.source})  "
+          if line.source == t"" then e"" else e"${Fg(palette.bytecode)}(${line.source})  "
 
         e"$indent$src${line.instruction.opcode.teletype}"
 

@@ -214,8 +214,7 @@ private[facsimile] object Filter:
       // Forcing the stream incrementally means a truncated (but valid-so-far) input keeps
       // whatever it decoded before the bytes ran out, matching the eager inflater's
       // partial-on-truncation behaviour; corrupt data throws from the backend.
-      chunks.each: chunk =>
-        builder.addAll(chunk)
+      chunks.each: chunk => builder.addAll(chunk)
     catch case _: IllegalStateException => ()
 
     val result = builder.result()
@@ -262,7 +261,7 @@ private[facsimile] object Filter:
             if (run: Interval).size <= length
             then abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"RunLengthDecode")))
 
-            data.iterate(run) { index => bytes += data.at(index) }
+            data.iterate(run): index => bytes += data.at(index)
           else
             // One byte, repeated `257 - length` times.
             surveyor.next(abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"RunLengthDecode")))):

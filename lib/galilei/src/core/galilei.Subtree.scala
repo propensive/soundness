@@ -96,8 +96,7 @@ object Subtree:
       ( using backend: FilesystemBackend on handle.Under, tactic: Tactic[Io.Error] )
     :   Chain[Path on plane] =
 
-      entriesResolved(handle.resolve(path)).map: child =>
-        path.unsafeChild(child.name)(using Unsafe)
+      entriesResolved(handle.resolve(path)).map: child => path.unsafeChild(child.name)(using Unsafe)
 
     transparent inline def remove()
       ( using handle: ((Directory.Handle { type Plane = plane }) & Granting[Grant.Write])^ )

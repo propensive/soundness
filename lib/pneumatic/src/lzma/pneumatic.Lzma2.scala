@@ -401,8 +401,7 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
     var symbol = 1
 
     if stateIsLiteral then
-      while symbol < 0x100 do
-        symbol = (symbol << 1) | rcDecodeBit(literalProbs, base + symbol)
+      while symbol < 0x100 do symbol = (symbol << 1) | rcDecodeBit(literalProbs, base + symbol)
     else
       var matchByte = dictGetByte(reps(0)) << 1
       var continue = true
@@ -414,8 +413,7 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
         symbol = (symbol << 1) | bit
         if matchBit != bit then continue = false
 
-      while symbol < 0x100 do
-        symbol = (symbol << 1) | rcDecodeBit(literalProbs, base + symbol)
+      while symbol < 0x100 do symbol = (symbol << 1) | rcDecodeBit(literalProbs, base + symbol)
 
     dictPutByte(symbol.toByte)
     updateLiteralState()
@@ -600,7 +598,8 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
             if chunkReset >= 2 then configureProperties(readByte())
             else if !modelReady then
               throw IllegalStateException("the LZMA2 data is corrupt: no properties before chunk")
-            else if chunkReset == 1 then resetModel()
+            else if chunkReset == 1 then
+              resetModel()
 
             if chunkReset == 3 then dictReset()
             uncompressedRemaining = chunkUncompressed
@@ -1328,9 +1327,7 @@ extends caps.Mutable:
         val uncompressedCeiling = Lzma2.UncompressedSizeMax - Lzma.MatchLenMax
         val compressedCeiling = Lzma2.CompressedSizeMax - 64
 
-        while hasMore &&
-          (pos - startPos) < uncompressedCeiling &&
-          rcPendingSize < compressedCeiling
+        while hasMore && (pos - startPos) < uncompressedCeiling && rcPendingSize < compressedCeiling
         do encodeSymbol()
 
         val uncompressedSize = pos - startPos

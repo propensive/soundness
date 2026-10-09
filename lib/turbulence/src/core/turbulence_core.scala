@@ -183,7 +183,7 @@ extension (consume stream: (Stream[Data] over Credit)^)
 
         if available < 0 then -1 else
           var byte: Int = 0
-          stream.lend { region => range => region.visit(range.capped(1)) { index => byte = region(index) & 0xff } }
+          stream.lend: region => range => region.visit(range.capped(1)): index => byte = region(index) & 0xff
           stream.skip(1)
           byte
 
@@ -217,7 +217,7 @@ extension (consume stream: (Stream[Data] over Credit)^)
     stream.refill(Credit(limit)) match
       case count: Int =>
         val take = count.min(limit)
-        val chunk = stream.lend { region => range => region.materialize(range.capped(take)) }
+        val chunk = stream.lend: region => range => region.materialize(range.capped(take))
         stream.skip(take)
         chunk
 
@@ -378,7 +378,8 @@ extension (stream: Chain[Data])
         if next.bytes < count then
           val head: Data = next
           head #:: recur(more, count - next.bytes)
-        else Chain(next.segment((0).z till (count.long.toInt).z).asInstanceOf[Data])
+        else
+          Chain(next.segment((0).z till (count.long.toInt).z).asInstanceOf[Data])
 
     recur(stream, bytes)
 

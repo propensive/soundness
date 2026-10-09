@@ -53,7 +53,8 @@ object Placeholder:
     if text.starts(Prefix) && text.ends(t"⟩") then
       val body: Text = text.skip(Prefix.length).skip(1, Rtl)
       if !body.nil && body.s.forall(_.isDigit) then safely(body.as[Int]) else Unset
-    else Unset
+    else
+      Unset
 
   /** The original string literal, if the text is an escaped genuine literal. */
   def escaped(text: Text): Optional[Text] =

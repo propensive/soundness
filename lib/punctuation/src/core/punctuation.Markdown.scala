@@ -234,8 +234,7 @@ object Markdown:
 
         nodes match
           case Nil =>
-            if block then ((Html.Text("\n"): Html of Flow) :: done).reverse
-            else done.reverse
+            if block then ((Html.Text("\n"): Html of Flow) :: done).reverse else done.reverse
 
           case Layout.Paragraph(_, contents*) :: tail if tight =>
             val content = Html.Fragment(contents.map(phrasing(_))*)
@@ -266,15 +265,13 @@ object Markdown:
 
         case Layout.BulletList(line, tight, items*) =>
           val items2 = items.map: (item: List[Layout]) =>
-            if item.nil then Li
-            else Li(merge(false, item, Nil, tight)*)
+            if item.nil then Li else Li(merge(false, item, Nil, tight)*)
 
           Ul(items2*)
 
         case Layout.OrderedList(line, start, tight, delimiter, items*) =>
           val items2 = items.map: (item: List[Layout]) =>
-            if item.nil then Li
-            else Li(merge(false, item, Nil, tight)*)
+            if item.nil then Li else Li(merge(false, item, Nil, tight)*)
 
           val start2 = start.puncture(1)
 

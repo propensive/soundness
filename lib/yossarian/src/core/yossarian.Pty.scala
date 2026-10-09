@@ -520,8 +520,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
       else safely(text.as[Int]).or(abort(Pty.Error(NonintegerSgrParameter(text))))
 
     def parseInts(text: Text): List[Int] =
-      if text.nil then Nil
-      else text.cut(t";").map(parseInt(_, 0))
+      if text.nil then Nil else text.cut(t";").map(parseInt(_, 0))
 
     def parsePair(text: Text, default: Int): (Int, Int) =
       if text.nil then (default, default) else
@@ -669,8 +668,8 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
       // advances forwards (matching recur's monotonic index walk), so amortised
       // cost is O(1) per character.
       inline def putGrapheme(): Pty =
-        while boundaryCursor < boundaries.length
-          && boundaries.readUnchecked(boundaryCursor) <= index
+        while boundaryCursor < boundaries.length &&
+          boundaries.readUnchecked(boundaryCursor) <= index
         do boundaryCursor += 1
 
         val end = boundaries.readUnchecked(boundaryCursor)

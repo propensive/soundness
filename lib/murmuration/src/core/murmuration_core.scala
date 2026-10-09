@@ -73,8 +73,7 @@ extension [self](self: self)(using traversable: self is Traversable)
     val last  = whole.length - part.length
 
     part.isEmpty || whole.indices.exists: start =>
-      start <= last && part.indices.forall: offset =>
-        whole(start + offset) == part(offset)
+      start <= last && part.indices.forall: offset => whole(start + offset) == part(offset)
 
   // The preferred name for monadic binding at explicit call sites; `flatMap` (below) is the same
   // operation, retained solely because `for`-comprehensions desugar to that name.
@@ -84,7 +83,7 @@ extension [self](self: self)(using traversable: self is Traversable)
   :   result =
 
     reshapable.reshape:
-      traversable.traverse(self).flatMap { element => innerTraversable.traverse(lambda(element)) }
+      traversable.traverse(self).flatMap: element => innerTraversable.traverse(lambda(element))
 
   def flatMap[inner, element2, result](lambda: traversable.Operand => inner)
     ( using innerTraversable: inner is Traversable by element2,
@@ -92,7 +91,7 @@ extension [self](self: self)(using traversable: self is Traversable)
   :   result =
 
     reshapable.reshape:
-      traversable.traverse(self).flatMap { element => innerTraversable.traverse(lambda(element)) }
+      traversable.traverse(self).flatMap: element => innerTraversable.traverse(lambda(element))
 
   def filter[result](predicate: traversable.Operand => Boolean)
     ( using reshapable: self is Reshapable by traversable.Operand to result )
@@ -132,7 +131,7 @@ extension [self](self: self)(using traversable: self is Traversable)
   :   result =
 
     reshapable.reshape:
-      traversable.traverse(self).flatMap { element => innerTraversable.traverse(element) }
+      traversable.traverse(self).flatMap: element => innerTraversable.traverse(element)
 
   // The running accumulation (the stdlib's `scanLeft`): every intermediate state, initial
   // state first, in the source's own (stable) shape.

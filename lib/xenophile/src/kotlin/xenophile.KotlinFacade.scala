@@ -279,17 +279,17 @@ object KotlinFacade:
       case other                => other.typeSymbol
 
     val mapLike =
-      target <:< TypeRepr.of[java.util.Map[?, ?]]
-        && constructorOf(argument) == constructorOf(TypeRepr.of[Map[Any, Any]])
+      target <:< TypeRepr.of[java.util.Map[?, ?]] &&
+        constructorOf(argument) == constructorOf(TypeRepr.of[Map[Any, Any]])
 
     val setLike =
-      target <:< TypeRepr.of[java.util.Set[?]]
-        && constructorOf(argument) == constructorOf(TypeRepr.of[Set[Any]])
+      target <:< TypeRepr.of[java.util.Set[?]] &&
+        constructorOf(argument) == constructorOf(TypeRepr.of[Set[Any]])
 
     val seqLike =
-      target <:< TypeRepr.of[java.util.Collection[?]]
-        && (argument <:< TypeRepr.of[Seq[?]]
-             || constructorOf(argument) == constructorOf(TypeRepr.of[proscenium.List[Any]]))
+      target <:< TypeRepr.of[java.util.Collection[?]] &&
+        (argument <:< TypeRepr.of[Seq[?]] ||
+             constructorOf(argument) == constructorOf(TypeRepr.of[proscenium.List[Any]]))
 
     mapLike || setLike || seqLike
 
@@ -477,8 +477,8 @@ object KotlinFacade:
       // exposes an inaccessible method and, worse, shadows the public `setX`-derived property of the
       // same name — so the `x = …` setter would silently never be generated.
       def accessible(method: Symbol): Boolean =
-        !method.flags.is(Flags.Synthetic) && !method.flags.is(Flags.Private)
-          && !method.flags.is(Flags.Protected) && method.privateWithin.isEmpty
+        !method.flags.is(Flags.Synthetic) && !method.flags.is(Flags.Private) &&
+          !method.flags.is(Flags.Protected) && method.privateWithin.isEmpty
 
       // A method worth refining: it has at least one functional-interface parameter (so a lambda
       // argument benefits) and a plain result.

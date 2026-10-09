@@ -53,5 +53,4 @@ given connectableSessional: [endpoint: {Connectable, Showable}]
     type Result = Duplex
 
     def session[result](target: endpoint)(lambda: (session: Result) ?=> result): result =
-      target.duplex: duplex =>
-        lambda(using duplex)
+      target.duplex: duplex => lambda(using duplex)

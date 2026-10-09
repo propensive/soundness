@@ -276,8 +276,8 @@ object decimalInternal:
       var i = 0
 
       while i < count do
-        val sum = (if i < leftCount then left(i) else 0).toLong
-          + (if i < rightCount then right(i) else 0) + carry
+        val sum = (if i < leftCount then left(i) else 0).toLong +
+          (if i < rightCount then right(i) else 0) + carry
 
         if sum >= Base then
           result(i) = (sum - Base).toInt
@@ -291,7 +291,8 @@ object decimalInternal:
       if carry == 1 then
         result(count) = 1
         (result, count + 1)
-      else (result, count)
+      else
+        (result, count)
 
     // Subtraction of a smaller-or-equal magnitude from a larger.
     private[hypotenuse] def subtractMagnitude
@@ -440,7 +441,8 @@ object decimalInternal:
               k += 1
 
             u(j + divisorCount) = ((u(j + divisorCount) + carry2)%Base).toInt
-          else u(j + divisorCount) = difference.toInt
+          else
+            u(j + divisorCount) = difference.toInt
 
           quotient(j) = qhat.toInt
           j -= 1
@@ -695,7 +697,8 @@ object decimalInternal:
             while zeros > 0 do
               digits.append('0')
               zeros -= 1
-          else if count > scale then digits.insert(digits.length - scale, '.')
+          else if count > scale then
+            digits.insert(digits.length - scale, '.')
           else
             val prefix = StringBuilder("0.")
             var zeros = scale - count

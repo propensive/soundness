@@ -173,4 +173,4 @@ object rewrite:
   // the place for what a proxy must ask before it can amend anything, and the only hook free to
   // await an answer.
   transparent inline def connected(inline block: => Unit)(using proxy: Lsp.Proxy^): Unit =
-    proxy.connected0 = Lsp.Registry.Slot[() => Unit](() => block)
+    proxy.connected0 = Lsp.Registry.Slot[() => Unit]: () => block

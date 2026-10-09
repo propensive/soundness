@@ -95,7 +95,7 @@ extension [plane: Filesystem](path: Path on plane)
     // process's filesystem.
     Fdtable.resolve(fdtables, Path.encodable.encode(path)) match
       case descriptor: Fdtable.Descriptor =>
-        try descriptor.open(List(OpenFlag.Write)) { handle => handle.writer(Chain(bytes)) }
+        try descriptor.open(List(OpenFlag.Write)): handle => handle.writer(Chain(bytes))
         catch case refusal: Fdtable.Refusal =>
           abort(Io.Error(path, Operation.Write, refusal.reason))
 
@@ -183,14 +183,14 @@ extension [plane: Filesystem](path: Path on plane)
           if segment == scala.List(Token.Globstar) then
             // `**` matches zero or more directories: the rest of the pattern is expanded both
             // here and, with the `**` retained, in every subdirectory.
-            val deeper = dirs.bind { dir => recur(dir.children.to[List].filter(directory), todo) }
+            val deeper = dirs.bind: dir => recur(dir.children.to[List].filter(directory), todo)
 
             recur(dirs, rest) + deeper
           else
             val matcher = Glob(segment*)
 
             val matched = dirs.bind: dir =>
-              dir.children.to[List].filter { child => matcher.matches(child.name) }
+              dir.children.to[List].filter: child => matcher.matches(child.name)
 
             recur(if rest.isEmpty then matched else matched.filter(directory), rest)
 

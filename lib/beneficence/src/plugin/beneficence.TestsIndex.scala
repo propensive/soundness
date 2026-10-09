@@ -170,11 +170,11 @@ object TestsIndex:
   // its substitutions replaced by holes; `None` if the source is anything else.
   private def literal(prefix: String, source: String): Option[String] =
     val body: Option[String] =
-      if source.startsWith(prefix + "\"\"\"") && source.endsWith("\"\"\"")
-        && source.length >= prefix.length + 6
+      if source.startsWith(prefix + "\"\"\"") && source.endsWith("\"\"\"") &&
+        source.length >= prefix.length + 6
       then Some(source.substring(prefix.length + 3, source.length - 3).nn)
-      else if source.startsWith(prefix + "\"") && source.endsWith("\"")
-        && source.length >= prefix.length + 2
+      else if source.startsWith(prefix + "\"") && source.endsWith("\"") &&
+        source.length >= prefix.length + 2
       then Some(source.substring(prefix.length + 1, source.length - 1).nn)
       else None
 
@@ -270,8 +270,8 @@ object TestsIndex:
         case TypeAlias(alias) =>
           val symbol = alias.typeSymbol
 
-          if symbol.exists && symbol.name.toString == "Impromptu"
-            && symbol.fullName.toString.startsWith("probably.")
+          if symbol.exists && symbol.name.toString == "Impromptu" &&
+            symbol.fullName.toString.startsWith("probably.")
           then (None, true)
           else alias.dealias match
             case ConstantType(Constant(name: String)) => (Some(name), false)
@@ -324,8 +324,8 @@ object TestsIndex:
         (tree, Nil)
 
     def pair(method: Symbol, lists: List[List[tpd.Tree]]): List[(Symbol, tpd.Tree)] =
-      val parameters = method.paramSymss.filter { list => list.isEmpty || list.head.isTerm }
-      parameters.zip(lists).flatMap { (parameters, arguments) => parameters.zip(arguments) }
+      val parameters = method.paramSymss.filter: list => list.isEmpty || list.head.isTerm
+      parameters.zip(lists).flatMap: (parameters, arguments) => parameters.zip(arguments)
 
     // The parameters and arguments of an application and of whatever it is selected from, so
     // that `bench(m"…", n"slow")(target = …).over(axis)(…)` yields its name and tags.
@@ -361,8 +361,8 @@ object TestsIndex:
     def monikerOf(pairs: List[(Symbol, tpd.Tree)]): String =
       pairs.collectFirst:
         case (parameter, argument)
-          if named(parameter.info, "Name")
-            && parameter.info.argInfos.headOption.exists(named(_, "Probing")) =>
+          if named(parameter.info, "Name") &&
+            parameter.info.argInfos.headOption.exists(named(_, "Probing")) =>
 
           Identifier.findFirstMatchIn(source(written(argument))).map(_.group(1).nn).getOrElse("")
 
@@ -371,8 +371,8 @@ object TestsIndex:
     def tagsOf(pairs: List[(Symbol, tpd.Tree)]): String =
       pairs.collectFirst:
         case (parameter, argument)
-          if parameter.info.isRepeatedParam
-            && parameter.info.argInfos.headOption.exists(named(_, "Tag")) =>
+          if parameter.info.isRepeatedParam &&
+            parameter.info.argInfos.headOption.exists(named(_, "Tag")) =>
 
           Identifier.findAllMatchIn(source(written(argument))).map(_.group(1).nn).mkString(",")
 
@@ -389,7 +389,7 @@ object TestsIndex:
     // The contextual `Testable` parameters of a block passed as an argument.
     def blockParameters(argument: tpd.Tree): List[Symbol] = strip(argument) match
       case tpd.Block((definition: tpd.DefDef) :: Nil, _: tpd.Closure) =>
-        definition.termParamss.flatten.map(_.symbol).filter { symbol => isTestable(symbol.info) }
+        definition.termParamss.flatten.map(_.symbol).filter: symbol => isTestable(symbol.info)
 
       case _ =>
         Nil
@@ -426,14 +426,14 @@ object TestsIndex:
           stated.foreach: id =>
             if !Admissible.matches(id) then
               report.error
-                ( s"the suite id \"$id\" must be a letter or `_` followed by letters, digits, `_` "
-                  + "or `-`, so that it can be typed on a command line",
+                ( s"the suite id \"$id\" must be a letter or `_` followed by letters, digits, `_` " +
+                  "or `-`, so that it can be typed on a command line",
                   tree.srcPos )
 
           val topic: Option[String] =
             stated.orElse(if title.contains(hole) then None else Some(derive(title)))
 
-          topic.foreach { id => suites(tree.symbol) = id }
+          topic.foreach: id => suites(tree.symbol) = id
 
           if tree.symbol.is(Module) && tree.symbol.isStatic then
             emit
@@ -456,9 +456,9 @@ object TestsIndex:
               // method would silently take whichever `Testable` the enclosing scope has.
               if !parameter.info.widen.member(topicName).info.isInstanceOf[TypeAlias] then
                 report.error
-                  ( "this Testable has no topic, so a test declared in this method would not be "
-                    + "declared for it: write `Testable of \"<the suite's name>\"`, or `Testable of "
-                    + "topic` for a type parameter `topic <: Label`",
+                  ( "this Testable has no topic, so a test declared in this method would not be " +
+                    "declared for it: write `Testable of \"<the suite's name>\"`, or `Testable of " +
+                    "topic` for a type parameter `topic <: Label`",
                     parameter.srcPos )
 
               val (topic, impromptu) = topicOf(parameter.info)
@@ -492,8 +492,8 @@ object TestsIndex:
         val block: Option[tpd.Tree] =
           paired.collectFirst:
             case (parameter, argument)
-              if defn.isContextFunctionType(parameter.info)
-                && parameter.info.dealias.argInfos.headOption.exists(isTestable) =>
+              if defn.isContextFunctionType(parameter.info) &&
+                parameter.info.dealias.argInfos.headOption.exists(isTestable) =>
 
               argument
 
@@ -507,7 +507,7 @@ object TestsIndex:
         (context, block) match
           case (Some(frame), Some(block)) =>
             val parameters = blockParameters(block)
-            val impromptu = parameters.exists { symbol => topicOf(symbol.info)(1) }
+            val impromptu = parameters.exists: symbol => topicOf(symbol.info)(1)
 
             val frame2: Frame =
               if impromptu then
@@ -522,7 +522,7 @@ object TestsIndex:
 
                 frame.child(name)
 
-            parameters.foreach { symbol => frames(symbol) = frame2 }
+            parameters.foreach: symbol => frames(symbol) = frame2
             inner = Some(frame2)
 
           case (Some(frame), None) if !frame.impromptu =>

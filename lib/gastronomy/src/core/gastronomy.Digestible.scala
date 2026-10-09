@@ -68,33 +68,33 @@ object Digestible extends Derivable[Digestible]:
   =>  Optional[value] is Digestible =
 
     // [by-name-capture] by-name Digestible laundered to pure thunk
-    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
+    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure: () => digestible
     (acc, value) => value.let(dig().digest(acc, _))
 
   given list: [list <: List, value] => (digestible: => value is Digestible)
   =>  list[value] is Digestible =
 
     // [by-name-capture]
-    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
+    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure: () => digestible
     (digestion, list) => list.each(dig().digest(digestion, _))
 
   given set: [set <: Set, value] => (digestible: => value is Digestible)
   =>  set[value] is Digestible =
 
     // [by-name-capture]
-    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
+    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure: () => digestible
     (digestion, set) => set.each(dig().digest(digestion, _))
 
   given sequence: [sequence <: Sequence, value] => (digestible: => value is Digestible)
   =>  sequence[value] is Digestible =
 
     // [by-name-capture]
-    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
+    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure: () => digestible
     (digestion, sequence) => sequence.each(dig().digest(digestion, _))
 
   given iarray: [value] => (digestible: => value is Digestible) => (Array[value]^{}) is Digestible =
     // [by-name-capture]
-    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
+    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure: () => digestible
     (digestion, iarray) => iarray.each(dig().digest(digestion, _))
 
   given map: [key, value] => (keyDigestible: => key is Digestible)
@@ -102,11 +102,11 @@ object Digestible extends Derivable[Digestible]:
   =>  Map[key, value] is Digestible =
 
     // [by-name-capture]
-    val digKey: () -> (key is Digestible) = caps.unsafe.unsafeAssumePure(() => keyDigestible)
+    val digKey: () -> (key is Digestible) = caps.unsafe.unsafeAssumePure: () => keyDigestible
 
     val digValue: () -> (value is Digestible) =
       // [by-name-capture]
-      caps.unsafe.unsafeAssumePure(() => valueDigestible)
+      caps.unsafe.unsafeAssumePure: () => valueDigestible
 
     (digestion, map) =>
       map.each: (key, value) =>
@@ -115,7 +115,7 @@ object Digestible extends Derivable[Digestible]:
 
   given stream: [value] => (digestible: => value is Digestible) => Chain[value] is Digestible =
     // [by-name-capture] by-name Digestible laundered to pure thunk
-    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
+    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure: () => digestible
     (digestion, iterable) => iterable.each(dig().digest(digestion, _))
 
   given int: Int is Digestible = (digestion, value) =>

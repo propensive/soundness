@@ -93,7 +93,7 @@ extension [countable: Countable](value: countable)
   :   Sequence[element] =
 
     val builder = scala.collection.immutable.Vector.newBuilder[element]
-    iterate { ordinal => builder += lambda(ordinal) }
+    iterate: ordinal => builder += lambda(ordinal)
     Sequence.from(builder.result())
 
   // The first index satisfying the predicate, confined to this value, or `Unset`: the safe
@@ -140,8 +140,7 @@ extension [countable: Countable](value: countable)
     var index: Int = 0
     val size: Int = countable.size(value)
 
-    while index < size
-      && predicate(Ordinal.zerary(index).asInstanceOf[Ordinal in value.type])
+    while index < size && predicate(Ordinal.zerary(index).asInstanceOf[Ordinal in value.type])
     do index += 1
 
     Interval.zerary(0, index).asInstanceOf[Interval in value.type]
@@ -161,8 +160,7 @@ extension [countable: Countable](value: countable)
     var index: Int = interval.limit.n0
     val size: Int = countable.size(value)
 
-    while index < size
-      && predicate(Ordinal.zerary(index).asInstanceOf[Ordinal in value.type])
+    while index < size && predicate(Ordinal.zerary(index).asInstanceOf[Ordinal in value.type])
     do index += 1
 
     Interval.zerary(interval.start.n0, index).asInstanceOf[Interval in value.type]
@@ -176,8 +174,7 @@ extension [countable: Countable](value: countable)
     var count: Int = countable.size(value)
     val least: Int = floor.max(0)
 
-    while count > least
-      && predicate(Ordinal.zerary(count - 1).asInstanceOf[Ordinal in value.type])
+    while count > least && predicate(Ordinal.zerary(count - 1).asInstanceOf[Ordinal in value.type])
     do count -= 1
 
     Interval.zerary(0, count).asInstanceOf[Interval in value.type]
@@ -223,13 +220,13 @@ extension [form](range: Interval in form)
 extension (interval: Interval)
   inline def tabulate[element](inline lambda: Ordinal => element): Sequence[element] =
     val builder = scala.collection.immutable.Vector.newBuilder[element]
-    interval.each { ordinal => builder += lambda(ordinal) }
+    interval.each: ordinal => builder += lambda(ordinal)
     Sequence.from(builder.result())
 
 extension [form](range: Interval in form)
   inline def tabulate[element](inline lambda: (Ordinal in form) => element): Sequence[element] =
     val builder = scala.collection.immutable.Vector.newBuilder[element]
-    range.each { ordinal => builder += lambda(ordinal) }
+    range.each: ordinal => builder += lambda(ordinal)
     Sequence.from(builder.result())
 
 // `thru` and `till` bound an interval from two ordinals. Both overloads live here, at package

@@ -44,11 +44,11 @@ import vacuous.*
 private[facsimile] object Trees:
   def names(root: Cos)(using Pdf)(using Tactic[Pdf.Error]): List[(Text, Cos)] =
     pairs(root, t"Names", Set()).bind: (key, value) =>
-      key.text.let(text => List((text, value))).or(List())
+      key.text.let{ text => List((text, value)) }.or(List())
 
   def numbers(root: Cos)(using Pdf)(using Tactic[Pdf.Error]): List[(Long, Cos)] =
     pairs(root, t"Nums", Set()).bind: (key, value) =>
-      key.long.let(number => List((number, value))).or(List())
+      key.long.let{ number => List((number, value)) }.or(List())
 
   private def pairs(node: Cos, key: Text, visited: Set[Int])(using pdf: Pdf)
   ( using Tactic[Pdf.Error] )
@@ -56,8 +56,7 @@ private[facsimile] object Trees:
 
     node match
       case Cos.Ref(number, _) =>
-        if visited.has(number) then List()
-        else pairs(pdf.resolved(node), key, visited :+ number)
+        if visited.has(number) then List() else pairs(pdf.resolved(node), key, visited :+ number)
 
       case Cos.Dictionary(entries) =>
         entries(t"Kids").let(pdf.resolved(_).elements).lay(leaf(entries, key)): kids =>

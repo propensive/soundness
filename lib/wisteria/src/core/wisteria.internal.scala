@@ -576,8 +576,7 @@ object internal:
             if isRoot || !resolvableNonStructural(typeclassConstructor, tpe) then
               reachable(key) = tpe
 
-              tpe.typeSymbol.children.each: child =>
-                visit(variantWith(child, tpe), false)
+              tpe.typeSymbol.children.each: child => visit(variantWith(child, tpe), false)
           else if isProductType(tpe) then
             // A path-carrier (a specialised spine type) is always derived; else probe as before.
             val carrier = refinementMember(tpe, "VRoot").isDefined
@@ -1101,7 +1100,6 @@ object internal:
     // hides `Optional`'s underlying type, so the expansion no longer conformed to the
     // dealiased `Optional[field]`.
 
-    . map: selection =>
-        '{${selection.asExprOf[field]}: Optional[field]}
+    . map: selection => '{${selection.asExprOf[field]}: Optional[field]}
 
     . getOrElse('{Unset: Optional[field]})

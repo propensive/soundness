@@ -405,8 +405,7 @@ object KotlinDialect extends Dialect:
         val arguments = tpe.getArguments.nn.asScala.to(List).flatMap: projection =>
           Optional(projection.getType).let { tpe => List(foreignType(tpe)) }.or(Nil)
 
-        if arguments.nil then Foreign.Type.Named(name)
-        else Foreign.Type.Applied(name, arguments)
+        if arguments.nil then Foreign.Type.Named(name) else Foreign.Type.Applied(name, arguments)
 
       case classifier: KmClassifier.TypeAlias =>
         Foreign.Type.Named(classifier.getName.nn.replace("/", ".").nn.tt)

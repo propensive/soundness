@@ -169,8 +169,8 @@ object internal:
 
       case lambda: Types.HKTypeLambda => lambda.resType match
         case Types.AppliedType(ref: Types.TypeRef, arguments)
-        if arguments.length == lambda.paramNames.length
-          && arguments.zipWithIndex.forall:
+        if arguments.length == lambda.paramNames.length &&
+          arguments.zipWithIndex.forall:
             case (param: Types.TypeParamRef, index) => param.binder == lambda && param.paramNum == index
             case _                                  => false
         => Some(ref)

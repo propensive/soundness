@@ -509,7 +509,7 @@ object Apoplexy:
 
     search(media).or:
       val group = media.cut(t"/").prim.or(t"application")
-      media.offsetOf(t"+", Rtl).let { plus => search(t"$group/${media.after(plus)}") }
+      media.offsetOf(t"+", Rtl).let: plus => search(t"$group/${media.after(plus)}")
 
   // The media types a body may take, in order of preference: `application/json` first, then by
   // name
@@ -626,7 +626,7 @@ object Apoplexy:
       Member.Union(alternatives.map { (kind, member) => (kind, relax(member)) }, multiplicity)
 
   private def relaxed(fields: List[(Text, Member)]): List[(Text, Member)] =
-    fields.map { (name, member) => (name, relax(member)) }
+    fields.map: (name, member) => (name, relax(member))
 
   // The error class a declared response raises, applied to its payload type
   private def failureType(using quotes: Quotes)(failure: Failure): quotes.reflect.TypeRepr =
@@ -667,7 +667,7 @@ object Apoplexy:
 
     import quotes.reflect.*
     val types: List[TypeRepr] = failures.map(failureType(_))
-    types.fold[TypeRepr](TypeRepr.of[Nothing]) { (left, right) => OrType(left, right) }
+    types.fold[TypeRepr](TypeRepr.of[Nothing]): (left, right) => OrType(left, right)
 
   // The status of the response an operation's success returns: `200` or `201` where the
   // operation declares one, else its lowest-numbered 2xx.
@@ -737,7 +737,7 @@ object Apoplexy:
 
     val verb = methodName(method)
 
-    val found = pathItem(doc, locus).let { (key, item) => item.operations(method).let((key, _)) }
+    val found = pathItem(doc, locus).let: (key, item) => item.operations(method).let((key, _))
 
     val (key, operation) = found.or:
       halt(m"apoplexy: $locus defines no $verb operation")
@@ -792,7 +792,7 @@ object Apoplexy:
       '{Query(${Lifts.list(List.concat(queryEntries, credentialQueries))})}
 
     val paramHeaders: List[Expr[Http.Header]] =
-      headerEntries.map { entry => '{Http.Header($entry(0), $entry(1))} }
+      headerEntries.map: entry => '{Http.Header($entry(0), $entry(1))}
 
     val headersExpr: Expr[List[Http.Header]] =
       Lifts.list(List.concat(paramHeaders, credentialHeaders))
@@ -1045,8 +1045,7 @@ object Apoplexy:
         keys.filter(deeper).map(_.stdlib(newSegs.size)).seek(isTemplate).lay:
           shortcut(self, doc, source, newLocus, Nil, positional)
 
-        . apply: template =>
-          fillTemplate(self, source, doc, newLocus, template, positional, wire)
+        . apply: template => fillTemplate(self, source, doc, newLocus, template, positional, wire)
 
   private def fillTemplate(using quotes: Quotes)
     ( self:       Expr[Api],

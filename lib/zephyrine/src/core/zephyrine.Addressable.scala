@@ -437,7 +437,7 @@ object Addressable:
     // would copy twice (into itself, then out of `toString`), and a `char[]` likewise.
     override def assemble(pieces: sci.Seq[Text], total: Int): Text =
       val list = java.util.ArrayList[CharSequence]()
-      pieces.foreach { piece => list.add(piece.s) }
+      pieces.foreach: piece => list.add(piece.s)
       String.join("", list).nn.tt
 
     inline def cloneStorage

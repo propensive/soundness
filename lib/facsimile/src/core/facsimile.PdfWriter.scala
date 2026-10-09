@@ -154,7 +154,7 @@ private[facsimile] object PdfWriter:
     // The trailer carries forward the original `/Root`, `/Info`, `/Encrypt` and `/ID`, with
     // any write-scope overrides (e.g. a newly-created `/Info`) taking precedence.
     val carried = List(t"Root", t"Info", t"Encrypt", t"ID").bind: key =>
-      pdf.trailer(key).let(value => List(key -> value)).or(Nil)
+      pdf.trailer(key).let{ value => List(key -> value) }.or(Nil)
 
     // Through a `Map` so a write-scope override replaces the carried-forward entry of the same
     // key rather than joining it.
@@ -235,7 +235,7 @@ private[facsimile] object PdfWriter:
       field(second, 4)
       field(third, 2)
 
-    val index = subsections(rows).flatMap((first, run) => List(first, run.size))
+    val index = subsections(rows).flatMap: (first, run) => List(first, run.size)
 
     ascii(t"$number 0 obj\n<< /Type /XRef /Size ${number + 1} /W [1 4 2] /Index [")
     ascii(index.map(_.show).join(t" "))

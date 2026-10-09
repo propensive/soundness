@@ -307,7 +307,8 @@ object Motif:
             // are deliberately *not* restored here.
             index += 1
             Node.Empty
-          else abort(Motif.Error(start, Flag))
+          else
+            abort(Motif.Error(start, Flag))
 
       else
         captures += 1

@@ -65,8 +65,7 @@ object Archetype:
   // Takes the page as a capability, so that a page can also render itself (`document`).
   private[graffiti] def render(page: Archetype^): Html of "html" =
     val sheet: Html of (? <: Metadata) =
-      page.stylesheetUrl.lay(Style(page.stylesheet)): url =>
-        Link.Stylesheet(href = url)
+      page.stylesheetUrl.lay(Style(page.stylesheet)): url => Link.Stylesheet(href = url)
 
     Html(Head(Title(page.pageTitle), sheet, page.head), Body(dir = page.direction)(page.frame))
 

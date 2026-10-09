@@ -80,7 +80,7 @@ object Fragment:
   // treats it, and a closing bracket as a symbol — so accent alone cannot tell an operator
   // (after which an expression is expected) from a value; text distinguishes them.
   private def symbolic(text: Text): Boolean =
-    text.length > 0 && text.s.forall { char => !identifierChar(char) && !char.isWhitespace }
+    text.length > 0 && text.s.forall: char => !identifierChar(char) && !char.isWhitespace
 
   // The standalone lexer's view of the fragment, flattened and stripped of noise.
   private def tokens(text: Text): List[Token] =
@@ -114,8 +114,8 @@ object Fragment:
         val closeBracket = text == t")" || text == t"]" || text == t"}"
 
         val valueEnding =
-          !ScalaKeywords.all.has(text)
-          && (closeBracket || text == t"_" || (valueAccents.has(last.accent) && !symbolic(text)))
+          !ScalaKeywords.all.has(text) &&
+          (closeBracket || text == t"_" || (valueAccents.has(last.accent) && !symbolic(text)))
 
         if !valueEnding then (Unset, prefix) else
           var end = start
@@ -143,9 +143,12 @@ object Fragment:
       if c == ')' || c == ']' || c == '}' then { depth += 1; i -= 1 }
       else if c == '(' || c == '[' || c == '{' then
         if depth == 0 then { i += 1; scanning = false } else { depth -= 1; i -= 1 }
-      else if depth > 0 then i -= 1
-      else if identifierChar(c) || c == '.' then i -= 1
-      else { i += 1; scanning = false }
+      else if depth > 0 then
+        i -= 1
+      else if identifierChar(c) || c == '.' then
+        i -= 1
+      else
+        { i += 1; scanning = false }
 
     if i < 0 then 0 else i
 
@@ -189,7 +192,8 @@ object Fragment:
       if offset >= length then length
       else if at(offset) == '"' && at(offset + 1) == '"' && at(offset + 2) == '"' then
         quotes(offset + 3)
-      else multiline(offset + 1)
+      else
+        multiline(offset + 1)
 
     // The offset past a run of `"`s.
     def quotes(offset: Int): Int =
@@ -205,8 +209,10 @@ object Fragment:
       if offset >= length then length
       else if at(offset) == '*' && at(offset + 1) == '/' then
         if nesting == 1 then offset + 2 else block(offset + 2, nesting - 1)
-      else if at(offset) == '/' && at(offset + 1) == '*' then block(offset + 2, nesting + 1)
-      else block(offset + 1, nesting)
+      else if at(offset) == '/' && at(offset + 1) == '*' then
+        block(offset + 2, nesting + 1)
+      else
+        block(offset + 1, nesting)
 
     def recur(offset: Int, depth: Int, state: state): state =
       if settled(state) || offset >= length then state
@@ -295,6 +301,7 @@ object Fragment:
           if depth == 0 && char == bracket then (found, offset + 1)
           else if depth == 0 && open.present && (char == ')' || char == ']' || char == '}') then
             (open.let { start => code.keep(offset).skip(start) :: found }.or(found), Unset)
-          else (found, open)
+          else
+            (found, open)
 
     found.reverse

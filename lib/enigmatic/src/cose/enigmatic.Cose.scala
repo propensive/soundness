@@ -240,8 +240,7 @@ object Cose:
         def cborTag:       Long   = Cose.Tag.Sign1
 
         def authenticate(toBeSigned: Data, key: PrivateKey[cipher]): Data =
-          key.secret.uncloak: bytes =>
-            algorithm.sign(toBeSigned, Array.unsafeFrozen(bytes))
+          key.secret.uncloak: bytes => algorithm.sign(toBeSigned, Array.unsafeFrozen(bytes))
 
     given symmetric: [cipher <: Cipher & Symmetric & Signing]
     =>  ( algorithm: cipher & Signing, coseAlg: cipher is Cose.Algorithm )
@@ -255,8 +254,7 @@ object Cose:
         def cborTag:       Long   = Cose.Tag.Mac0
 
         def authenticate(toBeSigned: Data, key: SymmetricKey[cipher]): Data =
-          key.secret.uncloak: bytes =>
-            algorithm.sign(toBeSigned, Array.unsafeFrozen(bytes))
+          key.secret.uncloak: bytes => algorithm.sign(toBeSigned, Array.unsafeFrozen(bytes))
 
   trait Authenticator:
     type Self
@@ -385,5 +383,4 @@ class Cose
     val externalAad = Array.empty[Byte]
     val tbs = Cose.toBeSigned(contextString, protectedHeader, externalAad, payload)
 
-    recipients.exists: recipient =>
-      verifier.check(tbs, recipient.authentication, key)
+    recipients.exists: recipient => verifier.check(tbs, recipient.authentication, key)

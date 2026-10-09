@@ -145,7 +145,8 @@ object Ram:
             if mode.atoms.has(Exclusive) then
               try Option(channel.tryLock()) catch
                 case _: jnc.OverlappingFileLockException => None
-            else Some(null)
+            else
+              Some(null)
 
           if lock.isEmpty then abort(Io.Error(value, Operation.Open, Reason.Busy))
 
@@ -153,7 +154,7 @@ object Ram:
             val write = mode.atoms.has(Write)
             val handle = new RamHandle(channel, write, size) with Granting[grants] {}
             try block(using handle) finally if write then handle.flush()
-          finally lock.foreach { held => if held != null then held.release() }
+          finally lock.foreach: held => if held != null then held.release()
         finally channel.close()
 
   given openable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]

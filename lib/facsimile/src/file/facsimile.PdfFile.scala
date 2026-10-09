@@ -88,8 +88,7 @@ object PdfFile:
       then abort(Pdf.Error(Pdf.Error.Reason.Io(t"the file already exists")))
 
       if flags.has(CreateFlag.Parents) then
-        target.parent.let: parent =>
-          if !parent.existent() then parent.create[Directory]()
+        target.parent.let: parent => if !parent.existent() then parent.create[Directory]()
 
       val part: Text = t".${target.name}.part"
       val temporary = target.peer(part)
@@ -259,6 +258,7 @@ class PdfFile private (origin: PdfFile.Origin):
         // table was only recovered by scanning has none to chain to.
         if pdf.xref.startxref.absent then abort(Pdf.Error(Pdf.Error.Reason.WriteUnsupported))
         PdfWriter.increment(pdf, source.size)
-      else Unset
+      else
+        Unset
 
     (outcome, increment)

@@ -248,8 +248,8 @@ object Alphabet:
               if base == 6 then
                 var fast: Boolean = true
 
-                while fast && accumulated == 0 && consumed + 4 <= sourceLength
-                  && produced + 3 <= targetSpace do
+                while fast && accumulated == 0 && consumed + 4 <= sourceLength &&
+                  produced + 3 <= targetSpace do
 
                   val c0 = chars(sourceOffset + consumed).toInt
                   val c1 = chars(sourceOffset + consumed + 1).toInt
@@ -260,8 +260,8 @@ object Alphabet:
                   val v2 = if c2 < invLength then inversions.readUnchecked(c2) else -1
                   val v3 = if c3 < invLength then inversions.readUnchecked(c3) else -1
 
-                  if v0 < 0 || v0 > dataMax || v1 < 0 || v1 > dataMax || v2 < 0 || v2 > dataMax
-                    || v3 < 0 || v3 > dataMax
+                  if v0 < 0 || v0 > dataMax || v1 < 0 || v1 > dataMax || v2 < 0 || v2 > dataMax ||
+                    v3 < 0 || v3 > dataMax
                   then fast = false
                   else
                     val group = (v0 << 18) | (v1 << 12) | (v2 << 6) | v3
@@ -319,5 +319,4 @@ extends caps.Pure:
   lazy val inversions: Array[Int]^{} =
     val max = inverse.keys.maximum.or(' ')
 
-    Array.tabulate(max + 1): index =>
-      inverse(index.toChar).or(-1)
+    Array.tabulate(max + 1): index => inverse(index.toChar).or(-1)

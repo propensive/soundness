@@ -480,7 +480,8 @@ object Ergo:
         do pos += 1
 
         rooted(Mn(s.substring(start, pos).nn.tt))
-      else if c == '\u0000' then fail(Ergo.Error.Reason.UnexpectedEnd)
+      else if c == '\u0000' then
+        fail(Ergo.Error.Reason.UnexpectedEnd)
       else
         // a content glyph, or an operator glyph degraded for want of an operand
         advance()

@@ -145,7 +145,7 @@ object Selection:
             if least == t"" && most == t"" then Unset
             else if least == t"" then number(most).let(Constraint.Most(axis, _, true))
             else if most == t"" then number(least).let(Constraint.Least(axis, _, true))
-            else number(least).let { least => number(most).let(Constraint.Interval(axis, least, _)) }
+            else number(least).let: least => number(most).let(Constraint.Interval(axis, least, _))
 
 // A subset of a suite's tests, parsed from command-line terms: which tests run (and, for
 // axial tests and benchmarks, which of their cells), or — with `--list` — which are only
@@ -176,8 +176,8 @@ case class Selection
     ( id: Test.Id, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)], tags: List[Tag] )
   :   Boolean =
 
-    admitted(kind) && admitted(id) && admitted(coordinates, false) && admitted(tags)
-    && !exclusions.exists(_.excludes(id, kind, coordinates, tags))
+    admitted(kind) && admitted(id) && admitted(coordinates, false) && admitted(tags) &&
+    !exclusions.exists(_.excludes(id, kind, coordinates, tags))
 
   // Whether this selection, as a `not:` term, removes the cell. Identical to admission but
   // for one thing: a constraint on an axis the cell does not have matches NOTHING here,
@@ -192,7 +192,7 @@ case class Selection
   private def admitted(kind: Entry.Kind): Boolean = kinds.nil || kinds.has(kind)
 
   private def admitted(tags: List[Tag]): Boolean =
-    this.tags.all { alternatives => tags.exists { tag => alternatives.has(tag.text) } }
+    this.tags.all: alternatives => tags.exists: tag => alternatives.has(tag.text)
 
   private def ancestry(id: Test.Id): List[Test.Id] =
     id :: id.suite.let { suite => ancestry(suite.id) }.or(Nil)
@@ -217,10 +217,10 @@ case class Selection
         val glob = kaleidoscope.Glob.parse(pattern)
 
         // A suite's id may hold a `-`, which makes it a glob rather than an identifier here.
-        names.exists(glob.matches(_))
-        || chain.exists { link => link.key.lay(false)(glob.matches(_)) }
-        || glob.matches(path)
-        || glob.matches(monikerPath)
+        names.exists(glob.matches(_)) ||
+        chain.exists { link => link.key.lay(false)(glob.matches(_)) }
+        || glob.matches(path) ||
+        glob.matches(monikerPath)
 
   // `strict`: whether a constraint on an axis absent from the coordinates fails (for an
   // exclusion) rather than passes (for an admission).
@@ -242,4 +242,4 @@ case class Selection
               if inclusive then numeric <= limit else numeric < limit
 
           case Selection.Constraint.Interval(_, least, most) =>
-            value.numeric.lay(false) { numeric => numeric >= least && numeric <= most }
+            value.numeric.lay(false): numeric => numeric >= least && numeric <= most

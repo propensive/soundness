@@ -67,8 +67,7 @@ object Property:
   def apply[name <: String, property](lambda: Text => property)
   :   ((name is Property of property)^{lambda}) =
 
-    (value, property) =>
-      lambda(value.or(panic(m"the system property $property was unavailable")))
+    (value, property) => lambda(value.or(panic(m"the system property $property was unavailable")))
 
 
   given generic: [label <: String & Singleton] => (tactic: Tactic[Property.Error])
@@ -105,7 +104,7 @@ object Property:
   given javaClassVersion: ("java.runtime.version" is Property of Int) =
     // Decoded under `unsafely`, whose unscoped tactic is minted per call: the lambda captures
     // nothing, so the instance is pure and can be stored as a global given.
-    Property(text => unsafely(text.as[Int]))
+    Property: text => unsafely(text.as[Int])
 
   // given javaExtDirs: [path: Instantiable across Paths from Text]
   // =>  ( system: System, property: Tactic[Property.Error] )
@@ -138,8 +137,7 @@ object Property:
   =>  ( tactic: Tactic[Property.Error] )
   =>  ( (label is Property of property)^{decoder, tactic} ) =
 
-    (value, name) =>
-      decoder.decoded(value.lest(Property.Error(name)))
+    (value, name) => decoder.decoded(value.lest(Property.Error(name)))
 
   // PropertyError → Property.Error
   case class Error(property: Text)(using Diagnostics)

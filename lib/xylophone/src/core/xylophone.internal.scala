@@ -1532,8 +1532,7 @@ object internal:
           buffer += keyStr.substring(6).nn
           buffer += value.s
 
-      if buffer.isEmpty then parent
-      else parent ++ (scala.IArray.from(buffer): Scope)
+      if buffer.isEmpty then parent else parent ++ (scala.IArray.from(buffer): Scope)
 
     // The first prefix used by the label or, if `checkAttributes`, by an attribute, which the
     // scope does not bind; `xmlns` is not a prefix
@@ -1669,7 +1668,7 @@ object internal:
     val fields = classSymbol.caseFields
     val arity = fields.length
     val fieldNames: List[String] = fields.map(_.name)
-    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
+    val fieldTypes: List[TypeRepr] = fields.map: field => tpe.memberType(field).dealias
 
     def kindOf(fieldType: TypeRepr): StagedKind =
       if fieldType =:= TypeRepr.of[Int] then IntK
@@ -1689,7 +1688,7 @@ object internal:
 
     // `@attribute` fields fill from the open tag and never match a child.
     val attrFlags: List[Boolean] = List.range(0, arity).map: index =>
-      annotationsOf(index).exists { annotation => annotation.tpe <:< TypeRepr.of[Xml.attribute] }
+      annotationsOf(index).exists: annotation => annotation.tpe <:< TypeRepr.of[Xml.attribute]
 
     // Names compile to literal packed-word comparisons when no `@name`
     // annotation can rename them (renames resolve at runtime, so annotated
@@ -1705,7 +1704,7 @@ object internal:
       val name = fieldNames(index)
       val length = name.length
 
-      val packs = length > 0 && length <= 16 && name.forall { char => char >= '!' && char < 127 }
+      val packs = length > 0 && length <= 16 && name.forall: char => char >= '!' && char < 127
 
       if !packs then None else
         var low = 0L
@@ -1998,7 +1997,8 @@ object internal:
             ( '{$wordRef == Xml.Reader.NameOpaque}.asTerm,
               textStep,
               Block(List(ValDef(high, Some('{$reader.childWordHigh}.asTerm))), chain(0)) )
-        else textStep
+        else
+          textStep
 
       val step: Term =
         Block
@@ -2081,10 +2081,10 @@ object internal:
                 whenUnseen
 
       Block
-        ( fociDef :: tacticDef :: slotDefs ::: seenDefs ::: bufferDefs
-            ::: (attributesDef :: attributeSteps)
-            ::: loop
-            ::: absents,
+        ( fociDef :: tacticDef :: slotDefs ::: seenDefs ::: bufferDefs :::
+            (attributesDef :: attributeSteps) :::
+            loop :::
+            absents,
           construct(slots.map { slot => Ref(slot) }) )
 
       . asExprOf[value]
@@ -2142,7 +2142,8 @@ object internal:
                       Xml.Parsable.focusing($foci, $keyText):
                         Xml.Parsable.gathered[fieldType]
                           ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing], proscenium.Nil )
-                    else $declared
+                    else
+                      $declared
                   }
 
               case _ =>
@@ -2152,8 +2153,8 @@ object internal:
 
       construct(arguments).asExprOf[value]
 
-    val nameExprs = fieldNames.map { name => Expr(name) }
-    val attrExprs = attrFlags.map { flag => Expr(flag) }
+    val nameExprs = fieldNames.map: name => Expr(name)
+    val attrExprs = attrFlags.map: flag => Expr(flag)
     val instanceExprs = List.range(0, arity).map(summonField)
     val fallbackExprs = List.range(0, arity).map(declaredDefault)
 
@@ -2180,7 +2181,7 @@ object internal:
           lazy val instances: Array[Xml.Field | Null]^{} = Array(${Varargs(instanceExprs)}*)
 
           lazy val repeatables: Array[Boolean]^{} =
-            instances.remap { instance => instance != null && Xml.Parsable.repeats(instance) }
+            instances.remap: instance => instance != null && Xml.Parsable.repeats(instance)
 
           lazy val fallbacks: Array[Any]^{} = Array[Any](${Varargs(fallbackExprs)}*)
           val fallback: Optional[() => value] = $defaultExpr

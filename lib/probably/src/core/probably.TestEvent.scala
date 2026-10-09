@@ -138,8 +138,8 @@ object TestEvent:
             List(CompareRow(depth, label, t"different", left, right, difference))
 
           case Juxtaposition.Collation(typeName, comparison, left, right) =>
-            CompareRow(depth, label, t"collation", left, right, typeName)
-              :: comparison.bind[List[CompareRow], CompareRow, List[CompareRow]]:
+            CompareRow(depth, label, t"collation", left, right, typeName) ::
+              comparison.bind[List[CompareRow], CompareRow, List[CompareRow]]:
                 (entry: (Text, Juxtaposition)) => recur(entry(0), entry(1), depth + 1)
 
       recur(t"", juxtaposition, 0)
@@ -173,8 +173,7 @@ object TestEvent:
           Coordinate(spec.label, domain, spec.emergent, Unset, Unset, number)
 
     def of(coordinates: List[(Axis.Spec, Value)]): List[Coordinate] =
-      coordinates.map: (coordinate: (Axis.Spec, Value)) =>
-        of(coordinate(0), coordinate(1))
+      coordinates.map: (coordinate: (Axis.Spec, Value)) => of(coordinate(0), coordinate(1))
 
   // One metric of a result, keyed by the `Metric` enum case's NAME (stable across versions in
   // a way its display label is not).
@@ -182,8 +181,7 @@ object TestEvent:
 
   object MetricValue:
     def of(metrics: Ledger[Metric, Double]): List[MetricValue] =
-      metrics.to[List].map: (entry: (Metric, Double)) =>
-        MetricValue(entry(0).toString.tt, entry(1))
+      metrics.to[List].map: (entry: (Metric, Double)) => MetricValue(entry(0).toString.tt, entry(1))
 
   // One axis of a scheduled test: the `Axis.Spec` fields, the labels of the values of the
   // admitted cells (`Value#text`, in first-appearance order; none for an emergent axis) and,

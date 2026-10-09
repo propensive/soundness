@@ -64,7 +64,7 @@ extension [monad[_], collection[element] <: Iterable[element],
     :   monad[scala.collection.immutable.List[element]] =
 
       if todo.isEmpty then accumulator
-      else recur(todo.tail, accumulator.flatMap { xs => todo.head.map(x => x :: xs) })
+      else recur(todo.tail, accumulator.flatMap { xs => todo.head.map{ x => x :: xs } })
 
 
     recur(elems, monad.point(scala.collection.immutable.List())).map(_.reverse.to(buildFrom.toFactory(scala.collection.immutable.List())))
@@ -81,7 +81,7 @@ extension [collection[element] <: Iterable[element], element](elems: collection[
     :   monad[scala.collection.immutable.List[element2]] =
 
       if todo.isEmpty then accumulator
-      else recur(todo.tail, accumulator.flatMap { xs => lambda(todo.head).map(x => x :: xs) })
+      else recur(todo.tail, accumulator.flatMap { xs => lambda(todo.head).map{ x => x :: xs } })
 
 
     recur(elems, monad.point(scala.collection.immutable.List())).map(_.reverse.to(buildFrom.toFactory(scala.collection.immutable.List())))

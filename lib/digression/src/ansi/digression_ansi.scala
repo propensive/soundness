@@ -141,8 +141,7 @@ package teletypeables:
 
     def classCell(row: Row): Teletype = row.inlined match
       case origin: Inlined =>
-        origin.source.lay(e""): source =>
-          e"${palette.subdue(accent(0), 0.85)}(${source.owner})"
+        origin.source.lay(e""): source => e"${palette.subdue(accent(0), 0.85)}(${source.owner})"
 
       case _ =>
         val frame = row.frame
@@ -214,7 +213,7 @@ package teletypeables:
 
     val scaffold =
       Scaffold[Row]
-        ( Column(e"")(row => e"${palette.separator}(${if row.inlined.present then t" ↳" else t"at"})"),
+        ( Column(e""){ row => e"${palette.separator}(${if row.inlined.present then t" ↳" else t"at"})" },
           Column(e"")(methodColumn),
           Column(e"")(locationColumn),
           // The quoted source is the first thing to go when the terminal is too narrow for it:

@@ -185,8 +185,7 @@ object Reactor:
         if headEnd < 0 then
           scanHead()
 
-          if headEnd < 0 && end > headLimit then
-            refuse(Http.RequestHeaderFieldsTooLarge)
+          if headEnd < 0 && end > headLimit then refuse(Http.RequestHeaderFieldsTooLarge)
 
         if headEnd >= 0 && pendingHead == null && !closing then parseHead(reactor)
 
@@ -216,8 +215,8 @@ object Reactor:
       var index = if scanned > 3 then scanned - 3 else 0
 
       while headEnd < 0 && index + 3 < end do
-        if accumulator(index) == 13 && accumulator(index + 1) == 10
-          && accumulator(index + 2) == 13 && accumulator(index + 3) == 10
+        if accumulator(index) == 13 && accumulator(index + 1) == 10 &&
+          accumulator(index + 2) == 13 && accumulator(index + 3) == 10
         then headEnd = index + 4
         else index += 1
 
@@ -239,9 +238,9 @@ object Reactor:
         val head = Http.Request.parseHead(cursor)
         val facts = SocketServer.factsOf(head)
 
-        if facts.chunked || SocketServer.expectsContinue(head, facts)
-          || SocketServer.isUpgrade(facts)
-          || facts.contentLength.or(0) > inlineBodyLimit
+        if facts.chunked || SocketServer.expectsContinue(head, facts) ||
+          SocketServer.isUpgrade(facts) ||
+          facts.contentLength.or(0) > inlineBodyLimit
         then handoff(reactor)
         else
           keep = SocketServer.keepAlive(head, facts)
@@ -495,8 +494,7 @@ final class Reactor
   private val running: Atomic[Boolean] = Atomic(true)
 
   private val fleet: scala.IArray[Lane] =
-    scala.IArray.tabulate(count): index =>
-      Lane(jnc.Selector.open().nn)
+    scala.IArray.tabulate(count): index => Lane(jnc.Selector.open().nn)
 
   private val threads: scala.IArray[Thread] =
     scala.IArray.tabulate(count): index =>

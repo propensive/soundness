@@ -277,7 +277,7 @@ trait Vernacular:
   protected final def durations(span: Timespan): List[Text] = Vernacular.components(span).map(quantity)
 
   protected final def dayPhrase(entry: (Optional[Int], Text)): Text =
-    entry(0).lay(entry(1))(ordinal => t"${position(ordinal)} ${entry(1)}")
+    entry(0).lay(entry(1)): ordinal => t"${position(ordinal)} ${entry(1)}"
 
   final def relativeTimespan(span: Timespan): Text = Vernacular.components(span) match
     case Nil => justNow
@@ -306,9 +306,9 @@ trait Vernacular:
       if rule.bySetPos.nil then Unset else takingPositions(rule.bySetPos)
 
     val clauses =
-      List(cadence)
-      + onClause.lay(List[Text]())(List(_))
-      + monthClause.lay(List[Text]())(List(_))
-      + setPosClause.lay(List[Text]())(List(_))
+      List(cadence) +
+      onClause.lay(List[Text]())(List(_)) +
+      monthClause.lay(List[Text]())(List(_)) +
+      setPosClause.lay(List[Text]())(List(_))
 
     t"${clauses.join(t" ")}${rule.count.lay(t"")(times)}"

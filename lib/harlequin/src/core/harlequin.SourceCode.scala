@@ -192,14 +192,13 @@ object SourceCode:
             . cut(t"\n")
             . to[Chain]
             . flatMap(untab(_).filter(_.length > 0))
-            . pipe { chain => chain.occupied.lay(chain)(_.lead) }
+            . pipe: chain => chain.occupied.lay(chain)(_.lead)
 
         scanner.nextToken()
         val end = scanner.lastOffset max start
 
         val meta: Optional[Token.Meta] =
-          metaMap.at((start, end)).let: syntax =>
-            Token.Meta(syntax, elaborations.at((start, end)))
+          metaMap.at((start, end)).let: syntax => Token.Meta(syntax, elaborations.at((start, end)))
 
         val annotation: Optional[TokenTag] = trees(start, end)
         val tokenAccent: Accent = annotation.lay(accent(token))(_.accent)
@@ -210,7 +209,7 @@ object SourceCode:
             text.segment(start.z thru end.u).cut(t"\n").to[Chain].flatMap: line =>
               Chain(Token(line, tokenAccent, meta, role = role), Token.Newline)
 
-            . pipe { chain => chain.occupied.lay(chain)(_.lead) }
+            . pipe: chain => chain.occupied.lay(chain)(_.lead)
 
         unparsed #::: content #::: stream(end)
 
@@ -681,8 +680,7 @@ object SourceCode:
 
         traverseChildren(tree)
 
-    run.units.each: unit =>
-      traverser.traverse(unit.tpdTree)
+    run.units.each: unit => traverser.traverse(unit.tpdTree)
 
     types.to(Map)
 

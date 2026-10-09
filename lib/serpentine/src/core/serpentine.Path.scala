@@ -321,8 +321,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       case EmptyTuple   => Unset
 
       case _ =>
-        if descent.isEmpty then Unset
-        else Path[Plane, Limit, Tuple](root, descent.tail.to(List))
+        if descent.isEmpty then Unset else Path[Plane, Limit, Tuple](root, descent.tail.to(List))
 
   def ancestors: List[Path on Plane under Limit] =
     safely(parent).let { parent => (parent :: parent.ancestors): List[Path on Plane under Limit] }

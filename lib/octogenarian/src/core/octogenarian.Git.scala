@@ -74,8 +74,7 @@ object Git:
     // observationally pure.
     // [closure-capture] filter closure privately owns local var
     caps.unsafe.unsafeAssumePure:
-      iterator.filter: progress =>
-        previous.lay(true)(_ != progress).also { previous = progress }
+      iterator.filter: progress => previous.lay(true)(_ != progress).also { previous = progress }
 
   def progress(process: Job[?, ?]): Iterator[Progress] =
     import hieroglyph.charsets.utf8Charset, hieroglyph.textSanitizers.substituteSanitizer

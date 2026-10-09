@@ -155,8 +155,7 @@ private[punctuation] final class BlockParser:
           case _ => panic(m"ListItem parent must be a List")
 
       case container: ContainerBuilder =>
-        container.finish(refs).let: layout =>
-          addToParent(parent, layout)
+        container.finish(refs).let: layout => addToParent(parent, layout)
         // Propagate trailing-blank from a closing inner list to the
         // enclosing ListItem so the outer list can detect looseness.
         container match
@@ -173,8 +172,7 @@ private[punctuation] final class BlockParser:
           case _ => ()
 
       case leaf: LeafBuilder =>
-        leaf.finish(refs).let: layout =>
-          addToParent(parent, layout)
+        leaf.finish(refs).let: layout => addToParent(parent, layout)
 
   private def addToParent(parent: BlockBuilder, layout: Layout): Unit = parent match
     case item: ListItemBuilder =>
@@ -429,8 +427,7 @@ private[punctuation] final class BlockParser:
               val maybeHeading = para.toHeading(lvl, refs)
               openStack.remove(openStack.length - 1)
 
-              maybeHeading.let: heading =>
-                addToParent(deepest, heading)
+              maybeHeading.let: heading => addToParent(deepest, heading)
               if maybeHeading.present then return
               // else: paragraph turned out to be all link reference defs;
               // the setext underline has nothing to promote, so it falls
@@ -506,8 +503,7 @@ private[punctuation] final class BlockParser:
             val maybeHeading = para.toHeading(lvl, refs)
             openStack.remove(openStack.length - 1)
 
-            maybeHeading.let: heading =>
-              addToParent(deepest, heading)
+            maybeHeading.let: heading => addToParent(deepest, heading)
             if maybeHeading.present then return
             // else: paragraph was all link-ref-defs; fall through.
 

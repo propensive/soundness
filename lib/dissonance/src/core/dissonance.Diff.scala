@@ -210,7 +210,7 @@ case class Diff[element](edits: Edit[element]*):
           val inssSeq = Sequence.from(inssRun.map { ins => ins.value: Optional[element] })
 
           val similar2: (Optional[element], Optional[element]) ->{similar} Boolean =
-            (left, right) => left.lay(false) { l => right.lay(false) { r => similar(l, r) } }
+            (left, right) => left.lay(false): l => right.lay(false): r => similar(l, r)
 
           val subs = dissonance.diff(delsSeq, inssSeq, similar2).edits.to(List).map:
             case Del(index, _) => Del(delsRun(index).left, delsRun(index).value)

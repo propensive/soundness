@@ -96,8 +96,7 @@ object Varint:
       if (b & 0x80) == 0 then
         // §4 minimality: a terminating byte after the first that carries
         // no payload bits is an overlong encoding.
-        if i > offset + 1 && (b & 0x7f) == 0
-        then abort(Varint.Error(Varint.Error.Reason.Overlong))
+        if i > offset + 1 && (b & 0x7f) == 0 then abort(Varint.Error(Varint.Error.Reason.Overlong))
 
         return Decoded(acc, i)
 

@@ -110,7 +110,7 @@ object Normalization:
       index += 1
 
     val sortedDecompositions =
-      rawDecompositions.keysIterator.to(sci.Vector).sorted.map { cp => (cp, close(cp)) }
+      rawDecompositions.keysIterator.to(sci.Vector).sorted.map: cp => (cp, close(cp))
 
     val decompCodepoints = Array.allocate[Int](sortedDecompositions.length)
     val decompOffsets = Array.allocate[Int](sortedDecompositions.length + 1)
@@ -152,8 +152,10 @@ object Normalization:
       if value == codepoint then
         found = mid
         low = high + 1
-      else if value > codepoint then high = mid - 1
-      else low = mid + 1
+      else if value > codepoint then
+        high = mid - 1
+      else
+        low = mid + 1
 
     found
 

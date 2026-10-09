@@ -173,7 +173,8 @@ object CHeader:
           // typed local before it is read (`wildApprox`).
           val inner: Optional[Foreign.Type] = applied.arguments.prim
           inner.lay(typed)(project(_))
-        else Foreign.Type.Applied(applied.constructor, applied.arguments.map(project(_)))
+        else
+          Foreign.Type.Applied(applied.constructor, applied.arguments.map(project(_)))
 
       case other => other
 
@@ -255,7 +256,7 @@ object CHeader:
 
       while tokens.nonEmpty do
         val (declaration, rest) = item(tokens)
-        declaration.let { value => declarations += value }
+        declaration.let: value => declarations += value
         tokens = rest
 
       declarations.toList.to(List)
@@ -296,10 +297,14 @@ object CHeader:
           else if char == '#' && line then recur(skipLine(index), "", flushed, true)
           else if char == '.' && next == '.' && next2 == '.' then
             recur(index + 3, "", "..." :: flushed, false)
-          else if ident(char) then recur(index + 1, current + char, tokens, false)
-          else if char == '\n' then recur(index + 1, "", flushed, true)
-          else if char.isWhitespace then recur(index + 1, "", flushed, line)
-          else recur(index + 1, "", char.toString :: flushed, false)
+          else if ident(char) then
+            recur(index + 1, current + char, tokens, false)
+          else if char == '\n' then
+            recur(index + 1, "", flushed, true)
+          else if char.isWhitespace then
+            recur(index + 1, "", flushed, line)
+          else
+            recur(index + 1, "", char.toString :: flushed, false)
 
       recur(0, "", SList(), true)
 

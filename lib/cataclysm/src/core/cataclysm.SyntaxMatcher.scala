@@ -177,12 +177,10 @@ object SyntaxMatcher:
     private def allOf(terms: List[Css.Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =
       if terms.nil then List(tokens)
       else
-        pickEach(terms, tokens).bind: (rest, rem) =>
-          allOf(rest, rem)
+        pickEach(terms, tokens).bind: (rest, rem) => allOf(rest, rem)
 
     private def anyOf(terms: List[Css.Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =
-      pickEach(terms, tokens).bind: (rest, rem) =>
-        (rem :: anyOf(rest, rem)): List[List[ValueToken]]
+      pickEach(terms, tokens).bind: (rest, rem) => (rem :: anyOf(rest, rem)): List[List[ValueToken]]
 
     private def repeat
       ( term: Css.Syntax, min: Int, max: Optional[Int], separated: Boolean, tokens: List[ValueToken] )

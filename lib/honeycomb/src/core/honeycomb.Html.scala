@@ -144,8 +144,7 @@ object Html extends Tag.Container
                   right      <: Html of rightTopic in dom]
   =>  left is Addable by right to (Fragment of leftTopic | rightTopic in dom) =
 
-    Addable: (left, right) =>
-      Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
+    Addable: (left, right) => Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
 
   // Internal Tactic used by the permissive-variant givens. Recovery warnings
   // (`raise`) are discarded; truly unrecoverable conditions (`abort`) still
@@ -338,7 +337,7 @@ object Html extends Tag.Container
       writeHtml(producer, htmlDoms.whatwg, node, 0, false, Mode.Whitespace)
 
     val builder: StringBuilder = new StringBuilder()
-    markup.each { char => builder.append(Inspectable.escape(char).s) }
+    markup.each: char => builder.append(Inspectable.escape(char).s)
 
     ("html\""+builder.toString+"\"").tt
 
@@ -444,8 +443,7 @@ object Html extends Tag.Container
         val mode = dom.elements(label).lay(Mode.Normal)(_.mode)
 
         val whitespace =
-          (mode == Mode.Whitespace || !nodes.exists(_.isInstanceOf[Text])) &&
-            block
+          (mode == Mode.Whitespace || !nodes.exists(_.isInstanceOf[Text])) && block
 
         if nodes.length > 0 || !dom.elements(label).lay(false)(_.void) then
           nodes.each(writeHtml(producer, dom, _, indent + 1, whitespace, mode))
@@ -516,8 +514,7 @@ object Html extends Tag.Container
   given sequences: [nodal, html <: Html] => (conversion: Conversion[nodal, html])
   =>  Conversion[List[nodal], List[html]] =
 
-    (sequence: List[nodal]) =>
-      sequence.map(conversion(_))
+    (sequence: List[nodal]) => sequence.map(conversion(_))
 
   enum Issue extends Format.Issue:
     case BadInsertion
@@ -1189,12 +1186,14 @@ object Html extends Tag.Container
             newlines += 1
             lastNewlineAt = i.n0
             lowSurrogates = 0
-          else if jl.Character.isLowSurrogate(char) then lowSurrogates += 1
+          else if jl.Character.isLowSurrogate(char) then
+            lowSurrogates += 1
 
         if newlines > 0 then
           cursor.unsafeBumpLine(newlines)(using Unsafe)
           cursor.unsafeSetColumn(end - lastNewlineAt - 1 - lowSurrogates)(using Unsafe)
-        else cursor.unsafeBumpColumn(end - lineationPos - lowSurrogates)(using Unsafe)
+        else
+          cursor.unsafeBumpColumn(end - lineationPos - lowSurrogates)(using Unsafe)
 
         lineationPos = end
 
@@ -1388,8 +1387,7 @@ object Html extends Tag.Container
       def expect(char: Char): Unit =
         advance()
 
-        lay(fail(ExpectedMore)): datum =>
-          if datum != char then fail(Unexpected(datum))
+        lay(fail(ExpectedMore)): datum => if datum != char then fail(Unexpected(datum))
 
       def expectInsensitive(char: Char): Unit =
         advance()
@@ -1708,8 +1706,7 @@ object Html extends Tag.Container
           case char if asciiLetter(char) || asciiDigit(char) =>
             val step = dom.entities.step(node, char)
 
-            if step < 0 then Unset
-            else advance() yet textEntity(mark, step)
+            if step < 0 then Unset else advance() yet textEntity(mark, step)
 
           case ';' =>
             advance()
@@ -1939,8 +1936,8 @@ object Html extends Tag.Container
       def read(parent: Tag, admissible: Set[BaseText], map: Attributes, count: Int): Node =
 
         def admit(child: BaseText): Boolean =
-          parent.foreign || parent.admissible.has(child)
-          || parent.transparent && admissible.has(child)
+          parent.foreign || parent.admissible.has(child) ||
+          parent.transparent && admissible.has(child)
 
         lay(finish(parent, map, count)):
           case '\u0000' =>
@@ -2073,8 +2070,7 @@ object Html extends Tag.Container
                   // back to text equality since `Tag.foreign` mints fresh
                   // instances per element.
                   val nameMismatch =
-                    if parent.foreign then content != parent.label
-                    else openTag ne parent
+                    if parent.foreign then content != parent.label else openTag ne parent
 
                   if nameMismatch then
                     if parent.autoclose then
@@ -2192,8 +2188,7 @@ object Html extends Tag.Container
                 val text = textual(begin(), Unset, true)
                 val trimmed = text.trim
 
-                if trimmed.length > 0
-                then state.foster(Text(trimmed), inTableContent)
+                if trimmed.length > 0 then state.foster(Text(trimmed), inTableContent)
 
                 read(parent, admissible, map, count)
               else
@@ -2251,8 +2246,7 @@ object Html extends Tag.Container
           // (e.g. input was all stray close tags), in which case `finish`
           // returns the root sentinel that was appended before `read`. Yield
           // an empty Fragment in that case rather than leaking the sentinel.
-          if fragment.nil then if head eq root then Fragment() else head
-          else Fragment(fragment*)
+          if fragment.nil then if head eq root then Fragment() else head else Fragment(fragment*)
 
 
   // ───────────────────────────────────────────────────────────────────────

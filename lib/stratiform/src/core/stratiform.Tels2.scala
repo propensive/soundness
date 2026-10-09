@@ -560,7 +560,7 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
 
     layers.map: layer =>
       val excludes: scala.List[Text] =
-        retractions.filter(_(1) == layer).map { (label, _) => Tel.camelToKebab(label.s) }
+        retractions.filter(_(1) == layer).map: (label, _) => Tel.camelToKebab(label.s)
 
       val definition =
         Tels.SelectDefinition(select, Array.empty, Array.empty, excludes = Array.from(excludes))

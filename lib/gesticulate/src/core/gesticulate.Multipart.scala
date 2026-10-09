@@ -207,7 +207,7 @@ object Multipart:
       // it, close it, consume the boundary and read what follows — the next part's headers
       // or the closing `--`.
       def rest(): Chain[Part] =
-        body().drain(region => range => ())
+        body().drain: region => range => ()
         body.close()
 
         // The body's stream leaves the cursor after the delimiter, or exhausted if the input

@@ -249,7 +249,7 @@ object Completions:
   :   Job[?, Text]^ =
 
     val variables = consulted.bind: name =>
-      safely(Environment[Text](name)).lay(Nil) { (value: Text) => List(name+t"="+value) }
+      safely(Environment[Text](name)).lay(Nil): (value: Text) => List(name+t"="+value)
 
     val prefix = List(t"sh", t"-c", t"exec \"$$@\" </dev/null 2>/dev/null", t"sh", t"env")
     Command((prefix + variables + question)*).fork[Text]()
@@ -324,7 +324,7 @@ object Completions:
 
     val home = safely(Environment[Text](t"HOME")).or(Directories.homeText)
     val fpath = answer.let(_.prim).or(Nil).bind(path(_).lay(Nil)(List(_)))
-    val writable = fpath.filter { dir => dir.existent() && dir.writable() }
+    val writable = fpath.filter: dir => dir.existent() && dir.writable()
     val own = writable.filter(_.encode.starts(t"$home/"))
     val scriptName = unsafely(Name[Linux](t"_$command"))
     val zshFallback: Path on Linux = Xdg.dataHome[Path on Linux]/"zsh"/"site-functions"

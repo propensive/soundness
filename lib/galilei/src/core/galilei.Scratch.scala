@@ -77,7 +77,7 @@ object Scratch:
 
       def wipe(path: Path on filesystem): Unit =
         if backend.stat(path, false).entry == Directory
-        then backend.children(path).each { name => wipe(path.unsafeChild(name)(using Unsafe)) }
+        then backend.children(path).each: name => wipe(path.unsafeChild(name)(using Unsafe))
 
         backend.delete(path)
 

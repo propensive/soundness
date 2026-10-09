@@ -181,8 +181,7 @@ private[hallucination] object WebpHuffman:
     java.lang.Integer.numberOfTrailingZeros(value)
 
   private def grow(array: scala.Array[Int], size: Int): scala.Array[Int] =
-    if array.length >= size then array
-    else java.util.Arrays.copyOf(array, size).nn
+    if array.length >= size then array else java.util.Arrays.copyOf(array, size).nn
 
   // Appends a copy of `array[from..]` to `array` (Rust's `extend_from_within`).
   // Appends via a Java-side copy, whose fluid result adapts to the pure result type.

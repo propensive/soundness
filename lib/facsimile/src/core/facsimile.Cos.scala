@@ -57,8 +57,7 @@ object Cos:
   private[facsimile] def encodeText(text: Text): Data =
     if text.s.forall(_ < 0x100) then
       Array.scribe[Byte](text.length): scribe => extent =>
-        extent.each: i =>
-          scribe(i) = text.s.charAt(i.n0).toByte
+        extent.each: i => scribe(i) = text.s.charAt(i.n0).toByte
     else
       val body = codepages.utf16BeCodepage.encoded(text)
       val bytes = Array.allocate[Byte](body.length + 2)
@@ -72,8 +71,8 @@ object Cos:
   private[facsimile] def decodeText(bytes: Data): Text =
     if bytes.length >= 2 && (bytes.readable(0) & 0xff) == 0xfe && (bytes.readable(1) & 0xff) == 0xff
     then charsets.utf16BeCharset.decoded(bytes.skip(2))
-    else if bytes.length >= 3
-      && (bytes.readable(0) & 0xff) == 0xef && (bytes.readable(1) & 0xff) == 0xbb && (bytes.readable(2) & 0xff) == 0xbf
+    else if bytes.length >= 3 &&
+      (bytes.readable(0) & 0xff) == 0xef && (bytes.readable(1) & 0xff) == 0xbb && (bytes.readable(2) & 0xff) == 0xbf
     then charsets.utf8Charset.decoded(bytes.skip(3))
     else
       val chars = Array.allocate[Char](bytes.length)

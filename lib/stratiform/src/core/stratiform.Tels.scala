@@ -525,8 +525,7 @@ object Tels extends Tels2:
       val chosen = select(schema, selection)
       var composed = schema.copy(layers = Array.empty)
 
-      chosen.each: layer =>
-        composed = applyLayer(composed, layer, schema)
+      chosen.each: layer => composed = applyLayer(composed, layer, schema)
 
       composed
 
@@ -583,7 +582,7 @@ object Tels extends Tels2:
     // listed twice applies twice, harmlessly.
     def composeComponents(base: Tels, components: List[Layer]): Tels raises Tel.Error =
       var composed = base.copy(layers = Array.empty)
-      components.each { layer => composed = applyLayer(composed, layer, base) }
+      components.each: layer => composed = applyLayer(composed, layer, base)
       Validation.checkComposed(composed)
 
     // `origin` is the schema before any layer was applied, against whose selects a layer's
@@ -648,7 +647,7 @@ object Tels extends Tels2:
 
         case s: SelectRef =>
           referenceToIndex(s.reference) = index
-          variantKeywords(s.reference).foreach { keyword => keywordToIndex(keyword) = index }
+          variantKeywords(s.reference).foreach: keyword => keywordToIndex(keyword) = index
 
         case _: Exclude => ()
 
@@ -792,7 +791,7 @@ object Tels extends Tels2:
           // declaring one where the base has none adds it. Removal has
           // no syntax.
           val mergedEncoding = out(existing).encoding.lay(newDef.encoding): base =>
-            newDef.encoding.let { layer => if layer != base then abort(Tel.Error(Reason.EncodingConflict)) }
+            newDef.encoding.let: layer => if layer != base then abort(Tel.Error(Reason.EncodingConflict))
             base
 
           val mergedPatterns = mergePatterns(out(existing).patterns, newDef.patterns)
@@ -964,8 +963,7 @@ object Tels extends Tels2:
       // E207: the schema sigil must be sigil-valid per §6. (An invalid
       // *pragma* sigil is E105 at parse time; this covers the schema
       // model itself, however it was constructed.)
-      schema.sigil.let: sigil =>
-        if !sigilValid(sigil) then abort(Tel.Error(Reason.BadSchemaSigil))
+      schema.sigil.let: sigil => if !sigilValid(sigil) then abort(Tel.Error(Reason.BadSchemaSigil))
 
       // E210: definition names are unique across a schema's records,
       // scalars and selects, in the base and within each layer (a layer's
@@ -977,12 +975,12 @@ object Tels extends Tels2:
       :   Unit raises Tel.Error =
 
         val names = scala.collection.mutable.HashSet.empty[Text]
-        records.each { r => if !names.add(r.name) then abort(Tel.Error(Reason.DuplicateDefinition)) }
-        scalars.each { s => if !names.add(s.name) then abort(Tel.Error(Reason.DuplicateDefinition)) }
-        selects.each { s => if !names.add(s.name) then abort(Tel.Error(Reason.DuplicateDefinition)) }
+        records.each: r => if !names.add(r.name) then abort(Tel.Error(Reason.DuplicateDefinition))
+        scalars.each: s => if !names.add(s.name) then abort(Tel.Error(Reason.DuplicateDefinition))
+        selects.each: s => if !names.add(s.name) then abort(Tel.Error(Reason.DuplicateDefinition))
 
       checkNames(schema.records, schema.scalars, schema.selects)
-      schema.layers.each { layer => checkNames(layer.records, layer.scalars, layer.selects) }
+      schema.layers.each: layer => checkNames(layer.records, layer.scalars, layer.selects)
 
       // Base-side select constraints, checked before composition: a
       // *declared* SelectDefinition must have at least one variant
@@ -1010,7 +1008,7 @@ object Tels extends Tels2:
       // unresolved encoding (E313), an unparseable pattern is never treated as
       // satisfied; the schema is invalid instead.
       checkPatterns(schema.scalars)
-      schema.layers.each { layer => checkPatterns(layer.scalars) }
+      schema.layers.each: layer => checkPatterns(layer.scalars)
 
     private def checkPatterns(scalars: Array[ScalarDefinition]^{}): Unit raises Tel.Error =
       scalars.each: definition =>
@@ -1039,10 +1037,10 @@ object Tels extends Tels2:
     // exclusively introduces pragma layer selections). Mirrors the
     // built-in `sigil` validator.
     private def sigilValid(sigil: Char): Boolean =
-      !(sigil == ' ' || sigil == '\n' || sigil == '\r' || sigil == '\t')
-        && !sigil.isLetterOrDigit
-        && "()[]{}<>".indexOf(sigil.toInt) < 0
-        && sigil != '+'
+      !(sigil == ' ' || sigil == '\n' || sigil == '\r' || sigil == '\t') &&
+        !sigil.isLetterOrDigit &&
+        "()[]{}<>".indexOf(sigil.toInt) < 0 &&
+        sigil != '+'
 
     // The Scalar a type resolves to through the composed namespace and
     // the built-ins (§20.5), or Unset for any non-Scalar resolution.
@@ -1062,8 +1060,8 @@ object Tels extends Tels2:
     // The built-in scalar TypeNames of §20.5. (`Flag` is not among them:
     // it parses to the Flag type directly, never to a Reference.)
     private def builtinScalar(name: Text): Boolean =
-      name == Builtin.String || name == Builtin.Identifier
-        || name == Builtin.TypeName || name == Builtin.Sigil
+      name == Builtin.String || name == Builtin.Identifier ||
+        name == Builtin.TypeName || name == Builtin.Sigil
 
     private def checkStruct(struct: Struct, schema: Tels): Unit raises Tel.Error =
       val keywords = scala.collection.mutable.HashSet.empty[Text]
@@ -1088,9 +1086,9 @@ object Tels extends Tels2:
             // scalar; a SelectDefinition can only be the target of a
             // SelectRef.
             case Reference(name) =>
-              if !schema.records.readable.exists(_.name == name)
-                && !schema.scalars.readable.exists(_.name == name)
-                && !builtinScalar(name)
+              if !schema.records.readable.exists(_.name == name) &&
+                !schema.scalars.readable.exists(_.name == name) &&
+                !builtinScalar(name)
               then
                 if schema.selects.readable.exists(_.name == name)
                 then abort(Tel.Error(Reason.ReferenceKindMismatch))
@@ -1110,15 +1108,14 @@ object Tels extends Tels2:
             keys += 1
             if keys > 1 then abort(Tel.Error(Reason.MultipleKeyFields))
 
-            if scalarOf(field.fieldType, schema).absent
-            then abort(Tel.Error(Reason.KeyOnNonScalar))
+            if scalarOf(field.fieldType, schema).absent then abort(Tel.Error(Reason.KeyOnNonScalar))
 
             if !required || repeatable then abort(Tel.Error(Reason.KeyOnLooseMember))
 
         case select: SelectRef =>
           schema.selects.readable.find(_.name == select.reference) match
             case scala.Some(definition) =>
-              definition.variants.each { variant => claim(variant.keyword) }
+              definition.variants.each: variant => claim(variant.keyword)
 
               // E212: a layer's excludes must not empty a
               // SelectDefinition that an effectively required SelectRef
@@ -1133,9 +1130,9 @@ object Tels extends Tels2:
             // a record, scalar or built-in name is a kind mismatch, and
             // anything else is unresolved.
             case scala.None =>
-              if schema.records.readable.exists(_.name == select.reference)
-                || schema.scalars.readable.exists(_.name == select.reference)
-                || builtinScalar(select.reference)
+              if schema.records.readable.exists(_.name == select.reference) ||
+                schema.scalars.readable.exists(_.name == select.reference) ||
+                builtinScalar(select.reference)
               then abort(Tel.Error(Reason.ReferenceKindMismatch))
               else abort(Tel.Error(Reason.UnresolvedReference))
 
@@ -1157,7 +1154,7 @@ object Tels extends Tels2:
         seqEq(a.layers, b.layers, layerEq)
 
     private def seqEq[T](a: Array[T]^{}, b: Array[T]^{}, eq: (T, T) => Boolean): Boolean =
-      a.coextent(b).lay(false) { shared => a.spot { i => !eq(a(i), b(shared(i))) }.absent }
+      a.coextent(b).lay(false): shared => a.spot { i => !eq(a(i), b(shared(i))) }.absent
 
     private def structEq(a: Struct, b: Struct): Boolean =
       seqEq(a.members, b.members, memberEq) && seqEq(a.validators, b.validators, textEq)
@@ -1235,7 +1232,7 @@ object Tels extends Tels2:
 
           case "sigil" =>
             val s = firstAtomText(c)
-            sigil = s.let { text => if text.nil then Unset else text.s.charAt(0) }
+            sigil = s.let: text => if text.nil then Unset else text.s.charAt(0)
 
           case "record"   => records  += parseRecord(c)
           case "scalar"   => scalars  += parseScalar(c)

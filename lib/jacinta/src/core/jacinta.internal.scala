@@ -155,8 +155,8 @@ object internal:
 
     repr.dealias match
       case AppliedType(constructor, scala.collection.immutable.List(element))
-      if repr <:< TypeRepr.of[Seq[Any]] || constructor.typeSymbol == defn.ArrayClass
-      || constructor.typeSymbol == listSym || constructor.typeSymbol == seriesSym =>
+      if repr <:< TypeRepr.of[Seq[Any]] || constructor.typeSymbol == defn.ArrayClass ||
+      constructor.typeSymbol == listSym || constructor.typeSymbol == seriesSym =>
         element
 
       case _ =>
@@ -292,7 +292,7 @@ object internal:
   // `spot` finds the first index satisfying the predicate, confined to the text, so the read
   // inside it is total and the search needs no bound of its own.
   private def hasMarker(text: Text): Boolean =
-    text.spot(index => text(index) == Marker).present
+    text.spot{ index => text(index) == Marker }.present
 
   private def preprocess(parts: List[String]): (List[String], Set[Int]) =
     var spreads: Set[Int] = Set()
@@ -866,8 +866,7 @@ object internal:
             val elems = arrayElements(arr)
             var c = 0
 
-            elems.extent.each: k =>
-              c += countHolesIn(elems(k))
+            elems.extent.each: k => c += countHolesIn(elems(k))
 
             c
 
@@ -1081,10 +1080,10 @@ object internal:
     // cannot pack still parses: an unpackable wire key always takes the
     // general `keyIndex` step, which matches all fields by string.
     val literalKeys: Boolean =
-      val annotated = ctor.paramSymss.flatten.filterNot(_.isTypeParam).flatMap(_.annotations)
-        ++ classSymbol.caseFields.flatMap(_.annotations)
+      val annotated = ctor.paramSymss.flatten.filterNot(_.isTypeParam).flatMap(_.annotations) ++
+        classSymbol.caseFields.flatMap(_.annotations)
 
-      !annotated.exists { annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+      !annotated.exists: annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]]
 
     def packedName(name: String): Option[(Long, Long)] =
       val length = name.length
@@ -1175,11 +1174,9 @@ object internal:
 
       val cursor = Symbol.newVal(owner, "index", TypeRepr.of[Int], Flags.Mutable, Symbol.noSymbol)
 
-      val slotDefs = locals.map: local =>
-        ValDef(local.slot, Some(zero(local.field.fieldType)))
+      val slotDefs = locals.map: local => ValDef(local.slot, Some(zero(local.field.fieldType)))
 
-      val seenDefs = locals.map: local =>
-        ValDef(local.seen, Some(Literal(BooleanConstant(false))))
+      val seenDefs = locals.map: local => ValDef(local.seen, Some(Literal(BooleanConstant(false))))
 
       // One switch arm per field: read the value (with focus bookkeeping),
       // assign it and mark it seen.
@@ -1331,8 +1328,8 @@ object internal:
       Block
         // The element types differ (`ValDef` and `Statement`), and `Concatenable` is invariant
         // where `:::` widened, so the concatenation happens on the stdlib side.
-        ( ('{$reader.openObject()}.asTerm
-            :: (slotDefs.stdlib ::: seenDefs.stdlib ::: loop.stdlib ::: absents.stdlib).to(List))
+        ( ('{$reader.openObject()}.asTerm ::
+            (slotDefs.stdlib ::: seenDefs.stdlib ::: loop.stdlib ::: absents.stdlib).to(List))
 
           . stdlib,
           construct )
@@ -1345,7 +1342,7 @@ object internal:
 
     val fociExpr = summonOrAbort[Foci[Json.Focus]]("Foci[Json.Focus]")
     val tacticExpr = summonOrAbort[Tactic[Json.Error]]("Tactic[Json.Error]")
-    val nameExprs = fields.map { field => Expr(field.name) }
+    val nameExprs = fields.map: field => Expr(field.name)
     val instanceExprs = fields.map(summonField)
     val fallbackExprs = fields.map(declaredDefault)
 
@@ -1438,7 +1435,7 @@ object internal:
           ( "jacinta: staged sum parsing needs a contextual `Discriminable in Json`, like " +
             "`jacinta.discriminables.jsonByKindDiscriminable`" )
 
-    val nameExprs = variantNames.map { name => Expr(name) }
+    val nameExprs = variantNames.map: name => Expr(name)
     val variantExprs = List.range(0, arity).map(summonVariant)
 
     // The dispatch chain: one monomorphic comparison per variant, ending in
@@ -1462,7 +1459,8 @@ object internal:
           ' {
               if $wireVariants.readUnchecked(${Expr(index)}) == $wireString then
                 $variants.readUnchecked(${Expr(index)}).asInstanceOf[variantType is Json.Field].parse($reader)
-              else ${dispatch(index + 1, reader, wire, wireString, variants, wireVariants)}
+              else
+                ${dispatch(index + 1, reader, wire, wireString, variants, wireVariants)}
             }
 
     ' {

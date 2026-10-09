@@ -785,8 +785,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
   // Flush the bit buffer and align the output on a byte boundary
   private update def biWindup(): Unit =
-    if biValid > 8 then putShort(biBuf)
-    else if biValid > 0 then putByte(biBuf.toByte)
+    if biValid > 8 then putShort(biBuf) else if biValid > 0 then putByte(biBuf.toByte)
 
     biBuf = 0
     biValid = 0

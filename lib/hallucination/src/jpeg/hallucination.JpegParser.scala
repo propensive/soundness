@@ -348,8 +348,7 @@ private[hallucination] object JpegParser:
 
       val table = JpegHuffmanTable(counts, values, tableClass == 1)
 
-      if tableClass == 0 then dcTables(index) = table
-      else acTables(index) = table
+      if tableClass == 0 then dcTables(index) = table else acTables(index) = table
 
       length -= 17 + size
 

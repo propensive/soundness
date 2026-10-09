@@ -211,13 +211,13 @@ object atomicMacros:
             case ident: Ident if ident.symbol == symbol => Shape.Identity
 
             case Apply(Select(left, "+"), args)
-            if numeric && args.length == 1 && isParam(left, symbol)
-            && !mentions(args.head, roots) =>
+            if numeric && args.length == 1 && isParam(left, symbol) &&
+            !mentions(args.head, roots) =>
               Shape.Increase
 
             case Apply(Select(left, "-"), args)
-            if numeric && args.length == 1 && isParam(left, symbol)
-            && !mentions(args.head, roots) =>
+            if numeric && args.length == 1 && isParam(left, symbol) &&
+            !mentions(args.head, roots) =>
               Shape.Decrease
 
             case other =>

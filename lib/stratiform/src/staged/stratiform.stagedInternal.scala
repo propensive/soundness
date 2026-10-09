@@ -95,7 +95,7 @@ object stagedInternal:
       if run == null then false else
         val sources = run.nn.units.map(_.source.path).toSet
         val position = symbol.pos
-        position.exists { position => sources.contains(position.sourceFile.path) }
+        position.exists: position => sources.contains(position.sourceFile.path)
     catch case _: Exception => false
 
   private def innerClasspath(using Quotes): String =
@@ -396,10 +396,10 @@ object stagedInternal:
       val children = classSymbol.children
 
       val supported =
-        !applied
-        && classSymbol.flags.is(Flags.Sealed)
-        && children.nonEmpty
-        && children.forall: child =>
+        !applied &&
+        classSymbol.flags.is(Flags.Sealed) &&
+        children.nonEmpty &&
+        children.forall: child =>
           child.isClassDef && child.flags.is(Flags.Case) && !hasRenames(child)
 
       if supported then Some(children.map { child => (child.name, child.typeRef) }) else None
@@ -410,12 +410,12 @@ object stagedInternal:
     import quotes.reflect.*
 
     tpe.classSymbol.exists: classSymbol =>
-      classSymbol.flags.is(Flags.Case)
-      && !classSymbol.owner.isTerm
-      && (tpe match { case AppliedType(_, _) => false case _ => true })
+      classSymbol.flags.is(Flags.Case) &&
+      !classSymbol.owner.isTerm &&
+      (tpe match { case AppliedType(_, _) => false case _ => true })
       && classSymbol.primaryConstructor.paramSymss
-        . filterNot(_.exists(_.isTypeParam)).length == 1
-      && !hasRenames(classSymbol)
+        . filterNot(_.exists(_.isTypeParam)).length == 1 &&
+      !hasRenames(classSymbol)
 
   // A wire keyword's packed form (at most eight printable-ASCII bytes,
   // LSB-first, the same packing as `TelReader.keywordWord`), or `None` when
@@ -423,7 +423,7 @@ object stagedInternal:
   private def packedTelKeyword(name: String): Option[Long] =
     val length = name.length
 
-    val packs = length > 0 && length <= 8 && name.forall { char => char >= '!' && char <= '~' }
+    val packs = length > 0 && length <= 8 && name.forall: char => char >= '!' && char <= '~'
 
     if !packs then None else
       var word = 0L
@@ -442,10 +442,10 @@ object stagedInternal:
 
     val annotated =
       classSymbol.primaryConstructor.paramSymss.flatten.filterNot(_.isTypeParam)
-        . flatMap(_.annotations)
-      ++ classSymbol.caseFields.flatMap(_.annotations)
+        . flatMap(_.annotations) ++
+      classSymbol.caseFields.flatMap(_.annotations)
 
-    annotated.exists { annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+    annotated.exists: annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]]
 
   // ── The collection generator ───────────────────────────────────────────
   // A single entry read as a collection: one element — the runtime
@@ -560,8 +560,8 @@ object stagedInternal:
     val fields = classSymbol.caseFields
     val arity = fields.length
     val fieldNames: List[String] = fields.map(_.name)
-    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
-    val wireNames: List[String] = fieldNames.map { name => Tel.camelToKebab(name).s }
+    val fieldTypes: List[TypeRepr] = fields.map: field => tpe.memberType(field).dealias
+    val wireNames: List[String] = fieldNames.map: name => Tel.camelToKebab(name).s
 
     val plans: List[Plan] = fieldTypes.map: fieldType =>
       builtinFor(fieldType) match
@@ -582,7 +582,7 @@ object stagedInternal:
     // `KeywordOpaque` and resolves through the literal text step, which
     // matches all fields by string.
     val packedKeywords: List[Option[Long]] =
-      List.range(0, arity).map { index => packedTelKeyword(wireNames(index)) }
+      List.range(0, arity).map: index => packedTelKeyword(wireNames(index))
 
     val owner = Symbol.spliceOwner
     val unit = Literal(UnitConstant())
@@ -995,7 +995,7 @@ object stagedInternal:
           "type whose variants are all case classes without `@name` renames)" )
 
     val arity = variants.length
-    val wireNames: List[String] = variants.map { (name, _) => Tel.camelToKebab(name).s }
+    val wireNames: List[String] = variants.map: (name, _) => Tel.camelToKebab(name).s
 
     def dispatch
       ( index:   Int,
@@ -1021,8 +1021,8 @@ object stagedInternal:
           val condition: Expr[Boolean] = packedTelKeyword(name) match
             case Some(packed) =>
               ' {
-                  $word == ${Expr(packed)}
-                  || ($word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)})
+                  $word == ${Expr(packed)} ||
+                  ($word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)})
                 }
 
             case None =>
@@ -1032,7 +1032,8 @@ object stagedInternal:
               if $condition then
                 def parseVariant(): variantType = ${instance.parse(reader, indent1)}
                 parseVariant()
-              else ${dispatch(index + 1, word, indent1)}
+              else
+                ${dispatch(index + 1, word, indent1)}
             }
 
     ' {

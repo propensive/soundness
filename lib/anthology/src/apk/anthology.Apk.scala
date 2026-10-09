@@ -191,8 +191,7 @@ object Apk extends Format.Application:
           ((value >> 24) & 0xff).toByte)
 
     private def u64(value: Long): Data =
-      Array.range(0, 8).remap: i =>
-        ((value >> (i*8)) & 0xff).toByte
+      Array.range(0, 8).remap: i => ((value >> (i*8)) & 0xff).toByte
 
     private def concat(parts: Data*): Data =
       val total = parts.map(_.length).sum

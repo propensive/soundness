@@ -258,8 +258,7 @@ extends Cli:
                 sh"'${shown.fit(width)} $aliasText -- $desc' $params"
 
             val duplicateLine: List[Command] =
-              if !incomplete then List()
-              else List(sh"'' $prefix2 $suffix2 -S '' -- $core")
+              if !incomplete then List() else List(sh"'' $prefix2 $suffix2 -S '' -- $core")
 
             (List(mainLine): List[Command]) + duplicateLine
 

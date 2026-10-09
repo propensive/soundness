@@ -87,7 +87,7 @@ object stagedInternal:
       if run == null then false else
         val sources = run.nn.units.map(_.source.path).toSet
         val position = symbol.pos
-        position.exists { position => sources.contains(position.sourceFile.path) }
+        position.exists: position => sources.contains(position.sourceFile.path)
     catch case _: Exception => false
 
   private def innerClasspath(using Quotes): String =
@@ -358,12 +358,12 @@ object stagedInternal:
     import quotes.reflect.*
 
     tpe.classSymbol.exists: classSymbol =>
-      classSymbol.flags.is(Flags.Case)
-      && !classSymbol.owner.isTerm
-      && (tpe match { case AppliedType(_, _) => false case _ => true })
+      classSymbol.flags.is(Flags.Case) &&
+      !classSymbol.owner.isTerm &&
+      (tpe match { case AppliedType(_, _) => false case _ => true })
       && classSymbol.primaryConstructor.paramSymss
-        . filterNot(_.exists(_.isTypeParam)).length == 1
-      && !hasRenames(classSymbol)
+        . filterNot(_.exists(_.isTypeParam)).length == 1 &&
+      !hasRenames(classSymbol)
 
   // `@name` renames resolve through inline machinery the structural
   // generator does not replicate; annotated records stay on `staged`.
@@ -372,10 +372,10 @@ object stagedInternal:
 
     val annotated =
       classSymbol.primaryConstructor.paramSymss.flatten.filterNot(_.isTypeParam)
-        . flatMap(_.annotations)
-      ++ classSymbol.caseFields.flatMap(_.annotations)
+        . flatMap(_.annotations) ++
+      classSymbol.caseFields.flatMap(_.annotations)
 
-    annotated.exists { annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+    annotated.exists: annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]]
 
   // ── The collection generator ───────────────────────────────────────────
   // Mirrors `Json.Parsable.iterable` exactly: openArray, per-element loop,
@@ -410,7 +410,8 @@ object stagedInternal:
                   builder +=
                     ( if focused then
                         Json.Parsable.focusing(foci, index.toString.tt)(parseElement())
-                      else parseElement() )
+                      else
+                        parseElement() )
 
                   index += 1
                   continue = parser.directElementNext()(using ptactic)
@@ -465,13 +466,13 @@ object stagedInternal:
     val fields = classSymbol.caseFields
     val arity = fields.length
     val fieldNames: List[String] = fields.map(_.name)
-    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
+    val fieldTypes: List[TypeRepr] = fields.map: field => tpe.memberType(field).dealias
 
     def packedName(index: Int): Option[(Long, Long)] =
       val name = fieldNames(index)
       val length = name.length
 
-      val packs = length > 0 && length <= 16 && name.forall { char => char >= ' ' && char < 127 }
+      val packs = length > 0 && length <= 16 && name.forall: char => char >= ' ' && char < 127
 
       if !packs then None else
         var low = 0L
@@ -533,7 +534,8 @@ object stagedInternal:
           Some('{$parser.directString()(using $ptactic).tt})
         else if tpe =:= TypeRepr.of[String] then
           Some('{$parser.directString()(using $ptactic)})
-        else None
+        else
+          None
 
       // The absent expression per field, through the ladder.
       def fieldAbsent(index: Int): Expr[Any] =
@@ -617,8 +619,8 @@ object stagedInternal:
               '{if $focused then ${call(slowDefs(index))} else ${hot()}}
               . asTerm.changeOwner(readDefs(index))
 
-            nestedDef.map(_(1)).toList
-              ::: List
+            nestedDef.map(_(1)).toList :::
+              List
                 ( DefDef(slowDefs(index), _ => Some(slowRhs)),
                   DefDef(readDefs(index), _ => Some(readRhs)) )
 

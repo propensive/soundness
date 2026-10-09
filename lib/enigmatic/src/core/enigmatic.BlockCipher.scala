@@ -204,7 +204,8 @@ extends Duct[Data, Data]:
       pending = session.finish()
       offset = 0
       deliver(bytes, targetOffset, targetSpace)
-    else 0
+    else
+      0
 
 // Streaming decryption's IV-prefix state machine (the `Inflation` header
 // precedent): the leading `ivSize` bytes accumulate before the session can

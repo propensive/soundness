@@ -111,8 +111,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // the first frame — the server role's first read on a new connection. A
   // mismatch (or a stream ending mid-preface) is a protocol error.
   update def expectPreface(preface: Bytes)(using Tactic[Http2.Error]): Unit =
-    if !ensure(preface.length)
-    then abort(Http2.Error(Reason.Protocol(t"bad connection preface")))
+    if !ensure(preface.length) then abort(Http2.Error(Reason.Protocol(t"bad connection preface")))
 
     val read: Bytes = slice(preface.length)
     var index: Int = 0

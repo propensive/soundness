@@ -63,7 +63,7 @@ object Reifier:
    *  prefix position. */
   def substitute(syntax: Syntax, placeholders: List[Placeholder]): Syntax =
     val pairs: List[(Int, Placeholder)] =
-      placeholders.map { placeholder => placeholder.id -> placeholder }
+      placeholders.map: placeholder => placeholder.id -> placeholder
 
     val byId: Map[Int, Placeholder] = pairs.to[Map]
 
@@ -74,7 +74,8 @@ object Reifier:
         Placeholder.reference(body).let { id => byId(id).let { p => Syntax.Symbolic(p.printed) } }
         . or(Placeholder.escaped(body).let { literal => Syntax.Primitive(t"\"$literal\"") })
 
-      else Unset
+      else
+        Unset
 
     def entries(map: Ledger[Text, Syntax]): Ledger[Text, Syntax] = map.map(recur)
 

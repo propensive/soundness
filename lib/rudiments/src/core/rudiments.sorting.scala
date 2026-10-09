@@ -168,7 +168,7 @@ object sorting:
   :   Iterator[element]^ =
 
     val entries =
-      elements.map { element => Entry(project(element), element).asInstanceOf[AnyRef] }
+      elements.map: element => Entry(project(element), element).asInstanceOf[AnyRef]
 
     val array = drain(entries, size)
 

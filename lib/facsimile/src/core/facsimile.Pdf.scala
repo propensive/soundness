@@ -446,7 +446,7 @@ object Pdf:
 
         if index >= 0 && index < common.widths.length && common.widths.readUnchecked(index) > 0
         then common.widths.readUnchecked(index)
-        else common.standard.lay(or(code)) { standard => StandardFonts.width(standard, code) }
+        else common.standard.lay(or(code)): standard => StandardFonts.width(standard, code)
 
     private def or(code: Int): Double = if common.defaultWidth > 0 then common.defaultWidth else 500
 
@@ -459,7 +459,8 @@ object Pdf:
       if common.twoByte then
         List.range(0, string.length/2).map: index =>
           ((string.readUnchecked(index*2) & 0xff) << 8) | (string.readUnchecked(index*2 + 1) & 0xff)
-      else string.to[List].map(_.toInt & 0xff)
+      else
+        string.to[List].map(_.toInt & 0xff)
 
     def decode(string: Data): Text =
       val builder = StringBuilder()
@@ -485,10 +486,10 @@ object Pdf:
       var entries = Map[Text, Cos]()
 
       def string(key: Text, value: Optional[Text]): Unit =
-        value.let { text => entries = entries.define(key, Cos.Chars(Cos.encodeText(text))) }
+        value.let: text => entries = entries.define(key, Cos.Chars(Cos.encodeText(text)))
 
       def date(key: Text, value: Optional[Timing]): Unit =
-        value.let { timing => entries = entries.define(key, Cos.Chars(Cos.encodeText(formatDate(timing)))) }
+        value.let: timing => entries = entries.define(key, Cos.Chars(Cos.encodeText(formatDate(timing))))
 
       string(t"Title", info.title)
       string(t"Author", info.author)
@@ -1045,7 +1046,7 @@ extends caps.ExclusiveCapability:
   private[facsimile] def pageReference(ordinal: Ordinal)(using Tactic[Pdf.Error]): Optional[Cos.Ref] =
     val entries = pageEntries
     // The bounds check and the lookup are the same act: a confined ordinal deindexes bare.
-    entries.pick(ordinal.n0.z) { position => entries(position)(0).let(Cos.Ref(_, 0)) }
+    entries.pick(ordinal.n0.z): position => entries(position)(0).let(Cos.Ref(_, 0))
 
   def trailer: Map[Text, Cos] = xref.trailer
 
@@ -1069,8 +1070,7 @@ extends caps.ExclusiveCapability:
 
       node match
         case Cos.Ref(reference, _) =>
-          if visited.has(reference)
-          then abort(Pdf.Error(Pdf.Error.Reason.CircularPageTree))
+          if visited.has(reference) then abort(Pdf.Error(Pdf.Error.Reason.CircularPageTree))
 
           visited = visited :+ reference
           recur(resolved(node), reference, inherited)
@@ -1106,8 +1106,7 @@ extends caps.ExclusiveCapability:
   // destinations that refer to pages by reference.
   private[facsimile] def pageNumbers(using Tactic[Pdf.Error]): Map[Int, Ordinal] =
     pageEntries.indexed.flatMap: (entry, index) =>
-      entry(0).lay(Sequence()): number =>
-        Sequence(number -> index)
+      entry(0).lay(Sequence()): number => Sequence(number -> index)
 
     . to[Map]
 
@@ -1128,8 +1127,7 @@ extends caps.ExclusiveCapability:
 
     raw.to[List].bind: (name, value) =>
       Destination.read(value, pages, raw(_))(using this)
-      . lay(List[(Text, Destination)]()): destination =>
-          List(name -> destination)
+      . lay(List[(Text, Destination)]()): destination => List(name -> destination)
 
     . to[Map]
 
@@ -1416,9 +1414,9 @@ extends caps.ExclusiveCapability:
     val kind = body.entries(t"Type").let(_.name).or(t"")
 
     val exempt =
-      kind == t"XRef"
-      || (kind == t"Metadata" && !guard.encryptMetadata)
-      || cryptMethod(body) == Guard.Method.Identity
+      kind == t"XRef" ||
+      (kind == t"Metadata" && !guard.encryptMetadata) ||
+      cryptMethod(body) == Guard.Method.Identity
 
     !exempt && streamOwners.contains(body.start)
 
@@ -1488,8 +1486,8 @@ extends caps.ExclusiveCapability:
     val window = source.read(position, 24)
 
     window.survey: surveyor =>
-      surveyor.pace { byte => CosLexer.whitespace(byte & 0xff) }
-      surveyor.matches(marker) { (byte, char) => (byte & 0xff) == char.toInt }
+      surveyor.pace: byte => CosLexer.whitespace(byte & 0xff)
+      surveyor.matches(marker): (byte, char) => (byte & 0xff) == char.toInt
 
   // Resolves a value and, one level down, the elements of an array or the values of a
   // dictionary: sufficient for `/Filter` and `/DecodeParms` shapes.

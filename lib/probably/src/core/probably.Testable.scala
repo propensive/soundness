@@ -78,8 +78,8 @@ object Testable:
   // declaration's parameter rather than on the class, where it would not be consulted for
   // the refined type that is sought.
   final val orphan =
-    "a test must be declared for a Suite — in its body, or in a method taking `(using Testable "
-    + "of \"<the suite's name>\")` — or inside an `impromptu` block"
+    "a test must be declared for a Suite — in its body, or in a method taking `(using Testable " +
+    "of \"<the suite's name>\")` — or inside an `impromptu` block"
 
   def of[topic]
     ( name:    Message,

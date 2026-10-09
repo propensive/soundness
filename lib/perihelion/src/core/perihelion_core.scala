@@ -142,7 +142,7 @@ private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^
   def recur(acc: Data): Data = input.refill(demand) match
     case count: Int =>
       if count > 0 then
-        val window = input.lend { region => range => region.materialize(range.capped(count)) }
+        val window = input.lend: region => range => region.materialize(range.capped(count))
         val acc2: Data = Array.frozen(acc.readable ++ window.readable)
         val marker = crlfCrlf(acc2)
 
@@ -152,7 +152,8 @@ private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^
         else
           input.skip(count)
           recur(acc2)
-      else recur(acc)
+      else
+        recur(acc)
 
     case _ =>
       acc

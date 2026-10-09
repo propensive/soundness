@@ -166,9 +166,7 @@ object Asn1:
       Producer.collect[Data]()(time(_, timestamp, true))
 
     case Asn1.Sequence(elements) =>
-      Producer.collect[Data](): out =>
-        elements.foreach: element =>
-          out.put(render(element))
+      Producer.collect[Data](): out => elements.foreach: element => out.put(render(element))
 
     case Asn1.Set(elements) =>
       // DER orders the members of a `SET` by their encodings, shorter-first when one is a prefix
@@ -176,9 +174,7 @@ object Asn1:
       given derComparable: Data is Comparable = Comparable.less(precedes(_, _))
       val rendered: List[Data] = elements.map(render(_)).sort
 
-      Producer.collect[Data](): out =>
-        rendered.foreach: element =>
-          out.put(element)
+      Producer.collect[Data](): out => rendered.foreach: element => out.put(element)
 
     case Asn1.Tagged(_, true, inner)    => render(inner)
     case Asn1.Tagged(_, false, inner)   => contentOf(inner)
@@ -245,12 +241,10 @@ object Asn1:
     case first :: second :: rest =>
       base128(out, first*40 + second)
 
-      rest.foreach: arc =>
-        base128(out, arc)
+      rest.foreach: arc => base128(out, arc)
 
     case rest =>
-      rest.foreach: arc =>
-        base128(out, arc)
+      rest.foreach: arc => base128(out, arc)
 
   private def time(out: (Producer.Bytes)^, timestamp: Long, generalized: scala.Boolean): Unit =
     val days = Math.floorDiv(timestamp, SecondsPerDay)

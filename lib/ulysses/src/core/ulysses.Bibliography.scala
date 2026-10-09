@@ -46,7 +46,7 @@ object Bibliography:
   private def ordered(left: Data, right: Data): Int =
     val shared = left.length.min(right.length)
 
-    (0 until shared).find(index => left.readable(index) != right.readable(index)).fold
+    (0 until shared).find{ index => left.readable(index) != right.readable(index) }.fold
       (left.length - right.length)
       (index => (left.readable(index) & 0xff) - (right.readable(index) & 0xff))
 
@@ -55,7 +55,7 @@ object Bibliography:
   private def prefixOrder(hash: Data, prefix: Data): Int =
     val shared = hash.length.min(prefix.length)
 
-    (0 until shared).find(index => hash.readable(index) != prefix.readable(index)).fold
+    (0 until shared).find{ index => hash.readable(index) != prefix.readable(index) }.fold
       (if hash.length < prefix.length then -1 else 0)
       (index => (hash.readable(index) & 0xff) - (prefix.readable(index) & 0xff))
 

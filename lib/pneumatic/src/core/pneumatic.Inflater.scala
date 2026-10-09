@@ -1156,8 +1156,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
           p = nextInIndex; n = availIn; b = bitb; k = bitk
           q = write; m = if q < read then read - q - 1 else windowEnd - q
 
-          if last == 0 then blocksMode = Type
-          else blocksMode = Dry
+          if last == 0 then blocksMode = Type else blocksMode = Dry
 
         case Dry =>
           write = q

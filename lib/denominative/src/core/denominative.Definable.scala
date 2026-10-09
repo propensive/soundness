@@ -75,7 +75,8 @@ object Definable:
 
         copy(index.n0) = value
         Array.unsafeFrozen(copy)
-      else array
+      else
+        array
 
   // Positional update on a linked list rebuilds its prefix, so — as with `Applicable.list` —
   // the instance is gated behind the linear-access acknowledgement rather than withheld.

@@ -288,7 +288,7 @@ object XPath extends Format:
         case _ => document match
           case Xml.Fragment(nodes*) =>
             val builder = StringBuilder()
-            nodes.foreach { node => builder.append(Locus.textOf(node).s) }
+            nodes.foreach: node => builder.append(Locus.textOf(node).s)
             builder.toString.nn.tt
 
           case node: Xml.Node =>
@@ -420,7 +420,7 @@ object XPath extends Format:
     if !text.contains('\'') then t"'$text'"
     else if !text.contains('"') then t"\"$text\""
     else
-      val pieces = text.cut(t"'").map { (piece: Text) => t"'$piece'" }
+      val pieces = text.cut(t"'").map: (piece: Text) => t"'$piece'"
       t"concat(${pieces.join(t",\"'\",")})"
 
   private def renderTest(test: NodeTest): Text = test match

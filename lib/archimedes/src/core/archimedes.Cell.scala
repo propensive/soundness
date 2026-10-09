@@ -114,7 +114,7 @@ object Cell:
       val rows =
         framed
         . map { cell => cell.lines.stdlib.map(_.text) }
-        . reduceLeft { (left, right) => left.zip(right).map { (l, r) => t"$l$r" } }
+        . reduceLeft: (left, right) => left.zip(right).map: (l, r) => t"$l$r"
 
       Cell(Sequence.from(rows.map(Writing(_))), cells.map(_.width).total, ascent)
 
@@ -171,8 +171,7 @@ object Cell:
     // `Optional` is a union, so a `let` inside a `let` flattens: one absent child
     // makes the whole concatenation absent.
     nodes.fold(t"": Optional[Text]): (text, node) =>
-      text.let: prefix =>
-        scriptText(node).let(part => t"$prefix$part")
+      text.let: prefix => scriptText(node).let: part => t"$prefix$part"
 
   // The script rewritten in `glyphs`, or `Unset` if any character has no glyph.
   private def transcribe(text: Text, glyphs: Map[Char, Char]): Optional[Text] =
@@ -189,7 +188,7 @@ object Cell:
   // occupies a single line and the script has glyphs for every character.
   private def sameLine(base: Cell, script: Mathml, glyphs: Map[Char, Char]): Optional[Cell] =
     if base.height > 1 then Unset else
-      scriptText(script).let(transcribe(_, glyphs)).let(text => line(t"${slice(base, 0)}$text"))
+      scriptText(script).let(transcribe(_, glyphs)).let: text => line(t"${slice(base, 0)}$text")
 
   def superscript(base: Cell, script: Cell): Cell =
     val height = base.height + script.height

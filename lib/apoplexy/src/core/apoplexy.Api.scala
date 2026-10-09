@@ -102,7 +102,7 @@ object Api:
     ( using Tactic[OAuth.Error], Diagnostics )
   :   Http.Header =
 
-    scopes.seek(scope => !credential.value.grants(List(scope))).let: scope =>
+    scopes.seek{ scope => !credential.value.grants(List(scope)) }.let: scope =>
       abort(OAuth.Error(OAuth.Error.Reason.InsufficientPrivileges(scope)))
 
     Http.Header(t"authorization", credential.value.bearer.show)

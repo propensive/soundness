@@ -90,7 +90,7 @@ extends caps.ExclusiveCapability:
 
     insert(Tar.Entry.File
       ( name, UnixMode(), UnixUser(0), UnixGroup(0), 0.bits.u32,
-        Archive.Body.deferred(() => if iterator.hasNext then iterator.next() else Unset) ))
+        Archive.Body.deferred{ () => if iterator.hasNext then iterator.next() else Unset } ))
 
   // Author one entry with a streamed, unknown-length body: the block writes
   // chunks through the lent `TarEntryWriter`. On an uncompressed target the
@@ -113,7 +113,7 @@ extends caps.ExclusiveCapability:
 
     . apply: out =>
         val probe = Tar.Entry.File(name, mode, user, group, mtime, Archive.Body.empty)
-        Tarfile.preamble(probe, format).each { chunk => write(out, chunk) }
+        Tarfile.preamble(probe, format).each: chunk => write(out, chunk)
 
         val headerPosition = out.getFilePointer
         write(out, Tarfile.zeroBlock)
@@ -133,7 +133,7 @@ extends caps.ExclusiveCapability:
       case file: Tar.Entry.File =>
         // Stream the body with a backpatched header, so a lazy payload is
         // never held in memory.
-        Tarfile.preamble(entry, format).each { chunk => write(out, chunk) }
+        Tarfile.preamble(entry, format).each: chunk => write(out, chunk)
         val headerPosition = out.getFilePointer
         write(out, Tarfile.zeroBlock)
 
@@ -147,8 +147,8 @@ extends caps.ExclusiveCapability:
         out.seek(end)
 
       case other =>
-        Tarfile.preamble(entry, format).each { chunk => write(out, chunk) }
-        other.serialize.each { chunk => write(out, chunk) }
+        Tarfile.preamble(entry, format).each: chunk => write(out, chunk)
+        other.serialize.each: chunk => write(out, chunk)
 
   private def pad(out: ji.RandomAccessFile, count: Long): Unit =
     val remainder = (count%512).toInt

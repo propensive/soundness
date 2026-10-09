@@ -207,7 +207,7 @@ case class Layout[row, text: ClassTag]
   def titleLines(using metrics: Text is Measurable, textual: text is Textual { type Result = Char }, hyphenation: Hyphenation)
   :   List[text] =
 
-    titles.bind { cells => lines(cells, Nil) }
+    titles.bind: cells => lines(cells, Nil)
 
   def topRule(using metrics: Text is Measurable, textual: text is Textual { type Result = Char }): Optional[text] =
     if style.topLine.absent then Unset else Grid.rule(style, widths, above = false, below = true)

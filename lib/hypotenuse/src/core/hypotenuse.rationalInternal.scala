@@ -130,7 +130,8 @@ object rationalInternal:
       if reduced >= (if fit == 0 then 2L else 1L) then
         terms(fit) = if fit == 0 then reduced - 1 else reduced
         count = fit + 1
-      else count = fit
+      else
+        count = fit
 
     var settled = false
 
@@ -543,8 +544,10 @@ object rationalInternal:
       if width + exponent > 32 then
         terms(0) = Cap
         encodeMagnitude(terms, 1, budget)
-      else encodeFraction(mantissa << exponent, 1L, budget)
-    else if -exponent <= 62 then encodeFraction(mantissa, 1L << -exponent, budget)
+      else
+        encodeFraction(mantissa << exponent, 1L, budget)
+    else if -exponent <= 62 then
+      encodeFraction(mantissa, 1L << -exponent, budget)
     else if -exponent - width >= 32 then
       terms(0) = 0L
       terms(1) = Cap

@@ -183,8 +183,7 @@ object Certificate:
     // choice is identified by its tag, and the string type never appears on the wire.
     val alternativeNames: Optional[Asn1] =
       if alternatives.nil then Unset else
-        val names = alternatives.map: name =>
-          Asn1.Tagged(2, false, Asn1.Ia5String(name))
+        val names = alternatives.map: name => Asn1.Tagged(2, false, Asn1.Ia5String(name))
 
         entry(SubjectAltName, false, Asn1.Sequence(names))
 

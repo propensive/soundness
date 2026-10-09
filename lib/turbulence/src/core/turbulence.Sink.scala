@@ -57,7 +57,7 @@ object Sink:
     // SAM expansion turns this given into an anonymous class that hides the
     // evidence; the pure thunk empties the capture.
     // [anon-fresh-field] scala.js SAM anonymous class hides tactic evidence
-    val cut: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => streamCut.asInstanceOf[AnyRef] }
+    val cut: () -> AnyRef = caps.unsafe.unsafeAssumePure: () => streamCut.asInstanceOf[AnyRef]
 
     value =>
       new Intake[Data]:
@@ -113,7 +113,7 @@ object Sink:
     // SAM expansion turns this given into an anonymous class that hides the
     // evidence; the pure thunk empties the capture.
     // [anon-fresh-field] scala.js SAM anonymous class hides tactic evidence
-    val cut: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => streamCut.asInstanceOf[AnyRef] }
+    val cut: () -> AnyRef = caps.unsafe.unsafeAssumePure: () => streamCut.asInstanceOf[AnyRef]
 
     value =>
       new Intake[Data]:

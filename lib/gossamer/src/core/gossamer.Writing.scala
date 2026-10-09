@@ -119,8 +119,7 @@ object Writing:
       val charStart = writing.boundaries.at(Ordinal.zerary(start.n0.min(writing.boundaries.readable.length - 1))).or(0)
       val foundChar = writing.text.s.indexOf(sub.s, charStart)
 
-      if foundChar < 0 then Unset else
-        writing.boundaries.where(_ == foundChar)
+      if foundChar < 0 then Unset else writing.boundaries.where(_ == foundChar)
 
     def builder(size: Optional[Int]): Builder[Writing] = WritingBuilder(size)
 

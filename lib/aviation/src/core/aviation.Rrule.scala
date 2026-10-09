@@ -81,10 +81,9 @@ object Rrule:
     ( using order: point is Comparable )
   :   Chain[point] =
 
-    val capped = until.lay(stream): limit =>
-      stream.keep(!order.greater(_, limit))
+    val capped = until.lay(stream): limit => stream.keep(!order.greater(_, limit))
 
-    count.lay(capped) { n => capped.keep(n) }
+    count.lay(capped): n => capped.keep(n)
 
   // ── RFC 5545 text form ───────────────────────────────────────────────────────────────────────
   // The rule is serialised on its own (the `DTSTART`/`start` is separate in iCalendar), e.g.
@@ -107,7 +106,7 @@ object Rrule:
       if condition then List(text) else List()
 
     def partOf[value](optional: Optional[value])(text: value => Text): List[Text] =
-      optional.lay(List())(value => List(text(value)))
+      optional.lay(List()): value => List(text(value))
 
     val parts =
       part(true, t"FREQ=${rule.frequency.show.upper}") +
@@ -285,8 +284,8 @@ object Rrule:
     val weekdays = if !rule.byDay.nil then rule.byDay.map(_.weekday) else List(start.weekday)
 
     val weeks =
-      rule.byWeekNo.map(week => if week > 0 then week else count + week + 1)
-        .filter(week => week >= 1 && week <= count)
+      rule.byWeekNo.map{ week => if week > 0 then week else count + week + 1 }
+        .filter: week => week >= 1 && week <= count
 
     val dates =
       for
@@ -337,8 +336,7 @@ object Rrule:
   private def months(start: Date, interval: Int)(using RomanCalendar): Chain[(Int, Int)] =
     val first = yearOf(start)*12 + (monthOf(start) - 1)
 
-    Chain.iterate(first)(_ + interval).map: n =>
-      (n/12, n%12 + 1)
+    Chain.iterate(first)(_ + interval).map: n => (n/12, n%12 + 1)
 
   // The ascending week-start dates for `Weekly`, aligned to `weekStart`, stepping `interval` weeks.
   private def weeks(start: Date, rule: Rrule[?]): Chain[Date] =
@@ -360,7 +358,7 @@ object Rrule:
 
     val candidates =
       byDayDates.lay(byMonthDayDates.or(list(monthDay(year, month, dayOf(start))))): byDay =>
-        byMonthDayDates.lay(byDay)(monthDays => byDay.filter(monthDays.has(_)))
+        byMonthDayDates.lay(byDay): monthDays => byDay.filter(monthDays.has(_))
 
     candidates.distinct.order(_.jdn)
 

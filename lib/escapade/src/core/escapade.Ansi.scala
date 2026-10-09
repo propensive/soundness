@@ -162,8 +162,7 @@ object Ansi extends Ansi2:
 
       if triggerLink then linkArmed = false
 
-      if !text.hyperlinks.nil then
-        text.hyperlinks.each: (k, v) => hyperlinks(n + k) = v
+      if !text.hyperlinks.nil then text.hyperlinks.each: (k, v) => hyperlinks(n + k) = v
 
       if text.insertions.nonEmpty then text.insertions.each: (k, v) => insertions(n + k) = v
 
@@ -319,8 +318,7 @@ object Ansi extends Ansi2:
     def skip(state: State): State = insert(state, Input.TextInput(Teletype.empty))
 
     def complete(state: State): Teletype =
-      if !state.stack.nil
-      then throw Error(m"the closing brace does not match an opening brace")
+      if !state.stack.nil then throw Error(m"the closing brace does not match an opening brace")
 
       val tail = if state.linkArmed then StyleWord.HyperlinkChange else 0L
       state.styles += tail

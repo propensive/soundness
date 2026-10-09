@@ -84,7 +84,7 @@ object bintelInternal:
       if run == null then false else
         val sources = run.nn.units.map(_.source.path).toSet
         val position = symbol.pos
-        position.exists { position => sources.contains(position.sourceFile.path) }
+        position.exists: position => sources.contains(position.sourceFile.path)
     catch case _: Exception => false
 
   private def innerClasspath(using Quotes): String =
@@ -455,10 +455,10 @@ object bintelInternal:
       val children = classSymbol.children
 
       val supported =
-        !applied
-        && classSymbol.flags.is(Flags.Sealed)
-        && children.nonEmpty
-        && children.forall { child => child.isClassDef && child.flags.is(Flags.Case) }
+        !applied &&
+        classSymbol.flags.is(Flags.Sealed) &&
+        children.nonEmpty &&
+        children.forall: child => child.isClassDef && child.flags.is(Flags.Case)
 
       if supported then Some(children.map { child => (child.name, child.typeRef) }) else None
 
@@ -466,12 +466,12 @@ object bintelInternal:
     import quotes.reflect.*
 
     tpe.classSymbol.exists: classSymbol =>
-      classSymbol.flags.is(Flags.Case)
-      && !classSymbol.owner.isTerm
-      && (tpe match { case AppliedType(_, _) => false case _ => true })
+      classSymbol.flags.is(Flags.Case) &&
+      !classSymbol.owner.isTerm &&
+      (tpe match { case AppliedType(_, _) => false case _ => true })
       && classSymbol.primaryConstructor.paramSymss
-        . filterNot(_.exists(_.isTypeParam)).length == 1
-      && !hasRenames(classSymbol)
+        . filterNot(_.exists(_.isTypeParam)).length == 1 &&
+      !hasRenames(classSymbol)
 
   // `@name` renames change the wire *keyword*, which positional index
   // dispatch never reads — but they mark intent the generator does not
@@ -481,10 +481,10 @@ object bintelInternal:
 
     val annotated =
       classSymbol.primaryConstructor.paramSymss.flatten.filterNot(_.isTypeParam)
-        . flatMap(_.annotations)
-      ++ classSymbol.caseFields.flatMap(_.annotations)
+        . flatMap(_.annotations) ++
+      classSymbol.caseFields.flatMap(_.annotations)
 
-    annotated.exists { annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+    annotated.exists: annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]]
 
   // ── The product generator ──────────────────────────────────────────────
   // One struct body: the child count, then per child a keyword index — the
@@ -530,15 +530,15 @@ object bintelInternal:
     val fields = classSymbol.caseFields
     val arity = fields.length
     val fieldNames: List[String] = fields.map(_.name)
-    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
+    val fieldTypes: List[TypeRepr] = fields.map: field => tpe.memberType(field).dealias
 
     val plans: List[Plan] =
-      List.range(0, arity).map { i => planFor[product](fieldNames(i), fieldTypes(i), cache) }
+      List.range(0, arity).map: i => planFor[product](fieldNames(i), fieldTypes(i), cache)
 
     // The wire keyword of each field, for foci paths — kebab-cased as the
     // schema derivation names it.
     val keywords: List[String] =
-      fieldNames.map { name => Tel.camelToKebab(name).s }
+      fieldNames.map: name => Tel.camelToKebab(name).s
 
     def body
       ( tactic:  Expr[Tactic[Tel.Error]],
@@ -931,7 +931,8 @@ object bintelInternal:
               if $kidx == ${Expr(index)} then
                 def parseVariant(): variantType = ${instance.parse(reader)}
                 parseVariant()
-              else ${dispatch(index + 1, kidx, btactic)}
+              else
+                ${dispatch(index + 1, kidx, btactic)}
             }
 
     def discard(index: Int, kidx: Expr[Int], btactic: Expr[Tactic[Bintel.Error]]): Expr[Unit] =
@@ -950,7 +951,8 @@ object bintelInternal:
                 def parseExtra(): variantType = ${instance.parse(reader)}
                 parseExtra()
                 ()
-              else ${discard(index + 1, kidx, btactic)}
+              else
+                ${discard(index + 1, kidx, btactic)}
             }
 
     ' {

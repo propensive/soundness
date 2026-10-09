@@ -95,7 +95,7 @@ object stagedInternal:
       if run == null then false else
         val sources = run.nn.units.map(_.source.path).toSet
         val position = symbol.pos
-        position.exists { position => sources.contains(position.sourceFile.path) }
+        position.exists: position => sources.contains(position.sourceFile.path)
     catch case _: Exception => false
 
   private def innerClasspath(using Quotes): String =
@@ -383,7 +383,7 @@ object stagedInternal:
           case '[variantType] => resolve[variantType](cache).isDefined
 
       if !resolvable then None
-      else discriminantAttribute[field].map { attribute => Inlinable.SumInlinable[field](attribute) }
+      else discriminantAttribute[field].map: attribute => Inlinable.SumInlinable[field](attribute)
 
   // The variants of a stageable sealed sum: `(label, type)` per variant, or
   // `None` when the shape is unsupported.
@@ -400,10 +400,10 @@ object stagedInternal:
       val children = classSymbol.children
 
       val supported =
-        !applied
-        && classSymbol.flags.is(Flags.Sealed)
-        && children.nonEmpty
-        && children.forall: child =>
+        !applied &&
+        classSymbol.flags.is(Flags.Sealed) &&
+        children.nonEmpty &&
+        children.forall: child =>
           child.isClassDef && child.flags.is(Flags.Case) && !hasAnnotations(child)
 
       if supported then Some(children.map { child => (child.name, child.typeRef) }) else None
@@ -459,12 +459,12 @@ object stagedInternal:
     import quotes.reflect.*
 
     tpe.classSymbol.exists: classSymbol =>
-      classSymbol.flags.is(Flags.Case)
-      && !classSymbol.owner.isTerm
-      && (tpe match { case AppliedType(_, _) => false case _ => true })
+      classSymbol.flags.is(Flags.Case) &&
+      !classSymbol.owner.isTerm &&
+      (tpe match { case AppliedType(_, _) => false case _ => true })
       && classSymbol.primaryConstructor.paramSymss
-        . filterNot(_.exists(_.isTypeParam)).length == 1
-      && !hasAnnotations(classSymbol)
+        . filterNot(_.exists(_.isTypeParam)).length == 1 &&
+      !hasAnnotations(classSymbol)
 
   // `@name` renames resolve through inline machinery the structural
   // generator does not replicate, and `@attribute` fields fill from the
@@ -475,12 +475,12 @@ object stagedInternal:
 
     val annotated =
       classSymbol.primaryConstructor.paramSymss.flatten.filterNot(_.isTypeParam)
-        . flatMap(_.annotations)
-      ++ classSymbol.caseFields.flatMap(_.annotations)
+        . flatMap(_.annotations) ++
+      classSymbol.caseFields.flatMap(_.annotations)
 
     annotated.exists: annotation =>
-      annotation.tpe <:< TypeRepr.of[adversaria.name[?]]
-      || annotation.tpe <:< TypeRepr.of[Xml.attribute]
+      annotation.tpe <:< TypeRepr.of[adversaria.name[?]] ||
+      annotation.tpe <:< TypeRepr.of[Xml.attribute]
 
   // ── The collection generator ───────────────────────────────────────────
   // A single element read as a collection: one element — the runtime
@@ -597,7 +597,7 @@ object stagedInternal:
     val tpe = TypeRepr.of[product].dealias
     val classSymbol = tpe.classSymbol.get
     val fields = classSymbol.caseFields
-    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
+    val fieldTypes: List[TypeRepr] = fields.map: field => tpe.memberType(field).dealias
 
     val plans: List[Plan] = fieldTypes.map: fieldType =>
       builtinFor(fieldType) match
@@ -648,7 +648,7 @@ object stagedInternal:
       val name = fieldNames(index)
       val length = name.length
 
-      val packs = length > 0 && length <= 16 && name.forall { char => char >= '!' && char < 127 }
+      val packs = length > 0 && length <= 16 && name.forall: char => char >= '!' && char < 127
 
       if !packs then None else
         var low = 0L
@@ -1204,7 +1204,8 @@ object stagedInternal:
               if $wire == ${Expr(variants(index)(0))} then
                 def parseVariant(): variantType = ${instance.parse(reader)}
                 parseVariant()
-              else ${dispatch(index + 1, wire, tactic)}
+              else
+                ${dispatch(index + 1, wire, tactic)}
             }
 
     ' {

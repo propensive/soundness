@@ -77,8 +77,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     // The edit reads and rewrites the same single-owner document.
     // [by-name-receiver] editPage lambda reads same document passed as argument
     scala.caps.unsafe.unsafeAssumeSeparate:
-      editPage(pdf, page): entries =>
-        entries.define(t"Contents", stream)
+      editPage(pdf, page): entries => entries.define(t"Contents", stream)
 
   // Sets a page's rotation.
   def setRotation(page: Page^, rotation: Page.Rotation)(using Tactic[Pdf.Error]): Unit =
@@ -155,8 +154,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
               t"BaseFont" -> Cos.Name(baseFont) )
 
         val encoded =
-          if symbolic then entries
-          else entries.define(t"Encoding", Cos.Name(t"WinAnsiEncoding"))
+          if symbolic then entries else entries.define(t"Encoding", Cos.Name(t"WinAnsiEncoding"))
 
         pdf.allocate(Cos.Dictionary(encoded))
 

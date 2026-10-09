@@ -110,9 +110,7 @@ object Grid:
     val descenders = if below then joints else sci.BitSet()
 
     val horizontal =
-      if !above then style.topLine
-      else if !below then style.bottomLine
-      else style.titleLine
+      if !above then style.topLine else if !below then style.bottomLine else style.titleLine
 
     Textual:
       Text.fill(width): index =>

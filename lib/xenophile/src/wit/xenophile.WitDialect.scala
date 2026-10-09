@@ -73,8 +73,7 @@ object WitDialect extends Dialect:
   def worlds(source: Text): Map[Text, World] = worlds0(source)
 
   private def packageOf(document: Wit.Document): Optional[Text] =
-    document.packageName.let: name =>
-      document.version.let { version => t"$name@$version" }.or(name)
+    document.packageName.let: name => document.version.let { version => t"$name@$version" }.or(name)
 
   private def worlds0(source: Text): Map[Text, World] =
     import strategies.throwUnsafely

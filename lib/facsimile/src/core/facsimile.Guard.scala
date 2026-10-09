@@ -121,7 +121,8 @@ private[facsimile] object Guard:
                 case _        => Method.Identity
 
         (method(t"StmF"), method(t"StrF"))
-      else (Method.Rc4, Method.Rc4)
+      else
+        (Method.Rc4, Method.Rc4)
 
     if revision >= 5 then
       // Revisions 5–6 (AES-256): the file key is unwrapped from `/UE` with a key derived
@@ -162,8 +163,8 @@ private[facsimile] object Guard:
     var hash: Data =
       md5:
         Array.frozen
-          ( Array.unsafeFrozen(padded(password)).readable ++ owner.keep(32.min(owner.length)).readable
-            ++ permissionsBytes.readable ++ id.readable ++ metadataBytes.readable )
+          ( Array.unsafeFrozen(padded(password)).readable ++ owner.keep(32.min(owner.length)).readable ++
+            permissionsBytes.readable ++ id.readable ++ metadataBytes.readable )
 
     // Revision 3+: 50 further MD5 rounds over the first `keyBytes` bytes.
     if revision >= 3 then
@@ -185,7 +186,7 @@ private[facsimile] object Guard:
       var i = 1
 
       while i <= 19 do
-        val roundKey = fileKey.remap(byte => (byte ^ i).toByte)
+        val roundKey = fileKey.remap: byte => (byte ^ i).toByte
         value = Rc4(roundKey, value)
         i += 1
 

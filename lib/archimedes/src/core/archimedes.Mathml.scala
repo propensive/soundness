@@ -412,8 +412,7 @@ object Mathml:
       nodes.at(index.z).or(Mrow(Nil))
 
     def decodeMath(elem: Xml.Element)(using Tactic[Mathml.Error]): Math =
-      val kept = elem.attributes.to[List].filter: (key, _) =>
-        key != t"xmlns" && key != t"display"
+      val kept = elem.attributes.to[List].filter: (key, _) => key != t"xmlns" && key != t"display"
 
       val display: Optional[Display] = elem.attributes(t"display").let:
         case Display(display) => display

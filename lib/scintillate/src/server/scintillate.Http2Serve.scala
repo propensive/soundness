@@ -105,8 +105,7 @@ object Http2Serve:
                   . to[Set]
 
               val (trailerEntries, headEntries) =
-                PseudoHeaders.entries(response).partition: entry =>
-                  trailerNames.has(entry.name)
+                PseudoHeaders.entries(response).partition: entry => trailerNames.has(entry.name)
 
               val trailing: Boolean = !trailerEntries.nil
 

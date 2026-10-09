@@ -144,11 +144,11 @@ object internal:
     val annotations: scala.List[(String, Term)] = cases.flatMap: child =>
       annotated(symbols(child), TypeRepr.of[retract]).map(child.name.stripSuffix("$") -> _)
 
-    val pairs = annotations.map((label, annotation) => (label, layerName(annotation))).distinct
+    val pairs = annotations.map{ (label, annotation) => (label, layerName(annotation)) }.distinct
 
     pairs.groupBy(_(1)).foreach: (layer, retracted) =>
       if cases.nonEmpty && retracted.map(_(0)).distinct.length == cases.length then
-        val last = annotations.filter((label, _) => retracted.exists(_(0) == label)).last(1)
+        val last = annotations.filter{ (label, _) => retracted.exists(_(0) == label) }.last(1)
 
         halt
           ( m"""the layer $layer retracts every case of ${sum.name}, which would leave nothing a
@@ -557,8 +557,7 @@ object internal:
       val left = pattern.compounds
       val right = input.compounds
 
-      left.spot: index =>
-        !right.at(index).lay(false)(matchCompound(left.at(index), _, marker, out))
+      left.spot: index => !right.at(index).lay(false)(matchCompound(left.at(index), _, marker, out))
 
       . absent
 
@@ -742,10 +741,10 @@ object internal:
     // still parses: it always arrives as `KeywordOpaque` and takes the
     // general text step, which matches all fields by string.
     val literalKeys: Boolean =
-      val annotated = ctor.paramSymss.flatten.filterNot(_.isTypeParam).flatMap(_.annotations)
-        ++ classSymbol.caseFields.flatMap(_.annotations)
+      val annotated = ctor.paramSymss.flatten.filterNot(_.isTypeParam).flatMap(_.annotations) ++
+        classSymbol.caseFields.flatMap(_.annotations)
 
-      !annotated.exists { annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+      !annotated.exists: annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]]
 
     def packedKeyword(name: String): Option[Long] =
       val length = name.length
@@ -1074,8 +1073,8 @@ object internal:
             Block
               ( ValDef
                   ( assignment,
-                    Some('{Tel.Parsable.positionalAssign($table, $atoms)(using $tactic)}.asTerm) )
-                :: deliveries,
+                    Some('{Tel.Parsable.positionalAssign($table, $atoms)(using $tactic)}.asTerm) ) ::
+                deliveries,
                 unit ),
             unit )
 
@@ -1105,7 +1104,8 @@ object internal:
       val resolve: Term =
         if literalKeys then
           If('{$wordRef == TelReader.KeywordOpaque}.asTerm, textStep, chain(fields))
-        else textStep
+        else
+          textStep
 
       val step: Term =
         Block
@@ -1209,7 +1209,7 @@ object internal:
 
     val fociExpr = summonOrAbort[Foci[Tel.Focus]]("Foci[Tel.Focus]")
     val tacticExpr = summonOrAbort[Tactic[Tel.Error]]("Tactic[Tel.Error]")
-    val nameExprs = fields.map { field => Expr(field.name) }
+    val nameExprs = fields.map: field => Expr(field.name)
     val instanceExprs = fields.map(summonField)
     val fallbackExprs = fields.map(declaredDefault)
 
@@ -1237,7 +1237,7 @@ object internal:
           lazy val instances: Array[Tel.Field | Null]^{} = Array(${Varargs(instanceExprs)}*)
 
           lazy val repeatables: Array[Boolean]^{} =
-            instances.remap { instance => instance != null && Tel.Parsable.repeats(instance) }
+            instances.remap: instance => instance != null && Tel.Parsable.repeats(instance)
 
           lazy val fallbacks: Array[Any]^{} = Array[Any](${Varargs(fallbackExprs)}*)
 

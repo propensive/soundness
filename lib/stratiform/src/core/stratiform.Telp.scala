@@ -175,8 +175,8 @@ object Telp:
 
           case scala.None =>
             if name == Tels.Builtin.Flag then Tels.Flag
-            else if name == Tels.Builtin.String || name == Tels.Builtin.Identifier
-              || name == Tels.Builtin.TypeName || name == Tels.Builtin.Sigil
+            else if name == Tels.Builtin.String || name == Tels.Builtin.Identifier ||
+              name == Tels.Builtin.TypeName || name == Tels.Builtin.Sigil
             then Tels.Scalar(Array.empty)
             else Unset
 
@@ -266,7 +266,7 @@ object Telp:
       case _ => false
 
   private[stratiform] def allDigits(component: Text): Boolean =
-    component.s.forall { ch => ch >= '0' && ch <= '9' }
+    component.s.forall: ch => ch >= '0' && ch <= '9'
 
   // The occurrence an all-digit component selects, saturating on a run of digits
   // too long for an `Int`: no occurrence sequence is that long, so the selection
@@ -350,7 +350,8 @@ case class Telp(components: List[Text]) derives CanEqual:
               if slot.repeatable then
                 pendingType = slot.slotType
                 pendingOccurrences = occurrences
-              else occurrences.prim.let { child => current = child }
+              else
+                occurrences.prim.let { child => current = child }
               . or(abort(Telp.Error(Telp.Error.Reason.AbsentMember, i)))
 
             case _ => abort(Telp.Error(Telp.Error.Reason.NonStructDescent, i))

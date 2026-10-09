@@ -90,8 +90,7 @@ extends GridSurface(widthFn(), heightFn()):
     val h       = gridHeight
     val validated = if invalidated then Unset else snapshotValid(1, columns, h)
 
-    validated.let: snap =>
-      presentDiff(1, columns, h, snap)
+    validated.let: snap => presentDiff(1, columns, h, snap)
 
     . or:
       invalidated = false

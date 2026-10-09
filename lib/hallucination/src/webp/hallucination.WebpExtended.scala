@@ -125,11 +125,9 @@ private[hallucination] object WebpExtended:
         val reader = WebpBitReader(data, start + 1, end)
         val rgba = WebpLossless.decodeRaw(reader, width, height)
 
-        scala.Array.tabulate(width*height): i =>
-          rgba(i*4 + 1) & 0xff
+        scala.Array.tabulate(width*height): i => rgba(i*4 + 1) & 0xff
       else if compression == 0 then
-        scala.Array.tabulate(width*height): i =>
-          u8(data, start + 1 + i)
+        scala.Array.tabulate(width*height): i => u8(data, start + 1 + i)
       else
         abort(Raster.Error(Webp(), Reason.UnsupportedVariant))
 
