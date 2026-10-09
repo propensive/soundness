@@ -3,8 +3,12 @@
 
 Counts, per file, every place the capture checker is overruled by hand — the four
 `caps.unsafe` hatches — and the array conversions that hide a capture behind a helper
-(`Array.unsafeFrozen`, `Array.unsafeJvm`, `Array.frozen`, `unsafeMutable`/`unsafeImmutable`, and
-`!!`, the erased-evidence operator over `unsafeErasedValue`).
+(`Array.unsafeFrozen`, `Array.unsafeJvm`, `Array.frozen`, `unsafeMutable`/`unsafeImmutable`, the
+stdlib's `IArray.unsafeFromArray`, and
+`!!`, the erased-evidence operator over `unsafeErasedValue`). It also counts the casts that
+move a capability past the checker without any hatch: a cast to `AnyRef`, the "neutral carrier"
+that a capability is stored as and later recovered from, and a cast whose target type carries a
+capture set (`x.asInstanceOf[Reader^]`), which reasserts one.
 A file may never gain more of any of them than `etc/escape-baseline.tsv` records; when a change
 removes some, run with `--update` to lower the baseline and lock the improvement in.
 
@@ -41,10 +45,15 @@ WRAPPERS = [
   ('unsafeJvm',    r'\bArray\.unsafeJvm\b'),
   ('frozen',       r'\bArray\.frozen\b'),
   ('mutability',   r'\bunsafe(?:Mutable|Immutable)\b'),
+  ('unsafeFromArray', r'\bIArray\.unsafeFromArray\b'),
   ('erasedEvidence', r'(?<![!\w])!!(?![!=\w])'),
 ]
 
-COLUMNS = [name for name, _ in HATCHES+WRAPPERS]+['untagged']
+# Casts are counted by their type argument, read with balanced brackets, since a capturing target
+# type is often nested (`asInstanceOf[(Stream[Text] over Credit)^]`).
+CASTS = ['anyRefCast', 'captureCast']
+
+COLUMNS = [name for name, _ in HATCHES+WRAPPERS]+CASTS+['untagged']
 
 # The closed vocabulary. Each tag names a blocker; `rep/DECISIONS.md` has the case behind it.
 TAGS = {
@@ -98,6 +107,25 @@ def tagged(raw, index):
   return None
 
 
+def casts(line):
+  found = []
+  start = 0
+
+  while (begin := line.find('.asInstanceOf[', start)) >= 0:
+    end = begin+len('.asInstanceOf[')
+    depth = 1
+
+    while end < len(line) and depth:
+      if line[end] == '[': depth += 1
+      elif line[end] == ']': depth -= 1
+      end += 1
+
+    found.append(line[begin+len('.asInstanceOf['):end-1])
+    start = end
+
+  return found
+
+
 def census(path):
   code, raw = lines(path)
   row = dict.fromkeys(COLUMNS, 0)
@@ -106,6 +134,10 @@ def census(path):
   for index, line in enumerate(code):
     line = strip(line)
     for name, pattern in WRAPPERS: row[name] += len(re.findall(pattern, line))
+
+    for target in casts(line):
+      if target.strip() == 'AnyRef': row['anyRefCast'] += 1
+      elif '^' in target: row['captureCast'] += 1
     for name, pattern in HATCHES:
       found = len(re.findall(pattern, line))
       if not found: continue
