@@ -104,14 +104,14 @@ object Addressable:
 
     // The pieces are copied once, straight into the array that becomes the value.
     override def assemble(pieces: sci.Seq[Data], total: Int): Data =
-      val array = new scala.Array[Byte](total)
+      val array = Array.allocate[Byte](total)
       var offset: Int = 0
 
       pieces.foreach: piece =>
         System.arraycopy(Array.unsafeJvm(piece), 0, array, offset, piece.length)
         offset += piece.length
 
-      Array.unsafeFrozen(array)
+      Array.freeze(array)
 
     override inline def backing(value: Data): Optional[scala.Array[Byte]] =
       value.asInstanceOf[scala.Array[Byte]]

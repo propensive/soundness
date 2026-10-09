@@ -560,9 +560,9 @@ object Dns:
         (high << 32) | u32()
 
       private def copy(from: Int, count: Int): Data =
-        val result = new scala.Array[Byte](count)
+        val result = Array.allocate[Byte](count)
         System.arraycopy(Array.unsafeJvm(data), from, result, 0, count)
-        Array.unsafeFrozen(result)
+        Array.freeze(result)
 
       private update def bytes(count: Int)(using Tactic[Error]): Data =
         need(count)

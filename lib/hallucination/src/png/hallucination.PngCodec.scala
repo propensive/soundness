@@ -287,7 +287,7 @@ private[hallucination] object PngCodec:
     val alpha = raster.descriptor.hasAlpha
     val channels = if alpha then 4 else 3
     val rowBytes = width*channels
-    val raw = new scala.Array[Byte]((rowBytes + 1)*height)
+    val raw = Array.allocate[Byte]((rowBytes + 1)*height)
     var previous = new scala.Array[Byte](rowBytes)
     val current = new scala.Array[Byte](rowBytes)
     val filtered = new scala.Array[Byte](rowBytes)
@@ -346,7 +346,7 @@ private[hallucination] object PngCodec:
       System.arraycopy(current, 0, previous, 0, rowBytes)
 
     val compressed =
-      concatenate(Zlib.compression.compress(Chain(Array.unsafeFrozen(raw))))
+      concatenate(Zlib.compression.compress(Chain(Array.freeze(raw))))
 
     val output = ji.ByteArrayOutputStream()
     signature.foreach(output.write(_))

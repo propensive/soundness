@@ -1534,17 +1534,17 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       (mode: @switch) match
         case ModeBcdInt =>
           val src = intItems.nn
-          val out = new scala.Array[Int](src.length)
-          src.copyToArray(out)
+          val out = Array.allocate[Int](src.length)
+          src.copyToArray(out.raw)
           relinquishBcdIntBuffer()
-          Array.unsafeFrozen(out)
+          Array.freeze(out)
 
         case ModeBcdLong =>
           val src = longItems.nn
-          val out = new scala.Array[Long](src.length)
-          src.copyToArray(out)
+          val out = Array.allocate[Long](src.length)
+          src.copyToArray(out.raw)
           relinquishBcdLongBuffer()
-          Array.unsafeFrozen(out)
+          Array.freeze(out)
 
         case _ =>
           // Mixed/boxed array — stored as `Array[Any]^{}` and parity-padded
@@ -1727,17 +1727,17 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         (mode: @switch) match
           case ModeBcdInt =>
             val src = intItems.nn
-            val out = new scala.Array[Int](src.length)
-            src.copyToArray(out)
+            val out = Array.allocate[Int](src.length)
+            src.copyToArray(out.raw)
             relinquishBcdIntBuffer()
-            Array.unsafeFrozen(out)
+            Array.freeze(out)
 
           case ModeBcdLong =>
             val src = longItems.nn
-            val out = new scala.Array[Long](src.length)
-            src.copyToArray(out)
+            val out = Array.allocate[Long](src.length)
+            src.copyToArray(out.raw)
             relinquishBcdLongBuffer()
-            Array.unsafeFrozen(out)
+            Array.freeze(out)
 
           case _ =>
             val src = anyItems.nn

@@ -84,12 +84,12 @@ private[pneumatic] trait BrotliEngine extends caps.Mutable:
 
   update def gather(): Data =
     val count = limit - delivered
-    val result = new scala.Array[Byte](count)
+    val result = Array.allocate[Byte](count)
     System.arraycopy(pending, delivered, result, 0, count)
     pending = new scala.Array[Byte](0)
     limit = 0
     delivered = 0
-    Array.unsafeFrozen(result)
+    Array.freeze(result)
 
 // Accumulates its input as a flat, doubling byte array: the counterpart of the
 // output side above, replacing another boxing `ArrayBuffer` (and a per-byte

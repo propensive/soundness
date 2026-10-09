@@ -180,7 +180,7 @@ object Blake3:
     // Interior scratch, as the block buffers are: the generic `Array.allocate`/`update` would
     // allocate reflectively and box every byte, which costs more than the hash itself.
     def rootOutputBytes(outLen: Int): Array[Byte]^{} =
-      val result = new scala.Array[Byte](outLen)
+      val result = Array.allocate[Byte](outLen)
       var blockCounter = 0L
       var pos = 0
 
@@ -198,7 +198,7 @@ object Blake3:
         blockCounter += 1
 
       // Fresh and never escaping before this point, so no writer can alias it.
-      Array.unsafeFrozen(result)
+      Array.freeze(result)
 
   private def parentOutput
     ( leftCv: Array[Int]^{}, rightCv: Array[Int]^{}, keyWords: Array[Int]^{}, flags: Int )

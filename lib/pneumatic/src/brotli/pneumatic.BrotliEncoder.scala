@@ -378,8 +378,7 @@ private[pneumatic] object BrotliEncoder:
 
   // --- Huffman-tree serialization (inverse of the decoder's readHuffmanCode) ---------------------
   private val codeLengthCodeOrder: Array[Int]^{} =
-    Array.unsafeFrozen:
-      scala.Array(1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+    Array(1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15)
 
   private def writeCodeLengthCodeLength(writer: BrotliBitWriter^, v: Int): Unit = v match
     case 0 => writer.writeBits(0, 2)
@@ -692,8 +691,7 @@ private[pneumatic] object BrotliEncoder:
   // Insert group and copy group determine the range index; see the decoder's command decoding.
   private val rangeIndex: Array[Int]^{} =
     // indexed by insGroup*3 + copGroup, giving the base range index (0..8)
-    Array.unsafeFrozen:
-      scala.Array(0, 1, 4, 2, 3, 6, 5, 7, 8)
+    Array(0, 1, 4, 2, 3, 6, 5, 7, 8)
 
   private def commandCode(insertCode: Int, copyCode: Int): Int =
     val insGroup = insertCode / 8

@@ -121,11 +121,11 @@ object Multipart:
     // What ends every body: a line break followed by the boundary line. Its skip table is
     // built once per message.
     val delimiter: Cursor.Delimiter =
-      val bytes = new scala.Array[Byte](boundary.length + 2)
+      val bytes = Array.allocate[Byte](boundary.length + 2)
       bytes(0) = '\r'.toByte
       bytes(1) = '\n'.toByte
       System.arraycopy(Array.unsafeJvm(boundary), 0, bytes, 2, boundary.length)
-      Cursor.Delimiter(Array.unsafeFrozen(bytes))
+      Cursor.Delimiter(Array.freeze(bytes))
 
     // Sealed as telekinesis seals a request's body: the cursor is single-owner and reachable
     // only through each part's spring, and the neutral carrier keeps the spring's result from

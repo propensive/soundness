@@ -166,7 +166,7 @@ object Tests extends Suite(m"Ulysses tests"):
 
     . assert(_ == (1 to 3).map(numbers(_)))
 
-    def bytes(values: Int*): Data = Array.frozen(scala.IArray.from(values.map(_.toByte)))
+    def bytes(values: Int*): Data = Array.from(values.map(_.toByte))
 
     val shelf = Bibliography:
       proscenium.List(bytes(0x80, 1), bytes(0x10, 2), bytes(0x80, 0), bytes(0x7f, 9), bytes(0x81))
