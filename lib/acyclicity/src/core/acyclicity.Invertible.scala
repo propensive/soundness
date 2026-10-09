@@ -36,14 +36,15 @@ import prepositional.*
 
 // The graph with every edge reversed, as a value of the type best placed to hold it (`Result`,
 // bound with `to`): a `Dag` inverts to a `Dag`, since reversing every edge preserves
-// acyclicity; a `Frozen` to a `Frozen` and a `Hasse` to a `Hasse` in O(1), by swapping the two
-// directions they already store; and anything else `Nodal` to a `Digraph`, by a fold over its
+// acyclicity; a `Hasse` to a `Hasse` in O(1), by swapping the two directions it stores; a frozen
+// `Topology` to another; and anything else `Nodal` to a `Digraph`, by a fold over its
 // edges — `generic`, a method the extension takes as the default of its `using` parameter (see
 // `Reachable` for why it is not a given).
 object Invertible:
   given digraph: [node] => Digraph[node] is Invertible by node to Digraph[node] = _.invert
   given dag: [node] => Dag[node] is Invertible by node to Dag[node] = _.invert
-  given frozen: [node] => Frozen[node] is Invertible by node to Frozen[node] = _.invert
+  given topology: [node] => ((Topology[node]^{}) is Invertible by node to Topology[node]^{}) =
+    _.invert
   given hasse: [node] => Hasse[node] is Invertible by node to Hasse[node] = _.invert
 
   def generic[self, node](nodal: self is Nodal by node)

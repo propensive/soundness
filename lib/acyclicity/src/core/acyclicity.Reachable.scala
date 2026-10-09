@@ -36,13 +36,13 @@ import prepositional.*
 
 // Everything reachable from a node, the node included, as a set. Total on cyclic input — a
 // visited set, not recursion — so it never raises on its own account; the extension that calls
-// it raises only for a node the graph does not have. The native instance (`Frozen`, which walks
-// compressed rows) sits here in the companion; the generic search through `Nodal` is `generic`,
+// it raises only for a node the graph does not have. The native instance (a frozen `Topology`,
+// which walks its edge lists) sits here in the companion; the generic search through `Nodal` is `generic`,
 // a method rather than a given: the extensions take it as the default of their `using`
 // parameter, so that it is reached without a nested given search — which, for an opaque receiver
 // such as `Map`, would see the alias dealiased and match nothing.
 object Reachable:
-  given frozen: [node] => Frozen[node] is Reachable by node = _.reachable(_)
+  given topology: [node] => ((Topology[node]^{}) is Reachable by node) = _.reachable(_)
 
   def generic[self, node](nodal: self is Nodal by node): self is Reachable by node =
     (graph, start) => Search.reachable(start, nodal.successors(graph, _))

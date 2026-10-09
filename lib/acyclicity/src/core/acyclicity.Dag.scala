@@ -151,7 +151,9 @@ final class Dag[node] private[acyclicity]
 
   def invert: Dag[node] = new Dag(transpose)
   def digraph: Digraph[node] = Digraph.of(adjacency)
-  def freeze: Frozen[node] = Frozen(this)
+
+  // The frozen form, for querying; `thaw` is the editable one.
+  def freeze: Topology[node]^{} = Topology.of(linearized, adjacency(_).iterator)
   def thaw: Topology[node]^ = Topology(this)
 
   def including(node: node): Dag[node] =

@@ -63,9 +63,9 @@ import com.google.common.graph.{GraphBuilder, Graphs, MutableGraph, Traverser}
 enum Shape:
   case Chain, Tree, Layered, BuildSystem, Sparse, Dense
 
-// The implementations under comparison: `Dag`, `Frozen` and `Topology` are core's three forms
-// (the repaired persistent map, the frozen rows and bit matrix, and the separation-checked
-// mutable graph, adopted from the candidates first measured here); `Mirrored` is the candidate
+// The implementations under comparison: `Dag`, `Frozen` and `Topology` are core's forms — the
+// repaired persistent map, a frozen `Topology[Int]^{}` with its bit matrix, and the editable
+// `Topology[Int]^` — adopted from the candidates first measured here; `Mirrored` is the candidate
 // not adopted, kept for comparison; `Stdlib` is the hand-rolled baseline; the last two are the
 // rival libraries, written as their own users write them.
 enum Engine:
@@ -172,7 +172,7 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
     dag
 
   def buildMirrored(data: Edges): MirroredDag[Int] = MirroredDag(data.count, data.from, data.to)
-  def buildFrozen(data: Edges): Frozen[Int] = buildDag(data).freeze
+  def buildFrozen(data: Edges): Topology[Int]^{} = buildDag(data).freeze
   def buildStdlib(data: Edges): StdlibDag = StdlibDag(data.count, data.from, data.to)
 
   def buildTopology(data: Edges): Topology[Int]^ =
@@ -278,7 +278,7 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
   private def mirrored(shape: Int, size: Int): MirroredDag[Int] =
     cached(Engine.Mirrored, shape, size)(buildMirrored(edges(shape, size)))
 
-  private def frozen(shape: Int, size: Int): Frozen[Int] =
+  private def frozen(shape: Int, size: Int): Topology[Int]^{} =
     cached(Engine.Frozen, shape, size)(buildFrozen(edges(shape, size)))
 
   private def stdlib(shape: Int, size: Int): StdlibDag =
@@ -325,7 +325,7 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
 
       case Engine.Topology =>
         val topology: Topology[Int]^ = buildTopology(data)
-        Frozen(topology).size
+        Topology.freeze(topology).size
 
   // The edges in the order adverse to each engine that keeps a topological order as edges
   // arrive (Pearce–Kelly in both), so that it has to repair the order as it goes; the persistent

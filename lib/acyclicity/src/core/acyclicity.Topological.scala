@@ -35,7 +35,7 @@ package acyclicity
 import prepositional.*
 
 // A type whose values admit a topological order — contain no directed cycle — by construction:
-// `Dag`, `Frozen`, `Topology` and `Hasse`, each of which can only be built through a check or
+// `Dag`, a frozen `Topology` and `Hasse`, each of which can only be built through a check or
 // an invariant. The instance is a marker, never the result of a runtime check on a general type:
 // a `Digraph` becomes `Topological` by `acyclic`, which answers a `Dag`. `linearized`,
 // `reduction` and `traversal` require it, so a cyclic graph has no such operations rather than

@@ -105,8 +105,8 @@ final class MirroredDag[node] private
     proscenium.Set.iterator(Search.reachable(node, successors(_).iterator)).toSet
 
   // Through the frozen form, as `Dag` does.
-  private def frozen: Frozen[node] =
-    Frozen.of(proscenium.List.from(sorted.get), successors(_).iterator)
+  private def frozen: Topology[node]^{} =
+    Topology.of(proscenium.List.from(sorted.get), successors(_).iterator)
 
   private def entries(dag: Dag[node]): Map[node, Set[node]] =
     proscenium.Set.iterator(dag.nodes).map { node => node -> proscenium.Set.iterator(dag.successors(node)).toSet }.toMap

@@ -349,8 +349,8 @@ object Tests extends Suite(m"Acyclicity Tests"):
           dag.reduction.edges.stdlib.subsetOf(dag.edges.stdlib)
       . assert(_ == true)
 
-    suite(m"Frozen"):
-      val frozen = diamond.freeze
+    suite(m"Frozen topologies"):
+      val frozen: Topology[Text]^{} = diamond.freeze
 
       test(m"a frozen graph linearizes identically"):
         frozen.linearized
@@ -372,16 +372,21 @@ object Tests extends Suite(m"Acyclicity Tests"):
         (frozen.sources, frozen.sinks)
       . assert(_ == (diamond.sources, diamond.sinks))
 
-      test(m"a frozen graph thaws to the same Dag"):
-        frozen.thaw
+      test(m"a frozen graph snapshots to the same Dag"):
+        frozen.snapshot
       . assert(_ == diamond)
+
+      test(m"a frozen graph thaws to an editable copy with the same edges"):
+        val thawed: Topology[Text]^ = Topology(frozen)
+        thawed.edges
+      . assert(_ == diamond.edges)
 
       test(m"a frozen graph inverts in place, reversing its order"):
         frozen.invert.linearized.stdlib
       . assert(_ == diamond.linearized.stdlib.reverse)
 
-      test(m"a frozen inversion thaws to the inverted Dag"):
-        frozen.invert.thaw
+      test(m"a frozen inversion snapshots to the inverted Dag"):
+        frozen.invert.snapshot
       . assert(_ == diamond.invert)
 
       test(m"the closure of a long chain fits"):
@@ -509,7 +514,7 @@ object Tests extends Suite(m"Acyclicity Tests"):
     val bypassedEdges = topology.snapshot.edges
     val bypassedOrder = topology.linearized
 
-    val frozenFromTopology = Frozen(topology)
+    val frozenFromTopology: Topology[Int]^{} = Topology.freeze(topology)
 
     suite(m"Topology"):
       test(m"a topology keeps a valid order as edges arrive"):

@@ -143,7 +143,7 @@ extension [self, node](graph: self)(using nodal: self is Nodal by node, dag: sel
       case Left(_)      => List()   // unreachable: the instance certifies there is no cycle
 
   // The minimal graph with the same reachability, through the frozen form's bit matrix.
-  def reduction: Dag[node] = Frozen.of(graph.linearized, nodal.successors(graph, _)).reduction
+  def reduction: Dag[node] = Topology.of(graph.linearized, nodal.successors(graph, _)).reduction
 
   // A value for every node from the values of its successors, which are computed first.
   def traversal[result](lambda: (Set[result], node) => result): Map[node, result] =

@@ -36,15 +36,24 @@ import scala.caps
 import scala.collection.immutable as sci
 
 import contingency.*
+import prepositional.*
 
 // A directed acyclic graph edited in place, under separation checking: the exclusive handle is
-// the only route to its tables, so there is nothing for the checker to be unable to express, and
-// a `Topology` given up to `Frozen` or `Dag` can never be edited behind the result's back. The
+// the only route to its tables, so there is nothing for the checker to be unable to express. The
 // name is for what it uniquely maintains — a live topological order of the nodes, kept valid
 // through every `add` by Pearce and Kelly's algorithm, which touches only the nodes between the
 // two ends of an offending edge and refuses one that would close a cycle. So the graph is
 // acyclic by invariant and `Topological` by construction, and `linearized` is a read of the
 // order.
+//
+// Mutability is the capture set, as for `Array`: a `Topology[node]^` is editable, and
+// `Topology.freeze` consumes it to give a `Topology[node]^{}`, on which the `update` methods are
+// not callable and nothing can ever change. The frozen form is the one for querying: it carries
+// the `Nodal`, `Bidirectional` and `Topological` instances, and its reachability matrix — rows
+// of ⌈n/64⌉ words, built on first use in O(e·n/64) — answers `reaches` in O(1) and serves
+// `closure` and `reduction` (Aho–Garey–Ullman over the rows). The matrix is cached against an
+// edit revision: a frozen handle, which cannot be edited, keeps it; an editable one that has been
+// edited since recomputes it for the call, since a pure reference could not replace the cache.
 //
 // Every table is a dense array by node id: adjacency in both directions as singly-linked edge
 // lists threaded through one slot pool, in- and out-degrees, the sources and sinks as swap-remove
@@ -54,6 +63,63 @@ import contingency.*
 // invariant that bounds each stated above it.
 object Topology:
   def apply[node](): Topology[node]^ = new Topology()
+
+  // Freezing consumes the handle: `consume` statically retires every writer, so the surviving
+  // reference can drop its exclusivity without copying — the launder only forgets a capability
+  // that is no longer exercisable. This is the only producer of a `Topology[node]^{}`.
+  def freeze[node](consume topology: Topology[node]^): Topology[node]^{} =
+    caps.unsafe.unsafeAssumePure(topology)
+
+  // A frozen topology from an order (dependencies first) and the successor relation: nodes
+  // arrive already ordered, so no edge needs reordering.
+  private[acyclicity] def of[node](order: List[node], successors: node => Iterator[node])
+  :   Topology[node]^{} =
+
+    val topology: Topology[node]^ = new Topology()
+    val nodes = List.iterator(order)
+    while nodes.hasNext do topology.add(nodes.next())
+    val again = List.iterator(order)
+
+    while again.hasNext do
+      val node = again.next()
+      val children = successors(node)
+      while children.hasNext do topology.attach(node, children.next())
+
+    freeze(topology)
+
+  // A fresh, editable copy of a frozen topology.
+  def apply[node](frozen: Topology[node]^{}): Topology[node]^ =
+    val topology: Topology[node]^ = new Topology()
+    val nodes = List.iterator(frozen.linearized)
+    while nodes.hasNext do topology.add(nodes.next())
+    val again = List.iterator(frozen.linearized)
+
+    while again.hasNext do
+      val node = again.next()
+      val children = Set.iterator(frozen.successors(node))
+      while children.hasNext do topology.attach(node, children.next())
+
+    topology
+
+  given nodal: [node] => ((Topology[node]^{}) is Nodal by node) = new Nodal:
+    type Self = Topology[node]^{}
+    type Operand = node
+    def nodes(self: Topology[node]^{}): Iterator[node] = List.iterator(self.linearized)
+    def has(self: Topology[node]^{}, node: node): Boolean = self.has(node)
+
+    def successors(self: Topology[node]^{}, node: node): Iterator[node] =
+      Set.iterator(self.successors(node))
+
+  given bidirectional: [node] => ((Topology[node]^{}) is Bidirectional by node) =
+    new Bidirectional:
+      type Self = Topology[node]^{}
+      type Operand = node
+
+      def predecessors(self: Topology[node]^{}, node: node): Iterator[node] =
+        Set.iterator(self.predecessors(node))
+
+  given topological: [node] => (Topology[node]^{}) is Topological =
+    new Topological { type Self = Topology[node]^{} }
 
   // Thawing a persistent graph: nodes in topological order, so no edge needs reordering.
   def apply[node](dag: Dag[node]): Topology[node]^ =
@@ -100,9 +166,10 @@ final class Topology[node] private[acyclicity]()
 extends caps.ExclusiveCapability, caps.Stateful:
   private[acyclicity] var count: Int = 0       // ids allocated, removed ones included
   private[acyclicity] var living: Int = 0
-  private[acyclicity] var edges: Int = 0
+  private[acyclicity] var edgeTotal: Int = 0
   private[acyclicity] var slots: Int = 0       // edge slots allocated, unlinked ones included
   private[acyclicity] var epoch: Int = 0
+  private[acyclicity] var revision: Int = 0    // bumped by every edit that changes reachability
 
   // The dictionary: open addressing with linear probing, capacity a power of two, at most half
   // full. `keys(slot)` is the node whose id is `ids(slot)`, or null for an empty slot.
@@ -139,13 +206,58 @@ extends caps.ExclusiveCapability, caps.Stateful:
   private[acyclicity] var inNext: scala.Array[Int]^ = new scala.Array[Int](16)
 
   def size: Int = living
-  def edgeCount: Int = edges
+  def edgeCount: Int = edgeTotal
+
+  private[acyclicity] def words: Int = (count + 63) >>> 6
+
+  // Row `id` holds the ids reachable from `id`, excluding `id`, filled dependencies-first over
+  // the live nodes so that each row is the union of its successors' rows plus their own bits.
+  private def buildReach(): scala.IArray[Long] =
+    val words = this.words
+    val bits = new scala.Array[Long](count*words)
+    var position = 0
+
+    // `id*words + word < count*words` for `id < count` and `word < words`; each list ends at 0.
+    while position < count do
+      if atRank(position) != 0 then
+        val id = atRank(position) - 1
+        val row = id*words
+        var slot = outHead(id)
+
+        while slot != 0 do
+          val child = edgeTo(slot - 1)
+          val childRow = child*words
+          var word = 0
+
+          while word < words do
+            bits(row + word) |= bits(childRow + word)
+            word += 1
+
+          bits(row + (child >>> 6)) |= 1L << (child & 63)
+          slot = outNext(slot - 1)
+
+      position += 1
+
+    // Frozen on the way out: nothing writes to it again.
+    bits.asInstanceOf[scala.IArray[Long]]
+
+  // The matrix, with the revision it was built at: initialised once, by whichever handle first
+  // asks, which a pure one may do.
+  private lazy val cachedReach: (Int, scala.IArray[Long]) = (revision, buildReach())
+
+  // The matrix as of now: the cached one unless an edit has happened since it was built — never
+  // the case on a frozen handle — in which case one is built for this call and not kept.
+  private[acyclicity] def reach: scala.IArray[Long] =
+    if cachedReach(0) == revision then cachedReach(1) else buildReach()
+
+  private[acyclicity] def bit(bits: scala.IArray[Long], row: Int, id: Int): Boolean =
+    (bits(row + (id >>> 6)) & (1L << (id & 63))) != 0L
 
   // ─── the dictionary ───────────────────────────────────────────────────────
 
   // The slot holding `node`, or -1. Terminated by state: the table is never full, so the probe
   // reaches an empty slot.
-  private def slotOf(node: node): Int =
+  private[acyclicity] def slotOf(node: node): Int =
     val mask = keys.length - 1
     var slot = Topology.hash(node) & mask
     var result = -1
@@ -299,6 +411,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
       atRank(id) = id + 1
       enlistSource(id)
       enlistSink(id)
+      revision += 1
       id
 
   // Terminated by state: the out-list ends at slot 0.
@@ -323,7 +436,8 @@ extends caps.ExclusiveCapability, caps.Stateful:
     inHead(to) = slot + 1
     outDegree(from) += 1
     inDegree(to) += 1
-    edges += 1
+    edgeTotal += 1
+    revision += 1
     if outDegree(from) == 1 then delistSource(from)
     if inDegree(to) == 1 then delistSink(to)
 
@@ -482,7 +596,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
       while slot != 0 do
         val next = outNext(slot - 1)
         unlinkIn(slot - 1)
-        edges -= 1
+        edgeTotal -= 1
         slot = next
 
       outHead(id) = 0
@@ -491,7 +605,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
       while slot != 0 do
         val next = inNext(slot - 1)
         unlinkOut(slot - 1)
-        edges -= 1
+        edgeTotal -= 1
         slot = next
 
       inHead(id) = 0
@@ -503,6 +617,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
       living -= 1
       atRank(rank(id)) = 0
       deleteIndex(index)
+      revision += 1
 
   // Drops a node, rerouting each dependant to each dependency; no reordering can be needed,
   // since every dependant already ranks above every dependency.
@@ -528,7 +643,55 @@ extends caps.ExclusiveCapability, caps.Stateful:
 
   // ─── reading ──────────────────────────────────────────────────────────────
 
-  private def name(id: Int): node = names(id).asInstanceOf[node]
+  private[acyclicity] def name(id: Int): node = names(id).asInstanceOf[node]
+
+  // Everything a node reaches, itself included: depth-first over the out-lists, marking on push,
+  // so every id is pushed at most once and a stack of `count` entries suffices.
+  def reachable(node: node): Set[node] =
+    val start = slotOf(node)
+
+    if start < 0 then Set() else
+      val seen = new scala.Array[Boolean](count)
+      val pending = new scala.Array[Int](count)
+      val builder = sci.Set.newBuilder[node]
+      var top = 0
+      pending(top) = ids(start)
+      top += 1
+      seen(ids(start)) = true
+
+      while top > 0 do
+        top -= 1
+        val id = pending(top)
+        builder += name(id)
+        var slot = outHead(id)
+
+        while slot != 0 do
+          val child = edgeTo(slot - 1)
+
+          if !seen(child) then
+            seen(child) = true
+            pending(top) = child
+            top += 1
+
+          slot = outNext(slot - 1)
+
+      Set.from(builder.result())
+
+  def edges: Set[(node, node)] =
+    val builder = sci.Set.newBuilder[(node, node)]
+    var id = 0
+
+    while id < count do
+      if alive(id) then
+        var slot = outHead(id)
+
+        while slot != 0 do
+          builder += ((name(id), name(edgeTo(slot - 1))))
+          slot = outNext(slot - 1)
+
+      id += 1
+
+    Set.from(builder.result())
 
   // Each list reader fetches the fields itself: passing a field of `this` to a method on `this`
   // is a separation failure.
@@ -607,6 +770,100 @@ extends caps.ExclusiveCapability, caps.Stateful:
       position += 1
 
     builder.result()
+
+
+  // Whether `from` reaches `to`, in O(1) once the matrix exists.
+  def reaches(from: node, to: node): Boolean =
+    val source = slotOf(from)
+    val target = slotOf(to)
+    source >= 0 && target >= 0 && bit(reach, ids(source)*words, ids(target))
+
+  // Every implied edge made explicit.
+  def closure: Dag[node] =
+    val bits = reach
+    val words = this.words
+    val builder = sci.VectorMap.newBuilder[node, sci.Set[node]]
+    var position = 0
+
+    // `atRank` has an entry for every rank below `count`; zero marks a removed node.
+    while position < count do
+      if atRank(position) != 0 then
+        val id = atRank(position) - 1
+        val row = sci.Set.newBuilder[node]
+        var other = 0
+
+        while other < count do
+          if alive(other) && bit(bits, id*words, other) then row += name(other)
+          other += 1
+
+        builder += ((name(id), row.result()))
+
+      position += 1
+
+    Dag.unchecked(builder.result())
+
+  // Aho–Garey–Ullman: a successor is redundant when a later successor (higher rank) of the same
+  // node already reaches it, so visiting the successors by descending rank with a running union
+  // of their rows decides every edge in O(degree·n/64).
+  def reduction: Dag[node] =
+    val bits = reach
+    val words = this.words
+    val covered = new scala.Array[Long](words)
+    var largest = 0
+    var position = 0
+
+    // The widest out-list, to size the sort buffer.
+    while position < count do
+      if atRank(position) != 0 then largest = largest.max(outDegree(atRank(position) - 1))
+      position += 1
+
+    val ordered = new scala.Array[Long](largest)
+    val builder = sci.VectorMap.newBuilder[node, sci.Set[node]]
+    position = 0
+
+    // `degree <= largest`, so `ordered` holds every successor of `id`, each packed as its rank in
+    // the high word and its id in the low.
+    while position < count do
+      if atRank(position) != 0 then
+        val id = atRank(position) - 1
+        java.util.Arrays.fill(covered, 0L)
+        var degree = 0
+        var slot = outHead(id)
+
+        while slot != 0 do
+          val child = edgeTo(slot - 1)
+          ordered(degree) = (rank(child).toLong << 32) | child.toLong
+          degree += 1
+          slot = outNext(slot - 1)
+
+        java.util.Arrays.sort(ordered, 0, degree)
+        val kept = sci.Set.newBuilder[node]
+        var index = degree - 1
+
+        while index >= 0 do
+          val child = (ordered(index) & 0xffffffffL).toInt
+
+          if !bit(covered.asInstanceOf[scala.IArray[Long]], 0, child) then
+            kept += name(child)
+            var word = 0
+
+            while word < words do
+              covered(word) |= bits(child*words + word)
+              word += 1
+
+          index -= 1
+
+        builder += ((name(id), kept.result()))
+
+      position += 1
+
+    Dag.unchecked(builder.result())
+
+  // Every edge reversed, as a frozen topology: the reversed order is a valid order for the
+  // reversed edges, so the copy needs no reordering.
+  def invert: Topology[node]^{} =
+    val reversed = List.from(List.iterator(linearized).toList.reverse)
+    Topology.of(reversed, node => Set.iterator(predecessors(node)))
 
   // A persistent copy, without giving up the handle.
   def snapshot: Dag[node] = Dag.unchecked(adjacency)

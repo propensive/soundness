@@ -7,10 +7,11 @@ with dependencies and no cycles — is the shape of build systems, task schedule
 and package dependencies. Soundness represents one as a `Dag`, an immutable value with the
 operations such graphs need: topological ordering, reachability, transitive closure and reduction,
 and editing that keeps the graph acyclic. Beside it sit a `Digraph`, the general directed graph
-that may contain a cycle; a `Frozen` form for graphs built once and queried often; and a
-`Topology`, a mutable graph edited in place that keeps a topological order live as edges arrive.
+that may contain a cycle, and a `Topology`, a mutable graph edited in place that keeps a
+topological order live as edges arrive — which, frozen, is also the form for graphs built once
+and queried often.
 
-All four, and anything else graph-shaped — a `Hasse` diagram, a `Map` from nodes to their
+All of these, and anything else graph-shaped — a `Hasse` diagram, a `Map` from nodes to their
 successors — share one vocabulary through the `Nodal` typeclass, so the same operations apply to
 each.
 
@@ -118,24 +119,28 @@ dag.closure     // all implied edges made explicit
 dag.reduction   // only the essential edges
 ```
 
-Both are answered through the frozen form's reachability matrix, which the next section
+Both are answered through a frozen topology's reachability matrix, which the next section
 describes; a graph queried this way more than once is best frozen once.
 
 ### Freezing
 
-A `Frozen` graph is a `Dag` laid out for querying: its nodes numbered in topological order, both
-directions of adjacency packed into arrays, and a bit matrix of reachability built on first use.
-Sources, sinks, successors and predecessors are index arithmetic, `invert` is free, and whether
-one node reaches another is a single bit:
+Mutability is a matter of the capture set, as it is for arrays: a `Topology[node]^` can be
+edited, and a `Topology[node]^{}` — the result of `dag.freeze`, or of `Topology.freeze`, which
+consumes an editable one — cannot, since its editing methods need an exclusive handle. The
+frozen form is the one laid out for querying: both directions of adjacency in dense arrays,
+sources and sinks maintained, and a bit matrix of reachability built on first use, so that
+whether one node reaches another is a single bit:
 
 ```scala
-val frozen = dag.freeze
+val frozen: Topology[Int]^{} = dag.freeze
 frozen.reaches(8, 2)      // true
 frozen.predecessors(2)    // Set(4, 6), with no acknowledgement needed
-frozen.thaw               // back to a Dag
+frozen.snapshot           // back to a Dag
 ```
 
-Nothing in a `Frozen` graph can be edited: thaw it, edit, and freeze again.
+A frozen topology's `closure`, `reduction` and `reaches` read the matrix, which is why they are
+offered only on the frozen form: an edit would make it stale. To edit, take an editable copy
+with `Topology(frozen)`, edit, and freeze again.
 
 ### Editing
 
@@ -179,9 +184,9 @@ An edge that would close a cycle is refused with a `Dag.Error`, and the graph is
 topology.add(t"core", t"app")   // raises Dag.Error
 ```
 
-When the editing is done, the topology is given up — `Frozen(topology)` or `Dag(topology)`
-consume it — so that the result can never be edited behind its back. A `Dag` thaws into a
-`Topology` with `thaw`, and `snapshot` takes a `Dag` without giving up the handle.
+When the editing is done, the topology is given up — `Topology.freeze(topology)` or
+`Dag(topology)` consume it — so that the result can never be edited behind its back. A `Dag`
+thaws into a `Topology` with `thaw`, and `snapshot` takes a `Dag` without giving up the handle.
 
 ### Partial orders
 
