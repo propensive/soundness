@@ -36,6 +36,8 @@ import scala.caps
 import scala.collection.immutable as sci
 
 import contingency.*
+import denominative.*
+import murmuration.*
 import prepositional.*
 
 // A directed acyclic graph edited in place, under separation checking: the exclusive handle is
@@ -121,6 +123,16 @@ object Topology:
   given topological: [node] => (Topology[node]^{}) is Topological =
     new Topological { type Self = Topology[node]^{} }
 
+  // As a collection, a frozen topology is its nodes, in topological order.
+  given traversable: [node] => ((Topology[node]^{}) is Traversable by node) =
+    topology => List.iterator(topology.linearized)
+
+  given inclusive: [node] => ((Topology[node]^{}) is Inclusive by node) = _.has(_)
+
+  given countable: [node] => (Topology[node]^{}) is Countable:
+    def size(self: Topology[node]^{}): Int = self.size
+    override def nil(self: Topology[node]^{}): Boolean = self.size == 0
+
   // Thawing a persistent graph: nodes in topological order, so no edge needs reordering.
   def apply[node](dag: Dag[node]): Topology[node]^ =
     val topology: Topology[node]^ = new Topology()
@@ -172,8 +184,12 @@ extends caps.ExclusiveCapability, caps.Stateful:
   private[acyclicity] var revision: Int = 0    // bumped by every edit that changes reachability
 
   // The dictionary: open addressing with linear probing, capacity a power of two, at most half
-  // full. `keys(slot)` is the node whose id is `ids(slot)`, or null for an empty slot.
+  // full. `keys(slot)` is the node whose id is `ids(slot)`, or null for an empty slot, and
+  // `hashes(slot)` its hash, so that a probe compares hashes and calls `equals` on the boxed key
+  // only when they agree. (The keys are boxed: generic code reaches an `Array[node]` through
+  // `ScalaRunTime`, which boxes on every access, so a typed array would gain nothing.)
   private[acyclicity] var keys: scala.Array[AnyRef | Null]^ = new scala.Array[AnyRef | Null](32)
+  private[acyclicity] var hashes: scala.Array[Int]^ = new scala.Array[Int](32)
   private[acyclicity] var ids: scala.Array[Int]^ = new scala.Array[Int](32)
   private[acyclicity] var occupied: Int = 0
 
@@ -259,7 +275,8 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // reaches an empty slot.
   private[acyclicity] def slotOf(node: node): Int =
     val mask = keys.length - 1
-    var slot = Topology.hash(node) & mask
+    val hash = Topology.hash(node)
+    var slot = hash & mask
     var result = -1
     var probing = true
 
@@ -267,7 +284,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
       val key = keys(slot)
 
       if key == null then probing = false
-      else if key == node then
+      else if hashes(slot) == hash && key == node then
         result = slot
         probing = false
       else
@@ -280,34 +297,57 @@ extends caps.ExclusiveCapability, caps.Stateful:
   private[acyclicity] update def growIndex(): Unit =
     val capacity = keys.length*2
     val bigger: scala.Array[AnyRef | Null]^ = new scala.Array[AnyRef | Null](capacity)
+    val biggerHashes: scala.Array[Int]^ = new scala.Array[Int](capacity)
     val biggerIds: scala.Array[Int]^ = new scala.Array[Int](capacity)
     val mask = capacity - 1
     var from = 0
 
     // Every occupied slot of the old table lands in an empty slot of the larger one.
     while from < keys.length do
-      val key = keys(from)
-
-      if key != null then
-        var slot = Topology.hash(key) & mask
+      if keys(from) != null then
+        var slot = hashes(from) & mask
         while bigger(slot) != null do slot = (slot + 1) & mask
-        bigger(slot) = key
+        bigger(slot) = keys(from)
+        biggerHashes(slot) = hashes(from)
         biggerIds(slot) = ids(from)
 
       from += 1
 
     keys = bigger
+    hashes = biggerHashes
     ids = biggerIds
 
-  private[acyclicity] update def insertIndex(node: node, id: Int): Unit =
+  // The id of `node`, allocating one (and the node's tables) if it has none: a single probe
+  // either finds the node or ends at the empty slot the node then takes.
+  private[acyclicity] update def identify(node: node): Int =
     if (occupied + 1)*2 > keys.length then growIndex()
     val mask = keys.length - 1
-    var slot = Topology.hash(node) & mask
+    val hash = Topology.hash(node)
+    var slot = hash & mask
+    var found = -1
+
     // Terminated by state: at most half the slots are occupied.
-    while keys(slot) != null do slot = (slot + 1) & mask
-    keys(slot) = node.asInstanceOf[AnyRef]
-    ids(slot) = id
-    occupied += 1
+    while found < 0 && keys(slot) != null do
+      if hashes(slot) == hash && keys(slot) == node then found = ids(slot)
+      else slot = (slot + 1) & mask
+
+    if found >= 0 then found else
+      if count == names.length then growNodes()
+      val id = count
+      count += 1
+      living += 1
+      names(id) = node.asInstanceOf[AnyRef]
+      alive(id) = true
+      keys(slot) = node.asInstanceOf[AnyRef]
+      hashes(slot) = hash
+      ids(slot) = id
+      occupied += 1
+      rank(id) = id
+      atRank(id) = id + 1
+      enlistSource(id)
+      enlistSink(id)
+      revision += 1
+      id
 
   // Backward-shift deletion: later entries of the same probe run move up into the hole, so no
   // tombstones are needed.
@@ -318,11 +358,12 @@ extends caps.ExclusiveCapability, caps.Stateful:
 
     // Terminated by state: the run ends at an empty slot.
     while keys(next) != null do
-      val home = Topology.hash(keys(next)) & mask
+      val home = hashes(next) & mask
 
       // The entry may move iff the hole lies on its probe path from `home`.
       if ((hole - home) & mask) < ((next - home) & mask) then
         keys(hole) = keys(next)
+        hashes(hole) = hashes(next)
         ids(hole) = ids(next)
         hole = next
 
@@ -396,23 +437,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // ─── editing ──────────────────────────────────────────────────────────────
 
   // Adds a node, if absent, at the end of the order; answers its id.
-  update def add(node: node): Int =
-    val slot = slotOf(node)
-
-    if slot >= 0 then ids(slot) else
-      if count == names.length then growNodes()
-      val id = count
-      count += 1
-      living += 1
-      names(id) = node.asInstanceOf[AnyRef]
-      alive(id) = true
-      insertIndex(node, id)
-      rank(id) = id
-      atRank(id) = id + 1
-      enlistSource(id)
-      enlistSink(id)
-      revision += 1
-      id
+  update def add(node: node): Int = identify(node)
 
   // Terminated by state: the out-list ends at slot 0.
   private def hasEdge(from: Int, to: Int): Boolean =
@@ -565,8 +590,8 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // Adds the edge if it keeps the graph acyclic, answering whether it did; a refused edge leaves
   // the graph unchanged.
   private[acyclicity] update def attach(from: node, to: node): Boolean =
-    val source = add(from)
-    val target = add(to)
+    val source = identify(from)
+    val target = identify(to)
 
     if source == target then false
     else if hasEdge(source, target) then true
@@ -770,7 +795,6 @@ extends caps.ExclusiveCapability, caps.Stateful:
       position += 1
 
     builder.result()
-
 
   // Whether `from` reaches `to`, in O(1) once the matrix exists.
   def reaches(from: node, to: node): Boolean =

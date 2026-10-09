@@ -38,6 +38,7 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import denominative.*
+import murmuration.*
 import prepositional.*
 import vacuous.*
 
@@ -109,6 +110,24 @@ object Digraph:
     def predecessors(self: Digraph[node], node: node): Iterator[node] =
       self.transpose.getOrElse(node, sci.Set()).iterator
 
+  // As a collection, a `Digraph` is its nodes, in the order they were given.
+  given traversable: [node] => Digraph[node] is Traversable by node = _.adjacency.keysIterator
+  given inclusive: [node] => Digraph[node] is Inclusive by node = _.adjacency.contains(_)
+
+  given countable: [node] => Digraph[node] is Countable:
+    def size(self: Digraph[node]): Int = self.adjacency.size
+    override def nil(self: Digraph[node]): Boolean = self.adjacency.isEmpty
+
+  given mappable: [node]
+  =>  ( Digraph[node] is Mappable { type Operand = node; type Result[node2] = Digraph[node2] } ) =
+    new Mappable:
+      type Self = Digraph[node]
+      type Operand = node
+      type Result[node2] = Digraph[node2]
+
+      def map[node2](self: Digraph[node], lambda: node => node2): Digraph[node2] =
+        self.renamed(lambda)
+
 final class Digraph[node] private[acyclicity]
   ( private[acyclicity] val adjacency: sci.VectorMap[node, sci.Set[node]] ):
 
@@ -116,8 +135,6 @@ final class Digraph[node] private[acyclicity]
     Search.transpose(adjacency.keysIterator, adjacency(_).iterator)
 
   def nodes: Set[node] = Set.from(adjacency.keySet)
-  def size: Int = adjacency.size
-  def has(node: node): Boolean = adjacency.contains(node)
   def successors(node: node): Set[node] = Set.from(adjacency.getOrElse(node, sci.Set()))
 
   def edges: Set[(node, node)] =
@@ -183,9 +200,9 @@ final class Digraph[node] private[acyclicity]
         adjacency.iterator.collect:
           case (node, targets) if Set.has(keep, node) => (node, targets.filter(Set.has(keep, _)))
 
-  // Renames the nodes; where two nodes map to one, their edges are united rather than one set
-  // being lost, and the result may therefore contain a cycle.
-  def map[node2](lambda: node => node2): Digraph[node2] =
+  // Renames the nodes (the `Mappable` instance's `map`); where two nodes map to one, their edges
+  // are united rather than one set being lost, and the result may therefore contain a cycle.
+  private[acyclicity] def renamed[node2](lambda: node => node2): Digraph[node2] =
     val builder = scm.LinkedHashMap[node2, sci.Set[node2]]()
 
     adjacency.foreach: (node, targets) =>

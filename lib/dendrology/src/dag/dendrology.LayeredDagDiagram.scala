@@ -45,6 +45,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
+import prepositional.*
 import spectacular.*
 import vacuous.*
 
@@ -91,7 +92,12 @@ object LayeredDagDiagram:
         case (true,  true,  true,  true)  => Junction
         case _                            => Space
 
-  def apply[node](dag: Dag[node]): LayeredDagDiagram[node] =
+  // Any graph that admits a topological order: a `Dag`, a frozen `Topology`, a `Hasse`.
+  def apply[graph, node](dag: graph)
+    ( using nodal:       graph is Nodal by node,
+            topological: graph is Topological )
+  :   LayeredDagDiagram[node] =
+
     val nodes: Vector[node] = proscenium.List.iterator(dag.linearized).to(Vector)
 
     if nodes.isEmpty then LayeredDagDiagram(Nil) else

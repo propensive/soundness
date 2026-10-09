@@ -43,8 +43,10 @@ import prepositional.*
 object Invertible:
   given digraph: [node] => Digraph[node] is Invertible by node to Digraph[node] = _.invert
   given dag: [node] => Dag[node] is Invertible by node to Dag[node] = _.invert
+
   given topology: [node] => ((Topology[node]^{}) is Invertible by node to Topology[node]^{}) =
     _.invert
+
   given hasse: [node] => Hasse[node] is Invertible by node to Hasse[node] = _.invert
 
   def generic[self, node](nodal: self is Nodal by node)

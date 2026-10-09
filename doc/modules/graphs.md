@@ -79,6 +79,11 @@ dag.invert             // the graph with every edge reversed
 `sinks` the nodes nothing depends on. `successors` are a node's dependencies, and `predecessors`
 its dependants.
 
+As a collection, a graph is its nodes — in topological order, for a `Dag` — so the collection
+vocabulary applies to it through the usual typeclasses: `dag.has(4)`, `dag.size`,
+`dag.each(println(_))`, `dag.map(_.toString)` (which answers a `Digraph`, since two nodes may
+merge into one and close a cycle).
+
 A `Dag` stores only the forward direction, so finding a node's predecessors means scanning every
 edge — a cost out of proportion to the question. The operations that need it (`predecessors`,
 `ancestors`, `lineage`, `bypass` and `-`) therefore ask for an acknowledgement, which an import

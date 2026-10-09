@@ -39,6 +39,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import fulminate.*
+import murmuration.*
 import nomenclature.*
 import prepositional.*
 
@@ -119,6 +120,28 @@ object Dag:
 
   given topological: [node] => Dag[node] is Topological = new Topological { type Self = Dag[node] }
 
+  // As a collection, a `Dag` is its nodes, in topological order; `map` renames them, answering a
+  // `Digraph` since two nodes may merge into a cycle, with the merged nodes' edges united.
+  given traversable: [node] => Dag[node] is Traversable by node =
+    dag => List.iterator(dag.linearized)
+
+  given inclusive: [node] => Dag[node] is Inclusive by node =
+    (dag, node) => dag.adjacency.contains(node)
+
+  given countable: [node] => Dag[node] is Countable:
+    def size(self: Dag[node]): Int = self.adjacency.size
+    override def nil(self: Dag[node]): Boolean = self.adjacency.isEmpty
+
+  given mappable: [node]
+  =>  ( Dag[node] is Mappable { type Operand = node; type Result[node2] = Digraph[node2] } ) =
+    new Mappable:
+      type Self = Dag[node]
+      type Operand = node
+      type Result[node2] = Digraph[node2]
+
+      def map[node2](self: Dag[node], lambda: node => node2): Digraph[node2] =
+        self.digraph.renamed(lambda)
+
 final class Dag[node] private[acyclicity]
   ( private[acyclicity] val adjacency: sci.VectorMap[node, sci.Set[node]] ):
 
@@ -134,8 +157,6 @@ final class Dag[node] private[acyclicity]
       case Left(_)      => sci.Nil   // unreachable: the constructors admit no cycle
 
   def nodes: Set[node] = Set.from(adjacency.keySet)
-  def size: Int = adjacency.size
-  def has(node: node): Boolean = adjacency.contains(node)
   def successors(node: node): Set[node] = Set.from(adjacency.getOrElse(node, sci.Set()))
 
   def edges: Set[(node, node)] =
@@ -207,8 +228,6 @@ final class Dag[node] private[acyclicity]
           case (node, targets) if Set.has(keep, node) => (node, targets.filter(Set.has(keep, _)))
 
   def subgraph(keep: Set[node])(using Dysasymptotic.LinearSize): Dag[node] = induced(keep)
-
-  def map[node2](lambda: node => node2): Digraph[node2] = digraph.map(lambda)
 
   // Substitutes a graph for each node: the nodes of `lambda(a)` point at every node of
   // `lambda(b)` for each edge `a -> b`, and at their own successors within `lambda(a)`.
