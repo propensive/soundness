@@ -83,7 +83,7 @@ object Enclave:
   // A shared capability: the built tool is a descriptor (its path and the daemon's pid) that
   // every tmux session of a suite drives at once — captured by each session's action and passed
   // to the loan that runs it.
-  case class Tool(path: Path on Linux, pid: Pid) extends caps.SharedCapability:
+  case class Tool(path: Path on Linux, pid: Pid) extends anticipation.Durable:
     def command: Text = path.name
 
     def completions(using Monitor, Environment)[result](block: => Unit): Optional[Text] =

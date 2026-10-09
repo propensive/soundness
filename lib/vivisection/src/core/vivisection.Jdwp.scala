@@ -825,7 +825,7 @@ object Jdwp:
   // and by the session's own thread at once, and every piece of its state is synchronised
   // (the counter, the pending map, the relays).
   class Connection private[vivisection] (monitor: Monitor, note: Diagnostics)
-  extends caps.SharedCapability:
+  extends anticipation.Durable:
     private val counter: Atomic[Int] = Atomic(0)
     private val pending: scc.TrieMap[Int, Promise[Connection.Reply]] = scc.TrieMap()
     private[vivisection] val outgoing: Relay[Data] = Relay()

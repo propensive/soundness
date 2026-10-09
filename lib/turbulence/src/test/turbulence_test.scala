@@ -758,17 +758,17 @@ object Tests extends Suite(m"Turbulence tests"):
         val stream = source.stream(reader)
         val builder = StringBuilder()
 
-        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
+        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:  // [closure-capture]
          stream.refill(Credit(64)) match
           case count: Int =>
             val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[Char]]
             builder.append(String(window, stream.start, count))
             stream.skip(count)
-            scala.caps.unsafe.unsafeAssumeSeparate(recur())
+            scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
 
           case _ => ()
 
-        scala.caps.unsafe.unsafeAssumeSeparate(recur())
+        scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
         builder.toString.tt
       . assert(_ == original)
 
@@ -821,9 +821,8 @@ object Tests extends Suite(m"Turbulence tests"):
           val endpoints = builder.result()
 
           val merged = Confluence(endpoints.map(_.asInstanceOf[Stream[Data] over Credit])*)
-          val gather = Gather2()
-          merged.pump(gather)
-          scala.caps.unsafe.unsafeAssumeSeparate(gather.data).readable.to(List).sorted
+          val gathered = Gather2().ingest(merged)
+          gathered.data.readable.to(List).sorted
       . assert(_ == (1 to 4).flatMap { index => List.fill(1000)(index.toByte) }.sorted.to(List))
 
       test(m"manifold delivers the whole stream to every subscriber"):
@@ -838,8 +837,8 @@ object Tests extends Suite(m"Turbulence tests"):
               (stream: (Stream[Data] over Credit)^).transfer: (stream, _, _) ?=>
                 val gather = Gather2()
                 // The pump of a fresh stream into a fresh intake: the `[pump-overlap]` seal.
-                caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
-                scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+                val gathered = gather.ingest(stream())
+                gathered.data.to[List]
 
           results.map { task => task.await() }.to(List)
       . assert(_ == List.fill(3)(payload.to[List]))
@@ -864,8 +863,8 @@ object Tests extends Suite(m"Turbulence tests"):
               (stream: (Stream[Data] over Credit)^).transfer: (stream, _, _) ?=>
                 val gather = Gather2()
                 // The pump of a fresh stream into a fresh intake: the `[pump-overlap]` seal.
-                caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
-                scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+                val gathered = gather.ingest(stream())
+                gathered.data.to[List]
 
           results.map { task => task.await() }.to(List)
       . assert(_ == List.fill(3)(mixed.to[List]))
@@ -881,9 +880,8 @@ object Tests extends Suite(m"Turbulence tests"):
             index += 1
 
           val merged = Confluence(builder.result().map(_.asInstanceOf[Stream[Data] over Credit])*)
-          val gather = Gather2()
-          merged.pump(gather)
-          scala.caps.unsafe.unsafeAssumeSeparate(gather.data).readable.length
+          val gathered = Gather2().ingest(merged)
+          gathered.data.readable.length
       . assert(_ == mixed.readable.length*3)
 
       test(m"cancelling a detached flow blocked on an empty conduit releases it"):
@@ -917,12 +915,11 @@ object Tests extends Suite(m"Turbulence tests"):
           // Queue capacity is `depth.max(sources.length)` transfer blocks: four, plus
           // one snapshotted block in flight per parked pump.
           val bounded = counters.map(_.get()).all(_ <= 80L)
-          val gather = Gather2()
-          merged.pump(gather)
+          val gathered = Gather2().ingest(merged)
 
           ( bounded,
             counters.map(_.get()).all(_ == 4096L),
-            scala.caps.unsafe.unsafeAssumeSeparate(gather.data).readable.length )
+            gathered.data.readable.length )
       . assert(_ == ((true, true, 16384)))
 
       test(m"cancelling the confluence scope releases parked pumps"):
@@ -964,18 +961,16 @@ object Tests extends Suite(m"Turbulence tests"):
 
           val taskA = caps.unsafe.unsafeAssumePure:
             (eager: (Stream[Data] over Credit)^).transfer: (eager, _, _) ?=>
-              val gatherA = Gather2()
-              caps.unsafe.unsafeAssumeSeparate(eager().pump(gatherA))
-              scala.caps.unsafe.unsafeAssumeSeparate(gatherA.data).readable.length
+              val gatheredA = Gather2().ingest(eager())
+              gatheredA.data.readable.length
 
           awaitStability(sci.IndexedSeq(counter))
           val gated = counter.get()
-          val gatherB = Gather2()
-          stalled.pump(gatherB)
+          val gatheredB = Gather2().ingest(stalled)
 
           ( gated <= 64L,
             taskA.await(),
-            scala.caps.unsafe.unsafeAssumeSeparate(gatherB.data).readable.length,
+            gatheredB.data.readable.length,
             counter.get() )
       . assert(_ == ((true, 4096, 4096, 4096L)))
 
@@ -991,10 +986,9 @@ object Tests extends Suite(m"Turbulence tests"):
           val abandoned = subscribers(1)
           awaitStability(sci.IndexedSeq(counter))
           abandoned.close()
-          val gather = Gather2()
-          eager.pump(gather)
+          val gathered = Gather2().ingest(eager)
 
-          ( scala.caps.unsafe.unsafeAssumeSeparate(gather.data).readable.length,
+          ( gathered.data.readable.length,
             counter.get() )
       . assert(_ == ((4096, 4096L)))
 

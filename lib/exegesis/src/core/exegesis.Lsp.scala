@@ -1521,7 +1521,7 @@ object Lsp:
 
   // A shared capability: the writer task reports what it sends and the reader task what it
   // receives, so an observer is called from two tasks at once and must be safe to.
-  trait Observer extends caps.SharedUnscoped:
+  trait Observer extends anticipation.DurableUnscoped:
     def received(message: Text): Unit
     def sent(message: Text): Unit
 
@@ -1627,12 +1627,14 @@ object Lsp:
   // Serves an editor over the stdio transport while forwarding everything to a language server
   // upstream, amending what the block registers on the lent proxy. The block may capture the
   // monitor, which a hook needs to await an answer of its own; see `Lsp.Proxy`.
-  def proxy[capture^](upstream: Server, observer: Observer = Observer.Silent)
-     ( register: (proxy: Lsp.Proxy^) ?->{capture} Unit )
-     ( using Stdio^, Monitor^{capture}, Probate, WorkingDirectory, Environment, Diagnostics )
+  // The registration block runs once, synchronously, and may capture the monitor freely: a
+  // monitor is a durable capability.
+  def proxy(upstream: Server, observer: Observer = Observer.Silent)
+     ( register: (proxy: Lsp.Proxy^) ?=> Unit )
+     ( using Stdio^, Monitor^, Probate, WorkingDirectory, Environment, Diagnostics )
   :   Unit =
 
-    Lsp.Proxy.run[capture](upstream, observer)(register)
+    Lsp.Proxy.run(upstream, observer)(register)
 
   // Establishes a Language Server over the stdio transport. The block registers the server's
   // feature handlers on the lent registry; once it returns, the registry is consumed and frozen,
@@ -1708,7 +1710,7 @@ object Lsp:
   // outgoing channel is a multi-producer rim by design, so publishing diagnostics from a task
   // spawned in a handler is legitimate), but scoping still confines it to the serving scope that
   // minted it — a client handle cannot be stashed for use after the session ends.
-  trait Client extends Findable, caps.SharedCapability:
+  trait Client extends Findable, anticipation.Durable:
     import Lsp.*
 
     @rpc
@@ -1760,7 +1762,7 @@ object Lsp:
   // caller's thread at once, and its state (the outgoing relay, the pending promises) is
   // synchronised.
   class Connection private[exegesis] ()(using Monitor, Diagnostics)
-  extends JsonRpc, caps.SharedCapability:
+  extends JsonRpc, anticipation.Durable:
     type Origin = Lsp
 
     import strategies.throwUnsafely
@@ -2092,7 +2094,7 @@ object Lsp:
   // is rejected there) and the session's invocation helpers, which restore the type by cast.
   // A shared capability: registration completes before serving begins, and the slots are then
   // read by the dispatch loop and whatever tasks it spawns.
-  class Registry private[exegesis] () extends caps.SharedCapability:
+  class Registry private[exegesis] () extends anticipation.Durable:
 
     @scala.caps.unsafe.untrackedCaptures
     var ready0: AnyRef | Null = null
@@ -2301,7 +2303,7 @@ object Lsp:
     var resolveWorkspaceSymbol0: AnyRef | Null = null
 
     @scala.caps.unsafe.untrackedCaptures
-    var adjust0: Optional[ServerCapabilities ->{caps.any.only[caps.SharedCapability]} ServerCapabilities] = Unset
+    var adjust0: Optional[ServerCapabilities ->{caps.any.only[anticipation.Durable]} ServerCapabilities] = Unset
 
     private def flag(registered: AnyRef | Null): Optional[Boolean] =
       if registered == null then Unset else true
@@ -2402,10 +2404,10 @@ object Lsp:
     // The registration block is capture-polymorphic, and the monitor is declared to be among what it
     // captures: a hook that asks the server something of its own needs the monitor to await the
     // answer, and separation checking would otherwise see the block and this method aliasing it.
-    def run[capture^]
+    def run
        ( upstream: Lsp.Server, observer: Lsp.Observer = Lsp.Observer.Silent )
-       ( register: (proxy: Lsp.Proxy^) ?->{capture} Unit )
-       ( using stdio: Stdio^, monitor: Monitor^{capture}, probate: Probate, working: WorkingDirectory,
+       ( register: (proxy: Lsp.Proxy^) ?=> Unit )
+       ( using stdio: Stdio^, monitor: Monitor^, probate: Probate, working: WorkingDirectory,
                environment: Environment, diagnostics: Diagnostics )
     :   Unit =
 

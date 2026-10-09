@@ -103,7 +103,7 @@ object Process:
 // A shared capability: a process is observed from several tasks at once — one draining each
 // of its output streams, one awaiting its exit — and aborted from a third, and the JVM's
 // process handle is thread-safe.
-class Process private (java: ProcessHandle) extends Process.Ref, caps.SharedCapability:
+class Process private (java: ProcessHandle) extends Process.Ref, anticipation.Durable:
   def pid: Pid = Pid(java.pid)
   def kill()(using (Exec.Event is Loggable)^): Unit = java.destroy()
   def abort()(using (Exec.Event is Loggable)^): Unit = java.destroyForcibly()

@@ -135,7 +135,7 @@ def daemon[error <: Hazard](using Codepoint)
 // containment is a child supervision scope of the enclosing `Monitor`, so unmatched or rejected
 // errors chain outwards to the parent scope's probate, up to the root. Distinct from the typed
 // `trap` (declared emitted errors).
-def contain(handler: PartialFunction[Error, Remedy]^{caps.any.only[caps.SharedCapability]})(using outer: SharedProbate)
+def contain(handler: PartialFunction[Error, Remedy]^{caps.any.only[anticipation.Durable]})(using outer: SharedProbate)
 :   Containment^{handler, outer} =
   Containment(handler, outer)
 
@@ -156,7 +156,7 @@ infix type emits[left, error <: Hazard] = left match
 // join. The body is evaluated with an `AsyncTactic[error]` that records a raised error as the
 // worker's `Failed` outcome instead of trying to break a stack-confined `boundary` across threads.
 def async[result, error <: Hazard](using Codepoint)
-  ( evaluate: (Worker, Tactic[error]) ?->{caps.any.only[caps.SharedCapability]} result )
+  ( evaluate: (Worker, Tactic[error]) ?->{caps.any.only[anticipation.Durable]} result )
   ( using monitor: Monitor^, probate: SharedProbate )
 :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
 
@@ -167,7 +167,7 @@ def async[result, error <: Hazard](using Codepoint)
 
 
 def task[result, error <: Hazard](using Codepoint)(name: Name[Async])
-  ( evaluate: (Worker, Tactic[error]) ?->{caps.any.only[caps.SharedCapability]} result )
+  ( evaluate: (Worker, Tactic[error]) ?->{caps.any.only[anticipation.Durable]} result )
   ( using monitor: Monitor^, probate: SharedProbate )
 :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
 
@@ -188,7 +188,7 @@ def task[result, error <: Hazard](using Codepoint)(name: Name[Async])
 // it honest.
 extension [resource](consume resource: resource^)
   def transfer[result, error <: Hazard](using Codepoint)
-    ( evaluate: (Task.Owned[resource], Worker, Tactic[error]) ?->{caps.any.only[caps.SharedCapability]} result )
+    ( evaluate: (Task.Owned[resource], Worker, Tactic[error]) ?->{caps.any.only[anticipation.Durable]} result )
     ( using monitor: Monitor^, probate: SharedProbate )
   :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
 
@@ -204,7 +204,7 @@ extension [resource](consume resource: resource^)
 
   // As `transfer`, for a named task.
   def transfer[result, error <: Hazard](using Codepoint)(name: Name[Async])
-    ( evaluate: (Task.Owned[resource], Worker, Tactic[error]) ?->{caps.any.only[caps.SharedCapability]} result )
+    ( evaluate: (Task.Owned[resource], Worker, Tactic[error]) ?->{caps.any.only[anticipation.Durable]} result )
     ( using monitor: Monitor^, probate: SharedProbate )
   :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
 
@@ -266,7 +266,7 @@ def supervise[result](block: Monitor ?=> result)(using threading: Threading, cod
 // whenever the elements outnumber the cores and each is cheap. Results are kept in a plain array
 // indexed by job number, so the output is ordered by job, not by completion. A job's exception
 // fails its task and surfaces here at that task's join, as it would from an `await`.
-def concurrently[result: ClassTag](count: Int, parallelism: Int)(job: Int ->{caps.any.only[caps.SharedCapability]} result)
+def concurrently[result: ClassTag](count: Int, parallelism: Int)(job: Int ->{caps.any.only[anticipation.Durable]} result)
   ( using monitor: Monitor^, probate: SharedProbate, codepoint: Codepoint )
 :   (Tactic[Async.Error]^) ?->{job, monitor, probate} scala.IArray[result] =
 

@@ -111,7 +111,7 @@ object LspSessional:
     // As in `Lsp.listen`, the dispatch closure is a local of this method and its target is
     // confined to it.
     // Pure: the dispatcher closes only over the (pure-typed) inbound client.
-    val dispatch: Json ->{caps.any.only[caps.SharedCapability]} Optional[Json] =
+    val dispatch: Json ->{caps.any.only[anticipation.Durable]} Optional[Json] =
       JsonRpc.serve[Lsp.Client](inbound)
 
     val notifications: List[Text] = JsonRpc.methods[Lsp.Client]

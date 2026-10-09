@@ -49,7 +49,7 @@ import vacuous.*
 
 object Task:
   def apply[result, error <: Hazard]
-    ( evaluate: Worker ->{caps.any.only[caps.SharedCapability]} result, name: Optional[Name[Async]] )
+    ( evaluate: Worker ->{caps.any.only[anticipation.Durable]} result, name: Optional[Name[Async]] )
     ( using monitor: Monitor^, codepoint: Codepoint, probate: SharedProbate )
   :   (Task[result] { type Error = error })^{monitor, probate, evaluate} =
 
@@ -158,8 +158,8 @@ trait Task[+result]:
     ( using monitor: Monitor^ )
   :   (Tactic[Async.Error]^) ?->{this, monitor} result
 
-  def bind[result2](lambda: result ->{caps.any.only[caps.SharedCapability]} Task[result2])(using monitor: Monitor^, probate: SharedProbate)
+  def bind[result2](lambda: result ->{caps.any.only[anticipation.Durable]} Task[result2])(using monitor: Monitor^, probate: SharedProbate)
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate}
 
-  def map[result2](lambda: result ->{caps.any.only[caps.SharedCapability]} result2)(using monitor: Monitor^, probate: SharedProbate)
+  def map[result2](lambda: result ->{caps.any.only[anticipation.Durable]} result2)(using monitor: Monitor^, probate: SharedProbate)
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate}

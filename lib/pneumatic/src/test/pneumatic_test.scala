@@ -675,31 +675,32 @@ object Tests extends Suite(m"Pneumatic tests"):
           ++ (t"repetition "*500).in[Data].readable
 
       test(m"gzip duct roundtrips a byte stream"):
-        val gather = Gather2()
-        summon[Data is Streamable by Data over Credit].stream(mixed)
-        . compress[Gzip].decompress[Gzip].pump(gather)
-        scala.caps.unsafe.unsafeAssumeSeparate(gather.data.to[List])
+        val gathered = Gather2().ingest:
+          summon[Data is Streamable by Data over Credit].stream(mixed)
+          . compress[Gzip].decompress[Gzip]
+        gathered.data.to[List]
       . assert(_ == mixed.to[List])
 
       test(m"deflate duct roundtrips a byte stream"):
-        val gather = Gather2()
-        summon[Data is Streamable by Data over Credit].stream(mixed)
-        . compress[Deflate].decompress[Deflate].pump(gather)
-        scala.caps.unsafe.unsafeAssumeSeparate(gather.data.to[List])
+        val gathered = Gather2().ingest:
+          summon[Data is Streamable by Data over Credit].stream(mixed)
+          . compress[Deflate].decompress[Deflate]
+        gathered.data.to[List]
       . assert(_ == mixed.to[List])
 
       test(m"zlib duct roundtrips a byte stream"):
-        val gather = Gather2()
-        summon[Data is Streamable by Data over Credit].stream(mixed)
-        . compress[Zlib].decompress[Zlib].pump(gather)
-        scala.caps.unsafe.unsafeAssumeSeparate(gather.data.to[List])
+        val gathered = Gather2().ingest:
+          summon[Data is Streamable by Data over Credit].stream(mixed)
+          . compress[Zlib].decompress[Zlib]
+        gathered.data.to[List]
       . assert(_ == mixed.to[List])
 
       test(m"gzip duct output is genuine gzip"):
-        val gather = Gather2()
-        summon[Data is Streamable by Data over Credit].stream(mixed).compress[Gzip].pump(gather)
+        val gathered = Gather2().ingest:
+          summon[Data is Streamable by Data over Credit].stream(mixed).compress[Gzip]
+        // [java-boundary] a Java stream over the gathered bytes
         val stream = scala.caps.unsafe.unsafeAssumeSeparate:
-          java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(Array.unsafeJvm(gather.data)))
+          java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(Array.unsafeJvm(gathered.data)))
         Array.unsafeFrozen(stream.readAllBytes().nn).to[List]
       . assert(_ == mixed.to[List])
 
@@ -712,19 +713,18 @@ object Tests extends Suite(m"Pneumatic tests"):
         zipped.write(Array.unsafeJvm(mixed))
         zipped.close()
         val chunks = buffer.toByteArray.nn.iterator.map { byte => Data(byte) }
-        val gather = Gather2()
-        Stream(chunks).decompress[Gzip].pump(gather)
-        scala.caps.unsafe.unsafeAssumeSeparate(gather.data.to[List])
+        val gathered = Gather2().ingest(Stream(chunks).decompress[Gzip])
+        gathered.data.to[List]
       . assert(_ == mixed.to[List])
 
       // The mirror image: compress fed one byte per chunk, so the CRC and size
       // accumulate over single-byte consumptions, validated by the JDK.
       test(m"gzip duct compresses correctly when fed one byte at a time"):
         val chunks = mixed.to[List].stdlib.iterator.map { byte => Data(byte) }
-        val gather = Gather2()
-        Stream(chunks).compress[Gzip].pump(gather)
+        val gathered = Gather2().ingest(Stream(chunks).compress[Gzip])
+        // [java-boundary] a Java stream over the gathered bytes
         val stream = scala.caps.unsafe.unsafeAssumeSeparate:
-          java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(Array.unsafeJvm(gather.data)))
+          java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(Array.unsafeJvm(gathered.data)))
         Array.unsafeFrozen(stream.readAllBytes().nn).to[List]
       . assert(_ == mixed.to[List])
 
@@ -739,6 +739,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         // A loop, not a recursion: `unsafeAssumeSeparate` takes its body as a lambda, so a
         // recursive call inside it is not in tail position, and at three bytes per refill this
         // runs for enough steps to overflow the stack.
+        // [closure-capture] a local def or closure over a fresh stream reads it back read-only
         scala.caps.unsafe.unsafeAssumeSeparate:
           var draining = true
 
@@ -761,13 +762,12 @@ object Tests extends Suite(m"Pneumatic tests"):
         val zipped = java.util.zip.GZIPOutputStream(out)
         zipped.write(Array.unsafeJvm(mixed))
         zipped.close()
-        val gather = Gather2()
+        val gathered = Gather2().ingest:
+          summon[Chain[Data] is Streamable by Data over Credit]
+          . stream(Array.unsafeFrozen(out.toByteArray.nn).readable.grouped(7).map(Array.frozen(_)).to(Chain))
+          . decompress[Gzip]
 
-        summon[Chain[Data] is Streamable by Data over Credit]
-        . stream(Array.unsafeFrozen(out.toByteArray.nn).readable.grouped(7).map(Array.frozen(_)).to(Chain))
-        . decompress[Gzip].pump(gather)
-
-        scala.caps.unsafe.unsafeAssumeSeparate(gather.data.to[List])
+        gathered.data.to[List]
       . assert(_ == mixed.to[List])
 
 class Gather2() extends Intake[Data]:
