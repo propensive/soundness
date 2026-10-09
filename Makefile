@@ -37,6 +37,9 @@ check-stdlib:
 check-while:
 	python3 etc/check-while-count.py
 
+check-escapes:
+	python3 etc/check-escape-count.py
+
 # The unsafety census: the counts of every rule in .pyrocosm/flair/config.tel, over the sources,
 # as `flair metrics` records them in git notes commit by commit. Reports only: nothing here fails.
 unsafety:
@@ -55,6 +58,7 @@ build:
 	python3 etc/check-doc-coverage.py
 	./etc/check-stdlib-count.sh
 	python3 etc/check-while-count.py
+	python3 etc/check-escape-count.py
 	./mill soundness.all
 	./mill benches.compile
 

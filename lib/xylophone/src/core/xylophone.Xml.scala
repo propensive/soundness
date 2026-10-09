@@ -195,6 +195,7 @@ object Xml extends Tag.Container
   // for these types — that branch's `summon[Decodable in Text]` for
   // `Int` would otherwise `abort` with `Number.Error` and break accrual.
   given int: (tactic: Tactic[Xml.Error]) => Int is Decodable in Xml =
+    // [field-purity] given primitive decodable over tactic
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try Integer.parseInt(text.s).nn
@@ -205,6 +206,7 @@ object Xml extends Tag.Container
           raise(Xml.Error(Reason.Untextual(t"Int"))) yet 0
 
   given long: (tactic: Tactic[Xml.Error]) => Long is Decodable in Xml =
+    // [field-purity] given primitive decodable over tactic
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Long.parseLong(text.s).nn
@@ -215,6 +217,7 @@ object Xml extends Tag.Container
           raise(Xml.Error(Reason.Untextual(t"Long"))) yet 0L
 
   given short: (tactic: Tactic[Xml.Error]) => Short is Decodable in Xml =
+    // [field-purity] given primitive decodable over tactic
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Short.parseShort(text.s).nn
@@ -225,6 +228,7 @@ object Xml extends Tag.Container
           raise(Xml.Error(Reason.Untextual(t"Short"))) yet 0.toShort
 
   given byte: (tactic: Tactic[Xml.Error]) => Byte is Decodable in Xml =
+    // [field-purity] given primitive decodable over tactic
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Byte.parseByte(text.s).nn
@@ -235,6 +239,7 @@ object Xml extends Tag.Container
           raise(Xml.Error(Reason.Untextual(t"Byte"))) yet 0.toByte
 
   given double: (tactic: Tactic[Xml.Error]) => Double is Decodable in Xml =
+    // [field-purity] given primitive decodable over tactic
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Double.parseDouble(text.s).nn
@@ -245,6 +250,7 @@ object Xml extends Tag.Container
           raise(Xml.Error(Reason.Untextual(t"Double"))) yet 0.0
 
   given float: (tactic: Tactic[Xml.Error]) => Float is Decodable in Xml =
+    // [field-purity] given primitive decodable over tactic
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Float.parseFloat(text.s).nn
@@ -255,6 +261,7 @@ object Xml extends Tag.Container
           raise(Xml.Error(Reason.Untextual(t"Float"))) yet 0.0f
 
   given boolean: (tactic: Tactic[Xml.Error]) => Boolean is Decodable in Xml =
+    // [field-purity] given primitive decodable over tactic
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         text.s match
@@ -299,6 +306,7 @@ object Xml extends Tag.Container
     // Sealed per the codec-thunk pattern: a by-name parameter cannot be
     // named in a capture set, so the honest capture of `element0` cannot be
     // expressed; see rep/DECISIONS.md.
+    // [by-name-capture] by-name element codec cannot be named in capture set
     caps.unsafe.unsafeAssumePure:
       new distillate.Decodable with Repeatable:
         type Self = collection[element]
@@ -351,6 +359,7 @@ object Xml extends Tag.Container
   =>  collection[element] is Encodable in Xml =
 
     // Sealed per the codec-thunk pattern, as in `collectionDecodable`.
+    // [by-name-capture] by-name element encoder captured
     caps.unsafe.unsafeAssumePure:
       new anticipation.Encodable with Repeatable:
         type Self = collection[element]
@@ -407,6 +416,7 @@ object Xml extends Tag.Container
   =>  value is Decodable in Xml =
 
     // Sealed per the codec-thunk pattern, as in `collectionDecodable`.
+    // [by-name-capture] by-name inner decodable captured
     caps.unsafe.unsafeAssumePure:
       new distillate.Decodable:
         type Self = value
@@ -430,6 +440,7 @@ object Xml extends Tag.Container
   =>  value is Encodable in Xml =
 
     // Sealed per the codec-thunk pattern, as in `collectionDecodable`.
+    // [by-name-capture] by-name inner encodable captured
     caps.unsafe.unsafeAssumePure:
       new anticipation.Encodable with Repeatable:
         type Self = value
@@ -452,6 +463,7 @@ object Xml extends Tag.Container
   =>  Map[key, value] is Encodable in Xml =
 
     // Sealed per the codec-thunk pattern, as in `collectionDecodable`.
+    // [by-name-capture] by-name key/value encoders captured
     caps.unsafe.unsafeAssumePure:
       new anticipation.Encodable with Repeatable:
         type Self = Map[key, value]
@@ -486,6 +498,7 @@ object Xml extends Tag.Container
   =>  Map[key, value] is Decodable in Xml =
 
     // Sealed per the codec-thunk pattern, as in `collectionDecodable`.
+    // [by-name-capture] by-name key/value decoders captured
     caps.unsafe.unsafeAssumePure:
       new distillate.Decodable with Repeatable:
         type Self = Map[key, value]
@@ -1155,6 +1168,7 @@ object Xml extends Tag.Container
       ( using factory: Factory[element, collection[element]] )
     :   collection[element] is Xml.Parsable =
 
+      // [by-name-capture] by-name field parser cannot be named
       caps.unsafe.unsafeAssumePure:
         new Xml.Parsable with Gathering:
           type Self = collection[element]
@@ -1656,6 +1670,7 @@ object Xml extends Tag.Container
       // loop, so no per-field lambda ever closes over the reader. Sealed per
       // the codec-thunk pattern: the field parsers the thunk resolves may
       // capture resolution-scoped capabilities (the AST bridge does).
+      // [field-purity] derived product field codec, codec-thunk seal
       caps.unsafe.unsafeAssumePure:
         val reflection = infer[ProductReflection[derivation]]
 
@@ -1701,6 +1716,7 @@ object Xml extends Tag.Container
       // construction, as stratiform's TEL derivation does. Sealed per the
       // codec-thunk pattern: the instance captures a resolution-scoped
       // decoder.
+      // [field-purity] derived sum field codec, codec-thunk seal
       caps.unsafe.unsafeAssumePure:
         Xml.Field(Xml.Parsable.fromDecodable(infer[derivation is Decodable in Xml]))
 
@@ -3063,6 +3079,7 @@ object Xml extends Tag.Container
     // Held as an `AnyRef` field with an exclusive-view accessor (the `Tel.Reader.parser0`
     // pattern): a typed array field's snapshot of the cursor's buffer trips both the
     // classifier and the consume checks.
+    // [cursor-snapshot] parser's AnyRef snapshot of cursor buffer
     @scala.caps.unsafe.untrackedCaptures
     private var bytes0: AnyRef = cursor.unsafeDataBuffer(using Unsafe).asInstanceOf[AnyRef]
 

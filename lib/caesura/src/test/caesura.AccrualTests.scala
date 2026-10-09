@@ -42,6 +42,7 @@ import denominative.dysasymptotics.linearSize
 case class ARecord(name: Text, age: Int, height: Int) derives CanEqual
 
 object CProbe:
+  // [test-harness] test construction-counter object var
   @scala.caps.unsafe.untrackedCaptures
   var constructions: Int = 0
 

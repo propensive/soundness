@@ -72,6 +72,7 @@ object Git:
 
     // The filter closure privately owns `previous`; the deduplicated view is
     // observationally pure.
+    // [closure-capture] filter closure privately owns local var
     caps.unsafe.unsafeAssumePure:
       iterator.filter: progress =>
         previous.lay(true)(_ != progress).also { previous = progress }
@@ -86,6 +87,7 @@ object Git:
     // the old `chain` bridge did) so the progress iterator is a plain,
     // single-owner value the fetching `Job` carries alongside its result.
     val stages = safely[Truncation.Error]:
+      // [transfer] stderr iterator laundered into single-owner Job value
       val lines = caps.unsafe.unsafeAssumePure(process.stderr().delineate.records)
 
       lines.collect:

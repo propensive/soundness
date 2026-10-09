@@ -79,6 +79,7 @@ object FakeDriver:
 // by everything that summons one, and a route capturing a capability would make the fake a
 // capability too.
 class FakeDriver(route: (Http.Method, Text, Int) -> Http.Response) extends Http.Backend:
+  // [test-harness] fake driver records exchanges in test
   @scala.caps.unsafe.untrackedCaptures
   var exchanges: List[FakeDriver.Exchange] = Nil
 
@@ -499,6 +500,7 @@ object Tests extends Suite(m"Tarantula tests"):
       import httpBackends.javaNetHttp
 
       supervise:
+        // [test-harness] test socket server built inside supervise
         val server = scala.caps.unsafe.unsafeAssumeSeparate:
           SocketServer(0).handle(Http.Response(Http.Ok, contentType = media"text/html")(page))
 

@@ -132,6 +132,7 @@ extends Testable(suiteName, Nil, Unset, key0):
     val count: Int = if selection.workers > 0 then selection.workers.max(workers) else 0
     Runner(selection, count)(using sink.lay(Reporter.report)(eventReporter(_)))
 
+  // [field-purity] runner var on non-Stateful Suite
   @scala.caps.unsafe.untrackedCaptures
   var runner0: Runner[Report] = makeRunner(Selection.all, Unset)
 

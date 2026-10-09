@@ -55,6 +55,7 @@ import errorDiagnostics.stackTracesDiagnostics
 // object (the bug class of `rep/capability-escape`).
 private[exegesis] object LspSession:
   private[exegesis] class Cell:
+    // [field-purity] fault var in pure-data Cell
     @scala.caps.unsafe.untrackedCaptures
     private[exegesis] var fault: Optional[Lsp.Error] = Unset
 
@@ -81,24 +82,31 @@ extends Lsp, caps.ExclusiveCapability:
   private val fault0: LspSession.Cell = LspSession.Cell()
 
   // What the client reported at initialization: pure data, exposed through `Workspace`.
+  // [field-purity] client init data var in non-Stateful session
   @scala.caps.unsafe.untrackedCaptures
   private[exegesis] var processId0: Optional[Int] = Unset
 
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   private[exegesis] var clientInfo0: Optional[ClientInfo] = Unset
 
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   private[exegesis] var locale0: Optional[Text] = Unset
 
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   private[exegesis] var rootUri0: Optional[Text] = Unset
 
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   private[exegesis] var clientCapabilities0: Json = Json.ast(Json.Ast(Unset))
 
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   private[exegesis] var folders0: List[Folder] = Nil
 
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   private[exegesis] var trace0: Optional[Text] = Unset
 
@@ -107,6 +115,7 @@ extends Lsp, caps.ExclusiveCapability:
   // The generated proxy captures the session; the macro splices `this` at a pure `JsonRpc`
   // hole, so the receiver is sealed at the staging boundary. The proxy never leaves the
   // session's scope: it is lent to handlers through the workspace handle.
+  // [quote-wall] macro splices this at pure JsonRpc hole
   private[exegesis] val client0: Lsp.Client = caps.unsafe.unsafeAssumePure(this).client
 
   private[exegesis] def fault(): Optional[Lsp.Error] =

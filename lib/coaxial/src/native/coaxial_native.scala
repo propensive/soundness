@@ -330,6 +330,7 @@ package socketBackends:
       case ClientExchange.Tcp(socket) =>
         val out = socket.getOutputStream.nn
 
+        // [transfer] consumed request stream laundered pure to drain
         caps.unsafe.unsafeAssumePure(input).drain: region =>
           range =>
             val interval: Interval = range
@@ -345,6 +346,7 @@ package socketBackends:
           val source = channelSource(jnc.Channels.newChannel(socket.getInputStream.nn).nn): () =>
             ()
 
+          // [construction-fresh] fresh response stream from channelSource laundered at factory
           caps.unsafe.unsafeAssumePure(source)
 
     def hangUp(exchange: ClientExchange): Unit = exchange match
@@ -399,6 +401,7 @@ package socketBackends:
       UdpCourier(jn.InetAddress.getLocalHost.nn, port.number, socket)
 
     def dispatch(courier: UdpCourier, consume input: (Stream[Data] over Credit)^): Unit =
+      // [transfer] consumed datagram stream laundered pure to memoize
       val bytes = caps.unsafe.unsafeAssumePure(input).memoize
 
       val packet =

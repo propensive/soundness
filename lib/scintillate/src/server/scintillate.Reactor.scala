@@ -141,6 +141,7 @@ object Reactor:
     // One static cursor per connection, re-pointed at the accumulator for every head (see
     // `Cursor.repoint`): no cursor and no copy of the head per request. Cast-erased, as the
     // key attachment is; re-asserted exclusive at its one use.
+    // [registry-lifetime] cast-erased AnyRef cursor handle field
     @scala.caps.unsafe.untrackedCaptures
     private val cursor0: AnyRef =
       Cursor[Data](new scala.Array[Byte](0).asInstanceOf[Data]).asInstanceOf[AnyRef]
@@ -311,6 +312,7 @@ object Reactor:
       // connection it captures — self-aliasing by design, which the checker reads as a
       // clash. The one rim in this file, inherited from the `Respond` API shape; a
       // `consume`-typed `respond` (the planned follow-up) retires it.
+      // [by-name-receiver] response by-name captures connection it is delivered on
       scala.caps.unsafe.unsafeAssumeSeparate:
         connection.respond:
           try reactor.invoke(connection)

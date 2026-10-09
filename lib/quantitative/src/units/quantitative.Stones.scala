@@ -37,6 +37,7 @@ import rudiments.*
 
 object Stones:
   given designation: Designation[Stones[1]] = () => "st".tt
-  inline given ratio: Ratio[Kilograms[1] & Stones[-1], 6.35029318] = !!
+  erased given ratio: Ratio[Kilograms[1] & Stones[-1], 6.35029318] =
+    Ratio.Evidence[Kilograms[1] & Stones[-1], 6.35029318]()
 
 trait Stones[Power <: Nat] extends Units[Power, Mass]

@@ -52,7 +52,7 @@ object Internet:
 // `SharedUnscoped`, as the error tactics and the log sinks are: network access is ambient
 // (an importable given, storable statically) and used from every task at once, and the
 // capability carries no state of its own.
-class Internet(val online: Boolean) extends Findable, caps.SharedUnscoped:
+class Internet(val online: Boolean) extends Findable, anticipation.DurableUnscoped:
   def require[result](block: Online ?=> result)(using Tactic[Internet.Error]): result =
     if online then block(using Online()) else abort(Internet.Error())
 

@@ -146,6 +146,7 @@ object Http2Serve:
   :   Http2.ServerConnection^{monitor} =
    // The connection is created and used under the same monitor; its fresh capability is
    // laundered into the declared result.
+   // [construction-fresh] connection's fresh capability laundered into result
    scala.caps.unsafe.unsafeAssumePure:
 
      // A local (pure) Probate rather than one captured from the accept daemon:
@@ -165,6 +166,7 @@ object Http2Serve:
 
     val connection = open(in, out)
     val probate: Probate = probates.cancelProbate
+    // [by-name-receiver] connection argument aliases monitor passed alongside
     scala.caps.unsafe.unsafeAssumeSeparate:
       runStreams(connection, handler.asInstanceOf[AnyRef], port)(using summon, probate)
 
@@ -184,6 +186,7 @@ object Http2Serve:
     val probate: Probate = probates.cancelProbate
 
     // The session retains only the per-connection state; no aliased writer.
+    // [closure-capture] anonymous session closes over fresh connection
     val session: Http2Session^ = scala.caps.unsafe.unsafeAssumeSeparate:
      new Http2Session:
       def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection}): Unit =
@@ -192,6 +195,7 @@ object Http2Serve:
         val handler0: AnyRef =
           ((ref: AnyRef) => handler(using ref.asInstanceOf[Http.Connection])).asInstanceOf[AnyRef]
 
+        // [by-name-receiver] connection argument aliases monitor passed alongside
         scala.caps.unsafe.unsafeAssumeSeparate:
           runStreams(connection, handler0, port)(using summon, probate)
 

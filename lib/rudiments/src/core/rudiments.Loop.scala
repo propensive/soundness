@@ -39,9 +39,12 @@ object Loop:
 // A shared capability: a loop runs on one task and is stopped from another, and `stop` is
 // synchronised. What it retains must therefore be shared too, so its iteration may capture
 // only shared capabilities (a task body's rule), which is where it runs anyway.
-class Loop(iteration: () ->{scala.caps.any.only[scala.caps.SharedCapability]} Unit) extends scala.caps.SharedCapability:
+class Loop
+  ( iteration: () ->{scala.caps.any.only[anticipation.Durable]} Unit )
+extends anticipation.Durable:
   private val mutex: Mutex = Mutex()
 
+  // [field-purity] mutex-guarded state var in shared Loop
   @scala.caps.unsafe.untrackedCaptures
   private var state: Loop.State = Loop.State.Active
 

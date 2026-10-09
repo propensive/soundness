@@ -282,7 +282,9 @@ object Ar:
 
     // Reached only through this exclusive handle, which scopes it; its capture of the
     // underlying source is erased here, as `Tar.Handle` erases its own.
+    // [field-fresh-param] handle field erases fresh iterator parameter's capture
     @caps.unsafe.untrackedCaptures
+    // [field-fresh-param]
     val entries: Iterator[Ar.Entry] = caps.unsafe.unsafeAssumePure(entries0)
 
 // An uninhabited marker naming the format, in the manner of `Tar`.

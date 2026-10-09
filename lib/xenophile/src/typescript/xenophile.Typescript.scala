@@ -432,6 +432,7 @@ object Typescript:
 
       // The cursor is a plain `Int` into an immutable vector, so it captures nothing; the
       // annotation says so, rather than making the whole parser a tracked capability.
+      // [field-purity] plain Int position var in non-Stateful cursor
       @scala.caps.unsafe.untrackedCaptures private var position: Int = 0
 
       def peek(ahead: Int = 0): Optional[Token] =

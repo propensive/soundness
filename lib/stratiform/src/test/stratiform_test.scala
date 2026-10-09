@@ -109,7 +109,9 @@ object Tests extends Suite(m"Stratiform Tests"):
 
   // An in-memory writable TEL source for the `open[Tel]` suite: readable
   // through its current content, and counting each write-back.
+  // [test-harness] in-memory test Cell content var
   class Cell(@scala.caps.unsafe.untrackedCaptures var content: Text):
+    // [test-harness] in-memory test Cell write counter
     @scala.caps.unsafe.untrackedCaptures var writes: Int = 0
 
   given cellStreamable: Cell is Streamable by Text over Credit = cell => Stream(cell.content)

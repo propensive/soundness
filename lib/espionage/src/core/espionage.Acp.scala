@@ -166,6 +166,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
@@ -206,6 +207,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
@@ -235,6 +237,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
@@ -265,6 +268,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Any): json =>
           json.`type`.as[Text] match
@@ -354,6 +358,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
@@ -376,6 +381,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
@@ -416,6 +422,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Any): json =>
           json.sessionUpdate.as[Text] match
@@ -502,6 +509,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str): json =>
           json.as[Text] match
@@ -541,6 +549,7 @@ object Acp:
       // caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] given decodable sealed pure with throwing tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Any): json =>
           json.outcome.as[Text] match
@@ -752,6 +761,7 @@ object Acp:
     // An `Observer` is a capability class, so an instance is `^`-typed; this one captures
     // nothing, and the fresh capability it constitutes is laundered away once, so the silent
     // observer is a pure value, storable in this object and as a default argument.
+    // [construction-fresh] silent Observer's fresh capability laundered for object storage
     val Silent: Observer^{} = caps.unsafe.unsafeAssumePure:
       new Observer:
         def received(message: Text): Unit = ()
@@ -761,7 +771,7 @@ object Acp:
 
   // A shared capability: the writer task reports what it sends and the reader task what it
   // receives, so an observer is called from two tasks at once and must be safe to.
-  trait Observer extends caps.SharedUnscoped:
+  trait Observer extends anticipation.DurableUnscoped:
     def received(message: Text): Unit
     def sent(message: Text): Unit
 
@@ -850,25 +860,31 @@ object Acp:
   // there) and the service's invocation helpers, which restore the type by cast.
   // A shared capability, as `exegesis.Lsp.Registry`: registered before serving, read from every
   // task after.
-  class Registry private[espionage] () extends caps.SharedCapability:
+  class Registry private[espionage] () extends anticipation.Durable:
 
+    // [registry-lifetime] cast-erased AnyRef handler slot in shared registry
     @scala.caps.unsafe.untrackedCaptures
     var updated0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var permission0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var readFile0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var writeFile0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var terminal0: AnyRef | Null = null
 
+    // [registry-lifetime] durable-capturing adjuster function held in shared registry
     @scala.caps.unsafe.untrackedCaptures
-    var adjust0: Optional[ClientCapabilities ->{caps.any.only[caps.SharedCapability]} ClientCapabilities] = Unset
+    var adjust0: Optional[ClientCapabilities ->{caps.any.only[anticipation.Durable]} ClientCapabilities] = Unset
 
     // The capabilities the client advertises at initialization, derived from what was
     // registered, so the declaration can never disagree with the implementation; `adjust0`, if
@@ -896,7 +912,7 @@ object Acp:
   // A shared capability, as `exegesis.Lsp.Connection`: driven by its writer and reader tasks
   // and by the caller's thread at once, with synchronised state.
   class Connection private[espionage] (state: State)(using Monitor, Diagnostics)
-  extends JsonRpc, caps.SharedCapability:
+  extends JsonRpc, anticipation.Durable:
     type Origin = AcpAgent
 
     import strategies.throwUnsafely
@@ -905,14 +921,18 @@ object Acp:
     // connection is confined by its own type and each proxy is a member of it, so sealing the
     // reference the generated modules hold is sound; the macro cannot take a capability-typed
     // splice.
+    // [quote-wall] proxy macro cannot take a capability-typed splice
     private val channel: JsonRpc = caps.unsafe.unsafeAssumePure(this)
 
     val lifecycle: AcpAgentLifecycle =
+      // [quote-wall] macro-generated proxy over sealed channel
       caps.unsafe.unsafeAssumePure(channel.proxy[AcpAgentLifecycle])
 
+    // [quote-wall]
     val sessions: AcpAgentSession = caps.unsafe.unsafeAssumePure(channel.proxy[AcpAgentSession])
 
     // What the agent reported at initialization: pure data, recorded by `initialize`.
+    // [field-purity] pure-data var on non-Stateful connection
     @scala.caps.unsafe.untrackedCaptures
     private var initialized0: Optional[InitializeResult] = Unset
 
@@ -1033,7 +1053,7 @@ object Acp:
   // A shared capability: the service answers requests from the reader task and the tasks it
   // spawns per request; its registry is shared and its state synchronised.
   private[espionage] class Service private (handlers: Registry^, state: State)
-  extends AcpClient, caps.SharedCapability:
+  extends AcpClient, anticipation.Durable:
     // Confined to this class rather than the file: `Acp.Error`'s constructor needs a
     // `Diagnostics`, and an ambient one would compete with the connection's own.
     import errorDiagnostics.stackTracesDiagnostics
@@ -1265,21 +1285,23 @@ object Acp:
       // Sealed: the connection captures this exchange's monitor and diagnostics, and an honest
       // `Acp.Connection^` would hide them from the writer and reader that serve it. It is a local
       // of this method, lent to `lambda` and dead once `lambda` returns.
+      // [construction-fresh] fresh connection sealed, lent to lambda for method scope
       val connection: Acp.Connection = caps.unsafe.unsafeAssumePure(Acp.Connection(state))
 
       // The service is confined by its own type and the dispatch closures are locals of this
       // method, so sealing the reference the generated dispatchers hold is sound; the macro cannot
       // take a capability-typed splice. One dispatcher per served interface, so each generated
       // class stays within the JVM constant-pool limit.
+      // [quote-wall] dispatch macro cannot take capability-typed splice
       val serving: AcpClient = caps.unsafe.unsafeAssumePure(service)
 
-      val sessionDispatch: Json ->{caps.any.only[caps.SharedCapability]} Optional[Json] =
+      val sessionDispatch: Json ->{caps.any.only[anticipation.Durable]} Optional[Json] =
         JsonRpc.serve[AcpClientSession](serving)
 
-      val fsDispatch: Json ->{caps.any.only[caps.SharedCapability]} Optional[Json] =
+      val fsDispatch: Json ->{caps.any.only[anticipation.Durable]} Optional[Json] =
         JsonRpc.serve[AcpClientFs](serving)
 
-      val terminalDispatch: Json ->{caps.any.only[caps.SharedCapability]} Optional[Json] =
+      val terminalDispatch: Json ->{caps.any.only[anticipation.Durable]} Optional[Json] =
         JsonRpc.serve[AcpClientTerminal](serving)
 
       val sessionMethods: List[Text] = JsonRpc.methods[AcpClientSession]
@@ -1304,7 +1326,7 @@ object Acp:
       // Runs one dispatch and sends its conclusion. Faults become error responses; a message the
       // dispatcher cannot decode is answered rather than dropped, so the agent never hangs
       // awaiting an answer.
-      def serve(dispatch: Json ->{caps.any.only[caps.SharedCapability]} Optional[Json])(json: Json): Unit =
+      def serve(dispatch: Json ->{caps.any.only[anticipation.Durable]} Optional[Json])(json: Json): Unit =
         val id: Optional[Json] = Acp.requestId(json)
 
         val response: Optional[Json] =

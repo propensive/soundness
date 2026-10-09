@@ -115,6 +115,7 @@ object Multipart:
         cursor.next()
         cursor.expect('\n')(expected('\n'))
         // A tail-recursive re-entry over the same single-owner cursor; no aliased writer.
+        // [closure-capture] local def re-entry over single-owner cursor
         scala.caps.unsafe.unsafeAssumeSeparate(headers((key, value) :: list))
 
     // What ends every body: a line break followed by the boundary line. Its skip table is
@@ -143,6 +144,7 @@ object Multipart:
       // per call would not do: a finished stream has stepped over the delimiter, and a new
       // one would take the next part for the rest of this body. Cast-erased like the cursor
       // it lends; the calls are sequential.
+      // [registry-lifetime] cast-erased AnyRef stream handle field
       @caps.unsafe.untrackedCaptures
       private val stream: AnyRef =
         streamOf(cursorRef.asInstanceOf[Cursor[Data, {}]^], delimiter).asInstanceOf[AnyRef]
@@ -197,6 +199,7 @@ object Multipart:
 
     def parts(): Chain[Part] =
       val body: Body^ = Body()
+      // [construction-fresh] fresh Body capability laundered into part
       val part = parsePart(headers(Nil), caps.unsafe.unsafeAssumePure(body))
 
       // Forced once the consumer has read the body, or chosen not to: skip what remains of
@@ -215,6 +218,7 @@ object Multipart:
           cursor.next()
           cursor.expect('\n')(expected('\n'))
           // A re-entry over the same single-owner cursor; no aliased writer.
+          // [closure-capture] local def parts() re-entry over single-owner cursor
           scala.caps.unsafe.unsafeAssumeSeparate(parts())
         else if cursor.peek == '-' then
           cursor.next()
@@ -227,6 +231,7 @@ object Multipart:
           Chain()
 
       // Lazy continuation over the same single-owner cursor; no aliased writer.
+      // [closure-capture] lazy local-def continuation over single-owner cursor
       scala.caps.unsafe.unsafeAssumeSeparate(part #:: rest())
 
     Multipart(parts())

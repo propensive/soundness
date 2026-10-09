@@ -541,9 +541,9 @@ object internal:
      out:     scala.collection.mutable.ListBuffer[Tel] )
   :   Boolean =
 
-    pattern.length == input.length && pattern.spot: index =>
-      !input.at(index).lay(false)(matchBlock(pattern.at(index), _, marker, out))
-    . absent
+    pattern.coextent(input).lay(false): shared =>
+      pattern.spot { index => !matchBlock(pattern(index), input(shared(index)), marker, out) }
+      . absent
 
   private def matchBlock
     ( pattern: Tel.Block,
@@ -1222,6 +1222,7 @@ object internal:
       // generated parser captures the resolution-scoped tactic and foci.
       // The instance and default arrays are single lazy vals, so recursive
       // self-references stay deferred until the first parse.
+      // [quote-wall] codec seal inside quoted generated parser
       caps.unsafe.unsafeAssumePure:
         val foci: Foci[Tel.Focus] = $fociExpr
         val tactic: Tactic[Tel.Error] = $tacticExpr

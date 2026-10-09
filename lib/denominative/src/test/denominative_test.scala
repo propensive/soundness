@@ -429,6 +429,110 @@ object Tests extends Suite(m"Denominative Tests"):
         total
       . assert(_ == 60)
 
+    suite(m"Tabulate tests"):
+      // `tabulate` is the collecting `iterate`: the lambda's ordinal is confined, so the read
+      // is bare — the test fails to compile if the brand is lost.
+      test(m"tabulate over a countable reads bare elements in order"):
+        val array = Array(10, 20, 30)
+        array.tabulate { ordinal => array(ordinal) + ordinal.n0 }
+      . assert(_ == Sequence(10, 21, 32))
+
+      test(m"tabulate over a branded capped extent keeps the brand"):
+        val array = Array(10, 20, 30, 40)
+        array.extent.capped(2).tabulate { ordinal => array(ordinal) }
+      . assert(_ == Sequence(10, 20))
+
+      test(m"tabulate over an unbranded interval yields plain ordinals"):
+        Interval.initial(3).tabulate(_.n1)
+      . assert(_ == Sequence(1, 2, 3))
+
+      test(m"tabulate over an empty extent yields an empty sequence"):
+        val array = Array[Int]()
+        array.tabulate(_.n0)
+      . assert(_ == Sequence())
+
+      test(m"tabulate can collect the confined ordinals themselves"):
+        val array = Array(5, 6, 7)
+        val ordinals: Sequence[Ordinal in array.type] = array.tabulate(identity)
+        var total = 0
+        ordinals.each { ordinal => total += array(ordinal) }
+        total
+      . assert(_ == 18)
+
+    suite(m"Branded-ordinal extension tests"):
+      // Inline extensions whose bodies do arithmetic on the receiver, inlined here from another
+      // compilation unit onto a brand-refined receiver.
+      test(m"next and previous resolve on a confined ordinal"):
+        val array = Array(1, 2, 3)
+        array.confine(1.z).let { ordinal => (ordinal.next.n0, ordinal.previous.n0, ordinal.n1) }
+      . assert(_ == (2, 0, 2))
+
+      test(m"subsequent and preceding resolve on a confined ordinal"):
+        val array = Array(1, 2, 3)
+        array.confine(1.z).let { ordinal => (ordinal.subsequent(2).size, ordinal.preceding(1).size) }
+      . assert(_ == (2, 1))
+
+      test(m"addition and subtraction on a confined ordinal use the brand-generic givens"):
+        val array = Array(1, 2, 3)
+        array.confine(2.z).let { ordinal => ((ordinal + 1).n0, (ordinal - 1).n0, ordinal - Prim) }
+      . assert(_ == (3, 1, 2))
+
+      test(m"within on a confined ordinal re-confines to another value"):
+        val array = Array(1, 2, 3)
+        val other = Array(4, 5)
+        array.confine(1.z).let { ordinal => ordinal.within(other).let(other(_)) }
+      . assert(_ == 5)
+
+    suite(m"Coextent tests"):
+      test(m"coextent is present for equal sizes"):
+        val left = Array(1, 2, 3)
+        val right = Array(4, 5, 6)
+        left.coextent(right).present
+      . assert(_ == true)
+
+      test(m"coextent is absent for differing sizes"):
+        val left = Array(1, 2, 3)
+        val right = Array(4, 5)
+        left.coextent(right).present
+      . assert(_ == false)
+
+      test(m"a transferred ordinal reads the other value bare"):
+        val left = Array(1, 2, 3)
+        val right = Array(10, 20, 30)
+        var total = 0
+
+        left.coextent(right).let: shared =>
+          left.iterate { ordinal => total += left(ordinal)*right(shared(ordinal)) }
+
+        total
+      . assert(_ == 140)
+
+      test(m"each over a coextent yields an ordinal for each value"):
+        val left = Array(1, 2, 3)
+        val right = Array(10, 20, 30)
+        var total = 0
+
+        left.coextent(right).let: shared =>
+          shared.each { (i, j) => total += left(i) + right(j) }
+
+        total
+      . assert(_ == 66)
+
+      test(m"invert transfers in the other direction"):
+        val left = Array(1, 2, 3)
+        val right = Array(10, 20, 30)
+
+        right.confine(2.z).let: ordinal =>
+          left.coextent(right).let { shared => left(shared.invert(ordinal)) }
+
+      . assert(_ == 3)
+
+      test(m"a coextent reports the shared size"):
+        val left = Array(1, 2)
+        val right = Array(3, 4)
+        left.coextent(right).let(_.size)
+      . assert(_ == 2)
+
     suite(m"Ordinal-showable tests"):
       test(m"nominal names a known ordinal"):
         import ordinalTextualizables.nominalOrdinal

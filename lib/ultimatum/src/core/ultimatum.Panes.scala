@@ -48,6 +48,7 @@ import scala.caps
 class Panes(initial: Pane*):
   // Internally a raw `Vector`: this is imperative container state, and the mutation operations
   // (`patch`, `indexWhere`, `:+`) belong to the stdlib surface. The public API exposes `Sequence`.
+  // [field-purity] pane vector var in pure Panes container
   @scala.caps.unsafe.untrackedCaptures
   private var vector: Vector[Pane] = initial.to(Vector)
 
@@ -55,6 +56,7 @@ class Panes(initial: Pane*):
   // bound. Typed as a *pure* function so a pane tree (and `Panes`) captures nothing and can be freely
   // collected and traversed; the installed callback genuinely captures the running form's event loop,
   // reconciled in `bindWake`.
+  // [field-purity] repaint callback var typed pure in Panes
   @scala.caps.unsafe.untrackedCaptures
   private var onChange: () -> Unit = () => ()
 
@@ -64,6 +66,7 @@ class Panes(initial: Pane*):
   // re-bound on every `run` (so it never references a finished form) and is only ever called from
   // within a mutation while that form is live. Hence the single, localised `unsafeAssumePure`.
   private[ultimatum] def bindWake(wake: () => Unit): Unit =
+    // [field-purity] form wake callback escapes into long-lived container
     onChange = caps.unsafe.unsafeAssumePure(wake)
 
   def contents: Sequence[Pane] = Sequence.from(vector)

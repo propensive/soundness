@@ -36,7 +36,7 @@ export
   denominative
   . { aka, capped, Countable, Vacuiscible, Applicable, Definable, Omissible, Terminable, Truncable, size, gamut, Interval, extent, iterate, prefix, nil, Ordinal, pare, Prim,
       Quat, Quin, retrace, Sec, Sen, Sept, Span, spot, Ter, u, z, Zerary, limit, ult, ant, pen,
-      Dysasymptotic, beyond }
+      Dysasymptotic, beyond, coextent, Coextent }
 
 // `thru` and `till` are re-declared here rather than exported: an export forwards only one of
 // the two overloads, so a plain `Ordinal` receiver would be offered the branded alternative
@@ -56,6 +56,25 @@ extension [form](ordinal: prepositional.`in`[denominative.Ordinal, form])
   inline infix def till (right: prepositional.`in`[denominative.Ordinal, form])
   :   prepositional.`in`[denominative.Interval, form] =
     denominative.till(ordinal)(right)
+
+// `tabulate` is overloaded like `each`, so it is re-declared here for the same reason as
+// `thru` and `till`.
+extension [countable: denominative.Countable](value: countable)
+  inline def tabulate[element]
+    ( inline lambda: prepositional.`in`[denominative.Ordinal, value.type] => element )
+  :   Sequence[element] =
+    denominative.tabulate(value)(lambda)
+
+extension (interval: denominative.Interval)
+  inline def tabulate[element](inline lambda: denominative.Ordinal => element)
+  :   Sequence[element] =
+    denominative.tabulate(interval)(lambda)
+
+extension [form](range: prepositional.`in`[denominative.Interval, form])
+  inline def tabulate[element]
+    ( inline lambda: prepositional.`in`[denominative.Ordinal, form] => element )
+  :   Sequence[element] =
+    denominative.tabulate(range)(lambda)
 
 package dysasymptotics:
   export denominative.dysasymptotics.{linearSize, linearAccess, unboundedSize}

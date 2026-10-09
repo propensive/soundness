@@ -58,7 +58,7 @@ object Cos:
     if text.s.forall(_ < 0x100) then
       Array.scribe[Byte](text.length): scribe => extent =>
         extent.each: i =>
-          scribe(i) = text.s.charAt((i: Ordinal).n0).toByte
+          scribe(i) = text.s.charAt(i.n0).toByte
     else
       val body = codepages.utf16BeCodepage.encoded(text)
       val bytes = Array.allocate[Byte](body.length + 2)

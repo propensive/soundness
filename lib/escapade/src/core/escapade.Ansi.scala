@@ -115,18 +115,23 @@ object Ansi extends Ansi2:
     val styles: scm.ArrayBuffer[Long] = scm.ArrayBuffer.empty
     val hyperlinks: scm.HashMap[Int, Text] = scm.HashMap.empty
     val insertions: scm.TreeMap[Int, Text] = scm.TreeMap.empty
+    // [field-purity] plain mutable var in non-Stateful parse State
     @scala.caps.unsafe.untrackedCaptures
     var last: Optional[Pending] = Unset
 
+    // [field-purity]
     @scala.caps.unsafe.untrackedCaptures
     var stack: List[Frame] = Nil
 
+    // [field-purity]
     @scala.caps.unsafe.untrackedCaptures
     var styleStack: List[TextStyle] = Nil
 
+    // [field-purity]
     @scala.caps.unsafe.untrackedCaptures
     var currentStyle: TextStyle = TextStyle()
 
+    // [field-purity]
     @scala.caps.unsafe.untrackedCaptures
     var linkArmed: Boolean = false
 

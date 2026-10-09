@@ -75,6 +75,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     val stream = pdf.allocate(pdf.newBody(Map(), ContentWriter.write(operators)))
 
     // The edit reads and rewrites the same single-owner document.
+    // [by-name-receiver] editPage lambda reads same document passed as argument
     scala.caps.unsafe.unsafeAssumeSeparate:
      editPage(pdf, page): entries =>
       entries.define(t"Contents", stream)
@@ -168,6 +169,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   :   Unit =
 
     // The edit reads and rewrites the same single-owner document.
+    // [by-name-receiver] editPage lambda reads same document passed as argument
     scala.caps.unsafe.unsafeAssumeSeparate:
      editPage(pdf, page): entries =>
       val resources = pdf.resolved(entries(t"Resources").or(Cos.Nil)).dictionary
@@ -211,6 +213,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     val ref = pdf.allocate(Cos.Dictionary(dict))
 
     // The edit reads and rewrites the same single-owner document.
+    // [by-name-receiver] editPage lambda reads same document passed as argument
     scala.caps.unsafe.unsafeAssumeSeparate:
      editPage(pdf, page): entries =>
       val existing = entries(t"Annots").let(pdf.resolved(_).elements).or(Nil)
@@ -265,6 +268,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     val pageRef = pdf.allocate(Cos.Dictionary(entries))
 
     // The edit reads and rewrites the same single-owner document.
+    // [by-name-receiver] editDictionary lambda reads the receiver document
     scala.caps.unsafe.unsafeAssumeSeparate:
      pdf.editDictionary(rootRef.number): tree =>
       val kids = tree(t"Kids").let(pdf.resolved(_).elements).or(Nil)
@@ -286,6 +290,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
         parentRef match
           case ref: Cos.Ref =>
             // The edit reads and rewrites the same single-owner document.
+            // [by-name-receiver] editDictionary lambda reads the receiver document
             scala.caps.unsafe.unsafeAssumeSeparate:
              pdf.editDictionary(ref.number): tree =>
               val kids = tree(t"Kids").let(pdf.resolved(_).elements).or(Nil)

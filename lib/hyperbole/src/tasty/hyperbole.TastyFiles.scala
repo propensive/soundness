@@ -47,6 +47,7 @@ private[hyperbole] object TastyFiles:
       val bytes = new scala.Array[Byte](data.length)
       System.arraycopy(Array.unsafeJvm(data), 0, bytes, 0, data.length)
       // The compiler's unpickler takes a pure array; `bytes` is freshly allocated just above.
+      // [java-boundary] fresh array passed to compiler's unpickler
       val unpickler = TastyUnpickler(scala.caps.unsafe.unsafeAssumePure(bytes))
       val positions = unpickler.unpickle(stacksInternal.PositionSection())
 

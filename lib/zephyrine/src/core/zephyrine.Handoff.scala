@@ -55,7 +55,7 @@ import rudiments.*
 //
 // A `SharedCapability`: like `Conduit`'s core, its guarantees come from
 // volatile publication order, not aliasing analysis.
-final class Handoff(depth: Int) extends caps.SharedCapability:
+final class Handoff(depth: Int) extends anticipation.Durable:
   private val capacity: Int = Integer.highestOneBit((depth.max(2)*2) - 1)
   private val mask: Int = capacity - 1
   // Raw, where `head` and `tail` are `Atomic[Long]`. `Atomic.Refs` reads a slot as `Optional`,
@@ -69,9 +69,13 @@ final class Handoff(depth: Int) extends caps.SharedCapability:
   private val head: Atomic[Long] = Atomic(0L)
   private val tail: Atomic[Long] = Atomic(0L)
 
+  // [field-purity] volatile thread var in non-Stateful handoff
   @caps.unsafe.untrackedCaptures @volatile private var producer: Thread | Null = null
+  // [field-purity]
   @caps.unsafe.untrackedCaptures @volatile private var consumer: Thread | Null = null
+  // [field-purity] volatile flag in non-Stateful handoff
   @caps.unsafe.untrackedCaptures @volatile private var done: Boolean = false
+  // [field-purity]
   @caps.unsafe.untrackedCaptures @volatile private var closed: Boolean = false
 
   // Spin budget before parking: sized to bridge the counterpart's wakeup

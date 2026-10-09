@@ -163,7 +163,7 @@ private[hallucination] object GifCodec:
             screenScribe.lattice(width): target =>
               frame.lattice(frameWidth): source =>
                 rowMap.iterate: rowOrdinal =>
-                  val row = (rowOrdinal: Ordinal).n0
+                  val row = rowOrdinal.n0
                   val y = top + rowMap.at(rowOrdinal)
 
                   source.row(row).let: sourceRow =>
