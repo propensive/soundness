@@ -45,7 +45,7 @@ import vacuous.*
 
 object Diff:
   given aggregable: (tactic: Tactic[Diff.Error])
-  =>  ((Diff[Text] is Aggregable by Text)^{tactic}) = parse(_)
+  =>  ( (Diff[Text] is Aggregable by Text)^{tactic} ) = parse(_)
 
   private def parse(lines: Chain[Text]): Diff[Text] raises Diff.Error =
     def recur

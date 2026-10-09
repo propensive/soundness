@@ -222,7 +222,7 @@ object SyntaxMatcher:
     private def typeMatch(name: Text, tokens: List[ValueToken]): List[List[ValueToken]] =
       composite(name) match
         case syntax: Css.Syntax => guarded(name, consume(syntax, tokens))
-        case _              => primitive(name, tokens)
+        case _                  => primitive(name, tokens)
 
     private def propertyMatch(name: Text, tokens: List[ValueToken]): List[List[ValueToken]] =
       PropertyDef.of(name) match

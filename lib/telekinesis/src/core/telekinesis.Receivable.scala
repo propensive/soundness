@@ -42,8 +42,8 @@ import zephyrine.*
 
 trait Receivable2:
   given instantiable: [content: Instantiable across HttpRequests from Text]
-  =>  (tactic: Tactic[Http.Error])
-  =>  ((content is Receivable)^{tactic}) =
+  =>  ( tactic: Tactic[Http.Error] )
+  =>  ( (content is Receivable)^{tactic} ) =
 
     Receivable:
       body => content(body.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].memoize.utf8)
@@ -69,12 +69,12 @@ object Receivable extends Receivable2:
       else lambda.read(response.body.stream)
 
   given text: (tactic: Tactic[Http.Error])
-  =>  ((Text is Receivable)^{tactic}) =
+  =>  ( (Text is Receivable)^{tactic} ) =
     Receivable(_.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].memoize.utf8)
 
   given streamable: [stream] => (aggregable: (stream is Aggregable by Data)^)
-  =>  (tactic: Tactic[Http.Error])
-  =>  ((stream is Receivable)^{aggregable, tactic}) =
+  =>  ( tactic: Tactic[Http.Error] )
+  =>  ( (stream is Receivable)^{aggregable, tactic} ) =
     Receivable(aggregable.accept(_))
 
   given httpStatus: Http.Status is Receivable = _.status

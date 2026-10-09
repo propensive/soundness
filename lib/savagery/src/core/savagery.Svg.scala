@@ -63,8 +63,8 @@ object Svg:
   // SVG's vocabulary is fixed and validated by the figure types, so the XML beneath is parsed
   // against the free-form schema; no `XmlSchema` is asked of the caller.
   given aggregable
-  :   (parseTactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], svgTactic: Tactic[Svg.Error])
-  =>  ((Svg is Aggregable by Text)^{parseTactic, xmlTactic, svgTactic}) =
+  :   ( parseTactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], svgTactic: Tactic[Svg.Error] )
+  =>  ( (Svg is Aggregable by Text)^{parseTactic, xmlTactic, svgTactic} ) =
 
     source =>
       given XmlSchema = XmlSchema.Freeform
@@ -72,21 +72,21 @@ object Svg:
       Svg.Parser.decodeSvg(Svg.Parser.rootElement(xml))
 
   given loadable
-  :   (parseTactic: Tactic[Parse.Error])
-  =>  (xmlTactic: Tactic[Xml.Error])
-  =>  (svgTactic: Tactic[Svg.Error])
-  =>  ((Svg is Loadable by Text)^{parseTactic, xmlTactic, svgTactic}) =
+  :   ( parseTactic: Tactic[Parse.Error] )
+  =>  ( xmlTactic: Tactic[Xml.Error] )
+  =>  ( svgTactic: Tactic[Svg.Error] )
+  =>  ( (Svg is Loadable by Text)^{parseTactic, xmlTactic, svgTactic} ) =
     source =>
       given XmlSchema = XmlSchema.Freeform
       fromXml(summon[(Xml is Loadable by Text)^].load(source))
 
   // The byte form: the XML is parsed from the bytes directly.
   given loadableData
-  :   (parseTactic: Tactic[Parse.Error])
-  =>  (xmlTactic: Tactic[Xml.Error])
-  =>  (svgTactic: Tactic[Svg.Error])
-  =>  (buffering: Buffering)
-  =>  ((Svg is Loadable by Data)^{parseTactic, xmlTactic, svgTactic}) =
+  :   ( parseTactic: Tactic[Parse.Error] )
+  =>  ( xmlTactic: Tactic[Xml.Error] )
+  =>  ( svgTactic: Tactic[Svg.Error] )
+  =>  ( buffering: Buffering )
+  =>  ( (Svg is Loadable by Data)^{parseTactic, xmlTactic, svgTactic} ) =
     source =>
       given XmlSchema = XmlSchema.Freeform
       fromXml(summon[(Xml is Loadable by Data)^].load(source))
@@ -162,7 +162,7 @@ object Svg:
   object Parser:
     def labelOf(xml: Xml): Text = xml match
       case e: Xml.Element => e.label
-      case _          => t"<unknown>"
+      case _              => t"<unknown>"
 
     def findSvg(nodes: List[Xml.Node])(using Tactic[Svg.Error]): Xml.Element =
       nodes.reap { case e: Xml.Element if e.label == t"svg" => e }.or:
@@ -233,7 +233,7 @@ object Svg:
         case child: Xml.Element => child.label match
           case t"defs" => child.children.each:
             case dd: Xml.Element => decodeSvgDef(dd).let: svgDef => defs += svgDef
-            case _           => ()
+            case _               => ()
 
           case _ =>
             decodeFigure(child).let: figure => figures += figure
@@ -310,7 +310,7 @@ object Svg:
 
       elem.children.each:
         case child: Xml.Element => decodeFigure(child).let: figure => figures += figure
-        case _              => ()
+        case _                  => ()
 
       Group(figures.to(List), idAttr(elem), styleAttr(elem), transformsAttr(elem))
 

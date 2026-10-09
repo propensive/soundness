@@ -136,7 +136,7 @@ object timestampInternal:
       text match
         case r"$yr(\d{4})-$mn(\d{2})-$dy(\d{2})[ T]$hr(\d{2}):$mi(\d{2}):$sc(\d{2})" =>
           mitigate:
-            case Number.Error(_, _, _) => Timestamp.Error(text, Timestamp.Error.Reason.BadNumber)
+            case Number.Error(_, _, _)    => Timestamp.Error(text, Timestamp.Error.Reason.BadNumber)
             case Moment.Error(_)          => Timestamp.Error(text, Timestamp.Error.Reason.BadTime)
 
           . protect:

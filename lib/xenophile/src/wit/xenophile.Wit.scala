@@ -116,14 +116,14 @@ object Wit:
     case Use(from: Text, names: List[(Text, Text)])
 
     def named: Text = this match
-      case Alias(name, _)        => name
-      case Record(name, _)       => name
-      case Variant(name, _)      => name
-      case Enumeration(name, _)  => name
-      case Flags(name, _)        => name
-      case Resource(name, _)     => name
+      case Alias(name, _)          => name
+      case Record(name, _)         => name
+      case Variant(name, _)        => name
+      case Enumeration(name, _)    => name
+      case Flags(name, _)          => name
+      case Resource(name, _)       => name
       case Item.Function(function) => function.name
-      case Use(from, _)          => from
+      case Use(from, _)            => from
 
   case class Interface(name: Text, items: List[Item])
 

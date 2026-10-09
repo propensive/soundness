@@ -219,7 +219,7 @@ private[facsimile] object PdfWriter:
       numbers: List[Int],
       offsets: scala.collection.mutable.HashMap[Int, Long],
       entries: List[(Text, Cos)] )
-  ( using Tactic[Pdf.Error] )
+  (using Tactic[Pdf.Error])
   :   Unit =
 
     val number = pdf.nextNumber
@@ -272,7 +272,7 @@ private[facsimile] object PdfWriter:
   private def appendObject
     ( pdf: Pdf, raw: Data => Unit, ascii: Text => Unit, cos: Cos,
       encryption: Optional[(Guard, Int, Int)] = Unset )
-  ( using Tactic[Pdf.Error] )
+  (using Tactic[Pdf.Error])
   :   Unit =
 
     cos match

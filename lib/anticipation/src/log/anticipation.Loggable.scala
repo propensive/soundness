@@ -61,7 +61,7 @@ object Loggable:
   given fanOut: [event, carrier, cap^]
   =>  ( transcribable: event is Transcribable to carrier,
         sinks:         Every[LogSink[event, carrier]^{cap}] )
-  =>  ((event is Loggable)^{cap, caps.any}) =
+  =>  ( (event is Loggable)^{cap, caps.any} ) =
 
     // The derived logger is a shared capability, so what it retains must be shared: every sink
     // is (`SharedUnscoped`, ambient and storable statically), but the collection that carries

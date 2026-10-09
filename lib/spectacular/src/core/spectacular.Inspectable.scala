@@ -439,7 +439,7 @@ object Inspectable extends Inspectable2:
   // `Self` is subtype-parametric so branded literals (`Sequence(1, 2, 3)`, typed
   // `Sequence[Int] & Populated`) match; rendering produces no collection, so no proof leaks.
   given sequence: [element, sequence <: Sequence[element]]
-  =>  (inspectable: => element is Inspectable)
+  =>  ( inspectable: => element is Inspectable )
   =>  sequence is Inspectable =
 
     // [by-name-capture] by-name inspectable laundered to pure thunk
@@ -467,7 +467,7 @@ object Inspectable extends Inspectable2:
       . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
 
   given arraySeq: [element, arraySeq <: scm.ArraySeq[element]]
-  =>  (inspectable: => element is Inspectable)
+  =>  ( inspectable: => element is Inspectable )
   =>  arraySeq is Inspectable =
     // [by-name-capture] by-name inspectable laundered to pure thunk
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)

@@ -152,7 +152,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint 
   // initiate; a `Duplexable` additionally offers `exchange`, which can also send proactively.
   def react[state](initialState: state)[message: Ingressive]
     ( handle: (state: state) ?=> message => Control[state] )
-    ( using (Socket.Event is Loggable)^ )(using buffering: Buffering)
+    (using (Socket.Event is Loggable)^)(using buffering: Buffering)
   :   state =
 
     val connection = serviceable.connect(endpoint, Unset)
@@ -206,7 +206,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
   def exchange[state](initialState: state)[message: {Ingressive, Transmissible}]
     ( handle: (state: state) ?=> message => Control[state] )
     ( interact: Transmitter[message]^ => Unit )
-    ( using (Socket.Event is Loggable)^ )(using buffering: Buffering)
+    (using (Socket.Event is Loggable)^)(using buffering: Buffering)
   :   state =
 
     val connection = duplexable.connect(endpoint, Unset)

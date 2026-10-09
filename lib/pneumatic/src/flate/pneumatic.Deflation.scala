@@ -80,7 +80,7 @@ extends Duct[Data, Data]:
     target(offset + 9) = -1
 
   update def step(source: Region[Data])(range: Interval in source.type)
-    ( target: Slate[Data] )(space: Interval in target.type)
+    (target: Slate[Data])(space: Interval in target.type)
   :   Duct.Progress =
 
     val sourceInterval: Interval = range
@@ -255,7 +255,7 @@ extends Duct[Data, Data]:
     if (flags & 2) != 0 then Header.Checksum(2) else Header.Done
 
   update def step(source: Region[Data])(range: Interval in source.type)
-    ( target: Slate[Data] )(space: Interval in target.type)
+    (target: Slate[Data])(space: Interval in target.type)
   :   Duct.Progress =
 
     val sourceInterval: Interval = range

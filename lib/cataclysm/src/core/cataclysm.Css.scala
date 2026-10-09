@@ -304,7 +304,7 @@ object Css:
     // for `Color in form`, of which each colour class is a subtype, and the `Css.Style` macro
     // asks for the value's exact type, where the typer could infer a supertype.
     given chromatic: [color] => (chromatic: (? >: color) is Chromatic)
-    =>  (color is Css.Convertible of "color") =
+    =>  ( color is Css.Convertible of "color" ) =
       color => hex(chromatic.red(color), chromatic.green(color), chromatic.blue(color))
 
     // Likewise any time (Quantitative's `Seconds`) renders in `ms`; the value is in seconds,

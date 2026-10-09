@@ -94,7 +94,7 @@ object internal:
         halt
           ( m"the ergo expression could not be parsed because ${error.reason}",
             Interpolation.sourcePosition
-              (parts, Interpolation.decodeOrigins[origins], 1, offset) )
+              ( parts, Interpolation.decodeOrigins[origins], 1, offset ) )
 
     // Hoisted from the `map` below: a quote inside a combinator lambda in a macro risks the
     // `wildApprox` crash.

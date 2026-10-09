@@ -68,7 +68,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
   @targetName("checkoutTag")
   def checkout(tag: Git.Tag)
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     sh"$git $repoOptions checkout $tag".exec[Exit]() match
@@ -79,7 +79,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
   @targetName("checkoutBranch")
   def checkout(branch: Git.Branch)
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     sh"$git $repoOptions checkout $branch".exec[Exit]() match
@@ -90,7 +90,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
   @targetName("checkoutGitHash")
   def checkout(commit: Git.Hash)
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     sh"$git $repoOptions checkout $commit".exec[Exit]() match
@@ -100,7 +100,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
 
   def switch(branch: Git.Branch)
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     sh"$git $repoOptions switch $branch".exec[Exit]() match
@@ -110,7 +110,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
 
   def pull()(using Git.Command, Internet, WorkingDirectory, Environment)
     ( using gitError: Tactic[Git.Error], exec: Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Git.Process[Unit] =
 
     val process = sh"$git $repoOptions pull --progress".fork[Exit]()
@@ -123,7 +123,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
 
   def commit(message: Text)
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     sh"$git $repoOptions commit -m $message".exec[Exit]() match
@@ -152,7 +152,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
 
   def makeBranch(branch: Git.Branch)
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Exec.Error], Tactic[Git.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     sh"$git $repoOptions checkout -b $branch".exec[Exit]() match
@@ -163,7 +163,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
   def add[path: Abstractable across Paths to Text](file: path)
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Path.Error], Tactic[Name.Error],
             Tactic[Exec.Error], Tactic[Git.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     val relativePath =
@@ -179,7 +179,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
 
   def reset(mode: ResetMode = ResetMode.Mixed, ref: Refspec = Refspec.head())
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     sh"$git $repoOptions reset $mode $ref".exec[Exit]() match
@@ -190,7 +190,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
   def unstage[path: Abstractable across Paths to Text](file: path)
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Path.Error], Tactic[Name.Error],
             Tactic[Exec.Error], Tactic[Git.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     val relativePath =
@@ -208,7 +208,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
     ( from: fromPath, to: toPath )
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Path.Error], Tactic[Name.Error],
             Tactic[Exec.Error], Tactic[Git.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     val fromRel = safely(this.path.toward(from.generic.as[Path on Linux])).or:
@@ -226,7 +226,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
   // diff(ref): full tree-vs-ref diff (working tree relative to ref).
   def diff(staged: Boolean = false)
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   List[FileDiff] =
 
     val stagedOpt = if staged then sh"--staged" else sh""
@@ -235,7 +235,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
 
   def diff(ref: Refspec)
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   List[FileDiff] =
 
     Patch.parse(sh"$git $repoOptions diff --no-color $ref".exec[Iterator[Text]]())
@@ -244,7 +244,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
   def merge
     ( ref: Refspec, ff: FastForward = FastForward.Auto, message: Optional[Text] = Unset )
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     val ffOpt = ff match
@@ -261,7 +261,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
 
   def cherryPick(commit: Git.Hash)
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     sh"$git $repoOptions cherry-pick $commit".exec[Exit]() match
@@ -271,7 +271,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
 
   def revert(commit: Git.Hash, noCommit: Boolean = false)
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     val noCommitOpt = if noCommit then sh"-n" else sh""
@@ -283,7 +283,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
 
   def lock(reason: Optional[Text] = Unset)
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     val reasonOpt = reason.lay(sh""): reason => sh"--reason=$reason"
@@ -295,7 +295,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
 
   def unlock()
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     sh"$git $repoOptions worktree unlock $path".exec[Exit]() match
@@ -309,7 +309,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
             Tactic[Git.Error],
             Tactic[Exec.Error],
             ((Path on Linux) is Decodable in Text)^ )
-  ( using Tactic[Name.Error], Tactic[Path.Error], (Git.Event is Loggable)^ )
+  (using Tactic[Name.Error], Tactic[Path.Error], (Git.Event is Loggable)^)
   :   Worktree =
 
     val target: Path on Linux =
@@ -323,7 +323,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
 
   def remove(force: Boolean = false)
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Unit =
 
     repo.removeWorktree(this, force)
@@ -331,7 +331,7 @@ case class Worktree(repo: Git.Repo, path: Path on Linux):
 
   def status(ignored: Boolean = false)
     ( using Git.Command, WorkingDirectory, Environment, Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   List[Git.PathStatus] =
 
     val ignoredParam = if ignored then sh"--ignored" else sh""

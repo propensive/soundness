@@ -1050,20 +1050,20 @@ object internal:
 
     if !classSymbol.flags.is(Flags.Case) then
       report.errorAndAbort
-        ("jacinta: staged parsing requires a case class; sums and other types use " +
-          "`Json.Parsable.derived`")
+        ( "jacinta: staged parsing requires a case class; sums and other types use " +
+          "`Json.Parsable.derived`" )
 
     if classSymbol.owner.isTerm then
       report.errorAndAbort
-        ("jacinta: staged parsing requires a top-level or object-nested case class; " +
-          "method-local classes use `Json.Parsable.derived`")
+        ( "jacinta: staged parsing requires a top-level or object-nested case class; " +
+          "method-local classes use `Json.Parsable.derived`" )
 
     val ctor = classSymbol.primaryConstructor
 
     if ctor.paramSymss.filterNot(_.exists(_.isTypeParam)).length != 1 then
       report.errorAndAbort
-        ("jacinta: staged parsing requires a single parameter list; use " +
-          "`Json.Parsable.derived`")
+        ( "jacinta: staged parsing requires a single parameter list; use " +
+          "`Json.Parsable.derived`" )
 
     def kindOf(fieldType: TypeRepr): StagedKind =
       if fieldType =:= TypeRepr.of[Int] then IntK
@@ -1126,12 +1126,12 @@ object internal:
         case '[fieldType] =>
           Expr.summon[fieldType is Json.Field].getOrElse:
             report.errorAndAbort
-              (s"jacinta: no Json.Field instance for field ${field.name}: " +
-                field.fieldType.show)
+              ( s"jacinta: no Json.Field instance for field ${field.name}: " +
+                field.fieldType.show )
 
     def declaredDefault(field: Field): Expr[Any] = field.fieldType.asType match
       case '[fieldType] =>
-        '{ wisteria.internal.default[value, fieldType](${Expr(field.index)}): Any }
+        '{wisteria.internal.default[value, fieldType](${Expr(field.index)}): Any}
 
     def zero(fieldType: TypeRepr): Term =
       if fieldType =:= TypeRepr.of[Int] then Literal(IntConstant(0))
@@ -1140,7 +1140,7 @@ object internal:
       else if fieldType =:= TypeRepr.of[Float] then Literal(FloatConstant(0.0f))
       else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
       else fieldType.asType match
-        case '[fieldType] => '{ null.asInstanceOf[fieldType] }.asTerm
+        case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
     def body
       ( reader:    Expr[Json.Reader],
@@ -1189,21 +1189,21 @@ object internal:
         val read: Term = local.field.fieldType.asType match
           case '[fieldType] =>
             val raw: Expr[fieldType] = local.field.kind match
-              case IntK     => '{ $reader.long().toInt }.asExprOf[fieldType]
-              case LongK    => '{ $reader.long() }.asExprOf[fieldType]
-              case DoubleK  => '{ $reader.double() }.asExprOf[fieldType]
-              case FloatK   => '{ $reader.double().toFloat }.asExprOf[fieldType]
-              case BooleanK => '{ $reader.boolean() }.asExprOf[fieldType]
-              case TextK    => '{ $reader.string() }.asExprOf[fieldType]
-              case StringK  => '{ $reader.string().s }.asExprOf[fieldType]
+              case IntK     => '{$reader.long().toInt}.asExprOf[fieldType]
+              case LongK    => '{$reader.long()}.asExprOf[fieldType]
+              case DoubleK  => '{$reader.double()}.asExprOf[fieldType]
+              case FloatK   => '{$reader.double().toFloat}.asExprOf[fieldType]
+              case BooleanK => '{$reader.boolean()}.asExprOf[fieldType]
+              case TextK    => '{$reader.string()}.asExprOf[fieldType]
+              case StringK  => '{$reader.string().s}.asExprOf[fieldType]
 
               case InstanceK =>
-                '{
+                ' {
                   $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
                   . parse($reader)
                 }
 
-            '{ Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)($raw) }.asTerm
+            '{Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)($raw)}.asTerm
 
         val rhs =
           Block
@@ -1214,7 +1214,7 @@ object internal:
 
         CaseDef(Literal(IntConstant(index)), None, rhs)
 
-      val fallthrough = CaseDef(Wildcard(), None, '{ $reader.skipValue() }.asTerm)
+      val fallthrough = CaseDef(Wildcard(), None, '{$reader.skipValue()}.asTerm)
 
       // The key loop. With literal keys, each step scans the key in place
       // and compares its packed words against the field names as immediate
@@ -1240,33 +1240,33 @@ object internal:
           val highRef = Ref(high).asExprOf[Long]
 
           def chain(remaining: List[Field]): Term = remaining match
-            case Nil => '{ Json.KeyTable.Unknown }.asTerm
+            case Nil => '{Json.KeyTable.Unknown}.asTerm
 
             case field :: rest => field.packed match
               case None => chain(rest)
 
               case Some((low, highWord)) =>
                 If
-                  ( '{ $wordRef == ${Expr(low)} && $highRef == ${Expr(highWord)} }.asTerm,
+                  ( '{$wordRef == ${Expr(low)} && $highRef == ${Expr(highWord)}}.asTerm,
                     Literal(IntConstant(field.index)),
                     chain(rest) )
 
           val resolve: Term =
             If
-              ( '{ $wordRef == Json.Reader.KeyOpaque }.asTerm,
-                '{ $reader.keyIndex($table) }.asTerm,
-                Block(scala.collection.immutable.List(ValDef(high, Some('{ $reader.keyWordHigh }.asTerm))), chain(fields)) )
+              ( '{$wordRef == Json.Reader.KeyOpaque}.asTerm,
+                '{$reader.keyIndex($table)}.asTerm,
+                Block(scala.collection.immutable.List(ValDef(high, Some('{$reader.keyWordHigh}.asTerm))), chain(fields)) )
 
           val step: Term =
             Block
-              ( scala.collection.immutable.List(ValDef(word, Some('{ $reader.keyWord() }.asTerm))),
+              ( scala.collection.immutable.List(ValDef(word, Some('{$reader.keyWord()}.asTerm))),
                 If
-                  ( '{ $wordRef == Json.Reader.KeyEnd }.asTerm,
+                  ( '{$wordRef == Json.Reader.KeyEnd}.asTerm,
                     Assign(Ref(run), Literal(BooleanConstant(false))),
                     Block
                       ( scala.collection.immutable.List(ValDef(found, Some(resolve))),
                         If
-                          ( '{ ${Ref(found).asExprOf[Int]} == Json.KeyTable.End }.asTerm,
+                          ( '{${Ref(found).asExprOf[Int]} == Json.KeyTable.End}.asTerm,
                             Assign(Ref(run), Literal(BooleanConstant(false))),
                             Match(Ref(found), armsFor(arms, fallthrough)) ) ) ) )
 
@@ -1274,13 +1274,13 @@ object internal:
             ( ValDef(run, Some(Literal(BooleanConstant(true)))),
               While(Ref(run), step) )
         else
-          val next: Term = '{ $reader.keyIndex($table) }.asTerm
+          val next: Term = '{$reader.keyIndex($table)}.asTerm
           val dispatch = Match(Ref(cursor), armsFor(arms, fallthrough))
 
           List
             ( ValDef(cursor, Some(next)),
               While
-                ( '{ ${Ref(cursor).asExprOf[Int]} != Json.KeyTable.End }.asTerm,
+                ( '{${Ref(cursor).asExprOf[Int]} != Json.KeyTable.End}.asTerm,
                   Block(scala.collection.immutable.List(dispatch), Assign(Ref(cursor), next)) ) )
 
       // Fields whose keys never arrived: the declared default, else the
@@ -1293,15 +1293,15 @@ object internal:
           case '[fieldType] =>
             val onAbsent: Expr[fieldType] = local.field.kind match
               case InstanceK =>
-                '{
+                ' {
                   $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
                   . absent()(using $tactic)
                 }
 
-              case _ => '{ Json.Parsable.missing[fieldType]()(using $tactic) }
+              case _ => '{Json.Parsable.missing[fieldType]()(using $tactic)}
 
             val resolve: Term =
-              '{
+              ' {
                 val declared = $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
                 if !declared.absent then declared.asInstanceOf[fieldType]
@@ -1309,7 +1309,7 @@ object internal:
               }.asTerm
 
             If
-              ( '{ !${Ref(local.seen).asExprOf[Boolean]} }.asTerm,
+              ( '{!${Ref(local.seen).asExprOf[Boolean]}}.asTerm,
                 Assign(Ref(local.slot), resolve),
                 Literal(UnitConstant()) )
 
@@ -1331,7 +1331,7 @@ object internal:
       Block
         // The element types differ (`ValDef` and `Statement`), and `Concatenable` is invariant
         // where `:::` widened, so the concatenation happens on the stdlib side.
-        ( ('{ $reader.openObject() }.asTerm
+        ( ('{$reader.openObject()}.asTerm
             :: (slotDefs.stdlib ::: seenDefs.stdlib ::: loop.stdlib ::: absents.stdlib).to(List))
 
           . stdlib,
@@ -1349,7 +1349,7 @@ object internal:
     val instanceExprs = fields.map(summonField)
     val fallbackExprs = fields.map(declaredDefault)
 
-    '{
+    ' {
       // Sealed per the codec-thunk pattern, like the derived instances: the
       // generated parser captures the resolution-scoped tactic and foci.
       // The instance and default arrays are single lazy vals, so recursive
@@ -1374,7 +1374,7 @@ object internal:
           def shape(): Morphology = Morphology.Any
 
           def parse(reader: Json.Reader^): value =
-            ${
+            $ {
               body
                 ( '{reader}, '{foci}, '{tactic}, '{keys}, '{table}, '{instances},
                   '{fallbacks} )
@@ -1405,7 +1405,7 @@ object internal:
     tpe match
       case AppliedType(_, _) =>
         report.errorAndAbort
-          ("jacinta: staged parsing does not support generic sums; use `Json.Parsable.derived`")
+          ( "jacinta: staged parsing does not support generic sums; use `Json.Parsable.derived`" )
 
       case _ =>
         ()
@@ -1417,8 +1417,8 @@ object internal:
 
     if !children.forall { child => child.isClassDef && child.flags.is(Flags.Case) } then
       report.errorAndAbort
-        ("jacinta: staged sum parsing requires every variant to be a case class; singleton " +
-          "variants use `Json.Parsable.derived`")
+        ( "jacinta: staged sum parsing requires every variant to be a case class; singleton " +
+          "variants use `Json.Parsable.derived`" )
 
     val variantTypes: scala.collection.immutable.List[TypeRepr] = children.map(_.typeRef)
     val variantNames: scala.collection.immutable.List[String] = children.map(_.name)
@@ -1429,14 +1429,14 @@ object internal:
         case '[variantType] =>
           Expr.summon[variantType is Json.Field].getOrElse:
             report.errorAndAbort
-              (s"jacinta: no Json.Field instance for variant ${variantNames(index)}: " +
-                variantTypes(index).show)
+              ( s"jacinta: no Json.Field instance for variant ${variantNames(index)}: " +
+                variantTypes(index).show )
 
     val discriminableExpr: Expr[value is Discriminable in Json] =
       Expr.summon[value is Discriminable in Json].getOrElse:
         report.errorAndAbort
-          ("jacinta: staged sum parsing needs a contextual `Discriminable in Json`, like " +
-            "`jacinta.discriminables.jsonByKindDiscriminable`")
+          ( "jacinta: staged sum parsing needs a contextual `Discriminable in Json`, like " +
+            "`jacinta.discriminables.jsonByKindDiscriminable`" )
 
     val nameExprs = variantNames.map { name => Expr(name) }
     val variantExprs = List.range(0, arity).map(summonVariant)
@@ -1453,19 +1453,19 @@ object internal:
     :   Expr[value] =
 
       if index == arity then
-        '{
+        ' {
           provide[Tactic[Variant.Error]]:
             abort(Variant.Error[value]($wire))
         }
       else variantTypes(index).asType match
         case '[type variantType <: value; variantType] =>
-          '{
+          ' {
             if $wireVariants.readUnchecked(${Expr(index)}) == $wireString then
               $variants.readUnchecked(${Expr(index)}).asInstanceOf[variantType is Json.Field].parse($reader)
-            else ${ dispatch(index + 1, reader, wire, wireString, variants, wireVariants) }
+            else ${dispatch(index + 1, reader, wire, wireString, variants, wireVariants)}
           }
 
-    '{
+    ' {
       // Sealed per the codec-thunk pattern, like the derived instances: the
       // variant instances may capture resolution-scoped tactics. The variant
       // array is a single lazy val, so recursive references stay deferred.
@@ -1492,7 +1492,7 @@ object internal:
 
               val wireString: String = wire.s
 
-              ${
+              $ {
                 dispatch
                   ( 0, '{reader}, '{wire}, '{wireString}, '{variants}, '{wireVariants} )
               }

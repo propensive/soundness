@@ -113,7 +113,7 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[Exec.Error] )
     ( using command: Git.Command )
-  ( using Tactic[Name.Error], (Git.Event is Loggable)^ )
+  (using Tactic[Name.Error], (Git.Event is Loggable)^)
   :   Worktree =
 
     try
@@ -137,7 +137,7 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[Exec.Error] )
     ( using command: Git.Command )
-  ( using Tactic[Name.Error], (Git.Event is Loggable)^ )
+  (using Tactic[Name.Error], (Git.Event is Loggable)^)
   :   Git.Repo =
 
     try
@@ -161,7 +161,7 @@ object Git:
             Tactic[Git.Error],
             Tactic[Exec.Error],
             WorkingDirectory, Environment )
-  ( using Tactic[Name.Error], (Git.Event is Loggable)^ )
+  (using Tactic[Name.Error], (Git.Event is Loggable)^)
   :   Git.Process[Worktree] =
 
     val sourceText = inline source match
@@ -185,7 +185,7 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[Exec.Error],
             Git.Command )
-  ( using Tactic[Path.Error], Tactic[Name.Error], Tactic[Git.Error], (Git.Event is Loggable)^ )
+  (using Tactic[Path.Error], Tactic[Name.Error], Tactic[Git.Error], (Git.Event is Loggable)^)
   :   Git.Process[Worktree] =
 
     val sourceText = inline source match
@@ -208,7 +208,7 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[Exec.Error],
             Git.Command )
-  ( using Tactic[Path.Error], Tactic[Name.Error], Tactic[Git.Error], (Git.Event is Loggable)^ )
+  (using Tactic[Path.Error], Tactic[Name.Error], Tactic[Git.Error], (Git.Event is Loggable)^)
   :   Git.Process[Git.Repo] =
 
     val sourceText = inline source match
@@ -228,7 +228,7 @@ object Git:
     ( using gitError:         Tactic[Git.Error],
             exec:             Tactic[Exec.Error],
             workingDirectory: WorkingDirectory, environment: Environment )
-  ( using Tactic[Name.Error], (Git.Event is Loggable)^ )
+  (using Tactic[Name.Error], (Git.Event is Loggable)^)
   :   Git.Process[Worktree] =
 
     val worktree = init(targetPath)
@@ -253,7 +253,7 @@ object Git:
             Tactic[Name.Error],
             Git.Command )
     ( using gitError: Tactic[Git.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Git.Process[Worktree] =
 
     val target: Path on Linux =
@@ -289,7 +289,7 @@ object Git:
             Tactic[Name.Error],
             Git.Command )
     ( using gitError: Tactic[Git.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   Git.Process[Git.Repo] =
 
     val target: Path on Linux =
@@ -506,7 +506,7 @@ object Git:
     def pushTags()
       ( using Internet, Git.Command, WorkingDirectory, Environment, Tactic[Git.Error],
               Tactic[Exec.Error] )
-    ( using (Git.Event is Loggable)^ )
+    (using (Git.Event is Loggable)^)
     :   Unit =
 
       sh"$git $repoOptions push --tags".exec[Exit]() match
@@ -517,7 +517,7 @@ object Git:
     def push()
       ( using Internet, Tactic[Git.Error], Git.Command, WorkingDirectory, Environment,
               Tactic[Exec.Error] )
-    ( using (Git.Event is Loggable)^ )
+    (using (Git.Event is Loggable)^)
     :   Unit =
 
       sh"$git $repoOptions push".exec[Exit]() match
@@ -528,7 +528,7 @@ object Git:
     def fetch(depth: Optional[Int] = Unset, repo: Text, refspec: Refspec)
       ( using Git.Command, Internet, WorkingDirectory, Environment )
       ( using gitError: Tactic[Git.Error], exec: Tactic[Exec.Error] )
-    ( using (Git.Event is Loggable)^ )
+    (using (Git.Event is Loggable)^)
     :   Git.Process[Unit] =
 
       val depthOption = depth.lay(sh""): depth => sh"--depth=$depth"
@@ -544,7 +544,7 @@ object Git:
     object config:
       def get[value: Decodable in Text](variable: Text)
         ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-      ( using (Git.Event is Loggable)^ )
+      (using (Git.Event is Loggable)^)
       :   value =
 
         sh"$git $repoOptions config --get $variable".exec[Text]().as[value]
@@ -558,7 +558,7 @@ object Git:
 
     def tag(name: Git.Tag)
       ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-    ( using (Git.Event is Loggable)^ )
+    (using (Git.Event is Loggable)^)
     :   Git.Tag =
 
       sh"$git $repoOptions tag $name".exec[Exit]() match
@@ -568,7 +568,7 @@ object Git:
 
     def deleteTag(name: Git.Tag)
       ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-    ( using (Git.Event is Loggable)^ )
+    (using (Git.Event is Loggable)^)
     :   Unit =
 
       sh"$git $repoOptions tag -d $name".exec[Exit]() match
@@ -578,7 +578,7 @@ object Git:
 
     def deleteBranch(branch: Git.Branch, force: Boolean = false)
       ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-    ( using (Git.Event is Loggable)^ )
+    (using (Git.Event is Loggable)^)
     :   Unit =
 
       val flag = if force then sh"-D" else sh"-d"
@@ -590,7 +590,7 @@ object Git:
 
     def renameBranch(from: Git.Branch, to: Git.Branch, force: Boolean = false)
       ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-    ( using (Git.Event is Loggable)^ )
+    (using (Git.Event is Loggable)^)
     :   Unit =
 
       val flag = if force then sh"-M" else sh"-m"
@@ -619,7 +619,7 @@ object Git:
 
     def addRemote(name: Text, url: Text)
       ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-    ( using (Git.Event is Loggable)^ )
+    (using (Git.Event is Loggable)^)
     :   Remote =
 
       sh"$git $repoOptions remote add $name $url".exec[Exit]() match
@@ -629,7 +629,7 @@ object Git:
 
     def removeRemote(name: Text)
       ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-    ( using (Git.Event is Loggable)^ )
+    (using (Git.Event is Loggable)^)
     :   Unit =
 
       sh"$git $repoOptions remote remove $name".exec[Exit]() match
@@ -707,7 +707,7 @@ object Git:
 
     def diff(refA: Refspec, refB: Refspec)
       ( using Git.Command, WorkingDirectory, Environment, Tactic[Exec.Error] )
-    ( using (Git.Event is Loggable)^ )
+    (using (Git.Event is Loggable)^)
     :   List[FileDiff] =
 
       Patch.parse(sh"$git $repoOptions diff --no-color $refA $refB".exec[Iterator[Text]]())
@@ -715,7 +715,7 @@ object Git:
 
     def reflog(ref: Optional[Refspec] = Unset)
       ( using Git.Command, WorkingDirectory, Environment, Tactic[Exec.Error] )
-    ( using (Git.Event is Loggable)^ )
+    (using (Git.Event is Loggable)^)
     :   List[ReflogEntry] =
 
       val refArg = ref.lay(sh""): ref => sh"$ref"
@@ -730,7 +730,7 @@ object Git:
 
     def revParse(refspec: Refspec)
       ( using Git.Command, WorkingDirectory, Environment, Tactic[Exec.Error] )
-    ( using (Git.Event is Loggable)^ )
+    (using (Git.Event is Loggable)^)
     :   Git.Hash =
 
       Git.Hash.unsafe(sh"$git $repoOptions rev-parse $refspec".exec[Text]().trim)
@@ -739,7 +739,7 @@ object Git:
     object notes:
       def show(target: Git.Hash, ref: Path on Git.Refs = Git.Refs.defaultNotes)
         ( using Git.Command, WorkingDirectory, Environment, Tactic[Exec.Error] )
-      ( using (Git.Event is Loggable)^ )
+      (using (Git.Event is Loggable)^)
       :   Optional[Text] =
 
         val refArg = sh"--ref=${ref.encode}"
@@ -760,7 +760,7 @@ object Git:
         ( target: Git.Hash, body: Text, force: Boolean = false,
           ref:    Path on Git.Refs = Git.Refs.defaultNotes )
         ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-      ( using (Git.Event is Loggable)^ )
+      (using (Git.Event is Loggable)^)
       :   Unit =
 
         val refArg   = sh"--ref=${ref.encode}"
@@ -774,7 +774,7 @@ object Git:
       def append
         ( target: Git.Hash, body: Text, ref: Path on Git.Refs = Git.Refs.defaultNotes )
         ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-      ( using (Git.Event is Loggable)^ )
+      (using (Git.Event is Loggable)^)
       :   Unit =
 
         val refArg = sh"--ref=${ref.encode}"
@@ -788,7 +788,7 @@ object Git:
         ( target: Git.Hash, ignoreMissing: Boolean = false,
           ref:    Path on Git.Refs = Git.Refs.defaultNotes )
         ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-      ( using (Git.Event is Loggable)^ )
+      (using (Git.Event is Loggable)^)
       :   Unit =
 
         val refArg     = sh"--ref=${ref.encode}"
@@ -801,7 +801,7 @@ object Git:
 
       def list(ref: Path on Git.Refs = Git.Refs.defaultNotes)
         ( using Git.Command, WorkingDirectory, Environment, Tactic[Exec.Error] )
-      ( using (Git.Event is Loggable)^ )
+      (using (Git.Event is Loggable)^)
       :   List[(Git.Hash, Git.Hash)] =
 
         val refArg = sh"--ref=${ref.encode}"
@@ -817,7 +817,7 @@ object Git:
         ( from: Git.Hash, to: Git.Hash, force: Boolean = false,
           ref:  Path on Git.Refs = Git.Refs.defaultNotes )
         ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-      ( using (Git.Event is Loggable)^ )
+      (using (Git.Event is Loggable)^)
       :   Unit =
 
         val refArg   = sh"--ref=${ref.encode}"
@@ -864,7 +864,7 @@ object Git:
               ((Path on Linux) is Decodable in Text)^,
               Tactic[Exec.Error],
               Git.Command )
-    ( using Tactic[Name.Error], Tactic[Path.Error], (Git.Event is Loggable)^ )
+    (using Tactic[Name.Error], Tactic[Path.Error], (Git.Event is Loggable)^)
     :   Worktree =
 
       val targetPath: Path on Linux =
@@ -880,7 +880,7 @@ object Git:
 
     def removeWorktree(worktree: Worktree, force: Boolean = false)
       ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-    ( using (Git.Event is Loggable)^ )
+    (using (Git.Event is Loggable)^)
     :   Unit =
 
       val forceOpt = if force then sh"--force" else sh""
@@ -892,7 +892,7 @@ object Git:
 
     def pruneWorktrees()
       ( using Git.Command, WorkingDirectory, Environment, Tactic[Git.Error], Tactic[Exec.Error] )
-    ( using (Git.Event is Loggable)^ )
+    (using (Git.Event is Loggable)^)
     :   Unit =
 
       sh"$git $repoOptions worktree prune".exec[Exit]() match
@@ -909,7 +909,7 @@ object Git:
     def parse(text: Text)(using Tactic[Git.RefError]): Git.Tag = new Git.Tag(octogenarian.internal.Refspec.parse(text))
 
     given decoder: (tactic: Tactic[Git.RefError])
-    =>  ((Git.Tag is Decodable in Text)^{tactic}) = parse(_)
+    =>  ( (Git.Tag is Decodable in Text)^{tactic} ) = parse(_)
     given showable: Git.Tag is Showable = _.text
 
     // The name alone would be indistinguishable from a branch name, a tag and a raw refspec,
@@ -923,7 +923,7 @@ object Git:
     def parse(text: Text)(using Tactic[Git.RefError]): Git.Branch = new Git.Branch(octogenarian.internal.Refspec.parse(text))
 
     given decoder: (tactic: Tactic[Git.RefError])
-    =>  ((Git.Branch is Decodable in Text)^{tactic}) = parse(_)
+    =>  ( (Git.Branch is Decodable in Text)^{tactic} ) = parse(_)
     given showable: Git.Branch is Showable = _.text
 
     given inspectable: [branch <: Git.Branch] => branch is Inspectable = branch =>
@@ -943,7 +943,7 @@ object Git:
     def unsafe(text: Text): Git.Hash = new Git.Hash(text)
 
     given decoder: (tactic: Tactic[Git.RefError])
-    =>  ((Git.Hash is Decodable in Text)^{tactic}) = apply(_)
+    =>  ( (Git.Hash is Decodable in Text)^{tactic} ) = apply(_)
     given showable: Git.Hash is Showable = _.text
 
     // The full forty hexadecimal digits: an abbreviated hash is ambiguous between objects, and
@@ -958,4 +958,4 @@ object Git:
 
     override def equals(any: Any): Boolean = any match
       case other: Git.Hash => text == other.text
-      case _              => false
+      case _               => false

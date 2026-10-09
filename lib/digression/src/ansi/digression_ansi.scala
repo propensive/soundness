@@ -191,7 +191,7 @@ package teletypeables:
 
     def lineCell(row: Row): Teletype = row.inlined match
       case origin: Inlined => e"${palette.subdue(palette.line, 0.5)}(${origin.line})"
-      case _ => e"${palette.line}(${row.frame.line.let(_.show).or(t"")})"
+      case _               => e"${palette.line}(${row.frame.line.let(_.show).or(t"")})"
 
     // The class, its separator and the method (and likewise the file, the colon and the line)
     // read as one contiguous word, so they share a column: under a `padding = 0` style, every

@@ -80,7 +80,7 @@ object KotlinFacade:
       // the stdlib's (this file builds `quotes.reflect` trees).
       members.stdlib.filter(_ != Foreign.Type.Named(t"null")) match
         case List(inner) if members.size == 2 => t"${kotlinType(inner)}?"
-        case _ => members.map(kotlinType).join(t" | ")
+        case _                                => members.map(kotlinType).join(t" | ")
 
     case Foreign.Type.Named(name) =>
       simple(name)

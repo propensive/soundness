@@ -115,7 +115,7 @@ extension [countable: Countable](value: countable)
   // point of a two-phase scan. A branded interval's limit is a safe scan START (the loop
   // re-checks `index < size`), though not itself a safe index.
   inline def spot(after: Interval in value.type)
-    (inline predicate: (Ordinal in value.type) => Boolean)
+    ( inline predicate: (Ordinal in value.type) => Boolean )
   :   Optional[Ordinal in value.type] =
 
     var index: Int = (after: Interval).limit.n0
@@ -154,7 +154,7 @@ extension [countable: Countable](value: countable)
   // Cumulatively, the limit is ALWAYS the resume point (an empty run returns `after`
   // unchanged), and each stage's own run is recoverable from consecutive limits.
   inline def prefix(after: Interval in value.type)
-    (inline predicate: (Ordinal in value.type) => Boolean)
+    ( inline predicate: (Ordinal in value.type) => Boolean )
   :   Interval in value.type =
 
     val interval: Interval = after

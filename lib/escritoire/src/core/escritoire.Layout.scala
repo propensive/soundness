@@ -149,7 +149,7 @@ case class Layout[row, text: ClassTag]
   def accommodates(cells: Cells[text]): Boolean =
     columns.readable.indices.all: index =>
       columns.readUnchecked(index).sizing.accommodates
-        (aggregates.readUnchecked(index), cells.metrics.readUnchecked(index))
+        ( aggregates.readUnchecked(index), cells.metrics.readUnchecked(index) )
 
   // This layout, if the row cannot move a column; else the aggregates widened by the row's
   // cells and the widths re-solved at the same width.

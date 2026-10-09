@@ -40,11 +40,11 @@ import prepositional.*
 
 object Segmentable:
   given indexedSeq: [element]
-  =>  (IndexedSeq[element] is Segmentable { type Segment = IndexedSeq[element] }) =
+  =>  ( IndexedSeq[element] is Segmentable { type Segment = IndexedSeq[element] } ) =
     (sequence, interval) => sequence.slice(interval.start.n0, interval.limit.n0)
 
   given iarray: [element: scala.reflect.ClassTag]
-  =>  ((Array[element]^{}) is Segmentable { type Segment = Array[element]^{} }) =
+  =>  ( (Array[element]^{}) is Segmentable { type Segment = Array[element]^{} } ) =
     (iarray: Array[element]^{}, interval: Interval) =>
       Array.frozen(iarray.readable.slice(interval.start.n0, interval.limit.n0))
 
@@ -53,11 +53,11 @@ object Segmentable:
   // a segment of a non-empty value may be empty, so the proof must not survive — the same
   // soundness rule as `Truncable`'s `Result`.
   given sequence: [element, sequence <: Sequence[element]]
-  =>  (sequence is Segmentable { type Segment = Sequence[element] }) =
+  =>  ( sequence is Segmentable { type Segment = Sequence[element] } ) =
     (sequence, interval) => Sequence.slice(sequence, interval.start.n0, interval.limit.n0)
 
   given list: [element, list <: List[element]]
-  =>  (list is Segmentable { type Segment = List[element] }) =
+  =>  ( list is Segmentable { type Segment = List[element] } ) =
     (list, interval) => List.slice(list, interval.start.n0, interval.limit.n0)
 
   given text: (Text is Segmentable { type Segment = Text }) = (text, interval) =>

@@ -77,9 +77,9 @@ object Placeholder:
       case _ => Unset
 
 case class Placeholder
-     (id:        Int,
+     ( id:        Int,
       kind:      PlaceholderKind,
       name:      Text,
       arity:     Int,
       definedAt: Optional[Text],
-      printed:   Text)
+      printed:   Text )

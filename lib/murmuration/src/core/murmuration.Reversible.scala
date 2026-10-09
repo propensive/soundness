@@ -43,14 +43,14 @@ import prepositional.*
 // forwarder (#1411). Unordered shapes (`Set`, `Map`) have no instance: reversing them is meaningless.
 object Reversible:
   given list: [element, container <: List[element]]
-  =>  (container is Reversible { type Result = List[element] }) =
+  =>  ( container is Reversible { type Result = List[element] } ) =
     new Reversible:
       type Self = container
       type Result = List[element]
       def reverse(self: container): List[element] = List.invert(self)
 
   given sequence: [element, container <: Sequence[element]]
-  =>  (container is Reversible { type Result = Sequence[element] }) =
+  =>  ( container is Reversible { type Result = Sequence[element] } ) =
     new Reversible:
       type Self = container
       type Result = Sequence[element]

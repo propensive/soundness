@@ -178,8 +178,8 @@ given wsClient: ( online:            Online,
                   websocketError:    Tactic[Websocket.Error],
                   httpResponseError: Tactic[Http.Response.Error],
                   portError:         Tactic[Port.Error] )
-=>  (((Websocket.Url is Duplexable) { type Output = Data; type Connection = Websocket.Connection })
-      ^{online, monitor, websocketError, httpResponseError, portError}) =
+=>  ( ((Websocket.Url is Duplexable) { type Output = Data; type Connection = Websocket.Connection })
+      ^{online, monitor, websocketError, httpResponseError, portError} ) =
   // The client retains its `Monitor` (the frame pump daemon) and tactics, so the instance
   // is a capability — a given constructed from capabilities produces a capability (see
   // rep/DECISIONS.md).
@@ -307,6 +307,6 @@ extends Sessional:
 given wsSessional: ( duplexable: ((Websocket.Url is Duplexable) { type Output = Data
                                                           type Connection = Websocket.Connection })^,
                      monitor:    Monitor )
-=>  (WsSessional^{duplexable, monitor, caps.any}) =
+=>  ( WsSessional^{duplexable, monitor, caps.any} ) =
 
   WsSessional()

@@ -47,8 +47,8 @@ object Bibliography:
     val shared = left.length.min(right.length)
 
     (0 until shared).find(index => left.readable(index) != right.readable(index)).fold
-      ( left.length - right.length )
-      ( index => (left.readable(index) & 0xff) - (right.readable(index) & 0xff) )
+      (left.length - right.length)
+      (index => (left.readable(index) & 0xff) - (right.readable(index) & 0xff))
 
   // The order of `hash` relative to every string beginning with `prefix`: zero when `hash` begins
   // with it, so that the hashes it matches form one run in the sorted index.
@@ -56,8 +56,8 @@ object Bibliography:
     val shared = hash.length.min(prefix.length)
 
     (0 until shared).find(index => hash.readable(index) != prefix.readable(index)).fold
-      ( if hash.length < prefix.length then -1 else 0 )
-      ( index => (hash.readable(index) & 0xff) - (prefix.readable(index) & 0xff) )
+      (if hash.length < prefix.length then -1 else 0)
+      (index => (hash.readable(index) & 0xff) - (prefix.readable(index) & 0xff))
 
   // The first index in `[low, high)` whose hash does not precede `prefix`.
   @tailrec

@@ -794,7 +794,7 @@ object rationalInternal:
 
     given orderable: Q64 is Orderable:
       inline def compare
-          (inline left: Q64, inline right: Q64, inline strict: Boolean, inline greater: Boolean)
+          ( inline left: Q64, inline right: Q64, inline strict: Boolean, inline greater: Boolean )
       :   Boolean =
 
         if left == Long.MinValue || right == Long.MinValue then false else
@@ -1121,7 +1121,7 @@ object rationalInternal:
 
     given orderable: Q32 is Orderable:
       inline def compare
-          (inline left: Q32, inline right: Q32, inline strict: Boolean, inline greater: Boolean)
+          ( inline left: Q32, inline right: Q32, inline strict: Boolean, inline greater: Boolean )
       :   Boolean =
 
         if left == Int.MinValue || right == Int.MinValue then false else

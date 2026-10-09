@@ -318,12 +318,12 @@ extension [self <: Populated](value: self)(using traversable: self is Traversabl
 // `transparent inline` narrows the declared `Optional[Operand]` to `Operand` in the proven
 // branch — the same technique as `total` above, whose result narrows when a `Zeroic` is found.
 extension [self](value: self)
-  (using terminable: self is Terminable, traversable: self is Traversable)
+  ( using terminable: self is Terminable, traversable: self is Traversable )
 
   transparent inline def last: Optional[terminable.Operand] =
     compiletime.summonFrom:
       case _: (`self` <:< Populated) => terminable.last(value)
-      case _ => if traversable.traverse(value).hasNext then terminable.last(value) else Unset
+      case _                         => if traversable.traverse(value).hasNext then terminable.last(value) else Unset
 
 extension [self <: Populated, result](value: self)(using truncable: self is Truncable to result)
   def lead: result = truncable.lead(value)

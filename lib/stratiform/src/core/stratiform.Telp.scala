@@ -130,7 +130,7 @@ object Telp:
       Telp(components.to(List))
 
   given decodable: (tactic: Tactic[Telp.Error])
-  =>  ((Telp is Decodable in Text)^{tactic}) = text => parse(text)
+  =>  ( (Telp is Decodable in Text)^{tactic} ) = text => parse(text)
 
   // The `telp"…"` literal: the path is parsed as the code compiles, and a
   // syntax error is reported at the offending component. Substitutions are

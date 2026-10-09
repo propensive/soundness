@@ -196,7 +196,7 @@ object internal:
 
         given settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make
-            (Some(outputDir), List("-experimental", "-classpath", innerClasspath))
+            ( Some(outputDir), List("-experimental", "-classpath", innerClasspath) )
 
         given staging.Compiler = staging.Compiler.make(macroClassloader)
         val started = System.nanoTime
@@ -209,7 +209,7 @@ object internal:
 
           val target =
             r2.Refinement
-              (r2.TypeRepr.of[Inlinable], "Self", r2.TypeBounds(fieldType, fieldType))
+              ( r2.TypeRepr.of[Inlinable], "Self", r2.TypeBounds(fieldType, fieldType) )
 
           // The summon is embedded in the snippet rather than performed here
           // eagerly: the run's expression builder executes post-typer (phase
@@ -217,7 +217,7 @@ object internal:
           // an embedded `summonInline` resolves during the inner compiler's
           // own inlining phase — an ordinary search context.
           target.asType match
-            case '[target] => '{ scala.compiletime.summonInline[target] }
+            case '[target] => '{scala.compiletime.summonInline[target]}
 
         // The snippet's classes are now ordinary files in `outputDir`; a new
         // classloader over that directory (parented by the macro classloader,
@@ -238,8 +238,8 @@ object internal:
         val duration = (System.nanoTime - started)/1000000L
 
         report.info
-          (s"prescience: staged summon for ${classSymbol.fullName} took ${duration}ms; " +
-            s"classes in $outputDir")
+          ( s"prescience: staged summon for ${classSymbol.fullName} took ${duration}ms; " +
+            s"classes in $outputDir" )
 
         reloaded match
           case instance: Inlinable => Some(instance)
@@ -284,15 +284,15 @@ object internal:
     def readField(index: Int, parts: Expr[scala.Array[String]]): Term =
       fieldTypes(index).asType match
         case '[fieldType] =>
-          val fieldExpr: Expr[String] = '{ $parts(${Expr(index)}) }
+          val fieldExpr: Expr[String] = '{$parts(${Expr(index)})}
 
           val instanceExpr: Expr[fieldType is Inlinable] =
             Expr.summon[fieldType is Inlinable].getOrElse:
               report.errorAndAbort
-                (s"prescience: no Inlinable instance for field ${fields(index).name}: " +
-                  fieldTypes(index).show)
+                ( s"prescience: no Inlinable instance for field ${fields(index).name}: " +
+                  fieldTypes(index).show )
 
-          def runtimeCall: Term = '{ $instanceExpr.readRuntime($fieldExpr) }.asTerm
+          def runtimeCall: Term = '{$instanceExpr.readRuntime($fieldExpr)}.asTerm
 
           evaluate(instanceExpr.asTerm) match
             case Some(instance) =>
@@ -309,7 +309,7 @@ object internal:
       Apply(Select(New(Inferred(tpe)), ctor), List.range(0, arity).map(readField(_, parts)))
       . asExprOf[value]
 
-    '{
+    ' {
       val parts: scala.Array[String] = $input.split(",").nn.map(_.nn)
-      ${ construct('parts) }
+      ${construct('parts)}
     }

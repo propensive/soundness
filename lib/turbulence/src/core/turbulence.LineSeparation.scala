@@ -173,7 +173,7 @@ object LineSeparation:
             if found < 0 then stop else found
 
           update def step(source: Region[Text])(range: Interval in source.type)
-            ( target: Slate[Array[Text]^{}] )(space: Interval in target.type)
+            (target: Slate[Array[Text]^{}])(space: Interval in target.type)
           :   Duct.Progress =
 
             val sourceInterval: Interval = range
@@ -430,7 +430,7 @@ object LineSeparation:
         index
 
       update def step(source: Region[Data])(range: Interval in source.type)
-        ( target: Slate[Array[Text]^{}] )(space: Interval in target.type)
+        (target: Slate[Array[Text]^{}])(space: Interval in target.type)
       :   Duct.Progress =
 
         val sourceInterval: Interval = range

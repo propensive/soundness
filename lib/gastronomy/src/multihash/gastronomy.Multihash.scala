@@ -77,7 +77,7 @@ object Multihash:
     recur(offset, 0, 0L, 0)
 
   def apply[algorithm <: Algorithm](digest: Digest in algorithm)
-     (using codec: algorithm is Multicodec)
+     ( using codec: algorithm is Multicodec )
   :   Multihash =
 
     Multihash(codec.code, digest.data)

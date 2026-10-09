@@ -71,7 +71,7 @@ object Logger:
       registry
       . computeIfAbsent(codepoint, _ =>
           establish[format, target](destination)
-            (using writable, addressable, buffering, monitor, codepoint, probate))
+            ( using writable, addressable, buffering, monitor, codepoint, probate ))
 
       . nn
       . asInstanceOf[Relay[format]]

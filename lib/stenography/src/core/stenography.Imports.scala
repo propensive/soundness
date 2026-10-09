@@ -97,7 +97,7 @@ object Imports:
     catch case NonFatal(_) => sci.Map()
 
   def resolve(designators: sci.Set[Designator], direct: sci.Set[Designator])
-       (using dotty.tools.dotc.core.Contexts.Context)
+       ( using dotty.tools.dotc.core.Contexts.Context )
   :   Imports =
 
     val aliases: sci.Map[String, Text] =

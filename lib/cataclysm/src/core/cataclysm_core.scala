@@ -79,7 +79,7 @@ private def listSimples(list: SelectorList): List[Simple] =
 
 private def compoundSimples(compound: Compound): List[Simple] =
   compound.parts.bind:
-    case simple@ Simple.PseudoClass(_, argument)   =>
+    case simple@ Simple.PseudoClass(_, argument) =>
       (simple :: argumentSimples(argument)): List[Simple]
 
     case simple@ Simple.PseudoElement(_, argument) =>

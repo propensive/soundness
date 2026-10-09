@@ -63,7 +63,7 @@ object Tels extends Tels2:
   // A schema from the semantic element BinTEL embeds (§6.2), as `element.as[Tels]`; its
   // counterpart from a TEL document, `tel.as[Tels]`, is `Tel.telsDecodable`.
   given elementDecodable: (tactic: Tactic[Tel.Error])
-  =>  ((Tels is Decodable in Tel.Element)^{tactic}) =
+  =>  ( (Tels is Decodable in Tel.Element)^{tactic} ) =
     SemanticReconstructor.reconstruct(_)
 
   // Per-axis polarity tristate from §20: "default" means no flag was
@@ -511,7 +511,7 @@ object Tels extends Tels2:
 
     case class Error(reason: Resolution.Error.Reason)(using Diagnostics)
     extends fulminate.Error(611, reason.ordinal + 1)
-      (m"the schema does not resolve because $reason")
+      ( m"the schema does not resolve because $reason" )
 
   // Layer composition per §20.3. Takes a base schema and applies its
   // ordered layer list, producing a flat composed Tels.

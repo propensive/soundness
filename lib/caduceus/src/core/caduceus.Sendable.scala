@@ -47,8 +47,8 @@ object Sendable:
   // `Document[Html]` supplies both instances) becomes an HTML-only body, anything else a text
   // body. The `Streamable` instance is retained, so this is a capability whenever it is one.
   given document: [document: Media]
-  =>  (streamable: (document is Streamable by Text over Credit)^)
-  =>  ((document is Sendable)^{streamable}) = document =>
+  =>  ( streamable: (document is Streamable by Text over Credit)^ )
+  =>  ( (document is Sendable)^{streamable} ) = document =>
     val content = document.read[Text]
 
     val body =

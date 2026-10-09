@@ -81,7 +81,7 @@ def run(): Unit =
           if lib.year > 2020 then e"${webColors.SandyBrown}(${lib.year})"
           else e"${webColors.Chocolate}(${lib.year})",
         Column
-         (e"$Bold(Description)", textAlign = TextAlignment.Justify, sizing = columnar.Paragraph):
+         ( e"$Bold(Description)", textAlign = TextAlignment.Justify, sizing = columnar.Paragraph ):
           lib => e"$Italic(${lib.description})" )
 
   // given TableRelabelling[Person] = () => Map(

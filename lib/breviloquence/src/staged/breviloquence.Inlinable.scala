@@ -61,7 +61,7 @@ trait Inlinable extends Typeclass:
   // What a field of this type yields when its key is absent from the map,
   // mirroring the runtime instances: an abort unless overridden.
   def absent(tactic: Expr[Tactic[Cbor.Error]])(using Quotes, Type[Self]): Expr[Self] =
-    '{ Cbor.Parsable.missing[Self]()(using $tactic) }
+    '{Cbor.Parsable.missing[Self]()(using $tactic)}
 
 object Inlinable:
   // Generates a monomorphic `Cbor.Parsable` for a case class or a
@@ -69,7 +69,7 @@ object Inlinable:
   // `Inlinable` instances: nested records, collection loops, variant
   // dispatch and custom leaf parsers all inline into one flat parser.
   inline def parsable[value]: value is Cbor.Parsable =
-    ${ breviloquence.stagedInternal.inlinableParsable[value] }
+    ${breviloquence.stagedInternal.inlinableParsable[value]}
 
   // The structural instance for a case class: reflects `Self` when invoked
   // (no macro — `Type[Self]` arrives with the call).
@@ -131,57 +131,57 @@ object Inlinable:
     type Self = Int
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Int]): Expr[Int] =
-      '{ $reader.int() }
+      '{$reader.int()}
 
   given long: (Long is Inlinable) = new Inlinable:
     type Self = Long
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Long]): Expr[Long] =
-      '{ $reader.long() }
+      '{$reader.long()}
 
   given double: (Double is Inlinable) = new Inlinable:
     type Self = Double
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Double]): Expr[Double] =
-      '{ $reader.double() }
+      '{$reader.double()}
 
   given float: (Float is Inlinable) = new Inlinable:
     type Self = Float
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Float]): Expr[Float] =
-      '{ $reader.double().toFloat }
+      '{$reader.double().toFloat}
 
   given boolean: (Boolean is Inlinable) = new Inlinable:
     type Self = Boolean
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Boolean]): Expr[Boolean] =
-      '{ $reader.boolean() }
+      '{$reader.boolean()}
 
   given text: (Text is Inlinable) = new Inlinable:
     type Self = Text
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Text]): Expr[Text] =
-      '{ $reader.text() }
+      '{$reader.text()}
 
   given string: (String is Inlinable) = new Inlinable:
     type Self = String
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[String]): Expr[String] =
-      '{ $reader.string() }
+      '{$reader.string()}
 
   given byteString: ((Data) is Inlinable) = new Inlinable:
     type Self = Data
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Data]): Expr[Data] =
-      '{ $reader.byteString() }
+      '{$reader.byteString()}
 
   given cbor: (Cbor is Inlinable) = new Inlinable:
     type Self = Cbor
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Cbor]): Expr[Cbor] =
-      '{ $reader.value() }
+      '{$reader.value()}
 
   given iterable: [collection <: Iterable, element]
-  =>  (element0: element is Inlinable)
-  =>  (collection[element] is Inlinable) =
+  =>  ( element0: element is Inlinable )
+  =>  ( collection[element] is Inlinable ) =
     IterableInlinable[element](element0).asInstanceOf[collection[element] is Inlinable]

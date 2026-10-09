@@ -171,7 +171,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // wrapping offset-based JDK APIs (charsets, ciphers, compressors) legitimately take,
   // widening the intervals back to offsets at that boundary.
   update def step(source: Region[operand])(range: Interval in source.type)
-    ( target: Slate[result] )(space: Interval in target.type)
+    (target: Slate[result])(space: Interval in target.type)
   :   Duct.Progress
 
   // Emit terminal state after the upstream ends: a compressor's tail, and —

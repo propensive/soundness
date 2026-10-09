@@ -150,7 +150,7 @@ extension [key, value](map: scala.collection.Map[key, value])
   inline def bijection: Bijection[key, value] = Bijection(map.to(scala.collection.immutable.Map))
 
 extension [self](inline value: self)
-  (using applicable: Applicable { type Self = self; type Operand = Ordinal })
+  ( using applicable: Applicable { type Self = self; type Operand = Ordinal } )
   inline def prim: Optional[applicable.Result] = value.at(Prim)
   inline def sec: Optional[applicable.Result] = value.at(Sec)
   inline def ter: Optional[applicable.Result] = value.at(Ter)

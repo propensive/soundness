@@ -126,7 +126,7 @@ object Confluence:
               // close to release an abandoned merge: the pumps are children of
               // the enclosing scope, and cancelling it interrupts the put.
               queue.put
-                (Block(storage.asInstanceOf[AnyRef], if stable then start else 0, count))
+                ( Block(storage.asInstanceOf[AnyRef], if stable then start else 0, count) )
 
             case _ =>
               continue = false

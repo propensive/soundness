@@ -271,7 +271,7 @@ object Ductile:
                 Duct.Progress(src - sourceOffset, dst - targetOffset)
 
           update def step(source: Region[Data])(range: Interval in source.type)
-            ( target: Slate[Text] )(space: Interval in target.type)
+            (target: Slate[Text])(space: Interval in target.type)
           :   Duct.Progress =
 
             val sourceInterval: Interval = range
@@ -364,7 +364,7 @@ object Ductile:
           override def quantum: Int = worst
 
           def step(source: Region[Text])(range: Interval in source.type)
-            ( target: Slate[Data] )(space: Interval in target.type)
+            (target: Slate[Data])(space: Interval in target.type)
           :   Duct.Progress =
 
             val sourceInterval: Interval = range

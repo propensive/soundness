@@ -436,7 +436,7 @@ object internal:
     // underlined in full.
     def segment(offset: Int, length: Int): Position =
       Interpolation.sourcePosition
-        (parts, Interpolation.decodeOrigins[origins], 1, offset, length.max(1))
+        ( parts, Interpolation.decodeOrigins[origins], 1, offset, length.max(1) )
 
     literal.tt.cut(t"/").map(_.s) match
       case List(repeats, start, period) =>

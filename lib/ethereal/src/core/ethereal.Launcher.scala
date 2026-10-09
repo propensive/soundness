@@ -267,7 +267,7 @@ object Launcher:
 
     message match
       case Message.Data(stream, chunk) => Bintel.frame(dataBody(stream, chunk), signature)
-      case other => Bintel.frame(Bintel.encode(element(other), schema, Tel.Codec.Bindings.builtins), signature)
+      case other                       => Bintel.frame(Bintel.encode(element(other), schema, Tel.Codec.Bindings.builtins), signature)
 
   // The body of a `data` document: the root's one child, the `data` variant, its two fields.
   private def dataBody(stream: Text, chunk: Data): Data =

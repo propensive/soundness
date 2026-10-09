@@ -163,7 +163,7 @@ object internal:
             val expr2 =
               descend
                 ( array, pattern.children.readable(index),
-                  '{$scrutinee.children.readable(${Expr(index)})}, '{true})
+                  '{$scrutinee.children.readable(${Expr(index)})}, '{true} )
 
             elements(index + 1)('{$expr && $expr2})
 

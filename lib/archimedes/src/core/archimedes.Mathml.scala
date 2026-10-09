@@ -383,7 +383,7 @@ object Mathml:
   object Parser:
     def labelOf(xml: Xml): Text = xml match
       case element: Xml.Element => element.label
-      case _                => t"<unknown>"
+      case _                    => t"<unknown>"
 
     def findMath(nodes: List[Xml.Node])(using Tactic[Mathml.Error]): Xml.Element =
       nodes.reap { case element: Xml.Element if element.label == t"math" => element }

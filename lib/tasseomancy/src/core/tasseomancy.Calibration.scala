@@ -58,9 +58,9 @@ object Calibration:
 
     def scale(lower: Double, upper: Double, anchored: Boolean, notation: Scale.Notation): Scale =
       policy match
-        case Policy.Linear      => Calibration.linear(lower, upper, anchored, notation, false)
-        case Policy.Tight       => Calibration.linear(lower, upper, anchored, notation, true)
-        case Policy.Logarithmic => Calibration.logarithmic(lower, upper, anchored, notation)
+        case Policy.Linear                 => Calibration.linear(lower, upper, anchored, notation, false)
+        case Policy.Tight                  => Calibration.linear(lower, upper, anchored, notation, true)
+        case Policy.Logarithmic            => Calibration.logarithmic(lower, upper, anchored, notation)
         case Policy.Exponential(curvature) => Calibration.exponential(lower, upper, anchored, notation, curvature)
 
         case Policy.Adaptive =>

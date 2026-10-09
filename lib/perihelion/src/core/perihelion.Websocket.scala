@@ -221,7 +221,7 @@ object Websocket:
           upgrade             = t"websocket" )
         // The channel's reader endpoint is a singleton: the upgrade body is
         // materialized exactly once, by the server's response writer.
-        ( Http.Body.Flowing(() => websocket.channel.stream) )
+        (Http.Body.Flowing(() => websocket.channel.stream))
 
   // WsUrl → Websocket.Url
   // A `ws://` or `wss://` URL. `Url` decoding is scheme-generic, so a `Websocket.Url` parses

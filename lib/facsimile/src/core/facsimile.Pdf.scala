@@ -306,7 +306,7 @@ object Pdf:
         val encodingValue = pdf.resolved(entries(t"Encoding").or(Cos.Nil))
 
         val encoding: Optional[Array[Char]^{}] = encodingValue match
-          case Cos.Name(name)          => encodingTable(name)
+          case Cos.Name(name)             => encodingTable(name)
           case dictionary: Cos.Dictionary => encodingTable(dictionary(t"BaseEncoding").let(_.name))
           case _                          => Unset
 
@@ -1059,7 +1059,7 @@ extends caps.ExclusiveCapability:
   // along each path; the object number of each leaf is kept so that destinations can refer
   // back to a page by reference.
   private[facsimile] def pageEntries
-  ( using Tactic[Pdf.Error] )
+  (using Tactic[Pdf.Error])
   :   Sequence[(Optional[Int], Map[Text, Cos], Page.Inherited)] =
 
     var visited: Set[Int] = Set()
@@ -1438,7 +1438,7 @@ extends caps.ExclusiveCapability:
       val name = parms match
         case Cos.Dictionary(entries) => entries(t"Name").let(_.name)
 
-        case Cos.Sequence(elements)  =>
+        case Cos.Sequence(elements) =>
           elements.flatMap(_.dictionary.let(_(t"Name")).let(_.name).lay(List())(List(_))).prim
             . or(Unset)
         case _                       => Unset

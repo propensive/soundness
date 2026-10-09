@@ -203,7 +203,7 @@ object stagedInternal:
       try
         given settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make
-            (None, List("-experimental", "-classpath", innerClasspath))
+            ( None, List("-experimental", "-classpath", innerClasspath) )
 
         given staging.Compiler = staging.Compiler.make(macroClassloader)
         val started = System.nanoTime
@@ -222,14 +222,14 @@ object stagedInternal:
                 r2.TypeBounds(rebuild(shape), rebuild(shape)) )
 
           target.asType match
-            case '[target] => '{ scala.compiletime.summonInline[target] }
+            case '[target] => '{scala.compiletime.summonInline[target]}
 
         val duration = (System.nanoTime - started)/1000000L
 
         result match
           case instance: Inlinable =>
             report.info
-              (s"xylophone: staged summon for ${TypeRepr.of[field].show} took ${duration}ms")
+              ( s"xylophone: staged summon for ${TypeRepr.of[field].show} took ${duration}ms" )
 
             Some(instance)
 
@@ -294,16 +294,16 @@ object stagedInternal:
     type Self = value
 
     def parse(reader: Expr[Xml.Reader])(using Quotes, Type[value]): Expr[value] =
-      '{
+      ' {
         Xml.Parsable.parseField[value]
-          ($parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef])
+          ( $parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef] )
       }
 
     override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
-      (using Quotes, Type[value])
+      ( using Quotes, Type[value] )
     :   Expr[value] =
 
-      '{ Xml.Parsable.absentField[value]($parsing.asInstanceOf[AnyRef])(using $tactic, $foci) }
+      '{Xml.Parsable.absentField[value]($parsing.asInstanceOf[AnyRef])(using $tactic, $foci)}
 
   private def builtinFor(using Quotes)(tpe: quotes.reflect.TypeRepr): Option[Inlinable] =
     import quotes.reflect.*
@@ -321,7 +321,7 @@ object stagedInternal:
   // collection (used to summon a `Factory`, since the opaque companion exposes
   // only a `Conversion`, not a direct instance).
   private[xylophone] def aliasCollectionUnderlying(using Quotes)
-    (tpe: quotes.reflect.TypeRepr)
+    ( tpe: quotes.reflect.TypeRepr )
   :   Option[quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
@@ -358,7 +358,7 @@ object stagedInternal:
           case '[element] =>
             resolve[element](cache).map: instance =>
               Inlinable.IterableInlinable[element]
-                (instance.asInstanceOf[element is Inlinable])
+                ( instance.asInstanceOf[element is Inlinable] )
 
       case _ =>
         None
@@ -419,7 +419,7 @@ object stagedInternal:
       try
         given settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make
-            (None, List("-experimental", "-classpath", innerClasspath))
+            ( None, List("-experimental", "-classpath", innerClasspath) )
 
         given staging.Compiler = staging.Compiler.make(macroClassloader)
 
@@ -442,7 +442,7 @@ object stagedInternal:
                 r2.TypeBounds(xml, xml) )
 
           target.asType match
-            case '[target] => '{ scala.compiletime.summonInline[target] }
+            case '[target] => '{scala.compiletime.summonInline[target]}
 
         result match
           case attribute: Xml.DiscriminantAttribute[?] => Some(attribute.attribute.s)
@@ -489,8 +489,8 @@ object stagedInternal:
   // occurrence directly (see `fieldLoop`), exactly as the derived engine
   // routes repeatable fields through `parseElement`.
   private[xylophone] def iterableBody[collection: Type]
-    (reader: Expr[Xml.Reader], element0: Inlinable)
-    (using Quotes)
+    ( reader: Expr[Xml.Reader], element0: Inlinable )
+    ( using Quotes )
   :   Expr[collection] =
 
     import quotes.reflect.*
@@ -506,8 +506,8 @@ object stagedInternal:
           case ('[element], '[stdlib]) =>
             val instance = element0.asInstanceOf[Inlinable { type Self = element }]
 
-            '{
-              def parseElement(): element = ${ instance.parse(reader) }
+            ' {
+              def parseElement(): element = ${instance.parse(reader)}
               val factory = infer[scala.collection.Factory[element, stdlib]]
               val builder = factory.newBuilder
               builder += parseElement()
@@ -516,7 +516,7 @@ object stagedInternal:
 
       case _ =>
         report.errorAndAbort
-          ("xylophone: an inlinable collection requires an applied collection type")
+          ( "xylophone: an inlinable collection requires an applied collection type" )
 
   private[xylophone] def iterableAbsent[collection: Type](element0: Inlinable)(using Quotes)
   :   Expr[collection] =
@@ -535,7 +535,7 @@ object stagedInternal:
 
       case _ =>
         report.errorAndAbort
-          ("xylophone: an inlinable collection requires an applied collection type")
+          ( "xylophone: an inlinable collection requires an applied collection type" )
 
   // ── The product generator ──────────────────────────────────────────────
   // Self-contained monomorphic element parsing, mirroring the staged
@@ -557,8 +557,8 @@ object stagedInternal:
     productFields[product](reader, Cache())
 
   private[xylophone] def productFields[product: Type]
-    (reader: Expr[Xml.Reader], cache: Cache)
-    (using Quotes)
+    ( reader: Expr[Xml.Reader], cache: Cache )
+    ( using Quotes )
   :   Expr[product] =
 
     import quotes.reflect.TypeRepr
@@ -569,15 +569,15 @@ object stagedInternal:
     finally cache.active -= TypeRepr.of[product].dealias.show
 
   private def productFields0[product: Type]
-    (reader: Expr[Xml.Reader], cache: Cache)
-    (using Quotes)
+    ( reader: Expr[Xml.Reader], cache: Cache )
+    ( using Quotes )
   :   Expr[product] =
 
-    '{
+    ' {
       val foci = $reader.foci
       val focused = foci.active
       val tactic = $reader.errorTactic
-      ${ fieldLoop[product](reader, 'foci, 'focused, 'tactic, cache) }
+      ${fieldLoop[product](reader, 'foci, 'focused, 'tactic, cache)}
     }
 
   // How one field reads, established at expansion: a builtin leaf, a
@@ -620,7 +620,7 @@ object stagedInternal:
       focused: Expr[Boolean],
       tactic:  Expr[Tactic[Xml.Error]],
       cache:   Cache )
-    (using Quotes)
+    ( using Quotes )
   :   Expr[product] =
 
     import quotes.reflect.*
@@ -629,9 +629,9 @@ object stagedInternal:
 
     if !productSupported(tpe) then
       report.errorAndAbort
-        (s"xylophone: ${tpe.show} is not an inlinable product (a non-generic, top-level or " +
+        ( s"xylophone: ${tpe.show} is not an inlinable product (a non-generic, top-level or " +
           "object-nested case class with a single parameter list and no `@name` or " +
-          "`@attribute` annotations); use `Xml.Parsable.staged` or `derived`")
+          "`@attribute` annotations); use `Xml.Parsable.staged` or `derived`" )
 
     val classSymbol = tpe.classSymbol.get
     val ctor = classSymbol.primaryConstructor
@@ -680,7 +680,7 @@ object stagedInternal:
       else if fieldType =:= TypeRepr.of[Float] then Literal(FloatConstant(0.0f))
       else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
       else fieldType.asType match
-        case '[fieldType] => '{ null.asInstanceOf[fieldType] }.asTerm
+        case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
     val slotDefs = List.range(0, arity).map: index =>
       ValDef(slots(index), Some(zero(fieldTypes(index))))
@@ -688,7 +688,7 @@ object stagedInternal:
     val seenDefs = List.range(0, arity).map: index =>
       ValDef(seens(index), Some(Literal(BooleanConstant(false))))
 
-    def keyText(index: Int): Expr[Text] = '{ ${Expr(fieldNames(index))}.tt }
+    def keyText(index: Int): Expr[Text] = '{${Expr(fieldNames(index))}.tt}
 
     // ── Gathered collection fields: a typed builder per field, an element
     // def emitted once (composition points become local defs — a fully
@@ -720,7 +720,7 @@ object stagedInternal:
                         aliasCollectionUnderlying(fieldTypes(index)) match
                           case Some(underlying) => underlying.asType match
                             case '[stdlib] =>
-                              '{
+                              ' {
                                 infer[scala.collection.Factory[element, stdlib]].newBuilder
                                 . asInstanceOf[scm.Builder[element, fieldType]]
                               }
@@ -728,7 +728,7 @@ object stagedInternal:
                             case _ => report.errorAndAbort("xylophone: unreachable")
 
                           case None =>
-                            '{
+                            ' {
                               infer[scala.collection.Factory[element, fieldType]].newBuilder
                             }
 
@@ -772,7 +772,7 @@ object stagedInternal:
               val instanceDef =
                 ValDef
                   ( instanceSymbol,
-                    Some('{ stagedInternal.fieldInstance[fieldType] }.asTerm) )
+                    Some('{stagedInternal.fieldInstance[fieldType]}.asTerm) )
 
               val instanceRef = Ref(instanceSymbol).asExprOf[fieldType is Xml.Parsing]
 
@@ -782,12 +782,12 @@ object stagedInternal:
                     Flags.EmptyFlags, Symbol.noSymbol )
 
               val repeatsDef =
-                ValDef(repeatsSymbol, Some('{ Xml.Parsable.repeats($instanceRef) }.asTerm))
+                ValDef(repeatsSymbol, Some('{Xml.Parsable.repeats($instanceRef)}.asTerm))
 
               val bufferSymbol =
                 Symbol.newVal(owner, "buffer"+index, bufferType, Flags.Mutable, Symbol.noSymbol)
 
-              val bufferDef = ValDef(bufferSymbol, Some('{ null }.asTerm))
+              val bufferDef = ValDef(bufferSymbol, Some('{null}.asTerm))
 
               Some:
                 SeamState
@@ -823,7 +823,7 @@ object stagedInternal:
     def firstWins(index: Int, read: Term): Term =
       If
         ( Ref(seens(index)),
-          '{ $reader.skipElement() }.asTerm,
+          '{$reader.skipElement()}.asTerm,
           Block
             ( List
                 ( Assign(Ref(slots(index)), read),
@@ -839,9 +839,9 @@ object stagedInternal:
 
               firstWins
                 ( index,
-                  '{
+                  ' {
                     Xml.Parsable.focusing($foci, ${keyText(index)})
-                      (${ instance.parse(reader) })
+                      ( ${instance.parse(reader)} )
                   }.asTerm )
 
             case Plan.Nested(_) =>
@@ -850,7 +850,7 @@ object stagedInternal:
 
               firstWins
                 ( index,
-                  '{ Xml.Parsable.focusing($foci, ${keyText(index)})($call) }.asTerm )
+                  '{Xml.Parsable.focusing($foci, ${keyText(index)})($call)}.asTerm )
 
             case Plan.Gather(_) =>
               val gather = gathers(index).get
@@ -864,9 +864,9 @@ object stagedInternal:
 
                       val call = Apply(Ref(gather.element), Nil).asExprOf[element]
 
-                      '{
+                      ' {
                         $builderRef.addOne
-                          (Xml.Parsable.focusing($foci, ${keyText(index)})($call))
+                          ( Xml.Parsable.focusing($foci, ${keyText(index)})($call) )
                       }.asTerm
 
                 case _ =>
@@ -879,21 +879,21 @@ object stagedInternal:
 
               val ensure: Term =
                 If
-                  ( '{ $bufferRef == null }.asTerm,
-                    Assign(Ref(seam.buffer), '{ scm.ListBuffer.empty[Any] }.asTerm),
+                  ( '{$bufferRef == null}.asTerm,
+                    Assign(Ref(seam.buffer), '{scm.ListBuffer.empty[Any]}.asTerm),
                     unit )
 
               val append: Term =
-                '{
+                ' {
                   $bufferRef.asInstanceOf[scm.ListBuffer[Any]].addOne
                     ( Xml.Parsable.focusing($foci, ${keyText(index)}):
                         Xml.Parsable.parseElement($instanceRef, $reader) )
                 }.asTerm
 
               val read: Term =
-                '{
+                ' {
                   Xml.Parsable.focusing($foci, ${keyText(index)})
-                    ($instanceRef.parse($reader))
+                    ( $instanceRef.parse($reader) )
                 }.asTerm
 
               If
@@ -903,7 +903,7 @@ object stagedInternal:
 
       CaseDef(Literal(IntConstant(index)), None, rhs)
 
-    val fallthrough = CaseDef(Wildcard(), None, '{ $reader.skipElement() }.asTerm)
+    val fallthrough = CaseDef(Wildcard(), None, '{$reader.skipElement()}.asTerm)
 
     // ── The child loop: packed two-word dispatch with a literal text step
     // for opaque names, mirroring the staged parser's step protocol. ──
@@ -922,7 +922,7 @@ object stagedInternal:
 
         case Some((low, highWord)) =>
           If
-            ( '{ $wordRef == ${Expr(low)} && $highRef == ${Expr(highWord)} }.asTerm,
+            ( '{$wordRef == ${Expr(low)} && $highRef == ${Expr(highWord)}}.asTerm,
               Literal(IntConstant(index)),
               packedChain(index + 1) )
 
@@ -936,27 +936,27 @@ object stagedInternal:
         if index == arity then Literal(IntConstant(-1))
         else
           If
-            ( '{ $nameRef == ${Expr(fieldNames(index))} }.asTerm,
+            ( '{$nameRef == ${Expr(fieldNames(index))}}.asTerm,
               Literal(IntConstant(index)),
               stringChain(index + 1) )
 
       Block
-        ( List(ValDef(name, Some('{ $reader.childLabel.s }.asTerm))),
+        ( List(ValDef(name, Some('{$reader.childLabel.s}.asTerm))),
           stringChain(0) )
 
     val resolveStep: Term =
       If
-        ( '{ $wordRef == Xml.Reader.NameOpaque }.asTerm,
+        ( '{$wordRef == Xml.Reader.NameOpaque}.asTerm,
           textStep,
           Block
-            ( List(ValDef(high, Some('{ $reader.childWordHigh }.asTerm))),
+            ( List(ValDef(high, Some('{$reader.childWordHigh}.asTerm))),
               packedChain(0) ) )
 
     val step: Term =
       Block
-        ( List(ValDef(word, Some('{ $reader.childWord() }.asTerm))),
+        ( List(ValDef(word, Some('{$reader.childWord()}.asTerm))),
           If
-            ( '{ $wordRef == Xml.Reader.NameEnd }.asTerm,
+            ( '{$wordRef == Xml.Reader.NameEnd}.asTerm,
               Assign(Ref(run), Literal(BooleanConstant(false))),
               Block
                 ( List(ValDef(found, Some(resolveStep))),
@@ -976,7 +976,7 @@ object stagedInternal:
           def resolveAbsent(onAbsent: Expr[fieldType]): Term =
             Assign
               ( Ref(slots(index)),
-                '{
+                ' {
                   val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
 
                   if !declared.absent then declared.asInstanceOf[fieldType]
@@ -985,7 +985,7 @@ object stagedInternal:
 
           def whenUnseen(onAbsent: Expr[fieldType]): Term =
             If
-              ( '{ !${Ref(seens(index)).asExprOf[Boolean]} }.asTerm,
+              ( '{!${Ref(seens(index)).asExprOf[Boolean]}}.asTerm,
                 resolveAbsent(onAbsent), unit )
 
           plans(index) match
@@ -1007,7 +1007,7 @@ object stagedInternal:
                       val builderRef =
                         Ref(gather.builder).asExprOf[scm.Builder[element, fieldType]]
 
-                      Assign(Ref(slots(index)), '{ $builderRef.result() }.asTerm)
+                      Assign(Ref(slots(index)), '{$builderRef.result()}.asTerm)
 
                 case _ =>
                   report.errorAndAbort("xylophone: unreachable gather shape")
@@ -1020,7 +1020,7 @@ object stagedInternal:
               val gatherFinish: Term =
                 Assign
                   ( Ref(slots(index)),
-                    '{
+                    ' {
                       Xml.Parsable.focusing($foci, ${keyText(index)}):
                         Xml.Parsable.gathered[fieldType]
                           ( $instanceRef,
@@ -1032,7 +1032,7 @@ object stagedInternal:
               If
                 ( Ref(seam.repeats),
                   gatherFinish,
-                  whenUnseen('{ $instanceRef.absent()(using $tactic, $foci) }) )
+                  whenUnseen('{$instanceRef.absent()(using $tactic, $foci)}) )
 
     val construct: Term =
       Apply(Select(New(Inferred(tpe)), ctor), slots.map { slot => Ref(slot) })
@@ -1053,15 +1053,15 @@ object stagedInternal:
   // sub-field takes its declared default or raises at its own focus —
   // exactly the derived engine's `absent()`.
   private[xylophone] def productAbsent[product: Type]
-    (tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
-    (using Quotes)
+    ( tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]] )
+    ( using Quotes )
   :   Expr[product] =
 
     productAbsent[product](tactic, foci, Cache())
 
   private[xylophone] def productAbsent[product: Type]
-    (tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]], cache: Cache)
-    (using Quotes)
+    ( tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]], cache: Cache )
+    ( using Quotes )
   :   Expr[product] =
 
     import quotes.reflect.*
@@ -1078,10 +1078,10 @@ object stagedInternal:
       val arguments: List[Term] = List.range(0, arity).map: index =>
         fieldTypes(index).asType match
           case '[fieldType] =>
-            val keyText: Expr[Text] = '{ ${Expr(fieldNames(index))}.tt }
+            val keyText: Expr[Text] = '{${Expr(fieldNames(index))}.tt}
 
             def declared(onAbsent: Expr[fieldType]): Expr[fieldType] =
-              '{
+              ' {
                 val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
 
                 if !declared.absent then declared.asInstanceOf[fieldType]
@@ -1098,20 +1098,20 @@ object stagedInternal:
                   . absent(tactic, foci))
 
               case Plan.Gather(element0) =>
-                '{
+                ' {
                   Xml.Parsable.focusing($foci, $keyText)
-                    (${ iterableAbsent[fieldType](element0) })
+                    ( ${iterableAbsent[fieldType](element0)} )
                 }
 
               case Plan.Seam =>
-                '{
+                ' {
                   val instance = stagedInternal.fieldInstance[fieldType]
 
                   if Xml.Parsable.repeats(instance) then
                     Xml.Parsable.focusing($foci, $keyText)
-                      (Xml.Parsable.gathered[fieldType](instance, proscenium.Nil))
+                      ( Xml.Parsable.gathered[fieldType](instance, proscenium.Nil) )
                   else
-                    ${ declared('{ instance.absent()(using $tactic, $foci) }) }
+                    ${declared('{instance.absent()(using $tactic, $foci)})}
                 }
 
             argument.asTerm
@@ -1120,19 +1120,19 @@ object stagedInternal:
 
     // A user-supplied `Default[product]` collapses a missing nested value
     // to a single error, exactly as the derived engine's `fallback` does.
-    val productName: Expr[Text] = '{ ${Expr(Type.show[product])}.tt }
+    val productName: Expr[Text] = '{${Expr(Type.show[product])}.tt}
 
     Expr.summon[Default[product]] match
       case Some(default) =>
-        '{
+        ' {
           raise(Xml.Error(Xml.Error.Reason.AbsentProduct($productName)))(using $tactic)
           $default()
         }
 
       case None =>
-        '{
+        ' {
           raise(Xml.Error(Xml.Error.Reason.AbsentProduct($productName)))(using $tactic)
-          ${ build() }
+          ${build()}
         }
 
   // ── The sum generator ──────────────────────────────────────────────────
@@ -1143,13 +1143,13 @@ object stagedInternal:
   // element and takes the AST disjunction's fallback: a raise-plus-`Default`
   // when the user supplied one, an abort otherwise.
   private[xylophone] def sumBody[sum: Type](reader: Expr[Xml.Reader], attribute: String)
-    (using Quotes)
+    ( using Quotes )
   :   Expr[sum] =
 
     sumBody[sum](reader, attribute, Cache())
 
   private def sumBody[sum: Type](reader: Expr[Xml.Reader], attribute: String, cache: Cache)
-    (using Quotes)
+    ( using Quotes )
   :   Expr[sum] =
 
     import quotes.reflect.*
@@ -1160,35 +1160,35 @@ object stagedInternal:
     finally cache.active -= TypeRepr.of[sum].dealias.show
 
   private def sumBody0[sum: Type](reader: Expr[Xml.Reader], attribute: String, cache: Cache)
-    (using Quotes)
+    ( using Quotes )
   :   Expr[sum] =
 
     import quotes.reflect.*
 
     val variants = sumVariants(TypeRepr.of[sum].dealias).getOrElse:
       report.errorAndAbort
-        (s"xylophone: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic sealed " +
-          "type whose variants are all case classes without annotations)")
+        ( s"xylophone: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic sealed " +
+          "type whose variants are all case classes without annotations)" )
 
     val arity = variants.length
 
-    val sumName: Expr[Text] = '{ ${Expr(Type.show[sum])}.tt }
+    val sumName: Expr[Text] = '{${Expr(Type.show[sum])}.tt}
 
     // `wire` is threaded in so the failure can name the discriminant it did not recognise.
     def fallback(wire: Expr[String], tactic: Expr[Tactic[Xml.Error]]): Expr[sum] =
       val reason: Expr[Xml.Error.Reason] =
-        '{ Xml.Error.Reason.UnknownVariant($wire.tt, $sumName) }
+        '{Xml.Error.Reason.UnknownVariant($wire.tt, $sumName)}
 
       Expr.summon[Default[sum]] match
         case Some(default) =>
-          '{
+          ' {
             $reader.skipElement()
             raise(Xml.Error($reason))(using $tactic)
             $default()
           }
 
         case None =>
-          '{ abort(Xml.Error($reason))(using $tactic) }
+          '{abort(Xml.Error($reason))(using $tactic)}
 
     def dispatch(index: Int, wire: Expr[String], tactic: Expr[Tactic[Xml.Error]]): Expr[sum] =
       if index == arity then fallback(wire, tactic)
@@ -1196,21 +1196,21 @@ object stagedInternal:
         case '[type variantType <: sum; variantType] =>
           val instance = resolve[variantType](cache).getOrElse:
             report.errorAndAbort
-              (s"xylophone: no Inlinable for variant ${variants(index)(0)}")
+              ( s"xylophone: no Inlinable for variant ${variants(index)(0)}" )
 
           . asInstanceOf[Inlinable { type Self = variantType }]
 
-          '{
+          ' {
             if $wire == ${Expr(variants(index)(0))} then
-              def parseVariant(): variantType = ${ instance.parse(reader) }
+              def parseVariant(): variantType = ${instance.parse(reader)}
               parseVariant()
-            else ${ dispatch(index + 1, wire, tactic) }
+            else ${dispatch(index + 1, wire, tactic)}
           }
 
-    '{
+    ' {
       val tactic = $reader.errorTactic
       val wire: String = Attributes.fetch($reader.attributes())(${Expr(attribute)}.tt).let(_.s).or("")
-      ${ dispatch(0, 'wire, 'tactic) }
+      ${dispatch(0, 'wire, 'tactic)}
     }
 
   // A missing sum field: no discriminator, so the AST disjunction's
@@ -1218,17 +1218,17 @@ object stagedInternal:
   private[xylophone] def sumAbsent[sum: Type](tactic: Expr[Tactic[Xml.Error]])(using Quotes)
   :   Expr[sum] =
 
-    val sumName: Expr[Text] = '{ ${Expr(Type.show[sum])}.tt }
+    val sumName: Expr[Text] = '{${Expr(Type.show[sum])}.tt}
 
     Expr.summon[Default[sum]] match
       case Some(default) =>
-        '{
+        ' {
           raise(Xml.Error(Xml.Error.Reason.AbsentVariant($sumName)))(using $tactic)
           $default()
         }
 
       case None =>
-        '{ abort(Xml.Error(Xml.Error.Reason.AbsentVariant($sumName)))(using $tactic) }
+        '{abort(Xml.Error(Xml.Error.Reason.AbsentVariant($sumName)))(using $tactic)}
 
   // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Xml.Parsable] =
@@ -1238,11 +1238,11 @@ object stagedInternal:
 
     if !productSupported(TypeRepr.of[value].dealias) then
       report.errorAndAbort
-        (s"xylophone: ${TypeRepr.of[value].show} is not an inlinable product (a non-generic, " +
+        ( s"xylophone: ${TypeRepr.of[value].show} is not an inlinable product (a non-generic, " +
           "top-level or object-nested case class with a single parameter list and no `@name` " +
-          "or `@attribute` annotations); use `Xml.Parsable.staged` or `derived`")
+          "or `@attribute` annotations); use `Xml.Parsable.staged` or `derived`" )
 
-    '{
+    ' {
       // Sealed per the codec-thunk pattern, like the staged instances: the
       // generated body resolves its capabilities at the read site, through
       // the reader.
@@ -1252,8 +1252,8 @@ object stagedInternal:
           protected def parseCarrier(reader0: AnyRef): value =
             // A capability class cannot be quoted into a pure hole, so
             // every use casts from the neutral carrier afresh.
-            ${ productFields[value]('{ reader0.asInstanceOf[Xml.Reader] }, cache) }
+            ${productFields[value]('{reader0.asInstanceOf[Xml.Reader]}, cache)}
 
           override def absent()(using tactic: Tactic[Xml.Error], foci: Foci[Xml.Focus]): value =
-            ${ productAbsent[value]('tactic, 'foci, cache) }
+            ${productAbsent[value]('tactic, 'foci, cache)}
     }

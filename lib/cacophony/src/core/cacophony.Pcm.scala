@@ -188,9 +188,9 @@ object Pcm:
       block(using new PcmOutput(value.mixerInfo, value.name, chunk) with Granting[grants] {})
 
   given feedOpenable: [layout: ChannelLayout]
-  =>  (tactic: Tactic[Feed.Error])
+  =>  ( tactic: Tactic[Feed.Error] )
   =>  ( FeedOpenable[layout]^{tactic} ) =
     FeedOpenable[layout]
 
-  given outletOpenable: (tactic: Tactic[Outlet.Error]) => ( OutletOpenable^{tactic} ) =
+  given outletOpenable: (tactic: Tactic[Outlet.Error]) => (OutletOpenable^{tactic}) =
     OutletOpenable()

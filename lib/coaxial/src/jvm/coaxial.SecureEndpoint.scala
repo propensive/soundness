@@ -56,8 +56,8 @@ object SecureEndpoint:
   // Honestly tracked, like `Connectable.tcpEndpoint`: the instance is resolvable only with
   // `Online` permission, so it is a capability carrying that evidence in its capture set.
   given connectable: (online: Online)
-  =>  (options: Every[Socket.Option.Tcp], tls: Tls)
-  =>  ((SecureEndpoint is Connectable)^{online, caps.any}) =
+  =>  ( options: Every[Socket.Option.Tcp], tls: Tls )
+  =>  ( (SecureEndpoint is Connectable)^{online, caps.any} ) =
 
    new Connectable:
     type Self = SecureEndpoint

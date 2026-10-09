@@ -118,6 +118,6 @@ infix type via [value, language] = Locale[language] ?=> value
 // language's sort order.
 given localeCollation: [language]
       =>  Locale[language]
-      =>  (collatable: language is Collatable)
+      =>  ( collatable: language is Collatable )
       =>  Collation =
   collatable.collation

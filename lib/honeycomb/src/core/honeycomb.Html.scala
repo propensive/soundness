@@ -164,7 +164,7 @@ object Html extends Tag.Container
   =>  ( dom:    Dom,
         tactic: Tactic[Parse.Error],
         strict: NotGiven[Html.Recovery.Permissive] )
-  =>  (((Html of content) is Aggregable by BaseText)^{tactic, caps.any}) =
+  =>  ( ((Html of content) is Aggregable by BaseText)^{tactic, caps.any} ) =
 
     new Aggregable:
       type Self = Html of content
@@ -180,7 +180,7 @@ object Html extends Tag.Container
 
   given strictAggregable2: (dom: Dom, tactic: Tactic[Parse.Error])
   =>  ( strict: NotGiven[Html.Recovery.Permissive] )
-  =>  ((Html is Aggregable by BaseText)^{tactic, caps.any}) =
+  =>  ( (Html is Aggregable by BaseText)^{tactic, caps.any} ) =
     new Aggregable:
       type Self = Html
       type Operand = BaseText
@@ -195,7 +195,7 @@ object Html extends Tag.Container
 
   given strictLoadable: (dom: Dom, tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  ( strict: NotGiven[Html.Recovery.Permissive] )
-  =>  ((Html is Loadable by BaseText)^{tactic, caps.any}) = stream =>
+  =>  ( (Html is Loadable by BaseText)^{tactic, caps.any} ) = stream =>
     loaded(stream.asInstanceOf[AnyRef], permissive = false, tracking)
 
   // The single place `.load[Html]` branches on position tracking. With
@@ -304,7 +304,7 @@ object Html extends Tag.Container
   // contextual `Formatting`. The whole emission lives in this instance so `.stream` is the single
   // route to streamed HTML; the producing code runs on a separate fiber.
   given streamable: (monitor: Monitor, probate: Probate)
-  =>  ((Document[Html] is Streamable by BaseText over Credit)^{monitor, caps.any}) = document =>
+  =>  ( (Document[Html] is Streamable by BaseText over Credit)^{monitor, caps.any} ) = document =>
     val formatting = summon[Formatting]
     val dom = document.metadata.dom
     val producer = Producer[BaseText]()

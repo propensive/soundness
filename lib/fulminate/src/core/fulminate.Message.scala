@@ -48,7 +48,7 @@ object Message:
   // The accumulator is `sci.List` internally: inline proxies are judged by their underlying
   // type, so an opaque-typed accumulator dealiases mid-expansion and fails to recombine.
   transparent inline def apply[tuple <: Tuple]
-    (inline messages: tuple, done: scala.collection.immutable.List[Message])
+    ( inline messages: tuple, done: scala.collection.immutable.List[Message] )
   :   List[Message] =
 
     inline erasedValue[tuple] match

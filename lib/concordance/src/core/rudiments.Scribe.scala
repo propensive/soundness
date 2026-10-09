@@ -183,7 +183,7 @@ object Scribe:
       val count = source.readable.length.min(target.length - ordinal.n0)
 
       System.arraycopy
-        (source.asInstanceOf[scala.Array[element]], 0, target, ordinal.n0, count)
+        ( source.asInstanceOf[scala.Array[element]], 0, target, ordinal.n0, count )
 
       count
 

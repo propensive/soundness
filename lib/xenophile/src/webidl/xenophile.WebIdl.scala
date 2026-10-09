@@ -131,7 +131,7 @@ object WebIdl:
       def signature: Text = arguments.map(_.typed.text).join(t",")
 
       kind match
-        case Member.Kind.Attribute | Member.Kind.Constant => name
+        case Member.Kind.Attribute | Member.Kind.Constant       => name
         case Member.Kind.Constructor                            => Text(s"new($signature)")
 
         case Member.Kind.Operation =>
@@ -293,7 +293,7 @@ object WebIdl:
           case ")" :: rest        => (acc.reverse, rest)
           case "," :: rest        => scopes(rest, acc)
           case name :: rest       => scopes(rest, name.tt :: acc)
-          case SNil            => (acc.reverse, SList())
+          case SNil               => (acc.reverse, SList())
 
       def group(tokens: SList[String], depth: Int, acc: SList[Text])
       :   (SList[Text], SList[String]) raises Error =
@@ -311,7 +311,7 @@ object WebIdl:
             group(rest, depth, acc :+ name.tt)
 
           case _ :: rest => group(rest, depth, acc)
-          case SNil   => fail(t"an extended attribute is unterminated", tokens)
+          case SNil      => fail(t"an extended attribute is unterminated", tokens)
 
       tokens match
         case "[" :: rest =>
@@ -560,7 +560,7 @@ object WebIdl:
             (members.reverse.to(List), intrinsics.reverse.to(List), rest)
 
           case "}" :: rest => fail(t"a definition must end `};`", rest)
-          case SNil     => fail(t"a definition body is unterminated", tokens)
+          case SNil        => fail(t"a definition body is unterminated", tokens)
 
           case _ =>
             val (parsed, intrinsic, rest) = member(tokens)
@@ -601,7 +601,7 @@ object WebIdl:
 
           tokens match
             case "}" :: ";" :: rest => (acc.reverse.to(List), rest)
-            case SNil            => fail(t"a dictionary body is unterminated", tokens)
+            case SNil               => fail(t"a dictionary body is unterminated", tokens)
 
             case _ =>
               val (_, afterAttrs) = attributes(tokens)
@@ -691,7 +691,7 @@ object WebIdl:
           (WebIdl.Definition.Includes(target.tt, mixin.tt), rest)
 
         case construct :: _ => unsupported(construct.tt)
-        case SNil        => fail(t"a definition was expected", afterAttrs)
+        case SNil           => fail(t"a definition was expected", afterAttrs)
 
 trait WebIdl extends Ecosystem:
   type Grammar = WebIdlDialect.type

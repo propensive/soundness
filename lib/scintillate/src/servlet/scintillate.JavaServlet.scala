@@ -99,7 +99,7 @@ open class JavaServlet(handle: Http.Connection => Http.Response) extends jsh.Htt
           target      = target,
           body        = () =>
             Streamable.inputStream
-              (using streamError0.asInstanceOf[Tactic[Truncation.Error]])
+              ( using streamError0.asInstanceOf[Tactic[Truncation.Error]] )
 
             . stream(in.asInstanceOf[ji.InputStream]),
           textHeaders = headers )

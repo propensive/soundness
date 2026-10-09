@@ -721,7 +721,7 @@ trait Json4:
 
     trait Schema2:
       given readable: [source] => (readable: (source is turbulence.Readable to Json)^)
-      =>  (Conversion[source, Schema]^{readable}) =
+      =>  ( Conversion[source, Schema]^{readable} ) =
         source => Schema(source.read[Json](using readable))
 
     object Schema extends Schema2:

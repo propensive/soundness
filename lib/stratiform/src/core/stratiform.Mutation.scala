@@ -262,7 +262,7 @@ object Mutation:
 
         val updatedBlock =
           targetBlock.copy
-           (compounds = Array.frozen(targetBlock.compounds.readable.updated(localIdx, updatedCompound)))
+           ( compounds = Array.frozen(targetBlock.compounds.readable.updated(localIdx, updatedCompound)) )
 
         rewrap(subtree, Array.frozen(subtree.children.readable.updated(blockIdx, updatedBlock)))
 
@@ -448,7 +448,7 @@ object Mutation:
             val children =
               if remaining.length == 0 then removeBlock(target.children, foundBlock, true)
               else Array.frozen
-                    (target.children.readable.updated(foundBlock, childBlock.copy(compounds = remaining)))
+                    ( target.children.readable.updated(foundBlock, childBlock.copy(compounds = remaining)) )
 
             splice(Array(target.copy(children = children)))
 
@@ -618,7 +618,7 @@ object Mutation:
 
     Array.frozen
      ( blocks.readable.updated
-        (blockIndex, block.copy(compounds = Array.frozen(block.compounds.readable :+ padded))) )
+        ( blockIndex, block.copy(compounds = Array.frozen(block.compounds.readable :+ padded)) ) )
 
   // Width of `text` in code points: the spec measures column geometry in
   // code points. (The parser records marker offsets in bytes and the

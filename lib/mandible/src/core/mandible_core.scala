@@ -74,7 +74,7 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
   given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
 
   mitigate:
-    case Io.Error(_, _, _, _) => Bytecode.Error(Bytecode.Error.Reason.ClassfileMissing)
+    case Io.Error(_, _, _, _)     => Bytecode.Error(Bytecode.Error.Reason.ClassfileMissing)
     case Truncation.Error(_)      => Bytecode.Error(Bytecode.Error.Reason.ClassfileUnreadable)
 
   . protect:

@@ -47,7 +47,7 @@ object Fqcn:
   // Decoding a `Fqcn` from `Text`, in `Fqcn`'s own companion rather than distillate's
   // `Decodable`, so that distillate need not depend on digression.
   given decodable: (tactic: Tactic[Fqcn.Error]^)
-  =>  ((Fqcn is Decodable in Text)^{tactic, caps.any}) =
+  =>  ( (Fqcn is Decodable in Text)^{tactic, caps.any} ) =
     Fqcn(_)
 
   def valid(char: Char): Boolean =

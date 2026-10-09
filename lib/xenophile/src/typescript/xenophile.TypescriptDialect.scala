@@ -64,7 +64,7 @@ object TypescriptDialect extends Dialect:
       declaration match
         case _: Typescript.Declaration.Interface => byName.put(declaration.key, declaration)
         case _: Typescript.Declaration.Class     => byName.put(declaration.key, declaration)
-        case _                                  => ()
+        case _                                   => ()
 
     // Inherited members are resolved against the declarations of this same file. A base named by
     // a declaration this file does not carry contributes nothing — the file is the whole world
@@ -108,7 +108,7 @@ object TypescriptDialect extends Dialect:
         member.signatures.prim.let: signature =>
           val result = signature match
             case Typescript.Type.Function(_, result, _, _) => foreign(result)
-            case other                                    => foreign(other)
+            case other                                     => foreign(other)
 
           Prototype(Unset, if member.optional then optional(result) else result)
 
@@ -144,4 +144,4 @@ object TypescriptDialect extends Dialect:
 
     case Typescript.Type.Union(members)     => Foreign.Type.Union(members.map(foreign(_)))
     case Typescript.Type.Literal(value, _)  => Foreign.Type.Named(value)
-    case other                             => Foreign.Type.Named(other.text)
+    case other                              => Foreign.Type.Named(other.text)

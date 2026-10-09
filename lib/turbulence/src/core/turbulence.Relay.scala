@@ -167,7 +167,7 @@ class Relay[record]():
                   case Relay.Termination => ended = true
                                             draining = false
 
-                  case record            => storage.asInstanceOf[scala.Array[AnyRef]^](limit0) =
+                  case record => storage.asInstanceOf[scala.Array[AnyRef]^](limit0) =
                                               record.asInstanceOf[AnyRef]
 
                                             limit0 += 1

@@ -205,7 +205,7 @@ extends Topical:
     val operandName: Optional[Text] =
       safely[Hazard]:
         summonInline
-         [(tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any}]
+         [ (tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any} ]
 
         . operandName
 
@@ -233,7 +233,7 @@ extends Topical:
         else
           attempt[Hazard]:
             summonInline
-             [(tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any}]
+             [ (tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any} ]
 
             . interpret(located.or(Nil))
 
@@ -253,7 +253,7 @@ extends Topical:
 
           attempt[Hazard]:
             summonInline
-             [(tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any}]
+             [ (tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any} ]
 
             . interpret(located.or(Nil))
 

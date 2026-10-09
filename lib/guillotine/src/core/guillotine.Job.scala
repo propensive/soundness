@@ -53,14 +53,14 @@ object Job:
   // Polymorphic over the capability instance (`job <: Job[…]^`, the galilei `Handle` recipe):
   // a bare `Job[command, result]` Self cannot match a tracked `Job` value.
   given writable: [chunk, command <: Label, result, job <: Job[command, result]^]
-  =>  (writable0: (Process.Input is Writable by chunk)^)
-  =>  ((job is Writable by chunk)^{writable0}) =
+  =>  ( writable0: (Process.Input is Writable by chunk)^ )
+  =>  ( (job is Writable by chunk)^{writable0} ) =
 
     (process, stream) => process.stdin(stream)
 
   given writableText: [command <: Label, result, job <: Job[command, result]^]
-  =>  (streamCut: Emit[Truncation.Error])
-  =>  ((job is Writable by Text)^{streamCut}) =
+  =>  ( streamCut: Emit[Truncation.Error] )
+  =>  ( (job is Writable by Text)^{streamCut} ) =
 
     (process, stream) =>
       process.stdin

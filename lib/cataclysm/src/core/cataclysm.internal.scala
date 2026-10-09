@@ -115,7 +115,7 @@ object internal:
 
           val position =
             Interpolation.sourcePosition
-              (parts.to(List), Interpolation.decodeOrigins[origins], 1, offset)
+              ( parts.to(List), Interpolation.decodeOrigins[origins], 1, offset )
 
           halt(cssError.message, position)
 

@@ -69,7 +69,7 @@ object Raster:
   // Recognises the format from its opening magic bytes, among the formats the caller has named.
   // `hallucination.formats` supplies every format this library implements.
   def apply[streamable: Streamable by Data over zephyrine.Credit](input: streamable)
-    (using formats: Raster.Formats)
+    ( using formats: Raster.Formats )
   :   Raster raises Raster.Error =
 
     val data = input.read[Data]
@@ -229,7 +229,7 @@ extends Formal, Operable:
     case buffer: scala.Array[Short] => buffer(index)&0xffffL
     case buffer: scala.Array[Int]   => buffer(index)&0xffffffffL
     case buffer: scala.Array[Long]  => buffer(index)
-    case _                    => panic(m"raster buffer has an unexpected element type")
+    case _                          => panic(m"raster buffer has an unexpected element type")
 
   def to[format: Rasterizable]: Raster in format = asInstanceOf[Raster in format]
 

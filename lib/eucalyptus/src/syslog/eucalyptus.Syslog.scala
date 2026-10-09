@@ -50,7 +50,7 @@ object Syslog:
     given hieroglyph.Codepage = hieroglyph.Codepage.system
 
     recover:
-      case Truncation.Error(_)     => ()
+      case Truncation.Error(_)            => ()
       case guillotine.Exec.Error(_, _, _) => ()
 
     . protect:

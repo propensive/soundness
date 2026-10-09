@@ -56,7 +56,7 @@ object TerminalBoard:
 // capture only read-only capabilities: `width`/`height` are read-only methods of a stateful
 // board, which may not reach an exclusive capability.
 class TerminalBoard(widthFn: () ->{scala.caps.any.rd} Int, heightFn: () ->{scala.caps.any.rd} Int)
-  (using Stdio)
+  ( using Stdio )
 extends Board:
   def width: Int = widthFn()
   def height: Int = heightFn()

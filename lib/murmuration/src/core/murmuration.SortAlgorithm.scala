@@ -72,7 +72,7 @@ object SortAlgorithm:
   // `Arrays.sort` is a Java method, so its loaded signature admits nulls in both the array and
   // the comparator.
   private[murmuration] def timsorted
-    (array: scala.Array[AnyRef]^, comparator: ju.Comparator[AnyRef])
+    ( array: scala.Array[AnyRef]^, comparator: ju.Comparator[AnyRef] )
   :   Unit =
 
     ju.Arrays.sort[AnyRef | Null]

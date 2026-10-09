@@ -129,12 +129,12 @@ object Audio:
       (format.mediaType.basic, HttpStreams.Body(audio.source[Data].chain))
 
   given aggregable: [format: Audible as audible] => (tactic: Tactic[Audio.Error])
-  =>  (((Audio in format) is Aggregable by Data)^{tactic}) =
+  =>  ( ((Audio in format) is Aggregable by Data)^{tactic} ) =
 
     audible.read(_)
 
   given aggregable2: (tactic: Tactic[Audio.Error])
-  =>  ((Audio is Aggregable by Data)^{tactic}) = Audio(_)
+  =>  ( (Audio is Aggregable by Data)^{tactic} ) = Audio(_)
 
   // AudioError → Audio.Error
   case class Error(audible: Optional[Audible])(using Diagnostics)

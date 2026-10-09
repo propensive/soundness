@@ -97,14 +97,14 @@ package temporaryDirectories:
 // `summonFrom`: the latter cannot be reduced when `temporaryDirectory`/`workingDirectory` is expanded
 // inside a staged quote (e.g. an ethereal daemon `cli` block printing the working directory).
 inline def temporaryDirectory[path: Representative of Paths]
-  (using temporary: TemporaryDirectory, resolver: Paths.Resolver[path])
+  ( using temporary: TemporaryDirectory, resolver: Paths.Resolver[path] )
 :   path =
 
   resolver(temporary.directory())
 
 
 inline def workingDirectory[path: Representative of Paths]
-  (using work: WorkingDirectory, resolver: Paths.Resolver[path])
+  ( using work: WorkingDirectory, resolver: Paths.Resolver[path] )
 :   path =
 
   resolver(work.directory())

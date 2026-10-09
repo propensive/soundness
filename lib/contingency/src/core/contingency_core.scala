@@ -50,7 +50,7 @@ package strategies:
     ThrowTactic()
 
   given mitigation: [error <: Hazard, error2 <: Hazard: Mitigable to error]
-  =>  (tactic: Tactic[error]^)
+  =>  ( tactic: Tactic[error]^ )
   =>  ( Tactic[error2]^ ) =
 
     tactic.contramap(error2.mitigate(_))

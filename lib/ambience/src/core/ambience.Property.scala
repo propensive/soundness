@@ -72,7 +72,7 @@ object Property:
 
 
   given generic: [label <: String & Singleton] => (tactic: Tactic[Property.Error])
-  =>  ((label is Property of Text)^{tactic}) =
+  =>  ( (label is Property of Text)^{tactic} ) =
 
     (value, property) => value.lest(Property.Error(property))
 
@@ -98,7 +98,7 @@ object Property:
   given javaVendorUrl: ("java.vendor.url" is Property of Text) = Property(identity)
 
   given javaRuntimeVersion: (tactic: Tactic[Property.Error])
-  =>  (("java.runtime.version" is Property of Text)^{tactic}) =
+  =>  ( ("java.runtime.version" is Property of Text)^{tactic} ) =
 
     (value, name) => value.lest(Property.Error(name))
 
@@ -135,8 +135,8 @@ object Property:
     Property(_.as[Architecture])
 
   given decoder: [label <: Label, property] => (decoder: (property is Decodable in Text)^)
-  =>  (tactic: Tactic[Property.Error])
-  =>  ((label is Property of property)^{decoder, tactic}) =
+  =>  ( tactic: Tactic[Property.Error] )
+  =>  ( (label is Property of property)^{decoder, tactic} ) =
 
     (value, name) =>
       decoder.decoded(value.lest(Property.Error(name)))

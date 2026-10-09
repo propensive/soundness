@@ -756,7 +756,7 @@ enum Syntax:
         if infix && (imports.has(parent) || imports.hasDirect(Designator.Type(parent, name))) =>
           elements match
             case List(first, second) => Infix(first, name, second).text
-            case _ => left.text+joined(elements.map(_.text), ", ", "[", "]").tt
+            case _                   => left.text+joined(elements.map(_.text), ", ", "[", "]").tt
 
         case _ =>
           left.text+joined(elements.map(_.text), ", ", "[", "]").tt

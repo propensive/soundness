@@ -166,14 +166,14 @@ object Markdown:
     entries.join(t"[", t", ", t"]")
 
   private def inspectNode(node: Markdown.Node): Text = node match
-    case Prose.Textual(text)    => t"Textual(${text.inspect})"
-    case Prose.Softbreak        => t"Softbreak"
-    case Prose.Linebreak        => t"Linebreak"
-    case Prose.Code(code)       => t"Code(${code.inspect})"
-    case Prose.HtmlInline(html) => t"HtmlInline(${html.inspect})"
-    case Prose.Emphasis(prose*) => t"Emphasis(${inspectNodes(prose.to(List))})"
-    case Prose.Strong(prose*)   => t"Strong(${inspectNodes(prose.to(List))})"
-    case Layout.ThematicBreak(line)  => t"ThematicBreak(${line.inspect})"
+    case Prose.Textual(text)          => t"Textual(${text.inspect})"
+    case Prose.Softbreak              => t"Softbreak"
+    case Prose.Linebreak              => t"Linebreak"
+    case Prose.Code(code)             => t"Code(${code.inspect})"
+    case Prose.HtmlInline(html)       => t"HtmlInline(${html.inspect})"
+    case Prose.Emphasis(prose*)       => t"Emphasis(${inspectNodes(prose.to(List))})"
+    case Prose.Strong(prose*)         => t"Strong(${inspectNodes(prose.to(List))})"
+    case Layout.ThematicBreak(line)   => t"ThematicBreak(${line.inspect})"
     case Layout.HtmlBlock(line, html) => t"HtmlBlock(${line.inspect} ╱ ${html.inspect})"
 
     case Prose.Link(destination, title, prose*) =>

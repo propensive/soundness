@@ -90,7 +90,7 @@ object Truncable:
 
   // The rebuilt array is fresh, so freezing it is discharged by construction.
   given frozenArray: [element: scala.reflect.ClassTag, array <: (Array[element]^{})]
-  =>  (complexity: Dysasymptotic.LinearSize)
+  =>  ( complexity: Dysasymptotic.LinearSize )
   =>  array is Truncable to (Array[element]^{}) =
     value => Array.frozen(value.readable.init)
 

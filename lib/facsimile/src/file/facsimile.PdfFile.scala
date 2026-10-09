@@ -152,7 +152,7 @@ object PdfFile:
 
   // Anchored here so `pdfFile.open(...)` resolves — and, `PdfFile` having a unique instance,
   // infers the `Pdf` form — with no import.
-  given openable: (tactic: Tactic[Pdf.Error]) => ( PdfOpenable^{tactic} ) = PdfOpenable()
+  given openable: (tactic: Tactic[Pdf.Error]) => (PdfOpenable^{tactic}) = PdfOpenable()
 
   // Authoring a new document: `path.create[Pdf](): doc ?=> doc.appendPage(...)`. The block
   // edits a fresh, empty document — the same write surface as editing an existing one — and
@@ -192,7 +192,7 @@ class PdfFile private (origin: PdfFile.Origin):
   private[facsimile] def openAs[grants <: Grant, result]
     ( password: Optional[Password], writable: Boolean )
     ( block: ((Pdf & Granting[grants])^) ?=> result )
-  ( using Tactic[Pdf.Error] )
+  (using Tactic[Pdf.Error])
   :   result =
 
     origin match
@@ -245,7 +245,7 @@ class PdfFile private (origin: PdfFile.Origin):
   private def read[grants <: Grant, result]
     ( source: ByteSource, password: Optional[Password], writable: Boolean )
     ( block: ((Pdf & Granting[grants])^) ?=> result )
-  ( using Tactic[Pdf.Error] )
+  (using Tactic[Pdf.Error])
   :   (result, Optional[Data]) =
 
     val version = Pdf.readVersion(source) // check the header before anything else is trusted

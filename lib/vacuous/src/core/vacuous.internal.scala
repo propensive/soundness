@@ -107,7 +107,7 @@ object internal:
     val anyDefault: Expr[Any] = default.asTerm.asExpr
 
     def fallback: Term =
-      '{
+      ' {
           $anyOptional match
             case Unset => $anyDefault
             case other => other

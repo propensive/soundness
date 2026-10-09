@@ -123,7 +123,7 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
     // anonymous class that wraps it (the statement rule); consume parameters carry
     // explicit capture sets and hide nothing.
     throughDuct[in, ductile.Result, transport, ductile.Transport]
-      (ductile.duct(stage), stream)
+      ( ductile.duct(stage), stream )
 
   // Pull-composition with a duct directly. A `Duct` *is* a pipeline stage, not a
   // description of one, so it needs no `Ductile` instance to be attached: the duct
@@ -205,7 +205,7 @@ extension [out, transport](consume intake: (Intake[out] over transport)^)
 
     // See `throughDuct` above.
     intakeThroughDuct[ductile.Operand, out, ductile.Upstream, transport]
-      (ductile.duct(stage), intake)
+      ( ductile.duct(stage), intake )
 
   // Push-composition with a duct directly; see `viaDuct` above.
   def acceptingDuct[in, upTransport]
@@ -229,7 +229,7 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
   // Drain the stream, applying `operation` to each successive region and its
   // branded readable interval; it must not retain the region beyond the call.
   def drain(operation: (region: Region[medium]) => (Interval in region.type) => Unit)
-    (using buffering: Buffering)
+    ( using buffering: Buffering )
   :   Unit =
 
     // A drain loop wants boundary-transfer-sized credit: a staging-block ask
@@ -785,7 +785,7 @@ private def throughDuct[in, out, upTransport, downTransport]
                             stream.start, stream.start + count )
                           ( region => range =>
                               Slate.over[out, Duct.Progress](using duct.output)
-                                (exclusive(), limit0, space): slate =>
+                                ( exclusive(), limit0, space ): slate =>
                                   slateSpace => duct.step(region)(range)(slate)(slateSpace) )
 
                       stream.skip(progress.consumed)

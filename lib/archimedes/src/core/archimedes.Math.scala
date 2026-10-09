@@ -67,27 +67,27 @@ import Mathml.*
 
 object Math extends Mathml.Container(new Math(_)):
   given aggregable: (schema: XmlSchema)
-  =>  (parseTactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], mathmlTactic: Tactic[Mathml.Error])
-  =>  ((Math is Aggregable by Text)^{parseTactic, xmlTactic, mathmlTactic}) =
+  =>  ( parseTactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], mathmlTactic: Tactic[Mathml.Error] )
+  =>  ( (Math is Aggregable by Text)^{parseTactic, xmlTactic, mathmlTactic} ) =
 
     source =>
       val xml: Xml = summon[Xml is Aggregable by Text].aggregate(source)
       Mathml.Parser.decodeMath(Mathml.Parser.rootElement(xml))
 
   given loadable: (XmlSchema)
-  =>  (parseTactic: Tactic[Parse.Error])
-  =>  (xmlTactic: Tactic[Xml.Error])
-  =>  (mathmlTactic: Tactic[Mathml.Error])
-  =>  ((Math is Loadable by Text)^{parseTactic, xmlTactic, mathmlTactic}) =
+  =>  ( parseTactic: Tactic[Parse.Error] )
+  =>  ( xmlTactic: Tactic[Xml.Error] )
+  =>  ( mathmlTactic: Tactic[Mathml.Error] )
+  =>  ( (Math is Loadable by Text)^{parseTactic, xmlTactic, mathmlTactic} ) =
     source => fromXml(summon[(Xml is Loadable by Text)^].load(source))
 
   // The byte form: the XML is parsed from the bytes directly.
   given loadableData: (XmlSchema)
-  =>  (parseTactic: Tactic[Parse.Error])
-  =>  (xmlTactic: Tactic[Xml.Error])
-  =>  (mathmlTactic: Tactic[Mathml.Error])
-  =>  (buffering: zephyrine.Buffering)
-  =>  ((Math is Loadable by Data)^{parseTactic, xmlTactic, mathmlTactic}) =
+  =>  ( parseTactic: Tactic[Parse.Error] )
+  =>  ( xmlTactic: Tactic[Xml.Error] )
+  =>  ( mathmlTactic: Tactic[Mathml.Error] )
+  =>  ( buffering: zephyrine.Buffering )
+  =>  ( (Math is Loadable by Data)^{parseTactic, xmlTactic, mathmlTactic} ) =
     source => fromXml(summon[(Xml is Loadable by Data)^].load(source))
 
   private def fromXml(xmlDoc: Document[Xml])(using Tactic[Xml.Error], Tactic[Mathml.Error])

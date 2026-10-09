@@ -374,8 +374,8 @@ object CHeader:
       :   (List[Foreign.Type], Boolean, SList[String]) raises Error =
 
         tokens match
-          case ")" :: rest   => (acc.reverse.to(List), false, rest)
-          case "," :: rest   => recur(rest, acc)
+          case ")" :: rest          => (acc.reverse.to(List), false, rest)
+          case "," :: rest          => recur(rest, acc)
           case "..." :: ")" :: rest => (acc.reverse.to(List), true, rest)
 
           case _ =>

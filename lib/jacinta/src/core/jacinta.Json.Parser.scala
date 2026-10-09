@@ -2400,11 +2400,11 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     val raw: Any = directNumber()
 
     raw.asMatchable match
-      case value: Long                     => value
-      case value: Double                   => value.toLong
-      case value: Int                      => Bcd.bcdIntToDouble(value).toLong
+      case value: Long                           => value
+      case value: Double                         => value.toLong
+      case value: Int                            => Bcd.bcdIntToDouble(value).toLong
       case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toLong.or(0L)
-      case _                               => 0L // unreachable: only number forms are produced
+      case _                                     => 0L // unreachable: only number forms are produced
 
   // Buffer-local fast path for the overwhelmingly common double shape:
   // optional sign, up to fifteen mantissa digits with one optional decimal
@@ -2507,19 +2507,19 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     val raw: Any = directNumber()
 
     raw.asMatchable match
-      case value: Double                   => value
-      case value: Long                     => value.toDouble
-      case value: Int                      => Bcd.bcdIntToDouble(value)
+      case value: Double                         => value
+      case value: Long                           => value.toDouble
+      case value: Int                            => Bcd.bcdIntToDouble(value)
       case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toDouble
-      case _                               => 0.0 // unreachable: only number forms are produced
+      case _                                     => 0.0 // unreachable: only number forms are produced
 
   private[jacinta] update def directBcd()(using Tactic[Parse.Error]): Bcd =
     val raw: Any = directNumber()
 
     raw.asMatchable match
       case value: scala.Array[Double] @unchecked => Bcd.adopt(value)
-      case value: Long                     => Bcd(BigDecimal(value))
-      case value: Double                   => Bcd(BigDecimal(value))
+      case value: Long                           => Bcd(BigDecimal(value))
+      case value: Double                         => Bcd(BigDecimal(value))
 
       case value: Int =>
         Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)

@@ -255,7 +255,7 @@ object decimalInternal:
       (result, length)
 
     private[hypotenuse] def compareMagnitude
-        (left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int): Int =
+        ( left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int ): Int =
       if leftCount != rightCount then if leftCount < rightCount then -1 else 1 else
         var i = leftCount - 1
         var result = 0
@@ -267,7 +267,7 @@ object decimalInternal:
         result
 
     private[hypotenuse] def addMagnitude
-        (left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int)
+        ( left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int )
     :   (scala.Array[Int], Int) =
 
       val count = math.max(leftCount, rightCount)
@@ -295,7 +295,7 @@ object decimalInternal:
 
     // Subtraction of a smaller-or-equal magnitude from a larger.
     private[hypotenuse] def subtractMagnitude
-        (left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int)
+        ( left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int )
     :   (scala.Array[Int], Int) =
 
       val result = new scala.Array[Int](leftCount)
@@ -319,7 +319,7 @@ object decimalInternal:
       (result, count)
 
     private[hypotenuse] def multiplyMagnitude
-        (left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int)
+        ( left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int )
     :   (scala.Array[Int], Int) =
 
       val result = new scala.Array[Int](leftCount + rightCount)
@@ -352,7 +352,7 @@ object decimalInternal:
     // Knuth's algorithm D in base 10⁹: every trial numerator and product fits in a `Long`,
     // since 10¹⁸ < 2⁶³. Returns the quotient and remainder magnitudes.
     private[hypotenuse] def divideMagnitude
-        (dividend: scala.Array[Int], dividendCount: Int, divisor: scala.Array[Int], divisorCount: Int)
+        ( dividend: scala.Array[Int], dividendCount: Int, divisor: scala.Array[Int], divisorCount: Int )
     :   (scala.Array[Int], Int, scala.Array[Int], Int) =
 
       if divisorCount == 1 then
@@ -526,8 +526,8 @@ object decimalInternal:
 
     given orderable: Decimal is Orderable:
       inline def compare
-          (inline left: Decimal, inline right: Decimal, inline strict: Boolean,
-           inline greater: Boolean): Boolean =
+          ( inline left: Decimal, inline right: Decimal, inline strict: Boolean,
+           inline greater: Boolean ): Boolean =
         val result = comparison(left, right)
 
         if greater then (if strict then result > 0 else result >= 0)
@@ -574,7 +574,7 @@ object decimalInternal:
         val rightMagnitude = magnitudeOf(right)
 
         val (result, count) = multiplyMagnitude
-          (leftMagnitude, leftMagnitude.length, rightMagnitude, rightMagnitude.length)
+          ( leftMagnitude, leftMagnitude.length, rightMagnitude, rightMagnitude.length )
 
         compose(left(0)*right(0), result, count, left(1) + right(1))
 

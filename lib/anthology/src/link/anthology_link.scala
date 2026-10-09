@@ -156,7 +156,7 @@ object sjsEdges:
         classpath.entries.bind:
           case Classpath.Entry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
           case Classpath.Entry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
-          case _                                   => Nil
+          case _                                    => Nil
 
     val initializers: List[ModuleInitializer] = entryPoints.map: entry =>
       ModuleInitializer.mainMethodWithArgs(entry.mainClass.text.s, "main")

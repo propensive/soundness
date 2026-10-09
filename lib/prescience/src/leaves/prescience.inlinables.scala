@@ -43,7 +43,7 @@ object IntInlinable extends Inlinable:
   type Self = Int
 
   def read(input: Expr[String])(using Quotes): Expr[Int] =
-    '{ java.lang.Integer.parseInt($input.trim.nn) }
+    '{java.lang.Integer.parseInt($input.trim.nn)}
 
   def readRuntime(input: String): Int =
     throw AssertionError("prescience: runtime tier invoked for a static instance")
@@ -59,7 +59,7 @@ object BooleanInlinable extends Inlinable:
   type Self = Boolean
 
   def read(input: Expr[String])(using Quotes): Expr[Boolean] =
-    '{ java.lang.Boolean.parseBoolean($input.trim.nn) }
+    '{java.lang.Boolean.parseBoolean($input.trim.nn)}
 
   def readRuntime(input: String): Boolean =
     throw AssertionError("prescience: runtime tier invoked for a static instance")
@@ -83,7 +83,7 @@ object Celsius:
     type Self = Celsius
 
     def read(input: Expr[String])(using Quotes): Expr[Celsius] =
-      '{ Celsius(java.lang.Integer.parseInt($input.trim.nn)) }
+      '{Celsius(java.lang.Integer.parseInt($input.trim.nn))}
 
     def readRuntime(input: String): Celsius =
       throw AssertionError("prescience: runtime tier invoked for a staging-tier instance")

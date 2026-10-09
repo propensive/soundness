@@ -62,7 +62,7 @@ object Destination:
       named: Text => Optional[Cos],
       following: Boolean = false )
     ( using pdf: Pdf )
-  ( using Tactic[Pdf.Error] )
+  (using Tactic[Pdf.Error])
   :   Optional[Destination] =
 
     pdf.resolved(value) match

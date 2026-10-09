@@ -49,7 +49,7 @@ import EmailAddress.Error.Reason.*
 
 object EmailAddress:
   given decodable: (tactic: Tactic[EmailAddress.Error])
-  =>  ((EmailAddress is Decodable in Text)^{tactic}) =
+  =>  ( (EmailAddress is Decodable in Text)^{tactic} ) =
     EmailAddress.parse(_)
 
   given encodable: EmailAddress is Encodable in Text = _.text

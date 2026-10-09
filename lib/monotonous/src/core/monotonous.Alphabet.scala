@@ -98,7 +98,7 @@ object Alphabet:
             Credit((demand.count.min(Long.MaxValue/8)*base/8).max(1))
 
           update def step(source: Region[Data])(range: Interval in source.type)
-            ( target: Slate[Text] )(space: Interval in target.type)
+            (target: Slate[Text])(space: Interval in target.type)
           :   Duct.Progress =
 
             val sourceInterval: Interval = range
@@ -182,7 +182,7 @@ object Alphabet:
             produced
 
   given deserialization: [encoding <: Serialization] => (tactic: Tactic[Serialization.Error])
-  =>  ((Ductile.Instance[Alphabet[encoding], Text, Data, Credit, Credit])^{tactic}) =
+  =>  ( (Ductile.Instance[Alphabet[encoding], Text, Data, Credit, Credit])^{tactic} ) =
 
     // The ducts raise through the given's tactic, so the instance honestly captures it.
     new Ductile:
@@ -222,7 +222,7 @@ object Alphabet:
             Credit((demand.count.min(Long.MaxValue/8)*8/base).max(1))
 
           update def step(source: Region[Text])(range: Interval in source.type)
-            ( target: Slate[Data] )(space: Interval in target.type)
+            (target: Slate[Data])(space: Interval in target.type)
           :   Duct.Progress =
 
             val sourceInterval: Interval = range
@@ -290,7 +290,7 @@ object Alphabet:
                 else
                   accumulator = (accumulator << base)
                     | stage.invert(position, char)
-                        (using tactic)
+                        ( using tactic )
 
                   accumulated += base
 

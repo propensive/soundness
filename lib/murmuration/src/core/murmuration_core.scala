@@ -50,7 +50,7 @@ extension [self](self: self)(using inclusive: self is Inclusive)
 // the mapped-container constructor is bound as the higher-kinded type parameter `result[_]` so the
 // return type `result[element2]` is a plain application, never a path-dependent projection (#1411).
 extension [self, result[_]](self: self)
-  (using mappable: self is Mappable { type Result[element2] = result[element2] })
+  ( using mappable: self is Mappable { type Result[element2] = result[element2] } )
   def map[element2](lambda: mappable.Operand => element2): result[element2] =
     mappable.map(self, lambda)
 

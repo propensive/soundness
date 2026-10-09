@@ -106,8 +106,8 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
     index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]]
 
   inline def unsafeAttested[result](index: applicable.Operand)
-    (inline lambda: prepositional.`in`[applicable.Operand, value.type] => result)
-    (using erased vacuous.Unsafe)
+    ( inline lambda: prepositional.`in`[applicable.Operand, value.type] => result )
+    ( using erased vacuous.Unsafe )
   :   result =
 
     lambda(index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]])
@@ -195,7 +195,7 @@ extension [value](value: value)
     rudiments.skip(value)(predicate, bidi)
 
 extension [self](inline value: self)
-  (using applicable: denominative.Applicable { type Self = self; type Operand = denominative.Ordinal })
+  ( using applicable: denominative.Applicable { type Self = self; type Operand = denominative.Ordinal } )
 
   inline def prim: vacuous.Optional[applicable.Result] = rudiments.prim(value)
   inline def sec: vacuous.Optional[applicable.Result] = rudiments.sec(value)

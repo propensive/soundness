@@ -52,7 +52,7 @@ import zephyrine.*
 // matching `Writable`'s end-of-stream behaviour.
 object Sink:
   given outputStream: [output <: ji.OutputStream] => (streamCut: Emit[Truncation.Error], buffering: Buffering)
-  =>  ((output is Sink by Data over Credit)^{streamCut}) =
+  =>  ( (output is Sink by Data over Credit)^{streamCut} ) =
     // Laundered for the Scala.js pipeline (see #1520): its pre-capture-checking
     // SAM expansion turns this given into an anonymous class that hides the
     // evidence; the pure thunk empties the capture.
@@ -108,7 +108,7 @@ object Sink:
           mark0 = 0
 
   given channel: (streamCut: Emit[Truncation.Error], buffering: Buffering)
-  =>  ((jn.channels.WritableByteChannel is Sink by Data over Credit)^{streamCut}) =
+  =>  ( (jn.channels.WritableByteChannel is Sink by Data over Credit)^{streamCut} ) =
     // Laundered for the Scala.js pipeline (see #1520): its pre-capture-checking
     // SAM expansion turns this given into an anonymous class that hides the
     // evidence; the pure thunk empties the capture.

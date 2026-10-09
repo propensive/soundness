@@ -46,7 +46,7 @@ object internal:
   def semver(context0: Expr[StringContext]): Macro[Semver] =
     val versionText = context0.valueOrAbort match
       case StringContext(text*) => text match
-        case Seq(text: String) => text
+        case Seq(text: String)  => text
         case _                  => panic(m"did not expect more than one part in StringContext")
 
     // Validate at expansion time so a malformed literal fails to compile, then

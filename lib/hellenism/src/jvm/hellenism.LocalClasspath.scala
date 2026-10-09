@@ -104,7 +104,7 @@ object LocalClasspath:
 
   given paths: [path: Abstractable across Paths to Text]
   =>  ( pathTactic: Tactic[Path.Error], ioTactic: Tactic[Io.Error], deref: DereferenceSymlinks )
-  =>  ((LocalClasspath is Addable by path to LocalClasspath)^{pathTactic, ioTactic}) =
+  =>  ( (LocalClasspath is Addable by path to LocalClasspath)^{pathTactic, ioTactic} ) =
 
     (classpath, path) =>
       path.generic.as[Path on Linux].pipe: path =>
@@ -127,6 +127,6 @@ extends Classpath:
     entries.bind:
       case Classpath.Entry.Directory(directory) => List(directory)
       case Classpath.Entry.Jar(jar)             => List(jar)
-      case _                                   => Nil
+      case _                                    => Nil
 
     . join(unsafely(System.properties.path.separator()))

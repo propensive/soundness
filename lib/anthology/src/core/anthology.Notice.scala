@@ -37,8 +37,8 @@ import denominative.*
 import vacuous.*
 
 case class Notice
-     (importance: Importance,
+     ( importance: Importance,
       file:       Text,
       message:    Text,
       span:       Optional[Span],
-      markup:     Optional[Text] = Unset)
+      markup:     Optional[Text] = Unset )

@@ -78,7 +78,7 @@ object Geolocation:
     Geolocation(location, altitude, crs, uncertainty, params.to[Map])
 
   given decoder: (tactic: Tactic[Geolocation.Error])
-  =>  ((Geolocation is Decodable in Text)^{tactic}) =
+  =>  ( (Geolocation is Decodable in Text)^{tactic} ) =
     case r"geo:$latitude(-?[0-9]+(\.[0-9]+)?),$longitude(-?[0-9]+(\.[0-9]+)?)$more(.*)" =>
       val location =
         unsafely(Location(latitude.as[Double].deg, longitude.as[Double].deg))

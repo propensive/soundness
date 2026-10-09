@@ -87,7 +87,7 @@ object internal:
     // pickle. Inlined at the concrete expansion site the lambdas' captures are concrete, so no reach
     // capability leaks.
     def fallback: Expr[value] =
-      '{
+      ' {
           $lambdasExpr.foldLeft($valueExpr): (accumulator, lambda) =>
             lambda(panopticon.Optic.identity[value])(accumulator)
         }

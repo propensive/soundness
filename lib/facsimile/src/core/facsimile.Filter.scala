@@ -152,7 +152,7 @@ private[facsimile] object Filter:
           case Id.Lzw =>
             if predicted
             then scala.collection.immutable.List
-              (Step.Unlzw(earlyChange(parms)), Step.Gather(predict(_, parms)))
+              ( Step.Unlzw(earlyChange(parms)), Step.Gather(predict(_, parms)) )
             else scala.collection.immutable.List(Step.Unlzw(earlyChange(parms)))
 
           case Id.Crypt =>

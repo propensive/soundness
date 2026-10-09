@@ -285,7 +285,7 @@ object Grpc:
       Array.frozen(header.readable ++ payload.readable)
 
     given framable: (tactic: Tactic[Error])
-    =>  ((Data is Framable by Framing)^{tactic}) = input =>
+    =>  ( (Data is Framable by Framing)^{tactic} ) = input =>
       def truncated(): Nothing =
         abort(Error(Grpc.Status.Internal, t"the gRPC message frame was truncated"))
 

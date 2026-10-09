@@ -41,7 +41,7 @@ import dotty.tools.io.VirtualFile
 object Shim:
   // 3.10 takes a lazy loader, `() => Option[TastyInfo]`, in place of the eager `Option`.
   inline def compilationUnitInfo
-     (file: VirtualFile, tastyInfo: dtd.core.TastyInfo)
+     ( file: VirtualFile, tastyInfo: dtd.core.TastyInfo )
   :   CompilationUnitInfo =
 
     CompilationUnitInfo(file, () => Some(tastyInfo))

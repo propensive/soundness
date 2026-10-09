@@ -114,7 +114,7 @@ extends Testable(suiteName, Nil, Unset, key0):
       override def scheduled(report: Report, id: Test.Id): Unit =
         report.emit:
           TestEvent.TestScheduled
-            (TestEvent.Ref.of(id), TestEvent.kindName(Entry.Kind.Check), Unset, id.tags.map(_.text), Nil)
+            ( TestEvent.Ref.of(id), TestEvent.kindName(Entry.Kind.Check), Unset, id.tags.map(_.text), Nil )
 
   // How many workers this suite's queued assertions may run on, when the host queues at all
   // (`--workers=<n>`): the larger of the host's count and this. One, the default, keeps

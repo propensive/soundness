@@ -78,7 +78,7 @@ object internal:
            ( "exoskeleton: an execute block must return a Termination, such as an Exit or a "
              + "Status, but the result type includes "+repr.show+", which is neither." )
 
-    '{
+    ' {
         new Status.Admissible:
           type Self = result
           def statuses: List[Status] = List.from(${Expr.ofList(values)})

@@ -195,11 +195,11 @@ object internal:
             val name = '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
 
             val get: Expr[entity => value] =
-              '{ (entity: entity) => ${'entity.asTerm.select(field).asExprOf[value]} }
+              '{(entity: entity) => ${'entity.asTerm.select(field).asExprOf[value]}}
 
             val set: Expr[(entity, value) => entity] =
               '{ (entity: entity, replacement: value) =>
-                   ${
+                   $ {
                        val arguments = parameters.map: parameter =>
                          if parameter.name == field.name then 'replacement.asTerm
                          else 'entity.asTerm.select(symbol.fieldMember(parameter.name))

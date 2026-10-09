@@ -115,7 +115,7 @@ class Reifier(classpath: LocalClasspath):
       classpath.entries.flatMap:
         case Classpath.Entry.Directory(directory) => List(directory)
         case Classpath.Entry.Jar(jar)             => List(jar)
-        case _                                   => Nil
+        case _                                    => Nil
 
       . join(java.io.File.pathSeparator.nn.tt)
 
@@ -180,7 +180,7 @@ class Reifier(classpath: LocalClasspath):
 
         val version =
           dotty.tools.tasty.TastyVersion
-            (header.majorVersion, header.minorVersion, header.experimentalVersion)
+            ( header.majorVersion, header.minorVersion, header.experimentalVersion )
 
         // The file exists only to give the compilation unit an associated name: its
         // contents are never read (the unpickler above already has the bytes), but the

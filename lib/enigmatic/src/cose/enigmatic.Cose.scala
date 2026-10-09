@@ -157,7 +157,7 @@ object Cose:
       case Cose.Tag.Mac0  => Cose.Context.Mac0
       case Cose.Tag.Sign  => Cose.Context.Signature
       case Cose.Tag.Mac   => Cose.Context.Mac
-      case other         => abort(Cose.Error(Cose.Error.Reason.UnknownTag(other)))
+      case other          => abort(Cose.Error(Cose.Error.Reason.UnknownTag(other)))
 
     val body = tag.value.asInstanceOf[Cbor.Ast]
 

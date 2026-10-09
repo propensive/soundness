@@ -105,7 +105,7 @@ object Interpolation:
     def recur[tuple: Type](acc: scala.List[String]): scala.List[String] = Type.of[tuple] match
       case '[head *: tail] => TypeRepr.of[head].dealias match
         case ConstantType(StringConstant(part)) => recur[tail](acc.prepended(part))
-        case _ => report.errorAndAbort("an interpolator's parts are string-literal types")
+        case _                                  => report.errorAndAbort("an interpolator's parts are string-literal types")
 
       case _ =>
         acc

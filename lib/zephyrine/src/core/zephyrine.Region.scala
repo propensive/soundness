@@ -128,7 +128,7 @@ object Region:
       val interval: Interval = range
 
       addressable.materialize
-       (region.asInstanceOf[addressable.Storage], interval.start.n0, interval.size)
+       ( region.asInstanceOf[addressable.Storage], interval.start.n0, interval.size )
 
     inline def cloneTo(range: Interval in region.type)(target: addressable.Target): Unit =
       val interval: Interval = range

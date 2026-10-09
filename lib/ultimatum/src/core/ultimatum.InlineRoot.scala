@@ -94,7 +94,7 @@ extends GridSurface(widthFn(), 0):
   private var topAnchored: Boolean = anchoring match
     case InlineAnchoring.TopAnchored | InlineAnchoring.Fullscreen      => true
     case InlineAnchoring.BottomDocked | InlineAnchoring.TopAfterResize => false
-    case InlineAnchoring.Flow                                        => false
+    case InlineAnchoring.Flow                                          => false
 
   private var started: Boolean = false
 

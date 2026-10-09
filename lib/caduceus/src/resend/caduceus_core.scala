@@ -65,7 +65,7 @@ package couriers:
   :   ( courierTactic: Tactic[Courier.Error], online: Online, loggable: Http.Event is Loggable,
         client: Http.Client )
   =>  ( apiKey: Resend.ApiKey )
-  =>  (Courier^{courierTactic, online}) =
+  =>  ( Courier^{courierTactic, online} ) =
     // The instance's own fresh capability is laundered; the declared result tracks its
     // retained capabilities.
     // [construction-fresh] new Courier's own fresh capability laundered at given

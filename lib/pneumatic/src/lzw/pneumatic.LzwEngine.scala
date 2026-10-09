@@ -214,7 +214,7 @@ private[pneumatic] class LzwStage(engine0: => LzwEngine^) extends Duct[Data, Dat
   def translate(demand: Credit): Credit = demand
 
   update def step(source: Region[Data])(range: Interval in source.type)
-    ( target: Slate[Data] )(space: Interval in target.type)
+    (target: Slate[Data])(space: Interval in target.type)
   :   Duct.Progress =
 
     val sourceInterval: Interval = range

@@ -192,7 +192,7 @@ object Wasm:
         new Variant(payload).asInstanceOf[(Variant[payload] of topic) { type Case = name }]
 
     given interoperable: [topic <: Label, name <: Label, payload]
-    =>  ((Variant[payload] of topic) { type Case = name } is Interoperable in Wit of topic) =
+    =>  ( (Variant[payload] of topic) { type Case = name } is Interoperable in Wit of topic ) =
       Interoperable()
 
   final class Variant[payload](val payload: payload) extends Topical

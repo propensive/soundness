@@ -59,7 +59,7 @@ extension (classpath: Classpath.type)
 
     if entries.exists:
       case _: Classpath.Entry.Url => true
-      case _                     => false
+      case _                      => false
     then OnlineClasspath(entries.to(List))
     else
       type Entry = Classpath.Entry.Directory | Classpath.Entry.Jar | Classpath.Entry.JavaRuntime.type

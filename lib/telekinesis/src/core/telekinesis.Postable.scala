@@ -96,7 +96,7 @@ object Postable:
 
   given dataStream: [response: Abstractable across HttpStreams to HttpStreams.Content]
   =>  ( tactic: Tactic[MediaType.Error] )
-  =>  ((response is Postable)^{tactic, caps.any}) =
+  =>  ( (response is Postable)^{tactic, caps.any} ) =
 
     // An honest capability: the tactic-capturing decoder is retained by the instance.
     val decoder: (MediaType is Decodable in Text)^ = summon[(MediaType is Decodable in Text)^]

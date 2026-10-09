@@ -133,7 +133,7 @@ object Completions:
   // supplies the `Environment`.
   def ensure(force: Boolean = false)
     ( using Entrypoint^, Environment, System, WorkingDirectory, Diagnostics )
-  ( using (CliEvent is Loggable)^ )
+  (using (CliEvent is Loggable)^)
   :   List[Text] =
 
     if force then safely(effectful(install(force))).let(_.paths).or(Nil)
@@ -151,13 +151,13 @@ object Completions:
 
   def install(force: Boolean = false)(using entrypoint: Entrypoint^)(using erased effectful: Effectful)
     ( using Environment, System, WorkingDirectory, Diagnostics )
-  ( using (CliEvent is Loggable)^ )
+  (using (CliEvent is Loggable)^)
   ( using Tactic[Install.Error] )
   :   Installation =
 
     mitigate:
-      case Path.Error(_, _)    => Install.Error(Install.Error.Reason.Environment)
-      case Name.Error(_, _, _) => Install.Error(Install.Error.Reason.Environment)
+      case Path.Error(_, _)               => Install.Error(Install.Error.Reason.Environment)
+      case Name.Error(_, _, _)            => Install.Error(Install.Error.Reason.Environment)
       case guillotine.Exec.Error(_, _, _) => Install.Error(Install.Error.Reason.Environment)
 
     . protect:
@@ -290,8 +290,8 @@ object Completions:
       loaded: Boolean )
     ( using erased effectful: Effectful )
     ( using Diagnostics )
-  ( using (CliEvent is Loggable)^ )
-  ( using Tactic[Install.Error] )
+  (using (CliEvent is Loggable)^)
+  (using Tactic[Install.Error])
   :   Installation.InstallResult =
 
     import filesystemOptions.createNonexistentParents
@@ -318,7 +318,7 @@ object Completions:
   private def installZsh(command: Text, answer: Optional[List[List[Text]]])
     ( using erased effectful: Effectful )
     ( using Environment, System, Diagnostics )
-  ( using (CliEvent is Loggable)^ )
+  (using (CliEvent is Loggable)^)
   ( using Tactic[Install.Error], Tactic[Path.Error] )
   :   Installation.InstallResult =
 
@@ -337,7 +337,7 @@ object Completions:
   private def installBash(command: Text, answer: Optional[List[List[Text]]])
     ( using erased effectful: Effectful )
     ( using Environment, System, Diagnostics )
-  ( using (CliEvent is Loggable)^ )
+  (using (CliEvent is Loggable)^)
   ( using Tactic[Install.Error], Tactic[Path.Error] )
   :   Installation.InstallResult =
 
@@ -353,7 +353,7 @@ object Completions:
   private def installFish(command: Text, answer: Optional[List[List[Text]]])
     ( using erased effectful: Effectful )
     ( using Environment, System, Diagnostics )
-  ( using (CliEvent is Loggable)^ )
+  (using (CliEvent is Loggable)^)
   ( using Tactic[Install.Error], Tactic[Path.Error] )
   :   Installation.InstallResult =
 
@@ -369,7 +369,7 @@ object Completions:
   private def installPowershell(command: Text, answer: Optional[List[List[Text]]])
     ( using erased effectful: Effectful )
     ( using Environment, System, WorkingDirectory, Diagnostics )
-  ( using (CliEvent is Loggable)^ )
+  (using (CliEvent is Loggable)^)
   :   Installation.InstallResult =
 
     val unwritable = Installation.InstallResult.NoWritableLocation(Shell.Powershell)
@@ -393,14 +393,14 @@ object Completions:
   def install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on Linux])
     ( using erased effectful: Effectful )
     ( using Diagnostics )
-  ( using (CliEvent is Loggable)^ )
+  (using (CliEvent is Loggable)^)
   ( using Tactic[Install.Error] )
   :   Installation.InstallResult =
 
     mitigate:
-      case Io.Error(_, _, _, _) => Install.Error(Install.Error.Reason.Io)
-      case Name.Error(_, _, _)  => Install.Error(Install.Error.Reason.Io)
-      case Path.Error(_, _)     => Install.Error(Install.Error.Reason.Io)
+      case Io.Error(_, _, _, _)     => Install.Error(Install.Error.Reason.Io)
+      case Name.Error(_, _, _)      => Install.Error(Install.Error.Reason.Io)
+      case Path.Error(_, _)         => Install.Error(Install.Error.Reason.Io)
       case Truncation.Error(_)      => Install.Error(Install.Error.Reason.Io)
 
     . protect:

@@ -77,14 +77,14 @@ object Writable:
       catch case error: ji.IOException => raise(Truncation.Error(total.b))
 
   given outputStreamData: [output <: ji.OutputStream]
-  =>  (streamCut: Emit[Truncation.Error], buffering: Buffering)
-  =>  ((output is Writable by Data)^{streamCut}) =
+  =>  ( streamCut: Emit[Truncation.Error], buffering: Buffering )
+  =>  ( (output is Writable by Data)^{streamCut} ) =
 
     (outputStream, stream) => drain(outputStream, stream)
 
   given outputStreamText: (streamCut: Emit[Truncation.Error], encoder: Codepage,
       buffering: Buffering)
-  =>  ((ji.OutputStream is Writable by Text)^{streamCut}) =
+  =>  ( (ji.OutputStream is Writable by Text)^{streamCut} ) =
 
     (outputStream, stream) =>
       drain
@@ -95,8 +95,8 @@ object Writable:
   // Operand adapters: a byte writer accepts characters through the encoder
   // duct, and vice versa.
   given decodingAdapter: [writable]
-  =>  (writable0: (writable is Writable by Text)^, decoder: Charset, buffering: Buffering)
-  =>  ((writable is Writable by Data)^{writable0}) =
+  =>  ( writable0: (writable is Writable by Text)^, decoder: Charset, buffering: Buffering )
+  =>  ( (writable is Writable by Data)^{writable0} ) =
 
     (target, stream) =>
       writable0.write
@@ -105,8 +105,8 @@ object Writable:
           . asInstanceOf[(Stream[Text] over Credit)^] )
 
   given encodingAdapter: [writable]
-  =>  (writable0: (writable is Writable by Data)^, encoder: Codepage, buffering: Buffering)
-  =>  ((writable is Writable by Text)^{writable0}) =
+  =>  ( writable0: (writable is Writable by Data)^, encoder: Codepage, buffering: Buffering )
+  =>  ( (writable is Writable by Text)^{writable0} ) =
 
     (target, stream) =>
       writable0.write
@@ -118,19 +118,19 @@ object Writable:
   // one chunk, written in order — the shape of an event log, where every
   // formatted event is one `Text` (or `Data`) chunk.
   given chunked: [medium, writable]
-  =>  (writable0: (writable is Writable by medium)^, addressable: medium is Addressable,
-      buffering: Buffering)
-  =>  ((writable is Writable by (Array[medium]^{}))^{writable0}) =
+  =>  ( writable0: (writable is Writable by medium)^, addressable: medium is Addressable,
+      buffering: Buffering )
+  =>  ( (writable is Writable by (Array[medium]^{}))^{writable0} ) =
 
     (target, stream) =>
       writable0.write
         ( target,
           Stream
-            (stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[medium]^{}] over Credit)^]
-              . records) )
+            ( stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[medium]^{}] over Credit)^]
+              . records ) )
 
   given channel: (streamCut: Emit[Truncation.Error], buffering: Buffering)
-  =>  ((jn.channels.WritableByteChannel is Writable by Data)^{streamCut}) =
+  =>  ( (jn.channels.WritableByteChannel is Writable by Data)^{streamCut} ) =
 
     (channel, stream) =>
       var total: Long = 0L

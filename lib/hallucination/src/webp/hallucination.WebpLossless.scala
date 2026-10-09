@@ -201,7 +201,7 @@ private[hallucination] object WebpLossless:
 
     private update def decodeImageStream
       ( xsize: Int, ysize: Int, argb: Boolean, data: scala.Array[Byte], offset: Int )
-    ( using Tactic[Raster.Error] )
+    (using Tactic[Raster.Error])
     :   Unit =
 
       val cache = readColorCache()
@@ -217,7 +217,7 @@ private[hallucination] object WebpLossless:
 
     private update def readHuffmanCodes
       ( readMeta: Boolean, xsize: Int, ysize: Int, cache: Optional[ColorCache] )
-    ( using Tactic[Raster.Error] )
+    (using Tactic[Raster.Error])
     :   HuffmanInfo =
 
       var numGroups = 1
@@ -292,7 +292,7 @@ private[hallucination] object WebpLossless:
 
     private update def readHuffmanCodeLengths
       ( codeLengthCodeLengths: scala.Array[Int], numSymbols: Int )
-    ( using Tactic[Raster.Error] )
+    (using Tactic[Raster.Error])
     :   scala.Array[Int] =
 
       val table = WebpHuffman.buildImplicit(codeLengthCodeLengths)
@@ -339,7 +339,7 @@ private[hallucination] object WebpLossless:
 
     private update def decodeImageData
       ( width: Int, height: Int, info: HuffmanInfo, data: scala.Array[Byte], offset: Int )
-    ( using Tactic[Raster.Error] )
+    (using Tactic[Raster.Error])
     :   Unit =
 
       val numValues = width*height

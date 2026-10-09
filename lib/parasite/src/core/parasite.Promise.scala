@@ -117,7 +117,7 @@ final class Promise[value]():
       case Complete(value) => value
       case Cancelled       => abort(Async.Error(Async.Error.Reason.Cancelled))
 
-      case Incomplete(_)   =>
+      case Incomplete(_) =>
         val strand0: Strand = monitor.supervisor.strand()
 
         @tailrec
@@ -179,7 +179,7 @@ final class Promise[value]():
       case Complete(value) => value
       case Cancelled       => abort(Async.Error(Async.Error.Reason.Cancelled))
 
-      case Incomplete(_)   =>
+      case Incomplete(_) =>
         val deadline = jl.System.nanoTime() + duration.generic
         val strand0: Strand = monitor.supervisor.strand()
 

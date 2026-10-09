@@ -78,7 +78,7 @@ object Platform:
   given pathReadable: [plane <: Platform: Filesystem, path <: Path on plane, result]
   =>  ( readable: (Data is Readable to result)^ )
   =>  ( tactic: Tactic[Io.Error], fdtables: Every[Fdtable] )
-  =>  ((path is Readable to result)^{readable, tactic}) =
+  =>  ( (path is Readable to result)^{readable, tactic} ) =
     path =>
       val encoded: Text = summon[Path on plane is Encodable in Text].encode(path)
 
@@ -102,7 +102,7 @@ object Platform:
   // `Path on <platform>` with no import.
   given pathWritable: [plane <: Platform: Filesystem, path <: Path on plane]
   =>  ( tactic: Tactic[Io.Error], fdtables: Every[Fdtable] )
-  =>  ((path is Writable by Data)^{tactic}) =
+  =>  ( (path is Writable by Data)^{tactic} ) =
     (path, stream) =>
       val bytes: Data = summon[Data is Aggregable by Data].accept(stream)
       val encoded: Text = summon[Path on plane is Encodable in Text].encode(path)

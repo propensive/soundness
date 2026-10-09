@@ -398,7 +398,7 @@ object Apoplexy:
     schemes match
       case scala.collection.immutable.Nil               => scala.collection.immutable.Nil
 
-      case scala.collection.immutable.::(scheme, rest)  =>
+      case scala.collection.immutable.::(scheme, rest) =>
         scala.collection.immutable.::(describe(doc, scheme), describeAll(doc, rest))
 
   private def unsatisfied(using Quotes)
@@ -697,9 +697,9 @@ object Apoplexy:
     responseContent(doc, operation).let(chosenMedia(_)).lay(TypeRepr.of[Unit]): media =>
       construable(media).or:
         report.warning
-          (s"apoplexy: nothing in scope construes the $media response of $verb $locus, so " +
+          ( s"apoplexy: nothing in scope construes the $media response of $verb $locus, so " +
             "`call()` yields the raw `Http.Response`; import its entry from `construables` " +
-            "(for example `construables.pngConstruable`) to read it as a value")
+            "(for example `construables.pngConstruable`) to read it as a value" )
 
         TypeRepr.of[Http.Response]
 
@@ -1394,7 +1394,7 @@ object Apoplexy:
 
     def listElement(repr: TypeRepr): Optional[TypeRepr] = repr match
       case AppliedType(_, scala.collection.immutable.List(element)) if repr <:< TypeRepr.of[List[Any]] => element
-      case _                                                                => Unset
+      case _                                                                                           => Unset
 
     def componentName(pointer: JsonPointer): Text = pointer.encode.cut(t"/").last.or(t"")
 

@@ -145,7 +145,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
 
         // Symbol and ZapfDingbats have built-in encodings; the text fonts take WinAnsi.
         val symbolic = standard match
-          case Pdf.Font.Standard.Symbol | Pdf.Font.Standard.ZapfDingbats => true
+          case Pdf.Font.Standard.Symbol | Pdf.Font.Standard.ZapfDingbats  => true
           case _                                                          => false
 
         val entries: Map[Text, Cos] =
@@ -192,7 +192,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   def addLink
     ( page: Page^, rect: Pdf.Rect, uri: Optional[Text] = Unset,
       destination: Optional[Destination] = Unset )
-  ( using Tactic[Pdf.Error] )
+  (using Tactic[Pdf.Error])
   :   Unit =
 
     val box =
@@ -243,7 +243,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   def appendPage
     ( mediaBox: Pdf.Rect, operators: List[Pdf.Operator] = Nil,
       resources: Optional[Cos] = Unset )
-  ( using Tactic[Pdf.Error] )
+  (using Tactic[Pdf.Error])
   :   Cos.Ref =
 
     val root = pdf.catalog(t"Pages").or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"Pages"))))
@@ -310,7 +310,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
 private def editPage
   ( pdf: (Pdf & Granting[Grant.Write])^, page: Page^ )
   ( transform: Map[Text, Cos] => Map[Text, Cos] )
-( using Tactic[Pdf.Error] )
+(using Tactic[Pdf.Error])
 :   Unit =
 
   page.number.let(pdf.editDictionary(_)(transform))
@@ -327,7 +327,7 @@ def winAnsi(text: Text): Data = PdfEncoding.winAnsiEncode(text)
 // descendant count (used for `/Count`).
 private def buildOutline
   ( pdf: (Pdf & Granting[Grant.Write])^, items: List[Bookmark], parent: Cos.Ref )
-( using Tactic[Pdf.Error] )
+(using Tactic[Pdf.Error])
 :   (Optional[Cos.Ref], Optional[Cos.Ref], Int) =
 
   if items.nil then (Unset, Unset, 0) else

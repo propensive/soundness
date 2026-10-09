@@ -118,14 +118,14 @@ object Installer:
     import systems.javaBaseSystem
 
     mitigate:
-      case Path.Error(_, _)      => Install.Error(Install.Error.Reason.Environment)
-      case Property.Error(_)     => Install.Error(Install.Error.Reason.Environment)
-      case Number.Error(_, _, _) => Install.Error(Install.Error.Reason.Environment)
-      case Io.Error(_, _, _, _)  => Install.Error(Install.Error.Reason.Io)
-      case Name.Error(_, _, _)   => Install.Error(Install.Error.Reason.Io)
+      case Path.Error(_, _)                 => Install.Error(Install.Error.Reason.Environment)
+      case Property.Error(_)                => Install.Error(Install.Error.Reason.Environment)
+      case Number.Error(_, _, _)            => Install.Error(Install.Error.Reason.Environment)
+      case Io.Error(_, _, _, _)             => Install.Error(Install.Error.Reason.Io)
+      case Name.Error(_, _, _)              => Install.Error(Install.Error.Reason.Io)
       case guillotine.Exec.Error(_, _, _)   => Install.Error(Install.Error.Reason.Io)
-      case Truncation.Error(_)       => Install.Error(Install.Error.Reason.Io)
-      case Zip.Error(_)          => Install.Error(Install.Error.Reason.Io)
+      case Truncation.Error(_)              => Install.Error(Install.Error.Reason.Io)
+      case Zip.Error(_)                     => Install.Error(Install.Error.Reason.Io)
 
     . protect:
         val command: Text = resident.script

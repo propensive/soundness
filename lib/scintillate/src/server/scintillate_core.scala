@@ -88,25 +88,25 @@ package httpServers:
   given jdkHttpserver: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( tactic: Tactic[Httpd.Error], monitor: Monitor, probate: Probate )
   =>  ( loggable: Httpd.Event is Loggable, errorPage: WebserverErrorPage )
-  =>  ((HttpdFor[port])^{tactic, monitor, caps.any}) =
+  =>  ( (HttpdFor[port])^{tactic, monitor, caps.any} ) =
     HttpProtocolic[port](false, true)
 
   given jdkHttpserverPublic: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( tactic: Tactic[Httpd.Error], monitor: Monitor, probate: Probate )
   =>  ( loggable: Httpd.Event is Loggable, errorPage: WebserverErrorPage )
-  =>  ((HttpdFor[port])^{tactic, monitor, caps.any}) =
+  =>  ( (HttpdFor[port])^{tactic, monitor, caps.any} ) =
     HttpProtocolic[port](false, false)
 
   given soundnessHttpd: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( tactic: Tactic[Httpd.Error], monitor: Monitor, probate: Probate )
   =>  ( loggable: Httpd.Event is Loggable, errorPage: WebserverErrorPage )
-  =>  ((HttpdFor[port])^{tactic, monitor, caps.any}) =
+  =>  ( (HttpdFor[port])^{tactic, monitor, caps.any} ) =
     HttpProtocolic[port](true, true)
 
   given soundnessHttpdPublic: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( tactic: Tactic[Httpd.Error], monitor: Monitor, probate: Probate )
   =>  ( loggable: Httpd.Event is Loggable, errorPage: WebserverErrorPage )
-  =>  ((HttpdFor[port])^{tactic, monitor, caps.any}) =
+  =>  ( (HttpdFor[port])^{tactic, monitor, caps.any} ) =
     HttpProtocolic[port](true, false)
 
 def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies(key)

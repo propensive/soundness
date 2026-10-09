@@ -79,7 +79,7 @@ object internal:
             expression match
               case Apply(Select(Ident(`a`), "=="), scala.collection.immutable.List(term)) => Some(term.asExpr)
               case Apply(Select(term, "=="), scala.collection.immutable.List(Ident(`a`))) => Some(term.asExpr)
-              case other                                       => None
+              case other                                                                  => None
 
           case other =>
             None

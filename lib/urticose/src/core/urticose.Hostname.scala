@@ -54,7 +54,7 @@ object Hostname:
   given showable: Hostname is Showable = _.dnsLabels.map(_.show).join(t".")
   given inspectable: [hostname <: Hostname] => hostname is Inspectable = showable.text(_)
   given decodable: (tactic: Tactic[Hostname.Error])
-  =>  ((Hostname is Decodable in Text)^{tactic}) =
+  =>  ( (Hostname is Decodable in Text)^{tactic} ) =
     parse(_)
 
   given encodable: Hostname is Encodable in Text = showable.text(_)

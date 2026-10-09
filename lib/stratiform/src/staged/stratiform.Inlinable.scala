@@ -66,7 +66,7 @@ trait Inlinable extends Typeclass:
   // mirroring the runtime instances: an abort unless overridden (the
   // primitive instances raise and continue with a sentinel).
   def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Self]): Expr[Self] =
-    '{ abort(Tel.Error(Tel.Error.Reason.Absent))(using $tactic) }
+    '{abort(Tel.Error(Tel.Error.Reason.Absent))(using $tactic)}
 
 object Inlinable:
   // Generates a monomorphic `Tel.Parsable` for a case class at compile
@@ -74,7 +74,7 @@ object Inlinable:
   // instances: nested records, collection gathering and custom leaf parsers
   // all inline into one flat parser.
   inline def parsable[value]: value is Tel.Parsable =
-    ${ stratiform.stagedInternal.inlinableParsable[value] }
+    ${stratiform.stagedInternal.inlinableParsable[value]}
 
   // The structural instance for a case class: reflects `Self` when invoked
   // (no macro — `Type[Self]` arrives with the call).
@@ -111,10 +111,10 @@ object Inlinable:
     def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[product])
     :   Expr[product] =
 
-      '{
+      ' {
         $reader.finishLine()
         val indent1 = $indent + 1
-        ${ stagedInternal.productFields[product](reader, 'indent1) }
+        ${stagedInternal.productFields[product](reader, 'indent1)}
       }
 
   // The structural instance for a sealed sum whose variants are all
@@ -151,19 +151,19 @@ object Inlinable:
     type Self = Int
 
     def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Int]): Expr[Int] =
-      '{ $reader.int().lay(Tel.Parsable.scalarFault($reader, t"Int", 0)) { value => value } }
+      '{$reader.int().lay(Tel.Parsable.scalarFault($reader, t"Int", 0)) { value => value}}
 
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Int]): Expr[Int] =
-      '{ Tel.Parsable.missing[Int](0)(using $tactic) }
+      '{Tel.Parsable.missing[Int](0)(using $tactic)}
 
   given long: (Long is Inlinable) = new Inlinable:
     type Self = Long
 
     def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Long]): Expr[Long] =
-      '{ $reader.long().lay(Tel.Parsable.scalarFault($reader, t"Long", 0L)) { value => value } }
+      '{$reader.long().lay(Tel.Parsable.scalarFault($reader, t"Long", 0L)) { value => value}}
 
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Long]): Expr[Long] =
-      '{ Tel.Parsable.missing[Long](0L)(using $tactic) }
+      '{Tel.Parsable.missing[Long](0L)(using $tactic)}
 
   given boolean: (Boolean is Inlinable) = new Inlinable:
     type Self = Boolean
@@ -171,7 +171,7 @@ object Inlinable:
     def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Boolean])
     :   Expr[Boolean] =
 
-      '{
+      ' {
         $reader.boolean().lay(Tel.Parsable.scalarFault($reader, t"Boolean", false)):
           value => value
       }
@@ -179,7 +179,7 @@ object Inlinable:
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Boolean])
     :   Expr[Boolean] =
 
-      '{ Tel.Parsable.missing[Boolean](false)(using $tactic) }
+      '{Tel.Parsable.missing[Boolean](false)(using $tactic)}
 
   given double: (Double is Inlinable) = new Inlinable:
     type Self = Double
@@ -187,7 +187,7 @@ object Inlinable:
     def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Double])
     :   Expr[Double] =
 
-      '{
+      ' {
         $reader.atom().lay({ $reader.fault(Tel.Error.Reason.Absent); 0.0 }): atom =>
           try java.lang.Double.parseDouble(atom.s)
           catch case _: NumberFormatException =>
@@ -198,16 +198,16 @@ object Inlinable:
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Double])
     :   Expr[Double] =
 
-      '{ Tel.Parsable.missing[Double](0.0)(using $tactic) }
+      '{Tel.Parsable.missing[Double](0.0)(using $tactic)}
 
   given text: (Text is Inlinable) = new Inlinable:
     type Self = Text
 
     def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Text]): Expr[Text] =
-      '{ $reader.atom().lay({ $reader.fault(Tel.Error.Reason.Absent); t"" }) { atom => atom } }
+      '{$reader.atom().lay({ $reader.fault(Tel.Error.Reason.Absent); t"" }) { atom => atom}}
 
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Text]): Expr[Text] =
-      '{ Tel.Parsable.missing[Text](t"")(using $tactic) }
+      '{Tel.Parsable.missing[Text](t"")(using $tactic)}
 
   given string: (String is Inlinable) = new Inlinable:
     type Self = String
@@ -215,14 +215,14 @@ object Inlinable:
     def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[String])
     :   Expr[String] =
 
-      '{ $reader.atom().lay({ $reader.fault(Tel.Error.Reason.Absent); "" }) { atom => atom.s } }
+      '{$reader.atom().lay({ $reader.fault(Tel.Error.Reason.Absent); "" }) { atom => atom.s}}
 
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[String])
     :   Expr[String] =
 
-      '{ Tel.Parsable.missing[String]("")(using $tactic) }
+      '{Tel.Parsable.missing[String]("")(using $tactic)}
 
   given iterable: [collection <: Iterable, element]
-  =>  (element0: element is Inlinable)
-  =>  (collection[element] is Inlinable) =
+  =>  ( element0: element is Inlinable )
+  =>  ( collection[element] is Inlinable ) =
     IterableInlinable[element](element0).asInstanceOf[collection[element] is Inlinable]

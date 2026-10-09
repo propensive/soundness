@@ -61,7 +61,7 @@ trait Inlinable extends Typeclass:
   // What a field of this type yields when its key is absent from the object,
   // mirroring the runtime instances: an abort unless overridden.
   def absent(tactic: Expr[Tactic[Json.Error]])(using Quotes, Type[Self]): Expr[Self] =
-    '{ Json.Parsable.missing[Self]()(using $tactic) }
+    '{Json.Parsable.missing[Self]()(using $tactic)}
 
 object Inlinable:
   // Generates a monomorphic `Json.Parsable` for a case class at compile
@@ -69,7 +69,7 @@ object Inlinable:
   // instances: nested records, collection loops and custom leaf parsers all
   // inline into one flat parser.
   inline def parsable[value]: value is Json.Parsable =
-    ${ jacinta.stagedInternal.inlinableParsable[value] }
+    ${jacinta.stagedInternal.inlinableParsable[value]}
 
   // The structural instance for a case class: reflects `Self` when invoked
   // (no macro — `Type[Self]` arrives with the call).
@@ -120,45 +120,45 @@ object Inlinable:
     type Self = Int
 
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[Int]): Expr[Int] =
-      '{ $reader.long().toInt }
+      '{$reader.long().toInt}
 
   given long: (Long is Inlinable) = new Inlinable:
     type Self = Long
 
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[Long]): Expr[Long] =
-      '{ $reader.long() }
+      '{$reader.long()}
 
   given double: (Double is Inlinable) = new Inlinable:
     type Self = Double
 
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[Double]): Expr[Double] =
-      '{ $reader.double() }
+      '{$reader.double()}
 
   given float: (Float is Inlinable) = new Inlinable:
     type Self = Float
 
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[Float]): Expr[Float] =
-      '{ $reader.double().toFloat }
+      '{$reader.double().toFloat}
 
   given boolean: (Boolean is Inlinable) = new Inlinable:
     type Self = Boolean
 
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[Boolean]): Expr[Boolean] =
-      '{ $reader.boolean() }
+      '{$reader.boolean()}
 
   given text: (Text is Inlinable) = new Inlinable:
     type Self = Text
 
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[Text]): Expr[Text] =
-      '{ $reader.string() }
+      '{$reader.string()}
 
   given string: (String is Inlinable) = new Inlinable:
     type Self = String
 
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[String]): Expr[String] =
-      '{ $reader.string().s }
+      '{$reader.string().s}
 
   given iterable: [collection <: Iterable, element]
-  =>  (element0: element is Inlinable)
-  =>  (collection[element] is Inlinable) =
+  =>  ( element0: element is Inlinable )
+  =>  ( collection[element] is Inlinable ) =
     IterableInlinable[element](element0).asInstanceOf[collection[element] is Inlinable]

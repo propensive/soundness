@@ -72,7 +72,7 @@ object Archetype:
 
   // `^{monitor}` only: `Probate` is not capture-tracked.
   given streamable: [page <: Archetype] => (monitor: Monitor, probate: Probate)
-  =>  ((page is Streamable by Text over Credit)^{monitor, caps.any}) =
+  =>  ( (page is Streamable by Text over Credit)^{monitor, caps.any} ) =
     archetype => archetype.document.source[Text]
 
 // The base of every page archetype. Concrete pages are built by mixing in feature traits (each a

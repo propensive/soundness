@@ -173,7 +173,7 @@ extension (consume stream: (Stream[Data] over Credit)^)
         if ended then -1 else stream.refill(Credit(block)) match
           case count: Int => if count == 0 then ensure() else count
 
-          case _          =>
+          case _ =>
             ended = true
             stream.close()
             -1
