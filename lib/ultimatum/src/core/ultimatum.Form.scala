@@ -276,9 +276,9 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
         // An animated fixture is dirty by definition: its appearance depends on the clock, not on
         // its rectangle or its state, so nothing else in `dirtyCells` would notice it changing.
         val dirty = dirtyCells(previousRects, updated.entries.map(_.rect), changed + animated)
-        dirty.each { index => updated.entries.confine(index.z).let(paint(updated)(_)) }
+        dirty.each { index => updated.entries.pick(index.z)(paint(updated)(_)) }
 
-    updated.focusables.confine(focusPosition(updated).z).let: position =>
+    updated.focusables.pick(focusPosition(updated).z): position =>
       paint(updated)(updated.focusables(position))
 
     root.flush()
@@ -311,7 +311,7 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
 
     current.entries.iterate: index =>
       if current.entries(index).fixture.lay(false)(_.period.present)
-      then builder += (index: Ordinal).n0
+      then builder += index.n0
 
     builder.result().to(Set)
 
@@ -396,11 +396,10 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
           val position = focusPosition(current)
           val next = (position + 1)%current.focusables.size
 
-          current.focusables.confine(position.z).let: vacated =>
-            current.focusables.confine(next.z).let: gaining =>
+          current.focusables.pick(position.z): vacated =>
+            current.focusables.pick(next.z): gaining =>
               focused = current.entries(current.focusables(gaining)).focus
-              val vacatedEntry: Ordinal = current.focusables(vacated)
-              requestRefresh(Set(vacatedEntry.n0))
+              requestRefresh(Set(current.focusables(vacated).n0))
 
       case Keypress.Escape | Keypress.Ctrl('C' | 'D') =>
         running = false
@@ -455,12 +454,12 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
         val current = layout
 
         if !current.focusables.nil then
-          current.focusables.confine(focusPosition(current).z).let: position =>
+          current.focusables.pick(focusPosition(current).z): position =>
             val ordinal = current.focusables(position)
 
             current.entries(ordinal).focus.let: widget =>
               widget.handle(event)
-              val changed = Set((ordinal: Ordinal).n0)
+              val changed = Set(ordinal.n0)
 
               // During a pending resize the widget's state updates immediately, but its
               // repaint coalesces into the debounced resize flush: presenting now would

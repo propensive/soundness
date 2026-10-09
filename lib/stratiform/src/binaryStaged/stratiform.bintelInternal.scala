@@ -988,6 +988,7 @@ object bintelInternal:
     '{
       // Sealed per the codec-thunk pattern: the generated body resolves its
       // capabilities where it is spliced.
+      // [quote-wall] codec seal inside quoted generated parser
       caps.unsafe.unsafeAssumePure:
         new Bintel.Parsable.Direct[value]:
           protected def parseCarrier(reader0: AnyRef): value =

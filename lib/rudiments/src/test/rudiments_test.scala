@@ -538,7 +538,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == 30)
 
       test(m"`spot` finds the first matching confined index"):
-        text.spot { i => text(i) == 'l' }.let { i => (i: Ordinal).n0 }
+        text.spot { i => text(i) == 'l' }.let { i => i.n0 }
       . assert(_ == 2)
 
       test(m"`spot` returns Unset when nothing matches"):
@@ -563,7 +563,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       test(m"`spot(after)` resumes the scan from the interval's limit"):
         // text = "hello": first 'l' after the prefix of non-'l's... then scan again past it
         val first = text.prefix { i => text(i) != 'l' }
-        text.spot(first) { i => text(i) == 'l' }.let { i => (i: Ordinal).n0 }
+        text.spot(first) { i => text(i) == 'l' }.let { i => i.n0 }
       . assert(_ == 2)
 
       test(m"`spot(after)` returns Unset when nothing matches beyond the interval"):
@@ -621,7 +621,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
     suite(m"Scribe tests"):
       test(m"`Array.scribe` fills through branded indices"):
-        Array.scribe[Int](4) { scribe => range => scribe.iterate { i => scribe(i) = (i: Ordinal).n0*2 } }
+        Array.scribe[Int](4) { scribe => range => scribe.iterate { i => scribe(i) = i.n0*2 } }
         . to[List]
       . assert(_ == List(0, 2, 4, 6))
 
@@ -640,7 +640,7 @@ object Tests extends Suite(m"Rudiments Tests"):
         val source = Array(1, 2, 3, 4, 5)
 
         val target = Array.scribe[Int](4): scribe =>
-          range => scribe.iterate { i => if (i: Ordinal) == Sec then scribe.place(source, i) }
+          range => scribe.iterate { i => if i == Sec then scribe.place(source, i) }
 
         target.to[List]
       . assert(_ == List(0, 1, 2, 3))
@@ -878,7 +878,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
         Array.scribe[Int](5): scribe =>
           range =>
-            scribe.iterate { i => scribe(i) = (i: Ordinal).n0 }
+            scribe.iterate { i => scribe(i) = i.n0 }
             kept = (scribe.pare(0) { i => scribe(i) > 2 }: Interval).size
 
         kept
@@ -1291,6 +1291,27 @@ object Tests extends Suite(m"Rudiments Tests"):
       test(m"absent Map key does not confine"):
         val map = Map(1 -> "one".tt)
         map.confine(9).let(map(_))
+      . assert(_ == Unset)
+
+    suite(m"pick tests"):
+      test(m"pick applies the lambda to a confined key"):
+        val map = Map(1 -> "one".tt, 2 -> "two".tt)
+        map.pick(2) { key => map(key).upper }
+      . assert(_ == "TWO".tt)
+
+      test(m"pick is absent for an undefined key"):
+        val map = Map(1 -> "one".tt)
+        map.pick(9)(map(_))
+      . assert(_ == Unset)
+
+      test(m"pick reads a sequence bare at a checked ordinal"):
+        val sequence = Sequence(10, 20, 30)
+        sequence.pick(2.z) { ordinal => sequence(ordinal) + ordinal.n0 }
+      . assert(_ == 32)
+
+      test(m"pick is absent beyond a sequence's extent"):
+        val sequence = Sequence(10, 20, 30)
+        sequence.pick(3.z)(sequence(_))
       . assert(_ == Unset)
 
     suite(m"Scoped tests"):

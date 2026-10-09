@@ -109,6 +109,7 @@ trait Json3 extends Json4:
     case given (`value` is distillate.Decodable in Text) =>
       // Laundered pure per the codec-thunk seal pattern: the parse lambda
       // closes over the resolution-scoped text decodable.
+      // [field-purity] given field codec over text decodable, codec-thunk seal
       caps.unsafe.unsafeAssumePure:
         Json.Field(Json.Parsable(Morphology.Str)(_.string().as[value]))
 
@@ -116,6 +117,7 @@ trait Json3 extends Json4:
       Json.ParsableDerivation.derived
 
     case given (`value` is Json.Decodable) =>
+      // [field-purity] given field codec over decodable, codec-thunk seal
       caps.unsafe.unsafeAssumePure:
         Json.Field(Json.Parsable.fromDecodable(infer[`value` is Json.Decodable]))
 
@@ -134,6 +136,7 @@ trait Json2 extends Json3:
     // Sealed lazily: the shape must stay by-name (recursive derivation
     // depends on deferral), and its thunk may not capture the evidence.
     val shape: () -> Morphology =
+      // [by-name-capture] deferred shape thunk may not capture evidence
       caps.unsafe.unsafeAssumePure(() => Morphology.Opt(encodable.shape()))
 
     Json.Encodable(shape): value =>
@@ -158,8 +161,10 @@ trait Json2 extends Json3:
     // the synthesized shape thunk aliases the tactic argument under separation
     // checking. Sealed until the checker can express it; see rep/DECISIONS.md
     // (upstream candidate: nameable by-name captures).
+    // [by-name-capture] by-name decodable cannot be named in capture set
     caps.unsafe.unsafeAssumePure:
       val shape: () -> Morphology =
+        // [by-name-capture] shape thunk over by-name decodable
         caps.unsafe.unsafeAssumePure(() => Morphology.Opt(decodable.shape()))
 
       Json.Decodable(shape()): json =>
@@ -263,6 +268,7 @@ trait Json2 extends Json3:
   =>  (tactic: Tactic[Parse.Error], jsonTactic: Tactic[Json.Error], tracking: PositionTracking)
   =>  ((value in Json) is Aggregable by Data) =
 
+    // [field-purity] given Aggregable codec over tactic, codec-thunk seal
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
         type Self = value in Json
@@ -287,6 +293,7 @@ trait Json2 extends Json3:
       // The decode lambda closes over the `provide`-summoned tactic, which shares the
       // instance's given-resolution lifetime; laundered pure per the codec-thunk seal
       // pattern (see rep/DECISIONS.md), like the primitive codecs.
+      // [field-purity] given decodable closing over provided tactic
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Str)(provide[Tactic[Json.Error]](_.root.string.as[value]))
 
@@ -718,6 +725,7 @@ object Json extends Json2, Dynamic:
     def apply[value](shape0: => Morphology)(decoder: (value is distillate.Decodable in Json)^)
     :   ((value is Json.Decodable)^{decoder}) =
       // Same shape-thunk laundering as `Encodable.apply`; see the comment there.
+      // [by-name-capture] by-name shape0 laundered to pure thunk
       val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure { () => shape0 }
 
       new Json.Decodable:
@@ -762,6 +770,7 @@ object Json extends Json2, Dynamic:
     def apply[value](shape0: => Morphology)(parser: (reader: Json.Reader^) => value)
     :   ((value is Json.Parsable)^{parser}) =
       // Same shape-thunk laundering as `Encodable.apply`; see the comment there.
+      // [by-name-capture] by-name shape0 laundered to pure thunk
       val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure { () => shape0 }
 
       new Json.Parsable:
@@ -849,6 +858,7 @@ object Json extends Json2, Dynamic:
               tactic:  Tactic[Json.Error] )
     :   value is Json.Parsable =
 
+      // [by-name-capture] parsable captures by-name field parser
       caps.unsafe.unsafeAssumePure:
         new Json.Parsable:
           type Self = value
@@ -877,6 +887,7 @@ object Json extends Json2, Dynamic:
               tactic:  Tactic[Json.Error] )
     :   Option[value] is Json.Parsable =
 
+      // [by-name-capture] parsable captures by-name field parser
       caps.unsafe.unsafeAssumePure:
         new Json.Parsable:
           type Self = Option[value]
@@ -919,6 +930,7 @@ object Json extends Json2, Dynamic:
               foci:    Foci[Json.Focus] )
     :   collection[element] is Json.Parsable =
 
+      // [by-name-capture] parsable captures by-name field parser
       caps.unsafe.unsafeAssumePure:
         new Json.Parsable:
           type Self = collection[element]
@@ -945,6 +957,7 @@ object Json extends Json2, Dynamic:
       ( using tactic: Tactic[Json.Error] )
     :   Map[key, element] is Json.Parsable =
 
+      // [by-name-capture] parsable captures by-name field parser
       caps.unsafe.unsafeAssumePure:
         new Json.Parsable:
           type Self = Map[key, element]
@@ -1078,7 +1091,7 @@ object Json extends Json2, Dynamic:
           val found =
             identical.or(named.spot(index => named(index) == key))
 
-          found.lay(-1) { ordinal => (ordinal: Ordinal).n0 }
+          found.lay(-1) { ordinal => ordinal.n0 }
 
         def parse(reader: Json.Reader^): derivation =
           val entries = fields
@@ -1293,7 +1306,7 @@ object Json extends Json2, Dynamic:
       val found =
         identical.or(keys.spot(index => keys(index) == name))
 
-      found.lay(KeyTable.Unknown) { ordinal => (ordinal: Ordinal).n0 }
+      found.lay(KeyTable.Unknown) { ordinal => ordinal.n0 }
 
   object Field:
     // Adapts an opted-in nominal instance (or any other `Parsing`) for use
@@ -1358,6 +1371,7 @@ object Json extends Json2, Dynamic:
 
     // Sealed per the codec-thunk pattern (see `Json.aggregable` and rep/DECISIONS.md).
     given parserAggregable: Tactic[Parse.Error] => Json.Ast is Aggregable by Data =
+      // [field-purity] given Aggregable codec over tactic, codec-thunk seal
       caps.unsafe.unsafeAssumePure:
         new Aggregable:
           type Self = Json.Ast
@@ -1587,6 +1601,7 @@ object Json extends Json2, Dynamic:
 
       // For each ASCII character, the byte that follows the backslash in its escape (`n` for a
       // newline, `"` for a quote), `u` for a `\uXXXX` reference, or zero for none.
+      // [field-purity] escape table array stored in object field
       @caps.unsafe.untrackedCaptures
       private[jacinta] val escapes: scala.Array[Byte] =
         val table = new scala.Array[Byte](128)
@@ -1605,6 +1620,7 @@ object Json extends Json2, Dynamic:
         table('\\') = '\\'.toByte
         table
 
+      // [field-purity] hex digit array stored in object field
       @caps.unsafe.untrackedCaptures
       private[jacinta] val hexDigits: scala.Array[Byte] = "0123456789abcdef".getBytes("US-ASCII").nn
 
@@ -1620,6 +1636,7 @@ object Json extends Json2, Dynamic:
       // back at `finish`, so a writer allocates nothing of its own once the pool is warm. Each
       // is reached only through this writer, and `untrackedCaptures` keeps the block's
       // exclusivity out of the class's own type.
+      // [registry-lifetime] exclusive block leased from shared Blockpool
       @caps.unsafe.untrackedCaptures
       private val current: scala.Array[Byte]^ =
         Blockpool.poll(bytesClass, block) match
@@ -1630,6 +1647,7 @@ object Json extends Json2, Dynamic:
 
       // Characters are inflated into this scratch a block at a time, so the encoding loop reads
       // a raw array rather than paying `charAt`'s coder check per character.
+      // [registry-lifetime] char scratch leased from shared Blockpool
       @caps.unsafe.untrackedCaptures
       private val scratch: scala.Array[Char] =
         Blockpool.poll(charsClass, block) match
@@ -2642,8 +2660,10 @@ object Json extends Json2, Dynamic:
 
     // Sealed as `optional` is: the by-name parameter cannot be named in a capture set, and
     // the shape thunk must stay deferred for recursive derivation.
+    // [by-name-capture] by-name decodable cannot be named in capture set
     caps.unsafe.unsafeAssumePure:
       val shape: () -> Morphology =
+        // [by-name-capture] shape thunk over by-name decodable
         caps.unsafe.unsafeAssumePure(() => Morphology.Opt(decodable.shape()))
 
       // The same three policies as `optional`, yielding `None`: an absent key or a wire `null`
@@ -2662,6 +2682,7 @@ object Json extends Json2, Dynamic:
     // Sealed lazily: the shape must stay by-name (recursive derivation
     // depends on deferral), and its thunk may not capture the evidence.
     val shape: () -> Morphology =
+      // [by-name-capture] deferred shape thunk may not capture evidence
       caps.unsafe.unsafeAssumePure(() => Morphology.Opt(encodable.shape()))
 
     Json.Encodable(shape):
@@ -2716,10 +2737,12 @@ object Json extends Json2, Dynamic:
   :   collection is Json.Encodable =
 
     // Laundered pure per the codec-thunk seal pattern; see `optional`'s comment above.
+    // [by-name-capture] encodable captures by-name element encoder
     caps.unsafe.unsafeAssumePure:
       // Sealed lazily: the shape must stay by-name (recursive derivation
       // depends on deferral), and its thunk may not capture the evidence.
       val shape: () -> Morphology =
+        // [by-name-capture] shape thunk over by-name encodable
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
 
       Json.Encodable(shape): values =>
@@ -2739,8 +2762,10 @@ object Json extends Json2, Dynamic:
     // the synthesized shape thunk aliases the tactic argument under separation
     // checking. Sealed until the checker can express it; see rep/DECISIONS.md
     // (upstream candidate: nameable by-name captures).
+    // [by-name-capture] by-name decodable cannot be named in capture set
     caps.unsafe.unsafeAssumePure:
       val shape: () -> Morphology =
+        // [by-name-capture] shape thunk over by-name decodable
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(decodable.shape()))
 
       Json.Decodable(shape()): value =>
@@ -2798,8 +2823,10 @@ object Json extends Json2, Dynamic:
     // the synthesized shape thunk aliases the tactic argument under separation
     // checking. Sealed until the checker can express it; see rep/DECISIONS.md
     // (upstream candidate: nameable by-name captures).
+    // [by-name-capture] by-name decodable cannot be named in capture set
     caps.unsafe.unsafeAssumePure:
       val shape: () -> Morphology =
+        // [by-name-capture] shape thunk over by-name decodable
         caps.unsafe.unsafeAssumePure(() => Morphology.Dict(Morphology.Str, decodable.shape()))
 
       Json.Decodable(shape()): value =>
@@ -2825,6 +2852,7 @@ object Json extends Json2, Dynamic:
     // Sealed lazily: the shape must stay by-name (recursive derivation
     // depends on deferral), and its thunk may not capture the evidence.
     val shape: () -> Morphology =
+      // [by-name-capture] deferred shape thunk may not capture evidence
       caps.unsafe.unsafeAssumePure(() => Morphology.Dict(Morphology.Str, encodable.shape()))
 
     Json.Encodable(shape): map =>
@@ -2844,6 +2872,7 @@ object Json extends Json2, Dynamic:
   // base class forbids captured references in method bodies).
   given aggregable: (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  Json is Aggregable by Data =
+    // [field-purity] given Aggregable codec over tactic, codec-thunk seal
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
         type Self = Json
@@ -2863,6 +2892,7 @@ object Json extends Json2, Dynamic:
   =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  ((value in Json) is Aggregable by Data) =
 
+    // [field-purity] given Aggregable codec over parsable and tactic
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
         type Self = value in Json
@@ -2890,6 +2920,7 @@ object Json extends Json2, Dynamic:
   =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  (Data is Readable to (value in Json)) =
 
+    // [field-purity] given Readable codec over parsable and tactic
     caps.unsafe.unsafeAssumePure:
       data => parseDirect(data, parsable).asInstanceOf[value in Json]
 
@@ -2982,11 +3013,13 @@ object Json extends Json2, Dynamic:
   // `Stageable.json`), where a capturing instance cannot be pickled.
   given decodable: (tactic: Tactic[Parse.Error])
   =>  Json is distillate.Decodable in Text =
+    // [field-purity] given text decodable over tactic, also pickled in quotes
     caps.unsafe.unsafeAssumePure:
       text => Chain(text.in[Data](using codepages.utf8Codepage)).read[Json]
 
   given instantiable: (tactic: Tactic[Parse.Error])
   =>  Json is Instantiable across HttpRequests from Text =
+    // [field-purity] given instantiable over resolution-scoped tactic
     caps.unsafe.unsafeAssumePure:
       text => Chain(text.in[Data](using codepages.utf8Codepage)).read[Json]
 

@@ -57,6 +57,7 @@ TAGS = {
   'closure-capture':    'a closure- or local-def-captured exclusive reads back read-only',
   'construction-fresh': 'the fresh capability an instance constitutes, laundered at its factory',
   'cursor-snapshot':    'a parser\'s snapshot of its cursor\'s buffer',
+  'erased-evidence':    'compile-time evidence with no runtime content, built with an erased value',
   'field-fresh-param':  'a field whose type mentions a fresh parameter capability (probe P18)',
   'field-purity':       'a capability-carrying value stored in an object-level field',
   'fresh-in-lambda':    'a fresh result minted inside a lambda or `try`',
@@ -87,7 +88,8 @@ def lines(path):
 
 
 def tagged(raw, index):
-  for line in raw[max(0, index - 3):index + 1]:
+  # Nearest first, so that a tag above one hatch is not credited to an adjacent one below it.
+  for line in reversed(raw[max(0, index - 3):index + 1]):
     if '//' not in line: continue
     for tag in TAG.findall(line.split('//', 1)[1]):
       if tag in TAGS: return tag

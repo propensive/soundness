@@ -141,6 +141,7 @@ object Confluence:
       type Transport = Credit
 
       // Untracked, cast-erased: reached only through this endpoint.
+      // [abstract-storage] cast-erased abstract Storage field in anonymous Stream
       @caps.unsafe.untrackedCaptures
       private var storage: addressable0.Storage =
         addressable0.allocate(0).asInstanceOf[addressable0.Storage]

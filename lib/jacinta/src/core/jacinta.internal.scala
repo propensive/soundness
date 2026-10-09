@@ -1351,6 +1351,7 @@ object internal:
       // generated parser captures the resolution-scoped tactic and foci.
       // The instance and default arrays are single lazy vals, so recursive
       // self-references stay deferred until the first parse.
+      // [quote-wall] generated parser in quote captures tactic and foci
       caps.unsafe.unsafeAssumePure[value is Json.Parsable]:
         val foci: Foci[Json.Focus] = $fociExpr
         val tactic: Tactic[Json.Error] = $tacticExpr
@@ -1464,6 +1465,7 @@ object internal:
       // Sealed per the codec-thunk pattern, like the derived instances: the
       // variant instances may capture resolution-scoped tactics. The variant
       // array is a single lazy val, so recursive references stay deferred.
+      // [quote-wall] generated sum parser in quote captures tactics
       caps.unsafe.unsafeAssumePure[value is Json.Parsable]:
         val discriminable: value is Discriminable in Json = $discriminableExpr
         val tagField: Text = Json.Parsable.discriminantField(discriminable)

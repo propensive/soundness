@@ -754,6 +754,7 @@ object Lsp:
       // thread a caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] enum decoder given; tactic cannot thread
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Whole): json => DiagnosticSeverity.fromOrdinal(json.as[Int] - 1)
 
@@ -769,6 +770,7 @@ object Lsp:
       // thread a caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] enum decoder given; tactic cannot thread
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Whole): json => MessageType.fromOrdinal(json.as[Int] - 1)
 
@@ -784,6 +786,7 @@ object Lsp:
       // thread a caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] enum decoder given; tactic cannot thread
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Whole): json => TextDocumentSyncKind.fromOrdinal(json.as[Int])
 
@@ -799,6 +802,7 @@ object Lsp:
       // thread a caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] enum decoder given; tactic cannot thread
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Whole): json => CompletionItemKind.fromOrdinal(json.as[Int] - 1)
 
@@ -816,6 +820,7 @@ object Lsp:
       // thread a caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] enum decoder given; tactic cannot thread
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Whole): json => SymbolKind.fromOrdinal(json.as[Int] - 1)
 
@@ -833,6 +838,7 @@ object Lsp:
       // thread a caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] enum decoder given; tactic cannot thread
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Whole): json =>
           DocumentHighlightKind.fromOrdinal(json.as[Int] - 1)
@@ -849,6 +855,7 @@ object Lsp:
       // thread a caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] enum decoder given; tactic cannot thread
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Whole): json =>
           TextDocumentSaveReason.fromOrdinal(json.as[Int] - 1)
@@ -865,6 +872,7 @@ object Lsp:
       // thread a caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] enum decoder given; tactic cannot thread
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Whole): json => SymbolTag.fromOrdinal(json.as[Int] - 1)
 
@@ -880,6 +888,7 @@ object Lsp:
       // thread a caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] enum decoder given; tactic cannot thread
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Whole): json => InlayHintKind.fromOrdinal(json.as[Int] - 1)
 
@@ -895,6 +904,7 @@ object Lsp:
       // thread a caller's tactic under separation checking.
       import strategies.throwUnsafely
 
+      // [field-purity] enum decoder given; tactic cannot thread
       caps.unsafe.unsafeAssumePure:
         Json.Decodable(Morphology.Whole): json => FileChangeType.fromOrdinal(json.as[Int] - 1)
 
@@ -914,8 +924,11 @@ object Lsp:
     // protocol's default position encoding and the unit of `Text`'s underlying characters, so no
     // transcoding is needed.
     private[exegesis] class State(val uri: Text, val language: Text):
+      // [field-purity] document state vars in non-Stateful class
       @scala.caps.unsafe.untrackedCaptures private[Document] var version0: Int = 0
+      // [field-purity]
       @scala.caps.unsafe.untrackedCaptures private[Document] var text0: Text = t""
+      // [field-purity]
       @scala.caps.unsafe.untrackedCaptures private var index: Optional[scala.Array[Int]] = Unset
 
       def version: Int = version0
@@ -1511,6 +1524,7 @@ object Lsp:
     // An `Observer` is a capability class, so an instance is `^`-typed; this one captures
     // nothing, and the fresh capability it constitutes is laundered away once, so the silent
     // observer is a pure value, storable in this object and as a default argument.
+    // [construction-fresh] silent observer's fresh capability laundered
     val Silent: Observer^{} = caps.unsafe.unsafeAssumePure:
       new Observer:
         def received(message: Text): Unit = ()
@@ -1597,6 +1611,7 @@ object Lsp:
       // instance's type would put a capability in the type of anything that summons it, including
       // a static object's method.
       LspSessional
+       // [field-purity] listener and observer sealed into sessional instance
        ( caps.unsafe.unsafeAssumePure(listener), caps.unsafe.unsafeAssumePure(observer) )
 
     // A server launched as a subprocess: how an editor starts a language server.
@@ -1663,6 +1678,7 @@ object Lsp:
     // The session is confined by its own type and the dispatch closures are locals of this
     // method, so sealing the reference the generated dispatchers hold is sound; the macro cannot
     // take a capability-typed splice.
+    // [quote-wall] dispatch macro cannot take capability-typed splice
     val dispatch: Json => Optional[Json] = Lsp.Dispatch(caps.unsafe.unsafeAssumePure(session))
 
     // The writer drains the channel and frames each message onto stdout. The observer sees the
@@ -1773,17 +1789,25 @@ object Lsp:
     // The connection is confined by its own type and each proxy is a member of it, so sealing the
     // reference the generated modules hold is sound; the macro cannot take a capability-typed splice
     // (as in `LspSession.client0`).
+    // [quote-wall] proxy macro cannot take capability-typed splice
     private val channel: JsonRpc = caps.unsafe.unsafeAssumePure(this)
 
     // The same confinement argument seals each proxy: the generated module's only capabilities
     // are this connection and the Lsp object, both already reachable through the member that
     // holds it, so the pure interface type loses nothing that is not confined here anyway.
+    // [quote-wall]
     val lifecycle:  LspLifecycle  = caps.unsafe.unsafeAssumePure(channel.proxy[LspLifecycle])
+    // [quote-wall]
     val language:   LspLanguage   = caps.unsafe.unsafeAssumePure(channel.proxy[LspLanguage])
+    // [quote-wall]
     val navigation: LspNavigation = caps.unsafe.unsafeAssumePure(channel.proxy[LspNavigation])
+    // [quote-wall]
     val editing:    LspEditing    = caps.unsafe.unsafeAssumePure(channel.proxy[LspEditing])
+    // [quote-wall]
     val advanced:   LspAdvanced   = caps.unsafe.unsafeAssumePure(channel.proxy[LspAdvanced])
+    // [quote-wall]
     val workspace:  LspWorkspace  = caps.unsafe.unsafeAssumePure(channel.proxy[LspWorkspace])
+    // [quote-wall]
     val resolve:    LspResolve    = caps.unsafe.unsafeAssumePure(channel.proxy[LspResolve])
 
     // A fault the server reports as an error response arrives as a `JsonRpc.Error` carrying the wire
@@ -2096,212 +2120,281 @@ object Lsp:
   // read by the dispatch loop and whatever tasks it spawns.
   class Registry private[exegesis] () extends anticipation.Durable:
 
+    // [registry-lifetime] erased AnyRef handler slot in Lsp.Registry
     @scala.caps.unsafe.untrackedCaptures
     var ready0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var terminating0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var opened0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var changed0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var saved0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var closed0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var saving0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var savingEdits0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var hover0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var complete0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var completeTriggers0: List[Text] = Nil
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var definition0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var references0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var documentSymbols0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var format0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var rename0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var codeActions0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var signatureHelp0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var signatureHelpTriggers0: List[Text] = Nil
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var declaration0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var typeDefinition0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var implementation0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var documentHighlights0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var foldingRanges0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var selectionRanges0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var documentLinks0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var codeLenses0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var documentColors0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var colorPresentations0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var formatRange0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var formatOnType0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var formatOnTypeFirst0: Optional[Text] = Unset
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var formatOnTypeMore0: List[Text] = Nil
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var prepareRename0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var prepareCallHierarchy0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var incomingCalls0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var outgoingCalls0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var prepareTypeHierarchy0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var supertypes0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var subtypes0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var semanticTokens0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var semanticTokensLegend0: Optional[SemanticTokensLegend] = Unset
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var semanticTokensDelta0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var semanticTokensRange0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var inlayHints0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var inlineValues0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var linkedEditingRange0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var monikers0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var diagnostics0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var diagnosticOptions0: Optional[DiagnosticOptions] = Unset
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var workspaceSymbols0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var commands0: List[(Text, AnyRef)] = Nil
 
     // The registered command names, tracked apart from the handlers: the capability derivation
     // and lookup paths must not traverse a list whose element type mentions a context function.
+    // [registry-lifetime] command-name list slot in Lsp.Registry
     @scala.caps.unsafe.untrackedCaptures
     var commandNames0: List[Text] = Nil
 
+    // [registry-lifetime] erased AnyRef handler slot in Lsp.Registry
     @scala.caps.unsafe.untrackedCaptures
     var configuration0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var watchedFiles0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var foldersChanged0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var creatingFiles0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var createdFiles0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var renamingFiles0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var renamedFiles0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var deletingFiles0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var deletedFiles0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var resolveCompletion0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var resolveCodeAction0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var resolveCodeLens0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var resolveDocumentLink0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var resolveInlayHint0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var resolveWorkspaceSymbol0: AnyRef | Null = null
 
+    // [registry-lifetime] capability-adjust function slot in Lsp.Registry
     @scala.caps.unsafe.untrackedCaptures
     var adjust0: Optional[ServerCapabilities ->{caps.any.only[anticipation.Durable]} ServerCapabilities] = Unset
 
@@ -2380,16 +2473,19 @@ object Lsp:
     // takes the listener, so the listener cannot take the connection — and `run` must not touch the
     // proxy again once registration is over.
     private[exegesis] class Upstream():
+      // [registry-lifetime] connection cell lent for session lifetime
       @scala.caps.unsafe.untrackedCaptures
       var connection: Lsp.Connection | Null = null
 
       // Sealed on the way in and out, as the listener is: the connection is lent for the life of the
       // session, and every hook that reads it here runs within it.
       def open(connection: Lsp.Connection^): Unit =
+        // [registry-lifetime]
         this.connection = caps.unsafe.unsafeAssumePure(connection)
 
       def apply(): Optional[Lsp.Connection] = connection match
         case null                      => Unset
+        // [registry-lifetime]
         case connection: Lsp.Connection => caps.unsafe.unsafeAssumePure(connection)
 
     // Runs the proxy: this process serves an editor over its own standard input and output while
@@ -2446,6 +2542,7 @@ object Lsp:
       // covers. Sealed because the listener writes downstream, and so captures this process's own
       // standard output, which an honest capability type would then hide from the loop below —
       // which writes there too. It is a local of this method, and lives as long as the session.
+      // [stdio-readonly] listener writes stdout also written by proxy loop
       given listener: Lsp.Listener = caps.unsafe.unsafeAssumePure(new Lsp.Listener:
         override def intercept(json: Json): Boolean =
           val method: Optional[Text] = Lsp.method(json)
@@ -2591,18 +2688,23 @@ object Lsp:
   extends caps.ExclusiveCapability:
     // The rewriters, by method: an erased rim like `Lsp.Registry`'s slots, for the same reason — a
     // function value in an invariant container freshens its capture set at every adaptation.
+    // [registry-lifetime] erased AnyRef rewriter/hook slots in Proxy
     @scala.caps.unsafe.untrackedCaptures
     val results: scm.HashMap[Text, AnyRef] = scm.HashMap()
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     val notices: scm.HashMap[Text, AnyRef] = scm.HashMap()
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var outbound0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var inbound0: AnyRef | Null = null
 
+    // [registry-lifetime]
     @scala.caps.unsafe.untrackedCaptures
     var connected0: AnyRef | Null = null
 

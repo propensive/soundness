@@ -391,8 +391,10 @@ object Tests extends Suite(m"Scintillate tests"):
           // boundary seals the monitor the async producer captures (its return
           // type is an unadorned `Http.Response`); this is what lets a real
           // honeycomb page compile through `.handle`.
+          // [test-harness] test server handler with async producer
           val server = scala.caps.unsafe.unsafeAssumeSeparate:
            SocketServer(0).handle:
+            // [test-harness] test response sealed mimicking Servable.serve boundary
             caps.unsafe.unsafeAssumePure:
               Http.Response(Http.Ok):
                 Http.Body.Flowing: () =>
@@ -446,6 +448,7 @@ object Tests extends Suite(m"Scintillate tests"):
           // Handles collected for concurrent await: sealed per the pure-façade convention
           // (D6; the `Seq[Task].sequence` shape).
           val tasks = List.tabulate(clients): _ =>
+            // [fresh-in-lambda] async task minted inside tabulate lambda
             caps.unsafe.unsafeAssumePure:
               async:
                 val socket = java.net.Socket("localhost", port)

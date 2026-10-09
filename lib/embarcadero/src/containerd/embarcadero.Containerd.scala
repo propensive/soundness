@@ -96,6 +96,7 @@ case class Containerd(channel: Grpc.Channel^):
   :   VersionResponse =
 
     // The RPC and its codecs share only the resolution-scoped tactics; no aliased writer.
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[Empty, VersionResponse](Containerd.versionMethod, Empty())
 
@@ -109,6 +110,7 @@ case class Containerd(channel: Grpc.Channel^):
     val request = ListContainersRequest(filters)
 
     // The RPC and its codecs share only the resolution-scoped tactics; no aliased writer.
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[ListContainersRequest, ListContainersResponse]
         (Containerd.listContainersMethod, request).containers
@@ -124,6 +126,7 @@ case class Containerd(channel: Grpc.Channel^):
 
     val created =
       // The RPC and its codecs share only the resolution-scoped tactics; no aliased writer.
+      // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
       scala.caps.unsafe.unsafeAssumeSeparate:
         channel.unary[CreateContainerRequest, CreateContainerResponse]
           (Containerd.createContainerMethod, request).container
@@ -140,6 +143,7 @@ case class Containerd(channel: Grpc.Channel^):
     val request = GetContainerRequest(id)
 
     // The RPC and its codecs share only the resolution-scoped tactics; no aliased writer.
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[GetContainerRequest, GetContainerResponse]
         (Containerd.getContainerMethod, request).container
@@ -151,6 +155,7 @@ case class Containerd(channel: Grpc.Channel^):
   :   Unit =
 
     val request = DeleteContainerRequest(id)
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     val _ = scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[DeleteContainerRequest, Empty](Containerd.deleteContainerMethod, request)
     Log.info(DockerEvent.ContainerDeleted(id))
@@ -164,6 +169,7 @@ case class Containerd(channel: Grpc.Channel^):
     val request = ListNamespacesRequest(filter)
 
     // The RPC and its codecs share only the resolution-scoped tactics; no aliased writer.
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[ListNamespacesRequest, ListNamespacesResponse]
         (Containerd.listNamespacesMethod, request).namespaces
@@ -177,6 +183,7 @@ case class Containerd(channel: Grpc.Channel^):
     val request = CreateNamespaceRequest(namespace)
 
     // The RPC and its codecs share only the resolution-scoped tactics; no aliased writer.
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[CreateNamespaceRequest, CreateNamespaceResponse]
         (Containerd.createNamespaceMethod, request).namespace
@@ -188,6 +195,7 @@ case class Containerd(channel: Grpc.Channel^):
   :   Unit =
 
     val request = DeleteNamespaceRequest(name)
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     val _ = scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[DeleteNamespaceRequest, Empty](Containerd.deleteNamespaceMethod, request)
 
@@ -200,6 +208,7 @@ case class Containerd(channel: Grpc.Channel^):
     val request = ListImagesRequest(filters)
 
     // The RPC and its codecs share only the resolution-scoped tactics; no aliased writer.
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[ListImagesRequest, ListImagesResponse]
         (Containerd.listImagesMethod, request).images
@@ -213,6 +222,7 @@ case class Containerd(channel: Grpc.Channel^):
     val request = GetImageRequest(name)
 
     // The RPC and its codecs share only the resolution-scoped tactics; no aliased writer.
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[GetImageRequest, GetImageResponse]
         (Containerd.getImageMethod, request).image
@@ -224,6 +234,7 @@ case class Containerd(channel: Grpc.Channel^):
   :   Unit =
 
     val request = DeleteImageRequest(name, sync)
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     val _ = scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[DeleteImageRequest, Empty](Containerd.deleteImageMethod, request)
     Log.info(DockerEvent.ImageDeleted(name))
@@ -239,6 +250,7 @@ case class Containerd(channel: Grpc.Channel^):
     val request = CreateTaskRequest(containerId, rootfs, options = options)
     Log.info(DockerEvent.TaskCreated(containerId))
     // The RPC and its codecs share only the resolution-scoped tactics; no aliased writer.
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[CreateTaskRequest, CreateTaskResponse](Containerd.createTaskMethod, request)
 
@@ -249,6 +261,7 @@ case class Containerd(channel: Grpc.Channel^):
   :   Int =
 
     val request = StartRequest(containerId, execId)
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     val pid = scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[StartRequest, StartResponse](Containerd.startTaskMethod, request).pid
     Log.info(DockerEvent.TaskStarted(containerId, pid))
@@ -261,6 +274,7 @@ case class Containerd(channel: Grpc.Channel^):
   :   Unit =
 
     val request = KillRequest(containerId, execId, signal, all)
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     val _ = scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[KillRequest, Empty](Containerd.killTaskMethod, request)
     Log.info(DockerEvent.TaskKilled(containerId, signal))
@@ -273,6 +287,7 @@ case class Containerd(channel: Grpc.Channel^):
 
     val request = WaitRequest(containerId, execId)
     // The RPC and its codecs share only the resolution-scoped tactics; no aliased writer.
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[WaitRequest, WaitResponse](Containerd.waitTaskMethod, request)
 
@@ -285,6 +300,7 @@ case class Containerd(channel: Grpc.Channel^):
     val request = DeleteTaskRequest(containerId, execId)
     Log.info(DockerEvent.TaskDeleted(containerId))
     // The RPC and its codecs share only the resolution-scoped tactics; no aliased writer.
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[DeleteTaskRequest, DeleteTaskResponse](Containerd.deleteTaskMethod, request)
 
@@ -296,6 +312,7 @@ case class Containerd(channel: Grpc.Channel^):
 
     val request = GetTaskRequest(containerId, execId)
     // The RPC and its codecs share only the resolution-scoped tactics; no aliased writer.
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[GetTaskRequest, GetTaskResponse](Containerd.getTaskMethod, request).process
 
@@ -307,5 +324,6 @@ case class Containerd(channel: Grpc.Channel^):
 
     val request = ListTasksRequest(filter)
     // The RPC and its codecs share only the resolution-scoped tactics; no aliased writer.
+    // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[ListTasksRequest, ListTasksResponse](Containerd.listTasksMethod, request).tasks

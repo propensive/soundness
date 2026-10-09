@@ -53,9 +53,11 @@ class Inlay[status: Gaugeable as design]
   private val started: Long = System.nanoTime
 
   // How many rows the last frame occupied, so the next one knows how far to move back up.
+  // [field-purity] drawn row counter in non-Stateful Inlay
   @scala.caps.unsafe.untrackedCaptures
   private var drawn: Int = 0
 
+  // [field-purity] running flag in non-Stateful Inlay
   @scala.caps.unsafe.untrackedCaptures
   private var running: Boolean = false
 
@@ -98,6 +100,7 @@ class Inlay[status: Gaugeable as design]
       // session: the task is started here, stopped by `finish`, and touches nothing else — so the
       // assertion is local and its scope is the object's own lifetime. (`form` makes the same
       // assertion, for the same reason, around the alternate-screen session.)
+      // [by-name-receiver] async body captures Inlay owning the Monitor
       scala.caps.unsafe.unsafeAssumeSeparate:
         async:
           while running do

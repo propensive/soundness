@@ -332,10 +332,8 @@ object internal:
       parts.zip(partOrigins).map: (part, origin) =>
         val (srcStart, _) = origin
 
-        // Sealed: the mapping closes over only strings, but its inferred fresh
-        // capture would leak into the collected sequence.
-        val mapping: Int -> Int = caps.unsafe.unsafeAssumePure:
-          sourceContent.lay[Int => Int](identity(_)): content =>
+        val mapping: Int -> Int =
+          sourceContent.lay[Int -> Int](identity(_)): content =>
             if srcStart > 0 && srcStart < content.length then
               val upper = (srcStart + part.length * 6 + 16).min(content.length)
               val sourceText = content.substring(srcStart, upper).nn
@@ -768,9 +766,11 @@ object internal:
         val a = storage(attrs)
 
         // Sealed: the iterator reads immutable storage through a read-only view.
+        // [stdlib-iterator] anonymous Iterator over immutable storage sealed pure
         caps.unsafe.unsafeAssumePure:
           new Iterator[Text]:
             // Untracked: a plain index over immutable storage.
+            // [stdlib-iterator] index var in anonymous Iterator
             @caps.unsafe.untrackedCaptures
             private var i: Int = 0
             def hasNext: Boolean = i < a.length
@@ -784,9 +784,11 @@ object internal:
         val a = storage(attrs)
 
         // Sealed: the iterator reads immutable storage through a read-only view.
+        // [stdlib-iterator] anonymous Iterator over immutable storage sealed pure
         caps.unsafe.unsafeAssumePure:
           new Iterator[(Text, Optional[Text])]:
             // Untracked: a plain index over immutable storage.
+            // [stdlib-iterator] index var in anonymous Iterator
             @caps.unsafe.untrackedCaptures
             private var i: Int = 0
             def hasNext: Boolean = i < a.length

@@ -58,22 +58,40 @@ object internal:
   extension (ordinal: Ordinal)
     inline infix def span (right: Int): Interval = Interval(ordinal, ordinal + right - 1)
 
+  // Every use of the inline receiver (and of an inline `right`) is widened by an erased cast,
+  // a no-op on the `Int` representation: a caller in another compilation unit inlines these
+  // onto a brand-refined receiver (`Ordinal in xs.type`, reached through the `Ordinal` export
+  // alias), where a bare `ordinal + 1` fails to retype against the refinement ("expression
+  // does not take parameters"), and a bare `ordinal` — or an ascribed `(ordinal: Int)` — keeps
+  // the refined type when the enclosing lambda also applies a function value ("Found:
+  // Ordinal in xs.type, Required: Int"). Only the cast survives both (verified for #1755).
   extension (inline ordinal: Ordinal)
-    inline def le(inline right: Ordinal): Boolean = (ordinal: Int) <= (right: Int)
+    inline def le(inline right: Ordinal): Boolean =
+      ordinal.asInstanceOf[Int] <= right.asInstanceOf[Int]
 
-    inline def lt(inline right: Ordinal): Boolean = (ordinal: Int) < (right: Int)
-    inline def ge(inline right: Ordinal): Boolean = (ordinal: Int) >= (right: Int)
-    inline def gt(inline right: Ordinal): Boolean = (ordinal: Int) > (right: Int)
-    inline def next: Ordinal = ordinal + 1
-    inline def previous: Ordinal = (ordinal - 1).max(0)
+    inline def lt(inline right: Ordinal): Boolean =
+      ordinal.asInstanceOf[Int] < right.asInstanceOf[Int]
 
-    inline def n0: Int = ordinal
-    inline def n1: Int = ordinal + 1
-    inline def subsequent(size: Int): Interval = Interval(ordinal + 1, ordinal + size)
-    inline def preceding(size: Int): Interval = Interval((ordinal - size).max(0), ordinal - 1)
+    inline def ge(inline right: Ordinal): Boolean =
+      ordinal.asInstanceOf[Int] >= right.asInstanceOf[Int]
+
+    inline def gt(inline right: Ordinal): Boolean =
+      ordinal.asInstanceOf[Int] > right.asInstanceOf[Int]
+
+    inline def next: Ordinal = ordinal.asInstanceOf[Int] + 1
+    inline def previous: Ordinal = (ordinal.asInstanceOf[Int] - 1).max(0)
+
+    inline def n0: Int = ordinal.asInstanceOf[Int]
+    inline def n1: Int = ordinal.asInstanceOf[Int] + 1
+
+    inline def subsequent(size: Int): Interval =
+      Interval(ordinal.asInstanceOf[Int] + 1, ordinal.asInstanceOf[Int] + size)
+
+    inline def preceding(size: Int): Interval =
+      Interval((ordinal.asInstanceOf[Int] - size).max(0), ordinal.asInstanceOf[Int] - 1)
 
     inline def within[collection: Countable](value: collection): Optional[Ordinal in value.type] =
-      if ordinal >= 0 && ordinal < collection.size(value)
+      if ordinal.asInstanceOf[Int] >= 0 && ordinal.asInstanceOf[Int] < collection.size(value)
       then ordinal.asInstanceOf[Ordinal in value.type]
       else Unset
 
@@ -85,6 +103,47 @@ object internal:
     given subtractable: Ordinal is Subtractable by Ordinal to Int = Subtractable(_ - _)
     given subtractable2: Ordinal is Subtractable by Int to Ordinal = Subtractable(_ - _)
     given comparable: Ordinal is Comparable = Comparable.int
+
+    // The brand-generic twins: a typeclass's `Self` is exact, so `ordinal + 1` on an
+    // `Ordinal in xs.type` finds none of the above. These live here because the companion of a
+    // refinement's parent is in its implicit scope, so no import is needed. The results are
+    // unbranded: arithmetic leaves the proven range.
+    given brandedAddable: [form] => (Ordinal in form) is Addable by Int to Ordinal =
+      Addable(_ + _)
+
+    given brandedSubtractable: [form] => (Ordinal in form) is Subtractable by Ordinal to Int =
+      Subtractable(_ - _)
+
+    given brandedSubtractable2: [form] => (Ordinal in form) is Subtractable by Int to Ordinal =
+      Subtractable(_ - _)
+
+  // See `denominative.coextent.scala` for the producer and the rationale.
+  opaque type Coextent[form1, form2] = Int
+
+  object Coextent:
+    private[denominative] def mint[form1, form2](size: Int): Coextent[form1, form2] = size
+
+    // In the companion (reached through implicit scope) rather than at package level: `each` and
+    // `size` are already package-level names in `denominative_core.scala`. The brands are type
+    // parameters here, not refinements of the opaque, so nothing collapses.
+    extension [form1, form2](coextent: Coextent[form1, form2])
+      // Transfer the proof: an index valid for the first value is valid for the second.
+      inline def apply(ordinal: Ordinal in form1): Ordinal in form2 =
+        ordinal.asInstanceOf[Ordinal in form2]
+
+      inline def invert: Coextent[form2, form1] = coextent
+      inline def size: Int = coextent
+
+      // Iterate the shared extent with the index proven against both values. A `while`, not
+      // the interval `each`: inside `internal` an `Interval` is transparently a `Long`, which
+      // is what the inlined call would carry to the caller (loops.md's third sanctioned shape).
+      inline def each(inline lambda: (Ordinal in form1, Ordinal in form2) => Unit): Unit =
+        var index: Int = 0
+        val size: Int = coextent
+
+        while index < size do
+          lambda(index.asInstanceOf[Ordinal in form1], index.asInstanceOf[Ordinal in form2])
+          index += 1
 
   extension (interval: Interval)
     inline def start: Ordinal = ((interval >> 32) & 0xffffffff).toInt

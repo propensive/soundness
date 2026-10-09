@@ -86,6 +86,7 @@ object Conduit:
     val freelist: Freelist = Freelist(depth + 1)
     // A JMM-managed flag: its safety is the volatile publication guarantee, not
     // aliasing analysis, so its captures are untracked.
+    // [field-purity] volatile error flag in shared core
     @caps.unsafe.untrackedCaptures @volatile var error: Throwable | Null = null
 
   def apply[medium]()
@@ -132,6 +133,7 @@ object Conduit:
       // all — the dominant per-instance cost for short-lived, by-reference
       // pipelines. `capacity` still reports `block` from construction, so advisory
       // `demand` is unchanged by the deferral.
+      // [abstract-storage] abstract Storage block var
       @caps.unsafe.untrackedCaptures
       private var current: addressable0.Storage =
         addressable0.allocate(0).asInstanceOf[addressable0.Storage]
@@ -240,6 +242,7 @@ object Conduit:
 
       // Untracked as `current` above: blocks adopted from the ring are owned by
       // this (single-reader) stream.
+      // [abstract-storage] abstract Storage var in stream endpoint
       @caps.unsafe.untrackedCaptures
       private var storage: addressable0.Storage =
         addressable0.allocate(0).asInstanceOf[addressable0.Storage]
@@ -255,6 +258,7 @@ object Conduit:
       // Blocks adopted from the ring in a burst (`drain`), served without
       // further synchronization: one `head` publication and one producer
       // unpark per burst, not per block. Consumer-owned, like `storage`.
+      // [anon-fresh-field] fresh adoption array in anonymous Stream
       @caps.unsafe.untrackedCaptures
       private val adopted: scala.Array[AnyRef | Null] =
         new scala.Array[AnyRef | Null](core.handoff.width)

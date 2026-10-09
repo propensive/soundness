@@ -46,6 +46,7 @@ object Framable:
   // over the caller's `Cursor`, so the iterator honestly captures `frame`.
   def frames[data](frame: => Optional[data]): Iterator[data]^{frame} =
     new Iterator[data]:
+      // [stdlib-iterator] ready cache var in anonymous Iterator
       @scala.caps.unsafe.untrackedCaptures
       private var ready: Optional[data] = Unset
 

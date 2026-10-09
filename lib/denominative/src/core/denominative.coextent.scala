@@ -30,14 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
+package denominative
 
-import anticipation.*
-import rudiments.*
+import prepositional.*
+import vacuous.*
 
-object Hours:
-  given designation: Designation[Hours[1]] = () => "h".tt
-  erased given ratio: Ratio[Seconds[1] & Hours[-1], 3600.0] =
-    Ratio.Evidence[Seconds[1] & Hours[-1], 3600.0]()
-
-trait Hours[Power <: Nat] extends Units[Power, Time]
+// Evidence that two countable values have the same size, so an index proven against one is
+// valid for the other. The brands are singleton types, and a single ordinal cannot carry two of
+// them: `Ordinal in a.type & Ordinal in b.type` is not a subtype of either, since two same-named
+// alias refinements do not intersect into one (verified; the design was evaluated and rejected
+// for #1755). A token minted by one size check carries the proof instead, and transfers an
+// ordinal between the brands. The opaque type itself lives in `internal` beside `Ordinal`: a
+// toplevel opaque is transparent to every file of its package, which would include the tests.
+extension [countable: Countable](value: countable)
+  // The shared extent of two values, or `Unset` when their sizes differ. Sound for immutable
+  // receivers on stable paths, exactly as `extent` is.
+  def coextent[other: Countable](other: other): Optional[Coextent[value.type, other.type]] =
+    val size = countable.size(value)
+    if size == summon[Countable { type Self = other }].size(other) then Coextent.mint(size)
+    else Unset

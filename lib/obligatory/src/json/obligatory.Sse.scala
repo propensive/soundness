@@ -61,6 +61,7 @@ object Sse:
 
   given framable: Text is Framable by Sse = input =>
     // The frame reader owns its cursor exclusively for the whole parse.
+    // [closure-capture] local frame def over fresh exclusive cursor
     scala.caps.unsafe.unsafeAssumeSeparate:
      val cursor = Cursor(input)
 
@@ -90,6 +91,7 @@ object Sse:
     // The decode lambda closes over the resolution-scoped tactic, which shares the
     // instance's given-resolution lifetime; laundered pure per the codec-thunk seal
     // pattern (see rep/DECISIONS.md).
+    // [field-purity] codec-thunk seal on Decodable given
     caps.unsafe.unsafeAssumePure: text =>
       var event: Text = "message"
       var data: List[Text] = Nil
@@ -168,11 +170,14 @@ object Sse:
   // SseSource → Sse.Source
   class Source(capacity: Int):
     private val mutex: Mutex = Mutex()
+    // [field-purity] buffer array in non-Stateful Sse.Source
     @scala.caps.unsafe.untrackedCaptures
     private val buffer: scala.Array[Sse] = new scala.Array(capacity)
 
+    // [field-purity] current index var in non-Stateful Sse.Source
     @scala.caps.unsafe.untrackedCaptures
     private var current: Int = 0
+    // [field-purity] spool relay var in non-Stateful Sse.Source
     @scala.caps.unsafe.untrackedCaptures
     private var spool: Relay[Sse] = Relay()
 

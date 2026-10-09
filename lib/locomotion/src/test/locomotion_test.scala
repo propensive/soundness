@@ -98,6 +98,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
     suite(m"Round-trips"):
       test(m"single int field"):
+        // [test-harness] test round-trip read over fresh chain
         scala.caps.unsafe.unsafeAssumeSeparate:
           proscenium.Chain(Sample(150).in[Protobuf].encode).read[Sample in Protobuf]
       . assert(_ == Sample(150))
@@ -220,6 +221,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
     suite(m"Parse errors carry a byte offset"):
       def decode(bytes: Byte*): Sample raises Protobuf.Error =
+        // [test-harness] test decode helper over fresh chain
         scala.caps.unsafe.unsafeAssumeSeparate:
           proscenium.Chain(Array.from(bytes)).read[Sample in Protobuf]
 
@@ -235,6 +237,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
       test(m"a varint longer than ten bytes is malformed"):
         capture[Protobuf.Error]:
+          // [test-harness] test read inside capture block
           scala.caps.unsafe.unsafeAssumeSeparate:
             proscenium.Chain(Array.fill(11)(0x80.toByte)).read[Sample in Protobuf]
       . assert(_ == Protobuf.Error(Protobuf.Error.Reason.MalformedVarint(0)))

@@ -55,6 +55,7 @@ object TableFixture:
     ( using TableStyle, Text is Measurable, Hyphenation )
   :   TableFixture =
 
+    // [by-name-capture] by-name table content laundered to pure thunk
     new TableFixture(caps.unsafe.unsafeAssumePure { () => content })
 
 // A live table pane: each measure lays the table out afresh at the offered width, so its
@@ -66,12 +67,15 @@ class TableFixture(content: () -> Tabulation[Teletype])
 extends Fixture:
 
   // A no-op until the fixture is bound into a running form; see `bindWake`.
+  // [field-purity] wake callback var in TableFixture
   @scala.caps.unsafe.untrackedCaptures
   private var wakeForm: () -> Unit = () => ()
 
+  // [field-purity] measuredWidth var in TableFixture
   @scala.caps.unsafe.untrackedCaptures
   private var measuredWidth: Int = -1
 
+  // [field-purity] lines var in TableFixture
   @scala.caps.unsafe.untrackedCaptures
   private var lines: List[Teletype] = Nil
 
@@ -80,6 +84,7 @@ extends Fixture:
   // As in `Panes.bindWake`: the callback captures the running form's event loop and escapes
   // into this longer-lived fixture, re-bound on every run — hence the localised assumption.
   override private[ultimatum] def bindWake(wake: () => Unit): Unit =
+    // [field-purity] form wake callback escapes into fixture field
     wakeForm = caps.unsafe.unsafeAssumePure(wake)
 
   // A fixture cannot raise, so an unsatisfiable width renders overflowing rather than failing.

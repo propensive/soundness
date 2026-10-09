@@ -108,16 +108,20 @@ object Runner:
     private val workerCount: Int = workers0.or(selection.workers)
 
     private val mutex: Mutex = Mutex()
+    // [field-purity] mutex-guarded var in non-Stateful runner
     @scala.caps.unsafe.untrackedCaptures
     private var active: List[Test.Id] = Nil
+    // [field-purity]
     @scala.caps.unsafe.untrackedCaptures
     private var listed0: List[(Test.Id, Entry.Kind, Optional[Long], List[(Axis.Spec, Value)])] =
       Nil
+    // [field-purity]
     @scala.caps.unsafe.untrackedCaptures
     private var declared0
     :   List[(Test.Id, Entry.Kind, Axis.Spec, Optional[Double], Optional[Double])] =
 
       Nil
+    // [field-purity]
     @scala.caps.unsafe.untrackedCaptures
     private var admitted0: Int = 0
 
@@ -134,16 +138,20 @@ object Runner:
     // traversal has since released; everything else runs inline, as without workers.
     private val stop: Runnable = () => ()
 
+    // [field-purity] java blocking queue field in runner
     @scala.caps.unsafe.untrackedCaptures
     private val queue: juc.LinkedBlockingQueue[Runnable] = juc.LinkedBlockingQueue()
 
+    // [field-purity] worker thread list var in runner
     @scala.caps.unsafe.untrackedCaptures
     private var workers: List[Thread] = Nil
 
+    // [field-purity] volatile failure var in runner
     @scala.caps.unsafe.untrackedCaptures
     @volatile private var failure: Optional[Throwable] = Unset
 
     // The traversal's stack of suites, innermost first (traversal thread only).
+    // [field-purity] traversal suite stack var in runner
     @scala.caps.unsafe.untrackedCaptures
     private var suites: List[Test.Id] = Nil
 
@@ -167,6 +175,7 @@ object Runner:
 
       // The thunk's captures are the assertion's pure test and the runner's own instances —
       // nothing scoped by the traversal — so holding it beyond the block is sound.
+      // [by-name-capture] assertion thunk laundered to pure Runnable
       val job: Runnable = scala.caps.unsafe.unsafeAssumePure(thunk)
 
       queue.put: () =>

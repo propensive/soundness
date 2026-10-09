@@ -1146,6 +1146,7 @@ object Html extends Tag.Container
     // buffer (see the invariant note below). Initialized empty — a field may
     // not derive from a constructor parameter under the provenance rule — and
     // populated by `syncFrom()` at the top of `parseHtml`.
+    // [cursor-snapshot] parser's snapshot of cursor buffer
     @caps.unsafe.untrackedCaptures
     private var bytes:  scala.Array[Char] = new scala.Array[Char](0)
     private var pos:    Int = 0
@@ -1305,6 +1306,7 @@ object Html extends Tag.Container
     // interpolation. Default no-op.
     // Untracked: the macro-expansion callback is installed and invoked only within
     // one `parseHtml` call.
+    // [field-purity] macro hole callback var on parser
     @caps.unsafe.untrackedCaptures
     // Pure-typed: the (sealed) callback closes only over the macro's hole map.
     var callback: Optional[(Ordinal, Hole) -> Unit] = Unset
@@ -2265,6 +2267,7 @@ object Html extends Tag.Container
 
     val parser = HtmlParser.fromIterator(input, permissive = false)
     // Sealed into the untracked field: the callback lives only for this parse.
+    // [field-purity] callback sealed into untracked parser field
     parser.callback = caps.unsafe.unsafeAssumePure(callback)
     parser.parseHtml(root, doctypes)
 
@@ -2330,6 +2333,7 @@ object Html extends Tag.Container
       // Cast-erased: the vararg splat wants an exclusive array of the refined
       // element type; the per-element decorations defeat an outer seal.
       Fragment[tag.Topic]
+        // [java-boundary] raw array cast for vararg splat
         ( caps.unsafe.unsafeAssumePure
             (Array.unsafeJvm(children2).asInstanceOf[scala.Array[(Element of tag.Topic) { type Form = tag.Form }]])* )
       . in[tag.Form]

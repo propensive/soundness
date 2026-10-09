@@ -37,7 +37,7 @@ lib/delicious/src/core/delicious.Markup.scala	3	0	2
 lib/denominative/src/core/denominative.Applicable.scala	0	1	1
 lib/denominative/src/core/denominative.Definable.scala	1	1	0
 lib/denominative/src/core/denominative.Terminable.scala	0	1	1
-lib/denominative/src/core/denominative.internal.scala	1	0	0
+lib/denominative/src/core/denominative.internal.scala	2	0	0
 lib/denominative/src/core/denominative_core.scala	10	0	0
 lib/digression/src/core/digression.Smap.scala	1	0	1
 lib/digression/src/core/digression.StackTrace.scala	1	0	6
@@ -191,7 +191,7 @@ lib/stratiform/src/core/stratiform.Tel.scala	108	63	17
 lib/stratiform/src/core/stratiform.Tel2.scala	1	3	0
 lib/stratiform/src/core/stratiform.Tel4.scala	0	0	2
 lib/stratiform/src/core/stratiform.Telp.scala	4	5	2
-lib/stratiform/src/core/stratiform.Tels.scala	12	16	2
+lib/stratiform/src/core/stratiform.Tels.scala	12	12	2
 lib/stratiform/src/core/stratiform.Varint.scala	2	0	0
 lib/stratiform/src/core/stratiform.internal.scala	6	0	2
 lib/superlunary/src/core/superlunary_core.scala	1	0	0

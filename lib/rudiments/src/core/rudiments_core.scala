@@ -174,11 +174,13 @@ extension [input, result](inline lambda: input => result)
 // `parasite.Task.apply` does for a worker), so a loop over pure state is a pure value.
 def loop(block: ->{scala.caps.any.only[anticipation.Durable]} Unit): Loop^{block} =
   def lambda(): Unit = block
+  // [construction-fresh] loop's fresh capability laundered at construction
   scala.caps.unsafe.unsafeAssumePure(Loop(lambda))
 
 export rudiments.internal.&
 
 @targetName("erasedValue")
+// [erased-evidence] erased value summoner
 inline def !! [erasure]: erasure = caps.unsafe.unsafeErasedValue
 
 extension [value <: Matchable](iterable: Iterable[value])
@@ -461,7 +463,7 @@ extension [value](iterable: Iterable[value])
   // set and crashes the compiler (#1410). `transparent` still refines the type at each call site.
   transparent inline def annex[right](lambda: value => right): Iterable[Tuple] =
     iterable.map: item =>
-      inline !![value] match
+      inline scala.compiletime.erasedValue[value] match
         case tuple: Tuple => tuple :* lambda(tuple)
         case other        => (other, lambda(other))
 
@@ -753,16 +755,16 @@ extension (erased tuple: Tuple)
   transparent inline def subtypes[supertype]: Tuple = recurSubtypes[tuple.type, supertype, Zero]
 
   private transparent inline def recurSubtypes[tuple <: Tuple, supertype, done <: Tuple]: Tuple =
-    inline !![tuple] match
+    inline scala.compiletime.erasedValue[tuple] match
       case _: Zero => !![Tuple.Reverse[done]]
 
       case _: (head *: tail) =>
-        inline !![head] match
+        inline scala.compiletime.erasedValue[head] match
           case _: `supertype`     => recurSubtypes[tail, supertype, head *: done]
           case _                  => recurSubtypes[tail, supertype, done]
 
   private inline def recurIndex[tuple <: Tuple, element](index: Int): Int =
-    inline !![tuple] match
+    inline scala.compiletime.erasedValue[tuple] match
       case _: Zero              => -1
       case _: (element *: tail) => index
       case _: (other *: tail)   => recurIndex[tail, element](index + 1)
@@ -782,7 +784,7 @@ extension (using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
 
     . let: value =>
 
-        inline !![primitive] match
+        inline scala.compiletime.erasedValue[primitive] match
           case _: Boolean =>
             value.constant.match
               case BooleanConstant(value) => value

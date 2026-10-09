@@ -80,6 +80,7 @@ object Logger:
     // spool registry's (application-wide, by design of the shared-spool scheme); laundered
     // pure so `Logger` instances remain plain values.
     val enqueue: (loggingType, Level, Long) -> Unit =
+      // [registry-lifetime] enqueue closure retains writer of global spool registry
       caps.unsafe.unsafeAssumePure: (message, level, timestamp) =>
         spool.put(inscribable.formatter(message, level, timestamp))
 
@@ -104,6 +105,7 @@ object Logger:
 
     // The daemon body must stay capture-free (hygienic, see above); the writer's lifetime is
     // the global spool registry's, so it is laundered pure for use inside the daemon.
+    // [registry-lifetime] writer laundered for daemon; lifetime of global spool registry
     val writable0: target is Writable by (Array[format]^{}) = caps.unsafe.unsafeAssumePure(writable)
     val addressable0: (Array[format]^{}) is Addressable = addressable
 

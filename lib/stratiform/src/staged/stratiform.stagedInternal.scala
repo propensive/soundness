@@ -1063,6 +1063,7 @@ object stagedInternal:
     '{
       // Sealed per the codec-thunk pattern, like the staged instances: the
       // generated body resolves its capabilities where it is spliced.
+      // [quote-wall] codec seal inside quoted staged parser
       caps.unsafe.unsafeAssumePure:
         new Tel.Parsable.Direct[value]:
           protected def parseEntry(reader0: AnyRef, indent: Int): value =

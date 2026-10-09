@@ -65,12 +65,12 @@ extension [form](range: prepositional.`in`[denominative.Interval, form])
   inline def each(inline lambda: prepositional.`in`[denominative.Ordinal, form] => Unit): Unit =
     denominative.each(range)(lambda)
 
-// The `Deindex` extension group (`apply`, `at`, `defines`, `confine`, `prim`, `sec`, `ter`) is
-// re-declared here rather than exported: its typeclass evidence is a dependent leading `using`
-// clause (required so a failed summon discards the candidate instead of erroring — see
-// `rudiments.Deindex`), and synthesized export forwarders cannot carry that shape. Each method
-// delegates to the `rudiments` original inline, so `summonFrom` dispatch and confined-index
-// narrowing behave identically.
+// The `Deindex` extension group (`apply`, `at`, `defines`, `confine`, `pick`, `prim`, `sec`,
+// `ter`) is re-declared here rather than exported: its typeclass evidence is a dependent
+// leading `using` clause (required so a failed summon discards the candidate instead of
+// erroring — see `rudiments.Deindex`), and synthesized export forwarders cannot carry that
+// shape. Each method delegates to the `rudiments` original inline, so `summonFrom` dispatch
+// and confined-index narrowing behave identically.
 extension (interval: denominative.Interval)
   inline def unsafeAttested[within](within: within)(using erased vacuous.Unsafe)
   :   prepositional.`in`[denominative.Interval, within.type] =
@@ -86,6 +86,14 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
   :   vacuous.Optional[prepositional.`in`[applicable.Operand, value.type]] =
     if applicable.contains(value, index)
     then index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]]
+    else vacuous.Unset
+
+  // Duplicated for the same reason as `confine`.
+  inline def pick[result](index: applicable.Operand)
+    ( inline lambda: prepositional.`in`[applicable.Operand, value.type] => result )
+  :   vacuous.Optional[result] =
+    if applicable.contains(value, index)
+    then lambda(index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]])
     else vacuous.Unset
 
   // Re-declared like the rest of the group; see `rudiments.unsafeAttested` for the discipline.

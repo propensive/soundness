@@ -16,6 +16,9 @@ a `readUnchecked` or a `.charAt(` beyond what `etc/while-baseline.tsv` records.
 | --- | --- |
 | counter never used in the body | `repeat(n): …` |
 | `xs(i)` over a countable receiver | `xs.extent.each: i => … xs(i) …` |
+| building a collection from `xs(i)` | `xs.tabulate: i => … xs(i) …` (and `range.tabulate` over any branded sub-interval) |
+| `if i < xs.length then … xs(i) …` | `xs.pick(i): i => … xs(i) …`, or `xs.at(i)` when the element is all the body wants |
+| `xs(i)` and `ys(i)` over two same-length receivers | `xs.coextent(ys).let: shared => … ys(shared(i)) …`, or `shared.each: (i, j) => …` |
 | the same, over part of it | `xs.extent.capped(n).each`, or `start thru end` from confined endpoints |
 | the same, anchored on the collection | `xs.iterate: i => …`, and `xs.iterate(range)` |
 | descending | `xs.retrace: i => …` |
@@ -82,10 +85,18 @@ a branded one and strips the brand with no error at all. And an `export` of an *
 extension forwards only one overload, so the other vanishes — which is why `thru`, `till` and
 `each` are hand-written in their umbrella files rather than exported.
 
-Extension lookup on a branded ordinal is fragile where the brand is a lender's handle: `.n0`
-does not resolve on an `Ordinal in scribe.type` until the receiver is ascribed back to
-`Ordinal`, as `(i: Ordinal).n0`. Reach for the ascription when an ordinal is reported as
-`Required: Int` at its own position.
+Extension members resolve on a branded ordinal: `i.n0`, `i.next`, `i.within(ys)` and the
+rest work on an `Ordinal in xs.type` without an upcast, and `i + 1` and `i - j` go through the
+brand-generic givens in `Ordinal`'s companion (the result is a plain `Ordinal`, since
+arithmetic leaves the proven range). The upcast `(i: Ordinal).n0` is no longer needed anywhere.
+What makes this work is inside `denominative.internal`: every inline extension there widens
+its receiver with an erased cast (`ordinal.asInstanceOf[Int]`), because the inliner cannot
+retype a bare or ascribed receiver against the brand once the call crosses a compilation
+unit. Keep that discipline when adding one.
+
+One brand cannot serve two receivers: `Ordinal in xs.type & Ordinal in ys.type` is not a
+subtype of either (same-named alias refinements do not intersect into one), so a parallel
+read goes through `coextent`, whose token transfers the proof instead.
 
 `extent` and the interval combinators are package-level in `denominative`, so a file that
 reaches them for the first time needs `import denominative.*`; only the operations in the

@@ -44,6 +44,7 @@ import vacuous.*
 
 object Lexicon:
   def apply[element]()(using Proximity by Int): Lexicon[element] = new Lexicon[element]:
+    // [field-purity] lexicon var in anonymous Lexicon instance
     @scala.caps.unsafe.untrackedCaptures
     private var lexicon: Optional[Lexicon[element]] = Unset
 
