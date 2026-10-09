@@ -47,19 +47,14 @@ package encodables:
     Json.Encodable(() => Morphology.Whole): duration => Json((duration.value*1000).toLong)
 
 package decodables:
-  // Laundered pure like jacinta's primitive codecs (codec-thunk seal): as derived-product
-  // field codecs these are summoned against pure expected types.
+  // Each captures the tactic it raises through.
   given instantJsonDecodable: (tactic: Tactic[Json.Error])
-  =>  (Instant over Unix) is Json.Decodable =
-    // [field-purity] given decodable over tactic, codec-thunk seal
-    caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Whole): json => Instant.of[Unix](json.root.long)
+  =>  (((Instant over Unix) is Json.Decodable)^{tactic}) =
+    Json.Decodable(Morphology.Whole): json => Instant.of[Unix](json.root.long)
 
   given durationJsonDecodable: (tactic: Tactic[Json.Error])
-  =>  Duration is Json.Decodable =
-    // [field-purity]
-    caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Whole): json => Duration(json.root.long)
+  =>  ((Duration is Json.Decodable)^{tactic}) =
+    Json.Decodable(Morphology.Whole): json => Duration(json.root.long)
 
 package parsables:
   // Direct-parsing counterparts: the epoch number is read straight off the

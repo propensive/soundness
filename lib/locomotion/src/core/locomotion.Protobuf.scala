@@ -227,29 +227,25 @@ object Protobuf extends Protobuf2:
   // the field map is never materialized. Declared here (not in `Protobuf2`,
   // where the `Decodable`-based `aggregableIn` lives) so it wins whenever a
   // `Protobuf.Parsable` exists, and is otherwise inapplicable — existing
-  // code resolves exactly as before. Sealed per the codec-thunk pattern:
-  // the instance retains the resolution-scoped parsable and tactic.
+  // code resolves exactly as before. It captures
+  // the parsable and the tactic it uses.
   given aggregableParsed: [value]
   =>  (parsable: (value is Protobuf.Parsable)^)
   =>  (tactic: Tactic[Protobuf.Error])
-  =>  ((value in Protobuf) is Aggregable by Data) =
+  =>  (((value in Protobuf) is Aggregable by Data)^{parsable, tactic}) =
 
-    // [field-purity] given Aggregable retaining parsable and tactic
-    caps.unsafe.unsafeAssumePure:
-      bytes => parseDirect(bytes.read[Data], parsable).asInstanceOf[value in Protobuf]
+    bytes => parseDirect(bytes.read[Data], parsable).asInstanceOf[value in Protobuf]
 
   // Whole-`Data` direct read: when the entire content is already in hand,
   // parse it in place rather than wrapping it in a one-element stream.
   // Concrete in `Data`, so it beats the composed pipeline by specificity.
-  // Sealed like `aggregableParsed` above.
+  // Captures what it parses with, like `aggregableParsed` above.
   given readableParsed: [value]
   =>  (parsable: (value is Protobuf.Parsable)^)
   =>  (tactic: Tactic[Protobuf.Error])
-  =>  (Data is Readable to (value in Protobuf)) =
+  =>  ((Data is Readable to (value in Protobuf))^{parsable, tactic}) =
 
-    // [field-purity] given Readable retaining parsable and tactic
-    caps.unsafe.unsafeAssumePure:
-      data => parseDirect(data, parsable).asInstanceOf[value in Protobuf]
+    data => parseDirect(data, parsable).asInstanceOf[value in Protobuf]
 
   given protobuf: Protobuf is Decodable in Protobuf = identity(_)
 

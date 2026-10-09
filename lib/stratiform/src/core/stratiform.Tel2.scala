@@ -753,27 +753,24 @@ trait Tel2 extends Tel3:
         fault:   distillate.Decodable.Fault in Tel,
         tactic:  Tactic[Tel.Error] )
   =>  ( decodable0: -> (inner is Tel.Decodable) )
-  =>  value is Tel.Decodable =
-    // Sealed per the codec-thunk pattern: the instance retains the resolution-scoped tactic
-    // for the lenient-faults path, as every other format's `optional` does.
-    // [field-purity] codec-thunk seal retaining resolution-scoped tactic
-    caps.unsafe.unsafeAssumePure:
-      new Tel.Decodable:
-        type Self = value
-        def shape(): Morphology = Morphology.Opt(decodable0.shape())
-        override def nature: Tel.Nature = decodable0.nature
-        override def optional: Boolean = !absence.strict
+  =>  ((value is Tel.Decodable)^{tactic}) =
+    // Captures the tactic for the lenient-faults path.
+    new Tel.Decodable:
+      type Self = value
+      def shape(): Morphology = Morphology.Opt(decodable0.shape())
+      override def nature: Tel.Nature = decodable0.nature
+      override def optional: Boolean = !absence.strict
 
-        override def absent()(using Tactic[Tel.Error]): value =
-          if absence.strict then abort(Tel.Error(Tel.Error.Reason.Absent)) else Unset
+      override def absent()(using Tactic[Tel.Error]): value =
+        if absence.strict then abort(Tel.Error(Tel.Error.Reason.Absent)) else Unset
 
-        def decoded(telVal: Tel): value =
-          if telVal.childCompounds.nil && telVal.atomTexts.nil then
-            if absence.strict then tactic.abort(Tel.Error(Tel.Error.Reason.Absent)) else Unset
-          else if fault.strict then
-            decodable0.decoded(telVal)
-          else
-            tactic.tolerate(decodable0.decoded(telVal)).or(Unset)
+      def decoded(telVal: Tel): value =
+        if telVal.childCompounds.nil && telVal.atomTexts.nil then
+          if absence.strict then tactic.abort(Tel.Error(Tel.Error.Reason.Absent)) else Unset
+        else if fault.strict then
+          decodable0.decoded(telVal)
+        else
+          tactic.tolerate(decodable0.decoded(telVal)).or(Unset)
 
   // Collection support (aligned with `#1291`) — a `List`/`Set` encodes to a
   // Document-rooted Tel whose children are the elements' compounds; the product

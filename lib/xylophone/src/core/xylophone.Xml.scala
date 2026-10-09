@@ -180,10 +180,7 @@ object Xml extends Tag.Container
     case Fragment(node: Node)             => textOf(node)
     case _                                => Unset
 
-  // The primitive decoders are laundered pure: their resolution-scoped tactic shares
-  // each instance's given-resolution lifetime, and the product derivation summons them
-  // against pure expected types (honest capturing forms return with wisteria capture-
-  // polymorphism; see rep/DECISIONS.md).
+  // The primitive decoders capture the tactic they raise through.
   //
   // Explicit `Decodable in Xml` for the common primitive scalars. These
   // *raise + continue* (record an `Xml.Error` on the ambient `Foci` and
@@ -194,83 +191,69 @@ object Xml extends Tag.Container
   // Specific givens here shadow the generic `decodable` summonFrom below
   // for these types — that branch's `summon[Decodable in Text]` for
   // `Int` would otherwise `abort` with `Number.Error` and break accrual.
-  given int: (tactic: Tactic[Xml.Error]) => Int is Decodable in Xml =
-    // [field-purity] given primitive decodable over tactic
-    caps.unsafe.unsafeAssumePure: xml =>
-      textOf(xml).let: text =>
-        try Integer.parseInt(text.s).nn
-        catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Int"))) yet 0
+  given int: (tactic: Tactic[Xml.Error]) => ((Int is Decodable in Xml)^{tactic}) = xml =>
+    textOf(xml).let: text =>
+      try Integer.parseInt(text.s).nn
+      catch case _: NumberFormatException =>
+        raise(Xml.Error(Reason.Malformed(text, t"Int"))) yet 0
 
-      . or:
-          raise(Xml.Error(Reason.Untextual(t"Int"))) yet 0
+    . or:
+        raise(Xml.Error(Reason.Untextual(t"Int"))) yet 0
 
-  given long: (tactic: Tactic[Xml.Error]) => Long is Decodable in Xml =
-    // [field-purity] given primitive decodable over tactic
-    caps.unsafe.unsafeAssumePure: xml =>
-      textOf(xml).let: text =>
-        try jl.Long.parseLong(text.s).nn
-        catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Long"))) yet 0L
+  given long: (tactic: Tactic[Xml.Error]) => ((Long is Decodable in Xml)^{tactic}) = xml =>
+    textOf(xml).let: text =>
+      try jl.Long.parseLong(text.s).nn
+      catch case _: NumberFormatException =>
+        raise(Xml.Error(Reason.Malformed(text, t"Long"))) yet 0L
 
-      . or:
-          raise(Xml.Error(Reason.Untextual(t"Long"))) yet 0L
+    . or:
+        raise(Xml.Error(Reason.Untextual(t"Long"))) yet 0L
 
-  given short: (tactic: Tactic[Xml.Error]) => Short is Decodable in Xml =
-    // [field-purity] given primitive decodable over tactic
-    caps.unsafe.unsafeAssumePure: xml =>
-      textOf(xml).let: text =>
-        try jl.Short.parseShort(text.s).nn
-        catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Short"))) yet 0.toShort
+  given short: (tactic: Tactic[Xml.Error]) => ((Short is Decodable in Xml)^{tactic}) = xml =>
+    textOf(xml).let: text =>
+      try jl.Short.parseShort(text.s).nn
+      catch case _: NumberFormatException =>
+        raise(Xml.Error(Reason.Malformed(text, t"Short"))) yet 0.toShort
 
-      . or:
-          raise(Xml.Error(Reason.Untextual(t"Short"))) yet 0.toShort
+    . or:
+        raise(Xml.Error(Reason.Untextual(t"Short"))) yet 0.toShort
 
-  given byte: (tactic: Tactic[Xml.Error]) => Byte is Decodable in Xml =
-    // [field-purity] given primitive decodable over tactic
-    caps.unsafe.unsafeAssumePure: xml =>
-      textOf(xml).let: text =>
-        try jl.Byte.parseByte(text.s).nn
-        catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Byte"))) yet 0.toByte
+  given byte: (tactic: Tactic[Xml.Error]) => ((Byte is Decodable in Xml)^{tactic}) = xml =>
+    textOf(xml).let: text =>
+      try jl.Byte.parseByte(text.s).nn
+      catch case _: NumberFormatException =>
+        raise(Xml.Error(Reason.Malformed(text, t"Byte"))) yet 0.toByte
 
-      . or:
-          raise(Xml.Error(Reason.Untextual(t"Byte"))) yet 0.toByte
+    . or:
+        raise(Xml.Error(Reason.Untextual(t"Byte"))) yet 0.toByte
 
-  given double: (tactic: Tactic[Xml.Error]) => Double is Decodable in Xml =
-    // [field-purity] given primitive decodable over tactic
-    caps.unsafe.unsafeAssumePure: xml =>
-      textOf(xml).let: text =>
-        try jl.Double.parseDouble(text.s).nn
-        catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Double"))) yet 0.0
+  given double: (tactic: Tactic[Xml.Error]) => ((Double is Decodable in Xml)^{tactic}) = xml =>
+    textOf(xml).let: text =>
+      try jl.Double.parseDouble(text.s).nn
+      catch case _: NumberFormatException =>
+        raise(Xml.Error(Reason.Malformed(text, t"Double"))) yet 0.0
 
-      . or:
-          raise(Xml.Error(Reason.Untextual(t"Double"))) yet 0.0
+    . or:
+        raise(Xml.Error(Reason.Untextual(t"Double"))) yet 0.0
 
-  given float: (tactic: Tactic[Xml.Error]) => Float is Decodable in Xml =
-    // [field-purity] given primitive decodable over tactic
-    caps.unsafe.unsafeAssumePure: xml =>
-      textOf(xml).let: text =>
-        try jl.Float.parseFloat(text.s).nn
-        catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Float"))) yet 0.0f
+  given float: (tactic: Tactic[Xml.Error]) => ((Float is Decodable in Xml)^{tactic}) = xml =>
+    textOf(xml).let: text =>
+      try jl.Float.parseFloat(text.s).nn
+      catch case _: NumberFormatException =>
+        raise(Xml.Error(Reason.Malformed(text, t"Float"))) yet 0.0f
 
-      . or:
-          raise(Xml.Error(Reason.Untextual(t"Float"))) yet 0.0f
+    . or:
+        raise(Xml.Error(Reason.Untextual(t"Float"))) yet 0.0f
 
-  given boolean: (tactic: Tactic[Xml.Error]) => Boolean is Decodable in Xml =
-    // [field-purity] given primitive decodable over tactic
-    caps.unsafe.unsafeAssumePure: xml =>
-      textOf(xml).let: text =>
-        text.s match
-          case "true"  => true
-          case "false" => false
-          case _       => raise(Xml.Error(Reason.Malformed(text, t"Boolean"))) yet false
+  given boolean: (tactic: Tactic[Xml.Error]) => ((Boolean is Decodable in Xml)^{tactic}) = xml =>
+    textOf(xml).let: text =>
+      text.s match
+        case "true"  => true
+        case "false" => false
+        case _       => raise(Xml.Error(Reason.Malformed(text, t"Boolean"))) yet false
 
-      . or:
-          raise(Xml.Error(Reason.Untextual(t"Boolean"))) yet false
+    . or:
+        raise(Xml.Error(Reason.Untextual(t"Boolean"))) yet false
 
   // The encoding counterpart of the `boolean` decodable above. The other
   // primitives encode through the blanket `encodable`'s `Encodable in Text`
@@ -5228,9 +5211,14 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
   // values describing the XPath of the failing field. Position information
   // stays `Unset`; decode a `Document[Xml]` loaded with `parsing.trackPositions`
   // in scope (`document.as[T]`) if you also want source line / column.
-  def as[result: Decodable in Xml]: result tracks Xml.Focus = this match
-    case Xml.Fragment(value) => result.decoded(value)
-    case xml: Xml            => result.decoded(xml)
+  //
+  // Capturing evidence, as jacinta's `as` takes: a decoder built from a `Tactic` captures it, and
+  // a context bound cannot say so. The `Foci` is a plain using-parameter, since a
+  // context-function result may not hide the capability-typed evidence.
+  def as[result](using decodable: (result is Decodable in Xml)^)(using Foci[Xml.Focus]): result =
+    this match
+      case Xml.Fragment(value) => decodable.decoded(value)
+      case xml: Xml            => decodable.decoded(xml)
 
   // Dynamic navigation. `xml.foo` selects every child element named `foo`,
   // flattening across all element-nodes in the current `Fragment` (XML tags

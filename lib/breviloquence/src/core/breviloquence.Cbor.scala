@@ -849,29 +849,25 @@ object Cbor extends Cbor2, Dynamic:
   // the AST is never materialized. Declared here (not in `Cbor2`, where the
   // `Decodable`-based `aggregableIn` lives) so it wins whenever a
   // `Cbor.Parsable` exists, and is otherwise inapplicable — existing code
-  // resolves exactly as before. Sealed per the codec-thunk pattern: the
-  // instance retains the resolution-scoped parsable and tactic.
+  // resolves exactly as before. It captures
+  // the parsable and the tactic it uses.
   given aggregableParsed: [value]
   =>  (parsable: (value is Cbor.Parsable)^)
   =>  (tactic: Tactic[Cbor.Error])
-  =>  ((value in Cbor) is Aggregable by Data) =
+  =>  (((value in Cbor) is Aggregable by Data)^{parsable, tactic}) =
 
-    // [field-purity] given retains resolution-scoped parsable and tactic
-    caps.unsafe.unsafeAssumePure:
-      bytes => parseDirect(bytes.read[Data], parsable).asInstanceOf[value in Cbor]
+    bytes => parseDirect(bytes.read[Data], parsable).asInstanceOf[value in Cbor]
 
   // Whole-`Data` direct read: when the entire content is already in hand,
   // parse it in place rather than wrapping it in a one-element stream.
   // Concrete in `Data`, so it beats the composed pipeline by specificity.
-  // Sealed like `aggregableParsed` above.
+  // Captures what it parses with, like `aggregableParsed` above.
   given readableParsed: [value]
   =>  (parsable: (value is Cbor.Parsable)^)
   =>  (tactic: Tactic[Cbor.Error])
-  =>  (Data is Readable to (value in Cbor)) =
+  =>  ((Data is Readable to (value in Cbor))^{parsable, tactic}) =
 
-    // [field-purity] given retains resolution-scoped parsable and tactic
-    caps.unsafe.unsafeAssumePure:
-      data => parseDirect(data, parsable).asInstanceOf[value in Cbor]
+    data => parseDirect(data, parsable).asInstanceOf[value in Cbor]
 
   given unit: (tactic: Tactic[Cbor.Error])
   =>  ((Unit is Decodable in Cbor)^{tactic}) =
