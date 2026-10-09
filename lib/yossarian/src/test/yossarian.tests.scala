@@ -75,6 +75,27 @@ object Tests extends Suite(m"Yossarian Tests"):
         . assert(_ == fixture(t"$shell.screen").trim)
 
     suite(m"Sequences real shells send"):
+      test(m"an escape sequence split between two chunks is resumed"):
+        val pty = fresh.consume(t"A$Esc[3").consume(t"1mB")
+        (row(pty, Prim), pty.buffer.style(Sec, Prim).foreground)
+      . assert(_ == (t"AB        ", Chroma(222, 056, 043)))
+
+      test(m"an escape split just after ESC is resumed"):
+        row(fresh.consume(t"A$Esc").consume(t"[2CB"), Prim)
+      . assert(_ == t"A  B      ")
+
+      test(m"an OSC split between chunks sets the title"):
+        fresh.consume(t"$Esc]0;Sh").consume(t"ell${Bel}X").title
+      . assert(_ == t"Shell")
+
+      test(m"the transcripts render alike however they are divided"):
+        List(t"bash", t"zsh", t"fish", t"pwsh").map: shell =>
+          val whole = fixture(t"$shell.transcript")
+          val chunks = whole.s.grouped(7).to(List)
+          val pty = chunks.foldLeft(Pty(80, 24))((pty, chunk) => pty.consume(Text(chunk)))
+          captured(pty) == captured(Pty(80, 24).consume(whole))
+      . assert(_ == List(true, true, true, true))
+
       test(m"SGR with no parameters resets the style"):
         val pty = fresh.consume(t"$Esc[1mX$Esc[mY")
         (pty.buffer.style(Prim, Prim).bold, pty.buffer.style(Sec, Prim).bold)
