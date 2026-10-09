@@ -179,6 +179,19 @@ val svg = t"""<svg width="50" height="50"><rect x="0" y="0" width="10" height="1
 (svg.width, svg.height, svg.figures.size)   // (50.0f, 50.0f, 1)
 ```
 
+A file written by a drawing tool begins with an XML declaration, and often a comment, before
+the `<svg>` element; `read[Svg]` accepts and discards the declaration, so a file reads the same
+way as a bare element. (`load[Svg]` keeps it, yielding a `Document[Svg]` whose metadata carries
+the encoding.)
+
+```scala
+val saved = t"""<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+                <!-- created by a drawing tool -->
+                <svg width="100" height="100"/>""".read[Svg]
+
+(saved.width, saved.height)   // (100.0f, 100.0f)
+```
+
 The root element's `width` and `height` may carry a unit, as a drawing tool writes them, and a
 `viewBox` names the user-space rectangle the viewport shows; both are kept, and written back as
 they were read:

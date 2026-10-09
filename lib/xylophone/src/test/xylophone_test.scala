@@ -121,6 +121,11 @@ object Tests extends Suite(m"Xylophone tests"):
           . read[Firm in Xml]
       . assert(_ == Firm(t"Acme", Worker(t"Alice", 30)))
 
+      test(m"`read[T in Xml]` drops a leading XML declaration"):
+        t"""<?xml version="1.0"?><Worker><name>Alice</name><age>30</age></Worker>"""
+          . read[Worker in Xml]
+      . assert(_ == Worker(t"Alice", 30))
+
     test(m"extract integer"):
       x"""<message>1</message>""".as[Int]
     . assert(_ == 1)
@@ -382,6 +387,22 @@ object Tests extends Suite(m"Xylophone tests"):
 
       test(m"Processing instruction target cannot be xml"):
         capture[Parse.Error](t"<a><?xml foo?></a>".read[Xml])
+      . assert(_.issue.isInstanceOf[Xml.Issue.InvalidTag])
+
+      test(m"A leading XML declaration is dropped from a fragment read"):
+        t"""<?xml version="1.0"?><a/>""".read[Xml]
+      . assert(_ == elem(t"a"))
+
+      test(m"A declaration with encoding and standalone, then a comment, is dropped"):
+        t"""<?xml version="1.0" encoding="UTF-8" standalone="no"?><!--c--><a/>""".read[Xml]
+      . assert(_ == Xml.Fragment(Xml.Comment(t"c"), elem(t"a")))
+
+      test(m"An XML declaration after the root element is rejected"):
+        capture[Parse.Error](t"""<a/><?xml version="1.0"?>""".read[Xml])
+      . assert(_.issue.isInstanceOf[Xml.Issue.InvalidTag])
+
+      test(m"An XML declaration after a processing instruction is rejected"):
+        capture[Parse.Error](t"""<?xml-stylesheet href='s'?><?xml version="1.0"?><a/>""".read[Xml])
       . assert(_.issue.isInstanceOf[Xml.Issue.InvalidTag])
 
       test(m"Processing instruction target cannot be XML"):
