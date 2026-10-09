@@ -94,6 +94,7 @@ object Cursor:
   final class Delimiter private (data: Data):
     // Untracked, as the cursor's own buffer is: both arrays are written only here, during
     // construction, and are reached only through this instance.
+    // [field-purity] construction-only array in Delimiter
     @caps.unsafe.untrackedCaptures
     private val bytes: scala.Array[Byte] = Array.unsafeJvm(data)
 
@@ -102,6 +103,7 @@ object Cursor:
     // For each byte value, how far the window shifts when that byte is the last one probed:
     // to align it with its last occurrence inside the delimiter, or past the window if none.
     // Chars, not ints: half a kilobyte of table for a delimiter of up to 65535 bytes.
+    // [field-purity] construction-only shift table in Delimiter
     @caps.unsafe.untrackedCaptures
     private val shifts: scala.Array[Char] =
       val table = scala.Array.fill(256)(length.min(Char.MaxValue.toInt).toChar)
@@ -175,6 +177,7 @@ object Cursor:
     // remain visible in the `cap` type argument.
     val cursor: Cursor[data, cap]^ =
       new Cursor[data, cap]
+        // [closure-capture] loader closure capture would collapse cursor to read-only
         ( caps.unsafe.unsafeAssumePure(() => load()),
           Unset,
           DefaultCapacity,
@@ -259,13 +262,16 @@ object Cursor:
 
             // The region last lent, released at the next borrow or fill. Untracked: a filler
             // is reached only through its cursor, which alone calls it, from `refill`.
+            // [abstract-storage] abstract Storage var in anonymous Lender
             @caps.unsafe.untrackedCaptures
             private var lentStorage0: addressable0.Storage =
               addressable0.allocate(0).asInstanceOf[addressable0.Storage]
 
+            // [field-purity] plain Int var in anonymous Lender
             @caps.unsafe.untrackedCaptures
             private var lentStart0: Int = 0
 
+            // [field-purity]
             @caps.unsafe.untrackedCaptures
             private var lent: Int = 0
 
@@ -299,6 +305,7 @@ object Cursor:
           // Sealed like the loader: the filler captures the adopted stream (consumed by
           // this factory — sole ownership), and Cursor's Unscoped classification cannot
           // hold a non-Unscoped capture.
+          // [construction-fresh] fresh filler over consumed stream laundered at factory
           caps.unsafe.unsafeAssumePure(filler) )
 
     cursor
@@ -324,6 +331,7 @@ object Cursor:
 
     val cursor: Cursor[data, {}]^ =
       new Cursor[data, {}]
+        // [closure-capture] loader closure over mutable chain cursor sealed
         ( caps.unsafe.unsafeAssumePure(load),
           Unset,
           DefaultCapacity,
@@ -355,6 +363,7 @@ object Cursor:
     // unaffected, and direct `clone`/`datum` users cast at the call site.
     val cursor: Cursor[data, {}]^ =
       new Cursor[data, {}]
+        // [closure-capture] iterator-capturing loader collapses cursor to read-only
         ( caps.unsafe.unsafeAssumePure
             (() => if iterator.hasNext then iterator.next() else Unset),
           Unset,
@@ -535,11 +544,13 @@ extends caps.Mutable:
   // region its source lent (a `Data` chunk's own array, a `Lender`'s region), read in place
   // and never written, which `borrowed` records. Untracked, with cast-erased assignments:
   // both are reached only through this (exclusive) cursor.
+  // [abstract-storage] abstract Storage owned buffer var
   @caps.unsafe.untrackedCaptures
   private var owned:     addressable.Storage =
     preset.lay(addressable.allocate(initialSize).asInstanceOf[addressable.Storage]): storage =>
       storage.asInstanceOf[addressable.Storage]
 
+  // [abstract-storage] abstract Storage current buffer var
   @caps.unsafe.untrackedCaptures
   private var buffer:    addressable.Storage = owned
   private var borrowed:  Boolean = false

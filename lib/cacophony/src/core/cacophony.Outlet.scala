@@ -92,8 +92,10 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info) extends Devi
     line.start()
 
     new Playback:
+      // [field-purity] stopped flag in anonymous Playback
       @scala.caps.unsafe.untrackedCaptures
       private var stopped = false
+      // [field-purity] sample array held in anonymous Playback
       @scala.caps.unsafe.untrackedCaptures
       private val data: scala.Array[Byte] = audio.data
 

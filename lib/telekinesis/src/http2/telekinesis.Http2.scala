@@ -662,6 +662,7 @@ object Http2:
     private val (writer, reader): (Daemon, Daemon) =
       // The containment and its protected body share only this connection's own state; no
       // aliased writer.
+      // [by-name-receiver] contain handler and protected body share connection state
       scala.caps.unsafe.unsafeAssumeSeparate:
        contain:
         case _ => tearDown(); Remedy.Accept
@@ -718,6 +719,7 @@ object Http2:
       // The consumption callback reaches only JMM-safe state (atomic counters
       // and the thread-safe outbound relay), so it is laundered pure at this
       // rim rather than tracked into the stream.
+      // [field-purity] consumption callback stored into stream
       val stream = Http2.Stream(id, scala.caps.unsafe.unsafeAssumePure(consumed))
       streams(id) = stream
       val encoder = Hpack()
@@ -836,6 +838,7 @@ object Http2:
     val body: Stream.Body = Stream.Body(count => onConsume(this, count))
 
     // Untracked: written only by the connection's single reader daemon.
+    // [field-purity] plain var written by single reader daemon
     @caps.unsafe.untrackedCaptures
     private var headersSeen: Boolean = false
 
@@ -947,6 +950,7 @@ object Http2:
               // The consumption callback reaches only JMM-safe state (atomic
               // counters and the thread-safe outbound relay), so it is
               // laundered pure at this rim rather than tracked into the stream.
+              // [field-purity] consumption callback stored into stream
               val stream = Http2.Stream(id, scala.caps.unsafe.unsafeAssumePure(conn.consumed))
               conn.streams(id) = stream
               stream.acceptHeaders(decoder.decode(block))
@@ -1064,6 +1068,7 @@ object Http2:
       val accepted0 = accepted
 
       // As `Http2.Connection`: no aliased writer between containment and body.
+      // [by-name-receiver] contain handler and protected body share state
       scala.caps.unsafe.unsafeAssumeSeparate:
        contain:
         case _ =>

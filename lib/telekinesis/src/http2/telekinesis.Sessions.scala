@@ -146,6 +146,7 @@ private[telekinesis] object Sessions:
       // discharges the field's capture-polymorphic declared type.
       val request2 = Http.Request
         ( request.method, request.version, request.host, request.target, headers,
+          // [field-fresh-param] body field's capture-polymorphic declared type
           caps.unsafe.unsafeAssumePure(request.body) )
 
       // Distinct throwing tactics per error type (a single shared tactic would

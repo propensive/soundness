@@ -78,6 +78,7 @@ private[punctuation] object InlineParser:
     ( val node:        InlineNode,
       val isImage:     Boolean,
       val sourceStart: Int,
+      // [field-purity] active flag in non-Stateful bracket entry
       @scala.caps.unsafe.untrackedCaptures
       var active:      Boolean = true )
 

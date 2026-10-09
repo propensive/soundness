@@ -98,6 +98,7 @@ private[hallucination] object Vp8Decoder:
     private var segments: scala.Array[Segment^]^ = scala.Array.fill(4)(Segment())
     // Passed to `bool.tree` while `bool` (itself held by `this`) is the exclusive receiver: a
     // genuine aliasing pattern separation checking rejects, so this one var stays untracked.
+    // [aliased-read] probability array read while bool is exclusive receiver
     @scala.caps.unsafe.untrackedCaptures
     private val segmentProbs: scala.Array[Int] = scala.Array(255, 255, 255)
 
@@ -111,6 +112,7 @@ private[hallucination] object Vp8Decoder:
 
     // Untracked for the same reason as `segmentProbs`: read by `bool.tree`/`partitions(p).tree`
     // while the reader is the exclusive receiver.
+    // [aliased-read] probability array read while bool is exclusive receiver
     @scala.caps.unsafe.untrackedCaptures
     private val tokenProbs: scala.Array[Int] = coeffProbs.asInstanceOf[scala.Array[Int]].clone()
     private var probSkipFalse = -1 // −1 means no skip probability
@@ -180,6 +182,7 @@ private[hallucination] object Vp8Decoder:
         mby += 1
 
       // The frame privately owns the decoder's plane buffers after decode completes.
+      // [construction-fresh] frame takes ownership of decoder plane buffers
       scala.caps.unsafe.unsafeAssumePure(Vp8Frame(width, height, bufferWidth, ybuf, ubuf, vbuf))
 
     private update def readFrameHeader()(using Tactic[Raster.Error]): Unit =

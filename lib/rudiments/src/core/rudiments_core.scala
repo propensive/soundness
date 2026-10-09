@@ -174,11 +174,13 @@ extension [input, result](inline lambda: input => result)
 // `parasite.Task.apply` does for a worker), so a loop over pure state is a pure value.
 def loop(block: ->{scala.caps.any.only[anticipation.Durable]} Unit): Loop^{block} =
   def lambda(): Unit = block
+  // [construction-fresh] loop's fresh capability laundered at construction
   scala.caps.unsafe.unsafeAssumePure(Loop(lambda))
 
 export rudiments.internal.&
 
 @targetName("erasedValue")
+// [erased-evidence] erased value summoner
 inline def !! [erasure]: erasure = caps.unsafe.unsafeErasedValue
 
 extension [value <: Matchable](iterable: Iterable[value])

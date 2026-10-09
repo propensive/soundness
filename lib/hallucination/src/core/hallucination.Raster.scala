@@ -207,6 +207,7 @@ class Raster private[hallucination]
     val height: Int,
     // Not frozen: a `Write`-granted `CanvasHandle` mutates the buffer in place, so it is
     // untracked instead, keeping the class type free of a capture variable.
+    // [live-view] pure Raster over buffer mutated by CanvasHandle
     @scala.caps.unsafe.untrackedCaptures private[hallucination] val buffer: scala.Array[?],
     val descriptor: Descriptor )
 extends Formal, Operable:

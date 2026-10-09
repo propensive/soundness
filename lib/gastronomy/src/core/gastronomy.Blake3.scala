@@ -174,6 +174,7 @@ object Blake3:
       // `cv` is allocated three lines above and never escapes, so no writer can
       // alias it; capture checking cannot see that through `arraycopy`, so the
       // freshness is asserted here, exactly as proscenium's `Array` does.
+      // [java-boundary] fresh array filled via System.arraycopy
       scala.caps.unsafe.unsafeAssumePure(cv)
 
     // Interior scratch, as the block buffers are: the generic `Array.allocate`/`update` would
@@ -208,6 +209,7 @@ object Blake3:
     System.arraycopy(leftCv, 0, blockWords, 0, 8)
     System.arraycopy(rightCv, 0, blockWords, 8, 8)
     // The freshly-constructed Output only holds fresh or private arrays.
+    // [construction-fresh] fresh Output holding fresh/private arrays
     scala.caps.unsafe.unsafeAssumePure
       ( Output(keyWords.clone(), blockWords, 0L, BlockLen, ParentFlag | flags) )
 
@@ -259,6 +261,7 @@ object Blake3:
       wordsFromBytes(block, 0, blockWords)
 
       // The freshly-constructed Output only holds fresh or private arrays.
+      // [construction-fresh] fresh Output holding fresh/private arrays
       scala.caps.unsafe.unsafeAssumePure
         ( Output
             ( chainingValue.clone(),

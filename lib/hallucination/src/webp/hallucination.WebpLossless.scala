@@ -79,6 +79,7 @@ private[hallucination] object WebpLossless:
     // Inserted into after construction, through the immutable `HuffmanInfo` holder, while the
     // reader is the exclusive receiver: the same aliasing pattern as `Vp8Decoder`'s probability
     // tables, so the entries stay untracked.
+    // [aliased-read] cache array written while reader is exclusive receiver
     @scala.caps.unsafe.untrackedCaptures
     private val entries: scala.Array[Int] = new scala.Array[Int](1 << bits)
     def insert(argb: Int): Unit = writable(entries)((0x1e35a7bd*argb) >>> (32 - bits)) = argb

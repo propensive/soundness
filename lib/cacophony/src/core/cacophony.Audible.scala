@@ -96,6 +96,7 @@ trait Audible extends Typeclass:
 
       // The audio privately owns its sample array; the inline Java-side copy adapts to the
       // pure base class (a named array value would charge its read capability against it).
+      // [construction-fresh] new Audio owning copied sample array laundered pure
       scala.caps.unsafe.unsafeAssumePure:
         new Audio(pcmFormat, java.util.Arrays.copyOf(readBytes, readBytes.length).nn):
           type Form = audible.Self

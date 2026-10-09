@@ -77,9 +77,12 @@ object Dictionary:
           if c < 128 then table0(c) = i
           i += 1
 
+      // [construction-fresh] new Alphabet instance laundered at factory
       scala.caps.unsafe.unsafeAssumePure:
+        // [anon-fresh-field] anonymous Alphabet template holds fresh table array
         scala.caps.unsafe.unsafeAssumeSeparate:
           new Alphabet:
+            // [anon-fresh-field] fresh table array stored in anonymous Alphabet field
             private val table: scala.Array[Int] = scala.caps.unsafe.unsafeAssumePure(table0)
             private val charTable: scala.Array[Char] = chars.toCharArray.nn
             private val n = chars.length
@@ -119,6 +122,7 @@ object Dictionary:
     val emptyValues: scala.Array[AnyRef | Null] =
       new scala.Array[AnyRef](0).asInstanceOf[scala.Array[AnyRef | Null]]
 
+    // [construction-fresh] new empty Dictionary over fresh arrays laundered
     scala.caps.unsafe.unsafeAssumePure:
       new Dictionary[value]
         ( emptyInts, emptyValues, emptyInts, emptyInts, emptyInts, Alphabet.empty, summon )
@@ -180,6 +184,7 @@ object Dictionary:
     final class NodeBuilder:
       val children = MutMap[Char, NodeBuilder]()
 
+      // [field-purity] nodeBuilder value var in temporary builder class
       @scala.caps.unsafe.untrackedCaptures
       var value: AnyRef | Null = null
 
@@ -251,6 +256,7 @@ object Dictionary:
       val emptyInts = new scala.Array[Int](0)
 
       // The arrays are never written after construction; the dictionary is observationally pure.
+      // [construction-fresh] new Dictionary over never-written arrays laundered
       scala.caps.unsafe.unsafeAssumePure:
         new Dictionary[value]
           ( childrenArr, valuesArr, emptyInts, emptyInts, emptyInts, alphabet, summon )
@@ -304,6 +310,7 @@ object Dictionary:
           sl += 1
 
       // As above: no writes after construction.
+      // [construction-fresh] new Dictionary over never-written arrays laundered
       scala.caps.unsafe.unsafeAssumePure:
         new Dictionary[value]
           ( childrenArr, valuesArr, depthArr.raw, failArr.raw, dictLinkArr.raw, alphabet,

@@ -58,6 +58,7 @@ case class TestIr(id: Text) extends anthology.Format.Ir
 case class TestApp(id: Text) extends anthology.Format.Application
 
 object executionLog:
+  // [test-harness] test execution-log object var
   @scala.caps.unsafe.untrackedCaptures
   var entries: List[Text] = Nil
 

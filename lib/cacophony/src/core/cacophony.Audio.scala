@@ -86,11 +86,13 @@ object Audio:
     val pcmFormat: jss.AudioFormat = pcm.getFormat.nn
     pcm.close()
     // The audio privately owns its sample array; laundered to the pure class type.
+    // [construction-fresh] new Audio owning sample array laundered pure
     scala.caps.unsafe.unsafeAssumePure:
       new Audio(pcmFormat, pcmBytes)
 
   def apply[form: Audible as audible](format: jss.AudioFormat, data: scala.Array[Byte]): Audio in form =
     // The audio privately owns its sample array; laundered to the pure class type.
+    // [construction-fresh]
     scala.caps.unsafe.unsafeAssumePure:
       new Audio(format, data):
         type Form = form
@@ -99,6 +101,7 @@ object Audio:
   :   Audio across layout =
 
     // The audio privately owns its sample array; laundered to the pure class type.
+    // [construction-fresh]
     scala.caps.unsafe.unsafeAssumePure:
       new Audio(format, data):
         type Domain = layout
@@ -145,6 +148,7 @@ object Audio:
 
 case class Audio
   ( private[cacophony] val format: jss.AudioFormat,
+    // [field-purity] sample array field in pure case class
     @scala.caps.unsafe.untrackedCaptures private[cacophony] val data: scala.Array[Byte] )
 extends Formal, Domainal:
   audio =>
@@ -186,6 +190,7 @@ extends Formal, Domainal:
 
   def to[form: Audible as audible]: Audio in form across audio.Domain =
     // The audio privately owns its sample array; laundered to the pure class type.
+    // [construction-fresh] new Audio owning sample array laundered pure
     scala.caps.unsafe.unsafeAssumePure:
       new Audio(format, data):
         type Form   = form

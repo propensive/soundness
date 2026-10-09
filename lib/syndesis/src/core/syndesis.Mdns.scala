@@ -311,6 +311,7 @@ object Mdns:
 
   // A name being probed for (RFC 6762 §8.1), with the records proposed for it.
   private class Probing(val name: Dns.Name, val records: List[Dns.Record]):
+    // [field-purity] volatile verdict var in non-Stateful Probing
     @caps.unsafe.untrackedCaptures @volatile var verdict: Verdict = Verdict.Clear
 
   // What this responder has claimed on the network: the instance (renamed if a conflict forces
@@ -324,8 +325,11 @@ object Mdns:
       records0:        List[Dns.Record] )
   extends Discovery.Advertising:
 
+    // [field-purity] volatile var in non-Stateful Claim
     @caps.unsafe.untrackedCaptures @volatile var instance: Discovery.Instance = instance0
+    // [field-purity]
     @caps.unsafe.untrackedCaptures @volatile var records: List[Dns.Record] = records0
+    // [field-purity]
     @caps.unsafe.untrackedCaptures @volatile var withdrawn: Boolean = false
 
   // A running browse, with its re-query loop and task smuggled past tracking as `Handles` are.
@@ -363,16 +367,24 @@ object Mdns:
 
     // Shared between the responder's tasks under `mutex`, as parasite's own state is: untracked,
     // since `Mutable`'s single-writer discipline is not the shape of a responder.
+    // [field-purity] mutex-shared transport var; responder not Mutable-shaped
     @caps.unsafe.untrackedCaptures private var live: Optional[Transport] = Unset
     // The live transport's loops and tasks, smuggled past capture tracking as `AnyRef`s (as
     // scintillate's server does with its loops), to be stopped and awaited at release.
+    // [registry-lifetime] loops and tasks smuggled as AnyRef handles
     @caps.unsafe.untrackedCaptures private var handles: Optional[Handles] = Unset
+    // [field-purity] mutex-shared var; responder not Mutable-shaped
     @caps.unsafe.untrackedCaptures private var loans: Int = 0
+    // [field-purity]
     @caps.unsafe.untrackedCaptures private var owned: List[Claim] = Nil
+    // [field-purity]
     @caps.unsafe.untrackedCaptures private var probing: List[Probing] = Nil
+    // [field-purity]
     @caps.unsafe.untrackedCaptures private var browses: List[Browse] = Nil
+    // [field-purity]
     @caps.unsafe.untrackedCaptures private var pending: List[Pending] = Nil
     // Answers to shared records awaiting the one delayed response that carries them all.
+    // [field-purity]
     @caps.unsafe.untrackedCaptures private var deferred: List[Dns.Record] = Nil
 
     // Our messages carry this ID (receivers ignore it, §18.1), which is how our own echoes are
@@ -513,6 +525,7 @@ object Mdns:
         first
 
       if first then
+        // [by-name-receiver] async body captures monitor and responder state
         caps.unsafe.unsafeAssumeSeparate:
           async:
             safely(snooze(20 + jitter(100L)))
@@ -769,6 +782,7 @@ object Mdns:
 
               // The second announcement, unless the advertisement was withdrawn or contested
               // in the meantime.
+              // [by-name-receiver] async body captures monitor and responder state
               caps.unsafe.unsafeAssumeSeparate:
                 async:
                   safely(snooze(1000L))

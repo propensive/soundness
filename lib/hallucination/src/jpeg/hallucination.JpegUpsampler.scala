@@ -128,6 +128,7 @@ private[hallucination] final class JpegUpsampler private
 
   // An `AnyRef` field + pure-view accessor: a nested-array field type is elaborated with
   // fresh element capabilities nothing can satisfy.
+  // [field-purity] nested-array field elaborates unsatisfiable fresh elements
   @scala.caps.unsafe.untrackedCaptures
   private val lineBuffers0: AnyRef =
     val buffers = new scala.Array[scala.Array[Byte]](count)

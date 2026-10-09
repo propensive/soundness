@@ -50,6 +50,7 @@ class FlowWindow(initial: Int):
   private val replenished: jucl.Condition = lock.newCondition().nn
 
   // Guarded by `lock`; reached only through this window's own methods.
+  // [field-purity] lock-guarded var in non-Stateful window
   @caps.unsafe.untrackedCaptures
   private var value: Long = initial.toLong
 

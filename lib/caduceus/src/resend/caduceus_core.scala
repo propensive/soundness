@@ -68,6 +68,7 @@ package couriers:
   =>  (Courier^{courierTactic, online}) =
     // The instance's own fresh capability is laundered; the declared result tracks its
     // retained capabilities.
+    // [construction-fresh] new Courier's own fresh capability laundered at given
     scala.caps.unsafe.unsafeAssumePure:
      new Courier:
 
@@ -120,6 +121,7 @@ package couriers:
 
         . protect:
            // The request and its decoding share only the resolution-scoped tactic.
+           // [by-name-receiver] request body and decoding share the resolution-scoped tactic
            scala.caps.unsafe.unsafeAssumeSeparate:
             url"https://api.resend.com/emails".submit
               ( Http.Post, authorization = Auth.Bearer(apiKey.key) )

@@ -599,6 +599,7 @@ object Tests extends Suite(m"Zephyrine tests"):
       // (issue #1301) — on a real socket the pull would deadlock.
       test(m"Cursor[Data].expect on a message's final byte does not refill"):
         class Live() extends Iterator[Data]:
+          // [stdlib-iterator] counter var in test Iterator subclass
           @scala.caps.unsafe.untrackedCaptures
           var pulls: Int = 0
           def hasNext: Boolean = true

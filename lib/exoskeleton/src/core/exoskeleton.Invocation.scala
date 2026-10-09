@@ -51,9 +51,11 @@ extends Cli, Stdio:
 
   export stdio.{termcap, out, err, in}
 
+  // [field-purity] argument-tracking vars in non-Stateful Invocation
   @scala.caps.unsafe.untrackedCaptures
   private var matchedArguments: List[Argument] = Nil
 
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   private var missingFlags: List[Flag] = Nil
 
@@ -63,6 +65,7 @@ extends Cli, Stdio:
   // The required flags which were not specified, in the order they were demanded.
   def missingRequisites: List[Flag] = missingFlags.reverse.distinct
 
+  // [field-purity] argument-tracking vars in non-Stateful Invocation
   @scala.caps.unsafe.untrackedCaptures
   private var faultedFlags: List[(Flag, Text)] = Nil
 

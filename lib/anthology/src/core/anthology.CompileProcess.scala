@@ -55,19 +55,24 @@ object CompileProcess:
 // `version` is the version of the compiler that ran, so a completed compilation can report what
 // produced its output without the caller keeping the compiler in hand.
 class CompileProcess(val version: Text):
+  // [field-purity] compile state var in non-Stateful CompileProcess
   @scala.caps.unsafe.untrackedCaptures
   private[anthology] var continue: Boolean = true
 
   private val completion: Promise[CompileResult] = Promise()
   private val relay: Relay[CompileProcess.Update] = Relay()
 
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   private var compilation: Optional[Task[Unit]] = Unset
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   private var errorCount: Int = 0
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   private var warningCount: Int = 0
   // Newest-first; reversed by the `notices` accessor.
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   private var noticeList: List[Notice] = Nil
 

@@ -62,6 +62,7 @@ object Alphabet:
 
     // Sealed: a Ductile is a stateless stage descriptor; instantiation freshens its
     // type arguments under capture checking, which the seal discards.
+    // [construction-fresh] stateless Ductile instance freshness sealed
     caps.unsafe.unsafeAssumePure:
      new Ductile:
       type Self = Alphabet[encoding]
@@ -74,6 +75,7 @@ object Alphabet:
       :   (Duct[Data, Text] { type Transport = Credit; type Upstream = Credit })^ =
 
         // hoisted: a constructor may not read the consumed (exclusive) descriptor
+        // [pump-overlap] consumed stage descriptor read by new Duct
         val alphabet = caps.unsafe.unsafeAssumePure(stage)
 
         new Duct[Data, Text]:
@@ -89,6 +91,7 @@ object Alphabet:
           // Character lookup table for the `2^base` data symbols, so the hot
           // loop indexes an array rather than re-reading the alphabet string.
           private val table: scala.Array[Char] =
+            // [anon-fresh-field] fresh lookup-table field in anonymous Duct
             caps.unsafe.unsafeAssumePure(scala.Array.tabulate(1 << base)(alphabet(_)))
 
           private var accumulator: Int = 0
@@ -190,6 +193,7 @@ object Alphabet:
     // raises through the given's resolution-scoped tactic, which shares the
     // instance's lifetime (the codec-thunk seal pattern); a fresh duct result may
     // hide only local state, not the enclosing given's parameter.
+    // [field-purity] ductile given seals resolution-scoped tactic
     caps.unsafe.unsafeAssumePure:
      // The tactic crosses into the fresh duct as a neutral reference: the duct
      // raises through the given's resolution-scoped tactic (the codec-thunk seal
@@ -207,6 +211,7 @@ object Alphabet:
       :   (Duct[Text, Data] { type Transport = Credit; type Upstream = Credit })^ =
 
         // hoisted: a constructor may not read the consumed (exclusive) descriptor
+        // [pump-overlap] consumed stage descriptor read by new Duct
         val alphabet = caps.unsafe.unsafeAssumePure(stage)
 
         new Duct[Text, Data]:

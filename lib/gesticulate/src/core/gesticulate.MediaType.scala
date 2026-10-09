@@ -60,6 +60,7 @@ object MediaType:
   // against pure expected types inside macro splices (see rep/DECISIONS.md).
   given decodable: (tactic: Tactic[MediaType.Error])
   =>  MediaType is Decodable in Text =
+    // [field-purity] given text decodable over resolution-scoped tactic
     caps.unsafe.unsafeAssumePure(Media.parse(_))
 
   def unapply(value: Text): Option[MediaType] = safely(Media.parse(value)).option

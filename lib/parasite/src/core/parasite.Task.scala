@@ -63,6 +63,7 @@ object Task:
     // The handle retains the monitor, probate and body — the declared result type says so —
     // but the fresh capability the new `Worker` instance itself constitutes cannot flow into
     // that set, so it is laundered away here, once, at the construction site.
+    // [construction-fresh] new Worker with Task handle laundered at construction
     scala.caps.unsafe.unsafeAssumePure:
       new Worker(codepoint, monitor, probate) with Task[result]:
         type Result = result
@@ -96,16 +97,20 @@ object Task:
   // interface demands — once, here, at the composition boundary. The capture is recoverable
   // bookkeeping: the tasks are bound and awaited within the same `Monitor` scope this given
   // requires.
+  // [field-purity] monad[Task] given captures resolution-scoped monitor
   given monad: (Monitor^, SharedProbate) => Monad[Task] = caps.unsafe.unsafeAssumePure:
     new Monad[Task]:
       // `Monad`'s lambdas are unrestricted; a task body may capture only shared capabilities, so
       // the façade asserts that of the lambda as it does purity of the handle.
       def bind[value, value2](value: Task[value])(lambda: value => Task[value2]): Task[value2] =
+        // [construction-fresh] fresh bound Task handle sealed for pure fa\u00e7ade
         caps.unsafe.unsafeAssumePure(value.bind(caps.unsafe.unsafeAssumePure(lambda)))
 
+      // [construction-fresh] fresh async Task handle sealed for pure fa\u00e7ade
       def point[value](value: value): Task[value] = caps.unsafe.unsafeAssumePure(async(value))
 
       def apply[value, value2](value: Task[value])(lambda: value => value2): Task[value2] =
+        // [construction-fresh] fresh mapped Task handle sealed for pure fa\u00e7ade
         caps.unsafe.unsafeAssumePure(value.map(caps.unsafe.unsafeAssumePure(lambda)))
 
   // The monadic form of `snooze`: a task which completes after the duration, for composition
@@ -120,6 +125,7 @@ object Task:
   extension [result](tasks: List[Task[result]])
     // Part of the pure façade (see `monad` above): the fresh handle is sealed once here.
     def sequence(using Monitor^, SharedProbate): Task[List[result]] emits Async.Error =
+      // [construction-fresh] fresh sequence Task handle sealed for pure fa\u00e7ade
       caps.unsafe.unsafeAssumePure(async(tasks.map(_.join())))
 
   extension [result](tasks: Iterable[Task[result]])

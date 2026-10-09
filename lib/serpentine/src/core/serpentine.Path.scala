@@ -284,6 +284,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   transparent inline def sameRoot(right: Path): Boolean = summonFrom:
     case plane: (Plane is Filesystem) =>
+      // [erased-evidence] erased UniqueRoot type test in inline match
       inline if caps.unsafe.unsafeErasedValue[plane.UniqueRoot] then true else root == right.root
 
     case _ =>
@@ -349,6 +350,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
     // A peer replaces the leaf, so the current leaf is dropped from the descent — mirroring
     // `child.type *: tail` at the type level.
+    // [erased-evidence] erased Topic value for inline type match
     inline caps.unsafe.unsafeErasedValue[Topic] match
       case _: (head *: tail) =>
         Path[Plane, Limit, child.type *: tail]

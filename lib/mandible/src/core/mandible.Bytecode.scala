@@ -1503,6 +1503,7 @@ case class Bytecode
       val callsite = bc.effectivelyStaticCalls
 
       // The budget counter is this walk's own local; no aliased writer.
+      // [closure-capture] each-lambda writes walk-local budget var
       scala.caps.unsafe.unsafeAssumeSeparate:
         bc.instructions.each: instr =>
           // The body itself spends the budget, so the bound is retested per element rather

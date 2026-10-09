@@ -119,6 +119,7 @@ object Pathname:
         // exactly as `~/` does; without this it would list the home directory's siblings.
         val directory = operand.ends(t"/") || operand == t"~"
         // Resolution runs under its own optional tactic; no aliased writer.
+        // [by-name-receiver] safely by-name resolution shares ambient tactic
         val prototype = scala.caps.unsafe.unsafeAssumeSeparate:
           workingDirectory.resolve(expand(operand))
         val showAll = tab > Prim || prototype.name.starts(t".")
@@ -149,6 +150,7 @@ object Pathname:
     // against the same argument (typically a `Subcommand`) must keep its suggestions.
     argument.suggest(Pathname.complete(argument(), argument.tab.or(Prim)) + prior)
 
+    // [by-name-receiver] safely by-name resolution shares ambient tactic
     scala.caps.unsafe.unsafeAssumeSeparate:
       safely(workingDirectory.resolve(expand(argument()))).option
 

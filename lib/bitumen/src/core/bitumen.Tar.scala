@@ -243,8 +243,10 @@ object Tar:
     // zero-padded, without regard to the incoming chunk boundaries.
     private[bitumen] def blocks512(chunks: Iterator[Data]): Iterator[Data] =
       new Iterator[Data]:
+        // [stdlib-iterator] re-blocking state in anonymous Iterator
         @scala.caps.unsafe.untrackedCaptures
         private var chunk: Data = Array.empty[Byte]
+        // [stdlib-iterator]
         @scala.caps.unsafe.untrackedCaptures
         private var offset: Int = 0
 
@@ -559,7 +561,9 @@ object Tar:
     // Reached only through this exclusive handle, which scopes it; its capture
     // of the underlying source is erased here, as the memoizing `LazyList` it
     // replaces erased it implicitly through its pure cells.
+    // [field-fresh-param] handle field erases fresh iterator parameter's capture
     @caps.unsafe.untrackedCaptures
+    // [field-fresh-param]
     val entries: Iterator[Tar.Entry] = caps.unsafe.unsafeAssumePure(entries0)
 
   object Handle:

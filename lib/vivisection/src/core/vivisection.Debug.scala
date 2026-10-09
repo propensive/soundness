@@ -85,6 +85,7 @@ object Debug:
 class Debug private[vivisection]
   ( connection: Jdwp.Connection, val console: Optional[Debug.Console] = Unset )
 extends caps.ExclusiveCapability:
+  // [field-purity] capabilities cache var in Debug
   @scala.caps.unsafe.untrackedCaptures
   private var capabilities0: Optional[Jdwp.Capabilities] = Unset
 
@@ -256,6 +257,7 @@ extends caps.ExclusiveCapability:
     // Laundered like the prepare handlers: the closure captures this session, which the
     // connection's registry cannot name, but it dies with it.
     val onStep: Halt => Unit =
+      // [registry-lifetime] step handler captures session; connection registry can't name it
       caps.unsafe.unsafeAssumePure: halt =>
         // The `Count(1)` request is spent the moment it fires; without this it would linger in
         // the VM's request table for the rest of the session.
@@ -311,6 +313,7 @@ extends caps.ExclusiveCapability:
     val location = connection.frames(thread, 0, 1).prim.let(_(1)).or:
       Jdwp.Location(Jdwp.TypeTag.Class, Jdwp.Ref.empty, Jdwp.Ref.empty, 0L)
 
+    // [construction-fresh] new Halt instance laundered at construction
     caps.unsafe.unsafeAssumePure
       ( new Halt(connection, thread, location, Halt.Cause.Stopped, Halt.Retention()) )
 
@@ -433,6 +436,7 @@ extends caps.ExclusiveCapability:
 
     // Laundered for the same reason as the source-position form above.
     val prepareHandler: Jdwp.Event.ClassPrepared => Unit =
+      // [registry-lifetime] prepare handler captures session; registry can't name it
       caps.unsafe.unsafeAssumePure: event =>
         val outcome: Optional[Unit] = safely[Debugger.Error]:
           entries(event.tag, event.cls).each(bind(_))
@@ -524,6 +528,7 @@ extends caps.ExclusiveCapability:
     // missed by both. Laundered: the handler captures this session, which the connection's
     // registry cannot name (see `Connection.PrepareSlot`), but it lives and dies with it.
     val prepareHandler: Jdwp.Event.ClassPrepared => Unit =
+      // [registry-lifetime] prepare handler captures session; registry can't name it
       caps.unsafe.unsafeAssumePure: event =>
         val outcome: Optional[Unit] = safely[Debugger.Error]:
           locateIn(event.tag, event.cls, source, line).each(bind(_))

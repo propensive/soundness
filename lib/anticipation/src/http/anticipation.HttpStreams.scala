@@ -43,6 +43,7 @@ object HttpStreams:
 
     // A whole-value body, delivered in `limit`-bounded slices.
     def apply(data: Array[Byte]^{}): Body = new Body:
+      // [field-purity] mutable position in anonymous Body
       @scala.caps.unsafe.untrackedCaptures
       private var position: Int = 0
 
@@ -61,6 +62,7 @@ object HttpStreams:
     // A chunked body from a lazy chain of chunks, forced one cell per call;
     // as above, `limit` cannot bound the chunks' own sizes.
     def apply(chain: Chain[Array[Byte]^{}]): Body = new Body:
+      // [field-purity] mutable position in anonymous Body
       @scala.caps.unsafe.untrackedCaptures
       private var remaining: Chain[Array[Byte]^{}] = chain
 

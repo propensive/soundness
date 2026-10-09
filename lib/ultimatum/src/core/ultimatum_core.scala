@@ -192,6 +192,7 @@ def conduct(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
   mode match
     case Occupancy.Fullscreen =>
       // The feature body and its terminal argument are the same single-owner session.
+      // [by-name-receiver] feature body and terminal argument share session
       scala.caps.unsafe.unsafeAssumeSeparate:
        profanity.terminalFeatures.alternateScreenFeature:
         // A buffered root: panels composite into its in-memory grid and each present

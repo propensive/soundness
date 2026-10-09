@@ -60,6 +60,7 @@ final class Surveyor[collection, brand, operand] @scala.annotation.publicInBinar
 
   // Untracked: the position is reached only through the surveyor, which the lender confines to
   // one lambda; `Stateful` would force capability typing onto a transient walker.
+  // [field-purity] walker position in non-Stateful surveyor
   @scala.caps.unsafe.untrackedCaptures
   private var mark0: Int = start
 

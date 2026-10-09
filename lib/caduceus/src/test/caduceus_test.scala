@@ -40,8 +40,10 @@ class TestCourier() extends Courier:
   type Result = Unit
 
   // Test-mock capture: `Courier.send` is read-only, so this recorder cannot be `Mutable`.
+  // [test-harness] mock courier recorder var; send is read-only
   @scala.caps.unsafe.untrackedCaptures
   var emails: List[Email] = Nil
+  // [test-harness]
   @scala.caps.unsafe.untrackedCaptures
   var envelopes: List[Envelope] = Nil
 

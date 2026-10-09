@@ -173,6 +173,7 @@ object Markup:
           // buffer, so the inferred `^{top.children}` is spurious; laundering it
           // lets the orphans outlive `top`. Splicing them into the parent while
           // they still captured `top.children` is what the checker refused.
+          // [construction-fresh] fresh toList copy spuriously captures top.children
           val orphans = scala.caps.unsafe.unsafeAssumePure(top.children.toList)
           stack = rest
           rest.stdlib.head.children ++= orphans

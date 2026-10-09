@@ -424,9 +424,11 @@ def streamOf(cursor: Cursor[Data, {}]^, delimiter: Cursor.Delimiter)
       // The carried bytes (at most `length - 1`), and the scratch they are joined in with
       // the start of the next region. Both are written only here and reached only through
       // this endpoint.
+      // [anon-fresh-field] fresh carry array in anonymous Stream
       @caps.unsafe.untrackedCaptures
       private val carry: scala.Array[Byte] = new scala.Array[Byte]((length - 1).max(0))
 
+      // [anon-fresh-field] fresh scratch array in anonymous Stream
       @caps.unsafe.untrackedCaptures
       private val joined: scala.Array[Byte] = new scala.Array[Byte]((2*length - 2).max(0))
 
@@ -590,6 +592,7 @@ def streamOf(expanse: Expanse^, offset: Long, length: Long)(using buffering: Buf
       // and reached only through this endpoint; it is never written through, and
       // the next refill replaces it wholesale (hence the pure placeholder
       // initial, as in the cursor-lending factory above).
+      // [abstract-storage] cast-erased storage region in anonymous Stream
       @caps.unsafe.untrackedCaptures
       private var storage: AnyRef = ""
       private var start0: Int = 0
@@ -629,8 +632,10 @@ private def chunkIterator[medium](consume stream: (Stream[medium] over Credit)^)
 
       // A stdlib class cannot extend `Stateful`, so its state is untracked
       // (the record-iterator precedent below).
+      // [stdlib-iterator] state var in anonymous Iterator
       @caps.unsafe.untrackedCaptures
       private var chunk: Optional[medium] = Unset
+      // [stdlib-iterator]
       @caps.unsafe.untrackedCaptures
       private var done: Boolean = false
 
@@ -667,14 +672,19 @@ private def recordIterator[record]
       // the refill contract (an unskipped region is reported, not extended).
       // A stdlib class cannot extend `Stateful`, so its state is untracked
       // (the `inputStream` adapter's precedent).
+      // [stdlib-iterator] storage var in anonymous record Iterator
       @caps.unsafe.untrackedCaptures
       private var storage: scala.Array[AnyRef] = new scala.Array[AnyRef](0)
+      // [stdlib-iterator] state var in anonymous record Iterator
       @caps.unsafe.untrackedCaptures
       private var index: Int = 0
+      // [stdlib-iterator]
       @caps.unsafe.untrackedCaptures
       private var limit: Int = 0
+      // [stdlib-iterator]
       @caps.unsafe.untrackedCaptures
       private var consumed: Int = 0
+      // [stdlib-iterator]
       @caps.unsafe.untrackedCaptures
       private var done: Boolean = false
 
@@ -718,6 +728,7 @@ private def throughDuct[in, out, upTransport, downTransport]
         duct.sizing(buffering).max(duct.quantum)
 
       // Untracked, cast-erased: reached only through this endpoint.
+      // [abstract-storage] abstract duct output Storage in anonymous Stream
       @caps.unsafe.untrackedCaptures
       private val storage: duct.output.Storage =
         duct.output.allocate(capacity).asInstanceOf[duct.output.Storage]
@@ -862,6 +873,7 @@ private def intakeThroughDuct[in, out, upTransport, downTransport]
 
       private val capacity: Int = buffering.capacity(duct.input.substrate)
       // Untracked, cast-erased: reached only through this endpoint.
+      // [abstract-storage] abstract duct input Storage in anonymous Intake
       @caps.unsafe.untrackedCaptures
       private val storage: duct.input.Storage =
         duct.input.allocate(capacity).asInstanceOf[duct.input.Storage]

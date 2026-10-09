@@ -45,6 +45,7 @@ object Loggable:
   // constitutes is laundered away here, once, so a silent logger is a pure value — storable in
   // a plain `val` or a package-level `given` (as `logging.silentLogging` is).
   def silent[event]: (event is Loggable)^{} =
+    // [construction-fresh] silent logger's fresh instance capability laundered
     caps.unsafe.unsafeAssumePure:
       new Loggable:
         type Self = event
@@ -108,5 +109,6 @@ trait Loggable extends Typeclass, Durable:
     def contramap[self2](lambda: self2 ->{caps.any.only[anticipation.Durable]} Self)
     :   (self2 is Loggable)^{this, lambda, caps.any} =
 
+      // [by-name-capture] contramap lambda laundered to pure function
       val lambda0: self2 -> Self = caps.unsafe.unsafeAssumePure(lambda)
       (level, timestamp, event) => loggable.log(level, timestamp, lambda0(event))

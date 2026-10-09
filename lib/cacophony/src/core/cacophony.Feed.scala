@@ -98,6 +98,7 @@ case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info) extends Device
 
     new Recording:
       type Domain = layout
+      // [field-purity] stopped flag in anonymous Recording
       @scala.caps.unsafe.untrackedCaptures
       private var stopped = false
 

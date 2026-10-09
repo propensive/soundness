@@ -270,6 +270,7 @@ object Tests extends Suite(m"Turbulence tests"):
               store.arrayBuffer.append(byte)
 
       class TextStore():
+        // [test-harness] test TextStore text var
         @scala.caps.unsafe.untrackedCaptures
         var text: Text = t""
         def apply(): Text = text
@@ -519,6 +520,7 @@ object Tests extends Suite(m"Turbulence tests"):
         supervise:
           val relay = Relay[Text]()
 
+          // [construction-fresh] fresh async producer handle sealed pure
           val producer = caps.unsafe.unsafeAssumePure:
             async:
               relay.put(t"a")
@@ -537,6 +539,7 @@ object Tests extends Suite(m"Turbulence tests"):
           // Handles collected for concurrent await: sealed per the pure-façade convention
           // (D6; the `Seq[Task].sequence` shape).
           val producers = (1 to 4).map: index =>
+            // [construction-fresh] fresh async producer handles sealed pure
             caps.unsafe.unsafeAssumePure:
               async:
                 for value <- 1 to 25 do relay.put(t"${index*100 + value}")
@@ -833,6 +836,7 @@ object Tests extends Suite(m"Turbulence tests"):
           // Handles collected for concurrent await: sealed per the pure-façade convention
           // (D6; the `Seq[Task].sequence` shape).
           val results = subscribers.map: stream =>
+            // [construction-fresh] fresh transfer task handles sealed pure
             caps.unsafe.unsafeAssumePure:
               (stream: (Stream[Data] over Credit)^).transfer: (stream, _, _) ?=>
                 val gather = Gather2()
@@ -859,6 +863,7 @@ object Tests extends Suite(m"Turbulence tests"):
           // Handles collected for concurrent await: sealed per the pure-façade convention
           // (D6; the `Seq[Task].sequence` shape).
           val results = subscribers.map: stream =>
+            // [construction-fresh] fresh transfer task handles sealed pure
             caps.unsafe.unsafeAssumePure:
               (stream: (Stream[Data] over Credit)^).transfer: (stream, _, _) ?=>
                 val gather = Gather2()
@@ -959,6 +964,7 @@ object Tests extends Suite(m"Turbulence tests"):
           val eager = subscribers(0)
           val stalled = subscribers(1)
 
+          // [construction-fresh] fresh transfer task handle sealed pure
           val taskA = caps.unsafe.unsafeAssumePure:
             (eager: (Stream[Data] over Credit)^).transfer: (eager, _, _) ?=>
               val gatheredA = Gather2().ingest(eager())

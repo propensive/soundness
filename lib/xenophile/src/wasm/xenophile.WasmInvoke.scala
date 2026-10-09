@@ -227,6 +227,7 @@ object WasmInvoke extends Materializer:
           while pairs.hasNext do
             val (element, field) = pairs.next()
             val (repr, decode) = decodeFor(element, field)
+            // [quote-wall] macro Expr decode function laundered
             val decode1: Expr[Any] -> Expr[Any] = caps.unsafe.unsafeAssumePure(decode)
             derivedBuffer += ((repr, decode1))
 

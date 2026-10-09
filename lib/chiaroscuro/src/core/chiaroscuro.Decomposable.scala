@@ -69,6 +69,7 @@ object Decomposable extends Decomposable2:
   =>  ( decomposable: => element is Decomposable )
   =>  collection is Decomposable =
 
+    // [field-purity] given codec retaining element decomposer; codec-thunk seal
     caps.unsafe.unsafeAssumePure: list =>
         Decomposition.Sequence(t"List", list.map(decomposable.decomposition(_)), list)
 
@@ -77,6 +78,7 @@ object Decomposable extends Decomposable2:
   =>  ( decomposable: => element is Decomposable )
   =>  collection is Decomposable =
 
+    // [field-purity]
     caps.unsafe.unsafeAssumePure: sequence =>
         val values: Sequence[Decomposition] = sequence.map(decomposable.decomposition(_))
         Decomposition.Sequence(t"Sequence", values.to[List], sequence)
@@ -85,6 +87,7 @@ object Decomposable extends Decomposable2:
   =>  ( decomposable: => element is Decomposable )
   =>  (Array[element]^{}) is Decomposable =
 
+    // [field-purity]
     caps.unsafe.unsafeAssumePure: iarray =>
         Decomposition.Sequence
           ( t"Array",

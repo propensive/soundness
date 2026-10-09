@@ -149,6 +149,7 @@ private[jacinta] object Parser:
     parser.resetData(source)
     parser.holes = false
     parser.numberMode = mode
+    // [registry-lifetime] result of pooled thread-local parser laundered
     caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parse(source: Data, holes: Boolean, mode: NumberMode): Raw raises Parse.Error =
@@ -157,6 +158,7 @@ private[jacinta] object Parser:
     parser.resetData(source)
     parser.holes = holes
     parser.numberMode = mode
+    // [registry-lifetime]
     caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parse(input: Iterator[Data], mode: NumberMode): Raw raises Parse.Error =
@@ -165,6 +167,7 @@ private[jacinta] object Parser:
     parser.resetIterator(input)
     parser.holes = false
     parser.numberMode = mode
+    // [registry-lifetime]
     caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parse(input: Iterator[Data], holes: Boolean, mode: NumberMode): Raw raises Parse.Error =
@@ -173,6 +176,7 @@ private[jacinta] object Parser:
     parser.resetIterator(input)
     parser.holes = holes
     parser.numberMode = mode
+    // [registry-lifetime]
     caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parseTracked(source: Data, mode: NumberMode = NumberMode.Full)
@@ -183,6 +187,7 @@ private[jacinta] object Parser:
     parser.resetData(source)
     parser.holes = false
     parser.numberMode = mode
+    // [registry-lifetime] result of pooled thread-local parser laundered
     val raw = caps.unsafe.unsafeAssumePure(parser.parse())
     (raw.asInstanceOf[Json.Ast], Json.PositionIndex(parser.rootIndex.nn))
 
@@ -194,6 +199,7 @@ private[jacinta] object Parser:
     parser.resetIterator(input)
     parser.holes = false
     parser.numberMode = mode
+    // [registry-lifetime] result of pooled thread-local parser laundered
     val raw = caps.unsafe.unsafeAssumePure(parser.parse())
     (raw.asInstanceOf[Json.Ast], Json.PositionIndex(parser.rootIndex.nn))
 
@@ -205,6 +211,7 @@ private[jacinta] object Parser:
     parser.resetStream(moved.asInstanceOf[(Stream[Data] over Credit)^])
     parser.holes = false
     parser.numberMode = mode
+    // [registry-lifetime] result of pooled thread-local parser laundered
     caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parseTracked(consume input: (Stream[Data] over Credit)^, mode: NumberMode)
@@ -217,6 +224,7 @@ private[jacinta] object Parser:
     parser.resetStream(moved.asInstanceOf[(Stream[Data] over Credit)^])
     parser.holes = false
     parser.numberMode = mode
+    // [registry-lifetime] result of pooled thread-local parser laundered
     val raw = caps.unsafe.unsafeAssumePure(parser.parse())
     (raw.asInstanceOf[Json.Ast], Json.PositionIndex(parser.rootIndex.nn))
 
@@ -584,6 +592,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // the parser), which the hidden-set check cannot see. Sealed before the cursor
     // binding hides the parser: the audited rim.
     val act: Cursor.Held -> result =
+      // [by-name-receiver] hold action captures parser owning the held cursor
       caps.unsafe.unsafeAssumePure((held: Cursor.Held) => action(using held))
     val current = cursor
     current.hold(act(summon[Cursor.Held]))

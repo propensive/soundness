@@ -196,6 +196,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
     // schema recursion, over itself), which share the instance's given-resolution lifetime;
     // the whole instance is laundered pure per the codec-thunk seal pattern (see
     // rep/DECISIONS.md).
+    // [field-purity] given decodable closing over two tactics
     caps.unsafe.unsafeAssumePure:
       Json.Decodable(Morphology.Any)(decodeSchema(_))
 
@@ -210,13 +211,17 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
     // Sealed pure: a capability-typed local would hide the tactic from every
     // subsequent statement (the statement rule); this whole decoder is already
     // sealed at the `decodable` given, which documents the honesty blockage.
+    // [field-purity] local codec given would hide tactic from statements
     given textDecodable: (Text is Json.Decodable) = caps.unsafe.unsafeAssumePure(Json.text)
+    // [field-purity]
     given intDecodable: (Int is Json.Decodable) = caps.unsafe.unsafeAssumePure(Json.int)
 
     given doubleDecodable: (Double is Json.Decodable) =
+      // [field-purity]
       caps.unsafe.unsafeAssumePure(Json.double)
 
     given booleanDecodable: (scala.Boolean is Json.Decodable) =
+      // [field-purity]
       caps.unsafe.unsafeAssumePure(Json.boolean)
 
     def field[value](name: Text)(using decodable: (value is Json.Decodable)^)
@@ -230,6 +235,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
     // The seals are consistent with (and no stronger than) the enclosing whole-instance seal on
     // `decodable`.
     val self: JsonSchema is Json.Decodable =
+      // [by-name-receiver] codec passed by-name aliases collection given's tactic
       caps.unsafe.unsafeAssumePure(Json.Decodable(Morphology.Any)(decodeSchema(_)))
 
     // A plain val, not the `textDecodable` given alias: a given alias re-evaluates its
@@ -237,14 +243,17 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
     val textDecodable0: Text is Json.Decodable = textDecodable
 
     val textList: List[Text] is Json.Decodable =
+      // [by-name-receiver] by-name codec thunk aliases tactic argument
       caps.unsafe.unsafeAssumePure
         (Json.listDecodable[List, Text](using jsonError, summon)(using textDecodable0))
 
     val schemaList: List[JsonSchema] is Json.Decodable =
+      // [by-name-receiver]
       caps.unsafe.unsafeAssumePure
         (Json.listDecodable[List, JsonSchema](using jsonError, summon)(using self))
 
     val schemaMap: Map[Text, JsonSchema] is Json.Decodable =
+      // [by-name-receiver]
       caps.unsafe.unsafeAssumePure
         (Json.map[Text, JsonSchema](using self)(using summon, jsonError))
 

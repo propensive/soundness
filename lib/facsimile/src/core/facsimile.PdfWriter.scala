@@ -79,6 +79,7 @@ private[facsimile] object PdfWriter:
         offsets(number) = length
         ascii(t"$number 0 obj\n")
         // The writer thunks share only this append pass's own accumulators.
+        // [by-name-receiver] writer thunk arguments share append accumulators
         scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value))
         ascii(t"\nendobj\n")
 
@@ -96,6 +97,7 @@ private[facsimile] object PdfWriter:
       pdf.trailerOverrides.at(key).or(pdf.trailer(key)).let: value =>
         ascii(t" /$key ")
         // The writer thunks share only this append pass's own accumulators.
+        // [by-name-receiver] writer thunk arguments share append accumulators
         scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value))
 
     ascii(t" >>\nstartxref\n$xrefOffset\n%%EOF\n")
@@ -135,6 +137,7 @@ private[facsimile] object PdfWriter:
         guard => encryptStrings(pdf.overlay(number), guard, number, generation)
 
       // The writer thunks share only this append pass's own accumulators.
+      // [by-name-receiver] writer thunk arguments share append accumulators
       scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value, encryption))
       ascii(t"\nendobj\n")
 
@@ -162,6 +165,7 @@ private[facsimile] object PdfWriter:
     // others reject outright.
     if pdf.xref.streamed
     // The writer thunks share only this append pass's own accumulators.
+    // [by-name-receiver] writer thunk arguments share append accumulators
     then scala.caps.unsafe.unsafeAssumeSeparate
           ( streamed(pdf, raw, ascii, xrefOffset, numbers, offsets, entries) )
     else
@@ -189,6 +193,7 @@ private[facsimile] object PdfWriter:
 
       entries.each: (key, value) =>
         ascii(t" /$key ")
+        // [by-name-receiver] writer thunk arguments share append accumulators
         scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value))
 
       pdf.xref.startxref.let: previous => ascii(t" /Prev $previous")
@@ -237,6 +242,7 @@ private[facsimile] object PdfWriter:
     entries.each: (key, value) =>
       ascii(t" /$key ")
       // The writer thunks share only this append pass's own accumulators.
+      // [by-name-receiver] writer thunk arguments share append accumulators
       scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value))
 
     pdf.xref.startxref.let: previous => ascii(t" /Prev $previous")
