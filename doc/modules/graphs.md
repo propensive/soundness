@@ -120,6 +120,37 @@ divisors.children(6)   // Set(2, 3)
 divisors.maxima        // Set(12)
 ```
 
+### Layering
+
+`layered` arranges a `Dag` for drawing: each node is assigned to a layer, dependencies above
+dependents, and the nodes within each layer are ordered to minimise the number of times the
+lines joining adjacent layers cross — the layered approach of Sugiyama, as Graphviz's `dot` draws
+it. An edge that spans more than one layer passes through a `Layering.Vertex.Virtual` in each
+layer between, so that every link in the result joins adjacent layers:
+
+```scala
+val layering = dag.layered
+
+layering.rank(2)          // 0: a node with no dependencies is in the first layer
+layering.rank(8)          // 2: two layers below, one per dependency on the longest path
+layering.layers(1)        // the vertices of the second layer, in their drawn order
+layering.links(0)         // the (upper, lower) positions joined between layers 0 and 1
+layering.crossings        // 0: no link crosses another
+```
+
+By default a node sits one layer below its deepest dependency, so every node without
+dependencies shares the first layer. Importing `rankings.balancedRanking` pulls each node with
+dependents down to the layer above its shallowest dependent instead, which shortens the long
+edge from a source that only feeds something deep:
+
+```scala
+import rankings.balancedRanking
+
+val deep = Dag(1 -> Set(), 5 -> Set(), 2 -> Set(1), 3 -> Set(2, 5))
+
+deep.layered.rank(5)      // 1: 5 feeds only 3, two layers down, so it sinks to the layer above
+```
+
 ### Drawing
 
 A `Dag` of text renders to DOT, ready for [Graphviz](https://graphviz.org/):

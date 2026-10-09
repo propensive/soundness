@@ -108,7 +108,10 @@ object Pty:
       link:               Text    = t"",
       scrollTop:          Ordinal = Prim,
       scrollBottom:       Ordinal = Prim,
-      pendingWrap:        Boolean = false )
+      pendingWrap:        Boolean = false,
+      mainScreen:         Optional[Screen[Style]] = Unset,
+      mainCursor:         Ordinal = Prim,
+      pending:            Text    = t"" )
 
 case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
   // The legacy view of the reply relay (the audited bridge).
@@ -120,7 +123,10 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
   def cursor: Ordinal = state.cursor
   def cursorVisible: Boolean = !state.hideCursor
 
-  def consume(input: Text): Pty raises Pty.Error =
+  // Output read from a terminal arrives in chunks, which may end partway through an escape
+  // sequence; the incomplete sequence is kept, as `pending`, and resumed by the next `consume`.
+  def consume(fresh: Text): Pty raises Pty.Error =
+    val input = if state.pending.nil then fresh else t"${state.pending}$fresh"
     val escBuffer = StringBuilder()
     val buffer2: Screen[Style] = buffer.copy()
 
@@ -132,6 +138,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
     var boundaryCursor: Int = 0
 
     var pendingWrap: Boolean = state.pendingWrap
+    var escapeStart: Int = 0
     var lastGrapheme: Grapheme = Grapheme(" ")
 
     object cursor:
@@ -174,9 +181,9 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
     var scrollBottom: Ordinal = state.scrollBottom
 
     enum Context:
-      case Normal, Escape, Csi, Csi2, Osc, Osc2, EatString, EatString2
+      case Normal, Escape, Csi, Csi2, Osc, Osc2, EatString, EatString2, Charset
 
-    import Context.{Normal, Escape, Csi, Csi2, Osc, Osc2, EatString, EatString2}
+    import Context.{Normal, Escape, Csi, Csi2, Osc, Osc2, EatString, EatString2, Charset}
 
     def wipe(cursor: Ordinal): Unit = buffer2.set(cursor, Grapheme(" "), style, link)
 
@@ -259,6 +266,25 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
     def detectFocus(value: Boolean): Unit = state2 = state2.copy(focusDetectionMode = value)
     def focus(value: Boolean): Unit = state2 = state2.copy(focus = value)
     def bcp(value: Boolean): Unit = state2 = state2.copy(bracketedPasteMode = value)
+
+    // The alternate screen, on which a full-screen program draws, leaving the main screen as it
+    // was when the program exits. The main screen is kept aside while the alternate one is shown;
+    // mode 1049 also saves and restores the cursor, as modes 47 and 1047 do not.
+    def alternateScreen(enter: Boolean, saveCursor: Boolean): Unit =
+      if enter then
+        if state2.mainScreen.absent then
+          state2 = state2.copy(mainScreen = buffer2.copy(), mainCursor = cursor())
+          for i <- 0 until buffer2.capacity do wipe(i.z)
+          if saveCursor then cursor() = Prim
+      else
+        state2.mainScreen.let: main =>
+          for i <- 0 until buffer2.capacity do
+            val x = (i%buffer2.width).z
+            val y = (i/buffer2.width).z
+            buffer2.set(x, y, main.grapheme(x, y), main.style(x, y), main.link(x, y))
+
+          if saveCursor then cursor() = state2.mainCursor
+          state2 = state2.copy(mainScreen = Unset)
 
     def writeGrapheme(grapheme: Grapheme): Unit =
       val w = grapheme.metrics
@@ -434,10 +460,16 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
       cursor() = Prim
       state2 = Pty.State(scrollBottom = scrollBottom)
 
+    // Besides the title and hyperlinks, shells send notifications which say nothing about what
+    // the screen shows — the working directory (7), prompt and command marks (133), the icon
+    // name (1), the clipboard (52) — and query the default colors (10, 11, 12), which a terminal
+    // need not answer. All of them are accepted and ignored.
     def osc(command: Text): Unit = command match
-      case r"8;([^;]*);$text(.*)" => setLink(text)
-      case r"0;$text(.*)"         => title(text)
-      case parameter              => raise(Pty.Error(BadOscParameter(parameter)))
+      case r"8;([^;]*);$text(.*)"                 => setLink(text)
+      case r"[02];$text(.*)"                      => title(text)
+      case r"(1|7|52|133)(;.*)?"                  => ()
+      case r"1[012];\?"                           => ()
+      case parameter                              => raise(Pty.Error(BadOscParameter(parameter)))
 
     import Style.{Bit, Foreground, Background}, Bit.*
 
@@ -499,18 +531,41 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
           case _                    => (default, default)
 
     def privateMode(params: Text, char: Char): Unit = (params, char) match
-      case (t"?25",   'h') => dectcem(true)
-      case (t"?25",   'l') => dectcem(false)
-      case (t"?1004", 'h') => detectFocus(true)
-      case (t"?1004", 'l') => detectFocus(false)
-      case (t"?2004", 'h') => bcp(true)
-      case (t"?2004", 'l') => bcp(false)
-      case (_, 'h' | 'l')  => () // unknown DEC private modes are silently ignored
-      case _               => raise(Pty.Error(BadCsiCommand(params, char)))
+      case (t"?1049", 'h')            => alternateScreen(true, true)
+      case (t"?1049", 'l')            => alternateScreen(false, true)
+      case (t"?1047" | t"?47", 'h')   => alternateScreen(true, false)
+      case (t"?1047" | t"?47", 'l')   => alternateScreen(false, false)
+      case (t"?25",   'h')            => dectcem(true)
+      case (t"?25",   'l')            => dectcem(false)
+      case (t"?1004", 'h')            => detectFocus(true)
+      case (t"?1004", 'l')            => detectFocus(false)
+      case (t"?2004", 'h')            => bcp(true)
+      case (t"?2004", 'l')            => bcp(false)
+      case (_, 'h' | 'l')             => () // unknown DEC private modes are silently ignored
+      case (t"?", 'u')                => () // a kitty keyboard protocol query, left unanswered
+      case _                          => raise(Pty.Error(BadCsiCommand(params, char)))
+
+    // Sequences with a `>`, `=` or `<` prefix configure or query the keyboard (modifyOtherKeys,
+    // the kitty keyboard protocol) or ask for the terminal's version; none affects the screen, and
+    // only the secondary device attributes are answered.
+    def extended(params: Text, char: Char): Unit = char match
+      case 'c' if params.starts(t">")  => secondaryDa()
+      case 'm' | 'q' | 'u' | 'n' | 't' => ()
+      case _                           => raise(Pty.Error(BadCsiCommand(params, char)))
+
+    // Sequences with intermediate bytes: the cursor's shape (`SP q`) and a query of a mode's state
+    // (`$ p`), neither of which affects the screen.
+    def intermediate(params: Text, char: Char): Unit =
+      if params.ends(t" ") && char == 'q' || params.ends(t"$$") && char == 'p' then ()
+      else raise(Pty.Error(BadCsiCommand(params, char)))
 
     def csi(params: Text, char: Char): Unit =
-      if params.starts(t"?") then privateMode(params, char) else char match
-        case 'm' => sgr(parseInts(params))
+      if params.starts(t"?") && !params.ends(t"$$") then privateMode(params, char)
+      else if params.starts(t">") || params.starts(t"=") || params.starts(t"<")
+      then extended(params, char)
+      else if params.ends(t" ") || params.ends(t"$$") then intermediate(params, char)
+      else char match
+        case 'm' => sgr(if params.nil then List(0) else parseInts(params))
         case 'A' => cuu(parseInt(params, 1))
         case 'B' => cud(parseInt(params, 1))
         case 'C' => cuf(parseInt(params, 1))
@@ -518,6 +573,10 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
         case 'E' => cnl(parseInt(params, 1))
         case 'F' => cpl(parseInt(params, 1))
         case 'G' => cha(parseInt(params, 1).u)
+        case 'd' => cursor.y = parseInt(params, 1).u
+        case 't' => () // window manipulation: there is no window to manipulate
+        case 'h' => () // ANSI modes, such as insertion, are not supported
+        case 'l' => ()
         case 'J' => ed(parseInt(params, 0))
         case 'K' => el(parseInt(params, 0))
         case 'S' => su(parseInt(params, 1))
@@ -621,9 +680,11 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
       // The presence of a character at `index` is the loop's bounds check; past the end of
       // the input, the walk is complete.
       input(index.z).lay:
+        val pending = if context == Normal then t"" else input.segment(escapeStart.z till index.z)
+
         Pty(buffer2,
             state2.copy(cursor = cursor(), style = style, link = link, scrollTop = scrollTop,
-                scrollBottom = scrollBottom, pendingWrap = pendingWrap),
+                scrollBottom = scrollBottom, pendingWrap = pendingWrap, pending = pending),
             output = output)
 
       . apply: current =>
@@ -657,7 +718,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
               case '\u0018' => proceed(Normal) // can()
               case '\u0019' => proceed(Normal) // em()
               case '\u001a' => proceed(Normal) // sub()
-              case '\u001b' => proceed(Escape)
+              case '\u001b' => escapeStart = index; proceed(Escape)
               case '\u001c' => proceed(Normal) // fs()
               case '\u001d' => proceed(Normal) // gs()
               case '\u001e' => proceed(Normal) // rs()
@@ -676,11 +737,17 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
               case 'E'                   => nel(); proceed(Normal)
               case 'M'                   => ri(); proceed(Normal)
               case 'N' | 'O'             => proceed(Normal) // SS2 / SS3 — charset not supported
+              case '=' | '>'             => proceed(Normal) // keypad modes affect only input
+              case '(' | ')' | '*' | '+' => proceed(Charset) // designates a character set
               case '\\'                  => proceed(Normal) // bare ST is ignored
 
               case char =>
                 raise(Pty.Error(BadFeEscape(char)))
                 proceed(Normal)
+
+          // The character set designated is ignored: only the default is supported.
+          case Charset =>
+            proceed(Normal)
 
           case EatString =>
             current match

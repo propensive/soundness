@@ -107,6 +107,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   def edges: Set[(node, node)] = edgeMap.to(Set).flatMap: (key, values) => values.map(key -> _)
   def closure: Dag[node] = Dag(keys.map { k => k -> (reach(k) - k) }.to(Map))
   def sorted: List[node] raises Dag.Error = sort(edgeMap, Nil).reverse
+  def layered(using ranking: Ranking): Layering[node] raises Dag.Error = Layering(this, ranking)
   def hasCycle(start: node): Boolean raises Dag.Error = findCycle(start).isDefined
 
   def remove(key: node, value: node): Dag[node] =

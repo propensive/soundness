@@ -2185,7 +2185,7 @@ object exoskeleton extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
-  object rig extends Internal(completions, manpage, superlunary.core, ethereal.core, anthology.linker, quantitative.units):
+  object rig extends Internal(completions, manpage, superlunary.core, ethereal.core, anthology.linker, quantitative.units, yossarian.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def mvnDeps =
@@ -2399,7 +2399,7 @@ object graffiti extends Library:
       settings.sep(super.scalacOptions())
 
 object guillotine extends Library:
-  object core extends Component(turbulence.core, ambience.core, contextual.core, parasite.core):
+  object core extends Component(turbulence.core, ambience.core, contextual.core, parasite.core, aperture.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
