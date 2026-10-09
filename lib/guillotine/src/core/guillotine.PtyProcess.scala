@@ -36,11 +36,11 @@ import java.io as ji
 import java.lang.foreign as jlf
 import java.lang.invoke as jli
 import java.util.concurrent as juc
-import java.util.concurrent.atomic as juca
 
 import scala.annotation.tailrec
-import scala.caps
 import scala.language.experimental.pureFunctions
+
+import rudiments.*
 
 // The handful of POSIX calls a pseudo-terminal needs, bound through the foreign function API. The
 // constants which differ between platforms are chosen for macOS or for Linux (glibc) at runtime.
@@ -49,9 +49,9 @@ private[guillotine] object PtyProcess:
   // reading: a descriptor number is reused as soon as it is closed, so a second `close`, or a read
   // racing a `close`, could reach some unrelated file.
   class Descriptor(val fd: Int):
-    private val done = juca.AtomicBoolean(false)
-    def closed: Boolean = done.get
-    def close(): Unit = if done.compareAndSet(false, true) then PtyProcess.close(fd)
+    private val done: Atomic[Boolean] = Atomic(false)
+    def closed: Boolean = done()
+    def close(): Unit = if !done.ere(true) then PtyProcess.close(fd)
 
   val BufferSize: Int = 8192
   val Chunks: Int = 256
@@ -220,7 +220,7 @@ private[guillotine] object PtyProcess:
     ( pid:    Int,
       master: Descriptor,
       chunks: juc.BlockingQueue[scala.IArray[Byte]],
-      stop:   juca.AtomicBoolean )
+      stop:   Atomic[Boolean] )
   :   Thread =
 
     Thread.ofPlatform().nn.daemon().nn.name("guillotine-pty-pump-"+pid).nn.start: () =>
@@ -233,11 +233,11 @@ private[guillotine] object PtyProcess:
 
       @tailrec
       def enqueue(bytes: scala.IArray[Byte]): Unit =
-        if !stop.get && !chunks.offer(bytes, Patience.toLong, juc.TimeUnit.MILLISECONDS)
+        if !stop() && !chunks.offer(bytes, Patience.toLong, juc.TimeUnit.MILLISECONDS)
         then enqueue(bytes)
 
       @tailrec
-      def recur(): Unit = if !stop.get then
+      def recur(): Unit = if !stop() then
         val ready = (poll.invokeExact(state, descriptor, 1L, Patience): Int)
 
         if ready == 0 || ready < 0 && errorNumber(state) == Interrupted then recur()
@@ -395,7 +395,7 @@ private[guillotine] class PtyProcess private (processId: Int, master: PtyProcess
 extends java.lang.Process:
   private val exit: juc.CompletableFuture[Integer] = juc.CompletableFuture[Integer]().nn
   private val chunks = juc.ArrayBlockingQueue[scala.IArray[Byte]](PtyProcess.Chunks)
-  private val stop = juca.AtomicBoolean(false)
+  private val stop: Atomic[Boolean] = Atomic(false)
   private val pump: Thread = PtyProcess.pump(processId, master, chunks, stop)
 
   // `waitpid` blocks, so it runs on a thread of its own rather than on whichever thread first asks
@@ -404,10 +404,11 @@ extends java.lang.Process:
     exit.complete(Integer.valueOf(PtyProcess.await(processId)))
 
   private lazy val input: ji.InputStream = new ji.InputStream:
-    // A JDK class cannot extend `Stateful`; its state is confined to this stream, behind its lock.
-    @caps.unsafe.untrackedCaptures private var chunk: scala.IArray[Byte] = scala.IArray[Byte]()
-    @caps.unsafe.untrackedCaptures private var position: Int = 0
-    @caps.unsafe.untrackedCaptures private var ended: Boolean = false
+    // A JDK class cannot extend `Stateful`, so its state is held in atomic cells rather than
+    // `var`s; it is only ever read and written behind this stream's lock.
+    private val chunk: Atomic.Ref[scala.IArray[Byte]] = Atomic.Ref(scala.IArray[Byte]())
+    private val position: Atomic[Int] = Atomic(0)
+    private val ended: Atomic[Boolean] = Atomic(false)
 
     override def read(): Int =
       val bytes = scala.Array[Byte](0)
@@ -415,18 +416,20 @@ extends java.lang.Process:
 
     override def read(bytes: scala.Array[Byte] | Null, offset: Int, length: Int): Int =
       synchronized:
-        if !ended && length > 0 && position == chunk.length then
-          chunk = chunks.take().asInstanceOf[scala.IArray[Byte]]
-          position = 0
-          ended = chunk.length == 0
+        if !ended() && length > 0 && position() == chunk().length then
+          val next = chunks.take().asInstanceOf[scala.IArray[Byte]]
+          chunk() = next
+          position() = 0
+          ended() = next.length == 0
 
-        if length == 0 then 0 else if ended then -1 else
-          val count = Math.min(length, chunk.length - position)
-          System.arraycopy(chunk.asInstanceOf[AnyRef], position, bytes, offset, count)
-          position += count
+        if length == 0 then 0 else if ended() then -1 else
+          val current = chunk()
+          val count = Math.min(length, current.length - position())
+          System.arraycopy(current.asInstanceOf[AnyRef], position(), bytes, offset, count)
+          position() = position() + count
           count
 
-    override def available(): Int = synchronized(chunk.length - position)
+    override def available(): Int = synchronized(chunk().length - position())
 
   private lazy val output: ji.OutputStream = new ji.OutputStream:
     private val buffer = jlf.Arena.ofAuto().nn.allocate(PtyProcess.BufferSize.toLong).nn
@@ -457,7 +460,7 @@ extends java.lang.Process:
         PtyProcess.signal(processId, PtyProcess.Kill)
         waitFor()
 
-    stop.set(true)
+    stop() = true
 
     try pump.join() catch case _: InterruptedException => Thread.currentThread().nn.interrupt()
 
