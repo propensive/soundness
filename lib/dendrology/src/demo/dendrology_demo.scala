@@ -39,6 +39,7 @@ import environments.javaBaseEnvironment
 import stdios.fileDescriptorStdio
 import strategies.throwUnsafely
 import termcaps.environmentTermcap
+import textMetrics.uniformMetric
 
 @main
 def laneDemo(): Unit =
