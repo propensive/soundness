@@ -49,7 +49,7 @@ export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum,
 // checking and fail to retypecheck.
 extension [in, transport](consume stream: (Stream[in] over transport)^)
   def via[stage](consume stage: stage^)
-    ( using ductile: (stage is Ductile by in) { type Upstream = transport },
+    ( using ductile: ((stage is Ductile by in) { type Upstream = transport })^,
             buffering: Buffering )
   :   (Stream[ductile.Result] over ductile.Transport)^ =
     // The call's dependent result widens to a `Ductile{...}#Result` projection rather than
@@ -60,7 +60,7 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
 
 extension [out, transport](consume intake: (Intake[out] over transport)^)
   def accepting[stage](consume stage: stage^)
-    ( using ductile: (stage is Ductile to out) { type Transport = transport },
+    ( using ductile: ((stage is Ductile to out) { type Transport = transport })^,
             buffering: Buffering )
   :   (Intake[ductile.Operand] over ductile.Upstream)^ =
     // See `via` above.

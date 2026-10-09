@@ -52,8 +52,7 @@ object JsonPointer extends Root(""):
   type Plane = JsonPointer
 
   given navigable: [ordinal <: Ordinal] => ordinal is Navigable on JsonPointer =
-    // `(ordinal: Ordinal)` widens the singleton-bounded parameter (case-2 pure-value box).
-    ordinal => (ordinal: Ordinal).n0.show
+    ordinal => ordinal.n0.show
   given admissible: [ordinal <: Ordinal] => ordinal is Admissible on JsonPointer = _ => ()
   given admissible2: [text <: Text] => text is Admissible on JsonPointer = _ => ()
 

@@ -153,7 +153,7 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
     descent.prim.let: prior => parent / lambda(using prior.aka["prior"])
 
   private inline def check[topic, filesystem](path: List[Text]): Unit =
-    inline !![topic] match
+    inline scala.compiletime.erasedValue[topic] match
       case _: (head *: tail) =>
         path match
           case first :: rest =>
@@ -180,7 +180,7 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
 
   inline def unqualified: Relative of Topic under Limit = this
 
-  transparent inline def parent = inline !![Topic] match
+  transparent inline def parent = inline scala.compiletime.erasedValue[Topic] match
     case head *: tail =>
       descent match
         case _ :: rest => Relative[Plane, tail.type, Limit](ascent, rest*)

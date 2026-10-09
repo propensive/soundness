@@ -115,6 +115,7 @@ object Dsv extends Dsv2:
     // separation failure under a tracked tactic. The `optionalityOptions` policies vary
     // either side: a strict absence raises `Absent`, and lenient faults decode the cell under
     // `tactic.tolerate`.
+    // [field-purity] row decoder given seals resolution-scoped tactic
     caps.unsafe.unsafeAssumePure:
       row =>
         if row.data.length == 0 then
@@ -152,30 +153,35 @@ object Dsv extends Dsv2:
   // rep/DECISIONS.md).
   given int: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Int is Decodable in Dsv =
+    // [field-purity] cell decoder given retains resolution-scoped tactic
     caps.unsafe.unsafeAssumePure: dsv =>
       decodeCell(dsv, t"Int", 0): cell =>
         safely(cell.as[Int])
 
   given long: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Long is Decodable in Dsv =
+    // [field-purity]
     caps.unsafe.unsafeAssumePure: dsv =>
       decodeCell(dsv, t"Long", 0L): cell =>
         safely(cell.as[Long])
 
   given double: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Double is Decodable in Dsv =
+    // [field-purity]
     caps.unsafe.unsafeAssumePure: dsv =>
       decodeCell(dsv, t"Double", 0.0): cell =>
         safely(cell.as[Double])
 
   given float: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Float is Decodable in Dsv =
+    // [field-purity]
     caps.unsafe.unsafeAssumePure: dsv =>
       decodeCell(dsv, t"Float", 0.0f): cell =>
         safely(cell.as[Float])
 
   given boolean: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Boolean is Decodable in Dsv =
+    // [field-purity]
     caps.unsafe.unsafeAssumePure: dsv =>
       decodeCell(dsv, t"Boolean", false): cell =>
         cell.s match
@@ -185,10 +191,12 @@ object Dsv extends Dsv2:
 
   given text: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Text is Decodable in Dsv =
+    // [field-purity] cell decoder given retains resolution-scoped tactic
     caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"Text", t"")(cell => cell)
 
   given string: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  String is Decodable in Dsv =
+    // [field-purity]
     caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"String", "")(cell => cell.s)
 
   inline given decodableDerivation: [value <: Product: ProductReflection]
@@ -226,6 +234,7 @@ object Dsv extends Dsv2:
   given aggregableParsed: [value] => (parsable: value is Dsv.Parsable)
   =>  ( format: Dsv.Format, tactic: Tactic[Dsv.Error], buffering: Buffering )
   =>  ((value in Dsv) is Aggregable by Text) =
+    // [field-purity] aggregable given retains parsable and tactic
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
         type Self = value in Dsv
@@ -243,6 +252,7 @@ object Dsv extends Dsv2:
   given aggregableParsedList: [value] => (parsable: value is Dsv.Parsable)
   =>  ( format: Dsv.Format, tactic: Tactic[Dsv.Error], buffering: Buffering )
   =>  ((List[value] in Dsv) is Aggregable by Text) =
+    // [field-purity] aggregable given retains parsable and tactic
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
         type Self = List[value] in Dsv
@@ -309,6 +319,7 @@ object Dsv extends Dsv2:
     // `Optional` fields. Sealed per the codec-thunk pattern.
     given decodable: [value] => (decodable: (value is Decodable in Text)^)
     =>  value is Dsv.Field =
+      // [field-purity] field given retains captured decodable
       caps.unsafe.unsafeAssumePure:
         new Field:
           type Self = value
@@ -320,6 +331,7 @@ object Dsv extends Dsv2:
     =>  ( absence: Decodable.Absence in Dsv, fault: Decodable.Fault in Dsv )
     =>  ( field: => inner is Dsv.Field )
     =>  value is Dsv.Field =
+      // [by-name-capture] by-name field codec sealed into instance
       caps.unsafe.unsafeAssumePure:
         new Field:
           type Self = value

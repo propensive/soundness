@@ -54,6 +54,7 @@ object ScrollFixture:
     ( content: => scala.List[Teletype] )
   :   ScrollFixture =
 
+    // [by-name-capture] by-name content laundered to pure thunk
     new ScrollFixture(caps.unsafe.unsafeAssumePure { () => content }, track, thumb)
 
 // A VIEWPORT over content taller than the space offered to render it: the fixture holds
@@ -71,23 +72,28 @@ class ScrollFixture(content: () -> scala.List[Teletype], track: Text, thumb: Tex
 extends Focus:
 
   // A no-op until the fixture is bound into a running form; see `bindWake`.
+  // [field-purity] wake callback var in ScrollFixture
   @scala.caps.unsafe.untrackedCaptures
   private var wakeForm: () -> Unit = () => ()
 
   // `Unset` = docked to the bottom, tracking growth.
+  // [field-purity] offset var in ScrollFixture
   @scala.caps.unsafe.untrackedCaptures
   private var offset0: Optional[Int] = Unset
 
   // The content length and viewport height most recently rendered, for clamping scroll
   // requests that arrive between paints.
+  // [field-purity] lastLength var in ScrollFixture
   @scala.caps.unsafe.untrackedCaptures
   private var lastLength: Int = 0
+  // [field-purity] lastViewport var in ScrollFixture
   @scala.caps.unsafe.untrackedCaptures
   private var lastViewport: Int = 0
 
   // As in `TableFixture.bindWake`: the callback captures the running form's event loop and
   // escapes into this longer-lived fixture, re-bound on every run.
   override private[ultimatum] def bindWake(wake: () => Unit): Unit =
+    // [field-purity] form wake callback escapes into fixture field
     wakeForm = caps.unsafe.unsafeAssumePure(wake)
 
   def refresh(): Unit = wakeForm()

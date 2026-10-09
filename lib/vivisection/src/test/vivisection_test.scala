@@ -191,7 +191,9 @@ object Tests extends Suite(m"Vivisection tests"):
     val session = DapSession: json =>
       client.let(_.enqueue(json))
 
+    // [test-harness] test client wires session handler as pure callback
     val handle: Json => Unit = scala.caps.unsafe.unsafeAssumePure(session.handle(_))
+    // [construction-fresh] fresh test DapClient instance laundered
     val live = scala.caps.unsafe.unsafeAssumePure(DapClient(handle))
     client = live
 

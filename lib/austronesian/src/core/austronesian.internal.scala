@@ -180,6 +180,7 @@ object internal:
 
       // The by-name element codec and resolution-scoped tactic share this instance's
       // given-resolution lifetime; laundered pure (the codec-thunk seal pattern).
+      // [by-name-capture] by-name element codec sealed into derived given
       caps.unsafe.unsafeAssumePure:
         case array: scala.Array[Pojo @unchecked] =>
           factory.newBuilder.pipe: builder =>

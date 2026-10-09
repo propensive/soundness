@@ -234,6 +234,7 @@ object Protobuf extends Protobuf2:
   =>  (tactic: Tactic[Protobuf.Error])
   =>  ((value in Protobuf) is Aggregable by Data) =
 
+    // [field-purity] given Aggregable retaining parsable and tactic
     caps.unsafe.unsafeAssumePure:
       bytes => parseDirect(bytes.read[Data], parsable).asInstanceOf[value in Protobuf]
 
@@ -246,6 +247,7 @@ object Protobuf extends Protobuf2:
   =>  (tactic: Tactic[Protobuf.Error])
   =>  (Data is Readable to (value in Protobuf)) =
 
+    // [field-purity] given Readable retaining parsable and tactic
     caps.unsafe.unsafeAssumePure:
       data => parseDirect(data, parsable).asInstanceOf[value in Protobuf]
 

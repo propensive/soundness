@@ -55,7 +55,7 @@ trait Xml2 extends Xml3:
   =>  ( ((value in Xml) is Aggregable by Data)^{tactic, xmlTactic} ) =
 
     input =>
-      Xml.XmlParser.fromDataChain(input).parseXml(headers0 = false).as[value]
+      Xml.XmlParser.fromDataChain(input).parseXml(keepHeader = false).as[value]
       . asInstanceOf[value in Xml]
 
   given aggregableInText: [value: Decodable in Xml]
@@ -64,5 +64,5 @@ trait Xml2 extends Xml3:
   =>  ( ((value in Xml) is Aggregable by Text)^{tactic, xmlTactic} ) =
 
     input =>
-      Xml.XmlParser.fromChain(input).parseXml(headers0 = false).as[value]
+      Xml.XmlParser.fromChain(input).parseXml(keepHeader = false).as[value]
       . asInstanceOf[value in Xml]

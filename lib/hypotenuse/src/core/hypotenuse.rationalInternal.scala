@@ -721,8 +721,9 @@ object rationalInternal:
     final val Max: Q64 = q64(encodeFraction(0x7ffffffeL, 1L, Budget64))
     final val Min: Q64 = q64(Max | Long.MinValue)
 
+    // [erased-evidence] underlying evidence for Q64
     inline given underlying: Underlying[Q64, Long] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[Q64, Q64] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[Q64, Q64] = CanEqual.derived
 
     // `Q64` dealiases to `Long` here, so arrays of it — as `mosquito`'s `Matrix` builds —
     // are primitive `long[]`s.
@@ -1047,8 +1048,9 @@ object rationalInternal:
     final val Max: Q32 = q32(encodeFraction(0x7ffeL, 1L, Budget32).toInt)
     final val Min: Q32 = q32(Max | Int.MinValue)
 
+    // [erased-evidence] underlying evidence for Q32
     inline given underlying: Underlying[Q32, Int] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[Q32, Q32] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[Q32, Q32] = CanEqual.derived
 
     // `Q32` dealiases to `Int` here, so arrays of it are primitive `int[]`s.
     given classTag: ClassTag[Q32] = summon[ClassTag[Int]].asInstanceOf[ClassTag[Q32]]

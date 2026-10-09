@@ -77,7 +77,7 @@ object Fqcn:
     val builder = StringBuilder()
 
     parts.iterate(parts.extent.capped(count)): index =>
-      if (index: Ordinal) != Prim then builder.append(".")
+      if index != Prim then builder.append(".")
       builder.append(parts.at(index).s)
 
     builder.toString.tt

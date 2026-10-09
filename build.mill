@@ -1312,6 +1312,12 @@ object acyclicity extends Library:
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
+  object bench extends Benchmarks(core, quantitative.units):
+    // The rivals are the two mainstream JVM graph libraries, written as their own users write
+    // them; both are mutable, which is why a mutable candidate sits beside the persistent ones.
+    def mvnDeps = Seq
+      ( mvn"org.jgrapht:jgrapht-core:1.5.2",
+        mvn"com.google.guava:guava:33.4.8-jre" )
 
 object adversaria extends Library:
   // `panopticon.core` so the generated field accessors are `Lens`es — read/write and composable —

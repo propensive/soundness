@@ -286,6 +286,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         // chunk here stands in for a later response that must stay unread.
         test(m"Bodiless response head does not read past the final CRLF"):
           class Live() extends Iterator[Data]:
+            // [stdlib-iterator] counter var in test Iterator subclass
             @scala.caps.unsafe.untrackedCaptures
             var pulls: Int = 0
             def hasNext: Boolean = true
@@ -424,6 +425,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       for blockSize <- blockSizes do
         test(m"fixedBody reads exactly N bytes at block size $blockSize"):
           val cursor = Cursor[Data](chunks(t"hello world", blockSize).stdlib.iterator)
+          // [pump-overlap] body stream consumes cursor in test
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.fixedBody(cursor, 5).memoize.utf8
 
@@ -431,8 +433,10 @@ object Tests extends Suite(m"Telekinesis tests"):
 
         test(m"fixedBody leaves the cursor after the body at block size $blockSize"):
           val cursor = Cursor[Data](chunks(t"hello world", blockSize).stdlib.iterator)
+          // [pump-overlap] body stream consumes cursor, cursor read after
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.fixedBody(cursor, 5).memoize
+          // [pump-overlap] cursor read again after body consumed it
           scala.caps.unsafe.unsafeAssumeSeparate:
             cursor.remainder.read[Data].utf8
 
@@ -441,6 +445,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         test(m"chunkedBody decodes chunks at block size $blockSize"):
           val fixture = t"5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n"
           val cursor = Cursor[Data](chunks(fixture, blockSize).stdlib.iterator)
+          // [pump-overlap] chunked body consumes cursor in test
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.chunkedBody(cursor).memoize.utf8
 
@@ -449,8 +454,10 @@ object Tests extends Suite(m"Telekinesis tests"):
         test(m"chunkedBody leaves the cursor after the body at block size $blockSize"):
           val fixture = t"3\r\nabc\r\n0\r\n\r\nNEXT"
           val cursor = Cursor[Data](chunks(fixture, blockSize).stdlib.iterator)
+          // [pump-overlap] chunked body consumes cursor, cursor read after
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.chunkedBody(cursor).memoize
+          // [pump-overlap] cursor read again after body consumed it
           scala.caps.unsafe.unsafeAssumeSeparate:
             cursor.remainder.read[Data].utf8
 

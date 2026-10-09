@@ -952,6 +952,7 @@ object stagedInternal:
     '{
       // Sealed per the codec-thunk pattern: the generated body resolves its
       // capabilities where it is spliced.
+      // [quote-wall] generated Parsable sealed inside quote
       caps.unsafe.unsafeAssumePure:
         new Cbor.Parsable.Direct[value]:
           protected def parseCarrier(reader0: AnyRef): value =

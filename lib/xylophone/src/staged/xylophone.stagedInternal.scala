@@ -1240,6 +1240,7 @@ object stagedInternal:
       // Sealed per the codec-thunk pattern, like the staged instances: the
       // generated body resolves its capabilities at the read site, through
       // the reader.
+      // [quote-wall] staged Parsable generated inside quote
       caps.unsafe.unsafeAssumePure:
         new Xml.Parsable.Direct[value]:
           protected def parseCarrier(reader0: AnyRef): value =

@@ -852,6 +852,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
               // Overlap false positive: the action closure mentions the enclosing
               // tool/command capabilities alongside the fresh tmux session.
+              // [by-name-receiver] tmux action closure captures enclosing tool/command capabilities
               scala.caps.unsafe.unsafeAssumeSeparate:
                 Shell.Bash.tmux():
                   Tmux.enter(t"$command cooked")
@@ -867,6 +868,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
               // Overlap false positive: the action closure mentions the enclosing
               // tool/command capabilities alongside the fresh tmux session.
+              // [by-name-receiver] tmux action closure captures enclosing tool/command capabilities
               scala.caps.unsafe.unsafeAssumeSeparate:
                 Shell.Bash.tmux():
                   Tmux.enter(t"$command cooked")
@@ -883,6 +885,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
               // Overlap false positive: the action closure mentions the enclosing
               // tool/command capabilities alongside the fresh tmux session.
+              // [by-name-receiver] tmux action closure captures enclosing tool/command capabilities
               scala.caps.unsafe.unsafeAssumeSeparate:
                 Shell.Bash.tmux():
                   Tmux.enter(t"$command cooked")
@@ -901,6 +904,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
               // Overlap false positive: the action closure mentions the enclosing
               // tool/command capabilities alongside the fresh tmux session.
+              // [by-name-receiver] tmux action closure captures enclosing tool/command capabilities
               scala.caps.unsafe.unsafeAssumeSeparate:
                 Shell.Bash.tmux():
                   Tmux.enter(t"$command concealed")
@@ -919,6 +923,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             test(m"a command runs on the client's terminal and its status comes back"):
               sh"$tool echo probe".exec[Unit]()
 
+              // [by-name-receiver] tmux action closure captures enclosing tool/command capabilities
               scala.caps.unsafe.unsafeAssumeSeparate:
                 Shell.Bash.tmux():
                   Tmux.enter(t"$command terminal 'echo from-child; exit 3'")
@@ -932,6 +937,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             test(m"a command on the terminal reads the terminal, not the session"):
               sh"$tool echo probe".exec[Unit]()
 
+              // [by-name-receiver] tmux action closure captures enclosing tool/command capabilities
               scala.caps.unsafe.unsafeAssumeSeparate:
                 Shell.Bash.tmux():
                   Tmux.enter(t"$command terminal 'read word; echo got-$$word'")
@@ -948,6 +954,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
               // Overlap false positive: the action closure mentions the enclosing
               // tool/command capabilities alongside the fresh tmux session.
+              // [by-name-receiver] tmux action closure captures enclosing tool/command capabilities
               scala.caps.unsafe.unsafeAssumeSeparate:
                 Shell.Bash.tmux():
                   Tmux.enter(t"$command cat")

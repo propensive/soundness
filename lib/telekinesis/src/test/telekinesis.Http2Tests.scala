@@ -348,6 +348,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
           val client = Http2.Connection(clientSide)
           val serverStarted = async(server.start())
           client.start()
+          // [test-harness] test awaits server task alongside client
           scala.caps.unsafe.unsafeAssumeSeparate:
             serverStarted.await()
 
@@ -387,6 +388,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
           val client = Http2.Connection(clientSide)
           val serverStarted = async(server.start())
           client.start()
+          // [test-harness] test awaits server task alongside client
           scala.caps.unsafe.unsafeAssumeSeparate:
             serverStarted.await()
 
@@ -462,6 +464,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
           val client = Http2.Connection(clientSide)
           val serverStarted = async(server.start())
           client.start()
+          // [test-harness] test awaits server task alongside client
           scala.caps.unsafe.unsafeAssumeSeparate:
             serverStarted.await()
 
@@ -507,6 +510,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
           val client = Http2.Connection(clientSide, window = 4096)
           val serverStarted = async(server.start())
           client.start()
+          // [test-harness] test awaits server task alongside client
           scala.caps.unsafe.unsafeAssumeSeparate:
             serverStarted.await()
 
@@ -585,6 +589,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
           val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]), t"/upload",
               Nil, () => Stream(payload))
 
+          // [test-harness] test async fetch over shared client
           val fetched = scala.caps.unsafe.unsafeAssumeSeparate:
             async:
               val (_, response) = client.fetch(request, t"http", t"unix")

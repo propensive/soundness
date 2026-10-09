@@ -53,6 +53,7 @@ trait Focus extends Fixture:
 // wrapped rows its current value occupies, so an editor that grows past one line
 // pushes the rest of the layout down.
 class EditorField(initial: LineEditor = LineEditor()) extends Focus:
+  // [field-purity] editor var in non-Stateful EditorField
   @scala.caps.unsafe.untrackedCaptures
   private var editor: LineEditor = initial
 
@@ -75,6 +76,7 @@ class EditorField(initial: LineEditor = LineEditor()) extends Focus:
 // A focusable wrapping a `SelectMenu`. Its intrinsic height is one row per
 // option.
 class MenuField[item: Showable](initial: SelectMenu[item]) extends Focus:
+  // [field-purity] menu var in non-Stateful MenuField
   @scala.caps.unsafe.untrackedCaptures
   private var menu: SelectMenu[item] = initial
 

@@ -244,6 +244,7 @@ object Tests extends Suite(m"Perihelion tests"):
       // frame behind the peer's next transmission (issue #1301).
       test(m"An empty control frame parses without reading past its end"):
         class Live() extends Iterator[Data]:
+          // [stdlib-iterator] counter in test Iterator subclass
           @scala.caps.unsafe.untrackedCaptures
           var pulls: Int = 0
           def hasNext: Boolean = true

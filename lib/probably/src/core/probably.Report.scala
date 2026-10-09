@@ -142,6 +142,7 @@ object Report:
 // The insertion-ordered, mutex-guarded map of report lines within one suite node.
 class TestsMap():
   private val mutex: Mutex = Mutex()
+  // [field-purity] mutex-guarded ledger var in non-Stateful TestsMap
   @scala.caps.unsafe.untrackedCaptures
   private var tests: Ledger[Test.Id, ReportLine] = Ledger()
 
@@ -174,6 +175,7 @@ final class Report():
   // The sink is a PURE function (`->`): `Report` appears as a pure type throughout the
   // `Inclusion` machinery, so it may not retain a capability — and a real sink (writing
   // through a host's untracked `OutputStream` under a `Mutex`) satisfies purity naturally.
+  // [field-purity] pure sink var on pure-typed Report
   @scala.caps.unsafe.untrackedCaptures
   private var sink: Optional[TestEvent -> Unit] = Unset
 
@@ -181,8 +183,10 @@ final class Report():
 
   private[probably] def emit(event: => TestEvent): Unit = sink.let(_(event))
 
+  // [field-purity] plain var on pure-typed Report
   @scala.caps.unsafe.untrackedCaptures
   private var failure0: Optional[(Throwable, Set[Test.Id])] = Unset
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   private var pass: Boolean = false
 

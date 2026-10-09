@@ -127,6 +127,7 @@ object GarbageCollection:
 
             // The listener is registered with the JVM and only retained here to deregister it later;
             // laundering it to pure keeps that bookkeeping list out of the capture-checked world.
+            // [registry-lifetime] listener registered with JVM, kept only to deregister
             List(emitter -> caps.unsafe.unsafeAssumePure(listener))
 
           case _ =>

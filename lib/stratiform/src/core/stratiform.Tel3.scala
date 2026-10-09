@@ -61,6 +61,7 @@ trait Tel3 extends Tel4:
     case given (`value` is distillate.Decodable in Text) =>
       // Laundered pure per the codec-thunk seal pattern (see rep/DECISIONS.md):
       // the parser closes over the resolution-scoped text codec.
+      // [field-purity] codec-thunk seal over resolution-scoped text codec
       caps.unsafe.unsafeAssumePure:
         Tel.Field(Tel.textCodecParsable[value])
 
@@ -68,5 +69,6 @@ trait Tel3 extends Tel4:
       Tel.ParsableDerivation.derived
 
     case given (`value` is Tel.Decodable) =>
+      // [field-purity] codec-thunk seal over resolution-scoped decodable
       caps.unsafe.unsafeAssumePure:
         Tel.Field(Tel.Parsable.fromDecodable(infer[`value` is Tel.Decodable]))

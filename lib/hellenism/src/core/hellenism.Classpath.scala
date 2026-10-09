@@ -88,6 +88,7 @@ object Classpath extends Root(t""):
 
     // Built over `throwUnsafely` (unscoped, merely throws) and the pure classloader, so the
     // instance retains no scoped capability; laundered pure (the codec-thunk seal pattern).
+    // [field-purity] given streamable codec, codec-thunk seal
     caps.unsafe.unsafeAssumePure:
       given Tactic[Truncation.Error] = strategies.throwUnsafely
 
@@ -98,6 +99,7 @@ object Classpath extends Root(t""):
   =>  path is Streamable by Data over Credit =
 
     // See `streamable` above; laundered pure for the same reason.
+    // [field-purity] given streamable codec, codec-thunk seal
     caps.unsafe.unsafeAssumePure:
       given Tactic[Truncation.Error] = strategies.throwUnsafely
 
@@ -132,6 +134,7 @@ object Classpath extends Root(t""):
 
     // The loader's only capture is the read view of the freshly-built URL array, laundered
     // here.
+    // [java-boundary] uRL array passed to Java URLClassLoader
     scala.caps.unsafe.unsafeAssumePure:
       delegation match
         case Classloader.Delegation.Deferential => new jn.URLClassLoader(urls, parent)

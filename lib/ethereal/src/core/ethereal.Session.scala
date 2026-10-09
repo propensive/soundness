@@ -99,8 +99,11 @@ object Session:
 // so to the launcher, in halves of the window rather than per chunk, to halve the chatter.
 class SessionInput(stream: Text, credit: Long -> Unit) extends ji.InputStream:
   private val chunks: ju.ArrayDeque[Data] = ju.ArrayDeque()
+  // [field-purity] offset var in InputStream subclass, not Stateful
   @caps.unsafe.untrackedCaptures private var offset: Int = 0
+  // [field-purity] ended flag in InputStream subclass, not Stateful
   @caps.unsafe.untrackedCaptures private var ended: Boolean = false
+  // [field-purity] consumed counter in InputStream subclass, not Stateful
   @caps.unsafe.untrackedCaptures private var consumed: Long = 0L
 
   def push(bytes: Data): Unit = synchronized:
@@ -211,7 +214,9 @@ class Session
   private val outbox: Object = Object()
   private val control: ju.ArrayDeque[Data] = ju.ArrayDeque()
   private val data: ju.ArrayDeque[Data] = ju.ArrayDeque()
+  // [field-purity] closing flag in non-Stateful Session
   @caps.unsafe.untrackedCaptures private var closing: Boolean = false
+  // [field-purity] dead flag in non-Stateful Session
   @caps.unsafe.untrackedCaptures private var dead: Boolean = false
 
   def send(message: Message): Unit = enqueue(Launcher.encode(message), priority = true)
@@ -257,6 +262,7 @@ class Session
   // ── Credit for the streams the daemon sends ─────────────────────────────────────────────
 
   private val credits: ju.HashMap[Text, Long] = ju.HashMap()
+  // [field-purity] launcherGone flag in non-Stateful Session
   @caps.unsafe.untrackedCaptures private var launcherGone: Boolean = false
 
   private def openCredit(stream: Text): Unit = credits.synchronized:
@@ -290,6 +296,7 @@ class Session
   private val outputs: scc.TrieMap[Text, SessionOutput] = scc.TrieMap()
 
   private def input(stream: Text): SessionInput =
+    // [field-purity] credit callback over session stored in stream's field
     val credit: Long -> Unit = caps.unsafe.unsafeAssumePure(count => send(Message.Credit(stream, count)))
     val stream0 = SessionInput(stream, credit)
     inputs(stream) = stream0
@@ -297,8 +304,10 @@ class Session
 
   private def output(stream: Text): SessionOutput =
     openCredit(stream)
+    // [field-purity] allowance callback over session stored in stream's field
     val allowance0: Int -> Int = caps.unsafe.unsafeAssumePure(want => allowance(stream, want))
     val emit: Data -> Unit =
+      // [field-purity] emit callback over session stored in stream's field
       caps.unsafe.unsafeAssumePure(chunk => enqueue(Launcher.encode(Message.Data(stream, chunk)), priority = false))
 
     val stream0 = SessionOutput(stream, allowance0, emit)

@@ -42,6 +42,7 @@ case class QPerson(name: Text, email: Text) derives CanEqual
 case class QTeam(leader: QPerson, title: Text) derives CanEqual
 
 object QProbe:
+  // [test-harness] test probe counter var in object
   @scala.caps.unsafe.untrackedCaptures
   var constructions: Int = 0
 

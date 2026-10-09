@@ -37,6 +37,7 @@ import rudiments.*
 
 object Hours:
   given designation: Designation[Hours[1]] = () => "h".tt
-  inline given ratio: Ratio[Seconds[1] & Hours[-1], 3600.0] = !!
+  erased given ratio: Ratio[Seconds[1] & Hours[-1], 3600.0] =
+    Ratio.Evidence[Seconds[1] & Hours[-1], 3600.0]()
 
 trait Hours[Power <: Nat] extends Units[Power, Time]

@@ -44,6 +44,7 @@ case class AContact(person: APerson, company: Text) derives CanEqual
 case class APair(width: Int, height: Int) derives CanEqual
 
 object TProbe:
+  // [test-harness] test probe construction counter var
   @scala.caps.unsafe.untrackedCaptures
   var constructions: Int = 0
 

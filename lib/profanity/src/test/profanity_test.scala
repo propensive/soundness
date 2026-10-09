@@ -142,6 +142,7 @@ object Tests extends Suite(m"Profanity Tests"):
 
         // Overlap false positive: the action closure mentions the enclosing
         // tool capability alongside the fresh tmux session.
+        // [test-harness] tmux action closure mentions tool and fresh session
         scala.caps.unsafe.unsafeAssumeSeparate:
           Bash.tmux():
             val tool = summon[Enclave.Tool].command
@@ -200,6 +201,7 @@ object Tests extends Suite(m"Profanity Tests"):
           test(m"submits correct text after wrap and backspace"):
             // Overlap false positive: the action closure mentions the enclosing
             // tool capability alongside the fresh tmux session.
+            // [test-harness] tmux action closure mentions tool and fresh session
             scala.caps.unsafe.unsafeAssumeSeparate:
               Bash.tmux(width = 20, height = 10):
                 val tool = summon[Enclave.Tool].command
@@ -216,6 +218,7 @@ object Tests extends Suite(m"Profanity Tests"):
           test(m"backspace clears characters wrapped onto the next visual line"):
             // Overlap false positive: the action closure mentions the enclosing
             // tool capability alongside the fresh tmux session.
+            // [test-harness] tmux action closure mentions tool and fresh session
             scala.caps.unsafe.unsafeAssumeSeparate:
               Bash.tmux(width = 20, height = 10):
                 val tool = summon[Enclave.Tool].command
@@ -241,6 +244,7 @@ object Tests extends Suite(m"Profanity Tests"):
           test(m"select-menu draws a wrapping option without ghost rows"):
             // Overlap false positive: the action closure mentions the enclosing
             // tool capability alongside the fresh tmux session.
+            // [test-harness] tmux action closure mentions tool and fresh session
             scala.caps.unsafe.unsafeAssumeSeparate:
               Bash.tmux(width = 20, height = 12):
                 val tool = summon[Enclave.Tool].command

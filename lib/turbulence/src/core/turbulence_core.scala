@@ -164,6 +164,7 @@ extension (consume stream: (Stream[Data] over Credit)^)
 
     new ji.InputStream:
       // A JDK class cannot extend `Stateful`; the flag is this adapter's only state.
+      // [field-purity] ended flag in JDK InputStream adapter
       @caps.unsafe.untrackedCaptures
       private var ended: Boolean = false
 
@@ -383,8 +384,11 @@ extension (stream: Chain[Data])
 
   def inputStream: ji.InputStream = new ji.InputStream:
     // A JDK adapter, not a capability class: its staging slots are untracked.
+    // [field-purity] staging var in JDK InputStream adapter
     @caps.unsafe.untrackedCaptures private var current: Chain[Data] = stream
+    // [field-purity]
     @caps.unsafe.untrackedCaptures private var offset: Int = 0
+    // [field-purity]
     @caps.unsafe.untrackedCaptures private var focus: Data = Array.empty[Byte].asInstanceOf[Data]
 
     override def available(): Int =

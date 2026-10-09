@@ -74,12 +74,13 @@ object internal:
     final val Min: F64 = Double.MinValue
     final val Max: F64 = Double.MaxValue
 
+    // [erased-evidence] underlying evidence for F64
     inline given underlying: Underlying[F64, Double] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual
       [ F64, F64 | S64 | S32 | S16 | S8 | Double | Long | Int | Short | Byte ] =
 
-      caps.unsafe.unsafeErasedValue
+      CanEqual.derived
 
     inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B64): F64 = F64:
       (if sign then Long.MinValue else 0L) | ((exponent & 0xffL) << 52) |
@@ -185,12 +186,13 @@ object internal:
     final val Min: F32 = Float.MinValue
     final val Max: F32 = Float.MaxValue
 
+    // [erased-evidence] underlying evidence for F32
     inline given underlying: Underlying[F32, Float] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual
       [ F32, F32 | S64 | S32 | S16 | S8 | Float | Long | Int | Short | Byte ] =
 
-      caps.unsafe.unsafeErasedValue
+      CanEqual.derived
 
     inline given orderable: F32 is Orderable:
       inline def compare
@@ -239,8 +241,9 @@ object internal:
     final val Min: U64 = 0L
     final val Max: U64 = -1L
 
+    // [erased-evidence] underlying evidence for U64
     inline given underlying: Underlying[U64, Long] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[U64, U64] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U64, U64] = CanEqual.derived
 
     given fromDigits: FromDigits[U64]:
       inline def fromDigits(digits: String): U64 = ${hypotenuse.protointernal.parseU64('digits)}
@@ -268,12 +271,13 @@ object internal:
     final val Min: U64 = Long.MinValue
     final val Max: U64 = Long.MaxValue
 
+    // [erased-evidence] underlying evidence for S64
     inline given underlying: Underlying[S64, Long] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual[S64, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long |
       Int | Short | Byte] =
 
-      caps.unsafe.unsafeErasedValue
+      CanEqual.derived
 
     given fromDigits: FromDigits[S64]:
       inline def fromDigits(digits: String): S64 = ${hypotenuse.protointernal.parseS64('digits)}
@@ -298,8 +302,9 @@ object internal:
     final val Min: U32 = Int.MinValue
     final val Max: U32 = Int.MaxValue
 
+    // [erased-evidence] underlying evidence for U32
     inline given underlying: Underlying[U32, Int] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[U32, U32] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U32, U32] = CanEqual.derived
 
     given fromDigits: FromDigits[U32]:
       inline def fromDigits(digits: String): U32 = ${hypotenuse.protointernal.parseU32('digits)}
@@ -327,12 +332,13 @@ object internal:
     final val Min: S32 = Int.MinValue
     final val Max: S32 = Int.MaxValue
 
+    // [erased-evidence] underlying evidence for S32
     inline given underlying: Underlying[S32, Int] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual[S32, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long |
       Int | Short | Byte] =
 
-      caps.unsafe.unsafeErasedValue
+      CanEqual.derived
 
     given fromDigits: FromDigits[S32]:
       inline def fromDigits(digits: String): S32 = ${hypotenuse.protointernal.parseS32('digits)}
@@ -357,8 +363,9 @@ object internal:
     final val Min: S16 = 0
     final val Max: S16 = -1
 
+    // [erased-evidence] underlying evidence for U16
     inline given underlying: Underlying[U16, Short] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[U16, U16] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U16, U16] = CanEqual.derived
 
     given fromDigits: FromDigits[U16]:
       inline def fromDigits(digits: String): U16 = ${hypotenuse.protointernal.parseU16('digits)}
@@ -386,13 +393,14 @@ object internal:
     final val Min: S16 = Short.MinValue
     final val Max: S16 = Short.MaxValue
 
+    // [erased-evidence] underlying evidence for S16
     inline given underlying: Underlying[S16, Short] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual[S16,
                                     F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int |
                                       Short | Byte] =
 
-      caps.unsafe.unsafeErasedValue
+      CanEqual.derived
 
     given fromDigits: FromDigits[S16]:
       inline def fromDigits(digits: String): S16 = ${hypotenuse.protointernal.parseS16('digits)}
@@ -420,8 +428,9 @@ object internal:
     final val Min: U8 = 0
     final val Max: U8 = -1
 
+    // [erased-evidence] underlying evidence for U8
     inline given underlying: Underlying[U8, Byte] = caps.unsafe.unsafeErasedValue
-    inline given canEqual: CanEqual[U8, U8] = caps.unsafe.unsafeErasedValue
+    inline given canEqual: CanEqual[U8, U8] = CanEqual.derived
 
     given fromDigits: FromDigits[U8]:
       inline def fromDigits(digits: String): U8 = ${hypotenuse.protointernal.parseU8('digits)}
@@ -449,12 +458,13 @@ object internal:
     final val Min: S8 = Byte.MinValue
     final val Max: S8 = Byte.MaxValue
 
+    // [erased-evidence] underlying evidence for S8
     inline given underlying: Underlying[S8, Byte] = caps.unsafe.unsafeErasedValue
 
     inline given canEqual: CanEqual[S8, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long |
       Int | Short | Byte] =
 
-      caps.unsafe.unsafeErasedValue
+      CanEqual.derived
 
     given fromDigits: FromDigits[S8]:
       inline def fromDigits(digits: String): S8 = ${hypotenuse.protointernal.parseS8('digits)}
@@ -476,6 +486,7 @@ object internal:
         else inline if strict then (left: Byte) < (right: Byte) else (left: Byte) <= (right: Byte)
 
   object B64:
+    // [erased-evidence] underlying evidence for B64
     inline given underlying: Underlying[B64, Long] = caps.unsafe.unsafeErasedValue
 
     inline def block(inline n: Int): B64 = (1L << n) - 1
@@ -510,6 +521,7 @@ object internal:
       b64
 
   object B32:
+    // [erased-evidence] underlying evidence for B32
     inline given underlying: Underlying[B32, Int] = caps.unsafe.unsafeErasedValue
 
     inline def block(inline n: Int): B32 = (1 << n) - 1
@@ -531,6 +543,7 @@ object internal:
       b32
 
   object B16:
+    // [erased-evidence] underlying evidence for B16
     inline given underlying: Underlying[B16, Short] = caps.unsafe.unsafeErasedValue
 
     inline def block(inline n: Int): B16 = ((1 << n) - 1).toShort
@@ -550,6 +563,7 @@ object internal:
       b16.toShort
 
   object B8:
+    // [erased-evidence] underlying evidence for B8
     inline given underlying: Underlying[B8, Byte] = caps.unsafe.unsafeErasedValue
 
     inline def block(inline n: Int): B8 = ((1 << n) - 1).toByte
