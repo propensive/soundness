@@ -437,6 +437,98 @@ object Tests extends Suite(m"Guillotine tests"):
         proc.await(2000L)
       . assert(_ == ())
 
+    suite(m"Pseudoterminals"):
+      test(m"a command on a pseudo-terminal finds a terminal"):
+        sh"sh -c '[ -t 0 ] && [ -t 1 ] && [ -t 2 ] && echo terminal'".pty().exec[Text]().trim
+      . assert(_ == t"terminal")
+
+      test(m"the pseudo-terminal is a device"):
+        sh"tty".pty().exec[Text]().s.startsWith("/dev/")
+      . assert(_ == true)
+
+      test(m"the pseudo-terminal has the requested size"):
+        sh"stty size".pty(100, 30).exec[Text]().trim
+      . assert(_ == t"30 100")
+
+      test(m"standard error is written to the pseudo-terminal"):
+        sh"sh -c 'echo err 1>&2'".pty().exec[Text]().trim
+      . assert(_ == t"err")
+
+      test(m"the exit status of a command on a terminal is reported"):
+        sh"sh -c 'exit 3'".pty().exec[Exit]()
+      . assert(_ == Exit.Fail(3))
+
+      test(m"output written before a quick exit is not lost"):
+        sh"echo hello".pty().session: terminal ?=>
+          terminal.attend()
+          terminal.text().trim
+      . assert(_ == t"hello")
+
+      test(m"text typed at the terminal reaches the command"):
+        sh"head -n 1".pty().session: terminal ?=>
+          t"hi\r".writeTo(terminal)
+          terminal.text().s.replace("\r", "").nn.trim.nn.tt
+      . assert(_ == t"hi\nhi")
+
+      test(m"the end-of-file character ends a read from the terminal"):
+        sh"cat".pty().session: terminal ?=>
+          terminal.stdin(Stream(Data(104, 105, 13, 4)))
+          terminal.await()
+      . assert(_ == Exit.Ok)
+
+      test(m"a resized terminal reports its new size"):
+        sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
+          terminal.resize(132, 50)
+          Data(13).writeTo(terminal)
+          terminal.text().trim
+      . assert(_ == t"50 132")
+
+      test(m"a command on a terminal can be killed"):
+        sh"sleep 10".pty().session: terminal ?=>
+          terminal.kill()
+          terminal.exitStatus()
+      . assert(_ == Exit.Fail(137))
+
+      test(m"a session hangs up on a command still running at its end"):
+        val pid: Long = sh"sleep 30".pty().session: terminal ?=>
+          terminal.pid.value
+
+        ProcessHandle.of(pid).nn.isPresent
+      . assert(_ == false)
+
+      test(m"a session ends its command when its block throws"):
+        val pids = scala.collection.mutable.ListBuffer[Long]()
+
+        try sh"sleep 30".pty().session: terminal ?=>
+          pids += terminal.pid.value
+          throw Exception("abandoned")
+        catch case _: Exception => ()
+
+        pids.toList.map(ProcessHandle.of(_).nn.isPresent)
+      . assert(_ == List(false))
+
+      test(m"a session ends though a background job holds the terminal"):
+        // The background `sleep` ignores the hang-up and keeps the terminal open after `sh` exits,
+        // so the terminal's output never ends; the session must end without waiting for it.
+        val start = java.lang.System.nanoTime
+        sh"sh -c '(trap \"\" HUP; sleep 5) & echo started'".pty().session: terminal ?=>
+          terminal.attend()
+
+        (java.lang.System.nanoTime - start)/1_000_000L < 3000L
+      . assert(_ == true)
+
+      test(m"interrupting a command run directly on a terminal stops it"):
+        // `^C` reaches a program only through its terminal's foreground process group, which the
+        // terminal has only if it is the program's controlling terminal.
+        sh"cat".pty().session: terminal ?=>
+          Data(3).writeTo(terminal)
+          terminal.exitStatus()
+      . assert(_ == Exit.Fail(130))
+
+      test(m"a missing command on a terminal raises Exec.Error"):
+        capture[Exec.Error](sh"definitely-not-a-binary-xyz".pty().exec[Text]())
+      . assert(_.command.arguments.head == t"definitely-not-a-binary-xyz")
+
     suite(m"Stdin and stderr"):
       test(m"pipe Chain[Data] into stdin"):
         val proc = sh"cat".fork[Text]()

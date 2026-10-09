@@ -2185,7 +2185,7 @@ object exoskeleton extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
-  object rig extends Internal(completions, manpage, superlunary.core, ethereal.core, anthology.linker, quantitative.units):
+  object rig extends Internal(completions, manpage, superlunary.core, ethereal.core, anthology.linker, quantitative.units, yossarian.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def mvnDeps =
@@ -2399,7 +2399,7 @@ object graffiti extends Library:
       settings.sep(super.scalacOptions())
 
 object guillotine extends Library:
-  object core extends Component(turbulence.core, ambience.core, contextual.core, parasite.core):
+  object core extends Component(turbulence.core, ambience.core, contextual.core, parasite.core, aperture.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -3325,6 +3325,11 @@ object stratiform extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, base256, binaryStaged, staged, optics, time, http, duplex,
       eucalyptus.core, galilei.jvm)
+  // The capture-checked twin of `test`: a derived TEL codec is only exercised under `-Ycc-new`
+  // by a consumer compiled that way (#2197), and `test` is not yet sep-clean.
+  object checked extends Tests(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
   object bench extends Benchmarks(core, base256, binaryStaged, quantitative.units,
       hellenism.core, ambience.core):
     // Not yet checked: the suite object holds its exclusive payload arrays as fields, which

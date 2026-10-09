@@ -54,6 +54,99 @@ object Tests extends Suite(m"Yossarian Tests"):
       pty.output.stop()
       pty.stream.to[List].join
 
+    // A fixture from `res/test/yossarian/shells`: what a shell wrote to its terminal while a short
+    // script was typed at it, captured over a guillotine pseudo-terminal, or the screen tmux showed
+    // after replaying that transcript, as an independent judgement of how it should render.
+    def fixture(name: Text): Text =
+      val stream = getClass.getResourceAsStream(s"/yossarian/shells/$name").nn
+      Text(String(stream.readAllBytes().nn, "UTF-8"))
+
+    // The screen as tmux's `capture-pane` shows it: trailing spaces and blank lines removed.
+    def captured(pty: Pty): Text =
+      val lines = pty.buffer.render.cut(t"\n").map: line =>
+        Text(line.s.replaceAll(" +$", "").nn)
+
+      Text(lines.join(t"\n").s.replaceAll("\n+$", "").nn)
+
+    suite(m"Shell transcripts"):
+      for shell <- List(t"bash", t"zsh", t"fish", t"pwsh") do
+        test(m"$shell's output renders as tmux renders it"):
+          captured(Pty(80, 24).consume(fixture(t"$shell.transcript")))
+        . assert(_ == fixture(t"$shell.screen").trim)
+
+    suite(m"Sequences real shells send"):
+      test(m"an escape sequence split between two chunks is resumed"):
+        val pty = fresh.consume(t"A$Esc[3").consume(t"1mB")
+        (row(pty, Prim), pty.buffer.style(Sec, Prim).foreground)
+      . assert(_ == (t"AB        ", Chroma(222, 056, 043)))
+
+      test(m"an escape split just after ESC is resumed"):
+        row(fresh.consume(t"A$Esc").consume(t"[2CB"), Prim)
+      . assert(_ == t"A  B      ")
+
+      test(m"an OSC split between chunks sets the title"):
+        fresh.consume(t"$Esc]0;Sh").consume(t"ell${Bel}X").title
+      . assert(_ == t"Shell")
+
+      test(m"the transcripts render alike however they are divided"):
+        List(t"bash", t"zsh", t"fish", t"pwsh").map: shell =>
+          val whole = fixture(t"$shell.transcript")
+          val chunks = whole.s.grouped(7).to(List)
+          val pty = chunks.foldLeft(Pty(80, 24))((pty, chunk) => pty.consume(Text(chunk)))
+          captured(pty) == captured(Pty(80, 24).consume(whole))
+      . assert(_ == List(true, true, true, true))
+
+      test(m"SGR with no parameters resets the style"):
+        val pty = fresh.consume(t"$Esc[1mX$Esc[mY")
+        (pty.buffer.style(Prim, Prim).bold, pty.buffer.style(Sec, Prim).bold)
+      . assert(_ == (true, false))
+
+      test(m"keypad modes are accepted and ignored"):
+        row(fresh.consume(t"$Esc=A$Esc>B"), Prim)
+      . assert(_ == t"AB        ")
+
+      test(m"a character-set designation is accepted and ignored"):
+        row(fresh.consume(t"$Esc(BA$Esc)0B"), Prim)
+      . assert(_ == t"AB        ")
+
+      test(m"keyboard-protocol sequences do not change the style"):
+        val pty = fresh.consume(t"$Esc[>4;1m$Esc[>1u$Esc[=5;1u$Esc[<uA$Esc[?u")
+        (row(pty, Prim), pty.buffer.style(Prim, Prim).bold)
+      . assert(_ == (t"A         ", false))
+
+      test(m"a version query is accepted and left unanswered"):
+        drainOutput(fresh.consume(t"$Esc[>0q"))
+      . assert(_ == t"")
+
+      test(m"cursor-shape and mode-query sequences are accepted"):
+        row(fresh.consume(t"$Esc[2 qA$Esc[?2026$$pB"), Prim)
+      . assert(_ == t"AB        ")
+
+      test(m"shell notifications in OSC are accepted and ignored"):
+        val notifications =
+          t"$Esc]7;file://localhost/tmp$Bel$Esc]133;A$Esc\\$Esc]11;?$Esc\\$Esc]1;icon$Bel"
+
+        row(fresh.consume(t"${notifications}A"), Prim)
+      . assert(_ == t"A         ")
+
+      test(m"OSC 2 sets the window title"):
+        fresh.consume(t"$Esc]2;Shell$Bel").title
+      . assert(_ == t"Shell")
+
+      test(m"VPA moves the cursor to a row"):
+        val pty = fresh.consume(t"ab$Esc[3dX")
+        (cell(pty, Ter, Ter), cell(pty, Ter, Prim))
+      . assert(_ == ('X', ' '))
+
+      test(m"the alternate screen starts blank"):
+        row(fresh.consume(t"main$Esc[?1049h"), Prim)
+      . assert(_ == t"          ")
+
+      test(m"leaving the alternate screen restores the main screen and cursor"):
+        val pty = fresh.consume(t"main$Esc[?1049halt$Esc[?1049lX")
+        row(pty, Prim)
+      . assert(_ == t"mainX     ")
+
     suite(m"Plain text"):
       test(m"writing text places characters in cells"):
         row(fresh.consume(t"hi"), Prim)
