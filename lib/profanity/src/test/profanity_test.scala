@@ -122,115 +122,92 @@ object Tests extends Suite(m"Profanity Tests"):
             t"finished"
           }
 
-      def waitFor(text: Text, ms: Int = 5000)(using Tmux, Monitor, WorkingDirectory): Boolean =
-        def matches: Boolean = Tmux.screenshot().screen.readable.toList.exists(_.contains(text))
-        // Bound the wait against a wall-clock deadline rather than counting fixed
-        // 50 ms iterations: each poll spawns a `tmux` screenshot subprocess whose
-        // latency varies wildly under load, so an iteration count made the real
-        // timeout unbounded (a miss could cost tens of seconds under `make
-        // attest`). A real deadline keeps a missed marker cheap and predictable.
-        val deadline = jl.System.currentTimeMillis + ms
-        var found = matches
-        while !found && jl.System.currentTimeMillis < deadline do
-          sleep(0.05*Second)
-          found = matches
-        found
+      def waitFor(text: Text, ms: Int = 5000)(using Pane, Monitor): Boolean =
+        Pane.waitFor(_.contains(text), ms.toLong)
 
-      def runFixture(arg: Text, marker: Text = t"RESULT:")(input: Tmux ?=> Unit)
+      def runFixture(arg: Text, marker: Text = t"RESULT:")(input: Pane ?=> Unit)
         ( using Enclave.Tool, Monitor, WorkingDirectory, TemporaryDirectory )
       :   Text =
 
-        // Overlap false positive: the action closure mentions the enclosing
-        // tool capability alongside the fresh tmux session.
-        scala.caps.unsafe.unsafeAssumeSeparate:
-          Bash.tmux():
-            val tool = summon[Enclave.Tool].command
-            Tmux.enter(tool, ' ', arg)
-            Tmux.enter('\r')
-            if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-            input
-            // Wait only for the marker this fixture actually prints. The `echo`
-            // fixture emits `GOT:` and never `RESULT:`, so the old `RESULT:`-first
-            // probe always burnt the full timeout before falling back to `GOT:`.
-            waitFor(marker)
-            Tmux.screenshot().screen.readable.toSeq.join(t"\n")
+        Bash.pane():
+          val tool = summon[Enclave.Tool].command
+          Pane.enter(tool, ' ', arg)
+          Pane.enter('\r')
+          if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+          input
+          // Wait only for the marker this fixture actually prints. The `echo`
+          // fixture emits `GOT:` and never `RESULT:`, so the old `RESULT:`-first
+          // probe always burnt the full timeout before falling back to `GOT:`.
+          waitFor(marker)
+          Pane.screenshot().screen.readable.toSeq.join(t"\n")
 
       launcher.sandbox:
         // Warmup run to spawn the daemon and avoid timing flake on the first real test
         runFixture(t"echo", marker = t"GOT:"):
-          Tmux.enter('a')
+          Pane.enter('a')
 
         suite(m"Line buffering"):
           test(m"a single keypress reaches the app before Enter is pressed"):
             runFixture(t"echo", marker = t"GOT:"):
-              Tmux.enter('a')
+              Pane.enter('a')
           . check(_.contains(t"GOT:a"))
 
         suite(m"LineEditor"):
           test(m"submits accumulated text on Enter"):
             runFixture(t"line-editor"):
-              Tmux.enter("hello")
-              Tmux.enter('\r')
+              Pane.enter("hello")
+              Pane.enter('\r')
           . check(_.contains(t"RESULT:hello"))
 
           test(m"backspace removes characters"):
             runFixture(t"line-editor"):
-              Tmux.enter("helXX")
-              Tmux.enter('', '')
-              Tmux.enter("lo")
-              Tmux.enter('\r')
+              Pane.enter("helXX")
+              Pane.enter('', '')
+              Pane.enter("lo")
+              Pane.enter('\r')
           . check(_.contains(t"RESULT:hello"))
 
-          // Aspirational because, under Ethereal's daemon model, the socket round-trip
-          // between consecutive bytes of \e[D can exceed Profanity's 30 ms ESC timeout in
-          // Keyboard.process, which dismisses the widget before the arrow code completes.
-          // The state-transition suite below covers Left-arrow handling deterministically.
-          aspirationally:
-            test(m"Left arrow moves the cursor"):
-              runFixture(t"line-editor"):
-                Tmux.enter("helo")
-                Tmux.enter(t"Left")
-                Tmux.enter("l")
-                Tmux.enter('\r')
-            . check(_.contains(t"RESULT:hello"))
+          // Under Ethereal's daemon model, a gap between the bytes of `\e[D` longer than
+          // Profanity's 30 ms ESC timeout in `Keyboard.process` would dismiss the widget before
+          // the arrow code completed. A pane writes the whole sequence to its terminal at once,
+          // as a terminal does, so the launcher reads it in one piece; under tmux this was
+          // aspirational.
+          test(m"Left arrow moves the cursor"):
+            runFixture(t"line-editor"):
+              Pane.enter("helo")
+              Pane.enter(t"Left")
+              Pane.enter("l")
+              Pane.enter('\r')
+          . check(_.contains(t"RESULT:hello"))
 
           // Wrap-aware redraw: typing past the terminal width and then backspacing back
           // across the wrap boundary must clear the wrapped row and reposition the cursor.
 
           test(m"submits correct text after wrap and backspace"):
-            // Overlap false positive: the action closure mentions the enclosing
-            // tool capability alongside the fresh tmux session.
-            scala.caps.unsafe.unsafeAssumeSeparate:
-              Bash.tmux(width = 20, height = 10):
-                val tool = summon[Enclave.Tool].command
-                Tmux.enter(tool, ' ', t"line-editor-sized 20 10")
-                Tmux.enter('\r')
-                if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-                Tmux.enter(t"X"*25)
-                Tmux.enter('', '', '', '', '')
-                Tmux.enter('\r')
-                waitFor(t"RESULT:")
-                Tmux.screenshot().screen.to[List].join
+            Bash.pane(width = 20, height = 10):
+              val tool = summon[Enclave.Tool].command
+              Pane.enter(tool, ' ', t"line-editor-sized 20 10")
+              Pane.enter('\r')
+              if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+              Pane.enter(t"X"*25)
+              Pane.enter('', '', '', '', '')
+              Pane.enter('\r')
+              waitFor(t"RESULT:")
+              Pane.screenshot().screen.to[List].join
           . check(_.contains(t"RESULT:${t"X"*20}"))
 
           test(m"backspace clears characters wrapped onto the next visual line"):
-            // Overlap false positive: the action closure mentions the enclosing
-            // tool capability alongside the fresh tmux session.
-            scala.caps.unsafe.unsafeAssumeSeparate:
-              Bash.tmux(width = 20, height = 10):
-                val tool = summon[Enclave.Tool].command
-                Tmux.enter(tool, ' ', t"line-editor-sized 20 10")
-                Tmux.enter('\r')
-                if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-                Tmux.attend(Tmux.enter(t"X"*25))
-                sleep(0.1*Second)
-                Tmux.attend:
-                  Tmux.enter('', '', '', '', '')
-                sleep(0.2*Second)
-                val mid = Tmux.screenshot()
-                Tmux.enter('\r')
-                waitFor(t"RESULT:")
-                mid.screen.to[List].map(_.count(_ == 'X')).total
+            Bash.pane(width = 20, height = 10):
+              val tool = summon[Enclave.Tool].command
+              Pane.enter(tool, ' ', t"line-editor-sized 20 10")
+              Pane.enter('\r')
+              if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+              Pane.attend(t"X"*25)
+              Pane.attend('\u007f', '\u007f', '\u007f', '\u007f', '\u007f')
+              val mid = Pane.screenshot()
+              Pane.enter('\r')
+              waitFor(t"RESULT:")
+              mid.screen.to[List].map(_.count(_ == 'X')).total
           . check(_ == 20)
 
           // SelectMenu wrap-aware redraw: an option longer than the terminal width must
@@ -239,22 +216,20 @@ object Tests extends Suite(m"Profanity Tests"):
           // which is flaky under daemon-mode ESC timing) and confirm the wrapped option's
           // tail appears exactly once on screen.
           test(m"select-menu draws a wrapping option without ghost rows"):
-            // Overlap false positive: the action closure mentions the enclosing
-            // tool capability alongside the fresh tmux session.
-            scala.caps.unsafe.unsafeAssumeSeparate:
-              Bash.tmux(width = 20, height = 12):
-                val tool = summon[Enclave.Tool].command
-                Tmux.enter(tool, ' ', t"select-menu-long-sized 20 12")
-                Tmux.enter('\r')
-                if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-                sleep(0.3*Second)
-                val mid = Tmux.screenshot()
-                Tmux.enter('\r')
-                waitFor(t"RESULT:")
-                // The third option ("third") must appear exactly once. If the renderer
-                // miscounts visual rows for the wrapped second option, the menu drifts
-                // on subsequent re-renders and stale copies of "third" pile up.
-                mid.screen.readable.toList.count(_.contains(t"third"))
+            Bash.pane(width = 20, height = 12):
+              val tool = summon[Enclave.Tool].command
+              Pane.enter(tool, ' ', t"select-menu-long-sized 20 12")
+              Pane.enter('\r')
+              if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+              waitFor(t"third")
+              Pane.settle()
+              val mid = Pane.screenshot()
+              Pane.enter('\r')
+              waitFor(t"RESULT:")
+              // The third option ("third") must appear exactly once. If the renderer
+              // miscounts visual rows for the wrapped second option, the menu drifts
+              // on subsequent re-renders and stale copies of "third" pile up.
+              mid.screen.readable.toList.count(_.contains(t"third"))
           . check(_ == 1)
 
       // Pure state-transition tests, bypassing terminal IO. These exercise the
