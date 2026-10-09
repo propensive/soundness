@@ -169,9 +169,12 @@ extension [input, result](inline lambda: input => result)
   inline infix def and (inline input2: => input): result = lambda(input2)
   inline def context: input ?=> result = (input: input) ?=> lambda(input)
 
-def loop(block: => Unit): Loop^{block} =
+// The loop retains its block — the declared result says so — but the fresh capability the
+// instance itself constitutes is laundered away here, once, at the construction site (as
+// `parasite.Task.apply` does for a worker), so a loop over pure state is a pure value.
+def loop(block: ->{scala.caps.any.only[scala.caps.SharedCapability]} Unit): Loop^{block} =
   def lambda(): Unit = block
-  Loop(lambda)
+  scala.caps.unsafe.unsafeAssumePure(Loop(lambda))
 
 export rudiments.internal.&
 

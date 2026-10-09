@@ -397,15 +397,16 @@ object Tests extends Suite(m"Scintillate tests"):
               Http.Response(Http.Ok):
                 Http.Body.Flowing: () =>
                   val producer = Producer[Data]()
+                  val output = producer.iterator
 
-                  async:
+                  producer.transfer: (producer, _, _) ?=>
                     var i = 0
                     while i < 4000 do
-                      producer.put(t"line-$i\n".in[Data])
+                      producer().put(t"line-$i\n".in[Data])
                       i += 1
-                    producer.finish()
+                    producer().finish()
 
-                  Stream(producer.iterator)
+                  Stream(output)
 
           val port = server.port
 
@@ -436,7 +437,9 @@ object Tests extends Suite(m"Scintillate tests"):
         supervise:
           val server = SocketServer(0).handle(Http.Response(Http.Ok)(t"pong"))
           val port = server.port
-          val payload = (t"GET / HTTP/1.1\r\nHost: x\r\n\r\n"*perClient).s.getBytes("US-ASCII").nn
+          // Frozen, so the client tasks share it as a plain value.
+          val payload: Data =
+            Array.unsafeFrozen((t"GET / HTTP/1.1\r\nHost: x\r\n\r\n"*perClient).s.getBytes("US-ASCII").nn)
 
           val start = java.lang.System.nanoTime()
 
@@ -447,7 +450,7 @@ object Tests extends Suite(m"Scintillate tests"):
               async:
                 val socket = java.net.Socket("localhost", port)
                 val out = socket.getOutputStream.nn
-                out.write(payload)
+                out.write(Array.unsafeJvm(payload))
                 out.flush()
                 socket.shutdownOutput()
                 val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII").tt

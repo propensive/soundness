@@ -159,213 +159,213 @@ object Tests extends Suite(m"Exoskeleton Tests"):
       . sandbox:
           // Warmup runs to avoid timing issues in CI. A missing shell binary on the host
           // should not abort the suite — individual tests will surface a `Tmux.Error`.
-          safely(scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.completions(t""))))
-          safely(scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t""))))
-          safely(scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux(width = 120)(Tmux.completions(t""))))
-          safely(scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.completions(t""))))
+          safely(Bash.tmux()(Tmux.completions(t"")))
+          safely(Zsh.tmux()(Tmux.completions(t"")))
+          safely(Fish.tmux(width = 120)(Tmux.completions(t"")))
+          safely(Powershell.tmux()(Tmux.completions(t"")))
 
           test(m"Test subcommands on bash"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.completions(t"")))
+            Bash.tmux()(Tmux.completions(t""))
           . check(_ == t"alpha         beta          distribution")
 
           test(m"Test subcommands on zsh"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t"")))
+            Zsh.tmux()(Tmux.completions(t""))
           . check(_ == t"alpha          -- a command to run\nbeta           -- another command to run\ndistribution   -- a different command to run")
 
           test(m"Test subcommands on fish"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux(width = 120)(Tmux.completions(t"")))
+            Fish.tmux(width = 120)(Tmux.completions(t""))
           . check(_ == t"alpha  (a command to run)  beta  (another command to run)  distribution  (a different command to run)")
 
           test(m"Test subcommands with spaces on bash"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.completions(t"distribution ")))
+            Bash.tmux()(Tmux.completions(t"distribution "))
           . check(_ == t"gentoo   red hat  ubuntu")
 
           test(m"Test subcommands with spaces on zsh"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t"distribution ")))
+            Zsh.tmux()(Tmux.completions(t"distribution "))
           . check(_ == t"gentoo    -- Gentoo Linux\nred hat   -- Red Hat Linux\nubuntu    -- Ubuntu")
 
           test(m"Test subcommands with spaces on fish"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux(width = 120)(Tmux.completions(t"distribution ")))
+            Fish.tmux(width = 120)(Tmux.completions(t"distribution "))
           . check(_ == t"gentoo  (Gentoo Linux)  red hat  (Red Hat Linux)  ubuntu  (Ubuntu)")
 
           test(m"Test subcommands on powershell"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.completions(t"")))
+            Powershell.tmux()(Tmux.completions(t""))
           . check(_ == t"alpha  (a command to run)  beta  (another command to run)  distribution  (a different command to run)")
 
           test(m"Test subcommands with spaces on powershell"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.completions(t"distribution ")))
+            Powershell.tmux()(Tmux.completions(t"distribution "))
           . check(_ == t"gentoo  (Gentoo Linux)  red hat  (Red Hat Linux)  ubuntu  (Ubuntu)")
 
           test(m"Test flags on bash"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.completions(t"distribution ubuntu ")))
+            Bash.tmux()(Tmux.completions(t"distribution ubuntu "))
           . check(_ == t"--one  --two")
 
           test(m"Test flags on fish"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux(width = 120)(Tmux.completions(t"distribution ubuntu ")))
+            Fish.tmux(width = 120)(Tmux.completions(t"distribution ubuntu "))
           . check(_ == t"--one  (the first one)  --two  (the second one)")
 
           test(m"Test flags on powershell"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.completions(t"distribution ubuntu ")))
+            Powershell.tmux()(Tmux.completions(t"distribution ubuntu "))
           . check(_ == t"--one  (the first one)  --two  (the second one)")
 
           test(m"Autocomplete progress for flag in Fish"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux(width = 120)(Tmux.progress(t"distribution ubuntu ")))
+            Fish.tmux(width = 120)(Tmux.progress(t"distribution ubuntu "))
           . check(_ == t"distribution ubuntu --^")
 
           test(m"Autocomplete progress for flag in Bash"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.progress(t"distribution ubuntu ")))
+            Bash.tmux()(Tmux.progress(t"distribution ubuntu "))
           . check(_ == t"distribution ubuntu --^")
 
           test(m"Autocomplete progress for flag in Zsh"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.progress(t"distribution ubuntu ")))
+            Zsh.tmux()(Tmux.progress(t"distribution ubuntu "))
           . check(_ == t"distribution ubuntu --^")
 
           test(m"Autocomplete progress for flag in Powershell"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.progress(t"distribution ubuntu ")))
+            Powershell.tmux()(Tmux.progress(t"distribution ubuntu "))
           . check(_ == t"distribution ubuntu --^")
 
           test(m"Test flags on zsh"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t"distribution ubuntu --")))
+            Zsh.tmux()(Tmux.completions(t"distribution ubuntu --"))
           . check(_ == t"--one   -- the first one\n--two   -- the second one")
 
           test(m"Test capture 1"):
             scala.caps.unsafe.unsafeAssumeSeparate:
               summon[Enclave.Tool].completions:
-                scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t"distribution ubuntu ")))
+                Zsh.tmux()(Tmux.completions(t"distribution ubuntu "))
 
           . check()
 
           test(m"Test capture 2"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t"distribution ")))
+            Zsh.tmux()(Tmux.completions(t"distribution "))
 
           . check()
 
           test(m"flag parameter on zsh"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t"distribution gentoo --color ")))
+            Zsh.tmux()(Tmux.completions(t"distribution gentoo --color "))
           . check(_ == t"blue   green  red")
 
           test(m"flag parameter on bash"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.completions(t"distribution gentoo --color ")))
+            Bash.tmux()(Tmux.completions(t"distribution gentoo --color "))
           . check(_ == t"blue   green  red")
 
           test(m"flag parameter on fish"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.completions(t"distribution gentoo --color ")))
+            Fish.tmux()(Tmux.completions(t"distribution gentoo --color "))
           . check(_ == t"blue  green  red")
 
           test(m"flag parameter on zsh is not repeatable"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.progress(t"distribution gentoo --color red ")))
+            Zsh.tmux()(Tmux.progress(t"distribution gentoo --color red "))
           . check(_ == t"distribution gentoo --color red ^")
 
           test(m"flag parameter on bash is not repeatable"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.progress(t"distribution gentoo --color red ")))
+            Bash.tmux()(Tmux.progress(t"distribution gentoo --color red "))
           . check(_ == t"distribution gentoo --color red ^")
 
           test(m"flag parameter on fish is not repeatable"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.progress(t"distribution gentoo --color red ")))
+            Fish.tmux()(Tmux.progress(t"distribution gentoo --color red "))
           . check(_ == t"distribution gentoo --color red ^")
 
           test(m"repeatable flag parameter on zsh is repeatable"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.progress(t"gamma --colors red ")))
+            Zsh.tmux()(Tmux.progress(t"gamma --colors red "))
           . check(_ == t"gamma --colors red --colors ^")
 
           test(m"repeatable flag parameter on bash is repeatable"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.progress(t"gamma --colors red ")))
+            Bash.tmux()(Tmux.progress(t"gamma --colors red "))
           . check(_ == t"gamma --colors red -^")
 
           test(m"repeatable flag parameter on fish is repeatable"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.progress(t"gamma --colors red ")))
+            Fish.tmux()(Tmux.progress(t"gamma --colors red "))
           . check(_ == t"gamma --colors red -^")
 
           test(m"flag parameter with `=` on zsh"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.completions(t"distribution gentoo --color=")))
+            Zsh.tmux()(Tmux.completions(t"distribution gentoo --color="))
           . check(_ == t"blue   green  red")
 
           test(m"flag parameter with `=` on bash"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.completions(t"distribution gentoo --color=")))
+            Bash.tmux()(Tmux.completions(t"distribution gentoo --color="))
           . check(_ == t"blue   green  red")
 
           test(m"flag parameter with `=` on fish"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.completions(t"distribution gentoo --color=")))
+            Fish.tmux()(Tmux.completions(t"distribution gentoo --color="))
           . check(_ == t"--color=blue  --color=green  --color=red")
 
           test(m"completion of flag parameter with `=` on zsh"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.progress(t"distribution gentoo --color=b")))
+            Zsh.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
           . check(_ == t"distribution gentoo --color=blue ^")
 
           test(m"completion of flag parameter with `=` on bash"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.progress(t"distribution gentoo --color=b")))
+            Bash.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
           . check(_ == t"distribution gentoo --color=blue ^")
 
           test(m"completion of flag parameter with `=` on fish"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.progress(t"distribution gentoo --color=b")))
+            Fish.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
           . check(_ == t"distribution gentoo --color=blue ^")
 
           test(m"short flag options on zsh"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.progress(t"distribution gentoo -")))
+            Zsh.tmux()(Tmux.progress(t"distribution gentoo -"))
           . check(_ == t"distribution gentoo -f ^")
 
           test(m"short flag options on fish"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.completions(t"distribution gentoo -")))
+            Fish.tmux()(Tmux.completions(t"distribution gentoo -"))
           . check(_ == t"-f  --color  (red, green or blue)")
 
           test(m"short flag options on bash"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.completions(t"distribution gentoo -")))
+            Bash.tmux()(Tmux.completions(t"distribution gentoo -"))
           . check(_ == t"--color  -f")
 
           test(m"flag options on zsh"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.progress(t"distribution gentoo --")))
+            Zsh.tmux()(Tmux.progress(t"distribution gentoo --"))
           . check(_ == t"distribution gentoo --color ^")
 
           test(m"flag options on fish"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.progress(t"distribution gentoo --")))
+            Fish.tmux()(Tmux.progress(t"distribution gentoo --"))
           . check(_ == t"distribution gentoo --color ^")
 
           test(m"flag options on bash"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.progress(t"distribution gentoo --")))
+            Bash.tmux()(Tmux.progress(t"distribution gentoo --"))
           . check(_ == t"distribution gentoo --color ^")
 
           test(m"completion of short flag parameter on zsh"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Zsh.tmux()(Tmux.progress(t"distribution gentoo -fb")))
+            Zsh.tmux()(Tmux.progress(t"distribution gentoo -fb"))
           . check(_ == t"distribution gentoo -fblue ^")
 
           test(m"completion of short flag parameter on bash"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Bash.tmux()(Tmux.progress(t"distribution gentoo -fb")))
+            Bash.tmux()(Tmux.progress(t"distribution gentoo -fb"))
           . check(_ == t"distribution gentoo -fblue ^")
 
           test(m"completion of short flag parameter on fish"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Fish.tmux()(Tmux.progress(t"distribution gentoo -fb")))
+            Fish.tmux()(Tmux.progress(t"distribution gentoo -fb"))
           . check(_ == t"distribution gentoo -fblue ^")
 
           test(m"flag parameter on powershell"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.completions(t"distribution gentoo --color ")))
+            Powershell.tmux()(Tmux.completions(t"distribution gentoo --color "))
           . check(_ == t"red  green  blue")
 
           test(m"flag parameter on powershell is not repeatable"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.progress(t"distribution gentoo --color red ")))
+            Powershell.tmux()(Tmux.progress(t"distribution gentoo --color red "))
           . check(_ == t"distribution gentoo --color red ^")
 
           test(m"repeatable flag parameter on powershell is repeatable"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.progress(t"gamma --colors red ")))
+            Powershell.tmux()(Tmux.progress(t"gamma --colors red "))
           . check(_ == t"gamma --colors red -^")
 
           test(m"flag parameter with `=` on powershell"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.completions(t"distribution gentoo --color=")))
+            Powershell.tmux()(Tmux.completions(t"distribution gentoo --color="))
           . check(_ == t"--color=red  --color=green  --color=blue")
 
           test(m"completion of flag parameter with `=` on powershell"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.progress(t"distribution gentoo --color=b")))
+            Powershell.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
           . check(_ == t"distribution gentoo --color=blue ^")
 
           test(m"short flag options on powershell"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.completions(t"distribution gentoo -")))
+            Powershell.tmux()(Tmux.completions(t"distribution gentoo -"))
           . check(_ == t"--color  (red, green or blue)  -f  (red, green or blue)")
 
           test(m"flag options on powershell"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.progress(t"distribution gentoo --")))
+            Powershell.tmux()(Tmux.progress(t"distribution gentoo --"))
           . check(_ == t"distribution gentoo --color ^")
 
           test(m"completion of short flag parameter on powershell"):
-            scala.caps.unsafe.unsafeAssumeSeparate(Powershell.tmux()(Tmux.progress(t"distribution gentoo -fb")))
+            Powershell.tmux()(Tmux.progress(t"distribution gentoo -fb"))
           . check(_ == t"distribution gentoo -fblue ^")
 
           suite(m"Admin commands"):

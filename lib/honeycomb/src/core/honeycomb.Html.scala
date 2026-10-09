@@ -313,12 +313,15 @@ object Html extends Tag.Container
     val producer = Producer[BaseText]()
     val block = formatting.indented
 
-    async:
-      writeHtml(producer, dom, dom.doctype, 0, block, Mode.Whitespace)
-      writeHtml(producer, dom, document.root, 0, block, Mode.Whitespace)
-      producer.finish()
+    // The reader side is taken first; the producer itself is then owned by the writing task.
+    val output = producer.iterator
 
-    Stream(producer.iterator)
+    producer.transfer: (producer, _, _) ?=>
+      writeHtml(producer(), dom, dom.doctype, 0, block, Mode.Whitespace)
+      writeHtml(producer(), dom, document.root, 0, block, Mode.Whitespace)
+      producer().finish()
+
+    Stream(output)
 
   // `.show` serializes against the standard WHATWG (HTML5) DOM and without indentation, so a bare
   // node renders correctly (void elements, escaping) even outside a `Document`. The `Streamable`

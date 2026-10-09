@@ -3669,12 +3669,13 @@ object Tel extends Tel2:
   // written to a socket or file before it is fully rendered — the model of `Xml.emit`.
   def emit(tel: Tel)(using monitor: Monitor, probate: Probate): Iterator[Text] =
     val producer = Producer[Text]()
+    val output = producer.iterator
 
-    async:
-      Serializer(new Textual(producer), document(tel)).write()
-      producer.finish()
+    producer.transfer: (producer, _, _) ?=>
+      Serializer(new Textual(producer()), document(tel)).write()
+      producer().finish()
 
-    producer.iterator
+    output
 
   // The push form: serializes on the caller's thread, handing each block to `deliver` as it
   // fills, so no fiber is involved — the right shape for writing to a file, a socket or an

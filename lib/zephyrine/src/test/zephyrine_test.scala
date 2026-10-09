@@ -54,9 +54,10 @@ object Tests extends Suite(m"Zephyrine tests"):
           producer.put("one")
           producer.put("two")
           producer.finish()
-          val it = async(producer.iterator.to(List))
+          val output = producer.iterator
+          val it = async(output.to(List))
 
-          unsafely(scala.caps.unsafe.unsafeAssumeSeparate(it.await()))
+          unsafely(it.await())
       . assert(_ == List("onet", "wo"))
 
       test(m"One block, exact size, ready immediately"):
@@ -105,19 +106,21 @@ object Tests extends Suite(m"Zephyrine tests"):
       test(m"Single long message, with blocking"):
         supervise:
           val producer = Producer[Text](4, 2)
-          val out = async(producer.iterator.to(List))
+          val output = producer.iterator
+          val out = async(output.to(List))
           producer.put("12345678901234567890")
           producer.finish()
-          unsafely(scala.caps.unsafe.unsafeAssumeSeparate(out.await()))
+          unsafely(out.await())
       . assert(_ == List("1234", "5678", "9012", "3456", "7890"))
 
       test(m"Single long message, with blocking; incomplete final block"):
         supervise:
           val producer = Producer[Text](4, 2)
-          val out = async(producer.iterator.to(List))
+          val output = producer.iterator
+          val out = async(output.to(List))
           producer.put("123456789012345678")
           producer.finish()
-          unsafely(scala.caps.unsafe.unsafeAssumeSeparate(out.await()))
+          unsafely(out.await())
       . assert(_ == List("1234", "5678", "9012", "3456", "78"))
 
       for i <- 0 to 30 do
@@ -125,39 +128,47 @@ object Tests extends Suite(m"Zephyrine tests"):
         test(m"String length $i, sent whole, async puts"):
           supervise:
             val producer = Producer[Text](5, 2)
-            val fiber = async:
-              producer.put(string)
-              producer.finish()
-            producer.iterator.foldLeft("")(_ + _)
+            val reader = producer.iterator
+
+            val fiber = producer.transfer: (producer, _, _) ?=>
+              producer().put(string)
+              producer().finish()
+
+            reader.foldLeft("")(_ + _)
         . assert(_ == string)
 
         test(m"String length $i, sent unitarily, async puts"):
           supervise:
             val producer = Producer[Text](5, 2)
-            val fiber = async:
+            val reader = producer.iterator
+
+            val fiber = producer.transfer: (producer, _, _) ?=>
               string.tt.chars.each: char =>
-                producer.put(char.toString)
-              producer.finish()
-            producer.iterator.foldLeft("")(_ + _)
+                producer().put(char.toString)
+              producer().finish()
+
+            reader.foldLeft("")(_ + _)
         . assert(_ == string)
 
         test(m"String length $i, sent whole, async reads"):
           supervise:
             val producer = Producer[Text](5, 2)
-            val output = async(producer.iterator.foldLeft("")(_ + _))
+            val reader = producer.iterator
+            val output = async(reader.foldLeft("")(_ + _))
             producer.put(string)
             producer.finish()
-            unsafely(scala.caps.unsafe.unsafeAssumeSeparate(output.await()))
+            unsafely(output.await())
         . assert(_ == string)
 
         test(m"String length $i, sent unitarily, async reads"):
           supervise:
             val producer = Producer[Text](5, 2)
-            val output = async(producer.iterator.foldLeft("")(_ + _))
+            val reader = producer.iterator
+            val output = async(reader.foldLeft("")(_ + _))
             string.tt.chars.each: char =>
               producer.put(char.toString)
             producer.finish()
-            unsafely(scala.caps.unsafe.unsafeAssumeSeparate(output.await()))
+            unsafely(output.await())
         . assert(_ == string)
 
       test(m"Bytes producer copies a non-zero-offset put correctly"):
@@ -165,11 +176,12 @@ object Tests extends Suite(m"Zephyrine tests"):
           // The second `put` lands at buffer index 3, exercising the bytes-path
           // `arraycopy` length (a regression here over-reads the source).
           val producer = Producer[Data](8)
-          val output = async(producer.iterator.to(List))
+          val reader = producer.iterator
+          val output = async(reader.to(List))
           producer.put(Data.fill(3)(_.toByte))
           producer.put(Data.fill(5)(i => (i + 10).toByte))
           producer.finish()
-          unsafely(scala.caps.unsafe.unsafeAssumeSeparate(output.await())).flatMap(_.readable.to(List))
+          unsafely(output.await()).flatMap(_.readable.to(List))
       . assert(_.map(_.toInt) == List(0, 1, 2, 10, 11, 12, 13, 14))
 
       test(m"Synchronous text collection joins puts"):
@@ -200,7 +212,8 @@ object Tests extends Suite(m"Zephyrine tests"):
       test(m"Push bytes across a block boundary (streaming)"):
         supervise:
           val producer = Producer[Data](4)
-          val output = async(producer.iterator.to(List))
+          val reader = producer.iterator
+          val output = async(reader.to(List))
           var i = 0
 
           while i < 10 do
@@ -208,7 +221,7 @@ object Tests extends Suite(m"Zephyrine tests"):
             i += 1
 
           producer.finish()
-          unsafely(scala.caps.unsafe.unsafeAssumeSeparate(output.await())).flatMap(_.readable.to(List))
+          unsafely(output.await()).flatMap(_.readable.to(List))
       . assert(_ == (0 until 10).map(_.toByte).to(List))
 
       test(m"Push chars (synchronous text)"):
@@ -911,12 +924,14 @@ object Tests extends Suite(m"Zephyrine tests"):
         supervise:
           Conduit[Data]() match
            case (intake, stream) =>
-            val gather = Gather()
-            val task = scala.caps.unsafe.unsafeAssumeSeparate(async(stream.pump(gather)))
+            val task = stream.transfer: (stream, _, _) ?=>
+              val gather = Gather()
+              scala.caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
+              scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+
             intake.put(bytes)
             intake.finish()
-            unsafely(scala.caps.unsafe.unsafeAssumeSeparate(task.await()))
-            scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+            unsafely(task.await())
       . assert(_ == bytes.to[List])
 
       val big: Data = Array.tabulate[Byte](10000)(index => (index%251).toByte)
@@ -925,13 +940,15 @@ object Tests extends Suite(m"Zephyrine tests"):
         supervise:
           Conduit[Data]() match
            case (intake, stream) =>
-            val gather = Gather()
-            val task = scala.caps.unsafe.unsafeAssumeSeparate(async(stream.pump(gather)))
+            val task = stream.transfer: (stream, _, _) ?=>
+              val gather = Gather()
+              scala.caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
+              scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+
             intake.put(Data(9))
             intake.put(big)
             intake.finish()
-            unsafely(scala.caps.unsafe.unsafeAssumeSeparate(task.await()))
-            scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+            unsafely(task.await())
       . assert(_ == 9.toByte +: big.to[List])
 
       // Pump a payload many times the transfer-block size across the conduit,
@@ -942,11 +959,13 @@ object Tests extends Suite(m"Zephyrine tests"):
           val payload: Data = Array.tabulate[Byte](1000000)(index => (index%251).toByte)
           Conduit[Data]() match
            case (intake, stream) =>
-            val gather = Gather()
-            val task = scala.caps.unsafe.unsafeAssumeSeparate(async(stream.pump(gather)))
+            val task = stream.transfer: (stream, _, _) ?=>
+              val gather = Gather()
+              scala.caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
+              scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+
             payload.stream.pump(intake)
-            unsafely(scala.caps.unsafe.unsafeAssumeSeparate(task.await()))
-            scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List] == payload.to[List]
+            unsafely(task.await()) == payload.to[List]
       . assert(identity)
 
       // A chunk passed through by reference is the caller's immutable data, so
@@ -958,11 +977,14 @@ object Tests extends Suite(m"Zephyrine tests"):
           val extra: Data = Array.tabulate[Byte](300000)(index => ((index + 1)%251).toByte)
           Conduit[Data]() match
            case (intake, stream) =>
-            val gather = Gather()
-            val task = scala.caps.unsafe.unsafeAssumeSeparate(async(stream.pump(gather)))
+            val task = stream.transfer: (stream, _, _) ?=>
+              val gather = Gather()
+              scala.caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
+              scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
+
             intake.put(original)
             extra.stream.pump(intake)
-            unsafely(scala.caps.unsafe.unsafeAssumeSeparate(task.await()))
+            unsafely(task.await())
             original.to[List] == Array.tabulate[Byte](80000)(index => (index%251).toByte).to[List]
       . assert(identity)
 

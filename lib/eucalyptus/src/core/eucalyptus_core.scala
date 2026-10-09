@@ -72,6 +72,4 @@ def mute[event](using erased void: Void)[result](lambda: (event is Loggable) ?=>
 package logging:
   // A silent logger; imported explicitly (`import logging.silentLogging`) it outranks the
   // companion-scoped `Loggable.fanOut`, suppressing all logging for the file.
-  given silentLogging: [event] => event is Loggable = new Loggable:
-    type Self = event
-    def log(level: Level, timestamp: Long, event: => event): Unit = ()
+  given silentLogging: [event] => ((event is Loggable)^{}) = Loggable.silent[event]

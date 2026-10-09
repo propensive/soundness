@@ -43,7 +43,7 @@ object CompileEvents:
   // Capture-polymorphic over the link channel's own capabilities, so the relay honestly carries
   // whatever the toolchain's channel captures.
   def relay[cap^](using linkEvents: (LinkEvent is Loggable)^{cap})
-  :   (CompileEvent is Loggable)^{cap} =
+  :   (CompileEvent is Loggable)^{cap, scala.caps.any} =
 
     new Loggable:
       type Self = CompileEvent

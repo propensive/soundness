@@ -304,12 +304,13 @@ object Protobuf extends Protobuf2:
   // their lengths must be known up front); this hands them out in bounded chunks.
   def emit(value: Protobuf)(using Monitor, Probate): Iterator[Data] =
     val producer = Producer[Data]()
+    val output = producer.iterator
 
-    async:
-      producer.put(value.payload)
-      producer.finish()
+    producer.transfer: (producer, _, _) ?=>
+      producer().put(value.payload)
+      producer().finish()
 
-    producer.iterator
+    output
 
   private def readVarint(protobuf: Protobuf)(using Tactic[Protobuf.Error]): Long =
     if protobuf.isAbsent then 0L else ProtobufParser(protobuf.payload).varint()

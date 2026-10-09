@@ -48,8 +48,9 @@ import rudiments.map
 import vacuous.*
 
 object Task:
-  def apply[result, error <: Hazard](evaluate: Worker => result, name: Optional[Name[Async]])
-    ( using monitor: Monitor^, codepoint: Codepoint, probate: Probate^ )
+  def apply[result, error <: Hazard]
+    ( evaluate: Worker ->{caps.any.only[caps.SharedCapability]} result, name: Optional[Name[Async]] )
+    ( using monitor: Monitor^, codepoint: Codepoint, probate: SharedProbate )
   :   (Task[result] { type Error = error })^{monitor, probate, evaluate} =
 
     // The handle is a fresh (`^`) capability — a `Task` IS a `Worker` — so both the handle
@@ -82,26 +83,35 @@ object Task:
           deliver[error, duration](duration)
 
 
+  // The transferred resource as a task body receives it: a pure carrier of the exclusive
+  // capability the spawner consumed, read as a fresh exclusive reference on each access (the
+  // `Reader` classes' `AnyRef` rim). A carrier rather than the capability itself because a body
+  // parameter typed `resource^` references the root capability, which the uses check rejects.
+  final class Owned[+resource] private[parasite] (resource0: AnyRef):
+    inline def apply(): resource^ = resource0.asInstanceOf[resource^]
+
   // THE PURE FAÇADE (D6 ruling, option c): `mercator.Monad[Task]` abstracts over `Task` as a
   // *pure* type constructor, but a `Task` handle is an honest capability (a `Worker`), so the
   // fresh handles produced by `async`/`bind`/`map` are sealed to the pure `Task` the `Monad`
   // interface demands — once, here, at the composition boundary. The capture is recoverable
   // bookkeeping: the tasks are bound and awaited within the same `Monitor` scope this given
   // requires.
-  given monad: (Monitor^, Probate^) => Monad[Task] = caps.unsafe.unsafeAssumePure:
+  given monad: (Monitor^, SharedProbate) => Monad[Task] = caps.unsafe.unsafeAssumePure:
     new Monad[Task]:
+      // `Monad`'s lambdas are unrestricted; a task body may capture only shared capabilities, so
+      // the façade asserts that of the lambda as it does purity of the handle.
       def bind[value, value2](value: Task[value])(lambda: value => Task[value2]): Task[value2] =
-        caps.unsafe.unsafeAssumePure(value.bind(lambda))
+        caps.unsafe.unsafeAssumePure(value.bind(caps.unsafe.unsafeAssumePure(lambda)))
 
       def point[value](value: value): Task[value] = caps.unsafe.unsafeAssumePure(async(value))
 
       def apply[value, value2](value: Task[value])(lambda: value => value2): Task[value2] =
-        caps.unsafe.unsafeAssumePure(value.map(lambda))
+        caps.unsafe.unsafeAssumePure(value.map(caps.unsafe.unsafeAssumePure(lambda)))
 
   // The monadic form of `snooze`: a task which completes after the duration, for composition
   // with `bind`/`map` without suspending the calling strand.
   def sleep[time: Schedulable](time: time)
-    ( using monitor: Monitor^, probate: Probate^, codepoint: Codepoint )
+    ( using monitor: Monitor^, probate: SharedProbate, codepoint: Codepoint )
   :   (Task[Unit] emits Async.Error)^{monitor, probate} =
 
     async(snooze(time))
@@ -109,11 +119,11 @@ object Task:
 
   extension [result](tasks: List[Task[result]])
     // Part of the pure façade (see `monad` above): the fresh handle is sealed once here.
-    def sequence(using Monitor^, Probate^): Task[List[result]] emits Async.Error =
+    def sequence(using Monitor^, SharedProbate): Task[List[result]] emits Async.Error =
       caps.unsafe.unsafeAssumePure(async(tasks.map(_.join())))
 
   extension [result](tasks: Iterable[Task[result]])
-    def race()(using monitor: Monitor^, probate: Probate^)
+    def race()(using monitor: Monitor^, probate: SharedProbate)
     :   (Tactic[Async.Error]^) ?->{monitor, probate} result =
       val promise: Promise[result] = Promise()
 
@@ -148,8 +158,8 @@ trait Task[+result]:
     ( using monitor: Monitor^ )
   :   (Tactic[Async.Error]^) ?->{this, monitor} result
 
-  def bind[result2](lambda: result => Task[result2])(using monitor: Monitor^, probate: Probate^)
+  def bind[result2](lambda: result ->{caps.any.only[caps.SharedCapability]} Task[result2])(using monitor: Monitor^, probate: SharedProbate)
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate}
 
-  def map[result2](lambda: result => result2)(using monitor: Monitor^, probate: Probate^)
+  def map[result2](lambda: result ->{caps.any.only[caps.SharedCapability]} result2)(using monitor: Monitor^, probate: SharedProbate)
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate}

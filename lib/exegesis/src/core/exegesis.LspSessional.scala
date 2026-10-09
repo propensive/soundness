@@ -93,8 +93,8 @@ object LspSessional:
   private[exegesis] def exchange[result]
      ( listener: Lsp.Listener,
        observer: Lsp.Observer,
-       sink:     (Intake[Data] over Credit)^,
-       read:     (Text => Unit) => Unit )
+       consume sink: (Intake[Data] over Credit)^,
+       consume read: (Text => Unit) => Unit )
      ( lambda: Lsp.Connection => result )
      ( using Monitor, Probate, Diagnostics )
   :   result =
@@ -110,27 +110,32 @@ object LspSessional:
 
     // As in `Lsp.listen`, the dispatch closure is a local of this method and its target is
     // confined to it.
-    val dispatch: Json => Optional[Json] =
+    // Pure: the dispatcher closes only over the (pure-typed) inbound client.
+    val dispatch: Json ->{caps.any.only[caps.SharedCapability]} Optional[Json] =
       JsonRpc.serve[Lsp.Client](inbound)
 
     val notifications: List[Text] = JsonRpc.methods[Lsp.Client]
 
     // A single writer, so writes never interleave. The observer sees the encoded body, not the
     // framing, matching `listen`.
-    val writer: Task[Unit] = async:
-      // The stdlib view is drained element by element, without memoizing the live chain.
-      connection.outgoing.stdlib.iterator.each: json =>
-        val body: Text = json.encode
-        observer.sent(body)
-        sink.put(LspTransport.frame(body))
-        sink.flush()
+    // The writer task owns the sink it frames messages onto.
+    val writer: Task[Unit] = sink.transfer: (sink, _, _) ?=>
+      // The stdlib view is drained element by element, without memoizing the live chain; the
+      // sink is finished when the drain ends, or when the task is cancelled.
+      try
+        connection.outgoing.stdlib.iterator.each: json =>
+          val body: Text = json.encode
+          observer.sent(body)
+          sink().put(LspTransport.frame(body))
+          sink().flush()
+      finally sink().finish()
 
     // The channel is read by a partly-applied `pump`, rather than by handing the stream over: the
     // stream is single-owner, so it is minted and consumed within the reader task, which also
     // keeps this thread off the channel's first refill — a blocking read that would otherwise
     // happen before the writer that unblocks it has started.
-    val reader: Task[Unit] = async:
-      read: message =>
+    val reader: Task[Unit] = read.transfer: (read, _, _) ?=>
+      read(): message =>
         safely(message.as[Json]).let: json =>
           if listener.intercept(json) then Unset
           else Lsp.method(json).lay(dispatch(json)): method =>
@@ -162,12 +167,10 @@ extends Sessional:
         val streamable = summon[ji.InputStream is Streamable by Data over Credit]
         val sink = summon[ji.OutputStream is Sink by Data over Credit].intake(output)
 
-        try
-          LspSessional.exchange
-           ( listener, observer, sink, LspTransport.pump(streamable.stream(input), observer)(_) )
-           ( lambda(using _) )
-
-        finally sink.finish()
+        // The sink is owned, and finished, by the exchange's writer task.
+        LspSessional.exchange
+         ( listener, observer, sink, LspTransport.pump(streamable.stream(input), observer)(_) )
+         ( lambda(using _) )
 
       case Lsp.Server.Process(command) =>
         // Launched with a silent logger and a throwing tactic: `Sessional#session` fixes the

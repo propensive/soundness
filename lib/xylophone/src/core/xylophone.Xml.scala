@@ -2092,12 +2092,13 @@ object Xml extends Tag.Container
   :   Iterator[BaseText] =
 
     val producer = Producer[BaseText]()
+    val output = producer.iterator
 
-    async:
-      writeDocument(new Textual(producer), formatting, document)
-      producer.finish()
+    producer.transfer: (producer, _, _) ?=>
+      writeDocument(new Textual(producer()), formatting, document)
+      producer().finish()
 
-    producer.iterator
+    output
 
   // The push form: serializes on the caller's thread, handing each block to `deliver` as it
   // fills, so no fiber is involved — the right shape for writing to a file, a socket or an

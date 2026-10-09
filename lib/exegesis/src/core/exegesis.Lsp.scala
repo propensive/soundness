@@ -1508,14 +1508,20 @@ object Lsp:
   // costs more than the one-line no-op it saves.
   object Observer:
     // The default: a server that does not expose its traffic pays nothing for the hook.
-    object Silent extends Observer:
-      def received(message: Text): Unit = ()
-      def sent(message: Text): Unit = ()
+    // An `Observer` is a capability class, so an instance is `^`-typed; this one captures
+    // nothing, and the fresh capability it constitutes is laundered away once, so the silent
+    // observer is a pure value, storable in this object and as a default argument.
+    val Silent: Observer^{} = caps.unsafe.unsafeAssumePure:
+      new Observer:
+        def received(message: Text): Unit = ()
+        def sent(message: Text): Unit = ()
 
     // Supplied contextually, as for `Listener.quiet`.
-    given silent: Observer = Silent
+    given silent: (Observer^{}) = Silent
 
-  trait Observer:
+  // A shared capability: the writer task reports what it sends and the reader task what it
+  // receives, so an observer is called from two tasks at once and must be safe to.
+  trait Observer extends caps.SharedUnscoped:
     def received(message: Text): Unit
     def sent(message: Text): Unit
 
@@ -1637,9 +1643,10 @@ object Lsp:
   // interleave. Everything stateful — registry, session, dispatcher — is local to this call:
   // nothing capability-carrying is ever stored in an application-lifetime object. `observer`, if
   // given, sees every message in both directions as it crosses the transport.
+  // The standard streams are the process's own (pure): the writer task writes to them.
   def listen(name: Text, version: Optional[Text] = Unset, observer: Observer^ = Observer.Silent)
     ( register: (registry: Lsp.Registry^) ?=> Unit )
-    ( using Stdio^, Monitor, Probate )
+    ( using Stdio, Monitor, Probate )
   :   Unit =
 
     import codepages.utf8Codepage
@@ -1658,9 +1665,13 @@ object Lsp:
 
     // The writer drains the channel and frames each message onto stdout. The observer sees the
     // encoded body, not the framing, so both directions read alike in a log.
+    // The relay is taken off the session here, so the task captures the relay (a plain value)
+    // rather than the session.
+    val outgoing = session.outgoing
+
     val writer: Task[Unit] = async:
       // The stdlib view is drained element by element, without memoizing the live chain.
-      session.outgoing.stdlib.iterator.each: json =>
+      outgoing.stdlib.iterator.each: json =>
         val body: Text = json.encode
         observer.sent(body)
         summon[Stdio].write(LspTransport.frame(body))
@@ -1745,8 +1756,11 @@ object Lsp:
   // onto the transport; inbound messages are read by the session's reader and routed here. A request
   // blocks the caller until its response arrives, but never blocks the reader, so several requests
   // may be in flight at once and may be answered out of order.
+  // A shared capability: a connection is driven by its writer and reader tasks and by the
+  // caller's thread at once, and its state (the outgoing relay, the pending promises) is
+  // synchronised.
   class Connection private[exegesis] ()(using Monitor, Diagnostics)
-  extends JsonRpc, caps.ExclusiveCapability:
+  extends JsonRpc, caps.SharedCapability:
     type Origin = Lsp
 
     import strategies.throwUnsafely
@@ -2076,7 +2090,9 @@ object Lsp:
   // context-function type freshens its capture sets at every adaptation, so the typed boundary is
   // the combinator (whose parameter is the pure handler type — a handler closing over the registry
   // is rejected there) and the session's invocation helpers, which restore the type by cast.
-  class Registry private[exegesis] () extends caps.ExclusiveCapability:
+  // A shared capability: registration completes before serving begins, and the slots are then
+  // read by the dispatch loop and whatever tasks it spawns.
+  class Registry private[exegesis] () extends caps.SharedCapability:
 
     @scala.caps.unsafe.untrackedCaptures
     var ready0: AnyRef | Null = null
@@ -2285,7 +2301,7 @@ object Lsp:
     var resolveWorkspaceSymbol0: AnyRef | Null = null
 
     @scala.caps.unsafe.untrackedCaptures
-    var adjust0: Optional[ServerCapabilities => ServerCapabilities] = Unset
+    var adjust0: Optional[ServerCapabilities ->{caps.any.only[caps.SharedCapability]} ServerCapabilities] = Unset
 
     private def flag(registered: AnyRef | Null): Optional[Boolean] =
       if registered == null then Unset else true
@@ -2410,7 +2426,7 @@ object Lsp:
       // Nullable rather than `Optional`, and alone among the rules in that: a function in a
       // container is capture-polymorphic, and the block is passed to a task rather than called here,
       // which is one adaptation more than an `Optional` of it survives.
-      val connected0: (() => Unit) | Null = connected(proxy.connected0)
+      val connected0: (() -> Unit) | Null = connected(proxy.connected0)
 
       // The method each in-flight request named, by the text of its id. An id is matched by its
       // encoded form because the protocol allows either a number or a string, and the proxy neither
@@ -2548,8 +2564,8 @@ object Lsp:
 
         relay
 
-    private def connected(block: AnyRef | Null): (() => Unit) | Null =
-      if block == null then null else block.asInstanceOf[Lsp.Registry.Slot[() => Unit]].value
+    private def connected(block: AnyRef | Null): (() -> Unit) | Null =
+      if block == null then null else block.asInstanceOf[Lsp.Registry.Slot[() -> Unit]].value
 
     // The id of a message, if the peer chose a string for it: the form `JsonRpc.call` mints, and so
     // the form a response to a request the proxy made itself comes back under.

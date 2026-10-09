@@ -49,7 +49,7 @@ extension (service: Discovery.Service)
   transparent inline def advertise[result](description: Discovery.Description)
     ( using backend: Discovery.Backend^ )
     ( block: Discovery.Advertisement ?=> result )
-    ( using Monitor^, Probate^, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
+    ( using Monitor^, SharedProbate, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
   :   result =
 
     val advertising = backend.advertise(service, description)
@@ -58,7 +58,7 @@ extension (service: Discovery.Service)
 
   transparent inline def browse[result](using backend: Discovery.Backend^)
     ( block: Discovery.Browser ?=> result )
-    ( using Monitor^, Probate^, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
+    ( using Monitor^, SharedProbate, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
   :   result =
 
     val browsing = backend.browse(service)
@@ -68,7 +68,7 @@ extension (service: Discovery.Service)
 extension (instance: Discovery.Instance)
   def resolve[duration: Abstractable across Durations to Long](timeout: duration)
     ( using backend: Discovery.Backend^ )
-    ( using Monitor^, Probate^, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
+    ( using Monitor^, SharedProbate, Tactic[Discovery.Error], (Discovery.Activity is Loggable)^ )
   :   Discovery.Resolution =
 
     backend.resolve(instance, timeout)

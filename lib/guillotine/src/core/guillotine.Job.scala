@@ -78,9 +78,12 @@ object Job:
 // exit status and pid speak for the pipeline — and `head` is where input is written, which for a
 // single command is the same process. The distinction is not cosmetic: `startPipeline` replaces
 // every process's standard input but the first's with a null stream that throws on any write.
+// A shared capability, as `Process` is: a job's output streams are drained by one task each
+// while another awaits its exit and the caller may abort it, and `java.lang.Process` is
+// thread-safe.
 class Job[+exec <: Label, result] private[guillotine]
    ( process: java.lang.Process, head: java.lang.Process )
-extends Subprocess, Process.Ref, caps.ExclusiveCapability:
+extends Subprocess, Process.Ref, caps.SharedCapability:
 
   private[guillotine] def this(process: java.lang.Process) = this(process, process)
 

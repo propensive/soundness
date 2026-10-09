@@ -141,7 +141,11 @@ object Debuggee:
         safely(job.stderr().chunks.each { chunk => console.err.put(chunk) })
         console.err.stop()
 
-      val exitWatch: Task[Unit] = async(console.exited.offer(job.exitStatus()))
+      // [logger-capture] The exit watch logs through the session's logger, which a task body may
+      // not capture (a logger captures its sink, and is unclassified). A logger is shared by
+      // nature; until `Loggable` says so, its purity is asserted for this one task.
+      val exitLog: (Exec.Event is Loggable) = scala.caps.unsafe.unsafeAssumePure(exec)
+      val exitWatch: Task[Unit] = async(console.exited.offer(job.exitStatus()(using exitLog)))
 
       try
         val port: Int =

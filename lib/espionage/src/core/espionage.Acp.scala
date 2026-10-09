@@ -686,13 +686,12 @@ object Acp:
   // capability-carrying is ever stored in an application-lifetime object. `observer`, if given,
   // sees every message in both directions as it crosses the transport.
   //
-  // `capture` lets the connection block capture the monitor, which a block that spawns a task —
-  // to prompt and cancel concurrently, say — needs; exegesis's `Lsp.proxy` takes the same shape.
-  def connect[result, capture^](agent: Agent, observer: Observer = Observer.Silent)
+  // The connection block may capture the monitor — which a block that spawns a task, to prompt
+  // and cancel concurrently, say, needs — freely: a monitor is a shared capability.
+  def connect[result](agent: Agent, observer: Observer = Observer.Silent)
     ( register: (registry: Acp.Registry^) ?=> Unit )
-    ( lambda: (connection: Acp.Connection) ?->{capture} result )
-    ( using Monitor^{capture}, Probate, Diagnostics, WorkingDirectory, Environment,
-            Tactic[Acp.Error] )
+    ( lambda: (connection: Acp.Connection) ?=> result )
+    ( using Monitor^, Probate, Diagnostics, WorkingDirectory, Environment, Tactic[Acp.Error] )
   :   result =
 
     import strategies.throwUnsafely
@@ -703,7 +702,7 @@ object Acp:
     val state: State = State()
     val service: Service^ = Service(registry, state)
 
-    def open(sink: (Intake[Data] over Credit)^, read: (Text => Unit) => Unit): result =
+    def open(consume sink: (Intake[Data] over Credit)^, consume read: (Text => Unit) => Unit): result =
       Exchange.exchange(service, state, observer, sink, read): connection =>
         connection.initialize(service.capabilities)
         lambda(using connection)
@@ -713,7 +712,8 @@ object Acp:
         val streamable = summon[ji.InputStream is Streamable by Data over Credit]
         val sink = summon[ji.OutputStream is Sink by Data over Credit].intake(output)
 
-        try open(sink, Transport.pump(streamable.stream(input), observer)(_)) finally sink.finish()
+        // The sink is owned, and finished, by the exchange's writer task.
+        open(sink, Transport.pump(streamable.stream(input), observer)(_))
 
       case Agent.Process(command) =>
         // Launched with a silent logger and a throwing tactic: a failure to launch has no
@@ -749,13 +749,19 @@ object Acp:
   // framed onto — the wire, before parsing, so a malformed message is observed too.
   object Observer:
     // The default: a client that does not expose its traffic pays nothing for the hook.
-    object Silent extends Observer:
-      def received(message: Text): Unit = ()
-      def sent(message: Text): Unit = ()
+    // An `Observer` is a capability class, so an instance is `^`-typed; this one captures
+    // nothing, and the fresh capability it constitutes is laundered away once, so the silent
+    // observer is a pure value, storable in this object and as a default argument.
+    val Silent: Observer^{} = caps.unsafe.unsafeAssumePure:
+      new Observer:
+        def received(message: Text): Unit = ()
+        def sent(message: Text): Unit = ()
 
-    given silent: Observer = Silent
+    given silent: (Observer^{}) = Silent
 
-  trait Observer:
+  // A shared capability: the writer task reports what it sends and the reader task what it
+  // receives, so an observer is called from two tasks at once and must be safe to.
+  trait Observer extends caps.SharedUnscoped:
     def received(message: Text): Unit
     def sent(message: Text): Unit
 
@@ -842,7 +848,9 @@ object Acp:
   // type freshens its capture sets at every adaptation, so the typed boundary is the combinator
   // (whose parameter is the pure handler type — a handler closing over the registry is rejected
   // there) and the service's invocation helpers, which restore the type by cast.
-  class Registry private[espionage] () extends caps.ExclusiveCapability:
+  // A shared capability, as `exegesis.Lsp.Registry`: registered before serving, read from every
+  // task after.
+  class Registry private[espionage] () extends caps.SharedCapability:
 
     @scala.caps.unsafe.untrackedCaptures
     var updated0: AnyRef | Null = null
@@ -860,7 +868,7 @@ object Acp:
     var terminal0: AnyRef | Null = null
 
     @scala.caps.unsafe.untrackedCaptures
-    var adjust0: Optional[ClientCapabilities => ClientCapabilities] = Unset
+    var adjust0: Optional[ClientCapabilities ->{caps.any.only[caps.SharedCapability]} ClientCapabilities] = Unset
 
     // The capabilities the client advertises at initialization, derived from what was
     // registered, so the declaration can never disagree with the implementation; `adjust0`, if
@@ -885,8 +893,10 @@ object Acp:
   // request blocks the caller until its response arrives, but never blocks the reader, so
   // several requests may be in flight at once — a prompt turn stays open while its updates
   // stream — and may be answered out of order.
+  // A shared capability, as `exegesis.Lsp.Connection`: driven by its writer and reader tasks
+  // and by the caller's thread at once, with synchronised state.
   class Connection private[espionage] (state: State)(using Monitor, Diagnostics)
-  extends JsonRpc, caps.ExclusiveCapability:
+  extends JsonRpc, caps.SharedCapability:
     type Origin = AcpAgent
 
     import strategies.throwUnsafely
@@ -1020,8 +1030,10 @@ object Acp:
     private[espionage] def apply(consume registry: Registry^, state: State): Service^ =
       new Service(registry, state)
 
+  // A shared capability: the service answers requests from the reader task and the tasks it
+  // spawns per request; its registry is shared and its state synchronised.
   private[espionage] class Service private (handlers: Registry^, state: State)
-  extends AcpClient, caps.ExclusiveCapability:
+  extends AcpClient, caps.SharedCapability:
     // Confined to this class rather than the file: `Acp.Error`'s constructor needs a
     // `Diagnostics`, and an ambient one would compete with the connection's own.
     import errorDiagnostics.stackTracesDiagnostics
@@ -1237,14 +1249,14 @@ object Acp:
     // `capture` flows through from `Acp.connect`: the lent block may capture the monitor (to
     // spawn tasks of its own), so the lambda — and the monitor it overlaps with — must both be
     // typed to admit it.
-    private[espionage] def exchange[result, capture^]
+    private[espionage] def exchange[result]
       ( service:  Service^,
         state:    State,
         observer: Acp.Observer,
-        sink:     (Intake[Data] over Credit)^,
-        read:     (Text => Unit) => Unit )
-      ( lambda: Acp.Connection ->{capture} result )
-      ( using Monitor^{capture}, Probate, Diagnostics )
+        consume sink: (Intake[Data] over Credit)^,
+        consume read: (Text => Unit) => Unit )
+      ( lambda: Acp.Connection => result )
+      ( using Monitor^, Probate, Diagnostics )
     :   result =
 
       import strategies.throwUnsafely
@@ -1261,13 +1273,13 @@ object Acp:
       // class stays within the JVM constant-pool limit.
       val serving: AcpClient = caps.unsafe.unsafeAssumePure(service)
 
-      val sessionDispatch: Json => Optional[Json] =
+      val sessionDispatch: Json ->{caps.any.only[caps.SharedCapability]} Optional[Json] =
         JsonRpc.serve[AcpClientSession](serving)
 
-      val fsDispatch: Json => Optional[Json] =
+      val fsDispatch: Json ->{caps.any.only[caps.SharedCapability]} Optional[Json] =
         JsonRpc.serve[AcpClientFs](serving)
 
-      val terminalDispatch: Json => Optional[Json] =
+      val terminalDispatch: Json ->{caps.any.only[caps.SharedCapability]} Optional[Json] =
         JsonRpc.serve[AcpClientTerminal](serving)
 
       val sessionMethods: List[Text] = JsonRpc.methods[AcpClientSession]
@@ -1276,18 +1288,23 @@ object Acp:
 
       // A single writer, so writes never interleave. The encoding is compact — the framing
       // forbids embedded newlines. The observer sees the encoded body, not the terminator.
-      val writer: Task[Unit] = async:
-        // The stdlib view is drained element by element, without memoizing the live chain.
-        connection.outgoing.stdlib.iterator.each: json =>
-          val body: Text = json.encode
-          observer.sent(body)
-          sink.put(Transport.frame(body))
-          sink.flush()
+      // The writer task owns the sink it frames messages onto, and the reader task the read
+      // loop; the dispatchers are pure, closing only over the (pure-typed) serving client.
+      val writer: Task[Unit] = sink.transfer: (sink, _, _) ?=>
+        // The stdlib view is drained element by element, without memoizing the live chain; the
+        // sink is finished when the drain ends, or when the task is cancelled.
+        try
+          connection.outgoing.stdlib.iterator.each: json =>
+            val body: Text = json.encode
+            observer.sent(body)
+            sink().put(Transport.frame(body))
+            sink().flush()
+        finally sink().finish()
 
       // Runs one dispatch and sends its conclusion. Faults become error responses; a message the
       // dispatcher cannot decode is answered rather than dropped, so the agent never hangs
       // awaiting an answer.
-      def serve(dispatch: Json => Optional[Json])(json: Json): Unit =
+      def serve(dispatch: Json ->{caps.any.only[caps.SharedCapability]} Optional[Json])(json: Json): Unit =
         val id: Optional[Json] = Acp.requestId(json)
 
         val response: Optional[Json] =
@@ -1309,8 +1326,8 @@ object Acp:
       // decision for minutes, and running it here would stall both update streaming and response
       // correlation. (This is the deliberate divergence from LSP's single-loop server, whose
       // reverse direction is notifications-only for exactly that reason.)
-      val reader: Task[Unit] = async:
-        read: message =>
+      val reader: Task[Unit] = read.transfer: (read, _, _) ?=>
+        read(): message =>
           safely(message.as[Json]).let: json =>
             Acp.method(json).lay(sessionDispatch(json) yet ()): method =>
               if sessionMethods.has(method) then

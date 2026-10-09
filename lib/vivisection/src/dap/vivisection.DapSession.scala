@@ -197,17 +197,17 @@ private[vivisection] class DapSession(emit: Json => Unit)
     debug.console.let: console =>
       val adapter = self
 
-      val out: () => Unit =
+      val out: () -> Unit =
         caps.unsafe.unsafeAssumePure: () =>
           console.stdout.each: data =>
             adapter.send(t"output", Dap.OutputBody(data.utf8, t"stdout").in[Json])
 
-      val err: () => Unit =
+      val err: () -> Unit =
         caps.unsafe.unsafeAssumePure: () =>
           console.stderr.each: data =>
             adapter.send(t"output", Dap.OutputBody(data.utf8, t"stderr").in[Json])
 
-      val exit: () => Unit =
+      val exit: () -> Unit =
         caps.unsafe.unsafeAssumePure: () =>
           safely(console.exited.await()).let: status =>
             val code = status match
@@ -266,7 +266,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
         // The session task's body is laundered into a pure thunk: opening the session uses
         // this adapter's capabilities, which the task must not be seen to smuggle; the task
         // dies with the adapter.
-        val body: () => Unit =
+        val body: () -> Unit =
           caps.unsafe.unsafeAssumePure: () =>
             val outcome: Optional[Unit] = safely[Debugger.Error]:
               val command: Command =
@@ -289,7 +289,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
         val endpoint: Endpoint[Tcp.Port] =
           Endpoint(arguments.hostName.or(t"localhost"), Port[Tcp](arguments.port))
 
-        val body: () => Unit =
+        val body: () -> Unit =
           caps.unsafe.unsafeAssumePure: () =>
             val outcome: Optional[Unit] = safely[Debugger.Error]:
               // Connected directly rather than through `Debugger.session`, for the same

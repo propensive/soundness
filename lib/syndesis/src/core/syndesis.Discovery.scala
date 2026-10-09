@@ -243,7 +243,7 @@ object Discovery:
   // checking), so what it does in the background between loans goes unreported.
   object Activity:
     // For a backend's background work, which has no loan to report to.
-    val silent: Activity is Loggable = (_, _, _) => ()
+    val silent: (Activity is Loggable)^{} = Loggable.silent[Activity]
 
     given communicable: Activity is Communicable =
       case Probing(name)       => m"probing for the name $name"
@@ -277,20 +277,20 @@ object Discovery:
     // whose `instance` is the name claimed — and later renamed, if a conflict after
     // establishment (RFC 6762 §9) forces it.
     def advertise(service: Service, description: Description)
-      ( using Monitor^, Probate^, Tactic[Discovery.Error], (Activity is Loggable)^ )
+      ( using Monitor^, SharedProbate, Tactic[Discovery.Error], (Activity is Loggable)^ )
     :   Advertising
 
     def withdraw(advertising: Advertising)(using Monitor^, (Activity is Loggable)^): Unit
 
     def browse(service: Service)
-      ( using Monitor^, Probate^, Tactic[Discovery.Error], (Activity is Loggable)^ )
+      ( using Monitor^, SharedProbate, Tactic[Discovery.Error], (Activity is Loggable)^ )
     :   Browsing
 
     def dismiss(browsing: Browsing)(using Monitor^): Unit
 
     def resolve[duration: Abstractable across Durations to Long]
       ( instance: Instance, timeout: duration )
-      ( using Monitor^, Probate^, Tactic[Discovery.Error], (Activity is Loggable)^ )
+      ( using Monitor^, SharedProbate, Tactic[Discovery.Error], (Activity is Loggable)^ )
     :   Resolution
 
   // A browse in progress, as a backend hands it over: the events it will relay, and a view of

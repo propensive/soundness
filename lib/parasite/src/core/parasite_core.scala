@@ -71,13 +71,13 @@ package probates:
   // Cleanup runs on the completing worker's own strand, with no ambient `Monitor`: the dying
   // worker itself licenses the suspension (a `Worker` IS a `Monitor`).
   given awaitProbate: Probate = worker =>
-    scala.caps.unsafe.unsafeAssumeSeparate(worker.delegate(_.attend()(using worker)))
+    worker.delegate(_.attend()(using worker))
   given cancelProbate: Probate = _.delegate(_.cancel())
 
   given panicProbate: Probate = _.delegate: child =>
     if !child.ready then fulminate.panic(m"asynchronous child task did not complete")
 
-  // The only capturing probate: its instance closes over the ambient `Tactic`, so it is `Probate^`.
+  // The only capturing probate: its instance closes over the ambient `Tactic`, so it is `SharedProbate`.
   given failProbate: (tactic: Tactic[Async.Error]) => (Probate^{tactic}) = _.delegate: child =>
     if !child.ready then raise(Async.Error(Async.Error.Reason.Incomplete))
 
@@ -123,7 +123,7 @@ transparent inline def monitor: Monitor^ = infer[Monitor^]
 // nearest `contain`/`Probate`.
 def daemon[error <: Hazard](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?->{} Unit )
-  ( using Monitor^, Probate^ )
+  ( using Monitor^, SharedProbate )
 :   Daemon =
 
   val tactic = AsyncTactic[error]()
@@ -135,7 +135,7 @@ def daemon[error <: Hazard](using Codepoint)
 // containment is a child supervision scope of the enclosing `Monitor`, so unmatched or rejected
 // errors chain outwards to the parent scope's probate, up to the root. Distinct from the typed
 // `trap` (declared emitted errors).
-def contain(handler: PartialFunction[Error, Remedy]^)(using outer: Probate^)
+def contain(handler: PartialFunction[Error, Remedy]^{caps.any.only[caps.SharedCapability]})(using outer: SharedProbate)
 :   Containment^{handler, outer} =
   Containment(handler, outer)
 
@@ -156,8 +156,8 @@ infix type emits[left, error <: Hazard] = left match
 // join. The body is evaluated with an `AsyncTactic[error]` that records a raised error as the
 // worker's `Failed` outcome instead of trying to break a stack-confined `boundary` across threads.
 def async[result, error <: Hazard](using Codepoint)
-  ( evaluate: (Worker, Tactic[error]) ?=> result )
-  ( using monitor: Monitor^, probate: Probate^ )
+  ( evaluate: (Worker, Tactic[error]) ?->{caps.any.only[caps.SharedCapability]} result )
+  ( using monitor: Monitor^, probate: SharedProbate )
 :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
 
   // The tactic is per-task bookkeeping owned by the worker; laundered so the handle's
@@ -167,13 +167,54 @@ def async[result, error <: Hazard](using Codepoint)
 
 
 def task[result, error <: Hazard](using Codepoint)(name: Name[Async])
-  ( evaluate: (Worker, Tactic[error]) ?=> result )
-  ( using monitor: Monitor^, probate: Probate^ )
+  ( evaluate: (Worker, Tactic[error]) ?->{caps.any.only[caps.SharedCapability]} result )
+  ( using monitor: Monitor^, probate: SharedProbate )
 :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
 
   // As in `async` above.
   val tactic = caps.unsafe.unsafeAssumePure(AsyncTactic[error]())
   Task[result, error | Async.Error](worker => evaluate(using worker, tactic), name = name)
+
+
+// A task that OWNS an exclusive resource. A task body may capture only shared capabilities
+// (the handle is a shared `Monitor`, and retains the body), so an exclusive resource — a
+// `Producer^` to feed, a `Stream^` to pump, a loop object to run — cannot be closed over. It
+// is transferred instead: `consume` takes it from the caller, which can no longer use it, and
+// the body receives it as its sole user, as its first context parameter:
+//
+//     producer.transfer: (producer, _, _) ?=> producer().put(…)
+//
+// The worker's retention of the resource is asserted here, once: the transfer is what makes
+// it honest.
+extension [resource](consume resource: resource^)
+  def transfer[result, error <: Hazard](using Codepoint)
+    ( evaluate: (Task.Owned[resource], Worker, Tactic[error]) ?->{caps.any.only[caps.SharedCapability]} result )
+    ( using monitor: Monitor^, probate: SharedProbate )
+  :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
+
+    val tactic = caps.unsafe.unsafeAssumePure(AsyncTactic[error]())
+    val owned = Task.Owned[resource](resource.asInstanceOf[AnyRef])
+
+    // Pure by assertion: the body's only non-shared capture is the resource just transferred,
+    // whose previous owner consumed it.
+    val body: Worker -> result =
+      caps.unsafe.unsafeAssumePure((worker: Worker) => evaluate(using owned, worker, tactic))
+
+    Task[result, error | Async.Error](body, name = Unset)
+
+  // As `transfer`, for a named task.
+  def transfer[result, error <: Hazard](using Codepoint)(name: Name[Async])
+    ( evaluate: (Task.Owned[resource], Worker, Tactic[error]) ?->{caps.any.only[caps.SharedCapability]} result )
+    ( using monitor: Monitor^, probate: SharedProbate )
+  :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
+
+    val tactic = caps.unsafe.unsafeAssumePure(AsyncTactic[error]())
+    val owned = Task.Owned[resource](resource.asInstanceOf[AnyRef])
+
+    val body: Worker -> result =
+      caps.unsafe.unsafeAssumePure((worker: Worker) => evaluate(using owned, worker, tactic))
+
+    Task[result, error | Async.Error](body, name = name)
 
 
 def relent[result]()(using Worker): Unit = monitor.relent()
@@ -200,10 +241,10 @@ def sleep[time: Schedulable](time: time)(using Monitor^): Unit =
 
 
 extension [result](stream: Chain[result])
-  def concurrent(using monitor: Monitor^, probate: Probate^)
+  def concurrent(using monitor: Monitor^, probate: SharedProbate)
   :   (Tactic[Async.Error]^) ?->{monitor, probate} Chain[result] =
     // The task is created and awaited under the same monitor; there is no aliased writer.
-    if scala.caps.unsafe.unsafeAssumeSeparate(async(stream.nil).await())
+    if async(stream.nil).await()
     then Chain() else stream match
       // The `nil` check above already forced the first cell (inside a task, since forcing may
       // block on a live source), so this match forces nothing further.
@@ -225,36 +266,36 @@ def supervise[result](block: Monitor ?=> result)(using threading: Threading, cod
 // whenever the elements outnumber the cores and each is cheap. Results are kept in a plain array
 // indexed by job number, so the output is ordered by job, not by completion. A job's exception
 // fails its task and surfaces here at that task's join, as it would from an `await`.
-def concurrently[result: ClassTag](count: Int, parallelism: Int)(job: Int => result)
-  ( using monitor: Monitor^, probate: Probate^, codepoint: Codepoint )
+def concurrently[result: ClassTag](count: Int, parallelism: Int)(job: Int ->{caps.any.only[caps.SharedCapability]} result)
+  ( using monitor: Monitor^, probate: SharedProbate, codepoint: Codepoint )
 :   (Tactic[Async.Error]^) ?->{job, monitor, probate} scala.IArray[result] =
 
   val index: Atomic[Int] = Atomic(0)
-  val output: scala.Array[result] = new scala.Array[result](count)
+
+  // The slots are a thread-safe Java array, which the checker sees as a plain value: every worker
+  // writes only the indices it has claimed through the counter, and the array is read only after
+  // every worker has joined. (An exclusive `Array[result]^` could not be shared by the task
+  // bodies, which may capture only shared capabilities.)
+  val output = java.util.concurrent.atomic.AtomicReferenceArray[result](count)
 
   // Sealed to pure handles as the `sequence` façade does: the workers are started and joined
-  // inside this one call, so their captures (the output array, the job, the scope) never escape.
+  // inside this one call, so their captures (the job, the scope) never escape.
   val tasks: List[Task[Unit]] =
     List.fill(parallelism.min(count).max(0)):
       caps.unsafe.unsafeAssumePure:
        async:
-         // The write view of the shared output: each worker writes only the slots it has
-         // claimed through the counter, and the array is read only after every worker has
-         // joined — the discipline separation checking cannot see through the closure (cf.
-         // `Handoff#drain`).
-         val slots = output.asInstanceOf[scala.Array[result]^]
          var running = true
 
          while running do
            // `ere` yields the counter's prior value: the index this worker has claimed.
            val i = index.ere(_ + 1)
-           if i >= count then running = false else slots(i) = job(i)
+           if i >= count then running = false else output.set(i, job(i))
 
   // Joined here rather than through `sequence`, which would start one more task for the join;
   // through the stdlib bridge because a `Task` join inside an `each` lambda trips the compiler.
   tasks.stdlib.foreach { (task: Task[Unit]) => task.join() }
 
-  scala.IArray.unsafeFromArray(output)
+  scala.IArray.tabulate(count)(output.get(_).nn)
 
 
 def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> value)

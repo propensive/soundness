@@ -260,7 +260,7 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
     val driver = ScalacDriver()
     val currentContext = driver.baseContext(arguments).get
 
-    given dtdc.Contexts.Context = currentContext.fresh.pipe: context =>
+    given context: dtdc.Contexts.Context = currentContext.fresh.pipe: context =>
       context
       . setReporter(reporter)
       . setCompilerCallback(new dtdi.CompilerCallback {})
@@ -272,17 +272,22 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
       . stdlib
 
     scalacProcess.put:
-      // The run compiles under this process's own compiler and reporter; no aliased
-      // writer.
-      scala.caps.unsafe.unsafeAssumeSeparate:
-       task(n"scalac"):
+      // The compilation context retains the reporter, and the reporter its logger, so the task
+      // owns the context and reads the reporter through it. Ascribed to its fresh form: inferred
+      // from the `given`, the owned type would name the `given` itself.
+      (context: dtdc.Contexts.Context^).transfer(n"scalac"): (context, _, _) ?=>
+        // dotty's API takes a pure `Context`; this one is the task's own, so the assertion is
+        // about the API's signature, not about aliasing.
+        given dtdc.Contexts.Context = scala.caps.unsafe.unsafeAssumePure(context())
+
         try
-          Scalac.compiler().newRun.tap: run =>
-            run.compileSources(sourceFiles)
-            if !reporter.hasErrors then driver.finishRun(Scalac.Scala3, run)
+          val run = Scalac.compiler().newRun
+          run.compileSources(sourceFiles)
+          if !summon[dtdc.Contexts.Context].reporter.hasErrors then driver.finishRun(Scalac.Scala3, run)
 
           scalacProcess.put
-            ( if reporter.hasErrors then CompileResult.Failure else CompileResult.Success )
+            ( if summon[dtdc.Contexts.Context].reporter.hasErrors then CompileResult.Failure
+              else CompileResult.Success )
 
         catch case suc.NonFatal(error) =>
           scalacProcess.put(CompileResult.Crash(error.stackTrace))

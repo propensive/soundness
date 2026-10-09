@@ -58,7 +58,14 @@ import Fulfillment.*
 import beneficence.*
 import unsafeExceptions.canThrowAny
 
-sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
+// A `SharedCapability`, as `contingency.Emit` is: a monitor is used from many tasks at once by
+// design — every task spawned under it captures it, and every join passes it again — and its
+// state (the promise, the children, the deadline) is synchronised internally. Shared
+// classification removes only the separation check between two uses of one monitor, which is
+// what a task handle captured under `supervise` and the `await` that joins it with the same
+// monitor are; the capture itself is still tracked, so neither a handle nor the monitor can
+// leave the `supervise` block (`rep/sepcheck-probes/p19-*`).
+sealed trait Monitor extends Resultant, Findable, caps.SharedCapability:
   self: Monitor^ =>
   val promise: Promise[Result]
 
@@ -266,7 +273,7 @@ private object Preload:
 
     Fulfillment.Initializing
 
-abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) extends Monitor:
+abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate) extends Monitor:
   self: Worker^ =>
   private val state: Atomic[Fulfillment[Result]] = Atomic(Preload.initial)
 
@@ -314,13 +321,13 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
     if supervisor.interrupted() || state() == Cancelled then throw new InterruptedException()
 
 
-  def map[result2](lambda: Result => result2)(using monitor: Monitor^, probate: Probate^)
+  def map[result2](lambda: Result ->{caps.any.only[caps.SharedCapability]} result2)(using monitor: Monitor^, probate: SharedProbate)
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate} =
 
     async(lambda(join()))
 
 
-  def bind[result2](lambda: Result => Task[result2])(using monitor: Monitor^, probate: Probate^)
+  def bind[result2](lambda: Result ->{caps.any.only[caps.SharedCapability]} Task[result2])(using monitor: Monitor^, probate: SharedProbate)
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate} =
 
     async(lambda(join()).join())

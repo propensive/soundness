@@ -161,9 +161,12 @@ private[anthology] def notice(diagnostic: Diagnostic): Notice =
   . nn
 
 // A reporter which relays each diagnostic to the given `CompileProcess` as a `Notice`.
+private[anthology] type ProcessReporter =
+  Reporter & UniqueMessagePositions & HideNonSensicalMessages
+
 private[anthology] def processReporter(process: CompileProcess)
   ( using loggable: (CompileEvent is Loggable)^ )
-:   (Reporter & UniqueMessagePositions & HideNonSensicalMessages)^{loggable} =
+:   ProcessReporter^{loggable} =
 
   new Reporter with UniqueMessagePositions with HideNonSensicalMessages:
     def doReport(diagnostic: Diagnostic)(using dtdc.Contexts.Context): Unit =

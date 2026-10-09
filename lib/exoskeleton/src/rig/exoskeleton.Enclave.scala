@@ -80,7 +80,10 @@ object Enclave:
 
   // A `Tool` is a *capability*: it references a live installed daemon process whose lifetime
   // is the `sandbox` block that spawns it (killed, and its files deleted, after the block).
-  case class Tool(path: Path on Linux, pid: Pid) extends caps.ExclusiveCapability:
+  // A shared capability: the built tool is a descriptor (its path and the daemon's pid) that
+  // every tmux session of a suite drives at once — captured by each session's action and passed
+  // to the loan that runs it.
+  case class Tool(path: Path on Linux, pid: Pid) extends caps.SharedCapability:
     def command: Text = path.name
 
     def completions(using Monitor, Environment)[result](block: => Unit): Optional[Text] =

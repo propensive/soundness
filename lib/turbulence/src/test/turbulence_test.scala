@@ -544,7 +544,7 @@ object Tests extends Suite(m"Turbulence tests"):
           val reader = async(relay.stream.records.to(Set))
           producers.each(_.await())
           relay.stop()
-          unsafely(scala.caps.unsafe.unsafeAssumeSeparate(reader.await()))
+          unsafely(reader.await())
       . assert(_ == (for index <- 1 to 4; value <- 1 to 25 yield t"${index*100 + value}").to(Set))
 
       // The relay's contract is that producers never block: it is the many-producer
@@ -566,7 +566,7 @@ object Tests extends Suite(m"Turbulence tests"):
             for value <- 1 to 100 do relay.put(t"$value")
             relay.stop()
 
-          unsafely(scala.caps.unsafe.unsafeAssumeSeparate(async(relay.stream.records.to(List)).await()))
+          unsafely(async(relay.stream.records.to(List)).await())
       . assert(_ == (1 to 100).to(List).map { value => t"$value" })
 
     suite(m"Line splitting"):
@@ -804,7 +804,7 @@ object Tests extends Suite(m"Turbulence tests"):
           Conduit[Data]() match
            case (intake, stream) =>
             val big = Data.fill(100000)(_.toByte)
-            val writer = async(intake.put(big))
+            val writer = intake.transfer: (intake, _, _) ?=> intake().put(big)
             writer.cancel()
             true
       . assert(identity)
@@ -835,9 +835,10 @@ object Tests extends Suite(m"Turbulence tests"):
           // (D6; the `Seq[Task].sequence` shape).
           val results = subscribers.map: stream =>
             caps.unsafe.unsafeAssumePure:
-              async:
+              (stream: (Stream[Data] over Credit)^).transfer: (stream, _, _) ?=>
                 val gather = Gather2()
-                scala.caps.unsafe.unsafeAssumeSeparate(stream.pump(gather))
+                // The pump of a fresh stream into a fresh intake: the `[pump-overlap]` seal.
+                caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
                 scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
 
           results.map { task => task.await() }.to(List)
@@ -860,9 +861,10 @@ object Tests extends Suite(m"Turbulence tests"):
           // (D6; the `Seq[Task].sequence` shape).
           val results = subscribers.map: stream =>
             caps.unsafe.unsafeAssumePure:
-              async:
+              (stream: (Stream[Data] over Credit)^).transfer: (stream, _, _) ?=>
                 val gather = Gather2()
-                scala.caps.unsafe.unsafeAssumeSeparate(stream.pump(gather))
+                // The pump of a fresh stream into a fresh intake: the `[pump-overlap]` seal.
+                caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
                 scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
 
           results.map { task => task.await() }.to(List)
@@ -959,17 +961,17 @@ object Tests extends Suite(m"Turbulence tests"):
           val subscribers = Divergence(Meter(chunkStream(256), counter), 2)
           val eager = subscribers(0)
           val stalled = subscribers(1)
-          val gatherA = Gather2()
 
           val taskA = caps.unsafe.unsafeAssumePure:
-            async:
-              scala.caps.unsafe.unsafeAssumeSeparate(eager.pump(gatherA))
+            (eager: (Stream[Data] over Credit)^).transfer: (eager, _, _) ?=>
+              val gatherA = Gather2()
+              caps.unsafe.unsafeAssumeSeparate(eager().pump(gatherA))
               scala.caps.unsafe.unsafeAssumeSeparate(gatherA.data).readable.length
 
           awaitStability(sci.IndexedSeq(counter))
           val gated = counter.get()
           val gatherB = Gather2()
-          scala.caps.unsafe.unsafeAssumeSeparate(stalled.pump(gatherB))
+          stalled.pump(gatherB)
 
           ( gated <= 64L,
             taskA.await(),
@@ -988,9 +990,9 @@ object Tests extends Suite(m"Turbulence tests"):
           val eager = subscribers(0)
           val abandoned = subscribers(1)
           awaitStability(sci.IndexedSeq(counter))
-          scala.caps.unsafe.unsafeAssumeSeparate(abandoned.close())
+          abandoned.close()
           val gather = Gather2()
-          scala.caps.unsafe.unsafeAssumeSeparate(eager.pump(gather))
+          eager.pump(gather)
 
           ( scala.caps.unsafe.unsafeAssumeSeparate(gather.data).readable.length,
             counter.get() )

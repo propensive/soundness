@@ -43,7 +43,7 @@ import vacuous.*
 
 object Daemon:
   def apply(evaluate: Worker => Unit)
-    ( using monitor: Monitor^, codepoint: Codepoint, probate: Probate^ )
+    ( using monitor: Monitor^, codepoint: Codepoint, probate: SharedProbate )
   :   Daemon =
 
     // The body closure may capture a stack-scoped error tactic; that is enforced at the `daemon`/
