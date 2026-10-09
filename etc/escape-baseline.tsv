@@ -320,7 +320,7 @@ lib/stratiform/src/core/stratiform.Bintel.scala	0	0	1	0	1	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Mutation.scala	0	0	0	0	0	0	20	0	0	0
 lib/stratiform/src/core/stratiform.Revision.scala	0	0	0	0	0	0	1	0	0	0
 lib/stratiform/src/core/stratiform.Tel.scala	4	0	6	0	2	4	7	0	0	0
-lib/stratiform/src/core/stratiform.Tel2.scala	3	0	0	0	0	0	0	0	0	0
+lib/stratiform/src/core/stratiform.Tel2.scala	9	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Tel3.scala	2	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Tels.scala	0	0	0	0	0	0	6	0	0	0
 lib/stratiform/src/core/stratiform.Tels2.scala	0	0	0	0	0	0	4	1	0	0
