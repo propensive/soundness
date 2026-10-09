@@ -119,7 +119,7 @@ object LspSessional:
     // A single writer, so writes never interleave. The observer sees the encoded body, not the
     // framing, matching `listen`.
     // The writer task owns the sink it frames messages onto.
-    val writer: Task[Unit] = Task.owning(sink): (sink, _, _) ?=>
+    val writer: Task[Unit] = sink.transfer: (sink, _, _) ?=>
       // The stdlib view is drained element by element, without memoizing the live chain; the
       // sink is finished when the drain ends, or when the task is cancelled.
       try
@@ -134,7 +134,7 @@ object LspSessional:
     // stream is single-owner, so it is minted and consumed within the reader task, which also
     // keeps this thread off the channel's first refill — a blocking read that would otherwise
     // happen before the writer that unblocks it has started.
-    val reader: Task[Unit] = Task.owning(read): (read, _, _) ?=>
+    val reader: Task[Unit] = read.transfer: (read, _, _) ?=>
       read(): message =>
         safely(message.as[Json]).let: json =>
           if listener.intercept(json) then Unset

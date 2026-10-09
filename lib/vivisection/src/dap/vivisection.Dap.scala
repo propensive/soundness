@@ -89,7 +89,7 @@ object Dap:
     val outgoing: Relay[Json] = Relay()
 
     // The writer task owns the standard streams it frames the messages onto.
-    val writer: Task[Unit] = Task.owning(stdio): (stdio, _, _) ?=>
+    val writer: Task[Unit] = stdio.transfer: (stdio, _, _) ?=>
       outgoing.chain.each: json =>
         val body: Text = json.encode
         observer(body)

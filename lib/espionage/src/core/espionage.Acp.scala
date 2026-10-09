@@ -1290,7 +1290,7 @@ object Acp:
       // forbids embedded newlines. The observer sees the encoded body, not the terminator.
       // The writer task owns the sink it frames messages onto, and the reader task the read
       // loop; the dispatchers are pure, closing only over the (pure-typed) serving client.
-      val writer: Task[Unit] = Task.owning(sink): (sink, _, _) ?=>
+      val writer: Task[Unit] = sink.transfer: (sink, _, _) ?=>
         // The stdlib view is drained element by element, without memoizing the live chain; the
         // sink is finished when the drain ends, or when the task is cancelled.
         try
@@ -1326,7 +1326,7 @@ object Acp:
       // decision for minutes, and running it here would stall both update streaming and response
       // correlation. (This is the deliberate divergence from LSP's single-loop server, whose
       // reverse direction is notifications-only for exactly that reason.)
-      val reader: Task[Unit] = Task.owning(read): (read, _, _) ?=>
+      val reader: Task[Unit] = read.transfer: (read, _, _) ?=>
         read(): message =>
           safely(message.as[Json]).let: json =>
             Acp.method(json).lay(sessionDispatch(json) yet ()): method =>

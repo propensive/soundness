@@ -275,7 +275,7 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
       // The compilation context retains the reporter, and the reporter its logger, so the task
       // owns the context and reads the reporter through it. Ascribed to its fresh form: inferred
       // from the `given`, the owned type would name the `given` itself.
-      Task.owning(n"scalac")(context: dtdc.Contexts.Context^): (context, _, _) ?=>
+      (context: dtdc.Contexts.Context^).transfer(n"scalac"): (context, _, _) ?=>
         // dotty's API takes a pure `Context`; this one is the task's own, so the assertion is
         // about the API's signature, not about aliasing.
         given dtdc.Contexts.Context = scala.caps.unsafe.unsafeAssumePure(context())

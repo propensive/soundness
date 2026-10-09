@@ -3671,7 +3671,7 @@ object Tel extends Tel2:
     val producer = Producer[Text]()
     val output = producer.iterator
 
-    Task.owning(producer): (producer, _, _) ?=>
+    producer.transfer: (producer, _, _) ?=>
       Serializer(new Textual(producer()), document(tel)).write()
       producer().finish()
 

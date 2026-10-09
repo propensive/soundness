@@ -306,7 +306,7 @@ object Protobuf extends Protobuf2:
     val producer = Producer[Data]()
     val output = producer.iterator
 
-    Task.owning(producer): (producer, _, _) ?=>
+    producer.transfer: (producer, _, _) ?=>
       producer().put(value.payload)
       producer().finish()
 

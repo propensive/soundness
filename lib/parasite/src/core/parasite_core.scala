@@ -176,6 +176,47 @@ def task[result, error <: Hazard](using Codepoint)(name: Name[Async])
   Task[result, error | Async.Error](worker => evaluate(using worker, tactic), name = name)
 
 
+// A task that OWNS an exclusive resource. A task body may capture only shared capabilities
+// (the handle is a shared `Monitor`, and retains the body), so an exclusive resource — a
+// `Producer^` to feed, a `Stream^` to pump, a loop object to run — cannot be closed over. It
+// is transferred instead: `consume` takes it from the caller, which can no longer use it, and
+// the body receives it as its sole user, as its first context parameter:
+//
+//     producer.transfer: (producer, _, _) ?=> producer().put(…)
+//
+// The worker's retention of the resource is asserted here, once: the transfer is what makes
+// it honest.
+extension [resource](consume resource: resource^)
+  def transfer[result, error <: Hazard](using Codepoint)
+    ( evaluate: (Task.Owned[resource], Worker, Tactic[error]) ?->{caps.any.only[caps.SharedCapability]} result )
+    ( using monitor: Monitor^, probate: SharedProbate )
+  :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
+
+    val tactic = caps.unsafe.unsafeAssumePure(AsyncTactic[error]())
+    val owned = Task.Owned[resource](resource.asInstanceOf[AnyRef])
+
+    // Pure by assertion: the body's only non-shared capture is the resource just transferred,
+    // whose previous owner consumed it.
+    val body: Worker -> result =
+      caps.unsafe.unsafeAssumePure((worker: Worker) => evaluate(using owned, worker, tactic))
+
+    Task[result, error | Async.Error](body, name = Unset)
+
+  // As `transfer`, for a named task.
+  def transfer[result, error <: Hazard](using Codepoint)(name: Name[Async])
+    ( evaluate: (Task.Owned[resource], Worker, Tactic[error]) ?->{caps.any.only[caps.SharedCapability]} result )
+    ( using monitor: Monitor^, probate: SharedProbate )
+  :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
+
+    val tactic = caps.unsafe.unsafeAssumePure(AsyncTactic[error]())
+    val owned = Task.Owned[resource](resource.asInstanceOf[AnyRef])
+
+    val body: Worker -> result =
+      caps.unsafe.unsafeAssumePure((worker: Worker) => evaluate(using owned, worker, tactic))
+
+    Task[result, error | Async.Error](body, name = name)
+
+
 def relent[result]()(using Worker): Unit = monitor.relent()
 def cancel[result]()(using Monitor^): Unit = monitor.cancel()
 

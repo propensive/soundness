@@ -2922,7 +2922,7 @@ object Json extends Json2, Dynamic:
     val producer = Producer[Text]()
     val output = producer.iterator
 
-    Task.owning(producer): (producer, _, _) ?=>
+    producer.transfer: (producer, _, _) ?=>
       Json.Ast.write(new Json.Ast.Textual(producer()), formatting, json.root)
       producer().finish()
 

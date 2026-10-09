@@ -84,7 +84,7 @@ object Divergence:
     // count. A copied (transient) block stays transfer-bounded.
     val pull: Int = if stable then Int.MaxValue else block
 
-    Task.owning(source): (source, _, _) ?=>
+    source.transfer: (source, _, _) ?=>
       def loop(): Unit = source().refill(Credit(pull)) match
         case size: Int =>
           // A stable source (a fixed in-memory buffer) is shared by reference,

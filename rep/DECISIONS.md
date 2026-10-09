@@ -2887,24 +2887,24 @@ consequences, checked one by one:
   body capturing one captures nothing in the checker's eyes — their thread-safety is their own
   contract, as the `Handoff` comment says.
 
-### `Task.owning`: transferring an exclusive resource into a task (2026-10-08)
+### `transfer`: moving an exclusive resource into a task (2026-10-08)
 
 The tree compile under the shared-only body rule failed in nine libraries, all the same shape:
 a task body closing over an exclusive resource it is the sole user of — a `Producer^` to feed
 (honeycomb, jacinta, xylophone, stratiform, locomotion `emit`), a `Stream^` to pump
 (turbulence `Divergence`), a compiler context (anthology), a `Loop` to run (coaxial,
-syndesis). The honest construct is ownership transfer: `Task.owning(resource)(body)` CONSUMES
+syndesis). The honest construct is ownership transfer: `resource.transfer(body)` CONSUMES
 the resource from the spawner, which can no longer touch it, and hands it to the body as its
 first context parameter, a pure carrier `Task.Owned[resource]` whose `apply()` yields the
-exclusive reference afresh: `Task.owning(producer): (producer, _, _) ?=> producer().put(…)`.
-The worker's retention of the resource is asserted inside `owning`, once — the one place a
+exclusive reference afresh: `producer.transfer: (producer, _, _) ?=> producer().put(…)`.
+The worker's retention of the resource is asserted inside `transfer`, once — the one place a
 `[transfer]` launder belongs. The reader side of a `Producer` (`iterator`, already typed pure
 as "the reader-side view") is taken BEFORE the transfer.
 
 Four shapes were tried before the carrier, each dead for a reason worth keeping:
-- `object async { def apply; def owning }` — `async$.class` and `Async$.class` collide on the
+- `object async { def apply; def owning }` (the first shape) — `async$.class` and `Async$.class` collide on the
   case-insensitive filesystem ("Not found: Async" everywhere). Objects may not differ from a
-  sibling class by case alone; hence `Task.owning`.
+  sibling class by case alone; hence `resource.transfer`, an extension on a consumed receiver (the static `Task.transferring` behind it).
 - A function of the resource, `resource^ -> ((Worker, Tactic) ?->{resource} result)` — a
   curried dependent context function type: "Implementation restriction" (⚑7).
 - A body parameter typed `resource^` (function or context parameter) — the `^` on an abstract
@@ -2946,7 +2946,7 @@ pure-typed `using Context` API.
 - **`[pump-overlap]`** (zephyrine/turbulence tests): `stream.pump(gather)` consumes the intake
   and pumps a fresh stream into it; the reads of `gather.data` after, and the recursive
   `recur()` pumps, were sealed before and stay sealed — they are not Monitor overlaps. The
-  test's task now OWNS the stream (`Task.owning(stream)`), and only the pump itself is sealed.
+  test's task now OWNS the stream (`stream.transfer`), and only the pump itself is sealed.
 
 ### Ambient capabilities under the task rule: loggers, sinks, the network, timeouts (2026-10-08)
 
@@ -2963,7 +2963,7 @@ as an exclusive resource although servers log from every daemon at once. Now:
 - `parasite.Timeout extends caps.SharedCapability`: nudged from whichever task sees activity
   (every connection handler of ethereal's daemon), state an atomic deadline.
 The vivisection DAP: the writer task owns the standard streams (`consume stdio` on `listen`,
-`Task.owning(stdio)`), the observer callback is shared-only, and the laundered thunks
+`stdio.transfer`), the observer callback is shared-only, and the laundered thunks
 (`out`/`err`/`exit`, `body`) are typed as the pure functions their launder makes them.
 
 ### The servers, and what `shared` means at the edges (2026-10-08, passes 7–8)
@@ -2977,7 +2977,7 @@ their task bodies, and the rule drew the same lines there:
   JVM's streams are synchronised), `Timeout` (nudged from every handler).
 - The single-owner resources at the edges are TRANSFERRED: the output sink to the writer task
   and the read loop to the reader task (`consume sink`, `consume read` on `exchange`,
-  `Task.owning` inside), and the sink is finished by its owner (`try … finally sink().finish()`
+  `transfer` inside), and the sink is finished by its owner (`try … finally sink().finish()`
   in the writer) rather than by the caller after the exchange. A relay taken off a session
   before the task (`val outgoing = session.outgoing`) lets the task capture the relay (plain)
   rather than the session.
@@ -2996,7 +2996,7 @@ their task bodies, and the rule drew the same lines there:
   `Board`'s exclusive one. A standard-streams value built from the JVM's own, thread-safe
   streams captures nothing and is a plain value; one that retains a terminal or a flow is typed
   `Stdio^{…}` and stays single-owner. `Lsp.listen` therefore takes `using Stdio` (the process's
-  own), and the DAP's `consume stdio: Stdio^` + `Task.owning(stdio)` is the shape for a server
+  own), and the DAP's `consume stdio: Stdio^` + `stdio.transfer` is the shape for a server
   handed a capturing one.
 - **`Observer` is `SharedUnscoped`, not merely shared**: a default argument of a shared
   capability type (`observer: Observer^ = Observer.Silent`) is a method whose result mints a
@@ -3011,3 +3011,13 @@ their task bodies, and the rule drew the same lines there:
   session of a suite) was `ExclusiveCapability`, captured by each `completions` action AND
   passed to the `tmux` loan as a using-argument. It is `SharedCapability` now.
 
+
+The name: `Task.owning(resource)(body)` became `resource.transfer(body)` — an extension on a
+consumed receiver — at Jon's suggestion: the resource is the subject, and "transfer" says what
+happens to it. `loan`/`lend` were considered and rejected for this construct: a loan is the
+*temporary* shape (`open[Scratch]`, `Stream#lend`, the tmux loan), where the lender has the
+value back after the block; here the caller consumes it. A real lend-to-a-task — the task
+borrows the resource and surrenders it at the join — would be a separate construct, if the
+pumps ever want it. (Delegating the extension to a static with the same signature failed on
+inference — `Owned[resource^{resource}]` named the receiver — so the extension IS the
+implementation, duplicated for the named form.)

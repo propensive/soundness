@@ -399,7 +399,7 @@ object Tests extends Suite(m"Scintillate tests"):
                   val producer = Producer[Data]()
                   val output = producer.iterator
 
-                  Task.owning(producer): (producer, _, _) ?=>
+                  producer.transfer: (producer, _, _) ?=>
                     var i = 0
                     while i < 4000 do
                       producer().put(t"line-$i\n".in[Data])

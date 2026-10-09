@@ -296,7 +296,7 @@ object Html extends Tag.Container
     // The reader side is taken first; the producer itself is then owned by the writing task.
     val output = producer.iterator
 
-    Task.owning(producer): (producer, _, _) ?=>
+    producer.transfer: (producer, _, _) ?=>
       writeHtml(producer(), dom, document.metadata.doctype, 0, block, Mode.Whitespace)
       writeHtml(producer(), dom, document.root, 0, block, Mode.Whitespace)
       producer().finish()

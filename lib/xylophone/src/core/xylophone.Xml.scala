@@ -2094,7 +2094,7 @@ object Xml extends Tag.Container
     val producer = Producer[BaseText]()
     val output = producer.iterator
 
-    Task.owning(producer): (producer, _, _) ?=>
+    producer.transfer: (producer, _, _) ?=>
       writeDocument(new Textual(producer()), formatting, document)
       producer().finish()
 

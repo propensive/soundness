@@ -83,48 +83,12 @@ object Task:
           deliver[error, duration](duration)
 
 
-  // The owned resource as a task body receives it: a pure carrier of the exclusive capability
-  // the spawner consumed, read as a fresh exclusive reference on each access (the `Reader`
-  // classes' `AnyRef` rim). A carrier rather than the capability itself because a body
+  // The transferred resource as a task body receives it: a pure carrier of the exclusive
+  // capability the spawner consumed, read as a fresh exclusive reference on each access (the
+  // `Reader` classes' `AnyRef` rim). A carrier rather than the capability itself because a body
   // parameter typed `resource^` references the root capability, which the uses check rejects.
   final class Owned[+resource] private[parasite] (resource0: AnyRef):
     inline def apply(): resource^ = resource0.asInstanceOf[resource^]
-
-  // A task that OWNS an exclusive resource. A task body may capture only shared capabilities
-  // (the handle is a shared `Monitor`, and retains the body), so an exclusive resource — a
-  // `Producer^` to feed, a `Stream^` to pump, a loop object to run — cannot be closed over.
-  // It is transferred instead: `consume` takes it from the spawner, which can no longer use
-  // it, and the body receives it as its sole user, as its first context parameter:
-  // `Task.owning(producer): (producer, _, _) ?=> producer().put(…)`. The worker's retention of
-  // the resource is asserted here, once: the transfer is what makes it honest.
-  def owning[resource, result, error <: Hazard](using Codepoint)(consume resource: resource^)
-    ( evaluate: (Owned[resource], Worker, Tactic[error]) ?->{caps.any.only[caps.SharedCapability]} result )
-    ( using monitor: Monitor^, probate: SharedProbate )
-  :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
-
-    val tactic = caps.unsafe.unsafeAssumePure(AsyncTactic[error]())
-    val owned = Owned[resource](resource.asInstanceOf[AnyRef])
-
-    // Pure by assertion: the body's only non-shared capture is the resource just consumed.
-    val body: Worker -> result =
-      caps.unsafe.unsafeAssumePure((worker: Worker) => evaluate(using owned, worker, tactic))
-
-    Task[result, error | Async.Error](body, name = Unset)
-
-  // As `owning`, for a named task.
-  def owning[resource, result, error <: Hazard](using Codepoint)(name: Name[Async])
-    ( consume resource: resource^ )
-    ( evaluate: (Owned[resource], Worker, Tactic[error]) ?->{caps.any.only[caps.SharedCapability]} result )
-    ( using monitor: Monitor^, probate: SharedProbate )
-  :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
-
-    val tactic = caps.unsafe.unsafeAssumePure(AsyncTactic[error]())
-    val owned = Owned[resource](resource.asInstanceOf[AnyRef])
-
-    val body: Worker -> result =
-      caps.unsafe.unsafeAssumePure((worker: Worker) => evaluate(using owned, worker, tactic))
-
-    Task[result, error | Async.Error](body, name = name)
 
   // THE PURE FAÇADE (D6 ruling, option c): `mercator.Monad[Task]` abstracts over `Task` as a
   // *pure* type constructor, but a `Task` handle is an honest capability (a `Worker`), so the

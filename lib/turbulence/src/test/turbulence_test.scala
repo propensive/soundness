@@ -804,7 +804,7 @@ object Tests extends Suite(m"Turbulence tests"):
           Conduit[Data]() match
            case (intake, stream) =>
             val big = Data.fill(100000)(_.toByte)
-            val writer = Task.owning(intake): (intake, _, _) ?=> intake().put(big)
+            val writer = intake.transfer: (intake, _, _) ?=> intake().put(big)
             writer.cancel()
             true
       . assert(identity)
@@ -835,7 +835,7 @@ object Tests extends Suite(m"Turbulence tests"):
           // (D6; the `Seq[Task].sequence` shape).
           val results = subscribers.map: stream =>
             caps.unsafe.unsafeAssumePure:
-              Task.owning(stream: (Stream[Data] over Credit)^): (stream, _, _) ?=>
+              (stream: (Stream[Data] over Credit)^).transfer: (stream, _, _) ?=>
                 val gather = Gather2()
                 // The pump of a fresh stream into a fresh intake: the `[pump-overlap]` seal.
                 caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
@@ -861,7 +861,7 @@ object Tests extends Suite(m"Turbulence tests"):
           // (D6; the `Seq[Task].sequence` shape).
           val results = subscribers.map: stream =>
             caps.unsafe.unsafeAssumePure:
-              Task.owning(stream: (Stream[Data] over Credit)^): (stream, _, _) ?=>
+              (stream: (Stream[Data] over Credit)^).transfer: (stream, _, _) ?=>
                 val gather = Gather2()
                 // The pump of a fresh stream into a fresh intake: the `[pump-overlap]` seal.
                 caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
@@ -963,7 +963,7 @@ object Tests extends Suite(m"Turbulence tests"):
           val stalled = subscribers(1)
 
           val taskA = caps.unsafe.unsafeAssumePure:
-            Task.owning(eager: (Stream[Data] over Credit)^): (eager, _, _) ?=>
+            (eager: (Stream[Data] over Credit)^).transfer: (eager, _, _) ?=>
               val gatherA = Gather2()
               caps.unsafe.unsafeAssumeSeparate(eager().pump(gatherA))
               scala.caps.unsafe.unsafeAssumeSeparate(gatherA.data).readable.length

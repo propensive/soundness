@@ -130,7 +130,7 @@ object Tests extends Suite(m"Zephyrine tests"):
             val producer = Producer[Text](5, 2)
             val reader = producer.iterator
 
-            val fiber = Task.owning(producer): (producer, _, _) ?=>
+            val fiber = producer.transfer: (producer, _, _) ?=>
               producer().put(string)
               producer().finish()
 
@@ -142,7 +142,7 @@ object Tests extends Suite(m"Zephyrine tests"):
             val producer = Producer[Text](5, 2)
             val reader = producer.iterator
 
-            val fiber = Task.owning(producer): (producer, _, _) ?=>
+            val fiber = producer.transfer: (producer, _, _) ?=>
               string.tt.chars.each: char =>
                 producer().put(char.toString)
               producer().finish()
@@ -924,7 +924,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         supervise:
           Conduit[Data]() match
            case (intake, stream) =>
-            val task = Task.owning(stream): (stream, _, _) ?=>
+            val task = stream.transfer: (stream, _, _) ?=>
               val gather = Gather()
               scala.caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
               scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
@@ -940,7 +940,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         supervise:
           Conduit[Data]() match
            case (intake, stream) =>
-            val task = Task.owning(stream): (stream, _, _) ?=>
+            val task = stream.transfer: (stream, _, _) ?=>
               val gather = Gather()
               scala.caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
               scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
@@ -959,7 +959,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val payload: Data = Array.tabulate[Byte](1000000)(index => (index%251).toByte)
           Conduit[Data]() match
            case (intake, stream) =>
-            val task = Task.owning(stream): (stream, _, _) ?=>
+            val task = stream.transfer: (stream, _, _) ?=>
               val gather = Gather()
               scala.caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
               scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
@@ -977,7 +977,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val extra: Data = Array.tabulate[Byte](300000)(index => ((index + 1)%251).toByte)
           Conduit[Data]() match
            case (intake, stream) =>
-            val task = Task.owning(stream): (stream, _, _) ?=>
+            val task = stream.transfer: (stream, _, _) ?=>
               val gather = Gather()
               scala.caps.unsafe.unsafeAssumeSeparate(stream().pump(gather))
               scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
