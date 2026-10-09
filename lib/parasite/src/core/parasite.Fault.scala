@@ -58,6 +58,7 @@ object Fault:
     type Target = Os.type
 
     def register(value: Os.type, action: Fault => Unit): () => Unit =
+      // [registry-lifetime] action stored in global uncaught-exception handler registry
       val handle: Fault -> Unit = caps.unsafe.unsafeAssumePure(action(_))
       handler.tasks.since(_ + handle)
 

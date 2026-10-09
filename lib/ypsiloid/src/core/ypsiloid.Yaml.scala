@@ -1272,6 +1272,7 @@ object Yaml extends Yaml2, Dynamic:
   // pipeline — rejects the `Optic`'s capture of `filter.predicate` against the required
   // pure `Optic` type. (Compiler divergence; see #1520 and `caesura`'s `rowFilter`.)
   given filterOptical: Filter[Yaml] is Optical from Yaml onto Yaml = filter =>
+    // [field-purity] scala.js: filter predicate captured by pure Optic given
     val predicate: Yaml -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
 
     Optic: (origin, lambda) =>
@@ -1976,12 +1977,14 @@ object Yaml extends Yaml2, Dynamic:
     // before mark/slice/refill operations and refresh after.
     // Held as an `AnyRef` field with an exclusive-view accessor (the `Tel.Reader.parser0`
     // pattern): a typed capability field poisons every later access to this parser.
+    // [registry-lifetime] cast-erased AnyRef cursor handle in parser
     @scala.caps.unsafe.untrackedCaptures
     private var cursor1: AnyRef = null.asInstanceOf[AnyRef]
 
     private inline def cursor: Cursor[Data, {}]^ = cursor1.asInstanceOf[Cursor[Data, {}]^]
     private var heldToken: Cursor.Held | Null = null
     // `AnyRef` field + accessor, as `cursor1` above.
+    // [cursor-snapshot] parser's AnyRef snapshot of cursor buffer bytes
     @scala.caps.unsafe.untrackedCaptures
     private var bytes1: AnyRef = null.asInstanceOf[AnyRef]
 
@@ -2106,6 +2109,7 @@ object Yaml extends Yaml2, Dynamic:
     :   Cursor[Data, {}]^ =
       // The stream's single ownership passes with this call (the `accept` convention); the
       // `give` closure is the only remaining reference.
+      // [transfer] consumed stream ownership passes into give closure
       scala.caps.unsafe.unsafeAssumeSeparate:
         if tracking then zephyrine.lineation.linefeedByte.give(Cursor[Data](input))
         else Lineation.untrackedData.give(Cursor[Data](input))
@@ -2162,6 +2166,7 @@ object Yaml extends Yaml2, Dynamic:
     // values and every descriptor would read `(1, 1)`.
     private update def reconcileLineation(): Unit =
       // Bookkeeping over this parser's own cursor; there is no aliased writer.
+      // [aliased-read] bytes array read while parser's cursor held exclusively"}
       scala.caps.unsafe.unsafeAssumeSeparate:
        val end = cursor.unsafePos(using Unsafe)
 

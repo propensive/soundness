@@ -195,6 +195,7 @@ object Xml extends Tag.Container
   // for these types — that branch's `summon[Decodable in Text]` for
   // `Int` would otherwise `abort` with `Number.Error` and break accrual.
   given int: (tactic: Tactic[Xml.Error]) => Int is Decodable in Xml =
+    // [field-purity] given primitive decodable over tactic
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try Integer.parseInt(text.s).nn
@@ -205,6 +206,7 @@ object Xml extends Tag.Container
           raise(Xml.Error(Reason.Untextual(t"Int"))) yet 0
 
   given long: (tactic: Tactic[Xml.Error]) => Long is Decodable in Xml =
+    // [field-purity] given primitive decodable over tactic
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Long.parseLong(text.s).nn
@@ -215,6 +217,7 @@ object Xml extends Tag.Container
           raise(Xml.Error(Reason.Untextual(t"Long"))) yet 0L
 
   given short: (tactic: Tactic[Xml.Error]) => Short is Decodable in Xml =
+    // [field-purity] given primitive decodable over tactic
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Short.parseShort(text.s).nn
@@ -225,6 +228,7 @@ object Xml extends Tag.Container
           raise(Xml.Error(Reason.Untextual(t"Short"))) yet 0.toShort
 
   given byte: (tactic: Tactic[Xml.Error]) => Byte is Decodable in Xml =
+    // [field-purity] given primitive decodable over tactic
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Byte.parseByte(text.s).nn
@@ -235,6 +239,7 @@ object Xml extends Tag.Container
           raise(Xml.Error(Reason.Untextual(t"Byte"))) yet 0.toByte
 
   given double: (tactic: Tactic[Xml.Error]) => Double is Decodable in Xml =
+    // [field-purity] given primitive decodable over tactic
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Double.parseDouble(text.s).nn
@@ -245,6 +250,7 @@ object Xml extends Tag.Container
           raise(Xml.Error(Reason.Untextual(t"Double"))) yet 0.0
 
   given float: (tactic: Tactic[Xml.Error]) => Float is Decodable in Xml =
+    // [field-purity] given primitive decodable over tactic
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         try jl.Float.parseFloat(text.s).nn
@@ -255,6 +261,7 @@ object Xml extends Tag.Container
           raise(Xml.Error(Reason.Untextual(t"Float"))) yet 0.0f
 
   given boolean: (tactic: Tactic[Xml.Error]) => Boolean is Decodable in Xml =
+    // [field-purity] given primitive decodable over tactic
     caps.unsafe.unsafeAssumePure: xml =>
       textOf(xml).let: text =>
         text.s match
@@ -299,6 +306,7 @@ object Xml extends Tag.Container
     // Sealed per the codec-thunk pattern: a by-name parameter cannot be
     // named in a capture set, so the honest capture of `element0` cannot be
     // expressed; see rep/DECISIONS.md.
+    // [by-name-capture] by-name element codec cannot be named in capture set
     caps.unsafe.unsafeAssumePure:
       new distillate.Decodable with Repeatable:
         type Self = collection[element]
@@ -351,6 +359,7 @@ object Xml extends Tag.Container
   =>  collection[element] is Encodable in Xml =
 
     // Sealed per the codec-thunk pattern, as in `collectionDecodable`.
+    // [by-name-capture] by-name element encoder captured
     caps.unsafe.unsafeAssumePure:
       new anticipation.Encodable with Repeatable:
         type Self = collection[element]
@@ -407,6 +416,7 @@ object Xml extends Tag.Container
   =>  value is Decodable in Xml =
 
     // Sealed per the codec-thunk pattern, as in `collectionDecodable`.
+    // [by-name-capture] by-name inner decodable captured
     caps.unsafe.unsafeAssumePure:
       new distillate.Decodable:
         type Self = value
@@ -430,6 +440,7 @@ object Xml extends Tag.Container
   =>  value is Encodable in Xml =
 
     // Sealed per the codec-thunk pattern, as in `collectionDecodable`.
+    // [by-name-capture] by-name inner encodable captured
     caps.unsafe.unsafeAssumePure:
       new anticipation.Encodable with Repeatable:
         type Self = value
@@ -452,6 +463,7 @@ object Xml extends Tag.Container
   =>  Map[key, value] is Encodable in Xml =
 
     // Sealed per the codec-thunk pattern, as in `collectionDecodable`.
+    // [by-name-capture] by-name key/value encoders captured
     caps.unsafe.unsafeAssumePure:
       new anticipation.Encodable with Repeatable:
         type Self = Map[key, value]
@@ -486,6 +498,7 @@ object Xml extends Tag.Container
   =>  Map[key, value] is Decodable in Xml =
 
     // Sealed per the codec-thunk pattern, as in `collectionDecodable`.
+    // [by-name-capture] by-name key/value decoders captured
     caps.unsafe.unsafeAssumePure:
       new distillate.Decodable with Repeatable:
         type Self = Map[key, value]
@@ -1155,6 +1168,7 @@ object Xml extends Tag.Container
       ( using factory: Factory[element, collection[element]] )
     :   collection[element] is Xml.Parsable =
 
+      // [by-name-capture] by-name field parser cannot be named
       caps.unsafe.unsafeAssumePure:
         new Xml.Parsable with Gathering:
           type Self = collection[element]
@@ -1656,6 +1670,7 @@ object Xml extends Tag.Container
       // loop, so no per-field lambda ever closes over the reader. Sealed per
       // the codec-thunk pattern: the field parsers the thunk resolves may
       // capture resolution-scoped capabilities (the AST bridge does).
+      // [field-purity] derived product field codec, codec-thunk seal
       caps.unsafe.unsafeAssumePure:
         val reflection = infer[ProductReflection[derivation]]
 
@@ -1701,6 +1716,7 @@ object Xml extends Tag.Container
       // construction, as stratiform's TEL derivation does. Sealed per the
       // codec-thunk pattern: the instance captures a resolution-scoped
       // decoder.
+      // [field-purity] derived sum field codec, codec-thunk seal
       caps.unsafe.unsafeAssumePure:
         Xml.Field(Xml.Parsable.fromDecodable(infer[derivation is Decodable in Xml]))
 
@@ -1820,30 +1836,31 @@ object Xml extends Tag.Container
 
 
   // The parser reads UTF-8 bytes, so a byte source is parsed as it arrives; a text source
-  // is encoded first (see `XmlParser`).
+  // is encoded first (see `XmlParser`). A leading `<?xml …?>` declaration is accepted and
+  // silently dropped, so a whole document reads as a fragment; `load` keeps it as metadata.
   given aggregable: [content <: Label: Reifiable to List[String]]
   =>  (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
   =>  (tactic: Tactic[Parse.Error])
   =>  (((Xml of content) is Aggregable by Data)^{tactic}) =
 
-    input => XmlParser.fromDataChain(input).parseXml(headers0 = false).of[content]
+    input => XmlParser.fromDataChain(input).parseXml(keepHeader = false).of[content]
 
   given aggregable2: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
   =>  (tactic: Tactic[Parse.Error])
   =>  ((Xml is Aggregable by Data)^{tactic}) =
-    input => XmlParser.fromDataChain(input).parseXml(headers0 = false)
+    input => XmlParser.fromDataChain(input).parseXml(keepHeader = false)
 
   given aggregableText: [content <: Label: Reifiable to List[String]]
   =>  (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
   =>  (tactic: Tactic[Parse.Error])
   =>  (((Xml of content) is Aggregable by BaseText)^{tactic}) =
 
-    input => XmlParser.fromChain(input).parseXml(headers0 = false).of[content]
+    input => XmlParser.fromChain(input).parseXml(keepHeader = false).of[content]
 
-  given aggregable2Text: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
+  given aggregableText2: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
   =>  (tactic: Tactic[Parse.Error])
   =>  ((Xml is Aggregable by BaseText)^{tactic}) =
-    input => XmlParser.fromChain(input).parseXml(headers0 = false)
+    input => XmlParser.fromChain(input).parseXml(keepHeader = false)
 
   // HTTP content-type integration. `Abstractable across HttpStreams` makes an
   // `Xml` value usable as an HTTP request/response body (telekinesis derives
@@ -1916,7 +1933,7 @@ object Xml extends Tag.Container
   // (there is no `PositionIndex` — the result is the caller's value, not an
   // `Xml`).
   //
-  // The root dispatch mirrors `parseXml(headers0 = false)` composed with
+  // The root dispatch mirrors `parseXml(keepHeader = false)` composed with
   // `Xml#as`: a root element is opened and handed to the instance; root
   // character data decodes as a text leaf (a `Fragment(TextNode(…))` on the
   // AST path); trailing content — a multi-node `Fragment`, which `as`
@@ -2015,10 +2032,11 @@ object Xml extends Tag.Container
   // `parsing.trackPositions` in scope the parser records source positions and the
   // resulting `Document[Xml]` carries them in its `Header` metadata, locatable via
   // `document.locate(path)`; otherwise the untracked throughput path is unchanged.
-  // `headers0 = true` accepts a leading `<?xml …?>` declaration, which is lifted
-  // into the metadata `Header` and dropped from the tree, so the tracked value has
-  // the same shape as a header-less load (keeping it aligned with the index, which
-  // is built from the root element alone).
+  // `keepHeader = true` keeps a leading `<?xml …?>` declaration in the parse (a
+  // fragment `read` drops it), so it can be lifted into the metadata `Header` and
+  // removed from the tree, leaving the tracked value with the same shape as a
+  // header-less load (keeping it aligned with the index, which is built from the
+  // root element alone).
   given loadable: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
   =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking)
   =>  ((Xml is Loadable by BaseText)^{tactic}) = stream =>
@@ -2053,7 +2071,7 @@ object Xml extends Tag.Container
     ( using Tactic[Parse.Error] )
   :   Document[Xml] =
 
-    val parsed = parser.parseXml(headers0 = true)
+    val parsed = parser.parseXml(keepHeader = true)
 
     val positionIndex: Optional[PositionIndex] = tracking match
       case PositionTracking.On =>
@@ -3061,6 +3079,7 @@ object Xml extends Tag.Container
     // Held as an `AnyRef` field with an exclusive-view accessor (the `Tel.Reader.parser0`
     // pattern): a typed array field's snapshot of the cursor's buffer trips both the
     // classifier and the consume checks.
+    // [cursor-snapshot] parser's AnyRef snapshot of cursor buffer
     @scala.caps.unsafe.untrackedCaptures
     private var bytes0: AnyRef = cursor.unsafeDataBuffer(using Unsafe).asInstanceOf[AnyRef]
 
@@ -3880,12 +3899,12 @@ object Xml extends Tag.Container
 
     private var headers: Boolean = false
 
-    update def parseXml(headers0: Boolean)(using Tactic[Parse.Error]): Xml =
+    update def parseXml(keepHeader: Boolean)(using Tactic[Parse.Error]): Xml =
       cursor.hold:
         heldToken = summon[Cursor.Held]
 
         try
-          if tracking then parseXmlTracked0(headers0) else parseXml0(headers0)
+          if tracking then parseXmlTracked0(keepHeader) else parseXml0(keepHeader)
         finally heldToken = null
 
     // Tracked variants of `readElement` / `readAttributes` / `readChildren`,
@@ -3894,8 +3913,10 @@ object Xml extends Tag.Container
     // the position bookkeeping differs. Splitting keeps the untracked
     // hot path free of any tracking-related branches.
 
-    private update def parseXmlTracked0(headers0: Boolean)(using Tactic[Parse.Error]): Xml =
-      headers = headers0
+    private update def parseXmlTracked0(keepHeader: Boolean)(using Tactic[Parse.Error]): Xml =
+      // A declaration is accepted only as the first node; `keepHeader` decides whether it
+      // stays in the tree (a document) or is dropped (a fragment read).
+      headers = true
       skipWs()
       val nodes = getNodeBuffer()
       val rootBuf = getIndexBuffer()
@@ -3936,15 +3957,18 @@ object Xml extends Tag.Container
               fail(Issue.Unexpected(peekChar))
           else if c2 == '?' then
             advance()
-            nodes += readProcessingInstruction()
+            val instruction = readProcessingInstruction()
+            if keepHeader || !instruction.isInstanceOf[Header] then nodes += instruction
           else if c2 == '/' then
             advance()
             val closeStart = begin()
             val close = readName()
             fail(Issue.UnopenedTag(close), closeStart)
           else
+            headers = false
             nodes += readElementTracked(rootBuf, startLine, startColumn, startMark)
 
+        headers = false
         skipWs()
 
       val result =
@@ -4200,8 +4224,10 @@ object Xml extends Tag.Container
       relinquishNodeBuffer()
       result
 
-    private update def parseXml0(headers0: Boolean)(using Tactic[Parse.Error]): Xml =
-      headers = headers0
+    private update def parseXml0(keepHeader: Boolean)(using Tactic[Parse.Error]): Xml =
+      // A declaration is accepted only as the first node; `keepHeader` decides whether it
+      // stays in the tree (a document) or is dropped (a fragment read).
+      headers = true
       skipWs()
       val nodes = getNodeBuffer()
 
@@ -4235,15 +4261,18 @@ object Xml extends Tag.Container
               fail(Issue.Unexpected(peekChar))
           else if c2 == '?' then
             advance()
-            nodes += readProcessingInstruction()
+            val instruction = readProcessingInstruction()
+            if keepHeader || !instruction.isInstanceOf[Header] then nodes += instruction
           else if c2 == '/' then
             advance()
             val closeStart = begin()
             val close = readName()
             fail(Issue.UnopenedTag(close), closeStart)
           else
+            headers = false
             nodes += readElement()
 
+        headers = false
         skipWs()
 
       val result =
@@ -4330,7 +4359,7 @@ object Xml extends Tag.Container
         try body finally heldToken = null
 
     // Positions the parser at the document's root value, mirroring
-    // `parseXml0(headers0 = false)`'s dispatch composed with `Xml#as`'s
+    // `parseXml0(keepHeader = false)`'s dispatch composed with `Xml#as`'s
     // shape rules:
     //   0 — a root element was opened (its name and attributes consumed);
     //   1 — the root begins with character data (`directRootText` reads
@@ -4339,8 +4368,13 @@ object Xml extends Tag.Container
     //       comment / PI / doctype / close tag, which the AST path decodes
     //       as a wrong-shape `Fragment` — the caller continues with
     //       `absent()`.
+    // A leading `<?xml …?>` declaration is consumed and dropped, as the AST
+    // path drops it from a fragment read.
     private[xylophone] update def directRoot()(using Tactic[Parse.Error]): Int =
-      headers = false
+      headers = true
+      directRoot0()
+
+    private update def directRoot0()(using Tactic[Parse.Error]): Int =
       skipWs()
 
       if !more then 2
@@ -4350,8 +4384,14 @@ object Xml extends Tag.Container
         if !more then fail(Issue.ExpectedMore)
         val c2 = peek
 
-        if c2 == '/' || c2 == '!' || c2 == '?' then 2
+        if c2 == '/' || c2 == '!' then 2
+        else if c2 == '?' then
+          advance()
+          readProcessingInstruction() match
+            case _: Header => directRoot0()
+            case _         => 2
         else
+          headers = false
           directOpen()
           0
 
@@ -4768,10 +4808,10 @@ object Xml extends Tag.Container
   // Back-compat for macro interpolators: matches the previous cursor-based
   // signature (Iterator[Text] + callback).
   private[xylophone] def parse[schema <: XmlSchema]
-    ( input:    Iterator[BaseText],
-      root:     Tag,
-      callback: (Ordinal, Hole) => Unit                = (_, _) => (),
-      headers0: Boolean                           = false )
+    ( input:      Iterator[BaseText],
+      root:       Tag,
+      callback:   (Ordinal, Hole) => Unit              = (_, _) => (),
+      keepHeader: Boolean                             = false )
     ( using schema: XmlSchema )
   :   (Tactic[Parse.Error]^) ?->{callback} Xml =
 
@@ -4781,7 +4821,7 @@ object Xml extends Tag.Container
       ( Cursor[Data](XmlParser.utf8(Chain.from(input))), tracking = false, callback,
         charOffsets = true )
       (using schema, Scope.xml, Namespacing.Lenient)
-    . parseXml(headers0)
+    . parseXml(keepHeader)
 
   // Selects the nodes matching an XPath: `//div[@id='x']` and friends,
   // evaluated against this tree. The result is a `Fragment` of the matching

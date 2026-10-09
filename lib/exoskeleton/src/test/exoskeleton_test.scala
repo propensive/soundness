@@ -229,6 +229,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           . check(_ == t"--one   -- the first one\n--two   -- the second one")
 
           test(m"Test capture 1"):
+            // [test-harness] test drives tmux completion blocks
             scala.caps.unsafe.unsafeAssumeSeparate:
               summon[Enclave.Tool].completions:
                 Zsh.pane()(Pane.completions(t"distribution ubuntu "))

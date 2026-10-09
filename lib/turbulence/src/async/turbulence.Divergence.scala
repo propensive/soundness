@@ -73,6 +73,7 @@ object Divergence:
     // aliasing analysis (as `Conduit`'s core), so the capture is erased to let
     // the rings ride the collection.
     val queues: IndexedSeq[Handoff] =
+      // [construction-fresh] fresh Handoff rings sealed to ride collection
       IndexedSeq.fill(count)(caps.unsafe.unsafeAssumePure(Handoff(buffering.depth)))
 
     val error: Atomic.Ref[Throwable | Null] = Atomic(null)

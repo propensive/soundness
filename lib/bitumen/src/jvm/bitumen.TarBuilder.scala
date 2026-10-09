@@ -79,6 +79,7 @@ class TarBuilder private[bitumen]
   ( sink: Optional[ji.RandomAccessFile], format: LongNameFormat )
   ( using Tactic[Tar.Error] )
 extends caps.ExclusiveCapability:
+  // [field-purity] entry stack in non-Stateful exclusive builder
   @scala.caps.unsafe.untrackedCaptures
   private var stack: List[Tar.Entry] = Nil
 

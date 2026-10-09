@@ -212,6 +212,7 @@ extension [plane: Filesystem](path: Path on plane)
   :   Path on plane =
 
     // Created and consumed under the same ambient tactic; no aliased writer.
+    // [by-name-receiver] by-name operation shares tactic with option receiver
     scala.caps.unsafe.unsafeAssumeSeparate:
       deleteRecursively.conditionally(path)(backend.delete(path))
     Log.info(Io.Event.Delete(path.show))
@@ -224,6 +225,7 @@ extension [plane: Filesystem](path: Path on plane)
   :   Path on plane =
 
     // As above: same ambient tactic on both sides.
+    // [by-name-receiver] by-name operation shares tactic with option receiver
     scala.caps.unsafe.unsafeAssumeSeparate:
       deleteRecursively.conditionally(path)(backend.deleteIfExists(path))
     Log.info(Io.Event.Delete(path.show))
@@ -250,6 +252,7 @@ extension [plane: Filesystem](path: Path on plane)
   :   Path on plane =
 
     // Created and consumed under the same ambient tactic; no aliased writer.
+    // [by-name-receiver] by-name operation shares tactic with option receiver
     scala.caps.unsafe.unsafeAssumeSeparate:
       createNonexistentParents(destination):
         overwritePreexisting(destination):
@@ -275,6 +278,7 @@ extension [plane: Filesystem](path: Path on plane)
   :   Path on plane =
 
     // Created and consumed under the same ambient tactic; no aliased writer.
+    // [by-name-receiver] by-name operation shares tactic with option receiver
     scala.caps.unsafe.unsafeAssumeSeparate:
       createNonexistentParents(destination):
         overwritePreexisting(destination):
@@ -308,6 +312,7 @@ extension [plane: Filesystem](path: Path on plane)
   :   Path on plane =
 
     // Created and consumed under the same ambient tactic; no aliased writer.
+    // [by-name-receiver] by-name operation shares tactic with option receiver
     scala.caps.unsafe.unsafeAssumeSeparate:
       createNonexistentParents(destination):
         overwritePreexisting(destination):
@@ -338,6 +343,7 @@ extension [plane: Filesystem](path: Path on plane)
   :   Path on plane =
 
     // Created and consumed under the same ambient tactic; no aliased writer.
+    // [by-name-receiver] by-name operation shares tactic with option receiver
     scala.caps.unsafe.unsafeAssumeSeparate:
       createNonexistentParents(destination):
         overwritePreexisting(destination):

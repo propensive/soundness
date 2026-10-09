@@ -69,6 +69,7 @@ object Pem:
   =>  ( Diagnostics, Tactic[Pem.Error] )
   =>  ( (value in Pem) is Aggregable by Text ) =
 
+    // [field-purity] codec-thunk seal on Aggregable given
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
         type Self = value in Pem
@@ -172,6 +173,7 @@ object Pem:
   // Sealed per the codec-thunk pattern (see rep/DECISIONS.md): the
   // resolution-scoped tactic shares the instance's given-resolution lifetime.
   given aggregable: (Diagnostics, Tactic[Pem.Error]) => Pem is Aggregable by Text =
+    // [field-purity] codec-thunk seal on Aggregable given
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
         type Self = Pem
@@ -188,6 +190,7 @@ object Pem:
   // A certificate chain (or any multi-block document) as a lazy sequence of
   // its blocks.
   given aggregableAll: (Diagnostics, Tactic[Pem.Error]) => Chain[Pem] is Aggregable by Text =
+    // [field-purity] codec-thunk seal on Aggregable given
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
         type Self = Chain[Pem]

@@ -126,6 +126,7 @@ extends Watcher:
 
           catch case _: InterruptedException => ()
 
+        // [registry-lifetime] poll task handle held for registration lifetime
         caps.unsafe.unsafeAssumePure(polling)
 
     Registration(async)

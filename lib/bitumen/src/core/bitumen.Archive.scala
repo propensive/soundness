@@ -59,6 +59,7 @@ object Archive:
     // `LazyList` chain this replaces performed implicitly through its cells —
     // and the producer must remain valid until the body is drained.
     private[bitumen] def deferred(pull: () => Optional[Data]): Archive.Body =
+      // [by-name-capture] producer thunk laundered to pure function
       new Archive.Body(Nil, caps.unsafe.unsafeAssumePure(pull))
 
   // The replayable body of an archive entry. Chunks pull lazily from the
@@ -71,6 +72,7 @@ object Archive:
       // `ArrayBuffer.from` demands an `IterableOnce`, which the opaque `List` is not.
       scala.collection.mutable.ArrayBuffer.from(initial.stdlib)
 
+    // [field-purity] exhausted flag in non-Stateful Body
     @scala.caps.unsafe.untrackedCaptures
     private var exhausted: Boolean = false
 
@@ -97,6 +99,7 @@ object Archive:
     // The body's chunks, replayed from the start; unread chunks pull from the
     // producer as the iterator advances.
     def chunks: Iterator[Data] = new Iterator[Data]:
+      // [stdlib-iterator] index state in anonymous Iterator
       @scala.caps.unsafe.untrackedCaptures
       private var index: Int = 0
 
@@ -130,12 +133,15 @@ object Archive:
   // the cursor stands at the next header. A stdlib class cannot extend `Stateful`, so its
   // state is untracked (the record-iterator precedent).
   private[bitumen] abstract class Lookahead[entry] extends Iterator[entry]:
+    // [stdlib-iterator] lookahead extends Iterator, cannot be Stateful
     @caps.unsafe.untrackedCaptures
     private var lookahead: Optional[entry] = Unset
 
+    // [stdlib-iterator]
     @caps.unsafe.untrackedCaptures
     private var unread: Optional[Archive.Body] = Unset
 
+    // [stdlib-iterator]
     @caps.unsafe.untrackedCaptures
     private var finished: Boolean = false
 
@@ -183,6 +189,7 @@ object Archive:
     ( truncated: (Int, Int) => Nothing )
   :   () ->{cursor, truncated} Optional[Data] =
 
+    // [closure-capture] local counter captured by returned pull closure
     @caps.unsafe.untrackedCaptures
     var consumed: Long = 0L
 

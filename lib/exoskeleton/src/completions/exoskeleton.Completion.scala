@@ -77,11 +77,14 @@ extends Cli:
   // Whether any suggestions have been offered yet for the focused argument. Flags registered
   // before this point were checked before subcommand dispatch, so they are "global": they apply
   // regardless of (and may influence) which subcommand is chosen.
+  // [field-purity] mutable completion state in case class
   @scala.caps.unsafe.untrackedCaptures
   private var dispatchSuggested: Boolean = false
 
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   var explanation: Optional[Text] = Unset
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   var cursorSuggestions: List[Suggestion] = Nil
 

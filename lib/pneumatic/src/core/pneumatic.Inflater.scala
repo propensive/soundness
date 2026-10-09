@@ -1202,6 +1202,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
     // `window` and `adler` are both reached through `this`, which the separation checker
     // rejects even though the checksum only reads the window. The read is genuinely
     // non-overlapping: `update` takes its buffer read-only and keeps no reference to it.
+    // [aliased-read] window read by adler while both reached through this
     if wrap != 0 && n > 0 then scala.caps.unsafe.unsafeAssumeSeparate(adler.update(window, q, n))
 
     // copy as far as windowEnd of window
@@ -1228,6 +1229,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
       // `window` and `adler` are both reached through `this`, which the separation checker
       // rejects even though the checksum only reads the window. The read is genuinely
       // non-overlapping: `update` takes its buffer read-only and keeps no reference to it.
+      // [aliased-read] window read by adler while both reached through this
       if wrap != 0 && n > 0 then scala.caps.unsafe.unsafeAssumeSeparate(adler.update(window, q, n))
 
       // copy

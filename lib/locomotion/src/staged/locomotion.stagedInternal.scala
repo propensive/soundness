@@ -1161,6 +1161,7 @@ object stagedInternal:
     '{
       // Sealed per the codec-thunk pattern: the generated body resolves its
       // capabilities where it is spliced.
+      // [quote-wall] staged Parsable generated inside quote
       caps.unsafe.unsafeAssumePure:
         new Protobuf.Parsable.Direct[value]:
           protected def parseCarrier(reader0: AnyRef): value =

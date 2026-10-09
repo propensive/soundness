@@ -55,6 +55,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
 
     // Laundered pure: the by-name element instance shares this instance's given-resolution
     // lifetime (the codec-thunk seal pattern; see rep/DECISIONS.md).
+    // [by-name-capture] by-name element instance sealed into given
     caps.unsafe.unsafeAssumePure:
       random =>
         given random0: (Random^{random}) = random
@@ -65,6 +66,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
 
     // Laundered pure: the by-name element instance shares this instance's given-resolution
     // lifetime (the codec-thunk seal pattern; see rep/DECISIONS.md).
+    // [by-name-capture] by-name element instance sealed into given
     caps.unsafe.unsafeAssumePure:
       random =>
         given random0: (Random^{random}) = random
@@ -75,6 +77,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
   =>  (Array[element]^{}) is Randomizable =
 
     // Laundered pure, as for `list` above.
+    // [by-name-capture] by-name element instance sealed into given
     caps.unsafe.unsafeAssumePure:
       random =>
         given random0: (Random^{random}) = random

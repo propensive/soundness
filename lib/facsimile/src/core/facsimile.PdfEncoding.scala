@@ -199,4 +199,4 @@ private[facsimile] object PdfEncoding:
   private[facsimile] def winAnsiEncode(text: Text): Data =
     Array.scribe[Byte](text.length): scribe => extent =>
       extent.each: i =>
-        scribe(i) = winAnsiCodes.at(text.s.charAt((i: Ordinal).n0)).or('?'.toInt).toByte
+        scribe(i) = winAnsiCodes.at(text.s.charAt(i.n0)).or('?'.toInt).toByte

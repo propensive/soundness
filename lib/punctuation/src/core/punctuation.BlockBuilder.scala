@@ -105,6 +105,7 @@ final class BlockQuoteBuilder(val line: Ordinal) extends ContainerBuilder:
 // already been stripped by the dispatcher when the item was opened.
 final class ListItemBuilder(val line: Ordinal, val indent: Int) extends ContainerBuilder:
   // Tracks blank lines for tight/loose detection at the list level.
+  // [field-purity] builder flag var in non-Stateful class
   @scala.caps.unsafe.untrackedCaptures
   var hadBlank: Boolean = false
 
@@ -147,10 +148,12 @@ final class BulletListBuilder(val line: Ordinal, val marker: Char) extends Conta
   val items: ArrayBuffer[List[Layout]] = ArrayBuffer()
   // True if any blank line is observed between blocks of the list (between
   // items or between blocks within an item) — makes the list loose.
+  // [field-purity] builder flag var in non-Stateful class
   @scala.caps.unsafe.untrackedCaptures
   var loose: Boolean = false
   // Set when an item closes with hadBlank=true; the next sibling-item open
   // will promote this to `loose`.
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   var pendingBlank: Boolean = false
 
@@ -167,8 +170,10 @@ final class OrderedListBuilder
     val delimiter: '.' | ')' )
 extends ContainerBuilder:
   val items: ArrayBuffer[List[Layout]] = ArrayBuffer()
+  // [field-purity] builder flag var in non-Stateful class
   @scala.caps.unsafe.untrackedCaptures
   var loose: Boolean = false
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   var pendingBlank: Boolean = false
 
@@ -197,8 +202,10 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
 
   // Stored after `extractLinkRefs` — the byte-position in the joined-lines
   // text where link-reference definitions end and paragraph content begins.
+  // [field-purity] builder state var in non-Stateful class
   @scala.caps.unsafe.untrackedCaptures
   private var linkRefEnd: Int = 0
+  // [field-purity]
   @scala.caps.unsafe.untrackedCaptures
   private var joinedText: String = ""
 

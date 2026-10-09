@@ -50,8 +50,10 @@ object Daemon:
     // `async` entry point and laundered to pure here. The daemon *handle* is likewise laundered to a
     // pure `Daemon` (it is freely shared, like a `Task`); the worker remains a supervised child of
     // `monitor`, and the effect capabilities its body uses are still tracked at the entry point.
+    // [by-name-capture] daemon body thunk laundered to pure function
     val evaluate0: Worker -> Unit = caps.unsafe.unsafeAssumePure(evaluate)
 
+    // [construction-fresh] new Worker with Daemon handle laundered at factory
     caps.unsafe.unsafeAssumePure:
       new Worker(codepoint, monitor, probate) with Daemon:
         type Result = Unit

@@ -202,7 +202,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   def name: Text = descent.to(List).prim.or(root)
   def nil: Boolean = descent.isEmpty
 
-  inline def knownElementTypes: Boolean = inline !![Topic] match
+  inline def knownElementTypes: Boolean = inline scala.compiletime.erasedValue[Topic] match
     case _: Zero           => true
     case _: (head *: tail) => true
     case _                 => false
@@ -210,7 +210,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   transparent inline def knownElements: Boolean = known[Topic]
 
   protected inline def known[topic <: Tuple]: Boolean =
-    inline !![topic] match
+    inline scala.compiletime.erasedValue[topic] match
       case _: Zero => true
 
       case _: (head *: tail) =>
@@ -234,13 +234,13 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   def precedes(path: Path on Plane): Boolean =
     path.root == root && path.descent.drop(path.descent.length - descent.length) == descent
 
-  transparent inline def depth: Int = inline !![Topic] match
+  transparent inline def depth: Int = inline scala.compiletime.erasedValue[Topic] match
     case Zero         => 0
     case head *: tail => valueOf[Tuple.Size[Topic]]
     case _            => descent.length
 
   private inline def check[topic, filesystem](path: List[Text]): Unit =
-    inline !![topic] match
+    inline scala.compiletime.erasedValue[topic] match
       case _: Zero => ()
 
       case _: (head *: tail) =>
@@ -284,6 +284,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   transparent inline def sameRoot(right: Path): Boolean = summonFrom:
     case plane: (Plane is Filesystem) =>
+      // [erased-evidence] erased UniqueRoot type test in inline match
       inline if caps.unsafe.unsafeErasedValue[plane.UniqueRoot] then true else root == right.root
 
     case _ =>
@@ -317,7 +318,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     recur(left0, right0, 0, 0)
 
   transparent inline def parent: Optional[Path on Plane under Limit] =
-    inline !![Topic] match
+    inline scala.compiletime.erasedValue[Topic] match
       case head *: tail => Path[Plane, Limit, tail.type](root, descent.tail.to(List))
       case EmptyTuple   => Unset
 
@@ -349,6 +350,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
     // A peer replaces the leaf, so the current leaf is dropped from the descent — mirroring
     // `child.type *: tail` at the type level.
+    // [erased-evidence] erased Topic value for inline type match
     inline caps.unsafe.unsafeErasedValue[Topic] match
       case _: (head *: tail) =>
         Path[Plane, Limit, child.type *: tail]

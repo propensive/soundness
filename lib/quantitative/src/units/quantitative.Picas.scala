@@ -37,6 +37,7 @@ import rudiments.*
 
 object Picas:
   given designation: Designation[Picas[1]] = () => "pc".tt
-  inline given ratio: Ratio[Picas[-1] & Metres[1], 0.004233333333333333] = !!
+  erased given ratio: Ratio[Picas[-1] & Metres[1], 0.004233333333333333] =
+    Ratio.Evidence[Picas[-1] & Metres[1], 0.004233333333333333]()
 
 trait Picas[Power <: Nat] extends Units[Power, Distance]

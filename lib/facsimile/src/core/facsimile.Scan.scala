@@ -45,10 +45,13 @@ private[facsimile] object Scan:
 // input abstraction for the lexer. Refills its window on demand, so lexemes spanning chunk
 // boundaries need no special handling; `-1` signals the end of the source.
 private[facsimile] class Scan(source: ByteSource, start: Long):
+  // [field-purity] cursor base var in non-Stateful Scan
   @scala.caps.unsafe.untrackedCaptures
   private var base: Long = start
+  // [field-purity] cursor chunk var in non-Stateful Scan
   @scala.caps.unsafe.untrackedCaptures
   private var chunk: Data = Array.empty[Byte]
+  // [field-purity] cursor index var in non-Stateful Scan
   @scala.caps.unsafe.untrackedCaptures
   private var cursor: Int = 0
 

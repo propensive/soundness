@@ -49,6 +49,7 @@ enum TestFlag:
   case Fast, Careful
 
 class DocHandle(val name: Text, val flags: List[TestFlag]) extends caps.ExclusiveCapability:
+  // [test-harness] test DocHandle fixture's appended-lines var
   @scala.caps.unsafe.untrackedCaptures
   private var appended: List[Text] = Nil
   def titleOf: Text = t"doc:$name"
@@ -109,16 +110,22 @@ given soleOpenable: SoleOpenable = SoleOpenable()
 // A creatable counterpart: an in-memory "vault" of documents, committed on scope close so
 // that rollback semantics are observable.
 class Vault:
+  // [test-harness] test Vault fixture's committed var
   @scala.caps.unsafe.untrackedCaptures
   var committed: Optional[List[Text]] = Unset
+  // [test-harness] test Vault fixture's made flag
   @scala.caps.unsafe.untrackedCaptures
   var made: Boolean = false
 
 case class VaultRef(vault: Vault)
 
+// [test-harness] annotation on test VaultScribe fixture class
 @scala.caps.unsafe.untrackedCaptures
+// [test-harness]
 @scala.caps.unsafe.untrackedCaptures
+// [test-harness]
 @scala.caps.unsafe.untrackedCaptures
+// [test-harness] test VaultScribe's lines var parameter
 class VaultScribe private[aperture] (@scala.caps.unsafe.untrackedCaptures var lines: List[Text])
 extends caps.ExclusiveCapability:
   def append(line: Text): Unit = lines = line :: lines

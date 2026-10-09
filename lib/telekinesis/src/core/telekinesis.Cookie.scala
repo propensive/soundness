@@ -101,6 +101,7 @@ object Cookie:
 
         // `response` is pure here, so its body is pure; the seal only discharges
         // the field's capture-polymorphic declared type (see `Protoresponse`).
+        // [field-fresh-param] body field's capture-polymorphic declared type
         val body = caps.unsafe.unsafeAssumePure(response.body)
         response.status(header :: response.textHeaders, body)
 

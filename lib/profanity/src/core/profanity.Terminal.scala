@@ -81,10 +81,13 @@ object Terminal:
   // then close over this holder instead of `Terminal.this` — which matters because the
   // daemon body must be a pure context function and `Termcap`/`Stdio` values must stay pure.
   private[profanity] class Metrics:
+    // [live-view] holder keeps Termcap/Stdio pure over live metrics
     @scala.caps.unsafe.untrackedCaptures
     var mode: Optional[Brightness] = Unset
+    // [live-view]
     @scala.caps.unsafe.untrackedCaptures
     var rows: Optional[Int] = Unset
+    // [live-view]
     @scala.caps.unsafe.untrackedCaptures
     var columns: Optional[Int] = Unset
 
@@ -221,6 +224,7 @@ extends Interactivity[Terminal.Event], caps.ExclusiveCapability, caps.Stateful:
   // `Interactivity` interface is pure-typed, exactly as `Spool.iterator` was
   // before it — the endpoint is reachable only through this iterator.
   def eventIterator(): Iterator[Terminal.Event] =
+    // [live-view] pure-typed event iterator over live relay
     caps.unsafe.unsafeAssumePure(events.stream.records)
 
   // The handler is bound over block locals (not fields) so it stays pure: `Console.trap`

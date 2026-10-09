@@ -145,10 +145,12 @@ object internal:
             // tracked) evidence is sealed on entry to the generated code. The
             // capability is fully applied within this request expression.
             given postable0: (payload is Postable) =
+              // [quote-wall] staging-boundary seal of postable evidence
               caps.unsafe.unsafeAssumePure($postable)
 
             // Staging-boundary seal, like `postable0` below: quoted types must stay pure.
             given loggable0: Http.Event is Loggable =
+              // [quote-wall] staging-boundary seal of loggable evidence
               caps.unsafe.unsafeAssumePure($loggable)
             val host: Host = $submit.host
             val path = $submit.originForm
@@ -187,6 +189,7 @@ object internal:
             // No `Online` binding, as in `submit` above.
             // Staging-boundary seal, like `postable0` below: quoted types must stay pure.
             given loggable0: Http.Event is Loggable =
+              // [quote-wall] staging-boundary seal of loggable evidence
               caps.unsafe.unsafeAssumePure($loggable)
 
             val path = $fetch.originForm

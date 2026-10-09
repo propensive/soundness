@@ -96,8 +96,10 @@ private def parsedIterator[value](consume reader: DsvReader^, parsable: value is
 :   Iterator[value]^ =
 
   new Iterator[value]:
+    // [stdlib-iterator] state in anonymous Iterator
     @caps.unsafe.untrackedCaptures
     private var pending: Optional[value] = Unset
+    // [stdlib-iterator]
     @caps.unsafe.untrackedCaptures
     private var finished: Boolean = false
 
@@ -144,6 +146,7 @@ package optics:
   // rejects the `Optic`'s capture of `filter.predicate` against the required pure `Optic` type.
   // (Compiler divergence; see #1520 and the identical laundering in `panopticon.Optical.filter`.)
   given dsvRowFilterOptical: Filter[Dsv] is Optical from Sheet onto Dsv = filter =>
+    // [by-name-capture] filter predicate laundered pure (Scala.js divergence)
     val predicate: Dsv -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
 
     Optic: (origin, lambda) =>
