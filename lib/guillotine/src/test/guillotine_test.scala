@@ -464,9 +464,10 @@ object Tests extends Suite(m"Guillotine tests"):
           terminal.text().trim
       . assert(_ == t"hello")
 
-      test(m"input typed at the terminal reaches the command"):
+      test(m"text typed at the terminal reaches the command"):
+        import codepages.utf8Codepage
         sh"head -n 1".pty().session: terminal ?=>
-          terminal.stdin(Stream(Data(104, 105, 13)))
+          t"hi\r".writeTo(terminal)
           terminal.text().s.replace("\r", "").nn.trim.nn.tt
       . assert(_ == t"hi\nhi")
 
@@ -479,7 +480,7 @@ object Tests extends Suite(m"Guillotine tests"):
       test(m"a resized terminal reports its new size"):
         sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
           terminal.resize(132, 50)
-          terminal.stdin(Stream(Data(13)))
+          Data(13).writeTo(terminal)
           terminal.text().trim
       . assert(_ == t"50 132")
 

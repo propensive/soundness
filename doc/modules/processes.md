@@ -153,20 +153,22 @@ and error, as it would if a person had typed it:
 sh"stty size".pty(100, 30).exec[Text]().trim   // t"30 100"
 ```
 
-For an interactive program, a `session` lends the running command to a block, as a `Job` which
-can also be resized, and ends it when the block does — hanging up on the program if it is still
-running, as closing a real terminal would. Its output is everything the program writes to the
-terminal, standard error included, escape sequences and all — what a terminal emulator would
-receive — and its input is what is typed at the terminal. A terminal has no end of input of its
-own, so a program reading until the end is sent the end-of-file character, `^D`, rather than
-having its input closed:
+For an interactive program, a `session` lends the running command to a block, as a `Job` which can
+also be resized, and ends it when the block does — hanging up on the program if it is still running,
+as closing a real terminal would. Its output is everything the program writes to the terminal,
+standard error included, escape sequences and all — what a terminal emulator would receive — and
+anything streamable can be typed at it with `writeTo`. A terminal has no end of input of its own, so
+a program reading until the end is sent the end-of-file character, `^D`, rather than having its
+input closed:
 
 <!-- doccheck: skip -->
 ```scala
+import codepages.utf8Codepage
+
 sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
-  terminal.resize(132, 50)         // the program receives SIGWINCH
-  terminal.stdin(Stream(Data(13))) // press Return
-  terminal.text().trim             // t"50 132"
+  terminal.resize(132, 50)   // the program receives SIGWINCH
+  t"\r".writeTo(terminal)    // press Return
+  terminal.text().trim       // t"50 132"
 ```
 
 The value `pty` returns is not itself a terminal: it describes how to run the command, and each
