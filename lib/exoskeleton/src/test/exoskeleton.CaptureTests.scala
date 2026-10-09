@@ -36,8 +36,8 @@ import soundness.*
 
 import strategies.throwUnsafely
 
-// `sandbox` lends the installed daemon to its block as a `Tool` capability, and `tmux` lends
-// the live tmux session as a `Tmux` capability; capture checking confines each to its block
+// `sandbox` lends the installed daemon to its block as a `Tool` capability, and `pane` lends
+// the shell's terminal as a `Pane` capability; capture checking confines each to its block
 // (the process is killed, and the session ended, afterwards).
 object CaptureTests extends Suite(m"Rig confinement tests"):
   def run(): Unit =

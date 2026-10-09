@@ -110,7 +110,8 @@ object Pty:
       scrollBottom:       Ordinal = Prim,
       pendingWrap:        Boolean = false,
       mainScreen:         Optional[Screen[Style]] = Unset,
-      mainCursor:         Ordinal = Prim )
+      mainCursor:         Ordinal = Prim,
+      pending:            Text    = t"" )
 
 case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
   // The legacy view of the reply relay (the audited bridge).
@@ -122,7 +123,10 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
   def cursor: Ordinal = state.cursor
   def cursorVisible: Boolean = !state.hideCursor
 
-  def consume(input: Text): Pty raises Pty.Error =
+  // Output read from a terminal arrives in chunks, which may end partway through an escape
+  // sequence; the incomplete sequence is kept, as `pending`, and resumed by the next `consume`.
+  def consume(fresh: Text): Pty raises Pty.Error =
+    val input = if state.pending.nil then fresh else t"${state.pending}$fresh"
     val escBuffer = StringBuilder()
     val buffer2: Screen[Style] = buffer.copy()
 
@@ -134,6 +138,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
     var boundaryCursor: Int = 0
 
     var pendingWrap: Boolean = state.pendingWrap
+    var escapeStart: Int = 0
     var lastGrapheme: Grapheme = Grapheme(" ")
 
     object cursor:
@@ -675,9 +680,11 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
       // The presence of a character at `index` is the loop's bounds check; past the end of
       // the input, the walk is complete.
       input(index.z).lay:
+        val pending = if context == Normal then t"" else input.segment(escapeStart.z till index.z)
+
         Pty(buffer2,
             state2.copy(cursor = cursor(), style = style, link = link, scrollTop = scrollTop,
-                scrollBottom = scrollBottom, pendingWrap = pendingWrap),
+                scrollBottom = scrollBottom, pendingWrap = pendingWrap, pending = pending),
             output = output)
 
       . apply: current =>
@@ -711,7 +718,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
               case '\u0018' => proceed(Normal) // can()
               case '\u0019' => proceed(Normal) // em()
               case '\u001a' => proceed(Normal) // sub()
-              case '\u001b' => proceed(Escape)
+              case '\u001b' => escapeStart = index; proceed(Escape)
               case '\u001c' => proceed(Normal) // fs()
               case '\u001d' => proceed(Normal) // gs()
               case '\u001e' => proceed(Normal) // rs()

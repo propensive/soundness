@@ -32,251 +32,241 @@
                                                                                                   */
 package exoskeleton
 
+import java.lang as jl
+
 import soundness.*
 
 import errorDiagnostics.stackTracesDiagnostics
-import pathInterfaces.pathOnLinux
-
 import filesystemBackends.javaBaseFilesystem
+import probates.cancelProbate
 
 extension (shell: Shell)
-  // Explicit `using` evidence instead of `raises`/`logs` sugar: a context-function result
-  // would hide the parameters, which the separation checker rejects.
-  def tmux(width: Int = 80, height: Int = 24)[result](action: (tmux: Tmux) ?=> result)
-    ( using WorkingDirectory, Environment, Enclave.Tool, Monitor, TemporaryDirectory )
-    ( using Tactic[Tmux.Error], (guillotine.Exec.Event is Loggable)^ )
+  // A pane on a pseudo-terminal, rendered by yossarian, running `shell` as `rig.launch` starts it.
+  //
+  // Explicit `using` evidence instead of `raises`/`logs` sugar: a context-function result would
+  // hide the parameters, which the separation checker rejects.
+  def pane(width: Int = 80, height: Int = 24)[result](action: (pane: Pane) ?=> result)
+    ( using WorkingDirectory, Environment, Enclave.Tool, Monitor )
+    ( using Tactic[Pane.Error], (guillotine.Exec.Event is Loggable)^ )
   :   result =
 
+    val command = rig.launch(shell, terminal = true)
+
     mitigate:
-      case guillotine.Exec.Error(_, _, _)   => Tmux.Error(Tmux.Error.Reason.ExecFailed)
-      case Number.Error(_, _, _) => Tmux.Error(Tmux.Error.Reason.SessionDied)
-      case Io.Error(_, _, _, _)  => Tmux.Error(Tmux.Error.Reason.ExecFailed)
-      case Truncation.Error(_)       => Tmux.Error(Tmux.Error.Reason.ExecFailed)
+      case guillotine.Exec.Error(_, _, _) => Pane.Error(Pane.Error.Reason.ExecFailed)
 
     . protect:
-        given tmux: Tmux =
-          Tmux(Uuid().show, summon[WorkingDirectory], summon[Environment], width, height, shell)
+        command.pty(width, height).session: job ?=>
+          val display = Pane.Display(width, height)
 
-        val path =
-          summon[Enclave.Tool].path.parent
-          . lay(abort(Tmux.Error(Tmux.Error.Reason.ExecFailed)))(_.encode)
+          // The output is rendered, and the shell's queries answered, from the moment it starts,
+          // by two tasks which end with the session: one when the terminal's output ends, the
+          // other when `finish` stops yossarian's replies.
+          val reader = async(safely(job.stdout().chunks.each(display.render(_))))
+          val answers = async(safely(display.answer(job)))
 
-        var psFile: Optional[Path on Linux] = Unset
+          try
+            val pane = Pane.Emulated(shell, display, job)
+            rig.ready(using pane)
+            action(using pane)
+          finally
+            display.finish()
+            safely(answers.await())
 
-        val shellBinary = shell match
-          case Shell.Zsh        => t"zsh"
-          case Shell.Fish       => t"fish"
-          case Shell.Bash       => t"bash"
-          case Shell.Powershell => t"pwsh"
+  // A pane in a tmux session, running `shell` exactly as `pane` does, to compare yossarian's
+  // rendering with an independent terminal emulator's.
+  def tmux(width: Int = 80, height: Int = 24)[result](action: (pane: Pane) ?=> result)
+    ( using WorkingDirectory, Environment, Enclave.Tool, Monitor )
+    ( using Tactic[Pane.Error], (guillotine.Exec.Event is Loggable)^ )
+  :   result =
 
-        locally:
-          import logging.silentLogging
+    val command = rig.launch(shell, terminal = false)
 
-          if sh"which $shellBinary".exec[Exit]() != Exit.Ok
-          then abort(Tmux.Error(Tmux.Error.Reason.ShellNotInstalled(shellBinary)))
+    val tmux =
+      Tmux(Uuid().show, summon[WorkingDirectory], summon[Environment], width, height, shell)
 
-        val shellInvocation = shell match
-          case Shell.Zsh        => t"zsh -l"
-          case Shell.Fish       => t"fish -l"
-          case Shell.Bash       => t"bash -l"
+    mitigate:
+      case guillotine.Exec.Error(_, _, _) => Pane.Error(Pane.Error.Reason.ExecFailed)
 
-          case Shell.Powershell =>
-            val cmd = summon[Enclave.Tool].command
+    . protect:
+        sh"tmux new-session -d -s ${tmux.id} -x $width -y $height ${command.escape}".exec[Unit]()
 
-            val psScript =
-              s"""using namespace Microsoft.PowerShell
-                 |function global:prompt { '> ' }
-                 |$$env:PATH = "${path}:" + $$env:PATH
-                 |try {
-                 |    Set-PSReadLineKeyHandler -Key Tab -ScriptBlock {
-                 |        param($$key, $$arg)
-                 |        $$line = $$null; $$cursor = $$null
-                 |        [PSConsoleReadLine]::GetBufferState([ref]$$line, [ref]$$cursor)
-                 |        $$ws = $$cursor
-                 |        while ($$ws -gt 0 -and $$line[$$ws - 1] -ne ' ') { $$ws-- }
-                 |        $$w = $$line.Substring($$ws, $$cursor - $$ws)
-                 |        $$cmpArgs = @('{completions}', 'powershell', "$$cursor", `
-                 |                      '0', '-', '--', $$line)
-                 |        $$results = @(& '$cmd' @cmpArgs 2>$$null |
-                 |            ForEach-Object { ($$_ -split "`t", 2)[0] })
-                 |        $$matching = @($$results | Where-Object { $$_.StartsWith($$w) })
-                 |        if ($$matching.Count -eq 0) { return }
-                 |        $$lcp = $$matching[0]
-                 |        for ($$i = 1; $$i -lt $$matching.Count; $$i++) {
-                 |            $$m = $$matching[$$i]; $$j = 0
-                 |            while ($$j -lt $$lcp.Length -and $$j -lt $$m.Length `
-                 |                   -and $$lcp[$$j] -eq $$m[$$j]) { $$j++ }
-                 |            $$lcp = $$lcp.Substring(0, $$j)
-                 |        }
-                 |        if ($$matching.Count -eq 1) {
-                 |            [PSConsoleReadLine]::Replace($$ws, $$cursor - $$ws, $$lcp + ' ')
-                 |            [PSConsoleReadLine]::SetCursorPosition($$ws + $$lcp.Length + 1)
-                 |        } elseif ($$lcp.Length -gt $$w.Length) {
-                 |            [PSConsoleReadLine]::Replace($$ws, $$cursor - $$ws, $$lcp)
-                 |            [PSConsoleReadLine]::SetCursorPosition($$ws + $$lcp.Length)
-                 |        }
-                 |    }
-                 |} catch {}
-                 |function global:_completions {
-                 |    param($$text)
-                 |    $$line = '$cmd ' + $$text
-                 |    $$cursor = $$line.Length
-                 |    $$cmpArgs = @('{completions}', 'powershell', "$$cursor", `
-                 |                  '0', '-', '--', $$line)
-                 |    & '$cmd' @cmpArgs 2>$$null | ForEach-Object {
-                 |        $$p = $$_ -split "`t", 2
-                 |        $$n = $$p[0].TrimEnd()
-                 |        if ($$p.Length -gt 1 -and $$p[1] -cne $$n) `
-                 |        { "$$n@@$$($$p[1])" } else { $$n }
-                 |    }
-                 |}
-                 |""".stripMargin
+        try
+          rig.ready(using tmux)
+          action(using tmux)
+        finally safely(sh"tmux kill-session -t ${tmux.id}".exec[Exit]())
 
-            import filesystemOptions.requireParents
-            import filesystemOptions.dereferenceSymlinks
-            import codepages.utf8Codepage
+object rig:
+  // The command which starts `shell` for a test: under the tool's scratch home, with the tool's
+  // directory first on the `PATH`, and with a configuration of the rig's own — a prompt of `> `,
+  // and the tool's completion script loaded — in place of any the user has. `terminal` sets
+  // `TERM`, which tmux sets for itself.
+  def launch(shell: Shell, terminal: Boolean)(using tool: Enclave.Tool, environment: Environment)
+    ( using Tactic[Pane.Error] )
+  :   Command =
 
-            val tmpDir: Path on Linux = temporaryDirectory[Path on Linux]
-            val file: Path on Linux = unsafely(tmpDir/t"exoskeleton-${Uuid()}.ps1")
-            file.open[File](Write, OpenFlag.Create) { h ?=> h.write(psScript.tt) }
-            psFile = file
-            t"POWERSHELL_UPDATECHECK=Off pwsh -NoLogo -NoExit -File ${file.encode}"
+    val home = tool.home
+    val directory = tool.path.parent.lay(abort(Pane.Error(Pane.Error.Reason.ExecFailed)))(_.encode)
+    def quote(text: Text): Text = t"'${text.sub(t"'", t"'\\\\''")}'"
 
-        sh"tmux new-session -d -s ${tmux.id} -x $width -y $height '$shellInvocation'".exec[Unit]()
+    // Named methods, not lambdas: interpolating inside a lambda passed to a combinator runs the
+    // interpolator's implicit search while the combinator's type is still uninstantiated,
+    // tripping dotc's `wildApprox` assertion (scala/scala3#24824).
+    def prefixed(rest: Text): Text = t"$directory:$rest"
+    def assignment(variable: (Text, Text)): Text = t"${variable(0)}=${variable(1)}"
 
-        Tmux.attend:
-          ()
+    val path = environment.variable(t"PATH").lay(directory)(prefixed)
 
-        shell match
-          case Shell.Zsh =>
-            val command = t"""precmd_functions=() preexec_functions=() PROMPT="> " RPROMPT="""""
-            sh"""tmux send-keys -t ${tmux.id} $command C-m""".exec[Unit]()
-            sh"""tmux send-keys -t ${tmux.id} "path+=(\"$path\")" C-m""".exec[Unit]()
+    val variables: List[(Text, Text)] =
+      val own = List(t"PATH" -> path, t"POWERSHELL_UPDATECHECK" -> t"Off")
+      val term = if terminal then List(t"TERM" -> t"xterm-256color") else Nil
+      List.concat(List.concat(Enclave.scratch(home).to[List], own), term)
 
-            sh"""tmux send-keys -t ${tmux.id} "autoload -Uz compinit; compinit -u" C-m"""
-            . exec[Unit]()
+    // Writes a configuration file into `directory`, a path of names under the scratch home.
+    def write(directory: List[Text], name: Text, content: Text): Text =
+      def unconfigured(problem: Message): Pane.Error =
+        Pane.Error(Pane.Error.Reason.Unconfigured(problem.text))
 
-            // `compinit` walks every completion function and can take seconds
-            // under Docker load; without an explicit ready-marker the test
-            // would start sending keys (including TAB) before the completion
-            // system is initialised, so TAB resolves to nothing.
-            sh"""tmux send-keys -t ${tmux.id} 'echo READY-${tmux.id}' C-m""".exec[Unit]()
-            var zshReady = false
-            var zshAttempts = 0
+      // Each directory is created in turn, from the scratch home down.
+      mitigate:
+        case error@Io.Error(_, _, _, _) => unconfigured(error.message)
+        case error@Path.Error(_, _)     => unconfigured(error.message)
+        case error@Name.Error(_, _, _)  => unconfigured(error.message)
 
-            while !zshReady && zshAttempts < 666 do
-              sleep(0.03*Second)
-              zshReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").readable.length > 0
-              zshAttempts += 1
+      . protect:
+          val parent = directory.fuse(home):
+            val child = state/next
+            if !child.existent() then child.create[Directory]()
+            child
 
-            Tmux.attend:
-              sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
+          val file = parent/name
 
-          case Shell.Bash =>
-            val cmd = summon[Enclave.Tool].command
+          // Each pane writes its configuration afresh, over whatever an earlier pane wrote.
+          locally:
+            import filesystemOptions.deleteOnlyEmpty
+            if file.existent() then file.delete()
 
-            sh"""tmux send-keys -t ${tmux.id} "PS1='> '" C-m""".exec[Unit]()
-            sh"""tmux send-keys -t ${tmux.id} 'export PATH="$path:$$PATH"' C-m""".exec[Unit]()
+          file.write(content.sysData)
+          file.encode
 
-            // Stock bash on macOS does not ship with bash-completion 2, which
-            // defines `_init_completion` (used by exoskeleton's installed bash
-            // completion script) and provides on-demand loading from the XDG
-            // bash-completion directories. Stub `_init_completion` as a no-op
-            // and source the installed completion script directly so the test
-            // doesn't depend on bash-completion 2 being present.
-            sh"""tmux send-keys -t ${tmux.id} '_init_completion() { return 0; }' C-m"""
-            . exec[Unit]()
+    // The tool's completion script for each shell, generated as `install` would write it, but
+    // into the scratch home, where the shell's configuration loads it.
+    def script(directory: List[Text], name: Text): Text =
+      write(directory, name, Completions.script(shell, tool.command))
 
-            // `BASH_COMPLETION_USER_DIR` first, as `Completions.install` writes there when set.
-            val sourceScript =
-              t"""for d in "$${BASH_COMPLETION_USER_DIR:+$$BASH_COMPLETION_USER_DIR/completions}" """ +
-                t""""$$XDG_DATA_HOME/bash-completion/completions" """ +
-                t""""$$HOME/.local/share/bash-completion/completions" """ +
-                t"""/usr/local/share/bash-completion/completions """ +
-                t"""/usr/share/bash-completion/completions; do [ -n "$$d" ] && """ +
-                t"""[ -r "$$d/$cmd" ] && . "$$d/$cmd" && break; done"""
+    val invocation: List[Text] = shell match
+      case Shell.Bash =>
+        val completions = List(t".local", t"share", t"bash-completion", t"completions")
+        val source = t". ${quote(script(completions, tool.command))}"
 
-            sh"""tmux send-keys -t ${tmux.id} '$sourceScript' C-m""".exec[Unit]()
+        val rc = write(List(t".rig"), t"bashrc", t"""PS1='> '
+          |_init_completion() { return 0; }
+          |$source
+          |bind "set show-all-if-ambiguous on"
+          |bind "set show-all-if-unmodified on"
+          |""".s.stripMargin.tt)
 
-            sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-ambiguous on"' C-m"""
-            . exec[Unit]()
+        List(t"bash", t"--rcfile", rc, t"-i")
 
-            sh"""tmux send-keys -t ${tmux.id} 'bind "set show-all-if-unmodified on"' C-m"""
-            . exec[Unit]()
+      case Shell.Zsh =>
+        val functions = List(t".rig", t"functions")
+        val fpath = t"fpath+=(${quote(rig.directory(script(functions, t"_${tool.command}")))})"
 
-            // Send a marker echo and wait for it to appear, so we know every
-            // setup command above has been processed before the test starts
-            // sending keystrokes.
-            sh"""tmux send-keys -t ${tmux.id} 'echo READY-${tmux.id}' C-m""".exec[Unit]()
-            var bashReady = false
-            var bashAttempts = 0
+        val rc = write(List(t".rig", t"zsh"), t".zshrc", t"""PROMPT='> '
+          |RPROMPT=''
+          |$fpath
+          |autoload -Uz compinit
+          |compinit -u -d ${quote(t"${home.encode}/.rig/zcompdump")}
+          |""".s.stripMargin.tt)
 
-            while !bashReady && bashAttempts < 666 do
-              sleep(0.03*Second)
-              bashReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").readable.length > 0
-              bashAttempts += 1
+        List(t"env", t"ZDOTDIR=${rig.directory(rc)}", t"zsh", t"-i")
 
-            Tmux.attend:
-              sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
+      case Shell.Fish =>
+        val completions = List(t".config", t"fish", t"completions")
+        val source = t"source ${quote(script(completions, t"${tool.command}.fish"))}"
 
-          case Shell.Fish =>
-            val cmd = summon[Enclave.Tool].command
+        write(List(t".config", t"fish"), t"config.fish", t"""set -g fish_greeting ''
+          |function fish_prompt; echo -n '> '; end
+          |function fish_right_prompt; end
+          |$source
+          |""".s.stripMargin.tt)
 
-            sh"""tmux send-keys -t ${tmux.id} "function fish_prompt; echo -n '> '; end" C-m"""
-            . exec[Unit]()
+        List(t"fish", t"-i")
 
-            // Override fish_right_prompt too — the user may have a global
-            // override (e.g. git branch indicator) that would otherwise
-            // appear at the end of the line and break exact-text assertions.
-            sh"""tmux send-keys -t ${tmux.id} "function fish_right_prompt; end" C-m"""
-            . exec[Unit]()
+      case Shell.Powershell =>
+        val profile = write(List(t".rig"), t"profile.ps1", rig.powershell(tool.command))
+        List(t"pwsh", t"-NoLogo", t"-NoProfile", t"-NoExit", t"-File", profile)
 
-            sh"""tmux send-keys -t ${tmux.id} 'fish_add_path --global "$path"' C-m"""
-            . exec[Unit]()
+    val assignments = variables.map(assignment)
+    Command(List.concat(t"env" :: assignments, invocation)*)
 
-            // Fish auto-loads completions from $XDG_CONFIG_HOME/fish/completions/
-            // lazily on first completion request, but the loaded script's
-            // `complete -c $cmd -a '(completions)'` only takes effect once
-            // fish has parsed the file. Source the installed script explicitly
-            // so it's registered before the first test key is sent.
-            val sourceFish =
-              t"""for d in $$XDG_CONFIG_HOME $$HOME/.config; """ +
-                t"""test -r "$$d/fish/completions/$cmd.fish"; """ +
-                t"""and source "$$d/fish/completions/$cmd.fish"; and break; end"""
+  // The directory part of a path.
+  def directory(path: Text): Text = Text(path.s.substring(0, path.s.lastIndexOf('/').max(0)).nn)
 
-            sh"""tmux send-keys -t ${tmux.id} '$sourceFish' C-m""".exec[Unit]()
+  // Waits until the shell has started and loaded its configuration, then clears the screen, so a
+  // test begins with a prompt alone. Every shell but PowerShell is asked to echo a marker, whose
+  // appearance shows every line of its configuration has been processed.
+  def ready(using pane: Pane)(using Monitor, Tactic[Pane.Error]): Unit =
+    val shell = pane.shell.toString.tt
+    if !Pane.waitFor(_.starts(t">")) then abort(Pane.Error(Pane.Error.Reason.NotReady(shell)))
 
-            // Fish's login-shell startup (welcome banner + greeting) can still
-            // be drawing when the next send-keys arrives, so prior setup
-            // commands get echoed into the banner rather than processed. Send
-            // a marker echo and wait for it to appear before the test starts.
-            sh"""tmux send-keys -t ${tmux.id} 'echo READY-${tmux.id}' C-m""".exec[Unit]()
-            var fishReady = false
-            var fishAttempts = 0
+    // The marker is short, so that neither it nor the command echoing it wraps in a narrow pane,
+    // where no single line would match it; it need only be unlikely to appear by chance.
+    if pane.shell != Shell.Powershell then
+      val marker = t"RDY${(jl.System.nanoTime % 100000).toString.tt}"
+      Pane.enter(t"echo $marker", '\r')
 
-            while !fishReady && fishAttempts < 666 do
-              sleep(0.03*Second)
-              fishReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").readable.length > 0
-              fishAttempts += 1
+      if !Pane.waitFor(_.trim == marker) then abort(Pane.Error(Pane.Error.Reason.NotReady(shell)))
 
-            Tmux.attend:
-              sh"""tmux send-keys -t ${tmux.id} C-l""".exec[Unit]()
+      Pane.attend(t"C-l")
 
-          case Shell.Powershell =>
-            var psReady = false
-            var psAttempts = 0
-
-            while !psReady && psAttempts < 666 do
-              sleep(0.03*Second)
-              psReady = Tmux.screenshot().screen.filter(_.starts(t">")).readable.length > 0
-              psAttempts += 1
-
-        val result = action
-
-        sh"tmux kill-session -t ${tmux.id}".exec[Exit]()
-
-        psFile.let: file =>
-          import filesystemOptions.deleteOnlyEmpty
-          safely(file.delete())
-
-        result
+  // A PowerShell profile giving a prompt of `> `, completing `command` on Tab through its own
+  // completion protocol, and defining `_completions`, which prints each completion of a line as
+  // `name@@description`.
+  def powershell(command: Text): Text =
+    s"""using namespace Microsoft.PowerShell
+       |function global:prompt { '> ' }
+       |try {
+       |    Set-PSReadLineKeyHandler -Key Tab -ScriptBlock {
+       |        param($$key, $$arg)
+       |        $$line = $$null; $$cursor = $$null
+       |        [PSConsoleReadLine]::GetBufferState([ref]$$line, [ref]$$cursor)
+       |        $$ws = $$cursor
+       |        while ($$ws -gt 0 -and $$line[$$ws - 1] -ne ' ') { $$ws-- }
+       |        $$w = $$line.Substring($$ws, $$cursor - $$ws)
+       |        $$cmpArgs = @('{completions}', 'powershell', "$$cursor", `
+       |                      '0', '-', '--', $$line)
+       |        $$results = @(& '$command' @cmpArgs 2>$$null |
+       |            ForEach-Object { ($$_ -split "`t", 2)[0] })
+       |        $$matching = @($$results | Where-Object { $$_.StartsWith($$w) })
+       |        if ($$matching.Count -eq 0) { return }
+       |        $$lcp = $$matching[0]
+       |        for ($$i = 1; $$i -lt $$matching.Count; $$i++) {
+       |            $$m = $$matching[$$i]; $$j = 0
+       |            while ($$j -lt $$lcp.Length -and $$j -lt $$m.Length `
+       |                   -and $$lcp[$$j] -eq $$m[$$j]) { $$j++ }
+       |            $$lcp = $$lcp.Substring(0, $$j)
+       |        }
+       |        if ($$matching.Count -eq 1) {
+       |            [PSConsoleReadLine]::Replace($$ws, $$cursor - $$ws, $$lcp + ' ')
+       |            [PSConsoleReadLine]::SetCursorPosition($$ws + $$lcp.Length + 1)
+       |        } elseif ($$lcp.Length -gt $$w.Length) {
+       |            [PSConsoleReadLine]::Replace($$ws, $$cursor - $$ws, $$lcp)
+       |            [PSConsoleReadLine]::SetCursorPosition($$ws + $$lcp.Length)
+       |        }
+       |    }
+       |} catch {}
+       |function global:_completions {
+       |    param($$text)
+       |    $$line = '$command ' + $$text
+       |    $$cursor = $$line.Length
+       |    $$cmpArgs = @('{completions}', 'powershell', "$$cursor", `
+       |                  '0', '-', '--', $$line)
+       |    & '$command' @cmpArgs 2>$$null | ForEach-Object {
+       |        $$p = $$_ -split "`t", 2
+       |        $$n = $$p[0].TrimEnd()
+       |        if ($$p.Length -gt 1 -and $$p[1] -cne $$n) `
+       |        { "$$n@@$$($$p[1])" } else { $$n }
+       |    }
+       |}
+       |""".stripMargin.tt
