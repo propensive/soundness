@@ -292,7 +292,7 @@ object Tests extends Suite(m"Vivisection tests"):
   def run(): Unit =
     val sizes = Jdwp.IdSizes.bootstrap
 
-    def roundtrip[value](write: Jdwp.Writer => Unit)(read: Jdwp.Reader => value): value =
+    def roundtrip[value](write: Jdwp.Writer => Unit)(read: Jdwp.Reader^ => value): value =
       val writer = Jdwp.Writer(sizes)
       write(writer)
       read(Jdwp.Reader(writer.data, sizes))

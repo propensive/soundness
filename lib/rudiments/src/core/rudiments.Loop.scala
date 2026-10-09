@@ -44,7 +44,7 @@ class Loop
 extends anticipation.Durable:
   private val mutex: Mutex = Mutex()
 
-  // [field-purity] mutex-guarded state var in shared Loop
+  // [synchronized] mutex-guarded state var in shared Loop
   @scala.caps.unsafe.untrackedCaptures
   private var state: Loop.State = Loop.State.Active
 

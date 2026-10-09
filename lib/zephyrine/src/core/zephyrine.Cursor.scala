@@ -92,28 +92,25 @@ object Cursor:
     def apply(bytes: Data): Delimiter = new Delimiter(bytes)
 
   final class Delimiter private (data: Data):
-    // Untracked, as the cursor's own buffer is: both arrays are written only here, during
-    // construction, and are reached only through this instance.
-    // [field-purity] construction-only array in Delimiter
-    @caps.unsafe.untrackedCaptures
-    private val bytes: scala.Array[Byte] = Array.unsafeJvm(data)
+    // Read-only views: the delimiter's bytes are already frozen, and the shift table is frozen
+    // once built, so the instance holds nothing mutable.
+    private val bytes: scala.IArray[Byte] = data.readable
 
     val length: Int = bytes.length
 
     // For each byte value, how far the window shifts when that byte is the last one probed:
     // to align it with its last occurrence inside the delimiter, or past the window if none.
     // Chars, not ints: half a kilobyte of table for a delimiter of up to 65535 bytes.
-    // [field-purity] construction-only shift table in Delimiter
-    @caps.unsafe.untrackedCaptures
-    private val shifts: scala.Array[Char] =
-      val table = scala.Array.fill(256)(length.min(Char.MaxValue.toInt).toChar)
+    private val shifts: scala.IArray[Char] =
+      val table = Array.allocate[Char](256)
+      table.fill(length.min(Char.MaxValue.toInt).toChar)
       var index = 0
 
       while index < length - 1 do
         table(bytes(index) & 0xff) = (length - 1 - index).min(Char.MaxValue.toInt).toChar
         index += 1
 
-      table
+      Array.freeze(table).readable
 
     // The index at which the delimiter first begins in `buffer`, wholly within `from` until
     // `end`, or `-1` if it does not.

@@ -142,7 +142,7 @@ object Report:
 // The insertion-ordered, mutex-guarded map of report lines within one suite node.
 class TestsMap():
   private val mutex: Mutex = Mutex()
-  // [field-purity] mutex-guarded ledger var in non-Stateful TestsMap
+  // [synchronized] mutex-guarded ledger var in non-Stateful TestsMap
   @scala.caps.unsafe.untrackedCaptures
   private var tests: Ledger[Test.Id, ReportLine] = Ledger()
 

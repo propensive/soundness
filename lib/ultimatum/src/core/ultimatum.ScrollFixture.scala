@@ -72,21 +72,21 @@ class ScrollFixture(content: () -> scala.List[Teletype], track: Text, thumb: Tex
 extends Focus:
 
   // A no-op until the fixture is bound into a running form; see `bindWake`.
-  // [field-purity] wake callback var in ScrollFixture
+  // [aliased-graph] wake callback var in ScrollFixture
   @scala.caps.unsafe.untrackedCaptures
   private var wakeForm: () -> Unit = () => ()
 
   // `Unset` = docked to the bottom, tracking growth.
-  // [field-purity] offset var in ScrollFixture
+  // [aliased-graph] offset var in ScrollFixture
   @scala.caps.unsafe.untrackedCaptures
   private var offset0: Optional[Int] = Unset
 
   // The content length and viewport height most recently rendered, for clamping scroll
   // requests that arrive between paints.
-  // [field-purity] lastLength var in ScrollFixture
+  // [aliased-graph] lastLength var in ScrollFixture
   @scala.caps.unsafe.untrackedCaptures
   private var lastLength: Int = 0
-  // [field-purity] lastViewport var in ScrollFixture
+  // [aliased-graph] lastViewport var in ScrollFixture
   @scala.caps.unsafe.untrackedCaptures
   private var lastViewport: Int = 0
 

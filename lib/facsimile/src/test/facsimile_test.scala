@@ -1327,9 +1327,10 @@ object Tests extends Suite(m"Facsimile tests"):
 
     suite(m"Streaming payloads"):
       def drain(stream: (Stream[Data] over Credit)^): Data =
-        val builder = DataBuilder()
+        val builder: DataBuilder^ = DataBuilder()
 
-        def recur(): Unit = stream.refill(Credit(4096)) match
+        // The builder is passed, not captured: a local def's capture of it reads back read-only.
+        def recur(builder: DataBuilder^): Unit = stream.refill(Credit(4096)) match
           case count: Int =>
             val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[Byte]]
             var i = 0
@@ -1339,12 +1340,12 @@ object Tests extends Suite(m"Facsimile tests"):
               i += 1
 
             stream.skip(count)
-            recur()
+            recur(builder)
 
           case _ =>
             ()
 
-        recur()
+        recur(builder)
         builder.result()
 
       def streamed(body: Data): Text =

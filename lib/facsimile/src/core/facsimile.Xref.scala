@@ -190,7 +190,7 @@ private[facsimile] object Xref:
       val raw = source.read(body.start, length)
       val chain = Filter.chain(body.entries(t"Filter"), body.entries(t"DecodeParms"))
       val data = Filter.decode(raw, chain)
-      val lexer = CosLexer(Scan(data))
+      val lexer: CosLexer^ = CosLexer(Scan(data))
 
       List.range(0, count).map: _ =>
         (lexer.next(), lexer.next()) match
@@ -231,7 +231,7 @@ private[facsimile] object Xref:
     while i >= 0 && !matches(window, i, marker) do i -= 1
     if i < 0 then Unset else
       safely:
-        val lexer = CosLexer(new Scan(source, source.size - windowSize + i))
+        val lexer: CosLexer^ = CosLexer(new Scan(source, source.size - windowSize + i))
         lexer.next() // the `trailer` keyword
         CosParser(lexer).value().dictionary.or(abort(Pdf.Error(Pdf.Error.Reason.Truncated)))
 
@@ -246,7 +246,7 @@ private[facsimile] object Xref:
     while i >= 0 && !matches(window, i, marker) do i -= 1
     if i < 0 then abort(Pdf.Error(Pdf.Error.Reason.MissingStartxref))
 
-    val lexer = CosLexer(new Scan(source, windowStart + i))
+    val lexer: CosLexer^ = CosLexer(new Scan(source, windowStart + i))
 
     lexer.next() // the `startxref` keyword itself
 
@@ -263,7 +263,7 @@ private[facsimile] object Xref:
   ( using Tactic[Pdf.Error] )
   :   (Map[Int, Entry], Map[Text, Cos]) =
 
-    val lexer = CosLexer(new Scan(source, offset))
+    val lexer: CosLexer^ = CosLexer(new Scan(source, offset))
 
     lexer.next() match
       case CosToken.Keyword(word) if word.s == "xref" =>
@@ -278,13 +278,15 @@ private[facsimile] object Xref:
   // A classic cross-reference table: subsections of fixed-format entries, then a trailer
   // dictionary. Entries are lexed rather than sliced at fixed widths, which also tolerates
   // the widespread 19-byte-line variant.
-  private def classic(lexer: CosLexer, offset: Long)
+  private def classic(lexer: CosLexer^, offset: Long)
   ( using Tactic[Pdf.Error] )
   :   (Map[Int, Entry], Map[Text, Cos]) =
 
     var entries = Map[Int, Entry]()
 
-    def subsections(): Map[Text, Cos] = lexer.next() match
+    // The lexer is passed rather than captured: a local def's capture of it reads back
+    // read-only, and each step advances it.
+    def subsections(lexer: CosLexer^): Map[Text, Cos] = lexer.next() match
       case CosToken.Integral(first) =>
         val count = lexer.next() match
           case CosToken.Integral(count) => count.toInt
@@ -304,7 +306,7 @@ private[facsimile] object Xref:
 
           entries = entries.define(first.toInt + index, entry)
 
-        subsections()
+        subsections(lexer)
 
       case CosToken.Keyword(word) if word.s == "trailer" =>
         CosParser(lexer).value() match
@@ -314,7 +316,7 @@ private[facsimile] object Xref:
       case _ =>
         abort(Pdf.Error(Pdf.Error.Reason.MalformedXref(offset)))
 
-    val trailer = subsections()
+    val trailer = subsections(lexer)
     (entries, trailer)
 
   // A cross-reference stream (ISO 32000-2 §7.5.8): the stream dictionary is the trailer, and
@@ -324,7 +326,7 @@ private[facsimile] object Xref:
   ( using Tactic[Pdf.Error] )
   :   (Map[Int, Entry], Map[Text, Cos]) =
 
-    val parser = CosParser(CosLexer(new Scan(source, offset)))
+    val parser: CosParser^ = CosParser(CosLexer(new Scan(source, offset)))
 
     parser.indirect() match
       case (_, _, Cos.Body(dictionary, start)) =>

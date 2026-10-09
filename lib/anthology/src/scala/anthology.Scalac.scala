@@ -68,7 +68,7 @@ object Scalac:
   case class Option[-version <: Versions](flags: Text*)
 
   private val mutex: Mutex = Mutex()
-  // [field-purity] object-level mutable compiler instance
+  // [synchronized] object-level mutable compiler instance
   @scala.caps.unsafe.untrackedCaptures
   private var Scala3: dtd.Compiler = new dtd.Compiler()
 

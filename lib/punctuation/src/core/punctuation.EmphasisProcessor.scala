@@ -75,30 +75,24 @@ final class BracketData(val isImage: Boolean) extends InlineData
 // algorithm consumes characters from the run.
 final class DelimData
   ( val char: Char,
-    // [field-purity] mutable delimiter length in non-Stateful class
+    // [aliased-graph] mutable delimiter length in non-Stateful class
     @scala.caps.unsafe.untrackedCaptures
     var length: Int,
     val canOpen: Boolean,
     val canClose: Boolean )
 extends InlineData
 
-// [field-purity] mutable inline-node field in non-Stateful class
-@scala.caps.unsafe.untrackedCaptures
-// [field-purity]
-@scala.caps.unsafe.untrackedCaptures
-// [field-purity]
-@scala.caps.unsafe.untrackedCaptures
-// [field-purity]
+// [aliased-graph] a node of the doubly linked inline list, reachable from its neighbours
 final class InlineNode(@scala.caps.unsafe.untrackedCaptures var data: InlineData):
-  // [field-purity]
+  // [aliased-graph]
   @scala.caps.unsafe.untrackedCaptures
   var prev: InlineNode | Null = null
-  // [field-purity] mutable inline-node link in non-Stateful class
+  // [aliased-graph] mutable inline-node link in non-Stateful class
   @scala.caps.unsafe.untrackedCaptures
   var next: InlineNode | Null = null
 
 final class InlineList:
-  // [field-purity] mutable list head in non-Stateful class
+  // [aliased-graph] mutable list head in non-Stateful class
   @scala.caps.unsafe.untrackedCaptures
   var first: InlineNode | Null = null
   // [field-purity] mutable list tail in non-Stateful class

@@ -47,14 +47,13 @@ private[facsimile] object ContentTokens:
   case class Instruction(operands: List[Cos], operator: Text)
 
   def read(data: Data)(using Tactic[Pdf.Error]): List[Instruction] =
-    val lexer = CosLexer(Scan(data))
-    val parser = CosParser(lexer, references = false)
+    val parser: CosParser^ = CosParser(CosLexer(Scan(data)), references = false)
     val instructions = scala.collection.immutable.List.newBuilder[Instruction]
     var done = false
 
     while !done do
       parser.instruction().let: (operands, operator) =>
-        if operator.s == "BI" then instructions += inlineImage(lexer, parser)
+        if operator.s == "BI" then instructions += inlineImage(parser)
         else instructions += Instruction(operands, operator)
 
       . or:
@@ -64,7 +63,7 @@ private[facsimile] object ContentTokens:
 
   // `BI <key value ...> ID <bytes> EI`: the keys parse as ordinary tokens up to the `ID`
   // operator, the payload is consumed at the byte level, and the closing `EI` is checked.
-  private def inlineImage(lexer: CosLexer, parser: CosParser)(using Tactic[Pdf.Error]): Instruction =
+  private def inlineImage(parser: CosParser^)(using Tactic[Pdf.Error]): Instruction =
     val entries = parser.instruction().let: (operands, operator) =>
       if operator.s != "ID" then abort(Pdf.Error(Pdf.Error.Reason.MalformedOperator(t"BI")))
 
@@ -78,7 +77,7 @@ private[facsimile] object ContentTokens:
 
     val length = entries.at(t"L").or(entries.at(t"Length"))
     . let(_.long).let(_.toInt)
-    val data = lexer.imageData(length)
+    val data = parser.imageData(length)
 
     val closed = parser.instruction().let(_(1).s == "EI").or(false)
     if !closed then abort(Pdf.Error(Pdf.Error.Reason.MalformedOperator(t"BI")))

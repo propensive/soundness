@@ -51,11 +51,11 @@ object Cache:
 
 class Cache[value](lifetime: Optional[Long]):
   private val mutex: Mutex = Mutex()
-  // [field-purity] plain mutex-guarded var in non-Stateful Cache
+  // [synchronized] plain mutex-guarded var in non-Stateful Cache
   @scala.caps.unsafe.untrackedCaptures
   private var expiry: Long = Long.MaxValue
 
-  // [field-purity] plain mutex-guarded Promise var in non-Stateful Cache
+  // [synchronized] plain mutex-guarded Promise var in non-Stateful Cache
   @scala.caps.unsafe.untrackedCaptures
   private var value: Promise[value] = Promise()
 

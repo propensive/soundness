@@ -60,7 +60,7 @@ object Database:
 class Database(size: Int) extends Findable:
   import Database.Relation
 
-  // [field-purity] id counter var in non-Stateful Database class
+  // [synchronized] id counter var in non-Stateful Database class
   @scala.caps.unsafe.untrackedCaptures
   private var nextId: Int = 1
 
@@ -73,17 +73,17 @@ class Database(size: Int) extends Findable:
   type Has[relation <: Relation[?, ?]] = relation <:< AllRelations
 
   private val mutex: Mutex = Mutex()
-  // [field-purity] references map var in non-Stateful Database
+  // [synchronized] references map var in non-Stateful Database
   @scala.caps.unsafe.untrackedCaptures
   private var references: Map[Any, Ref] = Map()
-  // [field-purity] dereferences map var in non-Stateful Database
+  // [synchronized] dereferences map var in non-Stateful Database
   @scala.caps.unsafe.untrackedCaptures
   private var dereferences: Map[Ref, Any] = Map()
 
-  // [field-purity] relations array field in non-Stateful Database
+  // [synchronized] relations array field in non-Stateful Database
   @scala.caps.unsafe.untrackedCaptures
   private val relations: scala.Array[Map[Ref, Set[Ref]]] = scala.Array.fill(size)(Map())
-  // [field-purity] corelations array field in non-Stateful Database
+  // [synchronized] corelations array field in non-Stateful Database
   @scala.caps.unsafe.untrackedCaptures
   private val corelations: scala.Array[Map[Ref, Ref]] = scala.Array.fill(size)(Map())
 

@@ -83,7 +83,7 @@ private[vivisection] object Plumbing:
     // Parses `count - 1` entries in classfile order. Only the entries a method reference chains
     // through are kept — Utf8, the three reference kinds and NameAndType — and every other kind
     // is skipped by its fixed width. Longs and doubles occupy two indices.
-    def parse(count: Int, reader: Jdwp.Reader): Pool =
+    def parse(count: Int, reader: Jdwp.Reader^): Pool =
       val entries: scc.TrieMap[Int, Entry] = scc.TrieMap()
 
       def recur(index: Int): Unit = if index < count && reader.remaining > 0 then
@@ -159,7 +159,7 @@ private[vivisection] object Plumbing:
       returns:   Int            = 0,
       other:     Boolean        = false )
 
-  private def shape(code: Jdwp.Reader, pool: Pool): Shape =
+  private def shape(code: Jdwp.Reader^, pool: Pool): Shape =
     def recur(shape: Shape): Shape = if code.remaining <= 0 || shape.other then shape else
       val opcode = code.byte() & 0xff
 
@@ -201,7 +201,7 @@ private[vivisection] object Plumbing:
   // trailing `$`: a class's mixin forwarder `greet` calls `Greeter.greet$`, which in turn calls
   // the default method `greet` holding the body, so the names may differ by the `$` in either
   // direction.
-  def trivial(name: Text, code: Jdwp.Reader, pool: Pool): Boolean =
+  def trivial(name: Text, code: Jdwp.Reader^, pool: Pool): Boolean =
     val summary = shape(code, pool)
 
     if summary.other || summary.returns != 1 then false

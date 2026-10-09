@@ -50,6 +50,7 @@ COLUMNS = [name for name, _ in HATCHES+WRAPPERS]+['untagged']
 TAGS = {
   'abstract-storage':   'an abstract `Storage` type cannot carry `^` (probe P5)',
   'aliased-read':       'an array read while another exclusive receiver holds its owner',
+  'aliased-graph':      'mutable nodes reachable from several references (a linked or shared graph)',
   'anon-fresh-field':   'a fresh-typed field in an anonymous template hides its capability',
   'borrowing-stateful': 'a stateful instance minted by `new` cannot borrow an enclosing `this`',
   'by-name-capture':    'a by-name parameter is not a nameable capture (fork leg P4)',
@@ -68,6 +69,7 @@ TAGS = {
   'registry-lifetime':  'a handle smuggled through an application-lifetime registry',
   'stdio-readonly':     'a writer held through a read-only standard-streams reference',
   'stdlib-iterator':    'state in a `scala.Iterator`, whose methods cannot be `update`',
+  'synchronized':       'state shared across threads under a lock, atomic or volatile: the honest model',
   'test-harness':       'test-only scaffolding, not library behaviour',
   'transfer':           'a resource moved into a task, whose previous owner consumed it',
 }

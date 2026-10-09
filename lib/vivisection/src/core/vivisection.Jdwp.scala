@@ -357,28 +357,26 @@ object Jdwp:
 
   // Decodes a JDWP packet payload. Big-endian throughout; identifier reads consult the negotiated
   // `sizes`. Stateful and single-threaded — one reader decodes one reply or one event, in order.
-  class Reader(data: Data, sizes: IdSizes):
-    // [field-purity] position var in packet Reader
-    @scala.caps.unsafe.untrackedCaptures
+  class Reader(data: Data, sizes: IdSizes) extends scala.caps.Mutable:
     private var position: Int = 0
 
     def remaining: Int = data.length - position
 
-    private def next(): Int =
+    private update def next(): Int =
       val byte = data.readUnchecked(position) & 0xff
       position += 1
       byte
 
-    def byte(): Byte = next().toByte
-    def boolean(): Boolean = next() != 0
-    def short(): Short = ((next() << 8) | next()).toShort
-    def char(): Char = ((next() << 8) | next()).toChar
-    def int(): Int = (next() << 24) | (next() << 16) | (next() << 8) | next()
-    def long(): Long = (int().toLong << 32) | (int().toLong & 0xffffffffL)
-    def float(): Float = jl.Float.intBitsToFloat(int())
-    def double(): Double = jl.Double.longBitsToDouble(long())
+    update def byte(): Byte = next().toByte
+    update def boolean(): Boolean = next() != 0
+    update def short(): Short = ((next() << 8) | next()).toShort
+    update def char(): Char = ((next() << 8) | next()).toChar
+    update def int(): Int = (next() << 24) | (next() << 16) | (next() << 8) | next()
+    update def long(): Long = (int().toLong << 32) | (int().toLong & 0xffffffffL)
+    update def float(): Float = jl.Float.intBitsToFloat(int())
+    update def double(): Double = jl.Double.longBitsToDouble(long())
 
-    def id(width: Int): Long =
+    update def id(width: Int): Long =
       var accumulator = 0L
       var count = 0
 
@@ -388,17 +386,17 @@ object Jdwp:
 
       accumulator
 
-    def objectId(): ObjectId = Ref(id(sizes.objectId))
-    def threadId(): ThreadId = Ref(id(sizes.objectId))
-    def threadGroupId(): ThreadGroupId = Ref(id(sizes.objectId))
-    def stringId(): StringId = Ref(id(sizes.objectId))
-    def classLoaderId(): ClassLoaderId = Ref(id(sizes.objectId))
-    def referenceTypeId(): ReferenceTypeId = Ref(id(sizes.referenceType))
-    def methodId(): MethodId = Ref(id(sizes.method))
-    def fieldId(): FieldId = Ref(id(sizes.field))
-    def frameId(): FrameId = Ref(id(sizes.frame))
+    update def objectId(): ObjectId = Ref(id(sizes.objectId))
+    update def threadId(): ThreadId = Ref(id(sizes.objectId))
+    update def threadGroupId(): ThreadGroupId = Ref(id(sizes.objectId))
+    update def stringId(): StringId = Ref(id(sizes.objectId))
+    update def classLoaderId(): ClassLoaderId = Ref(id(sizes.objectId))
+    update def referenceTypeId(): ReferenceTypeId = Ref(id(sizes.referenceType))
+    update def methodId(): MethodId = Ref(id(sizes.method))
+    update def fieldId(): FieldId = Ref(id(sizes.field))
+    update def frameId(): FrameId = Ref(id(sizes.frame))
 
-    def string(): Text =
+    update def string(): Text =
       val length = int()
       val text = Jdwp.decodeModifiedUtf8(data, position, length)
       position += length
@@ -406,19 +404,19 @@ object Jdwp:
 
     // A modified-UTF-8 run whose length the caller has already read — the classfile constant
     // pool's `u2`-prefixed form, as opposed to JDWP's own `int`-prefixed strings.
-    def modifiedUtf8(length: Int): Text =
+    update def modifiedUtf8(length: Int): Text =
       val text = Jdwp.decodeModifiedUtf8(data, position, length)
       position += length
       text
 
-    def skip(length: Int): Unit = position += length
+    update def skip(length: Int): Unit = position += length
 
-    def location(): Location =
+    update def location(): Location =
       Location(TypeTag(byte()), referenceTypeId(), methodId(), long())
 
-    def value(): Value = untaggedValue(Tag(next().toChar))
+    update def value(): Value = untaggedValue(Tag(next().toChar))
 
-    def untaggedValue(tag: Tag): Value = tag match
+    update def untaggedValue(tag: Tag): Value = tag match
       case Tag.ByteTag    => Value.OfByte(byte())
       case Tag.CharTag    => Value.OfChar(char())
       case Tag.DoubleTag  => Value.OfDouble(double())
@@ -433,7 +431,7 @@ object Jdwp:
     // An arrayregion (`ArrayReference.GetValues`): one tag byte for the whole region, then a
     // count. A primitive region packs untagged values of that one type; an object region carries
     // ordinarily tagged values, since the elements' runtime types may differ.
-    def arrayRegion(): List[Value] =
+    update def arrayRegion(): List[Value] =
       val tag = Tag(next().toChar)
       val count = int()
 
@@ -570,7 +568,7 @@ object Jdwp:
   object Event:
     case class Composite(policy: SuspendPolicy, events: List[Event])
 
-    def composite(reader: Reader): Composite =
+    def composite(reader: Reader^): Composite =
       val policy = SuspendPolicy(reader.byte())
       val count = reader.int()
 
@@ -586,7 +584,7 @@ object Jdwp:
 
       Composite(policy, decode(count))
 
-    private def one(reader: Reader): Event =
+    private def one(reader: Reader^): Event =
       val kind = EventKind(reader.byte() & 0xff)
       val request = reader.int()
 
@@ -703,7 +701,7 @@ object Jdwp:
 
     // Decodes one complete packet (exactly its own `length` bytes).
     def decode(bytes: Data): Packet =
-      val reader = Reader(bytes, IdSizes.bootstrap)
+      val reader: Reader^ = Reader(bytes, IdSizes.bootstrap)
       reader.int()
       val id = reader.int()
       val flags = reader.byte() & 0xff
@@ -853,7 +851,7 @@ object Jdwp:
     private val pools: scc.TrieMap[Long, Plumbing.Pool] = scc.TrieMap()
     private[vivisection] val unclaimed: Relay[Event.Composite] = Relay()
 
-    // [field-purity] negotiated id-sizes var in Connection
+    // [synchronized] negotiated id-sizes var in Connection
     @scala.caps.unsafe.untrackedCaptures
     private var sizes0: IdSizes = IdSizes.bootstrap
 
@@ -1030,7 +1028,7 @@ object Jdwp:
     // reaches the reply position.
     def request(set: Int, command: Int)(write: Writer => Unit)
       ( using Tactic[Debugger.Error] )
-    :   Reader =
+    :   Reader^ =
 
       given Diagnostics = note
 
@@ -1044,7 +1042,7 @@ object Jdwp:
 
     // VirtualMachine (command set 1): negotiate the identifier sizes the rest of the session needs.
     private[vivisection] def negotiate()(using Tactic[Debugger.Error]): Unit =
-      val reader = request(1, 7)(_ => ())
+      val reader: Reader^ = request(1, 7)(_ => ())
       sizes0 = IdSizes(reader.int(), reader.int(), reader.int(), reader.int(), reader.int())
 
     // Reads `count` items in sequence. A helper rather than `map` over a range, because the reads
@@ -1067,11 +1065,11 @@ object Jdwp:
 
     // VirtualMachine (command set 1).
     def version()(using Tactic[Debugger.Error]): Version =
-      val reader = request(1, 1)(_ => ())
+      val reader: Reader^ = request(1, 1)(_ => ())
       Version(reader.string(), reader.int(), reader.int(), reader.string(), reader.string())
 
     def allClasses()(using Tactic[Debugger.Error]): List[ClassInfo] =
-      val reader = request(1, 3)(_ => ())
+      val reader: Reader^ = request(1, 3)(_ => ())
 
       list(reader.int()): () =>
         ClassInfo(TypeTag(reader.byte()), reader.referenceTypeId(), reader.string(), reader.int())
@@ -1080,13 +1078,13 @@ object Jdwp:
     // without enumerating every class in the VM — so, unlike `allClasses`, it is safe to call
     // while a thread is suspended holding a class-loading lock.
     def classesBySignature(signature: Text)(using Tactic[Debugger.Error]): List[ClassInfo] =
-      val reader = request(1, 2)(_.string(signature))
+      val reader: Reader^ = request(1, 2)(_.string(signature))
 
       list(reader.int()): () =>
         ClassInfo(TypeTag(reader.byte()), reader.referenceTypeId(), signature, reader.int())
 
     def allThreads()(using Tactic[Debugger.Error]): List[ThreadId] =
-      val reader = request(1, 4)(_ => ())
+      val reader: Reader^ = request(1, 4)(_ => ())
       list(reader.int()): () => reader.threadId()
 
     def suspendAll()(using Tactic[Debugger.Error]): Unit = command(1, 8)(_ => ())
@@ -1101,7 +1099,7 @@ object Jdwp:
     // library consults are picked out by their published one-based positions, and a short reply
     // from an old VM leaves the missing flags false.
     def capabilitiesNew()(using Tactic[Debugger.Error]): Capabilities =
-      val reader = request(1, 17)(_ => ())
+      val reader: Reader^ = request(1, 17)(_ => ())
       var canWatchFieldModification = false
       var canWatchFieldAccess = false
       var canGetBytecodes = false
@@ -1157,13 +1155,13 @@ object Jdwp:
       request(2, 12)(_.referenceTypeId(cls)).string()
 
     def methods(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): List[MethodInfo] =
-      val reader = request(2, 5)(_.referenceTypeId(cls))
+      val reader: Reader^ = request(2, 5)(_.referenceTypeId(cls))
 
       list(reader.int()): () =>
         MethodInfo(reader.methodId(), reader.string(), reader.string(), reader.int())
 
     def fields(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): List[FieldInfo] =
-      val reader = request(2, 4)(_.referenceTypeId(cls))
+      val reader: Reader^ = request(2, 4)(_.referenceTypeId(cls))
 
       list(reader.int()): () =>
         FieldInfo(reader.fieldId(), reader.string(), reader.string(), reader.int())
@@ -1177,14 +1175,14 @@ object Jdwp:
     private def constantPool0(cls: ReferenceTypeId)(using Tactic[Debugger.Error])
     :   Plumbing.Pool =
 
-      val reader = request(2, 18)(_.referenceTypeId(cls))
+      val reader: Reader^ = request(2, 18)(_.referenceTypeId(cls))
       val count = reader.int()
       reader.int() // the byte length; the entries are self-delimiting
       Plumbing.Pool.parse(count, reader)
 
     // A method's bytecode, as a reader positioned at its first opcode. Needs `canGetBytecodes`.
-    def bytecodes(cls: ReferenceTypeId, method: MethodId)(using Tactic[Debugger.Error]): Reader =
-      val reader = request(6, 3)(_.referenceTypeId(cls).methodId(method))
+    def bytecodes(cls: ReferenceTypeId, method: MethodId)(using Tactic[Debugger.Error]): Reader^ =
+      val reader: Reader^ = request(6, 3)(_.referenceTypeId(cls).methodId(method))
       reader.int() // the byte length, which is what remains of the reply
       reader
 
@@ -1200,7 +1198,7 @@ object Jdwp:
       ( using Tactic[Debugger.Error] )
     :   Invocation =
 
-      val reader = request(3, 3): writer =>
+      val reader: Reader^ = request(3, 3): writer =>
         writer.referenceTypeId(cls).threadId(thread).methodId(method).int(args.size)
         args.each(writer.value)
         writer.int(1)
@@ -1212,7 +1210,7 @@ object Jdwp:
       ( using Tactic[Debugger.Error] )
     :   Invocation =
 
-      val reader = request(3, 4): writer =>
+      val reader: Reader^ = request(3, 4): writer =>
         writer.referenceTypeId(cls).threadId(thread).methodId(constructor).int(args.size)
         args.each(writer.value)
         writer.int(1)
@@ -1233,7 +1231,7 @@ object Jdwp:
       ( using Tactic[Debugger.Error] )
     :   LineTable =
 
-      val reader = request(6, 1)(_.referenceTypeId(cls).methodId(method))
+      val reader: Reader^ = request(6, 1)(_.referenceTypeId(cls).methodId(method))
       val start = reader.long()
       val end = reader.long()
       val lines = list(reader.int()): () => LineEntry(reader.long(), reader.int())
@@ -1251,7 +1249,7 @@ object Jdwp:
 
       submit(6, 2)(_.referenceTypeId(cls).methodId(method)) match
         case Connection.Reply.Ok(data) =>
-          val reader = Reader(data, sizes0)
+          val reader: Reader^ = Reader(data, sizes0)
           val argCount = reader.int()
 
           val slots = list(reader.int()): () =>
@@ -1268,14 +1266,14 @@ object Jdwp:
 
     // ObjectReference (command set 9).
     def referenceType(obj: ObjectId)(using Tactic[Debugger.Error]): (TypeTag, ReferenceTypeId) =
-      val reader = request(9, 1)(_.objectId(obj))
+      val reader: Reader^ = request(9, 1)(_.objectId(obj))
       (TypeTag(reader.byte()), reader.referenceTypeId())
 
     def fieldValues(obj: ObjectId, fields: List[FieldId])
       ( using Tactic[Debugger.Error] )
     :   List[Value] =
 
-      val reader = request(9, 2): writer =>
+      val reader: Reader^ = request(9, 2): writer =>
         writer.objectId(obj).int(fields.size)
         fields.each(writer.fieldId)
 
@@ -1303,7 +1301,7 @@ object Jdwp:
       ( using Tactic[Debugger.Error] )
     :   Invocation =
 
-      val reader = request(9, 6): writer =>
+      val reader: Reader^ = request(9, 6): writer =>
         writer.objectId(obj).threadId(thread).referenceTypeId(cls).methodId(method)
         writer.int(args.size)
         args.each(writer.value)
@@ -1314,7 +1312,7 @@ object Jdwp:
     // The reference type a `java.lang.Class` instance stands for — how a class object handed back
     // by `ClassLoader.defineClass` is turned into the reference type its methods are read from.
     def reflectedType(classObject: ObjectId)(using Tactic[Debugger.Error]): ReferenceTypeId =
-      val reader = request(17, 1)(_.objectId(classObject))
+      val reader: Reader^ = request(17, 1)(_.objectId(classObject))
       reader.byte()
       reader.referenceTypeId()
 
@@ -1333,7 +1331,7 @@ object Jdwp:
       command(11, 3)(_.threadId(thread))
 
     def threadStatus(thread: ThreadId)(using Tactic[Debugger.Error]): ThreadStatus =
-      val reader = request(11, 4)(_.threadId(thread))
+      val reader: Reader^ = request(11, 4)(_.threadId(thread))
       ThreadStatus(reader.int(), reader.int())
 
     def frameCount(thread: ThreadId)(using Tactic[Debugger.Error]): Int =
@@ -1343,7 +1341,7 @@ object Jdwp:
       ( using Tactic[Debugger.Error] )
     :   List[(FrameId, Location)] =
 
-      val reader = request(11, 6): writer => writer.threadId(thread).int(start).int(length)
+      val reader: Reader^ = request(11, 6): writer => writer.threadId(thread).int(start).int(length)
       list(reader.int()): () => (reader.frameId(), reader.location())
 
     // ArrayReference (command set 13).
@@ -1389,7 +1387,7 @@ object Jdwp:
       ( using Tactic[Debugger.Error] )
     :   List[Value] =
 
-      val reader = request(16, 1): writer =>
+      val reader: Reader^ = request(16, 1): writer =>
         writer.threadId(thread).frameId(frame).int(slots.size)
         slots.each: (slot, tag) => writer.int(slot).byte(tag.id.toByte)
 

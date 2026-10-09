@@ -39,12 +39,11 @@ import beneficence.*
 
 // A `Sextant` is a *capability*: it carries a mutable read position, so unpacking is an effect
 // and the sextant's lifetime is the `sextant { ... }` block that introduces it. `Exclusive`
-// because two readers sharing a position would corrupt each other's decoding.
+// because two readers sharing a position would corrupt each other's decoding, and `Mutable` so
+// that only an exclusive reference may advance it.
 class Sextant(private[polaris] val bytes: Data, initialPosition: Int = 0)
-extends Findable, caps.ExclusiveCapability:
-  // [field-purity] position var in ExclusiveCapability, not Stateful
-  @scala.caps.unsafe.untrackedCaptures
+extends Findable, caps.Mutable:
   private[polaris] var position: Int = initialPosition
 
   def offset: Int = position
-  def advance(count: Int): Unit = position += count
+  update def advance(count: Int): Unit = position += count
