@@ -183,12 +183,13 @@ it to a single block instead, as described in the JSON tutorial.
 
 ### Positions and accumulated errors
 
-With tracking switched on, every value remembers its line and column, so a decoding failure can
-point into the source file — the difference between "field missing" and "field missing at line
-12":
+With tracking switched on — by bringing `parsing.trackPositions` into scope, as for
+[JSON](json.md#source-positions) — every value remembers its line and column, so a decoding
+failure can point into the source file — the difference between "field missing" and "field
+missing at line 12":
 
 ```scala
-given Yaml.Tracking = Yaml.Tracking.On
+import parsing.trackPositions
 
 val tracked = t"{a: 1, b: 2}".read[Yaml]
 tracked.locate(YamlPath()(t"a"))   // the position of a

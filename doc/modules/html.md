@@ -212,6 +212,30 @@ else; reading as `Html of "ul" | "ol"` accepts either. The specification's rules
 inferring omitted tags apply, so reading `<p>Hello world</p>` as a whole document
 supplies the missing `<html>` and `<body>`.
 
+### Source positions
+
+Ordinary parsing keeps no record of where each element sat in the text. When a program needs
+that — to underline the element at fault in a linter, say — bringing `parsing.trackPositions`
+into scope makes `load` record positions on the `Document[Html]` it returns, and `locate`
+resolves a path to the line and column of the element it names:
+
+```scala
+import parsing.trackPositions
+
+val tracked = t"<html>\n  <body>\n    <p class=\"x\">Hi</p>\n  </body>\n</html>".load[Html]
+val paragraph = Html.Path().element(t"html").element(t"body").element(t"p")
+tracked.locate(paragraph).let(_.line)                   // 3
+tracked.locate(paragraph.attribute(t"class")).let(_.column)  // 8
+```
+
+A path is root-first: each step names a child element by its label and, for the second and
+later children with that label, its ordinal — `element(t"p", 2)` is the second paragraph —
+and a final `attribute` step names one of the last element's attributes. A position spans
+the whole element, from its start tag to the end of its end tag; an element the parser
+supplied itself, such as the `<html>` around a bare paragraph, starts at the tag that
+prompted it. A path that does not resolve gives `Unset`, as does any lookup on a document
+loaded without `parsing.trackPositions` in scope, which records nothing and costs nothing.
+
 ### Serializing
 
 An `Html` value converts to text with `show`, which suits most needs:

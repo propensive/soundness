@@ -2276,12 +2276,12 @@ object Json extends Json2, Dynamic:
 
       Parser.parse(input, holes, mode).asInstanceOf[Json.Ast]
 
-    def parseTracked(source: Data)(using mode: NumberMode)
+    private[jacinta] def parseTracked(source: Data)(using mode: NumberMode)
     :   (Json.Ast, Json.PositionIndex) raises Parse.Error =
 
       Parser.parseTracked(source, mode)
 
-    def parseTracked(input: Iterator[Data])(using mode: NumberMode)
+    private[jacinta] def parseTracked(input: Iterator[Data])(using mode: NumberMode)
     :   (Json.Ast, Json.PositionIndex) raises Parse.Error =
 
       Parser.parseTracked(input, mode)
@@ -2315,20 +2315,6 @@ object Json extends Json2, Dynamic:
   def apply(value: Byte): Json = new Json(value.toLong)
   def apply(value: Float): Json = new Json(value.toDouble)
   def apply(value: Any, positions: Optional[Json.PositionIndex]): Json = new Json(value, positions)
-
-  // Defined on the companion directly (not as a `Json.type` extension) because
-  // the companion's `Dynamic` parentage intercepts `Json.parseTracked(...)`
-  // before extension-method resolution gets a chance.
-  def parseTracked(source: Data)(using NumberMode): Json raises Parse.Error =
-    val (ast, index) = Json.Ast.parseTracked(source)
-    new Json(ast, index)
-
-  def parseTracked(input: Iterator[Data])(using NumberMode): Json raises Parse.Error =
-    val (ast, index) = Json.Ast.parseTracked(input)
-    new Json(ast, index)
-
-  def parseTracked(source: Text)(using NumberMode, Codepage): Json raises Parse.Error =
-    parseTracked(source.in[Data])
 
   // Parse a byte-chunk iterator into a `Json`, honouring the in-scope
   // `PositionTracking` toggle (`parsing.trackPositions`): when on, source

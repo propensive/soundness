@@ -122,4 +122,6 @@ trait Archetype:
 
   // The page as a `Document[Html]` with a leading doctype — the form that is served over HTTP.
   final def document: Document[Html] =
-    Document[Html](Html.Fragment(Html.doctype, Archetype.render(this)), htmlDoms.whatwg)
+    Document[Html]
+      ( Html.Fragment(Html.doctype, Archetype.render(this)),
+        Html.Provenance(htmlDoms.whatwg) )
