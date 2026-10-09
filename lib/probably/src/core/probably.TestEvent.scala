@@ -140,7 +140,7 @@ object TestEvent:
           case Juxtaposition.Collation(typeName, comparison, left, right) =>
             CompareRow(depth, label, t"collation", left, right, typeName)
               :: comparison.bind[List[CompareRow], CompareRow, List[CompareRow]]:
-                   (entry: (Text, Juxtaposition)) => recur(entry(0), entry(1), depth + 1)
+                (entry: (Text, Juxtaposition)) => recur(entry(0), entry(1), depth + 1)
 
       recur(t"", juxtaposition, 0)
 

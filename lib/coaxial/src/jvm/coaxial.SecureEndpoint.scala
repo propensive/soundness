@@ -59,45 +59,45 @@ object SecureEndpoint:
   =>  ( options: Every[Socket.Option.Tcp], tls: Tls )
   =>  ( (SecureEndpoint is Connectable)^{online, caps.any} ) =
 
-   new Connectable:
-    type Self = SecureEndpoint
+    new Connectable:
+      type Self = SecureEndpoint
 
-    def connect(endpoint: SecureEndpoint, interface: Optional[MacAddress]): Duplex =
-      val context = tls.context.or(jns.SSLContext.getDefault.nn)
-      val socket = context.getSocketFactory.nn.createSocket().nn.asInstanceOf[jns.SSLSocket]
-      configure(socket, options.values.to(List))
+      def connect(endpoint: SecureEndpoint, interface: Optional[MacAddress]): Duplex =
+        val context = tls.context.or(jns.SSLContext.getDefault.nn)
+        val socket = context.getSocketFactory.nn.createSocket().nn.asInstanceOf[jns.SSLSocket]
+        configure(socket, options.values.to(List))
 
-      interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
-        socket.bind(jn.InetSocketAddress(local, 0))
+        interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
+          socket.bind(jn.InetSocketAddress(local, 0))
 
-      // SNI lets the server select its certificate; endpoint identification then checks
-      // that certificate against the hostname (skipped only when verification is off).
-      val params = socket.getSSLParameters.nn
-      params.setServerNames(ju.List.of(jns.SNIHostName(endpoint.host.s)))
-      if tls.verify then params.setEndpointIdentificationAlgorithm("HTTPS")
+        // SNI lets the server select its certificate; endpoint identification then checks
+        // that certificate against the hostname (skipped only when verification is off).
+        val params = socket.getSSLParameters.nn
+        params.setServerNames(ju.List.of(jns.SNIHostName(endpoint.host.s)))
+        if tls.verify then params.setEndpointIdentificationAlgorithm("HTTPS")
 
-      // Offer the ALPN protocols (in preference order) so the peer can select the
-      // application protocol during the handshake; the choice is read back below.
-      // stdlib bridge: the SSL parameter setters take Java arrays of *nullable* `String`, and no
-      // `ClassTag` witnesses a union element, so the native `to[Array]` cannot build them.
-      if !tls.protocols.nil
-      then params.setApplicationProtocols(tls.protocols.stdlib.map(_.s).toArray)
+        // Offer the ALPN protocols (in preference order) so the peer can select the
+        // application protocol during the handshake; the choice is read back below.
+        // stdlib bridge: the SSL parameter setters take Java arrays of *nullable* `String`, and no
+        // `ClassTag` witnesses a union element, so the native `to[Array]` cannot build them.
+        if !tls.protocols.nil
+        then params.setApplicationProtocols(tls.protocols.stdlib.map(_.s).toArray)
 
-      // Restrict the TLS protocol versions when the configuration asks for it.
-      if !tls.versions.nil then params.setProtocols(tls.versions.stdlib.map(_.s).toArray)
+        // Restrict the TLS protocol versions when the configuration asks for it.
+        if !tls.versions.nil then params.setProtocols(tls.versions.stdlib.map(_.s).toArray)
 
-      socket.setSSLParameters(params)
+        socket.setSSLParameters(params)
 
-      socket.connect(jn.InetSocketAddress(endpoint.host.s, endpoint.port))
-      socket.startHandshake()
+        socket.connect(jn.InetSocketAddress(endpoint.host.s, endpoint.port))
+        socket.startHandshake()
 
-      // `getApplicationProtocol` is `""` when nothing was negotiated (and, defensively,
-      // could be `null`); either way the transport carries no ALPN protocol.
-      val negotiated: Optional[Text] = socket.getApplicationProtocol match
-        case null | "" => Unset
-        case protocol  => protocol.tt
+        // `getApplicationProtocol` is `""` when nothing was negotiated (and, defensively,
+        // could be `null`); either way the transport carries no ALPN protocol.
+        val negotiated: Optional[Text] = socket.getApplicationProtocol match
+          case null | "" => Unset
+          case protocol  => protocol.tt
 
-      streamsDuplex(socket.getInputStream.nn, socket.getOutputStream.nn, negotiated): () =>
-        socket.close()
+        streamsDuplex(socket.getInputStream.nn, socket.getOutputStream.nn, negotiated): () =>
+          socket.close()
 
 case class SecureEndpoint(host: Text, port: Int)

@@ -90,12 +90,12 @@ extension (domainSocket: DomainSocket)
             peer(client) )
 
       . let: connection =>
-          // Fire-and-forget: the fresh task handle is discarded (a lambda result may not
-          // carry it).
-          async:
-            safely(try handler(connection) finally connection.close())
+        // Fire-and-forget: the fresh task handle is discarded (a lambda result may not
+        // carry it).
+        async:
+          safely(try handler(connection) finally connection.close())
 
-          ()
+        ()
 
     // The loop is created and awaited under the same monitor; no aliased writer.
     val task = async(bindLoop.run())

@@ -112,10 +112,10 @@ object Inlinable:
     :   Expr[product] =
 
       ' {
-        $reader.finishLine()
-        val indent1 = $indent + 1
-        ${stagedInternal.productFields[product](reader, 'indent1)}
-      }
+          $reader.finishLine()
+          val indent1 = $indent + 1
+          ${stagedInternal.productFields[product](reader, 'indent1)}
+        }
 
   // The structural instance for a sealed sum whose variants are all
   // inlinable case classes: the wire form is a single child compound keyed
@@ -172,9 +172,9 @@ object Inlinable:
     :   Expr[Boolean] =
 
       ' {
-        $reader.boolean().lay(Tel.Parsable.scalarFault($reader, t"Boolean", false)):
-          value => value
-      }
+          $reader.boolean().lay(Tel.Parsable.scalarFault($reader, t"Boolean", false)):
+            value => value
+        }
 
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Boolean])
     :   Expr[Boolean] =
@@ -188,12 +188,12 @@ object Inlinable:
     :   Expr[Double] =
 
       ' {
-        $reader.atom().lay({ $reader.fault(Tel.Error.Reason.Absent); 0.0 }): atom =>
-          try java.lang.Double.parseDouble(atom.s)
-          catch case _: NumberFormatException =>
-            $reader.fault(Tel.Error.Reason.NotScalar(atom, t"Double"))
-            0.0
-      }
+          $reader.atom().lay({ $reader.fault(Tel.Error.Reason.Absent); 0.0 }): atom =>
+            try java.lang.Double.parseDouble(atom.s)
+            catch case _: NumberFormatException =>
+              $reader.fault(Tel.Error.Reason.NotScalar(atom, t"Double"))
+              0.0
+        }
 
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Double])
     :   Expr[Double] =

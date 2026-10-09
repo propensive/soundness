@@ -71,10 +71,10 @@ object Query extends Dynamic:
         Query:
           // Via the stdlib view: inline re-elaboration freshens the frozen array, defeating
           // both `to[List]` and the compat `toList`.
-              fields(value) { [field] => field => contextual.encoded(field).prefix(label) }
-              . readable.toList
-              . to(proscenium.List)
-              . flatMap(_.values)
+          fields(value) { [field] => field => contextual.encoded(field).prefix(label) }
+          . readable.toList
+          . to(proscenium.List)
+          . flatMap(_.values)
 
   object DecodableDerivation extends ProductDerivation[[Type] =>> Type is Decodable in Query]:
     // Each outer `focus` runs *after* the inner one (contingency's try/finally order), so a

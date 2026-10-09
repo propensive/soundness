@@ -240,8 +240,8 @@ object Mutation:
         val spliced =
           if replacement.length > 0
           then Array.frozen
-                ( children.readable.take(blockIdx) ++ replacement.readable
-                  ++ children.readable.drop(blockIdx + 1) )
+            ( children.readable.take(blockIdx) ++ replacement.readable
+              ++ children.readable.drop(blockIdx + 1) )
           else
             // The op emptied the block (§22.2 `delete`): the block and its
             // comments go, but its trailing blank lines — which include a
@@ -262,7 +262,7 @@ object Mutation:
 
         val updatedBlock =
           targetBlock.copy
-           ( compounds = Array.frozen(targetBlock.compounds.readable.updated(localIdx, updatedCompound)) )
+            ( compounds = Array.frozen(targetBlock.compounds.readable.updated(localIdx, updatedCompound)) )
 
         rewrap(subtree, Array.frozen(subtree.children.readable.updated(blockIdx, updatedBlock)))
 
@@ -316,8 +316,8 @@ object Mutation:
     def splice(replacement: Array[Tel.Compound]^{}): Array[Tel.Block]^{} =
       val compounds =
         Array.frozen
-         ( block.compounds.readable.take(localIdx) ++ replacement.readable
-           ++ block.compounds.readable.drop(localIdx + 1) )
+          ( block.compounds.readable.take(localIdx) ++ replacement.readable
+            ++ block.compounds.readable.drop(localIdx + 1) )
 
       if compounds.length == 0 then Array.empty
       else Array(block.copy(compounds = compounds))
@@ -359,8 +359,8 @@ object Mutation:
         // takes over the original separation from following content.
         if block.tabulation.present
         then Array
-              ( block.copy(trailingBlankLines = 1),
-                Tel.Block(Array.empty, Unset, Array(compound), block.trailingBlankLines) )
+          ( block.copy(trailingBlankLines = 1),
+            Tel.Block(Array.empty, Unset, Array(compound), block.trailingBlankLines) )
         else splice(Array(target, compound))
 
       case Op.SetFlag(_, keyword) =>
@@ -442,13 +442,13 @@ object Mutation:
 
             val remaining =
               Array.frozen
-               ( childBlock.compounds.readable.take(foundLocal)
-                 ++ childBlock.compounds.readable.drop(foundLocal + 1) )
+                ( childBlock.compounds.readable.take(foundLocal)
+                  ++ childBlock.compounds.readable.drop(foundLocal + 1) )
 
             val children =
               if remaining.length == 0 then removeBlock(target.children, foundBlock, true)
               else Array.frozen
-                    ( target.children.readable.updated(foundBlock, childBlock.copy(compounds = remaining)) )
+                ( target.children.readable.updated(foundBlock, childBlock.copy(compounds = remaining)) )
 
             splice(Array(target.copy(children = children)))
 
@@ -539,8 +539,8 @@ object Mutation:
         val separation = if last.tabulation.present then 1 else 0
 
         Array.frozen
-         ( blocks.readable.updated(lastIdx, last.copy(trailingBlankLines = separation))
-           :+ fresh )
+          ( blocks.readable.updated(lastIdx, last.copy(trailingBlankLines = separation))
+            :+ fresh )
     else
       val block = blocks.readable(lastB)
 
@@ -549,15 +549,15 @@ object Mutation:
         val fresh = Tel.Block(Array.empty, Unset, Array(compound), block.trailingBlankLines)
 
         Array.frozen
-         ( blocks.readable.take(lastB) ++ scala.IArray(separated, fresh)
-           ++ blocks.readable.drop(lastB + 1) )
+          ( blocks.readable.take(lastB) ++ scala.IArray(separated, fresh)
+            ++ blocks.readable.drop(lastB + 1) )
       else
         val cs = block.compounds
 
         val compounds =
           Array.frozen
-           ( cs.readable.take(lastC + 1) ++ scala.IArray(compound)
-             ++ cs.readable.drop(lastC + 1) )
+            ( cs.readable.take(lastC + 1) ++ scala.IArray(compound)
+              ++ cs.readable.drop(lastC + 1) )
         Array.frozen(blocks.readable.updated(lastB, block.copy(compounds = compounds)))
 
   // Remove the emptied block at `blockIdx`, discarding its comments
@@ -580,8 +580,8 @@ object Mutation:
       val absorbed = previous.copy(trailingBlankLines = trailing)
 
       Array.frozen
-       ( blocks.readable.take(blockIdx - 1) ++ scala.IArray(absorbed)
-         ++ blocks.readable.drop(blockIdx + 1) )
+        ( blocks.readable.take(blockIdx - 1) ++ scala.IArray(absorbed)
+          ++ blocks.readable.drop(blockIdx + 1) )
     else if blocks.length == 1 && nested && removed.trailingBlankLines > 0
     then Array(Tel.Block(Array.empty, Unset, Array.empty, removed.trailingBlankLines))
     else Array.frozen(blocks.readable.drop(1))
@@ -617,8 +617,8 @@ object Mutation:
     . or(compound)
 
     Array.frozen
-     ( blocks.readable.updated
-        ( blockIndex, block.copy(compounds = Array.frozen(block.compounds.readable :+ padded)) ) )
+      ( blocks.readable.updated
+         ( blockIndex, block.copy(compounds = Array.frozen(block.compounds.readable :+ padded)) ) )
 
   // Width of `text` in code points: the spec measures column geometry in
   // code points. (The parser records marker offsets in bytes and the
@@ -992,8 +992,8 @@ object Mutation:
 
     Array.frozen:
       blocks.readable.updated
-       ( blockIndex,
-         block.copy(tabulation = Tel.Tabulation(offsets, tab.headings), compounds = compounds) )
+        ( blockIndex,
+          block.copy(tabulation = Tel.Tabulation(offsets, tab.headings), compounds = compounds) )
 
   // §22.3 `construct` — produce a fresh compound from a keyword and a
   // sequence of scalar atom texts, choosing each atom's form by the §22.2

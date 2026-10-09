@@ -43,18 +43,18 @@ import fulminate.*
 object Outlet:
   def list: List[Outlet] =
 
-      jss.AudioSystem.getMixerInfo.nn.iterator.toList.flatMap: info0 =>
-        val info = info0.nn
-        val mixer = jss.AudioSystem.getMixer(info).nn
+    jss.AudioSystem.getMixerInfo.nn.iterator.toList.flatMap: info0 =>
+      val info = info0.nn
+      val mixer = jss.AudioSystem.getMixer(info).nn
 
-        val canPlay = mixer.getSourceLineInfo.nn.exists:
-          case dli: jss.DataLine.Info => dli.getLineClass == classOf[jss.SourceDataLine]
-          case _                      => false
+      val canPlay = mixer.getSourceLineInfo.nn.exists:
+        case dli: jss.DataLine.Info => dli.getLineClass == classOf[jss.SourceDataLine]
+        case _                      => false
 
-        if canPlay then scala.collection.immutable.List(Outlet(info))
-        else scala.collection.immutable.Nil
+      if canPlay then scala.collection.immutable.List(Outlet(info))
+      else scala.collection.immutable.Nil
 
-      . to(List)
+    . to(List)
 
   // OutletError → Outlet.Error
   object Error:

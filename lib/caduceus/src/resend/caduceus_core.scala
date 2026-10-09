@@ -70,62 +70,62 @@ package couriers:
     // retained capabilities.
     // [construction-fresh] new Courier's own fresh capability laundered at given
     scala.caps.unsafe.unsafeAssumePure:
-     new Courier:
+      new Courier:
 
-      type Result = Resend.Receipt
+        type Result = Resend.Receipt
 
-      private case class Attachment(filename: Text, content: Text)
+        private case class Attachment(filename: Text, content: Text)
 
-      private case class Request
-        ( from:         EmailAddress,
-          to:           List[EmailAddress],
-          subject:      Text,
-          bcc:          List[EmailAddress],
-          cc:           List[EmailAddress],
-          scheduled_at: Optional[Text],
-          replyTo:      List[EmailAddress],
-          headers:      Map[Text, Text],
-          html:         Optional[Text],
-          text:         Optional[Text],
-          attachments:  List[Attachment] )
+        private case class Request
+          ( from:         EmailAddress,
+            to:           List[EmailAddress],
+            subject:      Text,
+            bcc:          List[EmailAddress],
+            cc:           List[EmailAddress],
+            scheduled_at: Optional[Text],
+            replyTo:      List[EmailAddress],
+            headers:      Map[Text, Text],
+            html:         Optional[Text],
+            text:         Optional[Text],
+            attachments:  List[Attachment] )
 
-      def send(message: Document[Email]): Resend.Receipt =
-        val email = message.root
-        val envelope = message.metadata
+        def send(message: Document[Email]): Resend.Receipt =
+          val email = message.root
+          val envelope = message.metadata
 
-        val attachments = email.attachments.map: attachment =>
-          Attachment(attachment.name, attachment.stream.read[Data].serialize[Base64])
+          val attachments = email.attachments.map: attachment =>
+            Attachment(attachment.name, attachment.stream.read[Data].serialize[Base64])
 
-        val request =
-          Request
-            ( envelope.from,
-              envelope.to,
-              envelope.subject,
-              envelope.bcc,
-              envelope.cc,
-              Unset,
-              envelope.replyTo,
-              email.headers,
-              email.html,
-              email.text,
-              attachments )
+          val request =
+            Request
+              ( envelope.from,
+                envelope.to,
+                envelope.subject,
+                envelope.bcc,
+                envelope.cc,
+                Unset,
+                envelope.replyTo,
+                email.headers,
+                email.html,
+                email.text,
+                attachments )
 
-        def error = Courier.Error(envelope.from, envelope.to.stdlib.head, envelope.subject)
+          def error = Courier.Error(envelope.from, envelope.to.stdlib.head, envelope.subject)
 
-        mitigate:
-          case Connect.Error(reason)     => Out.println(reason.communicate) yet error
-          case Parse.Error(_, _, reason) => Out.println(reason.describe) yet error
-          case Http.Error(status, _)     => Out.println(status.communicate) yet error
-          case Json.Error(reason)        => Out.println(reason.communicate) yet error
-          case MediaType.Error(_, _)     => error
+          mitigate:
+            case Connect.Error(reason)     => Out.println(reason.communicate) yet error
+            case Parse.Error(_, _, reason) => Out.println(reason.describe) yet error
+            case Http.Error(status, _)     => Out.println(status.communicate) yet error
+            case Json.Error(reason)        => Out.println(reason.communicate) yet error
+            case MediaType.Error(_, _)     => error
 
-        . protect:
-           // The request and its decoding share only the resolution-scoped tactic.
-           // [by-name-receiver] request body and decoding share the resolution-scoped tactic
-           scala.caps.unsafe.unsafeAssumeSeparate:
-            url"https://api.resend.com/emails".submit
-              ( Http.Post, authorization = Auth.Bearer(apiKey.key) )
-              ( request.in[Json] )
+          . protect:
+            // The request and its decoding share only the resolution-scoped tactic.
+            // [by-name-receiver] request body and decoding share the resolution-scoped tactic
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              url"https://api.resend.com/emails".submit
+                ( Http.Post, authorization = Auth.Bearer(apiKey.key) )
+                ( request.in[Json] )
 
-            . receive[Json]
-            . as[Resend.Receipt]
+              . receive[Json]
+              . as[Resend.Receipt]

@@ -259,6 +259,6 @@ object OpensslCrypto extends Crypto:
       val block = if transformation.cut(t"/").prim == t"AES" then 16 else 8
 
       Array.frozen
-       ( update(context, data, block, encrypting).readable
-         ++ finish(context, block, encrypting).readable )
+        ( update(context, data, block, encrypting).readable
+          ++ finish(context, block, encrypting).readable )
     finally freeContext(context)

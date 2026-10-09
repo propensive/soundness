@@ -180,7 +180,7 @@ object Flow:
       var end = toCluster
 
       while end > fromCluster && plain.charAt(charStart(end - 1)) == ' ' &&
-            widths.readable(end) - widths.readable(fromCluster) > width
+        widths.readable(end) - widths.readable(fromCluster) > width
       do end -= 1
 
       segment(fromCluster, end)

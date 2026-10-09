@@ -183,7 +183,7 @@ object stagedInternal:
         for
           clazz <- classFor(constructor)
           shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-                      list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
+            list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
         yield TypeShape(clazz, shapes)
 
       case other =>
@@ -295,9 +295,9 @@ object stagedInternal:
 
     def parse(reader: Expr[Xml.Reader])(using Quotes, Type[value]): Expr[value] =
       ' {
-        Xml.Parsable.parseField[value]
-          ( $parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef] )
-      }
+          Xml.Parsable.parseField[value]
+            ( $parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef] )
+        }
 
     override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       ( using Quotes, Type[value] )
@@ -404,7 +404,7 @@ object stagedInternal:
         && classSymbol.flags.is(Flags.Sealed)
         && children.nonEmpty
         && children.forall: child =>
-             child.isClassDef && child.flags.is(Flags.Case) && !hasAnnotations(child)
+          child.isClassDef && child.flags.is(Flags.Case) && !hasAnnotations(child)
 
       if supported then Some(children.map { child => (child.name, child.typeRef) }) else None
 
@@ -463,7 +463,7 @@ object stagedInternal:
       && !classSymbol.owner.isTerm
       && (tpe match { case AppliedType(_, _) => false case _ => true })
       && classSymbol.primaryConstructor.paramSymss
-         . filterNot(_.exists(_.isTypeParam)).length == 1
+        . filterNot(_.exists(_.isTypeParam)).length == 1
       && !hasAnnotations(classSymbol)
 
   // `@name` renames resolve through inline machinery the structural
@@ -507,12 +507,12 @@ object stagedInternal:
             val instance = element0.asInstanceOf[Inlinable { type Self = element }]
 
             ' {
-              def parseElement(): element = ${instance.parse(reader)}
-              val factory = infer[scala.collection.Factory[element, stdlib]]
-              val builder = factory.newBuilder
-              builder += parseElement()
-              builder.result().asInstanceOf[collection]
-            }
+                def parseElement(): element = ${instance.parse(reader)}
+                val factory = infer[scala.collection.Factory[element, stdlib]]
+                val builder = factory.newBuilder
+                builder += parseElement()
+                builder.result().asInstanceOf[collection]
+              }
 
       case _ =>
         report.errorAndAbort
@@ -531,7 +531,7 @@ object stagedInternal:
         (arguments.last.asType, factoryType.asType) match
           case ('[element], '[stdlib]) =>
             '{ infer[scala.collection.Factory[element, stdlib]].newBuilder.result()
-               . asInstanceOf[collection] }
+              . asInstanceOf[collection] }
 
       case _ =>
         report.errorAndAbort
@@ -574,11 +574,11 @@ object stagedInternal:
   :   Expr[product] =
 
     ' {
-      val foci = $reader.foci
-      val focused = foci.active
-      val tactic = $reader.errorTactic
-      ${fieldLoop[product](reader, 'foci, 'focused, 'tactic, cache)}
-    }
+        val foci = $reader.foci
+        val focused = foci.active
+        val tactic = $reader.errorTactic
+        ${fieldLoop[product](reader, 'foci, 'focused, 'tactic, cache)}
+      }
 
   // How one field reads, established at expansion: a builtin leaf, a
   // gathered collection (with its element's generator), any other resolved
@@ -721,16 +721,16 @@ object stagedInternal:
                           case Some(underlying) => underlying.asType match
                             case '[stdlib] =>
                               ' {
-                                infer[scala.collection.Factory[element, stdlib]].newBuilder
-                                . asInstanceOf[scm.Builder[element, fieldType]]
-                              }
+                                  infer[scala.collection.Factory[element, stdlib]].newBuilder
+                                  . asInstanceOf[scm.Builder[element, fieldType]]
+                                }
 
                             case _ => report.errorAndAbort("xylophone: unreachable")
 
                           case None =>
                             ' {
-                              infer[scala.collection.Factory[element, fieldType]].newBuilder
-                            }
+                                infer[scala.collection.Factory[element, fieldType]].newBuilder
+                              }
 
                       val builderDef = ValDef(builderSymbol, Some(builderRhs.asTerm))
 
@@ -840,9 +840,9 @@ object stagedInternal:
               firstWins
                 ( index,
                   ' {
-                    Xml.Parsable.focusing($foci, ${keyText(index)})
-                      ( ${instance.parse(reader)} )
-                  }.asTerm )
+                      Xml.Parsable.focusing($foci, ${keyText(index)})
+                        ( ${instance.parse(reader)} )
+                    }.asTerm )
 
             case Plan.Nested(_) =>
               val (symbol, _) = nesteds(index).get
@@ -865,9 +865,9 @@ object stagedInternal:
                       val call = Apply(Ref(gather.element), Nil).asExprOf[element]
 
                       ' {
-                        $builderRef.addOne
-                          ( Xml.Parsable.focusing($foci, ${keyText(index)})($call) )
-                      }.asTerm
+                          $builderRef.addOne
+                            ( Xml.Parsable.focusing($foci, ${keyText(index)})($call) )
+                        }.asTerm
 
                 case _ =>
                   report.errorAndAbort("xylophone: unreachable gather shape")
@@ -885,16 +885,16 @@ object stagedInternal:
 
               val append: Term =
                 ' {
-                  $bufferRef.asInstanceOf[scm.ListBuffer[Any]].addOne
-                    ( Xml.Parsable.focusing($foci, ${keyText(index)}):
-                        Xml.Parsable.parseElement($instanceRef, $reader) )
-                }.asTerm
+                    $bufferRef.asInstanceOf[scm.ListBuffer[Any]].addOne
+                      ( Xml.Parsable.focusing($foci, ${keyText(index)}):
+                          Xml.Parsable.parseElement($instanceRef, $reader) )
+                  }.asTerm
 
               val read: Term =
                 ' {
-                  Xml.Parsable.focusing($foci, ${keyText(index)})
-                    ( $instanceRef.parse($reader) )
-                }.asTerm
+                    Xml.Parsable.focusing($foci, ${keyText(index)})
+                      ( $instanceRef.parse($reader) )
+                  }.asTerm
 
               If
                 ( Ref(seam.repeats),
@@ -977,11 +977,11 @@ object stagedInternal:
             Assign
               ( Ref(slots(index)),
                 ' {
-                  val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
+                    val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
 
-                  if !declared.absent then declared.asInstanceOf[fieldType]
-                  else Xml.Parsable.focusing($foci, ${keyText(index)})($onAbsent)
-                }.asTerm )
+                    if !declared.absent then declared.asInstanceOf[fieldType]
+                    else Xml.Parsable.focusing($foci, ${keyText(index)})($onAbsent)
+                  }.asTerm )
 
           def whenUnseen(onAbsent: Expr[fieldType]): Term =
             If
@@ -1021,13 +1021,13 @@ object stagedInternal:
                 Assign
                   ( Ref(slots(index)),
                     ' {
-                      Xml.Parsable.focusing($foci, ${keyText(index)}):
-                        Xml.Parsable.gathered[fieldType]
-                          ( $instanceRef,
-                            $bufferRef match
-                              case null   => proscenium.Nil
-                              case buffer => buffer.toList.to(proscenium.List) )
-                    }.asTerm )
+                        Xml.Parsable.focusing($foci, ${keyText(index)}):
+                          Xml.Parsable.gathered[fieldType]
+                            ( $instanceRef,
+                              $bufferRef match
+                                case null   => proscenium.Nil
+                                case buffer => buffer.toList.to(proscenium.List) )
+                      }.asTerm )
 
               If
                 ( Ref(seam.repeats),
@@ -1082,11 +1082,11 @@ object stagedInternal:
 
             def declared(onAbsent: Expr[fieldType]): Expr[fieldType] =
               ' {
-                val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
+                  val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
 
-                if !declared.absent then declared.asInstanceOf[fieldType]
-                else Xml.Parsable.focusing($foci, $keyText)($onAbsent)
-              }
+                  if !declared.absent then declared.asInstanceOf[fieldType]
+                  else Xml.Parsable.focusing($foci, $keyText)($onAbsent)
+                }
 
             val argument: Expr[fieldType] = plans(index) match
               case Plan.Leaf(instance0) =>
@@ -1099,20 +1099,20 @@ object stagedInternal:
 
               case Plan.Gather(element0) =>
                 ' {
-                  Xml.Parsable.focusing($foci, $keyText)
-                    ( ${iterableAbsent[fieldType](element0)} )
-                }
+                    Xml.Parsable.focusing($foci, $keyText)
+                      ( ${iterableAbsent[fieldType](element0)} )
+                  }
 
               case Plan.Seam =>
                 ' {
-                  val instance = stagedInternal.fieldInstance[fieldType]
+                    val instance = stagedInternal.fieldInstance[fieldType]
 
-                  if Xml.Parsable.repeats(instance) then
-                    Xml.Parsable.focusing($foci, $keyText)
-                      ( Xml.Parsable.gathered[fieldType](instance, proscenium.Nil) )
-                  else
-                    ${declared('{instance.absent()(using $tactic, $foci)})}
-                }
+                    if Xml.Parsable.repeats(instance) then
+                      Xml.Parsable.focusing($foci, $keyText)
+                        ( Xml.Parsable.gathered[fieldType](instance, proscenium.Nil) )
+                    else
+                      ${declared('{instance.absent()(using $tactic, $foci)})}
+                  }
 
             argument.asTerm
 
@@ -1125,15 +1125,15 @@ object stagedInternal:
     Expr.summon[Default[product]] match
       case Some(default) =>
         ' {
-          raise(Xml.Error(Xml.Error.Reason.AbsentProduct($productName)))(using $tactic)
-          $default()
-        }
+            raise(Xml.Error(Xml.Error.Reason.AbsentProduct($productName)))(using $tactic)
+            $default()
+          }
 
       case None =>
         ' {
-          raise(Xml.Error(Xml.Error.Reason.AbsentProduct($productName)))(using $tactic)
-          ${build()}
-        }
+            raise(Xml.Error(Xml.Error.Reason.AbsentProduct($productName)))(using $tactic)
+            ${build()}
+          }
 
   // ── The sum generator ──────────────────────────────────────────────────
   // The variant rides in an attribute of the just-opened element — the
@@ -1182,10 +1182,10 @@ object stagedInternal:
       Expr.summon[Default[sum]] match
         case Some(default) =>
           ' {
-            $reader.skipElement()
-            raise(Xml.Error($reason))(using $tactic)
-            $default()
-          }
+              $reader.skipElement()
+              raise(Xml.Error($reason))(using $tactic)
+              $default()
+            }
 
         case None =>
           '{abort(Xml.Error($reason))(using $tactic)}
@@ -1201,17 +1201,17 @@ object stagedInternal:
           . asInstanceOf[Inlinable { type Self = variantType }]
 
           ' {
-            if $wire == ${Expr(variants(index)(0))} then
-              def parseVariant(): variantType = ${instance.parse(reader)}
-              parseVariant()
-            else ${dispatch(index + 1, wire, tactic)}
-          }
+              if $wire == ${Expr(variants(index)(0))} then
+                def parseVariant(): variantType = ${instance.parse(reader)}
+                parseVariant()
+              else ${dispatch(index + 1, wire, tactic)}
+            }
 
     ' {
-      val tactic = $reader.errorTactic
-      val wire: String = Attributes.fetch($reader.attributes())(${Expr(attribute)}.tt).let(_.s).or("")
-      ${dispatch(0, 'wire, 'tactic)}
-    }
+        val tactic = $reader.errorTactic
+        val wire: String = Attributes.fetch($reader.attributes())(${Expr(attribute)}.tt).let(_.s).or("")
+        ${dispatch(0, 'wire, 'tactic)}
+      }
 
   // A missing sum field: no discriminator, so the AST disjunction's
   // fallback — a raise-plus-`Default` or an abort.
@@ -1223,9 +1223,9 @@ object stagedInternal:
     Expr.summon[Default[sum]] match
       case Some(default) =>
         ' {
-          raise(Xml.Error(Xml.Error.Reason.AbsentVariant($sumName)))(using $tactic)
-          $default()
-        }
+            raise(Xml.Error(Xml.Error.Reason.AbsentVariant($sumName)))(using $tactic)
+            $default()
+          }
 
       case None =>
         '{abort(Xml.Error(Xml.Error.Reason.AbsentVariant($sumName)))(using $tactic)}
@@ -1243,17 +1243,17 @@ object stagedInternal:
           "or `@attribute` annotations); use `Xml.Parsable.staged` or `derived`" )
 
     ' {
-      // Sealed per the codec-thunk pattern, like the staged instances: the
-      // generated body resolves its capabilities at the read site, through
-      // the reader.
-      // [quote-wall] staged Parsable generated inside quote
-      caps.unsafe.unsafeAssumePure:
-        new Xml.Parsable.Direct[value]:
-          protected def parseCarrier(reader0: AnyRef): value =
-            // A capability class cannot be quoted into a pure hole, so
-            // every use casts from the neutral carrier afresh.
-            ${productFields[value]('{reader0.asInstanceOf[Xml.Reader]}, cache)}
+        // Sealed per the codec-thunk pattern, like the staged instances: the
+        // generated body resolves its capabilities at the read site, through
+        // the reader.
+        // [quote-wall] staged Parsable generated inside quote
+        caps.unsafe.unsafeAssumePure:
+          new Xml.Parsable.Direct[value]:
+            protected def parseCarrier(reader0: AnyRef): value =
+              // A capability class cannot be quoted into a pure hole, so
+              // every use casts from the neutral carrier afresh.
+              ${productFields[value]('{reader0.asInstanceOf[Xml.Reader]}, cache)}
 
-          override def absent()(using tactic: Tactic[Xml.Error], foci: Foci[Xml.Focus]): value =
-            ${productAbsent[value]('tactic, 'foci, cache)}
-    }
+            override def absent()(using tactic: Tactic[Xml.Error], foci: Foci[Xml.Focus]): value =
+              ${productAbsent[value]('tactic, 'foci, cache)}
+      }

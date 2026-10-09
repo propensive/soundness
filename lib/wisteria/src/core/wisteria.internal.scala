@@ -344,10 +344,10 @@ object internal:
       if owner.isNoSymbol then Nil
       else
 
-          (owner.methodMembers ++ owner.fieldMembers)
-            . filter(isWrapper(typeclassConstructor, _)).distinct
+        (owner.methodMembers ++ owner.fieldMembers)
+          . filter(isWrapper(typeclassConstructor, _)).distinct
 
-          . to(List)
+        . to(List)
 
     val run = quotes.asInstanceOf[runtime.impl.QuotesImpl].ctx.run
 

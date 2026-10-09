@@ -169,7 +169,7 @@ private[facsimile] object PdfWriter:
     // The writer thunks share only this append pass's own accumulators.
     // [by-name-receiver] writer thunk arguments share append accumulators
     then scala.caps.unsafe.unsafeAssumeSeparate
-          ( streamed(pdf, raw, ascii, xrefOffset, numbers, offsets, entries) )
+      ( streamed(pdf, raw, ascii, xrefOffset, numbers, offsets, entries) )
     else
       ascii(t"xref\n")
 

@@ -530,7 +530,7 @@ object rationalInternal:
     val rawExponent = (bits >>> 52 & 0x7ffL).toInt
 
     var mantissa = if rawExponent == 0 then bits & 0xfffffffffffffL
-                   else bits & 0xfffffffffffffL | (1L << 52)
+      else bits & 0xfffffffffffffL | (1L << 52)
 
     var exponent = if rawExponent == 0 then -1074 else rawExponent - 1075
     val shift = JLong.numberOfTrailingZeros(mantissa)
@@ -794,7 +794,7 @@ object rationalInternal:
 
     given orderable: Q64 is Orderable:
       inline def compare
-          ( inline left: Q64, inline right: Q64, inline strict: Boolean, inline greater: Boolean )
+        ( inline left: Q64, inline right: Q64, inline strict: Boolean, inline greater: Boolean )
       :   Boolean =
 
         if left == Long.MinValue || right == Long.MinValue then false else
@@ -1121,7 +1121,7 @@ object rationalInternal:
 
     given orderable: Q32 is Orderable:
       inline def compare
-          ( inline left: Q32, inline right: Q32, inline strict: Boolean, inline greater: Boolean )
+        ( inline left: Q32, inline right: Q32, inline strict: Boolean, inline greater: Boolean )
       :   Boolean =
 
         if left == Int.MinValue || right == Int.MinValue then false else

@@ -217,7 +217,7 @@ object Reactor:
 
       while headEnd < 0 && index + 3 < end do
         if accumulator(index) == 13 && accumulator(index + 1) == 10
-            && accumulator(index + 2) == 13 && accumulator(index + 3) == 10
+          && accumulator(index + 2) == 13 && accumulator(index + 3) == 10
         then headEnd = index + 4
         else index += 1
 
@@ -232,22 +232,22 @@ object Reactor:
           refuse(SocketServer.errorStatus(error.reason))
 
       . protect:
-          // The head is parsed in place: the cursor borrows the accumulator's first
-          // `headEnd` bytes, which nothing writes until the parse has returned.
-          val cursor = cursor0.asInstanceOf[Cursor[Data, {}]^]
-          cursor.repoint(accumulator.asInstanceOf[AnyRef], headEnd)
-          val head = Http.Request.parseHead(cursor)
-          val facts = SocketServer.factsOf(head)
+        // The head is parsed in place: the cursor borrows the accumulator's first
+        // `headEnd` bytes, which nothing writes until the parse has returned.
+        val cursor = cursor0.asInstanceOf[Cursor[Data, {}]^]
+        cursor.repoint(accumulator.asInstanceOf[AnyRef], headEnd)
+        val head = Http.Request.parseHead(cursor)
+        val facts = SocketServer.factsOf(head)
 
-          if facts.chunked || SocketServer.expectsContinue(head, facts)
-              || SocketServer.isUpgrade(facts)
-              || facts.contentLength.or(0) > inlineBodyLimit
-          then handoff(reactor)
-          else
-            keep = SocketServer.keepAlive(head, facts)
-            contentLength = facts.contentLength.or(0)
-            needed = headEnd + contentLength
-            pendingHead = head
+        if facts.chunked || SocketServer.expectsContinue(head, facts)
+          || SocketServer.isUpgrade(facts)
+          || facts.contentLength.or(0) > inlineBodyLimit
+        then handoff(reactor)
+        else
+          keep = SocketServer.keepAlive(head, facts)
+          contentLength = facts.contentLength.or(0)
+          needed = headEnd + contentLength
+          pendingHead = head
 
     // Leave the reactor: cancel the key (flushing the cancellation with a
     // `selectNow()` on this lane's own selector, without which the channel may not

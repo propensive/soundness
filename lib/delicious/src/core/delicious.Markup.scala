@@ -187,10 +187,10 @@ enum Markup:
   case Textual(text: Text)
 
   case Typed
-        ( tasty:        Optional[Text],
-         placeholders: List[Placeholder],
-         rendition:    Rendition,
-         children:     List[Markup] )
+    ( tasty:        Optional[Text],
+     placeholders: List[Placeholder],
+     rendition:    Rendition,
+     children:     List[Markup] )
 
   case Symbolic(name: Text, full: Text, rendition: Rendition, children: List[Markup])
   case Named(isType: Boolean, rendition: Rendition, children: List[Markup])

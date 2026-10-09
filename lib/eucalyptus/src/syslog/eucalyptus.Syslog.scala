@@ -54,15 +54,15 @@ object Syslog:
       case guillotine.Exec.Error(_, _, _) => ()
 
     . protect:
-        // The fresh `Job` capability is bound before `writeTo` so its evidence summons
-        // against a stable reference rather than a fresh-decorated expression.
-        syslog.tag match
-          case tag: Text => mute[guillotine.Exec.Event]:
-            val job = sh"logger -t $tag".fork[Unit]()
-            job.stdin(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
+      // The fresh `Job` capability is bound before `writeTo` so its evidence summons
+      // against a stable reference rather than a fresh-decorated expression.
+      syslog.tag match
+        case tag: Text => mute[guillotine.Exec.Event]:
+          val job = sh"logger -t $tag".fork[Unit]()
+          job.stdin(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
 
-          case _ => mute[guillotine.Exec.Event]:
-            val job = sh"logger".fork[Unit]()
-            job.stdin(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
+        case _ => mute[guillotine.Exec.Event]:
+          val job = sh"logger".fork[Unit]()
+          job.stdin(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
 
 case class Syslog(tag: Optional[Text] = Unset)

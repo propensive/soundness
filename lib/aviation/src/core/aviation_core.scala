@@ -588,9 +588,9 @@ extension [sequence](sequence: sequence)(using recurrent: sequence is Recurrent)
   def within(window: Period[recurrent.Topic])(using order: recurrent.Topic is Comparable)
   :   Chain[recurrent.Topic] =
 
-      recurrent.occurrences(sequence)
-      . skip(order.less(_, window.start))
-      . keep(order.less(_, window.finish))
+    recurrent.occurrences(sequence)
+    . skip(order.less(_, window.start))
+    . keep(order.less(_, window.finish))
 
   def following(after: recurrent.Topic)(using order: recurrent.Topic is Comparable)
   :   Optional[recurrent.Topic] =

@@ -157,8 +157,8 @@ object LineSeparation:
 
             inline def lowest(at: Int): Int =
               least
-               ( least(least(chars(at), chars(at + 1)), least(chars(at + 2), chars(at + 3))),
-                 least(least(chars(at + 4), chars(at + 5)), least(chars(at + 6), chars(at + 7))) )
+                ( least(least(chars(at), chars(at + 1)), least(chars(at + 2), chars(at + 3))),
+                  least(least(chars(at + 4), chars(at + 5)), least(chars(at + 6), chars(at + 7))) )
 
             var index: Int = from
             var found: Int = -1
@@ -423,8 +423,8 @@ object LineSeparation:
         var index: Int = from
 
         while index < stop
-            && { val byte = bytes(index)
-                 (byte & 0xf8) != 0x08 || (byte != 10 && byte != 13) }
+          && { val byte = bytes(index)
+              (byte & 0xf8) != 0x08 || (byte != 10 && byte != 13) }
         do index += 1
 
         index

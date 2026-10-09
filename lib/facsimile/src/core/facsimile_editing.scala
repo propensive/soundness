@@ -77,8 +77,8 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     // The edit reads and rewrites the same single-owner document.
     // [by-name-receiver] editPage lambda reads same document passed as argument
     scala.caps.unsafe.unsafeAssumeSeparate:
-     editPage(pdf, page): entries =>
-      entries.define(t"Contents", stream)
+      editPage(pdf, page): entries =>
+        entries.define(t"Contents", stream)
 
   // Sets a page's rotation.
   def setRotation(page: Page^, rotation: Page.Rotation)(using Tactic[Pdf.Error]): Unit =
@@ -171,15 +171,15 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     // The edit reads and rewrites the same single-owner document.
     // [by-name-receiver] editPage lambda reads same document passed as argument
     scala.caps.unsafe.unsafeAssumeSeparate:
-     editPage(pdf, page): entries =>
-      val resources = pdf.resolved(entries(t"Resources").or(Cos.Nil)).dictionary
-        . or(Map[Text, Cos]())
+      editPage(pdf, page): entries =>
+        val resources = pdf.resolved(entries(t"Resources").or(Cos.Nil)).dictionary
+          . or(Map[Text, Cos]())
 
-      val existing = pdf.resolved(resources(category).or(Cos.Nil)).dictionary
-        . or(Map[Text, Cos]())
+        val existing = pdf.resolved(resources(category).or(Cos.Nil)).dictionary
+          . or(Map[Text, Cos]())
 
-      val category0 = Cos.Dictionary(existing.define(name, resource))
-      entries.define(t"Resources", Cos.Dictionary(resources.define(category, category0)))
+        val category0 = Cos.Dictionary(existing.define(name, resource))
+        entries.define(t"Resources", Cos.Dictionary(resources.define(category, category0)))
 
   // Sets a page's annotations from raw annotation dictionaries: each becomes an indirect
   // object, and the page's `/Annots` is set to the array of references.
@@ -215,9 +215,9 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     // The edit reads and rewrites the same single-owner document.
     // [by-name-receiver] editPage lambda reads same document passed as argument
     scala.caps.unsafe.unsafeAssumeSeparate:
-     editPage(pdf, page): entries =>
-      val existing = entries(t"Annots").let(pdf.resolved(_).elements).or(Nil)
-      entries.define(t"Annots", Cos.Sequence(existing :+ ref))
+      editPage(pdf, page): entries =>
+        val existing = entries(t"Annots").let(pdf.resolved(_).elements).or(Nil)
+        entries.define(t"Annots", Cos.Sequence(existing :+ ref))
 
   // Replaces the document outline (bookmarks). The tree is rebuilt as fresh objects with the
   // full `/First`/`/Last`/`/Next`/`/Prev`/`/Parent`/`/Count` linkage, and the catalog's
@@ -270,12 +270,12 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     // The edit reads and rewrites the same single-owner document.
     // [by-name-receiver] editDictionary lambda reads the receiver document
     scala.caps.unsafe.unsafeAssumeSeparate:
-     pdf.editDictionary(rootRef.number): tree =>
-      val kids = tree(t"Kids").let(pdf.resolved(_).elements).or(Nil)
-      val count = tree(t"Count").let(_.long).or(kids.size.toLong)
+      pdf.editDictionary(rootRef.number): tree =>
+        val kids = tree(t"Kids").let(pdf.resolved(_).elements).or(Nil)
+        val count = tree(t"Count").let(_.long).or(kids.size.toLong)
 
-      tree.define(t"Kids", Cos.Sequence(kids :+ pageRef))
-        . define(t"Count", Cos.Integral(count + 1))
+        tree.define(t"Kids", Cos.Sequence(kids :+ pageRef))
+          . define(t"Count", Cos.Integral(count + 1))
 
     pageRef
 
@@ -292,15 +292,15 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
             // The edit reads and rewrites the same single-owner document.
             // [by-name-receiver] editDictionary lambda reads the receiver document
             scala.caps.unsafe.unsafeAssumeSeparate:
-             pdf.editDictionary(ref.number): tree =>
-              val kids = tree(t"Kids").let(pdf.resolved(_).elements).or(Nil)
+              pdf.editDictionary(ref.number): tree =>
+                val kids = tree(t"Kids").let(pdf.resolved(_).elements).or(Nil)
 
-              val remaining = kids.filter:
-                case Cos.Ref(number, _) => number != pageNumber
-                case _                  => true
+                val remaining = kids.filter:
+                  case Cos.Ref(number, _) => number != pageNumber
+                  case _                  => true
 
-              tree.define(t"Kids", Cos.Sequence(remaining))
-                . define(t"Count", Cos.Integral(remaining.size.toLong))
+                tree.define(t"Kids", Cos.Sequence(remaining))
+                  . define(t"Count", Cos.Integral(remaining.size.toLong))
 
             pdf.remove(pageNumber)
 

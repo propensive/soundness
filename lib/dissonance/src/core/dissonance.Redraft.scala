@@ -220,10 +220,10 @@ object Redraft:
     def deambiguate(directives: List[Directive]): List[Directive] =
       val ambiguous =
 
-          analyze(directives, original, _ == _)(1).sweep:
-            case Anomaly(line, _, Reason.Ambiguous) => line
+        analyze(directives, original, _ == _)(1).sweep:
+          case Anomaly(line, _, Reason.Ambiguous) => line
 
-          . to[Set]
+        . to[Set]
 
       if ambiguous.nil then directives
       else deambiguate:

@@ -163,10 +163,10 @@ extension [self](self: self)(using traversable: self is Traversable)
     ( using reshapable: self is Reshapable by traversable.Operand to result )
   :   Map[key, result] =
 
-      traversable.traverse(self).toList.groupBy(lambda).map: (key, elements) =>
-        (key, reshapable.reshape(elements.iterator))
+    traversable.traverse(self).toList.groupBy(lambda).map: (key, elements) =>
+      (key, reshapable.reshape(elements.iterator))
 
-      . to(Map)
+    . to(Map)
 
   def distinct[result]
     ( using reshapable: self is Reshapable.Stable by traversable.Operand to result )
@@ -220,9 +220,9 @@ extension [self](self: self)(using traversable: self is Traversable)
     ( using reshapable: self is Reshapable.Stable by traversable.Operand to result )
   :   List[result] =
 
-      traversable.traverse(self).grouped(size).map { chunk => reshapable.reshape(chunk.iterator) }
-      . toList
-      . to(List)
+    traversable.traverse(self).grouped(size).map { chunk => reshapable.reshape(chunk.iterator) }
+    . toList
+    . to(List)
 
 // The choice of sorting algorithm, imported by name to make it. Only one may be in scope: two
 // would make every `sorted` and `order` ambiguous, which is the intended way of saying that a

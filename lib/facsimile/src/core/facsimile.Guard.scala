@@ -162,8 +162,8 @@ private[facsimile] object Guard:
     var hash: Data =
       md5:
         Array.frozen
-         ( Array.unsafeFrozen(padded(password)).readable ++ owner.keep(32.min(owner.length)).readable
-           ++ permissionsBytes.readable ++ id.readable ++ metadataBytes.readable )
+          ( Array.unsafeFrozen(padded(password)).readable ++ owner.keep(32.min(owner.length)).readable
+            ++ permissionsBytes.readable ++ id.readable ++ metadataBytes.readable )
 
     // Revision 3+: 50 further MD5 rounds over the first `keyBytes` bytes.
     if revision >= 3 then

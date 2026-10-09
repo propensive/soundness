@@ -80,26 +80,26 @@ object PdfFile:
       case Io.Error(_, _, _, _) => Pdf.Error(Pdf.Error.Reason.Io(t"the file could not be written"))
 
     . protect:
-        // [by-name-receiver] resolve's tactic shared with mitigated receiver path
-        val target: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
-          workingDirectory[Path on Local].resolve(filename)
+      // [by-name-receiver] resolve's tactic shared with mitigated receiver path
+      val target: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
+        workingDirectory[Path on Local].resolve(filename)
 
-        if !flags.has(CreateFlag.Replace) && target.existent()
-        then abort(Pdf.Error(Pdf.Error.Reason.Io(t"the file already exists")))
+      if !flags.has(CreateFlag.Replace) && target.existent()
+      then abort(Pdf.Error(Pdf.Error.Reason.Io(t"the file already exists")))
 
-        if flags.has(CreateFlag.Parents) then
-          target.parent.let: parent =>
-            if !parent.existent() then parent.create[Directory]()
+      if flags.has(CreateFlag.Parents) then
+        target.parent.let: parent =>
+          if !parent.existent() then parent.create[Directory]()
 
-        val part: Text = t".${target.name}.part"
-        val temporary = target.peer(part)
+      val part: Text = t".${target.name}.part"
+      val temporary = target.peer(part)
 
-        try
-          temporary.write(bytes)
-          temporary.moveTo(target)
-        catch case throwable: Throwable =>
-          safely(temporary.wipe())
-          throw throwable
+      try
+        temporary.write(bytes)
+        temporary.moveTo(target)
+      catch case throwable: Throwable =>
+        safely(temporary.wipe())
+        throw throwable
 
   // A named class rather than an anonymous given instance, for the reasons documented on
   // galilei's `FileOpenable`. Documents open read-only: a future write mode is a staged
@@ -210,32 +210,32 @@ class PdfFile private (origin: PdfFile.Origin):
             Pdf.Error(Pdf.Error.Reason.Io(t"the file could not be opened"))
 
         . protect:
-            // [by-name-receiver] resolve's tactic shared with mitigated receiver path
-            val path: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
-              workingDirectory[Path on Local].resolve(filename)
+          // [by-name-receiver] resolve's tactic shared with mitigated receiver path
+          val path: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
+            workingDirectory[Path on Local].resolve(filename)
 
-            if writable then
-              path.open[Ram](Read & Write): ram ?=>
-                // The source pins the file's size at open: the mapping grows for the
-                // incremental-update append below, and the document's view must not shift.
-                val source = ExpanseSource(ram.expanse, ram.size)
-                val (outcome, increment) = read[grants, result](source, password, true)(block)
+          if writable then
+            path.open[Ram](Read & Write): ram ?=>
+              // The source pins the file's size at open: the mapping grows for the
+              // incremental-update append below, and the document's view must not shift.
+              val source = ExpanseSource(ram.expanse, ram.size)
+              val (outcome, increment) = read[grants, result](source, password, true)(block)
 
-                // A `match`, not `.let`: the frozen member of the `Optional` union freshens
-                // under `let`'s type-variable instantiation.
-                increment.asInstanceOf[Matchable] match
-                  case bytes: (Array[Byte]^{}) @unchecked =>
-                    ram.grow(source.size + bytes.length)
-                    ram(source.size) = bytes
+              // A `match`, not `.let`: the frozen member of the `Optional` union freshens
+              // under `let`'s type-variable instantiation.
+              increment.asInstanceOf[Matchable] match
+                case bytes: (Array[Byte]^{}) @unchecked =>
+                  ram.grow(source.size + bytes.length)
+                  ram(source.size) = bytes
 
-                  case _ => ()
+                case _ => ()
 
-                outcome
-            else
-              path.open[Ram](): ram ?=>
-                val source = ExpanseSource(ram.expanse, ram.size)
-                val (outcome, _) = read[grants, result](source, password, false)(block)
-                outcome
+              outcome
+          else
+            path.open[Ram](): ram ?=>
+              val source = ExpanseSource(ram.expanse, ram.size)
+              val (outcome, _) = read[grants, result](source, password, false)(block)
+              outcome
 
   // The capability must be minted where the block is applied: a `Pdf` returned from another
   // method is a distinct fresh capability which could not flow into the block's own. The

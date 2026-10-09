@@ -276,12 +276,12 @@ object Telp:
 
   private def childrenAt(node: Tel.Element.Node, flatIndex: Int): List[Tel.Element] =
 
-      node.children.readable.filter: element =>
-        element match
-          case Tel.Element.Node(idx, _, _)  => idx.or(-1) == flatIndex
-          case Tel.Element.Value(idx, _, _) => idx == flatIndex
+    node.children.readable.filter: element =>
+      element match
+        case Tel.Element.Node(idx, _, _)  => idx.or(-1) == flatIndex
+        case Tel.Element.Value(idx, _, _) => idx == flatIndex
 
-      . to(List)
+    . to(List)
 
 case class Telp(components: List[Text]) derives CanEqual:
   // Push a component onto the root (front) of the path. The product
@@ -337,25 +337,25 @@ case class Telp(components: List[Text]) derives CanEqual:
         pendingOccurrences = Nil
 
       . or:
-          // Keyword step (§4 step 1): `current` must be a Struct-typed
-          // Node, and the component must match its keyword order.
-          current match
-            case node: Tel.Element.Node => Telp.resolved(node.elementType, schema) match
-              case struct: Tels.Struct =>
-                val slot = Telp.slotOf(struct, component, schema)
-                . or(abort(Telp.Error(Telp.Error.Reason.UnknownKeyword, i)))
+        // Keyword step (§4 step 1): `current` must be a Struct-typed
+        // Node, and the component must match its keyword order.
+        current match
+          case node: Tel.Element.Node => Telp.resolved(node.elementType, schema) match
+            case struct: Tels.Struct =>
+              val slot = Telp.slotOf(struct, component, schema)
+              . or(abort(Telp.Error(Telp.Error.Reason.UnknownKeyword, i)))
 
-                val occurrences = Telp.childrenAt(node, slot.flatIndex)
+              val occurrences = Telp.childrenAt(node, slot.flatIndex)
 
-                if slot.repeatable then
-                  pendingType = slot.slotType
-                  pendingOccurrences = occurrences
-                else occurrences.prim.let { child => current = child }
-                . or(abort(Telp.Error(Telp.Error.Reason.AbsentMember, i)))
-
-              case _ => abort(Telp.Error(Telp.Error.Reason.NonStructDescent, i))
+              if slot.repeatable then
+                pendingType = slot.slotType
+                pendingOccurrences = occurrences
+              else occurrences.prim.let { child => current = child }
+              . or(abort(Telp.Error(Telp.Error.Reason.AbsentMember, i)))
 
             case _ => abort(Telp.Error(Telp.Error.Reason.NonStructDescent, i))
+
+          case _ => abort(Telp.Error(Telp.Error.Reason.NonStructDescent, i))
 
       i += 1
 

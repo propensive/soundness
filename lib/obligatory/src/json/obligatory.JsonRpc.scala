@@ -92,9 +92,9 @@ object JsonRpc:
   // specification requires, when the request was unparseable and its id unknowable.
   def failure(code: Int, message: Text, id: Optional[Json] = Unset): Json =
     Map
-     ( t"jsonrpc" -> t"2.0".in[Json],
-       t"error"   -> Failure(code, message).in[Json],
-       t"id"      -> id.or(Json.ast(Json.Ast(Json.JsonNull))) )
+      ( t"jsonrpc" -> t"2.0".in[Json],
+        t"error"   -> Failure(code, message).in[Json],
+        t"id"      -> id.or(Json.ast(Json.Ast(Json.JsonNull))) )
 
     . in[Json]
 
@@ -217,10 +217,10 @@ object JsonRpc:
   // over the wire, so a caller can map the failure onto its own protocol's vocabulary — an LSP
   // client, for instance, recovers an `Lsp.Error.Reason` from the code.
   case class Error
-     ( reason: JsonRpc.Error.Reason,
-       code:   Optional[Int]  = Unset,
-       detail: Optional[Text] = Unset )
-     ( using Diagnostics )
+    ( reason: JsonRpc.Error.Reason,
+      code:   Optional[Int]  = Unset,
+      detail: Optional[Text] = Unset )
+    ( using Diagnostics )
   extends fulminate.Error(721, reason.number)(m"the JSON-RPC operation failed because $reason")
 
 trait JsonRpc extends Original:

@@ -78,10 +78,10 @@ object SourceCode:
     // typer-stopped run, so they stay source-level.
     val resolved
     :   Optional
-          [ ( Map[(Int, Int), Syntax],
-              Map[(Int, Int), prophesy.Elaboration],
-              List[Diagnostic],
-              Optional[Completions] ) ] =
+      [ ( Map[(Int, Int), Syntax],
+          Map[(Int, Int), prophesy.Elaboration],
+          List[Diagnostic],
+          Optional[Completions] ) ] =
 
       if highlighting.depth == Depth.Tokenized then Unset else
         highlighting.compilation.let: compilation =>

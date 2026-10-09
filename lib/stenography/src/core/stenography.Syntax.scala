@@ -49,10 +49,10 @@ import vacuous.*
 // `stenography` sits below `gossamer`, so `Text` has no `join` here; this is the native-`List`
 // stand-in for the stdlib `mkString` forms this file renders syntax through.
 private def joined
-   ( texts:     List[Text],
-     separator: String = "",
-     left:      String = "",
-     right:     String = "" )
+  ( texts:     List[Text],
+    separator: String = "",
+    left:      String = "",
+    right:     String = "" )
 :   String =
 
   val builder = StringBuilder(left)

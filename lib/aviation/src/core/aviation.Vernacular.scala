@@ -48,10 +48,10 @@ enum TimeUnit:
 object Vernacular:
   def components(span: Timespan): List[(Long, TimeUnit)] =
     List
-     ( (span.years.toLong, TimeUnit.Years), (span.months.toLong, TimeUnit.Months),
-       (span.weeks.toLong, TimeUnit.Weeks), (span.days.toLong, TimeUnit.Days),
-       (span.hours.toLong, TimeUnit.Hours), (span.minutes.toLong, TimeUnit.Minutes),
-       (span.seconds.value.toLong, TimeUnit.Seconds) )
+      ( (span.years.toLong, TimeUnit.Years), (span.months.toLong, TimeUnit.Months),
+        (span.weeks.toLong, TimeUnit.Weeks), (span.days.toLong, TimeUnit.Days),
+        (span.hours.toLong, TimeUnit.Hours), (span.minutes.toLong, TimeUnit.Minutes),
+        (span.seconds.value.toLong, TimeUnit.Seconds) )
 
     . filter(_(0) != 0)
 

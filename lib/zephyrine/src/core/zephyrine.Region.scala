@@ -112,9 +112,9 @@ object Region:
 
       while index + 8 <= end do
         whole
-         ( region.ordinal(index), region.ordinal(index + 1), region.ordinal(index + 2),
-           region.ordinal(index + 3), region.ordinal(index + 4), region.ordinal(index + 5),
-           region.ordinal(index + 6), region.ordinal(index + 7) )
+          ( region.ordinal(index), region.ordinal(index + 1), region.ordinal(index + 2),
+            region.ordinal(index + 3), region.ordinal(index + 4), region.ordinal(index + 5),
+            region.ordinal(index + 6), region.ordinal(index + 7) )
 
         index += 8
 
@@ -128,13 +128,13 @@ object Region:
       val interval: Interval = range
 
       addressable.materialize
-       ( region.asInstanceOf[addressable.Storage], interval.start.n0, interval.size )
+        ( region.asInstanceOf[addressable.Storage], interval.start.n0, interval.size )
 
     inline def cloneTo(range: Interval in region.type)(target: addressable.Target): Unit =
       val interval: Interval = range
 
       addressable.cloneStorage
-       (region.asInstanceOf[addressable.Storage], interval.start.n0, interval.size)(target)
+        (region.asInstanceOf[addressable.Storage], interval.start.n0, interval.size)(target)
 
     // Copies as much of `range` as fits in `space` — the minimum of the two sizes, returned —
     // so the operation is total by construction.
@@ -147,8 +147,8 @@ object Region:
       val count = source.size.min(dest.size)
 
       addressable.transfer
-       ( region.asInstanceOf[addressable.Storage], source.start.n0,
-         slate.asInstanceOf[addressable.Storage], dest.start.n0, count )
+        ( region.asInstanceOf[addressable.Storage], source.start.n0,
+          slate.asInstanceOf[addressable.Storage], dest.start.n0, count )
 
       count
 

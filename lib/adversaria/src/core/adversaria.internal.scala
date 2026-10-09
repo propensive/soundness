@@ -199,15 +199,15 @@ object internal:
 
             val set: Expr[(entity, value) => entity] =
               '{ (entity: entity, replacement: value) =>
-                   $ {
-                       val arguments = parameters.map: parameter =>
-                         if parameter.name == field.name then 'replacement.asTerm
-                         else 'entity.asTerm.select(symbol.fieldMember(parameter.name))
+                  $ {
+                      val arguments = parameters.map: parameter =>
+                        if parameter.name == field.name then 'replacement.asTerm
+                        else 'entity.asTerm.select(symbol.fieldMember(parameter.name))
 
-                       Select(New(TypeTree.of[entity]), symbol.primaryConstructor)
-                       . appliedToArgs(arguments)
-                       . asExprOf[entity]
-                   } }
+                      Select(New(TypeTree.of[entity]), symbol.primaryConstructor)
+                      . appliedToArgs(arguments)
+                      . asExprOf[entity]
+                    } }
 
             ConstantType(StringConstant(field.name)).asType.absolve match
               case '[type label; label] =>

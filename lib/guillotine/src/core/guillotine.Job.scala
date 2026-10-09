@@ -80,7 +80,7 @@ object Job:
 // while another awaits its exit and the caller may abort it, and `java.lang.Process` is
 // thread-safe.
 class Job[+exec <: Label, result] private[guillotine]
-   ( process: java.lang.Process, head: java.lang.Process )
+  ( process: java.lang.Process, head: java.lang.Process )
 extends Subprocess, Process.Ref, anticipation.Durable:
 
   private[guillotine] def this(process: java.lang.Process) = this(process, process)

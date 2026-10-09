@@ -175,7 +175,7 @@ object stagedInternal:
         for
           clazz <- classFor(constructor)
           shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-                      list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
+            list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
         yield TypeShape(clazz, shapes)
 
       case other =>
@@ -287,9 +287,9 @@ object stagedInternal:
 
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[value]): Expr[value] =
       ' {
-        Json.Parsable.parseField[value]
-          ( $parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef] )
-      }
+          Json.Parsable.parseField[value]
+            ( $parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef] )
+        }
 
     override def absent(tactic: Expr[Tactic[Json.Error]])(using Quotes, Type[value])
     :   Expr[value] =
@@ -309,9 +309,9 @@ object stagedInternal:
     instance match
       case _: Inlinable.ProductInlinable[?] | _: Inlinable.IterableInlinable[?] =>
         ' {
-          def parseNested(): fieldType = ${instance.parse(reader)}
-          parseNested()
-        }
+            def parseNested(): fieldType = ${instance.parse(reader)}
+            parseNested()
+          }
 
       case _ =>
         instance.parse(reader)
@@ -362,7 +362,7 @@ object stagedInternal:
       && !classSymbol.owner.isTerm
       && (tpe match { case AppliedType(_, _) => false case _ => true })
       && classSymbol.primaryConstructor.paramSymss
-         . filterNot(_.exists(_.isTypeParam)).length == 1
+        . filterNot(_.exists(_.isTypeParam)).length == 1
       && !hasRenames(classSymbol)
 
   // `@name` renames resolve through inline machinery the structural
@@ -395,28 +395,28 @@ object stagedInternal:
             val instance = element0.asInstanceOf[Inlinable { type Self = element }]
 
             ' {
-              def parseElement(): element = ${instance.parse(reader)}
-              val factory = infer[scala.collection.Factory[element, collection]]
-              val builder = factory.newBuilder
-              val foci = infer[Foci[Json.Focus]]
-              val focused = foci.active
-              val parser = $reader.rawParser.asInstanceOf[Parser]
-              val ptactic = $reader.rawTactic.asInstanceOf[Tactic[Parse.Error]]
-              parser.directOpenArray()(using ptactic)
-              var index = 0
-              var continue = parser.directElementFirst()(using ptactic)
+                def parseElement(): element = ${instance.parse(reader)}
+                val factory = infer[scala.collection.Factory[element, collection]]
+                val builder = factory.newBuilder
+                val foci = infer[Foci[Json.Focus]]
+                val focused = foci.active
+                val parser = $reader.rawParser.asInstanceOf[Parser]
+                val ptactic = $reader.rawTactic.asInstanceOf[Tactic[Parse.Error]]
+                parser.directOpenArray()(using ptactic)
+                var index = 0
+                var continue = parser.directElementFirst()(using ptactic)
 
-              while continue do
-                builder +=
-                  ( if focused then
-                      Json.Parsable.focusing(foci, index.toString.tt)(parseElement())
-                    else parseElement() )
+                while continue do
+                  builder +=
+                    ( if focused then
+                        Json.Parsable.focusing(foci, index.toString.tt)(parseElement())
+                      else parseElement() )
 
-                index += 1
-                continue = parser.directElementNext()(using ptactic)
+                  index += 1
+                  continue = parser.directElementNext()(using ptactic)
 
-              builder.result()
-            }
+                builder.result()
+              }
 
       case _ =>
         report.errorAndAbort
@@ -547,9 +547,9 @@ object stagedInternal:
 
               case None =>
                 ' {
-                  scala.compiletime.summonInline[fieldType is Json.Field]
-                  . absent()(using $tactic)
-                }
+                    scala.compiletime.summonInline[fieldType is Json.Field]
+                    . absent()(using $tactic)
+                  }
 
       val fieldCode: List[(Expr[Any], Expr[Any])] = List.range(0, arity).map: index =>
         (Expr(0), fieldAbsent(index))
@@ -610,8 +610,8 @@ object stagedInternal:
 
             val slowRhs: Term =
               ' {
-                Json.Parsable.focusing($foci, ${Expr(fieldNames(index))}.tt)(${hot()})
-              }.asTerm.changeOwner(slowDefs(index))
+                  Json.Parsable.focusing($foci, ${Expr(fieldNames(index))}.tt)(${hot()})
+                }.asTerm.changeOwner(slowDefs(index))
 
             val readRhs: Term =
               '{if $focused then ${call(slowDefs(index))} else ${hot()}}
@@ -619,8 +619,8 @@ object stagedInternal:
 
             nestedDef.map(_(1)).toList
               ::: List
-                    ( DefDef(slowDefs(index), _ => Some(slowRhs)),
-                      DefDef(readDefs(index), _ => Some(readRhs)) )
+                ( DefDef(slowDefs(index), _ => Some(slowRhs)),
+                  DefDef(readDefs(index), _ => Some(readRhs)) )
 
       def arms: List[CaseDef] = List.range(0, arity).map: index =>
         val rhs =
@@ -652,9 +652,9 @@ object stagedInternal:
         if index == arity then Expr(-1)
         else
           ' {
-            if ${Expr(fieldNames(index))} == $name then ${Expr(index)}
-            else ${namedChain(name, index + 1)}
-          }
+              if ${Expr(fieldNames(index))} == $name then ${Expr(index)}
+              else ${namedChain(name, index + 1)}
+            }
 
       // One key step: fresh symbols and arm trees per instantiation (trees
       // may not be shared between the unrolled first step and the loop).
@@ -676,9 +676,9 @@ object stagedInternal:
         // brace that became visible only after a refill.
         val opaque: Expr[Int] =
           ' {
-            val name = $reader.keyName()
-            if name == null then -2 else ${namedChain('{name.nn}, 0)}
-          }
+              val name = $reader.keyName()
+              if name == null then -2 else ${namedChain('{name.nn}, 0)}
+            }
 
         val resolveStep: Term =
           If
@@ -723,13 +723,13 @@ object stagedInternal:
               Assign
                 ( Ref(slots(index)),
                   ' {
-                    val declared =
-                      wisteria.internal.default[product, fieldType](${Expr(index)})
+                      val declared =
+                        wisteria.internal.default[product, fieldType](${Expr(index)})
 
-                    if !declared.absent then declared.asInstanceOf[fieldType]
-                    else Json.Parsable.focusing($foci, $keyText)
-                      ( ${fieldCode(index)(1).asExprOf[fieldType]} )
-                  }.asTerm )
+                      if !declared.absent then declared.asInstanceOf[fieldType]
+                      else Json.Parsable.focusing($foci, $keyText)
+                        ( ${fieldCode(index)(1).asExprOf[fieldType]} )
+                    }.asTerm )
 
             If('{!${Ref(seens(index)).asExprOf[Boolean]}}.asTerm, resolveAbsent, unit)
 
@@ -739,13 +739,13 @@ object stagedInternal:
       Block(slotDefs ::: seenDefs ::: loop ::: absents, construct).asExprOf[product]
 
     ' {
-      val foci = infer[Foci[Json.Focus]]
-      val focused = foci.active
-      val tactic = infer[Tactic[Json.Error]]
-      val parser = $reader.rawParser.asInstanceOf[Parser]
-      val ptactic = $reader.rawTactic.asInstanceOf[Tactic[Parse.Error]]
-      ${body('foci, 'focused, 'tactic, 'parser, 'ptactic)}
-    }
+        val foci = infer[Foci[Json.Focus]]
+        val focused = foci.active
+        val tactic = infer[Tactic[Json.Error]]
+        val parser = $reader.rawParser.asInstanceOf[Parser]
+        val ptactic = $reader.rawTactic.asInstanceOf[Tactic[Parse.Error]]
+        ${body('foci, 'focused, 'tactic, 'parser, 'ptactic)}
+      }
 
   // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Json.Parsable] =
@@ -768,13 +768,13 @@ object stagedInternal:
     val instance = root.asInstanceOf[Inlinable { type Self = value }]
 
     ' {
-      // Sealed per the codec-thunk pattern, like the staged instances: the
-      // generated body resolves its capabilities where it is spliced.
-      // [quote-wall] staged Parsable generated inside quote
-      caps.unsafe.unsafeAssumePure:
-        new Json.Parsable.Direct[value]:
-          protected def parseCarrier(reader0: AnyRef): value =
-            // A capability class cannot be quoted into a pure hole, so
-            // every use casts from the neutral carrier afresh.
-            ${instance.parse('{reader0.asInstanceOf[Json.Reader]})}
-    }
+        // Sealed per the codec-thunk pattern, like the staged instances: the
+        // generated body resolves its capabilities where it is spliced.
+        // [quote-wall] staged Parsable generated inside quote
+        caps.unsafe.unsafeAssumePure:
+          new Json.Parsable.Direct[value]:
+            protected def parseCarrier(reader0: AnyRef): value =
+              // A capability class cannot be quoted into a pure hole, so
+              // every use casts from the neutral carrier afresh.
+              ${instance.parse('{reader0.asInstanceOf[Json.Reader]})}
+      }

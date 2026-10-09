@@ -62,7 +62,7 @@ private[exegesis] class LspInbound(listener: Lsp.Listener) extends Lsp.Client:
   import Lsp.*
 
   def `textDocument/publishDiagnostics`
-     ( uri: Text, version: Optional[Int], diagnostics: List[Diagnostic] )
+    ( uri: Text, version: Optional[Int], diagnostics: List[Diagnostic] )
   :   Unit =
 
     listener.diagnostics(uri, version, diagnostics)
@@ -92,12 +92,12 @@ object LspSessional:
   // closure captures the observer, and a method of the session would have that same observer in
   // its own prefix — an overlap separation checking rejects.
   private[exegesis] def exchange[result]
-     ( listener: Lsp.Listener,
-       observer: Lsp.Observer,
-       consume sink: (Intake[Data] over Credit)^,
-       consume read: (Text => Unit) => Unit )
-     ( lambda: Lsp.Connection => result )
-     ( using Monitor, Probate, Diagnostics )
+    ( listener: Lsp.Listener,
+      observer: Lsp.Observer,
+      consume sink: (Intake[Data] over Credit)^,
+      consume read: (Text => Unit) => Unit )
+    ( lambda: Lsp.Connection => result )
+    ( using Monitor, Probate, Diagnostics )
   :   result =
 
     import strategies.throwUnsafely
@@ -154,9 +154,9 @@ object LspSessional:
       writer.cancel()
 
 class LspSessional
-   ( listener: Lsp.Listener = Lsp.Listener.Quiet,
-     observer: Lsp.Observer = Lsp.Observer.Silent )
-   ( using Monitor, Probate, Diagnostics, WorkingDirectory, Environment )
+  ( listener: Lsp.Listener = Lsp.Listener.Quiet,
+    observer: Lsp.Observer = Lsp.Observer.Silent )
+  ( using Monitor, Probate, Diagnostics, WorkingDirectory, Environment )
 extends Sessional:
   type Self = Lsp.Server
   type Result = Lsp.Connection^
@@ -171,8 +171,8 @@ extends Sessional:
 
         // The sink is owned, and finished, by the exchange's writer task.
         LspSessional.exchange
-         ( listener, observer, sink, LspTransport.pump(streamable.stream(input), observer)(_) )
-         ( lambda(using _) )
+          ( listener, observer, sink, LspTransport.pump(streamable.stream(input), observer)(_) )
+          ( lambda(using _) )
 
       case Lsp.Server.Process(command) =>
         // Launched with a silent logger and a throwing tactic: `Sessional#session` fixes the
@@ -187,7 +187,7 @@ extends Sessional:
         // was lent to.
         try
           LspSessional.exchange
-           ( listener, observer, job.intake, LspTransport.pump(job.stdout(), observer)(_) )
-           ( lambda(using _) )
+            ( listener, observer, job.intake, LspTransport.pump(job.stdout(), observer)(_) )
+            ( lambda(using _) )
 
         finally job.abort()

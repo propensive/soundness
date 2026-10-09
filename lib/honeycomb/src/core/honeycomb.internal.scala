@@ -366,7 +366,7 @@ object internal:
       case Varargs(insertions) => insertions
 
     var holes: scala.collection.immutable.Map[Ordinal, Html.Hole] =
-        scala.collection.immutable.Map()
+      scala.collection.immutable.Map()
 
     def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
 

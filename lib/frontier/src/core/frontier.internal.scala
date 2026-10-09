@@ -86,10 +86,10 @@ object internal:
           try List(Symbol.requiredMethod(path)) catch case _: Throwable => Nil
 
       . concat:
-          // The `soundness` catch-all is a top-level definition, so it may only
-          // be reachable as a member of the package's synthetic file object.
-          try Symbol.requiredPackage("soundness").methodMember("explainMissingContext")
-          catch case _: Throwable => Nil
+        // The `soundness` catch-all is a top-level definition, so it may only
+        // be reachable as a member of the package's synthetic file object.
+        try Symbol.requiredPackage("soundness").methodMember("explainMissingContext")
+        catch case _: Throwable => Nil
 
     sealed trait Result
 

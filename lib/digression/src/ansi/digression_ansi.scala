@@ -107,9 +107,9 @@ package teletypeables:
 
     val packages: Map[Text, Color in Srgb] =
 
-        dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil)
-        . indexed.map { (prefix, index) => prefix -> accent(index.n0) }
-        . to[Map]
+      dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil)
+      . indexed.map { (prefix, index) => prefix -> accent(index.n0) }
+      . to[Map]
 
     val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
     val init = e"${palette.message}($fullClass): ${stack.message}"
@@ -124,14 +124,14 @@ package teletypeables:
 
     val rows: List[Row] =
 
-        stack.frames.fold((List.empty[Row], t"", t"")):
-          case ((acc, lastClass, lastFile), frame) =>
-            val sameClass = frame.displayClass == lastClass
-            val sameFile = frame.file == lastFile
-            val subRows = frame.inlined.map(Row(frame, true, false, _)).reverse
-            (subRows + (Row(frame, sameClass, sameFile) :: acc), frame.displayClass, frame.file)
+      stack.frames.fold((List.empty[Row], t"", t"")):
+        case ((acc, lastClass, lastFile), frame) =>
+          val sameClass = frame.displayClass == lastClass
+          val sameFile = frame.file == lastFile
+          val subRows = frame.inlined.map(Row(frame, true, false, _)).reverse
+          (subRows + (Row(frame, sameClass, sameFile) :: acc), frame.displayClass, frame.file)
 
-        . _1.reverse
+      . _1.reverse
 
     // A frame the compiler generated—a bridge, a forwarder, an initializer—is rarely what the
     // reader is looking for, so it stays legible but recedes.

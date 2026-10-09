@@ -261,10 +261,10 @@ object Hyphenation:
       count
 
     . or:
-        // Zero the active prefix of the scores buffer so the running maxima
-        // start from 0 each call. `Arrays.fill` is a JIT intrinsic.
-        java.util.Arrays.fill(scores, 0, paddedLength + 1, 0.toByte)
-        trieWalkInto(padded, paddedLength, length, hyphenation, leftMin, rightMin, scores, breaks)
+      // Zero the active prefix of the scores buffer so the running maxima
+      // start from 0 each call. `Arrays.fill` is a JIT intrinsic.
+      java.util.Arrays.fill(scores, 0, paddedLength + 1, 0.toByte)
+      trieWalkInto(padded, paddedLength, length, hyphenation, leftMin, rightMin, scores, breaks)
 
   private inline def mergePattern
     ( scores: scala.Array[Byte]^, base: Int, pattern: Array[Byte]^{} )

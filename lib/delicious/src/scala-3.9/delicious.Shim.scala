@@ -41,7 +41,7 @@ import dotty.tools.io.VirtualFile
 object Shim:
   // 3.9 takes the `TastyInfo` by value.
   inline def compilationUnitInfo
-     ( file: VirtualFile, tastyInfo: dtd.core.TastyInfo )
+    ( file: VirtualFile, tastyInfo: dtd.core.TastyInfo )
   :   CompilationUnitInfo =
 
     CompilationUnitInfo(file, Some(tastyInfo))

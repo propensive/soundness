@@ -140,28 +140,28 @@ private[facsimile] object Filter:
     // not flow through the opaque `List` combinators (boxing), so the interior stays stdlib as
     // far as `.to(List)`.
 
-      chain.stdlib.takeWhile(!_(0).terminal).flatMap: (id, parms) =>
-        val predicted = parms(t"Predictor").let(_.long).or(1L) > 1
+    chain.stdlib.takeWhile(!_(0).terminal).flatMap: (id, parms) =>
+      val predicted = parms(t"Predictor").let(_.long).or(1L) > 1
 
-        id match
-          case Id.Flate =>
-            if predicted
-            then scala.collection.immutable.List(Step.Inflate, Step.Gather(predict(_, parms)))
-            else scala.collection.immutable.List(Step.Inflate)
+      id match
+        case Id.Flate =>
+          if predicted
+          then scala.collection.immutable.List(Step.Inflate, Step.Gather(predict(_, parms)))
+          else scala.collection.immutable.List(Step.Inflate)
 
-          case Id.Lzw =>
-            if predicted
-            then scala.collection.immutable.List
-              ( Step.Unlzw(earlyChange(parms)), Step.Gather(predict(_, parms)) )
-            else scala.collection.immutable.List(Step.Unlzw(earlyChange(parms)))
+        case Id.Lzw =>
+          if predicted
+          then scala.collection.immutable.List
+            ( Step.Unlzw(earlyChange(parms)), Step.Gather(predict(_, parms)) )
+          else scala.collection.immutable.List(Step.Unlzw(earlyChange(parms)))
 
-          case Id.Crypt =>
-            scala.collection.immutable.List()
+        case Id.Crypt =>
+          scala.collection.immutable.List()
 
-          case other =>
-            scala.collection.immutable.List(Step.Gather(stage(_, other, parms)))
+        case other =>
+          scala.collection.immutable.List(Step.Gather(stage(_, other, parms)))
 
-      . to(List)
+    . to(List)
 
   // Applies a resolved filter chain eagerly, stopping at the first terminal codec.
   def decode(data: Data, chain: List[(Id, Map[Text, Cos])])(using Tactic[Pdf.Error]): Data =

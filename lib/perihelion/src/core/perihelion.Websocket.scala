@@ -490,30 +490,30 @@ class Websocket[message, state]
           initial0
 
       . protect:
-          // Resolved locally: the class-level `Masking` given would re-capture
-          // the instance under construction.
-          given Masking = Masking.Server
+        // Resolved locally: the class-level `Masking` given would re-capture
+        // the instance under construction.
+        given Masking = Masking.Server
 
-          def loop(messages: Chain[Message], state: state): state =
-            messages.flow(channel0.stop() yet state):
-              Log.fine(Websocket.Event.Received(next.bytes.length))
+        def loop(messages: Chain[Message], state: state): state =
+          messages.flow(channel0.stop() yet state):
+            Log.fine(Websocket.Event.Received(next.bytes.length))
 
-              handleRef.asInstanceOf[state => message => Control[state]]
-                (state)(decodeRef.asInstanceOf[Message => message](next)) match
-                case Continue(state2) =>
-                  loop(more, state2.or(state))
+            handleRef.asInstanceOf[state => message => Control[state]]
+              (state)(decodeRef.asInstanceOf[Message => message](next)) match
+              case Continue(state2) =>
+                loop(more, state2.or(state))
 
-                case Terminate =>
-                  channel0.stop()
-                  state
+              case Terminate =>
+                channel0.stop()
+                state
 
-                case Reply(bytes, state2) =>
-                  channel0.enqueue(bytes)
-                  loop(more, state2.or(state))
+              case Reply(bytes, state2) =>
+                channel0.enqueue(bytes)
+                loop(more, state2.or(state))
 
-                case Conclude(bytes, state2) =>
-                  channel0.enqueue(bytes)
-                  channel0.stop()
-                  state2.or(state)
+              case Conclude(bytes, state2) =>
+                channel0.enqueue(bytes)
+                channel0.stop()
+                state2.or(state)
 
-          loop(Reader(bodyRef.asInstanceOf[Spring[Data]^], channel0).messages, initial0)
+        loop(Reader(bodyRef.asInstanceOf[Spring[Data]^], channel0).messages, initial0)

@@ -165,7 +165,7 @@ object bintelInternal:
         for
           clazz <- classFor(constructor)
           shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-                      list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
+            list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
         yield TypeShape(clazz, shapes)
 
       case other =>
@@ -385,7 +385,7 @@ object bintelInternal:
               case '[innerType] =>
                 resolve[innerType](cache) match
                   case Some(instance)
-                      if !instance.isInstanceOf[BintelInlinable.IterableInlinable[?]] =>
+                    if !instance.isInstanceOf[BintelInlinable.IterableInlinable[?]] =>
                     Plan.OptionalNested(instance, inner)
 
                   case _ =>
@@ -411,7 +411,7 @@ object bintelInternal:
                   case '[element] =>
                     resolve[element](cache) match
                       case Some(instance)
-                          if !instance.isInstanceOf[BintelInlinable.IterableInlinable[?]] =>
+                        if !instance.isInstanceOf[BintelInlinable.IterableInlinable[?]] =>
                         Plan.Gather(Elem.Nested(instance, elementType), elementType)
 
                       case _ =>
@@ -431,7 +431,7 @@ object bintelInternal:
           case '[field] =>
             resolve[field](cache) match
               case Some(instance)
-                  if !instance.isInstanceOf[BintelInlinable.IterableInlinable[?]] =>
+                if !instance.isInstanceOf[BintelInlinable.IterableInlinable[?]] =>
                 Plan.Nested(instance)
 
               case _ =>
@@ -470,7 +470,7 @@ object bintelInternal:
       && !classSymbol.owner.isTerm
       && (tpe match { case AppliedType(_, _) => false case _ => true })
       && classSymbol.primaryConstructor.paramSymss
-         . filterNot(_.exists(_.isTypeParam)).length == 1
+        . filterNot(_.exists(_.isTypeParam)).length == 1
       && !hasRenames(classSymbol)
 
   // `@name` renames change the wire *keyword*, which positional index
@@ -577,43 +577,43 @@ object bintelInternal:
       def leafRead(kind: Int): Expr[Any] = kind match
         case KInt =>
           ' {
-            val atom = Text($parser.directScalar()(using $btactic))
+              val atom = Text($parser.directScalar()(using $btactic))
 
-            try atom.s.toInt catch case _: NumberFormatException =>
-              raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Int")))(using $tactic)
-              0
-          }
+              try atom.s.toInt catch case _: NumberFormatException =>
+                raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Int")))(using $tactic)
+                0
+            }
 
         case KLong =>
           ' {
-            val atom = Text($parser.directScalar()(using $btactic))
+              val atom = Text($parser.directScalar()(using $btactic))
 
-            try atom.s.toLong catch case _: NumberFormatException =>
-              raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Long")))(using $tactic)
-              0L
-          }
+              try atom.s.toLong catch case _: NumberFormatException =>
+                raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Long")))(using $tactic)
+                0L
+            }
 
         case KBoolean =>
           ' {
-            val atom = Text($parser.directScalar()(using $btactic))
+              val atom = Text($parser.directScalar()(using $btactic))
 
-            atom.s match
-              case "true"  => true
-              case "false" => false
+              atom.s match
+                case "true"  => true
+                case "false" => false
 
-              case _ =>
-                raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Boolean")))(using $tactic)
-                false
-          }
+                case _ =>
+                  raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Boolean")))(using $tactic)
+                  false
+            }
 
         case KDouble =>
           ' {
-            val atom = Text($parser.directScalar()(using $btactic))
+              val atom = Text($parser.directScalar()(using $btactic))
 
-            try atom.s.toDouble catch case _: NumberFormatException =>
-              raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Double")))(using $tactic)
-              0.0
-          }
+              try atom.s.toDouble catch case _: NumberFormatException =>
+                raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Double")))(using $tactic)
+                0.0
+            }
 
         case KText   => '{Text($parser.directScalar()(using $btactic))}
         case KString => '{$parser.directScalar()(using $btactic)}
@@ -670,7 +670,7 @@ object bintelInternal:
                   case Some(underlying) => underlying.asType.absolve match
                     case '[stdlib] =>
                       '{ infer[scala.collection.Factory[element, stdlib]].newBuilder
-                         . asInstanceOf[scm.Builder[element, fieldType]] }
+                        . asInstanceOf[scm.Builder[element, fieldType]] }
 
                   case None =>
                     '{infer[scala.collection.Factory[element, fieldType]].newBuilder}
@@ -695,8 +695,8 @@ object bintelInternal:
 
         def focusedOver[result: Type](raw: Expr[result]): Expr[result] =
           ' {
-            if $focused then Tel.Parsable.focusingUnlocated($foci, $keyword)($raw) else $raw
-          }
+              if $focused then Tel.Parsable.focusingUnlocated($foci, $keyword)($raw) else $raw
+            }
 
         val rhs: Term = plans(index) match
           case Plan.Leaf(kind) =>
@@ -836,18 +836,18 @@ object bintelInternal:
 
               case Plan.Gather(_, _) =>
                 '{ ${Ref(builders(index)).asExpr}
-                     . asInstanceOf[scm.Builder[?, fieldType]].result() }
+                    . asInstanceOf[scm.Builder[?, fieldType]].result() }
 
             val resolveAbsent: Term =
               Assign
                 ( Ref(slots(index)),
                   ' {
-                    val declared =
-                      wisteria.internal.default[product, fieldType](${Expr(index)})
+                      val declared =
+                        wisteria.internal.default[product, fieldType](${Expr(index)})
 
-                    if !declared.absent then declared.asInstanceOf[fieldType]
-                    else Tel.Parsable.focusingUnlocated($foci, $keyword)($absentExpr)
-                  }.asTerm )
+                      if !declared.absent then declared.asInstanceOf[fieldType]
+                      else Tel.Parsable.focusingUnlocated($foci, $keyword)($absentExpr)
+                    }.asTerm )
 
             val whenSeen: Term = plans(index) match
               case Plan.Gather(_, _) =>
@@ -868,13 +868,13 @@ object bintelInternal:
       . asExprOf[product]
 
     ' {
-      val tactic = infer[Tactic[Tel.Error]]
-      val foci = infer[Foci[Tel.Focus]]
-      val focused = foci.active
-      val parser = $reader.rawParser.asInstanceOf[BintelParser]
-      val btactic = $reader.rawTactic.asInstanceOf[Tactic[Bintel.Error]]
-      ${body('tactic, 'foci, 'focused, 'parser, 'btactic)}
-    }
+        val tactic = infer[Tactic[Tel.Error]]
+        val foci = infer[Foci[Tel.Focus]]
+        val focused = foci.active
+        val parser = $reader.rawParser.asInstanceOf[BintelParser]
+        val btactic = $reader.rawTactic.asInstanceOf[Tactic[Bintel.Error]]
+        ${body('tactic, 'foci, 'focused, 'parser, 'btactic)}
+      }
 
   // ── The sum generator ──────────────────────────────────────────────────
   // A top-level sum's schema root is a struct with one `SelectRef` member:
@@ -928,11 +928,11 @@ object bintelInternal:
           . asInstanceOf[BintelInlinable { type Self = variantType }]
 
           ' {
-            if $kidx == ${Expr(index)} then
-              def parseVariant(): variantType = ${instance.parse(reader)}
-              parseVariant()
-            else ${dispatch(index + 1, kidx, btactic)}
-          }
+              if $kidx == ${Expr(index)} then
+                def parseVariant(): variantType = ${instance.parse(reader)}
+                parseVariant()
+              else ${dispatch(index + 1, kidx, btactic)}
+            }
 
     def discard(index: Int, kidx: Expr[Int], btactic: Expr[Tactic[Bintel.Error]]): Expr[Unit] =
       if index == arity then
@@ -946,32 +946,32 @@ object bintelInternal:
           . asInstanceOf[BintelInlinable { type Self = variantType }]
 
           ' {
-            if $kidx == ${Expr(index)} then
-              def parseExtra(): variantType = ${instance.parse(reader)}
-              parseExtra()
-              ()
-            else ${discard(index + 1, kidx, btactic)}
-          }
+              if $kidx == ${Expr(index)} then
+                def parseExtra(): variantType = ${instance.parse(reader)}
+                parseExtra()
+                ()
+              else ${discard(index + 1, kidx, btactic)}
+            }
 
     ' {
-      val tactic = infer[Tactic[Tel.Error]]
-      val parser = $reader.rawParser.asInstanceOf[BintelParser]
-      val btactic = $reader.rawTactic.asInstanceOf[Tactic[Bintel.Error]]
-      val total = parser.directCount()(using btactic)
+        val tactic = infer[Tactic[Tel.Error]]
+        val parser = $reader.rawParser.asInstanceOf[BintelParser]
+        val btactic = $reader.rawTactic.asInstanceOf[Tactic[Bintel.Error]]
+        val total = parser.directCount()(using btactic)
 
-      if total == 0 then abort(Tel.Error(Tel.Error.Reason.Absent))(using tactic)
-      else
-        val kidx = parser.directCount()(using btactic)
-        val result: sum = ${dispatch(0, 'kidx, 'btactic)}
-        var i = 1
+        if total == 0 then abort(Tel.Error(Tel.Error.Reason.Absent))(using tactic)
+        else
+          val kidx = parser.directCount()(using btactic)
+          val result: sum = ${dispatch(0, 'kidx, 'btactic)}
+          var i = 1
 
-        while i < total do
-          val extra = parser.directCount()(using btactic)
-          ${discard(0, 'extra, 'btactic)}
-          i += 1
+          while i < total do
+            val extra = parser.directCount()(using btactic)
+            ${discard(0, 'extra, 'btactic)}
+            i += 1
 
-        result
-    }
+          result
+      }
 
   // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Bintel.Parsable] =
@@ -992,13 +992,13 @@ object bintelInternal:
         . asInstanceOf[BintelInlinable { type Self = value }]
 
     ' {
-      // Sealed per the codec-thunk pattern: the generated body resolves its
-      // capabilities where it is spliced.
-      // [quote-wall] codec seal inside quoted generated parser
-      caps.unsafe.unsafeAssumePure:
-        new Bintel.Parsable.Direct[value]:
-          protected def parseCarrier(reader0: AnyRef): value =
-            // A capability class cannot be quoted into a pure hole, so
-            // every use casts from the neutral carrier afresh.
-            ${instance.parse('{reader0.asInstanceOf[BintelReader]})}
-    }
+        // Sealed per the codec-thunk pattern: the generated body resolves its
+        // capabilities where it is spliced.
+        // [quote-wall] codec seal inside quoted generated parser
+        caps.unsafe.unsafeAssumePure:
+          new Bintel.Parsable.Direct[value]:
+            protected def parseCarrier(reader0: AnyRef): value =
+              // A capability class cannot be quoted into a pure hole, so
+              // every use casts from the neutral carrier afresh.
+              ${instance.parse('{reader0.asInstanceOf[BintelReader]})}
+      }

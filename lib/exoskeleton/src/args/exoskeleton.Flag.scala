@@ -205,7 +205,7 @@ extends Topical:
     val operandName: Optional[Text] =
       safely[Hazard]:
         summonInline
-         [ (tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any} ]
+          [ (tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any} ]
 
         . operandName
 
@@ -233,15 +233,15 @@ extends Topical:
         else
           attempt[Hazard]:
             summonInline
-             [ (tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any} ]
+              [ (tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any} ]
 
             . interpret(located.or(Nil))
 
           . match
-              case Attempt.Success(value) => value.or(throw InvalidFlagError(this, bland))
+            case Attempt.Success(value) => value.or(throw InvalidFlagError(this, bland))
 
-              case Attempt.Failure(error) =>
-                throw InvalidFlagError(this, Error(error).message.text)
+            case Attempt.Failure(error) =>
+              throw InvalidFlagError(this, Error(error).message.text)
 
       case _ =>
         if located.absent then
@@ -253,18 +253,18 @@ extends Topical:
 
           attempt[Hazard]:
             summonInline
-             [ (tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any} ]
+              [ (tactic: Tactic[Hazard]^) ?=> (Topic is Interpretable)^{tactic, caps.any} ]
 
             . interpret(located.or(Nil))
 
           . match
-              case Attempt.Success(value) =>
-                if value.absent then cli.fault(this, bland)
-                Requisite[Topic](this, value)
+            case Attempt.Success(value) =>
+              if value.absent then cli.fault(this, bland)
+              Requisite[Topic](this, value)
 
-              case Attempt.Failure(error) =>
-                cli.fault(this, Error(error).message.text)
-                Requisite[Topic](this, Unset)
+            case Attempt.Failure(error) =>
+              cli.fault(this, Error(error).message.text)
+              Requisite[Topic](this, Unset)
 
 
   transparent inline def select(options: Iterable[Topic])

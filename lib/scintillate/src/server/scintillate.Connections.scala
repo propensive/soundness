@@ -70,13 +70,13 @@ private[scintillate] object Connections:
 
     val headers: List[Http.Header] =
 
-        exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.toList).flatMap: pair =>
-          pair.absolve match
-            case (key, values) => values.map: value =>
-              Http.Header(key, value.tt)
+      exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.toList).flatMap: pair =>
+        pair.absolve match
+          case (key, values) => values.map: value =>
+            Http.Header(key, value.tt)
 
-        . toList
-        . to(List)
+      . toList
+      . to(List)
 
     val version: Http.Version = Http.Version.parse(exchange.getProtocol.nn.tt)
 

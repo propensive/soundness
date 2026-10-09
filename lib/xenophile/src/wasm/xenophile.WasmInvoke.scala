@@ -295,33 +295,33 @@ object WasmInvoke extends Materializer:
           // A def, not a closure: the alternative is shared by two absence paths below, and a
           // tuple-resulted lambda here trips capture checking's freshness in the macro context.
           def opaque(): (TypeRepr, Expr[Any] -> Expr[Any]) = witType match
-              case Foreign.Type.Named(name) if isHandle(scala) =>
-                handleDecode(name, scala)
+            case Foreign.Type.Named(name) if isHandle(scala) =>
+              handleDecode(name, scala)
 
-              // A variant (or enum) result requested as a `Wasm.Case of topic`: the facade case
-              // object arrives, and its lower-kebab-case name is recovered at runtime.
-              // Payload-carrying cases lose their payload.
-              case Foreign.Type.Named(name) if isCase(scala) =>
-                val facade = facadeOf(name)
+            // A variant (or enum) result requested as a `Wasm.Case of topic`: the facade case
+            // object arrives, and its lower-kebab-case name is recovered at runtime.
+            // Payload-carrying cases lose their payload.
+            case Foreign.Type.Named(name) if isCase(scala) =>
+              val facade = facadeOf(name)
 
-                val decode: Expr[Any] -> Expr[Any] = call => scala.asType.absolve match
-                  case '[scala] =>
-                    val witCase = '{new Wasm.Case(Wasm.Case.caseName($call))}.asTerm
+              val decode: Expr[Any] -> Expr[Any] = call => scala.asType.absolve match
+                case '[scala] =>
+                  val witCase = '{new Wasm.Case(Wasm.Case.caseName($call))}.asTerm
 
-                    TypeApply(Select.unique(witCase, "asInstanceOf"), List(TypeTree.of[scala]))
-                    . asExprOf[Any]
+                  TypeApply(Select.unique(witCase, "asInstanceOf"), List(TypeTree.of[scala]))
+                  . asExprOf[Any]
 
-                (facade.typeRef, decode)
+              (facade.typeRef, decode)
 
-              // A genuinely void function (`block: func()`): nothing to check or decode.
-              case Foreign.Type.Named(name) if name.s == "unit" && scala =:= TypeRepr.of[Unit] =>
-                (TypeRepr.of[Unit], call => '{val _ = $call})
+            // A genuinely void function (`block: func()`): nothing to check or decode.
+            case Foreign.Type.Named(name) if name.s == "unit" && scala =:= TypeRepr.of[Unit] =>
+              (TypeRepr.of[Unit], call => '{val _ = $call})
 
-              case _ =>
-                if scala =:= TypeRepr.of[Unit]
-                then halt(m"xenophile: `invoke[Unit]` requires a WIT `result<…>` or void function")
-                else scala.asType.absolve match
-                  case '[scala] => deriveResult[scala]
+            case _ =>
+              if scala =:= TypeRepr.of[Unit]
+              then halt(m"xenophile: `invoke[Unit]` requires a WIT `result<…>` or void function")
+              else scala.asType.absolve match
+                case '[scala] => deriveResult[scala]
 
           optionPayload(witType) match
             case Unset => opaque()

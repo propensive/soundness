@@ -278,11 +278,11 @@ object Apoplexy:
               case _         => Left('{Api.apiKey($typed, $name.tt)})
 
           case OpenApi.SecurityScheme.Kind.Http | OpenApi.SecurityScheme.Kind.OAuth2
-              | OpenApi.SecurityScheme.Kind.OpenIdConnect if auth =>
+            | OpenApi.SecurityScheme.Kind.OpenIdConnect if auth =>
             Left('{Api.httpAuth($credential.asInstanceOf[Credential { type Result <: Auth }])})
 
           case OpenApi.SecurityScheme.Kind.Http | OpenApi.SecurityScheme.Kind.OAuth2
-              | OpenApi.SecurityScheme.Kind.OpenIdConnect if token =>
+            | OpenApi.SecurityScheme.Kind.OpenIdConnect if token =>
             val typed = '{$credential.asInstanceOf[Credential { type Result = Authorization }]}
 
             val strings: Expr[scala.collection.immutable.List[String]] =

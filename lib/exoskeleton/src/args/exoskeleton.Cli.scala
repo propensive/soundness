@@ -94,7 +94,7 @@ object Cli:
 // `Exclusive` because an invocation has a single owner; nothing may retain it past the exit.
 trait Cli
 extends Console, caps.ExclusiveCapability, WorkingDirectory.Provider, Environment.Provider,
-    Stdio.Provider:
+  Stdio.Provider:
   def arguments: List[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory

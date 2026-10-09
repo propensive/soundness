@@ -141,12 +141,12 @@ object BintelInlinable:
 
     def parse(reader: Expr[BintelReader])(using Quotes, Type[Int]): Expr[Int] =
       ' {
-        val atom = $reader.scalar()
+          val atom = $reader.scalar()
 
-        try atom.s.toInt catch case _: NumberFormatException =>
-          raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Int")))(using infer[Tactic[Tel.Error]])
-          0
-      }
+          try atom.s.toInt catch case _: NumberFormatException =>
+            raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Int")))(using infer[Tactic[Tel.Error]])
+            0
+        }
 
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Int]): Expr[Int] =
       '{Tel.Parsable.missing[Int](0)(using $tactic)}
@@ -156,12 +156,12 @@ object BintelInlinable:
 
     def parse(reader: Expr[BintelReader])(using Quotes, Type[Long]): Expr[Long] =
       ' {
-        val atom = $reader.scalar()
+          val atom = $reader.scalar()
 
-        try atom.s.toLong catch case _: NumberFormatException =>
-          raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Long")))(using infer[Tactic[Tel.Error]])
-          0L
-      }
+          try atom.s.toLong catch case _: NumberFormatException =>
+            raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Long")))(using infer[Tactic[Tel.Error]])
+            0L
+        }
 
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Long]): Expr[Long] =
       '{Tel.Parsable.missing[Long](0L)(using $tactic)}
@@ -171,18 +171,18 @@ object BintelInlinable:
 
     def parse(reader: Expr[BintelReader])(using Quotes, Type[Boolean]): Expr[Boolean] =
       ' {
-        val atom = $reader.scalar()
+          val atom = $reader.scalar()
 
-        atom.s match
-          case "true"  => true
-          case "false" => false
+          atom.s match
+            case "true"  => true
+            case "false" => false
 
-          case _ =>
-            raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Boolean")))
-              ( using infer[Tactic[Tel.Error]] )
+            case _ =>
+              raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Boolean")))
+                ( using infer[Tactic[Tel.Error]] )
 
-            false
-      }
+              false
+        }
 
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Boolean])
     :   Expr[Boolean] =
@@ -194,14 +194,14 @@ object BintelInlinable:
 
     def parse(reader: Expr[BintelReader])(using Quotes, Type[Double]): Expr[Double] =
       ' {
-        val atom = $reader.scalar()
+          val atom = $reader.scalar()
 
-        try atom.s.toDouble catch case _: NumberFormatException =>
-          raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Double")))
-            ( using infer[Tactic[Tel.Error]] )
+          try atom.s.toDouble catch case _: NumberFormatException =>
+            raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Double")))
+              ( using infer[Tactic[Tel.Error]] )
 
-          0.0
-      }
+            0.0
+        }
 
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Double])
     :   Expr[Double] =

@@ -171,10 +171,10 @@ object TestsIndex:
   private def literal(prefix: String, source: String): Option[String] =
     val body: Option[String] =
       if source.startsWith(prefix + "\"\"\"") && source.endsWith("\"\"\"")
-         && source.length >= prefix.length + 6
+        && source.length >= prefix.length + 6
       then Some(source.substring(prefix.length + 3, source.length - 3).nn)
       else if source.startsWith(prefix + "\"") && source.endsWith("\"")
-              && source.length >= prefix.length + 2
+        && source.length >= prefix.length + 2
       then Some(source.substring(prefix.length + 1, source.length - 1).nn)
       else None
 
@@ -271,7 +271,7 @@ object TestsIndex:
           val symbol = alias.typeSymbol
 
           if symbol.exists && symbol.name.toString == "Impromptu"
-             && symbol.fullName.toString.startsWith("probably.")
+            && symbol.fullName.toString.startsWith("probably.")
           then (None, true)
           else alias.dealias match
             case ConstantType(Constant(name: String)) => (Some(name), false)
@@ -362,7 +362,7 @@ object TestsIndex:
       pairs.collectFirst:
         case (parameter, argument)
           if named(parameter.info, "Name")
-             && parameter.info.argInfos.headOption.exists(named(_, "Probing")) =>
+            && parameter.info.argInfos.headOption.exists(named(_, "Probing")) =>
 
           Identifier.findFirstMatchIn(source(written(argument))).map(_.group(1).nn).getOrElse("")
 
@@ -372,7 +372,7 @@ object TestsIndex:
       pairs.collectFirst:
         case (parameter, argument)
           if parameter.info.isRepeatedParam
-             && parameter.info.argInfos.headOption.exists(named(_, "Tag")) =>
+            && parameter.info.argInfos.headOption.exists(named(_, "Tag")) =>
 
           Identifier.findAllMatchIn(source(written(argument))).map(_.group(1).nn).mkString(",")
 
@@ -493,7 +493,7 @@ object TestsIndex:
           paired.collectFirst:
             case (parameter, argument)
               if defn.isContextFunctionType(parameter.info)
-                 && parameter.info.dealias.argInfos.headOption.exists(isTestable) =>
+                && parameter.info.dealias.argInfos.headOption.exists(isTestable) =>
 
               argument
 

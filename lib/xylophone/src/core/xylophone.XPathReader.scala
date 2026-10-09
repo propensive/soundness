@@ -53,8 +53,8 @@ private[xylophone] object XPathReader:
 
   private enum Token derives CanEqual:
     case Slash, DoubleSlash, Pipe, Plus, Minus, Equals, Unequals, Less, LessOrEqual, Greater,
-         GreaterOrEqual, Star, OrKeyword, AndKeyword, DivKeyword, ModKeyword,
-         At, OpenParen, CloseParen, OpenBracket, CloseBracket, Comma, Dot, DotDot
+      GreaterOrEqual, Star, OrKeyword, AndKeyword, DivKeyword, ModKeyword,
+      At, OpenParen, CloseParen, OpenBracket, CloseBracket, Comma, Dot, DotDot
 
     case NameToken(prefix: Optional[Text], local: Text)
     case WildcardTest
@@ -76,9 +76,9 @@ private[xylophone] object XPathReader:
   // `AxisToken`, which likewise cannot end an operand.)
   private def operand(token: Token): Boolean = token match
     case Token.NameToken(_, _) | Token.WildcardTest | Token.PrefixWildcardTest(_)
-       | Token.LiteralToken(_) | Token.NumberToken(_) | Token.VariableToken(_, _)
-       | Token.CloseParen | Token.CloseBracket | Token.Dot | Token.DotDot
-       | Token.HoleToken(_) =>
+      | Token.LiteralToken(_) | Token.NumberToken(_) | Token.VariableToken(_, _)
+      | Token.CloseParen | Token.CloseBracket | Token.Dot | Token.DotDot
+      | Token.HoleToken(_) =>
       true
 
     case _ =>
@@ -143,8 +143,8 @@ private[xylophone] object XPathReader:
     def skipSpace(at: Int): Int =
       var index = at
       while index < length
-            && (string.charAt(index) == ' ' || string.charAt(index) == '\t'
-                || string.charAt(index) == '\r' || string.charAt(index) == '\n')
+        && (string.charAt(index) == ' ' || string.charAt(index) == '\t'
+            || string.charAt(index) == '\r' || string.charAt(index) == '\n')
       do index += 1
 
       index
@@ -167,7 +167,7 @@ private[xylophone] object XPathReader:
         var local = first
 
         if end < length && string.charAt(end) == ':' && end + 1 < length
-           && string.charAt(end + 1) != ':'
+          && string.charAt(end + 1) != ':'
         then
           if string.charAt(end + 1) == '*' then
             push(Token.PrefixWildcardTest(first.tt), start)
@@ -194,8 +194,8 @@ private[xylophone] object XPathReader:
           offset = ahead + 2
         else if ahead < length && string.charAt(ahead) == '(' then
           if prefix.absent
-             && (local == "node" || local == "text" || local == "comment"
-                 || local == "processing-instruction")
+            && (local == "node" || local == "text" || local == "comment"
+                || local == "processing-instruction")
           then push(Token.NodeTypeToken(local.tt), start)
           else push(Token.FunctionToken(prefix, local.tt), start)
 
@@ -356,8 +356,8 @@ private[xylophone] object XPathReader:
       var left = parseAdditive()
 
       while more
-            && (current == Token.Less || current == Token.LessOrEqual
-                || current == Token.Greater || current == Token.GreaterOrEqual)
+        && (current == Token.Less || current == Token.LessOrEqual
+            || current == Token.Greater || current == Token.GreaterOrEqual)
       do
         val operator = current
         advance()
@@ -386,8 +386,8 @@ private[xylophone] object XPathReader:
       var left = parseUnary()
 
       while more
-            && (current == Token.Star || current == Token.DivKeyword
-                || current == Token.ModKeyword)
+        && (current == Token.Star || current == Token.DivKeyword
+            || current == Token.ModKeyword)
       do
         val operator = current
         advance()
@@ -418,8 +418,8 @@ private[xylophone] object XPathReader:
 
     def startsStep(token: Token): Boolean = token match
       case Token.Dot | Token.DotDot | Token.At | Token.WildcardTest
-         | Token.NameToken(_, _) | Token.PrefixWildcardTest(_) | Token.NodeTypeToken(_)
-         | Token.AxisToken(_) =>
+        | Token.NameToken(_, _) | Token.PrefixWildcardTest(_) | Token.NodeTypeToken(_)
+        | Token.AxisToken(_) =>
         true
 
       case _ =>

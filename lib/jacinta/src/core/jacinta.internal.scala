@@ -525,20 +525,20 @@ object internal:
         val indexed = elements.readable.zipWithIndex
 
         val pieces = indexed.to(List).map: (elem, idx) =>
-            elem.asMatchable match
-              case Unset =>
-                if spreads.has(holeIndex) then
-                  if idx != n - 1 then halt:
-                    m"a `*`-spread is only allowed as the last element of an array"
+          elem.asMatchable match
+            case Unset =>
+              if spreads.has(holeIndex) then
+                if idx != n - 1 then halt:
+                  m"a `*`-spread is only allowed as the last element of an array"
 
-                  encodeArraySpread(consumeHole())
-                else
-                  val v = encodeValue(consumeHole())
-                  '{Iterable($v)}
-
-              case other =>
-                val v = serialize(other)
+                encodeArraySpread(consumeHole())
+              else
+                val v = encodeValue(consumeHole())
                 '{Iterable($v)}
+
+            case other =>
+              val v = serialize(other)
+              '{Iterable($v)}
 
         ' {
             // `Expr.ofList` takes a stdlib list.
@@ -1199,9 +1199,9 @@ object internal:
 
               case InstanceK =>
                 ' {
-                  $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
-                  . parse($reader)
-                }
+                    $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
+                    . parse($reader)
+                  }
 
             '{Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)($raw)}.asTerm
 
@@ -1294,19 +1294,19 @@ object internal:
             val onAbsent: Expr[fieldType] = local.field.kind match
               case InstanceK =>
                 ' {
-                  $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
-                  . absent()(using $tactic)
-                }
+                    $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
+                    . absent()(using $tactic)
+                  }
 
               case _ => '{Json.Parsable.missing[fieldType]()(using $tactic)}
 
             val resolve: Term =
               ' {
-                val declared = $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+                  val declared = $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
-                if !declared.absent then declared.asInstanceOf[fieldType]
-                else Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)($onAbsent)
-              }.asTerm
+                  if !declared.absent then declared.asInstanceOf[fieldType]
+                  else Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)($onAbsent)
+                }.asTerm
 
             If
               ( '{!${Ref(local.seen).asExprOf[Boolean]}}.asTerm,
@@ -1350,36 +1350,36 @@ object internal:
     val fallbackExprs = fields.map(declaredDefault)
 
     ' {
-      // Sealed per the codec-thunk pattern, like the derived instances: the
-      // generated parser captures the resolution-scoped tactic and foci.
-      // The instance and default arrays are single lazy vals, so recursive
-      // self-references stay deferred until the first parse.
-      // [quote-wall] generated parser in quote captures tactic and foci
-      caps.unsafe.unsafeAssumePure[value is Json.Parsable]:
-        val foci: Foci[Json.Focus] = $fociExpr
-        val tactic: Tactic[Json.Error] = $tacticExpr
+        // Sealed per the codec-thunk pattern, like the derived instances: the
+        // generated parser captures the resolution-scoped tactic and foci.
+        // The instance and default arrays are single lazy vals, so recursive
+        // self-references stay deferred until the first parse.
+        // [quote-wall] generated parser in quote captures tactic and foci
+        caps.unsafe.unsafeAssumePure[value is Json.Parsable]:
+          val foci: Foci[Json.Focus] = $fociExpr
+          val tactic: Tactic[Json.Error] = $tacticExpr
 
-        val keys: Array[String]^{} =
-          Json.Parsable.wireKeys(Array[String](${Varargs[String](nameExprs.stdlib)}*), $renames)
+          val keys: Array[String]^{} =
+            Json.Parsable.wireKeys(Array[String](${Varargs[String](nameExprs.stdlib)}*), $renames)
 
-        val table: Json.KeyTable = Json.KeyTable(keys)
-        lazy val instances: Array[Json.Field | Null]^{} =
-          // `Varargs` takes a stdlib `Seq`.
-          Array[Json.Field | Null](${Varargs[Json.Field | Null](instanceExprs.stdlib)}*)
+          val table: Json.KeyTable = Json.KeyTable(keys)
+          lazy val instances: Array[Json.Field | Null]^{} =
+            // `Varargs` takes a stdlib `Seq`.
+            Array[Json.Field | Null](${Varargs[Json.Field | Null](instanceExprs.stdlib)}*)
 
-        lazy val fallbacks: Array[Any]^{} = Array[Any](${Varargs[Any](fallbackExprs.stdlib)}*)
+          lazy val fallbacks: Array[Any]^{} = Array[Any](${Varargs[Any](fallbackExprs.stdlib)}*)
 
-        new Json.Parsable:
-          type Self = value
-          def shape(): Morphology = Morphology.Any
+          new Json.Parsable:
+            type Self = value
+            def shape(): Morphology = Morphology.Any
 
-          def parse(reader: Json.Reader^): value =
-            $ {
-              body
-                ( '{reader}, '{foci}, '{tactic}, '{keys}, '{table}, '{instances},
-                  '{fallbacks} )
-            }
-    }
+            def parse(reader: Json.Reader^): value =
+              $ {
+                  body
+                    ( '{reader}, '{foci}, '{tactic}, '{keys}, '{table}, '{instances},
+                      '{fallbacks} )
+                }
+      }
 
   // Generates a monomorphic `Json.Parsable` for a sealed sum with a
   // field-discriminated wire shape: the tag is located with `discriminant`'s
@@ -1454,46 +1454,46 @@ object internal:
 
       if index == arity then
         ' {
-          provide[Tactic[Variant.Error]]:
-            abort(Variant.Error[value]($wire))
-        }
+            provide[Tactic[Variant.Error]]:
+              abort(Variant.Error[value]($wire))
+          }
       else variantTypes(index).asType match
         case '[type variantType <: value; variantType] =>
           ' {
-            if $wireVariants.readUnchecked(${Expr(index)}) == $wireString then
-              $variants.readUnchecked(${Expr(index)}).asInstanceOf[variantType is Json.Field].parse($reader)
-            else ${dispatch(index + 1, reader, wire, wireString, variants, wireVariants)}
-          }
+              if $wireVariants.readUnchecked(${Expr(index)}) == $wireString then
+                $variants.readUnchecked(${Expr(index)}).asInstanceOf[variantType is Json.Field].parse($reader)
+              else ${dispatch(index + 1, reader, wire, wireString, variants, wireVariants)}
+            }
 
     ' {
-      // Sealed per the codec-thunk pattern, like the derived instances: the
-      // variant instances may capture resolution-scoped tactics. The variant
-      // array is a single lazy val, so recursive references stay deferred.
-      // [quote-wall] generated sum parser in quote captures tactics
-      caps.unsafe.unsafeAssumePure[value is Json.Parsable]:
-        val discriminable: value is Discriminable in Json = $discriminableExpr
-        val tagField: Text = Json.Parsable.discriminantField(discriminable)
+        // Sealed per the codec-thunk pattern, like the derived instances: the
+        // variant instances may capture resolution-scoped tactics. The variant
+        // array is a single lazy val, so recursive references stay deferred.
+        // [quote-wall] generated sum parser in quote captures tactics
+        caps.unsafe.unsafeAssumePure[value is Json.Parsable]:
+          val discriminable: value is Discriminable in Json = $discriminableExpr
+          val tagField: Text = Json.Parsable.discriminantField(discriminable)
 
-        val wireVariants: Array[String]^{} =
-          Json.Parsable.wireKeys(Array[String](${Varargs[String](nameExprs)}*), $renames)
+          val wireVariants: Array[String]^{} =
+            Json.Parsable.wireKeys(Array[String](${Varargs[String](nameExprs)}*), $renames)
 
-        lazy val variants: Array[Json.Field]^{} =
-          // `Varargs` takes a stdlib `Seq`.
-          Array[Json.Field](${Varargs[Json.Field](variantExprs.stdlib)}*)
+          lazy val variants: Array[Json.Field]^{} =
+            // `Varargs` takes a stdlib `Seq`.
+            Array[Json.Field](${Varargs[Json.Field](variantExprs.stdlib)}*)
 
-        new Json.Parsable:
-          type Self = value
-          def shape(): Morphology = Morphology.Any
+          new Json.Parsable:
+            type Self = value
+            def shape(): Morphology = Morphology.Any
 
-          def parse(reader: Json.Reader^): value =
-            provide[Tactic[Json.Error]]:
-              val wire: Text = reader.discriminant(tagField).or:
-                abort(Json.Error(Json.Error.Reason.Absent))
+            def parse(reader: Json.Reader^): value =
+              provide[Tactic[Json.Error]]:
+                val wire: Text = reader.discriminant(tagField).or:
+                  abort(Json.Error(Json.Error.Reason.Absent))
 
-              val wireString: String = wire.s
+                val wireString: String = wire.s
 
-              $ {
-                dispatch
-                  ( 0, '{reader}, '{wire}, '{wireString}, '{variants}, '{wireVariants} )
-              }
-    }
+                $ {
+                    dispatch
+                      ( 0, '{reader}, '{wire}, '{wireString}, '{variants}, '{wireVariants} )
+                  }
+      }

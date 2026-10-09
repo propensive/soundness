@@ -435,7 +435,7 @@ object WebIdl:
 
     private def member(tokens: SList[String])
     :   (Optional[Member], Optional[(Text, List[Foreign.Type])], SList[String]) raises
-          Error =
+      Error =
 
       val (_, afterAttrs) = attributes(tokens)
 
@@ -449,7 +449,7 @@ object WebIdl:
 
       def attribute(tokens: SList[String], readonly: Boolean)
       :   (Optional[Member], Optional[(Text, List[Foreign.Type])], SList[String]) raises
-            Error =
+        Error =
 
         val (typed, afterType) = typeOf(tokens)
 
@@ -465,7 +465,7 @@ object WebIdl:
 
       def intrinsic(keyword: Text, tokens: SList[String])
       :   (Optional[Member], Optional[(Text, List[Foreign.Type])], SList[String]) raises
-            Error =
+        Error =
 
         tokens match
           case "<" :: rest =>
@@ -476,7 +476,7 @@ object WebIdl:
 
       def operation(tokens: SList[String], special: Optional[Text])
       :   (Optional[Member], Optional[(Text, List[Foreign.Type])], SList[String]) raises
-            Error =
+        Error =
 
         val (typed, afterType) = typeOf(tokens)
 
@@ -546,14 +546,14 @@ object WebIdl:
 
     private def memberList(tokens: SList[String])
     :   (List[Member], List[(Text, List[Foreign.Type])], SList[String]) raises
-          Error =
+      Error =
 
       def recur
         ( tokens:     SList[String],
           members:    SList[Member],
           intrinsics: SList[(Text, List[Foreign.Type])] )
       :   (List[Member], List[(Text, List[Foreign.Type])], SList[String]) raises
-            Error =
+        Error =
 
         tokens match
           case "}" :: ";" :: rest =>

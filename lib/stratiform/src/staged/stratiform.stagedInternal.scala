@@ -183,7 +183,7 @@ object stagedInternal:
         for
           clazz <- classFor(constructor)
           shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-                      list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
+            list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
         yield TypeShape(clazz, shapes)
 
       case other =>
@@ -297,9 +297,9 @@ object stagedInternal:
     :   Expr[value] =
 
       ' {
-        Tel.Parsable.parseField[value]
-          ( $parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef], $indent )
-      }
+          Tel.Parsable.parseField[value]
+            ( $parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef], $indent )
+        }
 
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[value])
     :   Expr[value] =
@@ -400,7 +400,7 @@ object stagedInternal:
         && classSymbol.flags.is(Flags.Sealed)
         && children.nonEmpty
         && children.forall: child =>
-             child.isClassDef && child.flags.is(Flags.Case) && !hasRenames(child)
+          child.isClassDef && child.flags.is(Flags.Case) && !hasRenames(child)
 
       if supported then Some(children.map { child => (child.name, child.typeRef) }) else None
 
@@ -414,7 +414,7 @@ object stagedInternal:
       && !classSymbol.owner.isTerm
       && (tpe match { case AppliedType(_, _) => false case _ => true })
       && classSymbol.primaryConstructor.paramSymss
-         . filterNot(_.exists(_.isTypeParam)).length == 1
+        . filterNot(_.exists(_.isTypeParam)).length == 1
       && !hasRenames(classSymbol)
 
   // A wire keyword's packed form (at most eight printable-ASCII bytes,
@@ -472,12 +472,12 @@ object stagedInternal:
             val instance = element0.asInstanceOf[Inlinable { type Self = element }]
 
             ' {
-              def parseElement(): element = ${instance.parse(reader, indent)}
-              val factory = infer[scala.collection.Factory[element, stdlib]]
-              val builder = factory.newBuilder
-              builder += parseElement()
-              builder.result().asInstanceOf[collection]
-            }
+                def parseElement(): element = ${instance.parse(reader, indent)}
+                val factory = infer[scala.collection.Factory[element, stdlib]]
+                val builder = factory.newBuilder
+                builder += parseElement()
+                builder.result().asInstanceOf[collection]
+              }
 
       case _ =>
         report.errorAndAbort
@@ -520,11 +520,11 @@ object stagedInternal:
   :   Expr[product] =
 
     ' {
-      val foci = infer[Foci[Tel.Focus]]
-      val focused = foci.active
-      val tactic = infer[Tactic[Tel.Error]]
-      ${fieldLoop[product](reader, indent, 'foci, 'focused, 'tactic, cache)}
-    }
+        val foci = infer[Foci[Tel.Focus]]
+        val focused = foci.active
+        val tactic = infer[Tactic[Tel.Error]]
+        ${fieldLoop[product](reader, indent, 'foci, 'focused, 'tactic, cache)}
+      }
 
   // How one field reads, established at expansion: a builtin leaf, a
   // gathered collection (with its element's generator), any other resolved
@@ -640,16 +640,16 @@ object stagedInternal:
                           case Some(underlying) => underlying.asType match
                             case '[stdlib] =>
                               ' {
-                                infer[scala.collection.Factory[element, stdlib]].newBuilder
-                                . asInstanceOf[scm.Builder[element, fieldType]]
-                              }
+                                  infer[scala.collection.Factory[element, stdlib]].newBuilder
+                                  . asInstanceOf[scm.Builder[element, fieldType]]
+                                }
 
                             case _ => report.errorAndAbort("stratiform: unreachable")
 
                           case None =>
                             ' {
-                              infer[scala.collection.Factory[element, fieldType]].newBuilder
-                            }
+                                infer[scala.collection.Factory[element, fieldType]].newBuilder
+                              }
 
                       val builderDef = ValDef(builderSymbol, Some(builderRhs.asTerm))
 
@@ -759,9 +759,9 @@ object stagedInternal:
               firstWins
                 ( index,
                   ' {
-                    Tel.Parsable.focusing($foci, $reader, ${keyText(index)})
-                      ( ${instance.parse(reader, indent)} )
-                  }.asTerm )
+                      Tel.Parsable.focusing($foci, $reader, ${keyText(index)})
+                        ( ${instance.parse(reader, indent)} )
+                    }.asTerm )
 
             case Plan.Nested(_) =>
               val (symbol, _) = nesteds(index).get
@@ -784,9 +784,9 @@ object stagedInternal:
                       val call = Apply(Ref(gather.element), Nil).asExprOf[element]
 
                       ' {
-                        $builderRef.addOne
-                          ( Tel.Parsable.focusing($foci, $reader, ${keyText(index)})($call) )
-                      }.asTerm
+                          $builderRef.addOne
+                            ( Tel.Parsable.focusing($foci, $reader, ${keyText(index)})($call) )
+                        }.asTerm
 
                 case _ =>
                   report.errorAndAbort("stratiform: unreachable gather shape")
@@ -804,16 +804,16 @@ object stagedInternal:
 
               val append: Term =
                 ' {
-                  $bufferRef.asInstanceOf[scm.ListBuffer[Any]].addOne
-                    ( Tel.Parsable.focusing($foci, $reader, ${keyText(index)}):
-                        Tel.Parsable.parseElement($instanceRef, $reader, $indent) )
-                }.asTerm
+                    $bufferRef.asInstanceOf[scm.ListBuffer[Any]].addOne
+                      ( Tel.Parsable.focusing($foci, $reader, ${keyText(index)}):
+                          Tel.Parsable.parseElement($instanceRef, $reader, $indent) )
+                  }.asTerm
 
               val read: Term =
                 ' {
-                  Tel.Parsable.focusing($foci, $reader, ${keyText(index)})
-                    ( $instanceRef.parse($reader, $indent) )
-                }.asTerm
+                    Tel.Parsable.focusing($foci, $reader, ${keyText(index)})
+                      ( $instanceRef.parse($reader, $indent) )
+                  }.asTerm
 
               If
                 ( Ref(seam.repeats),
@@ -889,11 +889,11 @@ object stagedInternal:
             Assign
               ( Ref(slots(index)),
                 ' {
-                  val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
+                    val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
 
-                  if !declared.absent then declared.asInstanceOf[fieldType]
-                  else Tel.Parsable.focusingUnlocated($foci, ${keyText(index)})($onAbsent)
-                }.asTerm )
+                    if !declared.absent then declared.asInstanceOf[fieldType]
+                    else Tel.Parsable.focusingUnlocated($foci, ${keyText(index)})($onAbsent)
+                  }.asTerm )
 
           def whenUnseen(onAbsent: Expr[fieldType]): Term =
             If
@@ -933,13 +933,13 @@ object stagedInternal:
                 Assign
                   ( Ref(slots(index)),
                     ' {
-                      Tel.Parsable.focusingUnlocated($foci, ${keyText(index)}):
-                        Tel.Parsable.gathered[fieldType]
-                          ( $instanceRef,
-                            $bufferRef match
-                              case null   => proscenium.Nil
-                              case buffer => buffer.toList.to(proscenium.List) )
-                    }.asTerm )
+                        Tel.Parsable.focusingUnlocated($foci, ${keyText(index)}):
+                          Tel.Parsable.gathered[fieldType]
+                            ( $instanceRef,
+                              $bufferRef match
+                                case null   => proscenium.Nil
+                                case buffer => buffer.toList.to(proscenium.List) )
+                      }.asTerm )
 
               If
                 ( Ref(seam.repeats),
@@ -1005,9 +1005,9 @@ object stagedInternal:
 
       if index == arity then
         ' {
-          provide[Tactic[wisteria.Variant.Error]]:
-            abort(wisteria.Variant.Error[sum]($reader.keywordText))
-        }
+            provide[Tactic[wisteria.Variant.Error]]:
+              abort(wisteria.Variant.Error[sum]($reader.keywordText))
+          }
       else variants(index)(1).asType match
         case '[type variantType <: sum; variantType] =>
           val instance = resolve[variantType](cache).getOrElse:
@@ -1021,38 +1021,38 @@ object stagedInternal:
           val condition: Expr[Boolean] = packedTelKeyword(name) match
             case Some(packed) =>
               ' {
-                $word == ${Expr(packed)}
-                || ($word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)})
-              }
+                  $word == ${Expr(packed)}
+                  || ($word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)})
+                }
 
             case None =>
               '{$word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)}}
 
           ' {
-            if $condition then
-              def parseVariant(): variantType = ${instance.parse(reader, indent1)}
-              parseVariant()
-            else ${dispatch(index + 1, word, indent1)}
-          }
+              if $condition then
+                def parseVariant(): variantType = ${instance.parse(reader, indent1)}
+                parseVariant()
+              else ${dispatch(index + 1, word, indent1)}
+            }
 
     ' {
-      val tactic = infer[Tactic[Tel.Error]]
-      $reader.finishLine()
-      val indent1 = $indent + 1
-      val word = $reader.keywordWord(indent1)
+        val tactic = infer[Tactic[Tel.Error]]
+        $reader.finishLine()
+        val indent1 = $indent + 1
+        val word = $reader.keywordWord(indent1)
 
-      if word == TelReader.KeywordEnd
-      then abort(Tel.Error(Tel.Error.Reason.Absent))(using tactic)
-      else
-        val result: sum = ${dispatch(0, 'word, 'indent1)}
-        var next = $reader.keywordWord(indent1)
+        if word == TelReader.KeywordEnd
+        then abort(Tel.Error(Tel.Error.Reason.Absent))(using tactic)
+        else
+          val result: sum = ${dispatch(0, 'word, 'indent1)}
+          var next = $reader.keywordWord(indent1)
 
-        while next != TelReader.KeywordEnd do
-          $reader.skipEntry(indent1)
-          next = $reader.keywordWord(indent1)
+          while next != TelReader.KeywordEnd do
+            $reader.skipEntry(indent1)
+            next = $reader.keywordWord(indent1)
 
-        result
-    }
+          result
+      }
 
   // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Tel.Parsable] =
@@ -1067,18 +1067,18 @@ object stagedInternal:
           "renames); use `Tel.Parsable.staged` or `derived`" )
 
     ' {
-      // Sealed per the codec-thunk pattern, like the staged instances: the
-      // generated body resolves its capabilities where it is spliced.
-      // [quote-wall] codec seal inside quoted staged parser
-      caps.unsafe.unsafeAssumePure:
-        new Tel.Parsable.Direct[value]:
-          protected def parseEntry(reader0: AnyRef, indent: Int): value =
-            // A capability class cannot be quoted into a pure hole, so
-            // every use casts from the neutral carrier afresh.
-            reader0.asInstanceOf[TelReader].finishLine()
-            val indent1 = indent + 1
-            ${productFields[value]('{reader0.asInstanceOf[TelReader]}, 'indent1, cache)}
+        // Sealed per the codec-thunk pattern, like the staged instances: the
+        // generated body resolves its capabilities where it is spliced.
+        // [quote-wall] codec seal inside quoted staged parser
+        caps.unsafe.unsafeAssumePure:
+          new Tel.Parsable.Direct[value]:
+            protected def parseEntry(reader0: AnyRef, indent: Int): value =
+              // A capability class cannot be quoted into a pure hole, so
+              // every use casts from the neutral carrier afresh.
+              reader0.asInstanceOf[TelReader].finishLine()
+              val indent1 = indent + 1
+              ${productFields[value]('{reader0.asInstanceOf[TelReader]}, 'indent1, cache)}
 
-          protected def parseWhole(reader0: AnyRef): value =
-            ${productFields[value]('{reader0.asInstanceOf[TelReader]}, '{0}, cache)}
-    }
+            protected def parseWhole(reader0: AnyRef): value =
+              ${productFields[value]('{reader0.asInstanceOf[TelReader]}, '{0}, cache)}
+      }

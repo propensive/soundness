@@ -700,7 +700,7 @@ object internal:
       case Varargs(insertions) => insertions
 
     var holes: scala.collection.immutable.Map[Ordinal, Xml.Hole] =
-        scala.collection.immutable.Map()
+      scala.collection.immutable.Map()
 
     def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
 
@@ -1833,23 +1833,23 @@ object internal:
             def step(value: Expr[Text]): Expr[Unit] =
               val read: Expr[fieldType] = kinds(index) match
                 case IntK => '{Xml.intParsable.attribute($value)(using $tactic, $foci)}
-                                 . asExprOf[fieldType]
+                  . asExprOf[fieldType]
                 case LongK => '{Xml.longParsable.attribute($value)(using $tactic, $foci)}
-                                 . asExprOf[fieldType]
+                  . asExprOf[fieldType]
                 case DoubleK => '{Xml.doubleParsable.attribute($value)(using $tactic, $foci)}
-                                 . asExprOf[fieldType]
+                  . asExprOf[fieldType]
                 case FloatK => '{Xml.floatParsable.attribute($value)(using $tactic, $foci)}
-                                 . asExprOf[fieldType]
+                  . asExprOf[fieldType]
                 case BooleanK => '{Xml.booleanParsable.attribute($value)(using $tactic, $foci)}
-                                 . asExprOf[fieldType]
+                  . asExprOf[fieldType]
                 case TextK    => value.asExprOf[fieldType]
                 case StringK  => '{$value.s}.asExprOf[fieldType]
 
                 case InstanceK =>
                   ' {
-                    $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
-                    . attribute($value)(using $tactic, $foci)
-                  }
+                      $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
+                      . attribute($value)(using $tactic, $foci)
+                    }
 
               val focused: Term =
                 '{Xml.Parsable.focusing($foci, $keyText)($read)}.asTerm
@@ -1864,10 +1864,10 @@ object internal:
 
             Some:
               ' {
-                Attributes.fetch($attributes)($keyText) match
-                  case value: Text => ${step('{value})}
-                  case _           => ()
-              }.asTerm
+                  Attributes.fetch($attributes)($keyText) match
+                    case value: Text => ${step('{value})}
+                    case _           => ()
+                }.asTerm
 
       // One dispatch arm per child-matching field: read the value (with
       // focus bookkeeping), honoring the derived engine's semantics — a
@@ -1917,16 +1917,16 @@ object internal:
               case TextK =>
                 firstWins:
                   ' {
-                    Xml.Parsable.focusing($foci, $keyText):
-                      $reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"Text")); t"" }
-                  }.asTerm
+                      Xml.Parsable.focusing($foci, $keyText):
+                        $reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"Text")); t"" }
+                    }.asTerm
 
               case StringK =>
                 firstWins:
                   ' {
-                    Xml.Parsable.focusing($foci, $keyText):
-                      ($reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"String")); t"" }).s
-                  }.asTerm
+                      Xml.Parsable.focusing($foci, $keyText):
+                        ($reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"String")); t"" }).s
+                    }.asTerm
 
               case InstanceK =>
                 val bufferRef = Ref(buffers(index).get)
@@ -1944,18 +1944,18 @@ object internal:
 
                 val append: Term =
                   ' {
-                    $bufferExpr.asInstanceOf[scala.collection.mutable.ListBuffer[Any]].addOne
-                      ( Xml.Parsable.focusing($foci, $keyText):
-                          Xml.Parsable.parseElement
-                            ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing], $reader ) )
-                  }.asTerm
+                      $bufferExpr.asInstanceOf[scala.collection.mutable.ListBuffer[Any]].addOne
+                        ( Xml.Parsable.focusing($foci, $keyText):
+                            Xml.Parsable.parseElement
+                              ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing], $reader ) )
+                    }.asTerm
 
                 val read: Term =
                   ' {
-                    Xml.Parsable.focusing($foci, $keyText):
-                      $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
-                      . parse($reader)
-                  }.asTerm
+                      Xml.Parsable.focusing($foci, $keyText):
+                        $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
+                        . parse($reader)
+                    }.asTerm
 
                 If
                   ( '{$repeatables.readUnchecked(${Expr(index)})}.asTerm,
@@ -2025,34 +2025,34 @@ object internal:
             val onAbsent: Expr[fieldType] = kinds(index) match
               case InstanceK =>
                 ' {
-                  $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
-                  . absent()(using $tactic, $foci)
-                }
+                    $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
+                    . absent()(using $tactic, $foci)
+                  }
 
               case IntK => '{Xml.Parsable.missing[Int](0)(using $tactic)}
-                               . asExprOf[fieldType]
+                . asExprOf[fieldType]
               case LongK => '{Xml.Parsable.missing[Long](0L)(using $tactic)}
-                               . asExprOf[fieldType]
+                . asExprOf[fieldType]
               case DoubleK => '{Xml.Parsable.missing[Double](0.0)(using $tactic)}
-                               . asExprOf[fieldType]
+                . asExprOf[fieldType]
               case FloatK => '{Xml.Parsable.missing[Float](0.0f)(using $tactic)}
-                               . asExprOf[fieldType]
+                . asExprOf[fieldType]
               case BooleanK => '{Xml.Parsable.missing[Boolean](false)(using $tactic)}
-                               . asExprOf[fieldType]
+                . asExprOf[fieldType]
               case TextK => '{Xml.Parsable.missing[Text](t"")(using $tactic)}
-                               . asExprOf[fieldType]
+                . asExprOf[fieldType]
               case StringK => '{Xml.Parsable.missing[String]("")(using $tactic)}
-                               . asExprOf[fieldType]
+                . asExprOf[fieldType]
 
             val resolveAbsent: Term =
               Assign
                 ( Ref(slots(index)),
                   ' {
-                    val declared = $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+                      val declared = $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
-                    if !declared.absent then declared.asInstanceOf[fieldType]
-                    else Xml.Parsable.focusing($foci, $keyText)($onAbsent)
-                  }.asTerm )
+                      if !declared.absent then declared.asInstanceOf[fieldType]
+                      else Xml.Parsable.focusing($foci, $keyText)($onAbsent)
+                    }.asTerm )
 
             val whenUnseen: Term =
               If('{!${Ref(seens(index)).asExprOf[Boolean]}}.asTerm, resolveAbsent, unit)
@@ -2067,13 +2067,13 @@ object internal:
                   Assign
                     ( Ref(slots(index)),
                       ' {
-                        Xml.Parsable.focusing($foci, $keyText):
-                          Xml.Parsable.gathered[fieldType]
-                            ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing],
-                              $bufferExpr match
-                                case null   => proscenium.Nil
-                                case buffer => buffer.toList.to(proscenium.List) )
-                      }.asTerm )
+                          Xml.Parsable.focusing($foci, $keyText):
+                            Xml.Parsable.gathered[fieldType]
+                              ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing],
+                                $bufferExpr match
+                                  case null   => proscenium.Nil
+                                  case buffer => buffer.toList.to(proscenium.List) )
+                        }.asTerm )
 
                 If('{$repeatables.readUnchecked(${Expr(index)})}.asTerm, gatherFinish, whenUnseen)
 
@@ -2108,42 +2108,42 @@ object internal:
             val onAbsent: Expr[fieldType] = kinds(index) match
               case InstanceK =>
                 ' {
-                  $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
-                  . absent()(using $tactic, $foci)
-                }
+                    $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
+                    . absent()(using $tactic, $foci)
+                  }
 
               case IntK => '{Xml.Parsable.missing[Int](0)(using $tactic)}
-                               . asExprOf[fieldType]
+                . asExprOf[fieldType]
               case LongK => '{Xml.Parsable.missing[Long](0L)(using $tactic)}
-                               . asExprOf[fieldType]
+                . asExprOf[fieldType]
               case DoubleK => '{Xml.Parsable.missing[Double](0.0)(using $tactic)}
-                               . asExprOf[fieldType]
+                . asExprOf[fieldType]
               case FloatK => '{Xml.Parsable.missing[Float](0.0f)(using $tactic)}
-                               . asExprOf[fieldType]
+                . asExprOf[fieldType]
               case BooleanK => '{Xml.Parsable.missing[Boolean](false)(using $tactic)}
-                               . asExprOf[fieldType]
+                . asExprOf[fieldType]
               case TextK => '{Xml.Parsable.missing[Text](t"")(using $tactic)}
-                               . asExprOf[fieldType]
+                . asExprOf[fieldType]
               case StringK => '{Xml.Parsable.missing[String]("")(using $tactic)}
-                               . asExprOf[fieldType]
+                . asExprOf[fieldType]
 
             val declared: Expr[fieldType] =
               ' {
-                val declared = $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+                  val declared = $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
-                if !declared.absent then declared.asInstanceOf[fieldType]
-                else Xml.Parsable.focusing($foci, $keyText)($onAbsent)
-              }
+                  if !declared.absent then declared.asInstanceOf[fieldType]
+                  else Xml.Parsable.focusing($foci, $keyText)($onAbsent)
+                }
 
             val argument: Expr[fieldType] = kinds(index) match
               case InstanceK =>
                 ' {
-                  if $repeatables.readUnchecked(${Expr(index)}) then
-                    Xml.Parsable.focusing($foci, $keyText):
-                      Xml.Parsable.gathered[fieldType]
-                        ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing], proscenium.Nil )
-                  else $declared
-                }
+                    if $repeatables.readUnchecked(${Expr(index)}) then
+                      Xml.Parsable.focusing($foci, $keyText):
+                        Xml.Parsable.gathered[fieldType]
+                          ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing], proscenium.Nil )
+                    else $declared
+                  }
 
               case _ =>
                 declared
@@ -2165,42 +2165,42 @@ object internal:
         case None          => '{Unset}
 
     ' {
-      // Sealed per the codec-thunk pattern, like the derived instances: the
-      // field parsers the instance array resolves may capture resolution-
-      // scoped capabilities (the AST bridge does). The instance and default
-      // arrays are single lazy vals, so recursive self-references stay
-      // deferred until the first parse.
-      // [quote-wall] generated product parser inside quote
-      caps.unsafe.unsafeAssumePure:
-        val keys: Array[String]^{} =
-          Xml.Parsable.wireNames(Array[String](${Varargs(nameExprs)}*), $renames)
+        // Sealed per the codec-thunk pattern, like the derived instances: the
+        // field parsers the instance array resolves may capture resolution-
+        // scoped capabilities (the AST bridge does). The instance and default
+        // arrays are single lazy vals, so recursive self-references stay
+        // deferred until the first parse.
+        // [quote-wall] generated product parser inside quote
+        caps.unsafe.unsafeAssumePure:
+          val keys: Array[String]^{} =
+            Xml.Parsable.wireNames(Array[String](${Varargs(nameExprs)}*), $renames)
 
-        val attrs: Array[Boolean]^{} = Array[Boolean](${Varargs(attrExprs)}*)
+          val attrs: Array[Boolean]^{} = Array[Boolean](${Varargs(attrExprs)}*)
 
-        lazy val instances: Array[Xml.Field | Null]^{} = Array(${Varargs(instanceExprs)}*)
+          lazy val instances: Array[Xml.Field | Null]^{} = Array(${Varargs(instanceExprs)}*)
 
-        lazy val repeatables: Array[Boolean]^{} =
-          instances.remap { instance => instance != null && Xml.Parsable.repeats(instance) }
+          lazy val repeatables: Array[Boolean]^{} =
+            instances.remap { instance => instance != null && Xml.Parsable.repeats(instance) }
 
-        lazy val fallbacks: Array[Any]^{} = Array[Any](${Varargs(fallbackExprs)}*)
-        val fallback: Optional[() => value] = $defaultExpr
+          lazy val fallbacks: Array[Any]^{} = Array[Any](${Varargs(fallbackExprs)}*)
+          val fallback: Optional[() => value] = $defaultExpr
 
-        new Xml.Parsable:
-          type Self = value
+          new Xml.Parsable:
+            type Self = value
 
-          def parse(reader: Xml.Reader^): value =
-            $ {
-              body
-                ( '{reader}, '{keys}, '{attrs}, '{instances}, '{repeatables}, '{fallbacks} )
-            }
+            def parse(reader: Xml.Reader^): value =
+              $ {
+                  body
+                    ( '{reader}, '{keys}, '{attrs}, '{instances}, '{repeatables}, '{fallbacks} )
+                }
 
-          override def absent()(using tactic: Tactic[Xml.Error], foci: Foci[Xml.Focus]): value =
-            raise(Xml.Error(Xml.Error.Reason.Missing))
+            override def absent()(using tactic: Tactic[Xml.Error], foci: Foci[Xml.Focus]): value =
+              raise(Xml.Error(Xml.Error.Reason.Missing))
 
-            fallback.lay
-              ( $ {
-                  absentBody('{tactic}, '{foci})
-                    ( '{keys}, '{instances}, '{repeatables}, '{fallbacks} )
-                } )
-              { instantiate => instantiate() }
-    }
+              fallback.lay
+                ( $ {
+                      absentBody('{tactic}, '{foci})
+                        ( '{keys}, '{instances}, '{repeatables}, '{fallbacks} )
+                    } )
+                { instantiate => instantiate() }
+      }

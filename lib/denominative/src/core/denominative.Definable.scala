@@ -58,8 +58,8 @@ object Definable:
   // update copies the whole array — dysasymptotic, like the frozen array's `Appendable`,
   // `Prependable` and `Truncable` instances — so it is gated on the same acknowledgement.
   given frozenArray: [element: scala.reflect.ClassTag]
-        => ( complexity: Dysasymptotic.LinearSize )
-        => (Array[element]^{}) is Definable:
+    => ( complexity: Dysasymptotic.LinearSize )
+    => (Array[element]^{}) is Definable:
     type Self = Array[element]^{}
     type Operand = Ordinal
     type Result = element

@@ -43,18 +43,18 @@ import quantitative.*
 object Feed:
   def list: List[Feed] =
 
-      jss.AudioSystem.getMixerInfo.nn.iterator.toList.flatMap: info0 =>
-        val info = info0.nn
-        val mixer = jss.AudioSystem.getMixer(info).nn
+    jss.AudioSystem.getMixerInfo.nn.iterator.toList.flatMap: info0 =>
+      val info = info0.nn
+      val mixer = jss.AudioSystem.getMixer(info).nn
 
-        val canRecord = mixer.getTargetLineInfo.nn.exists:
-          case dli: jss.DataLine.Info => dli.getLineClass == classOf[jss.TargetDataLine]
-          case _                      => false
+      val canRecord = mixer.getTargetLineInfo.nn.exists:
+        case dli: jss.DataLine.Info => dli.getLineClass == classOf[jss.TargetDataLine]
+        case _                      => false
 
-        if canRecord then scala.collection.immutable.List(Feed(info))
-        else scala.collection.immutable.Nil
+      if canRecord then scala.collection.immutable.List(Feed(info))
+      else scala.collection.immutable.Nil
 
-      . to(List)
+    . to(List)
 
   // FeedError → Feed.Error
   object Error:

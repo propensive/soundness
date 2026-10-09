@@ -1368,9 +1368,9 @@ object KotlinFacade:
       bridgeCall(self, repr, className, member, provided, prototype)
 
     . apply: ordered =>
-        // `invocation` takes the argument terms as a stdlib `List`: it slices and zips them
-        // against `quotes.reflect` parameter lists, which are stdlib lists themselves.
-        invocation(self, repr, className, field, ordered.stdlib, prototype)
+      // `invocation` takes the argument terms as a stdlib `List`: it slices and zips them
+      // against `quotes.reflect` parameter lists, which are stdlib lists themselves.
+      invocation(self, repr, className, field, ordered.stdlib, prototype)
 
   // The facade of an `enum class` entry, a static field of the enum's own type.
   def enumEntry[kotlinType: Type](name: Expr[String])(using Quotes): Expr[Any] =

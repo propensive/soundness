@@ -213,9 +213,9 @@ extends StackTrace.Resolver:
   private def lines(path: Text): Optional[Sequence[Text]] =
     sourceFiles.synchronized:
       sourceFiles.getOrElseUpdate
-       ( path,
-         file(path).let: file =>
-           safely(file.read[Text].cut(t"\n").to[Sequence]) )
+        ( path,
+          file(path).let: file =>
+            safely(file.read[Text].cut(t"\n").to[Sequence]) )
 
   // A path recorded relative to `-sourceroot` resolves against the working directory, as the
   // compiler resolves it when unpickling. Not `Path#resolve`, whose result captures the tactic it

@@ -374,10 +374,10 @@ object Svg:
 
       val stops: List[Stop[Color in Srgb]] =
 
-          elem.children.readable.toList.collect:
-            case e: Xml.Element if e.label == t"stop" => decodeStop(e)
+        elem.children.readable.toList.collect:
+          case e: Xml.Element if e.label == t"stop" => decodeStop(e)
 
-          . to(List)
+        . to(List)
 
       LinearGradient(id, stops*)
 

@@ -310,6 +310,6 @@ object internal:
       . asExprOf[value]
 
     ' {
-      val parts: scala.Array[String] = $input.split(",").nn.map(_.nn)
-      ${construct('parts)}
-    }
+        val parts: scala.Array[String] = $input.split(",").nn.map(_.nn)
+        ${construct('parts)}
+      }

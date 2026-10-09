@@ -148,12 +148,12 @@ case class Permutation(factoradic: Factoradic):
     var sequence: List[Int] = expansion
 
     while sequence match
-        case head :: tail => array(head) = index
-                             index += 1
-                             sequence = tail
-                             true
+      case head :: tail => array(head) = index
+        index += 1
+        sequence = tail
+        true
 
-        case Nil          => false
+      case Nil          => false
     do ()
 
     unsafely(Permutation(Sequence.from(array.iterator)))

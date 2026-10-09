@@ -452,6 +452,6 @@ private[hallucination] object WebpLossless:
     private def planeCodeToDistance(xsize: Int, planeCode: Int): Int =
       if planeCode > 120 then planeCode - 120 else
         val dist = DistanceMap.asInstanceOf[scala.Array[Int]]((planeCode - 1)*2)
-            + DistanceMap.asInstanceOf[scala.Array[Int]]((planeCode - 1)*2 + 1)*xsize
+          + DistanceMap.asInstanceOf[scala.Array[Int]]((planeCode - 1)*2 + 1)*xsize
 
         if dist < 1 then 1 else dist

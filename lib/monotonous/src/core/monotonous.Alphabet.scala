@@ -249,7 +249,7 @@ object Alphabet:
                 var fast: Boolean = true
 
                 while fast && accumulated == 0 && consumed + 4 <= sourceLength
-                    && produced + 3 <= targetSpace do
+                  && produced + 3 <= targetSpace do
 
                   val c0 = chars(sourceOffset + consumed).toInt
                   val c1 = chars(sourceOffset + consumed + 1).toInt
@@ -261,7 +261,7 @@ object Alphabet:
                   val v3 = if c3 < invLength then inversions.readUnchecked(c3) else -1
 
                   if v0 < 0 || v0 > dataMax || v1 < 0 || v1 > dataMax || v2 < 0 || v2 > dataMax
-                      || v3 < 0 || v3 > dataMax
+                    || v3 < 0 || v3 > dataMax
                   then fast = false
                   else
                     val group = (v0 << 18) | (v1 << 12) | (v2 << 6) | v3
@@ -290,7 +290,7 @@ object Alphabet:
                 else
                   accumulator = (accumulator << base)
                     | stage.invert(position, char)
-                        ( using tactic )
+                      ( using tactic )
 
                   accumulated += base
 
