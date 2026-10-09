@@ -1,0 +1,8 @@
+> echo hello
+hello
+> echo hello
+hello
+> echo hello
+hello
+> ls /usr/lib/
+> exit

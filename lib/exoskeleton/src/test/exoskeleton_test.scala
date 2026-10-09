@@ -158,215 +158,215 @@ object Tests extends Suite(m"Exoskeleton Tests"):
 
       . sandbox:
           // Warmup runs to avoid timing issues in CI. A missing shell binary on the host
-          // should not abort the suite — individual tests will surface a `Tmux.Error`.
-          safely(Bash.tmux()(Tmux.completions(t"")))
-          safely(Zsh.tmux()(Tmux.completions(t"")))
-          safely(Fish.tmux(width = 120)(Tmux.completions(t"")))
-          safely(Powershell.tmux()(Tmux.completions(t"")))
+          // should not abort the suite — individual tests will surface a `Pane.Error`.
+          safely(Bash.pane()(Pane.completions(t"")))
+          safely(Zsh.pane()(Pane.completions(t"")))
+          safely(Fish.pane(width = 120)(Pane.completions(t"")))
+          safely(Powershell.pane()(Pane.completions(t"")))
 
           test(m"Test subcommands on bash"):
-            Bash.tmux()(Tmux.completions(t""))
+            Bash.pane()(Pane.completions(t""))
           . check(_ == t"alpha         beta          distribution")
 
           test(m"Test subcommands on zsh"):
-            Zsh.tmux()(Tmux.completions(t""))
+            Zsh.pane()(Pane.completions(t""))
           . check(_ == t"alpha          -- a command to run\nbeta           -- another command to run\ndistribution   -- a different command to run")
 
           test(m"Test subcommands on fish"):
-            Fish.tmux(width = 120)(Tmux.completions(t""))
+            Fish.pane(width = 120)(Pane.completions(t""))
           . check(_ == t"alpha  (a command to run)  beta  (another command to run)  distribution  (a different command to run)")
 
           test(m"Test subcommands with spaces on bash"):
-            Bash.tmux()(Tmux.completions(t"distribution "))
+            Bash.pane()(Pane.completions(t"distribution "))
           . check(_ == t"gentoo   red hat  ubuntu")
 
           test(m"Test subcommands with spaces on zsh"):
-            Zsh.tmux()(Tmux.completions(t"distribution "))
+            Zsh.pane()(Pane.completions(t"distribution "))
           . check(_ == t"gentoo    -- Gentoo Linux\nred hat   -- Red Hat Linux\nubuntu    -- Ubuntu")
 
           test(m"Test subcommands with spaces on fish"):
-            Fish.tmux(width = 120)(Tmux.completions(t"distribution "))
+            Fish.pane(width = 120)(Pane.completions(t"distribution "))
           . check(_ == t"gentoo  (Gentoo Linux)  red hat  (Red Hat Linux)  ubuntu  (Ubuntu)")
 
           test(m"Test subcommands on powershell"):
-            Powershell.tmux()(Tmux.completions(t""))
+            Powershell.pane()(Pane.completions(t""))
           . check(_ == t"alpha  (a command to run)  beta  (another command to run)  distribution  (a different command to run)")
 
           test(m"Test subcommands with spaces on powershell"):
-            Powershell.tmux()(Tmux.completions(t"distribution "))
+            Powershell.pane()(Pane.completions(t"distribution "))
           . check(_ == t"gentoo  (Gentoo Linux)  red hat  (Red Hat Linux)  ubuntu  (Ubuntu)")
 
           test(m"Test flags on bash"):
-            Bash.tmux()(Tmux.completions(t"distribution ubuntu "))
+            Bash.pane()(Pane.completions(t"distribution ubuntu "))
           . check(_ == t"--one  --two")
 
           test(m"Test flags on fish"):
-            Fish.tmux(width = 120)(Tmux.completions(t"distribution ubuntu "))
+            Fish.pane(width = 120)(Pane.completions(t"distribution ubuntu "))
           . check(_ == t"--one  (the first one)  --two  (the second one)")
 
           test(m"Test flags on powershell"):
-            Powershell.tmux()(Tmux.completions(t"distribution ubuntu "))
+            Powershell.pane()(Pane.completions(t"distribution ubuntu "))
           . check(_ == t"--one  (the first one)  --two  (the second one)")
 
           test(m"Autocomplete progress for flag in Fish"):
-            Fish.tmux(width = 120)(Tmux.progress(t"distribution ubuntu "))
+            Fish.pane(width = 120)(Pane.progress(t"distribution ubuntu "))
           . check(_ == t"distribution ubuntu --^")
 
           test(m"Autocomplete progress for flag in Bash"):
-            Bash.tmux()(Tmux.progress(t"distribution ubuntu "))
+            Bash.pane()(Pane.progress(t"distribution ubuntu "))
           . check(_ == t"distribution ubuntu --^")
 
           test(m"Autocomplete progress for flag in Zsh"):
-            Zsh.tmux()(Tmux.progress(t"distribution ubuntu "))
+            Zsh.pane()(Pane.progress(t"distribution ubuntu "))
           . check(_ == t"distribution ubuntu --^")
 
           test(m"Autocomplete progress for flag in Powershell"):
-            Powershell.tmux()(Tmux.progress(t"distribution ubuntu "))
+            Powershell.pane()(Pane.progress(t"distribution ubuntu "))
           . check(_ == t"distribution ubuntu --^")
 
           test(m"Test flags on zsh"):
-            Zsh.tmux()(Tmux.completions(t"distribution ubuntu --"))
+            Zsh.pane()(Pane.completions(t"distribution ubuntu --"))
           . check(_ == t"--one   -- the first one\n--two   -- the second one")
 
           test(m"Test capture 1"):
             // [test-harness] test drives tmux completion blocks
             scala.caps.unsafe.unsafeAssumeSeparate:
               summon[Enclave.Tool].completions:
-                Zsh.tmux()(Tmux.completions(t"distribution ubuntu "))
+                Zsh.pane()(Pane.completions(t"distribution ubuntu "))
 
           . check()
 
           test(m"Test capture 2"):
-            Zsh.tmux()(Tmux.completions(t"distribution "))
+            Zsh.pane()(Pane.completions(t"distribution "))
 
           . check()
 
           test(m"flag parameter on zsh"):
-            Zsh.tmux()(Tmux.completions(t"distribution gentoo --color "))
+            Zsh.pane()(Pane.completions(t"distribution gentoo --color "))
           . check(_ == t"blue   green  red")
 
           test(m"flag parameter on bash"):
-            Bash.tmux()(Tmux.completions(t"distribution gentoo --color "))
+            Bash.pane()(Pane.completions(t"distribution gentoo --color "))
           . check(_ == t"blue   green  red")
 
           test(m"flag parameter on fish"):
-            Fish.tmux()(Tmux.completions(t"distribution gentoo --color "))
+            Fish.pane()(Pane.completions(t"distribution gentoo --color "))
           . check(_ == t"blue  green  red")
 
           test(m"flag parameter on zsh is not repeatable"):
-            Zsh.tmux()(Tmux.progress(t"distribution gentoo --color red "))
+            Zsh.pane()(Pane.progress(t"distribution gentoo --color red "))
           . check(_ == t"distribution gentoo --color red ^")
 
           test(m"flag parameter on bash is not repeatable"):
-            Bash.tmux()(Tmux.progress(t"distribution gentoo --color red "))
+            Bash.pane()(Pane.progress(t"distribution gentoo --color red "))
           . check(_ == t"distribution gentoo --color red ^")
 
           test(m"flag parameter on fish is not repeatable"):
-            Fish.tmux()(Tmux.progress(t"distribution gentoo --color red "))
+            Fish.pane()(Pane.progress(t"distribution gentoo --color red "))
           . check(_ == t"distribution gentoo --color red ^")
 
           test(m"repeatable flag parameter on zsh is repeatable"):
-            Zsh.tmux()(Tmux.progress(t"gamma --colors red "))
+            Zsh.pane()(Pane.progress(t"gamma --colors red "))
           . check(_ == t"gamma --colors red --colors ^")
 
           test(m"repeatable flag parameter on bash is repeatable"):
-            Bash.tmux()(Tmux.progress(t"gamma --colors red "))
+            Bash.pane()(Pane.progress(t"gamma --colors red "))
           . check(_ == t"gamma --colors red -^")
 
           test(m"repeatable flag parameter on fish is repeatable"):
-            Fish.tmux()(Tmux.progress(t"gamma --colors red "))
+            Fish.pane()(Pane.progress(t"gamma --colors red "))
           . check(_ == t"gamma --colors red -^")
 
           test(m"flag parameter with `=` on zsh"):
-            Zsh.tmux()(Tmux.completions(t"distribution gentoo --color="))
+            Zsh.pane()(Pane.completions(t"distribution gentoo --color="))
           . check(_ == t"blue   green  red")
 
           test(m"flag parameter with `=` on bash"):
-            Bash.tmux()(Tmux.completions(t"distribution gentoo --color="))
+            Bash.pane()(Pane.completions(t"distribution gentoo --color="))
           . check(_ == t"blue   green  red")
 
           test(m"flag parameter with `=` on fish"):
-            Fish.tmux()(Tmux.completions(t"distribution gentoo --color="))
+            Fish.pane()(Pane.completions(t"distribution gentoo --color="))
           . check(_ == t"--color=blue  --color=green  --color=red")
 
           test(m"completion of flag parameter with `=` on zsh"):
-            Zsh.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
+            Zsh.pane()(Pane.progress(t"distribution gentoo --color=b"))
           . check(_ == t"distribution gentoo --color=blue ^")
 
           test(m"completion of flag parameter with `=` on bash"):
-            Bash.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
+            Bash.pane()(Pane.progress(t"distribution gentoo --color=b"))
           . check(_ == t"distribution gentoo --color=blue ^")
 
           test(m"completion of flag parameter with `=` on fish"):
-            Fish.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
+            Fish.pane()(Pane.progress(t"distribution gentoo --color=b"))
           . check(_ == t"distribution gentoo --color=blue ^")
 
           test(m"short flag options on zsh"):
-            Zsh.tmux()(Tmux.progress(t"distribution gentoo -"))
+            Zsh.pane()(Pane.progress(t"distribution gentoo -"))
           . check(_ == t"distribution gentoo -f ^")
 
           test(m"short flag options on fish"):
-            Fish.tmux()(Tmux.completions(t"distribution gentoo -"))
+            Fish.pane()(Pane.completions(t"distribution gentoo -"))
           . check(_ == t"-f  --color  (red, green or blue)")
 
           test(m"short flag options on bash"):
-            Bash.tmux()(Tmux.completions(t"distribution gentoo -"))
+            Bash.pane()(Pane.completions(t"distribution gentoo -"))
           . check(_ == t"--color  -f")
 
           test(m"flag options on zsh"):
-            Zsh.tmux()(Tmux.progress(t"distribution gentoo --"))
+            Zsh.pane()(Pane.progress(t"distribution gentoo --"))
           . check(_ == t"distribution gentoo --color ^")
 
           test(m"flag options on fish"):
-            Fish.tmux()(Tmux.progress(t"distribution gentoo --"))
+            Fish.pane()(Pane.progress(t"distribution gentoo --"))
           . check(_ == t"distribution gentoo --color ^")
 
           test(m"flag options on bash"):
-            Bash.tmux()(Tmux.progress(t"distribution gentoo --"))
+            Bash.pane()(Pane.progress(t"distribution gentoo --"))
           . check(_ == t"distribution gentoo --color ^")
 
           test(m"completion of short flag parameter on zsh"):
-            Zsh.tmux()(Tmux.progress(t"distribution gentoo -fb"))
+            Zsh.pane()(Pane.progress(t"distribution gentoo -fb"))
           . check(_ == t"distribution gentoo -fblue ^")
 
           test(m"completion of short flag parameter on bash"):
-            Bash.tmux()(Tmux.progress(t"distribution gentoo -fb"))
+            Bash.pane()(Pane.progress(t"distribution gentoo -fb"))
           . check(_ == t"distribution gentoo -fblue ^")
 
           test(m"completion of short flag parameter on fish"):
-            Fish.tmux()(Tmux.progress(t"distribution gentoo -fb"))
+            Fish.pane()(Pane.progress(t"distribution gentoo -fb"))
           . check(_ == t"distribution gentoo -fblue ^")
 
           test(m"flag parameter on powershell"):
-            Powershell.tmux()(Tmux.completions(t"distribution gentoo --color "))
+            Powershell.pane()(Pane.completions(t"distribution gentoo --color "))
           . check(_ == t"red  green  blue")
 
           test(m"flag parameter on powershell is not repeatable"):
-            Powershell.tmux()(Tmux.progress(t"distribution gentoo --color red "))
+            Powershell.pane()(Pane.progress(t"distribution gentoo --color red "))
           . check(_ == t"distribution gentoo --color red ^")
 
           test(m"repeatable flag parameter on powershell is repeatable"):
-            Powershell.tmux()(Tmux.progress(t"gamma --colors red "))
+            Powershell.pane()(Pane.progress(t"gamma --colors red "))
           . check(_ == t"gamma --colors red -^")
 
           test(m"flag parameter with `=` on powershell"):
-            Powershell.tmux()(Tmux.completions(t"distribution gentoo --color="))
+            Powershell.pane()(Pane.completions(t"distribution gentoo --color="))
           . check(_ == t"--color=red  --color=green  --color=blue")
 
           test(m"completion of flag parameter with `=` on powershell"):
-            Powershell.tmux()(Tmux.progress(t"distribution gentoo --color=b"))
+            Powershell.pane()(Pane.progress(t"distribution gentoo --color=b"))
           . check(_ == t"distribution gentoo --color=blue ^")
 
           test(m"short flag options on powershell"):
-            Powershell.tmux()(Tmux.completions(t"distribution gentoo -"))
+            Powershell.pane()(Pane.completions(t"distribution gentoo -"))
           . check(_ == t"--color  (red, green or blue)  -f  (red, green or blue)")
 
           test(m"flag options on powershell"):
-            Powershell.tmux()(Tmux.progress(t"distribution gentoo --"))
+            Powershell.pane()(Pane.progress(t"distribution gentoo --"))
           . check(_ == t"distribution gentoo --color ^")
 
           test(m"completion of short flag parameter on powershell"):
-            Powershell.tmux()(Tmux.progress(t"distribution gentoo -fb"))
+            Powershell.pane()(Pane.progress(t"distribution gentoo -fb"))
           . check(_ == t"distribution gentoo -fblue ^")
 
           suite(m"Admin commands"):
@@ -541,22 +541,46 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             // progressively — inserted without a trailing space, not advancing to the next
             // argument.
             test(m"fish inserts a unique directory without advancing"):
-              // [test-harness] test drives tmux completion blocks
-              scala.caps.unsafe.unsafeAssumeSeparate:
-                Fish.tmux():
-                  Tmux.enter(t"cd ${fixture.encode}")
-                  Tmux.enter('\r')
-                  Tmux.progress(t"files verify sr")
+              Fish.pane():
+                Pane.enter(t"cd ${fixture.encode}")
+                Pane.enter('\r')
+                Pane.progress(t"files verify sr")
             .check(_ == t"files verify src/^")
 
             test(m"fish menu shows each path entry once"):
-              // [test-harness]
-              scala.caps.unsafe.unsafeAssumeSeparate:
-                Fish.tmux(width = 120):
-                  Tmux.enter(t"cd ${fixture.encode}")
-                  Tmux.enter('\r')
-                  Tmux.completions(t"files verify ")
+              Fish.pane(width = 120):
+                Pane.enter(t"cd ${fixture.encode}")
+                Pane.enter('\r')
+                Pane.completions(t"files verify ")
             .check { out => out.cut(t"one.txt").stdlib.length == 2 && out.cut(t"src/").stdlib.length == 2 }
+
+          // yossarian, which renders the panes on a pseudo-terminal the tests above use, checked
+          // against tmux, an independent terminal emulator: each scenario is typed into a pane of
+          // each kind, under the same configuration, and the screens must be identical. tmux is
+          // not otherwise needed, so the comparison is skipped where it is absent.
+          suite(m"Panes render as tmux renders"):
+            val tmuxInstalled: Boolean = safely(sh"tmux -V".exec[Exit]()) == Exit.Ok
+
+            // The whole screen once the shell has listed the completions of `keys`, as
+            // `Pane.completions` asks for them: with Tab, or in PowerShell, whose Tab inserts only
+            // a common prefix, with the rig's `_completions` function.
+            def screen(keys: Text)(using Pane): Text =
+              Pane.completions(keys)
+              Pane.screenshot()()
+
+            // A suite's own output does not reach the report, so the skip is reported as a test.
+            if !tmuxInstalled then
+              test(m"tmux is not installed, so the comparison with tmux is skipped")(tmuxInstalled)
+              . check(_ == false)
+            else
+              List(Shell.Bash, Shell.Zsh, Shell.Fish, Shell.Powershell).each: shell =>
+                List(t"", t"distribution ", t"distribution gentoo -").each: keys =>
+                  // Both screens when they differ, so that a failure shows what each showed.
+                  test(m"${shell.toString.tt} renders the completions of $keys as tmux does"):
+                    val pane = shell.pane(width = 120)(screen(keys))
+                    val tmux = shell.tmux(width = 120)(screen(keys))
+                    if pane == tmux then t"" else t"pane:\n$pane\ntmux:\n$tmux"
+                  . check(_ == t"")
 
       object HelpApp:
         import interpreters.posixInterpreter
