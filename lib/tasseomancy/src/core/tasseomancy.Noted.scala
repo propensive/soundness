@@ -36,4 +36,4 @@ import anticipation.*
 
 // A value with a note attached — the name of the point it plots — which a scatter plot or a line
 // chart sets beside the marker.
-case class Annotated(value: Double, note: Text)
+case class Noted(value: Double, note: Text)
