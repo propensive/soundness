@@ -30,9 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aperture
 
-export
-  aperture
-  . { archive, Archivable, Archiver, create, Creatable, Creator, Exclusive, Grant, granting,
-      Granting, Mode, Openable, open, Opener, Read, session, Sessional, Write }
+// The applier returned by the `archive` extension method, mirroring `Opener` and `Creator`:
+// the form resolves the `Archivable` instance, and the flags arrive at `apply`. The `tracked`
+// parameter keeps the instance's `Self`, `Operand` and `Result` members precise.
+final class Archiver(tracked val archivable: Archivable^, val value: archivable.Self):
+
+  def apply(flags: archivable.Operand*): archivable.Result =
+    archivable.archive(value, flags.to(List))

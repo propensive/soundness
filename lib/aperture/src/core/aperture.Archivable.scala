@@ -30,9 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aperture
 
-export
-  aperture
-  . { archive, Archivable, Archiver, create, Creatable, Creator, Exclusive, Grant, granting,
-      Granting, Mode, Openable, open, Opener, Read, session, Sessional, Write }
+import prepositional.*
+
+// An entity whose contents can be gathered into an archive of a given form: a directory into a
+// tarball, `directory.archive[Tar]()`, or into a ZIP, `directory.archive[Zip]()`. An instance
+// is written `target is Archivable in Form by Flag to Result`, in the same way as `Openable`:
+// the form — the archive format — drives instance selection at the use site; `Operand` is the
+// flag type that tunes the archiving for that target/form pair (a long-name convention, an
+// owner to record, a compression method); and `Result` is the in-memory archive produced,
+// which the format's library then streams or compresses. Unlike `Creatable`, nothing is
+// written: the result is a value, and where it goes is the caller's next step.
+trait Archivable extends Typeclass, Formal, Operable, Resultant:
+  def archive(value: Self, flags: List[Operand]): Result
