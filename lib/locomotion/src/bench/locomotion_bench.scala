@@ -109,3 +109,25 @@ given intsDecodable:       Ints is Decodable in Protobuf = Protobuf.DecodableDer
 given attributesDecodable: Attributes is Decodable in Protobuf =
   Protobuf.DecodableDerivation.derived
 given deep1Decodable:      Deep1 is Decodable in Protobuf = Protobuf.DecodableDerivation.derived
+
+// Generated direct parsers, as plain `val`s rather than givens: the "typed" rows above resolve
+// through the derived `Decodable` (the `Protobuf` ADT path), and the direct rows bring one of
+// these into scope *inside* the staged body (`given … = locomotion.logsParsable`), so each row
+// measures one path and neither measures the generation of its parser.
+val usersParsable: Users is Protobuf.Parsable = Inlinable.parsable[Users]
+val logsParsable:  Logs is Protobuf.Parsable  = Inlinable.parsable[Logs]
+val deep1Parsable: Deep1 is Protobuf.Parsable = Inlinable.parsable[Deep1]
+
+// A hand-written streaming consumer with a tiny live set: counts the occurrences of field 1
+// (the `Logs.logs` entries) without decoding any of them, so a constrained-heap stress run over
+// a large message measures the parser's buffering alone, not the decoded value.
+val countEntries: Long is Protobuf.Parsable = Protobuf.Parsable: reader =>
+  var count = 0L
+
+  while reader.more do
+    val tag = reader.tag()
+    val saved = reader.enterField(tag & 7)
+    if (tag >>> 3) == 1 then count += 1
+    reader.leaveField(saved)
+
+  count
