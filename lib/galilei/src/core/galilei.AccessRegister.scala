@@ -53,6 +53,7 @@ object AccessRegister:
   // and overlaps every range.
   private case class Registration(real: Text, atoms: Set[Mode], range: Optional[(Long, Long)])
 
+  // [field-purity] object-level registration list
   @scala.caps.unsafe.untrackedCaptures
   private var registrations: List[Registration] = Nil
 

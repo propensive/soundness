@@ -84,6 +84,7 @@ object Gemini:
       // `Anthropic.Sessional`: confinement is the fresh `Result` capability's job.
       lambda
         ( using Llm.Session
+            // [construction-fresh] dialect laundered; confinement by fresh Result
             ( caps.unsafe.unsafeAssumePure(GeminiDialect(target)), target.system,
                 target.tools, target.settings, target.priming ) )
 

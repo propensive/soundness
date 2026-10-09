@@ -49,6 +49,7 @@ import scala.annotation.implicitNotFound
     "import a permit (e.g. `cryptoPermits.permitLegacyCrypto` to process existing data, or "+
     "`cryptoPermits.permitDisallowedCrypto`) to allow it")
 object ProcessingPermit:
+  // [erased-evidence] erased crypto permit given
   erased given acceptable: ProcessingPermit[Concession.Acceptable] = caps.unsafe.unsafeErasedValue
 
 trait ProcessingPermit[concession]
@@ -60,6 +61,7 @@ trait ProcessingPermit[concession]
     "`cryptoPermits.permitDisallowedCrypto`) to allow it")
 object Permit:
   // `Acceptable` crypto needs no permission, so this permit is always available.
+  // [erased-evidence] erased crypto permit given
   erased given acceptable: Permit[Concession.Acceptable] = caps.unsafe.unsafeErasedValue
 
 trait Permit[concession] extends ProcessingPermit[concession]

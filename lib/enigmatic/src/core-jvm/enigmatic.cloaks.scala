@@ -93,6 +93,7 @@ private[enigmatic] class OffHeapCloak extends Cloak, caps.SharedCapability:
     val segment = offload(bytes, arena)
 
     // As in `VeiledHeapCloak.cloak`: the secret's private array captures are laundered.
+    // [construction-fresh] new Secret over private arena segment laundered
     val secret: Secret^{this} = scala.caps.unsafe.unsafeAssumePure:
       new Secret:
         def uncloak[result](block: scala.Array[Byte] => result): result =
@@ -150,6 +151,7 @@ private[enigmatic] class VeiledHeapCloak extends Cloak, caps.SharedCapability:
 
     // The secret retains only this cloak and its own private nonce/ciphertext arrays, which
     // nothing else can reach; the local arrays' read capabilities are laundered here.
+    // [construction-fresh] new Secret over private nonce/ciphertext arrays laundered
     scala.caps.unsafe.unsafeAssumePure:
       new Secret:
         def uncloak[result](block: scala.Array[Byte] => result): result =
@@ -177,6 +179,7 @@ private[enigmatic] class VeiledOffHeapCloak extends Cloak, caps.SharedCapability
     val segment = offload(ciphertext, arena)
 
     // As in `VeiledHeapCloak.cloak`: the secret's private array captures are laundered.
+    // [construction-fresh] new Secret over private segment laundered
     val secret: Secret^{this} = scala.caps.unsafe.unsafeAssumePure:
       new Secret:
         def uncloak[result](block: scala.Array[Byte] => result): result =

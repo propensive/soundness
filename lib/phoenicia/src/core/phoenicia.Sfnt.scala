@@ -451,6 +451,7 @@ trait Sfnt:
       val formatId: Int = B16(data, offset).u16.int
 
       private val mutex: Mutex = Mutex()
+      // [field-purity] mutex-guarded memo var in non-Stateful class
       @scala.caps.unsafe.untrackedCaptures
       private var formatMemo: Optional[Format] = Unset
 

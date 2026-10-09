@@ -66,6 +66,7 @@ object Stream:
 
       private val size: Int = addressable0.length(value)
       // Untracked, cast-erased: reached only through this endpoint.
+      // [abstract-storage] abstract Storage in anonymous Stream
       @caps.unsafe.untrackedCaptures
       private val storage: addressable0.Storage =
         backing0.or(addressable0.allocate(size.max(1)).asInstanceOf[AnyRef])
@@ -120,6 +121,7 @@ object Stream:
       type Transport = Credit
 
       // Untracked, cast-erased: reached only through this endpoint.
+      // [abstract-storage] abstract Storage var in anonymous Stream
       @caps.unsafe.untrackedCaptures
       private var storage: addressable0.Storage =
         addressable0.allocate(0).asInstanceOf[addressable0.Storage]

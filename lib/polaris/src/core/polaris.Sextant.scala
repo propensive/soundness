@@ -42,6 +42,7 @@ import beneficence.*
 // because two readers sharing a position would corrupt each other's decoding.
 class Sextant(private[polaris] val bytes: Data, initialPosition: Int = 0)
 extends Findable, caps.ExclusiveCapability:
+  // [field-purity] position var in ExclusiveCapability, not Stateful
   @scala.caps.unsafe.untrackedCaptures
   private[polaris] var position: Int = initialPosition
 

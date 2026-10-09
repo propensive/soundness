@@ -100,6 +100,7 @@ object Sheet:
   // tactic shares the instance's given-resolution lifetime.
   given aggregable: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
   =>  Sheet is Aggregable by Text =
+    // [field-purity] aggregable given retains resolution-scoped tactic
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
         type Self = Sheet
@@ -148,6 +149,7 @@ object Sheet:
     // statement rule). The resolution-scoped tactic is sealed at the rim (the
     // codec-thunk pattern, as in `aggregable` above) so the fresh parser can
     // cross into the consume position without referring to the parameter.
+    // [field-purity] resolution-scoped tactic sealed for fresh parser
     given sealedTactic: Tactic[Dsv.Error] = caps.unsafe.unsafeAssumePure(tactic)
 
     rowIterator:
@@ -170,8 +172,10 @@ object Sheet:
   :   DsvReader^ =
 
     val block = buffering.capacity(Substrate.Chars)
+    // [field-purity] resolution-scoped tactic sealed for fresh parser
     given sealedTactic: Tactic[Dsv.Error] = caps.unsafe.unsafeAssumePure(tactic)
 
+    // [field-purity]
     DsvReader(format = format, tactic = caps.unsafe.unsafeAssumePure(tactic), parser =
       new Parser(() => stream.refill(Credit(block)) match
         case count: Int =>
@@ -186,8 +190,10 @@ object Sheet:
     new Iterator[Dsv]:
       // Untracked: a stdlib `Iterator` cannot extend `Stateful`; the fields
       // are reached only through this iterator's own methods.
+      // [stdlib-iterator] state in anonymous Iterator
       @caps.unsafe.untrackedCaptures
       private var pending: Optional[Dsv] = Unset
+      // [stdlib-iterator]
       @caps.unsafe.untrackedCaptures
       private var finished: Boolean = false
 

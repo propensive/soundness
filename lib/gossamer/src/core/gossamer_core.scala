@@ -103,7 +103,7 @@ extension (module: Text.type)
 
   def fill(length: Int)(lambda: Int => Char): Text =
     val buffer = Array.scribe[Char](length): scribe =>
-      _ => scribe.iterate { index => scribe(index) = lambda((index: Ordinal).n0) }
+      _ => scribe.iterate { index => scribe(index) = lambda(index.n0) }
 
     String(Array.unsafeJvm(buffer)).tt
 

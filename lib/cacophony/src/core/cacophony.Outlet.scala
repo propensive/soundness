@@ -92,19 +92,21 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info) extends Devi
     line.start()
 
     new Playback:
+      // [field-purity] stopped flag in anonymous Playback
       @scala.caps.unsafe.untrackedCaptures
       private var stopped = false
-      @scala.caps.unsafe.untrackedCaptures
-      private val data: scala.Array[Byte] = audio.data
+      private val data: Array[Byte]^{} = audio.data
 
       private val worker: Thread =
         val task: Runnable^{this} = () =>
           try
+            // `SourceDataLine.write` only reads the samples.
+            val samples = Array.unsafeJvm(data)
             var offset = 0
 
             while !stopped && offset < data.length do
               val len     = math.min(chunkBytes, data.length - offset)
-              val written = line.write(data, offset, len)
+              val written = line.write(samples, offset, len)
               if written <= 0 then offset = data.length else offset += written
 
             if !stopped then line.drain()

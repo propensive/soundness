@@ -34,10 +34,11 @@ package hallucination
 
 // A decoded VP8 keyframe: the luma and chroma planes (samples as `Int` in 0–255). The luma plane
 // has stride `bufferWidth` (the macroblock-padded width); chroma planes have stride
-// `bufferWidth/2`. `width`/`height` are the displayed dimensions.
+// `bufferWidth/2`. `width`/`height` are the displayed dimensions. Pure: the planes are frozen.
 private[hallucination] final class Vp8Frame
-  ( val width: Int, val height: Int, val bufferWidth: Int, val luma: scala.Array[Int],
-    val chromaU: scala.Array[Int], val chromaV: scala.Array[Int] )
+  ( val width: Int, val height: Int, val bufferWidth: Int, val luma: Array[Int]^{},
+    val chromaU: Array[Int]^{}, val chromaV: Array[Int]^{} )
+extends scala.caps.Pure
 
 // YUV→RGB conversion, ported from image-rs/image-webp (`src/lossy/yuv.rs`, MIT/Apache-2.0). This
 // uses simple (nearest-neighbour) chroma upsampling — each chroma sample covers a 2×2 luma block —
@@ -56,15 +57,18 @@ private[hallucination] object Vp8Yuv:
     val height = frame.height
     val chromaStride = frame.bufferWidth/2
     val rgb = new scala.Array[Int](width*height)
+    val lumaPlane = frame.luma.readable
+    val chromaUPlane = frame.chromaU.readable
+    val chromaVPlane = frame.chromaV.readable
     var y = 0
 
     while y < height do
       var x = 0
 
       while x < width do
-        val luma = frame.luma(y*frame.bufferWidth + x)
-        val u = frame.chromaU((y/2)*chromaStride + x/2)
-        val v = frame.chromaV((y/2)*chromaStride + x/2)
+        val luma = lumaPlane(y*frame.bufferWidth + x)
+        val u = chromaUPlane((y/2)*chromaStride + x/2)
+        val v = chromaVPlane((y/2)*chromaStride + x/2)
         val base = mulhi(luma, 19077)
         val red = clip(base + mulhi(v, 26149) - 14234)
         val green = clip(base - mulhi(u, 6419) - mulhi(v, 13320) + 8708)

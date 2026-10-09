@@ -54,7 +54,7 @@ object Compass:
   inline def apply[points <: 4 | 8 | 16](angle: Angle): Compass[points] =
     val radians = angle.principal.radians
 
-    inline !![points] match
+    inline scala.compiletime.erasedValue[points] match
       case _: 4  => points4.readUnchecked((0.5 + 2*radians/math.Pi).toInt%4)
       case _: 8  => points8.readUnchecked((0.5 + 4*radians/math.Pi).toInt%8)
       case _: 16 => points16.readUnchecked((0.5 + 8*radians/math.Pi).toInt%16)

@@ -53,6 +53,7 @@ abstract class Builder[textual](size: Optional[Int] = Unset):
     // builder DSL
     // (`append`/`appendln`/`builder`). Binding to a non-`this` val also avoids the universally
     // captured `this.type` that defeats `aka`.
+    // [live-view] builder `this` laundered to pure Builder for DSL block
     val builder: Builder[textual] = caps.unsafe.unsafeAssumePure(this)
     block(using builder.aka["builder"])
     apply()

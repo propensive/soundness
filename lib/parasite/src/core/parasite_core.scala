@@ -162,6 +162,7 @@ def async[result, error <: Hazard](using Codepoint)
 
   // The tactic is per-task bookkeeping owned by the worker; laundered so the handle's
   // capture set need not name a local.
+  // [construction-fresh] fresh AsyncTactic per task laundered
   val tactic = caps.unsafe.unsafeAssumePure(AsyncTactic[error]())
   Task[result, error | Async.Error](worker => evaluate(using worker, tactic), name = Unset)
 
@@ -172,6 +173,7 @@ def task[result, error <: Hazard](using Codepoint)(name: Name[Async])
 :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
 
   // As in `async` above.
+  // [construction-fresh] fresh AsyncTactic per task laundered
   val tactic = caps.unsafe.unsafeAssumePure(AsyncTactic[error]())
   Task[result, error | Async.Error](worker => evaluate(using worker, tactic), name = name)
 
@@ -192,12 +194,14 @@ extension [resource](consume resource: resource^)
     ( using monitor: Monitor^, probate: SharedProbate )
   :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
 
+    // [construction-fresh] fresh AsyncTactic per task laundered
     val tactic = caps.unsafe.unsafeAssumePure(AsyncTactic[error]())
     val owned = Task.Owned[resource](resource.asInstanceOf[AnyRef])
 
     // Pure by assertion: the body's only non-shared capture is the resource just transferred,
     // whose previous owner consumed it.
     val body: Worker -> result =
+      // [transfer] body captures resource consumed by previous owner
       caps.unsafe.unsafeAssumePure((worker: Worker) => evaluate(using owned, worker, tactic))
 
     Task[result, error | Async.Error](body, name = Unset)
@@ -208,10 +212,12 @@ extension [resource](consume resource: resource^)
     ( using monitor: Monitor^, probate: SharedProbate )
   :   (Task[result] emits (error | Async.Error))^{evaluate, monitor, probate} =
 
+    // [construction-fresh] fresh AsyncTactic per task laundered
     val tactic = caps.unsafe.unsafeAssumePure(AsyncTactic[error]())
     val owned = Task.Owned[resource](resource.asInstanceOf[AnyRef])
 
     val body: Worker -> result =
+      // [transfer] body captures resource consumed by previous owner
       caps.unsafe.unsafeAssumePure((worker: Worker) => evaluate(using owned, worker, tactic))
 
     Task[result, error | Async.Error](body, name = name)
@@ -282,6 +288,7 @@ def concurrently[result: ClassTag](count: Int, parallelism: Int)(job: Int ->{cap
   // inside this one call, so their captures (the job, the scope) never escape.
   val tasks: List[Task[Unit]] =
     List.fill(parallelism.min(count).max(0)):
+      // [construction-fresh] fresh worker task handles sealed pure
       caps.unsafe.unsafeAssumePure:
        async:
          var running = true

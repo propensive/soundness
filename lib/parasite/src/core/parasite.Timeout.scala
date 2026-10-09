@@ -59,6 +59,7 @@ object Timeout:
     // The timeout's own watchdog task is supervised bookkeeping recreated on each `reset`; its
     // handle is held only to cancel it, never returned, so it is laundered to pure to avoid
     // threading a per-call `fresh` result through the stored `makeProcess` factory.
+    // [construction-fresh] fresh watchdog task handle laundered
     def process(expiry: Atomic[Long]): Task[Unit] = caps.unsafe.unsafeAssumePure:
       task(n"timeout"):
         while jl.System.currentTimeMillis < expiry()
@@ -69,6 +70,7 @@ object Timeout:
 
     // As for `Task.apply`: the declared result tracks the retained capabilities; the
     // instance's own fresh capability is laundered.
+    // [construction-fresh] new Timeout instance laundered at factory
     caps.unsafe.unsafeAssumePure(new Timeout(timeout, process))
 
 
@@ -80,6 +82,7 @@ class Timeout private
 extends anticipation.Durable:
   private val expiry: Atomic[Long] = Atomic(jl.System.currentTimeMillis + duration)
 
+  // [field-purity] process task var in non-Stateful Timeout
   @scala.caps.unsafe.untrackedCaptures
   private var process: Task[Unit] = makeProcess(expiry)
 

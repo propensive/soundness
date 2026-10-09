@@ -44,6 +44,7 @@ import vacuous.*
 // locator and parsing stops there. `references` is disabled for content streams, where `R`
 // is illegal and could otherwise misread three numeric operands.
 private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
+  // [field-purity] parser pushback var in non-Stateful class
   @scala.caps.unsafe.untrackedCaptures
   private var pushback: List[CosToken] = List()
 

@@ -369,6 +369,7 @@ object Tel extends Tel2:
     :   ((value is Tel.Parsable)^{parser}) =
 
       // Shape-thunk laundering as in `Tel.Encodable.apply`.
+      // [by-name-capture] by-name shape parameter laundered to pure thunk
       val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure:
         () => shape0
 
@@ -505,6 +506,7 @@ object Tel extends Tel2:
       ( using factory: Factory[element, collection[element]], tactic: Tactic[Tel.Error] )
     :   collection[element] is Tel.Parsable =
 
+      // [by-name-capture] by-name field parser cannot be named in capture set
       caps.unsafe.unsafeAssumePure:
         new Tel.Parsable with Gathering:
           type Self = collection[element]
@@ -555,6 +557,7 @@ object Tel extends Tel2:
               tactic:  Tactic[Tel.Error] )
     :   value is Tel.Parsable =
 
+      // [by-name-capture] by-name field parser cannot be named in capture set
       caps.unsafe.unsafeAssumePure:
         new Tel.Parsable:
           type Self = value
@@ -679,7 +682,7 @@ object Tel extends Tel2:
     def keywordIndex(keys: Array[String]^{}, keyword: Text): Int =
       val name: String = keyword.s
 
-      keys.spot(index => keys(index) == name).lay(-1) { ordinal => (ordinal: Ordinal).n0 }
+      keys.spot(index => keys(index) == name).lay(-1) { ordinal => ordinal.n0 }
 
     // The repeatable-field hooks, looking through the `Field.Adapter` — for
     // staged parsers, which cannot name the private `Gathering` trait. A
@@ -850,7 +853,7 @@ object Tel extends Tel2:
           val name: String = keyword.s
 
           named.spot(index => named(index) == name).lay(-1):
-            ordinal => (ordinal: Ordinal).n0
+            ordinal => ordinal.n0
 
         // The value of a record field is its children, one level deeper than
         // its own entry line — after the entry line's own atoms fill fields
@@ -2763,6 +2766,7 @@ object Tel extends Tel2:
 
         // The arena slice is committed before any subsequent arena mutation, so the
         // atom never observes writes through the shared array.
+        // [construction-fresh] new Inline over arena slice laundered at factory
         scala.caps.unsafe.unsafeAssumePure(new Inline(arena, off, len, null, precedingSpaces))
 
       def unapply(i: Inline): (Text, Int) = (i.text, i.precedingSpaces)
@@ -2787,6 +2791,7 @@ object Tel extends Tel2:
       ( private val bytes:           scala.Array[Byte] | Null,
         private val byteOff:         Int,
         private val byteLen:         Int,
+        // [field-purity] lazy text cache var in Inline
         @scala.caps.unsafe.untrackedCaptures
         private var _text:           String | Null,
         val precedingSpaces:         Int )
@@ -3506,6 +3511,7 @@ object Tel extends Tel2:
 
     private val sigil: String = document.pragma.let(_.sigil.or('#')).or('#').toString
     // Reached only through this serializer, which is confined to one `write`.
+    // [field-purity] first flag var in Serializer
     @caps.unsafe.untrackedCaptures
     private var first: Boolean = true
 
@@ -4004,6 +4010,7 @@ object Tel extends Tel2:
     // the parser is cached per-thread and reset across calls. `reset()`
     // re-binds both before each `parse()` invocation.
 
+    // [registry-lifetime] cast-erased AnyRef cursor in per-thread cached parser
     @scala.caps.unsafe.untrackedCaptures
     var cursor0: AnyRef = null
 
@@ -4011,6 +4018,7 @@ object Tel extends Tel2:
     // read-only, and a per-use fresh capability keeps it apart from `this`.
     private inline def cursor: Cursor[Data, {}]^ = cursor0.asInstanceOf[Cursor[Data, {}]^]
     var schema: Optional[Tels] = Unset
+    // [cursor-snapshot] parser's AnyRef copy of cursor buffer bytes
     @scala.caps.unsafe.untrackedCaptures
     var bytes0: AnyRef = null
 
@@ -7885,7 +7893,9 @@ object Tel extends Tel2:
   // checking. The vars hold pure data, so they are untracked, exactly as
   // aperture's own handle fixtures.
   class Handle private[stratiform] (initial: Tel) extends caps.ExclusiveCapability:
+    // [field-purity] current document var in edit Handle
     @scala.caps.unsafe.untrackedCaptures var current0: Tel = initial
+    // [field-purity] dirty flag var in edit Handle
     @scala.caps.unsafe.untrackedCaptures var dirty0: Boolean = false
 
     def metadata0: Optional[Tel.Metadata] = current0.subtree match

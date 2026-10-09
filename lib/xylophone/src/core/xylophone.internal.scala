@@ -1211,6 +1211,7 @@ object internal:
         val a = storage(attrs).asInstanceOf[Array[AnyRef | Null]^{}]
 
         new Iterator[Text]:
+          // [stdlib-iterator] index var in anonymous Iterator
           @scala.caps.unsafe.untrackedCaptures
           private var i: Int = 0
           def hasNext: Boolean = i < a.length
@@ -1224,6 +1225,7 @@ object internal:
         val a = storage(attrs).asInstanceOf[Array[AnyRef | Null]^{}]
 
         new Iterator[Text]:
+          // [stdlib-iterator] index var in anonymous Iterator
           @scala.caps.unsafe.untrackedCaptures
           private var i: Int = 1
           def hasNext: Boolean = i < a.length
@@ -1237,6 +1239,7 @@ object internal:
         val a = storage(attrs).asInstanceOf[Array[AnyRef | Null]^{}]
 
         new Iterator[(Text, Text)]:
+          // [stdlib-iterator] index var in anonymous Iterator
           @scala.caps.unsafe.untrackedCaptures
           private var i: Int = 0
           def hasNext: Boolean = i < a.length
@@ -2163,6 +2166,7 @@ object internal:
       // scoped capabilities (the AST bridge does). The instance and default
       // arrays are single lazy vals, so recursive self-references stay
       // deferred until the first parse.
+      // [quote-wall] generated product parser inside quote
       caps.unsafe.unsafeAssumePure:
         val keys: Array[String]^{} =
           Xml.Parsable.wireNames(Array[String](${Varargs(nameExprs)}*), $renames)

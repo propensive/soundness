@@ -478,6 +478,7 @@ object Llm:
 
     // Not `Stateful`: a stateful `Response` minted by `new` is typed by its arguments' read-only
     // captures, which the `^{this, caps.any}` result of `Session.stream` cannot subsume.
+    // [borrowing-stateful] new Stateful Response cannot borrow session this
     @scala.caps.unsafe.untrackedCaptures
     private var reply0: Optional[Reply] = Unset
 
@@ -620,6 +621,7 @@ object Llm:
     // and the iterator. The one rim in this file; both are delivered into a single value whose
     // `^{this, caps.any}` result ties them back to this session.
     update def stream(message: Message): Response^{this, caps.any} =
+      // [borrowing-stateful] response borrows session and reads its dialect stream
       caps.unsafe.unsafeAssumeSeparate:
         Response(this, message, dialect.stream(exchange(message)))
 

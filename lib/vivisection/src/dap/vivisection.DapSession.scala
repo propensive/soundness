@@ -71,8 +71,11 @@ private[vivisection] object DapSession:
   // Holds a retained halt (or a breakpoint handle) out of the capture-tracked world: each
   // captures the debug session, which no registry value type can name, but the adapter's own
   // state machine encloses their lifetimes within the session task's.
+  // [registry-lifetime] halt held untracked in registry slot
   private class HaltSlot(@caps.unsafe.untrackedCaptures val halt: Halt)
+  // [registry-lifetime] breakpoint handle held untracked in registry slot
   private class SourceSlot(@caps.unsafe.untrackedCaptures val handle: SourceBreakpoint, val id: Int)
+  // [registry-lifetime] request handle held untracked in registry slot
   private class RequestSlot(@caps.unsafe.untrackedCaptures val handle: Breakpoint)
 
   // What a `variablesReference` handle refers to: a frame's local scope, or a structured value
@@ -109,6 +112,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
   // callbacks — breakpoint handlers, bind notifications, session tasks — refer to it through
   // this laundered alias, keeping their capture sets empty; every one of them dies with the
   // session (see `Connection.Slot` for the underlying pattern).
+  // [registry-lifetime] laundered self alias for session-lifetime callbacks
   private val self: DapSession = caps.unsafe.unsafeAssumePure(this)
 
   private val outgoing: Atomic[Int] = Atomic(0)
@@ -116,18 +120,22 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
   // The open session, laundered into a field: the session task below holds its loan open until
   // `disconnect`, so the field never outlives it.
+  // [registry-lifetime] open Debug session laundered into adapter field
   @caps.unsafe.untrackedCaptures
   private var debug0: Optional[Debug] = Unset
 
+  // [field-purity] classpath var in non-Stateful adapter
   @caps.unsafe.untrackedCaptures
   private var classpath0: Optional[LocalClasspath] = Unset
 
+  // [field-purity] namer var in non-Stateful adapter
   @caps.unsafe.untrackedCaptures
   private var namer0: Optional[Namer] = Unset
 
   private val ready: Promise[Unit] = Promise()
   private val terminate: Promise[Unit] = Promise()
 
+  // [field-purity] session task handle var in adapter
   @caps.unsafe.untrackedCaptures
   private var sessionTask: Optional[Task[Unit]] = Unset
 
@@ -143,12 +151,15 @@ private[vivisection] class DapSession(emit: Json => Unit)
   // source replaces every breakpoint previously set in it.
   private val bySource: scc.TrieMap[Text, List[DapSession.SourceSlot]] = scc.TrieMap()
 
+  // [registry-lifetime] list of untracked breakpoint request slots
   @caps.unsafe.untrackedCaptures
   private var exceptionRequests: List[DapSession.RequestSlot] = List()
 
+  // [registry-lifetime] list of untracked breakpoint source slots
   @caps.unsafe.untrackedCaptures
   private var functionRequests: List[DapSession.SourceSlot] = List()
 
+  // [registry-lifetime] list of untracked watch request slots
   @caps.unsafe.untrackedCaptures
   private var watchRequests: List[DapSession.RequestSlot] = List()
 
@@ -192,22 +203,26 @@ private[vivisection] class DapSession(emit: Json => Unit)
   // console is relayed as `output` events, and its exit as `exited` and `terminated` — the
   // relays are laundered pure thunks, like the session task itself.
   private def opened(debug: Debug^): Unit =
+    // [registry-lifetime] opened Debug session stored in adapter field
     debug0 = caps.unsafe.unsafeAssumePure(debug)
 
     debug.console.let: console =>
       val adapter = self
 
       val out: () -> Unit =
+        // [closure-capture] stdout relay thunk over adapter and console
         caps.unsafe.unsafeAssumePure: () =>
           console.stdout.each: data =>
             adapter.send(t"output", Dap.OutputBody(data.utf8, t"stdout").in[Json])
 
       val err: () -> Unit =
+        // [closure-capture] stderr relay thunk over adapter and console
         caps.unsafe.unsafeAssumePure: () =>
           console.stderr.each: data =>
             adapter.send(t"output", Dap.OutputBody(data.utf8, t"stderr").in[Json])
 
       val exit: () -> Unit =
+        // [closure-capture] exit relay thunk over adapter and console
         caps.unsafe.unsafeAssumePure: () =>
           safely(console.exited.await()).let: status =>
             val code = status match
@@ -230,6 +245,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
   // the stop. Runs on the backend dispatcher.
   private def onStop(reason: Text, hits: List[Int], all: Boolean)(using halt: Halt^): Unit =
     val id = threadHandle(halt.thread)
+    // [registry-lifetime] halt retained in stops registry slot
     stops(id) = DapSession.HaltSlot(caps.unsafe.unsafeAssumePure(halt))
     halt.remain()
     send(t"stopped", Dap.StoppedBody(reason, id, all, hits).in[Json])
@@ -267,6 +283,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
         // this adapter's capabilities, which the task must not be seen to smuggle; the task
         // dies with the adapter.
         val body: () -> Unit =
+          // [closure-capture] session task body thunk over adapter capabilities
           caps.unsafe.unsafeAssumePure: () =>
             val outcome: Optional[Unit] = safely[Debugger.Error]:
               val command: Command =
@@ -290,6 +307,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
           Endpoint(arguments.hostName.or(t"localhost"), Port[Tcp](arguments.port))
 
         val body: () -> Unit =
+          // [closure-capture] attach task body thunk over adapter capabilities
           caps.unsafe.unsafeAssumePure: () =>
             val outcome: Optional[Unit] = safely[Debugger.Error]:
               // Connected directly rather than through `Debugger.session`, for the same
@@ -299,6 +317,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
                 summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset)
 
               val open: Jdwp.Connection => Unit =
+                // [closure-capture] open callback over adapter self
                 caps.unsafe.unsafeAssumePure: connection => self.opened(new Debug(connection))
 
               try Jdwp.Connection.exchange(duplex)(open) finally duplex.close()
@@ -324,6 +343,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
             // Laundered: the callback captures this adapter, which the breakpoint's
             // registries cannot name, but it dies with the session.
             val verified: Jdwp.Location => Unit =
+              // [registry-lifetime] verified callback captured by breakpoint registries
               caps.unsafe.unsafeAssumePure: _ =>
                 self.send(t"breakpoint", Dap.BreakpointEventBody(t"changed",
                     Dap.Breakpoint(true, id, spec.line)).in[Json])
@@ -331,6 +351,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
             val handle = debug.breakpoint(source, Ordinal.uniary(spec.line), verified):
               stop ?=> adapter.onStop(t"breakpoint", List(id), true)(using stop)
 
+            // [registry-lifetime] breakpoint handle stored in source slot
             (DapSession.SourceSlot(caps.unsafe.unsafeAssumePure(handle), id), spec.line)
 
           bySource(source) = created.map: (slot, _) => slot
@@ -355,6 +376,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
               val handle = debug.exceptions(uncaught, caught):
                 stop ?=> adapter.onStop(t"exception", List(), true)(using stop)
 
+              // [registry-lifetime] exception request handle stored in slot
               List(DapSession.RequestSlot(caps.unsafe.unsafeAssumePure(handle)))
 
           val breakpoints = arguments.filters.map: _ => Dap.Breakpoint(true)
@@ -376,6 +398,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
             val handle = debug.breakpoint(cls, method):
               stop ?=> adapter.onStop(t"function breakpoint", List(id), true)(using stop)
 
+            // [registry-lifetime] function breakpoint handle stored in slot
             DapSession.SourceSlot(caps.unsafe.unsafeAssumePure(handle), id)
 
           functionRequests = created
@@ -428,6 +451,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
               handle match
                 case watch: Breakpoint =>
+                  // [registry-lifetime] watch handle stored in request slot
                   List(DapSession.RequestSlot(caps.unsafe.unsafeAssumePure(watch)))
 
                 case _ =>
@@ -712,6 +736,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
 
   // Reads the laundered session field back at a pure type, so inline expansion sites are not
   // poisoned by the untracked var's inferred capture.
+  // [registry-lifetime] reads laundered session field back at pure type
   private def currentDebug: Optional[Debug] = caps.unsafe.unsafeAssumePure(debug0)
 
   private inline def withDebug(request: Dap.Envelope)(inline body: Debug => Unit): Unit =

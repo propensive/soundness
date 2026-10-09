@@ -37,6 +37,7 @@ import rudiments.*
 
 object Furlongs:
   given designation: Designation[Furlongs[1]] = () => "fur".tt
-  inline given ratio: Ratio[Metres[1] & Furlongs[-1], 201.168] = !!
+  erased given ratio: Ratio[Metres[1] & Furlongs[-1], 201.168] =
+    Ratio.Evidence[Metres[1] & Furlongs[-1], 201.168]()
 
 trait Furlongs[Power <: Nat] extends Units[Power, Distance]

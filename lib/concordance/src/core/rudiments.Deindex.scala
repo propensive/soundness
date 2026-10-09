@@ -66,12 +66,25 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
 
   // Checks that `index` is defined for *this* value and, if so, returns it *confined* to it
   // (`Operand in value.type`), which `at` recognizes statically: the subsequent access returns a
-  // bare `Result` with no second bounds check — `map.confine(key).let(map.at(_))`. It generalizes
+  // bare `Result` with no second bounds check — `map.confine(key).let(map.at(_))`,
+  // or `map.pick(key)(map.at(_))` when the lambda is the whole use. It generalizes
   // denominative's `within` (the `Ordinal` producer) to any index or key type. Sound for
   // immutable receivers on stable paths, like `within` and `at`'s confined branch. Not `inline`:
   // see the note on `prim`/`sec`/`ter` below (same capture-checking issue).
   def confine(index: applicable.Operand): Optional[applicable.Operand in value.type] =
     if applicable.contains(value, index) then index.asInstanceOf[applicable.Operand in value.type]
+    else Unset
+
+  // The fused form of `confine` and `let`: the checked index reaches the lambda already confined,
+  // so the body's reads are total, and no `Optional[Operand]` is built in between. The safe twin
+  // of the block-scoped `unsafeAttested` below —
+  //     array.pick(ordinal): ordinal => array(ordinal)   // Optional[element], total inside
+  // When the body only reads the element, `at` already says it: `array.at(ordinal)`.
+  inline def pick[result](index: applicable.Operand)
+    ( inline lambda: (applicable.Operand in value.type) => result )
+  :   Optional[result] =
+    if applicable.contains(value, index)
+    then lambda(index.asInstanceOf[applicable.Operand in value.type])
     else Unset
 
   // As `confine`, minus the check: mints `Operand in value.type` on the caller's word, gated by

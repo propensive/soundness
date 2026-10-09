@@ -177,6 +177,7 @@ private[anthology] def processReporter(process: CompileProcess)
 // polls it for cancellation.
 private[anthology] def progressCallback(process: CompileProcess): dtdsi.ProgressCallback =
   new dtdsi.ProgressCallback:
+    // [field-purity] progress state in anonymous ProgressCallback
     @scala.caps.unsafe.untrackedCaptures
     private var last: Int = -1
 

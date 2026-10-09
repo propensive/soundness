@@ -134,6 +134,7 @@ object FakeModel:
 // network. A *pure* function, so that `FakeModel` is itself pure: `Http.Backend` is required
 // unadorned by everything that summons one.
 class FakeModel(route: (Http.Method, Text, Int) -> Http.Response) extends Http.Backend:
+  // [test-harness] fake model records exchanges in test
   @scala.caps.unsafe.untrackedCaptures
   var exchanges: List[FakeModel.Exchange] = Nil
 

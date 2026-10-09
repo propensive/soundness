@@ -48,6 +48,7 @@ object Requirable:
     // ambient `safely`-scoped `OptionalTactic`, so the decoded value does not retain that scoped
     // capability — mirroring `Extractable.decodable`. Laundered pure: the retained context
     // function shares the instance's given-resolution lifetime (the codec-thunk seal pattern).
+    // [field-purity] codec-thunk seal on given capturing resolution tactic
     caps.unsafe.unsafeAssumePure:
       () => safely(decodable(using strategies.throwUnsafely).decoded("".tt)).absent
 

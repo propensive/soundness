@@ -37,6 +37,7 @@ import rudiments.*
 
 object Drams:
   given designation: Designation[Drams[1]] = () => "dr".tt
-  inline given ratio: Ratio[Kilograms[1] & Drams[-1], 0.00177184375] = !!
+  erased given ratio: Ratio[Kilograms[1] & Drams[-1], 0.00177184375] =
+    Ratio.Evidence[Kilograms[1] & Drams[-1], 0.00177184375]()
 
 trait Drams[Power <: Nat] extends Units[Power, Mass]

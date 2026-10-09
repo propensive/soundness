@@ -401,7 +401,9 @@ object Ductile:
 
               out.position - targetOffset
 
-trait Ductile extends Typeclass.Pure, Operable, Resultant:
+// Not `Typeclass.Pure`: an instance may capture what its ducts raise through, as monotonous's
+// deserializer captures its tactic, so instances are passed as capturing evidence.
+trait Ductile extends Typeclass, Operable, Resultant:
   type Transport
   type Upstream
 

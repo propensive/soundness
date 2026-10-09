@@ -39,6 +39,8 @@ object Scanner:
   given default: (erased dummy: DummyImplicit) => Scanner = Scanner(Unset)
 
 class Scanner
+  // [field-purity] nextStart var in non-Stateful Scanner
   ( @scala.caps.unsafe.untrackedCaptures var nextStart: Optional[Int] = Unset,
+    // [field-purity] matchEnd var in non-Stateful Scanner
     @scala.caps.unsafe.untrackedCaptures var matchEnd:  Optional[Int] = Unset )
 extends Findable

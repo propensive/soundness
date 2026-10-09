@@ -771,6 +771,7 @@ object stagedInternal:
     '{
       // Sealed per the codec-thunk pattern, like the staged instances: the
       // generated body resolves its capabilities where it is spliced.
+      // [quote-wall] staged Parsable generated inside quote
       caps.unsafe.unsafeAssumePure:
         new Json.Parsable.Direct[value]:
           protected def parseCarrier(reader0: AnyRef): value =

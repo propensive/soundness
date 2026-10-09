@@ -48,6 +48,7 @@ object UncheckedError:
 
 case class UncheckedError private
   (text:       Text,
+   // [java-boundary] raw stack-trace array from Throwable.getStackTrace
    @scala.caps.unsafe.untrackedCaptures
    stackTrace: scala.Array[StackTraceElement | Null] | Null)
 extends Error(117, 0)(UncheckedError.describe(text))(using errorDiagnostics.emptyDiagnostics):

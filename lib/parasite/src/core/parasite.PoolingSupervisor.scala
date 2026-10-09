@@ -113,12 +113,14 @@ abstract class PoolingSupervisor extends ThreadSupervisor:
   def fork(name: () => Optional[Text])(block: => Unit): Strand =
     // The entry closes over the task's body, as a dedicated thread's `Runnable` would; it is
     // stored boxed as pure, the same laundering the supervision registry applies to workers.
+    // [by-name-capture] by-name task block laundered into Entry thunk
     val entry: Entry = caps.unsafe.unsafeAssumePure(Entry(() => block))
     val carrier = idle.pollFirst()
 
     if carrier == null then
       // A supervisor is a plain value, not a capability (see `Supervisor`); capture checking
       // cannot see that from inside its own body, so the reference is laundered here.
+      // [borrowing-stateful] new Carrier borrows enclosing supervisor `this`
       val fresh = Carrier(caps.unsafe.unsafeAssumePure(this))
       fresh.task = entry
       spawn(fresh)
@@ -166,8 +168,11 @@ object PoolingSupervisor:
   // published by volatile write, as `Handoff`'s are, so their captures are untracked.
   private[parasite] final class Entry(block: () => Unit) extends Strand:
     private val state: juca.AtomicInteger = juca.AtomicInteger(State.Queued)
+    // [field-purity] volatile carrier var in Entry
     @caps.unsafe.untrackedCaptures @volatile private var carrier: Thread | Null = null
+    // [field-purity] volatile interrupt flag in Entry
     @caps.unsafe.untrackedCaptures @volatile private var interruptRequested: Boolean = false
+    // [field-purity] volatile joiner var in Entry
     @caps.unsafe.untrackedCaptures @volatile private var joiner: Thread | Null = null
 
     // Requests cancellation of the task. Queued: remembered, and delivered when it mounts.
@@ -229,9 +234,12 @@ object PoolingSupervisor:
   // A carrier: the loop a pooled thread runs, and the strand identity of whatever task is
   // mounted on it, for waiter sets and parking.
   private[parasite] final class Carrier(pool: PoolingSupervisor) extends Runnable:
+    // [field-purity] volatile task var in Carrier
     @caps.unsafe.untrackedCaptures @volatile var task: Entry | Null = null
+    // [field-purity] volatile thread var in Carrier
     @caps.unsafe.untrackedCaptures @volatile var thread: Thread | Null = null
     // The park permit `CarrierStrand.unpark` grants, checked by the spinning phase of `park`.
+    // [field-purity] volatile permit flag in Carrier
     @caps.unsafe.untrackedCaptures @volatile var permit: Boolean = false
 
     val strand: Strand = CarrierStrand(this)

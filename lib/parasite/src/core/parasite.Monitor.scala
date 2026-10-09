@@ -99,10 +99,12 @@ sealed trait Monitor extends Resultant, Findable, anticipation.Durable:
   // the JVM pipeline accepts the direct form. A cast, not an ascription, because no source-level
   // type spells the pipeline's widened element type. (Compiler divergence.)
   protected[parasite] def addWorker(worker: Worker^): Unit =
+    // [registry-lifetime] worker stored in supervision workers set
     val worker0: Worker^{} = caps.unsafe.unsafeAssumePure(worker)
     workersRef.updateAndGet(_.nn.incl(worker0).asInstanceOf[scala.collection.immutable.Set[Worker^{}]])
 
   protected[parasite] def remove(monitor: Worker^): Unit =
+    // [registry-lifetime] worker removed from supervision workers set
     val monitor0: Worker^{} = caps.unsafe.unsafeAssumePure(monitor)
     workersRef.updateAndGet(_.nn.excl(monitor0).asInstanceOf[scala.collection.immutable.Set[Worker^{}]])
 
@@ -278,6 +280,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate
   self: Worker^ =>
   private val state: Atomic[Fulfillment[Result]] = Atomic(Preload.initial)
 
+  // [field-purity] relents counter var in Worker
   @scala.caps.unsafe.untrackedCaptures
   private var relents: Int = 1
 

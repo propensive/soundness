@@ -95,6 +95,7 @@ object Anthropic:
       // demote the stateful handle to a read-only alias `Session^{any}` cannot subsume.
       lambda
         ( using Llm.Session
+            // [construction-fresh] dialect laundered; confinement by fresh Result
             ( caps.unsafe.unsafeAssumePure(AnthropicDialect(target)), target.system,
                 target.tools, target.settings, target.priming ) )
 

@@ -199,9 +199,11 @@ private[facsimile] object ContentWriter:
 // is charged a read of the universal capability under uses checking (the `telekinesis.ByteBuf`
 // pattern: untracked storage, exclusive view for writes, Java-side copies for growth/freeze).
 private[facsimile] final class DataBuilder:
+  // [field-purity] dataBuilder storage array in non-Stateful class
   @scala.caps.unsafe.untrackedCaptures
   private var storage: scala.Array[Byte] = new scala.Array[Byte](64)
 
+  // [field-purity] dataBuilder size var in non-Stateful class
   @scala.caps.unsafe.untrackedCaptures
   private var size0: Int = 0
 

@@ -843,6 +843,7 @@ object Bintel:
 
     case other => other
 
+  // [field-purity] offset var in private Cursor class
   private final class Cursor(val data: Data, @scala.caps.unsafe.untrackedCaptures var offset: Int)
 
   private def encodeRoot

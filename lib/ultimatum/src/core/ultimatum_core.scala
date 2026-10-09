@@ -192,6 +192,7 @@ def conduct(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
   mode match
     case Occupancy.Fullscreen =>
       // The feature body and its terminal argument are the same single-owner session.
+      // [by-name-receiver] feature body and terminal argument share session
       scala.caps.unsafe.unsafeAssumeSeparate:
        profanity.terminalFeatures.alternateScreenFeature:
         // A buffered root: panels composite into its in-memory grid and each present
@@ -225,16 +226,14 @@ def dirtyCells
 :   Set[Int] =
 
   // A hot per-frame path: iterate `current` with confined ordinals (`iterate` proves each
-  // index against `current`; `confine` re-proves it against `previous`, whose length may
+  // index against `current`; `pick` re-proves it against `previous`, whose length may
   // legitimately differ), so both reads are bare and nothing is bounds-checked twice. An
   // index beyond `previous` is moved by definition.
   val moved = scala.collection.immutable.Set.newBuilder[Int]
 
   current.iterate: index =>
-    val dirty = previous.confine(index).lay(true): ordinal =>
-      previous(ordinal) != current(index)
-
-    if dirty then moved += (index: Ordinal).n0
+    val dirty = previous.pick(index) { ordinal => previous(ordinal) != current(index) }.or(true)
+    if dirty then moved += index.n0
 
   moved.result().to(Set) + changed
 
