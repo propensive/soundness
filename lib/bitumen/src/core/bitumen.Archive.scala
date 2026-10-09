@@ -35,16 +35,75 @@ package bitumen
 import scala.caps
 
 import anticipation.*
+import contingency.*
 import fulminate.*
+import galilei.*
+import gossamer.*
 import prepositional.*
 import rudiments.*
+import serpentine.*
+import turbulence.*
 import vacuous.*
 import zephyrine.*
+
+import rudiments.sortingAlgorithms.timsort
+import gossamer.collationComparable, gossamer.collations.codepointCollation
 
 // What the sequential archive formats share: the memoizing entry body a streaming read lends
 // to its consumer, and the reader plumbing that pulls it off a shared cursor. `Tar` and `Ar`
 // each parse their own headers; the lookahead, draining and chunked pulling are the same.
 object Archive:
+  // Flags common to archiving a directory tree in any of bitumen's formats, `directory
+  // .archive[Tar](flags*)`: the knobs that make an archive reproducible, as `tar --owner`,
+  // `--group` and `--mtime` do. Each replaces what the filesystem reports for every entry.
+  enum Flag:
+    case Owner(user: UnixUser, group: UnixGroup)
+    case Mtime(seconds: Long)
+
+  object Flag:
+    object Mtime:
+      def apply[instant: Abstractable across Instants to Long](instant: instant): Mtime =
+        Mtime(instant.generic/1000L)
+
+  // The walk every format's `Archivable` shares: the entries beneath `root`, pre-order, each
+  // directory's children in codepoint order. A sorted pre-order is what makes the archive
+  // reproducible — two runs over the same tree produce the same bytes — and it is what `tar`
+  // and `zip` consumers expect, a directory's entry preceding the entries beneath it. The root
+  // itself is not an entry; names are relative to it, joined with `/`.
+  private[bitumen] object Tree:
+    case class Member[plane](path: Path on plane, name: Text, stat: Stat)
+
+    def members[plane: Filesystem](root: Path on plane, follow: Boolean)
+      ( using backend: FilesystemBackend on plane )
+    :   List[Member[plane]] raises Io.Error =
+
+      given DereferenceSymlinks:
+        def dereference: Boolean = follow
+      given TraversalOrder = TraversalOrder.PreOrder
+
+      val prefix: Text = root.encode
+      val separator: Text = Tar.filesystem.separator
+
+      root.descendants.to[List].order(_.encode).map: path =>
+        val encoded = path.encode
+        val name = encoded.skip(prefix.length + separator.length)
+        Member(path, name, backend.stat(path, follow))
+
+    // The whole of a regular file, read through the backend.
+    def contents[plane](path: Path on plane)(using backend: FilesystemBackend on plane)
+    :   Data raises Io.Error =
+
+      backend.open(path, List(OpenFlag.Read), Unset): handle =>
+        summon[Data is Aggregable by Data].accept(Stream(handle.reader()))
+
+    // The owner and timestamp an entry records, after the flags have had their say.
+    def owner(stat: Stat, flags: List[Flag]): (UnixUser, UnixGroup) =
+      flags.reap { case Flag.Owner(user, group) => (user, group) }.or:
+        (UnixUser(stat.user.or(0)), UnixGroup(stat.group.or(0)))
+
+    def mtime(stat: Stat, flags: List[Flag]): Long =
+      flags.reap { case Flag.Mtime(seconds) => seconds }.or(stat.modified/1000L)
+
   object Body:
     // An in-memory body: its chunks are given up front, and nothing pulls lazily.
     def apply(chunks: Data*): Archive.Body =

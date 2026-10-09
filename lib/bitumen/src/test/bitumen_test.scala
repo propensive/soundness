@@ -621,10 +621,9 @@ object Tests extends Suite(m"Bitumen Tests"):
         listing(writeArchive(Tarfile(List(longSymlink), LongNameFormat.Gnu), t"linkgnu.tar"))
       . assert(_ == List(t"link"))
 
-    suite(m"Filesystem integration: Tarfile.from / extractTo"):
+    suite(m"Filesystem integration: archive[Tar] / extractTo"):
       import systems.javaBaseSystem
       import temporaryDirectories.systemTemporaryDirectory
-      import filesystemTraversal.preOrderTraversal
       import filesystemOptions.preserveSymlinks
       import filesystemOptions.overwritePreexisting
       import filesystemOptions.createNonexistentParents
@@ -635,15 +634,13 @@ object Tests extends Suite(m"Bitumen Tests"):
         d.create[Directory]()
         d
 
-      test(m"single file round-trips through Tarfile.from / extractTo"):
+      test(m"single file round-trips through archive[Tar] / extractTo"):
         val source = freshDir()
         val sourceFile = source / "hello.txt"
         sourceFile.create[File]()
         sourceFile.open[File](Write): handle ?=> handle.write(t"hi there".in[Data])
 
-        // The extension is called directly: fallback from the companion overload no longer
-        // re-elaborates under the frozen `Data` stream parameter.
-        val tar = bitumen.from(Tarfile)(source)
+        val tar = source.archive[Tar]()
         val dest = freshDir()
         tar.extractTo(dest)
 
@@ -661,7 +658,7 @@ object Tests extends Suite(m"Bitumen Tests"):
         (sub / "b.txt").create[File]()
         (sub / "b.txt").open[File](Write) { handle ?=> handle.write(t"B".in[Data]) }
 
-        val tar = bitumen.from(Tarfile)(source)
+        val tar = source.archive[Tar]()
         val dest = freshDir()
         tar.extractTo(dest)
 
@@ -705,12 +702,83 @@ object Tests extends Suite(m"Bitumen Tests"):
         (source / "real.txt").open[File](Write) { handle ?=> handle.write(t"realdata".in[Data]) }
         (source / "real.txt").symlinkTo(source / "link.txt")
 
-        val tar = bitumen.from(Tarfile)(source)
+        val tar = source.archive[Tar]()
         val dest = freshDir()
         tar.extractTo(dest)
 
         jnf.Files.isSymbolicLink((dest / "link.txt").javaPath)
       . assert(_ == true)
+
+      def tree(): Path on Linux =
+        val source = freshDir()
+        (source / "b.txt").create[File]()
+        (source / "b.txt").open[File](Write) { handle ?=> handle.write(t"B".in[Data]) }
+        (source / "a.txt").create[File]()
+        (source / "a.txt").open[File](Write) { handle ?=> handle.write(t"A".in[Data]) }
+        (source / "sub").create[Directory]()
+        (source / "sub" / "c.txt").create[File]()
+        (source / "sub" / "c.txt").open[File](Write) { handle ?=> handle.write(t"C".in[Data]) }
+        source
+
+      test(m"entries are archived in sorted pre-order"):
+        tree().archive[Tar]().entries.map(_.entryName)
+      . assert(_ == List(t"a.txt", t"b.txt", t"sub/", t"sub/c.txt"))
+
+      test(m"a dereferenced symlink archives its target's contents"):
+        import filesystemOptions.dereferenceSymlinks
+        val source = freshDir()
+        (source / "real.txt").create[File]()
+        (source / "real.txt").open[File](Write) { handle ?=> handle.write(t"realdata".in[Data]) }
+        (source / "real.txt").symlinkTo(source / "link.txt")
+
+        source.archive[Tar]().entries.map:
+          case file: Tar.Entry.File => (file.entryName, file.data.memoize.utf8)
+          case other                => (other.entryName, t"")
+      . assert(_ == List((t"link.txt", t"realdata"), (t"real.txt", t"realdata")))
+
+      test(m"a preserved symlink archives as a Symlink entry with its target"):
+        val source = freshDir()
+        (source / "real.txt").create[File]()
+        (source / "real.txt").symlinkTo(source / "link.txt")
+
+        val target = (source / "real.txt").encode
+
+        source.archive[Tar]().entries.map:
+          case link: Tar.Entry.Symlink => (link.entryName, link.target == target)
+          case other                   => (other.entryName, false)
+      . assert(_ == List((t"link.txt", true), (t"real.txt", false)))
+
+      test(m"the Owner flag replaces the recorded user and group"):
+        tree().archive[Tar](Archive.Flag.Owner(UnixUser(1000), UnixGroup(2000))).entries.map:
+          case file: Tar.Entry.File => (file.user.value, file.group.value)
+          case dir: Tar.Entry.Directory => (dir.user.value, dir.group.value)
+          case _ => (-1, -1)
+        . to[Set]
+      . assert(_ == Set((1000, 2000)))
+
+      test(m"the Mtime flag replaces every recorded timestamp"):
+        tree().archive[Tar](Archive.Flag.Mtime(1234567L)).entries.map:
+          case file: Tar.Entry.File => file.mtime.long
+          case dir: Tar.Entry.Directory => dir.mtime.long
+          case _ => -1L
+        . to[Set]
+      . assert(_ == Set(1234567L))
+
+      test(m"a LongNameFormat flag selects the long-name convention"):
+        tree().archive[Tar](LongNameFormat.Gnu).longNameFormat
+      . assert(_ == LongNameFormat.Gnu)
+
+      test(m"archive[Ar] flattens the tree to slash-joined member names"):
+        tree().archive[Ar]().entries.map(_.name)
+      . assert(_ == List(t"a.txt", t"b.txt", t"sub/c.txt"))
+
+      test(m"archive[Ar] records the whole st_mode, type bits included"):
+        tree().archive[Ar]().entries.map(_.mode & 61440).to[Set]
+      . assert(_ == Set(32768))
+
+      test(m"archive[Ar] member contents are the files' bytes"):
+        tree().archive[Ar]().entries.map(_.data.memoize.utf8)
+      . assert(_ == List(t"A", t"B", t"C"))
 
     suite(m"Compression: tar.gzip round-trip"):
       val tar = Tarfile(List(helloFile, emptyDir))

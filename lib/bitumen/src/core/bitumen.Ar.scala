@@ -39,11 +39,13 @@ import aperture.*
 import contingency.*
 import denominative.*
 import fulminate.*
+import galilei.*
 import gossamer.*
 import hieroglyph.*, codepages.asciiCodepage, textMetrics.uniformMetric
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
+import serpentine.*
 import spectacular.*
 import vacuous.*
 import zephyrine.*
@@ -62,6 +64,46 @@ object Ar:
   // `Ar` (`path.open[Ar]()`) lives in `bitumen.jvm`, alongside the disk backend.
   given dataOpenable: (tactic: Tactic[Ar.Error]) => (Ar.DataOpenable^{tactic}) = Ar.DataOpenable()
 
+  // Archives a directory tree as a flat `ar` archive, `directory.archive[Ar](flags*)`. `ar` has
+  // no directory entries, so every regular file beneath the root becomes a member named by its
+  // slash-joined relative path (a GNU long name, past fifteen characters), directories
+  // contribute nothing, and symbolic links are followed, since a link cannot be a member
+  // either. A FIFO or device raises `Unrepresentable`. `mode` is the whole `st_mode`, as `ar`
+  // stores it, and `Archive.Flag`s replace the owner and timestamp the filesystem reports.
+  class Archivable[plane: Filesystem]
+    ( using backend: FilesystemBackend on plane,
+            ioTactic: Tactic[Io.Error],
+            arTactic: Tactic[Ar.Error] )
+  extends aperture.Archivable:
+    type Self = Path on plane
+    type Form = Ar
+    type Operand = Archive.Flag
+    type Result = Arfile
+
+    def archive(root: Path on plane, flags: List[Archive.Flag]): Arfile =
+      val entries: List[Ar.Entry] =
+        Archive.Tree.members(root, true).filter(_.stat.entry != galilei.Directory).map: member =>
+          val stat = member.stat
+
+          stat.entry match
+            case galilei.File =>
+              val (user, group) = Archive.Tree.owner(stat, flags)
+              val body = Archive.Body(Archive.Tree.contents(member.path))
+              // `100644`: a regular file, readable by all and writable by its owner.
+              val mode = stat.mode.or(33188)
+              Ar.Entry(member.name, body, Archive.Tree.mtime(stat, flags), user, group, mode)
+
+            case _ =>
+              abort(Ar.Error(Ar.Error.Reason.Unrepresentable(member.name)))
+
+      Arfile(entries)
+
+  // In the companion of the form, so `directory.archive[Ar]()` resolves with no import.
+  given archivable: [plane: Filesystem]
+  =>  ( backend: FilesystemBackend on plane, ioTactic: Tactic[Io.Error], arTactic: Tactic[Ar.Error] )
+  =>  ( Ar.Archivable[plane]^{ioTactic, arTactic} ) =
+    Ar.Archivable[plane]
+
   // The kinds of member a GNU archive holds, told apart only by name — `ar` has no type field.
   // Debian's `.deb` uses `Regular` exclusively; the other two appear in `.a` static libraries,
   // which nest inside the `data.tar` of every `-dev` package.
@@ -78,6 +120,7 @@ object Ar:
       case BadLongNameRef(reference: Text) extends Reason(6)
       case UnsupportedNameFormat(name: Text) extends Reason(7)
       case WriteUnsupported extends Reason(8)
+      case Unrepresentable(name: Text) extends Reason(9)
 
     given communicable: Reason is Communicable =
       case Reason.BadMagic(actual) =>
@@ -103,6 +146,9 @@ object Ar:
 
       case Reason.WriteUnsupported =>
         m"ar archives cannot yet be opened for writing"
+
+      case Reason.Unrepresentable(name) =>
+        m"the entry $name is neither a regular file nor a directory, which ar cannot store"
 
   case class Error(reason: Ar.Error.Reason)(using Diagnostics)
   extends fulminate.Error(286, reason.number)
