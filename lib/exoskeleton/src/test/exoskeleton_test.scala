@@ -553,6 +553,34 @@ object Tests extends Suite(m"Exoskeleton Tests"):
                 Pane.completions(t"files verify ")
             .check { out => out.cut(t"one.txt").stdlib.length == 2 && out.cut(t"src/").stdlib.length == 2 }
 
+          // yossarian, which renders the panes on a pseudo-terminal the tests above use, checked
+          // against tmux, an independent terminal emulator: each scenario is typed into a pane of
+          // each kind, under the same configuration, and the screens must be identical. tmux is
+          // not otherwise needed, so the comparison is skipped where it is absent.
+          suite(m"Panes render as tmux renders"):
+            val tmuxInstalled: Boolean = safely(sh"tmux -V".exec[Exit]()) == Exit.Ok
+
+            // The whole screen once the shell has listed the completions of `keys`, as
+            // `Pane.completions` asks for them: with Tab, or in PowerShell, whose Tab inserts only
+            // a common prefix, with the rig's `_completions` function.
+            def screen(keys: Text)(using Pane): Text =
+              Pane.completions(keys)
+              Pane.screenshot()()
+
+            // A suite's own output does not reach the report, so the skip is reported as a test.
+            if !tmuxInstalled then
+              test(m"tmux is not installed, so the comparison with tmux is skipped")(tmuxInstalled)
+              . check(_ == false)
+            else
+              List(Shell.Bash, Shell.Zsh, Shell.Fish, Shell.Powershell).each: shell =>
+                List(t"", t"distribution ", t"distribution gentoo -").each: keys =>
+                  // Both screens when they differ, so that a failure shows what each showed.
+                  test(m"${shell.toString.tt} renders the completions of $keys as tmux does"):
+                    val pane = shell.pane(width = 120)(screen(keys))
+                    val tmux = shell.tmux(width = 120)(screen(keys))
+                    if pane == tmux then t"" else t"pane:\n$pane\ntmux:\n$tmux"
+                  . check(_ == t"")
+
       object HelpApp:
         import interpreters.posixInterpreter
         import stdios.muteStdio
