@@ -95,9 +95,10 @@ Chain(bytes).read[Person in Cbor]   // parsed without building a tree
 The derivation composes the parser at expansion time, so it lives in a separate module from the
 runtime codecs and is imported by name.
 
-Reading over a stream whose chunk boundaries fall anywhere works the same way: a value split
-across two chunks reads exactly as one that arrives whole, so a message need not be assembled
-before it is decoded.
+Reading over a stream works the same way, and the input is never assembled first: the parser
+reads each chunk as it arrives, so a value split across two chunks reads exactly as one that
+arrives whole, and the memory held is bounded by the one item being read, not the document. A
+`read[Cbor]` likewise reads the chunks as they arrive, but builds the whole tree.
 
 ### Tags
 
