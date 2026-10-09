@@ -43,14 +43,14 @@ work.create[Directory]()
 
 ### ZIP
 
-Writing a ZIP archive takes entries — each an archive-relative path and a content source — and
-either writes to a path or serializes as a byte stream. Compression is a policy in scope,
-deflating by default and storing where deflation would not help:
+A ZIP archive is a `Zipfile` of entries — each an archive-relative path and a content source —
+which streams as bytes, so writing one to disk is writing any other value. Compression is a
+policy in scope, deflating by default and storing where deflation would not help:
 
 ```scala
 val zipPath = work / "hello.zip"
 val entry = Zip.Entry(t"hello.txt".as[Path on Zip], t"Hello world".in[Data])
-Zipfile.write(zipPath)(List(entry))
+zipPath.write(Zipfile(List(entry)))
 ```
 
 An entry's path is a `Path on Zip`: relative to the archive root, so a text that names an absolute
@@ -94,9 +94,9 @@ main attributes parsed from `META-INF/MANIFEST.MF`, continuation lines rejoined 
 specification requires. An archive without a manifest simply has no attributes:
 
 ```scala
-val manifest = Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], t"Manifest-Version: 1.0".in[Data])
+val manifest = Jar.manifest(t"Manifest-Version" -> t"1.0")
 val jarPath = work / "hello.jar"
-Zipfile.write(jarPath)(List(manifest, entry))
+jarPath.write(Zipfile(List(manifest, entry)))
 
 jarPath.open[Jar]():
   zip.manifest   // Map(t"Manifest-Version" -> t"1.0")
@@ -159,19 +159,46 @@ tarPath.open[Tar](Tar.Flag.Gzip):
   tar.entries.map(_.entryName)
 ```
 
-A whole directory tree archives with `Tarfile.from(directory)` and unpacks with `extractTo`,
-connecting archives to the [filesystem](filesystem.md):
+A tarball unpacks onto the [filesystem](filesystem.md) with `extractTo`:
 
 ```scala
 val unpacked = work / "unpacked"
 tarball.extractTo(unpacked)
-Tarfile.from(unpacked).entries.map(_.entryName)
 ```
 
 Long names are handled in POSIX's pax form by default, or GNU's, chosen when the archive is built
 (`Tarfile(entries, LongNameFormat.Gnu)`); sparse files and pax extended headers round-trip
 faithfully. A malformed archive raises a `Tar.Error` naming the fault — a bad checksum, an
 unparseable header field, a truncated body.
+
+### Archiving a directory
+
+A directory tree archives in any of the formats with `archive`, the format chosen as a type:
+
+```scala
+import filesystemOptions.preserveSymlinks
+
+unpacked.archive[Tar]().gzip
+unpacked.archive[Zip]()
+unpacked.archive[Ar]()
+```
+
+The result is the in-memory archive — a `Tarfile`, `Zipfile` or `Arfile` — to stream, compress
+or write wherever it is wanted. Every descendant is visited in a fixed order, each directory's
+children sorted, so the same tree always produces the same bytes. Tar records each entry as its
+own kind, with the mode, owner and timestamp the filesystem reports; whether a symbolic link is
+stored as a link or as the file it points at follows the `filesystemOptions` symlink policy in
+scope. ZIP and `ar` cannot store a link, so they always follow one; and since `ar` has no
+directories, it flattens the tree, naming each file by its slash-joined relative path.
+
+Flags tune the archiving. `Archive.Flag.Owner` and `Archive.Flag.Mtime` replace the owner and
+timestamp of every entry — `tar --owner`, `--group` and `--mtime`, the knobs of a reproducible
+build — and a `LongNameFormat` chooses the long-name convention; a ZIP takes a `Zip.Compression`:
+
+```scala
+unpacked.archive[Tar](LongNameFormat.Gnu, Archive.Flag.Owner(UnixUser(0), UnixGroup(0)))
+unpacked.archive[Zip](Zip.Compression.Stored)
+```
 
 ### Ar
 
