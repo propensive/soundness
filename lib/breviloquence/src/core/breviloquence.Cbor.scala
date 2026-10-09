@@ -707,12 +707,8 @@ object Cbor extends Cbor2, Dynamic:
       else
         origin
 
-  // The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM
-  // pipeline — rejects the `Optic`'s capture of `filter.predicate` against the required
-  // pure `Optic` type. (Compiler divergence; see #1520 and `caesura`'s `rowFilter`.)
   given filterOptical: Filter[Cbor] is Optical from Cbor onto Cbor = filter =>
-    // [by-name-capture] filter predicate laundered pure (Scala.js divergence)
-    val predicate: Cbor -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
+    val predicate: Cbor -> Boolean = filter.predicate
 
     Optic: (origin, lambda) =>
       if origin.root.isArray then

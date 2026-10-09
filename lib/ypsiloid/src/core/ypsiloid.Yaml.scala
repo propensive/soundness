@@ -1268,12 +1268,8 @@ object Yaml extends Yaml2, Dynamic:
       else
         origin
 
-  // The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM
-  // pipeline — rejects the `Optic`'s capture of `filter.predicate` against the required
-  // pure `Optic` type. (Compiler divergence; see #1520 and `caesura`'s `rowFilter`.)
   given filterOptical: Filter[Yaml] is Optical from Yaml onto Yaml = filter =>
-    // [field-purity] scala.js: filter predicate captured by pure Optic given
-    val predicate: Yaml -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
+    val predicate: Yaml -> Boolean = filter.predicate
 
     Optic: (origin, lambda) =>
       if origin.root.isArray then
