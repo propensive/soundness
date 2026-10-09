@@ -30,58 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package denominative
 
-export
-  denominative
-  . { aka, capped, Countable, Vacuiscible, Applicable, Definable, Omissible, Terminable, Truncable, size, gamut, Interval, extent, iterate, prefix, nil, Ordinal, pare, Prim,
-      Quat, Quin, retrace, Sec, Sen, Sept, Span, spot, Ter, u, z, Zerary, limit, ult, ant, pen,
-      Dysasymptotic, beyond, coextent, Coextent }
+import prepositional.*
+import vacuous.*
 
-// `thru` and `till` are re-declared here rather than exported: an export forwards only one of
-// the two overloads, so a plain `Ordinal` receiver would be offered the branded alternative
-// and fail. Declaring both in one compilation unit restores ordinary overload resolution.
-extension (ordinal: denominative.Ordinal)
-  inline infix def thru (right: denominative.Ordinal): denominative.Interval =
-    denominative.thru(ordinal)(right)
-
-  inline infix def till (right: denominative.Ordinal): denominative.Interval =
-    denominative.till(ordinal)(right)
-
-extension [form](ordinal: prepositional.`in`[denominative.Ordinal, form])
-  inline infix def thru (right: prepositional.`in`[denominative.Ordinal, form])
-  :   prepositional.`in`[denominative.Interval, form] =
-    denominative.thru(ordinal)(right)
-
-  inline infix def till (right: prepositional.`in`[denominative.Ordinal, form])
-  :   prepositional.`in`[denominative.Interval, form] =
-    denominative.till(ordinal)(right)
-
-// `tabulate` is overloaded like `each`, so it is re-declared here for the same reason as
-// `thru` and `till`.
-extension [countable: denominative.Countable](value: countable)
-  inline def tabulate[element]
-    ( inline lambda: prepositional.`in`[denominative.Ordinal, value.type] => element )
-  :   Sequence[element] =
-    denominative.tabulate(value)(lambda)
-
-extension (interval: denominative.Interval)
-  inline def tabulate[element](inline lambda: denominative.Ordinal => element)
-  :   Sequence[element] =
-    denominative.tabulate(interval)(lambda)
-
-extension [form](range: prepositional.`in`[denominative.Interval, form])
-  inline def tabulate[element]
-    ( inline lambda: prepositional.`in`[denominative.Ordinal, form] => element )
-  :   Sequence[element] =
-    denominative.tabulate(range)(lambda)
-
-package dysasymptotics:
-  export denominative.dysasymptotics.{linearSize, linearAccess, unboundedSize}
-
-package ordinalTextualizables:
-  export
-    denominative.ordinalTextualizables
-    . { englishOrdinal, englishSuperscriptOrdinal, frenchOrdinal, intermediateOrdinal,
-        italianOrdinal, nominalOrdinal, russianOrdinal, spanishOrdinal, uniaryOrdinal,
-        unmarkedUniaryOrdinal, unmarkedZeraryOrdinal, zeraryOrdinal }
+// Evidence that two countable values have the same size, so an index proven against one is
+// valid for the other. The brands are singleton types, and a single ordinal cannot carry two of
+// them: `Ordinal in a.type & Ordinal in b.type` is not a subtype of either, since two same-named
+// alias refinements do not intersect into one (verified; the design was evaluated and rejected
+// for #1755). A token minted by one size check carries the proof instead, and transfers an
+// ordinal between the brands. The opaque type itself lives in `internal` beside `Ordinal`: a
+// toplevel opaque is transparent to every file of its package, which would include the tests.
+extension [countable: Countable](value: countable)
+  // The shared extent of two values, or `Unset` when their sizes differ. Sound for immutable
+  // receivers on stable paths, exactly as `extent` is.
+  def coextent[other: Countable](other: other): Optional[Coextent[value.type, other.type]] =
+    val size = countable.size(value)
+    if size == summon[Countable { type Self = other }].size(other) then Coextent.mint(size)
+    else Unset

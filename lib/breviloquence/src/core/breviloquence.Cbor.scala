@@ -1067,7 +1067,7 @@ object Cbor extends Cbor2, Dynamic:
     private val longCache: Array[AnyRef]^{} =
       Array.scribe[AnyRef](LongCacheSize): scribe => extent =>
         extent.each: index =>
-          scribe(index) = java.lang.Long.valueOf((index: Ordinal).n0.toLong).nn
+          scribe(index) = java.lang.Long.valueOf(index.n0.toLong).nn
 
     private inline def boxLong(value: Long): AnyRef =
       if value >= 0L && value < LongCacheSize then longCache.readUnchecked(value.toInt)

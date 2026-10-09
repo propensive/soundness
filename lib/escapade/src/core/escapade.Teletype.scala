@@ -198,7 +198,7 @@ object Teletype:
                   val style = denseStyles.at(index)
 
                   if style != previous then
-                    boundaryScribe.append((index: Ordinal).n0)
+                    boundaryScribe.append(index.n0)
                     styleScribe.append(style)
 
                   previous = style
@@ -330,7 +330,7 @@ case class Teletype
                 val style = styles.at(index)
 
                 if style != previous then
-                  boundaryScribe.append((index: Ordinal).n0)
+                  boundaryScribe.append(index.n0)
                   styleScribe.append(style)
 
                 previous = style
@@ -462,7 +462,7 @@ case class Teletype
 
         if isDense then
           val arr = Array.scribe[Long](keepLength + 1): scribe =>
-            _ => scribe.iterate { i => scribe(i) = styles.at(Ordinal.zerary(n + (i: Ordinal).n0)).or(0L) }
+            _ => scribe.iterate { i => scribe(i) = styles.at(Ordinal.zerary(n + i.n0)).or(0L) }
 
           Teletype
             ( plain.skip(n),
@@ -482,11 +482,11 @@ case class Teletype
               scribe.append(0)
 
               scribe.iterate: i =>
-                if (i: Ordinal) != Prim then
-                  scribe(i) = boundaries.at(Ordinal.zerary(firstRun + (i: Ordinal).n0)).or(0) - n
+                if i != Prim then
+                  scribe(i) = boundaries.at(Ordinal.zerary(firstRun + i.n0)).or(0) - n
 
           val newStylesArr = Array.scribe[Long](newK + 1): scribe =>
-            _ => scribe.iterate { i => scribe(i) = styles.at(Ordinal.zerary(firstRun + (i: Ordinal).n0)).or(0L) }
+            _ => scribe.iterate { i => scribe(i) = styles.at(Ordinal.zerary(firstRun + i.n0)).or(0L) }
 
           Teletype
             ( plain.skip(n),
@@ -507,7 +507,7 @@ case class Teletype
 
         if isDense then
           val arr = Array.scribe[Long](n + 1): scribe =>
-            _ => scribe.iterate { i => scribe(i) = if (i: Ordinal).n0 == n then 0L else styles.at(i).or(0L) }
+            _ => scribe.iterate { i => scribe(i) = if i.n0 == n then 0L else styles.at(i).or(0L) }
 
           Teletype
             ( plain.keep(n),
@@ -524,7 +524,7 @@ case class Teletype
             _ => scribe.iterate { i => scribe(i) = boundaries.at(i).or(0) }
 
           val newStylesArr = Array.scribe[Long](newK + 1): scribe =>
-            _ => scribe.iterate { i => scribe(i) = if (i: Ordinal).n0 == newK then 0L else styles.at(i).or(0L) }
+            _ => scribe.iterate { i => scribe(i) = if i.n0 == newK then 0L else styles.at(i).or(0L) }
 
           Teletype
             ( plain.keep(n),

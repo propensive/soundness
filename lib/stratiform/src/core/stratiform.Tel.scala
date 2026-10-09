@@ -679,7 +679,7 @@ object Tel extends Tel2:
     def keywordIndex(keys: Array[String]^{}, keyword: Text): Int =
       val name: String = keyword.s
 
-      keys.spot(index => keys(index) == name).lay(-1) { ordinal => (ordinal: Ordinal).n0 }
+      keys.spot(index => keys(index) == name).lay(-1) { ordinal => ordinal.n0 }
 
     // The repeatable-field hooks, looking through the `Field.Adapter` — for
     // staged parsers, which cannot name the private `Gathering` trait. A
@@ -850,7 +850,7 @@ object Tel extends Tel2:
           val name: String = keyword.s
 
           named.spot(index => named(index) == name).lay(-1):
-            ordinal => (ordinal: Ordinal).n0
+            ordinal => ordinal.n0
 
         // The value of a record field is its children, one level deeper than
         // its own entry line — after the entry line's own atoms fill fields

@@ -1078,7 +1078,7 @@ object Json extends Json2, Dynamic:
           val found =
             identical.or(named.spot(index => named(index) == key))
 
-          found.lay(-1) { ordinal => (ordinal: Ordinal).n0 }
+          found.lay(-1) { ordinal => ordinal.n0 }
 
         def parse(reader: Json.Reader^): derivation =
           val entries = fields
@@ -1293,7 +1293,7 @@ object Json extends Json2, Dynamic:
       val found =
         identical.or(keys.spot(index => keys(index) == name))
 
-      found.lay(KeyTable.Unknown) { ordinal => (ordinal: Ordinal).n0 }
+      found.lay(KeyTable.Unknown) { ordinal => ordinal.n0 }
 
   object Field:
     // Adapts an opted-in nominal instance (or any other `Parsing`) for use

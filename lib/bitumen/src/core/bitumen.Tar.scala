@@ -116,7 +116,7 @@ object Tar:
 
       // A short block sums fewer bytes and fails the comparison below, rather than overrunning.
       block.iterate(block.extent.capped(blockSize)): index =>
-        val i: Int = (index: Ordinal).n0
+        val i: Int = index.n0
 
         val byte: Int =
           if i >= checksumOffset && i < checksumOffset + checksumLength then 0x20

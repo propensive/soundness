@@ -1041,7 +1041,7 @@ extends caps.ExclusiveCapability:
   private[facsimile] def pageReference(ordinal: Ordinal)(using Tactic[Pdf.Error]): Optional[Cos.Ref] =
     val entries = pageEntries
     // The bounds check and the lookup are the same act: a confined ordinal deindexes bare.
-    entries.confine(ordinal.n0.z).let { position => entries(position)(0).let(Cos.Ref(_, 0)) }
+    entries.pick(ordinal.n0.z) { position => entries(position)(0).let(Cos.Ref(_, 0)) }
 
   def trailer: Map[Text, Cos] = xref.trailer
 

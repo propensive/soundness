@@ -86,6 +86,16 @@ extension [countable: Countable](value: countable)
       lambda(Ordinal.zerary(index).asInstanceOf[Ordinal in value.type])
       index += 1
 
+  // The collecting counterpart of `iterate`: one element per ordinal, in order, so building a
+  // sequence from a value's own confined indexes stays inside the proof machinery rather than
+  // falling back to `zipWithIndex` (a raw `Int`) or a mutable accumulator.
+  inline def tabulate[element](inline lambda: (Ordinal in value.type) => element)
+  :   Sequence[element] =
+
+    val builder = scala.collection.immutable.Vector.newBuilder[element]
+    iterate { ordinal => builder += lambda(ordinal) }
+    Sequence.from(builder.result())
+
   // The first index satisfying the predicate, confined to this value, or `Unset`: the safe
   // form of a guarded forward scan whose caller consumes the stopping index.
   inline def spot(inline predicate: (Ordinal in value.type) => Boolean)
@@ -208,6 +218,21 @@ extension [form](range: Interval in form)
       lambda(Ordinal.zerary(index).asInstanceOf[Ordinal in form])
       index += 1
 
+// The collecting counterpart of `each`, with the same two overloads for the same reason: the
+// branded one yields a confined ordinal per element, so `range.tabulate { i => xs(i) }` reads
+// bare elements over any sub-interval (`capped`, `beyond`, `thru`) of a branded extent.
+extension (interval: Interval)
+  inline def tabulate[element](inline lambda: Ordinal => element): Sequence[element] =
+    val builder = scala.collection.immutable.Vector.newBuilder[element]
+    interval.each { ordinal => builder += lambda(ordinal) }
+    Sequence.from(builder.result())
+
+extension [form](range: Interval in form)
+  inline def tabulate[element](inline lambda: (Ordinal in form) => element): Sequence[element] =
+    val builder = scala.collection.immutable.Vector.newBuilder[element]
+    range.each { ordinal => builder += lambda(ordinal) }
+    Sequence.from(builder.result())
+
 // `thru` and `till` bound an interval from two ordinals. Both overloads live here, at package
 // level, for the same reason `each` does: the unbranded alternative would otherwise be reached
 // through the opaque type's implicit scope and outrank the branded one, silently returning an
@@ -248,7 +273,7 @@ extension [form](range: Interval in form)
     Interval.sized(interval.start.n0 + dropped, interval.size - dropped)
     . asInstanceOf[Interval in form]
 
-export denominative.internal.{Ordinal, Interval, Span}
+export denominative.internal.{Ordinal, Interval, Span, Coextent}
 
 infix type aka [subject, label <: Label] = denominative.protointernal.Tagged[subject, label]
 

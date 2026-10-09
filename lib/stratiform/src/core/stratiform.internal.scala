@@ -541,9 +541,9 @@ object internal:
      out:     scala.collection.mutable.ListBuffer[Tel] )
   :   Boolean =
 
-    pattern.length == input.length && pattern.spot: index =>
-      !input.at(index).lay(false)(matchBlock(pattern.at(index), _, marker, out))
-    . absent
+    pattern.coextent(input).lay(false): shared =>
+      pattern.spot { index => !matchBlock(pattern(index), input(shared(index)), marker, out) }
+      . absent
 
   private def matchBlock
     ( pattern: Tel.Block,
