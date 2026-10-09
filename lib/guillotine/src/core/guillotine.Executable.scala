@@ -180,6 +180,9 @@ case class Command(arguments: Text*) extends Executable:
     new Job(process)
 
 
+  // This command, to be run on a fresh pseudo-terminal of the given size rather than on pipes.
+  def pty(width: Int = 80, height: Int = 24): Pseudoterminal = Pseudoterminal(this, width, height)
+
   def escape: Text = arguments.map { argument => t"'${argument.sub(t"'", t"\'")}'" }.join(t" ")
 
 object Pipeline:

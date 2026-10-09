@@ -437,6 +437,62 @@ object Tests extends Suite(m"Guillotine tests"):
         proc.await(2000L)
       . assert(_ == ())
 
+    suite(m"Pseudoterminals"):
+      test(m"a command on a pseudo-terminal finds a terminal"):
+        sh"sh -c '[ -t 0 ] && [ -t 1 ] && [ -t 2 ] && echo terminal'".pty().exec[Text]().trim
+      . assert(_ == t"terminal")
+
+      test(m"the pseudo-terminal is a device"):
+        sh"tty".pty().exec[Text]().s.startsWith("/dev/")
+      . assert(_ == true)
+
+      test(m"the pseudo-terminal has the requested size"):
+        sh"stty size".pty(100, 30).exec[Text]().trim
+      . assert(_ == t"30 100")
+
+      test(m"standard error is written to the pseudo-terminal"):
+        sh"sh -c 'echo err 1>&2'".pty().exec[Text]().trim
+      . assert(_ == t"err")
+
+      test(m"the exit status of a command on a terminal is reported"):
+        sh"sh -c 'exit 3'".pty().exec[Exit]()
+      . assert(_ == Exit.Fail(3))
+
+      test(m"output written before a quick exit is not lost"):
+        val job = sh"echo hello".pty().fork[Text]()
+        job.attend()
+        job.await().trim
+      . assert(_ == t"hello")
+
+      test(m"input typed at the terminal reaches the command"):
+        val job = sh"head -n 1".pty().fork[Text]()
+        job.stdin(Stream(Data(104, 105, 13)))
+        job.await().s.replace("\r", "").nn.trim.nn.tt
+      . assert(_ == t"hi\nhi")
+
+      test(m"the end-of-file character ends a read from the terminal"):
+        val job = sh"cat".pty().fork[Exit]()
+        job.stdin(Stream(Data(104, 105, 13, 4)))
+        job.await()
+      . assert(_ == Exit.Ok)
+
+      test(m"a resized terminal reports its new size"):
+        val job = sh"sh -c 'read line; stty size'".pty().fork[Text]()
+        job.resize(132, 50)
+        job.stdin(Stream(Data(13)))
+        job.await().trim
+      . assert(_ == t"50 132")
+
+      test(m"a command on a terminal can be killed"):
+        val job = sh"sleep 10".pty().fork[Exit]()
+        job.kill()
+        job.exitStatus()
+      . assert(_ == Exit.Fail(137))
+
+      test(m"a missing command on a terminal raises Exec.Error"):
+        capture[Exec.Error](sh"definitely-not-a-binary-xyz".pty().exec[Text]())
+      . assert(_.command.arguments.head == t"definitely-not-a-binary-xyz")
+
     suite(m"Stdin and stderr"):
       test(m"pipe Chain[Data] into stdin"):
         val proc = sh"cat".fork[Text]()
