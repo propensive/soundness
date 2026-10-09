@@ -87,7 +87,7 @@ import vacuous.*
 // inner workings are kept that way.
 abstract class PoolingSupervisor extends ThreadSupervisor:
   // Starts a carrier thread running `runnable` and returns it started.
-  protected def spawn(runnable: Runnable): Thread
+  protected def spawn(runnable: Runnable^): Thread
 
   // The number of idle carriers kept for reuse; one arriving above it retires instead.
   protected def idleLimit: Int = 256
@@ -118,16 +118,13 @@ abstract class PoolingSupervisor extends ThreadSupervisor:
     val carrier = idle.pollFirst()
 
     if carrier == null then
-      // A supervisor is a plain value, not a capability (see `Supervisor`); capture checking
-      // cannot see that from inside its own body, so the reference is laundered here.
-      // [borrowing-stateful] new Carrier borrows enclosing supervisor `this`
-      val fresh = Carrier(caps.unsafe.unsafeAssumePure(this))
+      val fresh = Carrier(this)
       fresh.task = entry
       spawn(fresh)
     else
       idleCount.decrementAndGet()
       carrier.task = entry
-      val thread = carrier.thread
+      val thread = carrier.strand.thread
       if thread != null then jucl.LockSupport.unpark(thread)
 
     entry
@@ -140,18 +137,18 @@ abstract class PoolingSupervisor extends ThreadSupervisor:
     case null => jucl.LockSupport.park(blocker)
     case carrier =>
       var spun = 0
-      while !carrier.permit && spun < spins do
+      while !carrier.strand.permit && spun < spins do
         spun += 1
         Thread.onSpinWait()
 
-      if !carrier.permit then jucl.LockSupport.park(blocker)
-      carrier.permit = false
+      if !carrier.strand.permit then jucl.LockSupport.park(blocker)
+      carrier.strand.permit = false
 
   override def park(blocker: AnyRef, deadline: Long): Unit = carriers.get() match
     case null => jucl.LockSupport.parkNanos(blocker, deadline - jl.System.nanoTime())
     case carrier =>
-      if !carrier.permit then jucl.LockSupport.parkNanos(blocker, deadline - jl.System.nanoTime())
-      carrier.permit = false
+      if !carrier.strand.permit then jucl.LockSupport.parkNanos(blocker, deadline - jl.System.nanoTime())
+      carrier.strand.permit = false
 
 object PoolingSupervisor:
   // Spin budget before parking, for a carrier awaiting a task and for a task's `park`: long
@@ -233,20 +230,16 @@ object PoolingSupervisor:
 
   // A carrier: the loop a pooled thread runs, and the strand identity of whatever task is
   // mounted on it, for waiter sets and parking.
-  private[parasite] final class Carrier(pool: PoolingSupervisor) extends Runnable:
+  private[parasite] final class Carrier(pool: PoolingSupervisor^) extends Runnable:
     // [field-purity] volatile task var in Carrier
     @caps.unsafe.untrackedCaptures @volatile var task: Entry | Null = null
-    // [field-purity] volatile thread var in Carrier
-    @caps.unsafe.untrackedCaptures @volatile var thread: Thread | Null = null
-    // The park permit `CarrierStrand.unpark` grants, checked by the spinning phase of `park`.
-    // [field-purity] volatile permit flag in Carrier
-    @caps.unsafe.untrackedCaptures @volatile var permit: Boolean = false
-
-    val strand: Strand = CarrierStrand(this)
+    // The carrier's thread and park permit live on its strand, which needs nothing else: so a
+    // strand, unlike its carrier, does not retain the pool.
+    val strand: CarrierStrand = CarrierStrand()
 
     def run(): Unit =
       val self = Thread.currentThread.nn
-      thread = self
+      strand.thread = self
       pool.carriers.set(this)
       var current: Entry | Null = task
 
@@ -274,20 +267,21 @@ object PoolingSupervisor:
         // waiting on it, so a stale permit only makes a later `park` spurious, which is allowed.
         task
 
-  private[parasite] final class CarrierStrand(val carrier: Carrier) extends Strand:
+  // Identity equality: one strand per carrier, for the carrier's whole life.
+  private[parasite] final class CarrierStrand() extends Strand:
+    // [field-purity] volatile thread var in CarrierStrand
+    @caps.unsafe.untrackedCaptures @volatile var thread: Thread | Null = null
+    // The park permit `unpark` grants, checked by the spinning phase of `park`.
+    // [field-purity] volatile permit flag in CarrierStrand
+    @caps.unsafe.untrackedCaptures @volatile var permit: Boolean = false
+
     def interrupt(): Unit =
-      val thread = carrier.thread
-      if thread != null then thread.interrupt()
+      val current = thread
+      if current != null then current.interrupt()
 
     def join(): Unit = ()
 
     def unpark(): Unit =
-      carrier.permit = true
-      val thread = carrier.thread
-      if thread != null then jucl.LockSupport.unpark(thread)
-
-    override def equals(that: Any): Boolean = that.asMatchable match
-      case that: CarrierStrand => that.carrier.eq(carrier)
-      case _                   => false
-
-    override def hashCode: Int = carrier.hashCode
+      permit = true
+      val current = thread
+      if current != null then jucl.LockSupport.unpark(current)

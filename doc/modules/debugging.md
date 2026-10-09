@@ -33,7 +33,7 @@ import soundness.*
 import probates.awaitProbate
 import strategies.throwUnsafely
 import stdios.javaLangSystemStdio
-import threading.virtualThreading
+import threads.virtualThreads
 ```
 
 ### Opening a session

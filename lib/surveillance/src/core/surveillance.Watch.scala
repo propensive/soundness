@@ -48,7 +48,7 @@ import vacuous.*
 
 object Watch:
   def apply[path: Abstractable across Paths to Text](paths: Iterable[path])(using watcher: Watcher)
-  :   Watch raises Watch.Error =
+  :   Watch^{watcher} raises Watch.Error =
 
     val pathGroups =
       paths.map(_.generic.s).map(jnf.Paths.get(_).nn).map: javaPath =>
@@ -70,12 +70,12 @@ object Watch:
 
   given openable: [path: Abstractable across Paths to Text]
   =>  ( watcher: Watcher, tactic: Tactic[Watch.Error] )
-  =>  ( Openable[path]^{tactic} ) =
+  =>  ( Openable[path]^{watcher, tactic} ) =
     Openable[path]
 
   given allOpenable: [path: Abstractable across Paths to Text, collection <: Iterable[path]]
   =>  ( watcher: Watcher, tactic: Tactic[Watch.Error] )
-  =>  ( AllOpenable[collection, path]^{tactic} ) =
+  =>  ( AllOpenable[collection, path]^{watcher, tactic} ) =
     AllOpenable[collection, path]
 
   // WatchError → Watch.Error
@@ -132,7 +132,7 @@ object Watch:
   // handle — with anything lazily derived from its event stream — is confined to it by capture
   // checking. Watching is pure observation, so no operation is grant-gated: the mode is
   // irrelevant, and `Read` (the default) describes it best.
-  class Handle private[surveillance] (watch: Watch) extends caps.ExclusiveCapability:
+  class Handle private[surveillance] (watch: Watch^) extends caps.ExclusiveCapability:
     def stream: Chain[Watch.Event] = watch.stream
 
     def batches[duration: Abstractable across Durations to Long](quiet: duration)
@@ -182,7 +182,7 @@ object Watch:
 // A `Watch` is the user-facing handle returned by registering one or more paths. Its `stream`
 // yields events as they occur, and `unregister` cancels the backend registration and terminates
 // the stream. The actual change-detection is delegated to a `Watcher` backend.
-class Watch(spool: Relay[Watch.Event], registration: Watcher.Registration):
+class Watch(spool: Relay[Watch.Event], registration: Watcher.Registration^):
   // The legacy view of the event relay (the audited bridge): one lazy,
   // single-owner drain of the shared queue, as before.
   def stream: Chain[Watch.Event] = Chain.from(spool.stream.records)

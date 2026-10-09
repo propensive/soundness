@@ -43,7 +43,8 @@ import turbulence.*
 // `watchers.polling` backend instead snapshots directories on a fixed interval, for filesystems or
 // platforms where native filewatching is unavailable or unreliable.
 
-object Watcher:
+// An object extending a capability, since its default given is one.
+object Watcher extends anticipation.DurableUnscoped uses JavaBaseWatcher:
   given default: Watcher = JavaBaseWatcher
 
   // A handle to a single backend registration; cancelling it stops delivery of further events for
@@ -51,8 +52,9 @@ object Watcher:
   trait Registration:
     def cancel(): Unit
 
-trait Watcher:
+// A capability: a backend detects changes on supervised tasks of its own.
+trait Watcher extends anticipation.DurableUnscoped:
   // Pure (`->`) filters: they are constructed by `Watch.apply` from path names alone, and
   // registrations are retained in backend-global state, which must not capture.
   def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Relay[Watch.Event])
-  :   Watcher.Registration raises Watch.Error
+  :   Watcher.Registration^{this} raises Watch.Error

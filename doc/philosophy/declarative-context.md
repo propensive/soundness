@@ -51,7 +51,7 @@ import codepages.utf8Codepage            // how text becomes bytes
 import formatting.compactJsonFormatting    // how JSON is rendered
 import dateFormats.iso8601DateFormat       // how dates are shown
 import affirmations.yesNoAffirmation       // how a boolean is shown
-import threading.virtualThreading          // what a task runs on
+import threads.virtualThreads          // what a task runs on
 import probates.cancelProbate              // what happens to unfinished tasks
 import httpBackends.soundnessHttp              // which HTTP transport is used
 import filesystemBackends.javaBaseFilesystem   // which filesystem implementation

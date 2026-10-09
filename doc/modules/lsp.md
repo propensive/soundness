@@ -45,7 +45,7 @@ import probates.awaitProbate
 import stdios.javaLangSystemStdio
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
-import threading.virtualThreading
+import threads.virtualThreads
 ```
 
 ### Defining a server

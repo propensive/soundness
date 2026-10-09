@@ -37,7 +37,7 @@ import soundness.*
 import backstops.stackTraceBackstop
 import executives.completionsExecutive
 import interpreters.posixInterpreter
-import threading.virtualThreading
+import threads.virtualThreads
 
 @main
 def run(): Unit = cli:

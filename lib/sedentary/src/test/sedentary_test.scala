@@ -45,7 +45,7 @@ import strategies.throwUnsafely
 import superlunary.embeddings.automaticEmbedding
 import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
-import threading.platformThreading
+import threads.platformThreads
 
 given BenchmarkDevice = LocalhostDevice
 

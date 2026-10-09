@@ -37,7 +37,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import threading.virtualThreading
+import threads.virtualThreads
 import probates.cancelProbate
 import xylophone.optics.{xmlEachOptical, xmlLens, xmlOrdinalOptical}
 

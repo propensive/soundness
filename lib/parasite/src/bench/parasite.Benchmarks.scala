@@ -82,7 +82,7 @@ import probates.panicProbate
 //
 // Results, 2026-09-07, Mac16,11 (12 cores, 24 GB), JDK 25.0.2, Scala 3.9.0-p16; mean time per
 // operation (one operation = the whole construction). Columns: Soundness on virtual threads,
-// Soundness on the pooled supervisor (`pooledThreading`, only where a construction spawns
+// Soundness on the pooled supervisor (`pooledThreads`, only where a construction spawns
 // tasks), cats-effect, Kyo. The blog's machine was a 16-core Mac15,9 on JDK 25.0.3, so absolute
 // numbers differ; the CE:Kyo ratios (last column, this run → blog) reproduce closely, as do the
 // rivals' bytes per operation (e.g. permit 1.95 MB / 329 kB against the blog's
@@ -115,7 +115,7 @@ import probates.panicProbate
 // (`Direct.running`), as the rivals' run inside their runtimes; that entry is the Soundness
 // runner-overhead row, and is included in every other row. The rows that spawn a task per
 // element or per batch in the rivals (collect successes, parallel chunks) use `concurrently`,
-// a fixed set of workers over numbered jobs, on the Soundness side. A task on `virtualThreading`
+// a fixed set of workers over numbered jobs, on the Soundness side. A task on `virtualThreads`
 // is a virtual thread, costing about 2.5 µs to start and join from another virtual thread (and
 // 7 µs from a platform thread, whose park is a kernel call), against Kyo's 0.15 µs and
 // cats-effect's 0.4 µs per fiber; so the one row that spawns a thousand tasks by specification
@@ -405,8 +405,8 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
           Rivals.Ky.queueChunks(batches, capacity, work) )
 
   def run(): Unit =
-    check()(using threading.virtualThreading)
-    check()(using threading.pooledThreading)
+    check()(using threads.virtualThreads)
+    check()(using threads.pooledThreads)
 
     val bench = Bench(heap = t"2g", gc = t"G1")
     val depthAxis: Axis[Int] = Axis(t"depth")(1000, 10000)
@@ -416,12 +416,12 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
       bench(m"Runner overhead")(target = 1*Second, baseline = Library.CatsEffect).over(Library):
         case Library.Soundness  =>
           '{
-              given Threading = parasite.threading.virtualThreading
+              given Threading = parasite.threads.virtualThreads
               parasite.Benchmarks.Direct.runner()
           }
         case Library.Pooled  =>
           '{
-              given Threading = parasite.threading.pooledThreading
+              given Threading = parasite.threads.pooledThreads
               parasite.Benchmarks.Direct.runner()
           }
         case Library.CatsEffect => '{ parasite.Rivals.Ce.runner() }
@@ -471,12 +471,12 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
       . over(Library):
           case Library.Soundness  =>
             '{
-                given Threading = parasite.threading.virtualThreading
+                given Threading = parasite.threads.virtualThreads
                 parasite.Benchmarks.Direct.promise(parasite.Benchmarks.ops)
             }
           case Library.Pooled  =>
             '{
-                given Threading = parasite.threading.pooledThreading
+                given Threading = parasite.threads.pooledThreads
                 parasite.Benchmarks.Direct.promise(parasite.Benchmarks.ops)
             }
           case Library.CatsEffect => '{ parasite.Rivals.Ce.deferred(parasite.Benchmarks.ops) }
@@ -486,13 +486,13 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
       . over(Library):
           case Library.Soundness =>
             '{
-                given Threading = parasite.threading.virtualThreading
+                given Threading = parasite.threads.virtualThreads
                 parasite.Benchmarks.Direct.queue
                   ( parasite.Benchmarks.ops, parasite.Benchmarks.capacity )
             }
           case Library.Pooled =>
             '{
-                given Threading = parasite.threading.pooledThreading
+                given Threading = parasite.threads.pooledThreads
                 parasite.Benchmarks.Direct.queue
                   ( parasite.Benchmarks.ops, parasite.Benchmarks.capacity )
             }
@@ -511,12 +511,12 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
       . over(Library):
           case Library.Soundness  =>
             '{
-                given Threading = parasite.threading.virtualThreading
+                given Threading = parasite.threads.virtualThreads
                 parasite.Benchmarks.Direct.spawnJoin(parasite.Benchmarks.ops)
             }
           case Library.Pooled  =>
             '{
-                given Threading = parasite.threading.pooledThreading
+                given Threading = parasite.threads.pooledThreads
                 parasite.Benchmarks.Direct.spawnJoin(parasite.Benchmarks.ops)
             }
           case Library.CatsEffect => '{ parasite.Rivals.Ce.spawnJoin(parasite.Benchmarks.ops) }
@@ -527,7 +527,7 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
       . over(Library, workAxis):
           case (Library.Soundness, work) =>
             '{
-                given Threading = parasite.threading.virtualThreading
+                given Threading = parasite.threads.virtualThreads
                 parasite.Benchmarks.Direct.workers
                   ( parasite.Benchmarks.valuesArray,
                     parasite.Benchmarks.parallelism,
@@ -535,7 +535,7 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
             }
           case (Library.Pooled, work) =>
             '{
-                given Threading = parasite.threading.pooledThreading
+                given Threading = parasite.threads.pooledThreads
                 parasite.Benchmarks.Direct.workers
                   ( parasite.Benchmarks.valuesArray,
                     parasite.Benchmarks.parallelism,
@@ -561,7 +561,7 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
       . over(Library, workAxis):
           case (Library.Soundness, work) =>
             '{
-                given Threading = parasite.threading.virtualThreading
+                given Threading = parasite.threads.virtualThreads
                 parasite.Benchmarks.Direct.collectSuccesses
                   ( parasite.Benchmarks.valuesArray,
                     parasite.Benchmarks.parallelism,
@@ -569,7 +569,7 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
             }
           case (Library.Pooled, work) =>
             '{
-                given Threading = parasite.threading.pooledThreading
+                given Threading = parasite.threads.pooledThreads
                 parasite.Benchmarks.Direct.collectSuccesses
                   ( parasite.Benchmarks.valuesArray,
                     parasite.Benchmarks.parallelism,
@@ -609,7 +609,7 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
       . over(Library, workAxis):
           case (Library.Soundness, work) =>
             '{
-                given Threading = parasite.threading.virtualThreading
+                given Threading = parasite.threads.virtualThreads
                 parasite.Benchmarks.Direct.parallelChunks
                   ( parasite.Benchmarks.batchArrays,
                     parasite.Benchmarks.streamWorkers,
@@ -617,7 +617,7 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
             }
           case (Library.Pooled, work) =>
             '{
-                given Threading = parasite.threading.pooledThreading
+                given Threading = parasite.threads.pooledThreads
                 parasite.Benchmarks.Direct.parallelChunks
                   ( parasite.Benchmarks.batchArrays,
                     parasite.Benchmarks.streamWorkers,
@@ -642,7 +642,7 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
       . over(Library, workAxis):
           case (Library.Soundness, work) =>
             '{
-                given Threading = parasite.threading.virtualThreading
+                given Threading = parasite.threads.virtualThreads
                 parasite.Benchmarks.Direct.queueChunks
                   ( parasite.Benchmarks.batchArrays,
                     parasite.Benchmarks.capacity,
@@ -650,7 +650,7 @@ object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs K
             }
           case (Library.Pooled, work) =>
             '{
-                given Threading = parasite.threading.pooledThreading
+                given Threading = parasite.threads.pooledThreads
                 parasite.Benchmarks.Direct.queueChunks
                   ( parasite.Benchmarks.batchArrays,
                     parasite.Benchmarks.capacity,

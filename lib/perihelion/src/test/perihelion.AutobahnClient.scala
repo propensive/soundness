@@ -37,7 +37,7 @@ import soundness.*
 import logging.silentLogging
 import internetAccess.online
 import strategies.throwUnsafely
-import threading.virtualThreading
+import threads.virtualThreads
 import probates.awaitProbate
 
 // A conformance harness for driving the WebSocket *client* against the Autobahn|Testsuite

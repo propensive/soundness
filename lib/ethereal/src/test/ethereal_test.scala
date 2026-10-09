@@ -49,7 +49,7 @@ import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
 import workingDirectories.javaBaseWorkingDirectory
 import logging.silentLogging
-import threading.platformThreading
+import threads.platformThreads
 
 import strategies.throwUnsafely
 import backstops.silentBackstop
@@ -1156,7 +1156,7 @@ object Tests extends Suite(m"Ethereal Tests"):
       val (strangerSeed, _) = Enclave.keygen(selfuWork/t"stranger")
       val selfuApp: Text = t"soundness/selfu"
 
-      def selfu(build: Long, appId: Optional[Text]): Enclave =
+      def selfu(build: Long, appId: Optional[Text]): Enclave^{parasite.threads} =
         if appId.absent then Enclave(selfuName, buildId = build)
         else Enclave(selfuName, build, releaseKey, recoveryKey, appId)
 

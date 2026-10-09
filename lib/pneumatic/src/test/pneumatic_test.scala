@@ -40,7 +40,7 @@ import java.io as ji
 import soundness.*
 
 import codepages.utf8Codepage, charsets.utf8Charset, textSanitizers.strictSanitizer
-import threading.platformThreading
+import threads.platformThreads
 import strategies.throwUnsafely
 import probates.panicProbate
 import errorDiagnostics.emptyDiagnostics

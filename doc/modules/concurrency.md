@@ -25,7 +25,7 @@ is that a concurrent program nests, and its structure is visible. Everything com
 
 ```scala
 import soundness.*
-import threading.virtualThreading
+import threads.virtualThreads
 import probates.cancelProbate
 import strategies.throwUnsafely
 ```
@@ -302,18 +302,18 @@ than continuing to consume resources on behalf of a computation that has already
 
 ### Threads and completion
 
-The thread model is chosen by import: `virtualThreading` runs tasks on virtual threads, cheap enough
-to spawn in great numbers, while `platformThreading` uses platform threads. Virtual threads exist
-only from Java 21, so `virtualThreading` fails at runtime on an older JVM; `adaptiveThreading`
+The thread model is chosen by import: `virtualThreads` runs tasks on virtual threads, cheap enough
+to spawn in great numbers, while `platformThreads` uses platform threads. Virtual threads exist
+only from Java 21, so `virtualThreads` fails at runtime on an older JVM; `adaptiveThreads`
 takes virtual threads where they exist and falls back to platform threads where they do not, which
 is what an application that cannot dictate its JVM should import. On Scala.js, where there are no
-threads at all, `javascriptThreading` schedules tasks on the event loop, and the same `supervise`,
+threads at all, `javascriptThreads` schedules tasks on the event loop, and the same `supervise`,
 `async` and `await` code runs unchanged. A separate choice, the
 *probate*, decides what a scope does with a child that has not finished when the scope ends —
 `cancelProbate` cancels it, `awaitProbate` waits for it — so the policy for tidying up concurrent work
 is explicit rather than assumed.
 
-`pooledThreading` runs tasks on a pool of reusable carrier threads — virtual threads on the JVM,
+`pooledThreads` runs tasks on a pool of reusable carrier threads — virtual threads on the JVM,
 platform threads on Scala Native — handing each new task to an idle carrier where one is waiting
 and starting another only where none is. A hand-off costs a few hundred nanoseconds where a thread
 start and join cost a few microseconds, so it suits fine-grained fan-out: a task per element, or a

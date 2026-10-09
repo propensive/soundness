@@ -51,7 +51,7 @@ with its `Header` — the version, and the encoding and standalone declarations 
 given — so a document round-trips with its declaration intact rather than losing it on the way in:
 
 ```scala
-import threading.platformThreading
+import threads.platformThreads
 
 supervise:
   t"""<?xml version="1.0"?><root>content</root>""".load[Xml]

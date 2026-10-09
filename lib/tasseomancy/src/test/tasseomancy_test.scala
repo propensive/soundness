@@ -470,14 +470,25 @@ object Tests extends Suite(m"Tasseomancy tests"):
       . assert(_ == true)
 
       test(m"an annotated point is labelled beside its marker"):
-        val named = Series(t"cities")((1.0, Annotated(3.0, t"Paris")), (2.0, Annotated(5.0, t"Rome")))
+        val named =
+          Series(t"cities")
+            ( (1.0, tasseomancy.Annotated(3.0, t"Paris")),
+              (2.0, tasseomancy.Annotated(5.0, t"Rome")) )
+
         val text = rendered(named.chart(Scatter()))
         (text.contains(t">Paris<"), text.contains(t">Rome<"))
       . assert(_ == (true, true))
 
     suite(m"Label placement"):
-      val apart = Series(t"cities")((1.0, Annotated(3.0, t"Paris")), (9.0, Annotated(9.0, t"Rome")))
-      val together = Series(t"cities")((5.0, Annotated(5.0, t"Paris")), (5.0, Annotated(5.0, t"Rome")))
+      val apart =
+        Series(t"cities")
+          ( (1.0, tasseomancy.Annotated(3.0, t"Paris")),
+            (9.0, tasseomancy.Annotated(9.0, t"Rome")) )
+
+      val together =
+        Series(t"cities")
+          ( (5.0, tasseomancy.Annotated(5.0, t"Paris")),
+            (5.0, tasseomancy.Annotated(5.0, t"Rome")) )
 
       test(m"notes at the same point are set on different sides"):
         val ends = t"text-anchor=\"end\""

@@ -39,7 +39,7 @@ import soundness.*
 import randomization.unseededRandomization
 
 import supervisors.globalSupervisor
-import threading.virtualThreading
+import threads.virtualThreads
 import strategies.throwUnsafely
 import probates.panicProbate
 

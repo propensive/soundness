@@ -43,7 +43,7 @@ import denominative.*
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
-import parasite.*, threading.virtualThreading, probates.cancelProbate
+import parasite.*, threads.virtualThreads, probates.cancelProbate
 import prepositional.*
 import probably.*
 import proscenium.*

@@ -60,7 +60,7 @@ import filesystemOptions.deleteOnlyEmpty
 import logging.silentLogging
 import probates.cancelProbate
 import systems.javaBaseSystem
-import threading.platformThreading
+import threads.platformThreads
 import workingDirectories.javaBaseWorkingDirectory
 
 import filesystemBackends.javaBaseFilesystem
@@ -179,7 +179,7 @@ case class Enclave
     recoveryKey: Optional[Path on Linux] = Unset,
     appId:       Optional[Text]          = Unset )
   ( using Classloader, Environment )
-extends Rig:
+extends Rig uses parasite.threads:
   type Result[output] = Enclave.Launcher
   type Form = Text
   type Target = Path on Linux

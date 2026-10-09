@@ -49,7 +49,7 @@ object VirtualSupervisor extends ThreadSupervisor:
   def fork(name: () => Optional[Text])(block: => Unit): Strand =
     PlatformSupervisor.fork(name)(block)
 
-object AdaptiveSupervisor extends ThreadSupervisor:
+object AdaptiveSupervisor extends ThreadSupervisor uses VirtualSupervisor, PlatformSupervisor:
   def name: Name[Async] = n"adaptive"
 
   def fork(name: () => Optional[Text])(block: => Unit): Strand =
@@ -61,7 +61,7 @@ object AdaptiveSupervisor extends ThreadSupervisor:
 object PooledSupervisor extends PoolingSupervisor:
   def name: Name[Async] = n"pooled"
 
-  protected def spawn(runnable: Runnable): Thread =
+  protected def spawn(runnable: Runnable^): Thread =
     val thread = new Thread(runnable)
     thread.start()
     thread
