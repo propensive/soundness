@@ -32,22 +32,130 @@
                                                                                                   */
 package acyclicity
 
-// Deliberate stdlib opt-out, as in `Dag`.
-import scala.collection.immutable.{List, Map, Nil, Set, ::}
+import scala.collection.immutable as sci
 
-// Candidate (c): a frozen, dense form for graphs that are built once and queried often. Nodes
-// are numbered in topological order and both directions of adjacency are compressed sparse rows
-// (an offsets array of n + 1 and a targets array of e), so successors, predecessors, sources
-// and sinks are index arithmetic. Reachability is a bit matrix of n rows of ⌈n/64⌉ words, filled
+import prepositional.*
+
+// A directed acyclic graph frozen for querying: nodes numbered in topological order, both
+// directions of adjacency as compressed sparse rows (an offsets array of n + 1 and a targets
+// array of e), and — on first need — a reachability matrix of n rows of ⌈n/64⌉ words, filled
 // dependencies-first in O(e·n/64) and shared by `closure`, `reduction` (Aho–Garey–Ullman over
-// the rows) and the O(1) `reaches`. Nothing is editable: a bounded edit that rebuilt O(n + e)
-// would be exactly the dysasymptotic cost the gates exist to name, so editing is not offered.
+// the rows) and the O(1) `reaches`. Successors, predecessors, sources and sinks are index
+// arithmetic, and `invert` swaps the two directions in O(1) rather than renumbering:
+// `ascending` records whether dependencies sit at lower indices (as built) or higher (inverted).
 //
-// `ascending` records whether dependencies sit at lower indices (true) or, after `invert` —
-// which swaps the two CSR pairs in O(1) rather than renumbering — at higher ones.
-final class FrozenDag[node] private[acyclicity]
+// Nothing is editable. A bounded edit that rebuilt O(n + e) would be exactly the dysasymptotic
+// cost the gates exist to name, so editing is not offered: `thaw` to a `Dag` or a `Topology`,
+// edit, and freeze again. Reading a bit row for a single node's `reachable` would be O(n/64)
+// however small the answer, so that query walks the rows instead and the matrix serves the
+// whole-graph ones.
+//
+// The loops here are the second shape `doc/standards/loops.md` sanctions — index arithmetic
+// derived from the data — and each names the invariant that bounds it.
+object Frozen:
+  def apply[node](dag: Dag[node]): Frozen[node] =
+    of(dag.linearized, node => dag.adjacency(node).iterator)
+
+  // The caller gives up its handle, so the frozen graph can never be edited behind its back.
+  def apply[node](consume topology: Topology[node]^): Frozen[node] =
+    val adjacency = topology.adjacency
+    of(topology.linearized, node => adjacency(node).iterator)
+
+  // From a topological order (dependencies first) and the successor relation, in O(n + e): one
+  // pass to count each node's successors, one to place them and count predecessors, one to
+  // place those.
+  private[acyclicity] def of[node](order: List[node], successors: node => Iterator[node])
+  :   Frozen[node] =
+
+    val count = List.size(order)
+    val names = new scala.Array[AnyRef](count)
+    val indexBuilder = sci.Map.newBuilder[node, Int]
+    var position = 0
+
+    List.iterator(order).foreach: node =>
+      names(position) = node.asInstanceOf[AnyRef]
+      indexBuilder += ((node, position))
+      position += 1
+
+    val index = indexBuilder.result()
+    val offsets = new scala.Array[Int](count + 1)
+    val reverseOffsets = new scala.Array[Int](count + 1)
+    var id = 0
+
+    // `id < count` and `names.length == count`, so every read of `names` is in range.
+    while id < count do
+      offsets(id + 1) = offsets(id) + successors(names(id).asInstanceOf[node]).size
+      id += 1
+
+    val targets = new scala.Array[Int](offsets(count))
+    id = 0
+
+    // `slot` runs from `offsets(id)` to `offsets(id + 1)`, the successors counted above, and
+    // every `child` is an index of `names`, since every successor is a node of the order.
+    while id < count do
+      var slot = offsets(id)
+
+      successors(names(id).asInstanceOf[node]).foreach: target =>
+        val child = index(target)
+        targets(slot) = child
+        slot += 1
+        reverseOffsets(child + 1) += 1
+
+      id += 1
+
+    id = 0
+
+    // Prefix sums over `count + 1` entries.
+    while id < count do
+      reverseOffsets(id + 1) += reverseOffsets(id)
+      id += 1
+
+    val reverseTargets = new scala.Array[Int](offsets(count))
+    val fill = reverseOffsets.clone
+    id = 0
+
+    // `fill(child)` advances from `reverseOffsets(child)` once per predecessor of `child`, of
+    // which there are exactly `reverseOffsets(child + 1) - reverseOffsets(child)`.
+    while id < count do
+      var slot = offsets(id)
+
+      while slot < offsets(id + 1) do
+        val child = targets(slot)
+        reverseTargets(fill(child)) = id
+        fill(child) += 1
+        slot += 1
+
+      id += 1
+
+    new Frozen
+      ( names.asInstanceOf[scala.IArray[AnyRef]],
+        index,
+        offsets.asInstanceOf[scala.IArray[Int]],
+        targets.asInstanceOf[scala.IArray[Int]],
+        reverseOffsets.asInstanceOf[scala.IArray[Int]],
+        reverseTargets.asInstanceOf[scala.IArray[Int]],
+        true )
+
+  given nodal: [node] => (Frozen[node] is Nodal by node) = new Nodal:
+    type Self = Frozen[node]
+    type Operand = node
+    def nodes(self: Frozen[node]): Iterator[node] = self.ordered
+    def has(self: Frozen[node], node: node): Boolean = self.has(node)
+    def successors(self: Frozen[node], node: node): Iterator[node] = self.successorIterator(node)
+
+  given bidirectional: [node] => (Frozen[node] is Bidirectional by node) = new Bidirectional:
+    type Self = Frozen[node]
+    type Operand = node
+
+    def predecessors(self: Frozen[node], node: node): Iterator[node] =
+      self.predecessorIterator(node)
+
+  given topological: [node] => Frozen[node] is Topological =
+    new Topological { type Self = Frozen[node] }
+
+final class Frozen[node] private[acyclicity]
   ( names:          scala.IArray[AnyRef],
-    index:          Map[node, Int],
+    index:          sci.Map[node, Int],
     offsets:        scala.IArray[Int],
     targets:        scala.IArray[Int],
     reverseOffsets: scala.IArray[Int],
@@ -59,93 +167,70 @@ final class FrozenDag[node] private[acyclicity]
 
   private def name(id: Int): node = names(id).asInstanceOf[node]
 
-  // The dependencies-first position of an index.
+  // The dependencies-first position of an index, and its inverse.
   private def rank(id: Int): Int = if ascending then id else count - 1 - id
   private def atRank(position: Int): Int = if ascending then position else count - 1 - position
 
   def size: Int = count
   def edgeCount: Int = targets.length
-  def nodes: Set[node] = index.keySet
   def has(node: node): Boolean = index.contains(node)
+  def nodes: Set[node] = Set.from(index.keySet)
 
-  def sorted: List[node] =
-    var result: List[node] = Nil
-    var position = count - 1
+  private[acyclicity] def ordered: Iterator[node] =
+    Iterator.range(0, count).map: position => name(atRank(position))
 
-    while position >= 0 do
-      result = name(atRank(position)) :: result
-      position -= 1
+  // Every node after everything it points at.
+  def linearized: List[node] = List.from(ordered)
 
-    result
+  private def slice(starts: scala.IArray[Int], ends: scala.IArray[Int], id: Int): Iterator[node] =
+    Iterator.range(starts(id), starts(id + 1)).map: slot => name(ends(slot))
 
-  private def slice(starts: scala.IArray[Int], ends: scala.IArray[Int], id: Int): Set[node] =
-    val builder = Set.newBuilder[node]
-    var slot = starts(id)
-
-    while slot < starts(id + 1) do
-      builder += name(ends(slot))
-      slot += 1
-
-    builder.result()
-
-  def successors(node: node): Set[node] = index.get(node) match
+  private[acyclicity] def successorIterator(node: node): Iterator[node] = index.get(node) match
     case Some(id) => slice(offsets, targets, id)
-    case None     => Set()
+    case None     => Iterator.empty
 
-  def predecessors(node: node): Set[node] = index.get(node) match
+  private[acyclicity] def predecessorIterator(node: node): Iterator[node] = index.get(node) match
     case Some(id) => slice(reverseOffsets, reverseTargets, id)
-    case None     => Set()
+    case None     => Iterator.empty
+
+  def successors(node: node): Set[node] = Set.from(successorIterator(node))
+  def predecessors(node: node): Set[node] = Set.from(predecessorIterator(node))
 
   def edges: Set[(node, node)] =
-    val builder = Set.newBuilder[(node, node)]
-    var id = 0
-
-    while id < count do
-      var slot = offsets(id)
-
-      while slot < offsets(id + 1) do
-        builder += ((name(id), name(targets(slot))))
-        slot += 1
-
-      id += 1
-
-    builder.result()
+    Set.from:
+      Iterator.range(0, count).flatMap: id => slice(offsets, targets, id).map(name(id) -> _)
 
   private def degreeless(starts: scala.IArray[Int]): Set[node] =
-    val builder = Set.newBuilder[node]
-    var id = 0
-
-    while id < count do
-      if starts(id + 1) == starts(id) then builder += name(id)
-      id += 1
-
-    builder.result()
+    Set.from(Iterator.range(0, count).filter { id => starts(id + 1) == starts(id) }.map(name))
 
   def sources: Set[node] = degreeless(offsets)
   def sinks: Set[node] = degreeless(reverseOffsets)
 
-  def invert: FrozenDag[node] =
-    new FrozenDag(names, index, reverseOffsets, reverseTargets, offsets, targets, !ascending)
+  def invert: Frozen[node] =
+    new Frozen(names, index, reverseOffsets, reverseTargets, offsets, targets, !ascending)
 
-  // Depth-first over the rows, marking on push so no index is pushed twice.
+  // Depth-first over the rows, marking on push, so every index is pushed at most once and the
+  // stack of `count` entries never overflows.
   def reachable(node: node): Set[node] = index.get(node) match
     case None => Set()
 
     case Some(start) =>
       val seen = new scala.Array[Boolean](count)
       val stack = new scala.Array[Int](count)
-      val builder = Set.newBuilder[node]
+      val builder = sci.Set.newBuilder[node]
       var top = 0
       stack(top) = start
       top += 1
       seen(start) = true
 
+      // Terminated by state: the stack empties once every reachable index has been popped.
       while top > 0 do
         top -= 1
         val id = stack(top)
         builder += name(id)
         var slot = offsets(id)
 
+        // `slot` runs over the compressed row of `id`.
         while slot < offsets(id + 1) do
           val child = targets(slot)
 
@@ -156,14 +241,15 @@ final class FrozenDag[node] private[acyclicity]
 
           slot += 1
 
-      builder.result()
+      Set.from(builder.result())
 
-  // Row `id` holds the indices reachable from `id`, excluding `id`. Filled dependencies-first, so
-  // each row is the union of its successors' rows plus the successors' own bits.
+  // Row `id` holds the indices reachable from `id`, excluding `id`: filled dependencies-first,
+  // so each row is the union of its successors' rows plus the successors' own bits.
   lazy val reach: scala.IArray[Long] =
     val bits = new scala.Array[Long](count*words)
     var position = 0
 
+    // `id*words + word < count*words` for `id < count` and `word < words`.
     while position < count do
       val id = atRank(position)
       val row = id*words
@@ -190,45 +276,45 @@ final class FrozenDag[node] private[acyclicity]
   private def bit(bits: scala.IArray[Long], row: Int, id: Int): Boolean =
     (bits(row + (id >>> 6)) & (1L << (id & 63))) != 0L
 
+  // Whether `from` reaches `to`, in O(1) once the matrix exists.
   def reaches(from: node, to: node): Boolean = (index.get(from), index.get(to)) match
     case (Some(source), Some(target)) => bit(reach, source*words, target)
     case _                            => false
 
-  def closure: Map[node, Set[node]] =
+  // Every implied edge made explicit.
+  def closure: Dag[node] =
     val bits = reach
-    val builder = Map.newBuilder[node, Set[node]]
-    var id = 0
 
-    while id < count do
-      val row = Set.newBuilder[node]
-      var other = 0
+    Dag.unchecked:
+      sci.VectorMap.from:
+        Iterator.range(0, count).map: id =>
+          val row = sci.Set.newBuilder[node]
 
-      while other < count do
-        if bit(bits, id*words, other) then row += name(other)
-        other += 1
+          Iterator.range(0, count).foreach: other =>
+            if bit(bits, id*words, other) then row += name(other)
 
-      builder += ((name(id), row.result()))
-      id += 1
+          (name(id), row.result())
 
-    builder.result()
-
-  // Aho–Garey–Ullman: a dependency is redundant when a later dependency (higher rank) of the
-  // same node already reaches it, so visiting the dependencies by descending rank with a
-  // running union of their rows decides every edge in O(degree·n/64).
-  def reduction: Map[node, Set[node]] =
+  // Aho–Garey–Ullman: a successor is redundant when a later successor (higher rank) of the same
+  // node already reaches it, so visiting the successors by descending rank with a running union
+  // of their rows decides every edge in O(degree·n/64).
+  def reduction: Dag[node] =
     val bits = reach
     val covered = new scala.Array[Long](words)
     var largest = 0
     var id = 0
 
+    // The widest row, to size the sort buffer.
     while id < count do
       largest = largest.max(offsets(id + 1) - offsets(id))
       id += 1
 
     val ordered = new scala.Array[Long](largest)
-    val builder = Map.newBuilder[node, Set[node]]
+    val builder = sci.VectorMap.newBuilder[node, sci.Set[node]]
     id = 0
 
+    // `degree <= largest`, so `ordered` holds every successor of `id`, each packed as its rank
+    // in the high word and its index in the low.
     while id < count do
       java.util.Arrays.fill(covered, 0L)
       val degree = offsets(id + 1) - offsets(id)
@@ -240,7 +326,7 @@ final class FrozenDag[node] private[acyclicity]
         slot += 1
 
       java.util.Arrays.sort(ordered, 0, degree)
-      val kept = Set.newBuilder[node]
+      val kept = sci.Set.newBuilder[node]
       slot = degree - 1
 
       while slot >= 0 do
@@ -259,79 +345,17 @@ final class FrozenDag[node] private[acyclicity]
       builder += ((name(id), kept.result()))
       id += 1
 
-    builder.result()
+    Dag.unchecked(builder.result())
 
-object FrozenDag:
-  // From a topological order (dependencies first) and the successor relation: two counting
-  // passes and two filling passes, O(n + e).
-  def apply[node](order: List[node], successors: node => Set[node]): FrozenDag[node] =
-    val count = order.length
-    val names = new scala.Array[AnyRef](count)
-    val indexBuilder = Map.newBuilder[node, Int]
-    var position = 0
+  // Back to the persistent form, in topological order.
+  def thaw: Dag[node] =
+    Dag.unchecked:
+      sci.VectorMap.from:
+        ordered.map: node => (node, sci.Set.from(successorIterator(node)))
 
-    order.foreach: node =>
-      names(position) = node.asInstanceOf[AnyRef]
-      indexBuilder += ((node, position))
-      position += 1
+  override def equals(other: Any): Boolean = other.asInstanceOf[Matchable] match
+    case that: Frozen[?] => edges == that.edges
+    case _               => false
 
-    val index = indexBuilder.result()
-    val offsets = new scala.Array[Int](count + 1)
-    val reverseOffsets = new scala.Array[Int](count + 1)
-    var id = 0
-
-    while id < count do
-      offsets(id + 1) = offsets(id) + successors(names(id).asInstanceOf[node]).size
-      id += 1
-
-    val targets = new scala.Array[Int](offsets(count))
-    id = 0
-
-    while id < count do
-      var slot = offsets(id)
-
-      successors(names(id).asInstanceOf[node]).foreach: target =>
-        val child = index(target)
-        targets(slot) = child
-        slot += 1
-        reverseOffsets(child + 1) += 1
-
-      id += 1
-
-    id = 0
-
-    while id < count do
-      reverseOffsets(id + 1) += reverseOffsets(id)
-      id += 1
-
-    val reverseTargets = new scala.Array[Int](offsets(count))
-    val fill = reverseOffsets.clone
-    id = 0
-
-    while id < count do
-      var slot = offsets(id)
-
-      while slot < offsets(id + 1) do
-        val child = targets(slot)
-        reverseTargets(fill(child)) = id
-        fill(child) += 1
-        slot += 1
-
-      id += 1
-
-    new FrozenDag
-      ( names.asInstanceOf[scala.IArray[AnyRef]],
-        index,
-        offsets.asInstanceOf[scala.IArray[Int]],
-        targets.asInstanceOf[scala.IArray[Int]],
-        reverseOffsets.asInstanceOf[scala.IArray[Int]],
-        reverseTargets.asInstanceOf[scala.IArray[Int]],
-        true )
-
-  // Consuming a topology: the caller gives up its handle, so the frozen graph can never be
-  // edited behind its back. (In core this will move the topology's arrays; here it reads them.)
-  def apply[node](consume topology: Topology[node]^): FrozenDag[node] =
-    val order = topology.linearized
-    val adjacency = topology.adjacency
-
-    FrozenDag(order, adjacency.getOrElse(_, Set()))
+  override def hashCode: Int = edges.hashCode
+  override def toString: String = s"Frozen(${count} nodes, ${targets.length} edges)"

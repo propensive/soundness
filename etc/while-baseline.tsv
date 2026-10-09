@@ -1,5 +1,8 @@
 # path	while	readUnchecked	charAt
-lib/acyclicity/src/core/acyclicity_core.scala	0	0	1
+lib/acyclicity/src/core/acyclicity.Frozen.scala	15	0	0
+lib/acyclicity/src/core/acyclicity.Search.scala	2	0	0
+lib/acyclicity/src/core/acyclicity.Topology.scala	26	0	0
+lib/acyclicity/src/core/acyclicity_core.scala	1	0	1
 lib/anthology/src/core/anthology.Toolchain.scala	3	0	0
 lib/archimedes/src/core/archimedes.Cell.scala	0	0	5
 lib/archimedes/src/core/archimedes.Ergo.scala	11	0	12

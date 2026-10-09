@@ -34,7 +34,7 @@ package acyclicity
 
 import java.lang.Integer
 
-import scala.collection.immutable.{List, Map, Nil, Set, ::}
+import scala.collection.immutable.{List, Map, Set}
 import scala.collection.mutable as scm
 import scala.jdk.CollectionConverters.*
 import scala.quoted.*
@@ -42,12 +42,12 @@ import scala.quoted.*
 import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
+import denominative.dysasymptotics.linearScan
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
 import probably.*
 import quantitative.*
-import rudiments.*
 import sedentary.*
 import superlunary.embeddings.automaticEmbedding
 import symbolism.*
@@ -63,11 +63,13 @@ import com.google.common.graph.{GraphBuilder, Graphs, MutableGraph, Traverser}
 enum Shape:
   case Chain, Tree, Layered, BuildSystem, Sparse, Dense
 
-// The implementations under comparison: `Current` is `acyclicity.Dag` as it is in core; the next
-// four are the candidates in this module; `Stdlib` is the hand-rolled baseline; the last two are
-// the rival libraries, written as their own users write them.
+// The implementations under comparison: `Dag`, `Frozen` and `Topology` are core's three forms
+// (the repaired persistent map, the frozen rows and bit matrix, and the separation-checked
+// mutable graph, adopted from the candidates first measured here); `Mirrored` is the candidate
+// not adopted, kept for comparison; `Stdlib` is the hand-rolled baseline; the last two are the
+// rival libraries, written as their own users write them.
 enum Engine:
-  case Current, Repaired, Mirrored, Frozen, Topology, Stdlib, JGraphT, Guava
+  case Dag, Mirrored, Frozen, Topology, Stdlib, JGraphT, Guava
 
 // One staged tree serves every cell: the operation, engine and shape travel as ordinals, so that
 // the compiled body is shared and only the dispatch — two `match`es, nanoseconds against
@@ -156,13 +158,56 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
 
   // ─── builders ─────────────────────────────────────────────────────────────
 
-  // `Dag` shares its representation with `AdjacencyDag`, so it is built from that map and has
-  // no construction cell of its own; what differs between them is every algorithm.
-  def buildCurrent(data: Edges): Dag[Int] = Dag(buildRepaired(data).adjacency)
-  def buildRepaired(data: Edges): AdjacencyDag[Int] = AdjacencyDag(data.count, data.from, data.to)
+  // The persistent form, by a fold of `add` over the edges, as `Dag(edges*)` does — the one
+  // cycle check per edge is what a `Dag` costs to build incrementally.
+  def buildDag(data: Edges): Dag[Int] =
+    val nodes = proscenium.Set.from(scala.collection.immutable.Range(0, data.count))
+    var dag = Digraph(nodes)(_ => proscenium.Set()).acyclic
+    var index = 0
+
+    while index < data.from.length do
+      dag = dag.add(data.from(index), data.to(index))
+      index += 1
+
+    dag
+
   def buildMirrored(data: Edges): MirroredDag[Int] = MirroredDag(data.count, data.from, data.to)
-  def buildFrozen(data: Edges): FrozenDag[Int] = buildRepaired(data).freeze
+  def buildFrozen(data: Edges): Frozen[Int] = buildDag(data).freeze
   def buildStdlib(data: Edges): StdlibDag = StdlibDag(data.count, data.from, data.to)
+
+  def buildTopology(data: Edges): Topology[Int]^ =
+    val topology: Topology[Int]^ = Topology()
+    var index = 0
+
+    while index < data.count do
+      topology.add(index)
+      index += 1
+
+    index = 0
+
+    while index < data.from.length do
+      topology.add(data.from(index), data.to(index))
+      index += 1
+
+    topology
+
+  // The same edges in reverse order, so that most arrive before the nodes they depend on are
+  // ranked below them, and the order has to be repaired as it goes.
+  def buildTopologyReversed(data: Edges): Topology[Int]^ =
+    val topology: Topology[Int]^ = Topology()
+    var index = data.count - 1
+
+    while index >= 0 do
+      topology.add(index)
+      index -= 1
+
+    index = data.from.length - 1
+
+    while index >= 0 do
+      topology.add(data.from(index), data.to(index))
+      index -= 1
+
+    topology
 
   inline def box(value: Int): Integer = Integer.valueOf(value).nn
 
@@ -227,16 +272,13 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
 
   // ─── the measured operations ──────────────────────────────────────────────
 
-  private def current(shape: Int, size: Int): Dag[Int] =
-    cached(Engine.Current, shape, size)(buildCurrent(edges(shape, size)))
-
-  private def repaired(shape: Int, size: Int): AdjacencyDag[Int] =
-    cached(Engine.Repaired, shape, size)(buildRepaired(edges(shape, size)))
+  private def dag(shape: Int, size: Int): Dag[Int] =
+    cached(Engine.Dag, shape, size)(buildDag(edges(shape, size)))
 
   private def mirrored(shape: Int, size: Int): MirroredDag[Int] =
     cached(Engine.Mirrored, shape, size)(buildMirrored(edges(shape, size)))
 
-  private def frozen(shape: Int, size: Int): FrozenDag[Int] =
+  private def frozen(shape: Int, size: Int): Frozen[Int] =
     cached(Engine.Frozen, shape, size)(buildFrozen(edges(shape, size)))
 
   private def stdlib(shape: Int, size: Int): StdlibDag =
@@ -274,7 +316,7 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
     val data = edges(shape, size)
 
     engine match
-      case Engine.Repaired => buildRepaired(data).size
+      case Engine.Dag      => buildDag(data).size
       case Engine.Mirrored => buildMirrored(data).size
       case Engine.Frozen   => buildFrozen(data).size
       case Engine.Stdlib   => buildStdlib(data).size
@@ -282,10 +324,8 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
       case Engine.Guava    => buildGuava(data).nodes().nn.size
 
       case Engine.Topology =>
-        val topology: Topology[Int]^ = Topology(data.count, data.from, data.to)
-        FrozenDag(topology).size
-
-      case Engine.Current  => 0
+        val topology: Topology[Int]^ = buildTopology(data)
+        Frozen(topology).size
 
   // The edges in the order adverse to each engine that keeps a topological order as edges
   // arrive (Pearce–Kelly in both), so that it has to repair the order as it goes; the persistent
@@ -294,11 +334,11 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
     val data = edges(shape, size)
 
     engine match
-      case Engine.Repaired => buildRepaired(data).size
+      case Engine.Dag      => buildDag(data).size
       case Engine.JGraphT  => buildJGraphTAdverse(data).vertexSet().nn.size
 
       case Engine.Topology =>
-        val topology: Topology[Int]^ = Topology.reversed(data.count, data.from, data.to)
+        val topology: Topology[Int]^ = buildTopologyReversed(data)
         topology.size
 
       case _ => 0
@@ -308,7 +348,7 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
 
     engine match
       case Engine.Topology =>
-        val topology: Topology[Int]^ = Topology(data.count, data.from, data.to)
+        val topology: Topology[Int]^ = buildTopology(data)
         topology.size
 
       case _ => 0
@@ -316,7 +356,7 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
   // The copy that the mutable engines' editing cells pay before they edit.
   def copy(engine: Engine, shape: Int, size: Int): Int = engine match
     case Engine.Topology =>
-      val topology: Topology[Int]^ = Topology(repaired(shape, size))
+      val topology: Topology[Int]^ = Topology(dag(shape, size))
       topology.size
 
     case Engine.Stdlib  => stdlib(shape, size).copy.size
@@ -325,10 +365,10 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
     case _              => 0
 
   def sorted(engine: Engine, shape: Int, size: Int): Int = engine match
-    case Engine.Current  => current(shape, size).sorted.length
-    case Engine.Repaired => repaired(shape, size).sorted.get.length
+    // A fresh instance: `Dag` keeps its order once computed.
+    case Engine.Dag      => proscenium.List.size(Dag.unchecked(dag(shape, size).adjacency).linearized)
     case Engine.Mirrored => mirrored(shape, size).sorted.get.length
-    case Engine.Frozen   => frozen(shape, size).sorted.length
+    case Engine.Frozen   => proscenium.List.size(frozen(shape, size).linearized)
     case Engine.Stdlib   => stdlib(shape, size).sorted.get.length
 
     case Engine.JGraphT =>
@@ -358,21 +398,18 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
     val node = size/2
 
     engine match
-      // A fresh instance, since `Dag` memoises reachability on the instance itself.
-      case Engine.Current  => Dag(current(shape, size).edgeMap).reachable(node).size
-      case Engine.Repaired => repaired(shape, size).reachable(node).size
+      case Engine.Dag      => proscenium.Set.size(dag(shape, size).reachable(node))
       case Engine.Mirrored => mirrored(shape, size).reachable(node).size
-      case Engine.Frozen   => frozen(shape, size).reachable(node).size
+      case Engine.Frozen   => proscenium.Set.size(frozen(shape, size).reachable(node))
       case Engine.Stdlib   => stdlib(shape, size).reachable(node).size
       case Engine.JGraphT  => jgrapht(shape, size).getDescendants(box(node)).nn.size + 1
       case Engine.Guava    => Graphs.reachableNodes(guava(shape, size), box(node)).nn.size
       case _               => 0
 
   def sources(engine: Engine, shape: Int, size: Int): Int = engine match
-    case Engine.Current  => current(shape, size).sources.size
-    case Engine.Repaired => repaired(shape, size).sources.size
+    case Engine.Dag      => proscenium.Set.size(dag(shape, size).sources)
     case Engine.Mirrored => mirrored(shape, size).sources.size
-    case Engine.Frozen   => frozen(shape, size).sources.size
+    case Engine.Frozen   => proscenium.Set.size(frozen(shape, size).sources)
     case Engine.Stdlib   => stdlib(shape, size).sources.size
 
     case Engine.JGraphT =>
@@ -386,10 +423,10 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
     case _ => 0
 
   def sinks(engine: Engine, shape: Int, size: Int): Int = engine match
-    case Engine.Current  => current(shape, size).invert.sources.size
-    case Engine.Repaired => AdjacencyDag(repaired(shape, size).adjacency).sinks.size
+    // A fresh instance: `Dag` keeps its transpose once computed.
+    case Engine.Dag      => proscenium.Set.size(Dag.unchecked(dag(shape, size).adjacency).sinks)
     case Engine.Mirrored => mirrored(shape, size).sinks.size
-    case Engine.Frozen   => frozen(shape, size).sinks.size
+    case Engine.Frozen   => proscenium.Set.size(frozen(shape, size).sinks)
     case Engine.Stdlib   => stdlib(shape, size).sinks.size
 
     case Engine.JGraphT =>
@@ -403,10 +440,9 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
     case _ => 0
 
   def closure(engine: Engine, shape: Int, size: Int): Int = engine match
-    case Engine.Current  => current(shape, size).closure.edges.size
-    case Engine.Repaired => repaired(shape, size).closure.edgeCount
+    case Engine.Dag      => proscenium.Set.size(dag(shape, size).closure.edges)
     case Engine.Mirrored => mirrored(shape, size).closure.edgeCount
-    case Engine.Frozen   => frozen(shape, size).closure.valuesIterator.map(_.size).sum
+    case Engine.Frozen   => proscenium.Set.size(frozen(shape, size).closure.edges)
     case Engine.Stdlib   => stdlib(shape, size).closure.valuesIterator.map(_.size).sum
 
     case Engine.JGraphT =>
@@ -420,10 +456,9 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
     case _ => 0
 
   def reduction(engine: Engine, shape: Int, size: Int): Int = engine match
-    case Engine.Current  => current(shape, size).reduction.edges.size
-    case Engine.Repaired => repaired(shape, size).reduction.edgeCount
+    case Engine.Dag      => proscenium.Set.size(dag(shape, size).reduction.edges)
     case Engine.Mirrored => mirrored(shape, size).reduction.edgeCount
-    case Engine.Frozen   => frozen(shape, size).reduction.valuesIterator.map(_.size).sum
+    case Engine.Frozen   => proscenium.Set.size(frozen(shape, size).reduction.edges)
     case Engine.Stdlib   => stdlib(shape, size).reduction.valuesIterator.map(_.size).sum
 
     case Engine.JGraphT =>
@@ -434,11 +469,10 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
     case _ => 0
 
   // Every edge reversed, materialised: the rivals' views are copied into fresh graphs so each
-  // cell does the same work. `Repaired` is given a fresh instance, since its transpose is a lazy
+  // cell does the same work. `Dag` is given a fresh instance, since its transpose is a lazy
   // value that the cached graph would otherwise have already computed.
   def invert(engine: Engine, shape: Int, size: Int): Int = engine match
-    case Engine.Current  => current(shape, size).invert.keys.size
-    case Engine.Repaired => AdjacencyDag(repaired(shape, size).adjacency).invert.size
+    case Engine.Dag      => Dag.unchecked(dag(shape, size).adjacency).invert.size
     case Engine.Mirrored => mirrored(shape, size).invert.size
     case Engine.Frozen   => frozen(shape, size).invert.size
     case Engine.Stdlib   => stdlib(shape, size).invert.size
@@ -464,21 +498,13 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
     val batch = this.batch.min(size - stride)
 
     engine match
-      case Engine.Current =>
-        var dag = current(shape, size)
+      case Engine.Dag =>
+        var graph = dag(shape, size)
         var k = 0
         while k < batch do
-          dag = dag.add(top - k, top - k - stride)
+          graph = graph.add(top - k, top - k - stride)
           k += 1
-        dag.keys.size
-
-      case Engine.Repaired =>
-        var dag = repaired(shape, size)
-        var k = 0
-        while k < batch do
-          dag = dag.add(top - k, top - k - stride)
-          k += 1
-        dag.size
+        graph.size
 
       case Engine.Mirrored =>
         var dag = mirrored(shape, size)
@@ -489,7 +515,7 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
         dag.size
 
       case Engine.Topology =>
-        val topology: Topology[Int]^ = Topology(repaired(shape, size))
+        val topology: Topology[Int]^ = Topology(dag(shape, size))
         var k = 0
         while k < batch do
           topology.add(top - k, top - k - stride)
@@ -530,21 +556,13 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
     val first = size/2
 
     engine match
-      case Engine.Current =>
-        var dag = current(shape, size)
+      case Engine.Dag =>
+        var graph = Dag.unchecked(dag(shape, size).adjacency)
         var k = 0
         while k < removals do
-          dag = dag.remove(first + k)
+          graph = graph.bypass(first + k)
           k += 1
-        dag.keys.size
-
-      case Engine.Repaired =>
-        var dag = AdjacencyDag(repaired(shape, size).adjacency)
-        var k = 0
-        while k < removals do
-          dag = dag.bypass(first + k)
-          k += 1
-        dag.size
+        graph.size
 
       case Engine.Mirrored =>
         var dag = mirrored(shape, size)
@@ -555,7 +573,7 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
         dag.size
 
       case Engine.Topology =>
-        val topology: Topology[Int]^ = Topology(repaired(shape, size))
+        val topology: Topology[Int]^ = Topology(dag(shape, size))
         var k = 0
         while k < removals do
           topology.bypass(first + k)
@@ -607,8 +625,14 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
 
   private def validOrder(data: Edges, order: List[Int]): Boolean = validOrder(data, order, data.count)
 
-  // Which engines disagree with `Repaired` on the sample graph, and whether each detects the
-  // cycle that `Dag.hasCycle` misses. Run before anything is timed.
+  private def plain[element](set: proscenium.Set[element]): Set[element] =
+    proscenium.Set.iterator(set).toSet
+
+  private def plain[element](list: proscenium.List[element]): List[element] =
+    proscenium.List.iterator(list).toList
+
+  // Which engines disagree with `Dag` on the sample graph, and whether each detects a cycle
+  // closed through an already-finished node. Run before anything is timed.
   def agreement(): List[Text] =
     val shape = Shape.BuildSystem.ordinal
     val size = 2000
@@ -618,19 +642,18 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
     def check(name: String)(condition: => Boolean): Unit =
       if !condition then failures += name.tt
 
-    val reference = repaired(shape, size)
-    val order = reference.sorted.get
-    check("repaired: order")(validOrder(data, order))
-    check("current: order")(validOrder(data, current(shape, size).sorted))
+    val reference = dag(shape, size)
+    check("dag: order")(validOrder(data, plain(reference.linearized)))
     check("mirrored: order")(validOrder(data, mirrored(shape, size).sorted.get))
-    check("frozen: order")(validOrder(data, frozen(shape, size).sorted))
+    check("frozen: order")(validOrder(data, plain(frozen(shape, size).linearized)))
     check("stdlib: order")(validOrder(data, stdlib(shape, size).sorted.get))
 
-    val topology: Topology[Int]^ = Topology(data.count, data.from, data.to)
-    check("topology: order")(validOrder(data, topology.linearized))
+    val topology: Topology[Int]^ = buildTopology(data)
+    check("topology: order")(validOrder(data, plain(topology.linearized)))
+
     check("topology reversed: order"):
-      val reversed: Topology[Int]^ = Topology.reversed(data.count, data.from, data.to)
-      validOrder(data, reversed.linearized)
+      val reversed: Topology[Int]^ = buildTopologyReversed(data)
+      validOrder(data, plain(reversed.linearized))
 
     val jgraphtOrder =
       val iterator = new org.jgrapht.traverse.TopologicalOrderIterator(jgrapht(shape, size))
@@ -638,6 +661,7 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
       while iterator.hasNext do buffer += iterator.next().nn.intValue
       buffer.toList
 
+    // JGraphT's `a -> b` means `a` before `b`, so its order lists dependants first.
     check("jgrapht: order")(validOrder(data, jgraphtOrder.reverse))
 
     val guavaOrder =
@@ -651,10 +675,9 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
 
     while sample < 50 do
       val node = sample*(size/50)
-      val expected = reference.reachable(node)
-      check("current: reachable " + node)(current(shape, size).reachable(node) == expected)
+      val expected = plain(reference.reachable(node))
       check("mirrored: reachable " + node)(mirrored(shape, size).reachable(node) == expected)
-      check("frozen: reachable " + node)(frozen(shape, size).reachable(node) == expected)
+      check("frozen: reachable " + node)(plain(frozen(shape, size).reachable(node)) == expected)
       check("stdlib: reachable " + node)(stdlib(shape, size).reachable(node) == expected)
 
       check("jgrapht: reachable " + node):
@@ -667,10 +690,9 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
 
       sample += 1
 
-    val closed = reference.closure.edges
-    check("current: closure")(current(shape, size).closure.edges == closed)
+    val closed = plain(reference.closure.edges)
     check("mirrored: closure")(mirrored(shape, size).closure.edges == closed)
-    check("frozen: closure")(edgeSet(frozen(shape, size).closure) == closed)
+    check("frozen: closure")(plain(frozen(shape, size).closure.edges) == closed)
     check("stdlib: closure")(edgeSet(stdlib(shape, size).closure) == closed)
 
     check("jgrapht: closure"):
@@ -680,10 +702,9 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
 
     check("guava: closure")(pairs(Graphs.transitiveClosure(guava(shape, size)).nn) == closed)
 
-    val reduced = reference.reduction.edges
-    check("current: reduction")(current(shape, size).reduction.edges == reduced)
+    val reduced = plain(reference.reduction.edges)
     check("mirrored: reduction")(mirrored(shape, size).reduction.edges == reduced)
-    check("frozen: reduction")(edgeSet(frozen(shape, size).reduction) == reduced)
+    check("frozen: reduction")(plain(frozen(shape, size).reduction.edges) == reduced)
     check("stdlib: reduction")(edgeSet(stdlib(shape, size).reduction) == reduced)
 
     check("jgrapht: reduction"):
@@ -691,46 +712,46 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
       org.jgrapht.alg.TransitiveReduction.INSTANCE.nn.reduce(copy)
       pairs(copy) == reduced
 
-    val expectedSources = reference.sources
-    val expectedSinks = reference.sinks
-    check("current: sources")(current(shape, size).sources == expectedSources)
+    val expectedSources = plain(reference.sources)
+    val expectedSinks = plain(reference.sinks)
     check("mirrored: sources")(mirrored(shape, size).sources == expectedSources)
-    check("frozen: sources")(frozen(shape, size).sources == expectedSources)
-    check("topology: sources")(topology.sources == expectedSources)
+    check("frozen: sources")(plain(frozen(shape, size).sources) == expectedSources)
+    check("topology: sources")(plain(topology.sources) == expectedSources)
     check("stdlib: sources")(stdlib(shape, size).sources == expectedSources)
     check("mirrored: sinks")(mirrored(shape, size).sinks == expectedSinks)
-    check("frozen: sinks")(frozen(shape, size).sinks == expectedSinks)
-    check("topology: sinks")(topology.sinks == expectedSinks)
+    check("frozen: sinks")(plain(frozen(shape, size).sinks) == expectedSinks)
+    check("topology: sinks")(plain(topology.sinks) == expectedSinks)
     check("stdlib: sinks")(stdlib(shape, size).sinks == expectedSinks)
 
     // Rerouting agrees, and the topology survives it with a valid order.
-    val bypassed = reference.bypass(size/2).bypass(size/2 + 1)
-    check("mirrored: bypass")(mirrored(shape, size).bypass(size/2).bypass(size/2 + 1).edges == bypassed.edges)
+    val bypassed = plain(reference.bypass(size/2).bypass(size/2 + 1).edges)
+    check("mirrored: bypass")(mirrored(shape, size).bypass(size/2).bypass(size/2 + 1).edges == bypassed)
 
     // Mutated outside the check: a closure sees the exclusive topology read-only.
     topology.bypass(size/2)
     topology.bypass(size/2 + 1)
-    val topologyEdges = topology.snapshot.edges
-    val topologyOrder = topology.linearized
-    check("topology: bypass")(topologyEdges == bypassed.edges && validOrder(data, topologyOrder, size - 2))
+    val topologyEdges = plain(topology.snapshot.edges)
+    val topologyOrder = plain(topology.linearized)
+    check("topology: bypass")(topologyEdges == bypassed && validOrder(data, topologyOrder, size - 2))
 
     check("stdlib: bypass"):
       val copy = stdlib(shape, size).copy
       copy.bypass(size/2)
       copy.bypass(size/2 + 1)
-      copy.edges == bypassed.edges
+      copy.edges == bypassed
 
-    // The cycle `Dag.hasCycle` misses: x -> a, x -> b, b -> a, a -> c, c -> b, with
+    // The cycle the old `Dag.hasCycle` missed: x -> a, x -> b, b -> a, a -> c, c -> b, with
     // x = 0, a = 1, b = 2, c = 3.
     val cycleFrom = scala.IArray(0, 0, 2, 1, 3)
     val cycleTo = scala.IArray(1, 2, 1, 3, 2)
-    check("repaired: cycle")(AdjacencyDag(4, cycleFrom, cycleTo).cycle.isDefined)
+    check("digraph: cycle")(Digraph(0 -> 1, 0 -> 2, 2 -> 1, 1 -> 3, 3 -> 2).cycle.present)
     check("mirrored: cycle")(MirroredDag(4, cycleFrom, cycleTo).cycle.isDefined)
     check("stdlib: cycle")(StdlibDag(4, cycleFrom, cycleTo).sorted.isEmpty)
 
     check("topology: cycle"):
       val cyclic: Topology[Int]^ = Topology()
-      cyclic.add(0, 1) && cyclic.add(0, 2) && cyclic.add(2, 1) && cyclic.add(1, 3) && !cyclic.add(3, 2)
+      cyclic.attach(0, 1) && cyclic.attach(0, 2) && cyclic.attach(2, 1) && cyclic.attach(1, 3)
+      && !cyclic.attach(3, 2)
 
     check("jgrapht: cycle"):
       val graph = new DirectedAcyclicGraph[Integer, DefaultEdge](classOf[DefaultEdge])
@@ -754,24 +775,18 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
         index += 1
       Graphs.hasCycle(graph)
 
-    check("current: cycle")(Dag(AdjacencyDag(4, cycleFrom, cycleTo).adjacency).hasCycle(0))
-
     failures.toList
 
   // ─── benchmarks ───────────────────────────────────────────────────────────
 
   // Three decades. A fourth (10⁵) is affordable for construction and the point queries but not
-  // for the rivals' per-edge order maintenance or anything materialising a closure, and a first
-  // full run should finish in well under an hour; raise it per operation once the picture is
-  // clear.
+  // for the rivals' per-edge order maintenance or anything materialising a closure, and a full
+  // run should finish in well under an hour.
   private val sizes = scala.Seq(100, 1000, 10000)
 
-  // `Dag`'s `sorted` is roughly cubic and its `reach` recurses to the depth of the longest
-  // path, so it is measured only where that finishes. A materialised closure of the build-system
-  // shape has about n²/2 edges, so every engine's closure and reduction stop at a thousand nodes
-  // (the frozen form's bit matrix would go further, but what the cell returns is the `Map`).
-  // The dense shape has n²/8 edges.
-  private val currentLimit = 1000
+  // A materialised closure of the build-system shape has about n²/2 edges, so every engine's
+  // closure and reduction stop at a thousand nodes (the frozen form's bit matrix would go
+  // further, but what the cell returns is the `Dag`). The dense shape has n²/8 edges.
   private val closureLimit = 1000
   private val denseLimit = 2000
 
@@ -793,53 +808,51 @@ object Benchmarks extends Suite(m"Acyclicity benchmarks"):
       val operation0 = operation.ordinal
       val shape0 = shape.ordinal
 
-      bench(name)(target = 250*Milli(Second), baseline = Engine.Repaired)
+      bench(name)(target = 250*Milli(Second), baseline = Engine.Dag)
       . over(Axis(Engine), Axis(t"size")(sizes*)):
           case (engine, size) if defined(engine, size) && (shape != Shape.Dense || size <= denseLimit) =>
             val engine0 = engine.ordinal
             '{ acyclicity.Benchmarks.measure($operation0, $engine0, $shape0, $size) }
 
-    def notCurrent(engine: Engine, size: Int): Boolean = engine != Engine.Current
+    def every(engine: Engine, size: Int): Boolean = true
 
     // The topology is exclusive, so no built instance can be cached for the query cells.
-    def currentCapped(engine: Engine, size: Int): Boolean =
-      engine != Engine.Topology && (engine != Engine.Current || size <= currentLimit)
+    def cached(engine: Engine, size: Int): Boolean = engine != Engine.Topology
 
     def shapes(operation: Operation, name: Message)(defined: (Engine, Int) -> Boolean): Unit =
       Shape.values.foreach: shape =>
         sweep(operation, shape, m"$name, ${shape.toString.tt}")(defined)
 
     suite(m"Construction"):
-      shapes(Operation.Construct, m"from edge arrays")(notCurrent)
+      shapes(Operation.Construct, m"from edge arrays")(every)
 
       shapes(Operation.ConstructReversed, m"from edge arrays in reverse order"): (engine, _) =>
-        engine == Engine.Repaired || engine == Engine.Topology || engine == Engine.JGraphT
+        engine == Engine.Dag || engine == Engine.Topology || engine == Engine.JGraphT
 
       sweep(Operation.Build, Shape.BuildSystem, m"topology alone, unfrozen")((engine, _) => engine == Engine.Topology)
 
     suite(m"Whole-graph queries"):
-      shapes(Operation.Sorted, m"topological order")(currentCapped)
+      shapes(Operation.Sorted, m"topological order")(cached)
 
       shapes(Operation.Closure, m"transitive closure"): (engine, size) =>
-        currentCapped(engine, size) && size <= closureLimit
+        cached(engine, size) && size <= closureLimit
 
       shapes(Operation.Reduction, m"transitive reduction"): (engine, size) =>
-        currentCapped(engine, size) && size <= closureLimit && engine != Engine.Guava
+        cached(engine, size) && size <= closureLimit && engine != Engine.Guava
 
-      sweep(Operation.Invert, Shape.BuildSystem, m"inversion, materialised")(currentCapped)
+      sweep(Operation.Invert, Shape.BuildSystem, m"inversion, materialised")(cached)
 
     suite(m"Point queries"):
-      sweep(Operation.Reachable, Shape.BuildSystem, m"reachable set of one node")(currentCapped)
-      sweep(Operation.Sources, Shape.BuildSystem, m"sources")((engine, _) => engine != Engine.Topology)
-      sweep(Operation.Sinks, Shape.BuildSystem, m"sinks")(currentCapped)
+      sweep(Operation.Reachable, Shape.BuildSystem, m"reachable set of one node")(cached)
+      sweep(Operation.Sources, Shape.BuildSystem, m"sources")(cached)
+      sweep(Operation.Sinks, Shape.BuildSystem, m"sinks")(cached)
 
     suite(m"Editing"):
       sweep(Operation.Copy, Shape.BuildSystem, m"the copy the mutable engines pay"): (engine, _) =>
         engine == Engine.Topology || engine == Engine.Stdlib || engine == Engine.JGraphT || engine == Engine.Guava
 
-      sweep(Operation.AddBatch, Shape.BuildSystem, m"a hundred added edges"): (engine, size) =>
-        (currentCapped(engine, size) || engine == Engine.Topology) && engine != Engine.Frozen
+      sweep(Operation.AddBatch, Shape.BuildSystem, m"a hundred added edges"): (engine, _) =>
+        engine != Engine.Frozen
 
-      sweep(Operation.Bypass, Shape.BuildSystem, m"ten nodes bypassed"): (engine, size) =>
-        (currentCapped(engine, size) || engine == Engine.Topology)
-        && engine != Engine.Frozen && engine != Engine.JGraphT && engine != Engine.Guava
+      sweep(Operation.Bypass, Shape.BuildSystem, m"ten nodes bypassed"): (engine, _) =>
+        engine != Engine.Frozen && engine != Engine.JGraphT && engine != Engine.Guava

@@ -32,10 +32,10 @@
                                                                                                   */
 package acyclicity
 
-// Deliberate stdlib opt-out, as in `Dag`.
-import scala.collection.immutable.{Map, Set}
-
+import scala.collection.immutable as sci
 import scala.collection.mutable as scm
+
+import prepositional.*
 
 object Hasse:
   // Build the Hasse diagram (covering relation) of the poset on `elements` ordered
@@ -118,44 +118,75 @@ object Hasse:
           if parents.isEmpty then maxima += x
           if children.isEmpty then minima += x
 
-    elements.foreach(insert)
+    Set.iterator(elements).foreach(insert)
 
     new Hasse
-      ( greater.view.mapValues(_.to(Set)).to(Map),
-        lesser.view.mapValues(_.to(Set)).to(Map),
-        aliases.to(Map) )
+      ( greater.view.mapValues(sci.Set.from(_)).to(sci.Map),
+        lesser.view.mapValues(sci.Set.from(_)).to(sci.Map),
+        aliases.to(sci.Map) )
+
+  // A `Hasse` is a graph whose successors are the covered elements (`children`) and whose
+  // predecessors are the covering ones (`parents`); both directions are stored, so neither is
+  // gated, and the covering relation of a partial order has no cycle.
+  given nodal: [element] => (Hasse[element] is Nodal by element) = new Nodal:
+    type Self = Hasse[element]
+    type Operand = element
+    def nodes(self: Hasse[element]): Iterator[element] = self.greater.keysIterator
+
+    def has(self: Hasse[element], node: element): Boolean =
+      self.greater.contains(self.canonical(node))
+
+    def successors(self: Hasse[element], node: element): Iterator[element] =
+      self.lesser.getOrElse(self.canonical(node), sci.Set()).iterator
+
+  given bidirectional: [element] => (Hasse[element] is Bidirectional by element) =
+    new Bidirectional:
+      type Self = Hasse[element]
+      type Operand = element
+
+      def predecessors(self: Hasse[element], node: element): Iterator[element] =
+        self.greater.getOrElse(self.canonical(node), sci.Set()).iterator
+
+  given topological: [element] => Hasse[element] is Topological =
+    new Topological { type Self = Hasse[element] }
 
 case class Hasse[element] private[acyclicity]
-  ( greater: Map[element, Set[element]],     // node -> immediate supertypes (parents, ↑)
-    lesser:  Map[element, Set[element]],     // node -> immediate subtypes  (children, ↓)
-    aliases: Map[element, element] = Map() ):
+  ( private[acyclicity] val greater: sci.Map[element, sci.Set[element]], // immediate supertypes (↑)
+    private[acyclicity] val lesser:  sci.Map[element, sci.Set[element]], // immediate subtypes (↓)
+    private[acyclicity] val aliases: sci.Map[element, element] = sci.Map() ):
 
-  private def canonical(node: element): element = aliases.getOrElse(node, node)
+  private[acyclicity] def canonical(node: element): element = aliases.getOrElse(node, node)
 
-  def parents(node: element): Set[element] = greater.getOrElse(canonical(node), Set())
-  def children(node: element): Set[element] = lesser.getOrElse(canonical(node), Set())
-  def elements: Set[element] = greater.keySet
-  def maxima: Set[element] = elements.filter(greater(_).isEmpty)
-  def minima: Set[element] = elements.filter(lesser(_).isEmpty)
-  def dag: Dag[element] = Dag(lesser)
+  def parents(node: element): Set[element] = Set.from(greater.getOrElse(canonical(node), sci.Set()))
+  def children(node: element): Set[element] = Set.from(lesser.getOrElse(canonical(node), sci.Set()))
+  def elements: Set[element] = Set.from(greater.keySet)
+  def maxima: Set[element] = Set.from(greater.keysIterator.filter(greater(_).isEmpty))
+  def minima: Set[element] = Set.from(greater.keysIterator.filter(lesser(_).isEmpty))
+
+  // The covering relation as a `Dag`, each element pointing at those it covers; acyclic because a
+  // partial order is.
+  def dag: Dag[element] = Dag.unchecked(sci.VectorMap.from(lesser))
+
+  // The same relation read upward: each element pointing at those covering it.
+  def invert: Hasse[element] = new Hasse(lesser, greater, aliases)
 
   // Attach `value` below every current minimum in one comparison-free sweep — it
   // is, by construction, less than everything (e.g. `Nothing` among types).
   def bottom(value: element): Hasse[element] =
-    val mins = minima
+    val mins = sci.Set.from(Set.iterator(minima))
 
     val lesser2 =
-      mins.foldLeft(lesser.updated(value, Set())): (map, min) =>
-        map.updated(min, map.getOrElse(min, Set()) + value)
+      mins.foldLeft(lesser.updated(value, sci.Set())): (map, min) =>
+        map.updated(min, map.getOrElse(min, sci.Set()) + value)
 
     new Hasse(greater.updated(value, mins), lesser2, aliases)
 
   // Attach `value` above every current maximum in one comparison-free sweep.
   def top(value: element): Hasse[element] =
-    val maxs = maxima
+    val maxs = sci.Set.from(Set.iterator(maxima))
 
     val greater2 =
-      maxs.foldLeft(greater.updated(value, Set())): (map, max) =>
-        map.updated(max, map.getOrElse(max, Set()) + value)
+      maxs.foldLeft(greater.updated(value, sci.Set())): (map, max) =>
+        map.updated(max, map.getOrElse(max, sci.Set()) + value)
 
     new Hasse(greater2, lesser.updated(value, maxs), aliases)

@@ -34,5 +34,7 @@ package soundness
 
 export
   acyclicity
-  . { Dag, Digraph, Dot, explore, Graph, Hasse, PartiallyOrdered,
-      Poset, Subgraph }
+  . { Bidirectional, Dag, Digraph, Dot, explore, Frozen, Hasse, Invertible, Nodal,
+      PartiallyOrdered, Poset, Reachable, Topological, Topology, nodes, successors, edges,
+      sources, sinks, predecessors, cycle, acyclic, digraph, reachable, closure, invert,
+      linearized, reduction, traversal }

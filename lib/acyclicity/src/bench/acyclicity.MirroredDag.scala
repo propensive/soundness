@@ -33,13 +33,14 @@
 package acyclicity
 
 // Deliberate stdlib opt-out, as in `Dag`.
-import scala.collection.immutable.{List, Map, Nil, Set, ::}
+import scala.collection.immutable.{List, Map, Set}
 
-// Candidate (b): the persistent adjacency map in both directions, with the sources (nodes that
-// depend on nothing) and sinks (nodes nothing depends on) maintained as sets through every
-// edit. This is issue #488's amortisation done as bookkeeping rather than as a sentinel node:
-// `sources`, `sinks` and `invert` become O(1), `predecessors` O(log n), and `remove`/`bypass`
-// need no transpose, at the price of a second map update per edge.
+// Candidate (b), not adopted: the persistent adjacency map in both directions, with the sources
+// (nodes that depend on nothing) and sinks (nodes nothing depends on) maintained as sets through
+// every edit — issue #488's amortisation done as bookkeeping rather than as a sentinel node.
+// `sources`, `sinks` and `invert` are O(1), `predecessors` O(log n), and `remove`/`bypass` need
+// no transpose, at the price of a second map update per edge, which made construction 3.7×
+// slower than `Dag`'s; kept so that the comparison stays reproducible.
 final class MirroredDag[node] private
   ( val forward:  Map[node, Set[node]],
     val backward: Map[node, Set[node]],
@@ -94,16 +95,24 @@ final class MirroredDag[node] private
 
     new MirroredDag(forward2, backward2, sources2, sinks2)
 
-  private def search: Either[List[node], List[node]] = Search.topological(forward.keys, successors)
+  private def search: Either[List[node], List[node]] =
+    Search.topological(forward.keysIterator, successors(_).iterator)
 
   def sorted: Option[List[node]] = search.toOption
   def cycle: Option[List[node]] = search.left.toOption
-  def reachable(node: node): Set[node] = Search.reachable(node, successors)
 
-  private def reach: Map[node, Set[node]] = Search.closure(sorted.get, successors)
+  def reachable(node: node): Set[node] =
+    proscenium.Set.iterator(Search.reachable(node, successors(_).iterator)).toSet
 
-  def closure: MirroredDag[node] = MirroredDag(reach)
-  def reduction: MirroredDag[node] = MirroredDag(Search.reduction(forward.keys, successors, reach))
+  // Through the frozen form, as `Dag` does.
+  private def frozen: Frozen[node] =
+    Frozen.of(proscenium.List.from(sorted.get), successors(_).iterator)
+
+  private def entries(dag: Dag[node]): Map[node, Set[node]] =
+    proscenium.Set.iterator(dag.nodes).map { node => node -> proscenium.Set.iterator(dag.successors(node)).toSet }.toMap
+
+  def closure: MirroredDag[node] = MirroredDag(entries(frozen.closure))
+  def reduction: MirroredDag[node] = MirroredDag(entries(frozen.reduction))
 
 object MirroredDag:
   def empty[node]: MirroredDag[node] = new MirroredDag(Map(), Map(), Set(), Set())

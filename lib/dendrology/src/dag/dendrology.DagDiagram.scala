@@ -44,15 +44,15 @@ import gossamer.*
 import spectacular.*
 
 object DagDiagram:
-  def apply[node](dag: Dag[node]): DagDiagram[node] raises Dag.Error =
-    val nodes = dag.sorted.to(Vector)
+  def apply[node](dag: Dag[node]): DagDiagram[node] =
+    val nodes = proscenium.List.iterator(dag.linearized).to(Vector)
     val indexes: scala.collection.immutable.Map[node, Int] = nodes.zipWithIndex.toMap
 
     // A flat exclusive scratch array rather than a nested `Array[Array[Int]]`: writing
     // through an element read of a nested array is rejected by separation checking.
     val n = nodes.length
     val layout: scala.Array[Int]^ = new scala.Array[Int](n*n)
-    var rest = dag.edges.to(List)
+    var rest = proscenium.Set.iterator(dag.edges).to(List)
 
     while rest.nonEmpty do
       val (source, destination) = rest.head

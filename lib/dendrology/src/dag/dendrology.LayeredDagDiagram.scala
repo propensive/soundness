@@ -91,12 +91,19 @@ object LayeredDagDiagram:
         case (true,  true,  true,  true)  => Junction
         case _                            => Space
 
-  def apply[node](dag: Dag[node]): LayeredDagDiagram[node] raises Dag.Error =
-    val nodes: Vector[node] = dag.sorted.to(Vector)
+  def apply[node](dag: Dag[node]): LayeredDagDiagram[node] =
+    val nodes: Vector[node] = proscenium.List.iterator(dag.linearized).to(Vector)
 
     if nodes.isEmpty then LayeredDagDiagram(Nil) else
-      val parents: Map[node, Set[node]] = dag.edgeMap
-      val forward: Map[node, Set[node]] = dag.invert.edgeMap
+      // Dependencies and dependants of each node, from the edges: `Dag` no longer exposes its
+      // adjacency.
+      val edges = proscenium.Set.iterator(dag.edges).to(List)
+
+      val parents: Map[node, Set[node]] =
+        edges.groupMap(_(0))(_(1)).view.mapValues(_.to(Set)).to(Map)
+
+      val forward: Map[node, Set[node]] =
+        edges.groupMap(_(1))(_(0)).view.mapValues(_.to(Set)).to(Map)
 
       val level: scm.HashMap[node, Int] = scm.HashMap()
 

@@ -32,43 +32,60 @@
                                                                                                   */
 package acyclicity
 
-// Deliberate stdlib opt-out: `Dag`'s domain model is set-algebraic throughout (`edgeMap`,
-// `keys`, intersections, differences), and migrating it to the total surface is deferred —
-// this import shadows the opaque `Set` for the whole file, greppably.
-import scala.collection.immutable.{List, Map, Nil, Set, ::}
+import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 
 import anticipation.*
 import contingency.*
 import denominative.*
-import nomenclature.*
-import rudiments.*
-
-import Dot.*
 import fulminate.*
+import nomenclature.*
+import prepositional.*
 
+// A directed acyclic graph as a persistent value: the representation of `Digraph`, with the
+// fact that it holds no cycle established once, at construction — the factories check, and
+// every edit either cannot create a cycle (`-`, `remove`, `bypass`, `subgraph`, `descendants`)
+// or checks the one path that could (`add`) or answers a `Digraph` (`+`, `++`, `map`). What
+// acyclicity buys is `linearized`, `reduction` and `traversal` without a failure mode, and the
+// `Topological` instance that lets the generic operations have them too.
+//
+// Whole-graph queries that depend on reachability — `closure`, `reduction` — go through the
+// frozen form, whose bit matrix answers them in O(e·n/64); a graph queried that way more than
+// once should be frozen once and kept. As in `Digraph`, the operations needing a node's
+// predecessors take a `Dysasymptotic.LinearScan`.
 object Dag:
-  @targetName("apply2")
-  def apply[node](keys: Set[node])(dependencies: node => Set[node]): Dag[node] =
-    Dag(keys.map { key => (key, dependencies(key)) }.to(Map))
-
-  // Both ends of every edge become keys: a target with no edges of its own has an empty
-  // dependency set, so it is a source of the graph and `sorted` can place it first.
   @targetName("fromEdges")
-  def apply[node](edges: (node, node)*): Dag[node] = Dag:
-    edges.foldLeft(Map[node, Set[node]]()): case (acc, (key, value)) =>
-      acc
-      . updated(key, acc.get(key).fold(Set(value))(_ + value))
-      . updated(value, acc.getOrElse(value, Set()))
+  def apply[node](edges: (node, node)*): Dag[node] raises Dag.Error = Digraph(edges*).acyclic
+
+  // An explicit `Tactic` rather than `raises`: under separation checking a context-function
+  // result would hide the (possibly capturing) `successors` parameter.
+  // Each node with its successors; a successor given no entry of its own becomes a node.
+  @targetName("fromPairs")
+  def apply[node, successors <: Set[node]](nodes: (node, successors)*): Dag[node] raises Dag.Error =
+    Digraph(nodes*).acyclic
 
   @targetName("fromNodes")
-  def apply[node](nodes: (node, Set[node])*): Dag[node] = Dag(Map(nodes*))
+  def apply[node](nodes: Set[node])(successors: node => Set[node])(using Tactic[Dag.Error])
+  :   Dag[node] =
+
+    Digraph(nodes)(successors).acyclic
+
+  @targetName("fromAdjacency")
+  def apply[node](adjacency: Map[node, Set[node]]): Dag[node] raises Dag.Error =
+    Digraph(adjacency).acyclic
+
+  // Acyclic by the topology's invariant, so no check; the caller gives up its handle.
+  def apply[node](consume topology: Topology[node]^): Dag[node] = topology.snapshot
+
+  private[acyclicity] def unchecked[node](adjacency: sci.VectorMap[node, sci.Set[node]])
+  :   Dag[node] =
+
+    new Dag(adjacency)
 
   extension (dag: Dag[Text])
     def dot: Dot = unsafely:
-      val edges = dag.edges.to(List).map: (a, b) => Name[Dot.Id](a) --> Name[Dot.Id](b)
-
-      Dot.Digraph(None, false, edges*)
+      val edges = Set.iterator(dag.edges).map: (a, b) => Name[Dot.Id](a) --> Name[Dot.Id](b)
+      Dot.Digraph(None, false, edges.toSeq*)
 
   // DagError → Dag.Error
   object Error:
@@ -83,132 +100,158 @@ object Dag:
   case class Error(reason: Dag.Error.Reason)(using Diagnostics)
   extends fulminate.Error(191, reason.number)(m"the DAG operation failed because $reason")
 
-case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
-  private val reachableCache: scm.HashMap[node, Set[node]] = scm.HashMap()
+  given nodal: [node] => (Dag[node] is Nodal by node) = new Nodal:
+    type Self = Dag[node]
+    type Operand = node
+    def nodes(self: Dag[node]): Iterator[node] = self.adjacency.keysIterator
+    def has(self: Dag[node], node: node): Boolean = self.adjacency.contains(node)
 
-  def keys: Set[node] = edgeMap.keySet
+    def successors(self: Dag[node], node: node): Iterator[node] =
+      self.adjacency.get(node).fold(Iterator.empty)(_.iterator)
 
-  def map[node2](lambda: node => node2): Dag[node2] =
-    Dag(edgeMap.map { (k, v) => (lambda(k), v.map(lambda)) })
+  given bidirectional: [node] => (complexity: Dysasymptotic.LinearScan)
+  =>  ( Dag[node] is Bidirectional by node ) = new Bidirectional:
+    type Self = Dag[node]
+    type Operand = node
 
-  def subgraph(keep: Set[node]): Dag[node] = (keys &~ keep).fuse(this)(state.remove(next))
-  def apply(key: node): Set[node] = edgeMap.getOrElse(key, Set())
+    def predecessors(self: Dag[node], node: node): Iterator[node] =
+      self.transpose.getOrElse(node, sci.Set()).iterator
 
-  def descendants(key: node): Dag[node] raises Dag.Error = subgraph(reachable(key))
-  def ancestors(key: node): Dag[node] raises Dag.Error = subgraph(invert.reachable(key))
+  given topological: [node] => Dag[node] is Topological = new Topological { type Self = Dag[node] }
 
-  def lineage(key: node): Dag[node] raises Dag.Error =
-    subgraph(reachable(key) ++ invert.reachable(key))
+final class Dag[node] private[acyclicity]
+  ( private[acyclicity] val adjacency: sci.VectorMap[node, sci.Set[node]] ):
 
-  @targetName("removeKey")
-  infix def - (key: node): Dag[node] = Dag(edgeMap - key)
+  private[acyclicity] lazy val transpose: sci.VectorMap[node, sci.Set[node]] =
+    Search.transpose(adjacency.keysIterator, adjacency(_).iterator)
 
-  def sources: Set[node] = edgeMap.collect { case (k, v) if v.isEmpty => k }.to(Set)
-  def edges: Set[(node, node)] = edgeMap.to(Set).flatMap: (key, values) => values.map(key -> _)
-  def closure: Dag[node] = Dag(keys.map { k => k -> (reach(k) - k) }.to(Map))
-  def sorted: List[node] raises Dag.Error = sort(edgeMap, Nil).reverse
-  def hasCycle(start: node): Boolean raises Dag.Error = findCycle(start).isDefined
+  private def missing(node: node): Text = node.toString.tt
 
-  def remove(key: node, value: node): Dag[node] =
-    Dag(edgeMap.updated(key, edgeMap.get(key).fold(Set())(_ - value)))
+  // The order every whole-graph operation shares, computed once per value: dependencies first.
+  private lazy val order: sci.List[node] =
+    Search.topological(adjacency.keysIterator, adjacency(_).iterator) match
+      case Right(order) => order
+      case Left(_)      => sci.Nil   // unreachable: the constructors admit no cycle
 
-  def has(key: node): Boolean = edgeMap.contains(key)
+  def nodes: Set[node] = Set.from(adjacency.keySet)
+  def size: Int = adjacency.size
+  def has(node: node): Boolean = adjacency.contains(node)
+  def successors(node: node): Set[node] = Set.from(adjacency.getOrElse(node, sci.Set()))
 
-  def traversal[node2](lambda: (Set[node2], node) => node2)
-  :   (Tactic[Dag.Error]^) ?->{lambda} Map[node, node2] =
+  def edges: Set[(node, node)] =
+    Set.from(adjacency.iterator.flatMap { (from, targets) => targets.iterator.map(from -> _) })
 
-    sorted.fuse(Map[node, node2]()):
-      state.updated(next, lambda(apply(next).map(state), next))
+  def sources: Set[node] =
+    Set.from(adjacency.iterator.collect { case (node, targets) if targets.isEmpty => node })
+
+  def sinks: Set[node] = Set.from(adjacency.keysIterator.filter(transpose(_).isEmpty))
+
+  // Every node after everything it points at.
+  def linearized: List[node] = List.from(order)
+
+  def invert: Dag[node] = new Dag(transpose)
+  def digraph: Digraph[node] = Digraph.of(adjacency)
+  def freeze: Frozen[node] = Frozen(this)
+  def thaw: Topology[node]^ = Topology(this)
+
+  def including(node: node): Dag[node] =
+    if adjacency.contains(node) then this else new Dag(adjacency.updated(node, sci.Set()))
+
+  // Adds an edge, unless `to` already reaches `from`, which is the one way an edge can close a
+  // cycle: O(reach of `to`).
+  def add(from: node, to: node): Dag[node] raises Dag.Error =
+    if from == to || Set.has(Search.reachable(to, adjacency.getOrElse(_, sci.Set()).iterator), from)
+    then abort(Dag.Error(Dag.Error.Reason.Cyclic))
+    else new Dag(including(to).adjacency.updated(from, adjacency.getOrElse(from, sci.Set()) + to))
+
+  @targetName("addEdge")
+  infix def + (edge: (node, node)): Digraph[node] = digraph + edge
 
   @targetName("addAll")
-  infix def ++ (dag: Dag[node]): Dag[node] =
-    val joined = edgeMap.to(List) ++ dag.edgeMap.to(List)
-    Dag(joined.groupBy(_._1).view.mapValues(_.flatMap(_._2).to(Set)).to(Map))
+  infix def ++ (other: Dag[node]): Digraph[node] = digraph ++ other.digraph
 
-  def add(key: node, value: node): Dag[node] = this ++ Dag(key -> value)
+  def remove(from: node, to: node): Dag[node] = adjacency.get(from) match
+    case Some(targets) => new Dag(adjacency.updated(from, targets - to))
+    case None          => this
 
-  def flatMap[node2](lambda: node => Dag[node2]): Dag[node2] = Dag:
-    edgeMap.flatMap:
-      case (k, v) => lambda(k).edgeMap.map:
-        case (h, w) => (h, (w ++ v.flatMap(lambda(_).keys)))
+  @targetName("removeNode")
+  infix def - (node: node)(using Dysasymptotic.LinearScan): Dag[node] =
+    val origins = transpose.getOrElse(node, sci.Set())
 
-  . reduction
+    val pruned = origins.foldLeft(adjacency - node): (acc, from) =>
+      acc.updated(from, acc(from) - node)
 
-  def reduction: Dag[node] =
-    val allEdges = closure.edgeMap
+    Dag.unchecked(pruned)
 
-    val removals =
-      for
-        key     <- keys
-        edge    <- edgeMap(key)
-        target  <- edgeMap.getOrElse(edge, Set())
-                if allEdges(key)(target)
-      yield (key, target)
+  // Rerouting predecessors to successors cannot create a cycle: every predecessor already
+  // reaches every successor through the node being dropped.
+  def bypass(node: node)(using Dysasymptotic.LinearScan): Dag[node] =
+    val origins = transpose.getOrElse(node, sci.Set())
+    val targets = adjacency.getOrElse(node, sci.Set())
 
-    Dag:
-      removals.foldLeft(edgeMap):
-        case (m, (k, v)) => m.updated(k, m(k) - v)
+    Dag.unchecked:
+      origins.foldLeft(adjacency - node): (acc, from) =>
+        acc.updated(from, acc(from) - node ++ targets)
+
+  // Bypasses several nodes one at a time, so that connectivity through a run of dropped nodes
+  // is preserved. (A `Set`, not a predicate: a lambda argument cannot be told from a node.)
+  def bypassAll(nodes: Set[node])(using Dysasymptotic.LinearScan): Dag[node] =
+    Set.iterator(nodes).foldLeft(this)(_.bypass(_))
+
+  private def induced(keep: Set[node]): Dag[node] =
+    Dag.unchecked:
+      sci.VectorMap.from:
+        adjacency.iterator.collect:
+          case (node, targets) if Set.has(keep, node) => (node, targets.filter(Set.has(keep, _)))
+
+  def subgraph(keep: Set[node])(using Dysasymptotic.LinearSize): Dag[node] = induced(keep)
+
+  def map[node2](lambda: node => node2): Digraph[node2] = digraph.map(lambda)
+
+  // Substitutes a graph for each node: the nodes of `lambda(a)` point at every node of
+  // `lambda(b)` for each edge `a -> b`, and at their own successors within `lambda(a)`.
+  def flatMap[node2](lambda: node => Dag[node2]): Digraph[node2] =
+    val builder = scm.LinkedHashMap[node2, sci.Set[node2]]()
+
+    adjacency.foreach: (node, targets) =>
+      val replacement = lambda(node)
+      val external = targets.flatMap(lambda(_).adjacency.keySet)
+
+      replacement.adjacency.foreach: (inner, innerTargets) =>
+        builder(inner) = builder.getOrElse(inner, sci.Set()) ++ innerTargets ++ external
+
+      external.foreach: outer => if !builder.contains(outer) then builder(outer) = sci.Set()
+
+    Digraph.of(sci.VectorMap.from(builder))
 
   def reachable(node: node): Set[node] raises Dag.Error =
-    if !edgeMap.defines(node)
-    then abort(Dag.Error(Dag.Error.Reason.NodeMissing(node.toString.tt)))
-    else reach(node)
+    if !adjacency.contains(node) then abort(Dag.Error(Dag.Error.Reason.NodeMissing(missing(node))))
+    else Search.reachable(node, adjacency(_).iterator)
 
-  private def reach(node: node): Set[node] =
-    reachableCache.getOrElseUpdate(node, edgeMap.getOrElse(node, Set()).flatMap(reach) + node)
+  def descendants(node: node): Dag[node] raises Dag.Error = induced(reachable(node))
 
-  def invert: Dag[node] = Dag:
-    edgeMap.foldLeft(Map[node, Set[node]]()):
-      case (acc, (k, vs)) =>
-        vs.fuse(acc)(state.updated(next, state.get(next).fold(Set(k))(_ + k)))
+  def ancestors(node: node)(using Dysasymptotic.LinearScan): Dag[node] raises Dag.Error =
+    if !adjacency.contains(node) then abort(Dag.Error(Dag.Error.Reason.NodeMissing(missing(node))))
+    else induced(Search.reachable(node, transpose(_).iterator))
 
-  def remove(element: node): Dag[node] =
-    val outgoing = edgeMap.getOrElse(element, Set())
+  def lineage(node: node)(using Dysasymptotic.LinearScan): Dag[node] raises Dag.Error =
+    induced(Set.concat(reachable(node), Search.reachable(node, transpose(_).iterator)))
 
-    Dag:
-      (edgeMap - element).view.mapValues:
-        map => if map(element) then map ++ outgoing - element else map
+  // Both through the frozen form's bit matrix: O(e·n/64), against the O(Σ|reach|) of set unions.
+  def closure: Dag[node] = freeze.closure
+  def reduction: Dag[node] = freeze.reduction
 
-      . to(Map)
+  // A value for every node from the values of its successors, which are computed first.
+  def traversal[result](lambda: (Set[result], node) => result): Map[node, result] =
+    val values = scm.HashMap[node, result]()
 
-  private def sort(todo: Map[node, Set[node]], done: List[node])
-  :   List[node] raises Dag.Error =
+    order.foreach: node => values(node) = lambda(Set.from(adjacency(node).map(values)), node)
 
-    if todo.isEmpty then done
-    else todo.find { (k, vs) => (vs -- done).isEmpty } match
-      case None => abort(Dag.Error(Dag.Error.Reason.Cyclic))
+    Map.from(values)
 
-      case Some((node, _)) =>
-        sort((todo - node).view.mapValues(_.filter(_ != node)).to(Map), node :: done)
+  override def equals(other: Any): Boolean = other.asInstanceOf[Matchable] match
+    case that: Dag[?] => adjacency == that.adjacency
+    case _            => false
 
-  def filter(predicate: node => Boolean): Dag[node] =
-    val deletions = keys.filter(!predicate(_))
-    val inverted = invert
-
-    Dag:
-      val pruned =
-        deletions.foldLeft(edgeMap): (acc, next) =>
-          inverted(next).foldLeft(acc):
-            (acc2, ref) => acc2.updated(ref, acc2(ref) - next ++ acc(next))
-
-      pruned -- deletions
-
-  private def findCycle(start: node): Option[List[node]] raises Dag.Error =
-    if !edgeMap.defines(start) then abort(Dag.Error(Dag.Error.Reason.NodeMissing(start.toString.tt)))
-
-    @tailrec
-    def recur(queue: List[(node, List[node])], finished: Set[node])
-    :   Option[List[node]] =
-
-      queue match
-        case Nil => None
-
-        case (vertex, trace) :: tail =>
-          trace.to(Set).intersect(apply(vertex)).headOption match
-            case Some(element) => Some(trace ++ List(vertex, element))
-
-            case None =>
-              val queue = tail ++ apply(vertex).diff(finished).to(List).map((_, trace :+ vertex))
-              recur(queue, finished + vertex)
-
-    recur(List((start, List())), Set())
+  override def hashCode: Int = adjacency.hashCode
+  override def toString: String = adjacency.mkString("Dag(", ", ", ")")

@@ -32,11 +32,12 @@
                                                                                                   */
 package acyclicity
 
-import nomenclature.*
+import prepositional.*
 
-object Subgraph:
-  def apply(id: Name[Dot.Id], statements: Dot.Statement*): Dot.Statement.Subgraph =
-    Dot.Statement.Subgraph(Some(id), statements*)
-
-  def apply(statements: Dot.Statement*): Dot.Statement.Subgraph =
-    Dot.Statement.Subgraph(None, statements*)
+// A type whose values admit a topological order — contain no directed cycle — by construction:
+// `Dag`, `Frozen`, `Topology` and `Hasse`, each of which can only be built through a check or
+// an invariant. The instance is a marker, never the result of a runtime check on a general type:
+// a `Digraph` becomes `Topological` by `acyclic`, which answers a `Dag`. `linearized`,
+// `reduction` and `traversal` require it, so a cyclic graph has no such operations rather than
+// operations that raise.
+trait Topological extends Typeclass.Pure
