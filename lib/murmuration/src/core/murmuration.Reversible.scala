@@ -35,12 +35,13 @@ package murmuration
 import prepositional.*
 
 // Order-reversal, unified across shapes so a single `reverse` extension serves both collections
-// (`List`/`Sequence`) and textual types (gossamer contributes a `Reversible` *instance* for `Textual`,
-// not a competing extension — that is what keeps the name un-clashed at the `soundness` umbrella).
-// Instances are subtype-parametric (`container <: List[element]`) to match `& Populated` receivers
-// and the distinct `soundness.*` re-export aliases; `Result` is bound as an ordinary type parameter
-// at the extension, never referenced path-dependently, so it survives the cross-package export
-// forwarder (#1411). Unordered shapes (`Set`, `Map`) have no instance: reversing them is meaningless.
+// (`List`/`Sequence`) and textual types (gossamer contributes a `Reversible` *instance* for
+// `Textual`, not a competing extension — that is what keeps the name un-clashed at the `soundness`
+// umbrella). Instances are subtype-parametric (`container <: List[element]`) to match `& Populated`
+// receivers and the distinct `soundness.*` re-export aliases; `Result` is bound as an ordinary type
+// parameter at the extension, never referenced path-dependently, so it survives the cross-package
+// export forwarder (#1411). Unordered shapes (`Set`, `Map`) have no instance: reversing them is
+// meaningless.
 object Reversible:
   given list: [element, container <: List[element]]
   =>  ( container is Reversible { type Result = List[element] } ) =

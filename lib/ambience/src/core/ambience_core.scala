@@ -94,8 +94,9 @@ package temporaryDirectories:
     first(List(t"TMPDIR", t"TMP", t"TEMP"))
 
 // Resolution goes through `Paths.Resolver` (ordinary implicit search) rather than an inline
-// `summonFrom`: the latter cannot be reduced when `temporaryDirectory`/`workingDirectory` is expanded
-// inside a staged quote (e.g. an ethereal daemon `cli` block printing the working directory).
+// `summonFrom`: the latter cannot be reduced when `temporaryDirectory`/`workingDirectory` is
+// expanded inside a staged quote (e.g. an ethereal daemon `cli` block printing the working
+// directory).
 inline def temporaryDirectory[path: Representative of Paths]
   ( using temporary: TemporaryDirectory, resolver: Paths.Resolver[path] )
 :   path =

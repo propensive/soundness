@@ -45,8 +45,8 @@ import zephyrine.*
 // grammar (one method per production of the W3C recommendation), reporting
 // every failure as a `Parse.Error` over the `XPath` format, carrying the
 // character offset at which it was detected, which the `xp"…"` interpolator
-// maps back onto a source-file caret. With `holes` enabled, a NUL (`\u0000`) marker (as inserted between the
-// parts of an interpolated literal) lexes as a numbered hole and parses as an
+// maps back onto a source-file caret. With `holes` enabled, a NUL (`\u0000`) marker (as inserted
+// between the parts of an interpolated literal) lexes as a numbered hole and parses as an
 // `Expression.Substitution` wherever a primary expression is permitted.
 private[xylophone] object XPathReader:
   import XPath.{Axis, Expression, NodeTest, Origin, Step}

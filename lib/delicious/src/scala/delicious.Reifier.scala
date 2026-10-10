@@ -168,11 +168,12 @@ class Reifier(classpath: LocalClasspath):
 
         // `TreeUnpickler`'s constructor reads `compilationUnitInfo.tastyInfo.get.attributes`
         // UNCONDITIONALLY, so the `TastyInfo` must be present or every payload dies on `None.get` —
-        // inside `unpickle` below, where the `catch` turns it into a silent `Unset`. The one-argument
-        // `CompilationUnitInfo` supplies `None`, so `DottyUnpickler`'s own header/attributes step is
-        // reproduced here too. Its VALUES are inert for a diagnostic payload — the pickler writes no
-        // attributes section, so this is `Attributes.empty` and every flag is false, exactly what
-        // `DottyUnpickler` would compute — but the `Some` wrapper is load-bearing.
+        // inside `unpickle` below, where the `catch` turns it into a silent `Unset`. The
+        // one-argument `CompilationUnitInfo` supplies `None`, so `DottyUnpickler`'s own
+        // header/attributes step is reproduced here too. Its VALUES are inert for a diagnostic
+        // payload — the pickler writes no attributes section, so this is `Attributes.empty` and
+        // every flag is false, exactly what `DottyUnpickler` would compute — but the `Some` wrapper
+        // is load-bearing.
         val attributes =
           unpickler.unpickle(DottyUnpickler.AttributesSectionUnpickler()).map(_.attributes)
           . getOrElse(dtd.core.tasty.Attributes.empty)

@@ -69,9 +69,10 @@ extension [text: Textual { type Result = Char }](items: List[text])
     Columnation.layout(items, width, gap, uniform, downward, align)
 
 // `failAttenuation` is a context function `Tactic[Table.Error] ?=> Attenuation^`: the returned
-// `Attenuation` captures the Tactic *parameter*, so the given value itself captures nothing from its
-// enclosing scope and these can stay package-level givens — accessing `failAttenuation` or
-// `ignoreAttenuation` then captures no capability (unlike a member of an `ExclusiveCapability` object).
+// `Attenuation` captures the Tactic *parameter*, so the given value itself captures nothing from
+// its enclosing scope and these can stay package-level givens — accessing `failAttenuation` or
+// `ignoreAttenuation` then captures no capability (unlike a member of an `ExclusiveCapability`
+// object).
 package columnAttenuation:
   given failAttenuation: (tactic: Tactic[Table.Error]) => (Attenuation^{tactic}) =
     (minimum, available) => raise(Table.Error(minimum, available))

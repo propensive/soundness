@@ -474,8 +474,8 @@ object KotlinFacade:
       // Only members a caller could actually invoke are worth refining. A non-empty `privateWithin`
       // marks a package-private or protected-scoped Java member (e.g. JDK 25's internal
       // `Thread.uncaughtExceptionHandler(handler)`, scoped to `java.lang`); refining it both
-      // exposes an inaccessible method and, worse, shadows the public `setX`-derived property of the
-      // same name — so the `x = …` setter would silently never be generated.
+      // exposes an inaccessible method and, worse, shadows the public `setX`-derived property of
+      // the same name — so the `x = …` setter would silently never be generated.
       def accessible(method: Symbol): Boolean =
         !method.flags.is(Flags.Synthetic) && !method.flags.is(Flags.Private) &&
           !method.flags.is(Flags.Protected) && method.privateWithin.isEmpty

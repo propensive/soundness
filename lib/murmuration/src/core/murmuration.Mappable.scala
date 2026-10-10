@@ -37,17 +37,18 @@ import prepositional.*
 // The shape-preserving `map`, pulled out of `Traversable` so a `Map`'s `map` maps its *values*
 // (keys structural) rather than iterating `(key, value)` pairs. `Operand` is the element the lambda
 // receives (the value for a `Map`); `Result[_]` is the mapped-container constructor. Each instance
-// is keyed on the container alone — `Operand` and `Result[_]` are fixed by the shape, independent of
-// the new element type — so a `Self`-keyed summon determines both before the lambda is elaborated
-// (`xs.map(_.field)` works). `map` (below, in `rudiments_core`) binds `Result[_]` as an HK type
-// *parameter* matched from this refinement, so its return type is a plain application, never a path-
-// dependent projection: that is what survives the cross-package export forwarder (#1411). Not
-// `Resultant`: its `Result` has kind `*`, but here `Result` must be `* -> *`.
-// The instances are subtype-parametric (`container <: List[element]`, not an exact `List[element]`),
-// mirroring the `Traversable` givens: this is what matches both `List[e] & Populated` receivers and
-// the `soundness.*` re-export aliases (which are *distinct* opaque types from the `proscenium`
-// originals) — an exact match would let the `Iterable` fallback win for them (wrong shape for `Set`,
-// pair operand for `Map`).
+// is keyed on the container alone — `Operand` and `Result[_]` are fixed by the shape, independent
+// of the new element type — so a `Self`-keyed summon determines both before the lambda is
+// elaborated (`xs.map(_.field)` works). `map` (below, in `rudiments_core`) binds `Result[_]` as an
+// HK type
+// *parameter* matched from this refinement, so its return type is a plain application, never a
+// path- dependent projection: that is what survives the cross-package export forwarder (#1411). Not
+// `Resultant`: its `Result` has kind `*`, but here `Result` must be `* -> *`. The instances are
+// subtype-parametric (`container <: List[element]`, not an exact `List[element]`), mirroring the
+// `Traversable` givens: this is what matches both `List[e] & Populated` receivers and the
+// `soundness.*` re-export aliases (which are *distinct* opaque types from the `proscenium`
+// originals) — an exact match would let the `Iterable` fallback win for them (wrong shape for
+// `Set`, pair operand for `Map`).
 object Mappable extends Mappable.Fallback:
   given list: [element, container <: List[element]]
   =>  ( container is Mappable { type Operand = element; type Result[element2] = List[element2] } ) =
@@ -116,8 +117,8 @@ object Mappable extends Mappable.Fallback:
         Ledger.map(self, lambda)
 
   trait Fallback:
-    // Any raw `Iterable` (stdlib collections, ranges, …) maps to a `List`, as the old umbrella `map`
-    // did. Lower priority than the alias instances above (companion-parent placement).
+    // Any raw `Iterable` (stdlib collections, ranges, …) maps to a `List`, as the old umbrella
+    // `map` did. Lower priority than the alias instances above (companion-parent placement).
     given iterable: [element, collection <: Iterable[element]]
     =>  ( collection is Mappable { type Operand = element; type Result[element2] = List[element2] } ) =
       new Mappable:

@@ -276,9 +276,9 @@ object Rrule:
   private def yearDayDates(year: Int, rule: Rrule[?])(using RomanCalendar): List[Date] =
     rule.byYearDay.flatMap { day => list(yearDay(year, day)) }.filter(monthAllowed(_, rule))
 
-  // The `byWeekNo` dates within a week-year (ISO weeks, Monday-based): for each selected week number
-  // (negatives count back from the last week), the `byDay` weekdays — or the start's weekday — of
-  // that week, filtered by `byMonth`.
+  // The `byWeekNo` dates within a week-year (ISO weeks, Monday-based): for each selected week
+  // number (negatives count back from the last week), the `byDay` weekdays — or the start's weekday
+  // — of that week, filtered by `byMonth`.
   private def weekNoDates(year: Int, start: Date, rule: Rrule[?])(using RomanCalendar): List[Date] =
     val count = WeekDate.weekOfYear(unsafely(Date(Year(year), Month.Dec, Day(28))))
     val weekdays = if !rule.byDay.nil then rule.byDay.map(_.weekday) else List(start.weekday)

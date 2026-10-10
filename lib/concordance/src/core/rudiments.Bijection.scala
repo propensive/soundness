@@ -43,8 +43,9 @@ object Bijection:
   def apply[key, value](map: sci.Map[key, value]): Bijection[key, value] =
     Bijection(map, map.map(_.swap).to(sci.Map))
 
-  // `Applicable` (in `denominative`) can't host this — `Bijection` lives above it — but `Bijection`'s
-  // own companion is in implicit scope for `Bijection is Applicable`, keeping `bijection.at(key)` working.
+  // `Applicable` (in `denominative`) can't host this — `Bijection` lives above it — but
+  // `Bijection`'s own companion is in implicit scope for `Bijection is Applicable`, keeping
+  // `bijection.at(key)` working.
   given indexable: [key, value] => Bijection[key, value] is Applicable:
     type Self = Bijection[key, value]
     type Operand = key

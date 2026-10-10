@@ -34,9 +34,10 @@ package soundness
 
 export
   rudiments
-  // `Scribe`/`scribe` and `Surveyor`/`survey` are deliberately absent: their lenders and combinators are
-  // dependent-typed inline extensions, which synthesized export forwarders break (the same
-  // policy as zephyrine's `Region`/`Slate`). Consumers import them from `rudiments` directly.
+  // `Scribe`/`scribe` and `Surveyor`/`survey` are deliberately absent: their lenders and
+  // combinators are dependent-typed inline extensions, which synthesized export forwarders break
+  // (the same policy as zephyrine's `Region`/`Slate`). Consumers import them from `rudiments`
+  // directly.
   . { !!, &, all, also, and, annex, Atomic, b, bi, Bijection, bijection, Bytes, bytes, collate,
       DecimalConverter, Defaulting, Defaulting2, Digit, Dynamical, Dynamically, dynamically, each,
       establish, Exit,

@@ -98,9 +98,9 @@ object internal:
         // test body carries an effect type, or the type is otherwise not contrastable).
         // The non-contrast assertion passes no expectation (`Unset`), so it constructs no
         // `Contrastable` at all. This avoids both the capture-checking box that the `inline`
-        // `Contrastable.nothing[test]` mints when `test` is a pure type (`left.decompose.text: Text`
-        // inlined into the splice) and the out-of-scope-given failure that summoning a *derived*
-        // `Contrastable` (e.g. a sum type's) would cause at the splice site.
+        // `Contrastable.nothing[test]` mints when `test` is a pure type (`left.decompose.text:
+        // Text` inlined into the splice) and the out-of-scope-given failure that summoning a
+        // *derived* `Contrastable` (e.g. a sum type's) would cause at the splice site.
         val plain: Expr[result] =
           ' {
               assertion[test, test, report, result]

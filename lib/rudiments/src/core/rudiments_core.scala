@@ -188,8 +188,8 @@ extension [value <: Matchable](iterable: Iterable[value])
     iterable.flatMap(filter.unapply(_))
 
   // Built with an explicit iterator rather than `zip(right).flatMap(Iterable(_, _))`: under capture
-  // checking the `Iterable(_, _)` closure returns a fresh collection per element that cannot flow into
-  // `flatMap`'s result capture set.
+  // checking the `Iterable(_, _)` closure returns a fresh collection per element that cannot flow
+  // into `flatMap`'s result capture set.
   def weave(right: Iterable[value]): Iterable[value] =
     val left = iterable.iterator
     val rght = right.iterator

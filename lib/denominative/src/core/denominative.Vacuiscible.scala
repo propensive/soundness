@@ -46,13 +46,14 @@ object Vacuiscible:
   given countable: [self] => (countable: self is Countable) => self is Vacuiscible = countable
 
   // `List`'s emptiness is O(1), so it gets an ungated instance here rather than relying on
-  // the `Dysasymptotic.LinearSize`-gated `Countable.list` through the `countable` bridge; being more
-  // specific, it wins whenever both are in scope.
+  // the `Dysasymptotic.LinearSize`-gated `Countable.list` through the `countable` bridge; being
+  // more specific, it wins whenever both are in scope.
   given list: [element] => List[element] is Vacuiscible:
     def nil(self: List[element]): Boolean = List.nil(self)
 
   // `Chain`'s emptiness is O(1) — it forces only the first node — so, like `List`, it gets an
-  // ungated instance here rather than reaching the `Dysasymptotic.UnboundedSize`-gated `Countable.chain`.
+  // ungated instance here rather than reaching the `Dysasymptotic.UnboundedSize`-gated
+  // `Countable.chain`.
   given chain: [element] => Chain[element] is Vacuiscible:
     def nil(self: Chain[element]): Boolean = Chain.nil(self)
 

@@ -145,8 +145,8 @@ object WasmInvoke extends Materializer:
 
     val listClass = Symbol.requiredClass("scala.collection.immutable.List")
 
-    // The opaque `proscenium.List` erases to `sci.List` and is representationally identical, but its
-    // type does not dealias to `sci.List` outside its defining module, so match its symbol too.
+    // The opaque `proscenium.List` erases to `sci.List` and is representationally identical, but
+    // its type does not dealias to `sci.List` outside its defining module, so match its symbol too.
     val opaqueListSymbol = TypeRepr.of[proscenium.List[Any]] match
       case AppliedType(list, _) => list.typeSymbol
       case tpe                  => tpe.typeSymbol
@@ -284,8 +284,9 @@ object WasmInvoke extends Materializer:
 
             val mapped = Select.overloaded(wrapped.asTerm, "map", List(elementType), List(mapper))
 
-            // `.toList` yields an `sci.List`; cast to the target type so an opaque `proscenium.List`
-            // result (representationally identical) is accepted by the checked `.asExprOf[result]`.
+            // `.toList` yields an `sci.List`; cast to the target type so an opaque
+            // `proscenium.List` result (representationally identical) is accepted by the checked
+            // `.asExprOf[result]`.
             val listTerm = Select.unique(mapped, "toList")
             TypeApply(Select.unique(listTerm, "asInstanceOf"), List(Inferred(scala))).asExprOf[Any]
 

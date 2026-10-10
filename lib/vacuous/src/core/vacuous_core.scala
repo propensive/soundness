@@ -77,15 +77,16 @@ extension [value](iterator: Iterator[Optional[value]])
     iterator.filter(!_.absent).map(_.or(panic(m"the absent elements were filtered out")))
 
 extension [value](option: Option[value])
-  // Not `inline`: inlining a union `Optional[value]` result re-infers it per call site, where capture
-  // checking stamps a spurious `^` when `value` is (or contains) a pure type such as `Text`.
+  // Not `inline`: inlining a union `Optional[value]` result re-infers it per call site, where
+  // capture checking stamps a spurious `^` when `value` is (or contains) a pure type such as
+  // `Text`.
   def optional: Optional[value] = option.getOrElse(Unset)
 
 extension [value](value: value)
   def puncture(point: value): Optional[value] = if value == point then Unset else value
 
-  // The partial function may capture a capability (e.g. a `case x /: y =>` whose extractor raises an
-  // error captures the ambient `Tactic`), so it is accepted as a capturing value (`^`).
+  // The partial function may capture a capability (e.g. a `case x /: y =>` whose extractor raises
+  // an error captures the ambient `Tactic`), so it is accepted as a capturing value (`^`).
   def only[value2](partial: (PartialFunction[value, value2])^): Optional[value2] =
     if partial.isDefinedAt(value) then partial(value) else Unset
 

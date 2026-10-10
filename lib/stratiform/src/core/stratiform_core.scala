@@ -131,7 +131,8 @@ private[stratiform] def rebuild(origin: Tel, children: Array[Tel.Block]^{}): Tel
   case document: Tel.Document => Tel.make(document.copy(children = children))
   case compound: Tel.Compound => Tel.make(compound.copy(children = children))
 
-// Wraps a value as a compound under the given keyword (used to key map entries' key/value children).
+// Wraps a value as a compound under the given keyword (used to key map entries' key/value
+// children).
 private[stratiform] def reKey(tel: Tel, keyword: Text): Tel.Compound = tel.subtree match
   case c: Tel.Compound => c.copy(keyword = keyword)
   case d: Tel.Document => Tel.Compound(keyword, Array.empty, Unset, d.children)
@@ -232,8 +233,8 @@ extension [value: Tel.Encodable](value: value)
   // Fulfils an acceptance from this value (§8.4, writer obligations): the value is held under
   // its type's derived schema — base, layers and optional-member atoms, less any layer which
   // retracts a case the value uses — and the first alternative that composition can serve is
-  // answered with the richest permitted composition, as a framed document. `Unset` when no alternative can be served. (`fulfil`, as `serve` is
-  // urticose's.)
+  // answered with the richest permitted composition, as a framed document. `Unset` when no
+  // alternative can be served. (`fulfil`, as `serve` is urticose's.)
   inline def fulfil
     ( acceptance: Tel.Acceptance, codecs: Tel.Codec.Bindings = Tel.Codec.Bindings.builtins )
     ( using schematic: value is TelSchematic over Tels.Type )

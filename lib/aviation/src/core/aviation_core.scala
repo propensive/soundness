@@ -399,8 +399,8 @@ package timeSeparators:
 // A human-readable, relative rendering of a `Timespan`, in place of the default ISO-8601 duration:
 // "in 18 minutes", "8 minutes ago", "just now", and their French/German/Spanish equivalents. Only
 // the non-zero components are shown (coarsest first); the sign chooses the future/past form. Import
-// the variant for the language(s) you want (e.g. `timespanFormats.frenchRelativeTimespan`); the in-scope
-// `Locale` selects which applies.
+// the variant for the language(s) you want (e.g. `timespanFormats.frenchRelativeTimespan`); the
+// in-scope `Locale` selects which applies.
 package timespanFormats:
   given englishRelativeTimespan: Locale[en] => Timespan is Showable = Vernacular.english.relativeTimespan(_)
   given frenchRelativeTimespan: Locale[fr] => Timespan is Showable = Vernacular.french.relativeTimespan(_)
@@ -481,8 +481,8 @@ package gapPolicies:
     (_, _) => abort(Moment.Error(_.Gap))
 
 // Switch sub-day `Moment` arithmetic to count leap seconds (the default `LeapMode.Lenient` works on
-// the leap-free POSIX line). Import `leapModes.exactLeapMode` so adding a duration that crosses an inserted
-// leap second advances by that many real SI seconds.
+// the leap-free POSIX line). Import `leapModes.exactLeapMode` so adding a duration that crosses an
+// inserted leap second advances by that many real SI seconds.
 package leapModes:
   given exactLeapMode: LeapMode = LeapMode.Exact
 

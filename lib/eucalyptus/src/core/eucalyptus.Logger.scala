@@ -87,10 +87,10 @@ object Logger:
     new Logger(level, categories, enqueue)
 
   // The write runs in a fire-and-forget daemon. A daemon body is hygienic — it cannot capture an
-  // enclosing handler to discharge a write failure — so it handles its own errors: a `Truncation.Error`
-  // ends the current stream, and the loop re-establishes a fresh `spool.stream` from the same queue,
-  // so one failure does not permanently silence the logger. The loop ends only once the spool is
-  // stopped.
+  // enclosing handler to discharge a write failure — so it handles its own errors: a
+  // `Truncation.Error` ends the current stream, and the loop re-establishes a fresh `spool.stream`
+  // from the same queue, so one failure does not permanently silence the logger. The loop ends only
+  // once the spool is stopped.
   private def establish[format, target]
     ( destination: target )
     ( using writable:    (target is Writable by (Array[format]^{}))^,

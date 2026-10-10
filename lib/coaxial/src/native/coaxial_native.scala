@@ -52,12 +52,13 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-// The `java.net`/`java.nio.channels` implementation of `Socket.Backend`, split out of `coaxial.core`
-// so the platform-neutral socket API can cross-compile; other platforms (e.g. WASI) supply their
-// own backend. Each handle type is a small ADT that preserves the exact Java representation each
-// role needs — a TCP server binds a stream `ServerSocket` (which honours `setSoTimeout`), a
-// Unix-domain server a `ServerSocketChannel`; a request/response exchange is a blocking `Socket`
-// for TCP but a non-blocking `SocketChannel` for Unix-domain — so no per-role behaviour is lost.
+// The `java.net`/`java.nio.channels` implementation of `Socket.Backend`, split out of
+// `coaxial.core` so the platform-neutral socket API can cross-compile; other platforms (e.g. WASI)
+// supply their own backend. Each handle type is a small ADT that preserves the exact Java
+// representation each role needs — a TCP server binds a stream `ServerSocket` (which honours
+// `setSoTimeout`), a Unix-domain server a `ServerSocketChannel`; a request/response exchange is a
+// blocking `Socket` for TCP but a non-blocking `SocketChannel` for Unix-domain — so no per-role
+// behaviour is lost.
 
 // A bound, listening stream socket. (Native has no `ServerSocketChannel`, so — unlike the JVM
 // backend — there is no Unix-domain variant here; the domain methods are unsupported.)

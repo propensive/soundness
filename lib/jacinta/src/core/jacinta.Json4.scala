@@ -297,7 +297,8 @@ trait Json4:
       type Form = Json.Provider
 
       // `Json.apply` yields an absent JSON value, rather than failing, for a key the object lacks;
-      // a `null` value is read as absent too, since the schema's `null` type marks a field optional.
+      // a `null` value is read as absent too, since the schema's `null` type marks a field
+      // optional.
       def access(name: Text, json: Json): Json = json(name)
       def absent(json: Json): Boolean = json.root.isAbsent || json.root.isNull
 

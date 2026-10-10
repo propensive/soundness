@@ -71,8 +71,8 @@ import dotty.tools.dotc.*, ast.tpd, core.*, Constants.*, Contexts.*, Flags.*, Na
 // declaration placed from a suite's root and otherwise the method whose parameter it hangs
 // from, and `<path>` is the `/`-separated NAMES of the groups between that root and the
 // declaration (a group's moniker is on its own `group` line, and a suite's title, which is
-// the name its tests' ids are computed from, on its `suite` line). `<tags>` are comma-separated, and
-// `<spread>` is `spread` for a test declared over axes, whose cells only a run enumerates.
+// the name its tests' ids are computed from, on its `suite` line). `<tags>` are comma-separated,
+// and `<spread>` is `spread` for a test declared over axes, whose cells only a run enumerates.
 //
 // A test's id is not recorded, because it follows from the names: see `probably.Test.Id#id`.
 object TestsIndex:

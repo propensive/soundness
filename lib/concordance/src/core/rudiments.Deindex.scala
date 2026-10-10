@@ -157,8 +157,8 @@ extension [self](inline value: self)
 
 extension [element](sequence: List[element])
 
-  // Deliberately NOT `inline`: an `inline def` returning the union `Optional[element]` re-infers the
-  // expanded body's type at each call site, where capture checking stamps a fresh `^` capture
+  // Deliberately NOT `inline`: an `inline def` returning the union `Optional[element]` re-infers
+  // the expanded body's type at each call site, where capture checking stamps a fresh `^` capture
   // variable on the union — which is spurious (and an error) when `element` is a pure type such as
   // `Text`. A plain method keeps the declared `Optional[element]` result and stays capture-clean.
   // `prim`/`sec`/`ter` get these ungated `List` special cases because their walk is bounded (at

@@ -38,26 +38,27 @@ import scala.collection.mutable as scm
 import prepositional.*
 
 // `collection.has(value)` (value membership) for any `collection` that is `Inclusive`; the queried
-// value type is fixed by the instance's `Operand`. Whether a *key/index* is present is `Applicable`'s
-// `defines` instead (that lives in `rudiments`, being `Ordinal`-adjacent).
+// value type is fixed by the instance's `Operand`. Whether a *key/index* is present is
+// `Applicable`'s `defines` instead (that lives in `rudiments`, being `Ordinal`-adjacent).
 extension [self](self: self)(using inclusive: self is Inclusive)
   def has(value: inclusive.Operand): Boolean = inclusive.has(self, value)
 
 // The shape-preserving `map`, driven by `Mappable` rather than `Traversable`+`Reshapable`, so a
-// `Map` maps its *values* (keys preserved) instead of iterating `(key, value)` pairs; `remap` (below)
-// covers the pairwise/entry case. `mappable` is summoned at the *extension* level so the lambda's
-// parameter type is the concrete `mappable.Operand` (so `xs.map(_.field)` infers the element type);
-// the mapped-container constructor is bound as the higher-kinded type parameter `result[_]` so the
-// return type `result[element2]` is a plain application, never a path-dependent projection (#1411).
+// `Map` maps its *values* (keys preserved) instead of iterating `(key, value)` pairs; `remap`
+// (below) covers the pairwise/entry case. `mappable` is summoned at the *extension* level so the
+// lambda's parameter type is the concrete `mappable.Operand` (so `xs.map(_.field)` infers the
+// element type); the mapped-container constructor is bound as the higher-kinded type parameter
+// `result[_]` so the return type `result[element2]` is a plain application, never a path-dependent
+// projection (#1411).
 extension [self, result[_]](self: self)
   ( using mappable: self is Mappable { type Result[element2] = result[element2] } )
   def map[element2](lambda: mappable.Operand => element2): result[element2] =
     mappable.map(self, lambda)
 
 // The transforming operations over any `Traversable`, rebuilt through `Reshapable`. `remap` is the
-// pairwise/entry map (a `Map`'s entries as `(key, value)` pairs, reshaped into whatever the lambda's
-// result implies). The `Ordinal`-indexed `each` and `Optional`-returning `seek`/`where` stay in
-// rudiments (they depend on denominative/vacuous, which sit above this module).
+// pairwise/entry map (a `Map`'s entries as `(key, value)` pairs, reshaped into whatever the
+// lambda's result implies). The `Ordinal`-indexed `each` and `Optional`-returning `seek`/`where`
+// stay in rudiments (they depend on denominative/vacuous, which sit above this module).
 extension [self](self: self)(using traversable: self is Traversable)
   def remap[element2, result](lambda: traversable.Operand => element2)
     ( using reshapable: self is Reshapable by element2 to result )

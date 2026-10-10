@@ -70,8 +70,9 @@ object Teletype:
   // contextual metric.
   given measurable: (Text is Measurable) => Teletype is Measurable = _.plain.metrics
 
-  // In `Teletype`'s companion (implicit scope for `Teletype is Reversible`), delegating to gossamer's
-  // shared textual reversal so `teletype.reverse` resolves through the single `rudiments` `reverse`.
+  // In `Teletype`'s companion (implicit scope for `Teletype is Reversible`), delegating to
+  // gossamer's shared textual reversal so `teletype.reverse` resolves through the single
+  // `rudiments` `reverse`.
   given reversible: (Teletype is Reversible { type Result = Teletype }) = reversibleTextual
 
   // Likewise for traversal: this is what lets the generic predicate forms of `keep` and `skip`

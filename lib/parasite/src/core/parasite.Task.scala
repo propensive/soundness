@@ -141,8 +141,9 @@ object Task:
 
 // A task carries the error type its body may raise as the `Error` member, refined by the `emits`
 // alias (`Task[result] emits error` = `Task[result] { type Error <: error }`). It is preserved to
-// `await`, where it is delivered through the caller's in-scope `Tactic`. `Async.Error` (cancellation
-// or timeout) is always a possible outcome, so it is added at the `await` site, not the member.
+// `await`, where it is delivered through the caller's in-scope `Tactic`. `Async.Error`
+// (cancellation or timeout) is always a possible outcome, so it is added at the `await` site, not
+// the member.
 trait Task[+result]:
   type Error <: Hazard
 

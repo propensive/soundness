@@ -111,10 +111,11 @@ object internal:
             def apply[value, value2](value: functor[value])(lambda: value => value2)
             :   functor[value2] =
 
-              // Build `(v, l) => v.map(l)` as a reflective lambda whose parameters are real symbols,
-              // then apply it to `value`/`lambda` at the quote level. Quoting the `lambda` parameter
-              // directly into the splice (`'lambda`) would reify it as a boxed `Expr` hole that does
-              // not conform to its unboxed `value ->{any} value2` type under capture checking.
+              // Build `(v, l) => v.map(l)` as a reflective lambda whose parameters are real
+              // symbols, then apply it to `value`/`lambda` at the quote level. Quoting the `lambda`
+              // parameter directly into the splice (`'lambda`) would reify it as a boxed `Expr`
+              // hole that does not conform to its unboxed `value ->{any} value2` type under capture
+              // checking.
               $ {
                   val methodType = MethodType(List("v", "l"))(
                     _ => List(TypeRepr.of[functor[value]], TypeRepr.of[value => value2]),

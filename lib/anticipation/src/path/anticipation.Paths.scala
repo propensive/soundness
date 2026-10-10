@@ -45,8 +45,8 @@ object Paths:
   // Resolve a directory `Text` into a `path`, preferring the trusted instantiation — temporary and
   // working directories come from the OS, so they are trusted — and falling back to plain-text
   // instantiation. This is resolved by ordinary implicit search (the `trusted` given in the
-  // companion takes priority over `fromText` in the parent), which works inside a staged quote where
-  // an inline `summonFrom` over the two `Instantiable` givens cannot be reduced.
+  // companion takes priority over `fromText` in the parent), which works inside a staged quote
+  // where an inline `summonFrom` over the two `Instantiable` givens cannot be reduced.
   trait Resolver[path]:
     def apply(text: Text): path
 

@@ -53,8 +53,8 @@ extension [populable: Vacuiscible](value: populable)
 
 extension [countable: Countable](value: countable)
   // `Countable` carries the dysasymptotic gating, so `list.size` demands the
-  // `Dysasymptotic.LinearSize` acknowledgement and `chain.size` the `Dysasymptotic.UnboundedSize` one,
-  // exactly as `gamut` and `limit` already do.
+  // `Dysasymptotic.LinearSize` acknowledgement and `chain.size` the `Dysasymptotic.UnboundedSize`
+  // one, exactly as `gamut` and `limit` already do.
   inline def size: Int = countable.size(value)
 
   inline def gamut: Interval = Interval.initial(countable.size(value))
