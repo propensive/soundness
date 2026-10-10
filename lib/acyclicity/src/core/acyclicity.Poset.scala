@@ -32,23 +32,14 @@
                                                                                                   */
 package acyclicity
 
-// Deliberate stdlib opt-out, as in `Dag`.
-import scala.collection.immutable.{Map, Set}
-
-import scala.collection.mutable as scm
+import scala.collection.immutable as sci
 
 object Poset:
   def apply[element: PartiallyOrdered](elements: element*): Poset[element] =
-    new Poset(elements.to(Set))
+    new Poset(Set.from(elements))
 
 case class Poset[element: PartiallyOrdered](elements: Set[element]):
+  // The covering relation, each element pointing at those immediately above it: the Hasse
+  // diagram built with the order's comparison, which prunes comparisons and needs no reduction.
   def dag: Dag[element] =
-    val map: scm.HashMap[element, scm.HashSet[element]] =
-      elements.map(_ -> scm.HashSet()).to(scm.HashMap)
-
-    for
-      left  <- elements
-      right <- elements
-    do if element.compare(left, right) then map(left) += right
-
-    Dag(map.view.mapValues(_.to(Set)).to(Map)).reduction
+    Dag.unchecked(sci.VectorMap.from(Hasse(elements)(element.compare(_, _)).greater))

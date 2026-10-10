@@ -32,7 +32,7 @@
                                                                                                   */
 package acyclicity
 
-import scala.collection.immutable.{List, Map, Nil, Set, ::}
+import scala.collection.immutable.{List, Map, Set}
 import scala.collection.mutable as scm
 
 // The baseline: the dependency graph a project writes for itself when it does not reach for a

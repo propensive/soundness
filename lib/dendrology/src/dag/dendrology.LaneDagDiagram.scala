@@ -44,6 +44,7 @@ import acyclicity.*
 import anticipation.*
 import contingency.*
 import gossamer.*
+import prepositional.*
 import spectacular.*
 import vacuous.*
 
@@ -83,13 +84,20 @@ object LaneDagDiagram:
         case (true, true, true, true)     => Junction
         case _                            => Space
 
-  def apply[node](dag: Dag[node]): LaneDagDiagram[node] raises Dag.Error =
-    val nodes: Vector[node] = dag.sorted.to(Vector)
+  // Any graph that admits a topological order: a `Dag`, a frozen `Topology`, a `Hasse`.
+  def apply[graph, node](dag: graph)
+    ( using nodal:       graph is Nodal by node,
+            topological: graph is Topological )
+  :   LaneDagDiagram[node] =
+
+    val nodes: Vector[node] = proscenium.List.iterator(dag.linearized).to(Vector)
     val total: Int = nodes.length
 
     if total == 0 then LaneDagDiagram(Nil) else
       val rowOf: Map[node, Int] = nodes.zipWithIndex.to(Map)
-      val forward: Map[node, Set[node]] = dag.invert.edgeMap
+      // Dependants of each node, from the edges: `Dag` no longer exposes its adjacency.
+      val forward: Map[node, Set[node]] =
+        proscenium.Set.iterator(dag.edges).to(List).groupMap(_(1))(_(0)).view.mapValues(_.to(Set)).to(Map)
 
       val nodeCol: scala.Array[Int]^ = new scala.Array[Int](total)
 

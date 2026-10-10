@@ -48,6 +48,28 @@ object Dot:
   case class Target(directed: Boolean, dest: Name[Dot.Id] | Statement.Subgraph, link: Option[Target])
   case class Property(key: Text, value: Text)
 
+  // The DOT graph constructors: a directed or undirected graph, optionally strict (no duplicate
+  // edges), and a subgraph statement. They were the top-level objects `Digraph`, `Graph` and
+  // `Subgraph`; `Digraph` is now the name of a graph *value*.
+  def digraph(id: Name[Dot.Id], statements: Statement*): Dot =
+    Dot.Digraph(Some(id), false, statements*)
+
+  def digraph(statements: Statement*): Dot = Dot.Digraph(None, false, statements*)
+
+  def strictDigraph(id: Name[Dot.Id], statements: Statement*): Dot =
+    Dot.Digraph(Some(id), true, statements*)
+
+  def graph(id: Name[Dot.Id], statements: Statement*): Dot =
+    Dot.Graph(Some(id), false, statements*)
+
+  def strictGraph(id: Name[Dot.Id], statements: Statement*): Dot =
+    Dot.Graph(Some(id), true, statements*)
+
+  def subgraph(id: Name[Dot.Id], statements: Statement*): Statement.Subgraph =
+    Statement.Subgraph(Some(id), statements*)
+
+  def subgraph(statements: Statement*): Statement.Subgraph = Statement.Subgraph(None, statements*)
+
   // The DOT graph DSL is built from `Name[Dot.Id]` identifiers. An identifier acts
   // as an edge endpoint (`a -- b`, `a --> b`), an assignment left-hand side
   // (`a := b`) or a node declaration carrying attributes (`a("color" -> "red")`).

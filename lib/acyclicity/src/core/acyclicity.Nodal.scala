@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.63.0.                                                                    ┃
+┃    Soundness, version 0.64.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,57 +30,52 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package denominative
+package acyclicity
 
-// Gates for dysasymptotic operations. Each is a plain marker type — *not* a capability —
-// required in a `using` position by the instance that provides the expensive operation. A
-// downstream file opts into a whole class of such operations by importing the matching enabler
-// from the `dysasymptotics` package, e.g. `import dysasymptotics.linearSize`, which leaves every
-// acknowledgement greppable. Because they carry no authority, they need none of the
-// `erased`/scope-function machinery a capability would; a harmless runtime residue is fine.
+import prepositional.*
+
+// A finite directed graph seen through its nodes: an enumerable node set and, for each node, the
+// nodes it has edges to — its `Operand`, bound with `by`, as `Dag[node] is Nodal by node`. Edge
+// direction is fixed by contract, not by instance: `successors(n)` are the nodes `n` points at,
+// which under the dependency reading used throughout Soundness (`a -> b` means `a` requires `b`)
+// are `a`'s dependencies, so a topological order lists a node after its successors. A
+// representation that also stores the other direction says so through `Bidirectional`, and one
+// whose values can hold no cycle through `Topological`.
 //
-// An operation's *semantic scope* is the portion of the data involved that the operation's
-// specification identifies as its subject: the data whose values must be observed, compared,
-// transformed, replaced, or produced in order to yield the specified result. Data that is merely
-// incorporated into the result unchanged, or traversed only to reach the subject, lies outside
-// the semantic scope.
-//
-// An operation on a particular data structure is *dysasymptotic* when its computational cost
-// grows more than logarithmically with some measure of the data outside its semantic scope —
-// typically the size of the containing structure, or the distance of the subject from the
-// structure's point of access — while the scope itself remains bounded with respect to that
-// measure. Dysasymptoticity is a property of the operation on that *representation*, not of the
-// operation in the abstract — `size` is free on `Sequence` but dysasymptotic on `List` — which
-// is why the gates sit on typeclass instances rather than on methods. Cost that merely tracks
-// the semantic scope is never gated, however large the scope grows: `fold` over an infinite
-// `Chain` diverges semantically, not dysasymptotically, whereas `Chain.size` (bounded scope,
-// unbounded cost) is dysasymptotic. (A few whole-scope operations on `List`, such as `iterate`
-// and `retrace`, are gated only because they route through `Countable`, whose `size` is
-// dysasymptotic there — a granularity artefact, not policy.)
-object Dysasymptotic:
-  // Computing the length of a strict linked structure — `List.size`, and the size-derived
-  // ordinal operations `gamut`/`limit`/`ult`/`pen`/`ant` — or rebuilding a structure wholesale
-  // for a bounded-scope change — `:+` on a `List`, and `:+`/`+:`/`lead`/`define` on a frozen
-  // array: O(n) in the data outside the scope.
-  sealed trait LinearSize
+// The iterators are internal currency, as in `Traversable`: the cheapest thing every
+// representation can produce, never user-facing; the extensions in `acyclicity_core` return
+// `Set`s and `List`s. `has` is a primitive rather than a scan of `nodes`, so a missing-node
+// check is never O(n). A successor *function* (`node => Iterable[node]`) is deliberately not
+// `Nodal`: it has no finite node set and no decidable `has`; `explore` materialises one.
+object Nodal:
+  // `Map` and `Ledger` belong to proscenium, so their instances anchor here, in the typeclass's
+  // companion. A target absent from the key set is not a node: the instance reports the map as
+  // it is, and `Digraph(adjacency)` is the constructor that closes the node set over targets.
+  // Subtype-parametric, as murmuration's instances are: an exact `Map[node, Set[node]]` fails to
+  // match when a nested summon sees the alias dealiased.
+  given map: [node, map <: Map[node, Set[node]]] => (map is Nodal by node) = new Nodal:
+    type Self = map
+    type Operand = node
+    def nodes(self: map): Iterator[node] = Set.iterator(Map.keys(self))
+    def has(self: map, node: node): Boolean = Map.defines(self, node)
 
-  // Positional access into a strict linked structure — indexing a `List` via `at` — a walk
-  // whose cost is the distance of the subject from the head. `prim`/`sec`/`ter` stay free:
-  // their distance is bounded.
-  sealed trait LinearAccess
+    def successors(self: map, node: node): Iterator[node] =
+      Map.read(self, node) match
+        case Some(targets) => Set.iterator(targets)
+        case None          => Iterator.empty
 
-  // Computing the size of a lazy structure — `Chain.size` — which forces the whole stream and
-  // diverges on an infinite one: unbounded rather than merely linear.
-  sealed trait UnboundedSize
+  given ledger: [node, ledger <: Ledger[node, Set[node]]] => (ledger is Nodal by node) = new Nodal:
+    type Self = ledger
+    type Operand = node
+    def nodes(self: ledger): Iterator[node] = List.iterator(Ledger.keys(self))
+    def has(self: ledger, node: node): Boolean = Ledger.defines(self, node)
 
-  // Locating a bounded subject by scanning a structure that keeps no index for it — the
-  // predecessors of one node in a graph that stores only its successors, and the operations
-  // built on them: O(n + e) in the data outside the scope, with no notion of access distance
-  // that could make it smaller.
-  sealed trait LinearScan
+    def successors(self: ledger, node: node): Iterator[node] =
+      Ledger.read(self, node) match
+        case Some(targets) => Set.iterator(targets)
+        case None          => Iterator.empty
 
-package dysasymptotics:
-  given linearSize: Dysasymptotic.LinearSize = new Dysasymptotic.LinearSize {}
-  given linearAccess: Dysasymptotic.LinearAccess = new Dysasymptotic.LinearAccess {}
-  given unboundedSize: Dysasymptotic.UnboundedSize = new Dysasymptotic.UnboundedSize {}
-  given linearScan: Dysasymptotic.LinearScan = new Dysasymptotic.LinearScan {}
+trait Nodal extends Typeclass.Pure, Operable:
+  def nodes(self: Self): Iterator[Operand]
+  def successors(self: Self, node: Operand): Iterator[Operand]
+  def has(self: Self, node: Operand): Boolean

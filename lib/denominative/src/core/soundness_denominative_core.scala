@@ -77,7 +77,7 @@ extension [form](range: prepositional.`in`[denominative.Interval, form])
     denominative.tabulate(range)(lambda)
 
 package dysasymptotics:
-  export denominative.dysasymptotics.{linearSize, linearAccess, unboundedSize}
+  export denominative.dysasymptotics.{linearSize, linearAccess, unboundedSize, linearScan}
 
 package ordinalTextualizables:
   export

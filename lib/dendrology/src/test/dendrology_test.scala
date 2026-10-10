@@ -150,6 +150,23 @@ object Tests extends Suite(m"Dendrology tests"):
 
     . assert(_ == (true, true, false, false))
 
+    test(m"Lane DAG: a Hasse diagram draws directly"):
+      import laneDagStyles.boxDrawingLaneDagStyle
+      val divisors = Hasse(Set(1, 2, 4))((a, b) => b%a == 0)
+      LaneDagDiagram(divisors).render(node => t" $node").size
+
+    . assert(_ == 5)
+
+    test(m"Lane DAG: a frozen topology draws as its Dag does"):
+      import laneDagStyles.boxDrawingLaneDagStyle
+      val dag = Dag(t"A" -> Set(), t"B" -> Set(t"A"), t"C" -> Set(t"B"))
+      val frozen: Topology[Text]^{} = dag.freeze
+      val fromDag = LaneDagDiagram(dag).render(node => t" $node").join(t"\n")
+      val fromFrozen = LaneDagDiagram(frozen).render(node => t" $node").join(t"\n")
+      fromFrozen == fromDag && fromDag.s.nonEmpty
+
+    . assert(_ == true)
+
     test(m"Lane DAG: single node"):
       import laneDagStyles.boxDrawingLaneDagStyle
       val dag = Dag(t"A" -> Set())

@@ -32,13 +32,11 @@
                                                                                                   */
 package acyclicity
 
-// Deliberate stdlib opt-out: the layering is built over `Dag`'s set-algebraic model, whose
-// `edgeMap` and `invert` are on the stdlib `Set` and `Map` — this import shadows the opaque
-// collections for the whole file, greppably, as `acyclicity.Dag.scala` does.
+// Deliberate stdlib opt-out: the layering's working structures are stdlib collections — this
+// import shadows the opaque collections for the whole file, greppably, as `acyclicity.Dag.scala`
+// does — and what it reads from the `Dag` is converted at the boundary.
 import scala.collection.immutable.{List, Map, Nil, Set}
 import scala.collection.mutable as scm
-
-import contingency.*
 
 object Ranking:
   // The companion default, outranked by a `rankings` given imported by name.
@@ -67,23 +65,26 @@ object Layering:
   private def crossed(a: (Int, Int), b: (Int, Int)): Boolean =
     (a(0) < b(0) && a(1) > b(1)) || (a(0) > b(0) && a(1) < b(1))
 
+  // A node's successors on the stdlib `Set` the arithmetic below runs on.
+  private def successors[node](dag: Dag[node], node: node): Set[node] =
+    proscenium.Set.iterator(dag.successors(node)).to(Set)
+
   private[acyclicity] def crossingsAmong(links: List[(Int, Int)]): Int =
     links.zipWithIndex.map { (a, i) => links.drop(i + 1).count(crossed(a, _)) }.sum
 
-  private[acyclicity] def apply[node](dag: Dag[node], ranking: Ranking)
-  :   Layering[node] raises Dag.Error =
-
-    val order: List[node] = dag.sorted
+  // A `Dag` is acyclic by construction, so there is nothing here that can fail.
+  private[acyclicity] def apply[node](dag: Dag[node], ranking: Ranking): Layering[node] =
+    val order: List[node] = proscenium.List.iterator(dag.linearized).to(List)
 
     if order.isEmpty then Layering(Nil, Nil) else
       val topo: Map[node, Int] = order.zipWithIndex.to(Map)
       val dependents: Dag[node] = dag.invert
       val rank: scm.HashMap[node, Int] = scm.HashMap()
 
-      order.foreach: n => rank(n) = dag(n).map(rank).maxOption.fold(0)(_ + 1)
+      order.foreach: n => rank(n) = successors(dag, n).map(rank).maxOption.fold(0)(_ + 1)
 
       if ranking == Ranking.Balanced then order.reverse.foreach: n =>
-        val below = dependents(n)
+        val below = successors(dependents, n)
         if below.nonEmpty then rank(n) = below.map(rank).min - 1
 
       val depth: Int = rank.values.max + 1
@@ -104,7 +105,7 @@ object Layering:
       order.foreach: child =>
         members(rank(child)) += Vertex.Real(child)
 
-        dag(child).to(List).sortBy(topo).foreach: parent =>
+        successors(dag, child).to(List).sortBy(topo).foreach: parent =>
           val between: List[(Int, Vertex[node])] =
             (rank(parent) + 1 until rank(child)).to(List).map(_ -> Vertex.Virtual(parent, child))
 

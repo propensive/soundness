@@ -32,11 +32,12 @@
                                                                                                   */
 package acyclicity
 
-import nomenclature.*
+import prepositional.*
 
-object Subgraph:
-  def apply(id: Name[Dot.Id], statements: Dot.Statement*): Dot.Statement.Subgraph =
-    Dot.Statement.Subgraph(Some(id), statements*)
-
-  def apply(statements: Dot.Statement*): Dot.Statement.Subgraph =
-    Dot.Statement.Subgraph(None, statements*)
+// A graph that can answer which nodes point *at* a node — its dependants, under the dependency
+// reading — without scanning every edge. A representation that stores only the forward
+// direction has an instance too, but gated behind `Dysasymptotic.LinearScan`: locating the
+// predecessors of one node there costs O(n + e) in data outside the question's scope, and the
+// gate makes a program say so where it accepts that cost (`import dysasymptotics.linearScan`).
+trait Bidirectional extends Typeclass.Pure, Operable:
+  def predecessors(self: Self, node: Operand): Iterator[Operand]

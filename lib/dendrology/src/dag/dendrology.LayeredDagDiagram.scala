@@ -38,8 +38,8 @@ import scala.collection.immutable.{List, Map, Nil, Set, Vector}
 
 import acyclicity.*
 import anticipation.*
-import contingency.*
 import gossamer.*
+import prepositional.*
 import spectacular.*
 import vacuous.*
 
@@ -79,10 +79,16 @@ object LayeredDagDiagram:
         case (true,  true,  true,  true)  => Junction
         case _                            => Space
 
-  // The layering decides the order within each layer; this assigns columns to it. A vertex
-  // wants the median column of its neighbours in the layer above (so a straight edge stays
-  // straight), and is pushed right past the vertex before it when that column is taken.
-  def apply[node](dag: Dag[node])(using Ranking): LayeredDagDiagram[node] raises Dag.Error =
+  // Any graph that admits a topological order: a `Dag`, a frozen `Topology`, a `Hasse`. The
+  // layering decides the order within each layer; this assigns columns to it. A vertex wants the
+  // median column of its neighbours in the layer above (so a straight edge stays straight), and
+  // is pushed right past the vertex before it when that column is taken.
+  def apply[graph, node](dag: graph)
+    ( using nodal:       graph is Nodal by node,
+            topological: graph is Topological,
+            ranking:     Ranking )
+  :   LayeredDagDiagram[node] =
+
     val layering = dag.layered
     val layers: Vector[Vector[Vertex[node]]] = layering.layers.map(_.to(Vector)).to(Vector)
     val links: Vector[Vector[(Int, Int)]] = layering.links.map(_.to(Vector)).to(Vector)

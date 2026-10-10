@@ -32,88 +32,27 @@
                                                                                                   */
 package acyclicity
 
-// Deliberate stdlib opt-out, as in `Dag`.
-import scala.collection.immutable.{List, Map, Nil, Set, ::}
+import prepositional.*
 
-// Candidate (a): the persistent adjacency map `Dag` has today, with every algorithm repaired —
-// iterative depth-first search in place of the quadratic `sorted` and the recursive `reach`,
-// `add` by two `updated`s rather than a rebuild of the whole map, and no mutable memo. Only the
-// forward direction is stored, so the transpose is a lazy value and `predecessors`, `sinks`,
-// `remove` and `bypass` cost O(n + e) the first time each instance needs it.
-final class AdjacencyDag[node](val adjacency: Map[node, Set[node]]):
-  def nodes: Set[node] = adjacency.keySet
-  def size: Int = adjacency.size
-  def has(node: node): Boolean = adjacency.contains(node)
-  def successors(node: node): Set[node] = adjacency.getOrElse(node, Set())
+// The graph with every edge reversed, as a value of the type best placed to hold it (`Result`,
+// bound with `to`): a `Dag` inverts to a `Dag`, since reversing every edge preserves
+// acyclicity; a `Hasse` to a `Hasse` in O(1), by swapping the two directions it stores; a frozen
+// `Topology` to another; and anything else `Nodal` to a `Digraph`, by a fold over its
+// edges — `generic`, a method the extension takes as the default of its `using` parameter (see
+// `Reachable` for why it is not a given).
+object Invertible:
+  given digraph: [node] => Digraph[node] is Invertible by node to Digraph[node] = _.invert
+  given dag: [node] => Dag[node] is Invertible by node to Dag[node] = _.invert
 
-  def edges: Set[(node, node)] =
-    adjacency.iterator.flatMap { (from, targets) => targets.iterator.map(from -> _) }.toSet
+  given topology: [node] => ((Topology[node]^{}) is Invertible by node to Topology[node]^{}) =
+    _.invert
 
-  def edgeCount: Int = adjacency.valuesIterator.map(_.size).sum
+  given hasse: [node] => Hasse[node] is Invertible by node to Hasse[node] = _.invert
 
-  // The nodes with no dependencies: a whole-graph scan.
-  def sources: Set[node] =
-    adjacency.iterator.collect { case (from, targets) if targets.isEmpty => from }.toSet
+  def generic[self, node](nodal: self is Nodal by node)
+  :   self is Invertible by node to Digraph[node] =
 
-  lazy val inverse: Map[node, Set[node]] =
-    val empty: Map[node, Set[node]] = adjacency.map { (from, _) => (from, Set[node]()) }
+    graph => Digraph.of(Search.transpose(nodal.nodes(graph), nodal.successors(graph, _)))
 
-    adjacency.foldLeft(empty): (acc, entry) =>
-      entry(1).foldLeft(acc): (acc2, target) =>
-        acc2.updated(target, acc2.getOrElse(target, Set()) + entry(0))
-
-  def predecessors(node: node): Set[node] = inverse.getOrElse(node, Set())
-  def sinks: Set[node] = adjacency.keysIterator.filter(predecessors(_).isEmpty).toSet
-  def invert: AdjacencyDag[node] = AdjacencyDag(inverse)
-
-  def add(from: node, to: node): AdjacencyDag[node] =
-    val added = adjacency.updated(from, successors(from) + to)
-    AdjacencyDag(if added.contains(to) then added else added.updated(to, Set()))
-
-  // Drops the node and its incident edges.
-  def remove(node: node): AdjacencyDag[node] =
-    AdjacencyDag:
-      predecessors(node).foldLeft(adjacency - node): (acc, from) =>
-        acc.updated(from, acc(from) - node)
-
-  // Drops the node, rerouting each of its dependants to each of its dependencies.
-  def bypass(node: node): AdjacencyDag[node] =
-    val targets = successors(node)
-
-    AdjacencyDag:
-      predecessors(node).foldLeft(adjacency - node): (acc, from) =>
-        acc.updated(from, acc(from) - node ++ targets)
-
-  private def search: Either[List[node], List[node]] = Search.topological(adjacency.keys, successors)
-
-  def sorted: Option[List[node]] = search.toOption
-  def cycle: Option[List[node]] = search.left.toOption
-  def reachable(node: node): Set[node] = Search.reachable(node, successors)
-
-  private def reach: Map[node, Set[node]] = Search.closure(sorted.get, successors)
-
-  def closure: AdjacencyDag[node] = AdjacencyDag(reach)
-  def reduction: AdjacencyDag[node] = AdjacencyDag(Search.reduction(adjacency.keys, successors, reach))
-  def freeze: FrozenDag[node] = FrozenDag(sorted.get, successors)
-
-object AdjacencyDag:
-  def apply[node](adjacency: Map[node, Set[node]]): AdjacencyDag[node] = new AdjacencyDag(adjacency)
-
-  // From parallel edge arrays over the nodes `0 until count`, by persistent updates: the cost
-  // that a fold of `add` pays.
-  def apply(count: Int, from: scala.IArray[Int], to: scala.IArray[Int]): AdjacencyDag[Int] =
-    var adjacency: Map[Int, Set[Int]] = Map()
-    var index = 0
-
-    while index < count do
-      adjacency = adjacency.updated(index, Set())
-      index += 1
-
-    index = 0
-
-    while index < from.length do
-      val source = from(index)
-      adjacency = adjacency.updated(source, adjacency(source) + to(index))
-      index += 1
-
-    new AdjacencyDag(adjacency)
+trait Invertible extends Typeclass.Pure, Operable, Resultant:
+  def invert(self: Self): Result
