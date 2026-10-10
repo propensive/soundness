@@ -95,9 +95,9 @@ object Regex:
         val compiled = motif(regex)
 
         // Restarting from `end + 1` (not `end`) after a non-overlapping match reproduces the
-        // `JavaBaseRegex` engine's behaviour exactly, including its skipping of immediately-adjacent
-        // matches. Positions advance over the raw slot bounds, since an empty match's
-        // `Interval` does not record where it occurred.
+        // `JavaBaseRegex` engine's behaviour exactly, including its skipping of
+        // immediately-adjacent matches. Positions advance over the raw slot bounds, since an empty
+        // match's `Interval` does not record where it occurred.
         def recur(from: Int): Chain[Interval] =
           if from > input.s.length then Chain() else
             compiled.slots(input, Ordinal.zerary(from), false).lay(Chain()): slots =>
@@ -125,8 +125,8 @@ object Regex:
             case _ =>
               ()
 
-          // The praxinoscope analogue of the `JavaBaseRegex` engine's sub-scan: a repeating group's span
-          // covers all its iterations, so the group's body is matched repeatedly over the span
+          // The praxinoscope analogue of the `JavaBaseRegex` engine's sub-scan: a repeating group's
+          // span covers all its iterations, so the group's body is matched repeatedly over the span
           // to recover each iteration.
           def rescan(body: Text, region: Text): List[Text] =
             val sub = compile(body)
@@ -178,9 +178,9 @@ object Regex:
         . or(None)
 
   // A matching backend, selected by the `Form` refinement of the `Regex` it operates on:
-  // `Regex in JavaBaseRegex` dispatches to `java.util.regex` and `Regex in Re2` to praxinoscope. The
-  // `JavaBaseRegex` instance lives in `JavaBaseRegex`'s companion; `Re2`'s companion is below this library, so its
-  // instance lives in this trait's companion instead (issue #1632).
+  // `Regex in JavaBaseRegex` dispatches to `java.util.regex` and `Regex in Re2` to praxinoscope.
+  // The `JavaBaseRegex` instance lives in `JavaBaseRegex`'s companion; `Re2`'s companion is below
+  // this library, so its instance lives in this trait's companion instead (issue #1632).
   trait Engine:
     type Self
 

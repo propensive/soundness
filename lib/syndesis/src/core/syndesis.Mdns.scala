@@ -394,47 +394,48 @@ object Mdns:
     private def now: Long = System.nanoTime
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────────────────────
-    private def acquire()(using Monitor^, SharedProbate, Tactic[Discovery.Error]): Transport = mutex:
-      loans += 1
+    private def acquire()(using Monitor^, SharedProbate, Tactic[Discovery.Error]): Transport =
+      mutex:
+        loans += 1
 
-      live.or:
-        val transport =
-          recover:
-            case error: Mdns.Error =>
-              given diagnostics: Diagnostics = error.diagnostics
-              abort(Discovery.Error(Discovery.Error.Reason.Unavailable))
+        live.or:
+          val transport =
+            recover:
+              case error: Mdns.Error =>
+                given diagnostics: Diagnostics = error.diagnostics
+                abort(Discovery.Error(Discovery.Error.Reason.Unavailable))
 
-          . protect(open())
+            . protect(open())
 
-        // A receive loop per inlet. A surprising message must not end a loop; what fails is
-        // that one dispatch. The loops are created and awaited under the same monitor (no
-        // aliased writer), and handed on erased: a recursion rather than a `map`, whose
-        // capture-polymorphic lambda cannot return a fresh loop.
-        def start(inlets: List[Transport.Inlet], started: List[(AnyRef, AnyRef)])
-        :   List[(AnyRef, AnyRef)] =
+          // A receive loop per inlet. A surprising message must not end a loop; what fails is
+          // that one dispatch. The loops are created and awaited under the same monitor (no
+          // aliased writer), and handed on erased: a recursion rather than a `map`, whose
+          // capture-polymorphic lambda cannot return a fresh loop.
+          def start(inlets: List[Transport.Inlet], started: List[(AnyRef, AnyRef)])
+          :   List[(AnyRef, AnyRef)] =
 
-          inlets match
-            case Nil => started
+            inlets match
+              case Nil => started
 
-            case inlet :: rest =>
-              val receiving = loop:
-                safely(inlet.receive()).let: packet =>
-                  try dispatch(packet) catch case _: Exception => ()
+              case inlet :: rest =>
+                val receiving = loop:
+                  safely(inlet.receive()).let: packet =>
+                    try dispatch(packet) catch case _: Exception => ()
 
-              val receiver = async(receiving.run())
-              val handle = (receiving.asInstanceOf[AnyRef], receiver.asInstanceOf[AnyRef])
-              start(rest, handle :: started)
+                val receiver = async(receiving.run())
+                val handle = (receiving.asInstanceOf[AnyRef], receiver.asInstanceOf[AnyRef])
+                start(rest, handle :: started)
 
-        val receivers = start(transport.inlets, Nil)
+          val receivers = start(transport.inlets, Nil)
 
-        val sweeping = loop:
-          safely(snooze(250L))
-          sweep()
+          val sweeping = loop:
+            safely(snooze(250L))
+            sweep()
 
-        val sweeper = async(sweeping.run())
-        live = transport
-        handles = Handles(receivers, sweeping.asInstanceOf[AnyRef], sweeper.asInstanceOf[AnyRef])
-        transport
+          val sweeper = async(sweeping.run())
+          live = transport
+          handles = Handles(receivers, sweeping.asInstanceOf[AnyRef], sweeper.asInstanceOf[AnyRef])
+          transport
 
     // The last loan's release stops the tasks and waits for them — outside the mutex, which the
     // tasks themselves take.

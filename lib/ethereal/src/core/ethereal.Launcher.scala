@@ -179,14 +179,14 @@ object Launcher:
       if stdinTty then children += flag(5)
       if stdoutTty then children += flag(6)
       if stderrTty then children += flag(7)
-      arguments.each { argument => children += value(8, argument) }
-      environment.each { variable => children += value(9, variable) }
-      invokedAs.let { name => children += value(10, name) }
-      umask.let { mask => children += value(11, mask) }
-      columns.let { count => children += value(12, count.show) }
-      rows.let { count => children += value(13, count.show) }
-      inputCodepage.let { page => children += value(14, page.show) }
-      outputCodepage.let { page => children += value(15, page.show) }
+      arguments.each: argument => children += value(8, argument)
+      environment.each: variable => children += value(9, variable)
+      invokedAs.let: name => children += value(10, name)
+      umask.let: mask => children += value(11, mask)
+      columns.let: count => children += value(12, count.show)
+      rows.let: count => children += value(13, count.show)
+      inputCodepage.let: page => children += value(14, page.show)
+      outputCodepage.let: page => children += value(15, page.show)
 
       descriptors.each: descriptor =>
         val fields = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
@@ -220,7 +220,10 @@ object Launcher:
     case Message.Open(name)        => stream(Variant.open, t"Open", name)
     case Message.Closed(name)      => stream(Variant.closed, t"Closed", name)
     case Message.Verify            => node(Variant.verify, t"Verify", Array.empty)
-    case Message.ExitStatus(code)  => node(Variant.exitStatus, t"ExitStatus", Array(value(0, code.show)))
+
+    case Message.ExitStatus(code) =>
+      node(Variant.exitStatus, t"ExitStatus", Array(value(0, code.show)))
+
     case Message.Shutdown          => node(Variant.shutdown, t"Shutdown", Array.empty)
 
     case Message.Credit(name, count) =>
@@ -229,9 +232,9 @@ object Launcher:
     case Message.Signal(name, columns, rows, deadline) =>
       val children = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       children += value(0, name)
-      columns.let { count => children += value(1, count.show) }
-      rows.let { count => children += value(2, count.show) }
-      deadline.let { millis => children += value(3, millis.show) }
+      columns.let: count => children += value(1, count.show)
+      rows.let: count => children += value(2, count.show)
+      deadline.let: millis => children += value(3, millis.show)
       node(Variant.signal, t"Signal", Array.from(children))
 
     case Message.SignalAck(accept) =>
@@ -251,7 +254,7 @@ object Launcher:
     case Message.Run(command, arguments, pwd) =>
       val children = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       children += value(0, command)
-      arguments.each { argument => children += value(1, argument) }
+      arguments.each: argument => children += value(1, argument)
 
       pwd match
         case pwd: Text => children += value(2, pwd)
@@ -264,19 +267,26 @@ object Launcher:
   // in between, since every chunk of every stream passes this way.
   def encode(message: Message): Data =
     import strategies.throwUnsafely
+
     message match
       case Message.Data(stream, chunk) => Bintel.frame(dataBody(stream, chunk), signature)
-      case other => Bintel.frame(Bintel.encode(element(other), schema, Tel.Codec.Bindings.builtins), signature)
+
+      case other =>
+        Bintel.frame
+          ( Bintel.encode(element(other), schema, Tel.Codec.Bindings.builtins), signature )
 
   // The body of a `data` document: the root's one child, the `data` variant, its two fields.
   private def dataBody(stream: Text, chunk: Data): Data =
     val name: scala.Array[Byte] = Array.unsafeJvm(stream.in[Data])
     val out = ji.ByteArrayOutputStream(chunk.length + name.length + 16)
+
     def varint(value: Long): Unit =
       var n = value
+
       while n >= 0x80 do
         out.write(((n & 0x7f) | 0x80).toInt)
         n >>= 7
+
       out.write(n.toInt)
 
     varint(1); varint(Variant.data); varint(2)
@@ -307,6 +317,7 @@ object Launcher:
       case Tel.Element.Node(_, _, Array(Tel.Element.Node(index, _, children))) =>
         def optional(field: Int): Optional[Text] = children.readable.collectFirst:
           case Tel.Element.Value(`field`, _, text) => text
+
         . optional
 
         def text(field: Int): Text = optional(field).or(abort(Launcher.Mismatch()))
@@ -329,6 +340,7 @@ object Launcher:
             case Tel.Element.Node(16, _, fields) =>
               def field(index: Int): Optional[Text] = fields.readable.collectFirst:
                 case Tel.Element.Value(`index`, _, text) => text
+
               . optional
 
               Descriptor
@@ -336,6 +348,7 @@ object Launcher:
                   field(1).or(abort(Launcher.Mismatch())),
                   field(2).or(abort(Launcher.Mismatch())),
                   field(3) )
+
           . to(List)
 
         def raws: List[Raw] =
@@ -343,12 +356,14 @@ object Launcher:
             case Tel.Element.Node(17, _, fields) =>
               def field(index: Int): Optional[Text] = fields.readable.collectFirst:
                 case Tel.Element.Value(`index`, _, text) => text
+
               . optional
 
               Raw
                 ( field(0).or(abort(Launcher.Mismatch())),
                   field(1).let(_.as[Int]),
                   Base256.decodeStrict(field(2).or(abort(Launcher.Mismatch()))) )
+
           . to(List)
 
         index.or(-1) match
@@ -409,6 +424,7 @@ object Launcher:
 
       while ok && !done && shift <= 63 do
         val byte = readByte()
+
         if byte < 0 then ok = false
         else
           declared |= (byte & 0x7fL) << shift
@@ -419,6 +435,7 @@ object Launcher:
       else
         in.readNBytes(declared.toInt) match
           case null => Unset
+
           case body: scala.Array[Byte] =>
             if body.length < declared.toInt then Unset else
               val prefix: scala.Array[Byte] = header.toByteArray.nn

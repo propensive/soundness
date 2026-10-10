@@ -141,9 +141,10 @@ extends Rig:
     // adaptive and custom supervisors classify by what they actually do. The remote JVM runs
     // the same `java`, so the probe's answer holds there. A non-thread-backed strand (an
     // event-loop supervisor) classifies as not virtual.
-    val virtual2: Boolean = threading.supervisor().fork(() => Unset)(()) match
+    val virtual2: Boolean = threading.supervisor().fork{ () => Unset }(()) match
       case strand: Strand.Threaded => strand.thread.isVirtual
       case _                       => false
+
     val threshold0: Optional[Long] = threshold.let(_.generic)
     val compliance0: Optional[Int] = compliance
 

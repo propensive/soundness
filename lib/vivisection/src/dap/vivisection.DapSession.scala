@@ -33,6 +33,7 @@
 package vivisection
 
 import java.lang as jl
+
 import scala.caps
 import scala.collection.concurrent as scc
 
@@ -658,6 +659,7 @@ private[vivisection] class DapSession(emit: Json => Unit)
             staged.let: (source, offset) =>
               val targets = complete(classpath, source, offset, cursor)
               respond(request, Dap.CompletionsBody(targets).in[Json])
+
             . or(fail(request, t"the frame does not support completion"))
 
       case t"setExpression" =>

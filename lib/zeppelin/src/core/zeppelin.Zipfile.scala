@@ -32,17 +32,18 @@
                                                                                                   */
 package zeppelin
 
-import scala.math
-
 import java.io as ji
 import java.nio as jn
 import java.nio.channels as jnc
 import java.nio.charset as jncs
 import java.nio.file as jnf
 
+import scala.math
+
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -53,9 +54,8 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import turbulence.*
-import zephyrine.*
 import vacuous.*
-import denominative.dysasymptotics.linearSize
+import zephyrine.*
 
 object Zipfile:
   private val u32Max: Long = 0xffffffffL
@@ -99,8 +99,7 @@ object Zipfile:
         if rebased < 0 || rebased + 56 > source.size
         then raise(Zip.Error(Zip.Error.Reason.Zip64Error))
         else
-          val update: Data = Data.build(8): array =>
-            Zip.putU64(array, 0, rebased)
+          val update: Data = Data.build(8): array => Zip.putU64(array, 0, rebased)
 
           val channel =
             jnc.FileChannel.open(jnf.Path.of(filename.s), jnf.StandardOpenOption.WRITE).nn
@@ -114,14 +113,17 @@ object Zipfile:
     val seen = scala.collection.mutable.HashSet[Text]()
 
     entries.each: entry =>
-      if !seen.add(entry.ref.encode) then raise(Zip.Error(Zip.Error.Reason.DuplicateEntry(entry.ref)))
+      if !seen.add(entry.ref.encode)
+      then raise(Zip.Error(Zip.Error.Reason.DuplicateEntry(entry.ref)))
 
   // Sources implement zephyrine's shared `Expanse`, the random-access view of the bytes
   // backing an archive, so other positional consumers (and future ones, such as ranged HTTP)
   // can interoperate.
   private[zeppelin] class DataSource(data: Data) extends Expanse:
     def size: Long = data.length.toLong
-    def read(offset: Long, length: Int): Data = data.segment((offset.toInt).z till (offset.toInt + length).z)
+
+    def read(offset: Long, length: Int): Data =
+      data.segment((offset.toInt).z till (offset.toInt + length).z)
 
   // Re-opens the file for each read, so entries stay detached and reusable with no held handle.
   private class FileSource(filename: Text) extends Expanse:
@@ -193,7 +195,8 @@ object Zipfile:
     val commentLength = Zip.u16(window, i + 20)
 
     val comment: Optional[Text] =
-      if commentLength == 0 then Unset else decodeText(window.segment((i + 22).z till (i + 22 + commentLength).z))
+      if commentLength == 0 then Unset
+      else decodeText(window.segment((i + 22).z till (i + 22 + commentLength).z))
 
     // Follow the ZIP64 locator if any EOCD field is saturated.
     if entryCount == u16Max.toLong || cdSize == u32Max || cdOffset == u32Max then
@@ -266,7 +269,8 @@ object Zipfile:
 
       val entryComment: Optional[Text] =
         if entryCommentLength == 0 then Unset
-        else decodeText(central.segment((commentStart).z till (commentStart + entryCommentLength).z))
+        else
+          decodeText(central.segment((commentStart).z till (commentStart + entryCommentLength).z))
 
       // ZIP64 extended information overrides the saturated fixed fields, in a fixed order.
       var q = 0
@@ -335,8 +339,8 @@ object Zipfile:
         else source.read(extraOffset, headerExtraLength)
 
       val localSizes =
-        (flags & Zip.streamedFlag) == 0
-        || Zip.u32(header, 14) != 0 || Zip.u32(header, 18) != 0 || Zip.u32(header, 22) != 0
+        (flags & Zip.streamedFlag) == 0 ||
+          Zip.u32(header, 14) != 0 || Zip.u32(header, 18) != 0 || Zip.u32(header, 22) != 0
 
       val start = extraOffset + headerExtraLength
 
@@ -573,6 +577,7 @@ case class Zipfile
     // any reader sees standard entries and the prefix as leading, otherwise-unassigned data.
     val prefixBytes: Data = prefix.or(Array.empty[Byte])
     var offset = prefixBytes.length.toLong
+
     val builder =
       scala.collection.immutable.List.newBuilder[(Zip.Entry, Data, Data, Optional[Data], Long)]
 
@@ -599,6 +604,7 @@ case class Zipfile
     // yield; each of the four `stdlib` bridges below is that crossing.
     val local: Iterator[Data] =
       records.stdlib.iterator.flatMap: (entry, _, header, descriptor, _) =>
-        Iterator(header) ++ entry.storedBytes().chunks ++ descriptor.lay(Iterator.empty)(Iterator(_))
+        Iterator(header) ++ entry.storedBytes().chunks ++
+          descriptor.lay(Iterator.empty)(Iterator(_))
 
     (prefixIterator ++ local ++ central.stdlib.iterator ++ tail.stdlib.iterator).stream

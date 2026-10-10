@@ -32,17 +32,15 @@
                                                                                                   */
 package caesura
 
-
 import scala.caps
-
-import scala.language.dynamics
-
 import scala.compiletime.*
+import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -51,7 +49,6 @@ import turbulence.*
 import vacuous.*
 import wisteria.*
 import zephyrine.*
-import fulminate.*
 
 trait Dsv2:
   // Generic fallback: any `Decodable in Text` (custom types, enums, `Uuid`, …)
@@ -60,7 +57,7 @@ trait Dsv2:
   // so those win for Int/Long/Double/… where a `Decodable in Text` also exists —
   // mirroring how distillate keeps its generic instance in `Decodable2`.
   given decoder: [decodable] => (decodable: (decodable is Decodable in Text)^)
-  =>  ((decodable is Decodable in Dsv)^{decodable}) =
+  =>  ( (decodable is Decodable in Dsv)^{decodable} ) =
     value => decodable.decoded(value.data.readable.head)
 
   // `source.read[Foo in Dsv]` shorthand: decodes a single DSV record (the first
@@ -70,8 +67,8 @@ trait Dsv2:
   // cast — `value in Dsv` is just `value { type Form = Dsv }`, so the cast is a
   // no-op at runtime.
   given aggregableIn: [value: Decodable in Dsv] => (format: Dsv.Format)
-  =>  (tactic: Tactic[Dsv.Error])
-  =>  (((value in Dsv) is Aggregable by Text)^{tactic}) =
+  =>  ( tactic: Tactic[Dsv.Error] )
+  =>  ( ((value in Dsv) is Aggregable by Text)^{tactic} ) =
     text =>
       summon[Sheet is Aggregable by Text].aggregate(text).rows.readable.head.as[value]
       . asInstanceOf[value in Dsv]
@@ -94,6 +91,7 @@ object Dsv extends Dsv2:
       index += 1
 
     Dsv(Array.from(builder.result()))
+
   def apply(text: Text*): Dsv = new Dsv(Array.from(text))
 
   // An absent cell (a short positional row, or a header column missing from the row) decodes
@@ -107,7 +105,7 @@ object Dsv extends Dsv2:
         format:  Dsv.Format,
         tactic:  Tactic[Dsv.Error] )
   =>  ( decodable: (inner is Decodable in Dsv)^ )
-  =>  ((value is Decodable in Dsv)^{tactic, decodable}) =
+  =>  ( (value is Decodable in Dsv)^{tactic, decodable} ) =
     // Captures its tactic and inner decoder, like the cell decoders above. The inner decoder is
     // by value, not by name: a row's fields are flat
     // (a recursive product would have infinite width), so nothing needs deferring, and a
@@ -147,27 +145,23 @@ object Dsv extends Dsv2:
 
   // The primitive cell decoders capture the tactic they raise through.
   given int: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  ((Int is Decodable in Dsv)^{tactic}) = dsv =>
-    decodeCell(dsv, t"Int", 0): cell =>
-      safely(cell.as[Int])
+  =>  ( (Int is Decodable in Dsv)^{tactic} ) = dsv =>
+    decodeCell(dsv, t"Int", 0): cell => safely(cell.as[Int])
 
   given long: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  ((Long is Decodable in Dsv)^{tactic}) = dsv =>
-    decodeCell(dsv, t"Long", 0L): cell =>
-      safely(cell.as[Long])
+  =>  ( (Long is Decodable in Dsv)^{tactic} ) = dsv =>
+    decodeCell(dsv, t"Long", 0L): cell => safely(cell.as[Long])
 
   given double: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  ((Double is Decodable in Dsv)^{tactic}) = dsv =>
-    decodeCell(dsv, t"Double", 0.0): cell =>
-      safely(cell.as[Double])
+  =>  ( (Double is Decodable in Dsv)^{tactic} ) = dsv =>
+    decodeCell(dsv, t"Double", 0.0): cell => safely(cell.as[Double])
 
   given float: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  ((Float is Decodable in Dsv)^{tactic}) = dsv =>
-    decodeCell(dsv, t"Float", 0.0f): cell =>
-      safely(cell.as[Float])
+  =>  ( (Float is Decodable in Dsv)^{tactic} ) = dsv =>
+    decodeCell(dsv, t"Float", 0.0f): cell => safely(cell.as[Float])
 
   given boolean: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  ((Boolean is Decodable in Dsv)^{tactic}) = dsv =>
+  =>  ( (Boolean is Decodable in Dsv)^{tactic} ) = dsv =>
     decodeCell(dsv, t"Boolean", false): cell =>
       cell.s match
         case "true"  => true
@@ -175,10 +169,12 @@ object Dsv extends Dsv2:
         case _       => Unset
 
   given text: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  ((Text is Decodable in Dsv)^{tactic}) = dsv => decodeCell(dsv, t"Text", t"")(cell => cell)
+  =>  ( (Text is Decodable in Dsv)^{tactic} ) = dsv => decodeCell(dsv, t"Text", t""): cell => cell
 
   given string: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  ((String is Decodable in Dsv)^{tactic}) = dsv => decodeCell(dsv, t"String", "")(cell => cell.s)
+  =>  ( (String is Decodable in Dsv)^{tactic} ) =
+
+    dsv => decodeCell(dsv, t"String", ""): cell => cell.s
 
   inline given decodableDerivation: [value <: Product: ProductReflection]
   =>  value is Decodable in Dsv =
@@ -214,7 +210,7 @@ object Dsv extends Dsv2:
   // every row. Each captures the tactic it raises through.
   given aggregableParsed: [value] => (parsable: value is Dsv.Parsable)
   =>  ( format: Dsv.Format, tactic: Tactic[Dsv.Error], buffering: Buffering )
-  =>  (((value in Dsv) is Aggregable by Text)^{tactic}) =
+  =>  ( ((value in Dsv) is Aggregable by Text)^{tactic} ) =
     new Aggregable:
       type Self = value in Dsv
       type Operand = Text
@@ -230,7 +226,7 @@ object Dsv extends Dsv2:
 
   given aggregableParsedList: [value] => (parsable: value is Dsv.Parsable)
   =>  ( format: Dsv.Format, tactic: Tactic[Dsv.Error], buffering: Buffering )
-  =>  (((List[value] in Dsv) is Aggregable by Text)^{tactic}) =
+  =>  ( ((List[value] in Dsv) is Aggregable by Text)^{tactic} ) =
     new Aggregable:
       type Self = List[value] in Dsv
       type Operand = Text
@@ -266,8 +262,6 @@ object Dsv extends Dsv2:
 
     def parse(reader: DsvReader^): Self = parse(reader, 0)
 
-  trait Parsable extends Parsing
-
   object Parsable:
     inline def derived[value <: Product: ProductReflection]: value is Dsv.Parsable =
       val field = ParsableDerivation.derived[value]
@@ -277,7 +271,7 @@ object Dsv extends Dsv2:
         override def width: Int = field.width
         def parse(reader: DsvReader^, offset: Int): value = field.parse(reader, offset)
 
-  trait Field extends Parsing
+  trait Parsable extends Parsing
 
   object Field:
     // Rim call points for generated code: the derivation's lambda holds the
@@ -295,7 +289,7 @@ object Dsv extends Dsv2:
     // the reader's own tactic; `optional` below intercepts that for
     // `Optional` fields. Captures its decodable.
     given decodable: [value] => (decodable: (value is Decodable in Text)^)
-    =>  ((value is Dsv.Field)^{decodable}) =
+    =>  ( (value is Dsv.Field)^{decodable} ) =
       new Field:
         type Self = value
 
@@ -322,6 +316,8 @@ object Dsv extends Dsv2:
             else
               reader.tactic.tolerate(field.parse(reader, offset)).or(Unset)
 
+  trait Field extends Parsing
+
   object ParsableDerivation extends ProductDerivable[Dsv.Field]:
     // The generated parse lambda takes the reader as a neutral `AnyRef`
     // carrier (a function type may not take a `^` parameter); the capability
@@ -339,7 +335,7 @@ object Dsv extends Dsv2:
 
       val spans: Array[Int]^{} = Spannable.derived[derivation].spans()
       var total: Int = 0
-      spans.foreach { span => total += span }
+      spans.foreach: span => total += span
 
       DsvProductParser[derivation](total, (carrier, offset) =>
         var count = offset
@@ -379,7 +375,7 @@ object Dsv extends Dsv2:
 
       // `spot` stops at the first unready slot rather than scanning them all, and its index is
       // confined to `slots`, so the read needs no bounds check.
-      val failed = active && slots.spot(slot => !slots(slot).ready).present
+      val failed = active && slots.spot{ slot => !slots(slot).ready }.present
       var slot = 0
 
       if failed then null.asInstanceOf[derivation]
@@ -452,8 +448,7 @@ object Dsv extends Dsv2:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Dsv =
 
-      value =>
-        Dsv.flatten(fields(value) { [field] => field => contextual.encode(field).data })
+      value => Dsv.flatten(fields(value) { [field] => field => contextual.encode(field).data })
 
   // DsvError → Dsv.Error
   object Error:
@@ -535,11 +530,13 @@ case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) 
   def apply[value](using value: (value is Decodable in Text)^)(field: Text): Optional[value] =
     columns.let(_(field)).let { index => data.at(index.z) }.let(value.decoded(_))
 
-  override def hashCode: Int = data.readable.indices.fuse(0)(state*31 + data.readUnchecked(next).hashCode)
+  override def hashCode: Int =
+    data.readable.indices.fuse(0)(state*31 + data.readUnchecked(next).hashCode)
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case row: Dsv =>
-      data.length == row.data.length && data.readable.indices.all: index => data.readUnchecked(index) == row.data.readUnchecked(index)
+      data.length == row.data.length && data.readable.indices.all: index =>
+        data.readUnchecked(index) == row.data.readUnchecked(index)
 
     case _ =>
       false

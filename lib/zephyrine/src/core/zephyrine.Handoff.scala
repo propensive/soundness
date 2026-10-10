@@ -32,10 +32,10 @@
                                                                                                   */
 package zephyrine
 
-import scala.caps
-
 import java.util.concurrent.atomic as juca
 import java.util.concurrent.locks.LockSupport
+
+import scala.caps
 
 import rudiments.*
 
@@ -245,4 +245,5 @@ final class Handoff(depth: Int) extends anticipation.Durable:
       val waiting = producer
       if waiting != null then LockSupport.unpark(waiting)
       item
-    else null
+    else
+      null

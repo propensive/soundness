@@ -32,7 +32,6 @@
                                                                                                   */
 package galilei
 
-
 import anticipation.*
 import aperture.*
 import gossamer.*
@@ -72,6 +71,7 @@ object AccessRegister:
 
   private def rangesOverlap(left: Optional[(Long, Long)], right: Optional[(Long, Long)])
   :   Boolean =
+
     left.lay(true): (leftOffset, leftSize) =>
       right.lay(true): (rightOffset, rightSize) =>
         leftOffset < rightOffset + rightSize && rightOffset < leftOffset + leftSize
@@ -81,9 +81,9 @@ object AccessRegister:
       val real2 = normalize(real)
 
       val conflict = registrations.exists: registration =>
-        overlapping(real2, registration.real)
-          && rangesOverlap(range, registration.range)
-          && (atoms.has(Exclusive) || registration.atoms.has(Exclusive))
+        overlapping(real2, registration.real) &&
+          rangesOverlap(range, registration.range) &&
+          (atoms.has(Exclusive) || registration.atoms.has(Exclusive))
 
       if conflict then false else
         registrations ::= Registration(real2, atoms, range)
@@ -94,6 +94,7 @@ object AccessRegister:
   // monitor's, which suffices for scope-shaped holds.
   def acquireAwait(real: Text, atoms: Set[Mode], range: Optional[(Long, Long)] = Unset)
   :   Unit =
+
     synchronized:
       while !acquire(real, atoms, range) do wait()
 
@@ -102,9 +103,9 @@ object AccessRegister:
       val real2 = normalize(real)
 
       def remove(list: List[Registration]): List[Registration] = list match
-        case Nil => Nil
+        case Nil                                                       => Nil
         case head :: tail if head == Registration(real2, atoms, range) => tail
-        case head :: tail => head :: remove(tail)
+        case head :: tail                                              => head :: remove(tail)
 
       registrations = remove(registrations)
       notifyAll()

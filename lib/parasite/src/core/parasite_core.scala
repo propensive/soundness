@@ -32,13 +32,12 @@
                                                                                                   */
 package parasite
 
-import scala.language.experimental.into
-import scala.language.experimental.pureFunctions
+import java.lang as jl
 
 import scala.caps
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 import scala.reflect.ClassTag
-
-import java.lang as jl
 
 import anticipation.*
 import contingency.*
@@ -50,7 +49,6 @@ import prepositional.*
 import rudiments.Atomic
 import symbolism.*
 import vacuous.*
-
 import abstractables.epochMillisecondsAbstractable
 import abstractables.nanosecondsAbstractable
 
@@ -59,7 +57,7 @@ import abstractables.nanosecondsAbstractable
 object threads
 extends anticipation.DurableUnscoped
 uses PlatformSupervisor, VirtualSupervisor, AdaptiveSupervisor, PooledSupervisor,
-    JavascriptSupervisor:
+  JavascriptSupervisor:
 
   given platformThreads: Threading = () => PlatformSupervisor
   given virtualThreads: Threading = () => VirtualSupervisor
@@ -76,14 +74,15 @@ uses PlatformSupervisor, VirtualSupervisor, AdaptiveSupervisor, PooledSupervisor
 package probates:
   // Cleanup runs on the completing worker's own strand, with no ambient `Monitor`: the dying
   // worker itself licenses the suspension (a `Worker` IS a `Monitor`).
-  given awaitProbate: Probate = worker =>
-    worker.delegate(_.attend()(using worker))
+  given awaitProbate: Probate = worker => worker.delegate(_.attend()(using worker))
+
   given cancelProbate: Probate = _.delegate(_.cancel())
 
   given panicProbate: Probate = _.delegate: child =>
     if !child.ready then fulminate.panic(m"asynchronous child task did not complete")
 
-  // The only capturing probate: its instance closes over the ambient `Tactic`, so it is `SharedProbate`.
+  // The only capturing probate: its instance closes over the ambient `Tactic`, so it is
+  // `SharedProbate`.
   given failProbate: (tactic: Tactic[Async.Error]) => (Probate^{tactic}) = _.delegate: child =>
     if !child.ready then raise(Async.Error(Async.Error.Reason.Incomplete))
 
@@ -118,15 +117,15 @@ package retryTenacities:
 
 transparent inline def monitor: Monitor^ = infer[Monitor^]
 
-// Like `async`, but fire-and-forget: a daemon is never joined, so an error cannot surface at a join.
-// The body runs on a worker thread that outlives the call, so — unlike `async`, which is awaited
-// within the capturing scope — it must be *hygienic*: it may not capture any capability from an
-// enclosing scope (a `boundary.Label`, a `using`-block file handle, …) whose lifetime could end
-// before the worker. This is expressed by the pure context-function arrow `?->{}`: capturing a plain
-// value is fine, and the body may freely *open and own* its own capabilities, but it may not close
-// over an outer one. So, like `async`, the daemon supplies its own label-free `AsyncTactic` rather
-// than letting the body capture an ambient `Emit`; a raised error fails the worker and reaches the
-// nearest `contain`/`Probate`.
+// Like `async`, but fire-and-forget: a daemon is never joined, so an error cannot surface at a
+// join. The body runs on a worker thread that outlives the call, so — unlike `async`, which is
+// awaited within the capturing scope — it must be *hygienic*: it may not capture any capability
+// from an enclosing scope (a `boundary.Label`, a `using`-block file handle, …) whose lifetime could
+// end before the worker. This is expressed by the pure context-function arrow `?->{}`: capturing a
+// plain value is fine, and the body may freely *open and own* its own capabilities, but it may not
+// close over an outer one. So, like `async`, the daemon supplies its own label-free `AsyncTactic`
+// rather than letting the body capture an ambient `Emit`; a raised error fails the worker and
+// reaches the nearest `contain`/`Probate`.
 def daemon[error <: Hazard](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?->{} Unit )
   ( using Monitor^, SharedProbate )
@@ -141,8 +140,10 @@ def daemon[error <: Hazard](using Codepoint)
 // containment is a child supervision scope of the enclosing `Monitor`, so unmatched or rejected
 // errors chain outwards to the parent scope's probate, up to the root. Distinct from the typed
 // `trap` (declared emitted errors).
-def contain(handler: PartialFunction[Error, Remedy]^{caps.any.only[anticipation.Durable]})(using outer: SharedProbate)
+def contain(handler: PartialFunction[Error, Remedy]^{caps.any.only[anticipation.Durable]})
+  ( using outer: SharedProbate )
 :   Containment^{handler, outer} =
+
   Containment(handler, outer)
 
 // `X emits error` is the one concept "X can produce these errors as an out-of-band side-channel",
@@ -208,7 +209,7 @@ extension [resource](consume resource: resource^)
     // whose previous owner consumed it.
     val body: Worker -> result =
       // [transfer] body captures resource consumed by previous owner
-      caps.unsafe.unsafeAssumePure((worker: Worker) => evaluate(using owned, worker, tactic))
+      caps.unsafe.unsafeAssumePure: (worker: Worker) => evaluate(using owned, worker, tactic)
 
     Task[result, error | Async.Error](body, name = Unset)
 
@@ -224,7 +225,7 @@ extension [resource](consume resource: resource^)
 
     val body: Worker -> result =
       // [transfer] body captures resource consumed by previous owner
-      caps.unsafe.unsafeAssumePure((worker: Worker) => evaluate(using owned, worker, tactic))
+      caps.unsafe.unsafeAssumePure: (worker: Worker) => evaluate(using owned, worker, tactic)
 
     Task[result, error | Async.Error](body, name = name)
 
@@ -232,12 +233,10 @@ extension [resource](consume resource: resource^)
 def relent[result]()(using Worker): Unit = monitor.relent()
 def cancel[result]()(using Monitor^): Unit = monitor.cancel()
 
-
 // Pauses the current strand until a duration has elapsed or an instant has arrived, whichever
 // kind of value is given (`Schedulable`). A snooze is a cancellation point: a cancelled task wakes
 // from it at once.
 def snooze[time: Schedulable](time: time)(using Monitor^): Unit = monitor.snooze(time.remaining)
-
 
 // As `snooze`, but waits out its whole deadline. It parks through the supervisor rather than
 // the monitor, whose `snooze` would refuse a cancelled task at once, and an early wakeup —
@@ -251,10 +250,10 @@ def sleep[time: Schedulable](time: time)(using Monitor^): Unit =
     monitor.supervisor.sleep(deadline - jl.System.nanoTime)
     if monitor.supervisor.interrupted() then ()
 
-
 extension [result](stream: Chain[result])
   def concurrent(using monitor: Monitor^, probate: SharedProbate)
   :   (Tactic[Async.Error]^) ?->{monitor, probate} Chain[result] =
+
     // The task is created and awaited under the same monitor; there is no aliased writer.
     if async(stream.nil).await()
     then Chain() else stream match
@@ -278,7 +277,8 @@ def supervise[result](block: Monitor ?=> result)(using threading: Threading, cod
 // whenever the elements outnumber the cores and each is cheap. Results are kept in a plain array
 // indexed by job number, so the output is ordered by job, not by completion. A job's exception
 // fails its task and surfaces here at that task's join, as it would from an `await`.
-def concurrently[result: ClassTag](count: Int, parallelism: Int)(job: Int ->{caps.any.only[anticipation.Durable]} result)
+def concurrently[result: ClassTag](count: Int, parallelism: Int)
+  ( job: Int ->{caps.any.only[anticipation.Durable]} result )
   ( using monitor: Monitor^, probate: SharedProbate, codepoint: Codepoint )
 :   (Tactic[Async.Error]^) ?->{job, monitor, probate} scala.IArray[result] =
 
@@ -296,17 +296,17 @@ def concurrently[result: ClassTag](count: Int, parallelism: Int)(job: Int ->{cap
     List.fill(parallelism.min(count).max(0)):
       // [construction-fresh] fresh worker task handles sealed pure
       caps.unsafe.unsafeAssumePure:
-       async:
-         var running = true
+        async:
+          var running = true
 
-         while running do
-           // `ere` yields the counter's prior value: the index this worker has claimed.
-           val i = index.ere(_ + 1)
-           if i >= count then running = false else output.set(i, job(i))
+          while running do
+            // `ere` yields the counter's prior value: the index this worker has claimed.
+            val i = index.ere(_ + 1)
+            if i >= count then running = false else output.set(i, job(i))
 
   // Joined here rather than through `sequence`, which would start one more task for the join;
   // through the stdlib bridge because a `Task` join inside an `each` lambda trips the compiler.
-  tasks.stdlib.foreach { (task: Task[Unit]) => task.join() }
+  tasks.stdlib.foreach: (task: Task[Unit]) => task.join()
 
   scala.IArray.tabulate(count)(output.get(_).nn)
 

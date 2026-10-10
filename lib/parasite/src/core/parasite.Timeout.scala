@@ -32,17 +32,16 @@
                                                                                                   */
 package parasite
 
-import scala.caps
+import java.lang as jl
 
+import scala.caps
 import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
 
-import java.lang as jl
 import anticipation.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
-
 import Async.nominative
 import abstractables.epochMillisecondsAbstractable
 
@@ -62,8 +61,7 @@ object Timeout:
     // [construction-fresh] fresh watchdog task handle laundered
     def process(expiry: Atomic[Long]): Task[Unit] = caps.unsafe.unsafeAssumePure:
       task(n"timeout"):
-        while jl.System.currentTimeMillis < expiry()
-        do snooze(expiry())
+        while jl.System.currentTimeMillis < expiry() do snooze(expiry())
 
         expiry() = Long.MinValue
         action

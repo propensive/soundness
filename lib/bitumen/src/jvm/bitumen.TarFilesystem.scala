@@ -32,7 +32,6 @@
                                                                                                   */
 package bitumen
 
-
 import java.nio.file as jnf
 
 import scala.collection.mutable as scm

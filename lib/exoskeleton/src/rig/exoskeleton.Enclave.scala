@@ -57,13 +57,11 @@ import spectacular.*
 import superlunary.*
 import symbolism.*
 import vacuous.*
-
 import logging.silentLogging
 import probates.cancelProbate
 import systems.javaBaseSystem
 import threads.platformThreads
 import workingDirectories.javaBaseWorkingDirectory
-
 import filesystemBackends.javaBaseFilesystem
 
 object Enclave:
@@ -73,11 +71,11 @@ object Enclave:
   // document and closes the connection, leaving `pid` with nothing to print.
   case class Error(tool: Path on Linux)(using Diagnostics)
   extends fulminate.Error(347, 0)
-    (m"""
+    ( m"""
       the tool $tool did not report a process ID; its launcher and its daemon may disagree on the
       launcher protocol schema, in which case the `xek` version pinned in `etc/xek.tsv` needs to
       be one whose runner carries the signature in `ethereal.Launcher`
-    """)
+    """ )
 
   // A `Tool` is a *capability*: it references a live installed daemon process whose lifetime
   // is the `sandbox` block that spawns it (killed, and its files deleted, after the block).

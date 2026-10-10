@@ -34,8 +34,8 @@ package telekinesis
 
 import java.util.concurrent.locks as jucl
 
-import scala.math
 import scala.caps
+import scala.math
 
 import proscenium.*
 
@@ -56,6 +56,7 @@ class FlowWindow(initial: Int):
 
   def acquire(n: Int): Int =
     lock.lock()
+
     try
       while value <= 0 do replenished.await()
       val take: Int = math.min(n.toLong, value).toInt
@@ -65,6 +66,7 @@ class FlowWindow(initial: Int):
 
   def release(increment: Int): Unit =
     lock.lock()
+
     try
       value += increment.toLong
       replenished.signalAll()

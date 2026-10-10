@@ -36,27 +36,27 @@ import scala.annotation.*
 import scala.collection.mutable as scm
 
 import anticipation.*
+import beneficence.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import hieroglyph.*
+import inimitable.*
 import jacinta.*
 import obligatory.*
 import parasite.*
 import prepositional.*
 import revolution.*
 import rudiments.*
+import scintillate.*
 import spectacular.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-import zephyrine.*
-import beneficence.*
-import fulminate.*
-import inimitable.*
-import scintillate.*
 import wisteria.*
+import zephyrine.*
 
 object Mcp:
   val version = t"2025-11-25"
@@ -182,7 +182,6 @@ object Mcp:
   // The correlation id of a request, read on its own so that a failure can echo it whatever
   // else the request lacks.
   private case class Correlation(id: Optional[Json] = Unset)
-
 
   case class TaskAugmented(task: Optional[TaskMetadata] = Unset)
 
@@ -342,7 +341,7 @@ object Mcp:
 
   object LoggingLevel:
     given encodable: LoggingLevel is Json.Encodable =
-      Json.Encodable(() => Morphology.Str)(_.toString.tt.lower.in[Json])
+      Json.Encodable{ () => Morphology.Str }(_.toString.tt.lower.in[Json])
 
     given decodable: Tactic[Json.Error] => LoggingLevel is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
@@ -487,12 +486,13 @@ object Mcp:
 
     private val typeTag = Json.discriminatedUnion[SamplingMessageContentBlock](t"type")
 
-    given encodable: SamplingMessageContentBlock is Json.Encodable = Json.Encodable(() => Morphology.Any):
-      case content: TextContent       => typeTag.rewrite(t"text",        content.in[Json])
-      case content: ImageContent      => typeTag.rewrite(t"image",       content.in[Json])
-      case content: AudioContent      => typeTag.rewrite(t"audio",       content.in[Json])
-      case content: ToolUseContent    => typeTag.rewrite(t"tool_use",    content.in[Json])
-      case content: ToolResultContent => typeTag.rewrite(t"tool_result", content.in[Json])
+    given encodable: SamplingMessageContentBlock is Json.Encodable =
+      Json.Encodable(() => Morphology.Any):
+        case content: TextContent       => typeTag.rewrite(t"text",        content.in[Json])
+        case content: ImageContent      => typeTag.rewrite(t"image",       content.in[Json])
+        case content: AudioContent      => typeTag.rewrite(t"audio",       content.in[Json])
+        case content: ToolUseContent    => typeTag.rewrite(t"tool_use",    content.in[Json])
+        case content: ToolResultContent => typeTag.rewrite(t"tool_result", content.in[Json])
 
     given decodable: Tactic[Json.Error] => SamplingMessageContentBlock is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>
@@ -939,6 +939,7 @@ object Mcp:
     def terminate(id: Text): Boolean =
       val interface = Mcp.Interface.evict(id)
       sessions.synchronized(sessions.remove(id)).isDefined || interface
+
     def initialize(): Session
 
     private given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
@@ -988,4 +989,3 @@ object Mcp:
 
   case class Error(reason: Mcp.Error.Reason)(using Diagnostics)
   extends fulminate.Error(630, reason.number)(m"the MCP operation failed because $reason")
-

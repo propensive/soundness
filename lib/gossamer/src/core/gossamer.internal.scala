@@ -32,12 +32,12 @@
                                                                                                   */
 package gossamer
 
-import scala.collection.immutable.Seq
+import java.nio.charset.StandardCharsets
 
+import scala.collection.immutable.Seq
 import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
-import java.nio.charset.StandardCharsets
 import anticipation.*
 import denominative.*
 import fulminate.*
@@ -183,7 +183,7 @@ object internal:
       // are escaped, and marked `ascii"…"`, which is close to the source form.
       given inspectable: [ascii <: Ascii] => ascii is Inspectable = ascii =>
         val builder: StringBuilder = new StringBuilder("ascii\"")
-        showable.text(ascii).each { char => builder.append(Inspectable.escape(char, true).s) }
+        showable.text(ascii).each: char => builder.append(Inspectable.escape(char, true).s)
 
         builder.append('"').toString.tt
 
@@ -208,11 +208,14 @@ object internal:
         def single(operand: Byte): Ascii = scala.IArray(operand)
         def fromChar(char: Char): Byte = char.toByte
         def length(ascii: Ascii): Int = ascii.size
+
         def text(ascii: Ascii): Text =
           String(ascii.asInstanceOf[scala.Array[Byte]], StandardCharsets.US_ASCII).nn.tt
+
         def access(ascii: Ascii, index: Ordinal): Byte =
           import scala.IArray.apply
           ascii(index.n0)
+
         def builder(size: Optional[Int]): Builder[Ascii] = AsciiBuilder(size)
         def size(ascii: Ascii): Int = ascii.length
 
@@ -222,6 +225,7 @@ object internal:
           Array.build[Byte](left.length + right.length): array =>
             array.place(Array.frozen(left), Prim)
             array.place(Array.frozen(right), left.length.z)
+
           . readable
 
         def indexOf(ascii: Ascii, sub: Text, start: Ordinal): Optional[Ordinal] =
@@ -373,8 +377,7 @@ object internal:
 
                     case _ =>
 
-                best.lay(Chain()): triple =>
-                  triple(2) #:: step(triple(1).max(from + 1))
+                best.lay(Chain()): triple => triple(2) #:: step(triple(1).max(from + 1))
 
             step($start.n0)
           }

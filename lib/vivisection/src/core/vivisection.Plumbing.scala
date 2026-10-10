@@ -212,5 +212,6 @@ private[vivisection] object Plumbing:
     else
       val delegates = summary.callee.lay(false): callee =>
         callee == name || callee == t"$name$$" || name == t"$callee$$"
+
       val pure = summary.getfields == 0 && summary.putfields == 0 && summary.statics <= 1
       pure && summary.invokes == 1 && delegates

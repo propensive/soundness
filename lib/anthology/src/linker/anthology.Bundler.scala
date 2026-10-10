@@ -32,7 +32,6 @@
                                                                                                   */
 package anthology
 
-
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -43,13 +42,12 @@ import galilei.*
 import gossamer.*
 import hellenism.*
 import prepositional.*
-import rudiments.*
 import revolution.*
+import rudiments.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
 import zeppelin.*
-
 import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.dereferenceSymlinks
 import filesystemTraversal.preOrderTraversal
@@ -82,29 +80,29 @@ object Bundler:
     val omissions: Set[Text] = Set("MANIFEST.MF", "plugin.properties")
 
     val entries =
-        Zip.Entry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest) ::
-          classpath.entries.bind:
-          case Classpath.Entry.Directory(directory) =>
-            val root = directory.as[Path on Linux]
+      Zip.Entry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest) ::
+        classpath.entries.bind:
+        case Classpath.Entry.Directory(directory) =>
+          val root = directory.as[Path on Linux]
 
-            root.descendants.filter { entry => !omissions.has(entry.name) }.bind: file =>
-              if file.entry() == Directory then Nil else
-                val ref = %.on[Zip] + root.toward(file).on[Zip]
-                List(Zip.Entry(ref, file.read[Data]))
+          root.descendants.filter { entry => !omissions.has(entry.name) }.bind: file =>
+            if file.entry() == Directory then Nil else
+              val ref = %.on[Zip] + root.toward(file).on[Zip]
+              List(Zip.Entry(ref, file.read[Data]))
 
-            . to[List]
+          . to[List]
 
-          case Classpath.Entry.Jar(jar) =>
-            val jarfile = workingDirectory[Path on Linux].resolve(jar)
+        case Classpath.Entry.Jar(jar) =>
+          val jarfile = workingDirectory[Path on Linux].resolve(jar)
 
-            // Re-emit each entry verbatim: it already carries its compressed bytes, so no
-            // decompression or recompression is needed.
-            Zipfile.read(jarfile).entries.filter: entry =>
-              val name: Text = entry.ref.encode
-              !entry.directory && name != t"META-INF/MANIFEST.MF"
+          // Re-emit each entry verbatim: it already carries its compressed bytes, so no
+          // decompression or recompression is needed.
+          Zipfile.read(jarfile).entries.filter: entry =>
+            val name: Text = entry.ref.encode
+            !entry.directory && name != t"META-INF/MANIFEST.MF"
 
-          case _ =>
-            Nil
+        case _ =>
+          Nil
 
     jarfile.write(Zipfile(entries.deduplicate(_.ref)))
 

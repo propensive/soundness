@@ -129,7 +129,8 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
   private var huftBits: Int = 0  // huftBuild in/out-value: bits per table
   private var v: scala.Array[Int]^ = new scala.Array[Int](288)      // work area for huftBuild
   private val c: scala.Array[Int]^ = new scala.Array[Int](Bmax + 1) // bit length count table
-  private val r: scala.Array[Int]^ = new scala.Array[Int](3)        // table entry for structure assignment
+  // table entry for structure assignment
+  private val r: scala.Array[Int]^ = new scala.Array[Int](3)
   private val u: scala.Array[Int]^ = new scala.Array[Int](Bmax)     // table stack
   private val x: scala.Array[Int]^ = new scala.Array[Int](Bmax + 1) // bit offsets, then code stack
 
@@ -416,7 +417,12 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
   var dtreeIndex: Int = 0
 
   private update def codesInit
-    ( bl: Int, bd: Int, tl: scala.Array[Int]^{this}, tlIndex: Int, td: scala.Array[Int]^{this}, tdIndex: Int )
+    ( bl:      Int,
+      bd:      Int,
+      tl:      scala.Array[Int]^{this},
+      tlIndex: Int,
+      td:      scala.Array[Int]^{this},
+      tdIndex: Int )
   :   Unit =
 
     codesMode = Start
@@ -662,7 +668,12 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
   // Called with number of bytes left to write in window at least 258 (the maximum string length)
   // and number of input bytes available at least ten.
   private update def inflateFast
-    ( bl: Int, bd: Int, tl: scala.Array[Int]^{this}, tlIndex: Int, td: scala.Array[Int]^{this}, tdIndex: Int )
+    ( bl:      Int,
+      bd:      Int,
+      tl:      scala.Array[Int]^{this},
+      tlIndex: Int,
+      td:      scala.Array[Int]^{this},
+      tdIndex: Int )
   :   Int =
 
     var t = 0       // temporary pointer
@@ -1156,8 +1167,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
           p = nextInIndex; n = availIn; b = bitb; k = bitk
           q = write; m = if q < read then read - q - 1 else windowEnd - q
 
-          if last == 0 then blocksMode = Type
-          else blocksMode = Dry
+          if last == 0 then blocksMode = Type else blocksMode = Dry
 
         case Dry =>
           write = q
@@ -1372,7 +1382,8 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
 
     ZStreamError // unreachable
 
-  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}): Unit = setInput(buffer, 0, buffer.length)
+  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}): Unit =
+    setInput(buffer, 0, buffer.length)
 
   // The engine borrows the caller's buffer zero-copy until the next `setInput`. The cast erases
   // the borrow's provenance, which separation checking would otherwise reject as a stored

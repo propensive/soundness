@@ -112,11 +112,12 @@ object Repackager:
   // to roughly `ceil(dependencies / parallelism) × latency` while staying polite to the API.
   private val parallelism: Int = 16
 
-  // Partitions the dependency hashes; `resolve` (the download sources) and `cached` (cache lookup) are injected
-  // so the logic is testable without the network or the filesystem. A published dependency becomes
-  // a `Requirement` (externalized, fetched at runtime); otherwise it contributes its cached entries
-  // to inline. The cached `Zip.Entry` values are carried through verbatim (still compressed) rather
-  // than decompressed, so the write path can copy their bytes without re-deflating.
+  // Partitions the dependency hashes; `resolve` (the download sources) and `cached` (cache lookup)
+  // are injected so the logic is testable without the network or the filesystem. A published
+  // dependency becomes a `Requirement` (externalized, fetched at runtime); otherwise it contributes
+  // its cached entries to inline. The cached `Zip.Entry` values are carried through verbatim (still
+  // compressed) rather than decompressed, so the write path can copy their bytes without
+  // re-deflating.
   def partition
     ( hashes: List[Text], resolve: Resolver, cached: CacheReader,
       progress: Progress = (_, _) => () )
@@ -149,8 +150,7 @@ object Repackager:
     . protect:
         supervise:
           hashes.batched(parallelism).each: group =>
-            val tasks = group.map: hash =>
-              async((hash, classify(hash)))
+            val tasks = group.map: hash => async((hash, classify(hash)))
 
             tasks.map(_.await()).each: (hash, result) =>
               val (reqs, entries) =
@@ -177,12 +177,12 @@ object Repackager:
   :   Summary raises RepackageError =
 
     mitigate:
-      case Io.Error(_, _, _, _)  => RepackageError(m"a filesystem error occurred while repackaging")
+      case Io.Error(_, _, _, _)      => RepackageError(m"a filesystem error occurred while repackaging")
       case Truncation.Error(_)       => RepackageError(m"a stream error occurred while repackaging")
-      case Zip.Error(reason)     => RepackageError(m"the JAR could not be read or written ($reason)")
-      case Path.Error(_, _)      => RepackageError(m"a path could not be resolved while repackaging")
-      case Number.Error(_, _, _) => RepackageError(m"the manifest contained malformed data")
-      case Fqcn.Error(_, _)      => RepackageError(m"the Main-Class is not a valid class name")
+      case Zip.Error(reason)         => RepackageError(m"the JAR could not be read or written ($reason)")
+      case Path.Error(_, _)          => RepackageError(m"a path could not be resolved while repackaging")
+      case Number.Error(_, _, _)     => RepackageError(m"the manifest contained malformed data")
+      case Fqcn.Error(_, _)          => RepackageError(m"the Main-Class is not a valid class name")
 
     . protect:
         val resource: Text = burdock.internal.ResourcePath.tt
@@ -235,8 +235,7 @@ object Repackager:
 
         val stripped: Set[Text] = publishedEntries.map(_.ref.show).to[Set]
 
-        val keptEntries: List[Zip.Entry] = ownEntries.filter: entry =>
-          !stripped.has(entry.ref.show)
+        val keptEntries: List[Zip.Entry] = ownEntries.filter: entry => !stripped.has(entry.ref.show)
 
         import manifestAttributes.*
 

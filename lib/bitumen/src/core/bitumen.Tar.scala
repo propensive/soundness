@@ -32,16 +32,22 @@
                                                                                                   */
 package bitumen
 
+import scala.caps
 
 import anticipation.*
+import aperture.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
+import fulminate.*
 import galilei.*
 import gossamer.*
 import hieroglyph.*, codepages.asciiCodepage, textMetrics.uniformMetric
+import hypotenuse.*
 import hypotenuse.*, arithmeticOptions.uncheckedOverflow
 import nomenclature.*
+import pneumatic.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -49,12 +55,6 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
-import fulminate.*
-import hypotenuse.*
-import scala.caps
-import aperture.*
-import pneumatic.*
-import denominative.dysasymptotics.linearSize
 
 object Tar:
   // TarRef → Tar.Ref
@@ -78,7 +78,7 @@ object Tar:
   // Anchored here so `data.open[Tar](...)` resolves with no import. Opening a filesystem
   // *path* as TAR (`path.open[Tar]`) lives in `bitumen.jvm`, alongside the disk backend.
   given dataOpenable: (tarTactic: Tactic[Tar.Error], streamTactic: Tactic[Truncation.Error])
-  =>  (Tar.DataOpenable^{tarTactic, streamTactic}) =
+  =>  ( Tar.DataOpenable^{tarTactic, streamTactic} ) =
     Tar.DataOpenable()
 
   // The 512-byte USTAR header, held as raw slices: nothing is decoded in the case class.
@@ -222,7 +222,7 @@ object Tar:
         Archive.Tree.members(root, symlinks.dereference).map: member =>
           val ref: Tar.Ref = Tarfile.decodePath(member.name)
           val stat = member.stat
-          val mode = stat.mode.lay(UnixMode())(mode => UnixMode.from(mode & 0xfff))
+          val mode = stat.mode.lay(UnixMode()): mode => UnixMode.from(mode & 0xfff)
           val (user, group) = Archive.Tree.owner(stat, archiveFlags)
           val mtime: U32 = Archive.Tree.mtime(stat, archiveFlags).toInt.bits.u32
 
@@ -240,9 +240,14 @@ object Tar:
             case galilei.Symlink =>
               Tar.Entry.Symlink(ref, mode, user, group, mtime, backend.linkTarget(member.path))
 
-            case galilei.Fifo        => Tar.Entry.Fifo(ref, mode, user, group, mtime)
-            case galilei.CharDevice  => Tar.Entry.CharSpecial(ref, mode, user, group, mtime, device)
-            case galilei.BlockDevice => Tar.Entry.BlockSpecial(ref, mode, user, group, mtime, device)
+            case galilei.Fifo =>
+              Tar.Entry.Fifo(ref, mode, user, group, mtime)
+
+            case galilei.CharDevice =>
+              Tar.Entry.CharSpecial(ref, mode, user, group, mtime, device)
+
+            case galilei.BlockDevice =>
+              Tar.Entry.BlockSpecial(ref, mode, user, group, mtime, device)
 
             case _ =>
               raise(Tar.Error(Tar.Error.Reason.DeviceCreationUnsupported(member.name)))
@@ -485,7 +490,10 @@ object Tar:
     // backpatches a placeholder header once an entry's body length is known.
     private[bitumen] def headerWith(size0: U32): Data = Data.build(512): array =>
       val nameData = entryName.in[Data]
-      array.place(if nameData.length > 100 then nameData.segment((0).z till (100).z) else nameData, Prim)
+
+      array.place
+        ( if nameData.length > 100 then nameData.segment((0).z till (100).z) else nameData, Prim )
+
       array.place(octal(mode.int), 100.z)
       array.place(octal(user.value), 108.z)
       array.place(octal(group.value), 116.z)
@@ -496,7 +504,10 @@ object Tar:
 
       link.let: link =>
         val linkData = link.in[Data]
-        array.place(if linkData.length > 100 then linkData.segment((0).z till (100).z) else linkData, 157.z)
+
+        array.place
+          ( if linkData.length > 100 then linkData.segment((0).z till (100).z) else linkData,
+            157.z )
 
       deviceNumbers.let: (devMajor, devMinor) =>
         array.place(format(devMajor, 8), 329.z)
@@ -504,11 +515,15 @@ object Tar:
 
       user.name.let: name =>
         val nameData = name.in[Data]
-        array.place(if nameData.length > 32 then nameData.segment((0).z till (32).z) else nameData, 265.z)
+
+        array.place
+          ( if nameData.length > 32 then nameData.segment((0).z till (32).z) else nameData, 265.z )
 
       group.name.let: name =>
         val nameData = name.in[Data]
-        array.place(if nameData.length > 32 then nameData.segment((0).z till (32).z) else nameData, 297.z)
+
+        array.place
+          ( if nameData.length > 32 then nameData.segment((0).z till (32).z) else nameData, 297.z )
 
       array.place(t"ustar\u0000".in[Data], 257.z)
       array.place(t"00".in[Data], 263.z)
@@ -533,7 +548,9 @@ object Tar:
     def serialize: Iterator[Data] = this match
       case sparse: Sparse if sparse.segments.size > 4 =>
         // `Iterator#++` demands an `IterableOnce`, which the opaque `List` is not.
-        Iterator(header) ++ Entry.sparseExtensionBlocks(sparse.segments.skip(4)).stdlib ++ dataBlocks
+        Iterator(header) ++
+          Entry.sparseExtensionBlocks(sparse.segments.skip(4)).stdlib ++
+          dataBlocks
 
       case _ =>
         Iterator(header) ++ dataBlocks
@@ -600,7 +617,8 @@ object Tar:
         m"the archive could not be written: $detail"
 
   case class Error(reason: Tar.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(284, reason.number)(m"the TAR archive could not be read or written because $reason")
+  extends fulminate.Error(284, reason.number)
+    ( m"the TAR archive could not be read or written because $reason" )
 
   // TarCompression → Tar.Compression
   object Compression
@@ -611,6 +629,20 @@ object Tar:
   // `path.open[Tar](Tar.Flag.Gzip)`.
   enum Flag:
     case Gzip, Zlib, Deflate
+
+  object Handle:
+    private[bitumen] def entries(consume stream: (Stream[Data] over Credit)^, flags: List[Tar.Flag])
+      ( using tarTactic:    Tactic[Tar.Error],
+              streamTactic: Tactic[Truncation.Error],
+              buffering:    Buffering )
+    :   Iterator[Tar.Entry]^{tarTactic, streamTactic} =
+
+      Tarfile.read:
+        flags.prim match
+          case Tar.Flag.Gzip    => stream.decompress[Gzip]
+          case Tar.Flag.Zlib    => stream.decompress[Zlib]
+          case Tar.Flag.Deflate => stream.decompress[Deflate]
+          case _                => stream
 
   // TarHandle → Tar.Handle
   // The scoped capability provided by opening an archive as `Tar`: `path.open[Tar]()`. TAR is a
@@ -628,18 +660,6 @@ object Tar:
     @caps.unsafe.untrackedCaptures
     // [field-fresh-param]
     val entries: Iterator[Tar.Entry] = caps.unsafe.unsafeAssumePure(entries0)
-
-  object Handle:
-    private[bitumen] def entries(consume stream: (Stream[Data] over Credit)^, flags: List[Tar.Flag])
-      ( using tarTactic: Tactic[Tar.Error], streamTactic: Tactic[Truncation.Error], buffering: Buffering )
-    :   Iterator[Tar.Entry]^{tarTactic, streamTactic} =
-
-      Tarfile.read:
-        flags.prim match
-          case Tar.Flag.Gzip    => stream.decompress[Gzip]
-          case Tar.Flag.Zlib    => stream.decompress[Zlib]
-          case Tar.Flag.Deflate => stream.decompress[Deflate]
-          case _                => stream
 
 case class SparseSegment(offset: Long, length: Long)
 

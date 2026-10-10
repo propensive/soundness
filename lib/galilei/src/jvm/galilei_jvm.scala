@@ -33,9 +33,6 @@
 package galilei
 
 import java.io as ji
-
-import murmuration.{has, filter, map, foreach}
-import symbolism.*
 import java.nio.channels as jnc
 import java.nio.file as jnf
 import java.nio.file.attribute as jnfa
@@ -43,11 +40,12 @@ import java.nio.file.attribute as jnfa
 import anticipation.*
 import contingency.*
 import gossamer.*
+import murmuration.{has, filter, map, foreach}
 import prepositional.*
 import serpentine.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
-
 import Io.Error.{Operation, Reason}
 
 package filesystemBackends:
@@ -202,12 +200,17 @@ package filesystemBackends:
       // creation withheld, never widen beyond the request.
       private def attributes(mode: Optional[Int]): Array[jnfa.FileAttribute[?]] =
         mode.let: mode =>
-          if posix then Array[jnfa.FileAttribute[?]](jnfa.PosixFilePermissions.asFileAttribute(permissions(mode)).nn)
-          else Array[jnfa.FileAttribute[?]]()
+          if posix then
+            Array[jnfa.FileAttribute[?]]
+              ( jnfa.PosixFilePermissions.asFileAttribute(permissions(mode)).nn )
+          else
+            Array[jnfa.FileAttribute[?]]()
+
         . or(Array[jnfa.FileAttribute[?]]())
 
       private def apply(path: Path on Plane, mode: Optional[Int]): Unit =
-        mode.let { mode => if posix then jnf.Files.setPosixFilePermissions(javaPath(path), permissions(mode)) }
+        mode.let: mode =>
+          if posix then jnf.Files.setPosixFilePermissions(javaPath(path), permissions(mode))
 
       def createDirectory(path: Path on Plane, mode: Optional[Int])(using Tactic[Io.Error]): Unit =
         protect(path, Operation.Create):
@@ -339,8 +342,10 @@ package filesystemBackends:
 
       private def attributeView(path: Path on Plane)(using Tactic[Io.Error])
       :   jnf.attribute.UserDefinedFileAttributeView =
+
         Optional(jnf.Files.getFileAttributeView
-            (javaPath(path), classOf[jnf.attribute.UserDefinedFileAttributeView]))
+            ( javaPath(path), classOf[jnf.attribute.UserDefinedFileAttributeView] ))
+
         . or(abort(Io.Error(path, Operation.Metadata, Reason.Unsupported)))
 
       def attributes(path: Path on Plane)(using Tactic[Io.Error]): List[Text] =
@@ -401,6 +406,7 @@ package filesystemBackends:
           try jnc.FileChannel.open(javaPath(path), optionSet).nn
           catch case error: Exception =>
             import scala.unsafeExceptions.canThrowAny
+
             if !writable then throw error else
               writable = false
               optionSet.remove(jnf.StandardOpenOption.WRITE)
@@ -419,7 +425,8 @@ package filesystemBackends:
                 if await then channel.lock(offset, extent, shared).nn
                 else channel.tryLock(offset, extent, shared).nn
               catch case _: jnc.OverlappingFileLockException => if shared then Some(null) else None
-            else Some(null)
+            else
+              Some(null)
 
           if lock.isEmpty then abort(Io.Error(path, Operation.Open, Reason.Busy))
 
@@ -449,8 +456,7 @@ package filesystemBackends:
                   val buffer = java.nio.ByteBuffer.wrap(Array.unsafeJvm(data), 0, available).nn
                   var position = offset + writeOffset
 
-                  while buffer.hasRemaining do
-                    position += channel.write(buffer, position)
+                  while buffer.hasRemaining do position += channel.write(buffer, position)
 
                   available
 
@@ -467,11 +473,12 @@ package filesystemBackends:
 
         // The mode applies only when this open creates the file.
         val creating: Boolean =
-          (flags.has(OpenFlag.Create) || flags.has(OpenFlag.Exclusive))
-          && !jnf.Files.exists(javaPath(path), jnf.LinkOption.NOFOLLOW_LINKS)
+          (flags.has(OpenFlag.Create) || flags.has(OpenFlag.Exclusive)) &&
+            !jnf.Files.exists(javaPath(path), jnf.LinkOption.NOFOLLOW_LINKS)
 
         val options: List[jnf.OpenOption] = flags.filter: flag =>
           flag != OpenFlag.Lock && flag != OpenFlag.LockShared && flag != OpenFlag.Await
+
         . map:
           case OpenFlag.Read      => jnf.StandardOpenOption.READ
           case OpenFlag.Write     => jnf.StandardOpenOption.WRITE
@@ -497,7 +504,9 @@ package filesystemBackends:
             options2.foreach { option => optionSet.add(option); () }
 
             val channel =
-              jnc.FileChannel.open(javaPath(path), optionSet, attributes(if creating then mode else Unset)*).nn
+              jnc.FileChannel
+              . open(javaPath(path), optionSet, attributes(if creating then mode else Unset)*)
+              . nn
 
             if creating then apply(path, mode)
             channel
@@ -524,10 +533,13 @@ package filesystemBackends:
                 if shared then
                   if await then channel.lock(0L, Long.MaxValue, true).nn
                   else channel.tryLock(0L, Long.MaxValue, true).nn
-                else if await then channel.lock().nn
-                else channel.tryLock().nn
+                else if await then
+                  channel.lock().nn
+                else
+                  channel.tryLock().nn
               catch case _: jnc.OverlappingFileLockException => if shared then Some(null) else None
-            else Some(null)
+            else
+              Some(null)
 
           if lock.isEmpty then abort(Io.Error(path, Operation.Open, Reason.Busy))
 

@@ -32,10 +32,9 @@
                                                                                                   */
 package surveillance
 
-import scala.caps
-
 import java.nio.file as jnf
 
+import scala.caps
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -44,7 +43,6 @@ import denominative.*
 import nomenclature.n
 import parasite.*, threads.platformThreads, Async.nominative
 import prepositional.*
-
 import rudiments.*
 import spectacular.*
 import turbulence.*

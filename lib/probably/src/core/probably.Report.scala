@@ -34,14 +34,13 @@ package probably
 
 import scala.collection.immutable as sci
 import scala.collection.mutable as scm
+import scala.math.Ordering
 
 import anticipation.*
 import digression.*
-import scala.math.Ordering
-
 import rudiments.*
-import vacuous.*
 import symbolism.*
+import vacuous.*
 
 object Report:
   given verdict: Inclusion[Report, Verdict]:
@@ -265,11 +264,11 @@ final class Report():
   // this settlement: lambdas over the opaque collections' higher-kinded methods are where the
   // compiler's `wildApprox` assertion trips (see `Documenting` before its removal).
   private def entries(line: ReportLine): sci.List[Entry] = line match
-    case ReportLine.Suite(_, tests) => tests.list.stdlib.flatMap { pair => entries(pair(1)) }
+    case ReportLine.Suite(_, tests) => tests.list.stdlib.flatMap: pair => entries(pair(1))
     case ReportLine.Item(entry)     => sci.List(entry)
 
   private def verdicts(entry: Entry): sci.List[Verdict] =
-    entry.cells.stdlib.flatMap { cell => cell(1).runs.stdlib }.flatMap { run => run.verdict.option }
+    entry.cells.stdlib.flatMap { cell => cell(1).runs.stdlib }.flatMap: run => run.verdict.option
 
   // A check counts only once it has a verdict; a measurement (a benchmark, stress test or
   // profile) counts, and passes, by having run at all. A check passes when its verdicts, over

@@ -36,6 +36,7 @@ import java.io as ji
 import java.lang as jl
 import java.nio.charset as jnc
 import java.util.concurrent as juc
+
 import scala.caps
 import scala.collection.concurrent as scc
 
@@ -1146,7 +1147,8 @@ object Jdwp:
     // The class's parsed SMAP, memoized for the session — including its absence, so a class
     // with no debug extension (or a VM without the capability) costs one round trip, ever.
     def smap(cls: ReferenceTypeId)(using Tactic[Debugger.Error]): Optional[digression.Smap] =
-      smaps.getOrElseUpdate(cls.long, safely(sourceDebugExtension(cls)).let(digression.Smap.parse(_)))
+      smaps.getOrElseUpdate
+        ( cls.long, safely(sourceDebugExtension(cls)).let(digression.Smap.parse(_)) )
 
     def sourceDebugExtension(cls: ReferenceTypeId)
       ( using Tactic[Debugger.Error] )

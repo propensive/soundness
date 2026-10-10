@@ -197,7 +197,8 @@ object internal:
           engine.matches(Regex.unsafeFrom(List(pattern))(using Unsafe), scrutinee)
 
         case _ =>
-          matcher.lay(engine.matches(Regex.unsafeFrom(List(pattern))(using Unsafe), scrutinee)): fsa =>
+          matcher
+          . lay(engine.matches(Regex.unsafeFrom(List(pattern))(using Unsafe), scrutinee)): fsa =>
             fsa.matches(scrutinee)
 
   class RExtractor[result, form](parts: Seq[String], staged: Optional[Motif] = Unset)

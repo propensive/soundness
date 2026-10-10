@@ -64,6 +64,7 @@ object DemoLspProxy:
           rewrite.hover: hover =>
             hover.copy(contents = MarkupContent(value = t"_(proxied)_ ${hover.contents.value}"))
 
-          rewrite.diagnostics(_.map { report => report.copy(message = t"[demo] ${report.message}") })
+          rewrite.diagnostics
+            ( _.map { report => report.copy(message = t"[demo] ${report.message}") } )
 
       Exit.Ok

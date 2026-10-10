@@ -32,123 +32,16 @@
                                                                                                   */
 package parasite
 
-import scala.caps
-import scala.compiletime.asMatchable
-
 import java.lang as jl
 import java.util.concurrent as juc
 import java.util.concurrent.atomic as juca
 import java.util.concurrent.locks as jucl
 
+import scala.caps
+import scala.compiletime.asMatchable
+
 import anticipation.*
 import vacuous.*
-
-// A supervisor which runs tasks on a pool of reusable carrier threads instead of starting a
-// thread per task. `fork` hands the task to an idle carrier when one is waiting, and starts a
-// fresh carrier only when none is; a carrier that finishes a task parks itself on the idle
-// list for the next. The hand-off to a waiting carrier costs a few hundred nanoseconds where
-// a thread start and join cost a few microseconds, which is the whole point: fine-grained
-// fan-out — one task per element, a spawn-and-join in a loop — stops being dominated by thread
-// creation. The carriers are whatever `spawn` produces: virtual threads on the JVM, platform
-// threads on Scala Native, where there is no Loom and a thread start costs tens of
-// microseconds, so the saving is larger still.
-//
-// THE POOL NEVER STARVES. A task that blocks — through `park` or any other way, including
-// JDK I/O, `Thread.sleep`, a `synchronized` block or `Handoff`'s own spin-then-park — simply
-// keeps its carrier, and the next `fork` finding no idle carrier starts another. So the worst
-// case is exactly the cost of a thread per task, and there is no fixed size, no queue that
-// tasks wait in, and no compensation logic to get wrong: a task is running from the moment it
-// is forked, as with every other supervisor. Idle carriers above `idleLimit` retire instead of
-// waiting, which bounds the pool's memory after a burst.
-//
-// CANCELLATION IS A HANDSHAKE. `Worker.cancel` interrupts a task's strand; on a dedicated
-// thread that is the thread's own interrupt status, but a carrier's status must belong only to
-// the task mounted on it. Each task entry runs a small state machine — queued, running,
-// interrupting, finished — and an interrupter that finds the task running takes the
-// `interrupting` state before touching the carrier, while a carrier finishing a task waits
-// out any interrupter in flight before clearing the status. So an interrupt aimed at a task
-// can neither be lost (it lands while the task is mounted, or is deferred to its mount) nor
-// leak to the task that runs next on the same carrier. An entry's `join` waits for the
-// finished state, not for the carrier, which lives on.
-//
-// THE COSTS. A task no longer has a thread of its own: thread-locals persist across the tasks
-// a carrier runs (parasite sets none, but a library that keys on the thread may), and a
-// thread dump shows carriers rather than tasks — `Worker.stack` and the monitor tree are the
-// task-level view. A task's `Thread.currentThread` is stable for its duration, which is all
-// the parking and waiter identity below rely on.
-//
-// A waiting carrier, and a task waiting in `park`, spin briefly before parking: a hand-off to
-// a carrier in lockstep, or a join of a task that has all but finished, then completes without
-// a park/unpark round trip, as in `Handoff`. The budget is small enough that an idle carrier
-// stops burning its core within a microsecond or two.
-//
-// The pool's state and the classes over it live in the companion, so that none of them closes
-// over the supervisor instance: the supervisor is a plain value, not a capability, and its
-// inner workings are kept that way.
-abstract class PoolingSupervisor extends ThreadSupervisor:
-  // Starts a carrier thread running `runnable` and returns it started.
-  protected def spawn(runnable: Runnable^): Thread
-
-  // The number of idle carriers kept for reuse; one arriving above it retires instead.
-  protected def idleLimit: Int = 256
-
-  import PoolingSupervisor.{Carrier, Entry, spins}
-
-  // The idle carriers, most recently idle first: a warm carrier is the better one to reuse.
-  // A linked deque (not a hand-rolled stack) so that reused carrier nodes cannot ABA.
-  private[parasite] val idle: juc.ConcurrentLinkedDeque[Carrier] = juc.ConcurrentLinkedDeque()
-  private[parasite] val idleCount: juca.AtomicInteger = juca.AtomicInteger(0)
-
-  // The carrier the calling thread is, if it is one; the JVM offers no cheaper way to ask.
-  private[parasite] val carriers: ThreadLocal[Carrier | Null] = ThreadLocal()
-
-  private[parasite] def limit: Int = idleLimit
-  private[parasite] val running: juca.AtomicInteger = juca.AtomicInteger(0)
-
-  // Diagnostics: the carriers running a task, and those waiting for one. A pool at rest has
-  // no active carriers; one that does not return to that state has a task that never finished.
-  def active: Int = running.get()
-  def idling: Int = idleCount.get()
-
-  def fork(name: () => Optional[Text])(block: => Unit): Strand =
-    // The entry closes over the task's body, as a dedicated thread's `Runnable` would; it is
-    // stored boxed as pure, the same laundering the supervision registry applies to workers.
-    // [by-name-capture] by-name task block laundered into Entry thunk
-    val entry: Entry = caps.unsafe.unsafeAssumePure(Entry(() => block))
-    val carrier = idle.pollFirst()
-
-    if carrier == null then
-      val fresh = Carrier(this)
-      fresh.task = entry
-      spawn(fresh)
-    else
-      idleCount.decrementAndGet()
-      carrier.task = entry
-      val thread = carrier.strand.thread
-      if thread != null then jucl.LockSupport.unpark(thread)
-
-    entry
-
-  override def strand(): Strand = carriers.get() match
-    case null    => Strand.Threaded(Thread.currentThread.nn)
-    case carrier => carrier.strand
-
-  override def park(blocker: AnyRef): Unit = carriers.get() match
-    case null => jucl.LockSupport.park(blocker)
-    case carrier =>
-      var spun = 0
-      while !carrier.strand.permit && spun < spins do
-        spun += 1
-        Thread.onSpinWait()
-
-      if !carrier.strand.permit then jucl.LockSupport.park(blocker)
-      carrier.strand.permit = false
-
-  override def park(blocker: AnyRef, deadline: Long): Unit = carriers.get() match
-    case null => jucl.LockSupport.parkNanos(blocker, deadline - jl.System.nanoTime())
-    case carrier =>
-      if !carrier.strand.permit then jucl.LockSupport.parkNanos(blocker, deadline - jl.System.nanoTime())
-      carrier.strand.permit = false
 
 object PoolingSupervisor:
   // Spin budget before parking, for a carrier awaiting a task and for a task's `park`: long
@@ -261,7 +154,8 @@ object PoolingSupervisor:
           if spun < spins then
             spun += 1
             Thread.onSpinWait()
-          else jucl.LockSupport.park(this)
+          else
+            jucl.LockSupport.park(this)
 
         // A hand-off leaves the carrier's own park permit possibly set; nothing else is
         // waiting on it, so a stale permit only makes a later `park` spurious, which is allowed.
@@ -285,3 +179,115 @@ object PoolingSupervisor:
       permit = true
       val current = thread
       if current != null then jucl.LockSupport.unpark(current)
+
+// A supervisor which runs tasks on a pool of reusable carrier threads instead of starting a
+// thread per task. `fork` hands the task to an idle carrier when one is waiting, and starts a
+// fresh carrier only when none is; a carrier that finishes a task parks itself on the idle
+// list for the next. The hand-off to a waiting carrier costs a few hundred nanoseconds where
+// a thread start and join cost a few microseconds, which is the whole point: fine-grained
+// fan-out — one task per element, a spawn-and-join in a loop — stops being dominated by thread
+// creation. The carriers are whatever `spawn` produces: virtual threads on the JVM, platform
+// threads on Scala Native, where there is no Loom and a thread start costs tens of
+// microseconds, so the saving is larger still.
+//
+// THE POOL NEVER STARVES. A task that blocks — through `park` or any other way, including
+// JDK I/O, `Thread.sleep`, a `synchronized` block or `Handoff`'s own spin-then-park — simply
+// keeps its carrier, and the next `fork` finding no idle carrier starts another. So the worst
+// case is exactly the cost of a thread per task, and there is no fixed size, no queue that
+// tasks wait in, and no compensation logic to get wrong: a task is running from the moment it
+// is forked, as with every other supervisor. Idle carriers above `idleLimit` retire instead of
+// waiting, which bounds the pool's memory after a burst.
+//
+// CANCELLATION IS A HANDSHAKE. `Worker.cancel` interrupts a task's strand; on a dedicated
+// thread that is the thread's own interrupt status, but a carrier's status must belong only to
+// the task mounted on it. Each task entry runs a small state machine — queued, running,
+// interrupting, finished — and an interrupter that finds the task running takes the
+// `interrupting` state before touching the carrier, while a carrier finishing a task waits
+// out any interrupter in flight before clearing the status. So an interrupt aimed at a task
+// can neither be lost (it lands while the task is mounted, or is deferred to its mount) nor
+// leak to the task that runs next on the same carrier. An entry's `join` waits for the
+// finished state, not for the carrier, which lives on.
+//
+// THE COSTS. A task no longer has a thread of its own: thread-locals persist across the tasks
+// a carrier runs (parasite sets none, but a library that keys on the thread may), and a
+// thread dump shows carriers rather than tasks — `Worker.stack` and the monitor tree are the
+// task-level view. A task's `Thread.currentThread` is stable for its duration, which is all
+// the parking and waiter identity below rely on.
+//
+// A waiting carrier, and a task waiting in `park`, spin briefly before parking: a hand-off to
+// a carrier in lockstep, or a join of a task that has all but finished, then completes without
+// a park/unpark round trip, as in `Handoff`. The budget is small enough that an idle carrier
+// stops burning its core within a microsecond or two.
+//
+// The pool's state and the classes over it live in the companion, so that none of them closes
+// over the supervisor instance: the supervisor is a plain value, not a capability, and its
+// inner workings are kept that way.
+abstract class PoolingSupervisor extends ThreadSupervisor:
+  // Starts a carrier thread running `runnable` and returns it started.
+  protected def spawn(runnable: Runnable^): Thread
+
+  // The number of idle carriers kept for reuse; one arriving above it retires instead.
+  protected def idleLimit: Int = 256
+
+  import PoolingSupervisor.{Carrier, Entry, spins}
+
+  // The idle carriers, most recently idle first: a warm carrier is the better one to reuse.
+  // A linked deque (not a hand-rolled stack) so that reused carrier nodes cannot ABA.
+  private[parasite] val idle: juc.ConcurrentLinkedDeque[Carrier] = juc.ConcurrentLinkedDeque()
+  private[parasite] val idleCount: juca.AtomicInteger = juca.AtomicInteger(0)
+
+  // The carrier the calling thread is, if it is one; the JVM offers no cheaper way to ask.
+  private[parasite] val carriers: ThreadLocal[Carrier | Null] = ThreadLocal()
+
+  private[parasite] def limit: Int = idleLimit
+  private[parasite] val running: juca.AtomicInteger = juca.AtomicInteger(0)
+
+  // Diagnostics: the carriers running a task, and those waiting for one. A pool at rest has
+  // no active carriers; one that does not return to that state has a task that never finished.
+  def active: Int = running.get()
+  def idling: Int = idleCount.get()
+
+  def fork(name: () => Optional[Text])(block: => Unit): Strand =
+    // The entry closes over the task's body, as a dedicated thread's `Runnable` would; it is
+    // stored boxed as pure, the same laundering the supervision registry applies to workers.
+    // [by-name-capture] by-name task block laundered into Entry thunk
+    val entry: Entry = caps.unsafe.unsafeAssumePure(Entry{ () => block })
+    val carrier = idle.pollFirst()
+
+    if carrier == null then
+      val fresh = Carrier(this)
+      fresh.task = entry
+      spawn(fresh)
+    else
+      idleCount.decrementAndGet()
+      carrier.task = entry
+      val thread = carrier.strand.thread
+      if thread != null then jucl.LockSupport.unpark(thread)
+
+    entry
+
+  override def strand(): Strand = carriers.get() match
+    case null    => Strand.Threaded(Thread.currentThread.nn)
+    case carrier => carrier.strand
+
+  override def park(blocker: AnyRef): Unit = carriers.get() match
+    case null => jucl.LockSupport.park(blocker)
+
+    case carrier =>
+      var spun = 0
+
+      while !carrier.strand.permit && spun < spins do
+        spun += 1
+        Thread.onSpinWait()
+
+      if !carrier.strand.permit then jucl.LockSupport.park(blocker)
+      carrier.strand.permit = false
+
+  override def park(blocker: AnyRef, deadline: Long): Unit = carriers.get() match
+    case null => jucl.LockSupport.parkNanos(blocker, deadline - jl.System.nanoTime())
+
+    case carrier =>
+      if !carrier.strand.permit
+      then jucl.LockSupport.parkNanos(blocker, deadline - jl.System.nanoTime())
+
+      carrier.strand.permit = false

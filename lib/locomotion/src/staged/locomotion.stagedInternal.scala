@@ -33,7 +33,6 @@
 package locomotion
 
 import scala.caps
-
 import scala.collection.immutable.{List, Nil, ::}
 import scala.collection.mutable as scm
 import scala.quoted.*
@@ -72,13 +71,13 @@ object stagedInternal:
     Implicits.search(TypeRepr.of[fieldType is Decodable in Protobuf]).absolve match
       case success: ImplicitSearchSuccess =>
         success.tree.asExpr.absolve match
-          case '{ $found: any } =>
-            '{ $found.asInstanceOf[fieldType is Decodable in Protobuf].decoded($wire) }
+          case '{$found: any} =>
+            '{$found.asInstanceOf[fieldType is Decodable in Protobuf].decoded($wire)}
 
       case failure: ImplicitSearchFailure =>
         report.errorAndAbort
-          (s"locomotion: no Decodable in Protobuf for ${TypeRepr.of[fieldType].show}: " +
-            failure.explanation)
+          ( s"locomotion: no Decodable in Protobuf for ${TypeRepr.of[fieldType].show}: " +
+            failure.explanation )
 
   // A nominal `Protobuf.Parsable` for a field type, resolved at expansion
   // time — the recursion tie: a recursive message's own alias given (a lazy
@@ -119,7 +118,7 @@ object stagedInternal:
       if run == null then false else
         val sources = run.nn.units.map(_.source.path).toSet
         val position = symbol.pos
-        position.exists { position => sources.contains(position.sourceFile.path) }
+        position.exists: position => sources.contains(position.sourceFile.path)
     catch case _: Exception => false
 
   private def innerClasspath(using Quotes): String =
@@ -207,7 +206,7 @@ object stagedInternal:
         for
           clazz <- classFor(constructor)
           shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-                      list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
+            list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
         yield TypeShape(clazz, shapes)
 
       case other =>
@@ -227,7 +226,7 @@ object stagedInternal:
       try
         given settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make
-            (None, List("-experimental", "-classpath", innerClasspath))
+            ( None, List("-experimental", "-classpath", innerClasspath) )
 
         given staging.Compiler = staging.Compiler.make(macroClassloader)
         val started = System.nanoTime
@@ -246,7 +245,7 @@ object stagedInternal:
                 r2.TypeBounds(rebuild(shape), rebuild(shape)) )
 
           target.asType match
-            case '[target] => '{ scala.compiletime.summonInline[target] }
+            case '[target] => '{scala.compiletime.summonInline[target]}
 
         val duration = (System.nanoTime - started)/1000000L
 
@@ -391,9 +390,9 @@ object stagedInternal:
               case '[innerType] =>
                 resolve[innerType](cache) match
                   case Some(instance)
-                      if !instance.isInstanceOf[Inlinable.IterableInlinable[?]]
-                      && !cache.active.contains(inner.show) =>
-                    Plan.OptionalNested(instance, inner)
+                    if !instance.isInstanceOf[Inlinable.IterableInlinable[?]] &&
+                      !cache.active.contains(inner.show) =>
+                      Plan.OptionalNested(instance, inner)
 
                   case _ =>
                     Plan.Seam
@@ -419,9 +418,9 @@ object stagedInternal:
                   case '[element] =>
                     resolve[element](cache) match
                       case Some(instance)
-                          if !instance.isInstanceOf[Inlinable.IterableInlinable[?]]
-                          && !cache.active.contains(elementType.show) =>
-                        Plan.Gather(Elem.Nested(instance, elementType), elementType)
+                        if !instance.isInstanceOf[Inlinable.IterableInlinable[?]] &&
+                          !cache.active.contains(elementType.show) =>
+                          Plan.Gather(Elem.Nested(instance, elementType), elementType)
 
                       // A recursive element would expand forever, and other
                       // shapes have no generator: each occurrence decodes
@@ -485,10 +484,10 @@ object stagedInternal:
       val children = classSymbol.children
 
       val supported =
-        !applied
-        && classSymbol.flags.is(Flags.Sealed)
-        && children.nonEmpty
-        && children.forall { child => child.isClassDef && child.flags.is(Flags.Case) }
+        !applied &&
+          classSymbol.flags.is(Flags.Sealed) &&
+          children.nonEmpty &&
+          children.forall: child => child.isClassDef && child.flags.is(Flags.Case)
 
       if supported then Some(children.map { child => (child.name, child.typeRef) }) else None
 
@@ -528,12 +527,12 @@ object stagedInternal:
     import quotes.reflect.*
 
     tpe.classSymbol.exists: classSymbol =>
-      classSymbol.flags.is(Flags.Case)
-      && !classSymbol.owner.isTerm
-      && (tpe match { case AppliedType(_, _) => false case _ => true })
-      && classSymbol.primaryConstructor.paramSymss
-         . filterNot(_.exists(_.isTypeParam)).length == 1
-      && fieldNumbersOf(classSymbol).isDefined
+      classSymbol.flags.is(Flags.Case) &&
+        !classSymbol.owner.isTerm &&
+        (tpe match { case AppliedType(_, _) => false case _ => true })
+        && classSymbol.primaryConstructor.paramSymss
+          . filterNot(_.exists(_.isTypeParam)).length == 1 &&
+        fieldNumbersOf(classSymbol).isDefined
 
   // ── The product generator ──────────────────────────────────────────────
   // Self-contained monomorphic message parsing, mirroring the AST record
@@ -542,13 +541,13 @@ object stagedInternal:
   // gathering (packed or unpacked) for repeated fields, declared defaults
   // then proto3 absent semantics for missing fields, direct construction.
   private[locomotion] def productBody[product: Type](reader: Expr[ProtobufReader])
-    (using Quotes)
+    ( using Quotes )
   :   Expr[product] =
 
     productBody[product](reader, Cache())
 
   private def productBody[product: Type](reader: Expr[ProtobufReader], cache: Cache)
-    (using Quotes)
+    ( using Quotes )
   :   Expr[product] =
 
     import quotes.reflect.*
@@ -559,7 +558,7 @@ object stagedInternal:
     try productBody0[product](reader, cache) finally cache.active -= tpe.show
 
   private def productBody0[product: Type](reader: Expr[ProtobufReader], cache: Cache)
-    (using Quotes)
+    ( using Quotes )
   :   Expr[product] =
 
     import quotes.reflect.*
@@ -568,15 +567,15 @@ object stagedInternal:
 
     if !productSupported(tpe) then
       report.errorAndAbort
-        (s"locomotion: ${tpe.show} is not an inlinable message (a non-generic, top-level or " +
+        ( s"locomotion: ${tpe.show} is not an inlinable message (a non-generic, top-level or " +
           "object-nested case class with a single parameter list and distinct, statically " +
-          "readable field numbers); use a `Decodable in Protobuf`")
+          "readable field numbers); use a `Decodable in Protobuf`" )
 
     val classSymbol = tpe.classSymbol.get
     val ctor = classSymbol.primaryConstructor
     val fields = classSymbol.caseFields
     val arity = fields.length
-    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
+    val fieldTypes: List[TypeRepr] = fields.map: field => tpe.memberType(field).dealias
     val numbers: List[Int] = fieldNumbersOf(classSymbol).get
     val plans: List[Plan] = fieldTypes.map(planFor(_, cache))
 
@@ -600,7 +599,7 @@ object stagedInternal:
         else if fieldType =:= TypeRepr.of[Float] then Literal(FloatConstant(0.0f))
         else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
         else fieldType.asType match
-          case '[fieldType] => '{ null.asInstanceOf[fieldType] }.asTerm
+          case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
       val slotDefs = List.range(0, arity).map: index =>
         ValDef(slots(index), Some(zero(fieldTypes(index))))
@@ -618,27 +617,27 @@ object stagedInternal:
         case KBoolean => Expr(false)
         case KDouble  => Expr(0.0)
         case KFloat   => Expr(0.0f)
-        case KText    => '{ Text("") }
-        case KData    => '{ Array.empty[Byte] }
+        case KText    => '{Text("")}
+        case KData    => '{Array.empty[Byte]}
 
       // One scalar field read, dispatching on the tag's wire code — the
       // parser handles the natural fast path and payload-window fallback.
       def scalarRead(kind: Int, code: Expr[Int]): Expr[Any] = kind match
-        case KInt     => '{ $parser.directLong($code)(using $tactic).toInt }
-        case KLong    => '{ $parser.directLong($code)(using $tactic) }
-        case KBoolean => '{ $parser.directLong($code)(using $tactic) != 0L }
-        case KDouble  => '{ $parser.directDouble($code)(using $tactic) }
-        case KFloat   => '{ $parser.directFloat($code)(using $tactic) }
-        case KText    => '{ Text($parser.directString($code)(using $tactic)) }
-        case KData    => '{ $parser.directData($code)(using $tactic) }
+        case KInt     => '{$parser.directLong($code)(using $tactic).toInt}
+        case KLong    => '{$parser.directLong($code)(using $tactic)}
+        case KBoolean => '{$parser.directLong($code)(using $tactic) != 0L}
+        case KDouble  => '{$parser.directDouble($code)(using $tactic)}
+        case KFloat   => '{$parser.directFloat($code)(using $tactic)}
+        case KText    => '{Text($parser.directString($code)(using $tactic))}
+        case KData    => '{$parser.directData($code)(using $tactic)}
 
       // One packed element read, in place within the packed run's window.
       def packedRead(kind: Int): Expr[Any] = kind match
-        case KInt     => '{ $parser.directVarint()(using $tactic).toInt }
-        case KLong    => '{ $parser.directVarint()(using $tactic) }
-        case KBoolean => '{ $parser.directVarint()(using $tactic) != 0L }
-        case KDouble  => '{ java.lang.Double.longBitsToDouble($parser.directFixed64()(using $tactic)) }
-        case KFloat   => '{ java.lang.Float.intBitsToFloat($parser.directFixed32()(using $tactic)) }
+        case KInt     => '{$parser.directVarint()(using $tactic).toInt}
+        case KLong    => '{$parser.directVarint()(using $tactic)}
+        case KBoolean => '{$parser.directVarint()(using $tactic) != 0L}
+        case KDouble  => '{java.lang.Double.longBitsToDouble($parser.directFixed64()(using $tactic))}
+        case KFloat   => '{java.lang.Float.intBitsToFloat($parser.directFixed32()(using $tactic))}
 
       // Per-field gathering state: a typed builder for `Gather` fields, a
       // wire-value buffer for `Seam` fields.
@@ -652,10 +651,11 @@ object stagedInternal:
                 TypeRepr.of[scm.Builder].appliedTo(List(elementType, fieldTypes(index)))
 
               Some(index -> Symbol.newVal
-                (owner, "builder"+index, builderType, Flags.EmptyFlags, Symbol.noSymbol))
+                ( owner, "builder"+index, builderType, Flags.EmptyFlags, Symbol.noSymbol ))
 
             case _ =>
               None
+
         . toMap
 
       val buffers: scala.collection.immutable.Map[Int, Symbol] =
@@ -668,6 +668,7 @@ object stagedInternal:
 
             case _ =>
               None
+
         . toMap
 
       val builderDefs: List[Statement] = List.range(0, arity).flatMap: index =>
@@ -678,7 +679,7 @@ object stagedInternal:
             (elementType.asType, fieldTypes(index).asType) match
               case ('[element], '[fieldType]) =>
                 val rhs: Expr[Any] =
-                  '{ infer[scala.collection.Factory[element, fieldType]].newBuilder }
+                  '{infer[scala.collection.Factory[element, fieldType]].newBuilder}
 
                 Some(ValDef(builders(index), Some(rhs.asTerm)))
 
@@ -688,7 +689,7 @@ object stagedInternal:
       val bufferDefs: List[Statement] = List.range(0, arity).flatMap: index =>
         plans(index) match
           case Plan.Seam =>
-            Some(ValDef(buffers(index), Some('{ scm.ListBuffer[Protobuf]() }.asTerm)))
+            Some(ValDef(buffers(index), Some('{scm.ListBuffer[Protobuf]()}.asTerm)))
 
           case _ =>
             None
@@ -700,7 +701,7 @@ object stagedInternal:
         List.range(0, arity).flatMap: index =>
           plans(index) match
             case Plan.Leaf(_) | Plan.Nested(_) | Plan.NestedRuntime(_) | Plan.OptionalLeaf(_)
-               | Plan.OptionalNested(_, _) =>
+              | Plan.OptionalNested(_, _) =>
               Some(index -> Symbol.newMethod
                 ( owner, "readField"+index,
                   MethodType(List("code"))(_ => List(TypeRepr.of[Int]),
@@ -714,6 +715,7 @@ object stagedInternal:
 
             case Plan.Seam =>
               None
+
         . toMap
 
       val readDefDefs: List[Statement] = List.range(0, arity).flatMap: index =>
@@ -731,46 +733,46 @@ object stagedInternal:
               case Plan.Nested(instance) =>
                 fieldTypes(index).asType match
                   case '[fieldType] =>
-                    '{
-                      val saved = $parser.directEnterField($code)(using $tactic)
+                    ' {
+                        val saved = $parser.directEnterField($code)(using $tactic)
 
-                      val result: fieldType =
-                        ${ instance.asInstanceOf[Inlinable { type Self = fieldType }]
-                             . parse(reader) }
+                        val result: fieldType =
+                          ${ instance.asInstanceOf[Inlinable { type Self = fieldType }]
+                               . parse(reader) }
 
-                      $parser.directLeaveField(saved)(using $tactic)
-                      result
-                    }
+                        $parser.directLeaveField(saved)(using $tactic)
+                        result
+                      }
 
               case Plan.NestedRuntime(parsable) =>
                 fieldTypes(index).asType match
                   case '[fieldType] =>
                     val instance = parsable.asInstanceOf[Expr[Any]]
 
-                    '{
-                      val saved = $parser.directEnterField($code)(using $tactic)
+                    ' {
+                        val saved = $parser.directEnterField($code)(using $tactic)
 
-                      val result: fieldType =
-                        Protobuf.Parsable.parseField[fieldType]
-                          ($instance.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef])
+                        val result: fieldType =
+                          Protobuf.Parsable.parseField[fieldType]
+                            ( $instance.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef] )
 
-                      $parser.directLeaveField(saved)(using $tactic)
-                      result
-                    }
+                        $parser.directLeaveField(saved)(using $tactic)
+                        result
+                      }
 
               case Plan.OptionalNested(instance, innerType0) =>
                 innerType0.asInstanceOf[TypeRepr].asType match
                   case '[innerType] =>
-                    '{
-                      val saved = $parser.directEnterField($code)(using $tactic)
+                    ' {
+                        val saved = $parser.directEnterField($code)(using $tactic)
 
-                      val result: innerType =
-                        ${ instance.asInstanceOf[Inlinable { type Self = innerType }]
-                             . parse(reader) }
+                        val result: innerType =
+                          ${ instance.asInstanceOf[Inlinable { type Self = innerType }]
+                               . parse(reader) }
 
-                      $parser.directLeaveField(saved)(using $tactic)
-                      result
-                    }
+                        $parser.directLeaveField(saved)(using $tactic)
+                        result
+                      }
 
               case Plan.Gather(element, elementType0) =>
                 val elementType = elementType0.asInstanceOf[TypeRepr]
@@ -784,53 +786,54 @@ object stagedInternal:
                       case Elem.Scalar(kind) =>
                         val natural = naturalCode(kind)
 
-                        '{
-                          if $code == 2 && ${Expr(natural)} != 2 then
-                            val saved = $parser.directEnterField(2)(using $tactic)
+                        ' {
+                            if $code == 2 && ${Expr(natural)} != 2 then
+                              val saved = $parser.directEnterField(2)(using $tactic)
 
-                            while !$parser.directAtLimit do
-                              $builder += ${ packedRead(kind).asExprOf[element] }
+                              while !$parser.directAtLimit do
+                                $builder += ${packedRead(kind).asExprOf[element]}
 
-                            $parser.directLeaveField(saved)(using $tactic)
-                          else $builder += ${ scalarRead(kind, code).asExprOf[element] }
-                        }
+                              $parser.directLeaveField(saved)(using $tactic)
+                            else
+                              $builder += ${scalarRead(kind, code).asExprOf[element]}
+                          }
 
                       case Elem.Chunk(kind) =>
-                        '{ $builder += ${ scalarRead(kind, code).asExprOf[element] } }
+                        '{$builder += ${scalarRead(kind, code).asExprOf[element]}}
 
                       case Elem.Nested(instance0, _) =>
                         val instance =
                           instance0.asInstanceOf[Inlinable { type Self = element }]
 
-                        '{
-                          val saved = $parser.directEnterField($code)(using $tactic)
-                          val result: element = ${ instance.parse(reader) }
-                          $parser.directLeaveField(saved)(using $tactic)
-                          $builder += result
-                        }
+                        ' {
+                            val saved = $parser.directEnterField($code)(using $tactic)
+                            val result: element = ${instance.parse(reader)}
+                            $parser.directLeaveField(saved)(using $tactic)
+                            $builder += result
+                          }
 
                       case Elem.Runtime(parsable) =>
                         val instance = parsable.asInstanceOf[Expr[Any]]
 
-                        '{
-                          val saved = $parser.directEnterField($code)(using $tactic)
+                        ' {
+                            val saved = $parser.directEnterField($code)(using $tactic)
 
-                          val result: element =
-                            Protobuf.Parsable.parseField[element]
-                              ($instance.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef])
+                            val result: element =
+                              Protobuf.Parsable.parseField[element]
+                                ( $instance.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef] )
 
-                          $parser.directLeaveField(saved)(using $tactic)
-                          $builder += result
-                        }
+                            $parser.directLeaveField(saved)(using $tactic)
+                            $builder += result
+                          }
 
                       case Elem.Seam =>
                         val occurrence =
-                          seamDecode[element]('{ $parser.directWire($code)(using $tactic) })
+                          seamDecode[element]('{$parser.directWire($code)(using $tactic)})
 
-                        '{ $builder += $occurrence }
+                        '{$builder += $occurrence}
 
               case Plan.Seam =>
-                '{ () }
+                '{()}
 
             Some(rhs.asTerm.changeOwner(method)))
 
@@ -840,7 +843,7 @@ object stagedInternal:
       def arms(code: Expr[Int]): List[CaseDef] = List.range(0, arity).map: index =>
         val body: Term = plans(index) match
           case Plan.Leaf(_) | Plan.Nested(_) | Plan.NestedRuntime(_) | Plan.OptionalLeaf(_)
-             | Plan.OptionalNested(_, _) =>
+            | Plan.OptionalNested(_, _) =>
             Block
               ( List
                   ( Assign
@@ -861,14 +864,14 @@ object stagedInternal:
 
             Block
               ( List
-                  ( '{ $buffer += $parser.directWire($code)(using $tactic) }.asTerm,
+                  ( '{$buffer += $parser.directWire($code)(using $tactic)}.asTerm,
                     Assign(Ref(seens(index)), Literal(BooleanConstant(true))) ),
                 unit )
 
         CaseDef(Literal(IntConstant(numbers(index))), None, body)
 
       def fallthrough(code: Expr[Int]) =
-        CaseDef(Wildcard(), None, '{ $parser.directSkipField($code)(using $tactic) }.asTerm)
+        CaseDef(Wildcard(), None, '{$parser.directSkipField($code)(using $tactic)}.asTerm)
 
       // The record loop: one tag per iteration, dispatching on the field
       // number until the window is exhausted.
@@ -880,23 +883,23 @@ object stagedInternal:
 
         Block
           ( List
-              ( ValDef(tag, Some('{ $parser.directTag()(using $tactic) }.asTerm)),
-                ValDef(code, Some('{ $tagRef & 7 }.asTerm)) ),
-            Match('{ $tagRef >>> 3 }.asTerm, arms(codeRef) ::: List(fallthrough(codeRef))) )
+              ( ValDef(tag, Some('{$parser.directTag()(using $tactic)}.asTerm)),
+                ValDef(code, Some('{$tagRef & 7}.asTerm)) ),
+            Match('{$tagRef >>> 3}.asTerm, arms(codeRef) ::: List(fallthrough(codeRef))) )
 
       val loop: List[Statement] =
-        List(While('{ !$parser.directAtLimit }.asTerm, step))
+        List(While('{!$parser.directAtLimit}.asTerm, step))
 
       // The declared-default-then-absent expression per field.
       def defaultOr(index: Int, absent: Expr[Any]): Expr[Any] =
         fieldTypes(index).asType match
           case '[fieldType] =>
-            '{
-              val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
+            ' {
+                val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
 
-              if !declared.absent then declared.asInstanceOf[fieldType]
-              else ${ absent.asExprOf[fieldType] }
-            }
+                if !declared.absent then declared.asInstanceOf[fieldType]
+                else ${absent.asExprOf[fieldType]}
+              }
 
       def planAbsent(index: Int, tactic: Expr[Tactic[Protobuf.Error]]): Expr[Any] =
         plans(index) match
@@ -904,7 +907,7 @@ object stagedInternal:
             zeroValue(kind)
 
           case Plan.OptionalLeaf(_) | Plan.OptionalNested(_, _) =>
-            '{ vacuous.Unset }
+            '{vacuous.Unset}
 
           case Plan.Nested(instance) =>
             fieldTypes(index).asType match
@@ -918,27 +921,27 @@ object stagedInternal:
               case '[fieldType] =>
                 val instance = parsable.asInstanceOf[Expr[Any]]
 
-                '{
-                  val window = $parser.directEmptyWindow()
+                ' {
+                    val window = $parser.directEmptyWindow()
 
-                  val result: fieldType =
-                    Protobuf.Parsable.parseField[fieldType]
-                      ($instance.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef])
+                    val result: fieldType =
+                      Protobuf.Parsable.parseField[fieldType]
+                        ( $instance.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef] )
 
-                  $parser.directRestore(window)
-                  result
-                }
+                    $parser.directRestore(window)
+                    result
+                  }
 
           case Plan.Gather(_, _) =>
             fieldTypes(index).asType match
               case '[fieldType] =>
-                '{ ${ Ref(builders(index)).asExpr }
-                     . asInstanceOf[scm.Builder[?, fieldType]].result() }
+                '{ ${Ref(builders(index)).asExpr}
+                    . asInstanceOf[scm.Builder[?, fieldType]].result() }
 
           case Plan.Seam =>
             fieldTypes(index).asType match
               case '[fieldType] =>
-                seamDecode[fieldType]('{ Protobuf.Absent })
+                seamDecode[fieldType]('{Protobuf.Absent})
 
       // Finalize each slot: missing fields take their declared default or
       // proto3 absent value; gathered fields collect their builder; seam
@@ -949,9 +952,9 @@ object stagedInternal:
 
         plans(index) match
           case Plan.Leaf(_) | Plan.Nested(_) | Plan.NestedRuntime(_) | Plan.OptionalLeaf(_)
-             | Plan.OptionalNested(_, _) =>
+            | Plan.OptionalNested(_, _) =>
             If
-              ( '{ !$seen }.asTerm,
+              ( '{!$seen}.asTerm,
                 Assign
                   ( Ref(slots(index)),
                     defaultOr(index, planAbsent(index, tactic)).asTerm ),
@@ -961,15 +964,15 @@ object stagedInternal:
             fieldTypes(index).asType match
               case '[fieldType] =>
                 val collected =
-                  '{ ${ Ref(builders(index)).asExpr }
-                       . asInstanceOf[scm.Builder[?, fieldType]].result() }
+                  '{ ${Ref(builders(index)).asExpr}
+                      . asInstanceOf[scm.Builder[?, fieldType]].result() }
 
                 Assign
                   ( Ref(slots(index)),
-                    '{
-                      if $seen then $collected
-                      else ${ defaultOr(index, collected).asExprOf[fieldType] }
-                    }.asTerm )
+                    ' {
+                        if $seen then $collected
+                        else ${defaultOr(index, collected).asExprOf[fieldType]}
+                      }.asTerm )
 
           case Plan.Seam =>
             fieldTypes(index).asType match
@@ -977,24 +980,26 @@ object stagedInternal:
                 val buffer = Ref(buffers(index)).asExprOf[scm.ListBuffer[Protobuf]]
 
                 val absent: Expr[fieldType] =
-                  defaultOr(index, seamDecode[fieldType]('{ Protobuf.Absent }))
+                  defaultOr(index, seamDecode[fieldType]('{Protobuf.Absent}))
                   . asExprOf[fieldType]
 
                 Assign
                   ( Ref(slots(index)),
-                    '{
-                      if $seen then
-                        ${ seamDecode[fieldType]('{ Protobuf.Repeated(($buffer.toList).to(proscenium.List)) }) }
-                      else $absent
-                    }.asTerm )
+                    ' {
+                        if $seen then
+                          ${seamDecode[fieldType]('{Protobuf.Repeated(($buffer.toList).to(proscenium.List))})}
+                        else
+                          $absent
+                      }.asTerm )
 
       val construct: Term =
         Apply(Select(New(Inferred(tpe)), ctor), slots.map { slot => Ref(slot) })
 
       Block
-        ( slotDefs ::: seenDefs ::: builderDefs ::: bufferDefs ::: readDefDefs ::: loop
-            ::: finalizers,
+        ( slotDefs ::: seenDefs ::: builderDefs ::: bufferDefs ::: readDefDefs ::: loop :::
+          finalizers,
           construct )
+
       . asExprOf[product]
 
     // The parser is not bound to a local: a `val` holding the exclusive parser is an alias of
@@ -1002,17 +1007,17 @@ object stagedInternal:
     // reader is used again (a nested or runtime-parsed field), and a capture-checked-only
     // module admits no `update` call through such a binding at all. Each rim call reaches the
     // parser through the reader's accessor instead — a field read the JIT hoists.
-    '{
-      val tactic = infer[Tactic[Protobuf.Error]]
-      ${ body('tactic, '{ ProtobufParser.of($reader.rawParser) }) }
-    }
+    ' {
+        val tactic = infer[Tactic[Protobuf.Error]]
+        ${body('tactic, '{ProtobufParser.of($reader.rawParser)})}
+      }
 
   // A wholly-absent message — what `decoded(Protobuf.Absent)` produces on
   // the AST path: every field takes its declared default or proto3 absent
   // value.
   private[locomotion] def productAbsent[product: Type]
-    (tactic: Expr[Tactic[Protobuf.Error]])
-    (using Quotes)
+    ( tactic: Expr[Tactic[Protobuf.Error]] )
+    ( using Quotes )
   :   Expr[product] =
 
     import quotes.reflect.*
@@ -1024,7 +1029,7 @@ object stagedInternal:
     val ctor = classSymbol.primaryConstructor
     val fields = classSymbol.caseFields
     val arity = fields.length
-    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
+    val fieldTypes: List[TypeRepr] = fields.map: field => tpe.memberType(field).dealias
     val plans: List[Plan] = fieldTypes.map(planFor(_, cache))
 
     val values: List[Term] = List.range(0, arity).map: index =>
@@ -1037,31 +1042,31 @@ object stagedInternal:
               case KBoolean => Expr(false)
               case KDouble  => Expr(0.0)
               case KFloat   => Expr(0.0f)
-              case KText    => '{ Text("") }
-              case KData    => '{ Array.empty[Byte] }
+              case KText    => '{Text("")}
+              case KData    => '{Array.empty[Byte]}
 
             case Plan.Nested(instance) =>
               instance.asInstanceOf[Inlinable { type Self = fieldType }].absent(tactic)
 
             case Plan.OptionalLeaf(_) | Plan.OptionalNested(_, _) =>
-              '{ vacuous.Unset }
+              '{vacuous.Unset}
 
             case Plan.Gather(_, elementType0) =>
               val elementType = elementType0.asInstanceOf[TypeRepr]
 
               elementType.asType match
                 case '[element] =>
-                  '{ infer[scala.collection.Factory[element, fieldType]].newBuilder.result() }
+                  '{infer[scala.collection.Factory[element, fieldType]].newBuilder.result()}
 
             case Plan.Seam =>
-              seamDecode[fieldType]('{ Protobuf.Absent })
+              seamDecode[fieldType]('{Protobuf.Absent})
 
-          '{
-            val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
+          ' {
+              val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
 
-            if !declared.absent then declared.asInstanceOf[fieldType]
-            else ${ absent.asExprOf[fieldType] }
-          }.asTerm
+              if !declared.absent then declared.asInstanceOf[fieldType]
+              else ${absent.asExprOf[fieldType]}
+            }.asTerm
 
     Apply(Select(New(Inferred(tpe)), ctor), values).asExprOf[product]
 
@@ -1092,8 +1097,8 @@ object stagedInternal:
 
     val variants = sumVariants(TypeRepr.of[sum].dealias).getOrElse:
       report.errorAndAbort
-        (s"locomotion: ${TypeRepr.of[sum].show} is not an inlinable oneof (a non-generic " +
-          "sealed type whose variants are all case classes)")
+        ( s"locomotion: ${TypeRepr.of[sum].show} is not an inlinable oneof (a non-generic " +
+          "sealed type whose variants are all case classes)" )
 
     val arity = variants.length
 
@@ -1101,51 +1106,53 @@ object stagedInternal:
     :   Expr[sum] =
 
       if index == arity then
-        '{ abort(Protobuf.Error(Protobuf.Error.Reason.MissingField(0)))(using $tactic) }
+        '{abort(Protobuf.Error(Protobuf.Error.Reason.MissingField(0)))(using $tactic)}
       else variants(index)(1).asType match
         case '[type variantType <: sum; variantType] =>
           val instance = resolve[variantType](cache).getOrElse:
             report.errorAndAbort
-              (s"locomotion: no Inlinable for variant ${variants(index)(0)}")
+              ( s"locomotion: no Inlinable for variant ${variants(index)(0)}" )
+
           . asInstanceOf[Inlinable { type Self = variantType }]
 
-          '{
-            if $chosen == ${Expr(index + 1)} then
-              val parsed: variantType = ${ instance.parse(reader) }
-              parsed
-            else ${ dispatch(index + 1, chosen, tactic) }
-          }
+          ' {
+              if $chosen == ${Expr(index + 1)} then
+                val parsed: variantType = ${instance.parse(reader)}
+                parsed
+              else
+                ${dispatch(index + 1, chosen, tactic)}
+            }
 
-    '{
-      val tactic = infer[Tactic[Protobuf.Error]]
-      var chosen = Int.MaxValue
-      var chosenStart = 0
-      var chosenEnd = 0
+    ' {
+        val tactic = infer[Tactic[Protobuf.Error]]
+        var chosen = Int.MaxValue
+        var chosenStart = 0
+        var chosenEnd = 0
 
-      // The message is buffered whole before the scan, so the chosen extent is still in
-      // the buffer when the scan returns to it.
-      ProtobufParser.of($reader.rawParser).directBufferWindow()(using tactic)
+        // The message is buffered whole before the scan, so the chosen extent is still in
+        // the buffer when the scan returns to it.
+        ProtobufParser.of($reader.rawParser).directBufferWindow()(using tactic)
 
-      while !ProtobufParser.of($reader.rawParser).directAtLimit do
-        val tag = ProtobufParser.of($reader.rawParser).directTag()(using tactic)
-        val number = tag >>> 3
-        val saved = ProtobufParser.of($reader.rawParser).directEnterField(tag & 7)(using tactic)
+        while !ProtobufParser.of($reader.rawParser).directAtLimit do
+          val tag = ProtobufParser.of($reader.rawParser).directTag()(using tactic)
+          val number = tag >>> 3
+          val saved = ProtobufParser.of($reader.rawParser).directEnterField(tag & 7)(using tactic)
 
-        if number >= 1 && number <= ${Expr(arity)} && number <= chosen then
-          chosen = number
-          chosenStart = ProtobufParser.of($reader.rawParser).directMark
-          chosenEnd = ProtobufParser.of($reader.rawParser).directBoundary
+          if number >= 1 && number <= ${Expr(arity)} && number <= chosen then
+            chosen = number
+            chosenStart = ProtobufParser.of($reader.rawParser).directMark
+            chosenEnd = ProtobufParser.of($reader.rawParser).directBoundary
 
-        ProtobufParser.of($reader.rawParser).directLeaveField(saved)(using tactic)
+          ProtobufParser.of($reader.rawParser).directLeaveField(saved)(using tactic)
 
-      if chosen == Int.MaxValue
-      then abort(Protobuf.Error(Protobuf.Error.Reason.MissingField(0)))(using tactic)
-      else
-        val outer = ProtobufParser.of($reader.rawParser).directWindow(chosenStart, chosenEnd)
-        val result: sum = ${ dispatch(0, 'chosen, 'tactic) }
-        ProtobufParser.of($reader.rawParser).directRestore(outer)
-        result
-    }
+        if chosen == Int.MaxValue
+        then abort(Protobuf.Error(Protobuf.Error.Reason.MissingField(0)))(using tactic)
+        else
+          val outer = ProtobufParser.of($reader.rawParser).directWindow(chosenStart, chosenEnd)
+          val result: sum = ${dispatch(0, 'chosen, 'tactic)}
+          ProtobufParser.of($reader.rawParser).directRestore(outer)
+          result
+      }
 
   // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Protobuf.Parsable] =
@@ -1155,26 +1162,26 @@ object stagedInternal:
 
     val root: Inlinable = resolve[value](cache).getOrElse:
       report.errorAndAbort
-        (s"locomotion: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not " +
-          "an inlinable message or oneof; use a `Decodable in Protobuf`")
+        ( s"locomotion: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not " +
+          "an inlinable message or oneof; use a `Decodable in Protobuf`" )
 
     if root.isInstanceOf[Inlinable.IterableInlinable[?]] then
       report.errorAndAbort
-        (s"locomotion: ${TypeRepr.of[value].show} is a collection; a Protobuf message is the " +
-          "unit of direct parsing")
+        ( s"locomotion: ${TypeRepr.of[value].show} is a collection; a Protobuf message is the " +
+          "unit of direct parsing" )
 
     val instance = root.asInstanceOf[Inlinable { type Self = value }]
 
-    '{
-      // Sealed per the codec-thunk pattern: the generated body resolves its
-      // capabilities where it is spliced.
-      // [quote-wall] staged Parsable generated inside quote
-      caps.unsafe.unsafeAssumePure:
-        new Protobuf.Parsable.Direct[value]:
-          protected def parseCarrier(reader0: AnyRef): value =
-            // The reader is never bound as a typed local: a capability
-            // class cannot be quoted into a pure hole, so every use casts
-            // from the neutral carrier afresh — the rim-reassertion
-            // pattern, at each use.
-            ${ instance.parse('{ reader0.asInstanceOf[ProtobufReader] }) }
-    }
+    ' {
+        // Sealed per the codec-thunk pattern: the generated body resolves its
+        // capabilities where it is spliced.
+        // [quote-wall] staged Parsable generated inside quote
+        caps.unsafe.unsafeAssumePure:
+          new Protobuf.Parsable.Direct[value]:
+            protected def parseCarrier(reader0: AnyRef): value =
+              // The reader is never bound as a typed local: a capability
+              // class cannot be quoted into a pure hole, so every use casts
+              // from the neutral carrier afresh — the rim-reassertion
+              // pattern, at each use.
+              ${instance.parse('{reader0.asInstanceOf[ProtobufReader]})}
+      }
