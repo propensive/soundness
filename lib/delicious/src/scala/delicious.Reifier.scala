@@ -32,21 +32,21 @@
                                                                                                   */
 package delicious
 
+import java.util as ju
+
+import scala.collection.immutable as sci
+
 import dotty.tools.dotc as dtd
 import dotty.tools.dotc.ast.tpd.TreeOps
 import dotty.tools.dotc.core.CompilationUnitInfo
 import dotty.tools.dotc.core.Contexts
 import dotty.tools.dotc.core.tasty.DottyUnpickler
 import dotty.tools.dotc.core.tasty.TastyUnpickler
-import dotty.tools.dotc.quoted.QuotesCache
 import dotty.tools.dotc.core.tasty.TreeUnpickler.UnpickleMode
+import dotty.tools.dotc.quoted.QuotesCache
 import dotty.tools.dotc.reporting.Reporter
 import dotty.tools.dotc.util.SourceFile
 import dotty.tools.io.VirtualFile
-
-import java.util as ju
-
-import scala.collection.immutable as sci
 
 import anticipation.*
 import gossamer.*
@@ -63,7 +63,7 @@ object Reifier:
    *  prefix position. */
   def substitute(syntax: Syntax, placeholders: List[Placeholder]): Syntax =
     val pairs: List[(Int, Placeholder)] =
-      placeholders.map { placeholder => placeholder.id -> placeholder }
+      placeholders.map: placeholder => placeholder.id -> placeholder
 
     val byId: Map[Int, Placeholder] = pairs.to[Map]
 
@@ -74,7 +74,8 @@ object Reifier:
         Placeholder.reference(body).let { id => byId(id).let { p => Syntax.Symbolic(p.printed) } }
         . or(Placeholder.escaped(body).let { literal => Syntax.Primitive(t"\"$literal\"") })
 
-      else Unset
+      else
+        Unset
 
     def entries(map: Ledger[Text, Syntax]): Ledger[Text, Syntax] = map.map(recur)
 
@@ -115,7 +116,7 @@ class Reifier(classpath: LocalClasspath):
       classpath.entries.flatMap:
         case Classpath.Entry.Directory(directory) => List(directory)
         case Classpath.Entry.Jar(jar)             => List(jar)
-        case _                                   => Nil
+        case _                                    => Nil
 
       . join(java.io.File.pathSeparator.nn.tt)
 
@@ -126,7 +127,11 @@ class Reifier(classpath: LocalClasspath):
         // As in `Scalac`: the argument array crosses in through a Java-side copy.
         val args = java.util.ArrayList[String]()
         args.add("-classpath"); args.add(entries.s); args.add("")
-        setup(args.toArray(new scala.Array[String | Null](0)).nn.asInstanceOf[scala.Array[String]], initCtx.fresh)
+
+        setup
+          ( args.toArray(new scala.Array[String | Null](0)).nn.asInstanceOf[scala.Array[String]],
+            initCtx.fresh )
+
         . map(_(1)).get
 
     val base = driver.context.fresh.setReporter(Reporter.NoReporter)
@@ -167,11 +172,12 @@ class Reifier(classpath: LocalClasspath):
 
         // `TreeUnpickler`'s constructor reads `compilationUnitInfo.tastyInfo.get.attributes`
         // UNCONDITIONALLY, so the `TastyInfo` must be present or every payload dies on `None.get` —
-        // inside `unpickle` below, where the `catch` turns it into a silent `Unset`. The one-argument
-        // `CompilationUnitInfo` supplies `None`, so `DottyUnpickler`'s own header/attributes step is
-        // reproduced here too. Its VALUES are inert for a diagnostic payload — the pickler writes no
-        // attributes section, so this is `Attributes.empty` and every flag is false, exactly what
-        // `DottyUnpickler` would compute — but the `Some` wrapper is load-bearing.
+        // inside `unpickle` below, where the `catch` turns it into a silent `Unset`. The
+        // one-argument `CompilationUnitInfo` supplies `None`, so `DottyUnpickler`'s own
+        // header/attributes step is reproduced here too. Its VALUES are inert for a diagnostic
+        // payload — the pickler writes no attributes section, so this is `Attributes.empty` and
+        // every flag is false, exactly what `DottyUnpickler` would compute — but the `Some` wrapper
+        // is load-bearing.
         val attributes =
           unpickler.unpickle(DottyUnpickler.AttributesSectionUnpickler()).map(_.attributes)
           . getOrElse(dtd.core.tasty.Attributes.empty)
@@ -180,7 +186,7 @@ class Reifier(classpath: LocalClasspath):
 
         val version =
           dotty.tools.tasty.TastyVersion
-            (header.majorVersion, header.minorVersion, header.experimentalVersion)
+            ( header.majorVersion, header.minorVersion, header.experimentalVersion )
 
         // The file exists only to give the compilation unit an associated name: its
         // contents are never read (the unpickler above already has the bytes), but the
@@ -192,6 +198,7 @@ class Reifier(classpath: LocalClasspath):
                 ( "<delicious>",
                   ju.Base64.getDecoder.nn.decode(tasty.s).nn.asInstanceOf[scala.Array[Byte]] ),
               dtd.core.TastyInfo(version, attributes) )
+
           . nn
         val positions = unpickler.unpickle(DottyUnpickler.PositionsSectionUnpickler())
         val comments = unpickler.unpickle(DottyUnpickler.CommentsSectionUnpickler())

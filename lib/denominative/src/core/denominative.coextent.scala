@@ -47,5 +47,6 @@ extension [countable: Countable](value: countable)
   // receivers on stable paths, exactly as `extent` is.
   def coextent[other: Countable](other: other): Optional[Coextent[value.type, other.type]] =
     val size = countable.size(value)
+
     if size == summon[Countable { type Self = other }].size(other) then Coextent.mint(size)
     else Unset

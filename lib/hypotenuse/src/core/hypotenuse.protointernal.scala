@@ -32,10 +32,9 @@
                                                                                                   */
 package hypotenuse
 
-import scala.language.experimental.genericNumberLiterals
-
 import java.lang.{Integer as JInt, Long as JLong}
 
+import scala.language.experimental.genericNumberLiterals
 import scala.quoted.*
 
 import anticipation.*

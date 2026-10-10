@@ -32,9 +32,9 @@
                                                                                                   */
 package galilei
 
-import scala.caps
-
 import java.nio.file as jnf
+
+import scala.caps
 
 import anticipation.*
 import aperture.*
@@ -49,9 +49,8 @@ import turbulence.Eof
 import turbulence.Readable
 import turbulence.Writable
 import vacuous.*
-import zephyrine.Stream
-
 import Io.Error.Operation
+import zephyrine.Stream
 
 // `Platform` is the common base of galilei's OS filesystem platform types (`Posix`/`Linux`/`MacOs`/
 // `Windows`/`Local`). It exists so that givens placed in its companion — notably the whole-file
@@ -79,7 +78,7 @@ object Platform:
   given pathReadable: [plane <: Platform: Filesystem, path <: Path on plane, result]
   =>  ( readable: (Data is Readable to result)^ )
   =>  ( tactic: Tactic[Io.Error], fdtables: Every[Fdtable] )
-  =>  ((path is Readable to result)^{readable, tactic}) =
+  =>  ( (path is Readable to result)^{readable, tactic} ) =
     path =>
       val encoded: Text = summon[Path on plane is Encodable in Text].encode(path)
 
@@ -103,14 +102,14 @@ object Platform:
   // `Path on <platform>` with no import.
   given pathWritable: [plane <: Platform: Filesystem, path <: Path on plane]
   =>  ( tactic: Tactic[Io.Error], fdtables: Every[Fdtable] )
-  =>  ((path is Writable by Data)^{tactic}) =
+  =>  ( (path is Writable by Data)^{tactic} ) =
     (path, stream) =>
       val bytes: Data = summon[Data is Aggregable by Data].accept(stream)
       val encoded: Text = summon[Path on plane is Encodable in Text].encode(path)
 
       Fdtable.resolve(fdtables, encoded) match
         case descriptor: Fdtable.Descriptor =>
-          try descriptor.open(List(OpenFlag.Write)) { handle => handle.writer(Chain(bytes)) }
+          try descriptor.open(List(OpenFlag.Write)): handle => handle.writer(Chain(bytes))
           catch case refusal: Fdtable.Refusal =>
             abort(Io.Error(path, Operation.Write, refusal.reason))
 

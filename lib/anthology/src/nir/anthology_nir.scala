@@ -137,7 +137,7 @@ object nativeEdges:
           classpath.entries.bind:
             case Classpath.Entry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
             case Classpath.Entry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
-            case _                                   => Nil
+            case _                                    => Nil
 
       try
         val outPath = jnf.Paths.get(out.encode.s).nn

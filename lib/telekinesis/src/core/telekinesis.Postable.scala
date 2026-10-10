@@ -33,7 +33,6 @@
 package telekinesis
 
 import scala.caps
-
 import scala.language.dynamics
 
 import anticipation.*
@@ -52,7 +51,6 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
-
 import alphabets.hexLowerCase
 
 object Postable:
@@ -98,7 +96,7 @@ object Postable:
 
   given dataStream: [response: Abstractable across HttpStreams to HttpStreams.Content]
   =>  ( tactic: Tactic[MediaType.Error] )
-  =>  ((response is Postable)^{tactic, caps.any}) =
+  =>  ( (response is Postable)^{tactic, caps.any} ) =
 
     // An honest capability: the tactic-capturing decoder is retained by the instance.
     val decoder: (MediaType is Decodable in Text)^ = summon[(MediaType is Decodable in Text)^]
@@ -108,6 +106,7 @@ object Postable:
 
       def mediaType(content: response): MediaType =
         content.generic(0).as[MediaType](using decoder)
+
       def stream(content: response): (Stream[Data] over Credit)^ = content.generic(1).stream
 
 trait Postable extends Typeclass:
@@ -122,7 +121,7 @@ trait Postable extends Typeclass:
     try endpoint.refill(Credit(1024)) match
       case count: Int =>
         val sample =
-          endpoint.lend { region => range => region.materialize(range.capped(count)) }
+          endpoint.lend: region => range => region.materialize(range.capped(count))
 
         val string: Text = sample.serialize[Hex]
         if count > 128 then t"$string..." else string

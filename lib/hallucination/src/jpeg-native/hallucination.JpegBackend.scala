@@ -35,7 +35,8 @@ package hallucination
 import anticipation.*
 import contingency.*
 
-// JPEG through the pure Scala codec, used wherever `javax.imageio` is unavailable (Scala.js and WASI).
+// JPEG through the pure Scala codec, used wherever `javax.imageio` is unavailable (Scala.js and
+// WASI).
 private[hallucination] object JpegBackend:
   def decode(format: Rasterizable, data: Data): Raster raises Raster.Error = JpegCodec.decode(data)
   def encode(format: Rasterizable, raster: Raster): Data = JpegEncoder.encode(raster)

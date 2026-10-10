@@ -32,19 +32,19 @@
                                                                                                   */
 package ypsiloid
 
-import scala.collection.immutable.Seq
-import scala.collection.immutable.IndexedSeq
-
-
 // Residue: `head` and the frozen-array subscript `apply` are partial; both await the
 // partial-operations tranche.
 
+import scala.collection.immutable.IndexedSeq
+import scala.collection.immutable.Seq
 import scala.compiletime.*
 import scala.quoted.*
 
 import anticipation.*
 import contextual.*
 import contingency.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gigantism.*
@@ -52,8 +52,6 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
-import denominative.*
-import denominative.dysasymptotics.linearSize
 
 // `y"…"` interpolator and extractor macros.
 //
@@ -80,7 +78,9 @@ object internal:
   private def stripPad(arr: Array[Any]^{}): Array[Any]^{} =
     val n = arr.length
 
-    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then arr.keep(n - 1) else arr
+    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad)
+    then arr.keep(n - 1)
+    else arr
 
   private def preprocess(parts: List[String]): (List[String], Set[Int]) =
     var spreads: Set[Int] = Set()
@@ -104,8 +104,13 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
-      case _               => strings
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
+      case _ => strings
 
     def firstOrigin[tuple: Type]: Int = Type.of[tuple] match
       case '[head *: tail] => TypeRepr.of[head].dealias match
@@ -118,6 +123,7 @@ object internal:
 
     val raw: String =
       parts.unique.or(halt(m"a YAML path literal cannot have substitutions"))
+
     val start: Int = firstOrigin[origins]
 
     try unsafely(raw.tt.as[YamlPath]) catch
@@ -145,8 +151,13 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
-      case _               => strings
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
+      case _ => strings
 
     val parts = recur[parts](Nil)
 
@@ -341,7 +352,9 @@ object internal:
                 '{Iterable($v)}
 
         ' {
-            val all = ${Expr.ofList(pieces)}.foldLeft(scala.collection.immutable.List.empty[Yaml.Ast])(_ ++ _)
+            val all =
+              ${Expr.ofList(pieces)}
+              . foldLeft(scala.collection.immutable.List.empty[Yaml.Ast])(_ ++ _)
             Yaml.Ast.Sequence(Array.from(all))
           }
 
@@ -372,7 +385,8 @@ object internal:
 
         ' {
             val all =
-              ${Expr.ofList(pieces)}.foldLeft(scala.collection.immutable.List.empty[(String, Yaml.Ast)])(_ ++ _)
+              ${Expr.ofList(pieces)}
+              . foldLeft(scala.collection.immutable.List.empty[(String, Yaml.Ast)])(_ ++ _)
 
             val arr = new scala.Array[Any](all.length*2)
             var k = 0
@@ -408,8 +422,7 @@ object internal:
           '{Yaml.Ast.Null}
 
         case arr: (Array[Any]^{}) @unchecked =>
-          if (arr.length & 1) == 0 then serializeObject(arr)
-          else serializeArray(stripPad(arr))
+          if (arr.length & 1) == 0 then serializeObject(arr) else serializeArray(stripPad(arr))
 
         case other =>
           halt(m"unexpected YAML AST node ${other.toString.tt}")
@@ -426,8 +439,13 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
-      case _               => strings
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
+      case _ => strings
 
     val parts = recur[parts](Nil)
 
@@ -549,6 +567,7 @@ object internal:
 
                   $array(${Expr(idx)}) =
                     Yaml.ast(Yaml.Ast.seqFromAnyArray(tail.asInstanceOf[Array[Any]^{}]))
+
                   true
                 }
               }
@@ -599,8 +618,8 @@ object internal:
           else
             val elems = stripPad(arr)
             var c = 0
-            elems.extent.each: k =>
-              c += countHolesIn(elems(k))
+
+            elems.extent.each: k => c += countHolesIn(elems(k))
 
             c
 
@@ -699,6 +718,7 @@ object internal:
 
                     $array(${Expr(idx)}) =
                       Yaml.ast(Yaml.Ast.mapFromAnyArray(arr.asInstanceOf[Array[Any]^{}]))
+
                     true
                   }
                 }
@@ -719,6 +739,7 @@ object internal:
 
       val numberOfHoles =
         var c = 0
+
         repeat(parts2.size - 1):
           c += 1
 

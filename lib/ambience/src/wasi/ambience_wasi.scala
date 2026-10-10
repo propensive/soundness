@@ -46,6 +46,7 @@ import xenophile.*
 // The WIT definitions the navigation below is typechecked against, and which the `call`
 // materializer consults (at its downstream expansion site) for the function's module id.
 type WasiEnvironmentApi = Interface in Wit at "/ambience/environment.wit"
+
 package wasiApis:
   given wasiEnvironmentApi: WasiEnvironmentApi = Interface[Wit](cp"/ambience/environment.wit")
 

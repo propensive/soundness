@@ -95,7 +95,7 @@ typeclasses rather than over concrete types.
 
 ## What it costs
 
-A composable API is less immediately convenient than a fused one. `Tarfile.from(dir).gzip`
+A composable API is less immediately convenient than a fused one. `dir.archive[Tar]().gzip`
 is two calls where `tarGzip(dir)` would be one, and a reader who wanted exactly the fused
 operation pays a small tax for the generality they did not need.
 

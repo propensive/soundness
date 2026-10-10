@@ -33,7 +33,6 @@
 package aviation
 
 import anticipation.*
-import rudiments.*
 import contextual.*
 import contingency.*
 import cosmopolite.{Locale, en, fr, de, es}
@@ -43,6 +42,7 @@ import gossamer.*
 import hieroglyph.*
 import prepositional.*
 import quantitative.Radix
+import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
@@ -98,27 +98,32 @@ package dateFormats:
   private given calendar: RomanCalendar = calendars.gregorianCalendar
 
   given europeanDateFormat: Date is Showable =
-    import dateEndianness.littleEndian, dateNumerics.fixedWidthDateNumerics, dateSeparators.dotDateSeparator
+    import dateEndianness.littleEndian, dateNumerics.fixedWidthDateNumerics
+    import dateSeparators.dotDateSeparator
     import yearFormats.fullYears
     Timestamp.dateShowable.text(_)
 
   given americanDateFormat: Date is Showable =
-    import dateEndianness.middleEndian, dateNumerics.fixedWidthDateNumerics, dateSeparators.slashDateSeparator
+    import dateEndianness.middleEndian, dateNumerics.fixedWidthDateNumerics
+    import dateSeparators.slashDateSeparator
     import yearFormats.fullYears
     Timestamp.dateShowable.text(_)
 
   given unitedKingdomDateFormat: Date is Showable =
-    import dateEndianness.littleEndian, dateNumerics.fixedWidthDateNumerics, dateSeparators.slashDateSeparator
+    import dateEndianness.littleEndian, dateNumerics.fixedWidthDateNumerics
+    import dateSeparators.slashDateSeparator
     import yearFormats.fullYears
     Timestamp.dateShowable.text(_)
 
   given southEastAsiaDateFormat: Date is Showable =
-    import dateEndianness.littleEndian, dateNumerics.fixedWidthDateNumerics, dateSeparators.hyphenDateSeparator
+    import dateEndianness.littleEndian, dateNumerics.fixedWidthDateNumerics
+    import dateSeparators.hyphenDateSeparator
     import yearFormats.fullYears
     Timestamp.dateShowable.text(_)
 
   given iso8601DateFormat: Date is Showable =
-    import dateEndianness.bigEndian, dateNumerics.fixedWidthDateNumerics, dateSeparators.hyphenDateSeparator
+    import dateEndianness.bigEndian, dateNumerics.fixedWidthDateNumerics
+    import dateSeparators.hyphenDateSeparator
     import yearFormats.fullYears
     Timestamp.dateShowable.text(_)
 
@@ -307,12 +312,14 @@ package monthFormats:
 
 package timeFormats:
   given militaryTimeFormat: Clockface is Showable =
-    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics, timeSeparators.noneTimeSeparator
+    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics
+    import timeSeparators.noneTimeSeparator
     import timeSpecificities.minutesSpecificity
     Clockface.showable.text(_)
 
   given civilianTimeFormat: Clockface is Showable =
-    import hourFormats.twelveHourClock, timeMeridiems.upperMeridiem, timeNumerics.fixedWidthTimeNumerics
+    import hourFormats.twelveHourClock, timeMeridiems.upperMeridiem
+    import timeNumerics.fixedWidthTimeNumerics
     import timeSeparators.colonTimeSeparator
     import timeSpecificities.minutesSpecificity
 
@@ -335,12 +342,14 @@ package timeFormats:
     Clockface.showable.text(_)
 
   given ledgerTimeFormat: Clockface is Showable =
-    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics, timeSeparators.dotTimeSeparator
+    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics
+    import timeSeparators.dotTimeSeparator
     import timeSpecificities.minutesSpecificity
     Clockface.showable.text(_)
 
   given railwayTimeFormat: Clockface is Showable =
-    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics, timeSeparators.colonTimeSeparator
+    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics
+    import timeSeparators.colonTimeSeparator
     import timeSpecificities.minutesSpecificity
     Clockface.showable.text(_)
 
@@ -399,13 +408,20 @@ package timeSeparators:
 // A human-readable, relative rendering of a `Timespan`, in place of the default ISO-8601 duration:
 // "in 18 minutes", "8 minutes ago", "just now", and their French/German/Spanish equivalents. Only
 // the non-zero components are shown (coarsest first); the sign chooses the future/past form. Import
-// the variant for the language(s) you want (e.g. `timespanFormats.frenchRelativeTimespan`); the in-scope
-// `Locale` selects which applies.
+// the variant for the language(s) you want (e.g. `timespanFormats.frenchRelativeTimespan`); the
+// in-scope `Locale` selects which applies.
 package timespanFormats:
-  given englishRelativeTimespan: Locale[en] => Timespan is Showable = Vernacular.english.relativeTimespan(_)
-  given frenchRelativeTimespan: Locale[fr] => Timespan is Showable = Vernacular.french.relativeTimespan(_)
-  given germanRelativeTimespan: Locale[de] => Timespan is Showable = Vernacular.german.relativeTimespan(_)
-  given spanishRelativeTimespan: Locale[es] => Timespan is Showable = Vernacular.spanish.relativeTimespan(_)
+  given englishRelativeTimespan: Locale[en] => Timespan is Showable =
+    Vernacular.english.relativeTimespan(_)
+
+  given frenchRelativeTimespan: Locale[fr] => Timespan is Showable =
+    Vernacular.french.relativeTimespan(_)
+
+  given germanRelativeTimespan: Locale[de] => Timespan is Showable =
+    Vernacular.german.relativeTimespan(_)
+
+  given spanishRelativeTimespan: Locale[es] => Timespan is Showable =
+    Vernacular.spanish.relativeTimespan(_)
 
 package calendars:
   given julianCalendar: RomanCalendar(t"Julian"):
@@ -481,8 +497,8 @@ package gapPolicies:
     (_, _) => abort(Moment.Error(_.Gap))
 
 // Switch sub-day `Moment` arithmetic to count leap seconds (the default `LeapMode.Lenient` works on
-// the leap-free POSIX line). Import `leapModes.exactLeapMode` so adding a duration that crosses an inserted
-// leap second advances by that many real SI seconds.
+// the leap-free POSIX line). Import `leapModes.exactLeapMode` so adding a duration that crosses an
+// inserted leap second advances by that many real SI seconds.
 package leapModes:
   given exactLeapMode: LeapMode = LeapMode.Exact
 
@@ -588,9 +604,9 @@ extension [sequence](sequence: sequence)(using recurrent: sequence is Recurrent)
   def within(window: Period[recurrent.Topic])(using order: recurrent.Topic is Comparable)
   :   Chain[recurrent.Topic] =
 
-      recurrent.occurrences(sequence)
-      . skip(order.less(_, window.start))
-      . keep(order.less(_, window.finish))
+    recurrent.occurrences(sequence)
+    . skip(order.less(_, window.start))
+    . keep(order.less(_, window.finish))
 
   def following(after: recurrent.Topic)(using order: recurrent.Topic is Comparable)
   :   Optional[recurrent.Topic] =

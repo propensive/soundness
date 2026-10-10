@@ -32,7 +32,6 @@
                                                                                                   */
 package geodesy
 
-
 import scala.math
 
 import rudiments.*

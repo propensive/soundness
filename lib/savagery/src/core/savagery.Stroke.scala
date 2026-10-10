@@ -41,7 +41,6 @@ import vacuous.*
 
 import decimalConverters.javaDecimalConverter
 
-
 object Stroke:
   private def form(name: Text, parts: Text*): Text =
     parts.map(_.s).mkString(s"${name.s}(", " ╱ ", ")").tt
@@ -74,13 +73,13 @@ object Stroke:
 
       case ArcTo(rx, ry, angle, largeArc, sweep, point) =>
         form
-         ( t"ArcTo", rx.inspect, ry.inspect, angle.inspect, largeArc.inspect, sweep.inspect,
-           point.inspect )
+          ( t"ArcTo", rx.inspect, ry.inspect, angle.inspect, largeArc.inspect, sweep.inspect,
+            point.inspect )
 
       case Arc(rx, ry, angle, largeArc, sweep, shift) =>
         form
-         ( t"Arc", rx.inspect, ry.inspect, angle.inspect, largeArc.inspect, sweep.inspect,
-           shift.inspect )
+          ( t"Arc", rx.inspect, ry.inspect, angle.inspect, largeArc.inspect, sweep.inspect,
+            shift.inspect )
 
   private def bit(value: Boolean): Text = if value then t"1" else t"0"
 

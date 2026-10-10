@@ -40,6 +40,189 @@ import gossamer.*
 import prepositional.*
 import vacuous.*
 
+object Inlinable:
+  // Generates a monomorphic `Xml.Parsable` for a case class at compile
+  // time, like `Xml.Parsable.staged`, but composed through `Inlinable`
+  // instances: nested records, collection gathering and custom leaf parsers
+  // all inline into one flat parser.
+  inline def parsable[value]: value is Xml.Parsable =
+    ${xylophone.stagedInternal.inlinableParsable[value]}
+
+  // The structural instance for a case class: reflects `Self` when invoked
+  // (no macro — `Type[Self]` arrives with the call).
+  def derived[product]: product is Inlinable = ProductInlinable[product]()
+
+  object ForXml:
+    def derived[value]: ForXml[value] = ForXml(Inlinable.derived[value])
+
+  // The `derives`-clause carrier: a `Self`-typed typeclass cannot appear in
+  // a `derives` clause (it has no type parameters), so `case class Foo(...)
+  // derives Inlinable.ForXml` synthesizes this parameterized subtrait —
+  // which *is* a `Foo is Inlinable` — into `Foo`'s companion, where the
+  // staging summon finds it. The resolution ladder unwraps the delegate so
+  // structural instances keep their generator identities.
+  final class ForXml[value](delegate0: value is Inlinable) extends Inlinable:
+    type Self = value
+    private[xylophone] def delegate: value is Inlinable = delegate0
+
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[value]): Expr[value] =
+      delegate0.parse(reader)
+
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
+      ( using Quotes, Type[value] )
+    :   Expr[value] =
+
+      delegate0.absent(tactic, foci)
+
+  private[xylophone] final class ProductInlinable[product]() extends Inlinable:
+    type Self = product
+
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[product]): Expr[product] =
+      stagedInternal.productFields[product](reader)
+
+    // A missing (or wrong-shape) record: one raise at the current focus,
+    // then a user-supplied `Default` sentinel or a per-sub-field absent
+    // build — the derived engine's `absent()` exactly.
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
+      ( using Quotes, Type[product] )
+    :   Expr[product] =
+
+      stagedInternal.productAbsent[product](tactic, foci)
+
+  // The structural instance for a sealed sum whose variants are all
+  // inlinable case classes and whose `Discriminable in Xml` is an
+  // `Xml.DiscriminantAttribute` (established live, through the staging
+  // summon): the variant rides in an attribute of the open tag, so the
+  // generated code dispatches on it straight off the reader and parses the
+  // chosen variant's fields in place — no element AST, no `delegate`.
+  private[xylophone] final class SumInlinable[sum](val attribute: String) extends Inlinable:
+    type Self = sum
+
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[sum]): Expr[sum] =
+      stagedInternal.sumBody[sum](reader, attribute)
+
+    // A missing sum field: the AST disjunction over the `Absent` sentinel —
+    // no discriminator, so a raise-plus-`Default` or an abort.
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
+      ( using Quotes, Type[sum] )
+    :   Expr[sum] =
+
+      stagedInternal.sumAbsent[sum](tactic)
+
+  private[xylophone] final class IterableInlinable[element](val element0: element is Inlinable)
+  extends Inlinable:
+    type Self = Iterable[element]
+
+    // A single element read as a collection: one element — the runtime
+    // `Xml.Parsable.iterable`'s behavior when handed a lone element. In
+    // *field* position the deriving generator never calls this: it gathers
+    // each same-name occurrence through the element's own generator.
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Iterable[element]])
+    :   Expr[Iterable[element]] =
+
+      stagedInternal.iterableBody[Iterable[element]](reader, element0)
+
+    // A missing collection field is the empty collection on both paths.
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
+      ( using Quotes, Type[Iterable[element]] )
+    :   Expr[Iterable[element]] =
+
+      stagedInternal.iterableAbsent[Iterable[element]](element0)
+
+  // ── Instances ──────────────────────────────────────────────────────────
+  // The leaf generators mirror the primitive `Xml.Parsable` instances (the
+  // staged parser's builtin arms) exactly, so direct, staged and inlined
+  // reads yield equal values and equal errors.
+
+  given int: (Int is Inlinable) = new Inlinable:
+    type Self = Int
+
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Int]): Expr[Int] =
+      '{Xml.intParsable.parse($reader)}
+
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
+      ( using Quotes, Type[Int] )
+    :   Expr[Int] =
+
+      '{Xml.Parsable.missing[Int](0)(using $tactic)}
+
+  given long: (Long is Inlinable) = new Inlinable:
+    type Self = Long
+
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Long]): Expr[Long] =
+      '{Xml.longParsable.parse($reader)}
+
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
+      ( using Quotes, Type[Long] )
+    :   Expr[Long] =
+
+      '{Xml.Parsable.missing[Long](0L)(using $tactic)}
+
+  given double: (Double is Inlinable) = new Inlinable:
+    type Self = Double
+
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Double]): Expr[Double] =
+      '{Xml.doubleParsable.parse($reader)}
+
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
+      ( using Quotes, Type[Double] )
+    :   Expr[Double] =
+
+      '{Xml.Parsable.missing[Double](0.0)(using $tactic)}
+
+  given float: (Float is Inlinable) = new Inlinable:
+    type Self = Float
+
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Float]): Expr[Float] =
+      '{Xml.floatParsable.parse($reader)}
+
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
+      ( using Quotes, Type[Float] )
+    :   Expr[Float] =
+
+      '{Xml.Parsable.missing[Float](0.0f)(using $tactic)}
+
+  given boolean: (Boolean is Inlinable) = new Inlinable:
+    type Self = Boolean
+
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Boolean]): Expr[Boolean] =
+      '{Xml.booleanParsable.parse($reader)}
+
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
+      ( using Quotes, Type[Boolean] )
+    :   Expr[Boolean] =
+
+      '{Xml.Parsable.missing[Boolean](false)(using $tactic)}
+
+  given text: (Text is Inlinable) = new Inlinable:
+    type Self = Text
+
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Text]): Expr[Text] =
+      '{$reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"Text")); t""}}
+
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
+      ( using Quotes, Type[Text] )
+    :   Expr[Text] =
+
+      '{Xml.Parsable.missing[Text](t"")(using $tactic)}
+
+  given string: (String is Inlinable) = new Inlinable:
+    type Self = String
+
+    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[String]): Expr[String] =
+      '{($reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"String")); t"" }).s}
+
+    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
+      ( using Quotes, Type[String] )
+    :   Expr[String] =
+
+      '{Xml.Parsable.missing[String]("")(using $tactic)}
+
+  given iterable: [collection <: Iterable, element]
+  =>  ( element0: element is Inlinable )
+  =>  ( collection[element] is Inlinable ) =
+    IterableInlinable[element](element0).asInstanceOf[collection[element] is Inlinable]
+
 // The Expr-level counterpart of `Xml.Parsable`: a typeclass whose methods
 // are macro-time code generators, following jacinta's `Inlinable` exactly.
 // An instance receives an `Expr` of the reader (positioned with the current
@@ -65,190 +248,7 @@ trait Inlinable extends Typeclass:
   // name, mirroring the runtime instances: an abort unless overridden (the
   // primitive instances raise and continue with a sentinel).
   def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
-    (using Quotes, Type[Self])
+    ( using Quotes, Type[Self] )
   :   Expr[Self] =
 
-    '{ abort(Xml.Error(Xml.Error.Reason.Missing))(using $tactic) }
-
-object Inlinable:
-  // Generates a monomorphic `Xml.Parsable` for a case class at compile
-  // time, like `Xml.Parsable.staged`, but composed through `Inlinable`
-  // instances: nested records, collection gathering and custom leaf parsers
-  // all inline into one flat parser.
-  inline def parsable[value]: value is Xml.Parsable =
-    ${ xylophone.stagedInternal.inlinableParsable[value] }
-
-  // The structural instance for a case class: reflects `Self` when invoked
-  // (no macro — `Type[Self]` arrives with the call).
-  def derived[product]: product is Inlinable = ProductInlinable[product]()
-
-  // The `derives`-clause carrier: a `Self`-typed typeclass cannot appear in
-  // a `derives` clause (it has no type parameters), so `case class Foo(...)
-  // derives Inlinable.ForXml` synthesizes this parameterized subtrait —
-  // which *is* a `Foo is Inlinable` — into `Foo`'s companion, where the
-  // staging summon finds it. The resolution ladder unwraps the delegate so
-  // structural instances keep their generator identities.
-  final class ForXml[value](delegate0: value is Inlinable) extends Inlinable:
-    type Self = value
-    private[xylophone] def delegate: value is Inlinable = delegate0
-
-    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[value]): Expr[value] =
-      delegate0.parse(reader)
-
-    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
-      (using Quotes, Type[value])
-    :   Expr[value] =
-
-      delegate0.absent(tactic, foci)
-
-  object ForXml:
-    def derived[value]: ForXml[value] = ForXml(Inlinable.derived[value])
-
-  private[xylophone] final class ProductInlinable[product]() extends Inlinable:
-    type Self = product
-
-    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[product]): Expr[product] =
-      stagedInternal.productFields[product](reader)
-
-    // A missing (or wrong-shape) record: one raise at the current focus,
-    // then a user-supplied `Default` sentinel or a per-sub-field absent
-    // build — the derived engine's `absent()` exactly.
-    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
-      (using Quotes, Type[product])
-    :   Expr[product] =
-
-      stagedInternal.productAbsent[product](tactic, foci)
-
-  // The structural instance for a sealed sum whose variants are all
-  // inlinable case classes and whose `Discriminable in Xml` is an
-  // `Xml.DiscriminantAttribute` (established live, through the staging
-  // summon): the variant rides in an attribute of the open tag, so the
-  // generated code dispatches on it straight off the reader and parses the
-  // chosen variant's fields in place — no element AST, no `delegate`.
-  private[xylophone] final class SumInlinable[sum](val attribute: String) extends Inlinable:
-    type Self = sum
-
-    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[sum]): Expr[sum] =
-      stagedInternal.sumBody[sum](reader, attribute)
-
-    // A missing sum field: the AST disjunction over the `Absent` sentinel —
-    // no discriminator, so a raise-plus-`Default` or an abort.
-    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
-      (using Quotes, Type[sum])
-    :   Expr[sum] =
-
-      stagedInternal.sumAbsent[sum](tactic)
-
-  private[xylophone] final class IterableInlinable[element](val element0: element is Inlinable)
-  extends Inlinable:
-    type Self = Iterable[element]
-
-    // A single element read as a collection: one element — the runtime
-    // `Xml.Parsable.iterable`'s behavior when handed a lone element. In
-    // *field* position the deriving generator never calls this: it gathers
-    // each same-name occurrence through the element's own generator.
-    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Iterable[element]])
-    :   Expr[Iterable[element]] =
-
-      stagedInternal.iterableBody[Iterable[element]](reader, element0)
-
-    // A missing collection field is the empty collection on both paths.
-    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
-      (using Quotes, Type[Iterable[element]])
-    :   Expr[Iterable[element]] =
-
-      stagedInternal.iterableAbsent[Iterable[element]](element0)
-
-  // ── Instances ──────────────────────────────────────────────────────────
-  // The leaf generators mirror the primitive `Xml.Parsable` instances (the
-  // staged parser's builtin arms) exactly, so direct, staged and inlined
-  // reads yield equal values and equal errors.
-
-  given int: (Int is Inlinable) = new Inlinable:
-    type Self = Int
-
-    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Int]): Expr[Int] =
-      '{ Xml.intParsable.parse($reader) }
-
-    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
-      (using Quotes, Type[Int])
-    :   Expr[Int] =
-
-      '{ Xml.Parsable.missing[Int](0)(using $tactic) }
-
-  given long: (Long is Inlinable) = new Inlinable:
-    type Self = Long
-
-    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Long]): Expr[Long] =
-      '{ Xml.longParsable.parse($reader) }
-
-    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
-      (using Quotes, Type[Long])
-    :   Expr[Long] =
-
-      '{ Xml.Parsable.missing[Long](0L)(using $tactic) }
-
-  given double: (Double is Inlinable) = new Inlinable:
-    type Self = Double
-
-    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Double]): Expr[Double] =
-      '{ Xml.doubleParsable.parse($reader) }
-
-    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
-      (using Quotes, Type[Double])
-    :   Expr[Double] =
-
-      '{ Xml.Parsable.missing[Double](0.0)(using $tactic) }
-
-  given float: (Float is Inlinable) = new Inlinable:
-    type Self = Float
-
-    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Float]): Expr[Float] =
-      '{ Xml.floatParsable.parse($reader) }
-
-    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
-      (using Quotes, Type[Float])
-    :   Expr[Float] =
-
-      '{ Xml.Parsable.missing[Float](0.0f)(using $tactic) }
-
-  given boolean: (Boolean is Inlinable) = new Inlinable:
-    type Self = Boolean
-
-    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Boolean]): Expr[Boolean] =
-      '{ Xml.booleanParsable.parse($reader) }
-
-    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
-      (using Quotes, Type[Boolean])
-    :   Expr[Boolean] =
-
-      '{ Xml.Parsable.missing[Boolean](false)(using $tactic) }
-
-  given text: (Text is Inlinable) = new Inlinable:
-    type Self = Text
-
-    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Text]): Expr[Text] =
-      '{ $reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"Text")); t"" } }
-
-    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
-      (using Quotes, Type[Text])
-    :   Expr[Text] =
-
-      '{ Xml.Parsable.missing[Text](t"")(using $tactic) }
-
-  given string: (String is Inlinable) = new Inlinable:
-    type Self = String
-
-    def parse(reader: Expr[Xml.Reader])(using Quotes, Type[String]): Expr[String] =
-      '{ ($reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"String")); t"" }).s }
-
-    override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
-      (using Quotes, Type[String])
-    :   Expr[String] =
-
-      '{ Xml.Parsable.missing[String]("")(using $tactic) }
-
-  given iterable: [collection <: Iterable, element]
-  =>  (element0: element is Inlinable)
-  =>  (collection[element] is Inlinable) =
-    IterableInlinable[element](element0).asInstanceOf[collection[element] is Inlinable]
+    '{abort(Xml.Error(Xml.Error.Reason.Missing))(using $tactic)}

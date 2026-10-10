@@ -32,10 +32,9 @@
                                                                                                   */
 package escritoire
 
-import scala.language.experimental.pureFunctions
-
 import scala.collection.immutable as sci
 import scala.collection.immutable.IndexedSeq
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import fulminate.*
@@ -111,9 +110,7 @@ object Grid:
     val descenders = if below then joints else sci.BitSet()
 
     val horizontal =
-      if !above then style.topLine
-      else if !below then style.bottomLine
-      else style.titleLine
+      if !above then style.topLine else if !below then style.bottomLine else style.titleLine
 
     Textual:
       Text.fill(width): index =>

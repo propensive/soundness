@@ -32,22 +32,20 @@
                                                                                                   */
 package mosquito
 
-import scala.math
-
 import scala.compiletime.*
 import scala.compiletime.ops.int.-
+import scala.math
 
 import anticipation.*
 import denominative.*
 import gossamer.*
 import hieroglyph.*
+import mosquito.internal.Vector
 import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-
-import mosquito.internal.Vector
 
 object Matrix:
   // The `Showable` sets a matrix as a multi-line grid inside stretched brackets, which inspection
@@ -93,7 +91,8 @@ object Matrix:
         val after = if row == 0 then t" ⎤" else if row == matrix.rows - 1 then t" ⎦" else t" ⎪"
 
         (0 until matrix.columns).map: column =>
-          textElements.readUnchecked(matrix.columns*row + column).pad(columnWidths.readUnchecked(column), Rtl)
+          textElements.readUnchecked(matrix.columns*row + column)
+          . pad(columnWidths.readUnchecked(column), Rtl)
 
         . join(before, t" ", after)
 
@@ -146,11 +145,12 @@ object Matrix:
         var i = 0
 
         while i < length do
-          array(i) = subtractable.subtract(left.elements.readUnchecked(i), right.elements.readUnchecked(i))
+          array(i) =
+            subtractable.subtract(left.elements.readUnchecked(i), right.elements.readUnchecked(i))
+
           i += 1
 
       new Matrix[result, rows, columns](left.rows, left.columns, arr)
-
 
   // The three shapes of multiplication — by scalar, by matrix and by vector — are separate
   // instances distinguished by `Operand`; the scalar instance's operand is unconstrained, but
@@ -317,7 +317,9 @@ object Matrix:
     Tuple.Union[Tuple.Map[rows, [tuple] =>> Tuple.Size[tuple & Tuple]]]
 
 
-  transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf](using erased void: Void)
+  transparent inline def apply
+    [ Rows <: Int: ValueOf, Columns <: Int: ValueOf ]
+    ( using erased void: Void )
     [ element ]
     ( rows: Tuple )
     ( using Constraint[rows.type, element],
@@ -363,8 +365,10 @@ object Matrix:
       val firstColumn = java.lang.Long.numberOfTrailingZeros(columnMask)
       val secondColumn = java.lang.Long.numberOfTrailingZeros(columnMask & (columnMask - 1L))
 
-      elements.readUnchecked(dimension*firstRow + firstColumn)*elements.readUnchecked(dimension*secondRow + secondColumn) -
-        elements.readUnchecked(dimension*firstRow + secondColumn)*elements.readUnchecked(dimension*secondRow + firstColumn)
+      elements.readUnchecked(dimension*firstRow + firstColumn) *
+        elements.readUnchecked(dimension*secondRow + secondColumn) -
+        elements.readUnchecked(dimension*firstRow + secondColumn) *
+        elements.readUnchecked(dimension*secondRow + firstColumn)
     else
       val expansionRow = java.lang.Long.numberOfTrailingZeros(rowMask)
       val remainingRows = rowMask & ~(1L << expansionRow)
@@ -885,12 +889,14 @@ class Matrix[element, rows <: Int, columns <: Int]
     // which is safe across element types.
     case matrix: Matrix[?, ?, ?] =>
       elements.readable.sameElements(matrix.elements.asInstanceOf[Array[element]^{}].readable)
+
     case _                       => false
 
   override def hashCode: Int =
     // Inlined `MurmurHash3.arrayHash`: `arrayHash` demands a pure `Array`, which the
     // capture-checked frozen form cannot supply without an unsafe cast.
     var hash = scala.util.hashing.MurmurHash3.arraySeed
+
     elements.extent.each: index =>
       hash = scala.util.hashing.MurmurHash3.mix(hash, elements(index).##)
 
@@ -910,6 +916,3 @@ class Matrix[element, rows <: Int, columns <: Int]
       index += 1
 
     builder.append("]").toString
-
-
-

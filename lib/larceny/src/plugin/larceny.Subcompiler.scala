@@ -32,9 +32,8 @@
                                                                                                   */
 package larceny
 
-import scala.language.adhocExtensions
-
 import scala.collection.mutable as scm
+import scala.language.adhocExtensions
 import scala.util.chaining.*
 
 import dotty.tools.*, dotc.*, util.*, reporting.*, core.*, config.Settings, Contexts.*
@@ -166,8 +165,8 @@ object Subcompiler:
         val pluginOptions = plugins.map: plugin => s"-Xplugin:$plugin"
 
         val args =
-          scala.Array[String]("") ++ ccOptions ++ importOptions ++ zflags ++ warnings
-            ++ pluginOptions
+          scala.Array[String]("") ++ ccOptions ++ importOptions ++ zflags ++ warnings ++
+            pluginOptions
 
         setup(args, context2).map(_(1)).get
 

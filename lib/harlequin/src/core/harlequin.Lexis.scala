@@ -109,8 +109,7 @@ object Lexis:
         if previous.lay(false)(indent <= _) then builder += Lexeme.Break
         previous = indent
 
-        line.each: token =>
-          lexeme(token).let(builder += _)
+        line.each: token => lexeme(token).let(builder += _)
 
     builder.result().to(List)
 
@@ -151,5 +150,7 @@ object Lexis:
         }
       }
 
-    val context: List[Lexeme] = if breakAtCaret then (Lexeme.Break: Lexeme) :: reversed else reversed
+    val context: List[Lexeme] =
+      if breakAtCaret then (Lexeme.Break: Lexeme) :: reversed else reversed
+
     (prefix, context.keep(limit))

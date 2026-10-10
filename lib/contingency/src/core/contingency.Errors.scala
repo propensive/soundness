@@ -32,9 +32,8 @@
                                                                                                   */
 package contingency
 
-import scala.language.experimental.pureFunctions
-
 import scala.annotation.*
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import fulminate.*

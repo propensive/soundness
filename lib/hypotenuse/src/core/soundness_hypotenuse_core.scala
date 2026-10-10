@@ -45,5 +45,5 @@ export
 package arithmeticOptions:
   export
     hypotenuse.arithmeticOptions
-    . { checkedDivision, checkedOverflow, q32RationalDivision, q64RationalDivision, uncheckedDivision,
-        uncheckedOverflow }
+    . { checkedDivision, checkedOverflow, q32RationalDivision, q64RationalDivision,
+        uncheckedDivision, uncheckedOverflow }

@@ -35,11 +35,11 @@ package anthology
 import scala.collection.mutable as scm
 
 import anticipation.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import gossamer.*
 import rudiments.*
 import vacuous.*
-import denominative.*
-import denominative.dysasymptotics.linearSize
 
 // Android binary XML ("AXML"): the compact, chunked encoding Android's framework parses a
 // manifest from — a string pool, an optional resource-map chunk, then a flat stream of

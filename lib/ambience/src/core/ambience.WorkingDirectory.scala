@@ -34,8 +34,8 @@ package ambience
 
 import anticipation.*
 import beneficence.*
-import prepositional.*
 import fulminate.*
+import prepositional.*
 
 object WorkingDirectory:
   def apply[path: Abstractable across Paths to Text](path: path): WorkingDirectory =

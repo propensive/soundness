@@ -350,8 +350,8 @@ object Anthropic:
 
     val node: Node = value match
       case JsonSchema.Object
-          ( description, properties, _, required, enumeration, additional, oneOf, _, allOf, anyOf,
-            not, const ) =>
+        ( description, properties, _, required, enumeration, additional, oneOf, _, allOf, anyOf,
+          not, const ) =>
         Node
           ( `type`               = t"object",
             description          = description,

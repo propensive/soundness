@@ -110,19 +110,35 @@ package filesystemBackends:
             jnf.Files.readAttributes(javaPath(path), classOf[jnfa.BasicFileAttributes], options*)
             . nn
 
+          // The `unix` attribute view is absent on Windows and on some mounted filesystems; its
+          // fields are then `Unset`, and an entry that is neither file, directory nor link
+          // cannot be told apart from a file.
+          def unixInt(name: String): Optional[Int] =
+            try jnf.Files.getAttribute(javaPath(path), name, options*).nn.absolve match
+              case value: Int => value
+              case _          => Unset
+            catch case _: Exception => Unset
+
+          def unixLong(name: String): Optional[Long] =
+            try jnf.Files.getAttribute(javaPath(path), name, options*).nn.absolve match
+              case value: Long => value
+              case value: Int  => value.toLong
+              case _           => Unset
+            catch case _: Exception => Unset
+
+          val mode: Optional[Int] = unixInt("unix:mode")
+
           val entry: Entry =
             if attributes.isSymbolicLink then Symlink
             else if attributes.isRegularFile then File
             else if attributes.isDirectory then Directory
-            else
-              try jnf.Files.getAttribute(javaPath(path), "unix:mode", options*).nn.absolve match
-                case mode: Int => (mode & 61440) match
-                  case  4096 => Fifo
-                  case  8192 => CharDevice
-                  case 24576 => BlockDevice
-                  case 49152 => Sock
-                  case _     => File
-              catch case _: Exception => File
+            else mode.lay(File): mode =>
+              (mode & 61440) match
+                case  4096 => Fifo
+                case  8192 => CharDevice
+                case 24576 => BlockDevice
+                case 49152 => Sock
+                case _     => File
 
           val created: Optional[Long] =
             val time = attributes.creationTime().nn.toInstant.nn.toEpochMilli
@@ -133,7 +149,15 @@ package filesystemBackends:
               attributes.size(),
               attributes.lastModifiedTime().nn.toInstant.nn.toEpochMilli,
               attributes.lastAccessTime().nn.toInstant.nn.toEpochMilli,
-              created )
+              created,
+              mode,
+              unixInt("unix:uid"),
+              unixInt("unix:gid"),
+              unixLong("unix:rdev") )
+
+      def linkTarget(path: Path on Plane)(using Tactic[Io.Error]): Text =
+        protect(path, Operation.Metadata):
+          jnf.Files.readSymbolicLink(javaPath(path)).nn.toString.nn.tt
 
       def exists(path: Path on Plane, dereference: Boolean): Boolean =
         jnf.Files.exists(javaPath(path), dereferenceOptions(dereference)*)

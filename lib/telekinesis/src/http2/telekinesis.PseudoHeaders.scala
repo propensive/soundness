@@ -85,7 +85,7 @@ object PseudoHeaders:
     val status: Http.Status =
       Http.Status.unapply(code).optional.lest(Http2.Error(Reason.Protocol(t"missing :status")))
 
-    status(headers.to(List), Http.Body.Flowing(() => zephyrine.Stream(body)))
+    status(headers.to(List), Http.Body.Flowing{ () => zephyrine.Stream(body) })
 
   // Reconstruct an `Http.Request` from a decoded request HEADERS block and the
   // body spring: `:method`/`:path` select the method and target, `:authority`
@@ -129,10 +129,7 @@ object PseudoHeaders:
     val forbidden: List[Text] =
       List(t"connection", t"keep-alive", t"transfer-encoding", t"upgrade", t"proxy-connection")
 
-    val regular = response.textHeaders.map: header =>
-      Hpack.Entry(header.key.lower, header.value)
-
-    . filter: entry =>
-        !forbidden.has(entry.name)
+    val regular = response.textHeaders.map: header => Hpack.Entry(header.key.lower, header.value)
+    . filter: entry => !forbidden.has(entry.name)
 
     Hpack.Entry(t":status", response.status.code.show) :: regular

@@ -43,14 +43,17 @@ object internal:
     val classLoader = this.getClass.getClassLoader.nn
 
     val classSymbol = typeRepr.dealias.classSymbol
+
     if classSymbol.isEmpty then Nil
     else
       val typeclassFqn = classSymbol.get.fullName
       val resourcePath = s"META-INF/givens/$typeclassFqn"
 
       val urls = classLoader.getResources(resourcePath).nn.asScala.toList
+
       val rawEntries: List[String] = urls.flatMap: url =>
         val source = Source.fromURL(url)(using Codec.UTF8)
+
         try source.getLines().toList.collect:
           case line if !line.isBlank && !line.startsWith("#") => line.trim.nn
         finally source.close()
@@ -61,6 +64,7 @@ object internal:
     import quotes.reflect.Symbol
 
     val lastDot = fqn.lastIndexOf('.')
+
     if lastDot < 0 then None
     else
       val ownerFqn   = fqn.take(lastDot)
@@ -72,6 +76,7 @@ object internal:
 
       owner.flatMap: ownerSymbol =>
         val methods = attempt(ownerSymbol.declaredMethod(memberName)).getOrElse(Nil)
+
         if methods.nonEmpty then Some(methods.head)
         else
           val field = attempt(ownerSymbol.declaredField(memberName)).getOrElse(Symbol.noSymbol)

@@ -32,7 +32,6 @@
                                                                                                   */
 package breviloquence
 
-
 import anticipation.*
 import contingency.*
 import distillate.Decodable.{Absence, Fault, Nullity}

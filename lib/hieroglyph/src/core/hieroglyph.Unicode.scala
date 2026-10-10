@@ -35,7 +35,6 @@ package hieroglyph
 import java.io as ji
 
 import scala.collection.immutable.TreeMap
-
 import scala.math.Ordering
 
 import anticipation.*
@@ -118,6 +117,7 @@ object Unicode:
 
       case _ =>
         Iterator.empty
+
     . to(Map)
 
   lazy val unicodeNames: Map[Char | Text, Text] =
@@ -139,6 +139,7 @@ object Unicode:
     @tailrec
     def recur(stream: Chain[Text], map: TreeMap[CharRange, EaWidth])
     :   TreeMap[CharRange, EaWidth] =
+
       stream match
         case
           r"${Hex(from)}([0-9A-F]{4,6})\.\.${Hex(to)}([0-9A-F]{4,6});${EaWidth(w)}([AFHNW]a?).*" #::

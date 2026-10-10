@@ -75,7 +75,7 @@ enum Decomposition:
     case Sequence(_, values, _) => values.map(_.text).join(t"[", t", ", t"]")
 
     case Product(name, values, _) =>
-      val fields: List[Text] = values.remap { (key, value) => field(key, value) }
+      val fields: List[Text] = values.remap: (key, value) => field(key, value)
       t"$name(${fields.join(t", ")}"
 
   def short: Text = this match

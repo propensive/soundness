@@ -129,7 +129,9 @@ object internal:
         new Tasty.Tree(tag, typeName, name, shown, code, Nil, parameter, true, false)
 
 
-      def repr(name: Text, repr: Optional[TypeRepr], parameter: Optional[Text] = Unset): Tasty.Tree =
+      def repr(name: Text, repr: Optional[TypeRepr], parameter: Optional[Text] = Unset)
+      :   Tasty.Tree =
+
         apply(' ', t"", name, Unset, repr.let(stenography.internal.name(_)), parameter).typeNode
 
       def expandType(repr: TypeRepr): Tasty.Tree =
@@ -648,8 +650,7 @@ object internal:
           t"Parameters" ->
             (symbol.paramSymss.map(_.map(_.name.tt).join(t"(", t" ", t")"))).to(List),
 
-          t"All overridden symbols" ->
-            symbol.allOverriddenSymbols.map(_.name.tt).to(List),
+          t"All overridden symbols" -> symbol.allOverriddenSymbols.map(_.name.tt).to(List),
 
           t"Primary constructor" -> symbol.primaryConstructor.name.tt,
 

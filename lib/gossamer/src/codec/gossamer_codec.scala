@@ -32,7 +32,6 @@
                                                                                                   */
 package gossamer
 
-
 import scala.reflect
 
 import anticipation.*

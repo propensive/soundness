@@ -32,7 +32,6 @@
                                                                                                   */
 package aviation
 
-
 import anticipation.*
 import contingency.*
 import fulminate.*
@@ -94,8 +93,8 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
   def leapYear(year: Year): Boolean = governing(year).leapYear(year)
   def leapYearsSinceEpoch(year: Year): Int = governing(year).leapYearsSinceEpoch(year)
 
-  // Validity in a governed regime is more than a day-of-month range check: a date is real only if the
-  // active government `locate`s it.
+  // Validity in a governed regime is more than a day-of-month range check: a date is real only if
+  // the active government `locate`s it.
   override def validDate(year: Year, month: Month, day: Day): Boolean =
     locate(year, month, day).present
 

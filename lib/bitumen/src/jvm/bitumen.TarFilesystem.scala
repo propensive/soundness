@@ -52,46 +52,9 @@ import vacuous.*
 
 import filesystemBackends.javaBaseFilesystem
 
+// Writes a `Tarfile` out to a directory tree: the inverse of `directory.archive[Tar]()`, still
+// through `java.nio`, since setting a mode has no backend primitive yet.
 private[bitumen] object TarFilesystem:
-  def entryFor[plane <: Posix: Filesystem]
-    ( root: Path on plane, path: Path on plane )
-    ( using DereferenceSymlinks, Tactic[Io.Error], Tactic[Tar.Error] )
-  :   Tar.Entry =
-
-    val ref = relativize(root, path)
-    val mtime: U32 = (jnf.Files.getLastModifiedTime(path.javaPath).nn.toMillis/1000L).toInt.bits.u32
-    val mode: UnixMode = readMode(path.javaPath)
-    val (uid, gid) = readOwner(path.javaPath)
-    val user = UnixUser(uid)
-    val group = UnixGroup(gid)
-
-    path.entry() match
-      case galilei.File =>
-        val bytes = Array.unsafeFrozen(jnf.Files.readAllBytes(path.javaPath).nn)
-        Tar.Entry.File(ref, mode, user, group, mtime, Archive.Body(bytes))
-
-      case galilei.Directory =>
-        Tar.Entry.Directory(ref, mode, user, group, mtime)
-
-      case galilei.Symlink =>
-        val target = jnf.Files.readSymbolicLink(path.javaPath).nn.toString.nn.tt
-        Tar.Entry.Symlink(ref, mode, user, group, mtime, target)
-
-      case galilei.Fifo =>
-        Tar.Entry.Fifo(ref, mode, user, group, mtime)
-
-      case galilei.CharDevice =>
-        val (major, minor) = readDeviceNumbers(path.javaPath)
-        Tar.Entry.CharSpecial(ref, mode, user, group, mtime, (major.bits.u32, minor.bits.u32))
-
-      case galilei.BlockDevice =>
-        val (major, minor) = readDeviceNumbers(path.javaPath)
-        Tar.Entry.BlockSpecial(ref, mode, user, group, mtime, (major.bits.u32, minor.bits.u32))
-
-      case _ =>
-        raise(Tar.Error(Tar.Error.Reason.DeviceCreationUnsupported(path.show)))
-        Tar.Entry.Fifo(ref, mode, user, group, mtime)
-
   // `created` holds the directories this extraction has made so far, so that the parent of each
   // entry is created only once: `createDirectories` stats every component of the chain, which a
   // tarball of many files in one directory would otherwise repeat for every file. The set must be
@@ -147,21 +110,6 @@ private[bitumen] object TarFilesystem:
       jnf.Files.createDirectories(parent)
       created += parent
 
-  private def relativize[plane <: Posix: Filesystem]
-    ( root: Path on plane, child: Path on plane )
-    ( using Tactic[Tar.Error] )
-  :   Tar.Ref =
-
-    val rootText = root.encode.s
-    val childText = child.encode.s
-    val prefix = if rootText.endsWith("/") then rootText else rootText+"/"
-
-    val relText: Text =
-      if childText.startsWith(prefix) then childText.substring(prefix.length).nn.tt
-      else childText.tt
-
-    decodePath(relText)
-
   private def absolutize[plane <: Posix: Filesystem]
     ( root: Path on plane, ref: Tar.Ref )
     ( using Tactic[Tar.Error] )
@@ -200,38 +148,6 @@ private[bitumen] object TarFilesystem:
       case Path.Error(_, _) => Tar.Error(Tar.Error.Reason.BadName(text))
 
     . protect(text.as[Relative on Tar])
-
-  private def readMode(javaPath: jnf.Path)(using Tactic[Io.Error]): UnixMode =
-    try (jnf.Files.getAttribute(javaPath, "unix:mode").nn: Any) match
-      case n: Int => UnixMode.from(n & 0xfff)
-      case _      => UnixMode()
-    catch
-      case _: UnsupportedOperationException                => UnixMode()
-      case _: jnf.attribute.UserPrincipalNotFoundException => UnixMode()
-
-  private def readOwner(javaPath: jnf.Path)(using Tactic[Io.Error]): (Int, Int) =
-    try
-      val uid = (jnf.Files.getAttribute(javaPath, "unix:uid").nn: Any) match
-        case n: Int => n
-        case _      => 0
-
-      val gid = (jnf.Files.getAttribute(javaPath, "unix:gid").nn: Any) match
-        case n: Int => n
-        case _      => 0
-
-      (uid, gid)
-    catch case _: UnsupportedOperationException => (0, 0)
-
-  private def readDeviceNumbers(javaPath: jnf.Path)(using Tactic[Io.Error]): (Int, Int) =
-    try
-      val rdev = (jnf.Files.getAttribute(javaPath, "unix:rdev").nn: Any) match
-        case n: Long => n
-        case _       => 0L
-
-      val major = ((rdev >> 8) & 0xff).toInt
-      val minor = (rdev & 0xff).toInt
-      (major, minor)
-    catch case _: UnsupportedOperationException => (0, 0)
 
   private def applyPermissions(javaPath: jnf.Path, mode: UnixMode): Unit =
     try jnf.Files.setAttribute(javaPath, "unix:mode", Integer.valueOf(mode.int & 0xfff))

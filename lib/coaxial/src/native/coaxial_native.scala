@@ -32,14 +32,13 @@
                                                                                                   */
 package coaxial
 
-import scala.caps
-
 import java.io as ji
 import java.net as jn
 import java.nio.ByteBuffer
 import java.nio.channels as jnc
 import java.util as ju
 
+import scala.caps
 import scala.scalanative.unsafe.*
 
 import anticipation.*
@@ -53,12 +52,13 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-// The `java.net`/`java.nio.channels` implementation of `Socket.Backend`, split out of `coaxial.core`
-// so the platform-neutral socket API can cross-compile; other platforms (e.g. WASI) supply their
-// own backend. Each handle type is a small ADT that preserves the exact Java representation each
-// role needs — a TCP server binds a stream `ServerSocket` (which honours `setSoTimeout`), a
-// Unix-domain server a `ServerSocketChannel`; a request/response exchange is a blocking `Socket`
-// for TCP but a non-blocking `SocketChannel` for Unix-domain — so no per-role behaviour is lost.
+// The `java.net`/`java.nio.channels` implementation of `Socket.Backend`, split out of
+// `coaxial.core` so the platform-neutral socket API can cross-compile; other platforms (e.g. WASI)
+// supply their own backend. Each handle type is a small ADT that preserves the exact Java
+// representation each role needs — a TCP server binds a stream `ServerSocket` (which honours
+// `setSoTimeout`), a Unix-domain server a `ServerSocketChannel`; a request/response exchange is a
+// blocking `Socket` for TCP but a non-blocking `SocketChannel` for Unix-domain — so no per-role
+// behaviour is lost.
 
 // A bound, listening stream socket. (Native has no `ServerSocketChannel`, so — unlike the JVM
 // backend — there is no Unix-domain variant here; the domain methods are unsupported.)
@@ -261,6 +261,7 @@ package socketBackends:
     def joinMulticast
       ( multicast: Multicast, interfaces: List[NetworkInterface], options: List[Socket.Option] )
     :   Unit =
+
       ()
 
     def receiveMulticast(socket: Unit): Packet raises Socket.Error =
@@ -271,6 +272,7 @@ package socketBackends:
 
     def sendTo(socket: Unit, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
     :   Unit raises Socket.Error =
+
       abort(Socket.Error(Socket.Error.Reason.Transmit))
 
     def leaveMulticast(socket: Unit): Unit = ()
@@ -298,7 +300,9 @@ package socketBackends:
 
     //── Request/response exchange (`Serviceable`) ──────────────────────────────────────────────
     def dialTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
+      ( endpoint:  Endpoint[Tcp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option] )
     :   ClientExchange =
 
       val socket =
@@ -334,8 +338,10 @@ package socketBackends:
         caps.unsafe.unsafeAssumePure(input).drain: region =>
           range =>
             val interval: Interval = range
+
             out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
                 interval.size)
+
             out.flush()
 
     def response(exchange: ClientExchange)(using Buffering, Tactic[Truncation.Error])
@@ -354,7 +360,9 @@ package socketBackends:
 
     //── Persistent duplex client (`Connectable`) ───────────────────────────────────────────────
     def duplexTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
+      ( endpoint:  Endpoint[Tcp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option] )
     :   Duplex =
 
       // The JVM backend uses a `SocketChannel`; native has none, so a plain blocking `Socket` and
@@ -376,7 +384,9 @@ package socketBackends:
 
     //── Fire-and-forget datagram courier (`Routable`) ──────────────────────────────────────────
     def routeUdp
-      ( endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
+      ( endpoint:  Endpoint[Udp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option] )
     :   UdpCourier =
 
       val address = jn.InetAddress.getByName(endpoint.remote.s).nn
@@ -554,8 +564,10 @@ private[coaxial] def streamsDuplex(in: ji.InputStream, out: ji.OutputStream)(shu
       data.drain: region =>
         range =>
           val interval: Interval = range
+
           out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
               interval.size)
+
           out.flush()
 
     def close(): Unit = shutdown()

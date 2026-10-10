@@ -202,7 +202,10 @@ object JavaBaseCrypto extends Crypto:
 
     def verify(data: Data, signature0: Data, publicKey: Data): Boolean =
       val sig = instance()
-      sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(Array.unsafeJvm(publicKey))))
+
+      sig.initVerify
+        ( keyFactory().generatePublic(jss.X509EncodedKeySpec(Array.unsafeJvm(publicKey))) )
+
       sig.update(Array.unsafeJvm(data))
 
       verified(sig, Array.unsafeJvm(signature0))
@@ -286,14 +289,20 @@ object JavaBaseCrypto extends Crypto:
 
     def sign(data: Data, privateKey: Data): Data =
       val sig = instance()
-      sig.initSign(keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(Array.unsafeJvm(privateKey))))
+
+      sig.initSign
+        ( keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(Array.unsafeJvm(privateKey))) )
+
       sig.update(Array.unsafeJvm(data))
 
       sig.sign().nn.unsafeImmutable(using Unsafe)
 
     def verify(data: Data, signature0: Data, publicKey: Data): Boolean =
       val sig = instance()
-      sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(Array.unsafeJvm(publicKey))))
+
+      sig.initVerify
+        ( keyFactory().generatePublic(jss.X509EncodedKeySpec(Array.unsafeJvm(publicKey))) )
+
       sig.update(Array.unsafeJvm(data))
 
       verified(sig, Array.unsafeJvm(signature0))
@@ -304,13 +313,20 @@ object JavaBaseCrypto extends Crypto:
 
     def sign(data: Data, privateKey: Data): Data =
       val sig = signature()
-      sig.initSign(keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.readable.to(scala.Array))))
+
+      sig.initSign
+        ( keyFactory()
+          . generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.readable.to(scala.Array))) )
+
       sig.update(data.readable.to(scala.Array))
       Array.unsafeFrozen(sig.sign().nn)
 
     def verify(data: Data, signature0: Data, publicKey: Data): Boolean =
       val sig = signature()
-      sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(publicKey.readable.to(scala.Array))))
+
+      sig.initVerify
+        ( keyFactory().generatePublic(jss.X509EncodedKeySpec(publicKey.readable.to(scala.Array))) )
+
       sig.update(data.readable.to(scala.Array))
       verified(sig, signature0.readable.to(scala.Array))
 
@@ -320,9 +336,13 @@ object JavaBaseCrypto extends Crypto:
       Array.unsafeFrozen(generator.generateKeyPair().nn.getPrivate.nn.getEncoded.nn)
 
     def privateToPublic(privateKey: Data): Data =
-      val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.readable.to(scala.Array))).nn match
-        case key: jsi.DSAPrivateKey => key
-        case key: js.PrivateKey     => panic(m"unexpected private key type")
+      val key =
+        keyFactory().generatePrivate
+          ( jss.PKCS8EncodedKeySpec(privateKey.readable.to(scala.Array)) )
+
+        . nn match
+          case key: jsi.DSAPrivateKey => key
+          case key: js.PrivateKey     => panic(m"unexpected private key type")
 
       val params = key.getParams.nn
       val y = params.getG.nn.modPow(key.getX, params.getP)

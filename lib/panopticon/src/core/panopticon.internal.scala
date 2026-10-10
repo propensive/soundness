@@ -33,9 +33,7 @@
 package panopticon
 
 import scala.collection.immutable.Seq
-
 import scala.collection.immutable.{List, Nil, ::}
-
 import scala.quoted.*
 
 import anticipation.*
@@ -86,10 +84,10 @@ object internal:
 
     // Fold the optic-application lambdas inline (rather than calling a capture-polymorphic helper):
     // a `[C^]` helper would put a `CapSet` type into this quoted tree, which `pickleQuotes` cannot
-    // pickle. Inlined at the concrete expansion site the lambdas' captures are concrete, so no reach
-    // capability leaks.
+    // pickle. Inlined at the concrete expansion site the lambdas' captures are concrete, so no
+    // reach capability leaks.
     def fallback: Expr[value] =
-      '{
+      ' {
           $lambdasExpr.foldLeft($valueExpr): (accumulator, lambda) =>
             lambda(panopticon.Optic.identity[value])(accumulator)
         }
@@ -488,10 +486,10 @@ object internal:
       val resultEx = emit[value](rootRef, branches)
       Block(List(rootDef), resultEx.asTerm).asExprOf[value]
 
-    // Extract through a `Seq[Any]` view: under capture checking, matching `Varargs` at the capturing
-    // element type `(Optic …) => value => value` hits a boxed/unboxed mismatch. `parseLambda` already
-    // takes `Expr[Any]`, and the single-lambda branch re-ascribes the precise type, so the pure view
-    // loses nothing.
+    // Extract through a `Seq[Any]` view: under capture checking, matching `Varargs` at the
+    // capturing element type `(Optic …) => value => value` hits a boxed/unboxed mismatch.
+    // `parseLambda` already takes `Expr[Any]`, and the single-lambda branch re-ascribes the precise
+    // type, so the pure view loses nothing.
     Varargs.unapply(lambdasExpr.asExprOf[Seq[Any]]) match
       case None => fallback
 

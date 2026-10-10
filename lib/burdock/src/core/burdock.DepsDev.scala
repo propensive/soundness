@@ -38,14 +38,13 @@ import distillate.*
 import eucalyptus.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
 import jacinta.*
 import monotonous.*, alphabets.base64Standard, alphabets.hexLowerCase
+import rudiments.*
 import spectacular.*
 import telekinesis.*
 import urticose.*
 import vacuous.*
-
 import httpBackends.javaNetHttp
 import internetAccess.online
 
@@ -77,6 +76,7 @@ object DepsDev:
       case List(name)            => (name.cut(t".").join(t"/"), name)
       case List(group, artifact) => (group.cut(t".").join(t"/"), artifact)
       case _                     => abort(Unresolved())
+
     val version: Text = key.version
     val jar: Text = t"$artifact-$version.jar"
 

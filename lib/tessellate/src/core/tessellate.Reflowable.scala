@@ -57,8 +57,7 @@ object Reflowable:
         val lines = Flow.wrap(content, width)
         val count = lines.size
 
-        lines.indexed.map: (line, index) =>
-          alignment.pad(line, width, index.n0 == count - 1)
+        lines.indexed.map: (line, index) => alignment.pad(line, width, index.n0 == count - 1)
         . to[Sequence]
 // Content that negotiates with a rectangular layout: it reports the intrinsic widths it wants
 // (`metrics`), how tall it runs at a candidate width (`height`), and finally arranges itself

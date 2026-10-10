@@ -36,14 +36,6 @@ import java.nio.file as jnf
 
 import scala.util.control as suc
 
-import org.jetbrains.kotlin.cli.common.ExitCode
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
-import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
-import org.jetbrains.kotlin.config.KotlinCompilerVersion
-import org.jetbrains.kotlin.config.Services
-
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -51,11 +43,18 @@ import denominative.*
 import digression.*
 import gossamer.*
 import hellenism.*
+import org.jetbrains.kotlin.cli.common.ExitCode
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
+import org.jetbrains.kotlin.config.KotlinCompilerVersion
+import org.jetbrains.kotlin.config.Services
 import parasite.*
 import prepositional.*
 import rudiments.*
-import vacuous.*
 import symbolism.*
+import vacuous.*
 
 object Kotlinc:
   type Versions = 1.9 | 2.0 | 2.1 | 2.2 | 2.3 | 2.4
@@ -99,6 +98,7 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
         jnf.Files.writeString(file, code.s)
 
         (file.toRealPath().nn.toString.tt, name)
+
       . to[Map]
 
     val collector = new MessageCollector:

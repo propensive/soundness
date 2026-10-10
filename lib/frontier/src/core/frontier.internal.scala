@@ -43,8 +43,8 @@ import gigantism.*
 import gossamer.*
 import proscenium.*
 import spectacular.*
-import vacuous.*
 import symbolism.*
+import vacuous.*
 
 object internal:
   // `transparent` is essential: only transparent inline calls are expanded at
@@ -84,11 +84,12 @@ object internal:
       List("frontier.context.explainMissingContext", "soundness.explainMissingContext")
       . flatMap: path =>
           try List(Symbol.requiredMethod(path)) catch case _: Throwable => Nil
+
       . concat:
-          // The `soundness` catch-all is a top-level definition, so it may only
-          // be reachable as a member of the package's synthetic file object.
-          try Symbol.requiredPackage("soundness").methodMember("explainMissingContext")
-          catch case _: Throwable => Nil
+        // The `soundness` catch-all is a top-level definition, so it may only
+        // be reachable as a member of the package's synthetic file object.
+        try Symbol.requiredPackage("soundness").methodMember("explainMissingContext")
+        catch case _: Throwable => Nil
 
     sealed trait Result
 
@@ -226,6 +227,7 @@ object internal:
 
       if typeParams.isEmpty then
         val resultRaw = resultOf(symbol.info)
+
         if resultRaw <:< target
         then Some(Matched(symbol, Nil, scala.collection.immutable.Map.empty))
         else None
@@ -378,7 +380,8 @@ object internal:
 
       val templateSymbol = template.typeSymbol
 
-      if params.contains(templateSymbol) then scala.collection.immutable.Map(templateSymbol -> target)
+      if params.contains(templateSymbol)
+      then scala.collection.immutable.Map(templateSymbol -> target)
       else (template.dealias, target.dealias) match
         case (AppliedType(tTycon, tArgs), AppliedType(rTycon, rArgs))
         if tArgs.length == rArgs.length =>

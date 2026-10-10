@@ -32,16 +32,17 @@
                                                                                                   */
 package embarcadero
 
+import scala.caps
+
 import anticipation.*
 import aperture.*
 import contingency.*
-import telekinesis.*
 import gossamer.*
 import locomotion.*
 import obligatory.*
 import parasite.*
 import rudiments.*
-import scala.caps
+import telekinesis.*
 import vacuous.*
 
 object Workload:
@@ -135,7 +136,8 @@ object Workload:
           // reaped before deletion, since containerd refuses to delete an unreaped task.
           if started then
             // [by-name-receiver] safely by-name teardown captures containerd and monitor
-            scala.caps.unsafe.unsafeAssumeSeparate(safely(containerd.killTask(created.id, 9, all = true)))
+            scala.caps.unsafe.unsafeAssumeSeparate
+              ( safely(containerd.killTask(created.id, 9, all = true)) )
             // [by-name-receiver]
             scala.caps.unsafe.unsafeAssumeSeparate(safely(containerd.waitTask(created.id)))
 

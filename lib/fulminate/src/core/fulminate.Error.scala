@@ -66,6 +66,7 @@ extends Exception(message.text.s, cause, false, diagnostics.captureStack), caps.
 
   def fullClass: List[Text] =
     (getClass.getName.nn.split("\\.").nn.iterator.map { part => Text(part.nn) }).to(List)
+
   def className: Text = List.last(fullClass)
   def component: Text = List.head(fullClass)
 

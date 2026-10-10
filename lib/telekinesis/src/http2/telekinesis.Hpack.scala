@@ -32,18 +32,19 @@
                                                                                                   */
 package telekinesis
 
+import java.nio.charset.StandardCharsets
+
+import scala.caps
 import scala.collection.mutable as scm
 
-import java.nio.charset.StandardCharsets
 import anticipation.*
-import denominative.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
 
 import Http2.Error.Reason
-import scala.caps
 
 // HPACK header-block compression and decompression (RFC 7541). A `Hpack` instance
 // owns one direction's dynamic table; a connection keeps one for decoding inbound
@@ -224,7 +225,9 @@ class Hpack(maxTableSize: Int = 4096) extends scala.caps.ExclusiveCapability, sc
   // An integer uses the low `prefix` bits of the byte at `data(offset)`; if those
   // are all 1 it continues in subsequent 7-bit groups (low 7 bits, high bit =
   // continuation). Returns the value and the index just past the integer.
-  private def readInteger(data: Data, offset: Int, prefix: Int)(using Tactic[Http2.Error]): (Int, Int) =
+  private def readInteger(data: Data, offset: Int, prefix: Int)(using Tactic[Http2.Error])
+  :   (Int, Int) =
+
     val mask = (1 << prefix) - 1
     val first = data.readUnchecked(offset) & mask
 

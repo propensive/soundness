@@ -32,10 +32,9 @@
                                                                                                   */
 package aviation
 
-import scala.collection.immutable.Seq
-
 import java.time as jt
 
+import scala.collection.immutable.Seq
 import scala.quoted.*
 
 import anticipation.*
@@ -168,7 +167,10 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head].literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
       case _               => strings
 
     val name: String = recur[parts](Nil) match
@@ -354,7 +356,10 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head].literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
       case _               => strings
 
     val part: String = recur[parts](Nil) match
@@ -398,7 +403,10 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head].literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
       case _               => strings
 
     val part: String = recur[parts](Nil) match
@@ -423,7 +431,10 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head].literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
       case _               => strings
 
     val parts = recur[parts](Nil)
@@ -437,7 +448,7 @@ object internal:
     // underlined in full.
     def segment(offset: Int, length: Int): Position =
       Interpolation.sourcePosition
-        (parts, Interpolation.decodeOrigins[origins], 1, offset, length.max(1))
+        ( parts, Interpolation.decodeOrigins[origins], 1, offset, length.max(1) )
 
     literal.tt.cut(t"/").map(_.s) match
       case List(repeats, start, period) =>
@@ -513,7 +524,9 @@ object internal:
     val rightTree = right.asTerm.underlyingArgument
 
     val collector = new TreeAccumulator[scala.collection.immutable.Map[Symbol, Term]]:
-      def foldTree(env: scala.collection.immutable.Map[Symbol, Term], tree: Tree)(owner: Symbol): scala.collection.immutable.Map[Symbol, Term] =
+      def foldTree(env: scala.collection.immutable.Map[Symbol, Term], tree: Tree)(owner: Symbol)
+      :   scala.collection.immutable.Map[Symbol, Term] =
+
         val env2 = tree match
           case valDef: ValDef => valDef.rhs match
             case Some(rhs) => env.updated(valDef.symbol, rhs)
@@ -526,6 +539,7 @@ object internal:
 
     val owner = Symbol.spliceOwner
     val leftEnv = collector.foldTree(scala.collection.immutable.Map(), leftTree)(owner)
+
     val env: scala.collection.immutable.Map[Symbol, Term] =
       collector.foldTree(leftEnv, rightTree)(owner)
 
@@ -548,8 +562,10 @@ object internal:
     // An `Int` constant, also peering through opaque wrappers like `Year(_)`/`Day(_)`.
     def constInt(term: Term): Optional[Int] = strip(term) match
       case Literal(IntConstant(value))                       => value
+
       case Apply(fn, scala.collection.immutable.List(arg)) if fn.symbol.name == "apply" =>
         constInt(arg)
+
       case _                                                 => Unset
 
     // The zero-based ordinal of a `Month` enum-case reference (e.g. `Mar`).

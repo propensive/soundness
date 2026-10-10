@@ -34,7 +34,6 @@ package urticose
 
 import java.io as ji
 
-
 import scala.compiletime.asMatchable
 import scala.quoted.*
 
@@ -123,7 +122,7 @@ object internal:
 
       given encodable: Ipv4 is Encodable in Text = _.show
       given decodable: (tactic: Tactic[IpAddress.Error])
-      =>  ((Ipv4 is Decodable in Text)^{tactic}) =
+      =>  ( (Ipv4 is Decodable in Text)^{tactic} ) =
         parse(_)
 
       lazy val Localhost: Ipv4 = apply(127, 0, 0, 1)
@@ -137,7 +136,7 @@ object internal:
       given dataEncodable: Ipv4 is Encodable in Data = _.bytes
 
       given dataDecodable: (tactic: Tactic[IpAddress.Error])
-      =>  ((Ipv4 is Decodable in Data)^{tactic}) = data =>
+      =>  ( (Ipv4 is Decodable in Data)^{tactic} ) = data =>
         if data.length != 4 then abort(IpAddress.Error(Ipv4WrongNumberOfBytes(data.length)))
         else Int(data)
 
@@ -173,7 +172,7 @@ object internal:
       given inspectable: [mac <: MacAddress] => mac is Inspectable = mac => mac.text
       given encodable: MacAddress is Encodable in Text = _.text
       given decoder: (tactic: Tactic[MacAddress.Error])
-      =>  ((MacAddress is Decodable in Text)^{tactic}) =
+      =>  ( (MacAddress is Decodable in Text)^{tactic} ) =
         parse(_)
 
       def apply(value: Long): MacAddress = value
@@ -189,8 +188,7 @@ object internal:
           case Nil => acc
 
           case head :: tail =>
-            if head.length != 2
-            then raise(MacAddress.Error(WrongGroupLength(index, head.length)))
+            if head.length != 2 then raise(MacAddress.Error(WrongGroupLength(index, head.length)))
 
             val value = try Integer.parseInt(head.s, 16) catch case error: NumberFormatException =>
               abort(MacAddress.Error(NotHex(index, head)))
@@ -248,7 +246,7 @@ object internal:
       given showableOver: [transport] => (Port over transport) is Showable = _.number.show
 
       given decodable: (numberTactic: Tactic[Number.Error], portTactic: Tactic[Port.Error])
-      =>  ((Port is Decodable in Text)^{numberTactic, portTactic}) =
+      =>  ( (Port is Decodable in Text)^{numberTactic, portTactic} ) =
         text => apply(text.as[Int])
 
       def unsafe[transport](value: Int): Port over transport =
@@ -258,8 +256,7 @@ object internal:
       // (`Port[Udp](8237)`) or inferred from the expected type (`Port(8237)` where a
       // `Port over Udp` is wanted).
       def apply[transport](value: Int): (Port over transport) raises Port.Error =
-        if 1 <= value <= 65535 then value.asInstanceOf[Port over transport]
-        else abort(Port.Error())
+        if 1 <= value <= 65535 then value.asInstanceOf[Port over transport] else abort(Port.Error())
 
       // A port that was unused a moment ago: an ephemeral probe socket of the right kind for
       // the transport is bound and then released, so that the caller can bind the port itself.
@@ -332,7 +329,7 @@ object internal:
     given inspectable: [subnet <: Ipv4Subnet] => subnet is Inspectable = showable.text(_)
     given encodable: Ipv4Subnet is Encodable in Text = _.show
     given decodable: (tactic: Tactic[IpAddress.Error])
-    =>  ((Ipv4Subnet is Decodable in Text)^{tactic}) =
+    =>  ( (Ipv4Subnet is Decodable in Text)^{tactic} ) =
       parse(_)
 
     def parse(text: Text): Ipv4Subnet raises IpAddress.Error =
@@ -353,7 +350,7 @@ object internal:
     given dataEncodable: Ipv6 is Encodable in Data = _.bytes
 
     given dataDecodable: (tactic: Tactic[IpAddress.Error])
-    =>  ((Ipv6 is Decodable in Data)^{tactic}) = data =>
+    =>  ( (Ipv6 is Decodable in Data)^{tactic} ) = data =>
       if data.length != 16 then abort(IpAddress.Error(Ipv6WrongNumberOfBytes(data.length)))
       else Ipv6(Long(B64(data, 0)), Long(B64(data, 8)))
 
@@ -363,11 +360,11 @@ object internal:
       case ipv4: (Ipv4 @unchecked) => ipv4.show
 
     given hostDecodable: (tactic: Tactic[Hostname.Error])
-    =>  ((urticose.Host is Decodable in Text)^{tactic}) = text =>
+    =>  ( (urticose.Host is Decodable in Text)^{tactic} ) = text =>
       safely(text.as[Ipv6]).or(safely(text.as[Ipv4])).or(text.as[Hostname])
 
     given decodable: (tactic: Tactic[IpAddress.Error])
-    =>  ((Ipv6 is Decodable in Text)^{tactic}) =
+    =>  ( (Ipv6 is Decodable in Text)^{tactic} ) =
       parse(_)
 
     given toExpr: ToExpr[Ipv6]:
@@ -420,8 +417,7 @@ object internal:
           then
             raise(IpAddress.Error(Ipv6TooManyNonzeroGroups(leftGroups.size + rightGroups.size)))
 
-          leftGroups + List.fill(8 - leftGroups.size - rightGroups.size)(t"0") +
-            rightGroups
+          leftGroups + List.fill(8 - leftGroups.size - rightGroups.size)(t"0") + rightGroups
 
         case List(whole) =>
           val groups = whole.cut(t":")
@@ -476,7 +472,7 @@ object internal:
     given inspectable: [subnet <: Ipv6Subnet] => subnet is Inspectable = showable.text(_)
     given encodable: Ipv6Subnet is Encodable in Text = _.show
     given decodable: (tactic: Tactic[IpAddress.Error])
-    =>  ((Ipv6Subnet is Decodable in Text)^{tactic}) =
+    =>  ( (Ipv6Subnet is Decodable in Text)^{tactic} ) =
       parse(_)
 
     def parse(text: Text): Ipv6Subnet raises IpAddress.Error =

@@ -68,7 +68,7 @@ extension [self, element](self: self)(using traversable: self is Traversable by 
   :   result =
 
     reshapable.reshape
-     ( sorting.ordered(algorithm, traversable.traverse(self), lambda, comparable, sizeHint) )
+      ( sorting.ordered(algorithm, traversable.traverse(self), lambda, comparable, sizeHint) )
 
   // Sorting by the elements' own order, the no-key sibling of `order(lambda)`. Elements are
   // their own keys here, so this pays for none of the decoration `order` needs.
@@ -79,7 +79,7 @@ extension [self, element](self: self)(using traversable: self is Traversable by 
   :   result =
 
     reshapable.reshape
-     ( sorting.sorted(algorithm, traversable.traverse(self), comparable, sizeHint) )
+      ( sorting.sorted(algorithm, traversable.traverse(self), comparable, sizeHint) )
 
   // How many elements are coming, when that is known and the caller has accepted the cost of
   // asking. `Countable` is complexity-gated — a `List` answers only where `linearSize` has been
@@ -134,7 +134,8 @@ object sorting:
 
   // The comparator the algorithms take, from a `Comparable` over the elements themselves.
   def comparator[element](comparable: element is Comparable): ju.Comparator[AnyRef] =
-    (left, right) => comparable.compare(left.asInstanceOf[element], right.asInstanceOf[element]).sign
+    (left, right) =>
+      comparable.compare(left.asInstanceOf[element], right.asInstanceOf[element]).sign
 
   // The elements of a traversal, in order. The array is a bare `scala.Array[AnyRef]`: it is
   // interior scratch, never escaping, and holding it untyped avoids demanding a `ClassTag` for
@@ -168,7 +169,7 @@ object sorting:
   :   Iterator[element]^ =
 
     val entries =
-      elements.map { element => Entry(project(element), element).asInstanceOf[AnyRef] }
+      elements.map: element => Entry(project(element), element).asInstanceOf[AnyRef]
 
     val array = drain(entries, size)
 

@@ -217,11 +217,11 @@ object Protobuf extends Protobuf2:
   // drives a `Protobuf.Parsable` instance over the input through a
   // `ProtobufReader`, its window set to the whole message.
   private def parseDirect[value]
-    ( input: Data, parsable: (value is Protobuf.Parsable)^ )
+    ( parser: ProtobufParser^, parsable: (value is Protobuf.Parsable)^ )
     ( using tactic: Tactic[Protobuf.Error] )
   :   value =
 
-    parsable.parse(ProtobufReader(ProtobufParser(input), tactic))
+    parsable.parse(ProtobufReader(parser, tactic))
 
   // Direct parsing: when the value knows how to consume wire fields itself,
   // the field map is never materialized. Declared here (not in `Protobuf2`,
@@ -234,7 +234,25 @@ object Protobuf extends Protobuf2:
   =>  (tactic: Tactic[Protobuf.Error])
   =>  (((value in Protobuf) is Aggregable by Data)^{parsable, tactic}) =
 
-    bytes => parseDirect(bytes.read[Data], parsable).asInstanceOf[value in Protobuf]
+    new Aggregable:
+      type Self = value in Protobuf
+      type Operand = Data
+
+      def aggregate(bytes: Chain[Data]): value in Protobuf =
+        // A single in-memory block — the common case — is read in place; the general
+        // path pulls the chain's cells as the parser needs them.
+        if !bytes.nil && bytes.stdlib.tail.isEmpty
+        then parseDirect(ProtobufParser(bytes.stdlib.head), parsable).asInstanceOf[value in Protobuf]
+        else parseDirect(ProtobufParser(bytes), parsable).asInstanceOf[value in Protobuf]
+
+      // The parameter is not `consume`: `Aggregable.accept`'s signature is pinned
+      // non-consuming by overrides in modules outside separation checking, so the stream
+      // crosses to the consuming parser as a neutral reference — each accept call delivers
+      // a stream that is used exactly once, by construction.
+      override def accept(stream: (Stream[Data] over Credit)^): value in Protobuf =
+        val moved: AnyRef = stream.asInstanceOf[AnyRef]
+        parseDirect(ProtobufParser(moved.asInstanceOf[(Stream[Data] over Credit)^]), parsable)
+        . asInstanceOf[value in Protobuf]
 
   // Whole-`Data` direct read: when the entire content is already in hand,
   // parse it in place rather than wrapping it in a one-element stream.
@@ -245,7 +263,7 @@ object Protobuf extends Protobuf2:
   =>  (tactic: Tactic[Protobuf.Error])
   =>  ((Data is Readable to (value in Protobuf))^{parsable, tactic}) =
 
-    data => parseDirect(data, parsable).asInstanceOf[value in Protobuf]
+    data => parseDirect(ProtobufParser(data), parsable).asInstanceOf[value in Protobuf]
 
   given protobuf: Protobuf is Decodable in Protobuf = identity(_)
 
@@ -280,7 +298,7 @@ object Protobuf extends Protobuf2:
       val number = ordinal.n1
 
       safely:
-        val fields = ProtobufParser(origin.payload).fields()
+        val fields = ProtobufParser.fields(origin.payload)
 
         if !fields.defines(number) then origin else
           val bytes = printed: printer =>
@@ -311,13 +329,13 @@ object Protobuf extends Protobuf2:
     output
 
   private def readVarint(protobuf: Protobuf)(using Tactic[Protobuf.Error]): Long =
-    if protobuf.isAbsent then 0L else ProtobufParser(protobuf.payload).varint()
+    if protobuf.isAbsent then 0L else ProtobufParser.varintOf(protobuf.payload)
 
   private def readFixed32(protobuf: Protobuf)(using Tactic[Protobuf.Error]): Int =
-    if protobuf.isAbsent then 0 else ProtobufParser(protobuf.payload).fixed32()
+    if protobuf.isAbsent then 0 else ProtobufParser.fixed32Of(protobuf.payload)
 
   private def readFixed64(protobuf: Protobuf)(using Tactic[Protobuf.Error]): Long =
-    if protobuf.isAbsent then 0L else ProtobufParser(protobuf.payload).fixed64()
+    if protobuf.isAbsent then 0L else ProtobufParser.fixed64Of(protobuf.payload)
 
   // Zig-zag maps signed integers to unsigned so small-magnitude negatives stay
   // short as varints: 0→0, -1→1, 1→2, -2→3, …
@@ -360,13 +378,13 @@ object Protobuf extends Protobuf2:
   =>  ((Double is Decodable in Protobuf)^{tactic, caps.any}) =
     protobuf =>
       if protobuf.isAbsent then 0.0
-      else jl.Double.longBitsToDouble(ProtobufParser(protobuf.payload).fixed64())
+      else jl.Double.longBitsToDouble(ProtobufParser.fixed64Of(protobuf.payload))
 
   given floatDecodable: (tactic: Tactic[Protobuf.Error])
   =>  ((Float is Decodable in Protobuf)^{tactic, caps.any}) =
     protobuf =>
       if protobuf.isAbsent then 0.0f
-      else jl.Float.intBitsToFloat(ProtobufParser(protobuf.payload).fixed32())
+      else jl.Float.intBitsToFloat(ProtobufParser.fixed32Of(protobuf.payload))
 
   given textDecodable: Text is Decodable in Protobuf =
     protobuf => jl.String(Array.unsafeJvm(protobuf.payload), UTF_8).nn.tt
@@ -471,7 +489,7 @@ object Protobuf extends Protobuf2:
       // value per occurrence) wire forms, per the proto3 compatibility rule.
       protobuf.occurrences.each: wire =>
         if wire.wireKind == WireType.Len && packable.wireType != WireType.Len
-        then ProtobufParser(wire.payload).packed(packable.wireType).each: element =>
+        then ProtobufParser.packed(wire.payload, packable.wireType).each: element =>
           builder += decodable.decoded(element)
         else builder += decodable.decoded(wire)
 
@@ -548,7 +566,7 @@ object Protobuf extends Protobuf2:
     // An honest capability, as `listEncodable` above.
     protobuf =>
       val entries = protobuf.occurrences.map: entry =>
-        val fields = ProtobufParser(entry.payload).fields()
+        val fields = ProtobufParser.fields(entry.payload)
         val key = keyDecodable.decoded(Repeated(fields(1).or(Nil)))
         val value = valueDecodable.decoded(Repeated(fields(2).or(Nil)))
         (key, value)
@@ -600,7 +618,7 @@ object Protobuf extends Protobuf2:
       // (`^`) trait result honestly admits the capture — no seal.
       { protobuf =>
         provide[Tactic[Protobuf.Error]]:
-          val map = ProtobufParser(protobuf.payload).fields()
+          val map = ProtobufParser.fields(protobuf.payload)
 
           build[derivation]:
             [field0] => context =>
@@ -613,7 +631,7 @@ object Protobuf extends Protobuf2:
       { protobuf =>
         provide[Tactic[Protobuf.Error]]:
           provide[Tactic[Variant.Error]]:
-            val map = ProtobufParser(protobuf.payload).fields()
+            val map = ProtobufParser.fields(protobuf.payload)
             val labels = variantLabels
 
             val (label, index) =

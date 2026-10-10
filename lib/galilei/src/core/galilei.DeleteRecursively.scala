@@ -33,8 +33,8 @@
 package galilei
 
 import beneficence.*
-import prepositional.*
 import contingency.*
+import prepositional.*
 import serpentine.*
 
 trait DeleteRecursively extends Planar, Findable:

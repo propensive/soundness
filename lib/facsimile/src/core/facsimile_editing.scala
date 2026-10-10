@@ -43,6 +43,7 @@ import quantitative.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
+
 // `linearAccess`: linking outline siblings reads the neighbouring `refs` by position, exactly
 // as the stdlib-indexed form it replaces did.
 import denominative.dysasymptotics.{linearAccess, linearSize}
@@ -77,8 +78,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     // The edit reads and rewrites the same single-owner document.
     // [by-name-receiver] editPage lambda reads same document passed as argument
     scala.caps.unsafe.unsafeAssumeSeparate:
-     editPage(pdf, page): entries =>
-      entries.define(t"Contents", stream)
+      editPage(pdf, page): entries => entries.define(t"Contents", stream)
 
   // Sets a page's rotation.
   def setRotation(page: Page^, rotation: Page.Rotation)(using Tactic[Pdf.Error]): Unit =
@@ -145,7 +145,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
 
         // Symbol and ZapfDingbats have built-in encodings; the text fonts take WinAnsi.
         val symbolic = standard match
-          case Pdf.Font.Standard.Symbol | Pdf.Font.Standard.ZapfDingbats => true
+          case Pdf.Font.Standard.Symbol | Pdf.Font.Standard.ZapfDingbats  => true
           case _                                                          => false
 
         val entries: Map[Text, Cos] =
@@ -155,8 +155,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
               t"BaseFont" -> Cos.Name(baseFont) )
 
         val encoded =
-          if symbolic then entries
-          else entries.define(t"Encoding", Cos.Name(t"WinAnsiEncoding"))
+          if symbolic then entries else entries.define(t"Encoding", Cos.Name(t"WinAnsiEncoding"))
 
         pdf.allocate(Cos.Dictionary(encoded))
 
@@ -171,15 +170,15 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     // The edit reads and rewrites the same single-owner document.
     // [by-name-receiver] editPage lambda reads same document passed as argument
     scala.caps.unsafe.unsafeAssumeSeparate:
-     editPage(pdf, page): entries =>
-      val resources = pdf.resolved(entries(t"Resources").or(Cos.Nil)).dictionary
-        . or(Map[Text, Cos]())
+      editPage(pdf, page): entries =>
+        val resources = pdf.resolved(entries(t"Resources").or(Cos.Nil)).dictionary
+          . or(Map[Text, Cos]())
 
-      val existing = pdf.resolved(resources(category).or(Cos.Nil)).dictionary
-        . or(Map[Text, Cos]())
+        val existing = pdf.resolved(resources(category).or(Cos.Nil)).dictionary
+          . or(Map[Text, Cos]())
 
-      val category0 = Cos.Dictionary(existing.define(name, resource))
-      entries.define(t"Resources", Cos.Dictionary(resources.define(category, category0)))
+        val category0 = Cos.Dictionary(existing.define(name, resource))
+        entries.define(t"Resources", Cos.Dictionary(resources.define(category, category0)))
 
   // Sets a page's annotations from raw annotation dictionaries: each becomes an indirect
   // object, and the page's `/Annots` is set to the array of references.
@@ -192,7 +191,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   def addLink
     ( page: Page^, rect: Pdf.Rect, uri: Optional[Text] = Unset,
       destination: Optional[Destination] = Unset )
-  ( using Tactic[Pdf.Error] )
+  (using Tactic[Pdf.Error])
   :   Unit =
 
     val box =
@@ -215,9 +214,9 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     // The edit reads and rewrites the same single-owner document.
     // [by-name-receiver] editPage lambda reads same document passed as argument
     scala.caps.unsafe.unsafeAssumeSeparate:
-     editPage(pdf, page): entries =>
-      val existing = entries(t"Annots").let(pdf.resolved(_).elements).or(Nil)
-      entries.define(t"Annots", Cos.Sequence(existing :+ ref))
+      editPage(pdf, page): entries =>
+        val existing = entries(t"Annots").let(pdf.resolved(_).elements).or(Nil)
+        entries.define(t"Annots", Cos.Sequence(existing :+ ref))
 
   // Replaces the document outline (bookmarks). The tree is rebuilt as fresh objects with the
   // full `/First`/`/Last`/`/Next`/`/Prev`/`/Parent`/`/Count` linkage, and the catalog's
@@ -243,7 +242,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
   def appendPage
     ( mediaBox: Pdf.Rect, operators: List[Pdf.Operator] = Nil,
       resources: Optional[Cos] = Unset )
-  ( using Tactic[Pdf.Error] )
+  (using Tactic[Pdf.Error])
   :   Cos.Ref =
 
     val root = pdf.catalog(t"Pages").or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"Pages"))))
@@ -270,12 +269,12 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     // The edit reads and rewrites the same single-owner document.
     // [by-name-receiver] editDictionary lambda reads the receiver document
     scala.caps.unsafe.unsafeAssumeSeparate:
-     pdf.editDictionary(rootRef.number): tree =>
-      val kids = tree(t"Kids").let(pdf.resolved(_).elements).or(Nil)
-      val count = tree(t"Count").let(_.long).or(kids.size.toLong)
+      pdf.editDictionary(rootRef.number): tree =>
+        val kids = tree(t"Kids").let(pdf.resolved(_).elements).or(Nil)
+        val count = tree(t"Count").let(_.long).or(kids.size.toLong)
 
-      tree.define(t"Kids", Cos.Sequence(kids :+ pageRef))
-        . define(t"Count", Cos.Integral(count + 1))
+        tree.define(t"Kids", Cos.Sequence(kids :+ pageRef))
+          . define(t"Count", Cos.Integral(count + 1))
 
     pageRef
 
@@ -292,15 +291,15 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
             // The edit reads and rewrites the same single-owner document.
             // [by-name-receiver] editDictionary lambda reads the receiver document
             scala.caps.unsafe.unsafeAssumeSeparate:
-             pdf.editDictionary(ref.number): tree =>
-              val kids = tree(t"Kids").let(pdf.resolved(_).elements).or(Nil)
+              pdf.editDictionary(ref.number): tree =>
+                val kids = tree(t"Kids").let(pdf.resolved(_).elements).or(Nil)
 
-              val remaining = kids.filter:
-                case Cos.Ref(number, _) => number != pageNumber
-                case _                  => true
+                val remaining = kids.filter:
+                  case Cos.Ref(number, _) => number != pageNumber
+                  case _                  => true
 
-              tree.define(t"Kids", Cos.Sequence(remaining))
-                . define(t"Count", Cos.Integral(remaining.size.toLong))
+                tree.define(t"Kids", Cos.Sequence(remaining))
+                  . define(t"Count", Cos.Integral(remaining.size.toLong))
 
             pdf.remove(pageNumber)
 
@@ -310,7 +309,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
 private def editPage
   ( pdf: (Pdf & Granting[Grant.Write])^, page: Page^ )
   ( transform: Map[Text, Cos] => Map[Text, Cos] )
-( using Tactic[Pdf.Error] )
+(using Tactic[Pdf.Error])
 :   Unit =
 
   page.number.let(pdf.editDictionary(_)(transform))
@@ -327,7 +326,7 @@ def winAnsi(text: Text): Data = PdfEncoding.winAnsiEncode(text)
 // descendant count (used for `/Count`).
 private def buildOutline
   ( pdf: (Pdf & Granting[Grant.Write])^, items: List[Bookmark], parent: Cos.Ref )
-( using Tactic[Pdf.Error] )
+(using Tactic[Pdf.Error])
 :   (Optional[Cos.Ref], Optional[Cos.Ref], Int) =
 
   if items.nil then (Unset, Unset, 0) else

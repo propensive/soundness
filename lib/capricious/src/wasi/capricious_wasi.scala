@@ -44,6 +44,7 @@ import xenophile.*
 // The WIT definitions the navigation below is typechecked against, and which the `call`
 // materializer consults (at its downstream expansion site) for the function's module id.
 type WasiRandomApi = Interface in Wit at "/capricious/random.wit"
+
 package wasiApis:
   given wasiRandomApi: WasiRandomApi = Interface[Wit](cp"/capricious/random.wit")
 

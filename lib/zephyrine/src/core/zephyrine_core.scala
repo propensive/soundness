@@ -123,7 +123,7 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
     // anonymous class that wraps it (the statement rule); consume parameters carry
     // explicit capture sets and hide nothing.
     throughDuct[in, ductile.Result, transport, ductile.Transport]
-      (ductile.duct(stage), stream)
+      ( ductile.duct(stage), stream )
 
   // Pull-composition with a duct directly. A `Duct` *is* a pipeline stage, not a
   // description of one, so it needs no `Ductile` instance to be attached: the duct
@@ -205,7 +205,7 @@ extension [out, transport](consume intake: (Intake[out] over transport)^)
 
     // See `throughDuct` above.
     intakeThroughDuct[ductile.Operand, out, ductile.Upstream, transport]
-      (ductile.duct(stage), intake)
+      ( ductile.duct(stage), intake )
 
   // Push-composition with a duct directly; see `viaDuct` above.
   def acceptingDuct[in, upTransport]
@@ -229,7 +229,7 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
   // Drain the stream, applying `operation` to each successive region and its
   // branded readable interval; it must not retain the region beyond the call.
   def drain(operation: (region: Region[medium]) => (Interval in region.type) => Unit)
-    (using buffering: Buffering)
+    ( using buffering: Buffering )
   :   Unit =
 
     // A drain loop wants boundary-transfer-sized credit: a staging-block ask
@@ -284,7 +284,7 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
 
     def loop(state: state): state = stream.refill(Credit(block)) match
       case count: Int =>
-        val state2 = stream.lend { region => range => operation(region)(state, range) }
+        val state2 = stream.lend: region => range => operation(region)(state, range)
         stream.skip(count)
         loop(state2)
 
@@ -324,7 +324,7 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
 
     def recur(): Chain[medium] = stream.refill(Credit(block)) match
       case count: Int =>
-        val chunk = stream.lend { region => range => region.materialize(range) }
+        val chunk = stream.lend: region => range => region.materialize(range)
         stream.skip(count)
         chunk #:: recur()
 
@@ -361,46 +361,47 @@ extension [record](consume stream: (Stream[Array[record]^{}] over Credit)^)
 def streamOf[data](cursor: Cursor[data, {}]^, length: Optional[Long] = Unset)
 :   (Stream[data] over Credit)^{cursor, caps.any} =
 
-    new Stream[data](using cursor.addressable):
-      type Transport = Credit
+  new Stream[data](using cursor.addressable):
+    type Transport = Credit
 
-      private var remaining: Long = length.or(Long.MaxValue)
+    private var remaining: Long = length.or(Long.MaxValue)
 
-      // A snapshot of the cursor's buffer state, taken by `refill`: only update
-      // methods may access the exclusive cursor, so the read-only accessors
-      // below serve the snapshot. The buffer reference is cast-erased and never
-      // exposed before the first refill (hence the pure placeholder initial).
-      private var storage: AnyRef = ""
-      private var start0: Int = 0
-      private var limit0: Int = 0
+    // A snapshot of the cursor's buffer state, taken by `refill`: only update
+    // methods may access the exclusive cursor, so the read-only accessors
+    // below serve the snapshot. The buffer reference is cast-erased and never
+    // exposed before the first refill (hence the pure placeholder initial).
+    private var storage: AnyRef = ""
+    private var start0: Int = 0
+    private var limit0: Int = 0
 
-      protected def storage0: AnyRef = storage
-      def start: Int = start0
-      def limit: Int = limit0
+    protected def storage0: AnyRef = storage
+    def start: Int = start0
+    def limit: Int = limit0
 
-      update def skip(count: Int): Unit =
-        remaining -= count
-        start0 += count
-        cursor.unsafeAdvanceBy(count)(using Unsafe)
+    update def skip(count: Int): Unit =
+      remaining -= count
+      start0 += count
+      cursor.unsafeAdvanceBy(count)(using Unsafe)
 
-      // Demand does not bound exposure: the cursor refills by its own bounded
-      // block, which is what bounds memory (as the iterator factory on
-      // `Stream`'s companion notes of its chunks). An unconsumed region is
-      // reported, not extended: `cursor.more` short-circuits while buffered
-      // elements remain, so re-snapshotting it is free.
-      update def refill(demand: Credit): Optional[Int] =
-        if remaining <= 0 then Unset
-        else if cursor.more then
-          storage = cursor.unsafeBuffer(using Unsafe).asInstanceOf[AnyRef]
-          start0 = cursor.unsafePos(using Unsafe)
-          val available = cursor.unsafeWriteEnd(using Unsafe) - start0
-          val readable = if remaining < available then remaining.toInt else available
-          limit0 = start0 + readable
-          readable
-        else Unset
+    // Demand does not bound exposure: the cursor refills by its own bounded
+    // block, which is what bounds memory (as the iterator factory on
+    // `Stream`'s companion notes of its chunks). An unconsumed region is
+    // reported, not extended: `cursor.more` short-circuits while buffered
+    // elements remain, so re-snapshotting it is free.
+    update def refill(demand: Credit): Optional[Int] =
+      if remaining <= 0 then Unset
+      else if cursor.more then
+        storage = cursor.unsafeBuffer(using Unsafe).asInstanceOf[AnyRef]
+        start0 = cursor.unsafePos(using Unsafe)
+        val available = cursor.unsafeWriteEnd(using Unsafe) - start0
+        val readable = if remaining < available then remaining.toInt else available
+        limit0 = start0 + readable
+        readable
+      else
+        Unset
 
-      // Deliberately not overridden: `close()` must leave the lent cursor open
-      // for the caller to resume.
+    // Deliberately not overridden: `close()` must leave the lent cursor open
+    // for the caller to resume.
 
 // A pull endpoint lending a cursor up to a delimiter: the bytes before the next occurrence
 // of `delimiter`, exposed zero-copy from the cursor's buffer and found in bulk (`distance`).
@@ -416,160 +417,160 @@ def streamOf[data](cursor: Cursor[data, {}]^, length: Optional[Long] = Unset)
 def streamOf(cursor: Cursor[Data, {}]^, delimiter: Cursor.Delimiter)
 :   (Stream[Data] over Credit)^{cursor, caps.any} =
 
-    new Stream[Data]:
-      type Transport = Credit
+  new Stream[Data]:
+    type Transport = Credit
 
-      private val length: Int = delimiter.length
+    private val length: Int = delimiter.length
 
-      // The carried bytes (at most `length - 1`), and the scratch they are joined in with
-      // the start of the next region. Both are written only here and reached only through
-      // this endpoint.
-      // [anon-fresh-field] fresh carry array in anonymous Stream
-      @caps.unsafe.untrackedCaptures
-      private val carry: scala.Array[Byte] = new scala.Array[Byte]((length - 1).max(0))
+    // The carried bytes (at most `length - 1`), and the scratch they are joined in with
+    // the start of the next region. Both are written only here and reached only through
+    // this endpoint.
+    // [anon-fresh-field] fresh carry array in anonymous Stream
+    @caps.unsafe.untrackedCaptures
+    private val carry: scala.Array[Byte] = new scala.Array[Byte]((length - 1).max(0))
 
-      // [anon-fresh-field] fresh scratch array in anonymous Stream
-      @caps.unsafe.untrackedCaptures
-      private val joined: scala.Array[Byte] = new scala.Array[Byte]((2*length - 2).max(0))
+    // [anon-fresh-field] fresh scratch array in anonymous Stream
+    @caps.unsafe.untrackedCaptures
+    private val joined: scala.Array[Byte] = new scala.Array[Byte]((2*length - 2).max(0))
 
-      private var carried: Int = 0
+    private var carried: Int = 0
 
-      // The region: over the cursor's buffer, or over `joined` when its content was carried.
-      private var storage: AnyRef = ""
-      private var start0: Int = 0
-      private var limit0: Int = 0
-      private var fromCursor: Boolean = false
+    // The region: over the cursor's buffer, or over `joined` when its content was carried.
+    private var storage: AnyRef = ""
+    private var start0: Int = 0
+    private var limit0: Int = 0
+    private var fromCursor: Boolean = false
 
-      // Owed once the current region has been consumed: bytes at the cursor to carry, then
-      // a found delimiter to step over.
-      private var toCarry: Int = 0
-      private var toStep: Int = 0
-      private var ended: Boolean = false
+    // Owed once the current region has been consumed: bytes at the cursor to carry, then
+    // a found delimiter to step over.
+    private var toCarry: Int = 0
+    private var toStep: Int = 0
+    private var ended: Boolean = false
 
-      protected def storage0: AnyRef = storage
-      def start: Int = start0
-      def limit: Int = limit0
+    protected def storage0: AnyRef = storage
+    def start: Int = start0
+    def limit: Int = limit0
 
-      update def skip(count: Int): Unit =
-        start0 += count
-        if fromCursor then cursor.unsafeAdvanceBy(count)(using Unsafe)
+    update def skip(count: Int): Unit =
+      start0 += count
+      if fromCursor then cursor.unsafeAdvanceBy(count)(using Unsafe)
 
-      private update def expose(buffer: AnyRef, from: Int, count: Int, cursorBacked: Boolean)
-      :   Int =
+    private update def expose(buffer: AnyRef, from: Int, count: Int, cursorBacked: Boolean)
+    :   Int =
 
-        storage = buffer
-        start0 = from
-        limit0 = from + count
-        fromCursor = cursorBacked
-        count
+      storage = buffer
+      start0 = from
+      limit0 = from + count
+      fromCursor = cursorBacked
+      count
 
-      // Cast-erased, as the length-bounded factory's snapshot is: the scratch is reached only
-      // through this endpoint.
-      private update def exposeJoined(count: Int): Int =
-        expose(joined.asInstanceOf[AnyRef], 0, count, false)
+    // Cast-erased, as the length-bounded factory's snapshot is: the scratch is reached only
+    // through this endpoint.
+    private update def exposeJoined(count: Int): Int =
+      expose(joined.asInstanceOf[AnyRef], 0, count, false)
 
-      private update def exposeCursor(count: Int): Int =
-        expose
-          ( cursor.unsafeBuffer(using Unsafe).asInstanceOf[AnyRef],
-            cursor.unsafePos(using Unsafe),
-            count,
-            true )
+    private update def exposeCursor(count: Int): Int =
+      expose
+        ( cursor.unsafeBuffer(using Unsafe).asInstanceOf[AnyRef],
+          cursor.unsafePos(using Unsafe),
+          count,
+          true )
 
-      private update def finish(step: Int): Optional[Int] =
-        cursor.unsafeAdvanceBy(step)(using Unsafe)
-        ended = true
-        Unset
+    private update def finish(step: Int): Optional[Int] =
+      cursor.unsafeAdvanceBy(step)(using Unsafe)
+      ended = true
+      Unset
 
-      // Move the bytes owed to the carry out of the cursor.
-      private update def absorb(count: Int): Unit =
-        System.arraycopy
-          ( cursor.unsafeDataBuffer(using Unsafe), cursor.unsafePos(using Unsafe), carry, carried,
-            count )
+    // Move the bytes owed to the carry out of the cursor.
+    private update def absorb(count: Int): Unit =
+      System.arraycopy
+        ( cursor.unsafeDataBuffer(using Unsafe), cursor.unsafePos(using Unsafe), carry, carried,
+          count )
 
-        carried += count
-        cursor.unsafeAdvanceBy(count)(using Unsafe)
+      carried += count
+      cursor.unsafeAdvanceBy(count)(using Unsafe)
 
-      update def refill(demand: Credit): Optional[Int] =
-        if limit0 > start0 then limit0 - start0
-        else if ended then Unset
+    update def refill(demand: Credit): Optional[Int] =
+      if limit0 > start0 then limit0 - start0
+      else if ended then Unset
+      else
+        if toCarry > 0 then
+          absorb(toCarry)
+          toCarry = 0
+
+        if toStep > 0 then finish(toStep) else next()
+
+    // The next region, with nothing carried: up to the delimiter if the buffer holds it,
+    // otherwise all but a possible prefix of it — or, when the buffer holds less than a
+    // delimiter, nothing yet: carry it all and look at the next fill.
+    private update def next(): Optional[Int] =
+      if carried > 0 then straddle()
+      else if !cursor.more then finish(0)
+      else
+        val distance = cursor.distance(delimiter)
+
+        if distance == 0 then finish(length)
+        else if distance > 0 then
+          toStep = length
+          exposeCursor(distance)
         else
-          if toCarry > 0 then
-            absorb(toCarry)
-            toCarry = 0
+          val available = cursor.available
 
-          if toStep > 0 then finish(toStep) else next()
-
-      // The next region, with nothing carried: up to the delimiter if the buffer holds it,
-      // otherwise all but a possible prefix of it — or, when the buffer holds less than a
-      // delimiter, nothing yet: carry it all and look at the next fill.
-      private update def next(): Optional[Int] =
-        if carried > 0 then straddle()
-        else if !cursor.more then finish(0)
-        else
-          val distance = cursor.distance(delimiter)
-
-          if distance == 0 then finish(length)
-          else if distance > 0 then
-            toStep = length
-            exposeCursor(distance)
+          if available >= length then
+            toCarry = length - 1
+            exposeCursor(available - (length - 1))
           else
-            val available = cursor.available
-
-            if available >= length then
-              toCarry = length - 1
-              exposeCursor(available - (length - 1))
-            else
-              absorb(available)
-              straddle()
-
-      // With bytes carried: join them with the start of the next region and search across
-      // the edge. A delimiter found there began in the carry; otherwise the carry is content
-      // as far as every start in it has been tested, which is all of it once `length - 1`
-      // bytes of the region were joined, and less when the region is shorter than that —
-      // the undecided rest, with the whole short region, is carried on.
-      private update def straddle(): Optional[Int] =
-        if !cursor.more then
-          // The input ended: the carry was content after all.
-          System.arraycopy(carry, 0, joined, 0, carried)
-          val content = carried
-          carried = 0
-          exposeJoined(content)
-        else
-          val head = cursor.available.min(length - 1)
-          val total = carried + head
-          System.arraycopy(carry, 0, joined, 0, carried)
-
-          System.arraycopy
-            ( cursor.unsafeDataBuffer(using Unsafe), cursor.unsafePos(using Unsafe), joined, carried,
-              head )
-
-          if total < length then
-            absorb(head)
+            absorb(available)
             straddle()
+
+    // With bytes carried: join them with the start of the next region and search across
+    // the edge. A delimiter found there began in the carry; otherwise the carry is content
+    // as far as every start in it has been tested, which is all of it once `length - 1`
+    // bytes of the region were joined, and less when the region is shorter than that —
+    // the undecided rest, with the whole short region, is carried on.
+    private update def straddle(): Optional[Int] =
+      if !cursor.more then
+        // The input ended: the carry was content after all.
+        System.arraycopy(carry, 0, joined, 0, carried)
+        val content = carried
+        carried = 0
+        exposeJoined(content)
+      else
+        val head = cursor.available.min(length - 1)
+        val total = carried + head
+        System.arraycopy(carry, 0, joined, 0, carried)
+
+        System.arraycopy
+          ( cursor.unsafeDataBuffer(using Unsafe), cursor.unsafePos(using Unsafe), joined, carried,
+            head )
+
+        if total < length then
+          absorb(head)
+          straddle()
+        else
+          val found = delimiter.find(joined, 0, total)
+
+          if found >= 0 then
+            // `found` lies in the carry: the rest of the delimiter is at the cursor.
+            val step = length - (carried - found)
+            carried = 0
+
+            if found == 0 then finish(step) else
+              toStep = step
+              exposeJoined(found)
+
+          else if head == length - 1 then
+            val content = carried
+            carried = 0
+            exposeJoined(content)
           else
-            val found = delimiter.find(joined, 0, total)
+            val content = total - (length - 1)
+            System.arraycopy(joined, content, carry, 0, total - content)
+            carried = total - content
+            cursor.unsafeAdvanceBy(head)(using Unsafe)
+            exposeJoined(content)
 
-            if found >= 0 then
-              // `found` lies in the carry: the rest of the delimiter is at the cursor.
-              val step = length - (carried - found)
-              carried = 0
-
-              if found == 0 then finish(step) else
-                toStep = step
-                exposeJoined(found)
-
-            else if head == length - 1 then
-              val content = carried
-              carried = 0
-              exposeJoined(content)
-            else
-              val content = total - (length - 1)
-              System.arraycopy(joined, content, carry, 0, total - content)
-              carried = total - content
-              cursor.unsafeAdvanceBy(head)(using Unsafe)
-              exposeJoined(content)
-
-      // Not overridden, as above: `close()` leaves the lent cursor open after the delimiter.
+    // Not overridden, as above: `close()` leaves the lent cursor open after the delimiter.
 
 // A pull endpoint over a bounded range of an `Expanse`: each refill reads the
 // next chunk of the range — sized by the buffering policy's transfer block — and
@@ -581,138 +582,139 @@ def streamOf(cursor: Cursor[Data, {}]^, delimiter: Cursor.Delimiter)
 def streamOf(expanse: Expanse^, offset: Long, length: Long)(using buffering: Buffering)
 :   (Stream[Data] over Credit)^{expanse, caps.any} =
 
-    new Stream[Data]:
-      type Transport = Credit
+  new Stream[Data]:
+    type Transport = Credit
 
-      private val block: Int = buffering.transfer(Substrate.Bytes)
-      private val end: Long = offset + length
-      private var position: Long = offset
+    private val block: Int = buffering.transfer(Substrate.Bytes)
+    private val end: Long = offset + length
+    private var position: Long = offset
 
-      // Each region is backed by the immutable chunk `read` returns, cast-erased
-      // and reached only through this endpoint; it is never written through, and
-      // the next refill replaces it wholesale (hence the pure placeholder
-      // initial, as in the cursor-lending factory above).
-      // [abstract-storage] cast-erased storage region in anonymous Stream
-      @caps.unsafe.untrackedCaptures
-      private var storage: AnyRef = ""
-      private var start0: Int = 0
-      private var limit0: Int = 0
+    // Each region is backed by the immutable chunk `read` returns, cast-erased
+    // and reached only through this endpoint; it is never written through, and
+    // the next refill replaces it wholesale (hence the pure placeholder
+    // initial, as in the cursor-lending factory above).
+    // [abstract-storage] cast-erased storage region in anonymous Stream
+    @caps.unsafe.untrackedCaptures
+    private var storage: AnyRef = ""
 
-      // Every refill installs a fresh immutable chunk rather than overwriting a
-      // shared buffer, so previously-exposed ranges stay valid indefinitely.
-      override def regionStable: Boolean = true
+    private var start0: Int = 0
+    private var limit0: Int = 0
 
-      protected def storage0: AnyRef = storage
-      def start: Int = start0
-      def limit: Int = limit0
-      update def skip(count: Int): Unit = start0 += count
+    // Every refill installs a fresh immutable chunk rather than overwriting a
+    // shared buffer, so previously-exposed ranges stay valid indefinitely.
+    override def regionStable: Boolean = true
 
-      // Demand does not bound exposure: the transfer block sizes each read, and
-      // is what bounds memory (as the cursor-lending factory above notes).
-      update def refill(demand: Credit): Optional[Int] =
-        if limit0 > start0 then limit0 - start0
-        else if position >= end then Unset
-        else
-          val granted = summon[Credit is Regulation].grant(demand)
+    protected def storage0: AnyRef = storage
+    def start: Int = start0
+    def limit: Int = limit0
+    update def skip(count: Int): Unit = start0 += count
 
-          if granted == 0 then 0 else
-            val count = (end - position).min(block.toLong).toInt
-            storage = expanse.read(position, count).asInstanceOf[AnyRef]
-            position += count
-            start0 = 0
-            limit0 = count
-            count
+    // Demand does not bound exposure: the transfer block sizes each read, and
+    // is what bounds memory (as the cursor-lending factory above notes).
+    update def refill(demand: Credit): Optional[Int] =
+      if limit0 > start0 then limit0 - start0
+      else if position >= end then Unset
+      else
+        val granted = summon[Credit is Regulation].grant(demand)
+
+        if granted == 0 then 0 else
+          val count = (end - position).min(block.toLong).toInt
+          storage = expanse.read(position, count).asInstanceOf[AnyRef]
+          position += count
+          start0 = 0
+          limit0 = count
+          count
 
 private def chunkIterator[medium](consume stream: (Stream[medium] over Credit)^)
   ( using buffering: Buffering )
 :   Iterator[medium]^ =
 
-    new Iterator[medium]:
-      private val block: Int = buffering.transfer(stream.addressable.substrate)
+  new Iterator[medium]:
+    private val block: Int = buffering.transfer(stream.addressable.substrate)
 
-      // A stdlib class cannot extend `Stateful`, so its state is untracked
-      // (the record-iterator precedent below).
-      // [stdlib-iterator] state var in anonymous Iterator
-      @caps.unsafe.untrackedCaptures
-      private var chunk: Optional[medium] = Unset
-      // [stdlib-iterator]
-      @caps.unsafe.untrackedCaptures
-      private var done: Boolean = false
+    // A stdlib class cannot extend `Stateful`, so its state is untracked
+    // (the record-iterator precedent below).
+    // [stdlib-iterator] state var in anonymous Iterator
+    @caps.unsafe.untrackedCaptures
+    private var chunk: Optional[medium] = Unset
+    // [stdlib-iterator]
+    @caps.unsafe.untrackedCaptures
+    private var done: Boolean = false
 
-      def hasNext: Boolean = !chunk.absent || (!done && advance())
+    def hasNext: Boolean = !chunk.absent || (!done && advance())
 
-      private def advance(): Boolean = stream.refill(Credit(block)) match
-        case count: Int =>
-          given stream.addressable.type = stream.addressable
-          chunk = stream.lend { region => range => region.materialize(range) }
-          stream.skip(count)
-          true
+    private def advance(): Boolean = stream.refill(Credit(block)) match
+      case count: Int =>
+        given stream.addressable.type = stream.addressable
+        chunk = stream.lend: region => range => region.materialize(range)
+        stream.skip(count)
+        true
 
-        case _ =>
-          done = true
-          stream.close()
-          false
+      case _ =>
+        done = true
+        stream.close()
+        false
 
-      def next(): medium =
-        chunk
-        . lay(if !done && advance() then next() else panic(m"the stream is exhausted")): result =>
-            chunk = Unset
-            result
+    def next(): medium =
+      chunk
+      . lay(if !done && advance() then next() else panic(m"the stream is exhausted")): result =>
+          chunk = Unset
+          result
 
 private def recordIterator[record]
   ( consume stream: (Stream[Array[record]^{}] over Credit)^ )
   ( using buffering: Buffering )
 :   Iterator[record]^ =
 
-    new Iterator[record]:
-      private val block: Int = buffering.transfer(Substrate.Boxes)
+  new Iterator[record]:
+    private val block: Int = buffering.transfer(Substrate.Boxes)
 
-      // The current region: records `index until limit` of `storage` are
-      // unread; `consumed` is skipped lazily, just before the next refill, per
-      // the refill contract (an unskipped region is reported, not extended).
-      // A stdlib class cannot extend `Stateful`, so its state is untracked
-      // (the `inputStream` adapter's precedent).
-      // [stdlib-iterator] storage var in anonymous record Iterator
-      @caps.unsafe.untrackedCaptures
-      private var storage: scala.Array[AnyRef] = new scala.Array[AnyRef](0)
-      // [stdlib-iterator] state var in anonymous record Iterator
-      @caps.unsafe.untrackedCaptures
-      private var index: Int = 0
-      // [stdlib-iterator]
-      @caps.unsafe.untrackedCaptures
-      private var limit: Int = 0
-      // [stdlib-iterator]
-      @caps.unsafe.untrackedCaptures
-      private var consumed: Int = 0
-      // [stdlib-iterator]
-      @caps.unsafe.untrackedCaptures
-      private var done: Boolean = false
+    // The current region: records `index until limit` of `storage` are
+    // unread; `consumed` is skipped lazily, just before the next refill, per
+    // the refill contract (an unskipped region is reported, not extended).
+    // A stdlib class cannot extend `Stateful`, so its state is untracked
+    // (the `inputStream` adapter's precedent).
+    // [stdlib-iterator] storage var in anonymous record Iterator
+    @caps.unsafe.untrackedCaptures
+    private var storage: scala.Array[AnyRef] = new scala.Array[AnyRef](0)
+    // [stdlib-iterator] state var in anonymous record Iterator
+    @caps.unsafe.untrackedCaptures
+    private var index: Int = 0
+    // [stdlib-iterator]
+    @caps.unsafe.untrackedCaptures
+    private var limit: Int = 0
+    // [stdlib-iterator]
+    @caps.unsafe.untrackedCaptures
+    private var consumed: Int = 0
+    // [stdlib-iterator]
+    @caps.unsafe.untrackedCaptures
+    private var done: Boolean = false
 
-      def hasNext: Boolean = index < limit || (!done && replenish())
+    def hasNext: Boolean = index < limit || (!done && replenish())
 
-      private def replenish(): Boolean =
-        if consumed > 0 then
-          stream.skip(consumed)
-          consumed = 0
+    private def replenish(): Boolean =
+      if consumed > 0 then
+        stream.skip(consumed)
+        consumed = 0
 
-        stream.refill(Credit(block)) match
-          case count: Int =>
-            storage = stream.unsafeStorage(using Unsafe).asInstanceOf[scala.Array[AnyRef]]
-            index = stream.start
-            limit = stream.start + count
-            consumed = count
-            index < limit
+      stream.refill(Credit(block)) match
+        case count: Int =>
+          storage = stream.unsafeStorage(using Unsafe).asInstanceOf[scala.Array[AnyRef]]
+          index = stream.start
+          limit = stream.start + count
+          consumed = count
+          index < limit
 
-          case _ =>
-            done = true
-            stream.close()
-            false
+        case _ =>
+          done = true
+          stream.close()
+          false
 
-      def next(): record =
-        if !hasNext then panic(m"the record stream is exhausted")
-        val result = storage(index).asInstanceOf[record]
-        index += 1
-        result
+    def next(): record =
+      if !hasNext then panic(m"the record stream is exhausted")
+      val result = storage(index).asInstanceOf[record]
+      index += 1
+      result
 
 private def throughDuct[in, out, upTransport, downTransport]
   ( consume duct:
@@ -721,82 +723,83 @@ private def throughDuct[in, out, upTransport, downTransport]
   ( using buffering: Buffering )
 :   (Stream[out] over downTransport)^ =
 
-    new Stream[out](using duct.output):
-      type Transport = downTransport
+  new Stream[out](using duct.output):
+    type Transport = downTransport
 
-      private val capacity: Int =
-        duct.sizing(buffering).max(duct.quantum)
+    private val capacity: Int =
+      duct.sizing(buffering).max(duct.quantum)
 
-      // Untracked, cast-erased: reached only through this endpoint.
-      // [abstract-storage] abstract duct output Storage in anonymous Stream
-      @caps.unsafe.untrackedCaptures
-      private val storage: duct.output.Storage =
-        duct.output.allocate(capacity).asInstanceOf[duct.output.Storage]
-      private var start0: Int = 0
-      private var limit0: Int = 0
-      private var ended: Boolean = false
-      private var flushed: Boolean = false
+    // Untracked, cast-erased: reached only through this endpoint.
+    // [abstract-storage] abstract duct output Storage in anonymous Stream
+    @caps.unsafe.untrackedCaptures
+    private val storage: duct.output.Storage =
+      duct.output.allocate(capacity).asInstanceOf[duct.output.Storage]
 
-      // Re-asserts the exclusivity the cast-erased field forgot: the buffer is
-      // reached only through this (exclusive) endpoint.
-      private def exclusive(): duct.output.Storage^ =
-        storage.asInstanceOf[duct.output.Storage^]
+    private var start0: Int = 0
+    private var limit0: Int = 0
+    private var ended: Boolean = false
+    private var flushed: Boolean = false
 
-      protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
-      def start: Int = start0
-      def limit: Int = limit0
-      update def skip(count: Int): Unit = start0 += count
+    // Re-asserts the exclusivity the cast-erased field forgot: the buffer is
+    // reached only through this (exclusive) endpoint.
+    private def exclusive(): duct.output.Storage^ =
+      storage.asInstanceOf[duct.output.Storage^]
 
-      update def refill(demand: downTransport): Optional[Int] =
-        if limit0 > start0 then limit0 - start0
-        else if flushed then Unset
-        else
-          start0 = 0
-          limit0 = 0
-          val granted = duct.regulation.grant(demand)
+    protected def storage0: AnyRef = storage.asInstanceOf[AnyRef]
+    def start: Int = start0
+    def limit: Int = limit0
+    update def skip(count: Int): Unit = start0 += count
 
-          if granted == 0 then 0 else
-            val space = capacity.min(granted.max(duct.quantum))
+    update def refill(demand: downTransport): Optional[Int] =
+      if limit0 > start0 then limit0 - start0
+      else if flushed then Unset
+      else
+        start0 = 0
+        limit0 = 0
+        val granted = duct.regulation.grant(demand)
 
-            while limit0 == 0 && !flushed do
-              if ended then
-                val produced =
-                  Slate.over[out, Int](using duct.output)(exclusive(), limit0, space): slate =>
-                    slateSpace => duct.flush(slate)(slateSpace)
+        if granted == 0 then 0 else
+          val space = capacity.min(granted.max(duct.quantum))
 
-                if produced == 0 then flushed = true else limit0 += produced
-              else
-                stream.refill(duct.translate(demand)) match
-                  case count: Int =>
-                    // The downstream demand granted at least `quantum`, so a
-                    // starved upstream means the duct's `translate` violated
-                    // its contract; spinning here would livelock silently.
-                    if count == 0
-                    then panic(m"a duct translated a productive demand into one granting nothing")
-                    else
-                      // `Addressable` instances are unique per medium, so the
-                      // stream's storage and the duct's input storage
-                      // coincide, even though their paths differ.
-                      val progress =
-                        Region.over[in, Duct.Progress](using duct.input)
-                          ( stream.unsafeStorage(using Unsafe).asInstanceOf[duct.input.Storage],
-                            stream.start, stream.start + count )
-                          ( region => range =>
-                              Slate.over[out, Duct.Progress](using duct.output)
-                                (exclusive(), limit0, space): slate =>
-                                  slateSpace => duct.step(region)(range)(slate)(slateSpace) )
+          while limit0 == 0 && !flushed do
+            if ended then
+              val produced =
+                Slate.over[out, Int](using duct.output)(exclusive(), limit0, space): slate =>
+                  slateSpace => duct.flush(slate)(slateSpace)
 
-                      stream.skip(progress.consumed)
-                      limit0 += progress.produced
+              if produced == 0 then flushed = true else limit0 += produced
+            else
+              stream.refill(duct.translate(demand)) match
+                case count: Int =>
+                  // The downstream demand granted at least `quantum`, so a
+                  // starved upstream means the duct's `translate` violated
+                  // its contract; spinning here would livelock silently.
+                  if count == 0
+                  then panic(m"a duct translated a productive demand into one granting nothing")
+                  else
+                    // `Addressable` instances are unique per medium, so the
+                    // stream's storage and the duct's input storage
+                    // coincide, even though their paths differ.
+                    val progress =
+                      Region.over[in, Duct.Progress](using duct.input)
+                        ( stream.unsafeStorage(using Unsafe).asInstanceOf[duct.input.Storage],
+                          stream.start, stream.start + count )
+                        ( region => range =>
+                            Slate.over[out, Duct.Progress](using duct.output)
+                              ( exclusive(), limit0, space ): slate =>
+                                slateSpace => duct.step(region)(range)(slate)(slateSpace) )
 
-                  case _ =>
-                    ended = true
+                    stream.skip(progress.consumed)
+                    limit0 += progress.produced
 
-            if flushed && limit0 == start0 then Unset else limit0 - start0
+                case _ =>
+                  ended = true
 
-      override update def close(): Unit =
-        duct.close()
-        stream.close()
+          if flushed && limit0 == start0 then Unset else limit0 - start0
+
+    override update def close(): Unit =
+      duct.close()
+      stream.close()
 
 // `truncate`/`discard` wrappers, in helpers rather than inline in the
 // extension for the same reason as `throughDuct`: a local binding of the
@@ -807,59 +810,59 @@ private def throughDuct[in, out, upTransport, downTransport]
 private def truncateStream[medium](consume stream: (Stream[medium] over Credit)^, count: Long)
 :   (Stream[medium] over Credit)^ =
 
-    new Stream[medium](using stream.addressable):
-      type Transport = Credit
+  new Stream[medium](using stream.addressable):
+    type Transport = Credit
 
-      private var remaining: Long = count.max(0)
+    private var remaining: Long = count.max(0)
 
-      protected def storage0: AnyRef = stream.unsafeStorage(using Unsafe).asInstanceOf[AnyRef]
-      def start: Int = stream.start
+    protected def storage0: AnyRef = stream.unsafeStorage(using Unsafe).asInstanceOf[AnyRef]
+    def start: Int = stream.start
 
-      def limit: Int =
-        val available = stream.limit - stream.start
-        stream.start + (if remaining < available then remaining.toInt else available)
+    def limit: Int =
+      val available = stream.limit - stream.start
+      stream.start + (if remaining < available then remaining.toInt else available)
 
-      update def skip(elements: Int): Unit =
-        remaining -= elements
-        stream.skip(elements)
+    update def skip(elements: Int): Unit =
+      remaining -= elements
+      stream.skip(elements)
 
-      update def refill(demand: Credit): Optional[Int] =
-        if remaining <= 0 then Unset else stream.refill(demand) match
-          case available: Int =>
-            if remaining < available then remaining.toInt else available
+    update def refill(demand: Credit): Optional[Int] =
+      if remaining <= 0 then Unset else stream.refill(demand) match
+        case available: Int =>
+          if remaining < available then remaining.toInt else available
 
-          case _ => Unset
+        case _ => Unset
 
-      override update def close(): Unit = stream.close()
+    override update def close(): Unit = stream.close()
 
 private def discardStream[medium](consume stream: (Stream[medium] over Credit)^, count: Long)
 :   (Stream[medium] over Credit)^ =
 
-    new Stream[medium](using stream.addressable):
-      type Transport = Credit
+  new Stream[medium](using stream.addressable):
+    type Transport = Credit
 
-      private var pending: Long = count.max(0)
+    private var pending: Long = count.max(0)
 
-      protected def storage0: AnyRef = stream.unsafeStorage(using Unsafe).asInstanceOf[AnyRef]
-      def start: Int = stream.start
-      def limit: Int = stream.limit
-      update def skip(elements: Int): Unit = stream.skip(elements)
+    protected def storage0: AnyRef = stream.unsafeStorage(using Unsafe).asInstanceOf[AnyRef]
+    def start: Int = stream.start
+    def limit: Int = stream.limit
+    update def skip(elements: Int): Unit = stream.skip(elements)
 
-      update def refill(demand: Credit): Optional[Int] =
-        var ended: Boolean = false
+    update def refill(demand: Credit): Optional[Int] =
+      var ended: Boolean = false
 
-        while pending > 0 && !ended do
-          stream.refill(Credit(pending.min(Int.MaxValue.toLong))) match
-            case available: Int =>
-              val skipped = available.toLong.min(pending).toInt
-              stream.skip(skipped)
-              pending -= skipped
+      while pending > 0 && !ended do
+        stream.refill(Credit(pending.min(Int.MaxValue.toLong))) match
+          case available: Int =>
+            val skipped = available.toLong.min(pending).toInt
+            stream.skip(skipped)
+            pending -= skipped
 
-            case _ => ended = true
+          case _ => ended = true
 
-        if ended then Unset else stream.refill(demand)
+      if ended then Unset else stream.refill(demand)
 
-      override update def close(): Unit = stream.close()
+    override update def close(): Unit = stream.close()
 
 private def intakeThroughDuct[in, out, upTransport, downTransport]
   ( consume duct:
@@ -868,64 +871,65 @@ private def intakeThroughDuct[in, out, upTransport, downTransport]
   ( using buffering: Buffering )
 :   (Intake[in] over upTransport)^ =
 
-    new Intake[in](using duct.input):
-      type Transport = upTransport
+  new Intake[in](using duct.input):
+    type Transport = upTransport
 
-      private val capacity: Int = buffering.capacity(duct.input.substrate)
-      // Untracked, cast-erased: reached only through this endpoint.
-      // [abstract-storage] abstract duct input Storage in anonymous Intake
-      @caps.unsafe.untrackedCaptures
-      private val storage: duct.input.Storage =
-        duct.input.allocate(capacity).asInstanceOf[duct.input.Storage]
-      private var mark0: Int = 0
+    private val capacity: Int = buffering.capacity(duct.input.substrate)
+    // Untracked, cast-erased: reached only through this endpoint.
+    // [abstract-storage] abstract duct input Storage in anonymous Intake
+    @caps.unsafe.untrackedCaptures
+    private val storage: duct.input.Storage =
+      duct.input.allocate(capacity).asInstanceOf[duct.input.Storage]
 
-      def demand: upTransport = duct.translate(intake.demand)
-      protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
-      def mark: Int = mark0
+    private var mark0: Int = 0
 
-      // `commit` always drains the whole buffer through the duct (partial
-      // atoms are carried in duct state, not here), so all space is free.
-      update def reserve(min: Int): Int = capacity - mark0
+    def demand: upTransport = duct.translate(intake.demand)
+    protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
+    def mark: Int = mark0
 
-      update def commit(count: Int): Unit =
-        mark0 += count
-        var offset: Int = 0
+    // `commit` always drains the whole buffer through the duct (partial
+    // atoms are carried in duct state, not here), so all space is free.
+    update def reserve(min: Int): Int = capacity - mark0
 
-        while offset < mark0 do
-          val free = intake.reserve(duct.quantum)
+    update def commit(count: Int): Unit =
+      mark0 += count
+      var offset: Int = 0
 
-          val progress =
-            Region.over[in, Duct.Progress](using duct.input)(storage, offset, mark0): region =>
-              range =>
-                Slate.over[out, Duct.Progress](using duct.output)
-                  ( intake.unsafeBuffer(using Unsafe).asInstanceOf[duct.output.Storage^],
-                    intake.mark, intake.mark + free )
-                  ( slate => slateSpace => duct.step(region)(range)(slate)(slateSpace) )
+      while offset < mark0 do
+        val free = intake.reserve(duct.quantum)
 
-          intake.commit(progress.produced)
-          offset += progress.consumed
+        val progress =
+          Region.over[in, Duct.Progress](using duct.input)(storage, offset, mark0): region =>
+            range =>
+              Slate.over[out, Duct.Progress](using duct.output)
+                ( intake.unsafeBuffer(using Unsafe).asInstanceOf[duct.output.Storage^],
+                  intake.mark, intake.mark + free )
+                ( slate => slateSpace => duct.step(region)(range)(slate)(slateSpace) )
 
-        mark0 = 0
+        intake.commit(progress.produced)
+        offset += progress.consumed
 
-      override update def flush(): Unit = intake.flush()
+      mark0 = 0
 
-      update def finish(): Unit =
-        var produced: Int = -1
+    override update def flush(): Unit = intake.flush()
 
-        while produced != 0 do
-          val free = intake.reserve(duct.quantum)
+    update def finish(): Unit =
+      var produced: Int = -1
 
-          produced =
-            Slate.over[out, Int](using duct.output)
-              ( intake.unsafeBuffer(using Unsafe).asInstanceOf[duct.output.Storage^],
-                intake.mark, intake.mark + free )
-              ( slate => slateSpace => duct.flush(slate)(slateSpace) )
+      while produced != 0 do
+        val free = intake.reserve(duct.quantum)
 
-          if produced > 0 then intake.commit(produced)
+        produced =
+          Slate.over[out, Int](using duct.output)
+            ( intake.unsafeBuffer(using Unsafe).asInstanceOf[duct.output.Storage^],
+              intake.mark, intake.mark + free )
+            ( slate => slateSpace => duct.flush(slate)(slateSpace) )
 
-        duct.close()
-        intake.finish()
+        if produced > 0 then intake.commit(produced)
 
-      override update def fail(error: Throwable): Unit =
-        duct.close()
-        intake.fail(error)
+      duct.close()
+      intake.finish()
+
+    override update def fail(error: Throwable): Unit =
+      duct.close()
+      intake.fail(error)

@@ -73,10 +73,10 @@ case class Argument
       if !suggestion.core.starts(t"-") then suggestion
       else
         suggestion.copy
-         ( core       = suggestion.core.skip(1),
-           prefix     = value,
-           display    = suggestion.core,
-           incomplete = true )
+          ( core       = suggestion.core.skip(1),
+            prefix     = value,
+            display    = suggestion.core,
+            incomplete = true )
 
     case Argument.Format.EqualityPrefix =>
       suggestion.copy(core = suggestion.core+t"="+value.after(value.offsetOf("=").or(Prim)))

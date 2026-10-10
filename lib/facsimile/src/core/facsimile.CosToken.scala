@@ -32,9 +32,8 @@
                                                                                                   */
 package facsimile
 
-import rudiments.*
-
 import anticipation.*
+import rudiments.*
 
 // The lexical vocabulary of ISO 32000-2 §7.2. Literal and hex strings both land in `Chars`,
 // already unescaped. Bare keywords — `obj`, `R`, `true`, content-stream operators — are all

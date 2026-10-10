@@ -32,14 +32,12 @@
                                                                                                   */
 package guillotine
 
-import scala.caps
-
-import scala.language.experimental.pureFunctions
-
 import java.io as ji
 import java.util.concurrent as juc
 
+import scala.caps
 import scala.jdk.StreamConverters.StreamHasToScala
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
@@ -55,14 +53,14 @@ object Job:
   // Polymorphic over the capability instance (`job <: Job[…]^`, the galilei `Handle` recipe):
   // a bare `Job[command, result]` Self cannot match a tracked `Job` value.
   given writable: [chunk, command <: Label, result, job <: Job[command, result]^]
-  =>  (writable0: (Process.Input is Writable by chunk)^)
-  =>  ((job is Writable by chunk)^{writable0}) =
+  =>  ( writable0: (Process.Input is Writable by chunk)^ )
+  =>  ( (job is Writable by chunk)^{writable0} ) =
 
     (process, stream) => process.stdin(stream)
 
   given writableText: [command <: Label, result, job <: Job[command, result]^]
-  =>  (streamCut: Emit[Truncation.Error])
-  =>  ((job is Writable by Text)^{streamCut}) =
+  =>  ( streamCut: Emit[Truncation.Error] )
+  =>  ( (job is Writable by Text)^{streamCut} ) =
 
     (process, stream) =>
       process.stdin
@@ -82,7 +80,7 @@ object Job:
 // while another awaits its exit and the caller may abort it, and `java.lang.Process` is
 // thread-safe.
 class Job[+exec <: Label, result] private[guillotine]
-   ( process: java.lang.Process, head: java.lang.Process )
+  ( process: java.lang.Process, head: java.lang.Process )
 extends Subprocess, Process.Ref, anticipation.Durable:
 
   private[guillotine] def this(process: java.lang.Process) = this(process, process)
@@ -117,6 +115,7 @@ extends Subprocess, Process.Ref, anticipation.Durable:
   def stdin[chunk](stream: (Stream[chunk] over Credit)^)
     ( using writable: (Process.Input is Writable by chunk)^ )
   :   Unit =
+
     writable.write(Process.Input(head.getOutputStream.nn), stream)
 
   // Standard input as a push endpoint. `stdin` writes a whole stream and closes the pipe when it

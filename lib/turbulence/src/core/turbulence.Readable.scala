@@ -57,7 +57,7 @@ trait Readable3:
   =>  ( source0: (source is Streamable by Text over Credit)^ )
   =>  ( aggregable: (result is Aggregable by Data)^ )
   =>  ( encoder: Codepage, buffering: Buffering )
-  =>  ((source is Readable to result)^{source0, aggregable}) =
+  =>  ( (source is Readable to result)^{source0, aggregable} ) =
     value => aggregable.accept(source0.stream(value).via(encoder))
 
 trait Readable2 extends Readable3:
@@ -65,14 +65,14 @@ trait Readable2 extends Readable3:
   =>  ( source0: (source is Streamable by Data over Credit)^ )
   =>  ( aggregable: (result is Aggregable by Text)^ )
   =>  ( decoder: Charset, buffering: Buffering )
-  =>  ((source is Readable to result)^{source0, aggregable}) =
+  =>  ( (source is Readable to result)^{source0, aggregable} ) =
     value => aggregable.accept(source0.stream(value).via(decoder))
 
 trait Readable1 extends Readable2:
   given textToText: [source, result]
   =>  ( source0: (source is Streamable by Text over Credit)^ )
   =>  ( aggregable: (result is Aggregable by Text)^ )
-  =>  ((source is Readable to result)^{source0, aggregable}) =
+  =>  ( (source is Readable to result)^{source0, aggregable} ) =
     value => aggregable.accept(source0.stream(value))
 
 object Readable extends Readable1:
@@ -88,7 +88,7 @@ object Readable extends Readable1:
   given dataToData: [source, result]
   =>  ( source0: (source is Streamable by Data over Credit)^ )
   =>  ( aggregable: (result is Aggregable by Data)^ )
-  =>  ((source is Readable to result)^{source0, aggregable}) =
+  =>  ( (source is Readable to result)^{source0, aggregable} ) =
     value => aggregable.accept(source0.stream(value))
 
 @implicitNotFound("turbulence: the source cannot be read as the target type; this needs a "+

@@ -44,11 +44,9 @@ import rudiments.*
 import serpentine.*
 import symbolism.*
 import vacuous.*
-
+import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.dereferenceSymlinks
 import pathInterfaces.pathOnLocal
-
-import filesystemBackends.javaBaseFilesystem
 
 object Pathname:
   // The property is read straight off the `System` capability rather than through
@@ -105,6 +103,7 @@ object Pathname:
       else if operand.nil then
         val children0: List[Path on Local] = workingDirectory.children.to[List]
         val showAll = tab > Prim
+
         val children =
           if !showAll then children0.filter(!_.name.starts(t".")) else children0
 
@@ -122,13 +121,13 @@ object Pathname:
         // [by-name-receiver] safely by-name resolution shares ambient tactic
         val prototype = scala.caps.unsafe.unsafeAssumeSeparate:
           workingDirectory.resolve(expand(operand))
+
         val showAll = tab > Prim || prototype.name.starts(t".")
         val base: Optional[Path on Local] = if directory then prototype else prototype.parent
-        val children0 = base.let(base => base.children.to[List]).or(List[Path on Local]())
+        val children0 = base.let{ base => base.children.to[List] }.or(List[Path on Local]())
 
         val children =
-          if directory then children0
-          else children0.filter(_.name.starts(prototype.name))
+          if directory then children0 else children0.filter(_.name.starts(prototype.name))
 
         val children2 =
           if !showAll then children.filter(!_.name.starts(t".")) else children
@@ -143,7 +142,6 @@ object Pathname:
             else workingDirectory.toward(path).encode+slash
 
     . or(List())
-
 
   def unapply(argument: Argument)(using WorkingDirectory, Cli, System): Option[Path on Local] =
     // The candidates add to `prior` rather than replacing it: another extractor evaluated

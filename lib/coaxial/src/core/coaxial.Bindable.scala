@@ -59,7 +59,8 @@ object Bindable:
     def stop(binding: Binding): Unit = backend.shutdown(binding)
     def close(connection: Duplex): Unit raises Socket.Error = connection.close()
 
-  given tcpPort: (backend: Socket.Backend, options: Every[Socket.Option.Tcp]) => Tcp.Port is Bindable:
+  given tcpPort: (backend: Socket.Backend, options: Every[Socket.Option.Tcp])
+  =>  Tcp.Port is Bindable:
     type Binding = backend.ServerSocket
     type Input = Duplex
     type Output = Data
@@ -75,7 +76,8 @@ object Bindable:
     def close(connection: Duplex): Unit raises Socket.Error = connection.close()
     def stop(binding: Binding): Unit = backend.shutdown(binding)
 
-  given udpPort: (backend: Socket.Backend, options: Every[Socket.Option.Udp]) => Udp.Port is Bindable:
+  given udpPort: (backend: Socket.Backend, options: Every[Socket.Option.Udp])
+  =>  Udp.Port is Bindable:
     type Binding = backend.DatagramSocket
     type Input = Packet
     type Output = UdpResponse

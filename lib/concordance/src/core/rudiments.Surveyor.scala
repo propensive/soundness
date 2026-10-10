@@ -89,7 +89,8 @@ final class Surveyor[collection, brand, operand] @scala.annotation.publicInBinar
       val element = read(value, mark0)
       mark0 += 1
       lambda(element)
-    else otherwise
+    else
+      otherwise
 
   // Consume up to `count` elements, returning the branded run actually traversed (clamped
   // at exhaustion): the counted form of `pace`.
@@ -111,8 +112,8 @@ final class Surveyor[collection, brand, operand] @scala.annotation.publicInBinar
     if size - mark0 < count then false else
       var index = 0
 
-      while index < count
-        && equal(read(value, mark0 + index), indexable.access(pattern, Ordinal.zerary(index)))
+      while index < count &&
+        equal(read(value, mark0 + index), indexable.access(pattern, Ordinal.zerary(index)))
       do index += 1
 
       index == count

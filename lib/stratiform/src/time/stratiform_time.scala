@@ -52,13 +52,13 @@ package encodables:
 
 package decodables:
   given instantTelDecodable: (tactic: Tactic[Tel.Error])
-  =>  (((Instant over Unix) is Tel.Decodable)^{tactic}) =
+  =>  ( ((Instant over Unix) is Tel.Decodable)^{tactic} ) =
     Tel.Decodable(() => Morphology.Whole): tel =>
       try Instant.of[Unix](tel.primaryAtom.s.toLong)
       catch case _: NumberFormatException => abort(Tel.Error(Tel.Error.Reason.BadVersion))
 
   given durationTelDecodable: (tactic: Tactic[Tel.Error])
-  =>  ((Duration is Tel.Decodable)^{tactic}) =
+  =>  ( (Duration is Tel.Decodable)^{tactic} ) =
     Tel.Decodable(() => Morphology.Whole): tel =>
       try Duration(tel.primaryAtom.s.toLong)
       catch case _: NumberFormatException => abort(Tel.Error(Tel.Error.Reason.BadVersion))

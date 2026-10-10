@@ -50,12 +50,15 @@ extension [countable: Countable](inline value: countable)
 extension [countable: Countable](value: countable)
   inline def ult: Optional[Ordinal in value.type] =
     if countable.size(value) >= 1
-    then (countable.size(value) - 1).z.asInstanceOf[Ordinal in value.type] else Unset
+    then (countable.size(value) - 1).z.asInstanceOf[Ordinal in value.type]
+    else Unset
 
   inline def pen: Optional[Ordinal in value.type] =
     if countable.size(value) >= 2
-    then (countable.size(value) - 2).z.asInstanceOf[Ordinal in value.type] else Unset
+    then (countable.size(value) - 2).z.asInstanceOf[Ordinal in value.type]
+    else Unset
 
   inline def ant: Optional[Ordinal in value.type] =
     if countable.size(value) >= 3
-    then (countable.size(value) - 3).z.asInstanceOf[Ordinal in value.type] else Unset
+    then (countable.size(value) - 3).z.asInstanceOf[Ordinal in value.type]
+    else Unset

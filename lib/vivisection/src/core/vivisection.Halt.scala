@@ -310,6 +310,7 @@ extends caps.ExclusiveCapability:
           elem.let: field =>
             connection.fieldValues(id, List(field.field)).prim.let: value0 =>
               (value0, Variable.Provenance.Cell(id, field.field, provenance), true)
+
           . or((value, provenance, false))
 
         else

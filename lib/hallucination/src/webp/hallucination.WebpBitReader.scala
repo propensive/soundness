@@ -32,11 +32,10 @@
                                                                                                   */
 package hallucination
 
-import anticipation.*
-import contingency.*
-
 import scala.caps
 
+import anticipation.*
+import contingency.*
 import Raster.Error.Reason
 
 // A little-endian bit reader for the VP8L lossless bitstream, ported from image-rs/image-webp

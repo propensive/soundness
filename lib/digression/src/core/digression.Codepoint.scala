@@ -32,9 +32,9 @@
                                                                                                   */
 package digression
 
-import scala.language.experimental.pureFunctions
-
 import java.util.concurrent as juc
+
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import beneficence.*

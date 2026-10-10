@@ -49,10 +49,10 @@ import vacuous.*
 // `stenography` sits below `gossamer`, so `Text` has no `join` here; this is the native-`List`
 // stand-in for the stdlib `mkString` forms this file renders syntax through.
 private def joined
-   ( texts:     List[Text],
-     separator: String = "",
-     left:      String = "",
-     right:     String = "" )
+  ( texts:     List[Text],
+    separator: String = "",
+    left:      String = "",
+    right:     String = "" )
 :   String =
 
   val builder = StringBuilder(left)
@@ -242,7 +242,7 @@ object Syntax:
       case _ =>
         sciList()
 
-    . flatMap(elements => elements)
+    . flatMap{ elements => elements }
     . group(_(0).name)
     . stdlib
     . view
@@ -347,8 +347,7 @@ object Syntax:
           else if unnamed && names.length == 1 then apply(types.head)
           else if unnamed then Sequence('(', (types.map(apply(_))).to(List))
           else
-            val parameters2 = names.zip(types).map: (name, typ) =>
-              Named(false, name, apply(typ))
+            val parameters2 = names.zip(types).map: (name, typ) => Named(false, name, apply(typ))
 
             Sequence('(', parameters2.to(List))
 
@@ -390,7 +389,6 @@ object Syntax:
   def term(using Quotes, Bindings)(repr: quotes.reflect.TermRef): Designator = apply(repr) match
     case Value(value) => value
     case _            => panic(m"expected a Value")
-
 
   // A refinement of a single type member can be written with an infix type alias, where one
   // which refines that member is in scope: `Foo { type Form = Bar }` is `Foo in Bar`. Only an
@@ -757,7 +755,7 @@ enum Syntax:
         if infix && (imports.has(parent) || imports.hasDirect(Designator.Type(parent, name))) =>
           elements match
             case List(first, second) => Infix(first, name, second).text
-            case _ => left.text+joined(elements.map(_.text), ", ", "[", "]").tt
+            case _                   => left.text+joined(elements.map(_.text), ", ", "[", "]").tt
 
         case _ =>
           left.text+joined(elements.map(_.text), ", ", "[", "]").tt
@@ -778,9 +776,13 @@ enum Syntax:
             case _                    => true)
 
       if aliased then
-        entries.fold(base) { case (left, (name, syntax)) => Infix(left, imports.aliases(name.s), syntax) }.text
+        entries
+        . fold(base) { case (left, (name, syntax)) => Infix(left, imports.aliases(name.s), syntax) }
+        . text
       else
-        val members2: List[Text] = members.remap: (name, syntax) => s"type $name = ${syntax.text}".tt
+        val members2: List[Text] = members.remap: (name, syntax) =>
+          s"type $name = ${syntax.text}".tt
+
         val defs2: List[Text] = defs.remap: (name, syntax) => s"def $name${syntax.text}".tt
         s"${base.text} { ${joined(members2 + defs2, "; ")} }".tt
 

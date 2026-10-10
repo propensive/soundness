@@ -187,7 +187,8 @@ private[cataclysm] object CssParser:
               ()
 
             case Outcome.Invalid =>
-              raise(Css.Error(Css.Error.Reason.BadValue(property, value), cursor.line, cursor.column))
+              raise:
+                Css.Error(Css.Error.Reason.BadValue(property, value), cursor.line, cursor.column)
 
             case Outcome.Unsupported(types) =>
               val reason = Css.Error.Reason.UnsupportedValue(property, types)

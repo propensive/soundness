@@ -34,11 +34,11 @@ package caduceus
 
 import scala.caps
 
+import anticipation.*
 import beneficence.*
+import fulminate.*
 import prepositional.*
 import turbulence.*
-import anticipation.*
-import fulminate.*
 import urticose.*
 
 object Courier:

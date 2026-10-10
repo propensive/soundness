@@ -35,14 +35,14 @@ package monotonous
 import scala.caps
 
 import anticipation.*
-import denominative.*
-import prepositional.*
-import rudiments.*
-import vacuous.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import hypotenuse.*
+import prepositional.*
+import rudiments.*
 import symbolism.`+`
+import vacuous.*
 import zephyrine.*
 
 // An `Alphabet` is the stage descriptor for streaming serialization in both
@@ -98,7 +98,7 @@ object Alphabet:
             Credit((demand.count.min(Long.MaxValue/8)*base/8).max(1))
 
           update def step(source: Region[Data])(range: Interval in source.type)
-            ( target: Slate[Text] )(space: Interval in target.type)
+            (target: Slate[Text])(space: Interval in target.type)
           :   Duct.Progress =
 
             val sourceInterval: Interval = range
@@ -111,7 +111,9 @@ object Alphabet:
 
             // The stage's own buffer, asserted exclusive at the cast rim.
             val chars: scala.Array[Char]^ =
-              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]]).asInstanceOf[scala.Array[Char]^]
+              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]])
+              . asInstanceOf[scala.Array[Char]^]
+
             var consumed: Int = 0
             var produced: Int = 0
             var continue: Boolean = true
@@ -121,14 +123,20 @@ object Alphabet:
               // groups — three input bytes to four characters — directly from
               // the table, skipping the per-character accumulator bookkeeping.
               if base == 6 then
-                while accumulated == 0 && consumed + 3 <= sourceLength && produced + 4 <= targetSpace
+                while accumulated == 0 && consumed + 3 <= sourceLength &&
+                  produced + 4 <= targetSpace
                 do
                   val b0 = bytes(sourceOffset + consumed) & 0xff
                   val b1 = bytes(sourceOffset + consumed + 1) & 0xff
                   val b2 = bytes(sourceOffset + consumed + 2) & 0xff
                   chars(targetOffset + produced) = table.readable(b0 >>> 2)
-                  chars(targetOffset + produced + 1) = table.readable(((b0 & 0x3) << 4) | (b1 >>> 4))
-                  chars(targetOffset + produced + 2) = table.readable(((b1 & 0xf) << 2) | (b2 >>> 6))
+
+                  chars(targetOffset + produced + 1) =
+                    table.readable(((b0 & 0x3) << 4) | (b1 >>> 4))
+
+                  chars(targetOffset + produced + 2) =
+                    table.readable(((b1 & 0xf) << 2) | (b2 >>> 6))
+
                   chars(targetOffset + produced + 3) = table.readable(b2 & 0x3f)
                   consumed += 3
                   produced += 4
@@ -136,7 +144,9 @@ object Alphabet:
 
               if accumulated >= base then
                 if produced < targetSpace then
-                  chars(targetOffset + produced) = table.readable((accumulator >>> (accumulated - base)) & mask)
+                  chars(targetOffset + produced) =
+                    table.readable((accumulator >>> (accumulated - base)) & mask)
+
                   produced += 1
                   accumulated -= base
                   written += 1
@@ -157,7 +167,9 @@ object Alphabet:
             val targetSpace = targetInterval.size
 
             val chars: scala.Array[Char]^ =
-              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]]).asInstanceOf[scala.Array[Char]^]
+              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]])
+              . asInstanceOf[scala.Array[Char]^]
+
             var produced: Int = 0
 
             if !flushing then
@@ -180,7 +192,7 @@ object Alphabet:
             produced
 
   given deserialization: [encoding <: Serialization] => (tactic: Tactic[Serialization.Error])
-  =>  ((Ductile.Instance[Alphabet[encoding], Text, Data, Credit, Credit])^{tactic}) =
+  =>  ( (Ductile.Instance[Alphabet[encoding], Text, Data, Credit, Credit])^{tactic} ) =
 
     // The ducts raise through the given's tactic, so the instance honestly captures it.
     new Ductile:
@@ -220,7 +232,7 @@ object Alphabet:
             Credit((demand.count.min(Long.MaxValue/8)*8/base).max(1))
 
           update def step(source: Region[Text])(range: Interval in source.type)
-            ( target: Slate[Data] )(space: Interval in target.type)
+            (target: Slate[Data])(space: Interval in target.type)
           :   Duct.Progress =
 
             val sourceInterval: Interval = range
@@ -233,7 +245,9 @@ object Alphabet:
 
             // The stage's own buffer, asserted exclusive at the cast rim.
             val bytes: scala.Array[Byte]^ =
-              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+              . asInstanceOf[scala.Array[Byte]^]
+
             var consumed: Int = 0
             var produced: Int = 0
             var continue: Boolean = true
@@ -245,8 +259,9 @@ object Alphabet:
               if base == 6 then
                 var fast: Boolean = true
 
-                while fast && accumulated == 0 && consumed + 4 <= sourceLength
-                    && produced + 3 <= targetSpace do
+                while fast && accumulated == 0 && consumed + 4 <= sourceLength &&
+                  produced + 3 <= targetSpace
+                do
 
                   val c0 = chars(sourceOffset + consumed).toInt
                   val c1 = chars(sourceOffset + consumed + 1).toInt
@@ -257,8 +272,8 @@ object Alphabet:
                   val v2 = if c2 < invLength then inversions.readUnchecked(c2) else -1
                   val v3 = if c3 < invLength then inversions.readUnchecked(c3) else -1
 
-                  if v0 < 0 || v0 > dataMax || v1 < 0 || v1 > dataMax || v2 < 0 || v2 > dataMax
-                      || v3 < 0 || v3 > dataMax
+                  if v0 < 0 || v0 > dataMax || v1 < 0 || v1 > dataMax || v2 < 0 || v2 > dataMax ||
+                    v3 < 0 || v3 > dataMax
                   then fast = false
                   else
                     val group = (v0 << 18) | (v1 << 12) | (v2 << 6) | v3
@@ -285,9 +300,9 @@ object Alphabet:
                 // accumulated before them are alignment filler.
                 if stage.padding && char == pad then accumulated = 0
                 else
-                  accumulator = (accumulator << base)
-                    | stage.invert(position, char)
-                        (using tactic)
+                  accumulator =
+                    (accumulator << base) | stage.invert(position, char)(using tactic)
+
                   accumulated += base
 
                 position += 1
@@ -304,7 +319,8 @@ extends caps.Pure:
   def apply(index: Int): Char = chars.s.charAt(index)
 
   def invert(position: Int, char: Char): Int raises Serialization.Error =
-    if char < inversions.length && inversions.readUnchecked(char) >= 0 then inversions.readUnchecked(char)
+    if char < inversions.length && inversions.readUnchecked(char) >= 0
+    then inversions.readUnchecked(char)
     else abort(Serialization.Error(position, char))
 
   lazy val inverse: Map[Char, Int] =
@@ -315,5 +331,4 @@ extends caps.Pure:
   lazy val inversions: Array[Int]^{} =
     val max = inverse.keys.maximum.or(' ')
 
-    Array.tabulate(max + 1): index =>
-      inverse(index.toChar).or(-1)
+    Array.tabulate(max + 1): index => inverse(index.toChar).or(-1)

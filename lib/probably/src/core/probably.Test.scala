@@ -35,6 +35,7 @@ package probably
 import scala.deriving.*
 import scala.math
 import scala.reflect
+
 import anticipation.*
 import digression.*
 import distillate.*
@@ -46,8 +47,8 @@ import hieroglyph.*
 import hypotenuse.*
 import nomenclature.*
 import rudiments.*
-import vacuous.*
 import symbolism.*
+import vacuous.*
 
 object Test:
   // An assertion's body must be PURE: it may close over no capability. The asserted result type
@@ -107,6 +108,7 @@ object Test:
     // the low 24 bits of `h(suite) ^ name.text.hashCode`, in hex.
     lazy val id: Text =
       (suite.lay(0)(_.hashCode) ^ name.text.s.hashCode).hex.pad(6, Rtl, '0').keep(6, Rtl)
+
     lazy val ids: List[Text] = id :: suite.let(_.id.ids).or(Nil)
 
     // What addresses this entry in a selection or a path, other than its hash and its name:
@@ -130,7 +132,8 @@ object Test:
 
       Spread(this, axis, action(using _))
 
-    def over[value <: reflect.Enum: Enumerable, result](companion: { def values: scala.Array[value] })
+    def over[value <: reflect.Enum: Enumerable, result]
+      ( companion: { def values: scala.Array[value] } )
       ( action: Harness ?=> (value ~> result) )
     :   Spread[value, result]^{action} =
 

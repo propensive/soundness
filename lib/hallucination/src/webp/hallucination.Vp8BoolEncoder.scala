@@ -32,14 +32,13 @@
                                                                                                   */
 package hallucination
 
-import scala.math
-
 import java.io as ji
+
+import scala.caps
+import scala.math
 
 import anticipation.*
 import vacuous.*
-
-import scala.caps
 
 // The VP8 boolean entropy encoder (RFC 6386 §7), ported from image-rs/image-webp
 // (`src/lossy/arithmetic_encoder.rs`, MIT/Apache-2.0) — the inverse of `Vp8Bool`.
@@ -109,11 +108,18 @@ private[hallucination] final class Vp8BoolEncoder extends caps.Mutable:
       writeFlag(v >= 0)
 
   // Encodes a tree value: locate the leaf `−value`, then emit the root-to-leaf bits.
-  update def writeTree(tree: scala.Array[Int], probs: scala.Array[Int], probOffset: Int, value: Int): Unit =
+  update def writeTree
+    ( tree: scala.Array[Int], probs: scala.Array[Int], probOffset: Int, value: Int )
+  :   Unit =
+
     writeTree(tree, probs, probOffset, value, 0)
 
   update def writeTree
-    ( tree: scala.Array[Int], probs: scala.Array[Int], probOffset: Int, value: Int, startIndex: Int )
+    ( tree:       scala.Array[Int],
+      probs:      scala.Array[Int],
+      probOffset: Int,
+      value:      Int,
+      startIndex: Int )
   :   Unit =
 
     var current = indexOf(tree, -value)

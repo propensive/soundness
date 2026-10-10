@@ -37,6 +37,7 @@ import rudiments.*
 
 object Rankines:
   given designation: Designation[Rankines[1]] = () => "°R".tt
+
   erased given ratio: Ratio[Rankines[1] & Kelvins[-1], 1.8] =
     Ratio.Evidence[Rankines[1] & Kelvins[-1], 1.8]()
 

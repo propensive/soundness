@@ -34,19 +34,18 @@ package facsimile
 
 // By name: `contingency.*` would otherwise shadow this package's own `Guard` (the PDF
 // standard-security handler) with contingency's skip-scope capability of the same name.
-import facsimile.Guard
-
 import anticipation.*
 import contingency.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
+import facsimile.Guard
 import gossamer.*
 import hieroglyph.*
 import rudiments.*
+import rudiments.sortingAlgorithms.timsort
 import spectacular.*
 import symbolism.*
 import vacuous.*
-import denominative.*
-import denominative.dysasymptotics.linearSize
-import rudiments.sortingAlgorithms.timsort
 
 // Serialises a write overlay as a PDF incremental update (ISO 32000-2 §7.5.6): the changed
 // and new objects, a cross-reference section covering just them, and a trailer chaining
@@ -75,6 +74,7 @@ private[facsimile] object PdfWriter:
 
     (1 to maxNumber).each: number =>
       val value = pdf.apply(number)
+
       if value != Cos.Nil && !pdf.freed.contains(number) then
         offsets(number) = length
         ascii(t"$number 0 obj\n")
@@ -124,6 +124,7 @@ private[facsimile] object PdfWriter:
 
     changed.each: (number: Int) =>
       offsets(number) = baseOffset + length
+
       val generation = pdf.xref.entries(number) match
         case Xref.Entry.Direct(_, gen) => gen
         case _                         => 0
@@ -133,6 +134,7 @@ private[facsimile] object PdfWriter:
       // In an encrypted document, new and edited objects — held in the overlay as cleartext —
       // are encrypted with their own per-object key as they are written.
       val encryption = pdf.guard.let((_, number, generation))
+
       val value = pdf.guard.lay(pdf.overlay(number)):
         guard => encryptStrings(pdf.overlay(number), guard, number, generation)
 
@@ -152,7 +154,7 @@ private[facsimile] object PdfWriter:
     // The trailer carries forward the original `/Root`, `/Info`, `/Encrypt` and `/ID`, with
     // any write-scope overrides (e.g. a newly-created `/Info`) taking precedence.
     val carried = List(t"Root", t"Info", t"Encrypt", t"ID").bind: key =>
-      pdf.trailer(key).let(value => List(key -> value)).or(Nil)
+      pdf.trailer(key).let{ value => List(key -> value) }.or(Nil)
 
     // Through a `Map` so a write-scope override replaces the carried-forward entry of the same
     // key rather than joining it.
@@ -167,7 +169,7 @@ private[facsimile] object PdfWriter:
     // The writer thunks share only this append pass's own accumulators.
     // [by-name-receiver] writer thunk arguments share append accumulators
     then scala.caps.unsafe.unsafeAssumeSeparate
-          ( streamed(pdf, raw, ascii, xrefOffset, numbers, offsets, entries) )
+      ( streamed(pdf, raw, ascii, xrefOffset, numbers, offsets, entries) )
     else
       ascii(t"xref\n")
 
@@ -217,7 +219,7 @@ private[facsimile] object PdfWriter:
       numbers: List[Int],
       offsets: scala.collection.mutable.HashMap[Int, Long],
       entries: List[(Text, Cos)] )
-  ( using Tactic[Pdf.Error] )
+  (using Tactic[Pdf.Error])
   :   Unit =
 
     val number = pdf.nextNumber
@@ -233,7 +235,7 @@ private[facsimile] object PdfWriter:
       field(second, 4)
       field(third, 2)
 
-    val index = subsections(rows).flatMap((first, run) => List(first, run.size))
+    val index = subsections(rows).flatMap: (first, run) => List(first, run.size)
 
     ascii(t"$number 0 obj\n<< /Type /XRef /Size ${number + 1} /W [1 4 2] /Index [")
     ascii(index.map(_.show).join(t" "))
@@ -270,7 +272,7 @@ private[facsimile] object PdfWriter:
   private def appendObject
     ( pdf: Pdf, raw: Data => Unit, ascii: Text => Unit, cos: Cos,
       encryption: Optional[(Guard, Int, Int)] = Unset )
-  ( using Tactic[Pdf.Error] )
+  (using Tactic[Pdf.Error])
   :   Unit =
 
     cos match
@@ -278,6 +280,7 @@ private[facsimile] object PdfWriter:
         // A stream: its dictionary, then the payload framed by `stream`/`endstream`, with
         // `/Length` recomputed to the (possibly encrypted) byte count.
         val stored = pdf.raw(body)
+
         val payload = encryption.lay(stored): (guard, number, generation) =>
           guard.encryptStream(stored, number, generation)
 

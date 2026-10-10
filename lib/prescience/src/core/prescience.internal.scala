@@ -68,7 +68,7 @@ object internal:
         val method = target.getClass.nn.getMethods.nn.find: method =>
           method.nn.getName == name && method.nn.getParameterCount == 0
 
-        method.flatMap { method => Option(method.nn.invoke(target)) }
+        method.flatMap: method => Option(method.nn.invoke(target))
       catch
         case _: ReflectiveOperationException => None
         case _: LinkageError                 => None
@@ -86,7 +86,8 @@ object internal:
         if definedInCurrentRun(select.symbol) then None
         else if select.symbol.flags.is(Flags.Module) then
           loadModule(moduleBinaryName(select.symbol))
-        else eval(qualifier).flatMap(invokeMember(_, name))
+        else
+          eval(qualifier).flatMap(invokeMember(_, name))
 
       case ref: Ref =>
         val symbol = ref.symbol
@@ -95,7 +96,8 @@ object internal:
         else if symbol.flags.is(Flags.Module) then loadModule(moduleBinaryName(symbol))
         else if symbol.owner.flags.is(Flags.Module) then
           loadModule(moduleBinaryName(symbol.owner)).flatMap(invokeMember(_, symbol.name))
-        else None
+        else
+          None
 
       case _ =>
         None
@@ -132,7 +134,7 @@ object internal:
       if run == null then false else
         val sources = run.nn.units.map(_.source.path).toSet
         val position = symbol.pos
-        position.exists { position => sources.contains(position.sourceFile.path) }
+        position.exists: position => sources.contains(position.sourceFile.path)
     catch case _: Exception => false
 
   // The macro classpath minus the current output directory, so the staging
@@ -182,73 +184,74 @@ object internal:
     import scala.quoted.staging
 
     TypeRepr.of[field].classSymbol.flatMap: classSymbol =>
-      if definedInCurrentRun(classSymbol) then None else try
-        val clazz = Class.forName(classSymbol.fullName, false, macroClassloader).nn
+      if definedInCurrentRun(classSymbol) then None else
+        try
+          val clazz = Class.forName(classSymbol.fullName, false, macroClassloader).nn
 
-        // The compiled snippet lands in a real directory, and the inner
-        // compiler's classpath excludes the current output directory, so a
-        // same-run instance can never resolve against a stale classfile from
-        // a previous incremental compile. `-experimental` because the repo
-        // compiles under experimental language features, so its symbols are
-        // `@experimental`-tagged.
-        val outputDir: String =
-          java.nio.file.Files.createTempDirectory("prescience").nn.toString
+          // The compiled snippet lands in a real directory, and the inner
+          // compiler's classpath excludes the current output directory, so a
+          // same-run instance can never resolve against a stale classfile from
+          // a previous incremental compile. `-experimental` because the repo
+          // compiles under experimental language features, so its symbols are
+          // `@experimental`-tagged.
+          val outputDir: String =
+            java.nio.file.Files.createTempDirectory("prescience").nn.toString
 
-        given settings: staging.Compiler.Settings =
-          staging.Compiler.Settings.make
-            (Some(outputDir), List("-experimental", "-classpath", innerClasspath))
+          given settings: staging.Compiler.Settings =
+            staging.Compiler.Settings.make
+              ( Some(outputDir), List("-experimental", "-classpath", innerClasspath) )
 
-        given staging.Compiler = staging.Compiler.make(macroClassloader)
-        val started = System.nanoTime
+          given staging.Compiler = staging.Compiler.make(macroClassloader)
+          val started = System.nanoTime
 
-        val result: Any = staging.run:
-          val quotes2 = summon[Quotes]
-          import quotes2.reflect as r2
+          val result: Any = staging.run:
+            val quotes2 = summon[Quotes]
+            import quotes2.reflect as r2
 
-          val fieldType = r2.TypeRepr.typeConstructorOf(clazz)
+            val fieldType = r2.TypeRepr.typeConstructorOf(clazz)
 
-          val target =
-            r2.Refinement
-              (r2.TypeRepr.of[Inlinable], "Self", r2.TypeBounds(fieldType, fieldType))
+            val target =
+              r2.Refinement
+                ( r2.TypeRepr.of[Inlinable], "Self", r2.TypeBounds(fieldType, fieldType) )
 
-          // The summon is embedded in the snippet rather than performed here
-          // eagerly: the run's expression builder executes post-typer (phase
-          // `quotedFrontend`), where a failing implicit search asserts, while
-          // an embedded `summonInline` resolves during the inner compiler's
-          // own inlining phase — an ordinary search context.
-          target.asType match
-            case '[target] => '{ scala.compiletime.summonInline[target] }
+            // The summon is embedded in the snippet rather than performed here
+            // eagerly: the run's expression builder executes post-typer (phase
+            // `quotedFrontend`), where a failing implicit search asserts, while
+            // an embedded `summonInline` resolves during the inner compiler's
+            // own inlining phase — an ordinary search context.
+            target.asType match
+              case '[target] => '{scala.compiletime.summonInline[target]}
 
-        // The snippet's classes are now ordinary files in `outputDir`; a new
-        // classloader over that directory (parented by the macro classloader,
-        // which supplies the instance's own classes) can reconstruct the
-        // instance independently of `staging.run`'s internal loader — the
-        // basis for caching a compiled summon across expansions.
-        val reloaded: Any =
-          try
-            val url = java.io.File(outputDir).toURI.nn.toURL.nn
-            val loader = java.net.URLClassLoader(scala.Array(url), macroClassloader)
-            val generated = loader.loadClass("Generated$Code$From$Quoted").nn
-            val instance = generated.getConstructor().nn.newInstance()
-            generated.getMethod("apply").nn.invoke(instance)
-          catch
-            case _: ReflectiveOperationException => result
-            case _: LinkageError                 => result
+          // The snippet's classes are now ordinary files in `outputDir`; a new
+          // classloader over that directory (parented by the macro classloader,
+          // which supplies the instance's own classes) can reconstruct the
+          // instance independently of `staging.run`'s internal loader — the
+          // basis for caching a compiled summon across expansions.
+          val reloaded: Any =
+            try
+              val url = java.io.File(outputDir).toURI.nn.toURL.nn
+              val loader = java.net.URLClassLoader(scala.Array(url), macroClassloader)
+              val generated = loader.loadClass("Generated$Code$From$Quoted").nn
+              val instance = generated.getConstructor().nn.newInstance()
+              generated.getMethod("apply").nn.invoke(instance)
+            catch
+              case _: ReflectiveOperationException => result
+              case _: LinkageError                 => result
 
-        val duration = (System.nanoTime - started)/1000000L
+          val duration = (System.nanoTime - started)/1000000L
 
-        report.info
-          (s"prescience: staged summon for ${classSymbol.fullName} took ${duration}ms; " +
-            s"classes in $outputDir")
+          report.info
+            ( s"prescience: staged summon for ${classSymbol.fullName} took ${duration}ms; " +
+              s"classes in $outputDir" )
 
-        reloaded match
-          case instance: Inlinable => Some(instance)
-          case _                   => None
-      catch
-        case _: ReflectiveOperationException => None
-        case _: LinkageError                 => None
-        case _: AssertionError               => None
-        case _: Exception                    => None
+          reloaded match
+            case instance: Inlinable => Some(instance)
+            case _                   => None
+        catch
+          case _: ReflectiveOperationException => None
+          case _: LinkageError                 => None
+          case _: AssertionError               => None
+          case _: Exception                    => None
 
   // ── The deriving macro ─────────────────────────────────────────────────────
   // One flat reader per case class: the input splits once, and each field's
@@ -279,20 +282,20 @@ object internal:
     val ctor = classSymbol.primaryConstructor
     val fields = classSymbol.caseFields
     val arity = fields.length
-    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
+    val fieldTypes: List[TypeRepr] = fields.map: field => tpe.memberType(field).dealias
 
     def readField(index: Int, parts: Expr[scala.Array[String]]): Term =
       fieldTypes(index).asType match
         case '[fieldType] =>
-          val fieldExpr: Expr[String] = '{ $parts(${Expr(index)}) }
+          val fieldExpr: Expr[String] = '{$parts(${Expr(index)})}
 
           val instanceExpr: Expr[fieldType is Inlinable] =
             Expr.summon[fieldType is Inlinable].getOrElse:
               report.errorAndAbort
-                (s"prescience: no Inlinable instance for field ${fields(index).name}: " +
-                  fieldTypes(index).show)
+                ( s"prescience: no Inlinable instance for field ${fields(index).name}: " +
+                  fieldTypes(index).show )
 
-          def runtimeCall: Term = '{ $instanceExpr.readRuntime($fieldExpr) }.asTerm
+          def runtimeCall: Term = '{$instanceExpr.readRuntime($fieldExpr)}.asTerm
 
           evaluate(instanceExpr.asTerm) match
             case Some(instance) =>
@@ -303,13 +306,14 @@ object internal:
                 summonStaged[fieldType] match
                   case Some(instance) => instance.read(fieldExpr).asExprOf[fieldType].asTerm
                   case None           => runtimeCall
-              else runtimeCall
+              else
+                runtimeCall
 
     def construct(parts: Expr[scala.Array[String]]): Expr[value] =
       Apply(Select(New(Inferred(tpe)), ctor), List.range(0, arity).map(readField(_, parts)))
       . asExprOf[value]
 
-    '{
-      val parts: scala.Array[String] = $input.split(",").nn.map(_.nn)
-      ${ construct('parts) }
-    }
+    ' {
+        val parts: scala.Array[String] = $input.split(",").nn.map(_.nn)
+        ${construct('parts)}
+      }

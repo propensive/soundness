@@ -35,4 +35,5 @@ package soundness
 export digression.StackTracePalette
 
 package teletypeables:
-  export digression.teletypeables.{exceptionTeletype, frameTeletype, methodTeletype, stackTraceTeletype}
+  export digression.teletypeables.{exceptionTeletype, frameTeletype, methodTeletype,
+      stackTraceTeletype}

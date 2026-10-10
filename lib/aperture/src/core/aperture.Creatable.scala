@@ -41,7 +41,7 @@ import prepositional.*
 //
 //  - *instantiation*: `path.create[Directory]()` makes an empty artifact exist, with no
 //    scope, returning the target;
-//  - *scoped authoring*: `path.create[Zip](): zip ?=> ...` creates the artifact, populates
+//  - *scoped authoring*: `path.create[Tar](): tar ?=> ...` creates the artifact, populates
 //    it through a handle granted `Grants` (write access from birth: a newborn artifact is
 //    unconditionally its creator's), and commits the result when the scope closes. An
 //    exception escaping the scope means nothing is left behind: instances guarantee this by

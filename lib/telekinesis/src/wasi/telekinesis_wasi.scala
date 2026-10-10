@@ -32,22 +32,23 @@
                                                                                                   */
 package telekinesis
 
-import scala.annotation.nowarn
 import java.nio.charset.StandardCharsets
+
+import scala.annotation.nowarn
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import gossamer.*
 import hellenism.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
+import soundness.{call, dispose}
 import spectacular.*
 import turbulence.*
-import vacuous.*
-import distillate.*
-import soundness.{call, dispose}
 import urticose.*
+import vacuous.*
 import xenophile.*
 import zephyrine.*
 
@@ -55,6 +56,7 @@ import zephyrine.*
 // materializer consults (at its downstream expansion site) for module ids, resource methods and
 // parameter types.
 type WasiHttpApi = Interface in Wit at "/telekinesis/http.wit"
+
 package wasiApis:
   given wasiHttpApi: WasiHttpApi = Interface[Wit](cp"/telekinesis/http.wit")
 
@@ -197,7 +199,9 @@ package httpBackends:
       bodyHandle.dispose()
       responseHandle.dispose()
 
-      val content: Data = Array.frozen(chunks.reverse.fold(scala.IArray.empty[Byte])(_ ++ _.readable))
+      val content: Data =
+        Array.frozen(chunks.reverse.fold(scala.IArray.empty[Byte])(_ ++ _.readable))
+
       status(textHeaders, Http.Body.Fixed(content))
 
 // Serves HTTP from a Wasm Component: the bridge from `wasi:http/incoming-handler`'s exported

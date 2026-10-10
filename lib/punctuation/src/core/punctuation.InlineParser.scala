@@ -36,8 +36,8 @@ import scala.collection.mutable
 
 import anticipation.*
 import denominative.*
-import rudiments.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 // Inline parser. Two passes:
@@ -333,12 +333,10 @@ private[punctuation] object InlineParser:
           // Per spec: when the `[label]` parses but the label doesn't
           // resolve, the link attempt fails entirely — don't fall back to
           // shortcut. The full-ref `[label]` is consumed by this attempt.
-          return refs.lookup(label).let: ref =>
-            LinkResolution(ref.destination, ref.title, r.end)
+          return refs.lookup(label).let: ref => LinkResolution(ref.destination, ref.title, r.end)
 
         case _ =>
           ()  // fall through to shortcut
 
     // 3. Shortcut reference
-    refs.lookup(bracketContent).let: ref =>
-      LinkResolution(ref.destination, ref.title, after)
+    refs.lookup(bracketContent).let: ref => LinkResolution(ref.destination, ref.title, after)

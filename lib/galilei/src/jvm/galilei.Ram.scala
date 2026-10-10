@@ -32,11 +32,11 @@
                                                                                                   */
 package galilei
 
-import scala.caps
-
 import java.nio as jn
 import java.nio.channels as jnc
 import java.nio.file as jnf
+
+import scala.caps
 
 import anticipation.*
 import aperture.*
@@ -46,28 +46,15 @@ import rudiments.*
 import serpentine.*
 import vacuous.*
 import zephyrine.*
-
 import Io.Error.{Operation, Reason}
-
-// The form for random access to a file's bytes through memory mapping:
-// `path.open[Ram](Read & Write)`. The handle serves positional reads with `ram(offset, length)`
-// and, when the `Write` grant was selected, positional writes with `ram(offset) = data`; both
-// go through a `MappedByteBuffer`, so the OS pages data in and out on demand. An `Exclusive`
-// mode additionally acquires an OS file lock for the duration of the scope, so exclusivity
-// holds against other *processes*, not just other scopes in this one. (galilei's jvm module
-// is not yet capture-checked, so confinement is enforced only for callers compiled with
-// capture checking; the annotations sharpen when the module joins the rollout.)
-trait Ram
-
-enum RamFlag:
-  case Size(bytes: Long)
 
 object Ram:
   class RamHandle private[galilei] (channel: jnc.FileChannel, readWrite: Boolean, initial: Long)
   extends caps.ExclusiveCapability:
 
     private val mapMode: jnc.FileChannel.MapMode =
-      if readWrite then jnc.FileChannel.MapMode.READ_WRITE.nn else jnc.FileChannel.MapMode.READ_ONLY.nn
+      if readWrite then jnc.FileChannel.MapMode.READ_WRITE.nn
+      else jnc.FileChannel.MapMode.READ_ONLY.nn
 
     private var buffer: jn.MappedByteBuffer = channel.map(mapMode, 0, initial).nn
     private var currentSize: Long = initial
@@ -146,7 +133,8 @@ object Ram:
             if mode.atoms.has(Exclusive) then
               try Option(channel.tryLock()) catch
                 case _: jnc.OverlappingFileLockException => None
-            else Some(null)
+            else
+              Some(null)
 
           if lock.isEmpty then abort(Io.Error(value, Operation.Open, Reason.Busy))
 
@@ -154,7 +142,7 @@ object Ram:
             val write = mode.atoms.has(Write)
             val handle = new RamHandle(channel, write, size) with Granting[grants] {}
             try block(using handle) finally if write then handle.flush()
-          finally lock.foreach { held => if held != null then held.release() }
+          finally lock.foreach: held => if held != null then held.release()
         finally channel.close()
 
   given openable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
@@ -206,7 +194,9 @@ object Ram:
             // Extend the new, empty file to its mapped size by writing its final byte.
             channel.write(jn.ByteBuffer.wrap(scala.Array[Byte](0)).nn, size - 1)
 
-            val handle = new RamHandle(channel, true, size) with Granting[Grant.Read & Grant.Write] {}
+            val handle =
+              new RamHandle(channel, true, size) with Granting[Grant.Read & Grant.Write] {}
+
             try block(using handle) finally handle.flush()
           catch case throwable: Throwable =>
             try backend.deleteIfExists(value) catch case _: Exception => ()
@@ -217,3 +207,16 @@ object Ram:
   =>  ( FilesystemBackend on filesystem, Tactic[Io.Error] )
   =>  RamCreatable[filesystem, path] =
     RamCreatable[filesystem, path]
+
+// The form for random access to a file's bytes through memory mapping:
+// `path.open[Ram](Read & Write)`. The handle serves positional reads with `ram(offset, length)`
+// and, when the `Write` grant was selected, positional writes with `ram(offset) = data`; both
+// go through a `MappedByteBuffer`, so the OS pages data in and out on demand. An `Exclusive`
+// mode additionally acquires an OS file lock for the duration of the scope, so exclusivity
+// holds against other *processes*, not just other scopes in this one. (galilei's jvm module
+// is not yet capture-checked, so confinement is enforced only for callers compiled with
+// capture checking; the annotations sharpen when the module joins the rollout.)
+trait Ram
+
+enum RamFlag:
+  case Size(bytes: Long)

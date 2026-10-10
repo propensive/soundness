@@ -43,22 +43,23 @@ object Cos:
   // The code points at which PDFDocEncoding (ISO 32000-2 Annex D.7) differs from Latin-1:
   // typographic accents at 0x18–0x1F and publishing characters at 0x80–0x9F, with the euro
   // sign at 0xA0.
-  private val docEncodingLow: Array[Char]^{} = Array
-    ( '˘', 'ˇ', 'ˆ', '˙', '˝', '˛', '˚', '˜' )
+  private val docEncodingLow: Array[Char]^{} =
+    Array
+      ( '˘', 'ˇ', 'ˆ', '˙', '˝', '˛', '˚', '˜' )
 
-  private val docEncodingHigh: Array[Char]^{} = Array
-    ( '•', '†', '‡', '…', '—', '–', 'ƒ', '⁄',
-      '‹', '›', '−', '‰', '„', '“', '”', '‘',
-      '’', '‚', '™', 'ﬁ', 'ﬂ', 'Ł', 'Œ', 'Š',
-      'Ÿ', 'Ž', 'ı', 'ł', 'œ', 'š', 'ž', '�' )
+  private val docEncodingHigh: Array[Char]^{} =
+    Array
+      ( '•', '†', '‡', '…', '—', '–', 'ƒ', '⁄',
+        '‹', '›', '−', '‰', '„', '“', '”', '‘',
+        '’', '‚', '™', 'ﬁ', 'ﬂ', 'Ł', 'Œ', 'Š',
+        'Ÿ', 'Ž', 'ı', 'ł', 'œ', 'š', 'ž', '�' )
 
   // Encodes text as a PDF text string: Latin-1 (a subset of PDFDocEncoding) when every
   // character fits, otherwise UTF-16BE with a byte-order mark, matching `decodeText`.
   private[facsimile] def encodeText(text: Text): Data =
     if text.s.forall(_ < 0x100) then
       Array.scribe[Byte](text.length): scribe => extent =>
-        extent.each: i =>
-          scribe(i) = text.s.charAt(i.n0).toByte
+        extent.each: i => scribe(i) = text.s.charAt(i.n0).toByte
     else
       val body = codepages.utf16BeCodepage.encoded(text)
       val bytes = Array.allocate[Byte](body.length + 2)
@@ -72,8 +73,9 @@ object Cos:
   private[facsimile] def decodeText(bytes: Data): Text =
     if bytes.length >= 2 && (bytes.readable(0) & 0xff) == 0xfe && (bytes.readable(1) & 0xff) == 0xff
     then charsets.utf16BeCharset.decoded(bytes.skip(2))
-    else if bytes.length >= 3
-            && (bytes.readable(0) & 0xff) == 0xef && (bytes.readable(1) & 0xff) == 0xbb && (bytes.readable(2) & 0xff) == 0xbf
+    else if bytes.length >= 3 &&
+      (bytes.readable(0) & 0xff) == 0xef && (bytes.readable(1) & 0xff) == 0xbb &&
+      (bytes.readable(2) & 0xff) == 0xbf
     then charsets.utf8Charset.decoded(bytes.skip(3))
     else
       val chars = Array.allocate[Char](bytes.length)

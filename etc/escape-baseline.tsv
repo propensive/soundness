@@ -29,9 +29,10 @@ lib/bitumen/src/core/bitumen.Pax.scala	0	0	0	0	0	0	1	0	0	0
 lib/bitumen/src/core/bitumen.Tar.scala	1	0	3	0	0	0	1	0	3	0
 lib/bitumen/src/core/bitumen.Tarfile.scala	1	2	1	0	0	0	0	0	0	0
 lib/bitumen/src/jvm/bitumen.TarBuilder.scala	0	0	1	0	0	1	0	0	0	0
-lib/bitumen/src/jvm/bitumen.TarFilesystem.scala	0	0	0	0	1	1	0	0	0	0
+lib/bitumen/src/jvm/bitumen.TarFilesystem.scala	0	0	0	0	0	1	0	0	0	0
 lib/bitumen/src/test/bitumen_test.scala	0	4	0	0	1	0	16	0	0	0
-lib/breviloquence/src/core/breviloquence.Cbor.scala	0	0	3	0	3	1	0	0	0	0
+lib/breviloquence/src/core/breviloquence.Cbor.scala	0	0	0	0	1	0	0	0	0	0
+lib/breviloquence/src/core/breviloquence.CborParser.scala	2	0	0	0	0	1	0	0	0	0
 lib/breviloquence/src/core/breviloquence.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0
 lib/breviloquence/src/staged/breviloquence.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0
 lib/breviloquence/src/test/breviloquence_test.scala	0	0	1	0	0	0	0	0	0	0
@@ -209,9 +210,8 @@ lib/jacinta/src/test/jacinta.ParserTests.scala	0	0	0	0	6	0	0	0	0	0
 lib/kaleidoscope/src/core/kaleidoscope.Scanner.scala	0	0	2	0	0	0	0	0	0	0
 lib/legerdemain/src/test/legerdemain_test.scala	0	0	1	0	0	0	0	0	0	0
 lib/locomotion/src/core/locomotion.Protobuf.scala	0	0	0	0	1	1	0	0	0	0
-lib/locomotion/src/core/locomotion.ProtobufParser.scala	0	0	2	0	0	0	0	0	0	0
 lib/locomotion/src/staged/locomotion.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0
-lib/locomotion/src/test/locomotion_test.scala	0	3	0	0	0	0	0	0	0	0
+lib/locomotion/src/test/locomotion_test.scala	0	5	0	0	0	0	0	0	0	0
 lib/mandible/src/core/mandible.Bytecode.scala	0	1	0	0	0	0	0	0	0	0
 lib/metamorphose/src/core/metamorphose.Permutation.scala	0	0	0	0	0	0	0	1	0	0
 lib/monotonous/src/core/monotonous.Serializable.scala	0	0	0	0	0	6	0	0	0	0

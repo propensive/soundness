@@ -32,14 +32,13 @@
                                                                                                   */
 package hallucination
 
-import anticipation.*
-import contingency.*
-import rudiments.foreach
-
 import scala.caps
 
+import anticipation.*
+import contingency.*
 import Raster.Error.Reason
 import Vp8Tables.*
+import rudiments.foreach
 
 // The VP8 lossy (keyframe) decoder, ported from image-rs/image-webp (`src/lossy/mod.rs`,
 // MIT/Apache-2.0), per RFC 6386. It parses the frame header, then for each macroblock reads the
@@ -115,6 +114,7 @@ private[hallucination] object Vp8Decoder:
     // [aliased-read] probability array read while bool is exclusive receiver
     @scala.caps.unsafe.untrackedCaptures
     private val tokenProbs: scala.Array[Int] = coeffProbs.asInstanceOf[scala.Array[Int]].clone()
+
     private var probSkipFalse = -1 // −1 means no skip probability
 
     private var top: scala.Array[Edge^]^ = scala.Array()
@@ -191,7 +191,8 @@ private[hallucination] object Vp8Decoder:
       val tag = u24le(position)
       position += 3
 
-      if (tag & 1) != 0 then abort(Raster.Error(Webp(), Reason.UnsupportedVariant)) // not a keyframe
+      // not a keyframe
+      if (tag & 1) != 0 then abort(Raster.Error(Webp(), Reason.UnsupportedVariant))
       val firstPartitionSize = tag >> 5
 
       if u8(position) != 0x9d || u8(position + 1) != 0x01 || u8(position + 2) != 0x2a
@@ -373,7 +374,6 @@ private[hallucination] object Vp8Decoder:
 
         i += 1
 
-
     private update def readMacroblockHeader(mbx: Int): Macroblock^ =
       val mb = Macroblock()
 
@@ -381,7 +381,12 @@ private[hallucination] object Vp8Decoder:
         mb.segmentId = bool.tree(segmentIdTree.asInstanceOf[scala.Array[Int]], segmentProbs, 0)
 
       mb.coeffsSkipped = if probSkipFalse >= 0 then bool.bool(probSkipFalse) else false
-      mb.lumaMode = bool.tree(keyframeYmodeTree.asInstanceOf[scala.Array[Int]], keyframeYmodeProbs.asInstanceOf[scala.Array[Int]], 0)
+
+      mb.lumaMode =
+        bool.tree
+          ( keyframeYmodeTree.asInstanceOf[scala.Array[Int]],
+            keyframeYmodeProbs.asInstanceOf[scala.Array[Int]],
+            0 )
 
       if mb.lumaMode == BPred then
         var y = 0
@@ -393,8 +398,11 @@ private[hallucination] object Vp8Decoder:
             val topMode = top(mbx).bpred(x)
             val leftMode = left.bpred(y)
 
-            val intra = bool.tree(keyframeBpredModeTree.asInstanceOf[scala.Array[Int]], keyframeBpredModeProbs.asInstanceOf[scala.Array[Int]],
-                (topMode*10 + leftMode)*9)
+            val intra =
+              bool.tree
+                ( keyframeBpredModeTree.asInstanceOf[scala.Array[Int]],
+                  keyframeBpredModeProbs.asInstanceOf[scala.Array[Int]],
+                  (topMode*10 + leftMode)*9 )
 
             (mb.bpred)(x + y*4) = intra
             (top(mbx).bpred)(x) = intra
@@ -411,7 +419,12 @@ private[hallucination] object Vp8Decoder:
           (left.bpred)(i) = mode
           i += 1
 
-      mb.chromaMode = bool.tree(keyframeUvModeTree.asInstanceOf[scala.Array[Int]], keyframeUvModeProbs.asInstanceOf[scala.Array[Int]], 0)
+      mb.chromaMode =
+        bool.tree
+          ( keyframeUvModeTree.asInstanceOf[scala.Array[Int]],
+            keyframeUvModeProbs.asInstanceOf[scala.Array[Int]],
+            0 )
+
       var i = 0
 
       while i < 4 do
@@ -430,7 +443,13 @@ private[hallucination] object Vp8Decoder:
     // Reads one 4×4 block's dequantized coefficients into `block(offset..)`; returns whether
     // it has any non-zero coefficient. For the Y-after-Y2 plane the DC (index 0) is untouched.
     private update def readCoefficients
-      ( block: scala.Array[Int]^, offset: Int, p: Int, plane: Int, complexity: Int, dcq: Int, acq: Int )
+      ( block:      scala.Array[Int]^,
+        offset:     Int,
+        p:          Int,
+        plane:      Int,
+        complexity: Int,
+        dcq:        Int,
+        acq:        Int )
     :   Boolean =
 
       val decoder = partitions(p)
@@ -444,7 +463,13 @@ private[hallucination] object Vp8Decoder:
       while i < 16 && !stop do
         val band = coeffBands.asInstanceOf[scala.Array[Int]](i)
         val probOffset = coeffIndex(plane, band, context, 0)
-        val token = decoder.tree(dctTokenTree.asInstanceOf[scala.Array[Int]], tokenProbs, probOffset, 2*(if skip then 1 else 0))
+
+        val token =
+          decoder.tree
+            ( dctTokenTree.asInstanceOf[scala.Array[Int]],
+              tokenProbs,
+              probOffset,
+              2*(if skip then 1 else 0) )
 
         if token == DctEob then stop = true
         else if token == Dct0 then
@@ -461,7 +486,9 @@ private[hallucination] object Vp8Decoder:
               var c = category*12
 
               while probDctCat.asInstanceOf[scala.Array[Int]](c) != 0 do
-                extra = extra + extra + (if decoder.bool(probDctCat.asInstanceOf[scala.Array[Int]](c)) then 1 else 0)
+                extra = extra + extra +
+                  (if decoder.bool(probDctCat.asInstanceOf[scala.Array[Int]](c)) then 1 else 0)
+
                 c += 1
 
               dctCatBase.asInstanceOf[scala.Array[Int]](category) + extra
@@ -480,8 +507,10 @@ private[hallucination] object Vp8Decoder:
 
     private def zigzagTable(i: Int): Int = zigzag.asInstanceOf[scala.Array[Int]](i)
 
-    private update def readResidualData(mb: Macroblock^, mbx: Int, p: Int, blocks: scala.Array[Int]^)
+    private update def readResidualData
+      ( mb: Macroblock^, mbx: Int, p: Int, blocks: scala.Array[Int]^ )
     :   Unit =
+
       val sindex = mb.segmentId
       var plane = if mb.lumaMode == BPred then 3 else 1 // YCoeff0 or Y2
 
@@ -552,8 +581,10 @@ private[hallucination] object Vp8Decoder:
           (left.complexity)(yy + j) = leftComplexity
           yy += 1
 
-    private update def intraPredictLuma(mbx: Int, mby: Int, mb: Macroblock^, resdata: scala.Array[Int]^)
+    private update def intraPredictLuma
+      ( mbx: Int, mby: Int, mb: Macroblock^, resdata: scala.Array[Int]^ )
     :   Unit =
+
       val stride = Vp8Predict.LumaStride
       val ws = Vp8Predict.createBorderLuma(mbx, mby, mbWidth, topBorderY, leftBorderY)
 
@@ -600,8 +631,10 @@ private[hallucination] object Vp8Decoder:
 
         y += 1
 
-    private update def intraPredictChroma(mbx: Int, mby: Int, mb: Macroblock^, resdata: scala.Array[Int]^)
+    private update def intraPredictChroma
+      ( mbx: Int, mby: Int, mb: Macroblock^, resdata: scala.Array[Int]^ )
     :   Unit =
+
       val stride = Vp8Predict.ChromaStride
       val chromaWidth = bufferWidth/2
       val uws = Vp8Predict.createBorderChroma(mbx, mby, topBorderU, leftBorderU)

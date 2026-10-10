@@ -32,11 +32,10 @@
                                                                                                   */
 package turbulence
 
-import scala.collection.immutable.IndexedSeq
+import java.util.concurrent as juc
 
 import scala.caps
-
-import java.util.concurrent as juc
+import scala.collection.immutable.IndexedSeq
 
 import anticipation.*
 import fulminate.*
@@ -144,6 +143,7 @@ object Divergence:
     locally:
       val subscribers = IndexedSeq.tabulate(queues.length): index =>
         val queue = queues(index)
+
         sealSubscriber(new Stream[medium](using addressable0):
           type Transport = Credit
 
@@ -210,4 +210,5 @@ object Divergence:
   private def sealSubscriber[medium]
     ( stream: (Stream[medium] over Credit)^ )
   :   AnyRef =
+
     stream.asInstanceOf[AnyRef]

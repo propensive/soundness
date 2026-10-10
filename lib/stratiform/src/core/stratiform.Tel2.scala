@@ -336,8 +336,18 @@ trait Tel2 extends Tel3:
                 then Tel.Compound(keyword, Array.empty, Unset, Array.empty)
                 else Tel.Compound(keyword, Array(firstAtom), Unset, Array.empty)
 
+    // The positional pre-pass, a plain method: read from the inline expansion, the
+    // `private[stratiform]` accessor `atoms` is reached through a synthesized inline accessor
+    // whose result re-freshens the array (`^{fresh.rd}`), which `assign` then rejects.
+    private def assignAtoms(telVal: Tel, profiles: Array[Positional.Profile]^{})
+      ( using Tactic[Tel.Error] )
+    :   Array[List[Tel.Atom]]^{} =
+
+      val atoms = telVal.atoms
+      if atoms.length == 0 then Array.empty else Positional.assign(atoms, profiles)
+
     inline def conjunction[derivation <: Product: ProductReflection]
-    :   derivation is Tel.Decodable =
+    :   (derivation is Tel.Decodable)^ =
 
       // `@name[Tel]` / bare `@name` renames and the per-field positional
       // profiles are per-derivation constants, hoisted out of the decode
@@ -379,10 +389,7 @@ trait Tel2 extends Tel3:
               // atoms fill fields in declaration order, per the schema-free
               // §20.2 step 3. The dominant wire form has no atoms and skips
               // the pass entirely.
-              val atoms = telVal.atoms
-
-              val assigned: Array[List[Tel.Atom]]^{} =
-                if atoms.length == 0 then Array.empty else Positional.assign(atoms, profiles)
+              val assigned: Array[List[Tel.Atom]]^{} = assignAtoms(telVal, profiles)
 
               val foci = infer[Foci[Tel.Focus]]
 
@@ -430,7 +437,13 @@ trait Tel2 extends Tel3:
 
               gate[derivation](infer[ProductReflection[derivation]], slots, active)
 
-    inline def disjunction[derivation: SumReflection]: derivation is Tel.Decodable =
+    // The variant a sum position carries: its first child compound, as a `Tel`. A plain
+    // method: read from the inline expansion, the compound array re-freshens (`^{any.rd}`).
+    private def firstVariant(telVal: Tel): Optional[Tel] =
+      val compounds = telVal.childCompounds
+      if compounds.nil then Unset else Tel.make(compounds.readable.head)
+
+    inline def disjunction[derivation: SumReflection]: (derivation is Tel.Decodable)^ =
       // A sum is a document whose single child compound is the chosen variant, keyed by
       // the variant's (kebab-cased) name. Dispatch on that child's keyword and decode it
       // as the variant. This is the select-member form `Tel.Type.assign` and BinTEL key
@@ -452,8 +465,6 @@ trait Tel2 extends Tel3:
           provide[Foci[Tel.Focus]]:
             provide[Tactic[Tel.Error]]:
               provide[Tactic[Variant.Error]]:
-                val compounds = telVal.childCompounds
-
                 // A sum position with no child compound carries no variant to
                 // dispatch on: a decode-layer absence, not a crash. Under an
                 // accruing scope, record ONE error and skip the variant decode
@@ -461,12 +472,7 @@ trait Tel2 extends Tel3:
                 // used (the caller sees the focus delta, or the tracking scope
                 // is tainted), so siblings keep accruing. Fail-fast scopes
                 // abort as before.
-                if compounds.nil then
-                  if infer[Foci[Tel.Focus]].active
-                  then raise(Tel.Error(Tel.Error.Reason.Absent)) yet null.asInstanceOf[derivation]
-                  else abort(Tel.Error(Tel.Error.Reason.Absent))
-                else
-                  val variant: Tel = Tel.make(compounds.readable.head)
+                firstVariant(telVal).let: variant =>
                   val variantKeyword: Text = labels(variant.keyword).or(variant.keyword)
 
                   // Each variant's result is widened to `derivation`, so that `delegate`
@@ -475,6 +481,11 @@ trait Tel2 extends Tel3:
                   // an anchored derivation then fails capture checking (#1972).
                   delegate(variantKeyword): [variant <: derivation] =>
                     ctx => (ctx.decoded(variant): derivation)
+                . or:
+                    if infer[Foci[Tel.Focus]].active
+                    then raise(Tel.Error(Tel.Error.Reason.Absent)) yet null
+                      . asInstanceOf[derivation]
+                    else abort(Tel.Error(Tel.Error.Reason.Absent))
 
   object EncodableDerivation extends Derivable[Tel.Encodable]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -752,9 +763,10 @@ trait Tel2 extends Tel3:
   =>  ( absence: distillate.Decodable.Absence in Tel,
         fault:   distillate.Decodable.Fault in Tel,
         tactic:  Tactic[Tel.Error] )
-  =>  ( decodable0: -> (inner is Tel.Decodable) )
-  =>  ((value is Tel.Decodable)^{tactic}) =
-    // Captures the tactic for the lenient-faults path.
+  =>  ( consume decodable0: => (inner is Tel.Decodable)^ )
+  =>  ((value is Tel.Decodable)^) =
+    // Captures the tactic for the lenient-faults path, and the by-name inner decoder, which
+    // cannot be named in a capture set: hence a fresh capture rather than `^{tactic}`.
     new Tel.Decodable:
       type Self = value
       def shape(): Morphology = Morphology.Opt(decodable0.shape())
@@ -795,31 +807,31 @@ trait Tel2 extends Tel3:
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
-        element0:  -> (element is Tel.Decodable) )
+        consume element0:  => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  collection[element] is Tel.Decodable =
+  =>  ((collection[element] is Tel.Decodable)^) =
     RepeatedDecodable[collection[element], element](element0, () => factory.newBuilder)
 
   // Alias counterparts: the opaque prelude collections do not conform to `Iterable`, so each
   // decodes at the underlying stdlib type and casts.
   given listDecodable: [list <: List, element]
-  =>  ( element0: -> (element is Tel.Decodable) )
+  =>  ( consume element0: => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  list[element] is Tel.Decodable =
+  =>  ((list[element] is Tel.Decodable)^) =
     RepeatedDecodable[list[element], element]
       ( element0, () => scala.collection.immutable.List.newBuilder[element] )
 
   given setDecodable: [set <: Set, element]
-  =>  ( element0: -> (element is Tel.Decodable) )
+  =>  ( consume element0: => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  set[element] is Tel.Decodable =
+  =>  ((set[element] is Tel.Decodable)^) =
     RepeatedDecodable[set[element], element]
       ( element0, () => scala.collection.immutable.Set.newBuilder[element] )
 
   given seriesDecodable: [sequence <: Sequence, element]
-  =>  ( element0: -> (element is Tel.Decodable) )
+  =>  ( consume element0: => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  sequence[element] is Tel.Decodable =
+  =>  ((sequence[element] is Tel.Decodable)^) =
     RepeatedDecodable[sequence[element], element](element0, () => Vector.newBuilder[element])
 
   // A `Map` encodes as a sequence of `entries` compounds, each carrying a `key`
@@ -837,11 +849,15 @@ trait Tel2 extends Tel3:
       Tel.compound(t"", Array.empty, entryList.to[Array])
 
   given mapDecodable: [key, value]
-  =>  ( keyCodec:   key is Tel.Decodable,
-        valueCodec: value is Tel.Decodable,
+  =>  ( keyCodec:   (key is Tel.Decodable)^,
+        valueCodec: (value is Tel.Decodable)^,
         tactic:     Tactic[Tel.Error] )
-  =>  ((Map[key, value] is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(() => Morphology.Dict(keyCodec.shape(), valueCodec.shape())): telVal =>
+  =>  ((Map[key, value] is Tel.Decodable)^{keyCodec, valueCodec, tactic}) =
+    // The shape is built eagerly: the codecs are strict parameters, so no recursive knot needs
+    // tying, and a thunk over a plain value captures neither of them.
+    val shape: Morphology = Morphology.Dict(keyCodec.shape(), valueCodec.shape())
+
+    Tel.Decodable(() => shape): telVal =>
       var accumulator = Map.empty[key, value]
 
       for entry <- telVal.fields(t"entries") do
@@ -886,7 +902,7 @@ trait Tel2 extends Tel3:
 // element into a fresh builder, then cast to the collection it stands for. A top-level class, so
 // no instance captures the `Tel2` that builds it.
 private[stratiform] class RepeatedDecodable[result, element]
-  ( element0:   -> (element is Tel.Decodable),
+  ( element0:   => (element is Tel.Decodable)^,
     newBuilder: () -> scala.collection.mutable.Builder[element, Any] )
 extends Tel.Decodable:
   type Self = result

@@ -32,22 +32,21 @@
                                                                                                   */
 package cataclysm
 
-import scala.collection.immutable.{Seq, ::}
 import scala.collection.`+:`
-
+import scala.collection.immutable.{Seq, ::}
 import scala.quoted.*
 
 import anticipation.*
 import contextual.*
-import gigantism.Lifts
-import murmuration.map
-import rudiments.each
-import rudiments.all
 import contingency.*
 import denominative.*
 import fulminate.*
+import gigantism.Lifts
 import gossamer.*
+import murmuration.map
 import nomenclature.*
+import rudiments.all
+import rudiments.each
 import spectacular.*
 import vacuous.*
 
@@ -116,7 +115,7 @@ object internal:
 
           val position =
             Interpolation.sourcePosition
-              (parts.to(List), Interpolation.decodeOrigins[origins], 1, offset)
+              ( parts.to(List), Interpolation.decodeOrigins[origins], 1, offset )
 
           halt(cssError.message, position)
 
@@ -249,19 +248,21 @@ object internal:
   // `Css.Style(color = 4.0*Px)` and `Css.Style(notAProperty = …)` fail to compile.
   def style(properties: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Css.Style] =
     def recur(exprs: Seq[Expr[(Label, Any)]])
-    :   scala.collection.immutable.List[Expr[(Text, Text)]] = exprs match
-      case '{type key <: Label; ($key: key, $value: value)} +: tail =>
-        val convertible = Expr.summon[value is Css.Convertible].getOrElse:
-          halt(m"cataclysm: no CSS value is available for this property's value")
+    :   scala.collection.immutable.List[Expr[(Text, Text)]] =
 
-        val name = key.value.getOrElse(halt(m"cataclysm: the property name must be a literal"))
-        val property = name.tt.uncamel.kebab
-        propertyIssue(property, topicOf(convertible)).let(halt(_))
+      exprs match
+        case '{type key <: Label; ($key: key, $value: value)} +: tail =>
+          val convertible = Expr.summon[value is Css.Convertible].getOrElse:
+            halt(m"cataclysm: no CSS value is available for this property's value")
 
-        '{(${Expr(property)}, $convertible.value($value))} :: recur(tail)
+          val name = key.value.getOrElse(halt(m"cataclysm: the property name must be a literal"))
+          val property = name.tt.uncamel.kebab
+          propertyIssue(property, topicOf(convertible)).let(halt(_))
 
-      case _ =>
-        scala.collection.immutable.Nil
+          '{(${Expr(property)}, $convertible.value($value))} :: recur(tail)
+
+        case _ =>
+          scala.collection.immutable.Nil
 
     properties match
       case Varargs(exprs) => '{Css.Style.of(List.from(${Expr.ofList(recur(exprs))}))}

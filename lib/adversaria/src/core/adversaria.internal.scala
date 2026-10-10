@@ -32,10 +32,9 @@
                                                                                                   */
 package adversaria
 
-import scala.collection.immutable.{List, Nil, ::}
-
 import java.lang as jl
 
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*
@@ -124,7 +123,9 @@ object internal:
       val fields =
         params2.flatMap: param =>
           if param.annotations.isEmpty then Nil else
-            List(param.name -> '{(${Expr(param.name)}.tt, ${matching(param.annotations)}.pipe(_.to(Set)))})
+            List
+              ( param.name ->
+                '{(${Expr(param.name)}.tt, ${matching(param.annotations)}.pipe(_.to(Set)))} )
 
         . to(scala.collection.immutable.Map)
 
@@ -137,12 +138,14 @@ object internal:
           case ('[topic], '[type target <: Label; target]) =>
             ' {
                 Annotated.AnnotatedField[operand, self, plane, limit, topic, target]
-                  ( $annotations.pipe(_.to(Set)), ${Expr.ofList(fields.values.to(List))}.pipe(_.to(Map)) )
+                  ( $annotations.pipe(_.to(Set)),
+                    ${Expr.ofList(fields.values.to(List))}.pipe(_.to(Map)) )
               }
       else
         ' {
             Annotated.AnnotatedFields[operand, self, plane, limit]
-              ( $annotations.pipe(_.to(Set)), ${Expr.ofList(fields.values.to(List))}.pipe(_.to(Map)) )
+              ( $annotations.pipe(_.to(Set)),
+                ${Expr.ofList(fields.values.to(List))}.pipe(_.to(Map)) )
           }
 
     else
@@ -196,19 +199,19 @@ object internal:
             val name = '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
 
             val get: Expr[entity => value] =
-              '{ (entity: entity) => ${'entity.asTerm.select(field).asExprOf[value]} }
+              '{(entity: entity) => ${'entity.asTerm.select(field).asExprOf[value]}}
 
             val set: Expr[(entity, value) => entity] =
               '{ (entity: entity, replacement: value) =>
-                   ${
-                       val arguments = parameters.map: parameter =>
-                         if parameter.name == field.name then 'replacement.asTerm
-                         else 'entity.asTerm.select(symbol.fieldMember(parameter.name))
+                  $ {
+                      val arguments = parameters.map: parameter =>
+                        if parameter.name == field.name then 'replacement.asTerm
+                        else 'entity.asTerm.select(symbol.fieldMember(parameter.name))
 
-                       Select(New(TypeTree.of[entity]), symbol.primaryConstructor)
-                       . appliedToArgs(arguments)
-                       . asExprOf[entity]
-                   } }
+                      Select(New(TypeTree.of[entity]), symbol.primaryConstructor)
+                      . appliedToArgs(arguments)
+                      . asExprOf[entity]
+                    } }
 
             ConstantType(StringConstant(field.name)).asType.absolve match
               case '[type label; label] =>
@@ -218,15 +221,18 @@ object internal:
         new Dereferenceable:
           type Self = entity
           type Result = value
+
           private val lambdas: scala.collection.immutable.Map[Text, Self => Result] =
             ${lambdaMap}.toMap
 
           private val lenses
           :   scala.collection.immutable.Map[Text, Lens from entity onto value] =
+
             ${lensMap}.toMap
 
           def names(entity: Self): proscenium.List[Text] = (${namesList}).to(proscenium.List)
           def select(entity: entity, name: Text): Result = lambdas(name)(entity)
+
           override def lens(name: Text): Optional[Lens from Self onto Result] =
             lenses.get(name).optional
       }

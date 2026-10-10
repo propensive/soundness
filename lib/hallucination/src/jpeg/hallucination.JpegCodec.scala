@@ -32,13 +32,13 @@
                                                                                                   */
 package hallucination
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import vacuous.*
 
 import Raster.Error.Reason
-
-import scala.caps
 
 // A pure-Scala JPEG decoder, ported from image-rs/jpeg-decoder (MIT/Apache-2.0). It handles
 // baseline and progressive Huffman-coded DCT images with 1, 3 or 4 components (grayscale, YCbCr /
@@ -87,11 +87,16 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
   private var reader: JpegReader^ = JpegReader(data, 0)
 
   private var frame: Optional[JpegFrame] = Unset
-  private var dcTables: scala.Array[Optional[JpegHuffmanTable]]^ = scala.Array(Unset, Unset, Unset, Unset)
-  private var acTables: scala.Array[Optional[JpegHuffmanTable]]^ = scala.Array(Unset, Unset, Unset, Unset)
+
+  private var dcTables: scala.Array[Optional[JpegHuffmanTable]]^ =
+    scala.Array(Unset, Unset, Unset, Unset)
+
+  private var acTables: scala.Array[Optional[JpegHuffmanTable]]^ =
+    scala.Array(Unset, Unset, Unset, Unset)
 
   // Quantization tables in natural (un-zigzagged) order, indexed by destination identifier.
-  private var quantTables: scala.Array[Optional[scala.Array[Int]]]^ = scala.Array(Unset, Unset, Unset, Unset)
+  private var quantTables: scala.Array[Optional[scala.Array[Int]]]^ =
+    scala.Array(Unset, Unset, Unset, Unset)
 
   private var restartInterval = 0
   private var adobeTransform: Optional[Int] = Unset
@@ -238,6 +243,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
   // terminated it (or -1).
   private update def decodeScan(frame: JpegFrame, scan: JpegScan)(using Tactic[Raster.Error])
   :   Int =
+
     val count = scan.componentIndices.length
     val components = scan.componentIndices.map(frame.components(_))
     var check = 0
@@ -410,7 +416,9 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
             index += r
 
             if index >= spectralEnd then continue = false else
-              writable(coeff)(base + Unzigzag.readable(index)) = huffman.receiveExtend(reader, s) << successiveLow
+              writable(coeff)(base + Unzigzag.readable(index)) =
+                huffman.receiveExtend(reader, s) << successiveLow
+
               index += 1
 
   // Section G.1.2: refines coefficients on later (successive-approximation) passes. `acTable`
@@ -541,7 +549,8 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
 
     plane
 
-  private def grayscaleRaster(component: JpegComponent, plane: scala.Array[Byte], width: Int, height: Int)
+  private def grayscaleRaster
+    ( component: JpegComponent, plane: scala.Array[Byte], width: Int, height: Int )
   :   Raster =
 
     val stride = component.blockWidth*8
