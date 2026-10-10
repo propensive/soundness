@@ -39,10 +39,11 @@ import scala.collection.mutable as scm
 import scala.math
 
 import anticipation.*
-import contingency.*
 import denominative.*
+import contingency.*
 import pneumatic.*
 import rudiments.*
+
 import Binary.*
 import Raster.Error.Reason
 
@@ -58,8 +59,7 @@ private[hallucination] object PngCodec:
   def decode(data: Data): Raster raises Raster.Error =
     try
       val signed =
-        data.length >= 8 && signature.readable.indices.forall: index =>
-          u8(data, index) == signature.readUnchecked(index)
+        data.length >= 8 && signature.readable.indices.forall: index => u8(data, index) == signature.readUnchecked(index)
 
       if !signed then abort(Raster.Error(Png(), Reason.BadSignature))
 
@@ -77,15 +77,12 @@ private[hallucination] object PngCodec:
       while !finished do
         val length = u32be(data, position)
         // `slice` yields a fresh array and `String`'s constructor copies it.
-        val chunkType =
-          new String(Array.unsafeJvm(data.segment((position + 4).z till (position + 8).z)))
-
+        val chunkType = new String(Array.unsafeJvm(data.segment((position + 4).z till (position + 8).z)))
         val body = data.segment((position + 8).z till (position + 8 + length).z)
 
         val storedCrc = u32be(data, position + 8 + length)
 
-        if corpuscular.Crc32.checksum(data.segment((position + 4).z till (position + 8).z), body) !=
-          storedCrc
+        if corpuscular.Crc32.checksum(data.segment((position + 4).z till (position + 8).z), body) != storedCrc
         then abort(Raster.Error(Png(), Reason.BadCrc))
 
         chunkType match
@@ -117,7 +114,8 @@ private[hallucination] object PngCodec:
                 u8(data, position + 10 + index*3)
 
           case "tRNS" =>
-            transparency = Array.tabulate(length): index => u8(data, position + 8 + index)
+            transparency = Array.tabulate(length): index =>
+              u8(data, position + 8 + index)
 
           case "IDAT" =>
             idat.addAll(Array.unsafeJvm(body), 0, length)
@@ -391,6 +389,7 @@ private[hallucination] object PngCodec:
   private def concatenate(stream: Chain[Data]): Data =
     val output = ji.ByteArrayOutputStream()
 
-    stream.each: data => output.write(Array.unsafeJvm(data))
+    stream.each: data =>
+      output.write(Array.unsafeJvm(data))
 
     Array.unsafeFrozen(output.toByteArray.nn)

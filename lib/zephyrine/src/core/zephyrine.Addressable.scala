@@ -32,10 +32,11 @@
                                                                                                   */
 package zephyrine
 
+import scala.caps
+
 import java.io as ji
 import java.lang as jl
 
-import scala.caps
 import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 import scala.reflect.ClassTag
@@ -62,9 +63,7 @@ object Addressable:
 
     inline def length(bytes: Data): Int = bytes.length
     inline def address(bytes: Data, index: Ordinal): Byte = bytes.readUnchecked(index.n0)
-
-    inline def grab(bytes: Data, start: Ordinal, end: Ordinal): Data =
-      bytes.segment((start.n0).z till (end.n0).z)
+    inline def grab(bytes: Data, start: Ordinal, end: Ordinal): Data = bytes.segment((start.n0).z till (end.n0).z)
 
 
     inline def clone(source: Data, start: Ordinal, end: Ordinal)(target: ji.ByteArrayOutputStream)
@@ -439,7 +438,7 @@ object Addressable:
     // would copy twice (into itself, then out of `toString`), and a `char[]` likewise.
     override def assemble(pieces: sci.Seq[Text], total: Int): Text =
       val list = java.util.ArrayList[CharSequence]()
-      pieces.foreach: piece => list.add(piece.s)
+      pieces.foreach { piece => list.add(piece.s) }
       String.join("", list).nn.tt
 
     inline def cloneStorage

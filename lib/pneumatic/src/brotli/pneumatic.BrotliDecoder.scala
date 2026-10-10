@@ -444,7 +444,6 @@ extends caps.Mutable:
 
   private update def readHuffmanCode(alphabetSize: Int, table: scala.Array[Int]^{this}, offset: Int)
   :   Unit =
-
     var ok = true
     val codeLengths: scala.Array[Int]^ = new scala.Array[Int](alphabetSize)
     val simpleCodeOrSkip = readBits(2)
@@ -505,9 +504,7 @@ extends caps.Mutable:
     if !ok then corrupt("invalid Huffman code")
     buildHuffmanTable(table, offset, HuffmanTableBits, codeLengths, alphabetSize)
 
-  private update def decodeContextMap(contextMapSize: Int, contextMap: scala.Array[Byte]^{this})
-  :   Int =
-
+  private update def decodeContextMap(contextMapSize: Int, contextMap: scala.Array[Byte]^{this}): Int =
     val numTrees = decodeVarLenUnsignedByte() + 1
 
     if numTrees == 1 then numTrees else
@@ -656,12 +653,8 @@ extends caps.Mutable:
       if rangeIdx >= 2 then { rangeIdx -= 2; distanceCode = -1 }
       val insertCode = insertRangeLut.readable(rangeIdx) + ((cmdCode >>> 3) & 7)
       val copyCode = copyRangeLut.readable(rangeIdx) + (cmdCode & 7)
-
-      insertLength =
-        insertLengthOffset.readable(insertCode) + readBits(insertLengthNBits.readable(insertCode))
-
-      copyLength =
-        copyLengthOffset.readable(copyCode) + readBits(copyLengthNBits.readable(copyCode))
+      insertLength = insertLengthOffset.readable(insertCode) + readBits(insertLengthNBits.readable(insertCode))
+      copyLength = copyLengthOffset.readable(copyCode) + readBits(copyLengthNBits.readable(copyCode))
 
       ensureCapacity(pos + insertLength)
 

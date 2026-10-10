@@ -32,6 +32,7 @@
                                                                                                   */
 package pneumatic
 
+
 // Shared LZMA model constants: the standard LZMA parameters (match lengths 2..273, 12 states,
 // 4 reps, 64 distance slots, a 16-entry alignment tree), documented in the LZMA specification.
 // The encoder and decoder build their probability models from the same constants, so the model
@@ -61,7 +62,6 @@ private[pneumatic] object Lzma:
   // flattened into a single probability array: tree `i` (`distSlot - DistModelStart`) has size
   // `2 << (i/2)` and starts at `DistSpecialOffsets(i)`.
   inline val DistSpecialTotal = 124
-
   val distSpecialOffsets: Array[Int]^{} =
     Array.unsafeFrozen(scala.Array(0, 2, 4, 8, 12, 20, 28, 44, 60, 92))
 
@@ -69,3 +69,4 @@ private[pneumatic] object Lzma:
 
   def distState(len: Int): Int =
     if len < DistStates + MatchLenMin then len - MatchLenMin else DistStates - 1
+

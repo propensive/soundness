@@ -49,7 +49,6 @@ private[pneumatic] object XzContainer:
   val magic: Array[Byte]^{} =
     Array.unsafeFrozen:
       scala.Array(0xfd.toByte, '7', 'z', 'X', 'Z', 0x00)
-
   inline val Lzma2FilterId = 0x21
   inline val IndexIndicator = 0x00
 
@@ -167,9 +166,7 @@ private[pneumatic] object XzContainer:
   // One complete block (header, LZMA2 payload, 4-byte-aligned padding, integrity check) for `data`,
   // paired with its unpadded size for the index. Used both whole-value and per-segment when
   // streaming, so each block bounds the compressor's working memory.
-  def block(data: scala.Array[Byte], checkType: Int, options: Lzma2Options)
-  :   (scala.Array[Byte], Long) =
-
+  def block(data: scala.Array[Byte], checkType: Int, options: Lzma2Options): (scala.Array[Byte], Long) =
     val payload = Lzma2Compressor(data, options).compress()
     val header = blockHeader(Lzma2Options.dictSizeToByte(options.dictSize))
     val out: ByteSink^ = ByteSink(header.length + payload.length + 64)

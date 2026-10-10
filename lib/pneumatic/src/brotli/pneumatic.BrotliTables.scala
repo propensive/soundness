@@ -204,3 +204,4 @@ private[pneumatic] object BrotliTables:
     Array.unsafeFrozen:
       scala.Array(
       0, 8, 0, 8, 16, 0, 16, 8, 16)
+

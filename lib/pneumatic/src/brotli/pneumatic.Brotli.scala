@@ -154,13 +154,12 @@ private[pneumatic] class BrotliStage(engine0: => BrotliEngine^) extends Duct[Dat
   def translate(demand: Credit): Credit = demand
 
   update def step(source: Region[Data])(range: Interval in source.type)
-    (target: Slate[Data])(space: Interval in target.type)
+    ( target: Slate[Data] )(space: Interval in target.type)
   :   Duct.Progress =
 
     val sourceInterval: Interval = range
     val targetInterval: Interval = space
     val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
-
     val out: scala.Array[Byte]^ =
       unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
 
@@ -177,10 +176,8 @@ private[pneumatic] class BrotliStage(engine0: => BrotliEngine^) extends Duct[Dat
       finishing = true
 
     val targetInterval: Interval = space
-
     val out: scala.Array[Byte]^ =
       unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
-
     engine.deliver(out, targetInterval.start.n0, targetInterval.size)
 
 object Brotli:

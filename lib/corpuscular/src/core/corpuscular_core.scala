@@ -66,6 +66,9 @@ private[corpuscular] object Checksum:
     // Fresh and never escaping before this point, so no writer can alias it.
     Array.unsafeFrozen(result)
 
+sealed trait Crc32 extends Algorithm:
+  type Bits = 32
+
 object Crc32:
   val table: Array[Int]^{} =
     val result = Array.allocate[Int](256)
@@ -74,7 +77,6 @@ object Crc32:
     while n < 256 do
       var c = n
       var k = 8
-
       while k > 0 do
         k -= 1
         c = if (c & 1) != 0 then 0xedb88320 ^ (c >>> 1) else c >>> 1
@@ -131,8 +133,10 @@ object Crc32:
     // Written into fresh scratch and frozen, so the digest allocates nothing but its result.
     update def digest(): Data = Checksum.bytes(v.toLong, 4)
 
-sealed trait Crc32 extends Algorithm:
-  type Bits = 32
+// CRC-64, in the ECMA-182 form XZ uses (polynomial 0xc96c5795d7870f42, reflected). The JDK has
+// no CRC-64, so only the Soundness provider offers it.
+sealed trait Crc64 extends Algorithm:
+  type Bits = 64
 
 object Crc64:
   // Eight slicing tables, flattened as `table(k*256 + n)`: `table(n)` is the classic bytewise
@@ -228,10 +232,9 @@ object Crc64:
 
     update def digest(): Data = Checksum.bytes(~v, 8)
 
-// CRC-64, in the ECMA-182 form XZ uses (polynomial 0xc96c5795d7870f42, reflected). The JDK has
-// no CRC-64, so only the Soundness provider offers it.
-sealed trait Crc64 extends Algorithm:
-  type Bits = 64
+// Adler-32, the zlib wrapper's checksum.
+sealed trait Adler32 extends Algorithm:
+  type Bits = 32
 
 object Adler32:
   private[corpuscular] final val Base = 65521 // largest prime smaller than 65536
@@ -269,7 +272,3 @@ object Adler32:
     def value: Long = (s2 << 16) | s1
 
     update def digest(): Data = Checksum.bytes(((s2 << 16) | s1).toLong, 4)
-
-// Adler-32, the zlib wrapper's checksum.
-sealed trait Adler32 extends Algorithm:
-  type Bits = 32
