@@ -32,24 +32,22 @@
                                                                                                   */
 package hypotenuse
 
-import scala.math
-
-import scala.language.experimental.genericNumberLiterals
-import scala.language.experimental.into
-
 import java.lang.{Integer as JInt, Long as JLong, Double as JDouble, Float as JFloat}
 
 import scala.annotation.*
+import scala.language.experimental.genericNumberLiterals
+import scala.language.experimental.into
+import scala.math
 
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import fulminate.{m, panic}
 import prepositional.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
-import denominative.dysasymptotics.linearSize
 
 export hypotenuse.internal.{B8, B16, B32, B64, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64}
 
@@ -69,6 +67,7 @@ extension [self](self: self)(using traversable: self is Traversable)
 
     if !iterator.hasNext then Unset else
       var current = iterator.next()
+
       while iterator.hasNext do
         val element = iterator.next()
         if element < current then current = element
@@ -83,6 +82,7 @@ extension [self](self: self)(using traversable: self is Traversable)
 
     if !iterator.hasNext then Unset else
       var current = iterator.next()
+
       while iterator.hasNext do
         val element = iterator.next()
         if element > current then current = element
@@ -509,7 +509,8 @@ extension (shortObject: Short.type)
   def apply(bits: B16): Short = bits.asInstanceOf[Short]
 
   @unexported
-  def apply(bytes: Array[Byte]^{}): Short = (((bytes.readable(0) & 0xFF) << 8) | (bytes.readable(1) & 0xff)).toShort
+  def apply(bytes: Array[Byte]^{}): Short =
+    (((bytes.readable(0) & 0xFF) << 8) | (bytes.readable(1) & 0xff)).toShort
 
 extension (intObject: Int.type)
   @unexported
@@ -673,14 +674,16 @@ package arithmeticOptions:
       else U64((Long(left.bits)/Long(right.bits)).bits)
 
     inline def divideS64(left: S64, right: S64): Wrap[S64]^ =
-      if right.long == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero)) else S64((left.long/right.long).bits)
+      if right.long == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
+      else S64((left.long/right.long).bits)
 
     inline def divideU32(left: U32, right: U32): Wrap[U32]^ =
       if right.long == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
       else U32((Int(left.bits)/Int(right.bits)).bits)
 
     inline def divideS32(left: S32, right: S32): Wrap[S32]^ =
-      if right.int == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero)) else S32((left.int/right.int).bits)
+      if right.int == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
+      else S32((left.int/right.int).bits)
 
     inline def divideU16(left: U16, right: U16): Wrap[U16]^ =
       if right.int == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
@@ -691,10 +694,12 @@ package arithmeticOptions:
       else S16((left.short/right.short).toShort.bits)
 
     inline def divideU8(left: U8, right: U8): Wrap[U8]^ =
-      if right.int == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero)) else U8((left.byte/right.byte).toByte.bits)
+      if right.int == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
+      else U8((left.byte/right.byte).toByte.bits)
 
     inline def divideS8(left: S8, right: S8): Wrap[S8]^ =
-      if right.int == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero)) else S8((left.byte/right.byte).toByte.bits)
+      if right.int == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
+      else S8((left.byte/right.byte).toByte.bits)
 
   inline given uncheckedOverflow: CheckOverflow:
     type Wrap[result] = result
@@ -728,7 +733,9 @@ package arithmeticOptions:
     inline def addS64(left: S64, right: S64): Wrap[S64]^ =
       val sum: Long = left.long + right.long
 
-      if ((left.long^sum) & (right.long^sum)) < 0L then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow)) else S64(sum.bits)
+      if ((left.long^sum) & (right.long^sum)) < 0L
+      then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow))
+      else S64(sum.bits)
 
     inline def addU32(left: U32, right: U32): Wrap[U32]^ =
       val result: B32 = (Int(left.bits) + Int(right.bits)).bits
@@ -740,7 +747,9 @@ package arithmeticOptions:
     inline def addS32(left: S32, right: S32): Wrap[S32]^ =
       val sum: Int = left.int + right.int
 
-      if ((left.int^sum) & (right.int^sum)) < 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow)) else S32(sum.bits)
+      if ((left.int^sum) & (right.int^sum)) < 0
+      then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow))
+      else S32(sum.bits)
 
     inline def addU16(left: U16, right: U16): Wrap[U16]^ =
       val result: B16 = (Short(left.bits) + Short(right.bits)).toShort.bits
@@ -752,7 +761,9 @@ package arithmeticOptions:
     inline def addS16(left: S16, right: S16): Wrap[S16]^ =
       val sum: Short = (left.short + right.short).toShort
 
-      if ((left.short^sum) & (right.short^sum)) < 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow)) else S16(sum.bits)
+      if ((left.short^sum) & (right.short^sum)) < 0
+      then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow))
+      else S16(sum.bits)
 
     inline def addU8(left: U8, right: U8): Wrap[U8]^ =
       val result: B8 = (left.short + right.short).toByte.bits
@@ -764,4 +775,6 @@ package arithmeticOptions:
     inline def addS8(left: S8, right: S8): Wrap[S8]^ =
       val sum: Byte = (left.short + right.short).toByte
 
-      if ((left.short^sum) & (right.short^sum)) < 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow)) else S8(sum.bits)
+      if ((left.short^sum) & (right.short^sum)) < 0
+      then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow))
+      else S8(sum.bits)

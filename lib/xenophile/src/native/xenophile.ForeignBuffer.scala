@@ -32,7 +32,6 @@
                                                                                                   */
 package xenophile
 
-
 import java.lang.foreign.*
 
 import anticipation.*

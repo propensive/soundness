@@ -35,7 +35,6 @@ package probably
 import scala.deriving.*
 import scala.reflect
 
-
 import anticipation.*
 import distillate.*
 import gossamer.*

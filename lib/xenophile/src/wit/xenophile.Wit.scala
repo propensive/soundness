@@ -116,14 +116,14 @@ object Wit:
     case Use(from: Text, names: List[(Text, Text)])
 
     def named: Text = this match
-      case Alias(name, _)        => name
-      case Record(name, _)       => name
-      case Variant(name, _)      => name
-      case Enumeration(name, _)  => name
-      case Flags(name, _)        => name
-      case Resource(name, _)     => name
+      case Alias(name, _)          => name
+      case Record(name, _)         => name
+      case Variant(name, _)        => name
+      case Enumeration(name, _)    => name
+      case Flags(name, _)          => name
+      case Resource(name, _)       => name
       case Item.Function(function) => function.name
-      case Use(from, _)          => from
+      case Use(from, _)            => from
 
   case class Interface(name: Text, items: List[Item])
 
@@ -183,7 +183,6 @@ object Wit:
     import scala.collection.immutable.List as SList
     import scala.collection.immutable.{::, Nil as SNil}
 
-
     // One `Document` per `package` section: a curated `.wit` file may hold several packages
     // (the WASI subsets the backends carry do), and every interface and world belongs to the
     // package declared above it.
@@ -235,8 +234,10 @@ object Wit:
             recur(index + 1, current + char, tokens)
           else if char == '@' && current.isEmpty && ident(next) then
             recur(index + 1, "@", tokens)
-          else if char.isWhitespace then recur(index + 1, "", flushed)
-          else recur(index + 1, "", char.toString :: flushed)
+          else if char.isWhitespace then
+            recur(index + 1, "", flushed)
+          else
+            recur(index + 1, "", char.toString :: flushed)
 
       recur(0, "", SList())
 
@@ -563,8 +564,7 @@ object Wit:
 
         if pkg.absent && interfaces.isEmpty && worlds.isEmpty then acc
         else
-          Document(pkg, version, interfaces.reverse.to(List), worlds.reverse.to(List))
-            :: acc
+          Document(pkg, version, interfaces.reverse.to(List), worlds.reverse.to(List)) :: acc
 
       def recur
         ( tokens:     SList[String],

@@ -41,8 +41,8 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
-import zephyrine.*
 import vacuous.*
+import zephyrine.*
 
 object Resource:
   given streamable: [resource <: Resource]
@@ -73,6 +73,7 @@ object Resource:
         Streamable.inputStream.contramap: (resource: resource) =>
           classloader.inputStream(resource.path.encode)
 
-  given nominable: [resource <: Resource] => resource is Nominable = _.path.descent.to(List).prim.or(t"/")
+  given nominable: [resource <: Resource] => resource is Nominable =
+    _.path.descent.to(List).prim.or(t"/")
 
 case class Resource private[hellenism](path: Path on Classpath) extends Locative

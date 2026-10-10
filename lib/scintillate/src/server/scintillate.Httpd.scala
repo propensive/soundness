@@ -34,10 +34,10 @@ package scintillate
 
 import java.net as jn
 
-import anticipation.Log
 import com.sun.net.httpserver as csnh
 
 import anticipation.*
+import anticipation.Log
 import contingency.*
 import digression.*
 import fulminate.*

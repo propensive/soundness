@@ -41,5 +41,5 @@ import prepositional.*
 // no type whose companion could hold it.
 package uuidInterfaces:
   given soundnessUuid: (tactic: Tactic[Uuid.Error])
-  =>  ((Uuid is Instantiable across Uuids from Text)^{tactic}) =
+  =>  ( (Uuid is Instantiable across Uuids from Text)^{tactic} ) =
     Uuid.parse(_)

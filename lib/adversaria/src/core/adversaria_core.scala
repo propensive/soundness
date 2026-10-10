@@ -32,13 +32,12 @@
                                                                                                   */
 package adversaria
 
-import rudiments.*
-
 import scala.compiletime.summonInline
 
 import anticipation.*
 import denominative.*
 import prepositional.*
+import rudiments.*
 import symbolism.*
 import vacuous.*
 

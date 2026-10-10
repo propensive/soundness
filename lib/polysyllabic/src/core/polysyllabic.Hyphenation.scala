@@ -36,10 +36,10 @@ import scala.collection.mutable.ArrayBuilder
 
 import anticipation.*
 import denominative.*
+import fulminate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
-import fulminate.*
 
 object Hyphenation:
   given fallback: Hyphenation = Unhyphenated
@@ -71,7 +71,12 @@ object Hyphenation:
   // optional `\lefthyphenmin` / `\righthyphenmin` directives.
   def fromTex(content: Text): Hyphenation =
     val parsed = TexPatterns.parseFile(content)
-    apply(parsed.patterns.readable.toSeq, parsed.exceptions.readable.toSeq, parsed.leftMin, parsed.rightMin)
+
+    apply
+      ( parsed.patterns.readable.toSeq,
+        parsed.exceptions.readable.toSeq,
+        parsed.leftMin,
+        parsed.rightMin )
 
   private[polysyllabic] def make
     ( patterns0:   Dictionary[Array[Byte]^{}],
@@ -261,10 +266,10 @@ object Hyphenation:
       count
 
     . or:
-        // Zero the active prefix of the scores buffer so the running maxima
-        // start from 0 each call. `Arrays.fill` is a JIT intrinsic.
-        java.util.Arrays.fill(scores, 0, paddedLength + 1, 0.toByte)
-        trieWalkInto(padded, paddedLength, length, hyphenation, leftMin, rightMin, scores, breaks)
+      // Zero the active prefix of the scores buffer so the running maxima
+      // start from 0 each call. `Arrays.fill` is a JIT intrinsic.
+      java.util.Arrays.fill(scores, 0, paddedLength + 1, 0.toByte)
+      trieWalkInto(padded, paddedLength, length, hyphenation, leftMin, rightMin, scores, breaks)
 
   private inline def mergePattern
     ( scores: scala.Array[Byte]^, base: Int, pattern: Array[Byte]^{} )
@@ -311,7 +316,8 @@ object Hyphenation:
 
   // HyphenationError → Hyphenation.Error
   case class Error(resource: Text)(using Diagnostics)
-  extends fulminate.Error(m"the hyphenation resource $resource could not be loaded from the classpath")
+  extends fulminate.Error
+    ( m"the hyphenation resource $resource could not be loaded from the classpath" )
 
 trait Hyphenation:
   // `patterns` is built via `Dictionary.aho(alphabet, …)` so the algorithm's
@@ -332,7 +338,8 @@ trait Hyphenation:
     val newExceptionPairs = exceptions.map(TexPatterns.parseException).toSeq
 
     val newPatterns =
-      Dictionary.aho[Array[Byte]^{}](Hyphenation.alphabet, (this.patterns.entries.toSeq ++ newPatternPairs)*)
+      Dictionary.aho[Array[Byte]^{}]
+        ( Hyphenation.alphabet, (this.patterns.entries.toSeq ++ newPatternPairs)* )
 
     val newExceptions = this.exceptions ++ newExceptionPairs
     val effectiveLeft = leftMin.or(this.leftMin)

@@ -58,8 +58,7 @@ object Clockface:
       val seconds0 = (clockface.second: Int).show.pad(2, Bidi.Rtl, '0')
 
       val seconds =
-        if !summon[Format].seconds then t""
-        else t"${summon[Separation].secondSeparator}$seconds0"
+        if !summon[Format].seconds then t"" else t"${summon[Separation].secondSeparator}$seconds0"
 
       val meridiem = (clockface.hour/12) match
         case 0 => Meridiem.Am

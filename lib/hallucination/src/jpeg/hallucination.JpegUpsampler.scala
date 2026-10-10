@@ -158,8 +158,15 @@ private[hallucination] final class JpegUpsampler private
 
     while index < count do
       upsampleRow
-        ( kinds.readable(index), componentData(index), widths.readable(index), heights.readable(index), rowStrides.readable(index),
-          hScales.readable(index), vScales.readable(index), row, lineBuffer(index) )
+        ( kinds.readable(index),
+          componentData(index),
+          widths.readable(index),
+          heights.readable(index),
+          rowStrides.readable(index),
+          hScales.readable(index),
+          vScales.readable(index),
+          row,
+          lineBuffer(index) )
 
       index += 1
 

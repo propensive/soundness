@@ -47,7 +47,8 @@ private[hallucination] object Vp8Filter:
   private inline def diff(a: Int, b: Int): Int = math.abs(a - b)
 
   // Adjusts the two middle samples of an edge; returns the primary adjustment `a`.
-  private def commonAdjust(useOuter: Boolean, p: scala.Array[Int], p1i: Int, p0i: Int, q0i: Int, q1i: Int)
+  private def commonAdjust
+    ( useOuter: Boolean, p: scala.Array[Int], p1i: Int, p0i: Int, q0i: Int, q1i: Int )
   :   Int =
 
     val p1 = signed(p(p1i)); val p0 = signed(p(p0i))
@@ -79,7 +80,10 @@ private[hallucination] object Vp8Filter:
     if simpleThreshold(edge, p(base + 3), p(base + 4), p(base + 2), p(base + 5))
     then commonAdjust(true, p, base + 2, base + 3, base + 4, base + 5)
 
-  def subblockFilterHorizontal(hev: Int, interior: Int, edge: Int, p: scala.Array[Int], base: Int): Unit =
+  def subblockFilterHorizontal
+    ( hev: Int, interior: Int, edge: Int, p: scala.Array[Int], base: Int )
+  :   Unit =
+
     if shouldFilter(interior, edge, k => p(base + k)) then
       val hv = highVariance(hev, p(base + 2), p(base + 3), p(base + 4), p(base + 5))
       val a = (commonAdjust(hv, p, base + 2, base + 3, base + 4, base + 5) + 1) >> 1
@@ -142,8 +146,10 @@ private[hallucination] object Vp8Filter:
         val a1 = clamp((27*w + 63) >> 7)
         writable(p)(point) = unsigned(q0 - a1); writable(p)(point - stride) = unsigned(p0 + a1)
         val a2 = clamp((18*w + 63) >> 7)
-        writable(p)(point + stride) = unsigned(q1 - a2); writable(p)(point - 2*stride) = unsigned(p1 + a2)
+        writable(p)(point + stride) = unsigned(q1 - a2)
+        writable(p)(point - 2*stride) = unsigned(p1 + a2)
         val a3 = clamp((9*w + 63) >> 7)
-        writable(p)(point + 2*stride) = unsigned(q2 - a3); writable(p)(point - 3*stride) = unsigned(p2 + a3)
+        writable(p)(point + 2*stride) = unsigned(q2 - a3)
+        writable(p)(point - 3*stride) = unsigned(p2 + a3)
       else
         commonAdjust(true, p, point - 2*stride, point - stride, point, point + stride)

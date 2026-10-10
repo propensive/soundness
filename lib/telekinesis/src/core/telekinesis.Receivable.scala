@@ -42,11 +42,12 @@ import zephyrine.*
 
 trait Receivable2:
   given instantiable: [content: Instantiable across HttpRequests from Text]
-  =>  (tactic: Tactic[Http.Error])
-  =>  ((content is Receivable)^{tactic}) =
+  =>  ( tactic: Tactic[Http.Error] )
+  =>  ( (content is Receivable)^{tactic} ) =
 
     Receivable:
-      body => content(body.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].memoize.utf8)
+      body =>
+        content(body.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].memoize.utf8)
 
 object Receivable extends Receivable2:
   // A named SAM rather than a function type: a function type may not take a
@@ -62,18 +63,19 @@ object Receivable extends Receivable2:
   // whole-value consumers go through their `Aggregable`'s `accept`.
   def apply[result](lambda: Reader[result]^)(using tactic: Tactic[Http.Error])
   :   ((result is Receivable)^{lambda, tactic}) =
+
     response =>
       if response.status.category != Http.Status.Category.Successful
       then abort(Http.Error(response.status, response.textHeaders))
       else lambda.read(response.body.stream)
 
   given text: (tactic: Tactic[Http.Error])
-  =>  ((Text is Receivable)^{tactic}) =
+  =>  ( (Text is Receivable)^{tactic} ) =
     Receivable(_.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].memoize.utf8)
 
   given streamable: [stream] => (aggregable: (stream is Aggregable by Data)^)
-  =>  (tactic: Tactic[Http.Error])
-  =>  ((stream is Receivable)^{aggregable, tactic}) =
+  =>  ( tactic: Tactic[Http.Error] )
+  =>  ( (stream is Receivable)^{aggregable, tactic} ) =
     Receivable(aggregable.accept(_))
 
   given httpStatus: Http.Status is Receivable = _.status
@@ -82,4 +84,6 @@ trait Receivable extends Typeclass:
   // Widened (`Response^`): a reader may consume a response whose streamed body
   // retains the live connection it arrived on.
   def read(response: Http.Response^): Self
-  def map[self2](lambda: Self => self2): (self2 is Receivable)^{this, lambda} = response => lambda(read(response))
+
+  def map[self2](lambda: Self => self2): (self2 is Receivable)^{this, lambda} =
+    response => lambda(read(response))

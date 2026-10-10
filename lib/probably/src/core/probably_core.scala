@@ -64,7 +64,6 @@ export Tagging.{nominative as taggingNominative}
 // here so that `import probably.*` still provides it.
 export hypotenuse.{!==, +/-, ===, Checkable, Tolerance, ±}
 
-
 // Declares a test by its description, optionally with tags (`test(m"…", n"slow", n"network")`)
 // by which a selection can admit or exclude it. The contextual `Testable` must say where the
 // test belongs: a `Suite`'s literal name, or `Impromptu` (see `Testable`).
@@ -85,7 +84,9 @@ def test[topic <: Label](name: Name[Probing], description: Message, tags: Tag*)
 
 
 def suite[topic <: Label, report](name: Message)
-  ( using @missingContext(Testable.orphan) suite: Testable of topic, runner: Runner[report], codepoint: Codepoint )
+  ( using @missingContext(Testable.orphan) suite: Testable of topic,
+          runner: Runner[report],
+          codepoint: Codepoint )
   ( block: (Testable of topic) ?=> Unit )
 :   Unit =
 
@@ -93,7 +94,9 @@ def suite[topic <: Label, report](name: Message)
 
 
 def suite[topic <: Label, report](name: Name[Probing], description: Message)
-  ( using @missingContext(Testable.orphan) suite: Testable of topic, runner: Runner[report], codepoint: Codepoint )
+  ( using @missingContext(Testable.orphan) suite: Testable of topic,
+          runner: Runner[report],
+          codepoint: Codepoint )
   ( block: (Testable of topic) ?=> Unit )
 :   Unit =
 

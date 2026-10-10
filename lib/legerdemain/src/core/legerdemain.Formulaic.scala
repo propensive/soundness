@@ -33,15 +33,14 @@
 package legerdemain
 
 import anticipation.*
-import rudiments.*
 import contingency.*
 import fulminate.*
 import gossamer.*
 import honeycomb.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 import wisteria.*
-
 import htmlDoms.whatwg, whatwg.*
 
 object Formulaic extends ProductDerivable[Formulaic]:

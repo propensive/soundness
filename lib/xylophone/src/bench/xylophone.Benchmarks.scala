@@ -189,7 +189,7 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
       bench(m"Parse bytes with Xylophone")(target = 1*Second, operationSize = size1):
         '{
             val bytes = xylophone.Benchmarks.xmlBytes1
-            unsafely(Xml.XmlParser.fromData(bytes).parseXml(headers0 = true))
+            unsafely(Xml.XmlParser.fromData(bytes).parseXml(keepHeader = true))
         }
 
       bench(m"Parse bytes with JDK DOM")(target = 1*Second, operationSize = size1):
@@ -236,7 +236,7 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
       bench(m"Parse bytes with Xylophone")(target = 1*Second, operationSize = size2):
         '{
             val bytes = xylophone.Benchmarks.xmlBytes2
-            unsafely(Xml.XmlParser.fromData(bytes).parseXml(headers0 = true))
+            unsafely(Xml.XmlParser.fromData(bytes).parseXml(keepHeader = true))
         }
 
       bench(m"Parse bytes with JDK DOM")(target = 1*Second, operationSize = size2):
@@ -283,7 +283,7 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
       bench(m"Parse bytes with Xylophone")(target = 1*Second, operationSize = size3):
         '{
             val bytes = xylophone.Benchmarks.xmlBytes3
-            unsafely(Xml.XmlParser.fromData(bytes).parseXml(headers0 = true))
+            unsafely(Xml.XmlParser.fromData(bytes).parseXml(keepHeader = true))
         }
 
       bench(m"Parse bytes with JDK DOM")(target = 1*Second, operationSize = size3):
@@ -330,7 +330,7 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
       bench(m"Parse bytes with Xylophone")(target = 1*Second, operationSize = size4):
         '{
             val bytes = xylophone.Benchmarks.xmlBytes4
-            unsafely(Xml.XmlParser.fromData(bytes).parseXml(headers0 = true))
+            unsafely(Xml.XmlParser.fromData(bytes).parseXml(keepHeader = true))
         }
 
       bench(m"Parse bytes with JDK DOM")(target = 1*Second, operationSize = size4):
@@ -377,7 +377,7 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
       bench(m"Parse bytes with Xylophone")(target = 1*Second, operationSize = size5):
         '{
             val bytes = xylophone.Benchmarks.xmlBytes5
-            unsafely(Xml.XmlParser.fromData(bytes).parseXml(headers0 = true))
+            unsafely(Xml.XmlParser.fromData(bytes).parseXml(keepHeader = true))
         }
 
       bench(m"Parse bytes with JDK DOM")(target = 1*Second, operationSize = size5):

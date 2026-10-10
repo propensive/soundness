@@ -76,7 +76,7 @@ object Computable:
 
   given instantiable: [instantiable]
   =>  ( evidence: (instantiable is Instantiable across Paths from Text)^ )
-  =>  ((instantiable is Computable)^{evidence}) =
+  =>  ( (instantiable is Computable)^{evidence} ) =
 
     text.map: text => evidence(text.trim)
 

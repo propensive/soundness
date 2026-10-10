@@ -142,7 +142,7 @@ private[punctuation] object InlineSupport:
   // `spot` finds the first index satisfying the predicate, confined to the text, so the read
   // inside it is total and the search needs no bound of its own.
   private def existsNonSpace(text: Text): Boolean =
-    text.spot(index => text(index) != ' ').present
+    text.spot{ index => text(index) != ' ' }.present
 
   // Email autolink pattern from the CommonMark spec (§6.4)
   private val EmailRegex: jur.Pattern =

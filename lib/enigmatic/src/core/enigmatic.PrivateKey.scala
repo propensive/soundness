@@ -72,8 +72,7 @@ object PrivateKey:
 // operation completes; only `pem`, gated on `Divulgence`, lets the material escape.
 class PrivateKey[cipher <: Cipher](private[enigmatic] val secret: Secret^):
   def public(using cipher: cipher): PublicKey[cipher] =
-    secret.uncloak: bytes =>
-      PublicKey(cipher.privateToPublic(Array.unsafeFrozen(bytes)))
+    secret.uncloak: bytes => PublicKey(cipher.privateToPublic(Array.unsafeFrozen(bytes)))
 
 
   def sign[encodable: Encodable in Data](value: encodable)

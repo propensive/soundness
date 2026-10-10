@@ -202,7 +202,7 @@ object SchemaResolver:
       // iterator had — later elements are visited, but never touched.
       stores.each: store =>
         if result.absent
-        then store(signature).let { body => result = accept(body.read[Tel], Step.Cache) }
+        then store(signature).let: body => result = accept(body.read[Tel], Step.Cache)
 
       // Library documents are schema documents the caller already has
       // in hand, and must be valid schemas; a malformed one aborts
@@ -253,9 +253,7 @@ object SchemaResolver:
     // Step 5: failure, naming the deepest step attempted.
     result.or:
       val step =
-        if bare then Step.Cache
-        else if delegate.present then Step.Lira
-        else Step.Library
+        if bare then Step.Cache else if delegate.present then Step.Lira else Step.Library
 
       abort(ResolutionError(Reason.Unresolved(step, identifier)))
 

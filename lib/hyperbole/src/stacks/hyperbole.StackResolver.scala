@@ -37,6 +37,8 @@ import scala.collection.mutable
 import ambience.*
 import anticipation.*
 import contingency.*
+import denominative.dysasymptotics.linearSize
+import denominative.z
 import digression.*
 import distillate.*
 import galilei.*, galilei.Platform.pathReadable
@@ -53,8 +55,6 @@ import vacuous.*
 import StackTrace.Frame.Kind
 import charsets.utf8Charset
 import textSanitizers.skipSanitizer
-import denominative.z
-import denominative.dysasymptotics.linearSize
 
 object StackResolver:
   // The compiled name cannot say which definition a frame came from, but it can say what kind of
@@ -174,7 +174,8 @@ extends StackTrace.Resolver:
     origin.cls.let: cls =>
       tastyFile(cls).let: tasty =>
         tasty.path.let: path =>
-          if tasty.compiledFrom(origin.path) then definitionSource(tasty, path, origin.line) else Unset
+          if tasty.compiledFrom(origin.path) then definitionSource(tasty, path, origin.line)
+          else Unset
 
   private def definitionSource(tasty: Tasty.File, path: Text, line: Int)
   :   Optional[StackTrace.Frame.Source] =
@@ -213,9 +214,9 @@ extends StackTrace.Resolver:
   private def lines(path: Text): Optional[Sequence[Text]] =
     sourceFiles.synchronized:
       sourceFiles.getOrElseUpdate
-       ( path,
-         file(path).let: file =>
-           safely(file.read[Text].cut(t"\n").to[Sequence]) )
+        ( path,
+          file(path).let: file =>
+            safely(file.read[Text].cut(t"\n").to[Sequence]) )
 
   // A path recorded relative to `-sourceroot` resolves against the working directory, as the
   // compiler resolves it when unpickling. Not `Path#resolve`, whose result captures the tactic it

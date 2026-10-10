@@ -40,6 +40,7 @@ extension [value](value: value)
   // fallibility requirement is enforced where a fallible optic given is summoned during expansion.
   inline def lens(inline lambdas: ((Optic from value onto value) => value => value)*)
   :   value =
+
     ${panopticon.internal.fuse[value]('value, 'lambdas)}
 
   // The capture-set parameter `C` carries the lambdas' captures so this folds over a varargs of

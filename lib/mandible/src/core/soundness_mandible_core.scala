@@ -33,5 +33,5 @@
 package soundness
 
 export mandible.
-        {Bytecode, BytecodePalette, Classfile, ClasspathIndex, ClassSurface,
-         disassemble}
+  {Bytecode, BytecodePalette, Classfile, ClasspathIndex, ClassSurface,
+    disassemble}

@@ -38,8 +38,8 @@ import prepositional.*
 
 object Lens:
   // The lens stores `get` and `set`, so it captures whatever they capture (`^{get, set}`): pure
-  // accessors yield a pure lens, while accessors that close over a `Tactic` (e.g. a fallible dynamic
-  // field update) yield a capturing lens, propagating the requirement to the use site.
+  // accessors yield a pure lens, while accessors that close over a `Tactic` (e.g. a fallible
+  // dynamic field update) yield a capturing lens, propagating the requirement to the use site.
   def apply[self, origin, target](get: origin => target, set: (origin, target) => origin)
   :   (self is Lens from origin onto target)^{get, set} =
 

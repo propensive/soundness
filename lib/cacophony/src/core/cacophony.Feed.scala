@@ -36,24 +36,25 @@ import javax.sound.sampled as jss
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import prepositional.*
 import quantitative.*
-import fulminate.*
 
 object Feed:
   def list: List[Feed] =
 
-      jss.AudioSystem.getMixerInfo.nn.iterator.toList.flatMap: info0 =>
-        val info = info0.nn
-        val mixer = jss.AudioSystem.getMixer(info).nn
+    jss.AudioSystem.getMixerInfo.nn.iterator.toList.flatMap: info0 =>
+      val info = info0.nn
+      val mixer = jss.AudioSystem.getMixer(info).nn
 
-        val canRecord = mixer.getTargetLineInfo.nn.exists:
-          case dli: jss.DataLine.Info => dli.getLineClass == classOf[jss.TargetDataLine]
-          case _                      => false
+      val canRecord = mixer.getTargetLineInfo.nn.exists:
+        case dli: jss.DataLine.Info => dli.getLineClass == classOf[jss.TargetDataLine]
+        case _                      => false
 
-        if canRecord then scala.collection.immutable.List(Feed(info))
-        else scala.collection.immutable.Nil
-      . to(List)
+      if canRecord then scala.collection.immutable.List(Feed(info))
+      else scala.collection.immutable.Nil
+
+    . to(List)
 
   // FeedError → Feed.Error
   object Error:

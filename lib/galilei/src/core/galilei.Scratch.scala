@@ -44,13 +44,6 @@ import vacuous.*
 
 import Io.Error.{Operation, Reason}
 
-// The form for transient working directories: `parent.open[Scratch](Read & Write)` creates a
-// fresh, uniquely-named directory beneath `parent`, provides a `Directory.Handle` over it for
-// the scope, and deletes it — and everything created within it — when the scope ends, however
-// it ends. The lifetime of the directory *is* the scope, and the fresh-plane machinery
-// guarantees that no path into it survives beyond it, so the deletion is always sound.
-trait Scratch
-
 object Scratch:
   class ScratchOpenable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
     ( using backend: FilesystemBackend on filesystem, ioError: Tactic[Io.Error] )
@@ -77,7 +70,8 @@ object Scratch:
 
       def wipe(path: Path on filesystem): Unit =
         if backend.stat(path, false).entry == Directory
-        then backend.children(path).each { name => wipe(path.unsafeChild(name)(using Unsafe)) }
+        then backend.children(path).each: name => wipe(path.unsafeChild(name)(using Unsafe))
+
         backend.delete(path)
 
       try
@@ -95,3 +89,10 @@ object Scratch:
         tactic:  Tactic[Io.Error] )
   =>  ( ScratchOpenable[filesystem, path]^{tactic} ) =
     ScratchOpenable[filesystem, path]
+
+// The form for transient working directories: `parent.open[Scratch](Read & Write)` creates a
+// fresh, uniquely-named directory beneath `parent`, provides a `Directory.Handle` over it for
+// the scope, and deletes it — and everything created within it — when the scope ends, however
+// it ends. The lifetime of the directory *is* the scope, and the fresh-plane machinery
+// guarantees that no path into it survives beyond it, so the deletion is always sound.
+trait Scratch

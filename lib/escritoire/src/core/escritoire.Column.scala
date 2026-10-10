@@ -32,10 +32,10 @@
                                                                                                   */
 package escritoire
 
-import gossamer.*
-import vacuous.*
 import anticipation.*
 import beneficence.*
+import gossamer.*
+import vacuous.*
 
 object Column:
   def apply[row, cell, text: Textual]
@@ -63,10 +63,17 @@ object Column:
   object Alignment:
     val topLeft: Column.Alignment[Any] = Column.Alignment(TextAlignment.Left, VerticalAlignment.Top)
 
-    given byte: Column.Alignment[Byte] = Column.Alignment(TextAlignment.Right, VerticalAlignment.Top)
-    given short: Column.Alignment[Short] = Column.Alignment(TextAlignment.Right, VerticalAlignment.Top)
+    given byte: Column.Alignment[Byte] =
+      Column.Alignment(TextAlignment.Right, VerticalAlignment.Top)
+
+    given short: Column.Alignment[Short] =
+      Column.Alignment(TextAlignment.Right, VerticalAlignment.Top)
+
     given int: Column.Alignment[Int] = Column.Alignment(TextAlignment.Right, VerticalAlignment.Top)
-    given long: Column.Alignment[Long] = Column.Alignment(TextAlignment.Right, VerticalAlignment.Top)
+
+    given long: Column.Alignment[Long] =
+      Column.Alignment(TextAlignment.Right, VerticalAlignment.Top)
+
     given text: Column.Alignment[Text] = Column.Alignment(TextAlignment.Left, VerticalAlignment.Top)
 
   case class Alignment[-column](text: TextAlignment, vertical: VerticalAlignment)

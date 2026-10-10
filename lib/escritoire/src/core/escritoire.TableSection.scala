@@ -32,5 +32,4 @@
                                                                                                   */
 package escritoire
 
-
 case class TableSection[text](widths: Array[Int]^{}, rows: Chain[TableRow[text]])

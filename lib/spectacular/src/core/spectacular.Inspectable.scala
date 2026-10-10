@@ -32,11 +32,9 @@
                                                                                                   */
 package spectacular
 
-import scala.reflect
-
-import scala.{caps, compiletime}
-
 import scala.collection.mutable as scm
+import scala.reflect
+import scala.{caps, compiletime}
 
 import anticipation.*
 import denominative.*
@@ -123,7 +121,7 @@ object Inspectable extends Inspectable2:
 
   given text: [text <: Text] => text is Inspectable = text =>
     val builder: StringBuilder = new StringBuilder()
-    text.each { char => builder.append(escape(char, true).s) }
+    text.each: char => builder.append(escape(char, true).s)
 
     ("t\""+builder.toString+"\"").tt
 
@@ -257,8 +255,7 @@ object Inspectable extends Inspectable2:
   // superscript suffix which follows them. The hexadecimal is formatted here rather than
   // through hypotenuse's own `hex`, whose inline expansion of `String.format` does not survive
   // separation checking at this use site.
-  given b8: [b8 <: B8] => b8 is Inspectable = b8 =>
-    (hexadecimal((b8: B8).s8.int.toLong, 2)+"ᵇ⁸").tt
+  given b8: [b8 <: B8] => b8 is Inspectable = b8 => (hexadecimal((b8: B8).s8.int.toLong, 2)+"ᵇ⁸").tt
 
   given b16: [b16 <: B16] => b16 is Inspectable = b16 =>
     (hexadecimal((b16: B16).s16.int.toLong, 4)+"ᵇ¹⁶").tt
@@ -399,7 +396,7 @@ object Inspectable extends Inspectable2:
   // through to another candidate — a subtype bound here turns a silent miss into a hard error.
   given set: [element] => (inspectable: => element is Inspectable) => Set[element] is Inspectable =
     // [by-name-capture] by-name inspectable laundered to pure thunk
-    val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
+    val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure: () => inspectable
     set => Showable.enclose(set.map(insp().text(_)), "{", ", ", "}")
 
   given map: [key, value]
@@ -407,16 +404,14 @@ object Inspectable extends Inspectable2:
   =>  Map[key, value] is Inspectable =
 
     // [by-name-capture] by-name key inspectable laundered to pure thunk
-    val inspKey: () -> (key is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectableKey)
+    val inspKey: () -> (key is Inspectable) = caps.unsafe.unsafeAssumePure: () => inspectableKey
 
     val inspValue: () -> (value is Inspectable) =
       // [by-name-capture] by-name value inspectable laundered to pure thunk
-      caps.unsafe.unsafeAssumePure(() => inspectableValue)
+      caps.unsafe.unsafeAssumePure: () => inspectableValue
 
     entries =>
-      entries.remap: (key, value) =>
-        inspKey().text(key).s+" → "+inspValue().text(value).s
-
+      entries.remap: (key, value) => inspKey().text(key).s+" → "+inspValue().text(value).s
       . stdlib.mkString("{", ", ", "}").tt
 
   // A `Ledger` keeps its insertion order, so it is bracketed differently from the unordered
@@ -427,11 +422,11 @@ object Inspectable extends Inspectable2:
   =>  Ledger[key, value] is Inspectable =
 
     // [by-name-capture] by-name key inspectable laundered to pure thunk
-    val inspKey: () -> (key is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectableKey)
+    val inspKey: () -> (key is Inspectable) = caps.unsafe.unsafeAssumePure: () => inspectableKey
 
     val inspValue: () -> (value is Inspectable) =
       // [by-name-capture] by-name value inspectable laundered to pure thunk
-      caps.unsafe.unsafeAssumePure(() => inspectableValue)
+      caps.unsafe.unsafeAssumePure: () => inspectableValue
 
     ledger =>
       Showable.enclose
@@ -441,25 +436,25 @@ object Inspectable extends Inspectable2:
   // `Self` is subtype-parametric so branded literals (`Sequence(1, 2, 3)`, typed
   // `Sequence[Int] & Populated`) match; rendering produces no collection, so no proof leaks.
   given sequence: [element, sequence <: Sequence[element]]
-  =>  (inspectable: => element is Inspectable)
+  =>  ( inspectable: => element is Inspectable )
   =>  sequence is Inspectable =
 
     // [by-name-capture] by-name inspectable laundered to pure thunk
-    val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
+    val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure: () => inspectable
     sequence => Showable.enclose(sequence.map(insp().text(_)), "⟨ ", " ", " ⟩")
 
   given list: [element] => (inspectable: => element is Inspectable)
   =>  List[element] is Inspectable =
 
     // [by-name-capture]
-    val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
+    val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure: () => inspectable
     list => Showable.enclose(list.map(insp().text(_)), "[", ", ", "]")
 
   given array: [element] => (inspectable: => element is Inspectable)
   =>  scala.Array[element] is Inspectable =
 
     // [by-name-capture]
-    val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
+    val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure: () => inspectable
 
     array =>
       array.iterator.zipWithIndex.map: (value, index) =>
@@ -469,10 +464,10 @@ object Inspectable extends Inspectable2:
       . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
 
   given arraySeq: [element, arraySeq <: scm.ArraySeq[element]]
-  =>  (inspectable: => element is Inspectable)
+  =>  ( inspectable: => element is Inspectable )
   =>  arraySeq is Inspectable =
     // [by-name-capture] by-name inspectable laundered to pure thunk
-    val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
+    val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure: () => inspectable
 
     array =>
       array.zipWithIndex.map: (value, index) =>
@@ -486,7 +481,7 @@ object Inspectable extends Inspectable2:
   =>  Chain[element] is Inspectable =
 
     // [by-name-capture] by-name inspectable laundered to pure thunk
-    val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
+    val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure: () => inspectable
 
     stream =>
       def recur(stream: Chain[element], todo: Int): Text =
@@ -504,7 +499,7 @@ object Inspectable extends Inspectable2:
   =>  (Array[element]^{}) is Inspectable =
 
     // [by-name-capture] by-name inspectable laundered to pure thunk
-    val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
+    val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure: () => inspectable
 
     iarray =>
       iarray.readable.zipWithIndex.map: (value, index) =>
@@ -528,14 +523,16 @@ object Inspectable extends Inspectable2:
       case 'Z' => "🆉" // Boolean
       case _   => "🯄" // Unknown
 
-    val dimension = if brackets < 2 then "".tt else brackets.toString.map { digit => "⁰¹²³⁴⁵⁶⁷⁸⁹".charAt(digit - '0') }.tt
+    val dimension =
+      if brackets < 2 then "".tt
+      else brackets.toString.map { digit => "⁰¹²³⁴⁵⁶⁷⁸⁹".charAt(digit - '0') }.tt
 
     arrayType+dimension//+renderBraille(string.split("@").nn(1).nn)
 
   // A pure thunk like the collection instances above; see that comment.
   given option: [value] => (inspectable: => value is Inspectable) => Option[value] is Inspectable =
     // [by-name-capture] by-name inspectable laundered to pure thunk
-    val insp: () -> (value is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
+    val insp: () -> (value is Inspectable) = caps.unsafe.unsafeAssumePure: () => inspectable
 
     {
       case None        => "None".tt

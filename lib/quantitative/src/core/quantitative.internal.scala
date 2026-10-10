@@ -33,7 +33,6 @@
 package quantitative
 
 import scala.language.implicitConversions
-
 import scala.quoted.*
 
 import anticipation.*

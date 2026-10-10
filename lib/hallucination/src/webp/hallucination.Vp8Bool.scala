@@ -32,9 +32,9 @@
                                                                                                   */
 package hallucination
 
-import anticipation.*
-
 import scala.caps
+
+import anticipation.*
 
 // The VP8 boolean entropy decoder (RFC 6386 §7). This is the canonical bit-exact algorithm; the
 // reference (image-rs/image-webp `src/lossy/arithmetic_decoder.rs`) uses a faster but equivalent
@@ -97,7 +97,10 @@ extends caps.Mutable:
   // Walks a token tree: `tree` holds branch targets in sibling pairs (positive = next node index
   // ×2, non-positive = negated leaf value); `probs`/`probOffset` give the per-node probability.
   // `startPosition` seeds the walk (2 skips the first decision — used after a zero coefficient).
-  update def tree(tree: scala.Array[Int], probs: scala.Array[Int], probOffset: Int, startPosition: Int): Int =
+  update def tree
+    ( tree: scala.Array[Int], probs: scala.Array[Int], probOffset: Int, startPosition: Int )
+  :   Int =
+
     var position = startPosition
 
     while

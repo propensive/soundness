@@ -41,8 +41,9 @@ import scala.quoted.*
 // the passing tests *prove* the generated code came from `read`.
 object IntInlinable extends Inlinable:
   type Self = Int
+
   def read(input: Expr[String])(using Quotes): Expr[Int] =
-    '{ java.lang.Integer.parseInt($input.trim.nn) }
+    '{java.lang.Integer.parseInt($input.trim.nn)}
 
   def readRuntime(input: String): Int =
     throw AssertionError("prescience: runtime tier invoked for a static instance")
@@ -56,8 +57,9 @@ object StringInlinable extends Inlinable:
 
 object BooleanInlinable extends Inlinable:
   type Self = Boolean
+
   def read(input: Expr[String])(using Quotes): Expr[Boolean] =
-    '{ java.lang.Boolean.parseBoolean($input.trim.nn) }
+    '{java.lang.Boolean.parseBoolean($input.trim.nn)}
 
   def readRuntime(input: String): Boolean =
     throw AssertionError("prescience: runtime tier invoked for a static instance")
@@ -69,19 +71,19 @@ object inlinables:
   given string: (String is Inlinable) = StringInlinable
   given boolean: (Boolean is Inlinable) = BooleanInlinable
 
+object Celsius:
+  given inlinable: (dummy: DummyImplicit) => (Celsius is Inlinable) = new Inlinable:
+    type Self = Celsius
+
+    def read(input: Expr[String])(using Quotes): Expr[Celsius] =
+      '{Celsius(java.lang.Integer.parseInt($input.trim.nn))}
+
+    def readRuntime(input: String): Celsius =
+      throw AssertionError("prescience: runtime tier invoked for a staging-tier instance")
+
 // The tier-B subject: its given is conditional, so the summoned tree is an
 // application — not a static path — and tier A cannot evaluate it. The inner
 // implicit search of the staging tier resolves and *runs* it, yielding a live
 // instance at expansion time; the throwing runtime sibling again proves that
 // a passing test inlined at compile time.
 case class Celsius(degrees: Int)
-
-object Celsius:
-  given inlinable: (dummy: DummyImplicit) => (Celsius is Inlinable) = new Inlinable:
-    type Self = Celsius
-
-    def read(input: Expr[String])(using Quotes): Expr[Celsius] =
-      '{ Celsius(java.lang.Integer.parseInt($input.trim.nn)) }
-
-    def readRuntime(input: String): Celsius =
-      throw AssertionError("prescience: runtime tier invoked for a staging-tier instance")

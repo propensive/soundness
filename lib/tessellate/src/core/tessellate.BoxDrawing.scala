@@ -33,8 +33,8 @@
 package tessellate
 
 import anticipation.*
-import rudiments.*
 import gossamer.*
+import rudiments.*
 
 object BoxDrawing:
   val asciiChars: Array[Char]^{} =

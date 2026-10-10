@@ -36,11 +36,11 @@ import scala.caps
 
 import anticipation.*
 import contingency.*
-import telekinesis.*
 import gossamer.*
 import locomotion.*
 import obligatory.*
 import parasite.*
+import telekinesis.*
 
 object Containerd:
   // containerd multiplexes every service over the one connection; each method is
@@ -158,6 +158,7 @@ case class Containerd(channel: Grpc.Channel^):
     // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     val _ = scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[DeleteContainerRequest, Empty](Containerd.deleteContainerMethod, request)
+
     Log.info(DockerEvent.ContainerDeleted(id))
 
   // The namespaces known to the daemon (`Namespaces.List`).
@@ -237,6 +238,7 @@ case class Containerd(channel: Grpc.Channel^):
     // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     val _ = scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[DeleteImageRequest, Empty](Containerd.deleteImageMethod, request)
+
     Log.info(DockerEvent.ImageDeleted(name))
 
   // Create a task for a container (`Tasks.Create`): give it a root filesystem (the
@@ -264,6 +266,7 @@ case class Containerd(channel: Grpc.Channel^):
     // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     val pid = scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[StartRequest, StartResponse](Containerd.startTaskMethod, request).pid
+
     Log.info(DockerEvent.TaskStarted(containerId, pid))
     pid
 
@@ -277,6 +280,7 @@ case class Containerd(channel: Grpc.Channel^):
     // [by-name-receiver] rPC and its codecs share resolution-scoped tactics
     val _ = scala.caps.unsafe.unsafeAssumeSeparate:
       channel.unary[KillRequest, Empty](Containerd.killTaskMethod, request)
+
     Log.info(DockerEvent.TaskKilled(containerId, signal))
 
   // Wait for a task to exit (`Tasks.Wait`), returning its exit status and time.

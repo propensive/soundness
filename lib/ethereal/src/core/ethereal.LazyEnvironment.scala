@@ -31,17 +31,17 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package ethereal
-import rudiments.*
-
 import ambience.*
 import anticipation.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 class LazyEnvironment(variables: List[Text]) extends Environment:
   private lazy val map: Map[Text, Text] =
     variables.map(_.cut(t"=", 2)).sweep:
       case List(key, value) => (key, value)
+
     . to[Map]
 
   def variable(key: Text): Optional[Text] = map.at(key)

@@ -34,5 +34,8 @@ package soundness
 
 export
   acyclicity
-  . { Dag, Digraph, Dot, explore, Graph, Hasse, PartiallyOrdered,
-      Poset, Subgraph }
+  . { Dag, Digraph, Dot, explore, Graph, Hasse, Layering, PartiallyOrdered,
+      Poset, Ranking, Subgraph }
+
+package rankings:
+  export acyclicity.rankings.{longestPathRanking, balancedRanking}

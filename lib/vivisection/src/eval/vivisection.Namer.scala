@@ -53,6 +53,7 @@ import vacuous.*
 class Namer(classpath: LocalClasspath):
   private lazy val classloader: Classloader =
     classpath.classloader(Classloader.Delegation.Preferential)
+
   private val files: scc.TrieMap[Text, Optional[Tasty.File]] = scc.TrieMap()
 
   def define(cls: Text, path: Text, line: Int): Optional[Text] =

@@ -70,7 +70,9 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
     var index: Ordinal = Prim
 
-    def fail(issue: Iso8601.Issue): Unit = raise(Moment.Error(_.Format(text, Iso8601, index)(issue)))
+    def fail(issue: Iso8601.Issue): Unit =
+      raise(Moment.Error(_.Format(text, Iso8601, index)(issue)))
+
     def focus: Char = text(index).or('\u0000')
     def next(): Char = (index += 1) yet focus
     def digit: Boolean = focus >= '0' && focus <= '9'

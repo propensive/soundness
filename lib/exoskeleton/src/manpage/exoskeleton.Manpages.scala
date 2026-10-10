@@ -75,7 +75,7 @@ object Manpages:
   def install(page: Roff, force: Boolean = false)
     ( using erased effectful: Effectful )
     ( using Environment, System, Diagnostics )
-  ( using (Io.Event is Loggable)^ )
+  (using (Io.Event is Loggable)^)
   ( using Tactic[Install.Error] )
   :   InstallResult =
 

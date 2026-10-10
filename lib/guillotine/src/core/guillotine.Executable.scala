@@ -32,18 +32,20 @@
                                                                                                   */
 package guillotine
 
-import scala.language.experimental.pureFunctions
-
 import java.io as ji
 
 import scala.annotation.targetName
+import scala.caps
+import scala.language.experimental.pureFunctions
 
 import ambience.*
 import anticipation.*
+import aperture.*
 import contingency.*
 import fulminate.*
 import gossamer.*
 import kaleidoscope.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
@@ -60,7 +62,6 @@ sealed trait Executable:
   def fork[result]()(using working: WorkingDirectory, environment: Environment)
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   Job[Exec, result]^
-
 
   // Real `using` clauses rather than the `raises`/`logs` sugar: a context-function result
   // would hide the `computable` parameter, which the separation checker rejects.
@@ -121,6 +122,77 @@ object Command:
 
   given showable: Command is Showable = command => formattedArguments(command.arguments.to(List))
 
+  object OnTerminal:
+    given showable: OnTerminal is Showable =
+      terminal => t"${terminal.command.show} on ${terminal.width}×${terminal.height}"
+
+    // A session with a command on a terminal lends its `Job` for the duration of the block, and
+    // ends it, whether the block returns or throws: a child still running is hung up on, as it
+    // would be when a real terminal closes, and the terminal itself is released.
+    class Sessional
+      ( using working:     WorkingDirectory,
+              environment: Environment,
+              tactic:      Tactic[Exec.Error],
+              loggable:    (Exec.Event is Loggable)^ )
+    extends aperture.Sessional:
+      type Self = OnTerminal
+      type Result = Job[Label]^
+
+      def session[result](target: OnTerminal)(lambda: (session: Result) ?=> result): result =
+        target.lend: job => lambda(using job)
+
+    // Anchored here, so that summoning it needs no import. Its capture set is spelled out, as
+    // tarantula's `WebDriver.Local.sessional` explains: an inferred one would freshen the
+    // capabilities it was built from, and the `Result` refinement would not match at the use site.
+    given sessional
+    :   ( working:     WorkingDirectory,
+          environment: Environment,
+          tactic:      Tactic[Exec.Error],
+          loggable:    (Exec.Event is Loggable)^ )
+    =>  ( OnTerminal.Sessional^{tactic, loggable, caps.any} ) =
+
+      OnTerminal.Sessional()
+
+    // A `Job` running on a pseudo-terminal. Its output is everything the child writes to the
+    // terminal, standard error included, as a terminal emulator would receive it; its input is
+    // what is typed at the terminal; and it can be resized, which delivers `SIGWINCH` to the
+    // child. A terminal has no end of input of its own, so a cooked-mode read is ended by typing
+    // the end-of-file character, `^D`, rather than by closing the input.
+    class Job[+exec <: Label] private[guillotine] (process: PtyProcess)
+    extends guillotine.Job[exec, Exit](process):
+      def resize(width: Int, height: Int): Unit = process.resize(width, height)
+
+  // A command to be run on a fresh pseudo-terminal of the given size, rather than on pipes, so
+  // that it finds a terminal on its standard input, output and error, as it would if a person
+  // typed it. It is not itself a terminal: each session, or each `exec`, allocates its own, with
+  // `posix_openpt`, through the foreign function API, on Linux and macOS.
+  case class OnTerminal private[guillotine] (command: Command, width: Int, height: Int):
+    // Runs the command on its terminal to completion, as `Executable.exec` runs it on pipes.
+    def exec[result]()
+      ( using computable:  (result is Computable)^,
+              working:     WorkingDirectory,
+              environment: Environment )
+      ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
+    :   result =
+
+      lend(computable.compute(_))
+
+
+    private[guillotine] def lend[result](lambda: OnTerminal.Job[Label] => result)
+      ( using working: WorkingDirectory, environment: Environment )
+      ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
+    :   result =
+
+      val processBuilder = Command.builder(command.arguments.to(List))
+
+      Log.info(Exec.Event.ProcessStart(command))
+
+      val process =
+        try PtyProcess(processBuilder, width, height)
+        catch case error: ji.IOException => abort(Exec.Error(command))
+
+      try lambda(new OnTerminal.Job(process)) finally process.close()
+
   // A process builder for the arguments, in the working directory and with the environment. An
   // environment which can enumerate its variables replaces the JVM's in the child, and since the
   // JDK finds a command named without a directory on the JVM's own `PATH`, not the child's, such a
@@ -141,7 +213,7 @@ object Command:
       if !javaArguments.isEmpty then javaArguments.set(0, locate(javaArguments.get(0).nn.tt).s)
       val variables = processBuilder.environment().nn
       variables.clear()
-      entries.stdlib.foreach { (name, value) => variables.put(name.s, value.s) }
+      entries.stdlib.foreach: (name, value) => variables.put(name.s, value.s)
 
     processBuilder
 
@@ -157,9 +229,9 @@ object Command:
       val candidates: List[ji.File] =
         environment.variable(t"PATH").or(t"").cut(ji.File.pathSeparator.nn.tt).bind: directory =>
           if directory == t"" then Nil
-          else extensions.map { extension => ji.File(directory.s, t"$name$extension".s) }
+          else extensions.map: extension => ji.File(directory.s, t"$name$extension".s)
 
-      val found: Optional[ji.File] = candidates.seek { file => file.isFile && file.canExecute }
+      val found: Optional[ji.File] = candidates.seek: file => file.isFile && file.canExecute
       found.lay(name)(_.getAbsolutePath.nn.tt)
 
 case class Command(arguments: Text*) extends Executable:
@@ -180,6 +252,10 @@ case class Command(arguments: Text*) extends Executable:
     new Job(process)
 
 
+  // This command, to be run on a fresh pseudo-terminal of the given size rather than on pipes.
+  def pty(width: Int = 80, height: Int = 24): Command.OnTerminal =
+    Command.OnTerminal(this, width, height)
+
   def escape: Text = arguments.map { argument => t"'${argument.sub(t"'", t"\'")}'" }.join(t" ")
 
 object Pipeline:
@@ -189,6 +265,7 @@ object Pipeline:
   // Subtype-bounded for the same reason as `Command.inspectable`, above.
   given inspectable: [pipeline <: Pipeline] => pipeline is Inspectable =
     _.commands.map(_.inspect).join(t" | ")
+
   given showable: Pipeline is Showable = _.commands.map(_.show).join(t" | ")
 
 case class Pipeline(commands: Command*) extends Executable:

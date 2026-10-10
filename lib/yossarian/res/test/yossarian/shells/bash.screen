@@ -1,0 +1,13 @@
+> echo hello
+hello
+> echo hello
+hello
+> echo hello
+hello
+> ls /usr/l
+lib/     libexec/ local/
+> ls /usr/l
+lib/     libexec/ local/
+> ls /usr/l^C
+> exit
+exit

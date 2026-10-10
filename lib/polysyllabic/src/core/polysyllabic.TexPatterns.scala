@@ -94,7 +94,8 @@ private[polysyllabic] object TexPatterns:
       if c == '-' then
         breaks(count) = letters.length
         count += 1
-      else letters.append(c)
+      else
+        letters.append(c)
 
       i += 1
 

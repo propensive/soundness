@@ -55,7 +55,6 @@ object Luhn:
 
   // False for empty input: a last digit to check against is the first requirement.
   def check(number: Text): Boolean =
-    number.ult.lay(false): ult =>
-      digit(number.skip(1, Rtl)) == number(ult) - '0'
+    number.ult.lay(false): ult => digit(number.skip(1, Rtl)) == number(ult) - '0'
 
   def check(number: Long): Boolean = check(number.show)

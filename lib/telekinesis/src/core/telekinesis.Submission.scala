@@ -40,7 +40,6 @@ import legerdemain.*
 import prepositional.*
 import vacuous.*
 
-
 case class Submission[value](query: Optional[Query]):
   def fresh: Boolean = query.absent
 

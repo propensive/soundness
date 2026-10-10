@@ -100,4 +100,5 @@ object Oci:
         m"OCI image archives cannot be opened for writing"
 
   case class Error(reason: Oci.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(285, reason.number)(m"the OCI image archive could not be read because $reason")
+  extends fulminate.Error(285, reason.number)
+    ( m"the OCI image archive could not be read because $reason" )

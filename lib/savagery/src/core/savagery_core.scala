@@ -46,7 +46,6 @@ import vacuous.*
 // `Float` and re-exports it for compatibility.
 export mosquito.Affine
 
-
 val Up:    Delta = Delta(0.0f, -1.0f)
 
 val Down:  Delta = Delta(0.0f, 1.0f)

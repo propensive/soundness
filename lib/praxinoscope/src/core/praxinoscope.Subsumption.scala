@@ -124,8 +124,8 @@ object Subsumption:
         // Word and line boundaries are context-dependent in a way this analysis does not
         // model, so a program containing one cannot be decided either way.
         case Program.Op.Test
-             ( Node.Anchor.WordBoundary | Node.Anchor.NonWordBoundary | Node.Anchor.LineStart
-               | Node.Anchor.LineEnd, _ ) =>
+          ( Node.Anchor.WordBoundary | Node.Anchor.NonWordBoundary | Node.Anchor.LineStart
+            | Node.Anchor.LineEnd, _ ) =>
           abort(Motif.Error(0, Unverifiable))
 
         case _ =>

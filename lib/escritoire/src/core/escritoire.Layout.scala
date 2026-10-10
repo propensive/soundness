@@ -33,7 +33,6 @@
 package escritoire
 
 import scala.collection.immutable.IndexedSeq
-
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
@@ -47,11 +46,6 @@ import vacuous.*
 
 // Per-row decorations are a short `List` read by column position.
 import denominative.dysasymptotics.linearAccess
-
-// One row's cells as the lines each will display, with each cell's intrinsic widths: phrased
-// once from the row, and independent of any width, so a layout can test a row, admit it, and
-// render it at whatever widths it settles on.
-case class Cells[text](lines: Array[Array[text]^{}]^{}, metrics: Array[Metrics]^{})
 
 object Cells:
   def of[text: Textual { type Result = Char }](lines: Array[Array[text]^{}]^{})
@@ -70,6 +64,11 @@ object Cells:
   :   Cells[text] =
 
     of(columns.map[Array[text]^{}] { column => column.get(row).lines.to[Array] })
+
+// One row's cells as the lines each will display, with each cell's intrinsic widths: phrased
+// once from the row, and independent of any width, so a layout can test a row, admit it, and
+// render it at whatever widths it settles on.
+case class Cells[text](lines: Array[Array[text]^{}]^{}, metrics: Array[Metrics]^{})
 
 object Layout:
   // Empty aggregates, one per column, for a layout that has admitted nothing yet.
@@ -142,7 +141,8 @@ case class Layout[row, text: ClassTag]
 
   lazy val widths: Array[Int]^{} = Array.from(survivors.map(_(1)))
 
-  def cells(row: row)(using metrics: Text is Measurable, textual: text is Textual { type Result = Char })
+  def cells(row: row)
+    ( using metrics: Text is Measurable, textual: text is Textual { type Result = Char } )
   :   Cells[text] =
 
     Cells.of(columns, row)
@@ -150,28 +150,37 @@ case class Layout[row, text: ClassTag]
   def accommodates(cells: Cells[text]): Boolean =
     columns.readable.indices.all: index =>
       columns.readUnchecked(index).sizing.accommodates
-        (aggregates.readUnchecked(index), cells.metrics.readUnchecked(index))
+        ( aggregates.readUnchecked(index), cells.metrics.readUnchecked(index) )
 
   // This layout, if the row cannot move a column; else the aggregates widened by the row's
   // cells and the widths re-solved at the same width.
-  def extend(cells: Cells[text])(using metrics: Text is Measurable, attenuation: Attenuation^): Layout[row, text] =
+  def extend(cells: Cells[text])(using metrics: Text is Measurable, attenuation: Attenuation^)
+  :   Layout[row, text] =
+
     if accommodates(cells) then this
     else Layout.solve(columns, titles, Layout.aggregate(aggregates, cells), width, style)
 
-  def resize(width: Int)(using metrics: Text is Measurable, attenuation: Attenuation^): Layout[row, text] =
+  def resize(width: Int)(using metrics: Text is Measurable, attenuation: Attenuation^)
+  :   Layout[row, text] =
+
     Layout.solve(columns, titles, aggregates, width, style)
 
   // Whether two layouts show the same columns at the same widths.
   def stable(that: Layout[row, text]): Boolean = survivors == that.survivors
 
   def row(cells: Cells[text], decorations: List[Optional[text -> text]])
-    ( using metrics: Text is Measurable, textual: text is Textual { type Result = Char }, hyphenation: Hyphenation )
+    ( using metrics:     Text is Measurable,
+            textual:     text is Textual { type Result = Char },
+            hyphenation: Hyphenation )
   :   TableRow[text] =
 
     val tableCells = Array.from:
       survivors.map: (index, cellWidth) =>
         val column = columns.readUnchecked(index)
-        val lines = column.sizing.fit[text](cells.lines.readable(index), cellWidth, column.textAlign)
+
+        val lines =
+          column.sizing.fit[text](cells.lines.readable(index), cellWidth, column.textAlign)
+
         val decoration: Optional[text -> text] = decorations.at(index.z)
 
         TableCell
@@ -184,7 +193,9 @@ case class Layout[row, text: ClassTag]
     TableRow(tableCells, false, height)
 
   def lines(cells: Cells[text], decorations: List[Optional[text -> text]])
-    ( using metrics: Text is Measurable, textual: text is Textual { type Result = Char }, hyphenation: Hyphenation )
+    ( using metrics:     Text is Measurable,
+            textual:     text is Textual { type Result = Char },
+            hyphenation: Hyphenation )
   :   List[text] =
 
     List.from(Grid.rowLines(style, widths, row(cells, decorations)))
@@ -193,7 +204,9 @@ case class Layout[row, text: ClassTag]
   // width fits its column is not wrapped, so it stands as many lines as it has; only a cell
   // that must wrap is fitted to find out.
   def height(cells: Cells[text])
-    ( using metrics: Text is Measurable, textual: text is Textual { type Result = Char }, hyphenation: Hyphenation )
+    ( using metrics:     Text is Measurable,
+            textual:     text is Textual { type Result = Char },
+            hyphenation: Hyphenation )
   :   Int =
 
     survivors.map: (index, cellWidth) =>
@@ -205,16 +218,25 @@ case class Layout[row, text: ClassTag]
 
     . maxOption.getOrElse(0)
 
-  def titleLines(using metrics: Text is Measurable, textual: text is Textual { type Result = Char }, hyphenation: Hyphenation)
+  def titleLines
+    ( using metrics:     Text is Measurable,
+            textual:     text is Textual { type Result = Char },
+            hyphenation: Hyphenation )
   :   List[text] =
 
-    titles.bind { cells => lines(cells, Nil) }
+    titles.bind: cells => lines(cells, Nil)
 
-  def topRule(using metrics: Text is Measurable, textual: text is Textual { type Result = Char }): Optional[text] =
+  def topRule(using metrics: Text is Measurable, textual: text is Textual { type Result = Char })
+  :   Optional[text] =
+
     if style.topLine.absent then Unset else Grid.rule(style, widths, above = false, below = true)
 
-  def titleRule(using metrics: Text is Measurable, textual: text is Textual { type Result = Char }): text =
+  def titleRule(using metrics: Text is Measurable, textual: text is Textual { type Result = Char })
+  :   text =
+
     Grid.rule(style, widths, above = true, below = true)
 
-  def bottomRule(using metrics: Text is Measurable, textual: text is Textual { type Result = Char }): Optional[text] =
+  def bottomRule(using metrics: Text is Measurable, textual: text is Textual { type Result = Char })
+  :   Optional[text] =
+
     if style.bottomLine.absent then Unset else Grid.rule(style, widths, above = true, below = false)

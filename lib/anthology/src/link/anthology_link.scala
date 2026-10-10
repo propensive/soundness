@@ -65,7 +65,8 @@ object linkerOptions:
   val sourceMaps: Toolchain.Setting = sjs(_.withSourceMap(true))
 
   object esVersion:
-    private def of(version: ESVersion): Toolchain.Setting = sjs(_.withESFeatures(_.withESVersion(version)))
+    private def of(version: ESVersion): Toolchain.Setting =
+      sjs(_.withESFeatures(_.withESVersion(version)))
 
     val es2015: Toolchain.Setting = of(ESVersion.ES2015)
     val es2016: Toolchain.Setting = of(ESVersion.ES2016)
@@ -156,7 +157,7 @@ object sjsEdges:
         classpath.entries.bind:
           case Classpath.Entry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
           case Classpath.Entry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
-          case _                                   => Nil
+          case _                                    => Nil
 
     val initializers: List[ModuleInitializer] = entryPoints.map: entry =>
       ModuleInitializer.mainMethodWithArgs(entry.mainClass.text.s, "main")

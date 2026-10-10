@@ -32,12 +32,11 @@
                                                                                                   */
 package hallucination
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import vacuous.*
-
-import scala.caps
-
 import Binary.*
 import Raster.Error.Reason
 
@@ -126,11 +125,9 @@ private[hallucination] object WebpExtended:
         val reader = WebpBitReader(data, start + 1, end)
         val rgba = WebpLossless.decodeRaw(reader, width, height)
 
-        scala.Array.tabulate(width*height): i =>
-          rgba(i*4 + 1) & 0xff
+        scala.Array.tabulate(width*height): i => rgba(i*4 + 1) & 0xff
       else if compression == 0 then
-        scala.Array.tabulate(width*height): i =>
-          u8(data, start + 1 + i)
+        scala.Array.tabulate(width*height): i => u8(data, start + 1 + i)
       else
         abort(Raster.Error(Webp(), Reason.UnsupportedVariant))
 
@@ -152,7 +149,9 @@ private[hallucination] object WebpExtended:
 
   // The alpha predictor for pixel (x, y) under the given filtering method, reading previously
   // un-filtered neighbours from `alpha`.
-  private def alphaPredictor(x: Int, y: Int, width: Int, filtering: Int, alpha: scala.Array[Int]): Int =
+  private def alphaPredictor(x: Int, y: Int, width: Int, filtering: Int, alpha: scala.Array[Int])
+  :   Int =
+
     inline def at(px: Int, py: Int): Int = alpha(py*width + px)
 
     filtering match
@@ -204,7 +203,9 @@ private[hallucination] object WebpExtended:
         then frame.word((y - frameY)*frameWidth + (x - frameX))
         else 0L
 
-  private def combine(width: Int, height: Int, rgb: scala.Array[Int], alpha: scala.Array[Int]): Raster =
+  private def combine(width: Int, height: Int, rgb: scala.Array[Int], alpha: scala.Array[Int])
+  :   Raster =
+
     Raster.build(width, height, Descriptor.rgba): index =>
       (rgb(index).toLong & 0xffffff) << 8 | (alpha(index) & 0xff)
 
@@ -217,4 +218,12 @@ private[hallucination] object WebpExtended:
     u8(data, offset) | (u8(data, offset + 1) << 8) | (u8(data, offset + 2) << 16)
 
   private def fourcc(data: Data, offset: Int): String =
-    String(scala.Array(data.readable(offset), data.readable(offset + 1), data.readable(offset + 2), data.readable(offset + 3)), "UTF-8").nn
+    String
+      ( scala.Array
+          ( data.readable(offset),
+            data.readable(offset + 1),
+            data.readable(offset + 2),
+            data.readable(offset + 3) ),
+        "UTF-8" )
+
+    . nn

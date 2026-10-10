@@ -59,6 +59,7 @@ object StackedBars:
 
   private def empty(count: Int): Sequence[Stack] =
     var stacks: Sequence[Stack] = Sequence.empty
+
     repeat(count):
       stacks = Sequence.append(stacks, Stack(0.0, 0.0))
 

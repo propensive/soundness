@@ -1572,7 +1572,7 @@ object breviloquence extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, staged, sedentary.core, eucalyptus.core)
-  object bench extends Benchmarks(core, quantitative.units):
+  object bench extends Benchmarks(core, staged, quantitative.units):
     // Capture-checked but not separation-checked: the benchmark sources annotate the
     // `Array[Byte]^{}` payloads they hold, matching the capture-checked `core` they measure, but
     // under separation checking the suite object's payload fields read as exclusive state
@@ -2185,7 +2185,7 @@ object exoskeleton extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
-  object rig extends Internal(completions, manpage, superlunary.core, ethereal.core, anthology.linker, quantitative.units):
+  object rig extends Internal(completions, manpage, superlunary.core, ethereal.core, anthology.linker, quantitative.units, yossarian.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def mvnDeps =
@@ -2399,7 +2399,7 @@ object graffiti extends Library:
       settings.sep(super.scalacOptions())
 
 object guillotine extends Library:
-  object core extends Component(turbulence.core, ambience.core, contextual.core, parasite.core):
+  object core extends Component(turbulence.core, ambience.core, contextual.core, parasite.core, aperture.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -2746,7 +2746,7 @@ object locomotion extends Library:
   object test extends Tests(core, staged):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
-  object bench extends Benchmarks(core, quantitative.units):
+  object bench extends Benchmarks(core, staged, quantitative.units):
     // Not yet checked: the suite object holds its exclusive payload arrays as fields, which
     // capture checking rejects ("needs to extend Capability since it has fields … with `any`");
     // the fix is breviloquence.bench's — frozen `^{}` payloads — and is pending (`safety-6`).
@@ -3325,6 +3325,11 @@ object stratiform extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, base256, binaryStaged, staged, optics, time, http, duplex,
       eucalyptus.core, galilei.jvm)
+  // The capture-checked twin of `test`: a derived TEL codec is only exercised under `-Ycc-new`
+  // by a consumer compiled that way (#2197), and `test` is not yet sep-clean.
+  object checked extends Tests(core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
   object bench extends Benchmarks(core, base256, binaryStaged, quantitative.units,
       hellenism.core, ambience.core):
     // Not yet checked: the suite object holds its exclusive payload arrays as fields, which

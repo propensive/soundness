@@ -44,12 +44,12 @@ import gossamer.collations.codepointCollation
 import guillotine.*
 import hieroglyph.*, textMetrics.uniformMetric
 import hypotenuse.*
+import rudiments.*
+import rudiments.sortingAlgorithms.timsort
 import spectacular.*
 import symbolism.*
 import turbulence.*
-import rudiments.*
 import vacuous.*
-import rudiments.sortingAlgorithms.timsort
 
 case class Completion
   ( fullArguments:    List[Argument],
@@ -152,6 +152,7 @@ extends Cli:
 
     if focused(argument) then
       dispatchSuggested = true
+
       cursorSuggestions = update(using cursorSuggestions.aka["prior"]).map: suggestion =>
         if suggestion.expanded then suggestion
         else suggestion.copy(core = prefix+suggestion.core+suffix, expanded = true)
@@ -217,7 +218,9 @@ extends Cli:
         val title = explanation.let { explanation => List(sh"'' -X $explanation") }.or(Nil)
         val termcap: Termcap = termcapDefinitions.xtermTrueColorTermcap
 
-        lazy val width = items.map { item => item.display.or(item.core).length }.maximize(identity).or(0)
+        lazy val width =
+          items.map { item => item.display.or(item.core).length }.maximize(identity).or(0)
+
         lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).maximize(identity).or(0) + 1
 
         val itemLines: List[Command] = items.bind:
@@ -230,6 +233,7 @@ extends Cli:
             // would just print it twice.
             val aliasText =
               if shortFlag && display.absent then core0 else aliases.join(t" ").fit(aliasesWidth)
+
             val prefix2 = if prefix.nil then sh"" else sh"-p $prefix"
             val suffix2 = if suffix.nil then sh"" else sh"-s $suffix"
             val core = if shortFlag then aliases.prim.or(core0) else core0
@@ -256,8 +260,7 @@ extends Cli:
                 sh"'${shown.fit(width)} $aliasText -- $desc' $params"
 
             val duplicateLine: List[Command] =
-              if !incomplete then List()
-              else List(sh"'' $prefix2 $suffix2 -S '' -- $core")
+              if !incomplete then List() else List(sh"'' $prefix2 $suffix2 -S '' -- $core")
 
             (List(mainLine): List[Command]) + duplicateLine
 

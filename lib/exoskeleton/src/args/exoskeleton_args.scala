@@ -34,12 +34,12 @@ package exoskeleton
 
 import anticipation.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import fulminate.*
 import gossamer.*
 import rudiments.*
-import vacuous.*
 import symbolism.*
-import denominative.dysasymptotics.linearSize
+import vacuous.*
 
 package interpreters:
   given simpleInterpreter: Interpreter:

@@ -64,8 +64,10 @@ object IpAddress:
 
         case SubnetWrongFormat(count) =>
           m"the subnet contains $count slash-separated parts instead of 2"
+
         case Ipv4WrongNumberOfBytes(count) =>
           m"the address is $count bytes long instead of 4"
+
         case Ipv6WrongNumberOfBytes(count) =>
           m"the address is $count bytes long instead of 16"
 

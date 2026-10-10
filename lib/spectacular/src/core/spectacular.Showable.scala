@@ -32,9 +32,8 @@
                                                                                                   */
 package spectacular
 
-import scala.reflect
-
 import scala.quoted.*
+import scala.reflect
 
 import anticipation.*
 import denominative.*
@@ -90,7 +89,6 @@ object Showable:
 
   given meta: [meta] => (quotes: Quotes) => Type[meta] is Showable =
     stenography.internal.name[meta](using _)
-
 
 trait Showable extends Communicable:
   def text(value: Self): Text

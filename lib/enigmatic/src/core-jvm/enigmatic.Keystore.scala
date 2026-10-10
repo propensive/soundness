@@ -32,12 +32,11 @@
                                                                                                   */
 package enigmatic
 
-import scala.caps
-
-
 import java.io as ji
 import java.security as js
 import java.util as ju
+
+import scala.caps
 
 import anticipation.*
 import aperture.*
@@ -46,17 +45,6 @@ import fulminate.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-
-// The form for PKCS#12 keystores: `path.open[Keystore](Password(t"..."))`. The password is
-// passed as a flag -- enigmatic's opaque `Password`, so the secret neither appears in the call
-// nor renders in diagnostics -- and the handle serves the store's aliases and DER-encoded
-// certificates for the duration of the scope.
-trait Keystore
-
-// The contextual keystore handle within an `open[Keystore]` block, in the manner of galilei's
-// `file`. Transparent inline so the handle's precise (grant-refined, capturing) type is
-// preserved.
-transparent inline def keystore(using handle: Keystore.KeystoreHandle^): handle.type = handle
 
 object Keystore:
   class KeystoreHandle private[enigmatic] (keystore: js.KeyStore)
@@ -90,8 +78,7 @@ object Keystore:
       ( block: ((KeystoreHandle & Granting[grants])^) ?=> result )
     :   result =
 
-      if mode.atoms.has(Write)
-      then abort(Keystore.Error(Keystore.Error.Reason.WriteUnsupported))
+      if mode.atoms.has(Write) then abort(Keystore.Error(Keystore.Error.Reason.WriteUnsupported))
 
       val in = ji.BufferedInputStream(ji.FileInputStream(value.generic.s))
 
@@ -111,11 +98,12 @@ object Keystore:
     // wrong password from a corrupt store.
     def loadKeystore(keystore: js.KeyStore, in: ji.InputStream, password: scala.Array[Char] | Null)
     :   Unit =
+
       try keystore.load(in, password)
       catch case error: Exception => abort(Keystore.Error(Keystore.Error.Reason.Unreadable))
 
   given openable: [path: Abstractable across Paths to Text]
-  =>  (tactic: Tactic[Keystore.Error])
+  =>  ( tactic: Tactic[Keystore.Error] )
   =>  ( KeystoreOpenable[path]^{tactic} ) =
     KeystoreOpenable[path]
 
@@ -131,3 +119,14 @@ object Keystore:
 
   case class Error(reason: Error.Reason)(using Diagnostics)
   extends fulminate.Error(522, reason.number)(m"the keystore operation failed because $reason")
+
+// The form for PKCS#12 keystores: `path.open[Keystore](Password(t"..."))`. The password is
+// passed as a flag -- enigmatic's opaque `Password`, so the secret neither appears in the call
+// nor renders in diagnostics -- and the handle serves the store's aliases and DER-encoded
+// certificates for the duration of the scope.
+trait Keystore
+
+// The contextual keystore handle within an `open[Keystore]` block, in the manner of galilei's
+// `file`. Transparent inline so the handle's precise (grant-refined, capturing) type is
+// preserved.
+transparent inline def keystore(using handle: Keystore.KeystoreHandle^): handle.type = handle

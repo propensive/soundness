@@ -32,8 +32,8 @@
                                                                                                   */
 package turbulence
 
-import java.lang as jl
 import java.io as ji
+import java.lang as jl
 
 import anticipation.*
 

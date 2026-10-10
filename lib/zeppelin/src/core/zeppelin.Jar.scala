@@ -40,8 +40,10 @@ import aperture.*
 import contingency.*
 import denominative.*
 import gossamer.*
+import hieroglyph.*, codepages.utf8Codepage
 import prepositional.*
 import rudiments.*
+import serpentine.*
 import vacuous.*
 import zephyrine.*
 
@@ -125,7 +127,15 @@ object Jar:
 
   given dataOpenable: Tactic[Zip.Error] => JarDataOpenable = JarDataOpenable()
 
-  given creatable: [path: Abstractable across Paths to Text]
-  =>  Tactic[Zip.Error]
-  =>  ZipBuilder.JarCreatable[path] =
-    ZipBuilder.JarCreatable[path]
+  private val manifestRef: Path on Zip =
+    Path[Zip, Text, Tuple](t"", List(t"MANIFEST.MF", t"META-INF"))
+
+  // The `META-INF/MANIFEST.MF` entry for the given attributes, with values wrapped at 72 bytes
+  // per the JAR specification. Put it first in the `Zipfile`, as convention prefers.
+  def manifest(attributes: (Text, Text)*)(using Zip.Compression): Zip.Entry =
+    val lines = attributes.to(List).map { (key, value) => wrap(t"$key: $value") }
+    val text = lines.join(t"", t"\r\n", t"\r\n\r\n")
+    Zip.Entry(manifestRef, text)
+
+  private def wrap(line: Text): Text =
+    if line.length <= 70 then line else t"${line.s.take(70)}\r\n ${wrap(line.s.drop(70).tt)}"

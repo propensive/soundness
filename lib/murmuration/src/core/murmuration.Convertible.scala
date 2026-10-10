@@ -33,7 +33,6 @@
 package murmuration
 
 import scala.collection.immutable.IndexedSeq
-
 import scala.reflect.ClassTag
 
 import prepositional.*
@@ -86,8 +85,8 @@ object Convertible:
   // `xs.to[Array]` yields the frozen form, `Array[element]^{}`: the built array is fresh,
   // so no writer survives its construction.
   given frozenArray: [self]
-  =>  (traversable: self is Traversable)
-  =>  (tag: ClassTag[traversable.Operand])
+  =>  ( traversable: self is Traversable )
+  =>  ( tag: ClassTag[traversable.Operand] )
   =>  self is Convertible in Array to (Array[traversable.Operand]^{}) =
     self => Array.unsafeFrozen(traversable.traverse(self).toArray(using tag))
 

@@ -88,13 +88,14 @@ extension [plane: Filesystem](path: Path on plane)
     ( using Tactic[Io.Error]^ )
     ( using fdtables: Every[Fdtable] )
   :   Unit =
+
     val bytes: Data = summon[Data is Aggregable by Data].accept(streamable.stream(content))
 
     // A path the fd table governs is written through its descriptor, not to this
     // process's filesystem.
     Fdtable.resolve(fdtables, Path.encodable.encode(path)) match
       case descriptor: Fdtable.Descriptor =>
-        try descriptor.open(List(OpenFlag.Write)) { handle => handle.writer(Chain(bytes)) }
+        try descriptor.open(List(OpenFlag.Write)): handle => handle.writer(Chain(bytes))
         catch case refusal: Fdtable.Refusal =>
           abort(Io.Error(path, Operation.Write, refusal.reason))
 
@@ -124,7 +125,6 @@ extension [plane: Filesystem](path: Path on plane)
   // `javaFile` are the ones users reach for. This one exists because `core`'s own operations
   // call `jnf.Files` directly and cannot depend on `jvm`.
   private[galilei] def nioPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
-
 
   // Scoped positional (random-access) reading (issue #1608): passes a `zephyrine.Expanse`
   // view of the file — `size` plus pread-style `read(offset, length)` — valid for the scope
@@ -183,14 +183,14 @@ extension [plane: Filesystem](path: Path on plane)
           if segment == scala.List(Token.Globstar) then
             // `**` matches zero or more directories: the rest of the pattern is expanded both
             // here and, with the `**` retained, in every subdirectory.
-            val deeper = dirs.bind { dir => recur(dir.children.to[List].filter(directory), todo) }
+            val deeper = dirs.bind: dir => recur(dir.children.to[List].filter(directory), todo)
 
             recur(dirs, rest) + deeper
           else
             val matcher = Glob(segment*)
 
             val matched = dirs.bind: dir =>
-              dir.children.to[List].filter { child => matcher.matches(child.name) }
+              dir.children.to[List].filter: child => matcher.matches(child.name)
 
             recur(if rest.isEmpty then matched else matched.filter(directory), rest)
 
@@ -208,13 +208,14 @@ extension [plane: Filesystem](path: Path on plane)
 
   def delete()(using deleteRecursively: DeleteRecursively on plane)
     ( using backend: FilesystemBackend on plane )
-  ( using Tactic[Io.Error], (Io.Event is Loggable)^ )
+  (using Tactic[Io.Error], (Io.Event is Loggable)^)
   :   Path on plane =
 
     // Created and consumed under the same ambient tactic; no aliased writer.
     // [by-name-receiver] by-name operation shares tactic with option receiver
     scala.caps.unsafe.unsafeAssumeSeparate:
       deleteRecursively.conditionally(path)(backend.delete(path))
+
     Log.info(Io.Event.Delete(path.show))
     path
 
@@ -228,6 +229,7 @@ extension [plane: Filesystem](path: Path on plane)
     // [by-name-receiver] by-name operation shares tactic with option receiver
     scala.caps.unsafe.unsafeAssumeSeparate:
       deleteRecursively.conditionally(path)(backend.deleteIfExists(path))
+
     Log.info(Io.Event.Delete(path.show))
     path
 
@@ -248,7 +250,7 @@ extension [plane: Filesystem](path: Path on plane)
     ( using overwritePreexisting: OverwritePreexisting on plane,
             createNonexistentParents: CreateNonexistentParents on plane,
             backend:                  FilesystemBackend on plane )
-  ( using Tactic[Io.Error], (Io.Event is Loggable)^ )
+  (using Tactic[Io.Error], (Io.Event is Loggable)^)
   :   Path on plane =
 
     // Created and consumed under the same ambient tactic; no aliased writer.
@@ -274,7 +276,7 @@ extension [plane: Filesystem](path: Path on plane)
             dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on plane )
     ( using FilesystemBackend on plane )
-  ( using Tactic[Io.Error], (Io.Event is Loggable)^ )
+  (using Tactic[Io.Error], (Io.Event is Loggable)^)
   :   Path on plane =
 
     // Created and consumed under the same ambient tactic; no aliased writer.
@@ -282,7 +284,8 @@ extension [plane: Filesystem](path: Path on plane)
     scala.caps.unsafe.unsafeAssumeSeparate:
       createNonexistentParents(destination):
         overwritePreexisting(destination):
-          summon[FilesystemBackend on plane].copy(path, destination, dereferenceSymlinks.dereference)
+          summon[FilesystemBackend on plane]
+          . copy(path, destination, dereferenceSymlinks.dereference)
 
     Log.info(Io.Event.Copy(path.show, destination.show))
     destination
@@ -308,7 +311,7 @@ extension [plane: Filesystem](path: Path on plane)
             dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on plane )
     ( using backend: FilesystemBackend on plane )
-  ( using Tactic[Io.Error], (Io.Event is Loggable)^ )
+  (using Tactic[Io.Error], (Io.Event is Loggable)^)
   :   Path on plane =
 
     // Created and consumed under the same ambient tactic; no aliased writer.
@@ -339,7 +342,7 @@ extension [plane: Filesystem](path: Path on plane)
     ( using overwritePreexisting: OverwritePreexisting on plane,
             createNonexistentParents: CreateNonexistentParents on plane,
             backend:                  FilesystemBackend on plane )
-  ( using Tactic[Io.Error], (Io.Event is Loggable)^ )
+  (using Tactic[Io.Error], (Io.Event is Loggable)^)
   :   Path on plane =
 
     // Created and consumed under the same ambient tactic; no aliased writer.
@@ -390,6 +393,7 @@ extension [plane: Filesystem](path: Path on plane)
   def touch()(using backend: FilesystemBackend on plane)
     ( using Tactic[Io.Error], (Io.Event is Loggable)^ )
   :   Unit =
+
     backend.touch(path)
     Log.fine(Io.Event.Touch(path.show))
 
@@ -443,6 +447,7 @@ package filesystemOptions:
 
     def conditionally[result](path: Path on Plane)(operation: => result)
     :   (Tactic[Io.Error]^) ?->{operation} result =
+
       path.children.each(recur(_)) yet operation
 
   given deleteOnlyEmpty: [plane: {Filesystem, Explorable}] => DeleteRecursively on plane:
@@ -451,6 +456,7 @@ package filesystemOptions:
 
     def conditionally[result](path: Path on Plane)(operation: => result)
     :   (Tactic[Io.Error]^) ?->{operation} result =
+
       if !path.children.nil
       then abort(Io.Error(path, Io.Error.Operation.Delete, Reason.DirectoryNotEmpty))
       else operation
@@ -463,6 +469,7 @@ package filesystemOptions:
 
     def apply[result](path: Path on Plane)(operation: => result)
     :   (Tactic[Io.Error]^) ?->{operation} result =
+
       deleteRecursively.conditionally(path)(operation)
 
   // The backend raises `AlreadyExists` itself when the operation collides with an existing
@@ -473,6 +480,7 @@ package filesystemOptions:
 
     def apply[result](path: Path on Plane)(operation: => result)
     :   (Tactic[Io.Error]^) ?->{operation} result =
+
       operation
 
   given createNonexistentParents: [plane: Filesystem]
@@ -481,6 +489,7 @@ package filesystemOptions:
 
     def apply[result](path: Path on plane)(operation: => result)
     :   (Tactic[Io.Error]^) ?->{operation} result =
+
       def ensure(directory: Path on plane): Unit =
         if !backend.exists(directory, true) then
           safely(directory.parent).let(ensure(_))
@@ -495,6 +504,7 @@ package filesystemOptions:
 
     def apply[result](path: Path on plane)(block: => result)
     :   (Tactic[Io.Error]^) ?->{block} result =
+
       block
 
 
@@ -520,6 +530,7 @@ extension [plane: Filesystem, transport <: Attributed](path: Path on plane over 
 
   def attribute(name: Text, value: Data)(using backend: FilesystemBackend on plane)
   :   Unit raises Io.Error =
+
     backend.attribute(path, name, value)
 
 // Btrfs-specific metadata, gated by the storage-filesystem axis (issue #567). Btrfs gives every

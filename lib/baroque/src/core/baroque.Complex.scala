@@ -32,9 +32,8 @@
                                                                                                   */
 package baroque
 
-import scala.{compiletime, math}
-
 import scala.annotation.*
+import scala.{compiletime, math}
 
 import anticipation.tt
 import geodesy.*

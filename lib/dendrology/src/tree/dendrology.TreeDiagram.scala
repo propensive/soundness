@@ -34,14 +34,13 @@ package dendrology
 
 import anticipation.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import gossamer.*
 import hieroglyph.*
 import polysyllabic.*
 import rudiments.*
 import spectacular.*
 import tessellate.*
-import denominative.dysasymptotics.linearSize
-
 import TreeTile.*
 
 object TreeDiagram:

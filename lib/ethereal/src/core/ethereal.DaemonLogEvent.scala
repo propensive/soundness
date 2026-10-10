@@ -58,7 +58,10 @@ object DaemonLogEvent:
     case CloseConnection(pid)      => m"closing the connection from $pid"
     case Init(pid)                 => m"initialising $pid"
     case PeerRefused(user)         => m"refusing a connection from another user: $user"
-    case Draining                  => m"accepting no further invocations; exiting when those in flight end"
+
+    case Draining =>
+      m"accepting no further invocations; exiting when those in flight end"
+
     case Refused(pid)              => m"refusing invocation $pid: the daemon is shutting down"
     case Closed(stream)            => m"the invocation's $stream has no reader"
 

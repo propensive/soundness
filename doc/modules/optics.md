@@ -87,6 +87,12 @@ json.lens(_.ceo.name = t"Bill").show
 json.lens(_.ceo.roles(Each).name = t"member").show
 ```
 
+The `conversions` import lets a bare encodable value — a `Text`, an `Int`, a case class — stand in
+for the format's own value on the right of the `=`; each format exports its own
+(`encodableToJson`, `encodableToCbor`, `encodableToYaml`, `encodableToTel`, `encodableToProtobuf`).
+[XML](xml.md) is the exception: its coercion lives on the `Xml` companion, so an `Xml` lens
+assignment takes a bare encodable value with no import at all.
+
 ### Lenses as values
 
 Underneath the syntax, a lens is an ordinary value — a getter and setter pair — that can be

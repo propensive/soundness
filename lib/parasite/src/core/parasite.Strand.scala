@@ -32,11 +32,10 @@
                                                                                                   */
 package parasite
 
-import scala.language.experimental.pureFunctions
-
 import java.util.concurrent.locks as jucl
 
 import scala.compiletime.asMatchable
+import scala.language.experimental.pureFunctions
 
 object Strand:
   // The strand handle of an eagerly-completed task (`JavascriptSupervisor`): by construction

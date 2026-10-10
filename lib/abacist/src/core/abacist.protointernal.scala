@@ -74,9 +74,9 @@ object protointernal extends anteprotointernal:
     // `base` and `form` are taken from the expected type, e.g. `val weight: Weight =
     // Quanta(5, 6)`, `date + Quanta(2)`, or — where no expected type is available — a type
     // ascription such as `(Quanta(5, 6): Weight)`.
-    // Cast to the refined `Quanta` type in this inline body, not inside the macro: forming the refined
-    // type within the splice makes capture checking box the `Form` tuple with a fresh capture set,
-    // which then fails to unify with the (independently boxed) expected type.
+    // Cast to the refined `Quanta` type in this inline body, not inside the macro: forming the
+    // refined type within the splice makes capture checking box the `Form` tuple with a fresh
+    // capture set, which then fails to unify with the (independently boxed) expected type.
     inline def apply[base <: AnyUnit, form <: Divisions](inline values: Int*)
     :   Quanta[base] { type Form = form } =
 
@@ -160,9 +160,7 @@ object protointernal extends anteprotointernal:
     :   quanta is Distributive by Long =
 
       distributive[quanta](_.components.values): (value, parts) =>
-        parts.zip(value.components.keys).map: (number, units) =>
-          t"$number $units"
-
+        parts.zip(value.components.keys).map: (number, units) => t"$number $units"
         . join(t", ")
 
     inline given distributive2: [base <: AnyUnit, form <: Divisions]

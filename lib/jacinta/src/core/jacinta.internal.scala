@@ -32,20 +32,17 @@
                                                                                                   */
 package jacinta
 
-
-import scala.collection.immutable.Seq
 import scala.collection.immutable.IndexedSeq
-
-import scala.{annotation, caps}
-
-
+import scala.collection.immutable.Seq
 import scala.compiletime.*
 import scala.quoted.*
+import scala.{annotation, caps}
 
 import anticipation.*
 import contextual.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gigantism.*
@@ -53,11 +50,10 @@ import gossamer.*
 import hypotenuse.Bcd
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 import wisteria.{Discriminable, Variant}
 import zephyrine.*
-import symbolism.*
-import denominative.dysasymptotics.linearSize
 
 object internal:
 
@@ -71,8 +67,13 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
-      case _               => strings
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
+      case _ => strings
 
     def firstOrigin[tuple: Type]: Int = Type.of[tuple] match
       case '[head *: tail] => TypeRepr.of[head].dealias match
@@ -85,6 +86,7 @@ object internal:
 
     val raw: String =
       parts.unique.or(halt(m"a JSON pointer literal cannot have substitutions"))
+
     val start: Int = firstOrigin[origins]
 
     try unsafely(raw.tt.as[JsonPointer]) catch
@@ -114,7 +116,8 @@ object internal:
   // (`Dynamical`-gated) runtime access.
 
   // Every `type X = …` member of a (possibly nested) refinement, by name.
-  private def armsFor(using Quotes)(arms: List[quotes.reflect.CaseDef], fallthrough: quotes.reflect.CaseDef)
+  private def armsFor(using Quotes)
+    ( arms: List[quotes.reflect.CaseDef], fallthrough: quotes.reflect.CaseDef )
   :   scala.collection.immutable.List[quotes.reflect.CaseDef] =
 
     // `quotes.reflect`'s `Match` takes a stdlib list of `CaseDef`s.
@@ -158,8 +161,8 @@ object internal:
 
     repr.dealias match
       case AppliedType(constructor, scala.collection.immutable.List(element))
-      if repr <:< TypeRepr.of[Seq[Any]] || constructor.typeSymbol == defn.ArrayClass
-      || constructor.typeSymbol == listSym || constructor.typeSymbol == seriesSym =>
+      if repr <:< TypeRepr.of[Seq[Any]] || constructor.typeSymbol == defn.ArrayClass ||
+        constructor.typeSymbol == listSym || constructor.typeSymbol == seriesSym =>
         element
 
       case _ =>
@@ -290,12 +293,14 @@ object internal:
   private def arrayElements(arr: Array[Any]^{}): Array[Any]^{} =
     val n = arr.length
 
-    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad) then arr.keep(n - 1) else arr
+    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad)
+    then arr.keep(n - 1)
+    else arr
 
   // `spot` finds the first index satisfying the predicate, confined to the text, so the read
   // inside it is total and the search needs no bound of its own.
   private def hasMarker(text: Text): Boolean =
-    text.spot(index => text(index) == Marker).present
+    text.spot{ index => text(index) == Marker }.present
 
   private def preprocess(parts: List[String]): (List[String], Set[Int]) =
     var spreads: Set[Int] = Set()
@@ -318,8 +323,13 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
-      case _               => strings
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
+      case _ => strings
 
     val parts = recur[parts](Nil)
 
@@ -451,6 +461,7 @@ object internal:
 
       def spreadIterable[t: Type](value: Expr[Iterable[t]], tpe: TypeRepr, pos: Position)
       :   Expr[Iterable[Json.Ast]] =
+
         Expr.summon[(? >: t) is Encodable in Json] match
           case Some('{$enc: Encodable}) =>
             '{$value.iterator.map($enc.encode(_).root).to(Iterable)}
@@ -462,10 +473,11 @@ object internal:
       // stdlib collection that is, so a run-time cast to `Iterable` is sound.
       // Detect them by their type-constructor symbol (a quote pattern can't see
       // through the opaque alias).
-      val aliasCollectionSyms = Set
-        ( TypeRepr.of[proscenium.List[Any]].typeSymbol,
-          TypeRepr.of[proscenium.Set[Any]].typeSymbol,
-          TypeRepr.of[proscenium.Sequence[Any]].typeSymbol )
+      val aliasCollectionSyms =
+        Set
+          ( TypeRepr.of[proscenium.List[Any]].typeSymbol,
+            TypeRepr.of[proscenium.Set[Any]].typeSymbol,
+            TypeRepr.of[proscenium.Sequence[Any]].typeSymbol )
 
       def encodeArraySpread(expr: Expr[Any]): Expr[Iterable[Json.Ast]] = expr.absolve match
         case '{$value: tpe} =>
@@ -527,20 +539,20 @@ object internal:
         val indexed = elements.readable.zipWithIndex
 
         val pieces = indexed.to(List).map: (elem, idx) =>
-            elem.asMatchable match
-              case Unset =>
-                if spreads.has(holeIndex) then
-                  if idx != n - 1 then halt:
-                    m"a `*`-spread is only allowed as the last element of an array"
+          elem.asMatchable match
+            case Unset =>
+              if spreads.has(holeIndex) then
+                if idx != n - 1 then halt:
+                  m"a `*`-spread is only allowed as the last element of an array"
 
-                  encodeArraySpread(consumeHole())
-                else
-                  val v = encodeValue(consumeHole())
-                  '{Iterable($v)}
-
-              case other =>
-                val v = serialize(other)
+                encodeArraySpread(consumeHole())
+              else
+                val v = encodeValue(consumeHole())
                 '{Iterable($v)}
+
+            case other =>
+              val v = serialize(other)
+              '{Iterable($v)}
 
         ' {
             // `Expr.ofList` takes a stdlib list.
@@ -652,8 +664,13 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
-      case _               => strings
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
+      case _ => strings
 
     val parts = recur[parts](Nil)
 
@@ -867,8 +884,8 @@ object internal:
             // Heterogeneous array (with possible sentinel pad on the end).
             val elems = arrayElements(arr)
             var c = 0
-            elems.extent.each: k =>
-              c += countHolesIn(elems(k))
+
+            elems.extent.each: k => c += countHolesIn(elems(k))
 
             c
 
@@ -982,6 +999,7 @@ object internal:
 
       val numberOfHoles =
         var c = 0
+
         repeat(parts2.size - 1):
           c += 1
 
@@ -1014,7 +1032,9 @@ object internal:
 
         case _ =>
           // `AppliedType` and `TupleClass` are `quotes.reflect` APIs over stdlib lists.
-          AppliedType(defn.TupleClass(types.stdlib.length).info.typeSymbol.typeRef, types.stdlib.reverse)
+          AppliedType
+            ( defn.TupleClass(types.stdlib.length).info.typeSymbol.typeRef, types.stdlib.reverse )
+
           . asType
           . absolve match
             case '[type result <: Tuple; result] =>
@@ -1050,20 +1070,20 @@ object internal:
 
     if !classSymbol.flags.is(Flags.Case) then
       report.errorAndAbort
-        ("jacinta: staged parsing requires a case class; sums and other types use " +
-          "`Json.Parsable.derived`")
+        ( "jacinta: staged parsing requires a case class; sums and other types use " +
+          "`Json.Parsable.derived`" )
 
     if classSymbol.owner.isTerm then
       report.errorAndAbort
-        ("jacinta: staged parsing requires a top-level or object-nested case class; " +
-          "method-local classes use `Json.Parsable.derived`")
+        ( "jacinta: staged parsing requires a top-level or object-nested case class; " +
+          "method-local classes use `Json.Parsable.derived`" )
 
     val ctor = classSymbol.primaryConstructor
 
     if ctor.paramSymss.filterNot(_.exists(_.isTypeParam)).length != 1 then
       report.errorAndAbort
-        ("jacinta: staged parsing requires a single parameter list; use " +
-          "`Json.Parsable.derived`")
+        ( "jacinta: staged parsing requires a single parameter list; use " +
+          "`Json.Parsable.derived`" )
 
     def kindOf(fieldType: TypeRepr): StagedKind =
       if fieldType =:= TypeRepr.of[Int] then IntK
@@ -1081,10 +1101,10 @@ object internal:
     // cannot pack still parses: an unpackable wire key always takes the
     // general `keyIndex` step, which matches all fields by string.
     val literalKeys: Boolean =
-      val annotated = ctor.paramSymss.flatten.filterNot(_.isTypeParam).flatMap(_.annotations)
-        ++ classSymbol.caseFields.flatMap(_.annotations)
+      val annotated = ctor.paramSymss.flatten.filterNot(_.isTypeParam).flatMap(_.annotations) ++
+        classSymbol.caseFields.flatMap(_.annotations)
 
-      !annotated.exists { annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+      !annotated.exists: annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]]
 
     def packedName(name: String): Option[(Long, Long)] =
       val length = name.length
@@ -1126,12 +1146,12 @@ object internal:
         case '[fieldType] =>
           Expr.summon[fieldType is Json.Field].getOrElse:
             report.errorAndAbort
-              (s"jacinta: no Json.Field instance for field ${field.name}: " +
-                field.fieldType.show)
+              ( s"jacinta: no Json.Field instance for field ${field.name}: " +
+                field.fieldType.show )
 
     def declaredDefault(field: Field): Expr[Any] = field.fieldType.asType match
       case '[fieldType] =>
-        '{ wisteria.internal.default[value, fieldType](${Expr(field.index)}): Any }
+        '{wisteria.internal.default[value, fieldType](${Expr(field.index)}): Any}
 
     def zero(fieldType: TypeRepr): Term =
       if fieldType =:= TypeRepr.of[Int] then Literal(IntConstant(0))
@@ -1140,7 +1160,7 @@ object internal:
       else if fieldType =:= TypeRepr.of[Float] then Literal(FloatConstant(0.0f))
       else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
       else fieldType.asType match
-        case '[fieldType] => '{ null.asInstanceOf[fieldType] }.asTerm
+        case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
     def body
       ( reader:    Expr[Json.Reader],
@@ -1175,11 +1195,9 @@ object internal:
 
       val cursor = Symbol.newVal(owner, "index", TypeRepr.of[Int], Flags.Mutable, Symbol.noSymbol)
 
-      val slotDefs = locals.map: local =>
-        ValDef(local.slot, Some(zero(local.field.fieldType)))
+      val slotDefs = locals.map: local => ValDef(local.slot, Some(zero(local.field.fieldType)))
 
-      val seenDefs = locals.map: local =>
-        ValDef(local.seen, Some(Literal(BooleanConstant(false))))
+      val seenDefs = locals.map: local => ValDef(local.seen, Some(Literal(BooleanConstant(false))))
 
       // One switch arm per field: read the value (with focus bookkeeping),
       // assign it and mark it seen.
@@ -1189,21 +1207,21 @@ object internal:
         val read: Term = local.field.fieldType.asType match
           case '[fieldType] =>
             val raw: Expr[fieldType] = local.field.kind match
-              case IntK     => '{ $reader.long().toInt }.asExprOf[fieldType]
-              case LongK    => '{ $reader.long() }.asExprOf[fieldType]
-              case DoubleK  => '{ $reader.double() }.asExprOf[fieldType]
-              case FloatK   => '{ $reader.double().toFloat }.asExprOf[fieldType]
-              case BooleanK => '{ $reader.boolean() }.asExprOf[fieldType]
-              case TextK    => '{ $reader.string() }.asExprOf[fieldType]
-              case StringK  => '{ $reader.string().s }.asExprOf[fieldType]
+              case IntK     => '{$reader.long().toInt}.asExprOf[fieldType]
+              case LongK    => '{$reader.long()}.asExprOf[fieldType]
+              case DoubleK  => '{$reader.double()}.asExprOf[fieldType]
+              case FloatK   => '{$reader.double().toFloat}.asExprOf[fieldType]
+              case BooleanK => '{$reader.boolean()}.asExprOf[fieldType]
+              case TextK    => '{$reader.string()}.asExprOf[fieldType]
+              case StringK  => '{$reader.string().s}.asExprOf[fieldType]
 
               case InstanceK =>
-                '{
-                  $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
-                  . parse($reader)
-                }
+                ' {
+                    $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
+                    . parse($reader)
+                  }
 
-            '{ Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)($raw) }.asTerm
+            '{Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)($raw)}.asTerm
 
         val rhs =
           Block
@@ -1214,7 +1232,7 @@ object internal:
 
         CaseDef(Literal(IntConstant(index)), None, rhs)
 
-      val fallthrough = CaseDef(Wildcard(), None, '{ $reader.skipValue() }.asTerm)
+      val fallthrough = CaseDef(Wildcard(), None, '{$reader.skipValue()}.asTerm)
 
       // The key loop. With literal keys, each step scans the key in place
       // and compares its packed words against the field names as immediate
@@ -1223,6 +1241,7 @@ object internal:
       val loop: List[Statement] =
         if literalKeys then
           val owner2 = owner
+
           val run = Symbol.newVal(owner2, "run", TypeRepr.of[Boolean], Flags.Mutable,
             Symbol.noSymbol)
 
@@ -1239,33 +1258,36 @@ object internal:
           val highRef = Ref(high).asExprOf[Long]
 
           def chain(remaining: List[Field]): Term = remaining match
-            case Nil => '{ Json.KeyTable.Unknown }.asTerm
+            case Nil => '{Json.KeyTable.Unknown}.asTerm
 
             case field :: rest => field.packed match
               case None => chain(rest)
 
               case Some((low, highWord)) =>
                 If
-                  ( '{ $wordRef == ${Expr(low)} && $highRef == ${Expr(highWord)} }.asTerm,
+                  ( '{$wordRef == ${Expr(low)} && $highRef == ${Expr(highWord)}}.asTerm,
                     Literal(IntConstant(field.index)),
                     chain(rest) )
 
           val resolve: Term =
             If
-              ( '{ $wordRef == Json.Reader.KeyOpaque }.asTerm,
-                '{ $reader.keyIndex($table) }.asTerm,
-                Block(scala.collection.immutable.List(ValDef(high, Some('{ $reader.keyWordHigh }.asTerm))), chain(fields)) )
+              ( '{$wordRef == Json.Reader.KeyOpaque}.asTerm,
+                '{$reader.keyIndex($table)}.asTerm,
+                Block
+                  ( scala.collection.immutable.List
+                      ( ValDef(high, Some('{$reader.keyWordHigh}.asTerm)) ),
+                    chain(fields) ) )
 
           val step: Term =
             Block
-              ( scala.collection.immutable.List(ValDef(word, Some('{ $reader.keyWord() }.asTerm))),
+              ( scala.collection.immutable.List(ValDef(word, Some('{$reader.keyWord()}.asTerm))),
                 If
-                  ( '{ $wordRef == Json.Reader.KeyEnd }.asTerm,
+                  ( '{$wordRef == Json.Reader.KeyEnd}.asTerm,
                     Assign(Ref(run), Literal(BooleanConstant(false))),
                     Block
                       ( scala.collection.immutable.List(ValDef(found, Some(resolve))),
                         If
-                          ( '{ ${Ref(found).asExprOf[Int]} == Json.KeyTable.End }.asTerm,
+                          ( '{${Ref(found).asExprOf[Int]} == Json.KeyTable.End}.asTerm,
                             Assign(Ref(run), Literal(BooleanConstant(false))),
                             Match(Ref(found), armsFor(arms, fallthrough)) ) ) ) )
 
@@ -1273,13 +1295,13 @@ object internal:
             ( ValDef(run, Some(Literal(BooleanConstant(true)))),
               While(Ref(run), step) )
         else
-          val next: Term = '{ $reader.keyIndex($table) }.asTerm
+          val next: Term = '{$reader.keyIndex($table)}.asTerm
           val dispatch = Match(Ref(cursor), armsFor(arms, fallthrough))
 
           List
             ( ValDef(cursor, Some(next)),
               While
-                ( '{ ${Ref(cursor).asExprOf[Int]} != Json.KeyTable.End }.asTerm,
+                ( '{${Ref(cursor).asExprOf[Int]} != Json.KeyTable.End}.asTerm,
                   Block(scala.collection.immutable.List(dispatch), Assign(Ref(cursor), next)) ) )
 
       // Fields whose keys never arrived: the declared default, else the
@@ -1292,23 +1314,28 @@ object internal:
           case '[fieldType] =>
             val onAbsent: Expr[fieldType] = local.field.kind match
               case InstanceK =>
-                '{
-                  $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
-                  . absent()(using $tactic)
-                }
+                ' {
+                    $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
+                    . absent()(using $tactic)
+                  }
 
-              case _ => '{ Json.Parsable.missing[fieldType]()(using $tactic) }
+              case _ => '{Json.Parsable.missing[fieldType]()(using $tactic)}
 
             val resolve: Term =
-              '{
-                val declared = $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+              ' {
+                  val declared =
+                    $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
-                if !declared.absent then declared.asInstanceOf[fieldType]
-                else Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)($onAbsent)
-              }.asTerm
+                  if !declared.absent then declared.asInstanceOf[fieldType]
+                  else
+                    Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)
+                      ( $onAbsent )
+                }
+
+              . asTerm
 
             If
-              ( '{ !${Ref(local.seen).asExprOf[Boolean]} }.asTerm,
+              ( '{!${Ref(local.seen).asExprOf[Boolean]}}.asTerm,
                 Assign(Ref(local.slot), resolve),
                 Literal(UnitConstant()) )
 
@@ -1330,10 +1357,11 @@ object internal:
       Block
         // The element types differ (`ValDef` and `Statement`), and `Concatenable` is invariant
         // where `:::` widened, so the concatenation happens on the stdlib side.
-        ( ('{ $reader.openObject() }.asTerm
-            :: (slotDefs.stdlib ::: seenDefs.stdlib ::: loop.stdlib ::: absents.stdlib).to(List))
+        ( ('{$reader.openObject()}.asTerm ::
+          (slotDefs.stdlib ::: seenDefs.stdlib ::: loop.stdlib ::: absents.stdlib).to(List))
           . stdlib,
           construct )
+
       . asExprOf[value]
 
     def summonOrAbort[required: Type](role: String): Expr[required] =
@@ -1342,40 +1370,41 @@ object internal:
 
     val fociExpr = summonOrAbort[Foci[Json.Focus]]("Foci[Json.Focus]")
     val tacticExpr = summonOrAbort[Tactic[Json.Error]]("Tactic[Json.Error]")
-    val nameExprs = fields.map { field => Expr(field.name) }
+    val nameExprs = fields.map: field => Expr(field.name)
     val instanceExprs = fields.map(summonField)
     val fallbackExprs = fields.map(declaredDefault)
 
-    '{
-      // Sealed per the codec-thunk pattern, like the derived instances: the
-      // generated parser captures the resolution-scoped tactic and foci.
-      // The instance and default arrays are single lazy vals, so recursive
-      // self-references stay deferred until the first parse.
-      // [quote-wall] generated parser in quote captures tactic and foci
-      caps.unsafe.unsafeAssumePure[value is Json.Parsable]:
-        val foci: Foci[Json.Focus] = $fociExpr
-        val tactic: Tactic[Json.Error] = $tacticExpr
+    ' {
+        // Sealed per the codec-thunk pattern, like the derived instances: the
+        // generated parser captures the resolution-scoped tactic and foci.
+        // The instance and default arrays are single lazy vals, so recursive
+        // self-references stay deferred until the first parse.
+        // [quote-wall] generated parser in quote captures tactic and foci
+        caps.unsafe.unsafeAssumePure[value is Json.Parsable]:
+          val foci: Foci[Json.Focus] = $fociExpr
+          val tactic: Tactic[Json.Error] = $tacticExpr
 
-        val keys: Array[String]^{} =
-          Json.Parsable.wireKeys(Array[String](${Varargs[String](nameExprs.stdlib)}*), $renames)
+          val keys: Array[String]^{} =
+            Json.Parsable.wireKeys(Array[String](${Varargs[String](nameExprs.stdlib)}*), $renames)
 
-        val table: Json.KeyTable = Json.KeyTable(keys)
-        lazy val instances: Array[Json.Field | Null]^{} =
-          // `Varargs` takes a stdlib `Seq`.
-          Array[Json.Field | Null](${Varargs[Json.Field | Null](instanceExprs.stdlib)}*)
-        lazy val fallbacks: Array[Any]^{} = Array[Any](${Varargs[Any](fallbackExprs.stdlib)}*)
+          val table: Json.KeyTable = Json.KeyTable(keys)
+          lazy val instances: Array[Json.Field | Null]^{} =
+            // `Varargs` takes a stdlib `Seq`.
+            Array[Json.Field | Null](${Varargs[Json.Field | Null](instanceExprs.stdlib)}*)
 
-        new Json.Parsable:
-          type Self = value
-          def shape(): Morphology = Morphology.Any
+          lazy val fallbacks: Array[Any]^{} = Array[Any](${Varargs[Any](fallbackExprs.stdlib)}*)
 
-          def parse(reader: Json.Reader^): value =
-            ${
-              body
-                ( '{reader}, '{foci}, '{tactic}, '{keys}, '{table}, '{instances},
-                  '{fallbacks} )
-            }
-    }
+          new Json.Parsable:
+            type Self = value
+            def shape(): Morphology = Morphology.Any
+
+            def parse(reader: Json.Reader^): value =
+              $ {
+                  body
+                    ( '{reader}, '{foci}, '{tactic}, '{keys}, '{table}, '{instances},
+                      '{fallbacks} )
+                }
+      }
 
   // Generates a monomorphic `Json.Parsable` for a sealed sum with a
   // field-discriminated wire shape: the tag is located with `discriminant`'s
@@ -1401,7 +1430,7 @@ object internal:
     tpe match
       case AppliedType(_, _) =>
         report.errorAndAbort
-          ("jacinta: staged parsing does not support generic sums; use `Json.Parsable.derived`")
+          ( "jacinta: staged parsing does not support generic sums; use `Json.Parsable.derived`" )
 
       case _ =>
         ()
@@ -1413,8 +1442,8 @@ object internal:
 
     if !children.forall { child => child.isClassDef && child.flags.is(Flags.Case) } then
       report.errorAndAbort
-        ("jacinta: staged sum parsing requires every variant to be a case class; singleton " +
-          "variants use `Json.Parsable.derived`")
+        ( "jacinta: staged sum parsing requires every variant to be a case class; singleton " +
+          "variants use `Json.Parsable.derived`" )
 
     val variantTypes: scala.collection.immutable.List[TypeRepr] = children.map(_.typeRef)
     val variantNames: scala.collection.immutable.List[String] = children.map(_.name)
@@ -1425,16 +1454,16 @@ object internal:
         case '[variantType] =>
           Expr.summon[variantType is Json.Field].getOrElse:
             report.errorAndAbort
-              (s"jacinta: no Json.Field instance for variant ${variantNames(index)}: " +
-                variantTypes(index).show)
+              ( s"jacinta: no Json.Field instance for variant ${variantNames(index)}: " +
+                variantTypes(index).show )
 
     val discriminableExpr: Expr[value is Discriminable in Json] =
       Expr.summon[value is Discriminable in Json].getOrElse:
         report.errorAndAbort
-          ("jacinta: staged sum parsing needs a contextual `Discriminable in Json`, like " +
-            "`jacinta.discriminables.jsonByKindDiscriminable`")
+          ( "jacinta: staged sum parsing needs a contextual `Discriminable in Json`, like " +
+            "`jacinta.discriminables.jsonByKindDiscriminable`" )
 
-    val nameExprs = variantNames.map { name => Expr(name) }
+    val nameExprs = variantNames.map: name => Expr(name)
     val variantExprs = List.range(0, arity).map(summonVariant)
 
     // The dispatch chain: one monomorphic comparison per variant, ending in
@@ -1449,47 +1478,50 @@ object internal:
     :   Expr[value] =
 
       if index == arity then
-        '{
-          provide[Tactic[Variant.Error]]:
-            abort(Variant.Error[value]($wire))
-        }
-      else variantTypes(index).asType match
-        case '[type variantType <: value; variantType] =>
-          '{
-            if $wireVariants.readUnchecked(${Expr(index)}) == $wireString then
-              $variants.readUnchecked(${Expr(index)}).asInstanceOf[variantType is Json.Field].parse($reader)
-            else ${ dispatch(index + 1, reader, wire, wireString, variants, wireVariants) }
+        ' {
+            provide[Tactic[Variant.Error]]:
+              abort(Variant.Error[value]($wire))
           }
-
-    '{
-      // Sealed per the codec-thunk pattern, like the derived instances: the
-      // variant instances may capture resolution-scoped tactics. The variant
-      // array is a single lazy val, so recursive references stay deferred.
-      // [quote-wall] generated sum parser in quote captures tactics
-      caps.unsafe.unsafeAssumePure[value is Json.Parsable]:
-        val discriminable: value is Discriminable in Json = $discriminableExpr
-        val tagField: Text = Json.Parsable.discriminantField(discriminable)
-
-        val wireVariants: Array[String]^{} =
-          Json.Parsable.wireKeys(Array[String](${Varargs[String](nameExprs)}*), $renames)
-
-        lazy val variants: Array[Json.Field]^{} =
-          // `Varargs` takes a stdlib `Seq`.
-          Array[Json.Field](${Varargs[Json.Field](variantExprs.stdlib)}*)
-
-        new Json.Parsable:
-          type Self = value
-          def shape(): Morphology = Morphology.Any
-
-          def parse(reader: Json.Reader^): value =
-            provide[Tactic[Json.Error]]:
-              val wire: Text = reader.discriminant(tagField).or:
-                abort(Json.Error(Json.Error.Reason.Absent))
-
-              val wireString: String = wire.s
-
-              ${
-                dispatch
-                  ( 0, '{reader}, '{wire}, '{wireString}, '{variants}, '{wireVariants} )
+      else
+        variantTypes(index).asType match
+          case '[type variantType <: value; variantType] =>
+            ' {
+                if $wireVariants.readUnchecked(${Expr(index)}) == $wireString then
+                  $variants.readUnchecked(${Expr(index)}).asInstanceOf[variantType is Json.Field]
+                  . parse($reader)
+                else
+                  ${dispatch(index + 1, reader, wire, wireString, variants, wireVariants)}
               }
-    }
+
+    ' {
+        // Sealed per the codec-thunk pattern, like the derived instances: the
+        // variant instances may capture resolution-scoped tactics. The variant
+        // array is a single lazy val, so recursive references stay deferred.
+        // [quote-wall] generated sum parser in quote captures tactics
+        caps.unsafe.unsafeAssumePure[value is Json.Parsable]:
+          val discriminable: value is Discriminable in Json = $discriminableExpr
+          val tagField: Text = Json.Parsable.discriminantField(discriminable)
+
+          val wireVariants: Array[String]^{} =
+            Json.Parsable.wireKeys(Array[String](${Varargs[String](nameExprs)}*), $renames)
+
+          lazy val variants: Array[Json.Field]^{} =
+            // `Varargs` takes a stdlib `Seq`.
+            Array[Json.Field](${Varargs[Json.Field](variantExprs.stdlib)}*)
+
+          new Json.Parsable:
+            type Self = value
+            def shape(): Morphology = Morphology.Any
+
+            def parse(reader: Json.Reader^): value =
+              provide[Tactic[Json.Error]]:
+                val wire: Text = reader.discriminant(tagField).or:
+                  abort(Json.Error(Json.Error.Reason.Absent))
+
+                val wireString: String = wire.s
+
+                $ {
+                    dispatch
+                      ( 0, '{reader}, '{wire}, '{wireString}, '{variants}, '{wireVariants} )
+                  }
+      }

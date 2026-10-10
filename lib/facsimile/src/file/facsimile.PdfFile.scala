@@ -32,7 +32,6 @@
                                                                                                   */
 package facsimile
 
-
 import ambience.*
 import anticipation.*
 import aperture.*
@@ -40,6 +39,7 @@ import contingency.*
 import distillate.*
 import enigmatic.*
 import eucalyptus.*
+import fulminate.errorDiagnostics.stackTracesDiagnostics
 import galilei.*
 import gossamer.*
 import nomenclature.*
@@ -48,8 +48,6 @@ import rudiments.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
-
-import fulminate.errorDiagnostics.stackTracesDiagnostics
 import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 import filesystemOptions.deleteRecursively
@@ -82,26 +80,25 @@ object PdfFile:
       case Io.Error(_, _, _, _) => Pdf.Error(Pdf.Error.Reason.Io(t"the file could not be written"))
 
     . protect:
-        // [by-name-receiver] resolve's tactic shared with mitigated receiver path
-        val target: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
-          workingDirectory[Path on Local].resolve(filename)
+      // [by-name-receiver] resolve's tactic shared with mitigated receiver path
+      val target: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
+        workingDirectory[Path on Local].resolve(filename)
 
-        if !flags.has(CreateFlag.Replace) && target.existent()
-        then abort(Pdf.Error(Pdf.Error.Reason.Io(t"the file already exists")))
+      if !flags.has(CreateFlag.Replace) && target.existent()
+      then abort(Pdf.Error(Pdf.Error.Reason.Io(t"the file already exists")))
 
-        if flags.has(CreateFlag.Parents) then
-          target.parent.let: parent =>
-            if !parent.existent() then parent.create[Directory]()
+      if flags.has(CreateFlag.Parents) then
+        target.parent.let: parent => if !parent.existent() then parent.create[Directory]()
 
-        val part: Text = t".${target.name}.part"
-        val temporary = target.peer(part)
+      val part: Text = t".${target.name}.part"
+      val temporary = target.peer(part)
 
-        try
-          temporary.write(bytes)
-          temporary.moveTo(target)
-        catch case throwable: Throwable =>
-          safely(temporary.wipe())
-          throw throwable
+      try
+        temporary.write(bytes)
+        temporary.moveTo(target)
+      catch case throwable: Throwable =>
+        safely(temporary.wipe())
+        throw throwable
 
   // A named class rather than an anonymous given instance, for the reasons documented on
   // galilei's `FileOpenable`. Documents open read-only: a future write mode is a staged
@@ -154,7 +151,7 @@ object PdfFile:
 
   // Anchored here so `pdfFile.open(...)` resolves — and, `PdfFile` having a unique instance,
   // infers the `Pdf` form — with no import.
-  given openable: (tactic: Tactic[Pdf.Error]) => ( PdfOpenable^{tactic} ) = PdfOpenable()
+  given openable: (tactic: Tactic[Pdf.Error]) => (PdfOpenable^{tactic}) = PdfOpenable()
 
   // Authoring a new document: `path.create[Pdf](): doc ?=> doc.appendPage(...)`. The block
   // edits a fresh, empty document — the same write surface as editing an existing one — and
@@ -194,7 +191,7 @@ class PdfFile private (origin: PdfFile.Origin):
   private[facsimile] def openAs[grants <: Grant, result]
     ( password: Optional[Password], writable: Boolean )
     ( block: ((Pdf & Granting[grants])^) ?=> result )
-  ( using Tactic[Pdf.Error] )
+  (using Tactic[Pdf.Error])
   :   result =
 
     origin match
@@ -212,31 +209,32 @@ class PdfFile private (origin: PdfFile.Origin):
             Pdf.Error(Pdf.Error.Reason.Io(t"the file could not be opened"))
 
         . protect:
-            // [by-name-receiver] resolve's tactic shared with mitigated receiver path
-            val path: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
-              workingDirectory[Path on Local].resolve(filename)
+          // [by-name-receiver] resolve's tactic shared with mitigated receiver path
+          val path: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
+            workingDirectory[Path on Local].resolve(filename)
 
-            if writable then
-              path.open[Ram](Read & Write): ram ?=>
-                // The source pins the file's size at open: the mapping grows for the
-                // incremental-update append below, and the document's view must not shift.
-                val source = ExpanseSource(ram.expanse, ram.size)
-                val (outcome, increment) = read[grants, result](source, password, true)(block)
+          if writable then
+            path.open[Ram](Read & Write): ram ?=>
+              // The source pins the file's size at open: the mapping grows for the
+              // incremental-update append below, and the document's view must not shift.
+              val source = ExpanseSource(ram.expanse, ram.size)
+              val (outcome, increment) = read[grants, result](source, password, true)(block)
 
-                // A `match`, not `.let`: the frozen member of the `Optional` union freshens
-                // under `let`'s type-variable instantiation.
-                increment.asInstanceOf[Matchable] match
-                  case bytes: (Array[Byte]^{}) @unchecked =>
-                    ram.grow(source.size + bytes.length)
-                    ram(source.size) = bytes
-                  case _ => ()
+              // A `match`, not `.let`: the frozen member of the `Optional` union freshens
+              // under `let`'s type-variable instantiation.
+              increment.asInstanceOf[Matchable] match
+                case bytes: (Array[Byte]^{}) @unchecked =>
+                  ram.grow(source.size + bytes.length)
+                  ram(source.size) = bytes
 
-                outcome
-            else
-              path.open[Ram](): ram ?=>
-                val source = ExpanseSource(ram.expanse, ram.size)
-                val (outcome, _) = read[grants, result](source, password, false)(block)
-                outcome
+                case _ => ()
+
+              outcome
+          else
+            path.open[Ram](): ram ?=>
+              val source = ExpanseSource(ram.expanse, ram.size)
+              val (outcome, _) = read[grants, result](source, password, false)(block)
+              outcome
 
   // The capability must be minted where the block is applied: a `Pdf` returned from another
   // method is a distinct fresh capability which could not flow into the block's own. The
@@ -246,7 +244,7 @@ class PdfFile private (origin: PdfFile.Origin):
   private def read[grants <: Grant, result]
     ( source: ByteSource, password: Optional[Password], writable: Boolean )
     ( block: ((Pdf & Granting[grants])^) ?=> result )
-  ( using Tactic[Pdf.Error] )
+  (using Tactic[Pdf.Error])
   :   (result, Optional[Data]) =
 
     val version = Pdf.readVersion(source) // check the header before anything else is trusted
@@ -260,6 +258,7 @@ class PdfFile private (origin: PdfFile.Origin):
         // table was only recovered by scanning has none to chain to.
         if pdf.xref.startxref.absent then abort(Pdf.Error(Pdf.Error.Reason.WriteUnsupported))
         PdfWriter.increment(pdf, source.size)
-      else Unset
+      else
+        Unset
 
     (outcome, increment)

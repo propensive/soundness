@@ -222,7 +222,8 @@ object Atomic:
           else if box.compareAndSet(current, next) then
             current = next
             settled = true
-          else current = box.get().asInstanceOf[value]
+          else
+            current = box.get().asInstanceOf[value]
 
         current
 

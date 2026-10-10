@@ -58,10 +58,10 @@ private[facsimile] class Gathering(transform: Data => Data) extends Duct[Data, D
   def translate(demand: Credit): Credit = demand
 
   update def step(source: Region[Data])(range: Interval in source.type)
-    ( target: Slate[Data] )(space: Interval in target.type)
+    (target: Slate[Data])(space: Interval in target.type)
   :   Duct.Progress =
 
-    source.visit(range) { index => gathered += source(index) }
+    source.visit(range): index => gathered += source(index)
     Duct.Progress((range: Interval).size, 0)
 
   override update def flush(target: Slate[Data])(space: Interval in target.type): Int =

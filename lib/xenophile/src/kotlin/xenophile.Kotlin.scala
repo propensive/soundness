@@ -32,16 +32,18 @@
                                                                                                   */
 package xenophile
 
-import anticipation.*
-import fulminate.*
-import gossamer.*
 import java.lang.invoke as jli
 import java.util.concurrent as juc
-import prepositional.*
-import rudiments.*
+
 import scala.collection.immutable.Seq
 import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
+
+import anticipation.*
+import fulminate.*
+import gossamer.*
+import prepositional.*
+import rudiments.*
 import vacuous.*
 
 // The Kotlin/JVM ecosystem: `Interoperable` markers associating Scala types with the Kotlin
@@ -119,7 +121,9 @@ object Kotlin:
           case "toString" => s"<function proxy>"
           case _          => handler(arguments)
 
-    def invokeDefault(owner: Class[?], name: String, arguments: scala.Array[Any | Null]): Any | Null =
+    def invokeDefault(owner: Class[?], name: String, arguments: scala.Array[Any | Null])
+    :   Any | Null =
+
       val key = s"${owner.getName}#$name#${arguments.length}"
 
       val handle = handles.computeIfAbsent(key, _ =>

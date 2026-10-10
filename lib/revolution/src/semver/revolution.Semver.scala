@@ -40,12 +40,10 @@ import fulminate.*
 import gossamer.*
 import kaleidoscope.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
-
-import rudiments.*
 import vacuous.*
-
 import errorDiagnostics.stackTracesDiagnostics
 
 object Semver:
@@ -116,6 +114,7 @@ object Semver:
     def compare(left0: List[Long | Text], right0: List[Long | Text]): Boolean =
       val left = left0.stdlib
       val right = right0.stdlib
+
       if left.isEmpty && right.isEmpty then false
       else if left.isEmpty then true
       else if right.isEmpty then false
@@ -124,6 +123,7 @@ object Semver:
         val rh = right.head
         val lts = left.tail.to(List)
         val rts = right.tail.to(List)
+
         lh.absolve match
           case lh: Text => rh.absolve match
             case rh: Long => false

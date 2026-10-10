@@ -33,8 +33,8 @@
 package stratiform
 
 import anticipation.*
-import rudiments.*
 import contingency.*
+import rudiments.*
 import vacuous.*
 
 // Composable edit DSL built atop the primitive Mutation.Op interpreter
@@ -115,6 +115,7 @@ object Revision:
 
     def reorderGroups(keyword: Text, otherKeyword: Text, placement: Mutation.Placement)
     :   Revision =
+
       Revision.single(Mutation.Op.ReorderGroups(pointer, keyword, otherKeyword, placement))
 
     // §22.2 `resize-tabulation` — pointer addresses the parent;
@@ -138,7 +139,6 @@ object Revision:
     Mutation.construct(keyword, members)
 
   private def single(op: Mutation.Op): Revision = new Revision(Array(op))
-
 
 case class Revision private[stratiform] (ops: Array[Mutation.Op]^{}):
   def ++ (next: Revision): Revision =

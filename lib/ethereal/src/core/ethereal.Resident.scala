@@ -32,15 +32,14 @@
                                                                                                   */
 package ethereal
 
-import scala.caps
-
-import galilei.*
-import scala.language.experimental.pureFunctions
-
 import java.lang as jl
+
+import scala.caps
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import exoskeleton.*
+import galilei.*
 import gossamer.*
 import guillotine.*
 import prepositional.*
@@ -132,6 +131,7 @@ extends Entrypoint, Umask.Provider, Fdtable.Provider, caps.ExclusiveCapability:
       raw.kind == kind && (raw.index match
         case position: Int => position == index
         case _             => false)
+
     . let(_.bytes)
 
   // The structured help tree for this command, generated lazily by re-running the application

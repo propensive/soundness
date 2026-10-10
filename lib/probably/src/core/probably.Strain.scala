@@ -32,13 +32,12 @@
                                                                                                   */
 package probably
 
-
 import anticipation.*
-import rudiments.*
+import denominative.dysasymptotics.linearSize
 import gossamer.*
+import rudiments.*
 import symbolism.*
 import vacuous.*
-import denominative.dysasymptotics.linearSize
 
 object Strain:
   given inclusion: Inclusion[Report, Strain]:

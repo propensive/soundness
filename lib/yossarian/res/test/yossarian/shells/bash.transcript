@@ -1,0 +1,14 @@
+[?2004h> clear
+[?2004l[3J[H[2J[?2004h> echo hello
+[?2004lhello
+[?2004h> echo helXX[K[Klo
+[?2004lhello
+[?2004h> echo helolo
+[?2004lhello
+[?2004h> ls /usr/l
+lib/     libexec/ local/   
+> ls /usr/l
+lib/     libexec/ local/   
+> ls /usr/l^C[?2004l[?2004h[?2004l
+[?2004h> exit
+[?2004lexit

@@ -42,7 +42,8 @@ package providers:
   export gastronomy.providers.{javaBaseProvider, soundnessProvider}
 
 package cryptoPermits:
-  export gastronomy.cryptoPermits.{permitUnauthenticatedCrypto, permitDeprecatedCrypto, permitLegacyCrypto,
+  export gastronomy.cryptoPermits.{permitUnauthenticatedCrypto, permitDeprecatedCrypto,
+      permitLegacyCrypto,
       permitDisallowedCrypto, permitCryptoThrough2014, permitCryptoThrough2024,
       permitCryptoThrough2030, permitLegacyTls, permitUntrustedCertificates,
       permitUncheckedRevocation, permitNonCryptographicHashes}

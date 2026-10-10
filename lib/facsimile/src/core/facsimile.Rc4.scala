@@ -72,8 +72,10 @@ private[facsimile] object Rc4:
       val swap = state.readable(a)
       state(a) = state.readable(b)
       state(b) = swap
+
       out(k) =
         (data.readable(k) ^ state.readable((state.readable(a) + state.readable(b)) & 0xff)).toByte
+
       k += 1
 
     Array.freeze(out)

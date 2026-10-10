@@ -33,8 +33,6 @@
 package pneumatic
 
 import scala.caps
-
-
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -94,6 +92,7 @@ private[pneumatic] abstract class BufferedEngine extends XzEngine:
 private[pneumatic] final class XzCompressorEngine(preset: Int, checkType: Int) extends XzEngine:
   private val options = Lzma2Options.preset(preset)
   private val segmentSize = options.dictSize
+
   private val segment: ByteSink^ =
     ByteSink(if segmentSize < (1 << 20) then segmentSize else 1 << 20)
 
@@ -336,12 +335,13 @@ private[pneumatic] class XzStage(engine0: => XzEngine^) extends Duct[Data, Data]
   def translate(demand: Credit): Credit = demand
 
   update def step(source: Region[Data])(range: Interval in source.type)
-    ( target: Slate[Data] )(space: Interval in target.type)
+    (target: Slate[Data])(space: Interval in target.type)
   :   Duct.Progress =
 
     val sourceInterval: Interval = range
     val targetInterval: Interval = space
     val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+
     val out: scala.Array[Byte]^ =
       unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
 
@@ -358,8 +358,10 @@ private[pneumatic] class XzStage(engine0: => XzEngine^) extends Duct[Data, Data]
       finishing = true
 
     val targetInterval: Interval = space
+
     val out: scala.Array[Byte]^ =
       unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+
     engine.deliver(out, targetInterval.start.n0, targetInterval.size)
 
 object Xz:

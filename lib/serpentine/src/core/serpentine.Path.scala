@@ -33,19 +33,17 @@
 package serpentine
 
 import scala.caps
-
-
 import scala.compiletime.*
 
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
-import denominative.dysasymptotics.linearSize
 import spectacular.*
 import symbolism.*
 import vacuous.*
@@ -60,8 +58,8 @@ object Path:
     type Limit = %.type
 
   given decodable: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
-  =>  (tactic: Tactic[Path.Error])
-  =>  (((Path on filesystem) is Decodable in Text)^{tactic}) =
+  =>  ( tactic: Tactic[Path.Error] )
+  =>  ( ((Path on filesystem) is Decodable in Text)^{tactic} ) =
 
     text =>
       val root = radical.encode(radical.decode(text))
@@ -71,8 +69,8 @@ object Path:
       Path(root, (parts2.reverse.map(filesystem.unescape(_))).to(List))
 
   given decodable2: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
-  =>  (tactic: Tactic[Path.Error])
-  =>  (((Path on filesystem under root) is Decodable in Text)^{tactic}) =
+  =>  ( tactic: Tactic[Path.Error] )
+  =>  ( ((Path on filesystem under root) is Decodable in Text)^{tactic} ) =
 
     text =>
       val root = radical.encode(radical.decode(text))
@@ -86,7 +84,7 @@ object Path:
 
   given trustedInstantiable: [filesystem: Filesystem]
   =>  ( radical: Tactic[Path.Error] ?=> Radical on filesystem )
-  =>  (((Path on filesystem) is Instantiable across Paths from Paths.Trusted)^{radical}) =
+  =>  ( ((Path on filesystem) is Instantiable across Paths from Paths.Trusted)^{radical} ) =
 
     // The input is already-trusted path data, so decoding it cannot fail; the tactic is
     // minted per call by `unsafely`, so the instance captures only the `radical` context.
@@ -96,8 +94,8 @@ object Path:
 
   given instantiable: [filesystem: Filesystem]
   =>  Radical on filesystem
-  =>  (tactic: Tactic[Path.Error])
-  =>  (((Path on filesystem) is Instantiable across Paths from Text)^{tactic}) =
+  =>  ( tactic: Tactic[Path.Error] )
+  =>  ( ((Path on filesystem) is Instantiable across Paths from Text)^{tactic} ) =
 
     _.as[Path on filesystem]
 
@@ -148,7 +146,7 @@ object Path:
 
   transparent inline given quotient: [filesystem, root, path <: Path on filesystem under root]
   =>  ( radical: root is Radical on filesystem )
-  =>  (Tactic[Path.Error]^)
+  =>  ( Tactic[Path.Error]^ )
   =>  path is Quotient =
 
     ( path =>
@@ -323,8 +321,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       case EmptyTuple   => Unset
 
       case _ =>
-        if descent.isEmpty then Unset
-        else Path[Plane, Limit, Tuple](root, descent.tail.to(List))
+        if descent.isEmpty then Unset else Path[Plane, Limit, Tuple](root, descent.tail.to(List))
 
   def ancestors: List[Path on Plane under Limit] =
     safely(parent).let { parent => (parent :: parent.ancestors): List[Path on Plane under Limit] }
@@ -354,11 +351,13 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     inline caps.unsafe.unsafeErasedValue[Topic] match
       case _: (head *: tail) =>
         Path[Plane, Limit, child.type *: tail]
-          ( root, (infer[child.type is Navigable on Plane].follow(child) +: descent.drop(1)).to(List) )
+          ( root,
+            (infer[child.type is Navigable on Plane].follow(child) +: descent.drop(1)).to(List) )
 
       case _ =>
         Path[Plane, Limit, Tuple]
-          ( root, (infer[child.type is Navigable on Plane].follow(child) +: descent.drop(1)).to(List) )
+          ( root,
+            (infer[child.type is Navigable on Plane].follow(child) +: descent.drop(1)).to(List) )
 
 
   transparent inline def + (relative: Relative): Path =

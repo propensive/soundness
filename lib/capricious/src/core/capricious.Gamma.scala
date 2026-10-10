@@ -32,9 +32,8 @@
                                                                                                   */
 package capricious
 
-import scala.language.experimental.genericNumberLiterals
-
 import scala.annotation.tailrec
+import scala.language.experimental.genericNumberLiterals
 
 import hypotenuse.*
 import symbolism.*

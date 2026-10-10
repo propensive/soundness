@@ -32,7 +32,6 @@
                                                                                                   */
 package cataclysm
 
-
 import anticipation.*
 import contextual.*
 import contingency.*
@@ -70,6 +69,7 @@ private def simples(nodes: List[Css.Node]): List[Simple] =
   nodes.bind:
     case Css.Node.Rule(selector, body) =>
       listSimples(selector) + simples(body)
+
     case Css.Node.At(_, _, body)       => body.lay(Nil)(simples)
     case Css.Node.Declaration(_, _)    => Nil
 
@@ -79,10 +79,12 @@ private def listSimples(list: SelectorList): List[Simple] =
 
 private def compoundSimples(compound: Compound): List[Simple] =
   compound.parts.bind:
-    case simple@ Simple.PseudoClass(_, argument)   =>
+    case simple@ Simple.PseudoClass(_, argument) =>
       (simple :: argumentSimples(argument)): List[Simple]
+
     case simple@ Simple.PseudoElement(_, argument) =>
       (simple :: argumentSimples(argument)): List[Simple]
+
     case simple                                    => List(simple)
 
 private def argumentSimples(argument: Optional[PseudoArgument]): List[Simple] =

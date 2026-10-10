@@ -37,16 +37,16 @@ import scala.reflect.*
 
 import anticipation.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import dissonance.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
-import symbolism.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 import wisteria.*
-import denominative.dysasymptotics.linearSize
 
 object Contrastable:
   inline given derived: [entity] => entity is Contrastable = summonFrom:
@@ -222,7 +222,10 @@ object Contrastable:
     if left == right then Juxtaposition.Same(leftDebug) else
       val comparison =
         Array.from:
-          dissonance.diff(Sequence.from(left.readable), Sequence.from(right.readable)).rdiff(_ == _, 10).changes.map:
+          dissonance.diff(Sequence.from(left.readable), Sequence.from(right.readable))
+          . rdiff(_ == _, 10)
+          . changes
+          . map:
             case Par(leftIndex, rightIndex, value) =>
               val label =
                 if leftIndex == rightIndex then leftIndex.show

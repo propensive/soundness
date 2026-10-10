@@ -33,7 +33,6 @@
 package parasite
 
 import scala.caps
-
 import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
 

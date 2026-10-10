@@ -32,15 +32,13 @@
                                                                                                   */
 package hallucination
 
-import scala.math
-
 import java.io as ji
+
+import scala.caps
+import scala.math
 
 import anticipation.*
 import vacuous.*
-
-import scala.caps
-
 import Vp8Tables.*
 
 // The VP8 lossy (keyframe) encoder, ported from image-rs/image-webp (`src/lossy/encoder.rs`,
@@ -62,8 +60,16 @@ private[hallucination] object Vp8Encoder:
   // the companion, not `Encoder`: its arguments are `Encoder`-derived arrays, which cannot be
   // passed to a method on the (exclusive) encoder itself.
   private def difference
-    ( predicted: scala.Array[Int], plane: scala.Array[Int], planeWidth: Int, stride: Int, px: Int, py: Int,
-        bx: Int, by: Int, out: scala.Array[Int], outOffset: Int )
+    ( predicted:  scala.Array[Int],
+      plane:      scala.Array[Int],
+      planeWidth: Int,
+      stride:     Int,
+      px:         Int,
+      py:         Int,
+      bx:         Int,
+      by:         Int,
+      out:        scala.Array[Int],
+      outOffset:  Int )
   :   Unit =
 
     var y = 0
@@ -121,6 +127,7 @@ private[hallucination] object Vp8Encoder:
     
     private inline def topComplexityRows(index: Int): scala.Array[Int] =
       topComplexity.asInstanceOf[scala.Array[scala.Array[Int]]](index)
+
     private var leftComplexity: scala.Array[Int]^ = new scala.Array[Int](9)
 
     update def run(): Data =
@@ -138,8 +145,17 @@ private[hallucination] object Vp8Encoder:
 
         while mbx < mbWidth do
           // Macroblock header: DC luma mode, DC chroma mode (no segment or skip flag).
-          header.writeTree(keyframeYmodeTree.asInstanceOf[scala.Array[Int]], keyframeYmodeProbs.asInstanceOf[scala.Array[Int]], 0, DcPred)
-          header.writeTree(keyframeUvModeTree.asInstanceOf[scala.Array[Int]], keyframeUvModeProbs.asInstanceOf[scala.Array[Int]], 0, DcPred)
+          header.writeTree
+            ( keyframeYmodeTree.asInstanceOf[scala.Array[Int]],
+              keyframeYmodeProbs.asInstanceOf[scala.Array[Int]],
+              0,
+              DcPred )
+
+          header.writeTree
+            ( keyframeUvModeTree.asInstanceOf[scala.Array[Int]],
+              keyframeUvModeProbs.asInstanceOf[scala.Array[Int]],
+              0,
+              DcPred )
 
           val yBlocks = transformLuma(mbx, mby)
           val (uBlocks, vBlocks) = transformChroma(mbx, mby)
@@ -220,7 +236,10 @@ private[hallucination] object Vp8Encoder:
 
         while x < 4 do
           val i = x + y*4
-          val n = encodeCoefficients(yBlocks, i*16, 0, left + topComplexityRows(mbx)(x + 1), ydc, yac)
+
+          val n =
+            encodeCoefficients(yBlocks, i*16, 0, left + topComplexityRows(mbx)(x + 1), ydc, yac)
+
           left = if n then 1 else 0
           writable(topComplexityRows(mbx))(x + 1) = if n then 1 else 0
           x += 1
@@ -286,11 +305,23 @@ private[hallucination] object Vp8Encoder:
 
         val token =
           if absValue == 0 then
-            partition.writeTree(dctTokenTree.asInstanceOf[scala.Array[Int]], tokenProbs.asInstanceOf[scala.Array[Int]], probOffset, Dct0, startIndex)
+            partition.writeTree
+              ( dctTokenTree.asInstanceOf[scala.Array[Int]],
+                tokenProbs.asInstanceOf[scala.Array[Int]],
+                probOffset,
+                Dct0,
+                startIndex )
+
             skipEob = true
             Dct0
           else if absValue <= 4 then
-            partition.writeTree(dctTokenTree.asInstanceOf[scala.Array[Int]], tokenProbs.asInstanceOf[scala.Array[Int]], probOffset, absValue, startIndex)
+            partition.writeTree
+              ( dctTokenTree.asInstanceOf[scala.Array[Int]],
+                tokenProbs.asInstanceOf[scala.Array[Int]],
+                probOffset,
+                absValue,
+                startIndex )
+
             skipEob = false
             absValue
           else
@@ -299,7 +330,13 @@ private[hallucination] object Vp8Encoder:
               else if absValue <= 18 then DctCat3 else if absValue <= 34 then DctCat4
               else if absValue <= 66 then DctCat5 else DctCat6
 
-            partition.writeTree(dctTokenTree.asInstanceOf[scala.Array[Int]], tokenProbs.asInstanceOf[scala.Array[Int]], probOffset, category, startIndex)
+            partition.writeTree
+              ( dctTokenTree.asInstanceOf[scala.Array[Int]],
+                tokenProbs.asInstanceOf[scala.Array[Int]],
+                probOffset,
+                category,
+                startIndex )
+
             val extra = absValue - dctCatBase.readable(category - DctCat1)
             var mask = if category == DctCat6 then 1 << 10 else 1 << (category - DctCat1)
             var c = (category - DctCat1)*12
@@ -319,8 +356,11 @@ private[hallucination] object Vp8Encoder:
       if endOfBlock < 16 then
         val band = coeffBands.readable(firstCoeff.max(endOfBlock))
 
-        partition.writeTree(dctTokenTree.asInstanceOf[scala.Array[Int]], tokenProbs.asInstanceOf[scala.Array[Int]], coeffIndex(plane, band, complexity, 0),
-            DctEob)
+        partition.writeTree
+          ( dctTokenTree.asInstanceOf[scala.Array[Int]],
+            tokenProbs.asInstanceOf[scala.Array[Int]],
+            coeffIndex(plane, band, complexity, 0),
+            DctEob )
 
       endOfBlock > 0
 
@@ -396,7 +436,10 @@ private[hallucination] object Vp8Encoder:
       reconstructLuma(predicted, blocks, mbx)
       blocks
 
-    private update def reconstructLuma(predicted: scala.Array[Int], blocks: scala.Array[Int], mbx: Int): Unit =
+    private update def reconstructLuma
+      ( predicted: scala.Array[Int], blocks: scala.Array[Int], mbx: Int )
+    :   Unit =
+
       val recon = blocks.clone()
       val c0: scala.Array[Int]^ = new scala.Array[Int](16)
       var k = 0
@@ -537,4 +580,3 @@ private[hallucination] object Vp8Encoder:
         k += 1
 
       blocks
-

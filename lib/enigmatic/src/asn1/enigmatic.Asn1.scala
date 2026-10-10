@@ -32,10 +32,9 @@
                                                                                                   */
 package enigmatic
 
-import scala.caps
-
 import java.nio.charset as jnc
 
+import scala.caps
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -92,7 +91,8 @@ object Asn1:
 
   given encodable: Asn1 is Encodable in Der = value => Der(render(value))
 
-  given decodable: (tactic: Tactic[Asn1.Error]^) => ((Asn1 is Decodable in Der)^{tactic, caps.any}) =
+  given decodable: (tactic: Tactic[Asn1.Error]^)
+  =>  ( (Asn1 is Decodable in Der)^{tactic, caps.any} ) =
     der => Parser.parse(der.data)
 
   given aggregable: (tactic: Tactic[Asn1.Error]^)
@@ -166,9 +166,7 @@ object Asn1:
       Producer.collect[Data]()(time(_, timestamp, true))
 
     case Asn1.Sequence(elements) =>
-      Producer.collect[Data](): out =>
-        elements.foreach: element =>
-          out.put(render(element))
+      Producer.collect[Data](): out => elements.foreach: element => out.put(render(element))
 
     case Asn1.Set(elements) =>
       // DER orders the members of a `SET` by their encodings, shorter-first when one is a prefix
@@ -176,9 +174,7 @@ object Asn1:
       given derComparable: Data is Comparable = Comparable.less(precedes(_, _))
       val rendered: List[Data] = elements.map(render(_)).sort
 
-      Producer.collect[Data](): out =>
-        rendered.foreach: element =>
-          out.put(element)
+      Producer.collect[Data](): out => rendered.foreach: element => out.put(element)
 
     case Asn1.Tagged(_, true, inner)    => render(inner)
     case Asn1.Tagged(_, false, inner)   => contentOf(inner)
@@ -245,12 +241,10 @@ object Asn1:
     case first :: second :: rest =>
       base128(out, first*40 + second)
 
-      rest.foreach: arc =>
-        base128(out, arc)
+      rest.foreach: arc => base128(out, arc)
 
     case rest =>
-      rest.foreach: arc =>
-        base128(out, arc)
+      rest.foreach: arc => base128(out, arc)
 
   private def time(out: (Producer.Bytes)^, timestamp: Long, generalized: scala.Boolean): Unit =
     val days = Math.floorDiv(timestamp, SecondsPerDay)
@@ -338,7 +332,8 @@ object Asn1:
     private inline def need(count: Int, limit: Int): Unit raises Asn1.Error =
       if limit - offset < count then abort(Asn1.Error(Reason.Truncated(offset.toLong)))
 
-    private inline update def readByte(): Int = (data.readUnchecked(offset) & 0xff).also(offset += 1)
+    private inline update def readByte(): Int =
+      (data.readUnchecked(offset) & 0xff).also(offset += 1)
 
     private update def readRaw(end: Int): scala.Array[Byte] =
       val result = new scala.Array[Byte](end - offset)
@@ -487,7 +482,9 @@ object Asn1:
       var difference = 0
 
       while difference == 0 && index < leftSize && index < rightSize do
-        difference = (data.readUnchecked(from + index) & 0xff) - (data.readUnchecked(from2 + index) & 0xff)
+        difference =
+          (data.readUnchecked(from + index) & 0xff) - (data.readUnchecked(from2 + index) & 0xff)
+
         index += 1
 
       if difference != 0 then difference < 0 else leftSize <= rightSize
@@ -502,7 +499,10 @@ object Asn1:
     private update def readTag(limit: Int)(using Tactic[Asn1.Error]): Int =
       val start = offset
       need(1, limit)
-      if (data.readUnchecked(offset) & 0xff) == 0x80 then abort(Asn1.Error(Reason.NonMinimalTag(start.toLong)))
+
+      if (data.readUnchecked(offset) & 0xff) == 0x80
+      then abort(Asn1.Error(Reason.NonMinimalTag(start.toLong)))
+
       var result = 0
       var reading = true
 
@@ -551,7 +551,10 @@ object Asn1:
 
       while offset < end do
         val subidentifier = offset
-        if (data.readUnchecked(offset) & 0xff) == 0x80 then abort(Asn1.Error(Reason.BadOid(subidentifier.toLong)))
+
+        if (data.readUnchecked(offset) & 0xff) == 0x80
+        then abort(Asn1.Error(Reason.BadOid(subidentifier.toLong)))
+
         var accumulated = 0
         var reading = true
 
@@ -583,7 +586,9 @@ object Asn1:
     // DER admits exactly one form for each of the two time types: `YYMMDDHHMMSSZ` and
     // `YYYYMMDDHHMMSSZ`, with no fractional seconds and no offset from UTC. `UTCTime`'s two-digit
     // year runs from 1950 to 2049 (RFC 5280 §4.1.2.5.1).
-    private update def timestamp(start: Int, end: Int, generalized: scala.Boolean)(using Tactic[Asn1.Error])
+    private update def timestamp
+      ( start: Int, end: Int, generalized: scala.Boolean )
+      ( using Tactic[Asn1.Error] )
     :   Long =
 
       val size = end - offset
@@ -606,7 +611,8 @@ object Asn1:
 
         result
 
-      if (data.readUnchecked(end - 1) & 0xff) != 'Z' then abort(Asn1.Error(Reason.BadTime(start.toLong)))
+      if (data.readUnchecked(end - 1) & 0xff) != 'Z'
+      then abort(Asn1.Error(Reason.BadTime(start.toLong)))
 
       val year =
         if generalized then number(0, 4)

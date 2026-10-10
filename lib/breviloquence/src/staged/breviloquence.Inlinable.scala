@@ -38,42 +38,20 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 
-// The Expr-level counterpart of `Cbor.Parsable`: a typeclass whose methods
-// are macro-time code generators. An instance receives an `Expr` of the
-// reader and returns an `Expr` of the decoded value, which the deriving
-// macro splices directly into its generated parser — so an instance
-// contributes *inlined* code, with no runtime dispatch, no instance arrays
-// and no adapter hops between composed parsers.
-//
-// Instances are ordinary runtime values: code generation is deferred to the
-// `parse` call, which receives the `Quotes` and the `Type` of `Self`, so
-// `derived` needs no macro of its own. At a `Cbor.Inlinable.parsable[T]`
-// expansion, the instance behind each summoned given is obtained *live* by
-// running the implicit search inside an in-macro staging compiler (the
-// prescience mechanism), which composes conditional instances — a collection
-// of a custom element, for example — through ordinary given resolution. The
-// constraint this inherits: an instance (and its type) must be compiled in
-// an earlier run than the expansion; same-run instances degrade to a spliced
-// runtime call through the `Decodable in Cbor` bridge.
-trait Inlinable extends Typeclass:
-  def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Self]): Expr[Self]
-
-  // What a field of this type yields when its key is absent from the map,
-  // mirroring the runtime instances: an abort unless overridden.
-  def absent(tactic: Expr[Tactic[Cbor.Error]])(using Quotes, Type[Self]): Expr[Self] =
-    '{ Cbor.Parsable.missing[Self]()(using $tactic) }
-
 object Inlinable:
   // Generates a monomorphic `Cbor.Parsable` for a case class or a
   // key-discriminated sealed sum at compile time, composed through
   // `Inlinable` instances: nested records, collection loops, variant
   // dispatch and custom leaf parsers all inline into one flat parser.
   inline def parsable[value]: value is Cbor.Parsable =
-    ${ breviloquence.stagedInternal.inlinableParsable[value] }
+    ${breviloquence.stagedInternal.inlinableParsable[value]}
 
   // The structural instance for a case class: reflects `Self` when invoked
   // (no macro — `Type[Self]` arrives with the call).
   def derived[product]: product is Inlinable = ProductInlinable[product]()
+
+  object ForCbor:
+    def derived[value]: ForCbor[value] = ForCbor(Inlinable.derived[value])
 
   // The `derives`-clause carrier: a `Self`-typed typeclass cannot appear in
   // a `derives` clause (it has no type parameters), so `case class Foo(...)
@@ -92,9 +70,6 @@ object Inlinable:
     :   Expr[value] =
 
       delegate0.absent(tactic)
-
-  object ForCbor:
-    def derived[value]: ForCbor[value] = ForCbor(Inlinable.derived[value])
 
   private[breviloquence] final class ProductInlinable[product]() extends Inlinable:
     type Self = product
@@ -129,50 +104,84 @@ object Inlinable:
 
   given int: (Int is Inlinable) = new Inlinable:
     type Self = Int
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Int]): Expr[Int] =
-      '{ $reader.int() }
+      '{$reader.int()}
 
   given long: (Long is Inlinable) = new Inlinable:
     type Self = Long
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Long]): Expr[Long] =
-      '{ $reader.long() }
+      '{$reader.long()}
 
   given double: (Double is Inlinable) = new Inlinable:
     type Self = Double
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Double]): Expr[Double] =
-      '{ $reader.double() }
+      '{$reader.double()}
 
   given float: (Float is Inlinable) = new Inlinable:
     type Self = Float
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Float]): Expr[Float] =
-      '{ $reader.double().toFloat }
+      '{$reader.double().toFloat}
 
   given boolean: (Boolean is Inlinable) = new Inlinable:
     type Self = Boolean
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Boolean]): Expr[Boolean] =
-      '{ $reader.boolean() }
+      '{$reader.boolean()}
 
   given text: (Text is Inlinable) = new Inlinable:
     type Self = Text
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Text]): Expr[Text] =
-      '{ $reader.text() }
+      '{$reader.text()}
 
   given string: (String is Inlinable) = new Inlinable:
     type Self = String
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[String]): Expr[String] =
-      '{ $reader.string() }
+      '{$reader.string()}
 
   given byteString: ((Data) is Inlinable) = new Inlinable:
     type Self = Data
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Data]): Expr[Data] =
-      '{ $reader.byteString() }
+      '{$reader.byteString()}
 
   given cbor: (Cbor is Inlinable) = new Inlinable:
     type Self = Cbor
+
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Cbor]): Expr[Cbor] =
-      '{ $reader.value() }
+      '{$reader.value()}
 
   given iterable: [collection <: Iterable, element]
-  =>  (element0: element is Inlinable)
-  =>  (collection[element] is Inlinable) =
+  =>  ( element0: element is Inlinable )
+  =>  ( collection[element] is Inlinable ) =
     IterableInlinable[element](element0).asInstanceOf[collection[element] is Inlinable]
+
+// The Expr-level counterpart of `Cbor.Parsable`: a typeclass whose methods
+// are macro-time code generators. An instance receives an `Expr` of the
+// reader and returns an `Expr` of the decoded value, which the deriving
+// macro splices directly into its generated parser — so an instance
+// contributes *inlined* code, with no runtime dispatch, no instance arrays
+// and no adapter hops between composed parsers.
+//
+// Instances are ordinary runtime values: code generation is deferred to the
+// `parse` call, which receives the `Quotes` and the `Type` of `Self`, so
+// `derived` needs no macro of its own. At a `Cbor.Inlinable.parsable[T]`
+// expansion, the instance behind each summoned given is obtained *live* by
+// running the implicit search inside an in-macro staging compiler (the
+// prescience mechanism), which composes conditional instances — a collection
+// of a custom element, for example — through ordinary given resolution. The
+// constraint this inherits: an instance (and its type) must be compiled in
+// an earlier run than the expansion; same-run instances degrade to a spliced
+// runtime call through the `Decodable in Cbor` bridge.
+trait Inlinable extends Typeclass:
+  def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Self]): Expr[Self]
+
+  // What a field of this type yields when its key is absent from the map,
+  // mirroring the runtime instances: an abort unless overridden.
+  def absent(tactic: Expr[Tactic[Cbor.Error]])(using Quotes, Type[Self]): Expr[Self] =
+    '{Cbor.Parsable.missing[Self]()(using $tactic)}

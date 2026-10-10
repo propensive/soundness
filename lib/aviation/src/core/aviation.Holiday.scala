@@ -33,8 +33,8 @@
 package aviation
 
 import anticipation.*
-import vacuous.*
 import symbolism.*
+import vacuous.*
 
 object Holiday:
   given comparable: Holiday is Comparable = summon[Date is Comparable].on(_.date)

@@ -53,6 +53,7 @@ object JsonPointer extends Root(""):
 
   given navigable: [ordinal <: Ordinal] => ordinal is Navigable on JsonPointer =
     ordinal => ordinal.n0.show
+
   given admissible: [ordinal <: Ordinal] => ordinal is Admissible on JsonPointer = _ => ()
   given admissible2: [text <: Text] => text is Admissible on JsonPointer = _ => ()
 
@@ -80,7 +81,7 @@ object JsonPointer extends Root(""):
   // and so are rejected as `ExpectedHash`; same-document refs are all OpenAPI's
   // `$ref`s use, and are JSON Pointer fragments per RFC 6901.
   given decodable: (tactic: Tactic[JsonPointer.Error])
-  =>  ((JsonPointer is Decodable in Text)^{tactic}) = text =>
+  =>  ( (JsonPointer is Decodable in Text)^{tactic} ) = text =>
     val string = text.s
 
     if string.isEmpty || string.charAt(0) != '#'

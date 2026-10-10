@@ -42,21 +42,19 @@ import digression.*
 import fulminate.*
 import galilei.*
 import gossamer.*
-import rudiments.seek
 import hellenism.*
 import inimitable.*
 import iridescence.*
 import nomenclature.*
 import prepositional.*
+import rudiments.seek
 import serpentine.*
 import turbulence.*
 import vacuous.*
-
 import errorDiagnostics.stackTracesDiagnostics
+import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.dereferenceSymlinks
 import pathInterfaces.pathOnLinux
-
-import filesystemBackends.javaBaseFilesystem
 
 
 def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using TemporaryDirectory)
@@ -76,7 +74,7 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
   given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
 
   mitigate:
-    case Io.Error(_, _, _, _) => Bytecode.Error(Bytecode.Error.Reason.ClassfileMissing)
+    case Io.Error(_, _, _, _)     => Bytecode.Error(Bytecode.Error.Reason.ClassfileMissing)
     case Truncation.Error(_)      => Bytecode.Error(Bytecode.Error.Reason.ClassfileUnreadable)
 
   . protect:

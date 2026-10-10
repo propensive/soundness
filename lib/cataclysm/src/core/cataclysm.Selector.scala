@@ -35,8 +35,8 @@ package cataclysm
 import anticipation.*
 import contingency.*
 import gossamer.*
-import rudiments.*
 import nomenclature.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
@@ -46,7 +46,8 @@ import vacuous.*
 // `Compound` (simple selectors with no whitespace between them, the tightest).
 
 object SelectorList:
-  given showable: SelectorList is Showable = selectorList => selectorList.selectors.map(_.show).join(t", ")
+  given showable: SelectorList is Showable =
+    selectorList => selectorList.selectors.map(_.show).join(t", ")
 
   given focusable: SelectorList is Focusable:
     def strategy: Text = t"css selector"

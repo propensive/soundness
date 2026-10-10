@@ -38,10 +38,13 @@ import fulminate.*
 
 // A `Probate` that contains *thrown* exceptions escaping fire-and-forget workers spawned within its
 // region — a catch-all distinct from the typed `contingency.trap`, which handles declared *emitted*
-// errors. Its child-fate policy (`cleanup`) is delegated unchanged to the enclosing probate; only the
-// failure branch (`trap`) is overridden. A handled error whose remedy is `Reject` — like one the
-// handler does not match — bubbles to the enclosing containment, so they compose as they nest.
-class Containment(handler: PartialFunction[Error, Remedy]^{scala.caps.any.only[anticipation.Durable]}, outer: SharedProbate) extends Probate:
+// errors. Its child-fate policy (`cleanup`) is delegated unchanged to the enclosing probate; only
+// the failure branch (`trap`) is overridden. A handled error whose remedy is `Reject` — like one
+// the handler does not match — bubbles to the enclosing containment, so they compose as they nest.
+class Containment
+  ( handler: PartialFunction[Error, Remedy]^{scala.caps.any.only[anticipation.Durable]},
+    outer:   SharedProbate )
+extends Probate:
   def cleanup(worker: Worker): Unit = outer.cleanup(worker)
 
   override def trap(worker: Worker, error: Error): Remedy =

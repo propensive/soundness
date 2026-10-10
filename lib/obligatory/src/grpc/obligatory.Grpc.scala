@@ -242,7 +242,8 @@ object Grpc:
         if messages.hasNext then
           // Successive pulls from the same single-owner message iterator.
           // [closure-capture] local recur def pulls same message iterator repeatedly
-          scala.caps.unsafe.unsafeAssumeSeparate(decodeMessage[response](messages.next()) #:: recur())
+          scala.caps.unsafe.unsafeAssumeSeparate
+            ( decodeMessage[response](messages.next()) #:: recur() )
         else
           expectStatus(stream)
           Chain()
@@ -265,6 +266,7 @@ object Grpc:
   // `LengthPrefix` does for the JSON-RPC stream framing.
   object Framing:
     private def gzip(message: Data): Data = Gzip.compression.compress(Chain(message)).read[Data]
+
     private def gunzip(message: Data): Data =
       Gzip.compression.decompress(Chain(message)).read[Data]
 
@@ -284,7 +286,7 @@ object Grpc:
       Array.frozen(header.readable ++ payload.readable)
 
     given framable: (tactic: Tactic[Error])
-    =>  ((Data is Framable by Framing)^{tactic}) = input =>
+    =>  ( (Data is Framable by Framing)^{tactic} ) = input =>
       def truncated(): Nothing =
         abort(Error(Grpc.Status.Internal, t"the gRPC message frame was truncated"))
 
@@ -310,10 +312,10 @@ object Grpc:
                   // Masked before shifting, as in `LengthPrefix.framable`: an unmasked signed
                   // `Byte` sign-extends and corrupts every length of 128 or more.
                   ( flag != 0,
-                    (byte0.asInstanceOf[Byte] & 0xff) << 24
-                      | (byte1.asInstanceOf[Byte] & 0xff) << 16
-                      | (byte2.asInstanceOf[Byte] & 0xff) << 8
-                      | (byte3.asInstanceOf[Byte] & 0xff) )
+                    (byte0.asInstanceOf[Byte] & 0xff) << 24 |
+                      (byte1.asInstanceOf[Byte] & 0xff) << 16 |
+                      (byte2.asInstanceOf[Byte] & 0xff) << 8 |
+                      (byte3.asInstanceOf[Byte] & 0xff) )
 
       Framable.frames[Data]:
         header.let: (compressed, length) =>

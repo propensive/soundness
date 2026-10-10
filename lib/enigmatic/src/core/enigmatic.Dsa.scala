@@ -32,10 +32,10 @@
                                                                                                   */
 package enigmatic
 
-import gastronomy.Signing
 import scala.reflect.Selectable.reflectiveSelectable
 
 import anticipation.*
+import gastronomy.Signing
 
 object Dsa:
   given value: [bits <: 512 | 1024 | 2048 | 3072: ValueOf]

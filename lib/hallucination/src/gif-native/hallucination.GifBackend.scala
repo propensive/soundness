@@ -35,7 +35,8 @@ package hallucination
 import anticipation.*
 import contingency.*
 
-// GIF through the pure Scala codec, used wherever `javax.imageio` is unavailable (Scala.js and WASI).
+// GIF through the pure Scala codec, used wherever `javax.imageio` is unavailable (Scala.js and
+// WASI).
 private[hallucination] object GifBackend:
   def decode(format: Rasterizable, data: Data): Raster raises Raster.Error = GifCodec.decode(data)
   def encode(format: Rasterizable, raster: Raster): Data = GifCodec.encode(raster)

@@ -45,7 +45,7 @@ object Endpoint:
   // inspected forms, so the remote is quoted as `Text` and the port carries whatever marks its
   // own type (`⌗8080` for a `Port`, `8080` for an `Int`).
   given inspectable: [port, endpoint <: Endpoint[port]]
-  =>  (port is Inspectable)
+  =>  ( port is Inspectable )
   =>  endpoint is Inspectable =
     endpoint => t"Endpoint(${endpoint.remote.inspect}:${endpoint.port.inspect})"
 

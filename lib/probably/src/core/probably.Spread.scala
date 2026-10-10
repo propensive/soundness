@@ -34,24 +34,11 @@ package probably
 
 import scala.deriving.*
 
-
 import chiaroscuro.*
-import distillate.*
-import vacuous.*
 import denominative.*
+import distillate.*
 import rudiments.each
-
-// A test spread over the domain of one axis: its body runs once per axis value, and each
-// verdict is recorded at that value’s coordinate of a single named test. A partial body
-// (`{ case … }`) leaves gaps: values it does not define are skipped. Assertion predicates
-// may consider just the result, or the axis value and the result together.
-//
-// The body is stored as a function OF the harness which yields the partial function, not
-// as a partial function over harness-contextual results: reading a root-captured value out
-// of a partial function’s range charges an unusable reach capability, whereas this field
-// reads as an ordinary path capability, exactly like `Test.action`.
-case class Spread[value, result]
-  ( id: Test.Id, axis: Axis[value], action: Harness => (value ~> result) )
+import vacuous.*
 
 object Spread:
   // Pure, as `Test.assert`: a spread's body may not close over a capability.
@@ -112,13 +99,17 @@ object Spread:
             true,
             false )
 
-// A test spread over the domains of two axes: one cell per combination the body defines,
-// rendered as a grid with gaps at undefined combinations.
-case class Spread2[left, right, result]
-  ( id:     Test.Id,
-    first:  Axis[left],
-    second: Axis[right],
-    action: Harness => (((left, right)) ~> result) )
+// A test spread over the domain of one axis: its body runs once per axis value, and each
+// verdict is recorded at that value’s coordinate of a single named test. A partial body
+// (`{ case … }`) leaves gaps: values it does not define are skipped. Assertion predicates
+// may consider just the result, or the axis value and the result together.
+//
+// The body is stored as a function OF the harness which yields the partial function, not
+// as a partial function over harness-contextual results: reading a root-captured value out
+// of a partial function’s range charges an unusable reach capability, whereas this field
+// reads as an ordinary path capability, exactly like `Test.action`.
+case class Spread[value, result]
+  ( id: Test.Id, axis: Axis[value], action: Harness => (value ~> result) )
 
 object Spread2:
   extension [left, right, result](spread: Spread2[left, right, result])
@@ -182,3 +173,11 @@ object Spread2:
               coordinates,
               true,
               false )
+
+// A test spread over the domains of two axes: one cell per combination the body defines,
+// rendered as a grid with gaps at undefined combinations.
+case class Spread2[left, right, result]
+  ( id:     Test.Id,
+    first:  Axis[left],
+    second: Axis[right],
+    action: Harness => (((left, right)) ~> result) )

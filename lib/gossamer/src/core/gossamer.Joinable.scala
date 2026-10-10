@@ -100,8 +100,8 @@ object Joinable:
   // can always be passed as parts.
   object Assembly extends Assembly.Fallback:
     given joinable: [self, element, textual >: element]
-    =>  (joinable: textual is Joinable)
-    =>  ((self is Assembly by element to textual) { type Part = textual }) =
+    =>  ( joinable: textual is Joinable )
+    =>  ( (self is Assembly by element to textual) { type Part = textual } ) =
       new Assembly:
         type Self = self
         type Operand = element
@@ -112,8 +112,8 @@ object Joinable:
 
     trait Fallback:
       given interleaving: [self, element, result]
-      =>  (reshapable: self is Reshapable by element to result)
-      =>  ((self is Assembly by element to result) { type Part = element }) =
+      =>  ( reshapable: self is Reshapable by element to result )
+      =>  ( (self is Assembly by element to result) { type Part = element } ) =
         new Assembly:
           type Self = self
           type Operand = element

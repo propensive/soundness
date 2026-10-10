@@ -77,9 +77,14 @@ object internal:
             // side (the expected value) is a closed term safe to splice. A projection such as
             // `_.field == x` matches neither case and yields no contrast.
             expression match
-              case Apply(Select(Ident(`a`), "=="), scala.collection.immutable.List(term)) => Some(term.asExpr)
-              case Apply(Select(term, "=="), scala.collection.immutable.List(Ident(`a`))) => Some(term.asExpr)
-              case other                                       => None
+              case Apply(Select(Ident(`a`), "=="), scala.collection.immutable.List(term)) =>
+                Some(term.asExpr)
+
+              case Apply(Select(term, "=="), scala.collection.immutable.List(Ident(`a`))) =>
+                Some(term.asExpr)
+
+              case other =>
+                None
 
           case other =>
             None
@@ -98,9 +103,9 @@ object internal:
         // test body carries an effect type, or the type is otherwise not contrastable).
         // The non-contrast assertion passes no expectation (`Unset`), so it constructs no
         // `Contrastable` at all. This avoids both the capture-checking box that the `inline`
-        // `Contrastable.nothing[test]` mints when `test` is a pure type (`left.decompose.text: Text`
-        // inlined into the splice) and the out-of-scope-given failure that summoning a *derived*
-        // `Contrastable` (e.g. a sum type's) would cause at the splice site.
+        // `Contrastable.nothing[test]` mints when `test` is a pure type (`left.decompose.text:
+        // Text` inlined into the splice) and the out-of-scope-given failure that summoning a
+        // *derived* `Contrastable` (e.g. a sum type's) would cause at the splice site.
         val plain: Expr[result] =
           ' {
               assertion[test, test, report, result]
@@ -224,6 +229,7 @@ object internal:
                 if selected then
                   expectation.let: pair =>
                     val (exp, contrast) = pair
+
                     inc2.include
                       ( runner.report,
                         test.id,
@@ -234,7 +240,8 @@ object internal:
                             contrast.juxtaposition(exp, value) ) )
 
                   if !map.nil
-                  then inc2.include(runner.report, test.id, coordinates, Verdict.Detail.Captures(map))
+                  then
+                    inc2.include(runner.report, test.id, coordinates, Verdict.Detail.Captures(map))
 
                 if aspirational then Verdict.AspireFail(duration) else Verdict.Fail(duration)
             catch case error: Exception =>
@@ -253,4 +260,5 @@ object internal:
     else if discard && verified && runner.queued then
       runner.defer(test.id, () => execute())
       ().asInstanceOf[result]
-    else execute()
+    else
+      execute()
