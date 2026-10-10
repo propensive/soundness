@@ -763,29 +763,26 @@ trait Tel2 extends Tel3:
   =>  ( absence: distillate.Decodable.Absence in Tel,
         fault:   distillate.Decodable.Fault in Tel,
         tactic:  Tactic[Tel.Error] )
-  =>  ( decodable0: => (inner is Tel.Decodable)^ )
-  =>  value is Tel.Decodable =
-    // [by-name-capture] by-name inner decoder cannot be named in a capture set
-    // Sealed per the codec-thunk pattern: the instance retains the resolution-scoped tactic
-    // for the lenient-faults path, as every other format's `optional` does.
-    // [field-purity] codec-thunk seal retaining resolution-scoped tactic
-    caps.unsafe.unsafeAssumePure:
-      new Tel.Decodable:
-        type Self = value
-        def shape(): Morphology = Morphology.Opt(decodable0.shape())
-        override def nature: Tel.Nature = decodable0.nature
-        override def optional: Boolean = !absence.strict
+  =>  ( consume decodable0: => (inner is Tel.Decodable)^ )
+  =>  ((value is Tel.Decodable)^) =
+    // Captures the tactic for the lenient-faults path, and the by-name inner decoder, which
+    // cannot be named in a capture set: hence a fresh capture rather than `^{tactic}`.
+    new Tel.Decodable:
+      type Self = value
+      def shape(): Morphology = Morphology.Opt(decodable0.shape())
+      override def nature: Tel.Nature = decodable0.nature
+      override def optional: Boolean = !absence.strict
 
-        override def absent()(using Tactic[Tel.Error]): value =
-          if absence.strict then abort(Tel.Error(Tel.Error.Reason.Absent)) else Unset
+      override def absent()(using Tactic[Tel.Error]): value =
+        if absence.strict then abort(Tel.Error(Tel.Error.Reason.Absent)) else Unset
 
-        def decoded(telVal: Tel): value =
-          if telVal.childCompounds.nil && telVal.atomTexts.nil then
-            if absence.strict then tactic.abort(Tel.Error(Tel.Error.Reason.Absent)) else Unset
-          else if fault.strict then
-            decodable0.decoded(telVal)
-          else
-            tactic.tolerate(decodable0.decoded(telVal)).or(Unset)
+      def decoded(telVal: Tel): value =
+        if telVal.childCompounds.nil && telVal.atomTexts.nil then
+          if absence.strict then tactic.abort(Tel.Error(Tel.Error.Reason.Absent)) else Unset
+        else if fault.strict then
+          decodable0.decoded(telVal)
+        else
+          tactic.tolerate(decodable0.decoded(telVal)).or(Unset)
 
   // Collection support (aligned with `#1291`) — a `List`/`Set` encodes to a
   // Document-rooted Tel whose children are the elements' compounds; the product
@@ -810,40 +807,32 @@ trait Tel2 extends Tel3:
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
-        element0:  => (element is Tel.Decodable)^ )
+        consume element0:  => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  collection[element] is Tel.Decodable =
-    // [by-name-capture] by-name element decoder cannot be named in a capture set
-    caps.unsafe.unsafeAssumePure:
-      RepeatedDecodable[collection[element], element](element0, () => factory.newBuilder)
+  =>  ((collection[element] is Tel.Decodable)^) =
+    RepeatedDecodable[collection[element], element](element0, () => factory.newBuilder)
 
   // Alias counterparts: the opaque prelude collections do not conform to `Iterable`, so each
   // decodes at the underlying stdlib type and casts.
   given listDecodable: [list <: List, element]
-  =>  ( element0: => (element is Tel.Decodable)^ )
+  =>  ( consume element0: => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  list[element] is Tel.Decodable =
-    // [by-name-capture] by-name element decoder cannot be named in a capture set
-    caps.unsafe.unsafeAssumePure:
-      RepeatedDecodable[list[element], element]
-        ( element0, () => scala.collection.immutable.List.newBuilder[element] )
+  =>  ((list[element] is Tel.Decodable)^) =
+    RepeatedDecodable[list[element], element]
+      ( element0, () => scala.collection.immutable.List.newBuilder[element] )
 
   given setDecodable: [set <: Set, element]
-  =>  ( element0: => (element is Tel.Decodable)^ )
+  =>  ( consume element0: => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  set[element] is Tel.Decodable =
-    // [by-name-capture] by-name element decoder cannot be named in a capture set
-    caps.unsafe.unsafeAssumePure:
-      RepeatedDecodable[set[element], element]
-        ( element0, () => scala.collection.immutable.Set.newBuilder[element] )
+  =>  ((set[element] is Tel.Decodable)^) =
+    RepeatedDecodable[set[element], element]
+      ( element0, () => scala.collection.immutable.Set.newBuilder[element] )
 
   given seriesDecodable: [sequence <: Sequence, element]
-  =>  ( element0: => (element is Tel.Decodable)^ )
+  =>  ( consume element0: => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  sequence[element] is Tel.Decodable =
-    // [by-name-capture] by-name element decoder cannot be named in a capture set
-    caps.unsafe.unsafeAssumePure:
-      RepeatedDecodable[sequence[element], element](element0, () => Vector.newBuilder[element])
+  =>  ((sequence[element] is Tel.Decodable)^) =
+    RepeatedDecodable[sequence[element], element](element0, () => Vector.newBuilder[element])
 
   // A `Map` encodes as a sequence of `entries` compounds, each carrying a `key`
   // and a `value` child field. As with other collections the product encoder
@@ -860,28 +849,26 @@ trait Tel2 extends Tel3:
       Tel.compound(t"", Array.empty, entryList.to[Array])
 
   given mapDecodable: [key, value]
-  =>  ( keyCodec:   => (key is Tel.Decodable)^,
-        valueCodec: => (value is Tel.Decodable)^,
+  =>  ( keyCodec:   (key is Tel.Decodable)^,
+        valueCodec: (value is Tel.Decodable)^,
         tactic:     Tactic[Tel.Error] )
-  =>  Map[key, value] is Tel.Decodable =
-    // [by-name-capture] by-name key and value decoders cannot be named in a capture set
-    caps.unsafe.unsafeAssumePure:
-      val shape: () -> Morphology =
-        // [by-name-capture] shape thunk over by-name decoders
-        caps.unsafe.unsafeAssumePure(() => Morphology.Dict(keyCodec.shape(), valueCodec.shape()))
+  =>  ((Map[key, value] is Tel.Decodable)^{keyCodec, valueCodec, tactic}) =
+    // The shape is built eagerly: the codecs are strict parameters, so no recursive knot needs
+    // tying, and a thunk over a plain value captures neither of them.
+    val shape: Morphology = Morphology.Dict(keyCodec.shape(), valueCodec.shape())
 
-      Tel.Decodable(shape): telVal =>
-        var accumulator = Map.empty[key, value]
+    Tel.Decodable(() => shape): telVal =>
+      var accumulator = Map.empty[key, value]
 
-        for entry <- telVal.fields(t"entries") do
-          // A missing `key`/`value` child routes through `absent()` rather
-          // than decoding an empty node, so flag-natured values report their
-          // absent form (`false`) instead of misreading emptiness.
-          val k = entry.field(t"key").lay(keyCodec.absent())(keyCodec.decoded(_))
-          val v = entry.field(t"value").lay(valueCodec.absent())(valueCodec.decoded(_))
-          accumulator = accumulator.define(k, v)
+      for entry <- telVal.fields(t"entries") do
+        // A missing `key`/`value` child routes through `absent()` rather
+        // than decoding an empty node, so flag-natured values report their
+        // absent form (`false`) instead of misreading emptiness.
+        val k = entry.field(t"key").lay(keyCodec.absent())(keyCodec.decoded(_))
+        val v = entry.field(t"value").lay(valueCodec.absent())(valueCodec.decoded(_))
+        accumulator = accumulator.define(k, v)
 
-        accumulator
+      accumulator
 
   // Helpers used by encoders to construct Tel values.
 

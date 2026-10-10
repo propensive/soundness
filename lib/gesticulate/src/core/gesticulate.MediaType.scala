@@ -55,13 +55,11 @@ object MediaType:
     mt => t"${mt.basic}${mt.parameters.map { (p: (Text, Text)) => t"; ${p(0)}=${p(1)}" }.join}"
 
   given encodable: MediaType is Encodable in Text = _.show
-  // Laundered pure: the resolution-scoped tactic shares the instance's given-resolution
-  // lifetime, and wisteria-derived codecs summon `Decodable in Text` field instances
-  // against pure expected types inside macro splices (see rep/DECISIONS.md).
+  // Captures the tactic it raises through.
   given decodable: (tactic: Tactic[MediaType.Error])
-  =>  MediaType is Decodable in Text =
-    // [field-purity] given text decodable over resolution-scoped tactic
-    caps.unsafe.unsafeAssumePure(Media.parse(_))
+  =>  ((MediaType is Decodable in Text)^{tactic}) =
+
+    Media.parse(_)
 
   def unapply(value: Text): Option[MediaType] = safely(Media.parse(value)).option
 

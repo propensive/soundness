@@ -42,15 +42,13 @@ import vacuous.*
 
 object Requirable:
   given decodable: [value] => (decodable: Tactic[Hazard]^ ?=> value is Decodable in Text)
-  =>  value is Requirable =
+  =>  ((value is Requirable)^{decodable}) =
 
     // The `Decodable` is resolved against `throwUnsafely` (a label-free tactic) rather than the
     // ambient `safely`-scoped `OptionalTactic`, so the decoded value does not retain that scoped
-    // capability — mirroring `Extractable.decodable`. Laundered pure: the retained context
-    // function shares the instance's given-resolution lifetime (the codec-thunk seal pattern).
-    // [field-purity] codec-thunk seal on given capturing resolution tactic
-    caps.unsafe.unsafeAssumePure:
-      () => safely(decodable(using strategies.throwUnsafely).decoded("".tt)).absent
+    // capability — mirroring `Extractable.decodable`. It captures the context function it decodes
+    // with.
+    () => safely(decodable(using strategies.throwUnsafely).decoded("".tt)).absent
 
 trait Requirable extends Typeclass:
   protected def isRequired(): Boolean

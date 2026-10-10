@@ -46,13 +46,10 @@ import vacuous.*
 object Extractable:
   given decodable: [text <: Text, result]
   =>  ( decodable: Tactic[Hazard]^ ?=> result is Decodable in Text )
-  =>  text is Extractable to result =
+  =>  ((text is Extractable to result)^{decodable}) =
 
-    // Laundered pure: the retained context function shares the instance's given-resolution
-    // lifetime (the codec-thunk seal pattern; see rep/DECISIONS.md).
-    // [field-purity] codec-thunk seal on given capturing resolution tactic
-    caps.unsafe.unsafeAssumePure:
-      value => safely(decodable(using strategies.throwUnsafely).decoded(value))
+    // Captures the context function it decodes with.
+    value => safely(decodable(using strategies.throwUnsafely).decoded(value))
 
   given optional: [result: Extractable]
   =>  Optional[result] is Extractable to result.Result =

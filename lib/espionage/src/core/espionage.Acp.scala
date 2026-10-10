@@ -161,21 +161,18 @@ object Acp:
       case StopReason.Refusal         => t"refusal".in[Json]
       case StopReason.Cancelled       => t"cancelled".in[Json]
 
-    given decodable: StopReason is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the decode cannot thread a
-      // caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((StopReason is Json.Decodable)^{tactic}) =
 
-      // [field-purity] given decodable sealed pure with throwing tactic
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Str): json =>
-          json.as[Text] match
-            case t"end_turn"          => StopReason.EndTurn
-            case t"max_tokens"        => StopReason.MaxTokens
-            case t"max_turn_requests" => StopReason.MaxTurnRequests
-            case t"refusal"           => StopReason.Refusal
-            case t"cancelled"         => StopReason.Cancelled
-            case _                    => abort(Json.Error(Json.Error.Reason.OutOfRange))
+      Json.Decodable(Morphology.Str): json =>
+        json.as[Text] match
+          case t"end_turn"          => StopReason.EndTurn
+          case t"max_tokens"        => StopReason.MaxTokens
+          case t"max_turn_requests" => StopReason.MaxTurnRequests
+          case t"refusal"           => StopReason.Refusal
+          case t"cancelled"         => StopReason.Cancelled
+          case _                    => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   // Why a prompt turn ended: the result of `session/prompt`.
   enum StopReason:
@@ -202,24 +199,21 @@ object Acp:
       case ToolKind.Fetch   => t"fetch".in[Json]
       case ToolKind.Other   => t"other".in[Json]
 
-    given decodable: ToolKind is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the decode cannot thread a
-      // caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((ToolKind is Json.Decodable)^{tactic}) =
 
-      // [field-purity] given decodable sealed pure with throwing tactic
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Str): json =>
-          json.as[Text] match
-            case t"read"    => ToolKind.Read
-            case t"edit"    => ToolKind.Edit
-            case t"delete"  => ToolKind.Delete
-            case t"move"    => ToolKind.Move
-            case t"search"  => ToolKind.Search
-            case t"execute" => ToolKind.Execute
-            case t"think"   => ToolKind.Think
-            case t"fetch"   => ToolKind.Fetch
-            case _          => ToolKind.Other
+      Json.Decodable(Morphology.Str): json =>
+        json.as[Text] match
+          case t"read"    => ToolKind.Read
+          case t"edit"    => ToolKind.Edit
+          case t"delete"  => ToolKind.Delete
+          case t"move"    => ToolKind.Move
+          case t"search"  => ToolKind.Search
+          case t"execute" => ToolKind.Execute
+          case t"think"   => ToolKind.Think
+          case t"fetch"   => ToolKind.Fetch
+          case _          => ToolKind.Other
 
   enum ToolKind:
     case Read, Edit, Delete, Move, Search, Execute, Think, Fetch, Other
@@ -232,21 +226,18 @@ object Acp:
       case ToolCallStatus.Failed     => t"failed".in[Json]
       case ToolCallStatus.Cancelled  => t"cancelled".in[Json]
 
-    given decodable: ToolCallStatus is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the decode cannot thread a
-      // caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((ToolCallStatus is Json.Decodable)^{tactic}) =
 
-      // [field-purity] given decodable sealed pure with throwing tactic
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Str): json =>
-          json.as[Text] match
-            case t"pending"     => ToolCallStatus.Pending
-            case t"in_progress" => ToolCallStatus.InProgress
-            case t"completed"   => ToolCallStatus.Completed
-            case t"failed"      => ToolCallStatus.Failed
-            case t"cancelled"   => ToolCallStatus.Cancelled
-            case _              => abort(Json.Error(Json.Error.Reason.OutOfRange))
+      Json.Decodable(Morphology.Str): json =>
+        json.as[Text] match
+          case t"pending"     => ToolCallStatus.Pending
+          case t"in_progress" => ToolCallStatus.InProgress
+          case t"completed"   => ToolCallStatus.Completed
+          case t"failed"      => ToolCallStatus.Failed
+          case t"cancelled"   => ToolCallStatus.Cancelled
+          case _              => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum ToolCallStatus:
     case Pending, InProgress, Completed, Failed, Cancelled
@@ -263,19 +254,16 @@ object Acp:
       case content: ToolDiff     => typeTag.rewrite(t"diff",     content.in[Json])
       case content: ToolTerminal => typeTag.rewrite(t"terminal", content.in[Json])
 
-    given decodable: ToolCallContent is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the decode cannot thread a
-      // caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((ToolCallContent is Json.Decodable)^{tactic}) =
 
-      // [field-purity] given decodable sealed pure with throwing tactic
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Any): json =>
-          json.`type`.as[Text] match
-            case "content"  => json.as[ToolContent]
-            case "diff"     => json.as[ToolDiff]
-            case "terminal" => json.as[ToolTerminal]
-            case _          => abort(Json.Error(Json.Error.Reason.OutOfRange))
+      Json.Decodable(Morphology.Any): json =>
+        json.`type`.as[Text] match
+          case "content"  => json.as[ToolContent]
+          case "diff"     => json.as[ToolDiff]
+          case "terminal" => json.as[ToolTerminal]
+          case _          => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   // What a tool call produced, as the agent reports it: ordinary content, a structured file
   // diff, or a reference to a terminal the agent runs a command in.
@@ -353,19 +341,16 @@ object Acp:
       case PlanPriority.Medium => t"medium".in[Json]
       case PlanPriority.Low    => t"low".in[Json]
 
-    given decodable: PlanPriority is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the decode cannot thread a
-      // caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((PlanPriority is Json.Decodable)^{tactic}) =
 
-      // [field-purity] given decodable sealed pure with throwing tactic
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Str): json =>
-          json.as[Text] match
-            case t"high"   => PlanPriority.High
-            case t"medium" => PlanPriority.Medium
-            case t"low"    => PlanPriority.Low
-            case _         => abort(Json.Error(Json.Error.Reason.OutOfRange))
+      Json.Decodable(Morphology.Str): json =>
+        json.as[Text] match
+          case t"high"   => PlanPriority.High
+          case t"medium" => PlanPriority.Medium
+          case t"low"    => PlanPriority.Low
+          case _         => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum PlanPriority:
     case High, Medium, Low
@@ -376,19 +361,16 @@ object Acp:
       case PlanStatus.InProgress => t"in_progress".in[Json]
       case PlanStatus.Completed  => t"completed".in[Json]
 
-    given decodable: PlanStatus is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the decode cannot thread a
-      // caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((PlanStatus is Json.Decodable)^{tactic}) =
 
-      // [field-purity] given decodable sealed pure with throwing tactic
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Str): json =>
-          json.as[Text] match
-            case t"pending"     => PlanStatus.Pending
-            case t"in_progress" => PlanStatus.InProgress
-            case t"completed"   => PlanStatus.Completed
-            case _              => abort(Json.Error(Json.Error.Reason.OutOfRange))
+      Json.Decodable(Morphology.Str): json =>
+        json.as[Text] match
+          case t"pending"     => PlanStatus.Pending
+          case t"in_progress" => PlanStatus.InProgress
+          case t"completed"   => PlanStatus.Completed
+          case _              => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum PlanStatus:
     case Pending, InProgress, Completed
@@ -417,24 +399,21 @@ object Acp:
 
       case update: CurrentModeUpdate => typeTag.rewrite(t"current_mode_update", update.in[Json])
 
-    given decodable: SessionUpdate is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the decode cannot thread a
-      // caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((SessionUpdate is Json.Decodable)^{tactic}) =
 
-      // [field-purity] given decodable sealed pure with throwing tactic
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Any): json =>
-          json.sessionUpdate.as[Text] match
-            case "user_message_chunk"        => json.as[UserMessageChunk]
-            case "agent_message_chunk"       => json.as[AgentMessageChunk]
-            case "agent_thought_chunk"       => json.as[AgentThoughtChunk]
-            case "tool_call"                 => json.as[ToolCall]
-            case "tool_call_update"          => json.as[ToolCallUpdate]
-            case "plan"                      => json.as[Plan]
-            case "available_commands_update" => json.as[AvailableCommandsUpdate]
-            case "current_mode_update"       => json.as[CurrentModeUpdate]
-            case _                           => abort(Json.Error(Json.Error.Reason.OutOfRange))
+      Json.Decodable(Morphology.Any): json =>
+        json.sessionUpdate.as[Text] match
+          case "user_message_chunk"        => json.as[UserMessageChunk]
+          case "agent_message_chunk"       => json.as[AgentMessageChunk]
+          case "agent_thought_chunk"       => json.as[AgentThoughtChunk]
+          case "tool_call"                 => json.as[ToolCall]
+          case "tool_call_update"          => json.as[ToolCallUpdate]
+          case "plan"                      => json.as[Plan]
+          case "available_commands_update" => json.as[AvailableCommandsUpdate]
+          case "current_mode_update"       => json.as[CurrentModeUpdate]
+          case _                           => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   // One `session/update` notification: everything an agent reports about a turn as it runs,
   // discriminated on the wire by its `sessionUpdate` member.
@@ -504,20 +483,17 @@ object Acp:
       case PermissionOptionKind.RejectOnce   => t"reject_once".in[Json]
       case PermissionOptionKind.RejectAlways => t"reject_always".in[Json]
 
-    given decodable: PermissionOptionKind is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the decode cannot thread a
-      // caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((PermissionOptionKind is Json.Decodable)^{tactic}) =
 
-      // [field-purity] given decodable sealed pure with throwing tactic
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Str): json =>
-          json.as[Text] match
-            case t"allow_once"    => PermissionOptionKind.AllowOnce
-            case t"allow_always"  => PermissionOptionKind.AllowAlways
-            case t"reject_once"   => PermissionOptionKind.RejectOnce
-            case t"reject_always" => PermissionOptionKind.RejectAlways
-            case _                => abort(Json.Error(Json.Error.Reason.OutOfRange))
+      Json.Decodable(Morphology.Str): json =>
+        json.as[Text] match
+          case t"allow_once"    => PermissionOptionKind.AllowOnce
+          case t"allow_always"  => PermissionOptionKind.AllowAlways
+          case t"reject_once"   => PermissionOptionKind.RejectOnce
+          case t"reject_always" => PermissionOptionKind.RejectAlways
+          case _                => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   enum PermissionOptionKind:
     case AllowOnce, AllowAlways, RejectOnce, RejectAlways
@@ -544,18 +520,15 @@ object Acp:
         case Cancelled =>
           typeTag.rewrite(t"cancelled", Map[Text, Json]().in[Json])
 
-    given decodable: RequestPermissionOutcome is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the decode cannot thread a
-      // caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((RequestPermissionOutcome is Json.Decodable)^{tactic}) =
 
-      // [field-purity] given decodable sealed pure with throwing tactic
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Any): json =>
-          json.outcome.as[Text] match
-            case "selected"  => Selected(json.optionId.as[Text])
-            case "cancelled" => Cancelled
-            case _           => abort(Json.Error(Json.Error.Reason.OutOfRange))
+      Json.Decodable(Morphology.Any): json =>
+        json.outcome.as[Text] match
+          case "selected"  => Selected(json.optionId.as[Text])
+          case "cancelled" => Cancelled
+          case _           => abort(Json.Error(Json.Error.Reason.OutOfRange))
 
   // The user's answer to a permission request: one of the offered options, or `Cancelled` — which
   // is also the mandatory answer to every request still pending when its turn is cancelled.

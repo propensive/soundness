@@ -263,11 +263,12 @@ trait Json2 extends Json3:
   // then decode. Lives at this priority so `object Json`'s direct-parsing
   // `aggregableParsed` wins whenever the value has a `Json.Parsable`; when it
   // does not (all pre-`Parsable` code), this resolves exactly as before.
-  // Sealed like `Json.aggregable`; see the comment there.
   given aggregableDirect: [value: distillate.Decodable in Json]
   =>  (tactic: Tactic[Parse.Error], jsonTactic: Tactic[Json.Error], tracking: PositionTracking)
   =>  ((value in Json) is Aggregable by Data) =
 
+    // Sealed: besides its tactics, the instance reaches `Json` through this given-priority
+    // trait, whose `this` the checker cannot see is pure.
     // [field-purity] given Aggregable codec over tactic, codec-thunk seal
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
@@ -1369,20 +1370,20 @@ object Json extends Json2, Dynamic:
   object Ast extends Format:
     def name: Text = "JSON"
 
-    // Sealed per the codec-thunk pattern (see `Json.aggregable` and rep/DECISIONS.md).
-    given parserAggregable: Tactic[Parse.Error] => Json.Ast is Aggregable by Data =
-      // [field-purity] given Aggregable codec over tactic, codec-thunk seal
-      caps.unsafe.unsafeAssumePure:
-        new Aggregable:
-          type Self = Json.Ast
-          type Operand = Data
+    // Captures the tactic it raises through, as `Json.aggregable` does.
+    given parserAggregable: (tactic: Tactic[Parse.Error])
+    =>  ((Json.Ast is Aggregable by Data)^{tactic}) =
 
-          // The parser consumes an `Iterator`, which only the stdlib view of a `Chain` offers.
-          def aggregate(source: Chain[Data]): Json.Ast = Json.Ast.parse(source.stdlib.iterator)
-          override def accept(stream: (Stream[Data] over Credit)^): Json.Ast =
-            // See `readJson`: the non-consume `accept` signature crosses to the
-            // consuming parser as a neutral reference.
-            Json.Ast.parse(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^])
+      new Aggregable:
+        type Self = Json.Ast
+        type Operand = Data
+
+        // The parser consumes an `Iterator`, which only the stdlib view of a `Chain` offers.
+        def aggregate(source: Chain[Data]): Json.Ast = Json.Ast.parse(source.stdlib.iterator)
+        override def accept(stream: (Stream[Data] over Credit)^): Json.Ast =
+          // See `readJson`: the non-consume `accept` signature crosses to the
+          // consuming parser as a neutral reference.
+          Json.Ast.parse(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^])
 
     // `Json.Ast` is an opaque union of primitives and arrays, so there is no reflection to derive
     // from, and its `Showable` (below) needs a `Formatting` which a debugger has no way to supply.
@@ -2866,63 +2867,55 @@ object Json extends Json2, Dynamic:
     given Formatting = Formatting(Unset, false)
     json.root.show
 
-  // Laundered pure per the codec-thunk seal pattern (see the primitive codecs above and
-  // rep/DECISIONS.md): the resolution-scoped tactic shares the instance's given-resolution
-  // lifetime, and a capturing instance cannot be expressed via `new Aggregable` (its pure
-  // base class forbids captured references in method bodies).
+  // Captures the parse tactic it raises through, and declares so.
   given aggregable: (tactic: Tactic[Parse.Error], tracking: PositionTracking)
-  =>  Json is Aggregable by Data =
-    // [field-purity] given Aggregable codec over tactic, codec-thunk seal
-    caps.unsafe.unsafeAssumePure:
-      new Aggregable:
-        type Self = Json
-        type Operand = Data
+  =>  ((Json is Aggregable by Data)^{tactic}) =
 
-        // The parser consumes an `Iterator`, which only the stdlib view of a `Chain` offers.
-        def aggregate(bytes: Chain[Data]): Json = readJson(bytes.stdlib.iterator)
-        override def accept(stream: (Stream[Data] over Credit)^): Json = readJson(stream)
+    new Aggregable:
+      type Self = Json
+      type Operand = Data
+
+      // The parser consumes an `Iterator`, which only the stdlib view of a `Chain` offers.
+      def aggregate(bytes: Chain[Data]): Json = readJson(bytes.stdlib.iterator)
+      override def accept(stream: (Stream[Data] over Credit)^): Json = readJson(stream)
 
   // Direct parsing: when the value knows how to consume JSON tokens itself,
   // the AST is never materialized. Declared here (not in `Json2`, where the
   // `Decodable`-based `aggregableDirect` lives) so it wins whenever a
   // `Json.Parsable` exists, and is otherwise inapplicable — existing code
-  // resolves exactly as before. Sealed like `aggregable` above.
+  // resolves exactly as before. Captures what it parses with, like `aggregable` above.
   given aggregableParsed: [value]
   =>  (parsable: (value is Json.Parsable)^)
   =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking)
-  =>  ((value in Json) is Aggregable by Data) =
+  =>  (((value in Json) is Aggregable by Data)^{parsable, tactic}) =
 
-    // [field-purity] given Aggregable codec over parsable and tactic
-    caps.unsafe.unsafeAssumePure:
-      new Aggregable:
-        type Self = value in Json
-        type Operand = Data
+    new Aggregable:
+      type Self = value in Json
+      type Operand = Data
 
-        def aggregate(bytes: Chain[Data]): value in Json =
-          // A single in-memory block — the common case — skips the iterator
-          // plumbing entirely.
-          // The single-block fast path peeks at the `Chain`'s head and tail, and the general
-          // path hands the parser an `Iterator`; neither has a native counterpart.
-          if !bytes.nil && bytes.stdlib.tail.isEmpty
-          then parseDirect(bytes.stdlib.head, parsable).asInstanceOf[value in Json]
-          else parseDirect(bytes.stdlib.iterator, parsable).asInstanceOf[value in Json]
+      def aggregate(bytes: Chain[Data]): value in Json =
+        // A single in-memory block — the common case — skips the iterator
+        // plumbing entirely.
+        // The single-block fast path peeks at the `Chain`'s head and tail, and the general
+        // path hands the parser an `Iterator`; neither has a native counterpart.
+        if !bytes.nil && bytes.stdlib.tail.isEmpty
+        then parseDirect(bytes.stdlib.head, parsable).asInstanceOf[value in Json]
+        else parseDirect(bytes.stdlib.iterator, parsable).asInstanceOf[value in Json]
 
-        override def accept(stream: (Stream[Data] over Credit)^): value in Json =
-          parseDirect(stream, parsable).asInstanceOf[value in Json]
+      override def accept(stream: (Stream[Data] over Credit)^): value in Json =
+        parseDirect(stream, parsable).asInstanceOf[value in Json]
 
   // Whole-`Data` direct read: when the entire content is already in hand,
   // parse it in place rather than wrapping it in a one-element stream —
   // the `Readable.dataData` precedent. Concrete in `Data`, so it beats the
-  // composed `dataToData` pipeline by specificity. Sealed like
+  // composed `dataToData` pipeline by specificity. Captures what it parses with, like
   // `aggregableParsed` above.
   given readableParsed: [value]
   =>  (parsable: (value is Json.Parsable)^)
   =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking)
-  =>  (Data is Readable to (value in Json)) =
+  =>  ((Data is Readable to (value in Json))^{parsable, tactic}) =
 
-    // [field-purity] given Readable codec over parsable and tactic
-    caps.unsafe.unsafeAssumePure:
-      data => parseDirect(data, parsable).asInstanceOf[value in Json]
+    data => parseDirect(data, parsable).asInstanceOf[value in Json]
 
   given showable: Formatting => Json is Showable = _.root.show
 
@@ -3018,10 +3011,9 @@ object Json extends Json2, Dynamic:
       text => Chain(text.in[Data](using codepages.utf8Codepage)).read[Json]
 
   given instantiable: (tactic: Tactic[Parse.Error])
-  =>  Json is Instantiable across HttpRequests from Text =
-    // [field-purity] given instantiable over resolution-scoped tactic
-    caps.unsafe.unsafeAssumePure:
-      text => Chain(text.in[Data](using codepages.utf8Codepage)).read[Json]
+  =>  ((Json is Instantiable across HttpRequests from Text)^{tactic}) =
+
+    text => Chain(text.in[Data](using codepages.utf8Codepage)).read[Json]
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Json)*): Json =
     val keys: Array[String]^{} = Array.from(elements.map(_(0))).asInstanceOf[Array[String]^{}]

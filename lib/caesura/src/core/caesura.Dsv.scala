@@ -107,23 +107,21 @@ object Dsv extends Dsv2:
         format:  Dsv.Format,
         tactic:  Tactic[Dsv.Error] )
   =>  ( decodable: (inner is Decodable in Dsv)^ )
-  =>  value is Decodable in Dsv =
-    // Laundered pure per the codec-thunk seal pattern, like the cell decoders above (see
-    // rep/DECISIONS.md). The inner decoder is by value, not by name: a row's fields are flat
+  =>  ((value is Decodable in Dsv)^{tactic, decodable}) =
+    // Captures its tactic and inner decoder, like the cell decoders above. The inner decoder is
+    // by value, not by name: a row's fields are flat
     // (a recursive product would have infinite width), so nothing needs deferring, and a
     // deferred thunk would alias the tactic it closes over with the `tactic` parameter — a
     // separation failure under a tracked tactic. The `optionalityOptions` policies vary
     // either side: a strict absence raises `Absent`, and lenient faults decode the cell under
     // `tactic.tolerate`.
-    // [field-purity] row decoder given seals resolution-scoped tactic
-    caps.unsafe.unsafeAssumePure:
-      row =>
-        if row.data.length == 0 then
-          if absence.strict then abort(Dsv.Error(format, Dsv.Error.Reason.Absent)) else Unset
-        else if fault.strict then
-          decodable.decoded(row)
-        else
-          tactic.tolerate(decodable.decoded(row)).or(Unset)
+    row =>
+      if row.data.length == 0 then
+        if absence.strict then abort(Dsv.Error(format, Dsv.Error.Reason.Absent)) else Unset
+      else if fault.strict then
+        decodable.decoded(row)
+      else
+        tactic.tolerate(decodable.decoded(row)).or(Unset)
 
   given encoder: [encodable: Encodable in Text] => encodable is Encodable in Dsv =
     value => Dsv(encodable.encode(value))
@@ -147,57 +145,40 @@ object Dsv extends Dsv2:
       parse(cell).or:
         raise(Dsv.Error(format, Dsv.Error.Reason.Unparseable(cell, expected))) yet sentinel
 
-  // The primitive cell decoders are laundered pure: their resolution-scoped tactic shares each
-  // instance's given-resolution lifetime, and the product derivation summons them against pure
-  // expected types (honest capturing forms return with wisteria capture-polymorphism; see
-  // rep/DECISIONS.md).
+  // The primitive cell decoders capture the tactic they raise through.
   given int: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  Int is Decodable in Dsv =
-    // [field-purity] cell decoder given retains resolution-scoped tactic
-    caps.unsafe.unsafeAssumePure: dsv =>
-      decodeCell(dsv, t"Int", 0): cell =>
-        safely(cell.as[Int])
+  =>  ((Int is Decodable in Dsv)^{tactic}) = dsv =>
+    decodeCell(dsv, t"Int", 0): cell =>
+      safely(cell.as[Int])
 
   given long: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  Long is Decodable in Dsv =
-    // [field-purity]
-    caps.unsafe.unsafeAssumePure: dsv =>
-      decodeCell(dsv, t"Long", 0L): cell =>
-        safely(cell.as[Long])
+  =>  ((Long is Decodable in Dsv)^{tactic}) = dsv =>
+    decodeCell(dsv, t"Long", 0L): cell =>
+      safely(cell.as[Long])
 
   given double: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  Double is Decodable in Dsv =
-    // [field-purity]
-    caps.unsafe.unsafeAssumePure: dsv =>
-      decodeCell(dsv, t"Double", 0.0): cell =>
-        safely(cell.as[Double])
+  =>  ((Double is Decodable in Dsv)^{tactic}) = dsv =>
+    decodeCell(dsv, t"Double", 0.0): cell =>
+      safely(cell.as[Double])
 
   given float: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  Float is Decodable in Dsv =
-    // [field-purity]
-    caps.unsafe.unsafeAssumePure: dsv =>
-      decodeCell(dsv, t"Float", 0.0f): cell =>
-        safely(cell.as[Float])
+  =>  ((Float is Decodable in Dsv)^{tactic}) = dsv =>
+    decodeCell(dsv, t"Float", 0.0f): cell =>
+      safely(cell.as[Float])
 
   given boolean: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  Boolean is Decodable in Dsv =
-    // [field-purity]
-    caps.unsafe.unsafeAssumePure: dsv =>
-      decodeCell(dsv, t"Boolean", false): cell =>
-        cell.s match
-          case "true"  => true
-          case "false" => false
-          case _       => Unset
+  =>  ((Boolean is Decodable in Dsv)^{tactic}) = dsv =>
+    decodeCell(dsv, t"Boolean", false): cell =>
+      cell.s match
+        case "true"  => true
+        case "false" => false
+        case _       => Unset
 
   given text: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  Text is Decodable in Dsv =
-    // [field-purity] cell decoder given retains resolution-scoped tactic
-    caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"Text", t"")(cell => cell)
+  =>  ((Text is Decodable in Dsv)^{tactic}) = dsv => decodeCell(dsv, t"Text", t"")(cell => cell)
 
   given string: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  String is Decodable in Dsv =
-    // [field-purity]
-    caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"String", "")(cell => cell.s)
+  =>  ((String is Decodable in Dsv)^{tactic}) = dsv => decodeCell(dsv, t"String", "")(cell => cell.s)
 
   inline given decodableDerivation: [value <: Product: ProductReflection]
   =>  value is Decodable in Dsv =
@@ -230,43 +211,39 @@ object Dsv extends Dsv2:
   // Direct-read entries, gated on an explicit `Dsv.Parsable` (they sit above
   // the AST-based `aggregableIn` in `Dsv2`, so opting in switches the path).
   // `read[Foo in Dsv]` parses the first row; `read[List[Foo] in Dsv]` parses
-  // every row. Sealed per the codec-thunk pattern.
+  // every row. Each captures the tactic it raises through.
   given aggregableParsed: [value] => (parsable: value is Dsv.Parsable)
   =>  ( format: Dsv.Format, tactic: Tactic[Dsv.Error], buffering: Buffering )
-  =>  ((value in Dsv) is Aggregable by Text) =
-    // [field-purity] aggregable given retains parsable and tactic
-    caps.unsafe.unsafeAssumePure:
-      new Aggregable:
-        type Self = value in Dsv
-        type Operand = Text
+  =>  (((value in Dsv) is Aggregable by Text)^{tactic}) =
+    new Aggregable:
+      type Self = value in Dsv
+      type Operand = Text
 
-        def aggregate(text: Chain[Text]): value in Dsv = accept(Stream(text))
+      def aggregate(text: Chain[Text]): value in Dsv = accept(Stream(text))
 
-        override def accept(stream: (Stream[Text] over Credit)^): value in Dsv =
-          val reader =
-            Sheet.directReader(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
+      override def accept(stream: (Stream[Text] over Credit)^): value in Dsv =
+        val reader =
+          Sheet.directReader(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
 
-          if reader.nextRow() then parsable.parse(reader, 0).asInstanceOf[value in Dsv]
-          else tactic.abort(Dsv.Error(format, Dsv.Error.Reason.Absent))
+        if reader.nextRow() then parsable.parse(reader, 0).asInstanceOf[value in Dsv]
+        else tactic.abort(Dsv.Error(format, Dsv.Error.Reason.Absent))
 
   given aggregableParsedList: [value] => (parsable: value is Dsv.Parsable)
   =>  ( format: Dsv.Format, tactic: Tactic[Dsv.Error], buffering: Buffering )
-  =>  ((List[value] in Dsv) is Aggregable by Text) =
-    // [field-purity] aggregable given retains parsable and tactic
-    caps.unsafe.unsafeAssumePure:
-      new Aggregable:
-        type Self = List[value] in Dsv
-        type Operand = Text
+  =>  (((List[value] in Dsv) is Aggregable by Text)^{tactic}) =
+    new Aggregable:
+      type Self = List[value] in Dsv
+      type Operand = Text
 
-        def aggregate(text: Chain[Text]): List[value] in Dsv = accept(Stream(text))
+      def aggregate(text: Chain[Text]): List[value] in Dsv = accept(Stream(text))
 
-        override def accept(stream: (Stream[Text] over Credit)^): List[value] in Dsv =
-          val reader =
-            Sheet.directReader(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
+      override def accept(stream: (Stream[Text] over Credit)^): List[value] in Dsv =
+        val reader =
+          Sheet.directReader(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
 
-          val buffer = scala.collection.mutable.ListBuffer[value]()
-          while reader.nextRow() do buffer += parsable.parse(reader, 0)
-          buffer.to(List).asInstanceOf[List[value] in Dsv]
+        val buffer = scala.collection.mutable.ListBuffer[value]()
+        while reader.nextRow() do buffer += parsable.parse(reader, 0)
+        buffer.to(List).asInstanceOf[List[value] in Dsv]
 
   // ---- Direct (AST-free) parsing --------------------------------------------
   //
@@ -316,16 +293,14 @@ object Dsv extends Dsv2:
     // Bridge: any `Decodable in Text` reads a single cell. An absent cell (a
     // short positional row, or a header column missing here) aborts through
     // the reader's own tactic; `optional` below intercepts that for
-    // `Optional` fields. Sealed per the codec-thunk pattern.
+    // `Optional` fields. Captures its decodable.
     given decodable: [value] => (decodable: (value is Decodable in Text)^)
-    =>  value is Dsv.Field =
-      // [field-purity] field given retains captured decodable
-      caps.unsafe.unsafeAssumePure:
-        new Field:
-          type Self = value
+    =>  ((value is Dsv.Field)^{decodable}) =
+      new Field:
+        type Self = value
 
-          def parse(reader: DsvReader^, offset: Int): value =
-            reader.cell(offset).lay(reader.absent()): cell => decodable.decoded(cell)
+        def parse(reader: DsvReader^, offset: Int): value =
+          reader.cell(offset).lay(reader.absent()): cell => decodable.decoded(cell)
 
     given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
     =>  ( absence: Decodable.Absence in Dsv, fault: Decodable.Fault in Dsv )
@@ -536,7 +511,13 @@ object Dsv extends Dsv2:
     def transform(name: Text): Text
 
 case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) extends Dynamic:
-  def as[cell: Decodable in Dsv]: cell raises Dsv.Error tracks CellRef = cell.decoded(this)
+  // Capturing evidence: a decoder built from a `Tactic` captures it, which a context bound
+  // cannot say.
+  def as[cell](using decodable: (cell is Decodable in Dsv)^)
+    ( using Tactic[Dsv.Error], Foci[CellRef] )
+  :   cell =
+
+    decodable.decoded(this)
 
   def header: Optional[Array[Text]^{}] = columns.let: map =>
     val columns = map.stdlib.map(_.swap)

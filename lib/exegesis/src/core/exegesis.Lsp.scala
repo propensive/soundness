@@ -749,14 +749,11 @@ object Lsp:
     given encodable: DiagnosticSeverity is Json.Encodable =
       Json.Encodable(() => Morphology.Whole): severity => (severity.ordinal + 1).in[Json]
 
-    given decodable: DiagnosticSeverity is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the wire-integer decode cannot
-      // thread a caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which a malformed wire integer raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((DiagnosticSeverity is Json.Decodable)^{tactic}) =
 
-      // [field-purity] enum decoder given; tactic cannot thread
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Whole): json => DiagnosticSeverity.fromOrdinal(json.as[Int] - 1)
+      Json.Decodable(Morphology.Whole): json => DiagnosticSeverity.fromOrdinal(json.as[Int] - 1)
 
   enum DiagnosticSeverity:
     case Error, Warning, Information, Hint
@@ -765,14 +762,11 @@ object Lsp:
     given encodable: MessageType is Json.Encodable =
       Json.Encodable(() => Morphology.Whole): level => (level.ordinal + 1).in[Json]
 
-    given decodable: MessageType is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the wire-integer decode cannot
-      // thread a caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((MessageType is Json.Decodable)^{tactic}) =
 
-      // [field-purity] enum decoder given; tactic cannot thread
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Whole): json => MessageType.fromOrdinal(json.as[Int] - 1)
+      Json.Decodable(Morphology.Whole): json => MessageType.fromOrdinal(json.as[Int] - 1)
 
   enum MessageType:
     case Error, Warning, Info, Log
@@ -781,14 +775,11 @@ object Lsp:
     given encodable: TextDocumentSyncKind is Json.Encodable =
       Json.Encodable(() => Morphology.Whole)(_.ordinal.in[Json])
 
-    given decodable: TextDocumentSyncKind is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the wire-integer decode cannot
-      // thread a caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((TextDocumentSyncKind is Json.Decodable)^{tactic}) =
 
-      // [field-purity] enum decoder given; tactic cannot thread
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Whole): json => TextDocumentSyncKind.fromOrdinal(json.as[Int])
+      Json.Decodable(Morphology.Whole): json => TextDocumentSyncKind.fromOrdinal(json.as[Int])
 
   enum TextDocumentSyncKind:
     case None, Full, Incremental
@@ -797,14 +788,11 @@ object Lsp:
     given encodable: CompletionItemKind is Json.Encodable =
       Json.Encodable(() => Morphology.Whole): kind => (kind.ordinal + 1).in[Json]
 
-    given decodable: CompletionItemKind is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the wire-integer decode cannot
-      // thread a caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((CompletionItemKind is Json.Decodable)^{tactic}) =
 
-      // [field-purity] enum decoder given; tactic cannot thread
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Whole): json => CompletionItemKind.fromOrdinal(json.as[Int] - 1)
+      Json.Decodable(Morphology.Whole): json => CompletionItemKind.fromOrdinal(json.as[Int] - 1)
 
   enum CompletionItemKind:
     case Text, Method, Function, Constructor, Field, Variable, Class, Interface, Module, Property,
@@ -815,14 +803,11 @@ object Lsp:
     given encodable: SymbolKind is Json.Encodable =
       Json.Encodable(() => Morphology.Whole): kind => (kind.ordinal + 1).in[Json]
 
-    given decodable: SymbolKind is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the wire-integer decode cannot
-      // thread a caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((SymbolKind is Json.Decodable)^{tactic}) =
 
-      // [field-purity] enum decoder given; tactic cannot thread
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Whole): json => SymbolKind.fromOrdinal(json.as[Int] - 1)
+      Json.Decodable(Morphology.Whole): json => SymbolKind.fromOrdinal(json.as[Int] - 1)
 
   enum SymbolKind:
     case File, Module, Namespace, Package, Class, Method, Property, Field, Constructor, Enum,
@@ -833,15 +818,12 @@ object Lsp:
     given encodable: DocumentHighlightKind is Json.Encodable =
       Json.Encodable(() => Morphology.Whole): kind => (kind.ordinal + 1).in[Json]
 
-    given decodable: DocumentHighlightKind is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the wire-integer decode cannot
-      // thread a caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((DocumentHighlightKind is Json.Decodable)^{tactic}) =
 
-      // [field-purity] enum decoder given; tactic cannot thread
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Whole): json =>
-          DocumentHighlightKind.fromOrdinal(json.as[Int] - 1)
+      Json.Decodable(Morphology.Whole): json =>
+        DocumentHighlightKind.fromOrdinal(json.as[Int] - 1)
 
   enum DocumentHighlightKind:
     case Text, Read, Write
@@ -850,15 +832,12 @@ object Lsp:
     given encodable: TextDocumentSaveReason is Json.Encodable =
       Json.Encodable(() => Morphology.Whole): reason => (reason.ordinal + 1).in[Json]
 
-    given decodable: TextDocumentSaveReason is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the wire-integer decode cannot
-      // thread a caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((TextDocumentSaveReason is Json.Decodable)^{tactic}) =
 
-      // [field-purity] enum decoder given; tactic cannot thread
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Whole): json =>
-          TextDocumentSaveReason.fromOrdinal(json.as[Int] - 1)
+      Json.Decodable(Morphology.Whole): json =>
+        TextDocumentSaveReason.fromOrdinal(json.as[Int] - 1)
 
   enum TextDocumentSaveReason:
     case Manual, AfterDelay, FocusOut
@@ -867,14 +846,11 @@ object Lsp:
     given encodable: SymbolTag is Json.Encodable =
       Json.Encodable(() => Morphology.Whole): tag => (tag.ordinal + 1).in[Json]
 
-    given decodable: SymbolTag is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the wire-integer decode cannot
-      // thread a caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((SymbolTag is Json.Decodable)^{tactic}) =
 
-      // [field-purity] enum decoder given; tactic cannot thread
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Whole): json => SymbolTag.fromOrdinal(json.as[Int] - 1)
+      Json.Decodable(Morphology.Whole): json => SymbolTag.fromOrdinal(json.as[Int] - 1)
 
   enum SymbolTag:
     case Deprecated
@@ -883,14 +859,11 @@ object Lsp:
     given encodable: InlayHintKind is Json.Encodable =
       Json.Encodable(() => Morphology.Whole): kind => (kind.ordinal + 1).in[Json]
 
-    given decodable: InlayHintKind is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the wire-integer decode cannot
-      // thread a caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((InlayHintKind is Json.Decodable)^{tactic}) =
 
-      // [field-purity] enum decoder given; tactic cannot thread
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Whole): json => InlayHintKind.fromOrdinal(json.as[Int] - 1)
+      Json.Decodable(Morphology.Whole): json => InlayHintKind.fromOrdinal(json.as[Int] - 1)
 
   enum InlayHintKind:
     case Type, Parameter
@@ -899,14 +872,11 @@ object Lsp:
     given encodable: FileChangeType is Json.Encodable =
       Json.Encodable(() => Morphology.Whole): kind => (kind.ordinal + 1).in[Json]
 
-    given decodable: FileChangeType is Json.Decodable =
-      // Pure and throwing, like the derivation anchors: the wire-integer decode cannot
-      // thread a caller's tactic under separation checking.
-      import strategies.throwUnsafely
+    // Captures the caller's tactic, which malformed input raises through.
+    given decodable: (tactic: Tactic[Json.Error])
+    =>  ((FileChangeType is Json.Decodable)^{tactic}) =
 
-      // [field-purity] enum decoder given; tactic cannot thread
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Whole): json => FileChangeType.fromOrdinal(json.as[Int] - 1)
+      Json.Decodable(Morphology.Whole): json => FileChangeType.fromOrdinal(json.as[Int] - 1)
 
   enum FileChangeType:
     case Created, Changed, Deleted

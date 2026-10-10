@@ -96,26 +96,23 @@ object Sheet:
               Column[Dsv, Text, Text](name, sizing = columnar.Collapsible(0.5))
                 ( _[Text](name).or(t"") ) )* )
 
-  // Sealed per the codec-thunk pattern (see rep/DECISIONS.md): the resolution-scoped
-  // tactic shares the instance's given-resolution lifetime.
+  // Captures the tactic it raises through.
   given aggregable: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  Sheet is Aggregable by Text =
-    // [field-purity] aggregable given retains resolution-scoped tactic
-    caps.unsafe.unsafeAssumePure:
-      new Aggregable:
-        type Self = Sheet
-        type Operand = Text
+  =>  ((Sheet is Aggregable by Text)^{tactic}) =
+    new Aggregable:
+      type Self = Sheet
+      type Operand = Text
 
-        def aggregate(text: Chain[Text]): Sheet = sheet(parseRows(Stream(text)))
-        override def accept(stream: (Stream[Text] over Credit)^): Sheet =
-          // The non-consume `accept` crosses to the consuming parser as a
-          // neutral reference; each accept delivers a single-use stream.
-          sheet(parseRows(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
+      def aggregate(text: Chain[Text]): Sheet = sheet(parseRows(Stream(text)))
+      override def accept(stream: (Stream[Text] over Credit)^): Sheet =
+        // The non-consume `accept` crosses to the consuming parser as a
+        // neutral reference; each accept delivers a single-use stream.
+        sheet(parseRows(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
 
-        private def sheet(iterator: Iterator[Dsv]^): Sheet =
-          val rows = Array.from(iterator)
-          if format.header then Sheet(rows, format, rows.prim.let(_.header))
-          else Sheet(rows, format)
+      private def sheet(iterator: Iterator[Dsv]^): Sheet =
+        val rows = Array.from(iterator)
+        if format.header then Sheet(rows, format, rows.prim.let(_.header))
+        else Sheet(rows, format)
 
   given showable: Dsv.Format => Sheet is Showable = _.rows.to[List].map(_.show).join(t"\n")
 
@@ -408,7 +405,10 @@ case class Sheet
     format:  Optional[Dsv.Format]    = Unset,
     columns: Optional[Array[Text]^{}] = Unset ):
 
-  def as[value: Decodable in Dsv]: List[value] raises Dsv.Error tracks CellRef =
+  def as[value](using decodable: (value is Decodable in Dsv)^)
+    ( using Tactic[Dsv.Error], Foci[CellRef] )
+  :   List[value] =
+
     rows.to[List].map(_.as[value])
 
   override def hashCode: Int =

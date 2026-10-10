@@ -31,7 +31,7 @@ lib/bitumen/src/core/bitumen.Tarfile.scala	1	2	1	0	0	0	0	0	0	0
 lib/bitumen/src/jvm/bitumen.TarBuilder.scala	0	0	1	0	0	1	0	0	0	0
 lib/bitumen/src/jvm/bitumen.TarFilesystem.scala	0	0	0	0	0	1	0	0	0	0
 lib/bitumen/src/test/bitumen_test.scala	0	4	0	0	1	0	16	0	0	0
-lib/breviloquence/src/core/breviloquence.Cbor.scala	2	0	0	0	1	0	0	0	0	0
+lib/breviloquence/src/core/breviloquence.Cbor.scala	0	0	0	0	1	0	0	0	0	0
 lib/breviloquence/src/core/breviloquence.CborParser.scala	2	0	0	0	0	1	0	0	0	0
 lib/breviloquence/src/core/breviloquence.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0
 lib/breviloquence/src/staged/breviloquence.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0
@@ -43,8 +43,8 @@ lib/cacophony/src/core/cacophony.Outlet.scala	0	0	1	0	0	1	0	0	0	0
 lib/cacophony/src/core/cacophony.Pcm.scala	0	0	0	0	0	1	0	0	0	0
 lib/caduceus/src/resend/caduceus_core.scala	1	1	0	0	0	0	0	0	0	0
 lib/caduceus/src/test/caduceus_test.scala	0	0	2	0	0	0	0	0	0	0
-lib/caesura/src/core/caesura.Dsv.scala	12	0	0	0	0	0	0	0	0	0
-lib/caesura/src/core/caesura.Sheet.scala	4	0	2	0	0	2	0	0	0	0
+lib/caesura/src/core/caesura.Dsv.scala	1	0	0	0	0	0	0	0	0	0
+lib/caesura/src/core/caesura.Sheet.scala	3	0	2	0	0	2	0	0	0	0
 lib/caesura/src/core/caesura.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0
 lib/caesura/src/core/caesura_core.scala	0	0	2	0	0	0	1	0	0	0
 lib/caesura/src/test/caesura.AccrualTests.scala	0	0	1	0	0	0	0	0	0	0
@@ -70,8 +70,6 @@ lib/degustation/src/core/degustation.Atomizer.scala	0	0	0	0	1	0	0	0	0	0
 lib/denominative/src/core/denominative.Definable.scala	0	0	0	0	1	0	0	0	0	0
 lib/denominative/src/core/denominative.Terminable.scala	0	0	0	0	0	0	1	0	0	0
 lib/digression/src/core/digression.Fqcn.scala	0	0	0	0	0	0	1	0	0	0
-lib/distillate/src/core/distillate.Extractable.scala	1	0	0	0	0	0	0	0	0	0
-lib/distillate/src/core/distillate.Requirable.scala	1	0	0	0	0	0	0	0	0	0
 lib/diuretic/src/core/diuretic.JavaIoFile.scala	0	0	0	1	0	0	0	0	0	0
 lib/diuretic/src/core/diuretic.JavaNioPath.scala	0	0	0	1	0	0	0	0	0	0
 lib/embarcadero/src/containerd/embarcadero.AnyMessage.scala	0	0	0	0	0	0	2	0	0	0
@@ -80,7 +78,6 @@ lib/embarcadero/src/containerd/embarcadero.Workload.scala	0	4	0	0	0	0	0	0	0	0
 lib/embarcadero/src/test/embarcadero_test.scala	0	12	0	0	0	0	0	0	0	0
 lib/enigmatic/src/asn1/enigmatic.Asn1.scala	0	0	0	0	1	3	0	2	0	0
 lib/enigmatic/src/asn1/enigmatic.Der.scala	0	0	0	0	0	1	0	0	0	0
-lib/enigmatic/src/asn1/enigmatic.Pem.scala	3	0	0	0	0	0	0	0	0	0
 lib/enigmatic/src/core-jvm/enigmatic.JavaBaseCrypto.scala	0	0	0	0	15	22	0	7	0	0
 lib/enigmatic/src/core-jvm/enigmatic.Keystore.scala	0	0	0	0	1	0	0	0	0	0
 lib/enigmatic/src/core-jvm/enigmatic.cloaks.scala	3	0	0	0	0	0	0	0	0	0
@@ -96,7 +93,7 @@ lib/escapade/src/core/escapade.Ansi.scala	0	0	5	0	1	0	0	0	0	0
 lib/escapade/src/core/escapade.Teletype.scala	0	0	1	0	1	1	0	0	0	0
 lib/escapade/src/core/escapade.internal.scala	0	0	0	0	0	0	1	0	0	0
 lib/escritoire/src/core/escritoire.Tabulable.scala	0	0	0	0	0	0	1	0	0	0
-lib/espionage/src/core/espionage.Acp.scala	15	0	7	0	0	0	0	0	0	0
+lib/espionage/src/core/espionage.Acp.scala	6	0	7	0	0	0	0	0	0	0
 lib/espionage/src/test/espionage_test.scala	0	4	0	0	0	0	0	0	0	0
 lib/ethereal/src/core/ethereal.Launcher.scala	0	0	0	0	2	2	0	0	0	0
 lib/ethereal/src/core/ethereal.Session.scala	3	0	6	0	3	3	0	0	0	0
@@ -104,7 +101,7 @@ lib/ethereal/src/core/ethereal_core.scala	3	8	0	0	1	2	0	0	0	0
 lib/ethereal/src/test/ethereal_test.scala	0	0	0	0	1	0	0	0	0	0
 lib/eucalyptus/src/core/eucalyptus.Logger.scala	2	0	0	0	0	0	0	0	0	0
 lib/eucalyptus/src/test/eucalyptus_test.scala	6	0	0	0	0	0	0	0	0	0
-lib/exegesis/src/core/exegesis.Lsp.scala	25	0	78	0	0	0	0	0	0	0
+lib/exegesis/src/core/exegesis.Lsp.scala	15	0	78	0	0	0	0	0	0	0
 lib/exegesis/src/core/exegesis.LspSession.scala	1	0	8	0	0	0	0	0	0	0
 lib/exegesis/src/core/exegesis.LspSessional.scala	1	0	0	0	0	0	0	0	0	0
 lib/exoskeleton/src/args/exoskeleton.Cli.scala	0	0	2	0	0	0	0	0	0	0
@@ -155,7 +152,7 @@ lib/gastronomy/src/core/gastronomy_core.scala	0	0	0	11	0	0	0	0	0	0
 lib/gastronomy/src/multihash/gastronomy.Multihash.scala	0	0	0	0	1	0	1	0	0	0
 lib/gastronomy/src/test/gastronomy_test.scala	0	0	0	0	4	1	1	0	0	0
 lib/gesticulate/src/bench/gesticulate.Benchmarks.scala	0	0	0	0	1	0	0	0	0	0
-lib/gesticulate/src/core/gesticulate.MediaType.scala	1	0	0	0	1	0	0	0	0	0
+lib/gesticulate/src/core/gesticulate.MediaType.scala	0	0	0	0	1	0	0	0	0	0
 lib/gesticulate/src/core/gesticulate.Multipart.scala	1	3	1	0	1	1	0	0	0	0
 lib/gesticulate/src/test/gesticulate_test.scala	0	0	0	0	4	5	2	0	0	0
 lib/gossamer/src/core/gossamer.AsciiBuilder.scala	0	0	0	0	1	0	0	0	0	0
@@ -204,16 +201,15 @@ lib/iridescence/src/core/iridescence.Rgb12Opaque.scala	0	0	0	0	0	0	0	0	1	0
 lib/iridescence/src/core/iridescence.Rgb32Opaque.scala	0	0	0	0	0	0	0	0	1	0
 lib/jacinta/src/bench/jacinta.Benchmarks.scala	0	0	0	0	9	1	0	0	0	0
 lib/jacinta/src/core/jacinta.Json.Parser.scala	1	0	0	0	4	0	0	0	0	0
-lib/jacinta/src/core/jacinta.Json.scala	29	0	4	0	6	0	1	0	0	0
+lib/jacinta/src/core/jacinta.Json.scala	24	0	4	0	6	0	1	0	0	0
 lib/jacinta/src/core/jacinta.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0
 lib/jacinta/src/core/jacinta.internal.scala	2	0	0	0	0	0	0	0	0	0
-lib/jacinta/src/schema/jacinta.JsonSchema.scala	9	0	0	0	0	0	0	0	0	0
+lib/jacinta/src/schema/jacinta.JsonSchema.scala	8	0	0	0	0	0	0	0	0	0
 lib/jacinta/src/staged/jacinta.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0
 lib/jacinta/src/test/jacinta.ParserTests.scala	0	0	0	0	6	0	0	0	0	0
-lib/jacinta/src/time/jacinta_time.scala	2	0	0	0	0	0	0	0	0	0
 lib/kaleidoscope/src/core/kaleidoscope.Scanner.scala	0	0	2	0	0	0	0	0	0	0
 lib/legerdemain/src/test/legerdemain_test.scala	0	0	1	0	0	0	0	0	0	0
-lib/locomotion/src/core/locomotion.Protobuf.scala	2	0	0	0	1	1	0	0	0	0
+lib/locomotion/src/core/locomotion.Protobuf.scala	0	0	0	0	1	1	0	0	0	0
 lib/locomotion/src/staged/locomotion.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0
 lib/locomotion/src/test/locomotion_test.scala	0	5	0	0	0	0	0	0	0	0
 lib/mandible/src/core/mandible.Bytecode.scala	0	1	0	0	0	0	0	0	0	0
@@ -318,7 +314,7 @@ lib/stratiform/src/core/stratiform.Bintel.scala	0	0	1	0	1	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Mutation.scala	0	0	0	0	0	0	20	0	0	0
 lib/stratiform/src/core/stratiform.Revision.scala	0	0	0	0	0	0	1	0	0	0
 lib/stratiform/src/core/stratiform.Tel.scala	4	0	6	0	2	4	7	0	0	0
-lib/stratiform/src/core/stratiform.Tel2.scala	9	0	0	0	0	0	0	0	0	0
+lib/stratiform/src/core/stratiform.Tel2.scala	2	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Tel3.scala	2	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Tels.scala	0	0	0	0	0	0	6	0	0	0
 lib/stratiform/src/core/stratiform.Tels2.scala	0	0	0	0	0	0	4	1	0	0
@@ -393,7 +389,7 @@ lib/xenophile/src/nativeruntime/xenophile.ForeignLibrary.scala	0	0	1	0	0	0	0	0	0
 lib/xenophile/src/test/xenophile_test.scala	0	1	0	0	0	0	0	0	0	0
 lib/xenophile/src/typescript/xenophile.Typescript.scala	0	0	1	0	0	0	0	0	0	0
 lib/xylophone/src/bench/xylophone.Benchmarks.scala	0	0	0	0	5	0	0	0	0	0
-lib/xylophone/src/core/xylophone.Xml.scala	16	1	1	0	4	3	1	0	0	0
+lib/xylophone/src/core/xylophone.Xml.scala	9	1	1	0	4	3	1	0	0	0
 lib/xylophone/src/core/xylophone.Xml3.scala	2	0	0	0	0	0	0	0	0	0
 lib/xylophone/src/core/xylophone.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0
 lib/xylophone/src/core/xylophone.internal.scala	1	0	3	0	0	0	8	0	0	0
