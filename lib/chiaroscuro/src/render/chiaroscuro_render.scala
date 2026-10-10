@@ -35,6 +35,11 @@ package chiaroscuro
 import anticipation.*
 import dendrology.*
 import denominative.*
+
+// The comparison list is rendered whole (and batched into rows), so counting its entries
+// is a linear walk of a list that is about to be walked anyway.
+import denominative.dysasymptotics.linearSize
+
 import escapade.*
 import escritoire.*, columnAttenuation.ignoreAttenuation
 import gossamer.*
@@ -46,14 +51,9 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-// The comparison list is rendered whole (and batched into rows), so counting its entries
-// is a linear walk of a list that is about to be walked anyway.
-import denominative.dysasymptotics.linearSize
-
 // These were members of `Juxtaposition`'s companion object, where the enum's cases were in
 // scope unqualified; out here they must be imported.
 import Juxtaposition.*
-
 
 // A real trait, not a structural refinement of `Palette`: structural member selection goes
 // through `iridescence.Palette.selectDynamic` — runtime reflection, which Scala Native does
@@ -145,6 +145,7 @@ package teletypeables:
               e"$line1\n$line2\n"
 
             // The mapped lines only read the two summary buffers; laundered pure.
+
             . asInstanceOf[List[Teletype]]
             . join(topRule, midRule, penultimateRule, bottomRule)
 
@@ -220,4 +221,3 @@ package teletypeables:
 
         case Same(value) =>
           e"The value $subdued($value) was expected"
-

@@ -550,7 +550,6 @@ object Atomizer:
 
           case _ => tag(out, '0')
 
-
       record(keyOf(ownerKey, symbol) + "[inline]", replaceable = true, encoded, references.toList)
 
     def typeMemberAtom(ownerKey: String, symbol: Symbol): Unit =

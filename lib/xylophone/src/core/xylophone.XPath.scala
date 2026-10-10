@@ -32,19 +32,18 @@
                                                                                                   */
 package xylophone
 
-
 import anticipation.*
 import contextual.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 import zephyrine.*
-import rudiments.*
-import denominative.dysasymptotics.linearSize
 
 // `XPath` is a `Format`, so a malformed *expression* is a `Parse.Error` like any other
 // parse failure, carrying the offset at which it was detected. `XPath.Error` is reserved
@@ -56,6 +55,10 @@ object XPath extends Format:
     def strategy: Text = t"xpath"
     def focus(xpath: XPath): Text = xpath.encode
 
+  object Position:
+    // The parser detects a fault at a point, not over a range, so spans are zero-length.
+    def at(offset: Int): Position = Position(Span.offset(offset.z, 0))
+
   // An XPath is a line-less source, so the span is `Offset`-mode: a character index into
   // the expression text, which the `xp"…"` interpolator maps back onto a source-file caret.
   // `Location` is taken here for a node's place within a *document*, so this is `Position`,
@@ -63,10 +66,6 @@ object XPath extends Format:
   case class Position(override val span: Span) extends Format.Position:
     def describe: Text = span.offset.lay(t"an unknown position"): offset =>
       t"character ${offset.n1}"
-
-  object Position:
-    // The parser detects a fault at a point, not over a range, so spans are zero-length.
-    def at(offset: Int): Position = Position(Span.offset(offset.z, 0))
 
   // The thirteen XPath 1.0 axes (§2.2). `keyword` is the spelling used in the
   // unabbreviated `axis::test` syntax.
@@ -143,16 +142,16 @@ object XPath extends Format:
     // be unreachable under the umbrella import. Members always win.
     infix def or(right: into[Expression]): Expression = Expression.Or(this, right)
     infix def and(right: into[Expression]): Expression = Expression.And(this, right)
-    def ===(right: into[Expression]): Expression = Expression.Equal(this, right)
-    def !==(right: into[Expression]): Expression = Expression.Unequal(this, right)
-    def <(right: into[Expression]): Expression = Expression.Less(this, right)
-    def <=(right: into[Expression]): Expression = Expression.LessOrEqual(this, right)
-    def >(right: into[Expression]): Expression = Expression.Greater(this, right)
-    def >=(right: into[Expression]): Expression = Expression.GreaterOrEqual(this, right)
-    def +(right: into[Expression]): Expression = Expression.Add(this, right)
-    def -(right: into[Expression]): Expression = Expression.Subtract(this, right)
-    def *(right: into[Expression]): Expression = Expression.Multiply(this, right)
-    def |(right: into[Expression]): Expression = Expression.Union(this, right)
+    def === (right: into[Expression]): Expression = Expression.Equal(this, right)
+    def !== (right: into[Expression]): Expression = Expression.Unequal(this, right)
+    def < (right: into[Expression]): Expression = Expression.Less(this, right)
+    def <= (right: into[Expression]): Expression = Expression.LessOrEqual(this, right)
+    def > (right: into[Expression]): Expression = Expression.Greater(this, right)
+    def >= (right: into[Expression]): Expression = Expression.GreaterOrEqual(this, right)
+    def + (right: into[Expression]): Expression = Expression.Add(this, right)
+    def - (right: into[Expression]): Expression = Expression.Subtract(this, right)
+    def * (right: into[Expression]): Expression = Expression.Multiply(this, right)
+    def | (right: into[Expression]): Expression = Expression.Union(this, right)
 
     infix def contains(right: into[Expression]): Expression =
       Expression.Call(Unset, t"contains", List(this, right))
@@ -190,7 +189,7 @@ object XPath extends Format:
   given pathConversion: Conversion[XPath, Expression] = _.expression
 
   // Absolute path start: `XPath / t"html" / t"body"` is `/html/body`.
-  def /(step: into[Step]): XPath = XPath(Expression.Route(Origin.Root, List(step)))
+  def / (step: into[Step]): XPath = XPath(Expression.Route(Origin.Root, List(step)))
 
   // Descendant-or-self start: `XPath.deep(t"div")` is `//div`.
   def deep(step: into[Step]): XPath =
@@ -240,6 +239,7 @@ object XPath extends Format:
 
     private def accumulate(element: Xml.Element, builder: StringBuilder): Unit =
       val children = element.children
+
       children.extent.each: i =>
         children(i) match
           case Xml.Text(text)     => builder.append(text.s)
@@ -288,7 +288,7 @@ object XPath extends Format:
         case _ => document match
           case Xml.Fragment(nodes*) =>
             val builder = StringBuilder()
-            nodes.foreach { node => builder.append(Locus.textOf(node).s) }
+            nodes.foreach: node => builder.append(Locus.textOf(node).s)
             builder.toString.nn.tt
 
           case node: Xml.Node =>
@@ -356,7 +356,10 @@ object XPath extends Format:
 
     given communicable: Reason is Communicable =
       case Reason.UnknownFunction(name) => m"the function $name is not an XPath 1.0 core function"
-      case Reason.BadArity(name)        => m"the function $name was applied to the wrong number of arguments"
+
+      case Reason.BadArity(name) =>
+        m"the function $name was applied to the wrong number of arguments"
+
       case Reason.UnboundVariable(name) => m"the variable $$$name has no binding"
       case Reason.NotNodeSet            => m"a node-set was expected"
       case Reason.Unsupported(feature)  => m"$feature is not supported"
@@ -408,7 +411,8 @@ object XPath extends Format:
   // integral value has no decimal point (`string(1.0)` is `1`).
   private[xylophone] def renderNumber(value: Double): Text =
     if value != value then t"NaN"
-    else if java.lang.Double.isInfinite(value) then (if value > 0 then t"Infinity" else t"-Infinity")
+    else if java.lang.Double.isInfinite(value)
+    then (if value > 0 then t"Infinity" else t"-Infinity")
     else if value == Math.floor(value) && Math.abs(value) < 1e15 then value.toLong.toString.tt
     else value.toString.tt
 
@@ -420,7 +424,7 @@ object XPath extends Format:
     if !text.contains('\'') then t"'$text'"
     else if !text.contains('"') then t"\"$text\""
     else
-      val pieces = text.cut(t"'").map { (piece: Text) => t"'$piece'" }
+      val pieces = text.cut(t"'").map: (piece: Text) => t"'$piece'"
       t"concat(${pieces.join(t",\"'\",")})"
 
   private def renderTest(test: NodeTest): Text = test match
@@ -500,7 +504,8 @@ object XPath extends Format:
 
   // Parses any XPath 1.0 expression — location paths, absolute or relative,
   // and the full expression language — reporting the offset of any error.
-  given decodable: (tactic: Tactic[Parse.Error]) => ((XPath is Decodable in Text)^{tactic}) = text =>
+  given decodable: (tactic: Tactic[Parse.Error])
+  =>  ( (XPath is Decodable in Text)^{tactic} ) = text =>
     XPath(XPathReader.parse(text, holes = false))
 
   // Was `XPath.Error.Reason`, whose numbering was append-only within the 562 envelope;
@@ -549,7 +554,7 @@ derives CanEqual:
       XPath(XPath.Expression.Route(XPath.Origin.Filter(other, Nil), List(step)))
 
   // Appends a `child::` step: `XPath / t"html" / t"body"` is `/html/body`.
-  def /(step: into[XPath.Step]): XPath = append(step)
+  def / (step: into[XPath.Step]): XPath = append(step)
 
   // Appends a descendant-or-self step: `XPath.deep(t"div").deep(t"a")` is
   // `//div//a`.

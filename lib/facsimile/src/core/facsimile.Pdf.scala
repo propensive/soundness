@@ -32,7 +32,6 @@
                                                                                                   */
 package facsimile
 
-
 import scala.caps
 
 // By name: `contingency.*` would otherwise shadow this package's own `Guard` (the PDF
@@ -107,7 +106,10 @@ object Pdf:
   // so are never themselves decrypted — and a wrong password fails here, at open, rather
   // than at first string or stream access. The password's cleartext is read only within
   // `uncloak`, so it is confined to this call; the empty password covers unprotected files.
-  private[facsimile] def unlock(pdf: Pdf^, password: Optional[Password])(using Tactic[Pdf.Error]): Unit =
+  private[facsimile] def unlock(pdf: Pdf^, password: Optional[Password])
+  ( using Tactic[Pdf.Error] )
+  :   Unit =
+
     pdf.trailer(t"Encrypt").let: encryptRef =>
       val encrypt = pdf.resolved(encryptRef).dictionary
         . or(abort(Pdf.Error(Pdf.Error.Reason.UnsupportedEncryption(0))))
@@ -218,7 +220,7 @@ object Pdf:
 
       case Reason.WriteUnsupported =>
         m"this document cannot be written (only an unencrypted, on-disk file with a valid " +
-            m"cross-reference table can be edited in place)"
+          m"cross-reference table can be edited in place)"
 
       case Reason.MissingPage(page) =>
         m"the document has no page $page"
@@ -298,16 +300,17 @@ object Pdf:
         // The `/Encoding` entry: a base name, or a dictionary of a base name plus differences.
         // A `match`, not `.let`: the frozen member of the `Optional` union freshens under
         // `let`'s type-variable instantiation.
-        def encodingTable(name: Optional[Text]): Optional[Array[Char]^{}] = name.asInstanceOf[Matchable] match
-          case t"WinAnsiEncoding"  => PdfEncoding.winAnsi: Array[Char]^{}
-          case t"MacRomanEncoding" => PdfEncoding.macRoman: Array[Char]^{}
-          case t"StandardEncoding" => PdfEncoding.standard: Array[Char]^{}
-          case _                   => Unset
+        def encodingTable(name: Optional[Text]): Optional[Array[Char]^{}] =
+          name.asInstanceOf[Matchable] match
+            case t"WinAnsiEncoding"  => PdfEncoding.winAnsi: Array[Char]^{}
+            case t"MacRomanEncoding" => PdfEncoding.macRoman: Array[Char]^{}
+            case t"StandardEncoding" => PdfEncoding.standard: Array[Char]^{}
+            case _                   => Unset
 
         val encodingValue = pdf.resolved(entries(t"Encoding").or(Cos.Nil))
 
         val encoding: Optional[Array[Char]^{}] = encodingValue match
-          case Cos.Name(name)          => encodingTable(name)
+          case Cos.Name(name)             => encodingTable(name)
           case dictionary: Cos.Dictionary => encodingTable(dictionary(t"BaseEncoding").let(_.name))
           case _                          => Unset
 
@@ -334,9 +337,10 @@ object Pdf:
           case _ =>
             Map()
 
-        def common(twoByte: Boolean, cidWidths: Map[Int, Double], default: Double) = Common
-          ( baseFont, standard, firstChar, widths, cidWidths, default, encoding, differences,
-            toUnicode, embedded, twoByte, descriptor )
+        def common(twoByte: Boolean, cidWidths: Map[Int, Double], default: Double) =
+          Common
+            ( baseFont, standard, firstChar, widths, cidWidths, default, encoding, differences,
+              toUnicode, embedded, twoByte, descriptor )
 
         subtype.s match
           case "Type1"    => Type1(common(false, Map(), defaultWidth))
@@ -447,7 +451,7 @@ object Pdf:
 
         if index >= 0 && index < common.widths.length && common.widths.readUnchecked(index) > 0
         then common.widths.readUnchecked(index)
-        else common.standard.lay(or(code)) { standard => StandardFonts.width(standard, code) }
+        else common.standard.lay(or(code)): standard => StandardFonts.width(standard, code)
 
     private def or(code: Int): Double = if common.defaultWidth > 0 then common.defaultWidth else 500
 
@@ -460,7 +464,8 @@ object Pdf:
       if common.twoByte then
         List.range(0, string.length/2).map: index =>
           ((string.readUnchecked(index*2) & 0xff) << 8) | (string.readUnchecked(index*2 + 1) & 0xff)
-      else string.to[List].map(_.toInt & 0xff)
+      else
+        string.to[List].map(_.toInt & 0xff)
 
     def decode(string: Data): Text =
       val builder = StringBuilder()
@@ -486,10 +491,11 @@ object Pdf:
       var entries = Map[Text, Cos]()
 
       def string(key: Text, value: Optional[Text]): Unit =
-        value.let { text => entries = entries.define(key, Cos.Chars(Cos.encodeText(text))) }
+        value.let: text => entries = entries.define(key, Cos.Chars(Cos.encodeText(text)))
 
       def date(key: Text, value: Optional[Timing]): Unit =
-        value.let { timing => entries = entries.define(key, Cos.Chars(Cos.encodeText(formatDate(timing)))) }
+        value.let: timing =>
+          entries = entries.define(key, Cos.Chars(Cos.encodeText(formatDate(timing))))
 
       string(t"Title", info.title)
       string(t"Author", info.author)
@@ -713,6 +719,7 @@ object Pdf:
         // Text (§9.4)
         case "BT" => BeginText
         case "ET" => EndText
+
         case "Td" => numbers(2) match
           case List(dx, dy) => Offset(dx, dy)
           case _            => malformed
@@ -720,6 +727,7 @@ object Pdf:
         case "TD" => numbers(2) match
           case List(dx, dy) => OffsetLeading(dx, dy)
           case _            => malformed
+
         case "Tm" => SetTextMatrix(matrix)
         case "T*" => NextLine
         case "Tc" => SetCharSpacing(number)
@@ -1041,10 +1049,13 @@ extends caps.ExclusiveCapability:
       case _            => ()
 
   // A reference to the page at a position in the flattened page sequence, for destinations.
-  private[facsimile] def pageReference(ordinal: Ordinal)(using Tactic[Pdf.Error]): Optional[Cos.Ref] =
+  private[facsimile] def pageReference(ordinal: Ordinal)
+  ( using Tactic[Pdf.Error] )
+  :   Optional[Cos.Ref] =
+
     val entries = pageEntries
     // The bounds check and the lookup are the same act: a confined ordinal deindexes bare.
-    entries.pick(ordinal.n0.z) { position => entries(position)(0).let(Cos.Ref(_, 0)) }
+    entries.pick(ordinal.n0.z): position => entries(position)(0).let(Cos.Ref(_, 0))
 
   def trailer: Map[Text, Cos] = xref.trailer
 
@@ -1058,7 +1069,7 @@ extends caps.ExclusiveCapability:
   // along each path; the object number of each leaf is kept so that destinations can refer
   // back to a page by reference.
   private[facsimile] def pageEntries
-  ( using Tactic[Pdf.Error] )
+  (using Tactic[Pdf.Error])
   :   Sequence[(Optional[Int], Map[Text, Cos], Page.Inherited)] =
 
     var visited: Set[Int] = Set()
@@ -1068,8 +1079,7 @@ extends caps.ExclusiveCapability:
 
       node match
         case Cos.Ref(reference, _) =>
-          if visited.has(reference)
-          then abort(Pdf.Error(Pdf.Error.Reason.CircularPageTree))
+          if visited.has(reference) then abort(Pdf.Error(Pdf.Error.Reason.CircularPageTree))
 
           visited = visited :+ reference
           recur(resolved(node), reference, inherited)
@@ -1105,8 +1115,7 @@ extends caps.ExclusiveCapability:
   // destinations that refer to pages by reference.
   private[facsimile] def pageNumbers(using Tactic[Pdf.Error]): Map[Int, Ordinal] =
     pageEntries.indexed.flatMap: (entry, index) =>
-      entry(0).lay(Sequence()): number =>
-        Sequence(number -> index)
+      entry(0).lay(Sequence()): number => Sequence(number -> index)
 
     . to[Map]
 
@@ -1127,8 +1136,7 @@ extends caps.ExclusiveCapability:
 
     raw.to[List].bind: (name, value) =>
       Destination.read(value, pages, raw(_))(using this)
-      . lay(List[(Text, Destination)]()): destination =>
-          List(name -> destination)
+      . lay(List[(Text, Destination)]()): destination => List(name -> destination)
 
     . to[Map]
 
@@ -1291,7 +1299,10 @@ extends caps.ExclusiveCapability:
   // Parses the object at an offset, returning its content only if the header matches the
   // number and generation asked for; a mismatch (a lie in the cross-reference table) is
   // `Unset`, so the caller can try a recovered offset instead.
-  private def atOffset(number: Int, generation: Int, offset: Long)(using Tactic[Pdf.Error]): Optional[Cos] =
+  private def atOffset(number: Int, generation: Int, offset: Long)
+  ( using Tactic[Pdf.Error] )
+  :   Optional[Cos] =
+
     if offset < 0 || offset >= source.size then Unset else
       safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (found, gen, content) =>
         if found == number && gen == generation then content else Unset
@@ -1411,15 +1422,16 @@ extends caps.ExclusiveCapability:
   // Whether a stream's raw bytes need decrypting: the document is encrypted and the stream is
   // not exempt — cross-reference streams (never encrypted), metadata under `/EncryptMetadata
   // false`, and streams marked with the `Identity` crypt filter.
-  private def encryptedStream(body: Cos.Body)(using Tactic[Pdf.Error]): Boolean = guard.lay(false): guard =>
-    val kind = body.entries(t"Type").let(_.name).or(t"")
+  private def encryptedStream(body: Cos.Body)(using Tactic[Pdf.Error]): Boolean =
+    guard.lay(false): guard =>
+      val kind = body.entries(t"Type").let(_.name).or(t"")
 
-    val exempt =
-      kind == t"XRef"
-      || (kind == t"Metadata" && !guard.encryptMetadata)
-      || cryptMethod(body) == Guard.Method.Identity
+      val exempt =
+        kind == t"XRef" ||
+          (kind == t"Metadata" && !guard.encryptMetadata) ||
+          cryptMethod(body) == Guard.Method.Identity
 
-    !exempt && streamOwners.contains(body.start)
+      !exempt && streamOwners.contains(body.start)
 
   // A `/Crypt` filter in the stream's filter chain selects a crypt method by name; `Identity`
   // (the default) means the stream is stored in the clear.
@@ -1436,7 +1448,8 @@ extends caps.ExclusiveCapability:
 
       val name = parms match
         case Cos.Dictionary(entries) => entries(t"Name").let(_.name)
-        case Cos.Sequence(elements)  =>
+
+        case Cos.Sequence(elements) =>
           elements.flatMap(_.dictionary.let(_(t"Name")).let(_.name).lay(List())(List(_))).prim
             . or(Unset)
         case _                       => Unset
@@ -1472,8 +1485,12 @@ extends caps.ExclusiveCapability:
           // The end-of-line before `endstream` belongs to the syntax, not the payload.
           val windowStart = (position - 2).max(body.start)
           val window = source.read(windowStart, (position - windowStart).toInt)
-          val last = if window.length >= 1 then window.readUnchecked(window.length - 1) & 0xff else -1
-          val prior = if window.length >= 2 then window.readUnchecked(window.length - 2) & 0xff else -1
+
+          val last =
+            if window.length >= 1 then window.readUnchecked(window.length - 1) & 0xff else -1
+
+          val prior =
+            if window.length >= 2 then window.readUnchecked(window.length - 2) & 0xff else -1
 
           if prior == 0x0d && last == 0x0a then position - 2
           else if last == 0x0a || last == 0x0d then position - 1
@@ -1486,8 +1503,8 @@ extends caps.ExclusiveCapability:
     val window = source.read(position, 24)
 
     window.survey: surveyor =>
-      surveyor.pace { byte => CosLexer.whitespace(byte & 0xff) }
-      surveyor.matches(marker) { (byte, char) => (byte & 0xff) == char.toInt }
+      surveyor.pace: byte => CosLexer.whitespace(byte & 0xff)
+      surveyor.matches(marker): (byte, char) => (byte & 0xff) == char.toInt
 
   // Resolves a value and, one level down, the elements of an array or the values of a
   // dictionary: sufficient for `/Filter` and `/DecodeParms` shapes.

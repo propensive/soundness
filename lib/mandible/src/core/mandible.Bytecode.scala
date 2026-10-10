@@ -32,8 +32,6 @@
                                                                                                   */
 package mandible
 
-import rudiments.*
-
 import java.lang.classfile as jlc
 import java.lang.classfile.attribute as jlca
 import java.lang.classfile.instruction as jlci
@@ -48,6 +46,7 @@ import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import iridescence.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
@@ -175,8 +174,7 @@ object Bytecode:
         val indent: Text = t"  "*line.depth
 
         val src: Teletype =
-          if line.source == t"" then e""
-          else e"${Fg(palette.bytecode)}(${line.source})  "
+          if line.source == t"" then e"" else e"${Fg(palette.bytecode)}(${line.source})  "
 
         e"$indent$src${line.instruction.opcode.teletype}"
 
@@ -1316,6 +1314,7 @@ object Bytecode:
     // what an under-full stack does.
     private def transform0(stack: scala.collection.immutable.List[Frame])
     :   scala.collection.immutable.List[Frame] =
+
       import scala.collection.immutable.{Nil, ::}
       import Frame.*
 

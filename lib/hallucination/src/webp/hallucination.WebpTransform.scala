@@ -54,7 +54,11 @@ private[hallucination] object WebpTransform:
   private inline def colorDelta(t: Byte, c: Byte): Int = (t.toInt*c.toInt) >> 5
 
   def predictor
-    ( data: scala.Array[Byte], width: Int, height: Int, sizeBits: Int, predictorData: Array[Byte]^{} )
+    ( data:          scala.Array[Byte],
+      width:         Int,
+      height:        Int,
+      sizeBits:      Int,
+      predictorData: Array[Byte]^{} )
   :   Unit =
 
     val blockWidth = subsampleSize(width, sizeBits)
@@ -91,7 +95,9 @@ private[hallucination] object WebpTransform:
 
       y += 1
 
-  private def dispatch(mode: Int, data: scala.Array[Byte], start: Int, end: Int, stride: Int): Unit =
+  private def dispatch(mode: Int, data: scala.Array[Byte], start: Int, end: Int, stride: Int)
+  :   Unit =
+
     mode match
       case 0  => opaque(data, start, end)
       case 1  => left(data, start, end)
@@ -235,7 +241,9 @@ private[hallucination] object WebpTransform:
       writable(data)(i) = (u(data(i)) + a).toByte
       i += 1
 
-  def color(data: scala.Array[Byte], width: Int, sizeBits: Int, transformData: Array[Byte]^{}): Unit =
+  def color(data: scala.Array[Byte], width: Int, sizeBits: Int, transformData: Array[Byte]^{})
+  :   Unit =
+
     val blockWidth = subsampleSize(width, sizeBits)
     val stride = width*4
     val height = data.length/stride

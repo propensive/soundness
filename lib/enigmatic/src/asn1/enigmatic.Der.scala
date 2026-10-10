@@ -32,10 +32,9 @@
                                                                                                   */
 package enigmatic
 
-import scala.caps
-
 import java.util as ju
 
+import scala.caps
 import scala.compiletime.*
 
 import anticipation.*
@@ -65,8 +64,7 @@ object Der:
   // document's bytes are rendered here as full-width lowercase hexadecimal instead. The whole
   // document is shown: a DER document is defined by its bytes, and two which differ in one byte
   // decode to different values.
-  given inspectable: [der <: Der] => der is Inspectable = der =>
-    t"Der(${Inspection.hex(der.data)})"
+  given inspectable: [der <: Der] => der is Inspectable = der => t"Der(${Inspection.hex(der.data)})"
 
 final class Der(val data: Data):
   override def equals(that: Any): Boolean = that.asMatchable match

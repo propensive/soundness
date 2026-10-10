@@ -90,6 +90,7 @@ object Handle:
     def write[source](source: source)
       ( using streamable: (source is Streamable by Data over Credit)^ )
     :   Unit =
+
       streamable.stream(source)
       . pump(handle.intake().asInstanceOf[AnyRef].asInstanceOf[(Intake[Data] over Credit)^])
 

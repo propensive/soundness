@@ -32,12 +32,12 @@
                                                                                                   */
 package zephyrine
 
-import scala.caps
-
 import java.util.concurrent as juc
 
-import anticipation.Data
+import scala.caps
+
 import anticipation.*
+import anticipation.Data
 import denominative.*
 import prepositional.*
 import vacuous.*
@@ -126,6 +126,7 @@ object Producer:
     @caps.unsafe.untrackedCaptures
     private val current: addressable.Storage =
       addressable.allocate(block).asInstanceOf[addressable.Storage]
+
     private var index: Ordinal = Prim
 
     private inline def free: Int = block - index.n0
@@ -260,6 +261,7 @@ object Producer:
       Blockpool.poll(charsClass, block) match
         case null   => new scala.Array[Char](block)
         case pooled => pooled.asInstanceOf[scala.Array[Char]]
+
     private val scratchView: java.nio.CharBuffer = java.nio.CharBuffer.wrap(scratch).nn
     private var filled: Int = 0
 
@@ -641,15 +643,6 @@ object Producer:
       Blockpool.offer(charsClass, block, scratch.asInstanceOf[AnyRef])
       Blockpool.offer(namesClass, Utf8Writer.NameSlots*2, names.asInstanceOf[AnyRef])
 
-  // The media a text serializer's push form can be delivered as: `Text` blocks through `sink`,
-  // or UTF-8 `Data` blocks through `utf8`. A format's `emit[medium](value, deliver)` summons
-  // one, so the serializer itself is written once, against `Producer[Text]`.
-  trait Emission[medium]:
-    def run(deliver: medium => Unit)
-      ( body: ((Producer[Text] { type Operand = Char })^) => Unit )
-      ( using Buffering )
-    :   Unit
-
   object Emission:
     given text: Emission[Text]:
       def run(deliver: Text => Unit)
@@ -666,6 +659,15 @@ object Producer:
       :   Unit =
 
         utf8(deliver)(body)
+
+  // The media a text serializer's push form can be delivered as: `Text` blocks through `sink`,
+  // or UTF-8 `Data` blocks through `utf8`. A format's `emit[medium](value, deliver)` summons
+  // one, so the serializer itself is written once, against `Producer[Text]`.
+  trait Emission[medium]:
+    def run(deliver: medium => Unit)
+      ( body: ((Producer[Text] { type Operand = Char })^) => Unit )
+      ( using Buffering )
+    :   Unit
 
 // A producer is a stateful capability: writing requires an exclusive reference, and the
 // root classification here lets `Intake` (and every other implementation) mark its

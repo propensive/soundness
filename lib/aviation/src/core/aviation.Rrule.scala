@@ -35,17 +35,17 @@ package aviation
 import anticipation.*
 import contingency.*
 import cosmopolite.{Locale, en, fr, de, es}
+import denominative.*
+import denominative.dysasymptotics.{linearSize, linearAccess}
 import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
-import spectacular.*
-import vacuous.*
-import denominative.*
-import symbolism.*
-import denominative.dysasymptotics.{linearSize, linearAccess}
 import rudiments.sortingAlgorithms.timsort
+import spectacular.*
+import symbolism.*
+import vacuous.*
 
 // One `BYDAY` entry: a weekday, optionally with an ordinal — `3MO` (3rd Monday), `-1FR` (last
 // Friday), or a bare `TU` (every Tuesday in the period). The ordinal is meaningful only under
@@ -81,10 +81,9 @@ object Rrule:
     ( using order: point is Comparable )
   :   Chain[point] =
 
-    val capped = until.lay(stream): limit =>
-      stream.keep(!order.greater(_, limit))
+    val capped = until.lay(stream): limit => stream.keep(!order.greater(_, limit))
 
-    count.lay(capped) { n => capped.keep(n) }
+    count.lay(capped): n => capped.keep(n)
 
   // ── RFC 5545 text form ───────────────────────────────────────────────────────────────────────
   // The rule is serialised on its own (the `DTSTART`/`start` is separate in iCalendar), e.g.
@@ -107,7 +106,7 @@ object Rrule:
       if condition then List(text) else List()
 
     def partOf[value](optional: Optional[value])(text: value => Text): List[Text] =
-      optional.lay(List())(value => List(text(value)))
+      optional.lay(List()): value => List(text(value))
 
     val parts =
       part(true, t"FREQ=${rule.frequency.show.upper}") +
@@ -215,9 +214,12 @@ object Rrule:
 
   private def yearOf(date: Date)(using calendar: RomanCalendar): Int =
     date.year(using calendar)()
+
   private def monthOf(date: Date)(using calendar: RomanCalendar): Int = date.month.numerical
+
   private def dayOf(date: Date)(using calendar: RomanCalendar): Int =
     date.day(using calendar)()
+
   private def list(date: Optional[Date]): List[Date] = date.lay(Nil)(List(_))
 
   // The ascending stream of zoneless date-times. A sub-day frequency steps the clock and filters by
@@ -274,16 +276,16 @@ object Rrule:
   private def yearDayDates(year: Int, rule: Rrule[?])(using RomanCalendar): List[Date] =
     rule.byYearDay.flatMap { day => list(yearDay(year, day)) }.filter(monthAllowed(_, rule))
 
-  // The `byWeekNo` dates within a week-year (ISO weeks, Monday-based): for each selected week number
-  // (negatives count back from the last week), the `byDay` weekdays — or the start's weekday — of
-  // that week, filtered by `byMonth`.
+  // The `byWeekNo` dates within a week-year (ISO weeks, Monday-based): for each selected week
+  // number (negatives count back from the last week), the `byDay` weekdays — or the start's weekday
+  // — of that week, filtered by `byMonth`.
   private def weekNoDates(year: Int, start: Date, rule: Rrule[?])(using RomanCalendar): List[Date] =
     val count = WeekDate.weekOfYear(unsafely(Date(Year(year), Month.Dec, Day(28))))
     val weekdays = if !rule.byDay.nil then rule.byDay.map(_.weekday) else List(start.weekday)
 
     val weeks =
-      rule.byWeekNo.map(week => if week > 0 then week else count + week + 1)
-        .filter(week => week >= 1 && week <= count)
+      rule.byWeekNo.map{ week => if week > 0 then week else count + week + 1 }
+        .filter: week => week >= 1 && week <= count
 
     val dates =
       for
@@ -334,8 +336,7 @@ object Rrule:
   private def months(start: Date, interval: Int)(using RomanCalendar): Chain[(Int, Int)] =
     val first = yearOf(start)*12 + (monthOf(start) - 1)
 
-    Chain.iterate(first)(_ + interval).map: n =>
-      (n/12, n%12 + 1)
+    Chain.iterate(first)(_ + interval).map: n => (n/12, n%12 + 1)
 
   // The ascending week-start dates for `Weekly`, aligned to `weekStart`, stepping `interval` weeks.
   private def weeks(start: Date, rule: Rrule[?]): Chain[Date] =
@@ -357,7 +358,7 @@ object Rrule:
 
     val candidates =
       byDayDates.lay(byMonthDayDates.or(list(monthDay(year, month, dayOf(start))))): byDay =>
-        byMonthDayDates.lay(byDay)(monthDays => byDay.filter(monthDays.has(_)))
+        byMonthDayDates.lay(byDay): monthDays => byDay.filter(monthDays.has(_))
 
     candidates.distinct.order(_.jdn)
 

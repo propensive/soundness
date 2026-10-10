@@ -32,12 +32,11 @@
                                                                                                   */
 package hallucination
 
+import scala.caps
+
 import contingency.*
 import rudiments.foreach
 import vacuous.*
-
-import scala.caps
-
 import Raster.Error.Reason
 
 // The VP8L lossless decoder, ported from image-rs/image-webp (`src/lossless/decoder/mod.rs`,
@@ -51,7 +50,9 @@ private[hallucination] object WebpLossless:
     . asInstanceOf[Array[Int]^{}]
 
   private val HuffmanCodesPerMetaCode: Int = 5
-  private val AlphabetSize: Array[Int]^{} = scala.Array(256 + 24, 256, 256, 256, 40).asInstanceOf[Array[Int]^{}]
+
+  private val AlphabetSize: Array[Int]^{} =
+    scala.Array(256 + 24, 256, 256, 256, 40).asInstanceOf[Array[Int]^{}]
 
   // (xoffset, yoffset) pairs, flattened, for short backward-reference distances.
   private val DistanceMap: Array[Int]^{} = scala.Array(
@@ -72,8 +73,8 @@ private[hallucination] object WebpLossless:
 
   private final class Group(val trees: Array[WebpHuffman]^{}):
     def allSingle: Boolean =
-      trees.readable(0).isSingleNode && trees.readable(1).isSingleNode && trees.readable(2).isSingleNode &&
-        trees.readable(3).isSingleNode
+      trees.readable(0).isSingleNode && trees.readable(1).isSingleNode &&
+        trees.readable(2).isSingleNode && trees.readable(3).isSingleNode
 
   private final class ColorCache(val bits: Int):
     // Inserted into after construction, through the immutable `HuffmanInfo` holder, while the
@@ -82,6 +83,7 @@ private[hallucination] object WebpLossless:
     // [aliased-read] cache array written while reader is exclusive receiver
     @scala.caps.unsafe.untrackedCaptures
     private val entries: scala.Array[Int] = new scala.Array[Int](1 << bits)
+
     def insert(argb: Int): Unit = writable(entries)((0x1e35a7bd*argb) >>> (32 - bits)) = argb
     def lookup(index: Int): Int = entries(index)
 
@@ -112,7 +114,9 @@ private[hallucination] object WebpLossless:
 
   // Decodes a VP8L stream whose dimensions are given externally (no 5-byte header), as used for
   // the lossless-compressed alpha plane of a lossy image. Returns the RGBA buffer.
-  def decodeRaw(reader: WebpBitReader^, width: Int, height: Int)(using Tactic[Raster.Error]): scala.Array[Byte] =
+  def decodeRaw(reader: WebpBitReader^, width: Int, height: Int)(using Tactic[Raster.Error])
+  :   scala.Array[Byte] =
+
     Decoder(reader, width, height).run()
 
   private final class Decoder(reader: WebpBitReader^, width: Int, height: Int)
@@ -201,7 +205,7 @@ private[hallucination] object WebpLossless:
 
     private update def decodeImageStream
       ( xsize: Int, ysize: Int, argb: Boolean, data: scala.Array[Byte], offset: Int )
-    ( using Tactic[Raster.Error] )
+    (using Tactic[Raster.Error])
     :   Unit =
 
       val cache = readColorCache()
@@ -217,7 +221,7 @@ private[hallucination] object WebpLossless:
 
     private update def readHuffmanCodes
       ( readMeta: Boolean, xsize: Int, ysize: Int, cache: Optional[ColorCache] )
-    ( using Tactic[Raster.Error] )
+    (using Tactic[Raster.Error])
     :   HuffmanInfo =
 
       var numGroups = 1
@@ -252,7 +256,9 @@ private[hallucination] object WebpLossless:
         var j = 0
 
         while j < HuffmanCodesPerMetaCode do
-          val alphabet = AlphabetSize.asInstanceOf[scala.Array[Int]](j) + (if j == 0 && cache.present then 1 << cacheBits else 0)
+          val alphabet = AlphabetSize.asInstanceOf[scala.Array[Int]](j) +
+            (if j == 0 && cache.present then 1 << cacheBits else 0)
+
           trees(j) = readHuffmanCode(alphabet)
           j += 1
 
@@ -285,14 +291,16 @@ private[hallucination] object WebpLossless:
         var i = 0
 
         while i < numCodeLengths do
-          codeLengthCodeLengths(CodeLengthCodeOrder.asInstanceOf[scala.Array[Int]](i)) = reader.readBits(3)
+          codeLengthCodeLengths(CodeLengthCodeOrder.asInstanceOf[scala.Array[Int]](i)) =
+            reader.readBits(3)
+
           i += 1
 
         WebpHuffman.buildImplicit(readHuffmanCodeLengths(codeLengthCodeLengths, alphabetSize))
 
     private update def readHuffmanCodeLengths
       ( codeLengthCodeLengths: scala.Array[Int], numSymbols: Int )
-    ( using Tactic[Raster.Error] )
+    (using Tactic[Raster.Error])
     :   scala.Array[Int] =
 
       val table = WebpHuffman.buildImplicit(codeLengthCodeLengths)
@@ -339,7 +347,7 @@ private[hallucination] object WebpLossless:
 
     private update def decodeImageData
       ( width: Int, height: Int, info: HuffmanInfo, data: scala.Array[Byte], offset: Int )
-    ( using Tactic[Raster.Error] )
+    (using Tactic[Raster.Error])
     :   Unit =
 
       val numValues = width*height
@@ -392,7 +400,9 @@ private[hallucination] object WebpLossless:
             index += 1
           else if green < 256 + 24 then
             val length = copyDistance(green - 256)
-            val dist = planeCodeToDistance(width, copyDistance(group.trees.readable(4).readSymbol(reader)))
+
+            val dist =
+              planeCodeToDistance(width, copyDistance(group.trees.readable(4).readSymbol(reader)))
 
             if index < dist || numValues - index < length then
               abort(Raster.Error(Webp(), Reason.Bitstream))
@@ -426,7 +436,13 @@ private[hallucination] object WebpLossless:
             index += 1
 
     private def store
-      ( data: scala.Array[Byte], offset: Int, index: Int, red: Int, green: Int, blue: Int, alpha: Int )
+      ( data:   scala.Array[Byte],
+        offset: Int,
+        index:  Int,
+        red:    Int,
+        green:  Int,
+        blue:   Int,
+        alpha:  Int )
     :   Unit =
 
       val p = offset + index*4
@@ -451,7 +467,7 @@ private[hallucination] object WebpLossless:
 
     private def planeCodeToDistance(xsize: Int, planeCode: Int): Int =
       if planeCode > 120 then planeCode - 120 else
-        val dist = DistanceMap.asInstanceOf[scala.Array[Int]]((planeCode - 1)*2)
-            + DistanceMap.asInstanceOf[scala.Array[Int]]((planeCode - 1)*2 + 1)*xsize
+        val dist = DistanceMap.asInstanceOf[scala.Array[Int]]((planeCode - 1)*2) +
+          DistanceMap.asInstanceOf[scala.Array[Int]]((planeCode - 1)*2 + 1)*xsize
 
         if dist < 1 then 1 else dist

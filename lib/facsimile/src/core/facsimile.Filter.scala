@@ -36,8 +36,8 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
-import rudiments.*
 import pneumatic.*
+import rudiments.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
@@ -103,7 +103,6 @@ private[facsimile] object Filter:
       case _ =>
         abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"DecodeParms", t"a dictionary or array")))
 
-
     // Walked in step rather than indexed: positional access on a `List` is O(n), and
     // `/DecodeParms` is permitted to be shorter than `/Filter` (a missing entry is empty).
     def recur(names: List[Text], parameters: List[Map[Text, Cos]])
@@ -136,31 +135,33 @@ private[facsimile] object Filter:
   // input and decode on flush, which is immaterial at their typical sizes.
   def steps(chain: List[(Id, Map[Text, Cos])])(using tactic: Tactic[Pdf.Error])
   :   List[Step^{tactic}] =
+
     // Deliberate stdlib opt-out: the steps capture `tactic`, and capture-carrying elements do
     // not flow through the opaque `List` combinators (boxing), so the interior stays stdlib as
     // far as `.to(List)`.
 
-      chain.stdlib.takeWhile(!_(0).terminal).flatMap: (id, parms) =>
-        val predicted = parms(t"Predictor").let(_.long).or(1L) > 1
+    chain.stdlib.takeWhile(!_(0).terminal).flatMap: (id, parms) =>
+      val predicted = parms(t"Predictor").let(_.long).or(1L) > 1
 
-        id match
-          case Id.Flate =>
-            if predicted
-            then scala.collection.immutable.List(Step.Inflate, Step.Gather(predict(_, parms)))
-            else scala.collection.immutable.List(Step.Inflate)
+      id match
+        case Id.Flate =>
+          if predicted
+          then scala.collection.immutable.List(Step.Inflate, Step.Gather(predict(_, parms)))
+          else scala.collection.immutable.List(Step.Inflate)
 
-          case Id.Lzw =>
-            if predicted
-            then scala.collection.immutable.List
-              (Step.Unlzw(earlyChange(parms)), Step.Gather(predict(_, parms)))
-            else scala.collection.immutable.List(Step.Unlzw(earlyChange(parms)))
+        case Id.Lzw =>
+          if predicted
+          then scala.collection.immutable.List
+            ( Step.Unlzw(earlyChange(parms)), Step.Gather(predict(_, parms)) )
+          else scala.collection.immutable.List(Step.Unlzw(earlyChange(parms)))
 
-          case Id.Crypt =>
-            scala.collection.immutable.List()
+        case Id.Crypt =>
+          scala.collection.immutable.List()
 
-          case other =>
-            scala.collection.immutable.List(Step.Gather(stage(_, other, parms)))
-      . to(List)
+        case other =>
+          scala.collection.immutable.List(Step.Gather(stage(_, other, parms)))
+
+    . to(List)
 
   // Applies a resolved filter chain eagerly, stopping at the first terminal codec.
   def decode(data: Data, chain: List[(Id, Map[Text, Cos])])(using Tactic[Pdf.Error]): Data =
@@ -171,14 +172,15 @@ private[facsimile] object Filter:
       case _ =>
         data
 
-  private def stage(data: Data, id: Id, parms: Map[Text, Cos])(using Tactic[Pdf.Error]): Data = id match
-    case Id.Flate     => predict(flate(data), parms)
-    case Id.Lzw       => predict(lzw(data, parms), parms)
-    case Id.Ascii85   => Ascii85.decode(data)
-    case Id.AsciiHex  => asciiHex(data)
-    case Id.RunLength => runLength(data)
-    case Id.Crypt     => data // `Identity` until encryption arrives; `Guard` will slot in here
-    case _            => data
+  private def stage(data: Data, id: Id, parms: Map[Text, Cos])(using Tactic[Pdf.Error]): Data =
+    id match
+      case Id.Flate     => predict(flate(data), parms)
+      case Id.Lzw       => predict(lzw(data, parms), parms)
+      case Id.Ascii85   => Ascii85.decode(data)
+      case Id.AsciiHex  => asciiHex(data)
+      case Id.RunLength => runLength(data)
+      case Id.Crypt     => data // `Identity` until encryption arrives; `Guard` will slot in here
+      case _            => data
 
   private def lzw(data: Data, parms: Map[Text, Cos])(using Tactic[Pdf.Error]): Data =
     try Lzw.decompress(Chain(data), earlyChange(parms)).flat.to[Array]
@@ -213,8 +215,7 @@ private[facsimile] object Filter:
       // Forcing the stream incrementally means a truncated (but valid-so-far) input keeps
       // whatever it decoded before the bytes ran out, matching the eager inflater's
       // partial-on-truncation behaviour; corrupt data throws from the backend.
-      chunks.each: chunk =>
-        builder.addAll(chunk)
+      chunks.each: chunk => builder.addAll(chunk)
     catch case _: IllegalStateException => ()
 
     val result = builder.result()
@@ -261,7 +262,7 @@ private[facsimile] object Filter:
             if (run: Interval).size <= length
             then abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"RunLengthDecode")))
 
-            data.iterate(run) { index => bytes += data.at(index) }
+            data.iterate(run): index => bytes += data.at(index)
           else
             // One byte, repeated `257 - length` times.
             surveyor.next(abort(Pdf.Error(Pdf.Error.Reason.CorruptStream(t"RunLengthDecode")))):

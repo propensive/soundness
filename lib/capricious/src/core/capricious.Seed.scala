@@ -32,7 +32,6 @@
                                                                                                   */
 package capricious
 
-
 import scala.language.experimental.genericNumberLiterals
 
 import anticipation.*

@@ -33,7 +33,6 @@
 package vicarious
 
 import scala.collection.immutable.{List, Nil, ::}
-
 import scala.compiletime.*
 import scala.quoted.*
 

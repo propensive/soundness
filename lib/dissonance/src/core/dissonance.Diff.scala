@@ -32,21 +32,20 @@
                                                                                                   */
 package dissonance
 
-
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import fulminate.*
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
-import symbolism.*
-import denominative.dysasymptotics.linearSize
 
 object Diff:
   given aggregable: (tactic: Tactic[Diff.Error])
-  =>  ((Diff[Text] is Aggregable by Text)^{tactic}) = parse(_)
+  =>  ( (Diff[Text] is Aggregable by Text)^{tactic} ) = parse(_)
 
   private def parse(lines: Chain[Text]): Diff[Text] raises Diff.Error =
     def recur
@@ -138,8 +137,10 @@ object Diff:
           else s"${range(left + 1, left + dels.size)}c${range(right + 1, right + inss.size)}".tt
 
         val delSeq = dels.map: del => Text("< "+del.value)
+
         val sep =
           if inss.size > 0 && dels.size > 0 then List(Text("---")) else List[Text]()
+
         val insSeq = inss.map: ins => Text("> "+ins.value)
 
         List(command) + delSeq + sep + insSeq
@@ -209,7 +210,7 @@ case class Diff[element](edits: Edit[element]*):
           val inssSeq = Sequence.from(inssRun.map { ins => ins.value: Optional[element] })
 
           val similar2: (Optional[element], Optional[element]) ->{similar} Boolean =
-            (left, right) => left.lay(false) { l => right.lay(false) { r => similar(l, r) } }
+            (left, right) => left.lay(false): l => right.lay(false): r => similar(l, r)
 
           val subs = dissonance.diff(delsSeq, inssSeq, similar2).edits.to(List).map:
             case Del(index, _) => Del(delsRun(index).left, delsRun(index).value)

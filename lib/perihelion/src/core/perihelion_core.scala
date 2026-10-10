@@ -32,16 +32,17 @@
                                                                                                   */
 package perihelion
 
-import scala.{caps, compiletime}
-
 import java.security.SecureRandom
+
+import scala.{caps, compiletime}
 
 import anticipation.*
 import coaxial.*
 import coaxial.socketBackends.javaBaseSockets
 import contingency.*
-import fulminate.Hazard
+import denominative.capped
 import distillate.*
+import fulminate.Hazard
 import gastronomy.*
 import gigantism.*
 import gossamer.*
@@ -49,17 +50,15 @@ import hieroglyph.*
 import monotonous.*
 import parasite.*
 import prepositional.*
-import denominative.capped
-import zephyrine.memoize
 import rudiments.*
 import spectacular.*
 import telekinesis.*
 import urticose.*
 import vacuous.*
-
 import alphabets.base64Standard
 import cryptoPermits.permitDeprecatedCrypto
 import providers.javaBaseProvider
+import zephyrine.memoize
 
 // `true` exactly when the message type is the raw `Message`. A match type reduces
 // by subtyping — `Message` matches the first case, any other (e.g. `Ping over Json`)
@@ -102,7 +101,9 @@ given overTransmissible: [transport, value]
 =>  ( format: transport is Encodable in Text, codec: value is Encodable in transport )
 =>  Codepage
 =>  (value over transport) is Transmissible =
-  payload => zephyrine.Stream(Websocket.Frame.Text(true, format.encoded(codec.encoded(payload)).in[Data]).encode)
+  payload =>
+    zephyrine.Stream
+      ( Websocket.Frame.Text(true, format.encoded(codec.encoded(payload)).in[Data]).encode )
 
 // The decode direction. The `Decodable in Text`/`in transport` instances are
 // `Tactic`-conditional and don't resolve as nested given constraints, so we
@@ -131,7 +132,8 @@ private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^
 
   def crlfCrlf(data: Data): Int =
     def matches(i: Int): Boolean =
-      data.readUnchecked(i) == 13 && data.readUnchecked(i + 1) == 10 && data.readUnchecked(i + 2) == 13 && data.readUnchecked(i + 3) == 10
+      data.readUnchecked(i) == 13 && data.readUnchecked(i + 1) == 10 &&
+        data.readUnchecked(i + 2) == 13 && data.readUnchecked(i + 3) == 10
 
     def recur(index: Int): Int =
       if index + 3 >= data.length then -1 else if matches(index) then index else recur(index + 1)
@@ -143,7 +145,7 @@ private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^
   def recur(acc: Data): Data = input.refill(demand) match
     case count: Int =>
       if count > 0 then
-        val window = input.lend { region => range => region.materialize(range.capped(count)) }
+        val window = input.lend: region => range => region.materialize(range.capped(count))
         val acc2: Data = Array.frozen(acc.readable ++ window.readable)
         val marker = crlfCrlf(acc2)
 
@@ -153,7 +155,8 @@ private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^
         else
           input.skip(count)
           recur(acc2)
-      else recur(acc)
+      else
+        recur(acc)
 
     case _ =>
       acc
@@ -179,8 +182,8 @@ given wsClient: ( online:            Online,
                   websocketError:    Tactic[Websocket.Error],
                   httpResponseError: Tactic[Http.Response.Error],
                   portError:         Tactic[Port.Error] )
-=>  (((Websocket.Url is Duplexable) { type Output = Data; type Connection = Websocket.Connection })
-      ^{online, monitor, websocketError, httpResponseError, portError}) =
+=>  ( ((Websocket.Url is Duplexable) { type Output = Data; type Connection = Websocket.Connection })
+      ^{online, monitor, websocketError, httpResponseError, portError} ) =
   // The client retains its `Monitor` (the frame pump daemon) and tactics, so the instance
   // is a capability — a given constructed from capabilities produces a capability (see
   // rep/DECISIONS.md).
@@ -255,7 +258,9 @@ given wsClient: ( online:            Online,
       val expected: Text = t"$key${Websocket.magic}".digest[Sha1].serialize[Base64].keep(28)
 
       if response.headers.secWebsocketAccept.prim != expected then
-        abort(Websocket.Error(Websocket.Error.Reason.Handshake(t"the Sec-WebSocket-Accept was wrong")))
+        abort
+          ( Websocket.Error
+              ( Websocket.Error.Reason.Handshake(t"the Sec-WebSocket-Accept was wrong") ) )
 
       val masking: Masking = Masking.Client()
       given Masking = masking
@@ -306,8 +311,8 @@ extends Sessional:
     try lambda(using connection) finally connection.close()
 
 given wsSessional: ( duplexable: ((Websocket.Url is Duplexable) { type Output = Data
-                                                          type Connection = Websocket.Connection })^,
+                                    type Connection = Websocket.Connection })^,
                      monitor:    Monitor )
-=>  (WsSessional^{duplexable, monitor, caps.any}) =
+=>  ( WsSessional^{duplexable, monitor, caps.any} ) =
 
   WsSessional()

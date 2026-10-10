@@ -32,7 +32,6 @@
                                                                                                   */
 package escritoire
 
-
 import scala.collection.immutable.IndexedSeq
 
 import anticipation.*
@@ -70,9 +69,10 @@ extension [text: Textual { type Result = Char }](items: List[text])
     Columnation.layout(items, width, gap, uniform, downward, align)
 
 // `failAttenuation` is a context function `Tactic[Table.Error] ?=> Attenuation^`: the returned
-// `Attenuation` captures the Tactic *parameter*, so the given value itself captures nothing from its
-// enclosing scope and these can stay package-level givens — accessing `failAttenuation` or
-// `ignoreAttenuation` then captures no capability (unlike a member of an `ExclusiveCapability` object).
+// `Attenuation` captures the Tactic *parameter*, so the given value itself captures nothing from
+// its enclosing scope and these can stay package-level givens — accessing `failAttenuation` or
+// `ignoreAttenuation` then captures no capability (unlike a member of an `ExclusiveCapability`
+// object).
 package columnAttenuation:
   given failAttenuation: (tactic: Tactic[Table.Error]) => (Attenuation^{tactic}) =
     (minimum, available) => raise(Table.Error(minimum, available))
@@ -118,7 +118,11 @@ package columnar:
     // wrapping but will chop mid-word rather than overflow, so it has no min-content floor.
     def flex(metrics: Metrics, maxWidth: Int): Flex =
       val floor = metrics.natural.min(1)
-      Flex(Metrics(floor, metrics.natural), (metrics.natural - floor).max(0).toDouble, metrics.natural)
+
+      Flex
+        ( Metrics(floor, metrics.natural),
+          (metrics.natural - floor).max(0).toDouble,
+          metrics.natural )
 
 
     def fit[textual: Textual { type Result = Char }]

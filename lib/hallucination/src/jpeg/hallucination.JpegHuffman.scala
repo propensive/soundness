@@ -32,10 +32,9 @@
                                                                                                   */
 package hallucination
 
-import contingency.*
-
 import scala.caps
 
+import contingency.*
 import Raster.Error.Reason
 
 // A canonical-Huffman decoder for JPEG entropy-coded data, ported from image-rs/jpeg-decoder
@@ -53,7 +52,9 @@ private[hallucination] object JpegHuffman:
 private[hallucination] object JpegHuffmanTable:
   // A real `using` clause rather than the `raises` sugar: a context-function result would
   // hide the array parameters, which the separation checker rejects.
-  def apply(counts: scala.Array[Int], values: scala.Array[Int], ac: Boolean)(using Tactic[Raster.Error])
+  def apply
+    ( counts: scala.Array[Int], values: scala.Array[Int], ac: Boolean )
+    ( using Tactic[Raster.Error] )
   :   JpegHuffmanTable =
 
     val lutBits = JpegHuffman.LutBits
@@ -177,6 +178,7 @@ private[hallucination] final class JpegHuffmanDecoder extends caps.Mutable:
   // Section F.2.2.3, Figure F.16.
   update def decode(reader: JpegReader^, table: JpegHuffmanTable)(using Tactic[Raster.Error])
   :   Int =
+
     if numBits < 16 then readBits(reader)
 
     val lookup = peekBits(JpegHuffman.LutBits)
@@ -206,6 +208,7 @@ private[hallucination] final class JpegHuffmanDecoder extends caps.Mutable:
   update def decodeFastAc(reader: JpegReader^, table: JpegHuffmanTable)
     ( using Tactic[Raster.Error] )
   :   Boolean =
+
     if !table.hasAcLut then false else
       if numBits < JpegHuffman.LutBits then readBits(reader)
       val lookup = peekBits(JpegHuffman.LutBits)

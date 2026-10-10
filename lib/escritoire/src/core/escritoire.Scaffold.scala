@@ -65,7 +65,7 @@ case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[
     val titles: List[Array[Array[text]^{}]^{}] =
       List:
         Array.from[Array[text]^{}]:
-          columns0.map { column => column.title.cut(t"\n").to[Array] }
+          columns0.map: column => column.title.cut(t"\n").to[Array]
 
     // A row phrased through these columns, ahead of any layout.
     def cells(row: row)
@@ -93,12 +93,9 @@ case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[
       val dataLength: Int = data.size
 
       val rows: List[Array[Array[text]^{}]^{}] =
-        data.map: row =>
-          columns.map[Array[text]^{}]: column =>
-            column.get(row).lines.to[Array]
+        data.map: row => columns.map[Array[text]^{}]: column => column.get(row).lines.to[Array]
 
       // Evaluated HERE, the last point at which the row value exists; carried as plain
       // lists (no `ClassTag` exists for an `Optional` of a function).
       override val decorations: List[List[Optional[text -> text]]] =
-        data.map: row =>
-          columns0.map { column => column.decorate(row) }.to(List)
+        data.map: row => columns0.map { column => column.decorate(row) }.to(List)

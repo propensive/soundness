@@ -33,7 +33,6 @@
 package contingency
 
 import scala.language.experimental.pureFunctions
-
 import scala.quoted.*
 
 import fulminate.*

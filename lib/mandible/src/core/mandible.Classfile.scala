@@ -35,8 +35,8 @@ package mandible
 import java.lang.classfile as jlc
 import java.lang.classfile.attribute as jlca
 import java.lang.classfile.instruction as jlci
-
 import java.nio.charset.StandardCharsets
+
 import anticipation.*
 import contingency.*
 import fulminate.*
@@ -52,15 +52,16 @@ object Classfile:
   case class Error()(using Diagnostics)
   extends fulminate.Error(293, 0)(m"there was an error reading the classfile")
 
-  given aggregable: Classfile is Aggregable by Data = stream => new Classfile(stream.read[Data].readable)
+  given aggregable: Classfile is Aggregable by Data =
+    stream => new Classfile(stream.read[Data].readable)
 
   def apply(name: Text)(using classloader: Classloader): Optional[Classfile] =
-    classloader(name).let(data => new Classfile(data.readable))
+    classloader(name).let: data => new Classfile(data.readable)
 
   def apply[classtype: ClassTag](using classloader: Classloader): Optional[Classfile] =
     val cls = classtype.runtimeClass
     val name = t"${cls.getName().nn.replace('.', '/').nn}.class"
-    classloader(name).let(data => new Classfile(data.readable))
+    classloader(name).let: data => new Classfile(data.readable)
 
 // `data` is the stdlib immutable array, not the frozen `Data`: a frozen-array constructor
 // field would make `Classfile` itself a capability. Conversion happens in the companion.
@@ -162,4 +163,5 @@ class Classfile(data: scala.IArray[Byte]):
 
   private lazy val model: jlc.ClassModel =
     jlc.ClassFile.of().nn.parse(data.asInstanceOf[scala.Array[Byte]]).nn
+
   lazy val methods: List[Method] = model.methods.nn.to[List].map(Method(_))

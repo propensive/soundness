@@ -32,32 +32,32 @@
                                                                                                   */
 package embarcadero
 
-import aperture.*
-import rudiments.{each, prim}
-import murmuration.has
-import fulminate.*
-import jacinta.*
-import pneumatic.*
+import scala.caps
+import scala.collection.mutable as scm
 
 import anticipation.*
+import aperture.*
 import bitumen.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*, codepages.utf8Codepage
 import hypotenuse.*
+import jacinta.*
+import murmuration.has
+import pneumatic.*
 import prepositional.*
 import rudiments.map
-import scala.caps
-import scala.collection.mutable as scm
+import rudiments.{each, prim}
 import serpentine.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 import wisteria.*
 import zephyrine.*
-import symbolism.*
 
 object Image:
   // Anchored here so `data.open[Image]()` resolves with no import. Opening a filesystem
@@ -263,7 +263,8 @@ object Image:
 
     def config(manifest: Oci.Manifest)(using Tactic[Oci.Error]): Oci.Config =
       if manifest.config.mediaType == media"application/vnd.wasm.config.v0+json"
-      then wasmConfig(manifest) else imageConfig(manifest)
+      then wasmConfig(manifest)
+      else imageConfig(manifest)
 
     // A layer's stored blob, verbatim: for OCI layers, the gzip-compressed tar.
     def compressed(descriptor: Descriptor)(using Tactic[Oci.Error])
@@ -350,9 +351,9 @@ case class Image
   def blobs: List[(Text, Data)] =
     val layerBlobs = layers.map: layer => (layer.digest, layer.blob)
 
-    List((configDescriptor.digest, configBytes))
-    + layerBlobs
-    + List((manifestDescriptor.digest, manifestBytes))
+    List((configDescriptor.digest, configBytes)) +
+      layerBlobs +
+      List((manifestDescriptor.digest, manifestBytes))
 
   // The complete image serialised as an OCI image-layout tar (an "oci-archive"):
   // an `oci-layout` marker, the `index.json`, and every blob under

@@ -32,13 +32,11 @@
                                                                                                   */
 package quantitative
 
-import scala.{caps, compiletime, math}
-
 // Deliberate stdlib opt-out: macro-internal unit algebra.
 import scala.collection.immutable.{List, Map, Nil, ::}
-
 import scala.compiletime.*
 import scala.quoted.*
+import scala.{caps, compiletime, math}
 
 import anticipation.*
 import fulminate.*
@@ -339,6 +337,7 @@ trait protointernal extends caps.Pure:
   def collectUnits[units <: Measure: Type]: Macro[proscenium.Map[Text, Int]] =
     def recur(expr: Expr[proscenium.Map[Text, Int]], todo: List[UnitPower])
     :   Expr[proscenium.Map[Text, Int]] =
+
       todo match
         case Nil => expr
 
@@ -349,7 +348,9 @@ trait protointernal extends caps.Pure:
               // `Map.from` inside the quote, not a conversion: a `Factory` conversion in
               // *generated* code carries a capture into a capture-set position, which crashes
               // capture checking with `IllegalCaptureRef` at every use of the macro.
-              recur('{proscenium.Map.from($expr.stdlib.updated($designation.text, ${Expr(power)}))}, todo2)
+              recur
+                ( '{proscenium.Map.from($expr.stdlib.updated($designation.text, ${Expr(power)}))},
+                  todo2 )
 
     Expr.summon[Redesignation[units]].absolve match
       case Some('{$redesignation: Redesignation[?]}) =>

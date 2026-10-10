@@ -33,7 +33,6 @@
 package contingency
 
 import scala.language.experimental.pureFunctions
-
 import scala.language.unsafeNulls
 import scala.quoted.*
 import scala.util.boundary
@@ -51,7 +50,7 @@ package strategies:
     ThrowTactic()
 
   given mitigation: [error <: Hazard, error2 <: Hazard: Mitigable to error]
-  =>  (tactic: Tactic[error]^)
+  =>  ( tactic: Tactic[error]^ )
   =>  ( Tactic[error2]^ ) =
 
     tactic.contramap(error2.mitigate(_))
@@ -246,7 +245,8 @@ extension [value](optional: Optional[value])
   :   Optional[success] =
 
     try boundary: label ?=>
-      optional.let(block(using Diagnostics.omit, OptionalTactic(label), summon[CanThrow[Exception]]))
+      optional.let
+        ( block(using Diagnostics.omit, OptionalTactic(label), summon[CanThrow[Exception]]) )
     catch case error: Exception => Unset
 
 

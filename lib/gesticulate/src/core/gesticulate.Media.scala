@@ -104,7 +104,7 @@ object Media:
         case _ =>
           ()
 
-      ps.map((param: Text) => param.cut(t"=", 2)).map: (p: List[Text]) =>
+      ps.map{ (param: Text) => param.cut(t"=", 2) }.map: (p: List[Text]) =>
         p.absolve match
           case List(key, value) => key.show -> value.show
 

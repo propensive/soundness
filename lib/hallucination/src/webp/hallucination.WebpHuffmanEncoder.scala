@@ -60,7 +60,10 @@ private[hallucination] object WebpHuffmanEncoder:
   // Builds codes for `frequencies` and writes the tree; falls back to a single-entry tree when
   // fewer than two symbols occur.
   def writeTree
-    ( writer: WebpBitWriter^, frequencies: scala.Array[Int], lengths: scala.Array[Int], codes: scala.Array[Int] )
+    ( writer:      WebpBitWriter^,
+      frequencies: scala.Array[Int],
+      lengths:     scala.Array[Int],
+      codes:       scala.Array[Int] )
   :   Unit =
 
     if !build(frequencies, lengths, codes, 15) then
@@ -106,7 +109,11 @@ private[hallucination] object WebpHuffmanEncoder:
 
   // Builds canonical code lengths (≤ `limit`) and codes from frequencies; returns false (and zeroes
   // the arrays) if fewer than two symbols occur.
-  private def build(frequencies: scala.Array[Int], lengths: scala.Array[Int], codes: scala.Array[Int], limit: Int)
+  private def build
+    ( frequencies: scala.Array[Int],
+      lengths:     scala.Array[Int],
+      codes:       scala.Array[Int],
+      limit:       Int )
   :   Boolean =
 
     java.util.Arrays.fill(lengths, 0)
@@ -154,7 +161,9 @@ private[hallucination] object WebpHuffmanEncoder:
       true
 
   // Rebalances code lengths so none exceeds `limit`, preserving a valid (Kraft-complete) tree.
-  private def limitLengths(frequencies: scala.Array[Int], lengths: scala.Array[Int], limit: Int): Unit =
+  private def limitLengths(frequencies: scala.Array[Int], lengths: scala.Array[Int], limit: Int)
+  :   Unit =
+
     var maxLength = 0
     var i = 0
 

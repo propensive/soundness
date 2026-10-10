@@ -33,14 +33,13 @@
 package parasite
 
 import scala.caps
-
 import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
-import fulminate.Hazard
 import digression.*
+import fulminate.Hazard
 import mercator.*
 import nomenclature.*
 import prepositional.*
@@ -131,6 +130,7 @@ object Task:
   extension [result](tasks: Iterable[Task[result]])
     def race()(using monitor: Monitor^, probate: SharedProbate)
     :   (Tactic[Async.Error]^) ?->{monitor, probate} result =
+
       val promise: Promise[result] = Promise()
 
       tasks.foreach: task =>
@@ -141,8 +141,9 @@ object Task:
 
 // A task carries the error type its body may raise as the `Error` member, refined by the `emits`
 // alias (`Task[result] emits error` = `Task[result] { type Error <: error }`). It is preserved to
-// `await`, where it is delivered through the caller's in-scope `Tactic`. `Async.Error` (cancellation
-// or timeout) is always a possible outcome, so it is added at the `await` site, not the member.
+// `await`, where it is delivered through the caller's in-scope `Tactic`. `Async.Error`
+// (cancellation or timeout) is always a possible outcome, so it is added at the `await` site, not
+// the member.
 trait Task[+result]:
   type Error <: Hazard
 
@@ -164,8 +165,10 @@ trait Task[+result]:
     ( using monitor: Monitor^ )
   :   (Tactic[Async.Error]^) ?->{this, monitor} result
 
-  def bind[result2](lambda: result ->{caps.any.only[anticipation.Durable]} Task[result2])(using monitor: Monitor^, probate: SharedProbate)
+  def bind[result2](lambda: result ->{caps.any.only[anticipation.Durable]} Task[result2])
+    ( using monitor: Monitor^, probate: SharedProbate )
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate}
 
-  def map[result2](lambda: result ->{caps.any.only[anticipation.Durable]} result2)(using monitor: Monitor^, probate: SharedProbate)
+  def map[result2](lambda: result ->{caps.any.only[anticipation.Durable]} result2)
+    ( using monitor: Monitor^, probate: SharedProbate )
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate}

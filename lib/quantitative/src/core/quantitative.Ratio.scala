@@ -32,10 +32,10 @@
                                                                                                   */
 package quantitative
 
-sealed trait Ratio[units <: Measure, ratio <: Double & Singleton]
-
 object Ratio:
   // The evidence an erased `Ratio` given is built from: never instantiated at runtime, since
   // every use (the units macro reads only its types) is erased.
   private[quantitative] final class Evidence[units <: Measure, ratio <: Double & Singleton]()
   extends Ratio[units, ratio]
+
+sealed trait Ratio[units <: Measure, ratio <: Double & Singleton]

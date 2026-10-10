@@ -115,5 +115,4 @@ object Tasty:
     def covering(line: Int): List[Definition] =
       val covered: List[Definition] = definitions.filter(_.covers(line))
 
-      covered.order: definition =>
-        (if definition.span == 0 then 1 else 0, definition.span)
+      covered.order: definition => (if definition.span == 0 then 1 else 0, definition.span)

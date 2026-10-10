@@ -32,10 +32,10 @@
                                                                                                   */
 package enigmatic
 
-import gastronomy.Signing
 import scala.reflect.Selectable.reflectiveSelectable
 
 import anticipation.*
+import gastronomy.Signing
 
 // ML-DSA (FIPS 204), the module-lattice signature scheme standardized from CRYSTALS-Dilithium,
 // in its three parameter sets: 44, 65 and 87 (the dimensions of the matrix A, e.g. 6×5 for

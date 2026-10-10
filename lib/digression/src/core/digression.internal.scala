@@ -33,7 +33,6 @@
 package digression
 
 import scala.language.experimental.pureFunctions
-
 import scala.quoted.*
 
 import anticipation.*

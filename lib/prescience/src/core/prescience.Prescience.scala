@@ -38,11 +38,11 @@ object Prescience:
   // `Inlinable` instance is resolved at expansion time; statically-evaluable
   // instances contribute generated code, anything else a runtime call.
   inline def read[value](input: String): value =
-    ${ prescience.internal.readStaged[value]('input, '{false}) }
+    ${prescience.internal.readStaged[value]('input, '{false})}
 
   // As `read`, but instances beyond the static subset are obtained by running
   // the implicit search inside an in-macro `staging.Compiler` — expensive (a
   // full compiler run per instance, reported via an info diagnostic) but able
   // to evaluate conditional and derived givens at expansion time.
   inline def readStaging[value](input: String): value =
-    ${ prescience.internal.readStaged[value]('input, '{true}) }
+    ${prescience.internal.readStaged[value]('input, '{true})}

@@ -38,7 +38,8 @@ import gossamer.Textual.concatenable
 import rudiments.*
 import symbolism.*
 
-case class TextualTreeStyle[line: Textual as textual](space: Text, last: Text, branch: Text, extender: Text)
+case class TextualTreeStyle[line: Textual as textual]
+  ( space: Text, last: Text, branch: Text, extender: Text )
 extends TreeStyle[line]:
   def serialize(tiles: List[TreeTile], node: line): line =
     textual.apply(tiles.map(text(_)).join)+node

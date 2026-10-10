@@ -32,9 +32,8 @@
                                                                                                   */
 package ambience
 
-import scala.language.dynamics
-
 import scala.compiletime.ops.string.*
+import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
@@ -68,12 +67,11 @@ object Property:
   def apply[name <: String, property](lambda: Text => property)
   :   ((name is Property of property)^{lambda}) =
 
-    (value, property) =>
-      lambda(value.or(panic(m"the system property $property was unavailable")))
+    (value, property) => lambda(value.or(panic(m"the system property $property was unavailable")))
 
 
   given generic: [label <: String & Singleton] => (tactic: Tactic[Property.Error])
-  =>  ((label is Property of Text)^{tactic}) =
+  =>  ( (label is Property of Text)^{tactic} ) =
 
     (value, property) => value.lest(Property.Error(property))
 
@@ -99,14 +97,14 @@ object Property:
   given javaVendorUrl: ("java.vendor.url" is Property of Text) = Property(identity)
 
   given javaRuntimeVersion: (tactic: Tactic[Property.Error])
-  =>  (("java.runtime.version" is Property of Text)^{tactic}) =
+  =>  ( ("java.runtime.version" is Property of Text)^{tactic} ) =
 
     (value, name) => value.lest(Property.Error(name))
 
   given javaClassVersion: ("java.runtime.version" is Property of Int) =
     // Decoded under `unsafely`, whose unscoped tactic is minted per call: the lambda captures
     // nothing, so the instance is pure and can be stored as a global given.
-    Property(text => unsafely(text.as[Int]))
+    Property: text => unsafely(text.as[Int])
 
   // given javaExtDirs: [path: Instantiable across Paths from Text]
   // =>  ( system: System, property: Tactic[Property.Error] )
@@ -136,11 +134,10 @@ object Property:
     Property(_.as[Architecture])
 
   given decoder: [label <: Label, property] => (decoder: (property is Decodable in Text)^)
-  =>  (tactic: Tactic[Property.Error])
-  =>  ((label is Property of property)^{decoder, tactic}) =
+  =>  ( tactic: Tactic[Property.Error] )
+  =>  ( (label is Property of property)^{decoder, tactic} ) =
 
-    (value, name) =>
-      decoder.decoded(value.lest(Property.Error(name)))
+    (value, name) => decoder.decoded(value.lest(Property.Error(name)))
 
   // PropertyError → Property.Error
   case class Error(property: Text)(using Diagnostics)

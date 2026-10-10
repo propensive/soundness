@@ -48,6 +48,7 @@ object Directories:
   def home[path](using instantiable: (path is Instantiable across Paths from Text)^)
     ( using system: System )
   :   path =
+
     instantiable(homeText)
 
 
@@ -131,7 +132,8 @@ object Directories:
     instantiable(localAppDataText)
 
 
-  private def roamingAppData[path](using instantiable: (path is Instantiable across Paths from Text)^)
+  private def roamingAppData[path]
+    ( using instantiable: (path is Instantiable across Paths from Text)^ )
     ( using environment: Environment, system: System )
   :   path =
 

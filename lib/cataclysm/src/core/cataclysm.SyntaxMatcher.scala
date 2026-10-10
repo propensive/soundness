@@ -39,12 +39,10 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
-
 import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-
 
 // Checks a CSS property value against its `Css.Syntax` grammar. Composite `<type>`s
 // are resolved lazily from the bundled `syntaxes.json` (which expand to keywords,
@@ -94,7 +92,6 @@ object SyntaxMatcher:
       ( t"calc", t"min", t"max", t"clamp", t"sin", t"cos", t"tan", t"asin", t"acos", t"atan",
         t"atan2", t"pow", t"sqrt", t"hypot", t"log", t"exp", t"abs", t"sign", t"mod", t"rem",
         t"round" )
-
 
   private def substitution(token: ValueToken): Boolean = token match
     case ValueToken.Function(name) => substitutions(name.lower)
@@ -180,15 +177,17 @@ object SyntaxMatcher:
     private def allOf(terms: List[Css.Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =
       if terms.nil then List(tokens)
       else
-        pickEach(terms, tokens).bind: (rest, rem) =>
-          allOf(rest, rem)
+        pickEach(terms, tokens).bind: (rest, rem) => allOf(rest, rem)
 
     private def anyOf(terms: List[Css.Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =
-      pickEach(terms, tokens).bind: (rest, rem) =>
-        (rem :: anyOf(rest, rem)): List[List[ValueToken]]
+      pickEach(terms, tokens).bind: (rest, rem) => (rem :: anyOf(rest, rem)): List[List[ValueToken]]
 
     private def repeat
-      ( term: Css.Syntax, min: Int, max: Optional[Int], separated: Boolean, tokens: List[ValueToken] )
+      ( term:      Css.Syntax,
+        min:       Int,
+        max:       Optional[Int],
+        separated: Boolean,
+        tokens:    List[ValueToken] )
     :   List[List[ValueToken]] =
 
       def go(count: Int, toks: List[ValueToken]): List[List[ValueToken]] =
@@ -225,7 +224,7 @@ object SyntaxMatcher:
     private def typeMatch(name: Text, tokens: List[ValueToken]): List[List[ValueToken]] =
       composite(name) match
         case syntax: Css.Syntax => guarded(name, consume(syntax, tokens))
-        case _              => primitive(name, tokens)
+        case _                  => primitive(name, tokens)
 
     private def propertyMatch(name: Text, tokens: List[ValueToken]): List[List[ValueToken]] =
       PropertyDef.of(name) match

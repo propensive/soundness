@@ -55,4 +55,3 @@ extension [medium, transport](consume stream: (Stream[medium] over transport)^)
     async:
       streamRef.asInstanceOf[(Stream[medium] over transport)^]
       . pump(intakeRef.asInstanceOf[(Intake[medium] over transport)^])
-

@@ -32,8 +32,6 @@
                                                                                                   */
 package rudiments
 
-
-
 import scala.quoted.*
 
 import anticipation.*

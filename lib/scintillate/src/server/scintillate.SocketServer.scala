@@ -68,8 +68,7 @@ object SocketServer:
     var found = false
 
     while !found && index <= max do
-      if value.regionMatches(true, index, token, 0, token.length) then found = true
-      else index += 1
+      if value.regionMatches(true, index, token, 0, token.length) then found = true else index += 1
 
     found
 
@@ -206,12 +205,13 @@ extends RequestServable:
   // receiver proxies to read-only).
   private def requestBody(cursor: Cursor[Data, {}]^, facts: HeadFacts^)
   :   (Stream[Data] over Credit)^{cursor} =
-   // The stream's own fresh capability is laundered into the declared result, which
-   // tracks the single-owner cursor.
-   // [construction-fresh] stream's fresh capability laundered into declared result
-   scala.caps.unsafe.unsafeAssumePure:
-     if facts.chunked then Http.Request.chunkedBody(cursor)
-     else facts.contentLength.lay(Http.emptyBody())(Http.Request.fixedBody(cursor, _))
+
+    // The stream's own fresh capability is laundered into the declared result, which
+    // tracks the single-owner cursor.
+    // [construction-fresh] stream's fresh capability laundered into declared result
+    scala.caps.unsafe.unsafeAssumePure:
+      if facts.chunked then Http.Request.chunkedBody(cursor)
+      else facts.contentLength.lay(Http.emptyBody())(Http.Request.fixedBody(cursor, _))
 
   private def streaming(response: Http.Response^): Boolean = response.body match
     case Http.Body.Flowing(_) => true
@@ -290,22 +290,22 @@ extends RequestServable:
           // The responder retains only per-request locals; no aliased writer.
           // [closure-capture] anonymous responder closes over per-request locals
           val respond: Http.Connection.Respond^ = scala.caps.unsafe.unsafeAssumeSeparate:
-           new Http.Connection.Respond:
-            def apply(response: Http.Response^)(using Tactic[Truncation.Error]): Unit =
-              if response.status == Http.SwitchingProtocols then
-                // Switch to the upgraded protocol: write the handshake headers, then
-                // pipe its raw stream until it ends. This blocks for the lifetime of
-                // the upgraded connection (e.g. a WebSocket session).
-                upgraded = true
-                writeAll(out, Http.Response.serialize(response))
-              else
-                // A streaming body to a pre-1.1 client can't be chunked, so it must
-                // be delimited by closing the connection.
-                if head.version != 1.1 && streaming(response) then keep = false
-                val response2 = if keep then response else response + closeHeader
-                val bytes = Http.Response.serialize(response2, head.method != Http.Head, head.version)
+            new Http.Connection.Respond:
+              def apply(response: Http.Response^)(using Tactic[Truncation.Error]): Unit =
+                if response.status == Http.SwitchingProtocols then
+                  // Switch to the upgraded protocol: write the handshake headers, then
+                  // pipe its raw stream until it ends. This blocks for the lifetime of
+                  // the upgraded connection (e.g. a WebSocket session).
+                  upgraded = true
+                  writeAll(out, Http.Response.serialize(response))
+                else
+                  // A streaming body to a pre-1.1 client can't be chunked, so it must
+                  // be delimited by closing the connection.
+                  if head.version != 1.1 && streaming(response) then keep = false
+                  val response2 = if keep then response else response + closeHeader
+                  val bytes = Http.Response.serialize(response2, head.method != Http.Head, head.version)
 
-                writeAll(out, bytes, flushEach = streaming(response))
+                  writeAll(out, bytes, flushEach = streaming(response))
 
           val connection = new Http.Connection(request, ssl.present, port, respond)
           Log.fine(Httpd.Event.Received(request))
@@ -352,15 +352,15 @@ extends RequestServable:
         Log.warn(Httpd.Event.BrokenStream(length))
 
     . protect:
-        // The connection cursor pulls straight from the socket's endpoint;
-        // construction is deferred until the first read (live-socket rule).
-        // The recovery tactic and the socket cursor share no writer; the request loop owns
-        // the cursor exclusively within this block.
-        // [by-name-receiver] protect body and recovery tactic overlap
-        scala.caps.unsafe.unsafeAssumeSeparate:
-          val cursor = Cursor[Data](Streamable.inputStream.stream(in))
-          var continue = true
-          while continue && !cursor.finished do continue = serveRequest(cursor)
+      // The connection cursor pulls straight from the socket's endpoint;
+      // construction is deferred until the first read (live-socket rule).
+      // The recovery tactic and the socket cursor share no writer; the request loop owns
+      // the cursor exclusively within this block.
+      // [by-name-receiver] protect body and recovery tactic overlap
+      scala.caps.unsafe.unsafeAssumeSeparate:
+        val cursor = Cursor[Data](Streamable.inputStream.stream(in))
+        var continue = true
+        while continue && !cursor.finished do continue = serveRequest(cursor)
 
   // A per-request server: handle every request (HTTP/1.1) or stream (HTTP/2)
   // with `handler`. The degenerate session with no per-connection setup. The
@@ -386,8 +386,7 @@ extends RequestServable:
         Service(() => reactor0.asInstanceOf[Reactor].stop(), reactor.port)
 
       case _ =>
-        handleSession: session ?=>
-          session.handle(handler)
+        handleSession: session ?=> session.handle(handler)
 
   // A per-connection session server: `scope` runs once when a connection is
   // established (an HTTP/2 connection, or an HTTP/1.1 keep-alive socket) and may
@@ -442,10 +441,10 @@ extends RequestServable:
     // aliased writer.
     // [by-name-receiver] contain handler and protected body share server state
     scala.caps.unsafe.unsafeAssumeSeparate:
-     contain:
-      case error => Log.fail(Httpd.Event.ConnectionFailed(error)); Remedy.Accept
+      contain:
+        case error => Log.fail(Httpd.Event.ConnectionFailed(error)); Remedy.Accept
 
-     . protect:
+      . protect:
         // Daemon bodies must be pure context functions, so the server, the handler and each
         // socket cross into them as `AnyRef` rims (the `AnyRef`-rim recipe).
         val self: AnyRef = bound
@@ -497,6 +496,7 @@ extends RequestServable:
                   val session: Http2Session^ = new Http2Session:
                     def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
                     :   Unit =
+
                       self1.serveConnection(handler)(in, out)
 
                   scope2(session.asInstanceOf[AnyRef])
@@ -510,10 +510,10 @@ extends RequestServable:
         // The loop and its canceller run under the same supervisor; no aliased writer.
         // [by-name-receiver] async body shares supervisor with accept loop
         val stopTask = scala.caps.unsafe.unsafeAssumeSeparate:
-         async:
-          cancel.attend()
-          acceptLoop.stop()
-          safely(serverSocket.close())
+          async:
+            cancel.attend()
+            acceptLoop.stop()
+            safely(serverSocket.close())
 
         Service(() => safely(cancel.fulfill(())), serverSocket.getLocalPort)
 

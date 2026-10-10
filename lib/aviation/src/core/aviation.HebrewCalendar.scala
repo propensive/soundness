@@ -51,7 +51,6 @@ class HebrewCalendar() extends Calendar:
   private val epoch: Int = 347998
   val name: Text = t"Hebrew"
 
-
   def leapYear(year: Year): Boolean = (7*year() + 1)%19 < 7
   def monthsInYear(year: Year): Int = if leapYear(year) then 13 else 12
 

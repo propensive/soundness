@@ -32,7 +32,6 @@
                                                                                                   */
 package vicarious
 
-
 import scala.language.dynamics
 
 import beneficence.Findable

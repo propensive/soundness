@@ -33,10 +33,10 @@
 package enigmatic
 
 import anticipation.*
-import rudiments.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 import xenophile.*
 
@@ -87,6 +87,7 @@ object OpensslCrypto extends Crypto:
         Foreign["library", Native].HMAC
           ( md, keyBuffer.pointer, key.length, dataBuffer.pointer, data.length.toLong,
             output.pointer, outputLength.pointer )
+
         . call[Address]()
 
         output.data(outputLength.int)
@@ -219,7 +220,7 @@ object OpensslCrypto extends Crypto:
 
     def encrypt(transformation: Text, key: Data, iv: Optional[Data], data: Data): Data =
       val body = oneShot(encrypting = true, transformation, key, iv, data)
-      iv.lay(body)(prefix => Array.frozen(prefix.readable ++ body.readable))
+      iv.lay(body): prefix => Array.frozen(prefix.readable ++ body.readable)
 
     def decrypt(transformation: Text, key: Data, ivSize: Optional[Int], data: Data): Data =
       ivSize.lay(oneShot(encrypting = false, transformation, key, Unset, data)): size =>
@@ -258,6 +259,6 @@ object OpensslCrypto extends Crypto:
       val block = if transformation.cut(t"/").prim == t"AES" then 16 else 8
 
       Array.frozen
-       ( update(context, data, block, encrypting).readable
-         ++ finish(context, block, encrypting).readable )
+        ( update(context, data, block, encrypting).readable ++
+          finish(context, block, encrypting).readable )
     finally freeContext(context)

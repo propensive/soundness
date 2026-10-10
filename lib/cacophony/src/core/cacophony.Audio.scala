@@ -37,19 +37,20 @@ import javax.sound.sampled as jss
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import gossamer.*
 import prepositional.*
 import quantitative.*
 import rudiments.*
 import symbolism.*
 import turbulence.*
-import zephyrine.*
 import vacuous.*
-import fulminate.*
+import zephyrine.*
 
 object Audio:
   def apply[streamable: Streamable by Data over Credit](input: streamable)
   :   Audio raises Audio.Error =
+
     // `ByteArrayInputStream` only reads the array it wraps.
     val rawBytes: scala.Array[Byte] = Array.unsafeJvm(input.read[Data])
 
@@ -88,7 +89,9 @@ object Audio:
     pcm.close()
     new Audio(pcmFormat, pcmBytes)
 
-  def apply[form: Audible as audible](format: jss.AudioFormat, data: Array[Byte]^{}): Audio in form =
+  def apply[form: Audible as audible](format: jss.AudioFormat, data: Array[Byte]^{})
+  :   Audio in form =
+
     new Audio(format, data):
       type Form = form
 
@@ -128,12 +131,12 @@ object Audio:
       (format.mediaType.basic, HttpStreams.Body(audio.source[Data].chain))
 
   given aggregable: [format: Audible as audible] => (tactic: Tactic[Audio.Error])
-  =>  (((Audio in format) is Aggregable by Data)^{tactic}) =
+  =>  ( ((Audio in format) is Aggregable by Data)^{tactic} ) =
 
     audible.read(_)
 
   given aggregable2: (tactic: Tactic[Audio.Error])
-  =>  ((Audio is Aggregable by Data)^{tactic}) = Audio(_)
+  =>  ( (Audio is Aggregable by Data)^{tactic} ) = Audio(_)
 
   // AudioError → Audio.Error
   case class Error(audible: Optional[Audible])(using Diagnostics)

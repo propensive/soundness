@@ -152,7 +152,8 @@ object Mathml:
   case class Msqrt(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
     def label: Text = t"msqrt"
 
-  case class Mroot(base: Mathml, index: Mathml, attributes: List[(Text, Text)] = Nil) extends Layout:
+  case class Mroot(base: Mathml, index: Mathml, attributes: List[(Text, Text)] = Nil)
+  extends Layout:
     def label: Text = t"mroot"
     def contents: List[Mathml] = List(base, index)
 
@@ -383,7 +384,7 @@ object Mathml:
   object Parser:
     def labelOf(xml: Xml): Text = xml match
       case element: Xml.Element => element.label
-      case _                => t"<unknown>"
+      case _                    => t"<unknown>"
 
     def findMath(nodes: List[Xml.Node])(using Tactic[Mathml.Error]): Xml.Element =
       nodes.reap { case element: Xml.Element if element.label == t"math" => element }
@@ -412,8 +413,7 @@ object Mathml:
       nodes.at(index.z).or(Mrow(Nil))
 
     def decodeMath(elem: Xml.Element)(using Tactic[Mathml.Error]): Math =
-      val kept = elem.attributes.to[List].filter: (key, _) =>
-        key != t"xmlns" && key != t"display"
+      val kept = elem.attributes.to[List].filter: (key, _) => key != t"xmlns" && key != t"display"
 
       val display: Optional[Display] = elem.attributes(t"display").let:
         case Display(display) => display
@@ -486,7 +486,8 @@ object Mathml:
 
   object Reader:
     def read(html: Html)(using Tactic[Mathml.Error]): Math =
-      findMath(html).lay(abort(Mathml.Error(Mathml.Error.Reason.NotMathml(t"<missing>")))): element =>
+      findMath(html)
+      . lay(abort(Mathml.Error(Mathml.Error.Reason.NotMathml(t"<missing>")))): element =>
         Mathml.Parser.decodeMath(toXmlElement(element))
 
     def findMath(html: Html): Optional[honeycomb.Html.Element] = html match
@@ -526,4 +527,3 @@ trait Mathml:
   def attributes: List[(Text, Text)]
   def contents: List[Mathml]
   def text: Optional[Text]
-

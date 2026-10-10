@@ -37,10 +37,12 @@ package gastronomy
 private[gastronomy] object HashConstants:
   val sha256H: Array[Int]^{} = scala.Array[Int](
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19)
+
   . asInstanceOf[Array[Int]^{}]
 
   val sha224H: Array[Int]^{} = scala.Array[Int](
     0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939, 0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4)
+
   . asInstanceOf[Array[Int]^{}]
 
   val sha256K: Array[Int]^{} = scala.Array[Int](
@@ -52,16 +54,19 @@ private[gastronomy] object HashConstants:
     0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
     0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2)
+
   . asInstanceOf[Array[Int]^{}]
 
   val sha512H: Array[Long]^{} = scala.Array[Long](
     0x6a09e667f3bcc908L, 0xbb67ae8584caa73bL, 0x3c6ef372fe94f82bL, 0xa54ff53a5f1d36f1L,
     0x510e527fade682d1L, 0x9b05688c2b3e6c1fL, 0x1f83d9abfb41bd6bL, 0x5be0cd19137e2179L)
+
   . asInstanceOf[Array[Long]^{}]
 
   val sha384H: Array[Long]^{} = scala.Array[Long](
     0xcbbb9d5dc1059ed8L, 0x629a292a367cd507L, 0x9159015a3070dd17L, 0x152fecd8f70e5939L,
     0x67332667ffc00b31L, 0x8eb44a8768581511L, 0xdb0c2e0d64f98fa7L, 0x47b5481dbefa4fa4L)
+
   . asInstanceOf[Array[Long]^{}]
 
   val sha512K: Array[Long]^{} = scala.Array[Long](
@@ -85,6 +90,7 @@ private[gastronomy] object HashConstants:
     0x06f067aa72176fbaL, 0x0a637dc5a2c898a6L, 0x113f9804bef90daeL, 0x1b710b35131c471bL,
     0x28db77f523047d84L, 0x32caab7b40c72493L, 0x3c9ebe0a15c9bebcL, 0x431d67c49c100d4cL,
     0x4cc5d4becb3e42b6L, 0x597f299cfc657e2aL, 0x5fcb6fab3ad6faecL, 0x6c44198c4a475817L)
+
   . asInstanceOf[Array[Long]^{}]
 
   val md5T: Array[Int]^{} = scala.Array[Int](
@@ -96,4 +102,5 @@ private[gastronomy] object HashConstants:
     0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x04881d05, 0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
     0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039, 0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
     0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1, 0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391)
+
   . asInstanceOf[Array[Int]^{}]

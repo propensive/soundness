@@ -32,15 +32,13 @@
                                                                                                   */
 package contingency
 
-import scala.language.experimental.pureFunctions
-
 import scala.annotation.*
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import fulminate.*
 import rudiments.*
 import vacuous.*
-
 import errorDiagnostics.stackTracesDiagnostics
 
 object Validation:
@@ -71,4 +69,5 @@ extends Error(59, 0)(Validation.text(messages)):
 
   def apply(pointer: Pointer): Optional[Message] =
     map.at(pointer)
+
   def text: Message = Validation.text(messages)

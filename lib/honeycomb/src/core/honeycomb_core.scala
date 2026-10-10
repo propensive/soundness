@@ -33,7 +33,6 @@
 package honeycomb
 
 import scala.language.dynamics
-
 import scala.util.NotGiven
 
 import anticipation.*

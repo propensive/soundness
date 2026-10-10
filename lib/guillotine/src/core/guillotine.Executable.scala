@@ -32,12 +32,11 @@
                                                                                                   */
 package guillotine
 
-import scala.caps
-import scala.language.experimental.pureFunctions
-
 import java.io as ji
 
 import scala.annotation.targetName
+import scala.caps
+import scala.language.experimental.pureFunctions
 
 import ambience.*
 import anticipation.*
@@ -63,7 +62,6 @@ sealed trait Executable:
   def fork[result]()(using working: WorkingDirectory, environment: Environment)
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   Job[Exec, result]^
-
 
   // Real `using` clauses rather than the `raises`/`logs` sugar: a context-function result
   // would hide the `computable` parameter, which the separation checker rejects.
@@ -215,7 +213,7 @@ object Command:
       if !javaArguments.isEmpty then javaArguments.set(0, locate(javaArguments.get(0).nn.tt).s)
       val variables = processBuilder.environment().nn
       variables.clear()
-      entries.stdlib.foreach { (name, value) => variables.put(name.s, value.s) }
+      entries.stdlib.foreach: (name, value) => variables.put(name.s, value.s)
 
     processBuilder
 
@@ -231,9 +229,9 @@ object Command:
       val candidates: List[ji.File] =
         environment.variable(t"PATH").or(t"").cut(ji.File.pathSeparator.nn.tt).bind: directory =>
           if directory == t"" then Nil
-          else extensions.map { extension => ji.File(directory.s, t"$name$extension".s) }
+          else extensions.map: extension => ji.File(directory.s, t"$name$extension".s)
 
-      val found: Optional[ji.File] = candidates.seek { file => file.isFile && file.canExecute }
+      val found: Optional[ji.File] = candidates.seek: file => file.isFile && file.canExecute
       found.lay(name)(_.getAbsolutePath.nn.tt)
 
 case class Command(arguments: Text*) extends Executable:
@@ -267,6 +265,7 @@ object Pipeline:
   // Subtype-bounded for the same reason as `Command.inspectable`, above.
   given inspectable: [pipeline <: Pipeline] => pipeline is Inspectable =
     _.commands.map(_.inspect).join(t" | ")
+
   given showable: Pipeline is Showable = _.commands.map(_.show).join(t" | ")
 
 case class Pipeline(commands: Command*) extends Executable:

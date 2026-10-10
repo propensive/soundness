@@ -41,5 +41,5 @@ import urticose.*
 // here by name.
 package urlInterfaces:
   given soundnessUrl: (tactic: Tactic[Url.Error])
-  =>  ((HttpUrl is Instantiable across Urls from Text)^{tactic}) =
+  =>  ( (HttpUrl is Instantiable across Urls from Text)^{tactic} ) =
     Url.instantiable

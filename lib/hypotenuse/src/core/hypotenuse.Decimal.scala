@@ -33,9 +33,8 @@
 package hypotenuse
 
 import scala.caps
-
-import scala.util.FromDigits
 import scala.math
+import scala.util.FromDigits
 
 import anticipation.*
 import contingency.*
@@ -182,8 +181,10 @@ object decimalInternal:
     // Builds the canonical form: high zero limbs dropped, factors of ten moved into the
     // scale (as `stripTrailingZeros`), and the unique zero when the magnitude vanishes. The
     // input is copied into a fresh working array, which the strip loops then clobber.
-    private[hypotenuse] def compose(signum: Int, magnitude0: scala.Array[Int], count0: Int, scale0: Int)
+    private[hypotenuse] def compose
+      ( signum: Int, magnitude0: scala.Array[Int], count0: Int, scale0: Int )
     :   Decimal =
+
       val magnitude = Array.allocate[Int](count0)
       System.arraycopy(magnitude0, 0, magnitude.raw, 0, count0)
       var count = count0
@@ -204,7 +205,9 @@ object decimalInternal:
           count -= 1
           scale -= BaseDigits
 
-        while magnitude.readable(0)%10 == 0 && magnitude.readable(0) != 0 || count > 1 && magnitude.readable(0) == 0 do
+        while magnitude.readable(0)%10 == 0 && magnitude.readable(0) != 0 ||
+          count > 1 && magnitude.readable(0) == 0
+        do
           divideSmall(magnitude.raw, count, 10)
           if count > 1 && magnitude.readable(count - 1) == 0 then count -= 1
           scale -= 1
@@ -230,7 +233,9 @@ object decimalInternal:
 
     // The magnitude scaled up by 10ᵖᵒʷᵉʳ: whole limbs are prepended for each factor of 10⁹,
     // then a single small multiplication handles the residue.
-    private[hypotenuse] def scaleUp(magnitude: scala.Array[Int], count: Int, power: Int): (scala.Array[Int], Int) =
+    private[hypotenuse] def scaleUp(magnitude: scala.Array[Int], count: Int, power: Int)
+    :   (scala.Array[Int], Int) =
+
       val shift = power/BaseDigits
       val residue = power%BaseDigits
       val result = new scala.Array[Int](count + shift + 1)
@@ -255,7 +260,9 @@ object decimalInternal:
       (result, length)
 
     private[hypotenuse] def compareMagnitude
-        (left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int): Int =
+      ( left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int )
+    :   Int =
+
       if leftCount != rightCount then if leftCount < rightCount then -1 else 1 else
         var i = leftCount - 1
         var result = 0
@@ -267,7 +274,7 @@ object decimalInternal:
         result
 
     private[hypotenuse] def addMagnitude
-        (left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int)
+      ( left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int )
     :   (scala.Array[Int], Int) =
 
       val count = math.max(leftCount, rightCount)
@@ -276,8 +283,8 @@ object decimalInternal:
       var i = 0
 
       while i < count do
-        val sum = (if i < leftCount then left(i) else 0).toLong
-            + (if i < rightCount then right(i) else 0) + carry
+        val sum = (if i < leftCount then left(i) else 0).toLong +
+          (if i < rightCount then right(i) else 0) + carry
 
         if sum >= Base then
           result(i) = (sum - Base).toInt
@@ -291,11 +298,12 @@ object decimalInternal:
       if carry == 1 then
         result(count) = 1
         (result, count + 1)
-      else (result, count)
+      else
+        (result, count)
 
     // Subtraction of a smaller-or-equal magnitude from a larger.
     private[hypotenuse] def subtractMagnitude
-        (left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int)
+      ( left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int )
     :   (scala.Array[Int], Int) =
 
       val result = new scala.Array[Int](leftCount)
@@ -319,7 +327,7 @@ object decimalInternal:
       (result, count)
 
     private[hypotenuse] def multiplyMagnitude
-        (left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int)
+      ( left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int )
     :   (scala.Array[Int], Int) =
 
       val result = new scala.Array[Int](leftCount + rightCount)
@@ -352,7 +360,10 @@ object decimalInternal:
     // Knuth's algorithm D in base 10⁹: every trial numerator and product fits in a `Long`,
     // since 10¹⁸ < 2⁶³. Returns the quotient and remainder magnitudes.
     private[hypotenuse] def divideMagnitude
-        (dividend: scala.Array[Int], dividendCount: Int, divisor: scala.Array[Int], divisorCount: Int)
+      ( dividend:      scala.Array[Int],
+        dividendCount: Int,
+        divisor:       scala.Array[Int],
+        divisorCount:  Int )
     :   (scala.Array[Int], Int, scala.Array[Int], Int) =
 
       if divisorCount == 1 then
@@ -440,7 +451,8 @@ object decimalInternal:
               k += 1
 
             u(j + divisorCount) = ((u(j + divisorCount) + carry2)%Base).toInt
-          else u(j + divisorCount) = difference.toInt
+          else
+            u(j + divisorCount) = difference.toInt
 
           quotient(j) = qhat.toInt
           j -= 1
@@ -509,7 +521,9 @@ object decimalInternal:
         if leftSign > 0 then result else -result
 
     // Aligns two nonzero operands to their common (larger) scale.
-    private[hypotenuse] def aligned(left: Decimal, right: Decimal): (scala.Array[Int], Int, scala.Array[Int], Int, Int) =
+    private[hypotenuse] def aligned(left: Decimal, right: Decimal)
+    :   (scala.Array[Int], Int, scala.Array[Int], Int, Int) =
+
       val scale = math.max(left(1), right(1))
       val leftMagnitude = magnitudeOf(left)
       val rightMagnitude = magnitudeOf(right)
@@ -526,8 +540,10 @@ object decimalInternal:
 
     given orderable: Decimal is Orderable:
       inline def compare
-          (inline left: Decimal, inline right: Decimal, inline strict: Boolean,
-           inline greater: Boolean): Boolean =
+        ( inline left: Decimal, inline right: Decimal, inline strict: Boolean,
+          inline greater: Boolean )
+      :   Boolean =
+
         val result = comparison(left, right)
 
         if greater then (if strict then result > 0 else result >= 0)
@@ -552,29 +568,31 @@ object decimalInternal:
         if left(0) == right(0) then
           val (total, count) = addMagnitude(leftAligned, leftCount, rightAligned, rightCount)
           compose(left(0), total, count, scale)
-        else compareMagnitude(leftAligned, leftCount, rightAligned, rightCount) match
-          case 0 =>
-            Zero
+        else
+          compareMagnitude(leftAligned, leftCount, rightAligned, rightCount) match
+            case 0 =>
+              Zero
 
-          case order if order > 0 =>
-            val (difference, count) =
-              subtractMagnitude(leftAligned, leftCount, rightAligned, rightCount)
+            case order if order > 0 =>
+              val (difference, count) =
+                subtractMagnitude(leftAligned, leftCount, rightAligned, rightCount)
 
-            compose(left(0), difference, count, scale)
+              compose(left(0), difference, count, scale)
 
-          case _ =>
-            val (difference, count) =
-              subtractMagnitude(rightAligned, rightCount, leftAligned, leftCount)
+            case _ =>
+              val (difference, count) =
+                subtractMagnitude(rightAligned, rightCount, leftAligned, leftCount)
 
-            compose(right(0), difference, count, scale)
+              compose(right(0), difference, count, scale)
 
     def product(left: Decimal, right: Decimal): Decimal =
       if left(0) == 0 || right(0) == 0 then Zero else
         val leftMagnitude = magnitudeOf(left)
         val rightMagnitude = magnitudeOf(right)
 
-        val (result, count) = multiplyMagnitude
-          (leftMagnitude, leftMagnitude.length, rightMagnitude, rightMagnitude.length)
+        val (result, count) =
+          multiplyMagnitude
+            ( leftMagnitude, leftMagnitude.length, rightMagnitude, rightMagnitude.length )
 
         compose(left(0)*right(0), result, count, left(1) + right(1))
 
@@ -695,13 +713,16 @@ object decimalInternal:
             while zeros > 0 do
               digits.append('0')
               zeros -= 1
-          else if count > scale then digits.insert(digits.length - scale, '.')
+          else if count > scale then
+            digits.insert(digits.length - scale, '.')
           else
             val prefix = StringBuilder("0.")
             var zeros = scale - count
+
             while zeros > 0 do
               prefix.append('0')
               zeros -= 1
+
             digits.insert(start, prefix)
 
           digits.toString.tt

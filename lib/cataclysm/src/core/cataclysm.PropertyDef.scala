@@ -32,13 +32,11 @@
                                                                                                   */
 package cataclysm
 
-
 import anticipation.*
 import contingency.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
-
 
 object PropertyDef:
   // Every known CSS property, from the string tables compiled from the bundled dataset at build

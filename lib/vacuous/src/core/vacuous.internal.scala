@@ -33,7 +33,6 @@
 package vacuous
 
 import scala.collection.immutable.{List, Nil, ::}
-
 import scala.quoted.*
 
 import fulminate.*
@@ -108,11 +107,12 @@ object internal:
     val anyDefault: Expr[Any] = default.asTerm.asExpr
 
     def fallback: Term =
-      '{
+      ' {
           $anyOptional match
             case Unset => $anyDefault
             case other => other
         }
+
       . asTerm
 
     def optimize(term: Term): Term = term match

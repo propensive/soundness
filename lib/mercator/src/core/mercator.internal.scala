@@ -33,9 +33,7 @@
 package mercator
 
 import scala.annotation
-
 import scala.collection.immutable.{List, Nil, ::}
-
 import scala.compiletime.*
 import scala.quoted.*
 
@@ -113,19 +111,22 @@ object internal:
             def apply[value, value2](value: functor[value])(lambda: value => value2)
             :   functor[value2] =
 
-              // Build `(v, l) => v.map(l)` as a reflective lambda whose parameters are real symbols,
-              // then apply it to `value`/`lambda` at the quote level. Quoting the `lambda` parameter
-              // directly into the splice (`'lambda`) would reify it as a boxed `Expr` hole that does
-              // not conform to its unboxed `value ->{any} value2` type under capture checking.
+              // Build `(v, l) => v.map(l)` as a reflective lambda whose parameters are real
+              // symbols, then apply it to `value`/`lambda` at the quote level. Quoting the `lambda`
+              // parameter directly into the splice (`'lambda`) would reify it as a boxed `Expr`
+              // hole that does not conform to its unboxed `value ->{any} value2` type under capture
+              // checking.
               $ {
                   val methodType = MethodType(List("v", "l"))(
                     _ => List(TypeRepr.of[functor[value]], TypeRepr.of[value => value2]),
                     _ => TypeRepr.of[functor[value2]])
 
                   Lambda(Symbol.spliceOwner, methodType, (_, args) =>
-                    args(0).asInstanceOf[Term].select(mapMethods(0)).appliedToType(TypeRepr.of[value2])
+                    args(0).asInstanceOf[Term].select(mapMethods(0))
+                    . appliedToType(TypeRepr.of[value2])
                     . appliedTo(args(1).asInstanceOf[Term])).asExpr
                 }
+
               . asInstanceOf[(functor[value], value => value2) => functor[value2]]
               . apply(value, lambda)
         }
@@ -170,8 +171,10 @@ object internal:
 
                   Lambda(Symbol.spliceOwner, methodType, (_, args) =>
                     args(0).asInstanceOf[Term].select(flatMapMethods(0))
-                    . appliedToType(TypeRepr.of[value2]).appliedTo(args(1).asInstanceOf[Term])).asExpr
+                    . appliedToType(TypeRepr.of[value2])
+                    . appliedTo(args(1).asInstanceOf[Term])).asExpr
                 }
+
               . asInstanceOf[(monad[value], value => monad[value2]) => monad[value2]]
               . apply(value, lambda)
 

@@ -32,10 +32,10 @@
                                                                                                   */
 package turbulence
 
-import scala.caps
-
 import java.io as ji
 import java.nio as jn
+
+import scala.caps
 
 import anticipation.*
 import contingency.*
@@ -51,13 +51,14 @@ import zephyrine.*
 // only reports a cut, never aborts. `finish` closes the underlying resource,
 // matching `Writable`'s end-of-stream behaviour.
 object Sink:
-  given outputStream: [output <: ji.OutputStream] => (streamCut: Emit[Truncation.Error], buffering: Buffering)
-  =>  ((output is Sink by Data over Credit)^{streamCut}) =
+  given outputStream: [output <: ji.OutputStream]
+  =>  ( streamCut: Emit[Truncation.Error], buffering: Buffering )
+  =>  ( (output is Sink by Data over Credit)^{streamCut} ) =
     // Laundered for the Scala.js pipeline (see #1520): its pre-capture-checking
     // SAM expansion turns this given into an anonymous class that hides the
     // evidence; the pure thunk empties the capture.
     // [anon-fresh-field] scala.js SAM anonymous class hides tactic evidence
-    val cut: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => streamCut.asInstanceOf[AnyRef] }
+    val cut: () -> AnyRef = caps.unsafe.unsafeAssumePure: () => streamCut.asInstanceOf[AnyRef]
 
     value =>
       new Intake[Data]:
@@ -93,7 +94,9 @@ object Sink:
           // Pre-read into a local: `raise`'s capture-polymorphic argument may not
           // hide this instance's state.
           val written: Long = total
-          try value.close() catch case _: ji.IOException => raise(Truncation.Error(written.b))(using cut().asInstanceOf[Emit[Truncation.Error]^])
+
+          try value.close() catch case _: ji.IOException =>
+            raise(Truncation.Error(written.b))(using cut().asInstanceOf[Emit[Truncation.Error]^])
 
         private update def drain(): Unit =
           if mark0 > 0 && !broken then
@@ -103,17 +106,21 @@ object Sink:
               total += mark0
             catch case _: ji.IOException =>
               broken = true
-              { val written: Long = total; raise(Truncation.Error(written.b))(using cut().asInstanceOf[Emit[Truncation.Error]^]) }
+
+              { val written: Long = total
+
+                raise(Truncation.Error(written.b))
+                  ( using cut().asInstanceOf[Emit[Truncation.Error]^] ) }
 
           mark0 = 0
 
   given channel: (streamCut: Emit[Truncation.Error], buffering: Buffering)
-  =>  ((jn.channels.WritableByteChannel is Sink by Data over Credit)^{streamCut}) =
+  =>  ( (jn.channels.WritableByteChannel is Sink by Data over Credit)^{streamCut} ) =
     // Laundered for the Scala.js pipeline (see #1520): its pre-capture-checking
     // SAM expansion turns this given into an anonymous class that hides the
     // evidence; the pure thunk empties the capture.
     // [anon-fresh-field] scala.js SAM anonymous class hides tactic evidence
-    val cut: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => streamCut.asInstanceOf[AnyRef] }
+    val cut: () -> AnyRef = caps.unsafe.unsafeAssumePure: () => streamCut.asInstanceOf[AnyRef]
 
     value =>
       new Intake[Data]:
@@ -146,7 +153,9 @@ object Sink:
           drain()
           // Pre-read into a local, as above.
           val written: Long = total
-          try value.close() catch case _: Exception => raise(Truncation.Error(written.b))(using cut().asInstanceOf[Emit[Truncation.Error]^])
+
+          try value.close() catch case _: Exception =>
+            raise(Truncation.Error(written.b))(using cut().asInstanceOf[Emit[Truncation.Error]^])
 
         private update def drain(): Unit =
           if mark0 > 0 && !broken then
@@ -156,12 +165,20 @@ object Sink:
               while buffer.hasRemaining do
                 if value.write(buffer) == -1 then
                   broken = true
-                  { val written: Long = total; raise(Truncation.Error(written.b))(using cut().asInstanceOf[Emit[Truncation.Error]^]) }
+
+                  { val written: Long = total
+
+                    raise(Truncation.Error(written.b))
+                      ( using cut().asInstanceOf[Emit[Truncation.Error]^] ) }
 
               total += mark0
             catch case _: Exception =>
               broken = true
-              { val written: Long = total; raise(Truncation.Error(written.b))(using cut().asInstanceOf[Emit[Truncation.Error]^]) }
+
+              { val written: Long = total
+
+                raise(Truncation.Error(written.b))
+                  ( using cut().asInstanceOf[Emit[Truncation.Error]^] ) }
 
           mark0 = 0
 
@@ -182,6 +199,7 @@ object Sink:
       @caps.unsafe.untrackedCaptures
       private val storage: addressable0.Storage =
         addressable0.allocate(block).asInstanceOf[addressable0.Storage]
+
       private var mark0: Int = 0
       private var chunks: List[medium] = Nil
 
@@ -219,4 +237,5 @@ trait Sink extends Typeclass, Operable:
 
   def contramap[self2](lambda: self2 => Self)
   :   (self2 is Sink by Operand over Transport)^{this, lambda} =
+
     target => intake(lambda(target))

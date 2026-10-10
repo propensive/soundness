@@ -33,14 +33,15 @@
 package galilei
 
 import scala.caps
+
 import anticipation.*
 import aperture.*
 import contingency.*
 import gossamer.*
-import spectacular.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
+import spectacular.*
 import vacuous.*
 import Io.Error.{Operation, Reason}
 

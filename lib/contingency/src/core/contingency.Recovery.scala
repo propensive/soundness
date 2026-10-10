@@ -33,9 +33,7 @@
 package contingency
 
 import scala.caps
-
 import scala.language.experimental.pureFunctions
-
 import scala.util.boundary
 
 import fulminate.*

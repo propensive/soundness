@@ -32,9 +32,8 @@
                                                                                                   */
 package honeycomb
 
-import rudiments.*
-
 import anticipation.*
+import rudiments.*
 import symbolism.*
 
 case class Attribute(label: Text, elements: Set[Text], global: Boolean):

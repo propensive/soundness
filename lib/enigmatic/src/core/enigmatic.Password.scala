@@ -32,11 +32,11 @@
                                                                                                   */
 package enigmatic
 
-import scala.caps
-
 import java.nio as jn
 import java.nio.charset as jnc
 import java.util as ju
+
+import scala.caps
 
 import anticipation.*
 import gossamer.*
@@ -81,6 +81,7 @@ class Password private[enigmatic] (private[enigmatic] val secret: Secret^):
       val chars = new scala.Array[Char](buffer.remaining)
       buffer.get(chars)
       if buffer.hasArray then ju.Arrays.fill(buffer.array.nn, '\u0000')
+
       try block(using Cleartext(chars.asInstanceOf[Array[Char]^{}]))
       finally ju.Arrays.fill(chars, '\u0000')
 
@@ -90,7 +91,8 @@ class Password private[enigmatic] (private[enigmatic] val secret: Secret^):
 // cleartext could be neither confined to the block nor zeroed after it.
 // The chars are held as the frozen form (a bare mutable `Array` field would violate this
 // shared capability's classifier); `chars` re-exposes the mutable view for zeroing.
-class Cleartext private[enigmatic] (private val secret: Array[Char]^{}) extends caps.SharedCapability:
+class Cleartext private[enigmatic] (private val secret: Array[Char]^{})
+extends caps.SharedCapability:
   def chars: scala.Array[Char] = secret.asInstanceOf[scala.Array[Char]]
 
 // The cleartext lent within an `uncloak` block, reached contextually: `cleartext.chars` rather

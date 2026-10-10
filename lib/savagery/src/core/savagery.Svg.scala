@@ -32,28 +32,29 @@
                                                                                                   */
 package savagery
 
+import scala.collection.mutable.ListBuffer
+
 import anticipation.*
+import cardinality.*
+import cataclysm.formatting.compactCssFormatting
+import cataclysm.{Css, FontFace}
 import contingency.*
 import denominative.*
+import distillate.*
+import fulminate.*
+import geodesy.*
 import gossamer.*
 import hieroglyph.*
+import iridescence.*
+import kaleidoscope.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 import xylophone.*
 import zephyrine.*
-import fulminate.*
-import scala.collection.mutable.ListBuffer
-import cardinality.*
-import cataclysm.formatting.compactCssFormatting
-import cataclysm.{Css, FontFace}
-import distillate.*
-import geodesy.*
-import iridescence.*
-import kaleidoscope.*
-import symbolism.*
 
 object Svg:
   // The `<svg>` document element, with its definitions and figures, as `svg.in[Xml]`.
@@ -62,8 +63,10 @@ object Svg:
   // SVG's vocabulary is fixed and validated by the figure types, so the XML beneath is parsed
   // against the free-form schema; no `XmlSchema` is asked of the caller.
   given aggregable
-  :   (parseTactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], svgTactic: Tactic[Svg.Error])
-  =>  ((Svg is Aggregable by Text)^{parseTactic, xmlTactic, svgTactic}) =
+  :   ( parseTactic: Tactic[Parse.Error],
+        xmlTactic:   Tactic[Xml.Error],
+        svgTactic:   Tactic[Svg.Error] )
+  =>  ( (Svg is Aggregable by Text)^{parseTactic, xmlTactic, svgTactic} ) =
 
     source =>
       given XmlSchema = XmlSchema.Freeform
@@ -71,21 +74,21 @@ object Svg:
       Svg.Parser.decodeSvg(Svg.Parser.rootElement(xml))
 
   given loadable
-  :   (parseTactic: Tactic[Parse.Error])
-  =>  (xmlTactic: Tactic[Xml.Error])
-  =>  (svgTactic: Tactic[Svg.Error])
-  =>  ((Svg is Loadable by Text)^{parseTactic, xmlTactic, svgTactic}) =
+  :   ( parseTactic: Tactic[Parse.Error] )
+  =>  ( xmlTactic: Tactic[Xml.Error] )
+  =>  ( svgTactic: Tactic[Svg.Error] )
+  =>  ( (Svg is Loadable by Text)^{parseTactic, xmlTactic, svgTactic} ) =
     source =>
       given XmlSchema = XmlSchema.Freeform
       fromXml(summon[(Xml is Loadable by Text)^].load(source))
 
   // The byte form: the XML is parsed from the bytes directly.
   given loadableData
-  :   (parseTactic: Tactic[Parse.Error])
-  =>  (xmlTactic: Tactic[Xml.Error])
-  =>  (svgTactic: Tactic[Svg.Error])
-  =>  (buffering: Buffering)
-  =>  ((Svg is Loadable by Data)^{parseTactic, xmlTactic, svgTactic}) =
+  :   ( parseTactic: Tactic[Parse.Error] )
+  =>  ( xmlTactic: Tactic[Xml.Error] )
+  =>  ( svgTactic: Tactic[Svg.Error] )
+  =>  ( buffering: Buffering )
+  =>  ( (Svg is Loadable by Data)^{parseTactic, xmlTactic, svgTactic} ) =
     source =>
       given XmlSchema = XmlSchema.Freeform
       fromXml(summon[(Xml is Loadable by Data)^].load(source))
@@ -161,8 +164,7 @@ object Svg:
   object Parser:
     def labelOf(xml: Xml): Text = xml match
       case e: Xml.Element => e.label
-      case _          => t"<unknown>"
-
+      case _              => t"<unknown>"
 
     def findSvg(nodes: List[Xml.Node])(using Tactic[Svg.Error]): Xml.Element =
       nodes.reap { case e: Xml.Element if e.label == t"svg" => e }.or:
@@ -188,9 +190,9 @@ object Svg:
         val trimmed = text.trim
 
         val unit: Optional[Units] =
-          Units.values.find(unit => trimmed.ends(unit.suffix)).getOrElse(Unset)
+          Units.values.find{ unit => trimmed.ends(unit.suffix) }.getOrElse(Unset)
 
-        val number = unit.lay(trimmed)(unit => trimmed.skip(unit.suffix.length, Rtl))
+        val number = unit.lay(trimmed): unit => trimmed.skip(unit.suffix.length, Rtl)
 
         safely(number.as[Double].toFloat).let((_, unit)).or:
           abort(Svg.Error(Svg.Error.Reason.MalformedLength(text)))
@@ -233,7 +235,7 @@ object Svg:
         case child: Xml.Element => child.label match
           case t"defs" => child.children.each:
             case dd: Xml.Element => decodeSvgDef(dd).let: svgDef => defs += svgDef
-            case _           => ()
+            case _               => ()
 
           case _ =>
             decodeFigure(child).let: figure => figures += figure
@@ -296,6 +298,7 @@ object Svg:
       val cy = numAttr(elem, t"cy")
       val rx = numAttr(elem, t"rx")
       val ry = numAttr(elem, t"ry")
+
       Ellipse
         ( Point(cx, cy), rx, ry, Angle(0), transformsAttr(elem), styleAttr(elem), idAttr(elem) )
 
@@ -309,7 +312,7 @@ object Svg:
 
       elem.children.each:
         case child: Xml.Element => decodeFigure(child).let: figure => figures += figure
-        case _              => ()
+        case _                  => ()
 
       Group(figures.to(List), idAttr(elem), styleAttr(elem), transformsAttr(elem))
 
@@ -373,9 +376,10 @@ object Svg:
 
       val stops: List[Stop[Color in Srgb]] =
 
-          elem.children.readable.toList.collect:
-            case e: Xml.Element if e.label == t"stop" => decodeStop(e)
-          . to(List)
+        elem.children.readable.toList.collect:
+          case e: Xml.Element if e.label == t"stop" => decodeStop(e)
+
+        . to(List)
 
       LinearGradient(id, stops*)
 
@@ -571,7 +575,9 @@ object Svg:
               case ("translate", List(dx))            => xs += Transform.Translate(Delta(dx, 0.0f))
               case ("scale", List(x))                 => xs += Transform.Scale(x, Unset)
               case ("scale", List(x, y))              => xs += Transform.Scale(x, y)
-              case ("rotate", List(angle))            => xs += Transform.Rotate(Angle.degrees(angle))
+
+              case ("rotate", List(angle)) =>
+                xs += Transform.Rotate(Angle.degrees(angle))
 
               case ("skewX", List(angle)) =>
                 xs += Transform.Skew(Angle.degrees(angle), Orientation.Horizontal)

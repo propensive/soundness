@@ -109,8 +109,8 @@ object Wasm:
 
   // WitError → Wasm.Error
   object Error:
-    // The failing case's lower-kebab-case name (as a `Wasm.Case` would spell it), recovered from the
-    // error value's class.
+    // The failing case's lower-kebab-case name (as a `Wasm.Case` would spell it), recovered from
+    // the error value's class.
     private def nameOf(value: Any): Text =
       val simple = value.getClass.getSimpleName.nn.tt
       val stripped = if simple.ends(t"$$") then simple.skip(1, Rtl) else simple
@@ -131,8 +131,8 @@ object Wasm:
   // A payload-less case of a WIT `variant` (or `enum`), named by its lower-kebab-case Scala-side
   // name (e.g. `get` or `dns-timeout`), for passing as an argument to a WIT function — such as the
   // `method` taken by `wasi:http`'s `outgoing-request.set-method`. The phantom `Topic` records the
-  // variant type, so the value converts (via the `Interoperable` instance below) into an argument of
-  // that foreign type; `invoke` selects the corresponding facade case object at runtime.
+  // variant type, so the value converts (via the `Interoperable` instance below) into an argument
+  // of that foreign type; `invoke` selects the corresponding facade case object at runtime.
   object Case:
     def apply[topic <: Label](name: Text): Case of topic =
       new Case(name).asInstanceOf[Case of topic]
@@ -153,10 +153,10 @@ object Wasm:
   // WitHandle → Wasm.Handle
   // An opaque handle to a WIT resource — a stateful foreign value such as an output stream or file
   // descriptor — obtained by `invoke`ing a resource-returning WIT function. The underlying value (a
-  // `@WitResourceImport` facade instance, only meaningful in Wasm-compiled code) is held untyped, so
-  // this module never names it; the phantom `Topic` records the WIT resource type, so the handle can
-  // be navigated like any other foreign value (via the `Interoperable` instance below) to invoke the
-  // resource's methods, and eventually `dispose()`d.
+  // `@WitResourceImport` facade instance, only meaningful in Wasm-compiled code) is held untyped,
+  // so this module never names it; the phantom `Topic` records the WIT resource type, so the handle
+  // can be navigated like any other foreign value (via the `Interoperable` instance below) to
+  // invoke the resource's methods, and eventually `dispose()`d.
   object Handle:
     given interoperable: [topic <: Label]
     =>  ( (Handle of topic) is Interoperable in Wit of topic ) =
@@ -182,16 +182,17 @@ object Wasm:
       Applier()
 
     // The topic and case are fixed by the type arguments above; this second application infers the
-    // payload's Scala type (which a single explicit type-argument list could not do alongside them).
-    // `invoke` reads the payload type from the `Variant`'s type argument and the topic and case
-    // from its phantom `Topic`/`Case` members.
+    // payload's Scala type (which a single explicit type-argument list could not do alongside
+    // them). `invoke` reads the payload type from the `Variant`'s type argument and the topic and
+    // case from its phantom `Topic`/`Case` members.
     class Applier[topic <: Label, name <: Label]():
       transparent inline def apply[payload](payload: payload)
       :   (Variant[payload] of topic) { type Case = name } =
+
         new Variant(payload).asInstanceOf[(Variant[payload] of topic) { type Case = name }]
 
     given interoperable: [topic <: Label, name <: Label, payload]
-    =>  ((Variant[payload] of topic) { type Case = name } is Interoperable in Wit of topic) =
+    =>  ( (Variant[payload] of topic) { type Case = name } is Interoperable in Wit of topic ) =
       Interoperable()
 
   final class Variant[payload](val payload: payload) extends Topical

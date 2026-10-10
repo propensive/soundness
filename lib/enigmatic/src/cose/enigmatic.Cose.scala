@@ -37,12 +37,12 @@ import breviloquence.*
 import contingency.*
 import corpuscular.*
 import enigmatic.*
-import prepositional.*
-import turbulence.*
-import gastronomy.*
-import rudiments.*
-import vacuous.*
 import fulminate.*
+import gastronomy.*
+import prepositional.*
+import rudiments.*
+import turbulence.*
+import vacuous.*
 
 object Cose:
   // Serialises a COSE message to its CBOR-tagged wire form, as `cose.in[Data]`. Bounded by
@@ -157,7 +157,7 @@ object Cose:
       case Cose.Tag.Mac0  => Cose.Context.Mac0
       case Cose.Tag.Sign  => Cose.Context.Signature
       case Cose.Tag.Mac   => Cose.Context.Mac
-      case other         => abort(Cose.Error(Cose.Error.Reason.UnknownTag(other)))
+      case other          => abort(Cose.Error(Cose.Error.Reason.UnknownTag(other)))
 
     val body = tag.value.asInstanceOf[Cbor.Ast]
 
@@ -240,8 +240,7 @@ object Cose:
         def cborTag:       Long   = Cose.Tag.Sign1
 
         def authenticate(toBeSigned: Data, key: PrivateKey[cipher]): Data =
-          key.secret.uncloak: bytes =>
-            algorithm.sign(toBeSigned, Array.unsafeFrozen(bytes))
+          key.secret.uncloak: bytes => algorithm.sign(toBeSigned, Array.unsafeFrozen(bytes))
 
     given symmetric: [cipher <: Cipher & Symmetric & Signing]
     =>  ( algorithm: cipher & Signing, coseAlg: cipher is Cose.Algorithm )
@@ -255,8 +254,7 @@ object Cose:
         def cborTag:       Long   = Cose.Tag.Mac0
 
         def authenticate(toBeSigned: Data, key: SymmetricKey[cipher]): Data =
-          key.secret.uncloak: bytes =>
-            algorithm.sign(toBeSigned, Array.unsafeFrozen(bytes))
+          key.secret.uncloak: bytes => algorithm.sign(toBeSigned, Array.unsafeFrozen(bytes))
 
   trait Authenticator:
     type Self
@@ -385,5 +383,4 @@ class Cose
     val externalAad = Array.empty[Byte]
     val tbs = Cose.toBeSigned(contextString, protectedHeader, externalAad, payload)
 
-    recipients.exists: recipient =>
-      verifier.check(tbs, recipient.authentication, key)
+    recipients.exists: recipient => verifier.check(tbs, recipient.authentication, key)

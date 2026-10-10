@@ -34,20 +34,18 @@ package coaxial
 
 import scala.caps
 
-
 import anticipation.*
 import contingency.*
+import denominative.capped
 import parasite.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
 import urticose.MacAddress
-import denominative.capped
-import zephyrine.{Stream, Credit, Buffering, Substrate, stream}
 import vacuous.*
-
 import Control.*
+import zephyrine.{Stream, Credit, Buffering, Substrate, stream}
 
 extension [bindable: {Bindable, Showable}](socket: bindable)
   // `listen` is a loan: it binds, lends the running server to `block` as a `Socket.Service`
@@ -141,6 +139,7 @@ extension [multicast: {Subscribable as subscribable, Showable}](group: multicast
 extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint is Serviceable)^)
   def transmit[message: Transmissible](input: message)(using (Socket.Event is Loggable)^)
   :   (Stream[Data] over Credit)^{serviceable, caps.any} =
+
     val connection = serviceable.connect(endpoint, Unset)
     Log.fine(Socket.Event.Connected(endpoint.show))
 
@@ -153,7 +152,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint 
   // initiate; a `Duplexable` additionally offers `exchange`, which can also send proactively.
   def react[state](initialState: state)[message: Ingressive]
     ( handle: (state: state) ?=> message => Control[state] )
-    ( using (Socket.Event is Loggable)^ )(using buffering: Buffering)
+    (using (Socket.Event is Loggable)^)(using buffering: Buffering)
   :   state =
 
     val connection = serviceable.connect(endpoint, Unset)
@@ -171,7 +170,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint 
       while !done do input.refill(demand) match
         case count: Int =>
           if count > 0 then
-            val data = input.lend { region => range => region.materialize(range.capped(count)) }
+            val data = input.lend: region => range => region.materialize(range.capped(count))
             input.skip(count)
 
             handle(using state)(message.deserialize(data)) match
@@ -207,7 +206,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
   def exchange[state](initialState: state)[message: {Ingressive, Transmissible}]
     ( handle: (state: state) ?=> message => Control[state] )
     ( interact: Transmitter[message]^ => Unit )
-    ( using (Socket.Event is Loggable)^ )(using buffering: Buffering)
+    (using (Socket.Event is Loggable)^)(using buffering: Buffering)
   :   state =
 
     val connection = duplexable.connect(endpoint, Unset)
@@ -231,7 +230,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
       while !done do input.refill(demand) match
         case count: Int =>
           if count > 0 then
-            val data = input.lend { region => range => region.materialize(range.capped(count)) }
+            val data = input.lend: region => range => region.materialize(range.capped(count))
             input.skip(count)
 
             handle(using state)(message.deserialize(data)) match

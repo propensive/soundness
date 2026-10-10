@@ -32,7 +32,6 @@
                                                                                                   */
 package ypsiloid
 
-
 import anticipation.*
 import contextual.*
 import contingency.*
@@ -57,6 +56,7 @@ object YamlPath extends Root(""):
 
   given navigable: [ordinal <: Ordinal] => ordinal is Navigable on YamlPath =
     ordinal => ordinal.n0.show
+
   given admissible: [ordinal <: Ordinal] => ordinal is Admissible on YamlPath = _ => ()
   given admissible2: [text <: Text] => text is Admissible on YamlPath = _ => ()
 
@@ -82,7 +82,7 @@ object YamlPath extends Root(""):
   // of any error. Modelled on `jacinta.JsonPointer`'s decoder, with the same
   // RFC 6901 escaping.
   given decodable: (tactic: Tactic[YamlPath.Error])
-  =>  ((YamlPath is Decodable in Text)^{tactic}) = text =>
+  =>  ( (YamlPath is Decodable in Text)^{tactic} ) = text =>
     val string = text.s
 
     if string.isEmpty || string.charAt(0) != '#'

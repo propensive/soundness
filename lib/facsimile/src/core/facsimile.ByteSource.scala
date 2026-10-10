@@ -42,7 +42,9 @@ private[facsimile] trait ByteSource extends zephyrine.Expanse
 
 private[facsimile] class DataSource(data: Data) extends ByteSource:
   def size: Long = data.length.toLong
-  def read(offset: Long, length: Int): Data = data.segment((offset.toInt).z till (offset.toInt + length).z)
+
+  def read(offset: Long, length: Int): Data =
+    data.segment((offset.toInt).z till (offset.toInt + length).z)
 
 // Positional reads against another `Expanse` — galilei's memory-mapped `Ram`, held open for
 // the lifetime of a `Pdf` scope. A PDF is resolved through many small reads which all happen

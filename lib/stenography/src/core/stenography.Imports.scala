@@ -43,8 +43,7 @@ object Imports:
 
   // A designator's fully-qualified dotted name, as the compiler's denotations look it up.
   private def path(designator: Designator): String =
-    designator.parent.lay(designator.name.s): parent =>
-      s"${path(parent)}.${designator.name}"
+    designator.parent.lay(designator.name.s): parent => s"${path(parent)}.${designator.name}"
 
   // The designators reachable by their leaf name through the `export` aliases declared in
   // `scope`, a package or object such as `soundness`: each alias's target type, and its
@@ -63,6 +62,7 @@ object Imports:
 
     try
       val denotation = Denotations.staticRef(termName(path(scope)), generateStubs = false)
+
       if !denotation.exists then sci.Set() else
         given quotes: scala.quoted.Quotes = scala.quoted.runtime.impl.QuotesImpl()
         given Bindings = Bindings()
@@ -84,21 +84,24 @@ object Imports:
 
     try
       val denotation = Denotations.staticRef(termName(path(scope)), generateStubs = false)
+
       if !denotation.exists then sci.Map() else
         given quotes: scala.quoted.Quotes = scala.quoted.runtime.impl.QuotesImpl()
         given Bindings = Bindings()
-        stenography.internal.scopeInfo(denotation.symbol)(1).groupBy(_(0)).view.mapValues: candidates =>
-          candidates.map(_(1).s).min.tt
+
+        stenography.internal.scopeInfo(denotation.symbol)(1).groupBy(_(0)).view
+        . mapValues: candidates => candidates.map(_(1).s).min.tt
         . toMap
     catch case NonFatal(_) => sci.Map()
 
   def resolve(designators: sci.Set[Designator], direct: sci.Set[Designator])
-       (using dotty.tools.dotc.core.Contexts.Context)
+    ( using dotty.tools.dotc.core.Contexts.Context )
   :   Imports =
 
     val aliases: sci.Map[String, Text] =
       designators.toList.flatMap(infixAliases(_).toList).groupBy(_(0)).view.mapValues: candidates =>
         candidates.map(_(1).s).min.tt
+
       . toMap
 
     Imports(designators, direct ++ designators.flatMap(exports), aliases)

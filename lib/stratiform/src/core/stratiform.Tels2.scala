@@ -31,17 +31,15 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package stratiform
-import rudiments.unsafeMutable
-
 import adversaria.*
 import anticipation.*
 import distillate.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
+import rudiments.unsafeMutable
 import vacuous.*
 import wisteria.*
-import rudiments.*
-
 import Tels.Polarity
 
 // Constructors for fused `Encodable & Schematic` / `Decodable & Schematic`
@@ -241,8 +239,8 @@ trait Tels2:
   // scalar whose derived schema carries that encoding, so the AST and
   // staged BinTEL paths agree on its wire form by construction.
   given encoded: [value, name <: Label]
-  =>  (marker: value is Tel.Encoded[name])
-  =>  (name0: ValueOf[name])
+  =>  ( marker: value is Tel.Encoded[name] )
+  =>  ( name0: ValueOf[name] )
   =>  value is TelSchematic over Tels.Type =
     () => Tels.Scalar(Array.empty, name0.value.tt)
 
@@ -367,8 +365,8 @@ trait Tels2:
 
     def referenced(struct: Tels.Struct): List[Text] =
       struct.members.to[proscenium.List].bind:
-        case Tels.Field(_, _, _, Tels.Reference(reference), _, _, _) => List(reference)
-        case Tels.Field(_, _, _, nested: Tels.Struct, _, _, _)       => referenced(nested)
+        case Tels.Field(_, _, _, Tels.Reference(reference), _, _, _)  => List(reference)
+        case Tels.Field(_, _, _, nested: Tels.Struct, _, _, _)        => referenced(nested)
         case _                                                        => Nil
 
     val fromRecords: List[Text] =
@@ -562,7 +560,7 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
 
     layers.map: layer =>
       val excludes: scala.List[Text] =
-        retractions.filter(_(1) == layer).map { (label, _) => Tel.camelToKebab(label.s) }
+        retractions.filter(_(1) == layer).map: (label, _) => Tel.camelToKebab(label.s)
 
       val definition =
         Tels.SelectDefinition(select, Array.empty, Array.empty, excludes = Array.from(excludes))

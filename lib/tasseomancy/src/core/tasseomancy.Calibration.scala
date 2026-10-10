@@ -58,10 +58,17 @@ object Calibration:
 
     def scale(lower: Double, upper: Double, anchored: Boolean, notation: Scale.Notation): Scale =
       policy match
-        case Policy.Linear      => Calibration.linear(lower, upper, anchored, notation, false)
-        case Policy.Tight       => Calibration.linear(lower, upper, anchored, notation, true)
-        case Policy.Logarithmic => Calibration.logarithmic(lower, upper, anchored, notation)
-        case Policy.Exponential(curvature) => Calibration.exponential(lower, upper, anchored, notation, curvature)
+        case Policy.Linear =>
+          Calibration.linear(lower, upper, anchored, notation, false)
+
+        case Policy.Tight =>
+          Calibration.linear(lower, upper, anchored, notation, true)
+
+        case Policy.Logarithmic =>
+          Calibration.logarithmic(lower, upper, anchored, notation)
+
+        case Policy.Exponential(curvature) =>
+          Calibration.exponential(lower, upper, anchored, notation, curvature)
 
         case Policy.Adaptive =>
           if lower > 0.0 && upper/lower >= 1000.0
@@ -95,10 +102,15 @@ object Calibration:
   // An exponential axis has a linear axis's range — padded to whole gradations — with the
   // exponential transform for its positions.
   private[tasseomancy] def exponential
-    ( lower0: Double, upper0: Double, anchored: Boolean, notation: Scale.Notation, curvature: Double )
+    ( lower0: Double,
+      upper0: Double,
+      anchored: Boolean,
+      notation: Scale.Notation,
+      curvature: Double )
   :   Scale =
 
-    linear(lower0, upper0, anchored, notation, false).copy(transform = Scale.Transform.Exponential(curvature))
+    linear(lower0, upper0, anchored, notation, false)
+    . copy(transform = Scale.Transform.Exponential(curvature))
 
   private[tasseomancy] def logarithmic
     ( lower0: Double, upper0: Double, anchored: Boolean, notation: Scale.Notation )

@@ -61,10 +61,10 @@ object TreeProvider:
 
   // Returns the member's parameters verbatim, to show that they reach the instance
   given params: ("params" is Intensional in TreeProvider from Tree to List[Text]) =
-    Intensional.parametric { (tree, params) => params }
+    Intensional.parametric: (tree, params) => params
 
   given counted: ("counted" is Intensional in TreeProvider from Tree to Int) =
-    Intensional { tree => evaluations.incrementAndGet() }
+    Intensional: tree => evaluations.incrementAndGet()
 
 abstract class TreeProvider(val fields: List[(Text, Member)]) extends Specification:
   type Origin = Tree

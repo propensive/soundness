@@ -32,19 +32,18 @@
                                                                                                   */
 package guillotine
 
+import scala.collection.immutable as sci
+import scala.collection.immutable.::
+import scala.collection.{`:+`, `+:`}
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contextual.*
 import fulminate.*
 import gossamer.*
-import scala.collection.immutable as sci
-import scala.collection.immutable.::
-import scala.collection.{`:+`, `+:`}
-
 import rudiments.*
-import vacuous.*
 import spectacular.*
+import vacuous.*
 
 object Sh:
   enum Context:

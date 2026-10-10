@@ -80,7 +80,7 @@ extends Duct[Data, Data]:
     target(offset + 9) = -1
 
   update def step(source: Region[Data])(range: Interval in source.type)
-    ( target: Slate[Data] )(space: Interval in target.type)
+    (target: Slate[Data])(space: Interval in target.type)
   :   Duct.Progress =
 
     val sourceInterval: Interval = range
@@ -90,8 +90,10 @@ extends Duct[Data, Data]:
     val targetOffset = targetInterval.start.n0
     val targetSpace = targetInterval.size
     val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+
     val out: scala.Array[Byte]^ =
       unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+
     var consumed: Int = 0
     var produced: Int = 0
 
@@ -129,8 +131,10 @@ extends Duct[Data, Data]:
     val targetInterval: Interval = space
     val targetOffset = targetInterval.start.n0
     val targetSpace = targetInterval.size
+
     val out: scala.Array[Byte]^ =
       unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+
     var produced: Int = 0
 
     if !headerDone && targetSpace >= 10 then
@@ -251,7 +255,7 @@ extends Duct[Data, Data]:
     if (flags & 2) != 0 then Header.Checksum(2) else Header.Done
 
   update def step(source: Region[Data])(range: Interval in source.type)
-    ( target: Slate[Data] )(space: Interval in target.type)
+    (target: Slate[Data])(space: Interval in target.type)
   :   Duct.Progress =
 
     val sourceInterval: Interval = range
@@ -261,8 +265,10 @@ extends Duct[Data, Data]:
     val targetOffset = targetInterval.start.n0
     val targetSpace = targetInterval.size
     val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+
     val out: scala.Array[Byte]^ =
       unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+
     var consumed: Int = 0
     var produced: Int = 0
 
@@ -307,8 +313,10 @@ extends Duct[Data, Data]:
     val targetInterval: Interval = space
     val targetOffset = targetInterval.start.n0
     val targetSpace = targetInterval.size
+
     val out: scala.Array[Byte]^ =
       unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+
     var produced: Int = 0
     var run: Int = 1
 

@@ -32,13 +32,12 @@
                                                                                                   */
 package escritoire
 
+import scala.collection.immutable as sci
 import scala.collection.immutable.IndexedSeq
-
 import scala.language.experimental.pureFunctions
 
-import scala.collection.immutable as sci
-
 import anticipation.*
+import denominative.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
@@ -46,7 +45,7 @@ import rudiments.*
 import symbolism.*
 import tessellate.*
 import vacuous.*
-import denominative.*
+
 // Per-row decorations are a short `List` read by column position.
 import denominative.dysasymptotics.linearAccess
 
@@ -69,7 +68,6 @@ abstract class Tabulation[text: ClassTag]():
 
   // Per-row, per-column cell decorations, aligned with `rows`; empty means undecorated.
   def decorations: List[List[Optional[text -> text]]] = Nil
-
 
   // The layout of every column at `width`, from the titles' and every row's claims.
   def layout(width: Int)
@@ -108,5 +106,7 @@ abstract class Tabulation[text: ClassTag]():
         layout.row(cells, rowDecorations)
 
     Grid
-      ( List(TableSection(layout.widths, lines(titleCells, Nil)), TableSection(layout.widths, lines(rowCells, decorations))),
+      ( List
+          ( TableSection(layout.widths, lines(titleCells, Nil)),
+            TableSection(layout.widths, lines(rowCells, decorations)) ),
         style )

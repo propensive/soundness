@@ -33,8 +33,8 @@
 package galilei
 
 import contingency.*
-import rudiments.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
 
 object Explorable:

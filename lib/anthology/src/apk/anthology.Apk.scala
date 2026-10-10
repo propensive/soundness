@@ -32,22 +32,21 @@
                                                                                                   */
 package anthology
 
-import scala.math
-
 import java.io as ji
 import java.security as js
 import java.security.cert as jsc
 
+import scala.math
+
 import anticipation.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import gastronomy.*
+import gastronomy.providers.javaBaseProvider
 import gossamer.*
 import rudiments.*
-import vacuous.*
-
-import gastronomy.providers.javaBaseProvider
-import denominative.*
 import symbolism.*
-import denominative.dysasymptotics.linearSize
+import vacuous.*
 
 // A complete, installable Android application package—dexed code, a binary manifest, aligned
 // and signed—bound to the Android runtime: the application node reached from `Classfile`
@@ -192,8 +191,7 @@ object Apk extends Format.Application:
           ((value >> 24) & 0xff).toByte)
 
     private def u64(value: Long): Data =
-      Array.range(0, 8).remap: i =>
-        ((value >> (i*8)) & 0xff).toByte
+      Array.range(0, 8).remap: i => ((value >> (i*8)) & 0xff).toByte
 
     private def concat(parts: Data*): Data =
       val total = parts.map(_.length).sum

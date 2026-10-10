@@ -52,6 +52,7 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
     ( using ductile: ((stage is Ductile by in) { type Upstream = transport })^,
             buffering: Buffering )
   :   (Stream[ductile.Result] over ductile.Transport)^ =
+
     // The call's dependent result widens to a `Ductile{...}#Result` projection rather than
     // narrowing back to this forwarder's `ductile.Result`; the value is returned unchanged,
     // so the cast only restores the dependent typing the export forwarder would have lost.
@@ -63,6 +64,7 @@ extension [out, transport](consume intake: (Intake[out] over transport)^)
     ( using ductile: ((stage is Ductile to out) { type Transport = transport })^,
             buffering: Buffering )
   :   (Intake[ductile.Operand] over ductile.Upstream)^ =
+
     // See `via` above.
     zephyrine.accepting[out, transport](intake)[stage](stage)(using ductile, buffering)
     . asInstanceOf[(Intake[ductile.Operand] over ductile.Upstream)^]

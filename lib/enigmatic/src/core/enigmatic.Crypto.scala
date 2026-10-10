@@ -34,8 +34,8 @@ package enigmatic
 
 import anticipation.*
 import corpuscular.*
-import vacuous.*
 import fulminate.*
+import vacuous.*
 
 // A pluggable cryptographic provider: it supplies the raw algorithmic
 // implementations (the JDK's JCE, BouncyCastle, OpenSSL, …) that the typed

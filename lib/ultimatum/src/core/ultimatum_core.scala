@@ -194,20 +194,20 @@ def conduct(mode: Occupancy = Occupancy.Fullscreen)(pane: Pane)
       // The feature body and its terminal argument are the same single-owner session.
       // [by-name-receiver] feature body and terminal argument share session
       scala.caps.unsafe.unsafeAssumeSeparate:
-       profanity.terminalFeatures.alternateScreenFeature:
-        // A buffered root: panels composite into its in-memory grid and each present
-        // diffs against what is already on screen, so unchanged cells are never
-        // re-emitted (no flicker). `cursor(false)` is recorded now and applied by the
-        // first present; `finish` re-shows the cursor on the way out.
-        // The root only reads the same single-owner terminal; no aliased writer.
-        val root = ScreenRoot(terminal)
-        root.cursor(false)
+        profanity.terminalFeatures.alternateScreenFeature:
+          // A buffered root: panels composite into its in-memory grid and each present
+          // diffs against what is already on screen, so unchanged cells are never
+          // re-emitted (no flicker). `cursor(false)` is recorded now and applied by the
+          // first present; `finish` re-shows the cursor on the way out.
+          // The root only reads the same single-owner terminal; no aliased writer.
+          val root = ScreenRoot(terminal)
+          root.cursor(false)
 
-        // No throttle or debounce: a fullscreen resize repaints immediately (the alternate screen
-        // has no scrollback to protect), but the wake is still supplied, for the animation tick.
-        try
-          Form(root, mode, pane, wake, 0, 0, scheduleWake).run(terminal.eventIterator())
-        finally root.finish()
+          // No throttle or debounce: a fullscreen resize repaints immediately (the alternate screen
+          // has no scrollback to protect), but the wake is still supplied, for the animation tick.
+          try
+            Form(root, mode, pane, wake, 0, 0, scheduleWake).run(terminal.eventIterator())
+          finally root.finish()
 
     case Occupancy.Inline =>
       // Resize repaints are throttled to ~10/second and debounced by 50 ms of quiet,
@@ -256,6 +256,7 @@ def paint(root: Board^, pane: Pane): Unit =
   // over the `root` canvas (a capability), and capture checking rejects that fresh capability
   // leaking out through the `.each` lambda's inferred parameter type.
   val cells = pane.leaves.zip(placement.cells).stdlib.iterator
+
   while cells.hasNext do
     val (leaf, rect) = cells.next()
     val extent = FlowExtent(root, rect)

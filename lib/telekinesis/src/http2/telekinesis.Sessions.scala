@@ -32,11 +32,11 @@
                                                                                                   */
 package telekinesis
 
-import scala.caps
-
 import java.io as ji
 import java.net as jn
 import javax.net.ssl as jns
+
+import scala.caps
 
 import anticipation.*
 import coaxial.*
@@ -88,7 +88,7 @@ private[telekinesis] object Sessions:
       val head: Http.Response.Head =
         try unsafely(Http.Response.parseHead(cursor)) catch
           case error: Http.Response.Error => abort(Connect.Error(Unknown))
-          case error: ji.IOException    => abort(Connect.Error(Unknown))
+          case error: ji.IOException      => abort(Connect.Error(Unknown))
 
       // A `101` body is the upgraded protocol's unending stream; refuse it.
       if head.status == Http.SwitchingProtocols then abort(Connect.Error(Unknown))
@@ -144,10 +144,11 @@ private[telekinesis] object Sessions:
 
       // The body spring comes from a pure `Request`, so the seal only
       // discharges the field's capture-polymorphic declared type.
-      val request2 = Http.Request
-        ( request.method, request.version, request.host, request.target, headers,
-          // [field-fresh-param] body field's capture-polymorphic declared type
-          caps.unsafe.unsafeAssumePure(request.body) )
+      val request2 =
+        Http.Request
+          ( request.method, request.version, request.host, request.target, headers,
+            // [field-fresh-param] body field's capture-polymorphic declared type
+            caps.unsafe.unsafeAssumePure(request.body) )
 
       // Distinct throwing tactics per error type (a single shared tactic would
       // alias across `fetch`'s two using-parameters, tripping separation).
@@ -166,6 +167,6 @@ private[telekinesis] object Sessions:
         response.status(response.textHeaders, body)
 
       catch
-        case error: Http2.Error  => abort(Connect.Error(Unknown))
-        case error: Async.Error  => abort(Connect.Error(Unknown))
+        case error: Http2.Error      => abort(Connect.Error(Unknown))
+        case error: Async.Error      => abort(Connect.Error(Unknown))
         case error: Truncation.Error => abort(Connect.Error(Unknown))

@@ -32,16 +32,14 @@
                                                                                                   */
 package hallucination
 
-import rudiments.Scribe.apply
-
 import scala.collection.mutable as scm
 
 import anticipation.*
+import contingency.*
 import denominative.*
 import rudiments.*
+import rudiments.Scribe.apply
 import vacuous.*
-import contingency.*
-
 import Binary.*
 import Raster.Error.Reason
 
@@ -174,7 +172,8 @@ private[hallucination] object GifCodec:
 
                       if entry != transparentIndex then
                         target.point(left + x, y).let: targetIndex =>
-                          screenScribe(targetIndex) = palette.at(Ordinal.zerary(entry)).or(0).toLong << 8 | 0xff
+                          screenScribe(targetIndex) =
+                            palette.at(Ordinal.zerary(entry)).or(0).toLong << 8 | 0xff
 
                       x += 1
 

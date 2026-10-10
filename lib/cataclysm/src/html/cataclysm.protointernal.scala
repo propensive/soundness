@@ -41,8 +41,8 @@ import fulminate.*
 import gigantism.*
 import gossamer.*
 import hellenism.*
-import vacuous.*
 import rudiments.*
+import vacuous.*
 
 // Compile-time machinery behind `Styles` and the `cssBindings.checkedBinding` given. A
 // `Styles` marker carries a stylesheet's classpath path as its `Locus` type; the

@@ -32,13 +32,12 @@
                                                                                                   */
 package hieroglyph
 
-import fulminate.*
-
 import java.nio as jn, jn.charset as jnc
 
 import anticipation.*
 import beneficence.*
 import denominative.*
+import fulminate.*
 import rudiments.*
 import vacuous.*
 

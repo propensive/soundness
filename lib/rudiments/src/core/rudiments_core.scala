@@ -32,10 +32,6 @@
                                                                                                   */
 package rudiments
 
-import scala.{caps, compiletime, math}
-
-import scala.language.dynamics
-
 import java.io as ji
 
 import scala.collection as sc
@@ -43,7 +39,9 @@ import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 import scala.compiletime.*
 import scala.deriving.*
+import scala.language.dynamics
 import scala.quoted.*
+import scala.{caps, compiletime, math}
 
 import anticipation.*
 import denominative.*
@@ -108,8 +106,10 @@ inline def next[value](using value: value aka "next"): value =
   // The explicit import outranks the package-scope deindexing `apply`, which would
   // otherwise shadow the `Tagged` unwrapping.
   value()
+
 inline def prior[value](using value: value aka "prior"): value =
   value()
+
 inline def ordinal(using value: Ordinal aka "ordinal"): Ordinal =
   value()
 
@@ -188,8 +188,8 @@ extension [value <: Matchable](iterable: Iterable[value])
     iterable.flatMap(filter.unapply(_))
 
   // Built with an explicit iterator rather than `zip(right).flatMap(Iterable(_, _))`: under capture
-  // checking the `Iterable(_, _)` closure returns a fresh collection per element that cannot flow into
-  // `flatMap`'s result capture set.
+  // checking the `Iterable(_, _)` closure returns a fresh collection per element that cannot flow
+  // into `flatMap`'s result capture set.
   def weave(right: Iterable[value]): Iterable[value] =
     val left = iterable.iterator
     val rght = right.iterator
@@ -231,7 +231,7 @@ extension [self](self: self)(using traversable: self is Traversable)
   :   result =
 
     reshapable.reshape:
-      traversable.traverse(self).zipWithIndex.map { (element, index) => (element, index.z) }
+      traversable.traverse(self).zipWithIndex.map: (element, index) => (element, index.z)
 
   // The extremum operations (`minimum`/`maximum`, the total counterparts of `min`/`max`) live
   // in hypotenuse, driven by `Commensurable` rather than `Comparable` — `Commensurable.orderable`
@@ -240,6 +240,7 @@ extension [self](self: self)(using traversable: self is Traversable)
 
   transparent inline def each(lambda: Ordinal aka "ordinal" ?=> traversable.Operand => Unit)
   :   Unit =
+
     var ordinal: Ordinal = Prim
 
     traversable.traverse(self).foreach: operand =>
@@ -277,8 +278,8 @@ extension [self](self: self)(using traversable: self is Traversable)
 
       case _ =>
         val iterator = traversable.traverse(self)
-        if !iterator.hasNext then Unset
-        else iterator.foldLeft(iterator.next())(addable.add)
+
+        if !iterator.hasNext then Unset else iterator.foldLeft(iterator.next())(addable.add)
 
   def product
     ( using unital:        traversable.Operand is Unital,
@@ -316,12 +317,14 @@ extension [self <: Populated](value: self)(using traversable: self is Traversabl
 // `transparent inline` narrows the declared `Optional[Operand]` to `Operand` in the proven
 // branch — the same technique as `total` above, whose result narrows when a `Zeroic` is found.
 extension [self](value: self)
-  (using terminable: self is Terminable, traversable: self is Traversable)
+  ( using terminable: self is Terminable, traversable: self is Traversable )
 
   transparent inline def last: Optional[terminable.Operand] =
     compiletime.summonFrom:
       case _: (`self` <:< Populated) => terminable.last(value)
-      case _ => if traversable.traverse(value).hasNext then terminable.last(value) else Unset
+
+      case _ =>
+        if traversable.traverse(value).hasNext then terminable.last(value) else Unset
 
 extension [self <: Populated, result](value: self)(using truncable: self is Truncable to result)
   def lead: result = truncable.lead(value)
@@ -542,8 +545,8 @@ extension [element](array: scala.Array[element])
     Array.freeze(newArray)
 
   inline def place(value: Array[element]^{}, ordinal: Ordinal = Prim): Unit =
-    System.arraycopy(value.asInstanceOf[scala.Array[element]], 0, array, ordinal.n0, value.readable.length)
-
+    System.arraycopy
+      ( value.asInstanceOf[scala.Array[element]], 0, array, ordinal.n0, value.readable.length )
 
 extension [key, value](map: Map[key, value])
   def upsert(key: key, optional: Optional[value] => value): Map[key, value] =
@@ -623,7 +626,9 @@ extension [self, operand](value: self)(using omissible: self is Omissible by ope
 // definition serves the collections and, through the instances `Textual` extends, every textual
 // type — shape-preservingly, since a segment of a styled text keeps its styling. (Moved here
 // from gossamer, which retains only the genuinely textual operations.)
-extension [value](value: value)(using segmentable: value is Segmentable, countable: value is Countable)
+extension [value](value: value)
+  ( using segmentable: value is Segmentable, countable: value is Countable )
+
   def before(ordinal: Ordinal): segmentable.Segment = value.segment(Prim till ordinal)
   def upto(ordinal: Ordinal): segmentable.Segment = value.segment(Prim thru ordinal)
   def from(ordinal: Ordinal): segmentable.Segment = value.segment(ordinal thru value.limit)
@@ -739,8 +744,6 @@ extension (bs: Long)
 
 extension (data: Data)
   def bytes: Bytes = Bytes(data.length)
-
-
 
 extension [product <: Product: Mirror.ProductOf](value: product)
   def tuple: product.MirroredElemTypes = Tuple.fromProductTyped(value)

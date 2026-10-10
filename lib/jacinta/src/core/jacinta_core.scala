@@ -32,10 +32,9 @@
                                                                                                   */
 package jacinta
 
+import scala.compiletime.*
 import scala.language.dynamics
 import scala.language.experimental.pureFunctions
-
-import scala.compiletime.*
 
 import anticipation.*
 import contextual.*

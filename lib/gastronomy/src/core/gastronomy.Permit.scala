@@ -32,9 +32,8 @@
                                                                                                   */
 package gastronomy
 
-import scala.caps
-
 import scala.annotation.implicitNotFound
+import scala.caps
 
 // Capability evidence that a `concession` (a weak algorithm, key length or mode)
 // is permitted. Following NIST SP 800-131A's apply-vs-process distinction:

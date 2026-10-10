@@ -63,7 +63,7 @@ object Tels extends Tels2:
   // A schema from the semantic element BinTEL embeds (§6.2), as `element.as[Tels]`; its
   // counterpart from a TEL document, `tel.as[Tels]`, is `Tel.telsDecodable`.
   given elementDecodable: (tactic: Tactic[Tel.Error])
-  =>  ((Tels is Decodable in Tel.Element)^{tactic}) =
+  =>  ( (Tels is Decodable in Tel.Element)^{tactic} ) =
     SemanticReconstructor.reconstruct(_)
 
   // Per-axis polarity tristate from §20: "default" means no flag was
@@ -420,15 +420,6 @@ object Tels extends Tels2:
     enum Step:
       case Embedded, Builtin, Cache, Library, Lira
 
-    // Any content-addressed store may serve resolution steps 2–3: a
-    // hash lookup is order-independent, because any store's answer for
-    // a given signature is the right answer. Bare development
-    // references resolve only through `reference`, against local state.
-    trait Store:
-      def apply(signature: Data): Optional[Data]
-      def reference(domain: Text, name: Text): Optional[Data]
-      def cache(signature: Data, body: Data): Unit
-
     object Store:
       // An in-memory content-addressed store: the process-lifetime
       // schema cache, and the test double. Signatures are keyed by
@@ -451,6 +442,15 @@ object Tels extends Tels2:
         // as `tel schema add` does for the developer's cache.
         def install(domain: Text, name: Text, body: Data): Unit =
           byReference(t"$domain/$name") = body
+
+    // Any content-addressed store may serve resolution steps 2–3: a
+    // hash lookup is order-independent, because any store's answer for
+    // a given signature is the right answer. Bare development
+    // references resolve only through `reference`, against local state.
+    trait Store:
+      def apply(signature: Data): Optional[Data]
+      def reference(domain: Text, name: Text): Optional[Data]
+      def cache(signature: Data, body: Data): Unit
 
     // A resolved schema body. Wrapping the bytes keeps effectful
     // delegate results pure under capture checking (a bare
@@ -511,7 +511,7 @@ object Tels extends Tels2:
 
     case class Error(reason: Resolution.Error.Reason)(using Diagnostics)
     extends fulminate.Error(611, reason.ordinal + 1)
-      (m"the schema does not resolve because $reason")
+      ( m"the schema does not resolve because $reason" )
 
   // Layer composition per §20.3. Takes a base schema and applies its
   // ordered layer list, producing a flat composed Tels.
@@ -525,8 +525,7 @@ object Tels extends Tels2:
       val chosen = select(schema, selection)
       var composed = schema.copy(layers = Array.empty)
 
-      chosen.each: layer =>
-        composed = applyLayer(composed, layer, schema)
+      chosen.each: layer => composed = applyLayer(composed, layer, schema)
 
       composed
 
@@ -552,6 +551,7 @@ object Tels extends Tels2:
             if declared(cursor).name == name then
               chosen += declared(cursor)
               found = true
+
             cursor += 1
 
           if !found then abort(Tel.Error(Reason.LayerOrderMismatch))
@@ -582,7 +582,7 @@ object Tels extends Tels2:
     // listed twice applies twice, harmlessly.
     def composeComponents(base: Tels, components: List[Layer]): Tels raises Tel.Error =
       var composed = base.copy(layers = Array.empty)
-      components.each { layer => composed = applyLayer(composed, layer, base) }
+      components.each: layer => composed = applyLayer(composed, layer, base)
       Validation.checkComposed(composed)
 
     // `origin` is the schema before any layer was applied, against whose selects a layer's
@@ -647,7 +647,7 @@ object Tels extends Tels2:
 
         case s: SelectRef =>
           referenceToIndex(s.reference) = index
-          variantKeywords(s.reference).foreach { keyword => keywordToIndex(keyword) = index }
+          variantKeywords(s.reference).foreach: keyword => keywordToIndex(keyword) = index
 
         case _: Exclude => ()
 
@@ -729,7 +729,9 @@ object Tels extends Tels2:
 
         i += 1
 
-      val mergedValidators = Array.frozen((base.validators.readable ++ layer.validators.readable).distinct)
+      val mergedValidators =
+        Array.frozen((base.validators.readable ++ layer.validators.readable).distinct)
+
       Struct(Array.from(members), mergedValidators)
 
     private def mergeRecordList
@@ -784,14 +786,17 @@ object Tels extends Tels2:
         val existing = out.indexWhere(_.name == newDef.name)
 
         if existing >= 0 then
-          val mergedValidators = Array.frozen((out(existing).validators.readable ++ newDef.validators.readable).distinct)
+          val mergedValidators =
+            Array.frozen((out(existing).validators.readable ++ newDef.validators.readable).distinct)
 
           // §20.3/§21.7: an encoding, once declared, cannot be changed
           // (E218). Restating the base's encoding is a benign no-op;
           // declaring one where the base has none adds it. Removal has
           // no syntax.
           val mergedEncoding = out(existing).encoding.lay(newDef.encoding): base =>
-            newDef.encoding.let { layer => if layer != base then abort(Tel.Error(Reason.EncodingConflict)) }
+            newDef.encoding.let: layer =>
+              if layer != base then abort(Tel.Error(Reason.EncodingConflict))
+
             base
 
           val mergedPatterns = mergePatterns(out(existing).patterns, newDef.patterns)
@@ -853,7 +858,9 @@ object Tels extends Tels2:
     // budget exhaustion (§21.8 requires exactly this), a word boundary the
     // analysis cannot model, or a pattern that does not compile — the last
     // being unreachable once `checkBase` has run, but fail-closed regardless.
-    private[stratiform] def contained(replacing: Array[Text]^{}, inherited: Array[Text]^{}): Boolean =
+    private[stratiform] def contained(replacing: Array[Text]^{}, inherited: Array[Text]^{})
+    :   Boolean =
+
       val motifs = scala.collection.mutable.ArrayBuffer.empty[Motif]
       var compiled = true
 
@@ -932,7 +939,8 @@ object Tels extends Tels2:
         else if !origin.variants.readable.exists(_.keyword == keyword)
         then abort(Tel.Error(Reason.ExcludeMissingVariant))
 
-      val mergedValidators = Array.frozen((base.validators.readable ++ layer.validators.readable).distinct)
+      val mergedValidators =
+        Array.frozen((base.validators.readable ++ layer.validators.readable).distinct)
 
       SelectDefinition(base.name, Array.from(variants), mergedValidators,
           layer.description.or(base.description))
@@ -963,8 +971,7 @@ object Tels extends Tels2:
       // E207: the schema sigil must be sigil-valid per §6. (An invalid
       // *pragma* sigil is E105 at parse time; this covers the schema
       // model itself, however it was constructed.)
-      schema.sigil.let: sigil =>
-        if !sigilValid(sigil) then abort(Tel.Error(Reason.BadSchemaSigil))
+      schema.sigil.let: sigil => if !sigilValid(sigil) then abort(Tel.Error(Reason.BadSchemaSigil))
 
       // E210: definition names are unique across a schema's records,
       // scalars and selects, in the base and within each layer (a layer's
@@ -976,12 +983,12 @@ object Tels extends Tels2:
       :   Unit raises Tel.Error =
 
         val names = scala.collection.mutable.HashSet.empty[Text]
-        records.each { r => if !names.add(r.name) then abort(Tel.Error(Reason.DuplicateDefinition)) }
-        scalars.each { s => if !names.add(s.name) then abort(Tel.Error(Reason.DuplicateDefinition)) }
-        selects.each { s => if !names.add(s.name) then abort(Tel.Error(Reason.DuplicateDefinition)) }
+        records.each: r => if !names.add(r.name) then abort(Tel.Error(Reason.DuplicateDefinition))
+        scalars.each: s => if !names.add(s.name) then abort(Tel.Error(Reason.DuplicateDefinition))
+        selects.each: s => if !names.add(s.name) then abort(Tel.Error(Reason.DuplicateDefinition))
 
       checkNames(schema.records, schema.scalars, schema.selects)
-      schema.layers.each { layer => checkNames(layer.records, layer.scalars, layer.selects) }
+      schema.layers.each: layer => checkNames(layer.records, layer.scalars, layer.selects)
 
       // Base-side select constraints, checked before composition: a
       // *declared* SelectDefinition must have at least one variant
@@ -1009,7 +1016,7 @@ object Tels extends Tels2:
       // unresolved encoding (E313), an unparseable pattern is never treated as
       // satisfied; the schema is invalid instead.
       checkPatterns(schema.scalars)
-      schema.layers.each { layer => checkPatterns(layer.scalars) }
+      schema.layers.each: layer => checkPatterns(layer.scalars)
 
     private def checkPatterns(scalars: Array[ScalarDefinition]^{}): Unit raises Tel.Error =
       scalars.each: definition =>
@@ -1038,10 +1045,10 @@ object Tels extends Tels2:
     // exclusively introduces pragma layer selections). Mirrors the
     // built-in `sigil` validator.
     private def sigilValid(sigil: Char): Boolean =
-      !(sigil == ' ' || sigil == '\n' || sigil == '\r' || sigil == '\t')
-        && !sigil.isLetterOrDigit
-        && "()[]{}<>".indexOf(sigil.toInt) < 0
-        && sigil != '+'
+      !(sigil == ' ' || sigil == '\n' || sigil == '\r' || sigil == '\t') &&
+        !sigil.isLetterOrDigit &&
+        "()[]{}<>".indexOf(sigil.toInt) < 0 &&
+        sigil != '+'
 
     // The Scalar a type resolves to through the composed namespace and
     // the built-ins (§20.5), or Unset for any non-Scalar resolution.
@@ -1061,8 +1068,8 @@ object Tels extends Tels2:
     // The built-in scalar TypeNames of §20.5. (`Flag` is not among them:
     // it parses to the Flag type directly, never to a Reference.)
     private def builtinScalar(name: Text): Boolean =
-      name == Builtin.String || name == Builtin.Identifier
-        || name == Builtin.TypeName || name == Builtin.Sigil
+      name == Builtin.String || name == Builtin.Identifier ||
+        name == Builtin.TypeName || name == Builtin.Sigil
 
     private def checkStruct(struct: Struct, schema: Tels): Unit raises Tel.Error =
       val keywords = scala.collection.mutable.HashSet.empty[Text]
@@ -1087,9 +1094,9 @@ object Tels extends Tels2:
             // scalar; a SelectDefinition can only be the target of a
             // SelectRef.
             case Reference(name) =>
-              if !schema.records.readable.exists(_.name == name)
-                && !schema.scalars.readable.exists(_.name == name)
-                && !builtinScalar(name)
+              if !schema.records.readable.exists(_.name == name) &&
+                !schema.scalars.readable.exists(_.name == name) &&
+                !builtinScalar(name)
               then
                 if schema.selects.readable.exists(_.name == name)
                 then abort(Tel.Error(Reason.ReferenceKindMismatch))
@@ -1108,14 +1115,15 @@ object Tels extends Tels2:
           if field.key then
             keys += 1
             if keys > 1 then abort(Tel.Error(Reason.MultipleKeyFields))
-            if scalarOf(field.fieldType, schema).absent
-            then abort(Tel.Error(Reason.KeyOnNonScalar))
+
+            if scalarOf(field.fieldType, schema).absent then abort(Tel.Error(Reason.KeyOnNonScalar))
+
             if !required || repeatable then abort(Tel.Error(Reason.KeyOnLooseMember))
 
         case select: SelectRef =>
           schema.selects.readable.find(_.name == select.reference) match
             case scala.Some(definition) =>
-              definition.variants.each { variant => claim(variant.keyword) }
+              definition.variants.each: variant => claim(variant.keyword)
 
               // E212: a layer's excludes must not empty a
               // SelectDefinition that an effectively required SelectRef
@@ -1130,9 +1138,9 @@ object Tels extends Tels2:
             // a record, scalar or built-in name is a kind mismatch, and
             // anything else is unresolved.
             case scala.None =>
-              if schema.records.readable.exists(_.name == select.reference)
-                || schema.scalars.readable.exists(_.name == select.reference)
-                || builtinScalar(select.reference)
+              if schema.records.readable.exists(_.name == select.reference) ||
+                schema.scalars.readable.exists(_.name == select.reference) ||
+                builtinScalar(select.reference)
               then abort(Tel.Error(Reason.ReferenceKindMismatch))
               else abort(Tel.Error(Reason.UnresolvedReference))
 
@@ -1154,7 +1162,7 @@ object Tels extends Tels2:
         seqEq(a.layers, b.layers, layerEq)
 
     private def seqEq[T](a: Array[T]^{}, b: Array[T]^{}, eq: (T, T) => Boolean): Boolean =
-      a.coextent(b).lay(false) { shared => a.spot { i => !eq(a(i), b(shared(i))) }.absent }
+      a.coextent(b).lay(false): shared => a.spot { i => !eq(a(i), b(shared(i))) }.absent
 
     private def structEq(a: Struct, b: Struct): Boolean =
       seqEq(a.members, b.members, memberEq) && seqEq(a.validators, b.validators, textEq)
@@ -1179,6 +1187,7 @@ object Tels extends Tels2:
       case (a: Scalar, b: Scalar) =>
         seqEq(a.validators, b.validators, textEq) && a.encoding == b.encoding &&
           seqEq(a.patterns, b.patterns, textEq)
+
       case (Flag, Flag)                   => true
       case (Reference(n1), Reference(n2)) => n1 == n2
       case _                              => false
@@ -1231,7 +1240,7 @@ object Tels extends Tels2:
 
           case "sigil" =>
             val s = firstAtomText(c)
-            sigil = s.let { text => if text.nil then Unset else text.s.charAt(0) }
+            sigil = s.let: text => if text.nil then Unset else text.s.charAt(0)
 
           case "record"   => records  += parseRecord(c)
           case "scalar"   => scalars  += parseScalar(c)
@@ -1329,13 +1338,17 @@ object Tels extends Tels2:
       children.each: cc =>
         cc.keyword.s match
           case "validate"    => validators ++= atomTexts(cc).readable
-          case "exclude"     => scalarAtomText(cc).let { keyword => excludes += keyword }
+          case "exclude"     => scalarAtomText(cc).let: keyword => excludes += keyword
           case "description" => ()
 
           case "variant" =>
             val ats = atomTexts(cc)
             if ats.length < 2 then abort(Tel.Error(Reason.RequiredMemberAbsent))
-            variants += Variant(ats.readUnchecked(0), parseType(ats.readUnchecked(1)), descriptionOf(childCompounds(cc)))
+            variants +=
+              Variant
+                ( ats.readUnchecked(0),
+                  parseType(ats.readUnchecked(1)),
+                  descriptionOf(childCompounds(cc)) )
 
           case _ =>
             abort(Tel.Error(Reason.UnknownKeyword))
@@ -1434,7 +1447,7 @@ object Tels extends Tels2:
           case "repeatable"   => repeatable = Polarity.Loose
           case "irrepeatable" => repeatable = Polarity.Tight
           case "key"          => key        = true
-          case "default"      => firstAtomText(cc).let { text => default = text }
+          case "default"      => firstAtomText(cc).let: text => default = text
           case _              => ()
 
       Field(required, repeatable, keyword, fieldType, default,
@@ -1495,7 +1508,14 @@ object Tels extends Tels2:
             ScalarDefinition(t"Sigil",      Array(t"sigil")),
             ScalarDefinition(t"String",     Array(t"string")) )
 
-      Tels(name, document, layers, sigil, records, Array.frozen(builtinScalars.readable ++ scalars.readable), selects)
+      Tels
+        ( name,
+          document,
+          layers,
+          sigil,
+          records,
+          Array.frozen(builtinScalars.readable ++ scalars.readable),
+          selects )
 
     private def typeFromText(name: Text): Type =
       if name == t"Flag" then Flag else Reference(name)
@@ -1574,6 +1594,7 @@ object Tels extends Tels2:
 
       val members    = scala.collection.mutable.ArrayBuffer.empty[Member]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
+
       children.extent.each: i =>
         val e = children(i)
 
@@ -1611,6 +1632,7 @@ object Tels extends Tels2:
       val variants   = scala.collection.mutable.ArrayBuffer.empty[Variant]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
       val excludes   = scala.collection.mutable.ArrayBuffer.empty[Text]
+
       ch.extent.each: i =>
         val e = ch(i)
 

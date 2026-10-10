@@ -36,16 +36,15 @@ import scala.caps
 
 import anticipation.{Data as Bytes, *}
 import contingency.*
-import gossamer.*
-import rudiments.*
-import vacuous.*
-import prepositional.*
-import symbolism.*
 import denominative.capped
-import zephyrine.{Slate, Stream, Credit, Buffering, Substrate}
-
-import Http2.Frame
+import gossamer.*
+import prepositional.*
+import rudiments.*
+import symbolism.*
+import vacuous.*
 import Http2.Error.Reason
+import Http2.Frame
+import zephyrine.{Slate, Stream, Credit, Buffering, Substrate}
 
 // Pulls whole HTTP/2 frames from a connection's pull endpoint, whose bytes arrive
 // in arbitrary chunks (a socket). Buffers leftover bytes between reads and blocks
@@ -112,8 +111,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // the first frame — the server role's first read on a new connection. A
   // mismatch (or a stream ending mid-preface) is a protocol error.
   update def expectPreface(preface: Bytes)(using Tactic[Http2.Error]): Unit =
-    if !ensure(preface.length)
-    then abort(Http2.Error(Reason.Protocol(t"bad connection preface")))
+    if !ensure(preface.length) then abort(Http2.Error(Reason.Protocol(t"bad connection preface")))
 
     val read: Bytes = slice(preface.length)
     var index: Int = 0
@@ -121,6 +119,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
     while index < preface.length do
       if read.readUnchecked(index) != preface.readUnchecked(index)
       then abort(Http2.Error(Reason.Protocol(t"bad connection preface")))
+
       index += 1
 
   // Read the next frame, or `Unset` at clean end of stream. The tactic is a plain

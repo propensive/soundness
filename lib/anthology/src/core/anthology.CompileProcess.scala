@@ -35,15 +35,15 @@ package anthology
 import scala.caps
 
 import anticipation.*
-import murmuration.fold
-import rudiments.each
-import rudiments.reverse
 import contingency.*
+import murmuration.fold
 import parasite.*
 import prepositional.*
+import rudiments.each
+import rudiments.reverse
 import turbulence.*
-import zephyrine.*
 import vacuous.*
+import zephyrine.*
 
 object CompileProcess:
   // One element of the live update feed: a diagnostic or a progress tick, in
@@ -96,6 +96,7 @@ class CompileProcess(val version: Text):
   def complete()(using Monitor)
     ( using Tactic[Async.Error], (CompileEvent is Loggable)^ )
   :   CompileResult =
+
     try completion.await() finally
       safely(compilation.let(_.await()))
       safely(relay.stop())
@@ -110,6 +111,7 @@ class CompileProcess(val version: Text):
   // relay), so a claim after completion replays the whole feed and then ends.
   def updates(using Buffering)
   :   (Stream[Array[CompileProcess.Update]^{}] over Credit)^ =
+
     relay.stream
 
   // The diagnostics reported so far, oldest first: a strict snapshot for post-hoc

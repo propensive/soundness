@@ -40,18 +40,6 @@ import locomotion.WireType
 import locomotion.field
 import prepositional.*
 
-// The protobuf well-known `google.protobuf.Any`: a serialized message tagged with its
-// type URL. containerd uses it to carry opaque payloads — notably a container's OCI
-// runtime spec and a task's runtime options — that this client passes through verbatim.
-// Named `AnyMessage` to avoid `scala.Any`.
-//
-// The payload is a dedicated pure opaque over the stdlib's immutable byte array, not a raw
-// `Data` field: inline protobuf derivation freshens a frozen-array field to an `any.rd`
-// capture that the `Data` codec instances cannot match.
-case class AnyMessage
-  ( @field(1) typeUrl: Text               = t"",
-    @field(2) value:   AnyMessage.Payload = AnyMessage.Payload.empty )
-
 object AnyMessage:
   opaque type Payload = scala.IArray[Byte]
 
@@ -66,3 +54,15 @@ object AnyMessage:
     given decodable: Payload is Decodable in Protobuf = _.payload.readable
 
   extension (payload: Payload) def data: Data = Array.frozen(payload)
+
+// The protobuf well-known `google.protobuf.Any`: a serialized message tagged with its
+// type URL. containerd uses it to carry opaque payloads — notably a container's OCI
+// runtime spec and a task's runtime options — that this client passes through verbatim.
+// Named `AnyMessage` to avoid `scala.Any`.
+//
+// The payload is a dedicated pure opaque over the stdlib's immutable byte array, not a raw
+// `Data` field: inline protobuf derivation freshens a frozen-array field to an `any.rd`
+// capture that the `Data` codec instances cannot match.
+case class AnyMessage
+  ( @field(1) typeUrl: Text               = t"",
+    @field(2) value:   AnyMessage.Payload = AnyMessage.Payload.empty )

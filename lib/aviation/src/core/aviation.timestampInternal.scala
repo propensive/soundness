@@ -136,7 +136,7 @@ object timestampInternal:
       text match
         case r"$yr(\d{4})-$mn(\d{2})-$dy(\d{2})[ T]$hr(\d{2}):$mi(\d{2}):$sc(\d{2})" =>
           mitigate:
-            case Number.Error(_, _, _) => Timestamp.Error(text, Timestamp.Error.Reason.BadNumber)
+            case Number.Error(_, _, _)    => Timestamp.Error(text, Timestamp.Error.Reason.BadNumber)
             case Moment.Error(_)          => Timestamp.Error(text, Timestamp.Error.Reason.BadTime)
 
           . protect:
@@ -318,7 +318,8 @@ object timestampInternal:
 
     given monthstampTimespanSubtractable: [topic <: Radix]
     =>  Monthstamp is Subtractable by (Timespan of topic) to Monthstamp =
-      Subtractable: (monthstamp, span) => monthstampShift(monthstamp, -(span.years*12 + span.months))
+      Subtractable: (monthstamp, span) =>
+        monthstampShift(monthstamp, -(span.years*12 + span.months))
 
     private def monthstampShift(monthstamp: Monthstamp, months: Int): Monthstamp =
       val total = monthstamp.year()*12 + monthstamp.month.ordinal + months

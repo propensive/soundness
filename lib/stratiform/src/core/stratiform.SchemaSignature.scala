@@ -121,8 +121,7 @@ object SchemaSignature:
     val layerChildren = root.children.filter: child => keywordIndexOf(child) == layerIdx
 
     val layerStruct: Optional[Tels.Struct] =
-      axiom.records.seek(_.name == t"Layer").let: rec =>
-        Tels.Struct(rec.members, rec.validators)
+      axiom.records.seek(_.name == t"Layer").let: rec => Tels.Struct(rec.members, rec.validators)
 
     val layerHashes: List[Data] =
       layerStruct.let: ls =>

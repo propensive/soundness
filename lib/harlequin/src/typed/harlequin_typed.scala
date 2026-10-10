@@ -50,7 +50,7 @@ extends Highlight.Compilation:
     localClasspath.entries.flatMap:
       case Classpath.Entry.Directory(directory) => List(directory)
       case Classpath.Entry.Jar(jar)             => List(jar)
-      case _                                   => Nil
+      case _                                    => Nil
 
     . join(java.io.File.pathSeparator.nn.tt)
 

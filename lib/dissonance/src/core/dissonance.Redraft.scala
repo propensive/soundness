@@ -220,9 +220,10 @@ object Redraft:
     def deambiguate(directives: List[Directive]): List[Directive] =
       val ambiguous =
 
-          analyze(directives, original, _ == _)(1).sweep:
-            case Anomaly(line, _, Reason.Ambiguous) => line
-          . to[Set]
+        analyze(directives, original, _ == _)(1).sweep:
+          case Anomaly(line, _, Reason.Ambiguous) => line
+
+        . to[Set]
 
       if ambiguous.nil then directives
       else deambiguate:
@@ -253,8 +254,7 @@ object Redraft:
         (index - d >= 0 && keep(index - d)) || (index + d < n && keep(index + d))
 
     directives.indexed
-    . filter: (directive, ordinal) =>
-        !directive.isInstanceOf[Directive.Keep] || near(ordinal.n0)
+    . filter: (directive, ordinal) => !directive.isInstanceOf[Directive.Keep] || near(ordinal.n0)
     . map(_(0))
 
   private def minimize

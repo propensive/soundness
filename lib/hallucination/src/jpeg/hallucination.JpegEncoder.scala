@@ -106,7 +106,12 @@ private[hallucination] object JpegEncoder:
 
   // Extracts one 8x8 block from a plane at the given stride, level-shifting samples by -128.
   private def block
-    ( plane: scala.Array[Byte], startX: Int, startY: Int, colStride: Int, rowStride: Int, width: Int )
+    ( plane:     scala.Array[Byte],
+      startX:    Int,
+      startY:    Int,
+      colStride: Int,
+      rowStride: Int,
+      width:     Int )
   :   scala.Array[Int] =
 
     val result = new scala.Array[Int](64)

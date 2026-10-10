@@ -32,7 +32,6 @@
                                                                                                   */
 package bitumen
 
-
 import java.io as ji
 
 import anticipation.*
@@ -40,9 +39,9 @@ import aperture.*
 import contingency.*
 import pneumatic.*
 import prepositional.*
+import rudiments.*
 import turbulence.*
 import zephyrine.*
-import rudiments.*
 
 // A named class rather than an anonymous given instance, for the reasons documented on galilei's
 // `FileOpenable`. Archives open read-only: a `Write` mode is refused with

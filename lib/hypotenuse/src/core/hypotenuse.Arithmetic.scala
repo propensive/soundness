@@ -38,8 +38,8 @@ import fulminate.*
 // The failure of an arithmetic *operation*, as distinct from a value that cannot be
 // represented (`Decimal.Error`, `Rational.Error`). Division and overflow are separate
 // `Reason`s rather than separate types because they are one concept — an operation with no
-// representable result — and `arithmeticOptions.checkedDivision` / `checkedOverflow` remain independent
-// imports, so a caller still chooses which checks to switch on.
+// representable result — and `arithmeticOptions.checkedDivision` / `checkedOverflow` remain
+// independent imports, so a caller still chooses which checks to switch on.
 object Arithmetic:
   object Error:
     enum Reason(val number: Int) extends Clarification:

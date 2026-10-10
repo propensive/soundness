@@ -32,5 +32,5 @@
                                                                                                   */
 package soundness
 
-export phoenicia.{Coverage, Face, Font, Glyph, Medium, Opentype, Sfnt, Slant, Stretch, Truetype, Typeface,
-    Typesettable, Variation, Weight}
+export phoenicia.{Coverage, Face, Font, Glyph, Medium, Opentype, Sfnt, Slant, Stretch, Truetype,
+    Typeface, Typesettable, Variation, Weight}

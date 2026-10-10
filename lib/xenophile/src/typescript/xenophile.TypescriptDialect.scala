@@ -64,7 +64,7 @@ object TypescriptDialect extends Dialect:
       declaration match
         case _: Typescript.Declaration.Interface => byName.put(declaration.key, declaration)
         case _: Typescript.Declaration.Class     => byName.put(declaration.key, declaration)
-        case _                                  => ()
+        case _                                   => ()
 
     // Inherited members are resolved against the declarations of this same file. A base named by
     // a declaration this file does not carry contributes nothing — the file is the whole world
@@ -82,7 +82,7 @@ object TypescriptDialect extends Dialect:
                 // The `Optional` base class is bound to a typed local before it is read
                 // (`wildApprox`).
                 val base: Optional[Typescript.Type] = extending
-                base.lay(implements) { value => List(value) + implements }
+                base.lay(implements): value => List(value) + implements
 
               case _ => Nil
 
@@ -92,8 +92,7 @@ object TypescriptDialect extends Dialect:
                 case _                              => accumulated
 
             declaration.declaredMembers.fold(inherited): (accumulated, member) =>
-              prototype(member).lay(accumulated): value =>
-                accumulated.define(member.name, value)
+              prototype(member).lay(accumulated): value => accumulated.define(member.name, value)
 
     byName.keys.to(List).map { key => key -> members(key, Set()) }.to[Map]
 
@@ -102,13 +101,14 @@ object TypescriptDialect extends Dialect:
   private def prototype(member: Typescript.Member): Optional[Prototype] =
     if !member.visible then Unset else member.kind match
       case Typescript.Member.Kind.Call | Typescript.Member.Kind.Construct
-         | Typescript.Member.Kind.Index => Unset
+        | Typescript.Member.Kind.Index =>
+        Unset
 
       case Typescript.Member.Kind.Property | Typescript.Member.Kind.Getter =>
         member.signatures.prim.let: signature =>
           val result = signature match
             case Typescript.Type.Function(_, result, _, _) => foreign(result)
-            case other                                    => foreign(other)
+            case other                                     => foreign(other)
 
           Prototype(Unset, if member.optional then optional(result) else result)
 
@@ -125,7 +125,6 @@ object TypescriptDialect extends Dialect:
               Prototype(arguments, foreign(result))
 
             case other => Prototype(Unset, foreign(other))
-
 
   private def optional(foreign: Foreign.Type): Foreign.Type =
     Foreign.Type.Union(List(foreign, Foreign.Type.Named(t"undefined")))
@@ -145,4 +144,4 @@ object TypescriptDialect extends Dialect:
 
     case Typescript.Type.Union(members)     => Foreign.Type.Union(members.map(foreign(_)))
     case Typescript.Type.Literal(value, _)  => Foreign.Type.Named(value)
-    case other                             => Foreign.Type.Named(other.text)
+    case other                              => Foreign.Type.Named(other.text)

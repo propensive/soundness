@@ -32,19 +32,18 @@
                                                                                                   */
 package xenophile
 
-import scala.quoted.*
 import scala.collection.immutable.Seq
-
+import scala.quoted.*
 
 import anticipation.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import fulminate.*
 import gigantism.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-import denominative.*
-import denominative.dysasymptotics.linearSize
 
 object Xenophile:
 
@@ -112,8 +111,7 @@ object Xenophile:
 
     var found: Optional[Materializer] = Unset
 
-    names.foreach: name =>
-      if found.absent then found = load(name)
+    names.foreach: name => if found.absent then found = load(name)
 
     found.or:
       halt(m"xenophile: no materializer for this foreign source language is on the classpath")
@@ -550,7 +548,8 @@ object Xenophile:
   def interface[form: Type](resource: Expr[Locative]): Macro[Interface] =
     import quotes.reflect.*
 
-    val members = (refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)).to(Map)
+    val members =
+      (refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)).to(Map)
 
     val locusRepr = members(t"Locus").or:
       halt(m"xenophile: the resource does not carry a singleton path type (it has no `Locus`)")

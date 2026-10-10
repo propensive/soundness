@@ -70,7 +70,7 @@ object Streamer:
   lazy val fingerprint: Data =
     def renderType(kind: Tels.Type): Text = kind match
       case Tels.Struct(members, _) =>
-        val rendered = members.to[List].map { (member: Tels.Member) => renderMember(member) }
+        val rendered = members.to[List].map: (member: Tels.Member) => renderMember(member)
         t"{${rendered.join(t";")}}"
 
       case Tels.Scalar(_, encoding, _) => t"scalar(${encoding.or(t"")})"
@@ -95,7 +95,8 @@ object Streamer:
       t"${select.name}[${variants.join(t",")}]"
 
     val selects =
-      schema.selects.to[List].map { (select: Tels.SelectDefinition) => renderSelect(select) }
+      schema.selects.to[List].map: (select: Tels.SelectDefinition) => renderSelect(select)
+
     val rendering: Text = t"${schema.name}|${renderType(schema.document)}|${selects.join(t"|")}"
 
     Blake3.hashOf(rendering.sysData, 32)

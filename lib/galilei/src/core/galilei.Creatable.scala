@@ -63,7 +63,8 @@ object Creation:
 
     if flags.has(Parents) then
       def ancestors(current: Path on filesystem): List[Path on filesystem] =
-        safely(current.parent).let { parent => (parent :: ancestors(parent)): List[Path on filesystem] }
+        safely(current.parent)
+        . let { parent => (parent :: ancestors(parent)): List[Path on filesystem] }
         . or(Nil)
 
       ancestors(path).reverse.each: ancestor =>
@@ -83,7 +84,8 @@ object Creation:
   :   Unit =
 
     if backend.stat(path, false).entry == Directory
-    then backend.children(path).each { name => wipe(path.unsafeChild(name)(using Unsafe)) }
+    then backend.children(path).each: name => wipe(path.unsafeChild(name)(using Unsafe))
+
     backend.delete(path)
 
   class DirectoryCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
@@ -107,8 +109,8 @@ object Creation:
 
     def create[result]
       ( value: path, flags: List[CreateFlag] )
-      ( block: (((Directory.Handle { type Under = filesystem })
-                  & Granting[Grant.Read & Grant.Write])^) ?=> result )
+      ( block: (((Directory.Handle { type Under = filesystem }) &
+        Granting[Grant.Read & Grant.Write])^) ?=> result )
     :   result =
 
       make(value, flags)
@@ -176,7 +178,8 @@ object Creation:
 
       try
         val outcome =
-          backend.open(temporary, List(OpenFlag.Write, OpenFlag.Create), umask.mode(Umask.fileBits)):
+          backend.open
+            ( temporary, List(OpenFlag.Write, OpenFlag.Create), umask.mode(Umask.fileBits) ):
             handle =>
             block(using handle.asInstanceOf[Handle & Granting[Grant.Read & Grant.Write]])
 

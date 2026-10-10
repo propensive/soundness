@@ -33,19 +33,17 @@
 package telekinesis
 
 import scala.caps
-
 import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
-import fulminate.Hazard
 import distillate.*
+import fulminate.Hazard
+import gossamer.*
 import honeycomb.*
 import legerdemain.*
-import gossamer.*
 import prepositional.*
 import vacuous.*
-
 import htmlDoms.whatwg, whatwg.*
 
 // An `Orchestrate` is a capability: it retains the caller's `process`/`render` function, which

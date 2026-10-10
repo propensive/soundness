@@ -32,18 +32,14 @@
                                                                                                   */
 package honeycomb
 
-
-import scala.collection.immutable.Seq
-import scala.collection.immutable.IndexedSeq
-
-import scala.caps
-
-import scala.language.dynamics
-
 import java.lang as jl
 
+import scala.caps
+import scala.collection.immutable.IndexedSeq
+import scala.collection.immutable.Seq
 import scala.collection.immutable.VectorMap
 import scala.collection.immutable.{List, Nil, ::}
+import scala.language.dynamics
 import scala.quoted.*
 
 import anticipation.*
@@ -70,7 +66,11 @@ object internal:
     import htmlDoms.whatwg
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head].literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
       case _               => strings
 
     val parts = recur[parts](Nil)
@@ -83,6 +83,7 @@ object internal:
     abortive:
       var holes: scala.collection.immutable.Map[Ordinal, Html.Hole] =
         scala.collection.immutable.Map()
+
       def capture(ordinal: Ordinal, hole: Html.Hole) = holes = holes.updated(ordinal, hole)
 
       val html: Html =
@@ -166,7 +167,7 @@ object internal:
             val expr2 =
               descend
                 ( array, pattern.children.readable(index),
-                  '{$scrutinee.children.readable(${Expr(index)})}, '{true})
+                  '{$scrutinee.children.readable(${Expr(index)})}, '{true} )
 
             elements(index + 1)('{$expr && $expr2})
 
@@ -291,7 +292,11 @@ object internal:
     import Html.Hole
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head].literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
       case _               => strings
 
     val parts = recur[parts](Nil)
@@ -369,7 +374,8 @@ object internal:
       case Varargs(insertions) => insertions
 
     var holes: scala.collection.immutable.Map[Ordinal, Html.Hole] =
-        scala.collection.immutable.Map()
+      scala.collection.immutable.Map()
+
     def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
 
     // Custom HaltTactic: translate parser Parse.Error positions to source-file ranges.
@@ -773,6 +779,7 @@ object internal:
             // [stdlib-iterator] index var in anonymous Iterator
             @caps.unsafe.untrackedCaptures
             private var i: Int = 0
+
             def hasNext: Boolean = i < a.length
 
             def next(): Text =
@@ -791,6 +798,7 @@ object internal:
             // [stdlib-iterator] index var in anonymous Iterator
             @caps.unsafe.untrackedCaptures
             private var i: Int = 0
+
             def hasNext: Boolean = i < a.length
 
             def next(): (Text, Optional[Text]) =

@@ -32,9 +32,9 @@
                                                                                                   */
 package eucalyptus
 
-import scala.language.experimental.pureFunctions
-
 import java.text as jt
+
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import fulminate.*

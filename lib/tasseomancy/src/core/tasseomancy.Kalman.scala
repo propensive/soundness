@@ -54,10 +54,13 @@ object Kalman:
 
   private def apply(m: Matrix, v: Vector): Vector = (m(0)*v(0) + m(1)*v(1), m(2)*v(0) + m(3)*v(1))
   private def transpose(m: Matrix): Matrix = (m(0), m(2), m(1), m(3))
-  private def add(m: Matrix, n: Matrix): Matrix = (m(0) + n(0), m(1) + n(1), m(2) + n(2), m(3) + n(3))
+
+  private def add(m: Matrix, n: Matrix): Matrix =
+    (m(0) + n(0), m(1) + n(1), m(2) + n(2), m(3) + n(3))
 
   private def invert(m: Matrix): Matrix =
     val determinant = m(0)*m(3) - m(1)*m(2)
+
     if determinant == 0.0 then (0.0, 0.0, 0.0, 0.0)
     else (m(3)/determinant, -m(1)/determinant, -m(2)/determinant, m(0)/determinant)
 
@@ -67,13 +70,16 @@ object Kalman:
 
   // One step of the forward filter: the estimate after the measurement, its covariance, and
   // the prediction and its covariance from before it, which the backward pass needs.
-  private case class Step(estimate: Vector, covariance: Matrix, predicted: Vector, predictedCovariance: Matrix)
+  private case class Step
+    ( estimate: Vector, covariance: Matrix, predicted: Vector, predictedCovariance: Matrix )
 
   def smooth(values: List[Double], ratio: Double): List[Double] = values match
     case Nil => Nil
 
     case first :: rest =>
-      val initial: Step = Step((first, 0.0), (ratio, 0.0, 0.0, ratio), (first, 0.0), (ratio, 0.0, 0.0, ratio))
+      val initial: Step =
+        Step((first, 0.0), (ratio, 0.0, 0.0, ratio), (first, 0.0), (ratio, 0.0, 0.0, ratio))
+
       val start: List[Step] = List(initial)
 
       // Forward, latest first.
@@ -82,13 +88,21 @@ object Kalman:
           acc match
             case previous :: _ =>
               val predicted = apply(transition, previous.estimate)
+
               val predictedCovariance =
-                add(multiply(multiply(transition, previous.covariance), transpose(transition)), noise)
+                add
+                  ( multiply(multiply(transition, previous.covariance), transpose(transition)),
+                    noise )
 
               val innovation = predictedCovariance(0) + ratio
-              val gain: Vector = (predictedCovariance(0)/innovation, predictedCovariance(2)/innovation)
+
+              val gain: Vector =
+                (predictedCovariance(0)/innovation, predictedCovariance(2)/innovation)
+
               val residual = measured - predicted(0)
-              val estimate: Vector = (predicted(0) + gain(0)*residual, predicted(1) + gain(1)*residual)
+
+              val estimate: Vector =
+                (predicted(0) + gain(0)*residual, predicted(1) + gain(1)*residual)
 
               val covariance: Matrix =
                 ( (1.0 - gain(0))*predictedCovariance(0), (1.0 - gain(0))*predictedCovariance(1),
@@ -104,16 +118,27 @@ object Kalman:
       // after it, through the gain that relates its covariance to the later prediction's.
       forward match
         case latest :: earlier =>
-          val begin: (List[Double], Vector, Step) = (List(latest.estimate(0)), latest.estimate, latest)
+          val begin: (List[Double], Vector, Step) =
+            (List(latest.estimate(0)), latest.estimate, latest)
 
           val smoothed: (List[Double], Vector, Step) =
             earlier.fold(begin): (acc, step) =>
               val later = acc(2)
               val laterSmoothed = acc(1)
-              val gain = multiply(multiply(step.covariance, transpose(transition)), invert(later.predictedCovariance))
-              val difference: Vector = (laterSmoothed(0) - later.predicted(0), laterSmoothed(1) - later.predicted(1))
+
+              val gain =
+                multiply
+                  ( multiply(step.covariance, transpose(transition)),
+                    invert(later.predictedCovariance) )
+
+              val difference: Vector =
+                (laterSmoothed(0) - later.predicted(0), laterSmoothed(1) - later.predicted(1))
+
               val correction = apply(gain, difference)
-              val estimate: Vector = (step.estimate(0) + correction(0), step.estimate(1) + correction(1))
+
+              val estimate: Vector =
+                (step.estimate(0) + correction(0), step.estimate(1) + correction(1))
+
               (estimate(0) :: acc(0), estimate, step)
 
           smoothed(0)

@@ -74,6 +74,7 @@ object Histogram:
 
   private def counts(fit: Histogram.Fit, values: Sequence[Double]): Sequence[Int] =
     var tally: Sequence[Int] = Sequence.empty
+
     repeat(fit.edges.size - 1):
       tally = Sequence.append(tally, 0)
 

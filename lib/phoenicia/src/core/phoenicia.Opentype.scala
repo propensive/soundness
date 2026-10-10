@@ -32,7 +32,6 @@
                                                                                                   */
 package phoenicia
 
-
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -45,7 +44,6 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
-
 
 object Opentype:
   def apply[source: Streamable by Data over Credit](source: source): Opentype =

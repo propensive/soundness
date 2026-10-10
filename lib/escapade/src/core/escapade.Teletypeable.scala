@@ -31,14 +31,13 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package escapade
-import rudiments.*
-
 import anticipation.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import iridescence.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
