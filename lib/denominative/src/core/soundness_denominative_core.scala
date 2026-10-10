@@ -34,8 +34,9 @@ package soundness
 
 export
   denominative
-  . { aka, capped, Countable, Vacuiscible, Applicable, Definable, Omissible, Terminable, Truncable, size, gamut, Interval, extent, iterate, prefix, nil, Ordinal, pare, Prim,
-      Quat, Quin, retrace, Sec, Sen, Sept, Span, spot, Ter, u, z, Zerary, limit, ult, ant, pen,
+  . { aka, capped, Countable, Vacuiscible, Applicable, Definable, Omissible, Terminable,
+      Truncable, size, gamut, Interval, extent, iterate, prefix, nil, Ordinal, pare, Prim, Quat,
+      Quin, retrace, Sec, Sen, Sept, Span, spot, Ter, u, z, Zerary, limit, ult, ant, pen,
       Dysasymptotic, beyond, coextent, Coextent }
 
 // `thru` and `till` are re-declared here rather than exported: an export forwards only one of

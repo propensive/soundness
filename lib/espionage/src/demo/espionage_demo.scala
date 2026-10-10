@@ -34,10 +34,10 @@ package espionage
 
 import soundness.*
 import backstops.stackTraceBackstop
+import errorDiagnostics.stackTracesDiagnostics
 import executives.completionsExecutive
 import interpreters.posixInterpreter
 import probates.awaitProbate
-import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import threads.virtualThreads
 import workingDirectories.javaBaseWorkingDirectory

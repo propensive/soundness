@@ -220,7 +220,10 @@ object Launcher:
     case Message.Open(name)        => stream(Variant.open, t"Open", name)
     case Message.Closed(name)      => stream(Variant.closed, t"Closed", name)
     case Message.Verify            => node(Variant.verify, t"Verify", Array.empty)
-    case Message.ExitStatus(code)  => node(Variant.exitStatus, t"ExitStatus", Array(value(0, code.show)))
+
+    case Message.ExitStatus(code) =>
+      node(Variant.exitStatus, t"ExitStatus", Array(value(0, code.show)))
+
     case Message.Shutdown          => node(Variant.shutdown, t"Shutdown", Array.empty)
 
     case Message.Credit(name, count) =>
@@ -267,7 +270,10 @@ object Launcher:
 
     message match
       case Message.Data(stream, chunk) => Bintel.frame(dataBody(stream, chunk), signature)
-      case other                       => Bintel.frame(Bintel.encode(element(other), schema, Tel.Codec.Bindings.builtins), signature)
+
+      case other =>
+        Bintel.frame
+          ( Bintel.encode(element(other), schema, Tel.Codec.Bindings.builtins), signature )
 
   // The body of a `data` document: the root's one child, the `data` variant, its two fields.
   private def dataBody(stream: Text, chunk: Data): Data =

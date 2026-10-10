@@ -209,7 +209,11 @@ object Conduit:
             val count = free.min(size - done)
 
             addressable0.copyChunk
-              ( source, offset.n0 + done, current.asInstanceOf[addressable0.Storage^], mark0, count )
+              ( source,
+                offset.n0 + done,
+                current.asInstanceOf[addressable0.Storage^],
+                mark0,
+                count )
 
             commit(count)
             done += count

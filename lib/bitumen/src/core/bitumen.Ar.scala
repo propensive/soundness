@@ -100,7 +100,9 @@ object Ar:
 
   // In the companion of the form, so `directory.archive[Ar]()` resolves with no import.
   given archivable: [plane: Filesystem]
-  =>  ( backend: FilesystemBackend on plane, ioTactic: Tactic[Io.Error], arTactic: Tactic[Ar.Error] )
+  =>  ( backend:  FilesystemBackend on plane,
+        ioTactic: Tactic[Io.Error],
+        arTactic: Tactic[Ar.Error] )
   =>  ( Ar.Archivable[plane]^{ioTactic, arTactic} ) =
     Ar.Archivable[plane]
 

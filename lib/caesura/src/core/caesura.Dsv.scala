@@ -172,7 +172,9 @@ object Dsv extends Dsv2:
   =>  ( (Text is Decodable in Dsv)^{tactic} ) = dsv => decodeCell(dsv, t"Text", t""): cell => cell
 
   given string: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  ( (String is Decodable in Dsv)^{tactic} ) = dsv => decodeCell(dsv, t"String", ""): cell => cell.s
+  =>  ( (String is Decodable in Dsv)^{tactic} ) =
+
+    dsv => decodeCell(dsv, t"String", ""): cell => cell.s
 
   inline given decodableDerivation: [value <: Product: ProductReflection]
   =>  value is Decodable in Dsv =
@@ -528,11 +530,13 @@ case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) 
   def apply[value](using value: (value is Decodable in Text)^)(field: Text): Optional[value] =
     columns.let(_(field)).let { index => data.at(index.z) }.let(value.decoded(_))
 
-  override def hashCode: Int = data.readable.indices.fuse(0)(state*31 + data.readUnchecked(next).hashCode)
+  override def hashCode: Int =
+    data.readable.indices.fuse(0)(state*31 + data.readUnchecked(next).hashCode)
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case row: Dsv =>
-      data.length == row.data.length && data.readable.indices.all: index => data.readUnchecked(index) == row.data.readUnchecked(index)
+      data.length == row.data.length && data.readable.indices.all: index =>
+        data.readUnchecked(index) == row.data.readUnchecked(index)
 
     case _ =>
       false

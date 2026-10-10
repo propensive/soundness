@@ -264,7 +264,7 @@ final class Report():
   // this settlement: lambdas over the opaque collections' higher-kinded methods are where the
   // compiler's `wildApprox` assertion trips (see `Documenting` before its removal).
   private def entries(line: ReportLine): sci.List[Entry] = line match
-    case ReportLine.Suite(_, tests) => tests.list.stdlib.flatMap { pair => entries(pair(1)) }
+    case ReportLine.Suite(_, tests) => tests.list.stdlib.flatMap: pair => entries(pair(1))
     case ReportLine.Item(entry)     => sci.List(entry)
 
   private def verdicts(entry: Entry): sci.List[Verdict] =

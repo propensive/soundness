@@ -62,7 +62,9 @@ object Addressable:
 
     inline def length(bytes: Data): Int = bytes.length
     inline def address(bytes: Data, index: Ordinal): Byte = bytes.readUnchecked(index.n0)
-    inline def grab(bytes: Data, start: Ordinal, end: Ordinal): Data = bytes.segment((start.n0).z till (end.n0).z)
+
+    inline def grab(bytes: Data, start: Ordinal, end: Ordinal): Data =
+      bytes.segment((start.n0).z till (end.n0).z)
 
 
     inline def clone(source: Data, start: Ordinal, end: Ordinal)(target: ji.ByteArrayOutputStream)

@@ -486,12 +486,13 @@ object Mcp:
 
     private val typeTag = Json.discriminatedUnion[SamplingMessageContentBlock](t"type")
 
-    given encodable: SamplingMessageContentBlock is Json.Encodable = Json.Encodable(() => Morphology.Any):
-      case content: TextContent       => typeTag.rewrite(t"text",        content.in[Json])
-      case content: ImageContent      => typeTag.rewrite(t"image",       content.in[Json])
-      case content: AudioContent      => typeTag.rewrite(t"audio",       content.in[Json])
-      case content: ToolUseContent    => typeTag.rewrite(t"tool_use",    content.in[Json])
-      case content: ToolResultContent => typeTag.rewrite(t"tool_result", content.in[Json])
+    given encodable: SamplingMessageContentBlock is Json.Encodable =
+      Json.Encodable(() => Morphology.Any):
+        case content: TextContent       => typeTag.rewrite(t"text",        content.in[Json])
+        case content: ImageContent      => typeTag.rewrite(t"image",       content.in[Json])
+        case content: AudioContent      => typeTag.rewrite(t"audio",       content.in[Json])
+        case content: ToolUseContent    => typeTag.rewrite(t"tool_use",    content.in[Json])
+        case content: ToolResultContent => typeTag.rewrite(t"tool_result", content.in[Json])
 
     given decodable: Tactic[Json.Error] => SamplingMessageContentBlock is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>

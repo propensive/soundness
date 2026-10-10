@@ -684,7 +684,9 @@ object Acp:
     val state: State = State()
     val service: Service^ = Service(registry, state)
 
-    def open(consume sink: (Intake[Data] over Credit)^, consume read: (Text => Unit) => Unit): result =
+    def open(consume sink: (Intake[Data] over Credit)^, consume read: (Text => Unit) => Unit)
+    :   result =
+
       Exchange.exchange(service, state, observer, sink, read): connection =>
         connection.initialize(service.capabilities)
         lambda(using connection)
@@ -857,7 +859,10 @@ object Acp:
 
     // [registry-lifetime] durable-capturing adjuster function held in shared registry
     @scala.caps.unsafe.untrackedCaptures
-    var adjust0: Optional[ClientCapabilities ->{caps.any.only[anticipation.Durable]} ClientCapabilities] = Unset
+    var adjust0
+    :   Optional[ClientCapabilities ->{caps.any.only[anticipation.Durable]} ClientCapabilities] =
+
+      Unset
 
     // The capabilities the client advertises at initialization, derived from what was
     // registered, so the declaration can never disagree with the implementation; `adjust0`, if
@@ -1299,7 +1304,9 @@ object Acp:
       // Runs one dispatch and sends its conclusion. Faults become error responses; a message the
       // dispatcher cannot decode is answered rather than dropped, so the agent never hangs
       // awaiting an answer.
-      def serve(dispatch: Json ->{caps.any.only[anticipation.Durable]} Optional[Json])(json: Json): Unit =
+      def serve(dispatch: Json ->{caps.any.only[anticipation.Durable]} Optional[Json])(json: Json)
+      :   Unit =
+
         val id: Optional[Json] = Acp.requestId(json)
 
         val response: Optional[Json] =

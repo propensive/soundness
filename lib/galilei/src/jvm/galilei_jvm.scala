@@ -200,13 +200,17 @@ package filesystemBackends:
       // creation withheld, never widen beyond the request.
       private def attributes(mode: Optional[Int]): Array[jnfa.FileAttribute[?]] =
         mode.let: mode =>
-          if posix then Array[jnfa.FileAttribute[?]](jnfa.PosixFilePermissions.asFileAttribute(permissions(mode)).nn)
-          else Array[jnfa.FileAttribute[?]]()
+          if posix then
+            Array[jnfa.FileAttribute[?]]
+              ( jnfa.PosixFilePermissions.asFileAttribute(permissions(mode)).nn )
+          else
+            Array[jnfa.FileAttribute[?]]()
 
         . or(Array[jnfa.FileAttribute[?]]())
 
       private def apply(path: Path on Plane, mode: Optional[Int]): Unit =
-        mode.let: mode => if posix then jnf.Files.setPosixFilePermissions(javaPath(path), permissions(mode))
+        mode.let: mode =>
+          if posix then jnf.Files.setPosixFilePermissions(javaPath(path), permissions(mode))
 
       def createDirectory(path: Path on Plane, mode: Optional[Int])(using Tactic[Io.Error]): Unit =
         protect(path, Operation.Create):
@@ -500,7 +504,9 @@ package filesystemBackends:
             options2.foreach { option => optionSet.add(option); () }
 
             val channel =
-              jnc.FileChannel.open(javaPath(path), optionSet, attributes(if creating then mode else Unset)*).nn
+              jnc.FileChannel
+              . open(javaPath(path), optionSet, attributes(if creating then mode else Unset)*)
+              . nn
 
             if creating then apply(path, mode)
             channel

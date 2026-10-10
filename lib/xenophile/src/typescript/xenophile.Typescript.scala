@@ -186,7 +186,8 @@ object Typescript:
   // recognise reports a smaller contract than the file declares — which would make any
   // compatibility claim computed from it unsound.
   case class Error(reason: Typescript.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(643, reason.number)(m"the TypeScript declarations could not be read because $reason")
+  extends fulminate.Error(643, reason.number)
+    ( m"the TypeScript declarations could not be read because $reason" )
 
   // TypescriptMember → Typescript.Member
   object Member:
@@ -239,7 +240,8 @@ object Typescript:
     // A type parameter's binder: its bound (`T extends U`) and its default (`T = U`). The name is
     // carried for diagnostics and for resolving references within the binder's scope; a canonical
     // encoding is expected to replace it with a positional index.
-    case class Parameter(name: Text, bound: Optional[Typescript.Type], default: Optional[Typescript.Type])
+    case class Parameter
+      ( name: Text, bound: Optional[Typescript.Type], default: Optional[Typescript.Type] )
 
     // A value parameter of a function, method or constructor. `rest` marks `...args: T[]`, whose
     // arity is unbounded, and `optional` marks `a?: T`, which callers may omit — both change what
@@ -382,7 +384,8 @@ object Typescript:
             end += 1
 
         if end >= text.length
-        then abort(Typescript.Error(Reason.Syntax(t"the string literal is unterminated", t"$quote")))
+        then abort:
+          Typescript.Error(Reason.Syntax(t"the string literal is unterminated", t"$quote"))
 
         tokens += Token.Str(builder.toString.tt)
         end + 1
@@ -608,7 +611,8 @@ object Typescript:
         skip(t";")
         ()
 
-      private update def interfaceDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
+      private update def interfaceDeclaration
+        ( scope: Typescript.Declaration.Scope, exported: Boolean )
         ( using Tactic[Typescript.Error] )
       :   Typescript.Declaration =
 
@@ -630,7 +634,10 @@ object Typescript:
         expect(t"class")
         val name = identifier()
         val typed = typeParameters()
-        val extending: Optional[Typescript.Type] = if skip(t"extends") then typeExpression() else Unset
+
+        val extending: Optional[Typescript.Type] =
+          if skip(t"extends") then typeExpression() else Unset
+
         val implements = if skip(t"implements") then typeList() else Nil
         expect(t"{")
         val members = memberList()
@@ -831,14 +838,19 @@ object Typescript:
 
       // --- types -------------------------------------------------------------------------------
 
-      private update def typeParameters()(using Tactic[Typescript.Error]): List[Typescript.Type.Parameter] =
+      private update def typeParameters()(using Tactic[Typescript.Error])
+      :   List[Typescript.Type.Parameter] =
+
         if !skip(t"<") then Nil else
           val parameters = scala.collection.mutable.ListBuffer[Typescript.Type.Parameter]()
 
           while !at(t">") && peek().present do
             if at(t"infer") then abort(Typescript.Error(Reason.Unsupported(t"an `infer` binder")))
             val name = identifier()
-            val bound: Optional[Typescript.Type] = if skip(t"extends") then typeExpression() else Unset
+
+            val bound: Optional[Typescript.Type] =
+              if skip(t"extends") then typeExpression() else Unset
+
             val default: Optional[Typescript.Type] = if skip(t"=") then typeExpression() else Unset
             parameters += Typescript.Type.Parameter(name, bound, default)
             skip(t",")
@@ -864,7 +876,9 @@ object Typescript:
 
         types.toList.to(List)
 
-      private update def parameterList()(using Tactic[Typescript.Error]): List[Typescript.Type.Argument] =
+      private update def parameterList()(using Tactic[Typescript.Error])
+      :   List[Typescript.Type.Argument] =
+
         expect(t"(")
         val parameters = scala.collection.mutable.ListBuffer[Typescript.Type.Argument]()
 
@@ -941,7 +955,8 @@ object Typescript:
               Typescript.Type.Predicate(name, typeExpression())
 
             case _ =>
-              abort(Typescript.Error(Reason.Syntax(t"a type predicate needs a parameter name", here)))
+              abort:
+                Typescript.Error(Reason.Syntax(t"a type predicate needs a parameter name", here))
         else
           result
 

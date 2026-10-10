@@ -287,5 +287,7 @@ abstract class PoolingSupervisor extends ThreadSupervisor:
     case null => jucl.LockSupport.parkNanos(blocker, deadline - jl.System.nanoTime())
 
     case carrier =>
-      if !carrier.strand.permit then jucl.LockSupport.parkNanos(blocker, deadline - jl.System.nanoTime())
+      if !carrier.strand.permit
+      then jucl.LockSupport.parkNanos(blocker, deadline - jl.System.nanoTime())
+
       carrier.strand.permit = false

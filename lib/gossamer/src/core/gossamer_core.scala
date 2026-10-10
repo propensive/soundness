@@ -84,7 +84,9 @@ inline def builder[value](using value: value aka "builder"): value =
   value()
 
 extension (module: Array.type)
-  def build[element: ClassTag](size: Int)(lambda: scala.Array[element]^ => Unit): Array[element]^{} =
+  def build[element: ClassTag](size: Int)(lambda: scala.Array[element]^ => Unit)
+  :   Array[element]^{} =
+
     val array = Array.allocate[element](size)
     lambda(array.raw)
     Array.freeze(array)

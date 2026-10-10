@@ -658,7 +658,8 @@ object Lsp:
 
   object WorkspaceFoldersChangeEvent:
     // Encoder anchor: derived once here so use sites share it instead of re-deriving.
-    given encodable: WorkspaceFoldersChangeEvent is Json.Encodable = Json.EncodableDerivation.derived
+    given encodable: WorkspaceFoldersChangeEvent is Json.Encodable =
+      Json.EncodableDerivation.derived
 
     given decodable: WorkspaceFoldersChangeEvent is Json.Decodable =
       // A pure, throwing instance: the derivation runs under one local throwing tactic (a
@@ -1783,7 +1784,9 @@ object Lsp:
     // set is reported as `Internal`, with the server's own message as the detail.
     private def ask[result](block: => result)(using Tactic[Lsp.Error]): result =
       try block catch case error: JsonRpc.Error =>
-        abort(Lsp.Error(error.code.let(Lsp.Error.reason(_)).or(Lsp.Error.Reason.Internal), error.detail))
+        abort:
+          Lsp.Error
+            ( error.code.let(Lsp.Error.reason(_)).or(Lsp.Error.Reason.Internal), error.detail )
 
     // The raw seam: sends a message exactly as given, without minting an id or awaiting an answer.
     // A proxy forwards through it, so that the editor's own request ids — and the methods this
@@ -1838,7 +1841,8 @@ object Lsp:
     def hover(uri: Text, position: Lsp.Position)(using Tactic[Lsp.Error]): Optional[Lsp.Hover] =
       ask(language.`textDocument/hover`(Lsp.TextDocumentIdentifier(uri), position))
 
-    def complete(uri: Text, position: Lsp.Position, context: Optional[Lsp.CompletionContext] = Unset)
+    def complete
+      ( uri: Text, position: Lsp.Position, context: Optional[Lsp.CompletionContext] = Unset )
       ( using Tactic[Lsp.Error] )
     :   Lsp.CompletionList =
 
@@ -1881,7 +1885,9 @@ object Lsp:
 
     // Navigation
 
-    def declaration(uri: Text, position: Lsp.Position)(using Tactic[Lsp.Error]): List[Lsp.Location] =
+    def declaration(uri: Text, position: Lsp.Position)(using Tactic[Lsp.Error])
+    :   List[Lsp.Location] =
+
       ask(navigation.`textDocument/declaration`(Lsp.TextDocumentIdentifier(uri), position))
 
     def typeDefinition(uri: Text, position: Lsp.Position)(using Tactic[Lsp.Error])
@@ -1924,7 +1930,9 @@ object Lsp:
     def search(query: Text)(using Tactic[Lsp.Error]): List[Lsp.WorkspaceSymbol] =
       ask(workspace.`workspace/symbol`(query))
 
-    def execute(command: Text, arguments: List[Json] = Nil)(using Tactic[Lsp.Error]): Optional[Json] =
+    def execute(command: Text, arguments: List[Json] = Nil)(using Tactic[Lsp.Error])
+    :   Optional[Json] =
+
       ask(workspace.`workspace/executeCommand`(command, arguments))
 
     def configure(settings: Json): Unit = workspace.`workspace/didChangeConfiguration`(settings)
@@ -2364,7 +2372,10 @@ object Lsp:
 
     // [registry-lifetime] capability-adjust function slot in Lsp.Registry
     @scala.caps.unsafe.untrackedCaptures
-    var adjust0: Optional[ServerCapabilities ->{caps.any.only[anticipation.Durable]} ServerCapabilities] = Unset
+    var adjust0
+    :   Optional[ServerCapabilities ->{caps.any.only[anticipation.Durable]} ServerCapabilities] =
+
+      Unset
 
     private def flag(registered: AnyRef | Null): Optional[Boolean] =
       if registered == null then Unset else true
@@ -2397,7 +2408,8 @@ object Lsp:
           renameProvider                   = flag(rename0),
           codeActionProvider               = flag(codeActions0),
           signatureHelpProvider            = flag(signatureHelp0).let: _ =>
-                                               SignatureHelpOptions(triggers(signatureHelpTriggers0)),
+                                               SignatureHelpOptions
+                                                ( triggers(signatureHelpTriggers0) ),
           declarationProvider              = flag(declaration0),
           typeDefinitionProvider          = flag(typeDefinition0),
           implementationProvider           = flag(implementation0),

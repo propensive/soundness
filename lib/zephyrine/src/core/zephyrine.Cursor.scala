@@ -759,7 +759,9 @@ extends caps.Mutable:
   // Variant of `advance` for callers that have just read the current operand
   // (e.g. via `unsafeBuffer(pos)` in a tight scan loop). Reuses the supplied
   // `operand` instead of re-loading it from the buffer for lineation tracking.
-  inline update def unsafeAdvanceWith(operand: addressable.Operand)(using erased unsafe: Unsafe): Unit =
+  inline update def unsafeAdvanceWith(operand: addressable.Operand)(using erased unsafe: Unsafe)
+  :   Unit =
+
     pos += 1
 
     if lineationActive then
@@ -884,7 +886,9 @@ extends caps.Mutable:
   inline def unsafeDatum(using erased unsafe: Unsafe): addressable.Operand =
     addressable.storageAddress(buffer, pos)
 
-  inline update def lay[result](inline otherwise: => result)(inline lambda: addressable.Operand => result)
+  inline update def lay[result]
+    ( inline otherwise: => result )
+    ( inline lambda: addressable.Operand => result )
   :   result =
 
     if !finished then lambda(addressable.storageAddress(buffer, pos)) else otherwise

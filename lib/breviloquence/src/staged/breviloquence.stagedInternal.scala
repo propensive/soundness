@@ -188,9 +188,9 @@ object stagedInternal:
     tpe.dealias match
       case AppliedType(constructor, arguments) =>
         for
-          clazz <- classFor(constructor)
+          clazz  <- classFor(constructor)
           shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-            list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
+            list.flatMap: tail => shapeOf(argument).map(_ :: tail)
         yield TypeShape(clazz, shapes)
 
       case other =>
@@ -519,8 +519,8 @@ object stagedInternal:
     tpe.classSymbol.exists: classSymbol =>
       classSymbol.flags.is(Flags.Case) &&
         !classSymbol.owner.isTerm &&
-        (tpe match { case AppliedType(_, _) => false case _ => true })
-        && classSymbol.primaryConstructor.paramSymss
+        (tpe match { case AppliedType(_, _) => false case _ => true }) &&
+        classSymbol.primaryConstructor.paramSymss
           . filterNot(_.exists(_.isTypeParam)).length == 1 &&
         !hasRenames(classSymbol)
 
@@ -703,12 +703,13 @@ object stagedInternal:
           case '[fieldType] =>
             if builtinDirect(fieldTypes(index)).isDefined then
               '{Cbor.Parsable.missing[fieldType]()(using $tactic)}
-            else resolve[fieldType](cache) match
-              case Some(instance0) =>
-                instance0.asInstanceOf[Inlinable { type Self = fieldType }].absent(tactic)
+            else
+              resolve[fieldType](cache) match
+                case Some(instance0) =>
+                  instance0.asInstanceOf[Inlinable { type Self = fieldType }].absent(tactic)
 
-              case None =>
-                '{stagedInternal.fieldSeamAbsent[fieldType]($tactic)}
+                case None =>
+                  '{stagedInternal.fieldSeamAbsent[fieldType]($tactic)}
 
       // One local def per field, shaped for the JIT: non-builtin bodies are
       // potentially large, so each is emitted once and *called* from its
@@ -911,21 +912,22 @@ object stagedInternal:
             provide[Tactic[wisteria.Variant.Error]]:
               abort(wisteria.Variant.Error[sum]($tag.tt))
           }
-      else variants(index)(1).asType match
-        case '[type variantType <: sum; variantType] =>
-          val instance = resolve[variantType](cache).getOrElse:
-            report.errorAndAbort
-              ( s"breviloquence: no Inlinable for variant ${variants(index)(0)}" )
+      else
+        variants(index)(1).asType match
+          case '[type variantType <: sum; variantType] =>
+            val instance = resolve[variantType](cache).getOrElse:
+              report.errorAndAbort
+                ( s"breviloquence: no Inlinable for variant ${variants(index)(0)}" )
 
-          . asInstanceOf[Inlinable { type Self = variantType }]
+            . asInstanceOf[Inlinable { type Self = variantType }]
 
-          ' {
-              if $tag == ${Expr(variants(index)(0))} then
-                def parseVariant(): variantType = ${instance.parse(reader)}
-                parseVariant()
-              else
-                ${dispatch(index + 1, tag)}
-            }
+            ' {
+                if $tag == ${Expr(variants(index)(0))} then
+                  def parseVariant(): variantType = ${instance.parse(reader)}
+                  parseVariant()
+                else
+                  ${dispatch(index + 1, tag)}
+              }
 
     ' {
         val tactic = infer[Tactic[Cbor.Error]]

@@ -162,15 +162,16 @@ object ProtobufParser:
       pos += length
       result
 
-    private update def wire(wireType: WireType)(using Tactic[Protobuf.Error]): Protobuf = wireType match
-      case WireType.Varint =>
-        val start = pos
-        varint()
-        Protobuf.Wire(WireType.Varint, data.segment(start.z till pos.z))
+    private update def wire(wireType: WireType)(using Tactic[Protobuf.Error]): Protobuf =
+      wireType match
+        case WireType.Varint =>
+          val start = pos
+          varint()
+          Protobuf.Wire(WireType.Varint, data.segment(start.z till pos.z))
 
-      case WireType.I64 => Protobuf.Wire(WireType.I64, slice(8))
-      case WireType.I32 => Protobuf.Wire(WireType.I32, slice(4))
-      case WireType.Len => Protobuf.Wire(WireType.Len, slice(varint().toInt))
+        case WireType.I64 => Protobuf.Wire(WireType.I64, slice(8))
+        case WireType.I32 => Protobuf.Wire(WireType.I32, slice(4))
+        case WireType.Len => Protobuf.Wire(WireType.Len, slice(varint().toInt))
 
     update def fields()(using Tactic[Protobuf.Error]): Map[Int, List[Protobuf]] =
       val accumulator = scm.LinkedHashMap.empty[Int, scm.ListBuffer[Protobuf]]

@@ -447,10 +447,17 @@ object Xml extends Tag.Container
         type Form = Xml
 
         private def child(label: BaseText, encoded: Xml): Node = encoded match
-          case element: Element           => Element(label, element.attributes, element.children, element.scope)
-          case Fragment(element: Element) => Element(label, element.attributes, element.children, element.scope)
-          case node: Node                 => Element(label, Attributes.empty, Array(node))
-          case Fragment(nodes*)           => Element(label, Attributes.empty, Array.unsafeFrozen(nodes.toArray))
+          case element: Element =>
+            Element(label, element.attributes, element.children, element.scope)
+
+          case Fragment(element: Element) =>
+            Element(label, element.attributes, element.children, element.scope)
+
+          case node: Node =>
+            Element(label, Attributes.empty, Array(node))
+
+          case Fragment(nodes*) =>
+            Element(label, Attributes.empty, Array.unsafeFrozen(nodes.toArray))
 
         def encoded(map: Map[key, value]): Xml =
           val entries: scm.ArrayBuffer[Node] = scm.ArrayBuffer()
@@ -458,7 +465,9 @@ object Xml extends Tag.Container
           map.keys.to[List].each: key =>
             map(key).let: value =>
               val pair: Array[Node]^{} =
-                Array(child(t"key", keyEncodable.encoded(key)), child(t"value", valueEncodable.encoded(value)))
+                Array
+                  ( child(t"key", keyEncodable.encoded(key)),
+                    child(t"value", valueEncodable.encoded(value)) )
 
               entries += Element(t"", Attributes.empty, pair)
 
@@ -1294,7 +1303,9 @@ object Xml extends Tag.Container
           var index = 0
 
           while index < count do
-            if !fields.readUnchecked(index)(3) && named.readUnchecked(index) == name then return index
+            if !fields.readUnchecked(index)(3) && named.readUnchecked(index) == name
+            then return index
+
             index += 1
 
           -1
@@ -1327,9 +1338,11 @@ object Xml extends Tag.Container
             if entries.readUnchecked(index)(3) then
               attributes(keys.readUnchecked(index).tt).let: text =>
                 values(index) =
-                  if focused
-                  then focus(descend(prior, keys.readUnchecked(index).tt))(entries.readUnchecked(index)(1).attribute(text))
-                  else entries.readUnchecked(index)(1).attribute(text)
+                  if focused then
+                    focus(descend(prior, keys.readUnchecked(index).tt))
+                      ( entries.readUnchecked(index)(1).attribute(text) )
+                  else
+                    entries.readUnchecked(index)(1).attribute(text)
 
             index += 1
 
@@ -1356,9 +1369,11 @@ object Xml extends Tag.Container
                       buffer
 
                   buffer +=
-                    ( if focused
-                      then focus(descend(prior, keys.readUnchecked(found).tt))(gathering.parseElement(reader))
-                      else gathering.parseElement(reader) )
+                    ( if focused then
+                        focus(descend(prior, keys.readUnchecked(found).tt))
+                          ( gathering.parseElement(reader) )
+                      else
+                        gathering.parseElement(reader) )
 
                 case _ =>
                   // Unknown children are skipped, and a duplicate child keeps
@@ -1367,9 +1382,11 @@ object Xml extends Tag.Container
                   if !(values.readable(found).asInstanceOf[AnyRef] eq AbsentSlot)
                   then reader.skipElement()
                   else values(found) =
-                    if focused
-                    then focus(descend(prior, keys.readUnchecked(found).tt))(entries.readUnchecked(found)(1).parse(reader))
-                    else entries.readUnchecked(found)(1).parse(reader)
+                    if focused then
+                      focus(descend(prior, keys.readUnchecked(found).tt))
+                        ( entries.readUnchecked(found)(1).parse(reader) )
+                    else
+                      entries.readUnchecked(found)(1).parse(reader)
 
           index = 0
 
@@ -1384,9 +1401,11 @@ object Xml extends Tag.Container
                   case _                         => Nil
 
                 values(index) =
-                  if focused
-                  then focus(descend(prior, keys.readUnchecked(index).tt))(gathering.gathered(elements))
-                  else gathering.gathered(elements)
+                  if focused then
+                    focus(descend(prior, keys.readUnchecked(index).tt))
+                      ( gathering.gathered(elements) )
+                  else
+                    gathering.gathered(elements)
 
               case _ =>
                 if values.readable(index).asInstanceOf[AnyRef] eq AbsentSlot then
@@ -1394,9 +1413,11 @@ object Xml extends Tag.Container
 
                   values(index) =
                     if declared.present then declared
-                    else if focused
-                    then focus(descend(prior, keys.readUnchecked(index).tt))(entries.readUnchecked(index)(1).absent())
-                    else entries.readUnchecked(index)(1).absent()
+                    else if focused then
+                      focus(descend(prior, keys.readUnchecked(index).tt))
+                        ( entries.readUnchecked(index)(1).absent() )
+                    else
+                      entries.readUnchecked(index)(1).absent()
 
             index += 1
 
@@ -1438,9 +1459,11 @@ object Xml extends Tag.Container
                 val declared = entries.readUnchecked(index)(2).asInstanceOf[Optional[Any]]
 
                 if declared.present then declared
-                else if focused
-                then focus(descend(prior, keys.readUnchecked(index).tt))(entries.readUnchecked(index)(1).absent())
-                else entries.readUnchecked(index)(1).absent()
+                else if focused then
+                  focus(descend(prior, keys.readUnchecked(index).tt))
+                    ( entries.readUnchecked(index)(1).absent() )
+                else
+                  entries.readUnchecked(index)(1).absent()
 
             index += 1
 
@@ -2528,7 +2551,10 @@ object Xml extends Tag.Container
 
       segments match
         case Nil =>
-          Position(data.readUnchecked(offset + 1).z, data.readUnchecked(offset + 2).z, length = data.readUnchecked(offset + 3))
+          Position
+            ( data.readUnchecked(offset + 1).z,
+              data.readUnchecked(offset + 2).z,
+              length = data.readUnchecked(offset + 3) )
 
         case XPath.Location.Attribute(attrName) :: _ =>
           xml match
@@ -2569,7 +2595,11 @@ object Xml extends Tag.Container
       else
         val attrOff = data.readUnchecked(offset + 6 + i)
         val base = offset + attrOff
-        Position(data.readUnchecked(base + 1).z, data.readUnchecked(base + 2).z, length = data.readUnchecked(base + 3))
+
+        Position
+          ( data.readUnchecked(base + 1).z,
+            data.readUnchecked(base + 2).z,
+            length = data.readUnchecked(base + 3) )
 
     // Find the position of the n-th (1-indexed) child element with the
     // given name among the child *elements only* (ignoring text, comment,
@@ -2697,7 +2727,9 @@ object Xml extends Tag.Container
     // exactly representable, so `mantissa.toDouble / TenPow(scale)` is
     // correctly rounded whenever the mantissa fits in 53 bits.
     private[xylophone] val TenPow: Array[Double]^{} =
-      scala.Array(1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15)
+      scala.Array
+        ( 1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15 )
+
       . asInstanceOf[Array[Double]^{}]
 
     // `true` and `false` packed LSB-first, for the boolean content fast path.
@@ -2725,7 +2757,8 @@ object Xml extends Tag.Container
     // surrogate keeps it back and prepends it to the next. (Not the `Codepage` duct, whose
     // encoder, staging buffer and block are a fixed cost per parse that a small document
     // notices.)
-    private[xylophone] def utf8(text: BaseText): Data = Array.unsafeFrozen(text.s.getBytes(Utf8Charset).nn)
+    private[xylophone] def utf8(text: BaseText): Data =
+      Array.unsafeFrozen(text.s.getBytes(Utf8Charset).nn)
 
     private[xylophone] def utf8(chain: Chain[BaseText]): Chain[Data] =
       def encode(todo: Chain[BaseText], carry: String): Chain[Data] =
@@ -3145,7 +3178,9 @@ object Xml extends Tag.Container
 
     // As `slice`, for a scan that saw every byte of the region and knows whether any was
     // non-ASCII: an ASCII region is copied without the decoder's own scan.
-    protected update def slice(start: Cursor.Mark, ascii: Boolean)(using Tactic[Parse.Error]): BaseText =
+    protected update def slice(start: Cursor.Mark, ascii: Boolean)(using Tactic[Parse.Error])
+    :   BaseText =
+
       syncTo()
       val end = cursor.mark(using heldToken.nn)
 
@@ -3156,7 +3191,9 @@ object Xml extends Tag.Container
 
     // The slice decoded: an all-ASCII one through the Latin-1 `String` constructor, any other
     // through the strict decoder, which rejects malformed UTF-8 as a parse error.
-    protected update def slice(start: Cursor.Mark, end: Cursor.Mark)(using Tactic[Parse.Error]): BaseText =
+    protected update def slice(start: Cursor.Mark, end: Cursor.Mark)(using Tactic[Parse.Error])
+    :   BaseText =
+
       cursor.slice(start, end): (storage, offset, length) =>
         Utf8.decode(storage.asInstanceOf[scala.Array[Byte]], offset, length)
         . or(fail(Issue.BadEncoding, start))
@@ -3230,7 +3267,9 @@ object Xml extends Tag.Container
     protected inline def fail(issue: Issue)(using Tactic[Parse.Error]): Nothing =
       abort(Parse.Error(Xml, computePosition(Unset), issue))
 
-    protected update def fail(issue: Issue, start: Cursor.Mark)(using Tactic[Parse.Error]): Nothing =
+    protected update def fail(issue: Issue, start: Cursor.Mark)(using Tactic[Parse.Error])
+    :   Nothing =
+
       abort(Parse.Error(Xml, computePosition(start), issue))
 
     protected inline def isAsciiLetter(c: Byte): Boolean =
@@ -3395,7 +3434,9 @@ object Xml extends Tag.Container
     // Read attribute value enclosed in `quote`. Returns the unescaped
     // value as Text. Position starts just after the opening quote and
     // ends just after the closing quote.
-    protected update def readAttrValue(tag: BaseText, quote: Byte)(using Tactic[Parse.Error]): BaseText =
+    protected update def readAttrValue(tag: BaseText, quote: Byte)(using Tactic[Parse.Error])
+    :   BaseText =
+
       val start = begin()
       var hasEntity = false
       var hasHole = false
@@ -3798,7 +3839,9 @@ object Xml extends Tag.Container
           scope = parent
           Element(name, attrs, children, own)
 
-    protected update def readChildren(parentName: BaseText)(using Tactic[Parse.Error]): Array[Node]^{} =
+    protected update def readChildren(parentName: BaseText)(using Tactic[Parse.Error])
+    :   Array[Node]^{} =
+
       val children = getNodeBuffer()
       var done = false
 
@@ -4370,7 +4413,8 @@ object Xml extends Tag.Container
 
     // The root character data, up to the next markup or the end of the
     // input — read exactly as `parseXml0` reads a root-level text run.
-    private[xylophone] update def directRootText()(using Tactic[Parse.Error]): BaseText = readText(t"")
+    private[xylophone] update def directRootText()(using Tactic[Parse.Error]): BaseText =
+      readText(t"")
 
     // The attributes of the element opened most recently. Valid until the
     // next element is opened.
@@ -4685,7 +4729,9 @@ object Xml extends Tag.Container
           case "false" => Optional(false)
           case _       => Unset
 
-    private[xylophone] update def directTextBoolean()(using Tactic[Parse.Error]): Optional[Boolean] =
+    private[xylophone] update def directTextBoolean()(using Tactic[Parse.Error])
+    :   Optional[Boolean] =
+
       if directEmpty then
         directText()
         Unset
@@ -5122,19 +5168,20 @@ object Xml extends Tag.Container
 
     // The value of the attribute with the resolved name; an unprefixed attribute is in no
     // namespace, whatever the default namespace
-    def attribute(name: Xml.Name): Optional[BaseText] = name.namespace.lay(attributes.fetch(name.local)):
-      uri =>
-        var found: Optional[BaseText] = Unset
-        val bindings0 = bindings
+    def attribute(name: Xml.Name): Optional[BaseText] =
+      name.namespace.lay(attributes.fetch(name.local)):
+        uri =>
+          var found: Optional[BaseText] = Unset
+          val bindings0 = bindings
 
-        attributes.eachPair: (key, value) =>
-          if found.absent then
-            val (prefix, local) = Xml.Name.split(key)
+          attributes.eachPair: (key, value) =>
+            if found.absent then
+              val (prefix, local) = Xml.Name.split(key)
 
-            if prefix.present && local == name.local && bindings0.resolve(prefix) == uri
-            then found = value
+              if prefix.present && local == name.local && bindings0.resolve(prefix) == uri
+              then found = value
 
-        found
+          found
 
     // Whether a child of this element with the label is the one `name` selects: by resolved
     // name when the name's prefix is bound in the scope or at this element, else by raw label
@@ -5150,13 +5197,17 @@ object Xml extends Tag.Container
 
       case Element(label, attributes, children) =>
         label == this.label && attributes.equalsAttributes(this.attributes) &&
-          ju.Arrays.equals(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]], Array.unsafeJvm(this.children).asInstanceOf[scala.Array[Object | Null]])
+          ju.Arrays.equals
+            ( Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]],
+              Array.unsafeJvm(this.children).asInstanceOf[scala.Array[Object | Null]] )
 
       case _ =>
         false
 
     override def hashCode: Int =
-      ju.Arrays.hashCode(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]]) ^ attributes.hashAttributes ^ label.hashCode
+      ju.Arrays.hashCode(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]]) ^
+        attributes.hashAttributes ^
+        label.hashCode
 
 
     def selectDynamic(name: Label)

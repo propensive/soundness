@@ -864,7 +864,10 @@ object Yaml extends Yaml2, Dynamic:
       var i = 0
 
       while i < n do
-        body(arr.readUnchecked(i).asInstanceOf[Yaml.Ast], arr.readUnchecked(i + 1).asInstanceOf[Yaml.Ast])
+        body
+          ( arr.readUnchecked(i).asInstanceOf[Yaml.Ast],
+            arr.readUnchecked(i + 1).asInstanceOf[Yaml.Ast] )
+
         i += 2
 
     // ── Pattern-match extractors ────────────────────────────────────────────
@@ -1223,7 +1226,9 @@ object Yaml extends Yaml2, Dynamic:
   =>  ( (Bytes is Decodable in Yaml)^{tactic, caps.any} ) =
     _.root.long.b
 
-  given lens: [name <: Label: ValueOf] => (erased dynamical: (? >: Yaml) is Dynamical) => (tactic: Tactic[Yaml.Error])
+  given lens: [name <: Label: ValueOf]
+  =>  ( erased dynamical: (? >: Yaml) is Dynamical )
+  =>  ( tactic: Tactic[Yaml.Error] )
   =>  ( (name is Lens from Yaml onto Yaml)^{tactic} ) =
     Lens(_.selectDynamic(valueOf[name]), (yaml, value) => yaml.modify(valueOf[name], value))
 
@@ -1733,7 +1738,8 @@ object Yaml extends Yaml2, Dynamic:
         // The non-consume `accept` crosses to the consuming transcode duct
         // and cursor as a neutral reference; each accept delivers a
         // single-use stream.
-        fromStream(utf8Stream(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
+        fromStream
+          ( utf8Stream(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]) )
 
   // Byte sources (files, HTTP bodies) skip transcoding entirely: the parser
   // reads the bytes as delivered, and `skipBom()` already absorbs a UTF-8 BOM.
@@ -1807,7 +1813,9 @@ object Yaml extends Yaml2, Dynamic:
 
       override def accept(stream: (Stream[Text] over Credit)^): value in Yaml =
         // See `aggregable` above.
-        fromStream(utf8Stream(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
+        fromStream
+          ( utf8Stream(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]) )
+
         . as[value].asInstanceOf[value in Yaml]
 
   def primitive(ast: Yaml.Ast): Yaml.Primitive =
@@ -6082,7 +6090,8 @@ extends Dynamic derives CanEqual:
   // Dynamic field access — `yaml.foo` desugars to `selectDynamic("foo")`.
   // Gated on an erased `Yaml is Dynamical` so the feature is opt-in via
   // `import dynamicAccess.dynamicYaml` or a `dynamically` block.
-  def selectDynamic(field: String)(using erased dynamical: (? >: Yaml) is Dynamical): Yaml = apply(field.tt)
+  def selectDynamic(field: String)(using erased dynamical: (? >: Yaml) is Dynamical): Yaml =
+    apply(field.tt)
 
   def applyDynamic(field: String)(index: Int)(using erased dynamical: (? >: Yaml) is Dynamical)
   :   Yaml raises Yaml.Error =
@@ -6118,7 +6127,8 @@ extends Dynamic derives CanEqual:
 
     modify(field, value.encode)
 
-  def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamical: (? >: Yaml) is Dynamical)
+  def updateDynamic(field: String)[value](unset: Unset.type)
+    ( using erased dynamical: (? >: Yaml) is Dynamical )
   :   Yaml raises Yaml.Error =
 
     delete(field)

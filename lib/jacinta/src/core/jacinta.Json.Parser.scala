@@ -773,7 +773,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         i += java.lang.Long.numberOfTrailingZeros(stops) >> 3
         scanning = false
 
-    if scanning then while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
+    if scanning then
+      while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
 
     if i < limit && bytes(i) == Quote then
       val out = new String(bytes, start, i - start, java.nio.charset.StandardCharsets.ISO_8859_1)
@@ -829,7 +830,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         i += java.lang.Long.numberOfTrailingZeros(stops) >> 3
         scanning = false
 
-    if scanning then while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
+    if scanning then
+      while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
 
     if i < limit && bytes(i) == Quote then
       val length = i - start
@@ -1204,9 +1206,11 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         if nibbles <= Bcd.MaxBcdLongNibbles then
           Bcd.packBcdLong(content, nibbles, negative)
         else
-          Bcd.fromContent15(content, negative).asInstanceOf[Bcd]  // frozen: built fresh, immutable after return
+          // frozen: built fresh, immutable after return
+          Bcd.fromContent15(content, negative).asInstanceOf[Bcd]
       else
-        bcdBuilder.finish(negative).asInstanceOf[Bcd]  // frozen: Bcd is opaque over a post-finish-immutable array
+        // frozen: Bcd is opaque over a post-finish-immutable array
+        bcdBuilder.finish(negative).asInstanceOf[Bcd]
     else if bcdValid then
       if numberMode == NumberMode.Bcd then
         // BCD mode: skip the decode loop and hand back the raw in-Long BCD
@@ -1261,7 +1265,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       // High-precision path: hand back the `Bcd` directly. Reached only in
       // `NumberMode.Full`; `Bcd` and `Double` modes leave `bcdValid` true
       // and truncate on overflow rather than allocating a `Bcd.Builder`.
-      bcdBuilder.finish(negative).asInstanceOf[Bcd]  // frozen: Bcd is opaque over a post-finish-immutable array
+      // frozen: Bcd is opaque over a post-finish-immutable array
+      bcdBuilder.finish(negative).asInstanceOf[Bcd]
 
   // `bcdOnly` propagates through the `Minus` recursion so that `-3.14`
   // parsed from an array context still short-circuits the Double path.
@@ -2291,7 +2296,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
           i += java.lang.Long.numberOfTrailingZeros(stops) >> 3
           scanning = false
 
-      if scanning then while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
+      if scanning then
+        while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
 
       if i < limit && bytes(i) == Quote then
         val out = new String(bytes, start, i - start, java.nio.charset.StandardCharsets.ISO_8859_1)
@@ -2406,7 +2412,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       case value: Double                         => value.toLong
       case value: Int                            => Bcd.bcdIntToDouble(value).toLong
       case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toLong.or(0L)
-      case _                                     => 0L // unreachable: only number forms are produced
+      // unreachable: only number forms are produced
+      case _                                     => 0L
 
   // Buffer-local fast path for the overwhelmingly common double shape:
   // optional sign, up to fifteen mantissa digits with one optional decimal
@@ -2514,7 +2521,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       case value: Long                           => value.toDouble
       case value: Int                            => Bcd.bcdIntToDouble(value)
       case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toDouble
-      case _                                     => 0.0 // unreachable: only number forms are produced
+      // unreachable: only number forms are produced
+      case _                                     => 0.0
 
   private[jacinta] update def directBcd()(using Tactic[Parse.Error]): Bcd =
     val raw: Any = directNumber()

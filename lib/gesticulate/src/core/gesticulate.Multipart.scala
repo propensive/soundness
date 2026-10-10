@@ -251,7 +251,9 @@ object Multipart:
       case Multipart.Error.Reason.StreamContinues   => m"the stream continues beyond the last part"
       case Multipart.Error.Reason.BadBoundaryEnding => m"unexpected content followed the boundary"
       case Multipart.Error.Reason.MediaType         => m"the media type is invalid"
-      case Multipart.Error.Reason.BadDisposition    => m"the `Content-Disposition` header has the wrong format"
+
+      case Multipart.Error.Reason.BadDisposition =>
+        m"the `Content-Disposition` header has the wrong format"
 
   import Multipart.Error.Reason
 

@@ -102,12 +102,16 @@ sealed trait Monitor extends Resultant, Findable, anticipation.Durable:
   protected[parasite] def addWorker(worker: Worker^): Unit =
     // [registry-lifetime] worker stored in supervision workers set
     val worker0: Worker^{} = caps.unsafe.unsafeAssumePure(worker)
-    workersRef.updateAndGet(_.nn.incl(worker0).asInstanceOf[scala.collection.immutable.Set[Worker^{}]])
+
+    workersRef.updateAndGet
+      ( _.nn.incl(worker0).asInstanceOf[scala.collection.immutable.Set[Worker^{}]] )
 
   protected[parasite] def remove(monitor: Worker^): Unit =
     // [registry-lifetime] worker removed from supervision workers set
     val monitor0: Worker^{} = caps.unsafe.unsafeAssumePure(monitor)
-    workersRef.updateAndGet(_.nn.excl(monitor0).asInstanceOf[scala.collection.immutable.Set[Worker^{}]])
+
+    workersRef.updateAndGet
+      ( _.nn.excl(monitor0).asInstanceOf[scala.collection.immutable.Set[Worker^{}]] )
 
   def name: Optional[Name[Async]]
   def chain: List[Codepoint]
@@ -328,13 +332,15 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate
     if supervisor.interrupted() || state() == Cancelled then throw new InterruptedException()
 
 
-  def map[result2](lambda: Result ->{caps.any.only[anticipation.Durable]} result2)(using monitor: Monitor^, probate: SharedProbate)
+  def map[result2](lambda: Result ->{caps.any.only[anticipation.Durable]} result2)
+    ( using monitor: Monitor^, probate: SharedProbate )
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate} =
 
     async(lambda(join()))
 
 
-  def bind[result2](lambda: Result ->{caps.any.only[anticipation.Durable]} Task[result2])(using monitor: Monitor^, probate: SharedProbate)
+  def bind[result2](lambda: Result ->{caps.any.only[anticipation.Durable]} Task[result2])
+    ( using monitor: Monitor^, probate: SharedProbate )
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate} =
 
     async(lambda(join()).join())

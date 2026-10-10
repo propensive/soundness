@@ -212,7 +212,8 @@ object Pem:
   given streamable: Pem is Streamable by Text over Credit = pem =>
     def groups(index: Int): Chain[Text] =
       if index >= pem.data.length then Chain(t"-----END ${pem.label}-----\n")
-      else t"${pem.data.segment((index).z till (index + 48).z).serialize[Base64]}\n" #:: groups(index + 48)
+      else t"${pem.data.segment((index).z till (index + 48).z).serialize[Base64]}\n" #::
+        groups(index + 48)
 
     Stream(t"-----BEGIN ${pem.label}-----\n" #:: Chain.defer(groups(0)))
 

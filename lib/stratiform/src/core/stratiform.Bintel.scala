@@ -864,7 +864,10 @@ object Bintel:
       case Tel.Element.Node(_, _, children) =>
         writeVarint(out, children.length.toLong)
         var i = 0
-        while i < children.length do { encodeElement(out, children.readable(i), schema, codecs); i += 1 }
+
+        while i < children.length do
+          encodeElement(out, children.readable(i), schema, codecs)
+          i += 1
 
       case _: Tel.Element.Value =>
         writeVarint(out, 1L)

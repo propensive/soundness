@@ -1414,7 +1414,8 @@ object Http:
   // `Tactic`, an `Online` token, a backend) which they retain — a given that takes capabilities
   // as parameters produces a capability (Jon, 2026-07-06; see rep/DECISIONS.md).
   trait Client extends Targetable, caps.ExclusiveCapability:
-    def request(request: Http.Request, target: Target)(using (Http.Event is Loggable)^): Http.Response
+    def request(request: Http.Request, target: Target)(using (Http.Event is Loggable)^)
+    :   Http.Response
 
   // HttpError → Http.Error
   case class Error(status: Http.Status, headers: List[Http.Header])(using Diagnostics)

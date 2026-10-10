@@ -330,7 +330,8 @@ object Bench:
                 ( runner.report,
                   testId,
                   coordinates,
-                  Bench.statistics(results0, iterations, confidence, size(left, right).or(operationSize)) )
+                  Bench.statistics
+                    ( results0, iterations, confidence, size(left, right).or(operationSize) ) )
 
         anchor.let: anchorValue =>
           lefts.seek(_ == anchorValue).lay:
@@ -467,7 +468,10 @@ object Bench:
       over(first, Axis(second))(body)
 
     inline def over
-      [ left <: reflect.Enum: Enumerable, right <: reflect.Enum: Enumerable, report, topic <: Label ]
+      [ left <: reflect.Enum: Enumerable,
+        right <: reflect.Enum: Enumerable,
+        report,
+        topic <: Label ]
       ( first: { def values: scala.Array[left] }, second: { def values: scala.Array[right] } )
       ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )

@@ -744,7 +744,8 @@ object Tel extends Tel2:
               repeatable,
               required =
                 nature != Tel.Nature.Flag &&
-                  !(optional || fallbacks.readUnchecked(index).asInstanceOf[Optional[Any]].present) )
+                  !(optional ||
+                    fallbacks.readUnchecked(index).asInstanceOf[Optional[Any]].present) )
 
         index += 1
 
@@ -990,9 +991,11 @@ object Tel extends Tel2:
                   // zero occurrences build the empty collection, as the AST
                   // derivation decodes an empty synthetic document.
                   values(index) =
-                    if focused
-                    then focus(descend(prior, keys.readUnchecked(index).tt))(gathering.gathered(elements))
-                    else gathering.gathered(elements)
+                    if focused then
+                      focus(descend(prior, keys.readUnchecked(index).tt))
+                        ( gathering.gathered(elements) )
+                    else
+                      gathering.gathered(elements)
 
                 case _ => ()
             else if values(index).asInstanceOf[AnyRef] eq AbsentSlot then
@@ -1137,7 +1140,8 @@ object Tel extends Tel2:
         applyConstraints(schema.document, Array.empty[Tel.Element], rootChildren, schema, checks)
 
       val root =
-        Tel.Element.Node(keywordIndex = Unset, elementType = schema.document, children = rootElements)
+        Tel.Element.Node
+          ( keywordIndex = Unset, elementType = schema.document, children = rootElements )
 
       checkStruct(root, schema.document, checks)
 
@@ -1620,8 +1624,11 @@ object Tel extends Tel2:
               var value: Optional[Text] = Unset
 
               node.children.readable.foreach:
-                case Tel.Element.Value(idx, _, text) => if idx == keyIdx && value.absent then value = text
-                case _                               => ()
+                case Tel.Element.Value(idx, _, text) =>
+                  if idx == keyIdx && value.absent then value = text
+
+                case _ =>
+                  ()
 
               value
 
@@ -2350,7 +2357,8 @@ object Tel extends Tel2:
 
       Alternative(Signature(lineage.signature(List())), selfContained, anyPublished, components)
 
-    inline def apply[formats <: Tuple](selfContained: Boolean = false, anyPublished: Boolean = false)
+    inline def apply[formats <: Tuple]
+      ( selfContained: Boolean = false, anyPublished: Boolean = false )
       ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error], Tactic[Tels.Resolution.Error],
               Tactic[Error] )
     :   Typed[formats] =
@@ -3389,7 +3397,8 @@ object Tel extends Tel2:
   // them lazily on demand (the more specific instance wins over turbulence's
   // generic `Chain` Aggregable, which would otherwise wrap the whole source as
   // a single element).
-  given listAggregable: (tactic: Tactic[Tel.Error]) => ((List[Tel] is Aggregable by Data)^{tactic}) =
+  given listAggregable: (tactic: Tactic[Tel.Error])
+  =>  ( (List[Tel] is Aggregable by Data)^{tactic} ) =
     source => parseAll(concatenate(source))
 
   given streamAggregable: (tactic: Tactic[Tel.Error])
@@ -3803,14 +3812,17 @@ object Tel extends Tel2:
         if index >= base && index < base + compounds.length
         then
           block.copy
-            ( compounds = Array.frozen
-               ( compounds.readable.updated(index - base, transform(compounds.readUnchecked(index - base))) ) )
+            ( compounds =
+                Array.frozen
+                  ( compounds.readable.updated
+                      ( index - base, transform(compounds.readUnchecked(index - base)) ) ) )
         else
           block
 
   // Apply `transform` to every child compound (flattened across blocks),
   // preserving block structure. Used by the panopticon `Each` optic.
-  private[stratiform] def mapChildCompounds(blocks: Array[Block]^{}, transform: Compound => Compound)
+  private[stratiform] def mapChildCompounds
+    ( blocks: Array[Block]^{}, transform: Compound => Compound )
   :   Array[Block]^{} =
 
     blocks.remap: block => block.copy(compounds = block.compounds.remap(transform))
@@ -4881,26 +4893,29 @@ object Tel extends Tel2:
 
     // Reads "#!..." line if present. The directive payload excludes the
     // "#!" prefix and the terminating LF.
-    private update def parseInterpreterDirective(): (Tactic[Tel.Error]^) ?->{this} Optional[Text] = inHold:
-      // We can peek the first two bytes without consuming.
-      if !more then Unset
-      else if peek != '#'.toByte then Unset
-      else
-        val second = peekNext()
+    private update def parseInterpreterDirective()
+    :   (Tactic[Tel.Error]^) ?->{this} Optional[Text] =
 
-        if second != '!'.toInt then Unset
+      inHold:
+        // We can peek the first two bytes without consuming.
+        if !more then Unset
+        else if peek != '#'.toByte then Unset
         else
-          // Consume "#!"
-          advance()
-          advance()
-          val mk = beginMark()
-          // Read until LF or CR
-          while more && peek != LF && peek != CR do advance()
-          val payload = sliceText(mk)
-          consumeLineEnding()
-          prevLineWasBoundary = true
-          hasConsumedNonBlankLine = true
-          payload.tt
+          val second = peekNext()
+
+          if second != '!'.toInt then Unset
+          else
+            // Consume "#!"
+            advance()
+            advance()
+            val mk = beginMark()
+            // Read until LF or CR
+            while more && peek != LF && peek != CR do advance()
+            val payload = sliceText(mk)
+            consumeLineEnding()
+            prevLineWasBoundary = true
+            hasConsumedNonBlankLine = true
+            payload.tt
 
     // Reads a pragma line ("tel ..." or "tel") if present as the first
     // non-blank line. Marks before consuming any blanks; if the first
@@ -5353,7 +5368,9 @@ object Tel extends Tel2:
     // compute admissibility at both candidate depths via the current ancestor
     // stack and pick deeper if and only if shallower is invalid AND deeper is
     // valid; tie-break favours shallower.
-    private update def recoverOddIndent(spaces: Int, line: Int): (Tactic[Tel.Error]^) ?->{this} Int =
+    private update def recoverOddIndent(spaces: Int, line: Int)
+    :   (Tactic[Tel.Error]^) ?->{this} Int =
+
       val rel = spaces - margin
 
       schema.let: s =>
@@ -5442,7 +5459,9 @@ object Tel extends Tel2:
 
     // ── parseChildren ────────────────────────────────────────────────────────
 
-    private update def parseChildren(parentIndent: Int): (Tactic[Tel.Error]^) ?->{this} Array[Tel.Block]^{} =
+    private update def parseChildren(parentIndent: Int)
+    :   (Tactic[Tel.Error]^) ?->{this} Array[Tel.Block]^{} =
+
       val expected = parentIndent + 1
 
       val start = blockScratchIx
@@ -5874,100 +5893,103 @@ object Tel extends Tel2:
 
     // Cursor is at the sigil. Reads marker offsets + headings, advances past
     // LF.
-    private update def parseTabulationLine(): (Tactic[Tel.Error]^) ?->{this} Tel.Tabulation = inHold:
-      val lineStartCol = head.leadingSpaces  // first marker offset (column 0 = sigil)
-      val markers = scala.collection.mutable.ArrayBuffer.empty[Int]
-      val headings = scala.collection.mutable.ArrayBuffer.empty[Text]
+    private update def parseTabulationLine()
+    :   (Tactic[Tel.Error]^) ?->{this} Tel.Tabulation =
 
-      markers += lineStartCol  // first marker at first non-space position
+      inHold:
+        val lineStartCol = head.leadingSpaces  // first marker offset (column 0 = sigil)
+        val markers = scala.collection.mutable.ArrayBuffer.empty[Int]
+        val headings = scala.collection.mutable.ArrayBuffer.empty[Text]
 
-      // Consume the first sigil.
-      advance()
+        markers += lineStartCol  // first marker at first non-space position
 
-      // Repeating: heading text until next marker (hard-space + sigil) or
-      // end of line.
-      var lineCol = lineStartCol + 1  // column index just past the sigil
-      var done = false
-      while !done do
-        // After a marker, an optional soft space introduces the heading.
-        // §16 / E120: non-space immediately after marker is malformed; >1
-        // leading space is malformed (unless empty heading).
-        if !more || peek == LF || peek == CR then
-          headings += t""
-          done = true
-        else if peek != SP then
-          errorAt(Reason.BadTabulationHeading, head.startLine, lineCol + 1)
-        else
-          // peek == SP
-          // Check if the next byte is also a space — if so, heading is empty
-          // or malformed.
-          val nextB = peekNext()
-          if nextB == SP.toInt then
-            // Two spaces after marker: empty heading? Look further.
-            // Consume the two spaces; check if next is a sigil (start of next
-            // column) or content (malformed).
-            advance(); lineCol += 1  // first space
-            advance(); lineCol += 1  // second space
-            // §16.1: the hard-space run before the next marker may be any
-            // length, so an empty heading may be followed by many spaces.
-            while more && peek == SP do { advance(); lineCol += 1 }
-            if more && peek == sigil then
-              // Empty heading; new marker.
-              markers += lineCol
-              advance(); lineCol += 1
-              headings += t""
-              // continue outer loop for next column
-            else if !more || peek == LF || peek == CR then
-              // Empty heading at line end.
-              headings += t""
-              done = true
-            else
-              // E120: more spaces or non-sigil content after empty.
-              errorAt(Reason.BadTabulationHeading, head.startLine, lineCol + 1)
+        // Consume the first sigil.
+        advance()
+
+        // Repeating: heading text until next marker (hard-space + sigil) or
+        // end of line.
+        var lineCol = lineStartCol + 1  // column index just past the sigil
+        var done = false
+        while !done do
+          // After a marker, an optional soft space introduces the heading.
+          // §16 / E120: non-space immediately after marker is malformed; >1
+          // leading space is malformed (unless empty heading).
+          if !more || peek == LF || peek == CR then
+            headings += t""
+            done = true
+          else if peek != SP then
+            errorAt(Reason.BadTabulationHeading, head.startLine, lineCol + 1)
           else
-            // One soft space — heading text follows.
-            advance(); lineCol += 1
-            val mk = beginMark()
-            var headingEnd = -1
-            var stop = false
-
-            while !stop do
-              if !more || peek == LF || peek == CR then
-                headingEnd = lineCol
-                stop = true
-              else if peek == sigil then
-                errorAt(Reason.BadTabulationHeading, head.startLine, lineCol + 1)
-              else if peek == SP then
-                // Hard space check: two spaces in a row?
-                val nb = peekNext()
-
-                if nb == SP.toInt then
-                  headingEnd = lineCol
-                  stop = true
-                else
-                  advance(); lineCol += 1
-              else
-                advance(); lineCol += 1
-
-            headings += sliceText(mk).tt
-            // Now we're either at LF/CR/EOF or at a hard-space run before a
-            // marker.
-            if !more || peek == LF || peek == CR then done = true
-            else
-              // Consume hard spaces.
+            // peek == SP
+            // Check if the next byte is also a space — if so, heading is empty
+            // or malformed.
+            val nextB = peekNext()
+            if nextB == SP.toInt then
+              // Two spaces after marker: empty heading? Look further.
+              // Consume the two spaces; check if next is a sigil (start of next
+              // column) or content (malformed).
+              advance(); lineCol += 1  // first space
+              advance(); lineCol += 1  // second space
+              // §16.1: the hard-space run before the next marker may be any
+              // length, so an empty heading may be followed by many spaces.
               while more && peek == SP do { advance(); lineCol += 1 }
-
               if more && peek == sigil then
+                // Empty heading; new marker.
                 markers += lineCol
                 advance(); lineCol += 1
-                // Loop continues.
+                headings += t""
+                // continue outer loop for next column
               else if !more || peek == LF || peek == CR then
+                // Empty heading at line end.
+                headings += t""
                 done = true
               else
+                // E120: more spaces or non-sigil content after empty.
                 errorAt(Reason.BadTabulationHeading, head.startLine, lineCol + 1)
+            else
+              // One soft space — heading text follows.
+              advance(); lineCol += 1
+              val mk = beginMark()
+              var headingEnd = -1
+              var stop = false
 
-      consumeLineEnding()
-      Tel.Tabulation(Array.from(markers), Array.from(headings))
+              while !stop do
+                if !more || peek == LF || peek == CR then
+                  headingEnd = lineCol
+                  stop = true
+                else if peek == sigil then
+                  errorAt(Reason.BadTabulationHeading, head.startLine, lineCol + 1)
+                else if peek == SP then
+                  // Hard space check: two spaces in a row?
+                  val nb = peekNext()
+
+                  if nb == SP.toInt then
+                    headingEnd = lineCol
+                    stop = true
+                  else
+                    advance(); lineCol += 1
+                else
+                  advance(); lineCol += 1
+
+              headings += sliceText(mk).tt
+              // Now we're either at LF/CR/EOF or at a hard-space run before a
+              // marker.
+              if !more || peek == LF || peek == CR then done = true
+              else
+                // Consume hard spaces.
+                while more && peek == SP do { advance(); lineCol += 1 }
+
+                if more && peek == sigil then
+                  markers += lineCol
+                  advance(); lineCol += 1
+                  // Loop continues.
+                else if !more || peek == LF || peek == CR then
+                  done = true
+                else
+                  errorAt(Reason.BadTabulationHeading, head.startLine, lineCol + 1)
+
+        consumeLineEnding()
+        Tel.Tabulation(Array.from(markers), Array.from(headings))
 
     // §16.2 column-rule validation. The cursor must be parked at the row's
     // first content byte (past leading spaces). Walks the bytes up to LF/CR
@@ -6013,7 +6035,9 @@ object Tel extends Tel2:
               else
                 if columnIdx >= 1 && columnIdx < markers.length - 1 then
                   val phraseWidth = runStart - phraseStart
-                  val colMax = markers.readUnchecked(columnIdx + 1) - markers.readUnchecked(columnIdx) - 2
+
+                  val colMax =
+                    markers.readUnchecked(columnIdx + 1) - markers.readUnchecked(columnIdx) - 2
 
                   // §19.5 SuppressColumnAlignment: record but keep scanning (the
                   // loop self-advances and the row is re-read by parseCompoundLine).
@@ -6103,7 +6127,9 @@ object Tel extends Tel2:
     // followed by more source). Captured lines (first sourceIndent spaces
     // stripped, trailing spaces removed) are joined with LF as a separator
     // with no trailing LF; trailing blank lines are discarded (§14).
-    private update def parseSourceAtom(sourceIndent: Int): (Tactic[Tel.Error]^) ?->{this} Tel.Atom.Source =
+    private update def parseSourceAtom(sourceIndent: Int)
+    :   (Tactic[Tel.Error]^) ?->{this} Tel.Atom.Source =
+
       sb.setLength(0)
 
       // §14 "Convention A": the captured lines are joined with LF as a
@@ -6323,26 +6349,29 @@ object Tel extends Tel2:
     // pushed onto the `scratchAtoms` stack; the caller (parseBlock) is
     // responsible for taking them — typically together with an optional
     // source/literal extra atom — and constructing the final Tel.Compound.
-    private update def parseCompoundLine(lineNumber: Int): (Tactic[Tel.Error]^) ?->{this} Unit = inHold:
-      val isAtColumnZero = head.leadingSpaces == 0
-      val mayBeMisplacedPragma = isAtColumnZero && hasConsumedNonBlankLine
+    private update def parseCompoundLine(lineNumber: Int)
+    :   (Tactic[Tel.Error]^) ?->{this} Unit =
 
-      // First phrase = keyword. Read until space or LF/CR.
-      val keyword = readKeyword()
+      inHold:
+        val isAtColumnZero = head.leadingSpaces == 0
+        val mayBeMisplacedPragma = isAtColumnZero && hasConsumedNonBlankLine
 
-      // E102: a `tel` or `tel …` line at column 0 after the first non-blank
-      // line is a misplaced pragma. The valid pragma was already consumed
-      // earlier by parsePragma; anything matching here is a violation.
-      // §19.5 RestartFromPragma: record the misplaced pragma but parse the line as
-      // an ordinary compound (the keyword is already read; the rest follows).
-      if mayBeMisplacedPragma && keyword == t"tel" then
-        recoverAt(Reason.PragmaNotFirst, lineNumber, 1, keyword.length)(())
+        // First phrase = keyword. Read until space or LF/CR.
+        val keyword = readKeyword()
 
-      hasConsumedNonBlankLine = true
-      // The value run starts just past the keyword; the scan advances from here.
-      if spanTracking then lineValueOrigin = head.leadingSpaces + 1 + keyword.length
-      parseCompoundLineRest(lineNumber)
-      compoundLineKeyword = keyword
+        // E102: a `tel` or `tel …` line at column 0 after the first non-blank
+        // line is a misplaced pragma. The valid pragma was already consumed
+        // earlier by parsePragma; anything matching here is a violation.
+        // §19.5 RestartFromPragma: record the misplaced pragma but parse the line as
+        // an ordinary compound (the keyword is already read; the rest follows).
+        if mayBeMisplacedPragma && keyword == t"tel" then
+          recoverAt(Reason.PragmaNotFirst, lineNumber, 1, keyword.length)(())
+
+        hasConsumedNonBlankLine = true
+        // The value run starts just past the keyword; the scan advances from here.
+        if spanTracking then lineValueOrigin = head.leadingSpaces + 1 + keyword.length
+        parseCompoundLineRest(lineNumber)
+        compoundLineKeyword = keyword
 
     // The remainder of a compound line once the keyword has been consumed:
     // inline atoms (pushed onto `scratchAtoms`), the optional remark
@@ -6350,185 +6379,188 @@ object Tel extends Tel2:
     // the line ending. Factored out of `parseCompoundLine` so the direct
     // parsing rim, which reads the keyword itself (`directKeyword`), can
     // consume the rest of the line through the same scan.
-    private update def parseCompoundLineRest(lineNumber: Int)(using Tactic[Tel.Error]): Unit = inHold:
-      var remark: Optional[Text] = Unset
-      // The running column of the inline-atom run, advanced at each commit by
-      // the space run that preceded the atom and then by the atom's own width.
-      // Inline atoms are copied from the source verbatim, so this replays the
-      // line's layout exactly.
-      var valueCursor = lineValueOrigin
-      lineValueColumn = 0
-      lineValueLength = 0
-      // Read atom bytes directly into the parser's atom-bytes arena. With
-      // narrow holds, parseCompoundLine's hold has holdStart > 0, so refills
-      // inside the line can compact and shift the cursor's `bytes` —
-      // we therefore copy bytes out into our own buffer (the arena) as we
-      // read them. Each Tel.Atom.Inline references its slice of the arena
-      // (arenaArray, offset, length); no per-atom byte[] is allocated.
-      var precedingSpaces = 0
-      var hardSpaceMode = false
-      var atomOpen = false
+    private update def parseCompoundLineRest(lineNumber: Int)(using Tactic[Tel.Error]): Unit =
+      inHold:
+        var remark: Optional[Text] = Unset
+        // The running column of the inline-atom run, advanced at each commit by
+        // the space run that preceded the atom and then by the atom's own width.
+        // Inline atoms are copied from the source verbatim, so this replays the
+        // line's layout exactly.
+        var valueCursor = lineValueOrigin
+        lineValueColumn = 0
+        lineValueLength = 0
+        // Read atom bytes directly into the parser's atom-bytes arena. With
+        // narrow holds, parseCompoundLine's hold has holdStart > 0, so refills
+        // inside the line can compact and shift the cursor's `bytes` —
+        // we therefore copy bytes out into our own buffer (the arena) as we
+        // read them. Each Tel.Atom.Inline references its slice of the arena
+        // (arenaArray, offset, length); no per-atom byte[] is allocated.
+        var precedingSpaces = 0
+        var hardSpaceMode = false
+        var atomOpen = false
 
-      inline def commit(): Unit =
-        if atomOpen then
-          val off = arenaInFlightOffset
-          val len = endInFlightAtom()
+        inline def commit(): Unit =
+          if atomOpen then
+            val off = arenaInFlightOffset
+            val len = endInFlightAtom()
 
-          if spanTracking then
-            valueCursor += precedingSpaces
-            if lineValueColumn == 0 then lineValueColumn = valueCursor
-            valueCursor += arenaCharLength(off, len)
+            if spanTracking then
+              valueCursor += precedingSpaces
+              if lineValueColumn == 0 then lineValueColumn = valueCursor
+              valueCursor += arenaCharLength(off, len)
 
-          if directPrimaryOnly then
-            // Consume only the first inline atom, in the reader's requested mode;
-            // later atoms on the line are consumed but neither parsed nor allocated.
-            if !directPrimaryPresent then
-              directPrimaryPresent = true
+            if directPrimaryOnly then
+              // Consume only the first inline atom, in the reader's requested mode;
+              // later atoms on the line are consumed but neither parsed nor allocated.
+              if !directPrimaryPresent then
+                directPrimaryPresent = true
 
-              directPrimaryMode match
-                case PrimaryLong =>
-                  directPrimaryOk = parseArenaLong(off, len)
-                  // Only a rejected value needs its text — for the `NotScalar`
-                  // error, byte-for-byte with the AST path. The happy path
-                  // allocates no `String`.
-                  if !directPrimaryOk then
+                directPrimaryMode match
+                  case PrimaryLong =>
+                    directPrimaryOk = parseArenaLong(off, len)
+                    // Only a rejected value needs its text — for the `NotScalar`
+                    // error, byte-for-byte with the AST path. The happy path
+                    // allocates no `String`.
+                    if !directPrimaryOk then
+                      directPrimaryText = new String(atomArena, off, len, StandardCharsets.UTF_8)
+
+                  case PrimaryInt =>
+                    // As `PrimaryLong`, but an out-of-`Int`-range (yet valid Long)
+                    // value is also a `NotScalar`, exactly as `_.toInt` throws —
+                    // so it too captures its text.
+                    directPrimaryOk =
+                      parseArenaLong(off, len) &&
+                        directPrimaryLongVal >= Int.MinValue && directPrimaryLongVal <= Int.MaxValue
+
+                    if !directPrimaryOk then
+                      directPrimaryText = new String(atomArena, off, len, StandardCharsets.UTF_8)
+
+                  case PrimaryBoolean =>
+                    if len == 4 && atomArena(off) == 't'.toByte &&
+                      atomArena(off + 1) == 'r'.toByte &&
+                      atomArena(off + 2) == 'u'.toByte && atomArena(off + 3) == 'e'.toByte
+                    then { directPrimaryBoolVal = true; directPrimaryOk = true }
+                    else if len == 5 && atomArena(off) == 'f'.toByte &&
+                      atomArena(off + 1) == 'a'.toByte && atomArena(off + 2) == 'l'.toByte &&
+                      atomArena(off + 3) == 's'.toByte && atomArena(off + 4) == 'e'.toByte
+                    then { directPrimaryBoolVal = false; directPrimaryOk = true }
+                    else
+                      directPrimaryOk = false
+                      directPrimaryText = new String(atomArena, off, len, StandardCharsets.UTF_8)
+
+                  case _ =>
                     directPrimaryText = new String(atomArena, off, len, StandardCharsets.UTF_8)
+            else
+              pushAtom(Tel.Atom.Inline.fromArena(atomArena, off, len, precedingSpaces))
 
-                case PrimaryInt =>
-                  // As `PrimaryLong`, but an out-of-`Int`-range (yet valid Long)
-                  // value is also a `NotScalar`, exactly as `_.toInt` throws —
-                  // so it too captures its text.
-                  directPrimaryOk =
-                    parseArenaLong(off, len) &&
-                      directPrimaryLongVal >= Int.MinValue && directPrimaryLongVal <= Int.MaxValue
+            atomOpen = false
 
-                  if !directPrimaryOk then
-                    directPrimaryText = new String(atomArena, off, len, StandardCharsets.UTF_8)
+        var stopped = false
 
-                case PrimaryBoolean =>
-                  if len == 4 && atomArena(off) == 't'.toByte && atomArena(off + 1) == 'r'.toByte &&
-                    atomArena(off + 2) == 'u'.toByte && atomArena(off + 3) == 'e'.toByte
-                  then { directPrimaryBoolVal = true; directPrimaryOk = true }
-                  else if len == 5 && atomArena(off) == 'f'.toByte &&
-                    atomArena(off + 1) == 'a'.toByte && atomArena(off + 2) == 'l'.toByte &&
-                    atomArena(off + 3) == 's'.toByte && atomArena(off + 4) == 'e'.toByte
-                  then { directPrimaryBoolVal = false; directPrimaryOk = true }
-                  else
-                    directPrimaryOk = false
-                    directPrimaryText = new String(atomArena, off, len, StandardCharsets.UTF_8)
-
-                case _ =>
-                  directPrimaryText = new String(atomArena, off, len, StandardCharsets.UTF_8)
+        while !stopped && remark.absent do
+          if !more || peek == LF || peek == CR then stopped = true
           else
-            pushAtom(Tel.Atom.Inline.fromArena(atomArena, off, len, precedingSpaces))
+            val ch = peek
 
-          atomOpen = false
+            if ch == SP then
+              var run = 0
+              while more && peek == SP do { advance(); run += 1 }
 
-      var stopped = false
-
-      while !stopped && remark.absent do
-        if !more || peek == LF || peek == CR then stopped = true
-        else
-          val ch = peek
-
-          if ch == SP then
-            var run = 0
-            while more && peek == SP do { advance(); run += 1 }
-
-            if hardSpaceMode then
-              if run >= 2 then
-                commit()
-                precedingSpaces = run
+              if hardSpaceMode then
+                if run >= 2 then
+                  commit()
+                  precedingSpaces = run
+                else
+                  // Single space inside a hard-space-mode atom: the SP byte is
+                  // part of the atom's content. atomOpen is necessarily already
+                  // true here (hard-space-mode is only entered after a content
+                  // commit, and hard-space-mode + run==1 only fires while
+                  // reading content).
+                  appendToArena(SP)
+                  atomOpen = true
               else
-                // Single space inside a hard-space-mode atom: the SP byte is
-                // part of the atom's content. atomOpen is necessarily already
-                // true here (hard-space-mode is only entered after a content
-                // commit, and hard-space-mode + run==1 only fires while
-                // reading content).
-                appendToArena(SP)
+                if run == 1 then
+                  commit()
+                  precedingSpaces = 1
+                else
+                  commit()
+                  precedingSpaces = run
+                  hardSpaceMode = true
+            else if ch == sigil && !atomOpen then
+              // Could be remark introducer: sigil + soft space + non-space.
+              ensureLookahead(3)
+              val afterSigil = if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
+
+              val softSpaceAfter =
+                afterSigil == SP.toInt && (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
+              if softSpaceAfter then
+                // Consume sigil + space, then read remark text until LF/CR.
+                advance()  // sigil
+                advance()  // space
+                val mk = beginMark()
+                while more && peek != LF && peek != CR do advance()
+                remark = sliceText(mk).tt
+              else
+                beginInFlightAtom()
+                appendToArena(ch)
+                advance()
                 atomOpen = true
             else
-              if run == 1 then
-                commit()
-                precedingSpaces = 1
+              // Read a run of non-space, non-sigil, non-LF, non-CR bytes,
+              // copying them into the parser's atom arena. After a refill
+              // compacts the cursor buffer, the source content stays valid
+              // because we read it out into our own arena before the next
+              // refill can fire.
+              val runStart = pos
+              while pos < bufEnd &&
+                bytes(pos) != SP &&
+                bytes(pos) != LF &&
+                bytes(pos) != CR &&
+                (atomOpen || bytes(pos) != sigil)
+              do pos += 1
+
+              val runLen = pos - runStart
+
+              if runLen > 0 then
+                if !atomOpen then beginInFlightAtom()
+                appendToArenaRange(bytes, runStart, runLen)
+                atomOpen = true
               else
-                commit()
-                precedingSpaces = run
-                hardSpaceMode = true
-          else if ch == sigil && !atomOpen then
-            // Could be remark introducer: sigil + soft space + non-space.
-            ensureLookahead(3)
-            val afterSigil = if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
+                // Defensive: only reachable if the outer guards were ever
+                // relaxed. Treat the byte at `pos` as one atom byte.
+                if !atomOpen then beginInFlightAtom()
+                appendToArena(ch)
+                advance()
+                atomOpen = true
 
-            val softSpaceAfter =
-              afterSigil == SP.toInt && (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
-            if softSpaceAfter then
-              // Consume sigil + space, then read remark text until LF/CR.
-              advance()  // sigil
-              advance()  // space
-              val mk = beginMark()
-              while more && peek != LF && peek != CR do advance()
-              remark = sliceText(mk).tt
-            else
-              beginInFlightAtom()
-              appendToArena(ch)
-              advance()
-              atomOpen = true
-          else
-            // Read a run of non-space, non-sigil, non-LF, non-CR bytes,
-            // copying them into the parser's atom arena. After a refill
-            // compacts the cursor buffer, the source content stays valid
-            // because we read it out into our own arena before the next
-            // refill can fire.
-            val runStart = pos
-            while pos < bufEnd &&
-              bytes(pos) != SP &&
-              bytes(pos) != LF &&
-              bytes(pos) != CR &&
-              (atomOpen || bytes(pos) != sigil)
-            do pos += 1
+        commit()
 
-            val runLen = pos - runStart
+        if spanTracking then
+          if lineValueColumn != 0 then lineValueLength = valueCursor - lineValueColumn
+          // Tag the measurement with the entry it belongs to, so the direct path
+          // can tell whether a focused block read this entry or something deeper.
+          directValueSeq = directEntrySeq
 
-            if runLen > 0 then
-              if !atomOpen then beginInFlightAtom()
-              appendToArenaRange(bytes, runStart, runLen)
-              atomOpen = true
-            else
-              // Defensive: only reachable if the outer guards were ever
-              // relaxed. Treat the byte at `pos` as one atom byte.
-              if !atomOpen then beginInFlightAtom()
-              appendToArena(ch)
-              advance()
-              atomOpen = true
+        // E108: a non-blank compound line must not end with a space character.
+        // Inside the outer `hold`, the buffer byte just before the current pos
+        // is still resident — peek it directly. (`pos > 0` because we have
+        // consumed at least the keyword.)
+        // §19.5 StripTrailing: the keyword/atoms already exclude the trailing space,
+        // so recording the error and continuing yields the stripped line.
+        // The trailing run itself is the offending text: walk back over it (still
+        // inside the hold, so those bytes are resident) to span exactly the spaces.
+        if remark.absent && more && (peek == LF || peek == CR) && pos > 0 && bytes(pos - 1) == SP
+        then
+          var back = pos
+          while back > 0 && bytes(back - 1) == SP do back -= 1
+          val trailing = pos - back
 
-      commit()
+          recoverAt
+            ( Reason.TrailingSpaces, lineNumber, columnForCurrentBytePos() - trailing, trailing )
+            ( () )
 
-      if spanTracking then
-        if lineValueColumn != 0 then lineValueLength = valueCursor - lineValueColumn
-        // Tag the measurement with the entry it belongs to, so the direct path
-        // can tell whether a focused block read this entry or something deeper.
-        directValueSeq = directEntrySeq
-
-      // E108: a non-blank compound line must not end with a space character.
-      // Inside the outer `hold`, the buffer byte just before the current pos
-      // is still resident — peek it directly. (`pos > 0` because we have
-      // consumed at least the keyword.)
-      // §19.5 StripTrailing: the keyword/atoms already exclude the trailing space,
-      // so recording the error and continuing yields the stripped line.
-      // The trailing run itself is the offending text: walk back over it (still
-      // inside the hold, so those bytes are resident) to span exactly the spaces.
-      if remark.absent && more && (peek == LF || peek == CR) && pos > 0 && bytes(pos - 1) == SP
-      then
-        var back = pos
-        while back > 0 && bytes(back - 1) == SP do back -= 1
-        val trailing = pos - back
-
-        recoverAt(Reason.TrailingSpaces, lineNumber, columnForCurrentBytePos() - trailing, trailing)
-          ( () )
-
-      consumeLineEnding()
-      compoundLineRemark  = remark
+        consumeLineEnding()
+        compoundLineRemark  = remark
 
     // Read a keyword from the current position. The keyword runs until SP, LF,
     // CR, or EOF. Returns the interned `Text`. Uses the 64-slot fingerprint
@@ -6806,7 +6838,9 @@ object Tel extends Tel2:
     // AST path would record. On a compound line, consumes the keyword
     // (leaving the parser mid-line, right after it) and records the entry
     // state for the per-entry consumers.
-    private[stratiform] update def directKeyword(indent: Int)(using Tactic[Tel.Error]): Text | Null =
+    private[stratiform] update def directKeyword(indent: Int)(using Tactic[Tel.Error])
+    :   Text | Null =
+
       if directKeywordAdvance(indent, textual = true) then directEntryKeyword else null
 
     // The step's shared line-classification loop. With `textual = true` the
@@ -7265,7 +7299,9 @@ object Tel extends Tel2:
     // As `directAtomLong`, additionally requiring the value to fit `Int`.
     private[stratiform] update def directAtomInt()(using Tactic[Tel.Error]): Optional[Int] =
       consumeDirectEntry(PrimaryInt)
-      if directPrimaryPresent && directPrimaryOk then Optional(directPrimaryLongVal.toInt) else Unset
+
+      if directPrimaryPresent && directPrimaryOk then Optional(directPrimaryLongVal.toInt)
+      else Unset
 
     // The entry's primary atom parsed straight from its bytes as a boolean, or
     // Unset for a missing atom or anything but `true` / `false`.
@@ -7373,52 +7409,53 @@ object Tel extends Tel2:
     // `optionalDecodable` performs. The entry is parsed in full under a mark
     // and then rewound, restoring every piece of parser state the parse
     // touched, so the caller can still consume the entry either way.
-    private[stratiform] update def directEntrySubstance()(using Tactic[Tel.Error]): Boolean = inHold:
-      val mk = beginMark()
+    private[stratiform] update def directEntrySubstance()(using Tactic[Tel.Error]): Boolean =
+      inHold:
+        val mk = beginMark()
 
-      val savedHead = (head.leadingSpaces, head.indentLevels, head.blank, head.eof,
-                       head.startLine, head.separator)
+        val savedHead = (head.leadingSpaces, head.indentLevels, head.blank, head.eof,
+                         head.startLine, head.separator)
 
-      val savedLineNo = lineNo
-      val savedBoundary = prevLineWasBoundary
-      val savedContentSpaces = prevContentLeadingSpaces
-      val savedNonBlank = hasConsumedNonBlankLine
-      val savedEndsLf = documentEndsWithLf
-      val savedArenaPos = arenaPos
-      val savedInFlight = inFlightStart
-      val savedAtomIx = atomScratchIx
-      val savedCommentIx = commentScratchIx
-      val savedCompoundIx = compoundScratchIx
-      val savedBlockIx = blockScratchIx
+        val savedLineNo = lineNo
+        val savedBoundary = prevLineWasBoundary
+        val savedContentSpaces = prevContentLeadingSpaces
+        val savedNonBlank = hasConsumedNonBlankLine
+        val savedEndsLf = documentEndsWithLf
+        val savedArenaPos = arenaPos
+        val savedInFlight = inFlightStart
+        val savedAtomIx = atomScratchIx
+        val savedCommentIx = commentScratchIx
+        val savedCompoundIx = compoundScratchIx
+        val savedBlockIx = blockScratchIx
 
-      val compound = directCompound(directEntryIndent)
+        val compound = directCompound(directEntryIndent)
 
-      val substance =
-        compound.atoms.length > 0 || compound.children.exists(_.compounds.length > 0)
+        val substance =
+          compound.atoms.length > 0 || compound.children.exists(_.compounds.length > 0)
 
-      syncTo()
-      cursor.cue(mk)
-      syncFrom()
-      head.leadingSpaces = savedHead._1
-      head.indentLevels  = savedHead._2
-      head.blank         = savedHead._3
-      head.eof           = savedHead._4
-      head.startLine     = savedHead._5
-      head.separator     = savedHead._6
-      lineNo = savedLineNo
-      prevLineWasBoundary = savedBoundary
-      prevContentLeadingSpaces = savedContentSpaces
-      hasConsumedNonBlankLine = savedNonBlank
-      documentEndsWithLf = savedEndsLf
-      // The probe's atoms are discarded; only the write positions rewind
-      // (atoms committed before the probe are self-contained slices).
-      arenaPos = savedArenaPos
-      inFlightStart = savedInFlight
-      atomScratchIx = savedAtomIx
-      commentScratchIx = savedCommentIx
-      compoundScratchIx = savedCompoundIx
-      blockScratchIx = savedBlockIx
-      substance
+        syncTo()
+        cursor.cue(mk)
+        syncFrom()
+        head.leadingSpaces = savedHead._1
+        head.indentLevels  = savedHead._2
+        head.blank         = savedHead._3
+        head.eof           = savedHead._4
+        head.startLine     = savedHead._5
+        head.separator     = savedHead._6
+        lineNo = savedLineNo
+        prevLineWasBoundary = savedBoundary
+        prevContentLeadingSpaces = savedContentSpaces
+        hasConsumedNonBlankLine = savedNonBlank
+        documentEndsWithLf = savedEndsLf
+        // The probe's atoms are discarded; only the write positions rewind
+        // (atoms committed before the probe are self-contained slices).
+        arenaPos = savedArenaPos
+        inFlightStart = savedInFlight
+        atomScratchIx = savedAtomIx
+        commentScratchIx = savedCommentIx
+        compoundScratchIx = savedCompoundIx
+        blockScratchIx = savedBlockIx
+        substance
 
   // TelError → Tel.Error
   object Error:
@@ -7600,7 +7637,10 @@ object Tel extends Tel2:
 
         case TooManyAtoms             => m"more atoms than assignable member positions"
         case AtomAtNonAssignablePos   => m"the atom is at a non-atom-assignable member position"
-        case AtomVariantUnmatched     => m"the atom text matches no variant keyword of the SelectRef"
+
+        case AtomVariantUnmatched =>
+          m"the atom text matches no variant keyword of the SelectRef"
+
         case AtomFlagKeywordMismatch  => m"the atom text does not match the Flag member's keyword"
         case UnknownKeyword           => m"the compound keyword is not recognised for the parent"
         case RequiredMemberAbsent     => m"a required member is absent and has no default"
@@ -7874,7 +7914,10 @@ object Tel extends Tel2:
 
         handle.mutate0(Mutation.Op.AttachRemark(pointer, text))
 
-      transparent inline def removeRemark(pointer: Tel.Pointer)(using Tactic[Mutation.Error]): Unit =
+      transparent inline def removeRemark(pointer: Tel.Pointer)
+        ( using Tactic[Mutation.Error] )
+      :   Unit =
+
         handle.mutate0(Mutation.Op.RemoveRemark(pointer))
 
       transparent inline def setFlag(pointer: Tel.Pointer, keyword: Text)

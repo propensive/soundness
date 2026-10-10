@@ -134,11 +134,15 @@ object Http2:
 
   object Frame:
     private[telekinesis] def uint24(data: Bytes, offset: Int): Int =
-      ((data.readUnchecked(offset) & 0xff) << 16) | ((data.readUnchecked(offset + 1) & 0xff) << 8) | (data.readUnchecked(offset + 2) & 0xff)
+      ((data.readUnchecked(offset) & 0xff) << 16) |
+        ((data.readUnchecked(offset + 1) & 0xff) << 8) |
+        (data.readUnchecked(offset + 2) & 0xff)
 
     private[telekinesis] def uint32(data: Bytes, offset: Int): Long =
-      ((data.readUnchecked(offset).toLong & 0xff) << 24) | ((data.readUnchecked(offset + 1).toLong & 0xff) << 16) |
-        ((data.readUnchecked(offset + 2).toLong & 0xff) << 8) | (data.readUnchecked(offset + 3).toLong & 0xff)
+      ((data.readUnchecked(offset).toLong & 0xff) << 24) |
+        ((data.readUnchecked(offset + 1).toLong & 0xff) << 16) |
+        ((data.readUnchecked(offset + 2).toLong & 0xff) << 8) |
+        (data.readUnchecked(offset + 3).toLong & 0xff)
 
     private def writeUint24(buf: ByteBuf^, value: Int): Unit =
       buf.add(((value >>> 16) & 0xff).toByte)
@@ -439,7 +443,8 @@ object Http2:
       new Http.Client:
         type Target = Endpoint[endpoint]
 
-        def request(request: Http.Request, target: Endpoint[endpoint])(using (Http.Event is Loggable)^)
+        def request(request: Http.Request, target: Endpoint[endpoint])
+          ( using (Http.Event is Loggable)^ )
         :   Http.Response =
 
           target.connect().fetch(request, t"http", target.authority)(1)
@@ -488,7 +493,8 @@ object Http2:
   object Connection:
     // The client connection preface (RFC 7540 §3.5): a fixed octet sequence that
     // precedes the first SETTINGS frame in prior-knowledge h2c.
-    private[telekinesis] val connectionPreface: Bytes = t"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n".in[Bytes]
+    private[telekinesis] val connectionPreface: Bytes =
+      t"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n".in[Bytes]
 
     // The HTTP/2 default flow-control window (RFC 7540 §6.9.2): the initial
     // send budget for the connection, and for a stream until SETTINGS say

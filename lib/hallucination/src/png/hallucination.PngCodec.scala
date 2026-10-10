@@ -58,7 +58,8 @@ private[hallucination] object PngCodec:
   def decode(data: Data): Raster raises Raster.Error =
     try
       val signed =
-        data.length >= 8 && signature.readable.indices.forall: index => u8(data, index) == signature.readUnchecked(index)
+        data.length >= 8 && signature.readable.indices.forall: index =>
+          u8(data, index) == signature.readUnchecked(index)
 
       if !signed then abort(Raster.Error(Png(), Reason.BadSignature))
 
@@ -76,12 +77,15 @@ private[hallucination] object PngCodec:
       while !finished do
         val length = u32be(data, position)
         // `slice` yields a fresh array and `String`'s constructor copies it.
-        val chunkType = new String(Array.unsafeJvm(data.segment((position + 4).z till (position + 8).z)))
+        val chunkType =
+          new String(Array.unsafeJvm(data.segment((position + 4).z till (position + 8).z)))
+
         val body = data.segment((position + 8).z till (position + 8 + length).z)
 
         val storedCrc = u32be(data, position + 8 + length)
 
-        if corpuscular.Crc32.checksum(data.segment((position + 4).z till (position + 8).z), body) != storedCrc
+        if corpuscular.Crc32.checksum(data.segment((position + 4).z till (position + 8).z), body) !=
+          storedCrc
         then abort(Raster.Error(Png(), Reason.BadCrc))
 
         chunkType match

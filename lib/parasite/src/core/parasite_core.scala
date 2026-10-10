@@ -140,7 +140,8 @@ def daemon[error <: Hazard](using Codepoint)
 // containment is a child supervision scope of the enclosing `Monitor`, so unmatched or rejected
 // errors chain outwards to the parent scope's probate, up to the root. Distinct from the typed
 // `trap` (declared emitted errors).
-def contain(handler: PartialFunction[Error, Remedy]^{caps.any.only[anticipation.Durable]})(using outer: SharedProbate)
+def contain(handler: PartialFunction[Error, Remedy]^{caps.any.only[anticipation.Durable]})
+  ( using outer: SharedProbate )
 :   Containment^{handler, outer} =
 
   Containment(handler, outer)
@@ -276,7 +277,8 @@ def supervise[result](block: Monitor ?=> result)(using threading: Threading, cod
 // whenever the elements outnumber the cores and each is cheap. Results are kept in a plain array
 // indexed by job number, so the output is ordered by job, not by completion. A job's exception
 // fails its task and surfaces here at that task's join, as it would from an `await`.
-def concurrently[result: ClassTag](count: Int, parallelism: Int)(job: Int ->{caps.any.only[anticipation.Durable]} result)
+def concurrently[result: ClassTag](count: Int, parallelism: Int)
+  ( job: Int ->{caps.any.only[anticipation.Durable]} result )
   ( using monitor: Monitor^, probate: SharedProbate, codepoint: Codepoint )
 :   (Tactic[Async.Error]^) ?->{job, monitor, probate} scala.IArray[result] =
 

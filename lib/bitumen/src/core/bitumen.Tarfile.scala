@@ -119,7 +119,8 @@ object Tarfile:
               val header = Tar.Header.parse(head)
 
               val checksummed: Venture[Unit] = venture:
-                Tar.Header.verifyChecksum(head, Tar.Header.decodeOctal(header.checksum, t"checksum"))
+                Tar.Header.verifyChecksum
+                  ( head, Tar.Header.decodeOctal(header.checksum, t"checksum") )
 
               // A block that fails its checksum cannot be trusted for anything — including the
               // size that locates the next header — so parsing on would only manufacture

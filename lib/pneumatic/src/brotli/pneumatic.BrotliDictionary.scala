@@ -223,7 +223,12 @@ private[pneumatic] object BrotliDictionary:
     len -= omitLast(op)
 
     i = len
-    while i > 0 do { dst(offset) = word.readUnchecked(wordOffset); offset += 1; wordOffset += 1; i -= 1 }
+
+    while i > 0 do
+      dst(offset) = word.readUnchecked(wordOffset)
+      offset += 1
+      wordOffset += 1
+      i -= 1
 
     if op == UppercaseAll || op == UppercaseFirst then
       var uppercaseOffset = offset - len

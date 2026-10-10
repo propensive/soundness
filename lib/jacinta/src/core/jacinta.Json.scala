@@ -437,7 +437,10 @@ trait Json2 extends Json3:
             else
               focus(fieldFocus(prior, key)):
                 val before = foci.length
-                val value: field = decodeField[field](context, values, key, default[Optional[field]])
+
+                val value: field =
+                  decodeField[field](context, values, key, default[Optional[field]])
+
                 if foci.length > before then Venture.failed else Venture(value)
 
       gate[derivation](reflection, slots, active)
@@ -643,7 +646,8 @@ trait Json2 extends Json3:
                       values.asInstanceOf[scala.Array[Any]^](count) = encoded
                       count += 1
 
-            if count == arity then Json.ast(Json.Ast.obj(Array.unsafeFrozen(labels), Array.unsafeFrozen(values)))
+            if count == arity
+            then Json.ast(Json.Ast.obj(Array.unsafeFrozen(labels), Array.unsafeFrozen(values)))
             else
               val labels2 = new scala.Array[String](count)
               val values2 = new scala.Array[Any](count)
@@ -1117,7 +1121,9 @@ object Json extends Json2, Dynamic:
             if found < 0 then reader.skipValue()
             else values(found) =
               if focused
-              then focus(descend(prior, keys.readUnchecked(found).tt))(entries.readUnchecked(found)(1).parse(reader))
+              then
+                focus(descend(prior, keys.readUnchecked(found).tt))
+                  ( entries.readUnchecked(found)(1).parse(reader) )
               else
                 (kinds.readUnchecked(found): @scala.annotation.switch) match
                   case KindInt     => reader.long().toInt
@@ -1251,10 +1257,12 @@ object Json extends Json2, Dynamic:
 
           while probeIndex < count && !clash do
             if packableFrozen.readUnchecked(probeIndex) then
-              val slot = (((lowsFrozen.readUnchecked(probeIndex)*KeyTable.Scramble) ^ highsFrozen.readUnchecked(probeIndex))
-                .toInt & (capacity - 1)).abs
+              val slot =
+                (((lowsFrozen.readUnchecked(probeIndex)*KeyTable.Scramble) ^
+                  highsFrozen.readUnchecked(probeIndex)).toInt & (capacity - 1)).abs
 
-              if attempt.readable(slot) == 0 then attempt.raw(slot) = probeIndex + 1 else clash = true
+              if attempt.readable(slot) == 0 then attempt.raw(slot) = probeIndex + 1
+              else clash = true
 
             probeIndex += 1
 
@@ -1293,13 +1301,17 @@ object Json extends Json2, Dynamic:
         val slot = (((low*KeyTable.Scramble) ^ high).toInt & (capacity - 1)).abs
         val found = slots.readUnchecked(slot) - 1
 
-        if found >= 0 && lows.readUnchecked(found) == low && highs.readUnchecked(found) == high then found
+        if found >= 0 && lows.readUnchecked(found) == low && highs.readUnchecked(found) == high
+        then found
         else KeyTable.Unknown
       else
         var index = 0
 
         while index < count do
-          if packable.readUnchecked(index) && lows.readUnchecked(index) == low && highs.readUnchecked(index) == high then return index
+          if packable.readUnchecked(index) && lows.readUnchecked(index) == low &&
+            highs.readUnchecked(index) == high
+          then return index
+
           index += 1
 
         KeyTable.Unknown
@@ -1409,7 +1421,9 @@ object Json extends Json2, Dynamic:
     // The single JSON serializer, driven through a `Producer`: `showable` collects it into one
     // `Text`, and `Json.emit` streams it chunk by chunk from a fiber, so a large document can
     // be sent before it is fully rendered — the model of xylophone's `emit`.
-    private[jacinta] def write(out: Json.Ast.Out^, formatting: Json.Formatting, ast: Json.Ast): Unit =
+    private[jacinta] def write(out: Json.Ast.Out^, formatting: Json.Formatting, ast: Json.Ast)
+    :   Unit =
+
       // Resolved once: testing the `Optional` on every structural character measured as a
       // sixth of the writer's time under compact formatting.
       val indentation: Optional[Text] = formatting.indent
@@ -2251,7 +2265,10 @@ object Json extends Json2, Dynamic:
       def obj(using Tactic[Json.Error]): (Array[String]^{}, Array[Json.Ast]^{}) =
         if !isObject
         then
-          val empty = (Array[String](), Array[Json.Ast]()).asInstanceOf[(Array[String]^{}, Array[Json.Ast]^{})]
+          val empty =
+            (Array[String](), Array[Json.Ast]())
+            . asInstanceOf[(Array[String]^{}, Array[Json.Ast]^{})]
+
           expected(Json.Primitive.Object) yet empty
         else
           val arr = json.asInstanceOf[Array[Any]^{}]
@@ -2731,7 +2748,8 @@ object Json extends Json2, Dynamic:
   =>  set[element] is Json.Encodable =
     arrayEncodable[set[element], element](encodable)
 
-  given seriesEncodable: [sequence <: Sequence, element] => (encodable: => (element is Json.Encodable))
+  given seriesEncodable: [sequence <: Sequence, element]
+  =>  ( encodable: => (element is Json.Encodable) )
   =>  sequence[element] is Json.Encodable =
     arrayEncodable[sequence[element], element](encodable)
 
@@ -2864,7 +2882,9 @@ object Json extends Json2, Dynamic:
       // `Array.from` takes an `IterableOnce`, so the mappings stay on the stdlib view.
       val values = Array.from(keys.stdlib.map(map(_).encode.root))
       val keysArr = Array.from(keys.stdlib.map(_.encode.s))
-      Json.ast(Json.Ast.obj(keysArr.asInstanceOf[Array[String]^{}], values.asInstanceOf[Array[Any]^{}]))
+
+      Json.ast
+        ( Json.Ast.obj(keysArr.asInstanceOf[Array[String]^{}], values.asInstanceOf[Array[Any]^{}]) )
 
   given jsonEncodableInText: Json is anticipation.Encodable in Text = json =>
     given Formatting = Formatting(Unset, false)
@@ -3002,7 +3022,8 @@ object Json extends Json2, Dynamic:
       type Result = HttpStreams.Content
 
       def genericize(json: Json): HttpStreams.Content =
-        (t"application/json; charset=${encoder.encoding.name}", HttpStreams.Body(json.show.in[Data]))
+        ( t"application/json; charset=${encoder.encoding.name}",
+          HttpStreams.Body(json.show.in[Data]) )
 
   // Laundered pure like the primitive codecs above; additionally, this instance is
   // summoned inside inline bodies that are expanded within staged quotes (superlunary's
@@ -3020,7 +3041,10 @@ object Json extends Json2, Dynamic:
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Json)*): Json =
     val keys: Array[String]^{} = Array.from(elements.map(_(0))).asInstanceOf[Array[String]^{}]
-    val values: Array[Json.Ast]^{} = Array.from(elements.map(_(1).root)).asInstanceOf[Array[Json.Ast]^{}]
+
+    val values: Array[Json.Ast]^{} =
+      Array.from(elements.map(_(1).root)).asInstanceOf[Array[Json.Ast]^{}]
+
     Json(Json.Ast.obj(keys, values.asInstanceOf[Array[Any]^{}]))
 
   def discriminatedUnion[value](label: Text): value is Discriminable in Json =
@@ -3262,7 +3286,8 @@ extends Dynamic, Topical, Original derives CanEqual:
     else Json.ast(Json.Ast(Unset))
 
   // Raising array access, preserving the behaviour of plain `json(i)`.
-  private[jacinta] def indexValue(index: Int): Json raises Json.Error = Json(root.array.readUnchecked(index))
+  private[jacinta] def indexValue(index: Int): Json raises Json.Error =
+    Json(root.array.readUnchecked(index))
 
   // Array indexing. For a schema-typed `Json of List[E] from R` the navigation
   // macro yields `Json of E from R`; for a plain `Json` it indexes at runtime
@@ -3305,7 +3330,8 @@ extends Dynamic, Topical, Original derives CanEqual:
     modify(field, value.encode)
 
 
-  def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamical: (? >: Json) is Dynamical)
+  def updateDynamic(field: String)[value](unset: Unset.type)
+    ( using erased dynamical: (? >: Json) is Dynamical )
   :   Json raises Json.Error =
 
     delete(field)

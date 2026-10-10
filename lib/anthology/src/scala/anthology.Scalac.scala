@@ -121,7 +121,9 @@ object Scalac:
             if file.isDirectory then walk(file, path)
             // The compiler emits names which are valid classpath elements, so decoding
             // cannot fail; the bytes are fresh from `toByteArray`, so no writer is retained.
-            else scala.List((unsafely(path.as[Path on Classpath]), Array.unsafeFrozen(file.toByteArray)))
+            else
+              scala.List
+                ( (unsafely(path.as[Path on Classpath]), Array.unsafeFrozen(file.toByteArray)) )
 
         walk(output, t"").to(Map)
 
@@ -286,7 +288,9 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
         try
           val run = Scalac.compiler().newRun
           run.compileSources(sourceFiles)
-          if !summon[dtdc.Contexts.Context].reporter.hasErrors then driver.finishRun(Scalac.Scala3, run)
+
+          if !summon[dtdc.Contexts.Context].reporter.hasErrors
+          then driver.finishRun(Scalac.Scala3, run)
 
           scalacProcess.put
             ( if summon[dtdc.Contexts.Context].reporter.hasErrors then CompileResult.Failure

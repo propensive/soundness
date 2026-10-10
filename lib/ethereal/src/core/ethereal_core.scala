@@ -410,7 +410,8 @@ def cli[bus <: Matchable](using executive: Executive)
         val stderr: ji.OutputStream = Outlet(t"stderr", session.stderr, session.stderr.severed)
 
         def printStream(out: ji.OutputStream, page: Optional[Int]): ji.PrintStream =
-          charset(page).lay(ji.PrintStream(out, true)): charset => ji.PrintStream(out, true, charset)
+          charset(page).lay(ji.PrintStream(out, true)): charset =>
+            ji.PrintStream(out, true, charset)
 
         val input: ji.InputStream =
           charset(inputCodepage).lay(session.stdin): charset =>
@@ -442,7 +443,8 @@ def cli[bus <: Matchable](using executive: Executive)
           // [by-name-receiver] help block lambda shares daemon state with other arguments
           scala.caps.unsafe.unsafeAssumeSeparate:
             executive.help(name, environment, () => directory, stdio, login):
-              (interface: executive.Interface) ?=> block(using resident, interface, environment, summon[Monitor])
+              (interface: executive.Interface) ?=>
+                block(using resident, interface, environment, summon[Monitor])
 
         lazy val resident: Resident over bus =
           // [by-name-receiver] resident constructor lambdas share single-owner daemon state
@@ -548,9 +550,11 @@ def cli[bus <: Matchable](using executive: Executive)
       // launcher that has found the socket may rely on it.
       safely:
         val acceptance: Data =
-          Array.unsafeFrozen(scala.Array[Byte](1, 0, 1, 0, 33) ++ Array.unsafeJvm(Launcher.signature))
+          Array.unsafeFrozen
+            ( scala.Array[Byte](1, 0, 1, 0, 33) ++ Array.unsafeJvm(Launcher.signature) )
 
-        acceptanceFile.open[File](Write, OpenFlag.Create, OpenFlag.Truncate)(file.write(Chain(acceptance)))
+        acceptanceFile.open[File](Write, OpenFlag.Create, OpenFlag.Truncate)
+          ( file.write(Chain(acceptance)) )
 
       val domainSocket: DomainSocket = DomainSocket(socketFile.encode)
 

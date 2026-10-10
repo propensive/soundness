@@ -327,7 +327,11 @@ object Image:
     :   result =
 
       if mode.atoms.has(Write) then abort(Oci.Error(Oci.Error.Reason.WriteUnsupported))
-      block(using new Image.Handle(Tarfile.read(value.stream).to(List).asInstanceOf[List[bitumen.Tar.Entry]]) with Granting[grants] {})
+
+      block
+        ( using new Image.Handle
+            ( Tarfile.read(value.stream).to(List).asInstanceOf[List[bitumen.Tar.Entry]] )
+          with Granting[grants] {} )
 
 case class Image
   ( layers:             List[Layer],

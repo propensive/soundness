@@ -61,20 +61,18 @@ import zeppelin.*
 
 import Repackager.UserError
 import backstops.stackTraceBackstop
+// `linearSize`: the externalized-dependency count is reported once, at the end of a repackage
+// that has already walked every entry in the JAR.
+import denominative.dysasymptotics.linearSize
+import denominative.size
 import environments.javaBaseEnvironment
 import executives.directExecutive
+import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.dereferenceSymlinks
 import interpreters.posixInterpreter
 import stdios.fileDescriptorStdio
 import systems.javaBaseSystem
 import termcaps.environmentTermcap
-
-import filesystemBackends.javaBaseFilesystem
-
-// `linearSize`: the externalized-dependency count is reported once, at the end of a repackage
-// that has already walked every entry in the JAR.
-import denominative.size
-import denominative.dysasymptotics.linearSize
 
 // The repackager's command-line logic, launched by the `soundness.repackage` entry point.
 // It self-locates the application JAR it is running from and rewrites it in place (see

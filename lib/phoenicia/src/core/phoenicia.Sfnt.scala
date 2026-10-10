@@ -94,8 +94,8 @@ object Sfnt:
 
     enum Ttf extends Tag:
       case
-        Avar, Cmap, Cvar, Cvt, Fpgm, Fvar, Gasp, Glyf, Gvar, Hdmx, Head, Hhea, Hmtx, Kern, Loca, Maxp,
-        Meta, Name, Post, Prep, Sbix, Vhea, Vmtx
+        Avar, Cmap, Cvar, Cvt, Fpgm, Fvar, Gasp, Glyf, Gvar, Hdmx, Head, Hhea, Hmtx, Kern, Loca,
+        Maxp, Meta, Name, Post, Prep, Sbix, Vhea, Vmtx
 
       def text: Text = this match
         case Cvt   => t"cvt "
@@ -103,8 +103,8 @@ object Sfnt:
 
     enum Otf extends Tag:
       case
-        Base, Cbdt, Cblc, Cff, Cff2, Colr, Cpal, Dsig, Ebdt, Eblc, Ebsc, Gdef, Gpos, Gsub, Hvar, Jstf,
-        Ltsh, Math, Merg, Mvar, Os2, Pclt, Stat, Svg, Vdmx, Vorg, Vvar
+        Base, Cbdt, Cblc, Cff, Cff2, Colr, Cpal, Dsig, Ebdt, Eblc, Ebsc, Gdef, Gpos, Gsub, Hvar,
+        Jstf, Ltsh, Math, Merg, Mvar, Os2, Pclt, Stat, Svg, Vdmx, Vorg, Vvar
 
       def text: Text = this match
         case Os2   => t"OS/2"
@@ -146,8 +146,10 @@ object Sfnt:
 
       while position < end do
         val word =
-          ((buffer.readable(position) & 0xffL) << 24) | ((buffer.readable(position + 1) & 0xffL) << 16) |
-            ((buffer.readable(position + 2) & 0xffL) << 8) | (buffer.readable(position + 3) & 0xffL)
+          ((buffer.readable(position) & 0xffL) << 24) |
+            ((buffer.readable(position + 1) & 0xffL) << 16) |
+            ((buffer.readable(position + 2) & 0xffL) << 8) |
+            (buffer.readable(position + 3) & 0xffL)
 
         sum = (sum + word) & 0xffffffffL
         position += 4
@@ -228,7 +230,8 @@ trait Sfnt:
   def head: HeadTable raises Font.Error =
     tables(Sfnt.Table.Ttf.Head).let: ref =>
       data.unpackFrom[HeadTable](ref.offset).tap: table =>
-        if table.magicNumber != 0x5f0f3cf5.bits then raise(Font.Error(Font.Error.Reason.MagicNumber))
+        if table.magicNumber != 0x5f0f3cf5.bits
+        then raise(Font.Error(Font.Error.Reason.MagicNumber))
 
     . lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Head)))
 

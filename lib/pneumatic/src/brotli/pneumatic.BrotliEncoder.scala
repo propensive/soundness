@@ -261,7 +261,10 @@ private[pneumatic] object BrotliEncoder:
     while i < nBits do { retval = (retval << 1) | (v & 1); v >>= 1; i += 1 }
     retval
 
-  private def convertBitDepthsToSymbols(depth: scala.Array[Byte], len: Int, bits: scala.Array[Int]^): Unit =
+  private def convertBitDepthsToSymbols
+    ( depth: scala.Array[Byte], len: Int, bits: scala.Array[Int]^ )
+  :   Unit =
+
     val blCount: scala.Array[Int]^ = new scala.Array[Int](16)
     val nextCode: scala.Array[Int]^ = new scala.Array[Int](16)
     var i = 0
@@ -279,7 +282,11 @@ private[pneumatic] object BrotliEncoder:
       i += 1
 
   private def setDepth
-    ( p0: Int, total: scala.Array[Int], left: scala.Array[Int], right: scala.Array[Int], depth: scala.Array[Byte]^,
+    ( p0:       Int,
+      total:    scala.Array[Int],
+      left:     scala.Array[Int],
+      right:    scala.Array[Int],
+      depth:    scala.Array[Byte]^,
       maxDepth: Int )
   :   Boolean =
 
@@ -399,7 +406,10 @@ private[pneumatic] object BrotliEncoder:
   // writing the code-length symbol stream without run-length compression (valid, and negligible
   // overhead for large blocks).
   private def storeHuffmanTree
-    ( writer: BrotliBitWriter^, depth: scala.Array[Byte]^, codes: scala.Array[Int], alphabetSize: Int )
+    ( writer:       BrotliBitWriter^,
+      depth:        scala.Array[Byte]^,
+      codes:        scala.Array[Int],
+      alphabetSize: Int )
   :   Unit =
 
     var used = 0
@@ -620,9 +630,12 @@ private[pneumatic] object BrotliEncoder:
     if isAllZero(litHist) then litHist(0) = 1
     if isAllZero(distHist) then distHist(0) = 1
 
-    val litDepth: scala.Array[Byte]^ = new scala.Array[Byte](256); val litCodes = new scala.Array[Int](256)
-    val cmdDepth: scala.Array[Byte]^ = new scala.Array[Byte](704); val cmdCodes = new scala.Array[Int](704)
-    val distDepth: scala.Array[Byte]^ = new scala.Array[Byte](64); val distCodes = new scala.Array[Int](64)
+    val litDepth: scala.Array[Byte]^ = new scala.Array[Byte](256)
+    val litCodes = new scala.Array[Int](256)
+    val cmdDepth: scala.Array[Byte]^ = new scala.Array[Byte](704)
+    val cmdCodes = new scala.Array[Int](704)
+    val distDepth: scala.Array[Byte]^ = new scala.Array[Byte](64)
+    val distCodes = new scala.Array[Int](64)
     createHuffmanTree(litHist, 256, 15, litDepth)
     convertBitDepthsToSymbols(litDepth, 256, litCodes)
     createHuffmanTree(cmdHist, 704, 15, cmdDepth)
@@ -658,11 +671,17 @@ private[pneumatic] object BrotliEncoder:
       val copyCode = if copy > 0 then lengthCode(copyLengthOffset, copyLengthNBits, copy) else 0
       val cmd = commandCode(insertCode, copyCode)
       writer.writeBits(cmdCodes(cmd), cmdDepth(cmd) & 0xff)
-      writer.writeBits(insert - insertLengthOffset.readable(insertCode), insertLengthNBits.readable(insertCode))
+
+      writer.writeBits
+        ( insert - insertLengthOffset.readable(insertCode),
+          insertLengthNBits.readable(insertCode) )
 
       if copy > 0
-      then writer.writeBits(copy - copyLengthOffset.readable(copyCode), copyLengthNBits.readable(copyCode))
-      else writer.writeBits(0, copyLengthNBits.readable(copyCode))
+      then
+        writer.writeBits
+          ( copy - copyLengthOffset.readable(copyCode), copyLengthNBits.readable(copyCode) )
+      else
+        writer.writeBits(0, copyLengthNBits.readable(copyCode))
 
       var t = 0
 

@@ -97,14 +97,18 @@ object LaneDagDiagram:
       val rowOf: Map[node, Int] = nodes.zipWithIndex.to(Map)
       // Dependants of each node, from the edges: `Dag` no longer exposes its adjacency.
       val forward: Map[node, Set[node]] =
-        proscenium.Set.iterator(dag.edges).to(List).groupMap(_(1))(_(0)).view.mapValues(_.to(Set)).to(Map)
+        proscenium.Set.iterator(dag.edges).to(List).groupMap(_(1))(_(0)).view
+        . mapValues(_.to(Set))
+        . to(Map)
 
       val nodeCol: scala.Array[Int]^ = new scala.Array[Int](total)
 
       val laneState: scala.Array[Map[Int, Lane[node]]]^ =
         scala.Array.fill(total + 1)(Map.empty[Int, Lane[node]])
 
-      val started: scala.Array[Vector[Lane[node]]]^ = scala.Array.fill(total)(Vector.empty[Lane[node]])
+      val started: scala.Array[Vector[Lane[node]]]^ =
+        scala.Array.fill(total)(Vector.empty[Lane[node]])
+
       val directOut: scala.Array[Boolean]^ = new scala.Array[Boolean](total)
       var r = 0
 
@@ -290,7 +294,8 @@ case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
     val widths = LaneDagDiagram.defaultWidths(lines.iterator.map(_(0)))
 
     lines.map: (tiles, node) =>
-      style.serialize(tiles.to(proscenium.List), Map.empty, widths.to(proscenium.List), node.let(label))
+      style.serialize
+        ( tiles.to(proscenium.List), Map.empty, widths.to(proscenium.List), node.let(label) )
 
   def render[line](glyph: node => line, label: node => line)(using style: LaneDagStyle[line])
   :   List[line] =

@@ -569,10 +569,12 @@ object Cbor extends Cbor2, Dynamic:
       // even-length backing array; arrays are odd-length (with sentinel padding
       // when the logical element count is even).
       inline def isMap: Boolean =
-        cbor.isInstanceOf[scala.Array[AnyRef]] && (cbor.asInstanceOf[scala.Array[?]].length & 1) == 0
+        cbor.isInstanceOf[scala.Array[AnyRef]] &&
+          (cbor.asInstanceOf[scala.Array[?]].length & 1) == 0
 
       inline def isArray: Boolean =
-        cbor.isInstanceOf[scala.Array[AnyRef]] && (cbor.asInstanceOf[scala.Array[?]].length & 1) == 1
+        cbor.isInstanceOf[scala.Array[AnyRef]] &&
+          (cbor.asInstanceOf[scala.Array[?]].length & 1) == 1
 
       def primitive: Primitive =
         if isInteger then Primitive.Integer
@@ -600,7 +602,9 @@ object Cbor extends Cbor2, Dynamic:
       def element(index: Int): Cbor.Ast = cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index)
 
       inline def key(index: Int): Cbor.Ast = cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index*2)
-      inline def value(index: Int): Cbor.Ast = cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index*2 + 1)
+
+      inline def value(index: Int): Cbor.Ast =
+        cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index*2 + 1)
 
       def index(key: String): Int =
         val array = cbor.asInstanceOf[Array[Any]^{}]
@@ -614,7 +618,8 @@ object Cbor extends Cbor2, Dynamic:
         -1
 
       def long: Long raises Cbor.Error =
-        if isInteger then cbor.asInstanceOf[Long] else if isFloat then cbor.asInstanceOf[Double].toLong
+        if isInteger then cbor.asInstanceOf[Long]
+        else if isFloat then cbor.asInstanceOf[Double].toLong
         else expected(Primitive.Integer) yet 0L
 
       def double: Double raises Cbor.Error =
@@ -661,7 +666,8 @@ object Cbor extends Cbor2, Dynamic:
   // and `filterOptical` traverse every (or matching) array element. All reuse the
   // existing `selectDynamic`/`modify`/`element`/`Ast.array` primitives and rebuild
   // immutably. Mirrors jacinta's `Json` optics.
-  given lens: [name <: Label: ValueOf] => (erased dynamical: (? >: Cbor) is Dynamical) => (tactic: Tactic[Cbor.Error])
+  given lens: [name <: Label: ValueOf] => (erased dynamical: (? >: Cbor) is Dynamical)
+  =>  ( tactic: Tactic[Cbor.Error] )
   =>  ( (name is Lens from Cbor onto Cbor)^{tactic} ) =
     // Both lambdas only read through the same resolution-scoped tactic; no aliased writer.
     Lens[name, Cbor, Cbor]
@@ -1215,7 +1221,9 @@ object Cbor extends Cbor2, Dynamic:
 class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives CanEqual:
   def apply(index: Int): Cbor raises Cbor.Error = Cbor(root.array.readUnchecked(index))
 
-  def selectDynamic(field: String)(using erased dynamical: (? >: Cbor) is Dynamical): Cbor raises Cbor.Error =
+  def selectDynamic(field: String)(using erased dynamical: (? >: Cbor) is Dynamical)
+  :   Cbor raises Cbor.Error =
+
     apply(field.tt)
 
 
@@ -1232,7 +1240,8 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
     modify(field, value.encode)
 
 
-  def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamical: (? >: Cbor) is Dynamical)
+  def updateDynamic(field: String)[value](unset: Unset.type)
+    ( using erased dynamical: (? >: Cbor) is Dynamical )
   :   Cbor raises Cbor.Error =
 
     delete(field)
@@ -1294,9 +1303,13 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
     else if left.isBoolean && right.isBoolean
     then left.asInstanceOf[Boolean] == right.asInstanceOf[Boolean]
     else if left.isByteString && right.isByteString
-    then java.util.Arrays.equals(left.asInstanceOf[scala.Array[Byte]], right.asInstanceOf[scala.Array[Byte]])
-    else if left.nullary && right.nullary then true
-    else if left.unset && right.unset then true
+    then
+      java.util.Arrays.equals
+        ( left.asInstanceOf[scala.Array[Byte]], right.asInstanceOf[scala.Array[Byte]] )
+    else if left.nullary && right.nullary then
+      true
+    else if left.unset && right.unset then
+      true
     else if left.isTag && right.isTag
     then
       val leftTag = left.asInstanceOf[Cbor.Tag]

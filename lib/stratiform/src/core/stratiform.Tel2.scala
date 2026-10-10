@@ -573,7 +573,9 @@ trait Tel2 extends Tel3:
 
                       if children.length == 0 then members += Mutation.Member.Break
                       else if children.length == 1
-                      then members += Mutation.Member.Child(children.readUnchecked(0).copy(keyword = keyword))
+                      then
+                        members +=
+                          Mutation.Member.Child(children.readUnchecked(0).copy(keyword = keyword))
                       else
                         val texts = scala.collection.mutable.ListBuffer.empty[Text]
 
@@ -795,7 +797,8 @@ trait Tel2 extends Tel3:
   =>  set[element] is Tel.Encodable =
     RepeatedEncodable[set[element], element](encodable)
 
-  given seriesEncodable: [sequence <: Sequence, element] => (encodable: -> (element is Tel.Encodable))
+  given seriesEncodable: [sequence <: Sequence, element]
+  =>  ( encodable: -> (element is Tel.Encodable) )
   =>  sequence[element] is Tel.Encodable =
     RepeatedEncodable[sequence[element], element](encodable)
 

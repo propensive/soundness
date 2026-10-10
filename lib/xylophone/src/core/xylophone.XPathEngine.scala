@@ -177,10 +177,9 @@ private[xylophone] object XPathEngine:
     case (Value.NodeSet(left), Value.NodeSet(right)) =>
       val rights = right.map(_.stringValue.s)
 
-      left.exists { locus =>
+      left.exists: locus =>
         val value = locus.stringValue.s
         rights.exists: other => (value == other) == equal
-      }
 
     case (Value.NodeSet(loci), other) => nodeSetTest(loci, other, equal)
     case (other, Value.NodeSet(loci)) => nodeSetTest(loci, other, equal)

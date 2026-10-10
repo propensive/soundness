@@ -121,7 +121,8 @@ private[facsimile] object Xref:
 
       while i < limit do
         // A candidate object header is `<digits> <digits> obj` at a token boundary.
-        if matches(chunk, i, t"obj") && (i + 3 >= chunk.length || !CosLexer.regular(chunk.readUnchecked(i + 3) & 0xff)) &&
+        if matches(chunk, i, t"obj") &&
+          (i + 3 >= chunk.length || !CosLexer.regular(chunk.readUnchecked(i + 3) & 0xff)) &&
           (i == 0 || CosLexer.whitespace(chunk.readUnchecked(i - 1) & 0xff))
         then
           objectHeader(chunk, i).let: (number, generation, start) =>
@@ -257,7 +258,10 @@ private[facsimile] object Xref:
 
   private def matches(window: Data, index: Int, marker: Text): Boolean =
     var j = 0
-    while j < marker.length && (window.readUnchecked(index + j) & 0xff) == marker.s.charAt(j).toInt do j += 1
+
+    while j < marker.length && (window.readUnchecked(index + j) & 0xff) == marker.s.charAt(j).toInt
+    do j += 1
+
     j == marker.length
 
   private def section(source: ByteSource, offset: Long)

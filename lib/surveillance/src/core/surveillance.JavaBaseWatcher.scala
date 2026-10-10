@@ -167,7 +167,8 @@ object JavaBaseWatcher extends Watcher uses parasite.threads:
     def cancel(): Unit =
       watchesMutex:
         pathWatches.each: pathWatch =>
-          watches(pathWatch.key) = watches.at(pathWatch.key).or(scala.collection.immutable.Set()) - pathWatch
+          watches(pathWatch.key) =
+            watches.at(pathWatch.key).or(scala.collection.immutable.Set()) - pathWatch
 
           if watches.at(pathWatch.key).or(scala.collection.immutable.Set()).isEmpty then
             pathWatch.key.cancel()

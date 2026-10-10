@@ -114,7 +114,9 @@ object CborParser:
     if parser.more then abort(Cbor.Error(Reason.Trailing(parser.position)))
     result
 
-  private[breviloquence] def parse(consume source: (Stream[Data] over Credit)^): Cbor.Ast raises Cbor.Error =
+  private[breviloquence] def parse(consume source: (Stream[Data] over Credit)^)
+  :   Cbor.Ast raises Cbor.Error =
+
     val moved: AnyRef = source.asInstanceOf[AnyRef]
     val parser = apply(moved.asInstanceOf[(Stream[Data] over Credit)^])
     val result = parser.value()
@@ -125,7 +127,9 @@ object CborParser:
   // `accept`, so chunked input is never assembled into one array first.
   // Resolution-scoped (the tactic), and defined here rather than in `Cbor.Ast`'s
   // companion so the seal lands in this file's census row.
-  private[breviloquence] def aggregable(using tactic: Tactic[Cbor.Error]): (Cbor.Ast is Aggregable by Data)^{tactic} =
+  private[breviloquence] def aggregable(using tactic: Tactic[Cbor.Error])
+  :   (Cbor.Ast is Aggregable by Data)^{tactic} =
+
     // [field-purity] given Aggregable codec over tactic, codec-thunk seal
     caps.unsafe.unsafeAssumePure:
       new Aggregable:

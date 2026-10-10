@@ -362,7 +362,9 @@ package socketBackends:
 
     //── Request/response exchange (`Serviceable`) ──────────────────────────────────────────────
     def dialTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
+      ( endpoint:  Endpoint[Tcp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option] )
     :   ClientExchange =
 
       val socket =
@@ -413,12 +415,16 @@ package socketBackends:
           range =>
             val interval: Interval = range
 
-            channel.write(ByteBuffer.wrap(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
-                interval.start.n0, interval.size))
+            channel.write
+              ( ByteBuffer.wrap
+                  ( unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
+                    interval.start.n0,
+                    interval.size ) )
 
         channel.shutdownOutput()
 
-    def response(exchange: ClientExchange)(using buffering: Buffering, tactic: Tactic[Truncation.Error])
+    def response(exchange: ClientExchange)
+      ( using buffering: Buffering, tactic: Tactic[Truncation.Error] )
     :   (Stream[Data] over Credit)^{tactic, caps.any} =
 
       exchange match
@@ -436,7 +442,9 @@ package socketBackends:
 
     //── Persistent duplex client (`Connectable`) ───────────────────────────────────────────────
     def duplexTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
+      ( endpoint:  Endpoint[Tcp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option] )
     :   Duplex =
 
       val address = jn.InetSocketAddress(endpoint.remote.s, endpoint.port.number)
@@ -460,7 +468,9 @@ package socketBackends:
 
     //── Fire-and-forget datagram courier (`Routable`) ──────────────────────────────────────────
     def routeUdp
-      ( endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
+      ( endpoint:  Endpoint[Udp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option] )
     :   UdpCourier =
 
       val address = jn.InetAddress.getByName(endpoint.remote.s).nn

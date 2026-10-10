@@ -149,12 +149,20 @@ private[facsimile] object ContentWriter:
 
       case StrokeColor(components, pattern) =>
         out(t"${components.map(num).join(t" ")}")
-        pattern.let { p => out(t" "); name(p) }
+
+        pattern.let: p =>
+          out(t" ")
+          name(p)
+
         out(t" SCN\n")
 
       case FillColor(components, pattern) =>
         out(t"${components.map(num).join(t" ")}")
-        pattern.let { p => out(t" "); name(p) }
+
+        pattern.let: p =>
+          out(t" ")
+          name(p)
+
         out(t" scn\n")
 
       case Draw(name0)              => name(name0); out(t" Do\n")

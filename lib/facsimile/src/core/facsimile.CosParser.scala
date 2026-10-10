@@ -109,7 +109,9 @@ extends scala.caps.Mutable:
   // One content-stream instruction: operand values followed by an operator keyword, or
   // `Unset` at the end of the stream. Operands left dangling by a truncated stream are
   // dropped, matching viewer behaviour.
-  private[facsimile] update def instruction()(using Tactic[Pdf.Error]): Optional[(List[Cos], Text)] =
+  private[facsimile] update def instruction()(using Tactic[Pdf.Error])
+  :   Optional[(List[Cos], Text)] =
+
     val operands = scala.collection.immutable.List.newBuilder[Cos]
 
     def recur(): Optional[(List[Cos], Text)] = advance() match

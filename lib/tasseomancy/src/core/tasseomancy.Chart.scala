@@ -255,8 +255,8 @@ object Chart:
 
   // A chart drawn with the components it asks for, as `chart.in[Svg]`.
   given encodable: [data, form, fit, style <: Chart.Style]
-  =>    ( style, ChartPalette, FontMetric, Arranger )
-  =>    Chart[data, form, fit, style] is Encodable in Svg =
+  =>  ( style, ChartPalette, FontMetric, Arranger )
+  =>  Chart[data, form, fit, style] is Encodable in Svg =
     _.drawing.in[Svg]
 
   // What changed between one drawing of a chart and the next: either the whole chart, because

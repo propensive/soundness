@@ -32,9 +32,8 @@
                                                                                                   */
 package galilei
 
-import scala.caps
-
 import scala.annotation.nowarn
+import scala.caps
 
 import anticipation.*
 import contingency.*
@@ -45,8 +44,8 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import vacuous.*
-import turbulence.Aggregable
 import soundness.{call, dispose}
+import turbulence.Aggregable
 import xenophile.*
 
 import Io.Error.{Operation, Reason}

@@ -307,7 +307,9 @@ class Session
 
   private def input(stream: Text): SessionInput =
     // [field-purity] credit callback over session stored in stream's field
-    val credit: Long -> Unit = caps.unsafe.unsafeAssumePure: count => send(Message.Credit(stream, count))
+    val credit: Long -> Unit =
+      caps.unsafe.unsafeAssumePure: count => send(Message.Credit(stream, count))
+
     val stream0 = SessionInput(stream, credit)
     inputs(stream) = stream0
     stream0
@@ -318,7 +320,8 @@ class Session
     val allowance0: Int -> Int = caps.unsafe.unsafeAssumePure: want => allowance(stream, want)
     val emit: Data -> Unit =
       // [field-purity] emit callback over session stored in stream's field
-      caps.unsafe.unsafeAssumePure: chunk => enqueue(Launcher.encode(Message.Data(stream, chunk)), priority = false)
+      caps.unsafe.unsafeAssumePure: chunk =>
+        enqueue(Launcher.encode(Message.Data(stream, chunk)), priority = false)
 
     val stream0 = SessionOutput(stream, allowance0, emit)
     outputs(stream) = stream0
@@ -339,13 +342,14 @@ class Session
   private val terminalLock: Object = Object()
   private val exited: ju.ArrayDeque[Int] = ju.ArrayDeque()
 
-  def terminal(command: Text, arguments: List[Text], pwd: Optional[Text]): Int = terminalLock.synchronized:
-    exited.synchronized(exited.clear())
-    send(Message.Run(command, arguments, pwd))
+  def terminal(command: Text, arguments: List[Text], pwd: Optional[Text]): Int =
+    terminalLock.synchronized:
+      exited.synchronized(exited.clear())
+      send(Message.Run(command, arguments, pwd))
 
-    exited.synchronized:
-      while exited.isEmpty && !launcherGone do exited.wait(250L)
-      if exited.isEmpty then 127 else exited.pollFirst().nn
+      exited.synchronized:
+        while exited.isEmpty && !launcherGone do exited.wait(250L)
+        if exited.isEmpty then 127 else exited.pollFirst().nn
 
   private def exitedWith(code: Int): Unit = exited.synchronized:
     exited.addLast(code)
@@ -442,8 +446,12 @@ class Session
 
       val reading = flags.has(OpenFlag.Read)
       val writing = flags.has(OpenFlag.Write) || flags.has(OpenFlag.Append)
-      if reading && !advertised.direction.contains('r') then throw Fdtable.Refusal(Reason.PermissionDenied)
-      if writing && !advertised.direction.contains('w') then throw Fdtable.Refusal(Reason.PermissionDenied)
+
+      if reading && !advertised.direction.contains('r')
+      then throw Fdtable.Refusal(Reason.PermissionDenied)
+
+      if writing && !advertised.direction.contains('w')
+      then throw Fdtable.Refusal(Reason.PermissionDenied)
 
       advertised.path match
         case real: Text if advertised.kind == t"file" => file(real)(lambda)
@@ -462,7 +470,9 @@ class Session
 
     val out: ji.OutputStream = new ji.OutputStream:
       private lazy val target: ji.OutputStream =
-        jnf.Files.newOutputStream(path, jnf.StandardOpenOption.WRITE, jnf.StandardOpenOption.CREATE).nn
+        jnf.Files
+        . newOutputStream(path, jnf.StandardOpenOption.WRITE, jnf.StandardOpenOption.CREATE)
+        . nn
 
       def write(byte: Int): Unit = target.write(byte)
 
