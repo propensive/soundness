@@ -96,6 +96,7 @@ def cli[bus <: Matchable](using executive: Executive)
              ?->{scala.caps.any.only[anticipation.Durable]} executive.Return )
   ( using interpreter: Interpreter,
           threading:   Threading,
+          watcher:     Watcher,
           handler:     Backstop )
 :   Unit =
 

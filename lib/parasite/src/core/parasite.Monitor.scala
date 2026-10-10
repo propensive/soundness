@@ -115,7 +115,7 @@ sealed trait Monitor extends Resultant, Findable, anticipation.Durable:
   def attend()(using Monitor^): Unit = promise.attend()
   def ready: Boolean = promise.ready
   def cancel(): Unit
-  def supervisor: Supervisor
+  def supervisor: Supervisor^{this}
 
   def snooze[generic: Abstractable across Durations to Long](duration: generic): Unit =
     supervisor.sleep(duration.generic)
@@ -124,11 +124,11 @@ sealed trait Monitor extends Resultant, Findable, anticipation.Durable:
 // through it — parking, sleeping and cancellation-status too. This is the whole platform seam:
 // a backend for a different execution model (an event loop over WASIp3 waitable-sets, say) is a
 // `Supervisor` implementation, selected by a `Threading` given; nothing else in parasite touches
-// the platform. DECOUPLED from `Monitor` (see capture-checking-capabilities notes): the global
-// strategy singletons (`PlatformSupervisor` etc.) are plain values, NOT capabilities, so they can
-// be referenced anywhere; the supervision tree (capability-tracked `Monitor`s) is rooted locally
-// per `supervise` block by a `Root`. The *license* to suspend is `Monitor^`; the supervisor is
-// only the mechanism.
+// the platform. A supervisor is a capability: forking and parking are effects, and a pool holds
+// live threads and queues. It is `DurableUnscoped` — shared by every task at once, retained
+// across thread boundaries, and, like the global strategy singletons (`PlatformSupervisor`
+// etc.), exempt from the level check. The supervision tree (capability-tracked `Monitor`s) is
+// rooted locally per `supervise` block by a `Root`, which retains its supervisor.
 //
 // The WASIp3 (Component Model async) mapping, for a future `parasite.wasi` backend:
 //   fork                 → allocate a run-queue entry (the strand) and enqueue it
@@ -140,7 +140,7 @@ sealed trait Monitor extends Resultant, Findable, anticipation.Durable:
 // implementable once the compiler can CPS-transform suspending code; until then such a backend
 // serves the monadic dialect (`Task.bind`/`map`, `Task.sleep`, `Promise#task`), whose
 // continuations are already reified.
-trait Supervisor:
+trait Supervisor extends anticipation.DurableUnscoped:
   def name: Name[Async]
 
   // `name` is a thunk: computing a worker's name (`Worker.stack`) walks the whole parent chain
@@ -194,8 +194,10 @@ trait ThreadSupervisor extends Supervisor:
 
 // The local root of a supervision tree, created by `supervise`. A `Monitor` (hence a capability),
 // but its lifetime is the `supervise` block, so it does not escape as a global capability.
-class Root(val supervisor: Supervisor) extends Monitor:
+class Root(supervisor0: Supervisor^) extends Monitor:
   type Result = Unit
+
+  def supervisor: Supervisor^{this} = supervisor0
 
   def chain: List[Codepoint] = List()
   val promise: Promise[Unit] = Promise()
@@ -291,7 +293,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate
 
   def chain: List[Codepoint] = frame :: parent.chain
   def evaluate(worker: Worker): Result
-  def supervisor: Supervisor = parent.supervisor
+  def supervisor: Supervisor^{this} = parent.supervisor
   def apply(): Optional[Result] = promise()
   def relentlessness: Double = (jl.System.currentTimeMillis - startTime).toDouble/relents
 

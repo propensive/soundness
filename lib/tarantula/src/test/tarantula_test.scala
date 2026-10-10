@@ -50,7 +50,7 @@ import systems.javaBaseSystem
 import termcaps.environmentTermcap
 import strategies.throwUnsafely
 import textSanitizers.skipSanitizer
-import threading.virtualThreading
+import threads.virtualThreads
 import webserverErrorPages.minimalErrorPage
 import workingDirectories.javaBaseWorkingDirectory
 

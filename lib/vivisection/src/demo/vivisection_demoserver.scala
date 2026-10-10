@@ -44,7 +44,7 @@ import probates.awaitProbate
 import socketBackends.javaBaseSockets
 import strategies.throwUnsafely
 import systems.javaBaseSystem
-import threading.virtualThreading
+import threads.virtualThreads
 import workingDirectories.javaBaseWorkingDirectory
 
 // A runnable Debug Adapter Protocol server over stdio: point a DAP frontend (VS Code with a

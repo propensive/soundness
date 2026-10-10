@@ -252,7 +252,7 @@ ambient concurrency context:
 ```scala
 import probates.cancelProbate
 import supervisors.globalSupervisor
-import threading.virtualThreading
+import threads.virtualThreads
 
 document.stream[Text]
 ```

@@ -43,7 +43,7 @@ import Json.jsonEncodableInText
 import errorDiagnostics.stackTracesDiagnostics
 import probates.awaitProbate
 import strategies.throwUnsafely
-import threading.virtualThreading
+import threads.virtualThreads
 import workingDirectories.javaBaseWorkingDirectory
 import environments.javaBaseEnvironment
 

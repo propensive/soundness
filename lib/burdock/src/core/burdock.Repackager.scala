@@ -54,7 +54,7 @@ import zeppelin.*
 
 import errorDiagnostics.emptyDiagnostics
 import parasite.probates.cancelProbate
-import parasite.threading.virtualThreading
+import parasite.threads.virtualThreads
 import denominative.*
 import denominative.dysasymptotics.linearSize
 
@@ -258,13 +258,13 @@ object Repackager:
         // Keep the first occurrence of each entry name: the force-included bootstrap over any
         // bundled or inlined copy (an unpublished `burdock` dependency's cached JAR also
         // carries `burdock/Bootstrap.class`), and a bundled class over an inlined cache copy.
-        // Without this, `Zipfile.write` rejects the duplicate entry.
+        // Without this, serializing the archive rejects the duplicate entry.
         // The concatenation is bound first so `deduplicate`'s implicit search never runs
         // against an uninstantiated result variable (the wildApprox hazard).
         val combined: List[Zip.Entry] = bootstrap :: keptEntries + inlined
         val entries: List[Zip.Entry] = combined.deduplicate(_.ref.show)
 
-        Zipfile.write(outputJar)(manifestEntry :: entries)
+        outputJar.write(Zipfile(manifestEntry :: entries))
 
         // The output also carries the manifest entry, hence `entries.length + 1`.
         Summary

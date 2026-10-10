@@ -43,7 +43,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import nomenclature.n
-import parasite.*, threading.platformThreading, Async.nominative
+import parasite.*, threads.platformThreads, Async.nominative
 import rudiments.*
 import spectacular.*
 import turbulence.*
@@ -53,8 +53,9 @@ import vacuous.*
 // .WatchService`). A single service and a single polling thread are shared across every
 // registration; keys are reference-counted so the service is closed only once nothing is being
 // watched.
-object JavaBaseWatcher extends Watcher:
-  private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop^{}):
+object JavaBaseWatcher extends Watcher uses parasite.threads:
+  private case class WatchService
+    ( watchService: jnf.WatchService, pollLoop: Loop^{} ) uses parasite.threads:
     import probates.awaitProbate
 
     def stop(): Unit =
@@ -71,9 +72,9 @@ object JavaBaseWatcher extends Watcher:
   private val watchesMutex: Mutex = Mutex()
   // [field-purity] volatile WatchService var in watcher
   @volatile @scala.caps.unsafe.untrackedCaptures
-  private var serviceValue: Optional[WatchService] = Unset
+  private var serviceValue: Optional[WatchService^{parasite.threads}] = Unset
 
-  private def service: WatchService = serviceValue.or:
+  private def service: WatchService^{parasite.threads} = serviceValue.or:
     serviceMutex:
       serviceValue.or:
         jnf.FileSystems.getDefault.nn.newWatchService().nn.pipe: watchService =>
@@ -117,7 +118,7 @@ object JavaBaseWatcher extends Watcher:
       case _: ji.IOException            => abort(Watch.Error(Watch.Error.Reason.LimitExceeded))
 
   def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Relay[Watch.Event])
-  :   Watcher.Registration raises Watch.Error =
+  :   Watcher.Registration^{this} raises Watch.Error =
 
     val pathWatches: scala.collection.immutable.Set[PathWatch] = watchesMutex:
       val watches0 = watches
@@ -175,6 +176,8 @@ object JavaBaseWatcher extends Watcher:
             watches.remove(pathWatch.key)
 
         if watches.nil then serviceMutex:
-          serviceValue.let: service =>
-            service.stop()
-            serviceValue = Unset
+          serviceValue match
+            case Unset                => ()
+            case service: WatchService =>
+              service.stop()
+              serviceValue = Unset

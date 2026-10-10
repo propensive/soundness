@@ -43,7 +43,8 @@ transparent inline def watch(using handle: Watch.Handle^): handle.type = handle
 
 export Watch.Event.{NewFile, NewDirectory, Modify, Delete}
 
-package watchers:
+// An object rather than a package, since its given is a capability.
+object watchers extends anticipation.DurableUnscoped uses JavaBaseWatcher:
   given javaBaseWatcher: Watcher = JavaBaseWatcher
 
   def polling[duration: Abstractable across Durations to Long](interval: duration): Watcher =

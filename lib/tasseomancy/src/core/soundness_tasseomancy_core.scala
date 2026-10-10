@@ -34,8 +34,8 @@ package soundness
 
 export
   tasseomancy
-  . { Annotated, Bands, Bars, Boxes, Calibration, Categorical, Category, Chart, ChartPalette,
-      Continuous, Estimate, FontMetric, Gradation, Histogram, Lines, Pie, Plottable, Ruler,
+  . { Bands, Bars, Boxes, Calibration, Categorical, Category, Chart, ChartPalette,
+      Continuous, Estimate, FontMetric, Gradation, Histogram, Lines, Noted, Pie, Plottable, Ruler,
       Samples, Scale, Scatter, Series, StackedBars, chart }
 
 package calibrations:

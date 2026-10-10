@@ -46,7 +46,7 @@ import strategies.throwUnsafely
 import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
 import filesystemBackends.javaBaseFilesystem
-import threading.platformThreading
+import threads.platformThreads
 
 object Tests extends Suite(m"Degustation Tests"):
 

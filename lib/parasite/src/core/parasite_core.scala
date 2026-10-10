@@ -54,18 +54,24 @@ import vacuous.*
 import abstractables.epochMillisecondsAbstractable
 import abstractables.nanosecondsAbstractable
 
-package threading:
-  given platformThreading: Threading = () => PlatformSupervisor
-  given virtualThreading: Threading = () => VirtualSupervisor
-  given adaptiveThreading: Threading = () => AdaptiveSupervisor
+// Objects rather than packages, since their givens are capabilities, and a field of capability type
+// must live in an object that is one; each declares the global supervisors it hands out.
+object threads
+extends anticipation.DurableUnscoped
+uses PlatformSupervisor, VirtualSupervisor, AdaptiveSupervisor, PooledSupervisor,
+    JavascriptSupervisor:
+
+  given platformThreads: Threading = () => PlatformSupervisor
+  given virtualThreads: Threading = () => VirtualSupervisor
+  given adaptiveThreads: Threading = () => AdaptiveSupervisor
   // Tasks on reusable carrier threads (see `PoolingSupervisor`): for fine-grained fan-out,
   // where a thread start per task would dominate.
-  given pooledThreading: Threading = () => PooledSupervisor
+  given pooledThreads: Threading = () => PooledSupervisor
 
   // The model for Scala.js (issue #1450): tasks run eagerly at `fork`, so structured
   // gather-style concurrency works on the event loop, with the limitations documented on
   // `JavascriptSupervisor`.
-  given javascriptThreading: Threading = () => JavascriptSupervisor
+  given javascriptThreads: Threading = () => JavascriptSupervisor
 
 package probates:
   // Cleanup runs on the completing worker's own strand, with no ambient `Monitor`: the dying
@@ -81,7 +87,7 @@ package probates:
   given failProbate: (tactic: Tactic[Async.Error]) => (Probate^{tactic}) = _.delegate: child =>
     if !child.ready then raise(Async.Error(Async.Error.Reason.Incomplete))
 
-package supervisors:
+object supervisors extends anticipation.DurableUnscoped uses PlatformSupervisor:
   given globalSupervisor: Supervisor = PlatformSupervisor
 
 // A process-lifetime monitor for blocking *outside* any `supervise` scope: it parks the calling
@@ -89,7 +95,7 @@ package supervisors:
 // call sites (daemon lifecycles, process-lifetime waits) where no supervision scope can exist;
 // prefer `supervise` wherever the blocking region is already scoped. (An object, not a `package`,
 // because a top-level field of capability type must live in an object extending `Capability`.)
-object unsupervised extends caps.ExclusiveCapability:
+object unsupervised extends caps.ExclusiveCapability uses PlatformSupervisor:
   given orphanMonitor: Monitor = Root(PlatformSupervisor)
 
 package retryTenacities:
@@ -259,7 +265,7 @@ extension [result](stream: Chain[result])
 
 
 def supervise[result](block: Monitor ?=> result)(using threading: Threading, codepoint: Codepoint)
-:   (Tactic[Async.Error]^) ?->{block} result =
+:   (Tactic[Async.Error]^) ?->{block, threading} result =
 
   block(using Root(threading.supervisor()))
 

@@ -38,7 +38,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import logFormats.untimestampedLogFormat
 import probates.cancelProbate
 import strategies.throwUnsafely
-import threading.platformThreading
+import threads.platformThreads
 
 import scala.unsafeExceptions.canThrowAny
 
