@@ -35,6 +35,8 @@ package ultimatum
 import scala.caps
 import scala.collection.immutable.Vector
 
+import rudiments.Atomic
+
 // A mutable, ordered container of child panes, backed by a `Sequence` for random
 // access. Holding a reference to it lets the layout change while a `form` is
 // running: appending a pane, or inserting one before or after an existing pane,
@@ -47,17 +49,16 @@ import scala.collection.immutable.Vector
 class Panes(initial: Pane*):
   // Internally a raw `Vector`: this is imperative container state, and the mutation operations
   // (`patch`, `indexWhere`, `:+`) belong to the stdlib surface. The public API exposes `Sequence`.
-  // [field-purity] pane vector var in pure Panes container
-  @scala.caps.unsafe.untrackedCaptures
-  private var vector: Vector[Pane] = initial.to(Vector)
+  // The container is mutated from background tasks, so the vector lives in an atomic cell and each
+  // mutation is one compare-and-set transition: concurrent mutations cannot lose a pane.
+  private val vector: Atomic.Ref[Vector[Pane]] = Atomic.Ref(initial.to(Vector))
 
   // Installed by the running form so a mutation requests a repaint; a no-op until the container is
   // bound. Typed as a *pure* function so a pane tree (and `Panes`) captures nothing and can be
   // freely collected and traversed; the installed callback genuinely captures the running form's
-  // event loop, reconciled in `bindWake`.
-  // [field-purity] repaint callback var typed pure in Panes
-  @scala.caps.unsafe.untrackedCaptures
-  private var onChange: () -> Unit = () => ()
+  // event loop, reconciled in `bindWake`. Atomic so that a mutating task sees the callback the
+  // form bound.
+  private val onChange: Atomic.Ref[() -> Unit] = Atomic.Ref(() => ())
 
   // Install the running form's repaint trigger. The callback captures the form's event loop, which
   // outlives this assignment, so it escapes into the long-lived container — a growing capture set
@@ -66,32 +67,37 @@ class Panes(initial: Pane*):
   // within a mutation while that form is live. Hence the single, localised `unsafeAssumePure`.
   private[ultimatum] def bindWake(wake: () => Unit): Unit =
     // [field-purity] form wake callback escapes into long-lived container
-    onChange = caps.unsafe.unsafeAssumePure(wake)
+    onChange() = caps.unsafe.unsafeAssumePure(wake)
 
-  def contents: Sequence[Pane] = Sequence.from(vector)
-  def size: Int = vector.length
-  def apply(index: Int): Pane = vector(index)
+  def contents: Sequence[Pane] = Sequence.from(vector())
+  def size: Int = vector().length
+  def apply(index: Int): Pane = vector()(index)
 
-  private def revise(updated: Vector[Pane]): Unit =
-    vector = updated
-    onChange()
+  // Apply one transition atomically, then wake the form. The transition is re-run if another
+  // mutation lands first, which is why each one reads the vector it is given, not the cell.
+  private inline def alter(inline transition: Vector[Pane] => Vector[Pane]): Unit =
+    vector.since(transition)
+    onChange()()
 
-  def append(pane: Pane): Unit = revise(vector :+ pane)
-  def prepend(pane: Pane): Unit = revise(pane +: vector)
+  // Insert at a position, clamped to the vector's bounds.
+  private def place(panes: Vector[Pane], index: Int, pane: Pane): Vector[Pane] =
+    panes.patch(index.min(panes.length).max(0), Vector(pane), 0)
+
+  def append(pane: Pane): Unit = alter(_ :+ pane)
+  def prepend(pane: Pane): Unit = alter(pane +: _)
 
   // Insert at a position, clamped to the container's bounds.
-  def insert(index: Int, pane: Pane): Unit =
-    revise(vector.patch(index.min(vector.length).max(0), Vector(pane), 0))
+  def insert(index: Int, pane: Pane): Unit = alter(place(_, index, pane))
 
   // Insert immediately before `reference` (by identity); appends if it is absent.
-  def insertBefore(reference: Pane, pane: Pane): Unit =
-    val index = vector.indexWhere(_ eq reference)
-    if index < 0 then append(pane) else insert(index, pane)
+  def insertBefore(reference: Pane, pane: Pane): Unit = alter: panes =>
+    val index = panes.indexWhere(_ eq reference)
+    if index < 0 then panes :+ pane else place(panes, index, pane)
 
   // Insert immediately after `reference` (by identity); appends if it is absent.
-  def insertAfter(reference: Pane, pane: Pane): Unit =
-    val index = vector.indexWhere(_ eq reference)
-    if index < 0 then append(pane) else insert(index + 1, pane)
+  def insertAfter(reference: Pane, pane: Pane): Unit = alter: panes =>
+    val index = panes.indexWhere(_ eq reference)
+    if index < 0 then panes :+ pane else place(panes, index + 1, pane)
 
   // Remove `reference` (by identity), if present.
-  def remove(reference: Pane): Unit = revise(vector.filter(_ ne reference))
+  def remove(reference: Pane): Unit = alter(_.filter(_ ne reference))

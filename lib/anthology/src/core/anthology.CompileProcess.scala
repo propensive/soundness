@@ -39,6 +39,7 @@ import contingency.*
 import murmuration.fold
 import parasite.*
 import prepositional.*
+import rudiments.Atomic
 import rudiments.each
 import rudiments.reverse
 import turbulence.*
@@ -55,9 +56,9 @@ object CompileProcess:
 // `version` is the version of the compiler that ran, so a completed compilation can report what
 // produced its output without the caller keeping the compiler in hand.
 class CompileProcess(val version: Text):
-  // [field-purity] compile state var in non-Stateful CompileProcess
-  @scala.caps.unsafe.untrackedCaptures
-  private[anthology] var continue: Boolean = true
+  // Cleared by `abort` on the caller's thread and polled by the compiler thread through its
+  // progress callback, so it is atomic: a plain field would let the compiler miss the abort.
+  private val continuing: Atomic[Boolean] = Atomic(true)
 
   private val completion: Promise[CompileResult] = Promise()
   private val relay: Relay[CompileProcess.Update] = Relay()
@@ -101,8 +102,9 @@ class CompileProcess(val version: Text):
       safely(compilation.let(_.await()))
       safely(relay.stop())
 
-  def abort(): Unit = continue = false
-  def cancelled: Boolean = !continue
+  def abort(): Unit = continuing() = false
+  def cancelled: Boolean = !continuing()
+  private[anthology] def continue: Boolean = continuing()
 
   // The live update feed: a single-owner, separation-checked pull endpoint over the
   // relay, whose refill blocks for the first update and then drains whatever else has

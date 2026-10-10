@@ -34,20 +34,22 @@ package ultimatum
 
 import scala.caps
 
+import rudiments.Atomic
+
 // A mutable cell holding a gauge's current status. Assigning to it publishes the new value and
 // wakes the running form, so a gauge updated from a background task repaints at once — the same
 // contract a `Panes` mutation has.
 // The status itself is plain data (a pane tree stays pure); the one effectful field is the
 // installed repaint callback.
 class Reading[status](initial: status):
-  // [field-purity] current status var in non-capability Reading
-  @scala.caps.unsafe.untrackedCaptures
-  private var current: status = initial
+  // Written from background tasks and read on the form's thread, and `amend` must not lose an
+  // update to a concurrent one, so the status lives in an atomic cell. `Atomic.Ref[status]`, not
+  // `Atomic[status]`: the match type cannot reduce for an abstract type parameter.
+  private val current: Atomic.Ref[status] = Atomic.Ref(initial)
 
-  // A no-op until the cell is bound into a running form.
-  // [field-purity] repaint callback var in Reading
-  @scala.caps.unsafe.untrackedCaptures
-  private var onChange: () -> Unit = () => ()
+  // A no-op until the cell is bound into a running form. Atomic too, so that a task updating the
+  // cell sees the callback the form bound, rather than a stale no-op that never wakes the form.
+  private val onChange: Atomic.Ref[() -> Unit] = Atomic.Ref(() => ())
 
   // Install the running form's repaint trigger. As in `Panes.bindWake`, the callback genuinely
   // captures the form's event loop and escapes into this longer-lived cell — a growing capture set
@@ -56,18 +58,17 @@ class Reading[status](initial: status):
   // from a mutation while that form is live. Hence the single, localised `unsafeAssumePure`.
   private[ultimatum] def bindWake(wake: () => Unit): Unit =
     // [field-purity] form wake callback escapes into Reading field
-    onChange = caps.unsafe.unsafeAssumePure(wake)
+    onChange() = caps.unsafe.unsafeAssumePure(wake)
 
-  def apply(): status = current
+  def apply(): status = current()
 
   // Paired with `apply`, this gives assignment syntax: `reading() = Fraction(0.42)`.
   def update(status: status): Unit =
-    // A status is data — a fraction, a count, a list of steps — but `status` is an unbounded type
-    // parameter, so the compiler cannot know that and will not let it into an untracked field.
-    // `Reading` is not a capability (a pane tree holding one must stay pure, as `Panes` does), so
-    // the alternative would be to make it `caps.Mutable` and lose that.
-    // [field-purity] unbounded status value stored in untracked field
-    current = caps.unsafe.unsafeAssumePure(status)
-    onChange()
+    current() = status
+    onChange()()
 
-  def amend(lambda: status => status): Unit = update(lambda(current))
+  // A compare-and-set transition, so two tasks amending at once both land. `lambda` may be re-run
+  // under contention, so it must be pure — the contract `Accrual`'s `combine` has.
+  def amend(lambda: status => status): Unit =
+    current.revise(lambda)
+    onChange()()

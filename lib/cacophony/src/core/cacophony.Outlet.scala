@@ -39,6 +39,7 @@ import scala.math
 import anticipation.*
 import contingency.*
 import fulminate.*
+import rudiments.*
 
 object Outlet:
   def list: List[Outlet] =
@@ -93,9 +94,10 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info) extends Devi
     line.start()
 
     new Playback:
-      // [field-purity] stopped flag in anonymous Playback
-      @scala.caps.unsafe.untrackedCaptures
-      private var stopped = false
+      // Set once, by whichever of `stop` and the worker's own completion comes first. The worker
+      // polls it between chunks on its own thread, so it is atomic for a `stop` to reach it, and
+      // `ere(true)` returning `false` names the one call that gets to close the line.
+      private val stopped: Atomic[Boolean] = Atomic(false)
 
       private val data: Array[Byte]^{} = audio.data
 
@@ -106,25 +108,23 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info) extends Devi
             val samples = Array.unsafeJvm(data)
             var offset = 0
 
-            while !stopped && offset < data.length do
+            while !stopped() && offset < data.length do
               val len     = math.min(chunkBytes, data.length - offset)
               val written = line.write(samples, offset, len)
               if written <= 0 then offset = data.length else offset += written
 
-            if !stopped then line.drain()
+            if !stopped() then line.drain()
           finally
-            if !stopped then
-              stopped = true
+            if !stopped.ere(true) then
               line.stop()
               line.close()
 
         Thread.ofVirtual.nn.start(task).nn
 
-      def active: Boolean = !stopped
+      def active: Boolean = !stopped()
 
       def stop(): Unit =
-        if !stopped then
-          stopped = true
+        if !stopped.ere(true) then
           line.stop()
           line.flush()
           line.close()
