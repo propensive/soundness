@@ -704,7 +704,6 @@ private[xylophone] object XPathEngine:
 
         Value.Truth:
           declared.prim.let: language => language == wanted || language.starts(t"$wanted-")
-
           . or(false)
 
       case "number" =>

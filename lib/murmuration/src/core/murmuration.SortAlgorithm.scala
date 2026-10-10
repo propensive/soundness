@@ -39,33 +39,6 @@ import scala.util.boundary
 
 import prepositional.*
 
-// A sorting algorithm: a way of putting a scratch array into order against a comparator, which
-// is the whole of what an algorithm is. Every operation that sorts — `sorted` and `order` over a
-// collection, `sort()` over a mutable array — is that plus the arrangements for getting the
-// elements into an array and the results back out, so the algorithm is not parameterized by the
-// collection it came from. It was, once: the measurements said that every implementation drained
-// its receiver into an array anyway, and that the one implementation which did not was five to
-// seven times slower for the trouble.
-//
-// An algorithm is chosen by importing one of the givens in `sortingAlgorithms`; there is
-// deliberately no default, so a program says how it sorts, and two imports are an ambiguity
-// rather than a silent preference.
-//
-// `Timsort`, `Powersort`, `BubbleSort` and `InsertionSort` are stable — equal elements keep
-// their source order — while `Quicksort` and `Heapsort` are not. Stability is not part of the
-// types: a marker would have no consumer yet, and would need a name that could not be confused
-// with `Reshapable.Stable`, which is about a *shape* preserving order, not an algorithm.
-// `sort` is an ordinary method, and the algorithms below ordinary methods, deliberately.
-// Making them `inline`, so that each call site got its own copy of the loop with the comparison
-// compiled into it, was tried and measured: sorting a hundred thousand elements went from
-// 5.59 ms to 6.68 ms. One shared, compact algorithm is inlined *by the JIT* better than many
-// large copies are, and the copies push the comparison call past its inlining budget. The only
-// arrangement that beat the shared one replaced the comparison with a primitive `<` (5.30 ms),
-// which needs an element type known at the call site and a `Comparable` able to expand inline —
-// neither of which the general case has.
-trait SortAlgorithm:
-  def sort(array: scala.Array[AnyRef]^, comparator: ju.Comparator[AnyRef]): Unit
-
 object SortAlgorithm:
   // The JDK's own sort for objects, which is Timsort: adaptive, stable, and the algorithm
   // behind the standard library's `sorted`. The casts are the price of `-Yexplicit-nulls`:
@@ -586,3 +559,30 @@ object SortAlgorithm:
       else last = middle + 1
 
     offset
+
+// A sorting algorithm: a way of putting a scratch array into order against a comparator, which
+// is the whole of what an algorithm is. Every operation that sorts — `sorted` and `order` over a
+// collection, `sort()` over a mutable array — is that plus the arrangements for getting the
+// elements into an array and the results back out, so the algorithm is not parameterized by the
+// collection it came from. It was, once: the measurements said that every implementation drained
+// its receiver into an array anyway, and that the one implementation which did not was five to
+// seven times slower for the trouble.
+//
+// An algorithm is chosen by importing one of the givens in `sortingAlgorithms`; there is
+// deliberately no default, so a program says how it sorts, and two imports are an ambiguity
+// rather than a silent preference.
+//
+// `Timsort`, `Powersort`, `BubbleSort` and `InsertionSort` are stable — equal elements keep
+// their source order — while `Quicksort` and `Heapsort` are not. Stability is not part of the
+// types: a marker would have no consumer yet, and would need a name that could not be confused
+// with `Reshapable.Stable`, which is about a *shape* preserving order, not an algorithm.
+// `sort` is an ordinary method, and the algorithms below ordinary methods, deliberately.
+// Making them `inline`, so that each call site got its own copy of the loop with the comparison
+// compiled into it, was tried and measured: sorting a hundred thousand elements went from
+// 5.59 ms to 6.68 ms. One shared, compact algorithm is inlined *by the JIT* better than many
+// large copies are, and the copies push the comparison call past its inlining budget. The only
+// arrangement that beat the shared one replaced the comparison with a primitive `<` (5.30 ms),
+// which needs an element type known at the call site and a `Comparable` able to expand inline —
+// neither of which the general case has.
+trait SortAlgorithm:
+  def sort(array: scala.Array[AnyRef]^, comparator: ju.Comparator[AnyRef]): Unit

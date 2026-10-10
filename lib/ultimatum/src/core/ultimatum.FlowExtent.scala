@@ -37,6 +37,10 @@ import denominative.*
 import profanity.*
 import turbulence.*
 
+object FlowExtent:
+  private[ultimatum] class Writer(board: Board^):
+    def write(text: Text): Unit = board.put(text)
+
 // A `Board` confined to a `Rect` of a parent surface, backed by the shared
 // character grid (`GridSurface`). Writes flow and wrap within the rectangle;
 // `flush` paints the grid onto the parent surface, one row at a time, via the
@@ -83,7 +87,3 @@ extends GridSurface(rect.width, rect.height), Extent:
     scala.caps.unsafe.unsafeAssumePure(FlowExtent.Writer(this))
 
   override def print(text: Text): Unit = writer.write(text)
-
-object FlowExtent:
-  private[ultimatum] class Writer(board: Board^):
-    def write(text: Text): Unit = board.put(text)

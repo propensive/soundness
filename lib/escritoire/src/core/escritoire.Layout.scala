@@ -47,11 +47,6 @@ import vacuous.*
 // Per-row decorations are a short `List` read by column position.
 import denominative.dysasymptotics.linearAccess
 
-// One row's cells as the lines each will display, with each cell's intrinsic widths: phrased
-// once from the row, and independent of any width, so a layout can test a row, admit it, and
-// render it at whatever widths it settles on.
-case class Cells[text](lines: Array[Array[text]^{}]^{}, metrics: Array[Metrics]^{})
-
 object Cells:
   def of[text: Textual { type Result = Char }](lines: Array[Array[text]^{}]^{})
     ( using metrics: Text is Measurable )
@@ -69,6 +64,11 @@ object Cells:
   :   Cells[text] =
 
     of(columns.map[Array[text]^{}] { column => column.get(row).lines.to[Array] })
+
+// One row's cells as the lines each will display, with each cell's intrinsic widths: phrased
+// once from the row, and independent of any width, so a layout can test a row, admit it, and
+// render it at whatever widths it settles on.
+case class Cells[text](lines: Array[Array[text]^{}]^{}, metrics: Array[Metrics]^{})
 
 object Layout:
   // Empty aggregates, one per column, for a layout that has admitted nothing yet.

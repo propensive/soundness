@@ -90,9 +90,7 @@ object Imports:
         given Bindings = Bindings()
 
         stenography.internal.scopeInfo(denotation.symbol)(1).groupBy(_(0)).view
-        . mapValues: candidates =>
-            candidates.map(_(1).s).min.tt
-
+        . mapValues: candidates => candidates.map(_(1).s).min.tt
         . toMap
     catch case NonFatal(_) => sci.Map()
 

@@ -576,7 +576,6 @@ object internal:
       val right = input.compounds
 
       left.spot: index => !right.at(index).lay(false)(matchCompound(left.at(index), _, marker, out))
-
       . absent
 
   private def matchCompound

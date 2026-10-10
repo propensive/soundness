@@ -82,6 +82,7 @@ object Btrfs:
   case class Subvolume[plane](root: Path on plane over Btrfs)
 
 sealed trait Btrfs extends CreationTimed, Attributed
+
 object Ext4:
   def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
   :   Option[Path on plane over Ext4] =
@@ -90,6 +91,7 @@ object Ext4:
     else None
 
 sealed trait Ext4 extends Attributed
+
 object Apfs:
   def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
   :   Option[Path on plane over Apfs] =
@@ -98,6 +100,7 @@ object Apfs:
     else None
 
 sealed trait Apfs extends CreationTimed, Attributed
+
 object Ntfs:
   def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
   :   Option[Path on plane over Ntfs] =

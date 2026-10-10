@@ -53,9 +53,7 @@ object Manifest:
 
     Manifest:
       (java.getMainAttributes.nn: _root_.java.util.Map[Object, Object]).to[List]
-      . map: (key, value) =>
-        (key.toString.tt, value.toString.tt)
-
+      . map: (key, value) => (key.toString.tt, value.toString.tt)
       . to[Map]
 
   given streamable: Manifest is Streamable by Data over Credit = manifest =>

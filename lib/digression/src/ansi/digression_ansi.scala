@@ -47,19 +47,6 @@ import symbolism.*
 import tessellate.*
 import vacuous.*
 
-trait StackTracePalette extends iridescence.Palette:
-  type Form = Srgb
-  def message:   Color in Srgb
-  def file:      Color in Srgb
-  def method:    Color in Srgb
-  def line:      Color in Srgb
-  def separator: Color in Srgb
-  def accent1:   Color in Srgb
-  def accent2:   Color in Srgb
-  def accent3:   Color in Srgb
-  def accent4:   Color in Srgb
-  def accent5:   Color in Srgb
-
 object StackTracePalette:
   private def hex(n: Int): Color in Srgb =
     Srgb(((n >> 16) & 255)/255.0, ((n >> 8) & 255)/255.0, (n & 255)/255.0)
@@ -77,6 +64,19 @@ object StackTracePalette:
     def accent3:    Color in Srgb = hex(0xfefe00)
     def accent4:    Color in Srgb = hex(0xfeae00)
     def accent5:    Color in Srgb = hex(0xaefe00)
+
+trait StackTracePalette extends iridescence.Palette:
+  type Form = Srgb
+  def message:   Color in Srgb
+  def file:      Color in Srgb
+  def method:    Color in Srgb
+  def line:      Color in Srgb
+  def separator: Color in Srgb
+  def accent1:   Color in Srgb
+  def accent2:   Color in Srgb
+  def accent3:   Color in Srgb
+  def accent4:   Color in Srgb
+  def accent5:   Color in Srgb
 
 // The styled renderings, imported decisively: `import digression.teletypeables.*`.
 package teletypeables:

@@ -103,7 +103,7 @@ class GivensPhase() extends PluginPhase:
 
       private def eligibleSuite(symbol: Symbols.Symbol)(using Context): Boolean =
         suite.exists &&
-        symbol.isClass &&
+          symbol.isClass &&
           symbol.is(Module) &&
           isStablyAccessible(symbol) &&
           symbol.asClass.baseClasses.contains(suite)
@@ -148,7 +148,7 @@ class GivensPhase() extends PluginPhase:
 
         tpe.baseClasses.iterator.filter: cls =>
           cls.exists &&
-          cls != Symbols.defn.ObjectClass &&
+            cls != Symbols.defn.ObjectClass &&
             cls != Symbols.defn.AnyClass &&
             cls != Symbols.defn.MatchableClass &&
             stripDollar(cls.name.toString) != valName

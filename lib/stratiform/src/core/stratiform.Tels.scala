@@ -420,15 +420,6 @@ object Tels extends Tels2:
     enum Step:
       case Embedded, Builtin, Cache, Library, Lira
 
-    // Any content-addressed store may serve resolution steps 2–3: a
-    // hash lookup is order-independent, because any store's answer for
-    // a given signature is the right answer. Bare development
-    // references resolve only through `reference`, against local state.
-    trait Store:
-      def apply(signature: Data): Optional[Data]
-      def reference(domain: Text, name: Text): Optional[Data]
-      def cache(signature: Data, body: Data): Unit
-
     object Store:
       // An in-memory content-addressed store: the process-lifetime
       // schema cache, and the test double. Signatures are keyed by
@@ -451,6 +442,15 @@ object Tels extends Tels2:
         // as `tel schema add` does for the developer's cache.
         def install(domain: Text, name: Text, body: Data): Unit =
           byReference(t"$domain/$name") = body
+
+    // Any content-addressed store may serve resolution steps 2–3: a
+    // hash lookup is order-independent, because any store's answer for
+    // a given signature is the right answer. Bare development
+    // references resolve only through `reference`, against local state.
+    trait Store:
+      def apply(signature: Data): Optional[Data]
+      def reference(domain: Text, name: Text): Optional[Data]
+      def cache(signature: Data, body: Data): Unit
 
     // A resolved schema body. Wrapping the bytes keeps effectful
     // delegate results pure under capture checking (a bare

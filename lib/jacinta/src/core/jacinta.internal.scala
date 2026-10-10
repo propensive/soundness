@@ -1356,7 +1356,6 @@ object internal:
         // where `:::` widened, so the concatenation happens on the stdlib side.
         ( ('{$reader.openObject()}.asTerm ::
           (slotDefs.stdlib ::: seenDefs.stdlib ::: loop.stdlib ::: absents.stdlib).to(List))
-
           . stdlib,
           construct )
 

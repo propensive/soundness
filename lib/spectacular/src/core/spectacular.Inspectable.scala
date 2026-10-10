@@ -412,7 +412,6 @@ object Inspectable extends Inspectable2:
 
     entries =>
       entries.remap: (key, value) => inspKey().text(key).s+" → "+inspValue().text(value).s
-
       . stdlib.mkString("{", ", ", "}").tt
 
   // A `Ledger` keeps its insertion order, so it is bracketed differently from the unordered

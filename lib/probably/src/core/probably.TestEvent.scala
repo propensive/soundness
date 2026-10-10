@@ -53,6 +53,13 @@ import vacuous.*
 // rebuild the tree, and a metrics `Ledger` becomes a list of labelled values. One deliberate
 // simplification: a `Message`'s rope structure is rendered to `Text` at this boundary.
 object TestEvent:
+  object Ref:
+    def of(id: Test.Id): Ref =
+      def names(id: Test.Id): List[Text] =
+        id.suite.let { suite => names(suite.id) }.or(Nil) :+ id.label.or(id.name.text)
+
+      Ref(id.id, id.name.text, id.label, names(id), id.codepoint.source, id.codepoint.line)
+
   // A test's (or suite's) identity on the wire: the stable 6-hex hash, the display name, the
   // optional moniker, the full name-or-moniker path from the root suite to this entry (`path`
   // includes the entry itself, so tree reconstruction needs no other context), and the
@@ -65,13 +72,6 @@ object TestEvent:
       file:    Text,
       line:    Int )
 
-  object Ref:
-    def of(id: Test.Id): Ref =
-      def names(id: Test.Id): List[Text] =
-        id.suite.let { suite => names(suite.id) }.or(Nil) :+ id.label.or(id.name.text)
-
-      Ref(id.id, id.name.text, id.label, names(id), id.codepoint.source, id.codepoint.line)
-
   case class Frame(className: Text, method: Text, file: Text, line: Optional[Int])
 
   // One hot method of a profile: the (demangled) class and method names and how many
@@ -81,8 +81,6 @@ object TestEvent:
   // One component of a flattened cause chain: the outermost exception first, each with its
   // class name, rendered message and frames.
   case class TraceComponent(className: Text, message: Text, frames: List[Frame])
-
-  case class Trace(components: List[TraceComponent])
 
   object Trace:
     def of(stack: StackTrace): Trace =
@@ -98,10 +96,7 @@ object TestEvent:
 
       Trace(recur(stack, Nil))
 
-  // A verdict without its live `Exception`: the outcome vocabulary is `pass`, `fail`,
-  // `throws`, `check-throws`, `aspire-pass` or `aspire-fail`, with the stack trace present for
-  // the two throwing outcomes.
-  case class Outcome(outcome: Text, duration: Long, stack: Optional[Trace])
+  case class Trace(components: List[TraceComponent])
 
   object Outcome:
     def of(verdict: Verdict): Outcome = verdict match
@@ -116,16 +111,10 @@ object TestEvent:
       case Verdict.CheckThrows(exception, duration) =>
         Outcome(t"check-throws", duration, Trace.of(StackTrace(exception)))
 
-  // One row of a flattened `Juxtaposition`, pre-order with depth, from which the comparison
-  // tree can be rebuilt: `kind` is `same`, `different` or `collation` (whose type name travels
-  // in `difference`).
-  case class CompareRow
-    ( depth:      Int,
-      label:      Text,
-      kind:       Text,
-      left:       Text,
-      right:      Text,
-      difference: Optional[Text] )
+  // A verdict without its live `Exception`: the outcome vocabulary is `pass`, `fail`,
+  // `throws`, `check-throws`, `aspire-pass` or `aspire-fail`, with the stack trace present for
+  // the two throwing outcomes.
+  case class Outcome(outcome: Text, duration: Long, stack: Optional[Trace])
 
   object CompareRow:
     def flatten(juxtaposition: Juxtaposition): List[CompareRow] =
@@ -144,16 +133,16 @@ object TestEvent:
 
       recur(t"", juxtaposition, 0)
 
-  // An axis coordinate: the `Axis.Spec` fields plus the `Value`, its enum flattened into three
-  // `Optional`s of which exactly one is present, according to `domain` (`discrete`, `integral`
-  // or `decimal`).
-  case class Coordinate
-    ( axis:     Text,
-      domain:   Text,
-      emergent: Boolean,
-      discrete: Optional[Text],
-      integral: Optional[Long],
-      decimal:  Optional[Double] )
+  // One row of a flattened `Juxtaposition`, pre-order with depth, from which the comparison
+  // tree can be rebuilt: `kind` is `same`, `different` or `collation` (whose type name travels
+  // in `difference`).
+  case class CompareRow
+    ( depth:      Int,
+      label:      Text,
+      kind:       Text,
+      left:       Text,
+      right:      Text,
+      difference: Optional[Text] )
 
   object Coordinate:
     def of(spec: Axis.Spec, value: Value): Coordinate =
@@ -175,25 +164,24 @@ object TestEvent:
     def of(coordinates: List[(Axis.Spec, Value)]): List[Coordinate] =
       coordinates.map: (coordinate: (Axis.Spec, Value)) => of(coordinate(0), coordinate(1))
 
-  // One metric of a result, keyed by the `Metric` enum case's NAME (stable across versions in
-  // a way its display label is not).
-  case class MetricValue(metric: Text, value: Double)
+  // An axis coordinate: the `Axis.Spec` fields plus the `Value`, its enum flattened into three
+  // `Optional`s of which exactly one is present, according to `domain` (`discrete`, `integral`
+  // or `decimal`).
+  case class Coordinate
+    ( axis:     Text,
+      domain:   Text,
+      emergent: Boolean,
+      discrete: Optional[Text],
+      integral: Optional[Long],
+      decimal:  Optional[Double] )
 
   object MetricValue:
     def of(metrics: Ledger[Metric, Double]): List[MetricValue] =
       metrics.to[List].map: (entry: (Metric, Double)) => MetricValue(entry(0).toString.tt, entry(1))
 
-  // One axis of a scheduled test: the `Axis.Spec` fields, the labels of the values of the
-  // admitted cells (`Value#text`, in first-appearance order; none for an emergent axis) and,
-  // for an emergent axis with declared bounds, the least and greatest values the run will
-  // produce.
-  case class AxisSchedule
-    ( axis:     Text,
-      domain:   Text,
-      emergent: Boolean,
-      values:   List[Text],
-      least:    Optional[Double],
-      most:     Optional[Double] )
+  // One metric of a result, keyed by the `Metric` enum case's NAME (stable across versions in
+  // a way its display label is not).
+  case class MetricValue(metric: Text, value: Double)
 
   object AxisSchedule:
     def of(schedule: Axis.Schedule): AxisSchedule =
@@ -209,6 +197,18 @@ object TestEvent:
           schedule.values.map(_.text),
           schedule.least,
           schedule.most )
+
+  // One axis of a scheduled test: the `Axis.Spec` fields, the labels of the values of the
+  // admitted cells (`Value#text`, in first-appearance order; none for an emergent axis) and,
+  // for an emergent axis with declared bounds, the least and greatest values the run will
+  // produce.
+  case class AxisSchedule
+    ( axis:     Text,
+      domain:   Text,
+      emergent: Boolean,
+      values:   List[Text],
+      least:    Optional[Double],
+      most:     Optional[Double] )
 
   def kindName(kind: Entry.Kind): Text = kind match
     case Entry.Kind.Check   => t"check"

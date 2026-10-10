@@ -255,7 +255,6 @@ object Redraft:
 
     directives.indexed
     . filter: (directive, ordinal) => !directive.isInstanceOf[Directive.Keep] || near(ordinal.n0)
-
     . map(_(0))
 
   private def minimize

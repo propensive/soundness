@@ -55,6 +55,10 @@ object XPath extends Format:
     def strategy: Text = t"xpath"
     def focus(xpath: XPath): Text = xpath.encode
 
+  object Position:
+    // The parser detects a fault at a point, not over a range, so spans are zero-length.
+    def at(offset: Int): Position = Position(Span.offset(offset.z, 0))
+
   // An XPath is a line-less source, so the span is `Offset`-mode: a character index into
   // the expression text, which the `xp"…"` interpolator maps back onto a source-file caret.
   // `Location` is taken here for a node's place within a *document*, so this is `Position`,
@@ -62,10 +66,6 @@ object XPath extends Format:
   case class Position(override val span: Span) extends Format.Position:
     def describe: Text = span.offset.lay(t"an unknown position"): offset =>
       t"character ${offset.n1}"
-
-  object Position:
-    // The parser detects a fault at a point, not over a range, so spans are zero-length.
-    def at(offset: Int): Position = Position(Span.offset(offset.z, 0))
 
   // The thirteen XPath 1.0 axes (§2.2). `keyword` is the spelling used in the
   // unabbreviated `axis::test` syntax.

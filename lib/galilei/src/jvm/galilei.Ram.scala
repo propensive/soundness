@@ -48,19 +48,6 @@ import vacuous.*
 import zephyrine.*
 import Io.Error.{Operation, Reason}
 
-// The form for random access to a file's bytes through memory mapping:
-// `path.open[Ram](Read & Write)`. The handle serves positional reads with `ram(offset, length)`
-// and, when the `Write` grant was selected, positional writes with `ram(offset) = data`; both
-// go through a `MappedByteBuffer`, so the OS pages data in and out on demand. An `Exclusive`
-// mode additionally acquires an OS file lock for the duration of the scope, so exclusivity
-// holds against other *processes*, not just other scopes in this one. (galilei's jvm module
-// is not yet capture-checked, so confinement is enforced only for callers compiled with
-// capture checking; the annotations sharpen when the module joins the rollout.)
-trait Ram
-
-enum RamFlag:
-  case Size(bytes: Long)
-
 object Ram:
   class RamHandle private[galilei] (channel: jnc.FileChannel, readWrite: Boolean, initial: Long)
   extends caps.ExclusiveCapability:
@@ -220,3 +207,16 @@ object Ram:
   =>  ( FilesystemBackend on filesystem, Tactic[Io.Error] )
   =>  RamCreatable[filesystem, path] =
     RamCreatable[filesystem, path]
+
+// The form for random access to a file's bytes through memory mapping:
+// `path.open[Ram](Read & Write)`. The handle serves positional reads with `ram(offset, length)`
+// and, when the `Write` grant was selected, positional writes with `ram(offset) = data`; both
+// go through a `MappedByteBuffer`, so the OS pages data in and out on demand. An `Exclusive`
+// mode additionally acquires an OS file lock for the duration of the scope, so exclusivity
+// holds against other *processes*, not just other scopes in this one. (galilei's jvm module
+// is not yet capture-checked, so confinement is enforced only for callers compiled with
+// capture checking; the annotations sharpen when the module joins the rollout.)
+trait Ram
+
+enum RamFlag:
+  case Size(bytes: Long)

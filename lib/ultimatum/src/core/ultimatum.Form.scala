@@ -164,7 +164,6 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
   // identity, so focus survives insertions), defaulting to the first.
   private def focusPosition(layout: Form.Layout): Int = focused.lay(0): widget =>
     layout.focusables.where: ordinal => layout.entries(ordinal).focus.lay(false)(_ eq widget)
-
     . lay(0)(_.n0)
 
   // Project the panes to a frame, overriding each widget's minimum with the live

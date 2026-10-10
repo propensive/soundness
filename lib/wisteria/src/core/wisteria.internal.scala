@@ -1103,5 +1103,4 @@ object internal:
     // dealiased `Optional[field]`.
 
     . map: selection => '{${selection.asExprOf[field]}: Optional[field]}
-
     . getOrElse('{Unset: Optional[field]})

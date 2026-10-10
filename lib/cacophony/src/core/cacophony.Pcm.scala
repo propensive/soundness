@@ -45,20 +45,6 @@ import rudiments.reap
 import turbulence.*
 import vacuous.or
 
-// The form for scoped PCM audio-line access. A `Feed` (an input device) opens as
-// `Pcm across layout` for capture -- `feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000))`
-// -- providing a handle streaming `Audio` chunks for as long as the scope lasts; an `Outlet`
-// (an output device) opens as plain `Pcm` for playback, whose `play` operation requires the
-// `Write` grant and plays each `Audio` synchronously. In both cases the OS line is confined to
-// the scope, released however it ends. The long-lived `Feed.record`/`Outlet.play` APIs remain
-// for open-ended use.
-trait Pcm extends Domainal
-
-enum PcmFlag:
-  case Rate(hertz: Int)
-  case Bits(bits: Int)
-  case Chunk(bytes: Int)
-
 object Pcm:
   class PcmInput[layout] private[cacophony] (line: jss.TargetDataLine, chunkBytes: Int)
   extends caps.ExclusiveCapability:
@@ -195,3 +181,17 @@ object Pcm:
 
   given outletOpenable: (tactic: Tactic[Outlet.Error]) => (OutletOpenable^{tactic}) =
     OutletOpenable()
+
+// The form for scoped PCM audio-line access. A `Feed` (an input device) opens as
+// `Pcm across layout` for capture -- `feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000))`
+// -- providing a handle streaming `Audio` chunks for as long as the scope lasts; an `Outlet`
+// (an output device) opens as plain `Pcm` for playback, whose `play` operation requires the
+// `Write` grant and plays each `Audio` synchronously. In both cases the OS line is confined to
+// the scope, released however it ends. The long-lived `Feed.record`/`Outlet.play` APIs remain
+// for open-ended use.
+trait Pcm extends Domainal
+
+enum PcmFlag:
+  case Rate(hertz: Int)
+  case Bits(bits: Int)
+  case Chunk(bytes: Int)

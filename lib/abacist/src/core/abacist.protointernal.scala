@@ -161,7 +161,6 @@ object protointernal extends anteprotointernal:
 
       distributive[quanta](_.components.values): (value, parts) =>
         parts.zip(value.components.keys).map: (number, units) => t"$number $units"
-
         . join(t", ")
 
     inline given distributive2: [base <: AnyUnit, form <: Divisions]

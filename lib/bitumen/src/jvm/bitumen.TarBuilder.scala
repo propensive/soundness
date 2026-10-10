@@ -63,112 +63,6 @@ class TarEntryWriter private[bitumen] (put0: Data => Unit) extends caps.Exclusiv
 
     zephyrine.chain(streamable.stream(data)).foreach(put0(_))
 
-// The authoring handle provided by `path.create[Tar](flags*)`. TAR permits duplicate names
-// (later entries supersede on extraction), so nothing is checked at insert.
-//
-// On an UNCOMPRESSED target, the builder writes straight through to the temporary sibling as
-// entries are inserted: a file whose payload is lazy streams to disk in bounded chunks, its
-// header written as a placeholder and backpatched with the real size and checksum once the
-// body has passed — so an entry of unknown length (`builder.file(...)`) streams end-to-end.
-// A COMPRESSED target cannot be backpatched through the compressor, so entries accumulate
-// and serialize when the scope closes, buffering each payload as the eager writer always
-// did. Either way the target appears atomically, or not at all.
-class TarBuilder private[bitumen]
-  ( sink: Optional[ji.RandomAccessFile], format: LongNameFormat )
-  ( using Tactic[Tar.Error] )
-extends caps.ExclusiveCapability:
-  // [field-purity] entry stack in non-Stateful exclusive builder
-  @scala.caps.unsafe.untrackedCaptures
-  private var stack: List[Tar.Entry] = Nil
-
-  def insert(entry: Tar.Entry): Unit = sink.lay(stack ::= entry)(writeEntry(_, entry))
-
-  def insert[data: Streamable by Data over Credit as streamable](name: Tar.Ref, data: data)
-  :   Unit =
-
-    val iterator = streamable.stream(data).chunks
-
-    insert(Tar.Entry.File
-      ( name, UnixMode(), UnixUser(0), UnixGroup(0), 0.bits.u32,
-        Archive.Body.deferred{ () => if iterator.hasNext then iterator.next() else Unset } ))
-
-  // Author one entry with a streamed, unknown-length body: the block writes
-  // chunks through the lent `TarEntryWriter`. On an uncompressed target the
-  // body goes straight to disk and the header is backpatched; on a compressed
-  // target the body is buffered and inserted whole when the block returns.
-  def file[result]
-    ( name:  Tar.Ref,
-      mode:  UnixMode  = UnixMode(),
-      user:  UnixUser  = UnixUser(0),
-      group: UnixGroup = UnixGroup(0),
-      mtime: U32       = 0.bits.u32 )
-    ( block: TarEntryWriter^ ?=> result )
-  :   result =
-
-    sink.lay:
-      val buffer = scm.ArrayBuffer[Data]()
-      val outcome = block(using TarEntryWriter(buffer += _))
-      insert(Tar.Entry.File(name, mode, user, group, mtime, Archive.Body(buffer.toSeq*)))
-      outcome
-
-    . apply: out =>
-        val probe = Tar.Entry.File(name, mode, user, group, mtime, Archive.Body.empty)
-        Tarfile.preamble(probe, format).each: chunk => write(out, chunk)
-
-        val headerPosition = out.getFilePointer
-        write(out, Tarfile.zeroBlock)
-
-        var count: Long = 0
-
-        val outcome =
-          block(using TarEntryWriter { chunk => write(out, chunk); count += chunk.length })
-
-        pad(out, count)
-        val end = out.getFilePointer
-        out.seek(headerPosition)
-        write(out, probe.headerWith(count.toInt.bits.u32))
-        out.seek(end)
-        outcome
-
-  private def writeEntry(out: ji.RandomAccessFile, entry: Tar.Entry): Unit =
-    entry match
-      case file: Tar.Entry.File =>
-        // Stream the body with a backpatched header, so a lazy payload is
-        // never held in memory.
-        Tarfile.preamble(entry, format).each: chunk => write(out, chunk)
-        val headerPosition = out.getFilePointer
-        write(out, Tarfile.zeroBlock)
-
-        var count: Long = 0
-        file.data.chunks.foreach { chunk => write(out, chunk); count += chunk.length }
-
-        pad(out, count)
-        val end = out.getFilePointer
-        out.seek(headerPosition)
-        write(out, file.headerWith(count.toInt.bits.u32))
-        out.seek(end)
-
-      case other =>
-        Tarfile.preamble(entry, format).each: chunk => write(out, chunk)
-        other.serialize.each: chunk => write(out, chunk)
-
-  private def pad(out: ji.RandomAccessFile, count: Long): Unit =
-    val remainder = (count%512).toInt
-    if remainder != 0 then write(out, Tarfile.zeroBlock.segment((0).z till (512 - remainder).z))
-
-  private def write(out: ji.RandomAccessFile, chunk: Data): Unit =
-    try out.write(Array.unsafeJvm(chunk))
-    catch case error: ji.IOException =>
-      abort(Tar.Error(Tar.Error.Reason.CannotWrite(error.getMessage.nn.tt)))
-
-  // The two terminating zero blocks, in streaming mode.
-  private[bitumen] def finish(): Unit = sink.let: out =>
-    write(out, Tarfile.zeroBlock)
-    write(out, Tarfile.zeroBlock)
-
-  private[bitumen] def tarfile(format: LongNameFormat): Tarfile =
-    Tarfile(stack.reverse, format)
-
 object TarBuilder:
   class TarCreatable[path: Abstractable across Paths to Text](using Tactic[Tar.Error])
   extends Creatable:
@@ -285,3 +179,109 @@ object TarBuilder:
     catch
       case error: ji.IOException =>
         abort(Tar.Error(Tar.Error.Reason.CannotWrite(error.getMessage.nn.tt)))
+
+// The authoring handle provided by `path.create[Tar](flags*)`. TAR permits duplicate names
+// (later entries supersede on extraction), so nothing is checked at insert.
+//
+// On an UNCOMPRESSED target, the builder writes straight through to the temporary sibling as
+// entries are inserted: a file whose payload is lazy streams to disk in bounded chunks, its
+// header written as a placeholder and backpatched with the real size and checksum once the
+// body has passed — so an entry of unknown length (`builder.file(...)`) streams end-to-end.
+// A COMPRESSED target cannot be backpatched through the compressor, so entries accumulate
+// and serialize when the scope closes, buffering each payload as the eager writer always
+// did. Either way the target appears atomically, or not at all.
+class TarBuilder private[bitumen]
+  ( sink: Optional[ji.RandomAccessFile], format: LongNameFormat )
+  ( using Tactic[Tar.Error] )
+extends caps.ExclusiveCapability:
+  // [field-purity] entry stack in non-Stateful exclusive builder
+  @scala.caps.unsafe.untrackedCaptures
+  private var stack: List[Tar.Entry] = Nil
+
+  def insert(entry: Tar.Entry): Unit = sink.lay(stack ::= entry)(writeEntry(_, entry))
+
+  def insert[data: Streamable by Data over Credit as streamable](name: Tar.Ref, data: data)
+  :   Unit =
+
+    val iterator = streamable.stream(data).chunks
+
+    insert(Tar.Entry.File
+      ( name, UnixMode(), UnixUser(0), UnixGroup(0), 0.bits.u32,
+        Archive.Body.deferred{ () => if iterator.hasNext then iterator.next() else Unset } ))
+
+  // Author one entry with a streamed, unknown-length body: the block writes
+  // chunks through the lent `TarEntryWriter`. On an uncompressed target the
+  // body goes straight to disk and the header is backpatched; on a compressed
+  // target the body is buffered and inserted whole when the block returns.
+  def file[result]
+    ( name:  Tar.Ref,
+      mode:  UnixMode  = UnixMode(),
+      user:  UnixUser  = UnixUser(0),
+      group: UnixGroup = UnixGroup(0),
+      mtime: U32       = 0.bits.u32 )
+    ( block: TarEntryWriter^ ?=> result )
+  :   result =
+
+    sink.lay:
+      val buffer = scm.ArrayBuffer[Data]()
+      val outcome = block(using TarEntryWriter(buffer += _))
+      insert(Tar.Entry.File(name, mode, user, group, mtime, Archive.Body(buffer.toSeq*)))
+      outcome
+
+    . apply: out =>
+        val probe = Tar.Entry.File(name, mode, user, group, mtime, Archive.Body.empty)
+        Tarfile.preamble(probe, format).each: chunk => write(out, chunk)
+
+        val headerPosition = out.getFilePointer
+        write(out, Tarfile.zeroBlock)
+
+        var count: Long = 0
+
+        val outcome =
+          block(using TarEntryWriter { chunk => write(out, chunk); count += chunk.length })
+
+        pad(out, count)
+        val end = out.getFilePointer
+        out.seek(headerPosition)
+        write(out, probe.headerWith(count.toInt.bits.u32))
+        out.seek(end)
+        outcome
+
+  private def writeEntry(out: ji.RandomAccessFile, entry: Tar.Entry): Unit =
+    entry match
+      case file: Tar.Entry.File =>
+        // Stream the body with a backpatched header, so a lazy payload is
+        // never held in memory.
+        Tarfile.preamble(entry, format).each: chunk => write(out, chunk)
+        val headerPosition = out.getFilePointer
+        write(out, Tarfile.zeroBlock)
+
+        var count: Long = 0
+        file.data.chunks.foreach { chunk => write(out, chunk); count += chunk.length }
+
+        pad(out, count)
+        val end = out.getFilePointer
+        out.seek(headerPosition)
+        write(out, file.headerWith(count.toInt.bits.u32))
+        out.seek(end)
+
+      case other =>
+        Tarfile.preamble(entry, format).each: chunk => write(out, chunk)
+        other.serialize.each: chunk => write(out, chunk)
+
+  private def pad(out: ji.RandomAccessFile, count: Long): Unit =
+    val remainder = (count%512).toInt
+    if remainder != 0 then write(out, Tarfile.zeroBlock.segment((0).z till (512 - remainder).z))
+
+  private def write(out: ji.RandomAccessFile, chunk: Data): Unit =
+    try out.write(Array.unsafeJvm(chunk))
+    catch case error: ji.IOException =>
+      abort(Tar.Error(Tar.Error.Reason.CannotWrite(error.getMessage.nn.tt)))
+
+  // The two terminating zero blocks, in streaming mode.
+  private[bitumen] def finish(): Unit = sink.let: out =>
+    write(out, Tarfile.zeroBlock)
+    write(out, Tarfile.zeroBlock)
+
+  private[bitumen] def tarfile(format: LongNameFormat): Tarfile =
+    Tarfile(stack.reverse, format)

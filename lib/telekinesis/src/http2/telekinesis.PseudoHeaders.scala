@@ -130,7 +130,6 @@ object PseudoHeaders:
       List(t"connection", t"keep-alive", t"transfer-encoding", t"upgrade", t"proxy-connection")
 
     val regular = response.textHeaders.map: header => Hpack.Entry(header.key.lower, header.value)
-
     . filter: entry => !forbidden.has(entry.name)
 
     Hpack.Entry(t":status", response.status.code.show) :: regular

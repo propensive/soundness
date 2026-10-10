@@ -39,29 +39,6 @@ import contingency.*
 import gossamer.*
 import prepositional.*
 
-// The Expr-level counterpart of `Bintel.Parsable`: a typeclass whose
-// methods are macro-time code generators, mirroring `stratiform.Inlinable`
-// (the text format's) for the binary encoding. An instance receives an
-// `Expr` of the reader — positioned at its value's payload — and returns an
-// `Expr` of the decoded value, spliced directly into the composed parser.
-//
-// BinTEL is schema-driven: the wire carries no keywords, only flat keyword
-// *indices* resolved against the schema derived from the value's type. The
-// derivation gives every case-class field exactly one flat slot, in
-// declaration order, so the generated dispatch is a positional table — the
-// index IS the field's position. Decoding a BinTEL document through the AST
-// path ends in the *text* format's `Tel.Decodable`, so a generated parser's
-// value semantics (leaf faults, absent handling, foci) mirror the text
-// format's `Inlinable` exactly.
-trait BintelInlinable extends Typeclass:
-  def parse(reader: Expr[BintelReader])(using Quotes, Type[Self]): Expr[Self]
-
-  // What a field of this type yields when its index is absent from the
-  // struct body, mirroring the text format's instances: an abort unless
-  // overridden.
-  def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Self]): Expr[Self] =
-    '{abort(Tel.Error(Tel.Error.Reason.Absent))(using $tactic)}
-
 object BintelInlinable:
   // Generates a monomorphic `Bintel.Parsable` for a case class or a sealed
   // sum at compile time: nested records, repeated-field gathering, variant
@@ -74,6 +51,9 @@ object BintelInlinable:
   // The structural instance for a case class: reflects `Self` when invoked
   // (no macro — `Type[Self]` arrives with the call).
   def derived[product]: product is BintelInlinable = ProductInlinable[product]()
+
+  object ForBintel:
+    def derived[value]: ForBintel[value] = ForBintel(BintelInlinable.derived[value])
 
   // The `derives`-clause carrier: a `Self`-typed typeclass cannot appear in
   // a `derives` clause (it has no type parameters), so `case class Foo(...)
@@ -93,9 +73,6 @@ object BintelInlinable:
     :   Expr[value] =
 
       delegate0.absent(tactic)
-
-  object ForBintel:
-    def derived[value]: ForBintel[value] = ForBintel(BintelInlinable.derived[value])
 
   private[stratiform] final class ProductInlinable[product]() extends BintelInlinable:
     type Self = product
@@ -236,3 +213,26 @@ object BintelInlinable:
   =>  ( element0: element is BintelInlinable )
   =>  ( collection[element] is BintelInlinable ) =
     IterableInlinable[element](element0).asInstanceOf[collection[element] is BintelInlinable]
+
+// The Expr-level counterpart of `Bintel.Parsable`: a typeclass whose
+// methods are macro-time code generators, mirroring `stratiform.Inlinable`
+// (the text format's) for the binary encoding. An instance receives an
+// `Expr` of the reader — positioned at its value's payload — and returns an
+// `Expr` of the decoded value, spliced directly into the composed parser.
+//
+// BinTEL is schema-driven: the wire carries no keywords, only flat keyword
+// *indices* resolved against the schema derived from the value's type. The
+// derivation gives every case-class field exactly one flat slot, in
+// declaration order, so the generated dispatch is a positional table — the
+// index IS the field's position. Decoding a BinTEL document through the AST
+// path ends in the *text* format's `Tel.Decodable`, so a generated parser's
+// value semantics (leaf faults, absent handling, foci) mirror the text
+// format's `Inlinable` exactly.
+trait BintelInlinable extends Typeclass:
+  def parse(reader: Expr[BintelReader])(using Quotes, Type[Self]): Expr[Self]
+
+  // What a field of this type yields when its index is absent from the
+  // struct body, mirroring the text format's instances: an abort unless
+  // overridden.
+  def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Self]): Expr[Self] =
+    '{abort(Tel.Error(Tel.Error.Reason.Absent))(using $tactic)}
