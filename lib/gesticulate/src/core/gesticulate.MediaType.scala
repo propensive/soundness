@@ -33,20 +33,19 @@
 package gesticulate
 
 import scala.caps
-
 import scala.language.dynamics
 
 import anticipation.*
 import contextual.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.+
 import vacuous.*
-import fulminate.*
 
 object MediaType:
   given inspectable: MediaType is Inspectable = mt => t"""media"${mt}""""
@@ -57,7 +56,7 @@ object MediaType:
   given encodable: MediaType is Encodable in Text = _.show
   // Captures the tactic it raises through.
   given decodable: (tactic: Tactic[MediaType.Error])
-  =>  ((MediaType is Decodable in Text)^{tactic}) =
+  =>  ( (MediaType is Decodable in Text)^{tactic} ) =
 
     Media.parse(_)
 

@@ -32,7 +32,6 @@
 package stratiform
 
 import soundness.*
-
 import strategies.throwUnsafely
 import codepages.utf8Codepage
 
@@ -59,41 +58,50 @@ object CheckedTests extends Suite(m"Stratiform capture-checked derivation tests"
     suite(m"product decoders"):
       test(m"scalar fields"):
         t"form scala\ncount 3\n".read[Tel].as[Plain]
+
       . assert(_ == Plain(t"scala", 3))
 
       test(m"the issue's script header: nested product and repeated fields"):
         t"language scala\n  flag -deprecation\n  flag -feature\nclasspath a.jar\nclasspath b.jar\n"
         . read[Tel].as[Script]
+
       . assert(_ == Script(Language(t"scala", List(t"-deprecation", t"-feature")),
                            List(t"a.jar", t"b.jar")))
 
       test(m"a repeated field left to its default"):
         t"language scala\n".read[Tel].as[Script]
+
       . assert(_ == Script(Language(t"scala")))
 
       test(m"a Set field"):
         t"names alpha\nnames beta\nnames alpha\n".read[Tel].as[Sets]
+
       . assert(_ == Sets(Set(t"alpha", t"beta")))
 
       test(m"a Map field"):
         t"entries\n  entries\n    key one\n    value 1\n  entries\n    key two\n    value 2\n"
         . read[Tel].as[Table]
+
       . assert(_ == Table(Map(t"one" -> 1, t"two" -> 2)))
 
       test(m"a present Optional field"):
         t"name x\ncount 7\n".read[Tel].as[Counted]
+
       . assert(_ == Counted(t"x", 7))
 
       test(m"an absent Optional field"):
         t"name x\n".read[Tel].as[Counted]
+
       . assert(_ == Counted(t"x", Unset))
 
     suite(m"sum and recursive decoders"):
       test(m"an enum field"):
         t"shape\n  circle\n    radius 2.5\ntags round\n".read[Tel].as[Shapes]
+
       . assert(_ == Shapes(Shape.Circle(2.5), List(t"round")))
 
       test(m"a recursive type"):
         t"name root\nchildren\n  name a\nchildren\n  name b\n  children\n    name c\n"
         . read[Tel].as[Tree]
+
       . assert(_ == Tree(t"root", List(Tree(t"a"), Tree(t"b", List(Tree(t"c"))))))

@@ -288,6 +288,7 @@ case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
 
   def render[line](label: node => line)(using style: LaneDagStyle[line]): List[line] =
     val widths = LaneDagDiagram.defaultWidths(lines.iterator.map(_(0)))
+
     lines.map: (tiles, node) =>
       style.serialize(tiles.to(proscenium.List), Map.empty, widths.to(proscenium.List), node.let(label))
 

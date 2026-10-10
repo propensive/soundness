@@ -204,6 +204,7 @@ object Http2:
 
         case FrameType.GoAway =>
           val lastStreamId = (uint32(body, 0) & 0x7fffffffL).toInt
+
           Frame.GoAway
             ( lastStreamId,
               uint32(body, 4),
@@ -419,7 +420,7 @@ object Http2:
         probate:    Probate,
         asyncError: Tactic[Async.Error],
         loggable:   (Socket.Event is Loggable)^ )
-  =>  (EndpointSessional[endpoint]^{monitor, asyncError, loggable, caps.any}) =
+  =>  ( EndpointSessional[endpoint]^{monitor, asyncError, loggable, caps.any} ) =
     EndpointSessional[endpoint]()
 
   // An `Http.Client` that speaks HTTP/2 (prior-knowledge h2c) to an `Http2.Endpoint`.
@@ -433,7 +434,7 @@ object Http2:
           probate:    Probate,
           http2Error: Tactic[Http2.Error],
           asyncError: Tactic[Async.Error] )
-    =>  ((Http.Client onto Endpoint[endpoint])^{monitor, http2Error, asyncError, caps.any}) =
+    =>  ( (Http.Client onto Endpoint[endpoint])^{monitor, http2Error, asyncError, caps.any} ) =
 
       new Http.Client:
         type Target = Endpoint[endpoint]
@@ -520,6 +521,7 @@ object Http2:
     private def dispatch(conn: Http2.Connection, frame: Frame, decoder: Hpack^)
       ( using Tactic[Http2.Error] )
     :   Boolean =
+
       frame match
         case Frame.Settings(settings, ack) =>
           if !ack then
@@ -640,8 +642,8 @@ object Http2:
     private def replenish(pending: Atomic[Int], id: Int): Unit =
       // The transition declines below the threshold, so no compare-and-set is issued at all in
       // the common case; above it, exactly one caller displaces the pending count and sends.
-      val drained = pending.ere: value =>
-        if value < threshold then value else 0
+      val drained = pending.ere: value => if value < threshold then value else 0
+
       if drained >= threshold then send(Frame.WindowUpdate(id, drained))
 
     // Tear the connection down after an unrecoverable reader/writer failure: unblock a
@@ -664,10 +666,10 @@ object Http2:
       // aliased writer.
       // [by-name-receiver] contain handler and protected body share connection state
       scala.caps.unsafe.unsafeAssumeSeparate:
-       contain:
-        case _ => tearDown(); Remedy.Accept
+        contain:
+          case _ => tearDown(); Remedy.Accept
 
-       . protect:
+        . protect:
           // Everything the fibers touch is bound to locals (or neutral carriers)
           // before they spawn: a daemon body may not capture the instance under
           // construction, and its context function must stay pure.
@@ -693,6 +695,7 @@ object Http2:
 
             while continue do (frameReader.next(): @unchecked) match
               case Unset        => continue = false
+
               case frame: Frame =>
                 continue = dispatch(self.asInstanceOf[Http2.Connection], frame, decoder)
 
@@ -734,7 +737,7 @@ object Http2:
         val streamWindow = streamWindows.getOrElseUpdate(id, FlowWindow(peerInitialWindow()))
 
         sendFlowControlled
-          (id, payload, endStream = true, connWindow, streamWindow, peerMaxFrame(), send)
+          ( id, payload, endStream = true, connWindow, streamWindow, peerMaxFrame(), send )
 
       stream
 
@@ -835,7 +838,7 @@ object Http2:
     // batched replenishment.
     private[telekinesis] val unreplenished: Atomic[Int] = Atomic(0)
 
-    val body: Stream.Body = Stream.Body(count => onConsume(this, count))
+    val body: Stream.Body = Stream.Body{ count => onConsume(this, count) }
 
     // Untracked: written only by the connection's single reader daemon.
     // [synchronized] plain var written by single reader daemon
@@ -911,6 +914,7 @@ object Http2:
     private def dispatch(conn: Http2.ServerConnection, frame: Frame, decoder: Hpack^)
       ( using Tactic[Http2.Error] )
     :   Boolean =
+
       frame match
         case Frame.Settings(settings, ack) =>
           if !ack then
@@ -1045,8 +1049,8 @@ object Http2:
     private def replenish(pending: Atomic[Int], id: Int): Unit =
       // The transition declines below the threshold, so no compare-and-set is issued at all in
       // the common case; above it, exactly one caller displaces the pending count and sends.
-      val drained = pending.ere: value =>
-        if value < threshold then value else 0
+      val drained = pending.ere: value => if value < threshold then value else 0
+
       if drained >= threshold then send(Frame.WindowUpdate(id, drained))
 
     // Tear the connection down after an unrecoverable reader/writer failure or a
@@ -1070,15 +1074,15 @@ object Http2:
       // As `Http2.Connection`: no aliased writer between containment and body.
       // [by-name-receiver] contain handler and protected body share state
       scala.caps.unsafe.unsafeAssumeSeparate:
-       contain:
-        case _ =>
-          started0.cancel()
-          streams0.values.foreach(_.end())
-          outbound0.stop()
-          accepted0.stop()
-          Remedy.Accept
+        contain:
+          case _ =>
+            started0.cancel()
+            streams0.values.foreach(_.end())
+            outbound0.stop()
+            accepted0.stop()
+            Remedy.Accept
 
-       . protect:
+        . protect:
           // Everything the fibers touch is bound to locals (or neutral carriers)
           // before they spawn: a daemon body may not capture the instance under
           // construction, and its context function must stay pure.
@@ -1110,6 +1114,7 @@ object Http2:
 
             while continue do (frameReader.next(): @unchecked) match
               case Unset        => continue = false
+
               case frame: Frame =>
                 continue = dispatch(self.asInstanceOf[Http2.ServerConnection], frame, decoder)
 
@@ -1146,8 +1151,9 @@ object Http2:
     // calling (per-stream) fiber at window exhaustion.
     def sendData(streamId: Int, payload: Bytes, endStream: Boolean): Unit =
       val streamWindow = streamWindows.getOrElseUpdate(streamId, FlowWindow(peerInitialWindow()))
+
       sendFlowControlled
-        (streamId, payload, endStream, connWindow, streamWindow, peerMaxFrame(), send)
+        ( streamId, payload, endStream, connWindow, streamWindow, peerMaxFrame(), send )
 
     // Send a trailing HEADERS block (always end-stream) on `streamId` — the
     // response trailers, e.g. gRPC's `grpc-status`. A response with trailers must
@@ -1164,4 +1170,3 @@ object Http2:
       reader.cancel()
       writer.cancel()
       duplexRef.asInstanceOf[Duplex^].close()
-

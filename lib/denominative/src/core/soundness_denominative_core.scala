@@ -51,10 +51,12 @@ extension (ordinal: denominative.Ordinal)
 extension [form](ordinal: prepositional.`in`[denominative.Ordinal, form])
   inline infix def thru (right: prepositional.`in`[denominative.Ordinal, form])
   :   prepositional.`in`[denominative.Interval, form] =
+
     denominative.thru(ordinal)(right)
 
   inline infix def till (right: prepositional.`in`[denominative.Ordinal, form])
   :   prepositional.`in`[denominative.Interval, form] =
+
     denominative.till(ordinal)(right)
 
 // `tabulate` is overloaded like `each`, so it is re-declared here for the same reason as
@@ -63,17 +65,20 @@ extension [countable: denominative.Countable](value: countable)
   inline def tabulate[element]
     ( inline lambda: prepositional.`in`[denominative.Ordinal, value.type] => element )
   :   Sequence[element] =
+
     denominative.tabulate(value)(lambda)
 
 extension (interval: denominative.Interval)
   inline def tabulate[element](inline lambda: denominative.Ordinal => element)
   :   Sequence[element] =
+
     denominative.tabulate(interval)(lambda)
 
 extension [form](range: prepositional.`in`[denominative.Interval, form])
   inline def tabulate[element]
     ( inline lambda: prepositional.`in`[denominative.Ordinal, form] => element )
   :   Sequence[element] =
+
     denominative.tabulate(range)(lambda)
 
 package dysasymptotics:

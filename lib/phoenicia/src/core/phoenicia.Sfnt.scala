@@ -47,7 +47,6 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-
 object Sfnt:
   // Which specialisation a font is, is a property of its tables: a `CFF ` table means the
   // outlines are PostScript, and the font is OpenType. Reading the directory is the only way
@@ -224,7 +223,7 @@ trait Sfnt:
         tableTag match
           case Sfnt.Table.Otf(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
           case Sfnt.Table.Ttf(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
-          case _           => None
+          case _                   => None
 
   def head: HeadTable raises Font.Error =
     tables(Sfnt.Table.Ttf.Head).let: ref =>

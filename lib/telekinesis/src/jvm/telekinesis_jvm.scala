@@ -42,7 +42,6 @@ import anticipation.*
 import coaxial.*
 import coaxial.socketBackends.javaBaseSockets
 import contingency.*
-import telekinesis.*
 import distillate.*
 import gigantism.*
 import gossamer.*
@@ -50,6 +49,7 @@ import parasite.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
@@ -172,7 +172,7 @@ package httpBackends:
   // responses do not stream yet, and `101` upgrades are not supported (the
   // upgraded stream would never end).
   given soundnessHttp: (online: Online)
-  =>  (backend: Socket.Backend, options: Every[Socket.Option.Tcp], buffering: Buffering, tls: Tls)
+  =>  ( backend: Socket.Backend, options: Every[Socket.Option.Tcp], buffering: Buffering, tls: Tls )
   =>  Http.Backend = new Http.Backend:
 
     def request
@@ -286,19 +286,19 @@ private def plaintextExchange
     // explicit — a framed body, or none at all — and neither side asked to
     // close: an unframed body was delimited by the server closing.
     val framed: Boolean =
-      response.body == Http.Body.Empty
-      || response.textHeaders.exists: header =>
-           val key = header.key.lower
+      response.body == Http.Body.Empty ||
+        response.textHeaders.exists: header =>
+          val key = header.key.lower
 
-           key == t"content-length"
-           || (key == t"transfer-encoding" && header.value.lower.contains(t"chunked"))
+          key == t"content-length" ||
+            (key == t"transfer-encoding" && header.value.lower.contains(t"chunked"))
 
     val serverClose: Boolean = response.textHeaders.exists: header =>
       header.key.lower == t"connection" && header.value.lower.contains(t"close")
 
     val reusable: Boolean =
-      framed && !serverClose && response.version == 1.1
-      && !headers.exists(_.key.lower == t"connection")
+      framed && !serverClose && response.version == 1.1 &&
+        !headers.exists(_.key.lower == t"connection")
 
     if reusable then surrender(duplex) else duplex.close()
 
@@ -308,18 +308,18 @@ private def plaintextExchange
     val duplex = connect()
 
     try attempt(duplex) catch
-      case error: Http.Response.Error => duplex.close(); abort(Connect.Error(Unknown))
+      case error: Http.Response.Error    => duplex.close(); abort(Connect.Error(Unknown))
       case error: Truncation.Error       => duplex.close(); abort(Connect.Error(Unknown))
-      case error: ji.IOException    => duplex.close(); abort(Connect.Error(Unknown))
+      case error: ji.IOException         => duplex.close(); abort(Connect.Error(Unknown))
 
   borrow() match
     case null => fresh()
 
     case duplex: Duplex =>
       try attempt(duplex) catch
-        case error: Http.Response.Error => duplex.close(); fresh()
+        case error: Http.Response.Error    => duplex.close(); fresh()
         case error: Truncation.Error       => duplex.close(); fresh()
-        case error: ji.IOException    => duplex.close(); fresh()
+        case error: ji.IOException         => duplex.close(); fresh()
 
 // The TLS exchange: ALPN offers `h2` then `http/1.1` during the handshake, and
 // the peer's selection selects the driver — HTTP/2 framing (the `Http2`
@@ -369,8 +369,8 @@ private def httpsExchange
             finally connection.close()
 
       catch
-        case error: Http2.Error  => abort(Connect.Error(Unknown))
-        case error: Async.Error  => abort(Connect.Error(Unknown))
+        case error: Http2.Error      => abort(Connect.Error(Unknown))
+        case error: Async.Error      => abort(Connect.Error(Unknown))
         case error: Truncation.Error => abort(Connect.Error(Unknown))
 
     case _ =>
@@ -410,9 +410,9 @@ private def sequentialFetch(duplex: Duplex, request: Http.Request)
     repackage(response, unsafely(response.body.stream.memoize))
 
   catch
-    case error: Http.Response.Error => abort(Connect.Error(Unknown))
+    case error: Http.Response.Error    => abort(Connect.Error(Unknown))
     case error: Truncation.Error       => abort(Connect.Error(Unknown))
-    case error: ji.IOException    => abort(Connect.Error(Unknown))
+    case error: ji.IOException         => abort(Connect.Error(Unknown))
 
 // A request is transmitted over a raw socket as its HTTP/1.1 wire form.
 given requestTransmissible: Http.Request is Transmissible = Http.Request.serialize(_)
@@ -434,6 +434,7 @@ given domainSocketHttpClient: Tactic[Truncation.Error] => Http.Client onto Domai
 
     def request(request: Http.Request, socket: DomainSocket)(using Http.Event is Loggable)
     :   Http.Response =
+
       unsafely:
         // Typed binding: `transmit` and `parse` are both overloaded (lazy-list and
         // endpoint forms), so the expected type picks the endpoint pair.

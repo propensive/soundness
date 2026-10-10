@@ -32,11 +32,9 @@
                                                                                                   */
 package stratiform
 
-import scala.collection.immutable.Vector
-
 import scala.caps
-
 import scala.collection.Factory
+import scala.collection.immutable.Vector
 import scala.compiletime.*
 
 import adversaria.*
@@ -98,7 +96,7 @@ trait Tel2 extends Tel3:
   given telViewOpenable: [source]
   =>  ( readable: (source is Readable to Tel)^,
         mutationError: Tactic[Mutation.Error] )
-  =>  (Tel.ViewOpenable[source]^{readable, mutationError}) =
+  =>  ( Tel.ViewOpenable[source]^{readable, mutationError} ) =
     Tel.ViewOpenable[source]()
 
   // `tel"…"` interpolator: parses at compile time and substitutes typed
@@ -197,8 +195,8 @@ trait Tel2 extends Tel3:
   // `aggregableParsed` wins whenever the value has a `Tel.Parsable`; when it
   // does not (all pre-`Parsable` code), this resolves exactly as before.
   given aggregableIn: [value: distillate.Decodable in Tel]
-  =>  (tactic: Tactic[Tel.Error], tracking: zephyrine.PositionTracking)
-  =>  (((value in Tel) is Aggregable by Data)^{tactic}) =
+  =>  ( tactic: Tactic[Tel.Error], tracking: zephyrine.PositionTracking )
+  =>  ( ((value in Tel) is Aggregable by Data)^{tactic} ) =
     source => Tel.parseTracking(Tel.concatenate(source)).as[value].asInstanceOf[value in Tel]
 
   object ParsableDerivation extends Derivable[Tel.Field]:
@@ -227,7 +225,7 @@ trait Tel2 extends Tel3:
                   default[Optional[field]]: Any )
           },
           values => Tel.Parsable.assemble(reflection, values))
-          ( using infer[Foci[Tel.Focus]], infer[Tactic[Tel.Error]] )
+          (using infer[Foci[Tel.Focus]], infer[Tactic[Tel.Error]])
 
     inline def disjunction[derivation: SumReflection]: derivation is Tel.Field =
       // A sum's wire form is a single child compound keyed by the variant's
@@ -258,7 +256,7 @@ trait Tel2 extends Tel3:
 
       // `spot` stops at the first unready slot rather than scanning them all, and its index is
       // confined to `slots`, so the read needs no bounds check.
-      val failed = active && slots.spot(slot => !slots(slot).ready).present
+      val failed = active && slots.spot{ slot => !slots(slot).ready }.present
       var slot = 0
 
       if failed then null.asInstanceOf[derivation]
@@ -325,8 +323,7 @@ trait Tel2 extends Tel3:
             // §20.2 step 5c: an inline atom plus a same-keyword
             // child fills a non-repeatable member twice (E308).
             // The atom wins — atoms precede children.
-            if match0.present
-            then raise(Tel.Error(Tel.Error.Reason.NonRepeatableTooMany))
+            if match0.present then raise(Tel.Error(Tel.Error.Reason.NonRepeatableTooMany))
 
             ctx.decoded:
               Tel.make:
@@ -364,8 +361,8 @@ trait Tel2 extends Tel3:
               ( renames(label).or(Tel.camelToKebab(label.s)),
                 context.nature,
                 context.repeatable,
-                required = context.nature != Tel.Nature.Flag
-                           && !(context.optional || default[Optional[field]].present) )
+                required = context.nature != Tel.Nature.Flag &&
+                  !(context.optional || default[Optional[field]].present) )
 
       // The object `Morphology` is built from the field decoders' own shapes (a single
       // inlined `contexts` traversal — kept here, not factored out, so it does not
@@ -417,7 +414,7 @@ trait Tel2 extends Tel3:
                     if !active then
                       Venture:
                         decodeField[field]
-                          (ctx, telVal, keyword, positional, default[Optional[field]])
+                          ( ctx, telVal, keyword, positional, default[Optional[field]] )
                     else
                       // Tag every error registered while decoding this field with its
                       // keyword path, so that under a `validate[Tel.Focus]` boundary the
@@ -431,7 +428,7 @@ trait Tel2 extends Tel3:
 
                         val value: field =
                           decodeField[field]
-                            (ctx, telVal, keyword, positional, default[Optional[field]])
+                            ( ctx, telVal, keyword, positional, default[Optional[field]] )
 
                         if foci.length > before then Venture.failed else Venture(value)
 
@@ -457,8 +454,8 @@ trait Tel2 extends Tel3:
       // lookups, per occurrence) — jacinta's map hoist.
       val labels: Map[Text, Text] =
 
-          variantLabels.map: label => Tel.camelToKebab(label.s) -> label
-          . to[Map]
+        variantLabels.map: label => Tel.camelToKebab(label.s) -> label
+        . to[Map]
 
       Tel.Decodable(() => Morphology.Any):
         telVal =>
@@ -481,6 +478,7 @@ trait Tel2 extends Tel3:
                   // an anchored derivation then fails capture checking (#1972).
                   delegate(variantKeyword): [variant <: derivation] =>
                     ctx => (ctx.decoded(variant): derivation)
+
                 . or:
                     if infer[Foci[Tel.Focus]].active
                     then raise(Tel.Error(Tel.Error.Reason.Absent)) yet null
@@ -503,9 +501,9 @@ trait Tel2 extends Tel3:
             // See `shape` above: not `to[List]`, because inline re-elaboration freshens
             // the array.
 
-              contexts[derivation](): [field] => context => (label, context.shape())
-              . readable.toList
-              . to(List)
+            contexts[derivation](): [field] => context => (label, context.shape())
+            . readable.toList
+            . to(List)
 
           Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
 
@@ -531,8 +529,7 @@ trait Tel2 extends Tel3:
                 // (TEL's representation of a repeated field — see `#1291`).
                 case d: Tel.Document =>
                   d.children.each: child =>
-                    child.compounds.each: compound =>
-                      compounds += compound.copy(keyword = keyword)
+                    child.compounds.each: compound => compounds += compound.copy(keyword = keyword)
 
           Tel.compound(t"", Array.empty, Array.from(compounds))
 
@@ -676,18 +673,15 @@ trait Tel2 extends Tel3:
 
   given intDecodable: (tactic: Tactic[Tel.Error]) => ((Int is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Whole, Tel.Nature.Scalar): tel =>
-      primitiveFault(tel, t"Int", 0): atom =>
-        safely(atom.as[Int])
+      primitiveFault(tel, t"Int", 0): atom => safely(atom.as[Int])
 
   given longDecodable: (tactic: Tactic[Tel.Error]) => ((Long is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Whole, Tel.Nature.Scalar): tel =>
-      primitiveFault(tel, t"Long", 0L): atom =>
-        safely(atom.as[Long])
+      primitiveFault(tel, t"Long", 0L): atom => safely(atom.as[Long])
 
   given doubleDecodable: (tactic: Tactic[Tel.Error]) => ((Double is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Real, Tel.Nature.Scalar): tel =>
-      primitiveFault(tel, t"Double", 0.0): atom =>
-        safely(atom.as[Double])
+      primitiveFault(tel, t"Double", 0.0): atom => safely(atom.as[Double])
 
   // A Scala `Boolean` is a value, not a TEL flag (§20 flags are keyword
   // presence alone), so it reads and writes the explicit `true`/`false` atom
@@ -702,7 +696,7 @@ trait Tel2 extends Tel3:
           case "false" => false
           case _       => Unset
 
-  given telDecodable: Tel is Tel.Decodable = Tel.Decodable(() => Morphology.Any)(identity(_))
+  given telDecodable: Tel is Tel.Decodable = Tel.Decodable{ () => Morphology.Any }(identity(_))
 
   // A schema from its TEL document (the §20.5 schema-of-schemas surface), as `tel.as[Tels]`.
   // Here rather than in `Tels`'s companion so that it accompanies `decodable`, the derived
@@ -733,7 +727,7 @@ trait Tel2 extends Tel3:
   given booleanEncodable: Boolean is Tel.Encodable =
     Tel.Encodable(() => Morphology.Bool, Tel.Nature.Scalar): b => Tel.scalar(b.toString.tt)
 
-  given telEncodable: Tel is Tel.Encodable = Tel.Encodable(() => Morphology.Any)(identity(_))
+  given telEncodable: Tel is Tel.Encodable = Tel.Encodable{ () => Morphology.Any }(identity(_))
 
   // Optional / List support — repeatable scalar fields produce multiple
   // compounds with the same keyword; we return a Document-rooted Tel
@@ -764,7 +758,7 @@ trait Tel2 extends Tel3:
         fault:   distillate.Decodable.Fault in Tel,
         tactic:  Tactic[Tel.Error] )
   =>  ( consume decodable0: => (inner is Tel.Decodable)^ )
-  =>  ((value is Tel.Decodable)^) =
+  =>  ( (value is Tel.Decodable)^ ) =
     // Captures the tactic for the lenient-faults path, and the by-name inner decoder, which
     // cannot be named in a capture set: hence a fresh capture rather than `^{tactic}`.
     new Tel.Decodable:
@@ -809,7 +803,7 @@ trait Tel2 extends Tel3:
   =>  ( factory:   Factory[element, collection[element]],
         consume element0:  => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  ((collection[element] is Tel.Decodable)^) =
+  =>  ( (collection[element] is Tel.Decodable)^ ) =
     RepeatedDecodable[collection[element], element](element0, () => factory.newBuilder)
 
   // Alias counterparts: the opaque prelude collections do not conform to `Iterable`, so each
@@ -817,21 +811,21 @@ trait Tel2 extends Tel3:
   given listDecodable: [list <: List, element]
   =>  ( consume element0: => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  ((list[element] is Tel.Decodable)^) =
+  =>  ( (list[element] is Tel.Decodable)^ ) =
     RepeatedDecodable[list[element], element]
       ( element0, () => scala.collection.immutable.List.newBuilder[element] )
 
   given setDecodable: [set <: Set, element]
   =>  ( consume element0: => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  ((set[element] is Tel.Decodable)^) =
+  =>  ( (set[element] is Tel.Decodable)^ ) =
     RepeatedDecodable[set[element], element]
       ( element0, () => scala.collection.immutable.Set.newBuilder[element] )
 
   given seriesDecodable: [sequence <: Sequence, element]
   =>  ( consume element0: => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  ((sequence[element] is Tel.Decodable)^) =
+  =>  ( (sequence[element] is Tel.Decodable)^ ) =
     RepeatedDecodable[sequence[element], element](element0, () => Vector.newBuilder[element])
 
   // A `Map` encodes as a sequence of `entries` compounds, each carrying a `key`
@@ -852,7 +846,7 @@ trait Tel2 extends Tel3:
   =>  ( keyCodec:   (key is Tel.Decodable)^,
         valueCodec: (value is Tel.Decodable)^,
         tactic:     Tactic[Tel.Error] )
-  =>  ((Map[key, value] is Tel.Decodable)^{keyCodec, valueCodec, tactic}) =
+  =>  ( (Map[key, value] is Tel.Decodable)^{keyCodec, valueCodec, tactic} ) =
     // The shape is built eagerly: the codecs are strict parameters, so no recursive knot needs
     // tying, and a thunk over a plain value captures neither of them.
     val shape: Morphology = Morphology.Dict(keyCodec.shape(), valueCodec.shape())

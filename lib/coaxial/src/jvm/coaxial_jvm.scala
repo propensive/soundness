@@ -32,14 +32,14 @@
                                                                                                   */
 package coaxial
 
-import scala.caps
-
 import java.io as ji
 import java.net as jn
 import java.nio.ByteBuffer
 import java.nio.channels as jnc
 import java.nio.file as jnf
 import java.util as ju
+
+import scala.caps
 
 import anticipation.*
 import contingency.*
@@ -54,12 +54,13 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-// The `java.net`/`java.nio.channels` implementation of `Socket.Backend`, split out of `coaxial.core`
-// so the platform-neutral socket API can cross-compile; other platforms (e.g. WASI) supply their
-// own backend. Each handle type is a small ADT that preserves the exact Java representation each
-// role needs — a TCP server binds a stream `ServerSocket` (which honours `setSoTimeout`), a
-// Unix-domain server a `ServerSocketChannel`; a request/response exchange is a blocking `Socket`
-// for TCP but a non-blocking `SocketChannel` for Unix-domain — so no per-role behaviour is lost.
+// The `java.net`/`java.nio.channels` implementation of `Socket.Backend`, split out of
+// `coaxial.core` so the platform-neutral socket API can cross-compile; other platforms (e.g. WASI)
+// supply their own backend. Each handle type is a small ADT that preserves the exact Java
+// representation each role needs — a TCP server binds a stream `ServerSocket` (which honours
+// `setSoTimeout`), a Unix-domain server a `ServerSocketChannel`; a request/response exchange is a
+// blocking `Socket` for TCP but a non-blocking `SocketChannel` for Unix-domain — so no per-role
+// behaviour is lost.
 
 // A bound, listening stream socket.
 private enum ServerBinding:
@@ -401,14 +402,17 @@ package socketBackends:
         input.drain: region =>
           range =>
             val interval: Interval = range
+
             out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
                 interval.size)
+
             out.flush()
 
       case ClientExchange.Domain(channel) =>
         input.drain: region =>
           range =>
             val interval: Interval = range
+
             channel.write(ByteBuffer.wrap(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
                 interval.start.n0, interval.size))
 
@@ -640,8 +644,10 @@ private[coaxial] def streamsDuplex
       data.drain: region =>
         range =>
           val interval: Interval = range
+
           out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
               interval.size)
+
           out.flush()
 
     def close(): Unit = shutdown()

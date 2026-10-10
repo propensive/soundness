@@ -32,9 +32,6 @@
                                                                                                   */
 package bitumen
 
-import rudiments.*
-
-
 import scala.caps
 
 import anticipation.*
@@ -45,13 +42,14 @@ import fulminate.*
 import gossamer.*
 import hieroglyph.*, codepages.asciiCodepage
 import hypotenuse.*
-import prepositional.*
-import serpentine.*
 import pneumatic.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
-import symbolism.*
 
 enum LongNameFormat:
   case Pax
@@ -60,8 +58,7 @@ enum LongNameFormat:
 object Tarfile:
   val zeroBlock: Data = Array.fill[Byte](512)(0)
 
-  given streamable: Tarfile is Streamable by Data over Credit = tarfile =>
-    Stream(tarfile.blocks)
+  given streamable: Tarfile is Streamable by Data over Credit = tarfile => Stream(tarfile.blocks)
 
   // The endpoint form: entries parse lazily straight off a pull endpoint (one
   // consumed entry advances the cursor past it), absorbing arbitrary chunk
@@ -343,8 +340,8 @@ object Tarfile:
         val name = Tar.Header.decodeNulText(header.name)
         val prefix = Tar.Header.decodeNulText(header.prefix)
         stripTrailingSlash(if prefix.nil then name else t"$prefix/$name")
-      . apply: text =>
-        stripTrailingSlash(text)
+
+      . apply: text => stripTrailingSlash(text)
 
   private def resolveLink
     ( header:        Tar.Header,
@@ -408,19 +405,15 @@ object Tarfile:
     val builder = scala.collection.immutable.List.newBuilder[(Text, Text)]
     if entry.entryName.in[Data].length > 100 then builder += ((t"path", entry.entryName))
 
-    entry.link.let: link =>
-      if link.in[Data].length > 100 then builder += ((t"linkpath", link))
+    entry.link.let: link => if link.in[Data].length > 100 then builder += ((t"linkpath", link))
 
     val (user, group) = userAndGroup(entry)
 
-    user.name.let: name =>
-      if name.in[Data].length > 32 then builder += ((t"uname", name))
+    user.name.let: name => if name.in[Data].length > 32 then builder += ((t"uname", name))
 
-    group.name.let: name =>
-      if name.in[Data].length > 32 then builder += ((t"gname", name))
+    group.name.let: name => if name.in[Data].length > 32 then builder += ((t"gname", name))
 
-    paxOf(entry).foreach: (k, v) =>
-      if !structuralPaxKeys.has(k) then builder += ((k, v))
+    paxOf(entry).foreach: (k, v) => if !structuralPaxKeys.has(k) then builder += ((k, v))
 
     builder.result().to(List)
 

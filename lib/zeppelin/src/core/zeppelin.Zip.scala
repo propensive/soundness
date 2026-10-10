@@ -33,30 +33,30 @@
 package zeppelin
 
 import java.io as ji
-import java.util.zip as juz
-
-import anticipation.*
-import contingency.*
-import distillate.*
-import galilei.*
-import gossamer.*
-import nomenclature.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import pneumatic.*
-import turbulence.*
-import zephyrine.*
-import vacuous.*
-import fulminate.*
-import scala.caps
 import java.nio as jn
 import java.nio.channels as jnc
 import java.nio.file as jnf
-import aperture.*
+import java.util.zip as juz
 
-import rudiments.sortingAlgorithms.timsort
+import scala.caps
+
+import anticipation.*
+import aperture.*
+import contingency.*
+import distillate.*
+import fulminate.*
+import galilei.*
+import gossamer.*
 import gossamer.collationComparable, gossamer.collations.codepointCollation
+import nomenclature.*
+import pneumatic.*
+import prepositional.*
+import rudiments.*
+import rudiments.sortingAlgorithms.timsort
+import serpentine.*
+import turbulence.*
+import vacuous.*
+import zephyrine.*
 
 object Zip:
   type Rules =
@@ -175,8 +175,8 @@ object Zip:
 
     // Construct an entry from raw bytes, compressing once per the contextual policy.
     def at[content: Streamable by Data over Credit,
-           instant: Abstractable across Instants to Long]
-      ( ref: Path on Zip, content: content, modified: instant )
+          instant: Abstractable across Instants to Long]
+      (ref: Path on Zip, content: content, modified: instant)
         ( using Compression )
     :   Entry =
 
@@ -266,7 +266,7 @@ object Zip:
      localSizes:         Boolean        = true ):
 
     // Whether a data descriptor follows the payload when the entry is written.
-    def streamed: Boolean = flags.lay(false)(flag => (flag & Zip.streamedFlag) != 0)
+    def streamed: Boolean = flags.lay(false): flag => (flag & Zip.streamedFlag) != 0
 
     // The decompressed content of the entry: a fresh stream per call, inflated
     // incrementally through the `Deflate` duct, so a payload of any size is read,

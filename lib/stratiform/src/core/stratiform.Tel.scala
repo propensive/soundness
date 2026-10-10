@@ -32,22 +32,22 @@
                                                                                                   */
 package stratiform
 
-
-import scala.collection.immutable.Vector
-
-import scala.caps
-
 import java.nio.charset.StandardCharsets
 
+import scala.caps
 import scala.collection.Factory
+import scala.collection.immutable.Vector
 import scala.compiletime.{erasedValue, summonInline}
 import scala.language.dynamics
 
 import anticipation.*
 import aperture.*
 import contingency.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import denominative.{Span, z}
 import distillate.*
+import fulminate.*
 import gossamer.*
 import parasite.*
 import prepositional.*
@@ -57,9 +57,6 @@ import turbulence.*
 import vacuous.*
 import wisteria.*
 import zephyrine.*
-import denominative.*
-import fulminate.*
-import denominative.dysasymptotics.linearSize
 
 // Presentation model from §17 of the TEL specification. The Scala AST is
 // structurally identical to the reference implementation's AST so that
@@ -95,7 +92,7 @@ object Tel extends Tel2:
   given telOpenable: [source]
   =>  ( readable: (source is Readable to Tel)^,
         writable: (source is Writable by Data)^ )
-  =>  (Tel.Openable[source]^{readable, writable}) =
+  =>  ( Tel.Openable[source]^{readable, writable} ) =
     Tel.Openable[source]()
 
   // The source `Position` type located by `tel.locate(pointer)` and carried on a
@@ -454,7 +451,7 @@ object Tel extends Tel2:
     // case class with a single parameter list — sums, method-local classes
     // and other shapes use `derived`.
     inline def staged[value]: value is Tel.Parsable =
-      ${ stratiform.internal.stagedParsable[value]('{ adversaria.relabelling[value, Tel] }) }
+      ${stratiform.internal.stagedParsable[value]('{adversaria.relabelling[value, Tel]})}
 
     def fromField[value](field0: (value is Tel.Parsing)^)
     :   ((value is Tel.Parsable)^{field0}) =
@@ -623,7 +620,7 @@ object Tel extends Tel2:
     // The wire keywords of a product's fields: `@name` renames applied
     // verbatim, camel→kebab otherwise — the same mapping as the derivations.
     def wireKeywords(names: Array[String]^{}, renames: Map[Text, Text]): Array[String]^{} =
-      names.remap { name => renames(name.tt).or(camelToKebab(name)).s }
+      names.remap: name => renames(name.tt).or(camelToKebab(name)).s
 
     // A required primitive field whose keyword never arrived: the primitives'
     // `absent()` semantics — raise and continue with the sentinel. It carries no
@@ -640,7 +637,8 @@ object Tel extends Tel2:
       then
         reader.fault(Tel.Error.Reason.NotScalar(reader.primaryText.or(t""), expected))
         sentinel
-      else reader.fault(Tel.Error.Reason.Absent) yet sentinel
+      else
+        reader.fault(Tel.Error.Reason.Absent) yet sentinel
 
     // Focus bookkeeping for one field read, compiled away when the ambient
     // `Foci` is the inert default — the same short-circuit as the derived
@@ -675,6 +673,7 @@ object Tel extends Tel2:
     inline def focusingUnlocated[result](foci: Foci[Tel.Focus], keyword: Text)
       ( inline block: => result )
     :   result =
+
       if foci.active then focus(using foci)(descend(prior, keyword))(block) else block
 
     // Linear keyword dispatch for the general step — an unpackable wire
@@ -682,7 +681,7 @@ object Tel extends Tel2:
     def keywordIndex(keys: Array[String]^{}, keyword: Text): Int =
       val name: String = keyword.s
 
-      keys.spot(index => keys(index) == name).lay(-1) { ordinal => ordinal.n0 }
+      keys.spot{ index => keys(index) == name }.lay(-1): ordinal => ordinal.n0
 
     // The repeatable-field hooks, looking through the `Field.Adapter` — for
     // staged parsers, which cannot name the private `Gathering` trait. A
@@ -744,8 +743,8 @@ object Tel extends Tel2:
               nature,
               repeatable,
               required =
-                nature != Tel.Nature.Flag
-                && !(optional || fallbacks.readUnchecked(index).asInstanceOf[Optional[Any]].present) )
+                nature != Tel.Nature.Flag &&
+                  !(optional || fallbacks.readUnchecked(index).asInstanceOf[Optional[Any]].present) )
 
         index += 1
 
@@ -768,7 +767,7 @@ object Tel extends Tel2:
         val atomList = assigned.readable(index)
         val slot = new scala.Array[Text](atomList.size)
 
-        atomList.each { atom => slot(ordinal.n0) = Positional.text(atom) }
+        atomList.each: atom => slot(ordinal.n0) = Positional.text(atom)
 
         result(index) = slot
         index += 1
@@ -838,8 +837,8 @@ object Tel extends Tel2:
               ( key.tt,
                 actual.nature,
                 actual.repeatable,
-                required = actual.nature != Tel.Nature.Flag
-                           && !(actual.optional || fallback.asInstanceOf[Optional[Any]].present) )
+                required = actual.nature != Tel.Nature.Flag &&
+                  !(actual.optional || fallback.asInstanceOf[Optional[Any]].present) )
 
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
@@ -852,7 +851,7 @@ object Tel extends Tel2:
           val named = keys
           val name: String = keyword.s
 
-          named.spot(index => named(index) == name).lay(-1):
+          named.spot{ index => named(index) == name }.lay(-1):
             ordinal => ordinal.n0
 
         // The value of a record field is its children, one level deeper than
@@ -1008,7 +1007,8 @@ object Tel extends Tel2:
                 focus(descend(prior, keys.readUnchecked(index).tt)):
                   val ventured = venture(entries.readUnchecked(index)(1).absent())
                   if ventured.ready then values(index) = ventured.vouch else failedSlots = true
-              else values(index) = entries.readUnchecked(index)(1).absent()
+              else
+                values(index) = entries.readUnchecked(index)(1).absent()
 
             index += 1
 
@@ -1221,10 +1221,11 @@ object Tel extends Tel2:
               if schema.selects.seek(_.name == name).present
               then abort(Tel.Error(Reason.ReferenceKindMismatch))
               else abort(Tel.Error(Reason.UnresolvedReference))
+
             . apply: scalarDef =>
               Tels.Scalar(scalarDef.validators, scalarDef.encoding, scalarDef.patterns)
-          . apply: record =>
-            Tels.Struct(record.members, record.validators)
+
+          . apply: record => Tels.Struct(record.members, record.validators)
 
         case other => other
 
@@ -1286,7 +1287,7 @@ object Tel extends Tel2:
           resolveType(f.fieldType, schema) match
             case _: Tels.Scalar => true
             case Tels.Flag      => true
-            case _         => false
+            case _              => false
 
         case s: Tels.SelectRef =>
           val selectDef = schema.selects.seek(_.name == s.reference).or:
@@ -1295,7 +1296,7 @@ object Tel extends Tel2:
           selectDef.variants.all: v =>
             resolveType(v.variantType, schema) match
               case Tels.Flag => true
-              case _    => false
+              case _         => false
 
         case _: Tels.Exclude => false
 
@@ -1307,12 +1308,12 @@ object Tel extends Tel2:
 
     // Effective polarity per §20: `required` unless declared `Loose`.
     private def requiredOf(member: Tels.Member): Boolean = member match
-      case f: Tels.Field => f.required != Tels.Polarity.Loose
+      case f: Tels.Field      => f.required != Tels.Polarity.Loose
       case s: Tels.SelectRef  => s.required != Tels.Polarity.Loose
       case _: Tels.Exclude    => false
 
     private def repeatableOf(member: Tels.Member): Boolean = member match
-      case f: Tels.Field => f.repeatable == Tels.Polarity.Loose
+      case f: Tels.Field      => f.repeatable == Tels.Polarity.Loose
       case s: Tels.SelectRef  => s.repeatable == Tels.Polarity.Loose
       case _: Tels.Exclude    => false
 
@@ -1323,7 +1324,7 @@ object Tel extends Tel2:
         case f: Tels.Field =>
           resolveType(f.fieldType, schema) match
             case Tels.Flag => true
-            case _    => false
+            case _         => false
 
         case s: Tels.SelectRef => atomAssignable(s, schema)
         case _: Tels.Exclude   => false
@@ -1332,7 +1333,7 @@ object Tel extends Tel2:
     :   Boolean raises Tel.Error =
 
       member match
-        case f: Tels.Field => f.keyword == text
+        case f: Tels.Field      => f.keyword == text
         case s: Tels.SelectRef  => selectDefinitionOf(s, schema).variants.exists(_.keyword == text)
         case _: Tels.Exclude    => false
 
@@ -1352,7 +1353,7 @@ object Tel extends Tel2:
       var i = 0
 
       def flatWidthOf(member: Tels.Member): Int = member match
-        case _: Tels.Field => 1
+        case _: Tels.Field      => 1
         case _: Tels.Exclude    => 0
 
         case s: Tels.SelectRef =>
@@ -1377,14 +1378,15 @@ object Tel extends Tel2:
             case _: Tels.Exclude => true
 
             case _ =>
-              !requiredOf(member)
-              && (!atomAssignable(member, schema)
-                  || (flagShaped(member, schema) && !keywordMatches(member, atomText, schema)))
+              !requiredOf(member) &&
+                (!atomAssignable(member, schema) ||
+                  (flagShaped(member, schema) && !keywordMatches(member, atomText, schema)))
 
           if skippable then
             flatPos += flatWidthOf(member)
             pos += 1
-          else scanning = false
+          else
+            scanning = false
 
         if pos >= parent.members.length then
           // §20.2 step 3b: more atoms than assignable member positions.
@@ -1490,7 +1492,7 @@ object Tel extends Tel2:
         // `supplementKeyPositions`) instead of the bare document root.
         focus({
           val base = prior.let(_.pointer).or(Telp.Root)
-          val indexed = occurrence.lay(base) { index => base.prepend(index.show) }
+          val indexed = occurrence.lay(base): index => base.prepend(index.show)
           Tel.Focus(indexed.prepend(compound.keyword))
         }):
           // An unrecognised keyword is skipped (`IgnoreErroneousNode`): record it and
@@ -1529,7 +1531,7 @@ object Tel extends Tel2:
       results ++= childElements.readable
 
       def flatWidth(member: Tels.Member): Int = member match
-        case _: Tels.Field => 1
+        case _: Tels.Field      => 1
         case _: Tels.Exclude    => 0
 
         case s: Tels.SelectRef =>
@@ -1575,17 +1577,14 @@ object Tel extends Tel2:
 
             // §20.2 step 5c; recovery reports the document invalid but
             // retains every occurrence.
-            if !repeatableOf(f) && fillCount > 1
-            then recoverNode(Reason.NonRepeatableTooMany)(())
+            if !repeatableOf(f) && fillCount > 1 then recoverNode(Reason.NonRepeatableTooMany)(())
 
           case s: Tels.SelectRef =>
             // §20.2 step 5b: defaults exist only on Scalar Fields, so an
             // absent required SelectRef is always E307.
-            if requiredOf(s) && fillCount == 0
-            then recoverNode(Reason.RequiredMemberAbsent)(())
+            if requiredOf(s) && fillCount == 0 then recoverNode(Reason.RequiredMemberAbsent)(())
 
-            if !repeatableOf(s) && fillCount > 1
-            then recoverNode(Reason.NonRepeatableTooMany)(())
+            if !repeatableOf(s) && fillCount > 1 then recoverNode(Reason.NonRepeatableTooMany)(())
 
           case _: Tels.Exclude => ()
 
@@ -1619,9 +1618,11 @@ object Tel extends Tel2:
 
             keyFlat.let: keyIdx =>
               var value: Optional[Text] = Unset
+
               node.children.readable.foreach:
                 case Tel.Element.Value(idx, _, text) => if idx == keyIdx && value.absent then value = text
                 case _                               => ()
+
               value
 
           case _ => Unset
@@ -1654,6 +1655,7 @@ object Tel extends Tel2:
 
         if repeatable then results.foreach: element =>
           val idx = indexOf(element)
+
           if idx >= flatStart && idx < flatStart + width then
             keyValueOf(element).let: keyValue =>
               if !seenKeys.add(keyValue) then
@@ -1882,6 +1884,23 @@ object Tel extends Tel2:
       case Value(text: Text)
       case Failure(message: Text)
 
+    object Bindings:
+      // No encoding name resolves: the configured-but-empty binding, under
+      // which every declared encoding is E313/B13.
+      val none: Bindings = _ => Unset
+
+      // The two codecs BinTEL §8.4 defines, which an implementation that
+      // supports acceptances binds by these names. Other schemas MAY use
+      // them too; compose with application codecs through `orElse`.
+      val builtins: Bindings = name => name.s match
+        case "base-256"         => base256
+        case "schema-signature" => schemaSignature
+        case _                  => Unset
+
+      extension (bindings: Bindings)
+        // The bindings resolving through `bindings` first, then `other`.
+        def orElse(other: Bindings): Bindings = name => bindings(name).or(other(name))
+
     // The resolution point for encoding names (§21.4-style callback):
     // `Unset` means the name is not recognised (E313 at validation, B13
     // at BinTEL decode). Distinct from having *no* binding configured —
@@ -1899,23 +1918,6 @@ object Tel extends Tel2:
 
       def apply(name: Text): Optional[Tel.Codec] =
         cache.getOrElseUpdate(name, bindings(name))
-
-    object Bindings:
-      // No encoding name resolves: the configured-but-empty binding, under
-      // which every declared encoding is E313/B13.
-      val none: Bindings = _ => Unset
-
-      // The two codecs BinTEL §8.4 defines, which an implementation that
-      // supports acceptances binds by these names. Other schemas MAY use
-      // them too; compose with application codecs through `orElse`.
-      val builtins: Bindings = name => name.s match
-        case "base-256"         => base256
-        case "schema-signature" => schemaSignature
-        case _                  => Unset
-
-      extension (bindings: Bindings)
-        // The bindings resolving through `bindings` first, then `other`.
-        def orElse(other: Bindings): Bindings = name => bindings(name).or(other(name))
 
     // BinTEL §8.4 `base-256`: the accepted texts are the BASE-256 strings
     // (including the empty string); `encode` is the BASE-256 decoder and
@@ -1960,7 +1962,7 @@ object Tel extends Tel2:
         else Unset
 
       count.let: n =>
-        val xor = data.readable.foldLeft(0) { (acc, byte) => acc ^ (byte & 0xff) }
+        val xor = data.readable.foldLeft(0): (acc, byte) => acc ^ (byte & 0xff)
         if xor == 0x79 then n else Unset
 
   trait Codec:
@@ -2014,6 +2016,7 @@ object Tel extends Tel2:
 
       val root: Tel.Element =
         Bintel.decode(body, Tels.Axiom.acceptance, Tel.Codec.Bindings.builtins)
+
       Acceptance(root)
 
     // Reads the BASE-256 text of a binary form, strictly: a character outside
@@ -2323,6 +2326,7 @@ object Tel extends Tel2:
       document.childCompounds.readable.toList.flatMap: compound =>
         val child = Tel.make(compound)
         keywords(child) + child.keyword
+
       . toSet
 
     // Whether serving a document under `component` would break it: a layer which excludes a
@@ -2593,32 +2597,7 @@ object Tel extends Tel2:
   enum LineEndings:
     case Lf, Crlf
 
-  // The pragma's positional parameters (§8): a schema reference, layer
-  // selections in the schema's declaration order, a BASE-256 schema
-  // signature, and a sigil — each optional, classified by form.
-  case class Pragma
-    ( version:   (Int, Int),
-      reference: Optional[Pragma.Reference],
-      layers:    List[Text],
-      signature: Optional[Text],
-      sigil:     Optional[Char] )
-
   object Pragma:
-    // A LIRA schema reference (§8.1): `domain/name[:selector]`, where a
-    // selector names a published release by version or tag and a bare
-    // reference is a local-only development handle.
-    case class Reference(domain: Text, name: Text, selector: Optional[Reference.Selector]):
-      def text: Text = t"$domain/$name${selector.lay(t"")(s => t":${s.text}")}"
-
-      // Whether this is the built-in `tels` meta-schema's coordinate,
-      // with or without its version pin.
-      def isTels: Boolean = is(Reference.tels)
-
-      // Whether this names the same module as `other` — the same domain and
-      // module name — with or without a selector. A built-in schema is
-      // recognised by module, and its pin is checked separately.
-      def is(other: Reference): Boolean = domain == other.domain && name == other.name
-
     object Reference:
       enum Selector:
         case Version(major: Int, minor: Int, patch: Int)
@@ -2655,15 +2634,15 @@ object Tel extends Tel2:
             l.nonEmpty && l.forall { ch => ch.isLetterOrDigit && ch <= 'z' || ch == '-' }
               && !l.startsWith("-") && !l.endsWith("-")
 
-          domain.nonEmpty && domain.split("\\.", -1).nn.forall { l => label(l.nn) }
+          domain.nonEmpty && domain.split("\\.", -1).nn.forall: l => label(l.nn)
 
         def nameValid(name: String): Boolean =
           def kebab(segment: String): Boolean =
-            segment.nonEmpty && segment.charAt(0).isLower
-              && segment.forall { ch => ch.isLower || ch.isDigit || ch == '-' }
+            segment.nonEmpty && segment.charAt(0).isLower &&
+              segment.forall { ch => ch.isLower || ch.isDigit || ch == '-' }
               && !segment.endsWith("-") && !segment.contains("--")
 
-          name.nonEmpty && name.split("[/.]", -1).nn.forall { segment => kebab(segment.nn) }
+          name.nonEmpty && name.split("[/.]", -1).nn.forall: segment => kebab(segment.nn)
 
         def natural(part: String): Boolean =
           part.nonEmpty && part.forall(_.isDigit) && (part == "0" || !part.startsWith("0"))
@@ -2673,15 +2652,16 @@ object Tel extends Tel2:
           else if selector.charAt(0).isDigit then
             selector.split("\\.", -1).nn.map(_.nn) match
               case scala.Array(major, minor, patch)
-                   if natural(major) && natural(minor) && natural(patch) =>
+                if natural(major) && natural(minor) && natural(patch) =>
                 Selector.Version(major.toInt, minor.toInt, patch.toInt)
 
               case _ =>
                 Unset
-          else if selector.charAt(0).isLetter
-                  && selector.forall { ch => ch.isLetterOrDigit || ch == '-' || ch == '.' }
+          else if selector.charAt(0).isLetter &&
+            selector.forall { ch => ch.isLetterOrDigit || ch == '-' || ch == '.' }
           then Selector.Tag(selector.tt)
-          else Unset
+          else
+            Unset
 
         val colon = s.indexOf(':')
 
@@ -2697,6 +2677,31 @@ object Tel extends Tel2:
             else if colon < 0 then Reference(domain.tt, name.tt, Unset)
             else selectorOf(s.substring(colon + 1).nn).let: selector =>
               Reference(domain.tt, name.tt, selector)
+
+    // A LIRA schema reference (§8.1): `domain/name[:selector]`, where a
+    // selector names a published release by version or tag and a bare
+    // reference is a local-only development handle.
+    case class Reference(domain: Text, name: Text, selector: Optional[Reference.Selector]):
+      def text: Text = t"$domain/$name${selector.lay(t"")(s => t":${s.text}")}"
+
+      // Whether this is the built-in `tels` meta-schema's coordinate,
+      // with or without its version pin.
+      def isTels: Boolean = is(Reference.tels)
+
+      // Whether this names the same module as `other` — the same domain and
+      // module name — with or without a selector. A built-in schema is
+      // recognised by module, and its pin is checked separately.
+      def is(other: Reference): Boolean = domain == other.domain && name == other.name
+
+  // The pragma's positional parameters (§8): a schema reference, layer
+  // selections in the schema's declaration order, a BASE-256 schema
+  // signature, and a sigil — each optional, classified by form.
+  case class Pragma
+    ( version:   (Int, Int),
+      reference: Optional[Pragma.Reference],
+      layers:    List[Text],
+      signature: Optional[Text],
+      sigil:     Optional[Char] )
 
   // Document-level prologue carried alongside a `Tel` value when it is
   // loaded via `text.load[Tel]`. The `Document[Tel]` pair lets callers
@@ -2929,6 +2934,7 @@ object Tel extends Tel2:
   // never on the hot path.
   private[stratiform] def buildIndex(document: Tel.Document, records: Array[Int]^{})
   :   Array[Int]^{} =
+
     var cursor = 0
 
     def build
@@ -2954,12 +2960,12 @@ object Tel extends Tel2:
 
         childDescriptors(k) =
           build
-           ( children.readUnchecked(k),
-             childLine,
-             childColumn,
-             childLength,
-             childValueColumn,
-             childValueLength )
+            ( children.readUnchecked(k),
+              childLine,
+              childColumn,
+              childLength,
+              childValueColumn,
+              childValueLength )
 
         k += 1
 
@@ -3045,13 +3051,13 @@ object Tel extends Tel2:
 
         if keyMode || valueColumn == 0
         then Tel.Error.Position
-              ( line   = data.readUnchecked(offset + 1),
-                column = data.readUnchecked(offset + 2),
-                length = Optional(data.readUnchecked(offset + 3)) )
+          ( line   = data.readUnchecked(offset + 1),
+            column = data.readUnchecked(offset + 2),
+            length = Optional(data.readUnchecked(offset + 3)) )
         else Tel.Error.Position
-              ( line   = data.readUnchecked(offset + 1),
-                column = valueColumn,
-                length = Optional(data.readUnchecked(offset + 5)) )
+          ( line   = data.readUnchecked(offset + 1),
+            column = valueColumn,
+            length = Optional(data.readUnchecked(offset + 5)) )
     else
       val children = node.children.bind(_.compounds)
       val keyword = segments(denominative.Ordinal.zerary(i))
@@ -3123,8 +3129,8 @@ object Tel extends Tel2:
     // grammar admits same-line siblings): prefer the last whose keyword starts
     // at or before the column, and give the line's leading indentation to the
     // first of them rather than to the preceding subtree.
-    while found > 0 && lineOf(found) == line && lineOf(found - 1) == line
-          && columnOf(found) > column
+    while found > 0 && lineOf(found) == line && lineOf(found - 1) == line &&
+      columnOf(found) > column
     do found -= 1
 
     if found < 0 then
@@ -3134,13 +3140,13 @@ object Tel extends Tel2:
         val valueLength = data.readUnchecked(offset + 5)
 
         val position =
-          if valueColumn != 0 && line == keyLine
-              && column >= valueColumn && column < valueColumn + valueLength
+          if valueColumn != 0 && line == keyLine &&
+            column >= valueColumn && column < valueColumn + valueLength
           then Tel.Error.Position(keyLine, valueColumn, length = Optional(valueLength))
           else Tel.Error.Position
-                ( keyLine,
-                  data.readUnchecked(offset + 2),
-                  length = Optional(data.readUnchecked(offset + 3)) )
+            ( keyLine,
+              data.readUnchecked(offset + 2),
+              length = Optional(data.readUnchecked(offset + 3)) )
 
         Tel.Enclosure(Telp(List.from(path.reverse)), position)
     else
@@ -3148,8 +3154,7 @@ object Tel extends Tel2:
       enclosingIn(child, data, childOffset(found), line, column, child.keyword :: path)
 
   private[stratiform] def enclosingAt(tel: Tel, line: Int, column: Int): Optional[Tel.Enclosure] =
-    tel.positionIndex.let: index =>
-      enclosingIn(tel.subtree, index.ints, 0, line, column, scala.Nil)
+    tel.positionIndex.let: index => enclosingIn(tel.subtree, index.ints, 0, line, column, scala.Nil)
 
   // Concatenate the chunks of a `Chain[Data]` source into a single byte array.
   private[stratiform] def concatenate(source: Chain[Data]): Data =
@@ -3162,6 +3167,7 @@ object Tel extends Tel2:
     // and `rest.nil` forces only the second node.
     source match
       case data #:: rest if rest.nil => data
+
       case _ =>
         var acc    = scala.IArray.empty[Byte]
         // The stdlib view walks the chain cell-by-cell; its `head`/`tail`
@@ -3181,7 +3187,7 @@ object Tel extends Tel2:
   // recover those alongside the value. Per §6.1, single-document parsing
   // stops at the first document separator; content after it is ignored.
   given aggregable: (tactic: Tactic[Tel.Error], tracking: PositionTracking)
-  =>  ((Tel is Aggregable by Data)^{tactic}) =
+  =>  ( (Tel is Aggregable by Data)^{tactic} ) =
     source => parseTracking(concatenate(source))
 
   // Direct parsing: when the value knows how to consume compound entries
@@ -3308,8 +3314,7 @@ object Tel extends Tel2:
         parsed.or(raise(Tel.Error(Tel.Error.Reason.NotScalar(text, t"Long"))) yet 0L)
 
   given doubleParsable: Double is Tel.Parsable =
-    primitiveParsable(Morphology.Real, t"Double", 0.0): atom =>
-      safely(atom.as[Double])
+    primitiveParsable(Morphology.Real, t"Double", 0.0): atom => safely(atom.as[Double])
 
   given booleanParsable: Boolean is Tel.Parsable =
     new Tel.Parsable:
@@ -3388,14 +3393,14 @@ object Tel extends Tel2:
     source => parseAll(concatenate(source))
 
   given streamAggregable: (tactic: Tactic[Tel.Error])
-  =>  ((Chain[Tel] is Aggregable by Data)^{tactic}) =
+  =>  ( (Chain[Tel] is Aggregable by Data)^{tactic} ) =
     source => parseStream(concatenate(source))
 
   // `text.load[Tel]` for any Chain[Text] source: concatenates the
   // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
   // `Tel.Metadata` carrying the document's prologue.
   given loadable: (tactic: Tactic[Tel.Error], buffering: Buffering, tracking: PositionTracking)
-  =>  ((Tel is Loadable by Text)^{tactic}) = stream =>
+  =>  ( (Tel is Loadable by Text)^{tactic} ) = stream =>
     // The whole document materializes once (the parser is whole-input), but the
     // Text stream is transcoded to UTF-8 through the encoder duct and memoized
     // straight to bytes — the parser's own input type — rather than through an
@@ -3412,7 +3417,7 @@ object Tel extends Tel2:
   // The byte form, the parser's own input: the stream memoizes straight to the whole
   // document's bytes, with no transcoding.
   given loadableData: (tactic: Tactic[Tel.Error], buffering: Buffering, tracking: PositionTracking)
-  =>  ((Tel is Loadable by Data)^{tactic}) = stream =>
+  =>  ( (Tel is Loadable by Data)^{tactic} ) = stream =>
     val bytes: Data =
       stream.asInstanceOf[AnyRef].asInstanceOf[(zephyrine.Stream[Data] over zephyrine.Credit)^]
       . memoize
@@ -3430,9 +3435,9 @@ object Tel extends Tel2:
     tel.subtree match
       case doc: Tel.Document =>
         turbulence.Document
-         ( tel,
-           Tel.Metadata
-            (doc.interpreterDirective, doc.pragma, doc.lineEndings, doc.continuation) )
+          ( tel,
+            Tel.Metadata
+             ( doc.interpreterDirective, doc.pragma, doc.lineEndings, doc.continuation ) )
 
       case _ =>
         turbulence.Document(tel, Tel.Metadata(Unset, Unset, Tel.LineEndings.Lf))
@@ -3662,7 +3667,7 @@ object Tel extends Tel2:
 
   // `^{monitor}` only: `Probate` is not capture-tracked, as in xylophone's `streamable`.
   given streamable: (monitor: Monitor, probate: Probate)
-  =>  ((Tel is Streamable by Text over Credit)^{monitor}) =
+  =>  ( (Tel is Streamable by Text over Credit)^{monitor} ) =
     tel => zephyrine.Stream(emit(tel))
 
   // The document a `Tel` renders as: its own, or, for one rooted at a Compound, its children
@@ -3720,7 +3725,7 @@ object Tel extends Tel2:
   // `showable` by name, since it needs no context of its own.
   given inspectable: [tel <: Tel] => tel is Inspectable = tel =>
     val builder: StringBuilder = new StringBuilder()
-    showable.text(tel: Tel).each { char => builder.append(Inspectable.escape(char).s) }
+    showable.text(tel: Tel).each: char => builder.append(Inspectable.escape(char).s)
 
     ("tel\""+builder.toString+"\"").tt
 
@@ -3762,6 +3767,7 @@ object Tel extends Tel2:
 
     while b < out.length && !found do
       val cs = out(b).compounds
+
       cs.where(_.keyword == keyword).let: ordinal =>
         out(b) =
           out(b).copy(compounds = Array.frozen(cs.readable.updated(ordinal.n0, compound)))
@@ -3797,8 +3803,8 @@ object Tel extends Tel2:
         if index >= base && index < base + compounds.length
         then
           block.copy
-           ( compounds = Array.frozen
-              (compounds.readable.updated(index - base, transform(compounds.readUnchecked(index - base)))) )
+            ( compounds = Array.frozen
+               ( compounds.readable.updated(index - base, transform(compounds.readUnchecked(index - base))) ) )
         else
           block
 
@@ -4385,7 +4391,6 @@ object Tel extends Tel2:
     val keyCacheLow:  scala.Array[Long]^   = new scala.Array[Long](64)
     val keyCacheHigh: scala.Array[Long]^   = new scala.Array[Long](64)
 
-
     // ── Substrate ─────────────────────────────────────────────────────────────
 
     update def syncTo(): Unit =
@@ -4502,16 +4507,14 @@ object Tel extends Tel2:
         val v = Words.load(bytes, pos)
 
         val combined =
-          Words.matches(v, rA) |
-            Words.matches(v, rB) |
-            Words.matches(v, rC) |
-            Words.matches(v, rD)
+          Words.matches(v, rA) | Words.matches(v, rB) | Words.matches(v, rC) | Words.matches(v, rD)
 
         if combined != 0L then
           pos += (java.lang.Long.numberOfTrailingZeros(combined) >>> 3)
           return
 
         pos += 8
+
       while pos < bufEnd && bytes(pos) != a && bytes(pos) != b && bytes(pos) != c && bytes(pos) != d
       do pos += 1
 
@@ -5079,8 +5082,8 @@ object Tel extends Tel2:
       var stage = 0
 
       def kebab(t: String): Boolean =
-        t.nonEmpty && t.charAt(0).isLower
-          && t.forall { ch => ch.isLower || ch.isDigit || ch == '-' }
+        t.nonEmpty && t.charAt(0).isLower &&
+          t.forall { ch => ch.isLower || ch.isDigit || ch == '-' }
           && !t.endsWith("-") && !t.contains("--")
 
       var index = 2
@@ -5137,8 +5140,8 @@ object Tel extends Tel2:
             case _ =>
               bad(column, s.length)
 
-        else if (s.length == 33 || s.length >= 37 && (s.length - 37) % 2 == 0)
-                && s.forall(Base256.valid(_)) then
+        else if (s.length == 33 || s.length >= 37 && (s.length - 37) % 2 == 0) &&
+          s.forall(Base256.valid(_)) then
           // Schema signature: a valid BASE-256 palimpsest of one
           // component (33 characters) or `37 + 2·(n − 2)` for n ≥ 2.
           // Decodability is checked at resolution, not at parse time.
@@ -5164,7 +5167,8 @@ object Tel extends Tel2:
             pragmaSigil = c
             stage = 4
 
-        else bad(column, s.length)
+        else
+          bad(column, s.length)
 
         index += 1
 
@@ -5278,8 +5282,7 @@ object Tel extends Tel2:
         case struct: Tels.Struct => struct
 
         case Tels.Reference(name) =>
-          s.records.seek(_.name == name).let: rec =>
-            Tels.Struct(rec.members, rec.validators)
+          s.records.seek(_.name == name).let: rec => Tels.Struct(rec.members, rec.validators)
 
         case _ => Unset
 
@@ -5465,8 +5468,8 @@ object Tel extends Tel2:
         // corpus DIVERGENCES note).
         if head.blank && !head.eof then
           val blanks = claimLeadingBlanksFor(expected)
-          if blanks > 0 then
-            pushBlock(Tel.Block(takeComments(0), Unset, takeCompounds(0), blanks))
+
+          if blanks > 0 then pushBlock(Tel.Block(takeComments(0), Unset, takeCompounds(0), blanks))
 
         if head.eof || head.separator || head.indentLevels < expected then continue = false
         else
@@ -5564,6 +5567,7 @@ object Tel extends Tel2:
 
       // Compound loop.
       var keepLoop = true
+
       while keepLoop && !head.eof && !head.separator && !head.blank && head.indentLevels == indent
       do
         if tabulationHeader != null && isCommentBody() then
@@ -5575,7 +5579,8 @@ object Tel extends Tel2:
           prevLineWasBoundary = true
           hasConsumedNonBlankLine = true
           fillHead()
-        else if isCommentBody() || isTabulationBody() then keepLoop = false
+        else if isCommentBody() || isTabulationBody() then
+          keepLoop = false
         else
           val compoundLeadingSpaces = head.leadingSpaces
           val compoundLine = head.startLine
@@ -5836,8 +5841,7 @@ object Tel extends Tel2:
       found
 
     private update def isTabulationBody(): (Tactic[Tel.Error]^) ?->{this} Boolean = inHold:
-      if !more || peek != sigil then false
-      else lineHasTabulationMarker()
+      if !more || peek != sigil then false else lineHasTabulationMarker()
 
     // ── Comment parsing ──────────────────────────────────────────────────────
 
@@ -6236,11 +6240,11 @@ object Tel extends Tel2:
         // text a caller must fix (by matching it on a closing line).
         if !more
         then done = recoverAt
-                     ( Reason.UnclosedLiteral,
-                       openingLine,
-                       literalIndent + 1,
-                       delimiter.length )
-                     ( true )
+          ( Reason.UnclosedLiteral,
+            openingLine,
+            literalIndent + 1,
+            delimiter.length )
+          ( true )
         // Read a line. Inside the literal payload, line endings are not
         // subject to the document's LF/CRLF mode (per §15 the payload is
         // verbatim, with CRLF normalised to LF). One hold per payload line so
@@ -6278,6 +6282,7 @@ object Tel extends Tel2:
             // PayloadToEof: an unterminated final line ends the payload at EOF.
             if !more then
               sb.append(raw)
+
               recoverAt(Reason.UnclosedLiteral, openingLine, literalIndent + 1, delimiter.length)
                 ( true )
             else
@@ -6394,19 +6399,19 @@ object Tel extends Tel2:
                   // value is also a `NotScalar`, exactly as `_.toInt` throws —
                   // so it too captures its text.
                   directPrimaryOk =
-                    parseArenaLong(off, len)
-                    && directPrimaryLongVal >= Int.MinValue && directPrimaryLongVal <= Int.MaxValue
+                    parseArenaLong(off, len) &&
+                      directPrimaryLongVal >= Int.MinValue && directPrimaryLongVal <= Int.MaxValue
 
                   if !directPrimaryOk then
                     directPrimaryText = new String(atomArena, off, len, StandardCharsets.UTF_8)
 
                 case PrimaryBoolean =>
-                  if len == 4 && atomArena(off) == 't'.toByte && atomArena(off + 1) == 'r'.toByte
-                    && atomArena(off + 2) == 'u'.toByte && atomArena(off + 3) == 'e'.toByte
+                  if len == 4 && atomArena(off) == 't'.toByte && atomArena(off + 1) == 'r'.toByte &&
+                    atomArena(off + 2) == 'u'.toByte && atomArena(off + 3) == 'e'.toByte
                   then { directPrimaryBoolVal = true; directPrimaryOk = true }
-                  else if len == 5 && atomArena(off) == 'f'.toByte
-                    && atomArena(off + 1) == 'a'.toByte && atomArena(off + 2) == 'l'.toByte
-                    && atomArena(off + 3) == 's'.toByte && atomArena(off + 4) == 'e'.toByte
+                  else if len == 5 && atomArena(off) == 'f'.toByte &&
+                    atomArena(off + 1) == 'a'.toByte && atomArena(off + 2) == 'l'.toByte &&
+                    atomArena(off + 3) == 's'.toByte && atomArena(off + 4) == 'e'.toByte
                   then { directPrimaryBoolVal = false; directPrimaryOk = true }
                   else
                     directPrimaryOk = false
@@ -6414,7 +6419,8 @@ object Tel extends Tel2:
 
                 case _ =>
                   directPrimaryText = new String(atomArena, off, len, StandardCharsets.UTF_8)
-          else pushAtom(Tel.Atom.Inline.fromArena(atomArena, off, len, precedingSpaces))
+          else
+            pushAtom(Tel.Atom.Inline.fromArena(atomArena, off, len, precedingSpaces))
 
           atomOpen = false
 
@@ -6810,6 +6816,7 @@ object Tel extends Tel2:
     // region ends).
     private update def directKeywordAdvance(indent: Int, textual: Boolean)(using Tactic[Tel.Error])
     :   Boolean =
+
       var result = false
       var done = false
 
@@ -6975,8 +6982,7 @@ object Tel extends Tel2:
       extraAtom.let(pushAtom(_))
 
       val children: Array[Tel.Block]^{} =
-        if !tabulated && extraAtom.absent then parseChildren(indent)
-        else EmptyBlocks
+        if !tabulated && extraAtom.absent then parseChildren(indent) else EmptyBlocks
 
       // When children were not parsed (extra atom or tabulated row), a
       // following deeper line is over-indented — the enclosing AST loop
@@ -7071,7 +7077,7 @@ object Tel extends Tel2:
         case PrimaryInt =>
           parsedTextLong(value) match
             case parsed: Long
-                 if parsed >= Int.MinValue && parsed <= Int.MaxValue =>
+              if parsed >= Int.MinValue && parsed <= Int.MaxValue =>
               directPrimaryLongVal = parsed
               directPrimaryOk = true
 
@@ -7084,7 +7090,8 @@ object Tel extends Tel2:
           else if value == "false" then
             directPrimaryBoolVal = false
             directPrimaryOk = true
-          else directPrimaryText = value
+          else
+            directPrimaryText = value
 
         case _ =>
           directPrimaryText = value
@@ -7111,7 +7118,8 @@ object Tel extends Tel2:
         consumeLineEnding()
         compoundLineRemark = Unset
         true
-      else if peek != SP then false
+      else if peek != SP then
+        false
       else
         advance()
 
@@ -7183,6 +7191,7 @@ object Tel extends Tel2:
 
                     while ok && index < endPos do
                       val digit = bytes(index) - '0'.toByte
+
                       if digit < 0 || digit > 9 then ok = false else
                         value = value*10L + digit
                         index += 1
@@ -7192,8 +7201,8 @@ object Tel extends Tel2:
 
                       directPrimaryPresent = true
 
-                      if mode == PrimaryInt
-                        && (signed < Int.MinValue.toLong || signed > Int.MaxValue.toLong)
+                      if mode == PrimaryInt &&
+                        (signed < Int.MinValue.toLong || signed > Int.MaxValue.toLong)
                       then
                         // In `Long` range but not `Int`: `NotScalar`, with
                         // the atom's text for the error.
@@ -7211,18 +7220,18 @@ object Tel extends Tel2:
                   case PrimaryBoolean =>
                     directPrimaryPresent = true
 
-                    if len == 4 && bytes(startPos) == 't'.toByte
-                      && bytes(startPos + 1) == 'r'.toByte
-                      && bytes(startPos + 2) == 'u'.toByte
-                      && bytes(startPos + 3) == 'e'.toByte
+                    if len == 4 && bytes(startPos) == 't'.toByte &&
+                      bytes(startPos + 1) == 'r'.toByte &&
+                      bytes(startPos + 2) == 'u'.toByte &&
+                      bytes(startPos + 3) == 'e'.toByte
                     then
                       directPrimaryOk = true
                       directPrimaryBoolVal = true
-                    else if len == 5 && bytes(startPos) == 'f'.toByte
-                      && bytes(startPos + 1) == 'a'.toByte
-                      && bytes(startPos + 2) == 'l'.toByte
-                      && bytes(startPos + 3) == 's'.toByte
-                      && bytes(startPos + 4) == 'e'.toByte
+                    else if len == 5 && bytes(startPos) == 'f'.toByte &&
+                      bytes(startPos + 1) == 'a'.toByte &&
+                      bytes(startPos + 2) == 'l'.toByte &&
+                      bytes(startPos + 3) == 's'.toByte &&
+                      bytes(startPos + 4) == 'e'.toByte
                     then
                       directPrimaryOk = true
                       directPrimaryBoolVal = false
@@ -7278,12 +7287,14 @@ object Tel extends Tel2:
           consumeLineEnding()
           compoundLineRemark = Unset
           true
-        else false
+        else
+          false
 
       if !bare then
         val atomsStart = atomScratchIx
         parseCompoundLineRest(directEntryLine)
         atomScratchIx = atomsStart
+
       prevContentLeadingSpaces = spaces
       prevLineWasBoundary = false
       fillHead()
@@ -7314,7 +7325,8 @@ object Tel extends Tel2:
           consumeLineEnding()
           compoundLineRemark = Unset
           true
-        else false
+        else
+          false
 
       val atomsStart = atomScratchIx
       if !bare then parseCompoundLineRest(directEntryLine)
@@ -7433,9 +7445,9 @@ object Tel extends Tel2:
     // reaches of an implausibly long line saturates instead of pointing elsewhere.
     def spanAt(line: Int, column: Int, length: Int): Span =
       Span.line
-       ( (line - 1).max(0).min(0x7fffff).z,
-         (column - 1).max(0).min(0x7ffff).z,
-         length.max(0).min(0x7ffff) )
+        ( (line - 1).max(0).min(0x7fffff).z,
+          (column - 1).max(0).min(0x7ffff).z,
+          length.max(0).min(0x7ffff) )
 
     // 1-indexed source position attached to a `Tel.Error` raised by the
     // TEL parser, so a caller capturing the error can point at the
@@ -7594,8 +7606,10 @@ object Tel extends Tel2:
         case RequiredMemberAbsent     => m"a required member is absent and has no default"
         case NonRepeatableTooMany     => m"a non-repeatable member is filled more than once"
         case MembersNonContiguous     => m"compound children of the same member are not contiguous"
-        case ValidatorRejected(message)  =>
+
+        case ValidatorRejected(message) =>
           m"a scalar value or struct failed a named validator: $message"
+
         case FlagWithContent          => m"the Flag-typed compound has atoms or compound children"
         case EncodingRejected         => m"a scalar value was rejected by its encoding's codec"
         case EncodingUnresolved       => m"a scalar's declared encoding is not bound to a codec"
@@ -7807,27 +7821,32 @@ object Tel extends Tel2:
       transparent inline def update(pointer: Tel.Pointer, text: Text)
         ( using Tactic[Mutation.Error] )
       :   Unit =
+
         handle.mutate0(Mutation.Op.UpdateAtom(pointer, 0, text))
 
       transparent inline def update(pointer: Tel.Pointer, atomIndex: Int, text: Text)
         ( using Tactic[Mutation.Error] )
       :   Unit =
+
         handle.mutate0(Mutation.Op.UpdateAtom(pointer, atomIndex, text))
 
       // §22.2 `insert` — natural-position insertion under the parent at `pointer`.
       transparent inline def insert(pointer: Tel.Pointer, compound: Tel.Compound)
         ( using Tactic[Mutation.Error] )
       :   Unit =
+
         handle.mutate0(Mutation.Op.Insert(pointer, compound))
 
       transparent inline def insertBefore(pointer: Tel.Pointer, compound: Tel.Compound)
         ( using Tactic[Mutation.Error] )
       :   Unit =
+
         handle.mutate0(Mutation.Op.InsertBefore(pointer, compound))
 
       transparent inline def insertAfter(pointer: Tel.Pointer, compound: Tel.Compound)
         ( using Tactic[Mutation.Error] )
       :   Unit =
+
         handle.mutate0(Mutation.Op.InsertAfter(pointer, compound))
 
       // §22.2 `insert-into-block` — append a row to the `blockIndex`-th child
@@ -7836,6 +7855,7 @@ object Tel extends Tel2:
         ( pointer: Tel.Pointer, blockIndex: Int, compound: Tel.Compound )
         ( using Tactic[Mutation.Error] )
       :   Unit =
+
         handle.mutate0(Mutation.Op.InsertIntoBlock(pointer, blockIndex, compound))
 
       // §22.2 `delete` — named `remove` because galilei claims `delete`.
@@ -7845,11 +7865,13 @@ object Tel extends Tel2:
       transparent inline def replace(pointer: Tel.Pointer, compound: Tel.Compound)
         ( using Tactic[Mutation.Error] )
       :   Unit =
+
         handle.mutate0(Mutation.Op.Replace(pointer, compound))
 
       transparent inline def attachRemark(pointer: Tel.Pointer, text: Text)
         ( using Tactic[Mutation.Error] )
       :   Unit =
+
         handle.mutate0(Mutation.Op.AttachRemark(pointer, text))
 
       transparent inline def removeRemark(pointer: Tel.Pointer)(using Tactic[Mutation.Error]): Unit =
@@ -7858,17 +7880,20 @@ object Tel extends Tel2:
       transparent inline def setFlag(pointer: Tel.Pointer, keyword: Text)
         ( using Tactic[Mutation.Error] )
       :   Unit =
+
         handle.mutate0(Mutation.Op.SetFlag(pointer, keyword))
 
       transparent inline def unsetFlag(pointer: Tel.Pointer, keyword: Text)
         ( using Tactic[Mutation.Error] )
       :   Unit =
+
         handle.mutate0(Mutation.Op.UnsetFlag(pointer, keyword))
 
       transparent inline def reorderWithinGroup
         ( pointer: Tel.Pointer, keyword: Text, oldIndex: Int, newIndex: Int )
         ( using Tactic[Mutation.Error] )
       :   Unit =
+
         handle.mutate0(Mutation.Op.ReorderWithinGroup(pointer, keyword, oldIndex, newIndex))
 
       transparent inline def reorderGroups
@@ -7878,14 +7903,16 @@ object Tel extends Tel2:
           placement:    Mutation.Placement )
         ( using Tactic[Mutation.Error] )
       :   Unit =
+
         handle.mutate0(Mutation.Op.ReorderGroups(pointer, keyword, otherKeyword, placement))
 
       transparent inline def resizeTabulation
         ( pointer: Tel.Pointer, blockIndex: Int, plannedRows: Tel.Compound* )
         ( using Tactic[Mutation.Error] )
       :   Unit =
+
         handle.mutate0
-          (Mutation.Op.ResizeTabulation(pointer, blockIndex, Array.from(plannedRows)))
+          ( Mutation.Op.ResizeTabulation(pointer, blockIndex, Array.from(plannedRows)) )
 
   // The scoped handle to a TEL document under edit. Public `*0` members
   // rather than private: the grant-gated operations are transparent-inline
@@ -7899,10 +7926,10 @@ object Tel extends Tel2:
     def metadata0: Optional[Tel.Metadata] = current0.subtree match
       case document: Tel.Document =>
         Tel.Metadata
-         ( document.interpreterDirective,
-           document.pragma,
-           document.lineEndings,
-           document.continuation )
+          ( document.interpreterDirective,
+            document.pragma,
+            document.lineEndings,
+            document.continuation )
 
       case _ =>
         Unset
@@ -7968,8 +7995,7 @@ object Tel extends Tel2:
       ( block: ((Handle & Granting[grants])^) ?=> result )
     :   result =
 
-      if mode.atoms.has(Write)
-      then abort(Mutation.Error(Mutation.Error.Reason.WriteUnsupported))
+      if mode.atoms.has(Write) then abort(Mutation.Error(Mutation.Error.Reason.WriteUnsupported))
 
       val document = readable.read(value)
       block(using new Handle(document) with Granting[grants] {})

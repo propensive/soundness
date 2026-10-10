@@ -39,11 +39,10 @@ import scala.collection.mutable as scm
 import scala.math
 
 import anticipation.*
-import denominative.*
 import contingency.*
+import denominative.*
 import pneumatic.*
 import rudiments.*
-
 import Binary.*
 import Raster.Error.Reason
 
@@ -114,8 +113,7 @@ private[hallucination] object PngCodec:
                 u8(data, position + 10 + index*3)
 
           case "tRNS" =>
-            transparency = Array.tabulate(length): index =>
-              u8(data, position + 8 + index)
+            transparency = Array.tabulate(length): index => u8(data, position + 8 + index)
 
           case "IDAT" =>
             idat.addAll(Array.unsafeJvm(body), 0, length)
@@ -389,7 +387,6 @@ private[hallucination] object PngCodec:
   private def concatenate(stream: Chain[Data]): Data =
     val output = ji.ByteArrayOutputStream()
 
-    stream.each: data =>
-      output.write(Array.unsafeJvm(data))
+    stream.each: data => output.write(Array.unsafeJvm(data))
 
     Array.unsafeFrozen(output.toByteArray.nn)

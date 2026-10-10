@@ -34,12 +34,12 @@ package facsimile
 
 import anticipation.*
 import contingency.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import gossamer.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
-import denominative.*
-import denominative.dysasymptotics.linearSize
 
 private[facsimile] object Xref:
   enum Entry:
@@ -79,7 +79,6 @@ private[facsimile] object Xref:
       val sectionEntries = sectionTrailer(t"XRefStm").let(_.long).lay(classicEntries):
         hybrid =>
           val (hybridEntries, _) = stream(source, hybrid)
-
 
           hybridEntries + classicEntries.filter: (number, entry) =>
             entry != Entry.Free || !hybridEntries.defines(number)
@@ -122,8 +121,8 @@ private[facsimile] object Xref:
 
       while i < limit do
         // A candidate object header is `<digits> <digits> obj` at a token boundary.
-        if matches(chunk, i, t"obj") && (i + 3 >= chunk.length || !CosLexer.regular(chunk.readUnchecked(i + 3) & 0xff))
-           && (i == 0 || CosLexer.whitespace(chunk.readUnchecked(i - 1) & 0xff))
+        if matches(chunk, i, t"obj") && (i + 3 >= chunk.length || !CosLexer.regular(chunk.readUnchecked(i + 3) & 0xff)) &&
+          (i == 0 || CosLexer.whitespace(chunk.readUnchecked(i - 1) & 0xff))
         then
           objectHeader(chunk, i).let: (number, generation, start) =>
             val offset = base + start
@@ -172,9 +171,11 @@ private[facsimile] object Xref:
   private def parseInt(chunk: Data, start: Int, end: Int): Int =
     var value = 0
     var i = start
+
     while i < end do
       value = value*10 + (chunk.readUnchecked(i) & 0xff) - '0'
       i += 1
+
     value
 
   // The object numbers packed into an object stream, from the header table of its decoded
@@ -216,8 +217,7 @@ private[facsimile] object Xref:
       entries.reap:
         case (number, Entry.Direct(offset, generation)) if catalog(offset) => (number, generation)
 
-      . lay(Map[Text, Cos]()): (number, generation) =>
-          Map(t"Root" -> Cos.Ref(number, generation))
+      . lay(Map[Text, Cos]()): (number, generation) => Map(t"Root" -> Cos.Ref(number, generation))
 
   // The last `trailer` dictionary in the file, if any (classic-xref files have one even when
   // their cross-reference table is corrupt).
@@ -229,6 +229,7 @@ private[facsimile] object Xref:
     var i = window.length - marker.length
 
     while i >= 0 && !matches(window, i, marker) do i -= 1
+
     if i < 0 then Unset else
       safely:
         val lexer: CosLexer^ = CosLexer(new Scan(source, source.size - windowSize + i))

@@ -67,15 +67,15 @@ private[facsimile] object CharMap:
 
     def increment(text: Text, by: Int): Text =
       if text.nil then text
-      else (text.s.substring(0, text.length - 1).nn
-          + (text.s.charAt(text.length - 1) + by).toChar).tt
+      else (text.s.substring(0, text.length - 1).nn +
+        (text.s.charAt(text.length - 1) + by).toChar).tt
 
     while !done do
       parser.instruction().let: (operands, operator) =>
         operator.s match
           case "endcodespacerange" => operands match
             case low :: _ =>
-              low.chars.let { bytes => codeBytes = bytes.length.max(1) }
+              low.chars.let: bytes => codeBytes = bytes.length.max(1)
 
             case _ =>
               ()
@@ -83,8 +83,7 @@ private[facsimile] object CharMap:
           case "endbfchar" =>
             operands.batched(2).each:
               case List(source, destination) =>
-                code(source).let: code =>
-                  target(destination).let { text => entries += code -> text }
+                code(source).let: code => target(destination).let: text => entries += code -> text
 
               case _ =>
                 ()
@@ -97,7 +96,7 @@ private[facsimile] object CharMap:
                     if end - start >= 0 && end - start <= 65535 then destination match
                       case Cos.Sequence(elements) =>
                         elements.each: element =>
-                          target(element).let { text => entries += (start + ordinal.n0) -> text }
+                          target(element).let: text => entries += (start + ordinal.n0) -> text
 
                       case single =>
                         target(single).let: base =>

@@ -49,11 +49,11 @@ package encodables:
 package decodables:
   // Each captures the tactic it raises through.
   given instantJsonDecodable: (tactic: Tactic[Json.Error])
-  =>  (((Instant over Unix) is Json.Decodable)^{tactic}) =
+  =>  ( ((Instant over Unix) is Json.Decodable)^{tactic} ) =
     Json.Decodable(Morphology.Whole): json => Instant.of[Unix](json.root.long)
 
   given durationJsonDecodable: (tactic: Tactic[Json.Error])
-  =>  ((Duration is Json.Decodable)^{tactic}) =
+  =>  ( (Duration is Json.Decodable)^{tactic} ) =
     Json.Decodable(Morphology.Whole): json => Duration(json.root.long)
 
 package parsables:

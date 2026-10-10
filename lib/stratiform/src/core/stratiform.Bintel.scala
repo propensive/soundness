@@ -37,13 +37,13 @@ import java.nio.charset.StandardCharsets
 import scala.language.unsafeNulls
 
 import anticipation.*
-import gossamer.*
-import rudiments.*
 import contingency.*
 import denominative.*
 import distillate.*
 import fulminate.*
+import gossamer.*
 import prepositional.*
+import rudiments.*
 import ulysses.*
 import vacuous.*
 
@@ -116,8 +116,7 @@ object Bintel:
     ( using Tactic[Tel.Error], Tactic[Bintel.Error] )
   :   Data =
 
-    Array.collect[Byte](): out =>
-      encodeRoot(out, element, schema, codecs)
+    Array.collect[Byte](): out => encodeRoot(out, element, schema, codecs)
 
   // Is `signature` a syntactically-valid palimpsest? Recovers the cadence
   // byte from the XOR-fold of every byte and checks the byte length is
@@ -363,8 +362,7 @@ object Bintel:
 
     val (root, consumed) = decodeBody(body, schema, codecs, checkCanonical)
 
-    if consumed != body.length
-    then abort(Bintel.Error(Bintel.Error.Reason.DeclaredLengthMismatch))
+    if consumed != body.length then abort(Bintel.Error(Bintel.Error.Reason.DeclaredLengthMismatch))
 
     root
 
@@ -760,8 +758,7 @@ object Bintel:
         Tel.Compound(kidx.let(flat.readable(_)._1).or(t""), Array.empty, Unset, Array.empty)
 
   private def blocks(compounds: Array[Tel.Compound]^{}): Array[Tel.Block]^{} =
-    if compounds.nil then Array.empty
-    else Array(Tel.Block(Array.empty, Unset, compounds, 0))
+    if compounds.nil then Array.empty else Array(Tel.Block(Array.empty, Unset, compounds, 0))
 
   object Parsable:
     // The base of generated parsers: generated code is capture-erased, so
@@ -840,8 +837,8 @@ object Bintel:
       schema.records.seek(_.name == name).lay:
         schema.scalars.seek(_.name == name).lay(t): sc =>
           Tels.Scalar(sc.validators, sc.encoding, sc.patterns)
-      . apply: rec =>
-        Tels.Struct(rec.members, rec.validators)
+
+      . apply: rec => Tels.Struct(rec.members, rec.validators)
 
     case other => other
 
@@ -1043,6 +1040,7 @@ object Bintel:
 
         case NestingLimitExceeded =>
           m"the document nests Structs more deeply than the decoder's limit"
+
         case VarintError         => m"a variable-length integer in the stream is invalid"
 
         case BadMagic =>
@@ -1096,4 +1094,3 @@ object Bintel:
 
   case class Error(reason: Bintel.Error.Reason)(using Diagnostics)
   extends fulminate.Error(609, reason.number)(m"the BinTEL stream is invalid because $reason")
-

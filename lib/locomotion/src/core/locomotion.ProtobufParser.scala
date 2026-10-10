@@ -33,10 +33,8 @@
 package locomotion
 
 import scala.caps
-
-import scala.language.experimental.pureFunctions
-
 import scala.collection.mutable as scm
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
@@ -46,7 +44,6 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
-
 import Protobuf.Error.Reason
 
 @unexported
@@ -401,6 +398,7 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
   // Advances to the absolute offset `target` without buffering the bytes passed over.
   private update def skipTo(target: Long)(using Tactic[Protobuf.Error]): Unit =
     val count = target - position
+
     if count <= 0 then () else if count <= bufEnd - pos then pos += count.toInt else
       val start = offset
       syncTo()
@@ -537,6 +535,7 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
   // its reads report the truncation instead, at the same offset.
   update def directEnterField(code: Int)(using Tactic[Protobuf.Error])
   :   Int =
+
     val saved = directBoundary
 
     code match
@@ -571,6 +570,7 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
   // skipped, not buffered.
   update def directLeaveField(saved: Int)(using Tactic[Protobuf.Error])
   :   Unit =
+
     skipTo(boundary)
     boundary = if saved == Int.MaxValue then Unbounded else saved.toLong
     relimit()
@@ -656,7 +656,8 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
       fillToEnd()
       boundary = position + (bufEnd - pos)
       relimit()
-    else expect((boundary - position).toInt)
+    else
+      expect((boundary - position).toInt)
 
   // Moves to an absolute offset within the buffered window.
   private inline def seek(target: Long): Unit = pos = (target - base).toInt

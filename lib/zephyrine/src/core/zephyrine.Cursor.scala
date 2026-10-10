@@ -32,9 +32,8 @@
                                                                                                   */
 package zephyrine
 
-import scala.caps
-
 import scala.annotation.targetName
+import scala.caps
 
 import anticipation.Data
 import anticipation.Text
@@ -43,8 +42,8 @@ import denominative.*
 import fulminate.{Diagnostics, Hazard, m, panic}
 import prepositional.*
 import rudiments.*
-import vacuous.*
 import symbolism.*
+import vacuous.*
 
 object Cursor:
   opaque type Mark = Long
@@ -175,7 +174,7 @@ object Cursor:
     val cursor: Cursor[data, cap]^ =
       new Cursor[data, cap]
         // [closure-capture] loader closure capture would collapse cursor to read-only
-        ( caps.unsafe.unsafeAssumePure(() => load()),
+        ( caps.unsafe.unsafeAssumePure{ () => load() },
           Unset,
           DefaultCapacity,
           addressable0,
@@ -362,7 +361,7 @@ object Cursor:
       new Cursor[data, {}]
         // [closure-capture] iterator-capturing loader collapses cursor to read-only
         ( caps.unsafe.unsafeAssumePure
-            (() => if iterator.hasNext then iterator.next() else Unset),
+            ( () => if iterator.hasNext then iterator.next() else Unset ),
           Unset,
           DefaultCapacity,
           addressable0,
@@ -550,6 +549,7 @@ extends caps.Mutable:
   // [abstract-storage] abstract Storage current buffer var
   @caps.unsafe.untrackedCaptures
   private var buffer:    addressable.Storage = owned
+
   private var borrowed:  Boolean = false
 
   private var pos:       Int = 0
@@ -714,8 +714,7 @@ extends caps.Mutable:
             addressable.copyChunk(data, 0, buffer, writeEnd, len)
             writeEnd += len
 
-          . apply: storage =>
-              adopt(storage, 0, len)
+          . apply: storage => adopt(storage, 0, len)
 
           loaded = true
 
@@ -753,8 +752,7 @@ extends caps.Mutable:
       pos += 1
 
       columnNo =
-        if !lineation.track(operand) then columnNo.next
-        else { lineNo = lineNo.next; Prim }
+        if !lineation.track(operand) then columnNo.next else { lineNo = lineNo.next; Prim }
     else
       pos += 1
 
@@ -766,8 +764,7 @@ extends caps.Mutable:
 
     if lineationActive then
       columnNo =
-        if !lineation.track(operand) then columnNo.next
-        else { lineNo = lineNo.next; Prim }
+        if !lineation.track(operand) then columnNo.next else { lineNo = lineNo.next; Prim }
 
   // Bulk-advance primitives. Allow a caller (typically a parser running a
   // register-resident scan loop) to consume `n` characters without paying the
@@ -827,8 +824,7 @@ extends caps.Mutable:
     val tailLen = writeEnd - pos
 
     val tail: data =
-      if tailLen <= 0 then addressable.empty
-      else addressable.materialize(buffer, pos, tailLen)
+      if tailLen <= 0 then addressable.empty else addressable.materialize(buffer, pos, tailLen)
 
     pos = writeEnd
 
@@ -926,8 +922,7 @@ extends caps.Mutable:
   // hold block, where compaction cannot drop the marked region.
   inline update def mark(using held: Cursor.Held): Cursor.Mark =
     Cursor.Mark(basePos + pos).tap: mark =>
-      if lineationActive then
-        recordMark(mark.absolute, Cursor.Offset(lineNo, columnNo).toLong)
+      if lineationActive then recordMark(mark.absolute, Cursor.Offset(lineNo, columnNo).toLong)
 
   // Append `(mark, offset)` to the parallel `Long` buffers, growing geometrically
   // when full. Off the hot path's inline budget so `mark()` itself stays small.
@@ -995,8 +990,7 @@ extends caps.Mutable:
   inline def clone(start: Cursor.Mark, end: Cursor.Mark)(target: addressable.Target): Unit =
     val len = (end.absolute - start.absolute).toInt
 
-    if len > 0
-    then addressable.cloneStorage(buffer, (start.absolute - basePos).toInt, len)(target)
+    if len > 0 then addressable.cloneStorage(buffer, (start.absolute - basePos).toInt, len)(target)
 
   inline update def take(inline otherwise: => data)(length: Int): data =
     hold:

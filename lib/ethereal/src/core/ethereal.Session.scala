@@ -77,6 +77,7 @@ object Session:
     case "/dev/stdin"  => 0
     case "/dev/stdout" => 1
     case "/dev/stderr" => 2
+
     case other =>
       val prefix =
         if other.startsWith("/dev/fd/") then "/dev/fd/"
@@ -85,6 +86,7 @@ object Session:
 
       if prefix.isEmpty then Unset else
         val number = other.substring(prefix.length).nn
+
         if number.nonEmpty && number.forall(_.isDigit) && number.length < 8 then number.toInt
         else Unset
 
@@ -123,16 +125,19 @@ class SessionInput(stream: Text, credit: Long -> Unit) extends ji.InputStream:
   override def read(buffer: scala.Array[Byte] | Null, start: Int, length: Int): Int = synchronized:
     if length == 0 then 0 else
       while chunks.isEmpty && !ended do wait()
+
       if chunks.isEmpty then -1 else
         val head: Data = chunks.peekFirst().nn
         val count = length.min(head.length - offset)
         jl.System.arraycopy(Array.unsafeJvm(head), offset, buffer, start, count)
         offset += count
+
         if offset == head.length then
           chunks.pollFirst()
           offset = 0
 
         consumed += count
+
         if consumed >= Session.window/2 then
           credit(consumed)
           consumed = 0L
@@ -177,6 +182,7 @@ extends ji.OutputStream:
 
       while position < bytes.length do
         val allowed = allowance(bytes.length - position)
+
         if allowed == 0 then
           import strategies.throwUnsafely
           severed() = true
@@ -236,9 +242,11 @@ class Session
 
   private lazy val writer: jl.Thread = Session.thread(t"session-writer"):
     var running = true
+
     while running do
       val frame: Optional[Data] = outbox.synchronized:
         while control.isEmpty && data.isEmpty && !closing && !dead do outbox.wait()
+
         if dead then Unset
         else if !control.isEmpty then control.pollFirst().nn
         else if !data.isEmpty then data.pollFirst().nn
@@ -282,11 +290,13 @@ class Session
       if launcherGone || !credits.containsKey(stream) then waiting = false
       else
         val credit: Long = credits.get(stream).nn
+
         if credit > 0 then
           allowed = want.min(credit.toInt).min(Session.chunk)
           credits.put(stream, credit - allowed)
           waiting = false
-        else credits.wait()
+        else
+          credits.wait()
 
     allowed
 
@@ -297,7 +307,7 @@ class Session
 
   private def input(stream: Text): SessionInput =
     // [field-purity] credit callback over session stored in stream's field
-    val credit: Long -> Unit = caps.unsafe.unsafeAssumePure(count => send(Message.Credit(stream, count)))
+    val credit: Long -> Unit = caps.unsafe.unsafeAssumePure: count => send(Message.Credit(stream, count))
     val stream0 = SessionInput(stream, credit)
     inputs(stream) = stream0
     stream0
@@ -305,10 +315,10 @@ class Session
   private def output(stream: Text): SessionOutput =
     openCredit(stream)
     // [field-purity] allowance callback over session stored in stream's field
-    val allowance0: Int -> Int = caps.unsafe.unsafeAssumePure(want => allowance(stream, want))
+    val allowance0: Int -> Int = caps.unsafe.unsafeAssumePure: want => allowance(stream, want)
     val emit: Data -> Unit =
       // [field-purity] emit callback over session stored in stream's field
-      caps.unsafe.unsafeAssumePure(chunk => enqueue(Launcher.encode(Message.Data(stream, chunk)), priority = false))
+      caps.unsafe.unsafeAssumePure: chunk => enqueue(Launcher.encode(Message.Data(stream, chunk)), priority = false)
 
     val stream0 = SessionOutput(stream, allowance0, emit)
     outputs(stream) = stream0
@@ -397,7 +407,7 @@ class Session
 
           // A `WINCH` or `CONT` carries the terminal's size, recorded before the signal is
           // dispatched so that a trap, or the termcap, reads the new size and not the old.
-          columns.let { columns => rows.let { rows => windowSize() = (columns, rows) } }
+          columns.let: columns => rows.let: rows => windowSize() = (columns, rows)
 
           val signal: Signal =
             Signal(interrupt, columns, rows, deadline.let(_.toDouble*Milli(Second)))
@@ -437,6 +447,7 @@ class Session
 
       advertised.path match
         case real: Text if advertised.kind == t"file" => file(real)(lambda)
+
         case _ => fd match
           case 0 => lambda(handle(stdin, Unset))
           case 1 => lambda(handle(Unset, stdout))
@@ -454,8 +465,10 @@ class Session
         jnf.Files.newOutputStream(path, jnf.StandardOpenOption.WRITE, jnf.StandardOpenOption.CREATE).nn
 
       def write(byte: Int): Unit = target.write(byte)
+
       override def write(bytes: scala.Array[Byte] | Null, start: Int, length: Int): Unit =
         target.write(bytes, start, length)
+
       override def flush(): Unit = target.flush()
       override def close(): Unit = target.close()
 
@@ -497,7 +510,7 @@ class Session
 
   private def handleOf(reader: () -> Chain[Data], out: ji.OutputStream): Handle =
     val writer: Chain[Data] -> Unit = chain =>
-      chain.each { data => out.write(Array.unsafeJvm(data)) }
+      chain.each: data => out.write(Array.unsafeJvm(data))
       out.flush()
 
     Handle.whole(reader, writer)

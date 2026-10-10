@@ -52,7 +52,7 @@ import vacuous.*
 
 package optics:
   given jsonLens: [name <: Label: ValueOf] => (erased dynamical: (? >: Json) is Dynamical) => (tactic: Tactic[Json.Error])
-  =>  ((name is Lens from Json onto Json)^{tactic}) =
+  =>  ( (name is Lens from Json onto Json)^{tactic} ) =
 
     Lens(_.selectField(valueOf[name]), (json, value) => json.modify(valueOf[name], value))
 
@@ -116,4 +116,3 @@ package optics:
           Json.Ast.arr(Array.freeze(updated))
       else
         origin
-

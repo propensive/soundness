@@ -54,7 +54,7 @@ private[facsimile] object ContentWriter:
 
   def write(operators: List[Pdf.Operator]): Data =
     val builder = DataBuilder()
-    operators.each { operator => line(builder, operator) }
+    operators.each: operator => line(builder, operator)
     builder.result()
 
   private def line(builder: DataBuilder^, operator: Pdf.Operator)

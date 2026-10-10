@@ -42,7 +42,7 @@ import vacuous.*
 
 object Requirable:
   given decodable: [value] => (decodable: Tactic[Hazard]^ ?=> value is Decodable in Text)
-  =>  ((value is Requirable)^{decodable}) =
+  =>  ( (value is Requirable)^{decodable} ) =
 
     // The `Decodable` is resolved against `throwUnsafely` (a label-free tactic) rather than the
     // ambient `safely`-scoped `OptionalTactic`, so the decoded value does not retain that scoped

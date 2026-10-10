@@ -39,31 +39,30 @@ import contingency.*
 import fulminate.*
 import galilei.*
 import gossamer.*
+import gossamer.collationComparable, gossamer.collations.codepointCollation
 import prepositional.*
 import rudiments.*
+import rudiments.sortingAlgorithms.timsort
 import serpentine.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-import rudiments.sortingAlgorithms.timsort
-import gossamer.collationComparable, gossamer.collations.codepointCollation
-
 // What the sequential archive formats share: the memoizing entry body a streaming read lends
 // to its consumer, and the reader plumbing that pulls it off a shared cursor. `Tar` and `Ar`
 // each parse their own headers; the lookahead, draining and chunked pulling are the same.
 object Archive:
+  object Flag:
+    object Mtime:
+      def apply[instant: Abstractable across Instants to Long](instant: instant): Mtime =
+        Mtime(instant.generic/1000L)
+
   // Flags common to archiving a directory tree in any of bitumen's formats, `directory
   // .archive[Tar](flags*)`: the knobs that make an archive reproducible, as `tar --owner`,
   // `--group` and `--mtime` do. Each replaces what the filesystem reports for every entry.
   enum Flag:
     case Owner(user: UnixUser, group: UnixGroup)
     case Mtime(seconds: Long)
-
-  object Flag:
-    object Mtime:
-      def apply[instant: Abstractable across Instants to Long](instant: instant): Mtime =
-        Mtime(instant.generic/1000L)
 
   // The walk every format's `Archivable` shares: the entries beneath `root`, pre-order, each
   // directory's children in codepoint order. A sorted pre-order is what makes the archive
@@ -79,6 +78,7 @@ object Archive:
 
       given DereferenceSymlinks:
         def dereference: Boolean = follow
+
       given TraversalOrder = TraversalOrder.PreOrder
 
       val prefix: Text = root.encode

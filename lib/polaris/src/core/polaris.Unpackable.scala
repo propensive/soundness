@@ -52,8 +52,7 @@ object Unpackable:
         val local = Sextant(bytes, start)
 
         Array.scribe[pack](count): scribe => extent =>
-          extent.each: index =>
-            scribe(index) = pack.debuffer(local)
+          extent.each: index => scribe(index) = pack.debuffer(local)
 
   given debufferable: [pack: Debufferable] => pack is Unpackable:
     type Wrap[Type] = Type

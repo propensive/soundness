@@ -32,13 +32,15 @@
                                                                                                   */
 package telekinesis
 
+import java.lang as jl
+import java.net as jn
+
 import scala.caps
-
-import beneficence.*
-
 import scala.language.dynamics
+import scala.util.NotGiven
 
 import anticipation.*
+import beneficence.*
 import contingency.*
 import denominative.*
 import distillate.*
@@ -56,9 +58,6 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
-import java.lang as jl
-import java.net as jn
-import scala.util.NotGiven
 
 object Http:
   object Version:
@@ -88,14 +87,14 @@ object Http:
     // itself contain a comma (RFC 6265 §3).
     private val repeatableFields: Set[Text] =
       Set
-       ( t"accept", t"accept-charset", t"accept-encoding", t"accept-language", t"accept-patch",
-         t"accept-ranges", t"access-control-allow-headers", t"access-control-allow-methods",
-         t"access-control-expose-headers", t"access-control-request-headers", t"allow", t"alt-svc",
-         t"cache-control", t"clear-site-data", t"connection", t"content-encoding",
-         t"content-language", t"expect", t"forwarded", t"if-match", t"if-none-match", t"link",
-         t"pragma", t"prefer", t"preference-applied", t"proxy-authenticate", t"set-cookie", t"te",
-         t"trailer", t"transfer-encoding", t"upgrade", t"vary", t"via", t"warning",
-         t"www-authenticate" )
+        ( t"accept", t"accept-charset", t"accept-encoding", t"accept-language", t"accept-patch",
+          t"accept-ranges", t"access-control-allow-headers", t"access-control-allow-methods",
+          t"access-control-expose-headers", t"access-control-request-headers", t"allow", t"alt-svc",
+          t"cache-control", t"clear-site-data", t"connection", t"content-encoding",
+          t"content-language", t"expect", t"forwarded", t"if-match", t"if-none-match", t"link",
+          t"pragma", t"prefer", t"preference-applied", t"proxy-authenticate", t"set-cookie", t"te",
+          t"trailer", t"transfer-encoding", t"upgrade", t"vary", t"via", t"warning",
+          t"www-authenticate" )
 
     // Whether a field may appear more than once. Field names are case-insensitive, so the key is
     // lowered before lookup. An unknown field is treated as a singleton: that is the safe default,
@@ -272,9 +271,7 @@ object Http:
         try request.body().memoize.utf8 catch case error: Truncation.Error  => t"[-/-]"
 
       val headers: Text =
-        request.textHeaders.map: (header: Header) =>
-          t"${header.key}: ${header.value}"
-
+        request.textHeaders.map: (header: Header) => t"${header.key}: ${header.value}"
         . join(t"\n          ")
 
       val params: Text =
@@ -323,7 +320,7 @@ object Http:
 
             case count: Int =>
               result =
-                endpoint.lend { region => range => region.materialize(range.capped(count)) }
+                endpoint.lend: region => range => region.materialize(range.capped(count))
 
               endpoint.skip(count)
               continue = false
@@ -364,11 +361,11 @@ object Http:
           val text = head(t"Transfer-Encoding: chunked")
 
           Stream
-            ( Iterator(text.in[Data])
-              ++ frame(first)
-              ++ frame(second)
-              ++ Iterator.continually(pull()).takeWhile(_.present).flatMap(_.lay(Iterator())(frame))
-              ++ Iterator(t"0\r\n\r\n".in[Data]) )
+            ( Iterator(text.in[Data]) ++
+              frame(first) ++
+              frame(second) ++
+              Iterator.continually(pull()).takeWhile(_.present).flatMap(_.lay(Iterator())(frame)) ++
+              Iterator(t"0\r\n\r\n".in[Data]) )
 
         case _ =>
           val data = first.or(Array.empty[Byte])
@@ -531,6 +528,7 @@ object Http:
           // aborts here; a stale memo under concurrency merely reparses.
           hostMemo match
             case (cached, host0) if cached == text => host0
+
             case _ =>
               val parsed =
                 safely(text.as[Host]).or:
@@ -671,7 +669,8 @@ object Http:
 
                   consumeCrlf() // final blank line
                   ended = true
-                else remaining = size
+                else
+                  remaining = size
 
           if ended then Unset
           else if cursor.more then
@@ -765,6 +764,7 @@ object Http:
     lazy val textCookies: Map[Text, Text] =
       headers.cookie.bind: (cookie: List[Cookie.Value]) =>
         cookie.map { value => value.name -> value.value }
+
       . to[Map]
 
   // The swappable transport that physically sends a single request and returns
@@ -812,8 +812,7 @@ object Http:
         // `Set-Cookie` keeps both, since repeating it is how more than one value is expressed.
         // Comparison is case-insensitive, as field names are.
         val derived = response.textHeaders.filter: header =>
-          Header.repeatable(header.key)
-          || !headers.exists(_.key.lower == header.key.lower)
+          Header.repeatable(header.key) || !headers.exists(_.key.lower == header.key.lower)
 
         Response
           ( 1.1,
@@ -825,7 +824,7 @@ object Http:
             caps.unsafe.unsafeAssumePure(response.body) )
 
     given streamable: (tactic: Tactic[Http.Error])
-    =>  ((Response is Streamable by Data over Credit)^{tactic}) = response =>
+    =>  ( (Response is Streamable by Data over Credit)^{tactic} ) = response =>
       response.status.category match
         case Http.Status.Category.Successful => response.body.stream
 
@@ -834,6 +833,7 @@ object Http:
 
     private[Http] def response(status: Status, headers: List[Header], body: Body^)
     :   Response^{body} =
+
       new Response(1.1, status, headers, body)
 
     // Serialise a response to HTTP/1.1 wire bytes: status line, headers (with an
@@ -867,7 +867,7 @@ object Http:
 
               case count: Int =>
                 result =
-                  endpoint.lend { region => range => region.materialize(range.capped(count)) }
+                  endpoint.lend: region => range => region.materialize(range.capped(count))
 
                 endpoint.skip(count)
                 continue = false
@@ -1121,8 +1121,7 @@ object Http:
 
           cursor.next()
 
-          while cursor.peek == ' ' || cursor.peek == '\t'
-          do cursor.next()
+          while cursor.peek == ' ' || cursor.peek == '\t' do cursor.next()
 
           val value: Text = cursor.hold:
             val start = cursor.mark
@@ -1203,8 +1202,7 @@ object Http:
         else if cannotHaveBody then Http.Body.Empty
         else if chunked then framed(Unset)
         else
-          length.lay(remainder()): length =>
-            if length <= 0 then Http.Body.Empty else framed(length)
+          length.lay(remainder()): length => if length <= 0 then Http.Body.Empty else framed(length)
 
       Response(version, status, headerList, body)
 
@@ -1247,8 +1245,7 @@ object Http:
     // The successful response's body as a single-owner pull endpoint (explicit
     // `memoize` replaces the former implicit whole-body caching).
     def successBody: Optional[(Stream[Data] over Credit)^] =
-      if status.category != Http.Status.Category.Successful then Unset
-      else body.stream
+      if status.category != Http.Status.Category.Successful then Unset else body.stream
 
     def receive[body](using receivable: (body is Receivable)^): body =
       receivable.read(this)
@@ -1323,8 +1320,9 @@ object Http:
 
   // HttpClient → Http.Client
   object Client:
-    // Log a received response at a level reflecting its status: a server error is a `Fail`, a client
-    // error a `Warn`, and anything else (informational, success, redirect) routine `Fine` detail.
+    // Log a received response at a level reflecting its status: a server error is a `Fail`, a
+    // client error a `Warn`, and anything else (informational, success, redirect) routine `Fine`
+    // detail.
     private def logResponse(response: Http.Response): Http.Response =
       response.status.category match
         case Http.Status.Category.ServerError => Log.fail(Http.Event.Response(response.status))

@@ -56,6 +56,7 @@ import symbolism.*
 // materializer consults (at its downstream expansion site) for module ids, resource methods and
 // parameter types.
 type WasiFilesystemApi = Interface in Wit at "/galilei/filesystem.wit"
+
 package wasiApis:
   given wasiFilesystemApi: WasiFilesystemApi = Interface[Wit](cp"/galilei/filesystem.wit")
 
@@ -123,12 +124,11 @@ package filesystemBackends:
         def covers(preopen: Text): Boolean =
           target == preopen || preopen == t"/" || target.starts(t"$preopen/")
 
-        val covering = preopens.filter: entry =>
-          covers(entry(1))
+        val covering = preopens.filter: entry => covers(entry(1))
 
         // Named, not anonymous, so `most` orders the covering preopens by prefix length.
         given longestPrefix: (Wasm.Handle of "descriptor", Text) is Comparable =
-          Comparable.int.on { entry => entry(1).s.length }
+          Comparable.int.on: entry => entry(1).s.length
 
         // `most` is `Unset` exactly when nothing covers the path.
         val (descriptor, prefix) = covering.maximum.or:
@@ -221,7 +221,7 @@ package filesystemBackends:
 
               while !done do
                 val entry = stream.`read-directory-entry`.call[Optional[(U8, Text)]]()
-                entry.lay({ done = true })(pair => names = pair(1) :: names)
+                entry.lay({ done = true }): pair => names = pair(1) :: names
 
               streamHandle.dispose()
               names.reverse.to[Chain]
@@ -392,6 +392,7 @@ package filesystemBackends:
                 try
                   while remaining > 0 do
                     val chunk = stream.`blocking-read`(U64(remaining.toLong.bits)).call[Data]()
+
                     if chunk.length == 0 then remaining = 0 else
                       chunks = chunk :: chunks
                       remaining -= chunk.length
@@ -463,6 +464,7 @@ package filesystemBackends:
                 try
                   while remaining > 0 do
                     val chunk = stream.`blocking-read`(U64(remaining.toLong.bits)).call[Data]()
+
                     if chunk.length == 0 then remaining = 0 else
                       chunks = chunk :: chunks
                       remaining -= chunk.length

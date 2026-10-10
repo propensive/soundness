@@ -65,9 +65,9 @@ import rudiments.sortingAlgorithms.timsort
 // suppression does not recognise, so the bound would silently do nothing and the union of
 // statuses would be widened to `Status` (soundness#1811).
 def execute[result <: Termination: scala.Precise]
-   ( block: (erased effectful: Effectful) ?=> Invocation ?=> result )
-   ( using cli: Cli )
-   ( using admissible: result is Status.Admissible )
+  ( block: (erased effectful: Effectful) ?=> Invocation ?=> result )
+  ( using cli: Cli )
+  ( using admissible: result is Status.Admissible )
 :   Execution to result =
 
   val statuses = admissible.statuses
@@ -91,13 +91,12 @@ def execute[result <: Termination: scala.Precise]
 
         if !missing.nil then
           Err.println(t"The following required options were not specified:")
-          missing.each { flag => Err.println(t"  ${Flag.serialize(flag.name)}") }
+          missing.each: flag => Err.println(t"  ${Flag.serialize(flag.name)}")
 
         if !invalid.nil then
           Err.println(t"The following options were given invalid values:")
 
-          invalid.each: (flag, message) =>
-            Err.println(t"  ${Flag.serialize(flag.name)}: $message")
+          invalid.each: (flag, message) => Err.println(t"  ${Flag.serialize(flag.name)}: $message")
 
         Execution.of[result](Exit.Fail(2), statuses)
 
@@ -235,7 +234,7 @@ def helpTree
 
 package executives:
   given completionsExecutive: (backstop: Backstop)
-  =>  (CompletionsExecutive^{parasite.threads}) =
+  =>  ( CompletionsExecutive^{parasite.threads} ) =
 
     CompletionsExecutive()
 
@@ -276,6 +275,7 @@ package executives:
           val restParts = parts match
             case _ :: (rest @ (_ :: _)) => rest
             case _                      => List(t"")
+
           val tab = Completions.tab(tty, Completions.Tab(arguments, focus, cursor))
 
           Completion

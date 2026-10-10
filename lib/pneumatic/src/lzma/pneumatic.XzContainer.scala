@@ -48,6 +48,7 @@ import vacuous.*
 private[pneumatic] object XzContainer:
   val magic: Array[Byte]^{} =
     Array(0xfd.toByte, '7', 'z', 'X', 'Z', 0x00)
+
   inline val Lzma2FilterId = 0x21
   inline val IndexIndicator = 0x00
 

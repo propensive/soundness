@@ -32,11 +32,10 @@
                                                                                                   */
 package gastronomy
 
-import scala.{caps, math}
-
 import java.nio.charset.StandardCharsets
 
 import scala.reflect.Selectable.reflectiveSelectable
+import scala.{caps, math}
 
 import anticipation.*
 import corpuscular.*
@@ -346,8 +345,7 @@ object Blake3:
     hasher.complete(length)
 
   def keyedHash(key: Array[Byte]^{}, input: Array[Byte]^{}, length: Int = OutLen): Array[Byte]^{} =
-    if key.length != KeyLen
-    then panic(m"BLAKE3 key must be $KeyLen bytes (got ${key.length})")
+    if key.length != KeyLen then panic(m"BLAKE3 key must be $KeyLen bytes (got ${key.length})")
 
     val keyWords = Array.allocate[Int](8)
     // `wordsFromBytes` only reads its bytes.

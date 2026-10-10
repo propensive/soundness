@@ -33,7 +33,6 @@
 package contextual
 
 import scala.language.dynamics
-
 import scala.quoted.*
 
 import gigantism.*
@@ -106,7 +105,7 @@ object Interpolation:
     def recur[tuple: Type](acc: scala.List[String]): scala.List[String] = Type.of[tuple] match
       case '[head *: tail] => TypeRepr.of[head].dealias match
         case ConstantType(StringConstant(part)) => recur[tail](acc.prepended(part))
-        case _ => report.errorAndAbort("an interpolator's parts are string-literal types")
+        case _                                  => report.errorAndAbort("an interpolator's parts are string-literal types")
 
       case _ =>
         acc
@@ -237,7 +236,6 @@ object Interpolation:
                   type Transport = transport
                   type Origins = origins
               } . asInstanceOf[Expr[Interpolation of topic]]
-
 
 trait Interpolation extends scala.caps.Pure:
   type Topic

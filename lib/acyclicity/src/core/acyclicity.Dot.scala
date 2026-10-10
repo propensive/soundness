@@ -32,17 +32,17 @@
                                                                                                   */
 package acyclicity
 
-import anticipation.*
-import denominative.*
-import gossamer.*
-import nomenclature.*
 import scala.collection.immutable.List
 
+import anticipation.*
+import denominative.*
+import fulminate.*
+import gossamer.*
+import nomenclature.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
-import prepositional.*
-import fulminate.*
 
 object Dot:
   case class Target(directed: Boolean, dest: Name[Dot.Id] | Statement.Subgraph, link: Option[Target])

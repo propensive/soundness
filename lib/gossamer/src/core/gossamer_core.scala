@@ -32,19 +32,16 @@
                                                                                                   */
 package gossamer
 
-import scala.reflect
-
-import scala.compiletime
-
-import scala.language.experimental.into
-import scala.language.experimental.pureFunctions
-
 import java.lang as jl
-import java.nio.charset.StandardCharsets
 import java.net.{URLEncoder, URLDecoder}
+import java.nio.charset.StandardCharsets
 import java.util.regex as jur
 
 import scala.collection.mutable as scm
+import scala.compiletime
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
+import scala.reflect
 import scala.reflect.*
 
 import anticipation.*
@@ -58,7 +55,6 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-
 import Textual.concatenable
 
 export gossamer.internal.opaques.{Ascii, Grapheme}
@@ -103,7 +99,7 @@ extension (module: Text.type)
 
   def fill(length: Int)(lambda: Int => Char): Text =
     val buffer = Array.scribe[Char](length): scribe =>
-      _ => scribe.iterate { index => scribe(index) = lambda(index.n0) }
+      _ => scribe.iterate: index => scribe(index) = lambda(index.n0)
 
     String(Array.unsafeJvm(buffer)).tt
 
@@ -145,8 +141,8 @@ extension [textual](text: textual)
 // `Textual` instance is a trailing `using` clause, not a context bound: a context bound on
 // `textual` is committed before `traversable` has pinned `textual`, mis-selecting a given.
 extension [self, textual](words: self)
-  (using traversable: self is Traversable by textual)
-  (using instance: textual is Textual { type Result = Char })
+  ( using traversable: self is Traversable by textual )
+  ( using instance: textual is Textual { type Result = Char } )
   def pascal: textual = traversable.traverse(words).map(_.lower.capitalize).to(Iterable).join
   def camel: textual = words.pascal.uncapitalize
   def snake: textual = words.join(instance.apply("_".tt))
@@ -157,13 +153,14 @@ extension [self, textual](words: self)
 // The ordinal-bounded `before`/`upto`/`from`/`after` now live in `rudiments`, alongside the
 // other generic positional operations over `Segmentable` and `Countable`.
 
-// A textual value reverses to its own type. Exposed as a factory rather than a blanket given because
-// `Reversible`'s companion (in `rudiments`) cannot reference `Textual`, so a generic given would not
-// be in implicit scope; each textual type instead publishes `given … is Reversible = reversibleTextual`
-// in its own companion (e.g. `Teletype`), which keeps the single `rudiments` `reverse` serving both
-// text and collections with no competing extension at the umbrella.
+// A textual value reverses to its own type. Exposed as a factory rather than a blanket given
+// because `Reversible`'s companion (in `rudiments`) cannot reference `Textual`, so a generic given
+// would not be in implicit scope; each textual type instead publishes `given … is Reversible =
+// reversibleTextual` in its own companion (e.g. `Teletype`), which keeps the single `rudiments`
+// `reverse` serving both text and collections with no competing extension at the umbrella.
 def reversibleTextual[textual](using textual0: textual is Textual)
 :   textual is Reversible { type Result = textual } =
+
   new Reversible:
     type Self = textual
     type Result = textual
@@ -186,12 +183,13 @@ def reversibleTextual[textual](using textual0: textual is Textual)
 // goes through `segment`, so styled texts stay styled.
 def traversableTextual[textual](using textual0: textual is Textual)
 :   textual is Traversable { type Operand = textual0.Result } =
+
   new Traversable:
     type Self = textual
     type Operand = textual0.Result
 
     def traverse(text: textual): Iterator[Operand] =
-      scala.Iterator.range(0, textual0.length(text)).map { index => textual0.access(text, index.z) }
+      scala.Iterator.range(0, textual0.length(text)).map: index => textual0.access(text, index.z)
 
 extension [textual: Textual as instance](text: textual)
   inline def length: Int = textual.length(text)
@@ -360,6 +358,7 @@ extension [textual: Textual { type Result = Char } as instance](text: textual)
       bidi match
         case Ltr =>
           builder.append(text)
+
           repeat(padSize):
             builder.append(char)
 
@@ -560,8 +559,8 @@ extension (iarray: Array[Char]^{}) def text: Text = String(Array.unsafeJvm(iarra
 // clause, not a context bound: a context bound is committed before `source` has pinned the
 // element, mis-selecting a given.
 extension [self, element, result](values: self)
-  (using source: self is Joinable.Source by element)
-  (using assembly: self is Joinable.Assembly by element to result)
+  ( using source: self is Joinable.Source by element )
+  ( using assembly: self is Joinable.Assembly by element to result )
   def join: result = assembly.assemble(source.traverse(values))
 
   def join(separator: assembly.Part): result =

@@ -148,4 +148,3 @@ package optics:
     Optic: (origin, lambda) =>
       origin.copy
         ( rows = origin.rows.remap { row => if predicate(row) then lambda(row) else row } )
-

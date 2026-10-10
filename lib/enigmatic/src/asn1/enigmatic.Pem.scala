@@ -32,13 +32,13 @@
                                                                                                   */
 package enigmatic
 
-import scala.caps
-
 import java.lang as jl
 
+import scala.caps
+
 import anticipation.*
-import denominative.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -102,16 +102,16 @@ object Pem:
   private def parse[cap^](cursor: Cursor[Text, cap]^)(using Diagnostics, Tactic[Pem.Error]^)
   :   Pem =
 
-    while !cursor.finished
-          && (cursor.peek == ' ' || cursor.peek == '\t'
-              || cursor.peek == '\n' || cursor.peek == '\r')
+    while !cursor.finished &&
+      (cursor.peek == ' ' || cursor.peek == '\t' || cursor.peek == '\n' || cursor.peek == '\r')
     do cursor.next()
 
     nextLine(cursor).lay(abort(Pem.Error(Pem.Error.Reason.BeginMissing))):
       case r"-----* *BEGIN ${Pem.Label(label)}([ A-Z]+) *-----*" => block(cursor, label)
-      case _                                                    => abort:
-                                                                     Pem.Error:
-                                                                       Pem.Error.Reason.BeginMissing
+
+      case _ => abort:
+        Pem.Error:
+          Pem.Error.Reason.BeginMissing
 
   // Every PEM block of the input, lazily: one block parses per forced cell,
   // and content between blocks (comments, subject lines in certificate
@@ -122,7 +122,7 @@ object Pem:
 
     def recur(): Chain[Pem] = nextLine(cursor).lay(Chain()):
       case r"-----* *BEGIN ${Pem.Label(label)}([ A-Z]+) *-----*" => block(cursor, label) #:: recur()
-      case _                                                    => recur()
+      case _                                                     => recur()
 
     Chain.defer(recur())
 
@@ -147,6 +147,7 @@ object Pem:
             // dealiases opaque types, and `Data` is a transparent alias over an opaque one.
             // Inferred, the two sides of the check were spelled differently — `Data` against
             // its own dealiasing, `scala.Array[Byte]` — and did not match.
+
             . protect[Data](body.toString.tt.deserialize[Base64])
 
           case _ =>
@@ -170,7 +171,7 @@ object Pem:
 
   // Captures the tactic it raises through.
   given aggregable: (diagnostics: Diagnostics, tactic: Tactic[Pem.Error])
-  =>  ((Pem is Aggregable by Text)^{tactic}) =
+  =>  ( (Pem is Aggregable by Text)^{tactic} ) =
 
     new Aggregable:
       type Self = Pem
@@ -187,7 +188,7 @@ object Pem:
   // A certificate chain (or any multi-block document) as a lazy sequence of
   // its blocks.
   given aggregableAll: (diagnostics: Diagnostics, tactic: Tactic[Pem.Error])
-  =>  ((Chain[Pem] is Aggregable by Text)^{tactic}) =
+  =>  ( (Chain[Pem] is Aggregable by Text)^{tactic} ) =
 
     new Aggregable:
       type Self = Chain[Pem]

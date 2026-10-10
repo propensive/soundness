@@ -32,17 +32,18 @@
                                                                                                   */
 package zeppelin
 
-import scala.math
-
 import java.io as ji
 import java.nio as jn
 import java.nio.channels as jnc
 import java.nio.charset as jncs
 import java.nio.file as jnf
 
+import scala.math
+
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -53,9 +54,8 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import turbulence.*
-import zephyrine.*
 import vacuous.*
-import denominative.dysasymptotics.linearSize
+import zephyrine.*
 
 object Zipfile:
   private val u32Max: Long = 0xffffffffL
@@ -99,8 +99,7 @@ object Zipfile:
         if rebased < 0 || rebased + 56 > source.size
         then raise(Zip.Error(Zip.Error.Reason.Zip64Error))
         else
-          val update: Data = Data.build(8): array =>
-            Zip.putU64(array, 0, rebased)
+          val update: Data = Data.build(8): array => Zip.putU64(array, 0, rebased)
 
           val channel =
             jnc.FileChannel.open(jnf.Path.of(filename.s), jnf.StandardOpenOption.WRITE).nn
@@ -335,8 +334,8 @@ object Zipfile:
         else source.read(extraOffset, headerExtraLength)
 
       val localSizes =
-        (flags & Zip.streamedFlag) == 0
-        || Zip.u32(header, 14) != 0 || Zip.u32(header, 18) != 0 || Zip.u32(header, 22) != 0
+        (flags & Zip.streamedFlag) == 0 ||
+          Zip.u32(header, 14) != 0 || Zip.u32(header, 18) != 0 || Zip.u32(header, 22) != 0
 
       val start = extraOffset + headerExtraLength
 
@@ -573,6 +572,7 @@ case class Zipfile
     // any reader sees standard entries and the prefix as leading, otherwise-unassigned data.
     val prefixBytes: Data = prefix.or(Array.empty[Byte])
     var offset = prefixBytes.length.toLong
+
     val builder =
       scala.collection.immutable.List.newBuilder[(Zip.Entry, Data, Data, Optional[Data], Long)]
 

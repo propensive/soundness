@@ -33,7 +33,6 @@
 package espionage
 
 import soundness.*
-
 import backstops.stackTraceBackstop
 import executives.completionsExecutive
 import interpreters.posixInterpreter

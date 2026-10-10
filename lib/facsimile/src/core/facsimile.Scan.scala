@@ -31,10 +31,9 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package facsimile
-import rudiments.*
-
 import anticipation.*
 import denominative.*
+import rudiments.*
 
 private[facsimile] object Scan:
   private val chunkSize: Int = 8192

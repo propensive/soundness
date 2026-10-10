@@ -36,14 +36,13 @@ import java.util as ju
 import java.util.concurrent as juc
 
 import anticipation.*
+import beneficence.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import prepositional.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
-
-import beneficence.*
-import denominative.*
-import denominative.dysasymptotics.linearSize
 
 object Runner:
   private[probably] val harness: Scoped[Harness] = Scoped()
@@ -97,8 +96,10 @@ object Runner:
     def listed: List[Runner.Scheduled] = base.listed
     def admitted: Int = base.admitted
     def run[result](test: Test[result]^): Trial[result] = base.run[result](test)
+
     def suite[topic](suite: Testable of topic, block: (Testable of topic) ?=> Unit): Unit =
       base.suite(suite, block)
+
     def terminate(error: Throwable): Unit = base.terminate(error)
     def complete(): Unit = base.complete()
 
@@ -168,7 +169,7 @@ object Runner:
       val enclosing: List[Test.Id] = suites
 
       mutex:
-        enclosing.each { suite => pending.put(suite, pending.getOrDefault(suite, 0).nn + 1) }
+        enclosing.each: suite => pending.put(suite, pending.getOrDefault(suite, 0).nn + 1)
         if workers.nil then workers = (0 until workerCount).to(List).map(start(_))
 
       reporter.scheduled(report, id)
@@ -185,13 +186,14 @@ object Runner:
 
     private def start(index: Int): Thread =
       val thread =
-        Thread.ofVirtual().nn.name(s"probably-worker-$index").nn.unstarted(() => work()).nn
+        Thread.ofVirtual().nn.name(s"probably-worker-$index").nn.unstarted{ () => work() }.nn
 
       thread.start()
       thread
 
     private def work(): Unit =
       var running = true
+
       while running do
         val job: Runnable = queue.take().nn
         if job eq stop then running = false else job.run()
@@ -205,7 +207,7 @@ object Runner:
           pending.put(suite, left)
           left == 0 && exited.remove(suite)
 
-      ending.each { suite => reporter.ended(report, suite, true) }
+      ending.each: suite => reporter.ended(report, suite, true)
 
     // Waits for every queued assertion; a worker's escaped `Throwable` (an `Error`, or a
     // failure outside the test's own bracket) is rethrown here, on the traversal's thread.
@@ -213,7 +215,7 @@ object Runner:
       val running: List[Thread] = mutex { workers.also { workers = Nil } }
       running.each { _ => queue.put(stop) }
       running.each(_.join())
-      failure.let { error => throw error }
+      failure.let: error => throw error
 
     // Abandons what is queued and waits for what is in flight, for a run that is terminating.
     private def abort(): Unit =
@@ -272,13 +274,13 @@ object Runner:
       val declarations = declared0.reverse
 
       entries.map { entry => (entry(0), entry(1)) }.distinct.map: (id, kind) =>
-        val cells = entries.filter { entry => entry(0) == id && entry(1) == kind }
+        val cells = entries.filter: entry => entry(0) == id && entry(1) == kind
 
         val expected: Optional[Long] =
           cells.fold(Unset: Optional[Long]): (sum, entry) =>
-            entry(2).lay(sum) { value => sum.lay(value)(_ + value) }
+            entry(2).lay(sum): value => sum.lay(value)(_ + value)
 
-        val declared = declarations.filter { entry => entry(0) == id && entry(1) == kind }
+        val declared = declarations.filter: entry => entry(0) == id && entry(1) == kind
 
         val specs: List[Axis.Spec] =
           cells.flatMap { entry => entry(3).map(_(0)) }.distinct
@@ -360,7 +362,6 @@ object Runner:
         reporter.complete(report)
 
     def complete(): Unit = reporter.complete(report)
-
 
 trait Runner[report] extends Findable:
   // Whether verdicts are recorded as aspirations (`AspirePass`/`AspireFail`): set within an

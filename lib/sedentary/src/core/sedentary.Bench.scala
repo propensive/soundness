@@ -66,60 +66,6 @@ import workingDirectories.javaBaseWorkingDirectory
 import denominative.*
 import denominative.dysasymptotics.linearSize
 
-// `heap`, `cpus` and `gc` size and pin the measurement JVM exactly as for `Stress` (see the
-// notes on `BenchmarkDevice#invoke`): the defaults are a fixed 1 GB heap and the Serial collector,
-// which suit single-threaded microbenchmarks; a body that runs a fiber runtime or many virtual
-// threads should ask for `gc = t"G1"` and a heap sized to what the rival's own harness used.
-case class Bench
-  ( heap: Optional[Text] = Unset, cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset )
-  ( using Classloader, Environment )
-  ( using device: BenchmarkDevice )
-extends Rig:
-  type Result[output] = output
-  type Form = Text
-  type Target = Path on Linux
-  type Transport = Json
-
-  // Captures the benchmark's name, tags and settings; the returned plan is applied to a
-  // quoted body directly (a single measurement) or spread `over` one or two axes, one
-  // measurement per defined combination. `baseline` names one axis value as the comparison
-  // anchor. The tags label the benchmark for selection (`tag:slow`) and exclusion.
-  def apply[duration: Abstractable across Durations to Long]
-    ( name: Message, tags: Tag* )
-    ( target:        duration,
-      operationSize: Optional[OperationSize]         = Unset,
-      iterations:    Optional[Int]                   = Unset,
-      warmups:       Optional[Int]                   = Unset,
-      confidence:    Optional[Benchmark.Percentiles] = Unset,
-      baseline:      Optional[Any]                   = Unset,
-      comparison:    Baseline                        = Baseline() )
-  :   Bench.Plan =
-
-    val iterations0: Optional[Int] = iterations
-    val iterations2: Int = iterations0.or(5)
-    val warmups0: Optional[Int] = warmups
-    val confidence0: Optional[Benchmark.Percentiles] = confidence
-
-    Bench.Plan
-      ( this,
-        name,
-        tags.to(List),
-        target.generic,
-        operationSize,
-        iterations2,
-        warmups0.or(iterations2),
-        confidence0.or(95),
-        baseline,
-        comparison )
-
-
-  def stage(out: Path on Linux): Path on Linux = stageOn(device, out)
-
-  protected val scalac: Scalac[3.7, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
-
-  protected def invoke[output](stage: Stage[output, Text, Path on Linux]): output =
-    stage.remote: input => unsafely(device.invoke(stage.target, input, heap, cpus, gc))
-
 object Bench:
   // The staged measurement harness, shared by every cell of every plan: warmup, doubling
   // calibration, median-rate count selection, then `iterations` timed batches.
@@ -280,6 +226,125 @@ object Bench:
       ( total, count, runs, total.toDouble/count, min, max, sd, confidence,
         operationSizeText, operationRateText, operationQuantity, allocation )
 
+  object Plan:
+    // A plan whose single-axis cells are each sized by `size`.
+    case class Uniaxial[value](plan: Plan, size: value => Optional[OperationSize]):
+      import plan.*
+
+      // See `Plan#over`: the measurement of every defined axis value.
+      inline def over[report, topic <: Label](axis: Axis[value])
+        ( inline body: (References over Json) ?=> Quotes ?=> (value ~> Expr[Any]) )
+        ( using System, TemporaryDirectory, Stageable over Json in Text )
+        ( using runner:    Runner[report],
+                inclusion: Inclusion[report, Benchmark],
+                anchors:   Inclusion[report, Anchor],
+                @missingContext(Testable.orphan)
+                suite:     Testable of topic,
+                codepoint: Codepoint )
+      :   Unit raises Compiler.Error raises Rig.Error =
+
+        val testId = Test.Id(name, suite, codepoint, Unset, tags)
+        val target2: Long = Bench.scaled(target, runner.scale)
+        val values = axis.values
+
+        // Definedness may not depend on the staging context, so gaps are probed under a
+        // throwaway quotes context and a discarded References instance; the partial function
+        // is never applied there, only queried.
+        val probe: value ~> Expr[Any] =
+          given staging.Compiler = bench.compiler2
+          staging.withQuotes(body(using References[Json]()))
+
+        // An iterator rather than `each`: a lambda cannot capture the inline `body`.
+        val iterator = List.iterator(values)
+
+        while iterator.hasNext do
+          val value = iterator.next()
+
+          val coordinates = List(axis.coordinate(value))
+
+          // An unselected cell is skipped BEFORE staging: it costs no compilation and no JVM.
+          if probe.isDefinedAt(value) &&
+            !runner.skip(testId, Entry.Kind.Bench, coordinates,
+                            Bench.expected(target2, iterations, warmups))
+          then
+            val results0 =
+              bench.dispatch(Bench.measured(iterations, warmups, target2)(body(value)))
+
+            inclusion.include
+              ( runner.report,
+                testId,
+                coordinates,
+                Bench.statistics(results0, iterations, confidence, size(value).or(operationSize)) )
+
+        anchor.let: anchorValue =>
+          values.seek(_ == anchorValue).let: value =>
+            anchors.include
+              ( runner.report, testId, Nil, Anchor(axis.spec, axis.point(value), comparison) )
+
+    // A plan whose crosstab cells are each sized by `size`.
+    case class Biaxial[left, right](plan: Plan, size: (left, right) => Optional[OperationSize]):
+      import plan.*
+
+      // See `Plan#over`: the measurement of every defined combination of the two axes.
+      inline def over[report, topic <: Label](first: Axis[left], second: Axis[right])
+        ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
+        ( using System, TemporaryDirectory, Stageable over Json in Text )
+        ( using runner:    Runner[report],
+                inclusion: Inclusion[report, Benchmark],
+                anchors:   Inclusion[report, Anchor],
+                @missingContext(Testable.orphan)
+                suite:     Testable of topic,
+                codepoint: Codepoint )
+      :   Unit raises Compiler.Error raises Rig.Error =
+
+        val testId = Test.Id(name, suite, codepoint, Unset, tags)
+        val target2: Long = Bench.scaled(target, runner.scale)
+        val lefts = first.values
+        val rights = second.values
+
+        // See the definedness note in the uniaxial `over`.
+        val probe: ((left, right)) ~> Expr[Any] =
+          given staging.Compiler = bench.compiler2
+          staging.withQuotes(body(using References[Json]()))
+
+        // Iterators rather than `each`; see the uniaxial `over`.
+        val leftIterator = List.iterator(lefts)
+
+        while leftIterator.hasNext do
+          val left = leftIterator.next()
+          val rightIterator = List.iterator(rights)
+
+          while rightIterator.hasNext do
+            val right = rightIterator.next()
+
+            val coordinates = List(first.coordinate(left), second.coordinate(right))
+
+            if probe.isDefinedAt((left, right)) &&
+              !runner.skip(testId, Entry.Kind.Bench, coordinates,
+                              Bench.expected(target2, iterations, warmups))
+            then
+              val results0 =
+                bench.dispatch(Bench.measured(iterations, warmups, target2)(body((left, right))))
+
+              inclusion.include
+                ( runner.report,
+                  testId,
+                  coordinates,
+                  Bench.statistics(results0, iterations, confidence, size(left, right).or(operationSize)) )
+
+        anchor.let: anchorValue =>
+          lefts.seek(_ == anchorValue).lay:
+            rights.seek(_ == anchorValue).let: value =>
+              anchors.include
+                ( runner.report,
+                  testId,
+                  Nil,
+                  Anchor(second.spec, second.point(value), comparison) )
+
+          . apply: value =>
+            anchors.include
+              ( runner.report, testId, Nil, Anchor(first.spec, first.point(value), comparison) )
+
   case class Plan
     ( bench:         Bench,
       name:          Message,
@@ -325,6 +390,7 @@ object Bench:
 
     def sized[left, right](size: (left, right) => Optional[OperationSize])
     :   Plan.Biaxial[left, right] =
+
       Plan.Biaxial(this, size)
 
     // One measurement per defined axis value, each a fresh dispatch: cells whose staged
@@ -416,128 +482,63 @@ object Bench:
       over(Axis(first), Axis(second))(body)
 
 
-  object Plan:
-    // A plan whose single-axis cells are each sized by `size`.
-    case class Uniaxial[value](plan: Plan, size: value => Optional[OperationSize]):
-      import plan.*
-
-      // See `Plan#over`: the measurement of every defined axis value.
-      inline def over[report, topic <: Label](axis: Axis[value])
-        ( inline body: (References over Json) ?=> Quotes ?=> (value ~> Expr[Any]) )
-        ( using System, TemporaryDirectory, Stageable over Json in Text )
-        ( using runner:    Runner[report],
-                inclusion: Inclusion[report, Benchmark],
-                anchors:   Inclusion[report, Anchor],
-                @missingContext(Testable.orphan)
-                suite:     Testable of topic,
-                codepoint: Codepoint )
-      :   Unit raises Compiler.Error raises Rig.Error =
-
-        val testId = Test.Id(name, suite, codepoint, Unset, tags)
-        val target2: Long = Bench.scaled(target, runner.scale)
-        val values = axis.values
-
-        // Definedness may not depend on the staging context, so gaps are probed under a
-        // throwaway quotes context and a discarded References instance; the partial function
-        // is never applied there, only queried.
-        val probe: value ~> Expr[Any] =
-          given staging.Compiler = bench.compiler2
-          staging.withQuotes(body(using References[Json]()))
-
-        // An iterator rather than `each`: a lambda cannot capture the inline `body`.
-        val iterator = List.iterator(values)
-
-        while iterator.hasNext do
-          val value = iterator.next()
-
-          val coordinates = List(axis.coordinate(value))
-
-          // An unselected cell is skipped BEFORE staging: it costs no compilation and no JVM.
-          if probe.isDefinedAt(value)
-              && !runner.skip(testId, Entry.Kind.Bench, coordinates,
-                              Bench.expected(target2, iterations, warmups))
-          then
-            val results0 =
-              bench.dispatch(Bench.measured(iterations, warmups, target2)(body(value)))
-
-            inclusion.include
-              ( runner.report,
-                testId,
-                coordinates,
-                Bench.statistics(results0, iterations, confidence, size(value).or(operationSize)) )
-
-        anchor.let: anchorValue =>
-          values.seek(_ == anchorValue).let: value =>
-            anchors.include
-              ( runner.report, testId, Nil, Anchor(axis.spec, axis.point(value), comparison) )
-
-    // A plan whose crosstab cells are each sized by `size`.
-    case class Biaxial[left, right](plan: Plan, size: (left, right) => Optional[OperationSize]):
-      import plan.*
-
-      // See `Plan#over`: the measurement of every defined combination of the two axes.
-      inline def over[report, topic <: Label](first: Axis[left], second: Axis[right])
-        ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
-        ( using System, TemporaryDirectory, Stageable over Json in Text )
-        ( using runner:    Runner[report],
-                inclusion: Inclusion[report, Benchmark],
-                anchors:   Inclusion[report, Anchor],
-                @missingContext(Testable.orphan)
-                suite:     Testable of topic,
-                codepoint: Codepoint )
-      :   Unit raises Compiler.Error raises Rig.Error =
-
-        val testId = Test.Id(name, suite, codepoint, Unset, tags)
-        val target2: Long = Bench.scaled(target, runner.scale)
-        val lefts = first.values
-        val rights = second.values
-
-        // See the definedness note in the uniaxial `over`.
-        val probe: ((left, right)) ~> Expr[Any] =
-          given staging.Compiler = bench.compiler2
-          staging.withQuotes(body(using References[Json]()))
-
-        // Iterators rather than `each`; see the uniaxial `over`.
-        val leftIterator = List.iterator(lefts)
-
-        while leftIterator.hasNext do
-          val left = leftIterator.next()
-          val rightIterator = List.iterator(rights)
-
-          while rightIterator.hasNext do
-            val right = rightIterator.next()
-
-            val coordinates = List(first.coordinate(left), second.coordinate(right))
-
-            if probe.isDefinedAt((left, right))
-                && !runner.skip(testId, Entry.Kind.Bench, coordinates,
-                                Bench.expected(target2, iterations, warmups))
-            then
-              val results0 =
-                bench.dispatch(Bench.measured(iterations, warmups, target2)(body((left, right))))
-
-              inclusion.include
-                ( runner.report,
-                  testId,
-                  coordinates,
-                  Bench.statistics(results0, iterations, confidence, size(left, right).or(operationSize)) )
-
-        anchor.let: anchorValue =>
-          lefts.seek(_ == anchorValue).lay:
-            rights.seek(_ == anchorValue).let: value =>
-              anchors.include
-                ( runner.report,
-                  testId,
-                  Nil,
-                  Anchor(second.spec, second.point(value), comparison) )
-          . apply: value =>
-            anchors.include
-              ( runner.report, testId, Nil, Anchor(first.spec, first.point(value), comparison) )
-
-
   // BenchError → Bench.Error
   case class Error()(using Diagnostics)
   extends fulminate.Error(794, 0)(m"unable to run benchmarks")
+
+// `heap`, `cpus` and `gc` size and pin the measurement JVM exactly as for `Stress` (see the
+// notes on `BenchmarkDevice#invoke`): the defaults are a fixed 1 GB heap and the Serial collector,
+// which suit single-threaded microbenchmarks; a body that runs a fiber runtime or many virtual
+// threads should ask for `gc = t"G1"` and a heap sized to what the rival's own harness used.
+case class Bench
+  ( heap: Optional[Text] = Unset, cpus: Optional[Int] = Unset, gc: Optional[Text] = Unset )
+  ( using Classloader, Environment )
+  ( using device: BenchmarkDevice )
+extends Rig:
+  type Result[output] = output
+  type Form = Text
+  type Target = Path on Linux
+  type Transport = Json
+
+  // Captures the benchmark's name, tags and settings; the returned plan is applied to a
+  // quoted body directly (a single measurement) or spread `over` one or two axes, one
+  // measurement per defined combination. `baseline` names one axis value as the comparison
+  // anchor. The tags label the benchmark for selection (`tag:slow`) and exclusion.
+  def apply[duration: Abstractable across Durations to Long]
+    ( name: Message, tags: Tag* )
+    ( target:        duration,
+      operationSize: Optional[OperationSize]         = Unset,
+      iterations:    Optional[Int]                   = Unset,
+      warmups:       Optional[Int]                   = Unset,
+      confidence:    Optional[Benchmark.Percentiles] = Unset,
+      baseline:      Optional[Any]                   = Unset,
+      comparison:    Baseline                        = Baseline() )
+  :   Bench.Plan =
+
+    val iterations0: Optional[Int] = iterations
+    val iterations2: Int = iterations0.or(5)
+    val warmups0: Optional[Int] = warmups
+    val confidence0: Optional[Benchmark.Percentiles] = confidence
+
+    Bench.Plan
+      ( this,
+        name,
+        tags.to(List),
+        target.generic,
+        operationSize,
+        iterations2,
+        warmups0.or(iterations2),
+        confidence0.or(95),
+        baseline,
+        comparison )
+
+
+  def stage(out: Path on Linux): Path on Linux = stageOn(device, out)
+
+  protected val scalac: Scalac[3.7, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
+
+  protected def invoke[output](stage: Stage[output, Text, Path on Linux]): output =
+    stage.remote: input => unsafely(device.invoke(stage.target, input, heap, cpus, gc))
 
 // Builds a jar of the code under measurement, with superlunary's executor as its entry point,
 // and deploys it to `device`: the staging which `Bench`, `Stress` and `Profile` share.

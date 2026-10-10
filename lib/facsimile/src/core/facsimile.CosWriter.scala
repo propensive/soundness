@@ -58,6 +58,7 @@ private[facsimile] object CosWriter:
 
   private def bytes(builder: DataBuilder^, text: String): Unit =
     var i = 0
+
     while i < text.length do
       builder += text.charAt(i).toByte
       i += 1
@@ -119,12 +120,14 @@ private[facsimile] object CosWriter:
         builder += '#'.toByte
         builder += hexDigit(byte >> 4)
         builder += hexDigit(byte & 0xf)
-      else builder += byte.toByte
+      else
+        builder += byte.toByte
 
   // A literal string with the mandatory escapes, and non-printable bytes as octal, so any
   // byte sequence round-trips.
   private def literal(builder: DataBuilder^, data: Data): Unit =
     builder += '('.toByte
+
     data.extent.each: i =>
       val byte = data(i) & 0xff
 

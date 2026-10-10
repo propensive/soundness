@@ -33,7 +33,6 @@
 package denominative
 
 import scala.collection.immutable.IndexedSeq
-
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
@@ -59,8 +58,8 @@ object Definable:
   // update copies the whole array — dysasymptotic, like the frozen array's `Appendable`,
   // `Prependable` and `Truncable` instances — so it is gated on the same acknowledgement.
   given frozenArray: [element: scala.reflect.ClassTag]
-        => (complexity: Dysasymptotic.LinearSize)
-        => (Array[element]^{}) is Definable:
+    => ( complexity: Dysasymptotic.LinearSize )
+    => (Array[element]^{}) is Definable:
     type Self = Array[element]^{}
     type Operand = Ordinal
     type Result = element
@@ -76,7 +75,8 @@ object Definable:
 
         copy(index.n0) = value
         Array.freeze(copy)
-      else array
+      else
+        array
 
   // Positional update on a linked list rebuilds its prefix, so — as with `Applicable.list` —
   // the instance is gated behind the linear-access acknowledgement rather than withheld.

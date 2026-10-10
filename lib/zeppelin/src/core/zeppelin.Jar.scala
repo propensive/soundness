@@ -47,11 +47,6 @@ import serpentine.*
 import vacuous.*
 import zephyrine.*
 
-// The form for Java archives: `path.open[Jar]()`. A JAR is a ZIP, so a `JarHandle` is a
-// `Zip.Handle` refined with the archive's parsed manifest; entries and their content behave
-// exactly as they do for the `Zip` form.
-trait Jar
-
 object Jar:
   private val ManifestName: Text = t"META-INF/MANIFEST.MF"
 
@@ -133,9 +128,14 @@ object Jar:
   // The `META-INF/MANIFEST.MF` entry for the given attributes, with values wrapped at 72 bytes
   // per the JAR specification. Put it first in the `Zipfile`, as convention prefers.
   def manifest(attributes: (Text, Text)*)(using Zip.Compression): Zip.Entry =
-    val lines = attributes.to(List).map { (key, value) => wrap(t"$key: $value") }
+    val lines = attributes.to(List).map: (key, value) => wrap(t"$key: $value")
     val text = lines.join(t"", t"\r\n", t"\r\n\r\n")
     Zip.Entry(manifestRef, text)
 
   private def wrap(line: Text): Text =
     if line.length <= 70 then line else t"${line.s.take(70)}\r\n ${wrap(line.s.drop(70).tt)}"
+
+// The form for Java archives: `path.open[Jar]()`. A JAR is a ZIP, so a `JarHandle` is a
+// `Zip.Handle` refined with the archive's parsed manifest; entries and their content behave
+// exactly as they do for the `Zip` form.
+trait Jar

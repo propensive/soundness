@@ -163,7 +163,7 @@ object Acp:
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
-    =>  ((StopReason is Json.Decodable)^{tactic}) =
+    =>  ( (StopReason is Json.Decodable)^{tactic} ) =
 
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
@@ -201,7 +201,7 @@ object Acp:
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
-    =>  ((ToolKind is Json.Decodable)^{tactic}) =
+    =>  ( (ToolKind is Json.Decodable)^{tactic} ) =
 
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
@@ -228,7 +228,7 @@ object Acp:
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
-    =>  ((ToolCallStatus is Json.Decodable)^{tactic}) =
+    =>  ( (ToolCallStatus is Json.Decodable)^{tactic} ) =
 
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
@@ -256,7 +256,7 @@ object Acp:
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
-    =>  ((ToolCallContent is Json.Decodable)^{tactic}) =
+    =>  ( (ToolCallContent is Json.Decodable)^{tactic} ) =
 
       Json.Decodable(Morphology.Any): json =>
         json.`type`.as[Text] match
@@ -343,7 +343,7 @@ object Acp:
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
-    =>  ((PlanPriority is Json.Decodable)^{tactic}) =
+    =>  ( (PlanPriority is Json.Decodable)^{tactic} ) =
 
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
@@ -363,7 +363,7 @@ object Acp:
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
-    =>  ((PlanStatus is Json.Decodable)^{tactic}) =
+    =>  ( (PlanStatus is Json.Decodable)^{tactic} ) =
 
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
@@ -401,7 +401,7 @@ object Acp:
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
-    =>  ((SessionUpdate is Json.Decodable)^{tactic}) =
+    =>  ( (SessionUpdate is Json.Decodable)^{tactic} ) =
 
       Json.Decodable(Morphology.Any): json =>
         json.sessionUpdate.as[Text] match
@@ -485,7 +485,7 @@ object Acp:
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
-    =>  ((PermissionOptionKind is Json.Decodable)^{tactic}) =
+    =>  ( (PermissionOptionKind is Json.Decodable)^{tactic} ) =
 
       Json.Decodable(Morphology.Str): json =>
         json.as[Text] match
@@ -522,7 +522,7 @@ object Acp:
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])
-    =>  ((RequestPermissionOutcome is Json.Decodable)^{tactic}) =
+    =>  ( (RequestPermissionOutcome is Json.Decodable)^{tactic} ) =
 
       Json.Decodable(Morphology.Any): json =>
         json.outcome.as[Text] match
@@ -915,9 +915,9 @@ object Acp:
     private def ask[result](block: => result)(using Tactic[Acp.Error]): result =
       try block catch case error: JsonRpc.Error =>
         abort
-         ( Acp.Error
-            ( error.code.let(Acp.Error.reason(_)).or(Acp.Error.Reason.Internal),
-              error.detail ) )
+          ( Acp.Error
+             ( error.code.let(Acp.Error.reason(_)).or(Acp.Error.Reason.Internal),
+               error.detail ) )
 
     // The raw seam: sends a message exactly as given, without minting an id or awaiting an
     // answer, for the methods this library does not model.
@@ -1104,7 +1104,7 @@ object Acp:
 
     def `session/update`(sessionId: Text, update: SessionUpdate): Unit =
       turned1[SessionUpdate aka "update", Unit](())(handlers.updated0)
-       ( sessionId, update.aka["update"] )
+        ( sessionId, update.aka["update"] )
 
     // The protocol requires a permission request pending when its turn is cancelled to be
     // answered `Cancelled`. A request arriving after cancellation is answered without troubling
@@ -1120,12 +1120,12 @@ object Acp:
       if state.cancelled(sessionId) then RequestPermissionResult(Cancelled) else
         val outcome: RequestPermissionOutcome =
           turned2
-           [ ToolCallUpdate aka "toolCall",
-             List[PermissionOption] aka "options",
-             RequestPermissionOutcome ]
-           ( Cancelled )
-           ( handlers.permission0 )
-           ( sessionId, toolCall.aka["toolCall"], options.aka["options"] )
+            [ ToolCallUpdate aka "toolCall",
+              List[PermissionOption] aka "options",
+              RequestPermissionOutcome ]
+            ( Cancelled )
+            ( handlers.permission0 )
+            ( sessionId, toolCall.aka["toolCall"], options.aka["options"] )
 
         RequestPermissionResult(if state.cancelled(sessionId) then Cancelled else outcome)
 
@@ -1138,18 +1138,18 @@ object Acp:
       if handlers.readFile0 == null then unregistered(ReadTextFileResult(t"")) else
         val content: Text =
           turned3[Text aka "path", Optional[Int] aka "line", Optional[Int] aka "limit", Text]
-           ( t"" )
-           ( handlers.readFile0 )
-           ( sessionId, path.aka["path"], line.aka["line"], limit.aka["limit"] )
+            ( t"" )
+            ( handlers.readFile0 )
+            ( sessionId, path.aka["path"], line.aka["line"], limit.aka["limit"] )
 
         ReadTextFileResult(content)
 
     def `fs/write_text_file`(sessionId: Text, path: Text, content: Text): Json =
       if handlers.writeFile0 == null then unregistered(()) else
         turned2[Text aka "path", Text aka "content", Unit]
-         ( () )
-         ( handlers.writeFile0 )
-         ( sessionId, path.aka["path"], content.aka["content"] )
+          ( () )
+          ( handlers.writeFile0 )
+          ( sessionId, path.aka["path"], content.aka["content"] )
 
       Json.ast(Json.Ast(Json.JsonNull))
 
@@ -1169,8 +1169,8 @@ object Acp:
 
         case terminals: Terminals =>
           CreateTerminalResult
-           ( terminals.create
-              ( sessionId, command, args.or(Nil), env.or(Nil), cwd, outputByteLimit ) )
+            ( terminals.create
+               ( sessionId, command, args.or(Nil), env.or(Nil), cwd, outputByteLimit ) )
 
     def `terminal/output`(sessionId: Text, terminalId: Text): TerminalOutputResult =
       terminals match

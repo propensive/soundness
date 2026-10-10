@@ -127,6 +127,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
   val userId: Optional[UserId] =
     safely(System.properties.ethereal.user.id[Text]()).let(UserId(_))
+
   val userName: Optional[Text] = safely(System.properties.ethereal.user.name[Text]())
 
   val startTime: Long =
@@ -165,8 +166,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
   def ownsState: Boolean =
     val recorded: Optional[Text] =
-      if pidFile.existent() then safely(pidFile.read[Text].trim)
-      else Unset
+      if pidFile.existent() then safely(pidFile.read[Text].trim) else Unset
 
     recorded.let(_ == Process().pid.value.show).or(false)
 
@@ -231,7 +231,8 @@ def cli[bus <: Matchable](using executive: Executive)
             if hash == recorded.hash then
               scriptIdentity() = recorded.copy(mtime = mtime)
               true
-            else false
+            else
+              false
 
         . or(false)
 
@@ -283,6 +284,7 @@ def cli[bus <: Matchable](using executive: Executive)
         if peerRefused then Log.warn(DaemonLogEvent.PeerRefused(connection.peer.or(t"")))
         else if document.present then Log.warn(DaemonLogEvent.ProtocolMismatch)
         else Log.warn(DaemonLogEvent.UnrecognizedMessage)
+
         connection.close()
 
       // The launcher asks the daemon to exit once in-flight invocations end; not answered.
@@ -324,10 +326,12 @@ def cli[bus <: Matchable](using executive: Executive)
       // exit status, rather than closing on a launcher that would read that as a daemon of
       // another protocol.
       case Launcher.Message.Init(pid0, uid, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)
-          if draining() || userId.let(_ != UserId(uid)).or(false) =>
+        if draining() || userId.let(_ != UserId(uid)).or(false) =>
         val pid = Pid(pid0)
+
         if draining() then Log.warn(DaemonLogEvent.Refused(pid))
         else Log.warn(DaemonLogEvent.PeerRefused(uid))
+
         reply(Launcher.Message.ExitStatus(2))
         connection.close()
 
@@ -362,9 +366,9 @@ def cli[bus <: Matchable](using executive: Executive)
         // [closure-capture] local dispatch def laundered to pure function
         val dispatch0: Signal -> SignalResponse = caps.unsafe.unsafeAssumePure(dispatch)
         // [closure-capture] logging lambda laundered to pure function
-        val log0: DaemonLogEvent -> Unit = caps.unsafe.unsafeAssumePure(event => Log.info(event))
+        val log0: DaemonLogEvent -> Unit = caps.unsafe.unsafeAssumePure: event => Log.info(event)
         val session: Session = Session(connection, in, descriptors, dispatch0, log0)
-        columns.let { columns => rows.let { rows => session.windowSize() = (columns, rows) } }
+        columns.let: columns => rows.let: rows => session.windowSize() = (columns, rows)
         session.start()
 
         given environment: Environment = LazyEnvironment(env)
@@ -406,7 +410,7 @@ def cli[bus <: Matchable](using executive: Executive)
         val stderr: ji.OutputStream = Outlet(t"stderr", session.stderr, session.stderr.severed)
 
         def printStream(out: ji.OutputStream, page: Optional[Int]): ji.PrintStream =
-          charset(page).lay(ji.PrintStream(out, true)) { charset => ji.PrintStream(out, true, charset) }
+          charset(page).lay(ji.PrintStream(out, true)): charset => ji.PrintStream(out, true, charset)
 
         val input: ji.InputStream =
           charset(inputCodepage).lay(session.stdin): charset =>
@@ -427,8 +431,7 @@ def cli[bus <: Matchable](using executive: Executive)
           session.send(Launcher.Message.Mode(mode.canonical, mode.echo))
 
         def deliver(sourcePid: Pid, message: bus): Unit =
-          clients.each: (pid, client) =>
-            if sourcePid != pid then client.receive(message)
+          clients.each: (pid, client) => if sourcePid != pid then client.receive(message)
 
         // Generated lazily and memoized: re-runs the application's pure portion in
         // tab-completion mode to discover its subcommand/flag tree. Only the completions
@@ -438,32 +441,32 @@ def cli[bus <: Matchable](using executive: Executive)
         lazy val helpValue: Optional[Help] =
           // [by-name-receiver] help block lambda shares daemon state with other arguments
           scala.caps.unsafe.unsafeAssumeSeparate:
-           executive.help(name, environment, () => directory, stdio, login):
-             (interface: executive.Interface) ?=> block(using resident, interface, environment, summon[Monitor])
+            executive.help(name, environment, () => directory, stdio, login):
+              (interface: executive.Interface) ?=> block(using resident, interface, environment, summon[Monitor])
 
         lazy val resident: Resident over bus =
           // [by-name-receiver] resident constructor lambdas share single-owner daemon state
           scala.caps.unsafe.unsafeAssumeSeparate:
-           new Resident
-             ( pid,
-               () => drain(),
-               shellInput,
-               shellOutput,
-               shellError,
-               script.as[Path on Local],
-               name,
-               startTime,
-               () => helpValue,
-               setMode,
-               session.terminal,
-               invokedAs,
-               () => windowSize0(),
-               umask.let(Umask.parse(_)),
-               session.fdtable,
-               raws ):
-             type Transport = bus
-             def bus: Chain[Transport] = clientState.bus.chain
-             def broadcast(message: Transport): Unit = deliver(this.pid, message)
+            new Resident
+              ( pid,
+                () => drain(),
+                shellInput,
+                shellOutput,
+                shellError,
+                script.as[Path on Local],
+                name,
+                startTime,
+                () => helpValue,
+                setMode,
+                session.terminal,
+                invokedAs,
+                () => windowSize0(),
+                umask.let(Umask.parse(_)),
+                session.fdtable,
+                raws ):
+              type Transport = bus
+              def bus: Chain[Transport] = clientState.bus.chain
+              def broadcast(message: Transport): Unit = deliver(this.pid, message)
 
         Log.fine(DaemonLogEvent.NewCli)
 
@@ -476,13 +479,13 @@ def cli[bus <: Matchable](using executive: Executive)
             // [by-name-receiver] invocation arguments (directory lambda, stdio, resident) share
             // state
             scala.caps.unsafe.unsafeAssumeSeparate:
-             executive.invocation
-               ( textArguments,
-                 environment,
-                 () => directory,
-                 stdio,
-                 resident,
-                 login )
+              executive.invocation
+                ( textArguments,
+                  environment,
+                  () => directory,
+                  stdio,
+                  resident,
+                  login )
 
           clientState.invocation.offer(cli.asInstanceOf[AnyRef])
 
@@ -493,7 +496,8 @@ def cli[bus <: Matchable](using executive: Executive)
 
             // [by-name-receiver] process(cli)(result): result derived from cli
             exitStatus = scala.caps.unsafe.unsafeAssumeSeparate(executive.process(cli)(result))
-          else exitStatus = Exit.Ok
+          else
+            exitStatus = Exit.Ok
 
         // `Throwable`, not `Exception`: a `java.lang.Error` (a linkage error from a stale class
         // file, say) would otherwise escape. The backstop already distinguishes the two,
@@ -553,9 +557,9 @@ def cli[bus <: Matchable](using executive: Executive)
       // The timer's callback logs through the same single-owner syslog.
       // [by-name-receiver] timeout by-name body captures shared syslog
       val inactivityTimer: Timeout^ = scala.caps.unsafe.unsafeAssumeSeparate:
-       Timeout(idleTimeout):
-        Log.warn(DaemonLogEvent.IdleTimeout)
-        termination
+        Timeout(idleTimeout):
+          Log.warn(DaemonLogEvent.IdleTimeout)
+          termination
 
       // Bind and start accepting *before* the build- and pid-files are written:
       // a launcher waits for those readiness files to appear and then connects,
@@ -575,80 +579,81 @@ def cli[bus <: Matchable](using executive: Executive)
       // syslog, timer and monitor); nothing is an aliased writer.
       // [by-name-receiver] acceptor and serving block share daemon state
       scala.caps.unsafe.unsafeAssumeSeparate:
-       safely:
-        domainSocket.listenConnections(acceptor, ownerOnly = true):
-          val buildId = launcherBuildId()
+        safely:
+          domainSocket.listenConnections(acceptor, ownerOnly = true):
+            val buildId = launcherBuildId()
 
-          scriptPath.let: script =>
-            safely:
-              import anticipation.instantiables.epochMillisecondsInstantiable
-              hashScript(script).let: hash =>
-                scriptIdentity() =
-                  ScriptIdentity(script.filesize().long, script.modified[Long](), hash)
+            scriptPath.let: script =>
+              safely:
+                import anticipation.instantiables.epochMillisecondsInstantiable
 
-          // Record the launcher this daemon was started from as
-          // `<buildId> <size> <mtimeMillis>`, so that the launcher's staleness
-          // check can compare a later invocation's file against it; the first
-          // field is read only by launchers that predate the content check. A size
-          // mismatch displaces outright; an mtime mismatch makes the launcher ask
-          // this daemon to verify itself (the `v` message), so content is hashed
-          // at most once per change, by the party with the memory to avoid
-          // repeating it. Without a launcher (plain `java -jar`) there is nothing
-          // to compare, so only the build id is written.
-          val buildLine: Text =
-            scriptIdentity().lay(buildId.show): recorded =>
-              t"$buildId ${recorded.size} ${recorded.mtime}"
+                hashScript(script).let: hash =>
+                  scriptIdentity() =
+                    ScriptIdentity(script.filesize().long, script.modified[Long](), hash)
 
-          buildFile.open[File](Write, OpenFlag.Create)(file.write(buildLine))
-          val pidValue = Process().pid.value.show
-          pidFile.open[File](Write, OpenFlag.Create)(file.write(pidValue))
+            // Record the launcher this daemon was started from as
+            // `<buildId> <size> <mtimeMillis>`, so that the launcher's staleness
+            // check can compare a later invocation's file against it; the first
+            // field is read only by launchers that predate the content check. A size
+            // mismatch displaces outright; an mtime mismatch makes the launcher ask
+            // this daemon to verify itself (the `v` message), so content is hashed
+            // at most once per change, by the party with the memory to avoid
+            // repeating it. Without a launcher (plain `java -jar`) there is nothing
+            // to compare, so only the build id is written.
+            val buildLine: Text =
+              scriptIdentity().lay(buildId.show): recorded =>
+                t"$buildId ${recorded.size} ${recorded.mtime}"
 
-          task(n"pid-watcher"):
-            safely:
-              // Watching the launcher itself is defence-in-depth: a rebuild that
-              // rewrites it in place corrupts the zip this JVM is running from, so
-              // the daemon must die promptly rather than serve broken no-ops.
-              // Evaluating `ownsState` here forces the classes the handler needs
-              // while the jar is still readable.
-              ownsState
-              val watched: List[Path on Local] =
-                scriptPath.let(List(socketFile, buildFile, pidFile, _))
-                . or(List(socketFile, buildFile, pidFile))
+            buildFile.open[File](Write, OpenFlag.Create)(file.write(buildLine))
+            val pidValue = Process().pid.value.show
+            pidFile.open[File](Write, OpenFlag.Create)(file.write(pidValue))
 
-              // `Watch.allOpenable` is bound to `Iterable`, which the opaque `List` is not.
-              watched.stdlib
-              . open[Watch](): watcher ?=>
-                watcher.stream.each:
-                  case event@(Delete(_, _) | Modify(_, _) | NewFile(_, _)) =>
-                    val eventFile: Text = event match
-                      case Delete(_, file)  => file
-                      case Modify(_, file)  => file
-                      case NewFile(_, file) => file
-                      case other            => t""
+            task(n"pid-watcher"):
+              safely:
+                // Watching the launcher itself is defence-in-depth: a rebuild that
+                // rewrites it in place corrupts the zip this JVM is running from, so
+                // the daemon must die promptly rather than serve broken no-ops.
+                // Evaluating `ownsState` here forces the classes the handler needs
+                // while the jar is still readable.
+                ownsState
 
-                    // A metadata-only change to the launcher (`touch`) leaves its
-                    // content intact; verify it before treating the event as fatal
-                    // so that only a real rewrite terminates the daemon. State-file
-                    // events are always fatal. The launcher and the state files are
-                    // in different directories, but filenames suffice to tell them
-                    // apart: the state files' names are fixed (`build`/`pid`/
-                    // `socket`), and the launcher bears the application's name.
-                    val benign = scriptPath.lay(false): script =>
-                      eventFile == script.name && verifyScript()
+                val watched: List[Path on Local] =
+                  scriptPath.let(List(socketFile, buildFile, pidFile, _))
+                  . or(List(socketFile, buildFile, pidFile))
 
-                    // As for a stale verdict above: the rewritten jar may make the log
-                    // event's class unloadable, and termination must not wait on it.
-                    if !benign then
-                      try Log.warn(DaemonLogEvent.Termination) finally termination
+                // `Watch.allOpenable` is bound to `Iterable`, which the opaque `List` is not.
+                watched.stdlib
+                . open[Watch](): watcher ?=>
+                  watcher.stream.each:
+                    case event@(Delete(_, _) | Modify(_, _) | NewFile(_, _)) =>
+                      val eventFile: Text = event match
+                        case Delete(_, file)  => file
+                        case Modify(_, file)  => file
+                        case NewFile(_, file) => file
+                        case other            => t""
 
-                  case other =>
-                    ()
+                      // A metadata-only change to the launcher (`touch`) leaves its
+                      // content intact; verify it before treating the event as fatal
+                      // so that only a real rewrite terminates the daemon. State-file
+                      // events are always fatal. The launcher and the state files are
+                      // in different directories, but filenames suffice to tell them
+                      // apart: the state files' names are fixed (`build`/`pid`/
+                      // `socket`), and the launcher bears the application's name.
+                      val benign = scriptPath.lay(false): script =>
+                        eventFile == script.name && verifyScript()
 
-          // The accept loop runs on its own daemon inside `listenConnections`, so
-          // park the supervisor here to keep the daemon process alive until
-          // `termination` (an idle timeout, a watched-file change, or an explicit
-          // shutdown) calls `System.exit`.
-          Promise[Unit]().await()
+                      // As for a stale verdict above: the rewritten jar may make the log
+                      // event's class unloadable, and termination must not wait on it.
+                      if !benign then try Log.warn(DaemonLogEvent.Termination) finally termination
+
+                    case other =>
+                      ()
+
+            // The accept loop runs on its own daemon inside `listenConnections`, so
+            // park the supervisor here to keep the daemon process alive until
+            // `termination` (an idle timeout, a watched-file change, or an explicit
+            // shutdown) calls `System.exit`.
+            Promise[Unit]().await()
 
     Exit.Ok
 

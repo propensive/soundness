@@ -32,11 +32,10 @@
                                                                                                   */
 package caesura
 
-import scala.caps
-
 import java.lang as jl
 import java.util as ju
 
+import scala.caps
 import scala.collection.mutable as scm
 import scala.compiletime.*
 
@@ -86,8 +85,7 @@ object Sheet:
     def table(dsv: Sheet): Scaffold[Dsv, Text] =
       val columns: List[Text] =
         dsv.columns.let(_.to[List]).or:
-          dsv.rows.prim.let: head =>
-            (1 to head.data.length).to(List).map(_.show)
+          dsv.rows.prim.let: head => (1 to head.data.length).to(List).map(_.show)
 
         . or(Nil)
 
@@ -98,7 +96,7 @@ object Sheet:
 
   // Captures the tactic it raises through.
   given aggregable: (format: Dsv.Format) => (tactic: Tactic[Dsv.Error])
-  =>  ((Sheet is Aggregable by Text)^{tactic}) =
+  =>  ( (Sheet is Aggregable by Text)^{tactic} ) =
     new Aggregable:
       type Self = Sheet
       type Operand = Text
@@ -111,8 +109,8 @@ object Sheet:
 
       private def sheet(iterator: Iterator[Dsv]^): Sheet =
         val rows = Array.from(iterator)
-        if format.header then Sheet(rows, format, rows.prim.let(_.header))
-        else Sheet(rows, format)
+
+        if format.header then Sheet(rows, format, rows.prim.let(_.header)) else Sheet(rows, format)
 
   given showable: Dsv.Format => Sheet is Showable = _.rows.to[List].map(_.show).join(t"\n")
 
@@ -129,6 +127,7 @@ object Sheet:
     val columns = sheet.columns.lay(t"○")(cells(_))
 
     t"Sheet(format:${sheet.format.lay(t"○")(_.inspect)} ╱ columns:$columns ╱ rows:$rows)"
+
   given streamable: Dsv.Format => Sheet is Streamable by Text over Credit = sheet =>
     Stream(sheet.rows.readable.iterator.map(_.show+t"\n"))
 
@@ -152,7 +151,7 @@ object Sheet:
     rowIterator:
       new Parser(() => stream.refill(Credit(block)) match
         case count: Int =>
-          val text = stream.lend { region => range => region.materialize(range.capped(count)) }
+          val text = stream.lend: region => range => region.materialize(range.capped(count))
           stream.skip(count)
           text
 
@@ -176,7 +175,7 @@ object Sheet:
     DsvReader(format = format, tactic = caps.unsafe.unsafeAssumePure(tactic), parser =
       new Parser(() => stream.refill(Credit(block)) match
         case count: Int =>
-          val text = stream.lend { region => range => region.materialize(range.capped(count)) }
+          val text = stream.lend: region => range => region.materialize(range.capped(count))
           stream.skip(count)
           text
 
@@ -390,8 +389,10 @@ object Sheet:
 
           headings = mapBuilder.result().to(Map)
           advanceData()
-        else true
-      else false
+        else
+          true
+      else
+        false
 
     // The next data row, or `Unset` at the end of the input.
     update def nextRow(): Optional[Dsv] =
@@ -412,16 +413,16 @@ case class Sheet
     rows.to[List].map(_.as[value])
 
   override def hashCode: Int =
-    (ju.Arrays.hashCode(Array.unsafeJvm(rows).asInstanceOf[scala.Array[Object | Null]])*31
-        + format.hashCode)*31
-    + columns.lay(-1): array =>
+    (ju.Arrays.hashCode(Array.unsafeJvm(rows).asInstanceOf[scala.Array[Object | Null]])*31 +
+      format.hashCode)*31 +
+      columns.lay(-1): array =>
         ju.Arrays.hashCode(Array.unsafeJvm(array).asInstanceOf[scala.Array[Object | Null]])
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case dsv: Sheet =>
-      dsv.rows.readable.sameElements(rows.readable) && dsv.format == format
-      && columns.lay(dsv.columns.absent): columns =>
-           dsv.columns.lay(false)(other => columns.readable.sameElements(other.readable))
+      dsv.rows.readable.sameElements(rows.readable) && dsv.format == format &&
+        columns.lay(dsv.columns.absent): columns =>
+          dsv.columns.lay(false): other => columns.readable.sameElements(other.readable)
 
     case _ =>
       false

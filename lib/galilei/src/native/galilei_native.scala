@@ -32,23 +32,21 @@
                                                                                                   */
 package galilei
 
-import scala.caps
-
 import java.io as ji
-
-import murmuration.{has, filter, map, foreach}
 import java.nio.channels as jnc
 import java.nio.file as jnf
 import java.nio.file.attribute as jnfa
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import gossamer.*
+import murmuration.{has, filter, map, foreach}
 import prepositional.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
-
 import Io.Error.{Operation, Reason}
 
 package filesystemBackends:
@@ -66,7 +64,7 @@ package filesystemBackends:
       // as their types (and, for `FileSystemException`, their `getReason` texts) permit.
       // Inline, as the core `Path.protect`: the thunk must not cross a checked boundary.
       private inline def protect[result](path: Path on Plane, operation: Operation)
-        (inline block: result)
+        ( inline block: result )
         ( using Tactic[Io.Error] )
       :   result =
 
@@ -117,12 +115,14 @@ package filesystemBackends:
               else jnf.Files.readAttributes
                      ( javaPath(path), classOf[jnfa.BasicFileAttributes],
                        jnf.LinkOption.NOFOLLOW_LINKS ) )
+
             . nn
 
           def unixAttribute(name: String): Optional[Int | Long] =
             try
               ( if dereference then jnf.Files.getAttribute(javaPath(path), name)
                 else jnf.Files.getAttribute(javaPath(path), name, jnf.LinkOption.NOFOLLOW_LINKS) )
+
               . nn.absolve match
                 case value: Int  => value
                 case value: Long => value
@@ -192,8 +192,8 @@ package filesystemBackends:
 
             try
 
-                stream.iterator().nn.asScala.map(_.getFileName.nn.toString.tt).toList
-                . to(Chain)
+              stream.iterator().nn.asScala.map(_.getFileName.nn.toString.tt).toList
+              . to(Chain)
             finally stream.close()
 
       private def permissions(mode: Int): java.util.Set[jnfa.PosixFilePermission] =
@@ -253,7 +253,7 @@ package filesystemBackends:
           if dereference then jnf.Files.copy(javaPath(source), javaPath(destination))
           else
             jnf.Files.copy
-              (javaPath(source), javaPath(destination), jnf.LinkOption.NOFOLLOW_LINKS)
+              ( javaPath(source), javaPath(destination), jnf.LinkOption.NOFOLLOW_LINKS )
 
       def move
         ( source:      Path on Plane,
@@ -270,11 +270,11 @@ package filesystemBackends:
 
             case (true, true) =>
               jnf.Files.move
-                (javaPath(source), javaPath(destination), jnf.StandardCopyOption.ATOMIC_MOVE)
+                ( javaPath(source), javaPath(destination), jnf.StandardCopyOption.ATOMIC_MOVE )
 
             case (false, false) =>
               jnf.Files.move
-                (javaPath(source), javaPath(destination), jnf.LinkOption.NOFOLLOW_LINKS)
+                ( javaPath(source), javaPath(destination), jnf.LinkOption.NOFOLLOW_LINKS )
 
             case (false, true) =>
               jnf.Files.move
@@ -299,7 +299,8 @@ package filesystemBackends:
         protect(path, Operation.Metadata):
           ( if dereference then jnf.Files.getAttribute(javaPath(path), "unix:nlink")
             else jnf.Files.getAttribute
-                   (javaPath(path), "unix:nlink", jnf.LinkOption.NOFOLLOW_LINKS) )
+                   ( javaPath(path), "unix:nlink", jnf.LinkOption.NOFOLLOW_LINKS ) )
+
           . nn.absolve match
             case count: Int => count
 
@@ -398,6 +399,7 @@ package filesystemBackends:
           try jnc.FileChannel.open(javaPath(path), optionSet).nn
           catch case error: Exception =>
             import scala.unsafeExceptions.canThrowAny
+
             if !writable then throw error else
               writable = false
               optionSet.remove(jnf.StandardOpenOption.WRITE)
@@ -416,7 +418,8 @@ package filesystemBackends:
                 if await then channel.lock(offset, extent, shared).nn
                 else channel.tryLock(offset, extent, shared).nn
               catch case _: jnc.OverlappingFileLockException => if shared then Some(null) else None
-            else Some(null)
+            else
+              Some(null)
 
           if lock.isEmpty then abort(Io.Error(path, Operation.Open, Reason.Busy))
 
@@ -446,8 +449,7 @@ package filesystemBackends:
                   val buffer = java.nio.ByteBuffer.wrap(Array.unsafeJvm(data), 0, available).nn
                   var position = offset + writeOffset
 
-                  while buffer.hasRemaining do
-                    position += channel.write(buffer, position)
+                  while buffer.hasRemaining do position += channel.write(buffer, position)
 
                   available
 
@@ -464,11 +466,12 @@ package filesystemBackends:
 
         // The mode applies only when this open creates the file.
         val creating: Boolean =
-          (flags.has(OpenFlag.Create) || flags.has(OpenFlag.Exclusive))
-          && !jnf.Files.exists(javaPath(path), jnf.LinkOption.NOFOLLOW_LINKS)
+          (flags.has(OpenFlag.Create) || flags.has(OpenFlag.Exclusive)) &&
+            !jnf.Files.exists(javaPath(path), jnf.LinkOption.NOFOLLOW_LINKS)
 
         val options: List[jnf.OpenOption] = flags.filter: flag =>
           flag != OpenFlag.Lock && flag != OpenFlag.LockShared && flag != OpenFlag.Await
+
         . map:
           case OpenFlag.Read      => jnf.StandardOpenOption.READ
           case OpenFlag.Write     => jnf.StandardOpenOption.WRITE
@@ -493,6 +496,7 @@ package filesystemBackends:
           // the varargs formal is a pure Scala array, which no array value can satisfy.
           val optionSet = java.util.HashSet[jnf.OpenOption]()
           options2.foreach { option => optionSet.add(option); () }
+
           protect(path, Operation.Open):
             val channel = jnc.FileChannel.open(javaPath(path), optionSet).nn
             if creating then apply(path, mode)
@@ -520,10 +524,13 @@ package filesystemBackends:
                 if shared then
                   if await then channel.lock(0L, Long.MaxValue, true).nn
                   else channel.tryLock(0L, Long.MaxValue, true).nn
-                else if await then channel.lock().nn
-                else channel.tryLock().nn
+                else if await then
+                  channel.lock().nn
+                else
+                  channel.tryLock().nn
               catch case _: jnc.OverlappingFileLockException => if shared then Some(null) else None
-            else Some(null)
+            else
+              Some(null)
 
           if lock.isEmpty then abort(Io.Error(path, Operation.Open, Reason.Busy))
 
@@ -534,16 +541,16 @@ package filesystemBackends:
             // `finally` after `lambda` returns — so the capture is asserted safe with
             // `unsafeAssumePure`.
             lambda:
-             // The channel is this handle's single owner (see the comment above).
-             // [closure-capture] handle closures all capture single-owner channel
-             scala.caps.unsafe.unsafeAssumeSeparate:
-              Handle
-                ( () => unsafely(zephyrine.chain(Streamable.channel.stream(channel))),
-                  data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data))) )
-                // [fresh-in-lambda] fresh stream minted inside closure (native CC)
-                ( () => unsafely(caps.unsafe.unsafeAssumePure(Streamable.channel.stream(channel))),
-                  // [fresh-in-lambda] fresh sink minted inside closure (native CC)
-                  () => unsafely(caps.unsafe.unsafeAssumePure(Sink.channel.intake(channel))) )
+              // The channel is this handle's single owner (see the comment above).
+              // [closure-capture] handle closures all capture single-owner channel
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                Handle
+                  ( () => unsafely(zephyrine.chain(Streamable.channel.stream(channel))),
+                    data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data))) )
+                  // [fresh-in-lambda] fresh stream minted inside closure (native CC)
+                  ( () => unsafely(caps.unsafe.unsafeAssumePure(Streamable.channel.stream(channel))),
+                    // [fresh-in-lambda] fresh sink minted inside closure (native CC)
+                    () => unsafely(caps.unsafe.unsafeAssumePure(Sink.channel.intake(channel))) )
           finally lock.foreach: held =>
             // Closing the channel already releases the lock, and a fully-consumed stream
             // closes the channel itself, so release after that is a no-op.
