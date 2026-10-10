@@ -394,7 +394,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
     // -------------------------------------------------------------------------
 
     suite(m"Stress: 64 MiB document streamed through the direct parser (512 MB heap)"):
-      import parasite.threading.platformThreading
+      import parasite.threads.platformThreads
 
       constrained(m"Count directly with Breviloquence")(target = 5*Second):
         '{

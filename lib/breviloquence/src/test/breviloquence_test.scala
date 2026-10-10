@@ -40,7 +40,7 @@ import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import denominative.dysasymptotics.linearSize
 import supervisors.globalSupervisor
-import threading.virtualThreading
+import threads.virtualThreads
 import probates.panicProbate
 
 case class BadPerson(name: Int, age: Text) derives CanEqual

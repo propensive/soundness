@@ -350,7 +350,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     // -------------------------------------------------------------------------
 
     suite(m"Stress: 64 MiB message streamed through the direct parser (512 MB heap)"):
-      import parasite.threading.platformThreading
+      import parasite.threads.platformThreads
 
       constrained(m"Count directly with Locomotion")(target = 5*Second):
         '{
