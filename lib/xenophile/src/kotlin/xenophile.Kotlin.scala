@@ -121,7 +121,9 @@ object Kotlin:
           case "toString" => s"<function proxy>"
           case _          => handler(arguments)
 
-    def invokeDefault(owner: Class[?], name: String, arguments: scala.Array[Any | Null]): Any | Null =
+    def invokeDefault(owner: Class[?], name: String, arguments: scala.Array[Any | Null])
+    :   Any | Null =
+
       val key = s"${owner.getName}#$name#${arguments.length}"
 
       val handle = handles.computeIfAbsent(key, _ =>

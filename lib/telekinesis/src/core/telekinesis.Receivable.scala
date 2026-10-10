@@ -46,7 +46,8 @@ trait Receivable2:
   =>  ( (content is Receivable)^{tactic} ) =
 
     Receivable:
-      body => content(body.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].memoize.utf8)
+      body =>
+        content(body.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].memoize.utf8)
 
 object Receivable extends Receivable2:
   // A named SAM rather than a function type: a function type may not take a
@@ -83,4 +84,6 @@ trait Receivable extends Typeclass:
   // Widened (`Response^`): a reader may consume a response whose streamed body
   // retains the live connection it arrived on.
   def read(response: Http.Response^): Self
-  def map[self2](lambda: Self => self2): (self2 is Receivable)^{this, lambda} = response => lambda(read(response))
+
+  def map[self2](lambda: Self => self2): (self2 is Receivable)^{this, lambda} =
+    response => lambda(read(response))

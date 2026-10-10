@@ -305,7 +305,8 @@ object Flow:
     def recur(cluster: Int, lineStart: Int, acc: List[textual]): List[textual] =
       if cluster >= clusters then
         if lineStart == cluster then acc else segment(lineStart, cluster) :: acc
-      else if cluster > lineStart && widths.readable(cluster + 1) - widths.readable(lineStart) > width
+      else if cluster > lineStart &&
+        widths.readable(cluster + 1) - widths.readable(lineStart) > width
       then recur(cluster + 1, cluster, segment(lineStart, cluster) :: acc)
       else
         recur(cluster + 1, lineStart, acc)

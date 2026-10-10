@@ -105,7 +105,9 @@ private[hallucination] object Vp8Predict:
     ws(0) = if mby == 0 then 127 else if mbx == 0 then 129 else left(0)
     ws
 
-  def createBorderChroma(mbx: Int, mby: Int, top: scala.Array[Int], left: scala.Array[Int]): scala.Array[Int] =
+  def createBorderChroma(mbx: Int, mby: Int, top: scala.Array[Int], left: scala.Array[Int])
+  :   scala.Array[Int] =
+
     val stride = ChromaStride
     val ws = new scala.Array[Int](ChromaBlockSize)
 
@@ -140,7 +142,12 @@ private[hallucination] object Vp8Predict:
 
   // Adds a decoded 4×4 residual block to the predicted pixels, clamping to 0–255.
   def addResidue
-    ( pblock: scala.Array[Int], rblock: scala.Array[Int], rOffset: Int, y0: Int, x0: Int, stride: Int )
+    ( pblock:  scala.Array[Int],
+      rblock:  scala.Array[Int],
+      rOffset: Int,
+      y0:      Int,
+      x0:      Int,
+      stride:  Int )
   :   Unit =
 
     var pos = y0*stride + x0
@@ -182,7 +189,9 @@ private[hallucination] object Vp8Predict:
 
       y += 1
 
-  def predictDcpred(a: scala.Array[Int], size: Int, stride: Int, above: Boolean, left: Boolean): Unit =
+  def predictDcpred(a: scala.Array[Int], size: Int, stride: Int, above: Boolean, left: Boolean)
+  :   Unit =
+
     var sum = 0
     var shift = if size == 8 then 2 else 3
 
@@ -227,13 +236,19 @@ private[hallucination] object Vp8Predict:
 
       while x < size do
         val value = leftMinusP + a((y0 - 1)*stride + x0 + x)
-        writable(a)((y0 + y)*stride + x0 + x) = if value < 0 then 0 else if value > 255 then 255 else value
+
+        writable(a)((y0 + y)*stride + x0 + x) =
+          if value < 0 then 0 else if value > 255 then 255 else value
+
         x += 1
 
       y += 1
 
   // Dispatches each of a macroblock's sixteen 4×4 subblocks to its B_PRED mode, adding residue.
-  def predict4x4(ws: scala.Array[Int], stride: Int, modes: scala.Array[Int], resdata: scala.Array[Int]): Unit =
+  def predict4x4
+    ( ws: scala.Array[Int], stride: Int, modes: scala.Array[Int], resdata: scala.Array[Int] )
+  :   Unit =
+
     var sby = 0
 
     while sby < 4 do

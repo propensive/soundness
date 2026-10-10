@@ -255,7 +255,8 @@ extension [form](ordinal: Ordinal in form)
 extension [form](range: Interval in form)
   inline def capped(count: Int): Interval in form =
     val interval: Interval = range
-    Interval.sized(interval.start.n0, interval.size.min(count.max(0))).asInstanceOf[Interval in form]
+    Interval.sized(interval.start.n0, interval.size.min(count.max(0)))
+    . asInstanceOf[Interval in form]
 
   // The complement of `capped`: drop the first `count` indexes rather than keep them. Named
   // `beyond` because `skip`, `keep` and `after` are rudiments' segment vocabulary, and a

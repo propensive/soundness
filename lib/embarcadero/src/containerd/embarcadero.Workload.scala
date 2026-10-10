@@ -136,7 +136,8 @@ object Workload:
           // reaped before deletion, since containerd refuses to delete an unreaped task.
           if started then
             // [by-name-receiver] safely by-name teardown captures containerd and monitor
-            scala.caps.unsafe.unsafeAssumeSeparate(safely(containerd.killTask(created.id, 9, all = true)))
+            scala.caps.unsafe.unsafeAssumeSeparate
+              ( safely(containerd.killTask(created.id, 9, all = true)) )
             // [by-name-receiver]
             scala.caps.unsafe.unsafeAssumeSeparate(safely(containerd.waitTask(created.id)))
 

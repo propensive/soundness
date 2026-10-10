@@ -31,6 +31,10 @@
                                                                                                   */
 package scintillate
 
+object Frontend:
+  // The companion default, outranked by a `frontends` given imported by name.
+  given default: Frontend = Frontend.ThreadPerConnection
+
 // The engine `SocketServer.handle` serves with. `ThreadPerConnection` (the default)
 // spawns a virtual-thread daemon per accepted socket: any handler, streaming responses,
 // TLS, HTTP/2, per-connection sessions. `Reactive` serves cleartext HTTP/1.1 on the
@@ -39,10 +43,6 @@ package scintillate
 // path per connection, and a TLS-configured server ignores the selection entirely.
 enum Frontend:
   case ThreadPerConnection, Reactive
-
-object Frontend:
-  // The companion default, outranked by a `frontends` given imported by name.
-  given default: Frontend = Frontend.ThreadPerConnection
 
 // The choice package: `import frontends.reactiveFrontend` selects the reactor.
 package frontends:

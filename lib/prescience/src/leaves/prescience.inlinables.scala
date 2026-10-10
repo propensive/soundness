@@ -71,13 +71,6 @@ object inlinables:
   given string: (String is Inlinable) = StringInlinable
   given boolean: (Boolean is Inlinable) = BooleanInlinable
 
-// The tier-B subject: its given is conditional, so the summoned tree is an
-// application — not a static path — and tier A cannot evaluate it. The inner
-// implicit search of the staging tier resolves and *runs* it, yielding a live
-// instance at expansion time; the throwing runtime sibling again proves that
-// a passing test inlined at compile time.
-case class Celsius(degrees: Int)
-
 object Celsius:
   given inlinable: (dummy: DummyImplicit) => (Celsius is Inlinable) = new Inlinable:
     type Self = Celsius
@@ -87,3 +80,10 @@ object Celsius:
 
     def readRuntime(input: String): Celsius =
       throw AssertionError("prescience: runtime tier invoked for a staging-tier instance")
+
+// The tier-B subject: its given is conditional, so the summoned tree is an
+// application — not a static path — and tier A cannot evaluate it. The inner
+// implicit search of the staging tier resolves and *runs* it, yielding a live
+// instance at expansion time; the throwing runtime sibling again proves that
+// a passing test inlined at compile time.
+case class Celsius(degrees: Int)

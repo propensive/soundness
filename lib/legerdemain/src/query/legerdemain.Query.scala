@@ -213,7 +213,8 @@ object Query extends Dynamic:
       case Reason.Missing => m"the parameter was not present in the query string"
 
   case class Error(reason: Query.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(205, reason.number)(m"the query parameter could not be read because $reason")
+  extends fulminate.Error(205, reason.number)
+    ( m"the query parameter could not be read because $reason" )
 
 case class Query private (values: List[(Text, Text)]) extends Dynamic:
   // private lazy val map: Map[Text, Text | List[Text]] = values.groupMap(_(0))(_(1))
@@ -224,7 +225,8 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
   infix def ++ (query: Query) = Query(values + query.values)
 
 
-  def selectDynamic[result](label: String)(using erased parametric: label.type is Parametric to result)
+  def selectDynamic[result](label: String)
+    ( using erased parametric: label.type is Parametric to result )
     ( using decodable: result is Decodable in Query )
   :   result =
 

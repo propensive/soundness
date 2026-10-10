@@ -56,7 +56,9 @@ import zephyrine.{stream as _, *}
 // single abstract method.
 object Streamable:
   given bytes: Data is Streamable by Data over Credit = Stream(_)
-  given text: [textual <: Text] => textual is Streamable by Text over Credit = value => Stream(value)
+
+  given text: [textual <: Text] => textual is Streamable by Text over Credit =
+    value => Stream(value)
 
   // A `Text` value streamed as bytes, through the encoder duct.
   given textData: (encoder: Codepage, buffering: Buffering)
@@ -77,21 +79,25 @@ object Streamable:
   // as it is: a request's body, a multipart part's.
   given spring: Spring[Data] is Streamable by Data over Credit = _()
 
-  given inputStream: [input <: ji.InputStream] => (tactic: Tactic[Truncation.Error], buffering: Buffering)
+  given inputStream: [input <: ji.InputStream]
+  =>  ( tactic: Tactic[Truncation.Error], buffering: Buffering )
   =>  ( (input is Streamable by Data over Credit)^{tactic} ) =
     // Laundered for the Scala.js pipeline, as `Sink.outputStream` (see #1520).
     // [anon-fresh-field] scala.js SAM anonymous class hides tactic evidence
     val t: () -> AnyRef = caps.unsafe.unsafeAssumePure: () => tactic.asInstanceOf[AnyRef]
 
     value =>
-      Streamable.stream(jn.channels.Channels.newChannel(value).nn)(using t().asInstanceOf[Tactic[Truncation.Error]^], summon[Buffering])
+      Streamable.stream(jn.channels.Channels.newChannel(value).nn)
+        ( using t().asInstanceOf[Tactic[Truncation.Error]^], summon[Buffering] )
 
   given channel: (tactic: Tactic[Truncation.Error], buffering: Buffering)
   =>  ( (jn.channels.ReadableByteChannel is Streamable by Data over Credit)^{tactic} ) =
     // Laundered for the Scala.js pipeline, as `Sink.outputStream` (see #1520).
     // [anon-fresh-field]
     val t: () -> AnyRef = caps.unsafe.unsafeAssumePure: () => tactic.asInstanceOf[AnyRef]
-    value => Streamable.stream(value)(using t().asInstanceOf[Tactic[Truncation.Error]^], summon[Buffering])
+
+    value =>
+      Streamable.stream(value)(using t().asInstanceOf[Tactic[Truncation.Error]^], summon[Buffering])
 
   given reader: [input <: ji.Reader] => (tactic: Tactic[Truncation.Error], buffering: Buffering)
   =>  ( (input is Streamable by Text over Credit)^{tactic} ) =
@@ -141,7 +147,9 @@ object Streamable:
                 try value.close() catch case _: Exception => ()
 
                 { val received: Long = total
-                abort(Truncation.Error(received.b))(using t().asInstanceOf[Tactic[Truncation.Error]^]) }
+
+                abort(Truncation.Error(received.b))
+                  ( using t().asInstanceOf[Tactic[Truncation.Error]^] ) }
 
         override update def close(): Unit =
           ended = true

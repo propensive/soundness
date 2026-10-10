@@ -43,16 +43,6 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-// The common upper bound of every `Directory.Handle`'s fresh plane. Serpentine givens defined
-// generically over `plane <: Subtree` supply the naming rules for paths on any handle's plane,
-// so `dir / "name"` validates its names at compile time: in particular, `.` and `..` are
-// inadmissible, making escape from an opened directory inexpressible rather than checked.
-//
-// Deliberately, a subtree plane has no `Filesystem` instance: galilei's absolute-path
-// operations (bounded by `[plane: Filesystem]`) therefore cannot apply to subtree paths, which
-// would resolve them against the working directory instead of the handle.
-trait Subtree
-
 object Subtree:
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
 
@@ -144,3 +134,13 @@ object Subtree:
 
     import filesystemOptions.deleteOnlyEmpty
     path.delete()
+
+// The common upper bound of every `Directory.Handle`'s fresh plane. Serpentine givens defined
+// generically over `plane <: Subtree` supply the naming rules for paths on any handle's plane,
+// so `dir / "name"` validates its names at compile time: in particular, `.` and `..` are
+// inadmissible, making escape from an opened directory inexpressible rather than checked.
+//
+// Deliberately, a subtree plane has no `Filesystem` instance: galilei's absolute-path
+// operations (bounded by `[plane: Filesystem]`) therefore cannot apply to subtree paths, which
+// would resolve them against the working directory instead of the handle.
+trait Subtree

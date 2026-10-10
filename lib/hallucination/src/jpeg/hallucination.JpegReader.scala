@@ -43,7 +43,8 @@ import anticipation.*
 // `data` is the stdlib immutable array, not the frozen `Data`: a frozen-array constructor
 // field would make the holder's `this` a read-only capability, blocking exclusive use of
 // its other state.
-private[hallucination] final class JpegReader(data: scala.IArray[Byte], start: Int) extends caps.Mutable:
+private[hallucination] final class JpegReader(data: scala.IArray[Byte], start: Int)
+extends caps.Mutable:
   private var pos: Int = start
 
   def position: Int = pos

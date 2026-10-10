@@ -181,7 +181,8 @@ object decimalInternal:
     // Builds the canonical form: high zero limbs dropped, factors of ten moved into the
     // scale (as `stripTrailingZeros`), and the unique zero when the magnitude vanishes. The
     // input is copied into a fresh working array, which the strip loops then clobber.
-    private[hypotenuse] def compose(signum: Int, magnitude0: scala.Array[Int], count0: Int, scale0: Int)
+    private[hypotenuse] def compose
+      ( signum: Int, magnitude0: scala.Array[Int], count0: Int, scale0: Int )
     :   Decimal =
 
       val magnitude = Array.allocate[Int](count0)
@@ -204,7 +205,9 @@ object decimalInternal:
           count -= 1
           scale -= BaseDigits
 
-        while magnitude.readable(0)%10 == 0 && magnitude.readable(0) != 0 || count > 1 && magnitude.readable(0) == 0 do
+        while magnitude.readable(0)%10 == 0 && magnitude.readable(0) != 0 ||
+          count > 1 && magnitude.readable(0) == 0
+        do
           divideSmall(magnitude.raw, count, 10)
           if count > 1 && magnitude.readable(count - 1) == 0 then count -= 1
           scale -= 1
@@ -230,7 +233,9 @@ object decimalInternal:
 
     // The magnitude scaled up by 10ᵖᵒʷᵉʳ: whole limbs are prepended for each factor of 10⁹,
     // then a single small multiplication handles the residue.
-    private[hypotenuse] def scaleUp(magnitude: scala.Array[Int], count: Int, power: Int): (scala.Array[Int], Int) =
+    private[hypotenuse] def scaleUp(magnitude: scala.Array[Int], count: Int, power: Int)
+    :   (scala.Array[Int], Int) =
+
       val shift = power/BaseDigits
       val residue = power%BaseDigits
       val result = new scala.Array[Int](count + shift + 1)
@@ -353,7 +358,10 @@ object decimalInternal:
     // Knuth's algorithm D in base 10⁹: every trial numerator and product fits in a `Long`,
     // since 10¹⁸ < 2⁶³. Returns the quotient and remainder magnitudes.
     private[hypotenuse] def divideMagnitude
-      ( dividend: scala.Array[Int], dividendCount: Int, divisor: scala.Array[Int], divisorCount: Int )
+      ( dividend:      scala.Array[Int],
+        dividendCount: Int,
+        divisor:       scala.Array[Int],
+        divisorCount:  Int )
     :   (scala.Array[Int], Int, scala.Array[Int], Int) =
 
       if divisorCount == 1 then
@@ -511,7 +519,9 @@ object decimalInternal:
         if leftSign > 0 then result else -result
 
     // Aligns two nonzero operands to their common (larger) scale.
-    private[hypotenuse] def aligned(left: Decimal, right: Decimal): (scala.Array[Int], Int, scala.Array[Int], Int, Int) =
+    private[hypotenuse] def aligned(left: Decimal, right: Decimal)
+    :   (scala.Array[Int], Int, scala.Array[Int], Int, Int) =
+
       val scale = math.max(left(1), right(1))
       val leftMagnitude = magnitudeOf(left)
       val rightMagnitude = magnitudeOf(right)

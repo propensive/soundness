@@ -96,11 +96,14 @@ def evolve[element: ClassTag]
 
               case atom :: atoms =>
                 if !atom.has(iteration - 1)
-                then merge(atoms, edit :: (edits: List[Change[element]]), done, atom :: skips, inserts)
+                then merge
+                  ( atoms, edit :: (edits: List[Change[element]]), done, atom :: skips, inserts )
                 else edit match
                   case Ins(_, value) =>
                     val atom2 = Atom(value, Set(iteration))
-                    merge(atom :: (atoms: List[Atom[element]]), edits, done, skips, atom2 :: inserts)
+
+                    merge
+                      ( atom :: (atoms: List[Atom[element]]), edits, done, skips, atom2 :: inserts )
 
                   case Del(_, value) =>
                     merge(atoms, edits, done, atom :: skips, inserts)

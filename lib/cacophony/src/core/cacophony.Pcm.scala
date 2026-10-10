@@ -72,7 +72,8 @@ object Pcm:
           val audio =
             Audio.of[layout]
               ( line.getFormat.nn,
-                if count == chunkBytes then Array.freeze(buffer) else Array.freeze(Array.grow(buffer, count)) )
+                if count == chunkBytes then Array.freeze(buffer)
+                else Array.freeze(Array.grow(buffer, count)) )
 
           audio #:: recur
 

@@ -40,36 +40,6 @@ import gossamer.*
 import prepositional.*
 import vacuous.*
 
-// The Expr-level counterpart of `Xml.Parsable`: a typeclass whose methods
-// are macro-time code generators, following jacinta's `Inlinable` exactly.
-// An instance receives an `Expr` of the reader (positioned with the current
-// element just opened) and returns an `Expr` of the decoded value, which
-// the deriving macro splices directly into its generated parser — so an
-// instance contributes *inlined* code, with no runtime dispatch, no
-// instance arrays and no adapter hops between composed parsers.
-//
-// Instances are ordinary runtime values: code generation is deferred to the
-// `parse` call, which receives the `Quotes` and the `Type` of `Self`, so
-// `derived` needs no macro of its own. At a `Inlinable.parsable[T]`
-// expansion, the instance behind each summoned given is obtained *live* by
-// running the implicit search inside an in-macro staging compiler (the
-// prescience mechanism), which composes conditional instances — a collection
-// of a custom element, for example — through ordinary given resolution. The
-// constraint this inherits: an instance (and its type) must be compiled in
-// an earlier run than the expansion; same-run instances degrade to a spliced
-// runtime call through `Xml.Field`.
-trait Inlinable extends Typeclass:
-  def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Self]): Expr[Self]
-
-  // What a field of this type yields when no child element carries its
-  // name, mirroring the runtime instances: an abort unless overridden (the
-  // primitive instances raise and continue with a sentinel).
-  def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
-    ( using Quotes, Type[Self] )
-  :   Expr[Self] =
-
-    '{abort(Xml.Error(Xml.Error.Reason.Missing))(using $tactic)}
-
 object Inlinable:
   // Generates a monomorphic `Xml.Parsable` for a case class at compile
   // time, like `Xml.Parsable.staged`, but composed through `Inlinable`
@@ -81,6 +51,9 @@ object Inlinable:
   // The structural instance for a case class: reflects `Self` when invoked
   // (no macro — `Type[Self]` arrives with the call).
   def derived[product]: product is Inlinable = ProductInlinable[product]()
+
+  object ForXml:
+    def derived[value]: ForXml[value] = ForXml(Inlinable.derived[value])
 
   // The `derives`-clause carrier: a `Self`-typed typeclass cannot appear in
   // a `derives` clause (it has no type parameters), so `case class Foo(...)
@@ -100,9 +73,6 @@ object Inlinable:
     :   Expr[value] =
 
       delegate0.absent(tactic, foci)
-
-  object ForXml:
-    def derived[value]: ForXml[value] = ForXml(Inlinable.derived[value])
 
   private[xylophone] final class ProductInlinable[product]() extends Inlinable:
     type Self = product
@@ -252,3 +222,33 @@ object Inlinable:
   =>  ( element0: element is Inlinable )
   =>  ( collection[element] is Inlinable ) =
     IterableInlinable[element](element0).asInstanceOf[collection[element] is Inlinable]
+
+// The Expr-level counterpart of `Xml.Parsable`: a typeclass whose methods
+// are macro-time code generators, following jacinta's `Inlinable` exactly.
+// An instance receives an `Expr` of the reader (positioned with the current
+// element just opened) and returns an `Expr` of the decoded value, which
+// the deriving macro splices directly into its generated parser — so an
+// instance contributes *inlined* code, with no runtime dispatch, no
+// instance arrays and no adapter hops between composed parsers.
+//
+// Instances are ordinary runtime values: code generation is deferred to the
+// `parse` call, which receives the `Quotes` and the `Type` of `Self`, so
+// `derived` needs no macro of its own. At a `Inlinable.parsable[T]`
+// expansion, the instance behind each summoned given is obtained *live* by
+// running the implicit search inside an in-macro staging compiler (the
+// prescience mechanism), which composes conditional instances — a collection
+// of a custom element, for example — through ordinary given resolution. The
+// constraint this inherits: an instance (and its type) must be compiled in
+// an earlier run than the expansion; same-run instances degrade to a spliced
+// runtime call through `Xml.Field`.
+trait Inlinable extends Typeclass:
+  def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Self]): Expr[Self]
+
+  // What a field of this type yields when no child element carries its
+  // name, mirroring the runtime instances: an abort unless overridden (the
+  // primitive instances raise and continue with a sentinel).
+  def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
+    ( using Quotes, Type[Self] )
+  :   Expr[Self] =
+
+    '{abort(Xml.Error(Xml.Error.Reason.Missing))(using $tactic)}

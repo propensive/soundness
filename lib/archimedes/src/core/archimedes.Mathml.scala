@@ -152,7 +152,8 @@ object Mathml:
   case class Msqrt(contents: List[Mathml], attributes: List[(Text, Text)] = Nil) extends Layout:
     def label: Text = t"msqrt"
 
-  case class Mroot(base: Mathml, index: Mathml, attributes: List[(Text, Text)] = Nil) extends Layout:
+  case class Mroot(base: Mathml, index: Mathml, attributes: List[(Text, Text)] = Nil)
+  extends Layout:
     def label: Text = t"mroot"
     def contents: List[Mathml] = List(base, index)
 
@@ -485,7 +486,8 @@ object Mathml:
 
   object Reader:
     def read(html: Html)(using Tactic[Mathml.Error]): Math =
-      findMath(html).lay(abort(Mathml.Error(Mathml.Error.Reason.NotMathml(t"<missing>")))): element =>
+      findMath(html)
+      . lay(abort(Mathml.Error(Mathml.Error.Reason.NotMathml(t"<missing>")))): element =>
         Mathml.Parser.decodeMath(toXmlElement(element))
 
     def findMath(html: Html): Optional[honeycomb.Html.Element] = html match

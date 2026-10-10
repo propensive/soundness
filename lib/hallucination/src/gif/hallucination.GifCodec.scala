@@ -172,7 +172,8 @@ private[hallucination] object GifCodec:
 
                       if entry != transparentIndex then
                         target.point(left + x, y).let: targetIndex =>
-                          screenScribe(targetIndex) = palette.at(Ordinal.zerary(entry)).or(0).toLong << 8 | 0xff
+                          screenScribe(targetIndex) =
+                            palette.at(Ordinal.zerary(entry)).or(0).toLong << 8 | 0xff
 
                       x += 1
 

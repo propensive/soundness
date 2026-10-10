@@ -111,7 +111,8 @@ object Vernacular:
     def inMonths(names: List[Text], withDay: Boolean): Text =
       if withDay then t"of ${conjoin(names)}" else t"in ${conjoin(names)}"
 
-    def takingPositions(positions: List[Int]): Text = t"taking the ${conjoin(positions.map(position))}"
+    def takingPositions(positions: List[Int]): Text =
+      t"taking the ${conjoin(positions.map(position))}"
 
   private object French extends Vernacular:
     private def word(unit: TimeUnit): (Text, Text, Boolean) = unit match
@@ -146,7 +147,9 @@ object Vernacular:
       if interval == 1 then t"${article(unit)} ${word(unit)(1)}"
       else t"${article(unit)} $interval ${word(unit)(1)}"
 
-    def onDays(entries: List[(Optional[Int], Text)]): Text = t"le ${conjoin(entries.map(dayPhrase))}"
+    def onDays(entries: List[(Optional[Int], Text)]): Text =
+      t"le ${conjoin(entries.map(dayPhrase))}"
+
     def onMonthDays(days: List[Int]): Text = t"le ${conjoin(days.map(monthDay))}"
 
     def inMonths(names: List[Text], withDay: Boolean): Text =
@@ -188,7 +191,9 @@ object Vernacular:
       if interval == 1 then t"${word(unit)(2)} ${word(unit)(0)}"
       else t"alle $interval ${word(unit)(1)}"
 
-    def onDays(entries: List[(Optional[Int], Text)]): Text = t"am ${conjoin(entries.map(dayPhrase))}"
+    def onDays(entries: List[(Optional[Int], Text)]): Text =
+      t"am ${conjoin(entries.map(dayPhrase))}"
+
     def onMonthDays(days: List[Int]): Text = t"am ${conjoin(days.map(monthDay))}"
     def inMonths(names: List[Text], withDay: Boolean): Text = t"im ${conjoin(names)}"
 
@@ -230,13 +235,16 @@ object Vernacular:
     def everyUnit(interval: Int, unit: TimeUnit): Text =
       if interval == 1 then t"cada ${word(unit)(0)}" else t"cada $interval ${word(unit)(1)}"
 
-    def onDays(entries: List[(Optional[Int], Text)]): Text = t"el ${conjoin(entries.map(dayPhrase))}"
+    def onDays(entries: List[(Optional[Int], Text)]): Text =
+      t"el ${conjoin(entries.map(dayPhrase))}"
+
     def onMonthDays(days: List[Int]): Text = t"el ${conjoin(days.map(monthDay))}"
 
     def inMonths(names: List[Text], withDay: Boolean): Text =
       if withDay then t"de ${conjoin(names)}" else t"en ${conjoin(names)}"
 
-    def takingPositions(positions: List[Int]): Text = t"tomando el ${conjoin(positions.map(position))}"
+    def takingPositions(positions: List[Int]): Text =
+      t"tomando el ${conjoin(positions.map(position))}"
 
 // A `Vernacular` supplies one language's vocabulary and grammar for describing recurrences and
 // relative timespans in prose. The structural assembly (which clauses apply, in what order) is
@@ -274,7 +282,9 @@ trait Vernacular:
         t"${front.join(t", ")} $conjunction $end"
 
   protected final def quantity(pair: (Long, TimeUnit)): Text = units(pair(0).abs, pair(1))
-  protected final def durations(span: Timespan): List[Text] = Vernacular.components(span).map(quantity)
+
+  protected final def durations(span: Timespan): List[Text] =
+    Vernacular.components(span).map(quantity)
 
   protected final def dayPhrase(entry: (Optional[Int], Text)): Text =
     entry(0).lay(entry(1)): ordinal => t"${position(ordinal)} ${entry(1)}"

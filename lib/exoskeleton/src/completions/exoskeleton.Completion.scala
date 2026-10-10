@@ -218,7 +218,9 @@ extends Cli:
         val title = explanation.let { explanation => List(sh"'' -X $explanation") }.or(Nil)
         val termcap: Termcap = termcapDefinitions.xtermTrueColorTermcap
 
-        lazy val width = items.map { item => item.display.or(item.core).length }.maximize(identity).or(0)
+        lazy val width =
+          items.map { item => item.display.or(item.core).length }.maximize(identity).or(0)
+
         lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).maximize(identity).or(0) + 1
 
         val itemLines: List[Command] = items.bind:

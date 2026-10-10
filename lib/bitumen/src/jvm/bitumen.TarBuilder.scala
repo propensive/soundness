@@ -119,7 +119,9 @@ extends caps.ExclusiveCapability:
         write(out, Tarfile.zeroBlock)
 
         var count: Long = 0
-        val outcome = block(using TarEntryWriter { chunk => write(out, chunk); count += chunk.length })
+
+        val outcome =
+          block(using TarEntryWriter { chunk => write(out, chunk); count += chunk.length })
 
         pad(out, count)
         val end = out.getFilePointer
@@ -269,8 +271,10 @@ object TarBuilder:
             range =>
               val interval: Interval = range
 
-              out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
-                  interval.size)
+              out.write
+                ( unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
+                  interval.start.n0,
+                  interval.size )
         finally out.close()
 
         jnf.Files.move(temporary, target, jnf.StandardCopyOption.ATOMIC_MOVE,

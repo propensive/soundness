@@ -524,7 +524,9 @@ object Inspectable extends Inspectable2:
       case 'Z' => "🆉" // Boolean
       case _   => "🯄" // Unknown
 
-    val dimension = if brackets < 2 then "".tt else brackets.toString.map { digit => "⁰¹²³⁴⁵⁶⁷⁸⁹".charAt(digit - '0') }.tt
+    val dimension =
+      if brackets < 2 then "".tt
+      else brackets.toString.map { digit => "⁰¹²³⁴⁵⁶⁷⁸⁹".charAt(digit - '0') }.tt
 
     arrayType+dimension//+renderBraille(string.split("@").nn(1).nn)
 

@@ -98,7 +98,10 @@ object TestsIndex:
     def child(segment: String): Frame = copy(path = path :+ segment)
 
     def fields: List[String] =
-      List(escape(topic.getOrElse("")), escape(method.getOrElse("")), path.map(segment).mkString("/"))
+      List
+        ( escape(topic.getOrElse("")),
+          escape(method.getOrElse("")),
+          path.map(segment).mkString("/") )
 
   private val hole: Char = '\u0000'
 
@@ -162,7 +165,9 @@ object TestsIndex:
 
       if line2.forall(_.isWhitespace) then builder.append("\n") else
         if builder.nonEmpty then builder.append(" ")
-        builder.append(line2.replaceAll("^ *", "").nn.replaceAll(" *$", "").nn.replaceAll("\\s+", " ").nn)
+
+        builder.append
+          ( line2.replaceAll("^ *", "").nn.replaceAll(" *$", "").nn.replaceAll("\\s+", " ").nn )
 
     builder.toString
 
@@ -518,7 +523,9 @@ object TestsIndex:
                 val moniker = monikerOf(paired)
 
                 if !frame.impromptu then
-                  emit(("group" :: frame.fields ::: List(escape(name), escape(moniker), line(tree)))*)
+                  emit
+                    ( ("group" :: frame.fields :::
+                      List(escape(name), escape(moniker), line(tree)))* )
 
                 frame.child(name)
 

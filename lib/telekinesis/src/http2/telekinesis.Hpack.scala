@@ -224,7 +224,9 @@ class Hpack(maxTableSize: Int = 4096) extends scala.caps.ExclusiveCapability, sc
   // An integer uses the low `prefix` bits of the byte at `data(offset)`; if those
   // are all 1 it continues in subsequent 7-bit groups (low 7 bits, high bit =
   // continuation). Returns the value and the index just past the integer.
-  private def readInteger(data: Data, offset: Int, prefix: Int)(using Tactic[Http2.Error]): (Int, Int) =
+  private def readInteger(data: Data, offset: Int, prefix: Int)(using Tactic[Http2.Error])
+  :   (Int, Int) =
+
     val mask = (1 << prefix) - 1
     val first = data.readUnchecked(offset) & mask
 

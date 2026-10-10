@@ -113,10 +113,17 @@ object Writing:
 
     def access(writing: Writing, index: Ordinal): Grapheme =
       Grapheme:
-        writing.text.s.substring(writing.boundaries.readUnchecked(index.n0), writing.boundaries.readUnchecked(index.n0 + 1)).nn
+        writing.text.s.substring
+          ( writing.boundaries.readUnchecked(index.n0),
+            writing.boundaries.readUnchecked(index.n0 + 1) )
+
+        . nn
 
     def indexOf(writing: Writing, sub: Text, start: Ordinal): Optional[Ordinal] =
-      val charStart = writing.boundaries.at(Ordinal.zerary(start.n0.min(writing.boundaries.readable.length - 1))).or(0)
+      val charStart =
+        writing.boundaries.at(Ordinal.zerary(start.n0.min(writing.boundaries.readable.length - 1)))
+        . or(0)
+
       val foundChar = writing.text.s.indexOf(sub.s, charStart)
 
       if foundChar < 0 then Unset else writing.boundaries.where(_ == foundChar)
@@ -127,7 +134,10 @@ object Writing:
       val limit = length(writing)
       val s = interval.start.n0.max(0).min(limit)
       val e = interval.limit.n0.max(s).min(limit)
-      val slice = writing.text.s.substring(writing.boundaries.readable(s), writing.boundaries.readable(e)).nn
+
+      val slice =
+        writing.text.s.substring(writing.boundaries.readable(s), writing.boundaries.readable(e)).nn
+
       Writing(slice.tt)
 
   extension (writing: Writing)
@@ -135,7 +145,11 @@ object Writing:
       val n = writing.boundaries.readable.length - 1
 
       IndexedSeq.tabulate(n): i =>
-        Grapheme(writing.text.s.substring(writing.boundaries.readable(i), writing.boundaries.readable(i + 1)).nn)
+        Grapheme:
+          writing.text.s.substring
+            ( writing.boundaries.readable(i), writing.boundaries.readable(i + 1) )
+
+          . nn
 
     def graphemeCount: Int = writing.boundaries.readable.length - 1
 

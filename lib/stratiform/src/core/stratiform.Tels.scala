@@ -729,7 +729,9 @@ object Tels extends Tels2:
 
         i += 1
 
-      val mergedValidators = Array.frozen((base.validators.readable ++ layer.validators.readable).distinct)
+      val mergedValidators =
+        Array.frozen((base.validators.readable ++ layer.validators.readable).distinct)
+
       Struct(Array.from(members), mergedValidators)
 
     private def mergeRecordList
@@ -784,14 +786,17 @@ object Tels extends Tels2:
         val existing = out.indexWhere(_.name == newDef.name)
 
         if existing >= 0 then
-          val mergedValidators = Array.frozen((out(existing).validators.readable ++ newDef.validators.readable).distinct)
+          val mergedValidators =
+            Array.frozen((out(existing).validators.readable ++ newDef.validators.readable).distinct)
 
           // §20.3/§21.7: an encoding, once declared, cannot be changed
           // (E218). Restating the base's encoding is a benign no-op;
           // declaring one where the base has none adds it. Removal has
           // no syntax.
           val mergedEncoding = out(existing).encoding.lay(newDef.encoding): base =>
-            newDef.encoding.let: layer => if layer != base then abort(Tel.Error(Reason.EncodingConflict))
+            newDef.encoding.let: layer =>
+              if layer != base then abort(Tel.Error(Reason.EncodingConflict))
+
             base
 
           val mergedPatterns = mergePatterns(out(existing).patterns, newDef.patterns)
@@ -853,7 +858,9 @@ object Tels extends Tels2:
     // budget exhaustion (§21.8 requires exactly this), a word boundary the
     // analysis cannot model, or a pattern that does not compile — the last
     // being unreachable once `checkBase` has run, but fail-closed regardless.
-    private[stratiform] def contained(replacing: Array[Text]^{}, inherited: Array[Text]^{}): Boolean =
+    private[stratiform] def contained(replacing: Array[Text]^{}, inherited: Array[Text]^{})
+    :   Boolean =
+
       val motifs = scala.collection.mutable.ArrayBuffer.empty[Motif]
       var compiled = true
 
@@ -932,7 +939,8 @@ object Tels extends Tels2:
         else if !origin.variants.readable.exists(_.keyword == keyword)
         then abort(Tel.Error(Reason.ExcludeMissingVariant))
 
-      val mergedValidators = Array.frozen((base.validators.readable ++ layer.validators.readable).distinct)
+      val mergedValidators =
+        Array.frozen((base.validators.readable ++ layer.validators.readable).distinct)
 
       SelectDefinition(base.name, Array.from(variants), mergedValidators,
           layer.description.or(base.description))
@@ -1336,7 +1344,11 @@ object Tels extends Tels2:
           case "variant" =>
             val ats = atomTexts(cc)
             if ats.length < 2 then abort(Tel.Error(Reason.RequiredMemberAbsent))
-            variants += Variant(ats.readUnchecked(0), parseType(ats.readUnchecked(1)), descriptionOf(childCompounds(cc)))
+            variants +=
+              Variant
+                ( ats.readUnchecked(0),
+                  parseType(ats.readUnchecked(1)),
+                  descriptionOf(childCompounds(cc)) )
 
           case _ =>
             abort(Tel.Error(Reason.UnknownKeyword))
@@ -1496,7 +1508,14 @@ object Tels extends Tels2:
             ScalarDefinition(t"Sigil",      Array(t"sigil")),
             ScalarDefinition(t"String",     Array(t"string")) )
 
-      Tels(name, document, layers, sigil, records, Array.frozen(builtinScalars.readable ++ scalars.readable), selects)
+      Tels
+        ( name,
+          document,
+          layers,
+          sigil,
+          records,
+          Array.frozen(builtinScalars.readable ++ scalars.readable),
+          selects )
 
     private def typeFromText(name: Text): Type =
       if name == t"Flag" then Flag else Reference(name)

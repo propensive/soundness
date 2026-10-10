@@ -442,10 +442,12 @@ object Api:
   case class NotExtended[+payload](override val payload: payload)(using Diagnostics)
   extends Error[payload](Http.NotExtended, payload)
 
-  case class NetworkAuthenticationRequired[+payload](override val payload: payload)(using Diagnostics)
+  case class NetworkAuthenticationRequired[+payload](override val payload: payload)
+    ( using Diagnostics )
   extends Error[payload](Http.NetworkAuthenticationRequired, payload)
 
-  case class Informational[+payload](override val status: Http.Status, override val payload: payload)
+  case class Informational[+payload]
+    ( override val status: Http.Status, override val payload: payload )
     ( using Diagnostics )
   extends Error[payload](status, payload)
 

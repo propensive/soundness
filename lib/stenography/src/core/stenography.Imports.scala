@@ -89,8 +89,9 @@ object Imports:
         given quotes: scala.quoted.Quotes = scala.quoted.runtime.impl.QuotesImpl()
         given Bindings = Bindings()
 
-        stenography.internal.scopeInfo(denotation.symbol)(1).groupBy(_(0)).view.mapValues: candidates =>
-          candidates.map(_(1).s).min.tt
+        stenography.internal.scopeInfo(denotation.symbol)(1).groupBy(_(0)).view
+        . mapValues: candidates =>
+            candidates.map(_(1).s).min.tt
 
         . toMap
     catch case NonFatal(_) => sci.Map()

@@ -105,5 +105,7 @@ abstract class Tabulation[text: ClassTag]():
         layout.row(cells, rowDecorations)
 
     Grid
-      ( List(TableSection(layout.widths, lines(titleCells, Nil)), TableSection(layout.widths, lines(rowCells, decorations))),
+      ( List
+          ( TableSection(layout.widths, lines(titleCells, Nil)),
+            TableSection(layout.widths, lines(rowCells, decorations)) ),
         style )

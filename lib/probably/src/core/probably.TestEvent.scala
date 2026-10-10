@@ -248,7 +248,13 @@ enum TestEvent:
       timestamp:   Long )
 
   case DetailCaptures(test: TestEvent.Ref, values: Map[Text, Text])
-  case DetailCompare(test: TestEvent.Ref, expected: Text, found: Text, rows: List[TestEvent.CompareRow])
+
+  case DetailCompare
+    ( test:     TestEvent.Ref,
+      expected: Text,
+      found:    Text,
+      rows:     List[TestEvent.CompareRow] )
+
   case DetailMessage(test: TestEvent.Ref, message: Text)
   case DetailThrows(test: TestEvent.Ref, check: Boolean, stack: TestEvent.Trace)
 

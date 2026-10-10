@@ -51,4 +51,5 @@ object JavaNioPath extends Instantiable, Abstractable:
 // `java.nio.file.Path` can stand in for a soundness path abstraction (moved here from
 // `anticipation.path` to keep that module Scala.js-portable).
 // [erased-evidence] erased Representative given
-inline given javaNioPathRepresentative: jnf.Path is Representative of Paths = caps.unsafe.unsafeErasedValue
+inline given javaNioPathRepresentative: jnf.Path is Representative of Paths =
+  caps.unsafe.unsafeErasedValue

@@ -284,7 +284,8 @@ extension [plane: Filesystem](path: Path on plane)
     scala.caps.unsafe.unsafeAssumeSeparate:
       createNonexistentParents(destination):
         overwritePreexisting(destination):
-          summon[FilesystemBackend on plane].copy(path, destination, dereferenceSymlinks.dereference)
+          summon[FilesystemBackend on plane]
+          . copy(path, destination, dereferenceSymlinks.dereference)
 
     Log.info(Io.Event.Copy(path.show, destination.show))
     destination

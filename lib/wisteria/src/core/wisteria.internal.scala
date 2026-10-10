@@ -725,7 +725,9 @@ object internal:
       repr.termSymbol.isNoSymbol && repr.typeSymbol.children.nonEmpty
 
     repr.dealias match
-      case AndType(left, right)     => if parent(left) then productType(right) else productType(left)
+      case AndType(left, right) =>
+        if parent(left) then productType(right) else productType(left)
+
       case Refinement(base, _, _)   => productType(base)
       case AnnotatedType(under, _)  => productType(under)
       case other                    => other

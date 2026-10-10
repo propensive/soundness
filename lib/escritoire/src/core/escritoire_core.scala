@@ -118,7 +118,11 @@ package columnar:
     // wrapping but will chop mid-word rather than overflow, so it has no min-content floor.
     def flex(metrics: Metrics, maxWidth: Int): Flex =
       val floor = metrics.natural.min(1)
-      Flex(Metrics(floor, metrics.natural), (metrics.natural - floor).max(0).toDouble, metrics.natural)
+
+      Flex
+        ( Metrics(floor, metrics.natural),
+          (metrics.natural - floor).max(0).toDouble,
+          metrics.natural )
 
 
     def fit[textual: Textual { type Result = Char }]

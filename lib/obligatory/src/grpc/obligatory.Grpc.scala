@@ -242,7 +242,8 @@ object Grpc:
         if messages.hasNext then
           // Successive pulls from the same single-owner message iterator.
           // [closure-capture] local recur def pulls same message iterator repeatedly
-          scala.caps.unsafe.unsafeAssumeSeparate(decodeMessage[response](messages.next()) #:: recur())
+          scala.caps.unsafe.unsafeAssumeSeparate
+            ( decodeMessage[response](messages.next()) #:: recur() )
         else
           expectStatus(stream)
           Chain()

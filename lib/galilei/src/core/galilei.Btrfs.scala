@@ -63,16 +63,6 @@ sealed trait CreationTimed
 // accessors (issue #567).
 sealed trait Attributed
 
-sealed trait Btrfs extends CreationTimed, Attributed
-sealed trait Ext4 extends Attributed
-sealed trait Apfs extends CreationTimed, Attributed
-sealed trait Ntfs extends CreationTimed, Attributed
-
-private def storageFormat[plane](path: Path on plane)(using backend: FilesystemBackend on plane)
-:   Optional[Text] =
-
-  safely(backend.volume(path).volumeType.lower)
-
 object Btrfs:
   def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
   :   Option[Path on plane over Btrfs] =
@@ -91,6 +81,7 @@ object Btrfs:
   // They are the natural fields to add once an `ioctl` seam exists.
   case class Subvolume[plane](root: Path on plane over Btrfs)
 
+sealed trait Btrfs extends CreationTimed, Attributed
 object Ext4:
   def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
   :   Option[Path on plane over Ext4] =
@@ -98,6 +89,7 @@ object Ext4:
     if storageFormat(path) == t"ext4" then Some(path.asInstanceOf[Path on plane over Ext4])
     else None
 
+sealed trait Ext4 extends Attributed
 object Apfs:
   def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
   :   Option[Path on plane over Apfs] =
@@ -105,9 +97,17 @@ object Apfs:
     if storageFormat(path) == t"apfs" then Some(path.asInstanceOf[Path on plane over Apfs])
     else None
 
+sealed trait Apfs extends CreationTimed, Attributed
 object Ntfs:
   def unapply[plane](path: Path on plane)(using FilesystemBackend on plane)
   :   Option[Path on plane over Ntfs] =
 
     if storageFormat(path) == t"ntfs" then Some(path.asInstanceOf[Path on plane over Ntfs])
     else None
+
+sealed trait Ntfs extends CreationTimed, Attributed
+
+private def storageFormat[plane](path: Path on plane)(using backend: FilesystemBackend on plane)
+:   Optional[Text] =
+
+  safely(backend.volume(path).volumeType.lower)

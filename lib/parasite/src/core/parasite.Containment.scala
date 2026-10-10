@@ -41,7 +41,10 @@ import fulminate.*
 // errors. Its child-fate policy (`cleanup`) is delegated unchanged to the enclosing probate; only
 // the failure branch (`trap`) is overridden. A handled error whose remedy is `Reject` — like one
 // the handler does not match — bubbles to the enclosing containment, so they compose as they nest.
-class Containment(handler: PartialFunction[Error, Remedy]^{scala.caps.any.only[anticipation.Durable]}, outer: SharedProbate) extends Probate:
+class Containment
+  ( handler: PartialFunction[Error, Remedy]^{scala.caps.any.only[anticipation.Durable]},
+    outer:   SharedProbate )
+extends Probate:
   def cleanup(worker: Worker): Unit = outer.cleanup(worker)
 
   override def trap(worker: Worker, error: Error): Remedy =

@@ -79,7 +79,8 @@ extends GridSurface(rect.width, rect.height), Extent:
   // `Stdio` is itself stateful, the write is delegated to a plain (non-stateful) writer that
   // owns an exclusive reference to this surface, held as a pure field so that `print` is not an
   // access to that reference. The writer never leaves the object. [stdio-readonly]
-  private val writer: FlowExtent.Writer = scala.caps.unsafe.unsafeAssumePure(FlowExtent.Writer(this))
+  private val writer: FlowExtent.Writer =
+    scala.caps.unsafe.unsafeAssumePure(FlowExtent.Writer(this))
 
   override def print(text: Text): Unit = writer.write(text)
 

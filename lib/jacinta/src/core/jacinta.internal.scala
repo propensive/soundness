@@ -67,8 +67,13 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
-      case _               => strings
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
+      case _ => strings
 
     def firstOrigin[tuple: Type]: Int = Type.of[tuple] match
       case '[head *: tail] => TypeRepr.of[head].dealias match
@@ -111,7 +116,8 @@ object internal:
   // (`Dynamical`-gated) runtime access.
 
   // Every `type X = …` member of a (possibly nested) refinement, by name.
-  private def armsFor(using Quotes)(arms: List[quotes.reflect.CaseDef], fallthrough: quotes.reflect.CaseDef)
+  private def armsFor(using Quotes)
+    ( arms: List[quotes.reflect.CaseDef], fallthrough: quotes.reflect.CaseDef )
   :   scala.collection.immutable.List[quotes.reflect.CaseDef] =
 
     // `quotes.reflect`'s `Match` takes a stdlib list of `CaseDef`s.
@@ -287,7 +293,9 @@ object internal:
   private def arrayElements(arr: Array[Any]^{}): Array[Any]^{} =
     val n = arr.length
 
-    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad) then arr.keep(n - 1) else arr
+    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad)
+    then arr.keep(n - 1)
+    else arr
 
   // `spot` finds the first index satisfying the predicate, confined to the text, so the read
   // inside it is total and the search needs no bound of its own.
@@ -315,8 +323,13 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
-      case _               => strings
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
+      case _ => strings
 
     val parts = recur[parts](Nil)
 
@@ -650,8 +663,13 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
-      case _               => strings
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
+      case _ => strings
 
     val parts = recur[parts](Nil)
 
@@ -1013,7 +1031,9 @@ object internal:
 
         case _ =>
           // `AppliedType` and `TupleClass` are `quotes.reflect` APIs over stdlib lists.
-          AppliedType(defn.TupleClass(types.stdlib.length).info.typeSymbol.typeRef, types.stdlib.reverse)
+          AppliedType
+            ( defn.TupleClass(types.stdlib.length).info.typeSymbol.typeRef, types.stdlib.reverse )
+
           . asType
           . absolve match
             case '[type result <: Tuple; result] =>
@@ -1252,7 +1272,10 @@ object internal:
             If
               ( '{$wordRef == Json.Reader.KeyOpaque}.asTerm,
                 '{$reader.keyIndex($table)}.asTerm,
-                Block(scala.collection.immutable.List(ValDef(high, Some('{$reader.keyWordHigh}.asTerm))), chain(fields)) )
+                Block
+                  ( scala.collection.immutable.List
+                      ( ValDef(high, Some('{$reader.keyWordHigh}.asTerm)) ),
+                    chain(fields) ) )
 
           val step: Term =
             Block
@@ -1299,10 +1322,13 @@ object internal:
 
             val resolve: Term =
               ' {
-                  val declared = $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+                  val declared =
+                    $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
                   if !declared.absent then declared.asInstanceOf[fieldType]
-                  else Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)($onAbsent)
+                  else
+                    Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)
+                      ( $onAbsent )
                 }.asTerm
 
             If
@@ -1458,7 +1484,8 @@ object internal:
         case '[type variantType <: value; variantType] =>
           ' {
               if $wireVariants.readUnchecked(${Expr(index)}) == $wireString then
-                $variants.readUnchecked(${Expr(index)}).asInstanceOf[variantType is Json.Field].parse($reader)
+                $variants.readUnchecked(${Expr(index)}).asInstanceOf[variantType is Json.Field]
+                . parse($reader)
               else
                 ${dispatch(index + 1, reader, wire, wireString, variants, wireVariants)}
             }

@@ -72,7 +72,8 @@ object Mappable extends Mappable.Fallback:
         Set.map(self, lambda)
 
   given sequence: [element, container <: Sequence[element]]
-  =>  ( container is Mappable { type Operand = element; type Result[element2] = Sequence[element2] } ) =
+  =>  ( container is Mappable
+          { type Operand = element; type Result[element2] = Sequence[element2] } ) =
     new Mappable:
       type Self = container
       type Operand = element
@@ -107,7 +108,8 @@ object Mappable extends Mappable.Fallback:
   // Mapping over values must preserve entry order; the primitive builds through
   // `VectorMap.from` rather than a view's unordered `toMap`.
   given ledger: [key, value, container <: Ledger[key, value]]
-  =>  ( container is Mappable { type Operand = value; type Result[value2] = Ledger[key, value2] } ) =
+  =>  ( container is Mappable
+          { type Operand = value; type Result[value2] = Ledger[key, value2] } ) =
     new Mappable:
       type Self = container
       type Operand = value
@@ -120,7 +122,8 @@ object Mappable extends Mappable.Fallback:
     // Any raw `Iterable` (stdlib collections, ranges, …) maps to a `List`, as the old umbrella
     // `map` did. Lower priority than the alias instances above (companion-parent placement).
     given iterable: [element, collection <: Iterable[element]]
-    =>  ( collection is Mappable { type Operand = element; type Result[element2] = List[element2] } ) =
+    =>  ( collection is Mappable
+            { type Operand = element; type Result[element2] = List[element2] } ) =
       new Mappable:
         type Self = collection
         type Operand = element

@@ -428,7 +428,9 @@ object WebIdl:
                 afterDefault match
                   case "," :: more => recur(more, argument :: acc)
                   case ")" :: more => (((argument :: acc).reverse).to(List), more)
-                  case _           => fail(t"an argument must be followed by `,` or `)`", afterDefault)
+
+                  case _ =>
+                    fail(t"an argument must be followed by `,` or `)`", afterDefault)
 
               case SNil => fail(t"an argument name was expected", afterVariadic)
 
@@ -687,8 +689,10 @@ object WebIdl:
           val (arguments, after) = argumentList(afterResult)
 
           after match
-            case ";" :: more => (WebIdl.Definition.CallbackFunction(name.tt, result, arguments), more)
-            case _           => fail(t"a `;` was expected", after)
+            case ";" :: more =>
+              (WebIdl.Definition.CallbackFunction(name.tt, result, arguments), more)
+
+            case _ => fail(t"a `;` was expected", after)
 
         case target :: "includes" :: mixin :: ";" :: rest =>
           (WebIdl.Definition.Includes(target.tt, mixin.tt), rest)

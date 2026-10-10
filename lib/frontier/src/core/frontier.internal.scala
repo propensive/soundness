@@ -380,7 +380,8 @@ object internal:
 
       val templateSymbol = template.typeSymbol
 
-      if params.contains(templateSymbol) then scala.collection.immutable.Map(templateSymbol -> target)
+      if params.contains(templateSymbol)
+      then scala.collection.immutable.Map(templateSymbol -> target)
       else (template.dealias, target.dealias) match
         case (AppliedType(tTycon, tArgs), AppliedType(rTycon, rArgs))
         if tArgs.length == rArgs.length =>

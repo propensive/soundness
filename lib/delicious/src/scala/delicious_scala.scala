@@ -47,7 +47,10 @@ extension (message: SemanticMessage)
 
     def node(markup: Markup): Text = markup match
       case Markup.Textual(text)                     => text
-      case typed@Markup.Typed(_, _, _, children)    => reifier.syntax(typed).let(_.text).or(recur(children))
+
+      case typed@Markup.Typed(_, _, _, children) =>
+        reifier.syntax(typed).let(_.text).or(recur(children))
+
       case Markup.Symbolic(_, _, _, children)       => recur(children)
       case Markup.Named(_, _, children)             => recur(children)
       case Markup.Code(_, children)                 => recur(children)

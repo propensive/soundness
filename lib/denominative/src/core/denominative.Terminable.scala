@@ -80,7 +80,8 @@ object Truncable:
   given text: [text <: Text] => text is Truncable to Text =
     text => text.s.substring(0, text.s.length - 1).nn.tt
 
-  given indexedSeq: [element, seq <: IndexedSeq[element]] => seq is Truncable to IndexedSeq[element] =
+  given indexedSeq: [element, seq <: IndexedSeq[element]]
+  =>  seq is Truncable to IndexedSeq[element] =
     _.init
 
   // Dropping the last element copies the whole spine.

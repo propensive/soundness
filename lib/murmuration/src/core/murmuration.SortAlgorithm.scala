@@ -96,7 +96,10 @@ object SortAlgorithm:
       array(hole) = element
       index += 1
 
-  private[murmuration] def bubbleSorted(array: scala.Array[AnyRef]^, comparator: ju.Comparator[AnyRef]): Unit =
+  private[murmuration] def bubbleSorted
+    ( array: scala.Array[AnyRef]^, comparator: ju.Comparator[AnyRef] )
+  :   Unit =
+
     var end = array.length - 1
 
     while end > 0 do
@@ -115,7 +118,10 @@ object SortAlgorithm:
       // pass.
       end = last - 1
 
-  private[murmuration] def heapsorted(array: scala.Array[AnyRef]^, comparator: ju.Comparator[AnyRef]): Unit =
+  private[murmuration] def heapsorted
+    ( array: scala.Array[AnyRef]^, comparator: ju.Comparator[AnyRef] )
+  :   Unit =
+
     var index = array.length/2 - 1
 
     while index >= 0 do
@@ -151,7 +157,10 @@ object SortAlgorithm:
 
   // Median-of-three pivot selection with Hoare partitioning, recursing into the smaller side
   // and looping on the larger, which bounds the recursion depth at log₂(n) frames.
-  private[murmuration] def quicksorted(array: scala.Array[AnyRef]^, comparator: ju.Comparator[AnyRef]): Unit =
+  private[murmuration] def quicksorted
+    ( array: scala.Array[AnyRef]^, comparator: ju.Comparator[AnyRef] )
+  :   Unit =
+
     def recur(from: Int, to: Int): Unit =
       var start = from
       var end = to
@@ -224,7 +233,10 @@ object SortAlgorithm:
   // the order a nearly-optimal binary merge tree would, which the "power" of a boundary between
   // two adjacent runs identifies without building the tree. Like Timsort it is stable, adaptive
   // to existing runs, and merges by galloping (see `merge`).
-  private[murmuration] def powersorted(array: scala.Array[AnyRef]^, comparator: ju.Comparator[AnyRef]): Unit =
+  private[murmuration] def powersorted
+    ( array: scala.Array[AnyRef]^, comparator: ju.Comparator[AnyRef] )
+  :   Unit =
+
     val size = array.length
 
     var start = 0

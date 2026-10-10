@@ -172,14 +172,15 @@ private[facsimile] object Filter:
       case _ =>
         data
 
-  private def stage(data: Data, id: Id, parms: Map[Text, Cos])(using Tactic[Pdf.Error]): Data = id match
-    case Id.Flate     => predict(flate(data), parms)
-    case Id.Lzw       => predict(lzw(data, parms), parms)
-    case Id.Ascii85   => Ascii85.decode(data)
-    case Id.AsciiHex  => asciiHex(data)
-    case Id.RunLength => runLength(data)
-    case Id.Crypt     => data // `Identity` until encryption arrives; `Guard` will slot in here
-    case _            => data
+  private def stage(data: Data, id: Id, parms: Map[Text, Cos])(using Tactic[Pdf.Error]): Data =
+    id match
+      case Id.Flate     => predict(flate(data), parms)
+      case Id.Lzw       => predict(lzw(data, parms), parms)
+      case Id.Ascii85   => Ascii85.decode(data)
+      case Id.AsciiHex  => asciiHex(data)
+      case Id.RunLength => runLength(data)
+      case Id.Crypt     => data // `Identity` until encryption arrives; `Guard` will slot in here
+      case _            => data
 
   private def lzw(data: Data, parms: Map[Text, Cos])(using Tactic[Pdf.Error]): Data =
     try Lzw.decompress(Chain(data), earlyChange(parms)).flat.to[Array]

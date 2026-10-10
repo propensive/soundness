@@ -66,7 +66,8 @@ object Ram:
   extends caps.ExclusiveCapability:
 
     private val mapMode: jnc.FileChannel.MapMode =
-      if readWrite then jnc.FileChannel.MapMode.READ_WRITE.nn else jnc.FileChannel.MapMode.READ_ONLY.nn
+      if readWrite then jnc.FileChannel.MapMode.READ_WRITE.nn
+      else jnc.FileChannel.MapMode.READ_ONLY.nn
 
     private var buffer: jn.MappedByteBuffer = channel.map(mapMode, 0, initial).nn
     private var currentSize: Long = initial
@@ -206,7 +207,9 @@ object Ram:
             // Extend the new, empty file to its mapped size by writing its final byte.
             channel.write(jn.ByteBuffer.wrap(scala.Array[Byte](0)).nn, size - 1)
 
-            val handle = new RamHandle(channel, true, size) with Granting[Grant.Read & Grant.Write] {}
+            val handle =
+              new RamHandle(channel, true, size) with Granting[Grant.Read & Grant.Write] {}
+
             try block(using handle) finally handle.flush()
           catch case throwable: Throwable =>
             try backend.deleteIfExists(value) catch case _: Exception => ()

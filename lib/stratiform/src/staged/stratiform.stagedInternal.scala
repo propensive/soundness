@@ -572,9 +572,11 @@ object stagedInternal:
           fieldType.asType match
             case '[fieldType] =>
               resolve[fieldType](cache) match
-                case Some(iterable: Inlinable.IterableInlinable[?]) => Plan.Gather(iterable.element0)
-                case Some(instance)                                 => Plan.Nested(instance)
-                case None                                           => Plan.Seam
+                case Some(iterable: Inlinable.IterableInlinable[?]) =>
+                  Plan.Gather(iterable.element0)
+
+                case Some(instance) => Plan.Nested(instance)
+                case None           => Plan.Seam
 
     // Keywords compile to literal packed-word comparisons using the same
     // camel→kebab mapping and packing as the staged parser; a wire keyword

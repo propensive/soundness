@@ -356,7 +356,10 @@ object XPath extends Format:
 
     given communicable: Reason is Communicable =
       case Reason.UnknownFunction(name) => m"the function $name is not an XPath 1.0 core function"
-      case Reason.BadArity(name)        => m"the function $name was applied to the wrong number of arguments"
+
+      case Reason.BadArity(name) =>
+        m"the function $name was applied to the wrong number of arguments"
+
       case Reason.UnboundVariable(name) => m"the variable $$$name has no binding"
       case Reason.NotNodeSet            => m"a node-set was expected"
       case Reason.Unsupported(feature)  => m"$feature is not supported"
@@ -408,7 +411,8 @@ object XPath extends Format:
   // integral value has no decimal point (`string(1.0)` is `1`).
   private[xylophone] def renderNumber(value: Double): Text =
     if value != value then t"NaN"
-    else if java.lang.Double.isInfinite(value) then (if value > 0 then t"Infinity" else t"-Infinity")
+    else if java.lang.Double.isInfinite(value)
+    then (if value > 0 then t"Infinity" else t"-Infinity")
     else if value == Math.floor(value) && Math.abs(value) < 1e15 then value.toLong.toString.tt
     else value.toString.tt
 
@@ -500,7 +504,8 @@ object XPath extends Format:
 
   // Parses any XPath 1.0 expression — location paths, absolute or relative,
   // and the full expression language — reporting the offset of any error.
-  given decodable: (tactic: Tactic[Parse.Error]) => ((XPath is Decodable in Text)^{tactic}) = text =>
+  given decodable: (tactic: Tactic[Parse.Error])
+  =>  ( (XPath is Decodable in Text)^{tactic} ) = text =>
     XPath(XPathReader.parse(text, holes = false))
 
   // Was `XPath.Error.Reason`, whose numbering was append-only within the 562 envelope;

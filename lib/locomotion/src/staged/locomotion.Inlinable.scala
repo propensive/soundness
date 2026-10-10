@@ -38,34 +38,6 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 
-// The Expr-level counterpart of `Protobuf.Parsable`: a typeclass whose
-// methods are macro-time code generators. An instance receives an `Expr` of
-// the reader — its window set to the value's payload — and returns an `Expr`
-// of the decoded value, which the deriving macro splices directly into its
-// generated parser — so an instance contributes *inlined* code, with no
-// runtime dispatch, no field maps and no adapter hops between composed
-// parsers.
-//
-// Instances are ordinary runtime values: code generation is deferred to the
-// `parse` call, which receives the `Quotes` and the `Type` of `Self`, so
-// `derived` needs no macro of its own. At a `Protobuf.Inlinable.parsable[T]`
-// expansion, the instance behind each summoned given is obtained *live* by
-// running the implicit search inside an in-macro staging compiler (the
-// prescience mechanism). The constraint this inherits: an instance (and its
-// type) must be compiled in an earlier run than the expansion; same-run
-// instances degrade to a spliced runtime call through the
-// `Decodable in Protobuf` seam.
-trait Inlinable extends Typeclass:
-  def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Self]): Expr[Self]
-
-  // What a field of this type yields when its number is absent from the
-  // message. Proto3 has no required fields: scalars default to zero values
-  // and messages to all-fields-absent records — the structural instances
-  // override accordingly; the default aborts, so a custom instance that
-  // does not override is loud rather than silently wrong.
-  def absent(tactic: Expr[Tactic[Protobuf.Error]])(using Quotes, Type[Self]): Expr[Self] =
-    '{abort(Protobuf.Error(Protobuf.Error.Reason.MissingField(0)))(using $tactic)}
-
 object Inlinable:
   // Generates a monomorphic `Protobuf.Parsable` for a case-class message or
   // a sealed-sum oneof at compile time, composed through `Inlinable`
@@ -77,6 +49,9 @@ object Inlinable:
   // The structural instance for a case-class message: reflects `Self` when
   // invoked (no macro — `Type[Self]` arrives with the call).
   def derived[product]: product is Inlinable = ProductInlinable[product]()
+
+  object ForProtobuf:
+    def derived[value]: ForProtobuf[value] = ForProtobuf(Inlinable.derived[value])
 
   // The `derives`-clause carrier: a `Self`-typed typeclass cannot appear in
   // a `derives` clause (it has no type parameters), so `case class Foo(...)
@@ -95,9 +70,6 @@ object Inlinable:
     :   Expr[value] =
 
       delegate0.absent(tactic)
-
-  object ForProtobuf:
-    def derived[value]: ForProtobuf[value] = ForProtobuf(Inlinable.derived[value])
 
   private[locomotion] final class ProductInlinable[product]() extends Inlinable:
     type Self = product
@@ -187,3 +159,31 @@ object Inlinable:
   =>  ( element0: element is Inlinable )
   =>  ( collection[element] is Inlinable ) =
     IterableInlinable[element](element0).asInstanceOf[collection[element] is Inlinable]
+
+// The Expr-level counterpart of `Protobuf.Parsable`: a typeclass whose
+// methods are macro-time code generators. An instance receives an `Expr` of
+// the reader — its window set to the value's payload — and returns an `Expr`
+// of the decoded value, which the deriving macro splices directly into its
+// generated parser — so an instance contributes *inlined* code, with no
+// runtime dispatch, no field maps and no adapter hops between composed
+// parsers.
+//
+// Instances are ordinary runtime values: code generation is deferred to the
+// `parse` call, which receives the `Quotes` and the `Type` of `Self`, so
+// `derived` needs no macro of its own. At a `Protobuf.Inlinable.parsable[T]`
+// expansion, the instance behind each summoned given is obtained *live* by
+// running the implicit search inside an in-macro staging compiler (the
+// prescience mechanism). The constraint this inherits: an instance (and its
+// type) must be compiled in an earlier run than the expansion; same-run
+// instances degrade to a spliced runtime call through the
+// `Decodable in Protobuf` seam.
+trait Inlinable extends Typeclass:
+  def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Self]): Expr[Self]
+
+  // What a field of this type yields when its number is absent from the
+  // message. Proto3 has no required fields: scalars default to zero values
+  // and messages to all-fields-absent records — the structural instances
+  // override accordingly; the default aborts, so a custom instance that
+  // does not override is loud rather than silently wrong.
+  def absent(tactic: Expr[Tactic[Protobuf.Error]])(using Quotes, Type[Self]): Expr[Self] =
+    '{abort(Protobuf.Error(Protobuf.Error.Reason.MissingField(0)))(using $tactic)}

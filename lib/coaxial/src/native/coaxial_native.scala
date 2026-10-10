@@ -300,7 +300,9 @@ package socketBackends:
 
     //── Request/response exchange (`Serviceable`) ──────────────────────────────────────────────
     def dialTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
+      ( endpoint:  Endpoint[Tcp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option] )
     :   ClientExchange =
 
       val socket =
@@ -358,7 +360,9 @@ package socketBackends:
 
     //── Persistent duplex client (`Connectable`) ───────────────────────────────────────────────
     def duplexTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
+      ( endpoint:  Endpoint[Tcp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option] )
     :   Duplex =
 
       // The JVM backend uses a `SocketChannel`; native has none, so a plain blocking `Socket` and
@@ -380,7 +384,9 @@ package socketBackends:
 
     //── Fire-and-forget datagram courier (`Routable`) ──────────────────────────────────────────
     def routeUdp
-      ( endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
+      ( endpoint:  Endpoint[Udp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option] )
     :   UdpCourier =
 
       val address = jn.InetAddress.getByName(endpoint.remote.s).nn

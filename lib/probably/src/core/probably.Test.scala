@@ -132,7 +132,8 @@ object Test:
 
       Spread(this, axis, action(using _))
 
-    def over[value <: reflect.Enum: Enumerable, result](companion: { def values: scala.Array[value] })
+    def over[value <: reflect.Enum: Enumerable, result]
+      ( companion: { def values: scala.Array[value] } )
       ( action: Harness ?=> (value ~> result) )
     :   Spread[value, result]^{action} =
 

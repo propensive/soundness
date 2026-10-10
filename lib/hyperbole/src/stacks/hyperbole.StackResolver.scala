@@ -174,7 +174,8 @@ extends StackTrace.Resolver:
     origin.cls.let: cls =>
       tastyFile(cls).let: tasty =>
         tasty.path.let: path =>
-          if tasty.compiledFrom(origin.path) then definitionSource(tasty, path, origin.line) else Unset
+          if tasty.compiledFrom(origin.path) then definitionSource(tasty, path, origin.line)
+          else Unset
 
   private def definitionSource(tasty: Tasty.File, path: Text, line: Int)
   :   Optional[StackTrace.Frame.Source] =

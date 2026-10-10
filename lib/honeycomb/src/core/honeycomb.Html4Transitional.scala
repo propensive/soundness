@@ -421,15 +421,28 @@ class Html4Transitional() extends Dom:
     type Transport = ""
     type Form = Html4Transitional
 
-    val Hidden = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"hidden"))
+    val Hidden =
+      Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"hidden"))
+
     val Text = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"text"))
-    val Password = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"password"))
-    val Checkbox = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"checkbox"))
+
+    val Password =
+      Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"password"))
+
+    val Checkbox =
+      Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"checkbox"))
+
     val Radio = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"radio"))
-    val Submit = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"submit"))
+
+    val Submit =
+      Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"submit"))
+
     val Image = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"image"))
     val Reset = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"reset"))
-    val Button = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"button"))
+
+    val Button =
+      Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"button"))
+
     val File = Tag.void["input", Html4Transitional](presets = proscenium.Map(t"type" -> t"file"))
 
   val Ins = Tag.transparent["ins", "", Html4Transitional]()

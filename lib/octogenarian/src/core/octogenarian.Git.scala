@@ -90,9 +90,14 @@ object Git:
       val lines = caps.unsafe.unsafeAssumePure(process.stderr().delineate.records)
 
       lines.collect:
-        case r"Receiving objects: *$pc(\d*)\%.*" => Progress.Receiving(safely(pc.as[Int]).or(0)/100.0)
-        case r"Resolving deltas: *$pc(\d+)\%.*"  => Progress.Resolving(safely(pc.as[Int]).or(0)/100.0)
-        case r"Unpacking objects: *$pc(\d+)\%.*" => Progress.Unpacking(safely(pc.as[Int]).or(0)/100.0)
+        case r"Receiving objects: *$pc(\d*)\%.*" =>
+          Progress.Receiving(safely(pc.as[Int]).or(0)/100.0)
+
+        case r"Resolving deltas: *$pc(\d+)\%.*" =>
+          Progress.Resolving(safely(pc.as[Int]).or(0)/100.0)
+
+        case r"Unpacking objects: *$pc(\d+)\%.*" =>
+          Progress.Unpacking(safely(pc.as[Int]).or(0)/100.0)
 
         case r"remote: *Counting objects: *$pc(\d+)\%.*" =>
           Progress.RemoteCounting(safely(pc.as[Int]).or(0)/100.0)
@@ -392,7 +397,10 @@ object Git:
 
   // GitPathStatus → Git.PathStatus
   case class PathStatus
-    ( status1: Optional[Git.Status], status2: Optional[Git.Status], path1: Text, path2: Optional[Text] )
+    ( status1: Optional[Git.Status],
+      status2: Optional[Git.Status],
+      path1:   Text,
+      path2:   Optional[Text] )
 
   // GitProcess → Git.Process
   class Process[+result](val progress: Iterator[Progress])(closure: => result):
@@ -905,7 +913,9 @@ object Git:
   // GitTag/GitBranch/GitHash → Git.Tag/Branch/Hash
   object Tag:
     def unsafe(text: Text): Git.Tag = new Git.Tag(text)
-    def parse(text: Text)(using Tactic[Git.RefError]): Git.Tag = new Git.Tag(octogenarian.internal.Refspec.parse(text))
+
+    def parse(text: Text)(using Tactic[Git.RefError]): Git.Tag =
+      new Git.Tag(octogenarian.internal.Refspec.parse(text))
 
     given decoder: (tactic: Tactic[Git.RefError])
     =>  ( (Git.Tag is Decodable in Text)^{tactic} ) = parse(_)
@@ -919,7 +929,9 @@ object Git:
 
   object Branch:
     def unsafe(text: Text): Git.Branch = new Git.Branch(text)
-    def parse(text: Text)(using Tactic[Git.RefError]): Git.Branch = new Git.Branch(octogenarian.internal.Refspec.parse(text))
+
+    def parse(text: Text)(using Tactic[Git.RefError]): Git.Branch =
+      new Git.Branch(octogenarian.internal.Refspec.parse(text))
 
     given decoder: (tactic: Tactic[Git.RefError])
     =>  ( (Git.Branch is Decodable in Text)^{tactic} ) = parse(_)

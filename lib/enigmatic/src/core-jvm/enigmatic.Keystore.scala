@@ -46,17 +46,6 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
-// The form for PKCS#12 keystores: `path.open[Keystore](Password(t"..."))`. The password is
-// passed as a flag -- enigmatic's opaque `Password`, so the secret neither appears in the call
-// nor renders in diagnostics -- and the handle serves the store's aliases and DER-encoded
-// certificates for the duration of the scope.
-trait Keystore
-
-// The contextual keystore handle within an `open[Keystore]` block, in the manner of galilei's
-// `file`. Transparent inline so the handle's precise (grant-refined, capturing) type is
-// preserved.
-transparent inline def keystore(using handle: Keystore.KeystoreHandle^): handle.type = handle
-
 object Keystore:
   class KeystoreHandle private[enigmatic] (keystore: js.KeyStore)
   extends caps.ExclusiveCapability:
@@ -130,3 +119,14 @@ object Keystore:
 
   case class Error(reason: Error.Reason)(using Diagnostics)
   extends fulminate.Error(522, reason.number)(m"the keystore operation failed because $reason")
+
+// The form for PKCS#12 keystores: `path.open[Keystore](Password(t"..."))`. The password is
+// passed as a flag -- enigmatic's opaque `Password`, so the secret neither appears in the call
+// nor renders in diagnostics -- and the handle serves the store's aliases and DER-encoded
+// certificates for the duration of the scope.
+trait Keystore
+
+// The contextual keystore handle within an `open[Keystore]` block, in the manner of galilei's
+// `file`. Transparent inline so the handle's precise (grant-refined, capturing) type is
+// preserved.
+transparent inline def keystore(using handle: Keystore.KeystoreHandle^): handle.type = handle

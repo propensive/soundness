@@ -134,7 +134,8 @@ private[hallucination] object WebpHuffman:
       // Populate the secondary table for codes longer than the primary table.
       // Pure-typed (see `pureBytes`): the grow/extend reassignments in the loop below
       // could not consume an exclusively-typed array.
-      var secondaryTable: scala.Array[Int] = pureCopyRange(empty.asInstanceOf[scala.Array[Int]], 0, 0)
+      var secondaryTable: scala.Array[Int] =
+        pureCopyRange(empty.asInstanceOf[scala.Array[Int]], 0, 0)
 
       if maxLength > primaryTableBits then
         var subtableStart = 0
@@ -175,7 +176,8 @@ private[hallucination] object WebpHuffman:
   def single(symbol: Int): WebpHuffman = WebpHuffman(symbol, 0, empty, empty)
 
   def twoNode(zero: Int, one: Int): WebpHuffman =
-    WebpHuffman(-1, 0x1, scala.Array((1 << 12) | zero, (1 << 12) | one).asInstanceOf[Array[Int]^{}], empty)
+    WebpHuffman
+      ( -1, 0x1, scala.Array((1 << 12) | zero, (1 << 12) | one).asInstanceOf[Array[Int]^{}], empty )
 
   private def numberOfTrailingZeros(value: Int): Int =
     java.lang.Integer.numberOfTrailingZeros(value)

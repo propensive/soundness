@@ -108,11 +108,6 @@ object Decodable extends Decodable2:
   // `optionalityOptions` given, imported by name, outranks them. They are traits with a factory
   // rather than enums because an enum case cannot carry a per-format `Form` member.
 
-  // How a key the document omits reads: lenient yields `Unset`/`None`, strict raises the
-  // format's absence error
-  trait Absence extends Formal:
-    def strict: Boolean
-
   object Absence:
     def apply[form](strict0: Boolean): Absence in form =
       new Absence:
@@ -121,8 +116,9 @@ object Decodable extends Decodable2:
 
     given default: [form] => Absence in form = Absence(false)
 
-  // How the format's explicit null reads; only formats with a null literal consult it
-  trait Nullity extends Formal:
+  // How a key the document omits reads: lenient yields `Unset`/`None`, strict raises the
+  // format's absence error
+  trait Absence extends Formal:
     def strict: Boolean
 
   object Nullity:
@@ -133,9 +129,8 @@ object Decodable extends Decodable2:
 
     given default: [form] => Nullity in form = Nullity(false)
 
-  // How a value that is present but rejected by the inner decoder reads: strict (the default)
-  // lets the error through, lenient yields `Unset`/`None`
-  trait Fault extends Formal:
+  // How the format's explicit null reads; only formats with a null literal consult it
+  trait Nullity extends Formal:
     def strict: Boolean
 
   object Fault:
@@ -145,6 +140,11 @@ object Decodable extends Decodable2:
         def strict: Boolean = strict0
 
     given default: [form] => Fault in form = Fault(true)
+
+  // How a value that is present but rejected by the inner decoder reads: strict (the default)
+  // lets the error through, lenient yields `Unset`/`None`
+  trait Fault extends Formal:
+    def strict: Boolean
 
 trait Decodable extends Typeclass, Formal, Locative:
   inline def decodable: this.type = this

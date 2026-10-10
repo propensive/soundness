@@ -187,8 +187,12 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[Websocket.Error
             recur(partial)
 
           case Websocket.Frame.Close(code, reason) =>
-            if !validUtf8(reason, true) then abort(Websocket.Error(Websocket.Error.Reason.InvalidText))
-            channel.enqueue(Websocket.Frame.Close(if code == 1005 then 1000 else code, Data()).encode)
+            if !validUtf8(reason, true) then
+              abort(Websocket.Error(Websocket.Error.Reason.InvalidText))
+
+            channel.enqueue
+              ( Websocket.Frame.Close(if code == 1005 then 1000 else code, Data()).encode )
+
             channel.stop()
             Chain()
 
@@ -259,7 +263,8 @@ object Websocket:
       case Reason.Handshake(detail) => m"the WebSocket handshake failed because $detail"
 
   case class Error(reason: Websocket.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(368, reason.number)(m"the WebSocket protocol was violated because $reason")
+  extends fulminate.Error(368, reason.number)
+    ( m"the WebSocket protocol was violated because $reason" )
 
   // WebsocketEvent → Websocket.Event
   object Event:

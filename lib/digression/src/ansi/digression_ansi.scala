@@ -250,7 +250,8 @@ package teletypeables:
     val line = e"${palette.line}(${frame.line.let(_.show).or(t"?")})"
     e"$className${palette.separator}( ⌗ )$method $file${palette.separator}(:)$line"
 
-  given methodTeletype: (palette: StackTracePalette) => StackTrace.Method is Teletypeable = method =>
+  given methodTeletype: (palette: StackTracePalette)
+  =>  StackTrace.Method is Teletypeable = method =>
     val className = e"${palette.method}(${method.className})"
     val methodName = e"${palette.method}(${method.method})"
     e"$className${palette.separator}( ⌗ )$methodName"

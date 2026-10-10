@@ -104,7 +104,8 @@ object WasmInvoke extends Materializer:
 
     // The payload type of an `option`, whichever way the dialect rendered it.
     def optionPayload(witType: Foreign.Type): Optional[Foreign.Type] = witType match
-      case Foreign.Type.Union(proscenium.List(inner, Foreign.Type.Named(none))) if none.s == "none" =>
+      case Foreign.Type.Union(proscenium.List(inner, Foreign.Type.Named(none)))
+        if none.s == "none" =>
         inner
 
       case Foreign.Type.Applied(constructor, proscenium.List(inner)) if constructor.s == "option" =>
@@ -140,8 +141,10 @@ object WasmInvoke extends Materializer:
     // `case elements: List[Foreign.Type]`: the opaque `List` erases to the same class, so a type
     // test could not tell it from `Unset`'s alternative.
     def parameterTuple(parameter: Foreign.Type): Optional[List[Foreign.Type]] = parameter match
-      case Foreign.Type.Applied(constructor, elements) if constructor.s == "tuple" => elements.stdlib
-      case _                                                                       => Unset
+      case Foreign.Type.Applied(constructor, elements) if constructor.s == "tuple" =>
+        elements.stdlib
+
+      case _ => Unset
 
     val listClass = Symbol.requiredClass("scala.collection.immutable.List")
 
@@ -152,8 +155,10 @@ object WasmInvoke extends Materializer:
       case tpe                  => tpe.typeSymbol
 
     def isList(scala: TypeRepr): Boolean = scala.dealias match
-      case AppliedType(list, List(_)) => list.typeSymbol == listClass || list.typeSymbol == opaqueListSymbol
-      case _                          => false
+      case AppliedType(list, List(_)) =>
+        list.typeSymbol == listClass || list.typeSymbol == opaqueListSymbol
+
+      case _ => false
 
     def handleDecode(name: Text, scala: TypeRepr): (TypeRepr, Expr[Any] -> Expr[Any]) =
       val facade = facadeOf(name)
@@ -379,7 +384,8 @@ object WasmInvoke extends Materializer:
       case Foreign.Type.Named(name) =>
         Apply(marker("witNamed"), List(Literal(ClassOfConstant(facadeOf(name).typeRef))))
 
-      case Foreign.Type.Union(proscenium.List(inner, Foreign.Type.Named(none))) if none.s == "none" =>
+      case Foreign.Type.Union(proscenium.List(inner, Foreign.Type.Named(none)))
+        if none.s == "none" =>
         Apply(marker("witOption"), List(descriptor(inner)))
 
       case Foreign.Type.Applied(constructor, arguments) =>

@@ -127,9 +127,10 @@ private[stratiform] def rewrap(original: Tel.Compound, replacement: Tel): Tel.Co
       original.copy(atoms = Array.empty[Tel.Atom], remark = Unset, children = document.children)
 
 // Rebuilds a node with replaced children, preserving its document/compound shape.
-private[stratiform] def rebuild(origin: Tel, children: Array[Tel.Block]^{}): Tel = origin.subtree match
-  case document: Tel.Document => Tel.make(document.copy(children = children))
-  case compound: Tel.Compound => Tel.make(compound.copy(children = children))
+private[stratiform] def rebuild(origin: Tel, children: Array[Tel.Block]^{}): Tel =
+  origin.subtree match
+    case document: Tel.Document => Tel.make(document.copy(children = children))
+    case compound: Tel.Compound => Tel.make(compound.copy(children = children))
 
 // Wraps a value as a compound under the given keyword (used to key map entries' key/value
 // children).

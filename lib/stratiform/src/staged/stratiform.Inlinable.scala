@@ -40,34 +40,6 @@ import gossamer.*
 import prepositional.*
 import vacuous.*
 
-// The Expr-level counterpart of `Tel.Parsable`: a typeclass whose methods
-// are macro-time code generators, following jacinta's `Inlinable` exactly.
-// An instance receives an `Expr` of the reader (and, because a TEL value is
-// an *entry* whose extent depends on its indent, an `Expr` of the current
-// indent) and returns an `Expr` of the decoded value, which the deriving
-// macro splices directly into its generated parser — so an instance
-// contributes *inlined* code, with no runtime dispatch, no instance arrays
-// and no adapter hops between composed parsers.
-//
-// Instances are ordinary runtime values: code generation is deferred to the
-// `parse` call, which receives the `Quotes` and the `Type` of `Self`, so
-// `derived` needs no macro of its own. At a `Inlinable.parsable[T]`
-// expansion, the instance behind each summoned given is obtained *live* by
-// running the implicit search inside an in-macro staging compiler (the
-// prescience mechanism), which composes conditional instances — a collection
-// of a custom element, for example — through ordinary given resolution. The
-// constraint this inherits: an instance (and its type) must be compiled in
-// an earlier run than the expansion; same-run instances degrade to a spliced
-// runtime call through `Tel.Field`.
-trait Inlinable extends Typeclass:
-  def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Self]): Expr[Self]
-
-  // What a field of this type yields when its keyword never arrives,
-  // mirroring the runtime instances: an abort unless overridden (the
-  // primitive instances raise and continue with a sentinel).
-  def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Self]): Expr[Self] =
-    '{abort(Tel.Error(Tel.Error.Reason.Absent))(using $tactic)}
-
 object Inlinable:
   // Generates a monomorphic `Tel.Parsable` for a case class at compile
   // time, like `Tel.Parsable.staged`, but composed through `Inlinable`
@@ -79,6 +51,9 @@ object Inlinable:
   // The structural instance for a case class: reflects `Self` when invoked
   // (no macro — `Type[Self]` arrives with the call).
   def derived[product]: product is Inlinable = ProductInlinable[product]()
+
+  object ForTel:
+    def derived[value]: ForTel[value] = ForTel(Inlinable.derived[value])
 
   // The `derives`-clause carrier: a `Self`-typed typeclass cannot appear in
   // a `derives` clause (it has no type parameters), so `case class Foo(...)
@@ -99,9 +74,6 @@ object Inlinable:
     :   Expr[value] =
 
       delegate0.absent(tactic)
-
-  object ForTel:
-    def derived[value]: ForTel[value] = ForTel(Inlinable.derived[value])
 
   private[stratiform] final class ProductInlinable[product]() extends Inlinable:
     type Self = product
@@ -226,3 +198,31 @@ object Inlinable:
   =>  ( element0: element is Inlinable )
   =>  ( collection[element] is Inlinable ) =
     IterableInlinable[element](element0).asInstanceOf[collection[element] is Inlinable]
+
+// The Expr-level counterpart of `Tel.Parsable`: a typeclass whose methods
+// are macro-time code generators, following jacinta's `Inlinable` exactly.
+// An instance receives an `Expr` of the reader (and, because a TEL value is
+// an *entry* whose extent depends on its indent, an `Expr` of the current
+// indent) and returns an `Expr` of the decoded value, which the deriving
+// macro splices directly into its generated parser — so an instance
+// contributes *inlined* code, with no runtime dispatch, no instance arrays
+// and no adapter hops between composed parsers.
+//
+// Instances are ordinary runtime values: code generation is deferred to the
+// `parse` call, which receives the `Quotes` and the `Type` of `Self`, so
+// `derived` needs no macro of its own. At a `Inlinable.parsable[T]`
+// expansion, the instance behind each summoned given is obtained *live* by
+// running the implicit search inside an in-macro staging compiler (the
+// prescience mechanism), which composes conditional instances — a collection
+// of a custom element, for example — through ordinary given resolution. The
+// constraint this inherits: an instance (and its type) must be compiled in
+// an earlier run than the expansion; same-run instances degrade to a spliced
+// runtime call through `Tel.Field`.
+trait Inlinable extends Typeclass:
+  def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Self]): Expr[Self]
+
+  // What a field of this type yields when its keyword never arrives,
+  // mirroring the runtime instances: an abort unless overridden (the
+  // primitive instances raise and continue with a sentinel).
+  def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[Self]): Expr[Self] =
+    '{abort(Tel.Error(Tel.Error.Reason.Absent))(using $tactic)}

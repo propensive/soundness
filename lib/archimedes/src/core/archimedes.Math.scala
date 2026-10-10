@@ -67,7 +67,9 @@ import Mathml.*
 
 object Math extends Mathml.Container(new Math(_)):
   given aggregable: (schema: XmlSchema)
-  =>  ( parseTactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], mathmlTactic: Tactic[Mathml.Error] )
+  =>  ( parseTactic:  Tactic[Parse.Error],
+        xmlTactic:    Tactic[Xml.Error],
+        mathmlTactic: Tactic[Mathml.Error] )
   =>  ( (Math is Aggregable by Text)^{parseTactic, xmlTactic, mathmlTactic} ) =
 
     source =>

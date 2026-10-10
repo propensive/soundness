@@ -47,7 +47,8 @@ export
       Loop, loop, mean, mib, Mutex, next, ordinal, pipe, place, plus,
       prior, probe, product, Fixpoint, reflectClass, repeat, runs, runsBy, segment, Segmentable,
       before, upto, from, after, snip, tail, Appendable, Prependable, `:+`, `+:`,
-      indexed, sort, order, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri, triple, tuple, twin,
+      indexed, sort, order, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri,
+      triple, tuple, twin,
       typed, typeName, unit, unsafeImmutable, unsafeMatchable, unsafeMutable, unwind, upsert,
       variance, waive, weave, when, yet, upon, context,
       mean2, unique, seek, reap, where, Scoped, unused,
@@ -186,17 +187,22 @@ extension [value](value: value)
   def keep(predicate: traversable.Operand => Boolean): segmentable.Segment =
     rudiments.keep(value)(predicate)
 
-  def keep(predicate: traversable.Operand => Boolean, bidi: anticipation.Bidi): segmentable.Segment =
+  def keep(predicate: traversable.Operand => Boolean, bidi: anticipation.Bidi)
+  :   segmentable.Segment =
+
     rudiments.keep(value)(predicate, bidi)
 
   def skip(predicate: traversable.Operand => Boolean): segmentable.Segment =
     rudiments.skip(value)(predicate)
 
-  def skip(predicate: traversable.Operand => Boolean, bidi: anticipation.Bidi): segmentable.Segment =
+  def skip(predicate: traversable.Operand => Boolean, bidi: anticipation.Bidi)
+  :   segmentable.Segment =
+
     rudiments.skip(value)(predicate, bidi)
 
 extension [self](inline value: self)
-  ( using applicable: denominative.Applicable { type Self = self; type Operand = denominative.Ordinal } )
+  ( using applicable: denominative.Applicable
+                        { type Self = self; type Operand = denominative.Ordinal } )
 
   inline def prim: vacuous.Optional[applicable.Result] = rudiments.prim(value)
   inline def sec: vacuous.Optional[applicable.Result] = rudiments.sec(value)

@@ -115,7 +115,9 @@ private[xylophone] object XPathReader:
 
     def push(token: Token, at: Int): Unit = tokens += Positioned(token, at)
     def afterOperand: Boolean = tokens.nonEmpty && operand(tokens.last.token)
-    def digit(at: Int): Boolean = at < length && string.charAt(at) >= '0' && string.charAt(at) <= '9'
+
+    def digit(at: Int): Boolean =
+      at < length && string.charAt(at) >= '0' && string.charAt(at) <= '9'
 
     def scanNumber(start: Int): Unit =
       var end = start
@@ -131,7 +133,10 @@ private[xylophone] object XPathReader:
     def scanLiteral(start: Int): Unit =
       val quote = string.charAt(start)
       val close = string.indexOf(quote, start + 1)
-      if close < 0 then abort(Parse.Error(XPath, XPath.Position.at(start), XPath.Issue.UnterminatedLiteral))
+
+      if close < 0
+      then abort(Parse.Error(XPath, XPath.Position.at(start), XPath.Issue.UnterminatedLiteral))
+
       push(Token.LiteralToken(string.substring(start + 1, close).nn.tt), start)
       offset = close + 1
 
@@ -159,7 +164,9 @@ private[xylophone] object XPathReader:
           case "or"  => push(Token.OrKeyword, start)
           case "div" => push(Token.DivKeyword, start)
           case "mod" => push(Token.ModKeyword, start)
-          case _     => abort(Parse.Error(XPath, XPath.Position.at(start), XPath.Issue.UnexpectedToken))
+
+          case _ =>
+            abort(Parse.Error(XPath, XPath.Position.at(start), XPath.Issue.UnexpectedToken))
 
         offset = end
       else
@@ -185,11 +192,14 @@ private[xylophone] object XPathReader:
 
         if ahead + 1 < length && string.charAt(ahead) == ':' && string.charAt(ahead + 1) == ':'
         then
-          if prefix.present then abort(Parse.Error(XPath, XPath.Position.at(start), XPath.Issue.UnknownAxis))
+          if prefix.present
+          then abort(Parse.Error(XPath, XPath.Position.at(start), XPath.Issue.UnknownAxis))
 
           axisFor(local) match
             case axis: Axis => push(Token.AxisToken(axis), start)
-            case _          => abort(Parse.Error(XPath, XPath.Position.at(start), XPath.Issue.UnknownAxis))
+
+            case _ =>
+              abort(Parse.Error(XPath, XPath.Position.at(start), XPath.Issue.UnknownAxis))
 
           offset = ahead + 2
         else if ahead < length && string.charAt(ahead) == '(' then
@@ -425,7 +435,8 @@ private[xylophone] object XPathReader:
         false
 
     def parsePath(): Expression =
-      if !more then abort(Parse.Error(XPath, XPath.Position.at(here), XPath.Issue.ExpectedExpression))
+      if !more
+      then abort(Parse.Error(XPath, XPath.Position.at(here), XPath.Issue.ExpectedExpression))
 
       current match
         case Token.Slash =>
@@ -559,7 +570,8 @@ private[xylophone] object XPathReader:
         Expression.Route(Origin.Filter(primary, predicates), Nil)
 
     def parsePrimary(): Expression =
-      if !more then abort(Parse.Error(XPath, XPath.Position.at(here), XPath.Issue.ExpectedExpression))
+      if !more
+      then abort(Parse.Error(XPath, XPath.Position.at(here), XPath.Issue.ExpectedExpression))
 
       current match
         case Token.VariableToken(prefix, name) =>

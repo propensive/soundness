@@ -284,7 +284,9 @@ object Ductile:
             val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
             // The exclusive cast is sound for the same reason as `Conduit.put`'s:
             // the target is the stage's single-owner output buffer.
-            val chars = unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]]).asInstanceOf[scala.Array[Char]^]
+            val chars =
+              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]])
+              . asInstanceOf[scala.Array[Char]^]
 
             if staging.position == 0 then
               // Fast path: with no carried bytes, decode straight from the source

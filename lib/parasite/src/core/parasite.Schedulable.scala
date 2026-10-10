@@ -40,6 +40,12 @@ import scala.language.experimental.pureFunctions
 import anticipation.*
 import prepositional.*
 
+object Schedulable:
+  given duration: [time: Abstractable across Durations to Long] => time is Schedulable = _.generic
+
+  given instant: [time: Abstractable across Instants to Long] => time is Schedulable =
+    time => (time.generic - jl.System.currentTimeMillis)*1_000_000L
+
 // How long, in nanoseconds from now, a pause expressed as `Self` should last. This is what lets
 // `snooze` and `sleep` take either a duration or an instant: a duration's generic form is already
 // a nanosecond count, and an instant's is the epoch milliseconds at which to wake. A bare `Long`
@@ -51,9 +57,3 @@ trait Schedulable extends Typeclass:
   def nanoseconds(value: Self): Long
 
   extension (value: Self) def remaining: Long = nanoseconds(value)
-
-object Schedulable:
-  given duration: [time: Abstractable across Durations to Long] => time is Schedulable = _.generic
-
-  given instant: [time: Abstractable across Instants to Long] => time is Schedulable =
-    time => (time.generic - jl.System.currentTimeMillis)*1_000_000L

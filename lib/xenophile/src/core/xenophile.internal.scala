@@ -548,7 +548,8 @@ object Xenophile:
   def interface[form: Type](resource: Expr[Locative]): Macro[Interface] =
     import quotes.reflect.*
 
-    val members = (refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)).to(Map)
+    val members =
+      (refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)).to(Map)
 
     val locusRepr = members(t"Locus").or:
       halt(m"xenophile: the resource does not carry a singleton path type (it has no `Locus`)")

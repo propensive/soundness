@@ -72,7 +72,9 @@ object Multihash:
       else
         val byte = data.readable(index)
         val value = acc | ((byte & 0x7f).toLong << shift)
-        if (byte & 0x80) == 0 then (value, index + 1) else recur(index + 1, shift + 7, value, groups + 1)
+
+        if (byte & 0x80) == 0 then (value, index + 1)
+        else recur(index + 1, shift + 7, value, groups + 1)
 
     recur(offset, 0, 0L, 0)
 
@@ -93,7 +95,8 @@ object Multihash:
     if length > available then abort(Multihash.Error(Multihash.Reason.Truncated))
     if length < available then abort(Multihash.Error(Multihash.Reason.Trailing))
 
-    Multihash(code.toInt, Array.frozen(data.readable.slice(afterLength, afterLength + length.toInt)))
+    Multihash
+      ( code.toInt, Array.frozen(data.readable.slice(afterLength, afterLength + length.toInt)) )
 
   enum Reason:
     case Truncated, Trailing, Oversize

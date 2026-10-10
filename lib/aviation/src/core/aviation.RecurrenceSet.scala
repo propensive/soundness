@@ -55,7 +55,8 @@ object RecurrenceSet:
   // Lazily merge two ascending streams into one ascending stream (emit the lesser head first).
   // The `#::` matches prove non-emptiness structurally and force nothing beyond the two heads;
   // the n-way merge is a `reduce` of this over the (proven non-empty) list of streams.
-  private def merge[point](left: Chain[point], right: Chain[point])(using order: point is Comparable)
+  private def merge[point](left: Chain[point], right: Chain[point])
+  ( using order: point is Comparable )
   :   Chain[point] =
 
     left match

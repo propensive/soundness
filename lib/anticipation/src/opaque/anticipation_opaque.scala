@@ -33,5 +33,7 @@
 package anticipation
 
 extension [alias](value: alias)
-  inline def underlying[primitive](using erased underlying: Underlying[alias, primitive]): primitive =
+  inline def underlying[primitive](using erased underlying: Underlying[alias, primitive])
+  :   primitive =
+
     value.asInstanceOf[primitive]

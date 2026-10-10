@@ -413,7 +413,8 @@ object SourceCode:
     val diagnostics =
       if !full then typerDiagnostics else
         frontend(text, compilation): context =>
-          context.setSetting(context.settings.YstopBefore, scala.collection.immutable.List("genBCode"))
+          context.setSetting
+            ( context.settings.YstopBefore, scala.collection.immutable.List("genBCode") )
 
         ._3
 
@@ -449,11 +450,15 @@ object SourceCode:
         // carries a read capability the pure formal rejects.
         val args = java.util.ArrayList[String]()
 
-        (t"-classpath" :: compilation.classpath :: compilation.arguments + List(t"")).each: argument =>
+        (t"-classpath" :: compilation.classpath :: compilation.arguments + List(t""))
+        . each: argument =>
           args.add(argument.s)
           ()
 
-        setup(args.toArray(new scala.Array[String | Null](0)).nn.asInstanceOf[scala.Array[String]], base)
+        setup
+          ( args.toArray(new scala.Array[String | Null](0)).nn.asInstanceOf[scala.Array[String]],
+            base )
+
         . map(_(1)).get
 
     val base: Contexts.FreshContext = driver.context.fresh
@@ -487,7 +492,8 @@ object SourceCode:
   :   Optional[Completions] =
 
     try
-      val settings = ("-classpath" :: compilation.classpath.s :: compilation.arguments.map(_.s)).map(_.nn)
+      val settings =
+        ("-classpath" :: compilation.classpath.s :: compilation.arguments.map(_.s)).map(_.nn)
       // stdlib bridge: the presentation compiler's own API takes a `scala.List[String]`.
       val driver = Shim.interactiveDriver(settings.stdlib)
       // The driver resolves the URI as a path, so it must use the `file` scheme, though no
@@ -724,4 +730,8 @@ case class SourceCode
     else fragment(startLine, (endLine + 1).min(lastLine), range)
 
   def fragment(startLine: Int, endLine: Int, focus: Optional[Span] = Unset): SourceCode =
-    SourceCode(language, startLine, lines.segment((startLine - offset).z till (endLine - offset + 1).z), focus)
+    SourceCode
+      ( language,
+        startLine,
+        lines.segment((startLine - offset).z till (endLine - offset + 1).z),
+        focus )

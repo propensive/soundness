@@ -285,7 +285,8 @@ object Ergo:
       case (glyph, Directive.Fixed(n, v)) if n == name && v == value => glyph.show
       case (glyph, Directive.Param(n)) if n == name                  => t"$glyph($value)"
 
-  private class Parser(s: String, holes: Iterator[Mathml])(using Tactic[Ergo.Error]) extends scala.caps.Stateful:
+  private class Parser(s: String, holes: Iterator[Mathml])(using Tactic[Ergo.Error])
+  extends scala.caps.Stateful:
     private var pos = 0
     private var open = '('
     private var close = ')'

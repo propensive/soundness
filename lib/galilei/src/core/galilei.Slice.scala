@@ -44,22 +44,6 @@ import symbolism.*
 import vacuous.*
 import Io.Error.{Operation, Reason}
 
-// A byte range of a file, as a subject for `open` (issue #566): opening a `Slice` with an
-// `Exclusive` or `Shared` mode takes an OS advisory lock over exactly that range —
-// `FileChannel.lock(position, size, shared)` — and enrols the range in the access register,
-// where it conflicts only with overlapping ranges (a whole-file open overlaps every range).
-// The handle is a `Slice.Window`: a positional view windowed to the slice, whose `size` is
-// the window's, and whose reads and writes are relative to the window's start and confined
-// to it (issue #1878) — reads clamp, and writes store as much as fits and return the count,
-// in the manner of `pwrite`. The `read` and `write` extensions are gated by the mode's
-// grants, as `Ram`'s are. Opened without a locking mode, a `Slice` is simply a windowed
-// view, which even lockless backends (WASI) support.
-//
-//     Slice(path, 0L, 1024L).open[File](Read & Write & Exclusive): window ?=>
-//       window.write(0L, data)  // stored at the file's start, under a range lock
-//       window.read(0L, 16)
-case class Slice[plane](path: Path on plane, offset: Long, extent: Long)
-
 object Slice:
   // The handle for an open slice. `readFrom` and `writeTo` are the operational methods, which
   // backends implement already windowed; the public, grant-gated names are the `read` and
@@ -134,3 +118,19 @@ object Slice:
         tactic:  Tactic[Io.Error] )
   =>  ( SliceOpenable[filesystem, slice]^{tactic} ) =
     SliceOpenable[filesystem, slice]
+
+// A byte range of a file, as a subject for `open` (issue #566): opening a `Slice` with an
+// `Exclusive` or `Shared` mode takes an OS advisory lock over exactly that range —
+// `FileChannel.lock(position, size, shared)` — and enrols the range in the access register,
+// where it conflicts only with overlapping ranges (a whole-file open overlaps every range).
+// The handle is a `Slice.Window`: a positional view windowed to the slice, whose `size` is
+// the window's, and whose reads and writes are relative to the window's start and confined
+// to it (issue #1878) — reads clamp, and writes store as much as fits and return the count,
+// in the manner of `pwrite`. The `read` and `write` extensions are gated by the mode's
+// grants, as `Ram`'s are. Opened without a locking mode, a `Slice` is simply a windowed
+// view, which even lockless backends (WASI) support.
+//
+//     Slice(path, 0L, 1024L).open[File](Read & Write & Exclusive): window ?=>
+//       window.write(0L, data)  // stored at the file's start, under a range lock
+//       window.read(0L, 16)
+case class Slice[plane](path: Path on plane, offset: Long, extent: Long)

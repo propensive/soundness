@@ -110,7 +110,10 @@ package timeFormats:
         ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
 
 package timespanFormats:
-  export aviation.timespanFormats.{englishRelativeTimespan, frenchRelativeTimespan, germanRelativeTimespan, spanishRelativeTimespan}
+  export
+    aviation.timespanFormats
+    . { englishRelativeTimespan, frenchRelativeTimespan, germanRelativeTimespan,
+        spanishRelativeTimespan }
 
 package hourFormats:
   export aviation.hourFormats.{twelveHourClock, twelveHourSecondsClock, twentyFourHourClock,

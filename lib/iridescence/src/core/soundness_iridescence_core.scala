@@ -42,11 +42,15 @@ export
 package colorimetry:
   export
     iridescence.colorimetry
-    . { adobeRgbColorimetry, coolFluorescentColorimetry, coolWhiteFluorescentColorimetry, d50SimulatorColorimetry, d65SimulatorColorimetry, daylightColorimetry,
-        daylightFluorescentF1Colorimetry, daylightFluorescentF5Colorimetry, daylightFluorescentF7Colorimetry, equalEnergyColorimetry,
-        iccProfilePcsColorimetry, incandescentTungstenColorimetry, liteWhiteFluorescentColorimetry, midMorningDaylightColorimetry,
-        northSkyDaylightColorimetry, oldDaylightColorimetry, oldDirectSunlightAtNoonColorimetry, philipsTl83Colorimetry, philipsTl84Colorimetry,
-        philipsTl85Colorimetry, srgbColorimetry, sylvaniaF40Colorimetry, ultralume30Colorimetry, ultralume40Colorimetry, ultralume50Colorimetry, warmWhiteFluorescentColorimetry,
+    . { adobeRgbColorimetry, coolFluorescentColorimetry, coolWhiteFluorescentColorimetry,
+        d50SimulatorColorimetry, d65SimulatorColorimetry, daylightColorimetry,
+        daylightFluorescentF1Colorimetry, daylightFluorescentF5Colorimetry,
+        daylightFluorescentF7Colorimetry, equalEnergyColorimetry, iccProfilePcsColorimetry,
+        incandescentTungstenColorimetry, liteWhiteFluorescentColorimetry,
+        midMorningDaylightColorimetry, northSkyDaylightColorimetry, oldDaylightColorimetry,
+        oldDirectSunlightAtNoonColorimetry, philipsTl83Colorimetry, philipsTl84Colorimetry,
+        philipsTl85Colorimetry, srgbColorimetry, sylvaniaF40Colorimetry, ultralume30Colorimetry,
+        ultralume40Colorimetry, ultralume50Colorimetry, warmWhiteFluorescentColorimetry,
         whiteFluorescentColorimetry }
 
 package luminosity:
@@ -55,8 +59,9 @@ package luminosity:
 package mixing:
   export
     iridescence.mixing
-    . { colorBurnMixing, colorDodgeMixing, darkenMixing, differenceMixing, exclusionMixing, hardLightMixing, lightenMixing, linearBurnMixing,
-        linearDodgeMixing, multiplyMixing, overlayMixing, proportionalMixing, screenMixing, softLightMixing }
+    . { colorBurnMixing, colorDodgeMixing, darkenMixing, differenceMixing, exclusionMixing,
+        hardLightMixing, lightenMixing, linearBurnMixing, linearDodgeMixing, multiplyMixing,
+        overlayMixing, proportionalMixing, screenMixing, softLightMixing }
 
 package themes:
   export iridescence.themes.solarizedTheme

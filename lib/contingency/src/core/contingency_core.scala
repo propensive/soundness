@@ -245,7 +245,8 @@ extension [value](optional: Optional[value])
   :   Optional[success] =
 
     try boundary: label ?=>
-      optional.let(block(using Diagnostics.omit, OptionalTactic(label), summon[CanThrow[Exception]]))
+      optional.let
+        ( block(using Diagnostics.omit, OptionalTactic(label), summon[CanThrow[Exception]]) )
     catch case error: Exception => Unset
 
 

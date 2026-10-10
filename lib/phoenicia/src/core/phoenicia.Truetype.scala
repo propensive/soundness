@@ -104,7 +104,10 @@ case class Truetype(data: Data) extends Sfnt:
       newLoca(id*4 + 2) = (offsets(id) >> 8).toByte
       newLoca(id*4 + 3) = offsets(id).toByte
 
-    val headRef = tables(Sfnt.Table.Ttf.Head).lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Head)))
+    val headRef =
+      tables(Sfnt.Table.Ttf.Head)
+      . lest(Font.Error(Font.Error.Reason.MissingTable(Sfnt.Table.Ttf.Head)))
+
     val headData = data.segment((headRef.offset).z till (headRef.offset + headRef.length).z)
     val newHead = Array.allocate[Byte](headData.length)
     newHead.place(headData)
@@ -113,7 +116,9 @@ case class Truetype(data: Data) extends Sfnt:
     newHead(51) = 1
 
     val carried = tables.values.bind: ref =>
-      if ref.id == Sfnt.Table.Ttf.Glyf || ref.id == Sfnt.Table.Ttf.Loca || ref.id == Sfnt.Table.Ttf.Head then Nil
+      if ref.id == Sfnt.Table.Ttf.Glyf || ref.id == Sfnt.Table.Ttf.Loca ||
+        ref.id == Sfnt.Table.Ttf.Head
+      then Nil
       else List(ref.id.text -> data.segment((ref.offset).z till (ref.offset + ref.length).z))
 
     val entries =
@@ -151,7 +156,9 @@ case class Truetype(data: Data) extends Sfnt:
 
   case class GlyfTable(offset: Int, loca: LocaTable):
     def apply(glyphId: Int): GlyphRecord =
-      GlyphRecord(offset + loca.offsets.readUnchecked(glyphId), loca.offsets.readUnchecked(glyphId + 1) - loca.offsets.readUnchecked(glyphId))
+      GlyphRecord
+        ( offset + loca.offsets.readUnchecked(glyphId),
+          loca.offsets.readUnchecked(glyphId + 1) - loca.offsets.readUnchecked(glyphId) )
 
     // One glyph's raw data. A glyph with no outline — a space — has zero extent; a composite
     // glyph has a negative contour count and a list of component glyphs.

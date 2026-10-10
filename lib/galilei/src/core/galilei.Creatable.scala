@@ -63,7 +63,8 @@ object Creation:
 
     if flags.has(Parents) then
       def ancestors(current: Path on filesystem): List[Path on filesystem] =
-        safely(current.parent).let { parent => (parent :: ancestors(parent)): List[Path on filesystem] }
+        safely(current.parent)
+        . let { parent => (parent :: ancestors(parent)): List[Path on filesystem] }
         . or(Nil)
 
       ancestors(path).reverse.each: ancestor =>
@@ -177,7 +178,8 @@ object Creation:
 
       try
         val outcome =
-          backend.open(temporary, List(OpenFlag.Write, OpenFlag.Create), umask.mode(Umask.fileBits)):
+          backend.open
+            ( temporary, List(OpenFlag.Write, OpenFlag.Create), umask.mode(Umask.fileBits) ):
             handle =>
             block(using handle.asInstanceOf[Handle & Granting[Grant.Read & Grant.Write]])
 

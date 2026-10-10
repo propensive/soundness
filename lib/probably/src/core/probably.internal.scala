@@ -77,9 +77,14 @@ object internal:
             // side (the expected value) is a closed term safe to splice. A projection such as
             // `_.field == x` matches neither case and yields no contrast.
             expression match
-              case Apply(Select(Ident(`a`), "=="), scala.collection.immutable.List(term)) => Some(term.asExpr)
-              case Apply(Select(term, "=="), scala.collection.immutable.List(Ident(`a`))) => Some(term.asExpr)
-              case other                                                                  => None
+              case Apply(Select(Ident(`a`), "=="), scala.collection.immutable.List(term)) =>
+                Some(term.asExpr)
+
+              case Apply(Select(term, "=="), scala.collection.immutable.List(Ident(`a`))) =>
+                Some(term.asExpr)
+
+              case other =>
+                None
 
           case other =>
             None
@@ -235,7 +240,8 @@ object internal:
                             contrast.juxtaposition(exp, value) ) )
 
                   if !map.nil
-                  then inc2.include(runner.report, test.id, coordinates, Verdict.Detail.Captures(map))
+                  then
+                    inc2.include(runner.report, test.id, coordinates, Verdict.Detail.Captures(map))
 
                 if aspirational then Verdict.AspireFail(duration) else Verdict.Fail(duration)
             catch case error: Exception =>

@@ -262,7 +262,8 @@ object Mutation:
 
         val updatedBlock =
           targetBlock.copy
-            ( compounds = Array.frozen(targetBlock.compounds.readable.updated(localIdx, updatedCompound)) )
+            ( compounds =
+                Array.frozen(targetBlock.compounds.readable.updated(localIdx, updatedCompound)) )
 
         rewrap(subtree, Array.frozen(subtree.children.readable.updated(blockIdx, updatedBlock)))
 
@@ -409,7 +410,8 @@ object Mutation:
 
         if atomIdx >= 0 then
           val atoms =
-            Array.frozen(target.atoms.readable.take(atomIdx) ++ target.atoms.readable.drop(atomIdx + 1))
+            Array.frozen
+              ( target.atoms.readable.take(atomIdx) ++ target.atoms.readable.drop(atomIdx + 1) )
 
           splice(Array(target.copy(atoms = atoms)))
         else
@@ -446,7 +448,8 @@ object Mutation:
             val children =
               if remaining.length == 0 then removeBlock(target.children, foundBlock, true)
               else Array.frozen
-                ( target.children.readable.updated(foundBlock, childBlock.copy(compounds = remaining)) )
+                ( target.children.readable.updated
+                    ( foundBlock, childBlock.copy(compounds = remaining) ) )
 
             splice(Array(target.copy(children = children)))
 
@@ -886,7 +889,9 @@ object Mutation:
       var b = 0
 
       while b < blocks.length do
-        if movingBlocks.contains(b) then moving += blocks.readable(b) else pruned += ((b, blocks.readable(b)))
+        if movingBlocks.contains(b) then moving += blocks.readable(b)
+        else pruned += ((b, blocks.readable(b)))
+
         b += 1
 
       val anchor = placement match

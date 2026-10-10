@@ -77,7 +77,8 @@ object Pax:
         // of digits; fall back to 0 so the `length < 1` check below rejects it.
         val length = safely(data.segment((pos).z till (lengthEnd).z).ascii.as[Int]).or(0)
 
-        if length < 1 || pos + length > data.length || data.readUnchecked(pos + length - 1) != '\n'.toByte
+        if length < 1 || pos + length > data.length ||
+          data.readUnchecked(pos + length - 1) != '\n'.toByte
         then
           raise(Tar.Error(Tar.Error.Reason.BadPaxRecord(data)))
           pos = data.length

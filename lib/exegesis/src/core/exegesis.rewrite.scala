@@ -166,7 +166,9 @@ object rewrite:
 
     proxy.outbound0 = Lsp.Registry.Slot[Lsp.Proxy.OutboundHook](hook)
 
-  transparent inline def inbound(inline hook: Lsp.Proxy.InboundHook)(using proxy: Lsp.Proxy^): Unit =
+  transparent inline def inbound(inline hook: Lsp.Proxy.InboundHook)(using proxy: Lsp.Proxy^)
+  :   Unit =
+
     proxy.inbound0 = Lsp.Registry.Slot[Lsp.Proxy.InboundHook](hook)
 
   // Run once, on a task of its own, as soon as the proxy has a session with the server upstream:

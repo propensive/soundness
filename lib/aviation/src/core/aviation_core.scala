@@ -98,27 +98,32 @@ package dateFormats:
   private given calendar: RomanCalendar = calendars.gregorianCalendar
 
   given europeanDateFormat: Date is Showable =
-    import dateEndianness.littleEndian, dateNumerics.fixedWidthDateNumerics, dateSeparators.dotDateSeparator
+    import dateEndianness.littleEndian, dateNumerics.fixedWidthDateNumerics
+    import dateSeparators.dotDateSeparator
     import yearFormats.fullYears
     Timestamp.dateShowable.text(_)
 
   given americanDateFormat: Date is Showable =
-    import dateEndianness.middleEndian, dateNumerics.fixedWidthDateNumerics, dateSeparators.slashDateSeparator
+    import dateEndianness.middleEndian, dateNumerics.fixedWidthDateNumerics
+    import dateSeparators.slashDateSeparator
     import yearFormats.fullYears
     Timestamp.dateShowable.text(_)
 
   given unitedKingdomDateFormat: Date is Showable =
-    import dateEndianness.littleEndian, dateNumerics.fixedWidthDateNumerics, dateSeparators.slashDateSeparator
+    import dateEndianness.littleEndian, dateNumerics.fixedWidthDateNumerics
+    import dateSeparators.slashDateSeparator
     import yearFormats.fullYears
     Timestamp.dateShowable.text(_)
 
   given southEastAsiaDateFormat: Date is Showable =
-    import dateEndianness.littleEndian, dateNumerics.fixedWidthDateNumerics, dateSeparators.hyphenDateSeparator
+    import dateEndianness.littleEndian, dateNumerics.fixedWidthDateNumerics
+    import dateSeparators.hyphenDateSeparator
     import yearFormats.fullYears
     Timestamp.dateShowable.text(_)
 
   given iso8601DateFormat: Date is Showable =
-    import dateEndianness.bigEndian, dateNumerics.fixedWidthDateNumerics, dateSeparators.hyphenDateSeparator
+    import dateEndianness.bigEndian, dateNumerics.fixedWidthDateNumerics
+    import dateSeparators.hyphenDateSeparator
     import yearFormats.fullYears
     Timestamp.dateShowable.text(_)
 
@@ -307,12 +312,14 @@ package monthFormats:
 
 package timeFormats:
   given militaryTimeFormat: Clockface is Showable =
-    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics, timeSeparators.noneTimeSeparator
+    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics
+    import timeSeparators.noneTimeSeparator
     import timeSpecificities.minutesSpecificity
     Clockface.showable.text(_)
 
   given civilianTimeFormat: Clockface is Showable =
-    import hourFormats.twelveHourClock, timeMeridiems.upperMeridiem, timeNumerics.fixedWidthTimeNumerics
+    import hourFormats.twelveHourClock, timeMeridiems.upperMeridiem
+    import timeNumerics.fixedWidthTimeNumerics
     import timeSeparators.colonTimeSeparator
     import timeSpecificities.minutesSpecificity
 
@@ -335,12 +342,14 @@ package timeFormats:
     Clockface.showable.text(_)
 
   given ledgerTimeFormat: Clockface is Showable =
-    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics, timeSeparators.dotTimeSeparator
+    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics
+    import timeSeparators.dotTimeSeparator
     import timeSpecificities.minutesSpecificity
     Clockface.showable.text(_)
 
   given railwayTimeFormat: Clockface is Showable =
-    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics, timeSeparators.colonTimeSeparator
+    import hourFormats.twentyFourHourClock, timeNumerics.fixedWidthTimeNumerics
+    import timeSeparators.colonTimeSeparator
     import timeSpecificities.minutesSpecificity
     Clockface.showable.text(_)
 
@@ -402,10 +411,17 @@ package timeSeparators:
 // the variant for the language(s) you want (e.g. `timespanFormats.frenchRelativeTimespan`); the
 // in-scope `Locale` selects which applies.
 package timespanFormats:
-  given englishRelativeTimespan: Locale[en] => Timespan is Showable = Vernacular.english.relativeTimespan(_)
-  given frenchRelativeTimespan: Locale[fr] => Timespan is Showable = Vernacular.french.relativeTimespan(_)
-  given germanRelativeTimespan: Locale[de] => Timespan is Showable = Vernacular.german.relativeTimespan(_)
-  given spanishRelativeTimespan: Locale[es] => Timespan is Showable = Vernacular.spanish.relativeTimespan(_)
+  given englishRelativeTimespan: Locale[en] => Timespan is Showable =
+    Vernacular.english.relativeTimespan(_)
+
+  given frenchRelativeTimespan: Locale[fr] => Timespan is Showable =
+    Vernacular.french.relativeTimespan(_)
+
+  given germanRelativeTimespan: Locale[de] => Timespan is Showable =
+    Vernacular.german.relativeTimespan(_)
+
+  given spanishRelativeTimespan: Locale[es] => Timespan is Showable =
+    Vernacular.spanish.relativeTimespan(_)
 
 package calendars:
   given julianCalendar: RomanCalendar(t"Julian"):

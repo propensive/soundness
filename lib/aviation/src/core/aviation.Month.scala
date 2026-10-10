@@ -50,7 +50,8 @@ object Month extends MonthRadix:
     else all(index - 1)
 
   inline def apply(name: Text): Month raises Moment.Error =
-    try Month.valueOf(name.s) catch case _: Exception => abort(Moment.Error(_.Unknown(name, t"month")))
+    try Month.valueOf(name.s)
+    catch case _: Exception => abort(Moment.Error(_.Unknown(name, t"month")))
 
   def unapply(value: Text): Option[Month] =
     try Some(Month.valueOf(value.lower.capitalize.s))

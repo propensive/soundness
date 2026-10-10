@@ -83,10 +83,13 @@ object LocalClasspath:
   // to run the same code must be given: under a host, the property names the host's own jars.
   def of(classloader: Classloader)(using System): LocalClasspath = classloader.classpath match
     case classpath: LocalClasspath => classpath
-    case _                         => unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+
+    case _ =>
+      unsafely(System.properties.java.`class`.path().as[LocalClasspath])
 
   def apply
-    ( entries: (Classpath.Entry.Directory | Classpath.Entry.Jar | Classpath.Entry.JavaRuntime.type)* )
+    ( entries:
+        (Classpath.Entry.Directory | Classpath.Entry.Jar | Classpath.Entry.JavaRuntime.type)* )
   :   LocalClasspath =
 
     new LocalClasspath(entries.toList.to(List), entries.to(Set))

@@ -111,7 +111,8 @@ object Alphabet:
 
             // The stage's own buffer, asserted exclusive at the cast rim.
             val chars: scala.Array[Char]^ =
-              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]]).asInstanceOf[scala.Array[Char]^]
+              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]])
+              . asInstanceOf[scala.Array[Char]^]
 
             var consumed: Int = 0
             var produced: Int = 0
@@ -122,14 +123,20 @@ object Alphabet:
               // groups — three input bytes to four characters — directly from
               // the table, skipping the per-character accumulator bookkeeping.
               if base == 6 then
-                while accumulated == 0 && consumed + 3 <= sourceLength && produced + 4 <= targetSpace
+                while accumulated == 0 && consumed + 3 <= sourceLength &&
+                  produced + 4 <= targetSpace
                 do
                   val b0 = bytes(sourceOffset + consumed) & 0xff
                   val b1 = bytes(sourceOffset + consumed + 1) & 0xff
                   val b2 = bytes(sourceOffset + consumed + 2) & 0xff
                   chars(targetOffset + produced) = table.readable(b0 >>> 2)
-                  chars(targetOffset + produced + 1) = table.readable(((b0 & 0x3) << 4) | (b1 >>> 4))
-                  chars(targetOffset + produced + 2) = table.readable(((b1 & 0xf) << 2) | (b2 >>> 6))
+
+                  chars(targetOffset + produced + 1) =
+                    table.readable(((b0 & 0x3) << 4) | (b1 >>> 4))
+
+                  chars(targetOffset + produced + 2) =
+                    table.readable(((b1 & 0xf) << 2) | (b2 >>> 6))
+
                   chars(targetOffset + produced + 3) = table.readable(b2 & 0x3f)
                   consumed += 3
                   produced += 4
@@ -137,7 +144,9 @@ object Alphabet:
 
               if accumulated >= base then
                 if produced < targetSpace then
-                  chars(targetOffset + produced) = table.readable((accumulator >>> (accumulated - base)) & mask)
+                  chars(targetOffset + produced) =
+                    table.readable((accumulator >>> (accumulated - base)) & mask)
+
                   produced += 1
                   accumulated -= base
                   written += 1
@@ -158,7 +167,8 @@ object Alphabet:
             val targetSpace = targetInterval.size
 
             val chars: scala.Array[Char]^ =
-              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]]).asInstanceOf[scala.Array[Char]^]
+              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]])
+              . asInstanceOf[scala.Array[Char]^]
 
             var produced: Int = 0
 
@@ -235,7 +245,8 @@ object Alphabet:
 
             // The stage's own buffer, asserted exclusive at the cast rim.
             val bytes: scala.Array[Byte]^ =
-              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+              . asInstanceOf[scala.Array[Byte]^]
 
             var consumed: Int = 0
             var produced: Int = 0
@@ -308,7 +319,8 @@ extends caps.Pure:
   def apply(index: Int): Char = chars.s.charAt(index)
 
   def invert(position: Int, char: Char): Int raises Serialization.Error =
-    if char < inversions.length && inversions.readUnchecked(char) >= 0 then inversions.readUnchecked(char)
+    if char < inversions.length && inversions.readUnchecked(char) >= 0
+    then inversions.readUnchecked(char)
     else abort(Serialization.Error(position, char))
 
   lazy val inverse: Map[Char, Int] =

@@ -81,7 +81,9 @@ object Blake3:
   // the object impure.
   private def schedule: scala.Array[Int] = Array.unsafeJvm(Schedule)
 
-  private def mix(state: scala.Array[Int]^, a: Int, b: Int, c: Int, d: Int, mx: Int, my: Int): Unit =
+  private def mix(state: scala.Array[Int]^, a: Int, b: Int, c: Int, d: Int, mx: Int, my: Int)
+  :   Unit =
+
     state(a) = state(a) + state(b) + mx
     state(d) = Integer.rotateRight(state(d) ^ state(a), 16)
     state(c) = state(c) + state(d)
@@ -117,7 +119,8 @@ object Blake3:
 
     val state: scala.Array[Int]^ = new scala.Array[Int](16)
     System.arraycopy(chainingValue, 0, state, 0, 8)
-    state(8)  = Iv.readable(0); state(9)  = Iv.readable(1); state(10) = Iv.readable(2); state(11) = Iv.readable(3)
+    state(8)  = Iv.readable(0); state(9)  = Iv.readable(1)
+    state(10) = Iv.readable(2); state(11) = Iv.readable(3)
     state(12) = counter.toInt
     state(13) = (counter >>> 32).toInt
     state(14) = blockLen
@@ -140,7 +143,9 @@ object Blake3:
 
     state
 
-  private def wordsFromBytes(bytes: scala.Array[Byte], offset: Int, words: scala.Array[Int]^): Unit =
+  private def wordsFromBytes(bytes: scala.Array[Byte], offset: Int, words: scala.Array[Int]^)
+  :   Unit =
+
     var i = 0
 
     while i < words.length do
@@ -214,7 +219,8 @@ object Blake3:
 
     parentOutput(leftCv, rightCv, keyWords, flags).chainingValue()
 
-  private final class ChunkState(keyWordsInit: Array[Int]^{}, var chunkCounter: Long, val flags: Int)
+  private final class ChunkState
+    ( keyWordsInit: Array[Int]^{}, var chunkCounter: Long, val flags: Int )
   extends caps.Mutable:
     // Cloning only reads the frozen key words.
     private var chainingValue: scala.Array[Int]^ = Array.unsafeJvm(keyWordsInit).clone()

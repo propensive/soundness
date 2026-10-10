@@ -496,4 +496,9 @@ case class Cell(lines: Sequence[Writing], width: Int, baseline: Int):
     val above = Cell.max(ascent - baseline, 0)
     val below = Cell.max(descent - (height - 1 - baseline), 0)
     val blank = Cell.spaces(width)
-    Cell(Sequence.from(Iterator.fill(above)(blank)) + lines + Sequence.from(Iterator.fill(below)(blank)), width, ascent)
+
+    Cell
+      ( Sequence.from(Iterator.fill(above)(blank)) + lines +
+        Sequence.from(Iterator.fill(below)(blank)),
+        width,
+        ascent )

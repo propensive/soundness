@@ -91,7 +91,8 @@ object Matrix:
         val after = if row == 0 then t" ⎤" else if row == matrix.rows - 1 then t" ⎦" else t" ⎪"
 
         (0 until matrix.columns).map: column =>
-          textElements.readUnchecked(matrix.columns*row + column).pad(columnWidths.readUnchecked(column), Rtl)
+          textElements.readUnchecked(matrix.columns*row + column)
+          . pad(columnWidths.readUnchecked(column), Rtl)
 
         . join(before, t" ", after)
 
@@ -144,7 +145,9 @@ object Matrix:
         var i = 0
 
         while i < length do
-          array(i) = subtractable.subtract(left.elements.readUnchecked(i), right.elements.readUnchecked(i))
+          array(i) =
+            subtractable.subtract(left.elements.readUnchecked(i), right.elements.readUnchecked(i))
+
           i += 1
 
       new Matrix[result, rows, columns](left.rows, left.columns, arr)
@@ -314,7 +317,9 @@ object Matrix:
     Tuple.Union[Tuple.Map[rows, [tuple] =>> Tuple.Size[tuple & Tuple]]]
 
 
-  transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf](using erased void: Void)
+  transparent inline def apply
+    [ Rows <: Int: ValueOf, Columns <: Int: ValueOf ]
+    ( using erased void: Void )
     [ element ]
     ( rows: Tuple )
     ( using Constraint[rows.type, element],
@@ -360,8 +365,10 @@ object Matrix:
       val firstColumn = java.lang.Long.numberOfTrailingZeros(columnMask)
       val secondColumn = java.lang.Long.numberOfTrailingZeros(columnMask & (columnMask - 1L))
 
-      elements.readUnchecked(dimension*firstRow + firstColumn)*elements.readUnchecked(dimension*secondRow + secondColumn) -
-        elements.readUnchecked(dimension*firstRow + secondColumn)*elements.readUnchecked(dimension*secondRow + firstColumn)
+      elements.readUnchecked(dimension*firstRow + firstColumn) *
+        elements.readUnchecked(dimension*secondRow + secondColumn) -
+        elements.readUnchecked(dimension*firstRow + secondColumn) *
+        elements.readUnchecked(dimension*secondRow + firstColumn)
     else
       val expansionRow = java.lang.Long.numberOfTrailingZeros(rowMask)
       val remainingRows = rowMask & ~(1L << expansionRow)

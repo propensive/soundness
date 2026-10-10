@@ -108,11 +108,18 @@ private[hallucination] final class Vp8BoolEncoder extends caps.Mutable:
       writeFlag(v >= 0)
 
   // Encodes a tree value: locate the leaf `−value`, then emit the root-to-leaf bits.
-  update def writeTree(tree: scala.Array[Int], probs: scala.Array[Int], probOffset: Int, value: Int): Unit =
+  update def writeTree
+    ( tree: scala.Array[Int], probs: scala.Array[Int], probOffset: Int, value: Int )
+  :   Unit =
+
     writeTree(tree, probs, probOffset, value, 0)
 
   update def writeTree
-    ( tree: scala.Array[Int], probs: scala.Array[Int], probOffset: Int, value: Int, startIndex: Int )
+    ( tree:       scala.Array[Int],
+      probs:      scala.Array[Int],
+      probOffset: Int,
+      value:      Int,
+      startIndex: Int )
   :   Unit =
 
     var current = indexOf(tree, -value)

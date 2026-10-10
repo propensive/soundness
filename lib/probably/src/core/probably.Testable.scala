@@ -41,6 +41,33 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
+object Testable:
+  // What the compiler says of a declaration with no `Testable` that has a topic. On each
+  // declaration's parameter rather than on the class, where it would not be consulted for
+  // the refined type that is sought.
+  final val orphan =
+    "a test must be declared for a Suite — in its body, or in a method taking `(using Testable " +
+      "of \"<the suite's name>\")` — or inside an `impromptu` block"
+
+  def of[topic]
+    ( name:    Message,
+      parent:  Optional[Testable]      = Unset,
+      moniker: Optional[Name[Probing]] = Unset,
+      key:     Optional[Text]          = Unset )
+    ( using Codepoint )
+  :   Testable of topic =
+
+    new Testable(name, parent.lay(Nil)(List(_)), moniker, key) { type Topic = topic }
+
+  // The same position in the hierarchy as `testable` (equality is structural), for tests
+  // which are not statically attributed to it.
+  def impromptu(testable: Testable): Testable of Impromptu =
+    of[Impromptu](testable.name, testable.parent, testable.moniker, testable.key)
+      ( using testable.id.codepoint )
+
+  // Where `impromptu` tests go when no `Testable` surrounds the block.
+  val detached: Testable of Impromptu = of[Impromptu](m"impromptu")
+
 // What tests are attached to: a `Suite`, a `suite` block within one, or an `impromptu` block.
 // Its `Topic` says, statically, where its tests belong: the literal id of the `Suite` they are
 // declared for (`Testable of "json"`), which every `suite` block within it passes on; `Derived`
@@ -72,33 +99,6 @@ extends Findable:
   override def hashCode: Int = name.text.s.hashCode + parent.lay(0)(_.hashCode)
 
   val id: Test.Id = Test.Id(name, parent, codepoint, moniker, Nil, key)
-
-object Testable:
-  // What the compiler says of a declaration with no `Testable` that has a topic. On each
-  // declaration's parameter rather than on the class, where it would not be consulted for
-  // the refined type that is sought.
-  final val orphan =
-    "a test must be declared for a Suite — in its body, or in a method taking `(using Testable " +
-      "of \"<the suite's name>\")` — or inside an `impromptu` block"
-
-  def of[topic]
-    ( name:    Message,
-      parent:  Optional[Testable]      = Unset,
-      moniker: Optional[Name[Probing]] = Unset,
-      key:     Optional[Text]          = Unset )
-    ( using Codepoint )
-  :   Testable of topic =
-
-    new Testable(name, parent.lay(Nil)(List(_)), moniker, key) { type Topic = topic }
-
-  // The same position in the hierarchy as `testable` (equality is structural), for tests
-  // which are not statically attributed to it.
-  def impromptu(testable: Testable): Testable of Impromptu =
-    of[Impromptu](testable.name, testable.parent, testable.moniker, testable.key)
-      ( using testable.id.codepoint )
-
-  // Where `impromptu` tests go when no `Testable` surrounds the block.
-  val detached: Testable of Impromptu = of[Impromptu](m"impromptu")
 
 // The topic of a `Testable` whose tests are not attributed to a `Suite` at compile time: they
 // are declared as the program runs, inside an `impromptu` block, and no listing made without

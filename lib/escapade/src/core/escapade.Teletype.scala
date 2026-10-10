@@ -168,7 +168,9 @@ object Teletype:
     val n = plain.length
 
     if n == 0
-    then (Array(if denseStyles.length > 0 then denseStyles.readUnchecked(0) else 0L), Array.empty[Int])
+    then
+      ( Array(if denseStyles.length > 0 then denseStyles.readUnchecked(0) else 0L),
+        Array.empty[Int] )
     else
       // Count runs, tracking the previous style rather than reading `i - 1` again: the
       // confined scan visits each index once.
@@ -305,7 +307,8 @@ case class Teletype
   // For an already-sparse Teletype this is O(1); for a dense one it's O(plain.length).
   def asSparseArrays: (Array[Long]^{}, Array[Int]^{}) =
     if !isDense then (styles, boundaries)
-    else if plain.length == 0 then (Array(if styles.length > 0 then styles.readUnchecked(0) else 0L), Array(0))
+    else if plain.length == 0
+    then (Array(if styles.length > 0 then styles.readUnchecked(0) else 0L), Array(0))
     else
       val n = plain.length
       // Count runs, tracking the previous style; see `compressIfBeneficial`.

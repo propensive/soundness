@@ -79,7 +79,9 @@ object Markup:
     kind.s match
       case "type" =>
         val marked: List[(Text, Text)] = attrs.filter(_(0) == t"p")
-        val decoded: List[Optional[Placeholder]] = marked.map: (_, value) => Placeholder.decode(value)
+
+        val decoded: List[Optional[Placeholder]] =
+          marked.map: (_, value) => Placeholder.decode(value)
 
         val placeholders: List[Placeholder] =
           decoded.sweep { case placeholder: Placeholder => placeholder }

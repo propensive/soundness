@@ -114,4 +114,6 @@ object Servable:
 
 trait Servable extends Typeclass:
   def serve(content: Self): Http.Response
-  def contramap[self2](lambda: self2 => Self): (self2 is Servable)^{this, lambda} = content => serve(lambda(content))
+
+  def contramap[self2](lambda: self2 => Self): (self2 is Servable)^{this, lambda} =
+    content => serve(lambda(content))

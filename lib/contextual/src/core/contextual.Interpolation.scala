@@ -70,7 +70,11 @@ object Interpolation:
 
     arr(value.length) = srcIdx
     val mapping: Array[Int]^{} = Array.unsafeFrozen(arr)
-    i => if i < 0 then 0 else if i < mapping.length then mapping.readable(i) else mapping.readable(mapping.length - 1)
+
+    i =>
+      if i < 0 then 0
+      else if i < mapping.length then mapping.readable(i)
+      else mapping.readable(mapping.length - 1)
 
   // Walk a `StringContext.apply(...)` Term to recover each literal part's source-file
   // (start, end) range. We're permissive about the surrounding tree shape (Inlined / Typed /
@@ -105,7 +109,9 @@ object Interpolation:
     def recur[tuple: Type](acc: scala.List[String]): scala.List[String] = Type.of[tuple] match
       case '[head *: tail] => TypeRepr.of[head].dealias match
         case ConstantType(StringConstant(part)) => recur[tail](acc.prepended(part))
-        case _                                  => report.errorAndAbort("an interpolator's parts are string-literal types")
+
+        case _ =>
+          report.errorAndAbort("an interpolator's parts are string-literal types")
 
       case _ =>
         acc
@@ -122,7 +128,8 @@ object Interpolation:
       Type.of[tuple] match
         case '[head *: tail] =>
           val pair = TypeRepr.of[head].dealias match
-            case AppliedType(_, scala.List(ConstantType(IntConstant(s)), ConstantType(IntConstant(e)))) =>
+            case AppliedType(_, scala.List(ConstantType(IntConstant(s)),
+                                           ConstantType(IntConstant(e)))) =>
               (s, e)
 
             case _ =>

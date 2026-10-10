@@ -183,7 +183,11 @@ object SyntaxMatcher:
       pickEach(terms, tokens).bind: (rest, rem) => (rem :: anyOf(rest, rem)): List[List[ValueToken]]
 
     private def repeat
-      ( term: Css.Syntax, min: Int, max: Optional[Int], separated: Boolean, tokens: List[ValueToken] )
+      ( term:      Css.Syntax,
+        min:       Int,
+        max:       Optional[Int],
+        separated: Boolean,
+        tokens:    List[ValueToken] )
     :   List[List[ValueToken]] =
 
       def go(count: Int, toks: List[ValueToken]): List[List[ValueToken]] =

@@ -242,7 +242,8 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
         extent.flush()
 
       case Pane.Widget(_, fixture) =>
-        fixture.render(extent, layout.focusables.where(_ == index).lay(-1)(_.n0) == focusPosition(layout))
+        fixture.render
+          ( extent, layout.focusables.where(_ == index).lay(-1)(_.n0) == focusPosition(layout) )
 
       case _ =>
         ()

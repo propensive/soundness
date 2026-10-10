@@ -84,7 +84,9 @@ def test[topic <: Label](name: Name[Probing], description: Message, tags: Tag*)
 
 
 def suite[topic <: Label, report](name: Message)
-  ( using @missingContext(Testable.orphan) suite: Testable of topic, runner: Runner[report], codepoint: Codepoint )
+  ( using @missingContext(Testable.orphan) suite: Testable of topic,
+          runner: Runner[report],
+          codepoint: Codepoint )
   ( block: (Testable of topic) ?=> Unit )
 :   Unit =
 
@@ -92,7 +94,9 @@ def suite[topic <: Label, report](name: Message)
 
 
 def suite[topic <: Label, report](name: Name[Probing], description: Message)
-  ( using @missingContext(Testable.orphan) suite: Testable of topic, runner: Runner[report], codepoint: Codepoint )
+  ( using @missingContext(Testable.orphan) suite: Testable of topic,
+          runner: Runner[report],
+          codepoint: Codepoint )
   ( block: (Testable of topic) ?=> Unit )
 :   Unit =
 

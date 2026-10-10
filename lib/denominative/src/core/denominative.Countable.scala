@@ -95,7 +95,8 @@ object Countable:
   // `Chain#length` forces the whole stream (and diverges on infinite ones), so the
   // `Countable` instance is gated behind `Dysasymptotic.UnboundedSize`; the O(1) `nil` comes from
   // the ungated `Vacuiscible.chain` instead.
-  given chain: [element] => (complexity: Dysasymptotic.UnboundedSize) => Chain[element] is Countable:
+  given chain: [element] => (complexity: Dysasymptotic.UnboundedSize)
+  =>  Chain[element] is Countable:
     def size(self: Chain[element]): Int = Chain.size(self)
     override def nil(self: Chain[element]): Boolean = Chain.nil(self)
 

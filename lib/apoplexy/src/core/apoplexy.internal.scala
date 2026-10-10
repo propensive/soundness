@@ -595,15 +595,18 @@ object Apoplexy:
           case Unset => Payload.Carrier(t"text/plain")
 
           case repr: quotes.reflect.TypeRepr @unchecked =>
-            if repr =:= quotes.reflect.TypeRepr.of[Json] then recordPayload(status, referable, media)
+            if repr =:= quotes.reflect.TypeRepr.of[Json]
+            then recordPayload(status, referable, media)
             else Payload.Carrier(media)
 
     keys.map: status =>
       val referable: Optional[OpenApi.Referable[OpenApi.Response]] = operation.responses(status)
 
       val payload: Payload = referable match
-        case Unset                                                     => Payload.Empty
-        case referable: OpenApi.Referable[OpenApi.Response] @unchecked => payloadOf(status, referable)
+        case Unset => Payload.Empty
+
+        case referable: OpenApi.Referable[OpenApi.Response] @unchecked =>
+          payloadOf(status, referable)
 
       Failure(status, statusOf(status), payload)
 
@@ -955,7 +958,8 @@ object Apoplexy:
 
     import quotes.reflect.*
 
-    val members = (refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)).to(Map)
+    val members =
+      (refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)).to(Map)
 
     val source =
       members(t"Locus").lay(halt(m"apoplexy: the resource has no `Locus` path"))(stringOf(_))
@@ -1161,7 +1165,9 @@ object Apoplexy:
       val shown = transport.show
       halt(m"apoplexy: $what reads a JSON response, but this response is construed as $shown")
 
-    val pointer = members(t"Result").lay(halt(m"apoplexy: missing response schema pointer"))(stringOf(_))
+    val pointer =
+      members(t"Result").lay(halt(m"apoplexy: missing response schema pointer"))(stringOf(_))
+
     val source = members(t"Form").lay(halt(m"apoplexy: missing spec source"))(stringOf(_))
 
     (pointer, source)
@@ -1392,8 +1398,12 @@ object Apoplexy:
     def simpleName(repr: TypeRepr): Text = repr.dealias.typeSymbol.name.tt
 
     def listElement(repr: TypeRepr): Optional[TypeRepr] = repr match
-      case AppliedType(_, scala.collection.immutable.List(element)) if repr <:< TypeRepr.of[List[Any]] => element
-      case _                                                                                           => Unset
+      case AppliedType(_, scala.collection.immutable.List(element))
+        if repr <:< TypeRepr.of[List[Any]] =>
+        element
+
+      case _ =>
+        Unset
 
     def componentName(pointer: JsonPointer): Text = pointer.encode.cut(t"/").last.or(t"")
 

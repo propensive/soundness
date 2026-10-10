@@ -38,5 +38,7 @@ import dotty.tools.dotc.interactive
 // same names against that stream's shapes; nothing else in harlequin knows which is in play.
 object Shim:
   // 3.9's second parameter is `Option[LogicalPackage] = None`, so it is simply omitted.
-  inline def interactiveDriver(settings: scala.collection.immutable.List[String]): interactive.InteractiveDriver =
+  inline def interactiveDriver(settings: scala.collection.immutable.List[String])
+  :   interactive.InteractiveDriver =
+
     interactive.InteractiveDriver(settings)

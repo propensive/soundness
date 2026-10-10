@@ -310,11 +310,20 @@ object KotlinFacade:
         val constructor = constructorOf(tpe)
 
         if constructor == constructorOf(TypeRepr.of[Map[Any, Any]]) then
-          '{scala.jdk.javaapi.CollectionConverters.asJava(${argument.asExprOf[Any]}.asInstanceOf[scala.collection.immutable.Map[?, ?]])}
+          ' {
+              scala.jdk.javaapi.CollectionConverters.asJava
+                ( ${argument.asExprOf[Any]}.asInstanceOf[scala.collection.immutable.Map[?, ?]] )
+            }
         else if constructor == constructorOf(TypeRepr.of[Set[Any]]) then
-          '{scala.jdk.javaapi.CollectionConverters.asJava(${argument.asExprOf[Any]}.asInstanceOf[scala.collection.immutable.Set[?]])}
+          ' {
+              scala.jdk.javaapi.CollectionConverters.asJava
+                ( ${argument.asExprOf[Any]}.asInstanceOf[scala.collection.immutable.Set[?]] )
+            }
         else
-          '{scala.jdk.javaapi.CollectionConverters.asJava(${argument.asExprOf[Any]}.asInstanceOf[scala.collection.immutable.Seq[?]])}
+          ' {
+              scala.jdk.javaapi.CollectionConverters.asJava
+                ( ${argument.asExprOf[Any]}.asInstanceOf[scala.collection.immutable.Seq[?]] )
+            }
 
       TypeApply(Select.unique(view.asTerm, "asInstanceOf"), List(Inferred(solid(target))))
 
@@ -411,7 +420,8 @@ object KotlinFacade:
                 val loader = $samClass.getClassLoader
                 val invocations = Kotlin.Runtime.forwarder($handler)
 
-                java.lang.reflect.Proxy.newProxyInstance(loader, scala.Array($samClass), invocations)
+                java.lang.reflect.Proxy
+                . newProxyInstance(loader, scala.Array($samClass), invocations)
                 . asInstanceOf[i]
               }
 

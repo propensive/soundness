@@ -165,8 +165,10 @@ trait Task[+result]:
     ( using monitor: Monitor^ )
   :   (Tactic[Async.Error]^) ?->{this, monitor} result
 
-  def bind[result2](lambda: result ->{caps.any.only[anticipation.Durable]} Task[result2])(using monitor: Monitor^, probate: SharedProbate)
+  def bind[result2](lambda: result ->{caps.any.only[anticipation.Durable]} Task[result2])
+    ( using monitor: Monitor^, probate: SharedProbate )
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate}
 
-  def map[result2](lambda: result ->{caps.any.only[anticipation.Durable]} result2)(using monitor: Monitor^, probate: SharedProbate)
+  def map[result2](lambda: result ->{caps.any.only[anticipation.Durable]} result2)
+    ( using monitor: Monitor^, probate: SharedProbate )
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate}

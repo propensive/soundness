@@ -242,7 +242,9 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
       1
 
   // An MSB-first probability tree of `size` entries at `offset` within `probs`.
-  private update def rcDecodeBitTree(probs: scala.Array[Short]^{this}, offset: Int, size: Int): Int =
+  private update def rcDecodeBitTree(probs: scala.Array[Short]^{this}, offset: Int, size: Int)
+  :   Int =
+
     var symbol = 1
 
     while
@@ -252,7 +254,8 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
 
     symbol - size
 
-  private update def rcDecodeBitTreeReverse(probs: scala.Array[Short]^{this}, offset: Int, size: Int)
+  private update def rcDecodeBitTreeReverse
+    ( probs: scala.Array[Short]^{this}, offset: Int, size: Int )
   :   Int =
 
     var symbol = 1
@@ -1161,8 +1164,8 @@ extends caps.Mutable:
       if slot < DistModelEnd then
         val index = slot - DistModelStart
 
-        price += RangeCoder.bitTreeReversePrice(distSpecial, distSpecialOffsets.readUnchecked(index),
-            distSpecialSize(index), dist - base)
+        price += RangeCoder.bitTreeReversePrice(distSpecial,
+            distSpecialOffsets.readUnchecked(index), distSpecialSize(index), dist - base)
       else
         price += RangeCoder.directBitsPrice(footerBits - AlignBits)
         price += RangeCoder.bitTreeReversePrice(distAlign, 0, AlignSize, (dist - base) & AlignMask)
@@ -1281,8 +1284,8 @@ extends caps.Mutable:
       if slot < DistModelEnd then
         val index = slot - DistModelStart
 
-        rcEncodeBitTreeReverse(distSpecial, distSpecialOffsets.readUnchecked(index), distSpecialSize(index),
-            dist - base)
+        rcEncodeBitTreeReverse(distSpecial, distSpecialOffsets.readUnchecked(index),
+            distSpecialSize(index), dist - base)
       else
         rcEncodeDirectBits((dist - base) >>> AlignBits, footerBits - AlignBits)
         rcEncodeBitTreeReverse(distAlign, 0, AlignSize, (dist - base) & AlignMask)

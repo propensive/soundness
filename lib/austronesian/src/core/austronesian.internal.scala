@@ -51,9 +51,9 @@ object internal:
 
   object Pojo extends Pojo2:
     def apply
-      ( pojo: scala.Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character |
-        java.lang.Short | java.lang.Integer | java.lang.Long | java.lang.Float |
-        java.lang.Double )
+      ( pojo: scala.Array[Object] | String | java.lang.Boolean | java.lang.Byte |
+        java.lang.Character | java.lang.Short | java.lang.Integer | java.lang.Long |
+        java.lang.Float | java.lang.Double )
     :   Pojo =
 
       // The union's array member drags a read capability through the opaque alias;

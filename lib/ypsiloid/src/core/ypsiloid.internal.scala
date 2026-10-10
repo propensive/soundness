@@ -79,7 +79,9 @@ object internal:
   private def stripPad(arr: Array[Any]^{}): Array[Any]^{} =
     val n = arr.length
 
-    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then arr.keep(n - 1) else arr
+    if n > 0 && (arr.readUnchecked(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad)
+    then arr.keep(n - 1)
+    else arr
 
   private def preprocess(parts: List[String]): (List[String], Set[Int]) =
     var spreads: Set[Int] = Set()
@@ -103,8 +105,13 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
-      case _               => strings
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
+      case _ => strings
 
     def firstOrigin[tuple: Type]: Int = Type.of[tuple] match
       case '[head *: tail] => TypeRepr.of[head].dealias match
@@ -145,8 +152,13 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
-      case _               => strings
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
+      case _ => strings
 
     val parts = recur[parts](Nil)
 
@@ -341,7 +353,9 @@ object internal:
                 '{Iterable($v)}
 
         ' {
-            val all = ${Expr.ofList(pieces)}.foldLeft(scala.collection.immutable.List.empty[Yaml.Ast])(_ ++ _)
+            val all =
+              ${Expr.ofList(pieces)}
+              . foldLeft(scala.collection.immutable.List.empty[Yaml.Ast])(_ ++ _)
             Yaml.Ast.Sequence(Array.from(all))
           }
 
@@ -372,7 +386,8 @@ object internal:
 
         ' {
             val all =
-              ${Expr.ofList(pieces)}.foldLeft(scala.collection.immutable.List.empty[(String, Yaml.Ast)])(_ ++ _)
+              ${Expr.ofList(pieces)}
+              . foldLeft(scala.collection.immutable.List.empty[(String, Yaml.Ast)])(_ ++ _)
 
             val arr = new scala.Array[Any](all.length*2)
             var k = 0
@@ -425,8 +440,13 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
-      case _               => strings
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
+      case _ => strings
 
     val parts = recur[parts](Nil)
 

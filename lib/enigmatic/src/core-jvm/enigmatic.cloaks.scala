@@ -156,7 +156,8 @@ private[enigmatic] class VeiledHeapCloak extends Cloak, caps.SharedCapability:
       new Secret:
         def uncloak[result](block: scala.Array[Byte] => result): result =
           val cleartext = withKey[scala.Array[Byte]]: keyBytes =>
-            aes[scala.Array[Byte]](keyBytes, jc.Cipher.DECRYPT_MODE, nonce)(_.doFinal(ciphertext).nn)
+            aes[scala.Array[Byte]](keyBytes, jc.Cipher.DECRYPT_MODE, nonce)
+              ( _.doFinal(ciphertext).nn )
 
           try block(cleartext) finally ju.Arrays.fill(cleartext, 0.toByte)
 
@@ -171,8 +172,9 @@ private[enigmatic] class VeiledOffHeapCloak extends Cloak, caps.SharedCapability
     random.nextBytes(nonce)
 
     val ciphertext =
-      aes[scala.Array[Byte]](keyBytes.asInstanceOf[scala.Array[Byte]], jc.Cipher.ENCRYPT_MODE, nonce):
-        _.doFinal(bytes).nn
+      aes[scala.Array[Byte]]
+        ( keyBytes.asInstanceOf[scala.Array[Byte]], jc.Cipher.ENCRYPT_MODE, nonce )
+        ( _.doFinal(bytes).nn )
 
     ju.Arrays.fill(bytes, 0.toByte)
 
@@ -191,8 +193,9 @@ private[enigmatic] class VeiledOffHeapCloak extends Cloak, caps.SharedCapability
           // a fresh read capability, which a `try` result may not.
           val cleartext: Array[Byte]^{} =
             try
-              aes[Array[Byte]^{}](keyBytes.asInstanceOf[scala.Array[Byte]], jc.Cipher.DECRYPT_MODE, nonce):
-                _.doFinal(recovered).nn.asInstanceOf[Array[Byte]^{}]
+              aes[Array[Byte]^{}]
+                ( keyBytes.asInstanceOf[scala.Array[Byte]], jc.Cipher.DECRYPT_MODE, nonce )
+                ( _.doFinal(recovered).nn.asInstanceOf[Array[Byte]^{}] )
             finally ju.Arrays.fill(recovered, 0.toByte)
 
           val cleartext0 = cleartext.asInstanceOf[scala.Array[Byte]]

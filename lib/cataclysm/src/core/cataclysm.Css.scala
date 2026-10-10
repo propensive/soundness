@@ -260,7 +260,8 @@ object Css:
       case InvalidName(name: Text) extends Reason(9)
 
   case class Error(reason: Css.Error.Reason, line: Ordinal, column: Ordinal)(using Diagnostics)
-  extends fulminate.Error(251, reason.number)(m"invalid CSS at line ${line.n1} column ${column.n1}: $reason")
+  extends fulminate.Error(251, reason.number)
+    ( m"invalid CSS at line ${line.n1} column ${column.n1}: $reason" )
 
   // CssErrors → Css.Errors
   // The aggregate of every `Css.Error` accumulated while reading a stylesheet.
@@ -350,11 +351,11 @@ object Css:
   // later step matches a concrete value against. Nesting it under `Css` resolves the
   // clash with stenography's `Syntax` that kept it unexported.
   enum Syntax derives CanEqual:
-    case Keyword(name: Text)                          // a literal identifier, e.g. `auto`
-    case Literal(token: Text)                         // a literal token, e.g. `/` `,` or quoted `'+'`
-    case Type(name: Text, bounds: Optional[Text])     // `<length>`, `<integer [1,4]>` (bounds raw)
-    case Property(name: Text)                         // `<'border-width'>` — another property
-    case Function(name: Text, body: Syntax)           // `rgb( <number>#{3} )`
+    case Keyword(name: Text)                        // a literal identifier, e.g. `auto`
+    case Literal(token: Text)                       // a literal token, e.g. `/` `,` or quoted `'+'`
+    case Type(name: Text, bounds: Optional[Text])   // `<length>`, `<integer [1,4]>` (bounds raw)
+    case Property(name: Text)                       // `<'border-width'>` — another property
+    case Function(name: Text, body: Syntax)         // `rgb( <number>#{3} )`
     case Sequence(terms: List[Syntax])               // juxtaposition: terms in order
     case OneOf(options: List[Syntax])                // `|`  — exactly one
     case AnyOf(terms: List[Syntax])                  // `||` — one or more, in any order

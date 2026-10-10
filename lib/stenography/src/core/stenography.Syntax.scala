@@ -776,9 +776,13 @@ enum Syntax:
             case _                    => true)
 
       if aliased then
-        entries.fold(base) { case (left, (name, syntax)) => Infix(left, imports.aliases(name.s), syntax) }.text
+        entries
+        . fold(base) { case (left, (name, syntax)) => Infix(left, imports.aliases(name.s), syntax) }
+        . text
       else
-        val members2: List[Text] = members.remap: (name, syntax) => s"type $name = ${syntax.text}".tt
+        val members2: List[Text] = members.remap: (name, syntax) =>
+          s"type $name = ${syntax.text}".tt
+
         val defs2: List[Text] = defs.remap: (name, syntax) => s"def $name${syntax.text}".tt
         s"${base.text} { ${joined(members2 + defs2, "; ")} }".tt
 

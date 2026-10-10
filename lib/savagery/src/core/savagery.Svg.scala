@@ -63,7 +63,9 @@ object Svg:
   // SVG's vocabulary is fixed and validated by the figure types, so the XML beneath is parsed
   // against the free-form schema; no `XmlSchema` is asked of the caller.
   given aggregable
-  :   ( parseTactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], svgTactic: Tactic[Svg.Error] )
+  :   ( parseTactic: Tactic[Parse.Error],
+        xmlTactic:   Tactic[Xml.Error],
+        svgTactic:   Tactic[Svg.Error] )
   =>  ( (Svg is Aggregable by Text)^{parseTactic, xmlTactic, svgTactic} ) =
 
     source =>
@@ -573,7 +575,9 @@ object Svg:
               case ("translate", List(dx))            => xs += Transform.Translate(Delta(dx, 0.0f))
               case ("scale", List(x))                 => xs += Transform.Scale(x, Unset)
               case ("scale", List(x, y))              => xs += Transform.Scale(x, y)
-              case ("rotate", List(angle))            => xs += Transform.Rotate(Angle.degrees(angle))
+
+              case ("rotate", List(angle)) =>
+                xs += Transform.Rotate(Angle.degrees(angle))
 
               case ("skewX", List(angle)) =>
                 xs += Transform.Skew(Angle.degrees(angle), Orientation.Horizontal)

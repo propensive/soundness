@@ -63,7 +63,8 @@ object Moniker:
 
   // An honest capability: the instance retains the resolution-scoped tactic
   // (every given that includes a tactic is a capability; Jon, 2026-07-13).
-  given encodable: [transport] => (vocabulary: Vocabulary over transport, tactic: Tactic[Moniker.Error])
+  given encodable: [transport]
+  =>  ( vocabulary: Vocabulary over transport, tactic: Tactic[Moniker.Error] )
   =>  ( ((Moniker over transport) is Encodable in Text)^{tactic, caps.any} ) =
     new Encodable:
       type Self = Moniker over transport
@@ -71,7 +72,8 @@ object Moniker:
 
       def encoded(moniker: Self): Text = vocabulary.name(moniker.ordinal)
 
-  given decodable: [transport] => (vocabulary: Vocabulary over transport, tactic: Tactic[Moniker.Error])
+  given decodable: [transport]
+  =>  ( vocabulary: Vocabulary over transport, tactic: Tactic[Moniker.Error] )
   =>  ( ((Moniker over transport) is Decodable in Text)^{tactic} ) =
     text => wrap(vocabulary.number(text))
 

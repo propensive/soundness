@@ -1028,8 +1028,11 @@ object rationalInternal:
           val (numerator, denominator) = fractionOf(left & Long.MaxValue)
 
           if left < 0L then build(true, numerator/denominator, 1L)
-          else build(false, numerator/denominator + (if numerator%denominator == 0L then 0L else 1L),
-                     1L)
+          else
+            build
+              ( false,
+                numerator/denominator + (if numerator%denominator == 0L then 0L else 1L),
+                1L )
 
       // Half-up rounding, matching `math.round` on `Double`.
       def round: Long =
@@ -1335,8 +1338,11 @@ object rationalInternal:
           val (numerator, denominator) = fractionOf((left & Int.MaxValue).toLong)
 
           if left < 0 then build(true, numerator/denominator, 1L)
-          else build(false, numerator/denominator + (if numerator%denominator == 0L then 0L else 1L),
-                     1L)
+          else
+            build
+              ( false,
+                numerator/denominator + (if numerator%denominator == 0L then 0L else 1L),
+                1L )
 
       // Half-up rounding, matching `math.round` on `Double`.
       def round: Long =

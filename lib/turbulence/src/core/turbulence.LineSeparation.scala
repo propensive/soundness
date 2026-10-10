@@ -185,7 +185,8 @@ object LineSeparation:
             val chars = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Char]])
 
             val slots: scala.Array[AnyRef]^ =
-              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
+              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]])
+              . asInstanceOf[scala.Array[AnyRef]^]
 
             var consumed: Int = 0
             var produced: Int = 0
@@ -300,7 +301,8 @@ object LineSeparation:
             var count: Int = 0
 
             val slots: scala.Array[AnyRef]^ =
-              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
+              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]])
+              . asInstanceOf[scala.Array[AnyRef]^]
 
             while count < targetSpace && !tail.nil do
               tail match
@@ -444,7 +446,8 @@ object LineSeparation:
         val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
 
         val slots: scala.Array[AnyRef]^ =
-          unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
+          unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]])
+          . asInstanceOf[scala.Array[AnyRef]^]
 
         var consumed: Int = 0
         var produced: Int = 0
@@ -543,7 +546,8 @@ object LineSeparation:
         var count: Int = 0
 
         val slots: scala.Array[AnyRef]^ =
-          unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
+          unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]])
+          . asInstanceOf[scala.Array[AnyRef]^]
 
         while count < targetSpace && !tail.nil do
           tail match

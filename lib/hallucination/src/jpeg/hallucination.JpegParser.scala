@@ -279,13 +279,19 @@ private[hallucination] object JpegParser:
 
     // As `parseSof`: the freshly-built index arrays are frozen zero-copy.
     JpegScan
-      ( componentIndices.asInstanceOf[scala.IArray[Int]], dcTableIndices.asInstanceOf[scala.IArray[Int]],
-        acTableIndices.asInstanceOf[scala.IArray[Int]], spectralStart, spectralEnd + 1,
-        successiveHigh, successiveLow )
+      ( componentIndices.asInstanceOf[scala.IArray[Int]],
+        dcTableIndices.asInstanceOf[scala.IArray[Int]],
+        acTableIndices.asInstanceOf[scala.IArray[Int]],
+        spectralStart,
+        spectralEnd + 1,
+        successiveHigh,
+        successiveLow )
 
   // Section B.2.4.1: quantization tables, each returned in the file's zigzag order (unzigzagged by
   // the decoder). The four slots are indexed by the table's destination identifier.
-  def parseDqt(reader: JpegReader^)(using Tactic[Raster.Error]): scala.Array[Optional[scala.Array[Int]]] =
+  def parseDqt(reader: JpegReader^)(using Tactic[Raster.Error])
+  :   scala.Array[Optional[scala.Array[Int]]] =
+
     var length = readLength(reader)
     val tables: scala.Array[Optional[scala.Array[Int]]] = scala.Array(Unset, Unset, Unset, Unset)
 

@@ -52,7 +52,9 @@ private[hallucination] object JpegHuffman:
 private[hallucination] object JpegHuffmanTable:
   // A real `using` clause rather than the `raises` sugar: a context-function result would
   // hide the array parameters, which the separation checker rejects.
-  def apply(counts: scala.Array[Int], values: scala.Array[Int], ac: Boolean)(using Tactic[Raster.Error])
+  def apply
+    ( counts: scala.Array[Int], values: scala.Array[Int], ac: Boolean )
+    ( using Tactic[Raster.Error] )
   :   JpegHuffmanTable =
 
     val lutBits = JpegHuffman.LutBits

@@ -65,7 +65,8 @@ object linkerOptions:
   val sourceMaps: Toolchain.Setting = sjs(_.withSourceMap(true))
 
   object esVersion:
-    private def of(version: ESVersion): Toolchain.Setting = sjs(_.withESFeatures(_.withESVersion(version)))
+    private def of(version: ESVersion): Toolchain.Setting =
+      sjs(_.withESFeatures(_.withESVersion(version)))
 
     val es2015: Toolchain.Setting = of(ESVersion.ES2015)
     val es2016: Toolchain.Setting = of(ESVersion.ES2016)

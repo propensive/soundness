@@ -89,7 +89,9 @@ object Audio:
     pcm.close()
     new Audio(pcmFormat, pcmBytes)
 
-  def apply[form: Audible as audible](format: jss.AudioFormat, data: Array[Byte]^{}): Audio in form =
+  def apply[form: Audible as audible](format: jss.AudioFormat, data: Array[Byte]^{})
+  :   Audio in form =
+
     new Audio(format, data):
       type Form = form
 

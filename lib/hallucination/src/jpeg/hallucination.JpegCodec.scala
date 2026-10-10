@@ -87,11 +87,16 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
   private var reader: JpegReader^ = JpegReader(data, 0)
 
   private var frame: Optional[JpegFrame] = Unset
-  private var dcTables: scala.Array[Optional[JpegHuffmanTable]]^ = scala.Array(Unset, Unset, Unset, Unset)
-  private var acTables: scala.Array[Optional[JpegHuffmanTable]]^ = scala.Array(Unset, Unset, Unset, Unset)
+
+  private var dcTables: scala.Array[Optional[JpegHuffmanTable]]^ =
+    scala.Array(Unset, Unset, Unset, Unset)
+
+  private var acTables: scala.Array[Optional[JpegHuffmanTable]]^ =
+    scala.Array(Unset, Unset, Unset, Unset)
 
   // Quantization tables in natural (un-zigzagged) order, indexed by destination identifier.
-  private var quantTables: scala.Array[Optional[scala.Array[Int]]]^ = scala.Array(Unset, Unset, Unset, Unset)
+  private var quantTables: scala.Array[Optional[scala.Array[Int]]]^ =
+    scala.Array(Unset, Unset, Unset, Unset)
 
   private var restartInterval = 0
   private var adobeTransform: Optional[Int] = Unset
@@ -411,7 +416,9 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
             index += r
 
             if index >= spectralEnd then continue = false else
-              writable(coeff)(base + Unzigzag.readable(index)) = huffman.receiveExtend(reader, s) << successiveLow
+              writable(coeff)(base + Unzigzag.readable(index)) =
+                huffman.receiveExtend(reader, s) << successiveLow
+
               index += 1
 
   // Section G.1.2: refines coefficients on later (successive-approximation) passes. `acTable`
@@ -542,7 +549,8 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
 
     plane
 
-  private def grayscaleRaster(component: JpegComponent, plane: scala.Array[Byte], width: Int, height: Int)
+  private def grayscaleRaster
+    ( component: JpegComponent, plane: scala.Array[Byte], width: Int, height: Int )
   :   Raster =
 
     val stride = component.blockWidth*8

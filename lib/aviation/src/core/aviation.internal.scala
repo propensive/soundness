@@ -167,7 +167,10 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head].literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
       case _               => strings
 
     val name: String = recur[parts](Nil) match
@@ -353,7 +356,10 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head].literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
       case _               => strings
 
     val part: String = recur[parts](Nil) match
@@ -397,7 +403,10 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head].literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
       case _               => strings
 
     val part: String = recur[parts](Nil) match
@@ -422,7 +431,10 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head].literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
       case _               => strings
 
     val parts = recur[parts](Nil)
@@ -512,7 +524,9 @@ object internal:
     val rightTree = right.asTerm.underlyingArgument
 
     val collector = new TreeAccumulator[scala.collection.immutable.Map[Symbol, Term]]:
-      def foldTree(env: scala.collection.immutable.Map[Symbol, Term], tree: Tree)(owner: Symbol): scala.collection.immutable.Map[Symbol, Term] =
+      def foldTree(env: scala.collection.immutable.Map[Symbol, Term], tree: Tree)(owner: Symbol)
+      :   scala.collection.immutable.Map[Symbol, Term] =
+
         val env2 = tree match
           case valDef: ValDef => valDef.rhs match
             case Some(rhs) => env.updated(valDef.symbol, rhs)

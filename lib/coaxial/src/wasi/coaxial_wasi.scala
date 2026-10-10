@@ -189,7 +189,9 @@ package socketBackends:
 
       def loop(): Unit = input.refill(Credit(Long.MaxValue)) match
         case count: Int =>
-          val chunk = input.addressable.materialize(input.unsafeStorage(using Unsafe), input.start, count)
+          val chunk =
+            input.addressable.materialize(input.unsafeStorage(using Unsafe), input.start, count)
+
           stream.`blocking-write-and-flush`(chunk).call[Unit]()
           input.skip(count)
           loop()
@@ -248,7 +250,9 @@ package socketBackends:
     def shutdown(socketHandle: Wasm.Handle of "tcp-socket"): Unit = socketHandle.dispose()
 
     //── Datagram server (unsupported on WASI for now) ────────────────────────────────────────────
-    def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option]): Unit =
+    def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
+    :   Unit =
+
       ()
 
     def receive(socket: Unit): Packet raises Socket.Error =
@@ -291,7 +295,9 @@ package socketBackends:
 
     //── Request/response exchange (TCP; Unix-domain unsupported) ──────────────────────────────────
     def dialTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
+      ( endpoint:  Endpoint[Tcp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option] )
     :   WasiExchange =
 
       unsafely(connect(endpoint.remote, endpoint.port.number))
@@ -320,7 +326,9 @@ package socketBackends:
 
     //── Persistent duplex client (TCP; Unix-domain unsupported) ───────────────────────────────────
     def duplexTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
+      ( endpoint:  Endpoint[Tcp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option] )
     :   Duplex =
 
       duplexOf(unsafely(connect(endpoint.remote, endpoint.port.number)))
@@ -330,12 +338,16 @@ package socketBackends:
 
     //── Fire-and-forget datagram courier (unsupported on WASI for now) ────────────────────────────
     def routeUdp
-      ( endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
+      ( endpoint:  Endpoint[Udp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option] )
     :   Unit =
 
       ()
 
-    def routeUdpPort(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option]): Unit =
+    def routeUdpPort(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
+    :   Unit =
+
       ()
 
     def dispatch(courier: Unit, consume input: (Stream[Data] over Credit)^): Unit = ()

@@ -123,7 +123,9 @@ object internal:
       val fields =
         params2.flatMap: param =>
           if param.annotations.isEmpty then Nil else
-            List(param.name -> '{(${Expr(param.name)}.tt, ${matching(param.annotations)}.pipe(_.to(Set)))})
+            List
+              ( param.name ->
+                '{(${Expr(param.name)}.tt, ${matching(param.annotations)}.pipe(_.to(Set)))} )
 
         . to(scala.collection.immutable.Map)
 
@@ -136,12 +138,14 @@ object internal:
           case ('[topic], '[type target <: Label; target]) =>
             ' {
                 Annotated.AnnotatedField[operand, self, plane, limit, topic, target]
-                  ( $annotations.pipe(_.to(Set)), ${Expr.ofList(fields.values.to(List))}.pipe(_.to(Map)) )
+                  ( $annotations.pipe(_.to(Set)),
+                    ${Expr.ofList(fields.values.to(List))}.pipe(_.to(Map)) )
               }
       else
         ' {
             Annotated.AnnotatedFields[operand, self, plane, limit]
-              ( $annotations.pipe(_.to(Set)), ${Expr.ofList(fields.values.to(List))}.pipe(_.to(Map)) )
+              ( $annotations.pipe(_.to(Set)),
+                ${Expr.ofList(fields.values.to(List))}.pipe(_.to(Map)) )
           }
 
     else

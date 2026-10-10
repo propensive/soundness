@@ -66,8 +66,13 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
-      case _               => strings
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head].literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
+      case _ =>
+        strings
 
     val parts = recur[parts](Nil)
 
@@ -174,10 +179,22 @@ object internal:
                   index += 1
                   types ::= TypeRepr.of[Text]
                   iterator.next()
-                  '{$array(${Expr(index)}) = Attributes.pick($scrutinee.attributes.asInstanceOf[Attributes], ${Expr(head)}); true}
+
+                  ' {
+                      $array(${Expr(index)}) =
+                        Attributes.pick
+                          ( $scrutinee.attributes.asInstanceOf[Attributes], ${Expr(head)} )
+
+                      true
+                    }
 
                 case text: Text =>
-                  '{Attributes.pick($scrutinee.attributes.asInstanceOf[Attributes], ${Expr(head)}) == ${Expr(text)}}
+                  ' {
+                      Attributes.pick
+                        ( $scrutinee.attributes.asInstanceOf[Attributes],
+                          ${Expr(head)} ) ==
+                        ${Expr(text)}
+                    }
 
               '{$expr && $boolean}
 
@@ -190,7 +207,10 @@ object internal:
           if index == pattern.children.length then expr else
             val expr2 =
               descend
-                ( array, pattern.children.readUnchecked(index), '{$scrutinee.children.readUnchecked(${Expr(index)})}, '{true} )
+                ( array,
+                  pattern.children.readUnchecked(index),
+                  '{$scrutinee.children.readUnchecked(${Expr(index)})},
+                  '{true} )
 
             elements(index + 1)('{$expr && $expr2})
 
@@ -202,7 +222,8 @@ object internal:
 
         '{$attributesChecked && $elementsChecked}
 
-      def descend(array: Expr[scala.Array[Any]], pattern: Xml, scrutinee: Expr[Xml], expr: Expr[Boolean])
+      def descend
+        ( array: Expr[scala.Array[Any]], pattern: Xml, scrutinee: Expr[Xml], expr: Expr[Boolean] )
       :   Expr[Boolean] =
 
         pattern match
@@ -402,8 +423,13 @@ object internal:
     import XPath.{Axis, Expression, NodeTest, Origin, Step}
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
-      case _               => strings
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head].literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
+      case _ =>
+        strings
 
     def recurOrigins[tuple: Type](acc: List[(Int, Int)]): List[(Int, Int)] =
       Type.of[tuple] match
@@ -457,7 +483,10 @@ object internal:
 
         if parserOff <= acc + part.length && srcStart > 0 then
           val inPart = (parserOff - acc).min(part.length)
-          val at = (srcStart + mapping(inPart)).min((sourceContent.let(_.length).or(Int.MaxValue)) - 1)
+
+          val at =
+            (srcStart + mapping(inPart)).min((sourceContent.let(_.length).or(Int.MaxValue)) - 1)
+
           return Position(sourceFile, at, at + 1)
 
         acc += part.length + 1
@@ -533,23 +562,52 @@ object internal:
         '{Origin.Filter(${liftExpression(expression)}, ${liftExpressions(predicates)})}
 
     def liftExpression(expression: Expression): Expr[Expression] = expression match
-      case Expression.Or(l, r)             => '{Expression.Or(${liftExpression(l)}, ${liftExpression(r)})}
-      case Expression.And(l, r)            => '{Expression.And(${liftExpression(l)}, ${liftExpression(r)})}
-      case Expression.Equal(l, r)          => '{Expression.Equal(${liftExpression(l)}, ${liftExpression(r)})}
-      case Expression.Unequal(l, r)        => '{Expression.Unequal(${liftExpression(l)}, ${liftExpression(r)})}
-      case Expression.Less(l, r)           => '{Expression.Less(${liftExpression(l)}, ${liftExpression(r)})}
-      case Expression.LessOrEqual(l, r)    => '{Expression.LessOrEqual(${liftExpression(l)}, ${liftExpression(r)})}
-      case Expression.Greater(l, r)        => '{Expression.Greater(${liftExpression(l)}, ${liftExpression(r)})}
-      case Expression.GreaterOrEqual(l, r) => '{Expression.GreaterOrEqual(${liftExpression(l)}, ${liftExpression(r)})}
-      case Expression.Add(l, r)            => '{Expression.Add(${liftExpression(l)}, ${liftExpression(r)})}
-      case Expression.Subtract(l, r)       => '{Expression.Subtract(${liftExpression(l)}, ${liftExpression(r)})}
-      case Expression.Multiply(l, r)       => '{Expression.Multiply(${liftExpression(l)}, ${liftExpression(r)})}
-      case Expression.Divide(l, r)         => '{Expression.Divide(${liftExpression(l)}, ${liftExpression(r)})}
-      case Expression.Modulo(l, r)         => '{Expression.Modulo(${liftExpression(l)}, ${liftExpression(r)})}
-      case Expression.Negate(operand)      => '{Expression.Negate(${liftExpression(operand)})}
-      case Expression.Union(l, r)          => '{Expression.Union(${liftExpression(l)}, ${liftExpression(r)})}
-      case Expression.Literal(text)        => '{Expression.Literal(${Expr(text.s)}.tt)}
-      case Expression.Number(value)        => '{Expression.Number(${Expr(value)})}
+      case Expression.Or(l, r) =>
+        '{Expression.Or(${liftExpression(l)}, ${liftExpression(r)})}
+
+      case Expression.And(l, r) =>
+        '{Expression.And(${liftExpression(l)}, ${liftExpression(r)})}
+
+      case Expression.Equal(l, r) =>
+        '{Expression.Equal(${liftExpression(l)}, ${liftExpression(r)})}
+
+      case Expression.Unequal(l, r) =>
+        '{Expression.Unequal(${liftExpression(l)}, ${liftExpression(r)})}
+
+      case Expression.Less(l, r) =>
+        '{Expression.Less(${liftExpression(l)}, ${liftExpression(r)})}
+
+      case Expression.LessOrEqual(l, r) =>
+        '{Expression.LessOrEqual(${liftExpression(l)}, ${liftExpression(r)})}
+
+      case Expression.Greater(l, r) =>
+        '{Expression.Greater(${liftExpression(l)}, ${liftExpression(r)})}
+
+      case Expression.GreaterOrEqual(l, r) =>
+        '{Expression.GreaterOrEqual(${liftExpression(l)}, ${liftExpression(r)})}
+
+      case Expression.Add(l, r) =>
+        '{Expression.Add(${liftExpression(l)}, ${liftExpression(r)})}
+
+      case Expression.Subtract(l, r) =>
+        '{Expression.Subtract(${liftExpression(l)}, ${liftExpression(r)})}
+
+      case Expression.Multiply(l, r) =>
+        '{Expression.Multiply(${liftExpression(l)}, ${liftExpression(r)})}
+
+      case Expression.Divide(l, r) =>
+        '{Expression.Divide(${liftExpression(l)}, ${liftExpression(r)})}
+
+      case Expression.Modulo(l, r) =>
+        '{Expression.Modulo(${liftExpression(l)}, ${liftExpression(r)})}
+
+      case Expression.Negate(operand) => '{Expression.Negate(${liftExpression(operand)})}
+
+      case Expression.Union(l, r) =>
+        '{Expression.Union(${liftExpression(l)}, ${liftExpression(r)})}
+
+      case Expression.Literal(text) => '{Expression.Literal(${Expr(text.s)}.tt)}
+      case Expression.Number(value) => '{Expression.Number(${Expr(value)})}
 
       case Expression.Variable(prefix, name) =>
         '{Expression.Variable(${liftName(prefix)}, ${Expr(name.s)}.tt)}
@@ -618,8 +676,13 @@ object internal:
     import Xml.Hole
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
-      case _               => strings
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head].literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
+
+      case _ =>
+        strings
 
     val parts = recur[parts](Nil)
 
@@ -1815,7 +1878,9 @@ object internal:
         Symbol.newVal(owner, "attributes", TypeRepr.of[Attributes], Flags.EmptyFlags,
           Symbol.noSymbol)
 
-      val attributesDef = ValDef(attributesSymbol, Some('{$reader.attributes().asInstanceOf[Attributes]}.asTerm))
+      val attributesDef =
+        ValDef(attributesSymbol, Some('{$reader.attributes().asInstanceOf[Attributes]}.asTerm))
+
       val attributes = Ref(attributesSymbol).asExprOf[Attributes]
 
       val attributeSteps: List[Term] = List.range(0, arity).flatMap: index =>
@@ -1917,14 +1982,18 @@ object internal:
                 firstWins:
                   ' {
                       Xml.Parsable.focusing($foci, $keyText):
-                        $reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"Text")); t"" }
+                        $reader.text()
+                        . or { $reader.fault(Xml.Error.Reason.Untextual(t"Text")); t"" }
                     }.asTerm
 
               case StringK =>
                 firstWins:
                   ' {
                       Xml.Parsable.focusing($foci, $keyText):
-                        ($reader.text().or { $reader.fault(Xml.Error.Reason.Untextual(t"String")); t"" }).s
+                        ( $reader.text()
+                          . or { $reader.fault(Xml.Error.Reason.Untextual(t"String")); t"" } )
+
+                        . s
                     }.asTerm
 
               case InstanceK =>
@@ -1946,13 +2015,15 @@ object internal:
                       $bufferExpr.asInstanceOf[scala.collection.mutable.ListBuffer[Any]].addOne
                         ( Xml.Parsable.focusing($foci, $keyText):
                             Xml.Parsable.parseElement
-                              ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing], $reader ) )
+                              ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing],
+                                $reader ) )
                     }.asTerm
 
                 val read: Term =
                   ' {
                       Xml.Parsable.focusing($foci, $keyText):
-                        $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
+                        $instances.readUnchecked(${Expr(index)})
+                        . asInstanceOf[fieldType is Xml.Field]
                         . parse($reader)
                     }.asTerm
 
@@ -2048,7 +2119,8 @@ object internal:
               Assign
                 ( Ref(slots(index)),
                   ' {
-                      val declared = $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+                      val declared =
+                        $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
                       if !declared.absent then declared.asInstanceOf[fieldType]
                       else Xml.Parsable.focusing($foci, $keyText)($onAbsent)
@@ -2129,7 +2201,8 @@ object internal:
 
             val declared: Expr[fieldType] =
               ' {
-                  val declared = $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+                  val declared =
+                    $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
                   if !declared.absent then declared.asInstanceOf[fieldType]
                   else Xml.Parsable.focusing($foci, $keyText)($onAbsent)
@@ -2141,7 +2214,8 @@ object internal:
                     if $repeatables.readUnchecked(${Expr(index)}) then
                       Xml.Parsable.focusing($foci, $keyText):
                         Xml.Parsable.gathered[fieldType]
-                          ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing], proscenium.Nil )
+                          ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing],
+                            proscenium.Nil )
                     else
                       $declared
                   }

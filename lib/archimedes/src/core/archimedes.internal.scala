@@ -59,7 +59,11 @@ object internal:
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
       case _               => strings
 
     val parts = recur[parts](Nil)

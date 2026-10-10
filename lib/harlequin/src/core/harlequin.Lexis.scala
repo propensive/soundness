@@ -150,5 +150,7 @@ object Lexis:
         }
       }
 
-    val context: List[Lexeme] = if breakAtCaret then (Lexeme.Break: Lexeme) :: reversed else reversed
+    val context: List[Lexeme] =
+      if breakAtCaret then (Lexeme.Break: Lexeme) :: reversed else reversed
+
     (prefix, context.keep(limit))

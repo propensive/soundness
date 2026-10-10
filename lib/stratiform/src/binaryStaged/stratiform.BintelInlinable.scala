@@ -144,7 +144,9 @@ object BintelInlinable:
           val atom = $reader.scalar()
 
           try atom.s.toInt catch case _: NumberFormatException =>
-            raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Int")))(using infer[Tactic[Tel.Error]])
+            raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Int")))
+              ( using infer[Tactic[Tel.Error]] )
+
             0
         }
 
@@ -159,7 +161,9 @@ object BintelInlinable:
           val atom = $reader.scalar()
 
           try atom.s.toLong catch case _: NumberFormatException =>
-            raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Long")))(using infer[Tactic[Tel.Error]])
+            raise(Tel.Error(Tel.Error.Reason.NotScalar(atom, t"Long")))
+              ( using infer[Tactic[Tel.Error]] )
+
             0L
         }
 

@@ -318,7 +318,8 @@ object timestampInternal:
 
     given monthstampTimespanSubtractable: [topic <: Radix]
     =>  Monthstamp is Subtractable by (Timespan of topic) to Monthstamp =
-      Subtractable: (monthstamp, span) => monthstampShift(monthstamp, -(span.years*12 + span.months))
+      Subtractable: (monthstamp, span) =>
+        monthstampShift(monthstamp, -(span.years*12 + span.months))
 
     private def monthstampShift(monthstamp: Monthstamp, months: Int): Monthstamp =
       val total = monthstamp.year()*12 + monthstamp.month.ordinal + months

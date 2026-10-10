@@ -101,7 +101,9 @@ given overTransmissible: [transport, value]
 =>  ( format: transport is Encodable in Text, codec: value is Encodable in transport )
 =>  Codepage
 =>  (value over transport) is Transmissible =
-  payload => zephyrine.Stream(Websocket.Frame.Text(true, format.encoded(codec.encoded(payload)).in[Data]).encode)
+  payload =>
+    zephyrine.Stream
+      ( Websocket.Frame.Text(true, format.encoded(codec.encoded(payload)).in[Data]).encode )
 
 // The decode direction. The `Decodable in Text`/`in transport` instances are
 // `Tactic`-conditional and don't resolve as nested given constraints, so we
@@ -130,7 +132,8 @@ private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^
 
   def crlfCrlf(data: Data): Int =
     def matches(i: Int): Boolean =
-      data.readUnchecked(i) == 13 && data.readUnchecked(i + 1) == 10 && data.readUnchecked(i + 2) == 13 && data.readUnchecked(i + 3) == 10
+      data.readUnchecked(i) == 13 && data.readUnchecked(i + 1) == 10 &&
+        data.readUnchecked(i + 2) == 13 && data.readUnchecked(i + 3) == 10
 
     def recur(index: Int): Int =
       if index + 3 >= data.length then -1 else if matches(index) then index else recur(index + 1)
@@ -255,7 +258,9 @@ given wsClient: ( online:            Online,
       val expected: Text = t"$key${Websocket.magic}".digest[Sha1].serialize[Base64].keep(28)
 
       if response.headers.secWebsocketAccept.prim != expected then
-        abort(Websocket.Error(Websocket.Error.Reason.Handshake(t"the Sec-WebSocket-Accept was wrong")))
+        abort
+          ( Websocket.Error
+              ( Websocket.Error.Reason.Handshake(t"the Sec-WebSocket-Accept was wrong") ) )
 
       val masking: Masking = Masking.Client()
       given Masking = masking
@@ -306,7 +311,7 @@ extends Sessional:
     try lambda(using connection) finally connection.close()
 
 given wsSessional: ( duplexable: ((Websocket.Url is Duplexable) { type Output = Data
-                                                          type Connection = Websocket.Connection })^,
+                                    type Connection = Websocket.Connection })^,
                      monitor:    Monitor )
 =>  ( WsSessional^{duplexable, monitor, caps.any} ) =
 

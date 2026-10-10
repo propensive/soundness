@@ -285,7 +285,10 @@ object TlsAcceptance:
 
         pinned(chain) match
           case true  => ()
-          case false => throw jsc.CertificateException("the peer's certificate is not the pinned one")
+
+          case false =>
+            throw jsc.CertificateException("the peer's certificate is not the pinned one")
+
           case _     => attempt(check)
 
       // A pinned listener names no issuers: under TLS 1.2 they are sent in the certificate
@@ -347,10 +350,14 @@ case class TlsAcceptance
   def permitExpired(using erased permit: Permit[Concession.ExpiredCertificate]): TlsAcceptance =
     copy(trust = trust.copy(expired = true))
 
-  def permitSelfSigned(using erased permit: Permit[Concession.SelfSignedCertificate]): TlsAcceptance =
+  def permitSelfSigned(using erased permit: Permit[Concession.SelfSignedCertificate])
+  :   TlsAcceptance =
+
     copy(trust = trust.copy(selfSigned = true))
 
-  def permitHostnameMismatch(using erased permit: Permit[Concession.UnverifiedHostname]): TlsAcceptance =
+  def permitHostnameMismatch(using erased permit: Permit[Concession.UnverifiedHostname])
+  :   TlsAcceptance =
+
     copy(trust = trust.copy(hostname = false))
 
   def requireRevocationChecks: TlsAcceptance = copy(revocation = Trust.Revocation.Required)

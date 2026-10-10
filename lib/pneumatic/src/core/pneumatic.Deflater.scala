@@ -142,8 +142,8 @@ private[pneumatic] object TreeConfig:
 // The static configuration of one of the three Huffman trees: its static counterpart (empty for
 // the bit-length tree), extra-bit tables and size limits (JZlib's `StaticTree`).
 private[pneumatic] final class TreeConfig
-  ( val staticTree: Array[Short]^{}, val extraBits: Array[Int]^{}, val extraBase: Int, val elems: Int,
-    val maxLength: Int )
+  ( val staticTree: Array[Short]^{}, val extraBits: Array[Int]^{}, val extraBase: Int,
+    val elems: Int, val maxLength: Int )
 
 // A streaming deflater with the same call pattern as `java.util.zip.Deflater`: feed input with
 // `setInput`, drain with `deflate` (which consumes input into the sliding window and returns the
@@ -721,7 +721,10 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
     // are restricted to 64K-1 bytes.
 
   // Send the block data compressed using the given Huffman trees
-  private update def compressBlock(ltree: scala.Array[Short]^{this}, dtree: scala.Array[Short]^{this}): Unit =
+  private update def compressBlock
+    ( ltree: scala.Array[Short]^{this}, dtree: scala.Array[Short]^{this} )
+  :   Unit =
+
     var dist = 0 // distance of matched string
     var lc = 0   // match length or unmatched char (if dist == 0)
     var lx = 0   // running index in lBuf
@@ -1350,7 +1353,8 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
       if pending != 0 then ZOk else ZStreamEnd
 
-  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}): Unit = setInput(buffer, 0, buffer.length)
+  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}): Unit =
+    setInput(buffer, 0, buffer.length)
 
   // The engine borrows the caller's buffer zero-copy until the next `setInput`. The cast erases
   // the borrow's provenance, which separation checking would otherwise reject as a stored

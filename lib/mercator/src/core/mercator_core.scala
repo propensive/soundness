@@ -56,18 +56,23 @@ extension [monad[_], collection[element] <: Iterable[element],
   element](elems: collection[monad[element]])
   (using monad: Monad[monad])
 
-  def sequence(using buildFrom: BuildFrom[scala.collection.immutable.List[element], element, collection[element]])
+  def sequence
+    ( using buildFrom:
+              BuildFrom[scala.collection.immutable.List[element], element, collection[element]] )
   :   monad[collection[element]] =
 
 
-    def recur(todo: Iterable[monad[element]], accumulator: monad[scala.collection.immutable.List[element]])
+    def recur
+      ( todo:        Iterable[monad[element]],
+        accumulator: monad[scala.collection.immutable.List[element]] )
     :   monad[scala.collection.immutable.List[element]] =
 
       if todo.isEmpty then accumulator
       else recur(todo.tail, accumulator.flatMap { xs => todo.head.map{ x => x :: xs } })
 
 
-    recur(elems, monad.point(scala.collection.immutable.List())).map(_.reverse.to(buildFrom.toFactory(scala.collection.immutable.List())))
+    recur(elems, monad.point(scala.collection.immutable.List()))
+    . map(_.reverse.to(buildFrom.toFactory(scala.collection.immutable.List())))
 
 
 extension [collection[element] <: Iterable[element], element](elems: collection[element])
@@ -77,11 +82,13 @@ extension [collection[element] <: Iterable[element], element](elems: collection[
   :   monad[collection[element2]] =
 
 
-    def recur(todo: Iterable[element], accumulator: monad[scala.collection.immutable.List[element2]])
+    def recur
+      ( todo: Iterable[element], accumulator: monad[scala.collection.immutable.List[element2]] )
     :   monad[scala.collection.immutable.List[element2]] =
 
       if todo.isEmpty then accumulator
       else recur(todo.tail, accumulator.flatMap { xs => lambda(todo.head).map{ x => x :: xs } })
 
 
-    recur(elems, monad.point(scala.collection.immutable.List())).map(_.reverse.to(buildFrom.toFactory(scala.collection.immutable.List())))
+    recur(elems, monad.point(scala.collection.immutable.List()))
+    . map(_.reverse.to(buildFrom.toFactory(scala.collection.immutable.List())))

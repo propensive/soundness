@@ -122,7 +122,8 @@ object internal:
                     _ => TypeRepr.of[functor[value2]])
 
                   Lambda(Symbol.spliceOwner, methodType, (_, args) =>
-                    args(0).asInstanceOf[Term].select(mapMethods(0)).appliedToType(TypeRepr.of[value2])
+                    args(0).asInstanceOf[Term].select(mapMethods(0))
+                    . appliedToType(TypeRepr.of[value2])
                     . appliedTo(args(1).asInstanceOf[Term])).asExpr
                 }
 
@@ -170,7 +171,8 @@ object internal:
 
                   Lambda(Symbol.spliceOwner, methodType, (_, args) =>
                     args(0).asInstanceOf[Term].select(flatMapMethods(0))
-                    . appliedToType(TypeRepr.of[value2]).appliedTo(args(1).asInstanceOf[Term])).asExpr
+                    . appliedToType(TypeRepr.of[value2])
+                    . appliedTo(args(1).asInstanceOf[Term])).asExpr
                 }
 
               . asInstanceOf[(monad[value], value => monad[value2]) => monad[value2]]

@@ -234,10 +234,15 @@ object Tzdb:
       case Reason.UnexpectedRule          => m"unexpected rule"
       case Reason.UnexpectedLink          => m"unexpected link"
       case Reason.UnexpectedZoneInfo      => m"unexpected zone info"
-      case Reason.BadZoneInfo(line)       => m"bad zone information: ${line.join(t"[", t"   ", t"]")}"
+
+      case Reason.BadZoneInfo(line) =>
+        m"bad zone information: ${line.join(t"[", t"   ", t"]")}"
+
       case Reason.BadName(name)           => m"the name $name is not valid"
       case Reason.UnparsableDate          => m"the date could not be parsed"
-      case Reason.NoTzdbFile(name)        => m"the zonefile $name could not be found on the classpath"
+
+      case Reason.NoTzdbFile(name) =>
+        m"the zonefile $name could not be found on the classpath"
 
     enum Reason(val number: Int) extends Clarification:
       case CouldNotParseTime(time: Text) extends Reason(1)

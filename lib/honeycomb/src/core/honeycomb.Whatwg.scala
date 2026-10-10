@@ -543,7 +543,10 @@ class Whatwg() extends Dom:
     val Help = Tag.void["link", Whatwg](presets = proscenium.Map(t"rel" -> t"help"))
     val Icon = Tag.void["link", Whatwg](presets = proscenium.Map(t"rel" -> t"icon"))
     val Manifest = Tag.void["link", Whatwg](presets = proscenium.Map(t"rel" -> t"manifest"))
-    val Modulepreload = Tag.void["link", Whatwg](presets = proscenium.Map(t"rel" -> t"modulepreload"))
+
+    val Modulepreload =
+      Tag.void["link", Whatwg](presets = proscenium.Map(t"rel" -> t"modulepreload"))
+
     val License = Tag.void["link", Whatwg](presets = proscenium.Map(t"rel" -> t"license"))
     val Next = Tag.void["link", Whatwg](presets = proscenium.Map(t"rel" -> t"next"))
     val Pingback = Tag.void["link", Whatwg](presets = proscenium.Map(t"rel" -> t"pingback"))
@@ -551,7 +554,10 @@ class Whatwg() extends Dom:
     val Prefetch = Tag.void["link", Whatwg](presets = proscenium.Map(t"rel" -> t"prefetch"))
     val Preload = Tag.void["link", Whatwg](presets = proscenium.Map(t"rel" -> t"preload"))
     val Prev = Tag.void["link", Whatwg](presets = proscenium.Map(t"rel" -> t"prev"))
-    val PrivacyPolicy = Tag.void["link", Whatwg](presets = proscenium.Map(t"rel" -> t"privacy-policy"))
+
+    val PrivacyPolicy =
+      Tag.void["link", Whatwg](presets = proscenium.Map(t"rel" -> t"privacy-policy"))
+
     val Search = Tag.void["link", Whatwg](presets = proscenium.Map(t"rel" -> t"search"))
     val Stylesheet = Tag.void["link", Whatwg](presets = proscenium.Map(t"rel" -> t"stylesheet"))
 
@@ -669,7 +675,10 @@ class Whatwg() extends Dom:
 
     val Captions = Tag.void["track", Whatwg](presets = proscenium.Map(t"kind" -> t"captions"))
     val Chapters = Tag.void["track", Whatwg](presets = proscenium.Map(t"kind" -> t"chapters"))
-    val Descriptions = Tag.void["track", Whatwg](presets = proscenium.Map(t"kind" -> t"descriptions"))
+
+    val Descriptions =
+      Tag.void["track", Whatwg](presets = proscenium.Map(t"kind" -> t"descriptions"))
+
     val Metadata = Tag.void["track", Whatwg](presets = proscenium.Map(t"kind" -> t"metadata"))
     val Subtitles = Tag.void["track", Whatwg](presets = proscenium.Map(t"kind" -> t"subtitles"))
 

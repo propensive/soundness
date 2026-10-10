@@ -183,7 +183,10 @@ extension (consume stream: (Stream[Data] over Credit)^)
 
         if available < 0 then -1 else
           var byte: Int = 0
-          stream.lend: region => range => region.visit(range.capped(1)): index => byte = region(index) & 0xff
+
+          stream.lend: region => range =>
+            region.visit(range.capped(1)): index => byte = region(index) & 0xff
+
           stream.skip(1)
           byte
 
@@ -409,7 +412,8 @@ extension (stream: Chain[Data])
 
     override def close(): Unit = ()
 
-    def read(): Int = if available() == 0 then -1 else (focus.readUnchecked(offset) & 0xff).also(offset += 1)
+    def read(): Int =
+      if available() == 0 then -1 else (focus.readUnchecked(offset) & 0xff).also(offset += 1)
 
     override def read(array: scala.Array[Byte] | Null, arrayOffset: Int, length: Int): Int =
       if length == 0 then 0 else

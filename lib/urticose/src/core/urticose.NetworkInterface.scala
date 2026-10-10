@@ -134,7 +134,8 @@ object NetworkInterface:
       case Inspection(name: Text, message: Text)  extends Reason(2)
 
   case class Error(reason: NetworkInterface.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(418, reason.number)(m"the network interface could not be read because $reason")
+  extends fulminate.Error(418, reason.number)
+    ( m"the network interface could not be read because $reason" )
 
 case class NetworkInterface
   ( name:         Text,

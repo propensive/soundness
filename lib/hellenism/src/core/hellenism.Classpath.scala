@@ -166,7 +166,8 @@ object Classpath extends Root(t""):
       def apply[file: Instantiable across Paths from Text](): file = file(path)
 
     case class Url(url: Text) extends Classpath.Entry:
-      def apply[instantiable: Instantiable across Urls from Text](): instantiable = instantiable(url)
+      def apply[instantiable: Instantiable across Urls from Text](): instantiable =
+        instantiable(url)
 
     case object JavaRuntime extends Classpath.Entry
 

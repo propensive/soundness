@@ -134,7 +134,8 @@ object sorting:
 
   // The comparator the algorithms take, from a `Comparable` over the elements themselves.
   def comparator[element](comparable: element is Comparable): ju.Comparator[AnyRef] =
-    (left, right) => comparable.compare(left.asInstanceOf[element], right.asInstanceOf[element]).sign
+    (left, right) =>
+      comparable.compare(left.asInstanceOf[element], right.asInstanceOf[element]).sign
 
   // The elements of a traversal, in order. The array is a bare `scala.Array[AnyRef]`: it is
   // interior scratch, never escaping, and holding it untyped avoids demanding a `ClassTag` for

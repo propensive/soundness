@@ -608,9 +608,11 @@ object stagedInternal:
           fieldType.asType match
             case '[fieldType] =>
               resolve[fieldType](cache) match
-                case Some(iterable: Inlinable.IterableInlinable[?]) => Plan.Gather(iterable.element0)
-                case Some(instance)                                 => Plan.Nested(instance)
-                case None                                           => Plan.Seam
+                case Some(iterable: Inlinable.IterableInlinable[?]) =>
+                  Plan.Gather(iterable.element0)
+
+                case Some(instance) => Plan.Nested(instance)
+                case None           => Plan.Seam
 
     (fieldTypes, plans)
 
@@ -1210,7 +1212,10 @@ object stagedInternal:
 
     ' {
         val tactic = $reader.errorTactic
-        val wire: String = Attributes.fetch($reader.attributes())(${Expr(attribute)}.tt).let(_.s).or("")
+
+        val wire: String =
+          Attributes.fetch($reader.attributes())(${Expr(attribute)}.tt).let(_.s).or("")
+
         ${dispatch(0, 'wire, 'tactic)}
       }
 

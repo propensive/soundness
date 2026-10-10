@@ -189,6 +189,10 @@ object Raster:
   extends fulminate.Error
     ( m"unable to read the raster image in ${rasterizable.lay("unspecified".tt)(_.name)} format" )
 
+  object Formats:
+    def apply(formats: Rasterizable*): Raster.Formats =
+      Raster.Formats(formats.to(List))
+
   // RasterFormats → Raster.Formats
   // The formats `Raster` will try when asked to decode data whose format it was not told. Because
   // each codec now lives in its own component, the candidates are whatever the caller has linked
@@ -202,10 +206,6 @@ object Raster:
         case _            => Unset
 
       next(candidates)
-
-  object Formats:
-    def apply(formats: Rasterizable*): Raster.Formats =
-      Raster.Formats(formats.to(List))
 
 // A platform-neutral pixel store: `buffer`'s element type is the storage primitive of the
 // raster's layout (`Channel.Storage[Operand]`), held unparameterised and recovered statically at

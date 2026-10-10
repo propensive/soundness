@@ -351,11 +351,13 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     inline caps.unsafe.unsafeErasedValue[Topic] match
       case _: (head *: tail) =>
         Path[Plane, Limit, child.type *: tail]
-          ( root, (infer[child.type is Navigable on Plane].follow(child) +: descent.drop(1)).to(List) )
+          ( root,
+            (infer[child.type is Navigable on Plane].follow(child) +: descent.drop(1)).to(List) )
 
       case _ =>
         Path[Plane, Limit, Tuple]
-          ( root, (infer[child.type is Navigable on Plane].follow(child) +: descent.drop(1)).to(List) )
+          ( root,
+            (infer[child.type is Navigable on Plane].follow(child) +: descent.drop(1)).to(List) )
 
 
   transparent inline def + (relative: Relative): Path =

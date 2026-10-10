@@ -40,6 +40,8 @@ import prepositional.*
 // union of formats, or for every format at once (`Any is Dynamical`).
 sealed trait Dynamical extends Typeclass
 
+object Dynamically extends Dynamically[Any]
+
 // Contravariant, so that `Dynamically` (a `Dynamically[Any]`) is a `Dynamically[data]` for every
 // `data`, and so that `dynamically` with no type argument infers `data` as `Any`.
 sealed class Dynamically[-data]:
@@ -47,7 +49,5 @@ sealed class Dynamically[-data]:
   :   result =
 
     lambda(using !![data is Dynamical])
-
-object Dynamically extends Dynamically[Any]
 
 def dynamically[data]: Dynamically[data] = Dynamically

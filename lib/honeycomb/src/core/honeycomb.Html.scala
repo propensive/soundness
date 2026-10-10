@@ -2331,7 +2331,8 @@ object Html extends Tag.Container
       Fragment[tag.Topic]
         // [java-boundary] raw array cast for vararg splat
         ( caps.unsafe.unsafeAssumePure
-            (Array.unsafeJvm(children2).asInstanceOf[scala.Array[(Element of tag.Topic) { type Form = tag.Form }]])* )
+            ( Array.unsafeJvm(children2)
+              . asInstanceOf[scala.Array[(Element of tag.Topic) { type Form = tag.Form }]] )* )
 
       . in[tag.Form]
 
@@ -2345,7 +2346,10 @@ object Html extends Tag.Container
         case fragment: Fragment =>
           Element
             ( label, attributes,
-              Array.frozen(Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}].readable ++ children.readable)
+              Array.frozen
+                ( Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}].readable ++
+                  children.readable )
+
               . asInstanceOf[Array[Node]^{}],
               foreign )
 
@@ -2374,13 +2378,16 @@ object Html extends Tag.Container
       case Element(label, attributes, children, foreign) =>
         label == this.label && attributes.equalsAttributes(this.attributes) &&
           foreign == this.foreign &&
-          ju.Arrays.equals(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]], Array.unsafeJvm(this.children).asInstanceOf[scala.Array[Object | Null]])
+          ju.Arrays.equals
+            ( Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]],
+              Array.unsafeJvm(this.children).asInstanceOf[scala.Array[Object | Null]] )
 
       case _ =>
         false
 
     override def hashCode: Int =
-      ju.Arrays.hashCode(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]]) ^ attributes.hashAttributes ^ label.hashCode
+      ju.Arrays.hashCode(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]]) ^
+        attributes.hashAttributes ^ label.hashCode
 
     transparent inline def selectDynamic(name: Label): Any =
 

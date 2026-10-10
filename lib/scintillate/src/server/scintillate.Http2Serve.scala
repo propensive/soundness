@@ -135,7 +135,9 @@ object Http2Serve:
                   else connection0.sendData(streamId, Array.empty[Byte], endStream = true)
 
           val connection1 = new Http.Connection(request, true, port, respond)
-          connection1.respond(handler1(connection1.asInstanceOf[AnyRef]).asInstanceOf[Http.Response])
+
+          connection1.respond
+            ( handler1(connection1.asInstanceOf[AnyRef]).asInstanceOf[Http.Response] )
 
   // Open the HTTP/2 connection over the socket's streams and run its session
   // scope. `serve` (per-request) is the degenerate session that immediately

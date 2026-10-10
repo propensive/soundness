@@ -149,7 +149,8 @@ object Completions:
       Nil
 
 
-  def install(force: Boolean = false)(using entrypoint: Entrypoint^)(using erased effectful: Effectful)
+  def install(force: Boolean = false)(using entrypoint: Entrypoint^)
+    ( using erased effectful: Effectful )
     ( using Environment, System, WorkingDirectory, Diagnostics )
   (using (CliEvent is Loggable)^)
   ( using Tactic[Install.Error] )

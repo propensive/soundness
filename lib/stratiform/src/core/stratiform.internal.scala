@@ -206,8 +206,13 @@ object internal:
     import quotes.reflect.*
 
     def collectParts[tuple: Type](acc: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => collectParts[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: acc)
-      case _               => acc
+      case '[head *: tail] =>
+        collectParts[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: acc )
+
+      case _ => acc
 
     val parts = collectParts[parts](Nil)
 
@@ -252,8 +257,13 @@ object internal:
     // reverse-source order, so accumulating with cons gives source order
     // directly — no final reverse needed (mirrors jacinta.internal).
     def collectParts[tuple: Type](acc: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => collectParts[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: acc)
-      case _               => acc
+      case '[head *: tail] =>
+        collectParts[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: acc )
+
+      case _ => acc
 
     val parts = collectParts[parts](Nil)
     val source: String = parts.mkString(MarkerString)
@@ -393,7 +403,10 @@ object internal:
                 r.selector match
                   case Tel.Pragma.Reference.Selector.Version(major, minor, patch) =>
                     val version: Expr[Tel.Pragma.Reference.Selector] =
-                      '{Tel.Pragma.Reference.Selector.Version(${Expr(major)}, ${Expr(minor)}, ${Expr(patch)})}
+                      ' {
+                          Tel.Pragma.Reference.Selector.Version
+                            ( ${Expr(major)}, ${Expr(minor)}, ${Expr(patch)} )
+                        }
 
                     '{$version: Optional[Tel.Pragma.Reference.Selector]}
 
@@ -461,8 +474,13 @@ object internal:
     import quotes.reflect.*
 
     def collectParts[tuple: Type](acc: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => collectParts[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: acc)
-      case _               => acc
+      case '[head *: tail] =>
+        collectParts[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: acc )
+
+      case _ => acc
 
     val parts = collectParts[parts](Nil)
     val source: String = parts.mkString(MarkerString)
@@ -1073,7 +1091,9 @@ object internal:
             Block
               ( ValDef
                   ( assignment,
-                    Some('{Tel.Parsable.positionalAssign($table, $atoms)(using $tactic)}.asTerm) ) ::
+                    Some
+                      ( '{Tel.Parsable.positionalAssign($table, $atoms)(using $tactic)}
+                        . asTerm ) ) ::
                 deliveries,
                 unit ),
             unit )
@@ -1141,7 +1161,9 @@ object internal:
               case IntK     => '{Tel.Parsable.missing[Int](0)(using $tactic)}.asExprOf[fieldType]
               case LongK    => '{Tel.Parsable.missing[Long](0L)(using $tactic)}.asExprOf[fieldType]
               case TextK    => '{Tel.Parsable.missing[Text](t"")(using $tactic)}.asExprOf[fieldType]
-              case StringK  => '{Tel.Parsable.missing[String]("")(using $tactic)}.asExprOf[fieldType]
+
+              case StringK =>
+                '{Tel.Parsable.missing[String]("")(using $tactic)}.asExprOf[fieldType]
 
               case BooleanK =>
                 '{Tel.Parsable.missing[Boolean](false)(using $tactic)}.asExprOf[fieldType]
@@ -1150,7 +1172,8 @@ object internal:
               Assign
                 ( Ref(local.slot),
                   ' {
-                      val declared = $fallbacks.readable(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+                      val declared =
+                        $fallbacks.readable(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
                       if !declared.absent then declared.asInstanceOf[fieldType]
                       else Tel.Parsable.focusingUnlocated($foci, $keyText)($onAbsent)

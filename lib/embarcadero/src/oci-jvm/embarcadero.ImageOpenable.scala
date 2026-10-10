@@ -65,6 +65,8 @@ extends Openable:
 
 // Re-exported through `soundness.*`, so `path.open[Image]` resolves on the JVM as before.
 given imagePathOpenable: [path: Abstractable across Paths to Text]
-=>  ( ociTactic: Tactic[Oci.Error], tarTactic: Tactic[Tar.Error], streamTactic: Tactic[Truncation.Error] )
+=>  ( ociTactic: Tactic[Oci.Error],
+      tarTactic: Tactic[Tar.Error],
+      streamTactic: Tactic[Truncation.Error] )
 =>  ( ImageOpenable[path]^{ociTactic, tarTactic, streamTactic} ) =
   ImageOpenable[path]

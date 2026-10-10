@@ -119,35 +119,69 @@ package mixing:
       else 1 - math.min(1.0, (1 - backdrop)/layer)
 
 package colorimetry:
-  given incandescentTungstenColorimetry: Colorimetry = Colorimetry(109.850, 100, 35.585, 111.144, 100, 35.2)
+  given incandescentTungstenColorimetry: Colorimetry =
+    Colorimetry(109.850, 100, 35.585, 111.144, 100, 35.2)
 
   given oldDirectSunlightAtNoonColorimetry: Colorimetry =
     Colorimetry(99.0927, 100, 85.313, 99.178, 100, 84.3493)
 
-  given oldDaylightColorimetry: Colorimetry = Colorimetry(98.074, 100, 118.232, 97.285, 100, 116.145)
-  given iccProfilePcsColorimetry: Colorimetry = Colorimetry(96.422, 100, 82.521, 96.720, 100, 81.427)
-  given midMorningDaylightColorimetry: Colorimetry = Colorimetry(95.682, 100, 92.149, 95.799, 100, 90.926)
+  given oldDaylightColorimetry: Colorimetry =
+    Colorimetry(98.074, 100, 118.232, 97.285, 100, 116.145)
+
+  given iccProfilePcsColorimetry: Colorimetry =
+    Colorimetry(96.422, 100, 82.521, 96.720, 100, 81.427)
+
+  given midMorningDaylightColorimetry: Colorimetry =
+    Colorimetry(95.682, 100, 92.149, 95.799, 100, 90.926)
+
   given daylightColorimetry: Colorimetry = Colorimetry(95.047, 100, 108.883, 94.811, 100, 107.304)
   given srgbColorimetry: Colorimetry = daylightColorimetry
   given adobeRgbColorimetry: Colorimetry = daylightColorimetry
-  given northSkyDaylightColorimetry: Colorimetry = Colorimetry(94.972, 100, 122.638, 94.416, 100, 120.641)
+
+  given northSkyDaylightColorimetry: Colorimetry =
+    Colorimetry(94.972, 100, 122.638, 94.416, 100, 120.641)
+
   given equalEnergyColorimetry: Colorimetry = Colorimetry(100, 100, 100, 100, 100, 100)
-  given daylightFluorescentF1Colorimetry: Colorimetry = Colorimetry(92.834, 100, 103.665, 94.791, 100, 103.191)
-  given coolFluorescentColorimetry: Colorimetry = Colorimetry(99.187, 100, 67.395, 103.280, 100, 69.026)
-  given whiteFluorescentColorimetry: Colorimetry = Colorimetry(103.754, 100, 49.861, 108.968, 100, 51.965)
-  given warmWhiteFluorescentColorimetry: Colorimetry = Colorimetry(109.147, 100, 38.813, 114.961, 100, 40.963)
-  given daylightFluorescentF5Colorimetry: Colorimetry = Colorimetry(90.872, 100, 98.723, 93.369, 100, 98.636)
-  given liteWhiteFluorescentColorimetry: Colorimetry = Colorimetry(97.309, 100, 60.191, 102.148, 100, 62.074)
-  given daylightFluorescentF7Colorimetry: Colorimetry = Colorimetry(95.044, 100, 108.755, 95.792, 100, 107.687)
+
+  given daylightFluorescentF1Colorimetry: Colorimetry =
+    Colorimetry(92.834, 100, 103.665, 94.791, 100, 103.191)
+
+  given coolFluorescentColorimetry: Colorimetry =
+    Colorimetry(99.187, 100, 67.395, 103.280, 100, 69.026)
+
+  given whiteFluorescentColorimetry: Colorimetry =
+    Colorimetry(103.754, 100, 49.861, 108.968, 100, 51.965)
+
+  given warmWhiteFluorescentColorimetry: Colorimetry =
+    Colorimetry(109.147, 100, 38.813, 114.961, 100, 40.963)
+
+  given daylightFluorescentF5Colorimetry: Colorimetry =
+    Colorimetry(90.872, 100, 98.723, 93.369, 100, 98.636)
+
+  given liteWhiteFluorescentColorimetry: Colorimetry =
+    Colorimetry(97.309, 100, 60.191, 102.148, 100, 62.074)
+
+  given daylightFluorescentF7Colorimetry: Colorimetry =
+    Colorimetry(95.044, 100, 108.755, 95.792, 100, 107.687)
+
   given d65SimulatorColorimetry: Colorimetry = daylightFluorescentF7Colorimetry
   given sylvaniaF40Colorimetry: Colorimetry = Colorimetry(96.413, 100, 82.333, 97.115, 100, 81.135)
   given d50SimulatorColorimetry: Colorimetry = sylvaniaF40Colorimetry
-  given coolWhiteFluorescentColorimetry: Colorimetry = Colorimetry(100.365, 100, 67.868, 102.116, 100, 67.826)
+
+  given coolWhiteFluorescentColorimetry: Colorimetry =
+    Colorimetry(100.365, 100, 67.868, 102.116, 100, 67.826)
+
   given philipsTl85Colorimetry: Colorimetry = Colorimetry(96.174, 100, 81.712, 99.001, 100, 83.134)
   given ultralume50Colorimetry: Colorimetry = philipsTl85Colorimetry
-  given philipsTl84Colorimetry: Colorimetry = Colorimetry(100.966, 100, 64.370, 103.866, 100, 65.627)
+
+  given philipsTl84Colorimetry: Colorimetry =
+    Colorimetry(100.966, 100, 64.370, 103.866, 100, 65.627)
+
   given ultralume40Colorimetry: Colorimetry = philipsTl84Colorimetry
-  given philipsTl83Colorimetry: Colorimetry = Colorimetry(108.046, 100, 39.228, 111.428, 100, 40.353)
+
+  given philipsTl83Colorimetry: Colorimetry =
+    Colorimetry(108.046, 100, 39.228, 111.428, 100, 40.353)
+
   given ultralume30Colorimetry: Colorimetry = philipsTl83Colorimetry
 
 package palettes:
