@@ -60,8 +60,7 @@ object Variable extends Protovariable:
   :   Variable[name, List[path]] =
 
     // [quote-wall]
-    caps.unsafe.unsafeAssumePure:
-      _.cut(system(t"path.separator").or(t":")).map(instantiable(_))
+    caps.unsafe.unsafeAssumePure(_.cut(system(t"path.separator").or(t":")).map(instantiable(_)))
 
   given path: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^, system: System )

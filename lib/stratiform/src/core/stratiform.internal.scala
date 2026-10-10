@@ -239,9 +239,10 @@ object internal:
 
     try unsafely(Telp.parse(raw.tt)) catch
       case error: Telp.Error =>
-        val position = contextual.Interpolation.sourcePosition
-          ( parts.to(proscenium.List), contextual.Interpolation.decodeOrigins[origins], 1,
-            offsetOf(error.index), 1 )
+        val position =
+          contextual.Interpolation.sourcePosition
+            ( parts.to(proscenium.List), contextual.Interpolation.decodeOrigins[origins], 1,
+              offsetOf(error.index), 1 )
 
         halt(error.message, position)
 
@@ -902,14 +903,18 @@ object internal:
                   ' {
                       Tel.Parsable.focusing($foci, $reader, $keyText):
                         $reader.int().lay(Tel.Parsable.scalarFault($reader, t"Int", 0))(identity)
-                    }.asTerm
+                    }
+
+                  . asTerm
 
               case LongK =>
                 firstWins:
                   ' {
                       Tel.Parsable.focusing($foci, $reader, $keyText):
                         $reader.long().lay(Tel.Parsable.scalarFault($reader, t"Long", 0L))(identity)
-                    }.asTerm
+                    }
+
+                  . asTerm
 
               case BooleanK =>
                 firstWins:
@@ -917,7 +922,9 @@ object internal:
                       Tel.Parsable.focusing($foci, $reader, $keyText):
                         $reader.boolean()
                         . lay(Tel.Parsable.scalarFault($reader, t"Boolean", false))(identity)
-                    }.asTerm
+                    }
+
+                  . asTerm
 
               case TextK =>
                 firstWins:
@@ -925,7 +932,9 @@ object internal:
                       Tel.Parsable.focusing($foci, $reader, $keyText):
                         $reader.atom()
                         . lay { $reader.fault(Tel.Error.Reason.Absent); t"" } (identity)
-                    }.asTerm
+                    }
+
+                  . asTerm
 
               case StringK =>
                 firstWins:
@@ -933,7 +942,9 @@ object internal:
                       Tel.Parsable.focusing($foci, $reader, $keyText):
                         $reader.atom()
                         . lay { $reader.fault(Tel.Error.Reason.Absent); "" } { atom => atom.s }
-                    }.asTerm
+                    }
+
+                  . asTerm
 
               case InstanceK =>
                 val bufferRef = Ref(local.buffer.get)
@@ -957,14 +968,18 @@ object internal:
                               ( $instances.readable(${Expr(index)}).asInstanceOf[Tel.Parsing],
                                 $reader,
                                 $indent ) )
-                    }.asTerm
+                    }
+
+                  . asTerm
 
                 val read: Term =
                   ' {
                       Tel.Parsable.focusing($foci, $reader, $keyText):
                         $instances.readable(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
                         . parse($reader, $indent)
-                    }.asTerm
+                    }
+
+                  . asTerm
 
                 If
                   ( '{$repeatables.readable(${Expr(index)})}.asTerm,
@@ -1014,21 +1029,27 @@ object internal:
                     ' {
                         Tel.Parsable.focusing($foci, $reader, $keyText):
                           Tel.Parsable.atomInt($first)(using $tactic)
-                      }.asTerm
+                      }
+
+                    . asTerm
 
                 case LongK =>
                   fill:
                     ' {
                         Tel.Parsable.focusing($foci, $reader, $keyText):
                           Tel.Parsable.atomLong($first)(using $tactic)
-                      }.asTerm
+                      }
+
+                    . asTerm
 
                 case BooleanK =>
                   fill:
                     ' {
                         Tel.Parsable.focusing($foci, $reader, $keyText):
                           Tel.Parsable.atomBoolean($first)(using $tactic)
-                      }.asTerm
+                      }
+
+                    . asTerm
 
                 case TextK => fill(first.asTerm)
 
@@ -1064,7 +1085,9 @@ object internal:
                                   ( using $tactic ) )
 
                           occurrence += 1
-                      }.asTerm
+                      }
+
+                    . asTerm
 
                   val single: Term =
                     fill:
@@ -1076,7 +1099,9 @@ object internal:
                             if instance.nature == Tel.Nature.Flag
                             then instance.parseFlag()(using $tactic)
                             else instance.parseAtom($first)(using $tactic)
-                        }.asTerm
+                        }
+
+                      . asTerm
 
                   If
                     ( '{$repeatables.readable(${Expr(index)})}.asTerm,
@@ -1176,7 +1201,9 @@ object internal:
 
                       if !declared.absent then declared.asInstanceOf[fieldType]
                       else Tel.Parsable.focusingUnlocated($foci, $keyText)($onAbsent)
-                    }.asTerm )
+                    }
+
+                  . asTerm )
 
             val whenUnseen: Term =
               If('{!${Ref(local.seen).asExprOf[Boolean]}}.asTerm, resolveAbsent, unit)
@@ -1199,7 +1226,9 @@ object internal:
                                     case buffer => buffer.toList )
 
                                 . to(proscenium.List) )
-                        }.asTerm )
+                        }
+
+                      . asTerm )
 
                 If('{$repeatables.readable(${Expr(index)})}.asTerm, gatherFinish, whenUnseen)
 

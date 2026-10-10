@@ -33,12 +33,12 @@
 package apoplexy
 
 import scala.collection.immutable.Seq
-
 import scala.quoted.*
 
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gesticulate.*
@@ -58,12 +58,11 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import xylophone.*
-import zephyrine.Parse
 
 import codepages.utf8Codepage
-import strategies.throwUnsafely
-import denominative.dysasymptotics.linearSize
 import rudiments.sortingAlgorithms.timsort
+import strategies.throwUnsafely
+import zephyrine.Parse
 
 object Apoplexy:
   // --- compile-time spec access -------------------------------------------

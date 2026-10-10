@@ -33,12 +33,12 @@
 package gesticulate
 
 import scala.collection.immutable.Seq
-
 import scala.quoted.*
 
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import fulminate.*
 import gigantism.*
 import gossamer.*
@@ -48,7 +48,6 @@ import vacuous.*
 
 import caseSensitivity.caseInsensitive
 import proximities.levenshteinProximity
-import denominative.dysasymptotics.linearSize
 
 object internal:
   // Validation runs at macro-expansion time, so it must not reflectively

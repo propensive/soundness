@@ -36,9 +36,9 @@ import scala.caps
 
 import anticipation.*
 import contingency.*
-import rudiments.foreach
 import Raster.Error.Reason
 import Vp8Tables.*
+import rudiments.foreach
 
 // The VP8 lossy (keyframe) decoder, ported from image-rs/image-webp (`src/lossy/mod.rs`,
 // MIT/Apache-2.0), per RFC 6386. It parses the frame header, then for each macroblock reads the

@@ -142,16 +142,16 @@ object XPath extends Format:
     // be unreachable under the umbrella import. Members always win.
     infix def or(right: into[Expression]): Expression = Expression.Or(this, right)
     infix def and(right: into[Expression]): Expression = Expression.And(this, right)
-    def ===(right: into[Expression]): Expression = Expression.Equal(this, right)
-    def !==(right: into[Expression]): Expression = Expression.Unequal(this, right)
-    def <(right: into[Expression]): Expression = Expression.Less(this, right)
-    def <=(right: into[Expression]): Expression = Expression.LessOrEqual(this, right)
-    def >(right: into[Expression]): Expression = Expression.Greater(this, right)
-    def >=(right: into[Expression]): Expression = Expression.GreaterOrEqual(this, right)
-    def +(right: into[Expression]): Expression = Expression.Add(this, right)
-    def -(right: into[Expression]): Expression = Expression.Subtract(this, right)
-    def *(right: into[Expression]): Expression = Expression.Multiply(this, right)
-    def |(right: into[Expression]): Expression = Expression.Union(this, right)
+    def === (right: into[Expression]): Expression = Expression.Equal(this, right)
+    def !== (right: into[Expression]): Expression = Expression.Unequal(this, right)
+    def < (right: into[Expression]): Expression = Expression.Less(this, right)
+    def <= (right: into[Expression]): Expression = Expression.LessOrEqual(this, right)
+    def > (right: into[Expression]): Expression = Expression.Greater(this, right)
+    def >= (right: into[Expression]): Expression = Expression.GreaterOrEqual(this, right)
+    def + (right: into[Expression]): Expression = Expression.Add(this, right)
+    def - (right: into[Expression]): Expression = Expression.Subtract(this, right)
+    def * (right: into[Expression]): Expression = Expression.Multiply(this, right)
+    def | (right: into[Expression]): Expression = Expression.Union(this, right)
 
     infix def contains(right: into[Expression]): Expression =
       Expression.Call(Unset, t"contains", List(this, right))
@@ -189,7 +189,7 @@ object XPath extends Format:
   given pathConversion: Conversion[XPath, Expression] = _.expression
 
   // Absolute path start: `XPath / t"html" / t"body"` is `/html/body`.
-  def /(step: into[Step]): XPath = XPath(Expression.Route(Origin.Root, List(step)))
+  def / (step: into[Step]): XPath = XPath(Expression.Route(Origin.Root, List(step)))
 
   // Descendant-or-self start: `XPath.deep(t"div")` is `//div`.
   def deep(step: into[Step]): XPath =
@@ -554,7 +554,7 @@ derives CanEqual:
       XPath(XPath.Expression.Route(XPath.Origin.Filter(other, Nil), List(step)))
 
   // Appends a `child::` step: `XPath / t"html" / t"body"` is `/html/body`.
-  def /(step: into[XPath.Step]): XPath = append(step)
+  def / (step: into[XPath.Step]): XPath = append(step)
 
   // Appends a descendant-or-self step: `XPath.deep(t"div").deep(t"a")` is
   // `//div//a`.

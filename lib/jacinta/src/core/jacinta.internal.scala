@@ -162,7 +162,7 @@ object internal:
     repr.dealias match
       case AppliedType(constructor, scala.collection.immutable.List(element))
       if repr <:< TypeRepr.of[Seq[Any]] || constructor.typeSymbol == defn.ArrayClass ||
-      constructor.typeSymbol == listSym || constructor.typeSymbol == seriesSym =>
+        constructor.typeSymbol == listSym || constructor.typeSymbol == seriesSym =>
         element
 
       case _ =>
@@ -473,10 +473,11 @@ object internal:
       // stdlib collection that is, so a run-time cast to `Iterable` is sound.
       // Detect them by their type-constructor symbol (a quote pattern can't see
       // through the opaque alias).
-      val aliasCollectionSyms = Set
-        ( TypeRepr.of[proscenium.List[Any]].typeSymbol,
-          TypeRepr.of[proscenium.Set[Any]].typeSymbol,
-          TypeRepr.of[proscenium.Sequence[Any]].typeSymbol )
+      val aliasCollectionSyms =
+        Set
+          ( TypeRepr.of[proscenium.List[Any]].typeSymbol,
+            TypeRepr.of[proscenium.Set[Any]].typeSymbol,
+            TypeRepr.of[proscenium.Sequence[Any]].typeSymbol )
 
       def encodeArraySpread(expr: Expr[Any]): Expr[Iterable[Json.Ast]] = expr.absolve match
         case '{$value: tpe} =>
@@ -1329,7 +1330,9 @@ object internal:
                   else
                     Json.Parsable.focusing($foci, $keys.readUnchecked(${Expr(index)}).tt)
                       ( $onAbsent )
-                }.asTerm
+                }
+
+              . asTerm
 
             If
               ( '{!${Ref(local.seen).asExprOf[Boolean]}}.asTerm,
@@ -1479,15 +1482,16 @@ object internal:
             provide[Tactic[Variant.Error]]:
               abort(Variant.Error[value]($wire))
           }
-      else variantTypes(index).asType match
-        case '[type variantType <: value; variantType] =>
-          ' {
-              if $wireVariants.readUnchecked(${Expr(index)}) == $wireString then
-                $variants.readUnchecked(${Expr(index)}).asInstanceOf[variantType is Json.Field]
-                . parse($reader)
-              else
-                ${dispatch(index + 1, reader, wire, wireString, variants, wireVariants)}
-            }
+      else
+        variantTypes(index).asType match
+          case '[type variantType <: value; variantType] =>
+            ' {
+                if $wireVariants.readUnchecked(${Expr(index)}) == $wireString then
+                  $variants.readUnchecked(${Expr(index)}).asInstanceOf[variantType is Json.Field]
+                  . parse($reader)
+                else
+                  ${dispatch(index + 1, reader, wire, wireString, variants, wireVariants)}
+              }
 
     ' {
         // Sealed per the codec-thunk pattern, like the derived instances: the

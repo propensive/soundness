@@ -163,9 +163,9 @@ object bintelInternal:
     tpe.dealias match
       case AppliedType(constructor, arguments) =>
         for
-          clazz <- classFor(constructor)
+          clazz  <- classFor(constructor)
           shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-            list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
+            list.flatMap: tail => shapeOf(argument).map(_ :: tail)
         yield TypeShape(clazz, shapes)
 
       case other =>
@@ -427,20 +427,21 @@ object bintelInternal:
             reject("an unapplied collection type")
         else if sumVariants(tpe).isDefined then
           reject("a sum (nested sums derive to an unresolvable schema Reference)")
-        else tpe.asType match
-          case '[field] =>
-            resolve[field](cache) match
-              case Some(instance)
-                if !instance.isInstanceOf[BintelInlinable.IterableInlinable[?]] =>
-                Plan.Nested(instance)
+        else
+          tpe.asType match
+            case '[field] =>
+              resolve[field](cache) match
+                case Some(instance)
+                  if !instance.isInstanceOf[BintelInlinable.IterableInlinable[?]] =>
+                  Plan.Nested(instance)
 
-              case _ =>
-                textDecoder[field] match
-                  case Some(decoder) => Plan.SeamText(decoder, staticEncoding[field])
+                case _ =>
+                  textDecoder[field] match
+                    case Some(decoder) => Plan.SeamText(decoder, staticEncoding[field])
 
-                  case None =>
-                    if cache.active.contains(tpe.show) then reject("recursive")
-                    else reject("of an unsupported type")
+                    case None =>
+                      if cache.active.contains(tpe.show) then reject("recursive")
+                      else reject("of an unsupported type")
 
   private def sumVariants(using Quotes)(tpe: quotes.reflect.TypeRepr)
   :   Option[List[(String, quotes.reflect.TypeRepr)]] =
@@ -468,8 +469,8 @@ object bintelInternal:
     tpe.classSymbol.exists: classSymbol =>
       classSymbol.flags.is(Flags.Case) &&
         !classSymbol.owner.isTerm &&
-        (tpe match { case AppliedType(_, _) => false case _ => true })
-        && classSymbol.primaryConstructor.paramSymss
+        (tpe match { case AppliedType(_, _) => false case _ => true }) &&
+        classSymbol.primaryConstructor.paramSymss
           . filterNot(_.exists(_.isTypeParam)).length == 1 &&
         !hasRenames(classSymbol)
 
@@ -847,7 +848,9 @@ object bintelInternal:
 
                       if !declared.absent then declared.asInstanceOf[fieldType]
                       else Tel.Parsable.focusingUnlocated($foci, $keyword)($absentExpr)
-                    }.asTerm )
+                    }
+
+                  . asTerm )
 
             val whenSeen: Term = plans(index) match
               case Plan.Gather(_, _) =>
@@ -919,41 +922,43 @@ object bintelInternal:
     def dispatch(index: Int, kidx: Expr[Int], btactic: Expr[Tactic[Bintel.Error]]): Expr[sum] =
       if index == arity then
         '{abort(Bintel.Error(Bintel.Error.Reason.BadKeywordIndex))(using $btactic)}
-      else variants(index)(1).asType match
-        case '[type variantType <: sum; variantType] =>
-          val instance = resolve[variantType](cache).getOrElse:
-            report.errorAndAbort
-              ( s"stratiform: no BintelInlinable for variant ${variants(index)(0)}" )
+      else
+        variants(index)(1).asType match
+          case '[type variantType <: sum; variantType] =>
+            val instance = resolve[variantType](cache).getOrElse:
+              report.errorAndAbort
+                ( s"stratiform: no BintelInlinable for variant ${variants(index)(0)}" )
 
-          . asInstanceOf[BintelInlinable { type Self = variantType }]
+            . asInstanceOf[BintelInlinable { type Self = variantType }]
 
-          ' {
-              if $kidx == ${Expr(index)} then
-                def parseVariant(): variantType = ${instance.parse(reader)}
-                parseVariant()
-              else
-                ${dispatch(index + 1, kidx, btactic)}
-            }
+            ' {
+                if $kidx == ${Expr(index)} then
+                  def parseVariant(): variantType = ${instance.parse(reader)}
+                  parseVariant()
+                else
+                  ${dispatch(index + 1, kidx, btactic)}
+              }
 
     def discard(index: Int, kidx: Expr[Int], btactic: Expr[Tactic[Bintel.Error]]): Expr[Unit] =
       if index == arity then
         '{abort(Bintel.Error(Bintel.Error.Reason.BadKeywordIndex))(using $btactic)}
-      else variants(index)(1).asType match
-        case '[type variantType <: sum; variantType] =>
-          val instance = resolve[variantType](cache).getOrElse:
-            report.errorAndAbort
-              ( s"stratiform: no BintelInlinable for variant ${variants(index)(0)}" )
+      else
+        variants(index)(1).asType match
+          case '[type variantType <: sum; variantType] =>
+            val instance = resolve[variantType](cache).getOrElse:
+              report.errorAndAbort
+                ( s"stratiform: no BintelInlinable for variant ${variants(index)(0)}" )
 
-          . asInstanceOf[BintelInlinable { type Self = variantType }]
+            . asInstanceOf[BintelInlinable { type Self = variantType }]
 
-          ' {
-              if $kidx == ${Expr(index)} then
-                def parseExtra(): variantType = ${instance.parse(reader)}
-                parseExtra()
-                ()
-              else
-                ${discard(index + 1, kidx, btactic)}
-            }
+            ' {
+                if $kidx == ${Expr(index)} then
+                  def parseExtra(): variantType = ${instance.parse(reader)}
+                  parseExtra()
+                  ()
+                else
+                  ${discard(index + 1, kidx, btactic)}
+              }
 
     ' {
         val tactic = infer[Tactic[Tel.Error]]

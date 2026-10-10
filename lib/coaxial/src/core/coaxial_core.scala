@@ -44,8 +44,8 @@ import spectacular.*
 import turbulence.*
 import urticose.MacAddress
 import vacuous.*
-import zephyrine.{Stream, Credit, Buffering, Substrate, stream}
 import Control.*
+import zephyrine.{Stream, Credit, Buffering, Substrate, stream}
 
 extension [bindable: {Bindable, Showable}](socket: bindable)
   // `listen` is a loan: it binds, lends the running server to `block` as a `Socket.Service`

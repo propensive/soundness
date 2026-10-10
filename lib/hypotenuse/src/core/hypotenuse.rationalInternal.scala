@@ -530,8 +530,8 @@ object rationalInternal:
     val bits = JDouble.doubleToLongBits(value)
     val rawExponent = (bits >>> 52 & 0x7ffL).toInt
 
-    var mantissa = if rawExponent == 0 then bits & 0xfffffffffffffL
-      else bits & 0xfffffffffffffL | (1L << 52)
+    var mantissa =
+      if rawExponent == 0 then bits & 0xfffffffffffffL else bits & 0xfffffffffffffL | (1L << 52)
 
     var exponent = if rawExponent == 0 then -1074 else rawExponent - 1075
     val shift = JLong.numberOfTrailingZeros(mantissa)
@@ -583,24 +583,27 @@ object rationalInternal:
     if leftNegative == rightNegative then
       limbsAdd(cross, cross2)
       (leftNegative, encodeMagnitude(terms, euclideanWide(cross, wideDenominator, terms), budget))
-    else limbsCompare(cross, cross2) match
-      case 0 => (false, 0L)
+    else
+      limbsCompare(cross, cross2) match
+        case 0 => (false, 0L)
 
-      case order =>
-        if order > 0 then
-          limbsSubtract(cross, cross2)
+        case order =>
+          if order > 0 then
+            limbsSubtract(cross, cross2)
 
-          ( leftNegative,
-            encodeMagnitude(terms, euclideanWide(cross, wideDenominator, terms), budget) )
-        else
-          limbsSubtract(cross2, cross)
+            ( leftNegative,
+              encodeMagnitude(terms, euclideanWide(cross, wideDenominator, terms), budget) )
+          else
+            limbsSubtract(cross2, cross)
 
-          ( rightNegative,
-            encodeMagnitude(terms, euclideanWide(cross2, wideDenominator, terms), budget) )
+            ( rightNegative,
+              encodeMagnitude(terms, euclideanWide(cross2, wideDenominator, terms), budget) )
 
   // Multiplication or division of two decoded fractions over wide intermediates, for Q64.
-  private def multiplyWide(numerator: Long, factor: Long, denominator: Long, divisor: Long,
-                           budget: Int): Long =
+  private def multiplyWide
+    ( numerator: Long, factor: Long, denominator: Long, divisor: Long, budget: Int )
+  :   Long =
+
     val wideNumerator = new scala.Array[Long](Limbs)
     val wideDenominator = new scala.Array[Long](Limbs)
     limbsMultiply(numerator, factor, wideNumerator)
@@ -826,10 +829,11 @@ object rationalInternal:
         val (leftNumerator, leftDenominator) = fractionOf(left & Long.MaxValue)
         val (rightNumerator, rightDenominator) = fractionOf(right & Long.MaxValue)
 
-        val (negative, magnitude) = addWide
-          ( left < 0L, leftNumerator, leftDenominator,
-            right < 0L, rightNumerator, rightDenominator,
-            Budget64 )
+        val (negative, magnitude) =
+          addWide
+            ( left < 0L, leftNumerator, leftDenominator,
+              right < 0L, rightNumerator, rightDenominator,
+              Budget64 )
 
         if magnitude == 0L then q64(0L)
         else if negative then q64(magnitude | Long.MinValue)

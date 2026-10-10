@@ -43,8 +43,8 @@ import urticose.*
 import vacuous.*
 import wisteria.*
 import zephyrine.*
-import httpBackends.javaNetHttp
 import Json.Error.Reason
+import httpBackends.javaNetHttp
 
 extension (json: Json)
   // Runtime-checks `json` against the schema for `topic`, then re-types it as a

@@ -242,7 +242,9 @@ object Interpolation:
                   type Topic = topic
                   type Transport = transport
                   type Origins = origins
-              } . asInstanceOf[Expr[Interpolation of topic]]
+              }
+
+            . asInstanceOf[Expr[Interpolation of topic]]
 
 trait Interpolation extends scala.caps.Pure:
   type Topic

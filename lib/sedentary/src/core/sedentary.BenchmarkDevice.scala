@@ -47,9 +47,9 @@ import serpentine.*
 import urticose.*
 import vacuous.*
 
+import environments.javaBaseEnvironment
 import logging.silentLogging
 import workingDirectories.javaBaseWorkingDirectory
-import environments.javaBaseEnvironment
 import beneficence.*
 
 trait BenchmarkDevice extends Findable:

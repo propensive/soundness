@@ -257,7 +257,10 @@ extends caps.ExclusiveCapability:
         write(out, Tarfile.zeroBlock)
 
         var count: Long = 0
-        file.data.chunks.foreach { chunk => write(out, chunk); count += chunk.length }
+
+        file.data.chunks.foreach: chunk =>
+          write(out, chunk)
+          count += chunk.length
 
         pad(out, count)
         val end = out.getFilePointer

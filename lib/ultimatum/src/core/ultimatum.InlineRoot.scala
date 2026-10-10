@@ -235,7 +235,8 @@ extends GridSurface(widthFn(), 0):
     val validated =
       if !invalidated && started && h == presentedRows && columns == presentedColumns &&
         dockTop == presentedTop
-      then snapshotValid(dockTop, columns, h) else Unset
+      then snapshotValid(dockTop, columns, h)
+      else Unset
 
     validated.let(presentDiff(dockTop, columns, h, _)).or(flushDockedFull(rows, columns, h))
 

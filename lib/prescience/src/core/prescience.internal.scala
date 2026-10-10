@@ -184,73 +184,74 @@ object internal:
     import scala.quoted.staging
 
     TypeRepr.of[field].classSymbol.flatMap: classSymbol =>
-      if definedInCurrentRun(classSymbol) then None else try
-        val clazz = Class.forName(classSymbol.fullName, false, macroClassloader).nn
+      if definedInCurrentRun(classSymbol) then None else
+        try
+          val clazz = Class.forName(classSymbol.fullName, false, macroClassloader).nn
 
-        // The compiled snippet lands in a real directory, and the inner
-        // compiler's classpath excludes the current output directory, so a
-        // same-run instance can never resolve against a stale classfile from
-        // a previous incremental compile. `-experimental` because the repo
-        // compiles under experimental language features, so its symbols are
-        // `@experimental`-tagged.
-        val outputDir: String =
-          java.nio.file.Files.createTempDirectory("prescience").nn.toString
+          // The compiled snippet lands in a real directory, and the inner
+          // compiler's classpath excludes the current output directory, so a
+          // same-run instance can never resolve against a stale classfile from
+          // a previous incremental compile. `-experimental` because the repo
+          // compiles under experimental language features, so its symbols are
+          // `@experimental`-tagged.
+          val outputDir: String =
+            java.nio.file.Files.createTempDirectory("prescience").nn.toString
 
-        given settings: staging.Compiler.Settings =
-          staging.Compiler.Settings.make
-            ( Some(outputDir), List("-experimental", "-classpath", innerClasspath) )
+          given settings: staging.Compiler.Settings =
+            staging.Compiler.Settings.make
+              ( Some(outputDir), List("-experimental", "-classpath", innerClasspath) )
 
-        given staging.Compiler = staging.Compiler.make(macroClassloader)
-        val started = System.nanoTime
+          given staging.Compiler = staging.Compiler.make(macroClassloader)
+          val started = System.nanoTime
 
-        val result: Any = staging.run:
-          val quotes2 = summon[Quotes]
-          import quotes2.reflect as r2
+          val result: Any = staging.run:
+            val quotes2 = summon[Quotes]
+            import quotes2.reflect as r2
 
-          val fieldType = r2.TypeRepr.typeConstructorOf(clazz)
+            val fieldType = r2.TypeRepr.typeConstructorOf(clazz)
 
-          val target =
-            r2.Refinement
-              ( r2.TypeRepr.of[Inlinable], "Self", r2.TypeBounds(fieldType, fieldType) )
+            val target =
+              r2.Refinement
+                ( r2.TypeRepr.of[Inlinable], "Self", r2.TypeBounds(fieldType, fieldType) )
 
-          // The summon is embedded in the snippet rather than performed here
-          // eagerly: the run's expression builder executes post-typer (phase
-          // `quotedFrontend`), where a failing implicit search asserts, while
-          // an embedded `summonInline` resolves during the inner compiler's
-          // own inlining phase — an ordinary search context.
-          target.asType match
-            case '[target] => '{scala.compiletime.summonInline[target]}
+            // The summon is embedded in the snippet rather than performed here
+            // eagerly: the run's expression builder executes post-typer (phase
+            // `quotedFrontend`), where a failing implicit search asserts, while
+            // an embedded `summonInline` resolves during the inner compiler's
+            // own inlining phase — an ordinary search context.
+            target.asType match
+              case '[target] => '{scala.compiletime.summonInline[target]}
 
-        // The snippet's classes are now ordinary files in `outputDir`; a new
-        // classloader over that directory (parented by the macro classloader,
-        // which supplies the instance's own classes) can reconstruct the
-        // instance independently of `staging.run`'s internal loader — the
-        // basis for caching a compiled summon across expansions.
-        val reloaded: Any =
-          try
-            val url = java.io.File(outputDir).toURI.nn.toURL.nn
-            val loader = java.net.URLClassLoader(scala.Array(url), macroClassloader)
-            val generated = loader.loadClass("Generated$Code$From$Quoted").nn
-            val instance = generated.getConstructor().nn.newInstance()
-            generated.getMethod("apply").nn.invoke(instance)
-          catch
-            case _: ReflectiveOperationException => result
-            case _: LinkageError                 => result
+          // The snippet's classes are now ordinary files in `outputDir`; a new
+          // classloader over that directory (parented by the macro classloader,
+          // which supplies the instance's own classes) can reconstruct the
+          // instance independently of `staging.run`'s internal loader — the
+          // basis for caching a compiled summon across expansions.
+          val reloaded: Any =
+            try
+              val url = java.io.File(outputDir).toURI.nn.toURL.nn
+              val loader = java.net.URLClassLoader(scala.Array(url), macroClassloader)
+              val generated = loader.loadClass("Generated$Code$From$Quoted").nn
+              val instance = generated.getConstructor().nn.newInstance()
+              generated.getMethod("apply").nn.invoke(instance)
+            catch
+              case _: ReflectiveOperationException => result
+              case _: LinkageError                 => result
 
-        val duration = (System.nanoTime - started)/1000000L
+          val duration = (System.nanoTime - started)/1000000L
 
-        report.info
-          ( s"prescience: staged summon for ${classSymbol.fullName} took ${duration}ms; " +
-            s"classes in $outputDir" )
+          report.info
+            ( s"prescience: staged summon for ${classSymbol.fullName} took ${duration}ms; " +
+              s"classes in $outputDir" )
 
-        reloaded match
-          case instance: Inlinable => Some(instance)
-          case _                   => None
-      catch
-        case _: ReflectiveOperationException => None
-        case _: LinkageError                 => None
-        case _: AssertionError               => None
-        case _: Exception                    => None
+          reloaded match
+            case instance: Inlinable => Some(instance)
+            case _                   => None
+        catch
+          case _: ReflectiveOperationException => None
+          case _: LinkageError                 => None
+          case _: AssertionError               => None
+          case _: Exception                    => None
 
   // ── The deriving macro ─────────────────────────────────────────────────────
   // One flat reader per case class: the input splits once, and each field's

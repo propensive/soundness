@@ -43,6 +43,7 @@ import quantitative.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
+
 // `linearAccess`: linking outline siblings reads the neighbouring `refs` by position, exactly
 // as the stdlib-indexed form it replaces did.
 import denominative.dysasymptotics.{linearAccess, linearSize}

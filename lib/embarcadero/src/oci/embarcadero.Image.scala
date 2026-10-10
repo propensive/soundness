@@ -263,7 +263,8 @@ object Image:
 
     def config(manifest: Oci.Manifest)(using Tactic[Oci.Error]): Oci.Config =
       if manifest.config.mediaType == media"application/vnd.wasm.config.v0+json"
-      then wasmConfig(manifest) else imageConfig(manifest)
+      then wasmConfig(manifest)
+      else imageConfig(manifest)
 
     // A layer's stored blob, verbatim: for OCI layers, the gzip-compressed tar.
     def compressed(descriptor: Descriptor)(using Tactic[Oci.Error])

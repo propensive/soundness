@@ -44,9 +44,9 @@ import rudiments.*
 import serpentine.*
 import symbolism.*
 import vacuous.*
+import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.dereferenceSymlinks
 import pathInterfaces.pathOnLocal
-import filesystemBackends.javaBaseFilesystem
 
 object Pathname:
   // The property is read straight off the `System` capability rather than through

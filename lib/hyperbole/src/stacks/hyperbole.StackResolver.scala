@@ -37,6 +37,8 @@ import scala.collection.mutable
 import ambience.*
 import anticipation.*
 import contingency.*
+import denominative.dysasymptotics.linearSize
+import denominative.z
 import digression.*
 import distillate.*
 import galilei.*, galilei.Platform.pathReadable
@@ -53,8 +55,6 @@ import vacuous.*
 import StackTrace.Frame.Kind
 import charsets.utf8Charset
 import textSanitizers.skipSanitizer
-import denominative.z
-import denominative.dysasymptotics.linearSize
 
 object StackResolver:
   // The compiled name cannot say which definition a frame came from, but it can say what kind of

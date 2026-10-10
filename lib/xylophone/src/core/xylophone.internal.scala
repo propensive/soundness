@@ -1682,7 +1682,7 @@ object internal:
         Array.freeze(buffer).readable
 
       // This scope with the other's bindings appended, so the other's shadow this one's
-      def ++(that: Scope): Scope =
+      def ++ (that: Scope): Scope =
         if that.isEmpty then scope else if scope.isEmpty then that else
           val left = storage(scope)
           val right = storage(that)
@@ -1760,8 +1760,8 @@ object internal:
     // the general text step, which matches all fields by string.
     val literalKeys: Boolean =
       !List.range(0, arity).exists: index =>
-        annotationsOf(index).exists { annotation =>
-          annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+        annotationsOf(index).exists: annotation =>
+          annotation.tpe <:< TypeRepr.of[adversaria.name[?]]
 
     def packedName(index: Int): Option[(Long, Long)] =
       val name = fieldNames(index)
@@ -1931,7 +1931,9 @@ object internal:
                   Attributes.fetch($attributes)($keyText) match
                     case value: Text => ${step('{value})}
                     case _           => ()
-                }.asTerm
+                }
+
+              . asTerm
 
       // One dispatch arm per child-matching field: read the value (with
       // focus bookkeeping), honoring the derived engine's semantics — a
@@ -1984,7 +1986,9 @@ object internal:
                       Xml.Parsable.focusing($foci, $keyText):
                         $reader.text()
                         . or { $reader.fault(Xml.Error.Reason.Untextual(t"Text")); t"" }
-                    }.asTerm
+                    }
+
+                  . asTerm
 
               case StringK =>
                 firstWins:
@@ -1994,7 +1998,9 @@ object internal:
                           . or { $reader.fault(Xml.Error.Reason.Untextual(t"String")); t"" } )
 
                         . s
-                    }.asTerm
+                    }
+
+                  . asTerm
 
               case InstanceK =>
                 val bufferRef = Ref(buffers(index).get)
@@ -2017,7 +2023,9 @@ object internal:
                             Xml.Parsable.parseElement
                               ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Xml.Parsing],
                                 $reader ) )
-                    }.asTerm
+                    }
+
+                  . asTerm
 
                 val read: Term =
                   ' {
@@ -2025,7 +2033,9 @@ object internal:
                         $instances.readUnchecked(${Expr(index)})
                         . asInstanceOf[fieldType is Xml.Field]
                         . parse($reader)
-                    }.asTerm
+                    }
+
+                  . asTerm
 
                 If
                   ( '{$repeatables.readUnchecked(${Expr(index)})}.asTerm,
@@ -2124,7 +2134,9 @@ object internal:
 
                       if !declared.absent then declared.asInstanceOf[fieldType]
                       else Xml.Parsable.focusing($foci, $keyText)($onAbsent)
-                    }.asTerm )
+                    }
+
+                  . asTerm )
 
             val whenUnseen: Term =
               If('{!${Ref(seens(index)).asExprOf[Boolean]}}.asTerm, resolveAbsent, unit)
@@ -2145,7 +2157,9 @@ object internal:
                                 $bufferExpr match
                                   case null   => proscenium.Nil
                                   case buffer => buffer.toList.to(proscenium.List) )
-                        }.asTerm )
+                        }
+
+                      . asTerm )
 
                 If('{$repeatables.readUnchecked(${Expr(index)})}.asTerm, gatherFinish, whenUnseen)
 

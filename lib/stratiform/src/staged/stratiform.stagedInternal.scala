@@ -181,9 +181,9 @@ object stagedInternal:
     tpe.dealias match
       case AppliedType(constructor, arguments) =>
         for
-          clazz <- classFor(constructor)
+          clazz  <- classFor(constructor)
           shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-            list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
+            list.flatMap: tail => shapeOf(argument).map(_ :: tail)
         yield TypeShape(clazz, shapes)
 
       case other =>
@@ -412,8 +412,8 @@ object stagedInternal:
     tpe.classSymbol.exists: classSymbol =>
       classSymbol.flags.is(Flags.Case) &&
         !classSymbol.owner.isTerm &&
-        (tpe match { case AppliedType(_, _) => false case _ => true })
-        && classSymbol.primaryConstructor.paramSymss
+        (tpe match { case AppliedType(_, _) => false case _ => true }) &&
+        classSymbol.primaryConstructor.paramSymss
           . filterNot(_.exists(_.isTypeParam)).length == 1 &&
         !hasRenames(classSymbol)
 
@@ -763,7 +763,9 @@ object stagedInternal:
                   ' {
                       Tel.Parsable.focusing($foci, $reader, ${keyText(index)})
                         ( ${instance.parse(reader, indent)} )
-                    }.asTerm )
+                    }
+
+                  . asTerm )
 
             case Plan.Nested(_) =>
               val (symbol, _) = nesteds(index).get
@@ -788,7 +790,9 @@ object stagedInternal:
                       ' {
                           $builderRef.addOne
                             ( Tel.Parsable.focusing($foci, $reader, ${keyText(index)})($call) )
-                        }.asTerm
+                        }
+
+                      . asTerm
 
                 case _ =>
                   report.errorAndAbort("stratiform: unreachable gather shape")
@@ -809,13 +813,17 @@ object stagedInternal:
                     $bufferRef.asInstanceOf[scm.ListBuffer[Any]].addOne
                       ( Tel.Parsable.focusing($foci, $reader, ${keyText(index)}):
                           Tel.Parsable.parseElement($instanceRef, $reader, $indent) )
-                  }.asTerm
+                  }
+
+                . asTerm
 
               val read: Term =
                 ' {
                     Tel.Parsable.focusing($foci, $reader, ${keyText(index)})
                       ( $instanceRef.parse($reader, $indent) )
-                  }.asTerm
+                  }
+
+                . asTerm
 
               If
                 ( Ref(seam.repeats),
@@ -895,7 +903,9 @@ object stagedInternal:
 
                     if !declared.absent then declared.asInstanceOf[fieldType]
                     else Tel.Parsable.focusingUnlocated($foci, ${keyText(index)})($onAbsent)
-                  }.asTerm )
+                  }
+
+                . asTerm )
 
           def whenUnseen(onAbsent: Expr[fieldType]): Term =
             If
@@ -941,7 +951,9 @@ object stagedInternal:
                               $bufferRef match
                                 case null   => proscenium.Nil
                                 case buffer => buffer.toList.to(proscenium.List) )
-                      }.asTerm )
+                      }
+
+                    . asTerm )
 
               If
                 ( Ref(seam.repeats),
@@ -1010,33 +1022,34 @@ object stagedInternal:
             provide[Tactic[wisteria.Variant.Error]]:
               abort(wisteria.Variant.Error[sum]($reader.keywordText))
           }
-      else variants(index)(1).asType match
-        case '[type variantType <: sum; variantType] =>
-          val instance = resolve[variantType](cache).getOrElse:
-            report.errorAndAbort
-              ( s"stratiform: no Inlinable for variant ${variants(index)(0)}" )
+      else
+        variants(index)(1).asType match
+          case '[type variantType <: sum; variantType] =>
+            val instance = resolve[variantType](cache).getOrElse:
+              report.errorAndAbort
+                ( s"stratiform: no Inlinable for variant ${variants(index)(0)}" )
 
-          . asInstanceOf[Inlinable { type Self = variantType }]
+            . asInstanceOf[Inlinable { type Self = variantType }]
 
-          val name = wireNames(index)
+            val name = wireNames(index)
 
-          val condition: Expr[Boolean] = packedTelKeyword(name) match
-            case Some(packed) =>
-              ' {
-                  $word == ${Expr(packed)} ||
-                    ($word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)})
-                }
+            val condition: Expr[Boolean] = packedTelKeyword(name) match
+              case Some(packed) =>
+                ' {
+                    $word == ${Expr(packed)} ||
+                      ($word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)})
+                  }
 
-            case None =>
-              '{$word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)}}
+              case None =>
+                '{$word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)}}
 
-          ' {
-              if $condition then
-                def parseVariant(): variantType = ${instance.parse(reader, indent1)}
-                parseVariant()
-              else
-                ${dispatch(index + 1, word, indent1)}
-            }
+            ' {
+                if $condition then
+                  def parseVariant(): variantType = ${instance.parse(reader, indent1)}
+                  parseVariant()
+                else
+                  ${dispatch(index + 1, word, indent1)}
+              }
 
     ' {
         val tactic = infer[Tactic[Tel.Error]]

@@ -32,8 +32,6 @@
                                                                                                   */
 package mandible
 
-import rudiments.*
-
 import java.lang.classfile as jlc
 import java.lang.classfile.attribute as jlca
 import java.lang.classfile.instruction as jlci
@@ -48,6 +46,7 @@ import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import iridescence.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*

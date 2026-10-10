@@ -260,7 +260,8 @@ object Alphabet:
                 var fast: Boolean = true
 
                 while fast && accumulated == 0 && consumed + 4 <= sourceLength &&
-                  produced + 3 <= targetSpace do
+                  produced + 3 <= targetSpace
+                do
 
                   val c0 = chars(sourceOffset + consumed).toInt
                   val c1 = chars(sourceOffset + consumed + 1).toInt
@@ -299,9 +300,8 @@ object Alphabet:
                 // accumulated before them are alignment filler.
                 if stage.padding && char == pad then accumulated = 0
                 else
-                  accumulator = (accumulator << base)
-                    | stage.invert(position, char)
-                      ( using tactic )
+                  accumulator =
+                    (accumulator << base) | stage.invert(position, char)(using tactic)
 
                   accumulated += base
 

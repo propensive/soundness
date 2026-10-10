@@ -32,13 +32,13 @@
                                                                                                   */
 package hallucination
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import vacuous.*
 
 import Raster.Error.Reason
-
-import scala.caps
 
 // A pure-Scala JPEG decoder, ported from image-rs/jpeg-decoder (MIT/Apache-2.0). It handles
 // baseline and progressive Huffman-coded DCT images with 1, 3 or 4 components (grayscale, YCbCr /

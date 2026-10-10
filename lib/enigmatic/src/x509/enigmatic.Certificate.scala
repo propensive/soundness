@@ -35,9 +35,9 @@ package enigmatic
 import scala.caps
 
 import anticipation.*
-import denominative.*
 import aviation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gastronomy.*

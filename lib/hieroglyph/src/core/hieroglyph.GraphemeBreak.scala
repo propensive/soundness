@@ -182,7 +182,8 @@ object GraphemeBreak:
         low = mid + 1
 
     if found >= 0 && codepoint <= tables.ends.at(Ordinal.zerary(found)).or(-1)
-    then tables.props.at(Ordinal.zerary(found)).lay(-1)(_.toInt) else -1
+    then tables.props.at(Ordinal.zerary(found)).lay(-1)(_.toInt)
+    else -1
 
   def property(codepoint: Int): Property =
     val ord = lookup(gbpTables, codepoint)

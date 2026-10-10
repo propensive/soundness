@@ -49,8 +49,8 @@ import turbulence.Eof
 import turbulence.Readable
 import turbulence.Writable
 import vacuous.*
-import zephyrine.Stream
 import Io.Error.Operation
+import zephyrine.Stream
 
 // `Platform` is the common base of galilei's OS filesystem platform types (`Posix`/`Linux`/`MacOs`/
 // `Windows`/`Local`). It exists so that givens placed in its companion — notably the whole-file

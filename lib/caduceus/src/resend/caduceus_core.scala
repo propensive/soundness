@@ -36,6 +36,7 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import fulminate.*
+
 // `Message`'s `Printable` instance now lives in `fulminate.print`, outside `Message`'s implicit
 // scope, so printing a `Message` needs it imported by name.
 import fulminate.printables.messagePrintable

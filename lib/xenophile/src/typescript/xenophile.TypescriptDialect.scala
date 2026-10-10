@@ -101,7 +101,8 @@ object TypescriptDialect extends Dialect:
   private def prototype(member: Typescript.Member): Optional[Prototype] =
     if !member.visible then Unset else member.kind match
       case Typescript.Member.Kind.Call | Typescript.Member.Kind.Construct
-        | Typescript.Member.Kind.Index => Unset
+        | Typescript.Member.Kind.Index =>
+        Unset
 
       case Typescript.Member.Kind.Property | Typescript.Member.Kind.Getter =>
         member.signatures.prim.let: signature =>

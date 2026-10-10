@@ -227,7 +227,8 @@ extends Board:
     snapshot.let: snap =>
       if snapshotTop == top && snapshotColumns == columns &&
         snap.height == h && snap.width == gridWidth
-      then snap else Unset
+      then snap
+      else Unset
 
   // Whether the cell at `(c, r)` differs from the snapshot's. A cell is one grapheme
   // with one style; links never reach the grid (`putCell` always writes `t""`), so the

@@ -174,7 +174,7 @@ object internal:
             case (param: Types.TypeParamRef, index) =>
               param.binder == lambda && param.paramNum == index
             case _                                  => false
-        => Some(ref)
+        =>  Some(ref)
 
         case _ => None
 

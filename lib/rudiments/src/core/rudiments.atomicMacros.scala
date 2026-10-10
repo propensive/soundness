@@ -212,12 +212,12 @@ object atomicMacros:
 
             case Apply(Select(left, "+"), args)
             if numeric && args.length == 1 && isParam(left, symbol) &&
-            !mentions(args.head, roots) =>
+              !mentions(args.head, roots) =>
               Shape.Increase
 
             case Apply(Select(left, "-"), args)
             if numeric && args.length == 1 && isParam(left, symbol) &&
-            !mentions(args.head, roots) =>
+              !mentions(args.head, roots) =>
               Shape.Decrease
 
             case other =>

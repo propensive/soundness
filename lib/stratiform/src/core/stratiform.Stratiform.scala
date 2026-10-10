@@ -89,7 +89,7 @@ object Stratiform:
     repr.dealias match
       case AppliedType(constructor, scala.collection.immutable.List(element))
       if repr <:< TypeRepr.of[Seq[Any]] || constructor.typeSymbol == defn.ArrayClass ||
-      constructor.typeSymbol == listSym || constructor.typeSymbol == seriesSym =>
+        constructor.typeSymbol == listSym || constructor.typeSymbol == seriesSym =>
         element
 
       case _ =>

@@ -53,8 +53,8 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 import xylophone.*
-import zephyrine.Parse
 import Mathml.*
+import zephyrine.Parse
 
 // The root `<math>` element and Archimedes' integration points.
 //

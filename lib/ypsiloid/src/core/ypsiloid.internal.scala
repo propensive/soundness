@@ -32,18 +32,19 @@
                                                                                                   */
 package ypsiloid
 
-import scala.collection.immutable.IndexedSeq
-import scala.collection.immutable.Seq
-
 // Residue: `head` and the frozen-array subscript `apply` are partial; both await the
 // partial-operations tranche.
 
+import scala.collection.immutable.IndexedSeq
+import scala.collection.immutable.Seq
 import scala.compiletime.*
 import scala.quoted.*
 
 import anticipation.*
 import contextual.*
 import contingency.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gigantism.*
@@ -51,8 +52,6 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
-import denominative.*
-import denominative.dysasymptotics.linearSize
 
 // `y"…"` interpolator and extractor macros.
 //

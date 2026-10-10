@@ -42,9 +42,9 @@ import prepositional.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
-import zephyrine.{Slate, Stream, Credit, Buffering, Substrate}
-import Http2.Frame
 import Http2.Error.Reason
+import Http2.Frame
+import zephyrine.{Slate, Stream, Credit, Buffering, Substrate}
 
 // Pulls whole HTTP/2 frames from a connection's pull endpoint, whose bytes arrive
 // in arbitrary chunks (a socket). Buffers leftover bytes between reads and blocks

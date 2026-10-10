@@ -32,13 +32,11 @@
                                                                                                   */
 package quantitative
 
-import scala.{caps, compiletime, math}
-
 // Deliberate stdlib opt-out: macro-internal unit algebra.
 import scala.collection.immutable.{List, Map, Nil, ::}
-
 import scala.compiletime.*
 import scala.quoted.*
+import scala.{caps, compiletime, math}
 
 import anticipation.*
 import fulminate.*

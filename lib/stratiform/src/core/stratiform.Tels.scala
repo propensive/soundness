@@ -1338,7 +1338,7 @@ object Tels extends Tels2:
       children.each: cc =>
         cc.keyword.s match
           case "validate"    => validators ++= atomTexts(cc).readable
-          case "exclude"     => scalarAtomText(cc).let { keyword => excludes += keyword }
+          case "exclude"     => scalarAtomText(cc).let: keyword => excludes += keyword
           case "description" => ()
 
           case "variant" =>
@@ -1447,7 +1447,7 @@ object Tels extends Tels2:
           case "repeatable"   => repeatable = Polarity.Loose
           case "irrepeatable" => repeatable = Polarity.Tight
           case "key"          => key        = true
-          case "default"      => firstAtomText(cc).let { text => default = text }
+          case "default"      => firstAtomText(cc).let: text => default = text
           case _              => ()
 
       Field(required, repeatable, keyword, fieldType, default,

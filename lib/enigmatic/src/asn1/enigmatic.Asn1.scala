@@ -32,10 +32,9 @@
                                                                                                   */
 package enigmatic
 
-import scala.caps
-
 import java.nio.charset as jnc
 
+import scala.caps
 import scala.collection.mutable as scm
 
 import anticipation.*

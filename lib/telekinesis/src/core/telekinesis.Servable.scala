@@ -108,9 +108,10 @@ object Servable:
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
         given buffering: zephyrine.Buffering = buffering0
 
-        Http.Ok(headers, Http.Body.Flowing { () =>
-          streamable.stream(value).via(encoder0).asInstanceOf[(Stream[Data] over Credit)^]
-        })
+        Http.Ok
+          ( headers,
+            Http.Body.Flowing: () =>
+              streamable.stream(value).via(encoder0).asInstanceOf[(Stream[Data] over Credit)^] )
 
 trait Servable extends Typeclass:
   def serve(content: Self): Http.Response

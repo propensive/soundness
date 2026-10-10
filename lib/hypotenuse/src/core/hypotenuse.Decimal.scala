@@ -260,7 +260,9 @@ object decimalInternal:
       (result, length)
 
     private[hypotenuse] def compareMagnitude
-      ( left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int ): Int =
+      ( left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int )
+    :   Int =
+
       if leftCount != rightCount then if leftCount < rightCount then -1 else 1 else
         var i = leftCount - 1
         var result = 0
@@ -539,7 +541,9 @@ object decimalInternal:
     given orderable: Decimal is Orderable:
       inline def compare
         ( inline left: Decimal, inline right: Decimal, inline strict: Boolean,
-         inline greater: Boolean ): Boolean =
+          inline greater: Boolean )
+      :   Boolean =
+
         val result = comparison(left, right)
 
         if greater then (if strict then result > 0 else result >= 0)
@@ -564,29 +568,31 @@ object decimalInternal:
         if left(0) == right(0) then
           val (total, count) = addMagnitude(leftAligned, leftCount, rightAligned, rightCount)
           compose(left(0), total, count, scale)
-        else compareMagnitude(leftAligned, leftCount, rightAligned, rightCount) match
-          case 0 =>
-            Zero
+        else
+          compareMagnitude(leftAligned, leftCount, rightAligned, rightCount) match
+            case 0 =>
+              Zero
 
-          case order if order > 0 =>
-            val (difference, count) =
-              subtractMagnitude(leftAligned, leftCount, rightAligned, rightCount)
+            case order if order > 0 =>
+              val (difference, count) =
+                subtractMagnitude(leftAligned, leftCount, rightAligned, rightCount)
 
-            compose(left(0), difference, count, scale)
+              compose(left(0), difference, count, scale)
 
-          case _ =>
-            val (difference, count) =
-              subtractMagnitude(rightAligned, rightCount, leftAligned, leftCount)
+            case _ =>
+              val (difference, count) =
+                subtractMagnitude(rightAligned, rightCount, leftAligned, leftCount)
 
-            compose(right(0), difference, count, scale)
+              compose(right(0), difference, count, scale)
 
     def product(left: Decimal, right: Decimal): Decimal =
       if left(0) == 0 || right(0) == 0 then Zero else
         val leftMagnitude = magnitudeOf(left)
         val rightMagnitude = magnitudeOf(right)
 
-        val (result, count) = multiplyMagnitude
-          ( leftMagnitude, leftMagnitude.length, rightMagnitude, rightMagnitude.length )
+        val (result, count) =
+          multiplyMagnitude
+            ( leftMagnitude, leftMagnitude.length, rightMagnitude, rightMagnitude.length )
 
         compose(left(0)*right(0), result, count, left(1) + right(1))
 

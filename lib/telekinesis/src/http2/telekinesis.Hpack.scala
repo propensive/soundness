@@ -32,18 +32,19 @@
                                                                                                   */
 package telekinesis
 
+import java.nio.charset.StandardCharsets
+
+import scala.caps
 import scala.collection.mutable as scm
 
-import java.nio.charset.StandardCharsets
 import anticipation.*
-import denominative.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
 
 import Http2.Error.Reason
-import scala.caps
 
 // HPACK header-block compression and decompression (RFC 7541). A `Hpack` instance
 // owns one direction's dynamic table; a connection keeps one for decoding inbound

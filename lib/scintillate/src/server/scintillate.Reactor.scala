@@ -379,8 +379,8 @@ object Reactor:
         else if queued > highWater then halted = true
 
         val interest =
-          (if blocked then jnc.SelectionKey.OP_WRITE else 0)
-            | (if halted then 0 else jnc.SelectionKey.OP_READ)
+          (if blocked then jnc.SelectionKey.OP_WRITE else 0) |
+            (if halted then 0 else jnc.SelectionKey.OP_READ)
 
         key.interestOps(interest)
         if !blocked && closing then close()

@@ -173,7 +173,7 @@ object stagedInternal:
     tpe.dealias match
       case AppliedType(constructor, arguments) =>
         for
-          clazz <- classFor(constructor)
+          clazz  <- classFor(constructor)
           shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
             list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
         yield TypeShape(clazz, shapes)
@@ -360,8 +360,8 @@ object stagedInternal:
     tpe.classSymbol.exists: classSymbol =>
       classSymbol.flags.is(Flags.Case) &&
         !classSymbol.owner.isTerm &&
-        (tpe match { case AppliedType(_, _) => false case _ => true })
-        && classSymbol.primaryConstructor.paramSymss
+        (tpe match { case AppliedType(_, _) => false case _ => true }) &&
+        classSymbol.primaryConstructor.paramSymss
           . filterNot(_.exists(_.isTypeParam)).length == 1 &&
         !hasRenames(classSymbol)
 
@@ -543,15 +543,16 @@ object stagedInternal:
           case '[fieldType] =>
             if builtinDirect(fieldTypes(index)).isDefined then
               '{Json.Parsable.missing[fieldType]()(using $tactic)}
-            else resolve[fieldType](cache) match
-              case Some(instance0) =>
-                instance0.asInstanceOf[Inlinable { type Self = fieldType }].absent(tactic)
+            else
+              resolve[fieldType](cache) match
+                case Some(instance0) =>
+                  instance0.asInstanceOf[Inlinable { type Self = fieldType }].absent(tactic)
 
-              case None =>
-                ' {
-                    scala.compiletime.summonInline[fieldType is Json.Field]
-                    . absent()(using $tactic)
-                  }
+                case None =>
+                  ' {
+                      scala.compiletime.summonInline[fieldType is Json.Field]
+                      . absent()(using $tactic)
+                    }
 
       val fieldCode: List[(Expr[Any], Expr[Any])] = List.range(0, arity).map: index =>
         (Expr(0), fieldAbsent(index))
@@ -613,7 +614,9 @@ object stagedInternal:
             val slowRhs: Term =
               ' {
                   Json.Parsable.focusing($foci, ${Expr(fieldNames(index))}.tt)(${hot()})
-                }.asTerm.changeOwner(slowDefs(index))
+                }
+
+              . asTerm.changeOwner(slowDefs(index))
 
             val readRhs: Term =
               '{if $focused then ${call(slowDefs(index))} else ${hot()}}
@@ -731,7 +734,9 @@ object stagedInternal:
                       if !declared.absent then declared.asInstanceOf[fieldType]
                       else Json.Parsable.focusing($foci, $keyText)
                         ( ${fieldCode(index)(1).asExprOf[fieldType]} )
-                    }.asTerm )
+                    }
+
+                  . asTerm )
 
             If('{!${Ref(seens(index)).asExprOf[Boolean]}}.asTerm, resolveAbsent, unit)
 

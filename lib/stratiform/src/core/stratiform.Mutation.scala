@@ -577,7 +577,8 @@ object Mutation:
 
       val trailing =
         if removed.trailingBlankLines > previous.trailingBlankLines
-        then removed.trailingBlankLines else previous.trailingBlankLines
+        then removed.trailingBlankLines
+        else previous.trailingBlankLines
 
       val absorbed = previous.copy(trailingBlankLines = trailing)
 
@@ -585,7 +586,8 @@ object Mutation:
         ( blocks.readable.take(blockIdx - 1) ++ scala.IArray(absorbed) ++
           blocks.readable.drop(blockIdx + 1) )
     else if blocks.length == 1 && nested && removed.trailingBlankLines > 0
-    then Array(Tel.Block(Array.empty, Unset, Array.empty, removed.trailingBlankLines))
+    then
+      Array(Tel.Block(Array.empty, Unset, Array.empty, removed.trailingBlankLines))
     else
       Array.frozen(blocks.readable.drop(1))
 
@@ -874,7 +876,8 @@ object Mutation:
       Array.frozen(blocks.readable.updated(blockIdx, block.copy(compounds = compounds)))
 
     else if movingBlocks.exists(otherBlocks.contains) || !movingHomogeneous
-    then abort(Mutation.Error(Reason.PointerNotFound))
+    then
+      abort(Mutation.Error(Reason.PointerNotFound))
     else
       // Disjoint block sets: move the whole blocks of the `keyword`
       // group. Each seam created by the move gets at least one blank
@@ -895,7 +898,7 @@ object Mutation:
         b += 1
 
       val anchor = placement match
-        case Placement.Before => pruned.indexWhere { (idx, _) => otherBlocks.contains(idx) }
+        case Placement.Before => pruned.indexWhere: (idx, _) => otherBlocks.contains(idx)
         case Placement.After  => pruned.lastIndexWhere { (idx, _) => otherBlocks.contains(idx) } + 1
 
       val out = scala.collection.mutable.ArrayBuffer.empty[Tel.Block]

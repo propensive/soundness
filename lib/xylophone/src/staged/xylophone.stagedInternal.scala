@@ -181,9 +181,9 @@ object stagedInternal:
     tpe.dealias match
       case AppliedType(constructor, arguments) =>
         for
-          clazz <- classFor(constructor)
+          clazz  <- classFor(constructor)
           shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-            list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
+            list.flatMap: tail => shapeOf(argument).map(_ :: tail)
         yield TypeShape(clazz, shapes)
 
       case other =>
@@ -461,8 +461,8 @@ object stagedInternal:
     tpe.classSymbol.exists: classSymbol =>
       classSymbol.flags.is(Flags.Case) &&
         !classSymbol.owner.isTerm &&
-        (tpe match { case AppliedType(_, _) => false case _ => true })
-        && classSymbol.primaryConstructor.paramSymss
+        (tpe match { case AppliedType(_, _) => false case _ => true }) &&
+        classSymbol.primaryConstructor.paramSymss
           . filterNot(_.exists(_.isTypeParam)).length == 1 &&
         !hasAnnotations(classSymbol)
 
@@ -844,7 +844,9 @@ object stagedInternal:
                   ' {
                       Xml.Parsable.focusing($foci, ${keyText(index)})
                         ( ${instance.parse(reader)} )
-                    }.asTerm )
+                    }
+
+                  . asTerm )
 
             case Plan.Nested(_) =>
               val (symbol, _) = nesteds(index).get
@@ -869,7 +871,9 @@ object stagedInternal:
                       ' {
                           $builderRef.addOne
                             ( Xml.Parsable.focusing($foci, ${keyText(index)})($call) )
-                        }.asTerm
+                        }
+
+                      . asTerm
 
                 case _ =>
                   report.errorAndAbort("xylophone: unreachable gather shape")
@@ -890,13 +894,17 @@ object stagedInternal:
                     $bufferRef.asInstanceOf[scm.ListBuffer[Any]].addOne
                       ( Xml.Parsable.focusing($foci, ${keyText(index)}):
                           Xml.Parsable.parseElement($instanceRef, $reader) )
-                  }.asTerm
+                  }
+
+                . asTerm
 
               val read: Term =
                 ' {
                     Xml.Parsable.focusing($foci, ${keyText(index)})
                       ( $instanceRef.parse($reader) )
-                  }.asTerm
+                  }
+
+                . asTerm
 
               If
                 ( Ref(seam.repeats),
@@ -983,7 +991,9 @@ object stagedInternal:
 
                     if !declared.absent then declared.asInstanceOf[fieldType]
                     else Xml.Parsable.focusing($foci, ${keyText(index)})($onAbsent)
-                  }.asTerm )
+                  }
+
+                . asTerm )
 
           def whenUnseen(onAbsent: Expr[fieldType]): Term =
             If
@@ -1029,7 +1039,9 @@ object stagedInternal:
                               $bufferRef match
                                 case null   => proscenium.Nil
                                 case buffer => buffer.toList.to(proscenium.List) )
-                      }.asTerm )
+                      }
+
+                    . asTerm )
 
               If
                 ( Ref(seam.repeats),

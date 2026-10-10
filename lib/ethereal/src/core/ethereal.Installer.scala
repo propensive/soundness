@@ -34,11 +34,11 @@ package ethereal
 
 import ambience.*
 import anticipation.*
+import aperture.*
 import contingency.*
 import denominative.*
 import distillate.*
 import eucalyptus.*
-import aperture.*
 import exoskeleton.*
 import fulminate.*
 import galilei.*
@@ -55,12 +55,11 @@ import turbulence.*
 import vacuous.*
 import zeppelin.*
 
+import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.overwritePreexisting
-
-import filesystemBackends.javaBaseFilesystem
 import rudiments.sortingAlgorithms.timsort
 
 object Installer:

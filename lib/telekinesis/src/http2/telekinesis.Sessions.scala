@@ -144,10 +144,11 @@ private[telekinesis] object Sessions:
 
       // The body spring comes from a pure `Request`, so the seal only
       // discharges the field's capture-polymorphic declared type.
-      val request2 = Http.Request
-        ( request.method, request.version, request.host, request.target, headers,
-          // [field-fresh-param] body field's capture-polymorphic declared type
-          caps.unsafe.unsafeAssumePure(request.body) )
+      val request2 =
+        Http.Request
+          ( request.method, request.version, request.host, request.target, headers,
+            // [field-fresh-param] body field's capture-polymorphic declared type
+            caps.unsafe.unsafeAssumePure(request.body) )
 
       // Distinct throwing tactics per error type (a single shared tactic would
       // alias across `fetch`'s two using-parameters, tripping separation).

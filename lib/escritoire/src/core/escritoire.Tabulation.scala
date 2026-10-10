@@ -45,6 +45,7 @@ import rudiments.*
 import symbolism.*
 import tessellate.*
 import vacuous.*
+
 // Per-row decorations are a short `List` read by column position.
 import denominative.dysasymptotics.linearAccess
 

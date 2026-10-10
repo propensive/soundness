@@ -115,8 +115,9 @@ object Selection:
 
         if exclusion.trivial then selection
         else selection.copy(exclusions = selection.exclusions :+ exclusion)
-      else constraint(argument).lay(selection.copy(terms = selection.terms :+ term(argument))):
-        constraint => selection.copy(constraints = selection.constraints :+ constraint)
+      else
+        constraint(argument).lay(selection.copy(terms = selection.terms :+ term(argument))):
+          constraint => selection.copy(constraints = selection.constraints :+ constraint)
 
   private def term(argument: Text): Term =
     if identifier(argument) || hex(argument) then Term.Identifier(argument) else Term.Glob(argument)
@@ -218,8 +219,8 @@ case class Selection
 
         // A suite's id may hold a `-`, which makes it a glob rather than an identifier here.
         names.exists(glob.matches(_)) ||
-          chain.exists { link => link.key.lay(false)(glob.matches(_)) }
-          || glob.matches(path) ||
+          chain.exists { link => link.key.lay(false)(glob.matches(_)) } ||
+          glob.matches(path) ||
           glob.matches(monikerPath)
 
   // `strict`: whether a constraint on an axis absent from the coordinates fails (for an

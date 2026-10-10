@@ -55,10 +55,10 @@ import spectacular.*
 import telekinesis.*
 import urticose.*
 import vacuous.*
-import zephyrine.memoize
 import alphabets.base64Standard
 import cryptoPermits.permitDeprecatedCrypto
 import providers.javaBaseProvider
+import zephyrine.memoize
 
 // `true` exactly when the message type is the raw `Message`. A match type reduces
 // by subtyping — `Message` matches the first case, any other (e.g. `Ping over Json`)

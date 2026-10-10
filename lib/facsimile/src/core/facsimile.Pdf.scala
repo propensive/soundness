@@ -337,9 +337,10 @@ object Pdf:
           case _ =>
             Map()
 
-        def common(twoByte: Boolean, cidWidths: Map[Int, Double], default: Double) = Common
-          ( baseFont, standard, firstChar, widths, cidWidths, default, encoding, differences,
-            toUnicode, embedded, twoByte, descriptor )
+        def common(twoByte: Boolean, cidWidths: Map[Int, Double], default: Double) =
+          Common
+            ( baseFont, standard, firstChar, widths, cidWidths, default, encoding, differences,
+              toUnicode, embedded, twoByte, descriptor )
 
         subtype.s match
           case "Type1"    => Type1(common(false, Map(), defaultWidth))
