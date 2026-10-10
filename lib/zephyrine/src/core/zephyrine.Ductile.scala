@@ -32,9 +32,9 @@
                                                                                                   */
 package zephyrine
 
-import scala.caps
-
 import java.nio as jn, jn.charset as jnc
+
+import scala.caps
 
 import anticipation.*
 import contingency.*
@@ -271,7 +271,7 @@ object Ductile:
                 Duct.Progress(src - sourceOffset, dst - targetOffset)
 
           update def step(source: Region[Data])(range: Interval in source.type)
-            ( target: Slate[Text] )(space: Interval in target.type)
+            (target: Slate[Text])(space: Interval in target.type)
           :   Duct.Progress =
 
             val sourceInterval: Interval = range
@@ -284,7 +284,9 @@ object Ductile:
             val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
             // The exclusive cast is sound for the same reason as `Conduit.put`'s:
             // the target is the stage's single-owner output buffer.
-            val chars = unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]]).asInstanceOf[scala.Array[Char]^]
+            val chars =
+              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]])
+              . asInstanceOf[scala.Array[Char]^]
 
             if staging.position == 0 then
               // Fast path: with no carried bytes, decode straight from the source
@@ -364,7 +366,7 @@ object Ductile:
           override def quantum: Int = worst
 
           def step(source: Region[Text])(range: Interval in source.type)
-            ( target: Slate[Data] )(space: Interval in target.type)
+            (target: Slate[Data])(space: Interval in target.type)
           :   Duct.Progress =
 
             val sourceInterval: Interval = range

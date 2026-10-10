@@ -374,7 +374,7 @@ ultimatum's is the likelier one to rename.
 `GarbageCollection`, `GaugePalette`, `GenericHtmlAttribute`, `GivensPhase`,
 `GraphemeBreak`, `GrpcSessional`, `HalfWind`, `HaltTactic`, `HmacCipher`, `Html4Transitional`,
 `InitializationVector`, `IntercardinalWind`, `InterfaceAddress`, `IpAddress`, `Ipv4Subnet`,
-`Ipv6Subnet`, `IteratorHasAsScala`, `JarBuilder`, `JsigDiscipline`, `JsInvoke`,
+`Ipv6Subnet`, `IteratorHasAsScala`, `JsigDiscipline`, `JsInvoke`,
 `JuxtapositionPalette`, `JvmProfile`, `KillRequest`, `LanguageFeature`, `LayeredDagDiagram`,
 `LazyEnvironment`, `LengthPrefix`, `LinkEvent`, `LocalhostDevice`, `LongNameFormat`, `LruCache`,
 `LspSessional`, `ManifestSigning`, `MarkdownPalette`, `MediaType`, `MenuField`, `MethodId`,
@@ -398,7 +398,7 @@ ultimatum's is the likelier one to rename.
 `UrlPalette`, `UsedSets`, `UsesBlob`, `ValueToken`, `VentureTactic`, `VersionResponse`,
 `VersoPanel`, `VerticalAlignment`, `VirtualSupervisor`, `WarningFlag`, `WebserverErrorPage`,
 `WeekDate`, `WeekdayOrdinal`, `WideCharacterWidth`, `WireType`, `WritingBuilder`, `WsSessional`,
-`XeqConfiguration`, `XmlSchema`, `YamlPath`, `ZipBuilder`
+`XeqConfiguration`, `XmlSchema`, `YamlPath`
 
 ## Retained from the original inventory
 

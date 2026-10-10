@@ -98,12 +98,13 @@ private[facsimile] object TextExtractor:
         lastX = x + width
         lastY = y
 
-        runs += TextRun
-          ( decoded, font,
-            Quantity[Points[1]](effective*scale),
-            Quantity[Points[1]](x*scale),
-            Quantity[Points[1]](y*scale),
-            Quantity[Points[1]](width*scale) )
+        runs +=
+          TextRun
+            ( decoded, font,
+              Quantity[Points[1]](effective*scale),
+              Quantity[Points[1]](x*scale),
+              Quantity[Points[1]](y*scale),
+              Quantity[Points[1]](width*scale) )
 
       tm = Pdf.Matrix(1, 0, 0, 1, advance, 0).andThen(tm)
 

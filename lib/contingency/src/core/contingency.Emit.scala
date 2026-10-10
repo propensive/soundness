@@ -33,7 +33,6 @@
 package contingency
 
 import scala.caps
-
 import scala.language.experimental.pureFunctions
 
 import beneficence.*

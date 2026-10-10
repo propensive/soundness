@@ -33,21 +33,19 @@
 package xenophile
 
 import scala.caps
-
-
 import scala.collection.immutable as sci
 import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-import denominative.*
-import denominative.dysasymptotics.linearSize
 
 // The terminal materializer for the WIT ecosystem: turns a fully-applied `Foreign` invocation into
 // a real Wasm Component Model import call (`scala.scalajs.wit.witImportCall`, lowered by the
@@ -106,7 +104,8 @@ object WasmInvoke extends Materializer:
 
     // The payload type of an `option`, whichever way the dialect rendered it.
     def optionPayload(witType: Foreign.Type): Optional[Foreign.Type] = witType match
-      case Foreign.Type.Union(proscenium.List(inner, Foreign.Type.Named(none))) if none.s == "none" =>
+      case Foreign.Type.Union(proscenium.List(inner, Foreign.Type.Named(none)))
+        if none.s == "none" =>
         inner
 
       case Foreign.Type.Applied(constructor, proscenium.List(inner)) if constructor.s == "option" =>
@@ -142,20 +141,24 @@ object WasmInvoke extends Materializer:
     // `case elements: List[Foreign.Type]`: the opaque `List` erases to the same class, so a type
     // test could not tell it from `Unset`'s alternative.
     def parameterTuple(parameter: Foreign.Type): Optional[List[Foreign.Type]] = parameter match
-      case Foreign.Type.Applied(constructor, elements) if constructor.s == "tuple" => elements.stdlib
-      case _                                                                       => Unset
+      case Foreign.Type.Applied(constructor, elements) if constructor.s == "tuple" =>
+        elements.stdlib
+
+      case _ => Unset
 
     val listClass = Symbol.requiredClass("scala.collection.immutable.List")
 
-    // The opaque `proscenium.List` erases to `sci.List` and is representationally identical, but its
-    // type does not dealias to `sci.List` outside its defining module, so match its symbol too.
+    // The opaque `proscenium.List` erases to `sci.List` and is representationally identical, but
+    // its type does not dealias to `sci.List` outside its defining module, so match its symbol too.
     val opaqueListSymbol = TypeRepr.of[proscenium.List[Any]] match
       case AppliedType(list, _) => list.typeSymbol
       case tpe                  => tpe.typeSymbol
 
     def isList(scala: TypeRepr): Boolean = scala.dealias match
-      case AppliedType(list, List(_)) => list.typeSymbol == listClass || list.typeSymbol == opaqueListSymbol
-      case _                          => false
+      case AppliedType(list, List(_)) =>
+        list.typeSymbol == listClass || list.typeSymbol == opaqueListSymbol
+
+      case _ => false
 
     def handleDecode(name: Text, scala: TypeRepr): (TypeRepr, Expr[Any] -> Expr[Any]) =
       val facade = facadeOf(name)
@@ -224,6 +227,7 @@ object WasmInvoke extends Materializer:
 
           // The stdlib view provides a stepwise cursor for the imperative loop below.
           val pairs = elements.zip(fields).stdlib.iterator
+
           while pairs.hasNext do
             val (element, field) = pairs.next()
             val (repr, decode) = decodeFor(element, field)
@@ -246,6 +250,7 @@ object WasmInvoke extends Materializer:
             val decodedBuffer = List.newBuilder[Term]
 
             val indexed = derived.zipWithIndex.iterator
+
             while indexed.hasNext do
               val (derivation, index) = indexed.next()
               decodedBuffer +=
@@ -284,8 +289,9 @@ object WasmInvoke extends Materializer:
 
             val mapped = Select.overloaded(wrapped.asTerm, "map", List(elementType), List(mapper))
 
-            // `.toList` yields an `sci.List`; cast to the target type so an opaque `proscenium.List`
-            // result (representationally identical) is accepted by the checked `.asExprOf[result]`.
+            // `.toList` yields an `sci.List`; cast to the target type so an opaque
+            // `proscenium.List` result (representationally identical) is accepted by the checked
+            // `.asExprOf[result]`.
             val listTerm = Select.unique(mapped, "toList")
             TypeApply(Select.unique(listTerm, "asInstanceOf"), List(Inferred(scala))).asExprOf[Any]
 
@@ -295,33 +301,33 @@ object WasmInvoke extends Materializer:
           // A def, not a closure: the alternative is shared by two absence paths below, and a
           // tuple-resulted lambda here trips capture checking's freshness in the macro context.
           def opaque(): (TypeRepr, Expr[Any] -> Expr[Any]) = witType match
-              case Foreign.Type.Named(name) if isHandle(scala) =>
-                handleDecode(name, scala)
+            case Foreign.Type.Named(name) if isHandle(scala) =>
+              handleDecode(name, scala)
 
-              // A variant (or enum) result requested as a `Wasm.Case of topic`: the facade case
-              // object arrives, and its lower-kebab-case name is recovered at runtime.
-              // Payload-carrying cases lose their payload.
-              case Foreign.Type.Named(name) if isCase(scala) =>
-                val facade = facadeOf(name)
+            // A variant (or enum) result requested as a `Wasm.Case of topic`: the facade case
+            // object arrives, and its lower-kebab-case name is recovered at runtime.
+            // Payload-carrying cases lose their payload.
+            case Foreign.Type.Named(name) if isCase(scala) =>
+              val facade = facadeOf(name)
 
-                val decode: Expr[Any] -> Expr[Any] = call => scala.asType.absolve match
-                  case '[scala] =>
-                    val witCase = '{new Wasm.Case(Wasm.Case.caseName($call))}.asTerm
+              val decode: Expr[Any] -> Expr[Any] = call => scala.asType.absolve match
+                case '[scala] =>
+                  val witCase = '{new Wasm.Case(Wasm.Case.caseName($call))}.asTerm
 
-                    TypeApply(Select.unique(witCase, "asInstanceOf"), List(TypeTree.of[scala]))
-                    . asExprOf[Any]
+                  TypeApply(Select.unique(witCase, "asInstanceOf"), List(TypeTree.of[scala]))
+                  . asExprOf[Any]
 
-                (facade.typeRef, decode)
+              (facade.typeRef, decode)
 
-              // A genuinely void function (`block: func()`): nothing to check or decode.
-              case Foreign.Type.Named(name) if name.s == "unit" && scala =:= TypeRepr.of[Unit] =>
-                (TypeRepr.of[Unit], call => '{val _ = $call})
+            // A genuinely void function (`block: func()`): nothing to check or decode.
+            case Foreign.Type.Named(name) if name.s == "unit" && scala =:= TypeRepr.of[Unit] =>
+              (TypeRepr.of[Unit], call => '{val _ = $call})
 
-              case _ =>
-                if scala =:= TypeRepr.of[Unit]
-                then halt(m"xenophile: `invoke[Unit]` requires a WIT `result<…>` or void function")
-                else scala.asType.absolve match
-                  case '[scala] => deriveResult[scala]
+            case _ =>
+              if scala =:= TypeRepr.of[Unit]
+              then halt(m"xenophile: `invoke[Unit]` requires a WIT `result<…>` or void function")
+              else scala.asType.absolve match
+                case '[scala] => deriveResult[scala]
 
           optionPayload(witType) match
             case Unset => opaque()
@@ -378,7 +384,8 @@ object WasmInvoke extends Materializer:
       case Foreign.Type.Named(name) =>
         Apply(marker("witNamed"), List(Literal(ClassOfConstant(facadeOf(name).typeRef))))
 
-      case Foreign.Type.Union(proscenium.List(inner, Foreign.Type.Named(none))) if none.s == "none" =>
+      case Foreign.Type.Union(proscenium.List(inner, Foreign.Type.Named(none)))
+        if none.s == "none" =>
         Apply(marker("witOption"), List(descriptor(inner)))
 
       case Foreign.Type.Applied(constructor, arguments) =>

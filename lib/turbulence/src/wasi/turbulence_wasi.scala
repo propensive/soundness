@@ -32,9 +32,8 @@
                                                                                                   */
 package turbulence
 
-import java.nio.charset.StandardCharsets
-
 import java.io as ji
+import java.nio.charset.StandardCharsets
 
 import scala.annotation.nowarn
 
@@ -43,13 +42,14 @@ import hellenism.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
-import vacuous.*
 import soundness.{call, dispose}
+import vacuous.*
 import xenophile.*
 
 // The WIT definitions the navigation below is typechecked against, and which the `call`
 // materializer consults (at its downstream expansion site) for module ids and resource methods.
 type WasiCliApi = Interface in Wit at "/turbulence/cli.wit"
+
 package wasiApis:
   given wasiCliApi: WasiCliApi = Interface[Wit](cp"/turbulence/cli.wit")
 

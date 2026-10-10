@@ -32,11 +32,9 @@
                                                                                                   */
 package telekinesis
 
-import scala.collection.immutable.Seq
-import scala.collection.`+:`
-
 import scala.caps
-
+import scala.collection.`+:`
+import scala.collection.immutable.Seq
 import scala.quoted.*
 
 import anticipation.*
@@ -65,6 +63,7 @@ object internal:
       // `getOrElse` is inferred against the capture-decorated summon result and fails.
       val summoned = Expr.summon[Directive of ? >: value] match
         case Some(directive) => directive
+
         case None =>
           val typeName = Type.of[value].show
           halt(m"the type $typeName does not uniquely identify a particular HTTP header")
@@ -152,6 +151,7 @@ object internal:
             given loggable0: Http.Event is Loggable =
               // [quote-wall] staging-boundary seal of loggable evidence
               caps.unsafe.unsafeAssumePure($loggable)
+
             val host: Host = $submit.host
             val path = $submit.originForm
             val contentType = Http.Header(t"content-type", postable0.mediaType($payload).show)

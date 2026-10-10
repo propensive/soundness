@@ -36,8 +36,8 @@ import scala.caps
 
 import anticipation.{Data as Bytes, *}
 import prepositional.*
-import vacuous.*
 import rudiments.*
+import vacuous.*
 
 // A minimal growable byte buffer, classified as an exclusive, stateful capability:
 // the separation checker rejects `scala.collection.mutable.ArrayBuilder` mutation
@@ -48,7 +48,6 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // Untracked: reached only through this (exclusive) buffer, and `data` copies out.
   private var storage: scala.Array[Byte]^ = new scala.Array[Byte](initial.max(8))
   private var size0: Int = 0
-
 
   def size: Int = size0
 

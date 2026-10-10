@@ -33,6 +33,8 @@
 package digression
 
 import anticipation.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import fulminate.*
 import hypotenuse.*
 import prepositional.*
@@ -40,8 +42,6 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
-import denominative.*
-import denominative.dysasymptotics.linearSize
 
 object StackTrace:
   case class Method(className: Text, method: Text):
@@ -136,7 +136,7 @@ object StackTrace:
         val method = frame.displayMethod
         val methodPad = " ".repeat(methodWidth - method.s.length).nn.tt
         val line = frame.line.let(_.show).or("?".tt)
-        val code = frame.source.let(_.code).lay("".tt)(code => s"\n       $code".tt)
+        val code = frame.source.let(_.code).lay("".tt): code => s"\n       $code".tt
 
         // Each level of inlining the SMAP recorded, innermost first: extra detail about the same
         // frame, so it is indented beneath it like a quoted line of source. When the position
@@ -414,8 +414,10 @@ object StackTrace:
 
     val cause = Option(exception.getCause)
     val fullClassName: Text = rewrite(exception.getClass.nn.getName.nn)
+
     val fullClass: List[Text] =
       (fullClassName.s.split("\\.").nn.iterator.map { part => Text(part.nn) }).to(List)
+
     val className: Text = List.last(fullClass)
 
     val component: Text =

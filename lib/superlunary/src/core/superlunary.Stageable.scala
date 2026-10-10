@@ -65,11 +65,13 @@ object Stageable:
       val roots = Array.from(value.iterator.map { obj => Json.unseal(obj.asInstanceOf[Json]) })
       Json.ast(Json.Ast.arr(roots.asInstanceOf[Array[Any]])).encode
 
-    inline def embed[entity](value: entity): Json = provide[entity is Encodable in Json](value.in[Json])
+    inline def embed[entity](value: entity): Json =
+      provide[entity is Encodable in Json](value.in[Json])
 
     inline def extract[entity](json: Json): entity = provide[Tactic[Rig.Error]]:
       given jsonRemote: Rig.Error mitigates Json.Error =
         error => Rig.Error(Rig.Error.Reason.Unknown)
+
       provide[entity is Decodable in Json](json.as[entity])
 
   given pojo: Stageable:
@@ -79,7 +81,8 @@ object Stageable:
     inline def deserialize(value: scala.Array[Pojo] | Null): scala.Array[Object] =
       value.asInstanceOf[scala.Array[Object]]
 
-    inline def serialize(value: scala.Array[Object]): scala.Array[Pojo] = value.asInstanceOf[scala.Array[Pojo]]
+    inline def serialize(value: scala.Array[Object]): scala.Array[Pojo] =
+      value.asInstanceOf[scala.Array[Pojo]]
 
     inline def embed[entity](value: entity): Pojo =
       infer[entity is Encodable in Pojo].encoded(value)

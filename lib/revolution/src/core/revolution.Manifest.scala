@@ -32,40 +32,38 @@
                                                                                                   */
 package revolution
 
-import contingency.*
-import gossamer.*
-
 import java.io as ji
 import java.util.jar as juj
 
 import anticipation.*
+import contingency.*
 import denominative.*
+import gossamer.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
 import turbulence.*
-import zephyrine.Credit
 import vacuous.*
+import zephyrine.Credit
 
 object Manifest:
   protected def parse[streamable: Streamable by Data over Credit](source: streamable): Manifest =
     val java = juj.Manifest(source.source[Data].inputStream)
 
     Manifest:
-      (java.getMainAttributes.nn: _root_.java.util.Map[Object, Object]).to[List].map: (key, value) =>
-        (key.toString.tt, value.toString.tt)
-
+      (java.getMainAttributes.nn: _root_.java.util.Map[Object, Object]).to[List]
+      . map: (key, value) => (key.toString.tt, value.toString.tt)
       . to[Map]
 
   given streamable: Manifest is Streamable by Data over Credit = manifest =>
     zephyrine.Stream(manifest.serialize)
+
   given aggregable: Manifest is Aggregable by Data = parse(_)
 
   def apply(entries: Manifest.Entry*): Manifest = Manifest:
     Map.from:
-      entries.map: entry =>
-        (entry.key, entry.value)
+      entries.map: entry => (entry.key, entry.value)
 
   given addable: Manifest is Addable by Manifest.Entry to Manifest = Addable: (manifest, entry) =>
     Manifest(manifest.entries.define(entry.key, entry.value))
@@ -98,8 +96,7 @@ case class Manifest(entries: Map[Text, Text]):
   def serialize: Data =
     val manifest = juj.Manifest()
 
-    entries.each: (key, value) =>
-      manifest.getMainAttributes.nn.putValue(key.s, value.s)
+    entries.each: (key, value) => manifest.getMainAttributes.nn.putValue(key.s, value.s)
 
     // A genuine `OutputStream` sink, not a buffer: `java.util.jar.Manifest.write` writes INTO
     // the stream it is given, so `Scribe` cannot stand in for it. One of the two places where

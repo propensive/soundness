@@ -54,7 +54,7 @@ object Columnar:
   :   Metrics =
 
     var metrics = Metrics(0, 0)
-    lines.each { line => metrics = metrics.max(Flow.metrics(line)) }
+    lines.each: line => metrics = metrics.max(Flow.metrics(line))
     metrics
 
 trait Columnar:

@@ -32,12 +32,11 @@
                                                                                                   */
 package charisma
 
-
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import hypotenuse.*
-import denominative.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

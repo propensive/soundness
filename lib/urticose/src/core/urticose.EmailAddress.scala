@@ -49,7 +49,7 @@ import EmailAddress.Error.Reason.*
 
 object EmailAddress:
   given decodable: (tactic: Tactic[EmailAddress.Error])
-  =>  ((EmailAddress is Decodable in Text)^{tactic}) =
+  =>  ( (EmailAddress is Decodable in Text)^{tactic} ) =
     EmailAddress.parse(_)
 
   given encodable: EmailAddress is Encodable in Text = _.text
@@ -151,7 +151,9 @@ object EmailAddress:
         case InitialPeriod     => m"the local part starts with a period, which is not allowed"
         case UnclosedIpAddress => m"the domain begins with ${'['} but does not end with ${']'}"
         case UnescapedQuote    => m"the local part contains a quote character which is not escaped"
-        case InvalidChar(char) => m"the local part contains the character $char which is not allowed"
+
+        case InvalidChar(char) =>
+          m"the local part contains the character $char which is not allowed"
 
         case InvalidDomain(error) =>
           error match

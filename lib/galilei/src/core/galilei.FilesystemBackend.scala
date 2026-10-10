@@ -55,9 +55,13 @@ object FilesystemBackend:
     case Readable, Writable, Executable
 
 trait FilesystemBackend extends Planar:
-  // The entry's type, size and timestamps, in one read. (`created` is `Unset` on filesystems
-  // that do not record creation times.)
+  // The entry's type, size, timestamps and Unix inode fields, in one read. (`created` is
+  // `Unset` on filesystems that do not record creation times; the inode fields where the
+  // platform has none.)
   def stat(path: Path on Plane, dereference: Boolean)(using Tactic[Io.Error]): Stat
+
+  // The text a symbolic link points at, exactly as stored: relative links stay relative.
+  def linkTarget(path: Path on Plane)(using Tactic[Io.Error]): Text
 
   def exists(path: Path on Plane, dereference: Boolean): Boolean
 

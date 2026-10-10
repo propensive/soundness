@@ -32,10 +32,10 @@
                                                                                                   */
 package obligatory
 
+import java.util.concurrent as juc
+
 import scala.annotation.*
 import scala.quoted.*
-
-import java.util.concurrent as juc
 
 import anticipation.*
 import contingency.*
@@ -55,7 +55,6 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
-
 import httpBackends.javaNetHttp
 
 object JsonRpc:
@@ -75,7 +74,9 @@ object JsonRpc:
 
   // The dispatcher closes over the interface alone, so it may be called from a task when the
   // interface is pure or shared.
-  inline def serve[interface](interface: interface): Json ->{scala.caps.any.only[anticipation.Durable]} Optional[Json] =
+  inline def serve[interface](interface: interface)
+  :   Json ->{scala.caps.any.only[anticipation.Durable]} Optional[Json] =
+
     ${obligatory.internal.dispatcher[interface]('interface)}
 
   // The JSON-RPC method names an interface declares (its `@rpc` members). Used to route a
@@ -93,9 +94,10 @@ object JsonRpc:
   // specification requires, when the request was unparseable and its id unknowable.
   def failure(code: Int, message: Text, id: Optional[Json] = Unset): Json =
     Map
-     ( t"jsonrpc" -> t"2.0".in[Json],
-       t"error"   -> Failure(code, message).in[Json],
-       t"id"      -> id.or(Json.ast(Json.Ast(Json.JsonNull))) )
+      ( t"jsonrpc" -> t"2.0".in[Json],
+        t"error"   -> Failure(code, message).in[Json],
+        t"id"      -> id.or(Json.ast(Json.Ast(Json.JsonNull))) )
+
     . in[Json]
 
   def notification(target: JsonRpc, method: Text, payload: Json): Promise[Unit] =
@@ -150,8 +152,7 @@ object JsonRpc:
     val failure: Optional[Failure] = try json.error.as[Failure] catch case _: Exception => Unset
     val result: Optional[Json] = try json.result catch case _: Exception => Unset
 
-    id.let: id =>
-      failure.lay(result.let(receive(id, _)))(receiveFailure(id, _))
+    id.let: id => failure.lay(result.let(receive(id, _)))(receiveFailure(id, _))
 
 
   def request(target: HttpUrl, method: Text, payload: Json)(using Monitor, Probate, Online)
@@ -217,10 +218,10 @@ object JsonRpc:
   // over the wire, so a caller can map the failure onto its own protocol's vocabulary — an LSP
   // client, for instance, recovers an `Lsp.Error.Reason` from the code.
   case class Error
-     ( reason: JsonRpc.Error.Reason,
-       code:   Optional[Int]  = Unset,
-       detail: Optional[Text] = Unset )
-     ( using Diagnostics )
+    ( reason: JsonRpc.Error.Reason,
+      code:   Optional[Int]  = Unset,
+      detail: Optional[Text] = Unset )
+    ( using Diagnostics )
   extends fulminate.Error(721, reason.number)(m"the JSON-RPC operation failed because $reason")
 
 trait JsonRpc extends Original:
@@ -246,5 +247,4 @@ trait JsonRpc extends Original:
   def outgoing: Chain[Json] = Chain.from(channel.stream.records)
 
   def stream: Chain[Sse] =
-    Chain.from(channel.stream.records).map: json =>
-      Sse(data = List(json.encode: Text))
+    Chain.from(channel.stream.records).map: json => Sse(data = List(json.encode: Text))

@@ -47,7 +47,7 @@ object Markup:
   private final val TextSep  = '\uE003'
   private final val AttrSep  = '\u001F'
 
-  def marked(text: Text): Boolean = text.s.exists { char => char >= Start && char <= TextSep }
+  def marked(text: Text): Boolean = text.s.exists: char => char >= Start && char <= TextSep
 
   private[delicious] def decode(text: Text): Text =
     if !text.contains('%') then text else
@@ -79,7 +79,9 @@ object Markup:
     kind.s match
       case "type" =>
         val marked: List[(Text, Text)] = attrs.filter(_(0) == t"p")
-        val decoded: List[Optional[Placeholder]] = marked.map { (_, value) => Placeholder.decode(value) }
+
+        val decoded: List[Optional[Placeholder]] =
+          marked.map: (_, value) => Placeholder.decode(value)
 
         val placeholders: List[Placeholder] =
           decoded.sweep { case placeholder: Placeholder => placeholder }
@@ -118,14 +120,15 @@ object Markup:
         val kindEnd = input.indexOf(AttrsSep, index + 1)
         val attrsEnd = if kindEnd < 0 then -1 else input.indexOf(TextSep, kindEnd + 1)
 
-        val headerOk = kindEnd > 0 && attrsEnd > 0
-          && !input.substring(index + 1, attrsEnd).nn.exists { char => char == Start || char == End }
+        val headerOk = kindEnd > 0 && attrsEnd > 0 &&
+          !input.substring(index + 1, attrsEnd).nn.exists: char => char == Start || char == End
 
         if !headerOk then index += 1 else
           stack.stdlib.head.flush()
 
           val attrs = input.substring(kindEnd + 1, attrsEnd).nn match
             case ""         => Nil
+
             case attributes =>
               attributes.tt.cut(AttrSep).map: keyValue =>
                 keyValue.cut(t"=", 2) match
@@ -156,7 +159,8 @@ object Markup:
 
         index += 1
 
-      else if char == AttrsSep || char == TextSep then index += 1
+      else if char == AttrsSep || char == TextSep then
+        index += 1
 
       else
         stack.stdlib.head.text.append(char)
@@ -186,10 +190,10 @@ enum Markup:
   case Textual(text: Text)
 
   case Typed
-        (tasty:        Optional[Text],
-         placeholders: List[Placeholder],
-         rendition:    Rendition,
-         children:     List[Markup])
+    ( tasty:        Optional[Text],
+     placeholders: List[Placeholder],
+     rendition:    Rendition,
+     children:     List[Markup] )
 
   case Symbolic(name: Text, full: Text, rendition: Rendition, children: List[Markup])
   case Named(isType: Boolean, rendition: Rendition, children: List[Markup])

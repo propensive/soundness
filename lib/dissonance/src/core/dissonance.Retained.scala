@@ -34,7 +34,6 @@ package dissonance
 
 import scala.compiletime.*
 
-
 import vacuous.*
 
 // A phantom marker recording a *proof of retention* in a value's type: producers which populate

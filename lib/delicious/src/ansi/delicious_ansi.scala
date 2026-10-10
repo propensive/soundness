@@ -32,15 +32,13 @@
                                                                                                   */
 package delicious
 
-import rudiments.*
-
 import anticipation.*
 import escapade.*
 import gossamer.*
 import harlequin.*
+import rudiments.*
 import stenography.*
 import vacuous.*
-
 import syntaxHighlighting.unnumberedTeletypeable
 
 extension (message: SemanticMessage)

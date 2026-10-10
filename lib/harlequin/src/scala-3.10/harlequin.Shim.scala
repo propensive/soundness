@@ -39,5 +39,7 @@ import dotty.tools.dotc.interactive
 object Shim:
   // 3.10 replaced the `Option[LogicalPackage]` parameter with a `CachedLogicalPackage`, and gave
   // it no default; `none` is the empty case, matching 3.9's behaviour.
-  inline def interactiveDriver(settings: scala.collection.immutable.List[String]): interactive.InteractiveDriver =
+  inline def interactiveDriver(settings: scala.collection.immutable.List[String])
+  :   interactive.InteractiveDriver =
+
     interactive.InteractiveDriver(settings, interactive.CachedLogicalPackage.none)

@@ -63,8 +63,7 @@ object Lexicon:
 
     terms.to[List] match
       case (key, value) :: entries =>
-        Node(key, value).tap: tree =>
-          entries.each(tree(_) = _)
+        Node(key, value).tap: tree => entries.each(tree(_) = _)
 
       case _ => apply()
 

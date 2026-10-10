@@ -32,6 +32,8 @@
                                                                                                   */
 package exoskeleton
 
+import java.nio.file as jnf
+
 import scala.caps
 
 import ambience.*
@@ -56,11 +58,10 @@ import superlunary.*
 import symbolism.*
 import vacuous.*
 
-import filesystemOptions.deleteOnlyEmpty
 import logging.silentLogging
 import probates.cancelProbate
 import systems.javaBaseSystem
-import threading.platformThreading
+import threads.platformThreads
 import workingDirectories.javaBaseWorkingDirectory
 
 import filesystemBackends.javaBaseFilesystem
@@ -81,9 +82,9 @@ object Enclave:
   // A `Tool` is a *capability*: it references a live installed daemon process whose lifetime
   // is the `sandbox` block that spawns it (killed, and its files deleted, after the block).
   // A shared capability: the built tool is a descriptor (its path and the daemon's pid) that
-  // every tmux session of a suite drives at once — captured by each session's action and passed
-  // to the loan that runs it.
-  case class Tool(path: Path on Linux, pid: Pid) extends anticipation.Durable:
+  // every pane of a suite drives at once — captured by each pane's action and passed to the loan
+  // that runs it. `home` is the scratch home its daemon and its panes' shells run under.
+  case class Tool(path: Path on Linux, pid: Pid, home: Path on Linux) extends anticipation.Durable:
     def command: Text = path.name
 
     def completions(using Monitor, Environment)[result](block: => Unit): Optional[Text] =
@@ -94,6 +95,23 @@ object Enclave:
 
       block
       safely(promise.await())
+
+  // The variables which locate a user's configuration — their home, their XDG directories, and
+  // bash-completion's own — all directed into `home`. A tool installed under these, and the shells
+  // its tests start under them, read and write nothing of the real user's configuration.
+  def scratch(home: Path on Linux): Map[Text, Text] =
+    Map
+      ( t"HOME"                     -> home.encode,
+        t"XDG_CONFIG_HOME"          -> t"${home.encode}/.config",
+        t"XDG_DATA_HOME"            -> t"${home.encode}/.local/share",
+        t"BASH_COMPLETION_USER_DIR" -> t"${home.encode}/.local/share/bash-completion" )
+
+  // `base`, with the variables `scratch` directs into `home`.
+  def environment(base: Environment, home: Path on Linux): Environment = new Environment:
+    private val overrides = scratch(home)
+
+    def variable(name: Text): Optional[Text] = overrides.at(name).or(base.variable(name))
+    override def entries: Optional[Map[Text, Text]] = base.entries.let(_ + overrides)
 
   // The published `xek` builder, which also signs, resolved from `$XEK`, else `dist/xek` under
   // the working directory, where `make xek-fetch` puts the one pinned in `etc/xek.tsv`.
@@ -147,26 +165,27 @@ object Enclave:
               Tactic[Path.Error] )
     :   result =
 
-      val completionScripts = sh"$path '{admin}' install".exec[Text]()
+      // The daemon, and the shells the panes start, run under a scratch home rather than the
+      // user's. The tool is not `install`ed: installation writes completion scripts into the
+      // configuration of whatever home the daemon sees — and appends to a PowerShell profile —
+      // so the panes write the scripts they need into the scratch home themselves.
+      val home: Path on Linux =
+        jnf.Files.createTempDirectory("exoskeleton-home").nn.toString.tt.as[Path on Linux]
 
-      // `finally`, not `also`: `install` has already started a daemon by this point, so every
-      // exit from here — including an abort before `block` is ever reached — must kill it. An
-      // abandoned daemon holds a JVM for the rest of the session, and enough of them starve the
-      // machine of the processes later suites need to fork.
+      given Environment = Enclave.environment(summon[Environment], home)
+
+      // `finally`, not `also`: asking for the daemon's pid starts it, so every exit from here
+      // must kill it. An abandoned daemon holds a JVM for the rest of the session, and enough of
+      // them starve the machine of the processes later suites need to fork.
       try
         val reported = sh"$path '{admin}' pid".exec[Text]().trim
         if reported == t"" then abort(Enclave.Error(path))
-        block(using Tool(path, Pid(reported.as[Int])))
+        block(using Tool(path, Pid(reported.as[Int]), home))
 
       finally
         safely(sh"$path '{admin}' kill".exec[Exit]())
-
-        // Parsed under `safely`, like the deletion: an `install` that printed nothing (as when the
-        // launcher and daemon disagree on the protocol) must not raise here, over the error that
-        // is already propagating.
-        completionScripts.trim.lines.each: line =>
-          safely(line.as[Path on Linux]).let: (item: Path on Linux) =>
-            safely(item.delete())
+        import filesystemOptions.deleteRecursively
+        safely(home.delete())
 
 
 // `releaseKey`, `recoveryKey` and `appId` are baked into the executable's record, so that its
@@ -179,7 +198,7 @@ case class Enclave
     recoveryKey: Optional[Path on Linux] = Unset,
     appId:       Optional[Text]          = Unset )
   ( using Classloader, Environment )
-extends Rig:
+extends Rig uses parasite.threads:
   type Result[output] = Enclave.Launcher
   type Form = Text
   type Target = Path on Linux

@@ -33,7 +33,6 @@
 package stratiform
 
 import scala.caps
-
 import scala.compiletime.*
 
 import anticipation.*

@@ -33,7 +33,6 @@
 package monotonous
 
 import scala.caps
-
 import scala.collection.*
 
 import anticipation.*

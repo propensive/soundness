@@ -53,5 +53,7 @@ private[hallucination] def pureBytes(size: Int): scala.Array[Byte] =
   java.util.Arrays.copyOf(new scala.Array[Byte](0), size).nn
 
 // As `pureBytes`: a pure-typed copy of an int-array range via the Java API.
-private[hallucination] def pureCopyRange(source: scala.Array[Int], from: Int, until: Int): scala.Array[Int] =
+private[hallucination] def pureCopyRange(source: scala.Array[Int], from: Int, until: Int)
+:   scala.Array[Int] =
+
   java.util.Arrays.copyOfRange(source, from, until).nn

@@ -34,7 +34,10 @@ package soundness
 
 export
   acyclicity
-  . { Bidirectional, Dag, Digraph, Dot, explore, Hasse, Invertible, Nodal,
-      PartiallyOrdered, Poset, Reachable, Topological, Topology, nodes, successors, edges,
-      sources, sinks, predecessors, cycle, acyclic, digraph, reachable, closure, invert,
-      linearized, reduction, traversal }
+  . { Bidirectional, Dag, Digraph, Dot, explore, Hasse, Invertible, Layering, Nodal,
+      PartiallyOrdered, Poset, Ranking, Reachable, Topological, Topology, nodes, successors,
+      edges, sources, sinks, predecessors, cycle, acyclic, digraph, reachable, closure, invert,
+      linearized, reduction, traversal, layered }
+
+package rankings:
+  export acyclicity.rankings.{longestPathRanking, balancedRanking}

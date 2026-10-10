@@ -33,7 +33,6 @@
 package ambience
 
 import scala.caps
-
 import scala.language.dynamics
 
 import anticipation.*
@@ -61,8 +60,7 @@ object Variable extends Protovariable:
   :   Variable[name, List[path]] =
 
     // [quote-wall]
-    caps.unsafe.unsafeAssumePure:
-      _.cut(system(t"path.separator").or(t":")).map(instantiable(_))
+    caps.unsafe.unsafeAssumePure(_.cut(system(t"path.separator").or(t":")).map(instantiable(_)))
 
   given path: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^, system: System )
@@ -173,8 +171,9 @@ object Variable extends Protovariable:
     pathVariable(instantiable)
 
   given columns: (decodable: (Int is Decodable in Text)^)
-  =>  ((Variable["columns", Int])^{decodable}) =
+  =>  ( (Variable["columns", Int])^{decodable} ) =
     _.as[Int]
+
   given lang: Variable["lang", Text] = identity(_)
   given display: Variable["display", Text] = identity(_)
   given term: Variable["term", Text] = identity(_)

@@ -83,7 +83,9 @@ private[hallucination] object WebpEncoder:
     if (frame.length & 1) == 1 then out.write(0)
     Array.unsafeFrozen(out.toByteArray.nn)
 
-  private def encodeFrame(pixels: scala.Array[Byte], width: Int, height: Int, alpha: Boolean): Data =
+  private def encodeFrame(pixels: scala.Array[Byte], width: Int, height: Int, alpha: Boolean)
+  :   Data =
+
     val writer = WebpBitWriter()
 
     // Header: signature, dimensions, alpha flag, version.
@@ -221,7 +223,8 @@ private[hallucination] object WebpEncoder:
     if run <= 4 then writable(freq1)(256 + run - 1) += 1
     else writable(freq1)(256 + lengthToSymbol(run)(0)) += 1
 
-  private def writeRun(writer: WebpBitWriter^, run: Int, codes1: scala.Array[Int], lengths1: scala.Array[Int])
+  private def writeRun
+    ( writer: WebpBitWriter^, run: Int, codes1: scala.Array[Int], lengths1: scala.Array[Int] )
   :   Unit =
 
     if run <= 4 then

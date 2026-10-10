@@ -49,7 +49,7 @@ object Uuid extends Extractor[Text, Uuid]:
   // Decoding a `Uuid` from `Text`, kept in `Uuid`'s companion for the same reason as
   // `Fqcn.decodable`: distillate need not depend on inimitable.
   given decodable: (tactic: Tactic[Uuid.Error]^)
-  =>  ((Uuid is Decodable in Text)^{tactic, caps.any}) =
+  =>  ( (Uuid is Decodable in Text)^{tactic, caps.any} ) =
     Uuid.parse(_)
 
   // In `Uuid`'s own companion rather than `Showable`'s, so that `spectacular` need not depend on

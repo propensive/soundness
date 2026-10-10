@@ -32,19 +32,18 @@
                                                                                                   */
 package xenophile
 
-
 import scala.collection.mutable as scm
 import scala.jdk.CollectionConverters.*
 
 import anticipation.*
+import denominative.*
+import denominative.dysasymptotics.linearSize
 import gossamer.*
 import kotlin.metadata.*
 import kotlin.metadata.jvm.*
 import rudiments.*
-import vacuous.*
-import denominative.*
 import symbolism.*
-import denominative.dysasymptotics.linearSize
+import vacuous.*
 
 // The Kotlin grammar: self-resolving, per foreign type name, from the `@Metadata` annotation of
 // the identically-named class on the compile classpath (which the macro classloader sees),
@@ -406,8 +405,7 @@ object KotlinDialect extends Dialect:
         val arguments = tpe.getArguments.nn.asScala.to(List).flatMap: projection =>
           Optional(projection.getType).let { tpe => List(foreignType(tpe)) }.or(Nil)
 
-        if arguments.nil then Foreign.Type.Named(name)
-        else Foreign.Type.Applied(name, arguments)
+        if arguments.nil then Foreign.Type.Named(name) else Foreign.Type.Applied(name, arguments)
 
       case classifier: KmClassifier.TypeAlias =>
         Foreign.Type.Named(classifier.getName.nn.replace("/", ".").nn.tt)

@@ -37,8 +37,8 @@ import rudiments.at
 import vacuous.*
 
 // HTML5 named character references, taken from honeycomb's tables (the legacy HTML 4 set and
-// the HTML 5 additions, as the `whatwg` DOM's `entities` holds them). Only entries with a trailing semicolon
-// are kept, since CommonMark requires the `;` terminator for named entities to be valid.
+// the HTML 5 additions, as the `whatwg` DOM's `entities` holds them). Only entries with a trailing
+// semicolon are kept, since CommonMark requires the `;` terminator for named entities to be valid.
 private[punctuation] object HtmlEntities:
   private lazy val table: Map[String, String] =
     val builder = scala.collection.immutable.Map.newBuilder[String, String]

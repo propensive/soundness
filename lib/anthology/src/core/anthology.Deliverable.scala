@@ -53,7 +53,9 @@ enum Deliverable:
   // names the format under production, for diagnosis when a toolchain is miswired.
   def sources(target: Format): (Map[Text, Text], LocalClasspath) raises Link.Error = this match
     case Sources(sources, classpath) => (sources, classpath)
-    case _ => abort(Link.Error(Link.Error.Reason.UnexpectedInput(target.id)))
+
+    case _ =>
+      abort(Link.Error(Link.Error.Reason.UnexpectedInput(target.id)))
 
   def emission(target: Format): (Path on Linux, LocalClasspath) raises Link.Error = this match
     case Emission(out, classpath) => (out, classpath)

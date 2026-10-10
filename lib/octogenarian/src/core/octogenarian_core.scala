@@ -48,7 +48,7 @@ package gitCommands:
   given searchpathGitCommand: ( WorkingDirectory, Environment, Git.Event is Loggable,
                                 Tactic[Name.Error], Tactic[Path.Error], Tactic[Io.Error],
                                 Tactic[Exec.Error] )
-  =>  (((Path on Linux) is Instantiable across Paths from Text)^)
+  =>  ( ((Path on Linux) is Instantiable across Paths from Text)^ )
   =>  Git.Command =
 
     val path: Path on Linux = sh"which git".exec[Path on Linux]()
@@ -88,7 +88,7 @@ extension (noteRef: NoteRef)
             gitErr:  Tactic[Git.Error],
             refErr:  Tactic[Git.RefError],
             exec:    Tactic[Exec.Error] )
-  ( using (Git.Event is Loggable)^ )
+  (using (Git.Event is Loggable)^)
   :   value =
 
     repo.notes.show(noteRef.target, noteRef.namespace)

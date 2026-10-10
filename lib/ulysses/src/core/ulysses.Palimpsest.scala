@@ -128,7 +128,9 @@ case class Palimpsest(data: Data, length: Int):
                 body(offset + j) = (body(offset + j) ^ hash.readable(j)).toByte
                 j += 1
 
-            def recur(body: scala.Array[Byte]^, item: Int, matched: List[Data]): Optional[List[Data]] =
+            def recur(body: scala.Array[Byte]^, item: Int, matched: List[Data])
+            :   Optional[List[Data]] =
+
               if item == n then
                 var allZero = true
                 var k       = 0
@@ -155,8 +157,7 @@ case class Palimpsest(data: Data, length: Int):
                   xor_(body, hash, o)
                   val sub = recur(body, item + 1, hash :: matched)
 
-                  if sub.absent then xor_(body, hash, o)
-                  else found = sub
+                  if sub.absent then xor_(body, hash, o) else found = sub
 
                 found
 

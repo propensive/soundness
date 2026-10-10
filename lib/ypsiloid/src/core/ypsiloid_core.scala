@@ -135,7 +135,7 @@ private[ypsiloid] def renderAst(yaml: Yaml.Ast)(using formatting: Yaml.Formattin
     // Emit a scalar (or an empty collection) with no surrounding newlines.
     def scalar(ast: Yaml.Ast): Unit = ast.asMatchable match
       case bcd: scala.Array[Double] @unchecked => producer.put(Bcd.adopt(bcd).text.tt)
-      case n: Long                       => producer.put(n.toString.tt)
+      case n: Long                             => producer.put(n.toString.tt)
 
       case d: Double =>
         if d.isNaN then producer.put(".nan")

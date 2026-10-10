@@ -70,10 +70,10 @@ object Setting:
 case class Setting(name: Text, flag: Flag, variable: Optional[Text]) extends Topical:
   def apply()
     ( using cli:          Cli,
-      interpreter:  Interpreter,
-      configurator: Configurator^,
-      decodable:    (Topic is Decodable in Text)^,
-      suggestions:  (? <: Topic) is Discoverable = Discoverable.noSuggestions )
+            interpreter:  Interpreter,
+            configurator: Configurator^,
+            decodable:    (Topic is Decodable in Text)^,
+            suggestions:  (? <: Topic) is Discoverable = Discoverable.noSuggestions )
   :   Optional[Topic] =
 
     given textOperands: (Text is Discoverable) = Discoverable.noSuggestions[Text]

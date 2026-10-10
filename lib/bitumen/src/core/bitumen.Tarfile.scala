@@ -360,7 +360,7 @@ object Tarfile:
   private def stripTrailingSlash(text: Text): Text =
     if text.ends(t"/") then text.skip(1, Rtl) else text
 
-  private def decodePath(text: Text): Tar.Ref raises Tar.Error =
+  private[bitumen] def decodePath(text: Text): Tar.Ref raises Tar.Error =
     import errorDiagnostics.emptyDiagnostics
 
     mitigate:

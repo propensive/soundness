@@ -135,7 +135,10 @@ The three graph diagrams answer different questions. `DagDiagram` is dense: ever
 in a grid of connecting tiles, which is what a small graph with complicated edges needs.
 `LaneDagDiagram` puts each node on a vertical lane, as version-control history is drawn, which
 suits a long graph with few concurrent branches. `LayeredDagDiagram` arranges nodes into levels
-by depth, which suits showing what depends on what rather than what happened in what order.
+by depth, ordered within each level so that as few connecting lines cross as possible, which
+suits showing what depends on what rather than what happened in what order. The levels come
+from the graph's `layered` arrangement, so `import rankings.balancedRanking` changes the
+drawing as it changes the layering.
 
 All three take a `Dag`, and all three raise a `Dag.Error` where the graph is not acyclic — a cycle
 has no drawing, so it is reported rather than approximated.

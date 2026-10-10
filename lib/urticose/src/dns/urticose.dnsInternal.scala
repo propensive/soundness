@@ -32,7 +32,6 @@
                                                                                                   */
 package urticose
 
-
 import anticipation.*
 import contingency.*
 

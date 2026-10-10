@@ -34,9 +34,9 @@ package hallucination
 
 import java.io as ji
 
-import anticipation.*
-
 import scala.caps
+
+import anticipation.*
 
 // A little-endian bit writer for the VP8L lossless bitstream, ported from image-rs/image-webp
 // (`src/lossless/encoder/mod.rs`, MIT/Apache-2.0). Bits accumulate least-significant first into a

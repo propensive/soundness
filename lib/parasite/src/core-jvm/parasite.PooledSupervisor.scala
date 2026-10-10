@@ -41,4 +41,4 @@ import Async.nominative
 // the pool without occupying platform threads.
 object PooledSupervisor extends PoolingSupervisor:
   def name: Name[Async] = n"pooled"
-  protected def spawn(runnable: Runnable): Thread = Thread.ofVirtual().nn.start(runnable).nn
+  protected def spawn(runnable: Runnable^): Thread = Thread.ofVirtual().nn.start(runnable).nn

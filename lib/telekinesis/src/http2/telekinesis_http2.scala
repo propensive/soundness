@@ -61,7 +61,7 @@ class UrlSessional[url <: HttpUrl]
           buffering:    Buffering,
           tls:          Tls,
           connectError: Tactic[Connect.Error] )
-extends Sessional:
+extends Sessional uses parasite.threads:
   type Self = url
   type Result = Http.Session^{caps.any}
 
@@ -87,7 +87,7 @@ extends Sessional:
       try lambda(using Sessions.Sequential(duplex)) finally duplex.close()
 
     else
-      import threading.virtualThreading
+      import threads.virtualThreads
       import probates.cancelProbate
 
       val duplex: Duplex = secureConnect(host, port)

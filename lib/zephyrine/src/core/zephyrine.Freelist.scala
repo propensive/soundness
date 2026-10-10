@@ -32,9 +32,9 @@
                                                                                                   */
 package zephyrine
 
-import scala.caps
-
 import java.util.concurrent.atomic as juca
+
+import scala.caps
 
 import rudiments.*
 

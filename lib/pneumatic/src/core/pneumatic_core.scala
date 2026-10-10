@@ -32,9 +32,8 @@
                                                                                                   */
 package pneumatic
 
-import scala.language.adhocExtensions
-
 import scala.annotation.*
+import scala.language.adhocExtensions
 
 import anticipation.*
 import prepositional.*

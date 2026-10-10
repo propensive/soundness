@@ -33,10 +33,8 @@
 package denominative
 
 import scala.collection.immutable.IndexedSeq
-
-import scala.language.experimental.pureFunctions
-
 import scala.collection.mutable as scm
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import prepositional.*
@@ -75,7 +73,8 @@ object Applicable:
 
     def access(sequence: Self, index: Ordinal): Result = Sequence.at(sequence, index.n0)
 
-  // Opaque `List`: positional access is O(n), so the instance is gated behind `Dysasymptotic.LinearAccess`.
+  // Opaque `List`: positional access is O(n), so the instance is gated behind
+  // `Dysasymptotic.LinearAccess`.
   given list: [element, list <: List[element]] => (complexity: Dysasymptotic.LinearAccess)
   =>  list is Applicable:
     type Self = list

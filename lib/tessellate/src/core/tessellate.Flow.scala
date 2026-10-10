@@ -180,7 +180,7 @@ object Flow:
       var end = toCluster
 
       while end > fromCluster && plain.charAt(charStart(end - 1)) == ' ' &&
-            widths.readable(end) - widths.readable(fromCluster) > width
+        widths.readable(end) - widths.readable(fromCluster) > width
       do end -= 1
 
       segment(fromCluster, end)
@@ -249,8 +249,7 @@ object Flow:
         else
           recur(cluster + 1, lineStart, lastSpace, acc)
 
-    if width < 1 then Sequence.from(Vector(content))
-    else recur(0, 0, 0, Nil).reverse.to[Sequence]
+    if width < 1 then Sequence.from(Vector(content)) else recur(0, 0, 0, Nil).reverse.to[Sequence]
 
   // Truncate content wider than `width` cells, marking the cut with `ellipsis`; content that
   // already fits is returned unchanged. Truncation is by cluster, so a wide character never
@@ -306,9 +305,12 @@ object Flow:
     def recur(cluster: Int, lineStart: Int, acc: List[textual]): List[textual] =
       if cluster >= clusters then
         if lineStart == cluster then acc else segment(lineStart, cluster) :: acc
-      else if cluster > lineStart && widths.readable(cluster + 1) - widths.readable(lineStart) > width
-      then recur(cluster + 1, cluster, segment(lineStart, cluster) :: acc)
-      else recur(cluster + 1, lineStart, acc)
+      else if cluster > lineStart &&
+        widths.readable(cluster + 1) - widths.readable(lineStart) > width
+      then
+        recur(cluster + 1, cluster, segment(lineStart, cluster) :: acc)
+      else
+        recur(cluster + 1, lineStart, acc)
 
     if width < 1 || clusters == 0 then Sequence.from(Vector(content))
     else recur(0, 0, Nil).reverse.to[Sequence]

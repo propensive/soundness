@@ -62,6 +62,7 @@ object Cli:
 
   def done(): Unit = trigger.offer(())
   def log(input: Text): Unit = messages ::= input
+
   def await()(using Monitor^): List[Text] =
     safely(trigger.await(10.0*Second)) yet messages.reverse
 
@@ -93,7 +94,7 @@ object Cli:
 // `Exclusive` because an invocation has a single owner; nothing may retain it past the exit.
 trait Cli
 extends Console, caps.ExclusiveCapability, WorkingDirectory.Provider, Environment.Provider,
-    Stdio.Provider:
+  Stdio.Provider:
   def arguments: List[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory
@@ -132,7 +133,6 @@ extends Console, caps.ExclusiveCapability, WorkingDirectory.Provider, Environmen
 
   override def trap(handler: PartialFunction[Signal, SignalResponse]): Unit =
     signalHandlers.since(handler :: _)
-
 
   def dispatchSignal(signal: Signal): SignalResponse =
     def loop(handlers: List[PartialFunction[Signal, SignalResponse]]): SignalResponse =

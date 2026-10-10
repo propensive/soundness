@@ -52,7 +52,8 @@ import vacuous.*
 // compound with the same kebab-case keyword in place or appends a
 // new one. Mirrors jacinta's lens given.
 package optics:
-  given telLens: [name <: Label: ValueOf] => (erased dynamical: (? >: Tel) is Dynamical) => Tactic[Tel.Error]
+  given telLens: [name <: Label: ValueOf] => (erased dynamical: (? >: Tel) is Dynamical)
+  =>  Tactic[Tel.Error]
   =>  name is Lens from Tel onto Tel =
     Lens(_.selectField(valueOf[name]), _.modify(valueOf[name], _))
 
@@ -76,4 +77,3 @@ package optics:
       rebuild
         ( origin,
           Tel.mapChildCompounds(origin.subtree.children, c => rewrap(c, lambda(Tel.make(c)))) )
-

@@ -41,19 +41,17 @@ import vacuous.*
 object Frame:
   // Combine two optional maxima as a minimum, treating `Unset` as +infinity.
   private def lesser(a: Optional[Int], b: Optional[Int]): Optional[Int] =
-    a.lay(b): av => b.lay(av)(bv => av.min(bv))
+    a.lay(b): av => b.lay(av): bv => av.min(bv)
 
   // Min/max along the split axis: the minimum is the larger of the split's own
   // minimum and the SUM of its children's minima (a container can be no smaller
   // than its contents); the maximum is the smaller of its own maximum and the
   // sum of its children's maxima (any unbounded child makes the sum unbounded).
   private def alongLimits(own: Limits, children: List[Limits]): Limits =
-    val minSum = children.fold(0): (acc, child: Limits) =>
-      acc + child.min
+    val minSum = children.fold(0): (acc, child: Limits) => acc + child.min
 
     val maxSum: Optional[Int] = children.fold(0: Optional[Int]): (acc, child: Limits) =>
-      acc.let: total =>
-        child.max.let(total + _)
+      acc.let: total => child.max.let(total + _)
 
     Limits(own.min.max(minSum), lesser(own.max, maxSum))
 
@@ -61,11 +59,9 @@ object Frame:
   // cross extent must hold every child); the maximum is the smallest child
   // maximum.
   private def crossLimits(own: Limits, children: List[Limits]): Limits =
-    val minMax = children.fold(0): (acc, child: Limits) =>
-      acc.max(child.min)
+    val minMax = children.fold(0): (acc, child: Limits) => acc.max(child.min)
 
-    val maxMin = children.fold(Unset: Optional[Int]): (acc, child: Limits) =>
-      lesser(acc, child.max)
+    val maxMin = children.fold(Unset: Optional[Int]): (acc, child: Limits) => lesser(acc, child.max)
 
     Limits(own.min.max(minMax), lesser(own.max, maxMin))
 
@@ -84,8 +80,7 @@ object Frame:
   private def gridRows(childHeights: Vector[Limits], columns: Int): Vector[Int] =
     val cols = columns.max(1).min(childHeights.length.max(1))
 
-    childHeights.grouped(cols).to(Vector).map: row =>
-      row.map(_.min).maxOption.getOrElse(0)
+    childHeights.grouped(cols).to(Vector).map: row => row.map(_.min).maxOption.getOrElse(0)
 
   // A grid's width limits: its columns laid side by side with gaps, like a strip of the
   // per-column folds.
@@ -98,7 +93,7 @@ object Frame:
     val minSum = cols.map(_.min).sum + gaps
 
     val maxSum: Optional[Int] = cols.foldLeft(gaps: Optional[Int]): (acc, column) =>
-      acc.let { total => column.max.let(total + _) }
+      acc.let: total => column.max.let(total + _)
 
     Limits(own.min.max(minSum), lesser(own.max, maxSum))
 
@@ -171,9 +166,9 @@ enum Frame:
 
       // The stdlib view of the solved widths is scanned and indexed as a `Vector`.
       val colWidths = Flex.solve(Sequence.from(tracks), rect.width, gap).stdlib.map(_.or(0))
-      val xs = colWidths.scanLeft(rect.left)((x, width) => x + width + gap)
+      val xs = colWidths.scanLeft(rect.left): (x, width) => x + width + gap
       val rowHeights = Frame.gridRows(childList.map(_.measure(Arrangement.Stack)), cols)
-      val ys = rowHeights.scanLeft(rect.top)((y, height) => y + height + gap)
+      val ys = rowHeights.scanLeft(rect.top): (y, height) => y + height + gap
 
       val placements = childList.indices.map: index =>
         val row = index/cols

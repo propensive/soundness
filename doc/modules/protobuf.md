@@ -106,6 +106,29 @@ wrapper.lens(_(Prim) = Point(7, 8)).as[Wrapper]   // Wrapper(Point(7, 8), t"orig
 This is what to use where a message must be relayed with one field altered and everything else —
 including fields this program does not know about — passed through untouched.
 
+### Parsing directly
+
+A type with a `Protobuf.Parsable` instance is read straight from the wire bytes, field by field,
+with no intermediate `Protobuf` value built. The instance is derived at compiletime, composing a
+parser for that exact message shape:
+
+```scala
+import locomotion.Inlinable
+
+given (Person is Protobuf.Parsable) = Inlinable.parsable[Person]
+
+Chain(bytes).read[Person in Protobuf]   // parsed without materializing the fields
+```
+
+The derivation composes the parser at expansion time, so it lives in a separate module from the
+runtime codecs and is imported by name.
+
+Reading over a stream works the same way, and the input is never assembled first: the parser
+reads each chunk as it arrives, so a field split across two chunks reads exactly as one that
+arrives whole, and the memory held is bounded by the one field being read — except across a
+oneof, whose message is held while its variant is chosen. A `read[Protobuf]`, by contrast, reads
+the whole message into memory, since a `Protobuf` value is its bytes.
+
 ### Compatibility
 
 Compatibility with `protoc` is by construction and by test: the canonical example message from the

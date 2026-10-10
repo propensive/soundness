@@ -43,13 +43,13 @@ import Async.nominative
 // `Threading` givens) source-compatible: `adaptive` degrades exactly as it does on a pre-Loom
 // JVM, and `virtual` is a request for cheap concurrency, honoured with the cheapest available.
 
-object VirtualSupervisor extends ThreadSupervisor:
+object VirtualSupervisor extends ThreadSupervisor uses PlatformSupervisor:
   def name: Name[Async] = n"virtual"
 
   def fork(name: () => Optional[Text])(block: => Unit): Strand =
     PlatformSupervisor.fork(name)(block)
 
-object AdaptiveSupervisor extends ThreadSupervisor:
+object AdaptiveSupervisor extends ThreadSupervisor uses VirtualSupervisor, PlatformSupervisor:
   def name: Name[Async] = n"adaptive"
 
   def fork(name: () => Optional[Text])(block: => Unit): Strand =
@@ -61,7 +61,7 @@ object AdaptiveSupervisor extends ThreadSupervisor:
 object PooledSupervisor extends PoolingSupervisor:
   def name: Name[Async] = n"pooled"
 
-  protected def spawn(runnable: Runnable): Thread =
+  protected def spawn(runnable: Runnable^): Thread =
     val thread = new Thread(runnable)
     thread.start()
     thread

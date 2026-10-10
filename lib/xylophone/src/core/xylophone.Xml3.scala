@@ -33,7 +33,6 @@
 package xylophone
 
 import scala.caps
-
 import scala.compiletime.*
 
 import anticipation.*

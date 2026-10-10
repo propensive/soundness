@@ -39,13 +39,13 @@ import denominative.nil
 import escapade.*
 import escritoire.*
 import gossamer.*
-import hypotenuse.maximum
 import hieroglyph.*, textMetrics.uniformMetric
+import hypotenuse.maximum
 import polysyllabic.*
-import symbolism.*
 import rudiments.*
-import vacuous.*
 import rudiments.sortingAlgorithms.timsort
+import symbolism.*
+import vacuous.*
 
 object Help:
   case class Param

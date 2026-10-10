@@ -125,6 +125,7 @@ object Stream:
       @caps.unsafe.untrackedCaptures
       private var storage: addressable0.Storage =
         addressable0.allocate(0).asInstanceOf[addressable0.Storage]
+
       private var start0: Int = 0
       private var limit0: Int = 0
       private var size: Int = 0

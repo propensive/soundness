@@ -32,9 +32,9 @@
                                                                                                   */
 package contingency
 
-import fulminate.Hazard
-
 import scala.language.experimental.pureFunctions
+
+import fulminate.Hazard
 
 enum Attempt[+success, +error <: Hazard]:
   case Success(value: success)

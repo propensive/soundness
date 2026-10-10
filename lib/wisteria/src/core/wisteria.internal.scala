@@ -344,9 +344,10 @@ object internal:
       if owner.isNoSymbol then Nil
       else
 
-          (owner.methodMembers ++ owner.fieldMembers)
-            . filter(isWrapper(typeclassConstructor, _)).distinct
-          . to(List)
+        (owner.methodMembers ++ owner.fieldMembers)
+          . filter(isWrapper(typeclassConstructor, _)).distinct
+
+        . to(List)
 
     val run = quotes.asInstanceOf[runtime.impl.QuotesImpl].ctx.run
 
@@ -575,8 +576,7 @@ object internal:
             if isRoot || !resolvableNonStructural(typeclassConstructor, tpe) then
               reachable(key) = tpe
 
-              tpe.typeSymbol.children.each: child =>
-                visit(variantWith(child, tpe), false)
+              tpe.typeSymbol.children.each: child => visit(variantWith(child, tpe), false)
           else if isProductType(tpe) then
             // A path-carrier (a specialised spine type) is always derived; else probe as before.
             val carrier = refinementMember(tpe, "VRoot").isDefined
@@ -607,25 +607,26 @@ object internal:
                 case None =>
                   product.typeSymbol.caseFields.each: field =>
                     visit(product.memberType(field), false)
-          else tpe match
-            // An alias like `Optional[P]` dealiases to a union (`Unset | P`) with no type
-            // arguments, so the codec probes above cannot follow its elements, and a union is
-            // neither a sum nor a product. Visit each branch so a structural element inside a
-            // union field (`Optional`-of-product, #1600) still becomes a shared sibling: the
-            // element codec then resolves to the sibling's lazy val — never a fresh capturing
-            // expansion inside `optional`'s by-name slot, which capture checking rejects.
-            // Singleton members (`Unset`, `None.type`) are sentinels handled by the union-level
-            // codec itself: they can never need a sibling, and probing their resolvability
-            // expands capability givens at macro time, which perturbs capture-checking state.
-            case OrType(left, right) =>
-              def branch(part: TypeRepr): Unit =
-                if !(part.dealias <:< TypeRepr.of[scala.Singleton]) then visit(part, false)
+          else
+            tpe match
+              // An alias like `Optional[P]` dealiases to a union (`Unset | P`) with no type
+              // arguments, so the codec probes above cannot follow its elements, and a union is
+              // neither a sum nor a product. Visit each branch so a structural element inside a
+              // union field (`Optional`-of-product, #1600) still becomes a shared sibling: the
+              // element codec then resolves to the sibling's lazy val — never a fresh capturing
+              // expansion inside `optional`'s by-name slot, which capture checking rejects.
+              // Singleton members (`Unset`, `None.type`) are sentinels handled by the union-level
+              // codec itself: they can never need a sibling, and probing their resolvability
+              // expands capability givens at macro time, which perturbs capture-checking state.
+              case OrType(left, right) =>
+                def branch(part: TypeRepr): Unit =
+                  if !(part.dealias <:< TypeRepr.of[scala.Singleton]) then visit(part, false)
 
-              branch(left)
-              branch(right)
+                branch(left)
+                branch(right)
 
-            case _ =>
-              ()
+              case _ =>
+                ()
 
       val rootType = TypeRepr.of[derivation].dealias
       visit(rootType, isRoot = true)
@@ -725,7 +726,9 @@ object internal:
       repr.termSymbol.isNoSymbol && repr.typeSymbol.children.nonEmpty
 
     repr.dealias match
-      case AndType(left, right)     => if parent(left) then productType(right) else productType(left)
+      case AndType(left, right) =>
+        if parent(left) then productType(right) else productType(left)
+
       case Refinement(base, _, _)   => productType(base)
       case AnnotatedType(under, _)  => productType(under)
       case other                    => other
@@ -1099,7 +1102,6 @@ object internal:
     // term-reference type (a nullary-method `ExprType`, `@uncheckedVariance` included); either
     // hides `Optional`'s underlying type, so the expansion no longer conformed to the
     // dealiased `Optional[field]`.
-    . map: selection =>
-        '{${selection.asExprOf[field]}: Optional[field]}
 
+    . map: selection => '{${selection.asExprOf[field]}: Optional[field]}
     . getOrElse('{Unset: Optional[field]})

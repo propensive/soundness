@@ -33,10 +33,8 @@
 package contingency
 
 import scala.annotation
-
-import scala.collection.immutable.{List, Nil, ::}
-
 import scala.collection.immutable as sci
+import scala.collection.immutable.{List, Nil, ::}
 import scala.compiletime.*
 import scala.quoted.*
 

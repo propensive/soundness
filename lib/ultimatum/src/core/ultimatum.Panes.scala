@@ -32,9 +32,8 @@
                                                                                                   */
 package ultimatum
 
-import scala.collection.immutable.Vector
-
 import scala.caps
+import scala.collection.immutable.Vector
 
 // A mutable, ordered container of child panes, backed by a `Sequence` for random
 // access. Holding a reference to it lets the layout change while a `form` is
@@ -43,8 +42,8 @@ import scala.caps
 // re-derives its tree; when the container is bound into a running form, a
 // mutation also wakes the event loop so the change is shown immediately (even
 // from a background task).
-// Panes themselves are pure (a pane tree captures nothing), so `Panes` need not be a capability. Its
-// one effectful field is the installed repaint callback.
+// Panes themselves are pure (a pane tree captures nothing), so `Panes` need not be a capability.
+// Its one effectful field is the installed repaint callback.
 class Panes(initial: Pane*):
   // Internally a raw `Vector`: this is imperative container state, and the mutation operations
   // (`patch`, `indexWhere`, `:+`) belong to the stdlib surface. The public API exposes `Sequence`.
@@ -53,9 +52,9 @@ class Panes(initial: Pane*):
   private var vector: Vector[Pane] = initial.to(Vector)
 
   // Installed by the running form so a mutation requests a repaint; a no-op until the container is
-  // bound. Typed as a *pure* function so a pane tree (and `Panes`) captures nothing and can be freely
-  // collected and traversed; the installed callback genuinely captures the running form's event loop,
-  // reconciled in `bindWake`.
+  // bound. Typed as a *pure* function so a pane tree (and `Panes`) captures nothing and can be
+  // freely collected and traversed; the installed callback genuinely captures the running form's
+  // event loop, reconciled in `bindWake`.
   // [field-purity] repaint callback var typed pure in Panes
   @scala.caps.unsafe.untrackedCaptures
   private var onChange: () -> Unit = () => ()

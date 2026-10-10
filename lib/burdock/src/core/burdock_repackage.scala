@@ -42,6 +42,7 @@ import distillate.*
 import escapade.*
 import exoskeleton.*
 import fulminate.*
+
 // `Message`'s `Printable` instance now lives in `fulminate.print`, outside `Message`'s implicit
 // scope, so printing a `Message` needs it imported by name.
 import fulminate.printables.messagePrintable
@@ -130,8 +131,8 @@ def repackage(arguments: List[Text]): Unit = application(arguments):
           . to[List]
 
       val tmpFile: Path on Linux =
-        inputJar.parent.or(panic(m"a jar file always has a parent directory"))
-        / t"${inputJar.name}.tmp"
+        inputJar.parent.or(panic(m"a jar file always has a parent directory")) /
+          t"${inputJar.name}.tmp"
 
       // Only animate on a real terminal; when stdout is redirected the carriage-return redraws
       // and cursor escapes would garble the output, so we suppress them and let the final summary

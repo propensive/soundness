@@ -32,21 +32,19 @@
                                                                                                   */
 package jacinta
 
-
 import scala.annotation.*
 
 import anticipation.*
-import murmuration.{exists, foreach}
 import contingency.*
+import murmuration.{exists, foreach}
 import prepositional.*
 import telekinesis.*
 import urticose.*
 import vacuous.*
 import wisteria.*
 import zephyrine.*
-
-import httpBackends.javaNetHttp
 import Json.Error.Reason
+import httpBackends.javaNetHttp
 
 extension (json: Json)
   // Runtime-checks `json` against the schema for `topic`, then re-types it as a
@@ -77,8 +75,7 @@ private def conform(schema: JsonSchema, ast: Json.Ast): Unit raises Json.Error =
     case obj: JsonSchema.Object => obj.oneOf match
       case variants: List[JsonSchema] @scala.unchecked =>
         if
-          !(variants: List[JsonSchema]).exists: variant =>
-            safely(conform(variant, ast)).present
+          !(variants: List[JsonSchema]).exists: variant => safely(conform(variant, ast)).present
         then
           mismatch(Json.Primitive.Object)
 

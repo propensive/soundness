@@ -33,4 +33,3 @@
 package soundness
 
 export jacinta.{JsonSchema, memo, verify}
-

@@ -31,18 +31,17 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package turbulence
-import rudiments.reverse
-
 import java.io as ji
 import java.lang as jl
 import java.nio.charset as jnc
 
 import anticipation.*
+import beneficence.*
 import contingency.*
 import denominative.*
-import vacuous.*
-import beneficence.*
 import prepositional.*
+import rudiments.reverse
+import vacuous.*
 import zephyrine.*
 
 object LineSeparation:
@@ -158,8 +157,8 @@ object LineSeparation:
 
             inline def lowest(at: Int): Int =
               least
-               ( least(least(chars(at), chars(at + 1)), least(chars(at + 2), chars(at + 3))),
-                 least(least(chars(at + 4), chars(at + 5)), least(chars(at + 6), chars(at + 7))) )
+                ( least(least(chars(at), chars(at + 1)), least(chars(at + 2), chars(at + 3))),
+                  least(least(chars(at + 4), chars(at + 5)), least(chars(at + 6), chars(at + 7))) )
 
             var index: Int = from
             var found: Int = -1
@@ -174,7 +173,7 @@ object LineSeparation:
             if found < 0 then stop else found
 
           update def step(source: Region[Text])(range: Interval in source.type)
-            ( target: Slate[Array[Text]^{}] )(space: Interval in target.type)
+            (target: Slate[Array[Text]^{}])(space: Interval in target.type)
           :   Duct.Progress =
 
             val sourceInterval: Interval = range
@@ -184,8 +183,11 @@ object LineSeparation:
             val targetOffset = targetInterval.start.n0
             val targetSpace = targetInterval.size
             val chars = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Char]])
+
             val slots: scala.Array[AnyRef]^ =
-              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
+              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]])
+              . asInstanceOf[scala.Array[AnyRef]^]
+
             var consumed: Int = 0
             var produced: Int = 0
 
@@ -217,7 +219,8 @@ object LineSeparation:
                     else act(stage.lf)
 
                     produced += deliver(slots, targetOffset + produced)
-                  else pending = 10
+                  else
+                    pending = 10
                 else if char == '\r' then
                   consumed += 1
 
@@ -227,7 +230,8 @@ object LineSeparation:
                     else act(stage.cr)
 
                     produced += deliver(slots, targetOffset + produced)
-                  else pending = 13
+                  else
+                    pending = 13
                 else
                   // The run of ordinary chars up to the next separator (or the
                   // window's end).
@@ -297,7 +301,8 @@ object LineSeparation:
             var count: Int = 0
 
             val slots: scala.Array[AnyRef]^ =
-              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
+              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]])
+              . asInstanceOf[scala.Array[AnyRef]^]
 
             while count < targetSpace && !tail.nil do
               tail match
@@ -318,8 +323,8 @@ object LineSeparation:
   // found without decoding first. UTF-16 emphatically is not: `0x0A` occurs
   // inside its code units, and splitting its bytes would cut characters in half.
   def asciiTransparent(charset: jnc.Charset): Boolean =
-    charset == jnc.StandardCharsets.UTF_8 || charset == jnc.StandardCharsets.US_ASCII
-      || charset == jnc.StandardCharsets.ISO_8859_1
+    charset == jnc.StandardCharsets.UTF_8 || charset == jnc.StandardCharsets.US_ASCII ||
+      charset == jnc.StandardCharsets.ISO_8859_1
 
   // The byte-level twin of `lines`, for an ASCII-transparent encoding: it finds
   // terminators in the raw bytes and decodes each completed line in one step
@@ -421,15 +426,15 @@ object LineSeparation:
       private def scan(bytes: scala.Array[Byte], from: Int, stop: Int): Int =
         var index: Int = from
 
-        while index < stop
-            && { val byte = bytes(index)
-                 (byte & 0xf8) != 0x08 || (byte != 10 && byte != 13) }
+        while index < stop &&
+          { val byte = bytes(index)
+              (byte & 0xf8) != 0x08 || (byte != 10 && byte != 13) }
         do index += 1
 
         index
 
       update def step(source: Region[Data])(range: Interval in source.type)
-        ( target: Slate[Array[Text]^{}] )(space: Interval in target.type)
+        (target: Slate[Array[Text]^{}])(space: Interval in target.type)
       :   Duct.Progress =
 
         val sourceInterval: Interval = range
@@ -441,7 +446,8 @@ object LineSeparation:
         val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
 
         val slots: scala.Array[AnyRef]^ =
-          unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
+          unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]])
+          . asInstanceOf[scala.Array[AnyRef]^]
 
         var consumed: Int = 0
         var produced: Int = 0
@@ -470,7 +476,8 @@ object LineSeparation:
                 else act(policy.lf)
 
                 produced += deliver(slots, targetOffset + produced)
-              else pending = 10
+              else
+                pending = 10
             else if byte == 13 then
               consumed += 1
 
@@ -480,7 +487,8 @@ object LineSeparation:
                 else act(policy.cr)
 
                 produced += deliver(slots, targetOffset + produced)
-              else pending = 13
+              else
+                pending = 13
             else
               val start = sourceOffset + consumed
               val stop = sourceOffset + sourceLength
@@ -538,7 +546,8 @@ object LineSeparation:
         var count: Int = 0
 
         val slots: scala.Array[AnyRef]^ =
-          unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]]).asInstanceOf[scala.Array[AnyRef]^]
+          unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]])
+          . asInstanceOf[scala.Array[AnyRef]^]
 
         while count < targetSpace && !tail.nil do
           tail match

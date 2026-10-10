@@ -105,8 +105,7 @@ object Http2Serve:
                   . to[Set]
 
               val (trailerEntries, headEntries) =
-                PseudoHeaders.entries(response).partition: entry =>
-                  trailerNames.has(entry.name)
+                PseudoHeaders.entries(response).partition: entry => trailerNames.has(entry.name)
 
               val trailing: Boolean = !trailerEntries.nil
 
@@ -136,7 +135,9 @@ object Http2Serve:
                   else connection0.sendData(streamId, Array.empty[Byte], endStream = true)
 
           val connection1 = new Http.Connection(request, true, port, respond)
-          connection1.respond(handler1(connection1.asInstanceOf[AnyRef]).asInstanceOf[Http.Response])
+
+          connection1.respond
+            ( handler1(connection1.asInstanceOf[AnyRef]).asInstanceOf[Http.Response] )
 
   // Open the HTTP/2 connection over the socket's streams and run its session
   // scope. `serve` (per-request) is the degenerate session that immediately
@@ -144,20 +145,21 @@ object Http2Serve:
   // `Http2Session` so it can set up per-connection state first.
   private def open(in: ji.InputStream, out: ji.OutputStream)(using monitor: Monitor)
   :   Http2.ServerConnection^{monitor} =
-   // The connection is created and used under the same monitor; its fresh capability is
-   // laundered into the declared result.
-   // [construction-fresh] connection's fresh capability laundered into result
-   scala.caps.unsafe.unsafeAssumePure:
 
-     // A local (pure) Probate rather than one captured from the accept daemon:
-     // capturing the caller's `Probate` capability would make this call — and so
-     // the accept-daemon body — impure.
-     import probates.cancelProbate
-     given asyncTactic: Tactic[Async.Error] = strategies.throwUnsafely
-     given truncationTactic: Tactic[Truncation.Error] = strategies.throwUnsafely
-     val connection = Http2.ServerConnection(StreamDuplex(in, out))
-     connection.start()
-     connection
+    // The connection is created and used under the same monitor; its fresh capability is
+    // laundered into the declared result.
+    // [construction-fresh] connection's fresh capability laundered into result
+    scala.caps.unsafe.unsafeAssumePure:
+
+      // A local (pure) Probate rather than one captured from the accept daemon:
+      // capturing the caller's `Probate` capability would make this call — and so
+      // the accept-daemon body — impure.
+      import probates.cancelProbate
+      given asyncTactic: Tactic[Async.Error] = strategies.throwUnsafely
+      given truncationTactic: Tactic[Truncation.Error] = strategies.throwUnsafely
+      val connection = Http2.ServerConnection(StreamDuplex(in, out))
+      connection.start()
+      connection
 
   def serve
     ( handler: AnyRef => AnyRef, in: ji.InputStream, out: ji.OutputStream, port: Int )
@@ -188,16 +190,16 @@ object Http2Serve:
     // The session retains only the per-connection state; no aliased writer.
     // [closure-capture] anonymous session closes over fresh connection
     val session: Http2Session^ = scala.caps.unsafe.unsafeAssumeSeparate:
-     new Http2Session:
-      def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection}): Unit =
-        // Rim the context-function handler to a neutral `AnyRef => AnyRef`, as
-        // the accept loop does for the per-request path.
-        val handler0: AnyRef =
-          ((ref: AnyRef) => handler(using ref.asInstanceOf[Http.Connection])).asInstanceOf[AnyRef]
+      new Http2Session:
+        def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection}): Unit =
+          // Rim the context-function handler to a neutral `AnyRef => AnyRef`, as
+          // the accept loop does for the per-request path.
+          val handler0: AnyRef =
+            ((ref: AnyRef) => handler(using ref.asInstanceOf[Http.Connection])).asInstanceOf[AnyRef]
 
-        // [by-name-receiver] connection argument aliases monitor passed alongside
-        scala.caps.unsafe.unsafeAssumeSeparate:
-          runStreams(connection, handler0, port)(using summon, probate)
+          // [by-name-receiver] connection argument aliases monitor passed alongside
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            runStreams(connection, handler0, port)(using summon, probate)
 
     scope0.asInstanceOf[AnyRef => Unit](session.asInstanceOf[AnyRef])
 
@@ -220,6 +222,7 @@ extends Duplex:
     data.drain: region =>
       range =>
         val interval: Interval = range
+
         out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
             interval.size)
 

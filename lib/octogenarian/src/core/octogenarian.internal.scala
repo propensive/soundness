@@ -87,4 +87,3 @@ object internal:
   // Concrete `Refspec` for revision specifiers that aren't named refs:
   // `HEAD~N`, `master..feature`, raw revspecs decoded from text, etc.
   private case class RawRef(text: Text) extends Refspec
-

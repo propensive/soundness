@@ -83,8 +83,7 @@ extension [collection: Countable](value: collection)
     val offset2 = offset.max(0)
 
     val height =
-      if width2 == 0 || offset2 + width2 > size then 0
-      else (size - offset2 - width2)/stride2 + 1
+      if width2 == 0 || offset2 + width2 > size then 0 else (size - offset2 - width2)/stride2 + 1
 
     lambda(new Lattice[value.type](width2, height, stride2, offset2))
 

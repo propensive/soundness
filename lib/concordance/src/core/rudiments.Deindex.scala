@@ -83,6 +83,7 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
   inline def pick[result](index: applicable.Operand)
     ( inline lambda: (applicable.Operand in value.type) => result )
   :   Optional[result] =
+
     if applicable.contains(value, index)
     then lambda(index.asInstanceOf[applicable.Operand in value.type])
     else Unset
@@ -95,6 +96,7 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
   // second check. Same soundness boundary as `confine`: immutable receivers on stable paths.
   def unsafeAttested(index: applicable.Operand)(using erased Unsafe)
   :   applicable.Operand in value.type =
+
     index.asInstanceOf[applicable.Operand in value.type]
 
   // The block-scoped form: the attestation's extent is the lambda —
@@ -102,8 +104,8 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
   inline def unsafeAttested[result](index: applicable.Operand)
     (inline lambda: (applicable.Operand in value.type) => result)(using erased Unsafe)
   :   result =
-    lambda(index.asInstanceOf[applicable.Operand in value.type])
 
+    lambda(index.asInstanceOf[applicable.Operand in value.type])
 
 
   // A single `at` that dispatches at compile time on the index type: an index statically known to
@@ -148,15 +150,15 @@ extension [key, value](map: scala.collection.Map[key, value])
   inline def bijection: Bijection[key, value] = Bijection(map.to(scala.collection.immutable.Map))
 
 extension [self](inline value: self)
-  (using applicable: Applicable { type Self = self; type Operand = Ordinal })
+  ( using applicable: Applicable { type Self = self; type Operand = Ordinal } )
   inline def prim: Optional[applicable.Result] = value.at(Prim)
   inline def sec: Optional[applicable.Result] = value.at(Sec)
   inline def ter: Optional[applicable.Result] = value.at(Ter)
 
 extension [element](sequence: List[element])
 
-  // Deliberately NOT `inline`: an `inline def` returning the union `Optional[element]` re-infers the
-  // expanded body's type at each call site, where capture checking stamps a fresh `^` capture
+  // Deliberately NOT `inline`: an `inline def` returning the union `Optional[element]` re-infers
+  // the expanded body's type at each call site, where capture checking stamps a fresh `^` capture
   // variable on the union — which is spurious (and an error) when `element` is a pure type such as
   // `Text`. A plain method keeps the declared `Optional[element]` result and stays capture-clean.
   // `prim`/`sec`/`ter` get these ungated `List` special cases because their walk is bounded (at

@@ -93,16 +93,12 @@ case class Descriptor(entries: List[Descriptor.Entry]):
   // per-pixel bodies perform no channel lookups and no allocation.
   private lazy val rgbPositions: Optional[((Int, Int), (Int, Int), (Int, Int))] =
     locate("red".tt).let: red =>
-      locate("green".tt).let: green =>
-        locate("blue".tt).let: blue =>
-          (red, green, blue)
+      locate("green".tt).let: green => locate("blue".tt).let: blue => (red, green, blue)
 
   private lazy val cmykPositions: Optional[((Int, Int), (Int, Int), (Int, Int), (Int, Int))] =
     locate("cyan".tt).let: cyan =>
       locate("magenta".tt).let: magenta =>
-        locate("yellow".tt).let: yellow =>
-          locate("key".tt).let: key =>
-            (cyan, magenta, yellow, key)
+        locate("yellow".tt).let: yellow => locate("key".tt).let: key => (cyan, magenta, yellow, key)
 
   private lazy val alphaPosition: Optional[(Int, Int)] = locate("alpha".tt)
   private lazy val greyPosition: Optional[(Int, Int)] = locate("grey".tt)

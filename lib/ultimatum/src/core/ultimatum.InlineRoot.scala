@@ -94,7 +94,8 @@ extends GridSurface(widthFn(), 0):
   private var topAnchored: Boolean = anchoring match
     case InlineAnchoring.TopAnchored | InlineAnchoring.Fullscreen      => true
     case InlineAnchoring.BottomDocked | InlineAnchoring.TopAfterResize => false
-    case InlineAnchoring.Flow                                        => false
+    case InlineAnchoring.Flow                                          => false
+
   private var started: Boolean = false
 
   // Where the terminal reported the parked cursor cell after the last resize's reflow
@@ -179,6 +180,7 @@ extends GridSurface(widthFn(), 0):
     // Draw the block's rows from the top down; a trailing newline past the screen foot
     // scrolls the block up with the rest of the screen (relative addressing tracks it).
     var r = 0
+
     while r < h do
       emit(csi.el(2))
       val rendered = trimmedRowContent(r, columns).render(termcap)
@@ -193,6 +195,7 @@ extends GridSurface(widthFn(), 0):
     // row. The top does not move, so the box stays put and the freed rows go blank.
     if presentedRows > h then
       var k = h
+
       while k < presentedRows do
         emit(t"\n")
         emit(csi.el(2))
@@ -230,9 +233,10 @@ extends GridSurface(widthFn(), 0):
     val dockTop = if topAnchored then 1 else (rows - h + 1).max(1)
 
     val validated =
-      if !invalidated && started && h == presentedRows && columns == presentedColumns
-        && dockTop == presentedTop
-      then snapshotValid(dockTop, columns, h) else Unset
+      if !invalidated && started && h == presentedRows && columns == presentedColumns &&
+        dockTop == presentedTop
+      then snapshotValid(dockTop, columns, h)
+      else Unset
 
     validated.let(presentDiff(dockTop, columns, h, _)).or(flushDockedFull(rows, columns, h))
 
@@ -436,12 +440,15 @@ extends GridSurface(widthFn(), 0):
                 targetColumn = (col - 1).max(0)
             else
               val cellWidth = metric.width(grapheme)
+
               if cellWidth > 0 && col + cellWidth > w then
                 sub += 1
                 col = 0
+
               if c == target then
                 targetSub = sub
                 targetColumn = col
+
               col += cellWidth
 
             c += 1
@@ -504,5 +511,6 @@ extends GridSurface(widthFn(), 0):
 
       Out.print(csi.cup(below.max(1), 1))
       Out.print(t"\r\n")
+
     Out.print(csi.dectcem(true))
     if anchoring == InlineAnchoring.Fullscreen && started then Out.print(t"\e[?1049l")

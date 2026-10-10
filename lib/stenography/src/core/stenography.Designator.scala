@@ -51,6 +51,7 @@ object Designator:
 
         case '.' =>
           recur(i + 1, i + 1, designator.lay(Designator.Top(next))(Designator.Term(_, next)))
+
         case '#' =>
           recur(i + 1, i + 1, designator.lay(Designator.Top(next))(Designator.Type(_, next)))
 

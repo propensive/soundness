@@ -33,13 +33,13 @@
 package apoplexy
 
 import scala.compiletime
-
 import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
+import fulminate.*
 import gesticulate.*
 import gossamer.*
 import hellenism.*
@@ -54,7 +54,6 @@ import spectacular.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
-import fulminate.*
 import vacuous.*
 import xylophone.*
 import zephyrine.*
@@ -103,7 +102,7 @@ object Api:
     ( using Tactic[OAuth.Error], Diagnostics )
   :   Http.Header =
 
-    scopes.seek(scope => !credential.value.grants(List(scope))).let: scope =>
+    scopes.seek{ scope => !credential.value.grants(List(scope)) }.let: scope =>
       abort(OAuth.Error(OAuth.Error.Reason.InsufficientPrivileges(scope)))
 
     Http.Header(t"authorization", credential.value.bearer.show)
@@ -443,10 +442,12 @@ object Api:
   case class NotExtended[+payload](override val payload: payload)(using Diagnostics)
   extends Error[payload](Http.NotExtended, payload)
 
-  case class NetworkAuthenticationRequired[+payload](override val payload: payload)(using Diagnostics)
+  case class NetworkAuthenticationRequired[+payload](override val payload: payload)
+    ( using Diagnostics )
   extends Error[payload](Http.NetworkAuthenticationRequired, payload)
 
-  case class Informational[+payload](override val status: Http.Status, override val payload: payload)
+  case class Informational[+payload]
+    ( override val status: Http.Status, override val payload: payload )
     ( using Diagnostics )
   extends Error[payload](status, payload)
 

@@ -32,9 +32,8 @@
                                                                                                   */
 package cardinality
 
-import scala.language.experimental.genericNumberLiterals
-
 import scala.annotation.*
+import scala.language.experimental.genericNumberLiterals
 
 export NumericRange.`~`
 

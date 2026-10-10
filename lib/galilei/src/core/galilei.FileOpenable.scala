@@ -34,14 +34,13 @@ package galilei
 
 import anticipation.*
 import aperture.*
+import contingency.*
 import gigantism.Every
 import gossamer.*
-import contingency.*
 import prepositional.*
-import serpentine.*
 import rudiments.*
+import serpentine.*
 import symbolism.*
-
 import Io.Error.{Operation, Reason}
 
 // The `Openable` instance for opening a file's content: `path.open[File](Read & Write)`. A

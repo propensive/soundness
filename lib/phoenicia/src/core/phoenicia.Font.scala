@@ -110,7 +110,7 @@ object Font:
   class Of[medium <: Medium]():
     inline def apply[family <: Label](inline face: Face of family)
       ( using provision: Typeface of family is Typesettable in (? >: medium),
-            tactic:    Tactic[Font.Error] )
+              tactic:    Tactic[Font.Error] )
     :   Font in medium =
 
       ${phoenicia.internal.font[family, medium]('face, 'provision, 'tactic)}

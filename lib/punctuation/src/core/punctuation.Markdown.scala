@@ -75,6 +75,7 @@ object Markdown:
 
       override def accept(stream: (zephyrine.Stream[Text] over zephyrine.Credit)^)
       :   Markdown of Layout =
+
         // The non-consume `accept` crosses to the consuming factory as a
         // neutral reference; each accept delivers a single-use stream.
         Parser.parse:
@@ -165,14 +166,14 @@ object Markdown:
     entries.join(t"[", t", ", t"]")
 
   private def inspectNode(node: Markdown.Node): Text = node match
-    case Prose.Textual(text)    => t"Textual(${text.inspect})"
-    case Prose.Softbreak        => t"Softbreak"
-    case Prose.Linebreak        => t"Linebreak"
-    case Prose.Code(code)       => t"Code(${code.inspect})"
-    case Prose.HtmlInline(html) => t"HtmlInline(${html.inspect})"
-    case Prose.Emphasis(prose*) => t"Emphasis(${inspectNodes(prose.to(List))})"
-    case Prose.Strong(prose*)   => t"Strong(${inspectNodes(prose.to(List))})"
-    case Layout.ThematicBreak(line)  => t"ThematicBreak(${line.inspect})"
+    case Prose.Textual(text)          => t"Textual(${text.inspect})"
+    case Prose.Softbreak              => t"Softbreak"
+    case Prose.Linebreak              => t"Linebreak"
+    case Prose.Code(code)             => t"Code(${code.inspect})"
+    case Prose.HtmlInline(html)       => t"HtmlInline(${html.inspect})"
+    case Prose.Emphasis(prose*)       => t"Emphasis(${inspectNodes(prose.to(List))})"
+    case Prose.Strong(prose*)         => t"Strong(${inspectNodes(prose.to(List))})"
+    case Layout.ThematicBreak(line)   => t"ThematicBreak(${line.inspect})"
     case Layout.HtmlBlock(line, html) => t"HtmlBlock(${line.inspect} ╱ ${html.inspect})"
 
     case Prose.Link(destination, title, prose*) =>
@@ -233,8 +234,7 @@ object Markdown:
 
         nodes match
           case Nil =>
-            if block then ((Html.Text("\n"): Html of Flow) :: done).reverse
-            else done.reverse
+            if block then ((Html.Text("\n"): Html of Flow) :: done).reverse else done.reverse
 
           case Layout.Paragraph(_, contents*) :: tail if tight =>
             val content = Html.Fragment(contents.map(phrasing(_))*)
@@ -265,15 +265,13 @@ object Markdown:
 
         case Layout.BulletList(line, tight, items*) =>
           val items2 = items.map: (item: List[Layout]) =>
-            if item.nil then Li
-            else Li(merge(false, item, Nil, tight)*)
+            if item.nil then Li else Li(merge(false, item, Nil, tight)*)
 
           Ul(items2*)
 
         case Layout.OrderedList(line, start, tight, delimiter, items*) =>
           val items2 = items.map: (item: List[Layout]) =>
-            if item.nil then Li
-            else Li(merge(false, item, Nil, tight)*)
+            if item.nil then Li else Li(merge(false, item, Nil, tight)*)
 
           val start2 = start.puncture(1)
 

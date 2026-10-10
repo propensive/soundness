@@ -33,12 +33,11 @@
 package legerdemain
 
 import anticipation.*
-import rudiments.*
 import fulminate.*
 import honeycomb.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
-
 import attributives.textAttributive
 import htmlDoms.whatwg, whatwg.*
 

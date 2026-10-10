@@ -33,7 +33,7 @@ import formatting.compactJsonFormatting
 import logging.silentLogging
 import probates.awaitProbate
 import strategies.throwUnsafely
-import threading.virtualThreading
+import threads.virtualThreads
 import webserverErrorPages.minimalErrorPage
 ```
 

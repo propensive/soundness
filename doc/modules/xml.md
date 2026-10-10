@@ -51,7 +51,7 @@ with its `Header` — the version, and the encoding and standalone declarations 
 given — so a document round-trips with its declaration intact rather than losing it on the way in:
 
 ```scala
-import threading.platformThreading
+import threads.platformThreads
 
 supervise:
   t"""<?xml version="1.0"?><root>content</root>""".load[Xml]
@@ -285,6 +285,18 @@ import dynamicAccess.dynamicXml
 val document = t"<doc><x>1</x><x>2</x><x>3</x></doc>".read[Xml]
 document.lens(_.x = x"<x>9</x>").show   // the first <x> replaced
 document.lens(_(Each) = x"<x>0</x>").show   // every <x> replaced
+```
+
+The value on the right of the `=` need not be XML already: anything encodable in XML — a case
+class, an `Int`, a `Text` — is encoded as it is assigned, with no import. (The other formats ask
+for one, such as `conversions.encodableToJson`; XML's coercion lives on the `Xml` companion.)
+
+```scala
+import dynamicAccess.dynamicXml
+
+val staff = t"<staff><Worker><name>x</name><age>1</age></Worker></staff>".read[Xml]
+staff.lens(_.Worker = Worker(t"Alice", 30)).show
+// <staff><Worker><name>Alice</name><age>30</age></Worker></staff>
 ```
 
 ### Formatting

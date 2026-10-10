@@ -65,7 +65,7 @@ object Url:
     showable.text(_)
 
   given decodable: [scheme <: Label] => (tactic: Tactic[Url.Error])
-  =>  ((Url[scheme] is Decodable in Text)^{tactic}) =
+  =>  ( (Url[scheme] is Decodable in Text)^{tactic} ) =
     value =>
       import Url.Error.Expectation.*
 
@@ -128,7 +128,7 @@ object Url:
           abort(Url.Error(value, value.limit - 1, Url.Error.Reason.Expected(Colon)))
 
   given instantiable: (tactic: Tactic[Url.Error])
-  =>  ((HttpUrl is Instantiable across Urls from Text)^{tactic}) =
+  =>  ( (HttpUrl is Instantiable across Urls from Text)^{tactic} ) =
     _.as[HttpUrl]
 
   // UrlError → Url.Error

@@ -80,10 +80,10 @@ object RivalScintillate:
     HttpRivals.ready(server)
 
   lazy val virtual: Unit =
-    socketServer(HttpRivals.SocketServerVirtual)(using threading.virtualThreading)
+    socketServer(HttpRivals.SocketServerVirtual)(using threads.virtualThreads)
 
   lazy val platform: Unit =
-    socketServer(HttpRivals.SocketServerPlatform)(using threading.platformThreading)
+    socketServer(HttpRivals.SocketServerPlatform)(using threads.platformThreads)
 
   // The event-loop front-end: handlers inline on the selector lanes.
   lazy val reactor: Unit =

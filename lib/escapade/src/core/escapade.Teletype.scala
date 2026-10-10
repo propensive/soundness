@@ -32,8 +32,8 @@
                                                                                                   */
 package escapade
 
+import scala.collection.mutable as scm
 import scala.language.experimental.pureFunctions
-
 import scala.util.*
 
 import anticipation.*
@@ -44,7 +44,6 @@ import gossamer.collations.codepointCollation
 import hieroglyph.*
 import prepositional.*
 import rudiments.*
-import scala.collection.mutable as scm
 import spectacular.*
 import symbolism.*
 import vacuous.*
@@ -71,8 +70,9 @@ object Teletype:
   // contextual metric.
   given measurable: (Text is Measurable) => Teletype is Measurable = _.plain.metrics
 
-  // In `Teletype`'s companion (implicit scope for `Teletype is Reversible`), delegating to gossamer's
-  // shared textual reversal so `teletype.reverse` resolves through the single `rudiments` `reverse`.
+  // In `Teletype`'s companion (implicit scope for `Teletype is Reversible`), delegating to
+  // gossamer's shared textual reversal so `teletype.reverse` resolves through the single
+  // `rudiments` `reverse`.
   given reversible: (Teletype is Reversible { type Result = Teletype }) = reversibleTextual
 
   // Likewise for traversal: this is what lets the generic predicate forms of `keep` and `skip`
@@ -94,8 +94,9 @@ object Teletype:
 
     def map(text: Teletype)(lambda: Char => Char): Teletype =
       val plain = text.plain
+
       val array = Array.scribe[Char](plain.length): scribe =>
-        _ => plain.iterate { index => scribe.append(lambda(plain(index))) }
+        _ => plain.iterate: index => scribe.append(lambda(plain(index)))
 
       Teletype
         ( new String(Array.unsafeJvm(array)).tt,
@@ -167,7 +168,9 @@ object Teletype:
     val n = plain.length
 
     if n == 0
-    then (Array(if denseStyles.length > 0 then denseStyles.readUnchecked(0) else 0L), Array.empty[Int])
+    then
+      ( Array(if denseStyles.length > 0 then denseStyles.readUnchecked(0) else 0L),
+        Array.empty[Int] )
     else
       // Count runs, tracking the previous style rather than reading `i - 1` again: the
       // confined scan visits each index once.
@@ -259,7 +262,6 @@ object Teletype:
           insertions.to(TreeMap),
           newBoundaries )
 
-
 // `boundaries` is the run-start array for the sparse form; empty for the dense form.
 // Dense:  styles.length == plain.length + 1; styles.at(i) is the style for char i (0 ≤ i < length)
 //         and styles.at(length) is the trailing style.
@@ -305,7 +307,8 @@ case class Teletype
   // For an already-sparse Teletype this is O(1); for a dense one it's O(plain.length).
   def asSparseArrays: (Array[Long]^{}, Array[Int]^{}) =
     if !isDense then (styles, boundaries)
-    else if plain.length == 0 then (Array(if styles.length > 0 then styles.readUnchecked(0) else 0L), Array(0))
+    else if plain.length == 0
+    then (Array(if styles.length > 0 then styles.readUnchecked(0) else 0L), Array(0))
     else
       val n = plain.length
       // Count runs, tracking the previous style; see `compressIfBeneficial`.
@@ -356,7 +359,7 @@ case class Teletype
         // For indexes within the old array this reads the old style (the old trailing style
         // at `plain.length` equals `tail`); beyond it, the default IS the extension.
         val arr = Array.scribe[Long](newLength): scribe =>
-          _ => scribe.iterate { i => scribe(i) = styles.at(i).or(tail) }
+          _ => scribe.iterate: i => scribe(i) = styles.at(i).or(tail)
 
         Teletype(combinedPlain, arr, hyperlinks, insertions, Array.empty[Int])
       else
@@ -394,7 +397,7 @@ case class Teletype
       val combinedPlain = plain+that.plain
 
       val shiftedLinks = if that.hyperlinks.nil then hyperlinks else
-        val moved: Map[Int, Text] = that.hyperlinks.remap { (k, v) => (k + aN) -> v }
+        val moved: Map[Int, Text] = that.hyperlinks.remap: (k, v) => (k + aN) -> v
         hyperlinks + moved
 
       val shiftedInsertions = if that.insertions.isEmpty then insertions else
@@ -463,7 +466,7 @@ case class Teletype
 
         if isDense then
           val arr = Array.scribe[Long](keepLength + 1): scribe =>
-            _ => scribe.iterate { i => scribe(i) = styles.at(Ordinal.zerary(n + i.n0)).or(0L) }
+            _ => scribe.iterate: i => scribe(i) = styles.at(Ordinal.zerary(n + i.n0)).or(0L)
 
           Teletype
             ( plain.skip(n),
@@ -487,7 +490,7 @@ case class Teletype
                   scribe(i) = boundaries.at(Ordinal.zerary(firstRun + i.n0)).or(0) - n
 
           val newStylesArr = Array.scribe[Long](newK + 1): scribe =>
-            _ => scribe.iterate { i => scribe(i) = styles.at(Ordinal.zerary(firstRun + i.n0)).or(0L) }
+            _ => scribe.iterate: i => scribe(i) = styles.at(Ordinal.zerary(firstRun + i.n0)).or(0L)
 
           Teletype
             ( plain.skip(n),
@@ -508,7 +511,7 @@ case class Teletype
 
         if isDense then
           val arr = Array.scribe[Long](n + 1): scribe =>
-            _ => scribe.iterate { i => scribe(i) = if i.n0 == n then 0L else styles.at(i).or(0L) }
+            _ => scribe.iterate: i => scribe(i) = if i.n0 == n then 0L else styles.at(i).or(0L)
 
           Teletype
             ( plain.keep(n),
@@ -522,10 +525,10 @@ case class Teletype
           val newK = lastRun + 1
 
           val newBoundariesArr = Array.scribe[Int](newK): scribe =>
-            _ => scribe.iterate { i => scribe(i) = boundaries.at(i).or(0) }
+            _ => scribe.iterate: i => scribe(i) = boundaries.at(i).or(0)
 
           val newStylesArr = Array.scribe[Long](newK + 1): scribe =>
-            _ => scribe.iterate { i => scribe(i) = if i.n0 == newK then 0L else styles.at(i).or(0L) }
+            _ => scribe.iterate: i => scribe(i) = if i.n0 == newK then 0L else styles.at(i).or(0L)
 
           Teletype
             ( plain.keep(n),

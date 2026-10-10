@@ -37,6 +37,7 @@ import rudiments.*
 
 object NauticalMiles:
   given designation: Designation[NauticalMiles[1]] = () => "NM".tt
+
   erased given ratio: Ratio[NauticalMiles[1] & Metres[-1], 5.399568034557236E-4] =
     Ratio.Evidence[NauticalMiles[1] & Metres[-1], 5.399568034557236E-4]()
 

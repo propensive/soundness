@@ -72,13 +72,16 @@ object Multihash:
       else
         val byte = data.readable(index)
         val value = acc | ((byte & 0x7f).toLong << shift)
-        if (byte & 0x80) == 0 then (value, index + 1) else recur(index + 1, shift + 7, value, groups + 1)
+
+        if (byte & 0x80) == 0 then (value, index + 1)
+        else recur(index + 1, shift + 7, value, groups + 1)
 
     recur(offset, 0, 0L, 0)
 
   def apply[algorithm <: Algorithm](digest: Digest in algorithm)
-     (using codec: algorithm is Multicodec)
+    ( using codec: algorithm is Multicodec )
   :   Multihash =
+
     Multihash(codec.code, digest.data)
 
   // Reads an envelope. The declared length must match the bytes that follow exactly: a short
@@ -92,7 +95,8 @@ object Multihash:
     if length > available then abort(Multihash.Error(Multihash.Reason.Truncated))
     if length < available then abort(Multihash.Error(Multihash.Reason.Trailing))
 
-    Multihash(code.toInt, Array.frozen(data.readable.slice(afterLength, afterLength + length.toInt)))
+    Multihash
+      ( code.toInt, Array.frozen(data.readable.slice(afterLength, afterLength + length.toInt)) )
 
   enum Reason:
     case Truncated, Trailing, Oversize

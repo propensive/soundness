@@ -153,3 +153,14 @@ extension [self, node](graph: self)(using nodal: self is Nodal by node, dag: sel
       values(node) = lambda(Set.from(nodal.successors(graph, node).map(values)), node)
 
     Map.from(values)
+
+  // Arranged for drawing, as `Dag#layered`: the layering is computed on a `Dag`, so any other
+  // acyclic graph is converted once, unchecked, since `Topological` certifies it.
+  def layered(using ranking: Ranking): Layering[node] =
+    val adjacency = Search.adjacency(nodal.nodes(graph), nodal.successors(graph, _))
+    Layering(Dag.unchecked(adjacency), ranking)
+
+// The choice package: `import rankings.balancedRanking` pulls nodes down toward their dependents.
+package rankings:
+  given longestPathRanking: Ranking = Ranking.LongestPath
+  given balancedRanking: Ranking = Ranking.Balanced

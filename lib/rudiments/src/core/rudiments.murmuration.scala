@@ -35,8 +35,9 @@ package rudiments
 // `murmuration` hosts the collection typeclasses (moved below `denominative`/`vacuous`); re-export
 // them so `import rudiments.*` keeps exposing the whole surface unchanged.
 export murmuration.{Traversable, Reshapable, Mappable, Reversible, Inclusive, Convertible, reverse,
-    has, map, remap, bind, flatMap, filter, withFilter, foreach, exists, fold, flat, trace, excerpt, group,
-    distinct, deduplicate, zip, batched, span, partition, sweep, Keyed, keys, values, count, Intersectable,
+    has, map, remap, bind, flatMap, filter, withFilter, foreach, exists, fold, flat, trace, excerpt,
+    group, distinct, deduplicate, zip, batched, span, partition, sweep, Keyed, keys, values, count,
+    Intersectable,
     intersect, except, SortAlgorithm}
 
 // Mirrored so that code reaching murmuration through rudiments can select an algorithm with

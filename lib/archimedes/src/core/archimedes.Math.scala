@@ -36,26 +36,25 @@ import scala.math
 
 import anticipation.*
 import baroque.*
+import contextual.*
 import contingency.*
 import gossamer.*
 import hieroglyph.*
 import honeycomb.Html
-import hypotenuse.*
 import honeycomb.Renderable
+import hypotenuse.*
 import mosquito.*
 import prepositional.*
 import quantitative.*
 import rudiments.*
+import rudiments.sortingAlgorithms.timsort
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
-import contextual.*
 import xylophone.*
-import rudiments.sortingAlgorithms.timsort
-import symbolism.*
-import zephyrine.Parse
-
 import Mathml.*
+import zephyrine.Parse
 
 // The root `<math>` element and Archimedes' integration points.
 //
@@ -68,27 +67,29 @@ import Mathml.*
 
 object Math extends Mathml.Container(new Math(_)):
   given aggregable: (schema: XmlSchema)
-  =>  (parseTactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], mathmlTactic: Tactic[Mathml.Error])
-  =>  ((Math is Aggregable by Text)^{parseTactic, xmlTactic, mathmlTactic}) =
+  =>  ( parseTactic:  Tactic[Parse.Error],
+        xmlTactic:    Tactic[Xml.Error],
+        mathmlTactic: Tactic[Mathml.Error] )
+  =>  ( (Math is Aggregable by Text)^{parseTactic, xmlTactic, mathmlTactic} ) =
 
     source =>
       val xml: Xml = summon[Xml is Aggregable by Text].aggregate(source)
       Mathml.Parser.decodeMath(Mathml.Parser.rootElement(xml))
 
   given loadable: (XmlSchema)
-  =>  (parseTactic: Tactic[Parse.Error])
-  =>  (xmlTactic: Tactic[Xml.Error])
-  =>  (mathmlTactic: Tactic[Mathml.Error])
-  =>  ((Math is Loadable by Text)^{parseTactic, xmlTactic, mathmlTactic}) =
+  =>  ( parseTactic: Tactic[Parse.Error] )
+  =>  ( xmlTactic: Tactic[Xml.Error] )
+  =>  ( mathmlTactic: Tactic[Mathml.Error] )
+  =>  ( (Math is Loadable by Text)^{parseTactic, xmlTactic, mathmlTactic} ) =
     source => fromXml(summon[(Xml is Loadable by Text)^].load(source))
 
   // The byte form: the XML is parsed from the bytes directly.
   given loadableData: (XmlSchema)
-  =>  (parseTactic: Tactic[Parse.Error])
-  =>  (xmlTactic: Tactic[Xml.Error])
-  =>  (mathmlTactic: Tactic[Mathml.Error])
-  =>  (buffering: zephyrine.Buffering)
-  =>  ((Math is Loadable by Data)^{parseTactic, xmlTactic, mathmlTactic}) =
+  =>  ( parseTactic: Tactic[Parse.Error] )
+  =>  ( xmlTactic: Tactic[Xml.Error] )
+  =>  ( mathmlTactic: Tactic[Mathml.Error] )
+  =>  ( buffering: zephyrine.Buffering )
+  =>  ( (Math is Loadable by Data)^{parseTactic, xmlTactic, mathmlTactic} ) =
     source => fromXml(summon[(Xml is Loadable by Data)^].load(source))
 
   private def fromXml(xmlDoc: Document[Xml])(using Tactic[Xml.Error], Tactic[Mathml.Error])
@@ -218,8 +219,10 @@ object Math extends Mathml.Container(new Math(_)):
 
   private def product(nodes: List[Mathml]): Mathml = nodes match
     case one :: Nil   => one
+
     case head :: tail =>
       Mrow(head :: tail.flatMap { node => List(Mo(t"⁢"), node) })
+
     case Nil          => Mrow(Nil)
 
   private def fenced(inner: Mathml, open: Text, close: Text): Mathml =
@@ -250,4 +253,3 @@ extends Documentary:
       List(t"display" -> value.encode)
 
     (t"xmlns" -> mathmlNamespace) :: displayPairs + attributes
-

@@ -32,18 +32,12 @@
                                                                                                   */
 package dendrology
 
-import scala.collection.immutable.Vector
-
-// Deliberate stdlib opt-out: these internals consume acyclicity's `Dag`, whose set algebra
-// remains on the stdlib `Set` for now.
-import scala.collection.immutable.{List, Map, Nil, Set, ::}
-
-import scala.collection.mutable as scm
+// Deliberate stdlib opt-out: these internals consume acyclicity's `Layering`, whose layers
+// and links are on the stdlib `List` for now.
+import scala.collection.immutable.{List, Map, Nil, Set, Vector}
 
 import acyclicity.*
 import anticipation.*
-import contingency.*
-import denominative.*
 import gossamer.*
 import prepositional.*
 import spectacular.*
@@ -52,14 +46,7 @@ import vacuous.*
 import DagTile.*
 
 object LayeredDagDiagram:
-  private case class Lane[node](source: node, target: node, col: Int)
-
-  private case class Layout[node]
-    ( state:       Map[Int, Lane[node]],
-      terminating: Map[Int, Lane[node]],
-      continuing:  Map[Int, Lane[node]],
-      nodeCol:     Map[node, Int],
-      prevNodeCol: Map[node, Int] )
+  import Layering.Vertex
 
   // A cell's edges and crossings as bit flags in an `Int`, so a row is a plain array built in
   // place: there is no mutable cell object for the checker to track. `VerticalPassThrough` and
@@ -92,108 +79,66 @@ object LayeredDagDiagram:
         case (true,  true,  true,  true)  => Junction
         case _                            => Space
 
-  // Any graph that admits a topological order: a `Dag`, a frozen `Topology`, a `Hasse`.
+  // Any graph that admits a topological order: a `Dag`, a frozen `Topology`, a `Hasse`. The
+  // layering decides the order within each layer; this assigns columns to it. A vertex wants the
+  // median column of its neighbours in the layer above (so a straight edge stays straight), and
+  // is pushed right past the vertex before it when that column is taken.
   def apply[graph, node](dag: graph)
     ( using nodal:       graph is Nodal by node,
-            topological: graph is Topological )
+            topological: graph is Topological,
+            ranking:     Ranking )
   :   LayeredDagDiagram[node] =
 
-    val nodes: Vector[node] = proscenium.List.iterator(dag.linearized).to(Vector)
+    val layering = dag.layered
+    val layers: Vector[Vector[Vertex[node]]] = layering.layers.map(_.to(Vector)).to(Vector)
+    val links: Vector[Vector[(Int, Int)]] = layering.links.map(_.to(Vector)).to(Vector)
 
-    if nodes.isEmpty then LayeredDagDiagram(Nil) else
-      // Dependencies and dependants of each node, from the edges: `Dag` no longer exposes its
-      // adjacency.
-      val edges = proscenium.Set.iterator(dag.edges).to(List)
+    if layers.isEmpty then LayeredDagDiagram(Nil) else
+      def assign(layer: Int, above: Vector[Int]): Vector[Int] =
+        def desired(position: Int): Int =
+          if layer == 0 then -1 else
+            val upper = links(layer - 1).filter(_(1) == position).map: link => above(link(0))
+            if upper.isEmpty then -1 else upper.sorted.apply(upper.length/2)
 
-      val parents: Map[node, Set[node]] =
-        edges.groupMap(_(0))(_(1)).view.mapValues(_.to(Set)).to(Map)
+        layers(layer).indices.foldLeft(List.empty[Int]): (assigned, position) =>
+          assigned :+ (desired(position) max assigned.lastOption.fold(0)(_ + 1))
 
-      val forward: Map[node, Set[node]] =
-        edges.groupMap(_(1))(_(0)).view.mapValues(_.to(Set)).to(Map)
+        . to(Vector)
 
-      val level: scm.HashMap[node, Int] = scm.HashMap()
+      val columns: Vector[Vector[Int]] =
+        layers.indices.foldLeft(List.empty[Vector[Int]]): (above, layer) =>
+          above :+ assign(layer, above.lastOption.getOrElse(Vector.empty))
 
-      for n <- nodes do
-        val ps = parents.getOrElse(n, Set.empty)
-        level(n) = if ps.isEmpty then 0 else ps.iterator.map(level).max + 1
+        . to(Vector)
 
-      val maxLevel: Int = level.values.max
+      val width: Int = columns.flatten.max + 1
 
-      val byLevel: Vector[Vector[node]] =
-        (0 to maxLevel).to(Vector).map: l =>
-          nodes.filter(level(_) == l)
+      val rows = layers.indices.to(List).flatMap: layer =>
+        val vertices = layers(layer)
 
-      val state: scm.HashMap[Int, Lane[node]] = scm.HashMap()
-      val layouts = scm.ListBuffer[Layout[node]]()
-      var prevNodeCols: Map[node, Int] = Map.empty
+        val nodesAt: Map[Int, node] =
+          vertices.zip(columns(layer)).collect { case (Vertex.Real(n), column) => column -> n }
+          . to(Map)
 
-      for l <- 0 to maxLevel do
-        val levelNodes = byLevel(l)
+        val passing: Set[Int] =
+          vertices.zip(columns(layer)).collect { case (Vertex.Virtual(_, _), column) => column }
+          . to(Set)
 
-        val terminating = state.toMap.filter: (_, lane) => level(lane.target) == l
-        val continuing = state.toMap -- terminating.keys
+        val node = (nodeRow(nodesAt.keySet, passing, width), nodesAt)
 
-        val incomingByNode: Map[node, Vector[Int]] =
-          terminating
-            . groupBy(_._2.target)
-            . map: (n, m) =>
-                n -> m.keys.to(Vector).sorted
+        if layer == 0 then List(node) else
+          val bends = links(layer - 1).to(List).map: (upper, lower) =>
+            val continuing = (layers(layer - 1)(upper), vertices(lower)) match
+              case (Vertex.Virtual(_, _), Vertex.Virtual(_, _)) => true
+              case _                                            => false
 
-        val desired: Map[node, Int] = levelNodes.map: n =>
-          val incoming = incomingByNode.getOrElse(n, Vector.empty)
+            (columns(layer - 1)(upper), columns(layer)(lower), continuing)
 
-          val centre =
-            if incoming.nonEmpty then incoming(incoming.length/2)
-            else if continuing.nonEmpty then continuing.keys.max + 1
-            else 0
+          List((connectorRow(bends, width), Map.empty[Int, node]), node)
 
-          n -> centre
+      LayeredDagDiagram(rows)
 
-        . to(Map)
-
-        val ordered = levelNodes.sortBy(desired)
-        val nodeOccupied = scm.HashSet[Int]() ++ continuing.keys
-        val nodeCol = scm.LinkedHashMap[node, Int]()
-
-        for n <- ordered do
-          var col = desired(n)
-          while nodeOccupied.contains(col) do col += 1
-          nodeCol(n) = col
-          nodeOccupied.add(col)
-
-        layouts += Layout(state.toMap, terminating, continuing, nodeCol.toMap, prevNodeCols)
-
-        terminating.keys.foreach(state.remove)
-
-        val laneOccupied = scm.HashSet[Int]() ++ continuing.keys
-
-        for n <- ordered do
-          val outgoing = forward.getOrElse(n, Set.empty).filter(level(_) > l)
-          val sortedOut = outgoing.to(Vector).sortBy(level)
-
-          for target <- sortedOut do
-            var col = nodeCol(n)
-            while laneOccupied.contains(col) do col += 1
-            laneOccupied.add(col)
-            state(col) = Lane(n, target, col)
-
-        prevNodeCols = nodeCol.toMap
-
-      val width: Int =
-        val cols = layouts.iterator.flatMap: lay =>
-          lay.state.keys.iterator ++ lay.nodeCol.values.iterator ++ lay.prevNodeCol.values.iterator
-
-        cols.maxOption.fold(1)(_ + 1)
-
-      val rows = scm.ListBuffer[(List[DagTile], Map[Int, node])]()
-
-      layouts.iterator.zipWithIndex.foreach: (lay, l) =>
-        if l > 0 then rows += ((connectorRow(lay, width), Map.empty[Int, node]))
-        rows += ((nodeRow(lay, width), lay.nodeCol.iterator.map{ (n, c) => c -> n }.to(Map)))
-
-      LayeredDagDiagram(rows.to(List))
-
-  private def connectorRow[node](layout: Layout[node], width: Int): List[DagTile] =
+  private def connectorRow(bends: List[(Int, Int, Boolean)], width: Int): List[DagTile] =
     val cells = new scala.Array[Int](width)
 
     def drawBend(topEntry: Int, bottomExit: Int, continuing: Boolean): Unit =
@@ -228,27 +173,13 @@ object LayeredDagDiagram:
         cells(bottomExit) |= Cell.Right
         cells(bottomExit) |= Cell.Down
 
-    layout.state.foreach: (col, lane) =>
-      val justStarted = layout.prevNodeCol.contains(lane.source)
-      val terminatingNow = layout.terminating.contains(col)
-
-      (justStarted, terminatingNow) match
-        case (true, true) =>
-          drawBend(layout.prevNodeCol(lane.source), layout.nodeCol(lane.target), false)
-
-        case (false, true)  => drawBend(col, layout.nodeCol(lane.target), false)
-        case (true, false)  => drawBend(layout.prevNodeCol(lane.source), col, false)
-        case (false, false) => drawBend(col, col, true)
+    bends.foreach(drawBend)
 
     cells.iterator.map(Cell.tile).to(List)
 
-  private def nodeRow[node](layout: Layout[node], width: Int): List[DagTile] =
-    val nodeColSet = layout.nodeCol.values.to(Set)
-
-    (0 until width).map: c =>
-      if nodeColSet(c) then Node else if layout.continuing.contains(c) then Vertical else Space
-
-    . to(List)
+  private def nodeRow(nodes: Set[Int], passing: Set[Int], width: Int): List[DagTile] =
+    (0 until width).to(List).map: column =>
+      if nodes(column) then Node else if passing(column) then Vertical else Space
 
   given printable: [node: Showable] => (style: LaneDagStyle[Text])
   =>  LayeredDagDiagram[node] is Printable =

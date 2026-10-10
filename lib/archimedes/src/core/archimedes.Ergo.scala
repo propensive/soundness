@@ -34,12 +34,10 @@ package archimedes
 
 import scala.collection.immutable.Seq
 
-import scala.math
-
 // Deliberate stdlib opt-out, as in `Cell`.
 import scala.collection.immutable.{Map, Set}
-
 import scala.collection.mutable.ListBuffer
+import scala.math
 
 import anticipation.*
 import anticipation.*
@@ -286,7 +284,8 @@ object Ergo:
       case (glyph, Directive.Fixed(n, v)) if n == name && v == value => glyph.show
       case (glyph, Directive.Param(n)) if n == name                  => t"$glyph($value)"
 
-  private class Parser(s: String, holes: Iterator[Mathml])(using Tactic[Ergo.Error]) extends scala.caps.Stateful:
+  private class Parser(s: String, holes: Iterator[Mathml])(using Tactic[Ergo.Error])
+  extends scala.caps.Stateful:
     private var pos = 0
     private var open = '('
     private var close = ')'
@@ -394,6 +393,7 @@ object Ergo:
         case (u, o) =>
           val below = u.or(base)
           val above = o.or(base)
+
           Munderover(base, below, above,
             accent(below, t"accentunder") + accent(above, t"accent"))
 
@@ -480,7 +480,8 @@ object Ergo:
         do pos += 1
 
         rooted(Mn(s.substring(start, pos).nn.tt))
-      else if c == '\u0000' then fail(Ergo.Error.Reason.UnexpectedEnd)
+      else if c == '\u0000' then
+        fail(Ergo.Error.Reason.UnexpectedEnd)
       else
         // a content glyph, or an operator glyph degraded for want of an operand
         advance()

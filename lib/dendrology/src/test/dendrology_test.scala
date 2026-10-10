@@ -269,6 +269,29 @@ object Tests extends Suite(m"Dendrology tests"):
 
     . assert(_ == (3, 1, 2, 1))
 
+    // Reached in order from `A`, `C` precedes `D`, so `A → D` would cross `B → C`; the layering
+    // swaps them and the connector row needs no crossing tile.
+    test(m"Layered DAG: crossing minimisation removes an avoidable crossing"):
+      val dag = Dag
+        ( t"A" -> Set(),
+          t"B" -> Set(),
+          t"C" -> Set(t"A", t"B"),
+          t"D" -> Set(t"A") )
+      LayeredDagDiagram(dag).tiles.flatten.contains(DagTile.Crossing)
+
+    . assert(_ == false)
+
+    test(m"Layered DAG: balanced ranking sinks a source toward its dependent"):
+      import rankings.balancedRanking
+      val dag = Dag
+        ( t"A" -> Set(),
+          t"B" -> Set(),
+          t"C" -> Set(t"A"),
+          t"D" -> Set(t"B", t"C") )
+      LayeredDagDiagram(dag).rows.collect { case (_, nodesAt) if nodesAt.nonEmpty => nodesAt.size }
+
+    . assert(_ == List(1, 2, 1))
+
     test(m"Layered DAG: per-vertex glyph"):
       import laneDagStyles.boxDrawingLaneDagStyle
       val dag = Dag(t"A" -> Set(), t"B" -> Set(t"A"))

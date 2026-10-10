@@ -33,8 +33,8 @@
 package guillotine
 
 import java.io as ji
-import scala.caps
 
+import scala.caps
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
@@ -75,12 +75,12 @@ object Process:
   // delegate to turbulence's `OutputStream` writers.
   object Input:
     given data: (streamCut: Emit[Truncation.Error])
-    =>  ((Process.Input is Writable by Data)^{streamCut}) =
+    =>  ( (Process.Input is Writable by Data)^{streamCut} ) =
       (stdin, stream) =>
         summon[(ji.OutputStream is Writable by Data)^].write(stdin.outputStream, stream)
 
     given text: (streamCut: Emit[Truncation.Error], encoder: Codepage)
-    =>  ((Process.Input is Writable by Text)^{streamCut}) =
+    =>  ( (Process.Input is Writable by Text)^{streamCut} ) =
       (stdin, stream) =>
         summon[(ji.OutputStream is Writable by Text)^].write(stdin.outputStream, stream)
 
@@ -117,10 +117,14 @@ class Process private (java: ProcessHandle) extends Process.Ref, anticipation.Du
   def children: List[Process] =
     Process.processes(java.children.nn.iterator.nn.to[List])
 
-  def startTime[instantiable: Instantiable across Instants from Long as instant0]: Optional[instantiable] =
+  def startTime[instantiable: Instantiable across Instants from Long as instant0]
+  :   Optional[instantiable] =
+
     val instant = java.info.nn.startInstant.nn
     if instant.isPresent then instant0.apply(instant.get.nn.toEpochMilli) else Unset
 
-  def cpuUsage[instantiable: Instantiable across Durations from Long as duration0]: Optional[instantiable] =
+  def cpuUsage[instantiable: Instantiable across Durations from Long as duration0]
+  :   Optional[instantiable] =
+
     val duration = java.info.nn.totalCpuDuration.nn
     if duration.isPresent then duration0.apply(duration.get.nn.toNanos) else Unset

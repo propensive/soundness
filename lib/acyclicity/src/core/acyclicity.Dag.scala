@@ -262,6 +262,10 @@ final class Dag[node] private[acyclicity]
   def closure: Dag[node] = freeze.closure
   def reduction: Dag[node] = freeze.reduction
 
+  // Arranged for drawing: ranked layers, each ordered to minimise the crossings between it and
+  // the next (Sugiyama's layered approach, as `dot` draws it).
+  def layered(using ranking: Ranking): Layering[node] = Layering(this, ranking)
+
   // A value for every node from the values of its successors, which are computed first.
   def traversal[result](lambda: (Set[result], node) => result): Map[node, result] =
     val values = scm.HashMap[node, result]()

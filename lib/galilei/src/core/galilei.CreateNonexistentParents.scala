@@ -32,8 +32,8 @@
                                                                                                   */
 package galilei
 
-import prepositional.*
 import contingency.*
+import prepositional.*
 import serpentine.*
 
 trait CreateNonexistentParents extends Planar:

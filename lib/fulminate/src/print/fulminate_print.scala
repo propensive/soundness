@@ -40,4 +40,3 @@ import anticipation.*
 // generic fallback, so a call site which forgets fails to compile rather than degrading.
 package printables:
   given messagePrintable: Message is Printable = (message, termcap) => message.text
-

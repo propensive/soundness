@@ -57,11 +57,18 @@ extension [target](value: target)
     Opener(o, value)
 
   // Creates `value` in form `form`: `path.create[Directory]()` for an empty artifact, or
-  // `path.create[Zip]() { ... }` to author its contents, committed when the scope closes.
+  // `path.create[Tar]() { ... }` to author its contents, committed when the scope closes.
   def create[form](using c: (target is Creatable in form)^)
   :   (Creator { val creatable: c.type })^{c} =
 
     Creator(c, value)
+
+  // Archives `value` in form `form`: `directory.archive[Tar]()` yields the tarball of a
+  // directory tree as a value; flags, of the instance's `Operand` type, tune the archiving.
+  def archive[form](using a: (target is Archivable in form)^)
+  :   (Archiver { val archivable: a.type })^{a} =
+
+    Archiver(a, value)
 
   // Open a session on the target: the handle (of whatever kind the target's
   // `Sessional` instance provides) is available within `lambda`, and is

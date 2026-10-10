@@ -44,10 +44,18 @@ object ProtobufReader:
   // as a neutral carrier (jacinta's `Json.Reader` pattern): the field stays
   // pure, and each accessor reasserts the type at the rim — the audited
   // point.
-  private[locomotion] def apply(parser: ProtobufParser, tactic: Tactic[Protobuf.Error])
+  private[locomotion] def apply(parser: ProtobufParser^, tactic: Tactic[Protobuf.Error])
   :   ProtobufReader^ =
 
-    new ProtobufReader(parser, tactic.asInstanceOf[AnyRef])
+    new ProtobufReader(parser.asInstanceOf[AnyRef], tactic.asInstanceOf[AnyRef])
+
+  // Reasserts the capability of a reader that travelled as a neutral carrier — the
+  // generated parsers' `parseCarrier(reader0: AnyRef)` entry, which is spliced into user
+  // modules, so this is public, as `Protobuf.Parsable.parseField` is. Inline, so the cast
+  // expression itself lands in the user module: a method's `^` result is read-only in a
+  // module that is capture-checked but not separation-checked, and only the cast (or a
+  // parameter) yields the exclusive reader every `update` call needs.
+  inline def of(carrier: AnyRef): ProtobufReader^ = carrier.asInstanceOf[ProtobufReader^]
 
 // The public, restricted rim of the Protobuf wire parser, handed to
 // `Protobuf.Parsable` instances so they can consume fields straight off the
@@ -63,7 +71,7 @@ object ProtobufReader:
 // call, and nothing of it may be retained afterwards.
 final class ProtobufReader private (parser0: AnyRef, tactic0: AnyRef)
 extends caps.ExclusiveCapability, caps.Stateful:
-  private inline def parser: ProtobufParser = parser0.asInstanceOf[ProtobufParser]
+  private inline def parser: ProtobufParser^ = parser0.asInstanceOf[ProtobufParser^]
 
   // The sealed conduit for generated parsers: package-private, so the only
   // path to the wrapped capabilities from outside locomotion is through the
@@ -81,7 +89,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   update def more: Boolean = !parser.directAtLimit
   update def tag(): Int = parser.directTag()(using tactic)
   update def enterField(code: Int): Int = parser.directEnterField(code)(using tactic)
-  update def leaveField(saved: Int): Unit = parser.directLeaveField(saved)
+  update def leaveField(saved: Int): Unit = parser.directLeaveField(saved)(using tactic)
   update def skipField(code: Int): Unit = parser.directSkipField(code)(using tactic)
 
   // ── Scalars, reading the window's content exactly as the AST accessors
@@ -90,11 +98,11 @@ extends caps.ExclusiveCapability, caps.Stateful:
   update def varint(): Long = parser.directVarint()(using tactic)
   update def fixed32(): Int = parser.directFixed32()(using tactic)
   update def fixed64(): Long = parser.directFixed64()(using tactic)
-  update def text(): Text = parser.directStringWindow().tt
-  update def data(): Data = parser.directDataWindow()
+  update def text(): Text = parser.directStringWindow()(using tactic).tt
+  update def data(): Data = parser.directDataWindow()(using tactic)
 
   // ── The fallback seam: one field's wire value (for gathered occurrences
   // decoded through a `Decodable in Protobuf`), or the remaining window as
   // a message (for `Parsable.fromDecodable`). ──
   update def wire(code: Int): Protobuf = parser.directWire(code)(using tactic)
-  update def message(): Protobuf = parser.directMessage()
+  update def message(): Protobuf = parser.directMessage()(using tactic)

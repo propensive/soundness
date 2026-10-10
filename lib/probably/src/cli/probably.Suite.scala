@@ -32,7 +32,6 @@
                                                                                                   */
 package probably
 
-
 import java.lang as jl
 
 import anticipation.*
@@ -82,7 +81,9 @@ extends Testable(suiteName, Nil, Unset, key0):
   type Topic = topic
 
   def this(id: topic, title: Message) = this(id.tt, title, ())
-  def this(title: Message)(using Suite.Derivation[topic]) = this(Suite.derive(title.text), title, ())
+
+  def this(title: Message)(using Suite.Derivation[topic]) =
+    this(Suite.derive(title.text), title, ())
 
   // A `Reporter[Report]` whose report emits every datum as a `TestEvent` through the sink,
   // with execution brackets becoming progress events — the consumer owns all presentation.
@@ -115,7 +116,11 @@ extends Testable(suiteName, Nil, Unset, key0):
       override def scheduled(report: Report, id: Test.Id): Unit =
         report.emit:
           TestEvent.TestScheduled
-            (TestEvent.Ref.of(id), TestEvent.kindName(Entry.Kind.Check), Unset, id.tags.map(_.text), Nil)
+            ( TestEvent.Ref.of(id),
+              TestEvent.kindName(Entry.Kind.Check),
+              Unset,
+              id.tags.map(_.text),
+              Nil )
 
   // How many workers this suite's queued assertions may run on, when the host queues at all
   // (`--workers=<n>`): the larger of the host's count and this. One, the default, keeps

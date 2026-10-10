@@ -32,9 +32,8 @@
                                                                                                   */
 package distillate
 
-import scala.reflect
-
 import scala.caps
+import scala.reflect
 
 import anticipation.*
 import contingency.*
@@ -55,7 +54,7 @@ object Decodable extends Decodable2:
         abort(Number.Error(text, Int, Number.Error.Reason.Unparseable))
 
   given byte: (tactic: Tactic[Number.Error]^)
-  =>  ((Byte is Decodable in Text)^{tactic, caps.any}) =
+  =>  ( (Byte is Decodable in Text)^{tactic, caps.any} ) =
     text =>
       val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
         abort(Number.Error(text, Byte, Number.Error.Reason.Unparseable))
@@ -65,7 +64,7 @@ object Decodable extends Decodable2:
       else int.toByte
 
   given short: (tactic: Tactic[Number.Error]^)
-  =>  ((Short is Decodable in Text)^{tactic, caps.any}) =
+  =>  ( (Short is Decodable in Text)^{tactic, caps.any} ) =
     text =>
       val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
         abort(Number.Error(text, Short, Number.Error.Reason.Unparseable))
@@ -75,19 +74,19 @@ object Decodable extends Decodable2:
       else int.toShort
 
   given long: (tactic: Tactic[Number.Error]^)
-  =>  ((Long is Decodable in Text)^{tactic, caps.any}) =
+  =>  ( (Long is Decodable in Text)^{tactic, caps.any} ) =
     text =>
       try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
         abort(Number.Error(text, Long, Number.Error.Reason.Unparseable))
 
   given double: (tactic: Tactic[Number.Error]^)
-  =>  ((Double is Decodable in Text)^{tactic, caps.any}) =
+  =>  ( (Double is Decodable in Text)^{tactic, caps.any} ) =
     text =>
       try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
         abort(Number.Error(text, Double, Number.Error.Reason.Unparseable))
 
   given float: (tactic: Tactic[Number.Error]^)
-  =>  ((Float is Decodable in Text)^{tactic, caps.any}) =
+  =>  ( (Float is Decodable in Text)^{tactic, caps.any} ) =
     text =>
       try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
         abort(Number.Error(text, Float, Number.Error.Reason.Unparseable))
@@ -95,8 +94,8 @@ object Decodable extends Decodable2:
   given char: Char is Decodable in Text = _.s.charAt(0)
 
   given enumeration: [enumeration <: reflect.Enum: {Enumerable, Identifiable as identifiable}]
-  =>  (tactic: Tactic[Enumerable.Error]^)
-  =>  ((enumeration is Decodable in Text)^{tactic, caps.any}) =
+  =>  ( tactic: Tactic[Enumerable.Error]^ )
+  =>  ( (enumeration is Decodable in Text)^{tactic, caps.any} ) =
     value =>
 
       enumeration.value(identifiable.decode(value)).or:
@@ -109,11 +108,6 @@ object Decodable extends Decodable2:
   // `optionalityOptions` given, imported by name, outranks them. They are traits with a factory
   // rather than enums because an enum case cannot carry a per-format `Form` member.
 
-  // How a key the document omits reads: lenient yields `Unset`/`None`, strict raises the
-  // format's absence error
-  trait Absence extends Formal:
-    def strict: Boolean
-
   object Absence:
     def apply[form](strict0: Boolean): Absence in form =
       new Absence:
@@ -122,8 +116,9 @@ object Decodable extends Decodable2:
 
     given default: [form] => Absence in form = Absence(false)
 
-  // How the format's explicit null reads; only formats with a null literal consult it
-  trait Nullity extends Formal:
+  // How a key the document omits reads: lenient yields `Unset`/`None`, strict raises the
+  // format's absence error
+  trait Absence extends Formal:
     def strict: Boolean
 
   object Nullity:
@@ -134,9 +129,8 @@ object Decodable extends Decodable2:
 
     given default: [form] => Nullity in form = Nullity(false)
 
-  // How a value that is present but rejected by the inner decoder reads: strict (the default)
-  // lets the error through, lenient yields `Unset`/`None`
-  trait Fault extends Formal:
+  // How the format's explicit null reads; only formats with a null literal consult it
+  trait Nullity extends Formal:
     def strict: Boolean
 
   object Fault:
@@ -146,6 +140,11 @@ object Decodable extends Decodable2:
         def strict: Boolean = strict0
 
     given default: [form] => Fault in form = Fault(true)
+
+  // How a value that is present but rejected by the inner decoder reads: strict (the default)
+  // lets the error through, lenient yields `Unset`/`None`
+  trait Fault extends Formal:
+    def strict: Boolean
 
 trait Decodable extends Typeclass, Formal, Locative:
   inline def decodable: this.type = this

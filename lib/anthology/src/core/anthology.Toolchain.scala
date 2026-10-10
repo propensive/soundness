@@ -56,7 +56,8 @@ object Toolchain:
   // Assembles a toolchain from any number of edge groups, as the providers supply them:
   // `Toolchain(jarEdges(), dexEdges(), apkEdges())`.
   def apply(edges: List[Edge]*): Toolchain raises Link.Error =
-    // Deliberate stdlib opt-out, as noted above: Kahn's algorithm below is stdlib queue-and-map code.
+    // Deliberate stdlib opt-out, as noted above: Kahn's algorithm below is stdlib queue-and-map
+    // code.
     val all = edges.toList.flatMap(_.stdlib)
 
     all.groupBy { edge => (edge.source, edge.target) }.foreach: (pair, group) =>

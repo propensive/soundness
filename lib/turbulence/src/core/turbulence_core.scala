@@ -32,12 +32,12 @@
                                                                                                   */
 package turbulence
 
+import java.io as ji
+import java.lang as jl
+
 import scala.caps
 import scala.compiletime
 import scala.language.adhocExtensions
-
-import java.io as ji
-import java.lang as jl
 
 import anticipation.*
 import contingency.*
@@ -49,7 +49,6 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 import zephyrine.*
-
 import LineSeparation.*
 import abstractables.epochMillisecondsAbstractable
 
@@ -173,7 +172,8 @@ extension (consume stream: (Stream[Data] over Credit)^)
       private def ensure(): Int =
         if ended then -1 else stream.refill(Credit(block)) match
           case count: Int => if count == 0 then ensure() else count
-          case _          =>
+
+          case _ =>
             ended = true
             stream.close()
             -1
@@ -183,7 +183,10 @@ extension (consume stream: (Stream[Data] over Credit)^)
 
         if available < 0 then -1 else
           var byte: Int = 0
-          stream.lend { region => range => region.visit(range.capped(1)) { index => byte = region(index) & 0xff } }
+
+          stream.lend: region => range =>
+            region.visit(range.capped(1)): index => byte = region(index) & 0xff
+
           stream.skip(1)
           byte
 
@@ -217,7 +220,7 @@ extension (consume stream: (Stream[Data] over Credit)^)
     stream.refill(Credit(limit)) match
       case count: Int =>
         val take = count.min(limit)
-        val chunk = stream.lend { region => range => region.materialize(range.capped(take)) }
+        val chunk = stream.lend: region => range => region.materialize(range.capped(take))
         stream.skip(take)
         chunk
 
@@ -378,7 +381,8 @@ extension (stream: Chain[Data])
         if next.bytes < count then
           val head: Data = next
           head #:: recur(more, count - next.bytes)
-        else Chain(next.segment((0).z till (count.long.toInt).z).asInstanceOf[Data])
+        else
+          Chain(next.segment((0).z till (count.long.toInt).z).asInstanceOf[Data])
 
     recur(stream, bytes)
 
@@ -408,7 +412,8 @@ extension (stream: Chain[Data])
 
     override def close(): Unit = ()
 
-    def read(): Int = if available() == 0 then -1 else (focus.readUnchecked(offset) & 0xff).also(offset += 1)
+    def read(): Int =
+      if available() == 0 then -1 else (focus.readUnchecked(offset) & 0xff).also(offset += 1)
 
     override def read(array: scala.Array[Byte] | Null, arrayOffset: Int, length: Int): Int =
       if length == 0 then 0 else

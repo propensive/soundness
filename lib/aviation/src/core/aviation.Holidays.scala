@@ -33,7 +33,6 @@
 package aviation
 
 import scala.collection.immutable.SortedMap
-
 import scala.math.Ordering
 
 import rudiments.*

@@ -32,7 +32,6 @@
                                                                                                   */
 package pneumatic
 
-
 import anticipation.*
 import zephyrine.*
 

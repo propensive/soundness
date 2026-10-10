@@ -119,6 +119,7 @@ extension (data: Data)
         // (`canThrowAny` only relicenses the rethrow of the exceptions this handler does not
         // match.)
         import unsafeExceptions.canThrowAny
+
         if securityException(error, "javax.crypto.BadPaddingException")
         then abort(Crypto.Error(Crypto.Error.Reason.BadPadding, detail(error)))
         else if securityException(error, "javax.crypto.IllegalBlockSizeException")
@@ -150,8 +151,7 @@ extension [cipher <: Cipher](key: PublicKey[cipher])
 
 extension [cipher <: Cipher](key: PrivateKey[cipher]^)
   def uncloak[result](block: Decryptor[cipher]^ ?=> result): result =
-    key.secret.uncloak: bytes =>
-      block(using Decryptor(Array.unsafeFrozen(bytes)))
+    key.secret.uncloak: bytes => block(using Decryptor(Array.unsafeFrozen(bytes)))
 
 extension [cipher <: Cipher](key: SymmetricKey[cipher]^)
   def uncloak[result](block: (Encryptor[cipher]^, Decryptor[cipher]^) ?=> result): result =

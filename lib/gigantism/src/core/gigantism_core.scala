@@ -48,12 +48,14 @@ object Lifts:
 
   def varargs[element: Type](elements: List[Expr[element]])(using Quotes)
   :   Expr[scala.Seq[element]] =
+
     // stdlib bridge: `Varargs` takes a stdlib `Seq`; this is the confined hop.
     scala.quoted.Varargs(elements.stdlib)
 
   object Varargs:
     def unapply[element](expr: Expr[scala.Seq[element]])(using Quotes)
     :   Option[List[Expr[element]]] =
+
       scala.quoted.Varargs.unapply(expr).map(List.from(_))
 
 inline def every[value]: Every[value] = ${Every.summonAll[value]}

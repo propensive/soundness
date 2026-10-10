@@ -211,13 +211,13 @@ object atomicMacros:
             case ident: Ident if ident.symbol == symbol => Shape.Identity
 
             case Apply(Select(left, "+"), args)
-            if numeric && args.length == 1 && isParam(left, symbol)
-            && !mentions(args.head, roots) =>
+            if numeric && args.length == 1 && isParam(left, symbol) &&
+              !mentions(args.head, roots) =>
               Shape.Increase
 
             case Apply(Select(left, "-"), args)
-            if numeric && args.length == 1 && isParam(left, symbol)
-            && !mentions(args.head, roots) =>
+            if numeric && args.length == 1 && isParam(left, symbol) &&
+              !mentions(args.head, roots) =>
               Shape.Decrease
 
             case other =>
@@ -252,9 +252,9 @@ object atomicMacros:
           """
 
   def int
-     ( atomic:     Expr[juca.AtomicInteger],
-       transition: Expr[Int => Int],
-       prior:      Boolean )
+    ( atomic:     Expr[juca.AtomicInteger],
+      transition: Expr[Int => Int],
+      prior:      Boolean )
   :   Macro[Int] =
 
     import quotes.reflect.*
@@ -306,9 +306,9 @@ object atomicMacros:
           }
 
   def long
-     ( atomic:     Expr[juca.AtomicLong],
-       transition: Expr[Long => Long],
-       prior:      Boolean )
+    ( atomic:     Expr[juca.AtomicLong],
+      transition: Expr[Long => Long],
+      prior:      Boolean )
   :   Macro[Long] =
 
     import quotes.reflect.*
@@ -360,9 +360,9 @@ object atomicMacros:
   // A flag has no arithmetic, so only the identity and constant shapes have an intrinsic; `!_`
   // and anything else become the retry loop.
   def bool
-     ( atomic:     Expr[juca.AtomicBoolean],
-       transition: Expr[Boolean => Boolean],
-       prior:      Boolean )
+    ( atomic:     Expr[juca.AtomicBoolean],
+      transition: Expr[Boolean => Boolean],
+      prior:      Boolean )
   :   Macro[Boolean] =
 
     import quotes.reflect.*
@@ -401,9 +401,9 @@ object atomicMacros:
   // equal-but-distinct value is a genuine write, and a value type may define `==` expensively or
   // inconsistently. `Cell` is the one place where the two differ.
   def ref[value: Type]
-     ( atomic:     Expr[juca.AtomicReference[value]],
-       transition: Expr[value => value],
-       prior:      Boolean )
+    ( atomic:     Expr[juca.AtomicReference[value]],
+      transition: Expr[value => value],
+      prior:      Boolean )
   :   Macro[value] =
 
     import quotes.reflect.*

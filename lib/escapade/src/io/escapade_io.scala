@@ -58,4 +58,3 @@ package writables:
     def write(target: Self, stream: (Stream[Array[Teletype]^{}] over Credit)^): Unit =
       stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
       . records.each(Err.print(_))
-

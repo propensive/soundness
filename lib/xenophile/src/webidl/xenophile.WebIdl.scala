@@ -131,7 +131,7 @@ object WebIdl:
       def signature: Text = arguments.map(_.typed.text).join(t",")
 
       kind match
-        case Member.Kind.Attribute | Member.Kind.Constant => name
+        case Member.Kind.Attribute | Member.Kind.Constant       => name
         case Member.Kind.Constructor                            => Text(s"new($signature)")
 
         case Member.Kind.Operation =>
@@ -224,7 +224,6 @@ object WebIdl:
     import scala.collection.immutable.List as SList
     import scala.collection.immutable.{::, Nil as SNil}
 
-
     def parse(source: Text): List[WebIdl.Definition] raises Error =
       val definitions = scala.collection.mutable.ListBuffer[WebIdl.Definition]()
       var tokens = tokenize(source.s)
@@ -277,9 +276,12 @@ object WebIdl:
             recur(end, "", source.substring(index, end).nn :: flushed)
           else if char == '.' && next == '.' && next2 == '.' then
             recur(index + 3, "", "..." :: flushed)
-          else if ident(char) then recur(index + 1, current + char, tokens)
-          else if char.isWhitespace then recur(index + 1, "", flushed)
-          else recur(index + 1, "", char.toString :: flushed)
+          else if ident(char) then
+            recur(index + 1, current + char, tokens)
+          else if char.isWhitespace then
+            recur(index + 1, "", flushed)
+          else
+            recur(index + 1, "", char.toString :: flushed)
 
       recur(0, "", SList())
 
@@ -294,10 +296,11 @@ object WebIdl:
           case ")" :: rest        => (acc.reverse, rest)
           case "," :: rest        => scopes(rest, acc)
           case name :: rest       => scopes(rest, name.tt :: acc)
-          case SNil            => (acc.reverse, SList())
+          case SNil               => (acc.reverse, SList())
 
       def group(tokens: SList[String], depth: Int, acc: SList[Text])
       :   (SList[Text], SList[String]) raises Error =
+
         tokens match
           case "]" :: rest if depth == 0 => (acc, rest)
           case "[" :: rest               => group(rest, depth + 1, acc)
@@ -311,7 +314,7 @@ object WebIdl:
             group(rest, depth, acc :+ name.tt)
 
           case _ :: rest => group(rest, depth, acc)
-          case SNil   => fail(t"an extended attribute is unterminated", tokens)
+          case SNil      => fail(t"an extended attribute is unterminated", tokens)
 
       tokens match
         case "[" :: rest =>
@@ -425,7 +428,9 @@ object WebIdl:
                 afterDefault match
                   case "," :: more => recur(more, argument :: acc)
                   case ")" :: more => (((argument :: acc).reverse).to(List), more)
-                  case _           => fail(t"an argument must be followed by `,` or `)`", afterDefault)
+
+                  case _ =>
+                    fail(t"an argument must be followed by `,` or `)`", afterDefault)
 
               case SNil => fail(t"an argument name was expected", afterVariadic)
 
@@ -435,7 +440,7 @@ object WebIdl:
 
     private def member(tokens: SList[String])
     :   (Optional[Member], Optional[(Text, List[Foreign.Type])], SList[String]) raises
-          Error =
+      Error =
 
       val (_, afterAttrs) = attributes(tokens)
 
@@ -449,7 +454,7 @@ object WebIdl:
 
       def attribute(tokens: SList[String], readonly: Boolean)
       :   (Optional[Member], Optional[(Text, List[Foreign.Type])], SList[String]) raises
-            Error =
+        Error =
 
         val (typed, afterType) = typeOf(tokens)
 
@@ -465,7 +470,7 @@ object WebIdl:
 
       def intrinsic(keyword: Text, tokens: SList[String])
       :   (Optional[Member], Optional[(Text, List[Foreign.Type])], SList[String]) raises
-            Error =
+        Error =
 
         tokens match
           case "<" :: rest =>
@@ -476,7 +481,7 @@ object WebIdl:
 
       def operation(tokens: SList[String], special: Optional[Text])
       :   (Optional[Member], Optional[(Text, List[Foreign.Type])], SList[String]) raises
-            Error =
+        Error =
 
         val (typed, afterType) = typeOf(tokens)
 
@@ -546,21 +551,21 @@ object WebIdl:
 
     private def memberList(tokens: SList[String])
     :   (List[Member], List[(Text, List[Foreign.Type])], SList[String]) raises
-          Error =
+      Error =
 
       def recur
         ( tokens:     SList[String],
           members:    SList[Member],
           intrinsics: SList[(Text, List[Foreign.Type])] )
       :   (List[Member], List[(Text, List[Foreign.Type])], SList[String]) raises
-            Error =
+        Error =
 
         tokens match
           case "}" :: ";" :: rest =>
             (members.reverse.to(List), intrinsics.reverse.to(List), rest)
 
           case "}" :: rest => fail(t"a definition must end `};`", rest)
-          case SNil     => fail(t"a definition body is unterminated", tokens)
+          case SNil        => fail(t"a definition body is unterminated", tokens)
 
           case _ =>
             val (parsed, intrinsic, rest) = member(tokens)
@@ -601,7 +606,7 @@ object WebIdl:
 
           tokens match
             case "}" :: ";" :: rest => (acc.reverse.to(List), rest)
-            case SNil            => fail(t"a dictionary body is unterminated", tokens)
+            case SNil               => fail(t"a dictionary body is unterminated", tokens)
 
             case _ =>
               val (_, afterAttrs) = attributes(tokens)
@@ -684,14 +689,16 @@ object WebIdl:
           val (arguments, after) = argumentList(afterResult)
 
           after match
-            case ";" :: more => (WebIdl.Definition.CallbackFunction(name.tt, result, arguments), more)
-            case _           => fail(t"a `;` was expected", after)
+            case ";" :: more =>
+              (WebIdl.Definition.CallbackFunction(name.tt, result, arguments), more)
+
+            case _ => fail(t"a `;` was expected", after)
 
         case target :: "includes" :: mixin :: ";" :: rest =>
           (WebIdl.Definition.Includes(target.tt, mixin.tt), rest)
 
         case construct :: _ => unsupported(construct.tt)
-        case SNil        => fail(t"a definition was expected", afterAttrs)
+        case SNil           => fail(t"a definition was expected", afterAttrs)
 
 trait WebIdl extends Ecosystem:
   type Grammar = WebIdlDialect.type

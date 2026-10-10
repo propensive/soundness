@@ -32,12 +32,12 @@
                                                                                                   */
 package enigmatic
 
-import scala.caps
-
 import java.lang.foreign as jlf
 import java.security as js
 import java.util as ju
 import javax.crypto as jc, jc.spec as jcs
+
+import scala.caps
 
 // The available cloaks, selected by named import (e.g. `import enigmatic.cloaks.offHeapCloak`).
 // All but `heap` keep secret material out of (or encrypted on) the Java heap, so that a
@@ -156,7 +156,8 @@ private[enigmatic] class VeiledHeapCloak extends Cloak, caps.SharedCapability:
       new Secret:
         def uncloak[result](block: scala.Array[Byte] => result): result =
           val cleartext = withKey[scala.Array[Byte]]: keyBytes =>
-            aes[scala.Array[Byte]](keyBytes, jc.Cipher.DECRYPT_MODE, nonce)(_.doFinal(ciphertext).nn)
+            aes[scala.Array[Byte]](keyBytes, jc.Cipher.DECRYPT_MODE, nonce)
+              ( _.doFinal(ciphertext).nn )
 
           try block(cleartext) finally ju.Arrays.fill(cleartext, 0.toByte)
 
@@ -169,9 +170,12 @@ private[enigmatic] class VeiledOffHeapCloak extends Cloak, caps.SharedCapability
   def cloak(bytes: scala.Array[Byte]): Secret^{this} =
     val nonce = new scala.Array[Byte](12)
     random.nextBytes(nonce)
+
     val ciphertext =
-      aes[scala.Array[Byte]](keyBytes.asInstanceOf[scala.Array[Byte]], jc.Cipher.ENCRYPT_MODE, nonce):
-        _.doFinal(bytes).nn
+      aes[scala.Array[Byte]]
+        ( keyBytes.asInstanceOf[scala.Array[Byte]], jc.Cipher.ENCRYPT_MODE, nonce )
+        ( _.doFinal(bytes).nn )
+
     ju.Arrays.fill(bytes, 0.toByte)
 
     val arena = jlf.Arena.ofShared().nn
@@ -189,8 +193,9 @@ private[enigmatic] class VeiledOffHeapCloak extends Cloak, caps.SharedCapability
           // a fresh read capability, which a `try` result may not.
           val cleartext: Array[Byte]^{} =
             try
-              aes[Array[Byte]^{}](keyBytes.asInstanceOf[scala.Array[Byte]], jc.Cipher.DECRYPT_MODE, nonce):
-                _.doFinal(recovered).nn.asInstanceOf[Array[Byte]^{}]
+              aes[Array[Byte]^{}]
+                ( keyBytes.asInstanceOf[scala.Array[Byte]], jc.Cipher.DECRYPT_MODE, nonce )
+                ( _.doFinal(recovered).nn.asInstanceOf[Array[Byte]^{}] )
             finally ju.Arrays.fill(recovered, 0.toByte)
 
           val cleartext0 = cleartext.asInstanceOf[scala.Array[Byte]]

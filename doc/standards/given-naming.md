@@ -97,7 +97,7 @@ implementation comes from. One word per source, used the same way everywhere:
 | A Java module | the module's name | `javaBaseFilesystem`, `javaBaseSockets`, `javaNetHttp`, `jdkHttpserver` |
 | A WASI interface | `wasi` + the interface | `wasiFilesystem` (`wasi:filesystem`), `wasiHttp`, `wasiSockets` |
 | Scala Native, over libc/POSIX | `scalaNative` | `scalaNativeFilesystem`, `scalaNativeSockets` |
-| Scala.js | `javascript` | `javascriptThreading` |
+| Scala.js | `javascript` | `javascriptThreads` |
 | Soundness's own pure-Scala code | `soundness` | `soundnessHttp`, `soundnessHttpd`, `soundnessProvider` |
 | A third party | its own name | `opensslProvider`, `re2`, `resendCourier` |
 
@@ -113,7 +113,7 @@ Two things look like provenance and are not. A Java *type* adopted as a represen
 keeps the type-path name it already has elsewhere in Soundness (`javaNioPath`,
 `javaUtilDate`, `javaNetUrl`): the choice there is the type, not the module. And Java's
 own concept words stay Java's where they name the concept rather than the source:
-`platformThreading` and `virtualThreading` are platform and virtual threads;
+`platformThreads` and `virtualThreads` are platform and virtual threads;
 `systemClassloader` and `platformClassloader` are the JDK's names for those loaders.
 
 `native` never appears alone. It has meant Scala Native, the JDK's `WatchService` and

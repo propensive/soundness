@@ -65,12 +65,12 @@ object Cookie:
   // as bare words, so the rendering says exactly which attributes the template carries.
   given inspectable: [cookie <: Cookie[?]] => cookie is Inspectable = cookie =>
     Iterable
-     ( cookie.name.inspect,
-       cookie.domain.let { domain => t"domain:${domain.inspect}" },
-       cookie.path.let { path => t"path:${path.inspect}" },
-       cookie.expiry.let { expiry => t"expiry:${expiry.inspect}" },
-       if cookie.secure then t"secure" else Unset,
-       if cookie.httpOnly then t"httpOnly" else Unset )
+      ( cookie.name.inspect,
+        cookie.domain.let { domain => t"domain:${domain.inspect}" },
+        cookie.path.let { path => t"path:${path.inspect}" },
+        cookie.expiry.let { expiry => t"expiry:${expiry.inspect}" },
+        if cookie.secure then t"secure" else Unset,
+        if cookie.httpOnly then t"httpOnly" else Unset )
 
     . compact.join(t"Cookie(", t" ╱ ", t")")
 

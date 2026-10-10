@@ -56,8 +56,8 @@ object Suggestion:
   :   Suggestion =
 
     new Suggestion
-      (core, description, hidden, incomplete, aliases, prefix, suffix, expanded, group, operand,
-       display)
+      ( core, description, hidden, incomplete, aliases, prefix, suffix, expanded, group, operand,
+       display )
 
 
 case class Suggestion

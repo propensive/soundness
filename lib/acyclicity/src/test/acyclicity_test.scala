@@ -590,3 +590,56 @@ object Tests extends Suite(m"Acyclicity Tests"):
         demilitarize:
           val id: Name[Dot.Id] = n""
       . assert(_.nonEmpty)
+
+
+    suite(m"Layering"):
+      test(m"a chain has one node per layer"):
+        val dag = Dag(t"a" -> Set(), t"b" -> Set(t"a"), t"c" -> Set(t"b"))
+        dag.layered.layers.map(_.map { case Layering.Vertex.Real(n) => n; case other => t"?" })
+      . assert(_ == List(List(t"a"), List(t"b"), List(t"c")))
+
+      test(m"the diamond's middle layer holds both siblings"):
+        diamond.layered.layers.map(_.length)
+      . assert(_ == List(1, 2, 1))
+
+      test(m"ranks are the longest path from a source"):
+        diamond.layered.rank
+      . assert(_ == Map(t"d" -> 0, t"b" -> 1, t"c" -> 1, t"a" -> 2))
+
+      // In first-reach order `c` precedes `d`, which crosses `a → d` over `b → c`; swapping
+      // them is planar.
+      test(m"a crossing in the initial order is removed"):
+        val dag = Dag(t"a" -> Set(), t"b" -> Set(), t"c" -> Set(t"a", t"b"), t"d" -> Set(t"a"))
+        val layering = dag.layered
+        (layering.crossings, layering.position(t"d") < layering.position(t"c"))
+      . assert(_ == (0, true))
+
+      test(m"an edge spanning two layers passes through a virtual vertex"):
+        val dag = Dag(t"a" -> Set(), t"b" -> Set(t"a"), t"c" -> Set(t"a", t"b"))
+        dag.layered.layers(1).contains(Layering.Vertex.Virtual(t"a", t"c"))
+      . assert(_ == true)
+
+      test(m"links join every adjacent pair of layers"):
+        val dag = Dag(t"a" -> Set(), t"b" -> Set(t"a"), t"c" -> Set(t"a", t"b"))
+        dag.layered.links.map(_.length)
+      . assert(_ == List(2, 2))
+
+      // `b` feeds only `d`, two layers down: `Balanced` sinks it to the layer above `d`.
+      test(m"balanced ranking pulls a source toward its dependent"):
+        val dag =
+          Dag(t"a" -> Set(), t"b" -> Set(), t"c" -> Set(t"a"), t"d" -> Set(t"b", t"c"))
+
+        import rankings.balancedRanking
+        dag.layered.rank(t"b")
+      . assert(_ == 1)
+
+      test(m"longest-path ranking keeps every source in the first layer"):
+        val dag =
+          Dag(t"a" -> Set(), t"b" -> Set(), t"c" -> Set(t"a"), t"d" -> Set(t"b", t"c"))
+
+        dag.layered.rank(t"b")
+      . assert(_ == 0)
+
+      test(m"an empty graph has no layers"):
+        Dag[Text]().layered.layers
+      . assert(_ == Nil)

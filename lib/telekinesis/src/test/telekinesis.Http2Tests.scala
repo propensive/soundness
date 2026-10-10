@@ -220,7 +220,7 @@ object Http2Tests extends Suite(m"Telekinesis HTTP/2 Tests"):
       . assert(_ == true)
 
     suite(m"End-to-end over an in-memory Duplex (the whole stack)"):
-      import threading.virtualThreading
+      import threads.virtualThreads
       import probates.cancelProbate
 
       // An in-memory `Duplex` pair: bytes written to one side surface on the other's

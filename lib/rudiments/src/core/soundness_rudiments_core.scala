@@ -34,9 +34,10 @@ package soundness
 
 export
   rudiments
-  // `Scribe`/`scribe` and `Surveyor`/`survey` are deliberately absent: their lenders and combinators are
-  // dependent-typed inline extensions, which synthesized export forwarders break (the same
-  // policy as zephyrine's `Region`/`Slate`). Consumers import them from `rudiments` directly.
+  // `Scribe`/`scribe` and `Surveyor`/`survey` are deliberately absent: their lenders and
+  // combinators are dependent-typed inline extensions, which synthesized export forwarders break
+  // (the same policy as zephyrine's `Region`/`Slate`). Consumers import them from `rudiments`
+  // directly.
   . { !!, &, all, also, and, annex, Atomic, b, bi, Bijection, bijection, Bytes, bytes, collate,
       DecimalConverter, Defaulting, Defaulting2, Digit, Dynamical, Dynamically, dynamically, each,
       establish, Exit,
@@ -46,7 +47,8 @@ export
       Loop, loop, mean, mib, Mutex, next, ordinal, pipe, place, plus,
       prior, probe, product, Fixpoint, reflectClass, repeat, runs, runsBy, segment, Segmentable,
       before, upto, from, after, snip, tail, Appendable, Prependable, `:+`, `+:`,
-      indexed, sort, order, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri, triple, tuple, twin,
+      indexed, sort, order, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri,
+      triple, tuple, twin,
       typed, typeName, unit, unsafeImmutable, unsafeMatchable, unsafeMutable, unwind, upsert,
       variance, waive, weave, when, yet, upon, context,
       mean2, unique, seek, reap, where, Scoped, unused,
@@ -74,6 +76,7 @@ extension [form](range: prepositional.`in`[denominative.Interval, form])
 extension (interval: denominative.Interval)
   inline def unsafeAttested[within](within: within)(using erased vacuous.Unsafe)
   :   prepositional.`in`[denominative.Interval, within.type] =
+
     interval.asInstanceOf[prepositional.`in`[denominative.Interval, within.type]]
 
 extension [self](value: self)(using applicable: denominative.Applicable { type Self = self })
@@ -84,6 +87,7 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
 
   def confine(index: applicable.Operand)
   :   vacuous.Optional[prepositional.`in`[applicable.Operand, value.type]] =
+
     if applicable.contains(value, index)
     then index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]]
     else vacuous.Unset
@@ -92,6 +96,7 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
   inline def pick[result](index: applicable.Operand)
     ( inline lambda: prepositional.`in`[applicable.Operand, value.type] => result )
   :   vacuous.Optional[result] =
+
     if applicable.contains(value, index)
     then lambda(index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]])
     else vacuous.Unset
@@ -99,14 +104,15 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
   // Re-declared like the rest of the group; see `rudiments.unsafeAttested` for the discipline.
   def unsafeAttested(index: applicable.Operand)(using erased vacuous.Unsafe)
   :   prepositional.`in`[applicable.Operand, value.type] =
+
     index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]]
 
   inline def unsafeAttested[result](index: applicable.Operand)
-    (inline lambda: prepositional.`in`[applicable.Operand, value.type] => result)
-    (using erased vacuous.Unsafe)
+    ( inline lambda: prepositional.`in`[applicable.Operand, value.type] => result )
+    ( using erased vacuous.Unsafe )
   :   result =
-    lambda(index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]])
 
+    lambda(index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]])
 
 
   // The index parameter is typed directly as `applicable.Operand` (not a bounded type
@@ -121,10 +127,12 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
   // confined/checked dispatch behaves identically here.
   transparent inline def apply[index](ordinal: index)(using sub: index <:< applicable.Operand)
   :   vacuous.Optional[applicable.Result] =
+
     rudiments.apply(value)(ordinal)
 
   transparent inline def at[index](ordinal: index)(using sub: index <:< applicable.Operand)
   :   vacuous.Optional[applicable.Result] =
+
     rudiments.at(value)(ordinal)
 
 // Re-declared for the same reason as the `Deindex` group above: the typeclass evidence is a
@@ -179,17 +187,22 @@ extension [value](value: value)
   def keep(predicate: traversable.Operand => Boolean): segmentable.Segment =
     rudiments.keep(value)(predicate)
 
-  def keep(predicate: traversable.Operand => Boolean, bidi: anticipation.Bidi): segmentable.Segment =
+  def keep(predicate: traversable.Operand => Boolean, bidi: anticipation.Bidi)
+  :   segmentable.Segment =
+
     rudiments.keep(value)(predicate, bidi)
 
   def skip(predicate: traversable.Operand => Boolean): segmentable.Segment =
     rudiments.skip(value)(predicate)
 
-  def skip(predicate: traversable.Operand => Boolean, bidi: anticipation.Bidi): segmentable.Segment =
+  def skip(predicate: traversable.Operand => Boolean, bidi: anticipation.Bidi)
+  :   segmentable.Segment =
+
     rudiments.skip(value)(predicate, bidi)
 
 extension [self](inline value: self)
-  (using applicable: denominative.Applicable { type Self = self; type Operand = denominative.Ordinal })
+  ( using applicable: denominative.Applicable
+                        { type Self = self; type Operand = denominative.Ordinal } )
 
   inline def prim: vacuous.Optional[applicable.Result] = rudiments.prim(value)
   inline def sec: vacuous.Optional[applicable.Result] = rudiments.sec(value)

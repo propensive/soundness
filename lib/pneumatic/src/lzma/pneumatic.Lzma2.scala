@@ -242,7 +242,9 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
       1
 
   // An MSB-first probability tree of `size` entries at `offset` within `probs`.
-  private update def rcDecodeBitTree(probs: scala.Array[Short]^{this}, offset: Int, size: Int): Int =
+  private update def rcDecodeBitTree(probs: scala.Array[Short]^{this}, offset: Int, size: Int)
+  :   Int =
+
     var symbol = 1
 
     while
@@ -252,7 +254,8 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
 
     symbol - size
 
-  private update def rcDecodeBitTreeReverse(probs: scala.Array[Short]^{this}, offset: Int, size: Int)
+  private update def rcDecodeBitTreeReverse
+    ( probs: scala.Array[Short]^{this}, offset: Int, size: Int )
   :   Int =
 
     var symbol = 1
@@ -401,8 +404,7 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
     var symbol = 1
 
     if stateIsLiteral then
-      while symbol < 0x100 do
-        symbol = (symbol << 1) | rcDecodeBit(literalProbs, base + symbol)
+      while symbol < 0x100 do symbol = (symbol << 1) | rcDecodeBit(literalProbs, base + symbol)
     else
       var matchByte = dictGetByte(reps(0)) << 1
       var continue = true
@@ -414,8 +416,7 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
         symbol = (symbol << 1) | bit
         if matchBit != bit then continue = false
 
-      while symbol < 0x100 do
-        symbol = (symbol << 1) | rcDecodeBit(literalProbs, base + symbol)
+      while symbol < 0x100 do symbol = (symbol << 1) | rcDecodeBit(literalProbs, base + symbol)
 
     dictPutByte(symbol.toByte)
     updateLiteralState()
@@ -436,6 +437,7 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
 
       if distSlot < DistModelEnd then
         val index = distSlot - DistModelStart
+
         reps(0) += rcDecodeBitTreeReverse(distSpecial, distSpecialOffsets.readUnchecked(index),
             distSpecialSize(index))
       else
@@ -599,7 +601,8 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
             if chunkReset >= 2 then configureProperties(readByte())
             else if !modelReady then
               throw IllegalStateException("the LZMA2 data is corrupt: no properties before chunk")
-            else if chunkReset == 1 then resetModel()
+            else if chunkReset == 1 then
+              resetModel()
 
             if chunkReset == 3 then dictReset()
             uncompressedRemaining = chunkUncompressed
@@ -627,7 +630,6 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
             progressing = true
 
     compact()
-
 
   private update def configureProperties(propsByte: Int): Unit =
     val (lc, lp, pb) = Lzma2Options.decodeProperties(propsByte)
@@ -1161,8 +1163,9 @@ extends caps.Mutable:
 
       if slot < DistModelEnd then
         val index = slot - DistModelStart
-        price += RangeCoder.bitTreeReversePrice(distSpecial, distSpecialOffsets.readUnchecked(index),
-            distSpecialSize(index), dist - base)
+
+        price += RangeCoder.bitTreeReversePrice(distSpecial,
+            distSpecialOffsets.readUnchecked(index), distSpecialSize(index), dist - base)
       else
         price += RangeCoder.directBitsPrice(footerBits - AlignBits)
         price += RangeCoder.bitTreeReversePrice(distAlign, 0, AlignSize, (dist - base) & AlignMask)
@@ -1280,8 +1283,9 @@ extends caps.Mutable:
 
       if slot < DistModelEnd then
         val index = slot - DistModelStart
-        rcEncodeBitTreeReverse(distSpecial, distSpecialOffsets.readUnchecked(index), distSpecialSize(index),
-            dist - base)
+
+        rcEncodeBitTreeReverse(distSpecial, distSpecialOffsets.readUnchecked(index),
+            distSpecialSize(index), dist - base)
       else
         rcEncodeDirectBits((dist - base) >>> AlignBits, footerBits - AlignBits)
         rcEncodeBitTreeReverse(distAlign, 0, AlignSize, (dist - base) & AlignMask)
@@ -1326,9 +1330,7 @@ extends caps.Mutable:
         val uncompressedCeiling = Lzma2.UncompressedSizeMax - Lzma.MatchLenMax
         val compressedCeiling = Lzma2.CompressedSizeMax - 64
 
-        while hasMore &&
-          (pos - startPos) < uncompressedCeiling &&
-          rcPendingSize < compressedCeiling
+        while hasMore && (pos - startPos) < uncompressedCeiling && rcPendingSize < compressedCeiling
         do encodeSymbol()
 
         val uncompressedSize = pos - startPos

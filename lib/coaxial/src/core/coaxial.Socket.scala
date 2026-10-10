@@ -208,7 +208,8 @@ object Socket:
     sealed trait Domain extends Option
 
     case object ReuseAddress                  extends Tcp, Udp, Domain  // SO_REUSEADDR
-    case object ReusePort                      extends Tcp, Udp         // SO_REUSEPORT (OS-dependent)
+    case object ReusePort                      extends Tcp, Udp         // SO_REUSEPORT
+                                                                        // (OS-dependent)
     case class  ReceiveBuffer(bytes: Int)      extends Tcp, Udp, Domain // SO_RCVBUF
     case class  SendBuffer(bytes: Int)         extends Tcp, Udp, Domain // SO_SNDBUF
     case class  Timeout(milliseconds: Int)     extends Tcp, Udp, Domain // SO_TIMEOUT (blocking)

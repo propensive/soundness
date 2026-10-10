@@ -42,14 +42,6 @@ object Paths:
   // The `java.io.File` / `java.nio.file.Path` "Representative of Paths" bridges live in `diuretic`
   // (with the rest of the `java.*` interop) so that `anticipation.path` stays Scala.js-portable.
 
-  // Resolve a directory `Text` into a `path`, preferring the trusted instantiation — temporary and
-  // working directories come from the OS, so they are trusted — and falling back to plain-text
-  // instantiation. This is resolved by ordinary implicit search (the `trusted` given in the
-  // companion takes priority over `fromText` in the parent), which works inside a staged quote where
-  // an inline `summonFrom` over the two `Instantiable` givens cannot be reduced.
-  trait Resolver[path]:
-    def apply(text: Text): path
-
   object Resolver extends Resolver2:
     given trusted: [path] => (instantiable: (path is Instantiable across Paths from Trusted)^)
     =>  Resolver[path] =
@@ -60,6 +52,14 @@ object Paths:
       // they are expanded inside staged quotes (ethereal daemon `cli` blocks).
       // [quote-wall] resolver must stay pure; expanded inside staged quotes
       caps.unsafe.unsafeAssumePure: value => Trusted(value).instantiate
+
+  // Resolve a directory `Text` into a `path`, preferring the trusted instantiation — temporary and
+  // working directories come from the OS, so they are trusted — and falling back to plain-text
+  // instantiation. This is resolved by ordinary implicit search (the `trusted` given in the
+  // companion takes priority over `fromText` in the parent), which works inside a staged quote
+  // where an inline `summonFrom` over the two `Instantiable` givens cannot be reduced.
+  trait Resolver[path]:
+    def apply(text: Text): path
 
   trait Resolver2:
     given fromText: [path] => (instantiable: (path is Instantiable across Paths from Text)^)

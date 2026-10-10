@@ -59,6 +59,7 @@ object protointernal:
 
   def decompose(using Quotes)(repr: quotes.reflect.TypeRepr)
   :   scala.collection.immutable.Set[quotes.reflect.TypeRepr] =
+
     import quotes.reflect.*
 
     repr.dealias.asMatchable match

@@ -34,11 +34,11 @@ package ethereal
 
 import ambience.*
 import anticipation.*
+import aperture.*
 import contingency.*
 import denominative.*
 import distillate.*
 import eucalyptus.*
-import aperture.*
 import exoskeleton.*
 import fulminate.*
 import galilei.*
@@ -55,12 +55,11 @@ import turbulence.*
 import vacuous.*
 import zeppelin.*
 
+import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.overwritePreexisting
-
-import filesystemBackends.javaBaseFilesystem
 import rudiments.sortingAlgorithms.timsort
 
 object Installer:
@@ -118,14 +117,14 @@ object Installer:
     import systems.javaBaseSystem
 
     mitigate:
-      case Path.Error(_, _)      => Install.Error(Install.Error.Reason.Environment)
-      case Property.Error(_)     => Install.Error(Install.Error.Reason.Environment)
-      case Number.Error(_, _, _) => Install.Error(Install.Error.Reason.Environment)
-      case Io.Error(_, _, _, _)  => Install.Error(Install.Error.Reason.Io)
-      case Name.Error(_, _, _)   => Install.Error(Install.Error.Reason.Io)
+      case Path.Error(_, _)                 => Install.Error(Install.Error.Reason.Environment)
+      case Property.Error(_)                => Install.Error(Install.Error.Reason.Environment)
+      case Number.Error(_, _, _)            => Install.Error(Install.Error.Reason.Environment)
+      case Io.Error(_, _, _, _)             => Install.Error(Install.Error.Reason.Io)
+      case Name.Error(_, _, _)              => Install.Error(Install.Error.Reason.Io)
       case guillotine.Exec.Error(_, _, _)   => Install.Error(Install.Error.Reason.Io)
-      case Truncation.Error(_)       => Install.Error(Install.Error.Reason.Io)
-      case Zip.Error(_)          => Install.Error(Install.Error.Reason.Io)
+      case Truncation.Error(_)              => Install.Error(Install.Error.Reason.Io)
+      case Zip.Error(_)                     => Install.Error(Install.Error.Reason.Io)
 
     . protect:
         val command: Text = resident.script

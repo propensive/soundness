@@ -37,6 +37,7 @@ import java.util.zip as juz
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import galilei.*
 import gossamer.*
 import nomenclature.*
@@ -53,6 +54,9 @@ import java.nio as jn
 import java.nio.channels as jnc
 import java.nio.file as jnf
 import aperture.*
+
+import rudiments.sortingAlgorithms.timsort
+import gossamer.collationComparable, gossamer.collations.codepointCollation
 
 object Zip:
   type Rules =
@@ -88,10 +92,66 @@ object Zip:
 
   given dataOpenable: Tactic[Zip.Error] => Zip.DataOpenable = Zip.DataOpenable()
 
-  given creatable: [path: Abstractable across Paths to Text]
-  =>  Tactic[Zip.Error]
-  =>  ZipBuilder.ZipCreatable[path] =
-    ZipBuilder.ZipCreatable[path]
+  // Archives a directory tree as a ZIP, `directory.archive[Zip](flags*)`, through galilei's
+  // filesystem backend. Every descendant becomes an entry — a directory as a directory entry, a
+  // file with its contents and modification time — pre-order, each directory's children in
+  // codepoint order, so the same tree always yields the same archive. ZIP as zeppelin writes
+  // it has no symbolic links, so links are followed. The contextual `Zip.Compression` applies
+  // unless one is passed as a flag.
+  class Archivable[plane: Filesystem]
+    ( using backend: FilesystemBackend on plane,
+            ioTactic: Tactic[Io.Error],
+            zipTactic: Tactic[Zip.Error],
+            compression: Zip.Compression )
+  extends aperture.Archivable:
+    type Self = Path on plane
+    type Form = Zip
+    type Operand = Zip.Compression
+    type Result = Zipfile
+
+    def archive(root: Path on plane, flags: List[Zip.Compression]): Zipfile =
+      import filesystemOptions.dereferenceSymlinks
+      import abstractables.epochMillisecondsAbstractable
+      import errorDiagnostics.emptyDiagnostics
+      given Zip.Compression = flags.prim.or(compression)
+      given TraversalOrder = TraversalOrder.PreOrder
+
+      val prefix: Text = root.encode
+
+      val entries: List[Zip.Entry] =
+        root.descendants.to[List].order(_.encode).map: path =>
+          val name: Text = path.encode.skip(prefix.length + 1)
+
+          val ref: Path on Zip =
+            mitigate:
+              case Path.Error(_, _)    => Zip.Error(Zip.Error.Reason.InvalidName(name))
+              case Name.Error(_, _, _) => Zip.Error(Zip.Error.Reason.InvalidName(name))
+
+            . protect:
+              name.cut(t"/").each(Name[Zip](_))
+              name.as[Path on Zip]
+
+          val stat = backend.stat(path, true)
+
+          if stat.entry == galilei.Directory
+          then Zip.Entry.at(ref, Array.empty[Byte], stat.modified).asDirectory
+          else
+            val contents: Data =
+              backend.open(path, List(OpenFlag.Read), Unset): handle =>
+                summon[Data is Aggregable by Data].accept(Stream(handle.reader()))
+
+            Zip.Entry.at(ref, contents, stat.modified)
+
+      Zipfile(entries)
+
+  // In the companion of the form, so `directory.archive[Zip]()` resolves with no import.
+  given archivable: [plane: Filesystem]
+  =>  ( backend: FilesystemBackend on plane,
+        ioTactic: Tactic[Io.Error],
+        zipTactic: Tactic[Zip.Error],
+        compression: Zip.Compression )
+  =>  Zip.Archivable[plane] =
+    Zip.Archivable[plane]
 
   // The compression method actually recorded on an entry.
   enum Method(val id: Int):
@@ -371,11 +431,9 @@ object Zip:
   // ZipEvent -> Zip.Event
   object Event:
     given communicable: Zip.Event is Communicable =
-      case Wrote(path, entries) => m"wrote $entries entries to the zip archive $path"
-      case Read(path, entries)  => m"read $entries entries from the zip archive $path"
+      case Read(path, entries) => m"read $entries entries from the zip archive $path"
 
   enum Event:
-    case Wrote(path: Text, entries: Int) extends Zip.Event, Log.Serialization
     case Read(path: Text, entries: Int) extends Zip.Event, Log.Serialization
 
   // ZipHandle -> Zip.Handle

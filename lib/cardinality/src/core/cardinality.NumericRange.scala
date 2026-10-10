@@ -32,10 +32,8 @@
                                                                                                   */
 package cardinality
 
-
-import scala.language.experimental.genericNumberLiterals
-
 import scala.compiletime.ops.double.*
+import scala.language.experimental.genericNumberLiterals
 import scala.reflect.TypeTest
 import scala.util.FromDigits
 
@@ -105,7 +103,6 @@ object NumericRange:
       @scala.annotation.targetName("times3")
       infix def * (right: Double): Double = left*right
 
-
       @scala.annotation.targetName("minus")
       infix def - [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
       :   ( Min[leftMin - rightMin, leftMin - rightMax] ~
@@ -146,7 +143,6 @@ object NumericRange:
               1.0/0.0 ] =
 
           left/right
-
 
       @scala.annotation.targetName("divide3")
       infix def / (right: Double): Double = left/right

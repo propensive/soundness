@@ -123,8 +123,8 @@ object internal:
         // The generated DFA has no notion of the symbol before the cursor, so a
         // context-dependent anchor falls back to the Pike VM.
         case Program.Op.Test
-             ( Node.Anchor.WordBoundary | Node.Anchor.NonWordBoundary | Node.Anchor.LineStart
-               | Node.Anchor.LineEnd, _ ) =>
+          ( Node.Anchor.WordBoundary | Node.Anchor.NonWordBoundary | Node.Anchor.LineStart
+            | Node.Anchor.LineEnd, _ ) =>
           unsupported = true
 
         case _ =>

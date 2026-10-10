@@ -32,14 +32,13 @@
                                                                                                   */
 package parasite
 
-import scala.caps
-
-import scala.language.experimental.into
-import scala.language.experimental.pureFunctions
-
 import java.lang.management as jlm
 import javax.management as jm
 import javax.management.openmbean as jmo
+
+import scala.caps
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 import com.sun.management as csm
 
@@ -125,16 +124,16 @@ object GarbageCollection:
 
             emitter.addNotificationListener(listener, null, null)
 
-            // The listener is registered with the JVM and only retained here to deregister it later;
-            // laundering it to pure keeps that bookkeeping list out of the capture-checked world.
+            // The listener is registered with the JVM and only retained here to deregister it
+            // later; laundering it to pure keeps that bookkeeping list out of the capture-checked
+            // world.
             // [registry-lifetime] listener registered with JVM, kept only to deregister
             List(emitter -> caps.unsafe.unsafeAssumePure(listener))
 
           case _ =>
             Nil
 
-      () => listeners.each: (emitter, listener) =>
-        emitter.removeNotificationListener(listener)
+      () => listeners.each: (emitter, listener) => emitter.removeNotificationListener(listener)
 
   enum Cause:
     case
