@@ -43,7 +43,7 @@ import Async.nominative
 // `Threading` givens) source-compatible: `adaptive` degrades exactly as it does on a pre-Loom
 // JVM, and `virtual` is a request for cheap concurrency, honoured with the cheapest available.
 
-object VirtualSupervisor extends ThreadSupervisor:
+object VirtualSupervisor extends ThreadSupervisor uses PlatformSupervisor:
   def name: Name[Async] = n"virtual"
 
   def fork(name: () => Optional[Text])(block: => Unit): Strand =
