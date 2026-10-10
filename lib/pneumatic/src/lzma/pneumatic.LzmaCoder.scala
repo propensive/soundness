@@ -63,7 +63,7 @@ private[pneumatic] object Lzma:
   // `2 << (i/2)` and starts at `DistSpecialOffsets(i)`.
   inline val DistSpecialTotal = 124
   val distSpecialOffsets: Array[Int]^{} =
-    Array.unsafeFrozen(scala.Array(0, 2, 4, 8, 12, 20, 28, 44, 60, 92))
+    Array(0, 2, 4, 8, 12, 20, 28, 44, 60, 92)
 
   def distSpecialSize(index: Int): Int = 2 << (index/2)
 

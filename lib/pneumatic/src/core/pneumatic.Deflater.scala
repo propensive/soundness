@@ -93,24 +93,19 @@ private[pneumatic] object Deflater:
   // Per-level parameters: reduce lazy search above goodLength; do not perform lazy search above
   // maxLazy; quit search above niceLength; never search chains longer than maxChain.
   val configGoodLength: Array[Int]^{} =
-    Array.unsafeFrozen:
-      scala.Array(0, 4, 4, 4, 4, 8, 8, 8, 32, 32)
+    Array(0, 4, 4, 4, 4, 8, 8, 8, 32, 32)
 
   val configMaxLazy: Array[Int]^{} =
-    Array.unsafeFrozen:
-      scala.Array(0, 4, 5, 6, 4, 16, 16, 32, 128, 258)
+    Array(0, 4, 5, 6, 4, 16, 16, 32, 128, 258)
 
   val configNiceLength: Array[Int]^{} =
-    Array.unsafeFrozen:
-      scala.Array(0, 8, 16, 32, 16, 32, 128, 128, 258, 258)
+    Array(0, 8, 16, 32, 16, 32, 128, 128, 258, 258)
 
   val configMaxChain: Array[Int]^{} =
-    Array.unsafeFrozen:
-      scala.Array(0, 4, 8, 32, 16, 32, 128, 256, 1024, 4096)
+    Array(0, 4, 8, 32, 16, 32, 128, 256, 1024, 4096)
 
   val configFunc: Array[Int]^{} =
-    Array.unsafeFrozen:
-      scala.Array(StoredFunc, FastFunc, FastFunc, FastFunc, SlowFunc, SlowFunc, SlowFunc, SlowFunc,
+    Array(StoredFunc, FastFunc, FastFunc, FastFunc, SlowFunc, SlowFunc, SlowFunc, SlowFunc,
           SlowFunc, SlowFunc)
 
   // Mapping from a distance to a distance code, where dist is the distance - 1.

@@ -47,8 +47,7 @@ import vacuous.*
 // arrives and feeds each block's payload to an `Lzma2Decompressor` incrementally.
 private[pneumatic] object XzContainer:
   val magic: Array[Byte]^{} =
-    Array.unsafeFrozen:
-      scala.Array(0xfd.toByte, '7', 'z', 'X', 'Z', 0x00)
+    Array(0xfd.toByte, '7', 'z', 'X', 'Z', 0x00)
   inline val Lzma2FilterId = 0x21
   inline val IndexIndicator = 0x00
 

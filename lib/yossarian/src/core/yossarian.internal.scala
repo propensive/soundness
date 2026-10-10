@@ -68,11 +68,11 @@ object internal:
   class Screen[styling]
     ( val width:      Int,
       blank:          styling,
-      // [field-purity] screen style buffer behind exclusive write views
+      // [aliased-graph] screen style buffer behind exclusive write views
       @scala.caps.unsafe.untrackedCaptures styleBuffer:    scala.Array[styling],
-      // [field-purity] screen grapheme buffer behind exclusive write views
+      // [aliased-graph] screen grapheme buffer behind exclusive write views
       @scala.caps.unsafe.untrackedCaptures graphemeBuffer: scala.Array[Grapheme],
-      // [field-purity] screen link buffer behind exclusive write views
+      // [aliased-graph] screen link buffer behind exclusive write views
       @scala.caps.unsafe.untrackedCaptures linkBuffer:     scala.Array[Text] ):
 
     // Exclusive views for writes: the untracked fields read as read-only.

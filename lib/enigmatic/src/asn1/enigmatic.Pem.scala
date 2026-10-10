@@ -62,30 +62,28 @@ object Pem:
   given derDecodable: Der is Decodable in Pem = pem => Der(pem.data)
 
   // `text.read[Asn1 in Pem]` — and, through distillate's identity decodable, `text.read[Der in
-  // Pem]` — reading the armor and decoding its DER payload in one step. Sealed per the codec-thunk
-  // pattern (see rep/DECISIONS.md), like the `Pem` aggregables below.
+  // Pem]` — reading the armor and decoding its DER payload in one step. It captures its decodable
+  // and tactic, like the `Pem` aggregables below.
   given aggregableIn: [value]
   =>  ( decodable: (value is Decodable in Der)^ )
-  =>  ( Diagnostics, Tactic[Pem.Error] )
-  =>  ( (value in Pem) is Aggregable by Text ) =
+  =>  ( diagnostics: Diagnostics, tactic: Tactic[Pem.Error] )
+  =>  ( ((value in Pem) is Aggregable by Text)^{decodable, tactic} ) =
 
-    // [field-purity] codec-thunk seal on Aggregable given
-    caps.unsafe.unsafeAssumePure:
-      new Aggregable:
-        type Self = value in Pem
-        type Operand = Text
+    new Aggregable:
+      type Self = value in Pem
+      type Operand = Text
 
-        def aggregate(stream: Chain[Text]): value in Pem =
-          // `Cursor` is built from a stdlib `Iterator`, which the opaque `Chain` cannot yield.
-          decode(parse(Cursor(stream)))
+      def aggregate(stream: Chain[Text]): value in Pem =
+        // `Cursor` is built from a stdlib `Iterator`, which the opaque `Chain` cannot yield.
+        decode(parse(Cursor(stream)))
 
-        override def accept(stream: (Stream[Text] over Credit)^): value in Pem =
-          // See `aggregable` below.
-          val neutral: AnyRef = stream.asInstanceOf[AnyRef]
-          decode(parse(Cursor(neutral.asInstanceOf[(Stream[Text] over Credit)^])))
+      override def accept(stream: (Stream[Text] over Credit)^): value in Pem =
+        // See `aggregable` below.
+        val neutral: AnyRef = stream.asInstanceOf[AnyRef]
+        decode(parse(Cursor(neutral.asInstanceOf[(Stream[Text] over Credit)^])))
 
-        private def decode(pem: Pem): value in Pem =
-          decodable.decoded(Der(pem.data)).asInstanceOf[value in Pem]
+      private def decode(pem: Pem): value in Pem =
+        decodable.decoded(Der(pem.data)).asInstanceOf[value in Pem]
 
   // Streaming, cursor-based parsing: the input is consumed line by line, and
   // the base64 body accumulates in a single builder — nothing else of the
@@ -170,38 +168,37 @@ object Pem:
       if !cursor.finished then cursor.next()
       line
 
-  // Sealed per the codec-thunk pattern (see rep/DECISIONS.md): the
-  // resolution-scoped tactic shares the instance's given-resolution lifetime.
-  given aggregable: (Diagnostics, Tactic[Pem.Error]) => Pem is Aggregable by Text =
-    // [field-purity] codec-thunk seal on Aggregable given
-    caps.unsafe.unsafeAssumePure:
-      new Aggregable:
-        type Self = Pem
-        type Operand = Text
+  // Captures the tactic it raises through.
+  given aggregable: (diagnostics: Diagnostics, tactic: Tactic[Pem.Error])
+  =>  ((Pem is Aggregable by Text)^{tactic}) =
 
-        // `Cursor` is built from a stdlib `Iterator`, which the opaque `Chain` cannot yield.
-        def aggregate(stream: Chain[Text]): Pem = parse(Cursor(stream))
+    new Aggregable:
+      type Self = Pem
+      type Operand = Text
 
-        override def accept(stream: (Stream[Text] over Credit)^): Pem =
-          // The non-consume `accept` crosses to the consuming factory as a
-          // neutral reference; each accept delivers a single-use stream.
-          parse(Cursor(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
+      // `Cursor` is built from a stdlib `Iterator`, which the opaque `Chain` cannot yield.
+      def aggregate(stream: Chain[Text]): Pem = parse(Cursor(stream))
+
+      override def accept(stream: (Stream[Text] over Credit)^): Pem =
+        // The non-consume `accept` crosses to the consuming factory as a
+        // neutral reference; each accept delivers a single-use stream.
+        parse(Cursor(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
 
   // A certificate chain (or any multi-block document) as a lazy sequence of
   // its blocks.
-  given aggregableAll: (Diagnostics, Tactic[Pem.Error]) => Chain[Pem] is Aggregable by Text =
-    // [field-purity] codec-thunk seal on Aggregable given
-    caps.unsafe.unsafeAssumePure:
-      new Aggregable:
-        type Self = Chain[Pem]
-        type Operand = Text
+  given aggregableAll: (diagnostics: Diagnostics, tactic: Tactic[Pem.Error])
+  =>  ((Chain[Pem] is Aggregable by Text)^{tactic}) =
 
-        // `Cursor` is built from a stdlib `Iterator`, which the opaque `Chain` cannot yield.
-        def aggregate(stream: Chain[Text]): Chain[Pem] = parseAll(Cursor(stream))
+    new Aggregable:
+      type Self = Chain[Pem]
+      type Operand = Text
 
-        override def accept(stream: (Stream[Text] over Credit)^): Chain[Pem] =
-          // See `aggregable` above.
-          parseAll(Cursor(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
+      // `Cursor` is built from a stdlib `Iterator`, which the opaque `Chain` cannot yield.
+      def aggregate(stream: Chain[Text]): Chain[Pem] = parseAll(Cursor(stream))
+
+      override def accept(stream: (Stream[Text] over Credit)^): Chain[Pem] =
+        // See `aggregable` above.
+        parseAll(Cursor(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
 
   // The armored form is multi-line and base64-encoded, so it is not what an inspection shows:
   // the label identifies the block, and the payload is rendered as full-width hexadecimal, on

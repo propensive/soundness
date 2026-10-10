@@ -55,7 +55,7 @@ import errorDiagnostics.stackTracesDiagnostics
 // object (the bug class of `rep/capability-escape`).
 private[exegesis] object LspSession:
   private[exegesis] class Cell:
-    // [field-purity] fault var in pure-data Cell
+    // [aliased-graph] fault var in pure-data Cell
     @scala.caps.unsafe.untrackedCaptures
     private[exegesis] var fault: Optional[Lsp.Error] = Unset
 

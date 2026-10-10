@@ -99,11 +99,11 @@ object Session:
 // so to the launcher, in halves of the window rather than per chunk, to halve the chatter.
 class SessionInput(stream: Text, credit: Long -> Unit) extends ji.InputStream:
   private val chunks: ju.ArrayDeque[Data] = ju.ArrayDeque()
-  // [field-purity] offset var in InputStream subclass, not Stateful
+  // [synchronized] offset var in InputStream subclass, not Stateful
   @caps.unsafe.untrackedCaptures private var offset: Int = 0
-  // [field-purity] ended flag in InputStream subclass, not Stateful
+  // [synchronized] ended flag in InputStream subclass, not Stateful
   @caps.unsafe.untrackedCaptures private var ended: Boolean = false
-  // [field-purity] consumed counter in InputStream subclass, not Stateful
+  // [synchronized] consumed counter in InputStream subclass, not Stateful
   @caps.unsafe.untrackedCaptures private var consumed: Long = 0L
 
   def push(bytes: Data): Unit = synchronized:
@@ -214,9 +214,9 @@ class Session
   private val outbox: Object = Object()
   private val control: ju.ArrayDeque[Data] = ju.ArrayDeque()
   private val data: ju.ArrayDeque[Data] = ju.ArrayDeque()
-  // [field-purity] closing flag in non-Stateful Session
+  // [synchronized] closing flag in non-Stateful Session
   @caps.unsafe.untrackedCaptures private var closing: Boolean = false
-  // [field-purity] dead flag in non-Stateful Session
+  // [synchronized] dead flag in non-Stateful Session
   @caps.unsafe.untrackedCaptures private var dead: Boolean = false
 
   def send(message: Message): Unit = enqueue(Launcher.encode(message), priority = true)
@@ -262,7 +262,7 @@ class Session
   // ── Credit for the streams the daemon sends ─────────────────────────────────────────────
 
   private val credits: ju.HashMap[Text, Long] = ju.HashMap()
-  // [field-purity] launcherGone flag in non-Stateful Session
+  // [synchronized] launcherGone flag in non-Stateful Session
   @caps.unsafe.untrackedCaptures private var launcherGone: Boolean = false
 
   private def openCredit(stream: Text): Unit = credits.synchronized:

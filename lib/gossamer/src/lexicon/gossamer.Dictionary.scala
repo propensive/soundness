@@ -175,7 +175,7 @@ object Dictionary:
     final class NodeBuilder:
       val children = MutMap[Char, NodeBuilder]()
 
-      // [field-purity] nodeBuilder value var in temporary builder class
+      // [aliased-graph] nodeBuilder value var in temporary builder class
       @scala.caps.unsafe.untrackedCaptures
       var value: AnyRef | Null = null
 

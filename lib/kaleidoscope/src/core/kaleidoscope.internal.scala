@@ -191,7 +191,7 @@ object internal:
 
     def apply(): Regex in form = Regex.unsafeFrom(List(pattern))(using Unsafe).to[form]
 
-    def unapply(scrutinee: Text)(using scanner: Scanner): Boolean =
+    def unapply(scrutinee: Text)(using scanner: Scanner^): Boolean =
       scanner.nextStart match
         case index: Int =>
           engine.matches(Regex.unsafeFrom(List(pattern))(using Unsafe), scrutinee)
@@ -207,7 +207,7 @@ object internal:
       case staged: Motif => Regex.Engine.install(staged)
       case _             => ()
 
-    def unapply(scrutinee: Text)(using scanner: Scanner): result =
+    def unapply(scrutinee: Text)(using scanner: Scanner^): result =
       val result = engine.matchGroups(Regex.unsafeFrom(List.from(parts))(using Unsafe), scrutinee)
       val result2 = result.asInstanceOf[Option[Array[List[Text | Char] | Optional[Text | Char]]^{}]]
 

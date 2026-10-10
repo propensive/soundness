@@ -305,9 +305,9 @@ package socketBackends:
         catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Accept))
 
       buffer.flip()
-      val array = new scala.Array[Byte](buffer.remaining)
-      buffer.get(array)
-      Packet(Array.unsafeFrozen(array), senderOf(source), Port.unsafe[Udp](source.getPort))
+      val array = Array.allocate[Byte](buffer.remaining)
+      buffer.get(array.raw)
+      Packet(Array.freeze(array), senderOf(source), Port.unsafe[Udp](source.getPort))
 
     def sendGroup(binding: MulticastBinding, data: Data): Unit raises Socket.Error =
       val bytes = Array.unsafeJvm(data)

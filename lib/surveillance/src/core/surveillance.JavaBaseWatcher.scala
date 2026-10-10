@@ -70,7 +70,7 @@ object JavaBaseWatcher extends Watcher uses parasite.threads:
 
   private val serviceMutex: Mutex = Mutex()
   private val watchesMutex: Mutex = Mutex()
-  // [field-purity] volatile WatchService var in watcher
+  // [synchronized] volatile WatchService var in watcher
   @volatile @scala.caps.unsafe.untrackedCaptures
   private var serviceValue: Optional[WatchService^{parasite.threads}] = Unset
 

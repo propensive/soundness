@@ -47,7 +47,7 @@ import vacuous.*
 // unit across the range.
 private[facsimile] object CharMap:
   def parse(data: Data)(using Tactic[Pdf.Error]): CharMap =
-    val parser = CosParser(CosLexer(Scan(data)), references = false)
+    val parser: CosParser^ = CosParser(CosLexer(Scan(data)), references = false)
     val entries = scala.collection.immutable.Map.newBuilder[Int, Text]
     var codeBytes = 1
     var done = false

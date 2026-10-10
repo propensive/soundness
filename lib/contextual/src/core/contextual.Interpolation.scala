@@ -42,7 +42,7 @@ import prepositional.*
 
 object Interpolation:
   def buildMapping(sourceText: String, value: String): Int -> Int =
-    val arr = new scala.Array[Int](value.length + 1)
+    val arr = Array.allocate[Int](value.length + 1)
     var srcIdx = 0
     var valIdx = 0
 
@@ -70,7 +70,7 @@ object Interpolation:
       valIdx += 1
 
     arr(value.length) = srcIdx
-    val mapping: Array[Int]^{} = Array.unsafeFrozen(arr)
+    val mapping: Array[Int]^{} = Array.freeze(arr)
     i => if i < 0 then 0 else if i < mapping.length then mapping.readable(i) else mapping.readable(mapping.length - 1)
 
   // Walk a `StringContext.apply(...)` Term to recover each literal part's source-file

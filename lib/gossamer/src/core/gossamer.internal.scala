@@ -267,7 +267,7 @@ object internal:
   def extractMacro[textual: Type, value: Type]
     ( text:    Expr[textual],
       start:   Expr[Ordinal],
-      lambda:  Expr[Scanner ?=> textual ~> value],
+      lambda:  Expr[Scanner^ ?=> textual ~> value],
       textual: Expr[textual is Textual] )
     ( using Quotes )
   :   Expr[Chain[value]] =

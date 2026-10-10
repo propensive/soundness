@@ -86,7 +86,7 @@ object Conduit:
     val freelist: Freelist = Freelist(depth + 1)
     // A JMM-managed flag: its safety is the volatile publication guarantee, not
     // aliasing analysis, so its captures are untracked.
-    // [field-purity] volatile error flag in shared core
+    // [synchronized] volatile error flag in shared core
     @caps.unsafe.untrackedCaptures @volatile var error: Throwable | Null = null
 
   def apply[medium]()

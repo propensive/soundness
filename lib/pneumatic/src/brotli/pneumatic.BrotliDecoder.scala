@@ -63,21 +63,17 @@ private[pneumatic] object BrotliDecoder:
   private final val MaxLength = 15
 
   private[pneumatic] val codeLengthCodeOrder: Array[Int]^{} =
-    Array.unsafeFrozen:
-      scala.Array(1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+    Array(1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15)
 
   private[pneumatic] val distanceShortCodeIndexOffset: Array[Int]^{} =
-    Array.unsafeFrozen:
-      scala.Array(3, 2, 1, 0, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2)
+    Array(3, 2, 1, 0, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2)
 
   private[pneumatic] val distanceShortCodeValueOffset: Array[Int]^{} =
-    Array.unsafeFrozen:
-      scala.Array(0, 0, 0, 0, -1, 1, -2, 2, -3, 3, -1, 1, -2, 2, -3, 3)
+    Array(0, 0, 0, 0, -1, 1, -2, 2, -3, 3, -1, 1, -2, 2, -3, 3)
 
   // Static Huffman code for the code-length code lengths.
   private[pneumatic] val fixedTable: Array[Int]^{} =
-    Array.unsafeFrozen:
-      scala.Array(0x020000, 0x020004, 0x020003, 0x030002, 0x020000, 0x020004, 0x020003, 0x040001,
+    Array(0x020000, 0x020004, 0x020003, 0x030002, 0x020000, 0x020004, 0x020003, 0x040001,
           0x020000, 0x020004, 0x020003, 0x030002, 0x020000, 0x020004, 0x020003, 0x040005)
 
   private[pneumatic] def corrupt(message: String): Nothing =

@@ -67,7 +67,7 @@ object Definable:
 
     def define(array: Self, index: Ordinal, value: element): Self =
       if index.n0 >= 0 && index.n0 < array.length then
-        val copy = new scala.Array[element](array.length)
+        val copy = Array.allocate[element](array.length)
         var source = 0
 
         while source < array.length do
@@ -75,7 +75,7 @@ object Definable:
           source += 1
 
         copy(index.n0) = value
-        Array.unsafeFrozen(copy)
+        Array.freeze(copy)
       else array
 
   // Positional update on a linked list rebuilds its prefix, so — as with `Applicable.list` —

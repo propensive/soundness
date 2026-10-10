@@ -38,9 +38,9 @@ extension (bytes: Data)
   def unpackFrom[data: Unpackable](offset: Int): data.Result =
     data.unpack(Sextant(bytes, offset))
 
-  def sextant[result](lambda: Sextant ?=> result): result = lambda(using Sextant(bytes))
+  def sextant[result](lambda: Sextant^ ?=> result): result = lambda(using Sextant(bytes))
 
-def unpack[value: Unpackable](using sextant: Sextant): value.Result =
+def unpack[value: Unpackable](using sextant: Sextant^): value.Result =
   value.unpack(sextant)
 
 def byteWidth[data: Debufferable]: Int = data.width

@@ -391,7 +391,7 @@ object Http:
     // The last successfully-parsed `Host` header, memoized across requests; see the
     // comment at its use in `parseHead`. Untracked: an immutable pair behind a benign
     // read-mostly race, not a capability-bearing state.
-    // [field-purity] volatile host memo var
+    // [synchronized] volatile host memo var
     @scala.caps.unsafe.untrackedCaptures @volatile
     private var hostMemo: (Text, Host) | Null = null
 

@@ -170,14 +170,14 @@ object Sse:
   // SseSource → Sse.Source
   class Source(capacity: Int):
     private val mutex: Mutex = Mutex()
-    // [field-purity] buffer array in non-Stateful Sse.Source
+    // [synchronized] buffer array in non-Stateful Sse.Source
     @scala.caps.unsafe.untrackedCaptures
     private val buffer: scala.Array[Sse] = new scala.Array(capacity)
 
-    // [field-purity] current index var in non-Stateful Sse.Source
+    // [synchronized] current index var in non-Stateful Sse.Source
     @scala.caps.unsafe.untrackedCaptures
     private var current: Int = 0
-    // [field-purity] spool relay var in non-Stateful Sse.Source
+    // [synchronized] spool relay var in non-Stateful Sse.Source
     @scala.caps.unsafe.untrackedCaptures
     private var spool: Relay[Sse] = Relay()
 

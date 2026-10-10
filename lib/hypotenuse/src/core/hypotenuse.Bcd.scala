@@ -220,10 +220,10 @@ object Bcd:
   // is fixed (1 header + 1 data word).
   // Was `private[jacinta]`; its only caller, `jacinta.Json.Parser`, is now in another library.
   def fromContent15(content: Long, negative: Boolean): Bcd =
-    val arr = new scala.Array[Double](2)
+    val arr = Array.allocate[Double](2)
     arr(0) = packHeaderDouble(negative, 15)
     arr(1) = packDataDouble(content)
-    Array.unsafeFrozen(arr).readable
+    Array.freeze(arr).readable
 
   // Build a `Bcd` from a `BigDecimal`. Goes via `toPlainString` so the result
   // matches the in-AST representation a parser would produce for the same
@@ -323,11 +323,11 @@ object Bcd:
     // committed right-justified in its data slot.
     def finish(negative: Boolean): Bcd =
       val totalDataDoubles = if inWord > 0 then wordIdx + 1 else wordIdx
-      val arr = new scala.Array[Double](1 + totalDataDoubles)
+      val arr = Array.allocate[Double](1 + totalDataDoubles)
       arr(0) = packHeaderDouble(negative, nibbles)
       System.arraycopy(data, 0, arr, 1, wordIdx)
       if inWord > 0 then arr(1 + wordIdx) = packDataDouble(word)
-      Array.unsafeFrozen(arr).readable
+      Array.freeze(arr).readable
 
     private update def ensureCapacity(needed: Int): Unit =
       if needed > data.length then

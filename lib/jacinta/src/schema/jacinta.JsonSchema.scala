@@ -191,26 +191,20 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   // `type`-as-Scala-subtype derivation cannot model. Decoding by hand also
   // keeps the recursion on nested schemas pointed back at this same given.
   given decodable: (jsonError: Tactic[Json.Error], pointerError: Tactic[JsonPointer.Error])
-  =>  JsonSchema is Json.Decodable =
-    // The decoder closes over the two resolution-scoped tactics (and, through the nested-
-    // schema recursion, over itself), which share the instance's given-resolution lifetime;
-    // the whole instance is laundered pure per the codec-thunk seal pattern (see
-    // rep/DECISIONS.md).
-    // [field-purity] given decodable closing over two tactics
-    caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Any)(decodeSchema(_))
+  =>  ((JsonSchema is Json.Decodable)^{jsonError, pointerError}) =
+    // The decoder captures the two tactics it raises through.
+    Json.Decodable(Morphology.Any)(decodeSchema(_))
 
   // The body of `decodable`, named so the nested-schema recursion below can rebuild its
-  // own element codecs explicitly. The local primitive codecs re-expose the (sealed-pure)
-  // primitives at a higher priority so the `optional`/`array`/`map` givens' pure by-name
+  // own element codecs explicitly. The local primitive codecs re-expose the primitives, sealed
+  // pure, at a higher priority so the `optional`/`array`/`map` givens' pure by-name
   // inner codecs (their thunks must remain pure to be expressible inside staged quotes)
   // resolve without consulting the enclosing tactics.
   private def decodeSchema(json: Json)
     ( using jsonError: Tactic[Json.Error], pointerError: Tactic[JsonPointer.Error] )
   :   JsonSchema =
     // Sealed pure: a capability-typed local would hide the tactic from every
-    // subsequent statement (the statement rule); this whole decoder is already
-    // sealed at the `decodable` given, which documents the honesty blockage.
+    // subsequent statement (the statement rule).
     // [field-purity] local codec given would hide tactic from statements
     given textDecodable: (Text is Json.Decodable) = caps.unsafe.unsafeAssumePure(Json.text)
     // [field-purity]

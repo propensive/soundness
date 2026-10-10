@@ -61,8 +61,7 @@ private[pneumatic] object Flate:
 
   // And-ing with inflateMask(n) masks the lower n bits.
   val inflateMask: Array[Int]^{} =
-    Array.unsafeFrozen:
-      scala.Array(
+    Array(
       0x00000000, 0x00000001, 0x00000003, 0x00000007, 0x0000000f,
       0x0000001f, 0x0000003f, 0x0000007f, 0x000000ff, 0x000001ff,
       0x000003ff, 0x000007ff, 0x00000fff, 0x00001fff, 0x00003fff,
@@ -70,7 +69,7 @@ private[pneumatic] object Flate:
 
   def empty: scala.Array[Byte]^ = new scala.Array[Byte](0)
   def emptyInts: scala.Array[Int]^ = new scala.Array[Int](0)
-  val emptyShorts: Array[Short]^{} = Array.unsafeFrozen(new scala.Array[Short](0))
+  val emptyShorts: Array[Short]^{} = Array.empty[Short]
 
   def corrupt(message: String): Nothing =
     throw IllegalStateException("the compressed data is corrupt: "+message)

@@ -124,18 +124,18 @@ private[vivisection] class DapSession(emit: Json => Unit)
   @caps.unsafe.untrackedCaptures
   private var debug0: Optional[Debug] = Unset
 
-  // [field-purity] classpath var in non-Stateful adapter
+  // [aliased-graph] classpath var in non-Stateful adapter
   @caps.unsafe.untrackedCaptures
   private var classpath0: Optional[LocalClasspath] = Unset
 
-  // [field-purity] namer var in non-Stateful adapter
+  // [aliased-graph] namer var in non-Stateful adapter
   @caps.unsafe.untrackedCaptures
   private var namer0: Optional[Namer] = Unset
 
   private val ready: Promise[Unit] = Promise()
   private val terminate: Promise[Unit] = Promise()
 
-  // [field-purity] session task handle var in adapter
+  // [aliased-graph] session task handle var in adapter
   @caps.unsafe.untrackedCaptures
   private var sessionTask: Optional[Task[Unit]] = Unset
 

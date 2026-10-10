@@ -54,7 +54,7 @@ private[pneumatic] object RangeCoder:
   // Fixed-point bit prices (in 1/16-bit units): the cost of coding a bit whose probability index is
   // `prob >>> MoveReducingBits`. Built once, then read by the encoder's cost estimator.
   val prices: Array[Short]^{} =
-    val table: scala.Array[Short]^ = new scala.Array[Short](BitModelTotal >>> MoveReducingBits)
+    val table = Array.allocate[Short](BitModelTotal >>> MoveReducingBits)
     var i = 1 << (MoveReducingBits - 1)
 
     while i < BitModelTotal do
@@ -74,7 +74,7 @@ private[pneumatic] object RangeCoder:
       i += 1 << MoveReducingBits
 
     // The table is fresh and never written after construction.
-    Array.unsafeFrozen(table)
+    Array.freeze(table)
 
   def bitPrice(prob: Int, bit: Int): Int =
     prices.readable((prob ^ ((-bit) & (BitModelTotal - 1))) >>> MoveReducingBits).toInt

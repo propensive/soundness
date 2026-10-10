@@ -57,7 +57,7 @@ private[facsimile] object ContentWriter:
     operators.each { operator => line(builder, operator) }
     builder.result()
 
-  private def line(builder: DataBuilder, operator: Pdf.Operator)
+  private def line(builder: DataBuilder^, operator: Pdf.Operator)
   :   Unit =
 
     def out(text: Text): Unit = builder.addAll(codepages.iso88591Codepage.encoded(text))
@@ -196,29 +196,24 @@ private[facsimile] object ContentWriter:
         out(t"$operator\n")
 
 // A minimal growable byte accumulator replacing `DataBuilder()`, whose `result()`
-// is charged a read of the universal capability under uses checking (the `telekinesis.ByteBuf`
-// pattern: untracked storage, exclusive view for writes, Java-side copies for growth/freeze).
-private[facsimile] final class DataBuilder:
-  // [field-purity] dataBuilder storage array in non-Stateful class
-  @scala.caps.unsafe.untrackedCaptures
-  private var storage: scala.Array[Byte] = new scala.Array[Byte](64)
-
-  // [field-purity] dataBuilder size var in non-Stateful class
-  @scala.caps.unsafe.untrackedCaptures
+// is charged a read of the universal capability under uses checking. Mutable: it owns its
+// storage, which only an exclusive reference may grow or write.
+private[facsimile] final class DataBuilder extends scala.caps.Mutable:
+  private var storage: scala.Array[Byte]^ = new scala.Array[Byte](64)
   private var size0: Int = 0
 
-  private inline def target: scala.Array[Byte]^ = storage.asInstanceOf[scala.Array[Byte]^]
+  update def += (byte: Byte): Unit =
+    if size0 >= storage.length then
+      val bigger: scala.Array[Byte]^ = new scala.Array[Byte](storage.length*2)
+      java.lang.System.arraycopy(storage, 0, bigger, 0, size0)
+      storage = bigger
 
-  def += (byte: Byte): Unit =
-    if size0 >= storage.length
-    then storage = java.util.Arrays.copyOf(storage, storage.length*2).nn.asInstanceOf[scala.Array[Byte]]
-
-    target(size0) = byte
+    storage(size0) = byte
     size0 += 1
 
   // Reads its argument only, so it takes the opaque array through a shared-read reference:
   // frozen `Data` and exclusive arrays both subsume into it, and callers need no laundering.
-  def addAll(bytes: Array[Byte]^{caps.any.rd}): Unit =
+  update def addAll(bytes: Array[Byte]^{caps.any.rd}): Unit =
     val count = bytes.length
     var index = 0
 

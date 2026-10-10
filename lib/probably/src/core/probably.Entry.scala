@@ -77,20 +77,20 @@ final class Tally():
 // values without a cell are gaps, rendered as empty positions in a grid.
 final class Entry(val id: Test.Id, val kind: Entry.Kind):
   private val mutex: Mutex = Mutex()
-  // [field-purity] mutex-guarded var in non-Stateful Entry
+  // [synchronized] mutex-guarded var in non-Stateful Entry
   @scala.caps.unsafe.untrackedCaptures
   private var axes0: List[Axis.Spec] = Nil
-  // [field-purity]
+  // [synchronized]
   @scala.caps.unsafe.untrackedCaptures
   private var ticks0: Map[Axis.Spec, List[Value]] = Map()
-  // [field-purity]
+  // [synchronized]
   @scala.caps.unsafe.untrackedCaptures
   private var cells0: Ledger[List[Value], Tally] = Ledger()
 
-  // [field-purity] plain var in non-Stateful Entry
+  // [synchronized] plain var in non-Stateful Entry
   @scala.caps.unsafe.untrackedCaptures
   var headline: Optional[Metric] = Unset
-  // [field-purity]
+  // [synchronized]
   @scala.caps.unsafe.untrackedCaptures
   var anchor: Optional[Anchor] = Unset
 

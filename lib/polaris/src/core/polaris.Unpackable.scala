@@ -44,7 +44,7 @@ object Unpackable:
     // The continuation records the (pure) backing data and start offset, and mints its own
     // sextant per invocation, so it does not capture the caller's `Sextant` capability: the
     // arrow stays pure, and the caller's read position is unaffected by a later invocation.
-    def unpack(sextant: Sextant): Int -> Array[pack]^{} =
+    def unpack(sextant: Sextant^): Int -> Array[pack]^{} =
       val bytes = sextant.bytes
       val start = sextant.offset
 
@@ -58,10 +58,10 @@ object Unpackable:
   given debufferable: [pack: Debufferable] => pack is Unpackable:
     type Wrap[Type] = Type
 
-    def unpack(sextant: Sextant): pack = pack.debuffer(sextant)
+    def unpack(sextant: Sextant^): pack = pack.debuffer(sextant)
 
 trait Unpackable extends Typeclass:
   type Wrap[_]
   type Result = Wrap[Self]
 
-  def unpack(sextant: Sextant): Wrap[Self]
+  def unpack(sextant: Sextant^): Wrap[Self]

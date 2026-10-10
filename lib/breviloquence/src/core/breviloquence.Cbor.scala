@@ -845,44 +845,40 @@ object Cbor extends Cbor2, Dynamic:
   // the AST is never materialized. Declared here (not in `Cbor2`, where the
   // `Decodable`-based `aggregableIn` lives) so it wins whenever a
   // `Cbor.Parsable` exists, and is otherwise inapplicable — existing code
-  // resolves exactly as before. Sealed per the codec-thunk pattern: the
-  // instance retains the resolution-scoped parsable and tactic.
+  // resolves exactly as before. It captures
+  // the parsable and the tactic it uses.
   given aggregableParsed: [value]
   =>  (parsable: (value is Cbor.Parsable)^)
   =>  (tactic: Tactic[Cbor.Error])
-  =>  ((value in Cbor) is Aggregable by Data) =
+  =>  (((value in Cbor) is Aggregable by Data)^{parsable, tactic}) =
 
-    // [field-purity] given retains resolution-scoped parsable and tactic
-    caps.unsafe.unsafeAssumePure:
-      new Aggregable:
-        type Self = value in Cbor
-        type Operand = Data
+    new Aggregable:
+      type Self = value in Cbor
+      type Operand = Data
 
-        def aggregate(bytes: Chain[Data]): value in Cbor =
-          // A single in-memory block — the common case — is read in place; the general
-          // path pulls the chain's cells as the parser needs them.
-          if !bytes.nil && bytes.stdlib.tail.isEmpty
-          then parseDirect(CborParser(bytes.stdlib.head), parsable).asInstanceOf[value in Cbor]
-          else parseDirect(CborParser(bytes), parsable).asInstanceOf[value in Cbor]
+      def aggregate(bytes: Chain[Data]): value in Cbor =
+        // A single in-memory block — the common case — is read in place; the general
+        // path pulls the chain's cells as the parser needs them.
+        if !bytes.nil && bytes.stdlib.tail.isEmpty
+        then parseDirect(CborParser(bytes.stdlib.head), parsable).asInstanceOf[value in Cbor]
+        else parseDirect(CborParser(bytes), parsable).asInstanceOf[value in Cbor]
 
-        // The stream crosses as a neutral reference (see `CborParser.aggregable`).
-        override def accept(stream: (Stream[Data] over Credit)^): value in Cbor =
-          val moved: AnyRef = stream.asInstanceOf[AnyRef]
-          parseDirect(CborParser(moved.asInstanceOf[(Stream[Data] over Credit)^]), parsable)
-          . asInstanceOf[value in Cbor]
+      // The stream crosses as a neutral reference (see `CborParser.aggregable`).
+      override def accept(stream: (Stream[Data] over Credit)^): value in Cbor =
+        val moved: AnyRef = stream.asInstanceOf[AnyRef]
+        parseDirect(CborParser(moved.asInstanceOf[(Stream[Data] over Credit)^]), parsable)
+        . asInstanceOf[value in Cbor]
 
   // Whole-`Data` direct read: when the entire content is already in hand,
   // parse it in place rather than wrapping it in a one-element stream.
   // Concrete in `Data`, so it beats the composed pipeline by specificity.
-  // Sealed like `aggregableParsed` above.
+  // Captures what it parses with, like `aggregableParsed` above.
   given readableParsed: [value]
   =>  (parsable: (value is Cbor.Parsable)^)
   =>  (tactic: Tactic[Cbor.Error])
-  =>  (Data is Readable to (value in Cbor)) =
+  =>  ((Data is Readable to (value in Cbor))^{parsable, tactic}) =
 
-    // [field-purity] given retains resolution-scoped parsable and tactic
-    caps.unsafe.unsafeAssumePure:
-      data => parseDirect(CborParser(data), parsable).asInstanceOf[value in Cbor]
+    data => parseDirect(CborParser(data), parsable).asInstanceOf[value in Cbor]
 
   given unit: (tactic: Tactic[Cbor.Error])
   =>  ((Unit is Decodable in Cbor)^{tactic}) =

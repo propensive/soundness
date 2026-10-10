@@ -422,10 +422,10 @@ object Launcher:
           case body: scala.Array[Byte] =>
             if body.length < declared.toInt then Unset else
               val prefix: scala.Array[Byte] = header.toByteArray.nn
-              val whole: scala.Array[Byte] = new scala.Array[Byte](prefix.length + body.length)
+              val whole = Array.allocate[Byte](prefix.length + body.length)
               jl.System.arraycopy(prefix, 0, whole, 0, prefix.length)
               jl.System.arraycopy(body, 0, whole, prefix.length, body.length)
-              Array.unsafeFrozen(whole)
+              Array.freeze(whole)
 
   // Raised internally to turn any structural surprise into `Unset`.
   private case class Mismatch()(using Diagnostics)

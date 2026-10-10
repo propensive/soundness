@@ -173,10 +173,9 @@ object Murmur3:
       h1 += h2
       h2 += h1
 
-      val result = new scala.Array[Byte](16)
-      write(result, 0, h1, h2)
-      // Fresh and never escaping before this point, so no writer can alias it.
-      Array.unsafeFrozen(result)
+      val result = Array.allocate[Byte](16)
+      write(result.raw, 0, h1, h2)
+      Array.freeze(result)
 
 sealed trait Murmur3 extends Algorithm:
   type Bits = 128
