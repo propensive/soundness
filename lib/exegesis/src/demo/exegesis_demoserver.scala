@@ -39,7 +39,7 @@ import executives.completionsExecutive
 import interpreters.posixInterpreter
 import probates.awaitProbate
 import strategies.throwUnsafely
-import threading.virtualThreading
+import threads.virtualThreads
 
 // A minimal example Language Server, demonstrating a few features: a hover message showing the
 // word under the cursor, a fixed completion list, a command, and a diagnostic published whenever

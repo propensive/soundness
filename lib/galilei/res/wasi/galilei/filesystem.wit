@@ -48,6 +48,8 @@ interface types {
     open-at: func(path-flags: u32, path: string, open-flags: u32, flags: u32)
       -> result<descriptor, error-code>;
 
+    readlink-at: func(path: string) -> result<string, error-code>;
+
     create-directory-at: func(path: string) -> result<_, error-code>;
     unlink-file-at: func(path: string) -> result<_, error-code>;
     remove-directory-at: func(path: string) -> result<_, error-code>;

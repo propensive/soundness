@@ -60,13 +60,9 @@ object Optical:
       Optic: (origin, lambda) =>
         origin(key).let(lambda).lay(origin)(value => origin.define(key, value))
 
-  // The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM pipeline —
-  // rejects the `Optic`'s capture of `filter.predicate` against the required pure `Optic` type.
-  // (Compiler divergence; the JVM pipeline accepts the direct form.)
   given filter: [key, element] => Filter[key] is Optical from Map[key, element] onto element =
     filter =>
-      // [field-purity] filter predicate laundered for pure Optic (Scala.js)
-      val predicate: key -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
+      val predicate: key -> Boolean = filter.predicate
 
       Optic: (origin, lambda) =>
         // `Map.from`, not `.to[Map]`: the conversion route lets the (vacuous, strict-map)
@@ -77,8 +73,7 @@ object Optical:
 
   given filter2: [element] => Filter[element] is Optical from List[element] onto element =
     filter =>
-      // [field-purity] filter predicate laundered for pure Optic (Scala.js)
-      val predicate: element -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
+      val predicate: element -> Boolean = filter.predicate
 
       Optic: (origin, lambda) =>
         origin.map: value => if predicate(value) then lambda(value) else value

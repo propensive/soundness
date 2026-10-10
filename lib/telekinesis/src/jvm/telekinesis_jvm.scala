@@ -343,7 +343,7 @@ private def httpsExchange
 
   duplex.alpnProtocol match
     case t"h2" =>
-      import threading.virtualThreading
+      import threads.virtualThreads
       import probates.cancelProbate
 
       // The `:authority` pseudo-header omits a default port, like browsers do.

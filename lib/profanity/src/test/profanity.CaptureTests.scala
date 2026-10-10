@@ -38,7 +38,7 @@ import classloaders.systemClassloader
 import environments.javaBaseEnvironment
 import logging.silentLogging
 import strategies.throwUnsafely
-import threading.platformThreading
+import threads.platformThreads
 
 // `interactive` lends the raw-mode tty session to its block as a `Terminal` capability, and
 // capture checking confines it to that block: raw mode and stdin are torn down in the

@@ -43,20 +43,22 @@ import temporaryDirectories.systemTemporaryDirectory
 
 import filesystemBackends.javaBaseFilesystem
 
-object Tests extends Suite(m"Surveillance tests"):
+object Tests extends Suite(m"Surveillance tests") uses surveillance.Watcher:
   def run(): Unit =
     test(m"Watching a path beneath a nonexistent directory raises a Watch.Error"):
       val target = t"/surveillance-nonexistent-parent-9d3f17/child".as[Path on Local]
       capture[Watch.Error](target.open[Watch]() { () }).reason
 
-    . assert(_ == Watch.Error.Reason.Nonexistent)
+    // `check`, not `assert`: the body reaches the global default `Watcher`, a capability, so it
+    // runs inline rather than deferred (see `probably.Test`).
+    . check(_ == Watch.Error.Reason.Nonexistent)
 
     test(m"Watching a path whose parent is a regular file raises a Watch.Error"):
       val file = temporaryDirectory[Path on Local]/Uuid().show
       file.create[File]()
       capture[Watch.Error]((file/Uuid().show).open[Watch]() { () }).reason
 
-    . assert(_ == Watch.Error.Reason.NotDirectory)
+    . check(_ == Watch.Error.Reason.NotDirectory)
 
     test(m"A scoped watch on an untouched directory yields a terminating, empty stream"):
       val directory = temporaryDirectory[Path on Local]/Uuid().show
@@ -69,7 +71,7 @@ object Tests extends Suite(m"Surveillance tests"):
       watchSet.unregister()
       watchSet.stream.to[List]
 
-    . assert(_ == Nil)
+    . check(_ == Nil)
 
     test(m"The polling watcher reports a newly-created file"):
       given Watcher = watchers.polling(0.05*Second)

@@ -197,6 +197,69 @@ object Tar:
       val entries = Tar.Handle.entries(value.stream, flags)
       block(using new Tar.Handle(entries) with Granting[grants] {})
 
+  // Archives a directory tree as a tarball, `directory.archive[Tar](flags*)`, through the
+  // filesystem backend, so a tree is archived wherever galilei runs. Each descendant becomes
+  // the entry of its kind — a file with its contents, a directory, a symbolic link with its
+  // target (under `preserveSymlinks`; `dereferenceSymlinks` archives what the link points
+  // at), a FIFO or a device — with the mode, owner and timestamp the filesystem reports, or
+  // `Archive.Flag` overrides. A `LongNameFormat` flag chooses how long names are written.
+  class Archivable[plane: Filesystem]
+    ( using backend: FilesystemBackend on plane,
+            symlinks: DereferenceSymlinks,
+            ioTactic: Tactic[Io.Error],
+            tarTactic: Tactic[Tar.Error] )
+  extends aperture.Archivable:
+    type Self = Path on plane
+    type Form = Tar
+    type Operand = LongNameFormat | Archive.Flag
+    type Result = Tarfile
+
+    def archive(root: Path on plane, flags: List[Operand]): Tarfile =
+      val archiveFlags: List[Archive.Flag] = flags.sweep { case flag: Archive.Flag => flag }
+      val format = flags.reap { case format: LongNameFormat => format }.or(LongNameFormat.Pax)
+
+      val entries: List[Tar.Entry] =
+        Archive.Tree.members(root, symlinks.dereference).map: member =>
+          val ref: Tar.Ref = Tarfile.decodePath(member.name)
+          val stat = member.stat
+          val mode = stat.mode.lay(UnixMode())(mode => UnixMode.from(mode & 0xfff))
+          val (user, group) = Archive.Tree.owner(stat, archiveFlags)
+          val mtime: U32 = Archive.Tree.mtime(stat, archiveFlags).toInt.bits.u32
+
+          def device: (U32, U32) =
+            val rdev = stat.device.or(0L)
+            (((rdev >> 8) & 0xff).toInt.bits.u32, (rdev & 0xff).toInt.bits.u32)
+
+          stat.entry match
+            case galilei.File =>
+              val body = Archive.Body(Archive.Tree.contents(member.path))
+              Tar.Entry.File(ref, mode, user, group, mtime, body)
+
+            case galilei.Directory => Tar.Entry.Directory(ref, mode, user, group, mtime)
+
+            case galilei.Symlink =>
+              Tar.Entry.Symlink(ref, mode, user, group, mtime, backend.linkTarget(member.path))
+
+            case galilei.Fifo        => Tar.Entry.Fifo(ref, mode, user, group, mtime)
+            case galilei.CharDevice  => Tar.Entry.CharSpecial(ref, mode, user, group, mtime, device)
+            case galilei.BlockDevice => Tar.Entry.BlockSpecial(ref, mode, user, group, mtime, device)
+
+            case _ =>
+              raise(Tar.Error(Tar.Error.Reason.DeviceCreationUnsupported(member.name)))
+              Tar.Entry.Fifo(ref, mode, user, group, mtime)
+
+      Tarfile(entries, format)
+
+  // In the companion of the form, so `directory.archive[Tar]()` resolves with no import; the
+  // symlink policy is galilei's, chosen by importing one of `filesystemOptions`.
+  given archivable: [plane: Filesystem]
+  =>  ( backend: FilesystemBackend on plane,
+        symlinks: DereferenceSymlinks,
+        ioTactic: Tactic[Io.Error],
+        tarTactic: Tactic[Tar.Error] )
+  =>  ( Tar.Archivable[plane]^{ioTactic, tarTactic} ) =
+    Tar.Archivable[plane]
+
   object Entry:
     def apply[data: Streamable by Data over Credit, instant: Abstractable across Instants to Long]
       ( name:  Tar.Ref,

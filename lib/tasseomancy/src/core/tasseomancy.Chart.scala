@@ -213,7 +213,7 @@ object Chart:
           Polyline(List(point(x - cap, top), point(x + cap, top)), style = bar),
           Polyline(List(point(x - cap, bottom), point(x + cap, bottom)), style = bar) )
 
-    // The note an `Annotated` point carries, set beside its marker: to the right by default,
+    // The note a `Noted` point carries, set beside its marker: to the right by default,
     // or on whichever side the arrangement found clear of other labels, markers and lines.
     def pointLabel(at: Anchoring, text: Text, color: Color in Srgb): List[Figure] =
       List(lettering(at.point, text, at.anchor, at.baseline, color))

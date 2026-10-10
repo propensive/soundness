@@ -264,7 +264,7 @@ object Tests extends Suite(m"Syndesis tests"):
       . assert(_ == Socket.Error.Reason.Accept)
 
     suite(m"Discovery over the bus"):
-      import threading.platformThreading
+      import threads.platformThreads
       import probates.awaitProbate
       import abstractables.millisecondsAbstractable
 
@@ -434,7 +434,7 @@ object Tests extends Suite(m"Syndesis tests"):
       . assert(_ == List(Dns.Rdata.Ptr(gondor.dnsName), Dns.Rdata.Ptr(fury.dnsName)))
 
     suite(m"Discovery over the sockets"):
-      import threading.platformThreading
+      import threads.platformThreads
       import probates.awaitProbate
       import abstractables.millisecondsAbstractable
       import socketBackends.javaBaseSockets

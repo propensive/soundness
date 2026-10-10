@@ -64,7 +64,7 @@ object Tests extends Suite(m"Synesthesia Tests"):
       import supervisors.globalSupervisor
       import probates.cancelProbate
       import strategies.throwUnsafely
-      import threading.platformThreading
+      import threads.platformThreads
       import codepages.utf8Codepage
       import logging.silentLogging
       import classloaders.threadContextClassloader
@@ -108,7 +108,7 @@ object Tests extends Suite(m"Synesthesia Tests"):
       import supervisors.globalSupervisor
       import probates.cancelProbate
       import strategies.throwUnsafely
-      import threading.platformThreading
+      import threads.platformThreads
       import logging.silentLogging
       import codepages.utf8Codepage
 

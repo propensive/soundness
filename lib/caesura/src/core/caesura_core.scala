@@ -142,12 +142,8 @@ package optics:
   given dsvRowEachOptical: Each.type is Optical from Sheet onto Dsv = _ =>
     Optic: (origin, lambda) => origin.copy(rows = origin.rows.remap(lambda))
 
-  // The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM pipeline —
-  // rejects the `Optic`'s capture of `filter.predicate` against the required pure `Optic` type.
-  // (Compiler divergence; see #1520 and the identical laundering in `panopticon.Optical.filter`.)
   given dsvRowFilterOptical: Filter[Dsv] is Optical from Sheet onto Dsv = filter =>
-    // [by-name-capture] filter predicate laundered pure (Scala.js divergence)
-    val predicate: Dsv -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
+    val predicate: Dsv -> Boolean = filter.predicate
 
     Optic: (origin, lambda) =>
       origin.copy

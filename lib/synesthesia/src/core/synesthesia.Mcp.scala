@@ -757,7 +757,7 @@ object Mcp:
     :   GetPrompt =
 
       // The RPC proxy's awaits are scoped to this call, so it runs under its own supervision.
-      import threading.platformThreading
+      import threads.platformThreads
 
       val messages = unsafely(supervise:
         spec.invokePrompt(server, client, name, arguments.or(Map()))).map:
@@ -787,7 +787,7 @@ object Mcp:
 
     def `tools/call`(name: Text, arguments: Json, _meta: Optional[Json]): CallTool =
       // The RPC proxy's awaits are scoped to this call, so it runs under its own supervision.
-      import threading.platformThreading
+      import threads.platformThreads
       import formatting.compactJsonFormatting
 
       // A tool's own failure is a result the model can read (`isError`), distinct from a

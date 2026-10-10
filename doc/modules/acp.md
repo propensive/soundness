@@ -32,7 +32,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import probates.awaitProbate
 import stdios.javaLangSystemStdio
 import strategies.throwUnsafely
-import threading.virtualThreading
+import threads.virtualThreads
 import workingDirectories.javaBaseWorkingDirectory
 ```
 

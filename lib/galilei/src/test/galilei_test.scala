@@ -763,6 +763,36 @@ object Tests extends Suite(m"Galilei tests"):
         identified.entryIdentity == separate.entryIdentity
       . assert(_ == false)
 
+    suite(m"Inode metadata"):
+      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.deleteRecursively
+      import filesystemOptions.overwritePreexisting
+
+      val backend = summon[FilesystemBackend on Linux]
+      val fileLeaf: Text = Uuid().show
+      val linkLeaf: Text = Uuid().show
+      val file: Path on Linux = unsafely((% / "tmp" / fileLeaf).on[Linux])
+      val link: Path on Linux = unsafely((% / "tmp" / linkLeaf).on[Linux])
+      unsafely(file.write(t"content"))
+      unsafely(file.symlinkTo(link))
+
+      test(m"A regular file's stat carries the whole st_mode, type bits included"):
+        unsafely(backend.stat(file, true)).mode.let(_ & 61440)
+      . assert(_ == 32768)
+
+      test(m"A file's stat carries its owner and group"):
+        val stat = unsafely(backend.stat(file, true))
+        (stat.user.present, stat.group.present)
+      . assert(_ == (true, true))
+
+      test(m"A symbolic link's stat, undereferenced, is a Symlink"):
+        unsafely(backend.stat(link, false)).entry
+      . assert(_ == Symlink)
+
+      test(m"linkTarget is the link's stored text"):
+        unsafely(backend.linkTarget(link))
+      . assert(_ == file.encode)
+
     suite(m"Shared locking"):
       import errorDiagnostics.stackTracesDiagnostics
       import filesystemOptions.createNonexistentParents
@@ -803,7 +833,7 @@ object Tests extends Suite(m"Galilei tests"):
     suite(m"Awaited locking"):
       import filesystemOptions.createNonexistentParents
       import filesystemOptions.overwritePreexisting
-      import threading.platformThreading
+      import threads.platformThreads
 
       val awaitLeaf: Text = Uuid().show
       val awaited: Path on Linux = unsafely((% / "tmp" / awaitLeaf).on[Linux])

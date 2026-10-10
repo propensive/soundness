@@ -46,7 +46,7 @@ import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
 import workingDirectories.javaBaseWorkingDirectory
 import logging.silentLogging
-import threading.platformThreading
+import threads.platformThreads
 
 import strategies.throwUnsafely
 import backstops.silentBackstop

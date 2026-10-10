@@ -37,7 +37,7 @@ package vivisection
 import soundness.{Variable as _, *}
 
 import errorDiagnostics.stackTracesDiagnostics
-import threading.platformThreading
+import threads.platformThreads
 import probates.awaitProbate
 import logging.silentLogging
 import strategies.throwUnsafely

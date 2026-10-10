@@ -40,7 +40,7 @@ import internetAccess.online
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import webserverErrorPages.minimalErrorPage
-import threading.virtualThreading
+import threads.virtualThreads
 import probates.awaitProbate
 import formatting.compactJsonFormatting
 import codepages.utf8Codepage

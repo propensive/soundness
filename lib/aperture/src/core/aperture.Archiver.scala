@@ -30,10 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package tasseomancy
+package aperture
 
-import anticipation.*
+// The applier returned by the `archive` extension method, mirroring `Opener` and `Creator`:
+// the form resolves the `Archivable` instance, and the flags arrive at `apply`. The `tracked`
+// parameter keeps the instance's `Self`, `Operand` and `Result` members precise.
+final class Archiver(tracked val archivable: Archivable^, val value: archivable.Self):
 
-// A value with a note attached — the name of the point it plots — which a scatter plot or a line
-// chart sets beside the marker.
-case class Annotated(value: Double, note: Text)
+  def apply(flags: archivable.Operand*): archivable.Result =
+    archivable.archive(value, flags.to(List))

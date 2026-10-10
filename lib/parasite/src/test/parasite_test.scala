@@ -56,11 +56,11 @@ object Tests extends Suite("parasite", m"Parasite tests"):
   // respect but cost. The pool-specific suites cover what only a pool can get wrong.
   def run(): Unit =
     suite(m"Virtual threads"):
-      exercise()(using threading.virtualThreading)
+      exercise()(using threads.virtualThreads)
 
     suite(m"Pooled supervisor"):
-      exercise()(using threading.pooledThreading)
-      pooled()(using threading.pooledThreading)
+      exercise()(using threads.pooledThreads)
+      pooled()(using threads.pooledThreads)
 
   def pooled()(using Threading, Testable of "parasite"): Unit =
     supervise:
@@ -1426,24 +1426,24 @@ object Tests extends Suite("parasite", m"Parasite tests"):
 
       suite(m"Multiple supervisors"):
         test(m"Platform supervisor can be used"):
-          import threading.platformThreading
+          import threads.platformThreads
           supervise(async(42).await())
         . assert(_ == 42)
 
         test(m"Adaptive supervisor can be used"):
-          import threading.adaptiveThreading
+          import threads.adaptiveThreads
           supervise(async(42).await())
         . assert(_ == 42)
 
         test(m"Virtual supervisor can be used"):
-          import threading.virtualThreading
+          import threads.virtualThreads
           supervise(async(42).await())
         . assert(_ == 42)
 
       // The eager single-threaded model (issue #1450): platform-neutral, so its semantics are
       // pinned here on the JVM, though its purpose is Scala.js.
       suite(m"Javascript supervisor"):
-        import threading.javascriptThreading
+        import threads.javascriptThreads
 
         test(m"a forked task runs eagerly and awaits immediately"):
           supervise(async(42).await())

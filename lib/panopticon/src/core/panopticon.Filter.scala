@@ -32,4 +32,6 @@
                                                                                                   */
 package panopticon
 
-case class Filter[key](predicate: key => Boolean)
+// The predicate is a pure function: a filter is part of an optic, which is a pure value, so the
+// predicate may not capture a capability or mutable state.
+case class Filter[key](predicate: key -> Boolean)
