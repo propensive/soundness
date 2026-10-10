@@ -81,8 +81,7 @@ object Bundler:
 
     val omissions: Set[Text] = Set("MANIFEST.MF", "plugin.properties")
 
-    Zipfile.write(jarfile):
-      val entries =
+    val entries =
         Zip.Entry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest) ::
           classpath.entries.bind:
           case Classpath.Entry.Directory(directory) =>
@@ -107,6 +106,6 @@ object Bundler:
           case _ =>
             Nil
 
-      entries.deduplicate(_.ref)
+    jarfile.write(Zipfile(entries.deduplicate(_.ref)))
 
     jarfile

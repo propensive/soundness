@@ -47,8 +47,10 @@ import zephyrine.*
 
 import filesystemBackends.javaBaseFilesystem
 
-// Opening a filesystem path or building an archive from disk needs `bitumen.jvm`; re-exported
-// through `soundness.*`, so `path.open[Tar]` and `Tar.Entry(...)` resolve as before on the JVM.
+// Opening a filesystem path as an archive, or creating one on disk, needs `bitumen.jvm`;
+// re-exported through `soundness.*`, so `path.open[Tar]` and `path.create[Tar]` resolve as
+// before on the JVM. Archiving a directory (`directory.archive[Tar]()`) goes through galilei's
+// filesystem backend and lives in `bitumen.core`.
 given tarPathOpenable: [path: Abstractable across Paths to Text]
 =>  ( tarTactic: Tactic[Tar.Error], streamTactic: Tactic[Truncation.Error] )
 =>  ( TarOpenable[path]^{tarTactic, streamTactic} ) =
@@ -63,21 +65,6 @@ given tarPathCreatable: [path: Abstractable across Paths to Text]
 =>  (tactic: Tactic[Tar.Error])
 =>  ( TarBuilder.TarCreatable[path]^{tactic} ) =
   TarBuilder.TarCreatable[path]
-
-extension (companion: Tarfile.type)
-  // Build an archive from a directory tree on a filesystem.
-  def from[plane <: Posix: Filesystem](root: Path on plane)
-    ( using DereferenceSymlinks,
-            TraversalOrder,
-            plane is Explorable,
-            Tactic[Io.Error],
-            Tactic[Tar.Error] )
-  :   Tarfile =
-
-    val entries: List[Tar.Entry] = root.descendants.to[List].map: path =>
-      TarFilesystem.entryFor(root, path)
-
-    Tarfile(entries)
 
 extension (tarfile: Tarfile)
   // Extract an archive to a directory tree on a filesystem.

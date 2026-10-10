@@ -37,9 +37,9 @@ import fulminate.*
 
 object DepsEvent:
   given communicable: DepsEvent is Communicable =
-    case Querying(hash)      => m"querying deps.dev for the artifact with hash $hash"
-    case Resolved(hash, url) => m"resolved hash $hash to $url"
-    case Indexing(repository) => m"listing the GitHub releases of $repository"
+    case Querying(hash)              => m"querying deps.dev for the artifact with hash $hash"
+    case Resolved(hash, url)         => m"resolved hash $hash to $url"
+    case Indexing(repository)        => m"listing the GitHub releases of $repository"
     case Indexed(repository, assets) => m"indexed $assets release assets of $repository"
 
 enum DepsEvent:

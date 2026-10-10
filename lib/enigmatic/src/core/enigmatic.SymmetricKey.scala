@@ -33,10 +33,10 @@
 package enigmatic
 
 import scala.annotation.targetName
-import gastronomy.Signing
 
 import anticipation.*
 import gastronomy.ProcessingPermit
+import gastronomy.Signing
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -81,5 +81,4 @@ extends PrivateKey[cipher](handle):
   // The immutable `Data` in the result outlives the cloak's zeroing, which is why obtaining
   // it demands the explicit `Divulgence` token. This replaces the former `Encodable` given,
   // which serialized the key material silently.
-  def data(reveal: Divulgence.type): Data = secret.uncloak: bytes =>
-    Array.unsafeFrozen(bytes.clone)
+  def data(reveal: Divulgence.type): Data = secret.uncloak: bytes => Array.unsafeFrozen(bytes.clone)

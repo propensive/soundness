@@ -38,6 +38,128 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 
+object Inlinable:
+  // Generates a monomorphic `Protobuf.Parsable` for a case-class message or
+  // a sealed-sum oneof at compile time, composed through `Inlinable`
+  // instances: nested messages, repeated-field gathering, variant dispatch
+  // and custom leaf parsers all inline into one flat parser.
+  inline def parsable[value]: value is Protobuf.Parsable =
+    ${locomotion.stagedInternal.inlinableParsable[value]}
+
+  // The structural instance for a case-class message: reflects `Self` when
+  // invoked (no macro — `Type[Self]` arrives with the call).
+  def derived[product]: product is Inlinable = ProductInlinable[product]()
+
+  object ForProtobuf:
+    def derived[value]: ForProtobuf[value] = ForProtobuf(Inlinable.derived[value])
+
+  // The `derives`-clause carrier: a `Self`-typed typeclass cannot appear in
+  // a `derives` clause (it has no type parameters), so `case class Foo(...)
+  // derives Inlinable.ForProtobuf` synthesizes this parameterized subtrait —
+  // which *is* a `Foo is Inlinable` — into `Foo`'s companion, where the
+  // staging summon finds it. The resolution ladder unwraps the delegate so
+  // structural instances keep their generator identities.
+  final class ForProtobuf[value](delegate0: value is Inlinable) extends Inlinable:
+    type Self = value
+    private[locomotion] def delegate: value is Inlinable = delegate0
+
+    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[value]): Expr[value] =
+      delegate0.parse(reader)
+
+    override def absent(tactic: Expr[Tactic[Protobuf.Error]])(using Quotes, Type[value])
+    :   Expr[value] =
+
+      delegate0.absent(tactic)
+
+  private[locomotion] final class ProductInlinable[product]() extends Inlinable:
+    type Self = product
+
+    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[product]): Expr[product] =
+      stagedInternal.productBody[product](reader)
+
+    override def absent(tactic: Expr[Tactic[Protobuf.Error]])(using Quotes, Type[product])
+    :   Expr[product] =
+
+      stagedInternal.productAbsent[product](tactic)
+
+  // A marker in the resolution ladder: repeated fields gather across the
+  // whole message (occurrences may be scattered and packed), so collection
+  // parsing lives in the *product* generator, not here. The instance only
+  // carries the element for that generator; a collection cannot be parsed
+  // from a single field window.
+  private[locomotion] final class IterableInlinable[element](val element0: element is Inlinable)
+  extends Inlinable:
+    type Self = Iterable[element]
+
+    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Iterable[element]])
+    :   Expr[Iterable[element]] =
+
+      quotes.reflect.report.errorAndAbort
+        ( "locomotion: a repeated field parses through its message's generated parser; a " +
+          "collection has no standalone wire form" )
+
+  // The structural instance for a sealed-sum oneof: the variant is chosen
+  // by a scan of the message (the lowest variant number present, its last
+  // occurrence), then parsed from its recorded extent — exactly the AST
+  // disjunction's semantics.
+  private[locomotion] final class SumInlinable[sum]() extends Inlinable:
+    type Self = sum
+
+    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[sum]): Expr[sum] =
+      stagedInternal.sumBody[sum](reader)
+
+  // ── Instances ──────────────────────────────────────────────────────────
+  // The leaf generators read the reader's window exactly as the AST
+  // accessors interpret a field's recorded payload, for hand-written
+  // instances that compose over one wire value.
+
+  given int: (Int is Inlinable) = new Inlinable:
+    type Self = Int
+
+    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Int]): Expr[Int] =
+      '{$reader.varint().toInt}
+
+  given long: (Long is Inlinable) = new Inlinable:
+    type Self = Long
+
+    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Long]): Expr[Long] =
+      '{$reader.varint()}
+
+  given boolean: (Boolean is Inlinable) = new Inlinable:
+    type Self = Boolean
+
+    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Boolean]): Expr[Boolean] =
+      '{$reader.varint() != 0L}
+
+  given double: (Double is Inlinable) = new Inlinable:
+    type Self = Double
+
+    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Double]): Expr[Double] =
+      '{java.lang.Double.longBitsToDouble($reader.fixed64())}
+
+  given float: (Float is Inlinable) = new Inlinable:
+    type Self = Float
+
+    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Float]): Expr[Float] =
+      '{java.lang.Float.intBitsToFloat($reader.fixed32())}
+
+  given text: (Text is Inlinable) = new Inlinable:
+    type Self = Text
+
+    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Text]): Expr[Text] =
+      '{$reader.text()}
+
+  given data: (Data is Inlinable) = new Inlinable:
+    type Self = Data
+
+    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Data]): Expr[Data] =
+      '{$reader.data()}
+
+  given iterable: [collection <: Iterable, element]
+  =>  ( element0: element is Inlinable )
+  =>  ( collection[element] is Inlinable ) =
+    IterableInlinable[element](element0).asInstanceOf[collection[element] is Inlinable]
+
 // The Expr-level counterpart of `Protobuf.Parsable`: a typeclass whose
 // methods are macro-time code generators. An instance receives an `Expr` of
 // the reader — its window set to the value's payload — and returns an `Expr`
@@ -64,119 +186,4 @@ trait Inlinable extends Typeclass:
   // override accordingly; the default aborts, so a custom instance that
   // does not override is loud rather than silently wrong.
   def absent(tactic: Expr[Tactic[Protobuf.Error]])(using Quotes, Type[Self]): Expr[Self] =
-    '{ abort(Protobuf.Error(Protobuf.Error.Reason.MissingField(0)))(using $tactic) }
-
-object Inlinable:
-  // Generates a monomorphic `Protobuf.Parsable` for a case-class message or
-  // a sealed-sum oneof at compile time, composed through `Inlinable`
-  // instances: nested messages, repeated-field gathering, variant dispatch
-  // and custom leaf parsers all inline into one flat parser.
-  inline def parsable[value]: value is Protobuf.Parsable =
-    ${ locomotion.stagedInternal.inlinableParsable[value] }
-
-  // The structural instance for a case-class message: reflects `Self` when
-  // invoked (no macro — `Type[Self]` arrives with the call).
-  def derived[product]: product is Inlinable = ProductInlinable[product]()
-
-  // The `derives`-clause carrier: a `Self`-typed typeclass cannot appear in
-  // a `derives` clause (it has no type parameters), so `case class Foo(...)
-  // derives Inlinable.ForProtobuf` synthesizes this parameterized subtrait —
-  // which *is* a `Foo is Inlinable` — into `Foo`'s companion, where the
-  // staging summon finds it. The resolution ladder unwraps the delegate so
-  // structural instances keep their generator identities.
-  final class ForProtobuf[value](delegate0: value is Inlinable) extends Inlinable:
-    type Self = value
-    private[locomotion] def delegate: value is Inlinable = delegate0
-
-    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[value]): Expr[value] =
-      delegate0.parse(reader)
-
-    override def absent(tactic: Expr[Tactic[Protobuf.Error]])(using Quotes, Type[value])
-    :   Expr[value] =
-
-      delegate0.absent(tactic)
-
-  object ForProtobuf:
-    def derived[value]: ForProtobuf[value] = ForProtobuf(Inlinable.derived[value])
-
-  private[locomotion] final class ProductInlinable[product]() extends Inlinable:
-    type Self = product
-
-    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[product]): Expr[product] =
-      stagedInternal.productBody[product](reader)
-
-    override def absent(tactic: Expr[Tactic[Protobuf.Error]])(using Quotes, Type[product])
-    :   Expr[product] =
-
-      stagedInternal.productAbsent[product](tactic)
-
-  // A marker in the resolution ladder: repeated fields gather across the
-  // whole message (occurrences may be scattered and packed), so collection
-  // parsing lives in the *product* generator, not here. The instance only
-  // carries the element for that generator; a collection cannot be parsed
-  // from a single field window.
-  private[locomotion] final class IterableInlinable[element](val element0: element is Inlinable)
-  extends Inlinable:
-    type Self = Iterable[element]
-
-    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Iterable[element]])
-    :   Expr[Iterable[element]] =
-
-      quotes.reflect.report.errorAndAbort
-        ("locomotion: a repeated field parses through its message's generated parser; a " +
-          "collection has no standalone wire form")
-
-  // The structural instance for a sealed-sum oneof: the variant is chosen
-  // by a scan of the message (the lowest variant number present, its last
-  // occurrence), then parsed from its recorded extent — exactly the AST
-  // disjunction's semantics.
-  private[locomotion] final class SumInlinable[sum]() extends Inlinable:
-    type Self = sum
-
-    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[sum]): Expr[sum] =
-      stagedInternal.sumBody[sum](reader)
-
-  // ── Instances ──────────────────────────────────────────────────────────
-  // The leaf generators read the reader's window exactly as the AST
-  // accessors interpret a field's recorded payload, for hand-written
-  // instances that compose over one wire value.
-
-  given int: (Int is Inlinable) = new Inlinable:
-    type Self = Int
-    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Int]): Expr[Int] =
-      '{ $reader.varint().toInt }
-
-  given long: (Long is Inlinable) = new Inlinable:
-    type Self = Long
-    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Long]): Expr[Long] =
-      '{ $reader.varint() }
-
-  given boolean: (Boolean is Inlinable) = new Inlinable:
-    type Self = Boolean
-    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Boolean]): Expr[Boolean] =
-      '{ $reader.varint() != 0L }
-
-  given double: (Double is Inlinable) = new Inlinable:
-    type Self = Double
-    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Double]): Expr[Double] =
-      '{ java.lang.Double.longBitsToDouble($reader.fixed64()) }
-
-  given float: (Float is Inlinable) = new Inlinable:
-    type Self = Float
-    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Float]): Expr[Float] =
-      '{ java.lang.Float.intBitsToFloat($reader.fixed32()) }
-
-  given text: (Text is Inlinable) = new Inlinable:
-    type Self = Text
-    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Text]): Expr[Text] =
-      '{ $reader.text() }
-
-  given data: (Data is Inlinable) = new Inlinable:
-    type Self = Data
-    def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Data]): Expr[Data] =
-      '{ $reader.data() }
-
-  given iterable: [collection <: Iterable, element]
-  =>  (element0: element is Inlinable)
-  =>  (collection[element] is Inlinable) =
-    IterableInlinable[element](element0).asInstanceOf[collection[element] is Inlinable]
+    '{abort(Protobuf.Error(Protobuf.Error.Reason.MissingField(0)))(using $tactic)}

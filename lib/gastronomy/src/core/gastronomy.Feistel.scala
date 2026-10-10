@@ -41,8 +41,8 @@ object Feistel:
         recur
           // The XOR is masked, not widened: `.toLong` on a negative `Int` sign-extends, filling
           // the high word — the half just shifted in — with ones.
-          ( (value.toInt.toLong << 32)
-            | (((value >> 32).toInt ^ round(value.toInt, next)).toLong & 0xffffffffL),
+          ( (value.toInt.toLong << 32) |
+            (((value >> 32).toInt ^ round(value.toInt, next)).toLong & 0xffffffffL),
             more )
 
     recur(input, subkeys)

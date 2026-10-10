@@ -35,9 +35,9 @@ package obligatory
 import anticipation.*
 import coaxial.*
 import contingency.*
-import telekinesis.*
 import parasite.*
 import spectacular.*
+import telekinesis.*
 
 // A scoped gRPC channel over `Http2.EndpointSessional`: the HTTP/2
 // connection is opened and its handshake completed, the channel is lent to the lambda,

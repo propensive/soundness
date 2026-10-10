@@ -32,10 +32,8 @@
                                                                                                   */
 package xenophile
 
-
 import scala.collection.immutable.Seq
 import scala.collection.immutable.{List, Nil, ::}
-
 import scala.quoted.*
 
 import anticipation.*
@@ -43,8 +41,8 @@ import denominative.*
 import fulminate.*
 import gossamer.*
 import rudiments.*
-import vacuous.*
 import symbolism.*
+import vacuous.*
 
 // Kotlin metadata declares a member's parameters and default flags as short, declaration-sized
 // lists, read positionally against the arity the metadata itself supplies, so `size`, `skip` and
@@ -82,7 +80,7 @@ object KotlinFacade:
       // the stdlib's (this file builds `quotes.reflect` trees).
       members.stdlib.filter(_ != Foreign.Type.Named(t"null")) match
         case List(inner) if members.size == 2 => t"${kotlinType(inner)}?"
-        case _ => members.map(kotlinType).join(t" | ")
+        case _                                => members.map(kotlinType).join(t" | ")
 
     case Foreign.Type.Named(name) =>
       simple(name)
@@ -281,17 +279,17 @@ object KotlinFacade:
       case other                => other.typeSymbol
 
     val mapLike =
-      target <:< TypeRepr.of[java.util.Map[?, ?]]
-        && constructorOf(argument) == constructorOf(TypeRepr.of[Map[Any, Any]])
+      target <:< TypeRepr.of[java.util.Map[?, ?]] &&
+        constructorOf(argument) == constructorOf(TypeRepr.of[Map[Any, Any]])
 
     val setLike =
-      target <:< TypeRepr.of[java.util.Set[?]]
-        && constructorOf(argument) == constructorOf(TypeRepr.of[Set[Any]])
+      target <:< TypeRepr.of[java.util.Set[?]] &&
+        constructorOf(argument) == constructorOf(TypeRepr.of[Set[Any]])
 
     val seqLike =
-      target <:< TypeRepr.of[java.util.Collection[?]]
-        && (argument <:< TypeRepr.of[Seq[?]]
-             || constructorOf(argument) == constructorOf(TypeRepr.of[proscenium.List[Any]]))
+      target <:< TypeRepr.of[java.util.Collection[?]] &&
+        (argument <:< TypeRepr.of[Seq[?]] ||
+          constructorOf(argument) == constructorOf(TypeRepr.of[proscenium.List[Any]]))
 
     mapLike || setLike || seqLike
 
@@ -312,11 +310,20 @@ object KotlinFacade:
         val constructor = constructorOf(tpe)
 
         if constructor == constructorOf(TypeRepr.of[Map[Any, Any]]) then
-          '{scala.jdk.javaapi.CollectionConverters.asJava(${argument.asExprOf[Any]}.asInstanceOf[scala.collection.immutable.Map[?, ?]])}
+          ' {
+              scala.jdk.javaapi.CollectionConverters.asJava
+                ( ${argument.asExprOf[Any]}.asInstanceOf[scala.collection.immutable.Map[?, ?]] )
+            }
         else if constructor == constructorOf(TypeRepr.of[Set[Any]]) then
-          '{scala.jdk.javaapi.CollectionConverters.asJava(${argument.asExprOf[Any]}.asInstanceOf[scala.collection.immutable.Set[?]])}
+          ' {
+              scala.jdk.javaapi.CollectionConverters.asJava
+                ( ${argument.asExprOf[Any]}.asInstanceOf[scala.collection.immutable.Set[?]] )
+            }
         else
-          '{scala.jdk.javaapi.CollectionConverters.asJava(${argument.asExprOf[Any]}.asInstanceOf[scala.collection.immutable.Seq[?]])}
+          ' {
+              scala.jdk.javaapi.CollectionConverters.asJava
+                ( ${argument.asExprOf[Any]}.asInstanceOf[scala.collection.immutable.Seq[?]] )
+            }
 
       TypeApply(Select.unique(view.asTerm, "asInstanceOf"), List(Inferred(solid(target))))
 
@@ -413,7 +420,8 @@ object KotlinFacade:
                 val loader = $samClass.getClassLoader
                 val invocations = Kotlin.Runtime.forwarder($handler)
 
-                java.lang.reflect.Proxy.newProxyInstance(loader, scala.Array($samClass), invocations)
+                java.lang.reflect.Proxy
+                . newProxyInstance(loader, scala.Array($samClass), invocations)
                 . asInstanceOf[i]
               }
 
@@ -476,11 +484,11 @@ object KotlinFacade:
       // Only members a caller could actually invoke are worth refining. A non-empty `privateWithin`
       // marks a package-private or protected-scoped Java member (e.g. JDK 25's internal
       // `Thread.uncaughtExceptionHandler(handler)`, scoped to `java.lang`); refining it both
-      // exposes an inaccessible method and, worse, shadows the public `setX`-derived property of the
-      // same name — so the `x = …` setter would silently never be generated.
+      // exposes an inaccessible method and, worse, shadows the public `setX`-derived property of
+      // the same name — so the `x = …` setter would silently never be generated.
       def accessible(method: Symbol): Boolean =
-        !method.flags.is(Flags.Synthetic) && !method.flags.is(Flags.Private)
-          && !method.flags.is(Flags.Protected) && method.privateWithin.isEmpty
+        !method.flags.is(Flags.Synthetic) && !method.flags.is(Flags.Private) &&
+          !method.flags.is(Flags.Protected) && method.privateWithin.isEmpty
 
       // A method worth refining: it has at least one functional-interface parameter (so a lambda
       // argument benefits) and a plain result.
@@ -547,8 +555,10 @@ object KotlinFacade:
             if propertyNames.contains(property.s) then accumulated else
               samFunctionType(parameter).lay(accumulated): function =>
                 val getter = Refinement(accumulated, property.s, function)
+
                 val signature =
                   MethodType(List("value"))(_ => List(function), _ => TypeRepr.of[Unit])
+
                 Refinement(getter, s"${property.s}_=", signature)
 
           case _ =>
@@ -1368,9 +1378,9 @@ object KotlinFacade:
       bridgeCall(self, repr, className, member, provided, prototype)
 
     . apply: ordered =>
-        // `invocation` takes the argument terms as a stdlib `List`: it slices and zips them
-        // against `quotes.reflect` parameter lists, which are stdlib lists themselves.
-        invocation(self, repr, className, field, ordered.stdlib, prototype)
+      // `invocation` takes the argument terms as a stdlib `List`: it slices and zips them
+      // against `quotes.reflect` parameter lists, which are stdlib lists themselves.
+      invocation(self, repr, className, field, ordered.stdlib, prototype)
 
   // The facade of an `enum class` entry, a static field of the enum's own type.
   def enumEntry[kotlinType: Type](name: Expr[String])(using Quotes): Expr[Any] =

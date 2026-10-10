@@ -29,9 +29,10 @@ lib/bitumen/src/core/bitumen.Pax.scala	0	0	0	0	0	0	1	0	0	0
 lib/bitumen/src/core/bitumen.Tar.scala	1	0	3	0	0	0	1	0	3	0
 lib/bitumen/src/core/bitumen.Tarfile.scala	1	2	1	0	0	0	0	0	0	0
 lib/bitumen/src/jvm/bitumen.TarBuilder.scala	0	0	1	0	0	1	0	0	0	0
-lib/bitumen/src/jvm/bitumen.TarFilesystem.scala	0	0	0	0	1	1	0	0	0	0
+lib/bitumen/src/jvm/bitumen.TarFilesystem.scala	0	0	0	0	0	1	0	0	0	0
 lib/bitumen/src/test/bitumen_test.scala	0	4	0	0	1	0	16	0	0	0
-lib/breviloquence/src/core/breviloquence.Cbor.scala	0	0	3	0	3	1	0	0	0	0
+lib/breviloquence/src/core/breviloquence.Cbor.scala	0	0	0	0	1	0	0	0	0	0
+lib/breviloquence/src/core/breviloquence.CborParser.scala	2	0	0	0	0	1	0	0	0	0
 lib/breviloquence/src/core/breviloquence.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0
 lib/breviloquence/src/staged/breviloquence.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0
 lib/breviloquence/src/test/breviloquence_test.scala	0	0	1	0	0	0	0	0	0	0
@@ -97,7 +98,7 @@ lib/espionage/src/test/espionage_test.scala	0	4	0	0	0	0	0	0	0	0
 lib/ethereal/src/core/ethereal.Launcher.scala	0	0	0	0	2	2	0	0	0	0
 lib/ethereal/src/core/ethereal.Session.scala	3	0	6	0	3	3	0	0	0	0
 lib/ethereal/src/core/ethereal_core.scala	3	8	0	0	1	2	0	0	0	0
-lib/ethereal/src/test/ethereal_test.scala	0	7	0	0	1	0	0	0	0	0
+lib/ethereal/src/test/ethereal_test.scala	0	0	0	0	1	0	0	0	0	0
 lib/eucalyptus/src/core/eucalyptus.Logger.scala	2	0	0	0	0	0	0	0	0	0
 lib/eucalyptus/src/test/eucalyptus_test.scala	6	0	0	0	0	0	0	0	0	0
 lib/exegesis/src/core/exegesis.Lsp.scala	15	0	78	0	0	0	0	0	0	0
@@ -110,8 +111,7 @@ lib/exoskeleton/src/completions/exoskeleton.Completions.scala	0	1	0	0	0	0	0	0	0	
 lib/exoskeleton/src/completions/exoskeleton.Pathname.scala	0	2	0	0	0	0	0	0	0	0
 lib/exoskeleton/src/completions/exoskeleton_completions.scala	0	0	0	0	0	0	0	0	1	0
 lib/exoskeleton/src/core/exoskeleton.Invocation.scala	0	0	3	0	0	0	0	0	0	0
-lib/exoskeleton/src/rig/exoskeleton.Tmux.scala	0	3	0	0	0	0	0	0	0	0
-lib/exoskeleton/src/test/exoskeleton_test.scala	0	3	0	0	0	0	0	0	0	0
+lib/exoskeleton/src/test/exoskeleton_test.scala	0	1	0	0	0	0	0	0	0	0
 lib/facsimile/src/core/facsimile.Gathering.scala	0	0	0	0	1	0	0	0	0	0
 lib/facsimile/src/core/facsimile.Guard.scala	0	0	0	0	4	6	4	0	0	0
 lib/facsimile/src/core/facsimile.Page.scala	0	0	0	0	1	0	0	0	0	0
@@ -206,9 +206,8 @@ lib/jacinta/src/staged/jacinta.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0
 lib/jacinta/src/test/jacinta.ParserTests.scala	0	0	0	0	6	0	0	0	0	0
 lib/legerdemain/src/test/legerdemain_test.scala	0	0	1	0	0	0	0	0	0	0
 lib/locomotion/src/core/locomotion.Protobuf.scala	0	0	0	0	1	1	0	0	0	0
-lib/locomotion/src/core/locomotion.ProtobufParser.scala	0	0	2	0	0	0	0	0	0	0
 lib/locomotion/src/staged/locomotion.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0
-lib/locomotion/src/test/locomotion_test.scala	0	3	0	0	0	0	0	0	0	0
+lib/locomotion/src/test/locomotion_test.scala	0	5	0	0	0	0	0	0	0	0
 lib/mandible/src/core/mandible.Bytecode.scala	0	1	0	0	0	0	0	0	0	0
 lib/metamorphose/src/core/metamorphose.Permutation.scala	0	0	0	0	0	0	0	1	0	0
 lib/monotonous/src/core/monotonous.Serializable.scala	0	0	0	0	0	6	0	0	0	0
@@ -275,7 +274,7 @@ lib/probably/src/events/probably.Streamer.scala	0	0	0	0	0	0	0	2	0	0
 lib/profanity/src/core/profanity.Interaction.scala	0	0	1	0	0	0	0	0	0	0
 lib/profanity/src/core/profanity.Terminal.scala	1	0	3	0	0	0	0	0	0	0
 lib/profanity/src/core/profanity_core.scala	0	2	0	0	0	0	0	0	0	0
-lib/profanity/src/test/profanity_test.scala	0	4	0	0	4	0	0	0	0	0
+lib/profanity/src/test/profanity_test.scala	0	0	0	0	4	0	0	0	0	0
 lib/proscenium/src/core/proscenium.Array.scala	3	0	0	0	0	0	1	0	0	0
 lib/punctuation/src/core/punctuation.BlockBuilder.scala	0	0	7	0	0	0	0	0	0	0
 lib/punctuation/src/core/punctuation.EmphasisProcessor.scala	0	0	7	0	0	0	0	0	0	0

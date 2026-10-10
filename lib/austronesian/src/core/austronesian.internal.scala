@@ -32,9 +32,8 @@
                                                                                                   */
 package austronesian
 
-import scala.collection.immutable.Vector
-
 import scala.caps
+import scala.collection.immutable.Vector
 
 import anticipation.*
 import contingency.*
@@ -52,9 +51,9 @@ object internal:
 
   object Pojo extends Pojo2:
     def apply
-      ( pojo: scala.Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character |
-        java.lang.Short | java.lang.Integer | java.lang.Long | java.lang.Float |
-        java.lang.Double )
+      ( pojo: scala.Array[Object] | String | java.lang.Boolean | java.lang.Byte |
+        java.lang.Character | java.lang.Short | java.lang.Integer | java.lang.Long |
+        java.lang.Float | java.lang.Double )
     :   Pojo =
 
       // The union's array member drags a read capability through the opaque alias;
@@ -110,8 +109,7 @@ object internal:
     given list: [collection <: Iterable, element: Encodable in Pojo]
     =>  collection[element] is Encodable in Pojo =
 
-      iterable =>
-        scala.Array.from(iterable.map(_.encode.asInstanceOf[Object])).asInstanceOf[Pojo]
+      iterable => scala.Array.from(iterable.map(_.encode.asInstanceOf[Object])).asInstanceOf[Pojo]
 
     // Alias counterparts of `list`/`collection`: the opaque prelude collections
     // do not conform to `Iterable`, so each gets its own instance built at the
@@ -210,7 +208,6 @@ object internal:
     =>  sequence[element] is Decodable in Pojo =
       collection[Vector, element]
       . asInstanceOf[sequence[element] is Decodable in Pojo]
-
 
     extension (pojo: Pojo)
       inline def as[entity: Decodable in Pojo]: entity = entity.decoded(pojo)

@@ -32,7 +32,6 @@
                                                                                                   */
 package bitumen
 
-
 import hieroglyph.*, codepages.asciiCodepage, textMetrics.uniformMetric
 import hypotenuse.*, arithmeticOptions.uncheckedOverflow
 

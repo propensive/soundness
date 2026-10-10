@@ -32,7 +32,6 @@
                                                                                                   */
 package vexillology
 
-
 import java.lang as jl
 
 import distillate.*

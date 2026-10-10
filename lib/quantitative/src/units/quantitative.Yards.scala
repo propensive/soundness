@@ -37,6 +37,7 @@ import rudiments.*
 
 object Yards:
   given designation: Designation[Yards[1]] = () => "yd".tt
+
   erased given ratio: Ratio[Yards[-1] & Metres[1], 0.9144] =
     Ratio.Evidence[Yards[-1] & Metres[1], 0.9144]()
 

@@ -65,6 +65,7 @@ case class Cadence(initial: Int, regular: Int, hashSize: Int):
   val hashSizeIndex: Int =
     Cadence.hashSizes.where(_ == hashSize).lay:
       panic(m"hash size $hashSize is not one of ${Cadence.hashSizes.readable.toList.toString}")
+
     . apply(_.n0)
 
   // Packed cadence byte per §3.1: bits 4-7 = s, bits 2-3 = k_i - k_r, bits 0-1 = k_r - 1.

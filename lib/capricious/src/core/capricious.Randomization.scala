@@ -33,7 +33,6 @@
 package capricious
 
 import scala.language.experimental.genericNumberLiterals
-
 import scala.util as su
 
 import beneficence.*

@@ -45,7 +45,7 @@ import zephyrine.*
 
 object Serviceable:
   given domainSocket: (backend: Socket.Backend, tactic: Tactic[Truncation.Error])
-  =>  (options: Every[Socket.Option.Domain])
+  =>  ( options: Every[Socket.Option.Domain] )
   =>  ( (DomainSocket is Serviceable)^{tactic, caps.any} ) = new Serviceable:
     type Self = DomainSocket
     type Output = Data
@@ -63,8 +63,8 @@ object Serviceable:
     def close(connection: Connection): Unit = backend.hangUp(connection)
 
   given tcpEndpoint: Online
-  =>  (backend: Socket.Backend, tactic: Tactic[Truncation.Error])
-  =>  (options: Every[Socket.Option.Tcp])
+  =>  ( backend: Socket.Backend, tactic: Tactic[Truncation.Error] )
+  =>  ( options: Every[Socket.Option.Tcp] )
   =>  ( (Endpoint[Tcp.Port] is Serviceable)^{tactic} ) = new Serviceable:
     type Self = Endpoint[Tcp.Port]
     type Output = Data
@@ -82,7 +82,7 @@ object Serviceable:
       backend.response(connection)
 
   given tcpPort: (backend: Socket.Backend, tactic: Tactic[Truncation.Error])
-  =>  (options: Every[Socket.Option.Tcp])
+  =>  ( options: Every[Socket.Option.Tcp] )
   =>  ( (Tcp.Port is Serviceable)^{tactic} ) = new Serviceable:
     type Self = Tcp.Port
     type Output = Data

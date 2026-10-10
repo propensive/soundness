@@ -79,7 +79,7 @@ object Form:
     // `entries` — minted once at construction, sound because `entries` is immutable.
     val focusables: Sequence[Ordinal in entries.type] =
       val builder = scala.collection.immutable.Vector.newBuilder[Ordinal in entries.type]
-      entries.iterate { index => if entries(index).focus.present then builder += index }
+      entries.iterate: index => if entries(index).focus.present then builder += index
       Sequence.from(builder.result())
 
 // Drives an interactive layout. The pane tree is re-derived from its live
@@ -163,8 +163,7 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
   // The position, within `layout.focusables`, of the focused widget (matched by
   // identity, so focus survives insertions), defaulting to the first.
   private def focusPosition(layout: Form.Layout): Int = focused.lay(0): widget =>
-    layout.focusables.where: ordinal =>
-      layout.entries(ordinal).focus.lay(false)(_ eq widget)
+    layout.focusables.where: ordinal => layout.entries(ordinal).focus.lay(false)(_ eq widget)
     . lay(0)(_.n0)
 
   // Project the panes to a frame, overriding each widget's minimum with the live
@@ -242,7 +241,8 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
         extent.flush()
 
       case Pane.Widget(_, fixture) =>
-        fixture.render(extent, layout.focusables.where(_ == index).lay(-1)(_.n0) == focusPosition(layout))
+        fixture.render
+          ( extent, layout.focusables.where(_ == index).lay(-1)(_.n0) == focusPosition(layout) )
 
       case _ =>
         ()
@@ -276,7 +276,7 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
         // An animated fixture is dirty by definition: its appearance depends on the clock, not on
         // its rectangle or its state, so nothing else in `dirtyCells` would notice it changing.
         val dirty = dirtyCells(previousRects, updated.entries.map(_.rect), changed + animated)
-        dirty.each { index => updated.entries.pick(index.z)(paint(updated)(_)) }
+        dirty.each: index => updated.entries.pick(index.z)(paint(updated)(_))
 
     updated.focusables.pick(focusPosition(updated).z): position =>
       paint(updated)(updated.focusables(position))
@@ -310,8 +310,7 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
     val current = layout
 
     current.entries.iterate: index =>
-      if current.entries(index).fixture.lay(false)(_.period.present)
-      then builder += index.n0
+      if current.entries(index).fixture.lay(false)(_.period.present) then builder += index.n0
 
     builder.result().to(Set)
 
@@ -369,7 +368,7 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
 
         root match
           case inline: InlineRoot =>
-            anchor.let((row, column) => inline.anchor(row, column))
+            anchor.let: (row, column) => inline.anchor(row, column)
             anchor = Unset
             inline.invalidate()
 

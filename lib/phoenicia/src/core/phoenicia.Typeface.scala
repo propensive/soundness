@@ -45,6 +45,7 @@ object Typeface:
   // distinguishable from a provision for another at compile time. The name is what a document
   // writes where it refers to the typeface: a CSS `font-family`, a PDF `/BaseFont`.
   inline def apply[family <: Label]: Typeface of family = named[family](constValue[family].tt)
+
   private def named[family <: Label](name: Text): Typeface of family =
     new Typeface(name) { type Topic = family }
 

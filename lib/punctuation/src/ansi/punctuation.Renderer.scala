@@ -199,8 +199,7 @@ object Renderer:
       // Drop a trailing empty line that comes from a final '\n' in `code`.
       val lines = if raw.last.lay(false)(_.plain.length == 0) then raw.skip(1, Bidi.Rtl) else raw
 
-      lines.map: line =>
-        e"  ${line: Teletype}"
+      lines.map: line => e"  ${line: Teletype}"
 
     case Layout.HtmlBlock(_, html) =>
       val text: Teletype = e"${Fg(palette.subdued)}($html)"
@@ -243,8 +242,7 @@ object Renderer:
           case head :: tail =>
             (mk + Space + head) :: tail.map(indent(_, hang))
 
-      if tight then rendered.flat
-      else interleaveBlanks(rendered)
+      if tight then rendered.flat else interleaveBlanks(rendered)
 
 
   // -- helpers --------------------------------------------------------------

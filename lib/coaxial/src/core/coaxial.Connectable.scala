@@ -56,8 +56,8 @@ object Connectable:
   // Honestly tracked: the instance is resolvable only with `Online` permission, so it is a
   // capability carrying that evidence in its capture set.
   given tcpEndpoint: (online: Online)
-  =>  (backend: Socket.Backend, options: Every[Socket.Option.Tcp])
-  =>  ((Endpoint[Tcp.Port] is Connectable)^{online, caps.any}) =
+  =>  ( backend: Socket.Backend, options: Every[Socket.Option.Tcp] )
+  =>  ( (Endpoint[Tcp.Port] is Connectable)^{online, caps.any} ) =
 
     new Connectable:
       type Self = Endpoint[Tcp.Port]

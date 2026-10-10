@@ -72,6 +72,7 @@ extends Cipher, Encryption, Symmetric:
   // total length is finally known.
   def encryptStream(stream: Chain[Data], key: Data, vector: InitializationVector)
   :   Chain[Data] =
+
     val blockSize = cipher.blockSize(transformation)
     val iv: Optional[Data] = if mode.usesIv then vector(blockSize) else Unset
     val session = cipher.stream(transformation, key, iv)
@@ -115,7 +116,7 @@ extends Cipher, Encryption, Symmetric:
   // streaming decryption of AEAD input bounds no memory; it is offered for
   // API uniformity only.
   def decrypt(consume stream: (Stream[Data] over Credit)^, key: Data)
-    (using buffering: Buffering, tactic: Tactic[Crypto.Error])
+    ( using buffering: Buffering, tactic: Tactic[Crypto.Error] )
   :   (Stream[Data] over Credit)^ =
 
     val ivSize = if mode.usesIv then cipher.blockSize(transformation) else 0
@@ -173,7 +174,7 @@ extends Duct[Data, Data]:
     count
 
   update def step(source: Region[Data])(range: Interval in source.type)
-    ( target: Slate[Data] )(space: Interval in target.type)
+    (target: Slate[Data])(space: Interval in target.type)
   :   Duct.Progress =
 
     val sourceLength = (range: Interval).size
@@ -203,7 +204,8 @@ extends Duct[Data, Data]:
       pending = session.finish()
       offset = 0
       deliver(bytes, targetOffset, targetSpace)
-    else 0
+    else
+      0
 
 // Streaming decryption's IV-prefix state machine (the `Inflation` header
 // precedent): the leading `ivSize` bytes accumulate before the session can
@@ -240,7 +242,7 @@ extends Duct[Data, Data]:
   def translate(demand: Credit): Credit = demand
 
   update def step(source: Region[Data])(range: Interval in source.type)
-    ( target: Slate[Data] )(space: Interval in target.type)
+    (target: Slate[Data])(space: Interval in target.type)
   :   Duct.Progress =
 
     inner match
@@ -264,6 +266,7 @@ extends Duct[Data, Data]:
     inner match
       case duct0: CipherDuct =>
         val duct = duct0.asInstanceOf[CipherDuct^]
+
         try duct.flush(target)(space)
         catch case error: Exception =>
           // Matched by class name (see `securityException`): `javax.crypto` types cannot be

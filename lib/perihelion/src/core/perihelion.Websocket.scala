@@ -39,9 +39,9 @@ import coaxial.*
 import contingency.*
 import fulminate.*
 import gastronomy.*
-import hypotenuse.*
 import gossamer.*
 import hieroglyph.*
+import hypotenuse.*
 import monotonous.*
 import parasite.*
 import prepositional.*
@@ -51,7 +51,6 @@ import telekinesis.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
-
 import Control.*
 import alphabets.base64Standard
 import codepages.utf8Codepage
@@ -188,8 +187,12 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[Websocket.Error
             recur(partial)
 
           case Websocket.Frame.Close(code, reason) =>
-            if !validUtf8(reason, true) then abort(Websocket.Error(Websocket.Error.Reason.InvalidText))
-            channel.enqueue(Websocket.Frame.Close(if code == 1005 then 1000 else code, Data()).encode)
+            if !validUtf8(reason, true) then
+              abort(Websocket.Error(Websocket.Error.Reason.InvalidText))
+
+            channel.enqueue
+              ( Websocket.Frame.Close(if code == 1005 then 1000 else code, Data()).encode )
+
             channel.stop()
             Chain()
 
@@ -222,7 +225,7 @@ object Websocket:
           upgrade             = t"websocket" )
         // The channel's reader endpoint is a singleton: the upgrade body is
         // materialized exactly once, by the server's response writer.
-        ( Http.Body.Flowing(() => websocket.channel.stream) )
+        (Http.Body.Flowing{ () => websocket.channel.stream })
 
   // WsUrl → Websocket.Url
   // A `ws://` or `wss://` URL. `Url` decoding is scheme-generic, so a `Websocket.Url` parses
@@ -260,7 +263,8 @@ object Websocket:
       case Reason.Handshake(detail) => m"the WebSocket handshake failed because $detail"
 
   case class Error(reason: Websocket.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(368, reason.number)(m"the WebSocket protocol was violated because $reason")
+  extends fulminate.Error(368, reason.number)
+    ( m"the WebSocket protocol was violated because $reason" )
 
   // WebsocketEvent → Websocket.Event
   object Event:
@@ -344,6 +348,7 @@ object Websocket:
     def parse(cursor: Cursor[Data, {}]^)(using masking: Masking)
       ( using Tactic[Websocket.Error] )
     :   Optional[Frame] =
+
       if cursor.finished then Unset else
         val byte0 = cursor.peek.asInt
         cursor.advance()
@@ -393,6 +398,7 @@ object Websocket:
             // reason; a lone byte is malformed. `1005` is the internal "no code
             // present" sentinel and must never travel on the wire.
             if payload.length == 1 then abort(Websocket.Error(Websocket.Error.Reason.BadClose))
+
             val code =
               if payload.length >= 2 then B16(payload.keep(2)).u16.int else 1005
 
@@ -489,30 +495,30 @@ class Websocket[message, state]
           initial0
 
       . protect:
-          // Resolved locally: the class-level `Masking` given would re-capture
-          // the instance under construction.
-          given Masking = Masking.Server
+        // Resolved locally: the class-level `Masking` given would re-capture
+        // the instance under construction.
+        given Masking = Masking.Server
 
-          def loop(messages: Chain[Message], state: state): state =
-            messages.flow(channel0.stop() yet state):
-              Log.fine(Websocket.Event.Received(next.bytes.length))
+        def loop(messages: Chain[Message], state: state): state =
+          messages.flow(channel0.stop() yet state):
+            Log.fine(Websocket.Event.Received(next.bytes.length))
 
-              handleRef.asInstanceOf[state => message => Control[state]]
-                (state)(decodeRef.asInstanceOf[Message => message](next)) match
-                case Continue(state2) =>
-                  loop(more, state2.or(state))
+            handleRef.asInstanceOf[state => message => Control[state]]
+              (state)(decodeRef.asInstanceOf[Message => message](next)) match
+              case Continue(state2) =>
+                loop(more, state2.or(state))
 
-                case Terminate =>
-                  channel0.stop()
-                  state
+              case Terminate =>
+                channel0.stop()
+                state
 
-                case Reply(bytes, state2) =>
-                  channel0.enqueue(bytes)
-                  loop(more, state2.or(state))
+              case Reply(bytes, state2) =>
+                channel0.enqueue(bytes)
+                loop(more, state2.or(state))
 
-                case Conclude(bytes, state2) =>
-                  channel0.enqueue(bytes)
-                  channel0.stop()
-                  state2.or(state)
+              case Conclude(bytes, state2) =>
+                channel0.enqueue(bytes)
+                channel0.stop()
+                state2.or(state)
 
-          loop(Reader(bodyRef.asInstanceOf[Spring[Data]^], channel0).messages, initial0)
+        loop(Reader(bodyRef.asInstanceOf[Spring[Data]^], channel0).messages, initial0)

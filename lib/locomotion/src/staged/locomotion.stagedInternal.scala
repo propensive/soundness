@@ -738,7 +738,7 @@ object stagedInternal:
                         ${ instance.asInstanceOf[Inlinable { type Self = fieldType }]
                              . parse(reader) }
 
-                      $parser.directLeaveField(saved)
+                      $parser.directLeaveField(saved)(using $tactic)
                       result
                     }
 
@@ -754,7 +754,7 @@ object stagedInternal:
                         Protobuf.Parsable.parseField[fieldType]
                           ($instance.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef])
 
-                      $parser.directLeaveField(saved)
+                      $parser.directLeaveField(saved)(using $tactic)
                       result
                     }
 
@@ -768,7 +768,7 @@ object stagedInternal:
                         ${ instance.asInstanceOf[Inlinable { type Self = innerType }]
                              . parse(reader) }
 
-                      $parser.directLeaveField(saved)
+                      $parser.directLeaveField(saved)(using $tactic)
                       result
                     }
 
@@ -791,7 +791,7 @@ object stagedInternal:
                             while !$parser.directAtLimit do
                               $builder += ${ packedRead(kind).asExprOf[element] }
 
-                            $parser.directLeaveField(saved)
+                            $parser.directLeaveField(saved)(using $tactic)
                           else $builder += ${ scalarRead(kind, code).asExprOf[element] }
                         }
 
@@ -805,7 +805,7 @@ object stagedInternal:
                         '{
                           val saved = $parser.directEnterField($code)(using $tactic)
                           val result: element = ${ instance.parse(reader) }
-                          $parser.directLeaveField(saved)
+                          $parser.directLeaveField(saved)(using $tactic)
                           $builder += result
                         }
 
@@ -819,7 +819,7 @@ object stagedInternal:
                             Protobuf.Parsable.parseField[element]
                               ($instance.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef])
 
-                          $parser.directLeaveField(saved)
+                          $parser.directLeaveField(saved)(using $tactic)
                           $builder += result
                         }
 
@@ -919,7 +919,7 @@ object stagedInternal:
                 val instance = parsable.asInstanceOf[Expr[Any]]
 
                 '{
-                  val window = $parser.directWindow(0, 0)
+                  val window = $parser.directEmptyWindow()
 
                   val result: fieldType =
                     Protobuf.Parsable.parseField[fieldType]
@@ -997,10 +997,14 @@ object stagedInternal:
           construct )
       . asExprOf[product]
 
+    // The parser is not bound to a local: a `val` holding the exclusive parser is an alias of
+    // the reader it came from, which the separation checker then holds read-only wherever the
+    // reader is used again (a nested or runtime-parsed field), and a capture-checked-only
+    // module admits no `update` call through such a binding at all. Each rim call reaches the
+    // parser through the reader's accessor instead — a field read the JIT hoists.
     '{
       val tactic = infer[Tactic[Protobuf.Error]]
-      val parser = $reader.rawParser.asInstanceOf[ProtobufParser]
-      ${ body('tactic, 'parser) }
+      ${ body('tactic, '{ ProtobufParser.of($reader.rawParser) }) }
     }
 
   // A wholly-absent message — what `decoded(Protobuf.Absent)` produces on
@@ -1107,36 +1111,39 @@ object stagedInternal:
 
           '{
             if $chosen == ${Expr(index + 1)} then
-              def parseVariant(): variantType = ${ instance.parse(reader) }
-              parseVariant()
+              val parsed: variantType = ${ instance.parse(reader) }
+              parsed
             else ${ dispatch(index + 1, chosen, tactic) }
           }
 
     '{
       val tactic = infer[Tactic[Protobuf.Error]]
-      val parser = $reader.rawParser.asInstanceOf[ProtobufParser]
       var chosen = Int.MaxValue
       var chosenStart = 0
       var chosenEnd = 0
 
-      while !parser.directAtLimit do
-        val tag = parser.directTag()(using tactic)
+      // The message is buffered whole before the scan, so the chosen extent is still in
+      // the buffer when the scan returns to it.
+      ProtobufParser.of($reader.rawParser).directBufferWindow()(using tactic)
+
+      while !ProtobufParser.of($reader.rawParser).directAtLimit do
+        val tag = ProtobufParser.of($reader.rawParser).directTag()(using tactic)
         val number = tag >>> 3
-        val saved = parser.directEnterField(tag & 7)(using tactic)
+        val saved = ProtobufParser.of($reader.rawParser).directEnterField(tag & 7)(using tactic)
 
         if number >= 1 && number <= ${Expr(arity)} && number <= chosen then
           chosen = number
-          chosenStart = parser.directMark
-          chosenEnd = parser.directBoundary
+          chosenStart = ProtobufParser.of($reader.rawParser).directMark
+          chosenEnd = ProtobufParser.of($reader.rawParser).directBoundary
 
-        parser.directLeaveField(saved)
+        ProtobufParser.of($reader.rawParser).directLeaveField(saved)(using tactic)
 
       if chosen == Int.MaxValue
       then abort(Protobuf.Error(Protobuf.Error.Reason.MissingField(0)))(using tactic)
       else
-        val outer = parser.directWindow(chosenStart, chosenEnd)
+        val outer = ProtobufParser.of($reader.rawParser).directWindow(chosenStart, chosenEnd)
         val result: sum = ${ dispatch(0, 'chosen, 'tactic) }
-        parser.directRestore(outer)
+        ProtobufParser.of($reader.rawParser).directRestore(outer)
         result
     }
 

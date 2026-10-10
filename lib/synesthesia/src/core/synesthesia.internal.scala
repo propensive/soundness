@@ -32,11 +32,9 @@
                                                                                                   */
 package synesthesia
 
-import scala.collection.immutable.Seq
-
 import scala.annotation
-
 import scala.annotation.*
+import scala.collection.immutable.Seq
 import scala.quoted.*
 
 import anticipation.*
@@ -81,6 +79,7 @@ object internal:
 
     def concatenate(insertions: List[Expr[Text]], parts: List[String], done: Expr[String])
     :   Expr[String] =
+
       insertions match
         case Nil => done
 
@@ -137,6 +136,7 @@ object internal:
     // user interface, and is served with the MCP-app profile unless its MIME type is given.
     val uiUris: scala.collection.immutable.List[Expr[Text]] = toolMethods.flatMap: method =>
       val allAnnotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
+
       allAnnotations.filter(_.tpe.typeSymbol == uiType).map: annotation =>
         '{${annotation.asExprOf[ui]}.uri}
 

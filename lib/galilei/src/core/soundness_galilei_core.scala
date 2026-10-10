@@ -34,8 +34,9 @@ package soundness
 
 export
   galilei
-  . { accessed, Apfs, attribute, attributes, Attributed, BlockDevice, Btrfs, C, CharDevice, children, CopyAttributes, copyInto,
-      copyTo, created, CreateFlag, CreateNonexistentParents, Creation, creation, CreationTimed,
+  . { accessed, Apfs, attribute, attributes, Attributed, BlockDevice, Btrfs, C, CharDevice,
+      children, CopyAttributes, copyInto, copyTo, created, CreateFlag, CreateNonexistentParents,
+      Creation, creation, CreationTimed,
       D, delete, Ext4,
       DeleteRecursively, DereferenceSymlinks, descendants, dir, Directory, Dos, Drive, Entry,
       entry, entryIdentity, executable, expanse, Explorable, existent, Fifo, file, File,
@@ -59,8 +60,8 @@ package filesystemOptions:
   export
     galilei.filesystemOptions
     . { copyAttributes, createNonexistentParents, deleteOnlyEmpty, deleteRecursively,
-        dereferenceSymlinks, discardAttributes, failOnPreexisting, moveAtomically, moveNonAtomically,
-        overwritePreexisting, preserveSymlinks, requireParents }
+        dereferenceSymlinks, discardAttributes, failOnPreexisting, moveAtomically,
+        moveNonAtomically, overwritePreexisting, preserveSymlinks, requireParents }
 
 package filesystemTraversal:
   export galilei.filesystemTraversal.{postOrderTraversal, preOrderTraversal}

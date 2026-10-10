@@ -43,16 +43,6 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-// The common upper bound of every `Directory.Handle`'s fresh plane. Serpentine givens defined
-// generically over `plane <: Subtree` supply the naming rules for paths on any handle's plane,
-// so `dir / "name"` validates its names at compile time: in particular, `.` and `..` are
-// inadmissible, making escape from an opened directory inexpressible rather than checked.
-//
-// Deliberately, a subtree plane has no `Filesystem` instance: galilei's absolute-path
-// operations (bounded by `[plane: Filesystem]`) therefore cannot apply to subtree paths, which
-// would resolve them against the working directory instead of the handle.
-trait Subtree
-
 object Subtree:
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
 
@@ -70,6 +60,7 @@ object Subtree:
       ( using filesystem: handle.Under is Filesystem )
       ( using readable: (Data is Readable to result)^, tactic: Tactic[Io.Error] )
     :   result =
+
       readResolved[handle.Under, result](handle.resolve(path))
 
     transparent inline def overwrite[content](content: content)
@@ -78,6 +69,7 @@ object Subtree:
       ( using streamable: (content is Streamable by Data over Credit)^ )
       ( using tactic: Tactic[Io.Error] )
     :   Unit =
+
       writeResolved(handle.resolve(path), content)
 
     transparent inline def extant()
@@ -85,6 +77,7 @@ object Subtree:
       ( using filesystem: handle.Under is Filesystem )
       ( using backend: FilesystemBackend on handle.Under )
     :   Boolean =
+
       existsResolved(handle.resolve(path))
 
     transparent inline def entries
@@ -92,14 +85,15 @@ object Subtree:
       ( using filesystem: handle.Under is Filesystem )
       ( using backend: FilesystemBackend on handle.Under, tactic: Tactic[Io.Error] )
     :   Chain[Path on plane] =
-      entriesResolved(handle.resolve(path)).map: child =>
-        path.unsafeChild(child.name)(using Unsafe)
+
+      entriesResolved(handle.resolve(path)).map: child => path.unsafeChild(child.name)(using Unsafe)
 
     transparent inline def remove()
       ( using handle: ((Directory.Handle { type Plane = plane }) & Granting[Grant.Write])^ )
       ( using filesystem: handle.Under is Filesystem )
       ( using backend: FilesystemBackend on handle.Under, tactic: Tactic[Io.Error] )
     :   Unit =
+
       removeResolved(handle.resolve(path))
 
   // Helpers are public: `private` helpers called from the transparent-inline operations above
@@ -108,6 +102,7 @@ object Subtree:
     ( using filesystem: under is Filesystem )
     ( using readable: (Data is Readable to result)^, tactic: Tactic[Io.Error] )
   :   result =
+
     Platform.pathReadable[under, Path on under, result].read(path)
 
   def writeResolved[under, content](path: Path on under, content: content)
@@ -115,23 +110,37 @@ object Subtree:
     ( using streamable: (content is Streamable by Data over Credit)^ )
     ( using tactic: Tactic[Io.Error] )
   :   Unit =
+
     path.write(content)
 
   def existsResolved[under](path: Path on under)
     ( using filesystem: under is Filesystem )
     ( using backend: FilesystemBackend on under )
   :   Boolean =
+
     galilei.existent(path)()
 
   def entriesResolved[under](path: Path on under)
     ( using filesystem: under is Filesystem )
     ( using backend: FilesystemBackend on under, tactic: Tactic[Io.Error] )
   :   Chain[Path on under] =
+
     path.children
 
   def removeResolved[under](path: Path on under)
     ( using filesystem: under is Filesystem )
     ( using backend: FilesystemBackend on under, tactic: Tactic[Io.Error] )
   :   Unit =
+
     import filesystemOptions.deleteOnlyEmpty
     path.delete()
+
+// The common upper bound of every `Directory.Handle`'s fresh plane. Serpentine givens defined
+// generically over `plane <: Subtree` supply the naming rules for paths on any handle's plane,
+// so `dir / "name"` validates its names at compile time: in particular, `.` and `..` are
+// inadmissible, making escape from an opened directory inexpressible rather than checked.
+//
+// Deliberately, a subtree plane has no `Filesystem` instance: galilei's absolute-path
+// operations (bounded by `[plane: Filesystem]`) therefore cannot apply to subtree paths, which
+// would resolve them against the working directory instead of the handle.
+trait Subtree

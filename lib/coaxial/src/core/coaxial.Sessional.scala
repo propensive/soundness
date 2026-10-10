@@ -45,13 +45,12 @@ import spectacular.*
 // so `import coaxial.*` (which every socket consumer already has) brings this
 // instance into scope.
 given connectableSessional: [endpoint: {Connectable, Showable}]
-=>  (loggable: (Socket.Event is Loggable)^)
-=>  ((endpoint is Sessional to Duplex)^{loggable, caps.any}) =
+=>  ( loggable: (Socket.Event is Loggable)^ )
+=>  ( (endpoint is Sessional to Duplex)^{loggable, caps.any} ) =
 
- new Sessional:
-  type Self = endpoint
-  type Result = Duplex
+  new Sessional:
+    type Self = endpoint
+    type Result = Duplex
 
-  def session[result](target: endpoint)(lambda: (session: Result) ?=> result): result =
-    target.duplex: duplex =>
-      lambda(using duplex)
+    def session[result](target: endpoint)(lambda: (session: Result) ?=> result): result =
+      target.duplex: duplex => lambda(using duplex)

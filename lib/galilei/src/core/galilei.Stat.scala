@@ -34,15 +34,22 @@ package galilei
 
 import vacuous.*
 
-// An entry's metadata, as one value: its type, size in bytes, and millisecond-epoch timestamps.
-// `created` is `Unset` on filesystems that do not record creation times (most POSIX filesystems,
-// and WASI).
+// An entry's metadata, as one value: its type, size in bytes, millisecond-epoch timestamps, and
+// the Unix fields of its inode. `created` is `Unset` on filesystems that do not record creation
+// times (most POSIX filesystems, and WASI). `mode` is the whole `st_mode` — the type bits as
+// well as the permissions, as `ar` stores it — and `device` is `st_rdev`, meaningful only for a
+// character or block device; all four are `Unset` where the platform has no Unix inode (Windows,
+// WASI), so a reader falls back to a convention of its own.
 case class Stat
   ( entry:    Entry,
     size:     Long,
     modified: Long,
     accessed: Long,
-    created:  Optional[Long] )
+    created:  Optional[Long],
+    mode:     Optional[Int]  = Unset,
+    user:     Optional[Int]  = Unset,
+    group:    Optional[Int]  = Unset,
+    device:   Optional[Long] = Unset )
 
 object Stat:
   // An entry's identity on the storage device it lives on: the device number and the inode

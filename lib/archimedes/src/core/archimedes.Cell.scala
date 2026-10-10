@@ -114,7 +114,7 @@ object Cell:
       val rows =
         framed
         . map { cell => cell.lines.stdlib.map(_.text) }
-        . reduceLeft { (left, right) => left.zip(right).map { (l, r) => t"$l$r" } }
+        . reduceLeft: (left, right) => left.zip(right).map: (l, r) => t"$l$r"
 
       Cell(Sequence.from(rows.map(Writing(_))), cells.map(_.width).total, ascent)
 
@@ -171,8 +171,7 @@ object Cell:
     // `Optional` is a union, so a `let` inside a `let` flattens: one absent child
     // makes the whole concatenation absent.
     nodes.fold(t"": Optional[Text]): (text, node) =>
-      text.let: prefix =>
-        scriptText(node).let(part => t"$prefix$part")
+      text.let: prefix => scriptText(node).let: part => t"$prefix$part"
 
   // The script rewritten in `glyphs`, or `Unset` if any character has no glyph.
   private def transcribe(text: Text, glyphs: Map[Char, Char]): Optional[Text] =
@@ -189,7 +188,7 @@ object Cell:
   // occupies a single line and the script has glyphs for every character.
   private def sameLine(base: Cell, script: Mathml, glyphs: Map[Char, Char]): Optional[Cell] =
     if base.height > 1 then Unset else
-      scriptText(script).let(transcribe(_, glyphs)).let(text => line(t"${slice(base, 0)}$text"))
+      scriptText(script).let(transcribe(_, glyphs)).let: text => line(t"${slice(base, 0)}$text")
 
   def superscript(base: Cell, script: Cell): Cell =
     val height = base.height + script.height
@@ -198,6 +197,7 @@ object Cell:
       Sequence.from:
         (0 until height).map: row =>
           Writing(t"${slice(base, row - script.height)}${slice(script, row)}")
+
     Cell(lines, base.width + script.width, base.baseline + script.height)
 
   def subscript(base: Cell, script: Cell): Cell =
@@ -207,6 +207,7 @@ object Cell:
       Sequence.from:
         (0 until height).map: row =>
           Writing(t"${slice(base, row)}${slice(script, row - base.height)}")
+
     Cell(lines, base.width + script.width, base.baseline)
 
   def subsup(base: Cell, subscript: Cell, superscript: Cell): Cell =
@@ -232,6 +233,7 @@ object Cell:
           val scripts = fromSuperscript.or(fromSubscript.or(spaces(right).text))
 
           Writing(t"$left$scripts")
+
     Cell(lines, base.width + right, superscript.height + base.baseline)
 
   // Each of the three script schemata prefers the same-line Unicode form, and falls
@@ -311,6 +313,7 @@ object Cell:
         Sequence.from:
           (0 until height).map: row =>
             Writing(bracketGlyph(char, row, height, baseline, opening).show)
+
       Cell(glyphs, 1, baseline)
 
   private def bracketGlyph(char: Char, row: Int, height: Int, axis: Int, opening: Boolean): Char =
@@ -356,6 +359,7 @@ object Cell:
               else Stem.show
 
             Writing(t"${glyphs.join} ")
+
       Cell(lines, strokes + 1, axis)
 
   private def integralShape(char: Char): (Int, Boolean) = char match
@@ -393,6 +397,7 @@ object Cell:
             val column = min(fromTop, fromBottom)
             val glyph = if fromTop <= fromBottom then Tick else '╱'
             Writing(t"${spaces(column).text}$glyph${spaces(width - column - 1).text}")
+
     Cell(lines, width, height/2)
 
   // `∏`: a `┬──┬` lintel over two `│` legs.
@@ -404,6 +409,7 @@ object Cell:
         (0 until height).map: row =>
           if row == 0 then Writing(t"┬${repeat(Bar, width - 2).text}┬")
           else Writing(t"$Stem${spaces(width - 2).text}$Stem")
+
     Cell(lines, width, height/2)
 
   private def stretchyChar(node: Mathml): Optional[Char] = node match
@@ -490,4 +496,9 @@ case class Cell(lines: Sequence[Writing], width: Int, baseline: Int):
     val above = Cell.max(ascent - baseline, 0)
     val below = Cell.max(descent - (height - 1 - baseline), 0)
     val blank = Cell.spaces(width)
-    Cell(Sequence.from(Iterator.fill(above)(blank)) + lines + Sequence.from(Iterator.fill(below)(blank)), width, ascent)
+
+    Cell
+      ( Sequence.from(Iterator.fill(above)(blank)) + lines +
+        Sequence.from(Iterator.fill(below)(blank)),
+        width,
+        ascent )

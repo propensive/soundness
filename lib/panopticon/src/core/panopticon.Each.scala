@@ -37,4 +37,4 @@ import prepositional.*
 
 object Each:
   given optical: [element] => Each.type is Optical from List[element] onto element =
-    each => Optic[Each.type, List[element], element]((origin, lambda) => origin.map(lambda))
+    each => Optic[Each.type, List[element], element]: (origin, lambda) => origin.map(lambda)

@@ -32,7 +32,6 @@
                                                                                                   */
 package xenophile
 
-
 import java.lang.foreign.*
 import java.lang.invoke.MethodHandle
 
@@ -87,6 +86,7 @@ object ForeignLibrary:
 
     val signatures =
       CHeader.Dialect.parse(header)(CHeader.Dialect.library).or(Map[Text, Prototype]())
+
     new ForeignLibrary(attempt(paths), signatures)
 
   // The process-wide default lookup (the C standard library and already-loaded
@@ -94,6 +94,7 @@ object ForeignLibrary:
   def system(header: Text): ForeignLibrary =
     val signatures =
       CHeader.Dialect.parse(header)(CHeader.Dialect.library).or(Map[Text, Prototype]())
+
     new ForeignLibrary(linker.defaultLookup.nn, signatures)
 
   // Copies bytes into freshly-allocated native memory in `arena`.

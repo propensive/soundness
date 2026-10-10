@@ -247,7 +247,8 @@ object Timespan:
     ( using calendar: Calendar, ev: topic <:< calendar.MonthUnit, disambiguation: Disambiguation )
   :   (Date is Addable by (Timespan of topic) to Date) =
 
-    Addable: (date, span) => anchorMonth(date, span.years, span.months).addDays(span.days + span.weeks*7)
+    Addable: (date, span) =>
+      anchorMonth(date, span.years, span.months).addDays(span.days + span.weeks*7)
 
   private def physicalSeconds(span: Timespan): Quantity[Seconds[1]] =
     val days = span.days.toLong + span.weeks.toLong*7

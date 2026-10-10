@@ -39,6 +39,9 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import denominative.dysasymptotics.linearSize
+import supervisors.globalSupervisor
+import threads.virtualThreads
+import probates.panicProbate
 
 case class BadPerson(name: Int, age: Text) derives CanEqual
 
@@ -103,6 +106,15 @@ private def hexOf(bytes: Data): String =
     sb.append(f"${bytes.readable(index) & 0xFF}%02x")
     index += 1
   sb.toString
+
+// The bytes as a chain of `size`-byte chunks, so every multi-byte item whose
+// length is not a multiple of `size` straddles a chunk boundary somewhere.
+private def chunked(bytes: Data, size: Int): Chain[Data] =
+  if bytes.length == 0 then Chain() else
+    val split = size.min(bytes.length)
+    Chain.cons
+     ( bytes.segment((0).z till split.z),
+       chunked(bytes.segment(split.z till bytes.length.z), size) )
 
 object Tests extends Suite(m"Breviloquence Tests"):
   def run(): Unit =
@@ -313,6 +325,81 @@ object Tests extends Suite(m"Breviloquence Tests"):
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
         Cbor.ast(proscenium.Chain(bytes).read[Cbor.Ast]).as[Wrapper]
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
+
+    // The parser reads chunks as they arrive, so an item split anywhere must
+    // read as one that arrived whole, and every error offset is absolute.
+    suite(m"Chunked input"):
+      def encoded[value: Encodable in Cbor](value: value): Data =
+        Cbor.Ast.encodable.encoded(Cbor.unseal(value.in[Cbor]))
+
+      test(m"a record split one byte per chunk reads as the AST path"):
+        chunked(encoded(Team(Person(t"Ada", 36), 5)), 1).read[Cbor].as[Team]
+      . assert(_ == Team(Person(t"Ada", 36), 5))
+
+      test(m"a 64-bit integer split mid-value reads whole"):
+        chunked(hex("1b 00 00 00 01 00 00 00 00"), 3).read[Cbor].as[Long]
+      . assert(_ == 4294967296L)
+
+      test(m"a double split mid-value reads whole"):
+        chunked(hex("fb 3ff8000000000000"), 4).read[Cbor].as[Double]
+      . assert(_ == 1.5)
+
+      test(m"a long text string split across chunks reads whole"):
+        chunked(hex("79 012c " + "78".repeat(300).nn), 7).read[Cbor].as[Text]
+      . assert(_ == "x".repeat(300).nn.tt)
+
+      test(m"an indefinite-length text string with a chunk head on a boundary reads whole"):
+        chunked(hex("7f 63 616263 62 6465 ff"), 2).read[Cbor].as[Text]
+      . assert(_ == t"abcde")
+
+      test(m"a byte string split across chunks reads whole"):
+        chunked(hex("54 000102030405060708090a0b0c0d0e0f10111213"), 5).read[Cbor].as[Data].to[List]
+      . assert(_ == List.tabulate(20)(_.toByte))
+
+      test(m"a nested array split across chunks reads whole"):
+        chunked(hex("a1 66 76616c756573 83 01 02 03"), 2).read[Cbor].as[Nums]
+      . assert(_ == Nums(List(1, 2, 3)))
+
+      test(m"truncation inside a later chunk reports the absolute offset"):
+        capture[Cbor.Error](chunked(hex("1b 00 00 00"), 2).read[Cbor]).reason match
+          case Cbor.Error.Reason.Truncated(offset) => offset
+          case _                                   => -1L
+      . assert(_ == 1L)
+
+      test(m"trailing bytes in a later chunk report their absolute offset"):
+        capture[Cbor.Error](chunked(hex("00 00"), 1).read[Cbor]).reason match
+          case Cbor.Error.Reason.Trailing(offset) => offset
+          case _                                 => -1L
+      . assert(_ == 1L)
+
+      test(m"a reserved head byte in a later chunk reports its absolute offset"):
+        capture[Cbor.Error](chunked(hex("82 00 1c"), 1).read[Cbor]).reason match
+          case Cbor.Error.Reason.Reserved(offset, byte) => (offset, byte)
+          case _                                        => (-1L, -1)
+      . assert(_ == (2L, 28))
+
+      test(m"a complete item on a live stream reads without waiting for more"):
+        // The item is published as soon as it is parsed, and the producer only finishes
+        // the stream after it has been seen: the parse must complete without the parser
+        // asking the source for a byte it has not yet sent.
+        val slot = new java.util.concurrent.atomic.AtomicReference[Point | Null](null)
+
+        supervise:
+          Conduit[Data]() match
+           case (intake, stream) =>
+            val task = stream.transfer: (stream, _, _) ?=>
+              val parser = CborParser(stream())
+              slot.set(Cbor.ast(parser.value()).as[Point])
+
+            intake.put(encoded(Point(3, 4)))
+            intake.flush()
+            val deadline = java.lang.System.nanoTime + 2000000000L
+            while slot.get == null && java.lang.System.nanoTime < deadline do Thread.sleep(10)
+            val result = slot.get
+            intake.finish()
+            unsafely(task.await())
+            result
+      . assert(_ == Point(3, 4))
 
     suite(m"`in Cbor` decoder shorthand"):
       test(m"`read[T in Cbor]` resolves a value directly from bytes"):
@@ -594,6 +681,32 @@ object Tests extends Suite(m"Breviloquence Tests"):
           case Cbor.Error.Reason.Trailing(offset) => offset
           case _                                 => -1L
       . assert(_ == 7L)
+
+      test(m"a record split one byte per chunk reads directly"):
+        chunked(encoded(Team(Person(t"Ada", 36), 5)), 1).read[Team in Cbor]
+      . assert(_ == Team(Person(t"Ada", 36), 5))
+
+      test(m"a packed key split across chunks reads directly"):
+        chunked(encoded(Person(t"Ada", 36)), 2).read[Person in Cbor]
+      . assert(_ == Person(t"Ada", 36))
+
+      test(m"a key too long to pack split across chunks reads directly"):
+        chunked(encoded(Wide(1, 2)), 3).read[Wide in Cbor]
+      . assert(_ == Wide(1, 2))
+
+      test(m"a collection field split across chunks reads directly"):
+        chunked(encoded(Nums(List(1, 2, 3, 400, 500))), 2).read[Nums in Cbor]
+      . assert(_ == Nums(List(1, 2, 3, 400, 500)))
+
+      test(m"a byte-string field split across chunks reads directly"):
+        chunked(encoded(Blob(hex("0102030405060708"))), 3).read[Blob in Cbor].data.to[List]
+      . assert(_ == List.tabulate(8)(index => (index + 1).toByte))
+
+      test(m"truncation inside a later chunk reports the absolute offset directly"):
+        capture[Cbor.Error](chunked(hex("a2 6178 03 6179"), 2).read[Point in Cbor]).reason match
+          case Cbor.Error.Reason.Truncated(offset) => offset
+          case _                                   => -1L
+      . assert(_ == 6L)
 
       test(m"the aggregable trigger routes a stream through the direct parser"):
         val bytes = encoded(Person(t"Ada", 36))

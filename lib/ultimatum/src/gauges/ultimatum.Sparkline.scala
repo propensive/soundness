@@ -56,12 +56,12 @@ object Sparkline:
 
     if count <= width || width <= 0 then samples else
 
-        Sequence.from:
-          (0 until width).map: cell =>
-            val from = cell*count/width
-            val to = (((cell + 1)*count/width).max(from + 1)).min(count)
-            // The excerpt always spans at least one sample, so the fallback is unreachable.
-            Fraction(samples.excerpt(from, to).map(_.value).maximum.or(0.0))
+      Sequence.from:
+        (0 until width).map: cell =>
+          val from = cell*count/width
+          val to = (((cell + 1)*count/width).max(from + 1)).min(count)
+          // The excerpt always spans at least one sample, so the fallback is unreachable.
+          Fraction(samples.excerpt(from, to).map(_.value).maximum.or(0.0))
 // How a run of samples is drawn. `Blocks` gives eight levels in one row; `Tall` stacks two rows for
 // sixteen; `Dots` and `Ascii` trade resolution for a narrower character repertoire.
 enum Sparkline:

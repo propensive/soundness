@@ -32,9 +32,9 @@
                                                                                                   */
 package hieroglyph
 
-import scala.language.experimental.pureFunctions
-
 import java.nio as jn, jn.charset as jnc
+
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import beneficence.*

@@ -39,8 +39,8 @@ import scala.compiletime.ops.int.*
 // component with a bit depth, never instantiated. A pixel layout is a tuple of channels, most
 // significant first, e.g. `(Red[10], Green[12], Blue[10])`. The `label` singleton gives every
 // channel family a key which the match types in the companion use to locate a channel within a
-// layout, without needing a match-type case for each channel family. The hierarchy is open: domain-specific channels can be introduced downstream so
-// long as their labels are distinct.
+// layout, without needing a match-type case for each channel family. The hierarchy is open:
+// domain-specific channels can be introduced downstream so long as their labels are distinct.
 object Channel:
   type Label[channel] <: String = channel match
     case Channel[label, bits] => label

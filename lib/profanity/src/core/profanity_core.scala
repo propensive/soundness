@@ -42,12 +42,10 @@ import parasite.*
 import rudiments.*
 import turbulence.*
 
-
 // The canonical way a `Terminal` supplies the standard streams; a single instance, not a
 // choice, so it is a named toplevel given rather than a `stdios`-style package (which would
 // also be ambiguous with turbulence's `stdios` under two wildcard imports).
 given terminalStdio: (terminal: Terminal) => Stdio = terminal.stdio
-
 
 
 def interactive[result](block: (terminal: Terminal) ?=> result)

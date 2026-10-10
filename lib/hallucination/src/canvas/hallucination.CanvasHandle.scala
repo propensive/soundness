@@ -32,11 +32,11 @@
                                                                                                   */
 package hallucination
 
-import scala.compiletime.*
 import scala.caps
+import scala.compiletime.*
 
-import aperture.*
 import anticipation.*
+import aperture.*
 import iridescence.*
 import prepositional.*
 

@@ -39,4 +39,5 @@ import prepositional.*
 // lets any `Encodable in Protobuf` value be supplied directly at lens-assignment positions, such
 // as `protobuf.lens(_.field = value)`, without an explicit `.protobuf`.
 package conversions:
-  given encodableToProtobuf: [entity: Encodable in Protobuf] => Conversion[entity, Protobuf] = _.encode
+  given encodableToProtobuf: [entity: Encodable in Protobuf] => Conversion[entity, Protobuf] =
+    _.encode

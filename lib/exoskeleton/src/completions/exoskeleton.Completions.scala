@@ -56,10 +56,8 @@ import spectacular.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
-
 import charsets.utf8Charset
 import textSanitizers.skipSanitizer
-
 import filesystemBackends.javaBaseFilesystem
 
 object Completions:
@@ -130,13 +128,12 @@ object Completions:
         case AlreadyInstalled(_, path) => path
         case Unconfirmed(_, path)      => path
 
-
   // The environment and system are the invocation's, not the daemon JVM's, so the XDG
   // directories are those of the client asking for the install (#2034); a `Cli` in scope
   // supplies the `Environment`.
   def ensure(force: Boolean = false)
     ( using Entrypoint^, Environment, System, WorkingDirectory, Diagnostics )
-  ( using (CliEvent is Loggable)^ )
+  (using (CliEvent is Loggable)^)
   :   List[Text] =
 
     if force then safely(effectful(install(force))).let(_.paths).or(Nil)
@@ -152,15 +149,16 @@ object Completions:
       Nil
 
 
-  def install(force: Boolean = false)(using entrypoint: Entrypoint^)(using erased effectful: Effectful)
+  def install(force: Boolean = false)(using entrypoint: Entrypoint^)
+    ( using erased effectful: Effectful )
     ( using Environment, System, WorkingDirectory, Diagnostics )
-  ( using (CliEvent is Loggable)^ )
+  (using (CliEvent is Loggable)^)
   ( using Tactic[Install.Error] )
   :   Installation =
 
     mitigate:
-      case Path.Error(_, _)    => Install.Error(Install.Error.Reason.Environment)
-      case Name.Error(_, _, _) => Install.Error(Install.Error.Reason.Environment)
+      case Path.Error(_, _)               => Install.Error(Install.Error.Reason.Environment)
+      case Name.Error(_, _, _)            => Install.Error(Install.Error.Reason.Environment)
       case guillotine.Exec.Error(_, _, _) => Install.Error(Install.Error.Reason.Environment)
 
     . protect:
@@ -252,7 +250,7 @@ object Completions:
   :   Job[?, Text]^ =
 
     val variables = consulted.bind: name =>
-      safely(Environment[Text](name)).lay(Nil) { (value: Text) => List(name+t"="+value) }
+      safely(Environment[Text](name)).lay(Nil): (value: Text) => List(name+t"="+value)
 
     val prefix = List(t"sh", t"-c", t"exec \"$$@\" </dev/null 2>/dev/null", t"sh", t"env")
     Command((prefix + variables + question)*).fork[Text]()
@@ -277,6 +275,7 @@ object Completions:
     val (parts, _, _) = output.cut(t"\n").fold(initial):
       case ((parts, current, open), line) =>
         val trimmed = line.trim
+
         if trimmed == marker then (if open then current.reverse :: parts else parts, Nil, true)
         else if open then (parts, trimmed :: current, open)
         else (parts, current, open)
@@ -292,8 +291,8 @@ object Completions:
       loaded: Boolean )
     ( using erased effectful: Effectful )
     ( using Diagnostics )
-  ( using (CliEvent is Loggable)^ )
-  ( using Tactic[Install.Error] )
+  (using (CliEvent is Loggable)^)
+  (using Tactic[Install.Error])
   :   Installation.InstallResult =
 
     import filesystemOptions.createNonexistentParents
@@ -320,13 +319,13 @@ object Completions:
   private def installZsh(command: Text, answer: Optional[List[List[Text]]])
     ( using erased effectful: Effectful )
     ( using Environment, System, Diagnostics )
-  ( using (CliEvent is Loggable)^ )
+  (using (CliEvent is Loggable)^)
   ( using Tactic[Install.Error], Tactic[Path.Error] )
   :   Installation.InstallResult =
 
     val home = safely(Environment[Text](t"HOME")).or(Directories.homeText)
     val fpath = answer.let(_.prim).or(Nil).bind(path(_).lay(Nil)(List(_)))
-    val writable = fpath.filter { dir => dir.existent() && dir.writable() }
+    val writable = fpath.filter: dir => dir.existent() && dir.writable()
     val own = writable.filter(_.encode.starts(t"$home/"))
     val scriptName = unsafely(Name[Linux](t"_$command"))
     val zshFallback: Path on Linux = Xdg.dataHome[Path on Linux]/"zsh"/"site-functions"
@@ -339,7 +338,7 @@ object Completions:
   private def installBash(command: Text, answer: Optional[List[List[Text]]])
     ( using erased effectful: Effectful )
     ( using Environment, System, Diagnostics )
-  ( using (CliEvent is Loggable)^ )
+  (using (CliEvent is Loggable)^)
   ( using Tactic[Install.Error], Tactic[Path.Error] )
   :   Installation.InstallResult =
 
@@ -355,7 +354,7 @@ object Completions:
   private def installFish(command: Text, answer: Optional[List[List[Text]]])
     ( using erased effectful: Effectful )
     ( using Environment, System, Diagnostics )
-  ( using (CliEvent is Loggable)^ )
+  (using (CliEvent is Loggable)^)
   ( using Tactic[Install.Error], Tactic[Path.Error] )
   :   Installation.InstallResult =
 
@@ -371,7 +370,7 @@ object Completions:
   private def installPowershell(command: Text, answer: Optional[List[List[Text]]])
     ( using erased effectful: Effectful )
     ( using Environment, System, WorkingDirectory, Diagnostics )
-  ( using (CliEvent is Loggable)^ )
+  (using (CliEvent is Loggable)^)
   :   Installation.InstallResult =
 
     val unwritable = Installation.InstallResult.NoWritableLocation(Shell.Powershell)
@@ -395,14 +394,14 @@ object Completions:
   def install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on Linux])
     ( using erased effectful: Effectful )
     ( using Diagnostics )
-  ( using (CliEvent is Loggable)^ )
+  (using (CliEvent is Loggable)^)
   ( using Tactic[Install.Error] )
   :   Installation.InstallResult =
 
     mitigate:
-      case Io.Error(_, _, _, _) => Install.Error(Install.Error.Reason.Io)
-      case Name.Error(_, _, _)  => Install.Error(Install.Error.Reason.Io)
-      case Path.Error(_, _)     => Install.Error(Install.Error.Reason.Io)
+      case Io.Error(_, _, _, _)     => Install.Error(Install.Error.Reason.Io)
+      case Name.Error(_, _, _)      => Install.Error(Install.Error.Reason.Io)
+      case Path.Error(_, _)         => Install.Error(Install.Error.Reason.Io)
       case Truncation.Error(_)      => Install.Error(Install.Error.Reason.Io)
 
     . protect:
@@ -480,6 +479,7 @@ object Completions:
     def paths: List[Text] =
       this match
         case CommandNotOnPath(_)              => Nil
+
         case Shells(zsh, bash, fish, pwsh) =>
           List(zsh, bash, fish, pwsh).map(_.pathname).sweep { case text: Text => text }
 

@@ -427,6 +427,16 @@ object Tests extends Suite(m"Savagery tests"):
         (svg.width, svg.height, svg.figures.size, svg.defs.size)
       .assert(_ == (100.0f, 100.0f, 0, 0))
 
+      test(m"Parse an SVG file with its XML declaration and a comment"):
+        val file =
+          t"""<?xml version="1.0" encoding="UTF-8" standalone="no"?>"""
+          + t"""<!-- Created with Inkscape (http://www.inkscape.org/) -->"""
+          + t"""<svg width="100" height="100"/>"""
+
+        val svg = file.read[Svg]
+        (svg.width, svg.height, svg.figures.size)
+      .assert(_ == (100.0f, 100.0f, 0))
+
       test(m"Parse a width and height with a unit"):
         val svg = t"""<svg width="48.5mm" height="20.00001mm"/>""".read[Svg]
         (svg.width, svg.height, svg.unit)

@@ -34,8 +34,8 @@ package stratiform
 
 import anticipation.*
 import contingency.*
-import rudiments.`:+`
 import denominative.dysasymptotics.linearSize
+import rudiments.`:+`
 
 // The schema-free §19.2/§20.2 atom phase shared by both derivation engines
 // (issue #1694). A derived product codec approximates the schema's member
@@ -91,9 +91,9 @@ private[stratiform] object Positional:
         val profile = profiles.readable(position)
 
         val skippable =
-          !profile.required
-          && (profile.nature == Tel.Nature.Struct
-              || (profile.nature == Tel.Nature.Flag && value != profile.keyword))
+          !profile.required &&
+            (profile.nature == Tel.Nature.Struct ||
+              (profile.nature == Tel.Nature.Flag && value != profile.keyword))
 
         if skippable then position += 1 else scanning = false
 

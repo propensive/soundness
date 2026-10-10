@@ -53,8 +53,8 @@ extension [populable: Vacuiscible](value: populable)
 
 extension [countable: Countable](value: countable)
   // `Countable` carries the dysasymptotic gating, so `list.size` demands the
-  // `Dysasymptotic.LinearSize` acknowledgement and `chain.size` the `Dysasymptotic.UnboundedSize` one,
-  // exactly as `gamut` and `limit` already do.
+  // `Dysasymptotic.LinearSize` acknowledgement and `chain.size` the `Dysasymptotic.UnboundedSize`
+  // one, exactly as `gamut` and `limit` already do.
   inline def size: Int = countable.size(value)
 
   inline def gamut: Interval = Interval.initial(countable.size(value))
@@ -93,7 +93,7 @@ extension [countable: Countable](value: countable)
   :   Sequence[element] =
 
     val builder = scala.collection.immutable.Vector.newBuilder[element]
-    iterate { ordinal => builder += lambda(ordinal) }
+    iterate: ordinal => builder += lambda(ordinal)
     Sequence.from(builder.result())
 
   // The first index satisfying the predicate, confined to this value, or `Unset`: the safe
@@ -115,7 +115,7 @@ extension [countable: Countable](value: countable)
   // point of a two-phase scan. A branded interval's limit is a safe scan START (the loop
   // re-checks `index < size`), though not itself a safe index.
   inline def spot(after: Interval in value.type)
-    (inline predicate: (Ordinal in value.type) => Boolean)
+    ( inline predicate: (Ordinal in value.type) => Boolean )
   :   Optional[Ordinal in value.type] =
 
     var index: Int = (after: Interval).limit.n0
@@ -140,8 +140,7 @@ extension [countable: Countable](value: countable)
     var index: Int = 0
     val size: Int = countable.size(value)
 
-    while index < size
-      && predicate(Ordinal.zerary(index).asInstanceOf[Ordinal in value.type])
+    while index < size && predicate(Ordinal.zerary(index).asInstanceOf[Ordinal in value.type])
     do index += 1
 
     Interval.zerary(0, index).asInstanceOf[Interval in value.type]
@@ -154,15 +153,14 @@ extension [countable: Countable](value: countable)
   // Cumulatively, the limit is ALWAYS the resume point (an empty run returns `after`
   // unchanged), and each stage's own run is recoverable from consecutive limits.
   inline def prefix(after: Interval in value.type)
-    (inline predicate: (Ordinal in value.type) => Boolean)
+    ( inline predicate: (Ordinal in value.type) => Boolean )
   :   Interval in value.type =
 
     val interval: Interval = after
     var index: Int = interval.limit.n0
     val size: Int = countable.size(value)
 
-    while index < size
-      && predicate(Ordinal.zerary(index).asInstanceOf[Ordinal in value.type])
+    while index < size && predicate(Ordinal.zerary(index).asInstanceOf[Ordinal in value.type])
     do index += 1
 
     Interval.zerary(interval.start.n0, index).asInstanceOf[Interval in value.type]
@@ -176,8 +174,7 @@ extension [countable: Countable](value: countable)
     var count: Int = countable.size(value)
     val least: Int = floor.max(0)
 
-    while count > least
-      && predicate(Ordinal.zerary(count - 1).asInstanceOf[Ordinal in value.type])
+    while count > least && predicate(Ordinal.zerary(count - 1).asInstanceOf[Ordinal in value.type])
     do count -= 1
 
     Interval.zerary(0, count).asInstanceOf[Interval in value.type]
@@ -189,7 +186,6 @@ extension [countable: Countable](value: countable)
     while index >= 0 do
       lambda(Ordinal.zerary(index).asInstanceOf[Ordinal in value.type])
       index -= 1
-
 
 // Iteration over an interval's ordinals. The two overloads live here, at package level, rather
 // than in `internal` beside `fuse`: inside `internal` the opaque `Interval` is transparently a
@@ -224,13 +220,13 @@ extension [form](range: Interval in form)
 extension (interval: Interval)
   inline def tabulate[element](inline lambda: Ordinal => element): Sequence[element] =
     val builder = scala.collection.immutable.Vector.newBuilder[element]
-    interval.each { ordinal => builder += lambda(ordinal) }
+    interval.each: ordinal => builder += lambda(ordinal)
     Sequence.from(builder.result())
 
 extension [form](range: Interval in form)
   inline def tabulate[element](inline lambda: (Ordinal in form) => element): Sequence[element] =
     val builder = scala.collection.immutable.Vector.newBuilder[element]
-    range.each { ordinal => builder += lambda(ordinal) }
+    range.each: ordinal => builder += lambda(ordinal)
     Sequence.from(builder.result())
 
 // `thru` and `till` bound an interval from two ordinals. Both overloads live here, at package
@@ -259,7 +255,8 @@ extension [form](ordinal: Ordinal in form)
 extension [form](range: Interval in form)
   inline def capped(count: Int): Interval in form =
     val interval: Interval = range
-    Interval.sized(interval.start.n0, interval.size.min(count.max(0))).asInstanceOf[Interval in form]
+    Interval.sized(interval.start.n0, interval.size.min(count.max(0)))
+    . asInstanceOf[Interval in form]
 
   // The complement of `capped`: drop the first `count` indexes rather than keep them. Named
   // `beyond` because `skip`, `keep` and `after` are rudiments' segment vocabulary, and a

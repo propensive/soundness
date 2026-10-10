@@ -41,7 +41,7 @@ object Keyed:
   // The refinements appear in the declared types (not just the instance bodies) so a summon
   // with a `Keys`/`Values` refinement can solve them — the `Mappable` pattern.
   given map: [key, value]
-  =>  (Map[key, value] is Keyed { type Keys = Set[key]; type Values = List[value] }) =
+  =>  ( Map[key, value] is Keyed { type Keys = Set[key]; type Values = List[value] } ) =
     new Keyed:
       type Self = Map[key, value]
       type Keys = Set[key]
@@ -51,7 +51,7 @@ object Keyed:
       def values(map: Self): Values = Map.values(map)
 
   given ledger: [key, value]
-  =>  (Ledger[key, value] is Keyed { type Keys = List[key]; type Values = List[value] }) =
+  =>  ( Ledger[key, value] is Keyed { type Keys = List[key]; type Values = List[value] } ) =
     new Keyed:
       type Self = Ledger[key, value]
       type Keys = List[key]

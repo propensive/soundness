@@ -60,7 +60,8 @@ extension (domainSocket: DomainSocket)
   // a filesystem without POSIX permissions (Windows) is left as it is. Each accepted
   // connection carries the peer's user, where the platform reports one, in `Connection.peer`.
   def listenConnections[result](using Monitor, Probate)
-    ( handler: Connection ->{scala.caps.any.only[anticipation.Durable]} Unit, ownerOnly: Boolean = false )
+    ( handler:   Connection ->{scala.caps.any.only[anticipation.Durable]} Unit,
+      ownerOnly: Boolean = false )
     ( using (Socket.Event is Loggable)^ )
     ( block: Socket.Service ?=> result )
   :   result =
@@ -90,12 +91,12 @@ extension (domainSocket: DomainSocket)
             peer(client) )
 
       . let: connection =>
-          // Fire-and-forget: the fresh task handle is discarded (a lambda result may not
-          // carry it).
-          async:
-            safely(try handler(connection) finally connection.close())
+        // Fire-and-forget: the fresh task handle is discarded (a lambda result may not
+        // carry it).
+        async:
+          safely(try handler(connection) finally connection.close())
 
-          ()
+        ()
 
     // The loop is created and awaited under the same monitor; no aliased writer.
     val task = async(bindLoop.run())

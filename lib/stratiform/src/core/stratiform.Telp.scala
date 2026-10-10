@@ -34,16 +34,16 @@ package stratiform
 import anticipation.*
 import contextual.*
 import contingency.*
+import denominative.dysasymptotics.{linearAccess, linearSize}
+import denominative.{size, z}
 import distillate.*
 import fulminate.*
 import gossamer.*
-import prepositional.*
-import vacuous.*
 import murmuration.exists
+import prepositional.*
 import rudiments.each
 import rudiments.{`:+`, at, prim, seek}
-import denominative.dysasymptotics.{linearAccess, linearSize}
-import denominative.{size, z}
+import vacuous.*
 
 // TELP, the TEL Path companion specification: a schema-aware textual path
 // over the semantic model. The first character of a path selects its
@@ -118,8 +118,10 @@ object Telp:
         if i == s.length || s.charAt(i) == delimiter then
           if i == start then abort(Telp.Error(Error.Reason.Syntax, components.length))
           val component = s.substring(start, i).nn
+
           if component.contains("\n") || component.contains("\r")
           then abort(Telp.Error(Error.Reason.Syntax, components.length))
+
           components += component.tt
           start = i + 1
 
@@ -128,7 +130,7 @@ object Telp:
       Telp(components.to(List))
 
   given decodable: (tactic: Tactic[Telp.Error])
-  =>  ((Telp is Decodable in Text)^{tactic}) = text => parse(text)
+  =>  ( (Telp is Decodable in Text)^{tactic} ) = text => parse(text)
 
   // The `telp"…"` literal: the path is parsed as the code compiles, and a
   // syntax error is reported at the offending component. Substitutions are
@@ -173,8 +175,8 @@ object Telp:
 
           case scala.None =>
             if name == Tels.Builtin.Flag then Tels.Flag
-            else if name == Tels.Builtin.String || name == Tels.Builtin.Identifier
-              || name == Tels.Builtin.TypeName || name == Tels.Builtin.Sigil
+            else if name == Tels.Builtin.String || name == Tels.Builtin.Identifier ||
+              name == Tels.Builtin.TypeName || name == Tels.Builtin.Sigil
             then Tels.Scalar(Array.empty)
             else Unset
 
@@ -205,8 +207,10 @@ object Telp:
 
             while v < definition.variants.length && result.absent do
               val variant = definition.variants.readUnchecked(v)
+
               if variant.keyword == component
               then result = Slot(flat + v, s.repeatable == Tels.Polarity.Loose, variant.variantType)
+
               v += 1
 
         case _: Tels.Exclude => ()
@@ -262,7 +266,7 @@ object Telp:
       case _ => false
 
   private[stratiform] def allDigits(component: Text): Boolean =
-    component.s.forall { ch => ch >= '0' && ch <= '9' }
+    component.s.forall: ch => ch >= '0' && ch <= '9'
 
   // The occurrence an all-digit component selects, saturating on a run of digits
   // too long for an `Int`: no occurrence sequence is that long, so the selection
@@ -272,11 +276,12 @@ object Telp:
 
   private def childrenAt(node: Tel.Element.Node, flatIndex: Int): List[Tel.Element] =
 
-      node.children.readable.filter: element =>
-        element match
-          case Tel.Element.Node(idx, _, _)  => idx.or(-1) == flatIndex
-          case Tel.Element.Value(idx, _, _) => idx == flatIndex
-      . to(List)
+    node.children.readable.filter: element =>
+      element match
+        case Tel.Element.Node(idx, _, _)  => idx.or(-1) == flatIndex
+        case Tel.Element.Value(idx, _, _) => idx == flatIndex
+
+    . to(List)
 
 case class Telp(components: List[Text]) derives CanEqual:
   // Push a component onto the root (front) of the path. The product
@@ -325,30 +330,34 @@ case class Telp(components: List[Text]) derives CanEqual:
 
           current = pendingOccurrences.seek: occurrence =>
             Telp.keyValueOf(occurrence, slotType, schema).let(_ == component).or(false)
+
           . or(abort(Telp.Error(Telp.Error.Reason.KeyNotFound, i)))
 
         pendingType = Unset
         pendingOccurrences = Nil
+
       . or:
-          // Keyword step (§4 step 1): `current` must be a Struct-typed
-          // Node, and the component must match its keyword order.
-          current match
-            case node: Tel.Element.Node => Telp.resolved(node.elementType, schema) match
-              case struct: Tels.Struct =>
-                val slot = Telp.slotOf(struct, component, schema)
-                . or(abort(Telp.Error(Telp.Error.Reason.UnknownKeyword, i)))
+        // Keyword step (§4 step 1): `current` must be a Struct-typed
+        // Node, and the component must match its keyword order.
+        current match
+          case node: Tel.Element.Node => Telp.resolved(node.elementType, schema) match
+            case struct: Tels.Struct =>
+              val slot = Telp.slotOf(struct, component, schema)
+              . or(abort(Telp.Error(Telp.Error.Reason.UnknownKeyword, i)))
 
-                val occurrences = Telp.childrenAt(node, slot.flatIndex)
+              val occurrences = Telp.childrenAt(node, slot.flatIndex)
 
-                if slot.repeatable then
-                  pendingType = slot.slotType
-                  pendingOccurrences = occurrences
-                else occurrences.prim.let { child => current = child }
-                . or(abort(Telp.Error(Telp.Error.Reason.AbsentMember, i)))
+              if slot.repeatable then
+                pendingType = slot.slotType
+                pendingOccurrences = occurrences
+              else
+                occurrences.prim.let { child => current = child }
 
-              case _ => abort(Telp.Error(Telp.Error.Reason.NonStructDescent, i))
+              . or(abort(Telp.Error(Telp.Error.Reason.AbsentMember, i)))
 
             case _ => abort(Telp.Error(Telp.Error.Reason.NonStructDescent, i))
+
+          case _ => abort(Telp.Error(Telp.Error.Reason.NonStructDescent, i))
 
       i += 1
 

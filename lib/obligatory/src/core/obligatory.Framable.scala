@@ -59,6 +59,7 @@ object Framable:
       // the `Iterator` contract loosely would get a silent null instead of an error.
       def next(): data =
         if !hasNext then throw new NoSuchElementException("the framed stream is exhausted")
+
         ready.asInstanceOf[data].also:
           ready = Unset
 

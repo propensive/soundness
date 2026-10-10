@@ -87,7 +87,9 @@ object internal:
 
           while i < length do
             array(i) =
-              addable.add(left.data.readable(i).asInstanceOf[value], right.data.readable(i).asInstanceOf[value2])
+              addable.add
+                ( left.data.readable(i).asInstanceOf[value],
+                  right.data.readable(i).asInstanceOf[value2] )
 
             i += 1
 
@@ -124,7 +126,8 @@ object internal:
           while i < length do
             array(i) =
               subtractable.subtract
-                ( left.data.readable(i).asInstanceOf[value], right.data.readable(i).asInstanceOf[value2] )
+                ( left.data.readable(i).asInstanceOf[value],
+                  right.data.readable(i).asInstanceOf[value2] )
 
             i += 1
 

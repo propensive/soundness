@@ -47,7 +47,8 @@ package spinners:
     ultimatum.spinners
     . { aestheticSpinner, arcSpinner, arrowDoubleSpinner, arrowSpinner, balloonSpinner,
         binarySpinner, bounceSpinner, bouncingBallSpinner, bouncingBarSpinner, boxSpinner,
-        brailleDotsSpinner, brailleGrowSpinner, brailleRingSpinner, brailleSnakeSpinner, brailleWaveSpinner,
+        brailleDotsSpinner, brailleGrowSpinner, brailleRingSpinner, brailleSnakeSpinner,
+        brailleWaveSpinner,
         circleHalfSpinner, circlePulseSpinner, circleQuadrantSpinner, clockSpinner,
         crossStarSpinner, dotsScrollSpinner, dqpbSpinner, earthSpinner, growingBarSpinner,
         growingBlockSpinner, hamburgerSpinner, hourglassSpinner, hourglassThinSpinner, layerSpinner,

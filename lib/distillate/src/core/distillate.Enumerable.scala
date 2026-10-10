@@ -32,9 +32,8 @@
                                                                                                   */
 package distillate
 
-import scala.reflect
-
 import scala.deriving.*
+import scala.reflect
 
 import anticipation.*
 import denominative.*

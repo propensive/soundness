@@ -32,11 +32,10 @@
                                                                                                   */
 package eucalyptus
 
-import scala.caps
-
-import scala.language.experimental.pureFunctions
-
 import java.util.concurrent as juc
+
+import scala.caps
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import denominative.*
@@ -45,8 +44,8 @@ import parasite.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
-import zephyrine.*
 import vacuous.*
+import zephyrine.*
 
 object Logger:
   // Every construction site (a `Codepoint`) owns exactly one spool + writer daemon, so a `given`
@@ -72,7 +71,8 @@ object Logger:
       registry
       . computeIfAbsent(codepoint, _ =>
           establish[format, target](destination)
-            (using writable, addressable, buffering, monitor, codepoint, probate))
+            ( using writable, addressable, buffering, monitor, codepoint, probate ))
+
       . nn
       . asInstanceOf[Relay[format]]
 
@@ -87,10 +87,10 @@ object Logger:
     new Logger(level, categories, enqueue)
 
   // The write runs in a fire-and-forget daemon. A daemon body is hygienic — it cannot capture an
-  // enclosing handler to discharge a write failure — so it handles its own errors: a `Truncation.Error`
-  // ends the current stream, and the loop re-establishes a fresh `spool.stream` from the same queue,
-  // so one failure does not permanently silence the logger. The loop ends only once the spool is
-  // stopped.
+  // enclosing handler to discharge a write failure — so it handles its own errors: a
+  // `Truncation.Error` ends the current stream, and the loop re-establishes a fresh `spool.stream`
+  // from the same queue, so one failure does not permanently silence the logger. The loop ends only
+  // once the spool is stopped.
   private def establish[format, target]
     ( destination: target )
     ( using writable:    (target is Writable by (Array[format]^{}))^,

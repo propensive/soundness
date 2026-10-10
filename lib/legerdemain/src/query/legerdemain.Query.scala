@@ -32,14 +32,14 @@
                                                                                                   */
 package legerdemain
 
-import scala.language.dynamics
-
 import scala.compiletime.*
+import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -47,7 +47,6 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 import wisteria.*
-import fulminate.*
 
 object Query extends Dynamic:
   def apply(): Query = new Query(Nil)
@@ -72,10 +71,10 @@ object Query extends Dynamic:
         Query:
           // Via the stdlib view: inline re-elaboration freshens the frozen array, defeating
           // both `to[List]` and the compat `toList`.
-              fields(value) { [field] => field => contextual.encoded(field).prefix(label) }
-              . readable.toList
-              . to(proscenium.List)
-              . flatMap(_.values)
+          fields(value) { [field] => field => contextual.encoded(field).prefix(label) }
+          . readable.toList
+          . to(proscenium.List)
+          . flatMap(_.values)
 
   object DecodableDerivation extends ProductDerivation[[Type] =>> Type is Decodable in Query]:
     // Each outer `focus` runs *after* the inner one (contingency's try/finally order), so a
@@ -189,7 +188,9 @@ object Query extends Dynamic:
                   then
                     raise(Query.Error(Query.Error.Reason.Missing))
                     null.asInstanceOf[value]
-                  else abort(Query.Error(Query.Error.Reason.Missing))
+                  else
+                    abort(Query.Error(Query.Error.Reason.Missing))
+
                 . apply(_.as)
 
       case given ProductReflection[`value` & Product] =>
@@ -212,7 +213,8 @@ object Query extends Dynamic:
       case Reason.Missing => m"the parameter was not present in the query string"
 
   case class Error(reason: Query.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(205, reason.number)(m"the query parameter could not be read because $reason")
+  extends fulminate.Error(205, reason.number)
+    ( m"the query parameter could not be read because $reason" )
 
 case class Query private (values: List[(Text, Text)]) extends Dynamic:
   // private lazy val map: Map[Text, Text | List[Text]] = values.groupMap(_(0))(_(1))
@@ -223,7 +225,8 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
   infix def ++ (query: Query) = Query(values + query.values)
 
 
-  def selectDynamic[result](label: String)(using erased parametric: label.type is Parametric to result)
+  def selectDynamic[result](label: String)
+    ( using erased parametric: label.type is Parametric to result )
     ( using decodable: result is Decodable in Query )
   :   result =
 

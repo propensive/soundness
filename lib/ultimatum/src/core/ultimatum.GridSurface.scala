@@ -191,9 +191,9 @@ extends Board:
   protected def contentWidth(screen2: Screen[StyleWord], r: Int, limit: Int): Int =
     var end = limit.min(screen2.width)
 
-    while end > 0
-      && screen2.grapheme((end - 1).z, r.z).text == t" "
-      && screen2.style((end - 1).z, r.z).raw == StyleWord.Default.raw
+    while end > 0 &&
+      screen2.grapheme((end - 1).z, r.z).text == t" " &&
+      screen2.style((end - 1).z, r.z).raw == StyleWord.Default.raw
     do end -= 1
 
     end
@@ -225,16 +225,17 @@ extends Board:
   // as a non-Optional parameter.
   protected def snapshotValid(top: Int, columns: Int, h: Int): Optional[Screen[StyleWord]] =
     snapshot.let: snap =>
-      if snapshotTop == top && snapshotColumns == columns
-        && snap.height == h && snap.width == gridWidth
-      then snap else Unset
+      if snapshotTop == top && snapshotColumns == columns &&
+        snap.height == h && snap.width == gridWidth
+      then snap
+      else Unset
 
   // Whether the cell at `(c, r)` differs from the snapshot's. A cell is one grapheme
   // with one style; links never reach the grid (`putCell` always writes `t""`), so the
   // pair is the whole identity.
   private def cellChanged(snap: Screen[StyleWord], c: Int, r: Int): Boolean =
-    screen.grapheme(c.z, r.z).text != snap.grapheme(c.z, r.z).text
-      || screen.style(c.z, r.z).raw != snap.style(c.z, r.z).raw
+    screen.grapheme(c.z, r.z).text != snap.grapheme(c.z, r.z).text ||
+      screen.style(c.z, r.z).raw != snap.style(c.z, r.z).raw
 
   // Diff the grid (drawn at absolute rows `top..top + h - 1`, clipped to `columns`)
   // against `snap` — the validated snapshot, threaded in by the caller from
@@ -266,7 +267,8 @@ extends Board:
           frame.append(rendered.s)
           if rendered.contains(t"\e") then frame.append(csi.sgr(0).s)
           runs += 1
-        else c += 1
+        else
+          c += 1
 
       r += 1
 
@@ -291,8 +293,8 @@ extends Board:
 
     // The caret cell matters even when hidden: the cursor physically PARKS there
     // (below), making it the known anchor a resize recovery locates after a reflow.
-    val caretSame = caretVisible == presentedCaretVisible
-      && caretRow2 == presentedCaretRow && caretColumn2 == presentedCaretColumn
+    val caretSame = caretVisible == presentedCaretVisible &&
+      caretRow2 == presentedCaretRow && caretColumn2 == presentedCaretColumn
 
     if runs > 0 || !caretSame then
       val frame = StringBuilder()

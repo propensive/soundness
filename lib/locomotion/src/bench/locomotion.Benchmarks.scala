@@ -38,11 +38,13 @@ import contingency.*, strategies.throwUnsafely
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
+import denominative.*
 import prepositional.*
 import probably.*
 import proscenium.*
 import quantitative.*
 import sedentary.*
+import rudiments.*
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
@@ -82,8 +84,15 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // checksum is returned so the JIT cannot dead-code-eliminate the reads. A method
   // rather than a staged body, since `TimingMain` times it too.
   def walkWithProtobufJava(bytes: scala.Array[Byte]): Long =
+    walkWithProtobufJava(com.google.protobuf.CodedInputStream.newInstance(bytes).nn)
+
+  // The same walk over a stream, for the chunked rows: protobuf-java reads it through its own
+  // 4 KiB refill buffer.
+  def walkWithProtobufJava(input: java.io.InputStream): Long =
+    walkWithProtobufJava(com.google.protobuf.CodedInputStream.newInstance(input).nn)
+
+  def walkWithProtobufJava(in: com.google.protobuf.CodedInputStream): Long =
     import com.google.protobuf.WireFormat
-    val in = com.google.protobuf.CodedInputStream.newInstance(bytes).nn
     var checksum = 0L
     var tag = in.readTag()
     while tag != 0 do
@@ -120,18 +129,30 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
   // Corpus 3: 500 log entries with six fields each — a larger throughput target
   // dominated by short strings and small integers.
-  lazy val value3: Logs =
-    val levels   = Array(t"info", t"debug", t"warn", t"error")
-    val services = Array(t"auth", t"api", t"db", t"cache", t"worker")
-    Logs:
-      List.tabulate(500): index =>
-        LogEntry
-         ( 1700000000L + index,
-           levels(index & 3),
-           services(index%5),
-           t"req-$index",
-           1000L + (index%50),
-           t"event $index processed" )
+  lazy val value3: Logs = Logs(List.tabulate(500)(logEntry))
+
+  // The log-entry record shared by corpora 3 and 7 and the stress message.
+  def logEntry(index: Int): LogEntry =
+    val level = (index & 3) match
+      case 0 => t"info"
+      case 1 => t"debug"
+      case 2 => t"warn"
+      case _ => t"error"
+
+    val service = (index%5) match
+      case 0 => t"auth"
+      case 1 => t"api"
+      case 2 => t"db"
+      case 3 => t"cache"
+      case _ => t"worker"
+
+    LogEntry
+     ( 1700000000L + index,
+       level,
+       service,
+       t"req-$index",
+       1000L + (index%50),
+       t"event $index processed" )
 
   // Corpus 4: 1000 integers in a packed repeated field — the varint hot path
   // with no string or message overhead.
@@ -153,6 +174,48 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   lazy val bytes5: Data = value5.in[Protobuf].encode
   lazy val bytes6: Data = value6.in[Protobuf].encode
 
+  // Corpus 7: 5000 log entries (~400 KiB), large enough that a 4 KiB chunking yields ~100
+  // chunks, so the chunked rows measure reading across many chunk boundaries.
+  lazy val value7: Logs = Logs(List.tabulate(5000)(logEntry))
+
+  lazy val bytes7: Data = value7.in[Protobuf].encode
+
+  // Corpus 7 split into 4 KiB chunks, as a transport would deliver it: a strict chain of
+  // distinct segments for the Locomotion rows, and the same segments as a `List` for
+  // protobuf-java, which reads them through a `SequenceInputStream`.
+  val ChunkSize: Int = 4096
+
+  lazy val chunkList7: List[Data] =
+    val length = bytes7.length
+    List.tabulate((length + ChunkSize - 1)/ChunkSize): index =>
+      val start = index*ChunkSize
+      val end = (start + ChunkSize).min(length)
+      bytes7.segment(start.z till end.z)
+
+  lazy val chunks7: Chain[Data] = chunkList7.to[Chain]
+
+  def inputStream(chunks: List[Data]): java.io.InputStream =
+    val streams = new java.util.ArrayList[java.io.InputStream]()
+    chunks.each: chunk =>
+      streams.add(new java.io.ByteArrayInputStream(chunk.asInstanceOf[scala.Array[Byte]]))
+    new java.io.SequenceInputStream(java.util.Collections.enumeration(streams))
+
+  // The stress message: one 64 KiB block of whole `logs` occurrences re-emitted `StressBlocks`
+  // times (a message's fields may be concatenated freely, so the block is simply the encoding
+  // of a `Logs` with 720 entries). A `def`, not a `lazy val`, so each operation streams a
+  // fresh chain, and every cell refers to the *same* block, so nothing retained by a chain
+  // head grows with the message: only the parser's own buffering is measured.
+  val StressBlocks: Int = 1024
+
+  lazy val stressBlock: Data = Logs(List.tabulate(720)(logEntry)).in[Protobuf].encode
+
+  def stressDocument: Chain[Data] =
+    def repeat(n: Int): Chain[Data] =
+      if n == 0 then Chain() else Chain.cons(stressBlock, repeat(n - 1))
+    repeat(StressBlocks)
+
+  lazy val stressSize: Long = StressBlocks.toLong*stressBlock.length
+
   // Plain Array[Byte] views for protobuf-java (the cast is sound for read-only
   // consumers; CodedInputStream never mutates its input).
   lazy val raw1: scala.Array[Byte] = bytes1.asInstanceOf[scala.Array[Byte]]
@@ -164,6 +227,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
   def run(): Unit =
     val bench = Bench()
+    val constrained = Stress(heap = t"512m")
 
     val size1 = bytes1.length*Byte
     val size2 = bytes2.length*Byte
@@ -171,6 +235,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     val size4 = bytes4.length*Byte
     val size5 = bytes5.length*Byte
     val size6 = bytes6.length*Byte
+    val size7 = bytes7.length*Byte
 
     // -------------------------------------------------------------------------
     // Decode. Each corpus is decoded two ways: Locomotion typed decode (the
@@ -193,6 +258,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
         ( target = 1*Second, operationSize = size2 ):
         '{ Chain(locomotion.Benchmarks.bytes2).read[Users in Protobuf] }
 
+      bench(m"Decode directly with Locomotion")(target = 1*Second, operationSize = size2):
+        '{
+            given Users is Protobuf.Parsable = locomotion.usersParsable
+            Chain(locomotion.Benchmarks.bytes2).read[Users in Protobuf]
+        }
+
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size2):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw2) }
 
@@ -200,6 +271,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
       bench(m"Decode (typed) with Locomotion")
         ( target = 1*Second, operationSize = size3 ):
         '{ Chain(locomotion.Benchmarks.bytes3).read[Logs in Protobuf] }
+
+      bench(m"Decode directly with Locomotion")(target = 1*Second, operationSize = size3):
+        '{
+            given Logs is Protobuf.Parsable = locomotion.logsParsable
+            Chain(locomotion.Benchmarks.bytes3).read[Logs in Protobuf]
+        }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size3):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw3) }
@@ -225,8 +302,67 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
         ( target = 1*Second, operationSize = size6 ):
         '{ Chain(locomotion.Benchmarks.bytes6).read[Deep1 in Protobuf] }
 
+      bench(m"Decode directly with Locomotion")(target = 1*Second, operationSize = size6):
+        '{
+            given Deep1 is Protobuf.Parsable = locomotion.deep1Parsable
+            Chain(locomotion.Benchmarks.bytes6).read[Deep1 in Protobuf]
+        }
+
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size6):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw6) }
+
+    // -------------------------------------------------------------------------
+    // Chunked input: corpus 7 delivered as ~100 chunks of 4 KiB, the shape a
+    // transport produces. The Locomotion rows read the public `Chain` entry
+    // points (the `Protobuf` ADT path, and direct through a generated
+    // `Protobuf.Parsable`); protobuf-java walks the same chunks through an
+    // `InputStream`, building nothing, so it is the floor for a streaming read.
+    // -------------------------------------------------------------------------
+
+    suite(m"Decode 5000 log entries, chunked 4 KiB"):
+      bench(m"Decode (typed) with Locomotion")(target = 1*Second, operationSize = size7):
+        '{ locomotion.Benchmarks.chunks7.read[Logs in Protobuf] }
+
+      bench(m"Decode directly with Locomotion")(target = 1*Second, operationSize = size7):
+        '{
+            given Logs is Protobuf.Parsable = locomotion.logsParsable
+            locomotion.Benchmarks.chunks7.read[Logs in Protobuf]
+        }
+
+      bench(m"Count directly with Locomotion")(target = 1*Second, operationSize = size7):
+        '{
+            given Long is Protobuf.Parsable = locomotion.countEntries
+            locomotion.Benchmarks.chunks7.read[Long in Protobuf]
+        }
+
+      bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size7):
+        '{
+            locomotion.Benchmarks.walkWithProtobufJava
+              (locomotion.Benchmarks.inputStream(locomotion.Benchmarks.chunkList7))
+        }
+
+    // -------------------------------------------------------------------------
+    // Bounded memory: a 64 MiB message streamed through the direct parser in a
+    // pinned 512 MB heap. The counting consumer retains nothing, so the peak
+    // heap and post-run live set are the parser's own: a parser that assembles
+    // the input before decoding peaks at a multiple of the message size; a
+    // streaming parser at a few chunks.
+    // -------------------------------------------------------------------------
+
+    suite(m"Stress: 64 MiB message streamed through the direct parser (512 MB heap)"):
+      import parasite.threads.platformThreads
+
+      constrained(m"Count directly with Locomotion")(target = 5*Second):
+        '{
+            given Long is Protobuf.Parsable = locomotion.countEntries
+            locomotion.Benchmarks.stressDocument.read[Long in Protobuf]
+        }
+
+      constrained(m"Walk with protobuf-java")(target = 5*Second):
+        '{
+            locomotion.Benchmarks.walkWithProtobufJava
+              (locomotion.Benchmarks.inputStream(locomotion.Benchmarks.stressDocument.to[List]))
+        }
 
     // -------------------------------------------------------------------------
     // Encode. Locomotion encode is the `Min` baseline; protobuf-java rows are

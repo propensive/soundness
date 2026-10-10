@@ -32,11 +32,10 @@
                                                                                                   */
 package jacinta
 
-import scala.{annotation, caps}
-
 import scala.collection.immutable.{List, Nil, ::}
 import scala.collection.mutable as scm
 import scala.quoted.*
+import scala.{annotation, caps}
 
 import anticipation.*
 import contingency.*
@@ -88,7 +87,7 @@ object stagedInternal:
       if run == null then false else
         val sources = run.nn.units.map(_.source.path).toSet
         val position = symbol.pos
-        position.exists { position => sources.contains(position.sourceFile.path) }
+        position.exists: position => sources.contains(position.sourceFile.path)
     catch case _: Exception => false
 
   private def innerClasspath(using Quotes): String =
@@ -174,9 +173,9 @@ object stagedInternal:
     tpe.dealias match
       case AppliedType(constructor, arguments) =>
         for
-          clazz <- classFor(constructor)
+          clazz  <- classFor(constructor)
           shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-                      list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
+            list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
         yield TypeShape(clazz, shapes)
 
       case other =>
@@ -196,7 +195,7 @@ object stagedInternal:
       try
         given settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make
-            (None, List("-experimental", "-classpath", innerClasspath))
+            ( None, List("-experimental", "-classpath", innerClasspath) )
 
         given staging.Compiler = staging.Compiler.make(macroClassloader)
         val started = System.nanoTime
@@ -215,14 +214,14 @@ object stagedInternal:
                 r2.TypeBounds(rebuild(shape), rebuild(shape)) )
 
           target.asType match
-            case '[target] => '{ scala.compiletime.summonInline[target] }
+            case '[target] => '{scala.compiletime.summonInline[target]}
 
         val duration = (System.nanoTime - started)/1000000L
 
         result match
           case instance: Inlinable =>
             report.info
-              (s"jacinta: staged summon for ${TypeRepr.of[field].show} took ${duration}ms")
+              ( s"jacinta: staged summon for ${TypeRepr.of[field].show} took ${duration}ms" )
 
             Some(instance)
 
@@ -287,15 +286,15 @@ object stagedInternal:
     type Self = value
 
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[value]): Expr[value] =
-      '{
-        Json.Parsable.parseField[value]
-          ($parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef])
-      }
+      ' {
+          Json.Parsable.parseField[value]
+            ( $parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef] )
+        }
 
     override def absent(tactic: Expr[Tactic[Json.Error]])(using Quotes, Type[value])
     :   Expr[value] =
 
-      '{ Json.Parsable.absentField[value]($parsing.asInstanceOf[AnyRef])(using $tactic) }
+      '{Json.Parsable.absentField[value]($parsing.asInstanceOf[AnyRef])(using $tactic)}
 
   // Composition points become local defs rather than textual inlining: a
   // fully-flattened parser exceeds HotSpot's huge-method bytecode limit and
@@ -303,16 +302,16 @@ object stagedInternal:
   // def keeps each generated method JIT-compilable while the call stays
   // monomorphic and direct. Leaf generators stay inline.
   private def nested[fieldType: Type]
-    (instance: Inlinable { type Self = fieldType }, reader: Expr[Json.Reader])
-    (using Quotes)
+    ( instance: Inlinable { type Self = fieldType }, reader: Expr[Json.Reader] )
+    ( using Quotes )
   :   Expr[fieldType] =
 
     instance match
       case _: Inlinable.ProductInlinable[?] | _: Inlinable.IterableInlinable[?] =>
-        '{
-          def parseNested(): fieldType = ${ instance.parse(reader) }
-          parseNested()
-        }
+        ' {
+            def parseNested(): fieldType = ${instance.parse(reader)}
+            parseNested()
+          }
 
       case _ =>
         instance.parse(reader)
@@ -345,7 +344,7 @@ object stagedInternal:
           case '[element] =>
             resolve[element](cache).map: instance =>
               Inlinable.IterableInlinable[element]
-                (instance.asInstanceOf[element is Inlinable])
+                ( instance.asInstanceOf[element is Inlinable] )
 
       case _ =>
         None
@@ -359,12 +358,12 @@ object stagedInternal:
     import quotes.reflect.*
 
     tpe.classSymbol.exists: classSymbol =>
-      classSymbol.flags.is(Flags.Case)
-      && !classSymbol.owner.isTerm
-      && (tpe match { case AppliedType(_, _) => false case _ => true })
-      && classSymbol.primaryConstructor.paramSymss
-         . filterNot(_.exists(_.isTypeParam)).length == 1
-      && !hasRenames(classSymbol)
+      classSymbol.flags.is(Flags.Case) &&
+        !classSymbol.owner.isTerm &&
+        (tpe match { case AppliedType(_, _) => false case _ => true }) &&
+        classSymbol.primaryConstructor.paramSymss
+          . filterNot(_.exists(_.isTypeParam)).length == 1 &&
+        !hasRenames(classSymbol)
 
   // `@name` renames resolve through inline machinery the structural
   // generator does not replicate; annotated records stay on `staged`.
@@ -373,18 +372,18 @@ object stagedInternal:
 
     val annotated =
       classSymbol.primaryConstructor.paramSymss.flatten.filterNot(_.isTypeParam)
-        . flatMap(_.annotations)
-      ++ classSymbol.caseFields.flatMap(_.annotations)
+        . flatMap(_.annotations) ++
+        classSymbol.caseFields.flatMap(_.annotations)
 
-    annotated.exists { annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+    annotated.exists: annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]]
 
   // ── The collection generator ───────────────────────────────────────────
   // Mirrors `Json.Parsable.iterable` exactly: openArray, per-element loop,
   // per-index focusing when the read site's `Foci` is active — with the
   // element's generated code inlined into the loop.
   private[jacinta] def iterableBody[collection: Type]
-    (reader: Expr[Json.Reader], element0: Inlinable)
-    (using Quotes)
+    ( reader: Expr[Json.Reader], element0: Inlinable )
+    ( using Quotes )
   :   Expr[collection] =
 
     import quotes.reflect.*
@@ -395,33 +394,34 @@ object stagedInternal:
           case '[element] =>
             val instance = element0.asInstanceOf[Inlinable { type Self = element }]
 
-            '{
-              def parseElement(): element = ${ instance.parse(reader) }
-              val factory = infer[scala.collection.Factory[element, collection]]
-              val builder = factory.newBuilder
-              val foci = infer[Foci[Json.Focus]]
-              val focused = foci.active
-              val parser = $reader.rawParser.asInstanceOf[Parser]
-              val ptactic = $reader.rawTactic.asInstanceOf[Tactic[Parse.Error]]
-              parser.directOpenArray()(using ptactic)
-              var index = 0
-              var continue = parser.directElementFirst()(using ptactic)
+            ' {
+                def parseElement(): element = ${instance.parse(reader)}
+                val factory = infer[scala.collection.Factory[element, collection]]
+                val builder = factory.newBuilder
+                val foci = infer[Foci[Json.Focus]]
+                val focused = foci.active
+                val parser = $reader.rawParser.asInstanceOf[Parser]
+                val ptactic = $reader.rawTactic.asInstanceOf[Tactic[Parse.Error]]
+                parser.directOpenArray()(using ptactic)
+                var index = 0
+                var continue = parser.directElementFirst()(using ptactic)
 
-              while continue do
-                builder +=
-                  ( if focused then
-                      Json.Parsable.focusing(foci, index.toString.tt)(parseElement())
-                    else parseElement() )
+                while continue do
+                  builder +=
+                    ( if focused then
+                        Json.Parsable.focusing(foci, index.toString.tt)(parseElement())
+                      else
+                        parseElement() )
 
-                index += 1
-                continue = parser.directElementNext()(using ptactic)
+                  index += 1
+                  continue = parser.directElementNext()(using ptactic)
 
-              builder.result()
-            }
+                builder.result()
+              }
 
       case _ =>
         report.errorAndAbort
-          ("jacinta: an inlinable collection requires an applied collection type")
+          ( "jacinta: an inlinable collection requires an applied collection type" )
 
   // ── The product generator ──────────────────────────────────────────────
   // Self-contained monomorphic product parsing, mirroring the staged
@@ -457,22 +457,22 @@ object stagedInternal:
 
     if !productSupported(tpe) then
       report.errorAndAbort
-        (s"jacinta: ${tpe.show} is not an inlinable product (a non-generic, top-level or " +
+        ( s"jacinta: ${tpe.show} is not an inlinable product (a non-generic, top-level or " +
           "object-nested case class with a single parameter list and no `@name` renames); " +
-          "use `Json.Parsable.staged` or `derived`")
+          "use `Json.Parsable.staged` or `derived`" )
 
     val classSymbol = tpe.classSymbol.get
     val ctor = classSymbol.primaryConstructor
     val fields = classSymbol.caseFields
     val arity = fields.length
     val fieldNames: List[String] = fields.map(_.name)
-    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
+    val fieldTypes: List[TypeRepr] = fields.map: field => tpe.memberType(field).dealias
 
     def packedName(index: Int): Option[(Long, Long)] =
       val name = fieldNames(index)
       val length = name.length
 
-      val packs = length > 0 && length <= 16 && name.forall { char => char >= ' ' && char < 127 }
+      val packs = length > 0 && length <= 16 && name.forall: char => char >= ' ' && char < 127
 
       if !packs then None else
         var low = 0L
@@ -511,7 +511,7 @@ object stagedInternal:
         else if fieldType =:= TypeRepr.of[Float] then Literal(FloatConstant(0.0f))
         else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
         else fieldType.asType match
-          case '[fieldType] => '{ null.asInstanceOf[fieldType] }.asTerm
+          case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
       val slotDefs = List.range(0, arity).map: index =>
         ValDef(slots(index), Some(zero(fieldTypes(index))))
@@ -524,33 +524,35 @@ object stagedInternal:
       // EXPERIMENT(cc-bypass): builtins read straight off the parser bound
       // once per record, skipping the Json.Reader rim entirely.
       def builtinDirect(tpe: TypeRepr): Option[Expr[Any]] =
-        if tpe =:= TypeRepr.of[Int] then Some('{ $parser.directLong()(using $ptactic).toInt })
-        else if tpe =:= TypeRepr.of[Long] then Some('{ $parser.directLong()(using $ptactic) })
+        if tpe =:= TypeRepr.of[Int] then Some('{$parser.directLong()(using $ptactic).toInt})
+        else if tpe =:= TypeRepr.of[Long] then Some('{$parser.directLong()(using $ptactic)})
         else if tpe =:= TypeRepr.of[Double] then
-          Some('{ $parser.directDouble()(using $ptactic) })
+          Some('{$parser.directDouble()(using $ptactic)})
         else if tpe =:= TypeRepr.of[Boolean] then
-          Some('{ $parser.directBoolean()(using $ptactic) })
+          Some('{$parser.directBoolean()(using $ptactic)})
         else if tpe =:= TypeRepr.of[Text] then
-          Some('{ $parser.directString()(using $ptactic).tt })
+          Some('{$parser.directString()(using $ptactic).tt})
         else if tpe =:= TypeRepr.of[String] then
-          Some('{ $parser.directString()(using $ptactic) })
-        else None
+          Some('{$parser.directString()(using $ptactic)})
+        else
+          None
 
       // The absent expression per field, through the ladder.
       def fieldAbsent(index: Int): Expr[Any] =
         fieldTypes(index).asType match
           case '[fieldType] =>
             if builtinDirect(fieldTypes(index)).isDefined then
-              '{ Json.Parsable.missing[fieldType]()(using $tactic) }
-            else resolve[fieldType](cache) match
-              case Some(instance0) =>
-                instance0.asInstanceOf[Inlinable { type Self = fieldType }].absent(tactic)
+              '{Json.Parsable.missing[fieldType]()(using $tactic)}
+            else
+              resolve[fieldType](cache) match
+                case Some(instance0) =>
+                  instance0.asInstanceOf[Inlinable { type Self = fieldType }].absent(tactic)
 
-              case None =>
-                '{
-                  scala.compiletime.summonInline[fieldType is Json.Field]
-                  . absent()(using $tactic)
-                }
+                case None =>
+                  ' {
+                      scala.compiletime.summonInline[fieldType is Json.Field]
+                      . absent()(using $tactic)
+                    }
 
       val fieldCode: List[(Expr[Any], Expr[Any])] = List.range(0, arity).map: index =>
         (Expr(0), fieldAbsent(index))
@@ -585,7 +587,7 @@ object stagedInternal:
                       . parse(reader)
 
                     case None =>
-                      '{ stagedInternal.fieldSeam[fieldType]($reader) }
+                      '{stagedInternal.fieldSeam[fieldType]($reader)}
 
             val builtin = builtinDirect(fieldTypes(index)).isDefined
 
@@ -610,18 +612,20 @@ object stagedInternal:
                 case None              => rawParse()
 
             val slowRhs: Term =
-              '{
-                Json.Parsable.focusing($foci, ${Expr(fieldNames(index))}.tt)(${ hot() })
-              }.asTerm.changeOwner(slowDefs(index))
+              ' {
+                  Json.Parsable.focusing($foci, ${Expr(fieldNames(index))}.tt)(${hot()})
+                }
+
+              . asTerm.changeOwner(slowDefs(index))
 
             val readRhs: Term =
-              '{ if $focused then ${ call(slowDefs(index)) } else ${ hot() } }
+              '{if $focused then ${call(slowDefs(index))} else ${hot()}}
               . asTerm.changeOwner(readDefs(index))
 
-            nestedDef.map(_(1)).toList
-              ::: List
-                    ( DefDef(slowDefs(index), _ => Some(slowRhs)),
-                      DefDef(readDefs(index), _ => Some(readRhs)) )
+            nestedDef.map(_(1)).toList :::
+              List
+                ( DefDef(slowDefs(index), _ => Some(slowRhs)),
+                  DefDef(readDefs(index), _ => Some(readRhs)) )
 
       def arms: List[CaseDef] = List.range(0, arity).map: index =>
         val rhs =
@@ -634,7 +638,7 @@ object stagedInternal:
         CaseDef(Literal(IntConstant(index)), None, rhs)
 
       def fallthrough =
-        CaseDef(Wildcard(), None, '{ $parser.directSkipValue()(using $ptactic) }.asTerm)
+        CaseDef(Wildcard(), None, '{$parser.directSkipValue()(using $ptactic)}.asTerm)
 
       val run = Symbol.newVal(owner, "run", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
 
@@ -645,17 +649,17 @@ object stagedInternal:
 
           case Some((low, highWord)) =>
             If
-              ( '{ $wordRef == ${Expr(low)} && $highRef == ${Expr(highWord)} }.asTerm,
+              ( '{$wordRef == ${Expr(low)} && $highRef == ${Expr(highWord)}}.asTerm,
                 Literal(IntConstant(index)),
                 packedChainOver(wordRef, highRef)(index + 1) )
 
       def namedChain(name: Expr[String], index: Int): Expr[Int] =
         if index == arity then Expr(-1)
         else
-          '{
-            if ${Expr(fieldNames(index))} == $name then ${Expr(index)}
-            else ${ namedChain(name, index + 1) }
-          }
+          ' {
+              if ${Expr(fieldNames(index))} == $name then ${Expr(index)}
+              else ${namedChain(name, index + 1)}
+            }
 
       // One key step: fresh symbols and arm trees per instantiation (trees
       // may not be shared between the unrolled first step and the loop).
@@ -676,17 +680,17 @@ object stagedInternal:
         // the generally-consumed interned name; `null` there is a close
         // brace that became visible only after a refill.
         val opaque: Expr[Int] =
-          '{
-            val name = $reader.keyName()
-            if name == null then -2 else ${ namedChain('{name.nn}, 0) }
-          }
+          ' {
+              val name = $reader.keyName()
+              if name == null then -2 else ${namedChain('{name.nn}, 0)}
+            }
 
         val resolveStep: Term =
           If
-            ( '{ $wordRef == Json.Reader.KeyOpaque }.asTerm,
+            ( '{$wordRef == Json.Reader.KeyOpaque}.asTerm,
               opaque.asTerm,
               Block
-                ( List(ValDef(high, Some('{ $parser.directKeyWordHigh }.asTerm))),
+                ( List(ValDef(high, Some('{$parser.directKeyWordHigh}.asTerm))),
                   packedChainOver(wordRef, highRef)(0) ) )
 
         // The refill-revealed close brace (-2) is one more dispatch case
@@ -699,7 +703,7 @@ object stagedInternal:
         Block
           ( List(ValDef(word, Some(wordStep.asTerm))),
             If
-              ( '{ $wordRef == Json.Reader.KeyEnd }.asTerm,
+              ( '{$wordRef == Json.Reader.KeyEnd}.asTerm,
                 Assign(Ref(run), Literal(BooleanConstant(false))),
                 Block
                   ( List(ValDef(found, Some(resolveStep))),
@@ -710,43 +714,45 @@ object stagedInternal:
       val loop: List[Statement] =
         readDefDefs :::
           List
-            ( '{ $parser.directOpenObject()(using $ptactic) }.asTerm,
+            ( '{$parser.directOpenObject()(using $ptactic)}.asTerm,
               ValDef(run, Some(Literal(BooleanConstant(true)))),
-              step('{ $parser.directKeyWordFirst() }),
-              While(Ref(run), step('{ $parser.directKeyWordNext() })) )
+              step('{$parser.directKeyWordFirst()}),
+              While(Ref(run), step('{$parser.directKeyWordNext()})) )
 
       val absents: List[Term] = List.range(0, arity).map: index =>
         fieldTypes(index).asType match
           case '[fieldType] =>
-            val keyText: Expr[Text] = '{ ${Expr(fieldNames(index))}.tt }
+            val keyText: Expr[Text] = '{${Expr(fieldNames(index))}.tt}
 
             val resolveAbsent: Term =
               Assign
                 ( Ref(slots(index)),
-                  '{
-                    val declared =
-                      wisteria.internal.default[product, fieldType](${Expr(index)})
+                  ' {
+                      val declared =
+                        wisteria.internal.default[product, fieldType](${Expr(index)})
 
-                    if !declared.absent then declared.asInstanceOf[fieldType]
-                    else Json.Parsable.focusing($foci, $keyText)
-                      (${ fieldCode(index)(1).asExprOf[fieldType] })
-                  }.asTerm )
+                      if !declared.absent then declared.asInstanceOf[fieldType]
+                      else Json.Parsable.focusing($foci, $keyText)
+                        ( ${fieldCode(index)(1).asExprOf[fieldType]} )
+                    }
 
-            If('{ !${Ref(seens(index)).asExprOf[Boolean]} }.asTerm, resolveAbsent, unit)
+                  . asTerm )
+
+            If('{!${Ref(seens(index)).asExprOf[Boolean]}}.asTerm, resolveAbsent, unit)
 
       val construct: Term =
         Apply(Select(New(Inferred(tpe)), ctor), slots.map { slot => Ref(slot) })
 
       Block(slotDefs ::: seenDefs ::: loop ::: absents, construct).asExprOf[product]
 
-    '{
-      val foci = infer[Foci[Json.Focus]]
-      val focused = foci.active
-      val tactic = infer[Tactic[Json.Error]]
-      val parser = $reader.rawParser.asInstanceOf[Parser]
-      val ptactic = $reader.rawTactic.asInstanceOf[Tactic[Parse.Error]]
-      ${ body('foci, 'focused, 'tactic, 'parser, 'ptactic) }
-    }
+    ' {
+        val foci = infer[Foci[Json.Focus]]
+        val focused = foci.active
+        val tactic = infer[Tactic[Json.Error]]
+        val parser = $reader.rawParser.asInstanceOf[Parser]
+        val ptactic = $reader.rawTactic.asInstanceOf[Tactic[Parse.Error]]
+        ${body('foci, 'focused, 'tactic, 'parser, 'ptactic)}
+      }
 
   // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Json.Parsable] =
@@ -756,26 +762,26 @@ object stagedInternal:
 
     val root: Inlinable = resolve[value](cache).getOrElse:
       report.errorAndAbort
-        (s"jacinta: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not an " +
-          "inlinable product; use `Json.Parsable.staged` or `derived`")
+        ( s"jacinta: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not an " +
+          "inlinable product; use `Json.Parsable.staged` or `derived`" )
 
     // A runtime-tier root would find the very given under definition — an
     // infinite self-call — or add nothing over the instance it wraps.
     if root.isInstanceOf[RuntimeInlinable[?]] then
       report.errorAndAbort
-        (s"jacinta: ${TypeRepr.of[value].show} has no generator of its own; use " +
-          "`Json.Parsable.staged` or `derived` rather than `Inlinable.parsable`")
+        ( s"jacinta: ${TypeRepr.of[value].show} has no generator of its own; use " +
+          "`Json.Parsable.staged` or `derived` rather than `Inlinable.parsable`" )
 
     val instance = root.asInstanceOf[Inlinable { type Self = value }]
 
-    '{
-      // Sealed per the codec-thunk pattern, like the staged instances: the
-      // generated body resolves its capabilities where it is spliced.
-      // [quote-wall] staged Parsable generated inside quote
-      caps.unsafe.unsafeAssumePure:
-        new Json.Parsable.Direct[value]:
-          protected def parseCarrier(reader0: AnyRef): value =
-            // A capability class cannot be quoted into a pure hole, so
-            // every use casts from the neutral carrier afresh.
-            ${ instance.parse('{ reader0.asInstanceOf[Json.Reader] }) }
-    }
+    ' {
+        // Sealed per the codec-thunk pattern, like the staged instances: the
+        // generated body resolves its capabilities where it is spliced.
+        // [quote-wall] staged Parsable generated inside quote
+        caps.unsafe.unsafeAssumePure:
+          new Json.Parsable.Direct[value]:
+            protected def parseCarrier(reader0: AnyRef): value =
+              // A capability class cannot be quoted into a pure hole, so
+              // every use casts from the neutral carrier afresh.
+              ${instance.parse('{reader0.asInstanceOf[Json.Reader]})}
+      }

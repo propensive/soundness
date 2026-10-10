@@ -47,9 +47,9 @@ import serpentine.*
 import urticose.*
 import vacuous.*
 
+import environments.javaBaseEnvironment
 import logging.silentLogging
 import workingDirectories.javaBaseWorkingDirectory
-import environments.javaBaseEnvironment
 import beneficence.*
 
 trait BenchmarkDevice extends Findable:
@@ -197,6 +197,7 @@ object LocalhostDevice extends BenchmarkDevice:
 
     val opts =
       sh"-XX:+AlwaysPreTouch -Xms$size -Xmx$size -XX:CICompilerCount=2 -XX:+Use${collector}GC"
+
     val cmd = sh"java $opts $processors -jar $path $input"
 
     // Launched directly rather than through `exec`, with its standard error inherited: the

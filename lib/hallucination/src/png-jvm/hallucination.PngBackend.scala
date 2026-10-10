@@ -35,8 +35,10 @@ package hallucination
 import anticipation.*
 import contingency.*
 
-// PNG through `javax.imageio`, whose native codec outperforms the pure one. The pure codec beside this
-// remains compiled on the JVM, and is differentially tested against this backend.
+// PNG through `javax.imageio`, whose native codec outperforms the pure one. The pure codec beside
+// this remains compiled on the JVM, and is differentially tested against this backend.
 private[hallucination] object PngBackend:
-  def decode(format: Rasterizable, data: Data): Raster raises Raster.Error = ImageIo.decode(format, data)
+  def decode(format: Rasterizable, data: Data): Raster raises Raster.Error =
+    ImageIo.decode(format, data)
+
   def encode(format: Rasterizable, raster: Raster): Data = ImageIo.encode(format, raster)

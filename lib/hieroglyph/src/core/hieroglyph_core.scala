@@ -33,7 +33,6 @@
 package hieroglyph
 
 import scala.caps
-
 import scala.language.experimental.pureFunctions
 
 import anticipation.*

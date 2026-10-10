@@ -47,8 +47,8 @@ object Sendable:
   // `Document[Html]` supplies both instances) becomes an HTML-only body, anything else a text
   // body. The `Streamable` instance is retained, so this is a capability whenever it is one.
   given document: [document: Media]
-  =>  (streamable: (document is Streamable by Text over Credit)^)
-  =>  ((document is Sendable)^{streamable}) = document =>
+  =>  ( streamable: (document is Streamable by Text over Credit)^ )
+  =>  ( (document is Sendable)^{streamable} ) = document =>
     val content = document.read[Text]
 
     val body =
@@ -61,4 +61,6 @@ object Sendable:
 
 trait Sendable extends Typeclass:
   def email(content: Self): Email
-  def contramap[self2](lambda: self2 => Self): (self2 is Sendable)^{this, lambda} = content => email(lambda(content))
+
+  def contramap[self2](lambda: self2 => Self): (self2 is Sendable)^{this, lambda} =
+    content => email(lambda(content))

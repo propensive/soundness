@@ -33,7 +33,6 @@
 package chiaroscuro
 
 import scala.caps
-
 import scala.compiletime.*
 import scala.reflect.*
 
@@ -71,8 +70,7 @@ object Decomposable extends Decomposable2:
 
     // [field-purity] given codec retaining element decomposer; codec-thunk seal
     caps.unsafe.unsafeAssumePure: list =>
-        Decomposition.Sequence(t"List", list.map(decomposable.decomposition(_)), list)
-
+      Decomposition.Sequence(t"List", list.map(decomposable.decomposition(_)), list)
 
   given sequence: [element, collection <: Sequence[element]]
   =>  ( decomposable: => element is Decomposable )
@@ -80,8 +78,8 @@ object Decomposable extends Decomposable2:
 
     // [field-purity]
     caps.unsafe.unsafeAssumePure: sequence =>
-        val values: Sequence[Decomposition] = sequence.map(decomposable.decomposition(_))
-        Decomposition.Sequence(t"Sequence", values.to[List], sequence)
+      val values: Sequence[Decomposition] = sequence.map(decomposable.decomposition(_))
+      Decomposition.Sequence(t"Sequence", values.to[List], sequence)
 
   given iarray: [element]
   =>  ( decomposable: => element is Decomposable )
@@ -89,10 +87,10 @@ object Decomposable extends Decomposable2:
 
     // [field-purity]
     caps.unsafe.unsafeAssumePure: iarray =>
-        Decomposition.Sequence
-          ( t"Array",
-            iarray.readable.toSeq.map(decomposable.decomposition(_)).to(List),
-            iarray )
+      Decomposition.Sequence
+        ( t"Array",
+          iarray.readable.toSeq.map(decomposable.decomposition(_)).to(List),
+          iarray )
 
 trait Decomposable extends Typeclass:
   def decomposition(value: Self): Decomposition
@@ -141,7 +139,9 @@ trait Decomposable2 extends Decomposable3:
     inline def conjunction[derivation <: Product: ProductReflection]: derivation is Decomposable =
       value =>
         val map =
-          ((fields(value) { [field] => field => label -> contextual.decomposition(field) }).readable).to(Map)
+          (fields(value) { [field] => field => label -> contextual.decomposition(field) })
+          . readable
+          . to(Map)
 
         Decomposition.Product(typeName, map, value)
 

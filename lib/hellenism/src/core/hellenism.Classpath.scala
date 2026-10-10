@@ -32,23 +32,23 @@
                                                                                                   */
 package hellenism
 
-import scala.caps
-
+import java.io as ji
 import java.net as jn
 import java.util as ju
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
+import fulminate.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
-import zephyrine.*
 import vacuous.*
-import java.io as ji
-import fulminate.*
+import zephyrine.*
 
 object Classpath extends Root(t""):
   type Plane = Classpath
@@ -166,7 +166,8 @@ object Classpath extends Root(t""):
       def apply[file: Instantiable across Paths from Text](): file = file(path)
 
     case class Url(url: Text) extends Classpath.Entry:
-      def apply[instantiable: Instantiable across Urls from Text](): instantiable = instantiable(url)
+      def apply[instantiable: Instantiable across Urls from Text](): instantiable =
+        instantiable(url)
 
     case object JavaRuntime extends Classpath.Entry
 

@@ -73,7 +73,8 @@ object Masking:
         Array.freeze(bytes)
 
       val header: Data = Data.fill(headerLength): index =>
-        if index == 1 then (frame.readUnchecked(1).toInt | 0x80).toByte else frame.readUnchecked(index)
+        if index == 1 then (frame.readUnchecked(1).toInt | 0x80).toByte
+        else frame.readUnchecked(index)
 
       val prefix: Data = Array.frozen(header.readable ++ key.readable)
       val unmasked = Websocket.Frame.unmask(frame.skip(headerLength), key)

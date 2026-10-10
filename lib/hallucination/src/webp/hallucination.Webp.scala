@@ -32,7 +32,6 @@
                                                                                                   */
 package hallucination
 
-
 import anticipation.*
 import contingency.*
 import gesticulate.*

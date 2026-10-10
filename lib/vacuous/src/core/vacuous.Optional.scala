@@ -32,13 +32,11 @@
                                                                                                   */
 package vacuous
 
-import fulminate.{Diagnostics, m}
-
 import scala.caps
-
 import scala.language.experimental.pureFunctions
-
 import scala.quoted.*
+
+import fulminate.{Diagnostics, m}
 
 object Optional:
   // `<: caps.Pure` (not `<: Null`) makes `Unset` a pure type — so `Optional[v] = Unset | v` is pure

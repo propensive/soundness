@@ -43,6 +43,7 @@ import xenophile.*
 // The WIT definitions the navigation below is typechecked against, and which the `call`
 // materializer consults (at its downstream expansion site) for the function's module id.
 type WasiClockApi = Interface in Wit at "/aviation/clocks.wit"
+
 package wasiApis:
   given wasiClockApi: WasiClockApi = Interface[Wit](cp"/aviation/clocks.wit")
 

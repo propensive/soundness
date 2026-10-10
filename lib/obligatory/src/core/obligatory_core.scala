@@ -39,6 +39,7 @@ extension [element](stream: Iterator[element]^)
   // the framed iterator honestly retains the framer (it can raise during iteration).
   def frames[frame](using framable: (element is Framable by frame)^)
   :   Iterator[element]^{stream, framable} =
+
     framable.frames(stream)
 
 // These are declared inside `annotations` and exported, rather than at the top level, so that

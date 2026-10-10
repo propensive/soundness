@@ -60,7 +60,7 @@ object ScreenRoot:
 // redraws every row. It replaces the unbuffered `TerminalBoard` as the fullscreen
 // root, whose immediate per-`put` writes re-emitted every cell a repaint touched.
 class ScreenRoot(widthFn: () ->{scala.caps.any.rd} Int, heightFn: () ->{scala.caps.any.rd} Int)
-  (using stdio: Stdio)
+  ( using stdio: Stdio )
 extends GridSurface(widthFn(), heightFn()):
 
   // The live terminal size, for the layout solver; the grid is re-fitted to it by
@@ -90,9 +90,7 @@ extends GridSurface(widthFn(), heightFn()):
     val h       = gridHeight
     val validated = if invalidated then Unset else snapshotValid(1, columns, h)
 
-    validated.let: snap =>
-      presentDiff(1, columns, h, snap)
-
+    validated.let: snap => presentDiff(1, columns, h, snap)
     . or:
       invalidated = false
 

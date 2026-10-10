@@ -33,12 +33,10 @@
 package stratiform
 
 import scala.collection.immutable.Vector
-
-import scala.{annotation, caps}
-
 import scala.collection.immutable.{List, Nil, ::}
 import scala.collection.mutable as scm
 import scala.quoted.*
+import scala.{annotation, caps}
 
 import anticipation.*
 import contingency.*
@@ -97,7 +95,7 @@ object stagedInternal:
       if run == null then false else
         val sources = run.nn.units.map(_.source.path).toSet
         val position = symbol.pos
-        position.exists { position => sources.contains(position.sourceFile.path) }
+        position.exists: position => sources.contains(position.sourceFile.path)
     catch case _: Exception => false
 
   private def innerClasspath(using Quotes): String =
@@ -183,9 +181,9 @@ object stagedInternal:
     tpe.dealias match
       case AppliedType(constructor, arguments) =>
         for
-          clazz <- classFor(constructor)
+          clazz  <- classFor(constructor)
           shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-                      list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
+            list.flatMap: tail => shapeOf(argument).map(_ :: tail)
         yield TypeShape(clazz, shapes)
 
       case other =>
@@ -205,7 +203,7 @@ object stagedInternal:
       try
         given settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make
-            (None, List("-experimental", "-classpath", innerClasspath))
+            ( None, List("-experimental", "-classpath", innerClasspath) )
 
         given staging.Compiler = staging.Compiler.make(macroClassloader)
         val started = System.nanoTime
@@ -224,14 +222,14 @@ object stagedInternal:
                 r2.TypeBounds(rebuild(shape), rebuild(shape)) )
 
           target.asType match
-            case '[target] => '{ scala.compiletime.summonInline[target] }
+            case '[target] => '{scala.compiletime.summonInline[target]}
 
         val duration = (System.nanoTime - started)/1000000L
 
         result match
           case instance: Inlinable =>
             report.info
-              (s"stratiform: staged summon for ${TypeRepr.of[field].show} took ${duration}ms")
+              ( s"stratiform: staged summon for ${TypeRepr.of[field].show} took ${duration}ms" )
 
             Some(instance)
 
@@ -298,15 +296,15 @@ object stagedInternal:
     def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[value])
     :   Expr[value] =
 
-      '{
-        Tel.Parsable.parseField[value]
-          ($parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef], $indent)
-      }
+      ' {
+          Tel.Parsable.parseField[value]
+            ( $parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef], $indent )
+        }
 
     override def absent(tactic: Expr[Tactic[Tel.Error]])(using Quotes, Type[value])
     :   Expr[value] =
 
-      '{ Tel.Parsable.absentField[value]($parsing.asInstanceOf[AnyRef])(using $tactic) }
+      '{Tel.Parsable.absentField[value]($parsing.asInstanceOf[AnyRef])(using $tactic)}
 
   private def builtinFor(using Quotes)(tpe: quotes.reflect.TypeRepr): Option[Inlinable] =
     import quotes.reflect.*
@@ -323,8 +321,9 @@ object stagedInternal:
   // collection (used to summon a `Factory`, since the opaque companion exposes
   // only a `Conversion`, not a direct instance).
   private[stratiform] def aliasCollectionUnderlying(using Quotes)
-    (tpe: quotes.reflect.TypeRepr)
+    ( tpe: quotes.reflect.TypeRepr )
   :   Option[quotes.reflect.TypeRepr] =
+
     import quotes.reflect.*
     val listSym   = TypeRepr.of[proscenium.List[Any]].typeSymbol
     val setSym    = TypeRepr.of[proscenium.Set[Any]].typeSymbol
@@ -333,10 +332,13 @@ object stagedInternal:
     tpe.dealias match
       case AppliedType(constructor, args) if constructor.typeSymbol == listSym =>
         Some(TypeRepr.of[scala.collection.immutable.List].appliedTo(args.last))
+
       case AppliedType(constructor, args) if constructor.typeSymbol == setSym =>
         Some(TypeRepr.of[scala.collection.immutable.Set].appliedTo(args.last))
+
       case AppliedType(constructor, args) if constructor.typeSymbol == seriesSym =>
         Some(TypeRepr.of[Vector].appliedTo(args.last))
+
       case _ =>
         None
 
@@ -356,7 +358,7 @@ object stagedInternal:
           case '[element] =>
             resolve[element](cache).map: instance =>
               Inlinable.IterableInlinable[element]
-                (instance.asInstanceOf[element is Inlinable])
+                ( instance.asInstanceOf[element is Inlinable] )
 
       case _ =>
         None
@@ -394,11 +396,11 @@ object stagedInternal:
       val children = classSymbol.children
 
       val supported =
-        !applied
-        && classSymbol.flags.is(Flags.Sealed)
-        && children.nonEmpty
-        && children.forall: child =>
-             child.isClassDef && child.flags.is(Flags.Case) && !hasRenames(child)
+        !applied &&
+          classSymbol.flags.is(Flags.Sealed) &&
+          children.nonEmpty &&
+          children.forall: child =>
+            child.isClassDef && child.flags.is(Flags.Case) && !hasRenames(child)
 
       if supported then Some(children.map { child => (child.name, child.typeRef) }) else None
 
@@ -408,12 +410,12 @@ object stagedInternal:
     import quotes.reflect.*
 
     tpe.classSymbol.exists: classSymbol =>
-      classSymbol.flags.is(Flags.Case)
-      && !classSymbol.owner.isTerm
-      && (tpe match { case AppliedType(_, _) => false case _ => true })
-      && classSymbol.primaryConstructor.paramSymss
-         . filterNot(_.exists(_.isTypeParam)).length == 1
-      && !hasRenames(classSymbol)
+      classSymbol.flags.is(Flags.Case) &&
+        !classSymbol.owner.isTerm &&
+        (tpe match { case AppliedType(_, _) => false case _ => true }) &&
+        classSymbol.primaryConstructor.paramSymss
+          . filterNot(_.exists(_.isTypeParam)).length == 1 &&
+        !hasRenames(classSymbol)
 
   // A wire keyword's packed form (at most eight printable-ASCII bytes,
   // LSB-first, the same packing as `TelReader.keywordWord`), or `None` when
@@ -421,7 +423,7 @@ object stagedInternal:
   private def packedTelKeyword(name: String): Option[Long] =
     val length = name.length
 
-    val packs = length > 0 && length <= 8 && name.forall { char => char >= '!' && char <= '~' }
+    val packs = length > 0 && length <= 8 && name.forall: char => char >= '!' && char <= '~'
 
     if !packs then None else
       var word = 0L
@@ -440,10 +442,10 @@ object stagedInternal:
 
     val annotated =
       classSymbol.primaryConstructor.paramSymss.flatten.filterNot(_.isTypeParam)
-        . flatMap(_.annotations)
-      ++ classSymbol.caseFields.flatMap(_.annotations)
+        . flatMap(_.annotations) ++
+        classSymbol.caseFields.flatMap(_.annotations)
 
-    annotated.exists { annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+    annotated.exists: annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]]
 
   // ── The collection generator ───────────────────────────────────────────
   // A single entry read as a collection: one element — the runtime
@@ -452,8 +454,8 @@ object stagedInternal:
   // keyword directly (see `fieldLoop`), exactly as the derived engine
   // routes repeatable fields through `parseElement`.
   private[stratiform] def iterableBody[collection: Type]
-    (reader: Expr[TelReader], indent: Expr[Int], element0: Inlinable)
-    (using Quotes)
+    ( reader: Expr[TelReader], indent: Expr[Int], element0: Inlinable )
+    ( using Quotes )
   :   Expr[collection] =
 
     import quotes.reflect.*
@@ -469,17 +471,17 @@ object stagedInternal:
           case ('[element], '[stdlib]) =>
             val instance = element0.asInstanceOf[Inlinable { type Self = element }]
 
-            '{
-              def parseElement(): element = ${ instance.parse(reader, indent) }
-              val factory = infer[scala.collection.Factory[element, stdlib]]
-              val builder = factory.newBuilder
-              builder += parseElement()
-              builder.result().asInstanceOf[collection]
-            }
+            ' {
+                def parseElement(): element = ${instance.parse(reader, indent)}
+                val factory = infer[scala.collection.Factory[element, stdlib]]
+                val builder = factory.newBuilder
+                builder += parseElement()
+                builder.result().asInstanceOf[collection]
+              }
 
       case _ =>
         report.errorAndAbort
-          ("stratiform: an inlinable collection requires an applied collection type")
+          ( "stratiform: an inlinable collection requires an applied collection type" )
 
   // ── The product generator ──────────────────────────────────────────────
   // Self-contained monomorphic entry parsing, mirroring the staged parser's
@@ -494,15 +496,15 @@ object stagedInternal:
   // its runtime `Tel.Parsing` instance once per record and keeps the
   // engine's dynamic repeatability dispatch.
   private[stratiform] def productFields[product: Type]
-    (reader: Expr[TelReader], indent: Expr[Int])
-    (using Quotes)
+    ( reader: Expr[TelReader], indent: Expr[Int] )
+    ( using Quotes )
   :   Expr[product] =
 
     productFields[product](reader, indent, Cache())
 
   private[stratiform] def productFields[product: Type]
-    (reader: Expr[TelReader], indent: Expr[Int], cache: Cache)
-    (using Quotes)
+    ( reader: Expr[TelReader], indent: Expr[Int], cache: Cache )
+    ( using Quotes )
   :   Expr[product] =
 
     import quotes.reflect.TypeRepr
@@ -513,16 +515,16 @@ object stagedInternal:
     finally cache.active -= TypeRepr.of[product].dealias.show
 
   private def productFields0[product: Type]
-    (reader: Expr[TelReader], indent: Expr[Int], cache: Cache)
-    (using Quotes)
+    ( reader: Expr[TelReader], indent: Expr[Int], cache: Cache )
+    ( using Quotes )
   :   Expr[product] =
 
-    '{
-      val foci = infer[Foci[Tel.Focus]]
-      val focused = foci.active
-      val tactic = infer[Tactic[Tel.Error]]
-      ${ fieldLoop[product](reader, indent, 'foci, 'focused, 'tactic, cache) }
-    }
+    ' {
+        val foci = infer[Foci[Tel.Focus]]
+        val focused = foci.active
+        val tactic = infer[Tactic[Tel.Error]]
+        ${fieldLoop[product](reader, indent, 'foci, 'focused, 'tactic, cache)}
+      }
 
   // How one field reads, established at expansion: a builtin leaf, a
   // gathered collection (with its element's generator), any other resolved
@@ -540,7 +542,7 @@ object stagedInternal:
       focused: Expr[Boolean],
       tactic:  Expr[Tactic[Tel.Error]],
       cache:   Cache )
-    (using Quotes)
+    ( using Quotes )
   :   Expr[product] =
 
     import quotes.reflect.*
@@ -549,17 +551,17 @@ object stagedInternal:
 
     if !productSupported(tpe) then
       report.errorAndAbort
-        (s"stratiform: ${tpe.show} is not an inlinable product (a non-generic, top-level or " +
+        ( s"stratiform: ${tpe.show} is not an inlinable product (a non-generic, top-level or " +
           "object-nested case class with a single parameter list and no `@name` renames); " +
-          "use `Tel.Parsable.staged` or `derived`")
+          "use `Tel.Parsable.staged` or `derived`" )
 
     val classSymbol = tpe.classSymbol.get
     val ctor = classSymbol.primaryConstructor
     val fields = classSymbol.caseFields
     val arity = fields.length
     val fieldNames: List[String] = fields.map(_.name)
-    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
-    val wireNames: List[String] = fieldNames.map { name => Tel.camelToKebab(name).s }
+    val fieldTypes: List[TypeRepr] = fields.map: field => tpe.memberType(field).dealias
+    val wireNames: List[String] = fieldNames.map: name => Tel.camelToKebab(name).s
 
     val plans: List[Plan] = fieldTypes.map: fieldType =>
       builtinFor(fieldType) match
@@ -570,9 +572,11 @@ object stagedInternal:
           fieldType.asType match
             case '[fieldType] =>
               resolve[fieldType](cache) match
-                case Some(iterable: Inlinable.IterableInlinable[?]) => Plan.Gather(iterable.element0)
-                case Some(instance)                                 => Plan.Nested(instance)
-                case None                                           => Plan.Seam
+                case Some(iterable: Inlinable.IterableInlinable[?]) =>
+                  Plan.Gather(iterable.element0)
+
+                case Some(instance) => Plan.Nested(instance)
+                case None           => Plan.Seam
 
     // Keywords compile to literal packed-word comparisons using the same
     // camel→kebab mapping and packing as the staged parser; a wire keyword
@@ -580,7 +584,7 @@ object stagedInternal:
     // `KeywordOpaque` and resolves through the literal text step, which
     // matches all fields by string.
     val packedKeywords: List[Option[Long]] =
-      List.range(0, arity).map { index => packedTelKeyword(wireNames(index)) }
+      List.range(0, arity).map: index => packedTelKeyword(wireNames(index))
 
     val owner = Symbol.spliceOwner
     val unit = Literal(UnitConstant())
@@ -597,7 +601,7 @@ object stagedInternal:
       else if fieldType =:= TypeRepr.of[Double] then Literal(DoubleConstant(0.0))
       else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
       else fieldType.asType match
-        case '[fieldType] => '{ null.asInstanceOf[fieldType] }.asTerm
+        case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
     val slotDefs = List.range(0, arity).map: index =>
       ValDef(slots(index), Some(zero(fieldTypes(index))))
@@ -605,7 +609,7 @@ object stagedInternal:
     val seenDefs = List.range(0, arity).map: index =>
       ValDef(seens(index), Some(Literal(BooleanConstant(false))))
 
-    def keyText(index: Int): Expr[Text] = '{ ${Expr(wireNames(index))}.tt }
+    def keyText(index: Int): Expr[Text] = '{${Expr(wireNames(index))}.tt}
 
     // ── Gathered collection fields: a typed builder per field, an element
     // def emitted once (composition points become local defs — a fully
@@ -637,15 +641,17 @@ object stagedInternal:
                         aliasCollectionUnderlying(fieldTypes(index)) match
                           case Some(underlying) => underlying.asType match
                             case '[stdlib] =>
-                              '{
-                                infer[scala.collection.Factory[element, stdlib]].newBuilder
-                                . asInstanceOf[scm.Builder[element, fieldType]]
-                              }
+                              ' {
+                                  infer[scala.collection.Factory[element, stdlib]].newBuilder
+                                  . asInstanceOf[scm.Builder[element, fieldType]]
+                                }
+
                             case _ => report.errorAndAbort("stratiform: unreachable")
+
                           case None =>
-                            '{
-                              infer[scala.collection.Factory[element, fieldType]].newBuilder
-                            }
+                            ' {
+                                infer[scala.collection.Factory[element, fieldType]].newBuilder
+                              }
 
                       val builderDef = ValDef(builderSymbol, Some(builderRhs.asTerm))
 
@@ -687,7 +693,7 @@ object stagedInternal:
               val instanceDef =
                 ValDef
                   ( instanceSymbol,
-                    Some('{ stagedInternal.fieldInstance[fieldType] }.asTerm) )
+                    Some('{stagedInternal.fieldInstance[fieldType]}.asTerm) )
 
               val instanceRef = Ref(instanceSymbol).asExprOf[fieldType is Tel.Parsing]
 
@@ -697,12 +703,12 @@ object stagedInternal:
                     Flags.EmptyFlags, Symbol.noSymbol )
 
               val repeatsDef =
-                ValDef(repeatsSymbol, Some('{ Tel.Parsable.repeats($instanceRef) }.asTerm))
+                ValDef(repeatsSymbol, Some('{Tel.Parsable.repeats($instanceRef)}.asTerm))
 
               val bufferSymbol =
                 Symbol.newVal(owner, "buffer"+index, bufferType, Flags.Mutable, Symbol.noSymbol)
 
-              val bufferDef = ValDef(bufferSymbol, Some('{ null }.asTerm))
+              val bufferDef = ValDef(bufferSymbol, Some('{null}.asTerm))
 
               Some:
                 SeamState
@@ -738,7 +744,7 @@ object stagedInternal:
     def firstWins(index: Int, read: Term): Term =
       If
         ( Ref(seens(index)),
-          '{ $reader.skipEntry($indent) }.asTerm,
+          '{$reader.skipEntry($indent)}.asTerm,
           Block
             ( List
                 ( Assign(Ref(slots(index)), read),
@@ -754,10 +760,12 @@ object stagedInternal:
 
               firstWins
                 ( index,
-                  '{
-                    Tel.Parsable.focusing($foci, $reader, ${keyText(index)})
-                      (${ instance.parse(reader, indent) })
-                  }.asTerm )
+                  ' {
+                      Tel.Parsable.focusing($foci, $reader, ${keyText(index)})
+                        ( ${instance.parse(reader, indent)} )
+                    }
+
+                  . asTerm )
 
             case Plan.Nested(_) =>
               val (symbol, _) = nesteds(index).get
@@ -765,7 +773,7 @@ object stagedInternal:
 
               firstWins
                 ( index,
-                  '{ Tel.Parsable.focusing($foci, $reader, ${keyText(index)})($call) }.asTerm )
+                  '{Tel.Parsable.focusing($foci, $reader, ${keyText(index)})($call)}.asTerm )
 
             case Plan.Gather(_) =>
               val gather = gathers(index).get
@@ -779,10 +787,12 @@ object stagedInternal:
 
                       val call = Apply(Ref(gather.element), Nil).asExprOf[element]
 
-                      '{
-                        $builderRef.addOne
-                          (Tel.Parsable.focusing($foci, $reader, ${keyText(index)})($call))
-                      }.asTerm
+                      ' {
+                          $builderRef.addOne
+                            ( Tel.Parsable.focusing($foci, $reader, ${keyText(index)})($call) )
+                        }
+
+                      . asTerm
 
                 case _ =>
                   report.errorAndAbort("stratiform: unreachable gather shape")
@@ -794,22 +804,26 @@ object stagedInternal:
 
               val ensure: Term =
                 If
-                  ( '{ $bufferRef == null }.asTerm,
-                    Assign(Ref(seam.buffer), '{ scm.ListBuffer.empty[Any] }.asTerm),
+                  ( '{$bufferRef == null}.asTerm,
+                    Assign(Ref(seam.buffer), '{scm.ListBuffer.empty[Any]}.asTerm),
                     unit )
 
               val append: Term =
-                '{
-                  $bufferRef.asInstanceOf[scm.ListBuffer[Any]].addOne
-                    ( Tel.Parsable.focusing($foci, $reader, ${keyText(index)}):
-                        Tel.Parsable.parseElement($instanceRef, $reader, $indent) )
-                }.asTerm
+                ' {
+                    $bufferRef.asInstanceOf[scm.ListBuffer[Any]].addOne
+                      ( Tel.Parsable.focusing($foci, $reader, ${keyText(index)}):
+                          Tel.Parsable.parseElement($instanceRef, $reader, $indent) )
+                  }
+
+                . asTerm
 
               val read: Term =
-                '{
-                  Tel.Parsable.focusing($foci, $reader, ${keyText(index)})
-                    ($instanceRef.parse($reader, $indent))
-                }.asTerm
+                ' {
+                    Tel.Parsable.focusing($foci, $reader, ${keyText(index)})
+                      ( $instanceRef.parse($reader, $indent) )
+                  }
+
+                . asTerm
 
               If
                 ( Ref(seam.repeats),
@@ -818,7 +832,7 @@ object stagedInternal:
 
       CaseDef(Literal(IntConstant(index)), None, rhs)
 
-    val fallthrough = CaseDef(Wildcard(), None, '{ $reader.skipEntry($indent) }.asTerm)
+    val fallthrough = CaseDef(Wildcard(), None, '{$reader.skipEntry($indent)}.asTerm)
 
     // ── The keyword loop: packed-word dispatch with a literal text step for
     // opaque keywords, mirroring the staged parser's single-step protocol. ──
@@ -835,7 +849,7 @@ object stagedInternal:
 
         case Some(packed) =>
           If
-            ( '{ $wordRef == ${Expr(packed)} }.asTerm,
+            ( '{$wordRef == ${Expr(packed)}}.asTerm,
               Literal(IntConstant(index)),
               packedChain(index + 1) )
 
@@ -849,22 +863,22 @@ object stagedInternal:
         if index == arity then Literal(IntConstant(-1))
         else
           If
-            ( '{ $nameRef == ${Expr(wireNames(index))} }.asTerm,
+            ( '{$nameRef == ${Expr(wireNames(index))}}.asTerm,
               Literal(IntConstant(index)),
               stringChain(index + 1) )
 
       Block
-        ( List(ValDef(name, Some('{ $reader.keywordText.s }.asTerm))),
+        ( List(ValDef(name, Some('{$reader.keywordText.s}.asTerm))),
           stringChain(0) )
 
     val resolveStep: Term =
-      If('{ $wordRef == TelReader.KeywordOpaque }.asTerm, textStep, packedChain(0))
+      If('{$wordRef == TelReader.KeywordOpaque}.asTerm, textStep, packedChain(0))
 
     val step: Term =
       Block
-        ( List(ValDef(word, Some('{ $reader.keywordWord($indent) }.asTerm))),
+        ( List(ValDef(word, Some('{$reader.keywordWord($indent)}.asTerm))),
           If
-            ( '{ $wordRef == TelReader.KeywordEnd }.asTerm,
+            ( '{$wordRef == TelReader.KeywordEnd}.asTerm,
               Assign(Ref(run), Literal(BooleanConstant(false))),
               Block
                 ( List(ValDef(found, Some(resolveStep))),
@@ -884,16 +898,18 @@ object stagedInternal:
           def resolveAbsent(onAbsent: Expr[fieldType]): Term =
             Assign
               ( Ref(slots(index)),
-                '{
-                  val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
+                ' {
+                    val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
 
-                  if !declared.absent then declared.asInstanceOf[fieldType]
-                  else Tel.Parsable.focusingUnlocated($foci, ${keyText(index)})($onAbsent)
-                }.asTerm )
+                    if !declared.absent then declared.asInstanceOf[fieldType]
+                    else Tel.Parsable.focusingUnlocated($foci, ${keyText(index)})($onAbsent)
+                  }
+
+                . asTerm )
 
           def whenUnseen(onAbsent: Expr[fieldType]): Term =
             If
-              ( '{ !${Ref(seens(index)).asExprOf[Boolean]} }.asTerm,
+              ( '{!${Ref(seens(index)).asExprOf[Boolean]}}.asTerm,
                 resolveAbsent(onAbsent), unit )
 
           plans(index) match
@@ -915,7 +931,7 @@ object stagedInternal:
                       val builderRef =
                         Ref(gather.builder).asExprOf[scm.Builder[element, fieldType]]
 
-                      Assign(Ref(slots(index)), '{ $builderRef.result() }.asTerm)
+                      Assign(Ref(slots(index)), '{$builderRef.result()}.asTerm)
 
                 case _ =>
                   report.errorAndAbort("stratiform: unreachable gather shape")
@@ -928,19 +944,21 @@ object stagedInternal:
               val gatherFinish: Term =
                 Assign
                   ( Ref(slots(index)),
-                    '{
-                      Tel.Parsable.focusingUnlocated($foci, ${keyText(index)}):
-                        Tel.Parsable.gathered[fieldType]
-                          ( $instanceRef,
-                            $bufferRef match
-                              case null   => proscenium.Nil
-                              case buffer => buffer.toList.to(proscenium.List) )
-                    }.asTerm )
+                    ' {
+                        Tel.Parsable.focusingUnlocated($foci, ${keyText(index)}):
+                          Tel.Parsable.gathered[fieldType]
+                            ( $instanceRef,
+                              $bufferRef match
+                                case null   => proscenium.Nil
+                                case buffer => buffer.toList.to(proscenium.List) )
+                      }
+
+                    . asTerm )
 
               If
                 ( Ref(seam.repeats),
                   gatherFinish,
-                  whenUnseen('{ $instanceRef.absent()(using $tactic) }) )
+                  whenUnseen('{$instanceRef.absent()(using $tactic)}) )
 
     val construct: Term =
       Apply(Select(New(Inferred(tpe)), ctor), slots.map { slot => Ref(slot) })
@@ -952,6 +970,7 @@ object stagedInternal:
     Block
       ( slotDefs ::: seenDefs ::: gatherDefs ::: seamDefs ::: nestedDefs ::: loop ::: absents,
         construct )
+
     . asExprOf[product]
 
   // ── The sum generator ──────────────────────────────────────────────────
@@ -963,13 +982,13 @@ object stagedInternal:
   // first child compound); an unknown keyword aborts through the splice
   // site's `Tactic[Variant.Error]`, exactly as `delegate` does.
   private[stratiform] def sumBody[sum: Type](reader: Expr[TelReader], indent: Expr[Int])
-    (using Quotes)
+    ( using Quotes )
   :   Expr[sum] =
 
     sumBody[sum](reader, indent, Cache())
 
   private def sumBody[sum: Type](reader: Expr[TelReader], indent: Expr[Int], cache: Cache)
-    (using Quotes)
+    ( using Quotes )
   :   Expr[sum] =
 
     import quotes.reflect.*
@@ -979,18 +998,18 @@ object stagedInternal:
     try sumBody0[sum](reader, indent, cache) finally cache.active -= TypeRepr.of[sum].dealias.show
 
   private def sumBody0[sum: Type](reader: Expr[TelReader], indent: Expr[Int], cache: Cache)
-    (using Quotes)
+    ( using Quotes )
   :   Expr[sum] =
 
     import quotes.reflect.*
 
     val variants = sumVariants(TypeRepr.of[sum].dealias).getOrElse:
       report.errorAndAbort
-        (s"stratiform: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic sealed " +
-          "type whose variants are all case classes without `@name` renames)")
+        ( s"stratiform: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic sealed " +
+          "type whose variants are all case classes without `@name` renames)" )
 
     val arity = variants.length
-    val wireNames: List[String] = variants.map { (name, _) => Tel.camelToKebab(name).s }
+    val wireNames: List[String] = variants.map: (name, _) => Tel.camelToKebab(name).s
 
     def dispatch
       ( index:   Int,
@@ -999,54 +1018,57 @@ object stagedInternal:
     :   Expr[sum] =
 
       if index == arity then
-        '{
-          provide[Tactic[wisteria.Variant.Error]]:
-            abort(wisteria.Variant.Error[sum]($reader.keywordText))
-        }
-      else variants(index)(1).asType match
-        case '[type variantType <: sum; variantType] =>
-          val instance = resolve[variantType](cache).getOrElse:
-            report.errorAndAbort
-              (s"stratiform: no Inlinable for variant ${variants(index)(0)}")
-          . asInstanceOf[Inlinable { type Self = variantType }]
+        ' {
+            provide[Tactic[wisteria.Variant.Error]]:
+              abort(wisteria.Variant.Error[sum]($reader.keywordText))
+          }
+      else
+        variants(index)(1).asType match
+          case '[type variantType <: sum; variantType] =>
+            val instance = resolve[variantType](cache).getOrElse:
+              report.errorAndAbort
+                ( s"stratiform: no Inlinable for variant ${variants(index)(0)}" )
 
-          val name = wireNames(index)
+            . asInstanceOf[Inlinable { type Self = variantType }]
 
-          val condition: Expr[Boolean] = packedTelKeyword(name) match
-            case Some(packed) =>
-              '{
-                $word == ${Expr(packed)}
-                || ($word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)})
+            val name = wireNames(index)
+
+            val condition: Expr[Boolean] = packedTelKeyword(name) match
+              case Some(packed) =>
+                ' {
+                    $word == ${Expr(packed)} ||
+                      ($word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)})
+                  }
+
+              case None =>
+                '{$word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)}}
+
+            ' {
+                if $condition then
+                  def parseVariant(): variantType = ${instance.parse(reader, indent1)}
+                  parseVariant()
+                else
+                  ${dispatch(index + 1, word, indent1)}
               }
 
-            case None =>
-              '{ $word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)} }
+    ' {
+        val tactic = infer[Tactic[Tel.Error]]
+        $reader.finishLine()
+        val indent1 = $indent + 1
+        val word = $reader.keywordWord(indent1)
 
-          '{
-            if $condition then
-              def parseVariant(): variantType = ${ instance.parse(reader, indent1) }
-              parseVariant()
-            else ${ dispatch(index + 1, word, indent1) }
-          }
+        if word == TelReader.KeywordEnd
+        then abort(Tel.Error(Tel.Error.Reason.Absent))(using tactic)
+        else
+          val result: sum = ${dispatch(0, 'word, 'indent1)}
+          var next = $reader.keywordWord(indent1)
 
-    '{
-      val tactic = infer[Tactic[Tel.Error]]
-      $reader.finishLine()
-      val indent1 = $indent + 1
-      val word = $reader.keywordWord(indent1)
+          while next != TelReader.KeywordEnd do
+            $reader.skipEntry(indent1)
+            next = $reader.keywordWord(indent1)
 
-      if word == TelReader.KeywordEnd
-      then abort(Tel.Error(Tel.Error.Reason.Absent))(using tactic)
-      else
-        val result: sum = ${ dispatch(0, 'word, 'indent1) }
-        var next = $reader.keywordWord(indent1)
-
-        while next != TelReader.KeywordEnd do
-          $reader.skipEntry(indent1)
-          next = $reader.keywordWord(indent1)
-
-        result
-    }
+          result
+      }
 
   // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Tel.Parsable] =
@@ -1056,23 +1078,23 @@ object stagedInternal:
 
     if !productSupported(TypeRepr.of[value].dealias) then
       report.errorAndAbort
-        (s"stratiform: ${TypeRepr.of[value].show} is not an inlinable product (a non-generic, " +
+        ( s"stratiform: ${TypeRepr.of[value].show} is not an inlinable product (a non-generic, " +
           "top-level or object-nested case class with a single parameter list and no `@name` " +
-          "renames); use `Tel.Parsable.staged` or `derived`")
+          "renames); use `Tel.Parsable.staged` or `derived`" )
 
-    '{
-      // Sealed per the codec-thunk pattern, like the staged instances: the
-      // generated body resolves its capabilities where it is spliced.
-      // [quote-wall] codec seal inside quoted staged parser
-      caps.unsafe.unsafeAssumePure:
-        new Tel.Parsable.Direct[value]:
-          protected def parseEntry(reader0: AnyRef, indent: Int): value =
-            // A capability class cannot be quoted into a pure hole, so
-            // every use casts from the neutral carrier afresh.
-            reader0.asInstanceOf[TelReader].finishLine()
-            val indent1 = indent + 1
-            ${ productFields[value]('{ reader0.asInstanceOf[TelReader] }, 'indent1, cache) }
+    ' {
+        // Sealed per the codec-thunk pattern, like the staged instances: the
+        // generated body resolves its capabilities where it is spliced.
+        // [quote-wall] codec seal inside quoted staged parser
+        caps.unsafe.unsafeAssumePure:
+          new Tel.Parsable.Direct[value]:
+            protected def parseEntry(reader0: AnyRef, indent: Int): value =
+              // A capability class cannot be quoted into a pure hole, so
+              // every use casts from the neutral carrier afresh.
+              reader0.asInstanceOf[TelReader].finishLine()
+              val indent1 = indent + 1
+              ${productFields[value]('{reader0.asInstanceOf[TelReader]}, 'indent1, cache)}
 
-          protected def parseWhole(reader0: AnyRef): value =
-            ${ productFields[value]('{ reader0.asInstanceOf[TelReader] }, '{0}, cache) }
-    }
+            protected def parseWhole(reader0: AnyRef): value =
+              ${productFields[value]('{reader0.asInstanceOf[TelReader]}, '{0}, cache)}
+      }

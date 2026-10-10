@@ -43,22 +43,9 @@ import iridescence.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import tessellate.*
 import vacuous.*
-import symbolism.*
-
-trait StackTracePalette extends iridescence.Palette:
-  type Form = Srgb
-  def message:   Color in Srgb
-  def file:      Color in Srgb
-  def method:    Color in Srgb
-  def line:      Color in Srgb
-  def separator: Color in Srgb
-  def accent1:   Color in Srgb
-  def accent2:   Color in Srgb
-  def accent3:   Color in Srgb
-  def accent4:   Color in Srgb
-  def accent5:   Color in Srgb
 
 object StackTracePalette:
   private def hex(n: Int): Color in Srgb =
@@ -77,6 +64,19 @@ object StackTracePalette:
     def accent3:    Color in Srgb = hex(0xfefe00)
     def accent4:    Color in Srgb = hex(0xfeae00)
     def accent5:    Color in Srgb = hex(0xaefe00)
+
+trait StackTracePalette extends iridescence.Palette:
+  type Form = Srgb
+  def message:   Color in Srgb
+  def file:      Color in Srgb
+  def method:    Color in Srgb
+  def line:      Color in Srgb
+  def separator: Color in Srgb
+  def accent1:   Color in Srgb
+  def accent2:   Color in Srgb
+  def accent3:   Color in Srgb
+  def accent4:   Color in Srgb
+  def accent5:   Color in Srgb
 
 // The styled renderings, imported decisively: `import digression.teletypeables.*`.
 package teletypeables:
@@ -107,9 +107,9 @@ package teletypeables:
 
     val packages: Map[Text, Color in Srgb] =
 
-        dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil)
-        . indexed.map { (prefix, index) => prefix -> accent(index.n0) }
-        . to[Map]
+      dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil)
+      . indexed.map { (prefix, index) => prefix -> accent(index.n0) }
+      . to[Map]
 
     val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
     val init = e"${palette.message}($fullClass): ${stack.message}"
@@ -124,14 +124,14 @@ package teletypeables:
 
     val rows: List[Row] =
 
-        stack.frames.fold((List.empty[Row], t"", t"")):
-          case ((acc, lastClass, lastFile), frame) =>
-            val sameClass = frame.displayClass == lastClass
-            val sameFile = frame.file == lastFile
-            val subRows = frame.inlined.map(Row(frame, true, false, _)).reverse
-            (subRows + (Row(frame, sameClass, sameFile) :: acc), frame.displayClass, frame.file)
+      stack.frames.fold((List.empty[Row], t"", t"")):
+        case ((acc, lastClass, lastFile), frame) =>
+          val sameClass = frame.displayClass == lastClass
+          val sameFile = frame.file == lastFile
+          val subRows = frame.inlined.map(Row(frame, true, false, _)).reverse
+          (subRows + (Row(frame, sameClass, sameFile) :: acc), frame.displayClass, frame.file)
 
-        . _1.reverse
+      . _1.reverse
 
     // A frame the compiler generated—a bridge, a forwarder, an initializer—is rarely what the
     // reader is looking for, so it stays legible but recedes.
@@ -141,8 +141,7 @@ package teletypeables:
 
     def classCell(row: Row): Teletype = row.inlined match
       case origin: Inlined =>
-        origin.source.lay(e""): source =>
-          e"${palette.subdue(accent(0), 0.85)}(${source.owner})"
+        origin.source.lay(e""): source => e"${palette.subdue(accent(0), 0.85)}(${source.owner})"
 
       case _ =>
         val frame = row.frame
@@ -184,13 +183,14 @@ package teletypeables:
 
     def fileCell(row: Row): Teletype = row.inlined match
       case origin: Inlined => e"${palette.subdue(palette.file, 0.5)}(${origin.file})"
+
       case _ =>
         val color = if row.sameFile then palette.subdue(palette.file, 0.85) else palette.file
         e"$color(${row.frame.file})"
 
     def lineCell(row: Row): Teletype = row.inlined match
       case origin: Inlined => e"${palette.subdue(palette.line, 0.5)}(${origin.line})"
-      case _ => e"${palette.line}(${row.frame.line.let(_.show).or(t"")})"
+      case _               => e"${palette.line}(${row.frame.line.let(_.show).or(t"")})"
 
     // The class, its separator and the method (and likewise the file, the colon and the line)
     // read as one contiguous word, so they share a column: under a `padding = 0` style, every
@@ -213,7 +213,7 @@ package teletypeables:
 
     val scaffold =
       Scaffold[Row]
-        ( Column(e"")(row => e"${palette.separator}(${if row.inlined.present then t" ↳" else t"at"})"),
+        ( Column(e""){ row => e"${palette.separator}(${if row.inlined.present then t" ↳" else t"at"})" },
           Column(e"")(methodColumn),
           Column(e"")(locationColumn),
           // The quoted source is the first thing to go when the terminal is too narrow for it:
@@ -250,8 +250,8 @@ package teletypeables:
     val line = e"${palette.line}(${frame.line.let(_.show).or(t"?")})"
     e"$className${palette.separator}( ⌗ )$method $file${palette.separator}(:)$line"
 
-  given methodTeletype: (palette: StackTracePalette) => StackTrace.Method is Teletypeable = method =>
+  given methodTeletype: (palette: StackTracePalette)
+  =>  StackTrace.Method is Teletypeable = method =>
     val className = e"${palette.method}(${method.className})"
     val methodName = e"${palette.method}(${method.method})"
     e"$className${palette.separator}( ⌗ )$methodName"
-

@@ -32,7 +32,6 @@
                                                                                                   */
 package bitumen
 
-
 import anticipation.*
 import vacuous.*
 

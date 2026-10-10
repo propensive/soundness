@@ -142,7 +142,7 @@ extension (consume stream: (Stream[Data] over Credit)^)
 
 extension (consume stream: (Stream[Text] over Credit)^)
   def deserialize[scheme <: Serialization]
-    (using Alphabet[scheme], Buffering, Tactic[Serialization.Error])
+    ( using Alphabet[scheme], Buffering, Tactic[Serialization.Error] )
   :   (Stream[Data] over Credit)^ =
 
     stream.via(summon[Alphabet[scheme]])

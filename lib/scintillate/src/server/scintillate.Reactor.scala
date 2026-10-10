@@ -145,6 +145,7 @@ object Reactor:
     @scala.caps.unsafe.untrackedCaptures
     private val cursor0: AnyRef =
       Cursor[Data](new scala.Array[Byte](0).asInstanceOf[Data]).asInstanceOf[AnyRef]
+
     private var queued: Long = 0L
     private var halted: Boolean = false
 
@@ -184,8 +185,7 @@ object Reactor:
         if headEnd < 0 then
           scanHead()
 
-          if headEnd < 0 && end > headLimit then
-            refuse(Http.RequestHeaderFieldsTooLarge)
+          if headEnd < 0 && end > headLimit then refuse(Http.RequestHeaderFieldsTooLarge)
 
         if headEnd >= 0 && pendingHead == null && !closing then parseHead(reactor)
 
@@ -196,8 +196,10 @@ object Reactor:
 
           // Shift any pipelined remainder to the front and reset per-request state.
           val remainder = end - needed
+
           if remainder > 0
           then java.lang.System.arraycopy(accumulator, needed, accumulator, 0, remainder)
+
           end = remainder
           scanned = 0
           headEnd = -1
@@ -213,8 +215,8 @@ object Reactor:
       var index = if scanned > 3 then scanned - 3 else 0
 
       while headEnd < 0 && index + 3 < end do
-        if accumulator(index) == 13 && accumulator(index + 1) == 10
-            && accumulator(index + 2) == 13 && accumulator(index + 3) == 10
+        if accumulator(index) == 13 && accumulator(index + 1) == 10 &&
+          accumulator(index + 2) == 13 && accumulator(index + 3) == 10
         then headEnd = index + 4
         else index += 1
 
@@ -229,22 +231,22 @@ object Reactor:
           refuse(SocketServer.errorStatus(error.reason))
 
       . protect:
-          // The head is parsed in place: the cursor borrows the accumulator's first
-          // `headEnd` bytes, which nothing writes until the parse has returned.
-          val cursor = cursor0.asInstanceOf[Cursor[Data, {}]^]
-          cursor.repoint(accumulator.asInstanceOf[AnyRef], headEnd)
-          val head = Http.Request.parseHead(cursor)
-          val facts = SocketServer.factsOf(head)
+        // The head is parsed in place: the cursor borrows the accumulator's first
+        // `headEnd` bytes, which nothing writes until the parse has returned.
+        val cursor = cursor0.asInstanceOf[Cursor[Data, {}]^]
+        cursor.repoint(accumulator.asInstanceOf[AnyRef], headEnd)
+        val head = Http.Request.parseHead(cursor)
+        val facts = SocketServer.factsOf(head)
 
-          if facts.chunked || SocketServer.expectsContinue(head, facts)
-              || SocketServer.isUpgrade(facts)
-              || facts.contentLength.or(0) > inlineBodyLimit
-          then handoff(reactor)
-          else
-            keep = SocketServer.keepAlive(head, facts)
-            contentLength = facts.contentLength.or(0)
-            needed = headEnd + contentLength
-            pendingHead = head
+        if facts.chunked || SocketServer.expectsContinue(head, facts) ||
+          SocketServer.isUpgrade(facts) ||
+          facts.contentLength.or(0) > inlineBodyLimit
+        then handoff(reactor)
+        else
+          keep = SocketServer.keepAlive(head, facts)
+          contentLength = facts.contentLength.or(0)
+          needed = headEnd + contentLength
+          pendingHead = head
 
     // Leave the reactor: cancel the key (flushing the cancellation with a
     // `selectNow()` on this lane's own selector, without which the channel may not
@@ -377,8 +379,8 @@ object Reactor:
         else if queued > highWater then halted = true
 
         val interest =
-          (if blocked then jnc.SelectionKey.OP_WRITE else 0)
-            | (if halted then 0 else jnc.SelectionKey.OP_READ)
+          (if blocked then jnc.SelectionKey.OP_WRITE else 0) |
+            (if halted then 0 else jnc.SelectionKey.OP_READ)
 
         key.interestOps(interest)
         if !blocked && closing then close()
@@ -492,8 +494,7 @@ final class Reactor
   private val running: Atomic[Boolean] = Atomic(true)
 
   private val fleet: scala.IArray[Lane] =
-    scala.IArray.tabulate(count): index =>
-      Lane(jnc.Selector.open().nn)
+    scala.IArray.tabulate(count): index => Lane(jnc.Selector.open().nn)
 
   private val threads: scala.IArray[Thread] =
     scala.IArray.tabulate(count): index =>
@@ -503,6 +504,7 @@ final class Reactor
       // zio-http Netty wedge, avoided); `stop()` still joins for orderly shutdown.
       Thread.ofPlatform.nn.daemon(true).nn.name(s"scintillate-lane-$index").nn.start: () =>
         while running() do lane.iterate(this)
+
       . nn
 
   // The boss thread: a blocking accept loop distributing connections round-robin. A
@@ -517,6 +519,7 @@ final class Reactor
           fleet(next).adopt(channel)
           next = (next + 1)%count
         catch case _: java.io.IOException => ()
+
     . nn
 
   def stop(): Unit =
@@ -524,12 +527,14 @@ final class Reactor
     try listener.close() catch case _: java.io.IOException => ()
 
     var index = 0
+
     while index < count do
       fleet(index).selector.wakeup()
       index += 1
 
     boss.join()
     index = 0
+
     while index < count do
       threads(index).join()
       index += 1

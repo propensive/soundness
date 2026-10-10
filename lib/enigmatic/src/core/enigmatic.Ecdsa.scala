@@ -32,10 +32,10 @@
                                                                                                   */
 package enigmatic
 
-import gastronomy.Signing
 import scala.reflect.Selectable.reflectiveSelectable
 
 import anticipation.*
+import gastronomy.Signing
 
 // ECDSA over a NIST prime curve, with the curve chosen by key size: 256 is P-256 (`secp256r1`),
 // 384 is P-384 and 521 is P-521. Unlike `Rsa`, ECDSA is not part of the mandatory provider

@@ -32,9 +32,9 @@
                                                                                                   */
 package galilei
 
-import scala.language.experimental.pureFunctions
-
 import java.nio.channels as jnc
+
+import scala.language.experimental.pureFunctions
 
 object Sock extends UnixEntry
 

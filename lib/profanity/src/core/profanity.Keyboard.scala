@@ -33,18 +33,18 @@
 package profanity
 
 import anticipation.*
-import denominative.*
 import clavichord.Keypress
 import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import hypotenuse.*
 import parasite.*
 import quantitative.*
-import spectacular.*
-import turbulence.*
-import symbolism.*
 import rudiments.*
+import spectacular.*
+import symbolism.*
+import turbulence.*
 import vacuous.*
 
 object Keyboard:
@@ -127,6 +127,17 @@ object Keyboard:
     case '6'       => Keypress.PageDown
     case _         => Keypress.Escape
 
+  object Lookahead:
+    // For pre-materialized input (tests, replays): a non-empty tail follows.
+    // Not for live input — emptiness would block on an unforced tail.
+    given immediate: Lookahead = !_.nil
+
+    def tty(stdio: Stdio, deadline: Int = 10): Lookahead = rest =>
+      def wait(remaining: Int): Boolean =
+        stdio.ready() || remaining > 0 && { Thread.sleep(1); wait(remaining - 1) }
+
+      wait(deadline)
+
   // Whether a just-read ESC begins an escape sequence: `true` when another
   // character follows closely enough to belong to one. On a live terminal,
   // already-buffered input decides INSTANTLY, with no timing heuristic at all
@@ -138,17 +149,6 @@ object Keyboard:
   // 30ms every bare Escape formerly cost.
   trait Lookahead:
     def sequenceFollows(rest: Chain[Char]): Boolean
-
-  object Lookahead:
-    // For pre-materialized input (tests, replays): a non-empty tail follows.
-    // Not for live input — emptiness would block on an unforced tail.
-    given immediate: Lookahead = !_.nil
-
-    def tty(stdio: Stdio, deadline: Int = 10): Lookahead = rest =>
-      def wait(remaining: Int): Boolean =
-        stdio.ready() || remaining > 0 && { Thread.sleep(1); wait(remaining - 1) }
-
-      wait(deadline)
 
   class Standard()(using lookahead: Lookahead) extends Keyboard:
     type Keypress = clavichord.Keypress | Terminal.Info

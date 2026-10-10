@@ -33,12 +33,12 @@
 package apoplexy
 
 import scala.collection.immutable.Seq
-
 import scala.quoted.*
 
 import anticipation.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
 import gesticulate.*
@@ -58,12 +58,11 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import xylophone.*
-import zephyrine.Parse
 
 import codepages.utf8Codepage
-import strategies.throwUnsafely
-import denominative.dysasymptotics.linearSize
 import rudiments.sortingAlgorithms.timsort
+import strategies.throwUnsafely
+import zephyrine.Parse
 
 object Apoplexy:
   // --- compile-time spec access -------------------------------------------
@@ -278,12 +277,13 @@ object Apoplexy:
               case _         => Left('{Api.apiKey($typed, $name.tt)})
 
           case OpenApi.SecurityScheme.Kind.Http | OpenApi.SecurityScheme.Kind.OAuth2
-              | OpenApi.SecurityScheme.Kind.OpenIdConnect if auth =>
+            | OpenApi.SecurityScheme.Kind.OpenIdConnect if auth =>
             Left('{Api.httpAuth($credential.asInstanceOf[Credential { type Result <: Auth }])})
 
           case OpenApi.SecurityScheme.Kind.Http | OpenApi.SecurityScheme.Kind.OAuth2
-              | OpenApi.SecurityScheme.Kind.OpenIdConnect if token =>
+            | OpenApi.SecurityScheme.Kind.OpenIdConnect if token =>
             val typed = '{$credential.asInstanceOf[Credential { type Result = Authorization }]}
+
             val strings: Expr[scala.collection.immutable.List[String]] =
               Expr(scopes.map(_.s).stdlib)
 
@@ -396,7 +396,8 @@ object Apoplexy:
 
     schemes match
       case scala.collection.immutable.Nil               => scala.collection.immutable.Nil
-      case scala.collection.immutable.::(scheme, rest)  =>
+
+      case scala.collection.immutable.::(scheme, rest) =>
         scala.collection.immutable.::(describe(doc, scheme), describeAll(doc, rest))
 
   private def unsatisfied(using Quotes)
@@ -507,7 +508,7 @@ object Apoplexy:
 
     search(media).or:
       val group = media.cut(t"/").prim.or(t"application")
-      media.offsetOf(t"+", Rtl).let { plus => search(t"$group/${media.after(plus)}") }
+      media.offsetOf(t"+", Rtl).let: plus => search(t"$group/${media.after(plus)}")
 
   // The media types a body may take, in order of preference: `application/json` first, then by
   // name
@@ -588,19 +589,23 @@ object Apoplexy:
 
       media match
         case Unset       => Payload.Empty
+
         case media: Text => construable(media) match
           case Unset => Payload.Carrier(t"text/plain")
 
           case repr: quotes.reflect.TypeRepr @unchecked =>
-            if repr =:= quotes.reflect.TypeRepr.of[Json] then recordPayload(status, referable, media)
+            if repr =:= quotes.reflect.TypeRepr.of[Json]
+            then recordPayload(status, referable, media)
             else Payload.Carrier(media)
 
     keys.map: status =>
       val referable: Optional[OpenApi.Referable[OpenApi.Response]] = operation.responses(status)
 
       val payload: Payload = referable match
-        case Unset                                                     => Payload.Empty
-        case referable: OpenApi.Referable[OpenApi.Response] @unchecked => payloadOf(status, referable)
+        case Unset => Payload.Empty
+
+        case referable: OpenApi.Referable[OpenApi.Response] @unchecked =>
+          payloadOf(status, referable)
 
       Failure(status, statusOf(status), payload)
 
@@ -618,11 +623,12 @@ object Apoplexy:
       Member.Value(plain, Nil, multiplicity)
 
     case Member.Record(fields, multiplicity) => Member.Record(relaxed(fields), multiplicity)
+
     case Member.Union(alternatives, multiplicity) =>
       Member.Union(alternatives.map { (kind, member) => (kind, relax(member)) }, multiplicity)
 
   private def relaxed(fields: List[(Text, Member)]): List[(Text, Member)] =
-    fields.map { (name, member) => (name, relax(member)) }
+    fields.map: (name, member) => (name, relax(member))
 
   // The error class a declared response raises, applied to its payload type
   private def failureType(using quotes: Quotes)(failure: Failure): quotes.reflect.TypeRepr =
@@ -663,7 +669,7 @@ object Apoplexy:
 
     import quotes.reflect.*
     val types: List[TypeRepr] = failures.map(failureType(_))
-    types.fold[TypeRepr](TypeRepr.of[Nothing]) { (left, right) => OrType(left, right) }
+    types.fold[TypeRepr](TypeRepr.of[Nothing]): (left, right) => OrType(left, right)
 
   // The status of the response an operation's success returns: `200` or `201` where the
   // operation declares one, else its lowest-numbered 2xx.
@@ -693,9 +699,9 @@ object Apoplexy:
     responseContent(doc, operation).let(chosenMedia(_)).lay(TypeRepr.of[Unit]): media =>
       construable(media).or:
         report.warning
-          (s"apoplexy: nothing in scope construes the $media response of $verb $locus, so " +
+          ( s"apoplexy: nothing in scope construes the $media response of $verb $locus, so " +
             "`call()` yields the raw `Http.Response`; import its entry from `construables` " +
-            "(for example `construables.pngConstruable`) to read it as a value")
+            "(for example `construables.pngConstruable`) to read it as a value" )
 
         TypeRepr.of[Http.Response]
 
@@ -733,7 +739,7 @@ object Apoplexy:
 
     val verb = methodName(method)
 
-    val found = pathItem(doc, locus).let { (key, item) => item.operations(method).let((key, _)) }
+    val found = pathItem(doc, locus).let: (key, item) => item.operations(method).let((key, _))
 
     val (key, operation) = found.or:
       halt(m"apoplexy: $locus defines no $verb operation")
@@ -788,7 +794,7 @@ object Apoplexy:
       '{Query(${Lifts.list(List.concat(queryEntries, credentialQueries))})}
 
     val paramHeaders: List[Expr[Http.Header]] =
-      headerEntries.map { entry => '{Http.Header($entry(0), $entry(1))} }
+      headerEntries.map: entry => '{Http.Header($entry(0), $entry(1))}
 
     val headersExpr: Expr[List[Http.Header]] =
       Lifts.list(List.concat(paramHeaders, credentialHeaders))
@@ -875,6 +881,7 @@ object Apoplexy:
           ("Verb", bounds(literalType(verb))),
           ("Transport", bounds(transport)),
           ("Failure", bounds(failure)) )
+
       . fold[TypeRepr](TypeRepr.of[Api.Response]): (parent, member) =>
           Refinement(parent, member(0), member(1))
 
@@ -950,7 +957,8 @@ object Apoplexy:
 
     import quotes.reflect.*
 
-    val members = (refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)).to(Map)
+    val members =
+      (refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)).to(Map)
 
     val source =
       members(t"Locus").lay(halt(m"apoplexy: the resource has no `Locus` path"))(stringOf(_))
@@ -1039,8 +1047,8 @@ object Apoplexy:
 
         keys.filter(deeper).map(_.stdlib(newSegs.size)).seek(isTemplate).lay:
           shortcut(self, doc, source, newLocus, Nil, positional)
-        . apply: template =>
-          fillTemplate(self, source, doc, newLocus, template, positional, wire)
+
+        . apply: template => fillTemplate(self, source, doc, newLocus, template, positional, wire)
 
   private def fillTemplate(using quotes: Quotes)
     ( self:       Expr[Api],
@@ -1156,7 +1164,9 @@ object Apoplexy:
       val shown = transport.show
       halt(m"apoplexy: $what reads a JSON response, but this response is construed as $shown")
 
-    val pointer = members(t"Result").lay(halt(m"apoplexy: missing response schema pointer"))(stringOf(_))
+    val pointer =
+      members(t"Result").lay(halt(m"apoplexy: missing response schema pointer"))(stringOf(_))
+
     val source = members(t"Form").lay(halt(m"apoplexy: missing spec source"))(stringOf(_))
 
     (pointer, source)
@@ -1387,8 +1397,12 @@ object Apoplexy:
     def simpleName(repr: TypeRepr): Text = repr.dealias.typeSymbol.name.tt
 
     def listElement(repr: TypeRepr): Optional[TypeRepr] = repr match
-      case AppliedType(_, scala.collection.immutable.List(element)) if repr <:< TypeRepr.of[List[Any]] => element
-      case _                                                                => Unset
+      case AppliedType(_, scala.collection.immutable.List(element))
+        if repr <:< TypeRepr.of[List[Any]] =>
+        element
+
+      case _ =>
+        Unset
 
     def componentName(pointer: JsonPointer): Text = pointer.encode.cut(t"/").last.or(t"")
 

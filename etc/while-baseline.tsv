@@ -12,7 +12,8 @@ lib/bitumen/src/core/bitumen.Archive.scala	1	0	0
 lib/bitumen/src/core/bitumen.Pax.scala	3	4	0
 lib/bitumen/src/core/bitumen.Tar.scala	2	0	0
 lib/bitumen/src/core/bitumen.Tarfile.scala	4	3	0
-lib/breviloquence/src/core/breviloquence.Cbor.scala	30	7	1
+lib/breviloquence/src/core/breviloquence.Cbor.scala	16	6	1
+lib/breviloquence/src/core/breviloquence.CborParser.scala	15	1	0
 lib/burdock/src/core/burdock.internal.scala	1	0	0
 lib/cacophony/src/core/cacophony.Audio.scala	2	0	0
 lib/cacophony/src/core/cacophony.Outlet.scala	1	0	0
@@ -117,7 +118,7 @@ lib/jacinta/src/core/jacinta.internal.scala	12	20	2
 lib/kaleidoscope/src/core/kaleidoscope.JavaBaseRegex.scala	1	0	0
 lib/kaleidoscope/src/core/kaleidoscope.Regex.scala	0	0	6
 lib/locomotion/src/core/locomotion.Protobuf.scala	1	0	0
-lib/locomotion/src/core/locomotion.ProtobufParser.scala	8	0	0
+lib/locomotion/src/core/locomotion.ProtobufParser.scala	13	0	0
 lib/locomotion/src/core/locomotion.ProtobufPrinter.scala	3	0	0
 lib/mandible/src/core/mandible.Bytecode.scala	1	0	4
 lib/metamorphose/src/core/metamorphose.Permutation.scala	1	0	0

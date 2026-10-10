@@ -40,9 +40,9 @@ import beneficence.*
 import contextual.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import prepositional.*
 import rudiments.*
-import fulminate.*
 
 object Timezone:
   private val ids: Set[Text] =

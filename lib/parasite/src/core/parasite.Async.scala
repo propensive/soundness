@@ -32,10 +32,10 @@
                                                                                                   */
 package parasite
 
+import fulminate.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
-import fulminate.*
 
 // The naming plane for parasite's nested async structures (supervisors, workers,
 // tasks, daemons): `Name[Async]`. A name must start with a letter and otherwise

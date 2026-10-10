@@ -32,15 +32,14 @@
                                                                                                   */
 package embarcadero
 
-
 import anticipation.*
 import aperture.*
 import bitumen.*
 import contingency.*
 import prepositional.*
+import rudiments.*
 import turbulence.*
 import zephyrine.*
-import rudiments.*
 
 // Opening a filesystem *path* as an OCI image, delegating the TAR bracket to bitumen's disk-backed
 // `TarOpenable`. Split from `embarcadero.oci`'s cross-platform sources because it needs
@@ -66,6 +65,8 @@ extends Openable:
 
 // Re-exported through `soundness.*`, so `path.open[Image]` resolves on the JVM as before.
 given imagePathOpenable: [path: Abstractable across Paths to Text]
-=>  ( ociTactic: Tactic[Oci.Error], tarTactic: Tactic[Tar.Error], streamTactic: Tactic[Truncation.Error] )
+=>  ( ociTactic: Tactic[Oci.Error],
+      tarTactic: Tactic[Tar.Error],
+      streamTactic: Tactic[Truncation.Error] )
 =>  ( ImageOpenable[path]^{ociTactic, tarTactic, streamTactic} ) =
   ImageOpenable[path]

@@ -32,9 +32,8 @@
                                                                                                   */
 package stratiform
 
-import scala.sys
-
 import scala.language.unsafeNulls
+import scala.sys
 
 import anticipation.*
 import contingency.*
@@ -190,4 +189,3 @@ object Base256:
 
   case class Error(reason: Base256.Error.Reason)(using Diagnostics)
   extends fulminate.Error(607, reason.number)(m"the BASE-256 string is invalid because $reason")
-

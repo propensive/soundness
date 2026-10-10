@@ -200,12 +200,12 @@ object internal:
     def startLine: Optional[Ordinal] = mode match
       case Span.Mode.Line   => Ordinal.zerary(((span >>> 38) & 0x7fffffL).toInt)
       case Span.Mode.Lines  => Ordinal.zerary(((span >>> 30) & 0x7fffffffL).toInt)
-      case Span.Mode.Area => Ordinal.zerary(((span >>> 39) & 0x3fffffL).toInt)
+      case Span.Mode.Area   => Ordinal.zerary(((span >>> 39) & 0x3fffffL).toInt)
       case _                => Unset
 
     def startColumn: Optional[Ordinal] = mode match
       case Span.Mode.Line   => Ordinal.zerary(((span >>> 19) & 0x7ffffL).toInt)
-      case Span.Mode.Area => Ordinal.zerary(((span >>> 25) & 0x3fffL).toInt)
+      case Span.Mode.Area   => Ordinal.zerary(((span >>> 25) & 0x3fffL).toInt)
       case _                => Unset
 
     def endLine: Optional[Ordinal] = mode match
@@ -223,7 +223,7 @@ object internal:
       case Span.Mode.Line =>
         Ordinal.zerary(((span >>> 19) & 0x7ffffL).toInt + (span & 0x7ffffL).toInt)
 
-      case Span.Mode.Area => Ordinal.zerary((span & 0x3fffL).toInt)
+      case Span.Mode.Area   => Ordinal.zerary((span & 0x3fffL).toInt)
       case _                => Unset
 
     def length: Optional[Int] = mode match
@@ -238,12 +238,12 @@ object internal:
     def lineCount: Optional[Int] = mode match
       case Span.Mode.Line   => 1
       case Span.Mode.Lines  => (span & 0x3fffffffL).toInt
-      case Span.Mode.Area => ((span >>> 14) & 0x7ffL).toInt + 1
+      case Span.Mode.Area   => ((span >>> 14) & 0x7ffL).toInt + 1
       case _                => Unset
 
     def singleLine: Boolean = mode match
       case Span.Mode.Line   => true
-      case Span.Mode.Area => ((span >>> 14) & 0x7ffL) == 0L
+      case Span.Mode.Area   => ((span >>> 14) & 0x7ffL) == 0L
       case _                => false
 
   object Span:

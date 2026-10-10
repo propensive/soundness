@@ -37,8 +37,8 @@ import scala.language.dynamics
 import anticipation.*
 import beneficence.*
 import contingency.*
-import vacuous.*
 import fulminate.*
+import vacuous.*
 
 object Environment extends Dynamic:
   // A source of a canonical `Environment`, such as a CLI invocation. In the companion of the

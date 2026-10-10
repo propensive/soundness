@@ -117,7 +117,7 @@ infix type via [value, language] = Locale[language] ?=> value
 // cosmopolite, so neither companion can host it): a contextual `Locale` confers its
 // language's sort order.
 given localeCollation: [language]
-      =>  Locale[language]
-      =>  (collatable: language is Collatable)
-      =>  Collation =
+=>  Locale[language]
+=>  ( collatable: language is Collatable )
+=>  Collation =
   collatable.collation

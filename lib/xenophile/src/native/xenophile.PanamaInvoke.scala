@@ -34,8 +34,8 @@ package xenophile
 
 import java.lang.foreign.*
 
-import scala.quoted.*
 import scala.collection.immutable.{List, Nil, ::}
+import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
@@ -104,8 +104,7 @@ object PanamaInvoke extends Materializer:
       case result                      => '{FunctionDescriptor.of(${layoutFor(result)}).nn}
 
     val descriptor: Expr[FunctionDescriptor] =
-      parameterTypes.fold(base): (acc, tpe) =>
-        '{$acc.appendArgumentLayouts(${layoutFor(tpe)}).nn}
+      parameterTypes.fold(base): (acc, tpe) => '{$acc.appendArgumentLayouts(${layoutFor(tpe)}).nn}
 
     def isString(tpe: Foreign.Type): Boolean = tpe match
       case Foreign.Type.Named(t"string") => true

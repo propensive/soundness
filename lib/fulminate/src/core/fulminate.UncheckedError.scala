@@ -47,9 +47,9 @@ object UncheckedError:
     new UncheckedError(message, throwable.getStackTrace)
 
 case class UncheckedError private
-  (text:       Text,
+  ( text:       Text,
    // [java-boundary] raw stack-trace array from Throwable.getStackTrace
    @scala.caps.unsafe.untrackedCaptures
-   stackTrace: scala.Array[StackTraceElement | Null] | Null)
+   stackTrace: scala.Array[StackTraceElement | Null] | Null )
 extends Error(117, 0)(UncheckedError.describe(text))(using errorDiagnostics.emptyDiagnostics):
   setStackTrace(stackTrace)

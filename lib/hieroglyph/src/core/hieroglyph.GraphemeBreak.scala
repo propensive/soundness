@@ -32,11 +32,9 @@
                                                                                                   */
 package hieroglyph
 
-
-import scala.caps
-
 import java.io as ji
 
+import scala.caps
 import scala.collection.mutable.ArrayBuilder
 
 import anticipation.*
@@ -46,8 +44,8 @@ import denominative.dysasymptotics.linearSize
 import fulminate.*
 import kaleidoscope.*
 import rudiments.*
-import vacuous.*
 import rudiments.sortingAlgorithms.timsort
+import vacuous.*
 
 object GraphemeBreak:
   enum Property:
@@ -72,8 +70,7 @@ object GraphemeBreak:
     ( in: ji.InputStream, classify: Text => Optional[Int] )
   :   List[Entry] =
 
-
-     scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
+    scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
       Text(line) match
         case r"${Hex(from)}([0-9A-Fa-f]+)\.\.${Hex(to)}([0-9A-Fa-f]+)\s*;\s*$name([A-Za-z_]+).*" =>
           classify(name).option.map(Entry(from, to, _))
@@ -83,7 +80,8 @@ object GraphemeBreak:
 
         case _ =>
           None
-     . to(List)
+
+    . to(List)
 
   private def gbpClassify(name: Text): Optional[Int] =
     name.s.match
@@ -112,7 +110,7 @@ object GraphemeBreak:
 
   private def parseIncbEntries(in: ji.InputStream): List[Entry] =
 
-     scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
+    scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
       Text(line) match
         case r"${Hex(from)}([0-9A-Fa-f]+)\.\.$rest(.*)" => rest match
           case r"${Hex(to)}([0-9A-Fa-f]+)\s*;\s*InCB\s*;\s*$name([A-Za-z]+).*" =>
@@ -125,7 +123,8 @@ object GraphemeBreak:
 
         case _ =>
           None
-     . to(List)
+
+    . to(List)
 
   private def incbClassify(name: Text): Optional[Int] = name.s match
     case "Consonant" => IncbValue.Consonant
@@ -183,7 +182,8 @@ object GraphemeBreak:
         low = mid + 1
 
     if found >= 0 && codepoint <= tables.ends.at(Ordinal.zerary(found)).or(-1)
-    then tables.props.at(Ordinal.zerary(found)).lay(-1)(_.toInt) else -1
+    then tables.props.at(Ordinal.zerary(found)).lay(-1)(_.toInt)
+    else -1
 
   def property(codepoint: Int): Property =
     val ord = lookup(gbpTables, codepoint)

@@ -33,7 +33,6 @@
 package archimedes
 
 import scala.collection.immutable.Seq
-
 import scala.quoted.*
 
 import anticipation.*
@@ -46,7 +45,6 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-
 import Mathml.*
 
 object internal:
@@ -57,10 +55,15 @@ object internal:
   // code that re-parses with the substitutions woven in.
   def ergoInterpolator[parts <: Tuple: Type, origins <: Tuple: Type](insertions: Expr[Seq[Any]])
   :   Macro[Math] =
+
     import quotes.reflect.*
 
     def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].or(halt(m"an interpolator's parts are string-literal types")) :: strings)
+      case '[head *: tail] =>
+        recur[tail]
+          ( TypeRepr.of[head]
+            . literal[String]
+            . or(halt(m"an interpolator's parts are string-literal types")) :: strings )
       case _               => strings
 
     val parts = recur[parts](Nil)
@@ -95,7 +98,7 @@ object internal:
         halt
           ( m"the ergo expression could not be parsed because ${error.reason}",
             Interpolation.sourcePosition
-              (parts, Interpolation.decodeOrigins[origins], 1, offset) )
+              ( parts, Interpolation.decodeOrigins[origins], 1, offset ) )
 
     // Hoisted from the `map` below: a quote inside a combinator lambda in a macro risks the
     // `wildApprox` crash.

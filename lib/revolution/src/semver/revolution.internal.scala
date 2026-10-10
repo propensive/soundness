@@ -33,7 +33,6 @@
 package revolution
 
 import scala.collection.immutable.Seq
-
 import scala.quoted.*
 
 import anticipation.*
@@ -47,7 +46,7 @@ object internal:
   def semver(context0: Expr[StringContext]): Macro[Semver] =
     val versionText = context0.valueOrAbort match
       case StringContext(text*) => text match
-        case Seq(text: String) => text
+        case Seq(text: String)  => text
         case _                  => panic(m"did not expect more than one part in StringContext")
 
     // Validate at expansion time so a malformed literal fails to compile, then
@@ -56,4 +55,7 @@ object internal:
     // components, which the opaque `List` alias makes awkward inside a quote.
     safely(versionText.tt.as[Semver]).or(halt(m"invalid semantic version"))
 
-    '{safely(${Expr(versionText)}.tt.as[Semver]).or(panic(m"the version literal was validated at expansion"))}
+    ' {
+        safely(${Expr(versionText)}.tt.as[Semver])
+        . or(panic(m"the version literal was validated at expansion"))
+      }

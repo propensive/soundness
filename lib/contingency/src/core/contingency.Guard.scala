@@ -33,7 +33,6 @@
 package contingency
 
 import scala.caps
-
 import scala.language.experimental.pureFunctions
 
 // The witness of an enclosing skip-scope: a lexical region — a `venture(…)` or `guard{…}` block —

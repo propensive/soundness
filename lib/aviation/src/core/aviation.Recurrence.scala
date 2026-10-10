@@ -33,14 +33,14 @@
 package aviation
 
 import anticipation.*
-import fulminate.*
-import rudiments.*
 import contingency.*
 import cosmopolite.{Locale, en, fr, de, es}
 import distillate.*
+import fulminate.*
 import gossamer.*
 import prepositional.*
 import quantitative.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
@@ -135,7 +135,7 @@ object Recurrence:
 
     sequence =>
       val all = Chain.iterate(sequence.start)(addable.add(_, sequence.period))
-      sequence.repetitions.lay(all) { n => all.keep(n) }
+      sequence.repetitions.lay(all): n => all.keep(n)
 
   // RecurrenceError → Recurrence.Error
   case class Error(value: Text)(using Diagnostics)

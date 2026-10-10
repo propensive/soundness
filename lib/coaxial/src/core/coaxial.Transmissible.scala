@@ -43,8 +43,7 @@ object Transmissible:
   // wildcard capture that cannot flow back into `^{}`.
   given bytes: Data is Transmissible = _.stream
 
-  given stream: [stream <: Chain[Data]] => stream is Transmissible = value =>
-    Stream(value)
+  given stream: [stream <: Chain[Data]] => stream is Transmissible = value => Stream(value)
 
   given text: [text <: Text] => Codepage => text is Transmissible =
     text => summon[Codepage].encoded(text).stream

@@ -37,6 +37,7 @@ import rudiments.*
 
 object Lightyears:
   given designation: Designation[Lightyears[1]] = () => "ly".tt
+
   erased given ratio: Ratio[Lightyears[1] & Metres[-1], 1.057E-16] =
     Ratio.Evidence[Lightyears[1] & Metres[-1], 1.057E-16]()
 

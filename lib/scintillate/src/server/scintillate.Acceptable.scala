@@ -43,15 +43,14 @@ import prepositional.*
 import rudiments.*
 import telekinesis.*
 import turbulence.*
-import zephyrine.*
 import vacuous.*
-
+import zephyrine.*
 import errorDiagnostics.stackTracesDiagnostics
 
 object Acceptable:
   // Honestly tracked: the instance retains its resolution-scoped tactic.
   given multipart: (tactic: Tactic[Multipart.Error])
-  =>  ((Multipart is Acceptable)^{tactic, caps.any}) = request =>
+  =>  ( (Multipart is Acceptable)^{tactic, caps.any} ) = request =>
     mitigate:
       case _: MediaType.Error => Multipart.Error(Multipart.Error.Reason.MediaType)
 

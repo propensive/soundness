@@ -73,12 +73,14 @@ object Normalization:
 
     scala.io.Source.fromInputStream(in).getLines().foreach: line =>
       val fields = line.split(";", -1).nn
+
       if fields.length > 5 then
         val codepoint = Integer.parseInt(fields(0).nn, 16)
         val ccc = Integer.parseInt(fields(3).nn)
         if ccc != 0 then cccPairs += ((codepoint, ccc))
 
         val mapping = fields(5).nn
+
         if !mapping.isEmpty && !mapping.startsWith("<") then
           val decomposition =
             mapping.split(" ").nn.iterator.map { part => Integer.parseInt(part.nn, 16) }
@@ -108,7 +110,7 @@ object Normalization:
       index += 1
 
     val sortedDecompositions =
-      rawDecompositions.keysIterator.to(sci.Vector).sorted.map { cp => (cp, close(cp)) }
+      rawDecompositions.keysIterator.to(sci.Vector).sorted.map: cp => (cp, close(cp))
 
     val decompCodepoints = Array.allocate[Int](sortedDecompositions.length)
     val decompOffsets = Array.allocate[Int](sortedDecompositions.length + 1)
@@ -150,8 +152,10 @@ object Normalization:
       if value == codepoint then
         found = mid
         low = high + 1
-      else if value > codepoint then high = mid - 1
-      else low = mid + 1
+      else if value > codepoint then
+        high = mid - 1
+      else
+        low = mid + 1
 
     found
 

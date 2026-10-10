@@ -37,6 +37,10 @@ import contingency.*
 import prepositional.*
 import turbulence.*
 
+// Parses one data item, rejecting trailing bytes: from an array, read in
+// place; from a chain of chunks, read as the chunks are pulled. (A stream is
+// read through `stream.read[Cbor.Ast]`, whose `accept` streams likewise.)
 extension (cbor: Cbor.Ast.type)
-  def parse(source: Array[Byte]^{}): Cbor.Ast raises Cbor.Error = Cbor.Parser.parse(source)
+  def parse(source: Data): Cbor.Ast raises Cbor.Error = CborParser.parse(source)
+  def parse(source: Chain[Data]): Cbor.Ast raises Cbor.Error = CborParser.parse(source)
 

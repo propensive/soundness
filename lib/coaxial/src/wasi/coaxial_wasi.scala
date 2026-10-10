@@ -32,9 +32,8 @@
                                                                                                   */
 package coaxial
 
-import scala.caps
-
 import scala.annotation.nowarn
+import scala.caps
 
 import anticipation.*
 import contingency.*
@@ -46,18 +45,19 @@ import hellenism.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
+import soundness.{call, dispose}
 import spectacular.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-import zephyrine.*
-import soundness.{call, dispose}
 import xenophile.*
+import zephyrine.*
 
 // The WIT definitions the navigation below is typechecked against, and which the `call`
 // materializer consults (at its downstream expansion site) for module ids, resource methods and
 // parameter types.
 type WasiSocketsApi = Interface in Wit at "/coaxial/sockets.wit"
+
 package wasiApis:
   given wasiSocketsApi: WasiSocketsApi = Interface[Wit](cp"/coaxial/sockets.wit")
 
@@ -189,7 +189,9 @@ package socketBackends:
 
       def loop(): Unit = input.refill(Credit(Long.MaxValue)) match
         case count: Int =>
-          val chunk = input.addressable.materialize(input.unsafeStorage(using Unsafe), input.start, count)
+          val chunk =
+            input.addressable.materialize(input.unsafeStorage(using Unsafe), input.start, count)
+
           stream.`blocking-write-and-flush`(chunk).call[Unit]()
           input.skip(count)
           loop()
@@ -248,7 +250,9 @@ package socketBackends:
     def shutdown(socketHandle: Wasm.Handle of "tcp-socket"): Unit = socketHandle.dispose()
 
     //── Datagram server (unsupported on WASI for now) ────────────────────────────────────────────
-    def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option]): Unit =
+    def listenUdp(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
+    :   Unit =
+
       ()
 
     def receive(socket: Unit): Packet raises Socket.Error =
@@ -256,6 +260,7 @@ package socketBackends:
 
     def reply(socket: Unit, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
     :   Unit raises Socket.Error =
+
       abort(Socket.Error(Socket.Error.Reason.Transmit))
 
     def unbind(socket: Unit): Unit = ()
@@ -266,11 +271,13 @@ package socketBackends:
         options:   List[Socket.Option],
         data:      Data )
     :   Packet raises Socket.Error =
+
       abort(Socket.Error(Socket.Error.Reason.Transmit))
 
     def joinMulticast
       ( multicast: Multicast, interfaces: List[NetworkInterface], options: List[Socket.Option] )
     :   Unit =
+
       ()
 
     def receiveMulticast(socket: Unit): Packet raises Socket.Error =
@@ -281,18 +288,23 @@ package socketBackends:
 
     def sendTo(socket: Unit, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
     :   Unit raises Socket.Error =
+
       abort(Socket.Error(Socket.Error.Reason.Transmit))
 
     def leaveMulticast(socket: Unit): Unit = ()
 
     //── Request/response exchange (TCP; Unix-domain unsupported) ──────────────────────────────────
     def dialTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
+      ( endpoint:  Endpoint[Tcp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option] )
     :   WasiExchange =
+
       unsafely(connect(endpoint.remote, endpoint.port.number))
 
     def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
     :   WasiExchange =
+
       unsafely(connect(t"127.0.0.1", port.number))
 
     def dialDomain(address: DomainSocket, options: List[Socket.Option]): WasiExchange =
@@ -304,6 +316,7 @@ package socketBackends:
 
     def response(exchange: WasiExchange)(using Buffering, Tactic[Truncation.Error])
     :   (Stream[Data] over Credit)^{caps.any} =
+
       readStream(exchange.input)
 
     def hangUp(exchange: WasiExchange): Unit =
@@ -313,8 +326,11 @@ package socketBackends:
 
     //── Persistent duplex client (TCP; Unix-domain unsupported) ───────────────────────────────────
     def duplexTcp
-      ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
+      ( endpoint:  Endpoint[Tcp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option] )
     :   Duplex =
+
       duplexOf(unsafely(connect(endpoint.remote, endpoint.port.number)))
 
     def duplexDomain(address: DomainSocket, options: List[Socket.Option]): Duplex =
@@ -322,11 +338,16 @@ package socketBackends:
 
     //── Fire-and-forget datagram courier (unsupported on WASI for now) ────────────────────────────
     def routeUdp
-      ( endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress], options: List[Socket.Option] )
+      ( endpoint:  Endpoint[Udp.Port],
+        interface: Optional[MacAddress],
+        options:   List[Socket.Option] )
     :   Unit =
+
       ()
 
-    def routeUdpPort(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option]): Unit =
+    def routeUdpPort(port: Udp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
+    :   Unit =
+
       ()
 
     def dispatch(courier: Unit, consume input: (Stream[Data] over Credit)^): Unit = ()

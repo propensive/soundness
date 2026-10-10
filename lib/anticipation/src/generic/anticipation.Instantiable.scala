@@ -39,6 +39,7 @@ trait Instantiable extends Typeclass, Domainal, Original:
 
   def map[self2](lambda: Self => self2)
   :   (self2 is Instantiable across Domain from Origin)^{this, lambda} =
+
     source => lambda(apply(source))
 
   extension (origin: Origin) def instantiate: Self = apply(origin)
