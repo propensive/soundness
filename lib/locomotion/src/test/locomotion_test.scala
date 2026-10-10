@@ -37,7 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import supervisors.globalSupervisor
-import threading.virtualThreading
+import threads.virtualThreads
 import probates.panicProbate
 
 case class Sample(@field(1) value: Int) derives CanEqual
