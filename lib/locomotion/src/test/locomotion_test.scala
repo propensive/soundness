@@ -36,6 +36,9 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
+import supervisors.globalSupervisor
+import threads.virtualThreads
+import probates.panicProbate
 
 case class Sample(@field(1) value: Int) derives CanEqual
 case class Point(@field(1) x: Int, @field(2) y: Int) derives CanEqual
@@ -77,6 +80,19 @@ derives CanEqual
 
 case class Defaulted(@field(1) a: Int, @field(2) b: Int = 7) derives CanEqual
 case class Boxed[value](@field(1) value: value) derives CanEqual
+
+// A singular nested field whose type parses through the runtime seam (`Tree` has a
+// `Parsable` but no `Inlinable`), for the absent-nested-value window.
+case class Holder(@field(1) label: Text, @field(2) inner: Tree) derives CanEqual
+
+// The bytes as a chain of `size`-byte chunks, so every multi-byte value whose
+// length is not a multiple of `size` straddles a chunk boundary somewhere.
+private def chunked(bytes: Data, size: Int): Chain[Data] =
+  if bytes.length == 0 then Chain() else
+    val split = size.min(bytes.length)
+    Chain.cons
+     ( bytes.segment((0).z till split.z),
+       chunked(bytes.segment(split.z till bytes.length.z), size) )
 
 object Tests extends Suite(m"Locomotion Protobuf Tests"):
   def run(): Unit =
@@ -248,6 +264,124 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
           decode(0x80.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte,
               0x80.toByte, 0x80.toByte, 0x80.toByte, 0x02)
       . assert(_ == Protobuf.Error(Protobuf.Error.Reason.Overflow(0)))
+
+    // The direct parser reads chunks as they arrive, so a value split anywhere must read
+    // as one that arrived whole, and every error offset is absolute. (The `Protobuf` ADT
+    // path reads a whole message, so it is exercised on chunked input only as a control.)
+    suite(m"Chunked input"):
+      def encoded[value: Encodable in Protobuf](value: value): Data = value.in[Protobuf].encode
+
+      given (Person is Protobuf.Parsable) = Inlinable.parsable[Person]
+      given (Point is Protobuf.Parsable) = Inlinable.parsable[Point]
+      given (Wrapper is Protobuf.Parsable) = Inlinable.parsable[Wrapper]
+      given (Tags is Protobuf.Parsable) = Inlinable.parsable[Tags]
+      given (Numbers is Protobuf.Parsable) = Inlinable.parsable[Numbers]
+      given (Typed is Protobuf.Parsable) = Inlinable.parsable[Typed]
+      given (Counts is Protobuf.Parsable) = Inlinable.parsable[Counts]
+      given (Shape is Protobuf.Parsable) = Inlinable.parsable[Shape]
+      given (Tree is Protobuf.Parsable) = Inlinable.parsable[Tree]
+      given (Holder is Protobuf.Parsable) = Inlinable.parsable[Holder]
+
+      test(m"a message split one byte per chunk reads through the ADT path"):
+        chunked(encoded(Wrapper(Point(3, 4), t"origin")), 1).read[Protobuf].as[Wrapper]
+      . assert(_ == Wrapper(Point(3, 4), t"origin"))
+
+      test(m"a message split one byte per chunk reads directly"):
+        chunked(encoded(Person(t"Ada", 36)), 1).read[Person in Protobuf]
+      . assert(_ == Person(t"Ada", 36))
+
+      test(m"a multi-byte varint split mid-value reads whole"):
+        chunked(encoded(Point(Int.MaxValue, 300)), 2).read[Point in Protobuf]
+      . assert(_ == Point(Int.MaxValue, 300))
+
+      test(m"fixed-width values split mid-value read whole"):
+        val typed = Typed(7.bits.u32, 8L.bits.u64, -3.bits.s32, -4L.bits.s64, 5.bits, 6L.bits)
+        chunked(encoded(typed), 3).read[Typed in Protobuf]
+      . assert(_ == Typed(7.bits.u32, 8L.bits.u64, -3.bits.s32, -4L.bits.s64, 5.bits, 6L.bits))
+
+      test(m"a long string split across chunks reads whole"):
+        val name = "x".repeat(300).nn.tt
+        chunked(encoded(Person(name, 1)), 7).read[Person in Protobuf]
+      . assert(_ == Person("x".repeat(300).nn.tt, 1))
+
+      test(m"a nested message whose length prefix straddles a boundary reads whole"):
+        // Field 1 (Len, length 4: Point(3, 4)) then field 2 "origin": the 2-byte chunking
+        // puts the length byte at the end of the first chunk.
+        chunked(encoded(Wrapper(Point(3, 4), t"origin")), 2).read[Wrapper in Protobuf]
+      . assert(_ == Wrapper(Point(3, 4), t"origin"))
+
+      test(m"repeated strings split across chunks gather in order"):
+        chunked(encoded(Tags(List(t"alpha", t"beta", t"gamma"))), 4).read[Tags in Protobuf]
+      . assert(_ == Tags(List(t"alpha", t"beta", t"gamma")))
+
+      test(m"a packed repeated field split across chunks reads its run"):
+        chunked(encoded(Numbers(List(3, 270, 86942, 1))), 2).read[Numbers in Protobuf]
+      . assert(_ == Numbers(List(3, 270, 86942, 1)))
+
+      test(m"a map field split across chunks bridges through the seam"):
+        chunked(encoded(Counts(Map(t"a" -> 1, t"bb" -> 2))), 3).read[Counts in Protobuf]
+      . assert(_ == Counts(Map(t"a" -> 1, t"bb" -> 2)))
+
+      test(m"a oneof whose variant is not the first field dispatches, split across chunks"):
+        // An unknown field 9 (varint 1), then Rectangle (field 2) width=3 height=4, then a
+        // later occurrence of field 2 that wins (width=5 height=6).
+        val bytes =
+          Array[Byte](0x48, 0x01, 0x12, 0x04, 0x08, 0x03, 0x10, 0x04, 0x12, 0x04, 0x08, 0x05,
+              0x10, 0x06)
+        (bytes.read[Shape in Protobuf], chunked(bytes, 3).read[Shape in Protobuf])
+      . assert(_ == (Shape.Rectangle(5, 6), Shape.Rectangle(5, 6)))
+
+      test(m"the lowest-numbered oneof variant wins over a later higher one, split"):
+        // Rectangle (field 2) first, then Circle (field 1): Circle wins.
+        val bytes = Array[Byte](0x12, 0x04, 0x08, 0x03, 0x10, 0x04, 0x0a, 0x02, 0x08, 0x07)
+        chunked(bytes, 2).read[Shape in Protobuf]
+      . assert(_ == Shape.Circle(7))
+
+      test(m"an absent nested runtime-seam field parses from an empty window"):
+        Array[Byte](0x0a, 0x01, 0x78).read[Holder in Protobuf]
+      . assert(_ == Holder(t"x", Tree(t"", Nil)))
+
+      test(m"truncation inside a later chunk reports the absolute offset directly"):
+        capture[Protobuf.Error]:
+          // [test-harness] test read inside capture block
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            chunked(Array[Byte](0x0a, 0x05, 0x41), 2).read[Person in Protobuf]
+      . assert(_ == Protobuf.Error(Protobuf.Error.Reason.Truncated(2)))
+
+      test(m"a truncated varint in a later chunk reports its absolute offset directly"):
+        capture[Protobuf.Error]:
+          // [test-harness] test read inside capture block
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            chunked(Array[Byte](0x10, 0x80.toByte), 1).read[Point in Protobuf]
+      . assert(_ == Protobuf.Error(Protobuf.Error.Reason.Truncated(2)))
+
+      test(m"a complete field on a live stream reads without waiting for more"):
+        // The field is published as soon as it is parsed, and the producer only finishes
+        // the stream after it has been seen: the read must complete without the parser
+        // asking the source for a byte it has not yet sent.
+        val slot = new java.util.concurrent.atomic.AtomicReference[String | Null](null)
+
+        supervise:
+          Conduit[Data]() match
+           case (intake, stream) =>
+            val task = stream.transfer: (stream, _, _) ?=>
+              val parser = ProtobufParser(stream())
+              val tactic = summon[Tactic[Protobuf.Error]]
+              val tag = parser.directTag()(using tactic)
+              val saved = parser.directEnterField(tag & 7)(using tactic)
+              val text = parser.directStringWindow()(using tactic)
+              parser.directLeaveField(saved)(using tactic)
+              slot.set(s"${tag >>> 3}:$text")
+
+            intake.put(Array[Byte](0x0a, 0x03, 0x41, 0x42, 0x43))
+            intake.flush()
+            val deadline = java.lang.System.nanoTime + 2000000000L
+            while slot.get == null && java.lang.System.nanoTime < deadline do Thread.sleep(10)
+            val result = slot.get
+            intake.finish()
+            unsafely(task.await())
+            result
+      . assert(_ == "1:ABC")
 
     suite(m"HTTP content-type integration"):
       test(m"serialises with the application/protobuf media type"):

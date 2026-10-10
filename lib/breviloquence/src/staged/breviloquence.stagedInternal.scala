@@ -56,14 +56,15 @@ object stagedInternal:
   // through its `Decodable in Cbor`, materializing just that field's
   // subtree. An inline method because `summonFrom` may only live in one; it
   // expands where the generated parser is spliced.
-  inline def fieldSeam[fieldType](reader: Cbor.Reader): fieldType =
+  // The reader travels as a neutral carrier and is reasserted here, at the audited point.
+  inline def fieldSeam[fieldType](reader: AnyRef): fieldType =
     scala.compiletime.summonFrom:
-      case parsable: (`fieldType` is Cbor.Parsable) => parsable.parse(reader)
+      case parsable: (`fieldType` is Cbor.Parsable) => parsable.parse(Cbor.Reader.of(reader))
 
       case _ =>
         Cbor.Parsable
         . fromDecodable(scala.compiletime.summonInline[fieldType is Decodable in Cbor])
-        . parse(reader)
+        . parse(Cbor.Reader.of(reader))
 
   // The seam's absent counterpart, preserving the AST path's semantics for
   // a missing key: `decoded(Cbor(Ast(Unset)))` through the bridge.
@@ -559,12 +560,12 @@ object stagedInternal:
               val factory = infer[scala.collection.Factory[element, stdlib]]
               val builder = factory.newBuilder
               val tactic = infer[Tactic[Cbor.Error]]
-              val parser = $reader.rawParser.asInstanceOf[Cbor.Parser]
-              var remaining = parser.directOpenArray()(using tactic)
+              var remaining = CborParser.of($reader.rawParser).directOpenArray()(using tactic)
               var run = remaining != 0
 
               while run do
-                if remaining < 0 && parser.directBreak()(using tactic) then run = false
+                if remaining < 0 && CborParser.of($reader.rawParser).directBreak()(using tactic)
+                then run = false
                 else
                   builder += parseElement()
                   remaining -= 1
@@ -643,7 +644,7 @@ object stagedInternal:
 
     def body
       ( tactic: Expr[Tactic[Cbor.Error]],
-        parser: Expr[Cbor.Parser] )
+        parser: Expr[CborParser] )
     :   Expr[product] =
 
       val owner = Symbol.spliceOwner
@@ -729,7 +730,7 @@ object stagedInternal:
                           reader )
 
                     case None =>
-                      '{ stagedInternal.fieldSeam[fieldType]($reader) }
+                      '{ stagedInternal.fieldSeam[fieldType]($reader.asInstanceOf[AnyRef]) }
 
             DefDef(readDefs(index), _ => Some(rhs.asTerm.changeOwner(readDefs(index))))
 
@@ -858,10 +859,12 @@ object stagedInternal:
 
       Block(slotDefs ::: seenDefs ::: loop ::: absents, construct).asExprOf[product]
 
+    // The parser is not bound to a local: every rim call reaches it through the reader's
+    // carrier and an inline cast, the one form that is exclusive in every checking mode
+    // (see `CborParser.of`).
     '{
       val tactic = infer[Tactic[Cbor.Error]]
-      val parser = $reader.rawParser.asInstanceOf[Cbor.Parser]
-      ${ body('tactic, 'parser) }
+      ${ body('tactic, '{ CborParser.of($reader.rawParser) }) }
     }
 
   // ── The sum generator ──────────────────────────────────────────────────
@@ -920,8 +923,7 @@ object stagedInternal:
 
     '{
       val tactic = infer[Tactic[Cbor.Error]]
-      val parser = $reader.rawParser.asInstanceOf[Cbor.Parser]
-      val tag = parser.directDiscriminant(${Expr(key)})(using tactic)
+      val tag = CborParser.of($reader.rawParser).directDiscriminant(${Expr(key)})(using tactic)
 
       if tag == null then abort(Cbor.Error(Cbor.Error.Reason.Absent))(using tactic)
       else

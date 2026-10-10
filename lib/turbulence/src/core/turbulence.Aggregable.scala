@@ -145,5 +145,15 @@ trait Aggregable extends Typeclass, Operable:
 
     aggregate(Chain.defer(recur()))
 
-  def map[self2](lambda: Self => self2): (self2 is Aggregable by Operand)^{this, lambda} = source =>
-    lambda(aggregable.aggregate(source))
+  // A mapped instance forwards `accept` as well as `aggregate`: a SAM lambda would reach the
+  // mapped instance only through `aggregate`, so a format whose `accept` streams (reading
+  // the windows directly, without materializing the chunks) would lose that path under `map`.
+  def map[self2](lambda: Self => self2): (self2 is Aggregable by Operand)^{this, lambda} =
+    new Aggregable:
+      type Self = self2
+      type Operand = aggregable.Operand
+
+      def aggregate(source: Chain[Operand]): self2 = lambda(aggregable.aggregate(source))
+
+      override def accept(stream: (Stream[Operand] over Credit)^): self2 =
+        lambda(aggregable.accept(stream))
