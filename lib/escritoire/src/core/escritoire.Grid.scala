@@ -91,7 +91,7 @@ object Grid:
             Textual((t" "*widths.readUnchecked(index)))
 
         val padded: text = textual.concat(textual.concat(Textual(pad), body), Textual(pad))
-        cell.decorate.lay(padded) { decoration => decoration(padded) }
+        cell.decorate.lay(padded): decoration => decoration(padded)
 
       . join(leftEdge, midEdge, rightEdge)
 

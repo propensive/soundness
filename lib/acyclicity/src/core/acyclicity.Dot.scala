@@ -32,20 +32,22 @@
                                                                                                   */
 package acyclicity
 
-import anticipation.*
-import denominative.*
-import gossamer.*
-import nomenclature.*
 import scala.collection.immutable.List
 
+import anticipation.*
+import denominative.*
+import fulminate.*
+import gossamer.*
+import nomenclature.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
-import prepositional.*
-import fulminate.*
 
 object Dot:
-  case class Target(directed: Boolean, dest: Name[Dot.Id] | Statement.Subgraph, link: Option[Target])
+  case class Target
+    ( directed: Boolean, dest: Name[Dot.Id] | Statement.Subgraph, link: Option[Target] )
+
   case class Property(key: Text, value: Text)
 
   // The DOT graph constructors: a directed or undirected graph, optionally strict (no duplicate
@@ -171,7 +173,8 @@ object Dot:
   // The naming plane for GraphViz DOT identifiers: `Name[Dot.Id]` is used for node
   // identifiers, edge endpoints, assignment targets and (sub)graph names alike.
   object Id:
-    inline given nominative: Dot.Id is Nominative under Dot.Identifier["a valid DOT identifier"] = !!
+    inline given nominative: Dot.Id is Nominative under Dot.Identifier["a valid DOT identifier"] =
+      !!
 
   sealed trait Id
 
@@ -182,7 +185,8 @@ object Dot:
   // without escaping). The `description` type parameter is the phrasing used in
   // error messages.
   object Identifier
-  extends Rule({ description => m"must be $description" }, { (name, _) => dotIdentifierValid(name) })
+  extends Rule
+    ( { description => m"must be $description" }, { (name, _) => dotIdentifierValid(name) } )
 
   sealed trait Identifier[description <: Label] extends Check[description]
 

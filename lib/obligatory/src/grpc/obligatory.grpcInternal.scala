@@ -111,45 +111,46 @@ object grpcInternal:
               halt(m"no ${TypeRepr.of[response is Decodable in Protobuf].show} instance was found")
 
           runSym.info.absolve match
-            case MethodType(_, scala.collection.immutable.List(parameter), result) => parameter.asType.absolve match
-              case '[request] =>
-                val enc = encoder[request]
-                val req = argument.asExprOf[request]
+            case MethodType(_, scala.collection.immutable.List(parameter), result) =>
+              parameter.asType.absolve match
+                case '[request] =>
+                  val enc = encoder[request]
+                  val req = argument.asExprOf[request]
 
-                result.asType.absolve match
-                  case '[Chain[response]] =>
-                    val dec = decoder[response]
+                  result.asType.absolve match
+                    case '[Chain[response]] =>
+                      val dec = decoder[response]
 
-                    Some:
-                      ' {
-                          given Monitor = ${monitorExpr}
-                          given grpcTactic: Tactic[Grpc.Error] = ${tactic[Grpc.Error]}
-                          given http2Tactic: Tactic[Http2.Error] = ${tactic[Http2.Error]}
-                          given asyncTactic: Tactic[Async.Error] = ${tactic[Async.Error]}
-                          given protobufTactic: Tactic[Protobuf.Error] = ${tactic[Protobuf.Error]}
+                      Some:
+                        ' {
+                            given Monitor = ${monitorExpr}
+                            given grpcTactic: Tactic[Grpc.Error] = ${tactic[Grpc.Error]}
+                            given http2Tactic: Tactic[Http2.Error] = ${tactic[Http2.Error]}
+                            given asyncTactic: Tactic[Async.Error] = ${tactic[Async.Error]}
+                            given protobufTactic: Tactic[Protobuf.Error] = ${tactic[Protobuf.Error]}
 
-                          $channel.serverStreaming[request, response]
-                            (Grpc.Method($service, $name), $req)(using $enc, $dec)
-                        }
+                            $channel.serverStreaming[request, response]
+                              (Grpc.Method($service, $name), $req)(using $enc, $dec)
+                          }
 
-                      . asTerm
+                        . asTerm
 
-                  case '[response] =>
-                    val dec = decoder[response]
+                    case '[response] =>
+                      val dec = decoder[response]
 
-                    Some:
-                      ' {
-                          given Monitor = ${monitorExpr}
-                          given grpcTactic: Tactic[Grpc.Error] = ${tactic[Grpc.Error]}
-                          given http2Tactic: Tactic[Http2.Error] = ${tactic[Http2.Error]}
-                          given asyncTactic: Tactic[Async.Error] = ${tactic[Async.Error]}
-                          given protobufTactic: Tactic[Protobuf.Error] = ${tactic[Protobuf.Error]}
+                      Some:
+                        ' {
+                            given Monitor = ${monitorExpr}
+                            given grpcTactic: Tactic[Grpc.Error] = ${tactic[Grpc.Error]}
+                            given http2Tactic: Tactic[Http2.Error] = ${tactic[Http2.Error]}
+                            given asyncTactic: Tactic[Async.Error] = ${tactic[Async.Error]}
+                            given protobufTactic: Tactic[Protobuf.Error] = ${tactic[Protobuf.Error]}
 
-                          $channel.unary[request, response]
-                            (Grpc.Method($service, $name), $req)(using $enc, $dec)
-                        }
+                            $channel.unary[request, response]
+                              (Grpc.Method($service, $name), $req)(using $enc, $dec)
+                          }
 
-                      . asTerm
+                        . asTerm
 
             case _ =>
               halt:

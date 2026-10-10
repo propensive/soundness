@@ -33,7 +33,6 @@
 package hallucination
 
 import scala.collection.mutable as scm
-
 // A stdlib `PriorityQueue` orders its elements with a stdlib `Ordering`, so this is one of the
 // few places that still names it rather than using `symbolism.Comparable`.
 import scala.math.Ordering

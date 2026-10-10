@@ -175,7 +175,7 @@ object stagedInternal:
         for
           clazz  <- classFor(constructor)
           shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-            list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
+            list.flatMap: tail => shapeOf(argument).map(_ :: tail)
         yield TypeShape(clazz, shapes)
 
       case other =>

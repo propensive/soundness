@@ -32,21 +32,16 @@
                                                                                                   */
 package xylophone
 
-import scala.collection.immutable.Vector
-
-import scala.collection.immutable.Seq
-
-import scala.caps
-
-
-import scala.language.dynamics
-
 import java.lang as jl
 import java.util as ju
 
+import scala.caps
 import scala.collection.Factory
+import scala.collection.immutable.Seq
+import scala.collection.immutable.Vector
 import scala.collection.mutable as scm
 import scala.compiletime.*
+import scala.language.dynamics
 import scala.quoted.*
 
 import adversaria.*
@@ -62,13 +57,12 @@ import parasite.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import typonym.*
 import vacuous.*
 import wisteria.*
 import zephyrine.*
-import symbolism.*
-
 import Xml.Error.Reason
 
 object Xml extends Tag.Container
@@ -453,10 +447,17 @@ object Xml extends Tag.Container
         type Form = Xml
 
         private def child(label: BaseText, encoded: Xml): Node = encoded match
-          case element: Element           => Element(label, element.attributes, element.children, element.scope)
-          case Fragment(element: Element) => Element(label, element.attributes, element.children, element.scope)
-          case node: Node                 => Element(label, Attributes.empty, Array(node))
-          case Fragment(nodes*)           => Element(label, Attributes.empty, Array.unsafeFrozen(nodes.toArray))
+          case element: Element =>
+            Element(label, element.attributes, element.children, element.scope)
+
+          case Fragment(element: Element) =>
+            Element(label, element.attributes, element.children, element.scope)
+
+          case node: Node =>
+            Element(label, Attributes.empty, Array(node))
+
+          case Fragment(nodes*) =>
+            Element(label, Attributes.empty, Array.unsafeFrozen(nodes.toArray))
 
         def encoded(map: Map[key, value]): Xml =
           val entries: scm.ArrayBuffer[Node] = scm.ArrayBuffer()
@@ -464,7 +465,9 @@ object Xml extends Tag.Container
           map.keys.to[List].each: key =>
             map(key).let: value =>
               val pair: Array[Node]^{} =
-                Array(child(t"key", keyEncodable.encoded(key)), child(t"value", valueEncodable.encoded(value)))
+                Array
+                  ( child(t"key", keyEncodable.encoded(key)),
+                    child(t"value", valueEncodable.encoded(value)) )
 
               entries += Element(t"", Attributes.empty, pair)
 
@@ -619,7 +622,7 @@ object Xml extends Tag.Container
 
       // `spot` stops at the first unready slot rather than scanning them all, and its index is
       // confined to `slots`, so the read needs no bounds check.
-      val failed = active && slots.spot(slot => !slots(slot).ready).present
+      val failed = active && slots.spot{ slot => !slots(slot).ready }.present
       var slot = 0
 
       if failed then null.asInstanceOf[derivation]
@@ -677,8 +680,7 @@ object Xml extends Tag.Container
             val childLabel = child.label.s
             val local = child.localName.s
 
-            if !children.contains(childLabel) then
-              children.update(childLabel, child)
+            if !children.contains(childLabel) then children.update(childLabel, child)
 
             if !localChildren.contains(local) then localChildren.update(local, child)
 
@@ -755,7 +757,7 @@ object Xml extends Tag.Container
                       // detect it and `raise + continue`; nested conjunctions
                       // detect it and may further short-circuit via a
                       // user-supplied `Default[Nested]`.
-                      case None => default.or(context.decoded(Absent))
+                      case None        => default.or(context.decoded(Absent))
 
             if !active then Venture(decodeNow())
             else
@@ -947,8 +949,7 @@ object Xml extends Tag.Container
                   // children.
                   encoded match
                     case Fragment(nodes*) =>
-                      nodes.each: node =>
-                        children += wrap(wireName, node, fieldScope)
+                      nodes.each: node => children += wrap(wireName, node, fieldScope)
 
                     case other =>
                       children += wrap(wireName, other, fieldScope)
@@ -1115,7 +1116,7 @@ object Xml extends Tag.Container
     // object-nested case class with a single parameter list — sums,
     // method-local classes and other shapes use `derived`.
     inline def staged[value]: value is Xml.Parsable =
-      ${ xylophone.internal.stagedParsable[value]('{ adversaria.relabelling[value, Xml] }) }
+      ${xylophone.internal.stagedParsable[value]('{adversaria.relabelling[value, Xml]})}
 
     def fromField[value](field0: (value is Xml.Parsing)^)
     :   ((value is Xml.Parsable)^{field0}) =
@@ -1218,7 +1219,7 @@ object Xml extends Tag.Container
 
     // The wire names of a product's fields, `@name` renames applied.
     def wireNames(names: Array[String]^{}, renames: Map[BaseText, BaseText]): Array[String]^{} =
-      names.remap { name => renames(name.tt).or(name.tt).s }
+      names.remap: name => renames(name.tt).or(name.tt).s
 
     // A required primitive field whose name never arrived: the primitives'
     // `absent()` semantics — raise and continue with the sentinel.
@@ -1230,6 +1231,7 @@ object Xml extends Tag.Container
     // derived parser's loop.
     inline def focusing[result](foci: Foci[Xml.Focus], name: BaseText)(inline block: => result)
     :   result =
+
       if foci.active then focus(using foci)(descend(prior, name))(block) else block
 
     // Linear child dispatch for the general step — an unpackable child name,
@@ -1301,7 +1303,9 @@ object Xml extends Tag.Container
           var index = 0
 
           while index < count do
-            if !fields.readUnchecked(index)(3) && named.readUnchecked(index) == name then return index
+            if !fields.readUnchecked(index)(3) && named.readUnchecked(index) == name
+            then return index
+
             index += 1
 
           -1
@@ -1334,9 +1338,11 @@ object Xml extends Tag.Container
             if entries.readUnchecked(index)(3) then
               attributes(keys.readUnchecked(index).tt).let: text =>
                 values(index) =
-                  if focused
-                  then focus(descend(prior, keys.readUnchecked(index).tt))(entries.readUnchecked(index)(1).attribute(text))
-                  else entries.readUnchecked(index)(1).attribute(text)
+                  if focused then
+                    focus(descend(prior, keys.readUnchecked(index).tt))
+                      ( entries.readUnchecked(index)(1).attribute(text) )
+                  else
+                    entries.readUnchecked(index)(1).attribute(text)
 
             index += 1
 
@@ -1363,9 +1369,11 @@ object Xml extends Tag.Container
                       buffer
 
                   buffer +=
-                    ( if focused
-                      then focus(descend(prior, keys.readUnchecked(found).tt))(gathering.parseElement(reader))
-                      else gathering.parseElement(reader) )
+                    ( if focused then
+                        focus(descend(prior, keys.readUnchecked(found).tt))
+                          ( gathering.parseElement(reader) )
+                      else
+                        gathering.parseElement(reader) )
 
                 case _ =>
                   // Unknown children are skipped, and a duplicate child keeps
@@ -1374,11 +1382,11 @@ object Xml extends Tag.Container
                   if !(values.readable(found).asInstanceOf[AnyRef] eq AbsentSlot)
                   then reader.skipElement()
                   else values(found) =
-                    if focused
-                    then focus(descend(prior, keys.readUnchecked(found).tt))(entries.readUnchecked(found)(1).parse(reader))
-                    else entries.readUnchecked(found)(1).parse(reader)
-
-
+                    if focused then
+                      focus(descend(prior, keys.readUnchecked(found).tt))
+                        ( entries.readUnchecked(found)(1).parse(reader) )
+                    else
+                      entries.readUnchecked(found)(1).parse(reader)
 
           index = 0
 
@@ -1393,9 +1401,11 @@ object Xml extends Tag.Container
                   case _                         => Nil
 
                 values(index) =
-                  if focused
-                  then focus(descend(prior, keys.readUnchecked(index).tt))(gathering.gathered(elements))
-                  else gathering.gathered(elements)
+                  if focused then
+                    focus(descend(prior, keys.readUnchecked(index).tt))
+                      ( gathering.gathered(elements) )
+                  else
+                    gathering.gathered(elements)
 
               case _ =>
                 if values.readable(index).asInstanceOf[AnyRef] eq AbsentSlot then
@@ -1403,9 +1413,11 @@ object Xml extends Tag.Container
 
                   values(index) =
                     if declared.present then declared
-                    else if focused
-                    then focus(descend(prior, keys.readUnchecked(index).tt))(entries.readUnchecked(index)(1).absent())
-                    else entries.readUnchecked(index)(1).absent()
+                    else if focused then
+                      focus(descend(prior, keys.readUnchecked(index).tt))
+                        ( entries.readUnchecked(index)(1).absent() )
+                    else
+                      entries.readUnchecked(index)(1).absent()
 
             index += 1
 
@@ -1447,9 +1459,11 @@ object Xml extends Tag.Container
                 val declared = entries.readUnchecked(index)(2).asInstanceOf[Optional[Any]]
 
                 if declared.present then declared
-                else if focused
-                then focus(descend(prior, keys.readUnchecked(index).tt))(entries.readUnchecked(index)(1).absent())
-                else entries.readUnchecked(index)(1).absent()
+                else if focused then
+                  focus(descend(prior, keys.readUnchecked(index).tt))
+                    ( entries.readUnchecked(index)(1).absent() )
+                else
+                  entries.readUnchecked(index)(1).absent()
 
             index += 1
 
@@ -1526,6 +1540,7 @@ object Xml extends Tag.Container
   // fallback, which parses exactly as the primitives here would have.
   given intParsable: Int is Xml.Parsable = new Xml.Parsable:
     type Self = Int
+
     def parse(reader: Xml.Reader^): Int =
       reader.int().or(reader.fault(Reason.Untextual(t"Int")) yet 0)
 
@@ -1535,10 +1550,11 @@ object Xml extends Tag.Container
     override def attribute(text: BaseText)(using Tactic[Xml.Error], Foci[Xml.Focus]): Int =
       try Integer.parseInt(text.s)
       catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Int"))) yet 0
+        raise(Xml.Error(Reason.Malformed(text, t"Int"))) yet 0
 
   given longParsable: Long is Xml.Parsable = new Xml.Parsable:
     type Self = Long
+
     def parse(reader: Xml.Reader^): Long =
       reader.long().or(reader.fault(Reason.Untextual(t"Long")) yet 0L)
 
@@ -1548,7 +1564,7 @@ object Xml extends Tag.Container
     override def attribute(text: BaseText)(using Tactic[Xml.Error], Foci[Xml.Focus]): Long =
       try jl.Long.parseLong(text.s)
       catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Long"))) yet 0L
+        raise(Xml.Error(Reason.Malformed(text, t"Long"))) yet 0L
 
   given shortParsable: Short is Xml.Parsable = primitiveParsable(0.toShort, t"Short"): text =>
     try jl.Short.parseShort(text.s) catch case _: NumberFormatException => Unset
@@ -1558,6 +1574,7 @@ object Xml extends Tag.Container
 
   given doubleParsable: Double is Xml.Parsable = new Xml.Parsable:
     type Self = Double
+
     def parse(reader: Xml.Reader^): Double =
       reader.double().or(reader.fault(Reason.Untextual(t"Double")) yet 0.0)
 
@@ -1567,13 +1584,14 @@ object Xml extends Tag.Container
     override def attribute(text: BaseText)(using Tactic[Xml.Error], Foci[Xml.Focus]): Double =
       try jl.Double.parseDouble(text.s)
       catch case _: NumberFormatException =>
-          raise(Xml.Error(Reason.Malformed(text, t"Double"))) yet 0.0
+        raise(Xml.Error(Reason.Malformed(text, t"Double"))) yet 0.0
 
   given floatParsable: Float is Xml.Parsable = primitiveParsable(0.0f, t"Float"): text =>
     try jl.Float.parseFloat(text.s) catch case _: NumberFormatException => Unset
 
   given booleanParsable: Boolean is Xml.Parsable = new Xml.Parsable:
     type Self = Boolean
+
     def parse(reader: Xml.Reader^): Boolean =
       reader.boolean().or(reader.fault(Reason.Untextual(t"Boolean")) yet false)
 
@@ -1762,12 +1780,11 @@ object Xml extends Tag.Container
     def split(label: BaseText): (Optional[BaseText], BaseText) =
       val colon = label.s.indexOf(':')
 
-      if colon < 0 then (Unset, label)
-      else (label.keep(colon), label.skip(colon + 1))
+      if colon < 0 then (Unset, label) else (label.keep(colon), label.skip(colon + 1))
 
     // Clark notation, `{uri}local`, or the bare local part
     given showable: Name is Showable = name =>
-      name.namespace.lay(name.local)(uri => t"{$uri}${name.local}")
+      name.namespace.lay(name.local): uri => t"{$uri}${name.local}"
 
     given inspectable: Name is Inspectable = name => t"Name(${name.show.inspect})"
 
@@ -1822,27 +1839,27 @@ object Xml extends Tag.Container
   // is encoded first (see `XmlParser`). A leading `<?xml …?>` declaration is accepted and
   // silently dropped, so a whole document reads as a fragment; `load` keeps it as metadata.
   given aggregable: [content <: Label: Reifiable to List[String]]
-  =>  (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
-  =>  (tactic: Tactic[Parse.Error])
-  =>  (((Xml of content) is Aggregable by Data)^{tactic}) =
+  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
+  =>  ( tactic: Tactic[Parse.Error] )
+  =>  ( ((Xml of content) is Aggregable by Data)^{tactic} ) =
 
     input => XmlParser.fromDataChain(input).parseXml(keepHeader = false).of[content]
 
   given aggregable2: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
-  =>  (tactic: Tactic[Parse.Error])
-  =>  ((Xml is Aggregable by Data)^{tactic}) =
+  =>  ( tactic: Tactic[Parse.Error] )
+  =>  ( (Xml is Aggregable by Data)^{tactic} ) =
     input => XmlParser.fromDataChain(input).parseXml(keepHeader = false)
 
   given aggregableText: [content <: Label: Reifiable to List[String]]
-  =>  (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
-  =>  (tactic: Tactic[Parse.Error])
-  =>  (((Xml of content) is Aggregable by BaseText)^{tactic}) =
+  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
+  =>  ( tactic: Tactic[Parse.Error] )
+  =>  ( ((Xml of content) is Aggregable by BaseText)^{tactic} ) =
 
     input => XmlParser.fromChain(input).parseXml(keepHeader = false).of[content]
 
   given aggregableText2: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
-  =>  (tactic: Tactic[Parse.Error])
-  =>  ((Xml is Aggregable by BaseText)^{tactic}) =
+  =>  ( tactic: Tactic[Parse.Error] )
+  =>  ( (Xml is Aggregable by BaseText)^{tactic} ) =
     input => XmlParser.fromChain(input).parseXml(keepHeader = false)
 
   // HTTP content-type integration. `Abstractable across HttpStreams` makes an
@@ -1861,8 +1878,8 @@ object Xml extends Tag.Container
         (t"application/xml; charset=${encoder.encoding.name}", HttpStreams.Body(xml.show.in[Data]))
 
   given instantiable: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
-  =>  (tactic: Tactic[Parse.Error])
-  =>  ((Xml is Instantiable across HttpRequests from BaseText)^{tactic}) =
+  =>  ( tactic: Tactic[Parse.Error] )
+  =>  ( (Xml is Instantiable across HttpRequests from BaseText)^{tactic} ) =
 
     text => Chain(text).read[Xml]
 
@@ -1998,18 +2015,18 @@ object Xml extends Tag.Container
     // receiver, which separation checking reports as an overlap; both are the one owner, and
     // the body runs only within the receiver's call.
     scala.caps.unsafe.unsafeAssumeSeparate:
-     parser.directSession:
-      parser.directRoot() match
-        case 0 =>
-          val result = parsable.parse(Xml.Reader(parser, tactic, xmlTactic, foci))
-          if parser.directTrailing() then parsable.absent() else result
+      parser.directSession:
+        parser.directRoot() match
+          case 0 =>
+            val result = parsable.parse(Xml.Reader(parser, tactic, xmlTactic, foci))
+            if parser.directTrailing() then parsable.absent() else result
 
-        case 1 =>
-          val text = parser.directRootText()
-          if parser.directTrailing() then parsable.absent() else parsable.attribute(text)
+          case 1 =>
+            val text = parser.directRootText()
+            if parser.directTrailing() then parsable.absent() else parsable.attribute(text)
 
-        case _ =>
-          parsable.absent()
+          case _ =>
+            parsable.absent()
 
   // The single place `.load[Xml]` branches on position tracking. With
   // `parsing.trackPositions` in scope the parser records source positions and the
@@ -2021,8 +2038,8 @@ object Xml extends Tag.Container
   // header-less load (keeping it aligned with the index, which is built from the
   // root element alone).
   given loadable: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
-  =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking)
-  =>  ((Xml is Loadable by BaseText)^{tactic}) = stream =>
+  =>  ( tactic: Tactic[Parse.Error], tracking: PositionTracking )
+  =>  ( (Xml is Loadable by BaseText)^{tactic} ) = stream =>
     // The chunk chain view of the pull endpoint (the audited bridge); the parser encodes
     // each chunk to UTF-8 as it reaches it.
     val chunks =
@@ -2037,8 +2054,8 @@ object Xml extends Tag.Container
   // The byte form, the parser's own input: a byte source — a file, an HTTP body — is parsed
   // as it arrives, with no decoding. Positions count bytes (see `XmlParser`).
   given loadableData: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
-  =>  (tactic: Tactic[Parse.Error], tracking: PositionTracking, buffering: Buffering)
-  =>  ((Xml is Loadable by Data)^{tactic}) = stream =>
+  =>  ( tactic: Tactic[Parse.Error], tracking: PositionTracking, buffering: Buffering )
+  =>  ( (Xml is Loadable by Data)^{tactic} ) = stream =>
     // The non-consume `load` crosses to the consuming cursor as a neutral reference.
     val bytes = stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]
 
@@ -2083,7 +2100,7 @@ object Xml extends Tag.Container
 
   // `^{monitor}` only: `Probate` is not capture-tracked (see rep/REVIEW.md).
   given streamable: (monitor: Monitor, probate: Probate)
-  =>  ((Document[Xml] is Streamable by BaseText over Credit)^{monitor}) =
+  =>  ( (Document[Xml] is Streamable by BaseText over Credit)^{monitor} ) =
     document => zephyrine.Stream(emit(document))
 
   // Serializes on a fiber, handing out text as it is produced, so a large document can be
@@ -2392,7 +2409,7 @@ object Xml extends Tag.Container
       writeXml(new Textual(producer), formatting, node, 0)
 
     val builder: StringBuilder = new StringBuilder()
-    markup.each { char => builder.append(Inspectable.escape(char).s) }
+    markup.each: char => builder.append(Inspectable.escape(char).s)
 
     ("xml\""+builder.toString+"\"").tt
 
@@ -2431,8 +2448,7 @@ object Xml extends Tag.Container
   given sequences: [nodal, xml <: Xml] => (conversion: Conversion[nodal, xml])
   =>  Conversion[Seq[nodal], Seq[xml]] =
 
-    (sequence: Seq[nodal]) =>
-      sequence.map(conversion(_))
+    (sequence: Seq[nodal]) => sequence.map(conversion(_))
 
   enum Issue extends Format.Issue:
     case BadInsertion
@@ -2535,7 +2551,10 @@ object Xml extends Tag.Container
 
       segments match
         case Nil =>
-          Position(data.readUnchecked(offset + 1).z, data.readUnchecked(offset + 2).z, length = data.readUnchecked(offset + 3))
+          Position
+            ( data.readUnchecked(offset + 1).z,
+              data.readUnchecked(offset + 2).z,
+              length = data.readUnchecked(offset + 3) )
 
         case XPath.Location.Attribute(attrName) :: _ =>
           xml match
@@ -2576,7 +2595,11 @@ object Xml extends Tag.Container
       else
         val attrOff = data.readUnchecked(offset + 6 + i)
         val base = offset + attrOff
-        Position(data.readUnchecked(base + 1).z, data.readUnchecked(base + 2).z, length = data.readUnchecked(base + 3))
+
+        Position
+          ( data.readUnchecked(base + 1).z,
+            data.readUnchecked(base + 2).z,
+            length = data.readUnchecked(base + 3) )
 
     // Find the position of the n-th (1-indexed) child element with the
     // given name among the child *elements only* (ignoring text, comment,
@@ -2652,8 +2675,7 @@ object Xml extends Tag.Container
 
       def locate(document: Document[Xml], path: XPath): Optional[Xml.Position] =
         document.metadata.positionIndex.let: index =>
-          path.locations.let: segments =>
-            Locator.walk(document.root, index.ints, 0, segments, true)
+          path.locations.let: segments => Locator.walk(document.root, index.ints, 0, segments, true)
 
       // XML has no distinct key positions, so there is nothing to locate by key.
       def locateKey(document: Document[Xml], path: XPath): Optional[Xml.Position] = Unset
@@ -2705,7 +2727,9 @@ object Xml extends Tag.Container
     // exactly representable, so `mantissa.toDouble / TenPow(scale)` is
     // correctly rounded whenever the mantissa fits in 53 bits.
     private[xylophone] val TenPow: Array[Double]^{} =
-      scala.Array(1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15)
+      scala.Array
+        ( 1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15 )
+
       . asInstanceOf[Array[Double]^{}]
 
     // `true` and `false` packed LSB-first, for the boolean content fast path.
@@ -2733,7 +2757,8 @@ object Xml extends Tag.Container
     // surrogate keeps it back and prepends it to the next. (Not the `Codepage` duct, whose
     // encoder, staging buffer and block are a fixed cost per parse that a small document
     // notices.)
-    private[xylophone] def utf8(text: BaseText): Data = Array.unsafeFrozen(text.s.getBytes(Utf8Charset).nn)
+    private[xylophone] def utf8(text: BaseText): Data =
+      Array.unsafeFrozen(text.s.getBytes(Utf8Charset).nn)
 
     private[xylophone] def utf8(chain: Chain[BaseText]): Chain[Data] =
       def encode(todo: Chain[BaseText], carry: String): Chain[Data] =
@@ -2862,7 +2887,6 @@ object Xml extends Tag.Container
     // as the opaque `Attributes`. Geometric growth.
     private var attrBuf: scala.Array[String]^ = new scala.Array[String](16)
 
-
     // Pool of `ArrayBuffer[Node]` instances re-used across recursive
     // `readChildren` calls. Each nesting level borrows one, fills it, copies
     // its contents into an `Array[Node]^{}`, and returns it. Pool grows on
@@ -2892,7 +2916,6 @@ object Xml extends Tag.Container
     private val tagCacheLow:  scala.Array[Long]^ = new scala.Array(TagCacheSize)
 
     private val tagCacheHigh: scala.Array[Long]^ = new scala.Array(TagCacheSize)
-
 
     // Fingerprint of the name most recently read by `readName` — the packed
     // words it computes anyway for the tag cache, and whether they identify
@@ -3155,7 +3178,9 @@ object Xml extends Tag.Container
 
     // As `slice`, for a scan that saw every byte of the region and knows whether any was
     // non-ASCII: an ASCII region is copied without the decoder's own scan.
-    protected update def slice(start: Cursor.Mark, ascii: Boolean)(using Tactic[Parse.Error]): BaseText =
+    protected update def slice(start: Cursor.Mark, ascii: Boolean)(using Tactic[Parse.Error])
+    :   BaseText =
+
       syncTo()
       val end = cursor.mark(using heldToken.nn)
 
@@ -3166,7 +3191,9 @@ object Xml extends Tag.Container
 
     // The slice decoded: an all-ASCII one through the Latin-1 `String` constructor, any other
     // through the strict decoder, which rejects malformed UTF-8 as a parse error.
-    protected update def slice(start: Cursor.Mark, end: Cursor.Mark)(using Tactic[Parse.Error]): BaseText =
+    protected update def slice(start: Cursor.Mark, end: Cursor.Mark)(using Tactic[Parse.Error])
+    :   BaseText =
+
       cursor.slice(start, end): (storage, offset, length) =>
         Utf8.decode(storage.asInstanceOf[scala.Array[Byte]], offset, length)
         . or(fail(Issue.BadEncoding, start))
@@ -3240,7 +3267,9 @@ object Xml extends Tag.Container
     protected inline def fail(issue: Issue)(using Tactic[Parse.Error]): Nothing =
       abort(Parse.Error(Xml, computePosition(Unset), issue))
 
-    protected update def fail(issue: Issue, start: Cursor.Mark)(using Tactic[Parse.Error]): Nothing =
+    protected update def fail(issue: Issue, start: Cursor.Mark)(using Tactic[Parse.Error])
+    :   Nothing =
+
       abort(Parse.Error(Xml, computePosition(start), issue))
 
     protected inline def isAsciiLetter(c: Byte): Boolean =
@@ -3323,7 +3352,8 @@ object Xml extends Tag.Container
             ascii = false
             len += 1
             pos += width
-        else scanning = false
+        else
+          scanning = false
 
       nameLow = packedLow
       nameHigh = packedHigh
@@ -3337,8 +3367,7 @@ object Xml extends Tag.Container
 
         val cached = tagCache(idx)
 
-        if cached != null && tagCacheLow(idx) == packedLow &&
-          tagCacheHigh(idx) == packedHigh
+        if cached != null && tagCacheLow(idx) == packedLow && tagCacheHigh(idx) == packedHigh
         then cached.nn
         else
           val fresh = slice(start, ascii = true)
@@ -3381,8 +3410,7 @@ object Xml extends Tag.Container
             val c = peek
             val dec = (c - '0').toChar
 
-            if dec <= 9 then value = 10*value + dec
-            else fail(Issue.Unexpected(peekChar))
+            if dec <= 9 then value = 10*value + dec else fail(Issue.Unexpected(peekChar))
 
             advance()
 
@@ -3406,7 +3434,9 @@ object Xml extends Tag.Container
     // Read attribute value enclosed in `quote`. Returns the unescaped
     // value as Text. Position starts just after the opening quote and
     // ends just after the closing quote.
-    protected update def readAttrValue(tag: BaseText, quote: Byte)(using Tactic[Parse.Error]): BaseText =
+    protected update def readAttrValue(tag: BaseText, quote: Byte)(using Tactic[Parse.Error])
+    :   BaseText =
+
       val start = begin()
       var hasEntity = false
       var hasHole = false
@@ -3522,6 +3552,7 @@ object Xml extends Tag.Container
           val key = readName()
           val keyStr: String = key.s
           val h: Int = keyStr.hashCode
+
           if keyStr.startsWith("xmlns") then attrXmlns = true
           else if keyStr.indexOf(':') >= 0 then attrPrefixed = true
 
@@ -3808,7 +3839,9 @@ object Xml extends Tag.Container
           scope = parent
           Element(name, attrs, children, own)
 
-    protected update def readChildren(parentName: BaseText)(using Tactic[Parse.Error]): Array[Node]^{} =
+    protected update def readChildren(parentName: BaseText)(using Tactic[Parse.Error])
+    :   Array[Node]^{} =
+
       val children = getNodeBuffer()
       var done = false
 
@@ -3955,8 +3988,7 @@ object Xml extends Tag.Container
         skipWs()
 
       val result =
-        if nodes.length == 1 then nodes(0)
-        else Fragment(nodes.toSeq*)
+        if nodes.length == 1 then nodes(0) else Fragment(nodes.toSeq*)
 
       relinquishNodeBuffer()
       rootIndex = Array.from(rootBuf)
@@ -4079,6 +4111,7 @@ object Xml extends Tag.Container
           val key = readName()
           val keyStr: String = key.s
           val h: Int = keyStr.hashCode
+
           if keyStr.startsWith("xmlns") then attrXmlns = true
           else if keyStr.indexOf(':') >= 0 then attrPrefixed = true
 
@@ -4259,8 +4292,7 @@ object Xml extends Tag.Container
         skipWs()
 
       val result =
-        if nodes.length == 1 then nodes(0)
-        else Fragment(nodes.toSeq*)
+        if nodes.length == 1 then nodes(0) else Fragment(nodes.toSeq*)
 
       relinquishNodeBuffer()
       result
@@ -4370,6 +4402,7 @@ object Xml extends Tag.Container
         if c2 == '/' || c2 == '!' then 2
         else if c2 == '?' then
           advance()
+
           readProcessingInstruction() match
             case _: Header => directRoot0()
             case _         => 2
@@ -4380,7 +4413,8 @@ object Xml extends Tag.Container
 
     // The root character data, up to the next markup or the end of the
     // input — read exactly as `parseXml0` reads a root-level text run.
-    private[xylophone] update def directRootText()(using Tactic[Parse.Error]): BaseText = readText(t"")
+    private[xylophone] update def directRootText()(using Tactic[Parse.Error]): BaseText =
+      readText(t"")
 
     // The attributes of the element opened most recently. Valid until the
     // next element is opened.
@@ -4579,6 +4613,7 @@ object Xml extends Tag.Container
     private update def directTextLongFallback()(using Tactic[Parse.Error]): Optional[Long] =
       directText() match
         case null       => Unset
+
         case text: BaseText =>
           try Optional(jl.Long.parseLong(text.s)) catch case _: NumberFormatException => Unset
 
@@ -4604,7 +4639,8 @@ object Xml extends Tag.Container
           else if c == '-' && digits == 0 && !neg then
             neg = true
             advance()
-          else bad = true
+          else
+            bad = true
 
         if !bad && more && digits > 0 then
           advance()
@@ -4631,6 +4667,7 @@ object Xml extends Tag.Container
     private update def directTextDoubleFallback()(using Tactic[Parse.Error]): Optional[Double] =
       directText() match
         case null       => Unset
+
         case text: BaseText =>
           try Optional(jl.Double.parseDouble(text.s))
           catch case _: NumberFormatException => Unset
@@ -4664,7 +4701,8 @@ object Xml extends Tag.Container
           else if c == '-' && digits == 0 && decimals < 0 && !neg then
             neg = true
             advance()
-          else bad = true
+          else
+            bad = true
 
         if !bad && more && digits > 0 then
           advance()
@@ -4685,12 +4723,15 @@ object Xml extends Tag.Container
     private update def directTextBooleanFallback()(using Tactic[Parse.Error]): Optional[Boolean] =
       directText() match
         case null       => Unset
+
         case text: BaseText => text.s match
           case "true"  => Optional(true)
           case "false" => Optional(false)
           case _       => Unset
 
-    private[xylophone] update def directTextBoolean()(using Tactic[Parse.Error]): Optional[Boolean] =
+    private[xylophone] update def directTextBoolean()(using Tactic[Parse.Error])
+    :   Optional[Boolean] =
+
       if directEmpty then
         directText()
         Unset
@@ -4706,7 +4747,8 @@ object Xml extends Tag.Container
             word |= (c.toLong & 0xFF) << (length*8)
             length += 1
             advance()
-          else bad = true
+          else
+            bad = true
 
         val isTrue = length == 4 && word == XmlParser.TrueWord
         val isFalse = length == 5 && word == XmlParser.FalseWord
@@ -4803,7 +4845,8 @@ object Xml extends Tag.Container
     new XmlParser
       ( Cursor[Data](XmlParser.utf8(Chain.from(input))), tracking = false, callback,
         charOffsets = true )
-      (using schema, Scope.xml, Namespacing.Lenient)
+      ( using schema, Scope.xml, Namespacing.Lenient )
+
     . parseXml(keepHeader)
 
   // Selects the nodes matching an XPath: `//div[@id='x']` and friends,
@@ -4876,6 +4919,7 @@ object Xml extends Tag.Container
 
       case Reason.Absent(expected) =>
         m"no element or attribute supplied the required $expected"
+
       case Reason.Empty                     => m"the element has no text"
       case Reason.Missing                   => m"the element or attribute was not present"
 
@@ -5026,9 +5070,9 @@ object Xml extends Tag.Container
       raise(Xml.Error(reason))(using errorTactic)
 
   // `caps.Pure` because, under separation checking, a class nested in an object is otherwise given
-  // an open capture set in its self type, which a node's pure parent rejects. And `this.` throughout
-  // the nodes: `object Xml` is itself a `Tag.Container`, so its own `Topic`, `Transport` and `Form`
-  // would otherwise be ambiguous with each node's inherited members.
+  // an open capture set in its self type, which a node's pure parent rejects. And `this.`
+  // throughout the nodes: `object Xml` is itself a `Tag.Container`, so its own `Topic`, `Transport`
+  // and `Form` would otherwise be ambiguous with each node's inherited members.
   sealed trait Node extends Xml, caps.Pure
 
   case class Comment(text: BaseText) extends Node:
@@ -5124,19 +5168,20 @@ object Xml extends Tag.Container
 
     // The value of the attribute with the resolved name; an unprefixed attribute is in no
     // namespace, whatever the default namespace
-    def attribute(name: Xml.Name): Optional[BaseText] = name.namespace.lay(attributes.fetch(name.local)):
-      uri =>
-        var found: Optional[BaseText] = Unset
-        val bindings0 = bindings
+    def attribute(name: Xml.Name): Optional[BaseText] =
+      name.namespace.lay(attributes.fetch(name.local)):
+        uri =>
+          var found: Optional[BaseText] = Unset
+          val bindings0 = bindings
 
-        attributes.eachPair: (key, value) =>
-          if found.absent then
-            val (prefix, local) = Xml.Name.split(key)
+          attributes.eachPair: (key, value) =>
+            if found.absent then
+              val (prefix, local) = Xml.Name.split(key)
 
-            if prefix.present && local == name.local && bindings0.resolve(prefix) == uri
-            then found = value
+              if prefix.present && local == name.local && bindings0.resolve(prefix) == uri
+              then found = value
 
-        found
+          found
 
     // Whether a child of this element with the label is the one `name` selects: by resolved
     // name when the name's prefix is bound in the scope or at this element, else by raw label
@@ -5152,13 +5197,17 @@ object Xml extends Tag.Container
 
       case Element(label, attributes, children) =>
         label == this.label && attributes.equalsAttributes(this.attributes) &&
-          ju.Arrays.equals(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]], Array.unsafeJvm(this.children).asInstanceOf[scala.Array[Object | Null]])
+          ju.Arrays.equals
+            ( Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]],
+              Array.unsafeJvm(this.children).asInstanceOf[scala.Array[Object | Null]] )
 
       case _ =>
         false
 
     override def hashCode: Int =
-      ju.Arrays.hashCode(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]]) ^ attributes.hashAttributes ^ label.hashCode
+      ju.Arrays.hashCode(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]]) ^
+        attributes.hashAttributes ^
+        label.hashCode
 
 
     def selectDynamic(name: Label)
@@ -5197,10 +5246,10 @@ object Xml extends Tag.Container
   // part of the document's identity, so a tracked and an untracked load of the same
   // source compare equal.
   case class Header
-      ( version:       BaseText,
-        encoding:      Optional[BaseText],
-        standalone:    Optional[Boolean],
-        positionIndex: Optional[Xml.PositionIndex] = Unset )
+    ( version:       BaseText,
+      encoding:      Optional[BaseText],
+      standalone:    Optional[Boolean],
+      positionIndex: Optional[Xml.PositionIndex] = Unset )
   extends Node:
     override def hashCode: Int =
       ((version.hashCode*31 + encoding.hashCode)*31 + standalone.hashCode)*31 + 0x48646572
@@ -5213,7 +5262,6 @@ object Xml extends Tag.Container
 
       case _ =>
         false
-
 
 sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
   type Topic <: Label
@@ -5261,7 +5309,7 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
     matchingElements(_.selects(_, name.tt))
 
   private def namedElements(name: Xml.Name): Array[Xml.Node]^{} =
-    matchingElements { (_, child) => child.qualified == name }
+    matchingElements: (_, child) => child.qualified == name
 
   // The child elements, of every element node here, which the predicate admits given their parent
   private def matchingElements(admits: (Xml.Element, Xml.Element) => Boolean): Array[Xml.Node]^{} =

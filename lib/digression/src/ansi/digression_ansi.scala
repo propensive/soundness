@@ -213,7 +213,8 @@ package teletypeables:
 
     val scaffold =
       Scaffold[Row]
-        ( Column(e""){ row => e"${palette.separator}(${if row.inlined.present then t" ↳" else t"at"})" },
+        ( Column(e"")
+            { row => e"${palette.separator}(${if row.inlined.present then t" ↳" else t"at"})" },
           Column(e"")(methodColumn),
           Column(e"")(locationColumn),
           // The quoted source is the first thing to go when the terminal is too narrow for it:

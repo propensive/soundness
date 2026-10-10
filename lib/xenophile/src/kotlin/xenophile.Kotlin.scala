@@ -136,7 +136,11 @@ object Kotlin:
       // The `java.util.List` overload, not the varargs one: an array splice cannot flow into
       // the pure varargs formal under separation checking.
       val argumentList = java.util.ArrayList[AnyRef]()
-      arguments.foreach { argument => argumentList.add(argument.asInstanceOf[AnyRef]); () }
+
+      arguments.foreach: argument =>
+        argumentList.add(argument.asInstanceOf[AnyRef])
+        ()
+
       handle.nn.invokeWithArguments(argumentList)
 
 trait Kotlin extends Ecosystem:

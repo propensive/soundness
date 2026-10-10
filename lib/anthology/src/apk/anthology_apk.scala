@@ -39,16 +39,16 @@ import scala.util.control as suc
 import ambience.*
 import anticipation.*
 import contingency.*
+import denominative.dysasymptotics.linearSize
 import digression.*
 import galilei.*
 import gossamer.*
 import parasite.*
 import prepositional.*
+import rudiments.{`:+`, filter, map}
 import serpentine.*
 import turbulence.*
 import zeppelin.*
-import rudiments.{`:+`, filter, map}
-import denominative.dysasymptotics.linearSize
 
 object apkOptions:
   private def apk(edit: Apk.Configuration => Apk.Configuration): Toolchain.Setting =

@@ -68,7 +68,7 @@ private[facsimile] object ContentTokens:
       if operator.s != "ID" then abort(Pdf.Error(Pdf.Error.Reason.MalformedOperator(t"BI")))
 
       operands.batched(2).flatMap:
-        case List(Cos.Name(key), value) => List(key -> value)
+        case List(Cos.Name(key), value)   => List(key -> value)
         case _                            => List()
 
       . to[Map]

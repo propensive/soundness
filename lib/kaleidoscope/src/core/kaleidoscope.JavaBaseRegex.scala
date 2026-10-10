@@ -42,9 +42,9 @@ import rudiments.*
 import vacuous.*
 
 object JavaBaseRegex:
-  // In the subject type's companion (issue #1632), so `Regex in JavaBaseRegex` operations resolve with no
-  // import. The bodies previously lived as methods on `Regex` itself; they move here so that a
-  // `Regex in Re2` cannot silently fall back to `java.util.regex`.
+  // In the subject type's companion (issue #1632), so `Regex in JavaBaseRegex` operations resolve
+  // with no import. The bodies previously lived as methods on `Regex` itself; they move here so
+  // that a `Regex in Re2` cannot silently fall back to `java.util.regex`.
   given engine: JavaBaseRegex is Regex.Engine:
     def matches(regex: Regex, text: Text)(using scanner: Scanner^): Boolean =
       scanner.nextStart match

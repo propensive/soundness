@@ -34,6 +34,13 @@ package galilei
 
 import vacuous.*
 
+object Stat:
+  // An entry's identity on the storage device it lives on: the device number and the inode
+  // number, which together name a file uniquely. Btrfs's subvolume boundaries are read from
+  // the device number (issue #567) — every subvolume is given its own anonymous device number
+  // — and every btrfs subvolume root is inode 256.
+  case class Identity(device: Long, inode: Long)
+
 // An entry's metadata, as one value: its type, size in bytes, millisecond-epoch timestamps, and
 // the Unix fields of its inode. `created` is `Unset` on filesystems that do not record creation
 // times (most POSIX filesystems, and WASI). `mode` is the whole `st_mode` — the type bits as
@@ -50,10 +57,3 @@ case class Stat
     user:     Optional[Int]  = Unset,
     group:    Optional[Int]  = Unset,
     device:   Optional[Long] = Unset )
-
-object Stat:
-  // An entry's identity on the storage device it lives on: the device number and the inode
-  // number, which together name a file uniquely. Btrfs's subvolume boundaries are read from
-  // the device number (issue #567) — every subvolume is given its own anonymous device number
-  // — and every btrfs subvolume root is inode 256.
-  case class Identity(device: Long, inode: Long)

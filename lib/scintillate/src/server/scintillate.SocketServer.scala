@@ -303,7 +303,9 @@ extends RequestServable:
                   // be delimited by closing the connection.
                   if head.version != 1.1 && streaming(response) then keep = false
                   val response2 = if keep then response else response + closeHeader
-                  val bytes = Http.Response.serialize(response2, head.method != Http.Head, head.version)
+
+                  val bytes =
+                    Http.Response.serialize(response2, head.method != Http.Head, head.version)
 
                   writeAll(out, bytes, flushEach = streaming(response))
 
@@ -410,7 +412,8 @@ extends RequestServable:
         // of fifty — far below what a keep-alive fleet opens at once; the kernel caps it
         // (macOS `kern.ipc.somaxconn`, 128 by default; Linux 4096).
         ssl.lay(jn.ServerSocket(port, backlog, address)): context =>
-          val socket = context.getServerSocketFactory.nn.createServerSocket(port, backlog, address).nn
+          val socket =
+            context.getServerSocketFactory.nn.createServerSocket(port, backlog, address).nn
 
           // Offer `h2` then `http/1.1` by ALPN, so a client that speaks HTTP/2
           // negotiates it during the TLS handshake; accepted sockets inherit
@@ -494,7 +497,8 @@ extends RequestServable:
                   // An HTTP/1.1 keep-alive connection is also a per-connection
                   // scope; its session `handle` serves the connection's requests.
                   val session: Http2Session^ = new Http2Session:
-                    def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection})
+                    def handle
+                      ( handler: (connection: Http.Connection) ?=> Http.Response^{connection} )
                     :   Unit =
 
                       self1.serveConnection(handler)(in, out)

@@ -32,22 +32,20 @@
                                                                                                   */
 package jacinta
 
-import scala.{caps, math}
-
+import scala.collection.mutable as scm
+import scala.compiletime.*
 import scala.language.dynamics
 import scala.language.experimental.pureFunctions
 import scala.language.experimental.separationChecking
-
-import scala.collection.mutable as scm
-import scala.compiletime.*
+import scala.{caps, math}
 
 import anticipation.*
 import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.*
-import hypotenuse.Bcd
 import hieroglyph.*
+import hypotenuse.Bcd
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -60,8 +58,8 @@ private[jacinta] object Parser:
   // immutable keeps `Raw` free of stateful members under separation checking.
   private[jacinta] type Raw =
     ( Long | Int | Double | Bcd | String | Array[Any] |
-        Array[Long] | Array[Int] |
-        Boolean | Json.JsonNull.type | Unset )^{}
+      Array[Long] | Array[Int] |
+      Boolean | Json.JsonNull.type | Unset )^{}
 
   private inline val NumZero       = 0
   private inline val NumInt        = 1
@@ -125,9 +123,7 @@ private[jacinta] object Parser:
 
     while i < 256 do
       arr(i) =
-        if i >= 32 && i < 128 && i != 0x22 && i != 0x5C
-        then 1.toByte
-        else 0.toByte
+        if i >= 32 && i < 128 && i != 0x22 && i != 0x5C then 1.toByte else 0.toByte
 
       i += 1
 
@@ -309,6 +305,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       import Lineation.untrackedData
       val fresh = Cursor[Data](input)
       cursor = fresh
+
     syncFrom()
     stringCursor = 0
     arrayBufferId = -1
@@ -326,6 +323,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       import Lineation.untrackedData
       val fresh = Cursor[Data](input)
       cursor = fresh
+
     syncFrom()
     stringCursor = 0
     arrayBufferId = -1
@@ -343,6 +341,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       import Lineation.untrackedData
       val fresh = Cursor[Data](input)
       cursor = fresh
+
     syncFrom()
     stringCursor = 0
     arrayBufferId = -1
@@ -465,6 +464,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   private update def moreSlow(): Boolean =
     locally:
       syncTo()
+
     if tracking then reconcileLineation()
 
     // Block-scoped for the same reason as in `reconcileLineation` above.
@@ -528,6 +528,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       val copied =
         locally:
           val current = cursor
+
           current.slice(start, end): (storage, off, len2) =>
             val arr = storage.asInstanceOf[scala.Array[Byte]]
             val tmp = new scala.Array[Char](len2)
@@ -585,7 +586,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // binding hides the parser: the audited rim.
     val act: Cursor.Held -> result =
       // [by-name-receiver] hold action captures parser owning the held cursor
-      caps.unsafe.unsafeAssumePure((held: Cursor.Held) => action(using held))
+      caps.unsafe.unsafeAssumePure: (held: Cursor.Held) => action(using held)
+
     val current = cursor
     current.hold(act(summon[Cursor.Held]))
 
@@ -650,6 +652,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // misread it (see #1576).
   protected def decodeBcdLongToScalar(value: Long): Any =
     val text = Bcd.bcdLongText(value)
+
     try java.lang.Long.parseLong(text)
     catch case _: NumberFormatException => java.lang.Double.parseDouble(text)
 
@@ -770,13 +773,15 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         i += java.lang.Long.numberOfTrailingZeros(stops) >> 3
         scanning = false
 
-    if scanning then while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
+    if scanning then
+      while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
 
     if i < limit && bytes(i) == Quote then
       val out = new String(bytes, start, i - start, java.nio.charset.StandardCharsets.ISO_8859_1)
       pos = i + 1
       out
-    else parseStringGeneral()
+    else
+      parseStringGeneral()
 
   private update def parseStringGeneral()(using Tactic[Parse.Error]): String = holding:
     val region = begin()
@@ -790,8 +795,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // content region) — see `tail`.
     if !more then errorAt(Issue.PrematureEnd, Cursor.Mark(region.absolute - 1))
 
-    if peek == Quote then slice(region).also(advance())
-    else tail(region)
+    if peek == Quote then slice(region).also(advance()) else tail(region)
 
   // Like `parseString`, but routes the no-escape result through `keyCache`.
   // The key's bytes are packed losslessly into a `(packedLow, packedHigh)`
@@ -826,7 +830,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         i += java.lang.Long.numberOfTrailingZeros(stops) >> 3
         scanning = false
 
-    if scanning then while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
+    if scanning then
+      while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
 
     if i < limit && bytes(i) == Quote then
       val length = i - start
@@ -855,7 +860,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         val out = new String(bytes, start, length, java.nio.charset.StandardCharsets.ISO_8859_1)
         pos = i + 1
         out
-    else parseObjectKeyGeneral()
+    else
+      parseObjectKeyGeneral()
 
   private update def parseObjectKeyGeneral()(using Tactic[Parse.Error]): String = holding:
     val region = begin()
@@ -898,8 +904,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
               val cached     = kc(idx)
 
-              if cached != null && kcLow(idx) == packedLow &&
-                kcHigh(idx) == packedHigh
+              if cached != null && kcLow(idx) == packedLow && kcHigh(idx) == packedHigh
               then cached
               else
                 val fresh = new String(arr, off, len, java.nio.charset.StandardCharsets.ISO_8859_1)
@@ -1097,8 +1102,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         bcdBuilder.add(n)
 
     inline def rewriteEAsNeg(): Unit =
-      if bcdValid then content = (content & ~0xFL) | 0xCL
-      else bcdBuilder.overwriteLast(0xC)
+      if bcdValid then content = (content & ~0xFL) | 0xCL else bcdBuilder.overwriteLast(0xC)
 
     while continue && more do
       val ch = peek
@@ -1202,9 +1206,11 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         if nibbles <= Bcd.MaxBcdLongNibbles then
           Bcd.packBcdLong(content, nibbles, negative)
         else
-          Bcd.fromContent15(content, negative).asInstanceOf[Bcd]  // frozen: built fresh, immutable after return
+          // frozen: built fresh, immutable after return
+          Bcd.fromContent15(content, negative).asInstanceOf[Bcd]
       else
-        bcdBuilder.finish(negative).asInstanceOf[Bcd]  // frozen: Bcd is opaque over a post-finish-immutable array
+        // frozen: Bcd is opaque over a post-finish-immutable array
+        bcdBuilder.finish(negative).asInstanceOf[Bcd]
     else if bcdValid then
       if numberMode == NumberMode.Bcd then
         // BCD mode: skip the decode loop and hand back the raw in-Long BCD
@@ -1259,7 +1265,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       // High-precision path: hand back the `Bcd` directly. Reached only in
       // `NumberMode.Full`; `Bcd` and `Double` modes leave `bcdValid` true
       // and truncate on overflow rather than allocating a `Bcd.Builder`.
-      bcdBuilder.finish(negative).asInstanceOf[Bcd]  // frozen: Bcd is opaque over a post-finish-immutable array
+      // frozen: Bcd is opaque over a post-finish-immutable array
+      bcdBuilder.finish(negative).asInstanceOf[Bcd]
 
   // `bcdOnly` propagates through the `Minus` recursion so that `-3.14`
   // parsed from an array context still short-circuits the Double path.
@@ -1308,6 +1315,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     locally:
       syncTo()
+
     reconcileLineation()
 
     // Each read is block-scoped: binding the cursor hides the parser for the rest of
@@ -2135,7 +2143,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
             advance()
             parseNumber(digit & 0x0F, true)
             ()
-          else errorAt(Issue.ExpectedDigit(digit.toChar))
+          else
+            errorAt(Issue.ExpectedDigit(digit.toChar))
 
         case other => errorAt(Issue.ExpectedSomeValue(other.toChar))
 
@@ -2265,6 +2274,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
   update def directString()(using Tactic[Parse.Error]): String =
     skip()
+
     if must() == Quote then
       advance()
       // Buffer-local fast path: a plain-ASCII string that closes inside the
@@ -2286,17 +2296,21 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
           i += java.lang.Long.numberOfTrailingZeros(stops) >> 3
           scanning = false
 
-      if scanning then while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
+      if scanning then
+        while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
 
       if i < limit && bytes(i) == Quote then
         val out = new String(bytes, start, i - start, java.nio.charset.StandardCharsets.ISO_8859_1)
         pos = i + 1
         out
-      else parseString()
-    else errorAt(Issue.ExpectedString(peek.toChar))
+      else
+        parseString()
+    else
+      errorAt(Issue.ExpectedString(peek.toChar))
 
   update def directBoolean()(using Tactic[Parse.Error]): Boolean =
     skip()
+
     must() match
       case LowerT => parseTrue()
       case LowerF => parseFalse()
@@ -2341,8 +2355,10 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       if (digit & 0xF8) == Num0 || (digit & 0xFE) == 0x38 then
         advance()
         parseNumber(digit & 0x0F, true)
-      else errorAt(Issue.ExpectedDigit(digit.toChar))
-    else errorAt(Issue.ExpectedNumber(ch.toChar))
+      else
+        errorAt(Issue.ExpectedDigit(digit.toChar))
+    else
+      errorAt(Issue.ExpectedNumber(ch.toChar))
 
   // Buffer-local fast path: scan a sign and up to 18 digits against the
   // current window, without BCD packing — a bare digit loop, as Jsoniter
@@ -2392,11 +2408,12 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     val raw: Any = directNumber()
 
     raw.asMatchable match
-      case value: Long                     => value
-      case value: Double                   => value.toLong
-      case value: Int                      => Bcd.bcdIntToDouble(value).toLong
+      case value: Long                           => value
+      case value: Double                         => value.toLong
+      case value: Int                            => Bcd.bcdIntToDouble(value).toLong
       case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toLong.or(0L)
-      case _                               => 0L // unreachable: only number forms are produced
+      // unreachable: only number forms are produced
+      case _                                     => 0L
 
   // Buffer-local fast path for the overwhelmingly common double shape:
   // optional sign, up to fifteen mantissa digits with one optional decimal
@@ -2473,7 +2490,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     if ok && i < limit then
       val next = bytes(i)
       if next >= Num0 && next <= Num9 then ok = false
-    else ok = false
+    else
+      ok = false
 
     if ok then
       val totalExp = expSign*explicitExp - decimalDigits
@@ -2499,19 +2517,20 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     val raw: Any = directNumber()
 
     raw.asMatchable match
-      case value: Double                   => value
-      case value: Long                     => value.toDouble
-      case value: Int                      => Bcd.bcdIntToDouble(value)
+      case value: Double                         => value
+      case value: Long                           => value.toDouble
+      case value: Int                            => Bcd.bcdIntToDouble(value)
       case value: scala.Array[Double] @unchecked => Bcd.adopt(value).toDouble
-      case _                               => 0.0 // unreachable: only number forms are produced
+      // unreachable: only number forms are produced
+      case _                                     => 0.0
 
   private[jacinta] update def directBcd()(using Tactic[Parse.Error]): Bcd =
     val raw: Any = directNumber()
 
     raw.asMatchable match
       case value: scala.Array[Double] @unchecked => Bcd.adopt(value)
-      case value: Long                     => Bcd(BigDecimal(value))
-      case value: Double                   => Bcd(BigDecimal(value))
+      case value: Long                           => Bcd(BigDecimal(value))
+      case value: Double                         => Bcd(BigDecimal(value))
 
       case value: Int =>
         Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)
@@ -2525,7 +2544,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     if must() == OpenBrace then
       advance()
       directPush()
-    else errorAt(Issue.ExpectedObject(peek.toChar))
+    else
+      errorAt(Issue.ExpectedObject(peek.toChar))
 
   // The next key of the current object (consuming any separator comma, the
   // key and its colon), or `null` after consuming the closing brace.
@@ -2984,14 +3004,16 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         val high = if length > 8 then packBytes(bytes, start + 8, length - 8) else 0L
         pos = i + 1
         table.indexOf(low, high)
-      else table.indexOfName(parseObjectKey())
+      else
+        table.indexOfName(parseObjectKey())
 
     skip()
 
     if must() == Colon then
       advance()
       index
-    else errorAt(Issue.ExpectedColon(peek.toChar))
+    else
+      errorAt(Issue.ExpectedColon(peek.toChar))
 
   // After the opening quote: the key itself and its trailing colon.
   private update def directKeyTail()(using Tactic[Parse.Error]): String =
@@ -3001,7 +3023,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     if must() == Colon then
       advance()
       key
-    else errorAt(Issue.ExpectedColon(peek.toChar))
+    else
+      errorAt(Issue.ExpectedColon(peek.toChar))
 
   // Buffer-local fast path for an object key: scan to the closing quote
   // within the current window and probe the intern cache straight from the
@@ -3041,7 +3064,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         val out = new String(bytes, start, length, java.nio.charset.StandardCharsets.ISO_8859_1)
         pos = i + 1
         out
-    else parseObjectKey()
+    else
+      parseObjectKey()
 
   update def directOpenArray()(using Tactic[Parse.Error]): Unit =
     skip()
@@ -3049,7 +3073,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     if must() == OpenBracket then
       advance()
       directPush()
-    else errorAt(Issue.ExpectedArray(peek.toChar))
+    else
+      errorAt(Issue.ExpectedArray(peek.toChar))
 
   // True when another element follows (positioned at it, with any separator
   // comma consumed); false after consuming the closing bracket.

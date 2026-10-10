@@ -69,7 +69,8 @@ object Bufferable extends ProductDerivable[Bufferable]:
     // failing any second expansion (upstream #26547).
     Join[derivation]
       ( contexts[derivation]() { [field] => _.width }.readable.sum,
-        (sextant: Sextant^, value) => fields(value) { [field] => field => contextual.sextant(sextant, field) } )
+        (sextant: Sextant^, value) =>
+          fields(value) { [field] => field => contextual.sextant(sextant, field) } )
 
 trait Bufferable extends Typeclass:
   def width: Int

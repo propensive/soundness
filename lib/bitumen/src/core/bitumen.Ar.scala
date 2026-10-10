@@ -100,7 +100,9 @@ object Ar:
 
   // In the companion of the form, so `directory.archive[Ar]()` resolves with no import.
   given archivable: [plane: Filesystem]
-  =>  ( backend: FilesystemBackend on plane, ioTactic: Tactic[Io.Error], arTactic: Tactic[Ar.Error] )
+  =>  ( backend:  FilesystemBackend on plane,
+        ioTactic: Tactic[Io.Error],
+        arTactic: Tactic[Ar.Error] )
   =>  ( Ar.Archivable[plane]^{ioTactic, arTactic} ) =
     Ar.Archivable[plane]
 
@@ -281,9 +283,9 @@ object Ar:
       t"$fields${mode.octal.fit(8)}${size.show.fit(10)}$terminator".in[Data]
 
   // The sixty-byte `ar` member header, held as raw slices: nothing is decoded in the case class, as
-  // in `Tar.Header`. Every field is left-aligned ASCII padded with trailing spaces — the opposite of
-  // TAR's right-aligned, space-led form — and every numeric field is decimal except `mode`, which
-  // is octal.
+  // in `Tar.Header`. Every field is left-aligned ASCII padded with trailing spaces — the opposite
+  // of TAR's right-aligned, space-led form — and every numeric field is decimal except `mode`,
+  // which is octal.
   case class Header
     ( name:       Data,
       mtime:      Data,

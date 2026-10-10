@@ -34,17 +34,18 @@ package surveillance
 
 import java.nio.file as jnf
 
+import scala.caps
+
 import anticipation.*
 import aperture.*
 import contingency.*
 import fulminate.*
 import prepositional.*
 import rudiments.*
-import scala.caps
 import spectacular.*
 import turbulence.*
-import zephyrine.*
 import vacuous.*
+import zephyrine.*
 
 object Watch:
   def apply[path: Abstractable across Paths to Text](paths: Iterable[path])(using watcher: Watcher)
@@ -61,8 +62,7 @@ object Watch:
       . groupBy(_(0)).view.mapValues(_.map(_(1)))
 
     val directories: Map[jnf.Path, Text -> Boolean] = Map.from:
-      pathGroups.mapValues: predicates =>
-        (value: Text) => predicates.exists(_(value))
+      pathGroups.mapValues: predicates => (value: Text) => predicates.exists(_(value))
 
     val spool: Relay[Watch.Event] = Relay()
 
@@ -109,14 +109,16 @@ object Watch:
     // `Instantiable` instances retain their filesystem evidence, which a pure context bound
     // cannot accept (as ambience's `Home` documents).
     def path[directory](using instantiable: (directory is Instantiable across Paths from Text)^)
-    :   directory = unsafely:
-      val relPath = this match
-        case NewFile(_, file)      => file
-        case NewDirectory(_, path) => path
-        case Modify(_, file)       => file
-        case Delete(_, path)       => path
+    :   directory =
 
-        instantiable(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show)
+      unsafely:
+        val relPath = this match
+          case NewFile(_, file)      => file
+          case NewDirectory(_, path) => path
+          case Modify(_, file)       => file
+          case Delete(_, path)       => path
+
+          instantiable(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show)
 
   // One quiet period's worth of events, oldest first: what `batches` yields once the watched
   // tree has stopped changing for the requested interval.
@@ -124,6 +126,7 @@ object Watch:
     // Every path touched in the batch, once each, in first-occurrence order.
     def paths[directory](using (directory is Instantiable across Paths from Text)^)
     :   List[directory] =
+
       events.map(_.path[directory]).distinct
 
   // WatchHandle → Watch.Handle
@@ -137,6 +140,7 @@ object Watch:
 
     def batches[duration: Abstractable across Durations to Long](quiet: duration)
     :   Chain[Watch.Batch] =
+
       watch.batches(quiet)
 
   // A named class rather than an anonymous given instance, for the reasons documented on
@@ -156,8 +160,8 @@ object Watch:
     :   result =
 
       val watch = Watch(List(value).stdlib)
-      try block(using new Watch.Handle(watch) with Granting[grants] {})
-      finally watch.unregister()
+
+      try block(using new Watch.Handle(watch) with Granting[grants] {}) finally watch.unregister()
 
   // Watching several paths at once: `List(a, b, c).open[Watch]()`, with one event stream
   // multiplexing all of them, exactly as `Watch` itself works. Parameterized over the concrete
@@ -191,6 +195,7 @@ class Watch(spool: Relay[Watch.Event], registration: Watcher.Registration^):
   // `quiet`, so a burst of editor saves is reported once, after it has settled.
   def batches[duration: Abstractable across Durations to Long](quiet: duration)
   :   Chain[Watch.Batch] =
+
     spool.batches(quiet).map(Watch.Batch(_))
 
   def unregister(): Unit =

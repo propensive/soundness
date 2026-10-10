@@ -33,7 +33,6 @@
 package distillate
 
 import scala.caps
-
 import scala.deriving.*
 import scala.reflect.*
 
@@ -46,7 +45,7 @@ import vacuous.*
 object Extractable:
   given decodable: [text <: Text, result]
   =>  ( decodable: Tactic[Hazard]^ ?=> result is Decodable in Text )
-  =>  ((text is Extractable to result)^{decodable}) =
+  =>  ( (text is Extractable to result)^{decodable} ) =
 
     // Captures the context function it decodes with.
     value => safely(decodable(using strategies.throwUnsafely).decoded(value))

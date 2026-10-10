@@ -32,7 +32,6 @@
                                                                                                   */
 package bitumen
 
-
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -62,7 +61,7 @@ given arPathOpenable: [path: Abstractable across Paths to Text]
   ArOpenable[path]
 
 given tarPathCreatable: [path: Abstractable across Paths to Text]
-=>  (tactic: Tactic[Tar.Error])
+=>  ( tactic: Tactic[Tar.Error] )
 =>  ( TarBuilder.TarCreatable[path]^{tactic} ) =
   TarBuilder.TarCreatable[path]
 
@@ -77,5 +76,4 @@ extension (tarfile: Tarfile)
 
     val created: scm.HashSet[java.nio.file.Path] = scm.HashSet()
 
-    tarfile.entries.each: entry =>
-      TarFilesystem.applyEntry(root, entry, created)
+    tarfile.entries.each: entry => TarFilesystem.applyEntry(root, entry, created)

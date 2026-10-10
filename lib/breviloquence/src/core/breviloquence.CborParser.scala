@@ -33,10 +33,8 @@
 package breviloquence
 
 import scala.caps
-
-import scala.language.experimental.pureFunctions
-
 import scala.collection.mutable as scm
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
@@ -46,7 +44,6 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
-
 import Cbor.Error.Reason
 
 object CborParser:
@@ -69,8 +66,7 @@ object CborParser:
 
   private val longCache: Array[AnyRef]^{} =
     Array.scribe[AnyRef](LongCacheSize): scribe => extent =>
-      extent.each: index =>
-        scribe(index) = java.lang.Long.valueOf(index.n0.toLong).nn
+      extent.each: index => scribe(index) = java.lang.Long.valueOf(index.n0.toLong).nn
 
   private inline def boxLong(value: Long): AnyRef =
     // The guard proves `0 <= value < LongCacheSize`, the cache's extent.
@@ -80,9 +76,7 @@ object CborParser:
   // Joins the chunks of an indefinite-length string: one `System.arraycopy`
   // per chunk through `Scribe`'s bulk `append`.
   private def join(chunks: scm.ArrayBuffer[Array[Byte]^{}]): Array[Byte]^{} =
-    Array.collect[Byte](): buffer =>
-      chunks.foreach: chunk =>
-        buffer.append(chunk, 0, chunk.length)
+    Array.collect[Byte](): buffer => chunks.foreach: chunk => buffer.append(chunk, 0, chunk.length)
 
   // One parser per parse: the parser owns no scratch arrays (the box cache is
   // shared here), so an instance is four fields and a cursor, and the
@@ -120,7 +114,9 @@ object CborParser:
     if parser.more then abort(Cbor.Error(Reason.Trailing(parser.position)))
     result
 
-  private[breviloquence] def parse(consume source: (Stream[Data] over Credit)^): Cbor.Ast raises Cbor.Error =
+  private[breviloquence] def parse(consume source: (Stream[Data] over Credit)^)
+  :   Cbor.Ast raises Cbor.Error =
+
     val moved: AnyRef = source.asInstanceOf[AnyRef]
     val parser = apply(moved.asInstanceOf[(Stream[Data] over Credit)^])
     val result = parser.value()
@@ -131,7 +127,9 @@ object CborParser:
   // `accept`, so chunked input is never assembled into one array first.
   // Resolution-scoped (the tactic), and defined here rather than in `Cbor.Ast`'s
   // companion so the seal lands in this file's census row.
-  private[breviloquence] def aggregable(using tactic: Tactic[Cbor.Error]): (Cbor.Ast is Aggregable by Data)^{tactic} =
+  private[breviloquence] def aggregable(using tactic: Tactic[Cbor.Error])
+  :   (Cbor.Ast is Aggregable by Data)^{tactic} =
+
     // [field-purity] given Aggregable codec over tactic, codec-thunk seal
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
@@ -198,6 +196,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
 
   private[breviloquence] update def resetStream(consume input: (Stream[Data] over Credit)^)
   :   Unit =
+
     import Lineation.untrackedData
     val fresh = Cursor[Data](input)
     cursor = fresh
@@ -336,7 +335,8 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
     // binding hides the parser: the audited rim.
     val act: Cursor.Held -> result =
       // [by-name-receiver] hold action captures parser owning the held cursor
-      caps.unsafe.unsafeAssumePure((held: Cursor.Held) => action(using held))
+      caps.unsafe.unsafeAssumePure: (held: Cursor.Held) => action(using held)
+
     val current = cursor
     current.hold(act(summon[Cursor.Held]))
 
@@ -403,6 +403,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
   // read-only proxy, so the inline helpers (`expect`, `skip`, `head`) call only plain ones.
   private update def readLength(info: Int, headOffset: Long)(using Tactic[Cbor.Error])
   :   Long =
+
     if info < 24 then info.toLong
     else info match
       case 24 => readUInt8().toLong
@@ -430,6 +431,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
   private update def boundedLength(length: Long, headOffset: Long)
     ( using Tactic[Cbor.Error] )
   :   Int =
+
     if length < 0 || length > Int.MaxValue then abort(Cbor.Error(Reason.Overflow(headOffset)))
     val count = length.toInt
     expect(count)
@@ -439,6 +441,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
   private update def skippedLength(length: Long, headOffset: Long)
     ( using Tactic[Cbor.Error] )
   :   Unit =
+
     if length < 0 || length > Int.MaxValue then abort(Cbor.Error(Reason.Overflow(headOffset)))
     skip(length.toInt)
 
@@ -533,8 +536,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
     //   head 0x20–0x37 : major 1, info 0–23  → value is -1 - (head & 0x1F)
     if head < 0x18 then return Cbor.Ast.fromRef(boxLong(head.toLong))
 
-    if head >= 0x20 && head < 0x38 then
-      return Cbor.Ast.fromRef(boxLong(-1L - (head & 0x1F).toLong))
+    if head >= 0x20 && head < 0x38 then return Cbor.Ast.fromRef(boxLong(-1L - (head & 0x1F).toLong))
 
     // Fast path for short text strings (major 3, info 0–23, head 0x60–0x77).
     // These dominate map keys and short literals; a length-prefixed UTF-8
@@ -612,8 +614,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
         else
           val length = readLength(info, headOffset)
 
-          if length < 0 || length > Int.MaxValue
-          then abort(Cbor.Error(Reason.Overflow(headOffset)))
+          if length < 0 || length > Int.MaxValue then abort(Cbor.Error(Reason.Overflow(headOffset)))
           val count = length.toInt
           // Allocate directly in the parity-padded shape used by `Cbor.Ast.array`
           // (odd length, with sentinel pad if logical count is even). One allocation
@@ -654,8 +655,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
         else
           val length = readLength(info, headOffset)
 
-          if length < 0 || length > Int.MaxValue
-          then abort(Cbor.Error(Reason.Overflow(headOffset)))
+          if length < 0 || length > Int.MaxValue then abort(Cbor.Error(Reason.Overflow(headOffset)))
 
           val count = length.toInt
           val items = Array.allocate[Any](count*2)
@@ -687,6 +687,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
             // The error message reads this parser only to render its diagnostic detail.
             val value = readUInt8()
             abort(Cbor.Error(Reason.BadSimpleValue(headOffset, value)))
+
           case 31 => abort(Cbor.Error(Reason.UnexpectedBreak(headOffset)))
           case _  => abort(Cbor.Error(Reason.BadSimpleValue(headOffset, info)))
 
@@ -937,8 +938,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
         else
           val length = readLength(info, headOffset)
 
-          if length < 0 || length > Int.MaxValue
-          then abort(Cbor.Error(Reason.Overflow(headOffset)))
+          if length < 0 || length > Int.MaxValue then abort(Cbor.Error(Reason.Overflow(headOffset)))
 
           repeat(length.toInt):
             directSkipValue()
@@ -951,8 +951,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
         else
           val length = readLength(info, headOffset)
 
-          if length < 0 || length > Int.MaxValue
-          then abort(Cbor.Error(Reason.Overflow(headOffset)))
+          if length < 0 || length > Int.MaxValue then abort(Cbor.Error(Reason.Overflow(headOffset)))
 
           repeat(length.toInt):
             directSkipValue()
@@ -967,14 +966,15 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
       case 7 =>
         info match
           case 20 | 21 | 22 | 23 => ()
-          case 25 => skip(2)
-          case 26 => skip(4)
-          case 27 => skip(8)
+          case 25                => skip(2)
+          case 26                => skip(4)
+          case 27                => skip(8)
 
           case 24 =>
             // As above.
             val value = readUInt8()
             abort(Cbor.Error(Reason.BadSimpleValue(headOffset, value)))
+
           case 31 => abort(Cbor.Error(Reason.UnexpectedBreak(headOffset)))
           case _  => abort(Cbor.Error(Reason.BadSimpleValue(headOffset, info)))
 
@@ -1008,8 +1008,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
       if info == 31 then -1 else
         val length = readLength(info, headOffset)
 
-        if length < 0 || length > Int.MaxValue
-        then abort(Cbor.Error(Reason.Overflow(headOffset)))
+        if length < 0 || length > Int.MaxValue then abort(Cbor.Error(Reason.Overflow(headOffset)))
 
         length.toInt
 

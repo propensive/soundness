@@ -32,9 +32,8 @@
                                                                                                   */
 package jacinta
 
-import scala.caps
-
 import scala.annotation.*
+import scala.caps
 
 import adversaria.*
 import anticipation.*
@@ -191,7 +190,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   // `type`-as-Scala-subtype derivation cannot model. Decoding by hand also
   // keeps the recursion on nested schemas pointed back at this same given.
   given decodable: (jsonError: Tactic[Json.Error], pointerError: Tactic[JsonPointer.Error])
-  =>  ((JsonSchema is Json.Decodable)^{jsonError, pointerError}) =
+  =>  ( (JsonSchema is Json.Decodable)^{jsonError, pointerError} ) =
     // The decoder captures the two tactics it raises through.
     Json.Decodable(Morphology.Any)(decodeSchema(_))
 
@@ -203,6 +202,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   private def decodeSchema(json: Json)
     ( using jsonError: Tactic[Json.Error], pointerError: Tactic[JsonPointer.Error] )
   :   JsonSchema =
+
     // Sealed pure: a capability-typed local would hide the tactic from every
     // subsequent statement (the statement rule).
     // [field-purity] local codec given would hide tactic from statements
@@ -220,6 +220,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
 
     def field[value](name: Text)(using decodable: (value is Json.Decodable)^)
     :   Optional[value] =
+
       json(name).as[Optional[value]]
 
     // The collection reads take their element codecs explicitly, as sealed-pure vals: resolved
@@ -239,17 +240,17 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
     val textList: List[Text] is Json.Decodable =
       // [by-name-receiver] by-name codec thunk aliases tactic argument
       caps.unsafe.unsafeAssumePure
-        (Json.listDecodable[List, Text](using jsonError, summon)(using textDecodable0))
+        ( Json.listDecodable[List, Text](using jsonError, summon)(using textDecodable0) )
 
     val schemaList: List[JsonSchema] is Json.Decodable =
       // [by-name-receiver]
       caps.unsafe.unsafeAssumePure
-        (Json.listDecodable[List, JsonSchema](using jsonError, summon)(using self))
+        ( Json.listDecodable[List, JsonSchema](using jsonError, summon)(using self) )
 
     val schemaMap: Map[Text, JsonSchema] is Json.Decodable =
       // [by-name-receiver]
       caps.unsafe.unsafeAssumePure
-        (Json.map[Text, JsonSchema](using self)(using summon, jsonError))
+        ( Json.map[Text, JsonSchema](using self)(using summon, jsonError) )
 
     // Every read below inspects the node's kind first, so that a document written to another
     // draft or dialect — a boolean `exclusiveMinimum`, a schema-valued `additionalProperties`,
@@ -412,7 +413,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
 
             (label, schema2)
 
-        .pipe(iarr => iarr.readable.to(Map))
+        .pipe: iarr => iarr.readable.to(Map)
 
       val required: List[Text] =
         contexts[derivation]():

@@ -33,7 +33,6 @@
 package archimedes
 
 import scala.collection.immutable.Seq
-
 // Deliberate stdlib opt-out, as in `Cell`.
 import scala.collection.immutable.{Map, Set}
 import scala.collection.mutable.ListBuffer

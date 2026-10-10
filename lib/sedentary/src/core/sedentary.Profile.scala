@@ -174,19 +174,18 @@ extends Rig:
             . sortBy(-_(1))
             . take(${Expr(frames2)})
 
-
           List.from:
-            total.toString.tt :: sorted.map: (key, count) =>
-              (count.toString + "\t" + key).tt
+            total.toString.tt :: sorted.map: (key, count) => (count.toString + "\t" + key).tt
         }
 
     // A profile records for its (scaled) target duration, so the declared time is the estimate.
-    if !runner.skip(testId, Entry.Kind.Profile, Nil, Bench.scaled(target.generic, runner.scale)) then
+    if !runner.skip(testId, Entry.Kind.Profile, Nil, Bench.scaled(target.generic, runner.scale))
+    then
       val results = dispatch(body)
 
       val hotspots =
         Hotspots
-          ( results.prim.let(line => safely(line.as[Long])).or(0L),
+          ( results.prim.let{ line => safely(line.as[Long]) }.or(0L),
             results.skip(1).map: line =>
               line.cut(t"\t") match
                 case count :: className :: method :: Nil =>

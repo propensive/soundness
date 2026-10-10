@@ -88,6 +88,7 @@ sealed trait Monitor extends Resultant, Findable, anticipation.Durable:
   // migrated; this waits on capture checking, not on this API.
   protected[parasite] val workersRef
   :   juca.AtomicReference[scala.collection.immutable.Set[Worker^{}]] =
+
     juca.AtomicReference[scala.collection.immutable.Set[Worker^{}]](
       scala.collection.immutable.Set())
 
@@ -101,12 +102,16 @@ sealed trait Monitor extends Resultant, Findable, anticipation.Durable:
   protected[parasite] def addWorker(worker: Worker^): Unit =
     // [registry-lifetime] worker stored in supervision workers set
     val worker0: Worker^{} = caps.unsafe.unsafeAssumePure(worker)
-    workersRef.updateAndGet(_.nn.incl(worker0).asInstanceOf[scala.collection.immutable.Set[Worker^{}]])
+
+    workersRef.updateAndGet
+      ( _.nn.incl(worker0).asInstanceOf[scala.collection.immutable.Set[Worker^{}]] )
 
   protected[parasite] def remove(monitor: Worker^): Unit =
     // [registry-lifetime] worker removed from supervision workers set
     val monitor0: Worker^{} = caps.unsafe.unsafeAssumePure(monitor)
-    workersRef.updateAndGet(_.nn.excl(monitor0).asInstanceOf[scala.collection.immutable.Set[Worker^{}]])
+
+    workersRef.updateAndGet
+      ( _.nn.excl(monitor0).asInstanceOf[scala.collection.immutable.Set[Worker^{}]] )
 
   def name: Optional[Name[Async]]
   def chain: List[Codepoint]
@@ -247,13 +252,13 @@ object JavascriptSupervisor extends Supervisor:
 
 // The failure path is, in a long-lived process, the code most likely to run for the first time late
 // in that process's life — and classloading is not guaranteed to still work by then. A daemon whose
-// jar has been replaced underneath it (rebuilt in place while it runs) holds an open `JarFile` whose
-// central directory has gone stale, so every class it has not *already* loaded fails from then on;
-// and a strand being cancelled through `Thread.interrupt` can fail a classload mid-read, because NIO
-// channel reads throw on an interrupted thread. Either way, if recording a failure were the first
-// touch of `Fulfillment.Failed`, that classload would throw `NoClassDefFoundError` in place of the
-// original error — destroying the only evidence of what actually went wrong — and leave the
-// strand's promise unsettled, parking every joiner forever.
+// jar has been replaced underneath it (rebuilt in place while it runs) holds an open `JarFile`
+// whose central directory has gone stale, so every class it has not *already* loaded fails from
+// then on; and a strand being cancelled through `Thread.interrupt` can fail a classload mid-read,
+// because NIO channel reads throw on an interrupted thread. Either way, if recording a failure were
+// the first touch of `Fulfillment.Failed`, that classload would throw `NoClassDefFoundError` in
+// place of the original error — destroying the only evidence of what actually went wrong — and
+// leave the strand's promise unsettled, parking every joiner forever.
 //
 // So every class the failure and shutdown paths need is loaded and initialized here instead, at the
 // birth of the first worker (whose `state` field reads `initial`), while classloading still works.
@@ -302,7 +307,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate
 
   def stack: Text =
     val ref = // The `(x: Text)` ascriptions widen singleton-bounded values (case-2 pure-value box).
-      name.lay((frame.text: Text).s)(name => (name: Text).s+"@"+(frame.text: Text).s)
+      name.lay((frame.text: Text).s): name => (name: Text).s+"@"+(frame.text: Text).s
 
     parent match
       case root: Root         => ((root.supervisor.name: Text).s+"://"+ref).tt
@@ -327,13 +332,15 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate
     if supervisor.interrupted() || state() == Cancelled then throw new InterruptedException()
 
 
-  def map[result2](lambda: Result ->{caps.any.only[anticipation.Durable]} result2)(using monitor: Monitor^, probate: SharedProbate)
+  def map[result2](lambda: Result ->{caps.any.only[anticipation.Durable]} result2)
+    ( using monitor: Monitor^, probate: SharedProbate )
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate} =
 
     async(lambda(join()))
 
 
-  def bind[result2](lambda: Result ->{caps.any.only[anticipation.Durable]} Task[result2])(using monitor: Monitor^, probate: SharedProbate)
+  def bind[result2](lambda: Result ->{caps.any.only[anticipation.Durable]} Task[result2])
+    ( using monitor: Monitor^, probate: SharedProbate )
   :   (Task[result2] emits Async.Error)^{this, lambda, monitor, probate} =
 
     async(lambda(join()).join())
@@ -363,6 +370,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate
   def result()(using cancel: Tactic[Async.Error]^): Result =
     state() match
       case Delivered(_, result) => result // Repeated joins skip the CAS and allocation below.
+
       case _ =>
         state.since:
           case null                        => abort(Async.Error(Reason.Incomplete))
@@ -421,6 +429,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate
   private def fulfilment[error <: Hazard]()(using Tactic[error | Async.Error]^): Result =
     state() match
       case Delivered(_, result) => result // Repeated joins skip the CAS and allocation below.
+
       case _ =>
         state.since:
           case Completed(duration, result) => Delivered(duration, result)
@@ -428,13 +437,13 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate
           case other                       => other
 
         . match
-          case Completed(_, result)        => result
-          case Delivered(_, result)        => result
+          case Completed(_, result)         => result
+          case Delivered(_, result)         => result
           case Failed(failure: Async.Error) => abort(failure)
-          case Failed(failure: Exception)  => abort(failure.asInstanceOf[error])
-          case Failed(failure)             => throw failure
-          case Cancelled                   => abort(Async.Error(Reason.Cancelled))
-          case _                           => abort(Async.Error(Reason.Incomplete))
+          case Failed(failure: Exception)   => abort(failure.asInstanceOf[error])
+          case Failed(failure)              => throw failure
+          case Cancelled                    => abort(Async.Error(Reason.Cancelled))
+          case _                            => abort(Async.Error(Reason.Incomplete))
 
   private lazy val strand: Strand = parent.supervisor.fork(() => stack):
     val started: Boolean = state.since:

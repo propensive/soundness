@@ -33,7 +33,6 @@
 package dendrology
 
 import scala.collection.immutable.Vector
-
 import scala.collection.immutable.{List, Nil, ::}
 import scala.reflect.*
 
@@ -77,7 +76,7 @@ object DagDiagram:
 
     DagDiagram:
       List.tabulate(n): row =>
-        val tiles = List.tabulate(row) { col => DagTile.fromOrdinal(layout(row*n + col)) }
+        val tiles = List.tabulate(row): col => DagTile.fromOrdinal(layout(row*n + col))
         (tiles, nodes(row))
 
   given printable: [node: Showable] => (style: DagStyle[Text]) => DagDiagram[node] is Printable =

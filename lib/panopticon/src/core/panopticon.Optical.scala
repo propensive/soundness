@@ -46,19 +46,17 @@ object Optical:
   given ordinalList: [element] => Ordinal is Optical from List[element] onto element =
     ordinal =>
       Optic: (origin, lambda) =>
-        origin.at(ordinal).lay(origin): element =>
-          origin.define(ordinal, lambda(element))
+        origin.at(ordinal).lay(origin): element => origin.define(ordinal, lambda(element))
 
   given ordinalSeries: [element] => Ordinal is Optical from Sequence[element] onto element =
     ordinal =>
       Optic: (origin, lambda) =>
-        origin.at(ordinal).lay(origin): element =>
-          origin.define(ordinal, lambda(element))
+        origin.at(ordinal).lay(origin): element => origin.define(ordinal, lambda(element))
 
   given at: [key, element] => key is Optical from Map[key, element] onto element =
     key =>
       Optic: (origin, lambda) =>
-        origin(key).let(lambda).lay(origin)(value => origin.define(key, value))
+        origin(key).let(lambda).lay(origin): value => origin.define(key, value)
 
   given filter: [key, element] => Filter[key] is Optical from Map[key, element] onto element =
     filter =>

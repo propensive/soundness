@@ -33,7 +33,6 @@
 package yossarian
 
 import scala.math
-
 import scala.reflect.*
 
 import anticipation.*
@@ -76,7 +75,8 @@ object internal:
       @scala.caps.unsafe.untrackedCaptures linkBuffer:     scala.Array[Text] ):
 
     // Exclusive views for writes: the untracked fields read as read-only.
-    private inline def styleTarget: scala.Array[styling]^ = styleBuffer.asInstanceOf[scala.Array[styling]^]
+    private inline def styleTarget: scala.Array[styling]^ =
+      styleBuffer.asInstanceOf[scala.Array[styling]^]
 
     private inline def graphemeTarget: scala.Array[Grapheme]^ =
       graphemeBuffer.asInstanceOf[scala.Array[Grapheme]^]

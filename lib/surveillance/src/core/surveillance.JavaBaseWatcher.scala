@@ -32,11 +32,10 @@
                                                                                                   */
 package surveillance
 
-import scala.caps
-
 import java.io as ji
 import java.nio.file as jnf, jnf.StandardWatchEventKinds.*
 
+import scala.caps
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -55,7 +54,7 @@ import vacuous.*
 // watched.
 object JavaBaseWatcher extends Watcher uses parasite.threads:
   private case class WatchService
-    ( watchService: jnf.WatchService, pollLoop: Loop^{} ) uses parasite.threads:
+    (watchService: jnf.WatchService, pollLoop: Loop^{}) uses parasite.threads:
     import probates.awaitProbate
 
     def stop(): Unit =
@@ -96,8 +95,7 @@ object JavaBaseWatcher extends Watcher uses parasite.threads:
             val watches0 = watches
             watches0.at(key).or(scala.collection.immutable.Set())
 
-          key.pollEvents().nn.iterator.nn.each: event =>
-            pathWatches.each(_.put(event))
+          key.pollEvents().nn.iterator.nn.each: event => pathWatches.each(_.put(event))
 
           // `reset` returns `false` once the key is no longer valid (e.g. the watched
           // directory was deleted); drop it so the map doesn't retain dead keys.
@@ -169,7 +167,8 @@ object JavaBaseWatcher extends Watcher uses parasite.threads:
     def cancel(): Unit =
       watchesMutex:
         pathWatches.each: pathWatch =>
-          watches(pathWatch.key) = watches.at(pathWatch.key).or(scala.collection.immutable.Set()) - pathWatch
+          watches(pathWatch.key) =
+            watches.at(pathWatch.key).or(scala.collection.immutable.Set()) - pathWatch
 
           if watches.at(pathWatch.key).or(scala.collection.immutable.Set()).isEmpty then
             pathWatch.key.cancel()
@@ -178,6 +177,7 @@ object JavaBaseWatcher extends Watcher uses parasite.threads:
         if watches.nil then serviceMutex:
           serviceValue match
             case Unset                => ()
+
             case service: WatchService =>
               service.stop()
               serviceValue = Unset

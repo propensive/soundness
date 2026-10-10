@@ -133,8 +133,8 @@ extends Lsp, caps.ExclusiveCapability:
       Lsp.requestId(json).lay:
         client0.logMessage(fault.response)
         Unset
-      .apply: id =>
-        JsonRpc.failure(fault.reason.code, fault.response, id)
+
+      .apply: id => JsonRpc.failure(fault.reason.code, fault.response, id)
 
   private[exegesis] def snapshot(uri: Text): Optional[TextDocumentItem] =
     states.at(uri).let: state =>

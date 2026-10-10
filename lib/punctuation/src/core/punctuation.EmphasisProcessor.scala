@@ -124,6 +124,7 @@ final class InlineList:
     // [stdlib-iterator] cursor in anonymous Iterator
     @scala.caps.unsafe.untrackedCaptures
     var cur: InlineNode | Null = first
+
     def hasNext: Boolean = cur != null
 
     def next(): InlineNode =

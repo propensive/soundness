@@ -242,21 +242,21 @@ object Chart:
   extends Bars.Style, StackedBars.Style, Histogram.Style, Lines.Style, Scatter.Style, Boxes.Style,
     Pie.Style
 
+  object Drawing:
+    // The whole drawing as one SVG, as `drawing.in[Svg]`.
+    given encodable: Drawing is Encodable in Svg = drawing =>
+      Svg(drawing.width.toFloat, drawing.height.toFloat, drawing.defs, drawing.parts.values)
+
   // A rendered chart as its parts, each under a stable identifier — `backdrop`, `grid`,
   // `abscissa`, `ordinate`, `legend`, `series-0`, `series-1`, … — in drawing order. The
   // identifiers are what a revision names.
   case class Drawing
     ( width: Double, height: Double, defs: List[Svg.Def], parts: Ledger[Svg.Id, Figure] )
 
-  object Drawing:
-    // The whole drawing as one SVG, as `drawing.in[Svg]`.
-    given encodable: Drawing is Encodable in Svg = drawing =>
-      Svg(drawing.width.toFloat, drawing.height.toFloat, drawing.defs, drawing.parts.values)
-
   // A chart drawn with the components it asks for, as `chart.in[Svg]`.
   given encodable: [data, form, fit, style <: Chart.Style]
-  =>    (style, ChartPalette, FontMetric, Arranger)
-  =>    Chart[data, form, fit, style] is Encodable in Svg =
+  =>  ( style, ChartPalette, FontMetric, Arranger )
+  =>  Chart[data, form, fit, style] is Encodable in Svg =
     _.drawing.in[Svg]
 
   // What changed between one drawing of a chart and the next: either the whole chart, because

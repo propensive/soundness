@@ -43,4 +43,3 @@ import turbulence.*
 extension (cbor: Cbor.Ast.type)
   def parse(source: Data): Cbor.Ast raises Cbor.Error = CborParser.parse(source)
   def parse(source: Chain[Data]): Cbor.Ast raises Cbor.Error = CborParser.parse(source)
-

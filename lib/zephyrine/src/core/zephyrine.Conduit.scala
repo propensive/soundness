@@ -90,7 +90,7 @@ object Conduit:
     @caps.unsafe.untrackedCaptures @volatile var error: Throwable | Null = null
 
   def apply[medium]()
-    ( using addressable0: medium is Addressable )(using buffering: Buffering)
+    (using addressable0: medium is Addressable)(using buffering: Buffering)
   :   ((Intake[medium] over Credit)^, (Stream[medium] over Credit)^) =
 
     val block: Int = buffering.capacity(addressable0.substrate)
@@ -152,7 +152,8 @@ object Conduit:
             if reused != null then reused else
               val pooled = Blockpool.poll(storageClass, ceiling)
               if pooled != null then pooled else addressable0.allocate(ceiling)
-          else addressable0.allocate(size) )
+          else
+            addressable0.allocate(size) )
 
         . asInstanceOf[addressable0.Storage]
 
@@ -206,8 +207,14 @@ object Conduit:
           while done < size do
             val free = reserve(size - done)
             val count = free.min(size - done)
+
             addressable0.copyChunk
-              (source, offset.n0 + done, current.asInstanceOf[addressable0.Storage^], mark0, count)
+              ( source,
+                offset.n0 + done,
+                current.asInstanceOf[addressable0.Storage^],
+                mark0,
+                count )
+
             commit(count)
             done += count
         else
@@ -246,6 +253,7 @@ object Conduit:
       @caps.unsafe.untrackedCaptures
       private var storage: addressable0.Storage =
         addressable0.allocate(0).asInstanceOf[addressable0.Storage]
+
       private var start0: Int = 0
       private var limit0: Int = 0
       private var end0: Int = 0
@@ -294,8 +302,10 @@ object Conduit:
         if error0 != null then
           ended = true
           throw error0
-        else if limit0 > start0 then limit0 - start0
-        else if ended then Unset
+        else if limit0 > start0 then
+          limit0 - start0
+        else if ended then
+          Unset
         else
           val granted = summon[Credit is Regulation].grant(demand)
 

@@ -63,22 +63,22 @@ object Sse:
     // The frame reader owns its cursor exclusively for the whole parse.
     // [closure-capture] local frame def over fresh exclusive cursor
     scala.caps.unsafe.unsafeAssumeSeparate:
-     val cursor = Cursor(input)
+      val cursor = Cursor(input)
 
-     def frame(start: Cursor.Mark)(using Cursor.Held): Optional[Text] = cursor.hold:
-       if !cursor.finished && cursor.seek(Lf.toByte.asInstanceOf[cursor.addressable.Operand]) then
-         val end = cursor.mark
-         cursor.next()
+      def frame(start: Cursor.Mark)(using Cursor.Held): Optional[Text] = cursor.hold:
+        if !cursor.finished && cursor.seek(Lf.toByte.asInstanceOf[cursor.addressable.Operand]) then
+          val end = cursor.mark
+          cursor.next()
 
-         cursor.lay(cursor.grab(start, end)): char =>
-           if char == Lf then cursor.next() yet cursor.grab(start, end) else frame(start)
-       else if cursor.mark == start then
-         Unset
-       else
-         cursor.grab(start, cursor.mark)
+          cursor.lay(cursor.grab(start, end)): char =>
+            if char == Lf then cursor.next() yet cursor.grab(start, end) else frame(start)
+        else if cursor.mark == start then
+          Unset
+        else
+          cursor.grab(start, cursor.mark)
 
-     Framable.frames[Text]:
-       cursor.hold(frame(cursor.mark))
+      Framable.frames[Text]:
+        cursor.hold(frame(cursor.mark))
 
   given jsonEncodable: Json is Encodable in Sse =
     import formatting.compactJsonFormatting
@@ -155,7 +155,9 @@ object Sse:
       case CapacityExceeded extends Reason(4)
 
     given communicable: Reason is Communicable =
-      case Reason.MalformedField   => m"a line did not contain the expected `field: value` separator"
+      case Reason.MalformedField =>
+        m"a line did not contain the expected `field: value` separator"
+
       case Reason.BadRetryValue    => m"the `retry` field value could not be parsed as an integer"
 
       case Reason.UnknownField =>
@@ -165,7 +167,8 @@ object Sse:
         m"the requested replay range exceeded the source buffer capacity"
 
   case class Error(reason: Sse.Error.Reason)(using Diagnostics)
-  extends fulminate.Error(350, reason.number)(m"the server-sent event was not valid because $reason")
+  extends fulminate.Error(350, reason.number)
+    ( m"the server-sent event was not valid because $reason" )
 
   // SseSource → Sse.Source
   class Source(capacity: Int):

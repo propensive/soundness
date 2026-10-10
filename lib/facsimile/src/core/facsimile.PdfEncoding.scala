@@ -193,10 +193,10 @@ private[facsimile] object PdfEncoding:
 
   // The reverse of the WinAnsi table: a character's code, for encoding show-text operands.
   private lazy val winAnsiCodes: Map[Char, Int] =
-    (32 until 256).flatMap { code =>
+    (32 until 256).flatMap: code =>
       val char = winAnsi.readUnchecked(code)
       if char == ' ' && code != 32 then None else Some(char -> code)
-    }
+
     . to(Map)
 
   // Encodes text as bytes for a simple WinAnsi font; an unrepresentable character becomes a

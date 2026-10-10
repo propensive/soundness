@@ -33,12 +33,10 @@
 package breviloquence
 
 import scala.collection.immutable.Vector
-
-import scala.{annotation, caps}
-
 import scala.collection.immutable.{List, Nil, ::}
 import scala.collection.mutable as scm
 import scala.quoted.*
+import scala.{annotation, caps}
 
 import anticipation.*
 import contingency.*
@@ -104,7 +102,7 @@ object stagedInternal:
       if run == null then false else
         val sources = run.nn.units.map(_.source.path).toSet
         val position = symbol.pos
-        position.exists { position => sources.contains(position.sourceFile.path) }
+        position.exists: position => sources.contains(position.sourceFile.path)
     catch case _: Exception => false
 
   private def innerClasspath(using Quotes): String =
@@ -190,9 +188,9 @@ object stagedInternal:
     tpe.dealias match
       case AppliedType(constructor, arguments) =>
         for
-          clazz <- classFor(constructor)
+          clazz  <- classFor(constructor)
           shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-                      list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
+            list.flatMap: tail => shapeOf(argument).map(_ :: tail)
         yield TypeShape(clazz, shapes)
 
       case other =>
@@ -212,7 +210,7 @@ object stagedInternal:
       try
         given settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make
-            (None, List("-experimental", "-classpath", innerClasspath))
+            ( None, List("-experimental", "-classpath", innerClasspath) )
 
         given staging.Compiler = staging.Compiler.make(macroClassloader)
         val started = System.nanoTime
@@ -231,7 +229,7 @@ object stagedInternal:
                 r2.TypeBounds(rebuild(shape), rebuild(shape)) )
 
           target.asType match
-            case '[target] => '{ scala.compiletime.summonInline[target] }
+            case '[target] => '{scala.compiletime.summonInline[target]}
 
         val duration = (System.nanoTime - started)/1000000L
 
@@ -307,29 +305,29 @@ object stagedInternal:
     type Self = value
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[value]): Expr[value] =
-      '{
-        Cbor.Parsable.parseField[value]
-          ($parsable.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef])
-      }
+      ' {
+          Cbor.Parsable.parseField[value]
+            ( $parsable.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef] )
+        }
 
     override def absent(tactic: Expr[Tactic[Cbor.Error]])(using Quotes, Type[value])
     :   Expr[value] =
 
-      '{ Cbor.Parsable.absentField[value]($parsable.asInstanceOf[AnyRef])(using $tactic) }
+      '{Cbor.Parsable.absentField[value]($parsable.asInstanceOf[AnyRef])(using $tactic)}
 
   private final class DecodedInlinable[value](decodable: Expr[Any]) extends Inlinable:
     type Self = value
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[value]): Expr[value] =
-      '{ $decodable.asInstanceOf[value is Decodable in Cbor].decoded($reader.value()) }
+      '{$decodable.asInstanceOf[value is Decodable in Cbor].decoded($reader.value())}
 
     override def absent(tactic: Expr[Tactic[Cbor.Error]])(using Quotes, Type[value])
     :   Expr[value] =
 
-      '{
-        $decodable.asInstanceOf[value is Decodable in Cbor]
-        . decoded(Cbor.ast(Cbor.Ast(vacuous.Unset)))
-      }
+      ' {
+          $decodable.asInstanceOf[value is Decodable in Cbor]
+          . decoded(Cbor.ast(Cbor.Ast(vacuous.Unset)))
+        }
 
   // Composition points become local defs rather than textual inlining: a
   // fully-flattened parser exceeds HotSpot's huge-method bytecode limit and
@@ -337,17 +335,17 @@ object stagedInternal:
   // JIT-compilable while the call stays monomorphic and direct. Leaf
   // generators stay inline.
   private def nested[fieldType: Type]
-    (instance: Inlinable { type Self = fieldType }, reader: Expr[Cbor.Reader])
-    (using Quotes)
+    ( instance: Inlinable { type Self = fieldType }, reader: Expr[Cbor.Reader] )
+    ( using Quotes )
   :   Expr[fieldType] =
 
     instance match
       case _: Inlinable.ProductInlinable[?] | _: Inlinable.IterableInlinable[?]
-         | _: Inlinable.SumInlinable[?] =>
-        '{
-          def parseNested(): fieldType = ${ instance.parse(reader) }
-          parseNested()
-        }
+        | _: Inlinable.SumInlinable[?] =>
+        ' {
+            def parseNested(): fieldType = ${instance.parse(reader)}
+            parseNested()
+          }
 
       case _ =>
         instance.parse(reader)
@@ -371,6 +369,7 @@ object stagedInternal:
   // only a `Conversion`, not a direct instance).
   private def aliasCollectionUnderlying(using Quotes)(tpe: quotes.reflect.TypeRepr)
   :   Option[quotes.reflect.TypeRepr] =
+
     import quotes.reflect.*
     val listSym   = TypeRepr.of[proscenium.List[Any]].typeSymbol
     val setSym    = TypeRepr.of[proscenium.Set[Any]].typeSymbol
@@ -379,10 +378,13 @@ object stagedInternal:
     tpe.dealias match
       case AppliedType(constructor, List(element)) if constructor.typeSymbol == listSym =>
         Some(TypeRepr.of[scala.collection.immutable.List].appliedTo(element))
+
       case AppliedType(constructor, List(element)) if constructor.typeSymbol == setSym =>
         Some(TypeRepr.of[scala.collection.immutable.Set].appliedTo(element))
+
       case AppliedType(constructor, List(element)) if constructor.typeSymbol == seriesSym =>
         Some(TypeRepr.of[Vector].appliedTo(element))
+
       case _ =>
         None
 
@@ -407,6 +409,7 @@ object stagedInternal:
       case AppliedType(constructor, _) =>
         val sym = constructor.typeSymbol
         sym == listSym || sym == setSym || sym == seriesSym
+
       case _ =>
         false
 
@@ -416,7 +419,7 @@ object stagedInternal:
           case '[element] =>
             resolve[element](cache).map: instance =>
               Inlinable.IterableInlinable[element]
-                (instance.asInstanceOf[element is Inlinable])
+                ( instance.asInstanceOf[element is Inlinable] )
 
       case _ =>
         None
@@ -440,7 +443,7 @@ object stagedInternal:
           case '[variantType] => resolve[variantType](cache).isDefined
 
       if !resolvable then None
-      else discriminantKeyFor[field].map { key => Inlinable.SumInlinable[field](key) }
+      else discriminantKeyFor[field].map: key => Inlinable.SumInlinable[field](key)
 
   // The variants of a stageable sealed sum: `(label, type)` per variant, or
   // `None` when the shape is unsupported.
@@ -457,11 +460,11 @@ object stagedInternal:
       val children = classSymbol.children
 
       val supported =
-        !applied
-        && classSymbol.flags.is(Flags.Sealed)
-        && children.nonEmpty
-        && children.forall: child =>
-             child.isClassDef && child.flags.is(Flags.Case) && !hasRenames(child)
+        !applied &&
+          classSymbol.flags.is(Flags.Sealed) &&
+          children.nonEmpty &&
+          children.forall: child =>
+            child.isClassDef && child.flags.is(Flags.Case) && !hasRenames(child)
 
       if supported then Some(children.map { child => (child.name, child.typeRef) }) else None
 
@@ -476,7 +479,7 @@ object stagedInternal:
       try
         given settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make
-            (None, List("-experimental", "-classpath", innerClasspath))
+            ( None, List("-experimental", "-classpath", innerClasspath) )
 
         given staging.Compiler = staging.Compiler.make(macroClassloader)
 
@@ -499,7 +502,7 @@ object stagedInternal:
                 r2.TypeBounds(cbor, cbor) )
 
           target.asType match
-            case '[target] => '{ scala.compiletime.summonInline[target] }
+            case '[target] => '{scala.compiletime.summonInline[target]}
 
         result match
           case discriminant: Cbor.DiscriminantKey[?] => Some(discriminant.key.s)
@@ -514,12 +517,12 @@ object stagedInternal:
     import quotes.reflect.*
 
     tpe.classSymbol.exists: classSymbol =>
-      classSymbol.flags.is(Flags.Case)
-      && !classSymbol.owner.isTerm
-      && (tpe match { case AppliedType(_, _) => false case _ => true })
-      && classSymbol.primaryConstructor.paramSymss
-         . filterNot(_.exists(_.isTypeParam)).length == 1
-      && !hasRenames(classSymbol)
+      classSymbol.flags.is(Flags.Case) &&
+        !classSymbol.owner.isTerm &&
+        (tpe match { case AppliedType(_, _) => false case _ => true }) &&
+        classSymbol.primaryConstructor.paramSymss
+          . filterNot(_.exists(_.isTypeParam)).length == 1 &&
+        !hasRenames(classSymbol)
 
   // `@name` renames resolve through inline machinery the structural
   // generator does not replicate; annotated records stay on the AST path.
@@ -528,18 +531,18 @@ object stagedInternal:
 
     val annotated =
       classSymbol.primaryConstructor.paramSymss.flatten.filterNot(_.isTypeParam)
-        . flatMap(_.annotations)
-      ++ classSymbol.caseFields.flatMap(_.annotations)
+        . flatMap(_.annotations) ++
+        classSymbol.caseFields.flatMap(_.annotations)
 
-    annotated.exists { annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+    annotated.exists: annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]]
 
   // ── The collection generator ───────────────────────────────────────────
   // Mirrors the AST `collectionDecodable` exactly: a definite array is
   // count-driven, an indefinite one Break-terminated — with the element's
   // generated code inlined into the loop.
   private[breviloquence] def iterableBody[collection: Type]
-    (reader: Expr[Cbor.Reader], element0: Inlinable)
-    (using Quotes)
+    ( reader: Expr[Cbor.Reader], element0: Inlinable )
+    ( using Quotes )
   :   Expr[collection] =
 
     import quotes.reflect.*
@@ -555,28 +558,28 @@ object stagedInternal:
           case ('[element], '[stdlib]) =>
             val instance = element0.asInstanceOf[Inlinable { type Self = element }]
 
-            '{
-              def parseElement(): element = ${ instance.parse(reader) }
-              val factory = infer[scala.collection.Factory[element, stdlib]]
-              val builder = factory.newBuilder
-              val tactic = infer[Tactic[Cbor.Error]]
-              var remaining = CborParser.of($reader.rawParser).directOpenArray()(using tactic)
-              var run = remaining != 0
+            ' {
+                def parseElement(): element = ${instance.parse(reader)}
+                val factory = infer[scala.collection.Factory[element, stdlib]]
+                val builder = factory.newBuilder
+                val tactic = infer[Tactic[Cbor.Error]]
+                var remaining = CborParser.of($reader.rawParser).directOpenArray()(using tactic)
+                var run = remaining != 0
 
-              while run do
-                if remaining < 0 && CborParser.of($reader.rawParser).directBreak()(using tactic)
-                then run = false
-                else
-                  builder += parseElement()
-                  remaining -= 1
-                  if remaining == 0 then run = false
+                while run do
+                  if remaining < 0 && CborParser.of($reader.rawParser).directBreak()(using tactic)
+                  then run = false
+                  else
+                    builder += parseElement()
+                    remaining -= 1
+                    if remaining == 0 then run = false
 
-              builder.result().asInstanceOf[collection]
-            }
+                builder.result().asInstanceOf[collection]
+              }
 
       case _ =>
         report.errorAndAbort
-          ("breviloquence: an inlinable collection requires an applied collection type")
+          ( "breviloquence: an inlinable collection requires an applied collection type" )
 
   // ── The product generator ──────────────────────────────────────────────
   // Self-contained monomorphic record parsing, mirroring the AST record
@@ -609,16 +612,16 @@ object stagedInternal:
 
     if !productSupported(tpe) then
       report.errorAndAbort
-        (s"breviloquence: ${tpe.show} is not an inlinable product (a non-generic, top-level " +
+        ( s"breviloquence: ${tpe.show} is not an inlinable product (a non-generic, top-level " +
           "or object-nested case class with a single parameter list and no `@name` renames); " +
-          "use a `Decodable in Cbor`")
+          "use a `Decodable in Cbor`" )
 
     val classSymbol = tpe.classSymbol.get
     val ctor = classSymbol.primaryConstructor
     val fields = classSymbol.caseFields
     val arity = fields.length
     val fieldNames: List[String] = fields.map(_.name)
-    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
+    val fieldTypes: List[TypeRepr] = fields.map: field => tpe.memberType(field).dealias
 
     // Field names pack exactly as `directKeyWord` packs wire keys: 1-16
     // bytes, all 7-bit ASCII, little-endian into a low and high word.
@@ -626,7 +629,7 @@ object stagedInternal:
       val name = fieldNames(index)
       val length = name.length
 
-      val packs = length > 0 && length <= 16 && name.forall { char => char >= ' ' && char < 127 }
+      val packs = length > 0 && length <= 16 && name.forall: char => char >= ' ' && char < 127
 
       if !packs then None else
         var low = 0L
@@ -662,7 +665,7 @@ object stagedInternal:
         else if fieldType =:= TypeRepr.of[Float] then Literal(FloatConstant(0.0f))
         else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
         else fieldType.asType match
-          case '[fieldType] => '{ null.asInstanceOf[fieldType] }.asTerm
+          case '[fieldType] => '{null.asInstanceOf[fieldType]}.asTerm
 
       val slotDefs = List.range(0, arity).map: index =>
         ValDef(slots(index), Some(zero(fieldTypes(index))))
@@ -675,36 +678,38 @@ object stagedInternal:
       // Builtins read straight off the parser bound once per record,
       // skipping the Cbor.Reader rim entirely.
       def builtinDirect(tpe: TypeRepr): Option[Expr[Any]] =
-        if tpe =:= TypeRepr.of[Int] then Some('{ $parser.directLong()(using $tactic).toInt })
-        else if tpe =:= TypeRepr.of[Long] then Some('{ $parser.directLong()(using $tactic) })
+        if tpe =:= TypeRepr.of[Int] then Some('{$parser.directLong()(using $tactic).toInt})
+        else if tpe =:= TypeRepr.of[Long] then Some('{$parser.directLong()(using $tactic)})
         else if tpe =:= TypeRepr.of[Double] then
-          Some('{ $parser.directDouble()(using $tactic) })
+          Some('{$parser.directDouble()(using $tactic)})
         else if tpe =:= TypeRepr.of[Float] then
-          Some('{ $parser.directDouble()(using $tactic).toFloat })
+          Some('{$parser.directDouble()(using $tactic).toFloat})
         else if tpe =:= TypeRepr.of[Boolean] then
-          Some('{ $parser.directBoolean()(using $tactic) })
+          Some('{$parser.directBoolean()(using $tactic)})
         else if tpe =:= TypeRepr.of[Text] then
-          Some('{ $parser.directString()(using $tactic).tt })
+          Some('{$parser.directString()(using $tactic).tt})
         else if tpe =:= TypeRepr.of[String] then
-          Some('{ $parser.directString()(using $tactic) })
+          Some('{$parser.directString()(using $tactic)})
         else if tpe =:= TypeRepr.of[Data] then
-          Some('{ $parser.directBytes()(using $tactic) })
+          Some('{$parser.directBytes()(using $tactic)})
         else if tpe =:= TypeRepr.of[Cbor] then
-          Some('{ Cbor.ast($parser.value()(using $tactic)) })
-        else None
+          Some('{Cbor.ast($parser.value()(using $tactic))})
+        else
+          None
 
       // The absent expression per field, through the ladder.
       def fieldAbsent(index: Int): Expr[Any] =
         fieldTypes(index).asType match
           case '[fieldType] =>
             if builtinDirect(fieldTypes(index)).isDefined then
-              '{ Cbor.Parsable.missing[fieldType]()(using $tactic) }
-            else resolve[fieldType](cache) match
-              case Some(instance0) =>
-                instance0.asInstanceOf[Inlinable { type Self = fieldType }].absent(tactic)
+              '{Cbor.Parsable.missing[fieldType]()(using $tactic)}
+            else
+              resolve[fieldType](cache) match
+                case Some(instance0) =>
+                  instance0.asInstanceOf[Inlinable { type Self = fieldType }].absent(tactic)
 
-              case None =>
-                '{ stagedInternal.fieldSeamAbsent[fieldType]($tactic) }
+                case None =>
+                  '{stagedInternal.fieldSeamAbsent[fieldType]($tactic)}
 
       // One local def per field, shaped for the JIT: non-builtin bodies are
       // potentially large, so each is emitted once and *called* from its
@@ -730,7 +735,7 @@ object stagedInternal:
                           reader )
 
                     case None =>
-                      '{ stagedInternal.fieldSeam[fieldType]($reader.asInstanceOf[AnyRef]) }
+                      '{stagedInternal.fieldSeam[fieldType]($reader.asInstanceOf[AnyRef])}
 
             DefDef(readDefs(index), _ => Some(rhs.asTerm.changeOwner(readDefs(index))))
 
@@ -746,14 +751,14 @@ object stagedInternal:
         // repeat key's value is skipped.
         val rhs =
           If
-            ( '{ !${Ref(seens(index)).asExprOf[Boolean]} }.asTerm,
+            ( '{!${Ref(seens(index)).asExprOf[Boolean]}}.asTerm,
               readAndMark,
-              '{ $parser.directSkipValue()(using $tactic) }.asTerm )
+              '{$parser.directSkipValue()(using $tactic)}.asTerm )
 
         CaseDef(Literal(IntConstant(index)), None, rhs)
 
       def fallthrough =
-        CaseDef(Wildcard(), None, '{ $parser.directSkipValue()(using $tactic) }.asTerm)
+        CaseDef(Wildcard(), None, '{$parser.directSkipValue()(using $tactic)}.asTerm)
 
       val remaining =
         Symbol.newVal(owner, "remaining", TypeRepr.of[Int], Flags.Mutable, Symbol.noSymbol)
@@ -769,17 +774,17 @@ object stagedInternal:
 
           case Some((low, highWord)) =>
             If
-              ( '{ $wordRef == ${Expr(low)} && $highRef == ${Expr(highWord)} }.asTerm,
+              ( '{$wordRef == ${Expr(low)} && $highRef == ${Expr(highWord)}}.asTerm,
                 Literal(IntConstant(index)),
                 packedChainOver(wordRef, highRef)(index + 1) )
 
       def namedChain(name: Expr[String], index: Int): Expr[Int] =
         if index == arity then Expr(-1)
         else
-          '{
-            if ${Expr(fieldNames(index))} == $name then ${Expr(index)}
-            else ${ namedChain(name, index + 1) }
-          }
+          ' {
+              if ${Expr(fieldNames(index))} == $name then ${Expr(index)}
+              else ${namedChain(name, index + 1)}
+            }
 
       // One entry step: read the key (packed fast path, general otherwise),
       // dispatch, then count the entry off. A non-text key arrives as a
@@ -800,42 +805,42 @@ object stagedInternal:
         val highRef = Ref(high).asExprOf[Long]
 
         val opaque: Expr[Int] =
-          '{
-            val name = $parser.directKeyName()(using $tactic)
-            if name == null then -1 else ${ namedChain('{name.nn}, 0) }
-          }
+          ' {
+              val name = $parser.directKeyName()(using $tactic)
+              if name == null then -1 else ${namedChain('{name.nn}, 0)}
+            }
 
         val resolveStep: Term =
           If
-            ( '{ $wordRef == Cbor.Reader.KeyOpaque }.asTerm,
+            ( '{$wordRef == Cbor.Reader.KeyOpaque}.asTerm,
               opaque.asTerm,
               Block
-                ( List(ValDef(high, Some('{ $parser.directKeyHigh }.asTerm))),
+                ( List(ValDef(high, Some('{$parser.directKeyHigh}.asTerm))),
                   packedChainOver(wordRef, highRef)(0) ) )
 
         val entry: Term =
           Block
             ( List
-                ( ValDef(word, Some('{ $parser.directKeyWord() }.asTerm)),
+                ( ValDef(word, Some('{$parser.directKeyWord()}.asTerm)),
                   Block
                     ( List(ValDef(found, Some(resolveStep))),
                       Match(Ref(found), arms ::: List(fallthrough)) ),
-                  Assign(Ref(remaining), '{ $remainingRef - 1 }.asTerm) ),
+                  Assign(Ref(remaining), '{$remainingRef - 1}.asTerm) ),
               If
-                ( '{ $remainingRef == 0 }.asTerm,
+                ( '{$remainingRef == 0}.asTerm,
                   Assign(Ref(run), Literal(BooleanConstant(false))),
                   unit ) )
 
         If
-          ( '{ $remainingRef < 0 && $parser.directBreak()(using $tactic) }.asTerm,
+          ( '{$remainingRef < 0 && $parser.directBreak()(using $tactic)}.asTerm,
             Assign(Ref(run), Literal(BooleanConstant(false))),
             entry )
 
       val loop: List[Statement] =
         readDefDefs :::
           List
-            ( ValDef(remaining, Some('{ $parser.directOpenMap()(using $tactic) }.asTerm)),
-              ValDef(run, Some('{ $remainingRef != 0 }.asTerm)),
+            ( ValDef(remaining, Some('{$parser.directOpenMap()(using $tactic)}.asTerm)),
+              ValDef(run, Some('{$remainingRef != 0}.asTerm)),
               While(runRef.asTerm, step) )
 
       val absents: List[Term] = List.range(0, arity).map: index =>
@@ -844,15 +849,15 @@ object stagedInternal:
             val resolveAbsent: Term =
               Assign
                 ( Ref(slots(index)),
-                  '{
-                    val declared =
-                      wisteria.internal.default[product, fieldType](${Expr(index)})
+                  ' {
+                      val declared =
+                        wisteria.internal.default[product, fieldType](${Expr(index)})
 
-                    if !declared.absent then declared.asInstanceOf[fieldType]
-                    else ${ fieldAbsent(index).asExprOf[fieldType] }
-                  }.asTerm )
+                      if !declared.absent then declared.asInstanceOf[fieldType]
+                      else ${fieldAbsent(index).asExprOf[fieldType]}
+                    }.asTerm )
 
-            If('{ !${Ref(seens(index)).asExprOf[Boolean]} }.asTerm, resolveAbsent, unit)
+            If('{!${Ref(seens(index)).asExprOf[Boolean]}}.asTerm, resolveAbsent, unit)
 
       val construct: Term =
         Apply(Select(New(Inferred(tpe)), ctor), slots.map { slot => Ref(slot) })
@@ -862,10 +867,10 @@ object stagedInternal:
     // The parser is not bound to a local: every rim call reaches it through the reader's
     // carrier and an inline cast, the one form that is exclusive in every checking mode
     // (see `CborParser.of`).
-    '{
-      val tactic = infer[Tactic[Cbor.Error]]
-      ${ body('tactic, '{ CborParser.of($reader.rawParser) }) }
-    }
+    ' {
+        val tactic = infer[Tactic[Cbor.Error]]
+        ${body('tactic, '{CborParser.of($reader.rawParser)})}
+      }
 
   // ── The sum generator ──────────────────────────────────────────────────
   // The variant is chosen by a scan-ahead of the discriminant entry (the
@@ -873,13 +878,13 @@ object stagedInternal:
   // map as its product — the discriminant entry skips as an unknown key —
   // exactly the AST disjunction's `discriminate` + `delegate` semantics.
   private[breviloquence] def sumBody[sum: Type](reader: Expr[Cbor.Reader], key: String)
-    (using Quotes)
+    ( using Quotes )
   :   Expr[sum] =
 
     sumBody[sum](reader, key, Cache())
 
   private def sumBody[sum: Type](reader: Expr[Cbor.Reader], key: String, cache: Cache)
-    (using Quotes)
+    ( using Quotes )
   :   Expr[sum] =
 
     import quotes.reflect.*
@@ -889,47 +894,50 @@ object stagedInternal:
     try sumBody0[sum](reader, key, cache) finally cache.active -= TypeRepr.of[sum].dealias.show
 
   private def sumBody0[sum: Type](reader: Expr[Cbor.Reader], key: String, cache: Cache)
-    (using Quotes)
+    ( using Quotes )
   :   Expr[sum] =
 
     import quotes.reflect.*
 
     val variants = sumVariants(TypeRepr.of[sum].dealias).getOrElse:
       report.errorAndAbort
-        (s"breviloquence: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic " +
-          "sealed type whose variants are all case classes without `@name` renames)")
+        ( s"breviloquence: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic " +
+          "sealed type whose variants are all case classes without `@name` renames)" )
 
     val arity = variants.length
 
     def dispatch(index: Int, tag: Expr[String]): Expr[sum] =
       if index == arity then
-        '{
-          provide[Tactic[wisteria.Variant.Error]]:
-            abort(wisteria.Variant.Error[sum]($tag.tt))
-        }
-      else variants(index)(1).asType match
-        case '[type variantType <: sum; variantType] =>
-          val instance = resolve[variantType](cache).getOrElse:
-            report.errorAndAbort
-              (s"breviloquence: no Inlinable for variant ${variants(index)(0)}")
-          . asInstanceOf[Inlinable { type Self = variantType }]
-
-          '{
-            if $tag == ${Expr(variants(index)(0))} then
-              def parseVariant(): variantType = ${ instance.parse(reader) }
-              parseVariant()
-            else ${ dispatch(index + 1, tag) }
+        ' {
+            provide[Tactic[wisteria.Variant.Error]]:
+              abort(wisteria.Variant.Error[sum]($tag.tt))
           }
-
-    '{
-      val tactic = infer[Tactic[Cbor.Error]]
-      val tag = CborParser.of($reader.rawParser).directDiscriminant(${Expr(key)})(using tactic)
-
-      if tag == null then abort(Cbor.Error(Cbor.Error.Reason.Absent))(using tactic)
       else
-        val tagValue: String = tag.nn
-        ${ dispatch(0, 'tagValue) }
-    }
+        variants(index)(1).asType match
+          case '[type variantType <: sum; variantType] =>
+            val instance = resolve[variantType](cache).getOrElse:
+              report.errorAndAbort
+                ( s"breviloquence: no Inlinable for variant ${variants(index)(0)}" )
+
+            . asInstanceOf[Inlinable { type Self = variantType }]
+
+            ' {
+                if $tag == ${Expr(variants(index)(0))} then
+                  def parseVariant(): variantType = ${instance.parse(reader)}
+                  parseVariant()
+                else
+                  ${dispatch(index + 1, tag)}
+              }
+
+    ' {
+        val tactic = infer[Tactic[Cbor.Error]]
+        val tag = CborParser.of($reader.rawParser).directDiscriminant(${Expr(key)})(using tactic)
+
+        if tag == null then abort(Cbor.Error(Cbor.Error.Reason.Absent))(using tactic)
+        else
+          val tagValue: String = tag.nn
+          ${dispatch(0, 'tagValue)}
+      }
 
   // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Cbor.Parsable] =
@@ -939,26 +947,26 @@ object stagedInternal:
 
     val root: Inlinable = resolve[value](cache).getOrElse:
       report.errorAndAbort
-        (s"breviloquence: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not " +
-          "an inlinable product, collection or key-discriminated sum; use a `Decodable in Cbor`")
+        ( s"breviloquence: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not " +
+          "an inlinable product, collection or key-discriminated sum; use a `Decodable in Cbor`" )
 
     // A runtime-tier root would find the very given under definition — an
     // infinite self-call — or add nothing over the instance it wraps.
     if root.isInstanceOf[RuntimeInlinable[?]] || root.isInstanceOf[DecodedInlinable[?]] then
       report.errorAndAbort
-        (s"breviloquence: ${TypeRepr.of[value].show} has no generator of its own; use its " +
-          "existing instance directly rather than `Inlinable.parsable`")
+        ( s"breviloquence: ${TypeRepr.of[value].show} has no generator of its own; use its " +
+          "existing instance directly rather than `Inlinable.parsable`" )
 
     val instance = root.asInstanceOf[Inlinable { type Self = value }]
 
-    '{
-      // Sealed per the codec-thunk pattern: the generated body resolves its
-      // capabilities where it is spliced.
-      // [quote-wall] generated Parsable sealed inside quote
-      caps.unsafe.unsafeAssumePure:
-        new Cbor.Parsable.Direct[value]:
-          protected def parseCarrier(reader0: AnyRef): value =
-            // A capability class cannot be quoted into a pure hole, so
-            // every use casts from the neutral carrier afresh.
-            ${ instance.parse('{ reader0.asInstanceOf[Cbor.Reader] }) }
-    }
+    ' {
+        // Sealed per the codec-thunk pattern: the generated body resolves its
+        // capabilities where it is spliced.
+        // [quote-wall] generated Parsable sealed inside quote
+        caps.unsafe.unsafeAssumePure:
+          new Cbor.Parsable.Direct[value]:
+            protected def parseCarrier(reader0: AnyRef): value =
+              // A capability class cannot be quoted into a pure hole, so
+              // every use casts from the neutral carrier afresh.
+              ${instance.parse('{reader0.asInstanceOf[Cbor.Reader]})}
+      }

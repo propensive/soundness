@@ -32,11 +32,11 @@
                                                                                                   */
 package telekinesis
 
-import scala.caps
-
 import java.io as ji
 import java.net as jn
 import javax.net.ssl as jns
+
+import scala.caps
 
 import anticipation.*
 import coaxial.*
@@ -105,15 +105,15 @@ extends Sessional uses parasite.threads:
               // connection; no aliased writer.
               // [by-name-receiver] session tactic and lambda share the connection
               scala.caps.unsafe.unsafeAssumeSeparate:
-               unsafely:
-                supervise:
-                  val connection = Http2.Connection(duplex)
+                unsafely:
+                  supervise:
+                    val connection = Http2.Connection(duplex)
 
-                  try
-                    connection.start()
-                    lambda(using Sessions.Multiplexed(connection, authority))
+                    try
+                      connection.start()
+                      lambda(using Sessions.Multiplexed(connection, authority))
 
-                  finally connection.close()
+                    finally connection.close()
 
             catch
               case error: Http2.Error => abort(Connect.Error(Unknown))
@@ -129,13 +129,13 @@ extends Sessional uses parasite.threads:
 // scope ends. Bounded like `Fetchable.httpUrl` so `url"https://..."` literals
 // (whose types are scheme-refined subtypes of `HttpUrl`) resolve the instance.
 given httpUrlSessional: [url <: HttpUrl]
-=>  (online: Online)
+=>  ( online: Online )
 =>  ( backend:      Socket.Backend,
       options:      Every[Socket.Option.Tcp],
       buffering:    Buffering,
       tls:          Tls,
       connectError: Tactic[Connect.Error] )
-=>  (UrlSessional[url]^{online, connectError, caps.any}) =
+=>  ( UrlSessional[url]^{online, connectError, caps.any} ) =
   UrlSessional[url]()
 
 // Open the TLS connection for an `https` exchange, offering `h2` and `http/1.1`
