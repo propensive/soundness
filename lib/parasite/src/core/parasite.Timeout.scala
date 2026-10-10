@@ -82,7 +82,7 @@ class Timeout private
 extends anticipation.Durable:
   private val expiry: Atomic[Long] = Atomic(jl.System.currentTimeMillis + duration)
 
-  // [field-purity] process task var in non-Stateful Timeout
+  // [synchronized] process task var in non-Stateful Timeout
   @scala.caps.unsafe.untrackedCaptures
   private var process: Task[Unit] = makeProcess(expiry)
 

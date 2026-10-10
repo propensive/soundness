@@ -67,15 +67,15 @@ class TableFixture(content: () -> Tabulation[Teletype])
 extends Fixture:
 
   // A no-op until the fixture is bound into a running form; see `bindWake`.
-  // [field-purity] wake callback var in TableFixture
+  // [aliased-graph] wake callback var in TableFixture
   @scala.caps.unsafe.untrackedCaptures
   private var wakeForm: () -> Unit = () => ()
 
-  // [field-purity] measuredWidth var in TableFixture
+  // [aliased-graph] measuredWidth var in TableFixture
   @scala.caps.unsafe.untrackedCaptures
   private var measuredWidth: Int = -1
 
-  // [field-purity] lines var in TableFixture
+  // [aliased-graph] lines var in TableFixture
   @scala.caps.unsafe.untrackedCaptures
   private var lines: List[Teletype] = Nil
 

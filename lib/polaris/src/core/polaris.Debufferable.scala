@@ -43,7 +43,7 @@ object Debufferable extends ProductDerivable[Debufferable]:
     new:
       def width: Int = byteWidth
 
-      def debuffer(sextant: Sextant): data =
+      def debuffer(sextant: Sextant^): data =
         lambda(sextant.bytes, sextant.offset).also(sextant.advance(width))
 
   given b8: B8 is Debufferable = Debufferable(1)(_.readUnchecked(_).bits)
@@ -64,10 +64,10 @@ object Debufferable extends ProductDerivable[Debufferable]:
   given long: Long is Debufferable = Debufferable(8)(B64(_, _).s64.long)
 
   class Join[derivation <: Product: ProductReflection]
-    ( val width: Int, debuffer0: Sextant -> derivation )
+    ( val width: Int, debuffer0: Sextant^ -> derivation )
   extends Debufferable:
     type Self = derivation
-    def debuffer(sextant: Sextant): derivation = debuffer0(sextant)
+    def debuffer(sextant: Sextant^): derivation = debuffer0(sextant)
 
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Debufferable =
     // The lambda parameter is ascribed so its type is not inferred from the expected arrow:
@@ -76,8 +76,8 @@ object Debufferable extends ProductDerivable[Debufferable]:
     // check (upstream #26547, from 2026-07-17 nightlies).
     Join[derivation]
       ( contexts[derivation]() { [field] => _.width }.readable.sum,
-        (sextant: Sextant) => build { [field] => context => context.debuffer(sextant) } )
+        (sextant: Sextant^) => build { [field] => context => context.debuffer(sextant) } )
 
 trait Debufferable extends Typeclass:
   def width: Int
-  def debuffer(sextant: Sextant): Self
+  def debuffer(sextant: Sextant^): Self

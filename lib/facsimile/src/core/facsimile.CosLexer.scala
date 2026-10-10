@@ -64,12 +64,12 @@ private[facsimile] object CosLexer:
 // A single-owner tokenizer over a `Scan`. The lexical grammar is shared between file bodies
 // and content streams; out-of-band binary consumption (stream payloads, inline images) goes
 // through `payloadStart`/`skip`/`read`, bypassing tokenization.
-private[facsimile] class CosLexer(scan: Scan):
+private[facsimile] class CosLexer(scan: Scan^) extends scala.caps.Mutable:
   import CosLexer.*
 
   def offset: Long = scan.offset
 
-  def next()(using Tactic[Pdf.Error]): CosToken =
+  update def next()(using Tactic[Pdf.Error]): CosToken =
     skipInterstice()
     val start = scan.offset
 
@@ -102,18 +102,18 @@ private[facsimile] class CosLexer(scan: Scan):
 
   // After the `stream` keyword: consume its end-of-line marker (LF or CRLF; a lone CR is
   // tolerated) and return the absolute offset of the first payload byte.
-  def payloadStart(): Long =
+  update def payloadStart(): Long =
     if scan.peek == 0x0d then scan.skip(1)
     if scan.peek == 0x0a then scan.skip(1)
     scan.offset
 
-  def skip(count: Long): Unit = scan.skip(count)
-  def read(length: Int): Data = scan.read(length)
+  update def skip(count: Long): Unit = scan.skip(count)
+  update def read(length: Int): Data = scan.read(length)
 
   // The binary payload of an inline image, between `ID` and `EI` (ISO 32000-2 §8.9.7): a
   // known length (`/L`) is read exactly; otherwise the data runs to the next standalone
   // `EI`, found by byte-level scanning — the one lexical construct tokens cannot express.
-  def imageData(length: Optional[Int])(using Tactic[Pdf.Error]): Data =
+  update def imageData(length: Optional[Int])(using Tactic[Pdf.Error]): Data =
     if whitespace(scan.peek) then scan.take() // a single whitespace byte follows `ID`
 
     length.let(scan.read(_)).or:
@@ -129,7 +129,7 @@ private[facsimile] class CosLexer(scan: Scan):
       bytes.result()
 
   // Comments run to the end of the line and are whitespace (ISO 32000-2 §7.2.4).
-  private def skipInterstice(): Unit =
+  private update def skipInterstice(): Unit =
     while
       if whitespace(scan.peek) then
         scan.take()
@@ -141,7 +141,7 @@ private[facsimile] class CosLexer(scan: Scan):
         false
     do ()
 
-  private def number(first: Int, start: Long)(using Tactic[Pdf.Error]): CosToken =
+  private update def number(first: Int, start: Long)(using Tactic[Pdf.Error]): CosToken =
     val text = StringBuilder()
     text.append(first.toChar)
 
@@ -164,7 +164,7 @@ private[facsimile] class CosLexer(scan: Scan):
       safely(CosToken.Integral(content.tt.as[Long]))
       . or(abort(Pdf.Error(Pdf.Error.Reason.Unparseable(start, t"a numeric object"))))
 
-  private def name(): CosToken =
+  private update def name(): CosToken =
     val bytes = DataBuilder()
 
     while regular(scan.peek) do
@@ -176,13 +176,13 @@ private[facsimile] class CosLexer(scan: Scan):
 
     CosToken.Name(charsets.utf8Charset.decoded(bytes.result()))
 
-  private def keyword(first: Int): CosToken =
+  private update def keyword(first: Int): CosToken =
     val bytes = DataBuilder()
     bytes += first.toByte
     while regular(scan.peek) do bytes += scan.take().toByte
     CosToken.Keyword(charsets.utf8Charset.decoded(bytes.result()))
 
-  private def literal(start: Long)(using Tactic[Pdf.Error]): CosToken =
+  private update def literal(start: Long)(using Tactic[Pdf.Error]): CosToken =
     val bytes = DataBuilder()
     var depth = 1
 
@@ -235,7 +235,7 @@ private[facsimile] class CosLexer(scan: Scan):
 
     CosToken.Chars(bytes.result())
 
-  private def hexadecimalChars(start: Long)(using Tactic[Pdf.Error]): CosToken =
+  private update def hexadecimalChars(start: Long)(using Tactic[Pdf.Error]): CosToken =
     val bytes = DataBuilder()
     var high: Int = -1
 

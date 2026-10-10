@@ -36,11 +36,8 @@ import beneficence.*
 import vacuous.*
 
 object Scanner:
-  given default: (erased dummy: DummyImplicit) => Scanner = Scanner(Unset)
+  given default: (erased dummy: DummyImplicit) => (Scanner^) = Scanner(Unset)
 
-class Scanner
-  // [field-purity] nextStart var in non-Stateful Scanner
-  ( @scala.caps.unsafe.untrackedCaptures var nextStart: Optional[Int] = Unset,
-    // [field-purity] matchEnd var in non-Stateful Scanner
-    @scala.caps.unsafe.untrackedCaptures var matchEnd:  Optional[Int] = Unset )
-extends Findable
+// Mutable: a match advances the scan position, so only an exclusive reference may drive it.
+class Scanner(var nextStart: Optional[Int] = Unset, var matchEnd: Optional[Int] = Unset)
+extends Findable, scala.caps.Mutable

@@ -43,7 +43,7 @@ import vacuous.*
 // parsed on demand from the decoded payload.
 private[facsimile] object ObjectStream:
   def apply(data: Data, first: Int, count: Int)(using Tactic[Pdf.Error]): ObjectStream =
-    val lexer = CosLexer(Scan(data))
+    val lexer: CosLexer^ = CosLexer(Scan(data))
     var offsets = Map[Int, Int]()
 
     for _ <- 0 until count do (lexer.next(), lexer.next()) match
@@ -57,6 +57,6 @@ private[facsimile] object ObjectStream:
 
 private[facsimile] class ObjectStream(data: Data, first: Int, offsets: Map[Int, Int]):
   def apply(number: Int)(using Tactic[Pdf.Error]): Optional[Cos] = offsets(number).let: offset =>
-    val scan = Scan(data)
+    val scan: Scan^ = Scan(data)
     scan.skip(first.toLong + offset)
     CosParser(CosLexer(scan)).value()

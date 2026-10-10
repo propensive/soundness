@@ -563,10 +563,11 @@ object Bintel:
     (root, cursor.offset)
 
   private def decodeStructBody
-    ( cursor: Cursor, struct: Tels.Struct, schema: Tels,
+    ( cursor: Cursor^, struct: Tels.Struct, schema: Tels,
       keywordIndex: Optional[Int], codecs: Optional[Tel.Codec.Resolver],
       checkCanonical: Boolean, depth: Int )
-  :   Tel.Element raises Bintel.Error =
+    ( using Tactic[Bintel.Error] )
+  :   Tel.Element =
 
     // §11 resource limits: every count in the stream is adversarial, so
     // the decoder fails rather than exhausting the stack or the heap.
@@ -591,9 +592,10 @@ object Bintel:
     Tel.Element.Node(keywordIndex, struct, Array.from(children))
 
   private def decodeElement
-    ( cursor: Cursor, flat: Array[(Text, Tels.Type)]^{}, schema: Tels,
+    ( cursor: Cursor^, flat: Array[(Text, Tels.Type)]^{}, schema: Tels,
       codecs: Optional[Tel.Codec.Resolver], checkCanonical: Boolean, depth: Int )
-  :   Tel.Element raises Bintel.Error =
+    ( using Tactic[Bintel.Error] )
+  :   Tel.Element =
 
     val kidx = readVarint(cursor)
     if kidx < 0 || kidx >= flat.length then abort(Bintel.Error(Bintel.Error.Reason.BadKeywordIndex))
@@ -660,7 +662,7 @@ object Bintel:
 
   // §10: a varint that is truncated — including one with no bytes
   // available at all — wider than 64 bits, or overlong is B02.
-  private def readVarint(cursor: Cursor): Long raises Bintel.Error =
+  private def readVarint(cursor: Cursor^)(using Tactic[Bintel.Error]): Long =
     import errorDiagnostics.emptyDiagnostics
 
     mitigate:
@@ -843,8 +845,8 @@ object Bintel:
 
     case other => other
 
-  // [field-purity] offset var in private Cursor class
-  private final class Cursor(val data: Data, @scala.caps.unsafe.untrackedCaptures var offset: Int)
+  // Mutable: decoding advances the offset, which only the exclusive owner may do.
+  private final class Cursor(val data: Data, var offset: Int) extends scala.caps.Mutable
 
   private def encodeRoot
     ( out: Scribe[Byte], element: Tel.Element, schema: Tels,

@@ -1602,10 +1602,9 @@ object Json extends Json2, Dynamic:
 
       // For each ASCII character, the byte that follows the backslash in its escape (`n` for a
       // newline, `"` for a quote), `u` for a `\uXXXX` reference, or zero for none.
-      // [field-purity] escape table array stored in object field
-      @caps.unsafe.untrackedCaptures
-      private[jacinta] val escapes: scala.Array[Byte] =
-        val table = new scala.Array[Byte](128)
+      // Built once and frozen, so the object holds only immutable tables.
+      private[jacinta] val escapes: Array[Byte]^{} =
+        val table = Array.allocate[Byte](128)
         var index = 0
 
         while index < 0x20 do
@@ -1619,11 +1618,9 @@ object Json extends Json2, Dynamic:
         table('\t') = 't'.toByte
         table('"') = '"'.toByte
         table('\\') = '\\'.toByte
-        table
+        Array.freeze(table)
 
-      // [field-purity] hex digit array stored in object field
-      @caps.unsafe.untrackedCaptures
-      private[jacinta] val hexDigits: scala.Array[Byte] = "0123456789abcdef".getBytes("US-ASCII").nn
+      private[jacinta] val hexDigits: Array[Byte]^{} = Array.from("0123456789abcdef".map(_.toByte))
 
 
 
@@ -1708,8 +1705,8 @@ object Json extends Json2, Dynamic:
         if code == 'u' then
           byte('0')
           byte('0')
-          byte(Out.hexDigits(char >> 4))
-          byte(Out.hexDigits(char & 0xf))
+          byte(Out.hexDigits.readable(char >> 4))
+          byte(Out.hexDigits.readable(char & 0xf))
 
       // Encodes `text(from until end)` when `chars` is null, else `chars(from until end)`,
       // escaping for a JSON string when `escaping`. A short string is read through `charAt`,
@@ -1722,7 +1719,7 @@ object Json extends Json2, Dynamic:
         ( text: String, chars: scala.Array[Char] | Null, from: Int, end: Int, escaping: Boolean )
       :   Unit =
 
-        val table = Out.escapes
+        val table = Out.escapes.readable
         val out = current
         val limit = block
         var k = from

@@ -905,7 +905,7 @@ object Acp:
     val sessions: AcpAgentSession = caps.unsafe.unsafeAssumePure(channel.proxy[AcpAgentSession])
 
     // What the agent reported at initialization: pure data, recorded by `initialize`.
-    // [field-purity] pure-data var on non-Stateful connection
+    // [synchronized] pure-data var on non-Stateful connection
     @scala.caps.unsafe.untrackedCaptures
     private var initialized0: Optional[InitializeResult] = Unset
 

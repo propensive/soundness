@@ -233,7 +233,7 @@ extension [textual: Textual as instance](text: textual)
     regex.search(textual.text(text), overlap = overlap).map(text.segment(_))
 
   inline def extract[value](inline start: Ordinal = Prim)
-    ( inline lambda: Scanner ?=> textual ~> value )
+    ( inline lambda: Scanner^ ?=> textual ~> value )
   :   Chain[value] =
 
     $ {

@@ -46,7 +46,7 @@ object JavaBaseRegex:
   // import. The bodies previously lived as methods on `Regex` itself; they move here so that a
   // `Regex in Re2` cannot silently fall back to `java.util.regex`.
   given engine: JavaBaseRegex is Regex.Engine:
-    def matches(regex: Regex, text: Text)(using scanner: Scanner): Boolean =
+    def matches(regex: Regex, text: Text)(using scanner: Scanner^): Boolean =
       scanner.nextStart match
         case index: Int =>
           val matcher = regex.javaPattern.matcher(text.s).nn
@@ -80,7 +80,7 @@ object JavaBaseRegex:
       recur(start.n0)
 
 
-    private[kaleidoscope] def matchGroups(regex: Regex, text: Text)(using scanner: Scanner)
+    private[kaleidoscope] def matchGroups(regex: Regex, text: Text)(using scanner: Scanner^)
     :   Option[Array[List[Text | Char] | Optional[Text | Char]]^{}] =
 
       val matcher: jur.Matcher = regex.javaPattern.matcher(text.s).nn

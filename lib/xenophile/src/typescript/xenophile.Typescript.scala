@@ -425,20 +425,19 @@ object Typescript:
     // A mutable cursor over the token stream. Declaration grammars are almost entirely
     // single-token-lookahead, and threading an index through forty mutually recursive functions
     // obscures the grammar without making it any more correct.
-    private class Cursor(tokens: List[Token]):
+    private class Cursor(tokens: List[Token]) extends scala.caps.Mutable:
       // A stdlib `Vector` because the cursor is a plain `Int` (see below): this is O(1)
       // `Int`-indexed random access, which the opaque collections deliberately withhold.
       private val items: scala.collection.immutable.Vector[Token] = tokens.stdlib.toVector
 
-      // The cursor is a plain `Int` into an immutable vector, so it captures nothing; the
-      // annotation says so, rather than making the whole parser a tracked capability.
-      // [field-purity] plain Int position var in non-Stateful cursor
-      @scala.caps.unsafe.untrackedCaptures private var position: Int = 0
+      // The cursor is a plain `Int` into an immutable vector. Mutable: parsing advances it,
+      // which only the parser's exclusive owner may do.
+      private var position: Int = 0
 
       def peek(ahead: Int = 0): Optional[Token] =
         if position + ahead < items.length then items(position + ahead) else Unset
 
-      def next(): Optional[Token] =
+      update def next(): Optional[Token] =
         val token = peek()
         position += 1
         token
@@ -462,13 +461,13 @@ object Typescript:
         case Token.Punct(value) => value == text
         case _                  => false
 
-      def skip(text: Text): Boolean = if at(text) then { position += 1; true } else false
+      update def skip(text: Text): Boolean = if at(text) then { position += 1; true } else false
 
-      def expect(text: Text): Unit raises Typescript.Error =
+      update def expect(text: Text)(using Tactic[Typescript.Error]): Unit =
         if !skip(text)
         then abort(Typescript.Error(Reason.Syntax(t"expected $text", here)))
 
-      def identifier(): Text raises Typescript.Error = next() match
+      update def identifier()(using Tactic[Typescript.Error]): Text = next() match
         case Token.Word(text) => text
         case Token.Str(text)  => text
         case Token.Num(text)  => text
@@ -476,7 +475,7 @@ object Typescript:
 
       // Consumes a `;` or `,` separator where the grammar permits either, and tolerates its
       // absence: a newline terminates a member in TypeScript, and the lexer has discarded newlines.
-      def separator(): Unit =
+      update def separator(): Unit =
         skip(t";")
         skip(t",")
         ()
@@ -501,7 +500,7 @@ object Typescript:
 
         found
 
-      def declarations(): List[Typescript.Declaration] raises Typescript.Error =
+      update def declarations()(using Tactic[Typescript.Error]): List[Typescript.Declaration] =
         val module = moduleForm
         val result = scala.collection.mutable.ListBuffer[Typescript.Declaration]()
         block(Nil, module, result, ambient = false)
@@ -525,24 +524,26 @@ object Typescript:
       // `ambient` marks a namespace body, where every declaration is exported implicitly: an
       // ambient namespace has no notion of a private member, so its contents are as reachable as
       // the namespace itself.
-      private def block
+      private update def block
         ( scope:   Typescript.Declaration.Scope,
           module:  Boolean,
           into:    scala.collection.mutable.ListBuffer[Typescript.Declaration],
           ambient: Boolean )
-      :   Unit raises Typescript.Error =
+        ( using Tactic[Typescript.Error] )
+      :   Unit =
 
         while peek().present && !at(t"}") do
           if at(t"}") then () else declaration(scope, module, into, ambient)
 
         ()
 
-      private def declaration
+      private update def declaration
         ( scope:   Typescript.Declaration.Scope,
           module:  Boolean,
           into:    scala.collection.mutable.ListBuffer[Typescript.Declaration],
           ambient: Boolean )
-      :   Unit raises Typescript.Error =
+        ( using Tactic[Typescript.Error] )
+      :   Unit =
 
         if skip(t";") then ()
         else if at(t"import") then skipStatement()
@@ -557,13 +558,14 @@ object Typescript:
             skip(t"declare")
             declared(scope, module, into, ambient, exported || ambient || !module)
 
-      private def declared
+      private update def declared
         ( scope:   Typescript.Declaration.Scope,
           module:  Boolean,
           into:    scala.collection.mutable.ListBuffer[Typescript.Declaration],
           ambient: Boolean,
           visible: Boolean )
-      :   Unit raises Typescript.Error =
+        ( using Tactic[Typescript.Error] )
+      :   Unit =
 
         if at(t"namespace") || at(t"module") || at(t"global") then
           val keyword = identifier()
@@ -584,7 +586,7 @@ object Typescript:
 
       // `import` and re-export forms are recorded by their absence: they bind no new contract of
       // their own, so the parser advances past them to the statement terminator.
-      private def skipStatement(): Unit =
+      private update def skipStatement(): Unit =
         var depth = 0
 
         while peek().present && !(depth == 0 && (at(t";") || at(t"}"))) do
@@ -595,8 +597,9 @@ object Typescript:
         skip(t";")
         ()
 
-      private def interfaceDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
-      :   Typescript.Declaration raises Typescript.Error =
+      private update def interfaceDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
+        ( using Tactic[Typescript.Error] )
+      :   Typescript.Declaration =
 
         expect(t"interface")
         val name = identifier()
@@ -608,8 +611,9 @@ object Typescript:
 
         Typescript.Declaration.Interface(name, scope, typed, extending, members, exported)
 
-      private def classDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
-      :   Typescript.Declaration raises Typescript.Error =
+      private update def classDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
+        ( using Tactic[Typescript.Error] )
+      :   Typescript.Declaration =
 
         val isAbstract = skip(t"abstract")
         expect(t"class")
@@ -624,8 +628,9 @@ object Typescript:
         Typescript.Declaration.Class
           (name, scope, typed, extending, implements, members, isAbstract, exported)
 
-      private def aliasDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
-      :   Typescript.Declaration raises Typescript.Error =
+      private update def aliasDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
+        ( using Tactic[Typescript.Error] )
+      :   Typescript.Declaration =
 
         expect(t"type")
         val name = identifier()
@@ -636,8 +641,9 @@ object Typescript:
 
         Typescript.Declaration.Alias(name, scope, typed, target, exported)
 
-      private def enumDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
-      :   Typescript.Declaration raises Typescript.Error =
+      private update def enumDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
+        ( using Tactic[Typescript.Error] )
+      :   Typescript.Declaration =
 
         val constant = skip(t"const")
         expect(t"enum")
@@ -655,8 +661,9 @@ object Typescript:
 
         Typescript.Declaration.Enumeration(name, scope, members.toList.to(List), constant, exported)
 
-      private def functionDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
-      :   Typescript.Declaration raises Typescript.Error =
+      private update def functionDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
+        ( using Tactic[Typescript.Error] )
+      :   Typescript.Declaration =
 
         expect(t"function")
         val name = identifier()
@@ -668,8 +675,9 @@ object Typescript:
         Typescript.Declaration.Function
           (name, scope, List(Typescript.Type.Function(parameters, result, typed)), exported)
 
-      private def variableDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
-      :   Typescript.Declaration raises Typescript.Error =
+      private update def variableDeclaration(scope: Typescript.Declaration.Scope, exported: Boolean)
+        ( using Tactic[Typescript.Error] )
+      :   Typescript.Declaration =
 
         val constant = at(t"const")
         next()
@@ -681,7 +689,7 @@ object Typescript:
 
       // --- members -----------------------------------------------------------------------------
 
-      private def memberList(): List[Typescript.Member] raises Typescript.Error =
+      private update def memberList()(using Tactic[Typescript.Error]): List[Typescript.Member] =
         val members = scala.collection.mutable.ListBuffer[Typescript.Member]()
 
         while !at(t"}") && peek().present do
@@ -707,12 +715,12 @@ object Typescript:
 
         merged.values.toList.to(List)
 
-      private def member(): Optional[Typescript.Member] raises Typescript.Error =
+      private update def member()(using Tactic[Typescript.Error]): Optional[Typescript.Member] =
         if skip(t";") then Unset
         else if at(t"@") then abort(Typescript.Error(Reason.Unsupported(t"a decorator")))
         else declaredMember()
 
-      private def declaredMember(): Typescript.Member raises Typescript.Error =
+      private update def declaredMember()(using Tactic[Typescript.Error]): Typescript.Member =
         var visibility = Typescript.Member.Visibility.Public
         var static = false
         var readonly = false
@@ -813,7 +821,7 @@ object Typescript:
 
       // --- types -------------------------------------------------------------------------------
 
-      private def typeParameters(): List[Typescript.Type.Parameter] raises Typescript.Error =
+      private update def typeParameters()(using Tactic[Typescript.Error]): List[Typescript.Type.Parameter] =
         if !skip(t"<") then Nil else
           val parameters = scala.collection.mutable.ListBuffer[Typescript.Type.Parameter]()
 
@@ -828,7 +836,7 @@ object Typescript:
           expect(t">")
           parameters.toList.to(List)
 
-      private def typeArguments(): List[Typescript.Type] raises Typescript.Error =
+      private update def typeArguments()(using Tactic[Typescript.Error]): List[Typescript.Type] =
         if !skip(t"<") then Nil else
           val arguments = scala.collection.mutable.ListBuffer[Typescript.Type]()
 
@@ -839,14 +847,14 @@ object Typescript:
           expect(t">")
           arguments.toList.to(List)
 
-      private def typeList(): List[Typescript.Type] raises Typescript.Error =
+      private update def typeList()(using Tactic[Typescript.Error]): List[Typescript.Type] =
         val types = scala.collection.mutable.ListBuffer[Typescript.Type]()
         types += typeExpression()
         while skip(t",") do types += typeExpression()
 
         types.toList.to(List)
 
-      private def parameterList(): List[Typescript.Type.Argument] raises Typescript.Error =
+      private update def parameterList()(using Tactic[Typescript.Error]): List[Typescript.Type.Argument] =
         expect(t"(")
         val parameters = scala.collection.mutable.ListBuffer[Typescript.Type.Argument]()
 
@@ -870,7 +878,7 @@ object Typescript:
         expect(t")")
         parameters.toList.to(List)
 
-      private def skipDefault(): Unit =
+      private update def skipDefault(): Unit =
         var depth = 0
 
         while peek().present && !(depth == 0 && (at(t",") || at(t")"))) do
@@ -880,7 +888,7 @@ object Typescript:
 
         ()
 
-      def typeExpression(): Typescript.Type raises Typescript.Error =
+      update def typeExpression()(using Tactic[Typescript.Error]): Typescript.Type =
         // A leading `|` or `&` is legal and purely cosmetic.
         skip(t"|")
         skip(t"&")
@@ -894,7 +902,7 @@ object Typescript:
 
           Typescript.Type.Union(members.toList.to(List))
 
-      private def intersection(): Typescript.Type raises Typescript.Error =
+      private update def intersection()(using Tactic[Typescript.Error]): Typescript.Type =
         val first = suffixed()
 
         if !at(t"&") then first else
@@ -905,7 +913,7 @@ object Typescript:
           Typescript.Type.Intersection(members.toList.to(List))
 
       // `T[]`, `T[][]` and `T[K]` all suffix a primary type, and they chain.
-      private def suffixed(): Typescript.Type raises Typescript.Error =
+      private update def suffixed()(using Tactic[Typescript.Error]): Typescript.Type =
         var result = primary()
 
         while at(t"[") do
@@ -926,7 +934,7 @@ object Typescript:
               abort(Typescript.Error(Reason.Syntax(t"a type predicate needs a parameter name", here)))
         else result
 
-      private def primary(): Typescript.Type raises Typescript.Error =
+      private update def primary()(using Tactic[Typescript.Error]): Typescript.Type =
         if at(t"(") then
           // Either a parenthesised type or a function type. They are distinguished only by what
           // follows the closing parenthesis, and `(a: T)` is not a valid type on its own, so the
@@ -1045,7 +1053,7 @@ object Typescript:
 
           case _ => abort(Typescript.Error(Reason.Syntax(t"expected a type", here)))
 
-      private def qualifiedName(): Text raises Typescript.Error =
+      private update def qualifiedName()(using Tactic[Typescript.Error]): Text =
         val parts = scala.collection.mutable.ListBuffer[Text]()
         parts += identifier()
         while skip(t".") do parts += identifier()

@@ -7890,13 +7890,11 @@ object Tel extends Tel2:
   // The scoped handle to a TEL document under edit. Public `*0` members
   // rather than private: the grant-gated operations are transparent-inline
   // extensions, and a private member's inline accessor bridge fails capture
-  // checking. The vars hold pure data, so they are untracked, exactly as
-  // aperture's own handle fixtures.
-  class Handle private[stratiform] (initial: Tel) extends caps.ExclusiveCapability:
-    // [field-purity] current document var in edit Handle
-    @scala.caps.unsafe.untrackedCaptures var current0: Tel = initial
-    // [field-purity] dirty flag var in edit Handle
-    @scala.caps.unsafe.untrackedCaptures var dirty0: Boolean = false
+  // checking. Mutable: an edit replaces the current document, which only the exclusive
+  // handle may do.
+  class Handle private[stratiform] (initial: Tel) extends caps.Mutable:
+    var current0: Tel = initial
+    var dirty0: Boolean = false
 
     def metadata0: Optional[Tel.Metadata] = current0.subtree match
       case document: Tel.Document =>
@@ -7911,11 +7909,11 @@ object Tel extends Tel2:
 
     // `Mutation` is pure and assignment happens only on success, so a
     // rejected operation cannot leave a partially-applied document.
-    def mutate0(op: Mutation.Op)(using Tactic[Mutation.Error]): Unit =
+    update def mutate0(op: Mutation.Op)(using Tactic[Mutation.Error]): Unit =
       current0 = Mutation(current0, op)
       dirty0 = true
 
-    def revise0(revision: Revision)(using Tactic[Mutation.Error]): Unit =
+    update def revise0(revision: Revision)(using Tactic[Mutation.Error]): Unit =
       current0 = revision(current0)
       dirty0 = true
 
@@ -7937,7 +7935,10 @@ object Tel extends Tel2:
       ( block: ((Handle & Granting[grants])^) ?=> result )
     :   result =
 
-      val handle = new Handle(readable.read(value)) with Granting[grants] {}
+      // Read first: an argument evaluated inside the anonymous subclass would be charged to its
+      // self type.
+      val document = readable.read(value)
+      val handle = new Handle(document) with Granting[grants] {}
       val outcome = block(using handle)
 
       // Write-back happens only on normal completion — an abort or an
@@ -7970,7 +7971,8 @@ object Tel extends Tel2:
       if mode.atoms.has(Write)
       then abort(Mutation.Error(Mutation.Error.Reason.WriteUnsupported))
 
-      block(using new Handle(readable.read(value)) with Granting[grants] {})
+      val document = readable.read(value)
+      block(using new Handle(document) with Granting[grants] {})
 
 class Tel private[stratiform]
   ( private[stratiform] val subtree:       Tel.Subtree,

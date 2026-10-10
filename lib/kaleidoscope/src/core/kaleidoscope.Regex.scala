@@ -77,7 +77,7 @@ object Regex:
     // parenthesis around every group (`plainPattern`), and `captureIndices` maps kaleidoscope's
     // capture groups onto praxinoscope's paren-ordered group numbers.
     given re2: Re2 is Regex.Engine:
-      def matches(regex: Regex, text: Text)(using scanner: Scanner): Boolean =
+      def matches(regex: Regex, text: Text)(using scanner: Scanner^): Boolean =
         scanner.nextStart match
           case index: Int =>
             motif(regex).slots(text, Ordinal.zerary(index), false).lay(false): slots =>
@@ -107,7 +107,7 @@ object Regex:
         recur(start.n0)
 
 
-      private[kaleidoscope] def matchGroups(regex: Regex, text: Text)(using scanner: Scanner)
+      private[kaleidoscope] def matchGroups(regex: Regex, text: Text)(using scanner: Scanner^)
       :   Option[Array[List[Text | Char] | Optional[Text | Char]]^{}] =
 
         val compiled = motif(regex)
@@ -184,11 +184,11 @@ object Regex:
   trait Engine:
     type Self
 
-    def matches(regex: Regex, text: Text)(using Scanner): Boolean
+    def matches(regex: Regex, text: Text)(using Scanner^): Boolean
     def seek(regex: Regex, input: Text, start: Ordinal): Optional[Interval]
     def search(regex: Regex, input: Text, start: Ordinal, overlap: Boolean): Chain[Interval]
 
-    private[kaleidoscope] def matchGroups(regex: Regex, text: Text)(using Scanner)
+    private[kaleidoscope] def matchGroups(regex: Regex, text: Text)(using Scanner^)
     :   Option[Array[List[Text | Char] | Optional[Text | Char]]^{}]
 
   enum Greed:
@@ -530,7 +530,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]) extends Formal:
   // generic collection extensions of the same names in the `soundness` package; the engine
   // resolves from the `Form` refinement, so a `Regex in Re2` can never silently fall back to
   // `java.util.regex`.
-  def matches(text: Text)(using scanner: Scanner, engine: Form is Regex.Engine): Boolean =
+  def matches(text: Text)(using scanner: Scanner^, engine: Form is Regex.Engine): Boolean =
     engine.matches(this, text)
 
   def seek(input: Text, start: Ordinal = Prim)(using engine: Form is Regex.Engine)

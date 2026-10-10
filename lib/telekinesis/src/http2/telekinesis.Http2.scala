@@ -838,7 +838,7 @@ object Http2:
     val body: Stream.Body = Stream.Body(count => onConsume(this, count))
 
     // Untracked: written only by the connection's single reader daemon.
-    // [field-purity] plain var written by single reader daemon
+    // [synchronized] plain var written by single reader daemon
     @caps.unsafe.untrackedCaptures
     private var headersSeen: Boolean = false
 

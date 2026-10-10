@@ -43,14 +43,18 @@ import vacuous.*
 // is `Pdf`'s job — and never reads stream payloads: a `stream` keyword yields a `Cos.Body`
 // locator and parsing stops there. `references` is disabled for content streams, where `R`
 // is illegal and could otherwise misread three numeric operands.
-private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
-  // [field-purity] parser pushback var in non-Stateful class
-  @scala.caps.unsafe.untrackedCaptures
+private[facsimile] class CosParser(lexer: CosLexer^, references: Boolean = true)
+extends scala.caps.Mutable:
   private var pushback: List[CosToken] = List()
 
   def offset: Long = lexer.offset
 
-  private def advance()(using Tactic[Pdf.Error]): CosToken = pushback match
+  // An inline image's raw payload, read from the parser's own lexer: the parser owns it, so
+  // nothing else may reach it.
+  update def imageData(length: Optional[Int])(using Tactic[Pdf.Error]): Data =
+    lexer.imageData(length)
+
+  private update def advance()(using Tactic[Pdf.Error]): CosToken = pushback match
     case head :: tail =>
       pushback = tail
       head
@@ -58,21 +62,21 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
     case _ =>
       lexer.next()
 
-  private def replace(token: CosToken): Unit = pushback = token :: pushback
+  private update def replace(token: CosToken): Unit = pushback = token :: pushback
 
-  def value()(using Tactic[Pdf.Error]): Cos = interpret(advance())
+  update def value()(using Tactic[Pdf.Error]): Cos = interpret(advance())
 
   // Parses `N G obj <content> endobj`, returning the header numbers — the caller checks them
   // against the cross-reference entry it followed — and a `Cos.Body` if the content is a
   // stream dictionary. The payload itself is never traversed: every object is located through
   // the cross-reference table, so parsing stops at the `stream` keyword.
-  def indirect()(using Tactic[Pdf.Error]): (Int, Int, Cos) =
+  update def indirect()(using Tactic[Pdf.Error]): (Int, Int, Cos) =
     val number = integral(t"an object number")
     val generation = integral(t"a generation number")
     expect(CosToken.Keyword(t"obj"), t"the keyword 'obj'")
     (number, generation, content())
 
-  private def integral(expected: Text)(using Tactic[Pdf.Error]): Int =
+  private update def integral(expected: Text)(using Tactic[Pdf.Error]): Int =
     val position = offset
 
     advance() match
@@ -82,7 +86,7 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
       case _ =>
         abort(Pdf.Error(Pdf.Error.Reason.Unparseable(position, expected)))
 
-  private def content()(using Tactic[Pdf.Error]): Cos =
+  private update def content()(using Tactic[Pdf.Error]): Cos =
     val content = value()
 
     advance() match
@@ -106,7 +110,7 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
   // One content-stream instruction: operand values followed by an operator keyword, or
   // `Unset` at the end of the stream. Operands left dangling by a truncated stream are
   // dropped, matching viewer behaviour.
-  private[facsimile] def instruction()(using Tactic[Pdf.Error]): Optional[(List[Cos], Text)] =
+  private[facsimile] update def instruction()(using Tactic[Pdf.Error]): Optional[(List[Cos], Text)] =
     val operands = scala.collection.immutable.List.newBuilder[Cos]
 
     def recur(): Optional[(List[Cos], Text)] = advance() match
@@ -135,11 +139,11 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
 
     recur()
 
-  private def expect(token: CosToken, expected: Text)(using Tactic[Pdf.Error]): Unit =
+  private update def expect(token: CosToken, expected: Text)(using Tactic[Pdf.Error]): Unit =
     val position = offset
     if advance() != token then abort(Pdf.Error(Pdf.Error.Reason.Unparseable(position, expected)))
 
-  private def interpret(token: CosToken)(using Tactic[Pdf.Error]): Cos = token match
+  private update def interpret(token: CosToken)(using Tactic[Pdf.Error]): Cos = token match
     case CosToken.Integral(first) =>
       // `N G R` is an indirect reference: two-token lookahead distinguishes it from a run of
       // numbers, with mismatches pushed back rather than lost.
@@ -173,7 +177,7 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
     case _ =>
       abort(Pdf.Error(Pdf.Error.Reason.Unparseable(offset, t"an object")))
 
-  private def sequence()(using Tactic[Pdf.Error]): Cos =
+  private update def sequence()(using Tactic[Pdf.Error]): Cos =
     val elements = scala.collection.immutable.List.newBuilder[Cos]
 
     while
@@ -191,7 +195,7 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
 
     Cos.Sequence(elements.result().to(List))
 
-  private def dictionary()(using Tactic[Pdf.Error]): Cos =
+  private update def dictionary()(using Tactic[Pdf.Error]): Cos =
     val entries = scala.collection.immutable.Map.newBuilder[Text, Cos]
 
     while

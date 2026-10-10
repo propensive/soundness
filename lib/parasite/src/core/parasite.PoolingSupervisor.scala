@@ -165,11 +165,11 @@ object PoolingSupervisor:
   // published by volatile write, as `Handoff`'s are, so their captures are untracked.
   private[parasite] final class Entry(block: () => Unit) extends Strand:
     private val state: juca.AtomicInteger = juca.AtomicInteger(State.Queued)
-    // [field-purity] volatile carrier var in Entry
+    // [synchronized] volatile carrier var in Entry
     @caps.unsafe.untrackedCaptures @volatile private var carrier: Thread | Null = null
-    // [field-purity] volatile interrupt flag in Entry
+    // [synchronized] volatile interrupt flag in Entry
     @caps.unsafe.untrackedCaptures @volatile private var interruptRequested: Boolean = false
-    // [field-purity] volatile joiner var in Entry
+    // [synchronized] volatile joiner var in Entry
     @caps.unsafe.untrackedCaptures @volatile private var joiner: Thread | Null = null
 
     // Requests cancellation of the task. Queued: remembered, and delivered when it mounts.
@@ -231,7 +231,7 @@ object PoolingSupervisor:
   // A carrier: the loop a pooled thread runs, and the strand identity of whatever task is
   // mounted on it, for waiter sets and parking.
   private[parasite] final class Carrier(pool: PoolingSupervisor^) extends Runnable:
-    // [field-purity] volatile task var in Carrier
+    // [synchronized] volatile task var in Carrier
     @caps.unsafe.untrackedCaptures @volatile var task: Entry | Null = null
     // The carrier's thread and park permit live on its strand, which needs nothing else: so a
     // strand, unlike its carrier, does not retain the pool.
@@ -269,10 +269,10 @@ object PoolingSupervisor:
 
   // Identity equality: one strand per carrier, for the carrier's whole life.
   private[parasite] final class CarrierStrand() extends Strand:
-    // [field-purity] volatile thread var in CarrierStrand
+    // [synchronized] volatile thread var in CarrierStrand
     @caps.unsafe.untrackedCaptures @volatile var thread: Thread | Null = null
     // The park permit `unpark` grants, checked by the spinning phase of `park`.
-    // [field-purity] volatile permit flag in CarrierStrand
+    // [synchronized] volatile permit flag in CarrierStrand
     @caps.unsafe.untrackedCaptures @volatile var permit: Boolean = false
 
     def interrupt(): Unit =

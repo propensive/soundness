@@ -282,7 +282,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate
   self: Worker^ =>
   private val state: Atomic[Fulfillment[Result]] = Atomic(Preload.initial)
 
-  // [field-purity] relents counter var in Worker
+  // [aliased-graph] relents counter var in Worker
   @scala.caps.unsafe.untrackedCaptures
   private var relents: Int = 1
 

@@ -112,14 +112,11 @@ lib/exoskeleton/src/completions/exoskeleton.Pathname.scala	0	2	0	0	0	0	0	0	0	0
 lib/exoskeleton/src/completions/exoskeleton_completions.scala	0	0	0	0	0	0	0	0	1	0
 lib/exoskeleton/src/core/exoskeleton.Invocation.scala	0	0	3	0	0	0	0	0	0	0
 lib/exoskeleton/src/test/exoskeleton_test.scala	0	1	0	0	0	0	0	0	0	0
-lib/facsimile/src/core/facsimile.ContentWriter.scala	0	0	2	0	0	0	0	0	0	0
-lib/facsimile/src/core/facsimile.CosParser.scala	0	0	1	0	0	0	0	0	0	0
 lib/facsimile/src/core/facsimile.Gathering.scala	0	0	0	0	1	0	0	0	0	0
 lib/facsimile/src/core/facsimile.Guard.scala	0	0	0	0	4	6	4	0	0	0
 lib/facsimile/src/core/facsimile.Page.scala	0	0	0	0	1	0	0	0	0	0
 lib/facsimile/src/core/facsimile.Pdf.scala	0	1	4	0	0	0	1	0	0	0
 lib/facsimile/src/core/facsimile.PdfWriter.scala	0	6	0	0	0	0	0	0	0	0
-lib/facsimile/src/core/facsimile.Scan.scala	0	0	3	0	0	0	0	0	0	0
 lib/facsimile/src/core/facsimile_editing.scala	0	5	0	0	0	0	0	0	0	0
 lib/facsimile/src/file/facsimile.PdfFile.scala	0	2	0	0	0	0	0	0	0	0
 lib/facsimile/src/test/facsimile_test.scala	0	24	0	0	19	16	1	1	0	0
@@ -201,13 +198,12 @@ lib/iridescence/src/core/iridescence.Rgb12Opaque.scala	0	0	0	0	0	0	0	0	1	0
 lib/iridescence/src/core/iridescence.Rgb32Opaque.scala	0	0	0	0	0	0	0	0	1	0
 lib/jacinta/src/bench/jacinta.Benchmarks.scala	0	0	0	0	9	1	0	0	0	0
 lib/jacinta/src/core/jacinta.Json.Parser.scala	1	0	0	0	4	0	0	0	0	0
-lib/jacinta/src/core/jacinta.Json.scala	24	0	4	0	6	0	1	0	0	0
+lib/jacinta/src/core/jacinta.Json.scala	24	0	2	0	6	0	1	0	0	0
 lib/jacinta/src/core/jacinta.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0
 lib/jacinta/src/core/jacinta.internal.scala	2	0	0	0	0	0	0	0	0	0
 lib/jacinta/src/schema/jacinta.JsonSchema.scala	8	0	0	0	0	0	0	0	0	0
 lib/jacinta/src/staged/jacinta.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0
 lib/jacinta/src/test/jacinta.ParserTests.scala	0	0	0	0	6	0	0	0	0	0
-lib/kaleidoscope/src/core/kaleidoscope.Scanner.scala	0	0	2	0	0	0	0	0	0	0
 lib/legerdemain/src/test/legerdemain_test.scala	0	0	1	0	0	0	0	0	0	0
 lib/locomotion/src/core/locomotion.Protobuf.scala	0	0	0	0	1	1	0	0	0	0
 lib/locomotion/src/staged/locomotion.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0
@@ -268,7 +264,6 @@ lib/pneumatic/src/lzma/pneumatic.XzCheck.scala	0	0	0	0	1	0	0	0	0	0
 lib/pneumatic/src/lzma/pneumatic.XzContainer.scala	0	0	0	0	1	1	0	0	0	0
 lib/pneumatic/src/lzw/pneumatic.LzwEngine.scala	0	0	0	0	1	0	0	0	0	0
 lib/pneumatic/src/test/pneumatic_test.scala	0	3	0	0	10	12	7	0	0	0
-lib/polaris/src/core/polaris.Sextant.scala	0	0	1	0	0	0	0	0	0	0
 lib/probably/src/cli/probably.Suite.scala	0	0	1	0	0	0	0	0	0	0
 lib/probably/src/core/probably.Entry.scala	0	0	5	0	0	0	0	0	0	0
 lib/probably/src/core/probably.Probing.scala	0	0	0	0	0	0	0	0	1	0
@@ -282,7 +277,7 @@ lib/profanity/src/core/profanity_core.scala	0	2	0	0	0	0	0	0	0	0
 lib/profanity/src/test/profanity_test.scala	0	0	0	0	4	0	0	0	0	0
 lib/proscenium/src/core/proscenium.Array.scala	3	0	0	0	0	0	1	0	0	0
 lib/punctuation/src/core/punctuation.BlockBuilder.scala	0	0	7	0	0	0	0	0	0	0
-lib/punctuation/src/core/punctuation.EmphasisProcessor.scala	0	0	10	0	0	0	0	0	0	0
+lib/punctuation/src/core/punctuation.EmphasisProcessor.scala	0	0	7	0	0	0	0	0	0	0
 lib/punctuation/src/core/punctuation.InlineParser.scala	0	0	1	0	0	0	0	0	0	0
 lib/quantitative/src/core/quantitative.internal.scala	0	0	0	0	0	0	0	0	3	0
 lib/quantitative/src/units/quantitative.Typometry.scala	0	0	0	0	0	0	0	0	1	0
@@ -310,10 +305,10 @@ lib/sibylline/src/test/sibylline.AnthropicTests.scala	0	0	1	0	0	0	0	0	0	0
 lib/spectacular/src/core/spectacular.Inspectable.scala	12	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/bench/stratiform.Benchmarks.scala	0	0	0	0	1	0	0	0	0	0
 lib/stratiform/src/binaryStaged/stratiform.bintelInternal.scala	1	0	0	0	0	0	0	0	0	0
-lib/stratiform/src/core/stratiform.Bintel.scala	0	0	1	0	1	0	0	0	0	0
+lib/stratiform/src/core/stratiform.Bintel.scala	0	0	0	0	1	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Mutation.scala	0	0	0	0	0	0	20	0	0	0
 lib/stratiform/src/core/stratiform.Revision.scala	0	0	0	0	0	0	1	0	0	0
-lib/stratiform/src/core/stratiform.Tel.scala	4	0	6	0	2	4	7	0	0	0
+lib/stratiform/src/core/stratiform.Tel.scala	4	0	4	0	2	4	7	0	0	0
 lib/stratiform/src/core/stratiform.Tel2.scala	2	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Tel3.scala	2	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Tels.scala	0	0	0	0	0	0	6	0	0	0
@@ -378,7 +373,7 @@ lib/urticose/src/test/urticose_test.scala	0	1	0	0	0	0	0	0	0	0
 lib/vicarious/src/core/vicarious.Catalog.scala	0	0	0	0	0	0	1	0	0	0
 lib/vivisection/src/core/vivisection.Debug.scala	4	0	1	0	0	0	0	0	0	0
 lib/vivisection/src/core/vivisection.Debuggee.scala	1	0	0	0	0	0	0	0	0	0
-lib/vivisection/src/core/vivisection.Jdwp.scala	2	0	4	0	4	3	0	0	0	0
+lib/vivisection/src/core/vivisection.Jdwp.scala	2	0	3	0	4	3	0	0	0	0
 lib/vivisection/src/dap/vivisection.DapSession.scala	15	0	10	0	0	0	0	0	0	0
 lib/vivisection/src/test/vivisection_test.scala	2	0	0	0	0	0	0	1	0	0
 lib/wisteria/src/core/wisteria.SumDerivation.scala	0	0	0	0	0	0	0	1	0	0
@@ -387,7 +382,6 @@ lib/xenophile/src/native/xenophile.ForeignBuffer.scala	0	0	0	0	0	1	0	0	0	0
 lib/xenophile/src/native/xenophile.ForeignLibrary.scala	0	0	0	0	0	1	0	0	0	0
 lib/xenophile/src/nativeruntime/xenophile.ForeignLibrary.scala	0	0	1	0	0	0	0	0	0	0
 lib/xenophile/src/test/xenophile_test.scala	0	1	0	0	0	0	0	0	0	0
-lib/xenophile/src/typescript/xenophile.Typescript.scala	0	0	1	0	0	0	0	0	0	0
 lib/xylophone/src/bench/xylophone.Benchmarks.scala	0	0	0	0	5	0	0	0	0	0
 lib/xylophone/src/core/xylophone.Xml.scala	9	1	1	0	4	3	1	0	0	0
 lib/xylophone/src/core/xylophone.Xml3.scala	2	0	0	0	0	0	0	0	0	0
@@ -404,7 +398,7 @@ lib/ypsiloid/src/core/ypsiloid.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0
 lib/zephyrine/src/bench/zephyrine.Benchmarks.scala	0	0	0	0	2	0	0	0	0	0
 lib/zephyrine/src/core/zephyrine.Addressable.scala	0	0	0	0	4	3	1	0	0	0
 lib/zephyrine/src/core/zephyrine.Conduit.scala	0	0	4	0	0	0	0	0	0	0
-lib/zephyrine/src/core/zephyrine.Cursor.scala	4	0	7	0	0	1	0	0	0	0
+lib/zephyrine/src/core/zephyrine.Cursor.scala	4	0	5	0	0	0	0	0	0	0
 lib/zephyrine/src/core/zephyrine.Handoff.scala	0	0	4	0	0	0	0	0	0	0
 lib/zephyrine/src/core/zephyrine.Producer.scala	1	0	3	0	0	0	0	0	0	0
 lib/zephyrine/src/core/zephyrine.Stream.scala	0	0	2	0	0	0	0	0	0	0

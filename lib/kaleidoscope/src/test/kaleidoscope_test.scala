@@ -740,7 +740,7 @@ object Tests extends Suite(m"Kaleidoscope tests"):
           val re2Regex = jvmRegex.to[Re2]
 
           inputs.each: input =>
-            given Scanner = Scanner(Unset)
+            given (Scanner^) = Scanner(Unset)
 
             if jvmRegex.matches(input) != re2Regex.matches(input)
             || jvmRegex.seek(input) != re2Regex.seek(input)
