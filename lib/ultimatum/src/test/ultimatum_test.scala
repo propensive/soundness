@@ -1040,6 +1040,60 @@ object Tests extends Suite(m"Ultimatum Tests"):
         root.render
       . assert(_ == t"A         \nB         ")
 
+      // Eight tasks mutate the same container at once; every pane must land, so each mutation
+      // has to be one atomic transition rather than a read followed by a write.
+      test(m"concurrent appends lose no panes"):
+        import strategies.throwUnsafely
+        import threads.virtualThreads
+        import probates.cancelProbate
+        val panes = Panes()
+
+        supervise:
+          // Start every task before awaiting any, with no collection of capturing handles.
+          def fork(count: Int): Unit = if count > 0 then
+            val task = async(repeat(250)(panes.append(cell())))
+            fork(count - 1)
+            task.await()
+
+          fork(8)
+
+        panes.size
+      . assert(_ == 2000)
+
+      test(m"concurrent amends lose no updates"):
+        import strategies.throwUnsafely
+        import threads.virtualThreads
+        import probates.cancelProbate
+        val reading = Reading(0)
+
+        supervise:
+          // Start every task before awaiting any, with no collection of capturing handles.
+          def fork(count: Int): Unit = if count > 0 then
+            val task = async(repeat(250)(reading.amend(_ + 1)))
+            fork(count - 1)
+            task.await()
+
+          fork(8)
+
+        reading()
+      . assert(_ == 2000)
+
+      // The wake callback is bound on the form's thread and called from the updating task, so the
+      // task must see the binding.
+      test(m"an update from a task wakes the callback bound by another thread"):
+        import strategies.throwUnsafely
+        import threads.virtualThreads
+        import probates.cancelProbate
+        val reading = Reading(0)
+        val woken = Atomic(0)
+        reading.bindWake(() => woken.since(_ + 1))
+
+        supervise:
+          async(reading() = 1).await()
+
+        woken()
+      . assert(_ == 1)
+
     suite(m"Focus indication"):
       def grid(): FlowExtent^ =
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)

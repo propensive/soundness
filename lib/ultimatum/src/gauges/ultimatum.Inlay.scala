@@ -37,6 +37,7 @@ import escapade.*
 import gossamer.*
 import parasite.*
 import quantitative.*
+import rudiments.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
@@ -52,14 +53,19 @@ class Inlay[status: Gaugeable as design]
 
   private val started: Long = System.nanoTime
 
-  // How many rows the last frame occupied, so the next one knows how far to move back up.
-  // [field-purity] drawn row counter in non-Stateful Inlay
-  @scala.caps.unsafe.untrackedCaptures
-  private var drawn: Int = 0
+  // Painting happens on two threads at once — the animation task, and whichever task updates the
+  // `Reading` and so triggers its wake callback — so every write to the terminal, and the row
+  // count it leaves behind, is serialised under this mutex.
+  private val mutex: Mutex = Mutex()
 
-  // [field-purity] running flag in non-Stateful Inlay
-  @scala.caps.unsafe.untrackedCaptures
-  private var running: Boolean = false
+  // How many rows the last frame occupied, so the next one knows how far to move back up. Only
+  // touched under `mutex`.
+  private val drawn: Atomic[Int] = Atomic(0)
+
+  // Between `start` and `finish`. Atomic because `finish` clears it on the caller's thread while
+  // the animation task polls it; `paint` re-checks it under the mutex, so a frame that was already
+  // on its way when `finish` ran cannot land after the erase.
+  private val live: Atomic[Boolean] = Atomic(false)
 
   private def columns: Int = width.or(stdio.termcap.width.max(1))
 
@@ -68,33 +74,33 @@ class Inlay[status: Gaugeable as design]
 
   // Draw one frame over the last one. Each row is erased to the end of the line as it is written,
   // so a frame that is shorter than its predecessor leaves no residue.
-  private def paint(): Unit =
-    // The stdlib view is taken once, indexed and counted by the paint loop below.
-    val rows = design.rows(reading(), tick, columns).stdlib
-    rewind()
-    var index = 0
+  private def paint(): Unit = mutex:
+    if live() then
+      // The stdlib view is taken once, indexed and counted by the paint loop below.
+      val rows = design.rows(reading(), tick, columns).stdlib
+      rewind()
+      var index = 0
 
-    while index < rows.length do
-      Out.print(e"${rows(index)}${csi.el()}")
-      if index < rows.length - 1 then Out.print(t"\n")
-      index += 1
+      while index < rows.length do
+        Out.print(e"${rows(index)}${csi.el()}")
+        if index < rows.length - 1 then Out.print(t"\n")
+        index += 1
 
-    drawn = rows.length
+      drawn() = rows.length
 
   // Back to the first column of the block's first row.
   private def rewind(): Unit =
-    if drawn > 1 then Out.print(csi.cuu(drawn - 1))
+    if drawn() > 1 then Out.print(csi.cuu(drawn() - 1))
     Out.print(t"\r")
 
   // Paint once, and — if the design animates — keep painting until `finish`. A design with no
   // period is drawn once here and thereafter only when its `Reading` changes and calls back.
   def start(): Unit =
+    live() = true
     reading.bindWake: () => paint()
     paint()
 
     design.period.let: period =>
-      running = true
-
       // The repaint task captures this `Inlay`, which also owns the `Monitor` the task is spawned
       // against, and separation checking rejects the overlap. They are the same single-owner
       // session: the task is started here, stopped by `finish`, and touches nothing else — so the
@@ -103,25 +109,27 @@ class Inlay[status: Gaugeable as design]
       // [by-name-receiver] async body captures Inlay owning the Monitor
       scala.caps.unsafe.unsafeAssumeSeparate:
         async:
-          while running do
+          while live() do
             snooze(period.toDouble*Milli(Second))
-            if running then paint()
+            paint()
 
         ()
 
   // Erase the block and leave the cursor where it started, so whatever the caller prints next
   // begins on a clean line.
   def finish(): Unit =
-    running = false
+    live() = false
     reading.bindWake: () => ()
-    rewind()
-    var index = 0
 
-    while index < drawn do
-      Out.print(csi.el())
-      if index < drawn - 1 then Out.print(t"\n")
-      index += 1
+    mutex:
+      rewind()
+      var index = 0
 
-    if drawn > 1 then Out.print(csi.cuu(drawn - 1))
-    Out.print(t"\r")
-    drawn = 0
+      while index < drawn() do
+        Out.print(csi.el())
+        if index < drawn() - 1 then Out.print(t"\n")
+        index += 1
+
+      if drawn() > 1 then Out.print(csi.cuu(drawn() - 1))
+      Out.print(t"\r")
+      drawn() = 0

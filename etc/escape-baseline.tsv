@@ -9,7 +9,7 @@ lib/anamnesis/src/core/anamnesis.Database.scala	0	0	5	0	0	0	0	0	0	4	0	0	0
 lib/anthology/src/apk/anthology.Apk.scala	0	0	0	0	4	1	0	0	0	0	0	0	0
 lib/anthology/src/apk/anthology.Axml.scala	0	0	0	0	1	0	0	0	0	0	0	0	0
 lib/anthology/src/apk/anthology_apk.scala	0	0	0	0	1	1	0	0	0	0	0	0	0
-lib/anthology/src/core/anthology.CompileProcess.scala	0	0	5	0	0	0	0	0	0	0	0	0	0
+lib/anthology/src/core/anthology.CompileProcess.scala	0	0	4	0	0	0	0	0	0	0	0	0	0
 lib/anthology/src/oci/anthology_oci.scala	0	0	0	0	1	0	0	1	0	0	0	0	0
 lib/anthology/src/scala/anthology.Scalac.scala	1	0	3	0	1	1	0	0	0	0	0	0	0
 lib/anthology/src/scala/anthology_scala.scala	0	0	1	0	0	0	0	0	0	0	0	0	0
@@ -42,7 +42,7 @@ lib/breviloquence/src/test/breviloquence_test.scala	0	0	1	0	0	0	0	0	0	0	0	0	0
 lib/cacophony/src/core/cacophony.Audible.scala	0	0	0	0	1	1	0	0	0	0	0	0	0
 lib/cacophony/src/core/cacophony.Audio.scala	0	0	0	0	1	2	0	0	0	0	0	0	0
 lib/cacophony/src/core/cacophony.Feed.scala	0	0	1	0	0	0	0	0	0	0	0	0	0
-lib/cacophony/src/core/cacophony.Outlet.scala	0	0	1	0	0	1	0	0	0	0	0	0	0
+lib/cacophony/src/core/cacophony.Outlet.scala	0	0	0	0	0	1	0	0	0	0	0	0	0
 lib/cacophony/src/core/cacophony.Pcm.scala	0	0	0	0	0	1	0	0	0	0	0	0	0
 lib/caduceus/src/resend/caduceus_core.scala	1	1	0	0	0	0	0	0	0	0	0	0	0
 lib/caduceus/src/test/caduceus_test.scala	0	0	2	0	0	0	0	0	0	0	0	0	0
@@ -399,11 +399,11 @@ lib/turbulence/src/test/turbulence_test.scala	5	3	1	0	2	1	7	0	0	0	11	5	0
 lib/turbulence/src/wasi/turbulence_wasi.scala	0	0	0	0	2	0	0	0	0	0	0	0	0
 lib/ultimatum/src/core/ultimatum.FlowExtent.scala	1	0	0	0	0	0	0	0	0	0	0	0	0
 lib/ultimatum/src/core/ultimatum.Focus.scala	0	0	2	0	0	0	0	0	0	0	0	0	0
-lib/ultimatum/src/core/ultimatum.Panes.scala	1	0	2	0	0	0	0	0	0	0	0	0	0
+lib/ultimatum/src/core/ultimatum.Panes.scala	1	0	0	0	0	0	0	0	0	0	0	0	0
 lib/ultimatum/src/core/ultimatum.ScrollFixture.scala	2	0	4	0	0	0	0	0	0	0	0	0	0
 lib/ultimatum/src/core/ultimatum_core.scala	0	1	0	0	0	0	0	0	0	0	0	0	0
-lib/ultimatum/src/gauges/ultimatum.Inlay.scala	0	1	2	0	0	0	0	0	0	0	0	0	0
-lib/ultimatum/src/gauges/ultimatum.Reading.scala	2	0	2	0	0	0	0	0	0	0	0	0	0
+lib/ultimatum/src/gauges/ultimatum.Inlay.scala	0	1	0	0	0	0	0	0	0	0	0	0	0
+lib/ultimatum/src/gauges/ultimatum.Reading.scala	1	0	0	0	0	0	0	0	0	0	0	0	0
 lib/ultimatum/src/tables/ultimatum.TableFixture.scala	2	0	3	0	0	0	0	0	0	0	0	0	0
 lib/ultimatum/src/test/ultimatum_test.scala	0	0	13	0	0	0	0	0	0	0	0	0	0
 lib/ulysses/src/core/ulysses.BloomFilter.scala	1	0	0	0	0	0	0	0	0	0	0	0	0
