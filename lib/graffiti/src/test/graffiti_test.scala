@@ -38,7 +38,7 @@ import htmlDoms.whatwg.*
 import formatting.indentedCssFormatting
 import strategies.throwUnsafely
 import parasite.probates.awaitProbate
-import parasite.threading.virtualThreading
+import parasite.threads.virtualThreads
 
 // A page assembled from a modest set of independent template traits, mirroring the README example.
 // `content` and `verso` are the only slots the page fills; everything else is contributed by traits.
@@ -94,7 +94,7 @@ class AdminDashboard extends Dashboard:
   def cards: List[Dashboard.Card] =
     List(Dashboard.Card(t"Users", P("128 active")), Dashboard.Card(t"Revenue", P("4200")))
 
-object Tests extends Suite(m"Graffiti tests"):
+object Tests extends Suite(m"Graffiti tests") uses parasite.threads:
   def run(): Unit =
     val page = Page(t"Welcome", List(t"home", t"docs"))
     val html = page.html.show
@@ -272,5 +272,7 @@ object Tests extends Suite(m"Graffiti tests"):
 
       test(m"serving an archetype streams the full HTML document, with a doctype"):
         supervise(Page(t"Demo", Nil).read[Text])
-      . assert: served =>
+      // `check`, not `assert`: the body reaches the global `threads`, a capability, so it runs
+      // inline rather than deferred (see `probably.Test`).
+      . check: served =>
           served.contains(t"<!DOCTYPE html>") && served.contains(t"Hello, world!")

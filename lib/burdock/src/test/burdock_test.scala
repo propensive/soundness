@@ -45,7 +45,7 @@ import temporaryDirectories.systemTemporaryDirectory
 import workingDirectories.javaBaseWorkingDirectory
 import environments.javaBaseEnvironment
 import logging.silentLogging
-import threading.platformThreading
+import threads.platformThreads
 import probates.awaitProbate
 
 object Tests extends Suite(m"Burdock Tests"):

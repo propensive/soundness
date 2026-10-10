@@ -31,7 +31,7 @@ lib/bitumen/src/core/bitumen.Tarfile.scala	1	2	1	0	0	0	0	0	0	0
 lib/bitumen/src/jvm/bitumen.TarBuilder.scala	0	0	1	0	0	1	0	0	0	0
 lib/bitumen/src/jvm/bitumen.TarFilesystem.scala	0	0	0	0	1	1	0	0	0	0
 lib/bitumen/src/test/bitumen_test.scala	0	4	0	0	1	0	16	0	0	0
-lib/breviloquence/src/core/breviloquence.Cbor.scala	3	0	3	0	3	1	0	0	0	0
+lib/breviloquence/src/core/breviloquence.Cbor.scala	2	0	3	0	3	1	0	0	0	0
 lib/breviloquence/src/core/breviloquence.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0
 lib/breviloquence/src/staged/breviloquence.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0
 lib/breviloquence/src/test/breviloquence_test.scala	0	0	1	0	0	0	0	0	0	0
@@ -45,7 +45,7 @@ lib/caduceus/src/test/caduceus_test.scala	0	0	2	0	0	0	0	0	0	0
 lib/caesura/src/core/caesura.Dsv.scala	12	0	0	0	0	0	0	0	0	0
 lib/caesura/src/core/caesura.Sheet.scala	4	0	2	0	0	2	0	0	0	0
 lib/caesura/src/core/caesura.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0
-lib/caesura/src/core/caesura_core.scala	1	0	2	0	0	0	1	0	0	0
+lib/caesura/src/core/caesura_core.scala	0	0	2	0	0	0	1	0	0	0
 lib/caesura/src/test/caesura.AccrualTests.scala	0	0	1	0	0	0	0	0	0	0
 lib/camouflage/src/core/camouflage.Cache.scala	0	0	2	0	0	0	0	0	0	0
 lib/capricious/src/core/capricious.Randomizable.scala	3	0	0	0	0	0	0	0	0	0
@@ -100,7 +100,7 @@ lib/espionage/src/test/espionage_test.scala	0	4	0	0	0	0	0	0	0	0
 lib/ethereal/src/core/ethereal.Launcher.scala	0	0	0	0	2	2	0	0	0	0
 lib/ethereal/src/core/ethereal.Session.scala	3	0	6	0	3	3	0	0	0	0
 lib/ethereal/src/core/ethereal_core.scala	3	8	0	0	1	2	0	0	0	0
-lib/ethereal/src/test/ethereal_test.scala	0	7	0	0	1	0	0	0	0	0
+lib/ethereal/src/test/ethereal_test.scala	0	0	0	0	1	0	0	0	0	0
 lib/eucalyptus/src/core/eucalyptus.Logger.scala	2	0	0	0	0	0	0	0	0	0
 lib/eucalyptus/src/test/eucalyptus_test.scala	6	0	0	0	0	0	0	0	0	0
 lib/exegesis/src/core/exegesis.Lsp.scala	25	0	78	0	0	0	0	0	0	0
@@ -113,8 +113,7 @@ lib/exoskeleton/src/completions/exoskeleton.Completions.scala	0	1	0	0	0	0	0	0	0	
 lib/exoskeleton/src/completions/exoskeleton.Pathname.scala	0	2	0	0	0	0	0	0	0	0
 lib/exoskeleton/src/completions/exoskeleton_completions.scala	0	0	0	0	0	0	0	0	1	0
 lib/exoskeleton/src/core/exoskeleton.Invocation.scala	0	0	3	0	0	0	0	0	0	0
-lib/exoskeleton/src/rig/exoskeleton.Tmux.scala	0	3	0	0	0	0	0	0	0	0
-lib/exoskeleton/src/test/exoskeleton_test.scala	0	3	0	0	0	0	0	0	0	0
+lib/exoskeleton/src/test/exoskeleton_test.scala	0	1	0	0	0	0	0	0	0	0
 lib/facsimile/src/core/facsimile.ContentWriter.scala	0	0	2	0	0	0	0	0	0	0
 lib/facsimile/src/core/facsimile.CosParser.scala	0	0	1	0	0	0	0	0	0	0
 lib/facsimile/src/core/facsimile.Gathering.scala	0	0	0	0	1	0	0	0	0	0
@@ -207,7 +206,6 @@ lib/jacinta/src/core/jacinta.Json.Parser.scala	1	0	0	0	4	0	0	0	0	0
 lib/jacinta/src/core/jacinta.Json.scala	29	0	4	0	6	0	1	0	0	0
 lib/jacinta/src/core/jacinta.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0
 lib/jacinta/src/core/jacinta.internal.scala	2	0	0	0	0	0	0	0	0	0
-lib/jacinta/src/optics/jacinta_optics.scala	1	0	0	0	0	0	0	0	0	0
 lib/jacinta/src/schema/jacinta.JsonSchema.scala	9	0	0	0	0	0	0	0	0	0
 lib/jacinta/src/staged/jacinta.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0
 lib/jacinta/src/test/jacinta.ParserTests.scala	0	0	0	0	6	0	0	0	0	0
@@ -239,12 +237,11 @@ lib/octogenarian/src/core/octogenarian.Git.scala	2	0	0	0	0	0	0	0	0	0
 lib/orthodoxy/src/core/orthodoxy.Pkce.scala	0	0	0	0	1	0	0	0	0	0
 lib/orthodoxy/src/test/orthodoxy_test.scala	0	0	2	0	0	0	0	0	0	0
 lib/panopticon/src/core/panopticon.Composable.scala	0	1	0	0	0	0	0	0	0	0
-lib/panopticon/src/core/panopticon.Optical.scala	2	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Async.scala	0	0	0	0	0	0	0	0	1	0
 lib/parasite/src/core/parasite.Daemon.scala	2	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Fault.scala	1	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Monitor.scala	2	0	1	0	0	0	0	0	0	0
-lib/parasite/src/core/parasite.PoolingSupervisor.scala	2	0	6	0	0	0	0	0	0	0
+lib/parasite/src/core/parasite.PoolingSupervisor.scala	1	0	6	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Task.scala	8	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Timeout.scala	2	0	1	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite_core.scala	7	0	0	0	0	0	0	0	0	0
@@ -286,7 +283,7 @@ lib/probably/src/events/probably.Streamer.scala	0	0	0	0	0	0	0	2	0	0
 lib/profanity/src/core/profanity.Interaction.scala	0	0	1	0	0	0	0	0	0	0
 lib/profanity/src/core/profanity.Terminal.scala	1	0	3	0	0	0	0	0	0	0
 lib/profanity/src/core/profanity_core.scala	0	2	0	0	0	0	0	0	0	0
-lib/profanity/src/test/profanity_test.scala	0	4	0	0	4	0	0	0	0	0
+lib/profanity/src/test/profanity_test.scala	0	0	0	0	4	0	0	0	0	0
 lib/proscenium/src/core/proscenium.Array.scala	3	0	0	0	0	0	1	0	0	0
 lib/punctuation/src/core/punctuation.BlockBuilder.scala	0	0	7	0	0	0	0	0	0	0
 lib/punctuation/src/core/punctuation.EmphasisProcessor.scala	0	0	10	0	0	0	0	0	0	0
@@ -321,7 +318,7 @@ lib/stratiform/src/core/stratiform.Bintel.scala	0	0	1	0	1	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Mutation.scala	0	0	0	0	0	0	20	0	0	0
 lib/stratiform/src/core/stratiform.Revision.scala	0	0	0	0	0	0	1	0	0	0
 lib/stratiform/src/core/stratiform.Tel.scala	4	0	6	0	2	4	7	0	0	0
-lib/stratiform/src/core/stratiform.Tel2.scala	3	0	0	0	0	0	0	0	0	0
+lib/stratiform/src/core/stratiform.Tel2.scala	9	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Tel3.scala	2	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Tels.scala	0	0	0	0	0	0	6	0	0	0
 lib/stratiform/src/core/stratiform.Tels2.scala	0	0	0	0	0	0	4	1	0	0
@@ -406,7 +403,7 @@ lib/xylophone/src/test/xylophone.PositionTests.scala	0	0	0	0	1	0	0	0	0	0
 lib/xylophone/src/test/xylophone_test.scala	0	0	0	0	6	0	0	0	0	0
 lib/yossarian/src/core/yossarian.Pty.scala	0	0	1	0	0	0	0	0	0	0
 lib/yossarian/src/core/yossarian.internal.scala	0	0	3	0	1	0	0	0	0	0
-lib/ypsiloid/src/core/ypsiloid.Yaml.scala	1	2	2	0	4	0	1	0	0	0
+lib/ypsiloid/src/core/ypsiloid.Yaml.scala	0	2	2	0	4	0	1	0	0	0
 lib/ypsiloid/src/core/ypsiloid.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0
 lib/zephyrine/src/bench/zephyrine.Benchmarks.scala	0	0	0	0	2	0	0	0	0	0
 lib/zephyrine/src/core/zephyrine.Addressable.scala	0	0	0	0	4	3	1	0	0	0

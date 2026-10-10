@@ -46,7 +46,7 @@ import executives.completionsExecutive
 import interpreters.posixInterpreter
 import systems.javaBaseSystem
 import textSanitizers.strictSanitizer
-import threading.platformThreading
+import threads.platformThreads
 import workingDirectories.systemWorkingDirectory
 
 @main

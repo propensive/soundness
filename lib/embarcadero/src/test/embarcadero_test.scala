@@ -334,7 +334,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == true)
 
     suite(m"containerd over a gRPC loopback"):
-      import threading.virtualThreading
+      import threads.virtualThreads
       import probates.cancelProbate
 
       def pair(): (Duplex, Duplex) = Duplex.pair()
@@ -563,7 +563,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == List((t"web", 4321, ProcessStatus.Running)))
 
     suite(m"workload lifecycle over a gRPC loopback"):
-      import threading.virtualThreading
+      import threads.virtualThreads
       import probates.cancelProbate
 
       val containersService = t"/containerd.services.containers.v1.Containers"

@@ -40,7 +40,7 @@ import logging.silentLogging
 import strategies.throwUnsafely
 import codepages.utf8Codepage
 import webserverErrorPages.minimalErrorPage
-import threading.virtualThreading
+import threads.virtualThreads
 import probates.awaitProbate
 import denominative.dysasymptotics.linearSize
 

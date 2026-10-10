@@ -27,7 +27,7 @@ comes from the `soundness` package, with concurrency in scope for the connection
 ```scala
 import soundness.*
 import strategies.throwUnsafely
-import threading.platformThreading
+import threads.platformThreads
 import probates.awaitProbate
 import logging.silentLogging
 import charsets.utf8Charset

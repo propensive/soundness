@@ -47,7 +47,7 @@ import codepages.utf8Codepage
 import charsets.utf8Charset
 import textSanitizers.skipSanitizer
 import errorDiagnostics.stackTracesDiagnostics
-import threading.platformThreading
+import threads.platformThreads
 import probates.awaitProbate
 
 import Control.*

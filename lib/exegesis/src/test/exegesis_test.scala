@@ -45,7 +45,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import logging.silentLogging
 import probates.awaitProbate
 import strategies.throwUnsafely
-import threading.virtualThreading
+import threads.virtualThreads
 import workingDirectories.javaBaseWorkingDirectory
 import environments.javaBaseEnvironment
 

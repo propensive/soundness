@@ -58,7 +58,7 @@ import superlunary.*
 import vacuous.*
 
 import systems.javaBaseSystem
-import threading.platformThreading
+import threads.platformThreads
 import workingDirectories.javaBaseWorkingDirectory
 
 // A profile test: where `Bench` measures how fast a fragment runs and `Stress` how it

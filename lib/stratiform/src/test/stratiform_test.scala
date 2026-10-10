@@ -67,7 +67,7 @@ import zephyrine.lineation.linefeedByte
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import codepages.utf8Codepage
-import threading.virtualThreading
+import threads.virtualThreads
 import probates.cancelProbate
 import Tel.given
 

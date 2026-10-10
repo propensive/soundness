@@ -234,7 +234,14 @@ def helpTree
   build(Nil, command, Unset, Unset, Set(), Set())
 
 package executives:
-  given completionsExecutive: (backstop: Backstop) => Executive:
+  given completionsExecutive: (backstop: Backstop)
+  =>  (CompletionsExecutive^{parasite.threads}) =
+
+    CompletionsExecutive()
+
+  // A named class rather than an anonymous given instance, so that it can declare its use of
+  // the global `threads`, under which `{admin} await` supervises.
+  class CompletionsExecutive(using backstop: Backstop) extends Executive uses parasite.threads:
     type Interface = Cli
     type Return = Execution
 
@@ -338,7 +345,7 @@ package executives:
 
             case t"await" =>
               Cli.prepare()
-              import parasite.threading.platformThreading
+              import parasite.threads.platformThreads
               safely(parasite.supervise(Cli.await())).or(Nil).map(Out.println(_))
               Exit.Ok
 

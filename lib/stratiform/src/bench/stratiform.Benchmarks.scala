@@ -45,7 +45,7 @@ import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
 import hieroglyph.*, codepages.utf8Codepage
-import parasite.*, threading.virtualThreading, probates.cancelProbate
+import parasite.*, threads.virtualThreads, probates.cancelProbate
 import probably.*
 import proscenium.*
 import quantitative.*

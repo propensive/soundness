@@ -833,7 +833,7 @@ object Tests extends Suite(m"Galilei tests"):
     suite(m"Awaited locking"):
       import filesystemOptions.createNonexistentParents
       import filesystemOptions.overwritePreexisting
-      import threading.platformThreading
+      import threads.platformThreads
 
       val awaitLeaf: Text = Uuid().show
       val awaited: Path on Linux = unsafely((% / "tmp" / awaitLeaf).on[Linux])

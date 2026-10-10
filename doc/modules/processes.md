@@ -141,6 +141,41 @@ sleeper.kill()
 A `Pid` is a distinct type rather than a number, so it cannot be confused with an exit code or a
 file descriptor, and it renders and parses in its own form.
 
+### On a terminal
+
+A command's standard streams are normally pipes, and many programs behave differently when they
+notice: a shell prints no prompt, `stty` fails, a line editor never starts. `pty` runs the command
+on a fresh pseudo-terminal of the given size instead, so it finds a terminal on its input, output
+and error, as it would if a person had typed it:
+
+<!-- doccheck: skip -->
+```scala
+sh"stty size".pty(100, 30).exec[Text]().trim   // t"30 100"
+```
+
+For an interactive program, a `session` lends the running command to a block, as a `Job` which can
+also be resized, and ends it when the block does — hanging up on the program if it is still running,
+as closing a real terminal would. Its output is everything the program writes to the terminal,
+standard error included, escape sequences and all — what a terminal emulator would receive — and
+anything streamable can be typed at it with `writeTo`. A terminal has no end of input of its own, so
+a program reading until the end is sent the end-of-file character, `^D`, rather than having its
+input closed:
+
+<!-- doccheck: skip -->
+```scala
+sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
+  terminal.resize(132, 50)   // the program receives SIGWINCH
+  t"\r".writeTo(terminal)    // press Return
+  terminal.text().trim       // t"50 132"
+```
+
+The value `pty` returns is not itself a terminal: it describes how to run the command, and each
+`session` or `exec` allocates a fresh terminal and releases it again.
+
+Pseudo-terminals are allocated through the JDK's foreign function API, on Linux and macOS, so a
+program using them should be run with `--enable-native-access=ALL-UNNAMED` to keep the JDK from
+warning about it.
+
 ### Failure
 
 A command that cannot be run at all — a missing binary, a directory that is not executable —

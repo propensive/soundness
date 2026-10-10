@@ -82,7 +82,7 @@ one returning a `Stream` a server-streaming call — with payloads as Protocol B
 
 <!-- doccheck: skip -->
 ```scala
-import threading.platformThreading
+import threads.platformThreads
 
 supervise:
   val endpoint = Endpoint(t"localhost", Port[Tcp](50051))
