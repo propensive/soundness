@@ -58,7 +58,7 @@ private[hyperbole] object stacksInternal:
   // numbers without the source file itself being available.
   class Lines(sizes: Array[Int]^{}):
     private val starts: Array[Int]^{} =
-      val array = new scala.Array[Int](sizes.length + 1)
+      val array = Array.allocate[Int](sizes.length + 1)
       var index = 0
 
       while index < sizes.length do
@@ -66,7 +66,7 @@ private[hyperbole] object stacksInternal:
         array(index + 1) = array(index) + 0.max(sizes.readUnchecked(index)) + 1
         index += 1
 
-      Array.unsafeFrozen(array)
+      Array.freeze(array)
 
     def count: Int = sizes.length
 
@@ -87,7 +87,7 @@ private[hyperbole] object stacksInternal:
     def unpickle(reader: TastyReader, nameAtRef: TastyUnpickler.NameTable): Positions =
       import reader.*
       val count = readNat()
-      val sizes = new scala.Array[Int](count)
+      val sizes = Array.allocate[Int](count)
       var index = 0
 
       while index < count do
@@ -114,7 +114,7 @@ private[hyperbole] object stacksInternal:
           if (header & 1) != 0 then readInt()
           spans(address) = (start, end)
 
-      Positions(Lines(Array.unsafeFrozen(sizes)), spans.to(Map))
+      Positions(Lines(Array.freeze(sizes)), spans.to(Map))
 
   class AttributeSection extends TastyUnpickler.SectionUnpickler[Optional[Text]](AttributesSection):
     def unpickle(reader: TastyReader, nameAtRef: TastyUnpickler.NameTable): Optional[Text] =

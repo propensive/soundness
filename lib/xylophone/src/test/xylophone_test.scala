@@ -1289,7 +1289,7 @@ object Tests extends Suite(m"Xylophone tests"):
 
       test(m"Malformed UTF-8 in text is a parse error"):
         val bytes: Data =
-          Array.unsafeFrozen(scala.Array[Byte]('<', 'a', '>', 0xc3.toByte, '(', '<', '/', 'a', '>'))
+          Array[Byte]('<', 'a', '>', 0xc3.toByte, '(', '<', '/', 'a', '>')
 
         capture[Parse.Error](bytes.read[Xml]).issue
       . assert(_ == Xml.Issue.BadEncoding)

@@ -2990,7 +2990,7 @@ object Tel extends Tel2:
 
       buffer
 
-    Array.frozen(scala.IArray.unsafeFromArray(build(document, 1, 1, 0, 0, 0)))
+    Array.unsafeFrozen(build(document, 1, 1, 0, 0, 0))
 
   // Resolves a `Telp` to the source `Position` recorded in a tracked `Tel`'s
   // `PositionIndex`. Exposed uniformly as `tel.locate(path)` / `tel.locateKey(path)`

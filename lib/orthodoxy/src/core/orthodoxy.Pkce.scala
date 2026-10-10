@@ -50,9 +50,9 @@ object Pkce:
 
   // A fresh verifier: 32 random octets, as 43 characters of the unpadded URL-safe alphabet
   def apply(): Pkce =
-    val bytes = new scala.Array[Byte](32)
-    random.nextBytes(bytes)
-    Pkce(Array.unsafeFrozen(bytes).serialize[Base64])
+    val bytes = Array.allocate[Byte](32)
+    random.nextBytes(bytes.raw)
+    Pkce(Array.freeze(bytes).serialize[Base64])
 
 case class Pkce(verifier: Text):
   def challenge: Text = verifier.in[Data].digest[Sha2[256]].data.serialize[Base64]

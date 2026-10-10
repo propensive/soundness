@@ -1405,8 +1405,7 @@ object Tests extends Suite(m"Facsimile tests"):
     suite(m"Encryption"):
       // Frozen: a suite-level JVM array charges every test closure that reads it with its
       // `rd` capability, and an assertion's body must be pure.
-      val padding: Data = Array.unsafeFrozen:
-        scala.Array[Byte]
+      val padding: Data = Array[Byte]
           ( 0x28, 0xbf.toByte, 0x4e, 0x5e, 0x4e, 0x75, 0x8a.toByte, 0x41, 0x64, 0x00, 0x4e,
             0x56, 0xff.toByte, 0xfa.toByte, 0x01, 0x08, 0x2e, 0x2e, 0x00, 0xb6.toByte,
             0xd0.toByte, 0x68, 0x3e, 0x80.toByte, 0x2f, 0x0c, 0xa9.toByte, 0xfe.toByte,

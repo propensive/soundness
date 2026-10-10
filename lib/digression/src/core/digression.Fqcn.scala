@@ -55,7 +55,7 @@ object Fqcn:
       char == '_' || char == '$'
 
   def apply(name: Text): Fqcn raises Fqcn.Error =
-    val parts = Array.frozen(scala.IArray.from(name.s.split("\\.").nn.iterator.map(_.nn)))
+    val parts = Array.from(name.s.split("\\.").nn.iterator.map(_.nn))
 
     parts.each: part =>
       if part.length == 0 then raise(Fqcn.Error(name, Fqcn.Error.Reason.EmptyName))

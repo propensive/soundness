@@ -92,7 +92,7 @@ private[pneumatic] object Inflater:
 
   // The `d`/`e` tables are unused when building the bit-lengths tree (every code value is below
   // the simple-code threshold), so an empty table is passed.
-  val noExtra: Array[Int]^{} = Array.unsafeFrozen(new scala.Array[Int](0))
+  val noExtra: Array[Int]^{} = Array.empty[Int]
 
 // Huffman decoding tables, built by `huftBuild` (zlib's `huft_build`): each entry is a triple
 // (operation, bits, value) flattened into an `Array[Int]`.

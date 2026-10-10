@@ -61,10 +61,10 @@ private[corpuscular] object Checksum:
       write(target, value, count, index + 1)
 
   def bytes(value: Long, count: Int): Data =
-    val result = new scala.Array[Byte](count)
-    write(result, value, count, 0)
+    val result = Array.allocate[Byte](count)
+    write(result.raw, value, count, 0)
     // Fresh and never escaping before this point, so no writer can alias it.
-    Array.unsafeFrozen(result)
+    Array.freeze(result)
 
 sealed trait Crc32 extends Algorithm:
   type Bits = 32
