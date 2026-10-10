@@ -41,7 +41,7 @@ import logFormats.timestampedLogFormat
 import probates.awaitProbate
 import stdios.javaLangSystemStdio
 import strategies.throwUnsafely
-import threading.virtualThreading
+import threads.virtualThreads
 ```
 
 ### Setting up a logger

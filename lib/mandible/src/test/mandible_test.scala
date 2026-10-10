@@ -46,7 +46,7 @@ import probates.cancelProbate
 import strategies.throwUnsafely
 import systems.javaBaseSystem
 import temporaryDirectories.systemTemporaryDirectory
-import threading.platformThreading
+import threads.platformThreads
 import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite(m"Mandible tests"):

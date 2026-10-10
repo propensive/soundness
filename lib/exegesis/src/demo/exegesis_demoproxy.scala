@@ -41,7 +41,7 @@ import interpreters.posixInterpreter
 import logging.silentLogging
 import probates.awaitProbate
 import strategies.throwUnsafely
-import threading.virtualThreading
+import threads.virtualThreads
 import workingDirectories.javaBaseWorkingDirectory
 
 // An example proxy: it launches the language server named by its own arguments, forwards

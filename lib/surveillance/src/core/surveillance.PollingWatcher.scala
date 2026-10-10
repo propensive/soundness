@@ -42,7 +42,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import nomenclature.n
-import parasite.*, threading.platformThreading, Async.nominative
+import parasite.*, threads.platformThreads, Async.nominative
 import prepositional.*
 
 import rudiments.*
@@ -56,7 +56,7 @@ import vacuous.*
 // inability to observe changes that leave size and modification time unchanged. A single background
 // task per registration does the scanning; cancelling the registration interrupts it.
 class PollingWatcher[duration: Abstractable across Durations to Long](interval: duration)
-extends Watcher:
+extends Watcher uses parasite.threads:
 
   import probates.awaitProbate
 
@@ -98,7 +98,7 @@ extends Watcher:
       if !current.defines(name) then spool.put(Watch.Event.Delete(base, name))
 
   def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Relay[Watch.Event])
-  :   Watcher.Registration raises Watch.Error =
+  :   Watcher.Registration^{this} raises Watch.Error =
 
     directories.each: (directory, _) =>
       val file = directory.toFile.nn

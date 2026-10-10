@@ -40,7 +40,7 @@ import interpreters.posixInterpreter
 import probates.awaitProbate
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
-import threading.virtualThreading
+import threads.virtualThreads
 import workingDirectories.javaBaseWorkingDirectory
 
 // A minimal ACP client: spawns `claude-code-acp` (which must be on the path), opens a session in

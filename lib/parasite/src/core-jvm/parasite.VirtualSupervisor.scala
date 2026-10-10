@@ -47,7 +47,7 @@ object VirtualSupervisor extends ThreadSupervisor:
   def fork(name: () => Optional[Text])(block: => Unit): Strand =
     Strand.Threaded(Thread.ofVirtual().nn.start{ () => block }.nn)
 
-object AdaptiveSupervisor extends ThreadSupervisor:
+object AdaptiveSupervisor extends ThreadSupervisor uses VirtualSupervisor, PlatformSupervisor:
   def name: Name[Async] = n"adaptive"
 
   // Virtual-thread support is a deterministic property of the JVM, so it is probed once with a

@@ -57,7 +57,7 @@ import superlunary.*
 import vacuous.*
 
 import systems.javaBaseSystem
-import threading.platformThreading
+import threads.platformThreads
 import workingDirectories.javaBaseWorkingDirectory
 
 // A stress test: the memory/scaling counterpart of `Bench`. Where `Bench` times one operation
@@ -99,8 +99,8 @@ import workingDirectories.javaBaseWorkingDirectory
 // pauses deterministic, but a saturated multi-threaded workload measuring tail latency
 // should select `t"G1"` so single-threaded stop-the-world pauses don't dominate p99.
 //
-// The contextual `Threading` (from parasite: `threading.platformThreading`,
-// `threading.virtualThreading` or `threading.adaptiveThreading`) selects the workers' thread
+// The contextual `Threading` (from parasite: `threads.platformThreads`,
+// `threads.virtualThreads` or `threads.adaptiveThreads`) selects the workers' thread
 // kind. Under virtual threading, a high-concurrency measurement multiplexes its pipelines
 // over the carrier pool rather than asking the OS scheduler to juggle one thread per worker —
 // the model a massively-concurrent application would use. Worker allocation is still fully

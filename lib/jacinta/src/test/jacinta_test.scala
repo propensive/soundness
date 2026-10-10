@@ -42,7 +42,7 @@ import scala.language.dynamics
 
 import codepages.utf8Codepage
 import strategies.throwUnsafely
-import threading.virtualThreading
+import threads.virtualThreads
 import probates.cancelProbate
 import formatting.compactJsonFormatting
 

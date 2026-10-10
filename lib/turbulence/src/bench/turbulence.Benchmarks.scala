@@ -37,7 +37,7 @@ import scala.collection.immutable.IndexedSeq
 import ambience.*, environments.javaBaseEnvironment, systems.javaBaseSystem
 import enigmatic.*, blockCipherModes.cbc, blockCipherPaddings.pkcs7
 import gastronomy.providers.javaBaseProvider, gastronomy.cryptoPermits.permitUnauthenticatedCrypto
-import parasite.*, threading.virtualThreading, probates.panicProbate
+import parasite.*, threads.virtualThreads, probates.panicProbate
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import denominative.*
@@ -1380,7 +1380,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // the axis the bounded-buffer design targets: allocation per pipeline, peak
     // heap, and a retained live set that stays flat under concurrency.
     suite(m"Stress: cross-thread hand-off memory (4 MB in 64 KiB chunks, N=16)"):
-      import threading.platformThreading
+      import threads.platformThreads
 
       stress(m"Soundness  Conduit")(target = 2*Second, concurrency = 16):
         '{
@@ -1468,7 +1468,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // The sweep then refines between the powers of two for the optimum N (the
     // smallest within 5% of the best throughput), flagged `sustained`.
     suite(m"Stress: constrained-heap scaling sweep (128 MB heap, N ≤ 64)"):
-      import threading.platformThreading
+      import threads.platformThreads
 
       constrained(m"Soundness  Conduit")(target = 1*Second, sweep = 64, refine = true):
         '{
@@ -1555,7 +1555,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
     suite(m"Stress: unbounded-model blowup (slow consumer, 128 MB heap, N ≤ 64)"):
-      import threading.platformThreading
+      import threads.platformThreads
 
       constrained(m"Soundness  Conduit depth 16")(target = 1*Second, sweep = 64, refine = true):
         '{
@@ -1690,7 +1690,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // conduit's live set stays flat at the ring bound; the unbounded models'
     // grows with the producer's lead, and the retained column shows it.
     suite(m"Stress: retained memory under slow consumption (4 MB, N=16)"):
-      import threading.platformThreading
+      import threads.platformThreads
 
       stress(m"Soundness  Conduit depth 16")(target = 2*Second, concurrency = 16):
         '{
@@ -1789,7 +1789,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // corpus deflates to a few dozen kB, so the output-side allocation vanishes
     // and the figure is dominated by how each library ingests the 4 MB input.)
     suite(m"Stress: gzip decompression memory (4 MB out, N=8)"):
-      import threading.platformThreading
+      import threads.platformThreads
 
       stress(m"Soundness  Stream.decompress[Gzip]")
         ( target = 2*Second, concurrency = 8 ):
@@ -1825,7 +1825,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // chunk (the fold shape), so the contrast is the per-chunk text allocation of
     // the decode stage itself.
     suite(m"Stress: UTF-8 decode memory (4 MB, N=8)"):
-      import threading.platformThreading
+      import threads.platformThreads
 
       stress(m"Soundness  via(Charset)")
         ( target = 2*Second, concurrency = 8 ):
@@ -1863,7 +1863,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // answer: each library's best sustained ops/sec under identical constraints.
     suite(m"Stress: capacity search (99% ≤ 5 ms, 2 GB heap, 4 CPUs)"):
       locally:
-        import threading.platformThreading
+        import threads.platformThreads
 
         gated(m"Soundness  Conduit")
           ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99, refine = true ):
@@ -1927,8 +1927,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
           }
 
       // The same Soundness pipeline with the harness workers on virtual threads
-      // (the file's ambient `virtualThreading`, where the rows above pin
-      // `platformThreading`): pipelines multiplex over the carrier pool instead
+      // (the file's ambient `virtualThreads`, where the rows above pin
+      // `platformThreads`): pipelines multiplex over the carrier pool instead
       // of one OS thread each, the model a massively-concurrent application
       // would use — and the fair comparison against the fiber runtimes'
       // sustained concurrency.
@@ -1965,7 +1965,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
     // Example U: saturated gzip decompression.
     suite(m"Stress: saturated gzip decompression sweep (256 KiB, N ≤ 128)"):
-      import threading.platformThreading
+      import threads.platformThreads
 
       saturated(m"Soundness  Stream.decompress[Gzip]")
         ( target = 1*Second, sweep = 128, refine = true ):
@@ -1998,7 +1998,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
     suite(m"Stress: saturated gzip decompression capacity (99% ≤ 10 ms, 256 KiB)"):
       locally:
-        import threading.platformThreading
+        import threads.platformThreads
 
         saturated(m"Soundness  Stream.decompress[Gzip]")
           ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
@@ -2032,7 +2032,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
           }
 
       // The harness workers on virtual threads (the file's ambient
-      // `virtualThreading`), as in Example S: pipelines multiplex over the carrier
+      // `virtualThreads`), as in Example S: pipelines multiplex over the carrier
       // pool instead of one OS thread each — the fair comparison against the fiber
       // runtimes' sustained concurrency.
       saturated(m"Soundness  Stream.decompress[Gzip] (virtual workers)")
@@ -2048,7 +2048,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
     // Example V: saturated line splitting (UTF-8 decode + split).
     suite(m"Stress: saturated line splitting sweep (256 KiB, N ≤ 128)"):
-      import threading.platformThreading
+      import threads.platformThreads
 
       saturated(m"Soundness  Stream.delineate")(target = 1*Second, sweep = 128, refine = true):
         '{
@@ -2072,7 +2072,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
     suite(m"Stress: saturated line splitting capacity (99% ≤ 10 ms, 256 KiB)"):
-      import threading.platformThreading
+      import threads.platformThreads
 
       saturated(m"Soundness  Stream.delineate")
         ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
@@ -2102,7 +2102,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // `memoize` row, every library aggregates counts per window (the fold shape), so
     // no row retains its output.
     suite(m"Stress: saturated transcode cascade sweep (256 KiB, N ≤ 128)"):
-      import threading.platformThreading
+      import threads.platformThreads
 
       saturated(m"Soundness  dec.enc.dec.enc.dec")(target = 1*Second, sweep = 128, refine = true):
         '{
@@ -2138,7 +2138,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
     suite(m"Stress: saturated transcode cascade capacity (99% ≤ 10 ms, 256 KiB)"):
-      import threading.platformThreading
+      import threads.platformThreads
 
       saturated(m"Soundness  dec.enc.dec.enc.dec")
         ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
@@ -2180,8 +2180,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // merging), so at high N this measures each library's scheduler multiplexing many
     // small concurrent merges — and almost all of the operation's cost is the *setup*
     // of that concurrency, since the stable sources share their windows by reference.
-    // The suite-level `platformThreading` pins only the harness workers; the Soundness
-    // bodies re-import `virtualThreading` so that `Confluence`'s internal pumps (one
+    // The suite-level `platformThreads` pins only the harness workers; the Soundness
+    // bodies re-import `virtualThreads` so that `Confluence`'s internal pumps (one
     // strand per source, forked per operation) are virtual threads — the counterpart
     // of the rivals' per-merge fiber spawns, and the configuration a
     // massively-concurrent application would use. On platform threads the row measures
@@ -2189,11 +2189,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // merging. If this pipeline's serial latency proves to exceed a couple of
     // milliseconds, its SLO (alone) should rise to 20 ms.
     suite(m"Stress: saturated fan-in sweep (256 KiB over 4 streams, N ≤ 128)"):
-      import threading.platformThreading
+      import threads.platformThreads
 
       saturated(m"Soundness  Confluence")(target = 1*Second, sweep = 128, refine = true):
         '{
-            import threading.virtualThreading
+            import threads.virtualThreads
             supervise:
               val merged = Confluence(turbulence.Benchmarks.smallQuarters.map(q => q.stream)*)
               var total = 0L
@@ -2240,12 +2240,12 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
     suite(m"Stress: saturated fan-in capacity (99% ≤ 10 ms, 256 KiB over 4 streams)"):
-      import threading.platformThreading
+      import threads.platformThreads
 
       saturated(m"Soundness  Confluence")
         ( target = 1*Second, threshold = 10*Milli(Second), compliance = 99, refine = true ):
         '{
-            import threading.virtualThreading
+            import threads.virtualThreads
             supervise:
               val merged = Confluence(turbulence.Benchmarks.smallQuarters.map(q => q.stream)*)
               var total = 0L

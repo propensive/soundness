@@ -203,7 +203,7 @@ slow consumer backpressures every input, and the merged stream ends when all of 
 draw on concurrency, so they run inside a supervised scope:
 
 ```scala
-import threading.platformThreading
+import threads.platformThreads
 import probates.cancelProbate
 
 val first = Stream(t"one")

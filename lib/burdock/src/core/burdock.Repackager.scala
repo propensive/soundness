@@ -54,7 +54,7 @@ import zeppelin.*
 
 import errorDiagnostics.emptyDiagnostics
 import parasite.probates.cancelProbate
-import parasite.threading.virtualThreading
+import parasite.threads.virtualThreads
 import denominative.*
 import denominative.dysasymptotics.linearSize
 

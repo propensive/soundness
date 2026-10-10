@@ -50,7 +50,7 @@ import rudiments.*
 import sedentary.*
 import symbolism.*
 import telekinesis.*
-import parasite.*, threading.virtualThreading
+import parasite.*, threads.virtualThreads
 import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
 import vacuous.*

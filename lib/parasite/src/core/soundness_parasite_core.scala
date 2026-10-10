@@ -43,14 +43,14 @@ export
       Worker,
       AsyncTactic, Remedy, concurrent, concurrently }
 
-package threading:
-  export parasite.threading.{adaptiveThreading, javascriptThreading, platformThreading,
-      pooledThreading, virtualThreading}
+object threads:
+  export parasite.threads.{adaptiveThreads, javascriptThreads, platformThreads, pooledThreads,
+      virtualThreads}
 
 package probates:
   export parasite.probates.{awaitProbate, cancelProbate, failProbate, panicProbate}
 
-package supervisors:
+object supervisors:
   export parasite.supervisors.globalSupervisor
 
 object unsupervised:
