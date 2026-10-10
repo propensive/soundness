@@ -829,92 +829,67 @@ object Tests extends Suite(m"Ethereal Tests"):
             . check(_ == t"1000000")
 
           suite(m"Cooked terminal mode"):
-            // These need a real terminal, so they run inside a tmux pane. The launcher
+            // These need a real terminal, so they run in a pane on a pseudo-terminal. The launcher
             // raw-modes any terminal stdin; `resident.cooked` asks it, over the control
             // channel, to hand canonical mode back for the duration of the block, which is
             // observable as the driver's own echo and line editing.
             val command: Text = summon[Enclave.Tool].command
 
-            def awaitScreen(predicate: Text => Boolean)(using Tmux)(using WorkingDirectory)
-            :   Boolean =
-
-              var found = false
-              var attempts = 0
-
-              while !found && attempts < 200 do
-                found = Tmux.screenshot().screen.filter(predicate).readable.length > 0
-                if !found then snooze(0.05*Second) yet (attempts += 1)
-
-              found
+            def awaitScreen(predicate: Text => Boolean)(using Pane): Boolean =
+              Pane.waitFor(predicate, 10000L)
 
             test(m"typed characters are echoed in a cooked block"):
               sh"$tool echo probe".exec[Unit]()
 
-              // Overlap false positive: the action closure mentions the enclosing
-              // tool/command capabilities alongside the fresh tmux session.
-              // [by-name-receiver] tmux action closure captures enclosing tool/command capabilities
-              scala.caps.unsafe.unsafeAssumeSeparate:
-                Shell.Bash.tmux():
-                  Tmux.enter(t"$command cooked")
-                  Tmux.enter('\r')
-                  snooze(0.5*Second)
-                  Tmux.enter(t"kestrel")
-                  awaitScreen(_.contains(t"kestrel"))
+              Shell.Bash.pane():
+                Pane.enter(t"$command cooked")
+                Pane.enter('\r')
+                snooze(0.5*Second)
+                Pane.enter(t"kestrel")
+                awaitScreen(_.contains(t"kestrel"))
 
             . check(_ == true)
 
             test(m"a cooked line is delivered to the application"):
               sh"$tool echo probe".exec[Unit]()
 
-              // Overlap false positive: the action closure mentions the enclosing
-              // tool/command capabilities alongside the fresh tmux session.
-              // [by-name-receiver] tmux action closure captures enclosing tool/command capabilities
-              scala.caps.unsafe.unsafeAssumeSeparate:
-                Shell.Bash.tmux():
-                  Tmux.enter(t"$command cooked")
-                  Tmux.enter('\r')
-                  snooze(0.5*Second)
-                  Tmux.enter(t"osprey")
-                  Tmux.enter('\r')
-                  awaitScreen(_.contains(t"[osprey]"))
+              Shell.Bash.pane():
+                Pane.enter(t"$command cooked")
+                Pane.enter('\r')
+                snooze(0.5*Second)
+                Pane.enter(t"osprey")
+                Pane.enter('\r')
+                awaitScreen(_.contains(t"[osprey]"))
 
             . check(_ == true)
 
             test(m"backspace edits the line rather than reaching the application"):
               sh"$tool echo probe".exec[Unit]()
 
-              // Overlap false positive: the action closure mentions the enclosing
-              // tool/command capabilities alongside the fresh tmux session.
-              // [by-name-receiver] tmux action closure captures enclosing tool/command capabilities
-              scala.caps.unsafe.unsafeAssumeSeparate:
-                Shell.Bash.tmux():
-                  Tmux.enter(t"$command cooked")
-                  Tmux.enter('\r')
-                  snooze(0.5*Second)
-                  Tmux.enter(t"merlix")
-                  Tmux.enter(t"BSpace")
-                  Tmux.enter(t"n")
-                  Tmux.enter('\r')
-                  awaitScreen(_.contains(t"[merlin]"))
+              Shell.Bash.pane():
+                Pane.enter(t"$command cooked")
+                Pane.enter('\r')
+                snooze(0.5*Second)
+                Pane.enter(t"merlix")
+                Pane.enter(t"BSpace")
+                Pane.enter(t"n")
+                Pane.enter('\r')
+                awaitScreen(_.contains(t"[merlin]"))
 
             . check(_ == true)
 
             test(m"a concealed line is delivered but not echoed"):
               sh"$tool echo probe".exec[Unit]()
 
-              // Overlap false positive: the action closure mentions the enclosing
-              // tool/command capabilities alongside the fresh tmux session.
-              // [by-name-receiver] tmux action closure captures enclosing tool/command capabilities
-              scala.caps.unsafe.unsafeAssumeSeparate:
-                Shell.Bash.tmux():
-                  Tmux.enter(t"$command concealed")
-                  Tmux.enter('\r')
-                  snooze(0.5*Second)
-                  Tmux.enter(t"kittiwake")
-                  Tmux.enter('\r')
-                  val delivered = awaitScreen(_.contains(t"[kittiwake]"))
-                  val echoed = Tmux.screenshot().screen.filter(_.contains(t"kittiwake")).readable.length > 1
-                  (delivered, echoed)
+              Shell.Bash.pane():
+                Pane.enter(t"$command concealed")
+                Pane.enter('\r')
+                snooze(0.5*Second)
+                Pane.enter(t"kittiwake")
+                Pane.enter('\r')
+                val delivered = awaitScreen(_.contains(t"[kittiwake]"))
+                val echoed = Pane.screenshot().screen.filter(_.contains(t"kittiwake")).readable.length > 1
+                (delivered, echoed)
 
             . check(_ == (true, false))
 
@@ -923,46 +898,38 @@ object Tests extends Suite(m"Ethereal Tests"):
             test(m"a command runs on the client's terminal and its status comes back"):
               sh"$tool echo probe".exec[Unit]()
 
-              // [by-name-receiver] tmux action closure captures enclosing tool/command capabilities
-              scala.caps.unsafe.unsafeAssumeSeparate:
-                Shell.Bash.tmux():
-                  Tmux.enter(t"$command terminal 'echo from-child; exit 3'")
-                  Tmux.enter('\r')
-                  val shown = awaitScreen(_.contains(t"from-child"))
-                  val status = awaitScreen(_.contains(t"exit=3"))
-                  (shown, status)
+              Shell.Bash.pane():
+                Pane.enter(t"$command terminal 'echo from-child; exit 3'")
+                Pane.enter('\r')
+                val shown = awaitScreen(_.contains(t"from-child"))
+                val status = awaitScreen(_.contains(t"exit=3"))
+                (shown, status)
 
             . check(_ == (true, true))
 
             test(m"a command on the terminal reads the terminal, not the session"):
               sh"$tool echo probe".exec[Unit]()
 
-              // [by-name-receiver] tmux action closure captures enclosing tool/command capabilities
-              scala.caps.unsafe.unsafeAssumeSeparate:
-                Shell.Bash.tmux():
-                  Tmux.enter(t"$command terminal 'read word; echo got-$$word'")
-                  Tmux.enter('\r')
-                  snooze(1*Second)
-                  Tmux.enter(t"gannet")
-                  Tmux.enter('\r')
-                  awaitScreen(_.contains(t"got-gannet"))
+              Shell.Bash.pane():
+                Pane.enter(t"$command terminal 'read word; echo got-$$word'")
+                Pane.enter('\r')
+                snooze(1*Second)
+                Pane.enter(t"gannet")
+                Pane.enter('\r')
+                awaitScreen(_.contains(t"got-gannet"))
 
             . check(_ == true)
 
             test(m"a command without a cooked block still gets raw, unechoed input"):
               sh"$tool echo probe".exec[Unit]()
 
-              // Overlap false positive: the action closure mentions the enclosing
-              // tool/command capabilities alongside the fresh tmux session.
-              // [by-name-receiver] tmux action closure captures enclosing tool/command capabilities
-              scala.caps.unsafe.unsafeAssumeSeparate:
-                Shell.Bash.tmux():
-                  Tmux.enter(t"$command cat")
-                  Tmux.enter('\r')
-                  snooze(0.5*Second)
-                  Tmux.enter(t"harrier")
-                  snooze(0.5*Second)
-                  Tmux.screenshot().screen.filter(_.contains(t"harrier")).readable.length > 0
+              Shell.Bash.pane():
+                Pane.enter(t"$command cat")
+                Pane.enter('\r')
+                snooze(0.5*Second)
+                Pane.enter(t"harrier")
+                snooze(0.5*Second)
+                Pane.screenshot().screen.filter(_.contains(t"harrier")).readable.length > 0
 
             . check(_ == false)
 

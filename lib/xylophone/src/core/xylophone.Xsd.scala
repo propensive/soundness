@@ -250,7 +250,7 @@ object Xsd:
   def parse(text: Text)(using Tactic[Error], Tactic[Parse.Error]): Xsd =
     val xml =
       Xml.XmlParser.fromText(text)(using XmlSchema.Freeform, Xml.Scope.xml, Xml.Namespacing.Strict)
-      . parseXml(headers0 = true)
+      . parseXml(keepHeader = true)
 
     parse(xml)
 
