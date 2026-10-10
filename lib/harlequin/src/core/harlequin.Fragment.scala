@@ -115,7 +115,7 @@ object Fragment:
 
         val valueEnding =
           !ScalaKeywords.all.has(text) &&
-          (closeBracket || text == t"_" || (valueAccents.has(last.accent) && !symbolic(text)))
+            (closeBracket || text == t"_" || (valueAccents.has(last.accent) && !symbolic(text)))
 
         if !valueEnding then (Unset, prefix) else
           var end = start

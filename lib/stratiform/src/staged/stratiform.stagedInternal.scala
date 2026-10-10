@@ -397,10 +397,10 @@ object stagedInternal:
 
       val supported =
         !applied &&
-        classSymbol.flags.is(Flags.Sealed) &&
-        children.nonEmpty &&
-        children.forall: child =>
-          child.isClassDef && child.flags.is(Flags.Case) && !hasRenames(child)
+          classSymbol.flags.is(Flags.Sealed) &&
+          children.nonEmpty &&
+          children.forall: child =>
+            child.isClassDef && child.flags.is(Flags.Case) && !hasRenames(child)
 
       if supported then Some(children.map { child => (child.name, child.typeRef) }) else None
 
@@ -411,11 +411,11 @@ object stagedInternal:
 
     tpe.classSymbol.exists: classSymbol =>
       classSymbol.flags.is(Flags.Case) &&
-      !classSymbol.owner.isTerm &&
-      (tpe match { case AppliedType(_, _) => false case _ => true })
-      && classSymbol.primaryConstructor.paramSymss
-        . filterNot(_.exists(_.isTypeParam)).length == 1 &&
-      !hasRenames(classSymbol)
+        !classSymbol.owner.isTerm &&
+        (tpe match { case AppliedType(_, _) => false case _ => true })
+        && classSymbol.primaryConstructor.paramSymss
+          . filterNot(_.exists(_.isTypeParam)).length == 1 &&
+        !hasRenames(classSymbol)
 
   // A wire keyword's packed form (at most eight printable-ASCII bytes,
   // LSB-first, the same packing as `TelReader.keywordWord`), or `None` when
@@ -443,7 +443,7 @@ object stagedInternal:
     val annotated =
       classSymbol.primaryConstructor.paramSymss.flatten.filterNot(_.isTypeParam)
         . flatMap(_.annotations) ++
-      classSymbol.caseFields.flatMap(_.annotations)
+        classSymbol.caseFields.flatMap(_.annotations)
 
     annotated.exists: annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]]
 
@@ -1022,7 +1022,7 @@ object stagedInternal:
             case Some(packed) =>
               ' {
                   $word == ${Expr(packed)} ||
-                  ($word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)})
+                    ($word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)})
                 }
 
             case None =>

@@ -359,11 +359,11 @@ object stagedInternal:
 
     tpe.classSymbol.exists: classSymbol =>
       classSymbol.flags.is(Flags.Case) &&
-      !classSymbol.owner.isTerm &&
-      (tpe match { case AppliedType(_, _) => false case _ => true })
-      && classSymbol.primaryConstructor.paramSymss
-        . filterNot(_.exists(_.isTypeParam)).length == 1 &&
-      !hasRenames(classSymbol)
+        !classSymbol.owner.isTerm &&
+        (tpe match { case AppliedType(_, _) => false case _ => true })
+        && classSymbol.primaryConstructor.paramSymss
+          . filterNot(_.exists(_.isTypeParam)).length == 1 &&
+        !hasRenames(classSymbol)
 
   // `@name` renames resolve through inline machinery the structural
   // generator does not replicate; annotated records stay on `staged`.
@@ -373,7 +373,7 @@ object stagedInternal:
     val annotated =
       classSymbol.primaryConstructor.paramSymss.flatten.filterNot(_.isTypeParam)
         . flatMap(_.annotations) ++
-      classSymbol.caseFields.flatMap(_.annotations)
+        classSymbol.caseFields.flatMap(_.annotations)
 
     annotated.exists: annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]]
 

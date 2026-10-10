@@ -456,9 +456,9 @@ object bintelInternal:
 
       val supported =
         !applied &&
-        classSymbol.flags.is(Flags.Sealed) &&
-        children.nonEmpty &&
-        children.forall: child => child.isClassDef && child.flags.is(Flags.Case)
+          classSymbol.flags.is(Flags.Sealed) &&
+          children.nonEmpty &&
+          children.forall: child => child.isClassDef && child.flags.is(Flags.Case)
 
       if supported then Some(children.map { child => (child.name, child.typeRef) }) else None
 
@@ -467,11 +467,11 @@ object bintelInternal:
 
     tpe.classSymbol.exists: classSymbol =>
       classSymbol.flags.is(Flags.Case) &&
-      !classSymbol.owner.isTerm &&
-      (tpe match { case AppliedType(_, _) => false case _ => true })
-      && classSymbol.primaryConstructor.paramSymss
-        . filterNot(_.exists(_.isTypeParam)).length == 1 &&
-      !hasRenames(classSymbol)
+        !classSymbol.owner.isTerm &&
+        (tpe match { case AppliedType(_, _) => false case _ => true })
+        && classSymbol.primaryConstructor.paramSymss
+          . filterNot(_.exists(_.isTypeParam)).length == 1 &&
+        !hasRenames(classSymbol)
 
   // `@name` renames change the wire *keyword*, which positional index
   // dispatch never reads — but they mark intent the generator does not
@@ -482,7 +482,7 @@ object bintelInternal:
     val annotated =
       classSymbol.primaryConstructor.paramSymss.flatten.filterNot(_.isTypeParam)
         . flatMap(_.annotations) ++
-      classSymbol.caseFields.flatMap(_.annotations)
+        classSymbol.caseFields.flatMap(_.annotations)
 
     annotated.exists: annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]]
 

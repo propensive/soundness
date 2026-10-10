@@ -217,7 +217,7 @@ object Pdf:
 
       case Reason.WriteUnsupported =>
         m"this document cannot be written (only an unencrypted, on-disk file with a valid " +
-            m"cross-reference table can be edited in place)"
+          m"cross-reference table can be edited in place)"
 
       case Reason.MissingPage(page) =>
         m"the document has no page $page"
@@ -1415,8 +1415,8 @@ extends caps.ExclusiveCapability:
 
     val exempt =
       kind == t"XRef" ||
-      (kind == t"Metadata" && !guard.encryptMetadata) ||
-      cryptMethod(body) == Guard.Method.Identity
+        (kind == t"Metadata" && !guard.encryptMetadata) ||
+        cryptMethod(body) == Guard.Method.Identity
 
     !exempt && streamOwners.contains(body.start)
 

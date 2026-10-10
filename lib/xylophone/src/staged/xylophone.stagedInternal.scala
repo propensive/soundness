@@ -401,10 +401,10 @@ object stagedInternal:
 
       val supported =
         !applied &&
-        classSymbol.flags.is(Flags.Sealed) &&
-        children.nonEmpty &&
-        children.forall: child =>
-          child.isClassDef && child.flags.is(Flags.Case) && !hasAnnotations(child)
+          classSymbol.flags.is(Flags.Sealed) &&
+          children.nonEmpty &&
+          children.forall: child =>
+            child.isClassDef && child.flags.is(Flags.Case) && !hasAnnotations(child)
 
       if supported then Some(children.map { child => (child.name, child.typeRef) }) else None
 
@@ -460,11 +460,11 @@ object stagedInternal:
 
     tpe.classSymbol.exists: classSymbol =>
       classSymbol.flags.is(Flags.Case) &&
-      !classSymbol.owner.isTerm &&
-      (tpe match { case AppliedType(_, _) => false case _ => true })
-      && classSymbol.primaryConstructor.paramSymss
-        . filterNot(_.exists(_.isTypeParam)).length == 1 &&
-      !hasAnnotations(classSymbol)
+        !classSymbol.owner.isTerm &&
+        (tpe match { case AppliedType(_, _) => false case _ => true })
+        && classSymbol.primaryConstructor.paramSymss
+          . filterNot(_.exists(_.isTypeParam)).length == 1 &&
+        !hasAnnotations(classSymbol)
 
   // `@name` renames resolve through inline machinery the structural
   // generator does not replicate, and `@attribute` fields fill from the
@@ -476,11 +476,11 @@ object stagedInternal:
     val annotated =
       classSymbol.primaryConstructor.paramSymss.flatten.filterNot(_.isTypeParam)
         . flatMap(_.annotations) ++
-      classSymbol.caseFields.flatMap(_.annotations)
+        classSymbol.caseFields.flatMap(_.annotations)
 
     annotated.exists: annotation =>
       annotation.tpe <:< TypeRepr.of[adversaria.name[?]] ||
-      annotation.tpe <:< TypeRepr.of[Xml.attribute]
+        annotation.tpe <:< TypeRepr.of[Xml.attribute]
 
   // ── The collection generator ───────────────────────────────────────────
   // A single element read as a collection: one element — the runtime

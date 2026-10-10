@@ -51,6 +51,7 @@ object Rgb12Opaque:
       val color: Rgb12 = rgb12
       ( "#"+Integer.toHexString(color.red).nn+Integer.toHexString(color.green).nn +
         Integer.toHexString(color.blue).nn ).tt
+
     given chromatic: Rgb12 is Chromatic = _.chroma
 
     def apply(red: Int, green: Int, blue: Int): Rgb12 =

@@ -1329,7 +1329,7 @@ object internal:
         // The element types differ (`ValDef` and `Statement`), and `Concatenable` is invariant
         // where `:::` widened, so the concatenation happens on the stdlib side.
         ( ('{$reader.openObject()}.asTerm ::
-            (slotDefs.stdlib ::: seenDefs.stdlib ::: loop.stdlib ::: absents.stdlib).to(List))
+          (slotDefs.stdlib ::: seenDefs.stdlib ::: loop.stdlib ::: absents.stdlib).to(List))
 
           . stdlib,
           construct )

@@ -58,8 +58,8 @@ private[jacinta] object Parser:
   // immutable keeps `Raw` free of stateful members under separation checking.
   private[jacinta] type Raw =
     ( Long | Int | Double | Bcd | String | Array[Any] |
-        Array[Long] | Array[Int] |
-        Boolean | Json.JsonNull.type | Unset )^{}
+      Array[Long] | Array[Int] |
+      Boolean | Json.JsonNull.type | Unset )^{}
 
   private inline val NumZero       = 0
   private inline val NumInt        = 1

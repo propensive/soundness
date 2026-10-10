@@ -1937,7 +1937,7 @@ object Html extends Tag.Container
 
         def admit(child: BaseText): Boolean =
           parent.foreign || parent.admissible.has(child) ||
-          parent.transparent && admissible.has(child)
+            parent.transparent && admissible.has(child)
 
         lay(finish(parent, map, count)):
           case '\u0000' =>

@@ -556,6 +556,7 @@ object Mutation:
         val compounds =
           Array.frozen
             ( cs.readable.take(lastC + 1) ++ scala.IArray(compound) ++ cs.readable.drop(lastC + 1) )
+
         Array.frozen(blocks.readable.updated(lastB, block.copy(compounds = compounds)))
 
   // Remove the emptied block at `blockIdx`, discarding its comments

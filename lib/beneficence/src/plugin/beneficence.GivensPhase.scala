@@ -104,9 +104,9 @@ class GivensPhase() extends PluginPhase:
       private def eligibleSuite(symbol: Symbols.Symbol)(using Context): Boolean =
         suite.exists &&
         symbol.isClass &&
-        symbol.is(Module) &&
-        isStablyAccessible(symbol) &&
-        symbol.asClass.baseClasses.contains(suite)
+          symbol.is(Module) &&
+          isStablyAccessible(symbol) &&
+          symbol.asClass.baseClasses.contains(suite)
 
       // A given is stably accessible if every enclosing scope on the path from
       // the root is a package or a module (object). Givens nested inside a
@@ -149,9 +149,9 @@ class GivensPhase() extends PluginPhase:
         tpe.baseClasses.iterator.filter: cls =>
           cls.exists &&
           cls != Symbols.defn.ObjectClass &&
-          cls != Symbols.defn.AnyClass &&
-          cls != Symbols.defn.MatchableClass &&
-          stripDollar(cls.name.toString) != valName
+            cls != Symbols.defn.AnyClass &&
+            cls != Symbols.defn.MatchableClass &&
+            stripDollar(cls.name.toString) != valName
 
         .nextOption().getOrElse(tpe.dealias.classSymbol)
 

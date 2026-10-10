@@ -352,6 +352,7 @@ case class Telp(components: List[Text]) derives CanEqual:
                 pendingOccurrences = occurrences
               else
                 occurrences.prim.let { child => current = child }
+
               . or(abort(Telp.Error(Telp.Error.Reason.AbsentMember, i)))
 
             case _ => abort(Telp.Error(Telp.Error.Reason.NonStructDescent, i))

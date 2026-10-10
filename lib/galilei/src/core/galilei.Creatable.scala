@@ -109,7 +109,7 @@ object Creation:
     def create[result]
       ( value: path, flags: List[CreateFlag] )
       ( block: (((Directory.Handle { type Under = filesystem }) &
-                  Granting[Grant.Read & Grant.Write])^) ?=> result )
+        Granting[Grant.Read & Grant.Write])^) ?=> result )
     :   result =
 
       make(value, flags)

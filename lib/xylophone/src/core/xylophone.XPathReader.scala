@@ -144,7 +144,7 @@ private[xylophone] object XPathReader:
       var index = at
       while index < length &&
         (string.charAt(index) == ' ' || string.charAt(index) == '\t' ||
-            string.charAt(index) == '\r' || string.charAt(index) == '\n')
+          string.charAt(index) == '\r' || string.charAt(index) == '\n')
       do index += 1
 
       index
@@ -195,7 +195,7 @@ private[xylophone] object XPathReader:
         else if ahead < length && string.charAt(ahead) == '(' then
           if prefix.absent &&
             (local == "node" || local == "text" || local == "comment" ||
-                local == "processing-instruction")
+              local == "processing-instruction")
           then push(Token.NodeTypeToken(local.tt), start)
           else push(Token.FunctionToken(prefix, local.tt), start)
 
@@ -357,7 +357,7 @@ private[xylophone] object XPathReader:
 
       while more &&
         (current == Token.Less || current == Token.LessOrEqual ||
-            current == Token.Greater || current == Token.GreaterOrEqual)
+          current == Token.Greater || current == Token.GreaterOrEqual)
       do
         val operator = current
         advance()

@@ -289,7 +289,7 @@ object KotlinFacade:
     val seqLike =
       target <:< TypeRepr.of[java.util.Collection[?]] &&
         (argument <:< TypeRepr.of[Seq[?]] ||
-             constructorOf(argument) == constructorOf(TypeRepr.of[proscenium.List[Any]]))
+          constructorOf(argument) == constructorOf(TypeRepr.of[proscenium.List[Any]]))
 
     mapLike || setLike || seqLike
 

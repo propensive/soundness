@@ -177,7 +177,7 @@ case class Selection
   :   Boolean =
 
     admitted(kind) && admitted(id) && admitted(coordinates, false) && admitted(tags) &&
-    !exclusions.exists(_.excludes(id, kind, coordinates, tags))
+      !exclusions.exists(_.excludes(id, kind, coordinates, tags))
 
   // Whether this selection, as a `not:` term, removes the cell. Identical to admission but
   // for one thing: a constraint on an axis the cell does not have matches NOTHING here,
@@ -218,9 +218,9 @@ case class Selection
 
         // A suite's id may hold a `-`, which makes it a glob rather than an identifier here.
         names.exists(glob.matches(_)) ||
-        chain.exists { link => link.key.lay(false)(glob.matches(_)) }
-        || glob.matches(path) ||
-        glob.matches(monikerPath)
+          chain.exists { link => link.key.lay(false)(glob.matches(_)) }
+          || glob.matches(path) ||
+          glob.matches(monikerPath)
 
   // `strict`: whether a constraint on an axis absent from the coordinates fails (for an
   // exclusion) rather than passes (for an admission).

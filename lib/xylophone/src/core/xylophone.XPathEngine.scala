@@ -340,16 +340,14 @@ private[xylophone] object XPathEngine:
     val root = Locus.root(locus.document)
 
     descendantLoci(root).filter: candidate =>
-      compareLoci(locus, candidate) < 0 &&
-      !isPrefix(locus.path, candidate.path)
+      compareLoci(locus, candidate) < 0 && !isPrefix(locus.path, candidate.path)
 
   // Nearest-first (reverse document order), as a reverse axis requires.
   private def precedingLoci(locus: Locus): List[Locus] =
     val root = Locus.root(locus.document)
 
     descendantLoci(root).filter: candidate =>
-      compareLoci(candidate, locus) < 0 &&
-      !isPrefix(candidate.path, locus.path)
+      compareLoci(candidate, locus) < 0 && !isPrefix(candidate.path, locus.path)
 
     . reverse
 

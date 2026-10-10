@@ -2082,9 +2082,9 @@ object internal:
 
       Block
         ( fociDef :: tacticDef :: slotDefs ::: seenDefs ::: bufferDefs :::
-            (attributesDef :: attributeSteps) :::
-            loop :::
-            absents,
+          (attributesDef :: attributeSteps) :::
+          loop :::
+          absents,
           construct(slots.map { slot => Ref(slot) }) )
 
       . asExprOf[value]

@@ -307,8 +307,8 @@ trait Vernacular:
 
     val clauses =
       List(cadence) +
-      onClause.lay(List[Text]())(List(_)) +
-      monthClause.lay(List[Text]())(List(_)) +
-      setPosClause.lay(List[Text]())(List(_))
+        onClause.lay(List[Text]())(List(_)) +
+        monthClause.lay(List[Text]())(List(_)) +
+        setPosClause.lay(List[Text]())(List(_))
 
     t"${clauses.join(t" ")}${rule.count.lay(t"")(times)}"
