@@ -185,6 +185,12 @@ package filesystemBackends:
           val (descriptor, relative) = resolve(path, Operation.Metadata)
           try statOf(descriptor, relative, dereference) finally descriptor.dispose()
 
+      def linkTarget(path: Path on Plane)(using Tactic[Io.Error]): Text =
+        protect(path, Operation.Metadata):
+          val (descriptor, relative) = resolve(path, Operation.Metadata)
+          val directory: Foreign of "descriptor" from Wit = descriptor
+          try directory.`readlink-at`(relative).call[Text]() finally descriptor.dispose()
+
       def exists(path: Path on Plane, dereference: Boolean): Boolean =
         import strategies.throwUnsafely
 

@@ -149,7 +149,7 @@ object apkEdges:
         Zip.Entry(entry.ref, unsafely(entry.read[Data])).aligned(4)
 
       val unsignedPath = out / "unsigned.apk"
-      unsafely(Zipfile.write(unsignedPath)(manifestEntry :: dexZipEntries))
+      unsafely(unsignedPath.write(Zipfile(manifestEntry :: dexZipEntries)))
       val unsigned = jnf.Files.readAllBytes(jnf.Paths.get(unsignedPath.encode.s)).nn
 
       val signed =

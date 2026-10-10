@@ -30,7 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aperture
 
-export bitumen.{ArOpenable, arPathOpenable, TarBuilder, TarOpenable, tarPathOpenable,
-  tarPathCreatable, extractTo}
+// The applier returned by the `archive` extension method, mirroring `Opener` and `Creator`:
+// the form resolves the `Archivable` instance, and the flags arrive at `apply`. The `tracked`
+// parameter keeps the instance's `Self`, `Operand` and `Result` members precise.
+final class Archiver(tracked val archivable: Archivable^, val value: archivable.Self):
+
+  def apply(flags: archivable.Operand*): archivable.Result =
+    archivable.archive(value, flags.to(List))

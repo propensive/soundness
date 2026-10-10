@@ -61,24 +61,9 @@ object Zipfile:
   private val u32Max: Long = 0xffffffffL
   private val u16Max: Int  = 0xffff
 
-  given streamable: Zipfile is Streamable by Data over Credit = zipfile => zipfile.serialize
-
-  def write[path: Abstractable across Paths to Text]
-    (path: path, prefix: Optional[Data] = Unset)(entries: List[Zip.Entry])
-  :   Unit logs Zip.Event raises Zip.Error =
-
-    checkDuplicates(entries)
-    val out = ji.FileOutputStream(ji.File(path.generic.s))
-
-    try
-      Zipfile(entries, Unset, prefix).serialize.drain: region =>
-        range =>
-          val interval: Interval = range
-          out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
-              interval.size)
-    finally out.close()
-
-    Log.info(Zip.Event.Wrote(path.generic, entries.size))
+  // Serializing checks for duplicate entry names, so the instance carries the tactic.
+  given streamable: Tactic[Zip.Error] => Zipfile is Streamable by Data over Credit =
+    zipfile => zipfile.serialize
 
   def read[path: Abstractable across Paths to Text](path: path)
   :   Zipfile logs Zip.Event raises Zip.Error =
@@ -579,7 +564,11 @@ case class Zipfile
   def entry(ref: Path on Zip): Zip.Entry raises Zip.Error =
     entries.seek(_.ref == ref).or(abort(Zip.Error(Zip.Error.Reason.NotFound(ref))))
 
-  def serialize: Stream[Data] over Credit =
+  // Two entries with one path make an archive no reader can resolve, so serializing refuses
+  // them up front, before any bytes are produced.
+  def serialize(using Tactic[Zip.Error]): Stream[Data] over Credit =
+    Zipfile.checkDuplicates(entries)
+
     // Emit the prefix first; all subsequent offsets are absolute (they include the prefix), so
     // any reader sees standard entries and the prefix as leading, otherwise-unassigned data.
     val prefixBytes: Data = prefix.or(Array.empty[Byte])
