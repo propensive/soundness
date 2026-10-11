@@ -223,6 +223,26 @@ object Refstore:
         lockFile.write(Objects.bytes(t"${kept.join(t"\n")}\n"))
         lockFile.moveTo(file)
 
+  // Detaches HEAD at a commit: written directly, where `update` would follow HEAD to its branch.
+  def detach
+    ( gitDir:    Path on Linux,
+      commonDir: Path on Linux,
+      commit:    Git.Hash,
+      previous:  Optional[Git.Hash],
+      identity:  Git.Identity,
+      message:   Text,
+      logging:   Boolean )
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
+  :   Unit =
+
+    val file = location(gitDir, commonDir, t"HEAD")
+
+    lock(file): lockFile =>
+      lockFile.write(Objects.bytes(t"${commit.text}\n"))
+      lockFile.moveTo(file)
+
+    if logging then log(gitDir, commonDir, t"HEAD", previous, commit, identity, message)
+
   def writeSymbolic(gitDir: Path on Linux, commonDir: Path on Linux, name: Text, target: Text)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =

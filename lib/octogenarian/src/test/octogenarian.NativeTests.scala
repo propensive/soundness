@@ -86,8 +86,10 @@ object NativeTests extends Suite(m"Octogenarian native backend"):
       sh"git -C $dir commit -q -m $message".exec[Exit]()
       Git.Hash.unsafe(sh"git -C $dir rev-parse HEAD".exec[Text]().trim)
 
+    // git's output without its trailing newline; leading spaces (as in porcelain status) are kept.
     def gitOut(dir: Path on Linux, arguments: Text*): Text =
-      Command((t"git" :: t"-C" :: dir.encode :: arguments.to(List))*).exec[Text]().trim
+      val output = Command((t"git" :: t"-C" :: dir.encode :: arguments.to(List))*).exec[Text]()
+      if output.ends(t"\n") then output.skip(1, Rtl) else output
 
     suite(m"Opening"):
 
@@ -339,6 +341,155 @@ object NativeTests extends Suite(m"Octogenarian native backend"):
         sh"git -C $dir remote add origin git@example.com:foo/bar.git".exec[Exit]()
         dir.open[Git.Repo]() { repo ?=> repo.remotes().value }
       .assert(_ == List(Remote(t"origin", t"git@example.com:foo/bar.git")))
+
+    suite(m"Working tree"):
+
+      def write(dir: Path on Linux, name: Text, content: Text): Unit =
+        val file = dir / name
+        if !file.existent() then file.create[File]()
+        file.open[File](Write) { handle ?=> handle.write(Chain(content.in[Data])) }
+
+      test(m"status agrees with git for added, modified, deleted and untracked files"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        gitCommit(dir, t"b", t"b\n", t"second")
+        write(dir, t"a", t"changed\n")
+        sh"rm $dir/b".exec[Exit]()
+        write(dir, t"c", t"c\n")
+        sh"git -C $dir add c".exec[Exit]()
+        write(dir, t"d", t"d\n")
+        val expected = gitOut(dir, t"status", t"--porcelain=v1", t"--untracked-files=all").cut(t"\n")
+
+        dir.open[Git.Worktree](): worktree ?=>
+          def code(status: Optional[Git.Status]): Text = status match
+            case Git.Status.Updated   => t"M"
+            case Git.Status.Added     => t"A"
+            case Git.Status.Deleted   => t"D"
+            case Git.Status.Untracked => t"?"
+            case _                    => t" "
+
+          def render(line: Git.PathStatus[worktree.Plane]): Text =
+            t"${code(line.index)}${code(line.worktree)} ${Operations.relative(line.path)}"
+
+          worktree.status().value.map(render(_)) == expected
+      .assert(_ == true)
+
+      test(m"a native add and commit is a commit git fsck accepts and git log shows"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        write(dir, t"b", t"b\n")
+        dir.open[Git.Worktree](Read & Write): worktree ?=>
+          worktree.add(Operations.planePath(worktree, t"b"))
+          worktree.commit(t"second", worktree.head())
+        (gitOut(dir, t"fsck", t"--strict"), gitOut(dir, t"log", t"--format=%s").cut(t"\n"), gitOut(dir, t"status", t"--porcelain"))
+      .assert(_ == ((t"", List(t"second", t"first"), t"")))
+
+      test(m"a native index is one git reads back identically"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        (dir / "sub").create[Directory]()
+        write(dir / "sub", t"b", t"b\n")
+        dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.add(Operations.planePath(worktree, t"sub/b")) }
+        gitOut(dir, t"ls-files", t"--stage").cut(t"\n").map(_.cut(t" ").prim.or(t""))
+      .assert(_ == List(t"100644", t"100644"))
+
+      test(m"rm removes the file and its index entry"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.rm(Operations.planePath(worktree, t"a"))() }
+        (gitOut(dir, t"status", t"--porcelain"), (dir / "a").existent())
+      .assert(_ == ((t"D  a", false)))
+
+      test(m"mv renames the file and git sees a rename"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.mv(Operations.planePath(worktree, t"a"), Operations.planePath(worktree, t"b")) }
+        gitOut(dir, t"status", t"--porcelain")
+      .assert(_ == t"R  a -> b")
+
+      test(m"restore discards a working change"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        write(dir, t"a", t"changed\n")
+        dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.restore(Operations.planePath(worktree, t"a"))() }
+        gitOut(dir, t"status", t"--porcelain")
+      .assert(_ == t"")
+
+      test(m"restore with staged unstages and keeps the file"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        write(dir, t"a", t"changed\n")
+        sh"git -C $dir add a".exec[Exit]()
+        dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.restore(Operations.planePath(worktree, t"a"))(staged = true) }
+        gitOut(dir, t"status", t"--porcelain")
+      .assert(_ == t" M a")
+
+      test(m"clean removes untracked files and reports them"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        write(dir, t"junk", t"x\n")
+        val removed = dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.clean().map(Operations.relative(_)) }
+        (removed, (dir / "junk").existent())
+      .assert(_ == ((List(t"junk"), false)))
+
+      test(m"reset --hard restores the tree as git would"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        gitCommit(dir, t"b", t"b\n", t"second")
+        dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.reset(ResetMode.Hard, Git.Revision.head(1), worktree.head()) }
+        (gitOut(dir, t"status", t"--porcelain"), (dir / "b").existent(), gitOut(dir, t"log", t"--format=%s"))
+      .assert(_ == ((t"", false, t"first")))
+
+      test(m"reset --mixed keeps the file but unstages it"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        gitCommit(dir, t"b", t"b\n", t"second")
+        dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.reset(ResetMode.Mixed, Git.Revision.head(1), worktree.head()) }
+        gitOut(dir, t"status", t"--porcelain")
+      .assert(_ == t"?? b")
+
+      test(m"switch creates a branch and checkout of main returns"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        dir.open[Git.Worktree](Read & Write): worktree ?=>
+          worktree.switch(Git.Branch(t"feature"), worktree.head(), create = true)
+          write(dir, t"b", t"b\n")
+          worktree.add(Operations.planePath(worktree, t"b"))
+          worktree.commit(t"feature", worktree.head())
+          worktree.switch(Git.Branch(t"main"), worktree.head())
+        (gitOut(dir, t"symbolic-ref", t"HEAD"), (dir / "b").existent(), gitOut(dir, t"status", t"--porcelain"))
+      .assert(_ == ((t"refs/heads/main", false, t"")))
+
+      test(m"checkout of a commit detaches HEAD and refuses to clobber changes"):
+        val dir = gitRepo()
+        val first = gitCommit(dir, t"a", t"a\n", t"first")
+        gitCommit(dir, t"a", t"a2\n", t"second")
+        write(dir, t"a", t"dirty\n")
+        val refused = dir.open[Git.Worktree](Read & Write): worktree ?=>
+          capture[Git.Error](worktree.checkout(first, worktree.head())).reason
+        sh"git -C $dir checkout -q -- a".exec[Exit]()
+        dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.checkout(first, worktree.head()) }
+        (refused, gitOut(dir, t"rev-parse", t"HEAD") == first.text, gitOut(dir, t"symbolic-ref", t"-q", t"HEAD"))
+      .assert(_ == ((Git.Error.Reason.Dirty(List(t"a")), true, t"")))
+
+      test(m"diff reports hunks git would print"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"one\ntwo\nthree\nfour\nfive\n", t"first")
+        write(dir, t"a", t"one\ntwo\nTHREE\nfour\nfive\n")
+        dir.open[Git.Worktree](): worktree ?=>
+          val file = worktree.diff().value.prim.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
+          val hunk = file.hunks.prim.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
+          val changes = hunk.edits.filter(!_.isInstanceOf[Par[?]]).fold(0) { (n, _) => n + 1 }
+          (file.changeKind, hunk.oldStart, hunk.oldLines, hunk.newStart, hunk.newLines, changes)
+      .assert(_ == ((ChangeKind.Modified, 1, 5, 1, 5, 2)))
+
+      test(m"diffBetween two commits matches the command-line parse of git diff"):
+        val dir = gitRepo()
+        val first = gitCommit(dir, t"a", t"one\ntwo\nthree\n", t"first")
+        val second = gitCommit(dir, t"a", t"one\n2\nthree\nfour\n", t"second")
+        val expected = Patch.parse(gitOut(dir, t"diff", t"--no-color", first.text, second.text).cut(t"\n"))
+        dir.open[Git.Worktree]() { worktree ?=> worktree.diffBetween(first, second) == expected }
+      .assert(_ == true)
 
     suite(m"Linked worktrees"):
 

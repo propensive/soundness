@@ -238,55 +238,61 @@ class Native() extends Git.Backend:
     io(Store.write(objects(gitDir), kind, data))
 
   def diffTree(gitDir: Path on Linux, left: Git.Hash, right: Git.Hash)(using Tactic[Git.Error]): List[FileDiff] =
-    unsupported(t"diffing trees")
+    io(Workspace.diffTree(objects(gitDir), left, right))
 
   // ─────────────────────────────────────── Index and working files ────────────────────────────
 
   def status(gitDir: Path on Linux, worktree: Path on Linux, ignored: Boolean, untracked: Boolean)
     ( using Tactic[Git.Error] )
-  :   List[Git.Backend.StatusLine] = unsupported(t"status")
+  :   List[Git.Backend.StatusLine] =
+
+    io(Workspace.status(gitDir, commonDir(gitDir), objects(gitDir), worktree, ignored, untracked))
 
   def add(gitDir: Path on Linux, worktree: Path on Linux, paths: List[Text], all: Boolean)(using Tactic[Git.Error]): Unit =
-    unsupported(t"add")
+    io(Workspace.add(gitDir, objects(gitDir), worktree, paths, all))
 
   def remove(gitDir: Path on Linux, worktree: Path on Linux, paths: List[Text], cached: Boolean, force: Boolean)
     ( using Tactic[Git.Error] )
-  :   Unit = unsupported(t"rm")
+  :   Unit = io(Workspace.remove(gitDir, worktree, paths, cached, force))
 
   def move(gitDir: Path on Linux, worktree: Path on Linux, from: Text, to: Text)(using Tactic[Git.Error]): Unit =
-    unsupported(t"mv")
+    io(Workspace.move(gitDir, worktree, from, to))
 
   def restore
     ( gitDir: Path on Linux, worktree: Path on Linux, paths: List[Text], source: Optional[Text],
       staged: Boolean, workingFiles: Boolean )
     ( using Tactic[Git.Error] )
-  :   Unit = unsupported(t"restore")
+  :   Unit =
+
+    io(Workspace.restore(gitDir, commonDir(gitDir), objects(gitDir), worktree, paths, source, staged, workingFiles))
 
   def clean(gitDir: Path on Linux, worktree: Path on Linux, paths: List[Text], directories: Boolean, ignored: Boolean)
     ( using Tactic[Git.Error] )
-  :   List[Text] = unsupported(t"clean")
+  :   List[Text] = io(Workspace.clean(gitDir, worktree, paths, directories, ignored))
 
   def writeTree(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Git.Error]): Git.Hash =
-    unsupported(t"write-tree")
+    io(Workspace.writeTree(gitDir, objects(gitDir)))
 
   def readTree(gitDir: Path on Linux, worktree: Path on Linux, mode: ResetMode)(using Tactic[Git.Error]): Unit =
-    unsupported(t"read-tree")
+    io(Workspace.readTree(gitDir, commonDir(gitDir), objects(gitDir), worktree, mode))
 
   def diffWorktree(gitDir: Path on Linux, worktree: Path on Linux, staged: Boolean, against: Optional[Text])
     ( using Tactic[Git.Error] )
-  :   List[FileDiff] = unsupported(t"diff")
+  :   List[FileDiff] =
+
+    io(Workspace.diffWorktree(gitDir, commonDir(gitDir), objects(gitDir), worktree, staged, against))
 
   def tracked(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Git.Error]): List[Text] =
-    unsupported(t"ls-files")
+    io(Workspace.tracked(gitDir))
 
   def conflicts(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Git.Error]): List[Text] =
-    unsupported(t"conflicts")
+    io(Workspace.conflicts(gitDir))
 
   def checkout(gitDir: Path on Linux, worktree: Path on Linux, revision: Text)(using Tactic[Git.Error]): Unit =
-    unsupported(t"checkout")
+    io(Workspace.checkout(gitDir, commonDir(gitDir), objects(gitDir), worktree, revision, identity(gitDir), logging(gitDir)))
 
   def switch(gitDir: Path on Linux, worktree: Path on Linux, branch: Git.Branch, create: Boolean)(using Tactic[Git.Error]): Unit =
-    unsupported(t"switch")
+    io(Workspace.switch(gitDir, commonDir(gitDir), objects(gitDir), worktree, branch, create, identity(gitDir), logging(gitDir)))
 
   def merge
     ( gitDir: Path on Linux, worktree: Path on Linux, revision: Text, ff: FastForward,
