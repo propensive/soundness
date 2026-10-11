@@ -35,20 +35,19 @@ package locomotion
 import scala.caps
 
 import anticipation.*
-import rudiments.each
-import zephyrine.*
+import rudiments.*
 
-// Writes Protocol Buffers wire bytes into a `Producer[Data]`. Varints are LEB128; fixed32/fixed64
+// Writes Protocol Buffers wire bytes into a `Scribe[Byte]`. Varints are LEB128; fixed32/fixed64
 // are little-endian; a field is its tag varint followed by the value (length-prefixed for the
-// length-delimited wire type). Drive it through `Protobuf.printed` (synchronous) or `Protobuf.emit`
-// (streaming).
+// length-delimited wire type). A message's encoded children are already in hand, so its size is
+// known before it is written (`fieldSize`), and `Protobuf` writes it into an exact-size array.
 @unexported
-// Holds the exclusive producer it drives, so the printer is itself a stateful
+// Holds the exclusive scribe it drives, so the printer is itself a stateful
 // capability with update-classified writes.
-class ProtobufPrinter(out: (Producer.Bytes)^) extends caps.ExclusiveCapability, caps.Stateful:
-  update def byte(value: Int): Unit = out.push(value.toByte)
+class ProtobufPrinter(out: Scribe[Byte]) extends caps.ExclusiveCapability, caps.Stateful:
+  update def byte(value: Int): Unit = out.append(value.toByte)
 
-  update def raw(data: Data): Unit = out.put(data)
+  update def raw(data: Data): Unit = out.append(data)
 
   update def varint(value: Long): Unit =
     var rest = value
@@ -86,3 +85,46 @@ class ProtobufPrinter(out: (Producer.Bytes)^) extends caps.ExclusiveCapability, 
       tag(number, wireType)
       if wireType == WireType.Len then varint(bytes.length)
       raw(bytes)
+
+@unexported
+object ProtobufPrinter:
+  // The LEB128 length of `value`, read as an unsigned 64-bit quantity: 1 to 10 bytes.
+  def varintSize(value: Long): Int =
+    (63 - java.lang.Long.numberOfLeadingZeros(value | 1))/7 + 1
+
+  // The number of bytes `field(number, value)` writes, which it must mirror exactly: a scribe
+  // of fixed size drops whatever is written past its end.
+  def fieldSize(number: Int, value: Protobuf): Int = value match
+    case Protobuf.Absent           => 0
+    case Protobuf.Repeated(values) => values.fold(0)(_ + fieldSize(number, _))
+
+    case Protobuf.Wire(wireType, bytes) =>
+      val tag = varintSize((number.toLong << 3) | wireType.id)
+      if wireType == WireType.Len then tag + varintSize(bytes.length) + bytes.length
+      else tag + bytes.length
+
+  // A scalar's wire bytes, written straight into an array of exactly their length.
+  def varintData(value: Long): Data =
+    val size = varintSize(value)
+    val buffer = Array.allocate[Byte](size)
+    var rest = value
+    var index = 0
+
+    repeat(size - 1):
+      buffer(index) = ((rest & 0x7f) | 0x80).toByte
+      rest = rest >>> 7
+      index += 1
+
+    buffer(index) = rest.toByte
+    Array.freeze(buffer)
+
+  // The low `width` bytes of `value`, little-endian.
+  def fixedData(value: Long, width: Int): Data =
+    val buffer = Array.allocate[Byte](width)
+    var index = 0
+
+    repeat(width):
+      buffer(index) = (value >>> (index*8)).toByte
+      index += 1
+
+    Array.freeze(buffer)

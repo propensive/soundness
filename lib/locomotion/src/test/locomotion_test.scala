@@ -79,6 +79,11 @@ case class Longs(@field(1) values: Sequence[Long]) derives CanEqual
 case class Item(@field(1) id: Int, @field(2) name: Text) derives CanEqual
 case class Batch(@field(1) items: List[Item]) derives CanEqual
 
+// Encodings at the printer's size boundaries: a two-byte tag, and nested payloads.
+case class HighField(@field(16) value: Int) derives CanEqual
+case class Envelope(@field(1) person: Person) derives CanEqual
+case class TagsEnvelope(@field(1) tags: Tags) derives CanEqual
+
 case class Defaulted(@field(1) a: Int, @field(2) b: Int = 7) derives CanEqual
 case class Boxed[value](@field(1) value: value) derives CanEqual
 
@@ -112,6 +117,25 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       test(m"sparse field numbers produce the right tags"):
         wire(Sparse(1, t"")).stdlib.take(2)
       . assert(_ == List(0x18, 0x01))
+
+      test(m"a negative int encodes as a ten-byte varint"):
+        wire(Sample(-1))
+      . assert(_ == List(0x08, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01))
+
+      test(m"field number 16 takes a two-byte tag"):
+        wire(HighField(1))
+      . assert(_ == List(0x80, 0x01, 0x01))
+
+      test(m"a nested payload over 127 bytes takes a two-byte length"):
+        // Person: tag, 2-byte length, 200 bytes of name, then age = 1: 205 bytes.
+        val bytes = wire(Envelope(Person("x".repeat(200).nn.tt, 1)))
+        (bytes.stdlib.take(3), bytes.stdlib.length, bytes.stdlib.takeRight(2))
+      . assert:
+          _ == (scala.List(0x0a, 0xcd, 0x01), 208, scala.List(0x10, 0x01))
+
+      test(m"a repeated field inside a nested message is sized whole"):
+        wire(TagsEnvelope(Tags(List(t"a", t"b"))))
+      . assert(_ == List(0x0a, 0x06, 0x0a, 0x01, 0x61, 0x0a, 0x01, 0x62))
 
     suite(m"Round-trips"):
       test(m"single int field"):
