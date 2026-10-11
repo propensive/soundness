@@ -153,6 +153,28 @@ class VaultCreatable extends Creatable:
 
 given vaultCreatable: VaultCreatable = VaultCreatable()
 
+// A sessional counterpart: a `Relay` lends a `Lease` handle, a capability closed when the
+// scope ends, so that the escape routes out of a session can be checked. `Tick` stands for a
+// capability an instance is built from (as tarantula's is built from `Online` and a monitor),
+// so that an instance's own capture set is seen to flow through `session` too.
+case class Relay(name: Text)
+
+class Lease(val name: Text) extends caps.ExclusiveCapability:
+  def alive: Boolean = true
+  def read(): Text = t"from:$name"
+
+class Tick extends caps.SharedCapability
+
+class RelaySessional(using tick: Tick) extends Sessional:
+  type Self = Relay
+  type Result = Lease^
+
+  def session[result](target: Relay)(lambda: (session: Result) ?=> result): result =
+    val heartbeat = tick
+    lambda(using Lease(target.name))
+
+given relaySessional: (tick: Tick) => (RelaySessional^{tick}) = RelaySessional()
+
 object Tests extends Suite(m"Aperture Tests"):
   def run(): Unit =
     test(m"An entity opens readably by default"):
@@ -192,6 +214,47 @@ object Tests extends Suite(m"Aperture Tests"):
         Ref(t"eta").open() { handle ?=> handle.title }
       . map(_.message)
     . assert(_.nonEmpty)
+
+    test(m"A session-independent value leaves a session"):
+      given Tick = Tick()
+      Relay(t"alpha").session { lease ?=> lease.read() }
+    . assert(_ == t"from:alpha")
+
+    test(m"The lent handle cannot be a session's result"):
+      demilitarize:
+        given Tick = Tick()
+        def attempt(): Lease^ = Relay(t"beta").session { lease ?=> lease }
+      . map(_.message.tt)
+    . assert(_.exists(_.contains(t"outlives its scope")))
+
+    test(m"A closure over the handle cannot be a session's result"):
+      demilitarize:
+        given Tick = Tick()
+        def attempt(): () => Boolean = Relay(t"gamma").session { lease ?=> () => lease.alive }
+      . map(_.message.tt)
+    . assert(_.exists(_.contains(t"outlives its scope")))
+
+    test(m"A closure over the handle cannot leave as an inferred result"):
+      demilitarize:
+        given Tick = Tick()
+        def attempt() = Relay(t"delta").session { lease ?=> () => lease.alive }
+      . map(_.message.tt)
+    . assert(_.exists(_.contains(t"outlives its scope")))
+
+    test(m"A collection holding the handle cannot be a session's result"):
+      demilitarize:
+        given Tick = Tick()
+        def attempt(): List[Lease^] = Relay(t"epsilon").session { lease ?=> List(lease) }
+      . map(_.message.tt)
+    . assert(_.exists(_.contains(t"Lease^{lease}")))
+
+    test(m"The handle cannot be saved in a variable outside the session"):
+      demilitarize:
+        given Tick = Tick()
+        var saved: Optional[Lease^] = Unset
+        Relay(t"zeta").session { lease ?=> saved = lease }
+      . map(_.message.tt)
+    . assert(_.exists(_.contains(t"cannot flow into capture set")))
 
     test(m"Instantiation creates an empty artifact and returns the target"):
       val vault = Vault()
