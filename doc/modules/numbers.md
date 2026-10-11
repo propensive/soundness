@@ -51,6 +51,22 @@ The name carries the meaning: `U*` is unsigned, `S*` is two's-complement signed,
 floating-point, and the number is the bit width. An unsigned value and a signed one are
 different types, and mixing them is a deliberate conversion rather than an accident.
 
+The operators are the generic ones from `symbolism`, which `import soundness.*` provides:
+`+`, `-`, `*`, `/` and prefix `-` resolve through `Addable`, `Subtractable`, `Multiplicable`,
+`Divisible` and `Negatable` instances, so a `U32` or an `F64` can be summed in code written
+against those typeclasses, and a value of one of these types can be mixed with a `Double`, an
+`Int` or a narrower type where a conversion exists:
+
+```scala
+val ratio: F64 = 1.5
+ratio*2          // F64(3.0): the Int is converted first
+ratio + 0.25     // F64(1.75)
+-ratio           // F64(-1.5)
+```
+
+The operand of a generic operator is a type parameter, which a bare literal does not constrain,
+so an integer literal operand is written with its type: `count + (1: U64)`.
+
 ### Checked arithmetic
 
 By default arithmetic behaves as the hardware does, wrapping on overflow. Importing the
@@ -70,9 +86,10 @@ after which `/` may raise a `Arithmetic.Error`. Where the check is not imported,
 keep their bare machine behavior and cost nothing.
 
 The two checks are independent, so a program that must not wrap but is content to trust its
-divisors imports only the first. Both are `inline`, and the unchecked forms compile to the same
-instructions the hardware would have executed anyway — the choice costs nothing where it is not
-taken.
+divisors imports only the first. Each policy's instances are objects, so after inlining an
+unchecked `a + b` on an `S32` is the one `iadd` instruction the hardware has for it, with
+nothing allocated — the choice costs nothing where it is not taken — and a checked one is the
+same instruction followed by the test.
 
 Overflow detection is exact rather than approximate: it distinguishes the cases where a signed
 addition genuinely overflows from those where it merely crosses zero, so a sum of the most

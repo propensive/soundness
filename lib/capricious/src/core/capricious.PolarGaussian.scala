@@ -36,6 +36,7 @@ import scala.annotation
 import scala.language.experimental.genericNumberLiterals
 
 import hypotenuse.*
+import symbolism.*
 
 case class PolarGaussian(mean: Double = 0.0, std: Double = 1.0) extends Distribution:
   def transform(random: Random): Double =

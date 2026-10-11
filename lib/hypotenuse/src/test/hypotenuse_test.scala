@@ -160,55 +160,229 @@ object Tests extends Suite(m"Hypotenuse tests"):
         (-1: Short).octal
       . assert(_ == t"177777")
 
-    suite(m"Signed overflow detection"):
+    suite(m"Fixed-width arithmetic"):
+      import arithmeticOptions.uncheckedOverflow, arithmeticOptions.uncheckedDivision
+
+      test(m"S32 addition wraps"):
+        S32.Max + S32(1.bits)
+      . assert(_ == S32.Min)
+
+      test(m"U8 addition wraps"):
+        U8.Max + U8(1.toByte.bits)
+      . assert(_ == U8.Min)
+
+      test(m"S64 subtraction"):
+        S64(5L.bits) - S64(8L.bits)
+      . assert(_ == S64((-3L).bits))
+
+      test(m"U32 multiplication wraps"):
+        U32(0x80000000.bits)*U32(2.bits)
+      . assert(_ == U32.Min)
+
+      test(m"S32 division truncates"):
+        S32((-7).bits)/S32(2.bits)
+      . assert(_ == S32((-3).bits))
+
+      test(m"U64 division is unsigned"):
+        U64.Max/U64(2L.bits)
+      . assert(_ == U64(Long.MaxValue.bits))
+
+      test(m"U32 division is unsigned"):
+        U32.Max/U32(2.bits)
+      . assert(_ == U32(Int.MaxValue.bits))
+
+      test(m"an ascribed integer literal operand"):
+        val count: U64 = 41
+        count + (1: U64)
+      . assert(_ == U64(42L.bits))
+
+      test(m"F64 addition"):
+        F64(1.5) + F64(2.0)
+      . assert(_ == F64(3.5))
+
+      test(m"F64 negation"):
+        -F64(2.0)
+      . assert(_ == F64(-2.0))
+
+      test(m"F64 with a Double operand"):
+        F64(1.5)*2.0
+      . assert(_ == F64(3.0))
+
+      test(m"F64 with an Int literal operand"):
+        F64(1.5)*2
+      . assert(_ == F64(3.0))
+
+      test(m"F64 with an S32 operand"):
+        F64(1.0) + S32(2.bits)
+      . assert(_ == F64(3.0))
+
+      test(m"F64 with a U8 operand above 127"):
+        F64(0.5) + U8(200.toByte.bits)
+      . assert(_ == F64(200.5))
+
+      test(m"F32 division by a Float"):
+        F32(1.5f)/2.0f
+      . assert(_ == F32(0.75f))
+
+      test(m"F32 negation"):
+        -F32(2.0f)
+      . assert(_ == F32(-2.0f))
+
+      def twice[number: Addable by number to number](value: number): number = value + value
+
+      test(m"S32 satisfies a generic Addable bound"):
+        twice(S32(21.bits))
+      . assert(_ == S32(42.bits))
+
+      test(m"F64 satisfies a generic Addable bound"):
+        val value: F64 = F64(1.25)
+        twice(value)
+      . assert(_ == F64(2.5))
+
+    suite(m"Checked overflow"):
       import arithmeticOptions.checkedOverflow
-      val co = summon[CheckOverflow]
 
-      test(m"S64.MinValue + S64(-1) overflows"):
-        safely(co.addS64(S64(Long.MinValue.bits), S64((-1L).bits)))
+      test(m"S64.Min + S64(-1) overflows"):
+        safely(S64.Min + S64((-1L).bits))
       . assert(_.absent)
 
-      test(m"S64.MinValue + S64.MinValue overflows"):
-        safely(co.addS64(S64(Long.MinValue.bits), S64(Long.MinValue.bits)))
+      test(m"S64.Min + S64.Min overflows"):
+        safely(S64.Min + S64.Min)
       . assert(_.absent)
 
-      test(m"S64.MaxValue + S64(1) overflows"):
-        safely(co.addS64(S64(Long.MaxValue.bits), S64(1L.bits)))
+      test(m"S64.Max + S64(1) overflows"):
+        safely(S64.Max + S64(1L.bits))
       . assert(_.absent)
 
       test(m"S64(5) + S64(3) does not overflow"):
         import strategies.throwUnsafely
-        co.addS64(S64(5L.bits), S64(3L.bits)).long
+        (S64(5L.bits) + S64(3L.bits)).long
       . assert(_ == 8L)
 
       test(m"S64(-5) + S64(-3) does not overflow"):
         import strategies.throwUnsafely
-        co.addS64(S64((-5L).bits), S64((-3L).bits)).long
+        (S64((-5L).bits) + S64((-3L).bits)).long
       . assert(_ == -8L)
 
-      test(m"S32.MinValue + S32(-1) overflows"):
-        safely(co.addS32(S32(Int.MinValue.bits), S32((-1).bits)))
+      test(m"the checked sum satisfies a raises type"):
+        def sum(left: S32, right: S32): S32 raises hypotenuse.Arithmetic.Error = left + right
+        safely(sum(S32(2.bits), S32(3.bits)))
+      . assert(_ == S32(5.bits))
+
+      test(m"S32.Min + S32(-1) overflows"):
+        safely(S32.Min + S32((-1).bits))
       . assert(_.absent)
 
-      test(m"S32.MaxValue + S32(1) overflows"):
-        safely(co.addS32(S32(Int.MaxValue.bits), S32(1.bits)))
+      test(m"S32.Max + S32(1) overflows"):
+        safely(S32.Max + S32(1.bits))
       . assert(_.absent)
 
-      test(m"S16.MinValue + S16(-1) overflows"):
-        safely(co.addS16(S16(Short.MinValue.bits), S16((-1: Short).bits)))
+      test(m"S16.Min + S16(-1) overflows"):
+        safely(S16.Min + S16((-1: Short).bits))
       . assert(_.absent)
 
-      test(m"S16.MaxValue + S16(1) overflows"):
-        safely(co.addS16(S16(Short.MaxValue.bits), S16((1: Short).bits)))
+      test(m"S16.Max + S16(1) overflows"):
+        safely(S16.Max + S16((1: Short).bits))
       . assert(_.absent)
 
-      test(m"S8.MinValue + S8(-1) overflows"):
-        safely(co.addS8(S8(Byte.MinValue.bits), S8((-1: Byte).bits)))
+      test(m"S8.Min + S8(-1) overflows"):
+        safely(S8.Min + S8((-1: Byte).bits))
       . assert(_.absent)
 
-      test(m"S8.MaxValue + S8(1) overflows"):
-        safely(co.addS8(S8(Byte.MaxValue.bits), S8((1: Byte).bits)))
+      test(m"S8.Max + S8(1) overflows"):
+        safely(S8.Max + S8((1: Byte).bits))
       . assert(_.absent)
+
+      test(m"U64.Max + U64(1) overflows"):
+        safely(U64.Max + U64(1L.bits))
+      . assert(_.absent)
+
+      test(m"a large U64 sum with no carry does not overflow"):
+        safely(U64(Long.MinValue.bits) + U64(1L.bits))
+      . assert(_ == U64((Long.MinValue + 1).bits))
+
+      test(m"U32.Max + U32(1) overflows"):
+        safely(U32.Max + U32(1.bits))
+      . assert(_.absent)
+
+      test(m"U8(200) + U8(100) overflows"):
+        safely(U8(200.toByte.bits) + U8(100.toByte.bits))
+      . assert(_.absent)
+
+      test(m"S32.Min - S32(1) overflows"):
+        safely(S32.Min - S32(1.bits))
+      . assert(_.absent)
+
+      test(m"S32(3) - S32(5) does not overflow"):
+        safely(S32(3.bits) - S32(5.bits))
+      . assert(_ == S32((-2).bits))
+
+      test(m"U32(0) - U32(1) overflows"):
+        safely(U32.Min - U32(1.bits))
+      . assert(_.absent)
+
+      test(m"U64(5) - U64(3) does not overflow"):
+        safely(U64(5L.bits) - U64(3L.bits))
+      . assert(_ == U64(2L.bits))
+
+      test(m"S64.Max * S64(2) overflows"):
+        safely(S64.Max*S64(2L.bits))
+      . assert(_.absent)
+
+      test(m"S64.Min * S64(-1) overflows"):
+        safely(S64.Min*S64((-1L).bits))
+      . assert(_.absent)
+
+      test(m"S64(-3) * S64(4) does not overflow"):
+        safely(S64((-3L).bits)*S64(4L.bits))
+      . assert(_ == S64((-12L).bits))
+
+      test(m"S32.Max * S32(2) overflows"):
+        safely(S32.Max*S32(2.bits))
+      . assert(_.absent)
+
+      test(m"S8(-128) * S8(-1) overflows"):
+        safely(S8.Min*S8((-1: Byte).bits))
+      . assert(_.absent)
+
+      test(m"U64.Max * U64(2) overflows"):
+        safely(U64.Max*U64(2L.bits))
+      . assert(_.absent)
+
+      test(m"a large U64 product that fits does not overflow"):
+        safely(U64(0x100000000L.bits)*U64(0x80000000L.bits))
+      . assert(_ == U64(Long.MinValue.bits))
+
+      test(m"U16(256) * U16(256) overflows"):
+        safely(U16(256.toShort.bits)*U16(256.toShort.bits))
+      . assert(_.absent)
+
+      test(m"U8(16) * U8(15) does not overflow"):
+        safely(U8(16.toByte.bits)*U8(15.toByte.bits))
+      . assert(_ == U8(240.toByte.bits))
+
+    suite(m"Checked division"):
+      import arithmeticOptions.checkedDivision
+
+      test(m"S32 division by zero raises"):
+        safely(S32(1.bits)/S32(0.bits))
+      . assert(_.absent)
+
+      test(m"U64 division by zero raises"):
+        safely(U64(1L.bits)/U64(0L.bits))
+      . assert(_.absent)
+
+      test(m"U8 division by zero raises"):
+        safely(U8(1.toByte.bits)/U8(0.toByte.bits))
+      . assert(_.absent)
+
+      test(m"U64 checked division is unsigned"):
+        safely(U64.Max/U64(2L.bits))
+      . assert(_ == U64(Long.MaxValue.bits))
+
+      test(m"S32 checked division"):
+        safely(S32(7.bits)/S32(2.bits))
+      . assert(_ == S32(3.bits))
 
     suite(m"Floor-mod tests"):
       test(m"Float %% positive divisor with positive dividend"):

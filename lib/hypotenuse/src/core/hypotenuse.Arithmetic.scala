@@ -34,6 +34,8 @@ package hypotenuse
 
 import anticipation.*
 import fulminate.*
+import prepositional.*
+import symbolism.*
 
 // The failure of an arithmetic *operation*, as distinct from a value that cannot be
 // represented (`Decimal.Error`, `Rational.Error`). Division and overflow are separate
@@ -53,3 +55,25 @@ object Arithmetic:
   case class Error(reason: Arithmetic.Error.Reason)(using Diagnostics)
   extends fulminate.Error(868, reason.number)
     ( m"the arithmetic operation could not be completed because $reason" )
+
+  // The shapes of the fixed-width arithmetic instances: a number with itself, to a result the
+  // policy in force wraps. Each policy implements them as `object`s (see `CheckOverflow`).
+  trait Addition[number, wrap[_]] extends Addable:
+    type Self = number
+    type Operand = number
+    type Result = wrap[number]
+
+  trait Subtraction[number, wrap[_]] extends Subtractable:
+    type Self = number
+    type Operand = number
+    type Result = wrap[number]
+
+  trait Multiplication[number, wrap[_]] extends Multiplicable:
+    type Self = number
+    type Operand = number
+    type Result = wrap[number]
+
+  trait Division[number, wrap[_]] extends Divisible:
+    type Self = number
+    type Operand = number
+    type Result = wrap[number]

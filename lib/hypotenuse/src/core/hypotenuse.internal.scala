@@ -43,6 +43,7 @@ import scala.{caps, math}
 
 import anticipation.*
 import denominative.*
+import prepositional.*
 import symbolism.*
 import vacuous.*
 
@@ -74,6 +75,86 @@ object internal:
 
     // [erased-evidence] underlying evidence for F64
     inline given underlying: Underlying[F64, Double] = caps.unsafe.unsafeErasedValue
+
+    // The instances are objects, named by their singleton types, so that an operator inlined
+    // through them leaves no allocation behind (`CheckOverflow` explains); here, inside the
+    // opaque scope, `F64` is a `Double`, and the bodies are the primitive operations.
+    object Addition extends Arithmetic.Addition[F64, [result] =>> result]:
+      inline def add(left: F64, right: F64): F64 = left + right
+
+    object Subtraction extends Arithmetic.Subtraction[F64, [result] =>> result]:
+      inline def subtract(left: F64, right: F64): F64 = left - right
+
+    object Multiplication extends Arithmetic.Multiplication[F64, [result] =>> result]:
+      inline def multiply(left: F64, right: F64): F64 = left*right
+
+    object Division extends Arithmetic.Division[F64, [result] =>> result]:
+      inline def divide(left: F64, right: F64): F64 = left/right
+
+    object Negation extends Negatable:
+      type Self = F64
+      type Result = F64
+
+      inline def negate(operand: F64): F64 = -operand
+
+    given addable: Addition.type = Addition
+    given subtractable: Subtraction.type = Subtraction
+    given multiplicable: Multiplication.type = Multiplication
+    given divisible: Division.type = Division
+    given negatable: Negation.type = Negation
+
+    // A conversion into `F64` which also carries the arithmetic on a `F64` with a value of the
+    // type it converts: the right operand is converted and the operation is the primitive
+    // one. The instances live here, one set per conversion, because an object cannot take a
+    // type parameter, and each must name `right` precisely for its `Operand`.
+    trait Widening[right] extends Conversion[right, F64]:
+      object Addition extends Addable:
+        type Self = F64
+        type Operand = right
+        type Result = F64
+
+        inline def add(left: F64, right: right): F64 = left + Widening.this(right)
+
+      object Subtraction extends Subtractable:
+        type Self = F64
+        type Operand = right
+        type Result = F64
+
+        inline def subtract(left: F64, right: right): F64 = left - Widening.this(right)
+
+      object Multiplication extends Multiplicable:
+        type Self = F64
+        type Operand = right
+        type Result = F64
+
+        inline def multiply(left: F64, right: right): F64 = left*Widening.this(right)
+
+      object Division extends Divisible:
+        type Self = F64
+        type Operand = right
+        type Result = F64
+
+        inline def divide(left: F64, right: right): F64 = left/Widening.this(right)
+
+    // The widening givens are transparent with a plain refinement type, rather than typed by
+    // the singleton: a search instantiates `right` from the expected `Operand` before it looks
+    // for the `Widening`, which a dependent type would not let it do, and transparency still
+    // gives the summoned instance its singleton type, through which `add` inlines.
+    transparent inline given addableWidening: [right] => (widening: Widening[right])
+          =>  F64 is Addable by right to F64 =
+      widening.Addition
+
+    transparent inline given subtractableWidening: [right] => (widening: Widening[right])
+          =>  F64 is Subtractable by right to F64 =
+      widening.Subtraction
+
+    transparent inline given multiplicableWidening: [right] => (widening: Widening[right])
+          =>  F64 is Multiplicable by right to F64 =
+      widening.Multiplication
+
+    transparent inline given divisibleWidening: [right] => (widening: Widening[right])
+          =>  F64 is Divisible by right to F64 =
+      widening.Division
 
     inline given canEqual: CanEqual
       [ F64, F64 | S64 | S32 | S16 | S8 | Double | Long | Int | Short | Byte ] =
@@ -118,20 +199,6 @@ object internal:
         then inline if strict then left > right else left >= right
         else inline if strict then left < right else left <= right
 
-    given divisible: F64 is Divisible:
-      type Self = F64
-      type Operand = Double
-      type Result = F64
-
-      inline def divide(left: F64, right: Double): F64 = left/right
-
-    given multiplicable: F64 is Multiplicable:
-      type Self = F64
-      type Operand = Double
-      type Result = F64
-
-      inline def multiply(left: F64, right: Double): F64 = left*right
-
     inline given commensurable: F64 is Commensurable:
       type Contrast = Double
 
@@ -147,38 +214,62 @@ object internal:
         then inline if strict then left > right else left >= right
         else inline if strict then left < right else left <= right
 
-    inline given doubleConversion: Conversion[Double, F64]:
-      inline def apply(value: Double): F64 = value
+    // The conversions are not inline: expanded from inside the opaque scope, their bodies would
+    // be typed by the underlying primitive, and an `into` parameter would then reject them.
+    object DoubleConversion extends Widening[Double]:
+      def apply(value: Double): F64 = value
 
-    inline given floatConversion: Conversion[Float, F64]:
+    inline given doubleConversion: DoubleConversion.type = DoubleConversion
+
+    object FloatConversion extends Widening[Float]:
       def apply(value: Float): F64 = value.toDouble
 
-    inline given intConversion: Conversion[Int, F64]:
+    inline given floatConversion: FloatConversion.type = FloatConversion
+
+    object IntConversion extends Widening[Int]:
       def apply(value: Int): F64 = value.toDouble
 
-    inline given shortConversion: Conversion[Short, F64]:
+    inline given intConversion: IntConversion.type = IntConversion
+
+    object ShortConversion extends Widening[Short]:
       def apply(value: Short): F64 = value.toDouble
 
-    inline given byteConversion: Conversion[Byte, F64]:
+    inline given shortConversion: ShortConversion.type = ShortConversion
+
+    object ByteConversion extends Widening[Byte]:
       def apply(value: Byte): F64 = value.toDouble
 
-    inline given u32Conversion: Conversion[U32, F64]:
+    inline given byteConversion: ByteConversion.type = ByteConversion
+
+    object U32Conversion extends Widening[U32]:
       def apply(value: U32): F64 = JInt.toUnsignedLong(value).toDouble
 
-    inline given s32Conversion: Conversion[S32, F64]:
+    inline given u32Conversion: U32Conversion.type = U32Conversion
+
+    object S32Conversion extends Widening[S32]:
       def apply(value: S32): F64 = value.toDouble
 
-    inline given u16Conversion: Conversion[U16, F64]:
+    inline given s32Conversion: S32Conversion.type = S32Conversion
+
+    object U16Conversion extends Widening[U16]:
       def apply(value: U16): F64 = JShort.toUnsignedInt(value).toDouble
 
-    inline given u8Conversion: Conversion[U8, F64]:
-      def apply(value: U8): F64 = JShort.toUnsignedInt(value).toDouble
+    inline given u16Conversion: U16Conversion.type = U16Conversion
 
-    inline given s16Conversion: Conversion[S16, F64]:
+    object U8Conversion extends Widening[U8]:
+      def apply(value: U8): F64 = JByte.toUnsignedInt(value).toDouble
+
+    inline given u8Conversion: U8Conversion.type = U8Conversion
+
+    object S16Conversion extends Widening[S16]:
       def apply(value: S16): F64 = value.toDouble
 
-    inline given s8Conversion: Conversion[S8, F64]:
+    inline given s16Conversion: S16Conversion.type = S16Conversion
+
+    object S8Conversion extends Widening[S8]:
       def apply(value: S8): F64 = value.toDouble
+
+    inline given s8Conversion: S8Conversion.type = S8Conversion
 
   object F32:
     final val Min: F32 = Float.MinValue
@@ -186,6 +277,86 @@ object internal:
 
     // [erased-evidence] underlying evidence for F32
     inline given underlying: Underlying[F32, Float] = caps.unsafe.unsafeErasedValue
+
+    // The instances are objects, named by their singleton types, so that an operator inlined
+    // through them leaves no allocation behind (`CheckOverflow` explains); here, inside the
+    // opaque scope, `F32` is a `Float`, and the bodies are the primitive operations.
+    object Addition extends Arithmetic.Addition[F32, [result] =>> result]:
+      inline def add(left: F32, right: F32): F32 = left + right
+
+    object Subtraction extends Arithmetic.Subtraction[F32, [result] =>> result]:
+      inline def subtract(left: F32, right: F32): F32 = left - right
+
+    object Multiplication extends Arithmetic.Multiplication[F32, [result] =>> result]:
+      inline def multiply(left: F32, right: F32): F32 = left*right
+
+    object Division extends Arithmetic.Division[F32, [result] =>> result]:
+      inline def divide(left: F32, right: F32): F32 = left/right
+
+    object Negation extends Negatable:
+      type Self = F32
+      type Result = F32
+
+      inline def negate(operand: F32): F32 = -operand
+
+    given addable: Addition.type = Addition
+    given subtractable: Subtraction.type = Subtraction
+    given multiplicable: Multiplication.type = Multiplication
+    given divisible: Division.type = Division
+    given negatable: Negation.type = Negation
+
+    // A conversion into `F32` which also carries the arithmetic on a `F32` with a value of the
+    // type it converts: the right operand is converted and the operation is the primitive
+    // one. The instances live here, one set per conversion, because an object cannot take a
+    // type parameter, and each must name `right` precisely for its `Operand`.
+    trait Widening[right] extends Conversion[right, F32]:
+      object Addition extends Addable:
+        type Self = F32
+        type Operand = right
+        type Result = F32
+
+        inline def add(left: F32, right: right): F32 = left + Widening.this(right)
+
+      object Subtraction extends Subtractable:
+        type Self = F32
+        type Operand = right
+        type Result = F32
+
+        inline def subtract(left: F32, right: right): F32 = left - Widening.this(right)
+
+      object Multiplication extends Multiplicable:
+        type Self = F32
+        type Operand = right
+        type Result = F32
+
+        inline def multiply(left: F32, right: right): F32 = left*Widening.this(right)
+
+      object Division extends Divisible:
+        type Self = F32
+        type Operand = right
+        type Result = F32
+
+        inline def divide(left: F32, right: right): F32 = left/Widening.this(right)
+
+    // The widening givens are transparent with a plain refinement type, rather than typed by
+    // the singleton: a search instantiates `right` from the expected `Operand` before it looks
+    // for the `Widening`, which a dependent type would not let it do, and transparency still
+    // gives the summoned instance its singleton type, through which `add` inlines.
+    transparent inline given addableWidening: [right] => (widening: Widening[right])
+          =>  F32 is Addable by right to F32 =
+      widening.Addition
+
+    transparent inline given subtractableWidening: [right] => (widening: Widening[right])
+          =>  F32 is Subtractable by right to F32 =
+      widening.Subtraction
+
+    transparent inline given multiplicableWidening: [right] => (widening: Widening[right])
+          =>  F32 is Multiplicable by right to F32 =
+      widening.Multiplication
+
+    transparent inline given divisibleWidening: [right] => (widening: Widening[right])
+          =>  F32 is Divisible by right to F32 =
+      widening.Division
 
     inline given canEqual: CanEqual
       [ F32, F32 | S64 | S32 | S16 | S8 | Float | Long | Int | Short | Byte ] =
@@ -214,26 +385,40 @@ object internal:
     inline def apply(inline bits: B32): F32 = JFloat.intBitsToFloat(bits)
     inline def apply(inline float: Float): F32 = float
 
-    inline given floatConversion: Conversion[Float, F32]:
+    object FloatConversion extends Widening[Float]:
       def apply(value: Float): F32 = value
 
-    inline given shortConversion: Conversion[Short, F32]:
+    inline given floatConversion: FloatConversion.type = FloatConversion
+
+    object ShortConversion extends Widening[Short]:
       def apply(value: Short): F32 = value.toFloat
 
-    inline given byteConversion: Conversion[Byte, F32]:
+    inline given shortConversion: ShortConversion.type = ShortConversion
+
+    object ByteConversion extends Widening[Byte]:
       def apply(value: Byte): F32 = value.toFloat
 
-    inline given u16Conversion: Conversion[U16, F32]:
+    inline given byteConversion: ByteConversion.type = ByteConversion
+
+    object U16Conversion extends Widening[U16]:
       def apply(value: U16): F32 = JShort.toUnsignedInt(value).toFloat
 
-    inline given u8Conversion: Conversion[U8, F32]:
-      def apply(value: U8): F32 = JShort.toUnsignedInt(value).toFloat
+    inline given u16Conversion: U16Conversion.type = U16Conversion
 
-    inline given s16Conversion: Conversion[S16, F32]:
+    object U8Conversion extends Widening[U8]:
+      def apply(value: U8): F32 = JByte.toUnsignedInt(value).toFloat
+
+    inline given u8Conversion: U8Conversion.type = U8Conversion
+
+    object S16Conversion extends Widening[S16]:
       def apply(value: S16): F32 = value.toFloat
 
-    inline given s8Conversion: Conversion[S8, F32]:
+    inline given s16Conversion: S16Conversion.type = S16Conversion
+
+    object S8Conversion extends Widening[S8]:
       def apply(value: S8): F32 = value.toFloat
+
+    inline given s8Conversion: S8Conversion.type = S8Conversion
 
   object U64:
     final val Min: U64 = 0L
@@ -241,6 +426,19 @@ object internal:
 
     // [erased-evidence] underlying evidence for U64
     inline given underlying: Underlying[U64, Long] = caps.unsafe.unsafeErasedValue
+
+    // Each instance is the policy's own object, named by its singleton type; `CheckOverflow`
+    // explains why that, rather than an instance, is what makes `+` inline to one instruction.
+    inline given addable: (overflow: CheckOverflow) => overflow.addU64.type = overflow.addU64
+
+    inline given subtractable: (overflow: CheckOverflow) => overflow.subtractU64.type =
+      overflow.subtractU64
+
+    inline given multiplicable: (overflow: CheckOverflow) => overflow.multiplyU64.type =
+      overflow.multiplyU64
+
+    inline given divisible: (division: DivisionByZero) => division.divideU64.type =
+      division.divideU64
     inline given canEqual: CanEqual[U64, U64] = CanEqual.derived
 
     given fromDigits: FromDigits[U64]:
@@ -266,11 +464,24 @@ object internal:
           else JLong.compareUnsigned(left, right) != 1
 
   object S64:
-    final val Min: U64 = Long.MinValue
-    final val Max: U64 = Long.MaxValue
+    final val Min: S64 = Long.MinValue
+    final val Max: S64 = Long.MaxValue
 
     // [erased-evidence] underlying evidence for S64
     inline given underlying: Underlying[S64, Long] = caps.unsafe.unsafeErasedValue
+
+    // Each instance is the policy's own object, named by its singleton type; `CheckOverflow`
+    // explains why that, rather than an instance, is what makes `+` inline to one instruction.
+    inline given addable: (overflow: CheckOverflow) => overflow.addS64.type = overflow.addS64
+
+    inline given subtractable: (overflow: CheckOverflow) => overflow.subtractS64.type =
+      overflow.subtractS64
+
+    inline given multiplicable: (overflow: CheckOverflow) => overflow.multiplyS64.type =
+      overflow.multiplyS64
+
+    inline given divisible: (division: DivisionByZero) => division.divideS64.type =
+      division.divideS64
 
     inline given canEqual: CanEqual[S64, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long |
       Int | Short | Byte] =
@@ -297,11 +508,24 @@ object internal:
         else inline if strict then (left: Long) < (right: Long) else (left: Long) <= (right: Long)
 
   object U32:
-    final val Min: U32 = Int.MinValue
-    final val Max: U32 = Int.MaxValue
+    final val Min: U32 = 0
+    final val Max: U32 = -1
 
     // [erased-evidence] underlying evidence for U32
     inline given underlying: Underlying[U32, Int] = caps.unsafe.unsafeErasedValue
+
+    // Each instance is the policy's own object, named by its singleton type; `CheckOverflow`
+    // explains why that, rather than an instance, is what makes `+` inline to one instruction.
+    inline given addable: (overflow: CheckOverflow) => overflow.addU32.type = overflow.addU32
+
+    inline given subtractable: (overflow: CheckOverflow) => overflow.subtractU32.type =
+      overflow.subtractU32
+
+    inline given multiplicable: (overflow: CheckOverflow) => overflow.multiplyU32.type =
+      overflow.multiplyU32
+
+    inline given divisible: (division: DivisionByZero) => division.divideU32.type =
+      division.divideU32
     inline given canEqual: CanEqual[U32, U32] = CanEqual.derived
 
     given fromDigits: FromDigits[U32]:
@@ -333,6 +557,19 @@ object internal:
     // [erased-evidence] underlying evidence for S32
     inline given underlying: Underlying[S32, Int] = caps.unsafe.unsafeErasedValue
 
+    // Each instance is the policy's own object, named by its singleton type; `CheckOverflow`
+    // explains why that, rather than an instance, is what makes `+` inline to one instruction.
+    inline given addable: (overflow: CheckOverflow) => overflow.addS32.type = overflow.addS32
+
+    inline given subtractable: (overflow: CheckOverflow) => overflow.subtractS32.type =
+      overflow.subtractS32
+
+    inline given multiplicable: (overflow: CheckOverflow) => overflow.multiplyS32.type =
+      overflow.multiplyS32
+
+    inline given divisible: (division: DivisionByZero) => division.divideS32.type =
+      division.divideS32
+
     inline given canEqual: CanEqual[S32, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long |
       Int | Short | Byte] =
 
@@ -358,11 +595,24 @@ object internal:
         else inline if strict then (left: Int) < (right: Int) else (left: Int) <= (right: Int)
 
   object U16:
-    final val Min: S16 = 0
-    final val Max: S16 = -1
+    final val Min: U16 = 0
+    final val Max: U16 = -1
 
     // [erased-evidence] underlying evidence for U16
     inline given underlying: Underlying[U16, Short] = caps.unsafe.unsafeErasedValue
+
+    // Each instance is the policy's own object, named by its singleton type; `CheckOverflow`
+    // explains why that, rather than an instance, is what makes `+` inline to one instruction.
+    inline given addable: (overflow: CheckOverflow) => overflow.addU16.type = overflow.addU16
+
+    inline given subtractable: (overflow: CheckOverflow) => overflow.subtractU16.type =
+      overflow.subtractU16
+
+    inline given multiplicable: (overflow: CheckOverflow) => overflow.multiplyU16.type =
+      overflow.multiplyU16
+
+    inline given divisible: (division: DivisionByZero) => division.divideU16.type =
+      division.divideU16
     inline given canEqual: CanEqual[U16, U16] = CanEqual.derived
 
     given fromDigits: FromDigits[U16]:
@@ -393,6 +643,19 @@ object internal:
 
     // [erased-evidence] underlying evidence for S16
     inline given underlying: Underlying[S16, Short] = caps.unsafe.unsafeErasedValue
+
+    // Each instance is the policy's own object, named by its singleton type; `CheckOverflow`
+    // explains why that, rather than an instance, is what makes `+` inline to one instruction.
+    inline given addable: (overflow: CheckOverflow) => overflow.addS16.type = overflow.addS16
+
+    inline given subtractable: (overflow: CheckOverflow) => overflow.subtractS16.type =
+      overflow.subtractS16
+
+    inline given multiplicable: (overflow: CheckOverflow) => overflow.multiplyS16.type =
+      overflow.multiplyS16
+
+    inline given divisible: (division: DivisionByZero) => division.divideS16.type =
+      division.divideS16
 
     inline given canEqual: CanEqual[S16,
                                     F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int |
@@ -428,6 +691,19 @@ object internal:
 
     // [erased-evidence] underlying evidence for U8
     inline given underlying: Underlying[U8, Byte] = caps.unsafe.unsafeErasedValue
+
+    // Each instance is the policy's own object, named by its singleton type; `CheckOverflow`
+    // explains why that, rather than an instance, is what makes `+` inline to one instruction.
+    inline given addable: (overflow: CheckOverflow) => overflow.addU8.type = overflow.addU8
+
+    inline given subtractable: (overflow: CheckOverflow) => overflow.subtractU8.type =
+      overflow.subtractU8
+
+    inline given multiplicable: (overflow: CheckOverflow) => overflow.multiplyU8.type =
+      overflow.multiplyU8
+
+    inline given divisible: (division: DivisionByZero) => division.divideU8.type =
+      division.divideU8
     inline given canEqual: CanEqual[U8, U8] = CanEqual.derived
 
     given fromDigits: FromDigits[U8]:
@@ -458,6 +734,19 @@ object internal:
 
     // [erased-evidence] underlying evidence for S8
     inline given underlying: Underlying[S8, Byte] = caps.unsafe.unsafeErasedValue
+
+    // Each instance is the policy's own object, named by its singleton type; `CheckOverflow`
+    // explains why that, rather than an instance, is what makes `+` inline to one instruction.
+    inline given addable: (overflow: CheckOverflow) => overflow.addS8.type = overflow.addS8
+
+    inline given subtractable: (overflow: CheckOverflow) => overflow.subtractS8.type =
+      overflow.subtractS8
+
+    inline given multiplicable: (overflow: CheckOverflow) => overflow.multiplyS8.type =
+      overflow.multiplyS8
+
+    inline given divisible: (division: DivisionByZero) => division.divideS8.type =
+      division.divideS8
 
     inline given canEqual: CanEqual[S8, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long |
       Int | Short | Byte] =
@@ -600,12 +889,6 @@ object internal:
     @targetName("powerS64")
     inline infix def ** (exponent: Double): Double = math.pow(s64.toDouble, exponent)
 
-    @targetName("divS64")
-    inline infix def / (right: Conversion.into[S64])(using division: DivisionByZero)
-    :   division.Wrap[S64] =
-
-      division.divideS64(s64, right)
-
     @targetName("modS64")
     inline infix def % (right: Conversion.into[S64]): S64 = s64%right
 
@@ -621,12 +904,6 @@ object internal:
       recur(s64, right)
 
   extension (s32: S32)
-    @targetName("plusS32")
-    inline infix def + (right: Conversion.into[S32])(using overflow: CheckOverflow)
-    :   overflow.Wrap[S32] =
-
-      overflow.addS32(s32, right)
-
     @targetName("intS32")
     inline def int: Int = s32
 
@@ -657,12 +934,6 @@ object internal:
     @targetName("floorDivS32")
     inline infix def /- (right: Conversion.into[S32]): S32 = math.floorDiv(s32, right)
 
-    @targetName("divS32")
-    inline infix def / (right: Conversion.into[S32])(using division: DivisionByZero)
-    :   division.Wrap[S32] =
-
-      division.divideS32(s32, right)
-
     @targetName("modS32")
     inline infix def % (right: Conversion.into[S32]): S32 = s32%right
 
@@ -678,12 +949,6 @@ object internal:
       recur(s32, right)
 
   extension (s16: S16)
-    @targetName("plusS16")
-    inline infix def + (right: Conversion.into[S16])(using overflow: CheckOverflow)
-    :   overflow.Wrap[S16] =
-
-      overflow.addS16(s16, right)
-
     @targetName("shortS16")
     inline def short: Short = s16
 
@@ -717,12 +982,6 @@ object internal:
     @targetName("floorDivS16")
     inline infix def /- (right: Conversion.into[S16]): S16 = math.floorDiv(s16, right).toShort
 
-    @targetName("divS16")
-    inline infix def / (right: Conversion.into[S16])(using division: DivisionByZero)
-    :   division.Wrap[S16] =
-
-      division.divideS16(s16, right)
-
     @targetName("modS16")
     inline infix def % (right: Conversion.into[S16]): S16 = (s16%right).toShort
 
@@ -738,12 +997,6 @@ object internal:
       recur(s16, right)
 
   extension (s8: S8)
-    @targetName("plusS8")
-    inline infix def + (right: Conversion.into[S8])(using overflow: CheckOverflow)
-    :   overflow.Wrap[S8] =
-
-      overflow.addS8(s8, right)
-
     @targetName("byteS8")
     inline def byte: Byte = s8
 
@@ -779,12 +1032,6 @@ object internal:
 
     @targetName("floorDivS8")
     inline infix def /- (right: Conversion.into[S8]): S8 = math.floorDiv(s8, right).toByte
-
-    @targetName("divS8")
-    inline infix def / (right: Conversion.into[S8])(using division: DivisionByZero)
-    :   division.Wrap[S8] =
-
-      division.divideS8(s8, right)
 
     @targetName("modS8")
     inline infix def % (right: Conversion.into[S8]): S8 = (s8%right).toByte
@@ -1195,21 +1442,6 @@ object internal:
     @targetName("powerF64")
     inline infix def ** (exponent: Conversion.into[F64]): F64 = math.pow(f64, exponent)
 
-    @targetName("plusF64")
-    inline infix def + (right: Conversion.into[F64]): F64 = f64 + right
-
-    @targetName("minusF64")
-    inline infix def - (right: Conversion.into[F64]): F64 = f64 - right
-
-    @targetName("timesF64")
-    inline infix def * (right: Conversion.into[F64]): F64 = f64*right
-
-    @targetName("divF64")
-    inline infix def / (right: Conversion.into[F64]): F64 = f64/right
-
-    @targetName("unaryMinusF64")
-    inline def `unary_-`: F64 = -f64
-
     @targetName("mantissaF64")
     inline def mantissa: B64 = bits & 0xfffffffffffffL
 
@@ -1280,21 +1512,6 @@ object internal:
     @targetName("powerF32")
     inline infix def ** (exponent: Conversion.into[F32]): F32 = math.pow(f32, exponent).toFloat
 
-    @targetName("plusF32")
-    inline infix def + (right: Conversion.into[F32]): F32 = f32 + right
-
-    @targetName("plusF32")
-    inline infix def - (right: Conversion.into[F32]): F32 = f32 - right
-
-    @targetName("timesF32")
-    inline infix def * (right: Conversion.into[F32]): F32 = f32*right
-
-    @targetName("divF32")
-    inline infix def / (right: Conversion.into[F32]): F32 = f32/right
-
-    @targetName("unaryMinusF32")
-    inline def `unary_-`: F32 = -f32
-
     @targetName("absF32")
     inline def abs: F32 = math.abs(float)
 
@@ -1356,15 +1573,6 @@ object internal:
     @targetName("bitsU64")
     inline def bits: B64 = u64
 
-    @targetName("plusU64")
-    inline infix def + (right: Conversion.into[U64]): U64 = u64 + right
-
-    @targetName("minusU64")
-    inline infix def - (right: Conversion.into[U64]): U64 = u64 - right
-
-    @targetName("timesU64")
-    inline infix def * (right: Conversion.into[U64]): U64 = u64*right
-
     @targetName("textU64")
     inline def text: Text = JLong.toUnsignedString(u64).nn.tt
 
@@ -1380,12 +1588,6 @@ object internal:
     @targetName("binaryU64")
     inline def binary: Text = JLong.toUnsignedString(u64, 2).nn.tt
 
-    @targetName("divU64")
-    inline infix def / (right: Conversion.into[U64])(using division: DivisionByZero)
-    :   division.Wrap[U64] =
-
-      division.divideU64(u64, right)
-
     @targetName("modU64")
     inline infix def % (right: Conversion.into[U64]): U64 = JLong.remainderUnsigned(u64, right)
 
@@ -1397,20 +1599,8 @@ object internal:
       recur(u64, right)
 
   extension (u32: U32)
-    @targetName("plusU32")
-    inline infix def + (right: Conversion.into[U32])(using overflow: CheckOverflow)
-    :   overflow.Wrap[U32] =
-
-      overflow.addU32(u32, right)
-
     @targetName("bitsU32")
     inline def bits: B32 = u32
-
-    @targetName("minuseU32")
-    inline infix def - (right: Conversion.into[U32]): U32 = u32 - right
-
-    @targetName("timesU32")
-    inline infix def * (right: Conversion.into[U32]): U32 = u32*right
 
     @targetName("textU32")
     inline def text: Text = JInt.toUnsignedString(u32).nn.tt
@@ -1430,12 +1620,6 @@ object internal:
     @targetName("longU32")
     inline def long: Long = JInt.toUnsignedLong(u32)
 
-    @targetName("divU32")
-    inline infix def / (right: Conversion.into[U32])(using division: DivisionByZero)
-    :   division.Wrap[U32] =
-
-      division.divideU32(u32, right)
-
     @targetName("modU32")
     inline infix def % (right: Conversion.into[U32]): U32 = JInt.remainderUnsigned(u32, right)
 
@@ -1453,20 +1637,8 @@ object internal:
       recur(u32, right)
 
   extension (u16: U16)
-    @targetName("plusU16")
-    inline infix def + (right: Conversion.into[U16])(using overflow: CheckOverflow)
-    :   overflow.Wrap[U16] =
-
-      overflow.addU16(u16, right)
-
     @targetName("bitsU16")
     inline def bits: B16 = u16
-
-    @targetName("minuseU16")
-    inline infix def - (right: Conversion.into[U16]): U16 = (u16 - right).toShort
-
-    @targetName("timesU16")
-    inline infix def * (right: Conversion.into[U16]): U16 = (u16*right).toShort
 
     @targetName("textU16")
     inline def text: Text = JInt.toUnsignedString(JShort.toUnsignedInt(u16)).nn.tt
@@ -1488,12 +1660,6 @@ object internal:
 
     @targetName("intU16")
     inline def int: Int = JShort.toUnsignedInt(u16)
-
-    @targetName("divU16")
-    inline infix def / (right: Conversion.into[U16])(using division: DivisionByZero)
-    :   division.Wrap[U16] =
-
-      division.divideU16(u16, right)
 
     @targetName("modU16")
     inline infix def % (right: Conversion.into[U16]): U16 =
@@ -1520,20 +1686,8 @@ object internal:
       recur(u16, right)
 
   extension (u8: U8)
-    @targetName("plusU8")
-    inline infix def + (right: Conversion.into[U8])(using overflow: CheckOverflow)
-    :   overflow.Wrap[U8] =
-
-      overflow.addU8(u8, right)
-
     @targetName("bitsU8")
     inline def bits: B8 = u8
-
-    @targetName("minusU8")
-    inline infix def - (right: Conversion.into[U8]): U8 = (u8 - right).toByte
-
-    @targetName("timesU8")
-    inline infix def * (right: Conversion.into[U8]): U8 = (u8*right).toByte
 
     @targetName("textU8")
     inline def text: Text = JInt.toUnsignedString(JByte.toUnsignedInt(u8)).nn.tt
@@ -1558,12 +1712,6 @@ object internal:
 
     @targetName("intU8")
     inline def short: Short = JByte.toUnsignedInt(u8).toShort
-
-    @targetName("divU8")
-    inline infix def / (right: Conversion.into[U8])(using division: DivisionByZero)
-    :   division.Wrap[U8] =
-
-      division.divideU8(u8, right)
 
     @targetName("modU8")
     inline infix def % (right: Conversion.into[U8]): U8 = JInt.remainderUnsigned(u8, right).toByte
