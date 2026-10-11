@@ -92,6 +92,86 @@ object Scribe:
   private[rudiments] def growing[element](buffer: scala.Array[element]): Scribe[element] =
     new Core(buffer.asInstanceOf[AnyRef], true)
 
+  // The LEB128 length of `value`, read as an unsigned 64-bit quantity: 1 to 10 bytes.
+  def varintLength(value: Long): Int =
+    (63 - java.lang.Long.numberOfLeadingZeros(value | 1))/7 + 1
+
+  // Writes `value` as LEB128 at `from`, returning the position after it; the caller has
+  // checked `varintLength(value)` bytes of room.
+  @scala.annotation.tailrec
+  def varintInto(target: scala.Array[Byte]^, from: Int, value: Long): Int =
+    if (value & ~0x7fL) == 0L then
+      target(from) = value.toByte
+      from + 1
+    else
+      target(from) = ((value & 0x7f) | 0x80).toByte
+      varintInto(target, from + 1, value >>> 7)
+
+  // The length of `string`'s UTF-8 encoding, without encoding it: counted char by char, a
+  // surrogate pair being one four-byte sequence and a lone surrogate the one byte of its
+  // replacement, `?`, as the JDK's encoder substitutes.
+  def utf8Length(string: String): Int = utf8Length(string, 0, 0)
+
+  @scala.annotation.tailrec
+  private def utf8Length(string: String, index: Int, total: Int): Int =
+    if index >= string.length then total else
+      val char = string.charAt(index)
+
+      if char < 0x80 then utf8Length(string, index + 1, total + 1)
+      else if char < 0x800 then utf8Length(string, index + 1, total + 2)
+      else if Character.isHighSurrogate(char) && index + 1 < string.length
+        && Character.isLowSurrogate(string.charAt(index + 1))
+      then utf8Length(string, index + 2, total + 4)
+      else if Character.isSurrogate(char) then utf8Length(string, index + 1, total + 1)
+      else utf8Length(string, index + 1, total + 3)
+
+  // Encodes `string` as UTF-8 at `from`, returning the position after it; the caller has
+  // checked `utf8Length(string)` bytes of room. A lone surrogate encodes as `?`, as the
+  // JDK's encoder substitutes. ASCII — the common case — runs in a loop of its own, small
+  // enough for the JIT to inline the char reads into; the general encoder takes over at the
+  // first other char.
+  @scala.annotation.tailrec
+  def utf8Into(target: scala.Array[Byte]^, from: Int, string: String, index: Int): Int =
+    if index >= string.length then from else
+      val char = string.charAt(index)
+
+      if char < 0x80 then
+        target(from) = char.toByte
+        utf8Into(target, from + 1, string, index + 1)
+      else utf8IntoGeneral(target, from, string, index)
+
+  @scala.annotation.tailrec
+  private def utf8IntoGeneral(target: scala.Array[Byte]^, from: Int, string: String, index: Int)
+  :   Int =
+
+    if index >= string.length then from else
+      val char = string.charAt(index)
+
+      if char < 0x80 then
+        target(from) = char.toByte
+        utf8IntoGeneral(target, from + 1, string, index + 1)
+      else if char < 0x800 then
+        target(from) = (0xc0 | (char >> 6)).toByte
+        target(from + 1) = (0x80 | (char & 0x3f)).toByte
+        utf8IntoGeneral(target, from + 2, string, index + 1)
+      else if Character.isHighSurrogate(char) && index + 1 < string.length
+        && Character.isLowSurrogate(string.charAt(index + 1))
+      then
+        val codepoint = Character.toCodePoint(char, string.charAt(index + 1))
+        target(from) = (0xf0 | (codepoint >> 18)).toByte
+        target(from + 1) = (0x80 | ((codepoint >> 12) & 0x3f)).toByte
+        target(from + 2) = (0x80 | ((codepoint >> 6) & 0x3f)).toByte
+        target(from + 3) = (0x80 | (codepoint & 0x3f)).toByte
+        utf8IntoGeneral(target, from + 4, string, index + 2)
+      else if Character.isSurrogate(char) then
+        target(from) = '?'.toByte
+        utf8IntoGeneral(target, from + 1, string, index + 1)
+      else
+        target(from) = (0xe0 | (char >> 12)).toByte
+        target(from + 1) = (0x80 | ((char >> 6) & 0x3f)).toByte
+        target(from + 2) = (0x80 | (char & 0x3f)).toByte
+        utf8IntoGeneral(target, from + 3, string, index + 1)
+
   // Doubling, so appending n elements costs O(n) rather than O(n²). Only reached from a
   // growable scribe.
   private[rudiments] def reserve[element: ClassTag](core: Core, extra: Int): Unit =
@@ -186,6 +266,27 @@ object Scribe:
         ( source.asInstanceOf[scala.Array[element]], 0, target, ordinal.n0, count )
 
       count
+
+// Bulk writes for the byte scribes behind binary formats: a value is written with one capacity
+// check rather than one per byte, which is what the per-byte `append` costs a varint or a
+// string. The exact-size scribe (`Array.scribe`) clamps as `append` does: a value that does
+// not fit is dropped whole.
+extension (scribe: Scribe[Byte])
+  // A LEB128 varint of `value` as an unsigned 64-bit quantity: one to ten bytes.
+  inline def appendVarint(value: Long): Unit =
+    val core = scribe.asInstanceOf[Scribe.Core]
+    val count = Scribe.varintLength(value)
+    if core.growable then Scribe.reserve[Byte](core, count)
+    val target = core.buffer.asInstanceOf[scala.Array[Byte]^]
+    if core.mark + count <= target.length then core.mark = Scribe.varintInto(target, core.mark, value)
+
+  // The UTF-8 encoding of `string`, encoded straight into the buffer: no intermediate array.
+  inline def appendUtf8(string: String): Unit =
+    val core = scribe.asInstanceOf[Scribe.Core]
+    val count = Scribe.utf8Length(string)
+    if core.growable then Scribe.reserve[Byte](core, count)
+    val target = core.buffer.asInstanceOf[scala.Array[Byte]^]
+    if core.mark + count <= target.length then core.mark = Scribe.utf8Into(target, core.mark, string, 0)
 
 extension (companion: Array.type)
   // Allocate, lend, freeze — with no size given, so the scribe grows as it is written and the

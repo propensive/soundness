@@ -260,13 +260,13 @@ object Inlinable:
     override def measure(value: Expr[Text], sizes: Expr[AnyRef])(using Quotes, Type[Text])
     :   Expr[Int] =
 
-      '{val bytes = ProtobufPrinter.utf8($value.s); ProtobufSizes.of($sizes).stash(bytes.asInstanceOf[AnyRef]); bytes.length}
+      '{ProtobufSizes.of($sizes).stashText($value.s)}
 
     override def write(value: Expr[Text], printer: Expr[AnyRef], sizes: Expr[AnyRef])
       ( using Quotes, Type[Text] )
     :   Expr[Unit] =
 
-      '{ProtobufPrinter.of($printer).raw(ProtobufSizes.of($sizes).unstash().asInstanceOf[Data])}
+      '{ProtobufPrinter.of($printer).stashedText(ProtobufSizes.of($sizes))}
 
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Text]): Expr[Text] =
       '{$reader.text()}

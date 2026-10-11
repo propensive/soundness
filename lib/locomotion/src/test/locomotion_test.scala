@@ -646,6 +646,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
          Scalars(-7, 1L << 40, true, 2.5, -1.5f, t"text", Array[Byte](1, 2, 3)) )
 
       same(m"text beyond ASCII is UTF-8", Person(t"héllo 😀 — ✓", 1))
+      same(m"a lone surrogate encodes as the JDK substitutes", Person(("a\ud83dz").tt, 1))
       same(m"packed doubles", Doubles(List(0.0, 1.5, -2.25)))
       same(m"a oneof in a field position: first variant", Shaped(t"c", Shape.Circle(3)))
       same(m"a oneof in a field position: last variant", Shaped(t"r", Shape.Rectangle(2, 3)))

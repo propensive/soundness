@@ -1271,9 +1271,8 @@ object stagedInternal:
 
       case KText =>
         ' {
-            val bytes = ProtobufPrinter.utf8(${value.asExprOf[Text]}.s)
-            ProtobufSizes.of($sizes).stash(bytes.asInstanceOf[AnyRef])
-            ProtobufPrinter.varintSize(bytes.length.toLong) + bytes.length
+            val length = ProtobufSizes.of($sizes).stashText(${value.asExprOf[Text]}.s)
+            ProtobufPrinter.varintSize(length.toLong) + length
           }
 
       case KData =>
@@ -1308,7 +1307,7 @@ object stagedInternal:
           }
 
       case KText =>
-        '{ProtobufPrinter.of($printer).chunk(ProtobufSizes.of($sizes).unstash().asInstanceOf[Data])}
+        '{ProtobufPrinter.of($printer).stashedText(ProtobufSizes.of($sizes))}
 
       case KData =>
         '{ProtobufPrinter.of($printer).chunk(${value.asExprOf[Data]})}

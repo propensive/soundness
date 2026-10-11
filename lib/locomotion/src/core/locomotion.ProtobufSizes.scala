@@ -43,25 +43,57 @@ object ProtobufSizes:
   // generated printers spliced into user modules; inline for the reason `ProtobufParser.of` is.
   inline def of(carrier: AnyRef): ProtobufSizes^ = carrier.asInstanceOf[ProtobufSizes^]
 
+  // One table per thread, reused by every `print` on it, so a print allocates nothing but
+  // its output. A print that finds the thread's table in use — a seam's `Encodable` printing
+  // a nested message through its own `Printable` — takes a fresh one.
+  // Held as a neutral carrier, as a registry holds a handle: the capability is reasserted at
+  // `acquire`, the one point a table is reached from, and only by the `print` that holds it
+  // until `release`.
+  private val local: ThreadLocal[AnyRef] =
+    ThreadLocal.withInitial(() => ProtobufSizes().asInstanceOf[AnyRef]).nn
+
+  private[locomotion] def acquire(): ProtobufSizes^ =
+    val table = local.get.nn.asInstanceOf[ProtobufSizes^]
+    if table.busy then ProtobufSizes() else
+      table.busy = true
+      table
+
+  private[locomotion] def release(table: ProtobufSizes^): Unit = table.reset()
+
 // The lengths a direct printer measures before it writes: every length-delimited value — a
 // nested message, a string, a packed run — needs its size as a prefix, so a `Protobuf.Printable`
 // measures a value in one pass, recording each such size here in the order it is visited, and
 // writes it in a second pass, reading the sizes back in the same order. A nested message's slot
 // is reserved before its children are measured and filled after, so the table is in pre-order
 // on both passes. (protobuf-java memoizes the size on each message object; a case class has
-// nowhere to keep one.) What the measuring pass produces and the writing pass needs — a
-// string's UTF-8 bytes, a wire value a seam encoded — is stashed alongside, in the same order.
+// nowhere to keep one.) What the measuring pass produces and the writing pass needs is kept
+// alongside, in the same order: a string is encoded once, into the table's byte scratch, and
+// copied out by the writing pass (`stashText`/`ProtobufPrinter.stashedText`); a wire value a
+// seam encoded is stashed as a reference.
 //
 // A stateful capability, as the parser is: owned by one `print` call for its duration.
 @unexported
 final class ProtobufSizes() extends caps.ExclusiveCapability, caps.Stateful:
   // The raw JVM arrays appear here only, as the parser's buffer does: growable cursor storage.
   private var sizes:    scala.Array[Int]    = new scala.Array[Int](32)
-  private var stashes:  scala.Array[AnyRef] = new scala.Array[AnyRef](16)
+  private var stashes:  scala.Array[AnyRef | Null] = new scala.Array[AnyRef | Null](16)
+  private var scratch:  scala.Array[Byte] = new scala.Array[Byte](256)
+  private var used:     Int = 0
   private var count:    Int = 0
   private var position: Int = 0
   private var stashed:  Int = 0
   private var taken:    Int = 0
+  private var busy:     Boolean = false
+
+  // Empties the table for its next print, dropping the references it stashed.
+  private update def reset(): Unit =
+    java.util.Arrays.fill(stashes, 0, stashed, null)
+    used = 0
+    count = 0
+    position = 0
+    stashed = 0
+    taken = 0
+    busy = false
 
   // A slot for a size known only after its children are measured; `set` fills it.
   update def reserve(): Int =
@@ -91,16 +123,40 @@ final class ProtobufSizes() extends caps.ExclusiveCapability, caps.Stateful:
     position += 1
     size
 
+  // Encodes `string` into the scratch, recording where and how long, and returns its encoded
+  // length; three bytes per char is the most UTF-8 needs (a surrogate pair's four cover two).
+  update def stashText(string: String): Int =
+    val room = used + 3*string.length
+
+    if room > scratch.length then
+      val bigger = new scala.Array[Byte](room.max(scratch.length*2))
+      System.arraycopy(scratch, 0, bigger, 0, used)
+      scratch = bigger
+
+    val end = Scribe.utf8Into(scratch.asInstanceOf[scala.Array[Byte]^], used, string, 0)
+    val length = end - used
+    record(used)
+    record(length)
+    used = end
+    length
+
+  // The next stashed string's bytes, as the scratch's own array with its offset and length:
+  // for `ProtobufPrinter.stashedText`, which copies them out.
+  private[locomotion] update def unstashText(copy: (scala.Array[Byte], Int, Int) => Unit): Unit =
+    val offset = next()
+    val length = next()
+    copy(scratch, offset, length)
+
   update def stash(value: AnyRef): Unit =
     if stashed == stashes.length then
-      val bigger = new scala.Array[AnyRef](stashed*2)
+      val bigger = new scala.Array[AnyRef | Null](stashed*2)
       System.arraycopy(stashes, 0, bigger, 0, stashed)
       stashes = bigger
 
-    stashes.asInstanceOf[scala.Array[AnyRef]^](stashed) = value
+    stashes.asInstanceOf[scala.Array[AnyRef | Null]^](stashed) = value
     stashed += 1
 
   update def unstash(): AnyRef =
-    val value = stashes(taken)
+    val value = stashes(taken).nn
     taken += 1
     value

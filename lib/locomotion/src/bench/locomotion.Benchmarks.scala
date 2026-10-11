@@ -687,3 +687,11 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
             locomotion.Benchmarks.value3.in[Protobuf].encode
         }
+
+      profile(m"Encode 1000 repeated strings directly")(target = 5*Second):
+        '{
+            given (Tags is Encodable in Protobuf) =
+              Protobuf.encodablePrinted(using locomotion.tagsPrintable)
+
+            locomotion.Benchmarks.value8.in[Protobuf].encode
+        }

@@ -288,10 +288,13 @@ object Protobuf extends Protobuf2:
     // A message's wire bytes through its `Printable`: measured, then written once into an
     // array of exactly that size.
     def print[value](value: value)(using printable: (value is Protobuf.Printable)^): Data =
-      val sizes = ProtobufSizes()
+      val sizes = ProtobufSizes.acquire()
       val size = printable.measure(value, sizes)
       sizes.rewind()
-      sized(size): printer => printable.write(value, printer, sizes)
+
+      sized(size): printer =>
+        printable.write(value, printer, sizes)
+        ProtobufSizes.release(sizes)
 
   // The direct-printing counterpart of `Encodable in Protobuf`: writes a value's fields
   // straight into the output array through a `ProtobufPrinter`, in two passes — `measure`
@@ -365,6 +368,16 @@ object Protobuf extends Protobuf2:
         val moved: AnyRef = stream.asInstanceOf[AnyRef]
         parseDirect(ProtobufParser(moved.asInstanceOf[(Stream[Data] over Credit)^]), parsable)
         . asInstanceOf[value in Protobuf]
+
+  // A chain already in hand — `Chain(bytes).read[…]`, the common in-memory read — goes to
+  // its `Aggregable`'s own `aggregate`, which reads a single block in place, rather than
+  // through a stream over the chain, as the generic composed `Readable` would route it.
+  // Concrete in `Chain[Data]`, so it beats the composed pipeline by specificity.
+  given chainReadable: [value]
+  =>  ( aggregable: ((value in Protobuf) is Aggregable by Data)^ )
+  =>  ( (Chain[Data] is Readable to (value in Protobuf))^{aggregable} ) =
+
+    (chain: Chain[Data]) => aggregable.aggregate(chain)
 
   // Whole-`Data` direct read: when the entire content is already in hand,
   // parse it in place rather than wrapping it in a one-element stream.
