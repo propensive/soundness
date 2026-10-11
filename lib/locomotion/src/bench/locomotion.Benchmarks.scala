@@ -180,6 +180,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
   lazy val bytes7: Data = value7.in[Protobuf].encode
 
+  // Corpus 8: 1000 short strings in a repeated (unpacked) field — a length-delimited
+  // element per occurrence with no message framing, the shape of a tag list.
+  lazy val value8: Tags = Tags(List.tabulate(1000)(index => t"tag-$index"))
+
+  lazy val bytes8: Data = value8.in[Protobuf].encode
+
   // Corpus 7 split into 4 KiB chunks, as a transport would deliver it: a strict chain of
   // distinct segments for the Locomotion rows, and the same segments as a `List` for
   // protobuf-java, which reads them through a `SequenceInputStream`.
@@ -224,6 +230,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   lazy val raw4: scala.Array[Byte] = bytes4.asInstanceOf[scala.Array[Byte]]
   lazy val raw5: scala.Array[Byte] = bytes5.asInstanceOf[scala.Array[Byte]]
   lazy val raw6: scala.Array[Byte] = bytes6.asInstanceOf[scala.Array[Byte]]
+  lazy val raw8: scala.Array[Byte] = bytes8.asInstanceOf[scala.Array[Byte]]
 
   def run(): Unit =
     val bench = Bench()
@@ -236,6 +243,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     val size5 = bytes5.length*Byte
     val size6 = bytes6.length*Byte
     val size7 = bytes7.length*Byte
+    val size8 = bytes8.length*Byte
 
     // -------------------------------------------------------------------------
     // Decode. Each corpus is decoded two ways: Locomotion typed decode (the
@@ -249,6 +257,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
       bench(m"Decode (typed) with Locomotion")
         ( target = 1*Second, operationSize = size1 ):
         '{ Chain(locomotion.Benchmarks.bytes1).read[Small in Protobuf] }
+
+      bench(m"Decode directly with Locomotion")(target = 1*Second, operationSize = size1):
+        '{
+            given Small is Protobuf.Parsable = locomotion.smallParsable
+            Chain(locomotion.Benchmarks.bytes1).read[Small in Protobuf]
+        }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size1):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw1) }
@@ -286,6 +300,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
         ( target = 1*Second, operationSize = size4 ):
         '{ Chain(locomotion.Benchmarks.bytes4).read[Ints in Protobuf] }
 
+      bench(m"Decode directly with Locomotion")(target = 1*Second, operationSize = size4):
+        '{
+            given Ints is Protobuf.Parsable = locomotion.intsParsable
+            Chain(locomotion.Benchmarks.bytes4).read[Ints in Protobuf]
+        }
+
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size4):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw4) }
 
@@ -294,8 +314,30 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
         ( target = 1*Second, operationSize = size5 ):
         '{ Chain(locomotion.Benchmarks.bytes5).read[Attributes in Protobuf] }
 
+      // A map stays on the seam by design (its wire form is a repeated entry message), so
+      // this row measures the seam's cost rather than a gathered field.
+      bench(m"Decode directly with Locomotion")(target = 1*Second, operationSize = size5):
+        '{
+            given Attributes is Protobuf.Parsable = locomotion.attributesParsable
+            Chain(locomotion.Benchmarks.bytes5).read[Attributes in Protobuf]
+        }
+
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size5):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw5) }
+
+    suite(m"Decode 1000 repeated strings"):
+      bench(m"Decode (typed) with Locomotion")
+        ( target = 1*Second, operationSize = size8 ):
+        '{ Chain(locomotion.Benchmarks.bytes8).read[Tags in Protobuf] }
+
+      bench(m"Decode directly with Locomotion")(target = 1*Second, operationSize = size8):
+        '{
+            given Tags is Protobuf.Parsable = locomotion.tagsParsable
+            Chain(locomotion.Benchmarks.bytes8).read[Tags in Protobuf]
+        }
+
+      bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size8):
+        '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw8) }
 
     suite(m"Decode 5-level nested message"):
       bench(m"Decode (typed) with Locomotion")
@@ -438,6 +480,21 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
             cos.writeTag(1, com.google.protobuf.WireFormat.WIRETYPE_LENGTH_DELIMITED)
             cos.writeUInt32NoTag(packed.length)
             cos.writeRawBytes(packed)
+            cos.flush()
+            out.toByteArray.nn
+        }
+
+    suite(m"Encode 1000 repeated strings"):
+      bench(m"Encode with Locomotion")
+        ( target = 1*Second, operationSize = size8 ):
+        '{ locomotion.Benchmarks.value8.in[Protobuf].encode }
+
+      bench(m"Encode with protobuf-java")(target = 1*Second, operationSize = size8):
+        '{
+            val out = new _root_.java.io.ByteArrayOutputStream(16384)
+            val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
+            var index = 0
+            while index < 1000 do { cos.writeString(1, s"tag-$index"); index += 1 }
             cos.flush()
             out.toByteArray.nn
         }
