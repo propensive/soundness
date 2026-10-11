@@ -129,6 +129,22 @@ arrives whole, and the memory held is bounded by the one field being read — ex
 oneof, whose message is held while its variant is chosen. A `read[Protobuf]`, by contrast, reads
 the whole message into memory, since a `Protobuf` value is its bytes.
 
+### Printing directly
+
+The same derivation generates the writing side. A `Protobuf.Printable` instance writes a value's
+fields straight into the output array — in two passes, one measuring every nested length and one
+writing — so no field is encoded into an intermediate `Protobuf` value and no nested message is
+encoded and then copied into its parent. With one in scope, `in[Protobuf]` uses it:
+
+```scala
+given (Person is Protobuf.Printable) = Inlinable.printable[Person]
+
+Person(t"Ada", 36).in[Protobuf].encode   // the same bytes, written once
+```
+
+The bytes are exactly those the derived encoding writes, so a message may be printed directly
+on one side of a connection and decoded through the `Protobuf` value on the other.
+
 ### Compatibility
 
 Compatibility with `protoc` is by construction and by test: the canonical example message from the

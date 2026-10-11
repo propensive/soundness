@@ -126,6 +126,17 @@ val tagsParsable:       Tags is Protobuf.Parsable       = Inlinable.parsable[Tag
 val attributesParsable: Attributes is Protobuf.Parsable = Inlinable.parsable[Attributes]
 val deep1Parsable:      Deep1 is Protobuf.Parsable      = Inlinable.parsable[Deep1]
 
+// Generated direct printers, likewise: the "Encode with Locomotion" rows resolve the derived
+// `Encodable` (the `Protobuf` ADT path), and the direct rows bring one of these into scope
+// through `Protobuf.encodablePrinted` inside the staged body.
+val smallPrintable:      Small is Protobuf.Printable      = Inlinable.printable[Small]
+val usersPrintable:      Users is Protobuf.Printable      = Inlinable.printable[Users]
+val logsPrintable:       Logs is Protobuf.Printable       = Inlinable.printable[Logs]
+val intsPrintable:       Ints is Protobuf.Printable       = Inlinable.printable[Ints]
+val tagsPrintable:       Tags is Protobuf.Printable       = Inlinable.printable[Tags]
+val attributesPrintable: Attributes is Protobuf.Printable = Inlinable.printable[Attributes]
+val deep1Printable:      Deep1 is Protobuf.Printable      = Inlinable.printable[Deep1]
+
 // A hand-written streaming consumer with a tiny live set: counts the occurrences of field 1
 // (the `Logs.logs` entries) without decoding any of them, so a constrained-heap stress run over
 // a large message measures the parser's buffering alone, not the decoded value.

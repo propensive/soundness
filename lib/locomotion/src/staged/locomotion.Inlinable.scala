@@ -46,6 +46,11 @@ object Inlinable:
   inline def parsable[value]: value is Protobuf.Parsable =
     ${locomotion.stagedInternal.inlinableParsable[value]}
 
+  // The writing counterpart: a monomorphic `Protobuf.Printable` that measures and writes a
+  // message's fields straight into the output array, composed through the same instances.
+  inline def printable[value]: value is Protobuf.Printable =
+    ${locomotion.stagedInternal.inlinablePrintable[value]}
+
   // The structural instance for a case-class message: reflects `Self` when
   // invoked (no macro — `Type[Self]` arrives with the call).
   def derived[product]: product is Inlinable = ProductInlinable[product]()
@@ -71,6 +76,19 @@ object Inlinable:
 
       delegate0.absent(tactic)
 
+    override def prints: Boolean = delegate0.prints
+
+    override def measure(value: Expr[value], sizes: Expr[AnyRef])(using Quotes, Type[value])
+    :   Expr[Int] =
+
+      delegate0.measure(value, sizes)
+
+    override def write(value: Expr[value], printer: Expr[AnyRef], sizes: Expr[AnyRef])
+      ( using Quotes, Type[value] )
+    :   Expr[Unit] =
+
+      delegate0.write(value, printer, sizes)
+
   private[locomotion] final class ProductInlinable[product]() extends Inlinable:
     type Self = product
 
@@ -81,6 +99,19 @@ object Inlinable:
     :   Expr[product] =
 
       stagedInternal.productAbsent[product](tactic)
+
+    override def prints: Boolean = true
+
+    override def measure(value: Expr[product], sizes: Expr[AnyRef])(using Quotes, Type[product])
+    :   Expr[Int] =
+
+      stagedInternal.productMeasure[product](value, sizes)
+
+    override def write(value: Expr[product], printer: Expr[AnyRef], sizes: Expr[AnyRef])
+      ( using Quotes, Type[product] )
+    :   Expr[Unit] =
+
+      stagedInternal.productWrite[product](value, printer, sizes)
 
   // A marker in the resolution ladder: repeated fields gather across the
   // whole message (occurrences may be scattered and packed), so collection
@@ -108,6 +139,19 @@ object Inlinable:
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[sum]): Expr[sum] =
       stagedInternal.sumBody[sum](reader)
 
+    override def prints: Boolean = true
+
+    override def measure(value: Expr[sum], sizes: Expr[AnyRef])(using Quotes, Type[sum])
+    :   Expr[Int] =
+
+      stagedInternal.sumMeasure[sum](value, sizes)
+
+    override def write(value: Expr[sum], printer: Expr[AnyRef], sizes: Expr[AnyRef])
+      ( using Quotes, Type[sum] )
+    :   Expr[Unit] =
+
+      stagedInternal.sumWrite[sum](value, printer, sizes)
+
   // ── Instances ──────────────────────────────────────────────────────────
   // The leaf generators read the reader's window exactly as the AST
   // accessors interpret a field's recorded payload, for hand-written
@@ -116,11 +160,37 @@ object Inlinable:
   given int: (Int is Inlinable) = new Inlinable:
     type Self = Int
 
+    override def prints: Boolean = true
+
+    override def measure(value: Expr[Int], sizes: Expr[AnyRef])(using Quotes, Type[Int])
+    :   Expr[Int] =
+
+      '{ProtobufPrinter.varintSize($value.toLong)}
+
+    override def write(value: Expr[Int], printer: Expr[AnyRef], sizes: Expr[AnyRef])
+      ( using Quotes, Type[Int] )
+    :   Expr[Unit] =
+
+      '{ProtobufPrinter.of($printer).varint($value.toLong)}
+
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Int]): Expr[Int] =
       '{$reader.varint().toInt}
 
   given long: (Long is Inlinable) = new Inlinable:
     type Self = Long
+
+    override def prints: Boolean = true
+
+    override def measure(value: Expr[Long], sizes: Expr[AnyRef])(using Quotes, Type[Long])
+    :   Expr[Int] =
+
+      '{ProtobufPrinter.varintSize($value)}
+
+    override def write(value: Expr[Long], printer: Expr[AnyRef], sizes: Expr[AnyRef])
+      ( using Quotes, Type[Long] )
+    :   Expr[Unit] =
+
+      '{ProtobufPrinter.of($printer).varint($value)}
 
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Long]): Expr[Long] =
       '{$reader.varint()}
@@ -128,11 +198,37 @@ object Inlinable:
   given boolean: (Boolean is Inlinable) = new Inlinable:
     type Self = Boolean
 
+    override def prints: Boolean = true
+
+    override def measure(value: Expr[Boolean], sizes: Expr[AnyRef])(using Quotes, Type[Boolean])
+    :   Expr[Int] =
+
+      Expr(1)
+
+    override def write(value: Expr[Boolean], printer: Expr[AnyRef], sizes: Expr[AnyRef])
+      ( using Quotes, Type[Boolean] )
+    :   Expr[Unit] =
+
+      '{ProtobufPrinter.of($printer).varint(if $value then 1L else 0L)}
+
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Boolean]): Expr[Boolean] =
       '{$reader.varint() != 0L}
 
   given double: (Double is Inlinable) = new Inlinable:
     type Self = Double
+
+    override def prints: Boolean = true
+
+    override def measure(value: Expr[Double], sizes: Expr[AnyRef])(using Quotes, Type[Double])
+    :   Expr[Int] =
+
+      Expr(8)
+
+    override def write(value: Expr[Double], printer: Expr[AnyRef], sizes: Expr[AnyRef])
+      ( using Quotes, Type[Double] )
+    :   Expr[Unit] =
+
+      '{ProtobufPrinter.of($printer).fixed64(java.lang.Double.doubleToLongBits($value))}
 
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Double]): Expr[Double] =
       '{java.lang.Double.longBitsToDouble($reader.fixed64())}
@@ -140,17 +236,56 @@ object Inlinable:
   given float: (Float is Inlinable) = new Inlinable:
     type Self = Float
 
+    override def prints: Boolean = true
+
+    override def measure(value: Expr[Float], sizes: Expr[AnyRef])(using Quotes, Type[Float])
+    :   Expr[Int] =
+
+      Expr(4)
+
+    override def write(value: Expr[Float], printer: Expr[AnyRef], sizes: Expr[AnyRef])
+      ( using Quotes, Type[Float] )
+    :   Expr[Unit] =
+
+      '{ProtobufPrinter.of($printer).fixed32(java.lang.Float.floatToIntBits($value))}
+
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Float]): Expr[Float] =
       '{java.lang.Float.intBitsToFloat($reader.fixed32())}
 
   given text: (Text is Inlinable) = new Inlinable:
     type Self = Text
 
+    override def prints: Boolean = true
+
+    override def measure(value: Expr[Text], sizes: Expr[AnyRef])(using Quotes, Type[Text])
+    :   Expr[Int] =
+
+      '{val bytes = ProtobufPrinter.utf8($value.s); ProtobufSizes.of($sizes).stash(bytes.asInstanceOf[AnyRef]); bytes.length}
+
+    override def write(value: Expr[Text], printer: Expr[AnyRef], sizes: Expr[AnyRef])
+      ( using Quotes, Type[Text] )
+    :   Expr[Unit] =
+
+      '{ProtobufPrinter.of($printer).raw(ProtobufSizes.of($sizes).unstash().asInstanceOf[Data])}
+
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Text]): Expr[Text] =
       '{$reader.text()}
 
   given data: (Data is Inlinable) = new Inlinable:
     type Self = Data
+
+    override def prints: Boolean = true
+
+    override def measure(value: Expr[Data], sizes: Expr[AnyRef])(using Quotes, Type[Data])
+    :   Expr[Int] =
+
+      '{$value.length}
+
+    override def write(value: Expr[Data], printer: Expr[AnyRef], sizes: Expr[AnyRef])
+      ( using Quotes, Type[Data] )
+    :   Expr[Unit] =
+
+      '{ProtobufPrinter.of($printer).raw($value)}
 
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Data]): Expr[Data] =
       '{$reader.data()}
@@ -179,6 +314,26 @@ object Inlinable:
 // `Decodable in Protobuf` seam.
 trait Inlinable extends Typeclass:
   def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Self]): Expr[Self]
+
+  // The printing side, for `Inlinable.printable`: whether the instance generates a printer,
+  // and if so the two passes over a value in a field position or window — `measure` records
+  // every length-delimited size it meets in the size table and returns the value's encoded
+  // length; `write` writes it, reading the sizes back. The printer and the table travel as
+  // neutral carriers (`ProtobufPrinter.of`, `ProtobufSizes.of` reassert them per use), since
+  // generated code is capture-erased. An instance that does not print — the default, so a
+  // parse-only instance stays honest — puts its field on the `Encodable in Protobuf` seam.
+  def prints: Boolean = false
+
+  def measure(value: Expr[Self], sizes: Expr[AnyRef])(using Quotes, Type[Self]): Expr[Int] =
+    quotes.reflect.report.errorAndAbort
+      ( s"locomotion: the Inlinable for ${Type.show[Self]} generates no printer" )
+
+  def write(value: Expr[Self], printer: Expr[AnyRef], sizes: Expr[AnyRef])
+    ( using Quotes, Type[Self] )
+  :   Expr[Unit] =
+
+    quotes.reflect.report.errorAndAbort
+      ( s"locomotion: the Inlinable for ${Type.show[Self]} generates no printer" )
 
   // What a field of this type yields when its number is absent from the
   // message. Proto3 has no required fields: scalars default to zero values

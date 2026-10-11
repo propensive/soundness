@@ -228,6 +228,90 @@ object Protobuf extends Protobuf2:
         type Self = value
         def parse(reader: ProtobufReader^): value = decodable.decoded(reader.message())
 
+  object Printable:
+    // The base of generated printers, as `Parsable.Direct` is of generated parsers: generated
+    // code is capture-erased, so the bodies receive the printer and the size table as neutral
+    // carriers, and the capabilities are asserted here at the rim.
+    abstract class Direct[value] extends Protobuf.Printable:
+      type Self = value
+
+      protected def measureCarrier(value: value, sizes: AnyRef): Int
+      protected def writeCarrier(value: value, printer: AnyRef, sizes: AnyRef): Unit
+
+      def measure(value: value, sizes: ProtobufSizes^): Int =
+        measureCarrier(value, sizes.asInstanceOf[AnyRef])
+
+      def write(value: value, printer: ProtobufPrinter^, sizes: ProtobufSizes^): Unit =
+        writeCarrier(value, printer.asInstanceOf[AnyRef], sizes.asInstanceOf[AnyRef])
+
+    def apply[value]
+      ( measure0: (value, ProtobufSizes^) => Int,
+        write0:   (value, ProtobufPrinter^, ProtobufSizes^) => Unit )
+    :   ((value is Protobuf.Printable)^{measure0, write0}) =
+
+      new Protobuf.Printable:
+        type Self = value
+        def measure(value: value, sizes: ProtobufSizes^): Int = measure0(value, sizes)
+
+        def write(value: value, printer: ProtobufPrinter^, sizes: ProtobufSizes^): Unit =
+          write0(value, printer, sizes)
+
+    // The call points for a nominal `Printable` in a field position of a *generated* printer
+    // (a recursive message's own instance, or a hand-written one), as `Parsable.parseField`:
+    // the carriers are reasserted here, at the audited point.
+    def measureField[value](printable: AnyRef, value: value, sizes: AnyRef): Int =
+      printable.asInstanceOf[value is Protobuf.Printable]
+      . measure(value, sizes.asInstanceOf[ProtobufSizes^])
+
+    def writeField[value](printable: AnyRef, value: value, printer: AnyRef, sizes: AnyRef)
+    :   Unit =
+
+      printable.asInstanceOf[value is Protobuf.Printable]
+      . write(value, printer.asInstanceOf[ProtobufPrinter^], sizes.asInstanceOf[ProtobufSizes^])
+
+    // The bridge from the AST world: the value's message, encoded once in the measuring pass
+    // and written in the second.
+    def fromEncodable[value](encodable: (value is Encodable in Protobuf)^)
+    :   ((value is Protobuf.Printable)^{encodable}) =
+
+      new Protobuf.Printable:
+        type Self = value
+
+        def measure(value: value, sizes: ProtobufSizes^): Int =
+          val wire = encodable.encode(value)
+          sizes.stash(wire)
+          wire.payload.length
+
+        def write(value: value, printer: ProtobufPrinter^, sizes: ProtobufSizes^): Unit =
+          printer.raw(sizes.unstash().asInstanceOf[Protobuf].payload)
+
+    // A message's wire bytes through its `Printable`: measured, then written once into an
+    // array of exactly that size.
+    def print[value](value: value)(using printable: (value is Protobuf.Printable)^): Data =
+      val sizes = ProtobufSizes()
+      val size = printable.measure(value, sizes)
+      sizes.rewind()
+      sized(size): printer => printable.write(value, printer, sizes)
+
+  // The direct-printing counterpart of `Encodable in Protobuf`: writes a value's fields
+  // straight into the output array through a `ProtobufPrinter`, in two passes — `measure`
+  // records every length-delimited size in a `ProtobufSizes`, `write` reads them back — so no
+  // `Protobuf` wire value is built for a field, and no nested message is encoded and copied.
+  // The opt-in surface is explicit instances and `Inlinable.printable`; `encodablePrinted`
+  // below makes `value.in[Protobuf]` direct whenever one is in scope.
+  trait Printable extends Typeclass:
+    def measure(value: Self, sizes: ProtobufSizes^): Int
+    def write(value: Self, printer: ProtobufPrinter^, sizes: ProtobufSizes^): Unit
+
+  // Declared here, not in `Protobuf2` where the derived `encodable` lives, so it wins whenever
+  // a `Printable` exists and is otherwise inapplicable — as `aggregableParsed` is for reads.
+  // The message is the one `Wire` the printer fills, so `.encode` is its array, uncopied.
+  given encodablePrinted: [value]
+  =>  ( printable: (value is Protobuf.Printable)^ )
+  =>  ( (value is Encodable in Protobuf)^{printable} ) =
+
+    value => Wire(WireType.Len, Printable.print(value))
+
   // The direct-parsing counterpart of `Decodable in Protobuf`: consumes
   // fields straight off the input bytes through a `ProtobufReader` instead
   // of walking the materialized number-keyed map, so `read[value in

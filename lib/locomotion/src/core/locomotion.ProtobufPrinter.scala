@@ -34,6 +34,8 @@ package locomotion
 
 import scala.caps
 
+import java.nio.charset.StandardCharsets.UTF_8
+
 import anticipation.*
 import rudiments.*
 
@@ -49,7 +51,16 @@ class ProtobufPrinter(out: Scribe[Byte]) extends caps.ExclusiveCapability, caps.
 
   update def raw(data: Data): Unit = out.append(data)
 
+  // A length-delimited payload: its length prefix, then its bytes.
+  update def chunk(data: Data): Unit =
+    varint(data.length.toLong)
+    raw(data)
+
+  // A one-byte varint — a tag, a short length, a small value — is the common case.
   update def varint(value: Long): Unit =
+    if (value & ~0x7fL) == 0L then byte(value.toInt) else varintSlow(value)
+
+  private update def varintSlow(value: Long): Unit =
     var rest = value
     var continue = true
 
@@ -88,9 +99,22 @@ class ProtobufPrinter(out: Scribe[Byte]) extends caps.ExclusiveCapability, caps.
 
 @unexported
 object ProtobufPrinter:
+  // Reasserts the capability of a printer that travelled as a neutral carrier, for the
+  // generated printers spliced into user modules; inline for the reason `ProtobufParser.of` is.
+  inline def of(carrier: AnyRef): ProtobufPrinter^ = carrier.asInstanceOf[ProtobufPrinter^]
+
   // The LEB128 length of `value`, read as an unsigned 64-bit quantity: 1 to 10 bytes.
   def varintSize(value: Long): Int =
     (63 - java.lang.Long.numberOfLeadingZeros(value | 1))/7 + 1
+
+  // The length of a field's tag: one byte up to field number 15, as a varint thereafter.
+  def tagSize(number: Int): Int = varintSize(number.toLong << 3)
+
+  // A string's UTF-8 bytes, which a printer encodes once in its measuring pass — the JDK's
+  // encoder is a single intrinsic copy for the Latin-1 strings that dominate — and stashes
+  // for the writing pass. (Scanning the chars for their encoded length and again to encode
+  // them, allocation-free, measured slower than the one copy.)
+  def utf8(string: String): Data = Array.unsafeFrozen(string.getBytes(UTF_8).nn)
 
   // The number of bytes `field(number, value)` writes, which it must mirror exactly: a scribe
   // of fixed size drops whatever is written past its end.
