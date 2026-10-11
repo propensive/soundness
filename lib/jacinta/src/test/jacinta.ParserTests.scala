@@ -43,6 +43,7 @@ import logging.silentLogging
 import codepages.utf8Codepage
 import environments.javaBaseEnvironment
 import gitCommands.searchpathGitCommand
+import gitBackends.commandlineGit
 import systems.javaBaseSystem
 import workingDirectories.javaBaseWorkingDirectory
 import internetAccess.online
@@ -70,7 +71,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       else Xdg.cacheHome[Path on Linux]/"soundness"/"JSONTestSuite"
 
     if !(jsonSuite/"test_parsing").existent() then
-      Git.clone(url"https://github.com/nst/JSONTestSuite", jsonSuite).complete()
+      Git.clone(url"https://github.com/nst/JSONTestSuite", jsonSuite)
 
     val tests: Path on Linux = jsonSuite/"test_parsing"
 

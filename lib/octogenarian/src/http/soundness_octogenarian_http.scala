@@ -30,11 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package octogenarian
+package soundness
 
-enum Progress:
-  case Receiving(complete: Double)
-  case Resolving(complete: Double)
-  case Unpacking(complete: Double)
-  case RemoteCounting(complete: Double)
-  case RemoteCompressing(complete: Double)
+export octogenarian.SmartHttp
+
+package gitTransports:
+  export octogenarian.gitTransports.smartHttp

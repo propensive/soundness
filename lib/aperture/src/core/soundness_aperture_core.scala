@@ -35,4 +35,4 @@ package soundness
 export
   aperture
   . { archive, Archivable, Archiver, create, Creatable, Creator, Exclusive, Grant, granting,
-      Granting, Mode, Openable, open, Opener, Read, session, Sessional, Write }
+      Granting, Mode, Openable, open, Opener, Read, session, Sessional, Stale, Write }

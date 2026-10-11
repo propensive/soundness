@@ -94,7 +94,7 @@ The converse — an `unsafe`-prefixed method must be gated — is `S1.2`, and is
 advisory rather than strict for now. Ten definitions break it:
 `proscenium.Array.unsafeFrozen` and `unsafeJvm`, `vacuous.Optional.unsafeGet`,
 `archimedes.Ergo.unsafe` and `unsafeInterpolate`, and the `unsafe` factories on
-`urticose.Port`, `octogenarian.Refspec`, `Git.Tag`, `Git.Branch` and `Git.Hash`.
+`urticose.Port`, `Git.Revision`, `Git.Tag`, `Git.Branch` and `Git.Hash`.
 
 Gating them is wanted and is tracked as a follow-up, not declined: a trial found
 the change reaches hundreds of call sites, a good share of which are colon-block

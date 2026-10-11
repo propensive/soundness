@@ -49,4 +49,33 @@ object Zlib:
 
       Inflation(gzip = false, nowrap = false)
 
+  // Inflates the one zlib stream which begins at `offset` in `data`, returning what it produced
+  // and how many compressed bytes it consumed: for formats which concatenate zlib streams
+  // without framing them, as git's packfiles do, so that the next one can be found.
+  def inflate(data: Data, offset: Int): (Data, Int) =
+    val input = data.asInstanceOf[scala.Array[Byte]]
+    val available = input.length - offset
+    val output = java.io.ByteArrayOutputStream()
+
+    // The engine and the window travel through the recursion rather than being captured by it,
+    // which separation checking would reject.
+    def recur(engine: InflateEngine^, buffer: scala.Array[Byte]^): Int =
+      if engine.finished then
+        val consumed = available - engine.getRemaining
+        engine.end()
+        consumed
+      else
+        val produced = engine.inflate(buffer, 0, buffer.length)
+
+        if produced > 0 then output.write(buffer, 0, produced)
+        else if !engine.finished
+        then throw IllegalStateException("the compressed data is truncated")
+
+        recur(engine, buffer)
+
+    val engine: InflateEngine^ = FlateBackend.inflater(false)
+    engine.setInput(input, offset, available)
+    val consumed = recur(engine, new scala.Array[Byte](65536))
+    (output.toByteArray.nn.asInstanceOf[Data], consumed)
+
 sealed trait Zlib extends Compressor

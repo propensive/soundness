@@ -32,67 +32,46 @@
                                                                                                   */
 package octogenarian
 
-import ambience.*
 import anticipation.*
+import aperture.*
 import contingency.*
 import distillate.*
-import galilei.*
 import gossamer.*
-import guillotine.*
-import nomenclature.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
 
-package gitCommands:
-  given searchpathGitCommand: ( WorkingDirectory, Environment, Git.Event is Loggable,
-                                Tactic[Name.Error], Tactic[Path.Error], Tactic[Io.Error],
-                                Tactic[Exec.Error] )
-  =>  ( ((Path on Linux) is Instantiable across Paths from Text)^ )
-  =>  Git.Command =
-
-    val path: Path on Linux = sh"which git".exec[Path on Linux]()
-    Git.Command(path.encode)
-
-export octogenarian.internal.Refspec
-
-// A `NoteRef` is just a `Path on Notes under Git.Hash`: the commit hash sits
-// at the root (it IS a `Root`, since `Git.Hash extends Root`), the namespace
-// segments sit in the descent.  Because `Git.Hash` and `NoteRef` are both
-// `Path` subtypes, `commit / t"foo"` and `noteRef / t"bar"` both go straight
-// to Serpentine's own `Path.def /` — Octogenarian defines no `/` of its own.
+// A `NoteRef` is a `Path on Notes under Git.Hash`: the commit hash is the root (it IS a `Root`,
+// since `Git.Hash extends Root`) and the namespace segments are the descent, so `commit / t"foo"`
+// goes straight to Serpentine's own `Path.def /`.
 type NoteRef = Path on Notes under Git.Hash
 
 extension (noteRef: NoteRef)
-  // Extract the commit hash from the path's root (encoded as `<hash>/`).
+  // The commit hash, from the path's root (encoded as `<hash>/`).
   def target: Git.Hash = Git.Hash.unsafe(noteRef.root.keep(40))
 
-  // The fully-qualified git ref path (e.g. `refs/notes/foo/bar`) that names
-  // the namespace; each descent segment is validated here.
-  def namespace(using Tactic[Git.RefError]): Path on Git.Refs =
-    val initial: Path on Git.Refs = Git.Refs / t"notes"
+  // The fully-qualified ref (`refs/notes/foo/bar`) naming the namespace; each segment is
+  // validated here.
+  def namespace(using Tactic[Git.RefError]): Git.Ref =
+    def recur(path: Git.Ref, segments: List[Text]): Git.Ref = segments match
+      case segment :: rest =>
+        Git.Refs.validateSegment(segment)
+        recur(path / segment, rest)
 
-    noteRef.descent.reverse.foldLeft(initial): (path, segment) =>
-      Git.Refs.validateSegment(segment)
-      path / segment
+      case _ => path
 
-  // Fetch the note body via `git notes show` on the implicit `Git.Repo` and
-  // decode it as `value`.  Aborts with `Git.Error(NoteNotFound)` if no note
-  // is attached. (Named `content`, not `read`, to avoid colliding with
-  // turbulence's `Readable` `read`: a `NoteRef` is a `Path`, which is readable.)
-  def content[value: Decodable in Text]
-    ( using repo:    Git.Repo,
-            command: Git.Command,
-            wd:      WorkingDirectory,
-            env:     Environment,
-            gitErr:  Tactic[Git.Error],
-            refErr:  Tactic[Git.RefError],
-            exec:    Tactic[Exec.Error] )
-  (using (Git.Event is Loggable)^)
-  :   value =
+    recur(Git.Refs / t"notes", noteRef.descent.to(List).reverse)
 
-    repo.notes.show(noteRef.target, noteRef.namespace)
-    . lest(Git.Error(Git.Error.Reason.NoteNotFound))
-    . as[value]
+  // The note's body, decoded as `value`, read through the repository handle in scope. A note is
+  // reached through a ref, which another process may move, so the result is `Stale`. Aborts with
+  // `NoteNotFound` if no note is attached. (Named `content`, not `read`, so as not to collide
+  // with turbulence's `Readable` `read`: a `NoteRef` is a `Path`, which is readable.)
+  def content[value]
+    ( using repo:      (Git.Repo.Handle & Granting[Grant.Read])^,
+            decodable: (value is Decodable in Text)^,
+            gitError:  Tactic[Git.Error],
+            refError:  Tactic[Git.RefError] )
+  :   Stale[value] =
 
-private[octogenarian] inline def git(using command: Git.Command): Git.Command = command
+    repo.note(noteRef.target, noteRef.namespace).let: note =>
+      decodable.decoded(note.lest(Git.Error(Git.Error.Reason.NoteNotFound)))

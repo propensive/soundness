@@ -45,18 +45,21 @@ object Patch:
   // Streams a `git diff -p --no-color` output as one FileDiff per file.
   // Common cases (modify, add, delete, rename, copy) are handled. Binary
   // diffs and mode-only changes produce a FileDiff with no hunks.
-  def parse(lines: Iterator[Text]^): List[FileDiff] =
-    val cursor = lines.buffered
-    while cursor.hasNext && !cursor.head.starts(t"diff --git ") do cursor.next()
-    val files = scala.collection.mutable.ListBuffer[FileDiff]()
+  def parse(lines: List[Text]): List[FileDiff] =
+    val prefix = t"diff --git "
 
-    while cursor.hasNext do
-      val header = cursor.next()
-      val body = scala.collection.mutable.ListBuffer[Text]()
-      while cursor.hasNext && !cursor.head.starts(t"diff --git ") do body += cursor.next()
-      files += parseFile(header, body.to(List))
+    def recur(remaining: List[Text], files: List[FileDiff]): List[FileDiff] = remaining match
+      case Nil => files.reverse
 
-    files.to(List)
+      case header :: rest if header.starts(prefix) =>
+        val (body, next) = rest.span(!_.starts(prefix))
+        recur(next, parseFile(header, body) :: files)
+
+      case _ :: rest => recur(rest, files)
+
+      case _ => files.reverse
+
+    recur(lines, Nil)
 
   // Flattens every hunk's edits into a single Dissonance Diff[Text]. Assembled exclusively from
   // `Retained` edits, so the `Diff` carries the proof.
