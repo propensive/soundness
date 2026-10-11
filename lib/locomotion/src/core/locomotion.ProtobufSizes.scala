@@ -140,12 +140,10 @@ final class ProtobufSizes() extends caps.ExclusiveCapability, caps.Stateful:
     used = end
     length
 
-  // The next stashed string's bytes, as the scratch's own array with its offset and length:
-  // for `ProtobufPrinter.stashedText`, which copies them out.
-  private[locomotion] update def unstashText(copy: (scala.Array[Byte], Int, Int) => Unit): Unit =
-    val offset = next()
-    val length = next()
-    copy(scratch, offset, length)
+  // The scratch the stashed strings were encoded into, for `ProtobufPrinter.stashedText`,
+  // which reads the next string's offset and length from the table and copies it out. (A
+  // callback taking the three would box its `Int`s: `Function3` is not specialized.)
+  private[locomotion] def scratchBytes: scala.Array[Byte] = scratch
 
   update def stash(value: AnyRef): Unit =
     if stashed == stashes.length then

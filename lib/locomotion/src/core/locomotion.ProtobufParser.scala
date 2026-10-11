@@ -129,6 +129,11 @@ object ProtobufParser:
   def fields(data: Data)(using Tactic[Protobuf.Error]): Map[Int, List[Protobuf]] =
     scan(Protobuf.Wire(WireType.Len, data)).map
 
+  // Materialized once: a `ClassTag` for a class type is otherwise looked up through a
+  // `ClassValue` at every allocation site, which `scan` reaches once per message.
+  private val protobufTag: scala.reflect.ClassTag[Protobuf] =
+    scala.reflect.ClassTag(classOf[Protobuf])
+
   // The same walk, into the flat structure the message decoder looks fields up in: one
   // pass counts the fields without copying anything, so the second fills arrays of exactly
   // that size, which are then frozen — a pure value the decoder's lambdas may capture.
@@ -136,7 +141,7 @@ object ProtobufParser:
     val payload = Payload(message.payload)
     val count = payload.count()
     val numbers = Array.allocate[Int](count)
-    val wires = Array.allocate[Protobuf](count)
+    val wires = Array.allocate[Protobuf](count)(using protobufTag)
     var index = 0
 
     // The arrays are filled here rather than handed to the walker, which would then be

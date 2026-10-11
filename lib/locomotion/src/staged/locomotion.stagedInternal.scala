@@ -1252,11 +1252,20 @@ object stagedInternal:
       case success: ImplicitSearchSuccess => Some(success.tree.asExpr)
       case _                              => None
 
-  private def wireTypeOf(kind: Int)(using Quotes): Expr[WireType] = kind match
-    case KDouble        => '{WireType.I64}
-    case KFloat         => '{WireType.I32}
-    case KText | KData  => '{WireType.Len}
-    case _              => '{WireType.Varint}
+  // A field's tag, known at expansion: a single literal byte for a field number up to 15 —
+  // nearly every field — and a varint beyond.
+  private def tagWrite(number: Int, code: Int, printer: Expr[AnyRef])(using Quotes)
+  :   Expr[Unit] =
+
+    val tag = (number << 3) | code
+    if tag < 0x80 then '{ProtobufPrinter.of($printer).byte(${Expr(tag)})}
+    else '{ProtobufPrinter.of($printer).varint(${Expr(tag.toLong)})}
+
+  private def wireCode(kind: Int): Int = kind match
+    case KDouble        => 1
+    case KFloat         => 5
+    case KText | KData  => 2
+    case _              => 0
 
   // The encoded length of a builtin scalar's payload, recording a string's.
   private def scalarSize(kind: Int, value: Expr[Any], sizes: Expr[AnyRef])(using Quotes)
@@ -1366,7 +1375,7 @@ object stagedInternal:
   :   Expr[Unit] =
 
     ' {
-        ProtobufPrinter.of($printer).tag(${Expr(number)}, WireType.Len)
+        ${tagWrite(number, 2, printer)}
         ProtobufPrinter.of($printer).varint(ProtobufSizes.of($sizes).next().toLong)
         $body
       }
@@ -1572,7 +1581,7 @@ object stagedInternal:
 
             def tagged(kind: Int, item: Expr[Any]): Expr[Unit] =
               ' {
-                  ProtobufPrinter.of($printer).tag(${Expr(number)}, ${wireTypeOf(kind)})
+                  ${tagWrite(number, wireCode(kind), printer)}
                   ${scalarWrite(kind, item, printer, sizes)}
                 }
 
@@ -1638,7 +1647,7 @@ object stagedInternal:
                             val run = ProtobufSizes.of($sizes).next()
 
                             if run > 0 then
-                              ProtobufPrinter.of($printer).tag(${Expr(number)}, WireType.Len)
+                              ${tagWrite(number, 2, printer)}
                               ProtobufPrinter.of($printer).varint(run.toLong)
                               ${visited(iterable)(each)}
                           }

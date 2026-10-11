@@ -65,7 +65,7 @@ lib/coaxial/src/wasi/coaxial_wasi.scala	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/concordance/src/core/rudiments.Appendable.scala	0	0	0	0	0	0	1	0	0	0	0	0	0
 lib/concordance/src/core/rudiments.Prependable.scala	0	0	0	0	0	0	1	0	0	0	0	0	0
 lib/concordance/src/core/rudiments.Scribe.scala	0	0	2	0	0	0	0	0	0	0	3	11	0
-lib/concordance/src/core/rudiments.Segmentable.scala	0	0	0	0	0	0	1	0	0	0	0	0	0
+lib/concordance/src/core/rudiments.Segmentable.scala	0	0	0	0	0	1	1	0	0	0	0	0	0
 lib/concordance/src/core/rudiments.Surveyor.scala	0	0	1	0	0	0	0	0	0	0	0	0	0
 lib/contingency/src/core/contingency.Recovery.scala	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/contingency/src/core/contingency.Venture.scala	0	0	0	0	0	0	0	0	0	0	1	0	0
