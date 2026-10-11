@@ -726,3 +726,58 @@ object NativeTests extends Suite(m"Octogenarian native backend"):
         sh"git -C $dir worktree add -q --detach $other".exec[Exit]()
         dir.open[Git.Repo]() { repo ?=> repo.worktrees().value.map(_.path).to[Set] == Set(dir, other) }
       .assert(_ == true)
+
+      test(m"a natively-added worktree is one git lists, with a clean checkout"):
+        val dir = gitRepo()
+        val first = gitCommit(dir, t"a", t"a\n", t"first")
+        val other = freshDir()
+        sh"rm -rf $other".exec[Exit]()
+        dir.open[Git.Repo](Read & Write) { repo ?=> repo.addWorktree(other, first, detach = true) }
+        val listed = gitOut(dir, t"worktree", t"list", t"--porcelain").cut(t"\n").filter(_.starts(t"worktree "))
+        ( listed == List(t"worktree ${dir.encode}", t"worktree ${other.encode}"), gitOut(other, t"status", t"--porcelain"),
+          gitOut(other, t"rev-parse", t"HEAD") == first.text )
+      .assert(_ == ((true, t"", true)))
+
+      test(m"a worktree added on a new branch has HEAD attached to it"):
+        val dir = gitRepo()
+        val first = gitCommit(dir, t"a", t"a\n", t"first")
+        val other = freshDir()
+        sh"rm -rf $other".exec[Exit]()
+        dir.open[Git.Repo](Read & Write) { repo ?=> repo.addWorktree(other, first, newBranch = Git.Branch(t"topic")) }
+        (gitOut(other, t"symbolic-ref", t"HEAD"), gitOut(dir, t"rev-parse", t"topic") == first.text)
+      .assert(_ == ((t"refs/heads/topic", true)))
+
+      test(m"lock, unlock, move and remove agree with git's listing"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        val other = freshDir()
+        sh"rm -rf $other".exec[Exit]()
+        sh"git -C $dir worktree add -q --detach $other".exec[Exit]()
+        val moved = freshDir()
+        sh"rm -rf $moved".exec[Exit]()
+
+        val (locked, afterMove) = dir.open[Git.Repo](Read & Write): repo ?=>
+          def entry(path: Path on Linux) = repo.worktrees().let(_.reap { case entry if entry.path == path => entry })
+          entry(other).value.let { e => repo.lockWorktree(Stale(e), reason = t"busy") }
+          val locked = gitOut(dir, t"worktree", t"list", t"--porcelain").contains(t"locked busy")
+          entry(other).value.let { e => repo.unlockWorktree(Stale(e)) }
+          entry(other).value.let { e => repo.moveWorktree(Stale(e), moved) }
+          val afterMove = gitOut(moved, t"rev-parse", t"--show-toplevel") == moved.encode
+          entry(moved).value.let { e => repo.removeWorktree(Stale(e)) }
+          (locked, afterMove)
+
+        val listed = gitOut(dir, t"worktree", t"list", t"--porcelain").cut(t"\n").filter(_.starts(t"worktree "))
+        (locked, afterMove, listed == List(t"worktree ${dir.encode}"))
+      .assert(_ == ((true, true, true)))
+
+      test(m"pruning removes the entry of a worktree whose directory has gone"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        val other = freshDir()
+        sh"rm -rf $other".exec[Exit]()
+        sh"git -C $dir worktree add -q --detach $other".exec[Exit]()
+        sh"rm -rf $other".exec[Exit]()
+        val pruned = dir.open[Git.Repo](Read & Write) { repo ?=> repo.pruneWorktrees() }
+        val listed = gitOut(dir, t"worktree", t"list", t"--porcelain").cut(t"\n").filter(_.starts(t"worktree "))
+        (pruned == List(other), listed == List(t"worktree ${dir.encode}"))
+      .assert(_ == ((true, true)))

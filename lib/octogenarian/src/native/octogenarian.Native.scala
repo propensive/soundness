@@ -432,21 +432,25 @@ class Native() extends Git.Backend:
     main :: others
 
   def addWorktree
-    ( gitDir: Path on Linux, target: Path on Linux, revision: Text, detach: Boolean, newBranch: Optional[Git.Branch] )
+    ( gitDir: Path on Linux, target: Path on Linux, revision: Text, detach: Boolean,
+      newBranch: Optional[Git.Branch] )
     ( using Tactic[Git.Error] )
-  :   Unit = unsupported(t"worktree add")
+  :   Unit = io:
+    Worktrees.add
+      ( gitDir, commonDir(gitDir), objects(gitDir), target, revision, detach, newBranch, identity(gitDir),
+        logging(gitDir) )
 
   def removeWorktree(gitDir: Path on Linux, path: Path on Linux, force: Boolean)(using Tactic[Git.Error]): Unit =
-    unsupported(t"worktree remove")
+    io(Worktrees.remove(commonDir(gitDir), objects(gitDir), path, force))
 
   def lockWorktree(gitDir: Path on Linux, path: Path on Linux, reason: Optional[Text])(using Tactic[Git.Error]): Unit =
-    unsupported(t"worktree lock")
+    io(Worktrees.lock(commonDir(gitDir), path, reason))
 
   def unlockWorktree(gitDir: Path on Linux, path: Path on Linux)(using Tactic[Git.Error]): Unit =
-    unsupported(t"worktree unlock")
+    io(Worktrees.unlock(commonDir(gitDir), path))
 
   def moveWorktree(gitDir: Path on Linux, path: Path on Linux, to: Path on Linux)(using Tactic[Git.Error]): Unit =
-    unsupported(t"worktree move")
+    io(Worktrees.move(commonDir(gitDir), path, to))
 
   def pruneWorktrees(gitDir: Path on Linux)(using Tactic[Git.Error]): List[Path on Linux] =
-    unsupported(t"worktree prune")
+    io(Worktrees.prune(commonDir(gitDir)))
