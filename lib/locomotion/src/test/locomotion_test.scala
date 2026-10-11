@@ -70,13 +70,35 @@ case class Labels(@field(1) entries: Map[Text, Text]) derives CanEqual
 case class Counts(@field(1) counts: Map[Text, Int]) derives CanEqual
 
 // Recursion through a collection (#1429) and a generic product used over a recursive type.
-// TEMPORARY (List-flip drain): the staged engine's `Plan.Gather` classifier does not
-// yet recognise the opaque `List` alias, so the recursive field stays `sci.List` until
-// the staged engines learn the prelude aliases.
-case class Tree
-  ( @field(1) value: Text,
-    @field(2) children: scala.collection.immutable.List[Tree] )
+case class Tree(@field(1) value: Text, @field(2) children: List[Tree]) derives CanEqual
+
+// The other prelude collections a repeated field may gather into, and a repeated nested
+// message for the no-materialization probe.
+case class Names(@field(1) names: Set[Text]) derives CanEqual
+case class Longs(@field(1) values: Sequence[Long]) derives CanEqual
+case class Item(@field(1) id: Int, @field(2) name: Text) derives CanEqual
+case class Batch(@field(1) items: List[Item]) derives CanEqual
+
+// Encodings at the printer's size boundaries: a two-byte tag, and nested payloads.
+case class HighField(@field(16) value: Int) derives CanEqual
+case class Envelope(@field(1) person: Person) derives CanEqual
+case class TagsEnvelope(@field(1) tags: Tags) derives CanEqual
+
+// Shapes the direct printer must write byte for byte as the derivation does: every scalar kind
+// in one message, text beyond ASCII, a oneof in a field position, and an optional message.
+case class Scalars
+   ( @field(1) int:     Int,
+     @field(2) long:    Long,
+     @field(3) boolean: Boolean,
+     @field(4) double:  Double,
+     @field(5) float:   Float,
+     @field(6) text:    Text,
+     @field(7) data:    Data )
 derives CanEqual
+
+case class Doubles(@field(1) values: List[Double]) derives CanEqual
+case class Shaped(@field(1) name: Text, @field(2) shape: Shape) derives CanEqual
+case class MaybePoint(@field(1) point: Optional[Point]) derives CanEqual
 
 case class Defaulted(@field(1) a: Int, @field(2) b: Int = 7) derives CanEqual
 case class Boxed[value](@field(1) value: value) derives CanEqual
@@ -111,6 +133,25 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       test(m"sparse field numbers produce the right tags"):
         wire(Sparse(1, t"")).stdlib.take(2)
       . assert(_ == List(0x18, 0x01))
+
+      test(m"a negative int encodes as a ten-byte varint"):
+        wire(Sample(-1))
+      . assert(_ == List(0x08, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01))
+
+      test(m"field number 16 takes a two-byte tag"):
+        wire(HighField(1))
+      . assert(_ == List(0x80, 0x01, 0x01))
+
+      test(m"a nested payload over 127 bytes takes a two-byte length"):
+        // Person: tag, 2-byte length, 200 bytes of name, then age = 1: 205 bytes.
+        val bytes = wire(Envelope(Person("x".repeat(200).nn.tt, 1)))
+        (bytes.stdlib.take(3), bytes.stdlib.length, bytes.stdlib.takeRight(2))
+      . assert:
+          _ == (scala.List(0x0a, 0xcd, 0x01), 208, scala.List(0x10, 0x01))
+
+      test(m"a repeated field inside a nested message is sized whole"):
+        wire(TagsEnvelope(Tags(List(t"a", t"b"))))
+      . assert(_ == List(0x0a, 0x06, 0x0a, 0x01, 0x61, 0x0a, 0x01, 0x62))
 
     suite(m"Round-trips"):
       test(m"single int field"):
@@ -424,6 +465,8 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       given (Counts is Protobuf.Parsable) = Inlinable.parsable[Counts]
       given (Tree is Protobuf.Parsable) = Inlinable.parsable[Tree]
       given (Defaulted is Protobuf.Parsable) = Inlinable.parsable[Defaulted]
+      given (Names is Protobuf.Parsable) = Inlinable.parsable[Names]
+      given (Longs is Protobuf.Parsable) = Inlinable.parsable[Longs]
 
       def encoded[value: Encodable in Protobuf](value: value): Data = value.in[Protobuf].encode
 
@@ -508,3 +551,125 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
         val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
         encoded(tree).read[Tree in Protobuf]
       . assert(_ == Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))
+
+      test(m"a repeated nested message gathers directly, never through a Decodable"):
+        // Either seam — the element's or the whole field's `Decodable` — would materialize
+        // a `Protobuf`; a lexically-scoped given beats the derived ones, so invoking it is
+        // the failure.
+        given itemSeam: (Item is Decodable in Protobuf) =
+          _ => panic(m"the generated parser decoded a repeated element through its Decodable")
+
+        given itemsSeam: (List[Item] is Decodable in Protobuf) =
+          _ => panic(m"the generated parser decoded a repeated field through its Decodable")
+
+        given (Batch is Protobuf.Parsable) = Inlinable.parsable[Batch]
+        encoded(Batch(List(Item(1, t"a"), Item(2, t"b")))).read[Batch in Protobuf]
+      . assert(_ == Batch(List(Item(1, t"a"), Item(2, t"b"))))
+
+      test(m"a prelude Set of strings gathers element by element"):
+        encoded(Names(Set(t"x", t"y", t"z"))).read[Names in Protobuf]
+      . assert(_ == Names(Set(t"x", t"y", t"z")))
+
+      test(m"a packed Sequence of longs reads its run in place"):
+        // Field 1, Len 4: varints 1, 300, 3.
+        Array[Byte](0x0a, 0x04, 0x01, 0xac.toByte, 0x02, 0x03).read[Longs in Protobuf]
+      . assert(_ == Longs(Sequence(1L, 300L, 3L)))
+
+      test(m"unpacked occurrences gather into a Sequence"):
+        Array[Byte](0x08, 0x01, 0x08, 0xac.toByte, 0x02).read[Longs in Protobuf]
+      . assert(_ == Longs(Sequence(1L, 300L)))
+
+    suite(m"Direct printing (Inlinable)"):
+      given (Sample is Protobuf.Printable) = Inlinable.printable[Sample]
+      given (Point is Protobuf.Printable) = Inlinable.printable[Point]
+      given (Person is Protobuf.Printable) = Inlinable.printable[Person]
+      given (Wrapper is Protobuf.Printable) = Inlinable.printable[Wrapper]
+      given (Tags is Protobuf.Printable) = Inlinable.printable[Tags]
+      given (Numbers is Protobuf.Printable) = Inlinable.printable[Numbers]
+      given (MaybeName is Protobuf.Printable) = Inlinable.printable[MaybeName]
+      given (Sparse is Protobuf.Printable) = Inlinable.printable[Sparse]
+      given (Typed is Protobuf.Printable) = Inlinable.printable[Typed]
+      given (Labels is Protobuf.Printable) = Inlinable.printable[Labels]
+      given (Counts is Protobuf.Printable) = Inlinable.printable[Counts]
+      given (Tree is Protobuf.Printable) = Inlinable.printable[Tree]
+      given (Defaulted is Protobuf.Printable) = Inlinable.printable[Defaulted]
+      given (Names is Protobuf.Printable) = Inlinable.printable[Names]
+      given (Longs is Protobuf.Printable) = Inlinable.printable[Longs]
+      given (Batch is Protobuf.Printable) = Inlinable.printable[Batch]
+      given (HighField is Protobuf.Printable) = Inlinable.printable[HighField]
+      given (Envelope is Protobuf.Printable) = Inlinable.printable[Envelope]
+      given (TagsEnvelope is Protobuf.Printable) = Inlinable.printable[TagsEnvelope]
+      given (Scalars is Protobuf.Printable) = Inlinable.printable[Scalars]
+      given (Doubles is Protobuf.Printable) = Inlinable.printable[Doubles]
+      given (Shaped is Protobuf.Printable) = Inlinable.printable[Shaped]
+      given (MaybePoint is Protobuf.Printable) = Inlinable.printable[MaybePoint]
+
+      // The derivation's bytes, which the printer must reproduce exactly.
+      def derived[value: Encodable in Protobuf](value: value): List[Int] =
+        value.in[Protobuf].encode.to[List].map(_ & 0xff)
+
+      def printed[value: Protobuf.Printable](value: value): List[Int] =
+        Protobuf.Printable.print(value).to[List].map(_ & 0xff)
+
+      inline def same[value: {Encodable in Protobuf, Protobuf.Printable}](name: Message, value: value)
+      :   Unit =
+
+        test(name)(printed(value)).assert(_ == derived(value))
+
+      same(m"a single int field", Sample(7))
+      same(m"a negative int takes ten bytes", Sample(-1))
+      same(m"a message of two ints", Point(3, 4))
+      same(m"a string and an int", Person(t"Jon", 42))
+      same(m"a nested message then a string", Wrapper(Point(1, 2), t"origin"))
+      same(m"repeated strings, one field each", Tags(List(t"a", t"bb", t"ccc")))
+      same(m"an empty repeated field writes nothing", Tags(Nil))
+      same(m"repeated ints pack into one field", Numbers(List(1, 300, -1)))
+      same(m"an empty packed field writes nothing", Numbers(Nil))
+      same(m"a present optional string", MaybeName(t"x"))
+      same(m"an absent optional string writes nothing", MaybeName(Unset))
+      same(m"sparse field numbers", Sparse(9, t"x"))
+      same(m"empty text is still written", Sparse(1, t""))
+      same(m"typed integers go through the seam", Typed(1.bits.u32, 2L.bits.u64, (-3).bits.s32, (-4L).bits.s64, 5.bits, 6L.bits))
+      same(m"a string map goes through the seam", Labels(Map(t"a" -> t"1", t"b" -> t"2")))
+      same(m"an int map goes through the seam", Counts(Map(t"a" -> 1)))
+      same(m"a recursive message", Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))
+      same(m"a field with a declared default is still written", Defaulted(1))
+      same(m"a prelude Set of strings", Names(Set(t"x", t"y")))
+      same(m"a packed Sequence of longs", Longs(Sequence(1L, 300L, 3L)))
+      same(m"repeated nested messages", Batch(List(Item(1, t"a"), Item(2, t"b"))))
+      same(m"field number 16 takes a two-byte tag", HighField(1))
+      same(m"a nested payload over 127 bytes", Envelope(Person("x".repeat(200).nn.tt, 1)))
+      same(m"a repeated field inside a nested message", TagsEnvelope(Tags(List(t"a", t"b"))))
+
+      same
+       ( m"every scalar kind",
+         Scalars(-7, 1L << 40, true, 2.5, -1.5f, t"text", Array[Byte](1, 2, 3)) )
+
+      same(m"text beyond ASCII is UTF-8", Person(t"héllo 😀 — ✓", 1))
+      same(m"a lone surrogate encodes as the JDK substitutes", Person(("a\ud83dz").tt, 1))
+      same(m"packed doubles", Doubles(List(0.0, 1.5, -2.25)))
+      same(m"a oneof in a field position: first variant", Shaped(t"c", Shape.Circle(3)))
+      same(m"a oneof in a field position: last variant", Shaped(t"r", Shape.Rectangle(2, 3)))
+      same(m"a present optional message", MaybePoint(Point(1, 2)))
+      same(m"an absent optional message writes nothing", MaybePoint(Unset))
+
+      test(m"printed bytes parse back directly"):
+        given (Wrapper is Protobuf.Parsable) = Inlinable.parsable[Wrapper]
+        Protobuf.Printable.print(Wrapper(Point(5, 6), t"w")).read[Wrapper in Protobuf]
+      . assert(_ == Wrapper(Point(5, 6), t"w"))
+
+      test(m"`in[Protobuf]` is direct when a Printable is in scope"):
+        // A derived `Encodable` on the way would be the resolved one here; a Printable in
+        // scope makes `encodablePrinted` win, and its message is the printed array itself.
+        Wrapper(Point(5, 6), t"w").in[Protobuf].encode.to[List].map(_ & 0xff)
+      . assert(_ == derived(Wrapper(Point(5, 6), t"w")))
+
+      test(m"a repeated nested message is written directly, never through an Encodable"):
+        given itemSeam: (Item is Encodable in Protobuf) =
+          _ => panic(m"the generated printer encoded a repeated element through its Encodable")
+
+        given itemsSeam: (List[Item] is Encodable in Protobuf) =
+          _ => panic(m"the generated printer encoded a repeated field through its Encodable")
+
+        printed(Batch(List(Item(1, t"a"), Item(2, t"b"))))
+      . assert(_ == List(0x0a, 0x05, 0x08, 0x01, 0x12, 0x01, 0x61, 0x0a, 0x05, 0x08, 0x02, 0x12, 0x01, 0x62))

@@ -69,6 +69,13 @@ object ProtobufParser:
   def varintOf(data: Data)(using Tactic[Protobuf.Error]): Long =
     val view = data.readable
     val limit = data.length
+
+    // A one-byte varint (a bool, a small count or enum) is the common case, read in place.
+    if limit > 0 && view(0) >= 0 then view(0).toLong else varintOfSlow(view, limit)
+
+  private def varintOfSlow(view: scala.IArray[Byte], limit: Int)(using Tactic[Protobuf.Error])
+  :   Long =
+
     var result = 0L
     var shift = 0
     var index = 0
@@ -117,11 +124,71 @@ object ProtobufParser:
     result
 
   // Parses a whole message payload into a number-keyed map of (one or more) raw wire
-  // values, preserving repeats and unknown fields — the structure the message decoder
-  // looks fields up in by number. Each field's payload is copied out once, into its
-  // `Wire`.
+  // values, preserving repeats and unknown fields, keyed in first-occurrence order. Each
+  // field's payload is copied out once, into its `Wire`.
   def fields(data: Data)(using Tactic[Protobuf.Error]): Map[Int, List[Protobuf]] =
-    Payload(data).fields()
+    scan(Protobuf.Wire(WireType.Len, data)).map
+
+  // The same walk, into the flat structure the message decoder looks fields up in: one
+  // pass counts the fields without copying anything, so the second fills arrays of exactly
+  // that size, which are then frozen — a pure value the decoder's lambdas may capture.
+  private[locomotion] def scan(message: Protobuf)(using Tactic[Protobuf.Error]): Fields =
+    val payload = Payload(message.payload)
+    val count = payload.count()
+    val numbers = Array.allocate[Int](count)
+    val wires = Array.allocate[Protobuf](count)
+    var index = 0
+
+    // The arrays are filled here rather than handed to the walker, which would then be
+    // taken to retain them.
+    repeat(count):
+      wires(index) = payload.next()
+      numbers(index) = payload.number
+      index += 1
+
+    Fields(Array.freeze(numbers).readable, Array.freeze(wires).readable)
+
+  // The fields of one message payload in wire order, as parallel arrays of numbers and
+  // wire values. A message declares few fields and its decoder looks each up once, so a
+  // backwards scan of the arrays costs less than building any keyed structure for them.
+  private[locomotion] final class Fields
+    ( numbers: scala.IArray[Int], wires: scala.IArray[Protobuf] )
+  extends caps.Pure:
+    private val count: Int = numbers.length
+
+    // The greatest index below `end` at which `number` occurs, or -1.
+    @scala.annotation.tailrec
+    private def seek(number: Int, end: Int): Int =
+      if end <= 0 then -1
+      else if numbers(end - 1) == number then end - 1
+      else seek(number, end - 1)
+
+    // Every occurrence of `number` below `end`, consed from the end so that wire order is
+    // kept without a reversal.
+    @scala.annotation.tailrec
+    private def gather(number: Int, end: Int, acc: List[Protobuf]): List[Protobuf] =
+      if end <= 0 then acc
+      else gather(number, end - 1, if numbers(end - 1) == number then wires(end - 1) :: acc else acc)
+
+    def defines(number: Int): Boolean = seek(number, count) >= 0
+
+    // The field as its decoder receives it: `Absent` if the number never occurs, the wire
+    // value itself if it occurs once, and `Repeated` of every occurrence otherwise.
+    def apply(number: Int): Protobuf =
+      val last = seek(number, count)
+      if last < 0 then Protobuf.Absent
+      else if seek(number, last) < 0 then wires(last)
+      else Protobuf.Repeated(gather(number, last + 1, Nil))
+
+    // The number-keyed form, for `fields(data)`'s callers; not on the decoding path.
+    def map: Map[Int, List[Protobuf]] =
+      val accumulator = scm.LinkedHashMap.empty[Int, List[Protobuf]]
+
+      List.range(0, count).each: index =>
+        val number = numbers(index)
+        if !accumulator.contains(number) then accumulator(number) = gather(number, count, Nil)
+
+      accumulator.to(Map)
 
   // Splits a packed `repeated` payload (a single length-delimited field holding
   // concatenated scalar values) into one wire value per element. `wireType` is the
@@ -137,6 +204,14 @@ object ProtobufParser:
     private var pos: Int = 0
 
     private update def varint()(using Tactic[Protobuf.Error]): Long =
+      // A one-byte varint (a tag, a bool, a short length) is the common case, read in place.
+      if pos < limit && view(pos) >= 0 then
+        val value = view(pos).toLong
+        pos += 1
+        value
+      else varintSlow()
+
+    private update def varintSlow()(using Tactic[Protobuf.Error]): Long =
       val start = pos
       var result = 0L
       var shift = 0
@@ -173,22 +248,45 @@ object ProtobufParser:
         case WireType.I32 => Protobuf.Wire(WireType.I32, slice(4))
         case WireType.Len => Protobuf.Wire(WireType.Len, slice(varint().toInt))
 
-    update def fields()(using Tactic[Protobuf.Error]): Map[Int, List[Protobuf]] =
-      val accumulator = scm.LinkedHashMap.empty[Int, scm.ListBuffer[Protobuf]]
+    // Steps over one field's payload without copying it.
+    private update def skip(wireType: WireType)(using Tactic[Protobuf.Error]): Unit =
+      val length = wireType match
+        case WireType.Varint => varint(); 0
+        case WireType.I64    => 8
+        case WireType.I32    => 4
+        case WireType.Len    => varint().toInt
 
-      // Ends on the data: each step consumes one whole field.
-      while pos < limit do
-        val tagStart = pos
-        val tag = varint().toInt
-        val number = tag >>> 3
-        val code = tag & 0x7
+      if length < 0 || pos + length > limit then abort(Protobuf.Error(Reason.Truncated(pos)))
+      pos += length
 
-        val wireType =
-          WireType.fromId(code).lest(Protobuf.Error(Reason.UnexpectedWireType(code, tagStart)))
+    private update def tag()(using Tactic[Protobuf.Error]): (Int, WireType) =
+      val tagStart = pos
+      val tag = varint().toInt
+      val code = tag & 0x7
+      (tag >>> 3, WireType.fromId(code).lest(Protobuf.Error(Reason.UnexpectedWireType(code, tagStart))))
 
-        accumulator.getOrElseUpdate(number, scm.ListBuffer()).addOne(wire(wireType))
+    // The number of fields in the payload, validating every tag and extent as `next` will;
+    // the walk then rewinds to the start.
+    update def count()(using Tactic[Protobuf.Error]): Int =
+      @scala.annotation.tailrec
+      def recur(count: Int): Int =
+        if pos >= limit then count else
+          skip(tag()(1))
+          recur(count + 1)
 
-      (accumulator.view.mapValues(_.to(List))).to(Map)
+      val result = recur(0)
+      pos = 0
+      result
+
+    // The number of the field most recently read by `next`.
+    private var current: Int = 0
+    def number: Int = current
+
+    // The next field's wire value, its number recorded in `number`.
+    update def next()(using Tactic[Protobuf.Error]): Protobuf =
+      val (number, wireType) = tag()
+      current = number
+      wire(wireType)
 
     update def packed(wireType: WireType)(using Tactic[Protobuf.Error]): List[Protobuf] =
       val builder = scala.collection.immutable.List.newBuilder[Protobuf]
@@ -261,17 +359,24 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
   // The absolute stream offset of `bytes(0)`, re-anchored by every `syncFrom()`.
   private var base: Long = 0L
 
+  // Whether the buffer is the whole input (`resetData`): there is no cursor to pull from.
+  private var static: Boolean = false
+
   // The window's end as an absolute offset (`Unbounded`: the end of the input), and the
   // same relative to `bytes(0)`, clamped — the hot-path bound, re-derived with `base`.
   private var boundary: Long = Unbounded
   private var limit:    Int = Int.MaxValue
 
+  // A whole message in memory needs no cursor: its array is the buffer, borrowed and never
+  // written, and the source is already exhausted — `static` makes every refill say so.
   private[locomotion] update def resetData(input: Data): Unit =
-    import Lineation.untrackedData
-    val fresh = Cursor[Data](input)
-    cursor = fresh
+    bytes = Array.unsafeJvm(input)
+    pos = 0
+    bufEnd = input.length
+    base = 0L
     boundary = input.length.toLong
-    syncFrom()
+    static = true
+    relimit()
 
   private[locomotion] update def resetChain(input: Chain[Data]): Unit =
     import Lineation.untrackedData
@@ -333,7 +438,7 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
 
   update def more: Boolean = pos < bufEnd || moreSlow()
 
-  private update def moreSlow(): Boolean =
+  private update def moreSlow(): Boolean = if static then false else
     syncTo()
 
     val hasMore =
@@ -348,7 +453,7 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
   // the source as needed under a hold, so a multi-byte value split across
   // chunks is read exactly as one that arrived whole. `false` if the input
   // ends first, with the read position unchanged.
-  private update def fill(count: Int): Boolean =
+  private update def fill(count: Int): Boolean = if static then false else
     syncTo()
 
     val complete =
@@ -373,7 +478,7 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
 
   // Buffers everything up to the end of the input — the content of an
   // unbounded window read whole (a top-level string or bytes message).
-  private update def fillToEnd(): Unit =
+  private update def fillToEnd(): Unit = if static then () else
     syncTo()
 
     locally:
@@ -400,7 +505,9 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
   private update def skipTo(target: Long)(using Tactic[Protobuf.Error]): Unit =
     val count = target - position
 
-    if count <= 0 then () else if count <= bufEnd - pos then pos += count.toInt else
+    if count <= 0 then () else if count <= bufEnd - pos then pos += count.toInt
+    else if static then abort(Protobuf.Error(Reason.Truncated(offset)))
+    else
       val start = offset
       syncTo()
 
@@ -458,8 +565,35 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
   update def directTag()(using Tactic[Protobuf.Error]): Int =
     directVarint().toInt
 
-  // The window-bounded varint read: the one varint loop of the streaming parser.
+  // The window-bounded varint read. A one-byte varint (a tag, a bool, a short length or a
+  // small value) is the common case, read in place when its byte is within the window and
+  // buffered; a longer one whose ten possible bytes are all buffered and within the window
+  // is read without per-byte end tests; only the remainder reach the general loop.
   update def directVarint()(using Tactic[Protobuf.Error]): Long =
+    if pos < limit && pos < bufEnd && bytes(pos) >= 0 then
+      val value = bytes(pos).toLong
+      pos += 1
+      value
+    else if limit - pos >= 10 && bufEnd - pos >= 10 then varintBuffered(offset, 0L, 0)
+    else directVarintSlow()
+
+  // Every byte a varint may have is buffered and within the window, so termination is the
+  // general loop's without its end tests: the last byte has its top bit clear, or the tenth
+  // byte is malformed.
+  @scala.annotation.tailrec
+  private update def varintBuffered(start: Int, result: Long, shift: Int)
+    ( using Tactic[Protobuf.Error] )
+  :   Long =
+
+    if shift >= 70 then abort(Protobuf.Error(Reason.MalformedVarint(start)))
+    val byte = bytes(pos) & 0xff
+    pos += 1
+    if shift == 63 && (byte & 0x7f) > 1 then abort(Protobuf.Error(Reason.Overflow(start)))
+    val next = if shift < 64 then result | ((byte.toLong & 0x7f) << shift) else result
+    if (byte & 0x80) == 0 then next else varintBuffered(start, next, shift + 7)
+
+  // The one varint loop of the streaming parser, for a varint at the window's or buffer's end.
+  private update def directVarintSlow()(using Tactic[Protobuf.Error]): Long =
     val start = offset
     var result = 0L
     var shift = 0
@@ -605,17 +739,28 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
       directLeaveField(saved)
       result
 
+  // A length-delimited field's content, checked to lie within the window and buffered: the
+  // fused form of `directEnterField(2)`, `windowLength()` and `directLeaveField` for a field
+  // read whole, with the same checks at the same offsets.
+  private update def lengthDelimited()(using Tactic[Protobuf.Error]): Int =
+    val length = directVarint().toInt
+    if length < 0 || position + length > boundary then abort(Protobuf.Error(Reason.Truncated(offset)))
+    expect(length)
+    length
+
   update def directString(code: Int)(using Tactic[Protobuf.Error]): String =
-    val saved = directEnterField(code)
-    val result = stringOut(windowLength())
-    directLeaveField(saved)
-    result
+    if code == 2 then stringOut(lengthDelimited()) else
+      val saved = directEnterField(code)
+      val result = stringOut(windowLength())
+      directLeaveField(saved)
+      result
 
   update def directData(code: Int)(using Tactic[Protobuf.Error]): Data =
-    val saved = directEnterField(code)
-    val result = copyOut(windowLength())
-    directLeaveField(saved)
-    result
+    if code == 2 then copyOut(lengthDelimited()) else
+      val saved = directEnterField(code)
+      val result = copyOut(windowLength())
+      directLeaveField(saved)
+      result
 
   // One field's wire value, materialized — the runtime seam for field types
   // without an `Inlinable`, gathered per occurrence and decoded through the
@@ -624,10 +769,11 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
     val wireType =
       WireType.fromId(code).lest(Protobuf.Error(Reason.UnexpectedWireType(code, offset)))
 
-    val saved = directEnterField(code)
-    val result = Protobuf.Wire(wireType, copyOut(windowLength()))
-    directLeaveField(saved)
-    result
+    if code == 2 then Protobuf.Wire(WireType.Len, copyOut(lengthDelimited())) else
+      val saved = directEnterField(code)
+      val result = Protobuf.Wire(wireType, copyOut(windowLength()))
+      directLeaveField(saved)
+      result
 
   // The whole window's content as text or bytes — the window-level reads
   // behind the reader's leaf accessors, mirroring how the AST accessors

@@ -121,7 +121,24 @@ trait Protobuf2:
 
   given aggregableIn: [value: Decodable in Protobuf] => (tactic: Tactic[Protobuf.Error])
   =>  ( ((value in Protobuf) is Aggregable by Data)^{tactic} ) =
-    bytes => Protobuf.message(bytes.read[Data]).as[value].asInstanceOf[value in Protobuf]
+
+    new Aggregable:
+      type Self = value in Protobuf
+      type Operand = Data
+
+      // A single in-memory block — the common case — is decoded in place, not copied.
+      def aggregate(bytes: Chain[Data]): value in Protobuf =
+        val message =
+          if !bytes.nil && Chain.tail(bytes).nil then Protobuf.message(Chain.head(bytes))
+          else Protobuf.message(Aggregable.bytesData.aggregate(bytes))
+
+        message.as[value].asInstanceOf[value in Protobuf]
+
+      // Gathered once into a single block, rather than materialised as a chain of cells
+      // and then copied, as the trait's default would.
+      override def accept(stream: (Stream[Data] over Credit)^): value in Protobuf =
+        Protobuf.message(Aggregable.bytesData.accept(stream)).as[value]
+        . asInstanceOf[value in Protobuf]
 
   // Unpacked `repeated`: each element is emitted as a separate field (one tag per
   // value). This is the fallback for elements with no `Packable` instance — strings,
@@ -140,7 +157,17 @@ trait Protobuf2:
     // An honest capability: the instance retains the by-name element codec, itself a
     // capability (every given that includes a tactic is a capability; Jon, 2026-07-12).
     values =>
-      val occurrences = values.to(List).bind(encodable.encode(_).occurrences)
+      val builder = scala.collection.immutable.List.newBuilder[Protobuf]
+
+      // An element's encoding is almost always a single wire value, appended as it is: only a
+      // repeated element's occurrences need flattening.
+      values.each: element =>
+        encodable.encode(element) match
+          case Protobuf.Absent           => ()
+          case Protobuf.Repeated(inner)  => inner.fold(builder)(_ += _)
+          case wire                      => builder += wire
+
+      val occurrences = List.from(builder.result())
       if occurrences.nil then Protobuf.Absent else Protobuf.Repeated(occurrences)
 
   given listDecodable: [collection <: Iterable, element]
@@ -201,6 +228,93 @@ object Protobuf extends Protobuf2:
         type Self = value
         def parse(reader: ProtobufReader^): value = decodable.decoded(reader.message())
 
+  object Printable:
+    // The base of generated printers, as `Parsable.Direct` is of generated parsers: generated
+    // code is capture-erased, so the bodies receive the printer and the size table as neutral
+    // carriers, and the capabilities are asserted here at the rim.
+    abstract class Direct[value] extends Protobuf.Printable:
+      type Self = value
+
+      protected def measureCarrier(value: value, sizes: AnyRef): Int
+      protected def writeCarrier(value: value, printer: AnyRef, sizes: AnyRef): Unit
+
+      def measure(value: value, sizes: ProtobufSizes^): Int =
+        measureCarrier(value, sizes.asInstanceOf[AnyRef])
+
+      def write(value: value, printer: ProtobufPrinter^, sizes: ProtobufSizes^): Unit =
+        writeCarrier(value, printer.asInstanceOf[AnyRef], sizes.asInstanceOf[AnyRef])
+
+    def apply[value]
+      ( measure0: (value, ProtobufSizes^) => Int,
+        write0:   (value, ProtobufPrinter^, ProtobufSizes^) => Unit )
+    :   ((value is Protobuf.Printable)^{measure0, write0}) =
+
+      new Protobuf.Printable:
+        type Self = value
+        def measure(value: value, sizes: ProtobufSizes^): Int = measure0(value, sizes)
+
+        def write(value: value, printer: ProtobufPrinter^, sizes: ProtobufSizes^): Unit =
+          write0(value, printer, sizes)
+
+    // The call points for a nominal `Printable` in a field position of a *generated* printer
+    // (a recursive message's own instance, or a hand-written one), as `Parsable.parseField`:
+    // the carriers are reasserted here, at the audited point.
+    def measureField[value](printable: AnyRef, value: value, sizes: AnyRef): Int =
+      printable.asInstanceOf[value is Protobuf.Printable]
+      . measure(value, sizes.asInstanceOf[ProtobufSizes^])
+
+    def writeField[value](printable: AnyRef, value: value, printer: AnyRef, sizes: AnyRef)
+    :   Unit =
+
+      printable.asInstanceOf[value is Protobuf.Printable]
+      . write(value, printer.asInstanceOf[ProtobufPrinter^], sizes.asInstanceOf[ProtobufSizes^])
+
+    // The bridge from the AST world: the value's message, encoded once in the measuring pass
+    // and written in the second.
+    def fromEncodable[value](encodable: (value is Encodable in Protobuf)^)
+    :   ((value is Protobuf.Printable)^{encodable}) =
+
+      new Protobuf.Printable:
+        type Self = value
+
+        def measure(value: value, sizes: ProtobufSizes^): Int =
+          val wire = encodable.encode(value)
+          sizes.stash(wire)
+          wire.payload.length
+
+        def write(value: value, printer: ProtobufPrinter^, sizes: ProtobufSizes^): Unit =
+          printer.raw(sizes.unstash().asInstanceOf[Protobuf].payload)
+
+    // A message's wire bytes through its `Printable`: measured, then written once into an
+    // array of exactly that size.
+    def print[value](value: value)(using printable: (value is Protobuf.Printable)^): Data =
+      val sizes = ProtobufSizes.acquire()
+      val size = printable.measure(value, sizes)
+      sizes.rewind()
+
+      sized(size): printer =>
+        printable.write(value, printer, sizes)
+        ProtobufSizes.release(sizes)
+
+  // The direct-printing counterpart of `Encodable in Protobuf`: writes a value's fields
+  // straight into the output array through a `ProtobufPrinter`, in two passes — `measure`
+  // records every length-delimited size in a `ProtobufSizes`, `write` reads them back — so no
+  // `Protobuf` wire value is built for a field, and no nested message is encoded and copied.
+  // The opt-in surface is explicit instances and `Inlinable.printable`; `encodablePrinted`
+  // below makes `value.in[Protobuf]` direct whenever one is in scope.
+  trait Printable extends Typeclass:
+    def measure(value: Self, sizes: ProtobufSizes^): Int
+    def write(value: Self, printer: ProtobufPrinter^, sizes: ProtobufSizes^): Unit
+
+  // Declared here, not in `Protobuf2` where the derived `encodable` lives, so it wins whenever
+  // a `Printable` exists and is otherwise inapplicable — as `aggregableParsed` is for reads.
+  // The message is the one `Wire` the printer fills, so `.encode` is its array, uncopied.
+  given encodablePrinted: [value]
+  =>  ( printable: (value is Protobuf.Printable)^ )
+  =>  ( (value is Encodable in Protobuf)^{printable} ) =
+
+    value => Wire(WireType.Len, Printable.print(value))
+
   // The direct-parsing counterpart of `Decodable in Protobuf`: consumes
   // fields straight off the input bytes through a `ProtobufReader` instead
   // of walking the materialized number-keyed map, so `read[value in
@@ -255,6 +369,16 @@ object Protobuf extends Protobuf2:
         parseDirect(ProtobufParser(moved.asInstanceOf[(Stream[Data] over Credit)^]), parsable)
         . asInstanceOf[value in Protobuf]
 
+  // A chain already in hand — `Chain(bytes).read[…]`, the common in-memory read — goes to
+  // its `Aggregable`'s own `aggregate`, which reads a single block in place, rather than
+  // through a stream over the chain, as the generic composed `Readable` would route it.
+  // Concrete in `Chain[Data]`, so it beats the composed pipeline by specificity.
+  given chainReadable: [value]
+  =>  ( aggregable: ((value in Protobuf) is Aggregable by Data)^ )
+  =>  ( (Chain[Data] is Readable to (value in Protobuf))^{aggregable} ) =
+
+    (chain: Chain[Data]) => aggregable.aggregate(chain)
+
   // Whole-`Data` direct read: when the entire content is already in hand,
   // parse it in place rather than wrapping it in a one-element stream.
   // Concrete in `Data`, so it beats the composed pipeline by specificity.
@@ -264,7 +388,7 @@ object Protobuf extends Protobuf2:
   =>  ( tactic: Tactic[Protobuf.Error] )
   =>  ( (Data is Readable to (value in Protobuf))^{parsable, tactic} ) =
 
-    data => parseDirect(ProtobufParser(data), parsable).asInstanceOf[value in Protobuf]
+    (data: Data) => parseDirect(ProtobufParser(data), parsable).asInstanceOf[value in Protobuf]
 
   given protobuf: Protobuf is Decodable in Protobuf = identity(_)
 
@@ -302,7 +426,7 @@ object Protobuf extends Protobuf2:
         val fields = ProtobufParser.fields(origin.payload)
 
         if !fields.defines(number) then origin else
-          val bytes = printed: printer =>
+          val bytes = printed(origin.payload.length): printer =>
             fields.each: (key, values) =>
               val value = Protobuf.Repeated(values)
               printer.field(key, if key == number then lambda(value) else value)
@@ -311,9 +435,34 @@ object Protobuf extends Protobuf2:
 
       . or(origin)
 
-  // Synchronously assemble wire bytes by running `lambda` against a `ProtobufPrinter`.
-  private def printed(lambda: ProtobufPrinter^ => Unit): Data =
-    Producer.collect[Data](): producer => lambda(ProtobufPrinter(producer))
+  // Synchronously assemble wire bytes of unknown length by running `lambda` against a
+  // `ProtobufPrinter`, starting from a buffer of `hint` bytes.
+  private def printed(hint: Int)(lambda: ProtobufPrinter^ => Unit): Data =
+    Array.collect[Byte](hint): scribe => lambda(ProtobufPrinter(scribe))
+
+  // The same, for wire bytes whose length is known: written into an array of exactly that
+  // size, which is returned without a copy.
+  private def sized(size: Int)(lambda: ProtobufPrinter^ => Unit): Data =
+    Array.scribe[Byte](size): scribe => _ => lambda(ProtobufPrinter(scribe))
+
+  // A message from its fields' numbers and encoded values, in declaration order: one pass
+  // sums their encoded size, the second writes them.
+  private def message(numbers: Array[Int]^{}, wires: Array[Protobuf]^{}): Data =
+    val numberView = numbers.readable
+    val wireView = wires.readable
+    var size = 0
+    var index = 0
+
+    repeat(numberView.length):
+      size += ProtobufPrinter.fieldSize(numberView(index), wireView(index))
+      index += 1
+
+    sized(size): printer =>
+      var index = 0
+
+      repeat(numberView.length):
+        printer.field(numberView(index), wireView(index))
+        index += 1
 
   // Chain a message's wire bytes incrementally (chunked); the producing code runs on a separate
   // fiber. The bytes themselves are already assembled (Protobuf length-prefixes nested messages, so
@@ -345,19 +494,19 @@ object Protobuf extends Protobuf2:
   private def utf8(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(UTF_8).nn)
 
   given intEncodable: Int is Encodable in Protobuf =
-    int => Wire(WireType.Varint, printed(_.varint(int.toLong)))
+    int => Wire(WireType.Varint, ProtobufPrinter.varintData(int.toLong))
 
   given longEncodable: Long is Encodable in Protobuf =
-    long => Wire(WireType.Varint, printed(_.varint(long)))
+    long => Wire(WireType.Varint, ProtobufPrinter.varintData(long))
 
   given booleanEncodable: Boolean is Encodable in Protobuf =
-    boolean => Wire(WireType.Varint, printed(_.varint(if boolean then 1L else 0L)))
+    boolean => Wire(WireType.Varint, ProtobufPrinter.varintData(if boolean then 1L else 0L))
 
   given doubleEncodable: Double is Encodable in Protobuf =
-    double => Wire(WireType.I64, printed(_.fixed64(jl.Double.doubleToLongBits(double))))
+    double => Wire(WireType.I64, ProtobufPrinter.fixedData(jl.Double.doubleToLongBits(double), 8))
 
   given floatEncodable: Float is Encodable in Protobuf =
-    float => Wire(WireType.I32, printed(_.fixed32(jl.Float.floatToIntBits(float))))
+    float => Wire(WireType.I32, ProtobufPrinter.fixedData(jl.Float.floatToIntBits(float).toLong, 4))
 
   given textEncodable: Text is Encodable in Protobuf = text => Wire(WireType.Len, utf8(text))
   given dataEncodable: Data is Encodable in Protobuf = bytes => Wire(WireType.Len, bytes)
@@ -396,22 +545,22 @@ object Protobuf extends Protobuf2:
   // B32/B64 → fixed32/fixed64 (little-endian).
 
   given u32Encodable: U32 is Encodable in Protobuf =
-    u32 => Wire(WireType.Varint, printed(_.varint(u32.long)))
+    u32 => Wire(WireType.Varint, ProtobufPrinter.varintData(u32.long))
 
   given u64Encodable: U64 is Encodable in Protobuf =
-    u64 => Wire(WireType.Varint, printed(_.varint(u64.bits.s64.long)))
+    u64 => Wire(WireType.Varint, ProtobufPrinter.varintData(u64.bits.s64.long))
 
   given s32Encodable: S32 is Encodable in Protobuf =
-    s32 => Wire(WireType.Varint, printed(_.varint(zigzag(s32.long))))
+    s32 => Wire(WireType.Varint, ProtobufPrinter.varintData(zigzag(s32.long)))
 
   given s64Encodable: S64 is Encodable in Protobuf =
-    s64 => Wire(WireType.Varint, printed(_.varint(zigzag(s64.long))))
+    s64 => Wire(WireType.Varint, ProtobufPrinter.varintData(zigzag(s64.long)))
 
   given b32Encodable: B32 is Encodable in Protobuf =
-    b32 => Wire(WireType.I32, printed(_.fixed32(b32.s32.int)))
+    b32 => Wire(WireType.I32, ProtobufPrinter.fixedData(b32.s32.int.toLong, 4))
 
   given b64Encodable: B64 is Encodable in Protobuf =
-    b64 => Wire(WireType.I64, printed(_.fixed64(b64.s64.long)))
+    b64 => Wire(WireType.I64, ProtobufPrinter.fixedData(b64.s64.long, 8))
 
   given u32Decodable: (tactic: Tactic[Protobuf.Error])
   =>  ( (U32 is Decodable in Protobuf)^{tactic, caps.any} ) =
@@ -466,12 +615,13 @@ object Protobuf extends Protobuf2:
       val list = values.to(List)
 
       if list.nil then Absent else
-        val bytes = printed: printer =>
-          var rest = list.stdlib
+        val hint = list.size*(packable.wireType match
+          case WireType.I64 => 8
+          case WireType.I32 => 4
+          case _            => 2)
 
-          while !rest.isEmpty do
-            printer.raw(encodable.encode(rest.head).payload)
-            rest = rest.tail
+        val bytes = printed(hint): printer =>
+          list.each: element => printer.raw(encodable.encode(element).payload)
 
         Wire(WireType.Len, bytes)
 
@@ -550,9 +700,13 @@ object Protobuf extends Protobuf2:
     map =>
       if map.nil then Absent else
         val entries = map.to[List].map: (key, value) =>
-          val bytes = printed: printer =>
-            printer.field(1, keyEncodable.encode(key))
-            printer.field(2, valueEncodable.encode(value))
+          val keyWire = keyEncodable.encode(key)
+          val valueWire = valueEncodable.encode(value)
+          val size = ProtobufPrinter.fieldSize(1, keyWire) + ProtobufPrinter.fieldSize(2, valueWire)
+
+          val bytes = sized(size): printer =>
+            printer.field(1, keyWire)
+            printer.field(2, valueWire)
 
           Wire(WireType.Len, bytes)
 
@@ -566,10 +720,8 @@ object Protobuf extends Protobuf2:
     // An honest capability, as `listEncodable` above.
     protobuf =>
       val entries = protobuf.occurrences.map: entry =>
-        val fields = ProtobufParser.fields(entry.payload)
-        val key = keyDecodable.decoded(Repeated(fields(1).or(Nil)))
-        val value = valueDecodable.decoded(Repeated(fields(2).or(Nil)))
-        (key, value)
+        val fields = ProtobufParser.scan(entry)
+        (keyDecodable.decoded(fields(1)), valueDecodable.decoded(fields(2)))
 
       entries.to[Map]
 
@@ -582,26 +734,26 @@ object Protobuf extends Protobuf2:
         case _                           => Map()
 
       value =>
-        // The parameter ascription pins the lambda's type at each expansion site; without it,
-        // repeated expansions in one unit reuse a memoized capability root (#26547).
-        val bytes = printed: (printer: ProtobufPrinter^) =>
-          fields(value):
-            [field0] => fieldValue =>
-              // The number is computed exactly as `fieldNumbers` would, from this field's own
-              // label and index — no map lookup whose totality would need asserting.
-              printer.field
-                ( annotated(label).let(_.stdlib.head.number).or(index + 1),
-                  contextual.encode(fieldValue) )
+        // Each number is computed exactly as `fieldNumbers` would, from the field's own label
+        // and index — no map lookup whose totality would need asserting.
+        val numbers: Array[Int]^{} = fields(value):
+          [field0] => _ => annotated(label).let(_.stdlib.head.number).or(index + 1)
 
-        Protobuf.Wire(WireType.Len, bytes)
+        val wires: Array[Protobuf]^{} = fields(value):
+          [field0] => fieldValue => contextual.encode(fieldValue)
+
+        Protobuf.Wire(WireType.Len, message(numbers, wires))
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Protobuf =
       value =>
         variant(value):
           [variant <: derivation] => variantValue =>
-            // Parameter ascription pins the capability root per expansion, as in `conjunction`.
-            val payload = printed: (printer: ProtobufPrinter^) =>
-              printer.field(index + 1, contextual.encode(variantValue))
+            val wire = contextual.encode(variantValue)
+
+            // The parameter ascription pins the lambda's type at each expansion site; without
+            // it, repeated expansions in one unit reuse a memoized capability root (#26547).
+            val payload = sized(ProtobufPrinter.fieldSize(index + 1, wire)):
+              (printer: ProtobufPrinter^) => printer.field(index + 1, wire)
 
             Protobuf.Wire(WireType.Len, payload)
 
@@ -618,30 +770,31 @@ object Protobuf extends Protobuf2:
       // (`^`) trait result honestly admits the capture — no seal.
       { protobuf =>
         provide[Tactic[Protobuf.Error]]:
-          val map = ProtobufParser.fields(protobuf.payload)
+          val table = ProtobufParser.scan(protobuf)
 
           build[derivation]:
             [field0] => context =>
-              map(annotated(label).let(_.stdlib.head.number).or(index + 1))
-              . lay(default.or(context.decoded(Protobuf.Absent))): values =>
-                context.decoded(Protobuf.Repeated(values)) }
+              val wire = table(annotated(label).let(_.stdlib.head.number).or(index + 1))
+              if wire.isAbsent then default.or(context.decoded(Protobuf.Absent))
+              else context.decoded(wire) }
 
     inline def disjunction[derivation: SumReflection]: (derivation is Decodable in Protobuf)^ =
       // A fresh (`^`) result honestly admitting the capture, as for `conjunction` above.
       { protobuf =>
         provide[Tactic[Protobuf.Error]]:
           provide[Tactic[Variant.Error]]:
-            val map = ProtobufParser.fields(protobuf.payload)
+            val table = ProtobufParser.scan(protobuf)
             val labels = variantLabels
 
             val (label, index) =
-              labels.indexed.seek { (_, ordinal) => map.defines(ordinal.n1) }.or:
+              labels.indexed.seek { (_, ordinal) => table.defines(ordinal.n1) }.or:
                 abort(Protobuf.Error(Reason.MissingField(0)))
 
             delegate(label):
               [variant <: derivation] => context =>
-                map(index.n1).lay(abort(Protobuf.Error(Reason.MissingField(index.n1)))): values =>
-                  context.decoded(Protobuf.Repeated(values)) }
+                val wire = table(index.n1)
+                if wire.isAbsent then abort(Protobuf.Error(Reason.MissingField(index.n1)))
+                else context.decoded(wire) }
 
   // ProtobufError → Protobuf.Error
   object Error:
@@ -684,7 +837,7 @@ enum Protobuf:
 
   // The most recent single wire value (protobuf's last-one-wins rule for scalars).
   def single: Protobuf = this match
-    case Repeated(values) => values.occupied.let(_.last).or(Protobuf.Absent)
+    case Repeated(values) => if values.nil then Protobuf.Absent else List.last(values)
     case other            => other
 
   // Every wire value recorded for this field — used to decode `repeated` fields.

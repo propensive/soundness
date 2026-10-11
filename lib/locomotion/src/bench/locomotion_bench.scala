@@ -70,6 +70,8 @@ case class Logs(@field(1) logs: List[LogEntry]) derives CanEqual
 
 case class Ints(@field(1) values: List[Long]) derives CanEqual
 
+case class Tags(@field(1) tags: List[Text]) derives CanEqual
+
 case class Attributes(@field(1) entries: Map[Text, Text]) derives CanEqual
 
 // A chain of distinct wrapper messages giving a fixed five-level nesting depth.
@@ -99,6 +101,7 @@ given smallEncodable:      Small is Encodable in Protobuf = Protobuf.EncodableDe
 given usersEncodable:      Users is Encodable in Protobuf = Protobuf.EncodableDerivation.derived
 given logsEncodable:       Logs is Encodable in Protobuf = Protobuf.EncodableDerivation.derived
 given intsEncodable:       Ints is Encodable in Protobuf = Protobuf.EncodableDerivation.derived
+given tagsEncodable:       Tags is Encodable in Protobuf = Protobuf.EncodableDerivation.derived
 given attributesEncodable: Attributes is Encodable in Protobuf =
   Protobuf.EncodableDerivation.derived
 given deep1Encodable:      Deep1 is Encodable in Protobuf = Protobuf.EncodableDerivation.derived
@@ -106,6 +109,7 @@ given smallDecodable:      Small is Decodable in Protobuf = Protobuf.DecodableDe
 given usersDecodable:      Users is Decodable in Protobuf = Protobuf.DecodableDerivation.derived
 given logsDecodable:       Logs is Decodable in Protobuf = Protobuf.DecodableDerivation.derived
 given intsDecodable:       Ints is Decodable in Protobuf = Protobuf.DecodableDerivation.derived
+given tagsDecodable:       Tags is Decodable in Protobuf = Protobuf.DecodableDerivation.derived
 given attributesDecodable: Attributes is Decodable in Protobuf =
   Protobuf.DecodableDerivation.derived
 given deep1Decodable:      Deep1 is Decodable in Protobuf = Protobuf.DecodableDerivation.derived
@@ -114,9 +118,24 @@ given deep1Decodable:      Deep1 is Decodable in Protobuf = Protobuf.DecodableDe
 // through the derived `Decodable` (the `Protobuf` ADT path), and the direct rows bring one of
 // these into scope *inside* the staged body (`given … = locomotion.logsParsable`), so each row
 // measures one path and neither measures the generation of its parser.
-val usersParsable: Users is Protobuf.Parsable = Inlinable.parsable[Users]
-val logsParsable:  Logs is Protobuf.Parsable  = Inlinable.parsable[Logs]
-val deep1Parsable: Deep1 is Protobuf.Parsable = Inlinable.parsable[Deep1]
+val smallParsable:      Small is Protobuf.Parsable      = Inlinable.parsable[Small]
+val usersParsable:      Users is Protobuf.Parsable      = Inlinable.parsable[Users]
+val logsParsable:       Logs is Protobuf.Parsable       = Inlinable.parsable[Logs]
+val intsParsable:       Ints is Protobuf.Parsable       = Inlinable.parsable[Ints]
+val tagsParsable:       Tags is Protobuf.Parsable       = Inlinable.parsable[Tags]
+val attributesParsable: Attributes is Protobuf.Parsable = Inlinable.parsable[Attributes]
+val deep1Parsable:      Deep1 is Protobuf.Parsable      = Inlinable.parsable[Deep1]
+
+// Generated direct printers, likewise: the "Encode with Locomotion" rows resolve the derived
+// `Encodable` (the `Protobuf` ADT path), and the direct rows bring one of these into scope
+// through `Protobuf.encodablePrinted` inside the staged body.
+val smallPrintable:      Small is Protobuf.Printable      = Inlinable.printable[Small]
+val usersPrintable:      Users is Protobuf.Printable      = Inlinable.printable[Users]
+val logsPrintable:       Logs is Protobuf.Printable       = Inlinable.printable[Logs]
+val intsPrintable:       Ints is Protobuf.Printable       = Inlinable.printable[Ints]
+val tagsPrintable:       Tags is Protobuf.Printable       = Inlinable.printable[Tags]
+val attributesPrintable: Attributes is Protobuf.Printable = Inlinable.printable[Attributes]
+val deep1Printable:      Deep1 is Protobuf.Printable      = Inlinable.printable[Deep1]
 
 // A hand-written streaming consumer with a tiny live set: counts the occurrences of field 1
 // (the `Logs.logs` entries) without decoding any of them, so a constrained-heap stress run over

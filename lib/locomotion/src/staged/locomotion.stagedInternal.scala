@@ -41,6 +41,7 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 
 // The machinery behind `Protobuf.Inlinable`: expansion-time instance
@@ -367,6 +368,54 @@ object stagedInternal:
       case OrType(left, right) if left =:= unset  => Some(right.dealias)
       case _                                      => None
 
+  // The opaque prelude `List`/`Set`/`Sequence` do not conform to `Iterable`
+  // (so the `Iterable` test misses them) and their companions expose no
+  // `Factory`, only a `Conversion`: each maps to its underlying stdlib
+  // collection, at which a builder is summoned and whose result is cast back
+  // — a no-op at erasure — mirroring breviloquence's generator.
+  private def aliasCollectionUnderlying(using Quotes)(tpe: quotes.reflect.TypeRepr)
+  :   Option[quotes.reflect.TypeRepr] =
+
+    import quotes.reflect.*
+
+    val listSym     = TypeRepr.of[proscenium.List[Any]].typeSymbol
+    val setSym      = TypeRepr.of[proscenium.Set[Any]].typeSymbol
+    val sequenceSym = TypeRepr.of[proscenium.Sequence[Any]].typeSymbol
+
+    tpe.dealias match
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == listSym =>
+        Some(TypeRepr.of[scala.collection.immutable.List].appliedTo(element))
+
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == setSym =>
+        Some(TypeRepr.of[scala.collection.immutable.Set].appliedTo(element))
+
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == sequenceSym =>
+        Some(TypeRepr.of[scala.collection.immutable.Vector].appliedTo(element))
+
+      case _ =>
+        None
+
+  // A fresh builder for a gathered field, typed at the field's own type so
+  // the per-occurrence appends and the finalizer need no cast: summoned at
+  // the field type, or — for an opaque prelude alias, which has no
+  // `Factory` — at its underlying stdlib collection and cast once here.
+  private def newBuilder[element: Type, fieldType: Type](using Quotes)
+  :   Expr[scm.Builder[element, fieldType]] =
+
+    import quotes.reflect.*
+
+    aliasCollectionUnderlying(TypeRepr.of[fieldType]) match
+      case Some(underlying) =>
+        underlying.asType match
+          case '[stdlib] =>
+            ' {
+                infer[scala.collection.Factory[element, stdlib]].newBuilder
+                . asInstanceOf[scm.Builder[element, fieldType]]
+              }
+
+      case None =>
+        '{infer[scala.collection.Factory[element, fieldType]].newBuilder}
+
   private def planFor(using Quotes)(tpe0: quotes.reflect.TypeRepr, cache: Cache): Plan =
     import quotes.reflect.*
 
@@ -384,7 +433,10 @@ object stagedInternal:
             Plan.OptionalLeaf(kind)
 
           case None =>
-            val innerIterable = inner <:< TypeRepr.of[Iterable[Any]]
+            // An optional collection has no inlined form on either path:
+            // it stays on the seam, prelude alias or not.
+            val innerIterable =
+              inner <:< TypeRepr.of[Iterable[Any]] || aliasCollectionUnderlying(inner).isDefined
 
             if innerIterable then Plan.Seam else inner.asType match
               case '[innerType] =>
@@ -398,11 +450,18 @@ object stagedInternal:
                     Plan.Seam
 
       case None =>
-        val isMap = tpe.derivesFrom(Symbol.requiredClass("scala.collection.Map"))
+        // A `Map` — stdlib or the opaque prelude alias — is an `Iterable` of
+        // pairs, but its wire form is a repeated entry message: it stays on
+        // the seam (`mapDecodable`). The opaque prelude `List`/`Set`/`Sequence`
+        // do not conform to `Iterable`, so they are recognised by their
+        // constructor.
+        val isMap =
+          tpe.derivesFrom(Symbol.requiredClass("scala.collection.Map")) ||
+            tpe.typeSymbol == TypeRepr.of[proscenium.Map[Any, Any]].typeSymbol
 
-        // A `Map` is an `Iterable` of pairs, but its wire form is a
-        // repeated entry message — it stays on the seam (`mapDecodable`).
-        if !isMap && tpe <:< TypeRepr.of[Iterable[Any]] then tpe match
+        val isAliasCollection = aliasCollectionUnderlying(tpe).isDefined
+
+        if !isMap && (tpe <:< TypeRepr.of[Iterable[Any]] || isAliasCollection) then tpe match
           case AppliedType(_, arguments) =>
             val elementType = arguments.last.dealias
 
@@ -678,10 +737,7 @@ object stagedInternal:
 
             (elementType.asType, fieldTypes(index).asType) match
               case ('[element], '[fieldType]) =>
-                val rhs: Expr[Any] =
-                  '{infer[scala.collection.Factory[element, fieldType]].newBuilder}
-
-                Some(ValDef(builders(index), Some(rhs.asTerm)))
+                Some(ValDef(builders(index), Some(newBuilder[element, fieldType].asTerm)))
 
           case _ =>
             None
@@ -1055,8 +1111,7 @@ object stagedInternal:
               val elementType = elementType0.asInstanceOf[TypeRepr]
 
               elementType.asType match
-                case '[element] =>
-                  '{infer[scala.collection.Factory[element, fieldType]].newBuilder.result()}
+                case '[element] => '{${newBuilder[element, fieldType]}.result()}
 
             case Plan.Seam =>
               seamDecode[fieldType]('{Protobuf.Absent})
@@ -1152,6 +1207,570 @@ object stagedInternal:
           val result: sum = ${dispatch(0, 'chosen, 'tactic)}
           ProtobufParser.of($reader.rawParser).directRestore(outer)
           result
+      }
+
+  // ── The printing generators ────────────────────────────────────────────
+  // The product printer follows the product parser's plans, so a message
+  // prints exactly the fields it parses: a builtin scalar `Leaf` is sized
+  // and written in place; a `Nested` instance that prints is measured into
+  // a slot of the size table reserved before its children and written after
+  // its length prefix; a `Gather` is a packed run (numeric scalars, one
+  // `Len` field whose size is recorded even when empty, so the write pass
+  // needs no second emptiness test), one field per element (strings, bytes,
+  // printing messages), or the whole-field seam; and the `Seam` encodes the
+  // field once, through its `Encodable in Protobuf`, stashing the wire value
+  // between the passes. Both passes visit the fields in declaration order,
+  // which is the order the derived `Encodable` writes them, so the bytes are
+  // the derivation's.
+  //
+  // The printer and the size table are neutral carriers, reasserted at every
+  // use (`ProtobufPrinter.of`, `ProtobufSizes.of`) and never bound to a
+  // local, for the reason `productBody` gives for the parser.
+
+  private def seamEncode[fieldType: Type](value: Expr[fieldType])(using Quotes)
+  :   Expr[Protobuf] =
+
+    import quotes.reflect.*
+
+    Implicits.search(TypeRepr.of[fieldType is Encodable in Protobuf]).absolve match
+      case success: ImplicitSearchSuccess =>
+        success.tree.asExpr.absolve match
+          case '{$found: any} =>
+            '{$found.asInstanceOf[fieldType is Encodable in Protobuf].encoded($value)}
+
+      case failure: ImplicitSearchFailure =>
+        report.errorAndAbort
+          ( s"locomotion: no Encodable in Protobuf for ${TypeRepr.of[fieldType].show}: " +
+            failure.explanation )
+
+  // A nominal `Protobuf.Printable` for a field type — the recursion tie and
+  // the composition point for hand-written printers, as `parsableFor`.
+  private def printableFor[fieldType: Type](using Quotes): Option[Expr[Any]] =
+    import quotes.reflect.*
+
+    Implicits.search(TypeRepr.of[fieldType is Protobuf.Printable]) match
+      case success: ImplicitSearchSuccess => Some(success.tree.asExpr)
+      case _                              => None
+
+  private def wireTypeOf(kind: Int)(using Quotes): Expr[WireType] = kind match
+    case KDouble        => '{WireType.I64}
+    case KFloat         => '{WireType.I32}
+    case KText | KData  => '{WireType.Len}
+    case _              => '{WireType.Varint}
+
+  // The encoded length of a builtin scalar's payload, recording a string's.
+  private def scalarSize(kind: Int, value: Expr[Any], sizes: Expr[AnyRef])(using Quotes)
+  :   Expr[Int] =
+
+    kind match
+      case KInt     => '{ProtobufPrinter.varintSize(${value.asExprOf[Int]}.toLong)}
+      case KLong    => '{ProtobufPrinter.varintSize(${value.asExprOf[Long]})}
+      case KBoolean => Expr(1)
+      case KDouble  => Expr(8)
+      case KFloat   => Expr(4)
+
+      case KText =>
+        ' {
+            val length = ProtobufSizes.of($sizes).stashText(${value.asExprOf[Text]}.s)
+            ProtobufPrinter.varintSize(length.toLong) + length
+          }
+
+      case KData =>
+        ' {
+            val length = ${value.asExprOf[Data]}.length
+            ProtobufPrinter.varintSize(length.toLong) + length
+          }
+
+  // The payload of a builtin scalar, after its tag.
+  private def scalarWrite
+    ( kind: Int, value: Expr[Any], printer: Expr[AnyRef], sizes: Expr[AnyRef] )
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    kind match
+      case KInt  => '{ProtobufPrinter.of($printer).varint(${value.asExprOf[Int]}.toLong)}
+      case KLong => '{ProtobufPrinter.of($printer).varint(${value.asExprOf[Long]})}
+
+      case KBoolean =>
+        '{ProtobufPrinter.of($printer).varint(if ${value.asExprOf[Boolean]} then 1L else 0L)}
+
+      case KDouble =>
+        ' {
+            ProtobufPrinter.of($printer).fixed64
+              (java.lang.Double.doubleToLongBits(${value.asExprOf[Double]}))
+          }
+
+      case KFloat =>
+        ' {
+            ProtobufPrinter.of($printer).fixed32
+              (java.lang.Float.floatToIntBits(${value.asExprOf[Float]}))
+          }
+
+      case KText =>
+        '{ProtobufPrinter.of($printer).stashedText(ProtobufSizes.of($sizes))}
+
+      case KData =>
+        '{ProtobufPrinter.of($printer).chunk(${value.asExprOf[Data]})}
+
+  // The elements of a gathered field, visited through an iterator by a local recursive
+  // function: no lambda, so nothing is boxed and no `var` is captured.
+  private def summed[element: Type](iterable: Expr[Iterable[element]])
+    ( size: Expr[element] => Expr[Int] )
+    ( using Quotes )
+  :   Expr[Int] =
+
+    ' {
+        val iterator = $iterable.iterator
+
+        def recur(total: Int): Int =
+          if iterator.hasNext then
+            val item = iterator.next()
+            recur(total + ${size('item)})
+          else total
+
+        recur(0)
+      }
+
+  private def visited[element: Type](iterable: Expr[Iterable[element]])
+    ( write: Expr[element] => Expr[Unit] )
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    ' {
+        val iterator = $iterable.iterator
+
+        def recur(): Unit =
+          if iterator.hasNext then
+            val item = iterator.next()
+            ${write('item)}
+            recur()
+
+        recur()
+      }
+
+  // A message in a field position: its size goes into a slot reserved before its children
+  // are measured, and the field is its tag, the length prefix and the body.
+  private def framedSize(number: Int, body: Expr[Int], sizes: Expr[AnyRef])(using Quotes)
+  :   Expr[Int] =
+
+    ' {
+        val slot = ProtobufSizes.of($sizes).reserve()
+        val size = $body
+        ProtobufSizes.of($sizes).set(slot, size)
+        ${Expr(ProtobufPrinter.tagSize(number))} + ProtobufPrinter.varintSize(size.toLong) + size
+      }
+
+  private def framedWrite
+    ( number: Int, body: Expr[Unit], printer: Expr[AnyRef], sizes: Expr[AnyRef] )
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    ' {
+        ProtobufPrinter.of($printer).tag(${Expr(number)}, WireType.Len)
+        ProtobufPrinter.of($printer).varint(ProtobufSizes.of($sizes).next().toLong)
+        $body
+      }
+
+  // The product's reflected shape, shared by both passes: its fields, their types and
+  // numbers, and their plans.
+  private def productShape[product: Type](cache: Cache)(using Quotes)
+  :   ( List[quotes.reflect.Symbol], List[quotes.reflect.TypeRepr], List[Int], List[Plan] ) =
+
+    import quotes.reflect.*
+
+    val tpe = TypeRepr.of[product].dealias
+
+    if !productSupported(tpe) then
+      report.errorAndAbort
+        ( s"locomotion: ${tpe.show} is not an inlinable message (a non-generic, top-level or " +
+          "object-nested case class with a single parameter list and distinct, statically " +
+          "readable field numbers); use an `Encodable in Protobuf`" )
+
+    val classSymbol = tpe.classSymbol.get
+    val fields = classSymbol.caseFields
+    val fieldTypes = fields.map { field => tpe.memberType(field).dealias }
+
+    (fields, fieldTypes, fieldNumbersOf(classSymbol).get, fieldTypes.map(planFor(_, cache)))
+
+  // Runs a generator with the product on the expansion stack, as `productBody` does.
+  private def active[product: Type, result](cache: Cache)(generate: => result)(using Quotes)
+  :   result =
+
+    val name = quotes.reflect.TypeRepr.of[product].dealias.show
+    cache.active += name
+    try generate finally cache.active -= name
+
+  private[locomotion] def productMeasure[product: Type](value: Expr[product], sizes: Expr[AnyRef])
+    ( using Quotes )
+  :   Expr[Int] =
+
+    productMeasure[product](value, sizes, Cache())
+
+  private def productMeasure[product: Type]
+    ( value: Expr[product], sizes: Expr[AnyRef], cache: Cache )
+    ( using Quotes )
+  :   Expr[Int] =
+
+    import quotes.reflect.*
+
+    active[product, Expr[Int]](cache):
+      val (fields, fieldTypes, numbers, plans) = productShape[product](cache)
+
+      val sizesOf: List[Expr[Int]] = List.range(0, fields.length).map: index =>
+        val number = numbers(index)
+        val tag = ProtobufPrinter.tagSize(number)
+        val field = Select(value.asTerm, fields(index)).asExpr
+
+        fieldTypes(index).asType match
+          case '[fieldType] =>
+            val typed = field.asExprOf[fieldType]
+
+            def seam: Expr[Int] =
+              ' {
+                  val wire = ${seamEncode[fieldType](typed)}
+                  ProtobufSizes.of($sizes).stash(wire)
+                  ProtobufPrinter.fieldSize(${Expr(number)}, wire)
+                }
+
+            def nominal: Expr[Int] = printableFor[fieldType] match
+              case Some(printable) =>
+                framedSize
+                  ( number,
+                    ' {
+                        Protobuf.Printable.measureField[fieldType]
+                          ($printable.asInstanceOf[AnyRef], $typed, $sizes)
+                      },
+                    sizes )
+
+              case None =>
+                seam
+
+            plans(index) match
+              case Plan.Leaf(kind) =>
+                '{${Expr(tag)} + ${scalarSize(kind, typed, sizes)}}
+
+              case Plan.OptionalLeaf(kind) =>
+                optionalInner(fieldTypes(index)).get.asType match
+                  case '[inner] =>
+                    ' {
+                        if ${typed.asExprOf[Optional[inner]]}.absent then 0
+                        else
+                          ${Expr(tag)} +
+                            ${scalarSize(kind, '{$typed.asInstanceOf[inner]}, sizes)}
+                      }
+
+              case Plan.Nested(instance) if instance.prints =>
+                framedSize
+                  ( number,
+                    instance.asInstanceOf[Inlinable { type Self = fieldType }]
+                    . measure(typed, sizes),
+                    sizes )
+
+              case Plan.Nested(_) | Plan.NestedRuntime(_) =>
+                nominal
+
+              case Plan.OptionalNested(instance, innerType0) if instance.prints =>
+                innerType0.asInstanceOf[TypeRepr].asType match
+                  case '[inner] =>
+                    val present: Expr[inner] = '{$typed.asInstanceOf[inner]}
+
+                    val framed = framedSize
+                      ( number,
+                        instance.asInstanceOf[Inlinable { type Self = inner }]
+                        . measure(present, sizes),
+                        sizes )
+
+                    '{if ${typed.asExprOf[Optional[inner]]}.absent then 0 else $framed}
+
+              case Plan.Gather(element, elementType0) =>
+                elementType0.asInstanceOf[TypeRepr].asType match
+                  case '[element] =>
+                    val iterable = '{$typed.asInstanceOf[Iterable[element]]}
+
+                    element match
+                      case Elem.Scalar(kind) =>
+                        def each(item: Expr[element]): Expr[Int] = scalarSize(kind, item, sizes)
+
+                        ' {
+                            val run = ${summed(iterable)(each)}
+                            ProtobufSizes.of($sizes).record(run)
+
+                            if run == 0 then 0
+                            else ${Expr(tag)} + ProtobufPrinter.varintSize(run.toLong) + run
+                          }
+
+                      case Elem.Chunk(kind) =>
+                        def each(item: Expr[element]): Expr[Int] =
+                          '{${Expr(tag)} + ${scalarSize(kind, item, sizes)}}
+
+                        summed(iterable)(each)
+
+                      case Elem.Nested(instance0, _) if instance0.prints =>
+                        val instance = instance0.asInstanceOf[Inlinable { type Self = element }]
+
+                        def framed(item: Expr[element]): Expr[Int] =
+                          framedSize(number, instance.measure(item, sizes), sizes)
+
+                        summed(iterable)(framed)
+
+                      case Elem.Nested(_, _) | Elem.Runtime(_) | Elem.Seam =>
+                        printableFor[element] match
+                          case Some(printable) =>
+                            def framed(item: Expr[element]): Expr[Int] =
+                              framedSize
+                                ( number,
+                                  ' {
+                                      Protobuf.Printable.measureField[element]
+                                        ($printable.asInstanceOf[AnyRef], $item, $sizes)
+                                    },
+                                  sizes )
+
+                            summed(iterable)(framed)
+
+                          case None =>
+                            seam
+
+              // A recursive message field (`Plan.Seam` here, its parser being on the
+              // stack) prints through its own nominal instance; the rest of the seam —
+              // maps, typed integers, optional collections, custom types — through their
+              // `Encodable`.
+              case _ =>
+                nominal
+
+      sizesOf.foldLeft[Expr[Int]](Expr(0)) { (total, size) => '{$total + $size} }
+
+  private[locomotion] def productWrite[product: Type]
+    ( value: Expr[product], printer: Expr[AnyRef], sizes: Expr[AnyRef] )
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    productWrite[product](value, printer, sizes, Cache())
+
+  private def productWrite[product: Type]
+    ( value: Expr[product], printer: Expr[AnyRef], sizes: Expr[AnyRef], cache: Cache )
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    import quotes.reflect.*
+
+    active[product, Expr[Unit]](cache):
+      val (fields, fieldTypes, numbers, plans) = productShape[product](cache)
+
+      val writes: List[Expr[Unit]] = List.range(0, fields.length).map: index =>
+        val number = numbers(index)
+        val field = Select(value.asTerm, fields(index)).asExpr
+
+        fieldTypes(index).asType match
+          case '[fieldType] =>
+            val typed = field.asExprOf[fieldType]
+
+            def seam: Expr[Unit] =
+              ' {
+                  ProtobufPrinter.of($printer).field
+                    (${Expr(number)}, ProtobufSizes.of($sizes).unstash().asInstanceOf[Protobuf])
+                }
+
+            def tagged(kind: Int, item: Expr[Any]): Expr[Unit] =
+              ' {
+                  ProtobufPrinter.of($printer).tag(${Expr(number)}, ${wireTypeOf(kind)})
+                  ${scalarWrite(kind, item, printer, sizes)}
+                }
+
+            def nominal: Expr[Unit] = printableFor[fieldType] match
+              case Some(printable) =>
+                framedWrite
+                  ( number,
+                    ' {
+                        Protobuf.Printable.writeField[fieldType]
+                          ($printable.asInstanceOf[AnyRef], $typed, $printer, $sizes)
+                      },
+                    printer, sizes )
+
+              case None =>
+                seam
+
+            plans(index) match
+              case Plan.Leaf(kind) =>
+                tagged(kind, typed)
+
+              case Plan.OptionalLeaf(kind) =>
+                optionalInner(fieldTypes(index)).get.asType match
+                  case '[inner] =>
+                    ' {
+                        if !${typed.asExprOf[Optional[inner]]}.absent
+                        then ${tagged(kind, '{$typed.asInstanceOf[inner]})}
+                      }
+
+              case Plan.Nested(instance) if instance.prints =>
+                framedWrite
+                  ( number,
+                    instance.asInstanceOf[Inlinable { type Self = fieldType }]
+                    . write(typed, printer, sizes),
+                    printer, sizes )
+
+              case Plan.Nested(_) | Plan.NestedRuntime(_) =>
+                nominal
+
+              case Plan.OptionalNested(instance, innerType0) if instance.prints =>
+                innerType0.asInstanceOf[TypeRepr].asType match
+                  case '[inner] =>
+                    val present: Expr[inner] = '{$typed.asInstanceOf[inner]}
+
+                    val framed = framedWrite
+                      ( number,
+                        instance.asInstanceOf[Inlinable { type Self = inner }]
+                        . write(present, printer, sizes),
+                        printer, sizes )
+
+                    '{if !${typed.asExprOf[Optional[inner]]}.absent then $framed}
+
+              case Plan.Gather(element, elementType0) =>
+                elementType0.asInstanceOf[TypeRepr].asType match
+                  case '[element] =>
+                    val iterable = '{$typed.asInstanceOf[Iterable[element]]}
+
+                    element match
+                      case Elem.Scalar(kind) =>
+                        def each(item: Expr[element]): Expr[Unit] =
+                          scalarWrite(kind, item, printer, sizes)
+
+                        ' {
+                            val run = ProtobufSizes.of($sizes).next()
+
+                            if run > 0 then
+                              ProtobufPrinter.of($printer).tag(${Expr(number)}, WireType.Len)
+                              ProtobufPrinter.of($printer).varint(run.toLong)
+                              ${visited(iterable)(each)}
+                          }
+
+                      case Elem.Chunk(kind) =>
+                        visited(iterable) { item => tagged(kind, item) }
+
+                      case Elem.Nested(instance0, _) if instance0.prints =>
+                        val instance = instance0.asInstanceOf[Inlinable { type Self = element }]
+
+                        def framed(item: Expr[element]): Expr[Unit] =
+                          framedWrite(number, instance.write(item, printer, sizes), printer, sizes)
+
+                        visited(iterable)(framed)
+
+                      case Elem.Nested(_, _) | Elem.Runtime(_) | Elem.Seam =>
+                        printableFor[element] match
+                          case Some(printable) =>
+                            def framed(item: Expr[element]): Expr[Unit] =
+                              framedWrite
+                                ( number,
+                                  ' {
+                                      Protobuf.Printable.writeField[element]
+                                        ($printable.asInstanceOf[AnyRef], $item, $printer, $sizes)
+                                    },
+                                  printer, sizes )
+
+                            visited(iterable)(framed)
+
+                          case None =>
+                            seam
+
+              // A recursive message field (`Plan.Seam` here, its parser being on the
+              // stack) prints through its own nominal instance; the rest of the seam —
+              // maps, typed integers, optional collections, custom types — through their
+              // `Encodable`.
+              case _ =>
+                nominal
+
+      Expr.block(writes, '{()})
+
+  // A oneof is a message holding one field, numbered by the variant's
+  // declaration order — `EncodableDerivation.disjunction`'s bytes. The
+  // variants are tried in order; the last needs no test, the sum being
+  // sealed.
+  private[locomotion] def sumMeasure[sum: Type](value: Expr[sum], sizes: Expr[AnyRef])
+    ( using Quotes )
+  :   Expr[Int] =
+
+    sumDispatch[sum, Int](value, Cache()):
+      [variant] => (index: Int, instance: Inlinable { type Self = variant }, item: Expr[variant]) =>
+        (tpe: Type[variant]) ?=> framedSize(index + 1, instance.measure(item, sizes), sizes)
+
+  private[locomotion] def sumWrite[sum: Type]
+    ( value: Expr[sum], printer: Expr[AnyRef], sizes: Expr[AnyRef] )
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    sumDispatch[sum, Unit](value, Cache()):
+      [variant] => (index: Int, instance: Inlinable { type Self = variant }, item: Expr[variant]) =>
+        (tpe: Type[variant]) ?=>
+          framedWrite(index + 1, instance.write(item, printer, sizes), printer, sizes)
+
+  private def sumDispatch[sum: Type, result: Type](value: Expr[sum], cache: Cache)
+    ( body: [variant] => (Int, Inlinable { type Self = variant }, Expr[variant])
+                         => Type[variant] ?=> Expr[result] )
+    ( using Quotes )
+  :   Expr[result] =
+
+    import quotes.reflect.*
+
+    active[sum, Expr[result]](cache):
+      val variants = sumVariants(TypeRepr.of[sum].dealias).getOrElse:
+        report.errorAndAbort
+          ( s"locomotion: ${TypeRepr.of[sum].show} is not an inlinable oneof (a non-generic " +
+            "sealed type whose variants are all case classes)" )
+
+      def dispatch(index: Int): Expr[result] =
+        variants(index)(1).asType match
+          case '[type variantType <: sum; variantType] =>
+            val instance = resolve[variantType](cache).getOrElse:
+              report.errorAndAbort(s"locomotion: no Inlinable for variant ${variants(index)(0)}")
+
+            if !instance.prints then
+              report.errorAndAbort
+                ( s"locomotion: the Inlinable for variant ${variants(index)(0)} generates no " +
+                  "printer" )
+
+            val typed = instance.asInstanceOf[Inlinable { type Self = variantType }]
+
+            if index == variants.length - 1 then
+              ' {
+                  val variant = $value.asInstanceOf[variantType]
+                  ${body[variantType](index, typed, 'variant)}
+                }
+            else
+              ' {
+                  if $value.isInstanceOf[variantType] then
+                    val variant = $value.asInstanceOf[variantType]
+                    ${body[variantType](index, typed, 'variant)}
+                  else ${dispatch(index + 1)}
+                }
+
+      dispatch(0)
+
+  def inlinablePrintable[value: Type](using Quotes): Expr[value is Protobuf.Printable] =
+    import quotes.reflect.*
+
+    val cache: Cache = Cache()
+
+    val root: Inlinable = resolve[value](cache).getOrElse:
+      report.errorAndAbort
+        ( s"locomotion: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not " +
+          "an inlinable message or oneof; use an `Encodable in Protobuf`" )
+
+    if root.isInstanceOf[Inlinable.IterableInlinable[?]] || !root.prints then
+      report.errorAndAbort
+        ( s"locomotion: ${TypeRepr.of[value].show} has no generated printer; a Protobuf " +
+          "message is the unit of direct printing" )
+
+    val instance = root.asInstanceOf[Inlinable { type Self = value }]
+
+    ' {
+        // Sealed per the codec-thunk pattern, as `inlinableParsable`.
+        // [quote-wall] staged Printable generated inside quote
+        caps.unsafe.unsafeAssumePure:
+          new Protobuf.Printable.Direct[value]:
+            protected def measureCarrier(value0: value, sizes0: AnyRef): Int =
+              ${instance.measure('value0, 'sizes0)}
+
+            protected def writeCarrier(value0: value, printer0: AnyRef, sizes0: AnyRef): Unit =
+              ${instance.write('value0, 'printer0, 'sizes0)}
       }
 
   // ── The entry macro ────────────────────────────────────────────────────

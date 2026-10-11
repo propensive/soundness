@@ -31,7 +31,7 @@ lib/charisma/src/core/charisma.PeriodicTable.scala	0	1	0
 lib/coaxial/src/core/coaxial_core.scala	2	0	0
 lib/concordance/src/core/rudiments.Grouping.scala	6	0	0
 lib/concordance/src/core/rudiments.Lattice.scala	1	0	0
-lib/concordance/src/core/rudiments.Scribe.scala	1	0	0
+lib/concordance/src/core/rudiments.Scribe.scala	1	0	5
 lib/concordance/src/core/rudiments.Surveyor.scala	2	0	0
 lib/contextual/src/core/contextual.Interpolation.scala	2	0	4
 lib/corpuscular/src/core/corpuscular_core.scala	8	0	0
@@ -119,7 +119,7 @@ lib/jacinta/src/core/jacinta.JsonPointer.scala	1	0	4
 lib/jacinta/src/core/jacinta.internal.scala	12	20	2
 lib/kaleidoscope/src/core/kaleidoscope.JavaBaseRegex.scala	1	0	0
 lib/kaleidoscope/src/core/kaleidoscope.Regex.scala	0	0	6
-lib/locomotion/src/core/locomotion.Protobuf.scala	1	0	0
+lib/locomotion/src/core/locomotion.Protobuf.scala	0	0	0
 lib/locomotion/src/core/locomotion.ProtobufParser.scala	13	0	0
 lib/locomotion/src/core/locomotion.ProtobufPrinter.scala	3	0	0
 lib/mandible/src/core/mandible.Bytecode.scala	1	0	4
