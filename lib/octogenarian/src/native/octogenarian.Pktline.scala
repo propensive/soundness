@@ -87,7 +87,7 @@ private[octogenarian] object Pktline:
     // A reader over a pull endpoint, which it alone drains. A JDK stream cannot carry the
     // endpoint's capability, so the view is laundered pure at this one point.
     def from(consume stream: (Stream[Data] over Credit)^)(using Buffering): Reader =
-      // [jdk-stream] the reader is the endpoint's only owner and reads it to its end
+      // [live-view] a pure-typed JDK view over the live endpoint, which this reader alone drains
       Reader(caps.unsafe.unsafeAssumePure(stream.inputStream))
 
   // Reads packets from a byte stream, blocking as the stream does.
