@@ -54,10 +54,11 @@ extension (noteRef: NoteRef)
   // validated here.
   def namespace(using Tactic[Git.RefError]): Git.Ref =
     def recur(path: Git.Ref, segments: List[Text]): Git.Ref = segments match
-      case Nil             => path
       case segment :: rest =>
         Git.Refs.validateSegment(segment)
         recur(path / segment, rest)
+
+      case _ => path
 
     recur(Git.Refs / t"notes", noteRef.descent.to(List).reverse)
 
@@ -66,8 +67,10 @@ extension (noteRef: NoteRef)
   // `NoteNotFound` if no note is attached. (Named `content`, not `read`, so as not to collide
   // with turbulence's `Readable` `read`: a `NoteRef` is a `Path`, which is readable.)
   def content[value]
-    ( using repo: (Git.Repo.Handle & Granting[Grant.Read])^, decodable: (value is Decodable in Text)^,
-            gitError: Tactic[Git.Error], refError: Tactic[Git.RefError] )
+    ( using repo:      (Git.Repo.Handle & Granting[Grant.Read])^,
+            decodable: (value is Decodable in Text)^,
+            gitError:  Tactic[Git.Error],
+            refError:  Tactic[Git.RefError] )
   :   Stale[value] =
 
     repo.note(noteRef.target, noteRef.namespace).let: note =>

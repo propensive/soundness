@@ -37,8 +37,8 @@ import java.nio.ByteBuffer
 import anticipation.*
 import contingency.*
 import gossamer.*
-import kaleidoscope.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 // The serialized forms of git's objects. Parsing is shared by both backends; serialization is
@@ -61,6 +61,7 @@ private[octogenarian] object Objects:
   private def split(data: Data): (List[(Text, Text)], Text) =
     val whole = text(data)
     val boundary = whole.s.indexOf("\n\n")
+
     val (headerText, message) =
       if boundary < 0 then (whole, t"") else (whole.keep(boundary), whole.skip(boundary + 2))
 
@@ -82,6 +83,7 @@ private[octogenarian] object Objects:
   def parseCommit(hash: Git.Hash, data: Data)(using Tactic[Git.Error]): Commit =
     val (headers, message) = split(data)
     def header(name: Text): Optional[Text] = headers.reap { case (`name`, value) => value }
+
     def signature(name: Text): Git.Signature =
       header(name).let(Git.Signature.parse(_)).or(abort(Git.Error(Reason.NoSuchObject(hash.text))))
 
@@ -128,10 +130,13 @@ private[octogenarian] object Objects:
 
     def hex(from: Int): Text =
       val builder = StringBuilder()
+
       def recur(index: Int): Unit = if index < from + 20 then
         val value = buffer.get(index) & 0xff
-        builder.append(Character.forDigit(value >> 4, 16)).append(Character.forDigit(value & 0xf, 16))
+        builder.append(Character.forDigit(value >> 4, 16))
+        builder.append(Character.forDigit(value & 0xf, 16))
         recur(index + 1)
+
       recur(from)
       builder.toString.tt
 
@@ -139,24 +144,28 @@ private[octogenarian] object Objects:
       if index >= length then entries.reverse else
         val space = indexOf(' '.toByte, index)
         val nul = indexOf(0.toByte, space)
+
         if nul + 21 > length then entries.reverse else
           val mode = Git.Object.Tree.Mode.parse(slice(index, space))
           val name = slice(space + 1, nul)
           val hash = Git.Hash.unsafe(hex(nul + 1))
-          val next = mode.lay(entries) { mode => Git.Object.Tree.Entry(mode, name, hash) :: entries }
+          val next = mode.lay(entries): mode => Git.Object.Tree.Entry(mode, name, hash) :: entries
           recur(nul + 21, next)
 
     recur(0, Nil)
 
-  private def parentLine(parent: Git.Hash): Text = t"parent ${parent.text}\n"
+  private def parentLine(parent: Git.Hash): Text = t"parent ${parent.text}"
 
   def serializeCommit
     ( tree: Git.Hash, parents: List[Git.Hash], author: Git.Signature, committer: Git.Signature,
       message: Text )
   :   Data =
 
-    val parentLines = parents.map(parentLine(_)).join
-    bytes(t"tree ${tree.text}\n${parentLines}author ${author.text}\ncommitter ${committer.text}\n\n${message}\n")
+    val headers =
+      List(t"tree ${tree.text}") + parents.map(parentLine(_)) +
+        List(t"author ${author.text}", t"committer ${committer.text}")
+
+    bytes(t"${headers.join(t"\n")}\n\n$message\n")
 
   // Inserts an armoured signature as the `gpgsig` header, its continuation lines indented by
   // one space, immediately before the blank line that ends the headers.
@@ -172,6 +181,7 @@ private[octogenarian] object Objects:
   def commitSignature(data: Data): Optional[(Data, Text)] =
     val whole = text(data)
     val boundary = whole.s.indexOf("\n\n")
+
     if boundary < 0 then Unset else
       val headerLines = whole.keep(boundary).cut(t"\n")
       val signature = scala.collection.mutable.ListBuffer[Text]()
@@ -185,7 +195,8 @@ private[octogenarian] object Objects:
         if line.starts(gpgsig) then
           inSignature = true
           signature += line.skip(7)
-        else if inSignature && line.starts(space) then signature += line.skip(1)
+        else if inSignature && line.starts(space) then
+          signature += line.skip(1)
         else
           inSignature = false
           kept += line
@@ -193,13 +204,22 @@ private[octogenarian] object Objects:
       headerLines.each(consider(_))
 
       if signature.isEmpty then Unset
-      else (bytes(t"${kept.to(List).join(t"\n")}${whole.skip(boundary)}"), signature.to(List).join(t"\n"))
+      else
+        val payload = bytes(t"${kept.to(List).join(t"\n")}${whole.skip(boundary)}")
+        (payload, signature.to(List).join(t"\n"))
 
   def serializeTag
     ( target: Git.Hash, kind: Git.Object.Kind, name: Git.Tag, tagger: Git.Signature, message: Text )
   :   Data =
 
-    bytes(t"object ${target.text}\ntype ${kind.text}\ntag ${name.text}\ntagger ${tagger.text}\n\n$message\n")
+    val headers =
+      List
+        ( t"object ${target.text}",
+          t"type ${kind.text}",
+          t"tag ${name.text}",
+          t"tagger ${tagger.text}" )
+
+    bytes(t"${headers.join(t"\n")}\n\n$message\n")
 
   def signTag(payload: Data, signature: Text): Data =
     bytes(t"${text(payload)}${signature.trim}\n")

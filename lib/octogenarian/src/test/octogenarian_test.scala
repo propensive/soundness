@@ -32,8 +32,6 @@
                                                                                                   */
 package octogenarian
 
-import scala.caps
-
 import soundness.*
 
 // `content`, `namespace` and `target` are package-level extensions on `NoteRef`; brought in by
@@ -51,10 +49,7 @@ import strategies.throwUnsafely
 import codepages.utf8Codepage
 import errorDiagnostics.stackTracesDiagnostics
 
-import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.overwritePreexisting
-import filesystemOptions.createNonexistentParents
-import filesystemOptions.deleteRecursively
 
 import gitCommands.searchpathGitCommand
 import gitBackends.commandlineGit
@@ -120,7 +115,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
       Operations.planePath(worktree, name)
 
     def patchFrom(lines: Text*): List[FileDiff] =
-      Patch.parse(lines.iterator)
+      Patch.parse(lines.to(List))
 
     def messages(using worktree: (Git.Worktree.Handle & Granting[Grant.Read & Grant.Write])^): List[Text] =
       worktree.log().value.map(_.message)
