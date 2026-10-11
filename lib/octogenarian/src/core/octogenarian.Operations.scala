@@ -88,9 +88,8 @@ private[octogenarian] object Operations:
     def recur(pairs: List[(Text, value)], parsed: List[(Git.Ref, value)]): List[(Git.Ref, value)] =
       pairs match
         case (name, value) :: rest =>
-          safely(Git.Refs.parse(name)) match
-            case ref: Git.Ref => recur(rest, (ref, value) :: parsed)
-            case _            => recur(rest, parsed)
+          safely(Git.Refs.parse(name)).lay(recur(rest, parsed)): ref =>
+            recur(rest, (ref, value) :: parsed)
 
         case _ => parsed
 

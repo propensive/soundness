@@ -2,35 +2,35 @@
 
 ### About
 
-Soundness drives [Git](https://git-scm.com/) as typed operations. A repository is a value on which
-methods like `commit`, `checkout`, `merge` and `log` are called; a branch, a tag and a commit hash
-are distinct types rather than interchangeable strings; and results come back as values — a commit
-with its author and message, a list of branches — rather than text to parse. Operations that reach a
-remote run asynchronously, reporting their progress as they go.
+Soundness drives [Git](https://git-scm.com/) as typed operations on a repository opened for a
+scope. A branch, a tag and a commit hash are distinct types rather than interchangeable strings;
+results come back as values rather than text to parse; and the API is honest about the one thing
+every Git library has to be honest about: the repository is on disk, and other processes write it.
 
-Underneath, the operations run the `git` command, so anything Git can do is available; what Soundness
-adds is that the commands are methods, the references are typed, and the output is structured.
+Underneath, the operations are carried out by a backend. The command-line backend runs the `git`
+command, so anything Git can do is available; a native backend reads and writes the repository's
+files itself. Both implement the same `Git.Backend` typeclass, and the choice is an import.
 
 ### On Git
 
 Git's real interface is its command line, built for a person at a shell. Driving it from a program
-means assembling command strings, and a mistyped subcommand or a malformed ref is a runtime failure;
-the output is text in a format that must be parsed by hand; and nothing distinguishes a branch name
-from a tag name from a commit hash until Git rejects one.
+means assembling command strings, parsing text output by hand, and treating a branch name, a tag
+name and a commit hash alike until Git rejects one. Worse, every program that drives Git races with
+every other: a ref read now may have moved by the time it is written.
 
-Repository operations that report their failures in their types, and cannot be run without the capabilities they need, are [honest signatures](../philosophy/honest-signatures.md) for version control.
+Repository operations that report their failures in their types, cannot be run without the
+capabilities they need, and cannot pretend a reading is still current, are [honest
+signatures](../philosophy/honest-signatures.md) for version control.
 
-Soundness wraps the command line in a typed API. Each operation is a method that names its
-requirements and the errors it can raise; a `Git.Branch`, `Git.Tag` and `Git.Hash` are separate types,
-so one cannot be passed where another is meant; and the output of `log`, `status` or `diff` is parsed
-into values. Everything comes from the `soundness` package, with the `git` command located and the
-capabilities the operations need in scope:
+Everything comes from the `soundness` package, with a backend selected and the capabilities the
+operations need in scope:
 
 ```scala
 import soundness.*
 
 import codepages.utf8Codepage
 import filesystemOptions.createNonexistentParents
+import gitBackends.commandlineGit
 import gitCommands.searchpathGitCommand
 import internetAccess.online
 import logging.silentLogging
@@ -38,118 +38,175 @@ import pathInterfaces.pathOnLinux
 import strategies.throwUnsafely
 import temporaryDirectories.javaBaseTemporaryDirectory
 import workingDirectories.javaBaseWorkingDirectory
+import environments.javaBaseEnvironment
+import filesystemBackends.javaBaseFilesystem
 
 val directory = temporaryDirectory[Path on Linux] / "git" / Uuid().show
 directory.create[Directory]()
 ```
 
-### Opening or creating a repository
+### Opening a repository
 
-An existing repository opens with `Git.Repo.at`, and a new one is created with `Git.init`, which
-returns a `Worktree` — a repository together with a working tree:
+A repository is created with `Git.init`, and opened, for the duration of a block, as one of two
+forms. `Git.Repo` is the object database and its refs, which a bare repository has; `Git.Worktree`
+is a checked-out tree, with an index and working files, over its repository. The mode names the
+grants the handle carries: a handle opened with `Read` alone cannot be used to write, which is a
+compile-time error rather than a runtime one.
 
 ```scala
-val worktree = Git.init(directory, initialBranch = Git.Branch(t"main"))
+Git.init(directory, initialBranch = Git.Branch(t"main"))
+
+directory.open[Git.Worktree](Read & Write): worktree ?=>
+  worktree.head().value
 ```
 
-`Git.initBare` creates a bare repository, one with no working tree, returning a `Git.Repo`.
+A `Git.Worktree.Handle` is also a `Git.Repo.Handle`, so every repository operation is available on
+it, and it is a directory handle: paths formed from it, such as `worktree / "notes.txt"`, belong to
+this handle alone, cannot express `..`, and may be read and written with the filesystem operations
+under the same grants.
+
+### Observing a repository that others change
+
+Every read that resolves a ref, HEAD, the index or the working files returns a `Stale` value: what
+it holds was true at the moment of the read, and may have changed since. `head()` reads where HEAD
+is; the `Stale[Git.Head]` it returns is the proof of what was seen.
+
+```scala
+directory.open[Git.Worktree](): worktree ?=>
+  val head: Stale[Git.Head] = worktree.head()
+  head.value match
+    case Git.Head.Attached(branch, tip) => t"on $branch"
+    case Git.Head.Detached(at)          => t"detached at $at"
+```
+
+Every write that moves a ref takes the `Stale` value it is conditional on, and fails, with
+`Git.Error(Moved(ref, expected, actual))`, if the ref no longer holds it. This is Git's own
+compare-and-swap, `git update-ref ref new old`, made unavoidable: a commit cannot overwrite work
+another process committed between the read and the write.
 
 ### Making a commit
 
-Staging and committing are methods on the worktree; the resulting commit's hash is read back by
-resolving `HEAD`:
+Staging and committing are methods on the worktree. `commit` takes the reading of HEAD it is
+conditional on and returns the new commit's hash:
 
 ```scala
-(worktree.path / "notes.txt").write(t"Remember the milk")
-worktree.add(worktree.path / "notes.txt")
-worktree.commit(t"Add notes")
-
-val hash = worktree.repo.revParse(Refspec.head())   // the new commit's Git.Hash
+directory.open[Git.Worktree](Read & Write): worktree ?=>
+  val head = worktree.head()
+  (worktree / "notes.txt").overwrite(t"Remember the milk")
+  worktree.add(worktree / "notes.txt")
+  worktree.commit(t"Add notes", head)
 ```
+
+The commit object is assembled by Soundness and stored, rather than made by `git commit`, so
+signing (`signer = …`) never leaves the process, and the same code serves both backends. A commit
+whose tree is unchanged raises `NothingToCommit` unless `allowEmpty = true`; `amend` rewrites the tip.
 
 ### Inspecting history
 
-`log` yields the commits as a stream, newest first, each a `Commit` with its hash, author, parents and
-message:
+`log` yields the commits as a list, newest first, each a `Commit` with its hash, author, parents and
+message. It is `Stale`: the branch it follows may move.
 
 ```scala
-worktree.repo.log().map(_.message.prim).to(List)   // List(t"Add notes")
+directory.open[Git.Worktree](): worktree ?=>
+  worktree.log().value.map(_.message)   // List(t"Add notes")
 ```
+
+Objects are immutable and named by their content, so a read keyed by a hash is a plain value:
+`commitAt`, `treeAt`, `blobAt` and `show` need no `Stale`.
 
 ### Branches and tags
 
-Branches and tags are created, listed and switched between with typed references. Merging takes the
-reference to merge and a fast-forward policy:
+Branches and tags are created, listed and switched between with typed references. A branch is
+created at a commit; switching takes the reading of HEAD it moves from.
 
 ```scala
-worktree.makeBranch(Git.Branch(t"feature"))
-worktree.checkout(Git.Branch(t"main"))
+directory.open[Git.Worktree](Read & Write): worktree ?=>
+  worktree.switch(Git.Branch(t"feature"), worktree.head(), create = true)
+  worktree.switch(Git.Branch(t"main"), worktree.head())
+  worktree.branches().value.keys
 ```
 
-### Cloning, pulling and pushing
+Deleting a branch or a tag takes the reading of its tip, so a branch that moved since it was
+listed is not deleted by mistake. A lightweight tag is `makeTag`; `annotatedTag` writes a tag object
+with a message, and optionally a signature.
 
-An operation that reaches a remote — cloning, fetching, pulling, pushing — requires the `Online`
-capability and runs asynchronously, returning a process whose progress can be observed and whose
-result is taken with `complete`:
+### Cloning, fetching and pushing
+
+An operation that reaches a remote requires the `Online` capability. It blocks until it is done,
+and reports its progress through a `Git.Activity`: a shared tracker of atomic counters, updated as
+objects arrive, which a user interface may poll from another thread with `report()`.
 
 ```scala
-val cloned = Git.clone(worktree.path, directory / "clone").complete()
-cloned.repo.log().to(List).size   // 1
+val target = directory / "clone"
+Git.clone(directory, target)
+
+target.open[Git.Worktree](): cloned ?=>
+  cloned.log().value.size   // 1
 ```
+
+`push` takes refspecs and a force policy. `Push.Force.Lease` is the remote-side compare-and-swap,
+`--force-with-lease`: it carries the readings of the remote's refs the push is conditional on.
 
 ### References
 
-A `Git.Branch`, `Git.Tag` and `Git.Hash` name the three kinds of reference, and a `Refspec` is any of
-them or a relative expression such as `Refspec.head()` for `HEAD`. Because each is its own type, an
-operation that expects a branch will not accept a tag, and a hash carries the guarantee that it is a
-well-formed forty-character identifier.
+A `Git.Branch`, `Git.Tag` and `Git.Hash` name the three kinds of reference, and a `Git.Revision` is
+any of them or a relative expression such as `Git.Revision.head(1)` for `HEAD~1`. Because each is
+its own type, an operation that expects a branch will not accept a tag, and a hash carries the
+guarantee that it is a well-formed forty-character identifier.
 
-Reference names follow Git's own rules — no leading dot, no `..`, no control characters, no
-trailing `.lock`, and the rest — checked as [names](names.md) on their own plane, so an invalid
-branch name is rejected where it is written rather than by Git at the point of use.
+A `Git.Ref` is a fully-qualified reference path, `refs/heads/main`, modelled as a path on the
+`Git.Refs` plane. Reference names follow Git's own rules — no leading dot, no `..`, no trailing
+`.lock`, and the rest — which are checked when a name is parsed from text, with `Git.Branch.parse`,
+`Git.Tag.parse` or `Git.Refs.heads`, and reported as a `Git.RefError`.
 
 ### Diffs
 
 `diff` reports changes as structured values rather than as patch text to re-parse. Each `FileDiff`
 carries the paths on both sides, the kind of change — added, modified, deleted, renamed, copied —
-and its hunks, each hunk a list of edits:
+and its hunks, each hunk a list of edits.
 
 ```scala
-(worktree.path / "notes.txt").write(t"Remember the milk and the eggs")
-
-val files = worktree.diff().to(List)
-files.prim.let(_.changeKind)                 // ChangeKind.Modified
-files.prim.let(_.hunks.flatMap(_.edits))     // the edits, hunk by hunk
+directory.open[Git.Worktree](Read & Write): worktree ?=>
+  (worktree / "notes.txt").overwrite(t"Remember the milk and the eggs")
+  val files = worktree.diff().value
+  files.prim.let(_.changeKind)   // ChangeKind.Modified
 ```
 
-The same parser reads a patch from anywhere — a file, an email, a code-review comment — so a tool
-that inspects or applies patches works with values, including the awkward cases: renames with
-similarity indices, binary files, mode changes, and files with no trailing newline.
+`diffStaged` compares the index with HEAD, `diffAgainst` the working files with a revision, and
+`diffBetween` two commits. The same parser, `Patch.parse`, reads a patch from anywhere.
 
-### Merging, cherry-picking and reverting
+### Merging, cherry-picking, reverting and rebasing
 
-`merge` takes the reference to merge and a fast-forward policy, so whether a merge commit is
-created is stated rather than inherited from configuration:
+`merge` takes the revision to merge, the reading of HEAD, and a fast-forward policy, so whether a
+merge commit is created is stated rather than inherited from configuration. Its outcome is a value:
+`FastForwarded`, `Merged`, `UpToDate`, or `Stopped`.
 
 ```scala
-worktree.merge(Git.Branch(t"feature"), ff = FastForward.Only)
-worktree.merge(Git.Branch(t"feature"), ff = FastForward.Never, message = t"Merge feature")
+directory.open[Git.Worktree](Read & Write): worktree ?=>
+  worktree.merge(Git.Branch(t"feature"), worktree.head(), ff = FastForward.Only)
 ```
 
-`cherryPick` and `revert` apply and undo a single commit's changes. A conflict is a typed failure
-naming the paths that conflict, rather than a non-zero exit status and a message to parse.
+A conflict is not an error. The operation stops, and the `Stopped` outcome carries a
+`Git.Operation` naming the paths in conflict; once they are resolved and added, `continue()`
+finishes it, `skip()` passes over the commit, and `abandon()` restores the state the operation
+began from. `cherryPick`, `revert` and `rebase` have the same shape, and `stash` saves and
+restores uncommitted work.
 
-### Remotes, notes and the reflog
+### Remotes, configuration, notes and the reflog
 
-Remotes are added, listed and removed as values, each reporting its name and URL. Notes attach
-arbitrary text to a commit without altering it, in a chosen namespace, which is how build
-attestations, review state and other out-of-band metadata travel with a repository:
+Remotes are added, listed and removed as values. Configuration is read and written through a lent
+handle, typed by the value's codec: `repo.config { config ?=> config.get[Text](key) }`. Notes
+attach text to a commit without altering it, in a chosen namespace; a note write is conditional
+on a reading of the notes ref, which is how build attestations and other out-of-band metadata
+travel with a repository without one writer clobbering another.
 
 ```scala
-worktree.repo.addRemote(t"origin", t"git@example.com:foo/bar.git")
-
-worktree.repo.notes.add(hash, t"a note body")
-worktree.repo.notes.show(hash)   // Unset where there is no note
+directory.open[Git.Worktree](Read & Write): worktree ?=>
+  worktree.addRemote(t"origin", t"git@example.com:foo/bar.git")
+  val hash = worktree.head().value.commit.or(Git.Hash.zero)
+  val notes = worktree.ref(Git.Refs.defaultNotes)
+  worktree.addNote(hash, t"a note body", notes)
+  worktree.note(hash).value   // Unset where there is no note
 ```
 
 `reflog` gives the local history of where a reference has pointed, newest first — the record that
