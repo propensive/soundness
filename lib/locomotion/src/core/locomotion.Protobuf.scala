@@ -121,7 +121,24 @@ trait Protobuf2:
 
   given aggregableIn: [value: Decodable in Protobuf] => (tactic: Tactic[Protobuf.Error])
   =>  ( ((value in Protobuf) is Aggregable by Data)^{tactic} ) =
-    bytes => Protobuf.message(bytes.read[Data]).as[value].asInstanceOf[value in Protobuf]
+
+    new Aggregable:
+      type Self = value in Protobuf
+      type Operand = Data
+
+      // A single in-memory block — the common case — is decoded in place, not copied.
+      def aggregate(bytes: Chain[Data]): value in Protobuf =
+        val message =
+          if !bytes.nil && Chain.tail(bytes).nil then Protobuf.message(Chain.head(bytes))
+          else Protobuf.message(Aggregable.bytesData.aggregate(bytes))
+
+        message.as[value].asInstanceOf[value in Protobuf]
+
+      // Gathered once into a single block, rather than materialised as a chain of cells
+      // and then copied, as the trait's default would.
+      override def accept(stream: (Stream[Data] over Credit)^): value in Protobuf =
+        Protobuf.message(Aggregable.bytesData.accept(stream)).as[value]
+        . asInstanceOf[value in Protobuf]
 
   // Unpacked `repeated`: each element is emitted as a separate field (one tag per
   // value). This is the fallback for elements with no `Packable` instance — strings,
@@ -264,7 +281,7 @@ object Protobuf extends Protobuf2:
   =>  ( tactic: Tactic[Protobuf.Error] )
   =>  ( (Data is Readable to (value in Protobuf))^{parsable, tactic} ) =
 
-    data => parseDirect(ProtobufParser(data), parsable).asInstanceOf[value in Protobuf]
+    (data: Data) => parseDirect(ProtobufParser(data), parsable).asInstanceOf[value in Protobuf]
 
   given protobuf: Protobuf is Decodable in Protobuf = identity(_)
 
@@ -566,10 +583,8 @@ object Protobuf extends Protobuf2:
     // An honest capability, as `listEncodable` above.
     protobuf =>
       val entries = protobuf.occurrences.map: entry =>
-        val fields = ProtobufParser.fields(entry.payload)
-        val key = keyDecodable.decoded(Repeated(fields(1).or(Nil)))
-        val value = valueDecodable.decoded(Repeated(fields(2).or(Nil)))
-        (key, value)
+        val fields = ProtobufParser.scan(entry)
+        (keyDecodable.decoded(fields(1)), valueDecodable.decoded(fields(2)))
 
       entries.to[Map]
 
@@ -618,30 +633,31 @@ object Protobuf extends Protobuf2:
       // (`^`) trait result honestly admits the capture — no seal.
       { protobuf =>
         provide[Tactic[Protobuf.Error]]:
-          val map = ProtobufParser.fields(protobuf.payload)
+          val table = ProtobufParser.scan(protobuf)
 
           build[derivation]:
             [field0] => context =>
-              map(annotated(label).let(_.stdlib.head.number).or(index + 1))
-              . lay(default.or(context.decoded(Protobuf.Absent))): values =>
-                context.decoded(Protobuf.Repeated(values)) }
+              val wire = table(annotated(label).let(_.stdlib.head.number).or(index + 1))
+              if wire.isAbsent then default.or(context.decoded(Protobuf.Absent))
+              else context.decoded(wire) }
 
     inline def disjunction[derivation: SumReflection]: (derivation is Decodable in Protobuf)^ =
       // A fresh (`^`) result honestly admitting the capture, as for `conjunction` above.
       { protobuf =>
         provide[Tactic[Protobuf.Error]]:
           provide[Tactic[Variant.Error]]:
-            val map = ProtobufParser.fields(protobuf.payload)
+            val table = ProtobufParser.scan(protobuf)
             val labels = variantLabels
 
             val (label, index) =
-              labels.indexed.seek { (_, ordinal) => map.defines(ordinal.n1) }.or:
+              labels.indexed.seek { (_, ordinal) => table.defines(ordinal.n1) }.or:
                 abort(Protobuf.Error(Reason.MissingField(0)))
 
             delegate(label):
               [variant <: derivation] => context =>
-                map(index.n1).lay(abort(Protobuf.Error(Reason.MissingField(index.n1)))): values =>
-                  context.decoded(Protobuf.Repeated(values)) }
+                val wire = table(index.n1)
+                if wire.isAbsent then abort(Protobuf.Error(Reason.MissingField(index.n1)))
+                else context.decoded(wire) }
 
   // ProtobufError → Protobuf.Error
   object Error:
@@ -684,7 +700,7 @@ enum Protobuf:
 
   // The most recent single wire value (protobuf's last-one-wins rule for scalars).
   def single: Protobuf = this match
-    case Repeated(values) => values.occupied.let(_.last).or(Protobuf.Absent)
+    case Repeated(values) => if values.nil then Protobuf.Absent else List.last(values)
     case other            => other
 
   // Every wire value recorded for this field — used to decode `repeated` fields.

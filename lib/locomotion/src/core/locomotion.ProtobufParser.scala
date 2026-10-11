@@ -117,11 +117,71 @@ object ProtobufParser:
     result
 
   // Parses a whole message payload into a number-keyed map of (one or more) raw wire
-  // values, preserving repeats and unknown fields — the structure the message decoder
-  // looks fields up in by number. Each field's payload is copied out once, into its
-  // `Wire`.
+  // values, preserving repeats and unknown fields, keyed in first-occurrence order. Each
+  // field's payload is copied out once, into its `Wire`.
   def fields(data: Data)(using Tactic[Protobuf.Error]): Map[Int, List[Protobuf]] =
-    Payload(data).fields()
+    scan(Protobuf.Wire(WireType.Len, data)).map
+
+  // The same walk, into the flat structure the message decoder looks fields up in: one
+  // pass counts the fields without copying anything, so the second fills arrays of exactly
+  // that size, which are then frozen — a pure value the decoder's lambdas may capture.
+  private[locomotion] def scan(message: Protobuf)(using Tactic[Protobuf.Error]): Fields =
+    val payload = Payload(message.payload)
+    val count = payload.count()
+    val numbers = Array.allocate[Int](count)
+    val wires = Array.allocate[Protobuf](count)
+    var index = 0
+
+    // The arrays are filled here rather than handed to the walker, which would then be
+    // taken to retain them.
+    repeat(count):
+      wires(index) = payload.next()
+      numbers(index) = payload.number
+      index += 1
+
+    Fields(Array.freeze(numbers).readable, Array.freeze(wires).readable)
+
+  // The fields of one message payload in wire order, as parallel arrays of numbers and
+  // wire values. A message declares few fields and its decoder looks each up once, so a
+  // backwards scan of the arrays costs less than building any keyed structure for them.
+  private[locomotion] final class Fields
+    ( numbers: scala.IArray[Int], wires: scala.IArray[Protobuf] )
+  extends caps.Pure:
+    private val count: Int = numbers.length
+
+    // The greatest index below `end` at which `number` occurs, or -1.
+    @scala.annotation.tailrec
+    private def seek(number: Int, end: Int): Int =
+      if end <= 0 then -1
+      else if numbers(end - 1) == number then end - 1
+      else seek(number, end - 1)
+
+    // Every occurrence of `number` below `end`, consed from the end so that wire order is
+    // kept without a reversal.
+    @scala.annotation.tailrec
+    private def gather(number: Int, end: Int, acc: List[Protobuf]): List[Protobuf] =
+      if end <= 0 then acc
+      else gather(number, end - 1, if numbers(end - 1) == number then wires(end - 1) :: acc else acc)
+
+    def defines(number: Int): Boolean = seek(number, count) >= 0
+
+    // The field as its decoder receives it: `Absent` if the number never occurs, the wire
+    // value itself if it occurs once, and `Repeated` of every occurrence otherwise.
+    def apply(number: Int): Protobuf =
+      val last = seek(number, count)
+      if last < 0 then Protobuf.Absent
+      else if seek(number, last) < 0 then wires(last)
+      else Protobuf.Repeated(gather(number, last + 1, Nil))
+
+    // The number-keyed form, for `fields(data)`'s callers; not on the decoding path.
+    def map: Map[Int, List[Protobuf]] =
+      val accumulator = scm.LinkedHashMap.empty[Int, List[Protobuf]]
+
+      List.range(0, count).each: index =>
+        val number = numbers(index)
+        if !accumulator.contains(number) then accumulator(number) = gather(number, count, Nil)
+
+      accumulator.to(Map)
 
   // Splits a packed `repeated` payload (a single length-delimited field holding
   // concatenated scalar values) into one wire value per element. `wireType` is the
@@ -173,22 +233,45 @@ object ProtobufParser:
         case WireType.I32 => Protobuf.Wire(WireType.I32, slice(4))
         case WireType.Len => Protobuf.Wire(WireType.Len, slice(varint().toInt))
 
-    update def fields()(using Tactic[Protobuf.Error]): Map[Int, List[Protobuf]] =
-      val accumulator = scm.LinkedHashMap.empty[Int, scm.ListBuffer[Protobuf]]
+    // Steps over one field's payload without copying it.
+    private update def skip(wireType: WireType)(using Tactic[Protobuf.Error]): Unit =
+      val length = wireType match
+        case WireType.Varint => varint(); 0
+        case WireType.I64    => 8
+        case WireType.I32    => 4
+        case WireType.Len    => varint().toInt
 
-      // Ends on the data: each step consumes one whole field.
-      while pos < limit do
-        val tagStart = pos
-        val tag = varint().toInt
-        val number = tag >>> 3
-        val code = tag & 0x7
+      if length < 0 || pos + length > limit then abort(Protobuf.Error(Reason.Truncated(pos)))
+      pos += length
 
-        val wireType =
-          WireType.fromId(code).lest(Protobuf.Error(Reason.UnexpectedWireType(code, tagStart)))
+    private update def tag()(using Tactic[Protobuf.Error]): (Int, WireType) =
+      val tagStart = pos
+      val tag = varint().toInt
+      val code = tag & 0x7
+      (tag >>> 3, WireType.fromId(code).lest(Protobuf.Error(Reason.UnexpectedWireType(code, tagStart))))
 
-        accumulator.getOrElseUpdate(number, scm.ListBuffer()).addOne(wire(wireType))
+    // The number of fields in the payload, validating every tag and extent as `next` will;
+    // the walk then rewinds to the start.
+    update def count()(using Tactic[Protobuf.Error]): Int =
+      @scala.annotation.tailrec
+      def recur(count: Int): Int =
+        if pos >= limit then count else
+          skip(tag()(1))
+          recur(count + 1)
 
-      (accumulator.view.mapValues(_.to(List))).to(Map)
+      val result = recur(0)
+      pos = 0
+      result
+
+    // The number of the field most recently read by `next`.
+    private var current: Int = 0
+    def number: Int = current
+
+    // The next field's wire value, its number recorded in `number`.
+    update def next()(using Tactic[Protobuf.Error]): Protobuf =
+      val (number, wireType) = tag()
+      current = number
+      wire(wireType)
 
     update def packed(wireType: WireType)(using Tactic[Protobuf.Error]): List[Protobuf] =
       val builder = scala.collection.immutable.List.newBuilder[Protobuf]
