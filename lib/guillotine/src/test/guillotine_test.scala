@@ -476,6 +476,34 @@ object Tests extends Suite(m"Guillotine tests"):
           terminal.await()
       . assert(_ == Exit.Ok)
 
+      test(m"a raw terminal has no echo and no line editing"):
+        sh"stty -a".pty(termios = Termios.raw).exec[Text]()
+      . assert { report => report.contains(t"-echo") && report.contains(t"-icanon") }
+
+      test(m"a raw terminal delivers each byte as it is typed"):
+        sh"head -c 2".pty(termios = Termios.raw).session: terminal ?=>
+          t"hi".writeTo(terminal)
+          terminal.text()
+      . assert(_ == t"hi")
+
+      test(m"the line discipline can be read"):
+        sh"sleep 5".pty(termios = Termios.raw).session: terminal ?=>
+          val mode: Termios = terminal.mode
+          mode
+      . assert(_ == Termios.raw)
+
+      test(m"the line discipline is cooked unless given"):
+        sh"sleep 5".pty().session: terminal ?=>
+          terminal.mode.canonical && terminal.mode.echo
+      . assert(_ == true)
+
+      test(m"the line discipline can be changed while the command runs"):
+        sh"sh -c 'read line; stty -a'".pty().session: terminal ?=>
+          terminal.mode = Termios.raw
+          t"\n".writeTo(terminal)
+          terminal.text()
+      . assert(_.contains(t"-echo"))
+
       test(m"a resized terminal reports its new size"):
         sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
           terminal.resize(132, 50)

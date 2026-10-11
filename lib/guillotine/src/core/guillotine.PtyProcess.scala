@@ -41,6 +41,7 @@ import scala.annotation.tailrec
 import scala.language.experimental.pureFunctions
 
 import rudiments.*
+import vacuous.*
 
 // The handful of POSIX calls a pseudo-terminal needs, bound through the foreign function API. The
 // constants which differ between platforms are chosen for macOS or for Linux (glibc) at runtime.
@@ -71,6 +72,28 @@ private[guillotine] object PtyProcess:
   private val SetDescriptorFlags: Int = 2
   private val DescriptorCloseOnExec: Int = 1
   private val SetWindowSize: Long = if macOs then 0x80087467L else 0x5414L
+
+  // The `termios` structure: four flag words, of `tcflag_t`, then the control characters. The
+  // words are eight bytes wide on macOS and four on Linux (glibc), which also puts a line
+  // discipline byte before the characters; the structure is at most 72 bytes on either.
+  private val TermiosSize: Long = 128L
+  private val FlagWidth: Long = if macOs then 8L else 4L
+  private val InputFlags: Long = 0L
+  private val OutputFlags: Long = FlagWidth
+  private val LocalFlags: Long = FlagWidth*3
+  private val Characters: Long = if macOs then 32L else 17L
+  private val MinimumIndex: Long = if macOs then 16L else 6L
+  private val TimeoutIndex: Long = if macOs then 17L else 5L
+  private val Now: Int = 0 // `TCSANOW`
+
+  private val Echo: Long = 0x8L
+  private val Canonical: Long = if macOs then 0x100L else 0x2L
+  private val Signals: Long = if macOs then 0x80L else 0x1L
+  private val Extensions: Long = if macOs then 0x400L else 0x8000L
+  private val TranslateReturn: Long = 0x100L
+  private val FlowControl: Long = if macOs then 0x200L else 0x400L
+  private val Postprocess: Long = 0x1L
+  private val NewlineReturn: Long = if macOs then 0x2L else 0x4L
   private val Interrupted: Int = 4
 
   // `POSIX_SPAWN_SETSID` makes the child a session leader, so the first terminal it opens — the
@@ -139,6 +162,12 @@ private[guillotine] object PtyProcess:
   private lazy val setSignalDefaults = bind("posix_spawnattr_setsigdefault", twoPointers)
   private lazy val spawnPath = bind("posix_spawn", spawning)
   private lazy val foreground = bind("tcgetpgrp", ints)
+
+  private lazy val getAttributes =
+    bindErrno("tcgetattr", jlf.FunctionDescriptor.of(int32, int32, pointer).nn)
+
+  private lazy val setAttributes =
+    bindErrno("tcsetattr", jlf.FunctionDescriptor.of(int32, int32, int32, pointer).nn)
 
   private lazy val waitid =
     bind("waitid", jlf.FunctionDescriptor.of(int32, int32, int32, pointer, int32).nn)
@@ -298,6 +327,71 @@ private[guillotine] object PtyProcess:
     size.set(int16, 2L, width.toShort)
     size
 
+  private def flags(termios: jlf.MemorySegment, offset: Long): Long =
+    if macOs then termios.get(int64, offset) else termios.get(int32, offset).toLong & 0xffffffffL
+
+  private def flags(termios: jlf.MemorySegment, offset: Long, value: Long): Unit =
+    if macOs then termios.set(int64, offset, value) else termios.set(int32, offset, value.toInt)
+
+  private def switch(word: Long, flag: Long, on: Boolean): Long =
+    if on then word | flag else word & ~flag
+
+  // The line discipline of the terminal `fd` is a side of, as the switches `Termios` names.
+  def mode(fd: Int): Termios =
+    val arena = jlf.Arena.ofConfined().nn
+
+    try
+      val state = arena.allocate(stateLayout).nn
+      val termios = arena.allocate(TermiosSize).nn
+      check("tcgetattr", state)((getAttributes.invokeExact(state, fd, termios): Int))
+      val input = flags(termios, InputFlags)
+      val output = flags(termios, OutputFlags)
+      val local = flags(termios, LocalFlags)
+
+      Termios
+        ( echo            = (local & Echo) != 0,
+          canonical       = (local & Canonical) != 0,
+          signals         = (local & Signals) != 0,
+          extensions      = (local & Extensions) != 0,
+          translateReturn = (input & TranslateReturn) != 0,
+          flowControl     = (input & FlowControl) != 0,
+          postprocessing  = (output & Postprocess) != 0 )
+
+    finally arena.close()
+
+  // Sets the switches `Termios` names, leaving the rest of the discipline as it is. Without
+  // canonical input, a read returns as soon as one byte has arrived, which is what `raw` means.
+  def mode(fd: Int, mode: Termios): Unit =
+    val arena = jlf.Arena.ofConfined().nn
+
+    try
+      val state = arena.allocate(stateLayout).nn
+      val termios = arena.allocate(TermiosSize).nn
+      check("tcgetattr", state)((getAttributes.invokeExact(state, fd, termios): Int))
+
+      val local =
+        switch(switch(switch(switch(flags(termios, LocalFlags), Echo, mode.echo),
+            Canonical, mode.canonical), Signals, mode.signals), Extensions, mode.extensions)
+
+      val input =
+        switch(switch(flags(termios, InputFlags), TranslateReturn, mode.translateReturn),
+            FlowControl, mode.flowControl)
+
+      val output =
+        switch(switch(flags(termios, OutputFlags), Postprocess, mode.postprocessing),
+            NewlineReturn, mode.postprocessing)
+
+      flags(termios, LocalFlags, local)
+      flags(termios, InputFlags, input)
+      flags(termios, OutputFlags, output)
+
+      if !mode.canonical then
+        termios.set(jlf.ValueLayout.JAVA_BYTE, Characters + MinimumIndex, 1.toByte)
+        termios.set(jlf.ValueLayout.JAVA_BYTE, Characters + TimeoutIndex, 0.toByte)
+
+      check("tcsetattr", state)((setAttributes.invokeExact(state, fd, Now, termios): Int))
+    finally arena.close()
+
   // A null-terminated array of C strings.
   private def strings(arena: jlf.Arena, values: java.util.List[String]): jlf.MemorySegment =
     val array = arena.allocate(pointer, values.size + 1L).nn
@@ -311,8 +405,9 @@ private[guillotine] object PtyProcess:
     array
 
   // Starts the command `builder` describes — its arguments, environment and working directory —
-  // on a fresh pseudo-terminal of the given size.
-  def apply(builder: ProcessBuilder, width: Int, height: Int): PtyProcess =
+  // on a fresh pseudo-terminal of the given size and, if one is given, line discipline.
+  def apply(builder: ProcessBuilder, width: Int, height: Int, termios: Optional[Termios])
+  :   PtyProcess =
     import scala.unsafeExceptions.canThrowAny
     val arena = jlf.Arena.ofConfined().nn
 
@@ -335,6 +430,7 @@ private[guillotine] object PtyProcess:
 
         try
           check("ioctl", state)((ioctl.invokeExact(state, master, SetWindowSize, size): Int))
+          termios.let(mode(slave, _))
           val pid = spawn(arena, builder, name)
           settle(arena, master, pid)
           new PtyProcess(pid, Descriptor(master))
@@ -541,6 +637,9 @@ extends java.lang.Process:
 
   def resize(width: Int, height: Int): Unit =
     if !master.closed then PtyProcess.resize(master.fd, width, height)
+
+  def mode: Termios = PtyProcess.mode(master.fd)
+  def mode_=(termios: Termios): Unit = PtyProcess.mode(master.fd, termios)
 
   def getInputStream(): ji.InputStream = input
   def getOutputStream(): ji.OutputStream = output
