@@ -143,7 +143,7 @@ object Store:
       val directory = Refstore.descend(objects, List(hash.text.keep(2)))
       val suffix = java.util.UUID.randomUUID.nn.toString.tt
       val temporary = Refstore.descend(directory, List(t"tmp_obj_$suffix"))
-      if !directory.existent() then directory.create[Directory]()
+      Refstore.ensureDirectory(directory)
       temporary.write(compressed)
       if !target.existent() then temporary.moveTo(target) else temporary.delete()
 

@@ -55,7 +55,7 @@ import filesystemOptions.deleteRecursively
 // The backend that reads and writes a repository's files itself, with no `git` binary: objects,
 // refs, configuration and notes are complete; the index, working-tree and transport operations
 // are supplied by later work and report `Unsupported` until then.
-class Native() extends Git.Backend:
+class Native(transports: List[Transport] = Nil) extends Git.Backend:
   import Git.Error.Reason as Reason
 
   private val dot: Text = t"."
@@ -133,10 +133,10 @@ class Native() extends Git.Backend:
   :   Unit = io:
 
     val gitDir = if bare then target else target / ".git"
-    if !gitDir.existent() then gitDir.create[Directory]()
+    Refstore.ensureDirectory(gitDir)
     def ensure(name: Text): Unit =
       val directory = Refstore.descend(gitDir, name.cut(t"/"))
-      if !directory.existent() then directory.create[Directory]()
+      Refstore.ensureDirectory(directory)
 
     List(t"objects", t"objects/info", t"objects/pack", t"refs", t"refs/heads", t"refs/tags", t"info")
     . each(ensure(_))
@@ -163,7 +163,51 @@ class Native() extends Git.Backend:
     ( using Internet, Tactic[Git.Error] )
   :   Unit =
 
-    unsupported(t"cloning")
+    if recursive then unsupported(t"cloning submodules recursively")
+    val peer = Transfer.connect(source, transports, locate(_), Git.Identity(t"unknown", t"unknown"))
+    val remoteHead = peer.symbolicHead()
+    val chosen = branch.let(_.text).or(remoteHead.let(_.skip(11))).or(t"main")
+    init(target, Git.Branch.unsafe(chosen), bare)
+    val location = locate(target).or(abort(Git.Error(Reason.NoRepository(target.encode))))
+    val gitDir = location.gitDir
+
+    io:
+      val file = gitDir / "config"
+      val origin: Optional[Text] = t"origin"
+      val lines = Gitconfig.readFile(file)
+      val withUrl = Gitconfig.set(lines, Git.Config.Key(t"remote", origin, t"url"), source, true)
+      val fetchSpec = if bare then t"+refs/heads/*:refs/heads/*" else t"+refs/heads/*:refs/remotes/origin/*"
+      val withFetch = Gitconfig.set(withUrl, Git.Config.Key(t"remote", origin, t"fetch"), fetchSpec, true)
+      Gitconfig.writeFile(file, withFetch)
+
+    val context = transferContext(gitDir)
+    io(Transfer.fetch(context, t"origin", peer, source, Nil, depth, false, true, activity))
+
+    io:
+      val tracking = if bare then t"refs/heads/$chosen" else t"refs/remotes/origin/$chosen"
+      val tip = Refstore.resolve(gitDir, context.commonDir, tracking)
+
+      tip.let: tip =>
+        if !bare then
+          Refstore.update
+            ( gitDir, context.commonDir, t"refs/heads/$chosen", tip, Git.Backend.Expectation.Absent,
+              t"clone: from $source", context.identity, context.logging )
+
+          val file = gitDir / "config"
+          val lines = Gitconfig.readFile(file)
+          val withRemote = Gitconfig.set(lines, Git.Config.Key(t"branch", chosen, t"remote"), t"origin", true)
+          val withMerge = Gitconfig.set(withRemote, Git.Config.Key(t"branch", chosen, t"merge"), t"refs/heads/$chosen", true)
+          Gitconfig.writeFile(file, withMerge)
+
+          activity.begin(Git.Activity.Phase.Checkout)
+          val tree = Workspace.treeSnapshot(context.objects, Revwalk.commit(context.objects, tip).tree)
+          val entries = Workspace.checkoutFiles(context.objects, target, Map(), tree)
+          Index.write(gitDir, Index.Contents(2, entries, Nil))
+
+    activity.finish()
+
+  private def transferContext(gitDir: Path on Linux)(using Tactic[Git.Error]): Transfer.Context =
+    Transfer.Context(gitDir, commonDir(gitDir), objects(gitDir), identity(gitDir), logging(gitDir))
 
   // ────────────────────────────────────────────── Refs ────────────────────────────────────────
 
@@ -381,19 +425,32 @@ class Native() extends Git.Backend:
   // ────────────────────────────────────── Remotes and transport ───────────────────────────────
 
   def remoteRefs(gitDir: Path on Linux, remote: Text)(using Internet, Tactic[Git.Error]): List[(Text, Git.Hash)] =
-    unsupported(t"ls-remote")
+    val context = transferContext(gitDir)
+    val url = io(Transfer.resolveUrl(context, remote, false))
+    val peer = Transfer.connect(url, transports, locate(_), context.identity)
+    io(Transfer.remoteRefs(context, remote, peer))
 
   def fetch
-    ( gitDir: Path on Linux, remote: Text, refspecs: List[Git.Refspec], depth: Optional[Int],
-      prune: Boolean, tags: Boolean, activity: Git.Activity^ )
+    ( gitDir: Path on Linux, remote: Text, refspecs: List[Git.Refspec], depth: Optional[Int], prune: Boolean,
+      tags: Boolean, activity: Git.Activity^ )
     ( using Internet, Tactic[Git.Error] )
-  :   List[(Text, Git.Hash)] = unsupported(t"fetch")
+  :   List[(Text, Git.Hash)] =
+
+    val context = transferContext(gitDir)
+    val url = io(Transfer.resolveUrl(context, remote, false))
+    val peer = Transfer.connect(url, transports, locate(_), context.identity)
+    io(Transfer.fetch(context, remote, peer, url, refspecs, depth, prune, tags, activity))
 
   def push
-    ( gitDir: Path on Linux, remote: Text, refspecs: List[Git.Refspec], force: Git.Push.Force,
-      tags: Boolean, setUpstream: Boolean, activity: Git.Activity^ )
+    ( gitDir: Path on Linux, remote: Text, refspecs: List[Git.Refspec], force: Git.Push.Force, tags: Boolean,
+      setUpstream: Boolean, activity: Git.Activity^ )
     ( using Internet, Tactic[Git.Error] )
-  :   List[(Text, Git.Push.Outcome)] = unsupported(t"push")
+  :   List[(Text, Git.Push.Outcome)] =
+
+    val context = transferContext(gitDir)
+    val url = io(Transfer.resolveUrl(context, remote, true))
+    val peer = Transfer.connect(url, transports, locate(_), context.identity)
+    io(Transfer.push(context, remote, peer, url, refspecs, force, tags, setUpstream, activity))
 
   // ────────────────────────────────────────── Linked worktrees ────────────────────────────────
 

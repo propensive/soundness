@@ -33,6 +33,7 @@
 package octogenarian
 
 import anticipation.*
+import aperture.*
 import contingency.*
 import distillate.*
 import galilei.*
@@ -41,9 +42,11 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import symbolism.*
+import turbulence.*
 import vacuous.*
 
 import sortingAlgorithms.timsort
+import filesystemBackends.javaBaseFilesystem
 
 // Revisions and history: resolving `gitrevisions(7)` expressions, walking commits in date order,
 // and finding merge bases.
@@ -52,8 +55,24 @@ object Revwalk:
 
   def commit(objects: Path on Linux, hash: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error]): Commit =
     Store.readOr(objects, hash) match
-      case (Git.Object.Kind.Commit, data) => Objects.parseCommit(hash, data)
-      case _                              => abort(Git.Error(Reason.NoSuchObject(hash.text)))
+      case (Git.Object.Kind.Commit, data) =>
+        val parsed = Objects.parseCommit(hash, data)
+        // A shallow clone's boundary commits have parents the repository does not hold.
+        if parsed.parents != Nil && shallow(objects).contains(hash) then parsed.copy(parents = Nil) else parsed
+
+      case _ => abort(Git.Error(Reason.NoSuchObject(hash.text)))
+
+  // The commits listed in the repository's `shallow` file, whose parents are absent by design.
+  private def shallow(objects: Path on Linux)(using Tactic[Io.Error]): java.util.HashSet[Git.Hash] =
+    val set = java.util.HashSet[Git.Hash]()
+    val file: Optional[Path on Linux] = objects.parent.let(Refstore.descend(_, List(t"shallow")))
+
+    def load(file: Path on Linux): Unit = if file.existent() then
+      Objects.text(file.read[Data]).cut(t"\n").filter(_.length == 40).each { line => set.add(Git.Hash.unsafe(line)) }
+
+    file.let(load(_))
+
+    set
 
   // Follows tag objects to the object they ultimately name.
   def peel(objects: Path on Linux, hash: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error]): Git.Hash =

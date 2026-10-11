@@ -87,7 +87,7 @@ object Sequencer:
 
   private def writeState(context: Context, name: Text, content: Text)(using Tactic[Io.Error]): Unit =
     val file = stateFile(context, name)
-    file.parent.let { parent => if !parent.existent() then parent.create[Directory]() }
+    file.parent.let(Refstore.ensureDirectory(_))
     if file.existent() then file.delete()
     file.write(Objects.bytes(content))
 

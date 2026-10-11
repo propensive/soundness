@@ -258,7 +258,7 @@ object Merging:
     def write(conflict: Conflict): List[Index.Entry] =
       conflict.content.let: data =>
         val target = Workspace.file(worktree, conflict.path)
-        target.parent.let { parent => if !parent.existent() then parent.create[Directory]() }
+        target.parent.let(Refstore.ensureDirectory(_))
         if target.existent() then target.delete()
         target.write(data)
         val mode = conflict.ours.or(conflict.theirs).let(_(0)).or(Index.regular)

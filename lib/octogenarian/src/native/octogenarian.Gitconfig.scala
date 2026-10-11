@@ -206,7 +206,7 @@ object Gitconfig:
   // Writes the file through a lock, as git does, so that two writers never interleave.
   def writeFile(file: Path on Linux, lines: List[Line])(using Tactic[Git.Error], Tactic[Io.Error]): Unit =
     val parent: Path on Linux = file.parent.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
-    if !parent.existent() then parent.create[Directory]()
+    Refstore.ensureDirectory(parent)
     val lockFile: Path on Linux = unsafely(t"${file.encode}.lock".as[Path on Linux])
 
     try lockFile.open[File](Write, OpenFlag.Create, OpenFlag.Exclusive) { handle ?=> () }

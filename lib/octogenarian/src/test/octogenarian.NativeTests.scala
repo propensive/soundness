@@ -716,6 +716,130 @@ object NativeTests extends Suite(m"Octogenarian native backend"):
         gitOut(dir, t"stash", t"list")
       .assert(_ == t"stash@{0}: On main: newer")
 
+    suite(m"Local transport"):
+
+      def write(dir: Path on Linux, name: Text, content: Text): Unit =
+        val file = dir / name
+        if !file.existent() then file.create[File]()
+        file.open[File](Write) { handle ?=> handle.write(Chain(content.in[Data])) }
+
+      def bare(): Path on Linux =
+        val dir = freshDir()
+        sh"git -C $dir init -q --bare -b main".exec[Exit]()
+        dir
+
+      def main: Git.Ref = Git.Refs.heads(t"main")
+
+      test(m"a native push creates the branch in a bare repository git reads"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        gitCommit(dir, t"b", t"b\n", t"second")
+        val mirror = bare()
+        val outcomes = dir.open[Git.Repo](Read & Write): repo ?=>
+          repo.addRemote(t"mirror", mirror.encode)
+          repo.push(t"mirror", List(Git.Refspec(main))).value.values.to[List]
+        val created = outcomes.exists(_.isInstanceOf[Git.Push.Outcome.Created])
+        (created, gitOut(mirror, t"log", t"--format=%s", t"main"), gitOut(mirror, t"fsck", t"--strict"))
+      .assert(_ == ((true, t"second\nfirst", t"")))
+
+      test(m"a second push updates, and a rewritten history is rejected"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        val mirror = bare()
+        dir.open[Git.Repo](Read & Write): repo ?=>
+          repo.addRemote(t"mirror", mirror.encode)
+          repo.push(t"mirror", List(Git.Refspec(main)))
+        val second = gitCommit(dir, t"b", t"b\n", t"second")
+        val updated = dir.open[Git.Repo](Read & Write) { repo ?=> repo.push(t"mirror", List(Git.Refspec(main))).value.values.to[List] }
+        sh"git -C $dir commit -q --amend -m rewritten".exec[Exit]()
+        val rejected = dir.open[Git.Repo](Read & Write) { repo ?=> repo.push(t"mirror", List(Git.Refspec(main))).value.values.to[List] }
+        val forced = dir.open[Git.Repo](Read & Write) { repo ?=> repo.push(t"mirror", List(Git.Refspec(main)), force = Git.Push.Force.Always).value.values.to[List] }
+
+        ( updated.exists(_.isInstanceOf[Git.Push.Outcome.Updated]), rejected == List(Git.Push.Outcome.Rejected(t"non-fast-forward")),
+          forced.exists(_.isInstanceOf[Git.Push.Outcome.Updated]), gitOut(mirror, t"log", t"-1", t"--format=%s", t"main") )
+      .assert(_ == ((true, true, true, t"rewritten")))
+
+      test(m"pushing a deletion removes the remote branch"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        val mirror = bare()
+        val outcomes = dir.open[Git.Repo](Read & Write): repo ?=>
+          repo.addRemote(t"mirror", mirror.encode)
+          repo.push(t"mirror", List(Git.Refspec(main), Git.Refspec(Git.Refs.heads(t"main"), Git.Refs.heads(t"other"))))
+          repo.push(t"mirror", List(Git.Refspec(Unset, t"refs/heads/other", false))).value.values.to[List]
+        (outcomes.exists(_.isInstanceOf[Git.Push.Outcome.Deleted]), gitOut(mirror, t"for-each-ref", t"--format=%(refname)"))
+      .assert(_ == ((true, t"refs/heads/main")))
+
+      test(m"remoteRefs lists the refs git ls-remote lists"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        sh"git -C $dir tag -a -m v1 v1".exec[Exit]()
+        val other = gitRepo()
+        val listed = other.open[Git.Repo](Read & Write): repo ?=>
+          repo.addRemote(t"origin", dir.encode)
+          repo.remoteRefs(t"origin").value.to[List].map { (ref, hash) => t"${hash.text}\t${ref.encode}" }.to[Set]
+        // The handle maps refs by name, so `HEAD` and the peeled `^{}` entries have no place in it.
+        listed == gitOut(dir, t"ls-remote", t"--refs", t".").cut(t"\n").to[Set]
+      .assert(_ == true)
+
+      test(m"a native fetch brings commits and tags git made, and sets FETCH_HEAD"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        val second = gitCommit(dir, t"b", t"b\n", t"second")
+        sh"git -C $dir tag -a -m v1 v1".exec[Exit]()
+        val other = gitRepo()
+        val fetched = other.open[Git.Repo](Read & Write): repo ?=>
+          repo.addRemote(t"origin", dir.encode)
+          repo.fetch(t"origin", tags = true).value.keys.to[List].map(_.encode).to[Set]
+
+        ( fetched, gitOut(other, t"rev-parse", t"refs/remotes/origin/main") == second.text,
+          gitOut(other, t"rev-parse", t"FETCH_HEAD") == second.text, gitOut(other, t"fsck", t"--strict", t"--no-dangling"),
+          gitOut(other, t"cat-file", t"-t", t"v1") )
+      .assert(_ == ((Set(t"refs/remotes/origin/main", t"refs/tags/v1"), true, true, t"", t"tag")))
+
+      test(m"a native clone is a repository git finds clean and complete"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        gitCommit(dir, t"b", t"b\n", t"second")
+        val target = freshDir()
+        sh"rm -rf $target".exec[Exit]()
+        Git.clone(dir, target)
+
+        ( gitOut(target, t"status", t"--porcelain"), gitOut(target, t"log", t"--format=%s"), gitOut(target, t"symbolic-ref", t"HEAD"),
+          gitOut(target, t"config", t"branch.main.remote"), gitOut(target, t"config", t"remote.origin.url") == dir.encode,
+          gitOut(target, t"rev-parse", t"refs/remotes/origin/main") == gitOut(dir, t"rev-parse", t"main"), gitOut(target, t"fsck", t"--strict") )
+      .assert(_ == ((t"", t"second\nfirst", t"refs/heads/main", t"origin", true, true, t"")))
+
+      test(m"a shallow native clone is shallow to git"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        gitCommit(dir, t"b", t"b\n", t"second")
+        gitCommit(dir, t"c", t"c\n", t"third")
+        val target = freshDir()
+        sh"rm -rf $target".exec[Exit]()
+        Git.clone(dir, target, depth = 1)
+        (gitOut(target, t"rev-parse", t"--is-shallow-repository"), gitOut(target, t"log", t"--format=%s"), gitOut(target, t"fsck", t"--strict"))
+      .assert(_ == ((t"true", t"third", t"")))
+
+      test(m"git fetches what a native push sent, and native fetches what git pushed"):
+        val mirror = bare()
+        val alpha = gitRepo()
+        gitCommit(alpha, t"a", t"a\n", t"first")
+        alpha.open[Git.Repo](Read & Write): repo ?=>
+          repo.addRemote(t"mirror", mirror.encode)
+          repo.push(t"mirror", List(Git.Refspec(main)))
+        val beta = freshDir()
+        sh"rm -rf $beta".exec[Exit]()
+        sh"git clone -q $mirror $beta".exec[Exit]()
+        sh"git -C $beta config user.email octogenarian@test.local".exec[Exit]()
+        sh"git -C $beta config user.name Octogenarian".exec[Exit]()
+        gitCommit(beta, t"b", t"b\n", t"second")
+        sh"git -C $beta push -q origin main".exec[Exit]()
+        val pulled = alpha.open[Git.Worktree](Read & Write): worktree ?=>
+          worktree.pull(t"mirror", worktree.head(), branch = Git.Branch(t"main"), mode = Git.Pull.Mode.FastForwardOnly)
+        (pulled.isInstanceOf[Git.Merge.Outcome.FastForwarded], gitOut(alpha, t"log", t"--format=%s"), gitOut(alpha, t"status", t"--porcelain"))
+      .assert(_ == ((true, t"second\nfirst", t"")))
+
     suite(m"Linked worktrees"):
 
       test(m"git's linked worktrees are listed natively"):

@@ -121,13 +121,12 @@ object Worktrees:
 
     val name = freshName(commonDir, target.name)
     val worktreeGitDir = Refstore.descend(registry(commonDir), List(name))
-    if !registry(commonDir).existent() then registry(commonDir).create[Directory]()
-    worktreeGitDir.create[Directory]()
+    Refstore.ensureDirectory(worktreeGitDir)
     writeText(worktreeGitDir / "gitdir", t"${target.encode}/.git\n")
     writeText(worktreeGitDir / "commondir", t"../..\n")
     writeText(worktreeGitDir / "HEAD", branchRef.lay(t"${commit.text}\n") { ref => t"ref: $ref\n" })
 
-    if !target.existent() then target.create[Directory]()
+    Refstore.ensureDirectory(target)
     writeText(target / ".git", t"gitdir: ${worktreeGitDir.encode}\n")
 
     val tree = Workspace.treeSnapshot(objects, Revwalk.commit(objects, commit).tree)

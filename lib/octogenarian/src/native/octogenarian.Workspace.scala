@@ -343,7 +343,7 @@ object Workspace:
     val source = file(worktree, from)
     val destination = file(worktree, to)
     if !source.existent() then abort(Git.Error(Reason.Untracked(from)))
-    destination.parent.let { parent => if !parent.existent() then parent.create[Directory]() }
+    destination.parent.let(Refstore.ensureDirectory(_))
     source.moveTo(destination)
     pruneEmpty(worktree, source)
     val moved = entry.copy(path = to)
@@ -394,7 +394,7 @@ object Workspace:
 
     val target = file(worktree, path)
     val (_, data) = Store.readOr(objects, hash)
-    target.parent.let { parent => if !parent.existent() then parent.create[Directory]() }
+    target.parent.let(Refstore.ensureDirectory(_))
     if target.existent() then target.delete()
 
     if mode == Index.symlink then

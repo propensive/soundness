@@ -72,6 +72,12 @@ object Refstore:
     case _            => Unset
 
   // A path descended segment by segment, without a lambda: `/` is transparent inline.
+  // Creates a directory and whichever of its ancestors are missing.
+  def ensureDirectory(directory: Path on Linux)(using Tactic[Io.Error]): Unit =
+    if !directory.existent() then
+      directory.parent.let(ensureDirectory(_))
+      directory.create[Directory]()
+
   def descend(base: Path on Linux, segments: List[Text]): Path on Linux =
     if segments == Nil then base
     else unsafely(t"${base.encode}/${segments.join(t"/")}".as[Path on Linux])
@@ -80,10 +86,14 @@ object Refstore:
     val base = if name.starts(refsPrefix) then commonDir else gitDir
     descend(base, name.cut(t"/"))
 
+  // A ref file holds `ref: <name>` or a hash; `FETCH_HEAD` and `MERGE_HEAD` hold one hash per
+  // line, the first with a tab-separated description after it.
   private def parseTarget(content: Text): Optional[Git.Backend.Target] =
-    val line = content.trim
+    val line = content.trim.cut(t"\n").prim.or(t"")
     if line.starts(symbolicPrefix) then Git.Backend.Target.Symbolic(line.skip(5).trim)
     else if line.length == 40 then Git.Backend.Target.Direct(Git.Hash.unsafe(line))
+    else if line.length > 40 && (line.s.charAt(40) == '\t' || line.s.charAt(40) == ' ')
+    then Git.Backend.Target.Direct(Git.Hash.unsafe(line.keep(40)))
     else Unset
 
   // The `packed-refs` file: `<hash> <name>` lines, with `^<hash>` lines giving the peeled commit
@@ -161,7 +171,7 @@ object Refstore:
   :   Unit =
 
     val parent: Path on Linux = file.parent.or(abort(Git.Error(Reason.Unexpected)))
-    if !parent.existent() then parent.create[Directory]()
+    ensureDirectory(parent)
     val lockFile: Path on Linux = unsafely(t"${file.encode}.lock".as[Path on Linux])
 
     try lockFile.open[File](Write, OpenFlag.Create, OpenFlag.Exclusive) { handle ?=> () }
@@ -268,7 +278,7 @@ object Refstore:
     val base = if name.starts(refsPrefix) then commonDir else gitDir
     val file = descend(base, t"logs" :: name.cut(t"/"))
     val parent: Path on Linux = file.parent.or(base)
-    if !parent.existent() then parent.create[Directory]()
+    ensureDirectory(parent)
     val signature = Git.Signature(identity, Git.Timestamp.now())
     val old = from.lay(Git.Hash.zero.text)(_.text)
     val fresh = to.lay(Git.Hash.zero.text)(_.text)
