@@ -173,15 +173,21 @@ object Scribe:
         utf8IntoGeneral(target, from + 3, string, index + 1)
 
   // Doubling, so appending n elements costs O(n) rather than O(n²). Only reached from a
-  // growable scribe.
-  private[rudiments] def reserve[element: ClassTag](core: Core, extra: Int): Unit =
+  // growable scribe. The bigger array takes its element class from the buffer itself rather
+  // than a `ClassTag`: an inline `append` would otherwise materialize its tag — a
+  // `ClassValue` lookup — on every call, ahead of the growth test it is only needed behind.
+  private[rudiments] def reserve[element](core: Core, extra: Int): Unit =
     val target = core.buffer.asInstanceOf[scala.Array[element]^]
     val required = core.mark + extra
 
     if required > target.length then
       var capacity = (target.length*2).max(16)
       while capacity < required do capacity *= 2
-      val bigger: scala.Array[element]^ = new scala.Array[element](capacity)
+
+      val bigger: scala.Array[element]^ =
+        java.lang.reflect.Array.newInstance(target.getClass.getComponentType.nn, capacity)
+        . asInstanceOf[scala.Array[element]^]
+
       System.arraycopy(target, 0, bigger, 0, core.mark)
       core.buffer = bigger.asInstanceOf[AnyRef]
 
@@ -207,7 +213,7 @@ object Scribe:
     // cursor and advances it, clamping silently at the end of the buffer, so no position a
     // caller can reach is out of range. The dominant safe form for compaction and filtering
     // loops, whose write index advances irregularly while the read index scans.
-    inline def append(value: element)(using ClassTag[element]): Unit =
+    inline def append(value: element): Unit =
       val core = scribe.asInstanceOf[Core]
       if core.growable then Scribe.reserve[element](core, 1)
       val target = core.buffer.asInstanceOf[scala.Array[element]^]
@@ -221,7 +227,7 @@ object Scribe:
     // the operation `ByteArrayOutputStream.write(bytes)` was reached for, and the reason the
     // class was used at all — one `arraycopy` per chunk rather than a byte at a time.
     @targetName("appendArray")
-    inline def append(source: Array[element]^{})(using ClassTag[element]): Unit =
+    inline def append(source: Array[element]^{}): Unit =
       val core = scribe.asInstanceOf[Core]
       val count = source.readable.length
       if core.growable then Scribe.reserve[element](core, count)
@@ -233,8 +239,7 @@ object Scribe:
         core.mark += room
 
     // A window of the source, for framing formats which append a slice of a larger block.
-    inline def append(source: Array[element]^{}, from: Int, count: Int)(using ClassTag[element])
-    :   Unit =
+    inline def append(source: Array[element]^{}, from: Int, count: Int): Unit =
 
       val core = scribe.asInstanceOf[Core]
       if core.growable then Scribe.reserve[element](core, count)
@@ -250,8 +255,7 @@ object Scribe:
 
     // Bulk copy of a whole frozen array into the scribe at `at`, clamped to the space that
     // remains: the confined form of `place`. Returns the count copied.
-    inline def place(source: Array[element]^{}, at: Ordinal in scribe.type)(using ClassTag[element])
-    :   Int =
+    inline def place(source: Array[element]^{}, at: Ordinal in scribe.type): Int =
 
       val ordinal: Ordinal = at
       val core = scribe.asInstanceOf[Core]
@@ -272,13 +276,16 @@ object Scribe:
 // string. The exact-size scribe (`Array.scribe`) clamps as `append` does: a value that does
 // not fit is dropped whole.
 extension (scribe: Scribe[Byte])
-  // A LEB128 varint of `value` as an unsigned 64-bit quantity: one to ten bytes.
+  // A LEB128 varint of `value` as an unsigned 64-bit quantity: one to ten bytes. A one-byte
+  // value — a tag, a short length, a small number — is the common case, appended as the byte
+  // it is.
   inline def appendVarint(value: Long): Unit =
-    val core = scribe.asInstanceOf[Scribe.Core]
-    val count = Scribe.varintLength(value)
-    if core.growable then Scribe.reserve[Byte](core, count)
-    val target = core.buffer.asInstanceOf[scala.Array[Byte]^]
-    if core.mark + count <= target.length then core.mark = Scribe.varintInto(target, core.mark, value)
+    if (value & ~0x7fL) == 0L then scribe.append(value.toByte) else
+      val core = scribe.asInstanceOf[Scribe.Core]
+      val count = Scribe.varintLength(value)
+      if core.growable then Scribe.reserve[Byte](core, count)
+      val target = core.buffer.asInstanceOf[scala.Array[Byte]^]
+      if core.mark + count <= target.length then core.mark = Scribe.varintInto(target, core.mark, value)
 
   // The UTF-8 encoding of `string`, encoded straight into the buffer: no intermediate array.
   inline def appendUtf8(string: String): Unit =

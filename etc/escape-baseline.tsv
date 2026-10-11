@@ -64,8 +64,8 @@ lib/coaxial/src/test/coaxial_test.scala	0	0	0	0	3	0	0	0	0	0	0	0	0
 lib/coaxial/src/wasi/coaxial_wasi.scala	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/concordance/src/core/rudiments.Appendable.scala	0	0	0	0	0	0	1	0	0	0	0	0	0
 lib/concordance/src/core/rudiments.Prependable.scala	0	0	0	0	0	0	1	0	0	0	0	0	0
-lib/concordance/src/core/rudiments.Scribe.scala	0	0	2	0	0	0	0	0	0	0	3	11	0
-lib/concordance/src/core/rudiments.Segmentable.scala	0	0	0	0	0	0	1	0	0	0	0	0	0
+lib/concordance/src/core/rudiments.Scribe.scala	0	0	2	0	0	0	0	0	0	0	3	12	0
+lib/concordance/src/core/rudiments.Segmentable.scala	0	0	0	0	0	1	1	0	0	0	0	0	0
 lib/concordance/src/core/rudiments.Surveyor.scala	0	0	1	0	0	0	0	0	0	0	0	0	0
 lib/contingency/src/core/contingency.Recovery.scala	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/contingency/src/core/contingency.Venture.scala	0	0	0	0	0	0	0	0	0	0	1	0	0
@@ -225,7 +225,7 @@ lib/jacinta/src/staged/jacinta.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0	3	0	0
 lib/jacinta/src/test/jacinta.ParserTests.scala	0	0	0	0	6	0	0	0	0	0	1	0	0
 lib/kaleidoscope/src/core/kaleidoscope.internal.scala	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/legerdemain/src/test/legerdemain_test.scala	0	0	1	0	0	0	0	0	0	0	0	0	0
-lib/locomotion/src/core/locomotion.Protobuf.scala	0	0	0	0	1	1	0	0	0	0	5	5	0
+lib/locomotion/src/core/locomotion.Protobuf.scala	0	0	0	0	2	2	0	0	0	0	5	5	0
 lib/locomotion/src/core/locomotion.ProtobufParser.scala	0	0	0	0	0	1	0	0	0	0	1	3	0
 lib/locomotion/src/core/locomotion.ProtobufPrinter.scala	0	0	0	0	1	0	0	0	0	0	0	1	0
 lib/locomotion/src/core/locomotion.ProtobufReader.scala	0	0	0	0	0	0	0	0	0	0	2	2	0

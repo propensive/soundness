@@ -31,7 +31,7 @@ lib/charisma/src/core/charisma.PeriodicTable.scala	0	1	0
 lib/coaxial/src/core/coaxial_core.scala	2	0	0
 lib/concordance/src/core/rudiments.Grouping.scala	6	0	0
 lib/concordance/src/core/rudiments.Lattice.scala	1	0	0
-lib/concordance/src/core/rudiments.Scribe.scala	1	0	5
+lib/concordance/src/core/rudiments.Scribe.scala	1	0	6
 lib/concordance/src/core/rudiments.Surveyor.scala	2	0	0
 lib/contextual/src/core/contextual.Interpolation.scala	2	0	4
 lib/corpuscular/src/core/corpuscular_core.scala	8	0	0

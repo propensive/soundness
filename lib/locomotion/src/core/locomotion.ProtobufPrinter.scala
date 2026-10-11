@@ -63,10 +63,11 @@ class ProtobufPrinter(out: Scribe[Byte]) extends caps.ExclusiveCapability, caps.
   // A string the measuring pass stashed (`ProtobufSizes.stashText`): its length prefix, then
   // its bytes copied from the table's scratch.
   update def stashedText(sizes: ProtobufSizes^): Unit =
-    sizes.unstashText: (scratch, offset, length) =>
-      varint(length.toLong)
-      // The scratch is read, never written, through this view, and only within this call.
-      out.append(Array.unsafeFrozen(scratch), offset, length)
+    val offset = sizes.next()
+    val length = sizes.next()
+    varint(length.toLong)
+    // The scratch is read, never written, through this view, and only within this call.
+    out.append(Array.unsafeFrozen(sizes.scratchBytes), offset, length)
 
   update def fixed32(value: Int): Unit =
     var i = 0

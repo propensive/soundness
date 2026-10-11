@@ -373,6 +373,30 @@ object stagedInternal:
   // `Factory`, only a `Conversion`: each maps to its underlying stdlib
   // collection, at which a builder is summoned and whose result is cast back
   // — a no-op at erasure — mirroring breviloquence's generator.
+  // A type with its capture annotations stripped: a frozen array field is `Array[T]^{}`,
+  // which reflection presents as the applied type under an annotation.
+  private def unannotated(using Quotes)(tpe: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+
+    tpe.dealias match
+      case AnnotatedType(inner, _) => unannotated(inner)
+      case other                   => other
+
+  // Whether a field is a frozen array of packable scalars, `Array[Long]^{}` and the like:
+  // gathered as a packed run into an unboxed array builder, and walked by index when
+  // printed. (`Array[Byte]^{}` is `Data`, a scalar, and never reaches here.)
+  private def isArrayType(using Quotes)(tpe: quotes.reflect.TypeRepr): Boolean =
+    import quotes.reflect.*
+
+    val arraySym = TypeRepr.of[proscenium.Array[Any]].typeSymbol
+
+    unannotated(tpe) match
+      case AppliedType(constructor, List(element)) =>
+        constructor.typeSymbol == arraySym && builtinKind(element.dealias).exists(_ <= KFloat)
+
+      case _ =>
+        false
+
   private def aliasCollectionUnderlying(using Quotes)(tpe: quotes.reflect.TypeRepr)
   :   Option[quotes.reflect.TypeRepr] =
 
@@ -382,7 +406,10 @@ object stagedInternal:
     val setSym      = TypeRepr.of[proscenium.Set[Any]].typeSymbol
     val sequenceSym = TypeRepr.of[proscenium.Sequence[Any]].typeSymbol
 
-    tpe.dealias match
+    unannotated(tpe) match
+      case AppliedType(constructor, List(element)) if isArrayType(tpe) =>
+        Some(TypeRepr.of[scala.Array].appliedTo(element))
+
       case AppliedType(constructor, List(element)) if constructor.typeSymbol == listSym =>
         Some(TypeRepr.of[scala.collection.immutable.List].appliedTo(element))
 
@@ -461,7 +488,8 @@ object stagedInternal:
 
         val isAliasCollection = aliasCollectionUnderlying(tpe).isDefined
 
-        if !isMap && (tpe <:< TypeRepr.of[Iterable[Any]] || isAliasCollection) then tpe match
+        if !isMap && (tpe <:< TypeRepr.of[Iterable[Any]] || isAliasCollection)
+        then unannotated(tpe) match
           case AppliedType(_, arguments) =>
             val elementType = arguments.last.dealias
 
@@ -842,16 +870,33 @@ object stagedInternal:
                       case Elem.Scalar(kind) =>
                         val natural = naturalCode(kind)
 
+                        // An array field's builder is the stdlib's unboxed one for the
+                        // element: appended through its own class, not the `Builder`
+                        // interface, so no element is boxed on the way in.
+                        def append(item: Expr[element]): Expr[Unit] =
+                          if isArrayType(fieldTypes(index)) then kind match
+                            case KInt =>
+                              '{$builder.asInstanceOf[scm.ArrayBuilder.ofInt].addOne(${item.asExprOf[Int]})}
+                            case KLong =>
+                              '{$builder.asInstanceOf[scm.ArrayBuilder.ofLong].addOne(${item.asExprOf[Long]})}
+                            case KBoolean =>
+                              '{$builder.asInstanceOf[scm.ArrayBuilder.ofBoolean].addOne(${item.asExprOf[Boolean]})}
+                            case KDouble =>
+                              '{$builder.asInstanceOf[scm.ArrayBuilder.ofDouble].addOne(${item.asExprOf[Double]})}
+                            case _ =>
+                              '{$builder.asInstanceOf[scm.ArrayBuilder.ofFloat].addOne(${item.asExprOf[Float]})}
+                          else '{$builder += $item}
+
                         ' {
                             if $code == 2 && ${Expr(natural)} != 2 then
                               val saved = $parser.directEnterField(2)(using $tactic)
 
                               while !$parser.directAtLimit do
-                                $builder += ${packedRead(kind).asExprOf[element]}
+                                ${append(packedRead(kind).asExprOf[element])}
 
                               $parser.directLeaveField(saved)(using $tactic)
                             else
-                              $builder += ${scalarRead(kind, code).asExprOf[element]}
+                              ${append(scalarRead(kind, code).asExprOf[element])}
                           }
 
                       case Elem.Chunk(kind) =>
@@ -946,16 +991,20 @@ object stagedInternal:
       val loop: List[Statement] =
         List(While('{!$parser.directAtLimit}.asTerm, step))
 
-      // The declared-default-then-absent expression per field.
+      // The declared-default-then-absent expression per field. A frozen array field takes
+      // its absent value directly: the default probe cannot be typed over `Array[T]^{}`
+      // under capture checking (its `Optionality` loses the capture set), and the ADT path
+      // decodes an absent packed field as empty regardless.
       def defaultOr(index: Int, absent: Expr[Any]): Expr[Any] =
         fieldTypes(index).asType match
           case '[fieldType] =>
-            ' {
-                val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
+            if isArrayType(fieldTypes(index)) then absent.asExprOf[fieldType] else
+              ' {
+                  val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
 
-                if !declared.absent then declared.asInstanceOf[fieldType]
-                else ${absent.asExprOf[fieldType]}
-              }
+                  if !declared.absent then declared.asInstanceOf[fieldType]
+                  else ${absent.asExprOf[fieldType]}
+                }
 
       def planAbsent(index: Int, tactic: Expr[Tactic[Protobuf.Error]]): Expr[Any] =
         plans(index) match
@@ -1048,8 +1097,15 @@ object stagedInternal:
                           $absent
                       }.asTerm )
 
+      // A frozen array slot reads back without its capture set, so it is reasserted at the
+      // one place it leaves the parser: the record's constructor.
       val construct: Term =
-        Apply(Select(New(Inferred(tpe)), ctor), slots.map { slot => Ref(slot) })
+        Apply
+          ( Select(New(Inferred(tpe)), ctor),
+            List.range(0, arity).map: index =>
+              if isArrayType(fieldTypes(index)) then fieldTypes(index).asType match
+                case '[fieldType] => '{${Ref(slots(index)).asExpr}.asInstanceOf[fieldType]}.asTerm
+              else Ref(slots(index)) )
 
       Block
         ( slotDefs ::: seenDefs ::: builderDefs ::: bufferDefs ::: readDefDefs ::: loop :::
@@ -1252,11 +1308,20 @@ object stagedInternal:
       case success: ImplicitSearchSuccess => Some(success.tree.asExpr)
       case _                              => None
 
-  private def wireTypeOf(kind: Int)(using Quotes): Expr[WireType] = kind match
-    case KDouble        => '{WireType.I64}
-    case KFloat         => '{WireType.I32}
-    case KText | KData  => '{WireType.Len}
-    case _              => '{WireType.Varint}
+  // A field's tag, known at expansion: a single literal byte for a field number up to 15 —
+  // nearly every field — and a varint beyond.
+  private def tagWrite(number: Int, code: Int, printer: Expr[AnyRef])(using Quotes)
+  :   Expr[Unit] =
+
+    val tag = (number << 3) | code
+    if tag < 0x80 then '{ProtobufPrinter.of($printer).byte(${Expr(tag)})}
+    else '{ProtobufPrinter.of($printer).varint(${Expr(tag.toLong)})}
+
+  private def wireCode(kind: Int): Int = kind match
+    case KDouble        => 1
+    case KFloat         => 5
+    case KText | KData  => 2
+    case _              => 0
 
   // The encoded length of a builtin scalar's payload, recording a string's.
   private def scalarSize(kind: Int, value: Expr[Any], sizes: Expr[AnyRef])(using Quotes)
@@ -1348,6 +1413,34 @@ object stagedInternal:
         recur()
       }
 
+  // The same two walks over a frozen array, by index: an `IArray[Long]` read is unboxed.
+  private def summedArray[element: Type](array: Expr[scala.IArray[element]])
+    ( size: Expr[element] => Expr[Int] )
+    ( using Quotes )
+  :   Expr[Int] =
+
+    ' {
+        def recur(index: Int, total: Int): Int =
+          if index < $array.length then recur(index + 1, total + ${size('{$array(index)})})
+          else total
+
+        recur(0, 0)
+      }
+
+  private def visitedArray[element: Type](array: Expr[scala.IArray[element]])
+    ( write: Expr[element] => Expr[Unit] )
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    ' {
+        def recur(index: Int): Unit =
+          if index < $array.length then
+            ${write('{$array(index)})}
+            recur(index + 1)
+
+        recur(0)
+      }
+
   // A message in a field position: its size goes into a slot reserved before its children
   // are measured, and the field is its tag, the length prefix and the body.
   private def framedSize(number: Int, body: Expr[Int], sizes: Expr[AnyRef])(using Quotes)
@@ -1366,7 +1459,7 @@ object stagedInternal:
   :   Expr[Unit] =
 
     ' {
-        ProtobufPrinter.of($printer).tag(${Expr(number)}, WireType.Len)
+        ${tagWrite(number, 2, printer)}
         ProtobufPrinter.of($printer).varint(ProtobufSizes.of($sizes).next().toLong)
         $body
       }
@@ -1491,8 +1584,13 @@ object stagedInternal:
                       case Elem.Scalar(kind) =>
                         def each(item: Expr[element]): Expr[Int] = scalarSize(kind, item, sizes)
 
+                        val runSize: Expr[Int] =
+                          if isArrayType(fieldTypes(index))
+                          then summedArray('{$typed.asInstanceOf[scala.IArray[element]]})(each)
+                          else summed(iterable)(each)
+
                         ' {
-                            val run = ${summed(iterable)(each)}
+                            val run = $runSize
                             ProtobufSizes.of($sizes).record(run)
 
                             if run == 0 then 0
@@ -1572,7 +1670,7 @@ object stagedInternal:
 
             def tagged(kind: Int, item: Expr[Any]): Expr[Unit] =
               ' {
-                  ProtobufPrinter.of($printer).tag(${Expr(number)}, ${wireTypeOf(kind)})
+                  ${tagWrite(number, wireCode(kind), printer)}
                   ${scalarWrite(kind, item, printer, sizes)}
                 }
 
@@ -1634,13 +1732,18 @@ object stagedInternal:
                         def each(item: Expr[element]): Expr[Unit] =
                           scalarWrite(kind, item, printer, sizes)
 
+                        val walk: Expr[Unit] =
+                          if isArrayType(fieldTypes(index))
+                          then visitedArray('{$typed.asInstanceOf[scala.IArray[element]]})(each)
+                          else visited(iterable)(each)
+
                         ' {
                             val run = ProtobufSizes.of($sizes).next()
 
                             if run > 0 then
-                              ProtobufPrinter.of($printer).tag(${Expr(number)}, WireType.Len)
+                              ${tagWrite(number, 2, printer)}
                               ProtobufPrinter.of($printer).varint(run.toLong)
-                              ${visited(iterable)(each)}
+                              $walk
                           }
 
                       case Elem.Chunk(kind) =>

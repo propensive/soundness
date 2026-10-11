@@ -43,6 +43,7 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import scala.collection.Factory
 import scala.compiletime.*
+import scala.reflect.ClassTag
 
 import adversaria.*
 import anticipation.*
@@ -688,6 +689,64 @@ object Protobuf extends Protobuf2:
   =>  ( (sequence[element] is Decodable in Protobuf)^{tactic, caps.any} ) =
     packedDecodable[Vector, element]
     . asInstanceOf[(sequence[element] is Decodable in Protobuf)^{tactic, caps.any}]
+
+  // A frozen array of packable scalars — `Array[Long]^{}`, `Array[Double]^{}` — is a packed
+  // `repeated` field too, in the unboxed representation: a generated parser fills it without
+  // boxing an element and a generated printer walks it by index. The bytes are the `List`
+  // form's. One instance per scalar, each as pure as the scalar's own, so a derivation over an
+  // array field sees the shape it sees for `Data`. (`Array[Byte]^{}` is `Data`, a scalar.)
+  private def packedArray[element: {Packable, ClassTag}]
+    ( encodable: element is Encodable in Protobuf, values: Array[element]^{} )
+  :   Protobuf =
+
+    packedEncodable[scala.collection.immutable.ArraySeq, element](using encodable, infer)
+    . encoded(scala.collection.immutable.ArraySeq.unsafeWrapArray(Array.unsafeJvm(values)))
+
+  private def unpackedArray[element: {Packable, ClassTag}]
+    ( decodable: (element is Decodable in Protobuf)^, protobuf: Protobuf )
+    ( using Tactic[Protobuf.Error] )
+  :   Array[element]^{} =
+
+    val values =
+      packedDecodable[scala.collection.immutable.List, element](using infer, decodable, infer)
+      . decoded(protobuf)
+
+    Array.unsafeFrozen(values.toArray)
+
+  given intArrayEncodable: (Array[Int]^{}) is Encodable in Protobuf =
+    packedArray(intEncodable, _)
+
+  given longArrayEncodable: (Array[Long]^{}) is Encodable in Protobuf =
+    packedArray(longEncodable, _)
+
+  given booleanArrayEncodable: (Array[Boolean]^{}) is Encodable in Protobuf =
+    packedArray(booleanEncodable, _)
+
+  given doubleArrayEncodable: (Array[Double]^{}) is Encodable in Protobuf =
+    packedArray(doubleEncodable, _)
+
+  given floatArrayEncodable: (Array[Float]^{}) is Encodable in Protobuf =
+    packedArray(floatEncodable, _)
+
+  given intArrayDecodable: (tactic: Tactic[Protobuf.Error])
+  =>  ( ((Array[Int]^{}) is Decodable in Protobuf)^{tactic, caps.any} ) =
+    unpackedArray(intDecodable, _)
+
+  given longArrayDecodable: (tactic: Tactic[Protobuf.Error])
+  =>  ( ((Array[Long]^{}) is Decodable in Protobuf)^{tactic, caps.any} ) =
+    unpackedArray(longDecodable, _)
+
+  given booleanArrayDecodable: (tactic: Tactic[Protobuf.Error])
+  =>  ( ((Array[Boolean]^{}) is Decodable in Protobuf)^{tactic, caps.any} ) =
+    unpackedArray(booleanDecodable, _)
+
+  given doubleArrayDecodable: (tactic: Tactic[Protobuf.Error])
+  =>  ( ((Array[Double]^{}) is Decodable in Protobuf)^{tactic, caps.any} ) =
+    unpackedArray(doubleDecodable, _)
+
+  given floatArrayDecodable: (tactic: Tactic[Protobuf.Error])
+  =>  ( ((Array[Float]^{}) is Decodable in Protobuf)^{tactic, caps.any} ) =
+    unpackedArray(floatDecodable, _)
 
   // `Map[K, V]` encodes as a `repeated` message of map entries, each a two-field
   // message `{ key = 1; value = 2 }` — the proto3 map wire format.
