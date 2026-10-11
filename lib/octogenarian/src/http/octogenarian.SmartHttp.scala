@@ -46,20 +46,13 @@ import zephyrine.*
 
 import alphabets.base64Standard
 
-// Remote repositories reached over HTTP or HTTPS by git's smart protocol: the capability
-// advertisement from `info/refs` and each command as a `POST` to the service, with protocol
-// version 2 requested in the `Git-Protocol` header. Credentials in the URL's userinfo are sent as
-// Basic authentication.
-class SmartHttp()(using backend: Http.Backend) extends Transport:
-  def accepts(url: Text): Boolean = url.starts(t"http://") || url.starts(t"https://")
-  def connect(url: Text)(using Tactic[Git.Error]): Peer^ = Protocol(SmartHttp.Channel(url, backend))
-
 object SmartHttp:
   import Git.Error.Reason as Reason
 
   // The URL without its userinfo, and the userinfo if there was one.
   private def split(url: Text): (Text, Optional[Text]) =
     val schemeEnd = url.s.indexOf("://")
+
     if schemeEnd < 0 then (url, Unset) else
       val authorityStart = schemeEnd + 3
       val pathStart = url.s.indexOf('/', authorityStart)
@@ -67,7 +60,9 @@ object SmartHttp:
       val at = url.s.lastIndexOf('@', authorityEnd)
 
       if at < authorityStart then (url, Unset)
-      else (t"${url.keep(authorityStart)}${url.skip(at + 1)}", url.s.substring(authorityStart, at).nn.tt)
+      else
+        val stripped = t"${url.keep(authorityStart)}${url.skip(at + 1)}"
+        (stripped, url.s.substring(authorityStart, at).nn.tt)
 
   class Channel(url: Text, backend: Http.Backend) extends octogenarian.Channel:
     private val (base, userinfo) = split(if url.ends(t"/") then url.skip(1, Rtl) else url)
@@ -76,9 +71,11 @@ object SmartHttp:
       def basic(userinfo: Text): Http.Header =
         Http.Header(t"authorization", t"Basic ${Objects.bytes(userinfo).serialize[Base64]}")
 
-      List(Http.Header(t"git-protocol", t"version=2")) + userinfo.let(List(_)).or(Nil).map(basic(_)) + extra
+      val protocol = Http.Header(t"git-protocol", t"version=2")
+      List(protocol) + userinfo.let(List(_)).or(Nil).map(basic(_)) + extra
 
-    private def request(target: Text, method: Http.Method, headers: List[Http.Header], body: Spring[Data])
+    private def request
+      ( target: Text, method: Http.Method, headers: List[Http.Header], body: Spring[Data] )
       ( using tactic: Tactic[Git.Error] )
     :   Pktline.Reader =
 
@@ -102,7 +99,8 @@ object SmartHttp:
     // The advertisement, with the `# service=…` line and its flush, which the HTTP form adds in
     // front, skipped.
     def advertise(service: Text)(using Tactic[Git.Error]): Pktline.Reader =
-      val reader = request(t"$base/info/refs?service=$service", Http.Get, headers(service, Nil), () => Http.emptyBody())
+      val target = t"$base/info/refs?service=$service"
+      val reader = request(target, Http.Get, headers(service, Nil), () => Http.emptyBody())
       val input = java.io.PushbackInputStream(reader.underlying, 65540)
       val probe = Pktline.Reader(input)
 
@@ -127,3 +125,12 @@ object SmartHttp:
       this.request(t"$base/$service", Http.Post, headers(service, extra), () => request.stream)
 
     def close(): Unit = ()
+
+// Remote repositories reached over HTTP or HTTPS by git's smart protocol: the capability
+// advertisement from `info/refs` and each command as a `POST` to the service, with protocol
+// version 2 requested in the `Git-Protocol` header. Credentials in the URL's userinfo are sent as
+// Basic authentication.
+
+class SmartHttp()(using backend: Http.Backend) extends Transport:
+  def accepts(url: Text): Boolean = url.starts(t"http://") || url.starts(t"https://")
+  def connect(url: Text)(using Tactic[Git.Error]): Peer^ = Protocol(SmartHttp.Channel(url, backend))

@@ -33,6 +33,8 @@
 package soundness
 
 export octogenarian.Native
+export octogenarian.Transport
+export octogenarian.Peer
 
 package gitBackends:
   export octogenarian.gitBackends.soundnessGit

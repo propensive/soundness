@@ -47,7 +47,7 @@ import providers.javaBaseProvider
 
 // Packfiles in transit: writing one from a list of objects (undeltified, each zlib-compressed)
 // and reading one received whole, resolving its deltas, into a store.
-object Packs:
+private[octogenarian] object Packs:
   import Git.Error.Reason as Reason
 
   private def typeCode(kind: Git.Object.Kind): Int = kind match
@@ -71,7 +71,9 @@ object Packs:
 
   // The entry header: the type in bits 4 to 6 of the first byte, the size in its low four bits
   // and then seven bits per continuation byte.
-  private def entryHeader(output: java.io.ByteArrayOutputStream, kind: Git.Object.Kind, size: Long): Unit =
+  private def entryHeader(output: java.io.ByteArrayOutputStream, kind: Git.Object.Kind, size: Long)
+  :   Unit =
+
     val first = (typeCode(kind) << 4) | (size & 15).toInt
     val rest = size >>> 4
 
@@ -84,10 +86,17 @@ object Packs:
     output.write(if rest == 0 then first else first | 0x80)
     continuation(rest)
 
-  private def sha1(data: Data): Data = Objects.unhex(data.digest[Sha1].serialize[Hex]).asInstanceOf[Data]
+  private def sha1
+    ( data: Data )
+  :   Data =
+
+    Objects.unhex(data.digest[Sha1].serialize[Hex]).asInstanceOf[Data]
 
   // A pack of `hashes`, each object read through `read`, in the order given.
-  def write(hashes: List[Git.Hash], read: Git.Hash => (Git.Object.Kind, Data), activity: Git.Activity^): Data =
+  def write
+    ( hashes: List[Git.Hash], read: Git.Hash => (Git.Object.Kind, Data), activity: Git.Activity^ )
+  :   Data =
+
     val output = java.io.ByteArrayOutputStream()
     output.write(Objects.bytes(t"PACK").asInstanceOf[scala.Array[Byte]])
     int(output, 2)
@@ -105,7 +114,8 @@ object Packs:
 
   // An entry as read: its type code, its inflated bytes, and for a delta its base (an offset or
   // a hash).
-  private case class Entry(offset: Long, code: Int, data: Data, baseOffset: Long, baseHash: Optional[Git.Hash])
+  private case class Entry
+    ( offset: Long, code: Int, data: Data, baseOffset: Long, baseHash: Optional[Git.Hash] )
 
   // Reads a whole pack, storing every object through `store` with deltas resolved (against
   // other entries, or through `external` for a thin pack's bases). Returns the object count.
@@ -116,17 +126,25 @@ object Packs:
   :   Int =
 
     val array = pack.asInstanceOf[scala.Array[Byte]]
+
     if array.length < 32 || Objects.text(array.slice(0, 4).asInstanceOf[Data]) != t"PACK"
     then abort(Git.Error(Reason.Unexpected, t"the data received is not a packfile"))
 
     val buffer = java.nio.ByteBuffer.wrap(array).nn
     val version = buffer.getInt(4)
-    if version != 2 && version != 3 then abort(Git.Error(Reason.Unsupported(t"packfile version $version")))
+
+    if version != 2 && version != 3
+    then abort(Git.Error(Reason.Unsupported(t"packfile version $version")))
+
     val count = buffer.getInt(8)
 
     val trailer = array.slice(array.length - 20, array.length).asInstanceOf[Data]
     val checksum = sha1(array.slice(0, array.length - 20).asInstanceOf[Data])
-    if Objects.text(trailer) != Objects.text(checksum) && !java.util.Arrays.equals(trailer.asInstanceOf[scala.Array[Byte]], checksum.asInstanceOf[scala.Array[Byte]])
+
+    val trailerBytes = trailer.asInstanceOf[scala.Array[Byte]]
+    val checksumBytes = checksum.asInstanceOf[scala.Array[Byte]]
+
+    if !java.util.Arrays.equals(trailerBytes, checksumBytes)
     then abort(Git.Error(Reason.Unexpected, t"the packfile's checksum does not match"))
 
     activity.begin(Git.Activity.Phase.Unpacking)
@@ -149,7 +167,9 @@ object Packs:
       if remaining == 0 then acc.reverse else
         val first = byteAt(position)
         val code = (first >> 4) & 7
-        val (_, afterSize) = if (first & 0x80) == 0 then (0L, position + 1) else size(position + 1, 0L, 4)
+
+        val (_, afterSize) =
+          if (first & 0x80) == 0 then (0L, position + 1) else size(position + 1, 0L, 4)
 
         val (baseOffset, baseHash, dataStart) = code match
           case 6 =>
@@ -164,11 +184,15 @@ object Packs:
 
         val (data, consumed) = Zlib.inflate(pack, dataStart)
         activity.advance()
-        entries(dataStart + consumed, remaining - 1, Entry(position.toLong, code, data, baseOffset, baseHash) :: acc)
+
+        entries
+          ( dataStart + consumed,
+            remaining - 1,
+            Entry(position.toLong, code, data, baseOffset, baseHash) :: acc )
 
     val all = entries(12, count, Nil)
     val byOffset = java.util.HashMap[Long, Entry]()
-    all.each { entry => byOffset.put(entry.offset, entry) }
+    all.each: entry => byOffset.put(entry.offset, entry)
     val resolved = java.util.HashMap[Long, (Git.Object.Kind, Data)]()
     val byHash = java.util.HashMap[Git.Hash, (Git.Object.Kind, Data)]()
 
@@ -177,12 +201,17 @@ object Packs:
 
     def resolve(entry: Entry): (Git.Object.Kind, Data) =
       val cached = resolved.get(entry.offset)
+
       if cached != null then cached else
         val result: (Git.Object.Kind, Data) = entry.code match
           case 6 =>
             val base = byOffset.get(entry.offset - entry.baseOffset)
-            if base == null then abort(Git.Error(Reason.Unexpected, t"a delta base offset outside the pack"))
+
+            if base == null
+            then abort(Git.Error(Reason.Unexpected, t"a delta base offset outside the pack"))
+
             val (kind, baseData) = resolve(base.nn)
+
             (kind, Packfile.applyDelta(baseData, entry.data))
 
           case 7 =>
@@ -191,7 +220,9 @@ object Packs:
 
             val (kind, baseData) =
               if inPack != null then inPack.nn
-              else plainWithHash(all, hash).or(external(hash).or(abort(Git.Error(Reason.NoSuchObject(hash.text)))))
+              else
+                plainWithHash(all, hash)
+                . or(external(hash).or(abort(Git.Error(Reason.NoSuchObject(hash.text)))))
 
             (kind, Packfile.applyDelta(baseData, entry.data))
 
@@ -201,13 +232,17 @@ object Packs:
         result
 
     // A plain (undeltified) entry whose object has the given hash, resolved.
-    def plainWithHash(remaining: List[Entry], hash: Git.Hash): Optional[(Git.Object.Kind, Data)] = remaining match
-      case entry :: rest =>
-        if entry.code > 4 then plainWithHash(rest, hash) else
-          val (kind, data) = resolve(entry)
-          if Store.hash(kind, data) == hash then (kind, data) else plainWithHash(rest, hash)
+    def plainWithHash
+      ( remaining: List[Entry], hash: Git.Hash )
+    :   Optional[(Git.Object.Kind, Data)] =
 
-      case _ => Unset
+      remaining match
+        case entry :: rest =>
+          if entry.code > 4 then plainWithHash(rest, hash) else
+            val (kind, data) = resolve(entry)
+            if Store.hash(kind, data) == hash then (kind, data) else plainWithHash(rest, hash)
+
+        case _ => Unset
 
     def storeAll(remaining: List[Entry]): Unit = remaining match
       case entry :: rest =>

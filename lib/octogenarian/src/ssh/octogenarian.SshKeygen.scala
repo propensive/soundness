@@ -59,8 +59,10 @@ object SshKeygen:
 
   // Runs `ssh-keygen` with `payload` on its standard input, returning its output and exit status.
   private def run(arguments: List[Text], payload: Data)
-    ( using working: WorkingDirectory, environment: Environment, loggable: (Exec.Event is Loggable)^,
-            tactic: Tactic[Git.Error] )
+    ( using working:     WorkingDirectory,
+            environment: Environment,
+            loggable:    (Exec.Event is Loggable)^,
+            tactic:      Tactic[Git.Error] )
   :   (Text, Int) =
 
     given execution: Tactic[Exec.Error] = tactic.contramap: error =>
@@ -81,7 +83,9 @@ object SshKeygen:
 
   // Signs with the private key in `key`.
   class Signer(key: Path on Linux)
-    ( using working: WorkingDirectory, environment: Environment, loggable: (Exec.Event is Loggable)^ )
+    ( using working:     WorkingDirectory,
+            environment: Environment,
+            loggable:    (Exec.Event is Loggable)^ )
   extends Git.Signer:
 
     def sign(payload: Data)(using Tactic[Git.Error]): Text =
@@ -91,7 +95,9 @@ object SshKeygen:
 
   // Verifies against the principals and keys in `allowedSigners`.
   class Verifier(allowedSigners: Path on Linux)
-    ( using working: WorkingDirectory, environment: Environment, loggable: (Exec.Event is Loggable)^ )
+    ( using working:     WorkingDirectory,
+            environment: Environment,
+            loggable:    (Exec.Event is Loggable)^ )
   extends Git.Verifier:
 
     def verify(payload: Data, signature: Text)(using Tactic[Git.Error]): Git.Verification =
@@ -99,15 +105,20 @@ object SshKeygen:
 
       try
         val (principals, found) =
-          run(List(t"-Y", t"find-principals", t"-s", file.encode, t"-f", allowedSigners.encode), payload)
+          run
+            ( List(t"-Y", t"find-principals", t"-s", file.encode, t"-f", allowedSigners.encode),
+              payload )
 
         if found != 0 then Git.Verification.Unknown(principals.trim) else
           val principal = principals.cut(t"\n").prim.or(t"").trim
 
-          val (output, status) =
-            run
-              ( List(t"-Y", t"verify", t"-n", namespace, t"-f", allowedSigners.encode, t"-I", principal, t"-s", file.encode),
-                payload )
+          val arguments =
+            List
+              ( t"-Y", t"verify", t"-n", namespace, t"-f", allowedSigners.encode, t"-I", principal,
+                t"-s", file.encode )
 
-          if status == 0 then Git.Verification.Good(principal) else Git.Verification.Bad(output.trim)
+          val (output, status) = run(arguments, payload)
+
+          if status == 0 then Git.Verification.Good(principal)
+          else Git.Verification.Bad(output.trim)
       finally java.nio.file.Files.deleteIfExists(java.nio.file.Path.of(file.encode.s))

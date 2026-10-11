@@ -48,27 +48,30 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import filesystemBackends.javaBaseFilesystem
-import filesystemOptions.createNonexistentParents
-import filesystemOptions.overwritePreexisting
-import filesystemOptions.moveAtomically
-import filesystemOptions.dereferenceSymlinks
-import filesystemOptions.deleteRecursively
 import alphabets.hexLowerCase
 import cryptoPermits.permitDeprecatedCrypto
+import filesystemBackends.javaBaseFilesystem
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.moveAtomically
+import filesystemOptions.overwritePreexisting
 import providers.javaBaseProvider
 
 // The object database of a repository: loose objects under `objects/xx/`, packfiles under
 // `objects/pack/`, and the stores named in `objects/info/alternates`. Objects are immutable and
 // content-addressed, so a store never caches a wrong answer; packs are re-listed when a hash is
 // not found, since another process may have repacked.
-object Store:
+private[octogenarian] object Store:
   import Git.Error.Reason as Reason
 
   private def loosePath(objects: Path on Linux, hash: Git.Hash): Path on Linux =
     Refstore.descend(objects, List(hash.text.keep(2), hash.text.skip(2)))
 
-  private def packs(objects: Path on Linux)(using Tactic[Git.Error], Tactic[Io.Error]): List[Packfile] =
+  private def packs(objects: Path on Linux)
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
+  :   List[Packfile] =
+
     val directory = objects / "pack"
 
     if !directory.existent() then Nil else
@@ -77,7 +80,8 @@ object Store:
           if path.name.ends(t".idx") then
             val pack = Refstore.descend(directory, List(t"${path.name.skip(4, Rtl)}.pack"))
             recur(rest, Packfile(pack, Packfile.loadIndex(path.read[Data])) :: acc)
-          else recur(rest, acc)
+          else
+            recur(rest, acc)
 
         case _ => acc.reverse
 
@@ -97,7 +101,10 @@ object Store:
 
       recur(Objects.text(file.read[Data]).cut(t"\n"), Nil)
 
-  def exists(objects: Path on Linux, hash: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error]): Boolean =
+  def exists(objects: Path on Linux, hash: Git.Hash)
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
+  :   Boolean =
+
     read(objects, hash).present
 
   // An object which must exist.
@@ -106,7 +113,9 @@ object Store:
 
     read(objects, hash) match
       case found: (Git.Object.Kind, Data) @unchecked => found
-      case _                                        => abort(Git.Error(Reason.NoSuchObject(hash.text)))
+
+      case _ =>
+        abort(Git.Error(Reason.NoSuchObject(hash.text)))
 
   // Reads an object: its kind and its content, without the `type size\0` header.
   def read(objects: Path on Linux, hash: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error])
@@ -131,7 +140,9 @@ object Store:
 
   // Writes a loose object, unless it is already present: written to a temporary name, then moved
   // into place, so a concurrent reader never sees a partial object.
-  def write(objects: Path on Linux, kind: Git.Object.Kind, data: Data)(using Tactic[Git.Error], Tactic[Io.Error])
+  def write
+    ( objects: Path on Linux, kind: Git.Object.Kind, data: Data )
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Git.Hash =
 
     val hash = Store.hash(kind, data)
@@ -155,7 +166,8 @@ object Store:
       if directory.name.length != 2 then Nil else
         def recur(files: List[Path on Linux], acc: List[Git.Hash]): List[Git.Hash] = files match
           case file :: rest =>
-            if file.name.length == 38 then recur(rest, Git.Hash.unsafe(t"${directory.name}${file.name}") :: acc)
+            if file.name.length == 38
+            then recur(rest, Git.Hash.unsafe(t"${directory.name}${file.name}") :: acc)
             else recur(rest, acc)
 
           case _ => acc.reverse

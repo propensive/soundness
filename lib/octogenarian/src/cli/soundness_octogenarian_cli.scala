@@ -33,6 +33,7 @@
 package soundness
 
 export octogenarian.Commandline
+export octogenarian.Gpg
 
 package gitCommands:
   export octogenarian.gitCommands.searchpathGitCommand

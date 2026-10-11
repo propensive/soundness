@@ -46,12 +46,12 @@ import vacuous.*
 
 import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
-import filesystemOptions.overwritePreexisting
 import filesystemOptions.deleteRecursively
+import filesystemOptions.overwritePreexisting
 
 // Fetching, pushing and cloning against a `Peer`: which refs a refspec selects, which objects
 // must travel, and how the local refs (or the peer's) are moved afterwards.
-object Transfer:
+private[octogenarian] object Transfer:
   import Git.Error.Reason as Reason
 
   case class Context
@@ -61,27 +61,36 @@ object Transfer:
       identity:  Git.Identity,
       logging:   Boolean )
 
-  def count[element](list: List[element]): Int = list.fold(0) { (n, _) => n + 1 }
+  def count[element](list: List[element]): Int = list.fold(0): (n, _) => n + 1
 
   // ───────────────────────────────────────── Object graphs ────────────────────────────────────
 
   // The objects an object refers to: a commit its tree and parents, a tree its entries, a tag
   // its target, a blob nothing.
-  private def references(kind: Git.Object.Kind, data: Data)(using Tactic[Git.Error]): List[Git.Hash] = kind match
-    case Git.Object.Kind.Blob   => Nil
-    case Git.Object.Kind.Tree   => Objects.parseTree(data).map(_.hash)
-    case Git.Object.Kind.Tag    => Objects.parseTag(data).target :: Nil
+  private def references
+    ( kind: Git.Object.Kind, data: Data )
+    ( using Tactic[Git.Error] )
+  :   List[Git.Hash] =
 
-    case Git.Object.Kind.Commit =>
-      val commit = Objects.parseCommit(Git.Hash.zero, data)
-      commit.tree :: commit.parents
+    kind match
+      case Git.Object.Kind.Blob => Nil
+      case Git.Object.Kind.Tree => Objects.parseTree(data).map(_.hash)
+      case Git.Object.Kind.Tag  => Objects.parseTag(data).target :: Nil
+
+      case Git.Object.Kind.Commit =>
+        val commit = Objects.parseCommit(Git.Hash.zero, data)
+        commit.tree :: commit.parents
 
   // Copies every object reachable from `wants` which `has` does not already know, from `read`
   // to `store`, commits newest first. With a `depth`, a commit's parents are not followed beyond
   // it, and the commits whose parents were cut off are returned.
   def copy
-    ( read: Git.Hash => Optional[(Git.Object.Kind, Data)], wants: List[Git.Hash], has: Git.Hash => Boolean,
-      depth: Optional[Int], store: (Git.Object.Kind, Data) => Git.Hash, activity: Git.Activity^ )
+    ( read: Git.Hash => Optional[(Git.Object.Kind, Data)],
+      wants: List[Git.Hash],
+      has: Git.Hash => Boolean,
+      depth: Optional[Int],
+      store: (Git.Object.Kind, Data) => Git.Hash,
+      activity: Git.Activity^ )
     ( using Tactic[Git.Error] )
   :   List[Git.Hash] =
 
@@ -135,12 +144,15 @@ object Transfer:
         if excludedCommits.contains(hash) then excludeCommits(rest)
         else
           excludedCommits.add(hash)
+
           Store.readOr(objects, hash) match
             case (Git.Object.Kind.Commit, data) =>
               val commit = Objects.parseCommit(hash, data)
               excludeCommits(commit.parents + rest)
 
-            case (Git.Object.Kind.Tag, data) => excludeCommits(Objects.parseTag(data).target :: rest)
+            case (Git.Object.Kind.Tag, data) =>
+              excludeCommits(Objects.parseTag(data).target :: rest)
+
             case _                           => excludeCommits(rest)
 
       case _ => ()
@@ -149,8 +161,11 @@ object Transfer:
 
     def markTree(hash: Git.Hash): Unit = if !known.contains(hash) then
       known.add(hash)
+
       Store.readOr(objects, hash) match
-        case (Git.Object.Kind.Tree, data) => Objects.parseTree(data).each { entry => markTree(entry.hash) }
+        case (Git.Object.Kind.Tree, data) => Objects.parseTree(data).each: entry =>
+          markTree(entry.hash)
+
         case _                            => ()
 
     // The trees of excluded commits adjacent to included ones are known to the peer.
@@ -162,7 +177,8 @@ object Transfer:
 
     def recur(pending: List[Git.Hash], acc: List[Git.Hash]): List[Git.Hash] = pending match
       case hash :: rest =>
-        if sent.contains(hash) || known.contains(hash) || excludedCommits.contains(hash) then recur(rest, acc)
+        if sent.contains(hash) || known.contains(hash) || excludedCommits.contains(hash)
+        then recur(rest, acc)
         else
           sent.add(hash)
           val (kind, data) = Store.readOr(objects, hash)
@@ -186,10 +202,12 @@ object Transfer:
   // Whether `pattern` (with at most one `*`) matches `name`, and what the `*` stood for.
   private def matchGlob(pattern: Text, name: Text): Optional[Text] =
     val star = pattern.s.indexOf('*')
+
     if star < 0 then if pattern == name then t"" else Unset
     else
       val prefix = pattern.keep(star)
       val suffix = pattern.skip(star + 1)
+
       if name.starts(prefix) && name.ends(suffix) && name.length >= prefix.length + suffix.length
       then name.skip(prefix.length).skip(suffix.length, Rtl)
       else Unset
@@ -199,12 +217,16 @@ object Transfer:
     if star < 0 then pattern else t"${pattern.keep(star)}$middle${pattern.skip(star + 1)}"
 
   private def isHex(text: Text): Boolean =
-    text.length == 40 && text.s.chars.nn.allMatch { char => (char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') }
+    text.length == 40 && text.s.chars.nn.allMatch: char =>
+      (char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')
 
   // The full name of a ref given by a short name, as git's DWIM rules find it among `refs`.
   private def expand(short: Text, refs: List[(Text, Git.Hash)]): Optional[Text] =
-    val candidates = List(short, t"refs/$short", t"refs/tags/$short", t"refs/heads/$short", t"refs/remotes/$short")
+    val candidates =
+      List(short, t"refs/$short", t"refs/tags/$short", t"refs/heads/$short", t"refs/remotes/$short")
+
     def named(candidate: Text): Boolean = refs.exists(_(0) == candidate)
+
     candidates.filter(named(_)).prim
 
   // One ref a fetch refspec selected on the peer: its name there, its hash, where it lands
@@ -214,18 +236,26 @@ object Transfer:
   private def select(refspec: Git.Refspec, refs: List[(Text, Git.Hash)]): List[Selection] =
     def globbed(source: Text, entry: (Text, Git.Hash)): List[Selection] =
       val (name, hash) = entry
+
       def selection(middle: Text): Selection =
         Selection(name, hash, refspec.destination.let(substitute(_, middle)), refspec.force)
+
       matchGlob(source, name).let(selection(_)).let(List(_)).or(Nil)
 
     def named(name: Text): List[Selection] =
-      def selection(entry: (Text, Git.Hash)): Selection = Selection(name, entry(1), refspec.destination, refspec.force)
+      def selection
+        ( entry: (Text, Git.Hash) )
+      :   Selection =
+
+        Selection(name, entry(1), refspec.destination, refspec.force)
+
       refs.filter(_(0) == name).map(selection(_))
 
     refspec.source match
       case source: Text =>
         if source.s.indexOf('*') >= 0 then refs.bind(globbed(source, _))
-        else if isHex(source) then List(Selection(source, Git.Hash.unsafe(source), refspec.destination, refspec.force))
+        else if isHex(source)
+        then List(Selection(source, Git.Hash.unsafe(source), refspec.destination, refspec.force))
         else expand(source, refs).let(named(_)).or(Nil)
 
       case _ => Nil
@@ -235,10 +265,16 @@ object Transfer:
   private def config(context: Context)(using Tactic[Io.Error]): List[(Git.Config.Key, Text)] =
     Gitconfig.effective(context.gitDir, context.commonDir)
 
-  private def remoteSetting(context: Context, remote: Text, name: Text)(using Tactic[Io.Error]): Optional[Text] =
+  private def remoteSetting(context: Context, remote: Text, name: Text)
+    ( using Tactic[Io.Error] )
+  :   Optional[Text] =
+
     Operations.setting(config(context), Git.Config.Key(t"remote", remote, name))
 
-  private def remoteSettings(context: Context, remote: Text, name: Text)(using Tactic[Io.Error]): List[Text] =
+  private def remoteSettings(context: Context, remote: Text, name: Text)
+    ( using Tactic[Io.Error] )
+  :   List[Text] =
+
     val key = Git.Config.Key(t"remote", remote, name)
     config(context).sweep { case (`key`, value) => value }
 
@@ -254,7 +290,9 @@ object Transfer:
     if url.starts(t"file://") then url.skip(7) else url
 
   def connect
-    ( url: Text, transports: List[Transport], locate: Path on Linux => Optional[Git.Backend.Location],
+    ( url: Text,
+      transports: List[Transport],
+      locate: Path on Linux => Optional[Git.Backend.Location],
       identity: Git.Identity )
     ( using Tactic[Git.Error] )
   :   Peer^ =
@@ -264,8 +302,11 @@ object Transfer:
       val location = locate(path).or(abort(Git.Error(Reason.NoRepository(path.encode))))
       Peer.Local(location, identity)
     else
-      transports.filter(_.accepts(url)).prim.lay(abort(Git.Error(Reason.Unsupported(t"the transport for $url")))):
-        transport => transport.connect(url)
+      val transport =
+        transports.filter(_.accepts(url)).prim
+        . or(abort(Git.Error(Reason.Unsupported(t"the transport for $url"))))
+
+      transport.connect(url)
 
   // ──────────────────────────────────────────── Fetching ──────────────────────────────────────
 
@@ -275,7 +316,9 @@ object Transfer:
     else if isHex(name) then name
     else t"'$name'"
 
-  def remoteRefs(context: Context, remote: Text, peer: Peer^)(using Tactic[Git.Error], Tactic[Io.Error])
+  def remoteRefs
+    ( context: Context, remote: Text, peer: Peer^ )
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   List[(Text, Git.Hash)] =
 
     val refs = peer.refs()
@@ -284,8 +327,15 @@ object Transfer:
   // Fetches from `peer`, moving the local refs the refspecs name and writing `FETCH_HEAD`;
   // returns the refs it changed.
   def fetch
-    ( context: Context, remote: Text, peer: Peer^, url: Text, refspecs: List[Git.Refspec], depth: Optional[Int],
-      prune: Boolean, tags: Boolean, activity: Git.Activity^ )
+    ( context: Context,
+      remote: Text,
+      peer: Peer^,
+      url: Text,
+      refspecs: List[Git.Refspec],
+      depth: Optional[Int],
+      prune: Boolean,
+      tags: Boolean,
+      activity: Git.Activity^ )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   List[(Text, Git.Hash)] =
 
@@ -297,7 +347,9 @@ object Transfer:
       if refspecs != Nil then refspecs
       else remoteSettings(context, remote, t"fetch").map(parseRefspec(_))
 
-    val specs = configured + (if tags then List(Git.Refspec(t"refs/tags/*", t"refs/tags/*", false)) else Nil)
+    val specs =
+      configured + (if tags then List(Git.Refspec(t"refs/tags/*", t"refs/tags/*", false)) else Nil)
+
     val selections = specs.bind(select(_, refs))
     def have(hash: Git.Hash): Boolean = Store.exists(context.objects, hash)
     val wants = selections.map(_.hash).distinct.filter(!have(_))
@@ -307,36 +359,62 @@ object Transfer:
     val haves = Refstore.list(context.commonDir, Unset).map(_(1)).distinct.filter(have(_))
 
     val boundary =
-      peer.download(wants, haves, have(_), depth, (kind, data) => Store.write(context.objects, kind, data), activity)
+      peer.download
+        ( wants,
+          haves,
+          have(_),
+          depth,
+          (kind, data) => Store.write(context.objects, kind, data),
+          activity )
 
     if boundary != Nil then
       val file = context.gitDir / "shallow"
-      val existing = if file.existent() then Objects.text(file.read[Data]).cut(t"\n").filter(_.length == 40) else Nil
+
+      val existing =
+        if file.existent() then Objects.text(file.read[Data]).cut(t"\n").filter(_.length == 40)
+        else Nil
+
       val all = (existing + boundary.map(_.text)).distinct
+
       if file.existent() then file.delete()
       file.write(Objects.bytes(t"${all.join(t"\n")}\n"))
 
     // Moves a local ref to what the peer has, if that is a fast-forward or forcing is allowed.
-    def update(selection: Selection): Optional[(Text, Git.Hash)] = selection.local.let(move(selection, _))
+    def update
+      ( selection: Selection )
+    :   Optional[(Text, Git.Hash)] =
+
+      selection.local.let(move(selection, _))
 
     def move(selection: Selection, local: Text): Optional[(Text, Git.Hash)] =
       val current = Refstore.resolve(context.gitDir, context.commonDir, local)
 
       if current == Optional(selection.hash) then Unset
       else
-        val fastForward = current.lay(true) { current => Revwalk.isAncestor(context.objects, current, selection.hash) }
+        val fastForward =
+          current.lay(true): current => Revwalk.isAncestor(context.objects, current, selection.hash)
 
         if !fastForward && !selection.force then
           abort(Git.Error(Reason.NotFastForward, t"$local: ${describe(selection.remote)} of $url"))
 
         Refstore.update
-          ( context.gitDir, context.commonDir, local, selection.hash, Git.Backend.Expectation(current),
-            t"fetch $url: ${if fastForward then t"fast-forward" else t"forced-update"}", context.identity,
+          ( context.gitDir,
+            context.commonDir,
+            local,
+            selection.hash,
+            Git.Backend.Expectation(current),
+            t"fetch $url: ${if fastForward then t"fast-forward" else t"forced-update"}",
+            context.identity,
             context.logging )
 
         (local, selection.hash)
 
-    def updatedBy(selection: Selection): List[(Text, Git.Hash)] = update(selection).let(List(_)).or(Nil)
+    def updatedBy
+      ( selection: Selection )
+    :   List[(Text, Git.Hash)] =
+
+      update(selection).let(List(_)).or(Nil)
+
     val updated = selections.bind(updatedBy(_))
 
     // Locals matching a pattern destination whose remote counterpart has gone.
@@ -344,6 +422,7 @@ object Transfer:
       def stale(spec: Git.Refspec): List[Text] = spec.destination match
         case destination: Text if destination.s.indexOf('*') >= 0 =>
           val remoteNames = selections.map(_.local)
+
           Refstore.list(context.commonDir, Unset).map(_(0)).filter: name =>
             matchGlob(destination, name).present && !remoteNames.has(name)
 
@@ -351,9 +430,16 @@ object Transfer:
 
       def delete(name: Text): Unit =
         val current = Refstore.resolve(context.gitDir, context.commonDir, name)
+
         Refstore.update
-          ( context.gitDir, context.commonDir, name, Unset, Git.Backend.Expectation(current), t"fetch $url: prune",
-            context.identity, context.logging )
+          ( context.gitDir,
+            context.commonDir,
+            name,
+            Unset,
+            Git.Backend.Expectation(current),
+            t"fetch $url: prune",
+            context.identity,
+            context.logging )
 
       specs.bind(stale(_)).distinct.each(delete(_))
 
@@ -379,15 +465,31 @@ object Transfer:
   private def destinationOf(source: Text, local: Text, remoteRefs: List[(Text, Git.Hash)]): Text =
     if local.starts(t"refs/") then local
     else if local.starts(t"refs/tags/") then local
-    else expand(local, remoteRefs).or(if source.starts(t"refs/tags/") then source else t"refs/heads/$local")
+    else
+      val fallback = if source.starts(t"refs/tags/") then source else t"refs/heads/$local"
+      expand(local, remoteRefs).or(fallback)
 
   def push
-    ( context: Context, remote: Text, peer: Peer^, url: Text, refspecs: List[Git.Refspec], force: Git.Push.Force,
-      tags: Boolean, setUpstream: Boolean, activity: Git.Activity^ )
+    ( context: Context,
+      remote: Text,
+      peer: Peer^,
+      url: Text,
+      refspecs: List[Git.Refspec],
+      force: Git.Push.Force,
+      tags: Boolean,
+      setUpstream: Boolean,
+      activity: Git.Activity^ )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   List[(Text, Git.Push.Outcome)] =
 
-    val remoteRefs = peer.refs().filter { entry => entry(0) != t"HEAD" && !entry(0).ends(t"^{}") }
+    def listed(entry: (Text, Git.Hash)): Boolean = entry(0) != t"HEAD" && !entry(0).ends(t"^{}")
+    val remoteRefs = peer.refs().filter(listed(_))
+
+    // A move the peer can make without discarding history: its current commit is one we have
+    // and the new one descends from it.
+    def fastForward(from: Git.Hash, to: Git.Hash): Boolean =
+      Store.exists(context.objects, from) && Revwalk.isAncestor(context.objects, from, to)
+
     val localRefs = Refstore.list(context.commonDir, Unset)
 
     val headRef: Optional[Text] = Refstore.read(context.gitDir, context.commonDir, t"HEAD") match
@@ -397,9 +499,10 @@ object Transfer:
     // With no refspec, the current branch goes to its namesake.
     val specs0 =
       if refspecs != Nil then refspecs
-      else headRef.lay(abort(Git.Error(Reason.Detached))) { ref => List(Git.Refspec(ref, ref, false)) }
+      else headRef.lay(abort(Git.Error(Reason.Detached))): ref => List(Git.Refspec(ref, ref, false))
 
-    val specs = specs0 + (if tags then List(Git.Refspec(t"refs/tags/*", t"refs/tags/*", false)) else Nil)
+    val specs =
+      specs0 + (if tags then List(Git.Refspec(t"refs/tags/*", t"refs/tags/*", false)) else Nil)
 
     // Resolves one refspec to the remote ref it names, what the peer should hold and whether
     // forcing was asked for.
@@ -407,7 +510,10 @@ object Transfer:
 
     def globbed(spec: Git.Refspec, source: Text, entry: (Text, Git.Hash)): List[Intent] =
       val (name, hash) = entry
-      def intent(middle: Text): Intent = Intent(spec.destination.let(substitute(_, middle)).or(name), hash, spec.force)
+
+      def intent(middle: Text): Intent =
+        Intent(spec.destination.let(substitute(_, middle)).or(name), hash, spec.force)
+
       matchGlob(source, name).let(intent(_)).let(List(_)).or(Nil)
 
     def deletion(destination: Text): List[Intent] = List(Intent(destination, Unset, true))
@@ -421,7 +527,11 @@ object Transfer:
             . or(abort(Git.Error(Reason.NoSuchRef(source))))
 
           val localName = expand(source, localRefs).or(source)
-          val remoteName = spec.destination.lay(destinationOf(source, localName, remoteRefs))(destinationOf(source, _, remoteRefs))
+
+          val remoteName =
+            spec.destination.lay(destinationOf(source, localName, remoteRefs)): destination =>
+              destinationOf(source, destination, remoteRefs)
+
           List(Intent(remoteName, resolved, spec.force))
 
       case _ => spec.destination.let(deletion(_)).or(Nil)
@@ -450,9 +560,10 @@ object Transfer:
               current match
                 case from: Git.Hash =>
                   if from == to then (intent, Right(Git.Push.Outcome.UpToDate))
-                  else if !Store.exists(context.objects, from) || !Revwalk.isAncestor(context.objects, from, to) then
+                  else if !fastForward(from, to) then
                     if forced then (intent, Right(Unset)) else (intent, Left(t"non-fast-forward"))
-                  else (intent, Right(Unset))
+                  else
+                    (intent, Right(Unset))
 
                 case _ => (intent, Right(Unset))
 
@@ -470,31 +581,42 @@ object Transfer:
     def target(intent: Intent): List[Git.Hash] = intent.to.let(List(_)).or(Nil)
     val wants = pending.bind(target(_))
     activity.begin(Git.Activity.Phase.Enumerating)
-    val objects = enumerate(context.objects, wants, remoteRefs.map(_(1)).filter(Store.exists(context.objects, _)))
+
+    val objects =
+      enumerate(context.objects, wants, remoteRefs.map(_(1))
+      . filter(Store.exists(context.objects, _)))
 
     def update(intent: Intent): RefUpdate =
       RefUpdate(intent.remote, Git.Backend.Expectation(remoteMap.at(intent.remote)), intent.to)
 
     val results =
       if pending == Nil then Nil
-      else peer.upload(objects, hash => Store.readOr(context.objects, hash), pending.map(update(_)), activity)
+      else
+        def read(hash: Git.Hash): (Git.Object.Kind, Data) = Store.readOr(context.objects, hash)
+        peer.upload(objects, read(_), pending.map(update(_)), activity)
 
     val resultMap = results.to[Map]
 
-    def outcome(entry: (Intent, Either[Text, Optional[Git.Push.Outcome]])): (Text, Git.Push.Outcome) =
+    def outcome(entry: (Intent, Either[Text, Optional[Git.Push.Outcome]]))
+    :   (Text, Git.Push.Outcome) =
+
       val (intent, decision) = entry
       val current = remoteMap.at(intent.remote)
       val forced = intent.force || force == Git.Push.Force.Always
 
       val result: Git.Push.Outcome = decision match
-        case Left(reason) => Git.Push.Outcome.Rejected(reason)
+        case Left(reason)   => Git.Push.Outcome.Rejected(reason)
+
         case Right(outcome) => outcome.or:
           resultMap.at(intent.remote).or(Unset) match
             case reason: Text => Git.Push.Outcome.Rejected(reason)
+
             case _ =>
               intent.to match
                 case to: Git.Hash => current match
-                  case from: Git.Hash => Git.Push.Outcome.Updated(from, to, forced && !Revwalk.isAncestor(context.objects, from, to))
+                  case from: Git.Hash =>
+                    Git.Push.Outcome.Updated(from, to, forced && !fastForward(from, to))
+
                   case _              => Git.Push.Outcome.Created(to)
 
                 case _ => Git.Push.Outcome.Deleted(current.or(Git.Hash.zero))
@@ -507,8 +629,13 @@ object Transfer:
       val branch = ref.skip(11)
       val file = context.gitDir / "config"
       val lines = Gitconfig.readFile(file)
-      val withRemote = Gitconfig.set(lines, Git.Config.Key(t"branch", branch, t"remote"), remote, true)
-      val withMerge = Gitconfig.set(withRemote, Git.Config.Key(t"branch", branch, t"merge"), ref, true)
+
+      val withRemote =
+        Gitconfig.set(lines, Git.Config.Key(t"branch", branch, t"remote"), remote, true)
+
+      val withMerge =
+        Gitconfig.set(withRemote, Git.Config.Key(t"branch", branch, t"merge"), ref, true)
+
       Gitconfig.writeFile(file, withMerge)
 
     if setUpstream then headRef.let(configureUpstream(_))

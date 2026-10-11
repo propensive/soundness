@@ -46,19 +46,6 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-// Remote repositories reached through a spawned `ssh`, as git itself reaches them: one process
-// per service, running `git-upload-pack` or `git-receive-pack` on the server with protocol
-// version 2 requested through the `GIT_PROTOCOL` variable (which `SendEnv` forwards, where the
-// server's `AcceptEnv` allows it). Both `ssh://[user@]host[:port]/path` and the `scp`-like
-// `[user@]host:path` forms are understood.
-class SshCommand()(using working: WorkingDirectory, environment: Environment, loggable: (Exec.Event is Loggable)^)
-extends Transport:
-  def accepts(url: Text): Boolean = SshCommand.parse(url).present
-
-  def connect(url: Text)(using Tactic[Git.Error]): Peer^ =
-    val address = SshCommand.parse(url).or(abort(Git.Error(Git.Error.Reason.Unsupported(t"the transport for $url"))))
-    Protocol(SshCommand.Channel(address))
-
 object SshCommand:
   import Git.Error.Reason as Reason
 
@@ -72,6 +59,7 @@ object SshCommand:
     if url.starts(t"ssh://") then
       val rest = url.skip(6)
       val slash = rest.s.indexOf('/')
+
       if slash < 0 then Unset else
         val authority = rest.keep(slash)
         val path = rest.skip(slash)
@@ -83,11 +71,13 @@ object SshCommand:
           safely(hostPort.skip(colon + 1).s.toInt) match
             case port: Int => Address(user, hostPort.keep(colon), port, path)
             case _         => Unset
-    else if url.s.contains("://") then Unset
+    else if url.s.contains("://") then
+      Unset
     else
       // `[user@]host:path`, provided the colon comes before any slash (else it is a local path).
       val colon = url.s.indexOf(':')
       val slash = url.s.indexOf('/')
+
       if colon <= 0 || (slash >= 0 && slash < colon) then Unset
       else
         val (user, host) = userHost(url.keep(colon))
@@ -97,7 +87,9 @@ object SshCommand:
   // exchange, discarded) before the request is written and the response read. Nothing is kept
   // between exchanges, so a fetch costs a connection for `ls-refs` and one for `fetch`.
   class Channel(address: Address)
-    ( using working: WorkingDirectory, environment: Environment, loggable: (Exec.Event is Loggable)^ )
+    ( using working:     WorkingDirectory,
+            environment: Environment,
+            loggable:    (Exec.Event is Loggable)^ )
   extends octogenarian.Channel:
 
     private val protocolVariable: Text = t"GIT_PROTOCOL"
@@ -109,16 +101,21 @@ object SshCommand:
         if name == protocolVariable then protocolVersion else environment.variable(name)
 
       override def entries: Optional[Map[Text, Text]] =
-        environment.entries.let { entries => (entries.to[List] + List((protocolVariable, protocolVersion))).to[Map] }
+        environment.entries.let: entries =>
+          (entries.to[List] + List((protocolVariable, protocolVersion))).to[Map]
 
     private def command(service: Text): Command =
-      val destination = address.user.lay(address.host) { user => t"$user@${address.host}" }
+      val destination = address.user.lay(address.host): user => t"$user@${address.host}"
       val portArguments = address.port.let { port => List(t"-p", port.toString.tt) }.or(Nil)
       val remote = t"$service '${address.path}'"
-      Command((List(t"ssh") + portArguments + List(t"-o", t"SendEnv=$protocolVariable", destination, remote))*)
+      val options = List(t"-o", t"SendEnv=$protocolVariable", destination, remote)
+      Command((List(t"ssh") + portArguments + options)*)
 
     // Starts the service, writes `request` (if any) to it and returns its output.
-    private def start(service: Text, request: Optional[Data])(using tactic: Tactic[Git.Error]): Pktline.Reader =
+    private def start(service: Text, request: Optional[Data])
+      ( using tactic: Tactic[Git.Error] )
+    :   Pktline.Reader =
+
       given execution: Tactic[Exec.Error] = tactic.contramap: error =>
         Git.Error(Reason.Unreachable(address.host), error.message.text)(using Diagnostics.omit)
 
@@ -138,3 +135,22 @@ object SshCommand:
       reader
 
     def close(): Unit = ()
+
+// Remote repositories reached through a spawned `ssh`, as git itself reaches them: one process
+// per service, running `git-upload-pack` or `git-receive-pack` on the server with protocol
+// version 2 requested through the `GIT_PROTOCOL` variable (which `SendEnv` forwards, where the
+// server's `AcceptEnv` allows it). Both `ssh://[user@]host[:port]/path` and the `scp`-like
+// `[user@]host:path` forms are understood.
+
+class SshCommand()
+  ( using working:     WorkingDirectory,
+          environment: Environment,
+          loggable:    (Exec.Event is Loggable)^ )
+extends Transport:
+  def accepts(url: Text): Boolean = SshCommand.parse(url).present
+
+  def connect(url: Text)(using Tactic[Git.Error]): Peer^ =
+    val address =
+      SshCommand.parse(url)
+      . or(abort(Git.Error(Git.Error.Reason.Unsupported(t"the transport for $url"))))
+    Protocol(SshCommand.Channel(address))

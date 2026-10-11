@@ -49,22 +49,22 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import sortingAlgorithms.timsort
-import filesystemBackends.javaBaseFilesystem
-import filesystemOptions.createNonexistentParents
-import filesystemOptions.overwritePreexisting
-import filesystemOptions.moveAtomically
-import filesystemOptions.dereferenceSymlinks
-import filesystemOptions.deleteRecursively
 import alphabets.hexLowerCase
 import cryptoPermits.permitDeprecatedCrypto
+import filesystemBackends.javaBaseFilesystem
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.moveAtomically
+import filesystemOptions.overwritePreexisting
 import providers.javaBaseProvider
+import sortingAlgorithms.timsort
 
 // The index (`DIRC`), versions 2, 3 and 4: the staged tree with the stat data that lets a status
 // skip hashing unchanged files. Read whole and written whole, through `index.lock`, with the
 // racy-git rule applied: an entry whose modification time is not older than the index file's
 // cannot be trusted and is re-hashed.
-object Index:
+private[octogenarian] object Index:
   // One index entry. `stage` is 0 for a merged path and 1 to 3 for the base, ours and theirs of
   // a conflict; `mode` is the full octal mode as an integer.
   case class Entry
@@ -90,7 +90,13 @@ object Index:
 
   case class Contents(version: Int, entries: List[Entry], extensions: List[Extension]):
     def staged: List[Entry] = entries.filter(_.stage == 0)
-    def at(path: Text): Optional[Entry] = entries.reap { case entry if entry.path == path && entry.stage == 0 => entry }
+
+    def at
+      ( path: Text )
+
+    :   Optional[Entry] =
+
+      entries.reap { case entry if entry.path == path && entry.stage == 0 => entry }
 
   val empty: Contents = Contents(2, Nil, Nil)
 
@@ -106,12 +112,22 @@ object Index:
   def parse(data: Data)(using Tactic[Git.Error]): Contents =
     val array = data.asInstanceOf[scala.Array[Byte]]
     val buffer = ByteBuffer.wrap(array).nn
-    if array.length < 12 || buffer.getInt(0) != 0x44495243 then abort(Git.Error(Git.Error.Reason.Unexpected, t"the index is not a DIRC file"))
-    val version = buffer.getInt(4)
-    val count = buffer.getInt(8)
-    if version < 2 || version > 4 then abort(Git.Error(Git.Error.Reason.Unsupported(t"index version $version")))
 
-    def nul(from: Int): Int = if from >= array.length || array(from) == 0 then from else nul(from + 1)
+    if array.length < 12 || buffer.getInt(0) != 0x44495243
+    then abort(Git.Error(Git.Error.Reason.Unexpected, t"the index is not a DIRC file"))
+
+    val version = buffer.getInt(4)
+
+    val count = buffer.getInt(8)
+
+    if version < 2 || version > 4
+    then abort(Git.Error(Git.Error.Reason.Unsupported(t"index version $version")))
+
+    def nul
+      ( from: Int )
+    :   Int =
+
+      if from >= array.length || array(from) == 0 then from else nul(from + 1)
 
     // Version 4 prefix-compresses names: a varint count of bytes to strip from the previous
     // name, then the suffix.
@@ -120,7 +136,9 @@ object Index:
       val next = (value << 7) | (byte & 0x7f)
       if (byte & 0x80) == 0 then (next, position + 1) else varint(position + 1, next + 1)
 
-    def entries(position: Int, remaining: Int, previous: Text, acc: List[Entry]): (List[Entry], Int) =
+    def entries(position: Int, remaining: Int, previous: Text, acc: List[Entry])
+    :   (List[Entry], Int) =
+
       if remaining == 0 then (acc.reverse, position) else
         val flags = buffer.getShort(position + 60) & 0xffff
         val extended = version >= 3 && (flags & 0x4000) != 0
@@ -179,10 +197,10 @@ object Index:
   private val volatile: Set[Text] = Set(t"TREE", t"UNTR", t"FSMN", t"EOIE", t"IEOT")
 
   def render(contents: Contents): Data =
-    val extended = contents.entries.exists { entry => entry.skipWorktree || entry.intentToAdd }
+    val extended = contents.entries.exists: entry => entry.skipWorktree || entry.intentToAdd
     val version = if extended then 3.max(contents.version.min(3)) else 2
     val out = java.io.ByteArrayOutputStream()
-    val sorted = contents.entries.order(entry => (entry.path.s, entry.stage))
+    val sorted = contents.entries.order: entry => (entry.path.s, entry.stage)
 
     def int(value: Int): Unit =
       out.write((value >>> 24) & 0xff); out.write((value >>> 16) & 0xff)
@@ -192,16 +210,31 @@ object Index:
       out.write((value >>> 8) & 0xff); out.write(value & 0xff)
 
     def entry(entry: Entry): Unit =
-      int(entry.changedSec); int(entry.changedNanos); int(entry.modifiedSec); int(entry.modifiedNanos)
-      int(entry.device); int(entry.inode); int(entry.mode); int(entry.user); int(entry.group); int(entry.size)
+      int(entry.changedSec)
+      int(entry.changedNanos)
+      int(entry.modifiedSec)
+      int(entry.modifiedNanos)
+      int(entry.device)
+      int(entry.inode)
+      int(entry.mode)
+      int(entry.user)
+      int(entry.group)
+      int(entry.size)
       out.write(Objects.unhex(entry.hash.text))
       val name = entry.path.s.getBytes("UTF-8").nn
       val useExtended = entry.skipWorktree || entry.intentToAdd
       val flags = (if entry.assumeValid then 0x8000 else 0) | (if useExtended then 0x4000 else 0) |
         ((entry.stage & 3) << 12) | name.length.min(0xfff)
+
       short(flags)
-      if useExtended then short((if entry.skipWorktree then 0x4000 else 0) | (if entry.intentToAdd then 0x2000 else 0))
+
+      if useExtended then
+        val skip = if entry.skipWorktree then 0x4000 else 0
+        val intent = if entry.intentToAdd then 0x2000 else 0
+        short(skip | intent)
+
       out.write(name)
+
       val length = (if useExtended then 64 else 62) + name.length + 1
       val padding = (length + 7) / 8 * 8 - length + 1
 
@@ -227,11 +260,14 @@ object Index:
     Store.concatenate(body, trailer.asInstanceOf[Data])
 
   // Written through `index.lock`, which another git process would also take.
-  def write(gitDir: Path on Linux, contents: Contents)(using Tactic[Git.Error], Tactic[Io.Error]): Unit =
+  def write(gitDir: Path on Linux, contents: Contents)
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
+  :   Unit =
+
     val file: Path on Linux = gitDir / "index"
     val lockFile: Path on Linux = gitDir / "index.lock"
 
-    try lockFile.open[File](Write, OpenFlag.Create, OpenFlag.Exclusive) { handle ?=> () }
+    try lockFile.open[File](Write, OpenFlag.Create, OpenFlag.Exclusive): handle ?=> ()
     catch case error: Io.Error => abort(Git.Error(Git.Error.Reason.Locked(file.encode)))
 
     try
@@ -242,6 +278,7 @@ object Index:
   // The modification time of the index file itself, in seconds, for the racy-git rule.
   def modified(gitDir: Path on Linux)(using Tactic[Io.Error]): Long =
     val file = gitDir / "index"
+
     if !file.existent() then 0L
     else summon[FilesystemBackend on Linux].stat(file, true).modified / 1000L
 
@@ -265,12 +302,17 @@ object Index:
   // Whether the stat data recorded for an entry still describes the file: if not, the content
   // must be hashed to know whether it changed. The racy-git rule treats an entry written in the
   // same second as the index as unverified.
-  def fresh(entry: Entry, worktree: Path on Linux, indexModified: Long)(using Tactic[Io.Error]): Boolean =
+  def fresh(entry: Entry, worktree: Path on Linux, indexModified: Long)
+    ( using Tactic[Io.Error] )
+  :   Boolean =
+
     val file = Refstore.descend(worktree, entry.path.cut(t"/"))
+
     if !file.existent() then false else
       val stat = summon[FilesystemBackend on Linux].stat(file, false)
       val seconds = (stat.modified / 1000L).toInt
       val nanos = ((stat.modified % 1000L) * 1000000L).toInt
 
-      stat.size.toInt == entry.size && seconds == entry.modifiedSec && nanos == entry.modifiedNanos &&
+      stat.size.toInt == entry.size && seconds == entry.modifiedSec &&
+        nanos == entry.modifiedNanos &&
         entry.modifiedSec.toLong < indexModified

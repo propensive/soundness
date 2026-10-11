@@ -45,21 +45,20 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import sortingAlgorithms.timsort
-
 import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
-import filesystemOptions.overwritePreexisting
-import filesystemOptions.moveAtomically
-import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.deleteRecursively
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.moveAtomically
+import filesystemOptions.overwritePreexisting
+import sortingAlgorithms.timsort
 
 // The refs of a repository: loose files under `refs/`, the `packed-refs` file, and the pseudo-refs
 // (`HEAD`, `ORIG_HEAD`, …) at the top of the git directory. A ref is written by taking its
 // `.lock` file with an exclusive create, re-reading it under the lock, comparing with what the
 // caller expected, and renaming the lock into place: git's own compare-and-swap, which every
 // other git process honours.
-object Refstore:
+private[octogenarian] object Refstore:
   import Git.Error.Reason as Reason
 
   private val refsPrefix: Text = t"refs/"
@@ -90,6 +89,7 @@ object Refstore:
   // line, the first with a tab-separated description after it.
   private def parseTarget(content: Text): Optional[Git.Backend.Target] =
     val line = content.trim.cut(t"\n").prim.or(t"")
+
     if line.starts(symbolicPrefix) then Git.Backend.Target.Symbolic(line.skip(5).trim)
     else if line.length == 40 then Git.Backend.Target.Direct(Git.Hash.unsafe(line))
     else if line.length > 40 && (line.s.charAt(40) == '\t' || line.s.charAt(40) == ' ')
@@ -127,7 +127,10 @@ object Refstore:
     recur(name, 0)
 
   // The name a symbolic ref chain ends at: the ref an update to `name` really writes.
-  def dereference(gitDir: Path on Linux, commonDir: Path on Linux, name: Text)(using Tactic[Io.Error]): Text =
+  def dereference(gitDir: Path on Linux, commonDir: Path on Linux, name: Text)
+    ( using Tactic[Io.Error] )
+  :   Text =
+
     def recur(name: Text, depth: Int): Text =
       if depth > 10 then name else read(gitDir, commonDir, name) match
         case Git.Backend.Target.Symbolic(ref) => recur(ref, depth + 1)
@@ -136,10 +139,15 @@ object Refstore:
     recur(name, 0)
 
   // Every ref under `prefix`, loose refs shadowing packed ones, sorted by name.
-  def list(commonDir: Path on Linux, prefix: Optional[Text])(using Tactic[Io.Error]): List[(Text, Git.Hash)] =
+  def list(commonDir: Path on Linux, prefix: Optional[Text])
+    ( using Tactic[Io.Error] )
+  :   List[(Text, Git.Hash)] =
+
     def loose(directory: Path on Linux, name: Text): List[(Text, Git.Hash)] =
       if !directory.existent() then Nil else
-        def recur(children: List[Path on Linux], acc: List[(Text, Git.Hash)]): List[(Text, Git.Hash)] =
+        def recur(children: List[Path on Linux], acc: List[(Text, Git.Hash)])
+        :   List[(Text, Git.Hash)] =
+
           children match
             case child :: rest =>
               val childName = t"$name/${child.name}"
@@ -160,9 +168,9 @@ object Refstore:
 
     val looseRefs = loose(commonDir / "refs", t"refs")
     val looseNames = looseRefs.map(_(0)).to[Set]
-    val packedRefs = packed(commonDir).filter { (name, _) => !looseNames.has(name) }
+    val packedRefs = packed(commonDir).filter: (name, _) => !looseNames.has(name)
     val all = looseRefs + packedRefs
-    val filtered = prefix.lay(all) { prefix => all.filter(_(0).starts(prefix)) }
+    val filtered = prefix.lay(all): prefix => all.filter(_(0).starts(prefix))
     filtered.order(_(0).s)
 
   // Takes `<file>.lock` with an exclusive create. A lock already held is reported as `Locked`.
@@ -174,11 +182,10 @@ object Refstore:
     ensureDirectory(parent)
     val lockFile: Path on Linux = unsafely(t"${file.encode}.lock".as[Path on Linux])
 
-    try lockFile.open[File](Write, OpenFlag.Create, OpenFlag.Exclusive) { handle ?=> () }
+    try lockFile.open[File](Write, OpenFlag.Create, OpenFlag.Exclusive): handle ?=> ()
     catch case error: Io.Error => abort(Git.Error(Reason.Locked(file.encode)))
 
-    try block(lockFile)
-    finally if lockFile.existent() then lockFile.delete()
+    try block(lockFile) finally if lockFile.existent() then lockFile.delete()
 
   // Compare-and-swap: writes `to` into `name` (or deletes it) if it currently holds `expected`.
   def update
@@ -223,7 +230,10 @@ object Refstore:
         if target != name then log(gitDir, commonDir, name, current, to, identity, message)
 
   // Rewrites `packed-refs` without `name`, under its own lock.
-  private def unpack(commonDir: Path on Linux, name: Text)(using Tactic[Git.Error], Tactic[Io.Error]): Unit =
+  private def unpack(commonDir: Path on Linux, name: Text)
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
+  :   Unit =
+
     val file = commonDir / "packed-refs"
 
     if file.existent() && packed(commonDir).exists(_(0) == name) then
@@ -298,17 +308,25 @@ object Refstore:
     if !file.existent() then Nil else
       val lines = Objects.text(file.read[Data]).cut(t"\n").filter(_.length > 0).reverse
 
-      def recur(lines: List[Text], index: Int, acc: List[ReflogEntry]): List[ReflogEntry] = lines match
-        case line :: rest =>
-          val tab = line.s.indexOf('\t')
-          val head = if tab < 0 then line else line.keep(tab)
-          val message = if tab < 0 then t"" else line.skip(tab + 1)
-          val fields = head.cut(t" ")
-          val hash = Refstore.nth(fields, 1).or(Git.Hash.zero.text)
-          val timestamp = Refstore.nth(fields.reverse, 1).let(Git.Timestamp.parse(_, utc)).let(_.seconds).or(0L)
-          val entry = ReflogEntry(Git.Hash.unsafe(hash), t"$name@{$index}", timestamp, message)
-          recur(rest, index + 1, entry :: acc)
+      def recur
+        ( lines: List[Text], index: Int, acc: List[ReflogEntry] )
+      :   List[ReflogEntry] =
 
-        case _ => acc.reverse
+        lines match
+          case line :: rest =>
+            val tab = line.s.indexOf('\t')
+            val head = if tab < 0 then line else line.keep(tab)
+            val message = if tab < 0 then t"" else line.skip(tab + 1)
+            val fields = head.cut(t" ")
+            val hash = Refstore.nth(fields, 1).or(Git.Hash.zero.text)
+
+            val timestamp =
+              Refstore.nth(fields.reverse, 1).let(Git.Timestamp.parse(_, utc)).let(_.seconds).or(0L)
+
+            val entry = ReflogEntry(Git.Hash.unsafe(hash), t"$name@{$index}", timestamp, message)
+
+            recur(rest, index + 1, entry :: acc)
+
+          case _ => acc.reverse
 
       recur(lines, 0, Nil)

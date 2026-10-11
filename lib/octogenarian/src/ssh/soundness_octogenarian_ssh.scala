@@ -33,6 +33,7 @@
 package soundness
 
 export octogenarian.SshCommand
+export octogenarian.SshKeygen
 
 package gitTransports:
   export octogenarian.gitTransports.sshCommand

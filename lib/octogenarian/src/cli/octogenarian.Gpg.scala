@@ -52,8 +52,10 @@ object Gpg:
   import Git.Error.Reason as Reason
 
   private def run(arguments: List[Text], payload: Data)
-    ( using working: WorkingDirectory, environment: Environment, loggable: (Exec.Event is Loggable)^,
-            tactic: Tactic[Git.Error] )
+    ( using working:     WorkingDirectory,
+            environment: Environment,
+            loggable:    (Exec.Event is Loggable)^,
+            tactic:      Tactic[Git.Error] )
   :   (Text, Int) =
 
     given execution: Tactic[Exec.Error] = tactic.contramap: error =>
@@ -74,18 +76,23 @@ object Gpg:
 
   // Signs with the default key, or with `key` (a key id, fingerprint or user id).
   class Signer(key: Optional[Text] = Unset)
-    ( using working: WorkingDirectory, environment: Environment, loggable: (Exec.Event is Loggable)^ )
+    ( using working:     WorkingDirectory,
+            environment: Environment,
+            loggable:    (Exec.Event is Loggable)^ )
   extends Git.Signer:
 
     def sign(payload: Data)(using Tactic[Git.Error]): Text =
-      val arguments = List(t"--batch", t"--status-fd=2", t"-bsa") + key.let { key => List(t"-u", key) }.or(Nil)
+      val keyArguments = key.let { key => List(t"-u", key) }.or(Nil)
+      val arguments = List(t"--batch", t"--status-fd=2", t"-bsa") + keyArguments
       val (output, status) = run(arguments, payload)
       if status != 0 then abort(Git.Error(Reason.SigningFailed(output.trim)))
       output
 
   // Verifies against the keyring, reading `GOODSIG`, `BADSIG` and the rest from the status lines.
   class Verifier()
-    ( using working: WorkingDirectory, environment: Environment, loggable: (Exec.Event is Loggable)^ )
+    ( using working:     WorkingDirectory,
+            environment: Environment,
+            loggable:    (Exec.Event is Loggable)^ )
   extends Git.Verifier:
 
     def verify(payload: Data, signature: Text)(using Tactic[Git.Error]): Git.Verification =

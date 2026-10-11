@@ -49,7 +49,7 @@ trait Channel:
 
 // The client side of git's wire protocol over a `Channel`: protocol version 2 for listing refs
 // and fetching, and the version 0 `receive-pack` exchange for pushing, as git itself does.
-class Protocol(channel: Channel^) extends Peer:
+private[octogenarian] class Protocol(channel: Channel^) extends Peer:
   import Git.Error.Reason as Reason
 
   private val uploadPack: Text = t"git-upload-pack"
@@ -58,28 +58,38 @@ class Protocol(channel: Channel^) extends Peer:
 
   private def ensureV2()(using Tactic[Git.Error]): Unit =
     val reader = channel.advertise(uploadPack)
+
     reader.section().map(_.text.trim) match
       case t"version 2" :: _ => ()
-      case _                 => abort(Git.Error(Reason.Unsupported(t"a server not offering protocol version 2")))
+
+      case _ =>
+        abort(Git.Error(Reason.Unsupported(t"a server not offering protocol version 2")))
 
   // The listing is fetched once per connection; `null` until then (`Unset` is itself `null` at
   // runtime, so the slot is spelled as a nullable JDK reference).
-  private val listed: java.util.concurrent.atomic.AtomicReference[List[(Text, Git.Hash, Optional[Text], Optional[Git.Hash])] | Null] =
+  private type Listing = List[(Text, Git.Hash, Optional[Text], Optional[Git.Hash])]
+
+  private val listed: java.util.concurrent.atomic.AtomicReference[Listing | Null] =
     java.util.concurrent.atomic.AtomicReference(null)
 
   // `ls-refs` with symrefs and peeled tags: name, hash, symref target and peeled hash.
-  private def lsRefs()(using Tactic[Git.Error]): List[(Text, Git.Hash, Optional[Text], Optional[Git.Hash])] =
+  private def lsRefs()
+    ( using Tactic[Git.Error] )
+  :   List[(Text, Git.Hash, Optional[Text], Optional[Git.Hash])] =
+
     val cached: List[(Text, Git.Hash, Optional[Text], Optional[Git.Hash])] | Null = listed.get
 
     cached match
       case list: List[(Text, Git.Hash, Optional[Text], Optional[Git.Hash])] @unchecked => list
+
       case _ =>
         ensureV2()
 
         val request =
           Pktline.concatenate
             ( List
-                ( List(Pktline.line(t"command=ls-refs\n"), Pktline.line(t"$agent\n"), Pktline.delim),
+                ( List(Pktline.line(t"command=ls-refs\n"), Pktline.line(t"$agent\n")),
+                  List(Pktline.delim),
                   List(Pktline.line(t"peel\n"), Pktline.line(t"symrefs\n"), Pktline.flush) ) )
 
         val reader = channel.exchange(uploadPack, request)
@@ -89,17 +99,26 @@ class Protocol(channel: Channel^) extends Peer:
           val hash = Git.Hash.unsafe(Refstore.nth(fields, 0).or(Git.Hash.zero.text))
           val name = Refstore.nth(fields, 1).or(t"")
           val symref = fields.filter(_.starts(t"symref-target:")).prim.let(_.skip(14))
-          val peeled = fields.filter(_.starts(t"peeled:")).prim.let(_.skip(7)).let(Git.Hash.unsafe(_))
+
+          val peeled =
+            fields.filter(_.starts(t"peeled:")).prim.let(_.skip(7)).let(Git.Hash.unsafe(_))
+
           (name, hash, symref, peeled)
 
         val result = reader.section().map(parse(_))
         listed.set(result)
         result
 
-  private def peeledEntry(name: Text, peeled: Git.Hash): List[(Text, Git.Hash)] = List((t"$name^{}", peeled))
+  private def peeledEntry
+    ( name: Text, peeled: Git.Hash )
+  :   List[(Text, Git.Hash)] =
+
+    List((t"$name^{}", peeled))
 
   def refs()(using Tactic[Git.Error]): List[(Text, Git.Hash)] =
-    def expand(entry: (Text, Git.Hash, Optional[Text], Optional[Git.Hash])): List[(Text, Git.Hash)] =
+    def expand(entry: (Text, Git.Hash, Optional[Text], Optional[Git.Hash]))
+    :   List[(Text, Git.Hash)] =
+
       val (name, hash, _, peeled) = entry
       List((name, hash)) + peeled.let(peeledEntry(name, _)).or(Nil)
 
@@ -110,20 +129,29 @@ class Protocol(channel: Channel^) extends Peer:
 
   // Reads a sideband-multiplexed packfile section: band 1 is pack data, band 2 progress text,
   // band 3 a fatal error.
-  private def sideband(reader: Pktline.Reader, activity: Git.Activity^)(using Tactic[Git.Error]): Data =
+  private def sideband(reader: Pktline.Reader, activity: Git.Activity^)
+    ( using Tactic[Git.Error] )
+  :   Data =
+
     val output = java.io.ByteArrayOutputStream()
 
     def recur(): Unit = reader.next() match
       case Pktline.Packet.Line(data) =>
         val array = data.asInstanceOf[scala.Array[Byte]]
+
         if array.length > 0 then
           (array(0) & 0xff) match
             case 1 =>
               output.write(array, 1, array.length - 1)
               activity.transferred((array.length - 1).toLong)
 
-            case 2 => progress(Objects.text(array.slice(1, array.length).asInstanceOf[Data]), activity)
-            case 3 => abort(Git.Error(Reason.RemoteRejected(t"", Objects.text(array.slice(1, array.length).asInstanceOf[Data]).trim)))
+            case 2 =>
+              progress(Objects.text(array.slice(1, array.length).asInstanceOf[Data]), activity)
+
+            case 3 =>
+              val message = Objects.text(array.slice(1, array.length).asInstanceOf[Data]).trim
+              abort(Git.Error(Reason.RemoteRejected(t"", message)))
+
             case _ => ()
 
         recur()
@@ -166,7 +194,8 @@ class Protocol(channel: Channel^) extends Peer:
       val request =
         Pktline.concatenate
           ( List
-              ( List(Pktline.line(t"command=fetch\n"), Pktline.line(t"$agent\n"), Pktline.delim, Pktline.line(t"ofs-delta\n")),
+              ( List(Pktline.line(t"command=fetch\n"), Pktline.line(t"$agent\n")),
+                List(Pktline.delim, Pktline.line(t"ofs-delta\n")),
                 wants.distinct.map(wantLine(_)),
                 haves.distinct.map(haveLine(_)),
                 deepen,
@@ -190,7 +219,9 @@ class Protocol(channel: Channel^) extends Peer:
       def shallowLines(acc: List[Git.Hash]): List[Git.Hash] = reader.next() match
         case Pktline.Packet.Line(data) =>
           val text = Objects.text(data).trim
-          if text.starts(t"shallow ") then shallowLines(Git.Hash.unsafe(text.skip(8)) :: acc) else shallowLines(acc)
+
+          if text.starts(t"shallow ") then shallowLines(Git.Hash.unsafe(text.skip(8)) :: acc)
+          else shallowLines(acc)
 
         case _ => acc.reverse
 
@@ -218,6 +249,7 @@ class Protocol(channel: Channel^) extends Peer:
 
       def refEntry(line: Pktline.Packet.Line): List[(Text, Git.Hash)] =
         val fields = beforeNul(line).cut(t" ")
+
         Refstore.nth(fields, 0) match
           case hash: Text => Refstore.nth(fields, 1) match
             case name: Text => List((name, Git.Hash.unsafe(hash)))
@@ -230,9 +262,13 @@ class Protocol(channel: Channel^) extends Peer:
       def old(update: RefUpdate): Text = update.expected match
         case Git.Backend.Expectation.Exactly(hash) => hash.text
         case Git.Backend.Expectation.Absent        => Git.Hash.zero.text
-        case Git.Backend.Expectation.Unconditional => current.filter(_(0) == update.ref).prim.let(_(1).text).or(Git.Hash.zero.text)
 
-      val wanted = List(t"report-status", t"delete-refs", t"ofs-delta").filter(serverCapabilities.has(_))
+        case Git.Backend.Expectation.Unconditional =>
+          current.filter(_(0) == update.ref).prim.let(_(1).text).or(Git.Hash.zero.text)
+
+      val wanted =
+        List(t"report-status", t"delete-refs", t"ofs-delta").filter(serverCapabilities.has(_))
+
       val capabilities = (wanted + List(agent)).join(t" ")
 
       def command(update: RefUpdate, first: Boolean): Data =
@@ -246,8 +282,12 @@ class Protocol(channel: Channel^) extends Peer:
       activity.begin(Git.Activity.Phase.Writing, true)
       activity.measure(Transfer.count(objects))
       def hasTarget(update: RefUpdate): Boolean = update.to.present
-      val pack = if updates.exists(hasTarget(_)) then Packs.write(objects, read, activity) else Data()
-      val response = channel.exchange(receivePack, Pktline.concatenate(List(commands, List(Pktline.flush), List(pack))))
+
+      val pack =
+        if updates.exists(hasTarget(_)) then Packs.write(objects, read, activity) else Data()
+
+      val body = Pktline.concatenate(List(commands, List(Pktline.flush), List(pack)))
+      val response = channel.exchange(receivePack, body)
 
       // `unpack ok` then `ok <ref>` or `ng <ref> <reason>` per command.
       val report = response.section().map(_.text.trim)
@@ -263,7 +303,9 @@ class Protocol(channel: Channel^) extends Peer:
         val rejection: Optional[Text] = reportLine(update) match
           case line: Text if line.starts(t"ng ") => line.skip(4 + update.ref.length).trim
           case line: Text                        => Unset
-          case _                                 => if unpack == t"ok" then t"no report from the server" else t"unpack $unpack"
+
+          case _ =>
+            if unpack == t"ok" then t"no report from the server" else t"unpack $unpack"
 
         (update.ref, rejection)
 

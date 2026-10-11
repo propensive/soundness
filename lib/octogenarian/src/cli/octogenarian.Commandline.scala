@@ -99,6 +99,8 @@ object Commandline:
       case r"(?s).*cannot lock ref '$ref([^']*)': reference already exists.*" =>
         Reason.RefExists(ref)
 
+      case r"(?s).*[Uu]nable to create '$path([^']*)': File exists.*" => Reason.Locked(path)
+
       case r"(?s).*cannot lock ref '$ref([^']*)': unable to resolve reference.*" =>
         Reason.NoSuchRef(ref)
 

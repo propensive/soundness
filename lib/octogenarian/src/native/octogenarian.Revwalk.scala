@@ -45,20 +45,24 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import sortingAlgorithms.timsort
 import filesystemBackends.javaBaseFilesystem
+import sortingAlgorithms.timsort
 
 // Revisions and history: resolving `gitrevisions(7)` expressions, walking commits in date order,
 // and finding merge bases.
-object Revwalk:
+private[octogenarian] object Revwalk:
   import Git.Error.Reason as Reason
 
-  def commit(objects: Path on Linux, hash: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error]): Commit =
+  def commit(objects: Path on Linux, hash: Git.Hash)
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
+  :   Commit =
+
     Store.readOr(objects, hash) match
       case (Git.Object.Kind.Commit, data) =>
         val parsed = Objects.parseCommit(hash, data)
         // A shallow clone's boundary commits have parents the repository does not hold.
-        if parsed.parents != Nil && shallow(objects).contains(hash) then parsed.copy(parents = Nil) else parsed
+        if parsed.parents != Nil && shallow(objects).contains(hash) then parsed.copy(parents = Nil)
+        else parsed
 
       case _ => abort(Git.Error(Reason.NoSuchObject(hash.text)))
 
@@ -68,14 +72,18 @@ object Revwalk:
     val file: Optional[Path on Linux] = objects.parent.let(Refstore.descend(_, List(t"shallow")))
 
     def load(file: Path on Linux): Unit = if file.existent() then
-      Objects.text(file.read[Data]).cut(t"\n").filter(_.length == 40).each { line => set.add(Git.Hash.unsafe(line)) }
+      Objects.text(file.read[Data]).cut(t"\n").filter(_.length == 40).each: line =>
+        set.add(Git.Hash.unsafe(line))
 
     file.let(load(_))
 
     set
 
   // Follows tag objects to the object they ultimately name.
-  def peel(objects: Path on Linux, hash: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error]): Git.Hash =
+  def peel(objects: Path on Linux, hash: Git.Hash)
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
+  :   Git.Hash =
+
     Store.read(objects, hash) match
       case found: (Git.Object.Kind, Data) @unchecked =>
         found match
@@ -84,7 +92,9 @@ object Revwalk:
 
       case _ => hash
 
-  private val hexDigits: Set[Char] = Set('0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f')
+  private val hexDigits: Set[Char] =
+    Set('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f')
+
   private def isHex(text: Text): Boolean = text.s.forall(hexDigits.has(_))
 
   // The order in which git tries to read a short name as a ref.
@@ -97,7 +107,8 @@ object Revwalk:
         t"refs/remotes/$name",
         t"refs/remotes/$name/HEAD" )
 
-  def resolve(gitDir: Path on Linux, commonDir: Path on Linux, objects: Path on Linux, revision: Text)
+  def resolve
+    ( gitDir: Path on Linux, commonDir: Path on Linux, objects: Path on Linux, revision: Text )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Optional[Git.Hash] =
 
@@ -116,7 +127,8 @@ object Revwalk:
             Store.all(objects).filter(_.text.starts(name)) match
               case List(only) => only
               case _          => Unset
-          else Unset
+          else
+            Unset
 
     def parent(hash: Git.Hash, n: Int): Optional[Git.Hash] =
       val parents = commit(objects, peel(objects, hash)).parents
@@ -127,7 +139,8 @@ object Revwalk:
 
     def reflogEntry(name: Text, n: Int): Optional[Git.Hash] =
       val target = if name == t"@" then t"HEAD" else name
-      Refstore.nth(Refstore.reflog(gitDir, commonDir, Refstore.dereference(gitDir, commonDir, target)), n).let(_.hash)
+      val resolved = Refstore.dereference(gitDir, commonDir, target)
+      Refstore.nth(Refstore.reflog(gitDir, commonDir, resolved), n).let(_.hash)
 
     // Suffix operators bind from the right: `main~2^{tree}` is `(main~2)^{tree}`.
     def recur(text: Text): Optional[Git.Hash] =
@@ -136,8 +149,9 @@ object Revwalk:
       if string.endsWith("^{}") then recur(text.skip(3, Rtl)).let(peel(objects, _))
       else if string.endsWith("^{commit}") then recur(text.skip(9, Rtl)).let(peel(objects, _))
       else if string.endsWith("^{tree}") then
-        recur(text.skip(7, Rtl)).let(h => commit(objects, peel(objects, h)).tree)
-      else if string.endsWith("^{tag}") then recur(text.skip(6, Rtl))
+        recur(text.skip(7, Rtl)).let: h => commit(objects, peel(objects, h)).tree
+      else if string.endsWith("^{tag}") then
+        recur(text.skip(6, Rtl))
       else if string.endsWith("}") && string.contains("@{") then
         val at = string.lastIndexOf("@{")
         val inner = string.substring(at + 2, string.length - 1).nn.tt
@@ -153,13 +167,19 @@ object Revwalk:
           val count = text.skip(position + 1)
           val n = if count.length == 0 then 1 else safely(count.as[Int]).or(1)
           val head = text.keep(position)
-          if position == tilde then recur(head).let(ancestor(_, n)) else recur(head).let(parent(_, n))
+
+          if position == tilde then recur(head).let(ancestor(_, n))
+          else recur(head).let(parent(_, n))
 
     recur(revision.trim)
 
   // Commits reachable from `from` and not from `until`, newest committer date first.
   def walk
-    ( objects: Path on Linux, from: Git.Hash, until: Optional[Git.Hash], limit: Optional[Int], paths: List[Text] )
+    ( objects: Path on Linux,
+      from: Git.Hash,
+      until: Optional[Git.Hash],
+      limit: Optional[Int],
+      paths: List[Text] )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   List[Git.Hash] =
 
@@ -168,6 +188,7 @@ object Revwalk:
     // Newest committer date first.
     val comparator: java.util.Comparator[(Long, Git.Hash)] =
       (left, right) => java.lang.Long.compare(right.nn(0), left.nn(0))
+
     val queue = java.util.PriorityQueue[(Long, Git.Hash)](comparator)
     val seen = java.util.HashSet[Git.Hash]()
 
@@ -184,7 +205,8 @@ object Revwalk:
         val parentTree = current.parents.prim.let(commit(objects, _).tree)
 
         paths.exists: path =>
-          Trees.lookup(objects, current.tree, path) != parentTree.let(Trees.lookup(objects, _, path))
+          Trees.lookup(objects, current.tree, path) != parentTree
+          . let(Trees.lookup(objects, _, path))
 
     def recur(acc: List[Git.Hash], count: Int): List[Git.Hash] =
       if queue.isEmpty || limit.lay(false)(count >= _) then acc.reverse else
@@ -231,6 +253,7 @@ object Revwalk:
         if seen.contains(hash) then candidates(rest, found)
         else
           seen.add(hash)
+
           if leftAncestors.contains(hash) then candidates(rest, hash :: found)
           else candidates(commit(objects, hash).parents + rest, found)
 
@@ -239,14 +262,14 @@ object Revwalk:
     val found = candidates(List(peel(objects, right)), Nil)
 
     def dominated(candidate: Git.Hash): Boolean =
-      found.exists { other => other != candidate && ancestors(objects, other).contains(candidate) }
+      found.exists: other => other != candidate && ancestors(objects, other).contains(candidate)
 
     def age(hash: Git.Hash): Long = -commit(objects, hash).committer.timestamp.seconds
 
     found.filter(!dominated(_)).order(age(_)).prim
 
 // Trees: looking up entries by path and writing trees.
-object Trees:
+private[octogenarian] object Trees:
   import Git.Error.Reason as Reason
 
   def entries(objects: Path on Linux, tree: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error])
@@ -257,7 +280,9 @@ object Trees:
       case _                            => abort(Git.Error(Reason.NoSuchObject(tree.text)))
 
   // The hash at a slash-separated path within a tree, if any.
-  def lookup(objects: Path on Linux, tree: Git.Hash, path: Text)(using Tactic[Git.Error], Tactic[Io.Error])
+  def lookup
+    ( objects: Path on Linux, tree: Git.Hash, path: Text )
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Optional[Git.Hash] =
 
     def recur(tree: Git.Hash, segments: List[Text]): Optional[Git.Hash] = segments match
@@ -282,7 +307,9 @@ object Trees:
 
     recur(tree, t"")
 
-  def write(objects: Path on Linux, entries: List[Git.Object.Tree.Entry])(using Tactic[Git.Error], Tactic[Io.Error])
+  def write
+    ( objects: Path on Linux, entries: List[Git.Object.Tree.Entry] )
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Git.Hash =
 
     Store.write(objects, Git.Object.Kind.Tree, Objects.serializeTree(entries))

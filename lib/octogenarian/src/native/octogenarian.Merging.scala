@@ -45,17 +45,17 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import sortingAlgorithms.timsort
 import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
 import filesystemOptions.overwritePreexisting
 import filesystemOptions.preserveSymlinks
-import filesystemOptions.deleteRecursively
+import sortingAlgorithms.timsort
 
 // Three-way merging: of trees, path by path, and of text, line by line (diff3). A merge either
 // settles every path or leaves some in conflict, with the stages git records for them and the
 // marked-up content git would leave in the working file.
-object Merging:
+private[octogenarian] object Merging:
   import Git.Error.Reason as Reason
 
   // A path on which the two sides disagree irreconcilably: the entry each side has for it (base,
@@ -78,6 +78,7 @@ object Merging:
     def recur(from: Int, acc: List[Text]): List[Text] =
       if from >= text.length then acc.reverse else
         val newline = text.s.indexOf('\n', from)
+
         if newline < 0 then (text.skip(from) :: acc).reverse
         else recur(newline + 1, text.s.substring(from, newline + 1).nn.tt :: acc)
 
@@ -87,13 +88,21 @@ object Merging:
 
   private def binary(data: Data): Boolean =
     val array = data.asInstanceOf[scala.Array[Byte]]
-    def recur(index: Int): Boolean = index < array.length.min(8000) && (array(index) == 0 || recur(index + 1))
+
+    def recur
+      ( index: Int )
+
+    :   Boolean =
+
+      index < array.length.min(8000) && (array(index) == 0 || recur(index + 1))
+
     recur(0)
 
   // Line-based three-way merge. Base lines matched on both sides in step are kept; between
   // them, a chunk changed on one side only takes that side, and a chunk changed differently on
   // both sides is a conflict, written out between git's markers.
-  def diff3(base: List[Text], ours: List[Text], theirs: List[Text], oursLabel: Text, theirsLabel: Text)
+  def diff3
+    ( base: List[Text], ours: List[Text], theirs: List[Text], oursLabel: Text, theirsLabel: Text )
   :   (List[Text], Boolean) =
 
     val baseList = java.util.ArrayList[Text]()
@@ -129,6 +138,7 @@ object Merging:
     def slice(list: java.util.ArrayList[Text], from: Int, until: Int): List[Text] =
       def recur(index: Int, acc: List[Text]): List[Text] =
         if index < from then acc else recur(index - 1, list.get(index).nn :: acc)
+
       recur(until - 1, Nil)
 
     // The next base line matched on both sides at or after `index`, or the end.
@@ -137,7 +147,9 @@ object Merging:
       else if oursMatch.get(index) >= 0 && theirsMatch.get(index) >= 0 then index
       else anchor(index + 1)
 
-    def resolve(baseChunk: List[Text], oursChunk: List[Text], theirsChunk: List[Text]): (List[Text], Boolean) =
+    def resolve(baseChunk: List[Text], oursChunk: List[Text], theirsChunk: List[Text])
+    :   (List[Text], Boolean) =
+
       if oursChunk == theirsChunk then (oursChunk, false)
       else if oursChunk == baseChunk then (theirsChunk, false)
       else if theirsChunk == baseChunk then (oursChunk, false)
@@ -148,11 +160,16 @@ object Merging:
 
         (marked, true)
 
+    // A base line matched by both sides, in step with them.
+    def stable(index: Int, oursIndex: Int, theirsIndex: Int): Boolean =
+      index < baseSize && oursMatch.get(index) == oursIndex && theirsMatch.get(index) == theirsIndex
+
     def recur(index: Int, oursIndex: Int, theirsIndex: Int, acc: List[Text], conflicted: Boolean)
     :   (List[Text], Boolean) =
 
-      if index >= baseSize && oursIndex >= oursSize && theirsIndex >= theirsSize then (acc.reverse, conflicted)
-      else if index < baseSize && oursMatch.get(index) == oursIndex && theirsMatch.get(index) == theirsIndex then
+      if index >= baseSize && oursIndex >= oursSize && theirsIndex >= theirsSize
+      then (acc.reverse, conflicted)
+      else if stable(index, oursIndex, theirsIndex) then
         recur(index + 1, oursIndex + 1, theirsIndex + 1, baseList.get(index).nn :: acc, conflicted)
       else
         val next = anchor(index)
@@ -182,7 +199,10 @@ object Merging:
 
       (Objects.bytes(merged.join(t"")), conflicted)
 
-  private def blob(objects: Path on Linux, entry: (Int, Git.Hash))(using Tactic[Git.Error], Tactic[Io.Error]): Data =
+  private def blob(objects: Path on Linux, entry: (Int, Git.Hash))
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
+  :   Data =
+
     Store.readOr(objects, entry(1))(1)
 
   private def textual(entry: Optional[(Int, Git.Hash)]): Boolean = entry match
@@ -215,7 +235,8 @@ object Merging:
         val baseData = if textual(baseEntry) then baseEntry.let(blob(objects, _)) else Unset
 
         val (merged, conflicted) =
-          content(baseData, blob(objects, oursPair), blob(objects, theirsPair), oursLabel, theirsLabel)
+          content
+            ( baseData, blob(objects, oursPair), blob(objects, theirsPair), oursLabel, theirsLabel )
 
         if conflicted then Left(Conflict(path, baseEntry, oursEntry, theirsEntry, merged))
         else Right((mode, Store.write(objects, Git.Object.Kind.Blob, merged)))
@@ -226,12 +247,18 @@ object Merging:
         val data = if textual(kept) then kept.let(blob(objects, _)) else Unset
         Left(Conflict(path, baseEntry, oursEntry, theirsEntry, data))
 
-    def recur(remaining: List[Text], merged: List[(Text, (Int, Git.Hash))], conflicts: List[Conflict]): Result =
+    def recur
+      ( remaining: List[Text], merged: List[(Text, (Int, Git.Hash))], conflicts: List[Conflict] )
+    :   Result =
+
       remaining match
         case path :: rest => settle(path) match
           case Left(conflict) => recur(rest, merged, conflict :: conflicts)
-          case Right(entry)   => entry match
-            case (mode: Int, hash: Git.Hash) => recur(rest, (path, (mode, hash)) :: merged, conflicts)
+
+          case Right(entry) => entry match
+            case (mode: Int, hash: Git.Hash) =>
+              recur(rest, (path, (mode, hash)) :: merged, conflicts)
+
             case _                           => recur(rest, merged, conflicts)
 
         case _ => Result(merged.to[Map], conflicts.reverse)

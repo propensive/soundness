@@ -148,6 +148,7 @@ object Git:
       case Reason.NoteExists(target)        => m"a note is already attached to $target"
       case Reason.NoSuchWorktree(path)      => m"$path is not a linked working tree"
       case Reason.NoSuchStash               => m"the stash entry does not exist"
+      case Reason.Locked(ref)               => m"the lock file for $ref is held by another process"
 
   // `detail` is what git itself said, when a backend has it: its standard error, trimmed.
   case class Error(reason: Git.Error.Reason, detail: Optional[Text] = Unset)(using Diagnostics)

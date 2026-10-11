@@ -46,7 +46,7 @@ import zephyrine.*
 // The pkt-line framing of git's wire protocols: each packet is four hexadecimal digits giving
 // its whole length, then its bytes; the lengths 0, 1 and 2 are the flush, delimiter and
 // response-end packets, which carry nothing.
-object Pktline:
+private[octogenarian] object Pktline:
   import Git.Error.Reason as Reason
 
   enum Packet:
@@ -58,6 +58,8 @@ object Pktline:
       case Flush      => t""
       case Delim      => t""
       case End        => t""
+
+  private val truncated: Text = t"the stream ended mid-packet"
 
   def flush: Data = Objects.bytes(t"0000")
   def delim: Data = Objects.bytes(t"0001")
@@ -98,8 +100,11 @@ object Pktline:
       def recur(buffer: scala.Array[Byte]^, position: Int): Optional[Data] =
         if position >= count then buffer.asInstanceOf[Data] else
           val read = input.read(buffer, position, count - position)
-          if read < 0 then (if position == 0 then Unset else abort(Git.Error(Reason.Unexpected, t"the stream ended mid-packet")))
-          else recur(buffer, position + read)
+
+          if read < 0 then
+            if position == 0 then Unset else abort(Git.Error(Reason.Unexpected, truncated))
+          else
+            recur(buffer, position + read)
 
       recur(new scala.Array[Byte](count), 0)
 
@@ -112,7 +117,9 @@ object Pktline:
       else if length == 1 then Packet.Delim
       else if length == 2 then Packet.End
       else if length < 4 then abort(Git.Error(Reason.Unexpected, t"a packet of length $length"))
-      else exactly(length - 4).let(Packet.Line(_)).or(abort(Git.Error(Reason.Unexpected, t"the stream ended mid-packet")))
+      else
+        val body = exactly(length - 4).or(abort(Git.Error(Reason.Unexpected, truncated)))
+        Packet.Line(body)
 
     // The lines up to the next flush (or delimiter, or the end of the stream), without it.
     def section()(using Tactic[Git.Error]): List[Packet.Line] =

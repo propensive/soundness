@@ -46,10 +46,11 @@ import vacuous.*
 // Git notes, natively: a notes ref names a commit whose tree maps annotated objects' hashes to
 // blobs, flat or fanned out into two-character directories. An edit builds a new tree and a new
 // commit on no ref; the handle moves the ref by compare-and-swap.
-object Annotations:
+private[octogenarian] object Annotations:
   import Git.Error.Reason as Reason
 
-  private def notesTree(gitDir: Path on Linux, commonDir: Path on Linux, objects: Path on Linux, ref: Text)
+  private def notesTree
+    ( gitDir: Path on Linux, commonDir: Path on Linux, objects: Path on Linux, ref: Text )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Optional[Git.Hash] =
 
@@ -69,9 +70,14 @@ object Annotations:
     if joined.length == 40 then Git.Hash.unsafe(joined.tt) else Unset
 
   private def noted(entry: (Text, Git.Hash)): List[(Git.Hash, Git.Hash)] =
-    flat(entry(0)).lay(Nil) { target => List((entry(1), target)) }
+    flat(entry(0)).lay(Nil): target => List((entry(1), target))
 
-  def read(gitDir: Path on Linux, commonDir: Path on Linux, objects: Path on Linux, ref: Text, target: Git.Hash)
+  def read
+    ( gitDir: Path on Linux,
+      commonDir: Path on Linux,
+      objects: Path on Linux,
+      ref: Text,
+      target: Git.Hash )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Optional[Text] =
 
@@ -89,7 +95,8 @@ object Annotations:
   :   Git.Hash =
 
     val existing: List[(Git.Hash, Git.Hash)] = base.lay(Nil): base =>
-      Trees.flatten(objects, Revwalk.commit(objects, base).tree).bind(noted(_)).map { (note, target) => (target, note) }
+      val root = Revwalk.commit(objects, base).tree
+      Trees.flatten(objects, root).bind(noted(_)).map: (note, target) => (target, note)
 
     def noteOf(target: Git.Hash): Optional[Git.Hash] =
       existing.reap { case (`target`, note) => note }
@@ -101,13 +108,15 @@ object Annotations:
     val (updated, summary): (List[(Git.Hash, Git.Hash)], Text) = edit match
       case Git.Backend.NoteEdit.Add(target, body, force) =>
         if noteOf(target).present && !force then abort(Git.Error(Reason.NoteExists(target)))
-        (existing.filter(_(0) != target) + List((target, blob(body))), t"Notes added by 'git notes add'")
+        val kept = existing.filter(_(0) != target)
+        (kept + List((target, blob(body))), t"Notes added by 'git notes add'")
 
       case Git.Backend.NoteEdit.Append(target, body) =>
         val combined = noteOf(target).lay(body): note =>
-          Store.read(objects, note).lay(body) { (_, data) => t"${Objects.text(data)}\n$body" }
+          Store.read(objects, note).lay(body): (_, data) => t"${Objects.text(data)}\n$body"
 
-        (existing.filter(_(0) != target) + List((target, blob(combined))), t"Notes added by 'git notes append'")
+        val kept = existing.filter(_(0) != target)
+        (kept + List((target, blob(combined))), t"Notes added by 'git notes append'")
 
       case Git.Backend.NoteEdit.Remove(target, ignoreMissing) =>
         if noteOf(target).absent && !ignoreMissing then abort(Git.Error(Reason.NoteNotFound))
@@ -123,5 +132,8 @@ object Annotations:
 
     val tree = Trees.write(objects, entries)
     val signature = Git.Signature(identity, Git.Timestamp.now())
-    val payload = Objects.serializeCommit(tree, base.let(List(_)).or(Nil), signature, signature, summary)
+
+    val payload =
+      Objects.serializeCommit(tree, base.let(List(_)).or(Nil), signature, signature, summary)
+
     Store.write(objects, Git.Object.Kind.Commit, payload)

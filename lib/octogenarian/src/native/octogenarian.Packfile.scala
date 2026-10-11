@@ -50,7 +50,7 @@ import filesystemBackends.javaBaseFilesystem
 // A packfile and its index, read positionally: the index is loaded once into arrays, and each
 // object is inflated from its own slice of the pack, whose end is the next entry's offset, so no
 // stream position has to be tracked across entries.
-object Packfile:
+private[octogenarian] object Packfile:
   import Git.Error.Reason as Reason
 
   // The version-2 index: a 256-entry fanout, the sorted hashes, their CRCs and offsets, with
@@ -77,6 +77,7 @@ object Packfile:
         if low > high then Unset else
           val mid = (low + high) >>> 1
           val order = compare(mid)
+
           if order == 0 then offsets.get(mid)
           else if order < 0 then search(mid + 1, high)
           else search(low, mid - 1)
@@ -103,8 +104,12 @@ object Packfile:
   def loadIndex(data: Data)(using Tactic[Git.Error]): Index =
     val array = data.asInstanceOf[scala.Array[Byte]]
     val buffer = ByteBuffer.wrap(array).nn
-    if buffer.getInt(0) != 0xff744f63 || buffer.getInt(4) != 2 then abort(Git.Error(Reason.Unsupported(t"packfile index version")))
+
+    if buffer.getInt(0) != 0xff744f63 || buffer.getInt(4) != 2
+    then abort(Git.Error(Reason.Unsupported(t"packfile index version")))
+
     val count = buffer.getInt(8 + 255*4)
+
     val hashesStart = 8 + 256*4
     val crcStart = hashesStart + count*20
     val offsetStart = crcStart + count*4
@@ -191,13 +196,23 @@ object Packfile:
     val target = java.io.ByteArrayOutputStream(targetSize.toInt)
 
     // A copy instruction's offset and length are assembled from the bytes its opcode bits select.
-    def field(position: Int, opcode: Int, bits: List[Int], value: Int, shift: Int): (Int, Int) = bits match
-      case bit :: rest =>
-        if (opcode & bit) != 0 then
-          field(position + 1, opcode, rest, value | ((instructions(position) & 0xff) << shift), shift + 8)
-        else field(position, opcode, rest, value, shift + 8)
+    def field
+      ( position: Int, opcode: Int, bits: List[Int], value: Int, shift: Int )
+    :   (Int, Int) =
 
-      case _ => (value, position)
+      bits match
+        case bit :: rest =>
+          if (opcode & bit) != 0 then
+            field
+              ( position + 1,
+                opcode,
+                rest,
+                value | ((instructions(position) & 0xff) << shift),
+                shift + 8 )
+          else
+            field(position, opcode, rest, value, shift + 8)
+
+        case _ => (value, position)
 
     def recur(position: Int): Unit = if position < instructions.length then
       val opcode = instructions(position) & 0xff
@@ -216,7 +231,7 @@ object Packfile:
     target.toByteArray.nn.asInstanceOf[Data]
 
 // One pack on disk, with its index loaded.
-class Packfile(val pack: Path on Linux, val index: Packfile.Index):
+private[octogenarian] class Packfile(val pack: Path on Linux, val index: Packfile.Index):
   import Git.Error.Reason as Reason
 
   def contains(hash: Git.Hash): Boolean = index.offsetOf(hash).present
@@ -242,7 +257,9 @@ class Packfile(val pack: Path on Linux, val index: Packfile.Index):
 
             case Packfile.Entry.RefDelta(baseHash, _, data) =>
               val (kind, base) =
-                index.offsetOf(baseHash).lay(external(baseHash).or(abort(Git.Error(Reason.NoSuchObject(baseHash.text)))))(at(_))
+                index.offsetOf(baseHash).lay(external(baseHash)
+                . or(abort(Git.Error(Reason.NoSuchObject(baseHash.text)))))(at(_))
+
               (kind, Packfile.applyDelta(base, Packfile.inflate(view, data, end)))
 
         at(offset)

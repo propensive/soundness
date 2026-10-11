@@ -47,16 +47,16 @@ import vacuous.*
 
 import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
+import filesystemOptions.moveAtomically
 import filesystemOptions.overwritePreexisting
 import filesystemOptions.preserveSymlinks
-import filesystemOptions.moveAtomically
-import filesystemOptions.deleteRecursively
 
 // The operations which move HEAD by replaying or combining commits — merge, cherry-pick, revert,
 // rebase and the stash — and the state files in `.git` through which they stop on a conflict
 // and are later continued, skipped or abandoned, in the same layout git uses, so that an
 // operation begun natively can be finished by `git` and vice versa.
-object Sequencer:
+private[octogenarian] object Sequencer:
   import Git.Error.Reason as Reason
 
   // Where an operation runs: the repository's directories, and who is making the commits.
@@ -85,7 +85,10 @@ object Sequencer:
 
   private def parseInt(text: Text): Optional[Int] = safely(text.as[Int])
 
-  private def writeState(context: Context, name: Text, content: Text)(using Tactic[Io.Error]): Unit =
+  private def writeState(context: Context, name: Text, content: Text)
+    ( using Tactic[Io.Error] )
+  :   Unit =
+
     val file = stateFile(context, name)
     file.parent.let(Refstore.ensureDirectory(_))
     if file.existent() then file.delete()
@@ -97,10 +100,13 @@ object Sequencer:
 
   private def present(context: Context, name: Text): Boolean = stateFile(context, name).existent()
 
-  private def count[element](list: List[element]): Int = list.fold(0) { (n, _) => n + 1 }
+  private def count[element](list: List[element]): Int = list.fold(0): (n, _) => n + 1
 
   // What `.git` records about an operation that has stopped part-way, if any.
-  def operation(gitDir: Path on Linux, conflicting: List[Text])(using Tactic[Io.Error]): Optional[Git.Operation] =
+  def operation(gitDir: Path on Linux, conflicting: List[Text])
+    ( using Tactic[Io.Error] )
+  :   Optional[Git.Operation] =
+
     val context = Context(gitDir, gitDir, gitDir, gitDir, Git.Identity(t"", t""), false)
     val rebaseMerge = gitDir / "rebase-merge"
     val rebaseApply = gitDir / "rebase-apply"
@@ -122,26 +128,34 @@ object Sequencer:
     else
       readHash(context, t"CHERRY_PICK_HEAD").let(Git.Operation.CherryPicking(_, conflicting))
       . or(readHash(context, t"REVERT_HEAD").let(Git.Operation.Reverting(_, conflicting)))
-      . or(readState(context, t"MERGE_HEAD").let(mergeHeads(_)).let(Git.Operation.Merging(_, conflicting)))
+      . or(readState(context, t"MERGE_HEAD").let(mergeHeads(_))
+      . let(Git.Operation.Merging(_, conflicting)))
       . or(if present(context, t"BISECT_LOG") then Git.Operation.Bisecting else Unset)
 
   private def mergeHeads(text: Text): List[Git.Hash] =
     text.cut(t"\n").filter(_.length == 40).map(Git.Hash.unsafe(_))
 
   private def ensureIdle(context: Context)(using Tactic[Git.Error], Tactic[Io.Error]): Unit =
-    operation(context.gitDir, Nil).let { operation => abort(Git.Error(Reason.OperationInProgress(operation))) }
+    operation(context.gitDir, Nil).let: operation =>
+      abort(Git.Error(Reason.OperationInProgress(operation)))
 
   // ───────────────────────────────────────────── Commits ──────────────────────────────────────
 
   private def headCommit(context: Context)(using Tactic[Git.Error], Tactic[Io.Error]): Git.Hash =
-    Refstore.resolve(context.gitDir, context.commonDir, t"HEAD").or(abort(Git.Error(Reason.NoSuchRef(t"HEAD"))))
+    Refstore.resolve(context.gitDir, context.commonDir, t"HEAD")
+    . or(abort(Git.Error(Reason.NoSuchRef(t"HEAD"))))
 
-  private def treeOf(context: Context, commit: Optional[Git.Hash])(using Tactic[Git.Error], Tactic[Io.Error])
+  private def treeOf
+    ( context: Context, commit: Optional[Git.Hash] )
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Workspace.Snapshot =
 
     Workspace.treeSnapshot(context.objects, commit.let(Revwalk.commit(context.objects, _).tree))
 
-  private def resolve(context: Context, revision: Text)(using Tactic[Git.Error], Tactic[Io.Error]): Git.Hash =
+  private def resolve(context: Context, revision: Text)
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
+  :   Git.Hash =
+
     val hash =
       Revwalk.resolve(context.gitDir, context.commonDir, context.objects, revision)
       . or(abort(Git.Error(Reason.NoSuchRef(revision))))
@@ -151,7 +165,11 @@ object Sequencer:
   private def subject(message: Text): Text = message.cut(t"\n").prim.or(t"")
 
   private def writeCommit
-    ( context: Context, tree: Git.Hash, parents: List[Git.Hash], author: Optional[Git.Signature], message: Text )
+    ( context: Context,
+      tree: Git.Hash,
+      parents: List[Git.Hash],
+      author: Optional[Git.Signature],
+      message: Text )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Git.Hash =
 
@@ -165,8 +183,14 @@ object Sequencer:
   :   Unit =
 
     Refstore.update
-      ( context.gitDir, context.commonDir, t"HEAD", to, Git.Backend.Expectation.Exactly(from), message,
-        context.identity, context.logging )
+      ( context.gitDir,
+        context.commonDir,
+        t"HEAD",
+        to,
+        Git.Backend.Expectation.Exactly(from),
+        message,
+        context.identity,
+        context.logging )
 
   // The name of the branch HEAD is on, as git prints it, or `detached HEAD`.
   private def headName(context: Context)(using Tactic[Io.Error]): Text =
@@ -179,10 +203,16 @@ object Sequencer:
   // ──────────────────────────────────────── Index and files ───────────────────────────────────
 
   // Brings the index and working files to `commit`'s tree, discarding every local change.
-  private def resetHard(context: Context, commit: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error]): Unit =
+  private def resetHard(context: Context, commit: Git.Hash)
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
+  :   Unit =
+
     val contents = Index.read(context.gitDir)
     val working = Workspace.workingSnapshot(context.gitDir, context.worktree, contents)
-    val entries = Workspace.checkoutFiles(context.objects, context.worktree, working, treeOf(context, commit))
+
+    val entries =
+      Workspace.checkoutFiles(context.objects, context.worktree, working, treeOf(context, commit))
+
     Index.write(context.gitDir, Index.Contents(contents.version, entries, contents.extensions))
 
   // Fails if a path which would change between the snapshots has local modifications.
@@ -190,13 +220,19 @@ object Sequencer:
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =
 
-    val modified = Workspace.modifiedPaths(context.gitDir, context.commonDir, context.objects, context.worktree)
-    val changing = (from.keys.to[List] + to.keys.to[List]).distinct.filter { path => from.at(path) != to.at(path) }
+    val modified =
+      Workspace.modifiedPaths(context.gitDir, context.commonDir, context.objects, context.worktree)
+
+    val changing =
+      (from.keys.to[List] + to.keys.to[List]).distinct.filter: path => from.at(path) != to.at(path)
+
     val clobbered = changing.filter(modified.has(_))
     if clobbered != Nil then abort(Git.Error(Reason.Dirty(clobbered)))
 
   private def ensureClean(context: Context)(using Tactic[Git.Error], Tactic[Io.Error]): Unit =
-    val modified = Workspace.modifiedPaths(context.gitDir, context.commonDir, context.objects, context.worktree)
+    val modified =
+      Workspace.modifiedPaths(context.gitDir, context.commonDir, context.objects, context.worktree)
+
     if modified != Set() then abort(Git.Error(Reason.Dirty(modified.to[List])))
 
   // Checks out `to` over `from` in the working files and the index, without moving HEAD.
@@ -219,15 +255,22 @@ object Sequencer:
     val oursTree = treeOf(context, ours)
 
     val result =
-      Merging.trees(context.objects, treeOf(context, base), oursTree, treeOf(context, theirs), oursLabel, theirsLabel)
+      Merging.trees
+        ( context.objects,
+          treeOf(context, base),
+          oursTree,
+          treeOf(context, theirs),
+          oursLabel,
+          theirsLabel )
 
-    val conflicted = result.conflicts.map { conflict => (conflict.path, (0, Git.Hash.zero)) }
+    val conflicted = result.conflicts.map: conflict => (conflict.path, (0, Git.Hash.zero))
     ensureUnmodified(context, oursTree, (conflicted + result.merged.to[List]).to[Map])
     Merging.apply(context.gitDir, context.objects, context.worktree, result)
 
   // ───────────────────────────────────────────── Merge ────────────────────────────────────────
 
-  def merge(context: Context, revision: Text, ff: FastForward, message: Optional[Text], sign: Boolean)
+  def merge
+    ( context: Context, revision: Text, ff: FastForward, message: Optional[Text], sign: Boolean )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Git.Merge.Outcome =
 
@@ -235,7 +278,10 @@ object Sequencer:
     if sign then abort(Git.Error(Reason.Unsupported(t"signing a merge commit natively")))
     val ours = headCommit(context)
     val theirs = resolve(context, revision)
-    val isBranch = Refstore.resolve(context.gitDir, context.commonDir, t"refs/heads/$revision").present
+
+    val isBranch =
+      Refstore.resolve(context.gitDir, context.commonDir, t"refs/heads/$revision").present
+
     val current = shortName(headName(context))
 
     val described =
@@ -251,17 +297,25 @@ object Sequencer:
       checkoutTree(context, from, to)
       advance(context, ours, theirs, t"merge $revision: Fast-forward")
       Git.Merge.Outcome.FastForwarded(theirs)
-    else if ff == FastForward.Only then abort(Git.Error(Reason.NotFastForward))
+    else if ff == FastForward.Only then
+      abort(Git.Error(Reason.NotFastForward))
     else
       val base = Revwalk.mergeBase(context.objects, ours, theirs)
       val conflicts = mergeInto(context, base, ours, theirs, t"HEAD", revision)
-      val into = if current == t"main" || current == t"master" || current == t"detached HEAD" then t"" else t" into $current"
+
+      val into =
+        if current == t"main" || current == t"master" || current == t"detached HEAD" then t""
+        else t" into $current"
+
       val text = message.or(t"Merge $described$into")
 
       if conflicts != Nil then
         writeState(context, t"MERGE_HEAD", t"${theirs.text}\n")
         writeState(context, t"MERGE_MODE", if ff == FastForward.Never then t"no-ff" else t"")
-        writeState(context, t"MERGE_MSG", t"$text\n\n# Conflicts:\n${conflicts.map(conflictLine(_)).join}")
+
+        val conflictText = conflicts.map(conflictLine(_)).join
+        writeState(context, t"MERGE_MSG", t"$text\n\n# Conflicts:\n$conflictText")
+
         Git.Merge.Outcome.Stopped(Git.Operation.Merging(List(theirs), conflicts))
       else
         val tree = Workspace.writeTree(context.gitDir, context.objects)
@@ -275,7 +329,9 @@ object Sequencer:
   private def mergeMessage(context: Context)(using Tactic[Io.Error]): Text =
     readState(context, t"MERGE_MSG").or(t"").cut(t"\n").filter(!_.starts(t"#")).join(t"\n").trim
 
-  private def mergeVerb(context: Context, verb: Git.Sequence.Verb)(using Tactic[Git.Error], Tactic[Io.Error])
+  private def mergeVerb
+    ( context: Context, verb: Git.Sequence.Verb )
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Git.Sequence.Outcome =
 
     def clear(): Unit =
@@ -322,7 +378,10 @@ object Sequencer:
     val picked = Revwalk.commit(context.objects, commit)
     val parent = picked.parents.prim
     val short = commit.text.keep(7)
-    val label = if revert then t"parent of $short (${subject(picked.message)})" else t"$short (${subject(picked.message)})"
+
+    val label =
+      if revert then t"parent of $short (${subject(picked.message)})"
+      else t"$short (${subject(picked.message)})"
 
     val message =
       if revert then t"Revert \"${subject(picked.message)}\"\n\nThis reverts commit ${commit.text}."
@@ -334,16 +393,25 @@ object Sequencer:
       if revert then
         parent match
           case parent: Git.Hash => mergeInto(context, commit, ours, parent, t"HEAD", label)
-          case _                => mergeInto(context, commit, ours, emptyCommit(context), t"HEAD", label)
-      else mergeInto(context, parent, ours, commit, t"HEAD", label)
+
+          case _ =>
+            mergeInto(context, commit, ours, emptyCommit(context), t"HEAD", label)
+      else
+        mergeInto(context, parent, ours, commit, t"HEAD", label)
 
     if conflicts != Nil then
-      writeState(context, if revert then t"REVERT_HEAD" else t"CHERRY_PICK_HEAD", t"${commit.text}\n")
-      writeState(context, t"MERGE_MSG", t"$signed\n\n# Conflicts:\n${conflicts.map(conflictLine(_)).join}")
+      writeState
+        ( context, if revert then t"REVERT_HEAD" else t"CHERRY_PICK_HEAD", t"${commit.text}\n" )
+
+      val conflictText = conflicts.map(conflictLine(_)).join
+      writeState(context, t"MERGE_MSG", t"$signed\n\n# Conflicts:\n$conflictText")
+
       Left(conflicts)
-    else if noCommit then Right(Unset)
+    else if noCommit then
+      Right(Unset)
     else
       val tree = Workspace.writeTree(context.gitDir, context.objects)
+
       if tree == Revwalk.commit(context.objects, ours).tree then Right(Unset)
       else
         val author: Optional[Git.Signature] = if revert then Unset else picked.author
@@ -361,7 +429,10 @@ object Sequencer:
     val line = t"Signed-off-by: ${context.identity.text}"
     if message.contains(line) then message else t"${message.trim}\n\n$line"
 
-  private def todoLine(context: Context, hash: Git.Hash)(using Tactic[Git.Error], Tactic[Io.Error]): Text =
+  private def todoLine(context: Context, hash: Git.Hash)
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
+  :   Text =
+
     t"pick ${hash.text} ${subject(Revwalk.commit(context.objects, hash).message)}"
 
   private def todoHashes(text: Text): List[Git.Hash] =
@@ -380,13 +451,18 @@ object Sequencer:
     commits match
       case _ :: _ :: _ if !noCommit =>
         writeState(context, t"sequencer/head", t"${head.text}\n")
-        writeState(context, t"sequencer/todo", t"${commits.map(todoLine(context, _)).join(t"\n")}\n")
+
+        writeState
+          ( context, t"sequencer/todo", t"${commits.map(todoLine(context, _)).join(t"\n")}\n" )
+
         if revert then writeState(context, t"sequencer/opts", t"") else ()
+
       case _ => ()
 
     runPicks(context, commits, revert, noCommit)
 
-  private def runPicks(context: Context, commits: List[Git.Hash], revert: Boolean, noCommit: Boolean)
+  private def runPicks
+    ( context: Context, commits: List[Git.Hash], revert: Boolean, noCommit: Boolean )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Git.Sequence.Outcome =
 
@@ -402,8 +478,11 @@ object Sequencer:
 
           case Right(created) =>
             if created.absent && !noCommit then abort(Git.Error(Reason.NothingToCommit))
+
             if present(context, t"sequencer") then
-              writeState(context, t"sequencer/todo", t"${rest.map(todoLine(context, _)).join(t"\n")}\n")
+              writeState
+                ( context, t"sequencer/todo", t"${rest.map(todoLine(context, _)).join(t"\n")}\n" )
+
             runPicks(context, rest, revert, noCommit)
 
       case _ =>
@@ -417,7 +496,9 @@ object Sequencer:
     val sequencer = context.gitDir / "sequencer"
     if sequencer.existent() then sequencer.delete()
 
-  private def pickVerb(context: Context, verb: Git.Sequence.Verb)(using Tactic[Git.Error], Tactic[Io.Error])
+  private def pickVerb
+    ( context: Context, verb: Git.Sequence.Verb )
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Git.Sequence.Outcome =
 
     val revert = present(context, t"REVERT_HEAD")
@@ -438,8 +519,12 @@ object Sequencer:
           val ours = headCommit(context)
           val tree = Workspace.writeTree(context.gitDir, context.objects)
           val message = mergeMessage(context)
-          val author: Optional[Git.Signature] = if revert then Unset else Revwalk.commit(context.objects, commit).author
+
+          val author: Optional[Git.Signature] =
+            if revert then Unset else Revwalk.commit(context.objects, commit).author
+
           val created = writeCommit(context, tree, List(ours), author, message)
+
           val name = if revert then t"revert" else t"cherry-pick"
           advance(context, ours, created, t"$name: ${subject(message)}")
 
@@ -487,7 +572,8 @@ object Sequencer:
     val name = headName(context)
 
     val autostash: Optional[Git.Hash] =
-      if options.has(Git.Rebase.Option.Autostash) then stash(context, Unset, false, false) else Unset
+      if options.has(Git.Rebase.Option.Autostash) then stash(context, Unset, false, false)
+      else Unset
 
     if autostash.absent then ensureClean(context)
 
@@ -495,7 +581,8 @@ object Sequencer:
       case _ :: _ :: _ => false
       case _           => true
 
-    val commits = Revwalk.walk(context.objects, original, upstreamHash, Unset, Nil).reverse.filter(linear(_))
+    val commits =
+      Revwalk.walk(context.objects, original, upstreamHash, Unset, Nil).reverse.filter(linear(_))
 
     val outcome =
       if commits == Nil then
@@ -515,10 +602,19 @@ object Sequencer:
         writeState(context, t"$rebaseDir/quiet", t"")
         writeState(context, t"$rebaseDir/msgnum", t"0\n")
         writeState(context, t"$rebaseDir/end", t"${count(commits)}\n")
-        writeState(context, t"$rebaseDir/git-rebase-todo", t"${commits.map(todoLine(context, _)).join(t"\n")}\n")
+
+        writeState
+          ( context,
+            t"$rebaseDir/git-rebase-todo",
+            t"${commits.map(todoLine(context, _)).join(t"\n")}\n" )
+
         writeState(context, t"$rebaseDir/done", t"")
-        if options.has(Git.Rebase.Option.KeepEmpty) then writeState(context, t"$rebaseDir/keep_redundant_commits", t"")
-        if options.has(Git.Rebase.Option.Signoff) then writeState(context, t"$rebaseDir/signoff", t"")
+
+        if options.has(Git.Rebase.Option.KeepEmpty)
+        then writeState(context, t"$rebaseDir/keep_redundant_commits", t"")
+
+        if options.has(Git.Rebase.Option.Signoff)
+        then writeState(context, t"$rebaseDir/signoff", t"")
 
         // Detach at `onto`, then replay.
         val from = treeOf(context, original)
@@ -533,15 +629,22 @@ object Sequencer:
 
     outcome match
       case Git.Sequence.Outcome.Completed(_) =>
-        autostash.let { _ => applyStash(context, 0, false, true) }
+        autostash.let: _ => applyStash(context, 0, false, true)
         outcome
 
       case _ => outcome
 
-  private def rebaseOptionSet(context: Context, name: Text): Boolean = present(context, t"$rebaseDir/$name")
+  private def rebaseOptionSet
+    ( context: Context, name: Text )
+  :   Boolean =
+
+    present(context, t"$rebaseDir/$name")
 
   // Replays the picks left in the todo list, stopping at the first conflict.
-  private def runRebase(context: Context)(using Tactic[Git.Error], Tactic[Io.Error]): Git.Sequence.Outcome =
+  private def runRebase(context: Context)
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
+  :   Git.Sequence.Outcome =
+
     val todo = readState(context, t"$rebaseDir/git-rebase-todo").let(todoHashes(_)).or(Nil)
     val onto = readHash(context, t"$rebaseDir/onto").or(Git.Hash.zero)
     val original = readHash(context, t"$rebaseDir/orig-head").or(Git.Hash.zero)
@@ -562,13 +665,15 @@ object Sequencer:
             writeState(context, t"$rebaseDir/stopped-sha", t"${commit.text}\n")
             writeState(context, t"$rebaseDir/message", t"${picked.message}\n")
             writeState(context, t"$rebaseDir/author-script", authorScript(picked.author))
-            Git.Sequence.Outcome.Stopped(Git.Operation.Rebasing(onto, original, done, total - done, conflicts))
+            val operation = Git.Operation.Rebasing(onto, original, done, total - done, conflicts)
+            Git.Sequence.Outcome.Stopped(operation)
 
           case Right(created) =>
             if created.absent && keepEmpty then
               val ours = headCommit(context)
               val picked = Revwalk.commit(context.objects, commit)
-              val empty = writeCommit(context, Revwalk.commit(context.objects, ours).tree, List(ours), picked.author, picked.message)
+              val tree = Revwalk.commit(context.objects, ours).tree
+              val empty = writeCommit(context, tree, List(ours), picked.author, picked.message)
               advance(context, ours, empty, t"rebase (pick): ${subject(picked.message)}")
 
             finishPick(context, commit, rest)
@@ -583,13 +688,21 @@ object Sequencer:
 
     val done = readState(context, t"$rebaseDir/done").or(t"")
     writeState(context, t"$rebaseDir/done", t"$done${todoLine(context, commit)}\n")
-    writeState(context, t"$rebaseDir/git-rebase-todo", t"${rest.map(todoLine(context, _)).join(t"\n")}\n")
+
+    writeState
+      ( context, t"$rebaseDir/git-rebase-todo", t"${rest.map(todoLine(context, _)).join(t"\n")}\n" )
 
   private def authorScript(author: Git.Signature): Text =
-    t"GIT_AUTHOR_NAME='${author.identity.name}'\nGIT_AUTHOR_EMAIL='${author.identity.email}'\nGIT_AUTHOR_DATE='@${author.timestamp.text}'\n"
+    val name = t"GIT_AUTHOR_NAME='${author.identity.name}'"
+    val email = t"GIT_AUTHOR_EMAIL='${author.identity.email}'"
+    val date = t"GIT_AUTHOR_DATE='@${author.timestamp.text}'"
+    t"$name\n$email\n$date\n"
 
   // Reattaches HEAD to the rebased branch, moving it to the replayed tip.
-  private def finishRebase(context: Context)(using Tactic[Git.Error], Tactic[Io.Error]): Git.Sequence.Outcome =
+  private def finishRebase(context: Context)
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
+  :   Git.Sequence.Outcome =
+
     val head = headCommit(context)
     val name = readState(context, t"$rebaseDir/head-name").let(_.trim).or(t"detached HEAD")
     val original = readHash(context, t"$rebaseDir/orig-head").or(head)
@@ -609,7 +722,9 @@ object Sequencer:
     val directory = context.gitDir / "rebase-merge"
     if directory.existent() then directory.delete()
 
-  private def rebaseVerb(context: Context, verb: Git.Sequence.Verb)(using Tactic[Git.Error], Tactic[Io.Error])
+  private def rebaseVerb
+    ( context: Context, verb: Git.Sequence.Verb )
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Git.Sequence.Outcome =
 
     val stopped = readHash(context, t"$rebaseDir/stopped-sha")
@@ -648,10 +763,16 @@ object Sequencer:
         val name = readState(context, t"$rebaseDir/head-name").let(_.trim).or(t"detached HEAD")
         resetHard(context, original)
 
-        if name.starts(t"refs/") then Refstore.writeSymbolic(context.gitDir, context.commonDir, t"HEAD", name)
+        if name.starts(t"refs/")
+        then Refstore.writeSymbolic(context.gitDir, context.commonDir, t"HEAD", name)
         else
           Refstore.detach
-            ( context.gitDir, context.commonDir, original, head, context.identity, t"rebase (abort): updating HEAD",
+            ( context.gitDir,
+              context.commonDir,
+              original,
+              head,
+              context.identity,
+              t"rebase (abort): updating HEAD",
               context.logging )
 
         clearRebase(context)
@@ -665,10 +786,14 @@ object Sequencer:
   def sequence(context: Context, verb: Git.Sequence.Verb)(using Tactic[Git.Error], Tactic[Io.Error])
   :   Git.Sequence.Outcome =
 
+    val picking =
+      present(context, t"CHERRY_PICK_HEAD") || present(context, t"REVERT_HEAD") ||
+        present(context, t"sequencer")
+
     if present(context, rebaseDir) then rebaseVerb(context, verb)
-    else if present(context, t"rebase-apply") then abort(Git.Error(Reason.Unsupported(t"continuing an `am`-style rebase")))
-    else if present(context, t"CHERRY_PICK_HEAD") || present(context, t"REVERT_HEAD") || present(context, t"sequencer")
-    then pickVerb(context, verb)
+    else if present(context, t"rebase-apply")
+    then abort(Git.Error(Reason.Unsupported(t"continuing an `am`-style rebase")))
+    else if picking then pickVerb(context, verb)
     else if present(context, t"MERGE_HEAD") then mergeVerb(context, verb)
     else abort(Git.Error(Reason.NoOperationInProgress))
 
@@ -678,16 +803,25 @@ object Sequencer:
 
   // Records the index and working files as commits under `refs/stash` and resets them, as
   // `git stash push` does: none if there is nothing to save.
-  def stash(context: Context, message: Optional[Text], includeUntracked: Boolean, keepIndex: Boolean)
+  def stash
+    ( context: Context, message: Optional[Text], includeUntracked: Boolean, keepIndex: Boolean )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Optional[Git.Hash] =
 
     val head = headCommit(context)
     val contents = Index.read(context.gitDir)
-    if contents.entries.exists(_.stage > 0) then abort(Git.Error(Reason.Unmerged(Git.Branch.unsafe(t"HEAD"), head)))
+
+    if contents.entries.exists(_.stage > 0)
+    then abort(Git.Error(Reason.Unmerged(Git.Branch.unsafe(t"HEAD"), head)))
 
     val lines =
-      Workspace.status(context.gitDir, context.commonDir, context.objects, context.worktree, false, includeUntracked)
+      Workspace.status
+        ( context.gitDir,
+          context.commonDir,
+          context.objects,
+          context.worktree,
+          false,
+          includeUntracked )
 
     val untrackedPaths = lines.filter(_.index == Optional(Git.Status.Untracked)).map(_.path)
     val changed = lines.filter(_.index != Optional(Git.Status.Untracked))
@@ -703,12 +837,15 @@ object Sequencer:
       // The working files as they are, for every path the index tracks that still exists.
       def working(entry: Index.Entry): Optional[(Text, (Int, Git.Hash))] =
         val file = Workspace.file(context.worktree, entry.path)
+
         if !file.existent() then Unset else
           val mode = fileMode(file, entry.mode)
           val data = Workspace.content(context.worktree, entry.path, mode)
           (entry.path, (mode, Store.write(context.objects, Git.Object.Kind.Blob, data)))
 
-      val workingSnapshot = contents.staged.bind { entry => working(entry).let(List(_)).or(Nil) }.to[Map]
+      val workingSnapshot =
+        contents.staged.bind { entry => working(entry).let(List(_)).or(Nil) }.to[Map]
+
       val workingTree = Workspace.writeSnapshot(context.objects, workingSnapshot)
 
       def untrackedEntry(path: Text): (Text, (Int, Git.Hash)) =
@@ -719,16 +856,24 @@ object Sequencer:
 
       val untrackedCommit: Optional[Git.Hash] =
         if untrackedPaths == Nil then Unset else
-          val tree = Workspace.writeSnapshot(context.objects, untrackedPaths.map(untrackedEntry(_)).to[Map])
+          val tree =
+            Workspace.writeSnapshot(context.objects, untrackedPaths.map(untrackedEntry(_)).to[Map])
+
           writeCommit(context, tree, Nil, Unset, t"untracked files on $description")
 
-      val text = message.lay(t"WIP on $description") { message => t"On $branchName: $message" }
+      val text = message.lay(t"WIP on $description"): message => t"On $branchName: $message"
       val parents = List(head, indexCommit) + untrackedCommit.let(List(_)).or(Nil)
       val stashCommit = writeCommit(context, workingTree, parents, Unset, text)
 
       Refstore.update
-        ( context.gitDir, context.commonDir, stashRef, stashCommit, Git.Backend.Expectation.Unconditional, text,
-          context.identity, true )
+        ( context.gitDir,
+          context.commonDir,
+          stashRef,
+          stashCommit,
+          Git.Backend.Expectation.Unconditional,
+          text,
+          context.identity,
+          true )
 
       // Then put everything back.
       if keepIndex then checkoutTree(context, workingSnapshot, Workspace.indexSnapshot(contents))
@@ -747,7 +892,10 @@ object Sequencer:
     else if file.executable() then Index.executable
     else Index.regular
 
-  private def stashEntry(context: Context, entry: Int)(using Tactic[Git.Error], Tactic[Io.Error]): Git.Hash =
+  private def stashEntry(context: Context, entry: Int)
+    ( using Tactic[Git.Error], Tactic[Io.Error] )
+  :   Git.Hash =
+
     Refstore.nth(Refstore.reflog(context.gitDir, context.commonDir, stashRef), entry)
     . or(abort(Git.Error(Reason.NoSuchStash)))
     . hash
@@ -765,13 +913,22 @@ object Sequencer:
     val contents = Index.read(context.gitDir)
     val ours = Workspace.indexSnapshot(contents)
     val baseTree = treeOf(context, base)
-    val result = Merging.trees(context.objects, baseTree, ours, treeOf(context, stashHash), t"Updated upstream", t"Stashed changes")
-    val conflicted = result.conflicts.map { conflict => (conflict.path, (0, Git.Hash.zero)) }
+    val theirs = treeOf(context, stashHash)
+
+    val result =
+      Merging.trees
+        ( context.objects, baseTree, ours, theirs, t"Updated upstream", t"Stashed changes" )
+
+    val conflicted = result.conflicts.map: conflict => (conflict.path, (0, Git.Hash.zero))
+
     ensureUnmodified(context, ours, (conflicted + result.merged.to[List]).to[Map])
 
     // Untracked files are restored only where nothing stands in their way.
     val untracked = treeOf(context, untrackedCommit)
-    val blocking = untracked.keys.to[List].filter { path => Workspace.file(context.worktree, path).existent() }
+
+    val blocking =
+      untracked.keys.to[List].filter: path => Workspace.file(context.worktree, path).existent()
+
     if blocking != Nil then abort(Git.Error(Reason.Dirty(blocking)))
 
     val conflicts = Merging.apply(context.gitDir, context.objects, context.worktree, result)
@@ -782,11 +939,15 @@ object Sequencer:
     val applied = Index.read(context.gitDir)
     val indexSnapshot = if index then treeOf(context, indexCommit) else ours
 
-    def restage(entry: Index.Entry): Index.Entry = indexSnapshot.at(entry.path) match
-      case (mode: Int, hash: Git.Hash) if index || result.merged.at(entry.path) != Optional((mode, hash)) =>
-        Index.Entry(entry.path, mode, hash, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    def restage(entry: Index.Entry): Index.Entry =
+      def changed(mode: Int, hash: Git.Hash): Boolean =
+        index || result.merged.at(entry.path) != Optional((mode, hash))
 
-      case _ => entry
+      indexSnapshot.at(entry.path) match
+        case (mode: Int, hash: Git.Hash) if changed(mode, hash) =>
+          Index.Entry(entry.path, mode, hash, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+        case _ => entry
 
     Index.write(context.gitDir, applied.copy(entries = applied.entries.map(restage(_))))
 
@@ -801,13 +962,20 @@ object Sequencer:
   def dropStash(context: Context, entry: Int)(using Tactic[Git.Error], Tactic[Io.Error]): Unit =
     val file = Refstore.descend(context.commonDir, List(t"logs", t"refs", t"stash"))
     val ref = Refstore.location(context.gitDir, context.commonDir, stashRef)
-    val lines = if file.existent() then Objects.text(file.read[Data]).cut(t"\n").filter(_.length > 0) else Nil
+
+    val lines =
+      if file.existent() then Objects.text(file.read[Data]).cut(t"\n").filter(_.length > 0) else Nil
+
     val total = count(lines)
+
     if entry < 0 || entry >= total then abort(Git.Error(Reason.NoSuchStash))
     val position = total - 1 - entry
 
     def without(remaining: List[Text], index: Int, acc: List[Text]): List[Text] = remaining match
-      case line :: rest => if index == position then without(rest, index + 1, acc) else without(rest, index + 1, line :: acc)
+      case line :: rest =>
+        val kept = if index == position then acc else line :: acc
+        without(rest, index + 1, kept)
+
       case _            => acc.reverse
 
     val kept = without(lines, 0, Nil)
@@ -819,6 +987,10 @@ object Sequencer:
       else
         file.delete()
         file.write(Objects.bytes(t"${kept.join(t"\n")}\n"))
-        val newest = kept.reverse.prim.let(_.cut(t" ")).let(Refstore.nth(_, 1)).or(Git.Hash.zero.text)
+
+        val newest =
+          kept.reverse.prim.let(_.cut(t" ")).let(Refstore.nth(_, 1)).or(Git.Hash.zero.text)
+
         lockFile.write(Objects.bytes(t"$newest\n"))
+
         lockFile.moveTo(ref)

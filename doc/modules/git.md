@@ -8,8 +8,9 @@ results come back as values rather than text to parse; and the API is honest abo
 every Git library has to be honest about: the repository is on disk, and other processes write it.
 
 Underneath, the operations are carried out by a backend. The command-line backend runs the `git`
-command, so anything Git can do is available; a native backend reads and writes the repository's
-files itself. Both implement the same `Git.Backend` typeclass, and the choice is an import.
+command, so anything Git can do is available; the native backend reads and writes the repository's
+files itself, and needs no `git` at all. Both implement the same `Git.Backend` typeclass, and the
+choice is an import: `gitBackends.commandlineGit` or `gitBackends.soundnessGit`.
 
 ### On Git
 
@@ -146,6 +147,37 @@ target.open[Git.Worktree](): cloned ?=>
 
 `push` takes refspecs and a force policy. `Push.Force.Lease` is the remote-side compare-and-swap,
 `--force-with-lease`: it carries the readings of the remote's refs the push is conditional on.
+
+### Choosing a backend
+
+`gitBackends.commandlineGit` runs the `git` command found by `gitCommands.searchpathGitCommand`,
+in the working directory and environment in scope, logging each invocation. It is the choice when
+git's own behaviour is wanted in full: hooks, filters, credential helpers, submodules.
+
+`gitBackends.soundnessGit` is the native backend: objects (loose and packed), refs, the index,
+configuration, notes, linked worktrees, merging, rebasing and the stash are all read and written
+directly, in git's own formats, so a repository is always one `git` itself understands, and an
+operation one side stops on a conflict the other can continue. It reaches repositories on the
+same filesystem by path; remote ones need a transport, which the `http` and `ssh` components
+supply: `Native(List(SmartHttp(), SshCommand()))` speaks git's wire protocol over whichever
+`Http.Backend` is in scope and over a spawned `ssh`.
+
+<!-- doccheck: skip -->
+```scala
+import gitTransports.{smartHttp, sshCommand}
+import httpBackends.javaNetHttp
+
+given Git.Backend = Native(List(SmartHttp(), SshCommand()))
+```
+
+Signing is independent of the backend. A `Git.Signer` makes the signature a commit or tag
+carries, and a `Git.Verifier` checks one: `SshKeygen.Signer(key)` and `SshKeygen.Verifier(
+allowedSigners)` drive `ssh-keygen -Y` as `gpg.format = ssh` has git do, and `Gpg.Signer()` and
+`Gpg.Verifier()` drive `gpg`. A tag signed through either is one `git tag -v` accepts.
+
+Whichever backend is chosen, `Exclusive` arbitrates only between handles in this JVM. Another
+process is never waited for, which is why every ref-moving operation is a compare-and-swap on the
+`Stale` reading it was given.
 
 ### References
 

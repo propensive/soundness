@@ -50,8 +50,13 @@ import filesystemOptions.dereferenceSymlinks
 // directory of the file it came from, a pattern without one matches a path's final component
 // anywhere beneath; a trailing slash matches directories only; `!` negates; the last matching
 // pattern wins; and an excluded directory excludes everything within it.
-object Ignore:
-  case class Rule(regex: java.util.regex.Pattern, negated: Boolean, directoryOnly: Boolean, anchored: Boolean, base: Text)
+private[octogenarian] object Ignore:
+  case class Rule
+    ( regex:         java.util.regex.Pattern,
+      negated:       Boolean,
+      directoryOnly: Boolean,
+      anchored:      Boolean,
+      base:          Text )
 
   // A set of rules, from the repository's `info/exclude`, its root `.gitignore`, and the
   // `.gitignore` of every directory, each applying beneath its own directory.
@@ -63,16 +68,20 @@ object Ignore:
         val slash = path.s.lastIndexOf('/')
         slash > 0 && ignored(path.keep(slash), true)
 
-      def decide(remaining: List[Rule], verdict: Optional[Boolean]): Optional[Boolean] = remaining match
-        case rule :: rest =>
-          val applies =
-            (rule.base.length == 0 || path.starts(t"${rule.base}/")) &&
-              (!rule.directoryOnly || directory) &&
-              Ignore.matches(rule, path)
+      def decide
+        ( remaining: List[Rule], verdict: Optional[Boolean] )
+      :   Optional[Boolean] =
 
-          decide(rest, if applies then !rule.negated else verdict)
+        remaining match
+          case rule :: rest =>
+            val applies =
+              (rule.base.length == 0 || path.starts(t"${rule.base}/")) &&
+                (!rule.directoryOnly || directory) &&
+                Ignore.matches(rule, path)
 
-        case _ => verdict
+            decide(rest, if applies then !rule.negated else verdict)
+
+          case _ => verdict
 
       decide(rules, Unset).or(parentIgnored)
 
@@ -100,10 +109,12 @@ object Ignore:
         recur(index + 2)
       else
         char match
-          case '*'  => builder.append("[^/]*")
-          case '?'  => builder.append("[^/]")
-          case '['  =>
+          case '*' => builder.append("[^/]*")
+          case '?' => builder.append("[^/]")
+
+          case '[' =>
             val close = string.indexOf(']', index + 1)
+
             if close < 0 then builder.append("\\[") else
               val body = string.substring(index + 1, close).nn
               val negated = body.startsWith("!")
@@ -112,11 +123,14 @@ object Ignore:
               builder.append((if negated then body.substring(1).nn else body).replace("\\", "\\\\"))
               builder.append(']')
               return recur(close + 1)
+
           case '\\' if index + 1 < string.length =>
             builder.append(java.util.regex.Pattern.quote(string.charAt(index + 1).toString))
             return recur(index + 2)
+
           case other if "\\.^$+{}()|".indexOf(other) >= 0 => builder.append('\\').append(other)
-          case other => builder.append(other)
+
+          case other                                      => builder.append(other)
 
         recur(index + 1)
 
@@ -153,7 +167,8 @@ object Ignore:
           else if unsafely(child.entry()) == Directory then
             val childBase = if base.length == 0 then child.name else t"$base/${child.name}"
             visit(rest, acc + recur(child, childBase))
-          else visit(rest, acc)
+          else
+            visit(rest, acc)
 
         case _ => acc
 

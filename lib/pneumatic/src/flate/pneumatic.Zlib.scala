@@ -66,8 +66,11 @@ object Zlib:
         consumed
       else
         val produced = engine.inflate(buffer, 0, buffer.length)
+
         if produced > 0 then output.write(buffer, 0, produced)
-        else if !engine.finished then throw IllegalStateException("the compressed data is truncated")
+        else if !engine.finished
+        then throw IllegalStateException("the compressed data is truncated")
+
         recur(engine, buffer)
 
     val engine: InflateEngine^ = FlateBackend.inflater(false)
