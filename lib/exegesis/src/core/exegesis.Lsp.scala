@@ -2500,7 +2500,9 @@ object Lsp:
       val results: scm.HashMap[Text, AnyRef] = proxy.results
       val notices: scm.HashMap[Text, AnyRef] = proxy.notices
       val inbound0: Optional[InboundHook] = inbound(proxy.inbound0)
-      val outbound0: Optional[OutboundHook] = outbound(proxy.outbound0)
+      // Read out as a pure function, like `connected0` below: the session block closes over it,
+      // and a binding whose type hid a fresh capability could not be touched from there.
+      val outbound0: Optional[(Text, Json) -> Transit] = outbound(proxy.outbound0)
       // Nullable rather than `Optional`, and alone among the rules in that: a function in a
       // container is capture-polymorphic, and the block is passed to a task rather than called
       // here, which is one adaptation more than an `Optional` of it survives.
@@ -2632,9 +2634,10 @@ object Lsp:
           val lambda: Json => Json = value.asInstanceOf[Lsp.Registry.Slot[Json => Json]].value
           lambda
 
-    private def outbound(hook: AnyRef | Null): Optional[OutboundHook] =
+    private def outbound(hook: AnyRef | Null): Optional[(Text, Json) -> Transit] =
       if hook == null then Unset else
-        val relay: OutboundHook = hook.asInstanceOf[Lsp.Registry.Slot[OutboundHook]].value
+        val relay: (Text, Json) -> Transit =
+          hook.asInstanceOf[Lsp.Registry.Slot[(Text, Json) -> Transit]].value
 
         relay
 

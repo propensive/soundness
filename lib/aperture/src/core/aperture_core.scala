@@ -32,6 +32,8 @@
                                                                                                   */
 package aperture
 
+import scala.caps
+
 import prepositional.*
 
 // Refines a type's `Grants` member; `Mode granting Grant.Read` reads naturally.
@@ -73,12 +75,20 @@ extension [target](value: target)
   // Open a session on the target: the handle (of whatever kind the target's
   // `Sessional` instance provides) is available within `lambda`, and is
   // disposed of when the scope ends. Values borrowing the session cannot escape
-  // it. Inline, with the instance as a capturing using-parameter ahead of the
-  // lambda: the instance's capabilities and its concrete `Result` type flow
-  // through from the use site, where a non-inline def would mint fresh roots
-  // the capability-carrying instance cannot flow into.
-  transparent inline def session[result](using sessional: (target is Sessional)^)
-    ( lambda: (session: sessional.Result) ?=> result )
+  // it. A plain method, not inline, and the handle's capability spelled here
+  // as `Result^`: an inline wrapper loses the lambda parameter's level once its
+  // body is read back from TASTy, so the handle, a closure over it, or a value
+  // derived from it could be returned as the block's `result` (#2216); a bare
+  // `sessional.Result` leaves the parameter untracked in the block. The instance
+  // is a capturing using-parameter ahead of the lambda, so its capabilities and
+  // its concrete `Result` type flow through from the use site. Both the instance
+  // and the lambda take their capture sets as parameters, `instance` and `block`,
+  // rather than fresh `^`s, which would assert that the two are separate: they
+  // routinely share a monitor or a tactic, and a fresh formal hides what its
+  // argument captures, failing separation checking against the other argument.
+  def session[result, instance^, block^]
+    ( using sessional: (target is Sessional)^{instance} )
+    ( lambda: (session: sessional.Result^) ?->{block} result )
   :   result =
 
     sessional.session(value)(lambda)
