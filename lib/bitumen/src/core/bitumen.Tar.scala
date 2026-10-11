@@ -52,6 +52,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
@@ -305,7 +306,7 @@ object Tar:
     private[bitumen] def formatLongOctal(number: Long, width: Int): Data =
       val str: String = java.lang.Long.toOctalString(number).nn
       val pad: Int = (width - 1 - str.length).max(0)
-      (("0"*pad) + str).tt.in[Data]
+      ("0".repeat(pad).nn + str).tt.in[Data]
 
     // Re-blocks arbitrary chunks as 512-byte archive blocks, the final block
     // zero-padded, without regard to the incoming chunk boundaries.
@@ -482,7 +483,7 @@ object Tar:
     def formatLong(number: Long, width: Int): Data =
       val str: String = java.lang.Long.toOctalString(number).nn
       val pad: Int = (width - 1 - str.length).max(0)
-      (("0"*pad) + str).tt.in[Data]
+      ("0".repeat(pad).nn + str).tt.in[Data]
 
     def header: Data = headerWith(size)
 

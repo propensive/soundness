@@ -506,7 +506,7 @@ extension (doubleObject: Double.type)
 
 extension (shortObject: Short.type)
   @unexported
-  def apply(bits: B16): Short = bits.asInstanceOf[Short]
+  inline def apply(bits: B16): Short = bits.asInstanceOf[Short]
 
   @unexported
   def apply(bytes: Array[Byte]^{}): Short =
@@ -514,7 +514,7 @@ extension (shortObject: Short.type)
 
 extension (intObject: Int.type)
   @unexported
-  def apply(bits: B32): Int = bits.asInstanceOf[Int]
+  inline def apply(bits: B32): Int = bits.asInstanceOf[Int]
 
   @unexported
   def apply(bytes: Array[Byte]^{}): Int =
@@ -530,7 +530,7 @@ extension (intObject: Int.type)
 
 extension (longObject: Long.type)
   @unexported
-  def apply(bits: B64): Long = bits.asInstanceOf[Long]
+  inline def apply(bits: B64): Long = bits.asInstanceOf[Long]
 
   @unexported
   def apply(bytes: Array[Byte]^{}): Long =
@@ -645,136 +645,10 @@ package arithmeticOptions:
 
     def divide(dividend: Q32, divisor: Q32): Double = dividend.double/divisor.double
 
-  inline given uncheckedDivision: DivisionByZero:
-    type Wrap[result] = result
-
-    inline def divideU64(left: U64, right: U64): U64 =
-      U64((Long(left.bits)/Long(right.bits)).bits)
-
-    inline def divideS64(left: S64, right: S64): S64 = S64((left.long/right.long).bits)
-    inline def divideU32(left: U32, right: U32): U32 = U32((Int(left.bits)/Int(right.bits)).bits)
-    inline def divideS32(left: S32, right: S32): S32 = S32((left.int/right.int).bits)
-
-    inline def divideU16(left: U16, right: U16): U16 =
-      U16((Short(left.bits)/Short(right.bits)).toShort.bits)
-
-    inline def divideS16(left: S16, right: S16): S16 = S16((left.short/right.short).toShort.bits)
-    inline def divideU8(left: U8, right: U8): U8 = U8((left.byte/right.byte).toByte.bits)
-    inline def divideS8(left: S8, right: S8): S8 = S8((left.byte/right.byte).toByte.bits)
-
-  inline given checkedDivision: DivisionByZero:
-    type Wrap[result] = result raises Arithmetic.Error
-    
-    // The overrides below keep the opaque `Wrap[X]^` spelling: written as
-    // `X raises E`, the inline bodies lose the tactic the `raises` expansion
-    // provides, and the `^` covers the expansion's existential capture.
-
-    inline def divideU64(left: U64, right: U64): Wrap[U64]^ =
-      if Long(right.bits) == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
-      else U64((Long(left.bits)/Long(right.bits)).bits)
-
-    inline def divideS64(left: S64, right: S64): Wrap[S64]^ =
-      if right.long == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
-      else S64((left.long/right.long).bits)
-
-    inline def divideU32(left: U32, right: U32): Wrap[U32]^ =
-      if right.long == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
-      else U32((Int(left.bits)/Int(right.bits)).bits)
-
-    inline def divideS32(left: S32, right: S32): Wrap[S32]^ =
-      if right.int == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
-      else S32((left.int/right.int).bits)
-
-    inline def divideU16(left: U16, right: U16): Wrap[U16]^ =
-      if right.int == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
-      else U16((Short(left.bits)/Short(right.bits)).toShort.bits)
-
-    inline def divideS16(left: S16, right: S16): Wrap[S16]^ =
-      if right.int == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
-      else S16((left.short/right.short).toShort.bits)
-
-    inline def divideU8(left: U8, right: U8): Wrap[U8]^ =
-      if right.int == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
-      else U8((left.byte/right.byte).toByte.bits)
-
-    inline def divideS8(left: S8, right: S8): Wrap[S8]^ =
-      if right.int == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
-      else S8((left.byte/right.byte).toByte.bits)
-
-  inline given uncheckedOverflow: CheckOverflow:
-    type Wrap[result] = result
-
-    inline def addU64(left: U64, right: U64): U64 = U64((Long(left.bits) + Long(right.bits)).bits)
-    inline def addS64(left: S64, right: S64): S64 = S64((left.long + right.long).bits)
-    inline def addU32(left: U32, right: U32): U32 = U32((Int(left.bits) + Int(right.bits)).bits)
-    inline def addS32(left: S32, right: S32): S32 = S32((left.int + right.int).bits)
-
-    inline def addU16(left: U16, right: U16): U16 =
-      U16((Short(left.bits) + Short(right.bits)).toShort.bits)
-
-    inline def addS16(left: S16, right: S16): S16 = S16((left.short + right.short).toShort.bits)
-    inline def addU8(left: U8, right: U8): U8 = U8((left.byte + right.byte).toByte.bits)
-    inline def addS8(left: S8, right: S8): S8 = S8((left.byte + right.byte).toByte.bits)
-
-  inline given checkedOverflow: CheckOverflow:
-    type Wrap[result] = result raises Arithmetic.Error
-    
-    // The overrides below keep the opaque `Wrap[X]^` spelling: written as
-    // `X raises E`, the inline bodies lose the tactic the `raises` expansion
-    // provides, and the `^` covers the expansion's existential capture.
-
-    inline def addU64(left: U64, right: U64): Wrap[U64]^ =
-      val result: B64 = (Long(left.bits) + Long(right.bits)).bits
-
-      if U64((left.bits^result) & (right.bits^result)) < U64(0.bits)
-      then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow))
-      else U64(result)
-
-    inline def addS64(left: S64, right: S64): Wrap[S64]^ =
-      val sum: Long = left.long + right.long
-
-      if ((left.long^sum) & (right.long^sum)) < 0L
-      then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow))
-      else S64(sum.bits)
-
-    inline def addU32(left: U32, right: U32): Wrap[U32]^ =
-      val result: B32 = (Int(left.bits) + Int(right.bits)).bits
-
-      if U32((left.bits^result) & (right.bits^result)) < U32(0.bits)
-      then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow))
-      else U32(result)
-
-    inline def addS32(left: S32, right: S32): Wrap[S32]^ =
-      val sum: Int = left.int + right.int
-
-      if ((left.int^sum) & (right.int^sum)) < 0
-      then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow))
-      else S32(sum.bits)
-
-    inline def addU16(left: U16, right: U16): Wrap[U16]^ =
-      val result: B16 = (Short(left.bits) + Short(right.bits)).toShort.bits
-
-      if U16((left.bits^result) & (right.bits^result)) < U16(0.toShort.bits)
-      then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow))
-      else U16(result)
-
-    inline def addS16(left: S16, right: S16): Wrap[S16]^ =
-      val sum: Short = (left.short + right.short).toShort
-
-      if ((left.short^sum) & (right.short^sum)) < 0
-      then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow))
-      else S16(sum.bits)
-
-    inline def addU8(left: U8, right: U8): Wrap[U8]^ =
-      val result: B8 = (left.short + right.short).toByte.bits
-
-      if U8((left.bits^result) & (right.bits^result)) < U8(0.toByte.bits)
-      then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow))
-      else U8(result)
-
-    inline def addS8(left: S8, right: S8): Wrap[S8]^ =
-      val sum: Byte = (left.short + right.short).toByte
-
-      if ((left.short^sum) & (right.short^sum)) < 0
-      then abort(Arithmetic.Error(Arithmetic.Error.Reason.Overflow))
-      else S8(sum.bits)
+  // The policies are objects, and the givens name them by their singleton types, so that an
+  // operator inlined under one of them refers to a pure path (dropped) rather than to an
+  // instance (allocated). `CheckOverflow` explains.
+  inline given uncheckedDivision: DivisionByZero.Unchecked.type = DivisionByZero.Unchecked
+  inline given checkedDivision: DivisionByZero.Checked.type = DivisionByZero.Checked
+  inline given uncheckedOverflow: CheckOverflow.Unchecked.type = CheckOverflow.Unchecked
+  inline given checkedOverflow: CheckOverflow.Checked.type = CheckOverflow.Checked
