@@ -172,6 +172,22 @@ sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
 The value `pty` returns is not itself a terminal: it describes how to run the command, and each
 `session` or `exec` allocates a fresh terminal and releases it again.
 
+A terminal's line discipline — whether it echoes what is typed, gathers input a line at a time,
+turns `^C` into a signal, and so on — is a `Termios`, named after the POSIX structure and with a
+switch for each of the flags a program most often changes. `Termios.raw` turns them all off, as a
+full-screen program does before it draws, and `Termios.cooked` turns them all on. A `Termios`
+given to `pty` is set before the command starts, and a running command's terminal can be read
+and changed through its `Job`:
+
+<!-- doccheck: skip -->
+```scala
+sh"head -c 2".pty(termios = Termios.raw).session: terminal ?=>
+  t"hi".writeTo(terminal)      // delivered at once, without a newline
+  terminal.mode.canonical      // false
+  terminal.mode = Termios.cooked
+  terminal.text()              // t"hi", unechoed
+```
+
 Pseudo-terminals are allocated through the JDK's foreign function API, on Linux and macOS, so a
 program using them should be run with `--enable-native-access=ALL-UNNAMED` to keep the JDK from
 warning about it.

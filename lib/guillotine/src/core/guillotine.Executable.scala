@@ -162,11 +162,17 @@ object Command:
     extends guillotine.Job[exec, Exit](process):
       def resize(width: Int, height: Int): Unit = process.resize(width, height)
 
+      // The terminal's line discipline, which can be changed while the command runs, as the
+      // command itself would with `stty`.
+      def mode: Termios = process.mode
+      def mode_=(termios: Termios): Unit = process.mode = termios
+
   // A command to be run on a fresh pseudo-terminal of the given size, rather than on pipes, so
   // that it finds a terminal on its standard input, output and error, as it would if a person
   // typed it. It is not itself a terminal: each session, or each `exec`, allocates its own, with
   // `posix_openpt`, through the foreign function API, on Linux and macOS.
-  case class OnTerminal private[guillotine] (command: Command, width: Int, height: Int):
+  case class OnTerminal private[guillotine]
+    ( command: Command, width: Int, height: Int, termios: Optional[Termios] ):
     // Runs the command on its terminal to completion, as `Executable.exec` runs it on pipes.
     def exec[result]()
       ( using computable:  (result is Computable)^,
@@ -188,7 +194,7 @@ object Command:
       Log.info(Exec.Event.ProcessStart(command))
 
       val process =
-        try PtyProcess(processBuilder, width, height)
+        try PtyProcess(processBuilder, width, height, termios)
         catch case error: ji.IOException => abort(Exec.Error(command))
 
       try lambda(new OnTerminal.Job(process)) finally process.close()
@@ -252,9 +258,12 @@ case class Command(arguments: Text*) extends Executable:
     new Job(process)
 
 
-  // This command, to be run on a fresh pseudo-terminal of the given size rather than on pipes.
-  def pty(width: Int = 80, height: Int = 24): Command.OnTerminal =
-    Command.OnTerminal(this, width, height)
+  // This command, to be run on a fresh pseudo-terminal of the given size rather than on pipes,
+  // with the terminal's line discipline left as the system sets it unless a `Termios` is given.
+  def pty(width: Int = 80, height: Int = 24, termios: Optional[Termios] = Unset)
+  :   Command.OnTerminal =
+
+    Command.OnTerminal(this, width, height, termios)
 
   def escape: Text = arguments.map { argument => t"'${argument.sub(t"'", t"\'")}'" }.join(t" ")
 
