@@ -2831,7 +2831,12 @@ object octogenarian extends Library:
     override def scalaJs = false // transitively JVM-only (process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, cli, eucalyptus.core):
+  // The backend that reads and writes the repository's files itself: `gitBackends.soundnessGit`.
+  object native extends Component(core, galilei.jvm, pneumatic.flate, gastronomy.core):
+    override def scalaJs = false // JVM-only (filesystem access)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, cli, native, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

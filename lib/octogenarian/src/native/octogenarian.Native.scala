@@ -1,0 +1,474 @@
+                                                                                                  /*
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                  ┃
+┃                                                   ╭───╮                                          ┃
+┃                                                   │   │                                          ┃
+┃                                                   │   │                                          ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
+┃                                                                                                  ┃
+┃    Soundness, version 0.64.0.                                                                    ┃
+┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
+┃                                                                                                  ┃
+┃    The primary distribution site is:                                                             ┃
+┃                                                                                                  ┃
+┃        https://soundness.dev/                                                                    ┃
+┃                                                                                                  ┃
+┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
+┃    except in compliance with the License. You may obtain a copy of the License at                ┃
+┃                                                                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
+┃                                                                                                  ┃
+┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
+┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
+┃    either express or implied. See the License for the specific language governing permissions    ┃
+┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                                                                                  */
+package octogenarian
+
+import anticipation.*
+import aperture.*
+import contingency.*
+import distillate.*
+import galilei.*
+import gossamer.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
+import symbolism.*
+import turbulence.*
+import urticose.*
+import vacuous.*
+
+import filesystemBackends.javaBaseFilesystem
+import filesystemOptions.createNonexistentParents
+import filesystemOptions.overwritePreexisting
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.deleteRecursively
+
+// The backend that reads and writes a repository's files itself, with no `git` binary: objects,
+// refs, configuration and notes are complete; the index, working-tree and transport operations
+// are supplied by later work and report `Unsupported` until then.
+class Native() extends Git.Backend:
+  import Git.Error.Reason as Reason
+
+  private val dot: Text = t"."
+
+  // Filesystem failures are reported as `Unexpected`, with the failure's own message as detail.
+  private def io[result](block: Tactic[Io.Error] ?=> result)(using Tactic[Git.Error]): result =
+    try throwErrors[Io.Error](block)
+    catch case error: Io.Error => abort(Git.Error(Reason.Unexpected, error.toString.tt))
+
+  private def unsupported(operation: Text)(using Tactic[Git.Error]): Nothing =
+    abort(Git.Error(Reason.Unsupported(operation)))
+
+  private def objects(gitDir: Path on Linux)(using Tactic[Git.Error]): Path on Linux =
+    commonDir(gitDir) / "objects"
+
+  // A linked worktree's git directory names the shared one in `commondir`.
+  private def commonDir(gitDir: Path on Linux)(using Tactic[Git.Error]): Path on Linux = io:
+    val file = gitDir / "commondir"
+    if !file.existent() then gitDir else
+      val target = Objects.text(file.read[Data]).trim
+      if target.starts(t"/") then unsafely(target.as[Path on Linux])
+      else Refstore.descend(gitDir, target.cut(t"/").filter(_ != dot))
+
+  private def config(gitDir: Path on Linux)(using Tactic[Git.Error]): List[(Git.Config.Key, Text)] =
+    io(Gitconfig.effective(gitDir, commonDir(gitDir)))
+
+  private def setting(gitDir: Path on Linux, key: Text)(using Tactic[Git.Error]): Optional[Text] =
+    Operations.setting(config(gitDir), unsafely(Git.Config.Key.parse(key)))
+
+  private def identity(gitDir: Path on Linux)(using Tactic[Git.Error]): Git.Identity =
+    Git.Identity(setting(gitDir, t"user.name").or(t"unknown"), setting(gitDir, t"user.email").or(t"unknown"))
+
+  private def bare(gitDir: Path on Linux)(using Tactic[Git.Error]): Boolean =
+    setting(gitDir, t"core.bare").lay(false)(_.lower == t"true")
+
+  private def logging(gitDir: Path on Linux)(using Tactic[Git.Error]): Boolean =
+    setting(gitDir, t"core.logallrefupdates").lay(!bare(gitDir))(_.lower != t"false")
+
+  private def isGitDir(path: Path on Linux)(using Tactic[Io.Error]): Boolean =
+    (path / "HEAD").existent() && (path / "objects").existent() && (path / "refs").existent()
+
+  // ─────────────────────────────────────────── Repository ─────────────────────────────────────
+
+  def locate(path: Path on Linux)(using Tactic[Git.Error]): Optional[Git.Backend.Location] = io:
+    val dotGit = path / ".git"
+
+    if !path.existent() then Unset
+    else if dotGit.existent() then
+      unsafely(dotGit.entry()) match
+        case Directory =>
+          Git.Backend.Location(dotGit, commonDir(dotGit), path)
+
+        case _ =>
+          // A linked worktree: `.git` is a file naming the worktree's git directory.
+          val content = Objects.text(dotGit.read[Data]).trim
+          if !content.starts(t"gitdir: ") then Unset else
+            val target = content.skip(8).trim
+            val gitDir =
+              if target.starts(t"/") then unsafely(target.as[Path on Linux])
+              else Refstore.descend(path, target.cut(t"/").filter(_ != dot))
+            Git.Backend.Location(gitDir, commonDir(gitDir), path)
+
+    else if isGitDir(path) then
+      val worktree: Optional[Path on Linux] =
+        if bare(path) then Unset
+        else if path.name == t".git" then path.parent
+        else Unset
+
+      Git.Backend.Location(path, commonDir(path), worktree)
+
+    else Unset
+
+  def init(target: Path on Linux, initialBranch: Optional[Git.Branch], bare: Boolean)
+    ( using Tactic[Git.Error] )
+  :   Unit = io:
+
+    val gitDir = if bare then target else target / ".git"
+    if !gitDir.existent() then gitDir.create[Directory]()
+    def ensure(name: Text): Unit =
+      val directory = Refstore.descend(gitDir, name.cut(t"/"))
+      if !directory.existent() then directory.create[Directory]()
+
+    List(t"objects", t"objects/info", t"objects/pack", t"refs", t"refs/heads", t"refs/tags", t"info")
+    . each(ensure(_))
+
+    val branch = initialBranch.lay(t"main")(_.text)
+    val bareText = if bare then t"true" else t"false"
+    if !(gitDir / "HEAD").existent() then (gitDir / "HEAD").write(Objects.bytes(t"ref: refs/heads/$branch\n"))
+
+    val lines =
+      List
+        ( Gitconfig.Line.Section(t"core", Unset, t"[core]"),
+          Gitconfig.Line.Entry(Git.Config.Key(t"core", Unset, t"repositoryformatversion"), t"0", t"\trepositoryformatversion = 0"),
+          Gitconfig.Line.Entry(Git.Config.Key(t"core", Unset, t"filemode"), t"true", t"\tfilemode = true"),
+          Gitconfig.Line.Entry(Git.Config.Key(t"core", Unset, t"bare"), bareText, t"\tbare = $bareText") ) +
+        (if bare then Nil else List(Gitconfig.Line.Entry(Git.Config.Key(t"core", Unset, t"logallrefupdates"), t"true", t"\tlogallrefupdates = true")))
+
+    if !(gitDir / "config").existent() then (gitDir / "config").write(Objects.bytes(Gitconfig.render(lines)))
+    if !(gitDir / "description").existent() then
+      (gitDir / "description").write(Objects.bytes(t"Unnamed repository; edit this file 'description' to name the repository.\n"))
+
+  def clone
+    ( source: Text, target: Path on Linux, branch: Optional[Git.Branch], depth: Optional[Int],
+      bare: Boolean, recursive: Boolean, activity: Git.Activity^ )
+    ( using Internet, Tactic[Git.Error] )
+  :   Unit =
+
+    unsupported(t"cloning")
+
+  // ────────────────────────────────────────────── Refs ────────────────────────────────────────
+
+  def head(gitDir: Path on Linux)(using Tactic[Git.Error]): Git.Head = io:
+    val common = commonDir(gitDir)
+
+    Refstore.read(gitDir, common, t"HEAD") match
+      case Git.Backend.Target.Symbolic(ref) =>
+        val name = if ref.starts(t"refs/heads/") then ref.skip(11) else ref
+        Git.Head.Attached(Git.Branch.unsafe(name), Refstore.resolve(gitDir, common, ref))
+
+      case Git.Backend.Target.Direct(hash) => Git.Head.Detached(hash)
+      case _ => abort(Git.Error(Reason.NoSuchRef(t"HEAD")))
+
+  def readRef(gitDir: Path on Linux, ref: Text)(using Tactic[Git.Error]): Optional[Git.Backend.Target] =
+    io(Refstore.read(gitDir, commonDir(gitDir), ref))
+
+  def listRefs(gitDir: Path on Linux, prefix: Optional[Text])(using Tactic[Git.Error]): List[(Text, Git.Hash)] =
+    io(Refstore.list(commonDir(gitDir), prefix))
+
+  def peel(gitDir: Path on Linux, hash: Git.Hash)(using Tactic[Git.Error]): Git.Hash =
+    io(Revwalk.peel(objects(gitDir), hash))
+
+  def updateRef
+    ( gitDir: Path on Linux, ref: Text, to: Optional[Git.Hash], expected: Git.Backend.Expectation,
+      message: Optional[Text] )
+    ( using Tactic[Git.Error] )
+  :   Unit = io:
+
+    Refstore.update(gitDir, commonDir(gitDir), ref, to, expected, message, identity(gitDir), logging(gitDir))
+
+  def updateSymbolicRef(gitDir: Path on Linux, name: Text, target: Text)(using Tactic[Git.Error]): Unit =
+    io(Refstore.writeSymbolic(gitDir, commonDir(gitDir), name, target))
+
+  def resolve(gitDir: Path on Linux, revision: Text)(using Tactic[Git.Error]): Optional[Git.Hash] =
+    io(Revwalk.resolve(gitDir, commonDir(gitDir), objects(gitDir), revision))
+
+  def revList
+    ( gitDir: Path on Linux, from: Text, until: Optional[Text], limit: Optional[Int], paths: List[Text] )
+    ( using Tactic[Git.Error] )
+  :   List[Git.Hash] = io:
+
+    val start = resolve(gitDir, from).or(abort(Git.Error(Reason.NoSuchRef(from))))
+    val stop = until.let { until => resolve(gitDir, until).or(abort(Git.Error(Reason.NoSuchRef(until)))) }
+    Revwalk.walk(objects(gitDir), start, stop, limit, paths)
+
+  def reflog(gitDir: Path on Linux, ref: Optional[Text])(using Tactic[Git.Error]): List[ReflogEntry] =
+    io(Refstore.reflog(gitDir, commonDir(gitDir), ref.or(t"HEAD")))
+
+  def mergeBase(gitDir: Path on Linux, left: Git.Hash, right: Git.Hash)(using Tactic[Git.Error]): Optional[Git.Hash] =
+    io(Revwalk.mergeBase(objects(gitDir), left, right))
+
+  def isAncestor(gitDir: Path on Linux, ancestor: Git.Hash, descendant: Git.Hash)(using Tactic[Git.Error]): Boolean =
+    io(Revwalk.isAncestor(objects(gitDir), ancestor, descendant))
+
+  // ──────────────────────────────────────────── Objects ───────────────────────────────────────
+
+  def readObject(gitDir: Path on Linux, hash: Git.Hash)(using Tactic[Git.Error]): Optional[(Git.Object.Kind, Data)] =
+    io(Store.read(objects(gitDir), hash))
+
+  def readObjects(gitDir: Path on Linux, hashes: List[Git.Hash])(using Tactic[Git.Error])
+  :   List[(Git.Hash, Git.Object.Kind, Data)] = io:
+
+    val store = objects(gitDir)
+
+    def read(hash: Git.Hash): List[(Git.Hash, Git.Object.Kind, Data)] =
+      Store.read(store, hash).lay(Nil) { (kind, data) => List((hash, kind, data)) }
+
+    hashes.bind(read(_))
+
+  def writeObject(gitDir: Path on Linux, kind: Git.Object.Kind, data: Data)(using Tactic[Git.Error]): Git.Hash =
+    io(Store.write(objects(gitDir), kind, data))
+
+  def diffTree(gitDir: Path on Linux, left: Git.Hash, right: Git.Hash)(using Tactic[Git.Error]): List[FileDiff] =
+    unsupported(t"diffing trees")
+
+  // ─────────────────────────────────────── Index and working files ────────────────────────────
+
+  def status(gitDir: Path on Linux, worktree: Path on Linux, ignored: Boolean, untracked: Boolean)
+    ( using Tactic[Git.Error] )
+  :   List[Git.Backend.StatusLine] = unsupported(t"status")
+
+  def add(gitDir: Path on Linux, worktree: Path on Linux, paths: List[Text], all: Boolean)(using Tactic[Git.Error]): Unit =
+    unsupported(t"add")
+
+  def remove(gitDir: Path on Linux, worktree: Path on Linux, paths: List[Text], cached: Boolean, force: Boolean)
+    ( using Tactic[Git.Error] )
+  :   Unit = unsupported(t"rm")
+
+  def move(gitDir: Path on Linux, worktree: Path on Linux, from: Text, to: Text)(using Tactic[Git.Error]): Unit =
+    unsupported(t"mv")
+
+  def restore
+    ( gitDir: Path on Linux, worktree: Path on Linux, paths: List[Text], source: Optional[Text],
+      staged: Boolean, workingFiles: Boolean )
+    ( using Tactic[Git.Error] )
+  :   Unit = unsupported(t"restore")
+
+  def clean(gitDir: Path on Linux, worktree: Path on Linux, paths: List[Text], directories: Boolean, ignored: Boolean)
+    ( using Tactic[Git.Error] )
+  :   List[Text] = unsupported(t"clean")
+
+  def writeTree(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Git.Error]): Git.Hash =
+    unsupported(t"write-tree")
+
+  def readTree(gitDir: Path on Linux, worktree: Path on Linux, mode: ResetMode)(using Tactic[Git.Error]): Unit =
+    unsupported(t"read-tree")
+
+  def diffWorktree(gitDir: Path on Linux, worktree: Path on Linux, staged: Boolean, against: Optional[Text])
+    ( using Tactic[Git.Error] )
+  :   List[FileDiff] = unsupported(t"diff")
+
+  def tracked(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Git.Error]): List[Text] =
+    unsupported(t"ls-files")
+
+  def conflicts(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Git.Error]): List[Text] =
+    unsupported(t"conflicts")
+
+  def checkout(gitDir: Path on Linux, worktree: Path on Linux, revision: Text)(using Tactic[Git.Error]): Unit =
+    unsupported(t"checkout")
+
+  def switch(gitDir: Path on Linux, worktree: Path on Linux, branch: Git.Branch, create: Boolean)(using Tactic[Git.Error]): Unit =
+    unsupported(t"switch")
+
+  def merge
+    ( gitDir: Path on Linux, worktree: Path on Linux, revision: Text, ff: FastForward,
+      message: Optional[Text], sign: Boolean )
+    ( using Tactic[Git.Error] )
+  :   Git.Merge.Outcome = unsupported(t"merge")
+
+  def cherryPick(gitDir: Path on Linux, worktree: Path on Linux, commits: List[Git.Hash], noCommit: Boolean)
+    ( using Tactic[Git.Error] )
+  :   Git.Sequence.Outcome = unsupported(t"cherry-pick")
+
+  def revert(gitDir: Path on Linux, worktree: Path on Linux, commits: List[Git.Hash], noCommit: Boolean)
+    ( using Tactic[Git.Error] )
+  :   Git.Sequence.Outcome = unsupported(t"revert")
+
+  def rebase
+    ( gitDir: Path on Linux, worktree: Path on Linux, onto: Text, upstream: Optional[Text],
+      options: List[Git.Rebase.Option] )
+    ( using Tactic[Git.Error] )
+  :   Git.Sequence.Outcome = unsupported(t"rebase")
+
+  def sequence(gitDir: Path on Linux, worktree: Path on Linux, verb: Git.Sequence.Verb)(using Tactic[Git.Error])
+  :   Git.Sequence.Outcome = unsupported(t"continuing an operation")
+
+  def operation(gitDir: Path on Linux, worktree: Optional[Path on Linux])(using Tactic[Git.Error]): Optional[Git.Operation] = io:
+    def hash(name: Text): Optional[Git.Hash] =
+      val file = Refstore.descend(gitDir, name.cut(t"/"))
+      if file.existent() then Git.Hash.unsafe(Objects.text(file.read[Data]).trim) else Unset
+
+    def number(path: Path on Linux): Int =
+      if path.existent() then safely(Objects.text(path.read[Data]).trim.as[Int]).or(0) else 0
+
+    val rebaseMerge = gitDir / "rebase-merge"
+    val rebaseApply = gitDir / "rebase-apply"
+    val mergeHead = gitDir / "MERGE_HEAD"
+
+    if rebaseMerge.existent() then
+      Git.Operation.Rebasing
+        ( hash(t"rebase-merge/onto").or(Git.Hash.zero),
+          hash(t"rebase-merge/orig-head").or(Git.Hash.zero),
+          number(rebaseMerge / "msgnum"),
+          number(rebaseMerge / "end") - number(rebaseMerge / "msgnum"),
+          Nil )
+    else if rebaseApply.existent() then
+      Git.Operation.Rebasing
+        ( hash(t"rebase-apply/onto").or(Git.Hash.zero),
+          hash(t"rebase-apply/orig-head").or(Git.Hash.zero),
+          number(rebaseApply / "next"),
+          number(rebaseApply / "last") - number(rebaseApply / "next"),
+          Nil )
+    else
+      hash(t"CHERRY_PICK_HEAD").let(Git.Operation.CherryPicking(_, Nil))
+      . or(hash(t"REVERT_HEAD").let(Git.Operation.Reverting(_, Nil)))
+      . or:
+          if mergeHead.existent() then
+            val heads = Objects.text(mergeHead.read[Data]).cut(t"\n").filter(_.length == 40).map(Git.Hash.unsafe(_))
+            Git.Operation.Merging(heads, Nil)
+          else Unset
+      . or(if (gitDir / "BISECT_LOG").existent() then Git.Operation.Bisecting else Unset)
+
+  def stash(gitDir: Path on Linux, worktree: Path on Linux, message: Optional[Text], includeUntracked: Boolean, keepIndex: Boolean)
+    ( using Tactic[Git.Error] )
+  :   Optional[Git.Hash] = unsupported(t"stash")
+
+  def stashes(gitDir: Path on Linux)(using Tactic[Git.Error]): List[Git.Stash.Entry] = io:
+    def entry(reflog: ReflogEntry): Git.Stash.Entry =
+      val index = safely(reflog.selector.skip(11).skip(1, Rtl).as[Int]).or(0)
+      Git.Stash.Entry(index, reflog.hash, reflog.message)
+
+    Refstore.reflog(gitDir, commonDir(gitDir), t"refs/stash").map(entry(_))
+
+  def applyStash(gitDir: Path on Linux, worktree: Path on Linux, entry: Int, index: Boolean, drop: Boolean)
+    ( using Tactic[Git.Error] )
+  :   Git.Sequence.Outcome = unsupported(t"stash apply")
+
+  def dropStash(gitDir: Path on Linux, entry: Int)(using Tactic[Git.Error]): Unit = unsupported(t"stash drop")
+
+  // ───────────────────────────────────────────── Notes ────────────────────────────────────────
+
+  def readNote(gitDir: Path on Linux, ref: Text, target: Git.Hash)(using Tactic[Git.Error]): Optional[Text] =
+    io(Annotations.read(gitDir, commonDir(gitDir), objects(gitDir), ref, target))
+
+  def listNotes(gitDir: Path on Linux, ref: Text)(using Tactic[Git.Error]): List[(Git.Hash, Git.Hash)] =
+    io(Annotations.list(gitDir, commonDir(gitDir), objects(gitDir), ref))
+
+  def editNotes(gitDir: Path on Linux, base: Optional[Git.Hash], edit: Git.Backend.NoteEdit)(using Tactic[Git.Error]): Git.Hash =
+    io(Annotations.edit(gitDir, commonDir(gitDir), objects(gitDir), base, edit, identity(gitDir)))
+
+  // ───────────────────────────────────────────── Config ───────────────────────────────────────
+
+  private def configFile(source: Git.Config.Source)(using Tactic[Git.Error]): Path on Linux = source match
+    case Git.Config.Source.File(path)                                    => path
+    case Git.Config.Source.Repository(gitDir, Git.Config.Scope.Worktree) => gitDir / "config.worktree"
+    case Git.Config.Source.Repository(gitDir, Git.Config.Scope.Local)    => commonDir(gitDir) / "config"
+    case Git.Config.Source.Repository(_, Git.Config.Scope.Global) =>
+      unsafely(t"${System.getProperty("user.home").nn}/.gitconfig".as[Path on Linux])
+    case Git.Config.Source.Repository(_, Git.Config.Scope.System) => unsafely(t"/etc/gitconfig".as[Path on Linux])
+    case Git.Config.Source.Effective(gitDir) => commonDir(gitDir) / "config"
+
+  def configRead(source: Git.Config.Source)(using Tactic[Git.Error]): List[(Git.Config.Key, Text)] = io:
+    source match
+      case Git.Config.Source.Effective(gitDir) => Gitconfig.effective(gitDir, commonDir(gitDir))
+      case other                               => Gitconfig.entries(Gitconfig.readFile(configFile(other)))
+
+  def configWrite(source: Git.Config.Source, key: Git.Config.Key, value: Text, add: Boolean)(using Tactic[Git.Error]): Unit = io:
+    val file = configFile(source)
+    val lines = Gitconfig.readFile(file)
+    Gitconfig.writeFile(file, if add then Gitconfig.add(lines, key, value) else Gitconfig.set(lines, key, value, false))
+
+  def configUnset(source: Git.Config.Source, key: Git.Config.Key, all: Boolean)(using Tactic[Git.Error]): Unit = io:
+    val file = configFile(source)
+    Gitconfig.writeFile(file, Gitconfig.unset(Gitconfig.readFile(file), key, all))
+
+  // ────────────────────────────────────── Remotes and transport ───────────────────────────────
+
+  def remoteRefs(gitDir: Path on Linux, remote: Text)(using Internet, Tactic[Git.Error]): List[(Text, Git.Hash)] =
+    unsupported(t"ls-remote")
+
+  def fetch
+    ( gitDir: Path on Linux, remote: Text, refspecs: List[Git.Refspec], depth: Optional[Int],
+      prune: Boolean, tags: Boolean, activity: Git.Activity^ )
+    ( using Internet, Tactic[Git.Error] )
+  :   List[(Text, Git.Hash)] = unsupported(t"fetch")
+
+  def push
+    ( gitDir: Path on Linux, remote: Text, refspecs: List[Git.Refspec], force: Git.Push.Force,
+      tags: Boolean, setUpstream: Boolean, activity: Git.Activity^ )
+    ( using Internet, Tactic[Git.Error] )
+  :   List[(Text, Git.Push.Outcome)] = unsupported(t"push")
+
+  // ────────────────────────────────────────── Linked worktrees ────────────────────────────────
+
+  def worktrees(gitDir: Path on Linux)(using Tactic[Git.Error]): List[Git.Backend.WorktreeEntry] = io:
+    val common = commonDir(gitDir)
+
+    def entry(dir: Path on Linux, worktree: Optional[Path on Linux]): Git.Backend.WorktreeEntry =
+      val head = Refstore.read(dir, common, t"HEAD")
+      val branch = head match
+        case Git.Backend.Target.Symbolic(ref) if ref.starts(t"refs/heads/") => Git.Branch.unsafe(ref.skip(11))
+        case _ => Unset
+      val locked = (dir / "locked").existent()
+      val reason: Optional[Text] = if locked then Objects.text((dir / "locked").read[Data]).trim else Unset
+      val path = worktree.or(common)
+      val prunable = if worktree.lay(false)(!_.existent()) then t"gitdir file points to non-existent location" else Unset
+
+      Git.Backend.WorktreeEntry
+        ( path, Refstore.resolve(dir, common, t"HEAD"), branch, worktree.absent, reason, prunable )
+
+    val main = entry(common, if bare(common) then Unset else common.parent)
+    val linked = common / "worktrees"
+
+    def linkedEntry(dir: Path on Linux): Git.Backend.WorktreeEntry =
+      val gitdirFile = dir / "gitdir"
+
+      val target: Optional[Path on Linux] =
+        if gitdirFile.existent() then
+          val text = Objects.text(gitdirFile.read[Data]).trim
+          unsafely(text.as[Path on Linux]).parent
+        else Unset
+
+      entry(dir, target)
+
+    val others = if !linked.existent() then Nil else linked.children.to[List].map(linkedEntry(_))
+
+    main :: others
+
+  def addWorktree
+    ( gitDir: Path on Linux, target: Path on Linux, revision: Text, detach: Boolean, newBranch: Optional[Git.Branch] )
+    ( using Tactic[Git.Error] )
+  :   Unit = unsupported(t"worktree add")
+
+  def removeWorktree(gitDir: Path on Linux, path: Path on Linux, force: Boolean)(using Tactic[Git.Error]): Unit =
+    unsupported(t"worktree remove")
+
+  def lockWorktree(gitDir: Path on Linux, path: Path on Linux, reason: Optional[Text])(using Tactic[Git.Error]): Unit =
+    unsupported(t"worktree lock")
+
+  def unlockWorktree(gitDir: Path on Linux, path: Path on Linux)(using Tactic[Git.Error]): Unit =
+    unsupported(t"worktree unlock")
+
+  def moveWorktree(gitDir: Path on Linux, path: Path on Linux, to: Path on Linux)(using Tactic[Git.Error]): Unit =
+    unsupported(t"worktree move")
+
+  def pruneWorktrees(gitDir: Path on Linux)(using Tactic[Git.Error]): List[Path on Linux] =
+    unsupported(t"worktree prune")

@@ -98,6 +98,7 @@ object Git:
       case NoteExists(target: Git.Hash)                                     extends Reason(31)
       case NoSuchWorktree(path: Text)                                       extends Reason(32)
       case NoSuchStash                                                      extends Reason(33)
+      case Locked(ref: Text)                                                extends Reason(34)
 
     private def hash(hash: Optional[Git.Hash]): Text = hash.lay(t"nothing")(_.text)
 

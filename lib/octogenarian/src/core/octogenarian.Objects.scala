@@ -41,6 +41,8 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
+import sortingAlgorithms.timsort
+
 // The serialized forms of git's objects. Parsing is shared by both backends; serialization is
 // used when a commit or tag is authored here, which is what keeps signing in-process.
 private[octogenarian] object Objects:
@@ -128,18 +130,6 @@ private[octogenarian] object Objects:
     def slice(from: Int, until: Int): Text =
       String(array, from, until - from, "UTF-8").nn.tt
 
-    def hex(from: Int): Text =
-      val builder = StringBuilder()
-
-      def recur(index: Int): Unit = if index < from + 20 then
-        val value = buffer.get(index) & 0xff
-        builder.append(Character.forDigit(value >> 4, 16))
-        builder.append(Character.forDigit(value & 0xf, 16))
-        recur(index + 1)
-
-      recur(from)
-      builder.toString.tt
-
     def recur(index: Int, entries: List[Git.Object.Tree.Entry]): List[Git.Object.Tree.Entry] =
       if index >= length then entries.reverse else
         val space = indexOf(' '.toByte, index)
@@ -148,7 +138,7 @@ private[octogenarian] object Objects:
         if nul + 21 > length then entries.reverse else
           val mode = Git.Object.Tree.Mode.parse(slice(index, space))
           val name = slice(space + 1, nul)
-          val hash = Git.Hash.unsafe(hex(nul + 1))
+          val hash = Git.Hash.unsafe(hex(array, nul + 1, 20))
           val next = mode.lay(entries): mode => Git.Object.Tree.Entry(mode, name, hash) :: entries
           recur(nul + 21, next)
 
@@ -220,6 +210,29 @@ private[octogenarian] object Objects:
           t"tagger ${tagger.text}" )
 
     bytes(t"${headers.join(t"\n")}\n\n$message\n")
+
+  // Entries sorted as git sorts them — by name, a directory's name compared as if it ended in a
+  // slash — each `<mode> <name>\0` followed by the twenty raw bytes of the hash.
+  def serializeTree(entries: List[Git.Object.Tree.Entry]): Data =
+    def sortKey(entry: Git.Object.Tree.Entry): Text =
+      if entry.mode == Git.Object.Tree.Mode.Directory then t"${entry.name}/" else entry.name
+
+    def prefix(entry: Git.Object.Tree.Entry): scala.Array[Byte] =
+      bytes(t"${entry.mode.octal} ${entry.name}\u0000").asInstanceOf[scala.Array[Byte]]
+
+    val out = java.io.ByteArrayOutputStream()
+    val sorted = entries.order(sortKey(_).s)
+
+    sorted.each: entry =>
+      out.write(prefix(entry))
+      out.write(unhex(entry.hash.text))
+
+    out.toByteArray.nn.asInstanceOf[Data]
+
+  def unhex(text: Text): scala.Array[Byte] = java.util.HexFormat.of().nn.parseHex(text.s).nn
+
+  def hex(array: scala.Array[Byte], from: Int, length: Int): Text =
+    java.util.HexFormat.of().nn.formatHex(array, from, from + length).nn.tt
 
   def signTag(payload: Data, signature: Text): Data =
     bytes(t"${text(payload)}${signature.trim}\n")
