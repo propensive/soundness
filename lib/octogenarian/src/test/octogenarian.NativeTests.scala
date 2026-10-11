@@ -491,6 +491,231 @@ object NativeTests extends Suite(m"Octogenarian native backend"):
         dir.open[Git.Worktree]() { worktree ?=> worktree.diffBetween(first, second) == expected }
       .assert(_ == true)
 
+    suite(m"Merging and replaying"):
+
+      def write(dir: Path on Linux, name: Text, content: Text): Unit =
+        val file = dir / name
+        if !file.existent() then file.create[File]()
+        file.open[File](Write) { handle ?=> handle.write(Chain(content.in[Data])) }
+
+      def read(dir: Path on Linux, name: Text): Text = Command(t"cat", (dir / name).encode).exec[Text]()
+
+      // `main` and `feature` each with a commit beyond a common base; HEAD on `main`.
+      def diverged(dir: Path on Linux, base: Text, ours: Text, theirs: Text): Git.Hash =
+        gitCommit(dir, t"a", base, t"base")
+        sh"git -C $dir switch -q -c feature".exec[Exit]()
+        val feature = gitCommit(dir, t"a", theirs, t"feature")
+        sh"git -C $dir switch -q main".exec[Exit]()
+        gitCommit(dir, t"a", ours, t"main work")
+        feature
+
+      def fsck(dir: Path on Linux): Text = gitOut(dir, t"fsck", t"--strict", t"--no-dangling")
+
+      test(m"merge fast-forwards to the branch tip and leaves a clean tree"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"base")
+        sh"git -C $dir switch -q -c feature".exec[Exit]()
+        val feature = gitCommit(dir, t"b", t"b\n", t"feature")
+        sh"git -C $dir switch -q main".exec[Exit]()
+        val outcome = dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.merge(Git.Branch(t"feature"), worktree.head()) }
+        (outcome == Git.Merge.Outcome.FastForwarded(feature), gitOut(dir, t"rev-parse", t"HEAD") == feature.text, gitOut(dir, t"status", t"--porcelain"))
+      .assert(_ == ((true, true, t"")))
+
+      test(m"a non-overlapping merge makes a commit git accepts with the content git would make"):
+        val dir = gitRepo()
+        diverged(dir, t"one\ntwo\nthree\nfour\nfive\n", t"ONE\ntwo\nthree\nfour\nfive\n", t"one\ntwo\nthree\nfour\nFIVE\n")
+        val outcome = dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.merge(Git.Branch(t"feature"), worktree.head()) }
+        val parents = gitOut(dir, t"log", t"-1", t"--format=%P").cut(t" ").size
+
+        ( outcome.isInstanceOf[Git.Merge.Outcome.Merged], parents, gitOut(dir, t"show", t"HEAD:a"),
+          gitOut(dir, t"log", t"-1", t"--format=%s"), fsck(dir), gitOut(dir, t"status", t"--porcelain") )
+      .assert(_ == ((true, 2, t"ONE\ntwo\nthree\nfour\nFIVE", t"Merge branch 'feature'", t"", t"")))
+
+      test(m"a conflicting merge leaves the file and the index stages git would leave"):
+        val dir = gitRepo()
+        diverged(dir, t"base\n", t"ours\n", t"theirs\n")
+        val twin = freshDir()
+        sh"rm -rf $twin".exec[Exit]()
+        sh"cp -R $dir $twin".exec[Exit]()
+        sh"git -C $twin merge feature".exec[Exit]()
+        val outcome = dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.merge(Git.Branch(t"feature"), worktree.head()) }
+
+        ( outcome.isInstanceOf[Git.Merge.Outcome.Stopped], read(dir, t"a") == read(twin, t"a"),
+          gitOut(dir, t"ls-files", t"--stage") == gitOut(twin, t"ls-files", t"--stage"),
+          gitOut(dir, t"status", t"--porcelain"), gitOut(dir, t"rev-parse", t"MERGE_HEAD") == gitOut(twin, t"rev-parse", t"MERGE_HEAD") )
+      .assert(_ == ((true, true, true, t"UU a", true)))
+
+      test(m"git itself can commit a merge the native backend stopped"):
+        val dir = gitRepo()
+        diverged(dir, t"base\n", t"ours\n", t"theirs\n")
+        dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.merge(Git.Branch(t"feature"), worktree.head()) }
+        write(dir, t"a", t"resolved\n")
+        sh"git -C $dir add a".exec[Exit]()
+        sh"git -C $dir -c core.editor=true commit -q --no-edit".exec[Exit]()
+        (gitOut(dir, t"log", t"-1", t"--format=%P").cut(t" ").size, gitOut(dir, t"log", t"-1", t"--format=%s"))
+      .assert(_ == ((2, t"Merge branch 'feature'")))
+
+      test(m"a merge stopped by git is continued natively"):
+        val dir = gitRepo()
+        diverged(dir, t"base\n", t"ours\n", t"theirs\n")
+        sh"git -C $dir merge feature".exec[Exit]()
+        write(dir, t"a", t"resolved\n")
+        val outcome = dir.open[Git.Worktree](Read & Write): worktree ?=>
+          worktree.add(Operations.planePath(worktree, t"a"))
+          worktree.continue()
+
+        ( outcome.isInstanceOf[Git.Sequence.Outcome.Completed], gitOut(dir, t"log", t"-1", t"--format=%P").cut(t" ").size,
+          (dir / ".git" / "MERGE_HEAD").existent(), fsck(dir) )
+      .assert(_ == ((true, 2, false, t"")))
+
+      test(m"abandoning a stopped merge restores the tree git sees as clean"):
+        val dir = gitRepo()
+        diverged(dir, t"base\n", t"ours\n", t"theirs\n")
+        val main = gitOut(dir, t"rev-parse", t"HEAD")
+        dir.open[Git.Worktree](Read & Write): worktree ?=>
+          worktree.merge(Git.Branch(t"feature"), worktree.head())
+          worktree.abandon()
+        (gitOut(dir, t"status", t"--porcelain"), gitOut(dir, t"rev-parse", t"HEAD") == main, read(dir, t"a"))
+      .assert(_ == ((t"", true, t"ours\n")))
+
+      test(m"cherryPick replays a commit keeping its author date"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"base")
+        sh"git -C $dir switch -q -c feature".exec[Exit]()
+        val feature = gitCommit(dir, t"b", t"b\n", t"feature")
+        sh"git -C $dir switch -q main".exec[Exit]()
+        gitCommit(dir, t"c", t"c\n", t"main work")
+        dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.cherryPick(List(feature), worktree.head()) }
+
+        ( gitOut(dir, t"log", t"--format=%s"), gitOut(dir, t"log", t"-1", t"--format=%at") == gitOut(dir, t"log", t"-1", t"--format=%at", feature.text),
+          read(dir, t"b"), fsck(dir) )
+      .assert(_ == ((t"feature\nmain work\nbase", true, t"b\n", t"")))
+
+      test(m"revert makes the inverse commit with git's message"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"base")
+        val toRevert = gitCommit(dir, t"b", t"b\n", t"add b")
+        dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.revert(List(toRevert), worktree.head()) }
+        (gitOut(dir, t"log", t"-1", t"--format=%s"), (dir / "b").existent(), gitOut(dir, t"status", t"--porcelain"))
+      .assert(_ == ((t"Revert \"add b\"", false, t"")))
+
+      test(m"rebase replays the branch onto main and reattaches HEAD"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"base")
+        sh"git -C $dir switch -q -c feature".exec[Exit]()
+        gitCommit(dir, t"b", t"b\n", t"feature")
+        sh"git -C $dir switch -q main".exec[Exit]()
+        gitCommit(dir, t"c", t"c\n", t"main work")
+        sh"git -C $dir switch -q feature".exec[Exit]()
+        val outcome = dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.rebase(Git.Branch(t"main"), worktree.head()) }
+
+        ( outcome.isInstanceOf[Git.Sequence.Outcome.Completed], gitOut(dir, t"log", t"--format=%s"),
+          gitOut(dir, t"symbolic-ref", t"HEAD"), (dir / ".git" / "rebase-merge").existent(), fsck(dir) )
+      .assert(_ == ((true, t"feature\nmain work\nbase", t"refs/heads/feature", false, t"")))
+
+      test(m"git can continue a rebase the native backend stopped"):
+        val dir = gitRepo()
+        diverged(dir, t"base\n", t"ours\n", t"theirs\n")
+        sh"git -C $dir switch -q feature".exec[Exit]()
+        val outcome = dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.rebase(Git.Branch(t"main"), worktree.head()) }
+        write(dir, t"a", t"resolved\n")
+        sh"git -C $dir add a".exec[Exit]()
+        val exit = sh"git -C $dir -c core.editor=true rebase --continue".exec[Exit]()
+
+        val result = ( outcome.isInstanceOf[Git.Sequence.Outcome.Stopped], exit == Exit.Ok, gitOut(dir, t"log", t"--format=%s"),
+          gitOut(dir, t"symbolic-ref", t"HEAD") )
+        result
+      .assert(_ == ((true, true, t"feature\nmain work\nbase", t"refs/heads/feature")))
+
+      test(m"a conflicting rebase is skipped natively"):
+        val dir = gitRepo()
+        diverged(dir, t"base\n", t"ours\n", t"theirs\n")
+        sh"git -C $dir switch -q feature".exec[Exit]()
+        val outcome = dir.open[Git.Worktree](Read & Write): worktree ?=>
+          worktree.rebase(Git.Branch(t"main"), worktree.head())
+          worktree.skip()
+        (outcome.isInstanceOf[Git.Sequence.Outcome.Completed], gitOut(dir, t"log", t"--format=%s"), gitOut(dir, t"symbolic-ref", t"HEAD"))
+      .assert(_ == ((true, t"main work\nbase", t"refs/heads/feature")))
+
+      test(m"a rebase git stopped is abandoned natively"):
+        val dir = gitRepo()
+        val feature = diverged(dir, t"base\n", t"ours\n", t"theirs\n")
+        sh"git -C $dir switch -q feature".exec[Exit]()
+        sh"git -C $dir rebase main".exec[Exit]()
+        dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.abandon() }
+        (gitOut(dir, t"rev-parse", t"HEAD") == feature.text, gitOut(dir, t"symbolic-ref", t"HEAD"), gitOut(dir, t"status", t"--porcelain"))
+      .assert(_ == ((true, t"refs/heads/feature", t"")))
+
+    suite(m"Stash"):
+
+      def write(dir: Path on Linux, name: Text, content: Text): Unit =
+        val file = dir / name
+        if !file.existent() then file.create[File]()
+        file.open[File](Write) { handle ?=> handle.write(Chain(content.in[Data])) }
+
+      def read(dir: Path on Linux, name: Text): Text = Command(t"cat", (dir / name).encode).exec[Text]()
+
+      test(m"a native stash is one git lists and pops"):
+        val dir = gitRepo()
+        val first = gitCommit(dir, t"a", t"a\n", t"first")
+        write(dir, t"a", t"changed\n")
+        val stashed = dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.stash() }
+        val listed = gitOut(dir, t"stash", t"list")
+        val clean = gitOut(dir, t"status", t"--porcelain")
+        sh"git -C $dir stash pop -q".exec[Exit]()
+        val result = (stashed.present, listed == t"stash@{0}: WIP on main: ${first.text.keep(7)} first", clean, read(dir, t"a"))
+        result
+      .assert(_ == ((true, true, t"", t"changed\n")))
+
+      test(m"a stash git made is popped natively"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        write(dir, t"a", t"changed\n")
+        sh"git -C $dir stash -q".exec[Exit]()
+        dir.open[Git.Worktree](Read & Write): worktree ?=>
+          val entry = worktree.stashes().let(_.prim.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
+          worktree.popStash(entry)
+        (gitOut(dir, t"status", t"--porcelain"), gitOut(dir, t"stash", t"list"), read(dir, t"a"))
+      .assert(_ == ((t" M a", t"", t"changed\n")))
+
+      test(m"a stash with untracked files restores them on popping"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        write(dir, t"d", t"d\n")
+        val gone = dir.open[Git.Worktree](Read & Write): worktree ?=>
+          worktree.stash(includeUntracked = true)
+          !(dir / "d").existent()
+        val listed = gitOut(dir, t"stash", t"list")
+        dir.open[Git.Worktree](Read & Write): worktree ?=>
+          val entry = worktree.stashes().let(_.prim.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
+          worktree.popStash(entry)
+        (gone, listed.starts(t"stash@{0}: WIP on main"), gitOut(dir, t"status", t"--porcelain"))
+      .assert(_ == ((true, true, t"?? d")))
+
+      test(m"dropping a stash natively leaves no stash ref for git"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        write(dir, t"a", t"changed\n")
+        sh"git -C $dir stash -q".exec[Exit]()
+        dir.open[Git.Worktree](Read & Write): worktree ?=>
+          val entry = worktree.stashes().let(_.prim.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
+          worktree.dropStash(entry)
+        (gitOut(dir, t"stash", t"list"), sh"git -C $dir rev-parse -q --verify refs/stash".exec[Exit]() == Exit.Ok)
+      .assert(_ == ((t"", false)))
+
+      test(m"dropping the older of two stashes keeps the newer at the top"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        write(dir, t"a", t"one\n")
+        sh"git -C $dir stash -q -m older".exec[Exit]()
+        write(dir, t"a", t"two\n")
+        sh"git -C $dir stash -q -m newer".exec[Exit]()
+        dir.open[Git.Worktree](Read & Write): worktree ?=>
+          val entry = worktree.stashes().let(_.reverse.prim.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
+          worktree.dropStash(entry)
+        gitOut(dir, t"stash", t"list")
+      .assert(_ == t"stash@{0}: On main: newer")
+
     suite(m"Linked worktrees"):
 
       test(m"git's linked worktrees are listed natively"):

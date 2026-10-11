@@ -294,81 +294,53 @@ class Native() extends Git.Backend:
   def switch(gitDir: Path on Linux, worktree: Path on Linux, branch: Git.Branch, create: Boolean)(using Tactic[Git.Error]): Unit =
     io(Workspace.switch(gitDir, commonDir(gitDir), objects(gitDir), worktree, branch, create, identity(gitDir), logging(gitDir)))
 
+  private def context(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Git.Error]): Sequencer.Context =
+    Sequencer.Context(gitDir, commonDir(gitDir), objects(gitDir), worktree, identity(gitDir), logging(gitDir))
+
   def merge
-    ( gitDir: Path on Linux, worktree: Path on Linux, revision: Text, ff: FastForward,
-      message: Optional[Text], sign: Boolean )
+    ( gitDir: Path on Linux, worktree: Path on Linux, revision: Text, ff: FastForward, message: Optional[Text],
+      sign: Boolean )
     ( using Tactic[Git.Error] )
-  :   Git.Merge.Outcome = unsupported(t"merge")
+  :   Git.Merge.Outcome = io(Sequencer.merge(context(gitDir, worktree), revision, ff, message, sign))
 
   def cherryPick(gitDir: Path on Linux, worktree: Path on Linux, commits: List[Git.Hash], noCommit: Boolean)
     ( using Tactic[Git.Error] )
-  :   Git.Sequence.Outcome = unsupported(t"cherry-pick")
+  :   Git.Sequence.Outcome = io(Sequencer.cherryPick(context(gitDir, worktree), commits, false, noCommit))
 
   def revert(gitDir: Path on Linux, worktree: Path on Linux, commits: List[Git.Hash], noCommit: Boolean)
     ( using Tactic[Git.Error] )
-  :   Git.Sequence.Outcome = unsupported(t"revert")
+  :   Git.Sequence.Outcome = io(Sequencer.cherryPick(context(gitDir, worktree), commits, true, noCommit))
 
   def rebase
     ( gitDir: Path on Linux, worktree: Path on Linux, onto: Text, upstream: Optional[Text],
       options: List[Git.Rebase.Option] )
     ( using Tactic[Git.Error] )
-  :   Git.Sequence.Outcome = unsupported(t"rebase")
+  :   Git.Sequence.Outcome = io(Sequencer.rebase(context(gitDir, worktree), onto, upstream, options))
 
   def sequence(gitDir: Path on Linux, worktree: Path on Linux, verb: Git.Sequence.Verb)(using Tactic[Git.Error])
-  :   Git.Sequence.Outcome = unsupported(t"continuing an operation")
+  :   Git.Sequence.Outcome = io(Sequencer.sequence(context(gitDir, worktree), verb))
 
   def operation(gitDir: Path on Linux, worktree: Optional[Path on Linux])(using Tactic[Git.Error]): Optional[Git.Operation] = io:
-    def hash(name: Text): Optional[Git.Hash] =
-      val file = Refstore.descend(gitDir, name.cut(t"/"))
-      if file.existent() then Git.Hash.unsafe(Objects.text(file.read[Data]).trim) else Unset
-
-    def number(path: Path on Linux): Int =
-      if path.existent() then safely(Objects.text(path.read[Data]).trim.as[Int]).or(0) else 0
-
-    val rebaseMerge = gitDir / "rebase-merge"
-    val rebaseApply = gitDir / "rebase-apply"
-    val mergeHead = gitDir / "MERGE_HEAD"
-
-    if rebaseMerge.existent() then
-      Git.Operation.Rebasing
-        ( hash(t"rebase-merge/onto").or(Git.Hash.zero),
-          hash(t"rebase-merge/orig-head").or(Git.Hash.zero),
-          number(rebaseMerge / "msgnum"),
-          number(rebaseMerge / "end") - number(rebaseMerge / "msgnum"),
-          Nil )
-    else if rebaseApply.existent() then
-      Git.Operation.Rebasing
-        ( hash(t"rebase-apply/onto").or(Git.Hash.zero),
-          hash(t"rebase-apply/orig-head").or(Git.Hash.zero),
-          number(rebaseApply / "next"),
-          number(rebaseApply / "last") - number(rebaseApply / "next"),
-          Nil )
-    else
-      hash(t"CHERRY_PICK_HEAD").let(Git.Operation.CherryPicking(_, Nil))
-      . or(hash(t"REVERT_HEAD").let(Git.Operation.Reverting(_, Nil)))
-      . or:
-          if mergeHead.existent() then
-            val heads = Objects.text(mergeHead.read[Data]).cut(t"\n").filter(_.length == 40).map(Git.Hash.unsafe(_))
-            Git.Operation.Merging(heads, Nil)
-          else Unset
-      . or(if (gitDir / "BISECT_LOG").existent() then Git.Operation.Bisecting else Unset)
+    Sequencer.operation(gitDir, worktree.lay(Nil) { _ => Workspace.conflicts(gitDir) })
 
   def stash(gitDir: Path on Linux, worktree: Path on Linux, message: Optional[Text], includeUntracked: Boolean, keepIndex: Boolean)
     ( using Tactic[Git.Error] )
-  :   Optional[Git.Hash] = unsupported(t"stash")
+  :   Optional[Git.Hash] = io(Sequencer.stash(context(gitDir, worktree), message, includeUntracked, keepIndex))
 
   def stashes(gitDir: Path on Linux)(using Tactic[Git.Error]): List[Git.Stash.Entry] = io:
-    def entry(reflog: ReflogEntry): Git.Stash.Entry =
-      val index = safely(reflog.selector.skip(11).skip(1, Rtl).as[Int]).or(0)
-      Git.Stash.Entry(index, reflog.hash, reflog.message)
+    def recur(remaining: List[ReflogEntry], index: Int, acc: List[Git.Stash.Entry]): List[Git.Stash.Entry] =
+      remaining match
+        case entry :: rest => recur(rest, index + 1, Git.Stash.Entry(index, entry.hash, entry.message) :: acc)
+        case _             => acc.reverse
 
-    Refstore.reflog(gitDir, commonDir(gitDir), t"refs/stash").map(entry(_))
+    recur(Refstore.reflog(gitDir, commonDir(gitDir), t"refs/stash"), 0, Nil)
 
   def applyStash(gitDir: Path on Linux, worktree: Path on Linux, entry: Int, index: Boolean, drop: Boolean)
     ( using Tactic[Git.Error] )
-  :   Git.Sequence.Outcome = unsupported(t"stash apply")
+  :   Git.Sequence.Outcome = io(Sequencer.applyStash(context(gitDir, worktree), entry, index, drop))
 
-  def dropStash(gitDir: Path on Linux, entry: Int)(using Tactic[Git.Error]): Unit = unsupported(t"stash drop")
+  def dropStash(gitDir: Path on Linux, entry: Int)(using Tactic[Git.Error]): Unit =
+    io(Sequencer.dropStash(context(gitDir, gitDir), entry))
 
   // ───────────────────────────────────────────── Notes ────────────────────────────────────────
 

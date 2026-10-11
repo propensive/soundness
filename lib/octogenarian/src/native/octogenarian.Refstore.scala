@@ -156,7 +156,7 @@ object Refstore:
     filtered.order(_(0).s)
 
   // Takes `<file>.lock` with an exclusive create. A lock already held is reported as `Locked`.
-  private def lock(file: Path on Linux)(block: Path on Linux => Unit)
+  def lock(file: Path on Linux)(block: Path on Linux => Unit)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =
 

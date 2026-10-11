@@ -75,7 +75,7 @@ object Workspace:
     else if (mode & 0x49) != 0 then Git.Object.Tree.Mode.Executable
     else Git.Object.Tree.Mode.Regular
 
-  private def file(worktree: Path on Linux, path: Text): Path on Linux =
+  def file(worktree: Path on Linux, path: Text): Path on Linux =
     Refstore.descend(worktree, path.cut(t"/"))
 
   // Every blob in a tree, by path.
@@ -106,6 +106,30 @@ object Workspace:
 
   def indexSnapshot(contents: Index.Contents): Snapshot =
     contents.staged.map { entry => (entry.path, (entry.mode, entry.hash)) }.to[Map]
+
+  // The working files as they are now, for every path the index knows: an entry whose stat data
+  // still matches is trusted, any other is hashed, a conflicted path gets a null entry, and a
+  // deleted file has none. A checkout from this snapshot rewrites exactly what differs.
+  def workingSnapshot(gitDir: Path on Linux, worktree: Path on Linux, contents: Index.Contents)
+    ( using Tactic[Io.Error] )
+  :   Snapshot =
+
+    val indexModified = Index.modified(gitDir)
+
+    def working(entry: Index.Entry): Optional[(Text, (Int, Git.Hash))] =
+      val target = file(worktree, entry.path)
+      if !target.existent() then Unset
+      else if entry.stage > 0 then (entry.path, (0, Git.Hash.zero))
+      else
+        val mode =
+          if entry.mode == Index.symlink || entry.mode == Index.gitlink then entry.mode
+          else if target.executable() then Index.executable
+          else Index.regular
+
+        if Index.fresh(entry, worktree, indexModified) && mode == entry.mode then (entry.path, (mode, entry.hash))
+        else (entry.path, (mode, hashFile(worktree, entry.path, mode)))
+
+    contents.entries.bind { entry => working(entry).let(List(_)).or(Nil) }.to[Map]
 
   // Every file and symbolic link beneath the worktree, except the git directory, with its mode.
   def files(worktree: Path on Linux)(using Tactic[Io.Error]): List[(Text, Int)] =
@@ -302,7 +326,7 @@ object Workspace:
     if !cached then targets.each(unlink(_))
 
   // Removes a deleted file's parent directories while they are empty, as git does.
-  private def pruneEmpty(worktree: Path on Linux, deleted: Path on Linux)(using Tactic[Io.Error]): Unit =
+  def pruneEmpty(worktree: Path on Linux, deleted: Path on Linux)(using Tactic[Io.Error]): Unit =
     val parent: Optional[Path on Linux] = deleted.parent
 
     parent.lay(()): parent =>
@@ -364,7 +388,7 @@ object Workspace:
     if staged then Index.write(gitDir, updatedIndex)
 
   // Writes a blob to a working file with the given mode, creating directories as needed.
-  private def writeFile(objects: Path on Linux, worktree: Path on Linux, path: Text, mode: Int, hash: Git.Hash)
+  def writeFile(objects: Path on Linux, worktree: Path on Linux, path: Text, mode: Int, hash: Git.Hash)
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Unit =
 
@@ -493,13 +517,13 @@ object Workspace:
         Index.write(gitDir, Index.Contents(contents.version, target.keys.to[List].map(entry(_)), contents.extensions))
 
       case ResetMode.Hard =>
-        val entries = checkoutFiles(objects, worktree, indexSnapshot(contents), target)
+        val entries = checkoutFiles(objects, worktree, workingSnapshot(gitDir, worktree, contents), target)
         Index.write(gitDir, Index.Contents(contents.version, entries, contents.extensions))
 
       case other => abort(Git.Error(Reason.Unsupported(t"reset ${other.flag}")))
 
   // Paths whose working or staged content differs from HEAD: a checkout must not overwrite them.
-  private def modifiedPaths
+  def modifiedPaths
     ( gitDir: Path on Linux, commonDir: Path on Linux, objects: Path on Linux, worktree: Path on Linux )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   Set[Text] =
@@ -539,7 +563,7 @@ object Workspace:
     if branch.present then Refstore.writeSymbolic(gitDir, commonDir, t"HEAD", branchRef)
     else Refstore.detach(gitDir, commonDir, commit, previous, identity, message, logging)
 
-  private def describeHead(gitDir: Path on Linux, commonDir: Path on Linux)(using Tactic[Io.Error]): Text =
+  def describeHead(gitDir: Path on Linux, commonDir: Path on Linux)(using Tactic[Io.Error]): Text =
     Refstore.read(gitDir, commonDir, t"HEAD") match
       case Git.Backend.Target.Symbolic(ref) => if ref.starts(t"refs/heads/") then ref.skip(11) else ref
       case Git.Backend.Target.Direct(hash)  => hash.text
