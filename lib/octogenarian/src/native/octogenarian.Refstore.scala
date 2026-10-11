@@ -202,11 +202,12 @@ object Refstore:
       expected match
         case Git.Backend.Expectation.Unconditional => ()
 
+        // Reported under the name the caller used (`HEAD`, say), as git does, not its target.
         case Git.Backend.Expectation.Absent =>
-          if current.present then abort(Git.Error(Reason.Moved(target, Unset, current)))
+          if current.present then abort(Git.Error(Reason.Moved(name, Unset, current)))
 
         case Git.Backend.Expectation.Exactly(hash) =>
-          if current != Optional(hash) then abort(Git.Error(Reason.Moved(target, hash, current)))
+          if current != Optional(hash) then abort(Git.Error(Reason.Moved(name, hash, current)))
 
       to match
         case hash: Git.Hash =>

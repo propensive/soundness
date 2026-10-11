@@ -999,6 +999,53 @@ object NativeTests extends Suite(m"Octogenarian native backend"):
           (outcomes.exists(_.isInstanceOf[Git.Push.Outcome.Updated]), gitOut(mirror, t"log", t"-1", t"--format=%s", t"main"))
       .assert(_ == ((true, t"third")))
 
+    suite(m"Signatures"):
+
+      // An ed25519 key pair and an allowed-signers file naming the test identity as its principal.
+      def keyPair(): (Path on Linux, Path on Linux) =
+        val dir = freshDir()
+        val key = dir / "key"
+        sh"ssh-keygen -q -t ed25519 -N ${t""} -f $key".exec[Exit]()
+        val publicKey = Command(t"cat", t"${key.encode}.pub").exec[Text]().trim
+        val allowed = dir / "allowed_signers"
+        allowed.create[File]()
+        allowed.open[File](Write) { handle ?=> handle.write(Chain(t"octogenarian@test.local $publicKey\n".in[Data])) }
+        (key, allowed)
+
+      test(m"a tag signed natively with ssh-keygen is one git verifies, and verifies natively"):
+        val dir = gitRepo()
+        val first = gitCommit(dir, t"a", t"a\n", t"first")
+        val (key, allowed) = keyPair()
+        sh"git -C $dir config gpg.format ssh".exec[Exit]()
+        sh"git -C $dir config gpg.ssh.allowedSignersFile $allowed".exec[Exit]()
+        val signer = SshKeygen.Signer(key)
+        given Git.Verifier = SshKeygen.Verifier(allowed)
+
+        val verified = dir.open[Git.Repo](Read & Write): repo ?=>
+          repo.annotatedTag(Git.Tag(t"v1"), first, t"release", signer = signer)
+          repo.verifyTag(Git.Tag(t"v1")).value
+
+        (sh"git -C $dir tag -v v1".exec[Exit]() == Exit.Ok, verified)
+      .assert(_ == ((true, Git.Verification.Good(t"octogenarian@test.local"))))
+
+      test(m"a commit signed natively with ssh-keygen is one git verifies"):
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        val (key, allowed) = keyPair()
+        sh"git -C $dir config gpg.format ssh".exec[Exit]()
+        sh"git -C $dir config gpg.ssh.allowedSignersFile $allowed".exec[Exit]()
+        (dir / "b").create[File]()
+        (dir / "b").open[File](Write) { handle ?=> handle.write(Chain(t"b\n".in[Data])) }
+        given Git.Verifier = SshKeygen.Verifier(allowed)
+
+        val verified = dir.open[Git.Worktree](Read & Write): worktree ?=>
+          worktree.add(Operations.planePath(worktree, t"b"))
+          val commit = worktree.commit(t"signed", worktree.head(), signer = SshKeygen.Signer(key))
+          worktree.verifyCommit(commit)
+
+        (sh"git -C $dir verify-commit HEAD".exec[Exit]() == Exit.Ok, verified)
+      .assert(_ == ((true, Git.Verification.Good(t"octogenarian@test.local"))))
+
     suite(m"Linked worktrees"):
 
       test(m"git's linked worktrees are listed natively"):
