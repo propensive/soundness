@@ -257,7 +257,7 @@ object Transfer:
     ( url: Text, transports: List[Transport], locate: Path on Linux => Optional[Git.Backend.Location],
       identity: Git.Identity )
     ( using Tactic[Git.Error] )
-  :   Peer =
+  :   Peer^ =
 
     if isLocalUrl(url) then
       val path = Operations.path(localPath(url))
@@ -275,7 +275,7 @@ object Transfer:
     else if isHex(name) then name
     else t"'$name'"
 
-  def remoteRefs(context: Context, remote: Text, peer: Peer)(using Tactic[Git.Error], Tactic[Io.Error])
+  def remoteRefs(context: Context, remote: Text, peer: Peer^)(using Tactic[Git.Error], Tactic[Io.Error])
   :   List[(Text, Git.Hash)] =
 
     val refs = peer.refs()
@@ -284,7 +284,7 @@ object Transfer:
   // Fetches from `peer`, moving the local refs the refspecs name and writing `FETCH_HEAD`;
   // returns the refs it changed.
   def fetch
-    ( context: Context, remote: Text, peer: Peer, url: Text, refspecs: List[Git.Refspec], depth: Optional[Int],
+    ( context: Context, remote: Text, peer: Peer^, url: Text, refspecs: List[Git.Refspec], depth: Optional[Int],
       prune: Boolean, tags: Boolean, activity: Git.Activity^ )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   List[(Text, Git.Hash)] =
@@ -304,8 +304,10 @@ object Transfer:
 
     activity.begin(Git.Activity.Phase.Enumerating)
 
+    val haves = Refstore.list(context.commonDir, Unset).map(_(1)).distinct.filter(have(_))
+
     val boundary =
-      peer.download(wants, have(_), depth, (kind, data) => Store.write(context.objects, kind, data), activity)
+      peer.download(wants, haves, have(_), depth, (kind, data) => Store.write(context.objects, kind, data), activity)
 
     if boundary != Nil then
       val file = context.gitDir / "shallow"
@@ -380,7 +382,7 @@ object Transfer:
     else expand(local, remoteRefs).or(if source.starts(t"refs/tags/") then source else t"refs/heads/$local")
 
   def push
-    ( context: Context, remote: Text, peer: Peer, url: Text, refspecs: List[Git.Refspec], force: Git.Push.Force,
+    ( context: Context, remote: Text, peer: Peer^, url: Text, refspecs: List[Git.Refspec], force: Git.Push.Force,
       tags: Boolean, setUpstream: Boolean, activity: Git.Activity^ )
     ( using Tactic[Git.Error], Tactic[Io.Error] )
   :   List[(Text, Git.Push.Outcome)] =

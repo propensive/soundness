@@ -2836,7 +2836,18 @@ object octogenarian extends Library:
     override def scalaJs = false // JVM-only (filesystem access)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, cli, native, eucalyptus.core):
+  // Remote repositories over smart HTTP(S), protocol version 2: `gitTransports.smartHttp`.
+  object http extends Component(native, telekinesis.core):
+    override def scalaJs = false // transitively JVM-only (filesystem access)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // Remote repositories over a spawned `ssh`, and signing through `ssh-keygen`:
+  // `gitTransports.sshCommand`.
+  object ssh extends Component(native, guillotine.core):
+    override def scalaJs = false // transitively JVM-only (process)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, cli, native, http, ssh, telekinesis.jvm, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

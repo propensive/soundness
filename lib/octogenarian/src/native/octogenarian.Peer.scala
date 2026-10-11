@@ -60,11 +60,12 @@ trait Peer:
   // What `HEAD` is a symbolic ref to, if the peer says.
   def symbolicHead()(using Tactic[Git.Error]): Optional[Text]
 
-  // Sends every object reachable from `wants` which `has` does not know to `store`. With a
-  // `depth`, commit history is cut that many commits deep and the commits at the boundary are
+  // Sends every object reachable from `wants` which `has` does not know to `store`; `haves` are
+  // the commits we hold, for a peer which can only be told what we have rather than asked. With
+  // a `depth`, commit history is cut that many commits deep and the commits at the boundary are
   // returned, for the `shallow` file.
   def download
-    ( wants: List[Git.Hash], has: Git.Hash => Boolean, depth: Optional[Int],
+    ( wants: List[Git.Hash], haves: List[Git.Hash], has: Git.Hash => Boolean, depth: Optional[Int],
       store: (Git.Object.Kind, Data) => Git.Hash, activity: Git.Activity^ )
     ( using Tactic[Git.Error] )
   :   List[Git.Hash]
@@ -80,7 +81,7 @@ trait Peer:
 // A way of reaching peers at some kind of URL: the `http` and `ssh` components supply these.
 trait Transport:
   def accepts(url: Text): Boolean
-  def connect(url: Text)(using Tactic[Git.Error]): Peer
+  def connect(url: Text)(using Tactic[Git.Error]): Peer^
 
 object Peer:
   import Git.Error.Reason as Reason
@@ -118,7 +119,7 @@ object Peer:
         case _                                => Unset
 
     def download
-      ( wants: List[Git.Hash], has: Git.Hash => Boolean, depth: Optional[Int],
+      ( wants: List[Git.Hash], haves: List[Git.Hash], has: Git.Hash => Boolean, depth: Optional[Int],
         store: (Git.Object.Kind, Data) => Git.Hash, activity: Git.Activity^ )
       ( using Tactic[Git.Error] )
     :   List[Git.Hash] = io:

@@ -840,6 +840,165 @@ object NativeTests extends Suite(m"Octogenarian native backend"):
         (pulled.isInstanceOf[Git.Merge.Outcome.FastForwarded], gitOut(alpha, t"log", t"--format=%s"), gitOut(alpha, t"status", t"--porcelain"))
       .assert(_ == ((true, t"second\nfirst", t"")))
 
+    suite(m"Remote transports"):
+
+      def bare(): Path on Linux =
+        val dir = freshDir()
+        sh"git -C $dir init -q --bare -b main".exec[Exit]()
+        sh"git -C $dir config http.receivepack true".exec[Exit]()
+        dir
+
+      // A repository with two commits, pushed into a fresh bare repository, which is returned.
+      def populated(): (Path on Linux, Path on Linux) =
+        val dir = gitRepo()
+        gitCommit(dir, t"a", t"a\n", t"first")
+        gitCommit(dir, t"b", t"b\n", t"second")
+        val mirror = bare()
+        sh"git -C $dir push -q $mirror main".exec[Exit]()
+        (dir, mirror)
+
+      // `git http-backend` as a CGI program behind the JDK's HTTP server, serving every repository
+      // beneath `root`. (Python's CGI server would do, but it forwards only a fixed few request
+      // headers, and `Git-Protocol`, which asks for protocol version 2, is not among them.)
+      def withHttpServer[result](root: Path on Linux)(block: Text => result): result =
+        import com.sun.net.httpserver as cs
+
+        val handler: cs.HttpHandler = exchange0 =>
+          val exchange = exchange0.nn
+          val uri = exchange.getRequestURI.nn
+          val builder = ProcessBuilder("git", "http-backend").nn
+          val env = builder.environment().nn
+          env.put("GIT_PROJECT_ROOT", root.encode.s)
+          env.put("GIT_HTTP_EXPORT_ALL", "1")
+          env.put("REQUEST_METHOD", exchange.getRequestMethod.nn)
+          env.put("PATH_INFO", uri.getPath.nn)
+          env.put("QUERY_STRING", Option(uri.getQuery).getOrElse(""))
+          env.put("REMOTE_ADDR", "127.0.0.1")
+          val headers = exchange.getRequestHeaders.nn
+
+          def forward(name: String, variable: String): Unit =
+            val value = headers.getFirst(name)
+            if value != null then env.put(variable, value)
+
+          forward("Content-Type", "CONTENT_TYPE")
+          forward("Content-Length", "CONTENT_LENGTH")
+          forward("Git-Protocol", "HTTP_GIT_PROTOCOL")
+          forward("Authorization", "HTTP_AUTHORIZATION")
+          val process = builder.start().nn
+          exchange.getRequestBody.nn.transferTo(process.getOutputStream.nn)
+          process.getOutputStream.nn.close()
+          val output = process.getInputStream.nn.readAllBytes().nn
+          process.waitFor()
+
+          // CGI output: header lines, a blank line, then the body.
+          val separator = (new String(output, "ISO-8859-1")).indexOf("\r\n\r\n")
+          val headerText = new String(output, 0, separator, "ISO-8859-1")
+          val bodyStart = separator + 4
+          var status = 200
+
+          headerText.split("\r\n").nn.foreach: line =>
+            val colon = line.nn.indexOf(':')
+            if colon > 0 then
+              val key = line.nn.substring(0, colon).nn.trim.nn
+              val value = line.nn.substring(colon + 1).nn.trim.nn
+              if key.equalsIgnoreCase("Status") then status = value.split(" ").nn.head.nn.toInt
+              else exchange.getResponseHeaders.nn.add(key, value)
+
+          exchange.sendResponseHeaders(status, (output.length - bodyStart).toLong)
+          exchange.getResponseBody.nn.write(output, bodyStart, output.length - bodyStart)
+          exchange.close()
+
+        val server = cs.HttpServer.create(java.net.InetSocketAddress("127.0.0.1", 0), 0).nn
+        server.createContext("/", handler)
+        server.start()
+        val port = server.getAddress.nn.getPort
+
+        try block(t"http://127.0.0.1:$port")
+        finally server.stop(0)
+
+      given TlsAcceptance = TlsAcceptance()
+      import httpBackends.javaNetHttp
+
+      test(m"a native clone over smart HTTP matches the repository git serves"):
+        val (source, mirror) = populated()
+        withHttpServer(mirror.parent.or(mirror)): base =>
+          given Git.Backend = Native(List(SmartHttp()))
+          val target = freshDir()
+          sh"rm -rf $target".exec[Exit]()
+          Git.clone(t"$base/${mirror.name}".as[HttpUrl], target)
+          (gitOut(target, t"log", t"--format=%s"), gitOut(target, t"status", t"--porcelain"), gitOut(target, t"fsck", t"--strict"))
+      .assert(_ == ((t"second\nfirst", t"", t"")))
+
+      test(m"a native push over smart HTTP is accepted by git's receive-pack"):
+        val (source, mirror) = populated()
+        gitCommit(source, t"c", t"c\n", t"third")
+        withHttpServer(mirror.parent.or(mirror)): base =>
+          given Git.Backend = Native(List(SmartHttp()))
+          val outcomes = source.open[Git.Repo](Read & Write): repo ?=>
+            repo.addRemote(t"web", t"$base/${mirror.name}")
+            repo.push(t"web", List(Git.Refspec(Git.Refs.heads(t"main")))).value.values.to[List]
+          (outcomes.exists(_.isInstanceOf[Git.Push.Outcome.Updated]), gitOut(mirror, t"log", t"-1", t"--format=%s", t"main"), gitOut(mirror, t"fsck", t"--strict"))
+      .assert(_ == ((true, t"third", t"")))
+
+      test(m"a native fetch over smart HTTP brings what git pushed since"):
+        val (source, mirror) = populated()
+        val other = gitRepo()
+        withHttpServer(mirror.parent.or(mirror)): base =>
+          given Git.Backend = Native(List(SmartHttp()))
+          other.open[Git.Repo](Read & Write): repo ?=>
+            repo.addRemote(t"origin", t"$base/${mirror.name}")
+            repo.fetch(t"origin")
+          gitCommit(source, t"c", t"c\n", t"third")
+          sh"git -C $source push -q $mirror main".exec[Exit]()
+          val fetched = other.open[Git.Repo](Read & Write) { repo ?=> repo.fetch(t"origin").value.keys.to[List].map(_.encode) }
+          (fetched, gitOut(other, t"log", t"--format=%s", t"refs/remotes/origin/main"), gitOut(other, t"fsck", t"--strict", t"--no-dangling"))
+      .assert(_ == ((List(t"refs/remotes/origin/main"), t"third\nsecond\nfirst", t"")))
+
+      // An `ssh` which runs the remote command on this machine, so that the protocol is exercised
+      // end to end against git's own `upload-pack` and `receive-pack`.
+      def stubBin(): Path on Linux =
+        val bin = freshDir()
+        val script = bin / "ssh"
+        script.create[File]()
+        script.open[File](Write): handle ?=>
+          handle.write(Chain(t"#!/bin/sh\nfor last; do :; done\nexec sh -c \"$$(printf '%s' \"$$last\" | sed 's/^git-/git /')\"\n".in[Data]))
+        sh"chmod +x $script".exec[Exit]()
+        bin
+
+      def withStubSsh[result](block: Environment ?=> result)(using base: Environment): result =
+        val bin = stubBin()
+
+        given stubbed: Environment = new Environment:
+          def variable(name: Text): Optional[Text] =
+            if name == t"PATH" then t"${bin.encode}:${base.variable(name).or(t"/usr/bin:/bin")}" else base.variable(name)
+
+          override def entries: Optional[Map[Text, Text]] =
+            base.entries.let { entries => (entries.to[List].filter(_(0) != t"PATH") + List((t"PATH", variable(t"PATH").or(t"")))).to[Map] }
+
+        block
+
+      test(m"a native fetch over ssh matches the repository"):
+        val (source, mirror) = populated()
+        val other = gitRepo()
+        withStubSsh:
+          given Git.Backend = Native(List(SshCommand()))
+          other.open[Git.Repo](Read & Write): repo ?=>
+            repo.addRemote(t"origin", t"ssh://localhost${mirror.encode}")
+            repo.fetch(t"origin", tags = true)
+          (gitOut(other, t"log", t"--format=%s", t"refs/remotes/origin/main"), gitOut(other, t"fsck", t"--strict", t"--no-dangling"))
+      .assert(_ == ((t"second\nfirst", t"")))
+
+      test(m"a native push over an scp-style ssh address is accepted by receive-pack"):
+        val (source, mirror) = populated()
+        gitCommit(source, t"c", t"c\n", t"third")
+        withStubSsh:
+          given Git.Backend = Native(List(SshCommand()))
+          val outcomes = source.open[Git.Repo](Read & Write): repo ?=>
+            repo.addRemote(t"shell", t"localhost:${mirror.encode}")
+            repo.push(t"shell", List(Git.Refspec(Git.Refs.heads(t"main")))).value.values.to[List]
+          (outcomes.exists(_.isInstanceOf[Git.Push.Outcome.Updated]), gitOut(mirror, t"log", t"-1", t"--format=%s", t"main"))
+      .assert(_ == ((true, t"third")))
+
     suite(m"Linked worktrees"):
 
       test(m"git's linked worktrees are listed natively"):
