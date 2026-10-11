@@ -40,9 +40,8 @@ package aperture
 // deliberately no timestamp: a clock would be a dependency this layer does not have, and "recent"
 // is not a property anyone should reason from. The only sound use of a stale value is to hand it
 // back to the handle that produced it.
-object Stale:
-  extension [value](stale: Stale[value])
-    // A value derived from a stale value is exactly as stale as its source.
-    inline def let[value2](inline lambda: value => value2): Stale[value2] = Stale(lambda(stale.value))
-
-case class Stale[+value](value: value)
+case class Stale[+value](value: value):
+  // A value derived from a stale value is exactly as stale as its source. A method rather than
+  // an extension: vacuous's `let`, lexically imported everywhere, would otherwise claim the
+  // receiver as an `Optional`.
+  def let[value2](lambda: value => value2): Stale[value2] = Stale(lambda(value))

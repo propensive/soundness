@@ -113,10 +113,15 @@ private[octogenarian] object Operations:
 
     backend.readObject(gitDir, hash).or(abort(Git.Error(Reason.NoSuchObject(hash.text))))
 
+  // The value in force for a single-valued key: git lists scopes from system to local and the
+  // last setting wins.
+  def setting(config: List[(Git.Config.Key, Text)], key: Git.Config.Key): Optional[Text] =
+    config.sweep { case (`key`, value) => value }.reverse.prim
+
   def identity(backend: Git.Backend^, gitDir: Path on Linux)(using Tactic[Git.Error]): Git.Identity =
     val config = backend.configRead(Git.Config.Source.Effective(gitDir))
     def value(key: Git.Config.Key): Text =
-      config.reap { case (`key`, value) => value }.or(abort(Git.Error(Reason.NoSuchConfig(key.text))))
+      setting(config, key).or(abort(Git.Error(Reason.NoSuchConfig(key.text))))
 
     val nameKey = Git.Config.Key(t"user", Unset, t"name")
     val emailKey = Git.Config.Key(t"user", Unset, t"email")
@@ -230,8 +235,8 @@ private[octogenarian] object Operations:
     names.map: name =>
       val urlKey = Git.Config.Key(remoteSection, name, urlName)
       val pushKey = Git.Config.Key(remoteSection, name, pushurlName)
-      val url = config.reap { case (`urlKey`, url) => url }.or(t"")
-      val push = config.reap { case (`pushKey`, url) => url }
+      val url = setting(config, urlKey).or(t"")
+      val push = setting(config, pushKey)
       Remote(name, url, push)
 
   def upstream(backend: Git.Backend^, gitDir: Path on Linux, branch: Git.Branch)(using Tactic[Git.Error])

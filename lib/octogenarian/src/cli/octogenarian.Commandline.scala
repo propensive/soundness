@@ -79,65 +79,69 @@ object Commandline:
   // What git said on standard error, read as a reason. git's messages are stable enough to
   // match on, but anything unrecognised is `Unexpected`, with the message kept as the error's
   // detail, so nothing is discarded.
-  def reason(stderr: Text): Git.Error.Reason =
+  def reason(stderr0: Text): Git.Error.Reason =
     import Git.Error.Reason as Reason
 
+    // git's messages end with a newline, and some span lines; each pattern is matched against the
+    // whole message in dot-all mode.
+    val stderr = stderr0.trim
+
     stderr match
-      case r".*fatal: not a git repository.*"                           => Reason.NoRepository(t"")
-      case r".*cannot lock ref '$ref([^']*)': is at $actual([0-9a-f]{40}) but expected $expected([0-9a-f]{40}).*" =>
+      case r"(?s).*fatal: not a git repository.*"                           => Reason.NoRepository(t"")
+      case r"(?s).*cannot lock ref '$ref([^']*)': is at $actual([0-9a-f]{40}) but expected $expected([0-9a-f]{40}).*" =>
         Reason.Moved(ref, hashOf(expected), hashOf(actual))
-      case r".*cannot lock ref '$ref([^']*)': reference already exists.*" => Reason.RefExists(ref)
-      case r".*cannot lock ref '$ref([^']*)': unable to resolve reference.*" =>
+      case r"(?s).*cannot lock ref '$ref([^']*)': reference already exists.*" => Reason.RefExists(ref)
+      case r"(?s).*cannot lock ref '$ref([^']*)': unable to resolve reference.*" =>
         Reason.NoSuchRef(ref)
-      case r".*cannot lock ref '$ref([^']*)': reference is missing but expected $expected([0-9a-f]{40}).*" =>
+      case r"(?s).*cannot lock ref '$ref([^']*)': reference is missing but expected $expected([0-9a-f]{40}).*" =>
         Reason.Moved(ref, hashOf(expected), Unset)
-      case r".*a branch named '$ref([^']*)' already exists.*"             => Reason.RefExists(ref)
-      case r".*tag '$ref([^']*)' already exists.*"                        => Reason.RefExists(ref)
-      case r".*[Tt]he branch '$branch([^']*)' is not fully merged.*"      =>
+      case r"(?s).*a branch named '$ref([^']*)' already exists.*"             => Reason.RefExists(ref)
+      case r"(?s).*tag '$ref([^']*)' already exists.*"                        => Reason.RefExists(ref)
+      case r"(?s).*[Tt]he branch '$branch([^']*)' is not fully merged.*"      =>
         Reason.Unmerged(Git.Branch.unsafe(branch), Git.Hash.zero)
-      case r".*ambiguous argument '$ref([^']*)': unknown revision.*"      => Reason.NoSuchRef(ref)
-      case r".*unknown revision or path not in the working tree.*"        => Reason.NoSuchRef(t"")
-      case r".*[Nn]ot a valid object name.*"                              => Reason.NoSuchObject(t"")
-      case r".*could not read object.*"                                   => Reason.NoSuchObject(t"")
-      case r".*nothing to commit.*"                                       => Reason.NothingToCommit
-      case r".*[Yy]ou are not currently on a branch.*"                    => Reason.Detached
-      case r".*HEAD detached.*"                                           => Reason.Detached
-      case r".*[Yy]our local changes to the following files would be overwritten.*" =>
+      case r"(?s).*ambiguous argument '$ref([^']*)': unknown revision.*"      => Reason.NoSuchRef(ref)
+      case r"(?s).*unknown revision or path not in the working tree.*"        => Reason.NoSuchRef(t"")
+      case r"(?s).*[Nn]ot a valid object name.*"                              => Reason.NoSuchObject(t"")
+      case r"(?s).*could not read object.*"                                   => Reason.NoSuchObject(t"")
+      case r"(?s).*nothing to commit.*"                                       => Reason.NothingToCommit
+      case r"(?s).*[Yy]ou are not currently on a branch.*"                    => Reason.Detached
+      case r"(?s).*HEAD detached.*"                                           => Reason.Detached
+      case r"(?s).*[Yy]our local changes to the following files would be overwritten.*" =>
         Reason.Dirty(indented(stderr))
-      case r".*untracked working tree files would be overwritten.*"       => Reason.Dirty(indented(stderr))
-      case r".*[Nn]ot possible to fast-forward.*"                         => Reason.NotFastForward
-      case r".*\(non-fast-forward\).*"                                    => Reason.NotFastForward
-      case r".*\(fetch first\).*"                                         => Reason.NotFastForward
-      case r".*\(stale info\).*"                                          => Reason.LeaseFailed(t"", Unset, Unset)
-      case r".*'$path([^']*)' is outside repository.*"                    => Reason.OutsideWorktree(path)
-      case r".*pathspec '$path([^']*)' did not match any file.*"          => Reason.Untracked(path)
-      case r".*[Nn]o rebase in progress.*"                                => Reason.NoOperationInProgress
-      case r".*no cherry-pick or revert in progress.*"                    => Reason.NoOperationInProgress
-      case r".*[Tt]here is no merge to abort.*"                           => Reason.NoOperationInProgress
-      case r".*[Nn]o merge in progress.*"                                 => Reason.NoOperationInProgress
-      case r".*[Yy]ou have not concluded your merge.*"                    => Reason.NoOperationInProgress
-      case r".*already a rebase-merge directory.*"                        => Reason.NoOperationInProgress
-      case r".*cherry-pick is already in progress.*"                      => Reason.NoOperationInProgress
-      case r".*[Nn]o such remote.*"                                       => Reason.NoSuchRemote(t"")
-      case r".*does not appear to be a git repository.*"                  => Reason.NoSuchRemote(t"")
-      case r".*remote $name(\S+) already exists.*"                        => Reason.RemoteExists(name)
-      case r".*[Aa]uthentication failed.*"                                => Reason.Unauthorized(t"")
-      case r".*Permission denied \(publickey.*"                           => Reason.Unauthorized(t"")
-      case r".*could not read Username.*"                                 => Reason.Unauthorized(t"")
-      case r".*[Cc]ould not resolve host.*"                               => Reason.Unreachable(t"")
-      case r".*Connection refused.*"                                      => Reason.Unreachable(t"")
-      case r".*Connection timed out.*"                                    => Reason.Unreachable(t"")
-      case r".*unable to access.*"                                        => Reason.Unreachable(t"")
-      case r".*\[remote rejected\] $ref(\S+) -> $dest(\S+) \($why([^)]*)\).*" =>
+      case r"(?s).*untracked working tree files would be overwritten.*"       => Reason.Dirty(indented(stderr))
+      case r"(?s).*[Nn]ot possible to fast-forward.*"                         => Reason.NotFastForward
+      case r"(?s).*\(non-fast-forward\).*"                                    => Reason.NotFastForward
+      case r"(?s).*\(fetch first\).*"                                         => Reason.NotFastForward
+      case r"(?s).*\(stale info\).*"                                          => Reason.LeaseFailed(t"", Unset, Unset)
+      case r"(?s).*'$path([^']*)' is outside repository.*"                    => Reason.OutsideWorktree(path)
+      case r"(?s).*pathspec '$path([^']*)' did not match any file.*"          => Reason.Untracked(path)
+      case r"(?s).*[Nn]o rebase in progress.*"                                => Reason.NoOperationInProgress
+      case r"(?s).*no cherry-pick or revert in progress.*"                    => Reason.NoOperationInProgress
+      case r"(?s).*[Tt]here is no merge to abort.*"                           => Reason.NoOperationInProgress
+      case r"(?s).*[Nn]o merge in progress.*"                                 => Reason.NoOperationInProgress
+      case r"(?s).*[Yy]ou have not concluded your merge.*"                    => Reason.NoOperationInProgress
+      case r"(?s).*already a rebase-merge directory.*"                        => Reason.NoOperationInProgress
+      case r"(?s).*cherry-pick is already in progress.*"                      => Reason.NoOperationInProgress
+      case r"(?s).*[Nn]o such remote.*"                                       => Reason.NoSuchRemote(t"")
+      case r"(?s).*does not appear to be a git repository.*"                  => Reason.NoSuchRemote(t"")
+      case r"(?s).*remote $name(\S+) already exists.*"                        => Reason.RemoteExists(name)
+      case r"(?s).*[Aa]uthentication failed.*"                                => Reason.Unauthorized(t"")
+      case r"(?s).*Permission denied \(publickey.*"                           => Reason.Unauthorized(t"")
+      case r"(?s).*could not read Username.*"                                 => Reason.Unauthorized(t"")
+      case r"(?s).*[Cc]ould not resolve host.*"                               => Reason.Unreachable(t"")
+      case r"(?s).*Connection refused.*"                                      => Reason.Unreachable(t"")
+      case r"(?s).*Connection timed out.*"                                    => Reason.Unreachable(t"")
+      case r"(?s).*unable to access.*"                                        => Reason.Unreachable(t"")
+      case r"(?s).*\[remote rejected\] $ref(\S+) -> $dest(\S+) \($why([^)]*)\).*" =>
         Reason.RemoteRejected(dest, why)
-      case r".*key does not contain a section.*"                          => Reason.InvalidConfig(t"", t"")
-      case r".*invalid key.*"                                             => Reason.InvalidConfig(t"", t"")
-      case r".*Cannot add notes. Found existing notes for object $hash([0-9a-f]{40}).*" =>
+      case r"(?s).*key does not contain a section.*"                          => Reason.InvalidConfig(t"", t"")
+      case r"(?s).*invalid key.*"                                             => Reason.InvalidConfig(t"", t"")
+      case r"(?s).*Cannot add notes. Found existing notes for object $hash([0-9a-f]{40}).*" =>
         Reason.NoteExists(Git.Hash.unsafe(hash))
-      case r".*gpg: BAD signature.*"                                      => Reason.BadSignature(stderr)
-      case r".*gpg failed to sign the data.*"                             => Reason.SigningFailed(stderr)
-      case r".*is not a working tree.*"                                   => Reason.NoSuchWorktree(t"")
-      case r".*CONFLICT \(.*"                                             => Reason.Conflict(Nil)
+      case r"(?s).*gpg: BAD signature.*"                                      => Reason.BadSignature(stderr)
+      case r"(?s).*gpg failed to sign the data.*"                             => Reason.SigningFailed(stderr)
+      case r"(?s).*is not a working tree.*"                                   => Reason.NoSuchWorktree(t"")
+      case r"(?s).*CONFLICT \(.*"                                             => Reason.Conflict(Nil)
       case _                                                              => Reason.Unexpected
 
   private def hashOf(text: Text): Optional[Git.Hash] = if text == zero then Unset else Git.Hash.unsafe(text)
@@ -376,6 +380,9 @@ extends Git.Backend:
         case Reason.Unexpected | Reason.NoSuchRef(_) if expected != Git.Backend.Expectation.Unconditional =>
           // The ref was expected to hold a value and does not: it moved, to nothing.
           Reason.Moved(ref, expected.expected, Unset)
+        case Reason.RefExists(_) if expected == Git.Backend.Expectation.Absent =>
+          // The ref was expected not to exist and does: it moved, from nothing.
+          Reason.Moved(ref, Unset, resolve(gitDir, ref))
         case other => other
 
       abort(Git.Error(reason, outcome.stderr.trim))
@@ -400,9 +407,10 @@ extends Git.Backend:
     if outcome.ok then hashes(outcome)
     else abort(Git.Error(Reason.NoSuchRef(from), outcome.stderr.trim))
 
+  // A repository with no commits has no reflog, which git reports as an error.
   def reflog(gitDir: Path on Linux, ref: Optional[Text])(using Tactic[Git.Error]): List[ReflogEntry] =
-    val outcome = expect(run(dirArgs(gitDir) + List(t"reflog", t"show", t"--format=%H %gd %ct %gs") + ref.let(List(_)).or(Nil)))
-    collect(outcome.lines)(reflogEntry(_))
+    val outcome = run(dirArgs(gitDir) + List(t"reflog", t"show", t"--format=%H %gd %ct %gs") + ref.let(List(_)).or(Nil))
+    if outcome.ok then collect(outcome.lines)(reflogEntry(_)) else Nil
 
   private def reflogEntry(line: Text): Optional[ReflogEntry] = line match
     case r"$hash([a-f0-9]{40}) $selector(\S+) $time([0-9]+) $message(.*)" =>
@@ -845,21 +853,19 @@ extends Git.Backend:
   :   List[(Text, Git.Hash)] =
 
     val arguments =
-      List(t"fetch", t"--progress", t"--porcelain")
+      List(t"fetch", t"--progress")
       + depth.lay(Nil) { depth => List(t"--depth=$depth") }
       + (if prune then List(t"--prune") else Nil)
       + (if tags then List(t"--tags") else Nil)
       + List(remote)
       + refspecs.map(_.text)
 
-    val outcome = expect(runProgress(dirArgs(gitDir) + arguments, activity))
-
-    collect(outcome.lines)(fetchLine(_))
-
-  // `--porcelain`: `<flag> <old-oid> <new-oid> <local-reference>` per updated ref.
-  private def fetchLine(line: Text): Optional[(Text, Git.Hash)] = line.cut(t" ") match
-    case List(_, _, hash, name) if hash.length == 40 => (name, Git.Hash.unsafe(hash))
-    case _                                           => Unset
+    // The refs the fetch changed: those whose value differs from before it ran. (`--porcelain`
+    // would report them directly, but needs git 2.41.)
+    val before = listRefs(gitDir, Unset).to[Map]
+    expect(runProgress(dirArgs(gitDir) + arguments, activity))
+    val after = listRefs(gitDir, Unset)
+    after.filter { (name, hash) => before.at(name) != Optional(hash) }
 
   def push
     ( gitDir: Path on Linux, remote: Text, refspecs: List[Git.Refspec], force: Git.Push.Force,

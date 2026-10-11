@@ -550,7 +550,7 @@ object Git:
   // object is processed. A user interface polls `report()` at its own cadence, or, for a
   // reactive one, drains `updates`, which exists only once asked for, so a poll-only caller
   // pays nothing for it.
-  class Activity() extends Durable:
+  class Activity() extends DurableUnscoped:
     private val phase: Atomic.Ref[Activity.Phase] = Atomic(Activity.Phase.Idle)
     private val remote: Atomic.Bool = Atomic(false)
     private val done: Atomic.Long = Atomic(0L)
@@ -635,21 +635,29 @@ object Git:
 
     object Handle:
       extension (config: (Git.Config.Handle & Granting[Grant.Read])^)
-        def get[value: Decodable in Text](key: Key)(using Tactic[Git.Error]): Stale[Optional[value]] =
-          Stale(config.backend.configRead(config.source).reap { case (`key`, text) => text }.let(_.as[value]))
+        def get[value](key: Key)(using decodable: (value is Decodable in Text)^, tactic: Tactic[Git.Error])
+        :   Stale[Optional[value]] =
 
-        def all[value: Decodable in Text](key: Key)(using Tactic[Git.Error]): Stale[List[value]] =
-          Stale(config.backend.configRead(config.source).sweep { case (`key`, text) => text.as[value] })
+          Stale(Operations.setting(config.backend.configRead(config.source), key).let(decodable.decoded(_)))
+
+        def all[value](key: Key)(using decodable: (value is Decodable in Text)^, tactic: Tactic[Git.Error])
+        :   Stale[List[value]] =
+
+          Stale(config.backend.configRead(config.source).sweep { case (`key`, text) => decodable.decoded(text) })
 
         def list()(using Tactic[Git.Error]): Stale[List[(Key, Text)]] =
           Stale(config.backend.configRead(config.source))
 
       extension (config: (Git.Config.Handle & Granting[Grant.Write])^)
-        def set[value: Encodable in Text](key: Key, value: value)(using Tactic[Git.Error]): Unit =
-          config.backend.configWrite(config.source, key, value.encode, false)
+        def set[value](key: Key, value: value)(using encodable: (value is Encodable in Text)^, tactic: Tactic[Git.Error])
+        :   Unit =
 
-        def add[value: Encodable in Text](key: Key, value: value)(using Tactic[Git.Error]): Unit =
-          config.backend.configWrite(config.source, key, value.encode, true)
+          config.backend.configWrite(config.source, key, encodable.encode(value), false)
+
+        def add[value](key: Key, value: value)(using encodable: (value is Encodable in Text)^, tactic: Tactic[Git.Error])
+        :   Unit =
+
+          config.backend.configWrite(config.source, key, encodable.encode(value), true)
 
         def unset(key: Key, all: Boolean = false)(using Tactic[Git.Error]): Unit =
           config.backend.configUnset(config.source, key, all)
@@ -1052,9 +1060,12 @@ object Git:
         :   Stale[List[Commit]] =
 
           Stale:
-            val hashes = repo.backend.revList(repo.gitDir, from.text, Unset, limit, paths)
-            repo.backend.readObjects(repo.gitDir, hashes).sweep:
-              case (hash, Git.Object.Kind.Commit, data) => Objects.parseCommit(hash, data)
+            // An unborn branch has no history; any other unresolvable start is an error.
+            if repo.backend.resolve(repo.gitDir, from.text).absent && repo.backend.head(repo.gitDir).commit.absent then Nil
+            else
+              val hashes = repo.backend.revList(repo.gitDir, from.text, Unset, limit, paths)
+              repo.backend.readObjects(repo.gitDir, hashes).sweep:
+                case (hash, Git.Object.Kind.Commit, data) => Objects.parseCommit(hash, data)
 
         def revList(from: Git.Revision, until: Optional[Git.Revision] = Unset, limit: Optional[Int] = Unset)
           ( using Tactic[Git.Error] )
@@ -1077,19 +1088,21 @@ object Git:
         def show(hash: Git.Hash)(using Tactic[Git.Error]): Git.Object =
           Objects.parse(hash, Operations.readObject(repo.backend, repo.gitDir, hash))
 
-        def commit(hash: Git.Hash)(using Tactic[Git.Error]): Commit = show(hash) match
+        // The typed readers are named `…At`, since `commit` is the worktree's write verb and a
+        // grant-gated handle cannot overload.
+        def commitAt(hash: Git.Hash)(using Tactic[Git.Error]): Commit = show(hash) match
           case Git.Object.Commit(commit) => commit
           case _ => abort(Git.Error(Reason.NoSuchObject(hash.text)))
 
-        def tree(hash: Git.Hash)(using Tactic[Git.Error]): List[Git.Object.Tree.Entry] = show(hash) match
+        def treeAt(hash: Git.Hash)(using Tactic[Git.Error]): List[Git.Object.Tree.Entry] = show(hash) match
           case Git.Object.Tree(entries) => entries
           case _ => abort(Git.Error(Reason.NoSuchObject(hash.text)))
 
-        def blob(hash: Git.Hash)(using Tactic[Git.Error]): Data = show(hash) match
+        def blobAt(hash: Git.Hash)(using Tactic[Git.Error]): Data = show(hash) match
           case Git.Object.Blob(data) => data
           case _ => abort(Git.Error(Reason.NoSuchObject(hash.text)))
 
-        def annotation(hash: Git.Hash)(using Tactic[Git.Error]): Git.Tag.Annotation = show(hash) match
+        def annotationAt(hash: Git.Hash)(using Tactic[Git.Error]): Git.Tag.Annotation = show(hash) match
           case Git.Object.Tag(annotation) => annotation
           case _ => abort(Git.Error(Reason.NoSuchObject(hash.text)))
 
@@ -1456,7 +1469,7 @@ object Git:
           ( using Tactic[Git.Error] )
         :   Unit =
 
-          worktree.backend.restore(worktree.gitDir, worktree.root, paths.to(List).map(Operations.relative(_)), source.let(_.text), staged, true)
+          worktree.backend.restore(worktree.gitDir, worktree.root, paths.to(List).map(Operations.relative(_)), source.let(_.text), staged, !staged)
 
         def clean(paths: List[Path on worktree.Plane] = Nil, directories: Boolean = false, ignored: Boolean = false)
           ( using Tactic[Git.Error] )

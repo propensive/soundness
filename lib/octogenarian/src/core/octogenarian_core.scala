@@ -65,10 +65,10 @@ extension (noteRef: NoteRef)
   // reached through a ref, which another process may move, so the result is `Stale`. Aborts with
   // `NoteNotFound` if no note is attached. (Named `content`, not `read`, so as not to collide
   // with turbulence's `Readable` `read`: a `NoteRef` is a `Path`, which is readable.)
-  def content[value: Decodable in Text]
-    ( using repo: (Git.Repo.Handle & Granting[Grant.Read])^, gitError: Tactic[Git.Error],
-            refError: Tactic[Git.RefError] )
+  def content[value]
+    ( using repo: (Git.Repo.Handle & Granting[Grant.Read])^, decodable: (value is Decodable in Text)^,
+            gitError: Tactic[Git.Error], refError: Tactic[Git.RefError] )
   :   Stale[value] =
 
     repo.note(noteRef.target, noteRef.namespace).let: note =>
-      note.lest(Git.Error(Git.Error.Reason.NoteNotFound)).as[value]
+      decodable.decoded(note.lest(Git.Error(Git.Error.Reason.NoteNotFound)))
