@@ -367,6 +367,54 @@ object stagedInternal:
       case OrType(left, right) if left =:= unset  => Some(right.dealias)
       case _                                      => None
 
+  // The opaque prelude `List`/`Set`/`Sequence` do not conform to `Iterable`
+  // (so the `Iterable` test misses them) and their companions expose no
+  // `Factory`, only a `Conversion`: each maps to its underlying stdlib
+  // collection, at which a builder is summoned and whose result is cast back
+  // — a no-op at erasure — mirroring breviloquence's generator.
+  private def aliasCollectionUnderlying(using Quotes)(tpe: quotes.reflect.TypeRepr)
+  :   Option[quotes.reflect.TypeRepr] =
+
+    import quotes.reflect.*
+
+    val listSym     = TypeRepr.of[proscenium.List[Any]].typeSymbol
+    val setSym      = TypeRepr.of[proscenium.Set[Any]].typeSymbol
+    val sequenceSym = TypeRepr.of[proscenium.Sequence[Any]].typeSymbol
+
+    tpe.dealias match
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == listSym =>
+        Some(TypeRepr.of[scala.collection.immutable.List].appliedTo(element))
+
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == setSym =>
+        Some(TypeRepr.of[scala.collection.immutable.Set].appliedTo(element))
+
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == sequenceSym =>
+        Some(TypeRepr.of[scala.collection.immutable.Vector].appliedTo(element))
+
+      case _ =>
+        None
+
+  // A fresh builder for a gathered field, typed at the field's own type so
+  // the per-occurrence appends and the finalizer need no cast: summoned at
+  // the field type, or — for an opaque prelude alias, which has no
+  // `Factory` — at its underlying stdlib collection and cast once here.
+  private def newBuilder[element: Type, fieldType: Type](using Quotes)
+  :   Expr[scm.Builder[element, fieldType]] =
+
+    import quotes.reflect.*
+
+    aliasCollectionUnderlying(TypeRepr.of[fieldType]) match
+      case Some(underlying) =>
+        underlying.asType match
+          case '[stdlib] =>
+            ' {
+                infer[scala.collection.Factory[element, stdlib]].newBuilder
+                . asInstanceOf[scm.Builder[element, fieldType]]
+              }
+
+      case None =>
+        '{infer[scala.collection.Factory[element, fieldType]].newBuilder}
+
   private def planFor(using Quotes)(tpe0: quotes.reflect.TypeRepr, cache: Cache): Plan =
     import quotes.reflect.*
 
@@ -384,7 +432,10 @@ object stagedInternal:
             Plan.OptionalLeaf(kind)
 
           case None =>
-            val innerIterable = inner <:< TypeRepr.of[Iterable[Any]]
+            // An optional collection has no inlined form on either path:
+            // it stays on the seam, prelude alias or not.
+            val innerIterable =
+              inner <:< TypeRepr.of[Iterable[Any]] || aliasCollectionUnderlying(inner).isDefined
 
             if innerIterable then Plan.Seam else inner.asType match
               case '[innerType] =>
@@ -398,11 +449,18 @@ object stagedInternal:
                     Plan.Seam
 
       case None =>
-        val isMap = tpe.derivesFrom(Symbol.requiredClass("scala.collection.Map"))
+        // A `Map` — stdlib or the opaque prelude alias — is an `Iterable` of
+        // pairs, but its wire form is a repeated entry message: it stays on
+        // the seam (`mapDecodable`). The opaque prelude `List`/`Set`/`Sequence`
+        // do not conform to `Iterable`, so they are recognised by their
+        // constructor.
+        val isMap =
+          tpe.derivesFrom(Symbol.requiredClass("scala.collection.Map")) ||
+            tpe.typeSymbol == TypeRepr.of[proscenium.Map[Any, Any]].typeSymbol
 
-        // A `Map` is an `Iterable` of pairs, but its wire form is a
-        // repeated entry message — it stays on the seam (`mapDecodable`).
-        if !isMap && tpe <:< TypeRepr.of[Iterable[Any]] then tpe match
+        val isAliasCollection = aliasCollectionUnderlying(tpe).isDefined
+
+        if !isMap && (tpe <:< TypeRepr.of[Iterable[Any]] || isAliasCollection) then tpe match
           case AppliedType(_, arguments) =>
             val elementType = arguments.last.dealias
 
@@ -678,10 +736,7 @@ object stagedInternal:
 
             (elementType.asType, fieldTypes(index).asType) match
               case ('[element], '[fieldType]) =>
-                val rhs: Expr[Any] =
-                  '{infer[scala.collection.Factory[element, fieldType]].newBuilder}
-
-                Some(ValDef(builders(index), Some(rhs.asTerm)))
+                Some(ValDef(builders(index), Some(newBuilder[element, fieldType].asTerm)))
 
           case _ =>
             None
@@ -1055,8 +1110,7 @@ object stagedInternal:
               val elementType = elementType0.asInstanceOf[TypeRepr]
 
               elementType.asType match
-                case '[element] =>
-                  '{infer[scala.collection.Factory[element, fieldType]].newBuilder.result()}
+                case '[element] => '{${newBuilder[element, fieldType]}.result()}
 
             case Plan.Seam =>
               seamDecode[fieldType]('{Protobuf.Absent})

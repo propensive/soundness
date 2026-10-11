@@ -70,13 +70,14 @@ case class Labels(@field(1) entries: Map[Text, Text]) derives CanEqual
 case class Counts(@field(1) counts: Map[Text, Int]) derives CanEqual
 
 // Recursion through a collection (#1429) and a generic product used over a recursive type.
-// TEMPORARY (List-flip drain): the staged engine's `Plan.Gather` classifier does not
-// yet recognise the opaque `List` alias, so the recursive field stays `sci.List` until
-// the staged engines learn the prelude aliases.
-case class Tree
-  ( @field(1) value: Text,
-    @field(2) children: scala.collection.immutable.List[Tree] )
-derives CanEqual
+case class Tree(@field(1) value: Text, @field(2) children: List[Tree]) derives CanEqual
+
+// The other prelude collections a repeated field may gather into, and a repeated nested
+// message for the no-materialization probe.
+case class Names(@field(1) names: Set[Text]) derives CanEqual
+case class Longs(@field(1) values: Sequence[Long]) derives CanEqual
+case class Item(@field(1) id: Int, @field(2) name: Text) derives CanEqual
+case class Batch(@field(1) items: List[Item]) derives CanEqual
 
 case class Defaulted(@field(1) a: Int, @field(2) b: Int = 7) derives CanEqual
 case class Boxed[value](@field(1) value: value) derives CanEqual
@@ -424,6 +425,8 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       given (Counts is Protobuf.Parsable) = Inlinable.parsable[Counts]
       given (Tree is Protobuf.Parsable) = Inlinable.parsable[Tree]
       given (Defaulted is Protobuf.Parsable) = Inlinable.parsable[Defaulted]
+      given (Names is Protobuf.Parsable) = Inlinable.parsable[Names]
+      given (Longs is Protobuf.Parsable) = Inlinable.parsable[Longs]
 
       def encoded[value: Encodable in Protobuf](value: value): Data = value.in[Protobuf].encode
 
@@ -508,3 +511,30 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
         val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
         encoded(tree).read[Tree in Protobuf]
       . assert(_ == Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))
+
+      test(m"a repeated nested message gathers directly, never through a Decodable"):
+        // Either seam — the element's or the whole field's `Decodable` — would materialize
+        // a `Protobuf`; a lexically-scoped given beats the derived ones, so invoking it is
+        // the failure.
+        given itemSeam: (Item is Decodable in Protobuf) =
+          _ => panic(m"the generated parser decoded a repeated element through its Decodable")
+
+        given itemsSeam: (List[Item] is Decodable in Protobuf) =
+          _ => panic(m"the generated parser decoded a repeated field through its Decodable")
+
+        given (Batch is Protobuf.Parsable) = Inlinable.parsable[Batch]
+        encoded(Batch(List(Item(1, t"a"), Item(2, t"b")))).read[Batch in Protobuf]
+      . assert(_ == Batch(List(Item(1, t"a"), Item(2, t"b"))))
+
+      test(m"a prelude Set of strings gathers element by element"):
+        encoded(Names(Set(t"x", t"y", t"z"))).read[Names in Protobuf]
+      . assert(_ == Names(Set(t"x", t"y", t"z")))
+
+      test(m"a packed Sequence of longs reads its run in place"):
+        // Field 1, Len 4: varints 1, 300, 3.
+        Array[Byte](0x0a, 0x04, 0x01, 0xac.toByte, 0x02, 0x03).read[Longs in Protobuf]
+      . assert(_ == Longs(Sequence(1L, 300L, 3L)))
+
+      test(m"unpacked occurrences gather into a Sequence"):
+        Array[Byte](0x08, 0x01, 0x08, 0xac.toByte, 0x02).read[Longs in Protobuf]
+      . assert(_ == Longs(Sequence(1L, 300L)))
