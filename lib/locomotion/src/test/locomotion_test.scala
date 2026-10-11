@@ -97,6 +97,12 @@ case class Scalars
 derives CanEqual
 
 case class Doubles(@field(1) values: List[Double]) derives CanEqual
+
+// The unboxed repeated representation: a frozen array of packable scalars. Read and written
+// through generated parsers and printers only: the derived codecs over such a field do not
+// yet capture-check (the checker fails on the derivation's re-declared field type).
+case class LongArray(@field(1) values: Array[Long]^{}) derives CanEqual
+case class DoubleArray(@field(1) values: Array[Double]^{}) derives CanEqual
 case class Shaped(@field(1) name: Text, @field(2) shape: Shape) derives CanEqual
 case class MaybePoint(@field(1) point: Optional[Point]) derives CanEqual
 
@@ -574,6 +580,54 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
         // Field 1, Len 4: varints 1, 300, 3.
         Array[Byte](0x0a, 0x04, 0x01, 0xac.toByte, 0x02, 0x03).read[Longs in Protobuf]
       . assert(_ == Longs(Sequence(1L, 300L, 3L)))
+
+      // One value per encoded width, one to ten bytes, packed and round-tripped.
+      val widths = List(1L, 1L << 7, 1L << 14, 1L << 21, 1L << 28, 1L << 35, 1L << 42,
+        1L << 49, 1L << 56, -1L)
+
+      given (LongArray is Protobuf.Parsable) = Inlinable.parsable[LongArray]
+      given (LongArray is Protobuf.Printable) = Inlinable.printable[LongArray]
+      given (DoubleArray is Protobuf.Parsable) = Inlinable.parsable[DoubleArray]
+      given (DoubleArray is Protobuf.Printable) = Inlinable.printable[DoubleArray]
+
+      test(m"a frozen array of longs prints as the packed List form"):
+        Protobuf.Printable.print(LongArray(Array[Long](1L, 300L, -1L))).to[List]
+      . assert(_ == Longs(Sequence(1L, 300L, -1L)).in[Protobuf].encode.to[List])
+
+      test(m"a frozen array of longs parses from the packed form"):
+        Longs(Sequence(1L, 300L, 3L)).in[Protobuf].encode.read[LongArray in Protobuf].values.to[List]
+      . assert(_ == List(1L, 300L, 3L))
+
+      test(m"a frozen array of longs parses from the unpacked form"):
+        Array[Byte](0x08, 0x01, 0x08, 0xac.toByte, 0x02).read[LongArray in Protobuf].values.to[List]
+      . assert(_ == List(1L, 300L))
+
+      test(m"a frozen array of doubles round-trips directly"):
+        Protobuf.Printable.print(DoubleArray(Array[Double](0.5, -2.0)))
+        . read[DoubleArray in Protobuf].values.to[List]
+      . assert(_ == List(0.5, -2.0))
+
+      test(m"an empty frozen array prints nothing and parses back empty"):
+        val bytes = Protobuf.Printable.print(LongArray(Array[Long]()))
+        (bytes.length, bytes.read[LongArray in Protobuf].values.length)
+      . assert(_ == (0, 0))
+
+      test(m"a frozen array gathers and prints directly, never through a seam"):
+        given arraySeam: ((Array[Long]^{}) is Decodable in Protobuf) =
+          _ => panic(m"the generated parser decoded an array field through its Decodable")
+
+        given arrayEncodeSeam: ((Array[Long]^{}) is Encodable in Protobuf) =
+          _ => panic(m"the generated printer encoded an array field through its Encodable")
+
+        val bytes = Protobuf.Printable.print(LongArray(Array[Long](1L, 300L, -1L)))
+        (bytes.to[List], bytes.read[LongArray in Protobuf].values.to[List])
+      . assert(_ == (List[Byte](0x0a, 13, 1, 0xac.toByte, 2, 0xff.toByte, 0xff.toByte, 0xff.toByte,
+          0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte, 1), List(1L, 300L, -1L)))
+
+      test(m"varints of every width read directly"):
+        given (Longs is Protobuf.Printable) = Inlinable.printable[Longs]
+        Protobuf.Printable.print(Longs(Sequence.from(widths))).read[Longs in Protobuf]
+      . assert(_ == Longs(Sequence.from(widths)))
 
       test(m"unpacked occurrences gather into a Sequence"):
         Array[Byte](0x08, 0x01, 0x08, 0xac.toByte, 0x02).read[Longs in Protobuf]

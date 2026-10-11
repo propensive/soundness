@@ -154,6 +154,9 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // with no string or message overhead.
   lazy val value4: Ints = Ints(List.tabulate(1000)(index => (index*37 + 1).toLong))
 
+  // The same values as a frozen array: the unboxed representation of a packed field.
+  lazy val value4a: IntArray = IntArray(Array.tabulate[Long](1000)(index => (index*37 + 1).toLong))
+
   // Corpus 5: a map with 50 string→string entries — exercises map-entry messages
   // (proto3 encodes maps as repeated key/value sub-messages).
   lazy val value5: Attributes =
@@ -338,6 +341,14 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
         '{
             given Ints is Protobuf.Parsable = locomotion.intsParsable
             Chain(locomotion.Benchmarks.bytes4).read[Ints in Protobuf]
+        }
+
+      // Into a frozen `Array[Long]`: no element is boxed and no list cell allocated.
+      bench(m"Decode directly into Array[Long] with Locomotion")
+        ( target = 1*Second, operationSize = size4 ):
+        '{
+            given IntArray is Protobuf.Parsable = locomotion.intArrayParsable
+            Chain(locomotion.Benchmarks.bytes4).read[IntArray in Protobuf]
         }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size4):
@@ -558,6 +569,15 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
             locomotion.Benchmarks.value4.in[Protobuf].encode
         }
 
+      bench(m"Encode directly from Array[Long] with Locomotion")
+        ( target = 1*Second, operationSize = size4 ):
+        '{
+            given (IntArray is Encodable in Protobuf) =
+              Protobuf.encodablePrinted(using locomotion.intArrayPrintable)
+
+            locomotion.Benchmarks.value4a.in[Protobuf].encode
+        }
+
       bench(m"Encode with protobuf-java (generated)")(target = 1*Second, operationSize = size4):
         '{ locomotion.Benchmarks.proto4.toBuilder.nn.build().nn.toByteArray.nn }
 
@@ -676,6 +696,20 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
       profile(m"Decode 1000 packed integers (typed)")(target = 5*Second):
         '{ Chain(locomotion.Benchmarks.bytes4).read[Ints in Protobuf] }
+
+      profile(m"Decode 1000 packed integers directly")(target = 5*Second):
+        '{
+            given Ints is Protobuf.Parsable = locomotion.intsParsable
+            Chain(locomotion.Benchmarks.bytes4).read[Ints in Protobuf]
+        }
+
+      profile(m"Encode 1000 packed integers directly")(target = 5*Second):
+        '{
+            given (Ints is Encodable in Protobuf) =
+              Protobuf.encodablePrinted(using locomotion.intsPrintable)
+
+            locomotion.Benchmarks.value4.in[Protobuf].encode
+        }
 
       profile(m"Encode 500 log entries")(target = 5*Second):
         '{ locomotion.Benchmarks.value3.in[Protobuf].encode }

@@ -70,6 +70,10 @@ case class Logs(@field(1) logs: List[LogEntry]) derives CanEqual
 
 case class Ints(@field(1) values: List[Long]) derives CanEqual
 
+// The same packed field in the unboxed representation (the frozen `Array[Long]^{}`; this
+// module is not capture-checked, so the annotation is not written).
+case class IntArray(@field(1) values: Array[Long]) derives CanEqual
+
 case class Tags(@field(1) tags: List[Text]) derives CanEqual
 
 case class Attributes(@field(1) entries: Map[Text, Text]) derives CanEqual
@@ -101,6 +105,8 @@ given smallEncodable:      Small is Encodable in Protobuf = Protobuf.EncodableDe
 given usersEncodable:      Users is Encodable in Protobuf = Protobuf.EncodableDerivation.derived
 given logsEncodable:       Logs is Encodable in Protobuf = Protobuf.EncodableDerivation.derived
 given intsEncodable:       Ints is Encodable in Protobuf = Protobuf.EncodableDerivation.derived
+given intArrayEncodable:   IntArray is Encodable in Protobuf = Protobuf.EncodableDerivation.derived
+given intArrayDecodable:   IntArray is Decodable in Protobuf = Protobuf.DecodableDerivation.derived
 given tagsEncodable:       Tags is Encodable in Protobuf = Protobuf.EncodableDerivation.derived
 given attributesEncodable: Attributes is Encodable in Protobuf =
   Protobuf.EncodableDerivation.derived
@@ -122,6 +128,7 @@ val smallParsable:      Small is Protobuf.Parsable      = Inlinable.parsable[Sma
 val usersParsable:      Users is Protobuf.Parsable      = Inlinable.parsable[Users]
 val logsParsable:       Logs is Protobuf.Parsable       = Inlinable.parsable[Logs]
 val intsParsable:       Ints is Protobuf.Parsable       = Inlinable.parsable[Ints]
+val intArrayParsable:   IntArray is Protobuf.Parsable   = Inlinable.parsable[IntArray]
 val tagsParsable:       Tags is Protobuf.Parsable       = Inlinable.parsable[Tags]
 val attributesParsable: Attributes is Protobuf.Parsable = Inlinable.parsable[Attributes]
 val deep1Parsable:      Deep1 is Protobuf.Parsable      = Inlinable.parsable[Deep1]
@@ -133,6 +140,7 @@ val smallPrintable:      Small is Protobuf.Printable      = Inlinable.printable[
 val usersPrintable:      Users is Protobuf.Printable      = Inlinable.printable[Users]
 val logsPrintable:       Logs is Protobuf.Printable       = Inlinable.printable[Logs]
 val intsPrintable:       Ints is Protobuf.Printable       = Inlinable.printable[Ints]
+val intArrayPrintable:   IntArray is Protobuf.Printable  = Inlinable.printable[IntArray]
 val tagsPrintable:       Tags is Protobuf.Printable       = Inlinable.printable[Tags]
 val attributesPrintable: Attributes is Protobuf.Printable = Inlinable.printable[Attributes]
 val deep1Printable:      Deep1 is Protobuf.Printable      = Inlinable.printable[Deep1]

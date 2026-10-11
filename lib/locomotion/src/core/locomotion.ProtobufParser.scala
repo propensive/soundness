@@ -579,8 +579,37 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
       val value = bytes(pos).toLong
       pos += 1
       value
-    else if limit - pos >= 10 && bufEnd - pos >= 10 then varintBuffered(offset, 0L, 0)
+    else if limit - pos >= 10 && bufEnd - pos >= 10 then varintShort(offset)
     else directVarintSlow()
+
+  // The two-, three- and four-byte varints — lengths, counts, timestamps, most packed
+  // values — read straight through, with no per-byte state; longer ones continue in
+  // `varintBuffered` from the fifth byte. Ten bytes are known to be buffered and in window.
+  private update def varintShort(start: Int)(using Tactic[Protobuf.Error]): Long =
+    val byte0 = bytes(pos)
+    val byte1 = bytes(pos + 1)
+    var result = (byte0 & 0x7f).toLong | ((byte1 & 0x7f).toLong << 7)
+
+    if byte1 >= 0 then
+      pos += 2
+      result
+    else
+      val byte2 = bytes(pos + 2)
+      result |= (byte2 & 0x7f).toLong << 14
+
+      if byte2 >= 0 then
+        pos += 3
+        result
+      else
+        val byte3 = bytes(pos + 3)
+        result |= (byte3 & 0x7f).toLong << 21
+
+        if byte3 >= 0 then
+          pos += 4
+          result
+        else
+          pos += 4
+          varintBuffered(start, result, 28)
 
   // Every byte a varint may have is buffered and within the window, so termination is the
   // general loop's without its end tests: the last byte has its top bit clear, or the tenth
