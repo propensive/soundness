@@ -34,8 +34,5 @@ package soundness
 
 export
   octogenarian
-  . { ChangeKind, Commit, FastForward, FileDiff, Git, Hunk, Note, NoteRef, Notes, Patch, Progress,
-      ReflogEntry, Refspec, Remote, ResetMode, SshUrl, Worktree, target, namespace, content }
-
-package gitCommands:
-  export octogenarian.gitCommands.searchpathGitCommand
+  . { ChangeKind, Commit, FastForward, FileDiff, Git, Hunk, NoteRef, Notes, Patch, ReflogEntry,
+      Remote, ResetMode, SshUrl, target, namespace, content }

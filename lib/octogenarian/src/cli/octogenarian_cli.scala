@@ -32,58 +32,36 @@
                                                                                                   */
 package octogenarian
 
+import scala.caps
+
+import ambience.*
 import anticipation.*
 import contingency.*
-import distillate.*
-import gossamer.*
+import galilei.*
 import guillotine.*
-import kaleidoscope.*
+import nomenclature.*
 import prepositional.*
-import rudiments.*
 import serpentine.*
-import spectacular.*
 
-object internal:
+package gitCommands:
+  // The `git` executable found on the search path.
+  given searchpathGitCommand: ( WorkingDirectory, Environment, Commandline.Event is Loggable,
+                                Tactic[Name.Error], Tactic[Path.Error], Tactic[Io.Error],
+                                Tactic[Exec.Error] )
+  =>  ( ((Path on Linux) is Instantiable across Paths from Text)^ )
+  =>  Commandline.Command =
 
-  // `Refspec` is the umbrella type for anything that can be passed to git
-  // as a revision argument: branch names, tag names, commit hashes,
-  // `HEAD~N`, `master..feature`, …  It used to be `opaque type Refspec =
-  // Text`; making it a trait lets `Git.Hash` extend Serpentine's `Root`
-  // (and therefore `Path`) while still flowing into every
-  // `repo.foo(refspec: Refspec)` call site that previously accepted
-  // opaque-typed hashes.
-  object Refspec:
-    def head(n: Int = 0): Refspec = unsafe(t"HEAD~$n")
-    def unsafe(text: Text): Refspec = RawRef(text)
+    val path: Path on Linux = sh"which git".exec[Path on Linux]()
+    Commandline.Command(path.encode)
 
-    def parse(text: Text)(using Tactic[Git.RefError]): Text =
-      def fail(reason: Git.RefError.Reason): Text = abort(Git.RefError(text, reason))
+package gitBackends:
+  // The backend that runs the `git` command. Its capture set is spelled out, as the `Sessional`
+  // givens do: an inferred one would freshen the logger it was built from.
+  given commandlineGit
+  :   ( command:     Commandline.Command,
+        working:     WorkingDirectory,
+        environment: Environment,
+        loggable:    (Commandline.Event is Loggable)^ )
+  =>  ( Git.Backend^{loggable, caps.any} ) =
 
-      text.cut(t"/").each: part =>
-        if part.starts(t".") || part.ends(t".") then fail(Git.RefError.Reason.LeadingOrTrailingDot)
-        if part.ends(t".lock")                  then fail(Git.RefError.Reason.ReservedSuffix)
-        if part.contains(t"@{")                 then fail(Git.RefError.Reason.ReservedSequence)
-        if part.contains(t"..")                 then fail(Git.RefError.Reason.DoubleDot)
-        if part.length == 0                     then fail(Git.RefError.Reason.EmptySegment)
-
-        for char <- List('*', '[', '\\', ' ', '^', '~', ':', '?')
-        do if part.contains(char) then fail(Git.RefError.Reason.InvalidCharacter)
-
-      text
-
-    given encodable: Refspec is Encodable in Text = _.text
-    given parameterizable: Refspec is Parameterizable = _.text
-    given showable: Refspec is Showable = _.text
-
-    // Covers the revision specifiers which are not named refs — `HEAD~2`, `main..feature` — as
-    // well as any `Refspec` seen only through the trait; `Git.Hash`, `Git.Branch` and `Git.Tag`
-    // each have their own, more specific, instance.
-    given inspectable: [refspec <: Refspec] => refspec is Inspectable = refspec =>
-      t"Refspec(${refspec.text})"
-
-  trait Refspec:
-    def text: Text
-
-  // Concrete `Refspec` for revision specifiers that aren't named refs:
-  // `HEAD~N`, `master..feature`, raw revspecs decoded from text, etc.
-  private case class RawRef(text: Text) extends Refspec
+    Commandline(command)

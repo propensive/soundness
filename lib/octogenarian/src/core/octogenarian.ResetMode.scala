@@ -33,16 +33,15 @@
 package octogenarian
 
 import anticipation.*
-import gossamer.{t}
-import guillotine.*
+import gossamer.t
 
-object ResetMode:
-  given parameterizable: ResetMode is Parameterizable =
+enum ResetMode:
+  case Soft, Mixed, Hard, Merge, Keep
+
+  // The command-line flag git knows this mode by.
+  def flag: Text = this match
     case Soft  => t"--soft"
     case Mixed => t"--mixed"
     case Hard  => t"--hard"
     case Merge => t"--merge"
     case Keep  => t"--keep"
-
-enum ResetMode:
-  case Soft, Mixed, Hard, Merge, Keep

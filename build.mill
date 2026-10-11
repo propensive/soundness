@@ -1036,7 +1036,7 @@ object soundness extends Toolchain:
 
   object tool extends Bundle(anthology.core, degustation.core,
     harlequin.core, harlequin.typed, hellenism.core,
-    hyperbole.tasty, hyperbole.core, octogenarian.core,
+    hyperbole.tasty, hyperbole.core, octogenarian.core, octogenarian.cli,
     revolution.core, revolution.semver,
     anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
@@ -2658,7 +2658,7 @@ object jacinta extends Library:
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
     )
   object test extends Tests(time, http, schema, staged, optics, sedentary.core,
-    diuretic.core, galilei.jvm, octogenarian.core, eucalyptus.core, hellenism.core)
+    diuretic.core, galilei.jvm, octogenarian.core, octogenarian.cli, eucalyptus.core, hellenism.core)
   object bench extends Benchmarks(core, quantitative.units):
     // Not yet checked: the suite object holds its exclusive payload arrays as fields, which
     // capture checking rejects ("needs to extend Capability since it has fields … with `any`");
@@ -2820,12 +2820,18 @@ object nomenclature extends Library:
       settings.sep(super.scalacOptions())
 
 object octogenarian extends Library:
-  object core extends Component(galilei.jvm, guillotine.core, urticose.core, enigmatic.asn1, anticipation.url,
-    dissonance.core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
+  // The model, the repository and worktree handles, and the `Git.Backend` typeclass they drive:
+  // no process-spawning here, so a consumer of the native backend never compiles guillotine.
+  object core extends Component(galilei.core, urticose.core, anticipation.url, dissonance.core):
+    override def scalaJs = false // JVM-only (filesystem access, real-path resolution)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, eucalyptus.core):
+  // The backend that runs the `git` command: `gitBackends.commandlineGit`.
+  object cli extends Component(core, guillotine.core, galilei.jvm):
+    override def scalaJs = false // transitively JVM-only (process)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, cli, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

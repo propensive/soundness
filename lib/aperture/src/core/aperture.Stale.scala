@@ -30,10 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package octogenarian
+package aperture
 
-import anticipation.*
-import prepositional.*
-import serpentine.*
+// A value as it was at the moment a handle showed it, over state the handle does not own: a ref in
+// a repository other processes write, a file's size, a directory's entries. The value is immutable
+// and pure; what it records may have changed before the constructor returned. The type exists so
+// that a signature can say so: a method returning `Stale[Git.Hash]` resolved a ref, and a method
+// taking one is conditional on it still holding, and fails typedly if it does not. There is
+// deliberately no timestamp: a clock would be a dependency this layer does not have, and "recent"
+// is not a property anyone should reason from. The only sound use of a stale value is to hand it
+// back to the handle that produced it.
+object Stale:
+  extension [value](stale: Stale[value])
+    // A value derived from a stale value is exactly as stale as its source.
+    inline def let[value2](inline lambda: value => value2): Stale[value2] = Stale(lambda(stale.value))
 
-case class Note(target: Git.Hash, body: Text, ref: Path on Git.Refs)
+case class Stale[+value](value: value)

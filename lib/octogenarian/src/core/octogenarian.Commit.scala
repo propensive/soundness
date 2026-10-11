@@ -33,14 +33,16 @@
 package octogenarian
 
 import anticipation.*
-import enigmatic.*
 import vacuous.*
 
+// A commit as stored: its own hash, its tree, its parents, who wrote and who committed it (each
+// with a timestamp), its signature block if it has one, and its message without the trailing
+// newline git appends.
 case class Commit
   ( commit:    Git.Hash,
     tree:      Git.Hash,
-    parent:    List[Git.Hash],
-    author:    Text,
-    committer: Text,
-    signature: Optional[Pem],
-    message:   List[Text] )
+    parents:   List[Git.Hash],
+    author:    Git.Signature,
+    committer: Git.Signature,
+    signature: Optional[Text],
+    message:   Text )
