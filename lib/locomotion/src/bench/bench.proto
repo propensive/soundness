@@ -1,0 +1,76 @@
+// The benchmark message schema, as a protobuf-java user would declare it: the same messages and
+// field numbers as `locomotion_bench.scala`. `BenchProtos.java` beside this file is its protoc
+// output, checked in (see the note at the top of that file).
+syntax = "proto3";
+
+package locomotion.bench;
+
+option java_package = "locomotion.bench";
+option java_outer_classname = "BenchProtos";
+
+message Small {
+  int64 id = 1;
+  string name = 2;
+  bool active = 3;
+}
+
+message User {
+  int64 id = 1;
+  string username = 2;
+  string email = 3;
+  bool active = 4;
+  string role = 5;
+}
+
+message Users {
+  repeated User users = 1;
+}
+
+message LogEntry {
+  int64 timestamp = 1;
+  string level = 2;
+  string service = 3;
+  string request_id = 4;
+  int64 user_id = 5;
+  string message = 6;
+}
+
+message Logs {
+  repeated LogEntry logs = 1;
+}
+
+message Ints {
+  repeated int64 values = 1;
+}
+
+message Tags {
+  repeated string tags = 1;
+}
+
+message Attributes {
+  map<string, string> entries = 1;
+}
+
+message Deep5 {
+  string label = 1;
+}
+
+message Deep4 {
+  string label = 1;
+  Deep5 child = 2;
+}
+
+message Deep3 {
+  string label = 1;
+  Deep4 child = 2;
+}
+
+message Deep2 {
+  string label = 1;
+  Deep3 child = 2;
+}
+
+message Deep1 {
+  string label = 1;
+  Deep2 child = 2;
+}

@@ -64,20 +64,16 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   given prefixes:        Prefixes               = Prefixes(List(Kilo, Mega, Giga, Tera))
 
   // ---------------------------------------------------------------------------
-  // Comparison baseline: Google's protobuf-java, used through its LOW-LEVEL
-  // CodedInputStream/CodedOutputStream API so no generated message classes (and
-  // no `protoc` step) are required.
+  // Comparison baseline: Google's protobuf-java, in two forms.
   //
-  // Caveats — the comparison is informative but not perfectly symmetric:
-  //   * Decode: this walk reads every field but builds no typed object, whereas
-  //     Locomotion's typed decode also materialises case classes (Wisteria),
-  //     `List`/`Map` builders and UTF-8 `Text`, so the walk does strictly less
-  //     work. (Locomotion's generic `read[Protobuf]` is not benchmarked: it only
-  //     wraps the payload lazily without parsing fields, so it would measure a
-  //     near no-op rather than a decode.)
-  //   * Encode: protobuf-java writes straight into a byte buffer, whereas
-  //     Locomotion builds an intermediate `Protobuf` ADT and then prints it.
-  // Read the numbers with that architectural difference in mind.
+  //   * The generated message classes (`BenchProtos`, protoc output from `bench.proto`
+  //     checked in beside this file): `parseFrom` and `toByteArray` are what a protobuf-java
+  //     user runs, and they materialise and serialise typed messages exactly as Locomotion's
+  //     typed and direct rows do, so the "(generated)" rows are the like-for-like comparison.
+  //   * The low-level `CodedInputStream`/`CodedOutputStream` API, used by hand: the decode
+  //     walk reads every field but builds nothing, and the hand-written encoders write straight
+  //     into a buffer, so these rows are the floor a reader or writer of the wire format can
+  //     reach, not a product anyone ships.
   // ---------------------------------------------------------------------------
 
   // Generic field walk — the analog of `read[Protobuf]`. The accumulated
@@ -232,9 +228,22 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   lazy val raw6: scala.Array[Byte] = bytes6.asInstanceOf[scala.Array[Byte]]
   lazy val raw8: scala.Array[Byte] = bytes8.asInstanceOf[scala.Array[Byte]]
 
+  // The same corpora as protobuf-java generated messages, parsed once from Locomotion's bytes so
+  // the two sides serialise identical values. An encode row serialises `proto.toBuilder.build()`:
+  // a generated message memoises its serialised size, so a fresh instance per operation is what
+  // makes the row pay the size pass, as Locomotion's does.
+  lazy val proto1: locomotion.bench.BenchProtos.Small = locomotion.bench.BenchProtos.Small.parseFrom(raw1).nn
+  lazy val proto2: locomotion.bench.BenchProtos.Users = locomotion.bench.BenchProtos.Users.parseFrom(raw2).nn
+  lazy val proto3: locomotion.bench.BenchProtos.Logs = locomotion.bench.BenchProtos.Logs.parseFrom(raw3).nn
+  lazy val proto4: locomotion.bench.BenchProtos.Ints = locomotion.bench.BenchProtos.Ints.parseFrom(raw4).nn
+  lazy val proto5: locomotion.bench.BenchProtos.Attributes = locomotion.bench.BenchProtos.Attributes.parseFrom(raw5).nn
+  lazy val proto6: locomotion.bench.BenchProtos.Deep1 = locomotion.bench.BenchProtos.Deep1.parseFrom(raw6).nn
+  lazy val proto8: locomotion.bench.BenchProtos.Tags = locomotion.bench.BenchProtos.Tags.parseFrom(raw8).nn
+
   def run(): Unit =
     val bench = Bench()
     val constrained = Stress(heap = t"512m")
+    val profile = Profile()
 
     val size1 = bytes1.length*Byte
     val size2 = bytes2.length*Byte
@@ -264,8 +273,19 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
             Chain(locomotion.Benchmarks.bytes1).read[Small in Protobuf]
         }
 
+      // The whole message in hand as one `Data`: read in place, with no stream or cursor.
+      bench(m"Decode directly from Data with Locomotion")
+        ( target = 1*Second, operationSize = size1 ):
+        '{
+            given Small is Protobuf.Parsable = locomotion.smallParsable
+            locomotion.Benchmarks.bytes1.read[Small in Protobuf]
+        }
+
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size1):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw1) }
+
+      bench(m"Parse with protobuf-java (generated)")(target = 1*Second, operationSize = size1):
+        '{ locomotion.bench.BenchProtos.Small.parseFrom(locomotion.Benchmarks.raw1) }
 
     suite(m"Decode 100 user records"):
       bench(m"Decode (typed) with Locomotion")
@@ -281,6 +301,9 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size2):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw2) }
 
+      bench(m"Parse with protobuf-java (generated)")(target = 1*Second, operationSize = size2):
+        '{ locomotion.bench.BenchProtos.Users.parseFrom(locomotion.Benchmarks.raw2) }
+
     suite(m"Decode 500 log entries"):
       bench(m"Decode (typed) with Locomotion")
         ( target = 1*Second, operationSize = size3 ):
@@ -292,8 +315,19 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
             Chain(locomotion.Benchmarks.bytes3).read[Logs in Protobuf]
         }
 
+      // The whole message in hand as one `Data`: read in place, with no stream or cursor.
+      bench(m"Decode directly from Data with Locomotion")
+        ( target = 1*Second, operationSize = size3 ):
+        '{
+            given Logs is Protobuf.Parsable = locomotion.logsParsable
+            locomotion.Benchmarks.bytes3.read[Logs in Protobuf]
+        }
+
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size3):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw3) }
+
+      bench(m"Parse with protobuf-java (generated)")(target = 1*Second, operationSize = size3):
+        '{ locomotion.bench.BenchProtos.Logs.parseFrom(locomotion.Benchmarks.raw3) }
 
     suite(m"Decode 1000 packed integers"):
       bench(m"Decode (typed) with Locomotion")
@@ -308,6 +342,9 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size4):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw4) }
+
+      bench(m"Parse with protobuf-java (generated)")(target = 1*Second, operationSize = size4):
+        '{ locomotion.bench.BenchProtos.Ints.parseFrom(locomotion.Benchmarks.raw4) }
 
     suite(m"Decode 50-entry string map"):
       bench(m"Decode (typed) with Locomotion")
@@ -325,6 +362,9 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size5):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw5) }
 
+      bench(m"Parse with protobuf-java (generated)")(target = 1*Second, operationSize = size5):
+        '{ locomotion.bench.BenchProtos.Attributes.parseFrom(locomotion.Benchmarks.raw5) }
+
     suite(m"Decode 1000 repeated strings"):
       bench(m"Decode (typed) with Locomotion")
         ( target = 1*Second, operationSize = size8 ):
@@ -336,8 +376,19 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
             Chain(locomotion.Benchmarks.bytes8).read[Tags in Protobuf]
         }
 
+      // The whole message in hand as one `Data`: read in place, with no stream or cursor.
+      bench(m"Decode directly from Data with Locomotion")
+        ( target = 1*Second, operationSize = size8 ):
+        '{
+            given Tags is Protobuf.Parsable = locomotion.tagsParsable
+            locomotion.Benchmarks.bytes8.read[Tags in Protobuf]
+        }
+
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size8):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw8) }
+
+      bench(m"Parse with protobuf-java (generated)")(target = 1*Second, operationSize = size8):
+        '{ locomotion.bench.BenchProtos.Tags.parseFrom(locomotion.Benchmarks.raw8) }
 
     suite(m"Decode 5-level nested message"):
       bench(m"Decode (typed) with Locomotion")
@@ -352,6 +403,9 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size6):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw6) }
+
+      bench(m"Parse with protobuf-java (generated)")(target = 1*Second, operationSize = size6):
+        '{ locomotion.bench.BenchProtos.Deep1.parseFrom(locomotion.Benchmarks.raw6) }
 
     // -------------------------------------------------------------------------
     // Chunked input: corpus 7 delivered as ~100 chunks of 4 KiB, the shape a
@@ -383,6 +437,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
               (locomotion.Benchmarks.inputStream(locomotion.Benchmarks.chunkList7))
         }
 
+      bench(m"Parse with protobuf-java (generated)")(target = 1*Second, operationSize = size7):
+        '{
+            locomotion.bench.BenchProtos.Logs.parseFrom
+              (locomotion.Benchmarks.inputStream(locomotion.Benchmarks.chunkList7))
+        }
+
     // -------------------------------------------------------------------------
     // Bounded memory: a 64 MiB message streamed through the direct parser in a
     // pinned 512 MB heap. The counting consumer retains nothing, so the peak
@@ -407,11 +467,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
         }
 
     // -------------------------------------------------------------------------
-    // Encode. Locomotion encode is the `Min` baseline; protobuf-java rows are
-    // provided for a representative subset of corpora (small scalar message,
-    // repeated nested messages, packed varints), with a hand-written low-level
-    // encoder: hand-writing the wire format of map entries and deep nesting adds
-    // bulk without changing the picture.
+    // Encode. Locomotion's ADT encode is the `Min` baseline, with a direct row through a
+    // generated `Protobuf.Printable` beside it; every corpus has a protobuf-java
+    // generated-message row, and a representative subset (small scalar message, repeated
+    // nested messages, packed varints, repeated strings) also has the hand-written
+    // low-level encoder as the floor: hand-writing the wire format of map entries and
+    // deep nesting adds bulk without changing the picture.
     // `operationSize` is the size of the encoded output, the usual throughput
     // denominator for serialisation.
     // -------------------------------------------------------------------------
@@ -420,6 +481,17 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
       bench(m"Encode with Locomotion")
         ( target = 1*Second, operationSize = size1 ):
         '{ locomotion.Benchmarks.value1.in[Protobuf].encode }
+
+      bench(m"Encode directly with Locomotion")(target = 1*Second, operationSize = size1):
+        '{
+            given (Small is Encodable in Protobuf) =
+              Protobuf.encodablePrinted(using locomotion.smallPrintable)
+
+            locomotion.Benchmarks.value1.in[Protobuf].encode
+        }
+
+      bench(m"Encode with protobuf-java (generated)")(target = 1*Second, operationSize = size1):
+        '{ locomotion.Benchmarks.proto1.toBuilder.nn.build().nn.toByteArray.nn }
 
       bench(m"Encode with protobuf-java")(target = 1*Second, operationSize = size1):
         '{
@@ -436,6 +508,17 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
       bench(m"Encode with Locomotion")
         ( target = 1*Second, operationSize = size2 ):
         '{ locomotion.Benchmarks.value2.in[Protobuf].encode }
+
+      bench(m"Encode directly with Locomotion")(target = 1*Second, operationSize = size2):
+        '{
+            given (Users is Encodable in Protobuf) =
+              Protobuf.encodablePrinted(using locomotion.usersPrintable)
+
+            locomotion.Benchmarks.value2.in[Protobuf].encode
+        }
+
+      bench(m"Encode with protobuf-java (generated)")(target = 1*Second, operationSize = size2):
+        '{ locomotion.Benchmarks.proto2.toBuilder.nn.build().nn.toByteArray.nn }
 
       bench(m"Encode with protobuf-java")(target = 1*Second, operationSize = size2):
         '{
@@ -467,6 +550,17 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
         ( target = 1*Second, operationSize = size4 ):
         '{ locomotion.Benchmarks.value4.in[Protobuf].encode }
 
+      bench(m"Encode directly with Locomotion")(target = 1*Second, operationSize = size4):
+        '{
+            given (Ints is Encodable in Protobuf) =
+              Protobuf.encodablePrinted(using locomotion.intsPrintable)
+
+            locomotion.Benchmarks.value4.in[Protobuf].encode
+        }
+
+      bench(m"Encode with protobuf-java (generated)")(target = 1*Second, operationSize = size4):
+        '{ locomotion.Benchmarks.proto4.toBuilder.nn.build().nn.toByteArray.nn }
+
       bench(m"Encode with protobuf-java")(target = 1*Second, operationSize = size4):
         '{
             val out = new _root_.java.io.ByteArrayOutputStream(4096)
@@ -489,6 +583,17 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
         ( target = 1*Second, operationSize = size8 ):
         '{ locomotion.Benchmarks.value8.in[Protobuf].encode }
 
+      bench(m"Encode directly with Locomotion")(target = 1*Second, operationSize = size8):
+        '{
+            given (Tags is Encodable in Protobuf) =
+              Protobuf.encodablePrinted(using locomotion.tagsPrintable)
+
+            locomotion.Benchmarks.value8.in[Protobuf].encode
+        }
+
+      bench(m"Encode with protobuf-java (generated)")(target = 1*Second, operationSize = size8):
+        '{ locomotion.Benchmarks.proto8.toBuilder.nn.build().nn.toByteArray.nn }
+
       bench(m"Encode with protobuf-java")(target = 1*Second, operationSize = size8):
         '{
             val out = new _root_.java.io.ByteArrayOutputStream(16384)
@@ -499,17 +604,86 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
             out.toByteArray.nn
         }
 
-    suite(m"Encode 500 log entries (Locomotion only)"):
+    suite(m"Encode 500 log entries"):
       bench(m"Encode with Locomotion")
         ( target = 1*Second, operationSize = size3 ):
         '{ locomotion.Benchmarks.value3.in[Protobuf].encode }
 
-    suite(m"Encode 50-entry string map (Locomotion only)"):
+      bench(m"Encode directly with Locomotion")(target = 1*Second, operationSize = size3):
+        '{
+            given (Logs is Encodable in Protobuf) =
+              Protobuf.encodablePrinted(using locomotion.logsPrintable)
+
+            locomotion.Benchmarks.value3.in[Protobuf].encode
+        }
+
+      bench(m"Encode with protobuf-java (generated)")(target = 1*Second, operationSize = size3):
+        '{ locomotion.Benchmarks.proto3.toBuilder.nn.build().nn.toByteArray.nn }
+
+    suite(m"Encode 50-entry string map"):
       bench(m"Encode with Locomotion")
         ( target = 1*Second, operationSize = size5 ):
         '{ locomotion.Benchmarks.value5.in[Protobuf].encode }
 
-    suite(m"Encode 5-level nested message (Locomotion only)"):
+      bench(m"Encode directly with Locomotion")(target = 1*Second, operationSize = size5):
+        '{
+            given (Attributes is Encodable in Protobuf) =
+              Protobuf.encodablePrinted(using locomotion.attributesPrintable)
+
+            locomotion.Benchmarks.value5.in[Protobuf].encode
+        }
+
+      bench(m"Encode with protobuf-java (generated)")(target = 1*Second, operationSize = size5):
+        '{ locomotion.Benchmarks.proto5.toBuilder.nn.build().nn.toByteArray.nn }
+
+    suite(m"Encode 5-level nested message"):
       bench(m"Encode with Locomotion")
         ( target = 1*Second, operationSize = size6 ):
         '{ locomotion.Benchmarks.value6.in[Protobuf].encode }
+
+      bench(m"Encode directly with Locomotion")(target = 1*Second, operationSize = size6):
+        '{
+            given (Deep1 is Encodable in Protobuf) =
+              Protobuf.encodablePrinted(using locomotion.deep1Printable)
+
+            locomotion.Benchmarks.value6.in[Protobuf].encode
+        }
+
+      bench(m"Encode with protobuf-java (generated)")(target = 1*Second, operationSize = size6):
+        '{ locomotion.Benchmarks.proto6.toBuilder.nn.build().nn.toByteArray.nn }
+
+    // -------------------------------------------------------------------------
+    // Where the time goes: JFR execution samples over each path's largest corpus,
+    // aggregated by the executing method, so a change to a hot path can be
+    // checked against the frames it was meant to remove.
+    // -------------------------------------------------------------------------
+
+    suite(m"Hotspots"):
+      profile(m"Decode 500 log entries directly")(target = 5*Second):
+        '{
+            given Logs is Protobuf.Parsable = locomotion.logsParsable
+            Chain(locomotion.Benchmarks.bytes3).read[Logs in Protobuf]
+        }
+
+      profile(m"Decode 500 log entries (typed)")(target = 5*Second):
+        '{ Chain(locomotion.Benchmarks.bytes3).read[Logs in Protobuf] }
+
+      profile(m"Decode 1000 repeated strings directly")(target = 5*Second):
+        '{
+            given Tags is Protobuf.Parsable = locomotion.tagsParsable
+            Chain(locomotion.Benchmarks.bytes8).read[Tags in Protobuf]
+        }
+
+      profile(m"Decode 1000 packed integers (typed)")(target = 5*Second):
+        '{ Chain(locomotion.Benchmarks.bytes4).read[Ints in Protobuf] }
+
+      profile(m"Encode 500 log entries")(target = 5*Second):
+        '{ locomotion.Benchmarks.value3.in[Protobuf].encode }
+
+      profile(m"Encode 500 log entries directly")(target = 5*Second):
+        '{
+            given (Logs is Encodable in Protobuf) =
+              Protobuf.encodablePrinted(using locomotion.logsPrintable)
+
+            locomotion.Benchmarks.value3.in[Protobuf].encode
+        }
