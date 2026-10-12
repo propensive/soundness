@@ -382,20 +382,29 @@ object stagedInternal:
       case AnnotatedType(inner, _) => unannotated(inner)
       case other                   => other
 
-  // Whether a field is a frozen array of packable scalars, `Array[Long]^{}` and the like:
-  // gathered as a packed run into an unboxed array builder, and walked by index when
-  // printed. (`Array[Byte]^{}` is `Data`, a scalar, and never reaches here.)
-  private def isArrayType(using Quotes)(tpe: quotes.reflect.TypeRepr): Boolean =
+  // Whether a field is a frozen array, `Array[T]^{}`: a repeated field in the representation
+  // with no cell per element — gathered into the stdlib's array builder for its element, and
+  // walked by index when printed. (`Array[Byte]^{}` is `Data`, a scalar, and never reaches
+  // here.)
+  private def isFrozenArray(using Quotes)(tpe: quotes.reflect.TypeRepr): Boolean =
     import quotes.reflect.*
 
     val arraySym = TypeRepr.of[proscenium.Array[Any]].typeSymbol
 
     unannotated(tpe) match
       case AppliedType(constructor, List(element)) =>
-        constructor.typeSymbol == arraySym && builtinKind(element.dealias).exists(_ <= KFloat)
+        constructor.typeSymbol == arraySym && !(element.dealias =:= TypeRepr.of[Byte])
 
       case _ =>
         false
+
+  // A frozen array of packable scalars, whose builder is the unboxed one.
+  private def isArrayType(using Quotes)(tpe: quotes.reflect.TypeRepr): Boolean =
+    import quotes.reflect.*
+
+    isFrozenArray(tpe) && (unannotated(tpe) match
+      case AppliedType(_, List(element)) => builtinKind(element.dealias).exists(_ <= KFloat)
+      case _                             => false)
 
   private def aliasCollectionUnderlying(using Quotes)(tpe: quotes.reflect.TypeRepr)
   :   Option[quotes.reflect.TypeRepr] =
@@ -407,7 +416,7 @@ object stagedInternal:
     val sequenceSym = TypeRepr.of[proscenium.Sequence[Any]].typeSymbol
 
     unannotated(tpe) match
-      case AppliedType(constructor, List(element)) if isArrayType(tpe) =>
+      case AppliedType(constructor, List(element)) if isFrozenArray(tpe) =>
         Some(TypeRepr.of[scala.Array].appliedTo(element))
 
       case AppliedType(constructor, List(element)) if constructor.typeSymbol == listSym =>
@@ -998,7 +1007,7 @@ object stagedInternal:
       def defaultOr(index: Int, absent: Expr[Any]): Expr[Any] =
         fieldTypes(index).asType match
           case '[fieldType] =>
-            if isArrayType(fieldTypes(index)) then absent.asExprOf[fieldType] else
+            if isFrozenArray(fieldTypes(index)) then absent.asExprOf[fieldType] else
               ' {
                   val declared = wisteria.internal.default[product, fieldType](${Expr(index)})
 
@@ -1103,7 +1112,7 @@ object stagedInternal:
         Apply
           ( Select(New(Inferred(tpe)), ctor),
             List.range(0, arity).map: index =>
-              if isArrayType(fieldTypes(index)) then fieldTypes(index).asType match
+              if isFrozenArray(fieldTypes(index)) then fieldTypes(index).asType match
                 case '[fieldType] => '{${Ref(slots(index)).asExpr}.asInstanceOf[fieldType]}.asTerm
               else Ref(slots(index)) )
 
@@ -1580,14 +1589,17 @@ object stagedInternal:
                   case '[element] =>
                     val iterable = '{$typed.asInstanceOf[Iterable[element]]}
 
+                    // The walk over the field's elements: by index for a frozen array,
+                    // through an iterator otherwise.
+                    val sumOver: (Expr[element] => Expr[Int]) => Expr[Int] =
+                      if isFrozenArray(fieldTypes(index))
+                      then summedArray('{$typed.asInstanceOf[scala.IArray[element]]})
+                      else summed(iterable)
+
                     element match
                       case Elem.Scalar(kind) =>
                         def each(item: Expr[element]): Expr[Int] = scalarSize(kind, item, sizes)
-
-                        val runSize: Expr[Int] =
-                          if isArrayType(fieldTypes(index))
-                          then summedArray('{$typed.asInstanceOf[scala.IArray[element]]})(each)
-                          else summed(iterable)(each)
+                        val runSize: Expr[Int] = sumOver(each)
 
                         ' {
                             val run = $runSize
@@ -1601,7 +1613,7 @@ object stagedInternal:
                         def each(item: Expr[element]): Expr[Int] =
                           '{${Expr(tag)} + ${scalarSize(kind, item, sizes)}}
 
-                        summed(iterable)(each)
+                        sumOver(each)
 
                       case Elem.Nested(instance0, _) if instance0.prints =>
                         val instance = instance0.asInstanceOf[Inlinable { type Self = element }]
@@ -1609,7 +1621,7 @@ object stagedInternal:
                         def framed(item: Expr[element]): Expr[Int] =
                           framedSize(number, instance.measure(item, sizes), sizes)
 
-                        summed(iterable)(framed)
+                        sumOver(framed)
 
                       case Elem.Nested(_, _) | Elem.Runtime(_) | Elem.Seam =>
                         printableFor[element] match
@@ -1623,7 +1635,7 @@ object stagedInternal:
                                     },
                                   sizes )
 
-                            summed(iterable)(framed)
+                            sumOver(framed)
 
                           case None =>
                             seam
@@ -1727,15 +1739,17 @@ object stagedInternal:
                   case '[element] =>
                     val iterable = '{$typed.asInstanceOf[Iterable[element]]}
 
+                    val eachOver: (Expr[element] => Expr[Unit]) => Expr[Unit] =
+                      if isFrozenArray(fieldTypes(index))
+                      then visitedArray('{$typed.asInstanceOf[scala.IArray[element]]})
+                      else visited(iterable)
+
                     element match
                       case Elem.Scalar(kind) =>
                         def each(item: Expr[element]): Expr[Unit] =
                           scalarWrite(kind, item, printer, sizes)
 
-                        val walk: Expr[Unit] =
-                          if isArrayType(fieldTypes(index))
-                          then visitedArray('{$typed.asInstanceOf[scala.IArray[element]]})(each)
-                          else visited(iterable)(each)
+                        val walk: Expr[Unit] = eachOver(each)
 
                         ' {
                             val run = ProtobufSizes.of($sizes).next()
@@ -1747,7 +1761,7 @@ object stagedInternal:
                           }
 
                       case Elem.Chunk(kind) =>
-                        visited(iterable) { item => tagged(kind, item) }
+                        eachOver { item => tagged(kind, item) }
 
                       case Elem.Nested(instance0, _) if instance0.prints =>
                         val instance = instance0.asInstanceOf[Inlinable { type Self = element }]
@@ -1755,7 +1769,7 @@ object stagedInternal:
                         def framed(item: Expr[element]): Expr[Unit] =
                           framedWrite(number, instance.write(item, printer, sizes), printer, sizes)
 
-                        visited(iterable)(framed)
+                        eachOver(framed)
 
                       case Elem.Nested(_, _) | Elem.Runtime(_) | Elem.Seam =>
                         printableFor[element] match
@@ -1769,7 +1783,7 @@ object stagedInternal:
                                     },
                                   printer, sizes )
 
-                            visited(iterable)(framed)
+                            eachOver(framed)
 
                           case None =>
                             seam

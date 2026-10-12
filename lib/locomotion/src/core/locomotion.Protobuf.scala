@@ -120,6 +120,24 @@ trait Protobuf2:
     listDecodable[Vector, element]
     . asInstanceOf[(sequence[element] is Decodable in Protobuf)^]
 
+  // A frozen array of any other element — messages, text, bytes — is an unpacked repeated
+  // field, as a `List` of them is; the packable scalars' arrays pack, in `object Protobuf`.
+  given arrayEncodable: [element: ClassTag]
+  =>  ( encodable: => (element is Encodable in Protobuf)^ )
+  =>  ( ((Array[element]^{}) is Encodable in Protobuf)^{encodable} ) =
+    // An honest capability, as `listEncodable` below.
+    values =>
+      listEncodable[scala.collection.immutable.ArraySeq, element]
+      . encoded(scala.collection.immutable.ArraySeq.unsafeWrapArray(Array.unsafeJvm(values)))
+
+  given arrayDecodable: [element: ClassTag]
+  =>  ( decodable: => (element is Decodable in Protobuf)^ )
+  =>  ( ((Array[element]^{}) is Decodable in Protobuf)^{decodable} ) =
+    // An honest capability, as `listEncodable` below.
+    protobuf =>
+      val values = listDecodable[scala.collection.immutable.List, element].decoded(protobuf)
+      Array.unsafeFrozen(values.toArray)
+
   given aggregableIn: [value: Decodable in Protobuf] => (tactic: Tactic[Protobuf.Error])
   =>  ( ((value in Protobuf) is Aggregable by Data)^{tactic} ) =
 

@@ -103,6 +103,8 @@ case class Doubles(@field(1) values: List[Double]) derives CanEqual
 // yet capture-check (the checker fails on the derivation's re-declared field type).
 case class LongArray(@field(1) values: Array[Long]^{}) derives CanEqual
 case class DoubleArray(@field(1) values: Array[Double]^{}) derives CanEqual
+case class ItemArray(@field(1) items: Array[Item]^{}) derives CanEqual
+case class NameArray(@field(1) names: Array[Text]^{}) derives CanEqual
 case class Shaped(@field(1) name: Text, @field(2) shape: Shape) derives CanEqual
 case class MaybePoint(@field(1) point: Optional[Point]) derives CanEqual
 
@@ -611,6 +613,36 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
         val bytes = Protobuf.Printable.print(LongArray(Array[Long]()))
         (bytes.length, bytes.read[LongArray in Protobuf].values.length)
       . assert(_ == (0, 0))
+
+      given (ItemArray is Protobuf.Parsable) = Inlinable.parsable[ItemArray]
+      given (ItemArray is Protobuf.Printable) = Inlinable.printable[ItemArray]
+      given (NameArray is Protobuf.Parsable) = Inlinable.parsable[NameArray]
+      given (NameArray is Protobuf.Printable) = Inlinable.printable[NameArray]
+
+      test(m"a frozen array of messages prints as the List form"):
+        Protobuf.Printable.print(ItemArray(Array[Item](Item(1, t"a"), Item(2, t"b")))).to[List]
+      . assert(_ == Batch(List(Item(1, t"a"), Item(2, t"b"))).in[Protobuf].encode.to[List])
+
+      test(m"a frozen array of messages parses from the List form"):
+        Batch(List(Item(1, t"a"), Item(2, t"b"))).in[Protobuf].encode
+        . read[ItemArray in Protobuf].items.to[List]
+      . assert(_ == List(Item(1, t"a"), Item(2, t"b")))
+
+      test(m"a frozen array of strings round-trips directly"):
+        Protobuf.Printable.print(NameArray(Array[Text](t"x", t"yy")))
+        . read[NameArray in Protobuf].names.to[List]
+      . assert(_ == List(t"x", t"yy"))
+
+      test(m"a frozen array of messages gathers and prints without a seam"):
+        given itemSeam: (Item is Decodable in Protobuf) =
+          _ => panic(m"the generated parser decoded an array element through its Decodable")
+
+        given itemEncodeSeam: (Item is Encodable in Protobuf) =
+          _ => panic(m"the generated printer encoded an array element through its Encodable")
+
+        val bytes = Protobuf.Printable.print(ItemArray(Array[Item](Item(1, t"a"))))
+        (bytes.to[List].map(_ & 0xff), bytes.read[ItemArray in Protobuf].items.to[List])
+      . assert(_ == (List(0x0a, 0x05, 0x08, 0x01, 0x12, 0x01, 0x61), List(Item(1, t"a"))))
 
       test(m"a frozen array gathers and prints directly, never through a seam"):
         given arraySeam: ((Array[Long]^{}) is Decodable in Protobuf) =

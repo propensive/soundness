@@ -66,10 +66,10 @@ case class Typed
 A nested case class is a nested message, and an enumeration or sealed hierarchy encodes as proto3's
 `oneof`, with the variant chosen by field number.
 
-A packed field of numbers may also be a frozen array — `Array[Long]^{}`, `Array[Double]^{}` — with
-the same bytes as the `List` form. It is the representation to choose for numeric data read or
-written directly (see below): the parser fills it without boxing an element, and the printer walks
-it by index.
+A repeated field may also be a frozen array — `Array[Long]^{}`, `Array[Double]^{}`,
+`Array[Message]^{}` — with the same bytes as the `List` form. It is the representation to choose
+for data read or written directly (see below): the parser fills it without a cell per element
+(and without boxing a number), and the printer walks it by index.
 
 ### Presence, repetition and maps
 

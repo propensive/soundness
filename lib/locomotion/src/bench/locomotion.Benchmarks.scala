@@ -127,6 +127,10 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // dominated by short strings and small integers.
   lazy val value3: Logs = Logs(List.tabulate(500)(logEntry))
 
+  // The same entries as a frozen array: the repeated-message representation with no cell
+  // per entry.
+  lazy val value3a: LogArray = LogArray(Array.tabulate[LogEntry](500)(logEntry))
+
   // The log-entry record shared by corpora 3 and 7 and the stress message.
   def logEntry(index: Int): LogEntry =
     val level = (index & 3) match
@@ -324,6 +328,14 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
         '{
             given Logs is Protobuf.Parsable = locomotion.logsParsable
             locomotion.Benchmarks.bytes3.read[Logs in Protobuf]
+        }
+
+      // Into a frozen `Array[LogEntry]`: no list cell per entry.
+      bench(m"Decode directly into Array[LogEntry] with Locomotion")
+        ( target = 1*Second, operationSize = size3 ):
+        '{
+            given LogArray is Protobuf.Parsable = locomotion.logArrayParsable
+            Chain(locomotion.Benchmarks.bytes3).read[LogArray in Protobuf]
         }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size3):
@@ -635,6 +647,15 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
               Protobuf.encodablePrinted(using locomotion.logsPrintable)
 
             locomotion.Benchmarks.value3.in[Protobuf].encode
+        }
+
+      bench(m"Encode directly from Array[LogEntry] with Locomotion")
+        ( target = 1*Second, operationSize = size3 ):
+        '{
+            given (LogArray is Encodable in Protobuf) =
+              Protobuf.encodablePrinted(using locomotion.logArrayPrintable)
+
+            locomotion.Benchmarks.value3a.in[Protobuf].encode
         }
 
       bench(m"Encode with protobuf-java (generated)")(target = 1*Second, operationSize = size3):
