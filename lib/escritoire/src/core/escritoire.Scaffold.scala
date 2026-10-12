@@ -93,7 +93,7 @@ case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[
       val dataLength: Int = data.size
 
       val rows: List[Array[Array[text]^{}]^{}] =
-        data.map: row => columns.map[Array[text]^{}]: column => column.get(row).lines.to[Array]
+        data.map: row => columns.map[Array[text]^{}](column => column.get(row).lines.to[Array])
 
       // Evaluated HERE, the last point at which the row value exists; carried as plain
       // lists (no `ClassTag` exists for an `Optional` of a function).

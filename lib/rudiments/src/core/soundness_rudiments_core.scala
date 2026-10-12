@@ -74,7 +74,7 @@ extension [form](range: prepositional.`in`[denominative.Interval, form])
 // shape. Each method delegates to the `rudiments` original inline, so `summonFrom` dispatch
 // and confined-index narrowing behave identically.
 extension (interval: denominative.Interval)
-  inline def unsafeAttested[within](within: within)(using erased vacuous.Unsafe)
+  inline def unsafeAttested[within](within: within)(using erased unsafe: vacuous.Unsafe)
   :   prepositional.`in`[denominative.Interval, within.type] =
 
     interval.asInstanceOf[prepositional.`in`[denominative.Interval, within.type]]
@@ -102,14 +102,14 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
     else vacuous.Unset
 
   // Re-declared like the rest of the group; see `rudiments.unsafeAttested` for the discipline.
-  def unsafeAttested(index: applicable.Operand)(using erased vacuous.Unsafe)
+  def unsafeAttested(index: applicable.Operand)(using erased unsafe: vacuous.Unsafe)
   :   prepositional.`in`[applicable.Operand, value.type] =
 
     index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]]
 
   inline def unsafeAttested[result](index: applicable.Operand)
     ( inline lambda: prepositional.`in`[applicable.Operand, value.type] => result )
-    ( using erased vacuous.Unsafe )
+    ( using erased unsafe: vacuous.Unsafe )
   :   result =
 
     lambda(index.asInstanceOf[prepositional.`in`[applicable.Operand, value.type]])
