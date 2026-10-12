@@ -739,6 +739,26 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       same(m"a present optional message", MaybePoint(Point(1, 2)))
       same(m"an absent optional message writes nothing", MaybePoint(Unset))
 
+      test(m"text beyond ASCII parses back directly"):
+        given (Person is Protobuf.Parsable) = Inlinable.parsable[Person]
+        Protobuf.Printable.print(Person(t"héllo 😀 — ✓", 1)).read[Person in Protobuf]
+      . assert(_ == Person(t"héllo 😀 — ✓", 1))
+
+      test(m"a high byte at the end of otherwise ASCII text parses back directly"):
+        given (Person is Protobuf.Parsable) = Inlinable.parsable[Person]
+        Protobuf.Printable.print(Person(t"plain ascii then é", 1)).read[Person in Protobuf]
+      . assert(_ == Person(t"plain ascii then é", 1))
+
+      test(m"empty and one-byte text parse back directly"):
+        given (Wrapper is Protobuf.Parsable) = Inlinable.parsable[Wrapper]
+        val bytes = Protobuf.Printable.print(Wrapper(Point(0, 0), t""))
+        (bytes.read[Wrapper in Protobuf].label, Protobuf.Printable.print(Wrapper(Point(0, 0), t"x")).read[Wrapper in Protobuf].label)
+      . assert(_ == (t"", t"x"))
+
+      test(m"text beyond ASCII decodes through the derived path"):
+        Person(t"héllo 😀", 1).in[Protobuf].encode.read[Person in Protobuf]
+      . assert(_ == Person(t"héllo 😀", 1))
+
       test(m"printed bytes parse back directly"):
         given (Wrapper is Protobuf.Parsable) = Inlinable.parsable[Wrapper]
         Protobuf.Printable.print(Wrapper(Point(5, 6), t"w")).read[Wrapper in Protobuf]
