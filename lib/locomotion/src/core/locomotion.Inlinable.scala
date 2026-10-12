@@ -44,12 +44,32 @@ object Inlinable:
   // instances: nested messages, repeated-field gathering, variant dispatch
   // and custom leaf parsers all inline into one flat parser.
   inline def parsable[value]: value is Protobuf.Parsable =
-    ${locomotion.stagedInternal.inlinableParsable[value]}
+    ${locomotion.inlining.inlinableParsable[value]}
 
   // The writing counterpart: a monomorphic `Protobuf.Printable` that measures and writes a
   // message's fields straight into the output array, composed through the same instances.
   inline def printable[value]: value is Protobuf.Printable =
-    ${locomotion.stagedInternal.inlinablePrintable[value]}
+    ${locomotion.inlining.inlinablePrintable[value]}
+
+  // The expansion-time evaluation of a user-written instance. An `Inlinable`
+  // given is an ordinary runtime value, so the generator can only call its
+  // `parse` by evaluating the given inside the macro — which takes an in-macro
+  // staging compiler, and with it the compiler jars that core does not depend
+  // on. `locomotion.staged` registers the implementation as a service; without
+  // it on the classpath, a field whose type has only a user-written instance
+  // takes the runtime seam through its `Decodable in Protobuf`.
+  trait Stager:
+    def summon[field: Type](using Quotes): Option[Inlinable]
+
+  object Stager:
+    private lazy val loaded: Option[Stager] =
+      val services =
+        java.util.ServiceLoader.load(classOf[Stager], classOf[Stager].getClassLoader).nn
+
+      val iterator = services.iterator.nn
+      if iterator.hasNext then Some(iterator.next.nn) else None
+
+    def summon[field: Type](using Quotes): Option[Inlinable] = loaded.flatMap(_.summon[field])
 
   // The structural instance for a case-class message: reflects `Self` when
   // invoked (no macro — `Type[Self]` arrives with the call).
@@ -93,25 +113,25 @@ object Inlinable:
     type Self = product
 
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[product]): Expr[product] =
-      stagedInternal.productBody[product](reader)
+      inlining.productBody[product](reader)
 
     override def absent(tactic: Expr[Tactic[Protobuf.Error]])(using Quotes, Type[product])
     :   Expr[product] =
 
-      stagedInternal.productAbsent[product](tactic)
+      inlining.productAbsent[product](tactic)
 
     override def prints: Boolean = true
 
     override def measure(value: Expr[product], sizes: Expr[AnyRef])(using Quotes, Type[product])
     :   Expr[Int] =
 
-      stagedInternal.productMeasure[product](value, sizes)
+      inlining.productMeasure[product](value, sizes)
 
     override def write(value: Expr[product], printer: Expr[AnyRef], sizes: Expr[AnyRef])
       ( using Quotes, Type[product] )
     :   Expr[Unit] =
 
-      stagedInternal.productWrite[product](value, printer, sizes)
+      inlining.productWrite[product](value, printer, sizes)
 
   // A marker in the resolution ladder: repeated fields gather across the
   // whole message (occurrences may be scattered and packed), so collection
@@ -137,20 +157,20 @@ object Inlinable:
     type Self = sum
 
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[sum]): Expr[sum] =
-      stagedInternal.sumBody[sum](reader)
+      inlining.sumBody[sum](reader)
 
     override def prints: Boolean = true
 
     override def measure(value: Expr[sum], sizes: Expr[AnyRef])(using Quotes, Type[sum])
     :   Expr[Int] =
 
-      stagedInternal.sumMeasure[sum](value, sizes)
+      inlining.sumMeasure[sum](value, sizes)
 
     override def write(value: Expr[sum], printer: Expr[AnyRef], sizes: Expr[AnyRef])
       ( using Quotes, Type[sum] )
     :   Expr[Unit] =
 
-      stagedInternal.sumWrite[sum](value, printer, sizes)
+      inlining.sumWrite[sum](value, printer, sizes)
 
   // ── Instances ──────────────────────────────────────────────────────────
   // The leaf generators read the reader's window exactly as the AST
@@ -288,7 +308,7 @@ object Inlinable:
       '{ProtobufPrinter.of($printer).raw($value)}
 
     def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Data]): Expr[Data] =
-      '{$reader.data()}
+      '{$reader.data()}.asInstanceOf[Expr[Data]]
 
   given iterable: [collection <: Iterable, element]
   =>  ( element0: element is Inlinable )
@@ -305,13 +325,14 @@ object Inlinable:
 //
 // Instances are ordinary runtime values: code generation is deferred to the
 // `parse` call, which receives the `Quotes` and the `Type` of `Self`, so
-// `derived` needs no macro of its own. At a `Protobuf.Inlinable.parsable[T]`
+// `derived` needs no macro of its own. At an `Inlinable.parsable[T]`
 // expansion, the instance behind each summoned given is obtained *live* by
 // running the implicit search inside an in-macro staging compiler (the
-// prescience mechanism). The constraint this inherits: an instance (and its
-// type) must be compiled in an earlier run than the expansion; same-run
-// instances degrade to a spliced runtime call through the
-// `Decodable in Protobuf` seam.
+// prescience mechanism, contributed by `locomotion.staged` as a `Stager`).
+// The constraint this inherits: an instance (and its type) must be compiled
+// in an earlier run than the expansion; same-run instances, and every
+// user-written instance when `locomotion.staged` is absent, degrade to a
+// spliced runtime call through the `Decodable in Protobuf` seam.
 trait Inlinable extends Typeclass:
   def parse(reader: Expr[ProtobufReader])(using Quotes, Type[Self]): Expr[Self]
 
