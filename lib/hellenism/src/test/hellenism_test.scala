@@ -66,7 +66,7 @@ object Tests extends Suite("classpath", m"Hellenism Tests"):
 
     test(m"check that a classpath file is streamable"):
       cp"/scala/Option.class".read[Data]
-    . assert(_.readable.length > 0)
+    . assert(_.length > 0)
 
     test(m"a classpath file on the classpath exists"):
       val path: Path on Classpath = Classpath / "scala" / "Option.class"
@@ -96,7 +96,7 @@ object Tests extends Suite("classpath", m"Hellenism Tests"):
       // The result of `Classloader#apply` retains nothing, so the read may sit inside a
       // `safely` block, as a host such as fume reads a suite index (#2071).
       test(m"read a resource's bytes inside safely"):
-        safely(threadContextClassloader(t"scala/Option.class")).let(_.readable.length)
+        safely(threadContextClassloader(t"scala/Option.class")).let(_.length)
       . assert(_.let(_ > 0) == true)
 
       test(m"a missing resource reads as Unset"):

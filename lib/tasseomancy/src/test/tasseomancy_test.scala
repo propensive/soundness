@@ -33,6 +33,7 @@
 package tasseomancy
 
 import soundness.*
+import symbolism.*
 
 import strategies.throwUnsafely
 import denominative.dysasymptotics.{linearAccess, linearSize}
@@ -42,7 +43,7 @@ import denominative.dysasymptotics.{linearAccess, linearSize}
 object TestFont:
   extension (left: Data)
     @targetName("concatData")
-    def ++ (right: Data): Data = Array.frozen(left.readable ++ right.readable)
+    def ++ (right: Data): Data = left + right
 
   def u16(values: Int*): Data =
     Array.from(values.flatMap { value => scala.Seq((value >> 8).toByte, value.toByte) })

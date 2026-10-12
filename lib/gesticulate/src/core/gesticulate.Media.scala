@@ -142,7 +142,7 @@ object Media:
       def notAllowed(char: Char): Boolean =
         char.isWhitespace || char.isControl || specials.has(char)
 
-      val chars = string.chars.readable.toSeq
+      val chars = string.chars.stdlib
 
       chars.find(notAllowed(_)).map: char =>
         raise(MediaType.Error(string, MediaType.Error.Reason.InvalidChar(char)))

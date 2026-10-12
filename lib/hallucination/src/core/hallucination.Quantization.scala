@@ -48,7 +48,7 @@ private[hallucination] object Quantization:
     if counts.size <= limit then
       val palette = Array.from(counts.keys)
 
-      for index <- 0 until palette.length do assignment(palette.readable(index)) = index
+      for index <- 0 until palette.length do assignment(palette.readUnchecked(index)) = index
 
       (palette, assignment)
     else

@@ -37,6 +37,7 @@ import distillate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 import wisteria.*
 import Tels.Polarity
@@ -102,14 +103,14 @@ object TelSchematic:
       buffer.get(layer.name) match
         case scala.Some(existing) =>
           val members =
-            Array.frozen(existing.overlay.members.readable ++ layer.overlay.members.readable)
+            existing.overlay.members + layer.overlay.members
 
           val validators =
-            Array.frozen(existing.overlay.validators.readable ++ layer.overlay.validators.readable)
+            existing.overlay.validators + layer.overlay.validators
 
-          val records = Array.frozen(existing.records.readable ++ layer.records.readable)
-          val scalars = Array.frozen(existing.scalars.readable ++ layer.scalars.readable)
-          val selects = combine(existing.selects.readable.toList ++ layer.selects.readable.toList)
+          val records = existing.records + layer.records
+          val scalars = existing.scalars + layer.scalars
+          val selects = combine(existing.selects.stdlib.toList ++ layer.selects.stdlib.toList)
           val overlay = Tels.Struct(members, validators)
           buffer(layer.name) = Tels.Layer(layer.name, overlay, records, scalars, selects)
 
@@ -131,10 +132,10 @@ object TelSchematic:
 
       Tels.SelectDefinition
         ( name,
-          Array.from(same.flatMap(_.variants.readable.toList).distinctBy(_.keyword)),
-          Array.from(same.flatMap(_.validators.readable.toList).distinct),
+          Array.from(same.flatMap(_.variants.stdlib.toList).distinctBy(_.keyword)),
+          Array.from(same.flatMap(_.validators.stdlib.toList).distinct),
           same.map(_.description).find(_.present).optional,
-          Array.from(same.flatMap(_.excludes.readable.toList).distinct) )
+          Array.from(same.flatMap(_.excludes.stdlib.toList).distinct) )
 
     Array.from(combined)
 

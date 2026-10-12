@@ -113,7 +113,7 @@ object Sh:
       case _ =>
         state.copy(offset = state.offset + 1)
 
-    private def chars(text: Text): scala.Seq[Char] = text.chars.readable.toSeq
+    private def chars(text: Text): scala.Seq[Char] = text.chars.stdlib
 
     def parse(current: State, text: Text): State = chars(text).fuse(current):
       val step = (state, next).absolve match

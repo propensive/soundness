@@ -73,8 +73,8 @@ object Hyphenation:
     val parsed = TexPatterns.parseFile(content)
 
     apply
-      ( parsed.patterns.readable.toSeq,
-        parsed.exceptions.readable.toSeq,
+      ( parsed.patterns.stdlib,
+        parsed.exceptions.stdlib,
         parsed.leftMin,
         parsed.rightMin )
 
@@ -151,7 +151,7 @@ object Hyphenation:
         val lastBreak = length - (if rightMin > 1 then rightMin else 1)
 
         while p <= lastBreak do
-          if (scores.readable(p + 1) & 1) == 1 then
+          if (scores.readUnchecked(p + 1) & 1) == 1 then
             breaks(count) = p
             count += 1
 

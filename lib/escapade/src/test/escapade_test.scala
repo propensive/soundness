@@ -504,7 +504,7 @@ object Tests extends Suite("ansi", m"Escapade tests"):
       . assert(_ == 'h')
 
       test(m"chars"):
-        e"abc".chars.readable.toSeq
+        e"abc".chars.stdlib
       . assert(_ == Seq('a', 'b', 'c'))
 
     suite(m"Textual: slicing"):

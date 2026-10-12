@@ -52,8 +52,7 @@ object Cells:
     ( using metrics: Text is Measurable )
   :   Cells[text] =
 
-    val metrics: Array[Metrics]^{} =
-      Array.from(lines.readable.indices.map { index => Columnar.metrics(lines.readable(index)) })
+    val metrics: Array[Metrics]^{} = lines.map(Columnar.metrics(_))
 
     Cells(lines, metrics)
 
@@ -178,8 +177,10 @@ case class Layout[row, text: ClassTag]
       survivors.map: (index, cellWidth) =>
         val column = columns.readUnchecked(index)
 
+        // Through the stdlib view: the element type `Array[text]^{}` is capture-polymorphic,
+        // which the inline `readUnchecked` cannot type its receiver proxy for.
         val lines =
-          column.sizing.fit[text](cells.lines.readable(index), cellWidth, column.textAlign)
+          column.sizing.fit[text](cells.lines.stdlib(index), cellWidth, column.textAlign)
 
         val decoration: Optional[text -> text] = decorations.at(index.z)
 
@@ -211,7 +212,7 @@ case class Layout[row, text: ClassTag]
 
     survivors.map: (index, cellWidth) =>
       val column = columns.readUnchecked(index)
-      val cellLines = cells.lines.readable(index)
+      val cellLines = cells.lines.stdlib(index) // as in `row` above
 
       if cells.metrics.readUnchecked(index).natural <= cellWidth then cellLines.length
       else column.sizing.fit[text](cellLines, cellWidth, column.textAlign).size

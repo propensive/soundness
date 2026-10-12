@@ -48,7 +48,7 @@ object Gif:
     def encode(raster: Raster): Data = GifBackend.encode(this, raster)
 
     def sniff(data: Data): Boolean =
-      ( data.length > 2 && data.readable(0) == 0x47 && data.readable(1) == 0x49 &&
-        data.readable(2) == 0x46 )
+      ( data.length > 2 && data.readUnchecked(0) == 0x47 && data.readUnchecked(1) == 0x49 &&
+        data.readUnchecked(2) == 0x46 )
 
 sealed trait Gif

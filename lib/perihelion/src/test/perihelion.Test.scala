@@ -213,7 +213,7 @@ object Tests extends Suite("websocket", m"Perihelion tests"):
 
       test(m"A 16-bit length frame parses fully"):
         parseFrame(frame(0x1, scala.Array.fill(200)(0x61.toByte))) match
-          case Websocket.Frame.Text(_, data) => data.readable.length
+          case Websocket.Frame.Text(_, data) => data.length
           case _                   => 0
       . assert(_ == 200)
 

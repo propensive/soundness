@@ -129,7 +129,7 @@ object Bintel:
       var i   = 0
 
       while i < total do
-        xor = xor ^ (signature.readable(i) & 0xff)
+        xor = xor ^ (signature.readUnchecked(i) & 0xff)
         i += 1
 
       Cadence.unpack(xor.toByte).let(_.hashCount(total - 1)).present
@@ -158,7 +158,7 @@ object Bintel:
       var ok = true
 
       while ok && i < expected.length do
-        if data.readable(offset + i) != expected.readable(i) then ok = false
+        if data.readUnchecked(offset + i) != expected.readUnchecked(i) then ok = false
         i += 1
 
       ok
@@ -497,7 +497,7 @@ object Bintel:
       var equal = true
 
       while i < a.length && equal do
-        if a.readable(i) != b.readable(i) then equal = false
+        if a.readUnchecked(i) != b.readUnchecked(i) then equal = false
         i += 1
 
       equal
@@ -597,7 +597,7 @@ object Bintel:
 
     val kidx = readVarint(cursor)
     if kidx < 0 || kidx >= flat.length then abort(Bintel.Error(Bintel.Error.Reason.BadKeywordIndex))
-    val (_, memberType) = flat.readable(kidx.toInt)
+    val (_, memberType) = flat.readUnchecked(kidx.toInt)
     val resolved = resolveType(memberType, schema)
 
     resolved match
@@ -617,7 +617,7 @@ object Bintel:
         var j = 0
 
         while j < len.toInt do
-          bytes(j) = cursor.data.readable(cursor.offset + j)
+          bytes(j) = cursor.data.readUnchecked(cursor.offset + j)
           j += 1
 
         cursor.offset += len.toInt
@@ -698,7 +698,7 @@ object Bintel:
     var i = 0
 
     while i < struct.members.length do
-      struct.members.readable(i) match
+      struct.members.readUnchecked(i) match
         case f: Tels.Field =>
           buf += ((f.keyword, f.fieldType))
 
@@ -708,7 +708,7 @@ object Bintel:
               var v = 0
 
               while v < selectDef.variants.length do
-                val variant = selectDef.variants.readable(v)
+                val variant = selectDef.variants.readUnchecked(v)
                 buf += ((variant.keyword, variant.variantType))
                 v += 1
 
@@ -742,10 +742,11 @@ object Bintel:
 
     element match
       case Tel.Element.Value(kidx, _, text) =>
-        Tel.Compound(flat.readable(kidx)._1, Array(Tel.Atom.Inline(text, 1)), Unset, Array.empty)
+        Tel.Compound
+          (flat.readUnchecked(kidx)._1, Array(Tel.Atom.Inline(text, 1)), Unset, Array.empty)
 
       case Tel.Element.Node(kidx, struct: Tels.Struct, children) =>
-        val keyword   = kidx.let(flat.readable(_)._1).or(t"")
+        val keyword   = kidx.let(flat.readUnchecked(_)._1).or(t"")
         val childFlat = flattenKeywordsLenient(struct, schema)
 
         Tel.Compound
@@ -755,7 +756,7 @@ object Bintel:
             blocks(children.remap(presentCompound(_, childFlat, schema))) )
 
       case Tel.Element.Node(kidx, _, _) =>
-        Tel.Compound(kidx.let(flat.readable(_)._1).or(t""), Array.empty, Unset, Array.empty)
+        Tel.Compound(kidx.let(flat.readUnchecked(_)._1).or(t""), Array.empty, Unset, Array.empty)
 
   private def blocks(compounds: Array[Tel.Compound]^{}): Array[Tel.Block]^{} =
     if compounds.nil then Array.empty else Array(Tel.Block(Array.empty, Unset, compounds, 0))
@@ -858,7 +859,7 @@ object Bintel:
         var i = 0
 
         while i < ordered.length do
-          encodeElement(out, ordered.readable(i), schema, codecs)
+          encodeElement(out, ordered.readUnchecked(i), schema, codecs)
           i += 1
 
       case Tel.Element.Node(_, _, children) =>
@@ -866,7 +867,7 @@ object Bintel:
         var i = 0
 
         while i < children.length do
-          encodeElement(out, children.readable(i), schema, codecs)
+          encodeElement(out, children.readUnchecked(i), schema, codecs)
           i += 1
 
       case _: Tel.Element.Value =>
@@ -899,7 +900,7 @@ object Bintel:
         var i = 0
 
         while i < ordered.length do
-          encodeElement(out, ordered.readable(i), schema, codecs)
+          encodeElement(out, ordered.readUnchecked(i), schema, codecs)
           i += 1
 
       case Tels.Flag =>
@@ -969,13 +970,13 @@ object Bintel:
 
       def keyOf(e: Tel.Element): Int =
         val flat = kidxOf(e)
-        if flat >= 0 && flat < memberBase.length then memberBase.readable(flat) else flat
+        if flat >= 0 && flat < memberBase.length then memberBase.readUnchecked(flat) else flat
 
       val arr = new scala.Array[Tel.Element](children.length)
       var i = 0
 
       while i < children.length do
-        arr(i) = children.readable(i)
+        arr(i) = children.readUnchecked(i)
         i += 1
 
       // java.util.Arrays.sort with a Comparator is stable — preserves
@@ -1000,7 +1001,7 @@ object Bintel:
     var i = 0
 
     while i < parent.members.length do
-      parent.members.readable(i) match
+      parent.members.readUnchecked(i) match
         case _: Tels.Field =>
           bases += flat
           flat += 1

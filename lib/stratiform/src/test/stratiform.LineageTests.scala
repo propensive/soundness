@@ -55,7 +55,7 @@ object LineageTests extends Suite("tel-lineage", m"Stratiform lineage tests"):
     Text(String(Array.unsafeJvm(resource(name)), "UTF-8").trim.nn)
 
   private def hex(data: Data): String =
-    data.readable.toSeq.map { byte => f"${byte & 0xff}%02x" }.mkString
+    data.stdlib.map { byte => f"${byte & 0xff}%02x" }.mkString
 
   private val axiom: Tels = Tels.Axiom.tels
 
@@ -97,7 +97,7 @@ object LineageTests extends Suite("tel-lineage", m"Stratiform lineage tests"):
       Tels.Layer(t"", Tels.Struct(Array.empty, Array.empty), Array.empty, Array.empty, Array.empty)
 
   private def keywords(schema: Tels): List[Text] =
-    proscenium.List.from(schema.document.members.readable.toList).map:
+    proscenium.List.from(schema.document.members.stdlib.toList).map:
       case field: Tels.Field      => field.keyword
       case select: Tels.SelectRef => select.reference
       case _: Tels.Exclude        => t""

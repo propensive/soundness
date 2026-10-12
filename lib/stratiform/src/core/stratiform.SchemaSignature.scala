@@ -125,7 +125,7 @@ object SchemaSignature:
 
     val layerHashes: List[Data] =
       layerStruct.let: ls =>
-        val hashes = layerChildren.readable.to(List).map: layer =>
+        val hashes = layerChildren.stdlib.to(List).map: layer =>
           val layerChildren = layer.asInstanceOf[Tel.Element.Node].children
           val layerRoot     = Tel.Element.Node(Unset, ls, layerChildren)
           Blake3.hashOf(layerRoot.bintel(axiom), cadence.hashSize)
@@ -149,7 +149,7 @@ object SchemaSignature:
     var found = -1
 
     while i < struct.members.length && found < 0 do
-      struct.members.readable(i) match
+      struct.members.readUnchecked(i) match
         case f: Tels.Field =>
           if f.keyword == t"layer" then found = idx else idx += 1
 
@@ -158,7 +158,7 @@ object SchemaSignature:
             var v = 0
 
             while v < sd.variants.length && found < 0 do
-              if sd.variants.readable(v).keyword == t"layer" then found = idx + v
+              if sd.variants.readUnchecked(v).keyword == t"layer" then found = idx + v
               v += 1
 
             if found < 0 then idx += sd.variants.length
@@ -197,7 +197,7 @@ object SchemaSignature:
     var i   = 0
 
     while i < total do
-      xor = xor ^ (signature.readable(i) & 0xff)
+      xor = xor ^ (signature.readUnchecked(i) & 0xff)
       i += 1
 
     val cadence: Cadence = Cadence.unpack(xor.toByte).or:
@@ -243,7 +243,7 @@ object SchemaSignature:
 
     val base = hash(Tels.Renderer.element(schema.copy(layers = Array.empty), axiom), axiom)
 
-    val layers = schema.layers.readable.to(List).map: layer =>
+    val layers = schema.layers.stdlib.to(List).map: layer =>
       hash(Tels.Renderer.layer(layer, axiom), axiom)
 
     (base, layers)
@@ -268,7 +268,7 @@ object SchemaSignature:
 
       val base = hash(Tels.Renderer.element(schema.copy(layers = Array.empty), axiom), axiom)
 
-      val layers = schema.layers.readable.to(List).map: layer =>
+      val layers = schema.layers.stdlib.to(List).map: layer =>
         Component(hash(Tels.Renderer.layer(layer, axiom), axiom), layer.name, layer)
 
       // Atoms are deduplicated by hash: an atom that occurs in two groups, or twice in one, is
@@ -440,7 +440,7 @@ object SchemaSignature:
       var ok = true
 
       while ok && i < a.length do
-        if a.readable(i) != b.readable(i) then ok = false
+        if a.readUnchecked(i) != b.readUnchecked(i) then ok = false
         i += 1
 
       ok
@@ -460,7 +460,7 @@ object SchemaSignature:
     import Tels.Resolution.Error.Reason
 
     val (base, layerHashes) = componentHashes(doc, axiom)
-    val names = schema.layers.readable.toList.map(_.name)
+    val names = schema.layers.stdlib.toList.map(_.name)
 
     // Frozen `Data` elements do not survive the generic `zip`/`to[Map]` pair (the
     // rebuilt element type loses its `^{}`), so the name-to-hash index is built on

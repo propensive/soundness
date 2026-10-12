@@ -129,7 +129,7 @@ private[hallucination] object Vp8Decoder:
 
     private var macroblocks: scala.Array[Macroblock^]^ = scala.Array()
 
-    private inline def u8(index: Int): Int = data.readable(index) & 0xff
+    private inline def u8(index: Int): Int = data.readUnchecked(index) & 0xff
 
     private def u16le(index: Int): Int = u8(index) | (u8(index + 1) << 8)
     private def u24le(index: Int): Int = u16le(index) | (u8(index + 2) << 16)
@@ -318,8 +318,8 @@ private[hallucination] object Vp8Decoder:
           i += 1
 
     private update def readQuantizationIndices(): Unit =
-      def dcQuant(index: Int): Int = Vp8Tables.dcQuant.readable(index.max(0).min(127))
-      def acQuant(index: Int): Int = Vp8Tables.acQuant.readable(index.max(0).min(127))
+      def dcQuant(index: Int): Int = Vp8Tables.dcQuant.readUnchecked(index.max(0).min(127))
+      def acQuant(index: Int): Int = Vp8Tables.acQuant.readUnchecked(index.max(0).min(127))
 
       val yacAbs = bool.literal(7)
       val ydcDelta = bool.optionalSigned(4)

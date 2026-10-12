@@ -47,6 +47,7 @@ import parasite.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import telekinesis.*
 import turbulence.*
 import vacuous.*
@@ -202,7 +203,7 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[Websocket.Error
           case Websocket.Frame.Continuation(fin, data) =>
             partial.lay(abort(Websocket.Error(Websocket.Error.Reason.BadFragmentation))):
               (text, accumulated) =>
-                extend(text, Array.frozen(accumulated.readable ++ data.readable), fin)
+                extend(text, accumulated + data, fin)
 
       recur(Unset)
 
@@ -452,7 +453,7 @@ object Websocket:
               (length >> 16).toByte, (length >> 8).toByte, length.toByte )
 
       // Sealed: see `closeData`.
-      Array.frozen(header.readable ++ payload.readable)
+      header + payload
 
 // The `Servable` carrier for a WebSocket handler. On serve it produces the `101`
 // handshake response whose body is the outgoing frame stream; the handler runs

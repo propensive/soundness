@@ -1071,15 +1071,15 @@ object Yaml extends Yaml2, Dynamic:
       inline def arrayLength: Int = Yaml.Ast.sequenceLength(yaml.asInstanceOf[Array[Any]^{}])
 
       inline def arrayElement(index: Int): Yaml.Ast =
-        yaml.asInstanceOf[Array[Yaml.Ast]^{}].readable(index)
+        yaml.asInstanceOf[Array[Yaml.Ast]^{}].readUnchecked(index)
 
       inline def objectSize: Int = yaml.asInstanceOf[Array[Any]^{}].length/2
 
       inline def objectKey(index: Int): String =
-        yaml.asInstanceOf[Array[Any]^{}].readable(index*2).asInstanceOf[String]
+        yaml.asInstanceOf[Array[Any]^{}].readUnchecked(index*2).asInstanceOf[String]
 
       inline def objectValue(index: Int): Yaml.Ast =
-        yaml.asInstanceOf[Array[Any]^{}].readable(index*2 + 1).asInstanceOf[Yaml.Ast]
+        yaml.asInstanceOf[Array[Any]^{}].readUnchecked(index*2 + 1).asInstanceOf[Yaml.Ast]
 
       // Linear scan for a key — returns the pair-indexed position (i.e.
       // `objectKey(result)` retrieves the key, `objectValue(result)` the

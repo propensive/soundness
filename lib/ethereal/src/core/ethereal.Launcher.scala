@@ -300,7 +300,7 @@ object Launcher:
       var same = true
 
       while same && i < left.length do
-        if left.readable(i) != right.readable(i) then same = false
+        if left.readUnchecked(i) != right.readUnchecked(i) then same = false
         i += 1
 
       same
@@ -323,10 +323,10 @@ object Launcher:
         def text(field: Int): Text = optional(field).or(abort(Launcher.Mismatch()))
 
         def texts(field: Int): List[Text] =
-          children.readable.toList.collect { case Tel.Element.Value(`field`, _, text) => text }
+          children.stdlib.toList.collect { case Tel.Element.Value(`field`, _, text) => text }
           . to(List)
 
-        def flag(field: Int): Boolean = children.readable.exists:
+        def flag(field: Int): Boolean = children.exists:
           case Tel.Element.Node(`field`, Tels.Flag, _) => true
           case _                                       => false
 
@@ -336,7 +336,7 @@ object Launcher:
         def optionalLong(field: Int): Optional[Long] = optional(field).let(_.as[Long])
 
         def descriptors: List[Descriptor] =
-          children.readable.toList.collect:
+          children.stdlib.toList.collect:
             case Tel.Element.Node(16, _, fields) =>
               def field(index: Int): Optional[Text] = fields.readable.collectFirst:
                 case Tel.Element.Value(`index`, _, text) => text
@@ -352,7 +352,7 @@ object Launcher:
           . to(List)
 
         def raws: List[Raw] =
-          children.readable.toList.collect:
+          children.stdlib.toList.collect:
             case Tel.Element.Node(17, _, fields) =>
               def field(index: Int): Optional[Text] = fields.readable.collectFirst:
                 case Tel.Element.Value(`index`, _, text) => text

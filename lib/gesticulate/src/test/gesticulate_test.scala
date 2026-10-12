@@ -51,9 +51,9 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
       def chunks(text: Text, size: Int): Chain[Data] =
         val data: Data = text.in[Data]
         def go(offset: Int): Chain[Data] =
-          if offset >= data.readable.length then Chain() else
-            val end = math.min(offset + size, data.readable.length)
-            Array.frozen(data.readable.slice(offset, end)) #:: go(end)
+          if offset >= data.length then Chain() else
+            val end = math.min(offset + size, data.length)
+            Array.from(data.stdlib.slice(offset, end)) #:: go(end)
         go(0)
 
       def bodyText(part: Part): Text = part.read[Data].utf8
@@ -197,7 +197,7 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
         def go(offset: Int): Chain[Data] =
           if offset >= data.length then Chain() else
             val end = math.min(offset + size, data.length)
-            Array.frozen(data.readable.slice(offset, end)) #:: go(end)
+            Array.from(data.stdlib.slice(offset, end)) #:: go(end)
         go(0)
 
       def binaryWire(body: Data, rest: Text = t"--xyz--\r\n"): Data =
@@ -299,9 +299,9 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
     // Every suffix must survive being written and read back: the hyphenated ones did not,
     // because the whole suffix was capitalized (`Json-seq`) rather than each word.
     test(m"every suffix round-trips through its rendered form"):
-      Array.unsafeFrozen(Media.Suffix.values).readable.toList.map: suffix =>
+      Array.unsafeFrozen(Media.Suffix.values).stdlib.toList.map: suffix =>
         t"application/thing+${suffix.name}".as[MediaType].suffixes
-    . assert(_ == Array.unsafeFrozen(Media.Suffix.values).readable.toList.map(List(_)))
+    . assert(_ == Array.unsafeFrozen(Media.Suffix.values).stdlib.toList.map(List(_)))
 
     test(m"parse a hyphenated suffix"):
       t"application/thing+json-seq".as[MediaType].suffixes

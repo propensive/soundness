@@ -48,7 +48,7 @@ object Catalog:
 
       Catalog(Array.tabulate(catalog.size): index =>
         partialFunction.applyOrElse
-          ( Proxy[key, value, index.type](index), _ => catalog.values.readable(index) ))
+          ( Proxy[key, value, index.type](index), _ => catalog.values.readUnchecked(index) ))
 
 //case class Catalog[key, value](values: Map[Text, value]):
 case class Catalog[key, value: ClassTag](values: Array[value]^{}) extends Findable:
@@ -73,4 +73,4 @@ case class Catalog[key, value: ClassTag](values: Array[value]^{}) extends Findab
   :   Catalog[key, result] =
 
     Catalog(Array.tabulate(values.length): index =>
-      lambda(values.readable(index), right.values.readable(index)))
+      lambda(values.readUnchecked(index), right.values.readUnchecked(index)))

@@ -163,18 +163,18 @@ object internal:
         // the frozen array a reach capture (`children*.rd`) that cannot subsume into the
         // read shim's `any.rd` receiver.
         def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
-          if index == pattern.children.readable.length then expr else
+          if index == pattern.children.length then expr else
             val expr2 =
               descend
-                ( array, pattern.children.readable(index),
-                  '{$scrutinee.children.readable(${Expr(index)})}, '{true} )
+                ( array, pattern.children.readUnchecked(index),
+                  '{$scrutinee.children.readUnchecked(${Expr(index)})}, '{true} )
 
             elements(index + 1)('{$expr && $expr2})
 
         val elementsChecked = elements(0):
           ' {
               ${Expr(pattern.label)} == $scrutinee.label &&
-                $scrutinee.children.readable.length == ${Expr(pattern.children.readable.length)}
+                $scrutinee.children.length == ${Expr(pattern.children.length)}
             }
 
         '{$attributesChecked && $elementsChecked}

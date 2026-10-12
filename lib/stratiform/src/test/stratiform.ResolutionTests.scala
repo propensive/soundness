@@ -73,14 +73,14 @@ object ResolutionTests extends Suite("tel-resolution", m"Stratiform schema resol
 
   // The composed document's field keywords, sorted, as one Text.
   private def memberKeywords(schema: Tels): Text =
-    Text(schema.document.members.readable.toList
+    Text(schema.document.members.stdlib.toList
     . collect { case f: Tels.Field => f.keyword.s }.sorted.mkString(","))
 
   // The composed signature for a selection: the base hash followed by
   // the selected layers' hashes, in declaration order.
   private def signatureFor(selection: List[Text]): Data =
     val (base, layerHashes) = SchemaSignature.componentHashes(layeredDoc, Tels.Axiom.tels)
-    val names = layeredSchema.layers.readable.toList.map(_.name)
+    val names = layeredSchema.layers.stdlib.toList.map(_.name)
     val byName = names.zip(layerHashes.stdlib).toMap
     SchemaSignature.encode((base :: selection.stdlib.map(byName(_))).to(List))
 
@@ -171,7 +171,7 @@ object ResolutionTests extends Suite("tel-resolution", m"Stratiform schema resol
 
       test(m"swapped layer components name the first diverging layer"):
         val (base, layerHashes) = SchemaSignature.componentHashes(layeredDoc, Tels.Axiom.tels)
-        val hashes = layeredSchema.layers.readable.toList.map(_.name).zip(layerHashes.stdlib).toMap
+        val hashes = layeredSchema.layers.stdlib.toList.map(_.name).zip(layerHashes.stdlib).toMap
         val swapped =
           SchemaSignature.encode((base :: scala.List(hashes(t"gamma"), hashes(t"alpha"))).to(List))
 
@@ -183,7 +183,7 @@ object ResolutionTests extends Suite("tel-resolution", m"Stratiform schema resol
 
       test(m"a layer hash in base position is a base mismatch"):
         val (base, layerHashes) = SchemaSignature.componentHashes(layeredDoc, Tels.Axiom.tels)
-        val hashes = layeredSchema.layers.readable.toList.map(_.name).zip(layerHashes.stdlib).toMap
+        val hashes = layeredSchema.layers.stdlib.toList.map(_.name).zip(layerHashes.stdlib).toMap
         val wrongBase =
           SchemaSignature.encode((hashes(t"gamma") :: scala.List(hashes(t"alpha"))).to(List))
 

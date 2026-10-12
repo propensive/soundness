@@ -85,9 +85,9 @@ object Dictionary:
 
         def slot(char: Char): Int =
           val c = char.toInt
-          if c < 128 then slots.readable(c) else -1
+          if c < 128 then slots.readUnchecked(c) else -1
 
-        def char(slot: Int): Char = letters.readable(slot)
+        def char(slot: Int): Char = letters.readUnchecked(slot)
 
     // An empty alphabet — no chars are recognised. Used by the empty
     // dictionary.
@@ -331,10 +331,10 @@ final class Dictionary[+value]
   // character at `node`.
   def step(node: Int, char: Char): Int =
     val sl = alphabet.slot(char)
-    if sl < 0 then -1 else children.readable(node*alphabet.size + sl)
+    if sl < 0 then -1 else children.readUnchecked(node*alphabet.size + sl)
 
   // Value at `node`, or `null` if no key terminates here.
-  inline def value(node: Int): value | Null = values.readable(node).asInstanceOf[value | Null]
+  inline def value(node: Int): value | Null = values.readUnchecked(node).asInstanceOf[value | Null]
 
   // Exact lookup of a full key. `Unset` if the key is not in the trie.
   def apply(key: Text): Optional[value] =
@@ -348,7 +348,7 @@ final class Dictionary[+value]
       i += 1
 
     if node < 0 then Unset else
-      val v = values.readable(node)
+      val v = values.readUnchecked(node)
       if v == null then Unset else v.asInstanceOf[value]
 
   // Slice variant: lookup against `buffer[offset, offset + length)`
@@ -363,7 +363,7 @@ final class Dictionary[+value]
       i += 1
 
     if node < 0 then Unset else
-      val v = values.readable(node)
+      val v = values.readUnchecked(node)
       if v == null then Unset else v.asInstanceOf[value]
 
   // Number of stored entries (nodes whose value is non-null).
@@ -372,7 +372,7 @@ final class Dictionary[+value]
     var i = 0
 
     while i < values.length do
-      if values.readable(i) != null then count += 1
+      if values.readUnchecked(i) != null then count += 1
       i += 1
 
     count
@@ -383,7 +383,7 @@ final class Dictionary[+value]
     var i = 0
 
     while i < values.length do
-      val v = values.readable(i)
+      val v = values.readUnchecked(i)
       if v != null then buffer += v.asInstanceOf[value]
       i += 1
 
@@ -398,12 +398,12 @@ final class Dictionary[+value]
     val alpha = alphabet.size
 
     def walk(node: Int): Unit =
-      val v = values.readable(node)
+      val v = values.readUnchecked(node)
       if v != null then buffer += ((key.toString.nn.tt, v.asInstanceOf[value]))
       var sl = 0
 
       while sl < alpha do
-        val child = children.readable(node*alpha + sl)
+        val child = children.readUnchecked(node*alpha + sl)
 
         if child >= 0 then
           key.append(alphabet.char(sl))

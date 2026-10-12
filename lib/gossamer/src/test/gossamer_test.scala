@@ -267,12 +267,12 @@ object Tests extends Suite("text", m"Gossamer Tests"):
 
     suite(m"Text methods"):
       test(m"get bytes from text"):
-        t"hello".sysData.readable.to(List)
+        t"hello".sysData.stdlib.to(List)
 
       . assert(_ == List(104, 101, 108, 108, 111))
 
       test(m"get bytes from empty Text"):
-        t"".sysData.readable.isEmpty
+        t"".sysData.stdlib.isEmpty
 
       . assert(identity(_))
 

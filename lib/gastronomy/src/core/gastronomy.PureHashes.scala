@@ -78,7 +78,7 @@ private[gastronomy] object PureHashes:
       while i < 64 do
         val s1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)
         val ch = (e & f) ^ (~e & g)
-        val t1 = hh + s1 + ch + sha256K.readable(i) + w(i)
+        val t1 = hh + s1 + ch + sha256K.readUnchecked(i) + w(i)
         val s0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)
         val maj = (a & b) ^ (a & c) ^ (b & c)
         val t2 = s0 + maj
@@ -133,7 +133,7 @@ private[gastronomy] object PureHashes:
       while i < 80 do
         val s1 = rotrL(e, 14) ^ rotrL(e, 18) ^ rotrL(e, 41)
         val ch = (e & f) ^ (~e & g)
-        val t1 = hh + s1 + ch + sha512K.readable(i) + w(i)
+        val t1 = hh + s1 + ch + sha512K.readUnchecked(i) + w(i)
         val s0 = rotrL(a, 28) ^ rotrL(a, 34) ^ rotrL(a, 39)
         val maj = (a & b) ^ (a & c) ^ (b & c)
         val t2 = s0 + maj
@@ -246,7 +246,7 @@ private[gastronomy] object PureHashes:
 
         val tmp = d
         d = c; c = b
-        b = b + rotl(a + f + md5T.readable(i) + m(g), shifts.readable(i))
+        b = b + rotl(a + f + md5T.readUnchecked(i) + m(g), shifts.readUnchecked(i))
         a = tmp
         i += 1
 

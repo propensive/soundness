@@ -178,20 +178,20 @@ object Tests extends Suite("geo", m"Geodesy tests"):
 
     suite(m"Compass.points4"):
       test(m"lists the cardinal winds clockwise from north"):
-        Compass.points4.readable.to(List)
+        Compass.points4.stdlib.to(List)
       . assert(_ == List(North, East, South, West))
 
     suite(m"Compass.points8"):
       test(m"contains eight points"):
-        Compass.points8.readable.length
+        Compass.points8.length
       . assert(_ == 8)
 
       test(m"index 7 is Northwest"):
-        Compass.points8.readable(7)
+        Compass.points8.stdlib(7)
       . assert(_ == Northwest)
 
       test(m"contains no duplicates"):
-        Compass.points8.readable.toSet.size
+        Compass.points8.stdlib.toSet.size
       . assert(_ == 8)
 
       test(m"315 degrees maps to Northwest"):
@@ -200,15 +200,15 @@ object Tests extends Suite("geo", m"Geodesy tests"):
 
     suite(m"Compass.points16"):
       test(m"contains sixteen distinct points"):
-        Compass.points16.readable.toSet.size
+        Compass.points16.stdlib.toSet.size
       . assert(_ == 16)
 
       test(m"every fourth point is a cardinal wind"):
-        List(0, 4, 8, 12).map(Compass.points16.readable(_))
+        List(0, 4, 8, 12).map(Compass.points16.stdlib(_))
       . assert(_ == List(North, East, South, West))
 
       test(m"intercardinal winds lie between the cardinal ones"):
-        List(2, 6, 10, 14).map(Compass.points16.readable(_))
+        List(2, 6, 10, 14).map(Compass.points16.stdlib(_))
       . assert(_ == List(Northeast, Southeast, Southwest, Northwest))
 
     suite(m"Compass directions"):

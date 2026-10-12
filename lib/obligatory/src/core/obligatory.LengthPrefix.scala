@@ -35,6 +35,7 @@ package obligatory
 import anticipation.*
 import contingency.*
 import prepositional.*
+import symbolism.*
 import vacuous.*
 import zephyrine.*
 
@@ -52,7 +53,7 @@ object LengthPrefix:
           (length >>> 8).toByte,
           length.toByte )
 
-    Array.frozen(header.readable ++ record.readable)
+    header + record
 
   // See `CarriageReturn.framable`: explicit `new` (the Scala.js pipeline mis-infers the SAM
   // lambda's `this`) plus a relabel of the local cursor's reachability of `input`.

@@ -73,8 +73,8 @@ object Interpolation:
 
     i =>
       if i < 0 then 0
-      else if i < mapping.length then mapping.readable(i)
-      else mapping.readable(mapping.length - 1)
+      else if i < mapping.length then mapping.readUnchecked(i)
+      else mapping.readUnchecked(mapping.length - 1)
 
   // Walk a `StringContext.apply(...)` Term to recover each literal part's source-file
   // (start, end) range. We're permissive about the surrounding tree shape (Inlined / Typed /

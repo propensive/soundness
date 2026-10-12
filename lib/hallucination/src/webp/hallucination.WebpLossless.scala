@@ -73,8 +73,8 @@ private[hallucination] object WebpLossless:
 
   private final class Group(val trees: Array[WebpHuffman]^{}):
     def allSingle: Boolean =
-      trees.readable(0).isSingleNode && trees.readable(1).isSingleNode &&
-        trees.readable(2).isSingleNode && trees.readable(3).isSingleNode
+      trees.readUnchecked(0).isSingleNode && trees.readUnchecked(1).isSingleNode &&
+        trees.readUnchecked(2).isSingleNode && trees.readUnchecked(3).isSingleNode
 
   private final class ColorCache(val bits: Int):
     // Inserted into after construction, through the immutable `HuffmanInfo` holder, while the
@@ -93,7 +93,7 @@ private[hallucination] object WebpLossless:
       val mask: Int, val groups: Array[Group]^{} ):
 
     def huffIndex(x: Int, y: Int): Int =
-      if bits == 0 then 0 else image.readable((y >> bits)*xsize + (x >> bits))
+      if bits == 0 then 0 else image.readUnchecked((y >> bits)*xsize + (x >> bits))
 
   private final class Transform(val kind: Int, val sizeBits: Int,
       val data: Array[Byte]^{}, val tableSize: Int)
@@ -351,7 +351,7 @@ private[hallucination] object WebpLossless:
     :   Unit =
 
       val numValues = width*height
-      var group = info.groups.readable(info.huffIndex(0, 0))
+      var group = info.groups.readUnchecked(info.huffIndex(0, 0))
       var index = 0
       var nextBlockStart = 0
 
@@ -363,19 +363,19 @@ private[hallucination] object WebpLossless:
           val x = index%width
           val y = index/width
           nextBlockStart = ((x | info.mask).min(width - 1)) + y*width + 1
-          group = info.groups.readable(info.huffIndex(x, y))
+          group = info.groups.readUnchecked(info.huffIndex(x, y))
 
           // Fast path: a block whose four colour codes are all single-symbol writes no per-pixel
           // data, so the whole run is one repeated pixel. (Re-reading a single-node tree on the
           // fall-through path below consumes no bits, so a non-literal code is handled there.)
           if group.allSingle then
-            val green = group.trees.readable(0).readSymbol(reader)
+            val green = group.trees.readUnchecked(0).readSymbol(reader)
 
             if green < 256 then
               val count = if info.bits == 0 then numValues - index else nextBlockStart - index
-              val red = group.trees.readable(1).readSymbol(reader)
-              val blue = group.trees.readable(2).readSymbol(reader)
-              val alpha = group.trees.readable(3).readSymbol(reader)
+              val red = group.trees.readUnchecked(1).readSymbol(reader)
+              val blue = group.trees.readUnchecked(2).readSymbol(reader)
+              val alpha = group.trees.readUnchecked(3).readSymbol(reader)
               var i = 0
 
               while i < count do
@@ -387,14 +387,14 @@ private[hallucination] object WebpLossless:
               handled = true
 
         if !handled then
-          val green = group.trees.readable(0).readSymbol(reader)
+          val green = group.trees.readUnchecked(0).readSymbol(reader)
 
           if green < 256 then
-            val red = group.trees.readable(1).readSymbol(reader)
-            val blue = group.trees.readable(2).readSymbol(reader)
+            val red = group.trees.readUnchecked(1).readSymbol(reader)
+            val blue = group.trees.readUnchecked(2).readSymbol(reader)
 
             if reader.nbits < 15 then reader.fill()
-            val alpha = group.trees.readable(3).readSymbol(reader)
+            val alpha = group.trees.readUnchecked(3).readSymbol(reader)
             store(data, offset, index, red, green, blue, alpha)
             info.cache.let(_.insert(pack(red, green, blue, alpha)))
             index += 1
@@ -402,7 +402,8 @@ private[hallucination] object WebpLossless:
             val length = copyDistance(green - 256)
 
             val dist =
-              planeCodeToDistance(width, copyDistance(group.trees.readable(4).readSymbol(reader)))
+              planeCodeToDistance
+                (width, copyDistance(group.trees.readUnchecked(4).readSymbol(reader)))
 
             if index < dist || numValues - index < length then
               abort(Raster.Error(Webp(), Reason.Bitstream))

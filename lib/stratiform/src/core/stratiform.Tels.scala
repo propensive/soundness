@@ -43,6 +43,7 @@ import gossamer.*
 import praxinoscope.Motif
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 import Tel.Error.Reason
@@ -567,8 +568,8 @@ object Tels extends Tels2:
         var composed = schema.copy(layers = Array.empty)
         var i = 0
 
-        while i < schema.layers.readable.length do
-          val layer = schema.layers.readable(i)
+        while i < schema.layers.length do
+          val layer = schema.layers.readUnchecked(i)
           if !seenLayerNames.add(layer.name) then abort(Tel.Error(Reason.DuplicateLayerName))
           composed = applyLayer(composed, layer, schema)
           i += 1
@@ -637,7 +638,7 @@ object Tels extends Tels2:
           var v = definition.variants.length - 1
 
           while v >= 0 do
-            keywords = definition.variants.readable(v).keyword :: keywords
+            keywords = definition.variants.readUnchecked(v).keyword :: keywords
             v -= 1
 
           keywords
@@ -656,8 +657,8 @@ object Tels extends Tels2:
 
       var i = 0
 
-      while i < layer.members.readable.length do
-        layer.members.readable(i) match
+      while i < layer.members.length do
+        layer.members.readUnchecked(i) match
           case f: Field =>
             keywordToIndex.get(f.keyword) match
               case Some(idx) =>
@@ -744,8 +745,8 @@ object Tels extends Tels2:
       val out = scala.collection.mutable.ArrayBuffer.from(base.readable)
       var i = 0
 
-      while i < layer.readable.length do
-        val newDef = layer.readable(i)
+      while i < layer.length do
+        val newDef = layer.readUnchecked(i)
         val existing = out.indexWhere(_.name == newDef.name)
 
         if existing >= 0 then
@@ -781,8 +782,8 @@ object Tels extends Tels2:
       val out = scala.collection.mutable.ArrayBuffer.from(base.readable)
       var i = 0
 
-      while i < layer.readable.length do
-        val newDef = layer.readable(i)
+      while i < layer.length do
+        val newDef = layer.readUnchecked(i)
         val existing = out.indexWhere(_.name == newDef.name)
 
         if existing >= 0 then
@@ -891,8 +892,8 @@ object Tels extends Tels2:
       val out = scala.collection.mutable.ArrayBuffer.from(base.readable)
       var i = 0
 
-      while i < layer.readable.length do
-        val newDef = layer.readable(i)
+      while i < layer.length do
+        val newDef = layer.readUnchecked(i)
         val existing = out.indexWhere(_.name == newDef.name)
 
         if existing >= 0 then
@@ -918,8 +919,8 @@ object Tels extends Tels2:
       val variants = scala.collection.mutable.ArrayBuffer.from(base.variants.readable)
       var i = 0
 
-      while i < layer.variants.readable.length do
-        val v = layer.variants.readable(i)
+      while i < layer.variants.length do
+        val v = layer.variants.readUnchecked(i)
         val existingIdx = variants.indexWhere(_.keyword == v.keyword)
         if existingIdx < 0 then abort(Tel.Error(Reason.LayerVariantAddition))
         i += 1
@@ -936,7 +937,7 @@ object Tels extends Tels2:
         val idx = variants.indexWhere(_.keyword == keyword)
 
         if idx >= 0 then variants.remove(idx)
-        else if !origin.variants.readable.exists(_.keyword == keyword)
+        else if !origin.variants.exists(_.keyword == keyword)
         then abort(Tel.Error(Reason.ExcludeMissingVariant))
 
       val mergedValidators =
@@ -1094,11 +1095,11 @@ object Tels extends Tels2:
             // scalar; a SelectDefinition can only be the target of a
             // SelectRef.
             case Reference(name) =>
-              if !schema.records.readable.exists(_.name == name) &&
-                !schema.scalars.readable.exists(_.name == name) &&
+              if !schema.records.exists(_.name == name) &&
+                !schema.scalars.exists(_.name == name) &&
                 !builtinScalar(name)
               then
-                if schema.selects.readable.exists(_.name == name)
+                if schema.selects.exists(_.name == name)
                 then abort(Tel.Error(Reason.ReferenceKindMismatch))
                 else abort(Tel.Error(Reason.UnresolvedReference))
 
@@ -1138,8 +1139,8 @@ object Tels extends Tels2:
             // a record, scalar or built-in name is a kind mismatch, and
             // anything else is unresolved.
             case scala.None =>
-              if schema.records.readable.exists(_.name == select.reference) ||
-                schema.scalars.readable.exists(_.name == select.reference) ||
+              if schema.records.exists(_.name == select.reference) ||
+                schema.scalars.exists(_.name == select.reference) ||
                 builtinScalar(select.reference)
               then abort(Tel.Error(Reason.ReferenceKindMismatch))
               else abort(Tel.Error(Reason.UnresolvedReference))
@@ -1262,7 +1263,7 @@ object Tels extends Tels2:
           layers   = Array.from(layers),
           sigil    = sigil,
           records  = Array.from(records),
-          scalars  = Array.frozen(builtinScalars.readable ++ Array.from(scalars).readable),
+          scalars  = builtinScalars + Array.from(scalars),
           selects  = Array.from(selects) )
 
     private def firstAtomText(c: Tel.Compound): Optional[Text] =
@@ -1514,7 +1515,7 @@ object Tels extends Tels2:
           layers,
           sigil,
           records,
-          Array.frozen(builtinScalars.readable ++ scalars.readable),
+          builtinScalars + scalars,
           selects )
 
     private def typeFromText(name: Text): Type =
@@ -1743,7 +1744,7 @@ object Tels extends Tels2:
 
       case Scalar(validators, encoding, patterns) =>
         if encoding.present || !patterns.nil then abort(Error(Error.Reason.InlineScalar(keyword)))
-        else validators.readable.toList match
+        else validators.stdlib.toList match
           case scala.Nil => t"String"
 
           case scala.List(single) => single.s match
@@ -1925,7 +1926,7 @@ object Tels extends Tels2:
 
     // The schema's groups: the base, then each layer in declaration order.
     def decompose(schema: Tels): List[Group] =
-      base(schema) :: schema.layers.readable.to(List).map(layer)
+      base(schema) :: schema.layers.stdlib.to(List).map(layer)
 
     def base(schema: Tels): Group =
       val head = Atom.Head(schema.name, schema.sigil)
@@ -1945,7 +1946,7 @@ object Tels extends Tels2:
     // writer of either serves a reader of the other with whatever optional members it holds.
     // Layers are left on the base as they are, with the definitions they reach.
     def split(schema: Tels): (Tels, List[Atom]) =
-      val members = schema.document.members.readable.toList
+      val members = schema.document.members.stdlib.toList
       val required = members.filter(requiredMember)
       val optional = members.filterNot(requiredMember)
 
@@ -2198,7 +2199,7 @@ object Tels extends Tels2:
     // parsed document but by no derived one, so it is disregarded when validator sets are
     // compared.
     private def constraining(validators: Array[Text]^{}): sci.Set[Text] =
-      validators.readable.toList.filter(_ != t"string").to(sci.Set)
+      validators.stdlib.toList.filter(_ != t"string").to(sci.Set)
 
     private def required(polarity: Polarity): Boolean = polarity != Polarity.Loose
     private def repeatable(polarity: Polarity): Boolean = polarity == Polarity.Loose
@@ -2210,7 +2211,7 @@ object Tels extends Tels2:
 
         case select: SelectRef =>
           schema.selects.seek(_.name == select.reference).lay(sci.Set()): definition =>
-            definition.variants.readable.toList.map(_.keyword).to(sci.Set)
+            definition.variants.stdlib.toList.map(_.keyword).to(sci.Set)
 
         case _: Exclude => sci.Set()
 
@@ -2240,7 +2241,7 @@ object Tels extends Tels2:
         if !constraining(right.validators).subsetOf(constraining(left.validators))
         then Failure.Validators(path)
         else
-          val members = left.members.readable.toList.map: member => (member, keywords(member, sub))
+          val members = left.members.stdlib.toList.map: member => (member, keywords(member, sub))
           var last = -1
           var failure: Optional[Failure] = Unset
 
@@ -2398,11 +2399,11 @@ object Tels extends Tels2:
         val index = indexOf(child)
 
         if index >= 0 && index < sourceKeywords.length then
-          val keyword = sourceKeywords.readable(index)(0)
+          val keyword = sourceKeywords.readUnchecked(index)(0)
           val position = targetKeywords.readable.indexWhere(_(0) == keyword)
 
           if position >= 0 then
-            (child, resolve(targetKeywords.readable(position)(1), to)) match
+            (child, resolve(targetKeywords.readUnchecked(position)(1), to)) match
               case (Tel.Element.Value(_, _, text), scalar: Scalar) =>
                 buffer += Tel.Element.Value(position, scalar, text)
 

@@ -95,8 +95,8 @@ object Writing:
     def apply(text: Text): Writing = Writing(text)
     def single(operand: Grapheme): Writing = Writing(operand.text)
     def fromChar(char: Char): Grapheme = Grapheme(char.toString)
-    def length(writing: Writing): Int = writing.boundaries.readable.length - 1
-    def size(writing: Writing): Int = writing.boundaries.readable.length - 1
+    def length(writing: Writing): Int = writing.boundaries.length - 1
+    def size(writing: Writing): Int = writing.boundaries.length - 1
     def text(writing: Writing): Text = writing.text
 
     def map(writing: Writing)(lambda: Grapheme => Grapheme): Writing =
@@ -121,7 +121,7 @@ object Writing:
 
     def indexOf(writing: Writing, sub: Text, start: Ordinal): Optional[Ordinal] =
       val charStart =
-        writing.boundaries.at(Ordinal.zerary(start.n0.min(writing.boundaries.readable.length - 1)))
+        writing.boundaries.at(Ordinal.zerary(start.n0.min(writing.boundaries.length - 1)))
         . or(0)
 
       val foundChar = writing.text.s.indexOf(sub.s, charStart)
@@ -136,22 +136,24 @@ object Writing:
       val e = interval.limit.n0.max(s).min(limit)
 
       val slice =
-        writing.text.s.substring(writing.boundaries.readable(s), writing.boundaries.readable(e)).nn
+        writing.text.s
+        . substring(writing.boundaries.readUnchecked(s), writing.boundaries.readUnchecked(e))
+        . nn
 
       Writing(slice.tt)
 
   extension (writing: Writing)
     def graphemes: IndexedSeq[Grapheme] =
-      val n = writing.boundaries.readable.length - 1
+      val n = writing.boundaries.length - 1
 
       IndexedSeq.tabulate(n): i =>
         Grapheme:
           writing.text.s.substring
-            ( writing.boundaries.readable(i), writing.boundaries.readable(i + 1) )
+            ( writing.boundaries.readUnchecked(i), writing.boundaries.readUnchecked(i + 1) )
 
           . nn
 
-    def graphemeCount: Int = writing.boundaries.readable.length - 1
+    def graphemeCount: Int = writing.boundaries.length - 1
 
 case class Writing(text: Text, boundaries: Array[Int]^{})
 

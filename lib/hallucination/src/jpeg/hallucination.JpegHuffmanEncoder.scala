@@ -49,7 +49,7 @@ private[hallucination] final class JpegEncodeTable
     while i < 16 do
       var count = 0
 
-      while count < lengths.readable(i) do
+      while count < lengths.readUnchecked(i) do
         sizes(k) = i + 1
         k += 1
         count += 1
@@ -75,8 +75,8 @@ private[hallucination] final class JpegEncodeTable
     i = 0
 
     while i < values.length do
-      sizeOf0(values.readable(i)) = sizes(i)
-      codeOf0(values.readable(i)) = codes(i)
+      sizeOf0(values.readUnchecked(i)) = sizes(i)
+      codeOf0(values.readUnchecked(i)) = codes(i)
       i += 1
 
     (sizeOf0.asInstanceOf[Array[Int]^{}], codeOf0.asInstanceOf[Array[Int]^{}])

@@ -76,7 +76,7 @@ object Pane:
     val deadline = jl.System.currentTimeMillis + timeout
 
     def recur(): Boolean =
-      if screenshot().screen.readable.exists(predicate) then true
+      if screenshot().screen.exists(predicate) then true
       else if jl.System.currentTimeMillis >= deadline then false
       else
         sleep(0.01*Second)
@@ -315,7 +315,7 @@ trait Pane extends caps.ExclusiveCapability:
   def resize(width: Int, height: Int)(using Tactic[Pane.Error]): Unit
 
 case class Screenshot(screen: Array[Text]^{}, size: (Int, Int), cursor: (Ordinal, Ordinal)):
-  def apply(): Text = screen.readable.toSeq.join(t"\n")
+  def apply(): Text = screen.stdlib.join(t"\n")
 
   def currentLine(decorate: Char => Text): Text =
     val line0 = screen.at(cursor(1)).or(t"")

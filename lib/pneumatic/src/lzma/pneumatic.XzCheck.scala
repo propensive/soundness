@@ -167,7 +167,7 @@ private[pneumatic] final class Sha256Checker extends XzChecker:
     while i < 64 do
       val big1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)
       val ch = (e & f) ^ ((~e) & g)
-      val t1 = hh + big1 + ch + Sha256.roundConstants.readable(i) + w(i)
+      val t1 = hh + big1 + ch + Sha256.roundConstants.readUnchecked(i) + w(i)
       val big0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)
       val maj = (a & b) ^ (a & c) ^ (b & c)
       val t2 = big0 + maj

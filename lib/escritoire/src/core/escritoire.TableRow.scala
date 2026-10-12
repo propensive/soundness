@@ -33,4 +33,4 @@
 package escritoire
 
 case class TableRow[text](cells: Array[TableCell[text]]^{}, title: Boolean, height: Int):
-  def apply(column: Int): TableCell[text] = cells.readable(column)
+  def apply(column: Int): TableCell[text] = cells.readUnchecked(column)

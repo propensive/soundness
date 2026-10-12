@@ -65,9 +65,9 @@ object JavaBaseCrypto extends Crypto:
   def hmac(algorithm: Text): Crypto.Mac = new Crypto.Mac:
     def mac(key: Data, data: Data): Data =
       val mac = jc.Mac.getInstance(algorithm.s).nn
-      mac.init(SecretKeySpec(key.readable.to(scala.Array), algorithm.s))
+      mac.init(SecretKeySpec(key.stdlib.to(scala.Array), algorithm.s))
       // [java-boundary] fresh array returned by the JDK, retained by nobody else
-      Array.unsafeFrozen(mac.doFinal(data.readable.to(scala.Array)).nn)
+      Array.unsafeFrozen(mac.doFinal(data.stdlib.to(scala.Array)).nn)
 
   def rsa: Crypto.PublicKeyCipher = new Crypto.PublicKeyCipher:
     private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("RSA").nn
@@ -328,9 +328,9 @@ object JavaBaseCrypto extends Crypto:
 
       sig.initSign
         ( keyFactory()
-          . generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.readable.to(scala.Array))) )
+          . generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.stdlib.to(scala.Array))) )
 
-      sig.update(data.readable.to(scala.Array))
+      sig.update(data.stdlib.to(scala.Array))
       // [java-boundary] fresh array returned by the JDK, retained by nobody else
       Array.unsafeFrozen(sig.sign().nn)
 
@@ -338,10 +338,10 @@ object JavaBaseCrypto extends Crypto:
       val sig = signature()
 
       sig.initVerify
-        ( keyFactory().generatePublic(jss.X509EncodedKeySpec(publicKey.readable.to(scala.Array))) )
+        ( keyFactory().generatePublic(jss.X509EncodedKeySpec(publicKey.stdlib.to(scala.Array))) )
 
-      sig.update(data.readable.to(scala.Array))
-      verified(sig, signature0.readable.to(scala.Array))
+      sig.update(data.stdlib.to(scala.Array))
+      verified(sig, signature0.stdlib.to(scala.Array))
 
     def generateKeyPair(bits: Int): Data =
       val generator = js.KeyPairGenerator.getInstance("DSA").nn
@@ -352,7 +352,7 @@ object JavaBaseCrypto extends Crypto:
     def privateToPublic(privateKey: Data): Data =
       val key =
         keyFactory().generatePrivate
-          ( jss.PKCS8EncodedKeySpec(privateKey.readable.to(scala.Array)) )
+          ( jss.PKCS8EncodedKeySpec(privateKey.stdlib.to(scala.Array)) )
 
         . nn match
           case key: jsi.DSAPrivateKey => key

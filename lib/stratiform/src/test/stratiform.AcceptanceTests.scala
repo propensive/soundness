@@ -62,7 +62,7 @@ object AcceptanceTests extends Suite("tel-acceptance", m"Stratiform acceptance t
     array.toSeq
 
   private def hex(data: Data): String =
-    data.readable.toSeq.map { byte => f"${byte & 0xff}%02x" }.mkString
+    data.stdlib.map { byte => f"${byte & 0xff}%02x" }.mkString
 
   private def bytes(values: Int*): Data =
     Array.unsafeFrozen(values.map(_.toByte).toArray)
@@ -84,7 +84,7 @@ object AcceptanceTests extends Suite("tel-acceptance", m"Stratiform acceptance t
     suite(m"The built-in acceptance schema"):
       test(m"acceptance.tel encodes to the 453-byte reference document root"):
         val encoded = schemaElement.bintel(Tels.Axiom.tels)
-        (encoded.length, encoded.readable.toSeq == hexBytes(resourceText("acceptance.bintel.hex").s))
+        (encoded.length, encoded.stdlib == hexBytes(resourceText("acceptance.bintel.hex").s))
       . assert(_ == (453, true))
 
       test(m"acceptance.tel matches the pinned BLAKE3-256 value hash"):
@@ -143,7 +143,7 @@ object AcceptanceTests extends Suite("tel-acceptance", m"Stratiform acceptance t
     suite(m"The base-256 and schema-signature codecs"):
       test(m"base-256 encodes a text to the bytes it spells"):
         Tel.Codec.base256.encode(t"ḀḁЂ") match
-          case Tel.Codec.Encoded.Bytes(data) => data.readable.toSeq
+          case Tel.Codec.Encoded.Bytes(data) => data.stdlib
           case _                             => Seq()
       . assert(_ == Seq[Byte](0, 1, 2))
 

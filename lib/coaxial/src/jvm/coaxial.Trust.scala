@@ -267,7 +267,7 @@ object TlsAcceptance:
           case chain =>
             chain.headOption.flatMap(Option(_)).exists: leaf =>
               val digest: Data = Tls.fingerprint(Array.unsafeFrozen(leaf.getEncoded.nn))
-              digest.readable.sameElements(fingerprint.readable)
+              Array.same(digest, fingerprint)
 
     new jns.X509ExtendedTrustManager:
       import unsafeExceptions.canThrowAny

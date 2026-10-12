@@ -348,15 +348,15 @@ object internal:
       // inside a quote picks up a fresh `any.rd` capability that cannot flow into `^{}`.
       // The emitted arrays are fresh and never written, so the frozen form is sound.
       def emitAtomsArray(atoms: Array[Tel.Atom]^{}): Expr[Array[Tel.Atom]^{}] =
-        val list = atoms.readable.toList.map(emitAtom)
+        val list = atoms.stdlib.toList.map(emitAtom)
         '{Array.from(${Expr.ofList(list)})}.asInstanceOf[Expr[Array[Tel.Atom]^{}]]
 
       def emitComment(c: Tel.Comment): Expr[Tel.Comment] =
         '{Tel.Comment(${Expr(c.text.s)}.tt)}
 
       def emitTabulation(t: Tel.Tabulation): Expr[Tel.Tabulation] =
-        val markers = Expr(t.markerOffsets.readable.toList)
-        val headings = Expr(t.headings.readable.toList.map(_.s))
+        val markers = Expr(t.markerOffsets.stdlib.toList)
+        val headings = Expr(t.headings.stdlib.toList.map(_.s))
         '{Tel.Tabulation(Array.from(${markers}), Array.from(${headings}.map(_.tt)))}
 
       def emitCompound(c: Tel.Compound): Expr[Tel.Compound] =
@@ -372,7 +372,7 @@ object internal:
 
       def emitBlock(b: Tel.Block): Expr[Tel.Block] =
         val comments =
-          '{Array.from(${Expr.ofList(b.comments.readable.toList.map(emitComment))})}
+          '{Array.from(${Expr.ofList(b.comments.stdlib.toList.map(emitComment))})}
           . asInstanceOf[Expr[Array[Tel.Comment]^{}]]
 
         val tab: Expr[Optional[Tel.Tabulation]] = b.tabulation match
@@ -380,14 +380,14 @@ object internal:
           case _                 => '{Unset}
 
         val compounds =
-          '{Array.from(${Expr.ofList(b.compounds.readable.toList.map(emitCompound))})}
+          '{Array.from(${Expr.ofList(b.compounds.stdlib.toList.map(emitCompound))})}
           . asInstanceOf[Expr[Array[Tel.Compound]^{}]]
 
         val tbl = Expr(b.trailingBlankLines)
         '{Tel.Block($comments, $tab, $compounds, $tbl)}
 
       def emitBlocks(blocks: Array[Tel.Block]^{}): Expr[Array[Tel.Block]^{}] =
-        '{Array.from(${Expr.ofList(blocks.readable.toList.map(emitBlock))})}
+        '{Array.from(${Expr.ofList(blocks.stdlib.toList.map(emitBlock))})}
         . asInstanceOf[Expr[Array[Tel.Block]^{}]]
 
       val directiveExpr: Expr[Optional[Text]] = document.interpreterDirective match
@@ -877,7 +877,7 @@ object internal:
       val arms = locals.map: local =>
         val index = local.field.index
 
-        val keyText: Expr[Text] = '{$keys.readable(${Expr(index)}).tt}
+        val keyText: Expr[Text] = '{$keys.readUnchecked(${Expr(index)}).tt}
 
         def firstWins(read: Term): Term =
           If
@@ -965,7 +965,7 @@ object internal:
                       $bufferExpr.asInstanceOf[scala.collection.mutable.ListBuffer[Any]].addOne
                         ( Tel.Parsable.focusing($foci, $reader, $keyText):
                             Tel.Parsable.parseElement
-                              ( $instances.readable(${Expr(index)}).asInstanceOf[Tel.Parsing],
+                              ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Tel.Parsing],
                                 $reader,
                                 $indent ) )
                     }
@@ -975,14 +975,15 @@ object internal:
                 val read: Term =
                   ' {
                       Tel.Parsable.focusing($foci, $reader, $keyText):
-                        $instances.readable(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
+                        $instances.readUnchecked(${Expr(index)})
+                        . asInstanceOf[fieldType is Tel.Field]
                         . parse($reader, $indent)
                     }
 
                   . asTerm
 
                 If
-                  ( '{$repeatables.readable(${Expr(index)})}.asTerm,
+                  ( '{$repeatables.readUnchecked(${Expr(index)})}.asTerm,
                     Block(List(ensure, append), unit),
                     firstWins(read) )
 
@@ -1004,7 +1005,7 @@ object internal:
         val deliveries: List[Statement] = locals.map: local =>
           val index = local.field.index
 
-          val keyText: Expr[Text] = '{$keys.readable(${Expr(index)}).tt}
+          val keyText: Expr[Text] = '{$keys.readUnchecked(${Expr(index)}).tt}
           val count: Expr[Int] = '{Tel.Parsable.positionalCount($assignmentExpr, ${Expr(index)})}
 
           val first: Expr[Text] =
@@ -1079,7 +1080,8 @@ object internal:
                           $bufferExpr.asInstanceOf[scala.collection.mutable.ListBuffer[Any]].addOne
                             ( Tel.Parsable.focusing($foci, $reader, $keyText):
                                 Tel.Parsable.parseAtomElement
-                                  ( $instances.readable(${Expr(index)}).asInstanceOf[Tel.Parsing],
+                                  ( $instances.readUnchecked(${Expr(index)})
+                                    . asInstanceOf[Tel.Parsing],
                                     Tel.Parsable.positionalText
                                       ( $assignmentExpr, ${Expr(index)}, occurrence ) )
                                   ( using $tactic ) )
@@ -1093,7 +1095,8 @@ object internal:
                     fill:
                       ' {
                           val instance =
-                            $instances.readable(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
+                            $instances.readUnchecked(${Expr(index)})
+                            . asInstanceOf[fieldType is Tel.Field]
 
                           Tel.Parsable.focusing($foci, $reader, $keyText):
                             if instance.nature == Tel.Nature.Flag
@@ -1104,7 +1107,7 @@ object internal:
                       . asTerm
 
                   If
-                    ( '{$repeatables.readable(${Expr(index)})}.asTerm,
+                    ( '{$repeatables.readUnchecked(${Expr(index)})}.asTerm,
                       Block(List(ensure), gather),
                       single )
 
@@ -1173,12 +1176,12 @@ object internal:
 
         local.field.fieldType.asType match
           case '[fieldType] =>
-            val keyText: Expr[Text] = '{$keys.readable(${Expr(index)}).tt}
+            val keyText: Expr[Text] = '{$keys.readUnchecked(${Expr(index)}).tt}
 
             val onAbsent: Expr[fieldType] = local.field.kind match
               case InstanceK =>
                 ' {
-                    $instances.readable(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
+                    $instances.readUnchecked(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
                     . absent()(using $tactic)
                   }
 
@@ -1197,7 +1200,7 @@ object internal:
                 ( Ref(local.slot),
                   ' {
                       val declared =
-                        $fallbacks.readable(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+                        $fallbacks.readUnchecked(${Expr(index)}).asInstanceOf[Optional[fieldType]]
 
                       if !declared.absent then declared.asInstanceOf[fieldType]
                       else Tel.Parsable.focusingUnlocated($foci, $keyText)($onAbsent)
@@ -1220,7 +1223,7 @@ object internal:
                       ' {
                           Tel.Parsable.focusingUnlocated($foci, $keyText):
                             Tel.Parsable.gathered[fieldType]
-                              ( $instances.readable(${Expr(index)}).asInstanceOf[Tel.Parsing],
+                              ( $instances.readUnchecked(${Expr(index)}).asInstanceOf[Tel.Parsing],
                                 ( $bufferExpr match
                                     case null   => Nil
                                     case buffer => buffer.toList )
@@ -1230,7 +1233,7 @@ object internal:
 
                       . asTerm )
 
-                If('{$repeatables.readable(${Expr(index)})}.asTerm, gatherFinish, whenUnseen)
+                If('{$repeatables.readUnchecked(${Expr(index)})}.asTerm, gatherFinish, whenUnseen)
 
               case _ =>
                 whenUnseen

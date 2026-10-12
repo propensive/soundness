@@ -76,20 +76,20 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
   case class Node(label: Text, child: Optional[Node])
 
   private def keywords(struct: Tels.Struct): List[Text] =
-    proscenium.List.from(struct.members.readable.toList).map:
+    proscenium.List.from(struct.members.stdlib.toList).map:
       case field: Tels.Field      => field.keyword
       case select: Tels.SelectRef => select.reference
       case _: Tels.Exclude        => t""
 
   private def retractions(schema: Tels): List[(Text, Text, List[Text])] =
-    proscenium.List.from(schema.layers.readable.toList).bind: layer =>
-      proscenium.List.from(layer.selects.readable.toList).map: select =>
-        (layer.name, select.name, proscenium.List.from(select.excludes.readable.toList))
+    proscenium.List.from(schema.layers.stdlib.toList).bind: layer =>
+      proscenium.List.from(layer.selects.stdlib.toList).map: select =>
+        (layer.name, select.name, proscenium.List.from(select.excludes.stdlib.toList))
 
   private def variants(schema: Tels, name: Text): List[Text] =
-    proscenium.List.from(schema.selects.readable.toList).bind: select =>
+    proscenium.List.from(schema.selects.stdlib.toList).bind: select =>
       if select.name != name then Nil
-      else proscenium.List.from(select.variants.readable.toList).map(_.keyword)
+      else proscenium.List.from(select.variants.stdlib.toList).map(_.keyword)
 
   // The names of the lineage's layers whose hashes a served document carries.
   private def servedLayers(lineage: SchemaSignature.Lineage, served: Tel.Acceptance.Served)
@@ -99,29 +99,29 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
     . map(_.layer.name)
 
   private def hex(data: Data): String =
-    data.readable.toSeq.map { byte => f"${byte & 0xff}%02x" }.mkString
+    data.stdlib.map { byte => f"${byte & 0xff}%02x" }.mkString
 
   def run(): Unit =
     suite(m"Derived schema shape"):
       lazy val schema = Tels.tels[ContactV2](t"contact")
 
       test(m"a nested product is a named record referenced by the field"):
-        (schema.records.readable.toList.map(_.name), keywords(schema.document))
+        (schema.records.stdlib.toList.map(_.name), keywords(schema.document))
       . assert(_ == (scala.List(t"Address"), List(t"name", t"email", t"address")))
 
       test(m"a layered field forms a layer of that name, refining the root"):
-        proscenium.List.from(schema.layers.readable.toList).map: layer =>
+        proscenium.List.from(schema.layers.stdlib.toList).map: layer =>
           (layer.name, keywords(layer.overlay))
       . assert(_ == List((t"with-phone", List(t"phone"))))
 
       test(m"a required field has implicit polarity"):
-        schema.document.members.readable.toList.map:
+        schema.document.members.stdlib.toList.map:
           case field: Tels.Field => field.required
           case _                 => Tels.Polarity.Tight
       . assert(_ == scala.List(Tels.Polarity.Implicit, Tels.Polarity.Loose, Tels.Polarity.Loose))
 
       test(m"a recursive type registers its own record"):
-        Tels.tels[Node](t"node").records.readable.toList.map(_.name)
+        Tels.tels[Node](t"node").records.stdlib.toList.map(_.name)
       . assert(_ == scala.List(t"Node"))
 
       test(m"a derived schema renders and hashes as its hand-written equivalent"):

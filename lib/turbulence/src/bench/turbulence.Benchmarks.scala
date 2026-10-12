@@ -111,7 +111,7 @@ object Benchmarks extends Suite("streams-bench", m"Streaming benchmarks: Soundne
 
   // A window onto `input`. `Data` is a frozen `Array[Byte]`, which has no `slice` of its
   // own, so this reads through the read-only view and re-freezes the result.
-  def slice(from: Int, until: Int): Data = Array.frozen(input.readable.slice(from, until))
+  def slice(from: Int, until: Int): Data = Array.from(input.stdlib.slice(from, until))
   // The same 4 MB split into 64 KiB chunks, so aggregation/write loops iterate
   // (a single in-memory chunk would let `read[Data]` fold to an identity).
   lazy val inputChunks: Chain[Data] =
@@ -170,7 +170,7 @@ object Benchmarks extends Suite("streams-bench", m"Streaming benchmarks: Soundne
   // The 256 KiB split into four equal parts, one per source stream for saturated fan-in.
   lazy val smallQuarters: IndexedSeq[Data] =
     val q = smallInput.length/4
-    IndexedSeq.tabulate(4)(i => Array.frozen(smallInput.readable.slice(i*q, (i + 1)*q)))
+    IndexedSeq.tabulate(4)(i => Array.from(smallInput.stdlib.slice(i*q, (i + 1)*q)))
 
   // AES-256 key + a fixed key/IV for the JDK reference, generated/derived once.
   lazy val aesKey: SymmetricKey[Aes[256] over Cbc against Pkcs7] =

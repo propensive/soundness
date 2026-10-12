@@ -60,7 +60,7 @@ package randomTexts:
     val resource = getClass.getResourceAsStream("/capricious/blns.txt").nn
     val blns = Array.from(scala.io.Source.fromInputStream(resource).getLines().map(_.tt))
 
-    def randomize(random: Random) = blns.readable(random.long().toInt.abs%blns.length)
+    def randomize(random: Random) = blns.readUnchecked(random.long().toInt.abs%blns.length)
 
 package randomSizes:
   given uniformSizeUpto10: Random.Size = _.long().toInt.abs%10

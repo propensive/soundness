@@ -66,19 +66,19 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       val header = blocks.head
 
       test(m"USTAR magic at offset 257"):
-        header.readable.slice(257, 263).toList.map(_.toChar)
+        header.stdlib.slice(257, 263).toList.map(_.toChar)
       . assert(_ == List('u', 's', 't', 'a', 'r', '\u0000'))
 
       test(m"version 00 at offset 263"):
-        header.readable.slice(263, 265).toList.map(_.toChar)
+        header.stdlib.slice(263, 265).toList.map(_.toChar)
       . assert(_ == List('0', '0'))
 
       test(m"file type flag at offset 156"):
-        header.readable(156).toChar
+        header.stdlib(156).toChar
       . assert(_ == '0')
 
       test(m"name field starts with hello.txt"):
-        header.readable.slice(0, 9).toList.map(_.toChar)
+        header.stdlib.slice(0, 9).toList.map(_.toChar)
       . assert(_ == List('h', 'e', 'l', 'l', 'o', '.', 't', 'x', 't'))
 
       test(m"single-file archive emits 4 blocks"):
@@ -86,7 +86,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == 4)
 
       test(m"single-file archive is 2048 bytes"):
-        blocks.map(_.readable.length).sum
+        blocks.map(_.length).sum
       . assert(_ == 2048)
 
     suite(m"Multi-entry archive"):
@@ -97,11 +97,11 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == 5)
 
       test(m"directory entry has type flag 5"):
-        blocks(2).readable(156).toChar
+        blocks(2).stdlib(156).toChar
       . assert(_ == '5')
 
       test(m"directory entryName ends with /"):
-        blocks(2).readable.slice(0, 5).toList.map(_.toChar)
+        blocks(2).stdlib.slice(0, 5).toList.map(_.toChar)
       . assert(_ == List('d', 'a', 't', 'a', '/'))
 
     suite(m"PAX extended headers for long names"):
@@ -120,27 +120,27 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == 5)
 
       test(m"PAX header has type flag 'x' at offset 156"):
-        blocks(0).readable(156).toChar
+        blocks(0).stdlib(156).toChar
       . assert(_ == 'x')
 
       test(m"PAX header name is PaxHeaders/0"):
-        blocks(0).readable.slice(0, 13).toList.map(_.toChar)
+        blocks(0).stdlib.slice(0, 13).toList.map(_.toChar)
       . assert(_ == List('P', 'a', 'x', 'H', 'e', 'a', 'd', 'e', 'r', 's', '/', '0', '\u0000'))
 
       test(m"PAX record begins with decimal length prefix '160 path='"):
-        blocks(1).readable.slice(0, 9).toList.map(_.toChar)
+        blocks(1).stdlib.slice(0, 9).toList.map(_.toChar)
       . assert(_ == List('1', '6', '0', ' ', 'p', 'a', 't', 'h', '='))
 
       test(m"PAX record ends with newline at offset 159"):
-        blocks(1).readable(159).toChar
+        blocks(1).stdlib(159).toChar
       . assert(_ == '\n')
 
       test(m"regular header (block 2) has type flag '0' for the file"):
-        blocks(2).readable(156).toChar
+        blocks(2).stdlib(156).toChar
       . assert(_ == '0')
 
       test(m"regular header name bytes 0, 99 both 'a' (truncated to 100)"):
-        (blocks(2).readable(0).toChar, blocks(2).readable(99).toChar)
+        (blocks(2).stdlib(0).toChar, blocks(2).stdlib(99).toChar)
       . assert(_ == ('a', 'a'))
 
     suite(m"PAX extended headers for long link targets"):
@@ -159,24 +159,24 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == 5)
 
       test(m"PAX header type flag is 'x'"):
-        blocks(0).readable(156).toChar
+        blocks(0).stdlib(156).toChar
       . assert(_ == 'x')
 
       test(m"PAX record uses the linkpath keyword"):
-        blocks(1).readable.slice(0, 13).toList.map(_.toChar)
+        blocks(1).stdlib.slice(0, 13).toList.map(_.toChar)
       . assert(_ == List('1', '6', '4', ' ', 'l', 'i', 'n', 'k', 'p', 'a', 't', 'h', '='))
 
       test(m"regular header (block 2) has type flag '2' for the symlink"):
-        blocks(2).readable(156).toChar
+        blocks(2).stdlib(156).toChar
       . assert(_ == '2')
 
       test(m"regular header link target bytes 157, 256 both 'b' (trunc 100)"):
-        (blocks(2).readable(157).toChar, blocks(2).readable(256).toChar)
+        (blocks(2).stdlib(157).toChar, blocks(2).stdlib(256).toChar)
       . assert(_ == ('b', 'b'))
 
     suite(m"Reader: round-trip a single file through a pull endpoint"):
       val bytes: Data = Tarfile(List(helloFile)).source[Data].memoize
-      val entries = Tarfile.read(bytes.readable.grouped(7).map(Array.frozen(_)).iterator.stream).toList
+      val entries = Tarfile.read(bytes.stdlib.grouped(7).map(Array.from(_)).iterator.stream).toList
 
       test(m"streamed reader produces one entry"):
         entries.length
@@ -184,7 +184,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"streamed file data round-trips across odd chunk boundaries"):
         entries.head match
-          case f: Tar.Entry.File => f.data.memoize.readable.to(List).map(_.toChar).mkString
+          case f: Tar.Entry.File => f.data.memoize.stdlib.to(List).map(_.toChar).mkString
           case _                => ""
       . assert(_ == "hello")
 
@@ -200,13 +200,13 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       val bytes: Data = Tarfile(List(bigFile)).source[Data].memoize
 
       test(m"a 200kB body arrives as multiple chunks"):
-        Tarfile.read(bytes.readable.grouped(8192).map(Array.frozen(_)).iterator.stream).toList.head match
+        Tarfile.read(bytes.stdlib.grouped(8192).map(Array.from(_)).iterator.stream).toList.head match
           case f: Tar.Entry.File => f.data.chunks.length
           case _                 => 0
       . assert(_ > 1)
 
       test(m"the chunks reassemble the payload exactly"):
-        Tarfile.read(bytes.readable.grouped(8192).map(Array.frozen(_)).iterator.stream).toList.head match
+        Tarfile.read(bytes.stdlib.grouped(8192).map(Array.from(_)).iterator.stream).toList.head match
           case f: Tar.Entry.File => f.data.size
           case _                 => 0
       . assert(_ == 200000)
@@ -229,7 +229,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"file data round-trips"):
         entries.head match
-          case f: Tar.Entry.File => f.data.memoize.readable.to(List).map(_.toChar).mkString
+          case f: Tar.Entry.File => f.data.memoize.stdlib.to(List).map(_.toChar).mkString
           case _                => ""
       . assert(_ == "hello")
 
@@ -340,7 +340,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"bad checksum is detected"):
         val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]]
-        val corrupted: List[Data] = Array.frozen(good.stdlib.head.readable.updated(0, ('Z'.toByte: Byte))) :: good.stdlib.tail.to(proscenium.List)
+        val corrupted: List[Data] = Array.from(good.stdlib.head.stdlib.updated(0, ('Z'.toByte: Byte))) :: good.stdlib.tail.to(proscenium.List)
         capture[Tar.Error](Tarfile.read(corrupted.stdlib.iterator.stream).toList).reason
       . assert: r =>
           r.isInstanceOf[Tar.Error.Reason.BadChecksum]
@@ -360,7 +360,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         // A corrupt block cannot be trusted for anything, so nothing in it is parsed: no
         // BadName/BadOctal cascade follows the checksum failure.
         val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]]
-        val corrupted: List[Data] = Array.frozen(good.stdlib.head.readable.updated(0, ('Z'.toByte: Byte))) :: good.stdlib.tail.to(proscenium.List)
+        val corrupted: List[Data] = Array.from(good.stdlib.head.stdlib.updated(0, ('Z'.toByte: Byte))) :: good.stdlib.tail.to(proscenium.List)
         collectTar { Tarfile.read(corrupted.stdlib.iterator.stream).toList; () }.reasons
       . assert: reasons =>
           reasons.size == 1 && reasons.prim.lay(false)(_.isInstanceOf[Tar.Error.Reason.BadChecksum])
@@ -369,7 +369,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]]
         // Patch the type flag to an unrecognised value and restamp the checksum
         // (bytes 148-156 count as spaces; "%06o\0 " format).
-        val flagged = good.stdlib.head.readable.updated(156, 'q'.toByte)
+        val flagged = good.stdlib.head.stdlib.updated(156, 'q'.toByte)
 
         var sum = 0L
         var i = 0
@@ -391,7 +391,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         patchedBlock = patchedBlock.updated(154, 0.toByte).updated(155, ' '.toByte)
 
         val patched: List[Data] =
-          Array.frozen(patchedBlock) :: good.stdlib.tail.to(proscenium.List)
+          Array.from(patchedBlock) :: good.stdlib.tail.to(proscenium.List)
 
         var entries: scala.collection.immutable.List[bitumen.Tar.Entry] = scala.Nil
         val issues = collectTar:
@@ -422,11 +422,11 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == 5)
 
       test(m"PAX record contains uname keyword"):
-        Array.frozen(blocks(1).readable.slice(0, 80)).utf8.s.contains("uname=")
+        Array.from(blocks(1).stdlib.slice(0, 80)).utf8.s.contains("uname=")
       . assert(_ == true)
 
       test(m"PAX record contains gname keyword"):
-        Array.frozen(blocks(1).readable.slice(0, 256)).utf8.s.contains("gname=")
+        Array.from(blocks(1).stdlib.slice(0, 256)).utf8.s.contains("gname=")
       . assert(_ == true)
 
       test(m"long uname round-trips via reader"):
@@ -457,19 +457,19 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       val blocks = tar.source[Data].chain.to[List].stdlib
 
       test(m"first block has 'L' type flag at offset 156"):
-        blocks(0).readable(156).toChar
+        blocks(0).stdlib(156).toChar
       . assert(_ == 'L')
 
       test(m"first block has name '././@LongLink'"):
-        blocks(0).readable.slice(0, 13).toList.map(_.toChar).mkString
+        blocks(0).stdlib.slice(0, 13).toList.map(_.toChar).mkString
       . assert(_ == "././@LongLink")
 
       test(m"second block holds the long name (first byte 'a')"):
-        blocks(1).readable(0).toChar
+        blocks(1).stdlib(0).toChar
       . assert(_ == 'a')
 
       test(m"third block is the regular file header (typeflag '0')"):
-        blocks(2).readable(156).toChar
+        blocks(2).stdlib(156).toChar
       . assert(_ == '0')
 
       test(m"long path round-trips via reader honouring 'L'"):
@@ -490,7 +490,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       val blocks = tar.source[Data].chain.to[List].stdlib
 
       test(m"first block has 'K' type flag"):
-        blocks(0).readable(156).toChar
+        blocks(0).stdlib(156).toChar
       . assert(_ == 'K')
 
       test(m"long link target round-trips via reader honouring 'K'"):
@@ -796,8 +796,8 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == List(t"hello.txt", t"data/"))
 
       test(m"gzipped stream is shorter than uncompressed (for small archive)"):
-        val raw = tar.source[Data].chain.stdlib.map(_.readable.length).sum
-        val compressed = tar.gzip.chain.stdlib.map(_.readable.length).sum
+        val raw = tar.source[Data].chain.stdlib.map(_.length).sum
+        val compressed = tar.gzip.chain.stdlib.map(_.length).sum
         compressed < raw
       . assert(_ == true)
 
@@ -907,7 +907,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
         target.open[Tar](Tar.Flag.Gzip):
           bitumen.tar.entries.to(List).head match
-            case f: Tar.Entry.File => f.data.memoize.readable.to(List).map(_.toChar).mkString
+            case f: Tar.Entry.File => f.data.memoize.stdlib.to(List).map(_.toChar).mkString
             case _                 => ""
       . assert(_ == "zipped")
 
@@ -942,30 +942,30 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       val blocks = bytes.to[List].stdlib
 
       test(m"header type flag is 'S'"):
-        blocks.head.readable(156).toChar
+        blocks.head.stdlib(156).toChar
       . assert(_ == 'S')
 
       test(m"realsize is recorded at offset 483-494"):
-        val realSize = Array.frozen(blocks.head.readable.slice(483, 494)).ascii.s
+        val realSize = Array.from(blocks.head.stdlib.slice(483, 494)).ascii.s
         java.lang.Long.parseLong(realSize.trim.nn, 8)
       . assert(_ == 10000L)
 
       test(m"first sparse segment offset+length recorded at 386-409"):
-        val ofs = Array.frozen(blocks.head.readable.slice(386, 397)).ascii.s
-        val len = Array.frozen(blocks.head.readable.slice(398, 409)).ascii.s
+        val ofs = Array.from(blocks.head.stdlib.slice(386, 397)).ascii.s
+        val len = Array.from(blocks.head.stdlib.slice(398, 409)).ascii.s
         ( java.lang.Long.parseLong(ofs.trim.nn, 8),
           java.lang.Long.parseLong(len.trim.nn, 8) )
       . assert(_ == (0L, 100L))
 
       test(m"second sparse segment offset+length recorded at 410-433"):
-        val ofs = Array.frozen(blocks.head.readable.slice(410, 421)).ascii.s
-        val len = Array.frozen(blocks.head.readable.slice(422, 433)).ascii.s
+        val ofs = Array.from(blocks.head.stdlib.slice(410, 421)).ascii.s
+        val len = Array.from(blocks.head.stdlib.slice(422, 433)).ascii.s
         ( java.lang.Long.parseLong(ofs.trim.nn, 8),
           java.lang.Long.parseLong(len.trim.nn, 8) )
       . assert(_ == (5000L, 200L))
 
       test(m"isExtended byte is 0 (fewer than 4 segments)"):
-        blocks.head.readable(482).toInt
+        blocks.head.stdlib(482).toInt
       . assert(_ == 0)
 
       val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
@@ -1004,11 +1004,11 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       val blocks = bytes.to[List].stdlib
 
       test(m"header isExtended byte is 1"):
-        blocks.head.readable(482).toInt
+        blocks.head.stdlib(482).toInt
       . assert(_ == 1)
 
       test(m"extension block (block 1) is emitted before data"):
-        blocks(1).readable(0).toChar
+        blocks(1).stdlib(0).toChar
       . assert(_ == '0') // first segment's offset starts with '0' octal
 
       test(m"reader recovers all 10 segments"):
@@ -1097,8 +1097,8 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"re-serialising a parsed archive reproduces the original bytes"):
         val original = arArchive(List(arEntry(t"a.txt", t"aaa"), arEntry(t"b.txt", t"bb")))
-        Arfile.from(original.source[Data]).source[Data].memoize.readable.to(List)
-      . assert(_ == arArchive(List(arEntry(t"a.txt", t"aaa"), arEntry(t"b.txt", t"bb"))).readable
+        Arfile.from(original.source[Data]).source[Data].memoize.stdlib.to(List)
+      . assert(_ == arArchive(List(arEntry(t"a.txt", t"aaa"), arEntry(t"b.txt", t"bb"))).stdlib
           .to(List))
 
     suite(m"AR: chunk boundaries"):
@@ -1108,12 +1108,12 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       for size <- List(1, 3, 7, 64) do
         test(m"members parse when the stream arrives in chunks of $size"):
-          Arfile.read(original.readable.grouped(size).map(Array.frozen(_)).iterator.stream).toList
+          Arfile.read(original.stdlib.grouped(size).map(Array.from(_)).iterator.stream).toList
           . map(_.name)
         . assert(_ == List(t"a.txt", t"bee.txt"))
 
         test(m"bodies survive chunking by $size"):
-          Arfile.read(original.readable.grouped(size).map(Array.frozen(_)).iterator.stream).toList
+          Arfile.read(original.stdlib.grouped(size).map(Array.from(_)).iterator.stream).toList
           . map(_.data.memoize.utf8)
         . assert(_ == List(t"aaa", t"bbbb"))
 
@@ -1138,7 +1138,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"a corrupt header terminator raises BadTerminator"):
         val original = arArchive(List(arEntry(t"a.txt", t"aaa")))
-        val corrupt = Array.frozen(original.readable.updated(8 + 58, ('X'.toByte: Byte)))
+        val corrupt = Array.from(original.stdlib.updated(8 + 58, ('X'.toByte: Byte)))
         capture[Ar.Error](Arfile.read(corrupt.source[Data]).toList).reason
       . assert(_.isInstanceOf[Ar.Error.Reason.BadTerminator])
 

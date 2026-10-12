@@ -91,7 +91,7 @@ class FakeDriver(route: (Http.Method, Text, Int) -> Http.Response) extends Http.
   :   Http.Response =
 
     val data = body().memoize
-    val sent = if data.readable.isEmpty then Unset else data.read[Text]
+    val sent = if data.stdlib.isEmpty then Unset else data.read[Text]
     val path = url.skip(t"http://localhost:4444".length)
     val attempt = exchanges.stdlib.size
     exchanges ::= FakeDriver.Exchange(method, path, sent)

@@ -208,7 +208,7 @@ object Apk extends Format.Application:
 
     // Reads the little-endian u32 at `offset`.
     private def readU32(data: Data, offset: Int): Long =
-      def byte(index: Int): Long = data.readable(offset + index).toLong & 0xff
+      def byte(index: Int): Long = data.readUnchecked(offset + index).toLong & 0xff
       byte(0) | (byte(1) << 8) | (byte(2) << 16) | (byte(3) << 24)
 
     // The end-of-central-directory record is the archive's final 22 bytes: the writer emits no
@@ -308,7 +308,7 @@ object Apk extends Format.Application:
       // built exclusively here rather than laundered out of a frozen `slice`.
       val eocd = Array.allocate[Byte](unsigned.length - eocdOffset)
       eocd.place(unsigned, eocdOffset, 0, eocd.length)
-      for i <- 0 until 4 do eocd(16 + i) = patch.readable(i)
+      for i <- 0 until 4 do eocd(16 + i) = patch.readUnchecked(i)
 
       concat(section1, signingBlock, centralDirectory, Array.freeze(eocd))
 

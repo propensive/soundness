@@ -474,7 +474,7 @@ object Pdf:
         val mapped: Optional[Text] = common.toUnicode.let(_(code)).or:
           common.differences(code).or:
             common.encoding.let: table =>
-              if code >= 0 && code < table.length then table.readable(code).show else Unset
+              if code >= 0 && code < table.length then table.readUnchecked(code).show else Unset
 
         val fallback: Text =
           if !common.twoByte && code >= 32 && code <= 126 then code.toChar.show else t"�"

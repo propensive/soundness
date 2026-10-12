@@ -74,7 +74,7 @@ class Digest(val data: Data):
   type Form <: Algorithm
 
   override def equals(that: Any) = that.asMatchable match
-    case digest: Digest => data.readable.sameElements(digest.data.readable)
+    case digest: Digest => Array.same(data, digest.data)
     case _              => false
 
   override def hashCode: Int = ju.Arrays.hashCode(Array.unsafeJvm(data))

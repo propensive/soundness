@@ -91,8 +91,8 @@ object TelCheckTree:
     CheckTree.Struct
       ( t"Tabulation",
         List
-         ( t"marker_offsets" -> CheckTree.Sequence((tabulation.markerOffsets.readable.toList.map(CheckTree.Num(_))).to(List)),
-           t"headings"       -> CheckTree.Sequence((tabulation.headings.readable.toList.map(h => CheckTree.Str(h))).to(List)) ) )
+         ( t"marker_offsets" -> CheckTree.Sequence((tabulation.markerOffsets.stdlib.toList.map(CheckTree.Num(_))).to(List)),
+           t"headings"       -> CheckTree.Sequence((tabulation.headings.stdlib.toList.map(h => CheckTree.Str(h))).to(List)) ) )
 
   private def ofCompound(compound: Tel.Compound): CheckTree =
     CheckTree.Struct
@@ -125,4 +125,4 @@ object TelCheckTree:
     opt.lay(CheckTree.Variant(t"None", Unset))(v => CheckTree.Variant(t"Some", f(v)))
 
   private def ofArray[value](items: Array[value])(f: value => CheckTree): CheckTree =
-    CheckTree.Sequence(items.readable.toList.map(f).to(List))
+    CheckTree.Sequence(items.stdlib.toList.map(f).to(List))

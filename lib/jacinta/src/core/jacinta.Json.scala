@@ -339,7 +339,7 @@ trait Json2 extends Json3:
       Json.Decodable({
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . pipe { array => array.readable.to(List) } // freshens the array
+          . pipe { array => array.stdlib.to(List) } // freshens the array
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -621,7 +621,7 @@ trait Json2 extends Json3:
       Json.Encodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . pipe { array => array.readable.to(List) } // freshens the array
+          . pipe { array => array.stdlib.to(List) } // freshens the array
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -1344,7 +1344,7 @@ object Json extends Json1, Dynamic:
           var failed = false
 
           while index < count do
-            if values.readable(index).asInstanceOf[AnyRef] eq AbsentSlot then
+            if values.readUnchecked(index).asInstanceOf[AnyRef] eq AbsentSlot then
               val fallback = entries.readUnchecked(index)(2).asInstanceOf[Optional[Any]]
 
               if fallback.present then values(index) = fallback
@@ -1464,7 +1464,7 @@ object Json extends Json1, Dynamic:
                 (((lowsFrozen.readUnchecked(probeIndex)*KeyTable.Scramble) ^
                   highsFrozen.readUnchecked(probeIndex)).toInt & (capacity - 1)).abs
 
-              if attempt.readable(slot) == 0 then attempt.raw(slot) = probeIndex + 1
+              if attempt.readUnchecked(slot) == 0 then attempt.raw(slot) = probeIndex + 1
               else clash = true
 
             probeIndex += 1
@@ -1929,8 +1929,8 @@ object Json extends Json1, Dynamic:
         if code == 'u' then
           byte('0')
           byte('0')
-          byte(Out.hexDigits.readable(char >> 4))
-          byte(Out.hexDigits.readable(char & 0xf))
+          byte(Out.hexDigits.readUnchecked(char >> 4))
+          byte(Out.hexDigits.readUnchecked(char & 0xf))
 
       // Encodes `text(from until end)` when `chars` is null, else `chars(from until end)`,
       // escaping for a JSON string when `escaping`. A short string is read through `charAt`,
@@ -2373,16 +2373,16 @@ object Json extends Json1, Dynamic:
           Json.Ast(smalls.readUnchecked(index))
 
         case _ =>
-          json.asInstanceOf[Array[Json.Ast]^{}].readable(index)
+          json.asInstanceOf[Array[Json.Ast]^{}].readUnchecked(index)
 
       // The number of key/value pairs in an object node.
       inline def objectSize: Int = json.asInstanceOf[Array[Any]^{}].length/2
 
       inline def objectKey(index: Int): String =
-        json.asInstanceOf[Array[Any]^{}].readable(index*2).asInstanceOf[String]
+        json.asInstanceOf[Array[Any]^{}].readUnchecked(index*2).asInstanceOf[String]
 
       inline def objectValue(index: Int): Json.Ast =
-        json.asInstanceOf[Array[Any]^{}].readable(index*2 + 1).asInstanceOf[Json.Ast]
+        json.asInstanceOf[Array[Any]^{}].readUnchecked(index*2 + 1).asInstanceOf[Json.Ast]
 
       // Linear scan for a key. Returns the value index (in pair units) or -1.
       def objectIndexOf(key: String): Int =

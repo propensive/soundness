@@ -123,7 +123,7 @@ private[hallucination] final class JpegUpsampler private
   private val lineBufferSize =
     var maximum = 0
     var index = 0
-    while index < count do { maximum = maximum.max(widths.readable(index)); index += 1 }
+    while index < count do { maximum = maximum.max(widths.readUnchecked(index)); index += 1 }
     maximum*hMax
 
   // An `AnyRef` field + pure-view accessor: a nested-array field type is elaborated with
@@ -158,13 +158,13 @@ private[hallucination] final class JpegUpsampler private
 
     while index < count do
       upsampleRow
-        ( kinds.readable(index),
+        ( kinds.readUnchecked(index),
           componentData(index),
-          widths.readable(index),
-          heights.readable(index),
-          rowStrides.readable(index),
-          hScales.readable(index),
-          vScales.readable(index),
+          widths.readUnchecked(index),
+          heights.readUnchecked(index),
+          rowStrides.readUnchecked(index),
+          hScales.readUnchecked(index),
+          vScales.readUnchecked(index),
           row,
           lineBuffer(index) )
 

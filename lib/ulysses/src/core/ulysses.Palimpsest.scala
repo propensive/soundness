@@ -68,7 +68,7 @@ object Palimpsest:
       var j    = 0
 
       while j < hashSize do
-        body(o + j) = (body.readable(o + j) ^ hash.readable(j)).toByte
+        body(o + j) = (body.readUnchecked(o + j) ^ hash.readUnchecked(j)).toByte
         j += 1
 
       i += 1
@@ -77,7 +77,7 @@ object Palimpsest:
     var k   = 0
 
     while k < bodyLen do
-      xor = xor ^ (body.readable(k) & 0xff)
+      xor = xor ^ (body.readUnchecked(k) & 0xff)
       k += 1
 
     val out = Array.allocate[Byte](bodyLen + 1)
@@ -108,7 +108,7 @@ case class Palimpsest(data: Data, length: Int):
       var i   = 0
 
       while i < total do
-        xor = xor ^ (data.readable(i) & 0xff)
+        xor = xor ^ (data.readUnchecked(i) & 0xff)
         i += 1
 
       Cadence.unpack(xor.toByte).let: cadence =>
@@ -125,7 +125,7 @@ case class Palimpsest(data: Data, length: Int):
               var j = 0
 
               while j < cadence.hashSize do
-                body(offset + j) = (body(offset + j) ^ hash.readable(j)).toByte
+                body(offset + j) = (body(offset + j) ^ hash.readUnchecked(j)).toByte
                 j += 1
 
             def recur(body: scala.Array[Byte]^, item: Int, matched: List[Data])

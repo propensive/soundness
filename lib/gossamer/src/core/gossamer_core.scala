@@ -464,26 +464,29 @@ package proximities:
       var j = 1
 
       while j <= n do
-        old(j) = old.readable(j - 1) + 1
+        old(j) = old.readUnchecked(j - 1) + 1
         j += 1
 
       var i = 1
 
       while i <= m do
-        dist(0) = old.readable(0) + 1
+        dist(0) = old.readUnchecked(0) + 1
         j = 1
 
         while j <= n do
           val c =
             if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1
 
-          dist(j) = (old.readable(j - 1) + c).min(old.readable(j) + 1).min(dist.readable(j - 1) + 1)
+          dist(j) =
+            (old.readUnchecked(j - 1) + c)
+            . min(old.readUnchecked(j) + 1)
+            . min(dist.readUnchecked(j - 1) + 1)
           j += 1
 
         old.place(dist, 0, 0, n + 1)
         i += 1
 
-      if m == 0 then n else dist.readable(n)
+      if m == 0 then n else dist.readUnchecked(n)
 
   given normalizedLevenshteinProximity: CaseSensitivity => Proximity by Double =
     (left, right) =>

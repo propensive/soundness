@@ -227,7 +227,7 @@ object Benchmarks extends Suite("cbor-bench", m"Breviloquence CBOR parser benchm
 
     // The stress block must begin where the definite array's elements begin.
     val arrayHead = encode(Cbor.Ast.array(Array.from((0 until 720).map(index => logEntry(index).asInstanceOf[Any]))))
-    if (arrayHead.readable(0) & 0xFF) != 0x99 then panic(m"stress block head is not a 2-byte-length array")
+    if (arrayHead.stdlib(0) & 0xFF) != 0x99 then panic(m"stress block head is not a 2-byte-length array")
 
     val size1 = cborBytes1.length*Byte
     val size2 = cborBytes2.length*Byte

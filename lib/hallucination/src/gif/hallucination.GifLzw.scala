@@ -67,7 +67,7 @@ private[hallucination] object GifLzw:
 
     while outdex < length do
       while bits < codeSize && index < data.length do
-        accumulator |= (data.readable(index)&0xff) << bits
+        accumulator |= (data.readUnchecked(index)&0xff) << bits
         bits += 8
         index += 1
 

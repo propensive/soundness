@@ -101,7 +101,7 @@ object SchemaResolver:
 
       signature.length < initial || (base :: layers.map(_(1))).exists: (hash: Data) =>
         hash.length >= initial && (0 until initial).forall: index =>
-          hash.readable(index) == signature.readable(index)
+          hash.readUnchecked(index) == signature.readUnchecked(index)
 
   // Keyed by identity, since `Tel` does not override `equals`.
   private val fingerprints: ju.WeakHashMap[Tel, Fingerprint] = ju.WeakHashMap()
@@ -263,7 +263,7 @@ object SchemaResolver:
       var equal = true
 
       while equal && i < a.length do
-        if a.readable(i) != b.readable(i) then equal = false
+        if a.readUnchecked(i) != b.readUnchecked(i) then equal = false
         i += 1
 
       equal

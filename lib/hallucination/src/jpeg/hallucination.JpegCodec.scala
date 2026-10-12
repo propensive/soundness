@@ -48,8 +48,9 @@ import Raster.Error.Reason
 // the image ends. The JVM keeps using `javax.imageio`; this codec serves Scala.js and WASI.
 private[hallucination] object JpegCodec:
   def isJpeg(data: Data): Boolean =
-    data.length >= 3 && (data.readable(0) & 0xff) == 0xff && (data.readable(1) & 0xff) == 0xd8 &&
-      (data.readable(2) & 0xff) == 0xff
+    data.length >= 3 && (data.readUnchecked(0) & 0xff) == 0xff &&
+        (data.readUnchecked(1) & 0xff) == 0xd8 &&
+      (data.readUnchecked(2) & 0xff) == 0xff
 
   def decode(data: Data): Raster raises Raster.Error =
     try JpegDecoder(data.readable).decode()
@@ -224,7 +225,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
       tables(index).let: table =>
         val natural = new scala.Array[Int](64)
         var j = 0
-        while j < 64 do { natural(Unzigzag.readable(j)) = table(j); j += 1 }
+        while j < 64 do { natural(Unzigzag.readUnchecked(j)) = table(j); j += 1 }
         quantTables(index) = natural
 
       index += 1
@@ -399,7 +400,8 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
           index += huffman.fastAcRun
 
           if index >= spectralEnd then continue = false else
-            writable(coeff)(base + Unzigzag.readable(index)) = huffman.fastAcValue << successiveLow
+            writable(coeff)(base + Unzigzag.readUnchecked(index)) =
+              huffman.fastAcValue << successiveLow
             index += 1
         else
           val byte = huffman.decode(reader, acTable)
@@ -416,7 +418,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
             index += r
 
             if index >= spectralEnd then continue = false else
-              writable(coeff)(base + Unzigzag.readable(index)) =
+              writable(coeff)(base + Unzigzag.readUnchecked(index)) =
                 huffman.receiveExtend(reader, s) << successiveLow
 
               index += 1
@@ -465,7 +467,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
             bad()
 
           index = refineNonZeroes(huffman, coeff, base, acTable, index, spectralEnd, zeroRun, bit)
-          if value != 0 then writable(coeff)(base + Unzigzag.readable(index)) = value
+          if value != 0 then writable(coeff)(base + Unzigzag.readUnchecked(index)) = value
           index += 1
 
   // Section G.1.2.3: advances through the band, refining already-nonzero coefficients by one bit,
@@ -488,7 +490,7 @@ private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends
     var settled = false
 
     while index < end && !settled do
-      val position = base + Unzigzag.readable(index)
+      val position = base + Unzigzag.readUnchecked(index)
 
       if coeff(position) == 0 then
         if zeroRun == 0 then

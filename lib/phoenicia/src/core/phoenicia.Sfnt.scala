@@ -146,10 +146,10 @@ object Sfnt:
 
       while position < end do
         val word =
-          ((buffer.readable(position) & 0xffL) << 24) |
-            ((buffer.readable(position + 1) & 0xffL) << 16) |
-            ((buffer.readable(position + 2) & 0xffL) << 8) |
-            (buffer.readable(position + 3) & 0xffL)
+          ((buffer.readUnchecked(position) & 0xffL) << 24) |
+            ((buffer.readUnchecked(position + 1) & 0xffL) << 16) |
+            ((buffer.readUnchecked(position + 2) & 0xffL) << 8) |
+            (buffer.readUnchecked(position + 3) & 0xffL)
 
         sum = (sum + word) & 0xffffffffL
         position += 4

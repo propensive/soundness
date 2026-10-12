@@ -765,7 +765,7 @@ object Tel extends Tel2:
       while index < profiles.length do
         // The slot's atoms are a linked list, so `size` is a walk; `linearSize`
         // acknowledges it (the array has to be sized before it can be filled).
-        val atomList = assigned.readable(index)
+        val atomList = assigned.readUnchecked(index)
         val slot = new scala.Array[Text](atomList.size)
 
         atomList.each: atom => slot(ordinal.n0) = Positional.text(atom)
@@ -2066,7 +2066,7 @@ object Tel extends Tel2:
     // (3), every scalar carrying BASE-256 text.
     def apply(element: Tel.Element)(using Tactic[Error]): Acceptance = element match
       case Tel.Element.Node(_, _, children) =>
-        Acceptance(children.readable.to(List).map(alternative))
+        Acceptance(children.stdlib.to(List).map(alternative))
 
       case _ =>
         abort(Error(Error.Reason.Malformed))
@@ -2330,7 +2330,7 @@ object Tel extends Tel2:
 
     // Every compound keyword of a document, at any depth.
     private[stratiform] def keywords(document: Tel): scala.collection.immutable.Set[Text] =
-      document.childCompounds.readable.toList.flatMap: compound =>
+      document.childCompounds.stdlib.toList.flatMap: compound =>
         val child = Tel.make(compound)
         keywords(child) + child.keyword
 
@@ -2344,7 +2344,7 @@ object Tel extends Tel2:
       ( component: SchemaSignature.Lineage.Component, used: scala.collection.immutable.Set[Text] )
     :   Boolean =
 
-      component.layer.selects.readable.exists(_.excludes.readable.exists(used.contains))
+      component.layer.selects.exists(_.excludes.exists(used.contains))
 
     // One alternative for a lineage: its base alone as the requirement, and every layer and
     // atom it holds offered by the shortest prefix that denotes it.

@@ -35,6 +35,7 @@ package stratiform
 import anticipation.*
 import contingency.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 // Composable edit DSL built atop the primitive Mutation.Op interpreter
@@ -142,6 +143,6 @@ object Revision:
 
 case class Revision private[stratiform] (ops: Array[Mutation.Op]^{}):
   def ++ (next: Revision): Revision =
-    new Revision(Array.frozen(ops.readable ++ next.ops.readable))
+    new Revision(ops + next.ops)
 
   def apply(tel: Tel): Tel raises Mutation.Error = Mutation(tel, ops.to[List])

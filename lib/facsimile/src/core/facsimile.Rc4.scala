@@ -54,9 +54,9 @@ private[facsimile] object Rc4:
     i = 0
 
     while i < 256 do
-      j = (j + state.readable(i) + (key.readable(i%key.length) & 0xff)) & 0xff
-      val swap = state.readable(i)
-      state(i) = state.readable(j)
+      j = (j + state.readUnchecked(i) + (key.readUnchecked(i%key.length) & 0xff)) & 0xff
+      val swap = state.readUnchecked(i)
+      state(i) = state.readUnchecked(j)
       state(j) = swap
       i += 1
 
@@ -68,13 +68,14 @@ private[facsimile] object Rc4:
 
     while k < data.length do
       a = (a + 1) & 0xff
-      b = (b + state.readable(a)) & 0xff
-      val swap = state.readable(a)
-      state(a) = state.readable(b)
+      b = (b + state.readUnchecked(a)) & 0xff
+      val swap = state.readUnchecked(a)
+      state(a) = state.readUnchecked(b)
       state(b) = swap
 
       out(k) =
-        (data.readable(k) ^ state.readable((state.readable(a) + state.readable(b)) & 0xff)).toByte
+        val mix = state.readUnchecked((state.readUnchecked(a) + state.readUnchecked(b)) & 0xff)
+        (data.readUnchecked(k) ^ mix).toByte
 
       k += 1
 

@@ -122,7 +122,7 @@ object Benchmarks extends Suite("compression-bench", m"Pneumatic benchmarks: XZ,
   // framing and the LZMA2 decode from the CRC-64 pass the default stream also verifies.
   lazy val xzPatternUnchecked: Data =
     val chunks = Xz.drive(XzCompressorEngine(Xz.DefaultPreset, XzCheck.None), Chain(pattern))
-    Array.from(chunks.stdlib.map(_.readable).flatten)
+    Array.from(chunks.stdlib.map(_.stdlib).flatten)
 
   lazy val xzTextArray: scala.Array[Byte] = xzText.asInstanceOf[scala.Array[Byte]]
   lazy val lzma2Pattern: Data = pattern.stream.compress[Lzma2].memoize

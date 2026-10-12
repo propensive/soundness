@@ -54,7 +54,7 @@ object Cadence:
     val regular = (b & 0x03) + 1
     val initial = regular + ((b >>> 2) & 0x03)
     val s = (b >>> 4) & 0x0f
-    if s >= hashSizes.length then Unset else Cadence(initial, regular, hashSizes.readable(s))
+    if s >= hashSizes.length then Unset else Cadence(initial, regular, hashSizes.readUnchecked(s))
 
 case class Cadence(initial: Int, regular: Int, hashSize: Int):
   if regular < 1 || regular > 4 then panic(m"regular cadence must be in 1..4 (got $regular)")
@@ -64,7 +64,7 @@ case class Cadence(initial: Int, regular: Int, hashSize: Int):
 
   val hashSizeIndex: Int =
     Cadence.hashSizes.where(_ == hashSize).lay:
-      panic(m"hash size $hashSize is not one of ${Cadence.hashSizes.readable.toList.toString}")
+      panic(m"hash size $hashSize is not one of ${Cadence.hashSizes.stdlib.toList.toString}")
 
     . apply(_.n0)
 

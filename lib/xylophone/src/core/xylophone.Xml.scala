@@ -1632,7 +1632,7 @@ object Xml extends Tag.Container
                   // Every occurrence of a repeatable field accumulates, in
                   // document order — the AST derivation's gather-all
                   // semantics.
-                  val buffer = values.readable(found) match
+                  val buffer = values.readUnchecked(found) match
                     case buffer: scm.ListBuffer[?] => buffer.asInstanceOf[scm.ListBuffer[Any]]
 
                     case _ =>
@@ -1651,7 +1651,7 @@ object Xml extends Tag.Container
                   // Unknown children are skipped, and a duplicate child keeps
                   // the first occurrence — the AST derivation's `HashMap`
                   // inserts only when the label is not yet present.
-                  if !(values.readable(found).asInstanceOf[AnyRef] eq AbsentSlot)
+                  if !(values.readUnchecked(found).asInstanceOf[AnyRef] eq AbsentSlot)
                   then reader.skipElement()
                   else values(found) =
                     if focused then
@@ -1668,7 +1668,7 @@ object Xml extends Tag.Container
                 // A repeatable field never consults the declared default:
                 // zero occurrences build the empty collection, exactly as
                 // the AST derivation decodes an empty synthetic fragment.
-                val elements: List[Any] = values.readable(index) match
+                val elements: List[Any] = values.readUnchecked(index) match
                   case buffer: scm.ListBuffer[?] => buffer.to(List)
                   case _                         => Nil
 
@@ -1680,7 +1680,7 @@ object Xml extends Tag.Container
                     gathering.gathered(elements)
 
               case _ =>
-                if values.readable(index).asInstanceOf[AnyRef] eq AbsentSlot then
+                if values.readUnchecked(index).asInstanceOf[AnyRef] eq AbsentSlot then
                   val declared = entries.readUnchecked(index)(2).asInstanceOf[Optional[Any]]
 
                   values(index) =

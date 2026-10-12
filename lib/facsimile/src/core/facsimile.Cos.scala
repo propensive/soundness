@@ -71,22 +71,23 @@ object Cos:
   // A text string (ISO 32000-2 §7.9.2.2): UTF-16BE or UTF-8 by byte-order mark, otherwise
   // PDFDocEncoding.
   private[facsimile] def decodeText(bytes: Data): Text =
-    if bytes.length >= 2 && (bytes.readable(0) & 0xff) == 0xfe && (bytes.readable(1) & 0xff) == 0xff
+    if bytes.length >= 2 && (bytes.readUnchecked(0) & 0xff) == 0xfe &&
+        (bytes.readUnchecked(1) & 0xff) == 0xff
     then charsets.utf16BeCharset.decoded(bytes.skip(2))
     else if bytes.length >= 3 &&
-      (bytes.readable(0) & 0xff) == 0xef && (bytes.readable(1) & 0xff) == 0xbb &&
-      (bytes.readable(2) & 0xff) == 0xbf
+      (bytes.readUnchecked(0) & 0xff) == 0xef && (bytes.readUnchecked(1) & 0xff) == 0xbb &&
+      (bytes.readUnchecked(2) & 0xff) == 0xbf
     then charsets.utf8Charset.decoded(bytes.skip(3))
     else
       val chars = Array.allocate[Char](bytes.length)
       var i = 0
 
       while i < bytes.length do
-        val byte = bytes.readable(i) & 0xff
+        val byte = bytes.readUnchecked(i) & 0xff
 
         chars(i) =
-          if byte >= 0x18 && byte <= 0x1f then docEncodingLow.readable(byte - 0x18)
-          else if byte >= 0x80 && byte <= 0x9f then docEncodingHigh.readable(byte - 0x80)
+          if byte >= 0x18 && byte <= 0x1f then docEncodingLow.readUnchecked(byte - 0x18)
+          else if byte >= 0x80 && byte <= 0x9f then docEncodingHigh.readUnchecked(byte - 0x80)
           else if byte == 0xa0 then '€'
           else byte.toChar
 

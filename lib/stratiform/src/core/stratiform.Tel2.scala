@@ -433,7 +433,7 @@ trait Tel2 extends Tel3:
                     val keyword: Text = renames(label).or(Tel.camelToKebab(label.s))
 
                     val positional: List[Tel.Atom] =
-                      if assigned.length == 0 then Nil else assigned.readable(index)
+                      if assigned.length == 0 then Nil else assigned.readUnchecked(index)
 
                     if !active then
                       Venture:

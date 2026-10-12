@@ -115,7 +115,7 @@ object Tests extends Suite("checksum", m"Corpuscular tests"):
           var i = 0
 
           while i < length do
-            c = Crc64.table.readable(((c ^ bytes.readable(i)) & 0xff).toInt) ^ (c >>> 8)
+            c = Crc64.table.stdlib(((c ^ bytes.stdlib(i)) & 0xff).toInt) ^ (c >>> 8)
             i += 1
 
           ~c

@@ -76,7 +76,7 @@ object EquivalenceTests extends Suite("tel-equivalence", m"Stratiform schema/cod
         var i = 0
 
         while i < children.length do
-          recur(children.readable(i), next)
+          recur(children.stdlib(i), next)
           i += 1
 
     recur(element, "#")

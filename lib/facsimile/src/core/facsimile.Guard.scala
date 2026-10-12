@@ -50,6 +50,7 @@ import gossamer.*
 import hieroglyph.*
 import prepositional.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 // The standard security handler (ISO 32000-2 §7.6.4), revisions 2–6. The file key is derived
@@ -182,7 +183,7 @@ private[facsimile] object Guard:
 
     if revision == 2 then Rc4(fileKey, padding).to[List] == user.to[List]
     else
-      var value: Data = md5(Array.frozen(padding.readable ++ id.readable))
+      var value: Data = md5(padding + id)
 
       value = Rc4(fileKey, value)
 

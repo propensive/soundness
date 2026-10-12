@@ -1280,7 +1280,7 @@ object internal:
           def hasNext: Boolean = i < a.length
 
           def next(): Text =
-            val k = a.readable(i).asInstanceOf[Text]
+            val k = a.readUnchecked(i).asInstanceOf[Text]
             i += 2
             k
 
@@ -1295,7 +1295,7 @@ object internal:
           def hasNext: Boolean = i < a.length
 
           def next(): Text =
-            val v = a.readable(i).asInstanceOf[Text]
+            val v = a.readUnchecked(i).asInstanceOf[Text]
             i += 2
             v
 
@@ -1310,7 +1310,8 @@ object internal:
           def hasNext: Boolean = i < a.length
 
           def next(): (Text, Text) =
-            val pair = (a.readable(i).asInstanceOf[Text], a.readable(i + 1).asInstanceOf[Text])
+            val pair =
+              (a.readUnchecked(i).asInstanceOf[Text], a.readUnchecked(i + 1).asInstanceOf[Text])
             i += 2
             pair
 

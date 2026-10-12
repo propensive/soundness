@@ -259,7 +259,7 @@ object Telp:
 
   private def structKeyed(slotType: Tels.Type, schema: Tels): Boolean =
     resolved(slotType, schema) match
-      case struct: Tels.Struct => struct.members.readable.exists:
+      case struct: Tels.Struct => struct.members.exists:
         case f: Tels.Field => f.key
         case _             => false
 

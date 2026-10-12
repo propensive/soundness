@@ -109,7 +109,7 @@ private def hexOf(bytes: Data): String =
   val sb = new StringBuilder
   var index = 0
   while index < bytes.length do
-    sb.append(f"${bytes.readable(index) & 0xFF}%02x")
+    sb.append(f"${bytes.stdlib(index) & 0xFF}%02x")
     index += 1
   sb.toString
 
@@ -719,7 +719,7 @@ object Tests extends Suite("cbor", m"Breviloquence Tests"):
 
       test(m"trailing bytes are rejected as on the AST path"):
         val bytes = encoded(Point(3, 4))
-        val padded = Array.from(bytes.readable.to(List) :+ 0.toByte)
+        val padded = Array.from(bytes.stdlib.to(List) :+ 0.toByte)
         capture[Cbor.Error](padded.read[Point in Cbor]).reason match
           case Cbor.Error.Reason.Trailing(offset) => offset
           case _                                 => -1L

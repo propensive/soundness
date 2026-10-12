@@ -70,7 +70,7 @@ object Multihash:
       if index >= data.length then abort(Multihash.Error(Multihash.Reason.Truncated))
       else if groups >= varintLimit then abort(Multihash.Error(Multihash.Reason.Oversize))
       else
-        val byte = data.readable(index)
+        val byte = data.readUnchecked(index)
         val value = acc | ((byte & 0x7f).toLong << shift)
 
         if (byte & 0x80) == 0 then (value, index + 1)
@@ -116,12 +116,12 @@ case class Multihash(code: Int, digest: Data):
 
   def serialize: Data =
     val prefix = Multihash.varint(code.toLong) ++ Multihash.varint(digest.length.toLong)
-    Array.unsafeFrozen((prefix ++ digest.readable.toSeq).toArray)
+    Array.unsafeFrozen((prefix ++ digest.stdlib).toArray)
 
   override def equals(that: Any): Boolean = (that: Any @unchecked) match
     case multihash: Multihash =>
-      code == multihash.code && digest.readable.sameElements(multihash.digest.readable)
+      code == multihash.code && Array.same(digest, multihash.digest)
 
     case _ => false
 
-  override def hashCode: Int = code*31 + digest.readable.toSeq.hashCode
+  override def hashCode: Int = code*31 + digest.stdlib.hashCode

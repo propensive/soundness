@@ -48,6 +48,6 @@ object Bmp:
     def encode(raster: Raster): Data = BmpBackend.encode(this, raster)
 
     def sniff(data: Data): Boolean =
-      (data.length > 1 && data.readable(0) == 0x42 && data.readable(1) == 0x4d)
+      (data.length > 1 && data.readUnchecked(0) == 0x42 && data.readUnchecked(1) == 0x4d)
 
 sealed trait Bmp

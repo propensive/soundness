@@ -58,7 +58,7 @@ object internal:
 
       while (value != 0) do
         val position = jl.Long.numberOfTrailingZeros(value)
-        set = set :+ enumerable.values.readable(position)
+        set = set :+ enumerable.values.readUnchecked(position)
         value &= value - 1
 
       set

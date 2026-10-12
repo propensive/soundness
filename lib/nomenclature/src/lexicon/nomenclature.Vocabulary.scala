@@ -75,7 +75,10 @@ class Vocabulary private (adjectives: List[Text], animals: List[Text]):
   def name(ordinal: Int)(using Tactic[Moniker.Error]): Text =
     if ordinal < 0 || ordinal >= size
     then abort(Moniker.Error(Moniker.Error.Reason.OutOfRange(ordinal)))
-    else t"${adjectiveArray.readable(ordinal/animalCount)}-${animalArray.readable(ordinal%animalCount)}"
+    else
+      val adjective = adjectiveArray.readUnchecked(ordinal/animalCount)
+      val animal = animalArray.readUnchecked(ordinal%animalCount)
+      t"$adjective-$animal"
 
   def number(moniker: Text)(using Tactic[Moniker.Error]): Int =
     moniker.cut(t"-") match

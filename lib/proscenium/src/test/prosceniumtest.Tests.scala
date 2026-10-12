@@ -73,7 +73,7 @@ object Tests extends Suite("prelude-consumer", m"Proscenium consumer-view tests"
       . assert(_ == scala.collection.immutable.List(t"b", t"a"))
 
       test(m"a frozen array crosses to the stdlib as an IArray"):
-        Array(1, 2, 3).readable.toList
+        Array(1, 2, 3).stdlib.toList
       . assert(_ == scala.collection.immutable.List(1, 2, 3))
 
     suite(m"Building the opaque types from stdlib collections"):

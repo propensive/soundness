@@ -33,6 +33,7 @@
 package obligatory
 
 import soundness.*
+import symbolism.*
 
 import codepages.utf8Codepage
 import strategies.throwUnsafely
@@ -138,7 +139,7 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
 
       test(m"Content-Length counts bytes, not characters"):
         val body = t"""{"text":"café"}"""
-        val input = t"Content-Length: ${body.in[Data].readable.length}\r\n\r\n"+body
+        val input = t"Content-Length: ${body.in[Data].length}\r\n\r\n"+body
 
         Iterator(input.in[Data]).frames[ContentLength].map(_.utf8).to(List)
       . assert(_ == List(t"""{"text":"café"}"""))
@@ -172,21 +173,21 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
 
       test(m"encode prefixes a flag byte and 4-byte length"):
         Grpc.Framing.encode(ascii(t"hi")).to[List]
-      . assert(_ == Array.frozen(Data(0, 0, 0, 0, 2).readable ++ ascii(t"hi").readable).to[List])
+      . assert(_ == Data(0, 0, 0, 0, 2) + ascii(t"hi").to[List])
 
       test(m"round-trip a single message"):
         val framed = Grpc.Framing.encode(ascii(t"hello"))
-        Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.readable.to(List))
+        Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.stdlib.to(List))
       . assert(_ == List(ascii(t"hello").to[List]))
 
       test(m"split two concatenated messages"):
-        val framed = Array.frozen(Grpc.Framing.encode(ascii(t"one")).readable ++ Grpc.Framing.encode(ascii(t"two")).readable)
-        Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.readable.to(List))
+        val framed = Array.from(Grpc.Framing.encode(ascii(t"one")).stdlib ++ Grpc.Framing.encode(ascii(t"two")).stdlib)
+        Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.stdlib.to(List))
       . assert(_ == List(ascii(t"one").to[List], ascii(t"two").to[List]))
 
       test(m"gzip-compressed message round-trips"):
         val framed = Grpc.Framing.encode(ascii(t"compress me please"), compress = true)
-        Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.readable.to(List))
+        Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.stdlib.to(List))
       . assert(_ == List(ascii(t"compress me please").to[List]))
 
       test(m"status code maps to the canonical name"):
@@ -310,9 +311,9 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
 
           val body =
             Array.frozen
-             ( Grpc.Framing.encode(Pong(t"a").in[Protobuf].encode).readable
-               ++ Grpc.Framing.encode(Pong(t"b").in[Protobuf].encode).readable
-               ++ Grpc.Framing.encode(Pong(t"c").in[Protobuf].encode).readable )
+             ( Grpc.Framing.encode(Pong(t"a").in[Protobuf].encode).stdlib
+               ++ Grpc.Framing.encode(Pong(t"b").in[Protobuf].encode).stdlib
+               ++ Grpc.Framing.encode(Pong(t"c").in[Protobuf].encode).stdlib )
 
           runServer(serverSide, (hpack, id) =>
             List

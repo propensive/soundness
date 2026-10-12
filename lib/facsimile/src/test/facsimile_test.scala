@@ -56,6 +56,7 @@ import _root_.java.util.zip as juz
 import _root_.javax.crypto as jc
 import _root_.javax.crypto.spec as jcs
 import pneumatic.*
+import symbolism.*
 import denominative.dysasymptotics.linearSize
 
 // These fixtures assemble PDF and font byte streams from many small pieces. A `Concatenable`
@@ -63,7 +64,7 @@ import denominative.dysasymptotics.linearSize
 // fixtures readable.
 extension (left: Data)
   @targetName("concatData")
-  def ++ (right: Data): Data = Array.frozen(left.readable ++ right.readable)
+  def ++ (right: Data): Data = left + right
 
 object Tests extends Suite("pdf", m"Facsimile tests"):
   val noParms: Map[Text, Cos] = Map()

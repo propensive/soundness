@@ -69,7 +69,7 @@ object Readers:
   // carried them exactly; compiled here for the same reason.
   def rawArgument(index: Int)(using resident: Resident): Text =
     resident.rawArgument(index) match
-      case bytes: Data => Text(bytes.readable.map(b => f"${b & 0xff}%02x").mkString)
+      case bytes: Data => Text(bytes.stdlib.map(b => f"${b & 0xff}%02x").mkString)
       case _           => t"(text)"
 
   // A resident whose clients exchange `Text` messages: `over` fixes the type `broadcast` takes and
@@ -888,7 +888,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
                 Pane.enter(t"kittiwake")
                 Pane.enter('\r')
                 val delivered = awaitScreen(_.contains(t"[kittiwake]"))
-                val echoed = Pane.screenshot().screen.filter(_.contains(t"kittiwake")).readable.length > 1
+                val echoed = Pane.screenshot().screen.filter(_.contains(t"kittiwake")).stdlib.length > 1
                 (delivered, echoed)
 
             . check(_ == (true, false))
@@ -929,7 +929,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
                 snooze(0.5*Second)
                 Pane.enter(t"harrier")
                 snooze(0.5*Second)
-                Pane.screenshot().screen.filter(_.contains(t"harrier")).readable.length > 0
+                Pane.screenshot().screen.filter(_.contains(t"harrier")).stdlib.length > 0
 
             . check(_ == false)
 
@@ -1334,7 +1334,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
         val signatureHex =
           t"55d18c247b88db8fc6af7a197c56ee2b680084d1800afe8947a2f613c70492e563"
 
-        def hex(data: Data): Text = Text(data.readable.map(b => f"${b & 0xff}%02x").mkString)
+        def hex(data: Data): Text = Text(data.stdlib.map(b => f"${b & 0xff}%02x").mkString)
         def bytes(values: Int*): Data = Array.unsafeFrozen(values.map(_.toByte).toArray)
 
         test(m"the schema signature is pinned"):
@@ -1468,7 +1468,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
           val raw = Launcher.Raw(t"argument", 1, bytes(0x61, 0xff, 0x62))
           Launcher.decode(Launcher.encode(init.copy(raws = List(raw)))) match
             case init2: Launcher.Message.Init => init2.raws.prim match
-              case raw2: Launcher.Raw => (raw2.kind, raw2.index, raw2.bytes.readable.map(_ & 0xff).toList)
+              case raw2: Launcher.Raw => (raw2.kind, raw2.index, raw2.bytes.stdlib.map(_ & 0xff).toList)
               case _                  => (t"", Unset, Nil)
             case _ => (t"", Unset, Nil)
         . check(_ == (t"argument", 1, List(0x61, 0xff, 0x62)))
@@ -1476,19 +1476,19 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
         // A chunk has no structural equality: its bytes are compared.
         test(m"a data document round-trips, bytes and all"):
           Launcher.decode(Launcher.encode(Launcher.Message.Data(t"7", bytes(0, 1, 127, 128, 255)))) match
-            case Launcher.Message.Data(stream, chunk) => (stream, chunk.readable.map(_ & 0xff).toList)
+            case Launcher.Message.Data(stream, chunk) => (stream, chunk.stdlib.map(_ & 0xff).toList)
             case other                                => (t"", Nil)
         . check(_ == (t"7", List(0, 1, 127, 128, 255)))
 
         test(m"a document of another schema is rejected"):
-          val bytes = Launcher.encode(Launcher.Message.ExitStatus(7)).readable.toList.toArray
+          val bytes = Launcher.encode(Launcher.Message.ExitStatus(7)).stdlib.toList.toArray
           bytes(6) = (bytes(6) ^ 0x01).toByte
           Launcher.decode(bytes.asInstanceOf[Array[Byte]]).absent
         . check(_ == true)
 
         test(m"readDocument takes exactly one document from a stream"):
           val document = Launcher.encode(Launcher.Message.ExitStatus(7))
-          val stream = document.readable.toList ++ scala.List[Byte](1, 2, 3)
+          val stream = document.stdlib.toList ++ scala.List[Byte](1, 2, 3)
           val in = ji.ByteArrayInputStream(stream.toArray)
           val read = Launcher.readDocument(in)
           (read.let(hex(_)), in.available())

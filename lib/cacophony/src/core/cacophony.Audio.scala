@@ -169,13 +169,13 @@ extends Formal, Domainal, scala.caps.Pure:
       var i = 0
 
       while i < bytesPerSample do
-        value = (value << 8) | (data.readable(offset + i) & 0xff)
+        value = (value << 8) | (data.readUnchecked(offset + i) & 0xff)
         i += 1
     else
       var i = bytesPerSample - 1
 
       while i >= 0 do
-        value = (value << 8) | (data.readable(offset + i) & 0xff)
+        value = (value << 8) | (data.readUnchecked(offset + i) & 0xff)
         i -= 1
 
     if signed && bytesPerSample < 4 then

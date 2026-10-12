@@ -450,7 +450,7 @@ private[pneumatic] object BrotliEncoder:
       i = 0
 
       while i < 18 && space > 0 do
-        val sym = codeLengthCodeOrder.readable(i)
+        val sym = codeLengthCodeOrder.readUnchecked(i)
         val v = clcDepth(sym) & 0xff
         writeCodeLengthCodeLength(writer, v)
         if v != 0 then space -= 32 >> v
@@ -467,7 +467,7 @@ private[pneumatic] object BrotliEncoder:
   // Scanning upward exits immediately for the common short lengths.
   private def lengthCode(offsets: Array[Int]^{}, nbits: Array[Int]^{}, length: Int): Int =
     var i = 0
-    while i + 1 < offsets.length && offsets.readable(i + 1) <= length do i += 1
+    while i + 1 < offsets.length && offsets.readUnchecked(i + 1) <= length do i += 1
     i
 
   // Distance symbol and extra bits for a backward distance, with NPOSTFIX = 0, NDIRECT = 0. The
@@ -673,15 +673,16 @@ private[pneumatic] object BrotliEncoder:
       writer.writeBits(cmdCodes(cmd), cmdDepth(cmd) & 0xff)
 
       writer.writeBits
-        ( insert - insertLengthOffset.readable(insertCode),
-          insertLengthNBits.readable(insertCode) )
+        ( insert - insertLengthOffset.readUnchecked(insertCode),
+          insertLengthNBits.readUnchecked(insertCode) )
 
       if copy > 0
       then
         writer.writeBits
-          ( copy - copyLengthOffset.readable(copyCode), copyLengthNBits.readable(copyCode) )
+          ( copy - copyLengthOffset.readUnchecked(copyCode),
+            copyLengthNBits.readUnchecked(copyCode) )
       else
-        writer.writeBits(0, copyLengthNBits.readable(copyCode))
+        writer.writeBits(0, copyLengthNBits.readUnchecked(copyCode))
 
       var t = 0
 
@@ -715,7 +716,7 @@ private[pneumatic] object BrotliEncoder:
   private def commandCode(insertCode: Int, copyCode: Int): Int =
     val insGroup = insertCode / 8
     val copGroup = copyCode / 8
-    val base = rangeIndex.readable(insGroup*3 + copGroup)
+    val base = rangeIndex.readUnchecked(insGroup*3 + copGroup)
     ((base + 2) << 6) | ((insertCode & 7) << 3) | (copyCode & 7)
 
   private def writeWindowBits(writer: BrotliBitWriter^, windowBits: Int): Unit =

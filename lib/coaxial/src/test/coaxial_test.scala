@@ -62,7 +62,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
     def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
     def bytes(data: Data): List[Byte] = data.to[List]
     def joined(stream: Chain[Data]): List[Byte] =
-      (stream.stdlib.flatMap { d => d.readable.toSeq }.toList).to(List)
+      (stream.stdlib.flatMap { d => d.stdlib }.toList).to(List)
     def drained(stream: zephyrine.Stream[Data] over Credit): List[Byte] = stream.memoize.to[List]
 
     suite(m"Duplex streaming endpoints"):
@@ -568,7 +568,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
         // Skip on hosts where no interface exposes a hardware address.
         if nic == null then true else
           var value = 0L
-          Array.unsafeFrozen(nic.getHardwareAddress.nn).readable.toSeq.each: byte => value = (value << 8) | (byte & 0xFF)
+          Array.unsafeFrozen(nic.getHardwareAddress.nn).stdlib.each: byte => value = (value << 8) | (byte & 0xFF)
           interfaceFor(urticose.MacAddress(value)).let(_ => true).or(false)
       . assert(_ == true)
 
