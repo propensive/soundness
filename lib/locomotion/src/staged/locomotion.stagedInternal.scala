@@ -447,7 +447,20 @@ object stagedInternal:
 
     import quotes.reflect.*
 
+    val mapSym = TypeRepr.of[scala.collection.immutable.Map[Any, Any]].typeSymbol
+
     aliasCollectionUnderlying(TypeRepr.of[fieldType]) match
+      // A map's own builder stages up through the small maps before a hash map; the hash
+      // map's builder, taken directly, measured faster for a map of any size a message
+      // carries. The result is a `Map`.
+      case Some(AppliedType(constructor, List(key, value))) if constructor.typeSymbol == mapSym =>
+        (key.asType, value.asType) match
+          case ('[k], '[v]) =>
+            ' {
+                scala.collection.immutable.HashMap.newBuilder[k, v]
+                . asInstanceOf[scm.Builder[element, fieldType]]
+              }
+
       case Some(underlying) =>
         underlying.asType match
           case '[stdlib] =>
@@ -727,6 +740,19 @@ object stagedInternal:
 
       val seens = List.range(0, arity).map: index =>
         Symbol.newVal(owner, "seen"+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+
+      // A numeric leaf with no declared default needs no `seen` flag: its slot starts at the
+      // proto3 zero an absent field decodes to, so the record loop can skip the store and
+      // the finalizer the test. (A declared default is read at expansion from the
+      // companion's default-argument method.)
+      val companion = classSymbol.companionModule
+
+      def declaresDefault(index: Int): Boolean =
+        companion.methodMember("$lessinit$greater$default$" + (index + 1)).nonEmpty
+
+      def needsSeen(index: Int): Boolean = plans(index) match
+        case Plan.Leaf(kind) => kind > KFloat || declaresDefault(index)
+        case _               => true
 
       def zero(fieldType: TypeRepr): Term =
         if fieldType =:= TypeRepr.of[Int] then Literal(IntConstant(0))
@@ -1058,11 +1084,10 @@ object stagedInternal:
           case Plan.Leaf(_) | Plan.Nested(_) | Plan.NestedRuntime(_) | Plan.OptionalLeaf(_)
             | Plan.OptionalNested(_, _) =>
             Block
-              ( List
-                  ( Assign
-                      ( Ref(slots(index)),
-                        Apply(Ref(readDefs(index)), List(code.asTerm)) ),
-                    Assign(Ref(seens(index)), Literal(BooleanConstant(true))) ),
+              ( Assign(Ref(slots(index)), Apply(Ref(readDefs(index)), List(code.asTerm)))
+                  :: (if needsSeen(index)
+                      then List(Assign(Ref(seens(index)), Literal(BooleanConstant(true))))
+                      else Nil),
                 unit )
 
           case Plan.Gather(_, _) | Plan.MapGather(_, _, _, _) =>
@@ -1086,19 +1111,60 @@ object stagedInternal:
       def fallthrough(code: Expr[Int]) =
         CaseDef(Wildcard(), None, '{$parser.directSkipField($code)(using $tactic)}.asTerm)
 
-      // The record loop: one tag per iteration, dispatching on the field
-      // number until the window is exhausted.
+      // The wire codes a field is expected with: its natural encoding, and for a packable
+      // scalar both the packed run and the bare value. A field read with another code, a
+      // seam field, and an unknown number all take the general dispatch.
+      def naturalCodes(index: Int): List[Int] = plans(index) match
+        case Plan.Leaf(kind)                          => List(naturalCode(kind))
+        case Plan.OptionalLeaf(kind)                  => List(naturalCode(kind))
+        case Plan.Gather(Elem.Scalar(kind), _)        => List(2, naturalCode(kind)).distinct
+        case Plan.Gather(Elem.Chunk(kind), _)         => List(naturalCode(kind))
+        case Plan.Gather(_, _)                        => List(2)
+        case Plan.Nested(_) | Plan.NestedRuntime(_)   => List(2)
+        case Plan.OptionalNested(_, _)                => List(2)
+        case Plan.MapGather(_, _, _, _)               => List(2)
+        case Plan.Seam                                => Nil
+
+      // The record loop: one tag per iteration. The whole tag is matched first — one dense
+      // switch over the constants a well-formed message carries, each arm handing its field
+      // reader the wire code it was declared with — and only another code, a seam field or
+      // an unknown number reaches the dispatch on the field number.
       val step: Term =
         val tag = Symbol.newVal(owner, "tag", TypeRepr.of[Int], Flags.EmptyFlags, Symbol.noSymbol)
         val code = Symbol.newVal(owner, "code", TypeRepr.of[Int], Flags.EmptyFlags, Symbol.noSymbol)
         val tagRef = Ref(tag).asExprOf[Int]
         val codeRef = Ref(code).asExprOf[Int]
 
+        val general: Term =
+          Block
+            ( List(ValDef(code, Some('{$tagRef & 7}.asTerm))),
+              Match('{$tagRef >>> 3}.asTerm, arms(codeRef) ::: List(fallthrough(codeRef))) )
+
+        val expected: List[CaseDef] = List.range(0, arity).flatMap: index =>
+          naturalCodes(index).map: wireCode =>
+            val literal = Expr(wireCode)
+            val body: Term = plans(index) match
+              case Plan.Leaf(_) | Plan.Nested(_) | Plan.NestedRuntime(_) | Plan.OptionalLeaf(_)
+                | Plan.OptionalNested(_, _) =>
+                Block
+                  ( Assign(Ref(slots(index)), Apply(Ref(readDefs(index)), List(literal.asTerm)))
+                      :: (if needsSeen(index)
+                          then List(Assign(Ref(seens(index)), Literal(BooleanConstant(true))))
+                          else Nil),
+                    unit )
+
+              case _ =>
+                Block
+                  ( List
+                      ( Apply(Ref(readDefs(index)), List(literal.asTerm)),
+                        Assign(Ref(seens(index)), Literal(BooleanConstant(true))) ),
+                    unit )
+
+            CaseDef(Literal(IntConstant((numbers(index) << 3) | wireCode)), None, body)
+
         Block
-          ( List
-              ( ValDef(tag, Some('{$parser.directTag()(using $tactic)}.asTerm)),
-                ValDef(code, Some('{$tagRef & 7}.asTerm)) ),
-            Match('{$tagRef >>> 3}.asTerm, arms(codeRef) ::: List(fallthrough(codeRef))) )
+          ( List(ValDef(tag, Some('{$parser.directTag()(using $tactic)}.asTerm))),
+            Match(tagRef.asTerm, expected ::: List(CaseDef(Wildcard(), None, general))) )
 
       val loop: List[Statement] =
         List(While('{!$parser.directAtLimit}.asTerm, step))
@@ -1168,6 +1234,9 @@ object stagedInternal:
         val seen = Ref(seens(index)).asExprOf[Boolean]
 
         plans(index) match
+          case Plan.Leaf(_) if !needsSeen(index) =>
+            unit
+
           case Plan.Leaf(_) | Plan.Nested(_) | Plan.NestedRuntime(_) | Plan.OptionalLeaf(_)
             | Plan.OptionalNested(_, _) =>
             If
