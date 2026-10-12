@@ -59,6 +59,26 @@ object ProtobufParser:
   // input, which a stream reveals only by ending.
   private inline val Unbounded = Long.MaxValue
 
+  // The bytes as a Latin-1 string, by the one constructor that copies them and nothing else:
+  // the `Charset` constructors reach the same copy only through their dispatch and checks.
+  // Deprecated since Java 1.1, not for removal, and exactly specified: each byte becomes the
+  // char with that low byte.
+  @scala.annotation.nowarn("cat=deprecation")
+  private def latin1(bytes: scala.Array[Byte], from: Int, length: Int): String =
+    java.lang.String(bytes, 0, from, length)
+
+  // Whether every byte in `[from, until)` is ASCII — has its top bit clear. The bounds are the
+  // caller's, already checked against the buffer. Inline, so that the loop sits in its
+  // caller.
+  private inline def ascii(bytes: scala.Array[Byte], from: Int, until: Int): Boolean =
+    val end = until.min(bytes.length)
+    var index = from
+
+    // Ends on the data: at the first high byte, or the end of the range.
+    while index < end && bytes(index) >= 0 do index += 1
+
+    index == until
+
   // ── Whole-payload reads, for the ADT path ───────────────────────────────
   // A `Protobuf.Wire` holds one field's recorded payload in memory, so the
   // AST accessors read it in place: a scalar through the allocation-free
@@ -550,10 +570,20 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
     pos += length
     Array.freeze(result)
 
+  // A string's construction is where a string-heavy message's decode goes, and which
+  // construction is cheapest depends on the path. Over a whole message in memory, an ASCII
+  // string — nearly every string in practice — built through the Latin-1 copy after a scan
+  // of its bytes here measured a fifth faster than the UTF-8 constructor, which reaches the
+  // same copy only after its own dispatch, checks and scan; over a stream, the UTF-8
+  // constructor measured a sixth faster than that copy, scan or no scan — what the JIT makes
+  // of the constructor in each caller, not the work. Each path takes its measured best.
   private update def stringOut(length: Int): String =
-    val result = java.lang.String(bytes, pos, length, java.nio.charset.StandardCharsets.UTF_8)
+    val start = pos
     pos += length
-    result
+
+    if static && ProtobufParser.ascii(bytes, start, start + length)
+    then ProtobufParser.latin1(bytes, start, length)
+    else java.lang.String(bytes, start, length, java.nio.charset.StandardCharsets.UTF_8)
 
   // ── The direct rim ─────────────────────────────────────────────────────
 

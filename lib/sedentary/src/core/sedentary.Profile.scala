@@ -73,6 +73,13 @@ import workingDirectories.javaBaseWorkingDirectory
 // invisible. It samples all threads, though, so pipeline threads the body spawns are
 // profiled along with the driver.
 //
+// `inclusive` counts a sample for every distinct method on its stack rather than its top
+// frame alone, so each method's share is the time spent in it *or anything it called* —
+// the view that finds a cost hidden inside a callee, or spread across callees, which the
+// self-time histogram attributes elsewhere: a string constructor inlined into a generated
+// loop, say. The shares then sum to more than the whole, and the outermost frames show
+// near 100%.
+//
 // `heap` and `cpus` pin the measurement JVM's resources, as on `Stress`.
 case class Profile(heap: Optional[Text] = Unset, cpus: Optional[Int] = Unset)
   ( using Classloader, Environment )
@@ -86,7 +93,7 @@ extends Rig:
 
   inline def apply[duration: Abstractable across Durations to Long, report, topic <: Label]
     ( name: Message, tags: Tag* )
-    ( target: duration, frames: Optional[Int] = Unset )
+    ( target: duration, frames: Optional[Int] = Unset, inclusive: Boolean = false )
     ( body0: (References over Transport) ?=> Quotes ?=> Expr[Any] )
     ( using System, TemporaryDirectory, Stageable over Transport in Form )
     ( using runner:    Runner[report],
@@ -99,6 +106,7 @@ extends Rig:
     val testId = Test.Id(name, suite, codepoint, Unset, tags.to(List))
     val frames0: Optional[Int] = frames
     val frames2: Int = frames0.or(25)
+    val inclusive0: Boolean = inclusive
 
     val body: (References over Transport) ?=> Quotes ?=> Expr[List[Text]] =
       val target2: Expr[Long] = Expr(Bench.scaled(target.generic, runner.scale))
@@ -144,27 +152,47 @@ extends Rig:
           recording.close()
 
           // Aggregate each sample's top frame — the method the thread was actually
-          // executing — keyed by class and method name.
+          // executing — keyed by class and method name; or, inclusively, every distinct
+          // method on its stack.
           val counts = new java.util.HashMap[String, Long]()
           val events = jdk.jfr.consumer.RecordingFile.readAllEvents(file).nn
           java.nio.file.Files.deleteIfExists(file)
           var total = 0L
           var i = 0
 
+          def keyOf(method: jdk.jfr.consumer.RecordedMethod): String =
+            val cls = method.getType.nn.getName
+            (if cls == null then "?" else cls) + "\t" + method.getName
+
+          def count(key: String): Unit =
+            val previous = counts.get(key)
+            counts.put(key, (if previous == null then 0L else previous) + 1L)
+
           while i < events.size do
             val event = events.get(i).nn
             val stack = event.getStackTrace
 
             if stack != null && !stack.getFrames.nn.isEmpty then
-              val frame = stack.getFrames.nn.get(0).nn
-              val method = frame.getMethod
+              val frames = stack.getFrames.nn
 
-              if method != null then
-                val cls = method.getType.nn.getName
-                val key = (if cls == null then "?" else cls) + "\t" + method.getName
-                val previous = counts.get(key)
-                counts.put(key, (if previous == null then 0L else previous) + 1L)
+              if ${Expr(inclusive0)} then
+                // Keyed by name: each frame carries its own `RecordedMethod` object.
+                val seen = new java.util.HashSet[String]()
+
+                def countFrames(j: Int): Unit =
+                  if j < frames.size then
+                    val method = frames.get(j).nn.getMethod
+                    if method != null && seen.add(keyOf(method)) then count(keyOf(method))
+                    countFrames(j + 1)
+
+                countFrames(0)
                 total += 1L
+              else
+                val method = frames.get(0).nn.getMethod
+
+                if method != null then
+                  count(keyOf(method))
+                  total += 1L
 
             i += 1
 

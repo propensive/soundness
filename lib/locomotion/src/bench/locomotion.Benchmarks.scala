@@ -127,6 +127,10 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // dominated by short strings and small integers.
   lazy val value3: Logs = Logs(List.tabulate(500)(logEntry))
 
+  // The same entries as a frozen array: the repeated-message representation with no cell
+  // per entry.
+  lazy val value3a: LogArray = LogArray(Array.tabulate[LogEntry](500)(logEntry))
+
   // The log-entry record shared by corpora 3 and 7 and the stress message.
   def logEntry(index: Int): LogEntry =
     val level = (index & 3) match
@@ -326,6 +330,14 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
             locomotion.Benchmarks.bytes3.read[Logs in Protobuf]
         }
 
+      // Into a frozen `Array[LogEntry]`: no list cell per entry.
+      bench(m"Decode directly into Array[LogEntry] with Locomotion")
+        ( target = 1*Second, operationSize = size3 ):
+        '{
+            given LogArray is Protobuf.Parsable = locomotion.logArrayParsable
+            Chain(locomotion.Benchmarks.bytes3).read[LogArray in Protobuf]
+        }
+
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size3):
         '{ locomotion.Benchmarks.walkWithProtobufJava(locomotion.Benchmarks.raw3) }
 
@@ -362,8 +374,8 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
         ( target = 1*Second, operationSize = size5 ):
         '{ Chain(locomotion.Benchmarks.bytes5).read[Attributes in Protobuf] }
 
-      // A map stays on the seam by design (its wire form is a repeated entry message), so
-      // this row measures the seam's cost rather than a gathered field.
+      // A map's entries are gathered directly: each entry message read in place into the
+      // map's builder.
       bench(m"Decode directly with Locomotion")(target = 1*Second, operationSize = size5):
         '{
             given Attributes is Protobuf.Parsable = locomotion.attributesParsable
@@ -637,6 +649,15 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
             locomotion.Benchmarks.value3.in[Protobuf].encode
         }
 
+      bench(m"Encode directly from Array[LogEntry] with Locomotion")
+        ( target = 1*Second, operationSize = size3 ):
+        '{
+            given (LogArray is Encodable in Protobuf) =
+              Protobuf.encodablePrinted(using locomotion.logArrayPrintable)
+
+            locomotion.Benchmarks.value3a.in[Protobuf].encode
+        }
+
       bench(m"Encode with protobuf-java (generated)")(target = 1*Second, operationSize = size3):
         '{ locomotion.Benchmarks.proto3.toBuilder.nn.build().nn.toByteArray.nn }
 
@@ -680,6 +701,15 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
     suite(m"Hotspots"):
       profile(m"Decode 500 log entries directly")(target = 5*Second):
+        '{
+            given Logs is Protobuf.Parsable = locomotion.logsParsable
+            Chain(locomotion.Benchmarks.bytes3).read[Logs in Protobuf]
+        }
+
+      // The inclusive view: each method's share is the time in it or anything it called,
+      // which is what finds a cost the self-time view attributes to the generated loop.
+      profile(m"Decode 500 log entries directly, inclusive")
+        ( target = 5*Second, frames = 40, inclusive = true ):
         '{
             given Logs is Protobuf.Parsable = locomotion.logsParsable
             Chain(locomotion.Benchmarks.bytes3).read[Logs in Protobuf]

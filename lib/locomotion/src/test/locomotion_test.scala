@@ -103,6 +103,9 @@ case class Doubles(@field(1) values: List[Double]) derives CanEqual
 // yet capture-check (the checker fails on the derivation's re-declared field type).
 case class LongArray(@field(1) values: Array[Long]^{}) derives CanEqual
 case class DoubleArray(@field(1) values: Array[Double]^{}) derives CanEqual
+case class ItemArray(@field(1) items: Array[Item]^{}) derives CanEqual
+case class Inventory(@field(1) items: Map[Text, Item]) derives CanEqual
+case class NameArray(@field(1) names: Array[Text]^{}) derives CanEqual
 case class Shaped(@field(1) name: Text, @field(2) shape: Shape) derives CanEqual
 case class MaybePoint(@field(1) point: Optional[Point]) derives CanEqual
 
@@ -612,6 +615,65 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
         (bytes.length, bytes.read[LongArray in Protobuf].values.length)
       . assert(_ == (0, 0))
 
+      given (ItemArray is Protobuf.Parsable) = Inlinable.parsable[ItemArray]
+      given (ItemArray is Protobuf.Printable) = Inlinable.printable[ItemArray]
+      given (NameArray is Protobuf.Parsable) = Inlinable.parsable[NameArray]
+      given (NameArray is Protobuf.Printable) = Inlinable.printable[NameArray]
+
+      test(m"a frozen array of messages prints as the List form"):
+        Protobuf.Printable.print(ItemArray(Array[Item](Item(1, t"a"), Item(2, t"b")))).to[List]
+      . assert(_ == Batch(List(Item(1, t"a"), Item(2, t"b"))).in[Protobuf].encode.to[List])
+
+      test(m"a frozen array of messages parses from the List form"):
+        Batch(List(Item(1, t"a"), Item(2, t"b"))).in[Protobuf].encode
+        . read[ItemArray in Protobuf].items.to[List]
+      . assert(_ == List(Item(1, t"a"), Item(2, t"b")))
+
+      test(m"a frozen array of strings round-trips directly"):
+        Protobuf.Printable.print(NameArray(Array[Text](t"x", t"yy")))
+        . read[NameArray in Protobuf].names.to[List]
+      . assert(_ == List(t"x", t"yy"))
+
+      test(m"a frozen array of messages gathers and prints without a seam"):
+        given itemSeam: (Item is Decodable in Protobuf) =
+          _ => panic(m"the generated parser decoded an array element through its Decodable")
+
+        given itemEncodeSeam: (Item is Encodable in Protobuf) =
+          _ => panic(m"the generated printer encoded an array element through its Encodable")
+
+        val bytes = Protobuf.Printable.print(ItemArray(Array[Item](Item(1, t"a"))))
+        (bytes.to[List].map(_ & 0xff), bytes.read[ItemArray in Protobuf].items.to[List])
+      . assert(_ == (List(0x0a, 0x05, 0x08, 0x01, 0x12, 0x01, 0x61), List(Item(1, t"a"))))
+
+      test(m"a map of scalars gathers and prints directly, never through a seam"):
+        given mapSeam: (Map[Text, Int] is Decodable in Protobuf) =
+          _ => panic(m"the generated parser decoded a map through its Decodable")
+
+        given mapEncodeSeam: (Map[Text, Int] is Encodable in Protobuf) =
+          _ => panic(m"the generated printer encoded a map through its Encodable")
+
+        given (Counts is Protobuf.Parsable) = Inlinable.parsable[Counts]
+        given (Counts is Protobuf.Printable) = Inlinable.printable[Counts]
+        val bytes = Protobuf.Printable.print(Counts(Map(t"a" -> 1, t"bb" -> 300)))
+        (bytes.to[List].map(_ & 0xff), bytes.read[Counts in Protobuf])
+      . assert(_ == (List(0x0a, 0x05, 0x0a, 0x01, 0x61, 0x10, 0x01, 0x0a, 0x07, 0x0a, 0x02, 0x62,
+          0x62, 0x10, 0xac, 0x02), Counts(Map(t"a" -> 1, t"bb" -> 300))))
+
+      val inventory = Inventory(Map(t"x" -> Item(1, t"one"), t"y" -> Item(2, t"two")))
+
+      test(m"a map of messages prints as the derivation and parses back directly"):
+        given (Inventory is Protobuf.Parsable) = Inlinable.parsable[Inventory]
+        given (Inventory is Protobuf.Printable) = Inlinable.printable[Inventory]
+        val bytes = Protobuf.Printable.print(inventory)
+        (bytes.to[List], bytes.read[Inventory in Protobuf])
+      . assert(_ == (inventory.in[Protobuf].encode.to[List], inventory))
+
+      test(m"a map entry missing its value decodes as the value's zero directly"):
+        given (Counts is Protobuf.Parsable) = Inlinable.parsable[Counts]
+        // Field 1, Len 3: an entry with only key "a".
+        Array[Byte](0x0a, 0x03, 0x0a, 0x01, 0x61).read[Counts in Protobuf]
+      . assert(_ == Counts(Map(t"a" -> 0)))
+
       test(m"a frozen array gathers and prints directly, never through a seam"):
         given arraySeam: ((Array[Long]^{}) is Decodable in Protobuf) =
           _ => panic(m"the generated parser decoded an array field through its Decodable")
@@ -706,6 +768,26 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       same(m"a oneof in a field position: last variant", Shaped(t"r", Shape.Rectangle(2, 3)))
       same(m"a present optional message", MaybePoint(Point(1, 2)))
       same(m"an absent optional message writes nothing", MaybePoint(Unset))
+
+      test(m"text beyond ASCII parses back directly"):
+        given (Person is Protobuf.Parsable) = Inlinable.parsable[Person]
+        Protobuf.Printable.print(Person(t"héllo 😀 — ✓", 1)).read[Person in Protobuf]
+      . assert(_ == Person(t"héllo 😀 — ✓", 1))
+
+      test(m"a high byte at the end of otherwise ASCII text parses back directly"):
+        given (Person is Protobuf.Parsable) = Inlinable.parsable[Person]
+        Protobuf.Printable.print(Person(t"plain ascii then é", 1)).read[Person in Protobuf]
+      . assert(_ == Person(t"plain ascii then é", 1))
+
+      test(m"empty and one-byte text parse back directly"):
+        given (Wrapper is Protobuf.Parsable) = Inlinable.parsable[Wrapper]
+        val bytes = Protobuf.Printable.print(Wrapper(Point(0, 0), t""))
+        (bytes.read[Wrapper in Protobuf].label, Protobuf.Printable.print(Wrapper(Point(0, 0), t"x")).read[Wrapper in Protobuf].label)
+      . assert(_ == (t"", t"x"))
+
+      test(m"text beyond ASCII decodes through the derived path"):
+        Person(t"héllo 😀", 1).in[Protobuf].encode.read[Person in Protobuf]
+      . assert(_ == Person(t"héllo 😀", 1))
 
       test(m"printed bytes parse back directly"):
         given (Wrapper is Protobuf.Parsable) = Inlinable.parsable[Wrapper]
