@@ -96,8 +96,8 @@ object Inspectable extends Inspectable2:
           val text = contextual.text(field)
           if this.tuple then text else s"$label:$text"
 
-        if rendered.readable.isEmpty && !this.tuple then typeName
-        else rendered.readable.mkString(if this.tuple then "(" else s"$typeName(", " ╱ ", ")").tt
+        if rendered.stdlib.isEmpty && !this.tuple then typeName
+        else rendered.stdlib.mkString(if this.tuple then "(" else s"$typeName(", " ╱ ", ")").tt
 
     inline def disjunction[derivation: SumReflection]: derivation is Inspectable = value =>
       variant(value):

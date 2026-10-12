@@ -334,7 +334,7 @@ object SchemaSignature:
     // The components whose hash begins with `prefix`: none, one (denoted), or several (which an
     // acceptance treats as none, §8.4).
     def matching(prefix: Data): List[Lineage.Component] =
-      components.filter(_.hash.readable.startsWith(prefix.readable))
+      components.filter(_.hash.stdlib.startsWith(prefix.stdlib))
 
     // The shortest prefix of the named layer's hash, at least `minimum` bytes long, that no other
     // component of this lineage shares — the form an acceptance names a further component by.
@@ -416,7 +416,7 @@ object SchemaSignature:
   // library.
   case class Library(lineages: List[Lineage]):
     def byBase(prefix: Data): List[Lineage] =
-      lineages.filter(_.base.readable.startsWith(prefix.readable))
+      lineages.filter(_.base.stdlib.startsWith(prefix.stdlib))
 
     // The lineage and ordered component hashes a signature names, if some lineage of the
     // library serves it.

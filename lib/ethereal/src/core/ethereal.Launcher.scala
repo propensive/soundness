@@ -315,7 +315,7 @@ object Launcher:
 
     document.root match
       case Tel.Element.Node(_, _, Array(Tel.Element.Node(index, _, children))) =>
-        def optional(field: Int): Optional[Text] = children.readable.collectFirst:
+        def optional(field: Int): Optional[Text] = children.stdlib.collectFirst:
           case Tel.Element.Value(`field`, _, text) => text
 
         . optional
@@ -338,7 +338,7 @@ object Launcher:
         def descriptors: List[Descriptor] =
           children.stdlib.toList.collect:
             case Tel.Element.Node(16, _, fields) =>
-              def field(index: Int): Optional[Text] = fields.readable.collectFirst:
+              def field(index: Int): Optional[Text] = fields.stdlib.collectFirst:
                 case Tel.Element.Value(`index`, _, text) => text
 
               . optional
@@ -354,7 +354,7 @@ object Launcher:
         def raws: List[Raw] =
           children.stdlib.toList.collect:
             case Tel.Element.Node(17, _, fields) =>
-              def field(index: Int): Optional[Text] = fields.readable.collectFirst:
+              def field(index: Int): Optional[Text] = fields.stdlib.collectFirst:
                 case Tel.Element.Value(`index`, _, text) => text
 
               . optional

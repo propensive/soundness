@@ -128,7 +128,7 @@ case class Truetype(data: Data) extends Sfnt:
 
     Truetype(Sfnt.assemble(data.segment((0).z till (4).z), entries))
 
-  def subset(text: Text): Truetype raises Font.Error = subset(Set.from(text.chars.readable))
+  def subset(text: Text): Truetype raises Font.Error = subset(Set.from(text.chars.stdlib))
 
   // The transitive closure of a set of glyphs under composite-glyph components: every glyph
   // needed to render the given ones.

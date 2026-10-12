@@ -70,27 +70,27 @@ object Benchmarks extends Suite("regex-bench", m"Kaleidoscope regex benchmarks")
   // backtracking engine is exponential while the RE2 engines stay linear. All patterns are
   // RE2-safe, so the same pattern text drives all four arms. The pathological input does NOT
   // match, which is what forces a backtracker to explore every path.
-  val patterns: scala.IArray[Text] = scala.IArray
+  val patterns: Array[Text] = Array
     ( t"\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} (?:INFO|WARN|ERROR) [a-z.]+ - .*",
       t"(?:(?:alpha|bravo|charlie|delta|echo|foxtrot|golf|hotel|india|juliett|kilo|lima|mike|november|oscar|papa|quebec|romeo|sierra|tango) ?)+",
       t"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
       t"(?:a|a)*c" )
 
-  val inputs: scala.IArray[Text] = scala.IArray
+  val inputs: Array[Text] = Array
     ( t"2026-08-23 14:31:07 INFO server.dispatch - accepted connection from 10.0.0.7",
       t"alpha bravo charlie delta echo foxtrot golf hotel india juliett kilo lima mike november oscar papa quebec romeo sierra tango alpha bravo charlie delta",
       t"f81d4fae-7dec-41d0-a765-00a0c91e6bf6",
       ("a".repeat(22).nn).tt )
 
-  val jurPatterns: scala.IArray[java.util.regex.Pattern] =
-    scala.IArray.from(patterns.map { pattern => java.util.regex.Pattern.compile(pattern.s).nn })
+  val jurPatterns: Array[java.util.regex.Pattern] =
+    Array.from(patterns.map { pattern => java.util.regex.Pattern.compile(pattern.s).nn })
 
-  val motifs: scala.IArray[Motif] =
-    scala.IArray.from(patterns.map { pattern => Motif.parse(pattern) })
+  val motifs: Array[Motif] =
+    Array.from(patterns.map { pattern => Motif.parse(pattern) })
 
   // The rival: Google's re2j, written as its own users would use it.
-  val re2jPatterns: scala.IArray[com.google.re2j.Pattern] =
-    scala.IArray.from(patterns.map { pattern => com.google.re2j.Pattern.compile(pattern.s).nn })
+  val re2jPatterns: Array[com.google.re2j.Pattern] =
+    Array.from(patterns.map { pattern => com.google.re2j.Pattern.compile(pattern.s).nn })
 
   def jurMatches(corpus: Int): Boolean =
     jurPatterns(corpus).matcher(inputs(corpus).s).nn.matches
@@ -133,22 +133,22 @@ object Benchmarks extends Suite("regex-bench", m"Kaleidoscope regex benchmarks")
   // first-symbol-class jump.
   val seekFiller: String = "lorem ipsum dolor sit amet ".repeat(150).nn
 
-  val seekPatterns: scala.IArray[Text] = scala.IArray
+  val seekPatterns: Array[Text] = Array
     ( t"ERROR [a-z.]+",
       t"\\d{4}-\\d{2}-\\d{2}" )
 
-  val seekInputs: scala.IArray[Text] = scala.IArray
+  val seekInputs: Array[Text] = Array
     ( (seekFiller + "ERROR server.overload").tt,
       (seekFiller + "2026-08-24 etc").tt )
 
-  val seekJur: scala.IArray[java.util.regex.Pattern] =
-    scala.IArray.from(seekPatterns.map { pattern => java.util.regex.Pattern.compile(pattern.s).nn })
+  val seekJur: Array[java.util.regex.Pattern] =
+    Array.from(seekPatterns.map { pattern => java.util.regex.Pattern.compile(pattern.s).nn })
 
-  val seekMotifs: scala.IArray[Motif] =
-    scala.IArray.from(seekPatterns.map { pattern => Motif.parse(pattern) })
+  val seekMotifs: Array[Motif] =
+    Array.from(seekPatterns.map { pattern => Motif.parse(pattern) })
 
-  val seekRe2j: scala.IArray[com.google.re2j.Pattern] =
-    scala.IArray.from(seekPatterns.map { pattern => com.google.re2j.Pattern.compile(pattern.s).nn })
+  val seekRe2j: Array[com.google.re2j.Pattern] =
+    Array.from(seekPatterns.map { pattern => com.google.re2j.Pattern.compile(pattern.s).nn })
 
   def jurSeek(corpus: Int): Boolean = seekJur(corpus).matcher(seekInputs(corpus).s).nn.find()
   def pikeSeek(corpus: Int): Boolean = seekMotifs(corpus).seek(seekInputs(corpus)).present

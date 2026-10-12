@@ -361,7 +361,7 @@ object Tels extends Tels2:
           field("any-published",  Flag, required = Loose),
           field("component",      Reference(t"Component"), required = Loose,
             repeatable = Loose))),
-      scalars  = Array.frozen(builtinScalars.readable ++ Array(
+      scalars  = builtinScalars + Array(
         ScalarDefinition
           ( t"Signature",
             Array.empty,
@@ -372,7 +372,7 @@ object Tels extends Tels2:
             Array.empty,
             t"A component hash, or a prefix of one at least four bytes long.",
             encoding = t"base-256",
-            patterns = Array(t".{4,32}") )).readable),
+            patterns = Array(t".{4,32}") )),
       selects  = Array.empty)
 
   // Bridges the schema-aware semantic model into the existing
@@ -538,7 +538,7 @@ object Tels extends Tels2:
     def select(schema: Tels, selection: List[Text])
     :   List[Tels.Layer] raises Tel.Error raises Resolution.Error =
 
-      val declared = schema.layers.readable
+      val declared = schema.layers
       val chosen = scala.collection.mutable.ListBuffer.empty[Tels.Layer]
       var cursor = 0
 
@@ -549,8 +549,8 @@ object Tels extends Tels2:
           var found = false
 
           while !found && cursor < declared.length do
-            if declared(cursor).name == name then
-              chosen += declared(cursor)
+            if declared.readUnchecked(cursor).name == name then
+              chosen += declared.readUnchecked(cursor)
               found = true
 
             cursor += 1
@@ -623,7 +623,7 @@ object Tels extends Tels2:
     private def mergeStruct(base: Struct, layer: Struct, selects: Array[SelectDefinition]^{})
     :   Struct raises Tel.Error =
 
-      val members = scala.collection.mutable.ArrayBuffer.from(base.members.readable)
+      val members = scala.collection.mutable.ArrayBuffer.from(base.members.stdlib)
 
       // §20.1/§20.3: a Struct's keyword space is its Fields' keywords together
       // with the variant keywords its SelectRefs contribute, so a layer member
@@ -731,7 +731,7 @@ object Tels extends Tels2:
         i += 1
 
       val mergedValidators =
-        Array.frozen((base.validators.readable ++ layer.validators.readable).distinct)
+        Array.from((base.validators.stdlib ++ layer.validators.stdlib).distinct)
 
       Struct(Array.from(members), mergedValidators)
 
@@ -742,7 +742,7 @@ object Tels extends Tels2:
        selects:  Array[SelectDefinition]^{} )
     :   Array[RecordDefinition]^{} raises Tel.Error =
 
-      val out = scala.collection.mutable.ArrayBuffer.from(base.readable)
+      val out = scala.collection.mutable.ArrayBuffer.from(base.stdlib)
       var i = 0
 
       while i < layer.length do
@@ -779,7 +779,7 @@ object Tels extends Tels2:
        selects: Array[SelectDefinition]^{} )
     :   Array[ScalarDefinition]^{} raises Tel.Error =
 
-      val out = scala.collection.mutable.ArrayBuffer.from(base.readable)
+      val out = scala.collection.mutable.ArrayBuffer.from(base.stdlib)
       var i = 0
 
       while i < layer.length do
@@ -788,7 +788,7 @@ object Tels extends Tels2:
 
         if existing >= 0 then
           val mergedValidators =
-            Array.frozen((out(existing).validators.readable ++ newDef.validators.readable).distinct)
+            Array.from((out(existing).validators.stdlib ++ newDef.validators.stdlib).distinct)
 
           // §20.3/§21.7: an encoding, once declared, cannot be changed
           // (E218). Restating the base's encoding is a benign no-op;
@@ -889,7 +889,7 @@ object Tels extends Tels2:
        origin:  Array[SelectDefinition]^{} )
     :   Array[SelectDefinition]^{} raises Tel.Error =
 
-      val out = scala.collection.mutable.ArrayBuffer.from(base.readable)
+      val out = scala.collection.mutable.ArrayBuffer.from(base.stdlib)
       var i = 0
 
       while i < layer.length do
@@ -897,7 +897,7 @@ object Tels extends Tels2:
         val existing = out.indexWhere(_.name == newDef.name)
 
         if existing >= 0 then
-          val original = origin.readable.find(_.name == newDef.name)
+          val original = origin.stdlib.find(_.name == newDef.name)
           out(existing) = mergeSelect(out(existing), newDef, original.getOrElse(out(existing)))
         else
           if records.exists(_.name == newDef.name) || scalars.exists(_.name == newDef.name)
@@ -916,7 +916,7 @@ object Tels extends Tels2:
       ( base: SelectDefinition, layer: SelectDefinition, origin: SelectDefinition )
     :   SelectDefinition raises Tel.Error =
 
-      val variants = scala.collection.mutable.ArrayBuffer.from(base.variants.readable)
+      val variants = scala.collection.mutable.ArrayBuffer.from(base.variants.stdlib)
       var i = 0
 
       while i < layer.variants.length do
@@ -941,7 +941,7 @@ object Tels extends Tels2:
         then abort(Tel.Error(Reason.ExcludeMissingVariant))
 
       val mergedValidators =
-        Array.frozen((base.validators.readable ++ layer.validators.readable).distinct)
+        Array.from((base.validators.stdlib ++ layer.validators.stdlib).distinct)
 
       SelectDefinition(base.name, Array.from(variants), mergedValidators,
           layer.description.or(base.description))
@@ -1057,7 +1057,7 @@ object Tels extends Tels2:
       case scalar: Scalar => scalar
 
       case Reference(name) =>
-        schema.scalars.readable.find(_.name == name) match
+        schema.scalars.stdlib.find(_.name == name) match
           case scala.Some(definition) =>
             Scalar(definition.validators, definition.encoding, definition.patterns)
 
@@ -1122,7 +1122,7 @@ object Tels extends Tels2:
             if !required || repeatable then abort(Tel.Error(Reason.KeyOnLooseMember))
 
         case select: SelectRef =>
-          schema.selects.readable.find(_.name == select.reference) match
+          schema.selects.stdlib.find(_.name == select.reference) match
             case scala.Some(definition) =>
               definition.variants.each: variant => claim(variant.keyword)
 
@@ -1338,7 +1338,7 @@ object Tels extends Tels2:
 
       children.each: cc =>
         cc.keyword.s match
-          case "validate"    => validators ++= atomTexts(cc).readable
+          case "validate"    => validators ++= atomTexts(cc).stdlib
           case "exclude"     => scalarAtomText(cc).let: keyword => excludes += keyword
           case "description" => ()
 
@@ -1399,7 +1399,7 @@ object Tels extends Tels2:
         cc.keyword.s match
           case "field"    => members += parseField(cc)
           case "select"   => members += parseSelectRef(cc)
-          case "validate" => validators ++= atomTexts(cc).readable
+          case "validate" => validators ++= atomTexts(cc).stdlib
 
           case "exclude" =>
             val ats = atomTexts(cc)
@@ -2400,7 +2400,7 @@ object Tels extends Tels2:
 
         if index >= 0 && index < sourceKeywords.length then
           val keyword = sourceKeywords.readUnchecked(index)(0)
-          val position = targetKeywords.readable.indexWhere(_(0) == keyword)
+          val position = targetKeywords.stdlib.indexWhere(_(0) == keyword)
 
           if position >= 0 then
             (child, resolve(targetKeywords.readUnchecked(position)(1), to)) match

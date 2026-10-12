@@ -61,11 +61,11 @@ object Bibliography:
 
   // The first index in `[low, high)` whose hash does not precede `prefix`.
   @tailrec
-  private def lowerBound(sorted: scala.IArray[Data], prefix: Data, low: Int, high: Int): Int =
+  private def lowerBound(sorted: Array[Data]^{}, prefix: Data, low: Int, high: Int): Int =
     if low >= high then low else
       val middle = (low + high) >>> 1
 
-      if prefixOrder(sorted(middle), prefix) < 0 then lowerBound(sorted, prefix, middle + 1, high)
+      if prefixOrder(sorted.readUnchecked(middle), prefix) < 0 then lowerBound(sorted, prefix, middle + 1, high)
       else lowerBound(sorted, prefix, low, middle)
 
 case class Bibliography(hashes: Array[Data]^{}) extends Findable:
@@ -73,11 +73,11 @@ case class Bibliography(hashes: Array[Data]^{}) extends Findable:
   // prefix sits in one contiguous run, found by binary search. One ordering serves every prefix
   // length, so the `Cadence` (which sets the `k_i`- and `k_r`-byte prefix lengths the palimpsest
   // §5 decoder asks for) need not be known here. Built on the first lookup.
-  private lazy val sorted: scala.IArray[Data] =
-    hashes.readable.sortWith(Bibliography.ordered(_, _) < 0)
+  private lazy val sorted: Array[Data]^{} =
+    Array.from[Data](hashes.stdlib.sortWith(Bibliography.ordered(_, _) < 0))
 
   // Return every library hash whose leading bytes equal `prefix`, in the index's byte order.
   def lookup(prefix: Data): Iterator[Data] =
     val first = Bibliography.lowerBound(sorted, prefix, 0, sorted.length)
 
-    sorted.iterator.drop(first).takeWhile(Bibliography.prefixOrder(_, prefix) == 0)
+    sorted.stdlib.iterator.drop(first).takeWhile(Bibliography.prefixOrder(_, prefix) == 0)

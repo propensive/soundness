@@ -462,7 +462,7 @@ trait Tel2 extends Tel3:
     // method: read from the inline expansion, the compound array re-freshens (`^{any.rd}`).
     private def firstVariant(telVal: Tel): Optional[Tel] =
       val compounds = telVal.childCompounds
-      if compounds.nil then Unset else Tel.make(compounds.readable.head)
+      if compounds.nil then Unset else Tel.make(compounds.stdlib.head)
 
     inline def disjunction[derivation: SumReflection]: (derivation is Tel.Decodable)^ =
       // A sum is a document whose single child compound is the chosen variant, keyed by

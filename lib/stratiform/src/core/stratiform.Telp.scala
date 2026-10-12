@@ -160,16 +160,16 @@ object Telp:
   private case class Slot(flatIndex: Int, repeatable: Boolean, slotType: Tels.Type)
 
   private def definitionOf(reference: Text, schema: Tels): Optional[Tels.SelectDefinition] =
-    schema.selects.readable.find(_.name == reference) match
+    schema.selects.stdlib.find(_.name == reference) match
       case scala.Some(definition) => definition
       case scala.None             => Unset
 
   private def resolved(t: Tels.Type, schema: Tels): Optional[Tels.Type] = t match
     case Tels.Reference(name) =>
-      schema.records.readable.find(_.name == name) match
+      schema.records.stdlib.find(_.name == name) match
         case scala.Some(record) => Tels.Struct(record.members, record.validators)
 
-        case scala.None => schema.scalars.readable.find(_.name == name) match
+        case scala.None => schema.scalars.stdlib.find(_.name == name) match
           case scala.Some(scalar) =>
             Tels.Scalar(scalar.validators, scalar.encoding, scalar.patterns)
 
@@ -245,7 +245,7 @@ object Telp:
           keyFlat.let: keyIndex =>
             var value: Optional[Text] = Unset
 
-            node.children.readable.foreach:
+            node.children.stdlib.foreach:
               case Tel.Element.Value(idx, _, text) =>
                 if idx == keyIndex && value.absent then value = text
 
@@ -276,7 +276,7 @@ object Telp:
 
   private def childrenAt(node: Tel.Element.Node, flatIndex: Int): List[Tel.Element] =
 
-    node.children.readable.filter: element =>
+    node.children.stdlib.filter: element =>
       element match
         case Tel.Element.Node(idx, _, _)  => idx.or(-1) == flatIndex
         case Tel.Element.Value(idx, _, _) => idx == flatIndex

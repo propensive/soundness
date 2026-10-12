@@ -263,7 +263,7 @@ class CollationTable private[hieroglyph]
   import CollationTable.{pack, primaryOf, secondaryOf, tertiaryOf}
 
   private def searchInt(array: Array[Int]^{}, value: Int): Int =
-    val readable = array.readable
+    val readable = array
     var low = 0
     var high = readable.length - 1
     var found = -1
@@ -271,10 +271,10 @@ class CollationTable private[hieroglyph]
     while low <= high do
       val mid = (low + high) >>> 1
 
-      if readable(mid) == value then
+      if readable.readUnchecked(mid) == value then
         found = mid
         low = high + 1
-      else if readable(mid) > value then
+      else if readable.readUnchecked(mid) > value then
         high = mid - 1
       else
         low = mid + 1
@@ -282,7 +282,7 @@ class CollationTable private[hieroglyph]
     found
 
   private def searchLong(array: Array[Long]^{}, value: Long): Int =
-    val readable = array.readable
+    val readable = array
     var low = 0
     var high = readable.length - 1
     var found = -1
@@ -290,10 +290,10 @@ class CollationTable private[hieroglyph]
     while low <= high do
       val mid = (low + high) >>> 1
 
-      if readable(mid) == value then
+      if readable.readUnchecked(mid) == value then
         found = mid
         low = high + 1
-      else if readable(mid) > value then
+      else if readable.readUnchecked(mid) > value then
         high = mid - 1
       else
         low = mid + 1
@@ -303,25 +303,24 @@ class CollationTable private[hieroglyph]
   def key(text: Text): Array[Int]^{} = key(Normalization.decompose(text))
 
   def key(codepoints: Array[Int]^{}): Array[Int]^{} =
-    val cps = Normalization.decompose(codepoints).readable
+    val cps = Normalization.decompose(codepoints)
     val n = cps.length
     val elements = Array.scratch[Long](n*maxExpansion + 1)
     var elementCount = 0
     val consumed = Array.scratch[Boolean](n)
-    val singleElementsView = singleElements.readable
-    val singleOffsetsView = singleOffsets.readable
-    val contractionElementsView = contractionElements.readable
-    val contractionOffsetsView = contractionOffsets.readable
-    val implicitStartsView = implicitStarts.readable
-    val implicitEndsView = implicitEnds.readable
-    val implicitBasesView = implicitBases.readable
-    val implicitSubtrahendsView = implicitSubtrahends.readable
-
+    val singleElementsView = singleElements
+    val singleOffsetsView = singleOffsets
+    val contractionElementsView = contractionElements
+    val contractionOffsetsView = contractionOffsets
+    val implicitStartsView = implicitStarts
+    val implicitEndsView = implicitEnds
+    val implicitBasesView = implicitBases
+    val implicitSubtrahendsView = implicitSubtrahends
     var index = 0
 
     while index < n do
       if !consumed(index) then
-        val codepoint = cps(index)
+        val codepoint = cps.readUnchecked(index)
         var matchKey = codepoint.toLong << 42
         var matchLength = 1
 
@@ -329,7 +328,7 @@ class CollationTable private[hieroglyph]
           // Longest contiguous match first (UCA S2.1): with keys of at most three
           // codepoints, that means trying length three, then two.
           if index + 2 < n && !consumed(index + 1) && !consumed(index + 2) then
-            val key3 = matchKey | cps(index + 1).toLong << 21 | cps(index + 2).toLong
+            val key3 = matchKey | cps.readUnchecked(index + 1).toLong << 21 | cps.readUnchecked(index + 2).toLong
 
             if searchLong(contractionKeys, key3) >= 0 then
               matchKey = key3
@@ -338,7 +337,7 @@ class CollationTable private[hieroglyph]
               consumed(index + 2) = true
 
           if matchLength == 1 && index + 1 < n && !consumed(index + 1) then
-            val key2 = matchKey | cps(index + 1).toLong << 21
+            val key2 = matchKey | cps.readUnchecked(index + 1).toLong << 21
 
             if searchLong(contractionKeys, key2) >= 0 then
               matchKey = key2
@@ -355,13 +354,13 @@ class CollationTable private[hieroglyph]
 
             while scanning && scan < n && matchLength < 3 do
               if !consumed(scan) then
-                val ccc = Normalization.combiningClass(cps(scan))
+                val ccc = Normalization.combiningClass(cps.readUnchecked(scan))
 
                 if ccc == 0 then scanning = false
                 else if ccc > lastCcc then
                   val extended =
-                    if matchLength == 1 then matchKey | cps(scan).toLong << 21
-                    else matchKey | cps(scan).toLong
+                    if matchLength == 1 then matchKey | cps.readUnchecked(scan).toLong << 21
+                    else matchKey | cps.readUnchecked(scan).toLong
 
                   if searchLong(contractionKeys, extended) >= 0 then
                     matchKey = extended
@@ -376,22 +375,22 @@ class CollationTable private[hieroglyph]
 
         if matchLength > 1 then
           val found = searchLong(contractionKeys, matchKey)
-          var offset = contractionOffsetsView(found)
-          val end = contractionOffsetsView(found + 1)
+          var offset = contractionOffsetsView.readUnchecked(found)
+          val end = contractionOffsetsView.readUnchecked(found + 1)
 
           while offset < end do
-            elements(elementCount) = contractionElementsView(offset)
+            elements(elementCount) = contractionElementsView.readUnchecked(offset)
             elementCount += 1
             offset += 1
         else
           val found = searchInt(singleCodepoints, codepoint)
 
           if found >= 0 then
-            var offset = singleOffsetsView(found)
-            val end = singleOffsetsView(found + 1)
+            var offset = singleOffsetsView.readUnchecked(found)
+            val end = singleOffsetsView.readUnchecked(found + 1)
 
             while offset < end do
-              elements(elementCount) = singleElementsView(offset)
+              elements(elementCount) = singleElementsView.readUnchecked(offset)
               elementCount += 1
               offset += 1
           else
@@ -400,12 +399,12 @@ class CollationTable private[hieroglyph]
             var directive = 0
 
             while directive < implicitStartsView.length do
-              val start = implicitStartsView(directive)
-              val end = implicitEndsView(directive)
+              val start = implicitStartsView.readUnchecked(directive)
+              val end = implicitEndsView.readUnchecked(directive)
 
               if codepoint >= start && codepoint <= end then
-                base = implicitBasesView(directive)
-                subtrahend = implicitSubtrahendsView(directive)
+                base = implicitBasesView.readUnchecked(directive)
+                subtrahend = implicitSubtrahendsView.readUnchecked(directive)
 
               directive += 1
 
@@ -470,15 +469,15 @@ class CollationTable private[hieroglyph]
   def compare(left: Text, right: Text): Int = compareKeys(key(left), key(right))
 
   def compareKeys(left: Array[Int]^{}, right: Array[Int]^{}): Int =
-    val leftView = left.readable
-    val rightView = right.readable
+    val leftView = left
+    val rightView = right
     val limit = leftView.length.min(rightView.length)
     var index = 0
     var result = 0
 
     while result == 0 && index < limit do
-      if leftView(index) != rightView(index)
-      then result = if leftView(index) < rightView(index) then -1 else 1
+      if leftView.readUnchecked(index) != rightView.readUnchecked(index)
+      then result = if leftView.readUnchecked(index) < rightView.readUnchecked(index) then -1 else 1
 
       index += 1
 
@@ -486,27 +485,27 @@ class CollationTable private[hieroglyph]
 
   def tailor(rules: List[CollationRule]): CollationTable =
     val entries = scm.HashMap[sci.Vector[Int], sci.Vector[Long]]()
-    val singleCodepointsView = singleCodepoints.readable
-    val singleOffsetsView = singleOffsets.readable
-    val singleElementsView = singleElements.readable
-    val contractionKeysView = contractionKeys.readable
-    val contractionOffsetsView = contractionOffsets.readable
-    val contractionElementsView = contractionElements.readable
+    val singleCodepointsView = singleCodepoints
+    val singleOffsetsView = singleOffsets
+    val singleElementsView = singleElements
+    val contractionKeysView = contractionKeys
+    val contractionOffsetsView = contractionOffsets
+    val contractionElementsView = contractionElements
 
     var index = 0
 
     while index < singleCodepointsView.length do
       val elements =
-        (singleOffsetsView(index) until singleOffsetsView(index + 1))
-        . map(singleElementsView(_)).to(sci.Vector)
+        (singleOffsetsView.readUnchecked(index) until singleOffsetsView.readUnchecked(index + 1))
+        . map(singleElementsView.readUnchecked(_)).to(sci.Vector)
 
-      entries(sci.Vector(singleCodepointsView(index))) = elements
+      entries(sci.Vector(singleCodepointsView.readUnchecked(index))) = elements
       index += 1
 
     index = 0
 
     while index < contractionKeysView.length do
-      val packed = contractionKeysView(index)
+      val packed = contractionKeysView.readUnchecked(index)
       val first = (packed >>> 42).toInt
       val second = ((packed >>> 21) & 0x1fffff).toInt
       val third = (packed & 0x1fffff).toInt
@@ -515,8 +514,8 @@ class CollationTable private[hieroglyph]
         if third != 0 then sci.Vector(first, second, third) else sci.Vector(first, second)
 
       val elements =
-        (contractionOffsetsView(index) until contractionOffsetsView(index + 1))
-        . map(contractionElementsView(_)).to(sci.Vector)
+        (contractionOffsetsView.readUnchecked(index) until contractionOffsetsView.readUnchecked(index + 1))
+        . map(contractionElementsView.readUnchecked(_)).to(sci.Vector)
 
       entries(key) = elements
       index += 1
@@ -524,8 +523,8 @@ class CollationTable private[hieroglyph]
     val counters = scm.HashMap[(sci.Vector[Int], Int), Int]()
 
     rules.each: rule =>
-      val baseKey = Normalization.decompose(rule.base).readable.toVector
-      val targetKey = Normalization.decompose(rule.target).readable.toVector
+      val baseKey = Normalization.decompose(rule.base).stdlib.toVector
+      val targetKey = Normalization.decompose(rule.target).stdlib.toVector
 
       val baseElements = entries.get(baseKey) match
         case Some(elements) => elements

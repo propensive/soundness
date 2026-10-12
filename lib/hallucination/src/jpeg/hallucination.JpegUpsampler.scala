@@ -53,7 +53,7 @@ private[hallucination] object JpegUpsampler:
 
   // Derives the per-component upsampling parameters into fresh arrays, frozen zero-copy into
   // the fully-initialized upsampler.
-  def apply(components: scala.IArray[JpegComponent], outputWidth: Int, outputHeight: Int)
+  def apply(components: Array[JpegComponent]^{}, outputWidth: Int, outputHeight: Int)
     ( using Tactic[Raster.Error] )
   :   JpegUpsampler =
 

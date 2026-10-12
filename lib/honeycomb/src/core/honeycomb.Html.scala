@@ -2346,15 +2346,13 @@ object Html extends Tag.Container
         case fragment: Fragment =>
           Element
             ( label, attributes,
-              Array.frozen
-                ( Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}].readable ++
-                  children.readable )
+              ( Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}] + children )
 
               . asInstanceOf[Array[Node]^{}],
               foreign )
 
         case node: Node =>
-          Element(label, attributes, Array.frozen(children.readable.prepended(node)), foreign)
+          Element(label, attributes, Array.from(children.stdlib.prepended(node)), foreign)
 
       . of[this.Topic]
       . over[this.Transport]
@@ -2363,7 +2361,7 @@ object Html extends Tag.Container
     def +^ (html: Html of this.Transport): Element of this.Topic over this.Transport in this.Form =
       (html: Html).match
         case fragment: Fragment =>
-          Element(label, attributes, Array.frozen(children.readable ++ fragment.nodes), foreign)
+          Element(label, attributes, Array.from(children.stdlib ++ fragment.nodes), foreign)
 
         case node: Node =>
           Element(label, attributes, children :+ node, foreign)

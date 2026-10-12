@@ -85,7 +85,7 @@ object Benchmarks extends Suite("compression-bench", m"Pneumatic benchmarks: XZ,
   // ~4 MB of prose-shaped text: words drawn from a small vocabulary by a fixed linear
   // congruential generator, so every run compresses exactly the same bytes.
   lazy val text: Data =
-    val vocabulary = IArray(
+    val vocabulary = Array(
       "the", "of", "and", "to", "in", "a", "is", "that", "for", "it", "as", "was", "with",
       "be", "by", "on", "not", "he", "this", "are", "or", "his", "from", "at", "which", "but",
       "have", "an", "had", "they", "you", "were", "their", "one", "all", "we", "can", "her",

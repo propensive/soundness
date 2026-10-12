@@ -580,20 +580,20 @@ object Protobuf extends Protobuf1:
   // A message from its fields' numbers and encoded values, in declaration order: one pass
   // sums their encoded size, the second writes them.
   private def message(numbers: Array[Int]^{}, wires: Array[Protobuf]^{}): Data =
-    val numberView = numbers.readable
-    val wireView = wires.readable
+    val numberView = numbers
+    val wireView = wires
     var size = 0
     var index = 0
 
     repeat(numberView.length):
-      size += ProtobufPrinter.fieldSize(numberView(index), wireView(index))
+      size += ProtobufPrinter.fieldSize(numberView.readUnchecked(index), wireView.readUnchecked(index))
       index += 1
 
     sized(size): printer =>
       var index = 0
 
       repeat(numberView.length):
-        printer.field(numberView(index), wireView(index))
+        printer.field(numberView.readUnchecked(index), wireView.readUnchecked(index))
         index += 1
 
   // Chain a message's wire bytes incrementally (chunked); the producing code runs on a separate

@@ -165,10 +165,10 @@ private[facsimile] object Guard:
 
     var hash: Data =
       md5:
-        Array.frozen
-          ( Array.unsafeFrozen(padded(password)).readable ++
-            owner.keep(32.min(owner.length)).readable ++
-            permissionsBytes.readable ++ id.readable ++ metadataBytes.readable )
+        Array.from
+          ( Array.unsafeFrozen(padded(password)).stdlib ++
+            owner.keep(32.min(owner.length)).stdlib ++
+            permissionsBytes.stdlib ++ id.stdlib ++ metadataBytes.stdlib )
 
     // Revision 3+: 50 further MD5 rounds over the first `keyBytes` bytes.
     if revision >= 3 then
@@ -235,7 +235,7 @@ private[facsimile] object Guard:
     // caller zeroes it -- but that happens strictly after this call returns, so a frozen view
     // is valid for this extent and spares every read below its own laundering.
     val pw = Array.unsafeFrozen(password)
-    var k: Data = sha(256, Array.frozen(pw.readable ++ salt.readable ++ extra.readable))
+    var k: Data = sha(256, Array.from(pw.stdlib ++ salt.stdlib ++ extra.stdlib))
 
     var round = 0
     var done = false
@@ -312,7 +312,7 @@ private[facsimile] class Guard
       // the "sAlT" constant
       val salt: Data = if aes then Array[Byte](0x73, 0x41, 0x6c, 0x54) else Array.empty[Byte]
 
-      Guard.md5(Array.frozen(fileKey.readable ++ numbering.readable ++ salt.readable))
+      Guard.md5(Array.from(fileKey.stdlib ++ numbering.stdlib ++ salt.stdlib))
       . keep((fileKey.length + 5).min(16))
 
   def string(bytes: Data, number: Int, generation: Int): Data =

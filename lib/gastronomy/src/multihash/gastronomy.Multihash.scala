@@ -96,7 +96,7 @@ object Multihash:
     if length < available then abort(Multihash.Error(Multihash.Reason.Trailing))
 
     Multihash
-      ( code.toInt, Array.frozen(data.readable.slice(afterLength, afterLength + length.toInt)) )
+      ( code.toInt, Array.from(data.stdlib.slice(afterLength, afterLength + length.toInt)) )
 
   enum Reason:
     case Truncated, Trailing, Oversize

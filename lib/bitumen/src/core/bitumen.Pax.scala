@@ -50,11 +50,11 @@ object Pax:
     (total.toString+" "+key.s+"="+value.s+"\n").tt.in[Data]
 
   def records(pairs: List[(Text, Text)]): Data =
-    // Accumulate on the `IArray` side: a `Concatenable` result is fresh, and a fresh capture
+    // Accumulated on the stdlib side: a `Concatenable` result is fresh, and a fresh capture
     // cannot instantiate the fold's accumulator type.
-    val empty = scala.IArray.empty[Byte]
+    val empty = scala.collection.immutable.ArraySeq.empty[Byte]
 
-    Array.frozen(pairs.fold(empty) { (bytes, pair) => bytes ++ record(pair(0), pair(1)).readable })
+    Array.from(pairs.fold(empty) { (bytes, pair) => bytes ++ record(pair(0), pair(1)).stdlib })
 
   def parse(data: Data): Map[Text, Text] raises Tar.Error =
     val builder = scala.collection.immutable.Map.newBuilder[Text, Text]

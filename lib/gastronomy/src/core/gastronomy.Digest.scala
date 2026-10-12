@@ -56,12 +56,12 @@ object Digest:
   // in the order they are held. The `ᴰ` suffix distinguishes the digits from any other
   // hexadecimal rendering; the algorithm is a phantom type, so it cannot be shown at runtime.
   given inspectable: [digest <: Digest] => digest is Inspectable = digest =>
-    val bytes = digest.data.readable
+    val bytes = digest.data
     val builder: StringBuilder = new StringBuilder()
     var index = 0
 
     while index < bytes.length do
-      val byte = bytes(index)
+      val byte = bytes.readUnchecked(index)
       builder.append(hexadecimal.charAt((byte & 0xf0) >>> 4))
       builder.append(hexadecimal.charAt(byte & 0x0f))
       index += 1

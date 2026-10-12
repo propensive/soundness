@@ -57,18 +57,18 @@ private[hallucination] object Vp8Yuv:
     val height = frame.height
     val chromaStride = frame.bufferWidth/2
     val rgb = new scala.Array[Int](width*height)
-    val lumaPlane = frame.luma.readable
-    val chromaUPlane = frame.chromaU.readable
-    val chromaVPlane = frame.chromaV.readable
+    val lumaPlane = frame.luma
+    val chromaUPlane = frame.chromaU
+    val chromaVPlane = frame.chromaV
     var y = 0
 
     while y < height do
       var x = 0
 
       while x < width do
-        val luma = lumaPlane(y*frame.bufferWidth + x)
-        val u = chromaUPlane((y/2)*chromaStride + x/2)
-        val v = chromaVPlane((y/2)*chromaStride + x/2)
+        val luma = lumaPlane.readUnchecked(y*frame.bufferWidth + x)
+        val u = chromaUPlane.readUnchecked((y/2)*chromaStride + x/2)
+        val v = chromaVPlane.readUnchecked((y/2)*chromaStride + x/2)
         val base = mulhi(luma, 19077)
         val red = clip(base + mulhi(v, 26149) - 14234)
         val green = clip(base - mulhi(u, 6419) - mulhi(v, 13320) + 8708)

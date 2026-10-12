@@ -43,7 +43,7 @@ object PropertyDef:
   // time (`CssData`); only each entry's `syntax` is kept.
   lazy val list: List[PropertyDef] =
     List.tabulate(CssData.propertyNames.length): index =>
-      PropertyDef(CssData.propertyNames(index).tt, CssData.propertySyntaxes(index).tt)
+      PropertyDef(CssData.propertyNames.readUnchecked(index).tt, CssData.propertySyntaxes.readUnchecked(index).tt)
 
   // The same properties keyed by name in a `Dictionary` for fast lookup.
   lazy val all: Dictionary[PropertyDef] =

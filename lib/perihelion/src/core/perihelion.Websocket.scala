@@ -325,7 +325,7 @@ object Websocket:
     val maxControlPayload: Int = 125
 
     def closeData(code: Int, reason: Data): Data =
-      Array.frozen(Data((code >> 8).toByte, code.toByte).readable ++ reason.readable)
+      Data((code >> 8).toByte, code.toByte) + reason
 
     // Close codes a client may legitimately send (RFC 6455 §7.4.1 plus the
     // registered application range). Everything else — including 1004/1005/1006,

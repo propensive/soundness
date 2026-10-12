@@ -215,11 +215,11 @@ object internal:
       if parts.length == 2
       then
         result2.map: (groups: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
-          groups.readable.head
+          groups.stdlib.head
 
         . asInstanceOf[result]
       else
         result2.map: (groups: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
-          Tuple.fromIArray(groups.readable)
+          Tuple.fromArray(Array.unsafeJvm(groups).asInstanceOf[scala.Array[Object]])
 
         . asInstanceOf[result]

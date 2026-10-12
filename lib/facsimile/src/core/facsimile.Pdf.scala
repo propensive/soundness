@@ -355,7 +355,7 @@ object Pdf:
                     case _                      => Matrix(0.001, 0, 0, 0.001, 0, 0)
 
             // Type 3 widths are in glyph space; normalize them to thousandths of an em.
-            val scaled = Array.frozen(widths.readable.map(_*matrix.a*1000))
+            val scaled = Array.from(widths.stdlib.map(_*matrix.a*1000))
             Type3(matrix, common(false, Map(), defaultWidth).copy(widths = scaled))
 
           case "Type0" =>

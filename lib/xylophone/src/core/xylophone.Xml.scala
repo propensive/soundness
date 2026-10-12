@@ -616,7 +616,7 @@ object Xml extends Tag.Container
         type Form = Xml
 
         private def childOf(entry: Element, label: BaseText): Xml =
-          val found = entry.children.readable.find:
+          val found = entry.children.stdlib.find:
             case element: Element => element.label == label
             case _                => false
 
@@ -5435,7 +5435,7 @@ object Xml extends Tag.Container
       val scope:      Scope = xylophone.internal.Scope.empty )
   extends Node, Topical, Transportive:
     override def toString(): String =
-      s"<$label>${children.readable.mkString}</$label>"
+      s"<$label>${children.stdlib.mkString}</$label>"
 
     // The bindings in force at this element: its scope, extended by any declarations among its
     // own attributes — which are all a hand-built element has

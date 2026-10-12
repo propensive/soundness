@@ -2,7 +2,7 @@
 lib/abacist/src/core/abacist.protointernal.scala	0	0	0	0	0	0	0	0	2	0	0	0
 lib/acyclicity/src/bench/acyclicity.Benchmarks.scala	0	0	0	0	0	0	0	0	0	1	0	0
 lib/acyclicity/src/core/acyclicity.Dot.scala	0	0	0	0	0	0	0	0	1	0	0	0
-lib/acyclicity/src/core/acyclicity.Topology.scala	1	0	0	0	0	0	0	0	0	2	0	1
+lib/acyclicity/src/core/acyclicity.Topology.scala	1	0	0	0	2	0	0	0	0	2	0	1
 lib/ambience/src/core/ambience.Searchpath.scala	0	0	0	0	0	0	0	0	1	0	0	0
 lib/ambience/src/core/ambience.Variable.scala	2	0	0	0	0	0	0	0	0	0	0	0
 lib/anamnesis/src/core/anamnesis.Database.scala	0	0	5	0	0	0	0	0	4	0	0	0
@@ -15,7 +15,7 @@ lib/anthology/src/scala/anthology.Scalac.scala	1	0	3	0	1	1	0	0	0	0	0	0
 lib/anthology/src/scala/anthology_scala.scala	0	0	1	0	0	0	0	0	0	0	0	0
 lib/anthology/src/test/anthology_test.scala	0	0	1	0	0	0	0	0	0	0	0	0
 lib/anticipation/src/color/anticipation.internal2.scala	0	0	0	1	0	0	0	0	0	0	0	0
-lib/anticipation/src/http/anticipation.HttpStreams.scala	0	0	2	0	0	0	1	0	0	0	0	0
+lib/anticipation/src/http/anticipation.HttpStreams.scala	0	0	2	0	0	0	0	0	0	0	0	0
 lib/anticipation/src/log/anticipation.Loggable.scala	2	0	0	0	0	0	0	0	0	0	1	0
 lib/anticipation/src/path/anticipation.Paths.scala	2	0	0	0	0	0	0	0	0	0	0	0
 lib/aperture/src/test/aperture_test.scala	0	0	7	0	0	0	0	0	0	0	0	0
@@ -27,8 +27,7 @@ lib/aviation/src/core/aviation.timestampInternal.scala	0	0	0	0	0	0	0	0	1	0	0	0
 lib/bitumen/src/core/bitumen.Ar.scala	1	0	1	0	0	0	0	0	0	0	0	0
 lib/bitumen/src/core/bitumen.Archive.scala	1	0	6	0	0	0	0	0	0	0	0	0
 lib/bitumen/src/core/bitumen.Arfile.scala	1	2	2	0	0	0	0	0	0	0	0	0
-lib/bitumen/src/core/bitumen.Pax.scala	0	0	0	0	0	0	1	0	0	0	0	0
-lib/bitumen/src/core/bitumen.Tar.scala	1	0	3	0	0	0	1	0	3	0	0	0
+lib/bitumen/src/core/bitumen.Tar.scala	1	0	3	0	0	0	0	0	3	0	0	0
 lib/bitumen/src/core/bitumen.Tarfile.scala	1	2	1	0	0	0	0	0	0	0	0	0
 lib/bitumen/src/jvm/bitumen.TarBuilder.scala	0	0	1	0	0	1	0	0	0	0	0	0
 lib/bitumen/src/jvm/bitumen.TarFilesystem.scala	0	0	0	0	0	1	0	0	0	0	0	0
@@ -49,7 +48,7 @@ lib/caduceus/src/test/caduceus_test.scala	0	0	2	0	0	0	0	0	0	0	0	0
 lib/caesura/src/core/caesura.Dsv.scala	1	0	0	0	0	0	0	0	0	3	3	0
 lib/caesura/src/core/caesura.Sheet.scala	3	0	2	0	0	2	0	0	0	1	2	0
 lib/caesura/src/core/caesura.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0	0	0
-lib/caesura/src/core/caesura_core.scala	0	0	2	0	0	0	1	0	0	0	0	0
+lib/caesura/src/core/caesura_core.scala	0	0	2	0	0	0	0	0	0	0	0	0
 lib/caesura/src/test/caesura.AccrualTests.scala	0	0	1	0	0	0	0	0	0	0	0	0
 lib/camouflage/src/core/camouflage.Cache.scala	0	0	2	0	0	0	0	0	0	0	0	0
 lib/capricious/src/core/capricious.Randomizable.scala	3	0	0	0	0	0	0	0	0	0	0	0
@@ -94,7 +93,6 @@ lib/enigmatic/src/test/enigmatic_test.scala	0	0	0	0	2	2	0	0	0	0	0	0
 lib/escapade/src/core/escapade.Ansi.scala	0	0	5	0	1	0	0	0	0	0	0	0
 lib/escapade/src/core/escapade.Teletype.scala	0	0	1	0	1	1	0	0	0	0	0	0
 lib/escapade/src/io/escapade_io.scala	0	0	0	0	0	0	0	0	0	2	2	0
-lib/escritoire/src/core/escritoire.Tabulable.scala	0	0	0	0	0	0	1	0	0	0	0	0
 lib/espionage/src/core/espionage.Acp.scala	6	0	7	0	0	0	0	0	0	0	0	0
 lib/espionage/src/test/espionage_test.scala	0	4	0	0	0	0	0	0	0	2	0	0
 lib/ethereal/src/core/ethereal.Launcher.scala	0	0	0	0	1	2	0	0	0	0	0	0
@@ -117,9 +115,8 @@ lib/exoskeleton/src/completions/exoskeleton_completions.scala	0	0	0	0	0	0	0	0	1	
 lib/exoskeleton/src/core/exoskeleton.Invocation.scala	0	0	3	0	0	0	0	0	0	0	0	0
 lib/exoskeleton/src/test/exoskeleton_test.scala	0	1	0	0	0	0	0	0	0	0	0	0
 lib/facsimile/src/core/facsimile.Gathering.scala	0	0	0	0	1	0	0	0	0	0	0	0
-lib/facsimile/src/core/facsimile.Guard.scala	0	0	0	0	4	6	3	0	0	0	0	0
-lib/facsimile/src/core/facsimile.Page.scala	0	0	0	0	1	0	0	0	0	0	0	0
-lib/facsimile/src/core/facsimile.Pdf.scala	0	1	4	0	0	0	1	0	0	0	0	0
+lib/facsimile/src/core/facsimile.Guard.scala	0	0	0	0	4	6	0	0	0	0	0	0
+lib/facsimile/src/core/facsimile.Pdf.scala	0	1	4	0	0	0	0	0	0	0	0	0
 lib/facsimile/src/core/facsimile.PdfWriter.scala	0	6	0	0	0	0	0	0	0	0	0	0
 lib/facsimile/src/core/facsimile_editing.scala	0	5	0	0	0	0	0	0	0	0	0	0
 lib/facsimile/src/file/facsimile.PdfFile.scala	0	2	0	0	0	0	0	0	0	0	0	0
@@ -151,7 +148,7 @@ lib/gastronomy/src/core/gastronomy.Murmur3.scala	0	0	0	0	0	2	0	0	0	0	0	0
 lib/gastronomy/src/core/gastronomy.Permit.scala	0	0	0	2	0	0	0	0	0	0	0	0
 lib/gastronomy/src/core/gastronomy.PureHashes.scala	0	0	0	0	0	1	0	0	0	0	0	0
 lib/gastronomy/src/core/gastronomy_core.scala	0	0	0	11	0	0	0	0	0	0	1	0
-lib/gastronomy/src/multihash/gastronomy.Multihash.scala	0	0	0	0	1	0	1	0	0	0	0	0
+lib/gastronomy/src/multihash/gastronomy.Multihash.scala	0	0	0	0	1	0	0	0	0	0	0	0
 lib/gastronomy/src/test/gastronomy_test.scala	0	0	0	0	4	1	0	0	0	0	0	0
 lib/gesticulate/src/bench/gesticulate.Benchmarks.scala	0	0	0	0	1	0	0	0	0	0	0	0
 lib/gesticulate/src/core/gesticulate.MediaType.scala	0	0	0	0	1	0	0	0	0	0	0	0
@@ -176,7 +173,7 @@ lib/hallucination/src/jpeg/hallucination.JpegCodec.scala	0	0	0	0	0	0	0	0	0	3	1	0
 lib/hallucination/src/jpeg/hallucination.JpegEncoder.scala	0	0	0	0	1	0	0	0	0	0	3	0
 lib/hallucination/src/jpeg/hallucination.JpegHuffman.scala	0	0	0	0	0	0	0	0	0	0	7	0
 lib/hallucination/src/jpeg/hallucination.JpegHuffmanEncoder.scala	0	0	0	0	0	0	0	0	0	0	4	0
-lib/hallucination/src/jpeg/hallucination.JpegParser.scala	1	0	0	0	0	0	0	0	0	0	0	0
+lib/hallucination/src/jpeg/hallucination.JpegParser.scala	1	0	0	0	4	0	0	0	0	0	0	0
 lib/hallucination/src/jpeg/hallucination.JpegUpsampler.scala	0	0	1	0	0	0	0	0	0	1	6	0
 lib/hallucination/src/png/hallucination.PngCodec.scala	0	0	0	0	4	4	0	0	0	0	0	0
 lib/hallucination/src/webp/hallucination.Vp8BoolEncoder.scala	0	0	0	0	1	0	0	0	0	0	0	0
@@ -188,7 +185,6 @@ lib/hallucination/src/webp/hallucination.WebpCodec.scala	0	0	0	0	1	1	0	0	0	0	0	0
 lib/hallucination/src/webp/hallucination.WebpEncoder.scala	0	0	0	0	1	1	0	0	0	0	0	0
 lib/hallucination/src/webp/hallucination.WebpHuffman.scala	0	0	0	0	0	0	0	0	0	0	4	0
 lib/hallucination/src/webp/hallucination.WebpLossless.scala	0	0	1	0	0	0	0	0	0	0	8	0
-lib/harlequin/src/core/harlequin.ProgrammingLanguage.scala	0	0	0	0	0	0	2	0	0	0	0	0
 lib/hellenism/src/core/hellenism.Classloader.scala	0	0	0	0	1	0	0	0	0	0	0	0
 lib/hellenism/src/core/hellenism.Classpath.scala	3	0	0	0	0	0	0	0	1	0	0	0
 lib/hellenism/src/core/hellenism.Resource.scala	2	2	0	0	0	0	0	0	0	0	0	0
@@ -198,7 +194,7 @@ lib/hieroglyph/src/core/hieroglyph.CollationTable.scala	0	0	0	0	1	0	0	0	0	0	0	0
 lib/hieroglyph/src/core/hieroglyph.Normalization.scala	0	0	0	0	2	0	0	0	0	0	0	0
 lib/hieroglyph/src/core/hieroglyph_core.scala	2	0	0	0	0	0	0	0	0	0	0	0
 lib/hieroglyph/src/test/hieroglyph_test.scala	0	0	0	0	4	0	0	0	0	0	0	0
-lib/honeycomb/src/core/honeycomb.Html.scala	2	0	2	0	0	4	3	3	0	5	6	0
+lib/honeycomb/src/core/honeycomb.Html.scala	2	0	2	0	0	4	0	3	0	5	6	0
 lib/honeycomb/src/core/honeycomb.internal.scala	2	0	2	0	0	0	4	0	0	0	1	0
 lib/hyperbole/src/tasty/hyperbole.TastyFiles.scala	1	0	0	0	0	1	0	0	0	0	0	0
 lib/hypotenuse/src/check/hypotenuse.Checkable.scala	0	0	0	0	0	0	0	0	0	0	1	0
@@ -218,7 +214,7 @@ lib/jacinta/src/core/jacinta.internal.scala	2	0	0	0	0	0	0	0	0	1	3	0
 lib/jacinta/src/schema/jacinta.JsonSchema.scala	8	0	0	0	0	0	0	0	0	0	0	0
 lib/jacinta/src/staged/jacinta.stagedInternal.scala	1	0	0	0	0	0	0	0	0	3	0	0
 lib/jacinta/src/test/jacinta.ParserTests.scala	0	0	0	0	6	0	0	0	0	1	0	0
-lib/kaleidoscope/src/core/kaleidoscope.internal.scala	0	0	0	0	0	0	0	0	0	0	1	0
+lib/kaleidoscope/src/core/kaleidoscope.internal.scala	0	0	0	0	0	1	0	0	0	0	1	0
 lib/legerdemain/src/test/legerdemain_test.scala	0	0	1	0	0	0	0	0	0	0	0	0
 lib/locomotion/src/core/locomotion.Protobuf.scala	0	0	0	0	2	2	0	0	0	5	5	0
 lib/locomotion/src/core/locomotion.ProtobufParser.scala	0	0	0	0	0	1	0	0	0	1	3	0
@@ -228,11 +224,12 @@ lib/locomotion/src/core/locomotion.ProtobufSizes.scala	0	0	0	0	0	0	0	0	0	1	5	0
 lib/locomotion/src/staged/locomotion.stagedInternal.scala	2	0	0	0	0	0	0	0	0	10	0	0
 lib/locomotion/src/test/locomotion_test.scala	0	5	0	0	0	0	0	0	0	0	0	0
 lib/mandible/src/core/mandible.Bytecode.scala	0	1	0	0	0	0	0	0	0	0	0	0
+lib/mandible/src/core/mandible.ClasspathIndex.scala	0	0	0	0	1	0	0	0	0	0	0	0
 lib/metamorphose/src/core/metamorphose.Permutation.scala	0	0	0	0	1	0	0	0	0	0	0	0
 lib/monotonous/src/core/monotonous.Serializable.scala	0	0	0	0	0	6	0	0	0	0	1	0
 lib/monotonous/src/test/monotonous_test.scala	0	0	0	0	1	0	0	0	0	0	0	0
 lib/mosquito/src/core/mosquito.Matrix.scala	0	0	0	0	0	3	0	0	0	0	1	0
-lib/mosquito/src/core/mosquito.internal.scala	0	0	0	0	0	0	2	0	0	0	0	0
+lib/mosquito/src/core/mosquito.internal.scala	0	0	0	0	0	0	1	0	0	0	0	0
 lib/murmuration/src/bench/murmuration.Benchmarks.scala	0	0	0	0	0	0	0	0	0	2	0	0
 lib/murmuration/src/core/murmuration.Convertible.scala	0	0	0	0	1	0	0	0	0	0	0	0
 lib/murmuration/src/core/murmuration.Reshapable.scala	0	0	0	0	1	0	0	0	0	0	0	0
@@ -248,11 +245,11 @@ lib/obligatory/src/core/obligatory.LengthPrefix.scala	0	0	0	0	0	0	0	0	0	0	1	0
 lib/obligatory/src/core/obligatory.Linefeed.scala	0	0	0	0	0	0	0	0	0	0	2	0
 lib/obligatory/src/grpc/obligatory.Grpc.scala	0	1	0	0	0	0	0	0	0	0	0	0
 lib/obligatory/src/json/obligatory.Sse.scala	1	1	3	0	0	0	0	0	0	0	1	0
-lib/obligatory/src/test/obligatory_test.scala	0	0	0	0	1	0	1	0	0	0	0	0
+lib/obligatory/src/test/obligatory_test.scala	0	0	0	0	1	0	0	0	0	0	0	0
 lib/octogenarian/src/native/octogenarian.Pktline.scala	1	0	0	0	0	0	0	0	0	0	0	0
 lib/orthodoxy/src/test/orthodoxy_test.scala	0	0	2	0	0	0	0	0	0	0	0	0
 lib/panopticon/src/core/panopticon.Composable.scala	0	1	0	0	0	0	0	0	0	0	0	0
-lib/parasite/src/bench/parasite.Benchmarks.scala	0	0	0	0	0	0	0	1	0	1	0	0
+lib/parasite/src/bench/parasite.Benchmarks.scala	0	0	0	0	1	0	0	1	0	1	0	0
 lib/parasite/src/core/parasite.Async.scala	0	0	0	0	0	0	0	0	1	0	0	0
 lib/parasite/src/core/parasite.Daemon.scala	2	0	0	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Fault.scala	1	0	0	0	0	0	0	0	0	0	0	0
@@ -263,7 +260,7 @@ lib/parasite/src/core/parasite.Timeout.scala	2	0	1	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite_core.scala	7	0	0	0	0	0	0	0	0	2	0	0
 lib/parasite/src/jvm/parasite.GarbageCollection.scala	1	0	0	0	0	0	0	0	0	0	0	0
 lib/parasite/src/test/parasite_test.scala	0	0	0	0	0	0	0	0	0	1	0	0
-lib/perihelion/src/core/perihelion.Websocket.scala	0	0	0	0	0	1	1	0	0	4	5	0
+lib/perihelion/src/core/perihelion.Websocket.scala	0	0	0	0	0	1	0	0	0	4	5	0
 lib/perihelion/src/core/perihelion_core.scala	0	0	0	0	0	0	0	0	0	1	1	0
 lib/perihelion/src/test/perihelion.Test.scala	0	0	1	0	2	0	0	0	0	0	0	0
 lib/phoenicia/src/core/phoenicia.Sfnt.scala	0	0	1	0	0	4	0	0	0	0	0	0
@@ -279,7 +276,7 @@ lib/pneumatic/src/flate/pneumatic.Deflation.scala	0	0	0	0	0	0	0	0	0	0	4	0
 lib/pneumatic/src/lzma/pneumatic.Xz.scala	0	0	0	0	2	2	0	0	0	0	3	0
 lib/pneumatic/src/lzma/pneumatic.XzContainer.scala	0	0	0	0	0	1	0	0	0	0	0	0
 lib/pneumatic/src/lzw/pneumatic.LzwEngine.scala	0	0	0	0	1	0	0	0	0	0	3	0
-lib/pneumatic/src/test/pneumatic_test.scala	0	3	0	0	10	12	1	0	0	1	0	0
+lib/pneumatic/src/test/pneumatic_test.scala	0	3	0	0	10	12	0	0	0	1	0	0
 lib/polysyllabic/src/core/polysyllabic.Hyphenation.scala	0	0	0	0	0	0	0	0	0	0	1	0
 lib/praxinoscope/src/core/praxinoscope.Pike.scala	0	0	0	0	0	0	0	1	0	0	0	0
 lib/praxinoscope/src/core/praxinoscope.internal.scala	0	0	0	0	0	0	0	3	0	0	0	0
@@ -332,13 +329,12 @@ lib/stratiform/src/bench/stratiform.Benchmarks.scala	0	0	0	0	1	0	0	0	0	0	0	0
 lib/stratiform/src/binaryStaged/stratiform.bintelInternal.scala	1	0	0	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Bintel.scala	0	0	0	0	1	0	0	0	0	1	3	0
 lib/stratiform/src/core/stratiform.BintelReader.scala	0	0	0	0	0	0	0	0	0	2	1	0
-lib/stratiform/src/core/stratiform.Mutation.scala	0	0	0	0	0	0	20	0	0	0	1	0
+lib/stratiform/src/core/stratiform.Mutation.scala	0	0	0	0	0	0	0	0	0	0	1	0
 lib/stratiform/src/core/stratiform.Positional.scala	0	0	0	0	0	0	0	0	0	0	1	0
-lib/stratiform/src/core/stratiform.Tel.scala	4	0	4	0	3	4	6	0	0	16	19	0
+lib/stratiform/src/core/stratiform.Tel.scala	4	0	4	0	3	4	2	0	0	16	19	0
 lib/stratiform/src/core/stratiform.Tel2.scala	2	0	0	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Tel3.scala	2	0	0	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.TelReader.scala	0	0	0	0	0	0	0	0	0	2	1	0
-lib/stratiform/src/core/stratiform.Tels.scala	0	0	0	0	0	0	4	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Varint.scala	0	0	0	0	0	0	0	0	0	0	1	0
 lib/stratiform/src/core/stratiform.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0	0	0
 lib/stratiform/src/core/stratiform.internal.scala	1	0	0	0	0	0	0	0	0	0	1	0
@@ -404,7 +400,6 @@ lib/urticose/src/core/urticose.NetworkInterface.scala	0	0	0	0	1	1	0	0	0	0	0	0
 lib/urticose/src/core/urticose.internal.scala	0	0	0	0	0	0	0	0	3	0	0	0
 lib/urticose/src/dns/urticose.Dns.scala	0	0	0	0	1	2	0	0	0	0	0	0
 lib/urticose/src/test/urticose_test.scala	0	1	0	0	0	0	0	0	0	0	0	0
-lib/vicarious/src/core/vicarious.Catalog.scala	0	0	0	0	0	0	1	0	0	0	0	0
 lib/vicarious/src/test/vicarious_test.scala	0	0	0	0	0	0	0	0	0	1	0	0
 lib/vivisection/src/core/vivisection.Debug.scala	4	0	1	0	0	0	0	0	0	0	0	0
 lib/vivisection/src/core/vivisection.Debuggee.scala	1	0	0	0	0	0	0	0	0	0	0	0
@@ -437,7 +432,7 @@ lib/ypsiloid/src/core/ypsiloid.internal.scala	0	0	0	0	0	0	0	0	0	1	3	0
 lib/ypsiloid/src/test/ypsiloid_conformance.scala	0	0	0	0	0	0	0	0	0	1	0	0
 lib/zephyrine/src/bench/zephyrine.Benchmarks.scala	0	0	0	0	2	0	0	0	0	0	0	0
 lib/zephyrine/src/core-jvm/zephyrine.WordLoad.scala	0	0	0	0	0	0	0	0	0	0	1	0
-lib/zephyrine/src/core/zephyrine.Addressable.scala	0	0	0	0	3	3	1	0	0	2	3	0
+lib/zephyrine/src/core/zephyrine.Addressable.scala	0	0	0	0	3	3	0	0	0	2	3	0
 lib/zephyrine/src/core/zephyrine.Conduit.scala	0	0	4	0	0	0	0	0	0	8	2	0
 lib/zephyrine/src/core/zephyrine.Cursor.scala	4	0	5	0	0	0	0	0	0	0	0	0
 lib/zephyrine/src/core/zephyrine.Handoff.scala	0	0	4	0	0	0	0	0	0	0	1	0

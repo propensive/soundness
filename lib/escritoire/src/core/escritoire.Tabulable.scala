@@ -58,7 +58,7 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
     ( arrays: Array[Array[Column[derivation, Text]]^{}]^{scala.caps.any.rd} )
   :   JoinTabulable[derivation] =
 
-    new JoinTabulable[derivation](Array.frozen(arrays.readable.map(_.readable).flatten))
+    new JoinTabulable[derivation](Array.from(arrays.stdlib.map(_.stdlib).flatten))
 
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Tabulable[Text] =
     val labels: Map[Text, Text] = compiletime.summonFrom:

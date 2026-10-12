@@ -61,11 +61,11 @@ object Benchmarks extends Suite("arithmetic-bench", m"Hypotenuse arithmetic benc
   val size: Int = 4096
 
   // Deterministic, mostly small values, so that products do not overflow the checked rows.
-  val ints: scala.IArray[Int] = scala.IArray.tabulate(size) { index => (index*7919)%1000 + 1 }
-  val longs: scala.IArray[Long] = scala.IArray.tabulate(size) { index => ((index*7919L)%1000) + 1 }
+  val ints: Array[Int] = Array.tabulate(size) { index => (index*7919)%1000 + 1 }
+  val longs: Array[Long] = Array.tabulate(size) { index => ((index*7919L)%1000) + 1 }
 
-  val doubles: scala.IArray[Double] =
-    scala.IArray.tabulate(size) { index => ((index*7919)%1000).toDouble/8.0 + 1.0 }
+  val doubles: Array[Double] =
+    Array.tabulate(size) { index => ((index*7919)%1000).toDouble/8.0 + 1.0 }
 
   // The reductions are kept in named methods (not written in the staged bodies) so that
   // `run()` can check that each pair agrees before it is timed.

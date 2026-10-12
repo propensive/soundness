@@ -81,17 +81,17 @@ object Benchmarks extends Suite("bloom-bench", m"Ulysses Bloom filter benchmarks
     cursor = (cursor + 1) & (ring - 1)
     cursor
 
-  val present: scala.IArray[Text] = scala.IArray.tabulate(filled) { index => ("key-"+index).tt }
-  val absent: scala.IArray[Text] = scala.IArray.tabulate(ring) { index => ("absent-"+index).tt }
+  val present: Array[Text] = Array.tabulate(filled) { index => ("key-"+index).tt }
+  val absent: Array[Text] = Array.tabulate(ring) { index => ("absent-"+index).tt }
 
   // The rivals take `String`s or UTF-8 bytes; conversion happens once, outside the timing.
-  val presentStrings: scala.IArray[String] = present.map(_.s)
-  val absentStrings: scala.IArray[String] = absent.map(_.s)
+  val presentStrings: Array[String] = present.map(_.s)
+  val absentStrings: Array[String] = absent.map(_.s)
 
-  val presentBytes: scala.IArray[scala.Array[Byte]] =
+  val presentBytes: Array[scala.Array[Byte]] =
     presentStrings.map(_.getBytes(StandardCharsets.UTF_8).nn)
 
-  val absentBytes: scala.IArray[scala.Array[Byte]] =
+  val absentBytes: Array[scala.Array[Byte]] =
     absentStrings.map(_.getBytes(StandardCharsets.UTF_8).nn)
 
   def keys(size: Int): List[Text] = List.tabulate(size)(present(_))

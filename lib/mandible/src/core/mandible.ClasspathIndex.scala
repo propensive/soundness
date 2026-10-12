@@ -83,7 +83,7 @@ class ClasspathIndex private (local: Map[Text, ClassSurface], classloader: jn.UR
       Optional(classloader.getResourceAsStream(t"$name.class".s)).let: stream =>
         // Same erasure: the bytes are read and never retained, so no freezing capability is
         // needed to hand them to the parser.
-        try ClassSurface(stream.readAllBytes().nn.asInstanceOf[scala.IArray[Byte]])
+        try ClassSurface(Array.unsafeFrozen(stream.readAllBytes().nn))
         finally stream.close()
 
   // The transitive supertype closure of `name`, nearest first, excluding `name` itself. Classes

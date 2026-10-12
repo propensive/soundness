@@ -518,7 +518,7 @@ object internal:
           // Cast-erased: the per-element `Expr` types are fresh-decorated, which an
           // outer seal cannot reach.
           val elements =
-            '{Array(${Expr.ofList(children.flatMap(serialize(_)).asInstanceOf[Array[Expr[Html.Node]]^{}].readable.toList)}*)}
+            '{Array(${Expr.ofList(children.flatMap(serialize(_)).asInstanceOf[Array[Expr[Html.Node]]^{}].stdlib.toList)}*)}
 
           List('{Html.Element(${Expr(label)}, $attrs, $elements, ${Expr(foreign)})})
 

@@ -53,7 +53,7 @@ package randomization:
     su.Random(ju.Random(seed.long))
 
   given secureSeededRandomization: (seed: Seed) => Randomization = () =>
-    su.Random(js.SecureRandom(seed.value.readable.toArray))
+    su.Random(js.SecureRandom(seed.value.stdlib.toArray))
 
 package randomTexts:
   given naughtyStringsText: Text is Randomizable:

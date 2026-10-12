@@ -90,7 +90,7 @@ private[stratiform] def collectionDocument[collection, value](values: collection
   values.each: element =>
     encodable.encoded(element).subtree match
       case compound: Tel.Compound => buffer += compound
-      case document: Tel.Document => document.children.each(buffer ++= _.compounds.readable)
+      case document: Tel.Document => document.children.each(buffer ++= _.compounds.stdlib)
 
   val compounds: Array[Tel.Compound]^{} = Array.from(buffer)
 
@@ -109,7 +109,7 @@ private[stratiform] def constructedDocument[collection, value](values: collectio
   values.each: element =>
     encodable.constructed(element).subtree match
       case compound: Tel.Compound => buffer += compound
-      case document: Tel.Document => document.children.each(buffer ++= _.compounds.readable)
+      case document: Tel.Document => document.children.each(buffer ++= _.compounds.stdlib)
 
   val compounds: Array[Tel.Compound]^{} = Array.from(buffer)
 

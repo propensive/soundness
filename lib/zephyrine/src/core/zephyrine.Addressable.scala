@@ -328,7 +328,7 @@ object Addressable:
     def grab(block: Array[Data]^{}, start: Ordinal, end: Ordinal): Array[Data]^{} =
       // Not `excerpt`: `Data`'s own capture annotation makes `Reshapable` widen the element
       // type to `Array[Byte]^{any.rd}`, which the frozen result type rejects.
-      Array.frozen(block.readable.slice(start.n0, end.n0))
+      Array.from[Array[Byte]^{}](block.stdlib.slice(start.n0, end.n0))
 
     def clone(source: Array[Data]^{}, start: Ordinal, end: Ordinal)
       ( target: scm.ArrayBuffer[Data] )

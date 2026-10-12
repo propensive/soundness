@@ -87,13 +87,13 @@ object ProtobufParser:
   // kept apart so that neither allocates for the other's needs.)
 
   def varintOf(data: Data)(using Tactic[Protobuf.Error]): Long =
-    val view = data.readable
+    val view = data
     val limit = data.length
 
     // A one-byte varint (a bool, a small count or enum) is the common case, read in place.
-    if limit > 0 && view(0) >= 0 then view(0).toLong else varintOfSlow(view, limit)
+    if limit > 0 && view.readUnchecked(0) >= 0 then view.readUnchecked(0).toLong else varintOfSlow(view, limit)
 
-  private def varintOfSlow(view: scala.IArray[Byte], limit: Int)(using Tactic[Protobuf.Error])
+  private def varintOfSlow(view: Data, limit: Int)(using Tactic[Protobuf.Error])
   :   Long =
 
     var result = 0L
@@ -106,7 +106,7 @@ object ProtobufParser:
     while continue do
       if index >= limit then abort(Protobuf.Error(Reason.Truncated(index)))
       if shift >= 70 then abort(Protobuf.Error(Reason.MalformedVarint(0)))
-      val byte = view(index) & 0xff
+      val byte = view.readUnchecked(index) & 0xff
       index += 1
       // The 10th byte (shift == 63) may only contribute bit 63; any higher bit set
       // means the value does not fit in 64 bits.
@@ -119,26 +119,26 @@ object ProtobufParser:
 
   def fixed32Of(data: Data)(using Tactic[Protobuf.Error]): Int =
     if data.length < 4 then abort(Protobuf.Error(Reason.Truncated(0)))
-    val view = data.readable
+    val view = data
     var result = 0
     var index = 0
 
     // Ends on a constant: four bytes, all below the checked length.
     while index < 4 do
-      result |= (view(index) & 0xff) << (index*8)
+      result |= (view.readUnchecked(index) & 0xff) << (index*8)
       index += 1
 
     result
 
   def fixed64Of(data: Data)(using Tactic[Protobuf.Error]): Long =
     if data.length < 8 then abort(Protobuf.Error(Reason.Truncated(0)))
-    val view = data.readable
+    val view = data
     var result = 0L
     var index = 0
 
     // Ends on a constant: eight bytes, all below the checked length.
     while index < 8 do
-      result |= (view(index).toLong & 0xff) << (index*8)
+      result |= (view.readUnchecked(index).toLong & 0xff) << (index*8)
       index += 1
 
     result
@@ -171,13 +171,13 @@ object ProtobufParser:
       numbers(index) = payload.number
       index += 1
 
-    Fields(Array.freeze(numbers).readable, Array.freeze(wires).readable)
+    Fields(Array.freeze(numbers), Array.freeze(wires))
 
   // The fields of one message payload in wire order, as parallel arrays of numbers and
   // wire values. A message declares few fields and its decoder looks each up once, so a
   // backwards scan of the arrays costs less than building any keyed structure for them.
   private[locomotion] final class Fields
-    ( numbers: scala.IArray[Int], wires: scala.IArray[Protobuf] )
+    ( numbers: Array[Int]^{}, wires: Array[Protobuf]^{} )
   extends caps.Pure:
     private val count: Int = numbers.length
 
@@ -185,7 +185,7 @@ object ProtobufParser:
     @scala.annotation.tailrec
     private def seek(number: Int, end: Int): Int =
       if end <= 0 then -1
-      else if numbers(end - 1) == number then end - 1
+      else if numbers.readUnchecked(end - 1) == number then end - 1
       else seek(number, end - 1)
 
     // Every occurrence of `number` below `end`, consed from the end so that wire order is
@@ -193,7 +193,7 @@ object ProtobufParser:
     @scala.annotation.tailrec
     private def gather(number: Int, end: Int, acc: List[Protobuf]): List[Protobuf] =
       if end <= 0 then acc
-      else gather(number, end - 1, if numbers(end - 1) == number then wires(end - 1) :: acc else acc)
+      else gather(number, end - 1, if numbers.readUnchecked(end - 1) == number then wires.readUnchecked(end - 1) :: acc else acc)
 
     def defines(number: Int): Boolean = seek(number, count) >= 0
 
@@ -202,7 +202,7 @@ object ProtobufParser:
     def apply(number: Int): Protobuf =
       val last = seek(number, count)
       if last < 0 then Protobuf.Absent
-      else if seek(number, last) < 0 then wires(last)
+      else if seek(number, last) < 0 then wires.readUnchecked(last)
       else Protobuf.Repeated(gather(number, last + 1, Nil))
 
     // The number-keyed form, for `fields(data)`'s callers; not on the decoding path.
@@ -210,7 +210,7 @@ object ProtobufParser:
       val accumulator = scm.LinkedHashMap.empty[Int, List[Protobuf]]
 
       List.range(0, count).each: index =>
-        val number = numbers(index)
+        val number = numbers.readUnchecked(index)
         if !accumulator.contains(number) then accumulator(number) = gather(number, count, Nil)
 
       accumulator.to(Map)
@@ -224,14 +224,14 @@ object ProtobufParser:
   // A single-pass walk over one in-memory payload: the message-level reads of the ADT
   // path, where every varint is read once for both its value and its extent.
   private final class Payload(data: Data) extends caps.Mutable:
-    private val view = data.readable
+    val view = data
     private val limit = data.length
     private var pos: Int = 0
 
     private update def varint()(using Tactic[Protobuf.Error]): Long =
       // A one-byte varint (a tag, a bool, a short length) is the common case, read in place.
-      if pos < limit && view(pos) >= 0 then
-        val value = view(pos).toLong
+      if pos < limit && view.readUnchecked(pos) >= 0 then
+        val value = view.readUnchecked(pos).toLong
         pos += 1
         value
       else varintSlow()
@@ -247,7 +247,7 @@ object ProtobufParser:
       while continue do
         if pos >= limit then abort(Protobuf.Error(Reason.Truncated(pos)))
         if shift >= 70 then abort(Protobuf.Error(Reason.MalformedVarint(start)))
-        val byte = view(pos) & 0xff
+        val byte = view.readUnchecked(pos) & 0xff
         pos += 1
         if shift == 63 && (byte & 0x7f) > 1 then abort(Protobuf.Error(Reason.Overflow(start)))
         if shift < 64 then result |= (byte.toLong & 0x7f) << shift

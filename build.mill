@@ -768,7 +768,7 @@ def stringTable(name: String, values: Seq[String]): String =
       else if char >= ' ' && char <= '~' then builder.append(char)
       else builder.append(f"\\u${char.toInt}%04x")
     builder.append('"').toString
-  values.map(escape).mkString(s"  val $name: scala.IArray[String] = scala.IArray(\n    ", ",\n    ", ")\n")
+  values.map(escape).mkString(s"  val $name = proscenium.Array(\n    ", ",\n    ", ")\n")
 
 // Like `Component`, but not published to Maven Central. For demos, examples, and
 // other modules that are built and tested but never released.

@@ -200,7 +200,7 @@ package httpBackends:
       responseHandle.dispose()
 
       val content: Data =
-        Array.frozen(chunks.reverse.fold(scala.IArray.empty[Byte])(_ ++ _.readable))
+        Array.frozen(chunks.reverse.fold(scala.IArray.empty[Byte])(_ ++ _.stdlib))
 
       status(textHeaders, Http.Body.Fixed(content))
 
@@ -250,7 +250,7 @@ object WasiHttpServer:
     bodyHandle.dispose()
     requestHandle.dispose()
 
-    val content: Data = Array.frozen(chunks.reverse.fold(scala.IArray.empty[Byte])(_ ++ _.readable))
+    val content: Data = Array.frozen(chunks.reverse.fold(scala.IArray.empty[Byte])(_ ++ _.stdlib))
 
     // The request's host is the server's own; a component behind `wasi:http` is not addressed by
     // hostname, so `Localhost` stands in (and avoids parsing the authority, which would reach the

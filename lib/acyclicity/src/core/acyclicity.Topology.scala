@@ -228,7 +228,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
 
   // Row `id` holds the ids reachable from `id`, excluding `id`, filled dependencies-first over
   // the live nodes so that each row is the union of its successors' rows plus their own bits.
-  private def buildReach(): scala.IArray[Long] =
+  private def buildReach(): Array[Long]^{} =
     val words = this.words
     val bits = new scala.Array[Long](count*words)
     var position = 0
@@ -255,19 +255,19 @@ extends caps.ExclusiveCapability, caps.Stateful:
       position += 1
 
     // Frozen on the way out: nothing writes to it again.
-    bits.asInstanceOf[scala.IArray[Long]]
+    Array.unsafeFrozen(bits)
 
   // The matrix, with the revision it was built at: initialised once, by whichever handle first
   // asks, which a pure one may do.
-  private lazy val cachedReach: (Int, scala.IArray[Long]) = (revision, buildReach())
+  private lazy val cachedReach: (Int, Array[Long]^{}) = (revision, buildReach())
 
   // The matrix as of now: the cached one unless an edit has happened since it was built — never
   // the case on a frozen handle — in which case one is built for this call and not kept.
-  private[acyclicity] def reach: scala.IArray[Long] =
+  private[acyclicity] def reach: Array[Long]^{} =
     if cachedReach(0) == revision then cachedReach(1) else buildReach()
 
-  private[acyclicity] def bit(bits: scala.IArray[Long], row: Int, id: Int): Boolean =
-    (bits(row + (id >>> 6)) & (1L << (id & 63))) != 0L
+  private[acyclicity] def bit(bits: Array[Long]^{}, row: Int, id: Int): Boolean =
+    (bits.readUnchecked(row + (id >>> 6)) & (1L << (id & 63))) != 0L
 
   // ─── the dictionary ───────────────────────────────────────────────────────
 
@@ -867,7 +867,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
         while index >= 0 do
           val child = (ordered(index) & 0xffffffffL).toInt
 
-          if !bit(covered.asInstanceOf[scala.IArray[Long]], 0, child) then
+          if !bit(Array.unsafeFrozen(covered), 0, child) then
             kept += name(child)
             var word = 0
 

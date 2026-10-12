@@ -246,12 +246,12 @@ object Redraft:
 
   private def trim(directives: List[Directive], k: Int): List[Directive] =
     val flags = directives.map { case Directive.Keep(_) => false; case _ => true }
-    val keep = flags.to[Array].readable
+    val keep = flags.to[Array]
     val n = keep.length
 
     def near(index: Int): Boolean =
       (1 to k).exists: d =>
-        (index - d >= 0 && keep(index - d)) || (index + d < n && keep(index + d))
+        (index - d >= 0 && keep.readUnchecked(index - d)) || (index + d < n && keep.readUnchecked(index + d))
 
     directives.indexed
     . filter: (directive, ordinal) => !directive.isInstanceOf[Directive.Keep] || near(ordinal.n0)
@@ -262,25 +262,25 @@ object Redraft:
   :   List[Directive] =
 
     // The greedy minimization walks the directives by position, repeatedly, so they are
-    // materialized once into an indexable array; every index below comes from `array.indices`.
-    val array = directives.to[Array].readable
+    // materialized once into an indexable array; every index below comes from `array.stdlib.indices`.
+    val array = directives.to[Array]
     val dropped = scala.collection.mutable.Set[Int]()
 
     def remaining: List[Directive] =
-      array.indices.to(List).filter(!dropped.has(_)).map(array(_))
+      array.stdlib.indices.to(List).filter(!dropped.has(_)).map(array.readUnchecked(_))
 
     def valid(candidate: List[Directive]): Boolean =
       val (edits, anomalies) = analyze(candidate, original, _ == _)
       anomalies.nil && Diff(edits*).patch(original.to[List]).to[List] == target
 
-    val changes = array.indices.filter(!array(_).isInstanceOf[Directive.Keep])
+    val changes = array.stdlib.indices.filter(!array.readUnchecked(_).isInstanceOf[Directive.Keep])
 
     def distance(index: Int): Int =
       if changes.nil then 0 else changes.map { c => (c - index).abs }.min
 
     val order =
-      array.indices
-      . filter(array(_).isInstanceOf[Directive.Keep])
+      array.stdlib.indices
+      . filter(array.readUnchecked(_).isInstanceOf[Directive.Keep])
       . sortBy: index => -distance(index)
 
     order.each: index =>

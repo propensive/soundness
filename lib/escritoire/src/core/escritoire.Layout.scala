@@ -72,11 +72,11 @@ case class Cells[text](lines: Array[Array[text]^{}]^{}, metrics: Array[Metrics]^
 object Layout:
   // Empty aggregates, one per column, for a layout that has admitted nothing yet.
   def nothing[row, text](columns: Array[Column[row, text]]^{}): Array[Metrics]^{} =
-    Array.from(columns.readable.indices.map { _ => Metrics(0, 0) })
+    Array.from(columns.stdlib.indices.map { _ => Metrics(0, 0) })
 
   def aggregate(aggregates: Array[Metrics]^{}, cells: Cells[?]): Array[Metrics]^{} =
     Array.from:
-      aggregates.readable.indices.map: index =>
+      aggregates.stdlib.indices.map: index =>
         aggregates.readUnchecked(index).max(cells.metrics.readUnchecked(index))
 
   // Solves the columns' widths at `width` from their aggregate claims: each column's flex from
@@ -92,13 +92,13 @@ object Layout:
   :   Layout[row, text] =
 
     val flexes: IndexedSeq[Flex] =
-      columns.readable.indices.map: index =>
+      columns.stdlib.indices.map: index =>
         columns.readUnchecked(index).sizing.flex(aggregates.readUnchecked(index), width)
 
     // A column that can never occupy any width (e.g. a `Paragraph` column whose every cell is
     // empty) vanishes entirely, as it would otherwise still cost padding and a rule.
     val visible: IndexedSeq[Int] =
-      columns.readable.indices.filter: index =>
+      columns.stdlib.indices.filter: index =>
         flexes(index).metrics.min > 0 || flexes(index).max.or(flexes(index).metrics.natural) > 0
 
     // The chrome around k columns is k*columnCost + 1 = (k - 1) gaps of columnCost, plus one
@@ -147,7 +147,7 @@ case class Layout[row, text: ClassTag]
     Cells.of(columns, row)
 
   def accommodates(cells: Cells[text]): Boolean =
-    columns.readable.indices.all: index =>
+    columns.stdlib.indices.all: index =>
       columns.readUnchecked(index).sizing.accommodates
         ( aggregates.readUnchecked(index), cells.metrics.readUnchecked(index) )
 
@@ -189,7 +189,7 @@ case class Layout[row, text: ClassTag]
             decoration )
 
     val height =
-      if survivors.isEmpty then 0 else tableCells.readable.maxBy(_.minHeight).minHeight
+      if survivors.isEmpty then 0 else tableCells.stdlib.maxBy(_.minHeight).minHeight
 
     TableRow(tableCells, false, height)
 

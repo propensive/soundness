@@ -105,11 +105,11 @@ extends caps.Mutable:
     element.digest(digestion, value)
     digestion.digest()
 
-  private def word(bytes: scala.IArray[Byte], offset: Int): Long =
+  private def word(bytes: Data, offset: Int): Long =
     @tailrec
     def recur(index: Int, result: Long): Long =
       if index == 8 then result
-      else recur(index + 1, (result << 8) | (bytes(offset + index) & 0xff))
+      else recur(index + 1, (result << 8) | (bytes.readUnchecked(offset + index) & 0xff))
 
     recur(0, 0L)
 
@@ -123,24 +123,24 @@ extends caps.Mutable:
 
     val first = digest(value, 0)
 
-    if first.length >= 16 then fold(word(first.readable, 0), word(first.readable, 8))
+    if first.length >= 16 then fold(word(first, 0), word(first, 8))
     else
       // Fewer than sixteen bytes: the bytes of successive digests are folded into the two words,
       // the first eight into h₁ and the next eight into h₂.
       @tailrec
-      def gather(bytes: scala.IArray[Byte], index: Int, count: Int, filled: Int, h1: Long, h2: Long)
+      def gather(bytes: Data, index: Int, count: Int, filled: Int, h1: Long, h2: Long)
       :   result =
 
         if filled == 16 then fold(h1, h2)
         else if index == bytes.length then
-          gather(digest(value, count).readable, 0, count + 1, filled, h1, h2)
+          gather(digest(value, count), 0, count + 1, filled, h1, h2)
         else
-          val byte = bytes(index) & 0xff
+          val byte = bytes.readUnchecked(index) & 0xff
 
           if filled < 8 then gather(bytes, index + 1, count, filled + 1, (h1 << 8) | byte, h2)
           else gather(bytes, index + 1, count, filled + 1, h1, (h2 << 8) | byte)
 
-      gather(first.readable, 0, 1, 0, 0L, 0L)
+      gather(first, 0, 1, 0, 0L, 0L)
 
   private def set(index: Int): Boolean = ((words(index >>> 6) >>> index) & 1L) != 0L
 

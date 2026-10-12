@@ -149,7 +149,7 @@ object Pane:
         enter(' ')
         enter(text)
         attend(Ht)
-        screenshot().screen.filter(!_.starts(t"> ")).readable.toSeq.join(t"\n").trim
+        screenshot().screen.filter(!_.starts(t"> ")).stdlib.toSeq.join(t"\n").trim
 
 
   def progress(text: Text, decorate: Char => Text = char => t"^")
@@ -234,7 +234,7 @@ object Pane:
     // Renders a chunk of the terminal's output. The longest prefix of the bytes which ends on a
     // character boundary is decoded; the rest waits for the next chunk.
     def render(chunk: Data): Unit =
-      val bytes = partial() ++ chunk.readable
+      val bytes = partial() ++ chunk.stdlib
       val complete = Pane.boundary(bytes)
       partial() = bytes.drop(complete)
       val text = Text(String(scala.IArray.genericWrapArray(bytes.take(complete)).toArray, "UTF-8"))

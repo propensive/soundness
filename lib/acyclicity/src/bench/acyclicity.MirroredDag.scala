@@ -131,7 +131,7 @@ object MirroredDag:
 
     new MirroredDag(forward, backward, sources, sinks)
 
-  def apply(count: Int, from: scala.IArray[Int], to: scala.IArray[Int]): MirroredDag[Int] =
+  def apply(count: Int, from: Array[Int], to: Array[Int]): MirroredDag[Int] =
     var forward: Map[Int, Set[Int]] = Map()
     var sources: Set[Int] = Set()
     var index = 0

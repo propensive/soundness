@@ -141,8 +141,8 @@ class Page private[facsimile]
       case many =>
         // `occupied` restores the non-emptiness proof `reduce` needs; the pattern above has
         // already established that this branch holds two or more payloads.
-        many.map(_.readable).occupied.lay(Array.empty[Byte]): payloads =>
-          Array.unsafeFrozen(payloads.reduce(_ ++ scala.IArray(0x0a.toByte) ++ _).toArray)
+        many.map(_.stdlib).occupied.lay(Array.empty[Byte]): payloads =>
+          Array.from(payloads.reduce(_ ++ Data(0x0a.toByte).stdlib ++ _))
 
   def operators(using Tactic[Pdf.Error]): List[Pdf.Operator] =
     ContentTokens.read(content).map(Pdf.Operator.read(_))

@@ -1284,7 +1284,7 @@ object Json extends Json1, Dynamic:
 
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
-            (fields.readable.map { (key, parser, _) => (key.tt, parser.shape()) }.toList).to(List)
+            (fields.stdlib.map { (key, parser, _) => (key.tt, parser.shape()) }.toList).to(List)
 
           Morphology.Obj
             ( entries, entries.sweep { case (key, shape) if !shape.optional => key } )
@@ -1943,7 +1943,7 @@ object Json extends Json1, Dynamic:
         ( text: String, chars: scala.Array[Char] | Null, from: Int, end: Int, escaping: Boolean )
       :   Unit =
 
-        val table = Out.escapes.readable
+        val table = Out.escapes
         val out = current
         val limit = block
         var k = from
@@ -1953,7 +1953,7 @@ object Json extends Json1, Dynamic:
           val char = if chars == null then text.charAt(k) else chars(k)
 
           if char < 0x80 && pending == 0 then
-            val code: Byte = if escaping then table(char) else 0
+            val code: Byte = if escaping then table.readUnchecked(char) else 0
 
             if code == 0 then
               if at == limit then

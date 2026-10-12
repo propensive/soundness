@@ -208,7 +208,7 @@ trait Sfnt:
   def advanceWidth(char: Char): Int raises Font.Error = hmtx.advanceWidth(glyph(char).id)
 
   def width(text: Text): Quantity[Ems[1]] raises Font.Error =
-    text.chars.readable.sumBy(advanceWidth).toDouble*Em/head.unitsPerEm.int.toDouble
+    text.chars.stdlib.sumBy(advanceWidth).toDouble*Em/head.unitsPerEm.int.toDouble
 
   def leftSideBearing(char: Char): Int raises Font.Error =
     hmtx.leftSideBearing(glyph(char).id)
@@ -446,7 +446,7 @@ trait Sfnt:
         case (1, 0)  => 4
         case _       => 5
 
-      if candidates.readable.isEmpty then Unset else candidates.readable.minBy(rank).decode
+      if candidates.stdlib.isEmpty then Unset else candidates.stdlib.minBy(rank).decode
 
   case class CmapTable(offset: Int):
     case class GlyphEncoding(platformId: Int, encodingId: Int, offset: Int):

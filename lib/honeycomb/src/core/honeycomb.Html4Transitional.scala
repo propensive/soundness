@@ -520,7 +520,7 @@ class Html4Transitional() extends Dom:
 
   val entities: Dictionary[Text] =
     val pairs = List.tabulate(EntityData.html4Names.length): index =>
-      (EntityData.html4Names(index).tt, EntityData.html4Values(index).tt)
+      (EntityData.html4Names.readUnchecked(index).tt, EntityData.html4Values.readUnchecked(index).tt)
 
     Dictionary(pairs*)
 

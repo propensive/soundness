@@ -536,7 +536,7 @@ object internal:
       def serializeArray(elements: Array[Any]^{}): Expr[Json.Ast] =
         val n = elements.length
 
-        val indexed = elements.readable.zipWithIndex
+        val indexed = elements.stdlib.zipWithIndex
 
         val pieces = indexed.to(List).map: (elem, idx) =>
           elem.asMatchable match

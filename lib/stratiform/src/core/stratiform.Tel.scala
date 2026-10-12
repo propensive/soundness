@@ -1432,7 +1432,7 @@ object Tel extends Tel2:
               case s: Tels.SelectRef =>
                 val selectDef = selectDefinitionOf(s, schema)
 
-                selectDef.variants.readable.zipWithIndex.find(_._1.keyword == atomText) match
+                selectDef.variants.stdlib.zipWithIndex.find(_._1.keyword == atomText) match
                   case Some((_, variantOffset)) =>
                     results += Tel.Element.Node(flatPos + variantOffset, Tels.Flag, Array.empty)
 
@@ -1531,8 +1531,8 @@ object Tel extends Tel2:
     :   Array[Tel.Element]^{} raises Tel.Error tracks Tel.Focus =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
-      results ++= atomElements.readable
-      results ++= childElements.readable
+      results ++= atomElements.stdlib
+      results ++= childElements.stdlib
 
       def flatWidth(member: Tels.Member): Int = member match
         case _: Tels.Field      => 1
@@ -1623,7 +1623,7 @@ object Tel extends Tel2:
             keyFlat.let: keyIdx =>
               var value: Optional[Text] = Unset
 
-              node.children.readable.foreach:
+              node.children.stdlib.foreach:
                 case Tel.Element.Value(idx, _, text) =>
                   if idx == keyIdx && value.absent then value = text
 
@@ -1969,7 +1969,7 @@ object Tel extends Tel2:
         else Unset
 
       count.let: n =>
-        val xor = data.readable.foldLeft(0): (acc, byte) => acc ^ (byte & 0xff)
+        val xor = data.stdlib.foldLeft(0): (acc, byte) => acc ^ (byte & 0xff)
         if xor == 0x79 then n else Unset
 
   trait Codec:
@@ -2011,7 +2011,7 @@ object Tel extends Tel2:
     // BASE-256 text.
     def apply(data: Data)(using Tactic[Bintel.Error], Tactic[Error]): Acceptance =
       val body: Data =
-        if data.readable.startsWith(Bintel.magic.readable) then
+        if data.stdlib.startsWith(Bintel.magic.stdlib) then
           val framed = Bintel.unframe(data)
 
           if !sameBytes(framed.signature, signatureData)
@@ -3206,7 +3206,7 @@ object Tel extends Tel2:
         var stream = source.stdlib
 
         while !stream.isEmpty do
-          acc = acc ++ stream.head.readable
+          acc = acc ++ stream.head.stdlib
           stream = stream.tail
 
         Array.frozen(acc)
@@ -3810,14 +3810,14 @@ object Tel extends Tel2:
 
     var b = 0
     var found = false
-    val out = scala.collection.mutable.ArrayBuffer.from(blocks.readable)
+    val out = scala.collection.mutable.ArrayBuffer.from(blocks.stdlib)
 
     while b < out.length && !found do
       val cs = out(b).compounds
 
       cs.where(_.keyword == keyword).let: ordinal =>
         out(b) =
-          out(b).copy(compounds = Array.frozen(cs.readable.updated(ordinal.n0, compound)))
+          out(b).copy(compounds = Array.from(cs.stdlib.updated(ordinal.n0, compound)))
 
         found = true
 
@@ -3841,8 +3841,8 @@ object Tel extends Tel2:
 
     var offset = 0
 
-    Array.frozen:
-      blocks.readable.map: block =>
+    Array.from:
+      blocks.stdlib.map: block =>
         val compounds = block.compounds
         val base = offset
         offset += compounds.length
@@ -3851,8 +3851,8 @@ object Tel extends Tel2:
         then
           block.copy
             ( compounds =
-                Array.frozen
-                  ( compounds.readable.updated
+                Array.from
+                  ( compounds.stdlib.updated
                       ( index - base, transform(compounds.readUnchecked(index - base)) ) ) )
         else
           block
@@ -8190,8 +8190,8 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // this is always empty since the root has no atoms.
   def atomTexts: Array[Text]^{} = subtree match
     case c: Tel.Compound =>
-      Array.frozen:
-        c.atoms.readable.map:
+      Array.from:
+        c.atoms.stdlib.map:
           case Tel.Atom.Inline(text, _)  => text
           case Tel.Atom.Source(text)     => text
           case Tel.Atom.Literal(_, text) => text

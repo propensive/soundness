@@ -231,7 +231,7 @@ object internal:
     def apply(index: Int): left = left.data.readUnchecked(index).asInstanceOf[left]
     def list: List[left] = left.data.to[List].asInstanceOf[List[left]]
     def iarray(using scala.reflect.ClassTag[left]): Array[left]^{} =
-      Array.frozen(left.data.readable.map(_.asInstanceOf[left]))
+      Array.from(left.data.stdlib.map(_.asInstanceOf[left]))
     def size(using ValueOf[size]): Int = valueOf[size]
 
 
@@ -314,4 +314,4 @@ object internal:
 
       scala.util.hashing.MurmurHash3.finalizeHash(hash, data.length)
 
-    override def toString: String = data.readable.mkString("Vector(", ", ", ")")
+    override def toString: String = data.stdlib.mkString("Vector(", ", ", ")")

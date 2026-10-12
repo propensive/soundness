@@ -183,7 +183,7 @@ object Normalization:
     decompose(Array.unsafeFrozen(trimmed))
 
   def decompose(codepoints: Array[Int]^{}): Array[Int]^{} =
-    val cps = codepoints.readable
+    val cps = codepoints
     val n = cps.length
 
     // Maximum canonical expansion is 4 codepoints per input codepoint (Hangul LVT = 3; Greek
@@ -195,7 +195,7 @@ object Normalization:
     var index = 0
 
     while index < n do
-      val codepoint = cps(index)
+      val codepoint = cps.readUnchecked(index)
 
       if codepoint < 0xc0 then
         buffer(size) = codepoint
