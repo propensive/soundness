@@ -38,7 +38,6 @@ import java.io as ji
 // partial-operations tranche.
 
 import soundness.*
-import symbolism.*
 
 import codepages.utf8Codepage, charsets.utf8Charset, textSanitizers.strictSanitizer
 import threads.platformThreads
@@ -671,7 +670,7 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
 
     suite(m"Compression duct tests"):
       val mixed: Data =
-        Array.frozen:
+        Array.from:
           Data.fill(50000) { index => (index%251).toByte }.stdlib
           ++ (t"repetition "*500).in[Data].stdlib
 

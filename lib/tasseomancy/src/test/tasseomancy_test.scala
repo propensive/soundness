@@ -33,7 +33,6 @@
 package tasseomancy
 
 import soundness.*
-import symbolism.*
 
 import strategies.throwUnsafely
 import denominative.dysasymptotics.{linearAccess, linearSize}

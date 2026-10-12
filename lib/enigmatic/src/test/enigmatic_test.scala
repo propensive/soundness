@@ -768,9 +768,9 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
       test(m"A tampered ML-DSA signature fails to verify"):
         val key = PrivateKey.generate[MlDsa[65]]()
         val signed = key.sign(pangram).bytes
-        val bytes: Array[Byte]^ = Array.allocate[Byte](signed.length)
+        val bytes = Array.allocate[Byte](signed.length)
         bytes.place(signed)
-        bytes(0) = (bytes(0) ^ 1).toByte
+        bytes(0) = (bytes.readUnchecked(0) ^ 1).toByte
         key.public.verify(pangram, Signature(Array.freeze(bytes)))
       . assert(!_)
 
@@ -841,10 +841,10 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         val certificate0 = certificate()
         val data = certificate0.in[Der].data
         val last = data.length - 1
-        val bytes: Array[Byte]^ = Array.allocate[Byte](data.length)
+        val bytes = Array.allocate[Byte](data.length)
         bytes.place(data)
         // Flip a bit inside the signature, which the structure keeps well-formed.
-        bytes(last) = (bytes(last) ^ 0xff.toByte).toByte
+        bytes(last) = (bytes.readUnchecked(last) ^ 0xff.toByte).toByte
         val tampered = Certificate(Der(Array.freeze(bytes)).as[Asn1])
 
         try
@@ -1064,9 +1064,9 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         val (root, _, _, leaf) = chain()
         val data = leaf.in[Der].data
         val last = data.length - 1
-        val bytes: Array[Byte]^ = Array.allocate[Byte](data.length)
+        val bytes = Array.allocate[Byte](data.length)
         bytes.place(data)
-        bytes(last) = (bytes(last) ^ 0xff.toByte).toByte
+        bytes(last) = (bytes.readUnchecked(last) ^ 0xff.toByte).toByte
         Certificate(Der(Array.freeze(bytes)).as[Asn1]).verify(root.public)
       . assert(!_)
 

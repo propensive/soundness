@@ -33,7 +33,6 @@
 package obligatory
 
 import soundness.*
-import symbolism.*
 
 import codepages.utf8Codepage
 import strategies.throwUnsafely
@@ -173,7 +172,7 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
 
       test(m"encode prefixes a flag byte and 4-byte length"):
         Grpc.Framing.encode(ascii(t"hi")).to[List]
-      . assert(_ == Data(0, 0, 0, 0, 2) + ascii(t"hi").to[List])
+      . assert(_ == (Data(0, 0, 0, 0, 2) + ascii(t"hi")).to[List])
 
       test(m"round-trip a single message"):
         val framed = Grpc.Framing.encode(ascii(t"hello"))
@@ -310,7 +309,7 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
           val (clientSide, serverSide) = pair()
 
           val body =
-            Array.frozen
+            Array.from
              ( Grpc.Framing.encode(Pong(t"a").in[Protobuf].encode).stdlib
                ++ Grpc.Framing.encode(Pong(t"b").in[Protobuf].encode).stdlib
                ++ Grpc.Framing.encode(Pong(t"c").in[Protobuf].encode).stdlib )

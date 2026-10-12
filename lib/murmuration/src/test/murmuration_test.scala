@@ -606,7 +606,7 @@ object Tests extends Suite("collections", m"Murmuration tests"):
         import collations.codepointCollation
         val array = mutableCopy(List(t"c", t"a", t"b"))
         array.sort()
-        array.to[List]
+        List.from(array.stdlib)
       . assert(_ == List(t"a", t"b", t"c"))
 
       // A primitive array is not a reference array, so its elements take a different route —
@@ -615,21 +615,21 @@ object Tests extends Suite("collections", m"Murmuration tests"):
         import sortingAlgorithms.powersort
         val array = mutableCopy(List(5, 3, 9, 1, 7, 3, 8, 2, 6, 0, 4))
         array.sort()
-        array.to[List]
+        List.from(array.stdlib)
       . assert(_ == List(0, 1, 2, 3, 3, 4, 5, 6, 7, 8, 9))
 
       test(m"an empty array sorts to itself"):
         import sortingAlgorithms.heapsort
         val array = Array.allocate[Int](0)
         array.sort()
-        array.to[List]
+        List.from(array.stdlib)
       . assert(_ == List[Int]())
 
       test(m"a single-element array sorts to itself"):
         import sortingAlgorithms.bubbleSort
         val array = mutableCopy(List(7))
         array.sort()
-        array.to[List]
+        List.from(array.stdlib)
       . assert(_ == List(7))
 
       test(m"sorting in place agrees with sorting a list"):
@@ -637,7 +637,7 @@ object Tests extends Suite("collections", m"Murmuration tests"):
         val values = pseudorandom(2000, 500)
         val array = mutableCopy(values)
         array.sort()
-        array.to[List] == values.sort
+        List.from(array.stdlib) == values.sort
       . assert(_ == true)
 
       test(m"every algorithm sorts an array in place alike"):
@@ -647,7 +647,7 @@ object Tests extends Suite("collections", m"Murmuration tests"):
           given SortAlgorithm = algorithm
           val array = mutableCopy(values)
           array.sort()
-          array.to[List]
+          List.from(array.stdlib)
 
         val results =
           scala.collection.immutable.List
@@ -668,7 +668,7 @@ object Tests extends Suite("collections", m"Murmuration tests"):
         val array = mutableCopy(List(3, 1, 2))
         val sorted: List[Int] = List(3, 1, 2).sort
         val inPlace: Unit = array.sort()
-        (sorted, array.to[List])
+        (sorted, List.from(array.stdlib))
       . assert(_ == (List(1, 2, 3), List(1, 2, 3)))
 
       // `sort` on an array means the in-place one, whatever the parens: an extension is chosen
@@ -691,7 +691,7 @@ object Tests extends Suite("collections", m"Murmuration tests"):
       test(m"a frozen array orders into a new array"):
         import sortingAlgorithms.timsort
         val array: Array[Int]^{} = Array(3, 1, 2).order(identity)
-        array.to[List]
+        List.from(array.stdlib)
       . assert(_ == List(1, 2, 3))
 
       test(m"sorting in place needs an algorithm to be chosen"):

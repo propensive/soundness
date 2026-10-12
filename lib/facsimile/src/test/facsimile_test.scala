@@ -56,7 +56,6 @@ import _root_.java.util.zip as juz
 import _root_.javax.crypto as jc
 import _root_.javax.crypto.spec as jcs
 import pneumatic.*
-import symbolism.*
 import denominative.dysasymptotics.linearSize
 
 // These fixtures assemble PDF and font byte streams from many small pieces. A `Concatenable`
