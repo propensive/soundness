@@ -706,6 +706,15 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
             Chain(locomotion.Benchmarks.bytes3).read[Logs in Protobuf]
         }
 
+      // The inclusive view: each method's share is the time in it or anything it called,
+      // which is what finds a cost the self-time view attributes to the generated loop.
+      profile(m"Decode 500 log entries directly, inclusive")
+        ( target = 5*Second, frames = 40, inclusive = true ):
+        '{
+            given Logs is Protobuf.Parsable = locomotion.logsParsable
+            Chain(locomotion.Benchmarks.bytes3).read[Logs in Protobuf]
+        }
+
       profile(m"Decode 500 log entries (typed)")(target = 5*Second):
         '{ Chain(locomotion.Benchmarks.bytes3).read[Logs in Protobuf] }
 
