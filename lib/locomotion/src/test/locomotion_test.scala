@@ -104,6 +104,7 @@ case class Doubles(@field(1) values: List[Double]) derives CanEqual
 case class LongArray(@field(1) values: Array[Long]^{}) derives CanEqual
 case class DoubleArray(@field(1) values: Array[Double]^{}) derives CanEqual
 case class ItemArray(@field(1) items: Array[Item]^{}) derives CanEqual
+case class Inventory(@field(1) items: Map[Text, Item]) derives CanEqual
 case class NameArray(@field(1) names: Array[Text]^{}) derives CanEqual
 case class Shaped(@field(1) name: Text, @field(2) shape: Shape) derives CanEqual
 case class MaybePoint(@field(1) point: Optional[Point]) derives CanEqual
@@ -643,6 +644,35 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
         val bytes = Protobuf.Printable.print(ItemArray(Array[Item](Item(1, t"a"))))
         (bytes.to[List].map(_ & 0xff), bytes.read[ItemArray in Protobuf].items.to[List])
       . assert(_ == (List(0x0a, 0x05, 0x08, 0x01, 0x12, 0x01, 0x61), List(Item(1, t"a"))))
+
+      test(m"a map of scalars gathers and prints directly, never through a seam"):
+        given mapSeam: (Map[Text, Int] is Decodable in Protobuf) =
+          _ => panic(m"the generated parser decoded a map through its Decodable")
+
+        given mapEncodeSeam: (Map[Text, Int] is Encodable in Protobuf) =
+          _ => panic(m"the generated printer encoded a map through its Encodable")
+
+        given (Counts is Protobuf.Parsable) = Inlinable.parsable[Counts]
+        given (Counts is Protobuf.Printable) = Inlinable.printable[Counts]
+        val bytes = Protobuf.Printable.print(Counts(Map(t"a" -> 1, t"bb" -> 300)))
+        (bytes.to[List].map(_ & 0xff), bytes.read[Counts in Protobuf])
+      . assert(_ == (List(0x0a, 0x05, 0x0a, 0x01, 0x61, 0x10, 0x01, 0x0a, 0x07, 0x0a, 0x02, 0x62,
+          0x62, 0x10, 0xac, 0x02), Counts(Map(t"a" -> 1, t"bb" -> 300))))
+
+      val inventory = Inventory(Map(t"x" -> Item(1, t"one"), t"y" -> Item(2, t"two")))
+
+      test(m"a map of messages prints as the derivation and parses back directly"):
+        given (Inventory is Protobuf.Parsable) = Inlinable.parsable[Inventory]
+        given (Inventory is Protobuf.Printable) = Inlinable.printable[Inventory]
+        val bytes = Protobuf.Printable.print(inventory)
+        (bytes.to[List], bytes.read[Inventory in Protobuf])
+      . assert(_ == (inventory.in[Protobuf].encode.to[List], inventory))
+
+      test(m"a map entry missing its value decodes as the value's zero directly"):
+        given (Counts is Protobuf.Parsable) = Inlinable.parsable[Counts]
+        // Field 1, Len 3: an entry with only key "a".
+        Array[Byte](0x0a, 0x03, 0x0a, 0x01, 0x61).read[Counts in Protobuf]
+      . assert(_ == Counts(Map(t"a" -> 0)))
 
       test(m"a frozen array gathers and prints directly, never through a seam"):
         given arraySeam: ((Array[Long]^{}) is Decodable in Protobuf) =

@@ -325,6 +325,9 @@ object stagedInternal:
     case OptionalLeaf(kind: Int)
     case OptionalNested(instance: Inlinable, innerType: Any)
     case Gather(element: Elem, elementType: Any)
+    // A map: each occurrence an entry message `{ key = 1; value = 2 }`, gathered into the
+    // map's builder — the key a scalar, the value a scalar or a printing/parsing message.
+    case MapGather(key: Elem, keyType: Any, value: Elem, valueType: Any)
     case Seam
 
   private def resolve[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
@@ -428,6 +431,10 @@ object stagedInternal:
       case AppliedType(constructor, List(element)) if constructor.typeSymbol == sequenceSym =>
         Some(TypeRepr.of[scala.collection.immutable.Vector].appliedTo(element))
 
+      case AppliedType(constructor, List(key, value))
+        if constructor.typeSymbol == TypeRepr.of[proscenium.Map[Any, Any]].typeSymbol =>
+        Some(TypeRepr.of[scala.collection.immutable.Map].appliedTo(List(key, value)))
+
       case _ =>
         None
 
@@ -497,7 +504,40 @@ object stagedInternal:
 
         val isAliasCollection = aliasCollectionUnderlying(tpe).isDefined
 
-        if !isMap && (tpe <:< TypeRepr.of[Iterable[Any]] || isAliasCollection)
+        // A map entry's key is a scalar; its value a scalar or a message with an instance.
+        def entryElem(entryType: TypeRepr, message: Boolean): Option[Elem] =
+          builtinKind(entryType) match
+            case Some(kind) if kind <= KFloat => Some(Elem.Scalar(kind))
+            case Some(kind)                   => Some(Elem.Chunk(kind))
+
+            case None if message =>
+              entryType.asType match
+                case '[entry] =>
+                  resolve[entry](cache) match
+                    case Some(instance)
+                      if !instance.isInstanceOf[Inlinable.IterableInlinable[?]] &&
+                        !cache.active.contains(entryType.show) =>
+                        Some(Elem.Nested(instance, entryType))
+
+                    case _ =>
+                      None
+
+            case None =>
+              None
+
+        if isMap then unannotated(tpe) match
+          case AppliedType(_, List(keyType0, valueType0)) =>
+            val keyType = keyType0.dealias
+            val valueType = valueType0.dealias
+
+            (entryElem(keyType, false), entryElem(valueType, true)) match
+              case (Some(key), Some(value)) => Plan.MapGather(key, keyType, value, valueType)
+              case _                        => Plan.Seam
+
+          case _ =>
+            Plan.Seam
+
+        else if tpe <:< TypeRepr.of[Iterable[Any]] || isAliasCollection
         then unannotated(tpe) match
           case AppliedType(_, arguments) =>
             val elementType = arguments.last.dealias
@@ -737,20 +777,26 @@ object stagedInternal:
 
       // Per-field gathering state: a typed builder for `Gather` fields, a
       // wire-value buffer for `Seam` fields.
+      // The element a gathered field's builder takes: the element, or a map's entry pair.
+      def gatheredType(index: Int): Option[TypeRepr] = plans(index) match
+        case Plan.Gather(_, elementType0) =>
+          Some(elementType0.asInstanceOf[TypeRepr])
+
+        case Plan.MapGather(_, keyType0, _, valueType0) =>
+          Some(TypeRepr.of[Tuple2].appliedTo
+            (List(keyType0.asInstanceOf[TypeRepr], valueType0.asInstanceOf[TypeRepr])))
+
+        case _ =>
+          None
+
       val builders: scala.collection.immutable.Map[Int, Symbol] =
         List.range(0, arity).flatMap: index =>
-          plans(index) match
-            case Plan.Gather(_, elementType0) =>
-              val elementType = elementType0.asInstanceOf[TypeRepr]
+          gatheredType(index).map: elementType =>
+            val builderType =
+              TypeRepr.of[scm.Builder].appliedTo(List(elementType, fieldTypes(index)))
 
-              val builderType =
-                TypeRepr.of[scm.Builder].appliedTo(List(elementType, fieldTypes(index)))
-
-              Some(index -> Symbol.newVal
-                ( owner, "builder"+index, builderType, Flags.EmptyFlags, Symbol.noSymbol ))
-
-            case _ =>
-              None
+            index -> Symbol.newVal
+              ( owner, "builder"+index, builderType, Flags.EmptyFlags, Symbol.noSymbol )
 
         . toMap
 
@@ -768,16 +814,10 @@ object stagedInternal:
         . toMap
 
       val builderDefs: List[Statement] = List.range(0, arity).flatMap: index =>
-        plans(index) match
-          case Plan.Gather(_, elementType0) =>
-            val elementType = elementType0.asInstanceOf[TypeRepr]
-
-            (elementType.asType, fieldTypes(index).asType) match
-              case ('[element], '[fieldType]) =>
-                Some(ValDef(builders(index), Some(newBuilder[element, fieldType].asTerm)))
-
-          case _ =>
-            None
+        gatheredType(index).map: elementType =>
+          (elementType.asType, fieldTypes(index).asType) match
+            case ('[element], '[fieldType]) =>
+              ValDef(builders(index), Some(newBuilder[element, fieldType].asTerm))
 
       val bufferDefs: List[Statement] = List.range(0, arity).flatMap: index =>
         plans(index) match
@@ -800,7 +840,7 @@ object stagedInternal:
                   MethodType(List("code"))(_ => List(TypeRepr.of[Int]),
                     _ => fieldTypes(index)) ))
 
-            case Plan.Gather(_, _) =>
+            case Plan.Gather(_, _) | Plan.MapGather(_, _, _, _) =>
               Some(index -> Symbol.newMethod
                 ( owner, "readOccurrence"+index,
                   MethodType(List("code"))(_ => List(TypeRepr.of[Int]),
@@ -942,6 +982,69 @@ object stagedInternal:
 
                         '{$builder += $occurrence}
 
+              case Plan.MapGather(key, keyType0, value, valueType0) =>
+                val keyType = keyType0.asInstanceOf[TypeRepr]
+                val valueType = valueType0.asInstanceOf[TypeRepr]
+
+                // One entry's field as its decoder receives it, and the value it takes when
+                // the entry omits it — the zero of a scalar, the empty message of a nested.
+                def entryRead(elem: Elem, tpe: TypeRepr, code: Expr[Int]): Expr[Any] =
+                  elem match
+                    case Elem.Scalar(kind) => scalarRead(kind, code)
+                    case Elem.Chunk(kind)  => scalarRead(kind, code)
+
+                    case Elem.Nested(instance0, _) =>
+                      tpe.asType match
+                        case '[entry] =>
+                          val instance = instance0.asInstanceOf[Inlinable { type Self = entry }]
+
+                          ' {
+                              val saved = $parser.directEnterField($code)(using $tactic)
+                              val result: entry = ${instance.parse(reader)}
+                              $parser.directLeaveField(saved)(using $tactic)
+                              result
+                            }
+
+                    case _ =>
+                      report.errorAndAbort("locomotion: an unreadable map entry")
+
+                def entryAbsent(elem: Elem, tpe: TypeRepr): Expr[Any] = elem match
+                  case Elem.Scalar(kind) => zeroValue(kind)
+                  case Elem.Chunk(kind)  => zeroValue(kind)
+
+                  case Elem.Nested(instance0, _) =>
+                    tpe.asType match
+                      case '[entry] =>
+                        instance0.asInstanceOf[Inlinable { type Self = entry }].absent(tactic)
+
+                  case _ =>
+                    report.errorAndAbort("locomotion: an unreadable map entry")
+
+                (keyType.asType, valueType.asType, fieldTypes(index).asType) match
+                  case ('[keyT], '[valueT], '[fieldType]) =>
+                    val builder =
+                      Ref(builders(index)).asExprOf[scm.Builder[(keyT, valueT), fieldType]]
+
+                    ' {
+                        val saved = $parser.directEnterField($code)(using $tactic)
+                        var entryKey: keyT = ${entryAbsent(key, keyType).asExprOf[keyT]}
+                        var entryValue: valueT = ${entryAbsent(value, valueType).asExprOf[valueT]}
+
+                        // The entry's fields, last occurrence winning, as `mapDecodable` reads
+                        // them from its field table.
+                        while !$parser.directAtLimit do
+                          val tag = $parser.directTag()(using $tactic)
+                          val entryCode = tag & 7
+
+                          (tag >>> 3) match
+                            case 1 => entryKey = ${entryRead(key, keyType, 'entryCode).asExprOf[keyT]}
+                            case 2 => entryValue = ${entryRead(value, valueType, 'entryCode).asExprOf[valueT]}
+                            case _ => $parser.directSkipField(entryCode)(using $tactic)
+
+                        $parser.directLeaveField(saved)(using $tactic)
+                        $builder += ((entryKey, entryValue))
+                      }
+
               case Plan.Seam =>
                 '{()}
 
@@ -962,7 +1065,7 @@ object stagedInternal:
                     Assign(Ref(seens(index)), Literal(BooleanConstant(true))) ),
                 unit )
 
-          case Plan.Gather(_, _) =>
+          case Plan.Gather(_, _) | Plan.MapGather(_, _, _, _) =>
             Block
               ( List
                   ( Apply(Ref(readDefs(index)), List(code.asTerm)),
@@ -1046,7 +1149,7 @@ object stagedInternal:
                     result
                   }
 
-          case Plan.Gather(_, _) =>
+          case Plan.Gather(_, _) | Plan.MapGather(_, _, _, _) =>
             fieldTypes(index).asType match
               case '[fieldType] =>
                 '{ ${Ref(builders(index)).asExpr}
@@ -1074,7 +1177,7 @@ object stagedInternal:
                     defaultOr(index, planAbsent(index, tactic)).asTerm ),
                 unit )
 
-          case Plan.Gather(_, _) =>
+          case Plan.Gather(_, _) | Plan.MapGather(_, _, _, _) =>
             fieldTypes(index).asType match
               case '[fieldType] =>
                 val collected =
@@ -1177,6 +1280,10 @@ object stagedInternal:
 
               elementType.asType match
                 case '[element] => '{${newBuilder[element, fieldType]}.result()}
+
+            case Plan.MapGather(_, keyType0, _, valueType0) =>
+              (keyType0.asInstanceOf[TypeRepr].asType, valueType0.asInstanceOf[TypeRepr].asType) match
+                case ('[keyT], '[valueT]) => '{${newBuilder[(keyT, valueT), fieldType]}.result()}
 
             case Plan.Seam =>
               seamDecode[fieldType]('{Protobuf.Absent})
@@ -1450,6 +1557,14 @@ object stagedInternal:
         recur(0)
       }
 
+  // Whether a map entry's side has a generated printer: a scalar always, a message when its
+  // instance prints.
+  private def entryPrints(elem: Elem): Boolean = elem match
+    case Elem.Scalar(_)         => true
+    case Elem.Chunk(_)          => true
+    case Elem.Nested(instance, _) => instance.prints
+    case _                      => false
+
   // A message in a field position: its size goes into a slot reserved before its children
   // are measured, and the field is its tag, the length prefix and the body.
   private def framedSize(number: Int, body: Expr[Int], sizes: Expr[AnyRef])(using Quotes)
@@ -1640,6 +1755,45 @@ object stagedInternal:
                           case None =>
                             seam
 
+              case Plan.MapGather(key, keyType0, value, valueType0) =>
+                val keyType = keyType0.asInstanceOf[TypeRepr]
+                val valueType = valueType0.asInstanceOf[TypeRepr]
+
+                // One entry field's size with its tag: a scalar in place, a message framed.
+                def entrySize(elem: Elem, tpe: TypeRepr, number: Int, item: Expr[Any])
+                :   Option[Expr[Int]] =
+
+                  elem match
+                    case Elem.Scalar(kind) =>
+                      Some('{${Expr(ProtobufPrinter.tagSize(number))} + ${scalarSize(kind, item, sizes)}})
+
+                    case Elem.Chunk(kind) =>
+                      Some('{${Expr(ProtobufPrinter.tagSize(number))} + ${scalarSize(kind, item, sizes)}})
+
+                    case Elem.Nested(instance0, _) if instance0.prints =>
+                      tpe.asType match
+                        case '[entry] =>
+                          val instance = instance0.asInstanceOf[Inlinable { type Self = entry }]
+                          Some(framedSize(number, instance.measure(item.asExprOf[entry], sizes), sizes))
+
+                    case _ =>
+                      None
+
+                (keyType.asType, valueType.asType) match
+                  case ('[keyT], '[valueT]) =>
+                    val entries = '{$typed.asInstanceOf[Iterable[(keyT, valueT)]]}
+
+                    def entry(item: Expr[(keyT, valueT)]): Option[Expr[Int]] =
+                      for
+                        keySize <- entrySize(key, keyType, 1, '{$item._1})
+                        valueSize <- entrySize(value, valueType, 2, '{$item._2})
+                      yield framedSize(number, '{$keySize + $valueSize}, sizes)
+
+                    // Both sides print, or the whole map takes the seam.
+                    if entryPrints(key) && entryPrints(value)
+                    then summed(entries) { item => entry(item).get }
+                    else seam
+
               // A recursive message field (`Plan.Seam` here, its parser being on the
               // stack) prints through its own nominal instance; the rest of the seam —
               // maps, typed integers, optional collections, custom types — through their
@@ -1787,6 +1941,55 @@ object stagedInternal:
 
                           case None =>
                             seam
+
+              case Plan.MapGather(key, keyType0, value, valueType0) =>
+                val keyType = keyType0.asInstanceOf[TypeRepr]
+                val valueType = valueType0.asInstanceOf[TypeRepr]
+
+                def entryWrite(elem: Elem, tpe: TypeRepr, number: Int, item: Expr[Any])
+                :   Option[Expr[Unit]] =
+
+                  elem match
+                    case Elem.Scalar(kind) =>
+                      Some
+                        ( ' {
+                              ${tagWrite(number, wireCode(kind), printer)}
+                              ${scalarWrite(kind, item, printer, sizes)}
+                            } )
+
+                    case Elem.Chunk(kind) =>
+                      Some
+                        ( ' {
+                              ${tagWrite(number, wireCode(kind), printer)}
+                              ${scalarWrite(kind, item, printer, sizes)}
+                            } )
+
+                    case Elem.Nested(instance0, _) if instance0.prints =>
+                      tpe.asType match
+                        case '[entry] =>
+                          val instance = instance0.asInstanceOf[Inlinable { type Self = entry }]
+
+                          Some
+                            ( framedWrite
+                                ( number, instance.write(item.asExprOf[entry], printer, sizes),
+                                  printer, sizes ) )
+
+                    case _ =>
+                      None
+
+                (keyType.asType, valueType.asType) match
+                  case ('[keyT], '[valueT]) =>
+                    val entries = '{$typed.asInstanceOf[Iterable[(keyT, valueT)]]}
+
+                    def entry(item: Expr[(keyT, valueT)]): Option[Expr[Unit]] =
+                      for
+                        keyWrite <- entryWrite(key, keyType, 1, '{$item._1})
+                        valueWrite <- entryWrite(value, valueType, 2, '{$item._2})
+                      yield framedWrite(number, '{ $keyWrite; $valueWrite }, printer, sizes)
+
+                    if entryPrints(key) && entryPrints(value)
+                    then visited(entries) { item => entry(item).get }
+                    else seam
 
               // A recursive message field (`Plan.Seam` here, its parser being on the
               // stack) prints through its own nominal instance; the rest of the seam —
