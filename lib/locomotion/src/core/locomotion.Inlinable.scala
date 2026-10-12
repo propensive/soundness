@@ -51,6 +51,16 @@ object Inlinable:
   inline def printable[value]: value is Protobuf.Printable =
     ${locomotion.inlining.inlinablePrintable[value]}
 
+  // Evidence that the generator builds a type's codec structurally, as a message or a oneof:
+  // the condition on `import codecs.direct`'s generated instances. Its given fails for any
+  // other type, so the search for a generated instance fails too, and the derived path
+  // resolves instead.
+  object Generates:
+    transparent inline given generates: [value] => Generates[value] =
+      ${locomotion.inlining.generates[value]}
+
+  final class Generates[value]()
+
   // The expansion-time evaluation of a user-written instance. An `Inlinable`
   // given is an ordinary runtime value, so the generator can only call its
   // `parse` by evaluating the given inside the macro — which takes an in-macro
@@ -58,9 +68,6 @@ object Inlinable:
   // on. `locomotion.staged` registers the implementation as a service; without
   // it on the classpath, a field whose type has only a user-written instance
   // takes the runtime seam through its `Decodable in Protobuf`.
-  trait Stager:
-    def summon[field: Type](using Quotes): Option[Inlinable]
-
   object Stager:
     private lazy val loaded: Option[Stager] =
       val services =
@@ -70,6 +77,9 @@ object Inlinable:
       if iterator.hasNext then Some(iterator.next.nn) else None
 
     def summon[field: Type](using Quotes): Option[Inlinable] = loaded.flatMap(_.summon[field])
+
+  trait Stager:
+    def summon[field: Type](using Quotes): Option[Inlinable]
 
   // The structural instance for a case-class message: reflects `Self` when
   // invoked (no macro — `Type[Self]` arrives with the call).

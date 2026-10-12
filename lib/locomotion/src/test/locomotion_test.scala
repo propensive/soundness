@@ -110,6 +110,12 @@ case class Shaped(@field(1) name: Text, @field(2) shape: Shape) derives CanEqual
 case class MaybePoint(@field(1) point: Optional[Point]) derives CanEqual
 
 case class Defaulted(@field(1) a: Int, @field(2) b: Int = 7) derives CanEqual
+
+// For the codec modes: a message that generates its codec once with `derives`, and a pair of
+// mutually recursive messages.
+case class Declared(@field(1) id: Int, @field(2) name: Text) derives Protobuf.Direct, CanEqual
+case class Ping(@field(1) n: Int, @field(2) pongs: List[Pong]) derives CanEqual
+case class Pong(@field(1) n: Int, @field(2) pings: List[Ping]) derives CanEqual
 case class Boxed[value](@field(1) value: value) derives CanEqual
 
 // A singular nested field whose type parses through the runtime seam (`Tree` has a
@@ -720,8 +726,10 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       given (Shaped is Protobuf.Printable) = Inlinable.printable[Shaped]
       given (MaybePoint is Protobuf.Printable) = Inlinable.printable[MaybePoint]
 
-      // The derivation's bytes, which the printer must reproduce exactly.
-      def derived[value: Encodable in Protobuf](value: value): List[Int] =
+      // The derivation's bytes, which the printer must reproduce exactly. The evidence is
+      // resolved under `codecs.derived` wherever this is used, so that a `Printable` in scope
+      // cannot stand in for the derivation it is checked against.
+      def reference[value: Encodable in Protobuf](value: value): List[Int] =
         value.in[Protobuf].encode.to[List].map(_ & 0xff)
 
       def printed[value: Protobuf.Printable](value: value): List[Int] =
@@ -730,44 +738,27 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       inline def same[value: {Encodable in Protobuf, Protobuf.Printable}](name: Message, value: value)
       :   Unit =
 
-        test(name)(printed(value)).assert(_ == derived(value))
+        test(name)(printed(value)).assert(_ == reference(value))
 
-      same(m"a single int field", Sample(7))
-      same(m"a negative int takes ten bytes", Sample(-1))
-      same(m"a message of two ints", Point(3, 4))
-      same(m"a string and an int", Person(t"Jon", 42))
-      same(m"a nested message then a string", Wrapper(Point(1, 2), t"origin"))
-      same(m"repeated strings, one field each", Tags(List(t"a", t"bb", t"ccc")))
-      same(m"an empty repeated field writes nothing", Tags(Nil))
-      same(m"repeated ints pack into one field", Numbers(List(1, 300, -1)))
-      same(m"an empty packed field writes nothing", Numbers(Nil))
-      same(m"a present optional string", MaybeName(t"x"))
-      same(m"an absent optional string writes nothing", MaybeName(Unset))
-      same(m"sparse field numbers", Sparse(9, t"x"))
-      same(m"empty text is still written", Sparse(1, t""))
-      same(m"typed integers go through the seam", Typed(1.bits.u32, 2L.bits.u64, (-3).bits.s32, (-4L).bits.s64, 5.bits, 6L.bits))
-      same(m"a string map goes through the seam", Labels(Map(t"a" -> t"1", t"b" -> t"2")))
-      same(m"an int map goes through the seam", Counts(Map(t"a" -> 1)))
-      same(m"a recursive message", Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))
-      same(m"a field with a declared default is still written", Defaulted(1))
-      same(m"a prelude Set of strings", Names(Set(t"x", t"y")))
-      same(m"a packed Sequence of longs", Longs(Sequence(1L, 300L, 3L)))
-      same(m"repeated nested messages", Batch(List(Item(1, t"a"), Item(2, t"b"))))
-      same(m"field number 16 takes a two-byte tag", HighField(1))
-      same(m"a nested payload over 127 bytes", Envelope(Person("x".repeat(200).nn.tt, 1)))
-      same(m"a repeated field inside a nested message", TagsEnvelope(Tags(List(t"a", t"b"))))
+      test(m"`in[Protobuf]` is direct when a Printable is in scope"):
+        // A derived `Encodable` on the way would be the resolved one here; a Printable in
+        // scope makes `encodablePrinted` win, and its message is the printed array itself.
+        val expected =
+          import codecs.derived
+          reference(Wrapper(Point(5, 6), t"w"))
 
-      same
-       ( m"every scalar kind",
-         Scalars(-7, 1L << 40, true, 2.5, -1.5f, t"text", Array[Byte](1, 2, 3)) )
+        (Wrapper(Point(5, 6), t"w").in[Protobuf].encode.to[List].map(_ & 0xff), expected)
+      . assert((direct, expected) => direct == expected)
 
-      same(m"text beyond ASCII is UTF-8", Person(t"héllo 😀 — ✓", 1))
-      same(m"a lone surrogate encodes as the JDK substitutes", Person(("a\ud83dz").tt, 1))
-      same(m"packed doubles", Doubles(List(0.0, 1.5, -2.25)))
-      same(m"a oneof in a field position: first variant", Shaped(t"c", Shape.Circle(3)))
-      same(m"a oneof in a field position: last variant", Shaped(t"r", Shape.Rectangle(2, 3)))
-      same(m"a present optional message", MaybePoint(Point(1, 2)))
-      same(m"an absent optional message writes nothing", MaybePoint(Unset))
+      test(m"a repeated nested message is written directly, never through an Encodable"):
+        given itemSeam: (Item is Encodable in Protobuf) =
+          _ => panic(m"the generated printer encoded a repeated element through its Encodable")
+
+        given itemsSeam: (List[Item] is Encodable in Protobuf) =
+          _ => panic(m"the generated printer encoded a repeated field through its Encodable")
+
+        printed(Batch(List(Item(1, t"a"), Item(2, t"b"))))
+      . assert(_ == List(0x0a, 0x05, 0x08, 0x01, 0x12, 0x01, 0x61, 0x0a, 0x05, 0x08, 0x02, 0x12, 0x01, 0x62))
 
       test(m"text beyond ASCII parses back directly"):
         given (Person is Protobuf.Parsable) = Inlinable.parsable[Person]
@@ -794,18 +785,153 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
         Protobuf.Printable.print(Wrapper(Point(5, 6), t"w")).read[Wrapper in Protobuf]
       . assert(_ == Wrapper(Point(5, 6), t"w"))
 
-      test(m"`in[Protobuf]` is direct when a Printable is in scope"):
-        // A derived `Encodable` on the way would be the resolved one here; a Printable in
-        // scope makes `encodablePrinted` win, and its message is the printed array itself.
-        Wrapper(Point(5, 6), t"w").in[Protobuf].encode.to[List].map(_ & 0xff)
-      . assert(_ == derived(Wrapper(Point(5, 6), t"w")))
+      // Spelled out, not taken from the derivation: the derived codecs over a `Data` field do
+      // not yet capture-check (#2249).
+      test(m"every scalar kind"):
+        printed(Scalars(-7, 1L << 40, true, 2.5, -1.5f, t"text", Array[Byte](1, 2, 3)))
+      . assert(_ == List(0x08, 0xf9, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, 0x10,
+          0x80, 0x80, 0x80, 0x80, 0x80, 0x20, 0x18, 0x01, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          0x04, 0x40, 0x2d, 0x00, 0x00, 0xc0, 0xbf, 0x32, 0x04, 0x74, 0x65, 0x78, 0x74, 0x3a, 0x03,
+          0x01, 0x02, 0x03))
 
-      test(m"a repeated nested message is written directly, never through an Encodable"):
+      // Every `same` below takes its reference bytes from the derivation.
+      import codecs.derived
+
+      same(m"a single int field", Sample(7))
+      same(m"a negative int takes ten bytes", Sample(-1))
+      same(m"a message of two ints", Point(3, 4))
+      same(m"a string and an int", Person(t"Jon", 42))
+      same(m"a nested message then a string", Wrapper(Point(1, 2), t"origin"))
+      same(m"repeated strings, one field each", Tags(List(t"a", t"bb", t"ccc")))
+      same(m"an empty repeated field writes nothing", Tags(Nil))
+      same(m"repeated ints pack into one field", Numbers(List(1, 300, -1)))
+      same(m"an empty packed field writes nothing", Numbers(Nil))
+      same(m"a present optional string", MaybeName(t"x"))
+      same(m"an absent optional string writes nothing", MaybeName(Unset))
+      same(m"sparse field numbers", Sparse(9, t"x"))
+      same(m"empty text is still written", Sparse(1, t""))
+      same(m"typed integers go through the seam", Typed(1.bits.u32, 2L.bits.u64, (-3).bits.s32, (-4L).bits.s64, 5.bits, 6L.bits))
+      same(m"a string map goes through the seam", Labels(Map(t"a" -> t"1", t"b" -> t"2")))
+      same(m"an int map goes through the seam", Counts(Map(t"a" -> 1)))
+      same(m"a recursive message", Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))
+      same(m"a field with a declared default is still written", Defaulted(1))
+      same(m"a prelude Set of strings", Names(Set(t"x", t"y")))
+      same(m"a packed Sequence of longs", Longs(Sequence(1L, 300L, 3L)))
+      same(m"repeated nested messages", Batch(List(Item(1, t"a"), Item(2, t"b"))))
+      same(m"field number 16 takes a two-byte tag", HighField(1))
+      same(m"a nested payload over 127 bytes", Envelope(Person("x".repeat(200).nn.tt, 1)))
+      same(m"a repeated field inside a nested message", TagsEnvelope(Tags(List(t"a", t"b"))))
+
+
+      same(m"text beyond ASCII is UTF-8", Person(t"héllo 😀 — ✓", 1))
+      same(m"a lone surrogate encodes as the JDK substitutes", Person(("a\ud83dz").tt, 1))
+      same(m"packed doubles", Doubles(List(0.0, 1.5, -2.25)))
+      same(m"a oneof in a field position: first variant", Shaped(t"c", Shape.Circle(3)))
+      same(m"a oneof in a field position: last variant", Shaped(t"r", Shape.Rectangle(2, 3)))
+      same(m"a present optional message", MaybePoint(Point(1, 2)))
+      same(m"an absent optional message writes nothing", MaybePoint(Unset))
+
+    suite(m"Codec modes"):
+      def bytes[value: Encodable in Protobuf](value: value): List[Int] =
+        value.in[Protobuf].encode.to[List].map(_ & 0xff)
+
+      val wrapper = Wrapper(Point(1, 2), t"origin")
+      val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+      val ping = Ping(1, List(Pong(2, List(Ping(3, Nil))), Pong(4, Nil)))
+      val shaped = Shaped(t"r", Shape.Rectangle(2, 3))
+      val batch = Batch(List(Item(1, t"a"), Item(2, t"b")))
+
+      // The derivation's encodings, each the reference for the generated printer's.
+      val (wrapperData, treeData, pingData, shapedData, batchData) =
+        import codecs.derived
+
+        ( wrapper.in[Protobuf].encode,
+          tree.in[Protobuf].encode,
+          ping.in[Protobuf].encode,
+          shaped.in[Protobuf].encode,
+          batch.in[Protobuf].encode )
+
+      def list(data: Data): List[Int] = data.to[List].map(_ & 0xff)
+
+      val reference =
+        (list(wrapperData), list(treeData), list(pingData), list(shapedData), list(batchData))
+
+      test(m"`codecs.direct` prints each message as the derivation does"):
+        import codecs.direct
+        (bytes(wrapper), bytes(tree), bytes(ping), bytes(shaped), bytes(batch))
+      . assert(_ == reference)
+
+      test(m"`codecs.direct` reads each message back"):
+        import codecs.direct
+
+        ( wrapperData.read[Wrapper in Protobuf],
+          treeData.read[Tree in Protobuf],
+          pingData.read[Ping in Protobuf],
+          shapedData.read[Shaped in Protobuf],
+          batchData.read[Batch in Protobuf] )
+      . assert(_ == (wrapper, tree, ping, shaped, batch))
+
+      test(m"`codecs.direct` reads a message with no instance of its own directly"):
+        import codecs.direct
+
+        given itemSeam: (Item is Decodable in Protobuf) =
+          _ => panic(m"a generated parser decoded a repeated element through its Decodable")
+
+        given batchSeam: (Batch is Decodable in Protobuf) =
+          _ => panic(m"the read decoded the message through its Decodable")
+
+        batchData.read[Batch in Protobuf]
+      . assert(_ == batch)
+
+      test(m"`codecs.direct` prints a message with no instance of its own directly"):
+        import codecs.direct
+
         given itemSeam: (Item is Encodable in Protobuf) =
-          _ => panic(m"the generated printer encoded a repeated element through its Encodable")
+          _ => panic(m"a generated printer encoded a repeated element through its Encodable")
 
-        given itemsSeam: (List[Item] is Encodable in Protobuf) =
-          _ => panic(m"the generated printer encoded a repeated field through its Encodable")
-
-        printed(Batch(List(Item(1, t"a"), Item(2, t"b"))))
+        bytes(batch)
       . assert(_ == List(0x0a, 0x05, 0x08, 0x01, 0x12, 0x01, 0x61, 0x0a, 0x05, 0x08, 0x02, 0x12, 0x01, 0x62))
+
+      test(m"`codecs.direct` leaves a generic message on the derived path"):
+        import codecs.direct
+        Boxed(7).in[Protobuf].encode.read[Boxed[Int] in Protobuf]
+      . assert(_ == Boxed(7))
+
+      test(m"`codecs.derived` decodes even where a direct parser is in scope"):
+        import codecs.derived
+        given (Wrapper is Protobuf.Parsable) = Inlinable.parsable[Wrapper]
+
+        // A sentinel decoder: only the derived path can return it.
+        given (Wrapper is Decodable in Protobuf) = _ => Wrapper(Point(0, 0), t"derived")
+
+        wrapperData.read[Wrapper in Protobuf]
+      . assert(_ == Wrapper(Point(0, 0), t"derived"))
+
+      test(m"`codecs.derived` encodes even where a direct printer is in scope"):
+        import codecs.derived
+
+        given (Batch is Protobuf.Printable) =
+          Protobuf.Printable
+            ( (_, _) => panic(m"the write measured through the Printable"),
+              (_, _, _) => panic(m"the write printed through the Printable") )
+
+        bytes(batch)
+      . assert(_ == reference(4))
+
+      test(m"`derives Protobuf.Direct` reads directly without an import"):
+        given (Declared is Decodable in Protobuf) =
+          _ => panic(m"the read decoded the message through its Decodable")
+
+        Protobuf.Printable.print(Declared(5, t"five")).read[Declared in Protobuf]
+      . assert(_ == Declared(5, t"five"))
+
+      test(m"`derives Protobuf.Direct` takes precedence over `codecs.direct`"):
+        import codecs.direct
+        summon[Declared is Protobuf.Parsable] == summon[Protobuf.Direct[Declared]].parsable
+      . assert(_ == true)
+
+      test(m"`codecs.derived` decodes a type that derives `Protobuf.Direct`"):
+        import codecs.derived
+        given (Declared is Decodable in Protobuf) = _ => Declared(0, t"derived")
+        Protobuf.Printable.print(Declared(5, t"five")).read[Declared in Protobuf]
+      . assert(_ == Declared(0, t"derived"))
