@@ -374,8 +374,8 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
         ( target = 1*Second, operationSize = size5 ):
         '{ Chain(locomotion.Benchmarks.bytes5).read[Attributes in Protobuf] }
 
-      // A map stays on the seam by design (its wire form is a repeated entry message), so
-      // this row measures the seam's cost rather than a gathered field.
+      // A map's entries are gathered directly: each entry message read in place into the
+      // map's builder.
       bench(m"Decode directly with Locomotion")(target = 1*Second, operationSize = size5):
         '{
             given Attributes is Protobuf.Parsable = locomotion.attributesParsable
