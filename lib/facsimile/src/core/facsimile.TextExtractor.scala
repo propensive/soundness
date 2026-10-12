@@ -159,7 +159,7 @@ private[facsimile] object TextExtractor:
       // frozen-array-union field with capture variables the checker cannot discharge.
       case operator if operator.isInstanceOf[Pdf.Operator.ShowTexts] =>
         operator.asInstanceOf[Pdf.Operator.ShowTexts].elements
-        . asInstanceOf[List[scala.IArray[Byte] | Double]] // pure view; same erasure
+        . asInstanceOf[List[Matchable]] // pure view; same erasure
         . stdlib.foreach: element =>
           (element.asInstanceOf[Matchable]: @unchecked) match
             case adjustment: Double => kern(adjustment)

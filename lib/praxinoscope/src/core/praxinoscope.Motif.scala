@@ -587,7 +587,7 @@ case class Motif(pattern: Text, node: Node, captures: Int, program: Program):
 
   def seek[input: Symbolizer](input: input, start: Ordinal = Prim): Optional[Interval] =
     Pike.run(program, input, start.n0, false, false).let: slots =>
-      Interval.zerary(slots(0), slots(1))
+      Interval.zerary(slots.readUnchecked(0), slots.readUnchecked(1))
 
   def search[input: Symbolizer as symbolizer](input: input, start: Ordinal = Prim)
   :   Chain[Interval] =
@@ -595,8 +595,10 @@ case class Motif(pattern: Text, node: Node, captures: Int, program: Program):
     def recur(from: Int): Chain[Interval] =
       if from > symbolizer.length(input) then Chain() else
         Pike.run(program, input, from, false, false).let: slots =>
-          val interval = Interval.zerary(slots(0), slots(1))
-          interval #:: recur(if slots(1) > slots(0) then slots(1) else slots(1) + 1)
+          val interval = Interval.zerary(slots.readUnchecked(0), slots.readUnchecked(1))
+          val first = slots.readUnchecked(0)
+          val last = slots.readUnchecked(1)
+          interval #:: recur(if last > first then last else last + 1)
 
         . or(Chain())
 
@@ -628,7 +630,7 @@ case class Motif(pattern: Text, node: Node, captures: Int, program: Program):
   // alongside `spans` because an `Interval` cannot represent the *position* of an empty match,
   // which callers stepping through repeated matches need.
   def slots[input: Symbolizer](input: input, start: Ordinal = Prim, anchored: Boolean = true)
-  :   Optional[scala.IArray[Int]] =
+  :   Optional[Array[Int]] =
 
     Pike.run(program, input, start.n0, anchored, anchored)
 
@@ -639,6 +641,6 @@ case class Motif(pattern: Text, node: Node, captures: Int, program: Program):
 
     Pike.run(program, input, start.n0, anchored, anchored).let: slots =>
       List.tabulate(captures + 1): group =>
-        val first = slots(2*group)
-        val last = slots(2*group + 1)
+        val first = slots.readUnchecked(2*group)
+        val last = slots.readUnchecked(2*group + 1)
         if first < 0 || last < 0 then Unset else Interval.zerary(first, last)

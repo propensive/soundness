@@ -64,7 +64,7 @@ object Program:
       case Program.Op.Jump(-1) => Program.Op.Jump(target)
       case other               => other
 
-    def bounds(ranges: Ranges): scala.IArray[Int] = scala.IArray.from(ranges.spans.stdlib)
+    def bounds(ranges: Ranges): Array[Int] = Array.from(ranges.spans.stdlib)
 
     // Emits the code for one node. Fragments are contiguous and fall through to whatever is
     // emitted next, so a consuming op's `next` is always its own pc + 1; only loops and
@@ -74,7 +74,7 @@ object Program:
         ()
 
       case Node.Literal(codepoint) =>
-        emit(Program.Op.Symbol(scala.IArray(codepoint, codepoint), ops.size + 1))
+        emit(Program.Op.Symbol(Array(codepoint, codepoint), ops.size + 1))
 
       case Node.Klass(ranges) =>
         emit(Program.Op.Symbol(bounds(ranges), ops.size + 1))
@@ -146,14 +146,14 @@ object Program:
     emit(Program.Op.Save(1, ops.size + 1))
     emit(Program.Op.Accept)
 
-    Program(scala.IArray.from(ops), 2*(captures + 1), captures)
+    Program(Array.from(ops), 2*(captures + 1), captures)
 
   // One instruction of a compiled program. Only `Symbol` consumes input; every other op is
   // followed at no cost during the Pike VM's ε-closure. `bounds` is the interleaved
   // `lo, hi, lo, hi, …` form of a `Ranges`, flattened for allocation-free scanning; `Split`
   // lists its `preferred` target first, which is how greed and reluctance are encoded.
   enum Op:
-    case Symbol(bounds: scala.IArray[Int], next: Int)
+    case Symbol(bounds: Array[Int], next: Int)
     case Split(preferred: Int, alternate: Int)
     case Jump(target: Int)
     case Save(slot: Int, next: Int)
@@ -163,7 +163,7 @@ object Program:
 // A regular expression compiled to a flat, array-indexed instruction sequence, executable by the
 // Pike VM and analyzable by the containment checker. Capture group `n` records its bounds in
 // slots `2n` and `2n + 1`; slots `0` and `1` are the whole match.
-case class Program(ops: scala.IArray[Program.Op], slots: Int, captures: Int):
+case class Program(ops: Array[Program.Op], slots: Int, captures: Int):
   def entry: Int = 0
 
   // The consuming ops reachable from `pcs` without consuming input, and whether `Accept` is
@@ -183,7 +183,7 @@ case class Program(ops: scala.IArray[Program.Op], slots: Int, captures: Int):
         if !visited(pc) then
           visited(pc) = true
 
-          ops(pc) match
+          ops.readUnchecked(pc) match
             case Program.Op.Jump(target)       => stack = target :: stack
             case Program.Op.Split(left, right) => stack = left :: right :: stack
             case Program.Op.Save(_, next)      => stack = next :: stack
@@ -199,16 +199,18 @@ case class Program(ops: scala.IArray[Program.Op], slots: Int, captures: Int):
   lazy val nullable: Boolean = opening(1)
 
   // The interleaved bounds of every symbol which can begin a match, coalesced.
-  lazy val firstBounds: scala.IArray[Int] =
+  lazy val firstBounds: Array[Int] =
     var spans: List[Int] = Nil
 
     opening(0).each: pc =>
-      ops(pc).absolve match
+      ops.readUnchecked(pc).absolve match
         case Program.Op.Symbol(bounds, _) =>
           var index = 0
 
           while index < bounds.length do
-            spans = Ranges(bounds(index), bounds(index + 1)).spans.absolve match
+            val range = Ranges(bounds.readUnchecked(index), bounds.readUnchecked(index + 1))
+
+            spans = range.spans.absolve match
               case lo :: hi :: Nil => lo :: hi :: spans
               case _               => spans
 
@@ -225,7 +227,7 @@ case class Program(ops: scala.IArray[Program.Op], slots: Int, captures: Int):
         merged = merged.union(Ranges(lo, hi))
         todo = rest
 
-    scala.IArray.from(merged.spans.stdlib)
+    Array.from(merged.spans.stdlib)
 
   // The longest literal every match must begin with (UTF-16-encoded, capped at 32 chars), or
   // empty if the first consuming op is not unique and single-valued. Seeking jumps between
@@ -235,10 +237,10 @@ case class Program(ops: scala.IArray[Program.Op], slots: Int, captures: Int):
 
     def recur(pcs: List[Int], accepts: Boolean): Unit =
       if !accepts && builder.length < 32 then pcs match
-        case pc :: Nil => ops(pc).absolve match
+        case pc :: Nil => ops.readUnchecked(pc).absolve match
           case Program.Op.Symbol(bounds, next) =>
-            if bounds.length == 2 && bounds(0) == bounds(1) then
-              builder.append(new String(Character.toChars(bounds(0))))
+            if bounds.length == 2 && bounds.readUnchecked(0) == bounds.readUnchecked(1) then
+              builder.append(new String(Character.toChars(bounds.readUnchecked(0))))
               val (symbols, accepts2) = reach(next :: Nil)
               recur(symbols, accepts2)
 

@@ -251,7 +251,7 @@ private[guillotine] object PtyProcess:
   def pump
     ( pid:    Int,
       master: Descriptor,
-      chunks: juc.BlockingQueue[scala.IArray[Byte]],
+      chunks: juc.BlockingQueue[Array[Byte]^{}],
       stop:   Atomic[Boolean] )
   :   Thread =
 
@@ -264,7 +264,7 @@ private[guillotine] object PtyProcess:
       descriptor.set(int16, 4L, Readable)
 
       @tailrec
-      def enqueue(bytes: scala.IArray[Byte]): Unit =
+      def enqueue(bytes: Array[Byte]^{}): Unit =
         if !stop() && !chunks.offer(bytes, Patience.toLong, juc.TimeUnit.MILLISECONDS)
         then enqueue(bytes)
 
@@ -278,12 +278,13 @@ private[guillotine] object PtyProcess:
 
           if count > 0 then
             val bytes = buffer.asSlice(0L, count).nn.toArray(jlf.ValueLayout.JAVA_BYTE)
-            enqueue(bytes.asInstanceOf[scala.IArray[Byte]])
+            // [java-boundary] fresh array returned by the JDK, retained by nobody else
+            enqueue(Array.unsafeFrozen(bytes.nn))
             recur()
 
       try
         recur()
-        enqueue(scala.IArray[Byte]())
+        enqueue(Array.empty[Byte])
       catch case _: InterruptedException => ()
       finally
         master.close()
@@ -565,7 +566,7 @@ private[guillotine] object PtyProcess:
 private[guillotine] class PtyProcess private (processId: Int, master: PtyProcess.Descriptor)
 extends java.lang.Process:
   private val exit: juc.CompletableFuture[Integer] = juc.CompletableFuture[Integer]().nn
-  private val chunks = juc.ArrayBlockingQueue[scala.IArray[Byte]](PtyProcess.Chunks)
+  private val chunks = juc.ArrayBlockingQueue[Array[Byte]^{}](PtyProcess.Chunks)
   private val stop: Atomic[Boolean] = Atomic(false)
   private val pump: Thread = PtyProcess.pump(processId, master, chunks, stop)
 
@@ -577,7 +578,7 @@ extends java.lang.Process:
   private lazy val input: ji.InputStream = new ji.InputStream:
     // A JDK class cannot extend `Stateful`, so its state is held in atomic cells rather than
     // `var`s; it is only ever read and written behind this stream's lock.
-    private val chunk: Atomic.Ref[scala.IArray[Byte]] = Atomic.Ref(scala.IArray[Byte]())
+    private val chunk: Atomic.Ref[Array[Byte]^{}] = Atomic.Ref(Array.empty[Byte])
     private val position: Atomic[Int] = Atomic(0)
     private val ended: Atomic[Boolean] = Atomic(false)
 
@@ -588,7 +589,7 @@ extends java.lang.Process:
     override def read(bytes: scala.Array[Byte] | Null, offset: Int, length: Int): Int =
       synchronized:
         if !ended() && length > 0 && position() == chunk().length then
-          val next = chunks.take().asInstanceOf[scala.IArray[Byte]]
+          val next = chunks.take().asInstanceOf[Array[Byte]^{}]
           chunk() = next
           position() = 0
           ended() = next.length == 0

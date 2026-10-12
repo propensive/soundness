@@ -1489,21 +1489,23 @@ object inlining:
         recur()
       }
 
-  // The same two walks over a frozen array, by index: an `IArray[Long]` read is unboxed.
-  private def summedArray[element: Type](array: Expr[scala.IArray[element]])
+  // The same two walks over a frozen array, by index: a `readUnchecked` on a concrete element
+  // type is an unboxed array load.
+  private def summedArray[element: Type](array: Expr[Array[element]])
     ( size: Expr[element] => Expr[Int] )
     ( using Quotes )
   :   Expr[Int] =
 
     ' {
         def recur(index: Int, total: Int): Int =
-          if index < $array.length then recur(index + 1, total + ${size('{$array(index)})})
+          if index < $array.length
+          then recur(index + 1, total + ${size('{$array.readUnchecked(index)})})
           else total
 
         recur(0, 0)
       }
 
-  private def visitedArray[element: Type](array: Expr[scala.IArray[element]])
+  private def visitedArray[element: Type](array: Expr[Array[element]])
     ( write: Expr[element] => Expr[Unit] )
     ( using Quotes )
   :   Expr[Unit] =
@@ -1511,7 +1513,7 @@ object inlining:
     ' {
         def recur(index: Int): Unit =
           if index < $array.length then
-            ${write('{$array(index)})}
+            ${write('{$array.readUnchecked(index)})}
             recur(index + 1)
 
         recur(0)
@@ -1668,7 +1670,7 @@ object inlining:
                     // through an iterator otherwise.
                     val sumOver: (Expr[element] => Expr[Int]) => Expr[Int] =
                       if isFrozenArray(fieldTypes(index))
-                      then summedArray('{$typed.asInstanceOf[scala.IArray[element]]})
+                      then summedArray('{$typed.asInstanceOf[Array[element]]})
                       else summed(iterable)
 
                     element match
@@ -1855,7 +1857,7 @@ object inlining:
 
                     val eachOver: (Expr[element] => Expr[Unit]) => Expr[Unit] =
                       if isFrozenArray(fieldTypes(index))
-                      then visitedArray('{$typed.asInstanceOf[scala.IArray[element]]})
+                      then visitedArray('{$typed.asInstanceOf[Array[element]]})
                       else visited(iterable)
 
                     element match

@@ -961,7 +961,7 @@ object internal:
             . flatMap(serialize(_, own))
             . toList
 
-            '{Array.frozen(scala.IArray(${Expr.ofList(serialized)}*))}
+            '{Array(${Expr.ofList(serialized)}*)}
 
           val scopeExpr: Expr[Scope] =
             if own.bindings.isEmpty then '{Scope.empty}

@@ -202,7 +202,7 @@ object Pane:
     private val size: Atomic.Ref[(Int, Int)] = Atomic.Ref((columns, rows))
 
     // Bytes of a UTF-8 character split between chunks, held until the rest of it arrives.
-    private val partial: Atomic.Ref[scala.IArray[Byte]] = Atomic.Ref(scala.IArray[Byte]())
+    private val partial: Atomic.Ref[Data] = Atomic.Ref(Array.empty[Byte])
 
     def width: Int = size()(0)
     def height: Int = size()(1)
@@ -234,10 +234,10 @@ object Pane:
     // Renders a chunk of the terminal's output. The longest prefix of the bytes which ends on a
     // character boundary is decoded; the rest waits for the next chunk.
     def render(chunk: Data): Unit =
-      val bytes = partial() ++ chunk.stdlib
+      val bytes = partial() + chunk
       val complete = Pane.boundary(bytes)
-      partial() = bytes.drop(complete)
-      val text = Text(String(scala.IArray.genericWrapArray(bytes.take(complete)).toArray, "UTF-8"))
+      partial() = Array.from(bytes.stdlib.drop(complete))
+      val text = Text(String(Array.unsafeJvm(bytes), 0, complete, "UTF-8"))
 
       try terminal() = terminal().consume(text)(using strategies.throwUnsafely)
       catch case error: yossarian.Pty.Error => problem() = error.message.text
@@ -265,10 +265,10 @@ object Pane:
 
   // The length of the longest prefix of `bytes` which ends on a UTF-8 character boundary: a lead
   // byte among the last three whose character runs past the end begins an incomplete character.
-  def boundary(bytes: scala.IArray[Byte]): Int =
+  def boundary(bytes: Data): Int =
     def recur(index: Int): Int =
       if index < 0 || index < bytes.length - 3 then bytes.length else
-        val byte = bytes(index) & 0xff
+        val byte = bytes.readUnchecked(index) & 0xff
 
         if (byte & 0xc0) == 0x80 then recur(index - 1)
         else

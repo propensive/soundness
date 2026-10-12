@@ -113,6 +113,7 @@ lib/exoskeleton/src/completions/exoskeleton.Completions.scala	0	1	0	0	0	0	0	0	0	
 lib/exoskeleton/src/completions/exoskeleton.Pathname.scala	0	2	0	0	0	0	0	0	0	0	0	0
 lib/exoskeleton/src/completions/exoskeleton_completions.scala	0	0	0	0	0	0	0	0	1	0	0	0
 lib/exoskeleton/src/core/exoskeleton.Invocation.scala	0	0	3	0	0	0	0	0	0	0	0	0
+lib/exoskeleton/src/rig/exoskeleton.Pane.scala	0	0	0	0	0	1	0	0	0	0	0	0
 lib/exoskeleton/src/test/exoskeleton_test.scala	0	1	0	0	0	0	0	0	0	0	0	0
 lib/facsimile/src/core/facsimile.Gathering.scala	0	0	0	0	1	0	0	0	0	0	0	0
 lib/facsimile/src/core/facsimile.Guard.scala	0	0	0	0	4	6	0	0	0	0	0	0
@@ -161,7 +162,7 @@ lib/gossamer/src/core/gossamer_core.scala	0	0	0	0	2	6	0	0	0	0	0	0
 lib/gossamer/src/lexicon/gossamer.Dictionary.scala	0	0	1	0	0	0	0	0	0	1	2	0
 lib/gossamer/src/lexicon/gossamer.Lexicon.scala	0	0	1	0	0	0	0	0	0	0	0	0
 lib/guillotine/src/core/guillotine.Job.scala	0	0	0	0	0	0	0	0	0	1	2	0
-lib/guillotine/src/core/guillotine.PtyProcess.scala	0	0	0	0	0	0	0	0	0	1	0	0
+lib/guillotine/src/core/guillotine.PtyProcess.scala	0	0	0	0	1	0	0	0	0	1	1	0
 lib/hallucination/src/bmp/hallucination.BmpCodec.scala	0	0	0	0	1	0	0	0	0	0	0	0
 lib/hallucination/src/canvas/hallucination.CanvasHandle.scala	0	0	0	0	0	0	0	0	0	0	4	0
 lib/hallucination/src/core-jvm/hallucination.ImageIo.scala	0	0	0	0	1	0	0	0	0	0	0	0
@@ -201,7 +202,6 @@ lib/hypotenuse/src/check/hypotenuse.Checkable.scala	0	0	0	0	0	0	0	0	0	0	1	0
 lib/hypotenuse/src/core/hypotenuse.Bcd.scala	0	0	0	0	1	0	0	0	0	0	0	0
 lib/hypotenuse/src/core/hypotenuse.Decimal.scala	0	0	0	0	0	0	1	0	0	0	0	0
 lib/hypotenuse/src/core/hypotenuse.internal.scala	0	0	0	14	0	0	0	0	0	0	0	0
-lib/hypotenuse/src/core/hypotenuse.protointernal.scala	0	0	0	0	0	0	0	0	0	0	1	0
 lib/hypotenuse/src/core/hypotenuse.rationalInternal.scala	0	0	0	2	0	0	0	0	0	0	0	0
 lib/iridescence/src/core/iridescence.PixelOpaque.scala	0	0	0	0	0	0	0	0	1	0	0	0
 lib/iridescence/src/core/iridescence.Rgb12Opaque.scala	0	0	0	0	0	0	0	0	1	0	0	0
@@ -249,7 +249,7 @@ lib/obligatory/src/test/obligatory_test.scala	0	0	0	0	1	0	0	0	0	0	0	0
 lib/octogenarian/src/native/octogenarian.Pktline.scala	1	0	0	0	0	0	0	0	0	0	0	0
 lib/orthodoxy/src/test/orthodoxy_test.scala	0	0	2	0	0	0	0	0	0	0	0	0
 lib/panopticon/src/core/panopticon.Composable.scala	0	1	0	0	0	0	0	0	0	0	0	0
-lib/parasite/src/bench/parasite.Benchmarks.scala	0	0	0	0	1	0	0	1	0	1	0	0
+lib/parasite/src/bench/parasite.Benchmarks.scala	0	0	0	0	1	0	0	0	0	1	0	0
 lib/parasite/src/core/parasite.Async.scala	0	0	0	0	0	0	0	0	1	0	0	0
 lib/parasite/src/core/parasite.Daemon.scala	2	0	0	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Fault.scala	1	0	0	0	0	0	0	0	0	0	0	0
@@ -278,8 +278,8 @@ lib/pneumatic/src/lzma/pneumatic.XzContainer.scala	0	0	0	0	0	1	0	0	0	0	0	0
 lib/pneumatic/src/lzw/pneumatic.LzwEngine.scala	0	0	0	0	1	0	0	0	0	0	3	0
 lib/pneumatic/src/test/pneumatic_test.scala	0	3	0	0	10	12	0	0	0	1	0	0
 lib/polysyllabic/src/core/polysyllabic.Hyphenation.scala	0	0	0	0	0	0	0	0	0	0	1	0
-lib/praxinoscope/src/core/praxinoscope.Pike.scala	0	0	0	0	0	0	0	1	0	0	0	0
-lib/praxinoscope/src/core/praxinoscope.internal.scala	0	0	0	0	0	0	0	3	0	0	0	0
+lib/praxinoscope/src/core/praxinoscope.Pike.scala	0	0	0	0	1	0	0	0	0	0	0	0
+lib/praxinoscope/src/core/praxinoscope.internal.scala	0	0	0	0	3	0	0	0	0	0	0	0
 lib/probably/src/cli/probably.Suite.scala	0	0	1	0	0	0	0	0	0	0	0	0
 lib/probably/src/core/probably.Entry.scala	0	0	5	0	0	0	0	0	0	0	0	0
 lib/probably/src/core/probably.Probing.scala	0	0	0	0	0	0	0	0	1	0	0	0
@@ -369,7 +369,7 @@ lib/telekinesis/src/http2/telekinesis.Sessions.scala	1	0	0	0	0	0	0	0	0	1	2	0
 lib/telekinesis/src/http2/telekinesis_http2.scala	0	1	0	0	0	0	0	0	0	0	0	0
 lib/telekinesis/src/test/telekinesis.Http2Tests.scala	0	5	0	0	1	0	0	0	0	5	0	0
 lib/telekinesis/src/test/telekinesis_test.scala	0	6	1	0	1	1	0	0	2	0	0	0
-lib/telekinesis/src/wasi/telekinesis_wasi.scala	0	0	0	0	2	0	2	0	0	0	0	0
+lib/telekinesis/src/wasi/telekinesis_wasi.scala	0	0	0	0	2	0	0	0	0	0	0	0
 lib/turbulence/src/async/turbulence.Confluence.scala	0	0	1	0	0	0	0	0	0	3	1	0
 lib/turbulence/src/async/turbulence.Divergence.scala	1	0	0	0	0	0	0	0	0	3	0	0
 lib/turbulence/src/async/turbulence_async.scala	0	0	0	0	0	0	0	0	0	2	2	0
@@ -419,7 +419,7 @@ lib/xylophone/src/bench/xylophone.Benchmarks.scala	0	0	0	0	5	0	0	0	0	0	0	0
 lib/xylophone/src/core/xylophone.Xml.scala	9	1	1	0	4	3	1	0	0	15	5	0
 lib/xylophone/src/core/xylophone.Xml3.scala	2	0	0	0	0	0	0	0	0	0	0	0
 lib/xylophone/src/core/xylophone.dynamicAccess.scala	0	0	0	0	0	0	0	0	1	0	0	0
-lib/xylophone/src/core/xylophone.internal.scala	1	0	3	0	0	0	8	0	0	0	3	0
+lib/xylophone/src/core/xylophone.internal.scala	1	0	3	0	0	0	7	0	0	0	3	0
 lib/xylophone/src/staged/xylophone.stagedInternal.scala	1	0	0	0	0	0	0	0	0	3	0	0
 lib/xylophone/src/test/xylophone.DirectParsingTests.scala	0	0	0	0	1	0	0	0	0	0	0	0
 lib/xylophone/src/test/xylophone.PositionTests.scala	0	0	0	0	1	0	0	0	0	0	0	0
@@ -436,7 +436,7 @@ lib/zephyrine/src/core/zephyrine.Addressable.scala	0	0	0	0	3	3	0	0	0	2	3	0
 lib/zephyrine/src/core/zephyrine.Conduit.scala	0	0	4	0	0	0	0	0	0	8	2	0
 lib/zephyrine/src/core/zephyrine.Cursor.scala	4	0	5	0	0	0	0	0	0	0	0	0
 lib/zephyrine/src/core/zephyrine.Handoff.scala	0	0	4	0	0	0	0	0	0	0	1	0
-lib/zephyrine/src/core/zephyrine.Producer.scala	1	0	3	0	0	0	0	3	0	11	0	0
+lib/zephyrine/src/core/zephyrine.Producer.scala	1	0	3	0	3	1	0	0	0	11	0	0
 lib/zephyrine/src/core/zephyrine.Region.scala	0	0	0	0	0	0	0	0	0	1	0	0
 lib/zephyrine/src/core/zephyrine.Slate.scala	0	0	0	0	0	0	0	0	0	1	2	0
 lib/zephyrine/src/core/zephyrine.Stream.scala	0	0	2	0	0	0	0	0	0	5	1	0

@@ -136,7 +136,7 @@ lib/jacinta/src/core/jacinta.JsonPointer.scala	1	0	4
 lib/jacinta/src/core/jacinta.inlining.scala	3	0	1
 lib/jacinta/src/core/jacinta.internal.scala	12	20	2
 lib/kaleidoscope/src/core/kaleidoscope.JavaBaseRegex.scala	1	0	0
-lib/kaleidoscope/src/core/kaleidoscope.Regex.scala	0	0	6
+lib/kaleidoscope/src/core/kaleidoscope.Regex.scala	0	18	6
 lib/locomotion/src/core/locomotion.Protobuf.scala	0	4	0
 lib/locomotion/src/core/locomotion.ProtobufParser.scala	13	13	0
 lib/locomotion/src/core/locomotion.ProtobufPrinter.scala	3	0	0
@@ -173,12 +173,12 @@ lib/polaris/src/core/polaris.Debufferable.scala	0	4	0
 lib/polysyllabic/src/core/polysyllabic.Hyphenation.scala	8	8	2
 lib/polysyllabic/src/core/polysyllabic.TexPatterns.scala	7	0	8
 lib/polysyllabic/src/core/polysyllabic_core.scala	8	2	5
-lib/praxinoscope/src/core/praxinoscope.Motif.scala	7	0	2
-lib/praxinoscope/src/core/praxinoscope.Pike.scala	4	0	0
-lib/praxinoscope/src/core/praxinoscope.Program.scala	5	0	0
+lib/praxinoscope/src/core/praxinoscope.Motif.scala	7	10	2
+lib/praxinoscope/src/core/praxinoscope.Pike.scala	4	4	0
+lib/praxinoscope/src/core/praxinoscope.Program.scala	5	8	0
 lib/praxinoscope/src/core/praxinoscope.Ranges.scala	4	0	0
-lib/praxinoscope/src/core/praxinoscope.Subsumption.scala	14	0	0
-lib/praxinoscope/src/core/praxinoscope.internal.scala	17	0	0
+lib/praxinoscope/src/core/praxinoscope.Subsumption.scala	14	10	0
+lib/praxinoscope/src/core/praxinoscope.internal.scala	17	17	0
 lib/prescience/src/core/prescience.internal.scala	1	0	0
 lib/probably/src/core/probably.Selection.scala	0	0	1
 lib/profanity/src/core/profanity.InlineBoard.scala	1	0	1
