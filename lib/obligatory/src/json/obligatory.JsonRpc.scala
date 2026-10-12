@@ -227,13 +227,13 @@ object JsonRpc:
 trait JsonRpc extends Original:
   private val channel: Relay[Json] = Relay()
 
-  inline def client: Origin = proxy[Origin]
+  inline def client: Origin^ = proxy[Origin]
 
   // A caller-side proxy for an arbitrary interface, rather than for the fixed `Origin`. A protocol
   // whose method surface is split across several interfaces — to keep each generated dispatcher
   // within the per-class constant-pool limit — needs one proxy per interface, all sharing this
   // instance's single outgoing channel.
-  inline def proxy[interface]: interface = ${obligatory.internal.client[interface]('this)}
+  inline def proxy[interface]: interface^ = ${obligatory.internal.client[interface]('this)}
 
   def put(json: Json): Unit =
     channel.put(json)

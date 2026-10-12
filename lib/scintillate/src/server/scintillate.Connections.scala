@@ -93,7 +93,7 @@ private[scintillate] object Connections:
     val source: ji.InputStream is Streamable by Data over Credit =
       unsafely:
         // [fresh-in-lambda] source evidence minted inside unsafely block
-        caps.unsafe.unsafeAssumePure(summon[ji.InputStream is Streamable by Data over Credit])
+        caps.unsafe.unsafeAssumePure(summon[(ji.InputStream is Streamable by Data over Credit)^])
 
     val request =
       Http.Request

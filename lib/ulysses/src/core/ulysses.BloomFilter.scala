@@ -142,7 +142,7 @@ extends caps.Mutable:
 
       gather(first.readable, 0, 1, 0, 0L, 0L)
 
-  private inline def set(index: Int): Boolean = ((words(index >>> 6) >>> index) & 1L) != 0L
+  private def set(index: Int): Boolean = ((words(index >>> 6) >>> index) & 1L) != 0L
 
   // Sets the element's positions in place; only an exclusive filter can.
   update def add(value: element): Unit =

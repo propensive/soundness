@@ -70,7 +70,7 @@ object Svg:
 
     source =>
       given XmlSchema = XmlSchema.Freeform
-      val xml: Xml = summon[Xml is Aggregable by Text].aggregate(source)
+      val xml: Xml = summon[(Xml is Aggregable by Text)^].aggregate(source)
       Svg.Parser.decodeSvg(Svg.Parser.rootElement(xml))
 
   given loadable

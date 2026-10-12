@@ -352,7 +352,7 @@ extension [self](self: self)
 extension [tuple <: Tuple](tuple: tuple)
   def to[product: Mirror.ProductOf]: product = product.fromProduct(tuple)
 
-extension [value](iterator: Iterator[value])
+extension [value](iterator: Iterator[value]^)
   transparent inline def each(predicate: Ordinal aka "ordinal" ?=> value => Unit): Unit =
     var ordinal: Ordinal = Prim
 

@@ -207,10 +207,10 @@ given wsClient: ( online:            Online,
       val duplex: Duplex =
         if secure then
           val endpoint = SecureEndpoint(host.show, portNumber)
-          summon[SecureEndpoint is Connectable].connect(endpoint, interface)
+          summon[(SecureEndpoint is Connectable)^].connect(endpoint, interface)
         else
           val endpoint = Endpoint(host.show, Port[Tcp](portNumber))
-          summon[Endpoint[Tcp.Port] is Connectable].connect(endpoint, interface)
+          summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, interface)
 
       // RFC 6455 §4.1: a fresh 16-byte nonce, Base64-encoded, is the `Sec-WebSocket-Key`;
       // the server's `Sec-WebSocket-Accept` must echo `base64(sha1(key ++ magic))`.

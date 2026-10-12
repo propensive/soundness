@@ -166,8 +166,8 @@ extends Sessional:
 
     target match
       case Lsp.Server.Streams(input, output) =>
-        val streamable = summon[ji.InputStream is Streamable by Data over Credit]
-        val sink = summon[ji.OutputStream is Sink by Data over Credit].intake(output)
+        val streamable = summon[(ji.InputStream is Streamable by Data over Credit)^]
+        val sink = summon[(ji.OutputStream is Sink by Data over Credit)^].intake(output)
 
         // The sink is owned, and finished, by the exchange's writer task.
         LspSessional.exchange

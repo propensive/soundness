@@ -93,10 +93,10 @@ extends Subprocess, Process.Ref, anticipation.Durable:
   // each call reads on from the live pipe, and explicit `memoize` replaces any
   // implicit caching.
   def stdout()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
-    summon[ji.InputStream is Streamable by Data over Credit].stream(process.getInputStream.nn)
+    summon[(ji.InputStream is Streamable by Data over Credit)^].stream(process.getInputStream.nn)
 
   def stderr()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
-    summon[ji.InputStream is Streamable by Data over Credit].stream(process.getErrorStream.nn)
+    summon[(ji.InputStream is Streamable by Data over Credit)^].stream(process.getErrorStream.nn)
 
   def text(): Text = String(process.getInputStream.nn.readAllBytes().nn, "UTF-8").nn.tt
   def errorText(): Text = String(process.getErrorStream.nn.readAllBytes().nn, "UTF-8").nn.tt

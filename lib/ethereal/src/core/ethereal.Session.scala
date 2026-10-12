@@ -411,7 +411,7 @@ class Session
 
           // A `WINCH` or `CONT` carries the terminal's size, recorded before the signal is
           // dispatched so that a trap, or the termcap, reads the new size and not the old.
-          columns.let: columns => rows.let: rows => windowSize() = (columns, rows)
+          columns.let: columns => rows.let { rows => windowSize() = (columns, rows) }
 
           val signal: Signal =
             Signal(interrupt, columns, rows, deadline.let(_.toDouble*Milli(Second)))

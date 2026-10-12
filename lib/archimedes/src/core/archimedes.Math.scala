@@ -73,7 +73,7 @@ object Math extends Mathml.Container(new Math(_)):
   =>  ( (Math is Aggregable by Text)^{parseTactic, xmlTactic, mathmlTactic} ) =
 
     source =>
-      val xml: Xml = summon[Xml is Aggregable by Text].aggregate(source)
+      val xml: Xml = summon[(Xml is Aggregable by Text)^].aggregate(source)
       Mathml.Parser.decodeMath(Mathml.Parser.rootElement(xml))
 
   given loadable: (XmlSchema)
