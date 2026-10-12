@@ -3,8 +3,7 @@
 
 Counts, per file, every place the capture checker is overruled by hand — the four
 `caps.unsafe` hatches — and the array conversions that hide a capture behind a helper
-(`Array.unsafeFrozen`, `Array.unsafeJvm`, `Array.frozen`, `unsafeMutable`/`unsafeImmutable`, the
-stdlib's `IArray.unsafeFromArray`, and
+(`Array.unsafeFrozen`, `Array.unsafeJvm`, `Array.frozen`, the stdlib's `IArray.unsafeFromArray`, and
 `!!`, the erased-evidence operator over `unsafeErasedValue`). It also counts the casts that
 move a capability past the checker without any hatch: a cast to `AnyRef`, the "neutral carrier"
 that a capability is stored as and later recovered from, and a cast whose target type carries a
@@ -44,7 +43,6 @@ WRAPPERS = [
   ('unsafeFrozen', r'\bArray\.unsafeFrozen\b'),
   ('unsafeJvm',    r'\bArray\.unsafeJvm\b'),
   ('frozen',       r'\bArray\.frozen\b'),
-  ('mutability',   r'\bunsafe(?:Mutable|Immutable)\b'),
   ('unsafeFromArray', r'\bIArray\.unsafeFromArray\b'),
   ('erasedEvidence', r'(?<![!\w])!!(?![!=\w])'),
 ]

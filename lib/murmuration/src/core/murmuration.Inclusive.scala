@@ -59,7 +59,15 @@ object Inclusive extends Inclusive.Fallback:
   // The frozen array, `Array[element]^{}`; distinct from the bare `scala.Array`
   // instance below.
   given frozenArray: [element <: Matchable] => (Array[element]^{}) is Inclusive by element =
-    (array, value) => array.readable.exists(_ == value)
+    (array, value) =>
+      var index = 0
+      var found = false
+
+      while !found && index < array.length do
+        found = array.readUnchecked(index) == value
+        index += 1
+
+      found
 
   // Opaque `Sequence` is no longer an `Iterable` subtype, so it needs its own instance.
   given sequence: [element, sequence <: Sequence[element]] => sequence is Inclusive by element =

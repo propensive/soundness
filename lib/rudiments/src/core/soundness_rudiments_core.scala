@@ -49,7 +49,7 @@ export
       before, upto, from, after, snip, tail, Appendable, Prependable, `:+`, `+:`,
       indexed, sort, order, sift, snapshot, state, std, sumBy, tap, that, tib, to, total, tri,
       triple, tuple, twin,
-      typed, typeName, unit, unsafeImmutable, unsafeMatchable, unsafeMutable, unwind, upsert,
+      typed, typeName, unit, unsafeMatchable, unwind, upsert,
       variance, waive, weave, when, yet, upon, context,
       mean2, unique, seek, reap, where, Scoped, unused,
       Populated, head, last, lead, reduce, populatedEquality }

@@ -233,7 +233,7 @@ object Dsv extends Dsv2:
 
             append(format.quote)
 
-    cells.readable.join(format.delimiter.show)
+    cells.join(format.delimiter.show)
 
   // Direct-read entries, gated on an explicit `Dsv.Parsable` (they sit above
   // the AST-based `aggregableIn` in `Dsv2`, so opting in switches the path).

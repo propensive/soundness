@@ -94,7 +94,8 @@ object SumDerivation:
         choicesFold[derivation, Variants, Labels, Unit]((), 0): accumulator =>
           [variant <: derivation] => context ?=> array(index) = lambda[variant](context)
 
-        array.unsafeImmutable(using Unsafe)
+        // [closure-capture] filled by the fold's closure, then never written again
+        Array.unsafeFrozen(array)
 
 
     private transparent inline def choicesFold

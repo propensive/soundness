@@ -89,11 +89,18 @@ object Truncable:
   =>  list is Truncable to List[element] =
     List.lead(_)
 
-  // The rebuilt array is fresh, so freezing it is discharged by construction.
+  // The rebuilt array is fresh and exclusive until it is frozen. An empty array truncates
+  // to itself.
   given frozenArray: [element: scala.reflect.ClassTag, array <: (Array[element]^{})]
   =>  ( complexity: Dysasymptotic.LinearSize )
   =>  array is Truncable to (Array[element]^{}) =
-    value => Array.frozen(value.readable.init)
+    value =>
+      // Read through the JVM view: the subtype-parametric receiver carries a `.rd` the
+      // inline `length` does not accept, and a length read never writes.
+      val count = (Array.unsafeJvm(value).length - 1).max(0)
+      val result: Array[element]^ = Array.allocate[element](count)
+      result.place(value, 0, 0, count)
+      Array.freeze(result)
 
   given chain: [element, chain <: Chain[element]] => (complexity: Dysasymptotic.UnboundedSize)
   =>  chain is Truncable to Chain[element] =

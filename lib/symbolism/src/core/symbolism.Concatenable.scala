@@ -71,7 +71,11 @@ object Concatenable:
 
   given frozenArray: [element: ClassTag]
   =>  (Array[element]^{}) is Concatenable by (Array[element]^{}) to (Array[element]^{}) =
-    (left, right) => Array.frozen(left.readable ++ right.readable)
+    (left, right) =>
+      val result: Array[element]^ = Array.allocate[element](left.length + right.length)
+      result.place(left)
+      result.place(right, left.length)
+      Array.freeze(result)
 
 trait Concatenable extends Typeclass.Pure, Operable, Resultant:
   def concat(left: Self, right: Operand): Result

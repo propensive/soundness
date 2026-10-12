@@ -74,8 +74,8 @@ object matrixConfig:
 
   val corpus: Config = corpora.config()
 
-  lazy val json: Data = corpus.in[Json].show.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
-  lazy val tel: Data = corpus.in[Tel].show.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
+  lazy val json: Data = Array.unsafeFrozen(corpus.in[Json].show.s.getBytes("UTF-8").nn)
+  lazy val tel: Data = Array.unsafeFrozen(corpus.in[Tel].show.s.getBytes("UTF-8").nn)
   lazy val xml: Text = corpus.in[Xml].show
   lazy val yaml: Text = corpus.in[Yaml].show
   lazy val cbor: Data = Cbor.Ast.encodable.encoded(Cbor.unseal(corpus.in[Cbor]))
@@ -109,10 +109,10 @@ object matrixConfig:
   // ── The third-party baselines ──
   def jsoniterRival(): MConfig =
     com.github.plokhotnyuk.jsoniter_scala.core.readFromArray[MConfig]
-      (json.unsafeMutable(using Unsafe))(using jsoniterCodecs.config)
+      (Array.unsafeJvm(json))(using jsoniterCodecs.config)
 
   def borerRival(): MConfig =
-    io.bullet.borer.Cbor.decode(cbor.unsafeMutable(using Unsafe)).to[MConfig]
+    io.bullet.borer.Cbor.decode(Array.unsafeJvm(cbor)).to[MConfig]
       (using borerCodecs.config).value
 
   def protobufJavaRival(): MConfig = protobufWalks.config(protobuf)
@@ -209,8 +209,8 @@ object matrixMenu:
 
   val corpus: MenuDoc = corpora.menu()
 
-  lazy val json: Data = corpus.in[Json].show.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
-  lazy val tel: Data = corpus.in[Tel].show.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
+  lazy val json: Data = Array.unsafeFrozen(corpus.in[Json].show.s.getBytes("UTF-8").nn)
+  lazy val tel: Data = Array.unsafeFrozen(corpus.in[Tel].show.s.getBytes("UTF-8").nn)
   lazy val xml: Text = corpus.in[Xml].show
   lazy val yaml: Text = corpus.in[Yaml].show
   lazy val cbor: Data = Cbor.Ast.encodable.encoded(Cbor.unseal(corpus.in[Cbor]))
@@ -244,10 +244,10 @@ object matrixMenu:
   // ── The third-party baselines ──
   def jsoniterRival(): MMenuDoc =
     com.github.plokhotnyuk.jsoniter_scala.core.readFromArray[MMenuDoc]
-      (json.unsafeMutable(using Unsafe))(using jsoniterCodecs.menu)
+      (Array.unsafeJvm(json))(using jsoniterCodecs.menu)
 
   def borerRival(): MMenuDoc =
-    io.bullet.borer.Cbor.decode(cbor.unsafeMutable(using Unsafe)).to[MMenuDoc]
+    io.bullet.borer.Cbor.decode(Array.unsafeJvm(cbor)).to[MMenuDoc]
       (using borerCodecs.menu).value
 
   def protobufJavaRival(): MMenuDoc = protobufWalks.menu(protobuf)
@@ -344,8 +344,8 @@ object matrixUsers:
 
   val corpus: Users = corpora.users()
 
-  lazy val json: Data = corpus.in[Json].show.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
-  lazy val tel: Data = corpus.in[Tel].show.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
+  lazy val json: Data = Array.unsafeFrozen(corpus.in[Json].show.s.getBytes("UTF-8").nn)
+  lazy val tel: Data = Array.unsafeFrozen(corpus.in[Tel].show.s.getBytes("UTF-8").nn)
   lazy val xml: Text = corpus.in[Xml].show
   lazy val yaml: Text = corpus.in[Yaml].show
   lazy val cbor: Data = Cbor.Ast.encodable.encoded(Cbor.unseal(corpus.in[Cbor]))
@@ -379,10 +379,10 @@ object matrixUsers:
   // ── The third-party baselines ──
   def jsoniterRival(): MUsers =
     com.github.plokhotnyuk.jsoniter_scala.core.readFromArray[MUsers]
-      (json.unsafeMutable(using Unsafe))(using jsoniterCodecs.users)
+      (Array.unsafeJvm(json))(using jsoniterCodecs.users)
 
   def borerRival(): MUsers =
-    io.bullet.borer.Cbor.decode(cbor.unsafeMutable(using Unsafe)).to[MUsers]
+    io.bullet.borer.Cbor.decode(Array.unsafeJvm(cbor)).to[MUsers]
       (using borerCodecs.users).value
 
   def protobufJavaRival(): MUsers = protobufWalks.users(protobuf)
@@ -479,8 +479,8 @@ object matrixLogs:
 
   val corpus: Logs = corpora.logs()
 
-  lazy val json: Data = corpus.in[Json].show.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
-  lazy val tel: Data = corpus.in[Tel].show.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
+  lazy val json: Data = Array.unsafeFrozen(corpus.in[Json].show.s.getBytes("UTF-8").nn)
+  lazy val tel: Data = Array.unsafeFrozen(corpus.in[Tel].show.s.getBytes("UTF-8").nn)
   lazy val xml: Text = corpus.in[Xml].show
   lazy val yaml: Text = corpus.in[Yaml].show
   lazy val cbor: Data = Cbor.Ast.encodable.encoded(Cbor.unseal(corpus.in[Cbor]))
@@ -514,10 +514,10 @@ object matrixLogs:
   // ── The third-party baselines ──
   def jsoniterRival(): MLogs =
     com.github.plokhotnyuk.jsoniter_scala.core.readFromArray[MLogs]
-      (json.unsafeMutable(using Unsafe))(using jsoniterCodecs.logs)
+      (Array.unsafeJvm(json))(using jsoniterCodecs.logs)
 
   def borerRival(): MLogs =
-    io.bullet.borer.Cbor.decode(cbor.unsafeMutable(using Unsafe)).to[MLogs]
+    io.bullet.borer.Cbor.decode(Array.unsafeJvm(cbor)).to[MLogs]
       (using borerCodecs.logs).value
 
   def protobufJavaRival(): MLogs = protobufWalks.logs(protobuf)
@@ -614,8 +614,8 @@ object matrixTransactions:
 
   val corpus: Transactions = corpora.transactions()
 
-  lazy val json: Data = corpus.in[Json].show.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
-  lazy val tel: Data = corpus.in[Tel].show.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
+  lazy val json: Data = Array.unsafeFrozen(corpus.in[Json].show.s.getBytes("UTF-8").nn)
+  lazy val tel: Data = Array.unsafeFrozen(corpus.in[Tel].show.s.getBytes("UTF-8").nn)
   lazy val xml: Text = corpus.in[Xml].show
   lazy val yaml: Text = corpus.in[Yaml].show
   lazy val cbor: Data = Cbor.Ast.encodable.encoded(Cbor.unseal(corpus.in[Cbor]))
@@ -649,10 +649,10 @@ object matrixTransactions:
   // ── The third-party baselines ──
   def jsoniterRival(): MTransactions =
     com.github.plokhotnyuk.jsoniter_scala.core.readFromArray[MTransactions]
-      (json.unsafeMutable(using Unsafe))(using jsoniterCodecs.transactions)
+      (Array.unsafeJvm(json))(using jsoniterCodecs.transactions)
 
   def borerRival(): MTransactions =
-    io.bullet.borer.Cbor.decode(cbor.unsafeMutable(using Unsafe)).to[MTransactions]
+    io.bullet.borer.Cbor.decode(Array.unsafeJvm(cbor)).to[MTransactions]
       (using borerCodecs.transactions).value
 
   def protobufJavaRival(): MTransactions = protobufWalks.transactions(protobuf)
@@ -749,8 +749,8 @@ object matrixInts:
 
   val corpus: Ints = corpora.ints()
 
-  lazy val json: Data = corpus.in[Json].show.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
-  lazy val tel: Data = corpus.in[Tel].show.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
+  lazy val json: Data = Array.unsafeFrozen(corpus.in[Json].show.s.getBytes("UTF-8").nn)
+  lazy val tel: Data = Array.unsafeFrozen(corpus.in[Tel].show.s.getBytes("UTF-8").nn)
   lazy val xml: Text = corpus.in[Xml].show
   lazy val yaml: Text = corpus.in[Yaml].show
   lazy val cbor: Data = Cbor.Ast.encodable.encoded(Cbor.unseal(corpus.in[Cbor]))
@@ -784,10 +784,10 @@ object matrixInts:
   // ── The third-party baselines ──
   def jsoniterRival(): MInts =
     com.github.plokhotnyuk.jsoniter_scala.core.readFromArray[MInts]
-      (json.unsafeMutable(using Unsafe))(using jsoniterCodecs.ints)
+      (Array.unsafeJvm(json))(using jsoniterCodecs.ints)
 
   def borerRival(): MInts =
-    io.bullet.borer.Cbor.decode(cbor.unsafeMutable(using Unsafe)).to[MInts]
+    io.bullet.borer.Cbor.decode(Array.unsafeJvm(cbor)).to[MInts]
       (using borerCodecs.ints).value
 
   def protobufJavaRival(): MInts = protobufWalks.ints(protobuf)
@@ -884,8 +884,8 @@ object matrixDecimals:
 
   val corpus: Decimals = corpora.decimals()
 
-  lazy val json: Data = corpus.in[Json].show.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
-  lazy val tel: Data = corpus.in[Tel].show.s.getBytes("UTF-8").nn.unsafeImmutable(using Unsafe)
+  lazy val json: Data = Array.unsafeFrozen(corpus.in[Json].show.s.getBytes("UTF-8").nn)
+  lazy val tel: Data = Array.unsafeFrozen(corpus.in[Tel].show.s.getBytes("UTF-8").nn)
   lazy val xml: Text = corpus.in[Xml].show
   lazy val yaml: Text = corpus.in[Yaml].show
   lazy val cbor: Data = Cbor.Ast.encodable.encoded(Cbor.unseal(corpus.in[Cbor]))
@@ -919,10 +919,10 @@ object matrixDecimals:
   // ── The third-party baselines ──
   def jsoniterRival(): MDecimals =
     com.github.plokhotnyuk.jsoniter_scala.core.readFromArray[MDecimals]
-      (json.unsafeMutable(using Unsafe))(using jsoniterCodecs.decimals)
+      (Array.unsafeJvm(json))(using jsoniterCodecs.decimals)
 
   def borerRival(): MDecimals =
-    io.bullet.borer.Cbor.decode(cbor.unsafeMutable(using Unsafe)).to[MDecimals]
+    io.bullet.borer.Cbor.decode(Array.unsafeJvm(cbor)).to[MDecimals]
       (using borerCodecs.decimals).value
 
   def protobufJavaRival(): MDecimals = protobufWalks.decimals(protobuf)

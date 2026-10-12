@@ -767,9 +767,11 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
       test(m"A tampered ML-DSA signature fails to verify"):
         val key = PrivateKey.generate[MlDsa[65]]()
-        val bytes = key.sign(pangram).bytes.unsafeMutable(using Unsafe)
+        val signed = key.sign(pangram).bytes
+        val bytes: Array[Byte]^ = Array.allocate[Byte](signed.length)
+        bytes.place(signed)
         bytes(0) = (bytes(0) ^ 1).toByte
-        key.public.verify(pangram, Signature(Array.unsafeFrozen(bytes)))
+        key.public.verify(pangram, Signature(Array.freeze(bytes)))
       . assert(!_)
 
       // The JDK offers no route from an ML-DSA private key back to its public key, so enigmatic
@@ -816,7 +818,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
       // `openssl verify` agree with it, but cannot be run from here.
       def parse(certificate: Certificate): jsc.X509Certificate =
         val factory = jsc.CertificateFactory.getInstance("X.509").nn
-        val bytes = ji.ByteArrayInputStream(certificate.in[Der].data.unsafeMutable(using Unsafe))
+        val bytes = ji.ByteArrayInputStream(Array.unsafeJvm(certificate.in[Der].data))
 
         factory.generateCertificate(bytes).nn.asInstanceOf[jsc.X509Certificate]
 
@@ -837,10 +839,13 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
       test(m"A tampered certificate fails the JDK's signature check"):
         val certificate0 = certificate()
-        val bytes = certificate0.in[Der].data.unsafeMutable(using Unsafe).clone.nn
+        val data = certificate0.in[Der].data
+        val last = data.length - 1
+        val bytes: Array[Byte]^ = Array.allocate[Byte](data.length)
+        bytes.place(data)
         // Flip a bit inside the signature, which the structure keeps well-formed.
-        bytes(bytes.length - 1) = (bytes(bytes.length - 1) ^ 0xff.toByte).toByte
-        val tampered = Certificate(Der(bytes.unsafeImmutable(using Unsafe)).as[Asn1])
+        bytes(last) = (bytes(last) ^ 0xff.toByte).toByte
+        val tampered = Certificate(Der(Array.freeze(bytes)).as[Asn1])
 
         try
           parse(tampered).verify(publicKey(certificate0))
@@ -1040,7 +1045,8 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         // subject key identifier is a bare OCTET STRING and the authority key identifier a
         // SEQUENCE whose `[0]` element is the same twenty bytes.
         def extension(certificate: jsc.X509Certificate, identifier: String): Data =
-          val value = certificate.getExtensionValue(identifier).nn.unsafeImmutable(using Unsafe)
+          // [java-boundary] fresh array returned by the JDK, retained by nobody else
+          val value = Array.unsafeFrozen(certificate.getExtensionValue(identifier).nn)
 
           Der(value).as[Asn1] match
             case Asn1.OctetString(bytes) => Der(bytes).as[Asn1] match
@@ -1056,9 +1062,12 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
       test(m"A tampered issued certificate fails against the issuer's key"):
         val (root, _, _, leaf) = chain()
-        val bytes = leaf.in[Der].data.unsafeMutable(using Unsafe).clone.nn
-        bytes(bytes.length - 1) = (bytes(bytes.length - 1) ^ 0xff.toByte).toByte
-        Certificate(Der(bytes.unsafeImmutable(using Unsafe)).as[Asn1]).verify(root.public)
+        val data = leaf.in[Der].data
+        val last = data.length - 1
+        val bytes: Array[Byte]^ = Array.allocate[Byte](data.length)
+        bytes.place(data)
+        bytes(last) = (bytes(last) ^ 0xff.toByte).toByte
+        Certificate(Der(Array.freeze(bytes)).as[Asn1]).verify(root.public)
       . assert(!_)
 
       test(m"An issued certificate round-trips through DER byte-exactly"):
@@ -1083,7 +1092,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
         val privateKey =
           js.KeyFactory.getInstance("EC").nn.generatePrivate
-            ( js.spec.PKCS8EncodedKeySpec(leaf.pem(Divulgence).data.unsafeMutable(using Unsafe)) )
+            ( js.spec.PKCS8EncodedKeySpec(Array.unsafeJvm(leaf.pem(Divulgence).data)) )
 
         val keystore = js.KeyStore.getInstance("PKCS12").nn
         keystore.load(null, null)
@@ -1169,7 +1178,8 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
               val leaf0 = chain(0).nn
               val root0 = chain(1).nn
               leaf0.verify(root0.getPublicKey)
-              val leafDer = leaf0.getEncoded.nn.unsafeImmutable(using Unsafe).serialize[Hex]
+              // [java-boundary] fresh array returned by the JDK, retained by nobody else
+              val leafDer = Array.unsafeFrozen(leaf0.getEncoded.nn).serialize[Hex]
               val expected = leafCertificate.in[Der].data.serialize[Hex]
               if leafDer == expected then t"" else t"a different leaf"
 

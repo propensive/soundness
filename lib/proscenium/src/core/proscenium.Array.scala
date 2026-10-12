@@ -45,7 +45,7 @@ import scala.reflect.ClassTag
 // than a wrapper class: the mutalias compiler patch classifies the alias as mutable
 // wherever it appears, so hiding `scala.Array` costs nothing at runtime.
 //
-// The total, `Optional`-returning read (`at`) lives in `vacuous`, which sits above this
+// The total, `Optional`-returning read (`at`) lives in `concordance`, which sits above this
 // module; it is built from `length` and the bounds-partial `readUnchecked` below.
 object Array:
   // Named `allocate`, not `apply`: the companion's `apply` is the frozen element-wise
@@ -60,21 +60,60 @@ object Array:
     // [construction-fresh] fresh array literal no writer can alias
     caps.unsafe.unsafeAssumePure(elements.toArray)
 
-  // Frozen constructors: each builds a fresh array no writer can ever alias, so the purity
-  // launder is discharged by construction, exactly as for `of`. Routed through the stdlib's
-  // `IArray` constructors and `frozen` (see its comment for why the cast lives there).
-  def empty[element: ClassTag]: Array[element]^{} = frozen(scala.IArray.empty[element])
+  // Frozen constructors: each fills a fresh exclusive array and freezes it, so the frozen
+  // result is produced by `freeze`'s checked transfer, not by a launder. The loops are the
+  // combinator internals the loop standard reserves `while` for.
+  def empty[element: ClassTag]: Array[element]^{} = freeze(allocate[element](0))
 
   def from[element: ClassTag](elements: IterableOnce[element]^): Array[element]^{} =
-    frozen(scala.IArray.from(elements))
+    // [construction-fresh] the iterator's fresh array is aliased by no writer
+    unsafeFrozen(elements.iterator.toArray)
 
   def fill[element: ClassTag](count: Int)(element: => element): Array[element]^{} =
-    frozen(scala.IArray.fill(count)(element))
+    val array: Array[element]^ = allocate[element](count)
+    var index = 0
+
+    while index < count do
+      array(index) = element
+      index += 1
+
+    freeze(array)
 
   def tabulate[element: ClassTag](count: Int)(lambda: Int => element): Array[element]^{} =
-    frozen(scala.IArray.tabulate(count)(lambda))
+    val array: Array[element]^ = allocate[element](count)
+    var index = 0
 
-  def range(start: Int, end: Int): Array[Int]^{} = frozen(scala.IArray.range(start, end))
+    while index < count do
+      array(index) = lambda(index)
+      index += 1
+
+    freeze(array)
+
+  def range(start: Int, end: Int): Array[Int]^{} =
+    val count = (end - start).max(0)
+    val array: Array[Int]^ = allocate[Int](count)
+    var index = 0
+
+    while index < count do
+      array(index) = start + index
+      index += 1
+
+    freeze(array)
+
+  // Element-wise equality of two readable arrays: the opaque alias cannot override `==`,
+  // which stays the JVM's reference comparison, so content equality is a named operation.
+  def same[element](left: Array[element]^{caps.any.rd}, right: Array[element]^{caps.any.rd})
+  :   Boolean =
+    left.length == right.length && {
+      var index = 0
+      var equal = true
+
+      while equal && index < left.length do
+        equal = left(index) == right(index)
+        index += 1
+
+      equal
+    }
 
   // A bare JVM array, allocated through the companion so that interior scratch (the
   // fields of `caps.Mutable` state machines, and other code below the reach of `Array`'s
@@ -91,12 +130,13 @@ object Array:
     // [transfer] freeze: consume retires writers, drops write capability
     caps.unsafe.unsafeAssumePure(array)
 
-  // The trusted boundary cast, successor to `IArray.unsafeFromArray`: asserts that the
-  // caller retains no writer to `array`. For interop edges that cannot thread `consume`.
-  // Routed through the (immutable, so capture-free) stdlib `IArray` because a read-only
-  // reference cannot feed `unsafeAssumePure` directly: inference demands an exclusive set.
+  // The trusted boundary cast: asserts that the caller retains no writer to `array`. For
+  // interop edges that cannot thread `consume`. A read-only reference cannot feed
+  // `unsafeAssumePure` directly (inference demands an exclusive set), so the cast first
+  // reasserts the exclusive form the launder expects.
   def unsafeFrozen[element](array: scala.Array[element]): Array[element]^{} =
-    frozen(array.asInstanceOf[scala.IArray[element]])
+    // [java-boundary] trusted boundary cast: the caller retains no writer
+    caps.unsafe.unsafeAssumePure(array.asInstanceOf[scala.Array[element]^])
 
   // Rehomes a stdlib `IArray` -- immutable by construction -- as a frozen `Array`: the
   // return path of the compat shims, which delegate to the stdlib's `IArray` operations.
@@ -109,7 +149,7 @@ object Array:
   // Pattern support for any readable reference: `case Array(a, b)` reads but never writes,
   // so frozen, shared and exclusive receivers all subsume into `^{caps.any.rd}`.
   def unapplySeq[element](array: Array[element]^{caps.any.rd}): Option[Seq[element]] =
-    Some(array.asInstanceOf[scala.IArray[element]].toSeq)
+    Some(array.stdlib)
 
   // The JVM array behind a readable reference, for Java APIs that read but never write their
   // array argument (`OutputStream.write`, `MessageDigest.update`, `SecretKeySpec`, and the
@@ -133,10 +173,11 @@ object Array:
   extension [element, C^](buffer: Array[element]^{C})
     inline def length: Int = buffer.length
 
-    // The bounds-partial shared read: exists for layering (`vacuous`'s total `at` wraps
-    // it in a bounds check), not for use at call sites, which should prefer `at` or an
-    // exclusive reference's `apply`. Reading through a shared reference is sound because
-    // separation excludes live writers wherever readers alias.
+    // The bounds-partial shared read. `concordance`'s total `at` wraps it in a bounds check,
+    // and that or a confined ordinal is what a call site should normally use; a bare call is
+    // the loop standard's data-derived shape, which carries a comment naming its proof.
+    // Reading through a shared reference is sound because separation excludes live writers
+    // wherever readers alias.
     inline def readUnchecked(index: Int): element = buffer(index)
 
   // An exclusive reference has sole ownership, so it may also read without the `Optional`
@@ -192,18 +233,32 @@ object Array:
     // surface, which exposes no write operations.
     inline def readable: scala.IArray[element] = array.asInstanceOf[scala.IArray[element]]
 
+    // The greppable stdlib bridge, as `List.stdlib`: a zero-copy, read-only `ArraySeq` view
+    // for the stdlib and Java APIs that want a `Seq`. Not for element access: its generic
+    // `apply` boxes, and it is a partial read the collection vocabulary does not offer.
+    inline def stdlib: scala.collection.immutable.ArraySeq[element] =
+      scala.collection.immutable.ArraySeq
+      . unsafeWrapArray(array.asInstanceOf[scala.Array[element]])
+
     // The one constructive frozen-array operation the generic collections API cannot serve:
     // murmuration's `map` requires a `Mappable` instance, and the frozen array has none (its
-    // element type carries a `ClassTag` obligation no typeclass slot can express). Promoted
-    // from the compat shims, but NOT `inline`: expansion re-typechecks the body at the call
-    // site, and in this file — where the opaque alias is transparent — the receiver proxy
-    // dealiases to `scala.Array`, whose exclusive `{}` cannot subsume the read-only receiver.
-    // The explicit `element2` parameter is what stops a nested frozen array's fresh `any.rd`
-    // being re-minted at the application site.
+    // element type carries a `ClassTag` obligation no typeclass slot can express). NOT
+    // `inline`: expansion re-typechecks the body at the call site, and in this file — where
+    // the opaque alias is transparent — the receiver proxy dealiases to `scala.Array`, whose
+    // exclusive `{}` cannot subsume the read-only receiver. The explicit `element2` parameter
+    // is what stops a nested frozen array's fresh `any.rd` being re-minted at the application
+    // site.
     @targetName("frozenMap")
     def map[element2: scala.reflect.ClassTag](lambda: element => element2)
     :   Array[element2]^{} =
-      Array.frozen(array.readable.map(lambda))
+      val result: Array[element2]^ = Array.allocate[element2](array.length)
+      var index = 0
+
+      while index < array.length do
+        result(index) = lambda(array(index))
+        index += 1
+
+      Array.freeze(result)
 
   given arrayIsSpreadable: [element] => (Spreadable[Array[element]^{}] { type Out = scala.Array[element]^{} }) =
     new Spreadable[Array[element]^{}]:

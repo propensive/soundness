@@ -43,17 +43,17 @@ object Segmentable:
   =>  ( IndexedSeq[element] is Segmentable { type Segment = IndexedSeq[element] } ) =
     (sequence, interval) => sequence.slice(interval.start.n0, interval.limit.n0)
 
-  // Copied with the element's `ClassTag` rather than through `IArray.slice`, which
+  // Copied with the element's `ClassTag` rather than through the stdlib's `slice`, which
   // materializes one from the array's runtime class on every call — a `ClassValue` lookup
   // that dominated a binary parser's profile. The bounds clamp as `slice`'s do.
-  given iarray: [element: scala.reflect.ClassTag]
+  given frozenArray: [element: scala.reflect.ClassTag]
   =>  ( (Array[element]^{}) is Segmentable { type Segment = Array[element]^{} } ) =
-    (iarray: Array[element]^{}, interval: Interval) =>
-      val length = iarray.readable.length
+    (array: Array[element]^{}, interval: Interval) =>
+      val length = array.length
       val start = interval.start.n0.max(0).min(length)
       val end = interval.limit.n0.max(start).min(length)
       val copy = Array.allocate[element](end - start)
-      System.arraycopy(Array.unsafeJvm(iarray), start, copy.raw, 0, end - start)
+      System.arraycopy(Array.unsafeJvm(array), start, copy.raw, 0, end - start)
       Array.freeze(copy)
 
   // Opaque `Sequence` is no longer an `IndexedSeq` subtype, so it needs its own instance.

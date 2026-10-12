@@ -81,16 +81,16 @@ object Decomposable extends Decomposable2:
       val values: Sequence[Decomposition] = sequence.map(decomposable.decomposition(_))
       Decomposition.Sequence(t"Sequence", values.to[List], sequence)
 
-  given iarray: [element]
+  given frozenArray: [element]
   =>  ( decomposable: => element is Decomposable )
   =>  (Array[element]^{}) is Decomposable =
 
     // [field-purity]
-    caps.unsafe.unsafeAssumePure: iarray =>
+    caps.unsafe.unsafeAssumePure: array =>
       Decomposition.Sequence
         ( t"Array",
-          iarray.readable.toSeq.map(decomposable.decomposition(_)).to(List),
-          iarray )
+          array.to[List].map(decomposable.decomposition(_)),
+          array )
 
 trait Decomposable extends Typeclass:
   def decomposition(value: Self): Decomposition

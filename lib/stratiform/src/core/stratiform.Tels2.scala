@@ -37,7 +37,6 @@ import distillate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
-import rudiments.unsafeMutable
 import vacuous.*
 import wisteria.*
 import Tels.Polarity

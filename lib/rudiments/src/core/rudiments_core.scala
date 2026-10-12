@@ -252,6 +252,11 @@ extension [self](self: self)(using traversable: self is Traversable)
   inline def all(predicate: traversable.Operand => Boolean): Boolean =
     traversable.traverse(self).forall(predicate)
 
+  // The first element satisfying the predicate, or `Unset`: the `Traversable` sibling of the
+  // stdlib's `find`, whose `Option` result the collections do not use.
+  inline def find(predicate: traversable.Operand => Boolean): Optional[traversable.Operand] =
+    traversable.traverse(self).find(predicate).optional
+
   // The `Traversable` sibling of the `Iterable` `fuse` below, so the opaque collections fold
   // through the same name.
   inline def fuse[state](base: state)
@@ -515,30 +520,7 @@ extension [value](iterable: Iterable[value])
 
     recur(0, iterable, 0, 0, 0)
 
-// The ambient-capability launderings between the opaque array and the JVM array. Prefer the
-// named forms in `Array`'s companion, which say what is being asserted and to whom:
-// `freeze` (sound, `consume`-gated), `unsafeFrozen` (this array is fresh and unaliased),
-// `unsafeJvm` (this Java callee reads but cannot say so), and `raw` (exclusive interop).
-// Forty-odd call sites remain (2026-10-07: eighteen in library code, the rest in tests), of
-// which only a few are for reasons the named forms cannot express:
-//   - `wisteria.SumDerivation` freezes an array a closure filled, so freshness is not evident;
-//   - enigmatic (`PrivateKey`, `SymmetricKey`, `JavaBaseCrypto`, `Asn1`) hands key material to
-//     `Cloak.cloak` and the JDK providers, which *zero* what they are given -- a write, so
-//     `unsafeJvm` would be a false claim. Fixing those properly means
-//     `cloak(consume Array[Byte]^)` and a `Crypto` provider contract that returns exclusive
-//     key material.
-// The tail (probably's `Streamer`, stratiform, metamorphose, coaxial's `Tls`, anthology's OCI
-// writer, and the corpuscular/enigmatic/facsimile/vivisection tests) should migrate to the
-// named forms. The escape census (doc/roadmap/safety.md, `safety-7`) counts every site; when
-// the last goes, so should these two.
-extension [element](value: Array[element]^{})
-  inline def unsafeMutable(using erased unsafe: Unsafe): scala.Array[element] =
-    value.asInstanceOf[scala.Array[element]]
-
 extension [element](array: scala.Array[element])
-  inline def unsafeImmutable(using erased unsafe: Unsafe): Array[element]^{} =
-    array.asInstanceOf[Array[element]^{}]
-
   def snapshot(using ClassTag[element]): Array[element]^{} =
     val newArray = Array.allocate[element](array.length)
     System.arraycopy(array, 0, newArray.raw, 0, array.length)
@@ -546,7 +528,7 @@ extension [element](array: scala.Array[element])
 
   inline def place(value: Array[element]^{}, ordinal: Ordinal = Prim): Unit =
     System.arraycopy
-      ( value.asInstanceOf[scala.Array[element]], 0, array, ordinal.n0, value.readable.length )
+      ( value.asInstanceOf[scala.Array[element]], 0, array, ordinal.n0, value.length )
 
 extension [key, value](map: Map[key, value])
   def upsert(key: key, optional: Optional[value] => value): Map[key, value] =

@@ -123,8 +123,8 @@ object Streamer:
           ((length >> 8) & 0xff).toByte,
           (length & 0xff).toByte )
 
-    output.write(header.unsafeMutable(using Unsafe))
-    output.write(payload.unsafeMutable(using Unsafe))
+    output.write(Array.unsafeJvm(header))
+    output.write(Array.unsafeJvm(payload))
     output.flush()
 
   // Runs the named suite (a `probably.Suite` object, loaded from THIS classloader — the

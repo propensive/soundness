@@ -59,7 +59,11 @@ object Appendable:
   // The frozen array is rebuilt in full: O(n), so the instance demands the marker.
   given frozenArray: [element: scala.reflect.ClassTag] => (complexity: Dysasymptotic.LinearSize)
   =>  (Array[element]^{}) is Appendable by element =
-    (array, element) => Array.frozen(array.readable :+ element)
+    (array, element) =>
+      val result: Array[element]^ = Array.allocate[element](array.length + 1)
+      result.place(array)
+      result(array.length) = element
+      Array.freeze(result)
 
 trait Appendable extends Typeclass.Pure, Operable:
   def append(self: Self, element: Operand): Self

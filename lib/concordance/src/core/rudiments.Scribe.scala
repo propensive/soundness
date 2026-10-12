@@ -229,7 +229,7 @@ object Scribe:
     @targetName("appendArray")
     inline def append(source: Array[element]^{}): Unit =
       val core = scribe.asInstanceOf[Core]
-      val count = source.readable.length
+      val count = source.length
       if core.growable then Scribe.reserve[element](core, count)
       val target = core.buffer.asInstanceOf[scala.Array[element]^]
       val room = count.min(target.length - core.mark)
@@ -261,10 +261,10 @@ object Scribe:
       val core = scribe.asInstanceOf[Core]
 
       if core.growable
-      then Scribe.reserve[element](core, ordinal.n0 + source.readable.length - core.mark)
+      then Scribe.reserve[element](core, ordinal.n0 + source.length - core.mark)
 
       val target: scala.Array[element]^ = core.buffer.asInstanceOf[scala.Array[element]^]
-      val count = source.readable.length.min(target.length - ordinal.n0)
+      val count = source.length.min(target.length - ordinal.n0)
 
       System.arraycopy
         ( source.asInstanceOf[scala.Array[element]], 0, target, ordinal.n0, count )
