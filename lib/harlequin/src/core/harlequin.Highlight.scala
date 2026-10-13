@@ -49,6 +49,12 @@ object Highlight:
     def classpath: Text
     def compiler(): dotty.tools.dotc.Compiler
 
+    // A context to type in, for a compilation which keeps a compiler warm: each run is given a
+    // fresh child of it, so the symbol table it has loaded is not loaded again, and what it
+    // has compiled is in scope. `Unset`, the default, has a context made afresh from
+    // `classpath` and `arguments` for every run.
+    def context(): Optional[dotty.tools.dotc.core.Contexts.Context] = Unset
+
 trait Highlight:
   def depth: Depth
   def compilation: Optional[Highlight.Compilation]
