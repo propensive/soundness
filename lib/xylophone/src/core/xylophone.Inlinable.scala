@@ -48,6 +48,20 @@ object Inlinable:
   inline def parsable[value]: value is Xml.Parsable =
     ${xylophone.inlining.inlinableParsable[value]}
 
+  // The writing counterpart: a monomorphic `Xml.Printable` that writes a record's compact XML
+  // text straight into a writer.
+  inline def printable[value]: value is Xml.Printable =
+    ${xylophone.inlining.inlinablePrintable[value]}
+
+  // Evidence that the generator builds a type's codec structurally, as a record: the condition
+  // on `import codecs.direct`'s generated instances. Its given fails for any other type, so the
+  // search for a generated instance fails too, and the derived path resolves instead.
+  object Generates:
+    transparent inline given generates: [value] => Generates[value] =
+      ${xylophone.inlining.generates[value]}
+
+  final class Generates[value]()
+
   // The expansion-time evaluation of a user-written instance, and of a sum's
   // `Discriminable in Xml`. An `Inlinable` given is an
   // ordinary runtime value, so the generator can only call its `parse` by evaluating the given

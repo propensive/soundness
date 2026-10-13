@@ -65,6 +65,18 @@ case class PPlaylist(name: Text, songs: List[Text]) derives CanEqual
 case class PTree(value: Text, children: List[PTree]) derives CanEqual
 case class PTeam(name: Text, members: List[PWorker]) derives CanEqual
 
+// For the codec modes: a record that generates its codec once with `derives`, a pair of
+// mutually recursive records, optional and map fields, and records with no children to write.
+case class XDeclared(id: Int, name: Text) derives Xml.Direct, CanEqual
+case class XPing(n: Int, pongs: List[XPong]) derives CanEqual
+case class XPong(n: Int, pings: List[XPing]) derives CanEqual
+case class XOpt(name: Text, nick: Optional[Text], boss: Optional[PWorker]) derives CanEqual
+case class XNick(nick: Optional[Text]) derives CanEqual
+case class XHolder(label: Text, inner: XNick, empty: XEmpty) derives CanEqual
+case class XEmpty() derives CanEqual
+case class XMapped(name: Text, counts: Map[Text, Int]) derives CanEqual
+case class XMixed(ok: Boolean, ratio: Double, big: Long, text: Text) derives CanEqual
+
 case class PIssues(items: List[(Text, Xml.Error)] = Nil)(using Diagnostics)
 extends Error(m"${items.size} XML decoding issues"):
   def +(focus: Text, error: Xml.Error): PIssues = PIssues(items :+ (focus, error))
