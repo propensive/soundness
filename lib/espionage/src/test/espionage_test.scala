@@ -179,7 +179,7 @@ object AgentFixture:
     // permission sequence completes, and its response must echo this request's id.
     var promptRequest: Optional[Json] = Unset
 
-    val streamable = summon[ji.InputStream is Streamable by Data over Credit]
+    val streamable = summon[(ji.InputStream is Streamable by Data over Credit)^]
 
     streamable.stream(input).chain.stdlib.iterator.frames[Linefeed].each: frame =>
       val message: Text = frame.utf8

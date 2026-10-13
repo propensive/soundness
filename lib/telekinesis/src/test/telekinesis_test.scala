@@ -776,7 +776,7 @@ object Tests extends Suite("http", m"Telekinesis tests"):
             in.readNBytes(24) // the client connection preface
 
             unsafely:
-              val source = summon[java.io.InputStream is Streamable by Data over Credit].stream(in)
+              val source = summon[(java.io.InputStream is Streamable by Data over Credit)^].stream(in)
               val reader = FrameReader(source)
               val hpack = Hpack()
               var continue = true

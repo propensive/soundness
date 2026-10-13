@@ -64,7 +64,7 @@ class EditorField(initial: LineEditor = LineEditor()) extends Focus:
   // appears in the focused editor and is hidden elsewhere.
   def render(canvas: Board^, focused: Boolean): Unit =
     given canvas0: (Board^{canvas}) = canvas
-    summon[Interaction[Text, LineEditor]].render(Unset, editor)
+    summon[(Interaction[Text, LineEditor])^].render(Unset, editor)
     canvas.cursor(focused)
 
   def handle(event: Terminal.Event): Unit = editor = editor.apply(event)

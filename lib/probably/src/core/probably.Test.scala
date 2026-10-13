@@ -61,8 +61,8 @@ object Test:
   // which accepts any body and runs it inline, its value flowing onward. The same holds
   // within an `aspirationally` block, whose runner only changes how verdicts are recorded.
   //
-  // The purity is enforced in the macro (`internal.pure`), not by this signature alone: the
-  // capture checker does not hold an inline method's arguments to its parameter types.
+  // The purity is enforced in the macro (`internal.pure`), which passes the test to a pure
+  // parameter, as well as by this signature.
   extension [test](test: Test[test])
     inline def assert(inline predicate: test => Boolean): Unit =
       ${probably.internal.assert[test]('test, 'predicate)}
@@ -133,7 +133,7 @@ object Test:
       Spread(this, axis, action(using _))
 
     def over[value <: reflect.Enum: Enumerable, result]
-      ( companion: { def values: scala.Array[value]^ } )
+      ( companion: { def valueOf(name: String): value } )
       ( action: Harness ?=> (value ~> result) )
     :   Spread[value, result]^{action} =
 
@@ -147,21 +147,21 @@ object Test:
       Spread2(this, first, second, action(using _))
 
     def over[left <: reflect.Enum: Enumerable, right, result]
-      ( first: { def values: scala.Array[left]^ }, second: Axis[right] )
+      ( first: { def valueOf(name: String): left }, second: Axis[right] )
       ( action: Harness ?=> (((left, right)) ~> result) )
     :   Spread2[left, right, result]^{action} =
 
       Spread2(this, Axis(first), second, action(using _))
 
     def over[left, right <: reflect.Enum: Enumerable, result]
-      ( first: Axis[left], second: { def values: scala.Array[right]^ } )
+      ( first: Axis[left], second: { def valueOf(name: String): right } )
       ( action: Harness ?=> (((left, right)) ~> result) )
     :   Spread2[left, right, result]^{action} =
 
       Spread2(this, first, Axis(second), action(using _))
 
     def over[left <: reflect.Enum: Enumerable, right <: reflect.Enum: Enumerable, result]
-      ( first: { def values: scala.Array[left]^ }, second: { def values: scala.Array[right]^ } )
+      ( first: { def valueOf(name: String): left }, second: { def valueOf(name: String): right } )
       ( action: Harness ?=> (((left, right)) ~> result) )
     :   Spread2[left, right, result]^{action} =
 

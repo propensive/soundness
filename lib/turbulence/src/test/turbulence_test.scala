@@ -740,15 +740,15 @@ object Tests extends Suite("streams", m"Turbulence tests"):
       test(m"input stream source flows to output stream sink"):
         val input = ji.ByteArrayInputStream(Array.unsafeJvm(payload))
         val output = ji.ByteArrayOutputStream()
-        val source = summon[ji.ByteArrayInputStream is Streamable by Data over Credit]
-        val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
+        val source = summon[(ji.ByteArrayInputStream is Streamable by Data over Credit)^]
+        val sink = summon[(ji.ByteArrayOutputStream is Sink by Data over Credit)^]
         source.stream(input).pump(sink.intake(output))
         Array.unsafeFrozen(output.toByteArray.nn).to[List]
       . assert(_ == payload.readable.to(List))
 
       test(m"in-memory data source flows to output stream sink"):
         val output = ji.ByteArrayOutputStream()
-        val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
+        val sink = summon[(ji.ByteArrayOutputStream is Sink by Data over Credit)^]
         summon[Data is Streamable by Data over Credit].stream(payload).pump(sink.intake(output))
         Array.unsafeFrozen(output.toByteArray.nn).to[List]
       . assert(_ == payload.readable.to(List))
@@ -757,7 +757,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
       test(m"reader source delivers text across refills"):
         val reader = ji.StringReader(original.s)
-        val source = summon[ji.StringReader is Streamable by Text over Credit]
+        val source = summon[(ji.StringReader is Streamable by Text over Credit)^]
         val stream = source.stream(reader)
         val builder = StringBuilder()
 
@@ -782,7 +782,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
       test(m"a Chain is a Source through its native instance"):
         val output = ji.ByteArrayOutputStream()
-        val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
+        val sink = summon[(ji.ByteArrayOutputStream is Sink by Data over Credit)^]
         val source = summon[Chain[Data] is Streamable by Data over Credit]
         source.stream(Chain(payload, payload)).pump(sink.intake(output))
         output.toByteArray.nn.length
@@ -796,7 +796,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
           override def write(array: scala.Array[Byte] | Null, off: Int, len: Int): Unit =
             throw ji.IOException("cut")
 
-        val sink = summon[ji.OutputStream is Sink by Data over Credit]
+        val sink = summon[(ji.OutputStream is Sink by Data over Credit)^]
 
         capture[Truncation.Error]:
           summon[Data is Streamable by Data over Credit].stream(payload).pump(sink.intake(broken))

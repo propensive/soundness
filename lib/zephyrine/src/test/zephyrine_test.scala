@@ -1375,14 +1375,16 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
           val reparked = awaitParked(writer)
           val advanced = written.get()
 
-          def drain(total: Int): Int = stream.refill(Credit(16)) match
+          var rest = 0
+          var draining = true
+
+          while draining do stream.refill(Credit(16)) match
             case count: Int =>
               stream.skip(count)
-              drain(total + count)
+              rest += count
 
-            case _ => total
+            case _ => draining = false
 
-          val rest = drain(0)
           writer.join(10000)
           (parked, frozen, reparked, advanced, 16 + rest)
       . assert(_ == ((true, 2, true, 4, 128)))
@@ -1413,16 +1415,16 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
           var consumed: Long = 0
           var worst: Long = 0
 
-          def loop(): Unit = stream.refill(Credit(64)) match
+          var looping = true
+
+          while looping do stream.refill(Credit(64)) match
             case count: Int =>
               stream.skip(count)
               consumed += count
               worst = worst.max(produced.get() - consumed)
-              loop()
 
-            case _ => ()
+            case _ => looping = false
 
-          loop()
           writer.join(10000)
           (consumed, worst <= 96L)
       . assert(_ == ((16384L, true)))
@@ -1448,14 +1450,16 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
 
           val parked = awaitParked(writer)
 
-          def drain(total: Int): Int = stream.refill(Credit(1000)) match
+          var total = 0
+          var draining = true
+
+          while draining do stream.refill(Credit(1000)) match
             case count: Int =>
               stream.skip(count)
-              drain(total + count)
+              total += count
 
-            case _ => total
+            case _ => draining = false
 
-          val total = drain(0)
           writer.join(10000)
           (parked, total)
       . assert(_ == ((true, 96)))
