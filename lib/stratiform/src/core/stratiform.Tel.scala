@@ -2935,6 +2935,28 @@ object Tel extends Tel2:
       case PositionTracking.On  => parseTracked(bytes)
       case PositionTracking.Off => parse(bytes)
 
+  // The same, for a document read from a cursor as it arrives.
+  private[stratiform] def parseTracking(cursor: Cursor[Data, {}]^)(using PositionTracking)
+  :   (Tactic[Tel.Error]^) ?->{cursor} Tel =
+
+    summon[PositionTracking] match
+      case PositionTracking.On =>
+        val (document, triples) = Tel.Parser.parseTracked(cursor)
+        Tel(document, Optional(PositionIndex(buildIndex(document, triples))))
+
+      case PositionTracking.Off =>
+        Tel(Tel.Parser.parse(cursor))
+
+  // A byte stream as the parser's cursor, filled as the parser reaches the end of what it has:
+  // the input is read as it arrives rather than gathered first. The parser counts lines itself,
+  // so the cursor's lineation is untracked, as for a whole `Data`. The non-consume `accept` and
+  // `load` that call this cross the stream to the consuming cursor as a neutral reference.
+  private[stratiform] def streamed(stream: (Stream[Data] over Credit)^)(using Buffering)
+  :   Cursor[Data, {}]^ =
+
+    import zephyrine.Lineation.untrackedData
+    Cursor[Data](stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^])
+
   // Fold the parser's flat pre-order stream of `positionStride`-int records — one
   // per compound, in recursive-descent order — into the navigable packed
   // descriptor layout documented on `PositionIndex`. The AST supplies the tree
@@ -3194,9 +3216,16 @@ object Tel extends Tel2:
   // pragma, line-endings) is *not* surfaced — use `.load[Tel]` to
   // recover those alongside the value. Per §6.1, single-document parsing
   // stops at the first document separator; content after it is ignored.
-  given aggregable: (tactic: Tactic[Tel.Error], tracking: PositionTracking)
+  given aggregable: (tactic: Tactic[Tel.Error], tracking: PositionTracking, buffering: Buffering)
   =>  ( (Tel is Aggregable by Data)^{tactic} ) =
-    source => parseTracking(concatenate(source))
+
+    new Aggregable:
+      type Self = Tel
+      type Operand = Data
+
+      def aggregate(source: Chain[Data]): Tel = parseTracking(concatenate(source))
+      override def accept(stream: (Stream[Data] over Credit)^): Tel =
+        parseTracking(streamed(stream))
 
   // Direct parsing: when the value knows how to consume compound entries
   // itself, the document's AST is never materialized. Declared here (not in
@@ -3205,9 +3234,18 @@ object Tel extends Tel2:
   // existing code resolves exactly as before.
   given aggregableParsed: [value]
   =>  ( parsable: (value is Tel.Parsable)^ )
-  =>  ( tactic: Tactic[Tel.Error], tracking: PositionTracking )
+  =>  ( tactic: Tactic[Tel.Error], tracking: PositionTracking, buffering: Buffering )
   =>  ( ((value in Tel) is Aggregable by Data)^{parsable, tactic} ) =
-    source => parseDirect(concatenate(source), parsable).asInstanceOf[value in Tel]
+
+    new Aggregable:
+      type Self = value in Tel
+      type Operand = Data
+
+      def aggregate(source: Chain[Data]): value in Tel =
+        parseDirect(concatenate(source), parsable).asInstanceOf[value in Tel]
+
+      override def accept(stream: (Stream[Data] over Credit)^): value in Tel =
+        parseDirect(streamed(stream), parsable).asInstanceOf[value in Tel]
 
   // Whole-`Data` direct read: when the entire content is already in hand,
   // parse it in place rather than wrapping it in a one-element stream —
@@ -3233,8 +3271,14 @@ object Tel extends Tel2:
   :   value =
 
     import zephyrine.Lineation.untrackedData
+    parseDirect(Cursor[Data](input), parsable)
+
+  private def parseDirect[value](cursor: Cursor[Data, {}]^, parsable: (value is Tel.Parsable)^)
+    ( using tactic: Tactic[Tel.Error], tracking: PositionTracking )
+  :   value =
+
     val parser = Tel.Parser.borrow()
-    parser.reset(Cursor[Data](input), Unset)
+    parser.reset(cursor, Unset)
 
     parser.spanTracking = tracking match
       case PositionTracking.On  => true
@@ -3397,50 +3441,44 @@ object Tel extends Tel2:
   // them lazily on demand (the more specific instance wins over turbulence's
   // generic `Chain` Aggregable, which would otherwise wrap the whole source as
   // a single element).
-  given listAggregable: (tactic: Tactic[Tel.Error])
+  given listAggregable: (tactic: Tactic[Tel.Error], buffering: Buffering)
   =>  ( (List[Tel] is Aggregable by Data)^{tactic} ) =
-    source => parseAll(concatenate(source))
+
+    new Aggregable:
+      type Self = List[Tel]
+      type Operand = Data
+
+      def aggregate(source: Chain[Data]): List[Tel] = parseAll(concatenate(source))
+
+      override def accept(stream: (Stream[Data] over Credit)^): List[Tel] =
+        Tel.Parser.parseDocuments(streamed(stream)).map(Tel(_))
 
   given streamAggregable: (tactic: Tactic[Tel.Error])
   =>  ( (Chain[Tel] is Aggregable by Data)^{tactic} ) =
     source => parseStream(concatenate(source))
 
-  // `text.load[Tel]` for any Chain[Text] source: concatenates the
-  // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
+  // `text.load[Tel]`: the text stream is transcoded to UTF-8 through the encoder duct — the
+  // parser's own input type — and parsed as it arrives, and the resulting Tel is paired with a
   // `Tel.Metadata` carrying the document's prologue.
   given loadable: (tactic: Tactic[Tel.Error], buffering: Buffering, tracking: PositionTracking)
   =>  ( (Tel is Loadable by Text)^{tactic} ) = stream =>
-    // The whole document materializes once (the parser is whole-input), but the
-    // Text stream is transcoded to UTF-8 through the encoder duct and memoized
-    // straight to bytes — the parser's own input type — rather than through an
-    // intermediate whole-document `String` and a second `getBytes` copy. The
-    // non-consume `load` crosses to `memoize` as a neutral reference.
-    val bytes: Data =
+    // The non-consume `load` crosses to the duct as a neutral reference.
+    val bytes =
       stream.asInstanceOf[AnyRef].asInstanceOf[(zephyrine.Stream[Text] over zephyrine.Credit)^]
       . via(hieroglyph.codepages.utf8Codepage)
       . asInstanceOf[(zephyrine.Stream[Data] over zephyrine.Credit)^]
-      . memoize
 
-    loaded(bytes)
+    loaded(parseTracking(streamed(bytes)))
 
-  // The byte form, the parser's own input: the stream memoizes straight to the whole
-  // document's bytes, with no transcoding.
+  // The byte form, the parser's own input: parsed as it arrives, with no transcoding.
   given loadableData: (tactic: Tactic[Tel.Error], buffering: Buffering, tracking: PositionTracking)
   =>  ( (Tel is Loadable by Data)^{tactic} ) = stream =>
-    val bytes: Data =
-      stream.asInstanceOf[AnyRef].asInstanceOf[(zephyrine.Stream[Data] over zephyrine.Credit)^]
-      . memoize
+    loaded(parseTracking(streamed(stream)))
 
-    loaded(bytes)
-
-  private def loaded(bytes: Data)(using Tactic[Tel.Error], PositionTracking)
-  :   turbulence.Document[Tel] =
-
-    // The metadata comes off the parsed `Tel`'s own subtree rather than from a
-    // second, untracked `Tel.Parser.parse`, so that under `parsing.trackPositions`
-    // the loaded document keeps its `positionIndex`.
-    val tel = parseTracking(bytes)
-
+  // The metadata comes off the parsed `Tel`'s own subtree rather than from a second, untracked
+  // `Tel.Parser.parse`, so that under `parsing.trackPositions` the loaded document keeps its
+  // `positionIndex`.
+  private def loaded(tel: Tel): turbulence.Document[Tel] =
     tel.subtree match
       case doc: Tel.Document =>
         turbulence.Document
@@ -3909,8 +3947,13 @@ object Tel extends Tel2:
     // bookkeeping, not the cursor's lineation.
     def parseTracked(input: Data): (Tel.Document, Array[Int]^{}) raises Tel.Error =
       import zephyrine.Lineation.untrackedData
+      parseTracked(Cursor[Data](input))
+
+    def parseTracked(cursor: Cursor[Data, {}]^)
+    :   (Tactic[Tel.Error]^) ?->{cursor} (Tel.Document, Array[Int]^{}) =
+
       val p = borrow()
-      p.reset(Cursor[Data](input), Unset)
+      p.reset(cursor, Unset)
       p.tracking = true
       p.spanTracking = true
 
@@ -3923,9 +3966,21 @@ object Tel extends Tel2:
     // contains. `parseDocuments` is eager; `parseStream` parses lazily on demand.
     def parseDocuments(input: Data): List[Tel.Document] raises Tel.Error =
       import zephyrine.Lineation.untrackedData
+      parseDocuments(Cursor[Data](input))
+
+    def parseDocuments(cursor: Cursor[Data, {}]^)
+    :   (Tactic[Tel.Error]^) ?->{cursor} List[Tel.Document] =
+
       val p = borrow()
-      p.reset(Cursor[Data](input), Unset)
+      p.reset(cursor, Unset)
       p.parseAllDocuments()
+
+    // A parser of its own over `cursor`, not the shared per-thread one, for a caller that steps
+    // through the documents of a source across calls and must own the parser's state.
+    def owned(cursor: Cursor[Data, {}]^): Parser^ =
+      val parser = new Parser()
+      parser.reset(cursor, Unset)
+      parser
 
     def parseStream(input: Data): Chain[Tel.Document] raises Tel.Error =
       import zephyrine.Lineation.untrackedData
@@ -4848,6 +4903,25 @@ object Tel extends Tel2:
         Chain.empty
       else
         Chain(doc)
+
+    // One step of a multi-document parse, as `documentStream` takes them: the next document,
+    // if there is one, and whether another may follow it.
+    private[stratiform] update def stepDocument(first: Boolean)
+    :   (Tactic[Tel.Error]^) ?->{this} (Optional[Tel.Document], Boolean) =
+
+      if first then
+        syncFrom()
+        checkBom()
+      else
+        resetForNextDocument()
+
+      val doc = parseOneDocument()
+
+      if head.separator then
+        consumeSeparatorLine()
+        (doc, true)
+      else if documentIsEmpty(doc) then (Unset, false)
+      else (doc, false)
 
     // A document with no prologue and no children: the empty document yielded
     // between two separators, or the absence of any document at the end of a

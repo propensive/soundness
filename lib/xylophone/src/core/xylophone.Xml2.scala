@@ -45,24 +45,57 @@ import zephyrine.*
 // the value has an `Xml.Parsable`; when it does not (all pre-`Parsable`
 // code), this resolves exactly as before.
 trait Xml2 extends Xml3:
+  // The write-side mirror of `read[Foo in Xml]`: `foo.in[Text over Xml]` is the value's XML
+  // text, encoded to the tree and rendered in the `Xml.Formatting` in scope, as `show`.
+  given encodableOver: [value] => (encodable: (value is Encodable in Xml)^)
+  =>  ( formatting: Xml.Formatting )
+  =>  ( (value is Encodable in (Text over Xml))^{encodable} ) =
+
+    value => Xml.showable[Xml].text(encodable.encode(value)).asInstanceOf[Text over Xml]
+
+  // `foo.in[Data over Xml]`: the same text, encoded in the `Codepage` in scope.
+  given encodableOverData: [value]
+  =>  ( text: (value is Encodable in (Text over Xml))^, codepage: hieroglyph.Codepage )
+  =>  ( (value is Encodable in (Data over Xml))^{text} ) =
+
+    value => codepage.encoded(text.encode(value)).asInstanceOf[Data over Xml]
+
   // `source.read[Foo in Xml]` shorthand for `source.read[Xml].as[Foo]`.
   // Mirrors `jacinta`'s `aggregableDirect` for `value in Json`. The `Form`
   // type-tag is added by an `asInstanceOf` cast — `value in Xml` is just
   // `value { type Form = Xml }` so the cast is a no-op at runtime.
   given aggregableIn: [value: Decodable in Xml]
   =>  ( schema: XmlSchema, scope: Xml.Scope, namespacing: Xml.Namespacing )
-  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error] )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], buffering: Buffering )
   =>  ( ((value in Xml) is Aggregable by Data)^{tactic, xmlTactic} ) =
 
-    input =>
-      Xml.XmlParser.fromDataChain(input).parseXml(keepHeader = false).as[value]
-      . asInstanceOf[value in Xml]
+    new Aggregable:
+      type Self = value in Xml
+      type Operand = Data
+
+      def aggregate(input: Chain[Data]): value in Xml =
+        Xml.XmlParser.fromDataChain(input).parseXml(keepHeader = false).as[value]
+        . asInstanceOf[value in Xml]
+
+      override def accept(stream: (Stream[Data] over Credit)^): value in Xml =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        Xml.XmlParser.fromStream(Xml.adopted(stream)).parseXml(keepHeader = false).as[value]
+        . asInstanceOf[value in Xml]
 
   given aggregableInText: [value: Decodable in Xml]
   =>  ( schema: XmlSchema, scope: Xml.Scope, namespacing: Xml.Namespacing )
-  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error] )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], buffering: Buffering )
   =>  ( ((value in Xml) is Aggregable by Text)^{tactic, xmlTactic} ) =
 
-    input =>
-      Xml.XmlParser.fromChain(input).parseXml(keepHeader = false).as[value]
-      . asInstanceOf[value in Xml]
+    new Aggregable:
+      type Self = value in Xml
+      type Operand = Text
+
+      def aggregate(input: Chain[Text]): value in Xml =
+        Xml.XmlParser.fromChain(input).parseXml(keepHeader = false).as[value]
+        . asInstanceOf[value in Xml]
+
+      override def accept(stream: (Stream[Text] over Credit)^): value in Xml =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        Xml.XmlParser.fromTextStream(Xml.adopted(stream)).parseXml(keepHeader = false).as[value]
+        . asInstanceOf[value in Xml]

@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package breviloquence
+package jacinta
 
 import scala.quoted.*
 
@@ -39,129 +39,206 @@ import contingency.*
 import prepositional.*
 
 object Inlinable:
-  // Generates a monomorphic `Cbor.Parsable` for a case class or a
-  // key-discriminated sealed sum at compile time, composed through
-  // `Inlinable` instances: nested records, collection loops, variant
-  // dispatch and custom leaf parsers all inline into one flat parser.
-  inline def parsable[value]: value is Cbor.Parsable =
-    ${breviloquence.stagedInternal.inlinableParsable[value]}
+  // Generates a monomorphic `Json.Parsable` for a case class at compile
+  // time, like `Json.Parsable.staged`, but composed through `Inlinable`
+  // instances: nested records, collection loops and custom leaf parsers all
+  // inline into one flat parser.
+  inline def parsable[value]: value is Json.Parsable =
+    ${jacinta.inlining.inlinableParsable[value]}
+
+  // The writing counterpart: a monomorphic `Json.Printable` that writes a value's compact JSON
+  // text straight into a writer, composed through the same instances.
+  inline def printable[value]: value is Json.Printable =
+    ${jacinta.inlining.inlinablePrintable[value]}
+
+  // Evidence that the generator builds a type's codec structurally, as a record: the condition
+  // on `import codecs.direct`'s generated instances. Its given fails for any other type, so the
+  // search for a generated instance fails too, and the derived path resolves instead.
+  object Generates:
+    transparent inline given generates: [value] => Generates[value] =
+      ${jacinta.inlining.generates[value]}
+
+  final class Generates[value]()
+
+  // The expansion-time evaluation of a user-written instance. An `Inlinable` given is an
+  // ordinary runtime value, so the generator can only call its `parse` by evaluating the given
+  // inside the macro — which takes an in-macro staging compiler, and with it the compiler jars
+  // that core does not depend on. `jacinta.staged` holds the implementation by name;
+  // without it on the classpath, a field whose type has only a user-written instance takes the
+  // runtime seam.
+  object Stager:
+    // `jacinta.staged`, when it is on the macro classpath, holds the implementation as
+    // a nested object, whose singleton is its static `MODULE$` field. `Class.forName/1`
+    // searches this macro's own classloader, and unlike `ServiceLoader` it compiles for Scala
+    // Native.
+    private lazy val loaded: Option[Stager] =
+      try
+        val implementation = Class.forName("jacinta.InlinableStager$Implementation$").nn
+        Some(implementation.getField("MODULE$").nn.get(null).nn.asInstanceOf[Stager])
+      catch case _: ClassNotFoundException | _: LinkageError => None
+
+    def summon[field: Type](using Quotes): Option[Inlinable] = loaded.flatMap(_.summon[field])
+
+  trait Stager:
+    def summon[field: Type](using Quotes): Option[Inlinable]
 
   // The structural instance for a case class: reflects `Self` when invoked
   // (no macro — `Type[Self]` arrives with the call).
   def derived[product]: product is Inlinable = ProductInlinable[product]()
 
-  object ForCbor:
-    def derived[value]: ForCbor[value] = ForCbor(Inlinable.derived[value])
+  object ForJson:
+    def derived[value]: ForJson[value] = ForJson(Inlinable.derived[value])
 
   // The `derives`-clause carrier: a `Self`-typed typeclass cannot appear in
   // a `derives` clause (it has no type parameters), so `case class Foo(...)
-  // derives Inlinable.ForCbor` synthesizes this parameterized subtrait —
+  // derives Inlinable.ForJson` synthesizes this parameterized subtrait —
   // which *is* a `Foo is Inlinable` — into `Foo`'s companion, where the
   // staging summon finds it. The resolution ladder unwraps the delegate so
   // structural instances keep their generator identities.
-  final class ForCbor[value](delegate0: value is Inlinable) extends Inlinable:
+  final class ForJson[value](delegate0: value is Inlinable) extends Inlinable:
     type Self = value
-    private[breviloquence] def delegate: value is Inlinable = delegate0
+    private[jacinta] def delegate: value is Inlinable = delegate0
 
-    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[value]): Expr[value] =
+    def parse(reader: Expr[Json.Reader])(using Quotes, Type[value]): Expr[value] =
       delegate0.parse(reader)
 
-    override def absent(tactic: Expr[Tactic[Cbor.Error]])(using Quotes, Type[value])
+    override def absent(tactic: Expr[Tactic[Json.Error]])(using Quotes, Type[value])
     :   Expr[value] =
 
       delegate0.absent(tactic)
 
-  private[breviloquence] final class ProductInlinable[product]() extends Inlinable:
+    override def prints: Boolean = delegate0.prints
+
+    override def write(value: Expr[value], out: Expr[AnyRef])(using Quotes, Type[value])
+    :   Expr[Unit] =
+
+      delegate0.write(value, out)
+
+  private[jacinta] final class ProductInlinable[product]() extends Inlinable:
     type Self = product
 
-    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[product]): Expr[product] =
-      stagedInternal.productBody[product](reader)
+    def parse(reader: Expr[Json.Reader])(using Quotes, Type[product]): Expr[product] =
+      inlining.productBody[product](reader)
 
-  private[breviloquence] final class IterableInlinable[element](element0: element is Inlinable)
+    override def prints: Boolean = true
+
+    override def write(value: Expr[product], out: Expr[AnyRef])(using Quotes, Type[product])
+    :   Expr[Unit] =
+
+      inlining.productWrite[product](value, out)
+
+  private[jacinta] final class IterableInlinable[element](element0: element is Inlinable)
   extends Inlinable:
     type Self = Iterable[element]
 
-    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Iterable[element]])
+    def parse(reader: Expr[Json.Reader])(using Quotes, Type[Iterable[element]])
     :   Expr[Iterable[element]] =
 
-      stagedInternal.iterableBody[Iterable[element]](reader, element0)
+      inlining.iterableBody[Iterable[element]](reader, element0)
 
-  // The structural instance for a sealed sum whose `Discriminable in Cbor`
-  // is the key-discriminated shape (`Cbor.DiscriminantKey`): the variant is
-  // chosen by a scan-ahead of the discriminant entry, then parsed from the
-  // start of the map as its product, with the discriminant entry skipped as
-  // an unknown key — exactly the AST disjunction's semantics.
-  private[breviloquence] final class SumInlinable[sum](key: String) extends Inlinable:
-    type Self = sum
+    override def prints: Boolean = element0.prints
 
-    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[sum]): Expr[sum] =
-      stagedInternal.sumBody[sum](reader, key)
+    override def write(value: Expr[Iterable[element]], out: Expr[AnyRef])
+      ( using Quotes, Type[Iterable[element]] )
+    :   Expr[Unit] =
+
+      inlining.iterableWrite[Iterable[element]](value, out, element0)
 
   // ── Instances ──────────────────────────────────────────────────────────
-  // The leaf generators mirror the AST accessors' coercions exactly; the
+  // The leaf generators mirror `Json.Parsable.staged`'s builtin arms; the
   // conditional collection instance composes through given resolution when
   // the graph is resolved inside the staging compiler.
 
   given int: (Int is Inlinable) = new Inlinable:
     type Self = Int
 
-    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Int]): Expr[Int] =
-      '{$reader.int()}
+    def parse(reader: Expr[Json.Reader])(using Quotes, Type[Int]): Expr[Int] =
+      '{$reader.long().toInt}
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Int], out: Expr[AnyRef])(using Quotes, Type[Int])
+    :   Expr[Unit] =
+
+      '{Json.Printable.writeLong($out, $value.toLong)}
 
   given long: (Long is Inlinable) = new Inlinable:
     type Self = Long
 
-    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Long]): Expr[Long] =
+    def parse(reader: Expr[Json.Reader])(using Quotes, Type[Long]): Expr[Long] =
       '{$reader.long()}
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Long], out: Expr[AnyRef])(using Quotes, Type[Long])
+    :   Expr[Unit] =
+
+      '{Json.Printable.writeLong($out, $value)}
 
   given double: (Double is Inlinable) = new Inlinable:
     type Self = Double
 
-    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Double]): Expr[Double] =
+    def parse(reader: Expr[Json.Reader])(using Quotes, Type[Double]): Expr[Double] =
       '{$reader.double()}
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Double], out: Expr[AnyRef])(using Quotes, Type[Double])
+    :   Expr[Unit] =
+
+      '{Json.Printable.writeDouble($out, $value)}
 
   given float: (Float is Inlinable) = new Inlinable:
     type Self = Float
 
-    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Float]): Expr[Float] =
+    def parse(reader: Expr[Json.Reader])(using Quotes, Type[Float]): Expr[Float] =
       '{$reader.double().toFloat}
 
   given boolean: (Boolean is Inlinable) = new Inlinable:
     type Self = Boolean
 
-    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Boolean]): Expr[Boolean] =
+    def parse(reader: Expr[Json.Reader])(using Quotes, Type[Boolean]): Expr[Boolean] =
       '{$reader.boolean()}
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Boolean], out: Expr[AnyRef])(using Quotes, Type[Boolean])
+    :   Expr[Unit] =
+
+      '{Json.Printable.writeBoolean($out, $value)}
 
   given text: (Text is Inlinable) = new Inlinable:
     type Self = Text
 
-    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Text]): Expr[Text] =
-      '{$reader.text()}
+    def parse(reader: Expr[Json.Reader])(using Quotes, Type[Text]): Expr[Text] =
+      '{$reader.string()}
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Text], out: Expr[AnyRef])(using Quotes, Type[Text])
+    :   Expr[Unit] =
+
+      '{Json.Printable.writeString($out, $value.s)}
 
   given string: (String is Inlinable) = new Inlinable:
     type Self = String
 
-    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[String]): Expr[String] =
-      '{$reader.string()}
+    def parse(reader: Expr[Json.Reader])(using Quotes, Type[String]): Expr[String] =
+      '{$reader.string().s}
 
-  given byteString: ((Data) is Inlinable) = new Inlinable:
-    type Self = Data
+    override def prints: Boolean = true
 
-    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Data]): Expr[Data] =
-      '{$reader.byteString()}
+    override def write(value: Expr[String], out: Expr[AnyRef])(using Quotes, Type[String])
+    :   Expr[Unit] =
 
-  given cbor: (Cbor is Inlinable) = new Inlinable:
-    type Self = Cbor
-
-    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Cbor]): Expr[Cbor] =
-      '{$reader.value()}
+      '{Json.Printable.writeString($out, $value)}
 
   given iterable: [collection <: Iterable, element]
   =>  ( element0: element is Inlinable )
   =>  ( collection[element] is Inlinable ) =
     IterableInlinable[element](element0).asInstanceOf[collection[element] is Inlinable]
 
-// The Expr-level counterpart of `Cbor.Parsable`: a typeclass whose methods
+// The Expr-level counterpart of `Json.Parsable`: a typeclass whose methods
 // are macro-time code generators. An instance receives an `Expr` of the
 // reader and returns an `Expr` of the decoded value, which the deriving
 // macro splices directly into its generated parser — so an instance
@@ -170,18 +247,29 @@ object Inlinable:
 //
 // Instances are ordinary runtime values: code generation is deferred to the
 // `parse` call, which receives the `Quotes` and the `Type` of `Self`, so
-// `derived` needs no macro of its own. At a `Cbor.Inlinable.parsable[T]`
+// `derived` needs no macro of its own. At a `Json.Inlinable.parsable[T]`
 // expansion, the instance behind each summoned given is obtained *live* by
 // running the implicit search inside an in-macro staging compiler (the
 // prescience mechanism), which composes conditional instances — a collection
 // of a custom element, for example — through ordinary given resolution. The
 // constraint this inherits: an instance (and its type) must be compiled in
 // an earlier run than the expansion; same-run instances degrade to a spliced
-// runtime call through the `Decodable in Cbor` bridge.
+// runtime call through `Json.Field`.
 trait Inlinable extends Typeclass:
-  def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Self]): Expr[Self]
+  def parse(reader: Expr[Json.Reader])(using Quotes, Type[Self]): Expr[Self]
 
-  // What a field of this type yields when its key is absent from the map,
+  // The printing side, for `Inlinable.printable`: whether the instance generates a printer, and
+  // if so the code that writes a value into the JSON writer, which travels as a neutral carrier
+  // (`Json.Printable`'s writers reassert it per use), since generated code is capture-erased. An
+  // instance that does not print — the default, so a parse-only instance stays honest — puts its
+  // field on the `Encodable in Json` seam.
+  def prints: Boolean = false
+
+  def write(value: Expr[Self], out: Expr[AnyRef])(using Quotes, Type[Self]): Expr[Unit] =
+    quotes.reflect.report.errorAndAbort
+      ( s"jacinta: the Inlinable for ${Type.show[Self]} generates no printer" )
+
+  // What a field of this type yields when its key is absent from the object,
   // mirroring the runtime instances: an abort unless overridden.
-  def absent(tactic: Expr[Tactic[Cbor.Error]])(using Quotes, Type[Self]): Expr[Self] =
-    '{Cbor.Parsable.missing[Self]()(using $tactic)}
+  def absent(tactic: Expr[Tactic[Json.Error]])(using Quotes, Type[Self]): Expr[Self] =
+    '{Json.Parsable.missing[Self]()(using $tactic)}

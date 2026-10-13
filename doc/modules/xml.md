@@ -182,6 +182,33 @@ t"<Worker><name>Alice</name><age>30</age></Worker>".read[Worker in Xml]
 // Worker(t"Alice", 30)
 ```
 
+`in[Text over Xml]` is the mirror of `read[Worker in Xml]`, encoding a value straight to its XML
+text:
+
+```scala
+Worker(t"Alice", 30).in[Text over Xml]
+// t"<Worker><name>Alice</name><age>30</age></Worker>"
+```
+
+`in[Data over Xml]` writes the same text as bytes, encoded in the `Codepage` in scope.
+
+A record with an `Xml.Printable` is written directly, with no tree built, wherever the formatting
+is compact; indented formatting still renders through the tree. The printer is derived at
+compiletime, for a record with no `@name` or `@attribute` annotations and no namespace, and writes
+the same text:
+
+```scala
+given Worker is Xml.Printable = Inlinable.printable[Worker]
+
+Worker(t"Alice", 30).in[Text over Xml]   // written directly
+```
+
+`Xml.Printable.emit` writes the text a block at a time, handing each to a function as it fills.
+A record can generate both instances once, into its companion, with `derives Xml.Direct`, and a
+single import selects the path for every such record in scope: `import codecs.direct` for a
+generated parser and printer, or `import codecs.derived` for the derived codecs even where a
+direct instance exists.
+
 A field marked `@attribute` becomes an attribute rather than a child element, and round-trips as
 one:
 

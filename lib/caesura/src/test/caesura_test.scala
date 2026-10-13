@@ -65,6 +65,20 @@ object Tests extends Suite(m"Caesura tests"):
         t"hello,world".read[DirectFoo in Dsv]
       . assert(_ == DirectFoo(t"hello", t"world"))
 
+      test(m"`in[Text over Dsv]` writes a single record"):
+        DirectFoo(t"hello", t"world").in[Text over Dsv]
+      . assert(_ == t"hello,world")
+
+      test(m"`in[Text over Dsv]` writes what `read[T in Dsv]` reads"):
+        DirectFoo(t"a, b", t"c").in[Text over Dsv].read[DirectFoo in Dsv]
+      . assert(_ == DirectFoo(t"a, b", t"c"))
+
+      test(m"`in[Data over Dsv]` writes what `read[T in Dsv]` reads"):
+        import codepages.utf8Codepage
+        import charsets.utf8Charset, textSanitizers.strictSanitizer
+        DirectFoo(t"Zoë", t"c").in[Data over Dsv].read[DirectFoo in Dsv]
+      . assert(_ == DirectFoo(t"Zoë", t"c"))
+
       test(m"read every row as a List directly"):
         t"a,b\nc,d\ne,f".read[List[DirectFoo] in Dsv]
       . assert(_ == List(DirectFoo(t"a", t"b"), DirectFoo(t"c", t"d"), DirectFoo(t"e", t"f")))
@@ -236,6 +250,18 @@ object Tests extends Suite(m"Caesura tests"):
     test(m"`read[T in Dsv]` decodes a record by headings"):
       import dsvFormats.csvWithHeaderFormat
       t"greeting,name\nhello,world".read[Quux in Dsv]
+    . assert(_ == Quux(t"world", t"hello"))
+
+    test(m"`read[T in Dsv]` decodes the first record of a one-char-chunk stream"):
+      import dsvFormats.csvFormat
+      val stream = "hello,world\nnext,row\n".grouped(1).nn.map(_.tt).stream
+      Dsv.aggregableIn[Foo].accept(stream)
+    . assert(_ == Foo(t"hello", t"world"))
+
+    test(m"`read[T in Dsv]` decodes by headings from a one-char-chunk stream"):
+      import dsvFormats.csvWithHeaderFormat
+      val stream = "greeting,name\nhello,world\n".grouped(1).nn.map(_.tt).stream
+      Dsv.aggregableIn[Quux].accept(stream)
     . assert(_ == Quux(t"world", t"hello"))
 
     test(m"encode case class"):

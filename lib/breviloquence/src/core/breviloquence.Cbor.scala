@@ -114,6 +114,13 @@ trait Cbor2:
   =>  ( ((value in Cbor) is Aggregable by Data)^{tactic} ) =
     Cbor.aggregable.map(_.as[value].asInstanceOf[value in Cbor])
 
+  // The write-side mirror of `read[Foo in Cbor]`: `foo.in[Data over Cbor]` is the value's
+  // CBOR bytes, encoded to the tree and serialized.
+  given encodableOver: [value] => (encodable: (value is Encodable in Cbor)^)
+  =>  ( (value is Encodable in (Data over Cbor))^{encodable} ) =
+
+    value => Cbor.Ast.encodable.encoded(encodable.encode(value).root).asInstanceOf[Data over Cbor]
+
   inline given encodable: [value] => value is Encodable in Cbor = summonFrom:
     case given (`value` is Encodable in Text) => value => ast(Ast(value.encode.s))
     case given Reflection[`value`]            => EncodableDerivation.derived
@@ -288,7 +295,72 @@ trait Cbor2:
       variant(value): [variant <: derivation] =>
         value => discriminable.rewrite(variantNames(label).or(label), contextual.encode(value))
 
-object Cbor extends Cbor2, Dynamic:
+// The direct path: the instances that drive a `Cbor.Parsable` or a `Cbor.Printable` whenever
+// one exists. They sit above the derived path in `Cbor2`, and below `object Cbor`, where
+// `import codecs.derived` overrides them.
+trait Cbor1 extends Cbor2:
+  this: Cbor.type =>
+
+  // Direct-parsing counterpart of the `aggregable`/`aggregableIn` path:
+  // drives a `Cbor.Parsable` instance over the input through a
+  // `Cbor.Reader`, so no AST is built for the items the instance reads
+  // directly. Trailing bytes are rejected exactly as `Parser.parse`.
+  private def parseDirect[value]
+    ( parser: CborParser^, parsable: (value is Cbor.Parsable)^ )
+    ( using tactic: Tactic[Cbor.Error] )
+  :   value =
+
+    val result = parsable.parse(Cbor.Reader(parser, tactic))
+    if parser.more then abort(Cbor.Error(Reason.Trailing(parser.position)))
+    result
+
+  // Direct parsing: when the value knows how to consume CBOR items itself,
+  // the AST is never materialized. Declared here (above `Cbor2`, where the
+  // `Decodable`-based `aggregableIn` lives) so it wins whenever a
+  // `Cbor.Parsable` exists, and is otherwise inapplicable — existing code
+  // resolves exactly as before. It captures
+  // the parsable and the tactic it uses.
+  given aggregableParsed: [value]
+  =>  ( parsable: (value is Cbor.Parsable)^ )
+  =>  ( tactic: Tactic[Cbor.Error] )
+  =>  ( ((value in Cbor) is Aggregable by Data)^{parsable, tactic} ) =
+
+    new Aggregable:
+      type Self = value in Cbor
+      type Operand = Data
+
+      def aggregate(bytes: Chain[Data]): value in Cbor =
+        // A single in-memory block — the common case — is read in place; the general
+        // path pulls the chain's cells as the parser needs them.
+        if !bytes.nil && bytes.stdlib.tail.isEmpty
+        then parseDirect(CborParser(bytes.stdlib.head), parsable).asInstanceOf[value in Cbor]
+        else parseDirect(CborParser(bytes), parsable).asInstanceOf[value in Cbor]
+
+      // The stream crosses as a neutral reference (see `CborParser.aggregable`).
+      override def accept(stream: (Stream[Data] over Credit)^): value in Cbor =
+        val moved: AnyRef = stream.asInstanceOf[AnyRef]
+        parseDirect(CborParser(moved.asInstanceOf[(Stream[Data] over Credit)^]), parsable)
+        . asInstanceOf[value in Cbor]
+
+  // Whole-`Data` direct read: when the entire content is already in hand,
+  // parse it in place rather than wrapping it in a one-element stream.
+  // Concrete in `Data`, so it beats the composed pipeline by specificity.
+  // Captures what it parses with, like `aggregableParsed` above.
+  given readableParsed: [value]
+  =>  ( parsable: (value is Cbor.Parsable)^ )
+  =>  ( tactic: Tactic[Cbor.Error] )
+  =>  ( (Data is Readable to (value in Cbor))^{parsable, tactic} ) =
+
+    data => parseDirect(CborParser(data), parsable).asInstanceOf[value in Cbor]
+
+  // `in[Data over Cbor]`, printed directly wherever a `Printable` exists: above `Cbor2`'s
+  // `encodableOver`, which builds the tree and serializes it.
+  given encodableOverPrinted: [value] => (printable: (value is Cbor.Printable)^)
+  =>  ( (value is Encodable in (Data over Cbor))^{printable} ) =
+
+    value => Printable.print(value).asInstanceOf[Data over Cbor]
+
+object Cbor extends Cbor1, Dynamic:
   // CBOR major-type representation in storage. Arrays are stored as an
   // odd-length `Array[Any]^{}` (sentinel-padded if the logical count is even),
   // and maps as an even-length `Array[Any]^{}` with alternating key/value
@@ -359,107 +431,139 @@ object Cbor extends Cbor2, Dynamic:
 
     def size(cbor: Ast): Int = cbor.asInstanceOf[Array[Any]^{}].length/2
 
-    // Encodes a CBOR node to its binary form (RFC 8949 major types). The whole byte-level fold
-    // lives in this instance so `.encode` is the single route to CBOR bytes: integers take the
-    // shortest of the 1/2/4/8-byte head encodings, floats are always emitted as 64-bit, and arrays
-    // and maps are length-prefixed.
+    // Encodes a CBOR node to its binary form (RFC 8949 major types), through `write` below:
+    // integers take the shortest of the 1/2/4/8-byte head encodings, floats are always emitted
+    // as 64-bit, and arrays and maps are length-prefixed. `.encode` is the route to the whole
+    // value's bytes; `Cbor.emit` produces the same bytes a block at a time.
     given encodable: Ast is Encodable in Data = cbor =>
-      def u16(out: (Producer.Bytes)^, value: Int): Unit =
-        out.push(((value >>> 8) & 0xFF).toByte)
-        out.push((value & 0xFF).toByte)
-
-      def u32(out: (Producer.Bytes)^, value: Long): Unit =
-        out.push(((value >>> 24) & 0xFF).toByte)
-        out.push(((value >>> 16) & 0xFF).toByte)
-        out.push(((value >>> 8) & 0xFF).toByte)
-        out.push((value & 0xFF).toByte)
-
-      def u64(out: (Producer.Bytes)^, value: Long): Unit =
-        out.push(((value >>> 56) & 0xFF).toByte)
-        out.push(((value >>> 48) & 0xFF).toByte)
-        out.push(((value >>> 40) & 0xFF).toByte)
-        out.push(((value >>> 32) & 0xFF).toByte)
-        out.push(((value >>> 24) & 0xFF).toByte)
-        out.push(((value >>> 16) & 0xFF).toByte)
-        out.push(((value >>> 8) & 0xFF).toByte)
-        out.push((value & 0xFF).toByte)
-
-      def head(out: (Producer.Bytes)^, major: Int, value: Long): Unit =
-        val majorBits = major << 5
-
-        if value < 0 then
-          out.push((majorBits | 27).toByte)
-          u64(out, value)
-        else if value < 24 then
-          out.push((majorBits | value.toInt).toByte)
-        else if value < (1 << 8) then
-          out.push((majorBits | 24).toByte)
-          out.push(value.toByte)
-        else if value < (1 << 16) then
-          out.push((majorBits | 25).toByte)
-          u16(out, value.toInt)
-        else if value < (1L << 32) then
-          out.push((majorBits | 26).toByte)
-          u32(out, value)
-        else
-          out.push((majorBits | 27).toByte)
-          u64(out, value)
-
-      def write(out: (Producer.Bytes)^, cbor: Cbor.Ast): Unit =
-        if cbor.isInteger then
-          val long = cbor.asInstanceOf[Long]
-
-          if long >= 0 then head(out, 0, long) else head(out, 1, -1L - long)
-
-        else if cbor.isFloat then
-          out.push((0xE0 | 27).toByte)
-          u64(out, java.lang.Double.doubleToLongBits(cbor.asInstanceOf[Double]))
-
-        else if cbor.isTextString then
-          val text = cbor.asInstanceOf[String]
-          val bytes = Array.unsafeFrozen(text.getBytes(StandardCharsets.UTF_8).nn)
-          head(out, 3, bytes.length.toLong)
-          out.put(bytes)
-
-        else if cbor.isByteString then
-          // `CborBytes` *is* the frozen array, so the erased storage needs no launder.
-          val bytes = cbor.asInstanceOf[Array[Byte]^{}]
-          head(out, 2, bytes.length.toLong)
-          out.put(bytes)
-
-        else if cbor.isBoolean then
-          out.push(if cbor.asInstanceOf[Boolean] then 0xF5.toByte else 0xF4.toByte)
-
-        else if cbor.nullary then
-          out.push(0xF6.toByte)
-        else if cbor.unset then
-          out.push(0xF7.toByte)
-
-        else if cbor.isTag then
-          val tag = cbor.asInstanceOf[Cbor.Tag]
-          head(out, 6, tag.tag)
-          write(out, tag.value.asInstanceOf[Cbor.Ast])
-
-        else if cbor.isArray then
-          val count = cbor.elements
-          head(out, 4, count.toLong)
-          var index = 0
-
-          while index < count do
-            write(out, cbor.element(index))
-            index += 1
-
-        else if cbor.isMap then
-          val count = cbor.entries
-          head(out, 5, count.toLong)
-          var index = 0
-
-          while index < count do
-            write(out, cbor.key(index))
-            write(out, cbor.value(index))
-            index += 1
-
       Producer.collect[Data](): producer => write(producer, cbor)
+
+    // The whole tree, depth first.
+    private[breviloquence] def write(out: (Producer.Bytes)^, cbor: Cbor.Ast): Unit =
+      opening(out, cbor)
+
+      if cbor.isTag then write(out, cbor.asInstanceOf[Cbor.Tag].value.asInstanceOf[Cbor.Ast])
+      else if cbor.isArray then
+        val count = cbor.elements
+        var index = 0
+
+        while index < count do
+          write(out, cbor.element(index))
+          index += 1
+
+      else if cbor.isMap then
+        val count = cbor.entries
+        var index = 0
+
+        while index < count do
+          write(out, cbor.key(index))
+          write(out, cbor.value(index))
+          index += 1
+
+    // A node's own bytes: the whole of a leaf, but only the head of an array, a map or a tag,
+    // whose contents follow it. Returns the number of bytes written.
+    private[breviloquence] def opening(out: (Producer.Bytes)^, cbor: Cbor.Ast): Int =
+      if cbor.isInteger then long(out, cbor.asInstanceOf[Long])
+      else if cbor.isFloat then double(out, cbor.asInstanceOf[Double])
+      else if cbor.isTextString then text(out, cbor.asInstanceOf[String])
+
+      // `CborBytes` *is* the frozen array, so the erased storage needs no launder.
+      else if cbor.isByteString then bytes(out, cbor.asInstanceOf[Array[Byte]^{}])
+
+      else if cbor.isBoolean then
+        out.push(if cbor.asInstanceOf[Boolean] then 0xF5.toByte else 0xF4.toByte)
+        1
+
+      else if cbor.nullary then
+        out.push(0xF6.toByte)
+        1
+
+      else if cbor.unset then
+        out.push(0xF7.toByte)
+        1
+
+      else if cbor.isTag then
+        head(out, 6, cbor.asInstanceOf[Cbor.Tag].tag)
+
+      else if cbor.isArray then
+        head(out, 4, cbor.elements.toLong)
+
+      else if cbor.isMap then
+        head(out, 5, cbor.entries.toLong)
+
+      else
+        0
+
+    // The leaves, as generated printers write them too. Each returns the number of bytes
+    // written.
+    private[breviloquence] def long(out: (Producer.Bytes)^, value: Long): Int =
+      if value >= 0 then head(out, 0, value) else head(out, 1, -1L - value)
+
+    private[breviloquence] def double(out: (Producer.Bytes)^, value: Double): Int =
+      out.push((0xE0 | 27).toByte)
+      fixed(out, java.lang.Double.doubleToLongBits(value), 8)
+      9
+
+    private[breviloquence] def text(out: (Producer.Bytes)^, value: String): Int =
+      bytes(out, Array.unsafeFrozen(value.getBytes(StandardCharsets.UTF_8).nn), 3)
+
+    private[breviloquence] def bytes(out: (Producer.Bytes)^, value: Data, major: Int = 2): Int =
+      val size = head(out, major, value.length.toLong)
+      out.put(value)
+      size + value.length
+
+    // A major type's head: its type and the shortest encoding of its argument. Returns the
+    // number of bytes written.
+    private[breviloquence] def head(out: (Producer.Bytes)^, major: Int, value: Long): Int =
+      val majorBits = major << 5
+
+      if value < 0 then
+        out.push((majorBits | 27).toByte)
+        fixed(out, value, 8)
+        9
+      else if value < 24 then
+        out.push((majorBits | value.toInt).toByte)
+        1
+      else if value < (1 << 8) then
+        out.push((majorBits | 24).toByte)
+        out.push(value.toByte)
+        2
+      else if value < (1 << 16) then
+        out.push((majorBits | 25).toByte)
+        fixed(out, value, 2)
+        3
+      else if value < (1L << 32) then
+        out.push((majorBits | 26).toByte)
+        fixed(out, value, 4)
+        5
+      else
+        out.push((majorBits | 27).toByte)
+        fixed(out, value, 8)
+        9
+
+    // The low `width` bytes of `value`, big-endian.
+    private def fixed(out: (Producer.Bytes)^, value: Long, width: Int): Unit =
+      var shift = (width - 1)*8
+
+      repeat(width):
+        out.push(((value >>> shift) & 0xFF).toByte)
+        shift -= 8
+
+    // The nodes that follow a node's head, in order: a tag's value, an array's elements, or a
+    // map's keys and values, alternately; nothing for a leaf.
+    private[breviloquence] def contents(cbor: Cbor.Ast): List[Cbor.Ast] =
+      if cbor.isTag then
+        List(cbor.asInstanceOf[Cbor.Tag].value.asInstanceOf[Cbor.Ast])
+
+      else if cbor.isArray then
+        List.range(0, cbor.elements).map(cbor.element(_))
+
+      else if cbor.isMap then
+        def entry(index: Int): List[Cbor.Ast] = List(cbor.key(index), cbor.value(index))
+        List.range(0, cbor.entries).bind(entry)
+
+      else
+        List()
 
     // Renders a CBOR node in the RFC 8949 §8 diagnostic notation. The whole rendering lives in this
     // instance so `.show` is the single route to diagnostic text.
@@ -658,7 +762,67 @@ object Cbor extends Cbor2, Dynamic:
       case that: Tag => tag == that.tag && value == that.value
       case _         => false
 
+  // A value's bytes a block at a time, as each is pulled: a depth-first walk over an explicit
+  // stack of the nodes still to write, so serialization pauses between blocks without a fiber.
+  // A block ends at the first node boundary past the `Buffering` capacity, so one long string
+  // may overrun it. The bytes are those `.encode` writes.
+  def emit(cbor: Cbor)(using buffering: Buffering): Iterator[Data] =
+    val block = buffering.capacity(summon[Data is Addressable].substrate)
+
+    new Iterator[Data]:
+      // [stdlib-iterator] the walk's stack in an anonymous Iterator
+      @caps.unsafe.untrackedCaptures
+      private var pending: List[Ast] = List(cbor.root)
+
+      def hasNext: Boolean = !pending.nil
+
+      def next(): Data =
+        if pending.nil then Iterator.empty.next()
+
+        Producer.collect[Data](block): out =>
+          var size = 0
+
+          while size < block && !pending.nil do pending match
+            case node :: rest =>
+              size += Ast.opening(out, node)
+              pending = List.concat(Ast.contents(node), rest)
+
+            case _ =>
+              ()
+
+  // The push form: serializes on the caller's thread, handing each block to `deliver` as it
+  // fills — the shape for writing to a file, a socket or an `OutputStream`.
+  def emit(cbor: Cbor, deliver: Data => Unit)(using Buffering): Unit =
+    Producer.sink[Data](deliver): producer => Ast.write(producer, cbor.root)
+
+  given streamable: Buffering => Cbor is Streamable by Data over Credit =
+    cbor => zephyrine.Stream(emit(cbor))
+
   def ast(value: Ast): Cbor = new Cbor(value)
+
+  // `import codecs.derived`: the derived codecs, even for a type with a direct instance in
+  // scope. Each outranks its direct counterpart in `Cbor1`, and applies only where that would.
+  given aggregableDerived: [value: Decodable in Cbor]
+  =>  ( derived: Codecs.Derived, parsable: (value is Cbor.Parsable)^ )
+  =>  ( tactic: Tactic[Cbor.Error] )
+  =>  ( ((value in Cbor) is Aggregable by Data)^{tactic} ) =
+
+    aggregableIn[value]
+
+  given readableDerived: [value: Decodable in Cbor]
+  =>  ( derived: Codecs.Derived, parsable: (value is Cbor.Parsable)^ )
+  =>  ( tactic: Tactic[Cbor.Error] )
+  =>  ( (Data is Readable to (value in Cbor))^{tactic} ) =
+
+    (data: Data) => Chain(data).read[Cbor].as[value].asInstanceOf[value in Cbor]
+
+  given encodableOverDerived: [value]
+  =>  ( derived: Codecs.Derived, printable: (value is Cbor.Printable)^ )
+  =>  ( encodable: (value is Encodable in Cbor)^ )
+  =>  ( (value is Encodable in (Data over Cbor))^{encodable} ) =
+
+    encodableOver[value]
+
   def unseal(cbor: Cbor): Ast = cbor.root
 
   // Panopticon optics: navigate and immutably update a CBOR document. `lens` is the
@@ -766,7 +930,7 @@ object Cbor extends Cbor2, Dynamic:
       def genericize(value: Cbor): HttpStreams.Content =
         (t"application/cbor", HttpStreams.Body(Ast.encodable.encoded(Cbor.unseal(value))))
 
-  object Parsable:
+  object Parsable extends Parsable2:
     // The base of generated parsers: generated code is capture-erased, so
     // the body receives the reader as a neutral carrier, and the capability
     // is asserted here at the rim — the audited point — like the reader's
@@ -816,13 +980,118 @@ object Cbor extends Cbor2, Dynamic:
     def absentField[value](parsable: AnyRef)(using Tactic[Cbor.Error]): value =
       parsable.asInstanceOf[value is Cbor.Parsable].absent()
 
+    // The parser a type generated once, into its companion, with `derives Cbor.Direct`.
+    given declared: [value] => (direct: Cbor.Direct[value]) => value is Cbor.Parsable =
+      direct.parsable
+
+  object Printable extends Printable2:
+    // The base of generated printers, as `Parsable.Direct` is of generated parsers: generated
+    // code is capture-erased, so the body receives the byte producer as a neutral carrier.
+    abstract class Direct[value] extends Cbor.Printable:
+      type Self = value
+
+      protected def writeCarrier(value: value, out: AnyRef): Unit
+
+      def write(value: value, out: Producer.Bytes^): Unit =
+        writeCarrier(value, out.asInstanceOf[AnyRef])
+
+    // The bridge from the AST world: the value's tree, encoded and written in place.
+    def fromEncodable[value](encodable: (value is Encodable in Cbor)^)
+    :   ((value is Cbor.Printable)^{encodable}) =
+
+      new Cbor.Printable:
+        type Self = value
+
+        def write(value: value, out: Producer.Bytes^): Unit =
+          Ast.write(out, unseal(encodable.encode(value)))
+
+    // The printer a type generated once, into its companion, with `derives Cbor.Direct`.
+    given declared: [value] => (direct: Cbor.Direct[value]) => value is Cbor.Printable =
+      direct.printable
+
+    // A value's CBOR bytes through its `Printable`, whole.
+    def print[value](value: value)(using printable: (value is Cbor.Printable)^): Data =
+      Producer.collect[Data](): out => printable.write(value, out)
+
+    // The same bytes in blocks of the `Buffering` capacity, each handed to `deliver` as it
+    // fills, so no array of the whole value is built.
+    def emit[value](value: value, deliver: Data => Unit)
+      ( using printable: (value is Cbor.Printable)^, buffering: Buffering )
+    :   Unit =
+
+      Producer.sink[Data](deliver): out => printable.write(value, out)
+
+    // The writers generated printers call: the producer travels as a neutral carrier, and is
+    // reasserted here, at the audited point. Public because generated printers are spliced
+    // into user modules.
+    private inline def of(out: AnyRef): Producer.Bytes^ = out.asInstanceOf[Producer.Bytes^]
+
+    def writeHead(out: AnyRef, major: Int, count: Int): Unit =
+      Ast.head(of(out), major, count.toLong)
+
+    def writeLong(out: AnyRef, value: Long): Unit = Ast.long(of(out), value)
+    def writeDouble(out: AnyRef, value: Double): Unit = Ast.double(of(out), value)
+    def writeText(out: AnyRef, value: String): Unit = Ast.text(of(out), value)
+    def writeBytes(out: AnyRef, value: Data): Unit = Ast.bytes(of(out), value)
+    def writeAst(out: AnyRef, value: Ast): Unit = Ast.write(of(out), value)
+
+    def writeBoolean(out: AnyRef, value: Boolean): Unit =
+      of(out).push(if value then 0xF5.toByte else 0xF4.toByte)
+
+    // Whether a field's encoded tree is written at all: the derived encoding leaves out a
+    // field whose encoding is `Unset`.
+    def present(value: Ast): Boolean =
+      import Ast.unset
+      !value.unset
+
+    // The call point for a nominal `Printable` in a field position of a generated printer (a
+    // recursive record's own instance, or a hand-written one).
+    def writeField[value](printable: AnyRef, value: value, out: AnyRef): Unit =
+      printable.asInstanceOf[value is Cbor.Printable].write(value, of(out))
+
+  // The direct-printing counterpart of `Encodable in Cbor`: writes a value's bytes straight
+  // into a byte producer, with no tree built. It is reached through `in[Data over Cbor]`, and
+  // its surface is explicit instances, `Inlinable.printable`, `derives Cbor.Direct` and
+  // `import codecs.direct`. A producer may collect the whole value or hand it on a block at a
+  // time (`Printable.emit`).
+  trait Printable extends Typeclass:
+    def write(value: Self, out: Producer.Bytes^): Unit
+
+  // `import codecs.direct`: a generated parser and printer for every record, expanded where
+  // each is needed. A type that is not a record fails `Generates`, and so takes the derived
+  // path. Below the companions' `declared` instances, so a type that derives `Cbor.Direct`
+  // uses the codec it generated once.
+  trait Parsable2:
+    inline given generated: [value]
+    =>  ( mode: Codecs.Direct, generates: Inlinable.Generates[value] )
+    =>  ( value is Cbor.Parsable ) =
+
+      ${breviloquence.inlining.inlinableParsable[value]}
+
+  trait Printable2:
+    inline given generated: [value]
+    =>  ( mode: Codecs.Direct, generates: Inlinable.Generates[value] )
+    =>  ( value is Cbor.Printable ) =
+
+      ${breviloquence.inlining.inlinablePrintable[value]}
+
+  // The `derives` carrier for a generated codec: `case class Foo(…) derives Cbor.Direct`
+  // generates `Foo`'s parser and printer once, into its companion. (A `Self`-typed typeclass
+  // has no type parameters, so it cannot appear in a `derives` clause itself.)
+  object Direct:
+    inline def derived[value]: Direct[value] =
+      Direct(Inlinable.parsable[value], Inlinable.printable[value])
+
+  final class Direct[value]
+    ( val parsable: value is Cbor.Parsable, val printable: value is Cbor.Printable )
+
   // The direct-parsing counterpart of `Decodable in Cbor`: consumes data
   // items straight off the input bytes through a `Cbor.Reader` instead of
   // walking a materialized `Cbor.Ast`, so `read[value in Cbor]` can
   // instantiate values without building the AST. `Parsable` is the opt-in
-  // surface: explicit instances and `Cbor.Inlinable.parsable`. It has no
-  // blanket fallback given, so no read changes behavior until a type opts
-  // in; field types without one bridge through `Parsable.fromDecodable`.
+  // surface: explicit instances, `Inlinable.parsable`, `derives Cbor.Direct`
+  // and `import codecs.direct`; without one of these, no read changes
+  // behavior. Field types without one bridge through `Parsable.fromDecodable`.
   trait Parsable extends distillate.Parsable:
     type Transport = Cbor
     type Reader = Cbor.Reader
@@ -831,58 +1100,6 @@ object Cbor extends Cbor2, Dynamic:
     // mirroring the AST path's `decoded(Cbor(Ast(Unset)))`: an abort unless
     // overridden.
     def absent()(using Tactic[Cbor.Error]): Self = abort(Cbor.Error(Reason.Absent))
-
-  // Direct-parsing counterpart of the `aggregable`/`aggregableIn` path:
-  // drives a `Cbor.Parsable` instance over the input through a
-  // `Cbor.Reader`, so no AST is built for the items the instance reads
-  // directly. Trailing bytes are rejected exactly as `Parser.parse`.
-  private def parseDirect[value]
-    ( parser: CborParser^, parsable: (value is Cbor.Parsable)^ )
-    ( using tactic: Tactic[Cbor.Error] )
-  :   value =
-
-    val result = parsable.parse(Cbor.Reader(parser, tactic))
-    if parser.more then abort(Cbor.Error(Reason.Trailing(parser.position)))
-    result
-
-  // Direct parsing: when the value knows how to consume CBOR items itself,
-  // the AST is never materialized. Declared here (not in `Cbor2`, where the
-  // `Decodable`-based `aggregableIn` lives) so it wins whenever a
-  // `Cbor.Parsable` exists, and is otherwise inapplicable — existing code
-  // resolves exactly as before. It captures
-  // the parsable and the tactic it uses.
-  given aggregableParsed: [value]
-  =>  ( parsable: (value is Cbor.Parsable)^ )
-  =>  ( tactic: Tactic[Cbor.Error] )
-  =>  ( ((value in Cbor) is Aggregable by Data)^{parsable, tactic} ) =
-
-    new Aggregable:
-      type Self = value in Cbor
-      type Operand = Data
-
-      def aggregate(bytes: Chain[Data]): value in Cbor =
-        // A single in-memory block — the common case — is read in place; the general
-        // path pulls the chain's cells as the parser needs them.
-        if !bytes.nil && bytes.stdlib.tail.isEmpty
-        then parseDirect(CborParser(bytes.stdlib.head), parsable).asInstanceOf[value in Cbor]
-        else parseDirect(CborParser(bytes), parsable).asInstanceOf[value in Cbor]
-
-      // The stream crosses as a neutral reference (see `CborParser.aggregable`).
-      override def accept(stream: (Stream[Data] over Credit)^): value in Cbor =
-        val moved: AnyRef = stream.asInstanceOf[AnyRef]
-        parseDirect(CborParser(moved.asInstanceOf[(Stream[Data] over Credit)^]), parsable)
-        . asInstanceOf[value in Cbor]
-
-  // Whole-`Data` direct read: when the entire content is already in hand,
-  // parse it in place rather than wrapping it in a one-element stream.
-  // Concrete in `Data`, so it beats the composed pipeline by specificity.
-  // Captures what it parses with, like `aggregableParsed` above.
-  given readableParsed: [value]
-  =>  ( parsable: (value is Cbor.Parsable)^ )
-  =>  ( tactic: Tactic[Cbor.Error] )
-  =>  ( (Data is Readable to (value in Cbor))^{parsable, tactic} ) =
-
-    data => parseDirect(CborParser(data), parsable).asInstanceOf[value in Cbor]
 
   given unit: (tactic: Tactic[Cbor.Error])
   =>  ( (Unit is Decodable in Cbor)^{tactic} ) =

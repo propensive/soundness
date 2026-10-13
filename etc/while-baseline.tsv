@@ -14,8 +14,9 @@ lib/bitumen/src/core/bitumen.Archive.scala	1	0	0
 lib/bitumen/src/core/bitumen.Pax.scala	3	4	0
 lib/bitumen/src/core/bitumen.Tar.scala	2	0	0
 lib/bitumen/src/core/bitumen.Tarfile.scala	4	3	0
-lib/breviloquence/src/core/breviloquence.Cbor.scala	16	6	1
+lib/breviloquence/src/core/breviloquence.Cbor.scala	17	6	1
 lib/breviloquence/src/core/breviloquence.CborParser.scala	15	1	0
+lib/breviloquence/src/core/breviloquence.inlining.scala	2	0	1
 lib/burdock/src/core/burdock.internal.scala	1	0	0
 lib/cacophony/src/core/cacophony.Audio.scala	2	0	0
 lib/cacophony/src/core/cacophony.Outlet.scala	1	0	0
@@ -116,12 +117,14 @@ lib/jacinta/src/core/jacinta.Json.Parser.scala	57	12	0
 lib/jacinta/src/core/jacinta.Json.scala	39	41	5
 lib/jacinta/src/core/jacinta.Json4.scala	0	0	0
 lib/jacinta/src/core/jacinta.JsonPointer.scala	1	0	4
+lib/jacinta/src/core/jacinta.inlining.scala	3	0	1
 lib/jacinta/src/core/jacinta.internal.scala	12	20	2
 lib/kaleidoscope/src/core/kaleidoscope.JavaBaseRegex.scala	1	0	0
 lib/kaleidoscope/src/core/kaleidoscope.Regex.scala	0	0	6
 lib/locomotion/src/core/locomotion.Protobuf.scala	0	0	0
 lib/locomotion/src/core/locomotion.ProtobufParser.scala	13	0	0
 lib/locomotion/src/core/locomotion.ProtobufPrinter.scala	3	0	0
+lib/locomotion/src/core/locomotion.inlining.scala	3	0	0
 lib/mandible/src/core/mandible.Bytecode.scala	1	0	4
 lib/metamorphose/src/core/metamorphose.Permutation.scala	1	0	0
 lib/monotonous/src/core/monotonous.Alphabet.scala	5	6	1
@@ -230,6 +233,7 @@ lib/xylophone/src/core/xylophone.XPath.scala	1	0	2
 lib/xylophone/src/core/xylophone.XPathEngine.scala	5	2	4
 lib/xylophone/src/core/xylophone.XPathReader.scala	15	0	25
 lib/xylophone/src/core/xylophone.Xml.scala	51	46	13
+lib/xylophone/src/core/xylophone.inlining.scala	1	0	1
 lib/xylophone/src/core/xylophone.internal.scala	22	18	2
 lib/yossarian/src/core/yossarian.Pty.scala	14	2	0
 lib/yossarian/src/core/yossarian.internal.scala	3	0	0

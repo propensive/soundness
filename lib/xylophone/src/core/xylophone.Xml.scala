@@ -65,9 +65,134 @@ import wisteria.*
 import zephyrine.*
 import Xml.Error.Reason
 
+// The direct path: the instances that drive an `Xml.Parsable` or an `Xml.Printable` whenever
+// one exists. They sit above the derived path in `Xml2`, and below `object Xml`, where
+// `import codecs.derived` overrides them.
+trait Xml1 extends Xml2:
+  this: Xml.type =>
+
+  // Direct parsing: when the value knows how to consume elements itself, the
+  // `Xml` tree is never materialized. Declared here (not in `Xml2`, where the
+  // `Decodable`-based `aggregableIn` now lives) so it wins whenever an
+  // `Xml.Parsable` exists, and is otherwise inapplicable — existing code
+  // resolves exactly as before. The read-site `Foci` travels with the reader
+  // so direct decode errors accrue with the same field foci as the AST
+  // path's.
+  given aggregableParsed: [value]
+  =>  ( parsable: (value is Xml.Parsable)^ )
+  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
+  =>  ( buffering: Buffering )
+  =>  ( ((value in Xml) is Aggregable by Data)^{parsable, tactic, xmlTactic} ) =
+
+    new Aggregable:
+      type Self = value in Xml
+      type Operand = Data
+
+      def aggregate(input: Chain[Data]): value in Xml =
+        parseDirectData(input, parsable).asInstanceOf[value in Xml]
+
+      override def accept(stream: (Stream[Data] over Credit)^): value in Xml =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        parseWith(XmlParser.fromStream(adopted(stream)), parsable).asInstanceOf[value in Xml]
+
+  given aggregableParsedText: [value]
+  =>  ( parsable: (value is Xml.Parsable)^ )
+  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
+  =>  ( buffering: Buffering )
+  =>  ( ((value in Xml) is Aggregable by anticipation.Text)^{parsable, tactic, xmlTactic} ) =
+
+    new Aggregable:
+      type Self = value in Xml
+      type Operand = anticipation.Text
+
+      def aggregate(input: Chain[anticipation.Text]): value in Xml =
+        parseDirect(input, parsable).asInstanceOf[value in Xml]
+
+      override def accept(stream: (Stream[anticipation.Text] over Credit)^): value in Xml =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        parseWith(XmlParser.fromTextStream(adopted(stream)), parsable).asInstanceOf[value in Xml]
+
+  // Whole-value direct reads: when the entire content is already in hand,
+  // parse it in place rather than wrapping it in a one-element stream —
+  // jacinta's `readableParsed` precedent. Concrete in `Data` / `Text`, so
+  // they beat the composed pipelines by specificity.
+  given readableParsed: [value]
+  =>  ( parsable: (value is Xml.Parsable)^ )
+  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
+  =>  ( (Data is Readable to (value in Xml))^{parsable, tactic, xmlTactic} ) =
+
+    data => parseDirectData(data, parsable).asInstanceOf[value in Xml]
+
+  given readableParsedText: [value]
+  =>  ( parsable: (value is Xml.Parsable)^ )
+  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
+  =>  ( (anticipation.Text is Readable to (value in Xml))^{parsable, tactic, xmlTactic} ) =
+
+    text => parseDirect(text, parsable).asInstanceOf[value in Xml]
+
+  // `in[Text over Xml]`, printed directly wherever a `Printable` exists and the formatting is
+  // compact: above `Xml2`'s `encodableOver`, which builds the tree and renders it, as it still
+  // does under indented formatting, which generated printers do not write.
+  given encodableOverPrinted: [value] => (printable: (value is Xml.Printable)^)
+  =>  ( encodable: (value is Encodable in Xml)^, formatting: Xml.Formatting )
+  =>  ( (value is Encodable in (anticipation.Text over Xml))^{printable, encodable} ) =
+
+    value =>
+      val text =
+        if formatting.indent.present then Xml.showable[Xml].text(encodable.encode(value))
+        else if formatting.trailingNewline then t"${Xml.Printable.print(value)}\n"
+        else Xml.Printable.print(value)
+
+      text.asInstanceOf[anticipation.Text over Xml]
+
 object Xml extends Tag.Container
-  ( label = "xml", admissible = Set("head", "body") ), Format, Xml2:
-  private type BaseText = anticipation.Text
+  ( label = "xml", admissible = Set("head", "body") ), Format, Xml1:
+  private[xylophone] type BaseText = anticipation.Text
+
+  // `import codecs.derived`: the derived codecs, even for a type with a direct instance in
+  // scope. Each outranks its direct counterpart in `Xml1`, and applies only where that would.
+  given aggregableDerived: [value: Decodable in Xml]
+  =>  ( derived: Codecs.Derived, parsable: (value is Xml.Parsable)^ )
+  =>  ( schema: XmlSchema, scope: Xml.Scope, namespacing: Xml.Namespacing )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], buffering: Buffering )
+  =>  ( ((value in Xml) is Aggregable by Data)^{tactic, xmlTactic} ) =
+
+    aggregableIn[value]
+
+  given aggregableDerivedText: [value: Decodable in Xml]
+  =>  ( derived: Codecs.Derived, parsable: (value is Xml.Parsable)^ )
+  =>  ( schema: XmlSchema, scope: Xml.Scope, namespacing: Xml.Namespacing )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], buffering: Buffering )
+  =>  ( ((value in Xml) is Aggregable by BaseText)^{tactic, xmlTactic} ) =
+
+    aggregableInText[value]
+
+  given readableDerived: [value: Decodable in Xml]
+  =>  ( derived: Codecs.Derived, parsable: (value is Xml.Parsable)^ )
+  =>  ( schema: XmlSchema, scope: Xml.Scope, namespacing: Xml.Namespacing )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], buffering: Buffering )
+  =>  ( (Data is Readable to (value in Xml))^{tactic, xmlTactic} ) =
+
+    data => aggregableIn[value].aggregate(Chain(data))
+
+  given readableDerivedText: [value: Decodable in Xml]
+  =>  ( derived: Codecs.Derived, parsable: (value is Xml.Parsable)^ )
+  =>  ( schema: XmlSchema, scope: Xml.Scope, namespacing: Xml.Namespacing )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], buffering: Buffering )
+  =>  ( (BaseText is Readable to (value in Xml))^{tactic, xmlTactic} ) =
+
+    text => aggregableInText[value].aggregate(Chain(text))
+
+  given encodableOverDerived: [value]
+  =>  ( derived: Codecs.Derived, printable: (value is Xml.Printable)^ )
+  =>  ( encodable: (value is Encodable in Xml)^, formatting: Xml.Formatting )
+  =>  ( (value is Encodable in (BaseText over Xml))^{encodable} ) =
+
+    encodableOver[value]
 
   // Controls how an `Xml` tree is serialized. `indent` is the whitespace unit emitted per nesting
   // level when indenting element-only content; `Unset` (the default) keeps everything on a single
@@ -878,7 +1003,7 @@ object Xml extends Tag.Container
 
     // Relabel an encoded field value to its field name and guarantee an
     // `Element` wrapper, so it decodes back from `<fieldName>…</fieldName>`.
-    private def wrap(fieldName: BaseText, encoded: Xml, scope: Optional[Scope]): Node =
+    private[xylophone] def wrap(fieldName: BaseText, encoded: Xml, scope: Optional[Scope]): Node =
       // The encoded element keeps the scope its own encoder gave it, unless the field is
       // unqualified, whose element is in no namespace
       def relabel(element: Element): Element =
@@ -1017,7 +1142,154 @@ object Xml extends Tag.Container
     // exactly `absent()`'s behavior — hence the default.
     def attribute(text: BaseText)(using Tactic[Xml.Error], Foci[Xml.Focus]): Self = absent()
 
-  object Parsable:
+  object Printable extends Printable2:
+    // The base of generated printers: generated code is capture-erased, so the body receives
+    // the writer as a neutral carrier. A record's element is labelled by its type at the root,
+    // and by its field where it is nested.
+    abstract class Direct[value] extends Xml.Printable:
+      type Self = value
+
+      protected def rootLabel: String
+      protected def writeCarrier(value: value, label: String, out: AnyRef): Unit
+
+      def write(value: value, out: Xml.Out^): Unit =
+        writeCarrier(value, rootLabel, out.asInstanceOf[AnyRef])
+
+      def write(value: value, label: String, out: Xml.Out^): Unit =
+        writeCarrier(value, label, out.asInstanceOf[AnyRef])
+
+    // The bridge from the AST world: the value's tree, encoded and written in place, relabelled
+    // where it is nested, as the derivation relabels it.
+    def fromEncodable[value](encodable: (value is Encodable in Xml)^)
+    :   ((value is Xml.Printable)^{encodable}) =
+
+      new Xml.Printable:
+        type Self = value
+
+        def write(value: value, out: Xml.Out^): Unit =
+          writeXml(out, compact, encodable.encoded(value), 0)
+
+        def write(value: value, label: String, out: Xml.Out^): Unit =
+          val wrapped = EncodableDerivation.wrap(label.tt, encodable.encoded(value), Unset)
+          writeXml(out, compact, wrapped, 0)
+
+    given declared: [value] => (direct: Xml.Direct[value]) => value is Xml.Printable =
+      direct.printable
+
+    private val compact: Xml.Formatting = Xml.Formatting(Unset, trailingNewline = false)
+
+    // A value's compact XML text through its `Printable`, whole.
+    def print[value](value: value)(using printable: (value is Xml.Printable)^): BaseText =
+      Producer.collect[BaseText](): producer => printable.write(value, new Textual(producer))
+
+    // The same text in blocks of the `Buffering` capacity, each handed to `deliver` as it
+    // fills, so no text of the whole value is built.
+    def emit[value](value: value, deliver: BaseText => Unit)
+      ( using printable: (value is Xml.Printable)^, buffering: Buffering )
+    :   Unit =
+
+      Producer.sink[BaseText](deliver): producer => printable.write(value, new Textual(producer))
+
+    // The writers generated printers call: the writer travels as a neutral carrier, and is
+    // reasserted here, at the audited point. Public because generated printers are spliced
+    // into user modules.
+    private inline def of(out: AnyRef): Xml.Out^ = out.asInstanceOf[Xml.Out^]
+
+    def writeAscii(out: AnyRef, value: String): Unit = of(out).ascii(value)
+    def writeName(out: AnyRef, value: String): Unit = of(out).name(value)
+
+    // A leaf's element: its label around its escaped text.
+    def writeLeaf(out: AnyRef, label: String, text: String): Unit =
+      val writer = of(out)
+      writer.ascii("<")
+      writer.name(label)
+      writer.ascii(">")
+      writer.text(text)
+      writer.ascii("</")
+      writer.name(label)
+      writer.ascii(">")
+
+    // Whether an `Optional` value is absent, and so writes no element.
+    def absent(value: Any): Boolean = value.asInstanceOf[Optional[Any]].absent
+
+    // The nodes the derivation makes of a field encoded through its `Encodable`: relabelled to
+    // the field, and flattened to one per item where the encoder is repeatable. Carried as a
+    // neutral reference between `nodes`, `some` and `writeNodes`.
+    def nodes[value](label: String, encodable: AnyRef, value: value): AnyRef =
+      val encoder = encodable.asInstanceOf[value is Encodable in Xml]
+      val encoded = encoder.encoded(value)
+
+      val repeatable = encoder.asInstanceOf[AnyRef] match
+        case marked: Repeatable => marked.repeatable
+        case _                  => false
+
+      val wrapped: scala.collection.immutable.List[Node] =
+        if repeatable then encoded match
+          case Fragment(nodes*) =>
+            nodes.toList.map(EncodableDerivation.wrap(label.tt, _, Unset))
+
+          case other =>
+            scala.collection.immutable.List(EncodableDerivation.wrap(label.tt, other, Unset))
+        else
+          scala.collection.immutable.List(EncodableDerivation.wrap(label.tt, encoded, Unset))
+
+      wrapped
+
+    def some(nodes: AnyRef): Boolean =
+      nodes.asInstanceOf[scala.collection.immutable.List[Node]].nonEmpty
+
+    def writeNodes(out: AnyRef, nodes: AnyRef): Unit =
+      nodes.asInstanceOf[scala.collection.immutable.List[Node]].foreach: node =>
+        writeXml(of(out), compact, node, 0)
+
+    // The call point for a nominal `Printable` in a field position of a generated printer (a
+    // recursive record's own instance, or a hand-written one), labelled by its field.
+    def writeField[value](printable: AnyRef, value: value, label: String, out: AnyRef): Unit =
+      printable.asInstanceOf[value is Xml.Printable].write(value, label, of(out))
+
+  // The direct-printing counterpart of `Encodable in Xml`: writes a value's compact XML text
+  // straight into a writer, with no tree built. It is reached through `in[Text over Xml]` and
+  // `in[Data over Xml]`, and its surface is explicit instances, `Inlinable.printable`, `derives
+  // Xml.Direct` and `import codecs.direct`.
+  trait Printable extends Typeclass:
+    // The value as its own element.
+    def write(value: Self, out: Xml.Out^): Unit
+
+    // The value as a field's element, labelled `label`.
+    def write(value: Self, label: String, out: Xml.Out^): Unit
+
+  // `import codecs.direct`: a generated parser and printer for every record, expanded where
+  // each is needed. A type that is not a record fails `Generates`, and so takes the derived
+  // path. Below the companions' `declared` instances, so a type that derives `Xml.Direct` uses
+  // the codec it generated once.
+  trait Parsable2:
+    inline given generated: [value]
+    =>  ( mode: Codecs.Direct, generates: Inlinable.Generates[value] )
+    =>  ( value is Xml.Parsable ) =
+
+      ${xylophone.inlining.inlinableParsable[value]}
+
+  trait Printable2:
+    inline given generated: [value]
+    =>  ( mode: Codecs.Direct, generates: Inlinable.Generates[value] )
+    =>  ( value is Xml.Printable ) =
+
+      ${xylophone.inlining.inlinablePrintable[value]}
+
+  // The `derives` carrier for a generated codec: `case class Foo(…) derives Xml.Direct` generates
+  // `Foo`'s parser and printer once, into its companion. (A `Self`-typed typeclass has no type
+  // parameters, so it cannot appear in a `derives` clause itself.)
+  object Direct:
+    inline def derived[value]: Direct[value] =
+      Direct(Inlinable.parsable[value], Inlinable.printable[value])
+
+  final class Direct[value]
+    ( val parsable: value is Xml.Parsable, val printable: value is Xml.Printable )
+
+  object Parsable extends Parsable2:
+    given declared: [value] => (direct: Xml.Direct[value]) => value is Xml.Parsable =
+      direct.parsable
+
     // The base of generated parsers: generated code is capture-erased, so
     // the body receives the reader as a neutral carrier, and the capability
     // is asserted here at the rim — the audited point — like the reader's
@@ -1835,32 +2107,78 @@ object Xml extends Tag.Container
       ${xylophone.internal.extractor[parts, origins]('scrutinee)}
 
 
+  // The stream an `Aggregable`'s `accept` receives, handed on to a consuming cursor. `accept`'s
+  // signature is pinned non-consuming, so ownership moves through a neutral reference: each
+  // call delivers a stream that is used exactly once, by construction.
+  private[xylophone] def adopted[operand](stream: (Stream[operand] over Credit)^)
+  :   (Stream[operand] over Credit)^ =
+
+    stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[operand] over Credit)^]
+
   // The parser reads UTF-8 bytes, so a byte source is parsed as it arrives; a text source
   // is encoded first (see `XmlParser`). A leading `<?xml …?>` declaration is accepted and
   // silently dropped, so a whole document reads as a fragment; `load` keeps it as metadata.
   given aggregable: [content <: Label: Reifiable to List[String]]
   =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
-  =>  ( tactic: Tactic[Parse.Error] )
+  =>  ( tactic: Tactic[Parse.Error], buffering: Buffering )
   =>  ( ((Xml of content) is Aggregable by Data)^{tactic} ) =
 
-    input => XmlParser.fromDataChain(input).parseXml(keepHeader = false).of[content]
+    new Aggregable:
+      type Self = Xml of content
+      type Operand = Data
+
+      def aggregate(input: Chain[Data]): Xml of content =
+        XmlParser.fromDataChain(input).parseXml(keepHeader = false).of[content]
+
+      override def accept(stream: (Stream[Data] over Credit)^): Xml of content =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        XmlParser.fromStream(adopted(stream)).parseXml(keepHeader = false).of[content]
 
   given aggregable2: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
-  =>  ( tactic: Tactic[Parse.Error] )
+  =>  ( tactic: Tactic[Parse.Error], buffering: Buffering )
   =>  ( (Xml is Aggregable by Data)^{tactic} ) =
-    input => XmlParser.fromDataChain(input).parseXml(keepHeader = false)
+
+    new Aggregable:
+      type Self = Xml
+      type Operand = Data
+
+      def aggregate(input: Chain[Data]): Xml =
+        XmlParser.fromDataChain(input).parseXml(keepHeader = false)
+
+      override def accept(stream: (Stream[Data] over Credit)^): Xml =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        XmlParser.fromStream(adopted(stream)).parseXml(keepHeader = false)
 
   given aggregableText: [content <: Label: Reifiable to List[String]]
   =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
-  =>  ( tactic: Tactic[Parse.Error] )
+  =>  ( tactic: Tactic[Parse.Error], buffering: Buffering )
   =>  ( ((Xml of content) is Aggregable by BaseText)^{tactic} ) =
 
-    input => XmlParser.fromChain(input).parseXml(keepHeader = false).of[content]
+    new Aggregable:
+      type Self = Xml of content
+      type Operand = BaseText
+
+      def aggregate(input: Chain[BaseText]): Xml of content =
+        XmlParser.fromChain(input).parseXml(keepHeader = false).of[content]
+
+      override def accept(stream: (Stream[BaseText] over Credit)^): Xml of content =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        XmlParser.fromTextStream(adopted(stream)).parseXml(keepHeader = false).of[content]
 
   given aggregableText2: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
-  =>  ( tactic: Tactic[Parse.Error] )
+  =>  ( tactic: Tactic[Parse.Error], buffering: Buffering )
   =>  ( (Xml is Aggregable by BaseText)^{tactic} ) =
-    input => XmlParser.fromChain(input).parseXml(keepHeader = false)
+
+    new Aggregable:
+      type Self = Xml
+      type Operand = BaseText
+
+      def aggregate(input: Chain[BaseText]): Xml =
+        XmlParser.fromChain(input).parseXml(keepHeader = false)
+
+      override def accept(stream: (Stream[BaseText] over Credit)^): Xml =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        XmlParser.fromTextStream(adopted(stream)).parseXml(keepHeader = false)
 
   // HTTP content-type integration. `Abstractable across HttpStreams` makes an
   // `Xml` value usable as an HTTP request/response body (telekinesis derives
@@ -1883,49 +2201,6 @@ object Xml extends Tag.Container
 
     text => Chain(text).read[Xml]
 
-  // Direct parsing: when the value knows how to consume elements itself, the
-  // `Xml` tree is never materialized. Declared here (not in `Xml2`, where the
-  // `Decodable`-based `aggregableIn` now lives) so it wins whenever an
-  // `Xml.Parsable` exists, and is otherwise inapplicable — existing code
-  // resolves exactly as before. The read-site `Foci` travels with the reader
-  // so direct decode errors accrue with the same field foci as the AST
-  // path's.
-  given aggregableParsed: [value]
-  =>  ( parsable: (value is Xml.Parsable)^ )
-  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
-  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
-  =>  ( ((value in Xml) is Aggregable by Data)^{parsable, tactic, xmlTactic} ) =
-
-    input => parseDirectData(input, parsable).asInstanceOf[value in Xml]
-
-  given aggregableParsedText: [value]
-  =>  ( parsable: (value is Xml.Parsable)^ )
-  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
-  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
-  =>  ( ((value in Xml) is Aggregable by BaseText)^{parsable, tactic, xmlTactic} ) =
-
-    input => parseDirect(input, parsable).asInstanceOf[value in Xml]
-
-  // Whole-value direct reads: when the entire content is already in hand,
-  // parse it in place rather than wrapping it in a one-element stream —
-  // jacinta's `readableParsed` precedent. Concrete in `Data` / `Text`, so
-  // they beat the composed pipelines by specificity.
-  given readableParsed: [value]
-  =>  ( parsable: (value is Xml.Parsable)^ )
-  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
-  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
-  =>  ( (Data is Readable to (value in Xml))^{parsable, tactic, xmlTactic} ) =
-
-    data => parseDirectData(data, parsable).asInstanceOf[value in Xml]
-
-  given readableParsedText: [value]
-  =>  ( parsable: (value is Xml.Parsable)^ )
-  =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
-  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
-  =>  ( (BaseText is Readable to (value in Xml))^{parsable, tactic, xmlTactic} ) =
-
-    text => parseDirect(text, parsable).asInstanceOf[value in Xml]
-
   // Direct-parsing counterpart of `Xml2.aggregableIn`: drives an
   // `Xml.Parsable` instance over the input through an `Xml.Reader`, so no
   // tree is built for the values the instance reads directly. Like
@@ -1943,7 +2218,8 @@ object Xml extends Tag.Container
   // value should be — also lands on `absent()`, where the AST path may
   // instead report a `Parse.Error`; the divergence is confined to inputs
   // that fail on both paths.)
-  private def parseDirect[value](input: Chain[BaseText], parsable: (value is Xml.Parsable)^)
+  private[xylophone] def parseDirect[value]
+    ( input: Chain[BaseText], parsable: (value is Xml.Parsable)^ )
     ( using schema:      XmlSchema,
             scope:       Scope,
             namespacing: Namespacing,
@@ -1955,7 +2231,8 @@ object Xml extends Tag.Container
     parseWith(XmlParser.fromChain(input), parsable)
 
   // The byte forms, the parser's own input: a chain of blocks, and a whole `Data`.
-  private def parseDirectData[value](input: Chain[Data], parsable: (value is Xml.Parsable)^)
+  private[xylophone] def parseDirectData[value]
+    ( input: Chain[Data], parsable: (value is Xml.Parsable)^ )
     ( using schema:      XmlSchema,
             scope:       Scope,
             namespacing: Namespacing,
@@ -1966,7 +2243,7 @@ object Xml extends Tag.Container
 
     parseWith(XmlParser.fromDataChain(input), parsable)
 
-  private def parseDirectData[value](input: Data, parsable: (value is Xml.Parsable)^)
+  private[xylophone] def parseDirectData[value](input: Data, parsable: (value is Xml.Parsable)^)
     ( using schema:      XmlSchema,
             scope:       Scope,
             namespacing: Namespacing,
@@ -1978,7 +2255,8 @@ object Xml extends Tag.Container
     parseWith(XmlParser.fromData(input), parsable)
 
   // The legacy interoperation shape: a stdlib `Iterator` of chunks.
-  private def parseDirect[value](input: Iterator[BaseText], parsable: (value is Xml.Parsable)^)
+  private[xylophone] def parseDirect[value]
+    ( input: Iterator[BaseText], parsable: (value is Xml.Parsable)^ )
     ( using schema:      XmlSchema,
             scope:       Scope,
             namespacing: Namespacing,
@@ -1991,7 +2269,7 @@ object Xml extends Tag.Container
 
   // Whole-`Text` form: a pre-filled single-chunk cursor, no iterator
   // plumbing (the `readableParsed` entry).
-  private def parseDirect[value](input: BaseText, parsable: (value is Xml.Parsable)^)
+  private[xylophone] def parseDirect[value](input: BaseText, parsable: (value is Xml.Parsable)^)
     ( using schema:      XmlSchema,
             scope:       Scope,
             namespacing: Namespacing,
@@ -2002,7 +2280,7 @@ object Xml extends Tag.Container
 
     parseWith(XmlParser.fromText(input), parsable)
 
-  private def parseWith[value](parser: XmlParser^, parsable: (value is Xml.Parsable)^)
+  private[xylophone] def parseWith[value](parser: XmlParser^, parsable: (value is Xml.Parsable)^)
     ( using schema:      XmlSchema,
             scope:       Scope,
             namespacing: Namespacing,
@@ -2043,7 +2321,7 @@ object Xml extends Tag.Container
     // The chunk chain view of the pull endpoint (the audited bridge); the parser encodes
     // each chunk to UTF-8 as it reaches it.
     val chunks =
-      zephyrine.chain(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[BaseText] over Credit)^])
+      zephyrine.chain(adopted(stream))
 
     val parser: XmlParser^ = tracking match
       case PositionTracking.On  => XmlParser.fromChainTracked(chunks)
@@ -2057,7 +2335,7 @@ object Xml extends Tag.Container
   =>  ( tactic: Tactic[Parse.Error], tracking: PositionTracking, buffering: Buffering )
   =>  ( (Xml is Loadable by Data)^{tactic} ) = stream =>
     // The non-consume `load` crosses to the consuming cursor as a neutral reference.
-    val bytes = stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]
+    val bytes = adopted(stream)
 
     val parser: XmlParser^ = tracking match
       case PositionTracking.On  => XmlParser.fromStreamTracked(bytes)
@@ -2177,7 +2455,8 @@ object Xml extends Tag.Container
   // render through the same code; `Bytes` writes UTF-8 straight into a byte block through
   // zephyrine's `Utf8Writer`, escaping and encoding each string in one pass over its characters,
   // and lends each block as it fills.
-  private[xylophone] trait Out extends caps.ExclusiveCapability, caps.Stateful:
+  // Public, as the medium an `Xml.Printable` writes into; its implementations stay internal.
+  trait Out extends caps.ExclusiveCapability, caps.Stateful:
     // Markup known to be ASCII: delimiters and keywords.
     update def ascii(text: String): Unit
 
@@ -2799,6 +3078,17 @@ object Xml extends Tag.Container
 
     // The text-input forms encode to UTF-8 and read the bytes; their error offsets are
     // converted back to chars (`charOffsets`), the units of the text supplied.
+    // A text stream, encoded to UTF-8 as it arrives; its error offsets are converted back to
+    // chars, as `fromText`'s are.
+    def fromTextStream(consume input: (Stream[BaseText] over Credit)^)(using Buffering)
+      ( using XmlSchema, Scope, Namespacing )
+    :   XmlParser^ =
+
+      new XmlParser
+        ( Cursor[Data](input.via(hieroglyph.codepages.utf8Codepage)),
+          tracking = false,
+          charOffsets = true )
+
     def fromText(text: BaseText)(using XmlSchema, Scope, Namespacing): XmlParser^ =
       new XmlParser(Cursor[Data](utf8(text)), tracking = false, charOffsets = true)
 

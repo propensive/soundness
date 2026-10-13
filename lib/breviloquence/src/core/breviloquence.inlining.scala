@@ -32,11 +32,11 @@
                                                                                                   */
 package breviloquence
 
+import scala.caps
 import scala.collection.immutable.Vector
-import scala.collection.immutable.{List, Nil, ::}
+import scala.collection.immutable.{List, Nil}
 import scala.collection.mutable as scm
 import scala.quoted.*
-import scala.{annotation, caps}
 
 import anticipation.*
 import contingency.*
@@ -44,10 +44,13 @@ import distillate.*
 import prepositional.*
 import vacuous.*
 
-// The machinery behind `Cbor.Inlinable`: expansion-time instance resolution
-// (through an in-macro staging compiler), the structural generators for
-// products, collections and sums, and the `Inlinable.parsable` entry macro.
-object stagedInternal:
+// The machinery behind `Inlinable`: expansion-time instance resolution, the
+// structural generators for products, collections and sums, and the entry
+// macros. A user-written `Inlinable`, and a sum's `Discriminable in Cbor`, can
+// only be evaluated at expansion time by an in-macro staging compiler, which
+// `breviloquence.staged` contributes as an `Inlinable.Stager`; without it, such
+// a field takes the runtime seam, and a sum is not generated.
+object inlining:
 
   // The runtime seam for a field type without an `Inlinable`: a nominal
   // `Parsable` (a custom instance) is called directly; anything else bridges
@@ -75,180 +78,6 @@ object stagedInternal:
         . fromDecodable(scala.compiletime.summonInline[fieldType is Decodable in Cbor])
         . absent()(using tactic)
 
-  // ── Expansion-time environment ─────────────────────────────────────────
-
-  private def macroClassloader: ClassLoader =
-    val contextual = Thread.currentThread.nn.getContextClassLoader
-    if contextual != null then contextual else getClass.getClassLoader.nn
-
-  private def currentOutputDirectory(using Quotes): Option[String] =
-    try
-      val ctx = quotes.asInstanceOf[scala.quoted.runtime.impl.QuotesImpl].ctx
-      given dotty.tools.dotc.core.Contexts.Context = ctx
-      import dotty.tools.dotc.config.Settings.Setting.value
-
-      Option(ctx.settings.outputDir.value.file).map(_.nn.getCanonicalPath.nn)
-    catch case _: Exception => None
-
-  // A symbol defined in the compilation run in progress has no trustworthy
-  // classfile (none on a clean build; a stale one from the previous compile
-  // on an incremental build), so instance evaluation must refuse it and the
-  // caller degrade to a runtime seam.
-  private def definedInCurrentRun(using Quotes)(symbol: quotes.reflect.Symbol): Boolean =
-    try
-      val ctx = quotes.asInstanceOf[scala.quoted.runtime.impl.QuotesImpl].ctx
-      val run = ctx.run
-
-      if run == null then false else
-        val sources = run.nn.units.map(_.source.path).toSet
-        val position = symbol.pos
-        position.exists: position => sources.contains(position.sourceFile.path)
-    catch case _: Exception => false
-
-  private def innerClasspath(using Quotes): String =
-    val separator = java.io.File.pathSeparator.nn
-
-    val full =
-      dotty.tools.dotc.util.ClasspathFromClassloader(macroClassloader).nn
-
-    currentOutputDirectory match
-      case None =>
-        full
-
-      case Some(excluded) =>
-        val entries = full.split(separator).nn
-        val joined = StringBuilder()
-        var index = 0
-
-        while index < entries.length do
-          val entry = entries(index).nn
-
-          val retain =
-            try java.io.File(entry).getCanonicalPath != excluded
-            catch case _: java.io.IOException => true
-
-          if retain then
-            if joined.nonEmpty then joined.append(separator)
-            joined.append(entry)
-
-          index += 1
-
-        joined.toString
-
-  // ── Type transport into the staging context ────────────────────────────
-  // The outer macro's `Type` cannot cross into the inner compiler, so a type
-  // travels as a tree of `java.lang.Class`es and is rebuilt inside with
-  // `TypeRepr.typeConstructorOf`. This restricts instance evaluation to
-  // class-shaped types (plain classes and applications of them) — opaque
-  // and structural types degrade to a runtime seam.
-
-  private case class TypeShape(clazz: Class[?], arguments: List[TypeShape])
-
-  private val primitiveClasses: scala.collection.immutable.Map[String, Class[?]] =
-    scala.collection.immutable.Map
-      ( "scala.Int"     -> classOf[Int],
-        "scala.Long"    -> classOf[Long],
-        "scala.Double"  -> classOf[Double],
-        "scala.Float"   -> classOf[Float],
-        "scala.Boolean" -> classOf[Boolean],
-        "scala.Short"   -> classOf[Short],
-        "scala.Byte"    -> classOf[Byte],
-        "scala.Char"    -> classOf[Char],
-        "scala.Unit"    -> classOf[Unit] )
-
-  // The binary name of a class symbol: package segments joined with dots,
-  // enclosing type segments with dollars.
-  private def binaryName(using Quotes)(symbol: quotes.reflect.Symbol): String =
-    import quotes.reflect.*
-
-    def build(symbol: Symbol): String =
-      val owner = symbol.owner
-
-      if owner.isPackageDef then
-        val prefix = owner.fullName
-        if prefix == "<empty>" then symbol.name else prefix+"."+symbol.name
-      else
-        val ownerName = build(if owner.isClassDef then owner else owner.owner)
-        ownerName+"$"+symbol.name
-
-    build(symbol)
-
-  private def shapeOf(using Quotes)(tpe: quotes.reflect.TypeRepr): Option[TypeShape] =
-    import quotes.reflect.*
-
-    def classFor(tpe: TypeRepr): Option[Class[?]] =
-      tpe.classSymbol.flatMap: symbol =>
-        if definedInCurrentRun(symbol) then None
-        else primitiveClasses.get(symbol.fullName).orElse:
-          try Some(Class.forName(binaryName(symbol), false, macroClassloader).nn)
-          catch
-            case _: ReflectiveOperationException => None
-            case _: LinkageError                 => None
-
-    tpe.dealias match
-      case AppliedType(constructor, arguments) =>
-        for
-          clazz  <- classFor(constructor)
-          shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-            list.flatMap: tail => shapeOf(argument).map(_ :: tail)
-        yield TypeShape(clazz, shapes)
-
-      case other =>
-        classFor(other).map(TypeShape(_, Nil))
-
-  // ── Instance evaluation: the staging summon ────────────────────────────
-  // One fresh compiler per summon, over the macro classloader with the
-  // current output directory excluded from its classpath. The summon is
-  // embedded in the compiled snippet (`summonInline`), so it resolves during
-  // the inner compiler's inlining phase, composing conditional instances —
-  // the whole instance graph arrives live in one run.
-  private def summonViaStaging[field: Type](using Quotes): Option[Inlinable] =
-    import quotes.reflect.*
-    import scala.quoted.staging
-
-    shapeOf(TypeRepr.of[field]).flatMap: shape =>
-      try
-        given settings: staging.Compiler.Settings =
-          staging.Compiler.Settings.make
-            ( None, List("-experimental", "-classpath", innerClasspath) )
-
-        given staging.Compiler = staging.Compiler.make(macroClassloader)
-        val started = System.nanoTime
-
-        val result: Any = staging.run:
-          val quotes2 = summon[Quotes]
-          import quotes2.reflect as r2
-
-          def rebuild(shape: TypeShape): r2.TypeRepr =
-            val base = r2.TypeRepr.typeConstructorOf(shape.clazz)
-            if shape.arguments.isEmpty then base else base.appliedTo(shape.arguments.map(rebuild))
-
-          val target =
-            r2.Refinement
-              ( r2.TypeRepr.of[Inlinable], "Self",
-                r2.TypeBounds(rebuild(shape), rebuild(shape)) )
-
-          target.asType match
-            case '[target] => '{scala.compiletime.summonInline[target]}
-
-        val duration = (System.nanoTime - started)/1000000L
-
-        result match
-          case instance: Inlinable =>
-            report.info
-              ( s"breviloquence: staged summon for ${TypeRepr.of[field].show} took " +
-                s"${duration}ms" )
-
-            Some(instance)
-
-          case _ =>
-            None
-      catch
-        case _: ReflectiveOperationException => None
-        case _: LinkageError                 => None
-        case _: AssertionError               => None
-        case _: Exception                    => None
-
   // ── The resolution ladder ──────────────────────────────────────────────
   // builtin → staged summon → structural collection/product/sum →
   // (caller's) runtime seam. The cache spans one entry expansion, so a
@@ -259,9 +88,62 @@ object stagedInternal:
   // types whose generators are currently on the expansion stack — a
   // recursive occurrence (`Tree` with `children: List[Tree]`) must degrade
   // to the runtime seam rather than expand forever.
-  private final class Cache:
+  private class Cache:
     val instances: scm.HashMap[String, Option[Inlinable]] = scm.HashMap()
     val active: scm.Set[String] = scm.Set()
+    val roots: scm.HashMap[String, Expr[Any]] = scm.HashMap()
+
+  // A cache for generating a printer: its runtime tier resolves printers, not parsers.
+  private final class PrintingCache extends Cache
+
+  // The cache of the expansion in progress. A structural instance reached through
+  // `Inlinable.parse` (or `write`) carries no cache, so it continues this one rather than
+  // starting afresh: the active set then spans the whole expansion, and a mutually recursive
+  // record ties back to a generator already on the stack instead of expanding forever.
+  private val ongoing: scala.util.DynamicVariable[Option[Cache]] =
+    scala.util.DynamicVariable(None)
+
+  private def continued(): Cache = ongoing.value.getOrElse(Cache())
+
+  private def within[result](cache: Cache)(generate: => result): result =
+    ongoing.withValue(Some(cache))(generate)
+
+  // A recursive occurrence of the root type reads (or writes) through the instance being
+  // generated.
+  private def rootFor[fieldType: Type](using Quotes): Option[Expr[Any]] =
+    import quotes.reflect.*
+
+    val name = TypeRepr.of[fieldType].dealias.show
+
+    ongoing.value.flatMap(_.roots.get(name))
+
+  // Whether an implicit-search result is the `import codecs.direct` fallback given, which a
+  // nominal lookup must not take: it would expand this very generator again for the field.
+  private def blanket(using Quotes)(tree: quotes.reflect.Tree): Boolean =
+    import quotes.reflect.*
+
+    tree match
+      case Inlined(_, _, body)    => blanket(body)
+      case Apply(function, _)     => blanket(function)
+      case TypeApply(function, _) => blanket(function)
+      case Block(_, expression)   => blanket(expression)
+
+      case other =>
+        val symbol = other.symbol
+
+        val owners =
+          List(TypeRepr.of[Cbor.Parsable2].typeSymbol, TypeRepr.of[Cbor.Printable2].typeSymbol)
+
+        symbol.name == "generated" && owners.contains(symbol.owner)
+
+  // A type with any `Form` refinement removed: a read of `Foo in Cbor` infers the instance's
+  // type as `Foo { type Form = Cbor }`, whose codec is `Foo`'s.
+  private def formless(using Quotes)(tpe: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+
+    tpe.dealias match
+      case Refinement(parent, "Form", _) => formless(parent)
+      case other                         => other
 
   private def resolve[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
     import quotes.reflect.*
@@ -269,7 +151,7 @@ object stagedInternal:
     val tpe = TypeRepr.of[field].dealias
 
     builtinFor(tpe).orElse:
-      cache.instances.getOrElseUpdate(tpe.show, summonViaStaging[field].map(unwrap))
+      cache.instances.getOrElseUpdate(tpe.show, Inlinable.Stager.summon[field].map(unwrap))
       . orElse(structuralFor[field](cache))
       . orElse(runtimeFor[field])
 
@@ -295,11 +177,52 @@ object stagedInternal:
 
     def searched(target: TypeRepr): Option[Expr[Any]] =
       Implicits.search(target) match
-        case success: ImplicitSearchSuccess => Some(success.tree.asExpr)
-        case _                              => None
+        case success: ImplicitSearchSuccess if !blanket(success.tree) => Some(success.tree.asExpr)
+        case _                                                        => None
 
-    searched(TypeRepr.of[field is Cbor.Parsable]).map(RuntimeInlinable[field](_)).orElse:
-      searched(TypeRepr.of[field is Decodable in Cbor]).map(DecodedInlinable[field](_))
+    ongoing.value match
+      case Some(_: PrintingCache) =>
+        rootFor[field].orElse(searched(TypeRepr.of[field is Cbor.Printable]))
+        . map(NominalPrinter[field](_))
+        . orElse(searched(TypeRepr.of[field is Encodable in Cbor]).map(EncodedPrinter[field](_)))
+
+      case _ =>
+        rootFor[field].orElse(searched(TypeRepr.of[field is Cbor.Parsable]))
+        . map(RuntimeInlinable[field](_))
+        . orElse(searched(TypeRepr.of[field is Decodable in Cbor]).map(DecodedInlinable[field](_)))
+
+  // The printing counterparts of the runtime tiers: a nominal `Printable` (the recursion tie,
+  // or a hand-written one), called in place, and the `Encodable` seam, whose tree is written
+  // in place (an element encoding to `Unset` is written as `undefined`, as the derivation
+  // writes it; a record field is handled by `productWrite`, which leaves it out).
+  private final class NominalPrinter[value](printable: Expr[Any]) extends Inlinable:
+    type Self = value
+
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[value]): Expr[value] =
+      quotes.reflect.report.errorAndAbort("breviloquence: a printer cannot parse")
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[value], out: Expr[AnyRef])(using Quotes, Type[value])
+    :   Expr[Unit] =
+
+      '{Cbor.Printable.writeField[value]($printable.asInstanceOf[AnyRef], $value, $out)}
+
+  private final class EncodedPrinter[value](val encodable: Expr[Any]) extends Inlinable:
+    type Self = value
+
+    def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[value]): Expr[value] =
+      quotes.reflect.report.errorAndAbort("breviloquence: a printer cannot parse")
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[value], out: Expr[AnyRef])(using Quotes, Type[value])
+    :   Expr[Unit] =
+
+      ' {
+          val typed = $encodable.asInstanceOf[value is Encodable in Cbor]
+          Cbor.Printable.writeAst($out, Cbor.unseal(typed.encoded($value)))
+        }
 
   private final class RuntimeInlinable[value](parsable: Expr[Any]) extends Inlinable:
     type Self = value
@@ -350,6 +273,17 @@ object stagedInternal:
       case _ =>
         instance.parse(reader)
 
+  // `Data`, read off the result of `Cbor.Reader.byteString` rather than quoted as
+  // `Type.of[Data]`: under capture checking, a quoted `Array[Byte]^{}` unpickles as
+  // `Array[Byte]^{any.rd}`, which no longer conforms to the type it was quoted from.
+  private def dataType(using Quotes): quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+
+    val reader = TypeRepr.of[Cbor.Reader]
+
+    reader.memberType(reader.typeSymbol.methodMember("byteString").head).absolve match
+      case MethodType(_, _, result) => result
+
   private def builtinFor(using Quotes)(tpe: quotes.reflect.TypeRepr): Option[Inlinable] =
     import quotes.reflect.*
 
@@ -360,7 +294,7 @@ object stagedInternal:
     else if tpe =:= TypeRepr.of[Boolean] then Some(Inlinable.boolean)
     else if tpe =:= TypeRepr.of[Text] then Some(Inlinable.text)
     else if tpe =:= TypeRepr.of[String] then Some(Inlinable.string)
-    else if tpe =:= TypeRepr.of[Data] then Some(Inlinable.byteString)
+    else if tpe =:= dataType then Some(Inlinable.byteString)
     else if tpe =:= TypeRepr.of[Cbor] then Some(Inlinable.cbor)
     else None
 
@@ -443,7 +377,8 @@ object stagedInternal:
           case '[variantType] => resolve[variantType](cache).isDefined
 
       if !resolvable then None
-      else discriminantKeyFor[field].map: key => Inlinable.SumInlinable[field](key)
+      else Inlinable.Stager.discriminantKey[field].map: key =>
+        Inlinable.SumInlinable[field](key, sumPrints(quotes.reflect.TypeRepr.of[field], key))
 
   // The variants of a stageable sealed sum: `(label, type)` per variant, or
   // `None` when the shape is unsupported.
@@ -467,51 +402,6 @@ object stagedInternal:
             child.isClassDef && child.flags.is(Flags.Case) && !hasRenames(child)
 
       if supported then Some(children.map { child => (child.name, child.typeRef) }) else None
-
-  // The sum's discriminant key, when its `Discriminable in Cbor` resolves —
-  // inside the staging compiler, so the instance is live — to a
-  // `Cbor.DiscriminantKey`.
-  private def discriminantKeyFor[sum: Type](using Quotes): Option[String] =
-    import quotes.reflect.*
-    import scala.quoted.staging
-
-    shapeOf(TypeRepr.of[sum]).flatMap: shape =>
-      try
-        given settings: staging.Compiler.Settings =
-          staging.Compiler.Settings.make
-            ( None, List("-experimental", "-classpath", innerClasspath) )
-
-        given staging.Compiler = staging.Compiler.make(macroClassloader)
-
-        val result: Any = staging.run:
-          val quotes2 = summon[Quotes]
-          import quotes2.reflect as r2
-
-          def rebuild(shape: TypeShape): r2.TypeRepr =
-            val base = r2.TypeRepr.typeConstructorOf(shape.clazz)
-            if shape.arguments.isEmpty then base else base.appliedTo(shape.arguments.map(rebuild))
-
-          val cbor = r2.TypeRepr.of[Cbor]
-
-          val target =
-            r2.Refinement
-              ( r2.Refinement
-                  ( r2.TypeRepr.of[wisteria.Discriminable], "Self",
-                    r2.TypeBounds(rebuild(shape), rebuild(shape)) ),
-                "Form",
-                r2.TypeBounds(cbor, cbor) )
-
-          target.asType match
-            case '[target] => '{scala.compiletime.summonInline[target]}
-
-        result match
-          case discriminant: Cbor.DiscriminantKey[?] => Some(discriminant.key.s)
-          case _                                     => None
-      catch
-        case _: ReflectiveOperationException => None
-        case _: LinkageError                 => None
-        case _: AssertionError               => None
-        case _: Exception                    => None
 
   private def productSupported(using Quotes)(tpe: quotes.reflect.TypeRepr): Boolean =
     import quotes.reflect.*
@@ -591,7 +481,7 @@ object stagedInternal:
   private[breviloquence] def productBody[product: Type](reader: Expr[Cbor.Reader])(using Quotes)
   :   Expr[product] =
 
-    productBody[product](reader, Cache())
+    productBody[product](reader, continued())
 
   private def productBody[product: Type](reader: Expr[Cbor.Reader], cache: Cache)(using Quotes)
   :   Expr[product] =
@@ -690,7 +580,7 @@ object stagedInternal:
           Some('{$parser.directString()(using $tactic).tt})
         else if tpe =:= TypeRepr.of[String] then
           Some('{$parser.directString()(using $tactic)})
-        else if tpe =:= TypeRepr.of[Data] then
+        else if tpe =:= dataType then
           Some('{$parser.directBytes()(using $tactic)})
         else if tpe =:= TypeRepr.of[Cbor] then
           Some('{Cbor.ast($parser.value()(using $tactic))})
@@ -709,7 +599,7 @@ object stagedInternal:
                   instance0.asInstanceOf[Inlinable { type Self = fieldType }].absent(tactic)
 
                 case None =>
-                  '{stagedInternal.fieldSeamAbsent[fieldType]($tactic)}
+                  '{inlining.fieldSeamAbsent[fieldType]($tactic)}
 
       // One local def per field, shaped for the JIT: non-builtin bodies are
       // potentially large, so each is emitted once and *called* from its
@@ -735,7 +625,7 @@ object stagedInternal:
                           reader )
 
                     case None =>
-                      '{stagedInternal.fieldSeam[fieldType]($reader.asInstanceOf[AnyRef])}
+                      '{inlining.fieldSeam[fieldType]($reader.asInstanceOf[AnyRef])}
 
             DefDef(readDefs(index), _ => Some(rhs.asTerm.changeOwner(readDefs(index))))
 
@@ -881,7 +771,7 @@ object stagedInternal:
     ( using Quotes )
   :   Expr[sum] =
 
-    sumBody[sum](reader, key, Cache())
+    sumBody[sum](reader, key, continued())
 
   private def sumBody[sum: Type](reader: Expr[Cbor.Reader], key: String, cache: Cache)
     ( using Quotes )
@@ -939,8 +829,262 @@ object stagedInternal:
           ${dispatch(0, 'tagValue)}
       }
 
+  // ── The printing side ──────────────────────────────────────────────────
+  // A generated printer writes into a `Producer.Bytes` exactly the bytes the derived encoding
+  // writes: a record is a definite-length map with text keys in field order, leaving out a
+  // field whose encoding is `Unset`; a collection a definite-length array; a sum its variant's
+  // map with the discriminant entry added at the end. A field with no printer of its own is
+  // encoded through its `Encodable in Cbor` and its tree written in place.
+
+  // How a record field is printed: through an instance that writes it in place, or through its
+  // `Encodable`, encoded ahead of the map's head so that a field encoding to `Unset` can be
+  // left out of the count.
+  private enum Printing:
+    case Generated(instance: Inlinable)
+    case Seam(encodable: Expr[Any])
+
+  private def printingFor[fieldType: Type](cache: Cache)(using Quotes): Printing =
+    import quotes.reflect.*
+
+    resolve[fieldType](cache) match
+      case Some(seam: EncodedPrinter[?])     => Printing.Seam(seam.encodable)
+      case Some(instance) if instance.prints => Printing.Generated(instance)
+
+      case _ =>
+        val name = TypeRepr.of[fieldType].show
+        report.errorAndAbort(s"breviloquence: no Printable or Encodable in Cbor for $name")
+
+  // Writes one value through its printing instance.
+  private def printed[fieldType: Type]
+    ( printing: Printing, value: Expr[fieldType], out: Expr[AnyRef] )
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    printing match
+      case Printing.Generated(instance) =>
+        instance.asInstanceOf[Inlinable { type Self = fieldType }].write(value, out)
+
+      // A seam field's tree is encoded ahead of the map's head, and written by the caller.
+      case Printing.Seam(encodable) =>
+        ' {
+            val typed = $encodable.asInstanceOf[fieldType is Encodable in Cbor]
+            Cbor.Printable.writeAst($out, Cbor.unseal(typed.encoded($value)))
+          }
+
+  private[breviloquence] def productWrite[product: Type](value: Expr[product], out: Expr[AnyRef])
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    productWrite[product](value, out, None, continued())
+
+  // `discriminant`: a sum variant's key and tag, written as the map's last entry.
+  private def productWrite[product: Type]
+    ( value:        Expr[product],
+      out:          Expr[AnyRef],
+      discriminant: Option[(String, String)],
+      cache:        Cache )
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    import quotes.reflect.*
+
+    val tpe = TypeRepr.of[product].dealias
+    val name = tpe.show
+    cache.active += name
+
+    try
+      val classSymbol = tpe.classSymbol.get
+      val fields = classSymbol.caseFields
+      val fieldTypes = fields.map(tpe.memberType(_).dealias)
+
+      val printings: List[Printing] = fieldTypes.map: fieldType =>
+        fieldType.asType.absolve match
+          case '[fieldType] => printingFor[fieldType](cache)
+
+      def field(index: Int): Term = Select.unique(value.asTerm, fields(index).name)
+
+      // Each seam field's tree, encoded before the map's head so that its count is known.
+      def withSeams(index: Int, encoded: List[Option[Expr[Cbor.Ast]]]): Expr[Unit] =
+        if index == fields.length then writeMap(encoded.reverse)
+        else fieldTypes(index).asType.absolve match
+          case '[fieldType] => printings(index) match
+            case Printing.Seam(encodable) =>
+              val typed = field(index).asExprOf[fieldType]
+
+              ' {
+                  val tree: Cbor.Ast =
+                    Cbor.unseal
+                      ( $encodable.asInstanceOf[fieldType is Encodable in Cbor].encoded($typed) )
+
+                  ${withSeams(index + 1, Some('tree) :: encoded)}
+                }
+
+            case _ =>
+              withSeams(index + 1, None :: encoded)
+
+      def writeMap(encoded: List[Option[Expr[Cbor.Ast]]]): Expr[Unit] =
+        val fixed = encoded.count(_.isEmpty) + (if discriminant.isDefined then 1 else 0)
+
+        val count: Expr[Int] = encoded.flatten.foldLeft(Expr(fixed)): (total, tree) =>
+          '{$total + (if Cbor.Printable.present($tree) then 1 else 0)}
+
+        val entries: List[Expr[Unit]] = List.range(0, fields.length).map: index =>
+          fieldTypes(index).asType.absolve match
+            case '[fieldType] =>
+              val key = Expr(fields(index).name)
+              val typed = field(index).asExprOf[fieldType]
+
+              encoded(index) match
+                case Some(tree) =>
+                  ' {
+                      if Cbor.Printable.present($tree) then
+                        Cbor.Printable.writeText($out, $key)
+                        Cbor.Printable.writeAst($out, $tree)
+                    }
+
+                case None =>
+                  ' {
+                      Cbor.Printable.writeText($out, $key)
+                      ${printed[fieldType](printings(index), typed, out)}
+                    }
+
+        val tail: List[Expr[Unit]] = discriminant.toList.map: (key, tag) =>
+          ' {
+              Cbor.Printable.writeText($out, ${Expr(key)})
+              Cbor.Printable.writeText($out, ${Expr(tag)})
+            }
+
+        Expr.block('{Cbor.Printable.writeHead($out, 5, $count)} :: entries ++ tail, '{()})
+
+      withSeams(0, Nil)
+
+    finally cache.active -= name
+
+  private[breviloquence] def iterableWrite[collection: Type]
+    ( value: Expr[collection], out: Expr[AnyRef], element0: Inlinable )
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    import quotes.reflect.*
+
+    TypeRepr.of[collection].dealias match
+      case AppliedType(_, arguments) =>
+        arguments.last.asType.absolve match
+          case '[element] =>
+            val instance = element0.asInstanceOf[Inlinable { type Self = element }]
+
+            ' {
+                // The opaque prelude collections erase to their stdlib counterparts.
+                val elements = $value.asInstanceOf[Iterable[element]]
+                Cbor.Printable.writeHead($out, 4, elements.size)
+                def write(element: element): Unit = ${instance.write('element, out)}
+                elements.foreach(write)
+              }
+
+      case _ =>
+        report.errorAndAbort
+          ( "breviloquence: an inlinable collection requires an applied collection type" )
+
+  private[breviloquence] def sumWrite[sum: Type](value: Expr[sum], out: Expr[AnyRef], key: String)
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    import quotes.reflect.*
+
+    val cache = continued()
+    val variants = sumVariants(TypeRepr.of[sum].dealias).get
+
+    def dispatch(index: Int): Expr[Unit] =
+      if index == variants.length then '{()}
+      else
+        variants(index)(1).asType.absolve match
+          case '[type variantType <: sum; variantType] =>
+            val (tag, _) = variants(index)
+            val variant = '{$value.asInstanceOf[variantType]}
+            val written = productWrite[variantType](variant, out, Some((key, tag)), cache)
+
+            '{if $value.isInstanceOf[variantType] then $written else ${dispatch(index + 1)}}
+
+    dispatch(0)
+
+  // Whether a sum's variants can all be printed with its discriminant appended: each a record,
+  // none with a field of the discriminant's name, which the derived encoding would overwrite in
+  // place rather than append.
+  private[breviloquence] def sumPrints(using Quotes)(tpe: quotes.reflect.TypeRepr, key: String)
+  :   Boolean =
+
+    sumVariants(tpe.dealias).exists: variants =>
+      variants.forall: (_, variant) =>
+        productSupported(variant) && !variant.classSymbol.get.caseFields.exists(_.name == key)
+
+  // Whether the generator builds a type's codec structurally, as a record: the condition on
+  // `import codecs.direct`'s generated instances. A cheap shape test, so a search under the mode
+  // stays cheap; a sum's discriminant is only known to the staging compiler, so a sum keeps the
+  // derived path unless it has an instance of its own.
+  def generates[value: Type](using Quotes): Expr[Inlinable.Generates[value]] =
+    import quotes.reflect.*
+
+    val tpe = formless(TypeRepr.of[value])
+
+    if productSupported(tpe) then '{Inlinable.Generates[value]()}
+    else report.errorAndAbort(s"breviloquence: ${tpe.show} has no generated codec")
+
+  def inlinablePrintable[value: Type](using Quotes): Expr[value is Cbor.Printable] =
+    import quotes.reflect.*
+
+    val tpe = formless(TypeRepr.of[value])
+
+    if tpe =:= TypeRepr.of[value].dealias then generatedPrintable[value]
+    else tpe.asType.absolve match
+      case '[formless] =>
+        '{${generatedPrintable[formless]}.asInstanceOf[value is Cbor.Printable]}
+
+  private def generatedPrintable[value: Type](using Quotes): Expr[value is Cbor.Printable] =
+    import quotes.reflect.*
+
+    val cache: Cache = PrintingCache()
+
+    val root: Inlinable = within(cache)(resolve[value](cache)).getOrElse:
+      report.errorAndAbort
+        ( s"breviloquence: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not " +
+          "an inlinable product, collection or key-discriminated sum; use an `Encodable in Cbor`" )
+
+    val runtime = root.isInstanceOf[NominalPrinter[?]] || root.isInstanceOf[EncodedPrinter[?]]
+
+    if !root.prints || runtime then
+      report.errorAndAbort
+        ( s"breviloquence: ${TypeRepr.of[value].show} has no generated printer; use its " +
+          "`Encodable in Cbor`" )
+
+    val instance = root.asInstanceOf[Inlinable { type Self = value }]
+    val name = TypeRepr.of[value].dealias.show
+
+    ' {
+        lazy val self: Cbor.Printable.Direct[value] =
+          new Cbor.Printable.Direct[value]:
+            protected def writeCarrier(value0: value, out0: AnyRef): Unit =
+              $ {
+                  cache.roots(name) = 'self
+                  within(cache)(instance.write('value0, 'out0))
+                }
+
+        // Sealed per the codec-thunk pattern, as `inlinableParsable`.
+        // [quote-wall] generated Printable sealed inside quote
+        caps.unsafe.unsafeAssumePure(self)
+      }
+
   // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Cbor.Parsable] =
+    import quotes.reflect.*
+
+    val tpe = formless(TypeRepr.of[value])
+
+    if tpe =:= TypeRepr.of[value].dealias then generatedParsable[value]
+    else tpe.asType.absolve match
+      case '[formless] =>
+        '{${generatedParsable[formless]}.asInstanceOf[value is Cbor.Parsable]}
+
+  private def generatedParsable[value: Type](using Quotes): Expr[value is Cbor.Parsable] =
     import quotes.reflect.*
 
     val cache: Cache = Cache()
@@ -958,15 +1102,21 @@ object stagedInternal:
           "existing instance directly rather than `Inlinable.parsable`" )
 
     val instance = root.asInstanceOf[Inlinable { type Self = value }]
+    val name = TypeRepr.of[value].dealias.show
 
     ' {
-        // Sealed per the codec-thunk pattern: the generated body resolves its
-        // capabilities where it is spliced.
-        // [quote-wall] generated Parsable sealed inside quote
-        caps.unsafe.unsafeAssumePure:
+        lazy val self: Cbor.Parsable.Direct[value] =
           new Cbor.Parsable.Direct[value]:
             protected def parseCarrier(reader0: AnyRef): value =
               // A capability class cannot be quoted into a pure hole, so
               // every use casts from the neutral carrier afresh.
-              ${instance.parse('{reader0.asInstanceOf[Cbor.Reader]})}
+              $ {
+                  cache.roots(name) = 'self
+                  within(cache)(instance.parse('{reader0.asInstanceOf[Cbor.Reader]}))
+                }
+
+        // Sealed per the codec-thunk pattern: the generated body resolves its
+        // capabilities where it is spliced.
+        // [quote-wall] generated Parsable sealed inside quote
+        caps.unsafe.unsafeAssumePure(self)
       }

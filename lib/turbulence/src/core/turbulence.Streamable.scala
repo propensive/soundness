@@ -57,6 +57,11 @@ import zephyrine.{stream as _, *}
 object Streamable:
   given bytes: Data is Streamable by Data over Credit = Stream(_)
 
+  // Bytes tagged with the format they carry, as `foo.in[Data over Protobuf]` writes them, read
+  // back as they are. (Text needs no counterpart: `text` below admits any subtype.)
+  given transported: [transport] => (Data over transport) is Streamable by Data over Credit =
+    value => Stream(value)
+
   given text: [textual <: Text] => textual is Streamable by Text over Credit =
     value => Stream(value)
 

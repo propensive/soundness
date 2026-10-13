@@ -32,26 +32,23 @@
                                                                                                   */
 package xylophone
 
+import scala.caps
 import scala.collection.immutable.Vector
-import scala.collection.immutable.{List, Nil, ::}
+import scala.collection.immutable.{List, Nil}
 import scala.collection.mutable as scm
 import scala.quoted.*
-import scala.{annotation, caps}
 
 import anticipation.*
 import contingency.*
-import gossamer.*
 import prepositional.*
 import vacuous.*
 
-// The machinery behind `xylophone.Inlinable`: expansion-time instance
-// resolution (through an in-macro staging compiler), the structural
-// generators for products and collections, and the `Inlinable.parsable`
-// entry macro — jacinta's `stagedInternal`, transposed to XML's element
-// reading (read-site capabilities from the reader, two-word packed name
-// dispatch) and to the derived engine's gathering semantics for repeatable
-// fields.
-object stagedInternal:
+// The machinery behind `Inlinable`: expansion-time instance resolution, the
+// structural generators for products, collections and sums, and the entry
+// macros. A user-written `Inlinable` can only be evaluated at expansion time by
+// an in-macro staging compiler, which `xylophone.staged` contributes as an
+// `Inlinable.Stager`; without it, such a field takes the runtime seam.
+object inlining:
 
   // The runtime seam for a field type without an `Inlinable`: the field's
   // `Xml.Parsing` instance, preferring a nominal `Parsable` in scope (a
@@ -68,179 +65,6 @@ object stagedInternal:
       case _ =>
         scala.compiletime.summonInline[fieldType is Xml.Field]
 
-  // ── Expansion-time environment ─────────────────────────────────────────
-
-  private def macroClassloader: ClassLoader =
-    val contextual = Thread.currentThread.nn.getContextClassLoader
-    if contextual != null then contextual else getClass.getClassLoader.nn
-
-  private def currentOutputDirectory(using Quotes): Option[String] =
-    try
-      val ctx = quotes.asInstanceOf[scala.quoted.runtime.impl.QuotesImpl].ctx
-      given dotty.tools.dotc.core.Contexts.Context = ctx
-      import dotty.tools.dotc.config.Settings.Setting.value
-
-      Option(ctx.settings.outputDir.value.file).map(_.nn.getCanonicalPath.nn)
-    catch case _: Exception => None
-
-  // A symbol defined in the compilation run in progress has no trustworthy
-  // classfile (none on a clean build; a stale one from the previous compile
-  // on an incremental build), so instance evaluation must refuse it and the
-  // caller degrade to a runtime seam.
-  private def definedInCurrentRun(using Quotes)(symbol: quotes.reflect.Symbol): Boolean =
-    try
-      val ctx = quotes.asInstanceOf[scala.quoted.runtime.impl.QuotesImpl].ctx
-      val run = ctx.run
-
-      if run == null then false else
-        val sources = run.nn.units.map(_.source.path).toSet
-        val position = symbol.pos
-        position.exists: position => sources.contains(position.sourceFile.path)
-    catch case _: Exception => false
-
-  private def innerClasspath(using Quotes): String =
-    val separator = java.io.File.pathSeparator.nn
-
-    val full =
-      dotty.tools.dotc.util.ClasspathFromClassloader(macroClassloader).nn
-
-    currentOutputDirectory match
-      case None =>
-        full
-
-      case Some(excluded) =>
-        val entries = full.split(separator).nn
-        val joined = StringBuilder()
-        var index = 0
-
-        while index < entries.length do
-          val entry = entries(index).nn
-
-          val retain =
-            try java.io.File(entry).getCanonicalPath != excluded
-            catch case _: java.io.IOException => true
-
-          if retain then
-            if joined.nonEmpty then joined.append(separator)
-            joined.append(entry)
-
-          index += 1
-
-        joined.toString
-
-  // ── Type transport into the staging context ────────────────────────────
-  // The outer macro's `Type` cannot cross into the inner compiler, so a type
-  // travels as a tree of `java.lang.Class`es and is rebuilt inside with
-  // `TypeRepr.typeConstructorOf`. This restricts instance evaluation to
-  // class-shaped types (plain classes and applications of them) — opaque
-  // and structural types degrade to a runtime seam.
-
-  private case class TypeShape(clazz: Class[?], arguments: List[TypeShape])
-
-  private val primitiveClasses: scala.collection.immutable.Map[String, Class[?]] =
-    scala.collection.immutable.Map
-      ( "scala.Int"     -> classOf[Int],
-        "scala.Long"    -> classOf[Long],
-        "scala.Double"  -> classOf[Double],
-        "scala.Float"   -> classOf[Float],
-        "scala.Boolean" -> classOf[Boolean],
-        "scala.Short"   -> classOf[Short],
-        "scala.Byte"    -> classOf[Byte],
-        "scala.Char"    -> classOf[Char],
-        "scala.Unit"    -> classOf[Unit] )
-
-  // The binary name of a class symbol: package segments joined with dots,
-  // enclosing type segments with dollars.
-  private def binaryName(using Quotes)(symbol: quotes.reflect.Symbol): String =
-    import quotes.reflect.*
-
-    def build(symbol: Symbol): String =
-      val owner = symbol.owner
-
-      if owner.isPackageDef then
-        val prefix = owner.fullName
-        if prefix == "<empty>" then symbol.name else prefix+"."+symbol.name
-      else
-        val ownerName = build(if owner.isClassDef then owner else owner.owner)
-        ownerName+"$"+symbol.name
-
-    build(symbol)
-
-  private def shapeOf(using Quotes)(tpe: quotes.reflect.TypeRepr): Option[TypeShape] =
-    import quotes.reflect.*
-
-    def classFor(tpe: TypeRepr): Option[Class[?]] =
-      tpe.classSymbol.flatMap: symbol =>
-        if definedInCurrentRun(symbol) then None
-        else primitiveClasses.get(symbol.fullName).orElse:
-          try Some(Class.forName(binaryName(symbol), false, macroClassloader).nn)
-          catch
-            case _: ReflectiveOperationException => None
-            case _: LinkageError                 => None
-
-    tpe.dealias match
-      case AppliedType(constructor, arguments) =>
-        for
-          clazz  <- classFor(constructor)
-          shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-            list.flatMap: tail => shapeOf(argument).map(_ :: tail)
-        yield TypeShape(clazz, shapes)
-
-      case other =>
-        classFor(other).map(TypeShape(_, Nil))
-
-  // ── Instance evaluation: the staging summon ────────────────────────────
-  // One fresh compiler per summon, over the macro classloader with the
-  // current output directory excluded from its classpath. The summon is
-  // embedded in the compiled snippet (`summonInline`), so it resolves during
-  // the inner compiler's inlining phase, composing conditional instances —
-  // the whole instance graph arrives live in one run.
-  private def summonViaStaging[field: Type](using Quotes): Option[Inlinable] =
-    import quotes.reflect.*
-    import scala.quoted.staging
-
-    shapeOf(TypeRepr.of[field]).flatMap: shape =>
-      try
-        given settings: staging.Compiler.Settings =
-          staging.Compiler.Settings.make
-            ( None, List("-experimental", "-classpath", innerClasspath) )
-
-        given staging.Compiler = staging.Compiler.make(macroClassloader)
-        val started = System.nanoTime
-
-        val result: Any = staging.run:
-          val quotes2 = summon[Quotes]
-          import quotes2.reflect as r2
-
-          def rebuild(shape: TypeShape): r2.TypeRepr =
-            val base = r2.TypeRepr.typeConstructorOf(shape.clazz)
-            if shape.arguments.isEmpty then base else base.appliedTo(shape.arguments.map(rebuild))
-
-          val target =
-            r2.Refinement
-              ( r2.TypeRepr.of[Inlinable], "Self",
-                r2.TypeBounds(rebuild(shape), rebuild(shape)) )
-
-          target.asType match
-            case '[target] => '{scala.compiletime.summonInline[target]}
-
-        val duration = (System.nanoTime - started)/1000000L
-
-        result match
-          case instance: Inlinable =>
-            report.info
-              ( s"xylophone: staged summon for ${TypeRepr.of[field].show} took ${duration}ms" )
-
-            Some(instance)
-
-          case _ =>
-            None
-      catch
-        case _: ReflectiveOperationException => None
-        case _: LinkageError                 => None
-        case _: AssertionError               => None
-        case _: Exception                    => None
-
   // ── The resolution ladder ──────────────────────────────────────────────
   // builtin → staged summon → structural collection/product → (caller's)
   // runtime seam. The cache spans one entry expansion, so a type's staging
@@ -253,6 +77,73 @@ object stagedInternal:
   private[xylophone] final class Cache:
     val instances: scm.HashMap[String, Option[Inlinable]] = scm.HashMap()
     val active: scm.Set[String] = scm.Set()
+    val roots: scm.HashMap[String, Expr[Any]] = scm.HashMap()
+
+  // The cache of the expansion in progress. A structural instance reached through
+  // `Inlinable.parse` carries no cache, so it continues this one rather than starting afresh:
+  // the active set then spans the whole expansion, and a mutually recursive record ties back
+  // to a generator already on the stack instead of expanding forever.
+  private val ongoing: scala.util.DynamicVariable[Option[Cache]] =
+    scala.util.DynamicVariable(None)
+
+  private def continued(): Cache = ongoing.value.getOrElse(Cache())
+
+  private def within[result](cache: Cache)(generate: => result): result =
+    ongoing.withValue(Some(cache))(generate)
+
+  // A recursive occurrence of the root type reads (or writes) through the instance being
+  // generated.
+  private def rootFor[fieldType: Type](roots: scm.HashMap[String, Expr[Any]])(using Quotes)
+  :   Option[Expr[Any]] =
+
+    import quotes.reflect.*
+
+    roots.get(TypeRepr.of[fieldType].dealias.show)
+
+  // Whether an implicit-search result is the `import codecs.direct` fallback given, which a
+  // nominal lookup must not take: it would expand this very generator again for the field.
+  private def blanket(using Quotes)(tree: quotes.reflect.Tree): Boolean =
+    import quotes.reflect.*
+
+    tree match
+      case Inlined(_, _, body)    => blanket(body)
+      case Apply(function, _)     => blanket(function)
+      case TypeApply(function, _) => blanket(function)
+      case Block(_, expression)   => blanket(expression)
+
+      case other =>
+        val symbol = other.symbol
+
+        val owners =
+          List(TypeRepr.of[Xml.Parsable2].typeSymbol, TypeRepr.of[Xml.Printable2].typeSymbol)
+
+        symbol.name == "generated" && owners.contains(symbol.owner)
+
+  // A type with any `Form` refinement removed: a read of `Foo in Xml` infers the instance's
+  // type as `Foo { type Form = Xml }`, whose codec is `Foo`'s.
+  private def formless(using Quotes)(tpe: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+
+    tpe.dealias match
+      case Refinement(parent, "Form", _) => formless(parent)
+      case other                         => other
+
+  // A record that encodes as text, which the derived encoding writes as a leaf, ahead of its
+  // structure; or one in a namespace, whose scopes the generator does not write.
+  private def special(using Quotes)(tpe: quotes.reflect.TypeRepr): Boolean =
+    import quotes.reflect.*
+
+    def found(target: TypeRepr): Boolean = Implicits.search(target) match
+      case _: ImplicitSearchSuccess => true
+      case _                        => false
+
+    val annotated =
+      tpe.classSymbol.exists(_.annotations.exists(_.tpe <:< TypeRepr.of[Xml.xmlns]))
+
+    annotated || (tpe.asType.absolve match
+      case '[value] =>
+        found(TypeRepr.of[value is anticipation.Encodable in Text]) ||
+          found(TypeRepr.of[value is Xml.Namespaced]))
 
   private def resolve[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
     import quotes.reflect.*
@@ -260,7 +151,7 @@ object stagedInternal:
     val tpe = TypeRepr.of[field].dealias
 
     builtinFor(tpe).orElse:
-      cache.instances.getOrElseUpdate(tpe.show, summonViaStaging[field].map(unwrap))
+      cache.instances.getOrElseUpdate(tpe.show, Inlinable.Stager.summon[field].map(unwrap))
       . orElse(structuralFor[field](cache))
       . orElse(runtimeFor[field])
 
@@ -284,11 +175,14 @@ object stagedInternal:
 
     def searched(target: TypeRepr): Option[Expr[Any]] =
       Implicits.search(target) match
-        case success: ImplicitSearchSuccess => Some(success.tree.asExpr)
-        case _                              => None
+        case success: ImplicitSearchSuccess if !blanket(success.tree) => Some(success.tree.asExpr)
+        case _                                                        => None
 
-    searched(TypeRepr.of[field is Xml.Parsable]).map(RuntimeInlinable[field](_)).orElse:
-      searched(TypeRepr.of[field is Xml.Field]).map(RuntimeInlinable[field](_))
+    val root = ongoing.value.flatMap(_.roots.get(TypeRepr.of[field].dealias.show))
+
+    root.orElse(searched(TypeRepr.of[field is Xml.Parsable]))
+    . map(RuntimeInlinable[field](_))
+    . orElse(searched(TypeRepr.of[field is Xml.Field]).map(RuntimeInlinable[field](_)))
 
   private[xylophone] final class RuntimeInlinable[value](parsing: Expr[Any]) extends Inlinable:
     type Self = value
@@ -383,7 +277,7 @@ object stagedInternal:
           case '[variantType] => resolve[variantType](cache).isDefined
 
       if !resolvable then None
-      else discriminantAttribute[field].map: attribute => Inlinable.SumInlinable[field](attribute)
+      else Inlinable.Stager.discriminantAttribute[field].map: attribute => Inlinable.SumInlinable[field](attribute)
 
   // The variants of a stageable sealed sum: `(label, type)` per variant, or
   // `None` when the shape is unsupported.
@@ -407,51 +301,6 @@ object stagedInternal:
             child.isClassDef && child.flags.is(Flags.Case) && !hasAnnotations(child)
 
       if supported then Some(children.map { child => (child.name, child.typeRef) }) else None
-
-  // The sum's discriminator attribute, when its `Discriminable in Xml`
-  // resolves — inside the staging compiler, so the instance is live — to an
-  // `Xml.DiscriminantAttribute`.
-  private def discriminantAttribute[sum: Type](using Quotes): Option[String] =
-    import quotes.reflect.*
-    import scala.quoted.staging
-
-    shapeOf(TypeRepr.of[sum]).flatMap: shape =>
-      try
-        given settings: staging.Compiler.Settings =
-          staging.Compiler.Settings.make
-            ( None, List("-experimental", "-classpath", innerClasspath) )
-
-        given staging.Compiler = staging.Compiler.make(macroClassloader)
-
-        val result: Any = staging.run:
-          val quotes2 = summon[Quotes]
-          import quotes2.reflect as r2
-
-          def rebuild(shape: TypeShape): r2.TypeRepr =
-            val base = r2.TypeRepr.typeConstructorOf(shape.clazz)
-            if shape.arguments.isEmpty then base else base.appliedTo(shape.arguments.map(rebuild))
-
-          val xml = r2.TypeRepr.of[Xml]
-
-          val target =
-            r2.Refinement
-              ( r2.Refinement
-                  ( r2.TypeRepr.of[wisteria.Discriminable], "Self",
-                    r2.TypeBounds(rebuild(shape), rebuild(shape)) ),
-                "Form",
-                r2.TypeBounds(xml, xml) )
-
-          target.asType match
-            case '[target] => '{scala.compiletime.summonInline[target]}
-
-        result match
-          case attribute: Xml.DiscriminantAttribute[?] => Some(attribute.attribute.s)
-          case _                                       => None
-      catch
-        case _: ReflectiveOperationException => None
-        case _: LinkageError                 => None
-        case _: AssertionError               => None
-        case _: Exception                    => None
 
   private[xylophone] def productSupported(using Quotes)(tpe: quotes.reflect.TypeRepr)
   :   Boolean =
@@ -554,7 +403,7 @@ object stagedInternal:
   private[xylophone] def productFields[product: Type](reader: Expr[Xml.Reader])(using Quotes)
   :   Expr[product] =
 
-    productFields[product](reader, Cache())
+    productFields[product](reader, continued())
 
   private[xylophone] def productFields[product: Type]
     ( reader: Expr[Xml.Reader], cache: Cache )
@@ -774,7 +623,7 @@ object stagedInternal:
               val instanceDef =
                 ValDef
                   ( instanceSymbol,
-                    Some('{stagedInternal.fieldInstance[fieldType]}.asTerm) )
+                    Some('{inlining.fieldInstance[fieldType]}.asTerm) )
 
               val instanceRef = Ref(instanceSymbol).asExprOf[fieldType is Xml.Parsing]
 
@@ -1119,7 +968,7 @@ object stagedInternal:
 
               case Plan.Seam =>
                 ' {
-                    val instance = stagedInternal.fieldInstance[fieldType]
+                    val instance = inlining.fieldInstance[fieldType]
 
                     if Xml.Parsable.repeats(instance) then
                       Xml.Parsable.focusing($foci, $keyText)
@@ -1160,7 +1009,7 @@ object stagedInternal:
     ( using Quotes )
   :   Expr[sum] =
 
-    sumBody[sum](reader, attribute, Cache())
+    sumBody[sum](reader, attribute, continued())
 
   private def sumBody[sum: Type](reader: Expr[Xml.Reader], attribute: String, cache: Cache)
     ( using Quotes )
@@ -1248,8 +1097,271 @@ object stagedInternal:
       case None =>
         '{abort(Xml.Error(Xml.Error.Reason.AbsentVariant($sumName)))(using $tactic)}
 
+  // ── The printing side ──────────────────────────────────────────────────
+  // A generated printer writes XML text exactly as the derived encoding renders it under
+  // compact formatting: a record is an element labelled by its field (by its type, at the
+  // root), its fields child elements in order; a leaf an element holding its text; an absent
+  // `Optional` field nothing; a collection field one element per item, each labelled by the
+  // field. A record that writes no children closes as an empty-element tag, which is only known
+  // as it is written, so each child first completes its parent's start tag. A field of any
+  // other shape is encoded through its `Encodable in Xml`, and the nodes the derivation would
+  // make of it are written in place.
+
+  // The text of a leaf, written as its element's content.
+  private def leafText[value: Type](value: Expr[value])(using Quotes): Option[Expr[String]] =
+    import quotes.reflect.*
+
+    val tpe = TypeRepr.of[value].dealias
+
+    if tpe =:= TypeRepr.of[Int] then Some('{$value.asInstanceOf[Int].toString})
+    else if tpe =:= TypeRepr.of[Long] then Some('{$value.asInstanceOf[Long].toString})
+    else if tpe =:= TypeRepr.of[Double] then Some('{$value.asInstanceOf[Double].toString})
+    else if tpe =:= TypeRepr.of[Text] then Some('{$value.asInstanceOf[Text].s})
+    else if tpe =:= TypeRepr.of[String] then Some('{$value.asInstanceOf[String]})
+    else if tpe =:= TypeRepr.of[Boolean] then
+      Some('{if $value.asInstanceOf[Boolean] then "true" else "false"})
+    else
+      None
+
+  // Whether a type is a record the printer writes structurally.
+  private def printsRecord(using Quotes)(tpe: quotes.reflect.TypeRepr): Boolean =
+    productSupported(tpe) && !special(tpe)
+
+  private def optionalOf(using Quotes)(tpe: quotes.reflect.TypeRepr)
+  :   Option[quotes.reflect.TypeRepr] =
+
+    import quotes.reflect.*
+
+    val unset = TypeRepr.of[vacuous.Optional.Unset]
+
+    tpe.dealias match
+      case OrType(left, right) if right =:= unset => Some(left.dealias)
+      case OrType(left, right) if left =:= unset  => Some(right.dealias)
+      case _                                      => None
+
+  // The element type of a collection field: a stdlib `Iterable` or an opaque prelude alias.
+  private def elementOf(using Quotes)(tpe: quotes.reflect.TypeRepr)
+  :   Option[quotes.reflect.TypeRepr] =
+
+    import quotes.reflect.*
+
+    val aliases =
+      List
+        ( TypeRepr.of[proscenium.List[Any]].typeSymbol,
+          TypeRepr.of[proscenium.Set[Any]].typeSymbol,
+          TypeRepr.of[proscenium.Sequence[Any]].typeSymbol )
+
+    val isMap = tpe.derivesFrom(Symbol.requiredClass("scala.collection.Map"))
+
+    tpe.dealias match
+      case AppliedType(constructor, List(element))
+        if !isMap && (tpe <:< TypeRepr.of[Iterable[Any]] ||
+          aliases.contains(constructor.typeSymbol)) =>
+        Some(element.dealias)
+
+      case _ =>
+        None
+
+  private final class PrintState
+    ( val roots: scm.HashMap[String, Expr[Any]], val active: scm.Set[String] )
+
+  // Writes `value` as an element labelled `label`, first running `opening`, which completes its
+  // parent's start tag.
+  private def element[value: Type]
+    ( value: Expr[value], label: Expr[String], out: Expr[AnyRef], opening: Expr[Unit],
+      state: PrintState )
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    import quotes.reflect.*
+
+    val tpe = TypeRepr.of[value].dealias
+    val name = tpe.show
+
+    // An item of a collection or an `Optional` the printer writes as an element of its own: a
+    // leaf or a record. Anything else — a nested collection — leaves the field to its seam.
+    val leaves =
+      List
+        ( TypeRepr.of[Int], TypeRepr.of[Long], TypeRepr.of[Double], TypeRepr.of[Boolean],
+          TypeRepr.of[Text], TypeRepr.of[String] )
+
+    def item(itemType: TypeRepr): Boolean =
+      leaves.exists(itemType =:= _) || printsRecord(itemType)
+
+    def seam: Expr[Unit] =
+      Implicits.search(TypeRepr.of[value is Encodable in Xml]).absolve match
+        case success: ImplicitSearchSuccess =>
+          val encodable = success.tree.asExpr
+
+          ' {
+              val nodes = Xml.Printable.nodes($label, $encodable.asInstanceOf[AnyRef], $value)
+
+              if Xml.Printable.some(nodes) then
+                $opening
+                Xml.Printable.writeNodes($out, nodes)
+            }
+
+        case failure: ImplicitSearchFailure =>
+          report.errorAndAbort(s"xylophone: no Encodable in Xml for ${tpe.show}")
+
+    leafText[value](value) match
+      case Some(text) =>
+        '{$opening; Xml.Printable.writeLeaf($out, $label, $text)}
+
+      case None => optionalOf(tpe) match
+        case Some(inner) if item(inner) =>
+          inner.asType.absolve match
+            case '[inner] =>
+              val inner = '{$value.asInstanceOf[inner]}
+              val present = element[inner](inner, label, out, opening, state)
+              '{if !Xml.Printable.absent($value) then $present}
+
+        case _ => elementOf(tpe) match
+          case Some(itemType) if item(itemType) =>
+            itemType.asType.absolve match
+              case '[item] =>
+                ' {
+                    def write(item: item): Unit =
+                      ${element[item]('item, label, out, opening, state)}
+
+                    $value.asInstanceOf[Iterable[item]].foreach(write)
+                  }
+
+          case _ =>
+            if printsRecord(tpe) && !state.active.contains(name) then
+              record[value](value, label, out, opening, state)
+            else
+              val nominal = rootFor[value](state.roots).orElse:
+                Implicits.search(TypeRepr.of[value is Xml.Printable]) match
+                  case success: ImplicitSearchSuccess if !blanket(success.tree) =>
+                    Some(success.tree.asExpr)
+
+                  case _ =>
+                    None
+
+              nominal match
+                case Some(printable) =>
+                  ' {
+                      $opening
+                      val carrier = $printable.asInstanceOf[AnyRef]
+                      Xml.Printable.writeField(carrier, $value, $label, $out)
+                    }
+
+                case None =>
+                  seam
+
+  private def record[product: Type]
+    ( value: Expr[product], label: Expr[String], out: Expr[AnyRef], opening: Expr[Unit],
+      state: PrintState )
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    import quotes.reflect.*
+
+    val tpe = TypeRepr.of[product].dealias
+    val name = tpe.show
+    state.active += name
+
+    try
+      val fields = tpe.classSymbol.get.caseFields
+
+      ' {
+          $opening
+          Xml.Printable.writeAscii($out, "<")
+          Xml.Printable.writeName($out, $label)
+          var opened = false
+
+          $ {
+              val open: Expr[Unit] =
+                ' {
+                    if !opened then
+                      Xml.Printable.writeAscii($out, ">")
+                      opened = true
+                  }
+
+              val children = fields.map: field =>
+                tpe.memberType(field).dealias.asType.absolve match
+                  case '[fieldType] =>
+                    val fieldValue = Select.unique(value.asTerm, field.name).asExprOf[fieldType]
+                    element[fieldType](fieldValue, Expr(field.name), out, open, state)
+
+              Expr.block(children, '{()})
+            }
+
+          if opened then
+            Xml.Printable.writeAscii($out, "</")
+            Xml.Printable.writeName($out, $label)
+            Xml.Printable.writeAscii($out, ">")
+          else
+            Xml.Printable.writeAscii($out, "/>")
+        }
+
+    finally state.active -= name
+
+  // Whether the generator builds a type's codec structurally, as a record: the condition on
+  // `import codecs.direct`'s generated instances. A cheap shape test, so a search under the mode
+  // stays cheap; anything else keeps the derived path.
+  def generates[value: Type](using Quotes): Expr[Inlinable.Generates[value]] =
+    import quotes.reflect.*
+
+    val tpe = formless(TypeRepr.of[value])
+
+    if printsRecord(tpe) then '{Inlinable.Generates[value]()}
+    else report.errorAndAbort(s"xylophone: ${tpe.show} has no generated codec")
+
+  def inlinablePrintable[value: Type](using Quotes): Expr[value is Xml.Printable] =
+    import quotes.reflect.*
+
+    val tpe = formless(TypeRepr.of[value])
+
+    if tpe =:= TypeRepr.of[value].dealias then generatedPrintable[value]
+    else tpe.asType.absolve match
+      case '[formless] =>
+        '{${generatedPrintable[formless]}.asInstanceOf[value is Xml.Printable]}
+
+  private def generatedPrintable[value: Type](using Quotes): Expr[value is Xml.Printable] =
+    import quotes.reflect.*
+
+    val tpe = TypeRepr.of[value].dealias
+
+    if !printsRecord(tpe) then
+      report.errorAndAbort
+        ( s"xylophone: ${tpe.show} is not a printable record (a non-generic case class with no " +
+          "`@name` or `@attribute` annotations, no namespace and no `Encodable in Text`); use " +
+          "its `Encodable in Xml`" )
+
+    val state = PrintState(scm.HashMap(), scm.Set())
+    val name = tpe.show
+    val root = Expr(tpe.classSymbol.get.name)
+
+    ' {
+        lazy val self: Xml.Printable.Direct[value] =
+          new Xml.Printable.Direct[value]:
+            protected def rootLabel: String = $root
+
+            protected def writeCarrier(value0: value, label0: String, out0: AnyRef): Unit =
+              $ {
+                  state.roots(name) = 'self
+                  record[value]('value0, 'label0, 'out0, '{()}, state)
+                }
+
+        // Sealed per the codec-thunk pattern, as `inlinableParsable`.
+        // [quote-wall] generated Printable sealed inside quote
+        caps.unsafe.unsafeAssumePure(self)
+      }
+
   // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Xml.Parsable] =
+    import quotes.reflect.*
+
+    val tpe = formless(TypeRepr.of[value])
+
+    if tpe =:= TypeRepr.of[value].dealias then generatedParsable[value]
+    else tpe.asType.absolve match
+      case '[formless] =>
+        '{${generatedParsable[formless]}.asInstanceOf[value is Xml.Parsable]}
+
+  private def generatedParsable[value: Type](using Quotes): Expr[value is Xml.Parsable] =
     import quotes.reflect.*
 
     val cache: Cache = Cache()
@@ -1260,18 +1372,25 @@ object stagedInternal:
           "top-level or object-nested case class with a single parameter list and no `@name` " +
           "or `@attribute` annotations); use `Xml.Parsable.staged` or `derived`" )
 
+    val name = TypeRepr.of[value].dealias.show
+
     ' {
-        // Sealed per the codec-thunk pattern, like the staged instances: the
-        // generated body resolves its capabilities at the read site, through
-        // the reader.
-        // [quote-wall] staged Parsable generated inside quote
-        caps.unsafe.unsafeAssumePure:
+        lazy val self: Xml.Parsable.Direct[value] =
           new Xml.Parsable.Direct[value]:
             protected def parseCarrier(reader0: AnyRef): value =
               // A capability class cannot be quoted into a pure hole, so
               // every use casts from the neutral carrier afresh.
-              ${productFields[value]('{reader0.asInstanceOf[Xml.Reader]}, cache)}
+              $ {
+                  cache.roots(name) = 'self
+                  within(cache)(productFields[value]('{reader0.asInstanceOf[Xml.Reader]}, cache))
+                }
 
             override def absent()(using tactic: Tactic[Xml.Error], foci: Foci[Xml.Focus]): value =
               ${productAbsent[value]('tactic, 'foci, cache)}
+
+        // Sealed per the codec-thunk pattern, like the staged instances: the
+        // generated body resolves its capabilities at the read site, through
+        // the reader.
+        // [quote-wall] staged Parsable generated inside quote
+        caps.unsafe.unsafeAssumePure(self)
       }

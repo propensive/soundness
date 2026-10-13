@@ -59,13 +59,141 @@ import zephyrine.*
 // The `Showable` instances themselves live in the `Yaml` and `Yaml.Ast` companions, in
 // implicit scope; this is only the emitter.
 private[ypsiloid] def renderAst(yaml: Yaml.Ast)(using formatting: Yaml.Formatting): Text =
-  val spaces: Text =
+  val builder = java.lang.StringBuilder()
+  YamlEmitter.fill(builder, YamlEmitter.start(builder, yaml), Int.MaxValue)
+  builder.toString.tt
+
+// The block-style emitter, as a walk over an explicit stack of the collections still being
+// written, so that it can stop between any two entries: `renderAst` runs it to the end, and
+// `Yaml.emit` a block at a time. Each step writes one entry of the innermost unfinished
+// collection, and opens its value as a new frame when that value spans several lines.
+private[ypsiloid] object YamlEmitter:
+  // A collection part-written: its entries, their indentation, and the next to write.
+  final case class Frame(collection: Array[Any]^{}, level: Int, index: Int)
+
+  private val spaces: Text =
     t"                                                                "
+
+  // Writes a value that fits on one line, and returns the frame for one that does not.
+  def start(builder: java.lang.StringBuilder, yaml: Yaml.Ast): List[Frame] =
+    yaml.asMatchable match
+      case xs: (Array[Any]^{}) @unchecked if !inlineable(yaml) =>
+        List(Frame(xs, 0, 0))
+
+      case _ =>
+        scalar(builder, yaml)
+        builder.append('\n')
+        Nil
+
+  // Writes entries until the stack is empty or the builder holds at least `limit` chars, and
+  // returns what remains to be written.
+  def fill(builder: java.lang.StringBuilder, stack0: List[Frame], limit: Int): List[Frame] =
+    var stack = stack0
+
+    while !stack.nil && builder.length < limit do stack = step(builder, stack)
+
+    stack
+
+  private def step(builder: java.lang.StringBuilder, stack: List[Frame]): List[Frame] =
+    stack match
+      case Frame(collection, level, index) :: rest =>
+        val mapping = (collection.length & 1) == 0
+        val count = if mapping then collection.length/2 else Yaml.Ast.sequenceLength(collection)
+
+        if index == count then rest else
+          val continuing = Frame(collection, level, index + 1) :: rest
+          indent(builder, level)
+
+          val child: Yaml.Ast =
+            if mapping then
+              scalar(builder, collection(index*2).asInstanceOf[Yaml.Ast])
+              builder.append(':')
+              collection(index*2 + 1).asInstanceOf[Yaml.Ast]
+            else
+              builder.append('-')
+              collection(index).asInstanceOf[Yaml.Ast]
+
+          // The value after a `key:` or `- ` marker: inline when scalar or empty, otherwise on
+          // the following lines, indented one step deeper.
+          child.asMatchable match
+            case xs: (Array[Any]^{}) @unchecked if !inlineable(child) =>
+              builder.append('\n')
+              Frame(xs, level + 2, 0) :: continuing
+
+            case _ =>
+              builder.append(' ')
+              scalar(builder, child)
+              builder.append('\n')
+              continuing
+
+      case _ =>
+        Nil
+
+  // Scalars and empty collections render on one line; non-empty collections span multiple lines.
+  private def inlineable(ast: Yaml.Ast): Boolean = ast.asMatchable match
+    case xs: (Array[Any]^{}) @unchecked =>
+      if (xs.length & 1) == 0 then xs.length == 0 else Yaml.Ast.sequenceLength(xs) == 0
+
+    case _ => true
+
+  private def indent(builder: java.lang.StringBuilder, count: Int): Unit =
+    var remaining = count
+
+    while remaining > 0 do
+      val chunk = remaining.min(64)
+      builder.append(spaces.s, 0, chunk)
+      remaining -= chunk
+
+  // A scalar (or an empty collection), with no surrounding newlines.
+  private def scalar(builder: java.lang.StringBuilder, ast: Yaml.Ast): Unit = ast.asMatchable match
+    case bcd: scala.Array[Double] @unchecked => builder.append(Bcd.adopt(bcd).text)
+    case n: Long                             => builder.append(n)
+
+    case d: Double =>
+      if d.isNaN then builder.append(".nan")
+      else if d == Double.PositiveInfinity then builder.append(".inf")
+      else if d == Double.NegativeInfinity then builder.append("-.inf")
+      else builder.append(d.toString)
+
+    case b: Boolean => builder.append(if b then "true" else "false")
+    case s: String  => string(builder, s)
+
+    case xs: (Array[Any]^{}) @unchecked =>
+      if (xs.length & 1) == 0 then builder.append("{}") else builder.append("[]")
+
+    case _ => builder.append("null")
+
+  private def string(builder: java.lang.StringBuilder, string: String): Unit =
+    if plainSafe(string) then builder.append(string) else
+      builder.append('"')
+      val length = string.length
+      var start = 0
+      var index = 0
+
+      inline def escape(entity: String): Unit =
+        if index > start then builder.append(string, start, index)
+        builder.append(entity)
+        start = index + 1
+
+      while index < length do
+        string.charAt(index) match
+          case '"'          => escape("\\\"")
+          case '\\'         => escape("\\\\")
+          case '\n'         => escape("\\n")
+          case '\r'         => escape("\\r")
+          case '\t'         => escape("\\t")
+          case c if c < ' ' => escape(unicode(c))
+          case _            => ()
+
+        index += 1
+
+      if length > start then builder.append(string, start, length)
+      builder.append('"')
 
   // A string is safe to emit as a plain scalar when it is a leading-letter run of `[A-Za-z0-9_-]`
   // (no whitespace or indicator characters, never empty) that the parser would not resolve as a
   // boolean or null.
-  def plainSafe(string: String): Boolean =
+  private def plainSafe(string: String): Boolean =
     val length = string.length
 
     if length == 0 then false else
@@ -92,112 +220,9 @@ private[ypsiloid] def renderAst(yaml: Yaml.Ast)(using formatting: Yaml.Formattin
           case _ =>
             true
 
-  def unicode(char: Char): Text =
+  private def unicode(char: Char): String =
     val hex: Text = Integer.toHexString(char.toInt).nn.tt
-    t"\\u${t"0"*(4 - hex.length)}$hex"
-
-  Producer.collect[Text](): producer =>
-    def indent(count: Int): Unit =
-      var remaining = count
-
-      while remaining > 0 do
-        val chunk = remaining.min(64)
-        producer.put(spaces, Prim, chunk)
-        remaining -= chunk
-
-    def writeString(string: String): Unit =
-      if plainSafe(string) then producer.put(string.tt) else
-        producer.put("\"")
-        val length = string.length
-        var start = 0
-        var index = 0
-
-        inline def escape(entity: Text): Unit =
-          if index > start then producer.put(string.tt, start.z, index - start)
-          producer.put(entity)
-          start = index + 1
-
-        while index < length do
-          string.charAt(index) match
-            case '"'          => escape(t"\\\"")
-            case '\\'         => escape(t"\\\\")
-            case '\n'         => escape(t"\\n")
-            case '\r'         => escape(t"\\r")
-            case '\t'         => escape(t"\\t")
-            case c if c < ' ' => escape(unicode(c))
-            case _            => ()
-
-          index += 1
-
-        if length > start then producer.put(string.tt, start.z, length - start)
-        producer.put("\"")
-
-    // Emit a scalar (or an empty collection) with no surrounding newlines.
-    def scalar(ast: Yaml.Ast): Unit = ast.asMatchable match
-      case bcd: scala.Array[Double] @unchecked => producer.put(Bcd.adopt(bcd).text.tt)
-      case n: Long                             => producer.put(n.toString.tt)
-
-      case d: Double =>
-        if d.isNaN then producer.put(".nan")
-        else if d == Double.PositiveInfinity then producer.put(".inf")
-        else if d == Double.NegativeInfinity then producer.put("-.inf")
-        else producer.put(d.toString.tt)
-
-      case b: Boolean => producer.put(if b then "true" else "false")
-      case s: String  => writeString(s)
-
-      case xs: (Array[Any]^{}) @unchecked =>
-        if (xs.length & 1) == 0 then producer.put("{}") else producer.put("[]")
-
-      case _ => producer.put("null")
-
-    // Scalars and empty collections render on one line; non-empty collections span multiple lines.
-    def inlineable(ast: Yaml.Ast): Boolean = ast.asMatchable match
-      case xs: (Array[Any]^{}) @unchecked =>
-        if (xs.length & 1) == 0 then xs.length == 0 else Yaml.Ast.sequenceLength(xs) == 0
-
-      case _ => true
-
-    // Emit the value after a `key:` or `- ` marker: inline when scalar/empty, otherwise on
-    // following lines indented one step deeper.
-    def value(ast: Yaml.Ast, level: Int): Unit =
-      if inlineable(ast) then
-        producer.put(" ")
-        scalar(ast)
-        producer.put("\n")
-      else
-        producer.put("\n")
-        block(ast, level + 2)
-
-    def block(ast: Yaml.Ast, level: Int): Unit = ast.asMatchable match
-      case xs: (Array[Any]^{}) @unchecked =>
-        if (xs.length & 1) == 0 then
-          val n = xs.length/2
-          var i = 0
-
-          while i < n do
-            indent(level)
-            scalar(xs(i*2).asInstanceOf[Yaml.Ast])
-            producer.put(":")
-            value(xs(i*2 + 1).asInstanceOf[Yaml.Ast], level)
-            i += 1
-        else
-          val n = Yaml.Ast.sequenceLength(xs)
-          var i = 0
-
-          while i < n do
-            indent(level)
-            producer.put("-")
-            value(xs(i).asInstanceOf[Yaml.Ast], level)
-            i += 1
-
-      case _ => ()
-
-    if inlineable(yaml) then
-      scalar(yaml)
-      producer.put("\n")
-    else
-      block(yaml, 0)
+    t"\\u${t"0"*(4 - hex.length)}$hex".s
 
 extension (inline context: StringContext)
   transparent inline def y: Interpolation = interpolation[Yaml](context)

@@ -1556,9 +1556,10 @@ object breviloquence extends Library:
                        zephyrine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  // `Cbor.Inlinable`, whose entry macro needs expansion-time instance
-  // evaluation (an in-macro staging compiler), kept out of `core` so
-  // breviloquence users don't inherit the compiler jars unless they opt in.
+  // The in-macro staging compiler that evaluates user-written `Inlinable`
+  // instances and sum discriminators at expansion time (the `Inlinable.Stager`
+  // service), kept out of `core` so breviloquence users don't inherit the
+  // compiler jars unless they opt in. The generator itself lives in `core`.
   object staged extends Component(core):
     override def scalaJs = false // expansion-time instance evaluation via staging
     override def scalacOptions = Task:
@@ -2647,9 +2648,10 @@ object jacinta extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  // The Expr-level `Json.Inlinable` typeclass and its expansion-time instance
-  // evaluation (an in-macro staging compiler), kept out of `core` so jacinta
-  // users don't inherit the compiler jars unless they opt in.
+  // The in-macro staging compiler that evaluates user-written `Inlinable`
+  // instances at expansion time (the `Inlinable.Stager` service), kept out of
+  // `core` so jacinta users don't inherit the compiler jars unless they opt in.
+  // The generator itself lives in `core`.
   object staged extends Component(core):
     override def scalaJs = false // expansion-time instance evaluation via staging
     override def scalacOptions = Task:
@@ -2729,9 +2731,10 @@ object locomotion extends Library:
         gossamer.core, panopticon.core, zephyrine.core, parasite.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  // `Protobuf.Inlinable`, whose entry macro needs expansion-time instance
-  // evaluation (an in-macro staging compiler), kept out of `core` so
-  // locomotion users don't inherit the compiler jars unless they opt in.
+  // The in-macro staging compiler that evaluates user-written `Inlinable`
+  // instances at expansion time (the `Inlinable.Stager` service), kept out of
+  // `core` so locomotion users don't inherit the compiler jars unless they opt
+  // in. The generator itself lives in `core`.
   object staged extends Component(core):
     override def scalaJs = false // expansion-time instance evaluation via staging
     override def scalacOptions = Task:
@@ -3796,9 +3799,10 @@ object xylophone extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  // The Expr-level `Inlinable` typeclass and its expansion-time instance
-  // evaluation (an in-macro staging compiler), kept out of `core` so
-  // xylophone users don't inherit the compiler jars unless they opt in.
+  // The in-macro staging compiler that evaluates user-written `Inlinable`
+  // instances at expansion time (the `Inlinable.Stager` service), kept out of
+  // `core` so xylophone users don't inherit the compiler jars unless they opt
+  // in. The generator itself lives in `core`.
   object staged extends Component(core):
     override def scalaJs = false // expansion-time instance evaluation via staging
     override def scalacOptions = Task:

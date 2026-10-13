@@ -65,6 +65,18 @@ case class PPlaylist(name: Text, songs: List[Text]) derives CanEqual
 case class PTree(value: Text, children: List[PTree]) derives CanEqual
 case class PTeam(name: Text, members: List[PWorker]) derives CanEqual
 
+// For the codec modes: a record that generates its codec once with `derives`, a pair of
+// mutually recursive records, optional and map fields, and records with no children to write.
+case class XDeclared(id: Int, name: Text) derives Xml.Direct, CanEqual
+case class XPing(n: Int, pongs: List[XPong]) derives CanEqual
+case class XPong(n: Int, pings: List[XPing]) derives CanEqual
+case class XOpt(name: Text, nick: Optional[Text], boss: Optional[PWorker]) derives CanEqual
+case class XNick(nick: Optional[Text]) derives CanEqual
+case class XHolder(label: Text, inner: XNick, empty: XEmpty) derives CanEqual
+case class XEmpty() derives CanEqual
+case class XMapped(name: Text, counts: Map[Text, Int]) derives CanEqual
+case class XMixed(ok: Boolean, ratio: Double, big: Long, text: Text) derives CanEqual
+
 case class PIssues(items: List[(Text, Xml.Error)] = Nil)(using Diagnostics)
 extends Error(m"${items.size} XML decoding issues"):
   def +(focus: Text, error: Xml.Error): PIssues = PIssues(items :+ (focus, error))
@@ -128,6 +140,39 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
       test(m"Derive a direct product parser"):
         t"<root><name>Alice</name><age>30</age></root>".read[PWorker in Xml]
       . assert(_ == PWorker(t"Alice", 30))
+
+      // A stream of `size`-byte (or `size`-char) chunks, so the readers' `accept` is the path
+      // taken and every token straddles a chunk boundary somewhere.
+      def dribble(text: Text, size: Int): Stream[Data] over Credit =
+        val bytes: Data = codepages.utf8Codepage.encoded(text)
+
+        Iterator.range(0, bytes.length, size)
+        . map: start =>
+            bytes.segment(start.z till (start + size).min(bytes.length).z)
+        . stream
+
+      def dribbleText(text: Text, size: Int): Stream[Text] over Credit =
+        text.s.grouped(size).nn.map(_.tt).stream
+
+      val team = t"<root><name>Crew</name><members><name>Zoë</name><age>3</age></members>"+
+        t"<members><name>Bob</name><age>40</age></members></root>"
+
+      test(m"Parse directly from a one-byte-chunk stream"):
+        summon[(PTeam in Xml) is Aggregable by Data].accept(dribble(team, 1))
+      . assert(_ == PTeam(t"Crew", List(PWorker(t"Zoë", 3), PWorker(t"Bob", 40))))
+
+      test(m"Parse directly from a one-char-chunk text stream"):
+        summon[(PTeam in Xml) is Aggregable by Text].accept(dribbleText(team, 1))
+      . assert(_ == PTeam(t"Crew", List(PWorker(t"Zoë", 3), PWorker(t"Bob", 40))))
+
+      test(m"`in[Text over Xml]` writes what `read[T in Xml]` reads"):
+        PWorker(t"Alice", 30).in[Text over Xml].read[PWorker in Xml]
+      . assert(_ == PWorker(t"Alice", 30))
+
+      test(m"`in[Data over Xml]` writes what `read[T in Xml]` reads"):
+        import codepages.utf8Codepage
+        PWorker(t"Zoë", 3).in[Data over Xml].read[PWorker in Xml]
+      . assert(_ == PWorker(t"Zoë", 3))
 
       test(m"Parse directly from bytes"):
         val bytes: Data =

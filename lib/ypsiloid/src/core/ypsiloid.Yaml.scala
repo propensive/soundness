@@ -384,6 +384,38 @@ object Yaml extends Yaml2, Dynamic:
   // In the companion (implicit scope), delegating to the block emitter in the package.
   given showable: Formatting => Yaml is Showable = unseal(_).show
 
+  // A value's text a block at a time, as each is pulled: the emitter stops between entries once
+  // a block holds the `Buffering` capacity, so serialization pauses without a fiber. One long
+  // scalar may overrun a block. The text is that `show` renders.
+  def emit(yaml: Yaml)(using formatting: Formatting, buffering: Buffering): Iterator[Text] =
+    val block = buffering.capacity(Substrate.Chars)
+    val builder = java.lang.StringBuilder()
+    val first = YamlEmitter.start(builder, unseal(yaml))
+
+    new Iterator[Text]:
+      // [stdlib-iterator] the walk's stack in an anonymous Iterator
+      @caps.unsafe.untrackedCaptures
+      private var pending: List[YamlEmitter.Frame] = first
+
+      // The builder holds whatever has been written and not yet handed out: at first, a value
+      // that fits on one line.
+      def hasNext: Boolean = builder.length > 0 || !pending.nil
+
+      def next(): Text =
+        if !hasNext then Iterator.empty.next()
+        pending = YamlEmitter.fill(builder, pending, block)
+        val text = builder.toString.tt
+        builder.setLength(0)
+        text
+
+  // The push form: serializes on the caller's thread, handing each block to `deliver` as it
+  // fills — the shape for writing to a file, a socket or an `OutputStream`.
+  def emit(yaml: Yaml, deliver: Text => Unit)(using Formatting, Buffering): Unit =
+    emit(yaml).each(deliver)
+
+  given streamable: (Formatting, Buffering) => Yaml is Streamable by Text over Credit =
+    yaml => zephyrine.Stream(emit(yaml))
+
   // `Yaml` is a plain class, so there is no reflection to derive from; its `Showable` needs a
   // `Formatting` which a debugger cannot supply, and YAML's block style is multi-line, which
   // inspection is not. The document is rendered with its line breaks escaped, so all of it is
@@ -1793,6 +1825,21 @@ object Yaml extends Yaml2, Dynamic:
   =>  ( (Yaml is Instantiable across HttpRequests from Text)^{tactic} ) =
 
     text => Chain(text).read[Yaml]
+
+  // The write-side mirror of `read[Foo in Yaml]`: `foo.in[Text over Yaml]` is the value's
+  // YAML text, encoded to the tree and rendered in the `Yaml.Formatting` in scope, as `show`.
+  given encodableOver: [value] => (encodable: (value is Encodable in Yaml)^)
+  =>  ( formatting: Yaml.Formatting )
+  =>  ( (value is Encodable in (Text over Yaml))^{encodable} ) =
+
+    value => encodable.encode(value).show.asInstanceOf[Text over Yaml]
+
+  // `foo.in[Data over Yaml]`: the same text, encoded in the `Codepage` in scope.
+  given encodableOverData: [value]
+  =>  ( text: (value is Encodable in (Text over Yaml))^, codepage: hieroglyph.Codepage )
+  =>  ( (value is Encodable in (Data over Yaml))^{text} ) =
+
+    value => codepage.encoded(text.encode(value)).asInstanceOf[Data over Yaml]
 
   // `source.read[Foo in Yaml]` shorthand for
   // `source.read[Yaml].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`

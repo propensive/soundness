@@ -56,6 +56,14 @@ t"name Alice\nage 30\n".read[Tel].as[Person]   // Person(t"Alice", 30)
 t"name Alice\nage 30\n".read[Person in Tel]    // the same, in one step
 ```
 
+`in[Text over Tel]` is the mirror, encoding a value straight to its TEL text:
+
+```scala
+Person(t"Alice", 30).in[Text over Tel].read[Person in Tel]   // Person(t"Alice", 30)
+```
+
+`in[Data over Tel]` writes the same text as bytes, encoded in the `Codepage` in scope.
+
 An `Optional` field reads as `Unset` when its keyword is missing, or present with neither an atom
 nor a child — TEL's two spellings of absence — and a value the inner decoder rejects is an error.
 The `optionalityOptions` package varies each: `strictTelAbsence` makes absence an error

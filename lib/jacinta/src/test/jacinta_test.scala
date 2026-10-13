@@ -118,6 +118,12 @@ case class Boxed[value](value: value) derives CanEqual
 // Read by a hand-written `Json.Parsable` in the direct-parsing tests.
 case class DirectPoint(x: Int, y: Int) derives CanEqual
 
+// For the codec modes: a record that generates its codec once with `derives`, and a pair of
+// mutually recursive records.
+case class JDeclared(id: Int, name: Text) derives Json.Direct, CanEqual
+case class JPing(n: Int, pongs: List[JPong]) derives CanEqual
+case class JPong(n: Int, pings: List[JPing]) derives CanEqual
+
 
 object Tests extends Suite(m"Jacinta Tests"):
   def run(): Unit =
@@ -912,12 +918,99 @@ object Tests extends Suite(m"Jacinta Tests"):
 // interpolator suites live here. The split is by class file, not by subject.
 object DirectTests extends Suite(m"Jacinta direct parsing and format tests"):
   def run(): Unit =
+    suite(m"Codec modes"):
+      val crew = Crew(Worker(t"al", 30), List(Worker(t"bo", 40), Worker(t"cy", 50)))
+      val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+      val ping = JPing(1, List(JPong(2, List(JPing(3, Nil))), JPong(4, Nil)))
+      val treeOpt = TreeOpt(t"a", TreeOpt(t"b", Unset))
+      val band = Band(List(Person(t"x", 1)), Person(t"y \"q\"\n", -2), None)
+      val counts = Counts(Map(t"a" -> 1), t"tag")
+
+      test(m"`codecs.direct` writes each record as `show` renders it"):
+        import codecs.direct
+
+        ( crew.in[Text over Json], tree.in[Text over Json], ping.in[Text over Json],
+          treeOpt.in[Text over Json], band.in[Text over Json], counts.in[Text over Json] )
+      . assert(_ == (crew.in[Json].show, tree.in[Json].show, ping.in[Json].show,
+          treeOpt.in[Json].show, band.in[Json].show, counts.in[Json].show))
+
+      test(m"`codecs.direct` reads each record back"):
+        import codecs.direct
+
+        ( crew.in[Text over Json].read[Crew in Json], tree.in[Text over Json].read[Tree in Json],
+          ping.in[Text over Json].read[JPing in Json] )
+      . assert(_ == (crew, tree, ping))
+
+      test(m"`codecs.direct` writes a record with no instance of its own directly"):
+        import codecs.direct
+
+        given workerSeam: (Worker is Json.Encodable) =
+          Json.Encodable(() => Morphology.Any)(_ => panic(m"encoded through its Encodable"))
+
+        crew.in[Text over Json]
+      . assert(_ == t"""{"lead":{"name":"al","age":30},"members":[{"name":"bo","age":40},{"name":"cy","age":50}]}""")
+
+      test(m"`codecs.direct` writes bytes through the generated printer"):
+        import codecs.direct
+        import codepages.utf8Codepage
+        crew.in[Data over Json].read[Crew in Json]
+      . assert(_ == crew)
+
+      test(m"`codecs.direct` leaves a generic record on the derived path"):
+        import codecs.direct
+        Boxed(7).in[Text over Json]
+      . assert(_ == Boxed(7).in[Json].show)
+
+      test(m"`codecs.direct` renders indented formatting through the tree"):
+        import codecs.direct
+        import formatting.indentedJsonFormatting
+        (crew.in[Text over Json], crew.in[Json].show)
+      . assert((direct, expected) => direct == expected)
+
+      test(m"`codecs.derived` encodes even where a direct printer is in scope"):
+        import codecs.derived
+
+        given (Worker is Json.Printable) =
+          Json.Printable.fromEncodable[Worker](_ => panic(m"printed directly"))
+
+        Worker(t"al", 30).in[Text over Json]
+      . assert(_ == t"""{"name":"al","age":30}""")
+
+      test(m"`derives Json.Direct` writes and reads without an import"):
+        JDeclared(5, t"five").in[Text over Json].read[JDeclared in Json]
+      . assert(_ == JDeclared(5, t"five"))
+
+      test(m"a printed record is written in blocks as it is printed"):
+        given Buffering:
+          def capacity(substrate: Substrate): Int = 8
+          def depth: Int = 2
+
+        given (Tree is Json.Printable) = Inlinable.printable[Tree]
+        val blocks = scala.collection.mutable.ListBuffer[Text]()
+        Json.Printable.emit(tree, blocks += _)
+        (blocks.length > 1, blocks.toList.join)
+      . assert(_ == (true, tree.in[Json].show))
+
     suite(m"Direct parsing tests"):
       test(m"an inlined recursive type ties through its own nominal Parsable"):
         given (Tree is Json.Parsable) = Inlinable.parsable[Tree]
         val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
         tree.in[Json].show.read[Tree in Json]
       . assert(_ == Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))
+
+      test(m"`in[Text over Json]` writes what `read[T in Json]` reads"):
+        val tree = Tree(t"root", List(Tree(t"a", Nil)))
+        tree.in[Text over Json].read[Tree in Json]
+      . assert(_ == Tree(t"root", List(Tree(t"a", Nil))))
+
+      test(m"`in[Text over Json]` renders in the formatting in scope"):
+        Tree(t"x", Nil).in[Text over Json]
+      . assert(_ == Tree(t"x", Nil).in[Json].show)
+
+      test(m"`in[Data over Json]` writes what `read[T in Json]` reads"):
+        val tree = Tree(t"root", List(Tree(t"a", Nil)))
+        tree.in[Data over Json].read[Tree in Json]
+      . assert(_ == Tree(t"root", List(Tree(t"a", Nil))))
 
       test(m"an inlined Map field stays on the runtime seam"):
         given (Counts is Json.Parsable) = Inlinable.parsable[Counts]

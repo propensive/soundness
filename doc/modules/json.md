@@ -99,6 +99,32 @@ t"""{"rowers":[{"name":"Bob","age":40}],"cox":{"name":"Carol","age":25}}"""
 // Crew(List(Person(t"Bob", 40)), Person(t"Carol", 25), None)
 ```
 
+Writing has the mirror form: `in[Text over Json]` encodes a value straight to its JSON text, in
+the `Json.Formatting` in scope, as `show` renders it:
+
+```scala
+import formatting.compactJsonFormatting
+Person(t"Bob", 40).in[Text over Json]   // t"""{"name":"Bob","age":40}"""
+```
+
+`in[Data over Json]` writes the same text as bytes, encoded in the `Codepage` in scope.
+
+A type with a `Json.Printable` is written directly, with no `Json` tree built, wherever the
+formatting is compact; indented formatting still renders through the tree. The printer is
+derived at compiletime as the parser is, and writes the same text:
+
+```scala
+given Person is Json.Printable = Inlinable.printable[Person]
+
+Person(t"Bob", 40).in[Text over Json]   // written directly
+```
+
+`Json.Printable.emit` writes the text a block at a time, handing each to a function as it fills.
+A record can generate both instances once, into its companion, with `derives Json.Direct`, and a
+single import selects the path for every record in scope: `import codecs.direct` for a generated
+parser and printer wherever a type is a record, or `import codecs.derived` for the derived codecs
+even where a direct instance exists.
+
 This is not a shorthand for parsing and then decoding. A type with a `Json.Parsable` instance is
 read *directly* from the source: the parser is composed for that type as the code compiles, and
 fields are taken from the token stream as they arrive, so no `Json` tree is ever built. What is

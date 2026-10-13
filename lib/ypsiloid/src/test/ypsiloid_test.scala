@@ -337,6 +337,18 @@ object Tests extends Suite("ypsiloid", m"Ypsiloid Tests"):
         t"{name: Alice, age: 30}".read[Person in Yaml]
       . assert(_ == Person(t"Alice", 30))
 
+      test(m"`in[Text over Yaml]` writes what `read[T in Yaml]` reads"):
+        import formatting.blockYamlFormatting
+        Person(t"Alice", 30).in[Text over Yaml].read[Person in Yaml]
+      . assert(_ == Person(t"Alice", 30))
+
+      test(m"`in[Data over Yaml]` writes what `read[T in Yaml]` reads"):
+        import formatting.blockYamlFormatting
+        import codepages.utf8Codepage
+        import charsets.utf8Charset, textSanitizers.strictSanitizer
+        Person(t"Zoë", 30).in[Data over Yaml].read[Person in Yaml]
+      . assert(_ == Person(t"Zoë", 30))
+
       test(m"`read[T in Yaml]` works for nested case classes"):
         t"{inner: {n: 7}}".read[Outer in Yaml]
       . assert(_ == Outer(Inner(7)))
@@ -1331,6 +1343,42 @@ object Tests extends Suite("ypsiloid", m"Ypsiloid Tests"):
       test(m"AST stable: empty flow sequence"):
         astStable(t"[]")
       . assert(identity)
+
+    suite(m"Emitting a tree a block at a time"):
+      import formatting.blockYamlFormatting
+
+      // Eight-char blocks, so the document is split across many.
+      given Buffering:
+        def capacity(substrate: Substrate): Int = 8
+        def depth: Int = 2
+
+      val document =
+        t"name: \"quoted \\\"text\\\"\"\nitems:\n  - 1\n  - nested:\n      deep: [1, 2]\n  - {}\n"
+        . read[Yaml]
+
+      test(m"the pulled blocks are the rendered text"):
+        Yaml.emit(document).to(List).join
+      . assert(_ == document.show)
+
+      test(m"a tree is emitted in several blocks"):
+        Yaml.emit(document).length
+      . assert(_ > 1)
+
+      test(m"the pushed blocks are the rendered text"):
+        val blocks = scala.collection.mutable.ListBuffer[Text]()
+        Yaml.emit(document, blocks += _)
+        blocks.toList.join
+      . assert(_ == document.show)
+
+      test(m"a single scalar is emitted whole"):
+        Yaml.emit(t"just text".read[Yaml]).to(List).join
+      . assert(_ == t"just text".read[Yaml].show)
+
+      test(m"a streamed value reads back"):
+        import strategies.throwUnsafely
+        val stream = summon[Yaml is Streamable by Text over Credit].stream(Person(t"Zoë", 30).in[Yaml])
+        summon[Text is Aggregable by Text].accept(stream).read[Person in Yaml]
+      . assert(_ == Person(t"Zoë", 30))
 
     suite(m"HTTP content-type integration"):
       import codepages.utf8Codepage

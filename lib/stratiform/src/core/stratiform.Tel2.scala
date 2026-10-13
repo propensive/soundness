@@ -187,6 +187,20 @@ trait Tel2 extends Tel3:
   =>  value is Tel.Field =
     Tel.Field(Tel.Parsable.optionality[inner, value](field))
 
+  // The write-side mirror of `read[Foo in Tel]`: `foo.in[Text over Tel]` is the value's Tel
+  // text, encoded to the tree and rendered, as `show`.
+  given encodableOver: [value] => (encodable: (value is anticipation.Encodable in Tel)^)
+  =>  ( (value is anticipation.Encodable in (Text over Tel))^{encodable} ) =
+
+    value => Tel.showable.text(encodable.encode(value)).asInstanceOf[Text over Tel]
+
+  // `foo.in[Data over Tel]`: the same text, encoded in the `Codepage` in scope.
+  given encodableOverData: [value]
+  =>  ( text: (value is anticipation.Encodable in (Text over Tel))^, codepage: hieroglyph.Codepage )
+  =>  ( (value is anticipation.Encodable in (Data over Tel))^{text} ) =
+
+    value => codepage.encoded(text.encode(value)).asInstanceOf[Data over Tel]
+
   // The AST-materializing read path: `source.read[Foo in Tel]` shorthand for
   // `source.read[Tel].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect` for
   // `value in Json`. The `Form` type-tag is added by an `asInstanceOf` cast —
@@ -196,8 +210,18 @@ trait Tel2 extends Tel3:
   // does not (all pre-`Parsable` code), this resolves exactly as before.
   given aggregableIn: [value: distillate.Decodable in Tel]
   =>  ( tactic: Tactic[Tel.Error], tracking: zephyrine.PositionTracking )
+  =>  ( buffering: zephyrine.Buffering )
   =>  ( ((value in Tel) is Aggregable by Data)^{tactic} ) =
-    source => Tel.parseTracking(Tel.concatenate(source)).as[value].asInstanceOf[value in Tel]
+
+    new Aggregable:
+      type Self = value in Tel
+      type Operand = Data
+
+      def aggregate(source: Chain[Data]): value in Tel =
+        Tel.parseTracking(Tel.concatenate(source)).as[value].asInstanceOf[value in Tel]
+
+      override def accept(stream: (zephyrine.Stream[Data] over zephyrine.Credit)^): value in Tel =
+        Tel.parseTracking(Tel.streamed(stream)).as[value].asInstanceOf[value in Tel]
 
   object ParsableDerivation extends Derivable[Tel.Field]:
     inline def conjunction[derivation <: Product: ProductReflection]

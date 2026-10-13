@@ -73,6 +73,14 @@ Reading straight to a type combines the two steps, decoding a single record from
 t"hello,world".read[FullName in Dsv]   // FullName(t"hello", t"world")
 ```
 
+and `in[Text over Dsv]` combines them on the way out, encoding a value as a single record:
+
+```scala
+FullName(t"hello", t"world").in[Text over Dsv]   // t"hello,world"
+```
+
+`in[Data over Dsv]` writes the same text as bytes, encoded in the `Codepage` in scope.
+
 ### Headers
 
 When the data begins with a header row, the header-bearing format matches each column to the

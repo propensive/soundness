@@ -63,7 +63,6 @@ import zephyrine.*
 
 import Protobuf.Error.Reason
 import fulminate.*
-import denominative.dysasymptotics.linearSize
 
 trait Protobuf2:
   this: Protobuf.type =>
@@ -159,6 +158,14 @@ trait Protobuf2:
         Protobuf.message(Aggregable.bytesData.accept(stream)).as[value]
         . asInstanceOf[value in Protobuf]
 
+  // The write-side mirror of `read[Foo in Protobuf]`: `foo.in[Data over Protobuf]` is the
+  // message's wire bytes. `.in[Protobuf]` is already direct wherever a `Printable` exists (its
+  // wire value is the printed array, uncopied), so one instance serves both paths.
+  given encodableOver: [value] => (encodable: (value is Encodable in Protobuf)^)
+  =>  ( (value is Encodable in (Data over Protobuf))^{encodable} ) =
+
+    value => encodable.encode(value).payload.asInstanceOf[Data over Protobuf]
+
   // Unpacked `repeated`: each element is emitted as a separate field (one tag per
   // value). This is the fallback for elements with no `Packable` instance — strings,
   // byte arrays and embedded messages. Numeric scalars are handled by the
@@ -201,12 +208,135 @@ trait Protobuf2:
 
       builder.result()
 
-object Protobuf extends Protobuf2:
+// The direct path: the instances that drive a `Protobuf.Parsable` or a `Protobuf.Printable`
+// whenever one exists. They sit above the derived path in `Protobuf2`, and below `object
+// Protobuf`, where `import codecs.derived` overrides them.
+trait Protobuf1 extends Protobuf2:
+  this: Protobuf.type =>
+
+  // Declared here, above `Protobuf2` where the derived `encodable` lives, so it wins whenever
+  // a `Printable` exists and is otherwise inapplicable — as `aggregableParsed` is for reads.
+  // The message is the one `Wire` the printer fills, so `.encode` is its array, uncopied.
+  given encodablePrinted: [value]
+  =>  ( printable: (value is Protobuf.Printable)^ )
+  =>  ( (value is Encodable in Protobuf)^{printable} ) =
+
+    value => Wire(WireType.Len, Printable.print(value))
+
+  // Direct-parsing counterpart of the `aggregable`/`aggregableIn` path:
+  // drives a `Protobuf.Parsable` instance over the input through a
+  // `ProtobufReader`, its window set to the whole message.
+  private def parseDirect[value]
+    ( parser: ProtobufParser^, parsable: (value is Protobuf.Parsable)^ )
+    ( using tactic: Tactic[Protobuf.Error] )
+  :   value =
+
+    parsable.parse(ProtobufReader(parser, tactic))
+
+  // Direct parsing: when the value knows how to consume wire fields itself,
+  // the field map is never materialized. Declared here (above `Protobuf2`,
+  // where the `Decodable`-based `aggregableIn` lives) so it wins whenever a
+  // `Protobuf.Parsable` exists, and is otherwise inapplicable — existing
+  // code resolves exactly as before. It captures
+  // the parsable and the tactic it uses.
+  given aggregableParsed: [value]
+  =>  ( parsable: (value is Protobuf.Parsable)^ )
+  =>  ( tactic: Tactic[Protobuf.Error] )
+  =>  ( ((value in Protobuf) is Aggregable by Data)^{parsable, tactic} ) =
+
+    new Aggregable:
+      type Self = value in Protobuf
+      type Operand = Data
+
+      def aggregate(bytes: Chain[Data]): value in Protobuf =
+        // A single in-memory block — the common case — is read in place; the general
+        // path pulls the chain's cells as the parser needs them.
+        if !bytes.nil && bytes.stdlib.tail.isEmpty
+        then
+          parseDirect(ProtobufParser(bytes.stdlib.head), parsable).asInstanceOf[value in Protobuf]
+        else
+          parseDirect(ProtobufParser(bytes), parsable).asInstanceOf[value in Protobuf]
+
+      // The parameter is not `consume`: `Aggregable.accept`'s signature is pinned
+      // non-consuming by overrides in modules outside separation checking, so the stream
+      // crosses to the consuming parser as a neutral reference — each accept call delivers
+      // a stream that is used exactly once, by construction.
+      override def accept(stream: (Stream[Data] over Credit)^): value in Protobuf =
+        val moved: AnyRef = stream.asInstanceOf[AnyRef]
+        parseDirect(ProtobufParser(moved.asInstanceOf[(Stream[Data] over Credit)^]), parsable)
+        . asInstanceOf[value in Protobuf]
+
+  // Whole-`Data` direct read: when the entire content is already in hand,
+  // parse it in place rather than wrapping it in a one-element stream.
+  // Concrete in `Data`, so it beats the composed pipeline by specificity.
+  // Captures what it parses with, like `aggregableParsed` above.
+  given readableParsed: [value]
+  =>  ( parsable: (value is Protobuf.Parsable)^ )
+  =>  ( tactic: Tactic[Protobuf.Error] )
+  =>  ( (Data is Readable to (value in Protobuf))^{parsable, tactic} ) =
+
+    (data: Data) => parseDirect(ProtobufParser(data), parsable).asInstanceOf[value in Protobuf]
+
+object Protobuf extends Protobuf1:
   // Wraps a complete message payload as a length-delimited wire value — the shape
   // the derivations decode. Used by the `Aggregable` instances backing `read`.
   private[locomotion] def message(bytes: Data): Protobuf = Wire(WireType.Len, bytes)
 
-  object Parsable:
+  // `import codecs.direct`: a generated parser and printer for every message and oneof,
+  // expanded where each is needed. A type that is neither fails `Generates`, and so takes the
+  // derived path. Below the companions' `declared` instances, so a type that derives
+  // `Protobuf.Direct` uses the codec it generated once.
+  trait Parsable2:
+    inline given generated: [value]
+    =>  ( mode: Codecs.Direct, generates: Inlinable.Generates[value] )
+    =>  ( value is Protobuf.Parsable ) =
+
+      ${locomotion.inlining.inlinableParsable[value]}
+
+  trait Printable2:
+    inline given generated: [value]
+    =>  ( mode: Codecs.Direct, generates: Inlinable.Generates[value] )
+    =>  ( value is Protobuf.Printable ) =
+
+      ${locomotion.inlining.inlinablePrintable[value]}
+
+  // The `derives` carrier for a generated codec: `case class Foo(…) derives Protobuf.Direct`
+  // generates `Foo`'s parser and printer once, into its companion, where they serve every read
+  // and write — with or without `import codecs.direct`, which would otherwise expand them at
+  // each use. (A `Self`-typed typeclass has no type parameters, so it cannot appear in a
+  // `derives` clause itself.)
+  object Direct:
+    inline def derived[value]: Direct[value] =
+      Direct(Inlinable.parsable[value], Inlinable.printable[value])
+
+  final class Direct[value]
+    ( val parsable: value is Protobuf.Parsable, val printable: value is Protobuf.Printable )
+
+  // `import codecs.derived`: the derived codecs, even for a type with a direct instance in
+  // scope. Each outranks its direct counterpart in `Protobuf1`, and applies only where that
+  // would; elsewhere the derived path is what resolves anyway.
+  given aggregableDerived: [value: Decodable in Protobuf]
+  =>  ( derived: Codecs.Derived, parsable: (value is Protobuf.Parsable)^ )
+  =>  ( tactic: Tactic[Protobuf.Error] )
+  =>  ( ((value in Protobuf) is Aggregable by Data)^{tactic} ) =
+
+    aggregableIn[value]
+
+  given readableDerived: [value: Decodable in Protobuf]
+  =>  ( derived: Codecs.Derived, parsable: (value is Protobuf.Parsable)^ )
+  =>  ( tactic: Tactic[Protobuf.Error] )
+  =>  ( (Data is Readable to (value in Protobuf))^{tactic} ) =
+
+    (data: Data) => Protobuf.message(data).as[value].asInstanceOf[value in Protobuf]
+
+  inline given encodableDerived: [value]
+  =>  ( derived: Codecs.Derived, printable: (value is Protobuf.Printable)^ )
+  =>  ( value is Encodable in Protobuf ) =
+
+    summonFrom:
+      case given Reflection[`value`] => EncodableDerivation.derived
+
+  object Parsable extends Parsable2:
     // The base of generated parsers: generated code is capture-erased, so
     // the body receives the reader as a neutral carrier, and the capability
     // is asserted here at the rim — the audited point — like the reader's
@@ -247,7 +377,11 @@ object Protobuf extends Protobuf2:
         type Self = value
         def parse(reader: ProtobufReader^): value = decodable.decoded(reader.message())
 
-  object Printable:
+    // The parser a type generated once, into its companion, with `derives Protobuf.Direct`.
+    given declared: [value] => (direct: Protobuf.Direct[value]) => value is Protobuf.Parsable =
+      direct.parsable
+
+  object Printable extends Printable2:
     // The base of generated printers, as `Parsable.Direct` is of generated parsers: generated
     // code is capture-erased, so the bodies receive the printer and the size table as neutral
     // carriers, and the capabilities are asserted here at the rim.
@@ -304,6 +438,10 @@ object Protobuf extends Protobuf2:
         def write(value: value, printer: ProtobufPrinter^, sizes: ProtobufSizes^): Unit =
           printer.raw(sizes.unstash().asInstanceOf[Protobuf].payload)
 
+    // The printer a type generated once, into its companion, with `derives Protobuf.Direct`.
+    given declared: [value] => (direct: Protobuf.Direct[value]) => value is Protobuf.Printable =
+      direct.printable
+
     // A message's wire bytes through its `Printable`: measured, then written once into an
     // array of exactly that size.
     def print[value](value: value)(using printable: (value is Protobuf.Printable)^): Data =
@@ -315,78 +453,60 @@ object Protobuf extends Protobuf2:
         printable.write(value, printer, sizes)
         ProtobufSizes.release(sizes)
 
+    // A message's bytes in blocks of the `Buffering` capacity, each handed to `deliver` as it
+    // fills: measured as `print` measures, then written block by block, so no array of the
+    // whole message is built. The bytes are those `print` returns.
+    def emit[value](value: value, consume deliver: Data => Unit)
+      ( using printable: (value is Protobuf.Printable)^, buffering: Buffering )
+    :   Unit =
+
+      val sizes = ProtobufSizes.acquire()
+      printable.measure(value, sizes)
+      sizes.rewind()
+      val printer = ProtobufPrinter.blocks(buffering.capacity(Substrate.Bytes), deliver)
+      printable.write(value, printer, sizes)
+      printer.flush()
+      ProtobufSizes.release(sizes)
+
+    // The pull form: the blocks as an iterator, written on a fiber as they are consumed, as
+    // `Protobuf.emit` hands out a tree's bytes. The fiber may capture nothing scoped, so the
+    // printer must be pure, as a generated one is.
+    def emit[value](value: value)
+      ( using printable: value is Protobuf.Printable )
+      ( using Monitor, Probate, Buffering )
+    :   Iterator[Data] =
+
+      val producer = Producer[Data]()
+      val output = producer.iterator
+
+      producer.transfer: (producer, _, _) ?=>
+        emit(value, producer().put(_))
+        producer().finish()
+
+      output
+
   // The direct-printing counterpart of `Encodable in Protobuf`: writes a value's fields
   // straight into the output array through a `ProtobufPrinter`, in two passes — `measure`
   // records every length-delimited size in a `ProtobufSizes`, `write` reads them back — so no
   // `Protobuf` wire value is built for a field, and no nested message is encoded and copied.
-  // The opt-in surface is explicit instances and `Inlinable.printable`; `encodablePrinted`
-  // below makes `value.in[Protobuf]` direct whenever one is in scope.
+  // The opt-in surface is explicit instances, `Inlinable.printable`, `derives
+  // Protobuf.Direct` and `import codecs.direct`; `encodablePrinted` makes
+  // `value.in[Protobuf]` direct whenever one is in scope.
   trait Printable extends Typeclass:
     def measure(value: Self, sizes: ProtobufSizes^): Int
     def write(value: Self, printer: ProtobufPrinter^, sizes: ProtobufSizes^): Unit
-
-  // Declared here, not in `Protobuf2` where the derived `encodable` lives, so it wins whenever
-  // a `Printable` exists and is otherwise inapplicable — as `aggregableParsed` is for reads.
-  // The message is the one `Wire` the printer fills, so `.encode` is its array, uncopied.
-  given encodablePrinted: [value]
-  =>  ( printable: (value is Protobuf.Printable)^ )
-  =>  ( (value is Encodable in Protobuf)^{printable} ) =
-
-    value => Wire(WireType.Len, Printable.print(value))
 
   // The direct-parsing counterpart of `Decodable in Protobuf`: consumes
   // fields straight off the input bytes through a `ProtobufReader` instead
   // of walking the materialized number-keyed map, so `read[value in
   // Protobuf]` can instantiate values without buffering every field's wire
-  // value. `Parsable` is the opt-in surface: explicit instances and
-  // `Protobuf.Inlinable.parsable`. It has no blanket fallback given, so no
-  // read changes behavior until a type opts in.
+  // value. `Parsable` is the opt-in surface: explicit instances,
+  // `Inlinable.parsable`, `derives Protobuf.Direct`, and — for every
+  // message and oneof — `import codecs.direct`. Without one of these, no read
+  // changes behavior.
   trait Parsable extends distillate.Parsable:
     type Transport = Protobuf
     type Reader = ProtobufReader
-
-  // Direct-parsing counterpart of the `aggregable`/`aggregableIn` path:
-  // drives a `Protobuf.Parsable` instance over the input through a
-  // `ProtobufReader`, its window set to the whole message.
-  private def parseDirect[value]
-    ( parser: ProtobufParser^, parsable: (value is Protobuf.Parsable)^ )
-    ( using tactic: Tactic[Protobuf.Error] )
-  :   value =
-
-    parsable.parse(ProtobufReader(parser, tactic))
-
-  // Direct parsing: when the value knows how to consume wire fields itself,
-  // the field map is never materialized. Declared here (not in `Protobuf2`,
-  // where the `Decodable`-based `aggregableIn` lives) so it wins whenever a
-  // `Protobuf.Parsable` exists, and is otherwise inapplicable — existing
-  // code resolves exactly as before. It captures
-  // the parsable and the tactic it uses.
-  given aggregableParsed: [value]
-  =>  ( parsable: (value is Protobuf.Parsable)^ )
-  =>  ( tactic: Tactic[Protobuf.Error] )
-  =>  ( ((value in Protobuf) is Aggregable by Data)^{parsable, tactic} ) =
-
-    new Aggregable:
-      type Self = value in Protobuf
-      type Operand = Data
-
-      def aggregate(bytes: Chain[Data]): value in Protobuf =
-        // A single in-memory block — the common case — is read in place; the general
-        // path pulls the chain's cells as the parser needs them.
-        if !bytes.nil && bytes.stdlib.tail.isEmpty
-        then
-          parseDirect(ProtobufParser(bytes.stdlib.head), parsable).asInstanceOf[value in Protobuf]
-        else
-          parseDirect(ProtobufParser(bytes), parsable).asInstanceOf[value in Protobuf]
-
-      // The parameter is not `consume`: `Aggregable.accept`'s signature is pinned
-      // non-consuming by overrides in modules outside separation checking, so the stream
-      // crosses to the consuming parser as a neutral reference — each accept call delivers
-      // a stream that is used exactly once, by construction.
-      override def accept(stream: (Stream[Data] over Credit)^): value in Protobuf =
-        val moved: AnyRef = stream.asInstanceOf[AnyRef]
-        parseDirect(ProtobufParser(moved.asInstanceOf[(Stream[Data] over Credit)^]), parsable)
-        . asInstanceOf[value in Protobuf]
 
   // A chain already in hand — `Chain(bytes).read[…]`, the common in-memory read — goes to
   // its `Aggregable`'s own `aggregate`, which reads a single block in place, rather than
@@ -397,17 +517,6 @@ object Protobuf extends Protobuf2:
   =>  ( (Chain[Data] is Readable to (value in Protobuf))^{aggregable} ) =
 
     (chain: Chain[Data]) => aggregable.aggregate(chain)
-
-  // Whole-`Data` direct read: when the entire content is already in hand,
-  // parse it in place rather than wrapping it in a one-element stream.
-  // Concrete in `Data`, so it beats the composed pipeline by specificity.
-  // Captures what it parses with, like `aggregableParsed` above.
-  given readableParsed: [value]
-  =>  ( parsable: (value is Protobuf.Parsable)^ )
-  =>  ( tactic: Tactic[Protobuf.Error] )
-  =>  ( (Data is Readable to (value in Protobuf))^{parsable, tactic} ) =
-
-    (data: Data) => parseDirect(ProtobufParser(data), parsable).asInstanceOf[value in Protobuf]
 
   given protobuf: Protobuf is Decodable in Protobuf = identity(_)
 
@@ -457,12 +566,16 @@ object Protobuf extends Protobuf2:
   // Synchronously assemble wire bytes of unknown length by running `lambda` against a
   // `ProtobufPrinter`, starting from a buffer of `hint` bytes.
   private def printed(hint: Int)(lambda: ProtobufPrinter^ => Unit): Data =
-    Array.collect[Byte](hint): scribe => lambda(ProtobufPrinter(scribe))
+    val printer = ProtobufPrinter.growing(hint)
+    lambda(printer)
+    printer.data()
 
   // The same, for wire bytes whose length is known: written into an array of exactly that
   // size, which is returned without a copy.
   private def sized(size: Int)(lambda: ProtobufPrinter^ => Unit): Data =
-    Array.scribe[Byte](size): scribe => _ => lambda(ProtobufPrinter(scribe))
+    val printer = ProtobufPrinter.exact(size)
+    lambda(printer)
+    printer.data()
 
   // A message from its fields' numbers and encoded values, in declaration order: one pass
   // sums their encoded size, the second writes them.
@@ -634,13 +747,16 @@ object Protobuf extends Protobuf2:
       val list = values.to(List)
 
       if list.nil then Absent else
-        val hint = list.size*(packable.wireType match
-          case WireType.I64 => 8
-          case WireType.I32 => 4
-          case _            => 2)
+        // Each element is encoded once, summing their lengths, so that the concatenation is
+        // written into an array of exactly that size, with no growing and no final copy.
+        var size = 0
 
-        val bytes = printed(hint): printer =>
-          list.each: element => printer.raw(encodable.encode(element).payload)
+        val payloads = list.map: element =>
+          val payload = encodable.encode(element).payload
+          size += payload.length
+          payload
+
+        val bytes = sized(size): printer => payloads.each(printer.raw(_))
 
         Wire(WireType.Len, bytes)
 

@@ -259,3 +259,41 @@ extension (acceptance: Tel.Acceptance)
   // same whichever of its forms is sent (§8.4).
   def valueHash(using Tactic[Tel.Error], Tactic[Bintel.Error]): Digest in Blake3 =
     acceptance.bintel.digest[Blake3]
+
+extension (consume stream: (zephyrine.Stream[Data] over zephyrine.Credit)^)
+  // The documents of a byte stream (§6.1) as a single-consumer iterator, each parsed only when
+  // it is reached: the streaming counterpart of `read[List[Tel]]`, which parses them all first.
+  def documents(using Tactic[Tel.Error], zephyrine.Buffering): Iterator[Tel]^ =
+    documentIterator(Tel.Parser.owned(Tel.streamed(stream)))
+
+// Constructed in a helper: a local binding of the fresh parser would hide it from the anonymous
+// class (the statement rule).
+private def documentIterator(consume parser: Tel.Parser^)(using tactic: Tactic[Tel.Error])
+:   Iterator[Tel]^ =
+
+  new Iterator[Tel]:
+    // [stdlib-iterator] state in anonymous Iterator
+    @scala.caps.unsafe.untrackedCaptures
+    private var pending: Optional[Tel] = Unset
+    // [stdlib-iterator]
+    @scala.caps.unsafe.untrackedCaptures
+    private var first: Boolean = true
+    // [stdlib-iterator]
+    @scala.caps.unsafe.untrackedCaptures
+    private var more: Boolean = true
+
+    def hasNext: Boolean =
+      if pending.present then true
+      else if !more then false
+      else
+        val (document, another) = parser.stepDocument(first)
+        first = false
+        more = another
+        pending = document.let(Tel(_))
+        pending.present
+
+    def next(): Tel =
+      if !hasNext then Iterator.empty.next()
+      val document = pending.or(Iterator.empty.next())
+      pending = Unset
+      document

@@ -44,11 +44,14 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
-// The machinery behind `Protobuf.Inlinable`: expansion-time instance
-// resolution (through an in-macro staging compiler), the structural
-// generators for messages, repeated fields and oneof sums, and the
-// `Inlinable.parsable` entry macro.
-object stagedInternal:
+// The machinery behind `Inlinable`: expansion-time instance resolution, the
+// structural generators for messages, repeated fields and oneof sums, and the
+// entry macros behind `Inlinable.parsable`, `Inlinable.printable` and the
+// `Protobuf.Parsable`/`Protobuf.Printable` generators. A user-written
+// `Inlinable` can only be evaluated at expansion time by an in-macro staging
+// compiler, which `locomotion.staged` contributes as an `Inlinable.Stager`;
+// without it, such a field takes the runtime seam.
+object inlining:
 
   // The runtime seam for a field type without an `Inlinable`: its
   // occurrences are gathered as wire values through the record loop and
@@ -88,183 +91,10 @@ object stagedInternal:
   private def parsableFor[fieldType: Type](using Quotes): Option[Expr[Any]] =
     import quotes.reflect.*
 
-    Implicits.search(TypeRepr.of[fieldType is Protobuf.Parsable]) match
-      case success: ImplicitSearchSuccess => Some(success.tree.asExpr)
-      case _                              => None
-
-  // ── Expansion-time environment ─────────────────────────────────────────
-
-  private def macroClassloader: ClassLoader =
-    val contextual = Thread.currentThread.nn.getContextClassLoader
-    if contextual != null then contextual else getClass.getClassLoader.nn
-
-  private def currentOutputDirectory(using Quotes): Option[String] =
-    try
-      val ctx = quotes.asInstanceOf[scala.quoted.runtime.impl.QuotesImpl].ctx
-      given dotty.tools.dotc.core.Contexts.Context = ctx
-      import dotty.tools.dotc.config.Settings.Setting.value
-
-      Option(ctx.settings.outputDir.value.file).map(_.nn.getCanonicalPath.nn)
-    catch case _: Exception => None
-
-  // A symbol defined in the compilation run in progress has no trustworthy
-  // classfile (none on a clean build; a stale one from the previous compile
-  // on an incremental build), so instance evaluation must refuse it and the
-  // caller degrade to a runtime seam.
-  private def definedInCurrentRun(using Quotes)(symbol: quotes.reflect.Symbol): Boolean =
-    try
-      val ctx = quotes.asInstanceOf[scala.quoted.runtime.impl.QuotesImpl].ctx
-      val run = ctx.run
-
-      if run == null then false else
-        val sources = run.nn.units.map(_.source.path).toSet
-        val position = symbol.pos
-        position.exists: position => sources.contains(position.sourceFile.path)
-    catch case _: Exception => false
-
-  private def innerClasspath(using Quotes): String =
-    val separator = java.io.File.pathSeparator.nn
-
-    val full =
-      dotty.tools.dotc.util.ClasspathFromClassloader(macroClassloader).nn
-
-    currentOutputDirectory match
-      case None =>
-        full
-
-      case Some(excluded) =>
-        val entries = full.split(separator).nn
-        val joined = StringBuilder()
-        var index = 0
-
-        while index < entries.length do
-          val entry = entries(index).nn
-
-          val retain =
-            try java.io.File(entry).getCanonicalPath != excluded
-            catch case _: java.io.IOException => true
-
-          if retain then
-            if joined.nonEmpty then joined.append(separator)
-            joined.append(entry)
-
-          index += 1
-
-        joined.toString
-
-  // ── Type transport into the staging context ────────────────────────────
-  // The outer macro's `Type` cannot cross into the inner compiler, so a type
-  // travels as a tree of `java.lang.Class`es and is rebuilt inside with
-  // `TypeRepr.typeConstructorOf`. This restricts instance evaluation to
-  // class-shaped types (plain classes and applications of them) — opaque
-  // and structural types degrade to a runtime seam.
-
-  private case class TypeShape(clazz: Class[?], arguments: List[TypeShape])
-
-  private val primitiveClasses: scala.collection.immutable.Map[String, Class[?]] =
-    scala.collection.immutable.Map
-      ( "scala.Int"     -> classOf[Int],
-        "scala.Long"    -> classOf[Long],
-        "scala.Double"  -> classOf[Double],
-        "scala.Float"   -> classOf[Float],
-        "scala.Boolean" -> classOf[Boolean],
-        "scala.Short"   -> classOf[Short],
-        "scala.Byte"    -> classOf[Byte],
-        "scala.Char"    -> classOf[Char],
-        "scala.Unit"    -> classOf[Unit] )
-
-  // The binary name of a class symbol: package segments joined with dots,
-  // enclosing type segments with dollars.
-  private def binaryName(using Quotes)(symbol: quotes.reflect.Symbol): String =
-    import quotes.reflect.*
-
-    def build(symbol: Symbol): String =
-      val owner = symbol.owner
-
-      if owner.isPackageDef then
-        val prefix = owner.fullName
-        if prefix == "<empty>" then symbol.name else prefix+"."+symbol.name
-      else
-        val ownerName = build(if owner.isClassDef then owner else owner.owner)
-        ownerName+"$"+symbol.name
-
-    build(symbol)
-
-  private def shapeOf(using Quotes)(tpe: quotes.reflect.TypeRepr): Option[TypeShape] =
-    import quotes.reflect.*
-
-    def classFor(tpe: TypeRepr): Option[Class[?]] =
-      tpe.classSymbol.flatMap: symbol =>
-        if definedInCurrentRun(symbol) then None
-        else primitiveClasses.get(symbol.fullName).orElse:
-          try Some(Class.forName(binaryName(symbol), false, macroClassloader).nn)
-          catch
-            case _: ReflectiveOperationException => None
-            case _: LinkageError                 => None
-
-    tpe.dealias match
-      case AppliedType(constructor, arguments) =>
-        for
-          clazz <- classFor(constructor)
-          shapes <- arguments.foldRight(Option(List.empty[TypeShape])): (argument, list) =>
-            list.flatMap { tail => shapeOf(argument).map(_ :: tail) }
-        yield TypeShape(clazz, shapes)
-
-      case other =>
-        classFor(other).map(TypeShape(_, Nil))
-
-  // ── Instance evaluation: the staging summon ────────────────────────────
-  // One fresh compiler per summon, over the macro classloader with the
-  // current output directory excluded from its classpath. The summon is
-  // embedded in the compiled snippet (`summonInline`), so it resolves during
-  // the inner compiler's inlining phase, composing conditional instances —
-  // the whole instance graph arrives live in one run.
-  private def summonViaStaging[field: Type](using Quotes): Option[Inlinable] =
-    import quotes.reflect.*
-    import scala.quoted.staging
-
-    shapeOf(TypeRepr.of[field]).flatMap: shape =>
-      try
-        given settings: staging.Compiler.Settings =
-          staging.Compiler.Settings.make
-            ( None, List("-experimental", "-classpath", innerClasspath) )
-
-        given staging.Compiler = staging.Compiler.make(macroClassloader)
-        val started = System.nanoTime
-
-        val result: Any = staging.run:
-          val quotes2 = summon[Quotes]
-          import quotes2.reflect as r2
-
-          def rebuild(shape: TypeShape): r2.TypeRepr =
-            val base = r2.TypeRepr.typeConstructorOf(shape.clazz)
-            if shape.arguments.isEmpty then base else base.appliedTo(shape.arguments.map(rebuild))
-
-          val target =
-            r2.Refinement
-              ( r2.TypeRepr.of[Inlinable], "Self",
-                r2.TypeBounds(rebuild(shape), rebuild(shape)) )
-
-          target.asType match
-            case '[target] => '{scala.compiletime.summonInline[target]}
-
-        val duration = (System.nanoTime - started)/1000000L
-
-        result match
-          case instance: Inlinable =>
-            report.info
-              ( s"locomotion: staged summon for ${TypeRepr.of[field].show} took " +
-                s"${duration}ms" )
-
-            Some(instance)
-
-          case _ =>
-            None
-      catch
-        case _: ReflectiveOperationException => None
-        case _: LinkageError                 => None
-        case _: AssertionError               => None
-        case _: Exception                    => None
+    rootFor[fieldType].orElse:
+      Implicits.search(TypeRepr.of[fieldType is Protobuf.Parsable]) match
+        case success: ImplicitSearchSuccess if !blanket(success.tree) => Some(success.tree.asExpr)
+        case _                                                        => None
 
   // ── The resolution ladder and field plans ──────────────────────────────
   // Every field of a message compiles to one of four plans: a builtin
@@ -275,13 +105,57 @@ object stagedInternal:
   // gathered as wire values and decoded once through the field's
   // `Decodable in Protobuf`).
 
-  // The per-entry expansion cache: memoized staging summons, and the set of
+  // The per-entry expansion cache: memoized staging summons, the set of
   // types whose generators are currently on the expansion stack — a
-  // recursive occurrence (`Tree` with `children: List[Tree]`) must degrade
-  // to the runtime seam rather than expand forever.
+  // recursive occurrence (`Tree` with `children: List[Tree]`) must not
+  // expand forever — and the instance being generated, named by its root
+  // type, which a recursive occurrence of that type reads through.
   private final class Cache:
     val instances: scm.HashMap[String, Option[Inlinable]] = scm.HashMap()
     val active: scm.Set[String] = scm.Set()
+    val roots: scm.HashMap[String, Expr[Any]] = scm.HashMap()
+
+  // The cache of the expansion in progress. A structural instance reached
+  // through `Inlinable.parse` (or `measure`, `write`) carries no cache, so it
+  // continues this one rather than starting afresh: the active set then spans
+  // the whole expansion, and a mutually recursive message ties back to a
+  // generator already on the stack instead of expanding forever.
+  private val ongoing: scala.util.DynamicVariable[Option[Cache]] =
+    scala.util.DynamicVariable(None)
+
+  private def continued(): Cache = ongoing.value.getOrElse(Cache())
+
+  private def within[result](cache: Cache)(generate: => result): result =
+    ongoing.withValue(Some(cache))(generate)
+
+  // A recursive occurrence of the root type reads through the instance being generated.
+  private def rootFor[fieldType: Type](using Quotes): Option[Expr[Any]] =
+    import quotes.reflect.*
+
+    val name = TypeRepr.of[fieldType].dealias.show
+
+    ongoing.value.flatMap(_.roots.get(name))
+
+  // Whether an implicit-search result is the `import codecs.direct` blanket given, which a
+  // nominal lookup must not take: it would expand this very generator again for the field.
+  private def blanket(using Quotes)(tree: quotes.reflect.Tree): Boolean =
+    import quotes.reflect.*
+
+    tree match
+      case Inlined(_, _, body)    => blanket(body)
+      case Apply(function, _)     => blanket(function)
+      case TypeApply(function, _) => blanket(function)
+      case Block(_, expression)   => blanket(expression)
+
+      case other =>
+        val symbol = other.symbol
+
+        val owners =
+          List
+            ( TypeRepr.of[Protobuf.Parsable2].typeSymbol,
+              TypeRepr.of[Protobuf.Printable2].typeSymbol )
+
+        symbol.name == "generated" && owners.contains(symbol.owner)
 
   // Builtin scalar kinds; the natural wire code of each is `naturalCode`.
   private inline val KInt = 0
@@ -299,6 +173,17 @@ object stagedInternal:
     case KData   => 2
     case _       => 0
 
+  // `Data`, read off the result of `ProtobufReader.data` rather than quoted as `Type.of[Data]`:
+  // under capture checking, a quoted `Array[Byte]^{}` unpickles as `Array[Byte]^{any.rd}`,
+  // which no longer conforms to the type it was quoted from.
+  private def dataType(using Quotes): quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+
+    val reader = TypeRepr.of[ProtobufReader]
+
+    reader.memberType(reader.typeSymbol.methodMember("data").head).absolve match
+      case MethodType(_, _, result) => result
+
   private def builtinKind(using Quotes)(tpe: quotes.reflect.TypeRepr): Option[Int] =
     import quotes.reflect.*
 
@@ -308,7 +193,7 @@ object stagedInternal:
     else if tpe =:= TypeRepr.of[Double] then Some(KDouble)
     else if tpe =:= TypeRepr.of[Float] then Some(KFloat)
     else if tpe =:= TypeRepr.of[Text] then Some(KText)
-    else if tpe =:= TypeRepr.of[Data] then Some(KData)
+    else if tpe =:= dataType then Some(KData)
     else None
 
   private enum Elem:
@@ -336,7 +221,7 @@ object stagedInternal:
     val tpe = TypeRepr.of[field].dealias
 
     if builtinKind(tpe).isDefined then None else
-      cache.instances.getOrElseUpdate(tpe.show, summonViaStaging[field].map(unwrap))
+      cache.instances.getOrElseUpdate(tpe.show, Inlinable.Stager.summon[field].map(unwrap))
       . orElse(structuralFor[field](cache))
 
   private def structuralFor[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
@@ -673,6 +558,12 @@ object stagedInternal:
       if resolved.distinct.length == resolved.length then Some(resolved) else None
 
   private def productSupported(using Quotes)(tpe: quotes.reflect.TypeRepr): Boolean =
+    productShaped(tpe) && tpe.classSymbol.exists(fieldNumbersOf(_).isDefined)
+
+  // The shape of an inlinable message, short of its field numbers: a `@field` annotation is
+  // not yet a literal application while the caller is still being typed, as it is when a
+  // `Generates` is searched for, so only the generator itself reads the numbers.
+  private def productShaped(using Quotes)(tpe: quotes.reflect.TypeRepr): Boolean =
     import quotes.reflect.*
 
     tpe.classSymbol.exists: classSymbol =>
@@ -680,8 +571,7 @@ object stagedInternal:
         !classSymbol.owner.isTerm &&
         (tpe match { case AppliedType(_, _) => false case _ => true })
         && classSymbol.primaryConstructor.paramSymss
-          . filterNot(_.exists(_.isTypeParam)).length == 1 &&
-        fieldNumbersOf(classSymbol).isDefined
+          . filterNot(_.exists(_.isTypeParam)).length == 1
 
   // ── The product generator ──────────────────────────────────────────────
   // Self-contained monomorphic message parsing, mirroring the AST record
@@ -693,7 +583,7 @@ object stagedInternal:
     ( using Quotes )
   :   Expr[product] =
 
-    productBody[product](reader, Cache())
+    productBody[product](reader, continued())
 
   private def productBody[product: Type](reader: Expr[ProtobufReader], cache: Cache)
     ( using Quotes )
@@ -1375,7 +1265,7 @@ object stagedInternal:
   private[locomotion] def sumBody[sum: Type](reader: Expr[ProtobufReader])(using Quotes)
   :   Expr[sum] =
 
-    sumBody[sum](reader, Cache())
+    sumBody[sum](reader, continued())
 
   private def sumBody[sum: Type](reader: Expr[ProtobufReader], cache: Cache)(using Quotes)
   :   Expr[sum] =
@@ -1489,9 +1379,10 @@ object stagedInternal:
   private def printableFor[fieldType: Type](using Quotes): Option[Expr[Any]] =
     import quotes.reflect.*
 
-    Implicits.search(TypeRepr.of[fieldType is Protobuf.Printable]) match
-      case success: ImplicitSearchSuccess => Some(success.tree.asExpr)
-      case _                              => None
+    rootFor[fieldType].orElse:
+      Implicits.search(TypeRepr.of[fieldType is Protobuf.Printable]) match
+        case success: ImplicitSearchSuccess if !blanket(success.tree) => Some(success.tree.asExpr)
+        case _                                                        => None
 
   // A field's tag, known at expansion: a single literal byte for a field number up to 15 —
   // nearly every field — and a varint beyond.
@@ -1527,7 +1418,7 @@ object stagedInternal:
 
       case KData =>
         ' {
-            val length = ${value.asExprOf[Data]}.length
+            val length = ${value.asInstanceOf[Expr[Data]]}.length
             ProtobufPrinter.varintSize(length.toLong) + length
           }
 
@@ -1560,7 +1451,7 @@ object stagedInternal:
         '{ProtobufPrinter.of($printer).stashedText(ProtobufSizes.of($sizes))}
 
       case KData =>
-        '{ProtobufPrinter.of($printer).chunk(${value.asExprOf[Data]})}
+        '{ProtobufPrinter.of($printer).chunk(${value.asInstanceOf[Expr[Data]]})}
 
   // The elements of a gathered field, visited through an iterator by a local recursive
   // function: no lambda, so nothing is boxed and no `var` is captured.
@@ -1690,7 +1581,7 @@ object stagedInternal:
     ( using Quotes )
   :   Expr[Int] =
 
-    productMeasure[product](value, sizes, Cache())
+    productMeasure[product](value, sizes, continued())
 
   private def productMeasure[product: Type]
     ( value: Expr[product], sizes: Expr[AnyRef], cache: Cache )
@@ -1877,7 +1768,7 @@ object stagedInternal:
     ( using Quotes )
   :   Expr[Unit] =
 
-    productWrite[product](value, printer, sizes, Cache())
+    productWrite[product](value, printer, sizes, continued())
 
   private def productWrite[product: Type]
     ( value: Expr[product], printer: Expr[AnyRef], sizes: Expr[AnyRef], cache: Cache )
@@ -2077,7 +1968,7 @@ object stagedInternal:
     ( using Quotes )
   :   Expr[Int] =
 
-    sumDispatch[sum, Int](value, Cache()):
+    sumDispatch[sum, Int](value, continued()):
       [variant] => (index: Int, instance: Inlinable { type Self = variant }, item: Expr[variant]) =>
         (tpe: Type[variant]) ?=> framedSize(index + 1, instance.measure(item, sizes), sizes)
 
@@ -2086,7 +1977,7 @@ object stagedInternal:
     ( using Quotes )
   :   Expr[Unit] =
 
-    sumDispatch[sum, Unit](value, Cache()):
+    sumDispatch[sum, Unit](value, continued()):
       [variant] => (index: Int, instance: Inlinable { type Self = variant }, item: Expr[variant]) =>
         (tpe: Type[variant]) ?=>
           framedWrite(index + 1, instance.write(item, printer, sizes), printer, sizes)
@@ -2133,7 +2024,46 @@ object stagedInternal:
 
       dispatch(0)
 
+  // Whether the generator builds a type's parser and printer structurally — a message or a
+  // oneof of messages — which is what `import codecs.direct` offers a generated codec for. A
+  // cheap shape test, so that a search under the mode stays cheap; anything else fails the
+  // search, and the type takes the derived path. (A type with a user-written `Inlinable` is
+  // reached through `Inlinable.parsable` and `Inlinable.printable`, as before.)
+  def generates[value: Type](using Quotes): Expr[Inlinable.Generates[value]] =
+    import quotes.reflect.*
+
+    val tpe = formless(TypeRepr.of[value])
+
+    val structural =
+      productShaped(tpe) || sumVariants(tpe).exists: variants =>
+        variants.map(_(1)).forall(productShaped(_))
+
+    if structural then '{Inlinable.Generates[value]()}
+    else report.errorAndAbort(s"locomotion: ${tpe.show} has no generated codec")
+
+  // A type with any `Form` refinement removed: a read of `Foo in Protobuf` infers the
+  // instance's type as `Foo { type Form = Protobuf }`, whose codec is `Foo`'s.
+  private def formless(using Quotes)(tpe: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+
+    tpe.dealias match
+      case Refinement(parent, "Form", _) => formless(parent)
+      case other                         => other
+
+  // ── The entry macros ───────────────────────────────────────────────────
+  // Each generated instance is bound to a lazy `self`, so that a recursive
+  // occurrence of its own type reads through it, in place.
   def inlinablePrintable[value: Type](using Quotes): Expr[value is Protobuf.Printable] =
+    import quotes.reflect.*
+
+    val tpe = formless(TypeRepr.of[value])
+
+    if tpe =:= TypeRepr.of[value].dealias then generatedPrintable[value]
+    else tpe.asType.absolve match
+      case '[formless] =>
+        '{${generatedPrintable[formless]}.asInstanceOf[value is Protobuf.Printable]}
+
+  private def generatedPrintable[value: Type](using Quotes): Expr[value is Protobuf.Printable] =
     import quotes.reflect.*
 
     val cache: Cache = Cache()
@@ -2149,21 +2079,39 @@ object stagedInternal:
           "message is the unit of direct printing" )
 
     val instance = root.asInstanceOf[Inlinable { type Self = value }]
+    val name = TypeRepr.of[value].dealias.show
 
     ' {
-        // Sealed per the codec-thunk pattern, as `inlinableParsable`.
-        // [quote-wall] staged Printable generated inside quote
-        caps.unsafe.unsafeAssumePure:
+        lazy val self: Protobuf.Printable.Direct[value] =
           new Protobuf.Printable.Direct[value]:
             protected def measureCarrier(value0: value, sizes0: AnyRef): Int =
-              ${instance.measure('value0, 'sizes0)}
+              $ {
+                  cache.roots(name) = 'self
+                  within(cache)(instance.measure('value0, 'sizes0))
+                }
 
             protected def writeCarrier(value0: value, printer0: AnyRef, sizes0: AnyRef): Unit =
-              ${instance.write('value0, 'printer0, 'sizes0)}
+              $ {
+                  cache.roots(name) = 'self
+                  within(cache)(instance.write('value0, 'printer0, 'sizes0))
+                }
+
+        // Sealed per the codec-thunk pattern, as `inlinableParsable`.
+        // [quote-wall] staged Printable generated inside quote
+        caps.unsafe.unsafeAssumePure(self)
       }
 
-  // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Protobuf.Parsable] =
+    import quotes.reflect.*
+
+    val tpe = formless(TypeRepr.of[value])
+
+    if tpe =:= TypeRepr.of[value].dealias then generatedParsable[value]
+    else tpe.asType.absolve match
+      case '[formless] =>
+        '{${generatedParsable[formless]}.asInstanceOf[value is Protobuf.Parsable]}
+
+  private def generatedParsable[value: Type](using Quotes): Expr[value is Protobuf.Parsable] =
     import quotes.reflect.*
 
     val cache: Cache = Cache()
@@ -2179,17 +2127,23 @@ object stagedInternal:
           "unit of direct parsing" )
 
     val instance = root.asInstanceOf[Inlinable { type Self = value }]
+    val name = TypeRepr.of[value].dealias.show
 
     ' {
-        // Sealed per the codec-thunk pattern: the generated body resolves its
-        // capabilities where it is spliced.
-        // [quote-wall] staged Parsable generated inside quote
-        caps.unsafe.unsafeAssumePure:
+        lazy val self: Protobuf.Parsable.Direct[value] =
           new Protobuf.Parsable.Direct[value]:
             protected def parseCarrier(reader0: AnyRef): value =
               // The reader is never bound as a typed local: a capability
               // class cannot be quoted into a pure hole, so every use casts
               // from the neutral carrier afresh — the rim-reassertion
               // pattern, at each use.
-              ${instance.parse('{reader0.asInstanceOf[ProtobufReader]})}
+              $ {
+                  cache.roots(name) = 'self
+                  within(cache)(instance.parse('{reader0.asInstanceOf[ProtobufReader]}))
+                }
+
+        // Sealed per the codec-thunk pattern: the generated body resolves its
+        // capabilities where it is spliced.
+        // [quote-wall] staged Parsable generated inside quote
+        caps.unsafe.unsafeAssumePure(self)
       }
