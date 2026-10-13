@@ -224,9 +224,10 @@ and whether it is a light or a dark theme — and a `Palette` selects from one b
 theme is built in and chosen by import:
 
 ```scala
+import luminosity.darkBrightness
 import themes.solarizedTheme
 
-Solarized.blue                 // Srgb(0.149, 0.545, 0.824)
+summon[Theme].background       // Srgb(0.000, 0.169, 0.212)
 summon[Theme].luminosity       // Brightness.Dark
 ```
 
@@ -247,9 +248,9 @@ as a tuple of channel types, most significant first, and the compiler works out 
 ```scala
 type Rgb565 = (Red[5], Green[6], Blue[5])
 
-compiletime.constValue[iridescence.Channel.TotalBits[Rgb]]      // 24
-summon[iridescence.Channel.Storage[Rgb565] =:= Short]           // the narrowest type that fits
-summon[iridescence.Channel.Storage[Tuple1[Grey[8]]] =:= Byte]
+compiletime.constValue[anticipation.Channel.TotalBits[Rgb]]      // 24
+summon[anticipation.Channel.Storage[Rgb565] =:= Short]           // the narrowest type that fits
+summon[anticipation.Channel.Storage[Tuple1[Grey[8]]] =:= Byte]
 ```
 
 `Channel` is reached through its library package here because the umbrella already exports a

@@ -87,6 +87,8 @@ supplied it — so one executable installed under several names by symbolic link
 on the name, while every alias shares one warm daemon:
 
 ```scala
+import dysasymptotics.linearSize
+
 def multicall(): Unit = cli:
   execute:
     resident.invokedAs.let(_.cut(t"/").last) match

@@ -45,6 +45,8 @@ rather than holding the source. Only the tree, and each paragraph's deferred raw
 retained, so a long document is parsed without ever being materialized:
 
 ```scala
+import dysasymptotics.linearSize
+
 val readme = t"# Readme\n\nThe first paragraph.\n\nThe second."
 
 Parser.parse(readme.stream).children.size   // 3

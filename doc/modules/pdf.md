@@ -34,6 +34,7 @@ be written:
 
 ```scala
 import soundness.*
+import soundness.pdfCreatable
 import strategies.throwUnsafely
 import codepages.utf8Codepage
 ```

@@ -31,6 +31,8 @@ import soundness.*
 
 import codepages.utf8Codepage
 import charsets.utf8Charset
+import textSanitizers.skipSanitizer
+import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 import logging.silentLogging
 import pathInterfaces.pathOnLinux
@@ -85,6 +87,8 @@ and closes the underlying source at the end of it, in the same way as a
 [file](filesystem.md#reading-and-writing). Inside the scope, `zip` is the open handle:
 
 ```scala
+import dysasymptotics.linearSize
+
 zipPath.open[Zip]():
   zip.entries.size   // 1
 ```

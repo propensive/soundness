@@ -271,8 +271,8 @@ A typed document encodes to BinTEL — a compact binary form guided by the schem
 a value hash fingerprints the content for integrity checks:
 
 ```scala
-val binary = doc.bintel(schema)      // the document as bytes
-doc.valueHash(schema)                // a BLAKE3 digest of the content
+val binary = document.bintel(schema)   // the document as bytes
+document.valueHash(schema)             // a BLAKE3 digest of the content
 ```
 
 A *self-contained* BinTEL frame carries its schema with it, so a document can travel to a reader

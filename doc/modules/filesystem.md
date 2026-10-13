@@ -34,6 +34,7 @@ import soundness.*
 
 import charsets.utf8Charset
 import codepages.utf8Codepage
+import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.overwritePreexisting

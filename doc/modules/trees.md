@@ -63,6 +63,7 @@ edges flowing between them — the shape version-control history is drawn in:
 
 ```scala
 import laneDagStyles.boxDrawingLaneDagStyle
+import textMetrics.uniformMetric
 import strategies.throwUnsafely
 
 val history = Dag(t"C" -> Set(t"B"), t"B" -> Set(t"A"), t"A" -> Set())
@@ -85,6 +86,8 @@ itself: colored labels for one kind of node, annotations appended to another. Th
 characters stay the style's business, and the meaning stays the caller's.
 
 ```scala
+import dysasymptotics.linearSize
+
 diagram.nodes    // the node of each line, in drawing order
 diagram.tiles    // the tiles of each line
 diagram.map { tiles => node => t"${tiles.size} ${node.name}" }

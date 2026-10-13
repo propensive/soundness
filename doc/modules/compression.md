@@ -30,6 +30,7 @@ byte for byte, and a value compressed one way decompresses the other. Everything
 import soundness.*
 
 import charsets.utf8Charset
+import textSanitizers.skipSanitizer
 import codepages.utf8Codepage
 import strategies.throwUnsafely
 ```
@@ -55,6 +56,7 @@ it flows, and nothing larger than the pipeline's buffers is held. Writing a comp
 side of the disk:
 
 ```scala
+import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 import pathInterfaces.pathOnLinux
 import temporaryDirectories.javaBaseTemporaryDirectory

@@ -93,6 +93,8 @@ caller's choosing — here, an [error](errors.md) that collects positions and fa
 block does the decoding:
 
 ```scala
+import dysasymptotics.linearSize
+
 case class DecodeIssues(items: List[(Int, Charset.Error)] = Nil)(using Diagnostics)
 extends Error(m"${items.size} decoding issues"):
   def +(position: Int, error: Charset.Error): DecodeIssues =

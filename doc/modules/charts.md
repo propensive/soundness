@@ -221,9 +221,11 @@ the page. If the fit still accommodates the new data, the axes hold still and on
 differ are replaced; if a point falls outside them, the whole chart is redrawn:
 
 ```scala
+import dysasymptotics.linearSize
+
 val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
 val (next, revisions) = latency.revise(latency.data.add((5.0, 13.0)))
-revisions.length   // 1: a Chart.Revision.Replace of `series-0`
+revisions.size   // 1: a Chart.Revision.Replace of `series-0`
 ```
 
 A page holding the SVG needs only two operations, replace an element by its identifier and

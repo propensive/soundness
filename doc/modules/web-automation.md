@@ -112,7 +112,8 @@ interfaces, checked against WebIDL, and render to JavaScript where an [HTML](htm
 expects a script:
 
 ```scala
-import htmlDoms.whatwg.*
+import htmlDoms.html4Transitional
+import html4Transitional.*
 
 Button(onclick = document.getElementById(t"foo").focus())
 // renders onclick="document.getElementById('foo').focus()"

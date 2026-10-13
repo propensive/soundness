@@ -26,6 +26,7 @@ have had anyway: a path and an assignment. Everything comes from the `soundness`
 
 ```scala
 import soundness.*
+import strategies.throwUnsafely
 ```
 
 ### Updating a field
@@ -79,6 +80,7 @@ with the identical syntax — one skill, both worlds:
 
 ```scala
 import dynamicAccess.dynamicJson, conversions.encodableToJson
+import optics.{jsonLens, jsonEachOptical}
 import formatting.compactJsonFormatting
 
 val json = company.in[Json]

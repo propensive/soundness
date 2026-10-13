@@ -81,7 +81,7 @@ def loadConfiguration(): Configuration =
   loads += 1
   Configuration(8080)
 
-val config: Cache[Configuration] = Cache(5.0*Minute)
+val config: Cache[Configuration] = Cache(300.0*Second)
 
 config.establish(loadConfiguration())   // loads now
 config.establish(loadConfiguration())   // the same value, until five minutes pass

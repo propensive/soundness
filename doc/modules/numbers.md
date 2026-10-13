@@ -102,9 +102,9 @@ The `B*` types are for treating a number as a set of bits. They carry the shifts
 and masks, and render in the usual radices, but no arithmetic:
 
 ```scala
-val flags: B32 = 0xf0
+val flags: B32 = 0xf0.bits
 flags << 2          // shift left
-flags & 0x30        // mask
+flags & 0x30.bits   // mask
 flags.hex           // t"000000f0"
 ```
 

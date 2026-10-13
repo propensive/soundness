@@ -60,6 +60,7 @@ source of instants — and the Unix clock is the ordinary choice:
 ```scala
 import strategies.throwUnsafely
 import chronometries.unixChronometry
+import soundness.{tsInterpolator, recInterpolator}
 ```
 
 ### Dates
@@ -401,10 +402,11 @@ demanded:
 
 ```scala
 import calendars.gregorianCalendar
+import dysasymptotics.linearSize
 
 (Instant(0L) ~ Instant(3_600_000L)).segments(15*Minute).size   // 4
 Period(2024-Jan-1, 2030-Jan-1).by(1*Day).keep(3)
-// List(2024-Jan-1, 2024-Jan-2, 2024-Jan-3)
+// Chain(2024-Jan-1, 2024-Jan-2, 2024-Jan-3)
 ```
 
 ### Time zones and moments
@@ -452,9 +454,14 @@ spring.instant   // pushed forward to 01:30 UTC by default
 ```
 
 ```scala
-import gapPolicies.rejectGapPolicy
-Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant
-// raises a Moment.Error: the local time never happens
+import errorDiagnostics.stackTracesDiagnostics
+
+val rejected =
+  import gapPolicies.rejectGapPolicy
+
+  capture[Moment.Error]:
+    Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant
+// a Moment.Error: the local time never happens
 ```
 
 When the clocks fall back, an hour repeats, and a reading in the overlap names two
@@ -574,7 +581,11 @@ interpolator writes one as a checked literal:
 
 ```scala
 Recurrence(2024-Jan-1, 1*Day, 5).encode   // R5/2024-01-01/P1D
-rec"R3/2024-01-01/P1M".occurrences
+
+val monthly =
+  import monthEnds.clampMonthEnd
+
+  rec"R3/2024-01-01/P1M".occurrences
 // Chain(2024-Jan-1, 2024-Feb-1, 2024-Mar-1)
 ```
 
@@ -679,23 +690,25 @@ localized, and the language is enforced by the types: it needs a `Locale` and th
 month and weekday names for that language in scope, or it will not compile:
 
 ```scala
-import monthFormats.englishMonths
-import weekdays.englishWeekdays
-given Locale[en] = Locale(en)
+val english =
+  import monthFormats.englishMonths
+  import weekdays.englishWeekdays
+  given Locale[en] = Locale(en)
 
-Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
-    byDay = List(WeekdayOrdinal(Thu, 4))).show
+  Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
+      byDay = List(WeekdayOrdinal(Thu, 4))).show
 // "every year on the 4th Thursday of November"
 ```
 
 Another language follows from a different locale and its names:
 
 ```scala
-import monthFormats.frenchMonths
-import weekdays.frenchWeekdays
-given Locale[fr] = Locale(fr)
+val french =
+  import monthFormats.frenchMonths
+  import weekdays.frenchWeekdays
+  given Locale[fr] = Locale(fr)
 
-Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
+  Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
 // "tous les mois le 3e lundi"
 ```
 
@@ -721,13 +734,11 @@ val date = 2025-Apr-7
 ```
 
 ```scala
-import dateFormats.iso8601DateFormat
-date.show   // 2025-04-07
+val iso = { import dateFormats.iso8601DateFormat; date.show }   // 2025-04-07
 ```
 
 ```scala
-import dateFormats.americanDateFormat
-date.show   // 04/07/2025
+val american = { import dateFormats.americanDateFormat; date.show }   // 04/07/2025
 ```
 
 Times offer the same range, from the twenty-four-hour form to the twelve-hour form:

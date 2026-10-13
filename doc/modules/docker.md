@@ -110,8 +110,8 @@ and describes a component rather than a filesystem, and the single layer is the 
 itself — `application/wasm`, stored uncompressed, so its `diffId` and `digest` coincide.
 
 ```scala
-artifact.wasmConfig.vouch.os            // wasip2 — the WASI generation
-artifact.wasmConfig.vouch.architecture  // wasm
+artifact.wasmConfig.let(_.os)            // wasip2 — the WASI generation
+artifact.wasmConfig.let(_.architecture)  // wasm
 ```
 
 The `exports` and `imports` are the Component Model interfaces the workload offers and needs.
@@ -128,8 +128,8 @@ world http {
   export wasi:http/incoming-handler@0.2.0;
 }"""
 
-val world: WitDialect.World = WitDialect.worlds(wit)(t"http")
-Image.wasm(component, exports = world.exports, imports = world.imports)
+WitDialect.worlds(wit)(t"http").let: world =>
+  Image.wasm(component, exports = world.exports, imports = world.imports)
 ```
 
 The [compiler](compiler.md) does exactly this on its edge producing an OCI image, so a
@@ -148,7 +148,7 @@ archive.open[Image](): handle ?=>
   handle.index                                        // the top-level index
   handle.manifest                                     // the manifest it names
   handle.imageConfig                                  // the image configuration
-  handle.verified(handle.manifest.layers.prim.vouch)  // a layer, digest-checked
+  handle.manifest.layers.prim.let(handle.verified(_))  // a layer, digest-checked
 ```
 
 Reaching a layer three ways makes the cost explicit: `compressed` yields the stored bytes
@@ -188,7 +188,7 @@ The client lists and inspects what the daemon holds, and creates and deletes it.
 result is a typed record:
 
 ```scala
-def inspect(client: Containerd): Unit =
+def inspect(client: Containerd)(using Monitor): Unit =
   val containers = client.containers()
   val one = client.container(t"web")
   (one.id, one.image, one.labels)
@@ -206,7 +206,7 @@ A container is a definition; a *task* is a running instance of one. A task is cr
 container with the root filesystem to mount, then started, waited on, and killed:
 
 ```scala
-def run(client: Containerd): Unit =
+def run(client: Containerd)(using Monitor): Unit =
   val rootfs = List(Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
 
   client.createTask(t"web", rootfs)

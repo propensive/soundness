@@ -99,21 +99,25 @@ the element and its descendants. Every `Xml.Element` carries the bindings in for
 `scope`, and resolves its own name through them:
 
 ```scala
+import dynamicAccess.dynamicXml
+
 val doc = t"""<r xmlns:a="urn:a"><a:x>1</a:x></r>""".read[Xml]
-doc.`a:x`().namespace   // urn:a
-doc.`a:x`().localName   // x
-doc.`a:x`().qualified   // Xml.Name(urn:a, x), shown as {urn:a}x
+
+doc.`a:x`() match
+  case Xml.Fragment(element: Xml.Element) =>
+    element.namespace   // urn:a
+    element.localName   // x
+    element.qualified   // Xml.Name(urn:a, x), shown as {urn:a}x
 ```
 
 Two names are the same name when their namespace URIs and local parts agree, whatever prefixes
 bind them. A prefixed name selects by resolved name when its prefix is bound, whether by a
-declaration in the document or by a `Namespace` given in scope, so the prefix the code uses need
+declaration in the document or by an `Xml.Scope` given in scope, so the prefix the code uses need
 not be the one the document used:
 
 ```scala
-import dynamicAccess.dynamicXml
-
 given svg: ("svg" is Namespace of "http://www.w3.org/2000/svg") = Namespace()
+given Xml.Scope = Xml.Scope(t"svg" -> t"http://www.w3.org/2000/svg")
 val picture = t"""<svg xmlns="http://www.w3.org/2000/svg"><rect/><rect/></svg>""".read[Xml]
 
 picture.`svg:rect`                                     // every rect in the SVG namespace

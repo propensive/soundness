@@ -345,6 +345,7 @@ carry optics such as `Each` or `Filter` to touch many elements at once:
 
 ```scala
 import dynamicAccess.dynamicJson, conversions.encodableToJson
+import optics.jsonLens
 
 case class Role(name: Text)
 case class Entity(name: Text, age: Int, roles: List[Role])
@@ -362,7 +363,7 @@ indented formatting adds newlines and indentation for reading:
 
 ```scala
 import formatting.indentedJsonFormatting
-List(1, 2, 3).in[Json].show   // pretty-printed across several lines
+(List(1, 2, 3): List[Int]).in[Json].show   // pretty-printed across several lines
 ```
 
 `show` renders the whole document into one `Text`. A large document need not be held in memory
@@ -422,6 +423,8 @@ two places yields four errors, pointed at `#/person/age`, `#/person/email` and s
 tree's faults in one pass, each locatable, rather than the first fault and nothing else:
 
 ```scala
+import dysasymptotics.linearSize
+
 case class Address(street: Text, postcode: Text)
 case class Contact(person: Person, address: Address)
 
@@ -744,6 +747,8 @@ number of milliseconds:
 
 ```scala
 import chronometries.unixChronometry
+import encodables.instantJsonEncodable
+import decodables.durationJsonDecodable
 
 Instant(1700000000000L).in[Json].show                       // t"1700000000000"
 t"5000".read[Json].as[Duration].value                   // 5.0

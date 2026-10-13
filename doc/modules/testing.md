@@ -55,6 +55,8 @@ aspirationally:
 Approximate comparison is built in for the numeric cases where exact equality is wrong:
 
 ```scala
+import dysasymptotics.linearSize
+
 val results = List(0.01, -0.02, 0.015)
 
 test(m"the mean converges"):
@@ -66,6 +68,8 @@ A test may also carry a *moniker*: a compiletime-checked identifier that names i
 selection or a chart can address it even after its description is reworded:
 
 ```scala
+import soundness.nominative
+
 test(n"square", m"square a number")(3*3).assert(_ == 9)
 ```
 
@@ -75,6 +79,7 @@ A suite has a title and an *id*. The id is what a selection and a path know the 
 it is either given, as a string literal before the title, or derived from the title: its
 letters and digits in lower case, with a `-` for each run of anything else.
 
+<!-- doccheck: skip -->
 ```scala
 object Tests extends Suite("parser", m"Parser tests")   // `fume run parser`
 object Tests extends Suite(m"Parser tests")             // `fume run parser-tests`
@@ -176,6 +181,7 @@ down to the field that changed, rather than as two unrelated entries the reader 
 `demilitarize` compiles the code it encloses and, instead of failing the build, delivers the
 compile errors as values:
 
+<!-- doccheck: skip -->
 ```scala
 import classloaders.threadContextClassloader
 

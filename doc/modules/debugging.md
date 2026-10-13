@@ -45,7 +45,7 @@ initialization needs. Its `session` lends a `Debug` capability to a block, reach
 
 ```scala
 def inspect(classpath: Text): List[Text] = supervise:
-  val target = Debuggee(sh"java -cp $classpath com.example.Main", port = 5005)
+  val target: Debuggee = Debuggee(sh"java -cp $classpath com.example.Main", port = 5005)
 
   target.session:
     debug.threads().map(debug.name(_))

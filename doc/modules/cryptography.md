@@ -29,9 +29,11 @@ a provider in scope:
 
 ```scala
 import soundness.*
+import soundness.textDecodable
 
 import codepages.utf8Codepage
 import charsets.utf8Charset
+import textSanitizers.skipSanitizer
 import cloaks.heapCloak
 import errorDiagnostics.stackTracesDiagnostics
 import providers.javaBaseProvider
@@ -55,6 +57,7 @@ padding, all in the type — and encryption happens inside the key's `uncloak` b
 ```scala
 import blockCipherModes.cbc
 import blockCipherPaddings.pkcs7
+import cryptoPermits.permitUnauthenticatedCrypto
 
 val key = SymmetricKey.generate[Aes[256]]()
 
@@ -128,6 +131,8 @@ A message authenticates with `hmac` under a shared secret, over any of the [hash
 algorithms, rendered through the usual [base encodings](base-encoding.md):
 
 ```scala
+import alphabets.hexLowerCase
+
 val secret = t"shared secret".in[Data]
 document.hmac[Sha2[256]](secret).serialize[Hex]
 ```

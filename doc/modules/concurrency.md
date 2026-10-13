@@ -128,6 +128,8 @@ path separators, since names compose into a hierarchy mirroring the scope tree. 
 `monitor.name` is the task's own name, and `monitor.stack` the full path:
 
 ```scala
+import Async.nominative
+
 supervise:
   task(n"worker")(monitor.name).await()   // t"worker"
 ```

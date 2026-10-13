@@ -25,7 +25,9 @@ package, with a courier and a sender in scope:
 ```scala
 import soundness.*
 
+import codepages.utf8Codepage
 import couriers.resendCourier
+import httpBackends.javaNetHttp
 import internetAccess.online
 import strategies.throwUnsafely
 
