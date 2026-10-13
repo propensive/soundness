@@ -33,4 +33,4 @@
 package soundness
 
 package highlighting:
-  export harlequin.highlighting.{typecheckedScala, compiledScala}
+  export harlequin.highlighting.{typecheckedScala, compiledScala, sessionScala}

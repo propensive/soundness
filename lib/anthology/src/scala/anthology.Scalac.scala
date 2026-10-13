@@ -103,6 +103,19 @@ object Scalac:
 
   // ScalacSession → Scalac.Session
   object Session:
+    // A session's front end, as it stands: its compiler, the base context whose symbol table
+    // the session has loaded and added to, and the classpath and options it was opened with.
+    // It is for a tool that types sources in the session without compiling them — harlequin's
+    // `highlighting.sessionScala` — and so sees what the session's compiles have defined, and
+    // pays for none of the loading again. These are the compiler's own values, which capture
+    // checking does not track: they are good only on the session's thread, and only until its
+    // next crash (which replaces them), so a caller takes a `frontend` afresh for each use.
+    case class Frontend
+      ( compiler:  dtd.Compiler,
+        context:   dtdc.Contexts.Context,
+        classpath: Text,
+        options:   List[Text] )
+
     // The process of a compile within a session. Compilation output is kept in memory (the
     // session's front-end names no output directory): `classfiles` exposes the emitted
     // artifacts, and `save` materializes them under a directory, only if the caller wants
@@ -150,9 +163,13 @@ object Scalac:
   // names per compile, as a REPL generates, are safe); and a macro defined by one compile
   // loads at its next use from the *classpath*, not the retained symbols, so callers wanting
   // same-session macro expansion must `save` to a directory on the session's classpath.
-  class Session private[anthology] (arguments: List[Text])
+  class Session private[anthology] (classpath: Text, options: List[Text])
     ( using loggable: (CompileEvent is Loggable)^, tactic: Tactic[Compiler.Error] )
   extends caps.ExclusiveCapability, caps.Stateful:
+
+    // The trailing empty argument stops the driver from treating an argument list with no
+    // source files as a request to print usage and bail out.
+    private val arguments: List[Text] = List(t"-classpath", classpath) + options + List(t"")
 
     private val driver: ScalacDriver = ScalacDriver()
 
@@ -171,6 +188,9 @@ object Scalac:
     private update def rebuild(): Unit =
       compiler = new dtd.Compiler()
       baseContext = driver.baseContext(arguments).getOrElse(abort(Compiler.Error()))
+
+    def frontend: Scalac.Session.Frontend =
+      Scalac.Session.Frontend(compiler, baseContext, classpath, options)
 
     update def compile(sources: Map[Text, Text]): Scalac.Session.Process^{this, caps.any} =
       val output = dtio.virtualDirectory("<session output>")
@@ -222,15 +242,11 @@ object Scalac:
     type Result = Scalac.Session^
 
     def session[result](target: Self)(lambda: (session: Result) ?=> result): result =
-      val arguments: List[Text] =
-        emission.flags +
-          List(t"-classpath", target.classpath()) +
-          target.scalac.commandLineArguments +
-          List(t"")
-
       // Nothing OS-level needs tearing down when the scope ends: the warm context is only
       // memory, reclaimed with the handle, which capture checking confines to the block.
-      lambda(using Scalac.Session(arguments))
+      lambda
+        ( using Scalac.Session
+                  ( target.classpath(), emission.flags + target.scalac.commandLineArguments ) )
 
 case class Scalac[version <: Scalac.Versions, universe <: Universe] private
   ( options: List[Scalac.Option[version]] ):

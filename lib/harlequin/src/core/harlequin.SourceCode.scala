@@ -461,7 +461,7 @@ object SourceCode:
 
         . map(_(1)).get
 
-    val base: Contexts.FreshContext = driver.context.fresh
+    val base: Contexts.FreshContext = compilation.context().or(driver.context).fresh
     base.setReporter(reporter)
     given context: Contexts.Context = stop(base)
 

@@ -54,7 +54,26 @@ extends Highlight.Compilation:
 
     . join(java.io.File.pathSeparator.nn.tt)
 
+// A warm anthology compiler session, as typechecked highlighting runs in it: on the session's
+// own compiler and in a child of its base context, so a snippet is typed against everything the
+// session has compiled, without the classpath's symbol table being loaded for it.
+private[harlequin] class SessionCompilation(frontend: Scalac.Session.Frontend)
+extends Highlight.Compilation:
+  def arguments: List[Text] = frontend.options
+  def classpath: Text = frontend.classpath
+  def compiler(): dotty.tools.dotc.Compiler = frontend.compiler
+  override def context(): Optional[dotty.tools.dotc.core.Contexts.Context] = frontend.context
+
 package highlighting:
+  // Typechecked highlighting within a warm compiler session (`scalac.on(classpath).session`),
+  // from the `frontend` the session gives of itself. It must run on the session's thread, as
+  // the session's compiles do; and since a snippet is typed as a source of the session, the
+  // top-level names it defines stay in scope there until the next snippet replaces them.
+  given sessionScala(using frontend: Scalac.Session.Frontend): Highlight =
+    new Highlight:
+      def depth: Depth = Depth.Typechecked
+      val compilation: Optional[Highlight.Compilation] = SessionCompilation(frontend)
+
   given typecheckedScala(using scalac: Scalac[?, ?], classpath: LocalClasspath): Highlight =
     new Highlight:
       def depth: Depth = Depth.Typechecked

@@ -143,6 +143,26 @@ object Tests extends Suite(m"Harlequin Tests"):
       typeOf(Scala.highlight(snippet).lines.to[List].stdlib.flatMap(_.stdlib).to(List), t"xs").or(t"")
     .assert { rendered => rendered.subsumes(t"List") && rendered.subsumes(t"Int") }
 
+    // Within a warm compiler session, a snippet is typed against what the session has compiled:
+    // `Earlier` is on no classpath, only in the session's symbol table.
+    test(m"session highlighting types a snippet against the session's compiles"):
+      given (CompileEvent is Loggable) = Loggable.silent[CompileEvent]
+      import strategies.throwUnsafely
+
+      Scalac[3.8](Nil).on(LocalClasspath.of(Classloader[Tests.type])).session:
+        compilation.compile(Map(t"earlier.scala" -> t"object Earlier:\n  val number: Int = 1\n"))
+        given Scalac.Session.Frontend = compilation.frontend
+        import highlighting.sessionScala
+
+        val first = Scala.highlight(t"val later = Earlier.number")
+        val second = Scala.highlight(t"val again = List(Earlier.number)")
+
+        ( first.diagnostics.size,
+          typeOf(first.lines.to[List].stdlib.flatMap(_.stdlib).to(List), t"later").or(t""),
+          typeOf(second.lines.to[List].stdlib.flatMap(_.stdlib).to(List), t"again").or(t"") )
+    .assert: (errors, later, again) =>
+      errors == 0 && later.subsumes(t"Int") && again.subsumes(t"List") && again.subsumes(t"Int")
+
     test(m"typechecked highlighting reports diagnostics for ill-typed code"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
