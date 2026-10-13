@@ -46,7 +46,31 @@ object Inlinable:
   // instances: nested records, collection gathering and custom leaf parsers
   // all inline into one flat parser.
   inline def parsable[value]: value is Xml.Parsable =
-    ${xylophone.stagedInternal.inlinableParsable[value]}
+    ${xylophone.inlining.inlinableParsable[value]}
+
+  // The expansion-time evaluation of a user-written instance, and of a sum's
+  // `Discriminable in Xml`. An `Inlinable` given is an
+  // ordinary runtime value, so the generator can only call its `parse` by evaluating the given
+  // inside the macro — which takes an in-macro staging compiler, and with it the compiler jars
+  // that core does not depend on. `xylophone.staged` registers the implementation as a
+  // service; without it on the classpath, a field whose type has only a user-written instance
+  // takes the runtime seam.
+  object Stager:
+    private lazy val loaded: Option[Stager] =
+      val services =
+        java.util.ServiceLoader.load(classOf[Stager], classOf[Stager].getClassLoader).nn
+
+      val iterator = services.iterator.nn
+      if iterator.hasNext then Some(iterator.next.nn) else None
+
+    def summon[field: Type](using Quotes): Option[Inlinable] = loaded.flatMap(_.summon[field])
+
+    def discriminantAttribute[sum: Type](using Quotes): Option[String] =
+      loaded.flatMap(_.discriminantAttribute[sum])
+
+  trait Stager:
+    def summon[field: Type](using Quotes): Option[Inlinable]
+    def discriminantAttribute[sum: Type](using Quotes): Option[String]
 
   // The structural instance for a case class: reflects `Self` when invoked
   // (no macro — `Type[Self]` arrives with the call).
@@ -78,7 +102,7 @@ object Inlinable:
     type Self = product
 
     def parse(reader: Expr[Xml.Reader])(using Quotes, Type[product]): Expr[product] =
-      stagedInternal.productFields[product](reader)
+      inlining.productFields[product](reader)
 
     // A missing (or wrong-shape) record: one raise at the current focus,
     // then a user-supplied `Default` sentinel or a per-sub-field absent
@@ -87,7 +111,7 @@ object Inlinable:
       ( using Quotes, Type[product] )
     :   Expr[product] =
 
-      stagedInternal.productAbsent[product](tactic, foci)
+      inlining.productAbsent[product](tactic, foci)
 
   // The structural instance for a sealed sum whose variants are all
   // inlinable case classes and whose `Discriminable in Xml` is an
@@ -99,7 +123,7 @@ object Inlinable:
     type Self = sum
 
     def parse(reader: Expr[Xml.Reader])(using Quotes, Type[sum]): Expr[sum] =
-      stagedInternal.sumBody[sum](reader, attribute)
+      inlining.sumBody[sum](reader, attribute)
 
     // A missing sum field: the AST disjunction over the `Absent` sentinel —
     // no discriminator, so a raise-plus-`Default` or an abort.
@@ -107,7 +131,7 @@ object Inlinable:
       ( using Quotes, Type[sum] )
     :   Expr[sum] =
 
-      stagedInternal.sumAbsent[sum](tactic)
+      inlining.sumAbsent[sum](tactic)
 
   private[xylophone] final class IterableInlinable[element](val element0: element is Inlinable)
   extends Inlinable:
@@ -120,14 +144,14 @@ object Inlinable:
     def parse(reader: Expr[Xml.Reader])(using Quotes, Type[Iterable[element]])
     :   Expr[Iterable[element]] =
 
-      stagedInternal.iterableBody[Iterable[element]](reader, element0)
+      inlining.iterableBody[Iterable[element]](reader, element0)
 
     // A missing collection field is the empty collection on both paths.
     override def absent(tactic: Expr[Tactic[Xml.Error]], foci: Expr[Foci[Xml.Focus]])
       ( using Quotes, Type[Iterable[element]] )
     :   Expr[Iterable[element]] =
 
-      stagedInternal.iterableAbsent[Iterable[element]](element0)
+      inlining.iterableAbsent[Iterable[element]](element0)
 
   // ── Instances ──────────────────────────────────────────────────────────
   // The leaf generators mirror the primitive `Xml.Parsable` instances (the

@@ -437,7 +437,7 @@ lib/xylophone/src/core/xylophone.Xml.scala	9	1	1	0	4	3	1	0	0	0	14	4	0
 lib/xylophone/src/core/xylophone.Xml3.scala	2	0	0	0	0	0	0	0	0	0	0	0	0
 lib/xylophone/src/core/xylophone.dynamicAccess.scala	0	0	0	0	0	0	0	0	0	1	0	0	0
 lib/xylophone/src/core/xylophone.internal.scala	1	0	3	0	0	0	8	0	0	0	0	3	0
-lib/xylophone/src/staged/xylophone.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0	3	0	0
+lib/xylophone/src/core/xylophone.inlining.scala	1	0	0	0	0	0	0	0	0	0	3	0	0
 lib/xylophone/src/test/xylophone.DirectParsingTests.scala	0	0	0	0	1	0	0	0	0	0	0	0	0
 lib/xylophone/src/test/xylophone.PositionTests.scala	0	0	0	0	1	0	0	0	0	0	0	0	0
 lib/xylophone/src/test/xylophone_test.scala	0	0	0	0	5	0	0	0	0	0	0	0	0
