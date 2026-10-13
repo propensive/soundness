@@ -37,7 +37,7 @@ lib/breviloquence/src/bench/breviloquence.Benchmarks.scala	0	0	0	0	0	0	0	0	0	0	0
 lib/breviloquence/src/core/breviloquence.Cbor.scala	0	0	1	0	1	0	0	0	0	0	7	14	0
 lib/breviloquence/src/core/breviloquence.CborParser.scala	2	0	0	0	0	1	0	0	0	0	3	5	0
 lib/breviloquence/src/core/breviloquence.dynamicAccess.scala	0	0	0	0	0	0	0	0	0	1	0	0	0
-lib/breviloquence/src/staged/breviloquence.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0	4	0	0
+lib/breviloquence/src/core/breviloquence.inlining.scala	1	0	0	0	0	0	0	0	0	0	4	0	0
 lib/breviloquence/src/test/breviloquence_test.scala	0	0	1	0	0	0	0	0	0	0	0	0	0
 lib/cacophony/src/core/cacophony.Audible.scala	0	0	0	0	1	1	0	0	0	0	0	0	0
 lib/cacophony/src/core/cacophony.Audio.scala	0	0	0	0	1	2	0	0	0	0	0	0	0

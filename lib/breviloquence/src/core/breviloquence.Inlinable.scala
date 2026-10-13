@@ -44,7 +44,31 @@ object Inlinable:
   // `Inlinable` instances: nested records, collection loops, variant
   // dispatch and custom leaf parsers all inline into one flat parser.
   inline def parsable[value]: value is Cbor.Parsable =
-    ${breviloquence.stagedInternal.inlinableParsable[value]}
+    ${breviloquence.inlining.inlinableParsable[value]}
+
+  // The expansion-time evaluation of a user-written instance, and of a sum's
+  // `Discriminable in Cbor`. Both are ordinary runtime values, which the generator can
+  // only consult by evaluating them inside the macro — which takes an in-macro staging
+  // compiler, and with it the compiler jars that core does not depend on.
+  // `breviloquence.staged` registers the implementation as a service; without it on
+  // the classpath, a field whose type has only a user-written instance takes the
+  // runtime seam, and a sum is decoded through its `Decodable in Cbor`.
+  object Stager:
+    private lazy val loaded: Option[Stager] =
+      val services =
+        java.util.ServiceLoader.load(classOf[Stager], classOf[Stager].getClassLoader).nn
+
+      val iterator = services.iterator.nn
+      if iterator.hasNext then Some(iterator.next.nn) else None
+
+    def summon[field: Type](using Quotes): Option[Inlinable] = loaded.flatMap(_.summon[field])
+
+    def discriminantKey[sum: Type](using Quotes): Option[String] =
+      loaded.flatMap(_.discriminantKey[sum])
+
+  trait Stager:
+    def summon[field: Type](using Quotes): Option[Inlinable]
+    def discriminantKey[sum: Type](using Quotes): Option[String]
 
   // The structural instance for a case class: reflects `Self` when invoked
   // (no macro — `Type[Self]` arrives with the call).
@@ -75,7 +99,7 @@ object Inlinable:
     type Self = product
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[product]): Expr[product] =
-      stagedInternal.productBody[product](reader)
+      inlining.productBody[product](reader)
 
   private[breviloquence] final class IterableInlinable[element](element0: element is Inlinable)
   extends Inlinable:
@@ -84,7 +108,7 @@ object Inlinable:
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Iterable[element]])
     :   Expr[Iterable[element]] =
 
-      stagedInternal.iterableBody[Iterable[element]](reader, element0)
+      inlining.iterableBody[Iterable[element]](reader, element0)
 
   // The structural instance for a sealed sum whose `Discriminable in Cbor`
   // is the key-discriminated shape (`Cbor.DiscriminantKey`): the variant is
@@ -95,7 +119,7 @@ object Inlinable:
     type Self = sum
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[sum]): Expr[sum] =
-      stagedInternal.sumBody[sum](reader, key)
+      inlining.sumBody[sum](reader, key)
 
   // ── Instances ──────────────────────────────────────────────────────────
   // The leaf generators mirror the AST accessors' coercions exactly; the
@@ -148,7 +172,7 @@ object Inlinable:
     type Self = Data
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Data]): Expr[Data] =
-      '{$reader.byteString()}
+      '{$reader.byteString()}.asInstanceOf[Expr[Data]]
 
   given cbor: (Cbor is Inlinable) = new Inlinable:
     type Self = Cbor
