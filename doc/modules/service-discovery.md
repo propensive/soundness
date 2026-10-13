@@ -19,6 +19,9 @@ when constructed, under validation, so a name over the DNS limits is reported th
 on the wire:
 
 ```scala
+import soundness.*
+import strategies.throwUnsafely
+
 val fury = Discovery.Service(t"fury", Tcp)
 fury.dnsName
 Discovery.Instance(t"Jon's Build Daemon", fury).dnsName

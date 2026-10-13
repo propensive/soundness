@@ -239,7 +239,7 @@ source.read[List[Tel]]
 ### Typed records from a schema
 
 Where the schema is authoritative, a `Tel.Provider` — an object declared in a file of its own,
-holding the schema and the one-line `record` macro — reads it at compiletime and produces typed
+holding the schema — reads it at compiletime and produces typed
 records from matching documents. Each field reads at the type the schema declares, an optional
 field is absent where the document omits it, a required one fails with a `Tel.Error` when it is
 missing, a repeatable field reads every occurrence as a `List`, a field declared as a struct or
@@ -318,7 +318,10 @@ val acceptance = Tel.Acceptance
 acceptance.encode        // the TEL text
 acceptance.framed        // a framed BinTEL document
 acceptance.text          // one BASE-256 word
-text.as[Tel.Acceptance]  // read back from any of them
+
+acceptance.encode.as[Tel.Acceptance]   // read back from the TEL text,
+Tel.Acceptance(acceptance.framed)      // from the BinTEL document,
+Tel.Acceptance(acceptance.text)        // or from the BASE-256 word
 ```
 
 Here `contact` is a `SchemaSignature.Lineage`: a base schema with its layers and atoms and their
@@ -330,7 +333,9 @@ the reader takes the first alternative whose schema the arriving document's is a
 <!-- doccheck: skip -->
 ```scala
 val served = Tel.Acceptance.serve(acceptance, contact, composition, element)   // the writer
-Tel.Acceptance.receive(acceptance, library, served.document)                    // the reader
+
+served.let: served =>
+  Tel.Acceptance.receive(acceptance, library, served.document)                  // the reader
 ```
 
 Compatibility is the subtype relation on composed schemas — records are subtyped by extension,
@@ -361,6 +366,7 @@ as an object whose name is part of its type, and a field is assigned to it with 
 object withPhone extends Tel.Layer("with-phone")
 
 case class Contact(name: Text, email: Optional[Text], @assign(withPhone) phone: Optional[Text])
+case class ContactV1(name: Text, email: Optional[Text])
 ```
 
 A layer can never add a case to a sum, but it can take cases away. A case of an `enum`, or of a

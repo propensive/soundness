@@ -677,7 +677,7 @@ object Catalogue extends Json.Provider(t"""{
       }
     }
   }
-}""".read[Json]):
+}""".read[Json])
 
 val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
 

@@ -217,7 +217,7 @@ its own JVM, so the measurement is not distorted by the rest of the suite:
 ```scala
 val bench = Bench()
 
-bench(m"decode directly")(target = 1*Second, operationSize = 1000):
+bench(m"decode directly")(target = 1*Second, operationSize = 1000*Byte):
   '{ Benchmarks.decodeUsersDirect() }
 ```
 

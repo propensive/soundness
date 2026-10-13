@@ -36,16 +36,17 @@ import charsets.utf8Charset
 ### Serving
 
 `listen` binds a socket and runs a handler for each arrival — a connection for TCP and domain
-sockets, a packet for UDP — each on its own daemon. The returned service stops the listener:
+sockets, a packet for UDP — each on its own task. The listener runs for the duration of the block
+it is given, and stops when the block ends:
 
 <!-- doccheck: skip -->
 ```scala
-def response(request: Stream[Data]): Stream[Data] = request
+def response(request: Data): Data = request
 
 supervise:
   val port = Port[Tcp]()   // an unused ephemeral port
 
-  port.listen[Data](connection => response(connection.stream())):
+  port.listen[Data](connection => response(connection.source.memoize)):
     // the server runs for the duration of this block
     ()
 ```
@@ -117,7 +118,7 @@ anything *transmissible* — bytes, text, or any value that encodes to text:
 val reply = DomainSocket(t"/run/service.sock").transmit(t"request")
 ```
 
-`exchange` holds a conversation: each received message produces a `Control` — continue with new
+`react` holds a conversation: each received message produces a `Control` — continue with new
 state, reply, or conclude — so a client-side protocol is a state machine rather than interleaved
 reads and writes. `duplex` opens a persistent bidirectional connection, sending and receiving
 independently, which is the transport beneath [HTTP/2](http-server.md):
@@ -126,7 +127,7 @@ independently, which is the transport beneath [HTTP/2](http-server.md):
 ```scala
 DomainSocket(t"/run/service.sock").duplex: duplex =>
   duplex.send(Stream(t"request".in[Data]))
-  duplex.stream.prim
+  duplex.source   // the read side, a Stream[Data]
 ```
 
 ### Sessions
@@ -203,15 +204,14 @@ be checked later.
 
 ### Conversations as state machines
 
-`exchange` drives a client-side protocol as a state machine: each received message yields a
+`react` drives a client-side protocol as a state machine: each received message yields a
 `Control` saying what happens next. `Continue` carries the new state — or none, leaving it
 unchanged — and `Terminate` ends the conversation:
 
 <!-- doccheck: skip -->
 ```scala
-endpoint.exchange(initial):
-  case (state, message) =>
-    if done(message) then Terminate else Continue(next(state, message))
+endpoint.react(initial)[Text]: state ?=> message =>
+  if done(message) then Control.Terminate else Control.Continue(next(state, message))
 ```
 
 Writing a protocol this way keeps its states explicit, rather than implied by where control

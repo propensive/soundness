@@ -125,7 +125,7 @@ continue through the rest. A job's exception fails the task it ran on and is ret
 
 `task` is `async` with a name, checked as the code compiles against the rules for a task name — no
 path separators, since names compose into a hierarchy mirroring the scope tree. Inside the task,
-`monitor.name` is the full path:
+`monitor.name` is the task's own name, and `monitor.stack` the full path:
 
 ```scala
 supervise:

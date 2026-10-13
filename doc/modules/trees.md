@@ -140,5 +140,6 @@ suits showing what depends on what rather than what happened in what order. The 
 from the graph's `layered` arrangement, so `import rankings.balancedRanking` changes the
 drawing as it changes the layering.
 
-All three take a `Dag`, and all three raise a `Dag.Error` where the graph is not acyclic — a cycle
-has no drawing, so it is reported rather than approximated.
+All three take any graph with a topological order — a `Dag`, a frozen `Topology` or a `Hasse` —
+and so cannot fail: a `Digraph`, which may hold a cycle, has no drawing until `acyclic` has
+converted it.

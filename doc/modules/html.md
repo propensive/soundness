@@ -246,7 +246,7 @@ Ol(Li("Alpha"), Li("Beta")).show
 ```
 
 For large documents or streaming output, a `Document[Html]` produces a chunked
-`Stream[Text]` (or `Stream[Bytes]`) instead, which runs concurrently and so needs the
+`Stream[Text]` instead, which runs concurrently and so needs the
 ambient concurrency context:
 
 ```scala

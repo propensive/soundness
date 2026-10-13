@@ -22,9 +22,9 @@ Reading an archive lazily, through a scope that owns the file, is the shape desc
 Soundness treats an archive as data. Entries are immutable values; their paths are typed
 archive-relative [paths](paths.md) that cannot express an escape from the archive root; and
 reading, writing and compressing are the same streaming operations used everywhere else.
-Everything comes from the `soundness` package. Writing an archive to disk logs an event and can
-fail, so an error strategy and a logging choice are in scope, and the examples work in a
-directory of their own:
+Everything comes from the `soundness` package. Reading an archive from disk logs an event, and
+reading or writing one can fail, so an error strategy and a logging choice are in scope, and the
+examples work in a directory of their own:
 
 ```scala
 import soundness.*
@@ -73,7 +73,7 @@ Every one of those fields defaults to `Unset` on a new entry, meaning the value 
 choose itself. Bit 3 of `flags` marks an entry as *streamed*: its CRC and sizes are repeated in a
 data descriptor after the payload, which is how an archive is written to a sink that cannot seek.
 
-`write` also takes an optional `prefix` of raw bytes to place before the archive proper. The ZIP
+`Zipfile` also takes an optional `prefix` of raw bytes to place before the archive proper. The ZIP
 format locates its own directory from the end of the file rather than the start, so an archive
 concatenated onto arbitrary leading bytes still reads correctly — which is how a self-extracting
 or directly-executable archive is made, and how the [packaged](packaging.md) launchers carry their

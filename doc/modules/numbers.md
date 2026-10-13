@@ -69,8 +69,9 @@ so an integer literal operand is written with its type: `count + (1: U64)`.
 
 ### Checked arithmetic
 
-By default arithmetic behaves as the hardware does, wrapping on overflow. Importing the
-checked given changes the result type of `+`, `-` and `*` to one that can raise
+Arithmetic on the integer types needs an overflow policy in scope. Importing
+`arithmeticOptions.uncheckedOverflow` gives the hardware's behavior, wrapping on overflow, while
+the checked given changes the result type of `+`, `-` and `*` to one that can raise
 `Arithmetic.Error`, so an overflow becomes a handled failure rather than a silent wrap:
 
 ```scala
@@ -82,8 +83,8 @@ big + big   // raises Arithmetic.Error rather than wrapping negative
 ```
 
 Division by zero is checked the same way, by importing `arithmeticOptions.checkedDivision`,
-after which `/` may raise a `Arithmetic.Error`. Where the check is not imported, the operations
-keep their bare machine behavior and cost nothing.
+after which `/` may raise a `Arithmetic.Error`. The unchecked givens, `uncheckedOverflow` and
+`uncheckedDivision`, keep the bare machine behavior and cost nothing.
 
 The two checks are independent, so a program that must not wrap but is content to trust its
 divisors imports only the first. Each policy's instances are objects, so after inlining an

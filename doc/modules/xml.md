@@ -111,8 +111,12 @@ declaration in the document or by a `Namespace` given in scope, so the prefix th
 not be the one the document used:
 
 ```scala
+import dynamicAccess.dynamicXml
+
 given svg: ("svg" is Namespace of "http://www.w3.org/2000/svg") = Namespace()
-picture.`svg:rect`()                                   // every rect in the SVG namespace
+val picture = t"""<svg xmlns="http://www.w3.org/2000/svg"><rect/><rect/></svg>""".read[Xml]
+
+picture.`svg:rect`                                     // every rect in the SVG namespace
 picture.elements(Xml.Name(t"http://www.w3.org/2000/svg", t"rect"))
 ```
 
@@ -134,6 +138,8 @@ scope takes no part in equality: a parsed element equals the same element built 
 A derived codec puts a case class in a namespace with an annotation:
 
 ```scala
+case class Item(sku: Text, quantity: Int)
+
 @xmlns("urn:shop")
 case class Order(id: Int, item: Item)
 ```
@@ -435,7 +441,7 @@ what a program reads.
 
 ### Positions and errors
 
-A malformed document raises a `ParseError` whose position is not merely a line number but a range:
+A malformed document raises a `Parse.Error` whose position is not merely a line number but a range:
 the offset and length of the text at fault, so a tool can underline exactly the mismatched closing
 tag or the unterminated attribute rather than the whole line.
 
