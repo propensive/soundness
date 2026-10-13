@@ -49,6 +49,23 @@ import symbolism.*
 trait Sensor extends caps.ExclusiveCapability
 trait Reader extends caps.SharedCapability, caps.Classifier
 
+// A dependent method applied to an argument which is not a stable path has its result selected
+// from a skolem: `?1.Alias`, in the compiler's notation, where `?1` stands for the argument. The
+// typer reduces such a selection itself when it can see the member in the argument's type, so
+// one survives to be rendered only where the refinement is behind a type alias, as it is in a
+// typeclass written `Foo is Bar to Baz`. Type inference and an ordinary `val` both widen the
+// skolem away too, so the tests read the type of the expression's own tree, through
+// `Probe.typeName`.
+trait Dependent:
+  type Alias
+  type Abstract <: AnyRef
+
+infix type aliasing[dependent <: Dependent, alias] = dependent { type Alias = alias }
+
+def alias(dependent: Dependent): dependent.Alias = ???
+def abstraction(dependent: Dependent): dependent.Abstract = ???
+def refined: Dependent aliasing Int = ???
+
 object Tests extends Suite("typenames", m"Stenography Tests"):
   def run(): Unit =
     test(m"Decode a term"):
@@ -368,6 +385,28 @@ object Tests extends Suite("typenames", m"Stenography Tests"):
     test(m"Pure dependent function type"):
       Syntax.name[(e: Enumeration) -> e.Value]
     . assert(_ == t"(e: Enumeration) -> e.Value")
+
+    test(m"Show a member aliased in a skolem's type as its alias"):
+      stenographyProbe.Probe.typeName(alias(refined))
+    . assert(_ == t"Int")
+
+    test(m"Show a member bounded in a skolem's type as a projection on it"):
+      stenographyProbe.Probe.typeName(abstraction(refined))
+    . assert(_ == t"(Dependent aliasing Int)#Abstract")
+
+    // What the compiler leaves in a `final val`'s type, where it has replaced the skolem with
+    // the type it stands for.
+    test(m"Show a member aliased in a projected alias as its alias"):
+      Syntax.name[(Dependent aliasing Int)#Alias]
+    . assert(_ == t"Int")
+
+    test(m"Show a member bounded in a projected alias as a projection on it"):
+      Syntax.name[(Dependent aliasing Int)#Abstract]
+    . assert(_ == t"(Dependent aliasing Int)#Abstract")
+
+    test(m"Parenthesise a refinement under a projection"):
+      Syntax.name[(Addable { type Q = Int })#Result]
+    . assert(_ == t"(Addable { type Q = Int })#Result")
 
     captures(new Sensor {}, new Sensor {}, Nil)
 

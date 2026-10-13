@@ -32,6 +32,8 @@
                                                                                                   */
 package stenographyProbe
 
+import scala.quoted.*
+
 import soundness.*
 
 // A package other than `stenography`, so the own-package rule cannot shorten the name: only the
@@ -47,3 +49,12 @@ object Probe:
   trait Planar { type Plane }
   def infixExportName: Text = Syntax.name[Planar on Int]
   def refinedExportName: Text = Syntax.name[Planar { type Plane = Int }]
+
+  // The type of `value`'s own tree, rendered as `Syntax.name` would render it: what a REPL reads
+  // off a typechecked `final val`, and the one place a skolem survives to be rendered, since
+  // inferring it into a type parameter widens it away.
+  inline def typeName(inline value: Any): Text = ${typeNameMacro('value)}
+
+  def typeNameMacro(value: Expr[Any])(using Quotes): Expr[Text] =
+    import quotes.reflect.*
+    Expr(stenography.internal.name(value.asTerm.tpe))
