@@ -99,13 +99,42 @@ given (Person is Cbor.Parsable) = Inlinable.parsable[Person]
 Chain(bytes).read[Person in Cbor]   // parsed without building a tree
 ```
 
-The derivation composes the parser at expansion time, so it lives in a separate module from the
-runtime codecs and is imported by name.
+The derivation composes the parser at expansion time and is imported by name. A sealed hierarchy,
+and a field whose type has a hand-written `Inlinable`, need the `breviloquence.staged` module
+too: it evaluates the discriminator and those instances as the code compiles.
 
 Reading over a stream works the same way, and the input is never assembled first: the parser
 reads each chunk as it arrives, so a value split across two chunks reads exactly as one that
 arrives whole, and the memory held is bounded by the one item being read, not the document. A
 `read[Cbor]` likewise reads the chunks as they arrive, but builds the whole tree.
+
+### Printing directly
+
+The same derivation generates the writing side. A `Cbor.Printable` writes a value's bytes
+straight out, with no tree built, and `in[Data over Cbor]` uses one wherever it exists:
+
+```scala
+given (Person is Cbor.Printable) = Inlinable.printable[Person]
+
+Person(t"Ada", 36).in[Data over Cbor]   // the same bytes, written directly
+```
+
+The bytes are exactly those the derived encoding writes. `Cbor.Printable.emit` writes them a
+block at a time, handing each to a function as it fills, so a value can be sent without its
+whole encoding ever being held.
+
+### Choosing the path for every type
+
+A record can generate both instances once, into its companion, with `derives Cbor.Direct`, and a
+single import selects the path for every record in scope:
+
+```scala
+import codecs.direct     // a generated parser and printer wherever a type is a record
+import codecs.derived    // the derived codecs, even where a direct instance is in scope
+```
+
+Under `codecs.direct`, a type that is not a record — a generic case class, a sealed hierarchy —
+keeps the derived path unless it has an instance of its own.
 
 ### Tags
 

@@ -46,6 +46,20 @@ object Inlinable:
   inline def parsable[value]: value is Cbor.Parsable =
     ${breviloquence.inlining.inlinableParsable[value]}
 
+  // The writing counterpart: a monomorphic `Cbor.Printable` that writes a value straight into
+  // a byte producer, composed through the same instances.
+  inline def printable[value]: value is Cbor.Printable =
+    ${breviloquence.inlining.inlinablePrintable[value]}
+
+  // Evidence that the generator builds a type's codec structurally, as a record: the condition
+  // on `import codecs.direct`'s generated instances. Its given fails for any other type, so the
+  // search for a generated instance fails too, and the derived path resolves instead.
+  object Generates:
+    transparent inline given generates: [value] => Generates[value] =
+      ${breviloquence.inlining.generates[value]}
+
+  final class Generates[value]()
+
   // The expansion-time evaluation of a user-written instance, and of a sum's
   // `Discriminable in Cbor`. Both are ordinary runtime values, which the generator can
   // only consult by evaluating them inside the macro — which takes an in-macro staging
@@ -95,11 +109,25 @@ object Inlinable:
 
       delegate0.absent(tactic)
 
+    override def prints: Boolean = delegate0.prints
+
+    override def write(value: Expr[value], out: Expr[AnyRef])(using Quotes, Type[value])
+    :   Expr[Unit] =
+
+      delegate0.write(value, out)
+
   private[breviloquence] final class ProductInlinable[product]() extends Inlinable:
     type Self = product
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[product]): Expr[product] =
       inlining.productBody[product](reader)
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[product], out: Expr[AnyRef])(using Quotes, Type[product])
+    :   Expr[Unit] =
+
+      inlining.productWrite[product](value, out)
 
   private[breviloquence] final class IterableInlinable[element](element0: element is Inlinable)
   extends Inlinable:
@@ -110,16 +138,30 @@ object Inlinable:
 
       inlining.iterableBody[Iterable[element]](reader, element0)
 
+    override def prints: Boolean = element0.prints
+
+    override def write(value: Expr[Iterable[element]], out: Expr[AnyRef])
+      ( using Quotes, Type[Iterable[element]] )
+    :   Expr[Unit] =
+
+      inlining.iterableWrite[Iterable[element]](value, out, element0)
+
   // The structural instance for a sealed sum whose `Discriminable in Cbor`
   // is the key-discriminated shape (`Cbor.DiscriminantKey`): the variant is
   // chosen by a scan-ahead of the discriminant entry, then parsed from the
   // start of the map as its product, with the discriminant entry skipped as
   // an unknown key — exactly the AST disjunction's semantics.
-  private[breviloquence] final class SumInlinable[sum](key: String) extends Inlinable:
+  private[breviloquence] final class SumInlinable[sum](key: String, printing: Boolean)
+  extends Inlinable:
     type Self = sum
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[sum]): Expr[sum] =
       inlining.sumBody[sum](reader, key)
+
+    override def prints: Boolean = printing
+
+    override def write(value: Expr[sum], out: Expr[AnyRef])(using Quotes, Type[sum]): Expr[Unit] =
+      inlining.sumWrite[sum](value, out, key)
 
   // ── Instances ──────────────────────────────────────────────────────────
   // The leaf generators mirror the AST accessors' coercions exactly; the
@@ -132,11 +174,25 @@ object Inlinable:
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Int]): Expr[Int] =
       '{$reader.int()}
 
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Int], out: Expr[AnyRef])(using Quotes, Type[Int])
+    :   Expr[Unit] =
+
+      '{Cbor.Printable.writeLong($out, $value.toLong)}
+
   given long: (Long is Inlinable) = new Inlinable:
     type Self = Long
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Long]): Expr[Long] =
       '{$reader.long()}
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Long], out: Expr[AnyRef])(using Quotes, Type[Long])
+    :   Expr[Unit] =
+
+      '{Cbor.Printable.writeLong($out, $value)}
 
   given double: (Double is Inlinable) = new Inlinable:
     type Self = Double
@@ -144,11 +200,25 @@ object Inlinable:
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Double]): Expr[Double] =
       '{$reader.double()}
 
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Double], out: Expr[AnyRef])(using Quotes, Type[Double])
+    :   Expr[Unit] =
+
+      '{Cbor.Printable.writeDouble($out, $value)}
+
   given float: (Float is Inlinable) = new Inlinable:
     type Self = Float
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Float]): Expr[Float] =
       '{$reader.double().toFloat}
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Float], out: Expr[AnyRef])(using Quotes, Type[Float])
+    :   Expr[Unit] =
+
+      '{Cbor.Printable.writeDouble($out, $value.toDouble)}
 
   given boolean: (Boolean is Inlinable) = new Inlinable:
     type Self = Boolean
@@ -156,11 +226,25 @@ object Inlinable:
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Boolean]): Expr[Boolean] =
       '{$reader.boolean()}
 
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Boolean], out: Expr[AnyRef])(using Quotes, Type[Boolean])
+    :   Expr[Unit] =
+
+      '{Cbor.Printable.writeBoolean($out, $value)}
+
   given text: (Text is Inlinable) = new Inlinable:
     type Self = Text
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Text]): Expr[Text] =
       '{$reader.text()}
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Text], out: Expr[AnyRef])(using Quotes, Type[Text])
+    :   Expr[Unit] =
+
+      '{Cbor.Printable.writeText($out, $value.s)}
 
   given string: (String is Inlinable) = new Inlinable:
     type Self = String
@@ -168,17 +252,38 @@ object Inlinable:
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[String]): Expr[String] =
       '{$reader.string()}
 
+    override def prints: Boolean = true
+
+    override def write(value: Expr[String], out: Expr[AnyRef])(using Quotes, Type[String])
+    :   Expr[Unit] =
+
+      '{Cbor.Printable.writeText($out, $value)}
+
   given byteString: ((Data) is Inlinable) = new Inlinable:
     type Self = Data
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Data]): Expr[Data] =
       '{$reader.byteString()}.asInstanceOf[Expr[Data]]
 
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Data], out: Expr[AnyRef])(using Quotes, Type[Data])
+    :   Expr[Unit] =
+
+      '{Cbor.Printable.writeBytes($out, $value)}
+
   given cbor: (Cbor is Inlinable) = new Inlinable:
     type Self = Cbor
 
     def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Cbor]): Expr[Cbor] =
       '{$reader.value()}
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Cbor], out: Expr[AnyRef])(using Quotes, Type[Cbor])
+    :   Expr[Unit] =
+
+      '{Cbor.Printable.writeAst($out, Cbor.unseal($value))}
 
   given iterable: [collection <: Iterable, element]
   =>  ( element0: element is Inlinable )
@@ -204,6 +309,17 @@ object Inlinable:
 // runtime call through the `Decodable in Cbor` bridge.
 trait Inlinable extends Typeclass:
   def parse(reader: Expr[Cbor.Reader])(using Quotes, Type[Self]): Expr[Self]
+
+  // The printing side, for `Inlinable.printable`: whether the instance generates a printer, and
+  // if so the code that writes a value into the byte producer, which travels as a neutral
+  // carrier (`Cbor.Printable`'s writers reassert it per use), since generated code is
+  // capture-erased. An instance that does not print — the default, so a parse-only instance
+  // stays honest — puts its field on the `Encodable in Cbor` seam.
+  def prints: Boolean = false
+
+  def write(value: Expr[Self], out: Expr[AnyRef])(using Quotes, Type[Self]): Expr[Unit] =
+    quotes.reflect.report.errorAndAbort
+      ( s"breviloquence: the Inlinable for ${Type.show[Self]} generates no printer" )
 
   // What a field of this type yields when its key is absent from the map,
   // mirroring the runtime instances: an abort unless overridden.

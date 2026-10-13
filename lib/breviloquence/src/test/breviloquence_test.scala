@@ -83,6 +83,12 @@ case class Blob(data: Data)
 case class Nums(values: List[Int]) derives CanEqual
 case class Mixed(a: Double, b: Boolean, c: Text) derives CanEqual
 
+// For the codec modes: a record that generates its codec once with `derives`, and a pair of
+// mutually recursive records.
+case class CDeclared(id: Int, name: Text) derives Cbor.Direct, CanEqual
+case class CPing(n: Int, pongs: List[CPong]) derives CanEqual
+case class CPong(n: Int, pings: List[CPing]) derives CanEqual
+
 enum CStatus derives CanEqual:
   @name[Cbor](t"ok") case Active(since: Int)
   @name(t"gone")     case Removed(at: Int)
@@ -794,3 +800,96 @@ object Tests extends Suite(m"Breviloquence Tests"):
         collectCbor(cbor)(_.as[BChecked])
         BProbe.constructions
       . assert(_ == 1)
+
+    suite(m"Codec modes"):
+      def bytes(data: Data): scala.collection.immutable.List[Int] =
+        data.to[List].stdlib.map(_ & 0xff)
+
+      def derivedBytes[value: Encodable in Cbor](value: value): scala.collection.immutable.List[Int] =
+        bytes(Cbor.Ast.encodable.encoded(Cbor.unseal(value.in[Cbor])))
+
+      val team = Team(Person(t"Ada", 36), 3)
+      val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+      val ping = CPing(1, List(CPong(2, List(CPing(3, Nil))), CPong(4, Nil)))
+      val present = OptPerson(t"Ada", 36)
+      val absent = OptPerson(t"Bob", Unset)
+      val option = OptionPerson(t"Cy", None)
+      val mixed = Mixed(2.5, true, t"héllo 😀")
+      val wrapper = Wrapper(List(1, -1, 300, 70000), t"w")
+
+      test(m"`codecs.direct` writes each record as the derivation does"):
+        import codecs.direct
+
+        ( bytes(team.in[Data over Cbor]), bytes(tree.in[Data over Cbor]),
+          bytes(ping.in[Data over Cbor]), bytes(present.in[Data over Cbor]),
+          bytes(absent.in[Data over Cbor]), bytes(option.in[Data over Cbor]),
+          bytes(mixed.in[Data over Cbor]), bytes(wrapper.in[Data over Cbor]) )
+      . assert(_ == (derivedBytes(team), derivedBytes(tree), derivedBytes(ping),
+          derivedBytes(present), derivedBytes(absent), derivedBytes(option), derivedBytes(mixed),
+          derivedBytes(wrapper)))
+
+      test(m"`codecs.direct` reads each record back"):
+        import codecs.direct
+
+        ( team.in[Data over Cbor].read[Team in Cbor],
+          tree.in[Data over Cbor].read[Tree in Cbor],
+          ping.in[Data over Cbor].read[CPing in Cbor] )
+      . assert(_ == (team, tree, ping))
+
+      test(m"`codecs.direct` writes a record with no instance of its own directly"):
+        import codecs.direct
+
+        given personSeam: (Person is Encodable in Cbor) =
+          _ => panic(m"a generated printer encoded a nested record through its Encodable")
+
+        bytes(team.in[Data over Cbor])
+      . assert(_ == derivedBytes(Team(Person(t"Ada", 36), 3)))
+
+      test(m"`codecs.direct` reads a record with no instance of its own directly"):
+        import codecs.direct
+
+        given personSeam: (Person is Decodable in Cbor) =
+          _ => panic(m"a generated parser decoded a nested record through its Decodable")
+
+        given teamSeam: (Team is Decodable in Cbor) =
+          _ => panic(m"the read decoded the record through its Decodable")
+
+        Cbor.Ast.encodable.encoded(Cbor.unseal(team.in[Cbor])).read[Team in Cbor]
+      . assert(_ == team)
+
+      test(m"`codecs.direct` leaves a generic record on the derived path"):
+        import codecs.direct
+        Boxed(7).in[Data over Cbor].read[Boxed[Int] in Cbor]
+      . assert(_ == Boxed(7))
+
+      test(m"`codecs.derived` encodes even where a direct printer is in scope"):
+        import codecs.derived
+
+        given (Team is Cbor.Printable) =
+          Cbor.Printable.fromEncodable[Team](_ => panic(m"printed directly"))
+
+        bytes(team.in[Data over Cbor])
+      . assert(_ == derivedBytes(team))
+
+      test(m"`codecs.derived` decodes even where a direct parser is in scope"):
+        import codecs.derived
+        given (Team is Cbor.Parsable) = Inlinable.parsable[Team]
+        given (Team is Decodable in Cbor) = _ => Team(Person(t"derived", 0), 0)
+        Cbor.Ast.encodable.encoded(Cbor.unseal(team.in[Cbor])).read[Team in Cbor]
+      . assert(_ == Team(Person(t"derived", 0), 0))
+
+      test(m"`derives Cbor.Direct` writes and reads without an import"):
+        CDeclared(5, t"five").in[Data over Cbor].read[CDeclared in Cbor]
+      . assert(_ == CDeclared(5, t"five"))
+
+      test(m"a printed record is written in blocks as it is printed"):
+        given Buffering:
+          def capacity(substrate: Substrate): Int = 8
+          def depth: Int = 2
+
+        given (Tree is Cbor.Printable) = Inlinable.printable[Tree]
+        val blocks = scala.collection.mutable.ListBuffer[Data]()
+        Cbor.Printable.emit(tree, blocks += _)
+        (blocks.length > 1, blocks.toList.flatMap(bytes))
+      . assert(_ == (true, derivedBytes(tree)))
+
