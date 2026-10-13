@@ -46,7 +46,7 @@ import codepages.utf8Codepage
 case class Address(house: Int, street: Text, city: Text, country: Text)
 case class Person(name: Text, address: Address)
 
-object Tests extends Suite(m"Telekinesis tests"):
+object Tests extends Suite("http", m"Telekinesis tests"):
   def run(): Unit =
     import httpBackends.javaNetHttp
     import internetAccess.online

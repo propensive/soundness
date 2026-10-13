@@ -53,7 +53,7 @@ import temporaryDirectories.systemTemporaryDirectory
 import vacuous.*
 import zephyrine.*
 
-object Benchmarks extends Suite(m"Gesticulate benchmarks"):
+object Benchmarks extends Suite("mime-bench", m"Gesticulate benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)

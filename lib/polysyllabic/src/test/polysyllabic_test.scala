@@ -38,7 +38,7 @@ import soundness.*
 
 import hyphenations.englishHyphenation
 
-object Tests extends Suite(m"Polysyllabic tests"):
+object Tests extends Suite("hyphenation", m"Polysyllabic tests"):
   def run(): Unit =
     suite(m"Pattern parser"):
       test(m"plain pattern: hy3ph decomposes to (hyph, [0,0,3,0,0])"):

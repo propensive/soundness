@@ -39,7 +39,7 @@ import logging.silentLogging
 
 // A handler receives one live exchange as an `Http.Connection` capability; capture checking
 // prevents the connection (or its respond sink) being retained past the handler invocation.
-object CaptureTests extends Suite(m"Connection confinement tests"):
+object CaptureTests extends Suite("httpd-capture", m"Connection confinement tests"):
   def run(): Unit =
     test(m"the connection cannot be stashed in an outer variable"):
       demilitarize:

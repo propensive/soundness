@@ -34,7 +34,7 @@ package synesthesia
 
 import soundness.*
 
-object Tests extends Suite(m"Synesthesia Tests"):
+object Tests extends Suite("mcp", m"Synesthesia Tests"):
   def run(): Unit =
     // A missing `Inspectable` is never a compile error, so coverage is held in place by
     // asserting on the renderings: `fallbacks` returns those which used a marked fallback.

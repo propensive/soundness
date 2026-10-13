@@ -63,7 +63,7 @@ import zephyrine.*
 // low-period arithmetic sequence that decodes almost entirely as long matches, so it measures
 // the copy paths; the *text* corpus is pseudo-random prose from a small vocabulary, which is
 // literal- and short-match-heavy and measures the range decoder and the literal coder.
-object Benchmarks extends Suite(m"Pneumatic benchmarks: XZ, LZMA2, LZW, Gzip and Brotli"):
+object Benchmarks extends Suite("compression-bench", m"Pneumatic benchmarks: XZ, LZMA2, LZW, Gzip and Brotli"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)

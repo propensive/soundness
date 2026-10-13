@@ -63,7 +63,7 @@ enum Engine:
 enum Growth:
   case InPlace, Copying
 
-object Benchmarks extends Suite(m"Ulysses Bloom filter benchmarks"):
+object Benchmarks extends Suite("bloom-bench", m"Ulysses Bloom filter benchmarks"):
   given decimalizer: Decimalizer     = Decimalizer(2)
   given device:      BenchmarkDevice = LocalhostDevice
 

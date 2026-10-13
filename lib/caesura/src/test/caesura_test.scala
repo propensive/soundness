@@ -40,7 +40,7 @@ import caesura.optics.{dsvCellLens, dsvRowEachOptical, dsvRowFilterOptical, dsvR
 
 given decimalizer: Decimalizer = Decimalizer(1)
 
-object Tests extends Suite(m"Caesura tests"):
+object Tests extends Suite("dsv", m"Caesura tests"):
   def run(): Unit =
     suite(m"Streaming rows"):
       import dsvFormats.csvFormat

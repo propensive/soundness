@@ -98,7 +98,7 @@ class FakeDriver(route: (Http.Method, Text, Int) -> Http.Response) extends Http.
 
     route(method, path, attempt)
 
-object Tests extends Suite(m"Tarantula tests"):
+object Tests extends Suite("webdriver", m"Tarantula tests"):
   import FakeDriver.*
 
   val sessionId: Text = t"CE6B6B4A"

@@ -52,7 +52,7 @@ object Manifest:
 
     Document(Manifest(bytes.utf8), bytes.length)
 
-object Tests extends Suite(m"Galilei tests"):
+object Tests extends Suite("filesystem", m"Galilei tests"):
   def run(): Unit =
     import codepages.utf8Codepage
     import charsets.utf8Charset

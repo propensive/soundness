@@ -62,7 +62,7 @@ import filesystemBackends.javaBaseFilesystem
 object CannotConnect extends Status(1, t"the server could not be reached")
 object BadConfig extends Status(2, t"the configuration file was invalid")
 
-object Tests extends Suite(m"Exoskeleton Tests"):
+object Tests extends Suite("cli", m"Exoskeleton Tests"):
   def run(): Unit =
     supervise:
       val foo: Text = "hello"

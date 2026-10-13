@@ -97,7 +97,7 @@ def humped(peak: Int)(window: Window): Outcome =
 def plateau(knee: Int)(window: Window): Outcome =
   Outcome(100.0*window.count.min(knee) + (if window.count > knee then window.count%7 else 0))
 
-object Tests extends Suite(m"Sedentary Tests"):
+object Tests extends Suite("bench", m"Sedentary Tests"):
   def run(): Unit =
     val bench = Bench()
 

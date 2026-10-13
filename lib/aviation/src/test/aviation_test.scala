@@ -42,7 +42,7 @@ import abstractables.epochMillisecondsAbstractable
 import chronometries.unixChronometry
 import denominative.dysasymptotics.linearSize
 
-object Tests extends Suite(m"Aviation Tests"):
+object Tests extends Suite("time", m"Aviation Tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
       test(m"Parse a canonical date"):

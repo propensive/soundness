@@ -37,7 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 
-object Tests extends Suite(m"Praxinoscope tests"):
+object Tests extends Suite("re2", m"Praxinoscope tests"):
   def run(): Unit =
     import Motif.Node, Node.*, Node.Anchor.*
     import Motif.Error.Reason

@@ -86,7 +86,7 @@ import pneumatic.*
 //     correspond — the checksum fold, the `Channel` hand-off rows, `Stream`
 //     fan-in (`collectAll`) and fan-out (`broadcast3`).
 
-object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 / Kyo"):
+object Benchmarks extends Suite("streams-bench", m"Streaming benchmarks: Soundness vs ZIO / FS2 / Kyo"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)

@@ -42,7 +42,7 @@ import soundness.*
 
 import scala.util.{Try, Success}
 
-object Tests extends Suite(m"Mercator tests"):
+object Tests extends Suite("monads", m"Mercator tests"):
   def run(): Unit =
     test(m"Identity for Option"):
       val point = summon[Identity[Option]]

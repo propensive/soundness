@@ -51,7 +51,7 @@ import strategies.throwUnsafely
 import codepages.utf8Codepage
 import denominative.dysasymptotics.linearSize
 
-object RecordsTests extends Suite(m"Stratiform Records tests"):
+object RecordsTests extends Suite("tel-records", m"Stratiform Records tests"):
   def run(): Unit =
     suite(m"Tel.Provider field access"):
       test(m"required String field is accessed as Text"):

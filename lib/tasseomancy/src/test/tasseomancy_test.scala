@@ -94,7 +94,7 @@ object TestFont:
     sfnt(t"cmap" -> cmapTable, t"head" -> headTable, t"hhea" -> hheaTable, t"hmtx" -> hmtxTable,
         t"maxp" -> maxpTable)
 
-object Tests extends Suite(m"Tasseomancy tests"):
+object Tests extends Suite("charts", m"Tasseomancy tests"):
   val decimal = Scale.Notation()
 
   def labels(scale: Scale, budget: Int): List[Text] =

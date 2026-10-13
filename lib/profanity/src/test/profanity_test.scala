@@ -55,7 +55,7 @@ import probates.cancelProbate
 import Shell.*
 import denominative.dysasymptotics.linearSize
 
-object Tests extends Suite(m"Profanity Tests"):
+object Tests extends Suite("terminal", m"Profanity Tests"):
   def run(): Unit =
     supervise:
       val launcher = Enclave(t"profanity-fixture").dispatch:

@@ -48,7 +48,7 @@ import denominative.dysasymptotics.linearSize
 
 case class Person(name: Text, age: Int)
 
-object Tests extends Suite(m"Gossamer Tests"):
+object Tests extends Suite("text", m"Gossamer Tests"):
   def run(): Unit =
     suite(m"Minimum Edit Distance"):
       import proximities.levenshteinProximity

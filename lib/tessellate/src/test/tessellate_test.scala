@@ -38,7 +38,7 @@ import soundness.*
 import hyphenations.englishHyphenation
 import textMetrics.wideCharacterWidthMetric
 
-object Tests extends Suite(m"Tessellate tests"):
+object Tests extends Suite("layout", m"Tessellate tests"):
   def run(): Unit =
     suite(m"Flex.solve"):
       def widths(tracks: Flex*)(available: Int, gap: Int = 0): List[Optional[Int]] =

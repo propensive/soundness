@@ -40,7 +40,7 @@ import java.nio.file as jnf
 import java.time as jt
 import java.util as ju
 
-object Tests extends Suite(m"Diuretic Tests"):
+object Tests extends Suite("java", m"Diuretic Tests"):
   def run(): Unit =
     suite(m"java.time.Instant tests"):
       test(m"Instantiate an Instant from epoch milliseconds"):

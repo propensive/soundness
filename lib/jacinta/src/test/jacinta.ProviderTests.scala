@@ -42,7 +42,7 @@ import urlInterfaces.soundnessUrl
 
 // Records over real-world JSON Schema documents (`ProviderSchemas.scala`) and over small schemas
 // each exercising one feature (`FeatureSchemas.scala`), read from valid and invalid documents.
-object ProviderTests extends Suite(m"JSON Provider tests"):
+object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
   import Json.Provider.Error.Reason.*
 
   def json(text: Text): Json = text.read[Json]

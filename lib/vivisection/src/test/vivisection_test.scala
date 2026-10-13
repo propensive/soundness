@@ -56,7 +56,7 @@ object Attach:
 
   given showable: Attach is Showable = _ => t"attach"
 
-object Tests extends Suite(m"Vivisection tests"):
+object Tests extends Suite("debugger", m"Vivisection tests"):
   // The debuggee's classpath — the one this suite's classes were loaded from, which under a
   // test-running host is not the JVM's — for launching it and for opening evaluations against.
   def fixtureClasspath: LocalClasspath = LocalClasspath.of(Classloader[Tests.type])

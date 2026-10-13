@@ -61,7 +61,7 @@ enum SeekEngine:
 enum SeekCorpus:
   case LiteralPrefix, ClassPrefix
 
-object Benchmarks extends Suite(m"Kaleidoscope regex benchmarks"):
+object Benchmarks extends Suite("regex-bench", m"Kaleidoscope regex benchmarks"):
   given decimalizer: Decimalizer     = Decimalizer(2)
   given device:      BenchmarkDevice = LocalhostDevice
 

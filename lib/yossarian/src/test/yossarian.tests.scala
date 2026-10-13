@@ -36,7 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 
-object Tests extends Suite(m"Yossarian Tests"):
+object Tests extends Suite("pty", m"Yossarian Tests"):
   def run(): Unit =
     // ESC and BEL bytes assembled at run time so the source file stays free of stray
     // control characters that would otherwise terminate OSC sequences silently.

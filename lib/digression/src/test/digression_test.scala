@@ -38,7 +38,7 @@ import StackTrace.Frame.Kind
 
 case class Person(name: Text, age: Int)
 
-object Tests extends Suite(m"Digression Tests"):
+object Tests extends Suite("stacktrace", m"Digression Tests"):
   def run(): Unit =
     suite(m"Demangling compiled names"):
       test(m"An operator name is decoded"):

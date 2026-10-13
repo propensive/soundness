@@ -45,7 +45,7 @@ import denominative.dysasymptotics.linearSize
 // agree with decoding through `Tel.Type.assign` — a divergence between the
 // two layers is caught even when both "succeed", by projecting the semantic
 // element tree and comparing it against a hand-written oracle.
-object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence tests"):
+object EquivalenceTests extends Suite("tel-equivalence", m"Stratiform schema/codec equivalence tests"):
 
   case class Issues(items: List[(Text, Tel.Error)] = Nil)(using Diagnostics)
   extends Error(m"${items.size} validation issues"):

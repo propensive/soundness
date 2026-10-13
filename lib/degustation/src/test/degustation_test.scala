@@ -48,7 +48,7 @@ import temporaryDirectories.systemTemporaryDirectory
 import filesystemBackends.javaBaseFilesystem
 import threads.platformThreads
 
-object Tests extends Suite(m"Degustation Tests"):
+object Tests extends Suite("atoms", m"Degustation Tests"):
 
   def proscalaLibrary(): Optional[java.nio.file.Path] =
     val home = java.lang.System.getProperty("user.home").nn

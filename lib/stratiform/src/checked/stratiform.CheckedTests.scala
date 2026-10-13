@@ -39,7 +39,7 @@ import codepages.utf8Codepage
 // field that reached a pure slot or a re-freshened array in the derivation — scalars, a nested
 // product, repeated `List`/`Set` fields with and without defaults, `Optional`, `Map`, an enum
 // and a recursive type. The values asserted are secondary; the suite's job is to compile.
-object CheckedTests extends Suite(m"Stratiform capture-checked derivation tests"):
+object CheckedTests extends Suite("tel-checked", m"Stratiform capture-checked derivation tests"):
   case class Language(form: Text, flag: List[Text] = Nil)
   case class Script(language: Language, classpath: List[Text] = Nil)
   case class Plain(form: Text, count: Int)

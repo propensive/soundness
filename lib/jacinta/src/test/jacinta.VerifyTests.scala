@@ -57,7 +57,7 @@ enum Hue derives CanEqual:
 object Hue:
   given encodable: Hue is Encodable in Text = _.toString.tt.lower
 
-object VerifyTests extends Suite(m"Jacinta verify tests"):
+object VerifyTests extends Suite("json-verify", m"Jacinta verify tests"):
   def run(): Unit =
     suite(m"Encodable & Schematic fusion"):
       val person = Employee(t"Alice", 30, t"a@b.c")

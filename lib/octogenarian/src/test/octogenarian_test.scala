@@ -58,7 +58,7 @@ import gitCommands.searchpathGitCommand
 import filesystemBackends.javaBaseFilesystem
 import denominative.dysasymptotics.linearSize
 
-object Tests extends Suite(m"Octogenarian Tests"):
+object Tests extends Suite("git", m"Octogenarian Tests"):
   def run(): Unit =
 
     // ----- Shared helpers -------------------------------------------------

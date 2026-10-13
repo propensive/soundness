@@ -39,7 +39,7 @@ import cryptoPermits.permitDisallowedCrypto   // the suite exercises MD5 and SHA
 
 import alphabets.hexUpperCase
 
-object Tests extends Suite(m"Gastronomy tests"):
+object Tests extends Suite("hashing", m"Gastronomy tests"):
 
   val request: Text = t"""
     |-----BEGIN CERTIFICATE REQUEST-----

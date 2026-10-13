@@ -256,7 +256,7 @@ object AgentFixture:
 
 // The `session/prompt` ids the fixture correlates on: the fake agent answers `perm1`'s prompt by
 // re-reading the request that carried it, so the two prompts are distinguished by their text.
-object Tests extends Suite(m"Espionage Tests"):
+object Tests extends Suite("acp", m"Espionage Tests"):
   def run(): Unit =
     import Acp.*
 

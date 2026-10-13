@@ -63,7 +63,7 @@ class Underived(val x: Int):
 
 case class Holder(item: Underived, count: Int)
 
-object Tests extends Suite(m"Spectacular Tests"):
+object Tests extends Suite("show", m"Spectacular Tests"):
   def run(): Unit =
     suite(m"Debug tests"):
       test(m"serialize boring string"):

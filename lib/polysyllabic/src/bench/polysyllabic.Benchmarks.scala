@@ -56,7 +56,7 @@ import hyphenations.englishHyphenation
 import denominative.dysasymptotics.linearSize
 import denominative.*
 
-object Benchmarks extends Suite(m"Polysyllabic benchmarks"):
+object Benchmarks extends Suite("hyphenation-bench", m"Polysyllabic benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)

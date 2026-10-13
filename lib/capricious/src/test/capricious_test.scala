@@ -46,7 +46,7 @@ enum Colour:
 given pointRandomizable: Point is Randomizable = Randomizable.derived
 given colourRandomizable: Colour is Randomizable = Randomizable.derived
 
-object Tests extends Suite(m"Capricious Tests"):
+object Tests extends Suite("random", m"Capricious Tests"):
   def run(): Unit =
     suite(m"Distributions"):
       test(m"Normal distribution mean"):

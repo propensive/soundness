@@ -57,7 +57,7 @@ object TextPage:
   given streamable: (TextPage is Streamable by Text over Credit) =
     value => Stream(value.lines.stdlib.iterator)
 
-object Tests extends Suite(m"Scintillate tests"):
+object Tests extends Suite("httpd", m"Scintillate tests"):
   def run(): Unit =
     def rawRequest(port: Int, request: Text): Text =
       val socket = java.net.Socket("localhost", port)

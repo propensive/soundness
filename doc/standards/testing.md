@@ -11,17 +11,20 @@ Tests live in a module's `src/test` directory. The test object extends `Suite`
 and implements `run()`:
 
 ```scala
-object Tests extends Suite(m"Eucalyptus tests"):
+object Tests extends Suite("logging", m"Eucalyptus tests"):
   def run(): Unit = ...
 ```
 
-The suite's title is a `Message`, naming the module under test. Its id, by which
-a selection addresses it, is derived from the title (`eucalyptus-tests`) unless one
-is given first, as a string literal: `Suite("logging", m"Eucalyptus tests")`. Give
-a suite an id when a method outside `run()` declares tests for it, since the
-method names the suite by it: `(using Testable of "logging")`. Where a module has
-several distinct areas, each may have its own file (`<module>.<Area>Tests.scala`)
-with its own `Suite`.
+The suite's title is a `Message`, naming the module under test. Before it comes
+the suite's id, a string literal by which a selection addresses it: `fume run
+logging`. The id names what the module is for, not the module: `logging`, not
+`eucalyptus`; `html`, not `honeycomb`. Keep it short, and one word unless two are
+needed. A method outside `run()` which declares tests for the suite names it by
+the same id: `(using Testable of "logging")`. Where a module has several distinct
+areas, each may have its own file (`<module>.<Area>Tests.scala`) with its own
+`Suite`, whose id adds the area to the module's: `json-parser`, `json-records`.
+A suite declared by its title alone has an id derived from it
+(`eucalyptus-tests`), which is a fallback and not the convention.
 
 ## 2. Structure
 

@@ -53,7 +53,7 @@ import vacuous.*
 // The benchmark message schema (the `Small`/`Users`/`Logs`/… case classes) lives
 // in `locomotion.BenchmarkSchema.scala`.
 
-object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
+object Benchmarks extends Suite("protobuf-bench", m"Locomotion Protobuf codec benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)

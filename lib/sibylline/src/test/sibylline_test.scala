@@ -63,7 +63,7 @@ extends Llm.Dialect:
     calls.append(turn)
     streams.dequeue().stdlib.iterator
 
-object Tests extends Suite(m"Sibylline tests"):
+object Tests extends Suite("llm", m"Sibylline tests"):
   import Llm.{Content, Event, Message, Role, Settings, Stop, Usage}
   import Event.Increment
 

@@ -39,7 +39,7 @@ import urticose.teletypeables.urlTeletype
 import denominative.dysasymptotics.linearSize
 import alphabets.hexUpperCase
 
-object Tests extends Suite(m"Urticose tests"):
+object Tests extends Suite("internet", m"Urticose tests"):
   given palette: UrlPalette = new Palette:
     type Form = Srgb
     def background: Color in Srgb = WebColors.Black

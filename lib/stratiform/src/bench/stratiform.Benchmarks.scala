@@ -88,7 +88,7 @@ case class BLog
 
 case class BLogs(logs: List[BLog])
 
-object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
+object Benchmarks extends Suite("tel-bench", m"Stratiform parser benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)

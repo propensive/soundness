@@ -85,7 +85,7 @@ def passTool(label: Text): Tool = new Tool:
 def initialOf(edges: List[Edge], target: anthology.Format): Any =
   edges.stdlib.find(_.target == target).get.tool.initial
 
-object Tests extends Suite(m"Anthology Tests"):
+object Tests extends Suite("compiler", m"Anthology Tests"):
   def run(): Unit =
     test(m"A single-type-argument Scalac targets the classfile universe"):
       val scalac: Scalac[3.6, Universe.Classfile] = Scalac[3.6](Nil)

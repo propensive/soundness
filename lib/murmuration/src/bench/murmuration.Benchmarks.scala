@@ -72,7 +72,7 @@ case class Ticket(number: Int)
 object Ticket:
   given comparable: Ticket is Comparable = Comparable.int.on(_.number)
 
-object Benchmarks extends Suite(m"Murmuration benchmarks"):
+object Benchmarks extends Suite("collections-bench", m"Murmuration benchmarks"):
   given device: BenchmarkDevice = LocalhostDevice
 
   // ─── input data ───────────────────────────────────────────────────────────

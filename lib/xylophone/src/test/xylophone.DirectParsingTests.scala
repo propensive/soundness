@@ -96,7 +96,7 @@ object DirectDefaultScope:
       case error: Xml.Error => accrual + (prior.let(_.path.encode).or(t"#"), error)
     . protect(input.read[PFirm in Xml]).items.map(_(0).s).to[Set]
 
-object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
+object DirectParsingTests extends Suite("xml-direct", m"Xylophone direct parsing tests"):
 
   // Inline, with a directly-constructed `Validate`, exactly as
   // `DecoderTests.validateXml` — a `raises … tracks …` function value cannot

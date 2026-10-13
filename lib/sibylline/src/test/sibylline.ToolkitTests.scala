@@ -48,7 +48,7 @@ object Broker:
   @ability
   def shout(message: Text)(using suffix: Text): Text = t"$message$suffix"
 
-object ToolkitTests extends Suite(m"Toolkit and tool-loop tests"):
+object ToolkitTests extends Suite("llm-tools", m"Toolkit and tool-loop tests"):
   import Llm.{Content, Message, Role, Settings, Stop, Usage}
 
   given suffix: Text = t"!"

@@ -37,7 +37,7 @@ import soundness.*
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 
-object Tests extends Suite(m"Syndesis tests"):
+object Tests extends Suite("mdns", m"Syndesis tests"):
   def run(): Unit =
     val fury = Discovery.Service(t"fury", Tcp)
 

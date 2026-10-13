@@ -41,7 +41,7 @@ import errorDiagnostics.emptyDiagnostics
 import strategies.throwUnsafely
 import textSanitizers.skipSanitizer
 
-object Tests extends Suite(m"OpenAPI tests"):
+object Tests extends Suite("openapi", m"OpenAPI tests"):
   val jsonSpec: Text =
     """{
       "openapi": "3.0.3",

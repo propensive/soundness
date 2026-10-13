@@ -38,7 +38,7 @@ import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import dysasymptotics.{linearScan, linearSize}
 
-object Tests extends Suite(m"Acyclicity Tests"):
+object Tests extends Suite("dag", m"Acyclicity Tests"):
   def run(): Unit =
     // Divisibility poset on the divisors of 12: `a ≤ b` iff `a` divides `b`.
     val divisors = Set(1, 2, 3, 4, 6, 12)

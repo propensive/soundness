@@ -54,7 +54,7 @@ sealed trait Lowercase
 sealed trait NotDigits
 sealed trait Repeated
 
-object Tests extends Suite(m"Nomenclature tests"):
+object Tests extends Suite("names", m"Nomenclature tests"):
   def run(): Unit =
     inline given id: Id is Nominative under MustEnd["!"] & MustNotStart["0"] & MustNotContain["."] = !!
     inline given id2: Id2 is Nominative under MustNotEqual["."] & MustNotEqual[".."] = !!

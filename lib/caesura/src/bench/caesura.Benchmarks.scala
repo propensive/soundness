@@ -58,7 +58,7 @@ enum Library:
 enum Corpus:
   case Tiny, Medium, MediumQuoted, Large, Tsv
 
-object Benchmarks extends Suite(m"Caesura benchmarks"):
+object Benchmarks extends Suite("dsv-bench", m"Caesura benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)

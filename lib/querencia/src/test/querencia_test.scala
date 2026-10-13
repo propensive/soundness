@@ -41,7 +41,7 @@ import html4Transitional.*
 // renders it to JavaScript, and lets such a value be used as a Honeycomb event handler. These tests
 // assert the rendered JavaScript and the expression AST, and that a foreign DOM value is accepted
 // as an `onclick` attribute (where plain text now is not).
-object Tests extends Suite(m"Querencia tests"):
+object Tests extends Suite("dom", m"Querencia tests"):
   def run(): Unit =
     suite(m"DOM navigation and JavaScript rendering"):
       test(m"a navigated DOM call renders to JavaScript"):

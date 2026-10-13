@@ -154,7 +154,7 @@ class FakeModel(route: (Http.Method, Text, Int) -> Http.Response) extends Http.B
 // A structured answer type for these tests; `Verdict` is a probably name in the umbrella.
 case class Appraisal(ticker: Text, rating: Text)
 
-object AnthropicTests extends Suite(m"Anthropic dialect tests"):
+object AnthropicTests extends Suite("anthropic", m"Anthropic dialect tests"):
   import Llm.{Content, Role, Stop, Usage}
 
   val target: Anthropic = Anthropic(t"claude-sonnet-4-5", t"sk-test").on(url"http://model.test")

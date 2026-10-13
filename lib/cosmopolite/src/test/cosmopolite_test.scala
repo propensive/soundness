@@ -37,7 +37,7 @@ import soundness.collationComparable
 import soundness.localeCollation
 import soundness.sortingAlgorithms.timsort
 
-object Tests extends Suite(m"Cosmopolite tests"):
+object Tests extends Suite("i18n", m"Cosmopolite tests"):
   def run(): Unit =
     suite(m"Language sort orders"):
       test(m"English uses dictionary order: cafe < café < caff"):

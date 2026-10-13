@@ -36,7 +36,7 @@ import soundness.*
 
 import PeriodicTable.*
 
-object Tests extends Suite(m"Charisma Tests"):
+object Tests extends Suite("chemistry", m"Charisma Tests"):
   def run(): Unit =
     suite(m"Periodic table tests"):
       test(m"Look up an element by atomic number"):

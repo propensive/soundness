@@ -40,7 +40,7 @@ import codepages.utf8Codepage
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 
-object Tests extends Suite(m"Gesticulate tests"):
+object Tests extends Suite("mime", m"Gesticulate tests"):
   def run(): Unit =
     suite(m"Multipart parsing"):
       // Fixtures use the standard HTTP multipart format: each boundary

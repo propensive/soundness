@@ -94,7 +94,7 @@ class AdminDashboard extends Dashboard:
   def cards: List[Dashboard.Card] =
     List(Dashboard.Card(t"Users", P("128 active")), Dashboard.Card(t"Revenue", P("4200")))
 
-object Tests extends Suite(m"Graffiti tests") uses parasite.threads:
+object Tests extends Suite("templates", m"Graffiti tests") uses parasite.threads:
   def run(): Unit =
     val page = Page(t"Welcome", List(t"home", t"docs"))
     val html = page.html.show

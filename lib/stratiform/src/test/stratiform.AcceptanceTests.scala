@@ -46,7 +46,7 @@ import denominative.dysasymptotics.linearSize
 // signature, and the four interchangeable forms of the message — TEL
 // text, framed and bare BinTEL, and BASE-256 — round-tripping the
 // specification's worked request.
-object AcceptanceTests extends Suite(m"Stratiform acceptance tests"):
+object AcceptanceTests extends Suite("tel-acceptance", m"Stratiform acceptance tests"):
 
   private def resource(name: String): Data =
     val stream = getClass.getResourceAsStream(s"/stratiform/corpus/$name").nn

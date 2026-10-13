@@ -54,7 +54,7 @@ import Control.*
 
 import socketBackends.javaBaseSockets
 
-object Tests extends Suite(m"Coaxial tests"):
+object Tests extends Suite("sockets", m"Coaxial tests"):
   def run(): Unit = unsafely:
 
     // A `Data` (`Array[Byte]^{}`) compares by reference, so byte-level assertions

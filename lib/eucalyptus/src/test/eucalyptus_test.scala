@@ -44,7 +44,7 @@ import scala.unsafeExceptions.canThrowAny
 
 import java.util.concurrent as juc
 
-object Tests extends Suite(m"Eucalyptus tests"):
+object Tests extends Suite("logging", m"Eucalyptus tests"):
 
   // A `Writable` that captures each formatted line into a blocking queue, so a test can `take` the
   // exact lines the asynchronous writer produced without depending on timing.

@@ -53,7 +53,7 @@ object TProbe:
 case class TChecked(name: Text, age: Int) derives CanEqual:
   TProbe.constructions += 1
 
-object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
+object AccrualTests extends Suite("tel-accrual", m"Stratiform multi-error accrual tests"):
 
   case class Issues(items: List[(Text, Tel.Error)] = Nil)(using Diagnostics)
   extends Error(m"${items.size} decoding issues"):

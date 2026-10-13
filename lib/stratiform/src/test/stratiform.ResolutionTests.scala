@@ -42,7 +42,7 @@ import codepages.utf8Codepage
 // order (§8.2): embedded, built-in (pinned coordinate and signature),
 // content-addressed stores, library with decomposition hints, the LIRA
 // delegate, and failure.
-object ResolutionTests extends Suite(m"Stratiform schema resolution tests"):
+object ResolutionTests extends Suite("tel-resolution", m"Stratiform schema resolution tests"):
 
   private val layeredSource: Text = Text("""|tel 1.0
     |

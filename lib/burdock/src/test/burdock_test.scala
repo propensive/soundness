@@ -48,7 +48,7 @@ import logging.silentLogging
 import threads.platformThreads
 import probates.awaitProbate
 
-object Tests extends Suite(m"Burdock Tests"):
+object Tests extends Suite("bootstrap", m"Burdock Tests"):
   def run(): Unit =
     suite(m"Externalizing macro"):
       val home: Text = _root_.java.lang.System.getProperty("user.home").nn.tt

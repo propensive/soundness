@@ -43,7 +43,7 @@ import threads.platformThreads
 // `interactive` lends the raw-mode tty session to its block as a `Terminal` capability, and
 // capture checking confines it to that block: raw mode and stdin are torn down in the
 // method's `finally`, so nothing may retain the session past it.
-object CaptureTests extends Suite(m"Terminal confinement tests"):
+object CaptureTests extends Suite("terminal-capture", m"Terminal confinement tests"):
   def run(): Unit =
     test(m"the Terminal capability cannot be returned from interactive"):
       demilitarize:

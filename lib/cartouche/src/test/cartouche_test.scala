@@ -36,7 +36,7 @@ import soundness.*
 
 import Caption.Attachment.*
 
-object Tests extends Suite(m"Cartouche tests"):
+object Tests extends Suite("captions", m"Cartouche tests"):
   def diverged(using pass: Arranger.Pass): Boolean = pass.diverged
 
   def run(): Unit =

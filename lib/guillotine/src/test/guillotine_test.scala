@@ -43,7 +43,7 @@ import errorDiagnostics.emptyDiagnostics
 given silentExecEvent: ((Exec.Event is Loggable)^{}) = Loggable.silent[Exec.Event]
 
 
-object Tests extends Suite(m"Guillotine tests"):
+object Tests extends Suite("shell", m"Guillotine tests"):
   def run(): Unit =
     suite(m"Parsing"):
       test(m"parse simple command"):

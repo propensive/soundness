@@ -64,7 +64,7 @@ given webIdlDom: WebIdlDomSource = Interface[WebIdlDom](cp"/xenophile/dom.idl")
 // Xenophile navigates and type-checks foreign types and builds a `Foreign.Expression`; it carries
 // no runtime representation and performs no evaluation, so these tests assert static foreign types
 // (by ascription) and the expression AST, plus the compile-time safety diagnostics.
-object Tests extends Suite(m"Xenophile tests"):
+object Tests extends Suite("ffi", m"Xenophile tests"):
   def run(): Unit =
     suite(m"Kotlin ecosystem"):
       test(m"a top-level Kotlin function call materializes as a direct JVM call"):

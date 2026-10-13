@@ -39,7 +39,7 @@ import soundness.*
 import scala.language.dynamics
 import denominative.dysasymptotics.linearSize
 
-object Tests extends Suite(m"Wisteria tests"):
+object Tests extends Suite("derivation", m"Wisteria tests"):
 
   // ===== Typeclass: Presentation =====
 

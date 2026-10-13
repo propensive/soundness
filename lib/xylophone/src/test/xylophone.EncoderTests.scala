@@ -78,7 +78,7 @@ case class Household(name: Text, head: Optional[DPerson]) derives CanEqual
 case class Inventory(name: Text, stock: Map[Text, Int]) derives CanEqual
 case class Roster(members: Map[Int, DPerson]) derives CanEqual
 
-object EncoderTests extends Suite(m"Xylophone case-class encoder tests"):
+object EncoderTests extends Suite("xml-encoder", m"Xylophone case-class encoder tests"):
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
 

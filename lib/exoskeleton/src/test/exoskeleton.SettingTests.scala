@@ -37,7 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import workingDirectories.javaBaseWorkingDirectory
 
-object SettingTests extends Suite(m"Setting tests"):
+object SettingTests extends Suite("cli-settings", m"Setting tests"):
   import interpreters.posixInterpreter
 
   given prefix: Configurator.Prefix = Configurator.Prefix(t"myapp")

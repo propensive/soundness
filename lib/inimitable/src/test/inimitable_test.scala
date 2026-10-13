@@ -36,7 +36,7 @@ import soundness.*
 
 import errorDiagnostics.stackTracesDiagnostics
 
-object Tests extends Suite(m"Inimitable Tests"):
+object Tests extends Suite("uuid", m"Inimitable Tests"):
   def run(): Unit =
     suite(m"UUID tests"):
       test(m"Construct a new UUID"):

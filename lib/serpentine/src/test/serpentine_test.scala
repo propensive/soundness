@@ -34,7 +34,7 @@ package serpentine
 
 import soundness.*
 
-object Tests extends Suite(m"internal Benchmarks"):
+object Tests extends Suite("paths", m"internal Benchmarks"):
   def run(): Unit =
     suite(m"Constructions"):
       test(m"Create a two-element path"):

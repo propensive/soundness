@@ -43,7 +43,7 @@ case class FPerson(name: Text, age: Int, email: Text) derives CanEqual
 case class FAddress(street: Text, city: Text, zip: Text) derives CanEqual
 case class FContact(person: FPerson, address: FAddress) derives CanEqual
 
-object FocusTests extends Suite(m"Ypsiloid focus + position tests"):
+object FocusTests extends Suite("yaml-focus", m"Ypsiloid focus + position tests"):
 
   case class Captured
     ( items: List[(Text, Optional[Int], Optional[Int])] = Nil )

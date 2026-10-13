@@ -41,7 +41,7 @@ import formatting.compactJsonFormatting
 import strategies.throwUnsafely
 import Http2.*
 
-object Tests extends Suite(m"Embarcadero OCI Tests"):
+object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
   def run(): Unit =
     def fileEntry(name: Text, content: Text): Tar.Entry =
       Tar.Entry.File

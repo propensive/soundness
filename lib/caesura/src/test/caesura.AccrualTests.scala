@@ -51,7 +51,7 @@ object CProbe:
 case class CChecked(name: Text, age: Int) derives CanEqual:
   CProbe.constructions += 1
 
-object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
+object AccrualTests extends Suite("dsv-accrual", m"Caesura multi-error accrual tests"):
 
   case class Issues(items: List[(Text, Dsv.Error)] = Nil)(using Diagnostics)
   extends Error(m"${items.size} decoding issues"):

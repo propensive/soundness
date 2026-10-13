@@ -51,7 +51,7 @@ import Control.*
 
 case class Ping(value: Int) derives CanEqual
 
-object Tests extends Suite(m"Perihelion tests"):
+object Tests extends Suite("websocket", m"Perihelion tests"):
   def run(): Unit =
     // A throwaway self-signed `CN=localhost` certificate (via the JDK's keytool) and the
     // matching contexts: a server context that presents it, and a trust-all client context

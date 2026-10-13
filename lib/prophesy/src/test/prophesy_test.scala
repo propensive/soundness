@@ -38,7 +38,7 @@ import prophesy.KeywordPattern.{Element, Expectation}
 import prophesy.ScalaKeywords
 import prophesy.Lexeme.Bracket
 
-object Tests extends Suite(m"Prophesy tests"):
+object Tests extends Suite("completions", m"Prophesy tests"):
   def run(): Unit =
     // A miniature tree exercising the lookup semantics; the real Scala tree is exercised
     // end-to-end from harlequin's tests. Reversed contexts read caret-outwards: the head is

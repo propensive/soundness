@@ -40,7 +40,7 @@ import strategies.throwUnsafely
 
 // The offline corpus: every real-world document in `res/test/openapi` loads, with the shape its
 // upstream has, and the JSON and YAML forms of a document decode to the same model.
-object CorpusTests extends Suite(m"OpenAPI corpus tests"):
+object CorpusTests extends Suite("openapi-corpus", m"OpenAPI corpus tests"):
   case class Fixture(path: Text, version: Text, paths: Int, operation: Optional[Text], schemas: Int)
 
   val fixtures: List[Fixture] = List

@@ -42,7 +42,7 @@ import textMetrics.uniformMetric
 import WebColors.{Red, Yellow, Green, Blue, Tan}
 import denominative.dysasymptotics.linearSize
 
-object Tests extends Suite(m"Escapade tests"):
+object Tests extends Suite("ansi", m"Escapade tests"):
   def run(): Unit =
 
     // ─── helpers ──────────────────────────────────────────────────────────

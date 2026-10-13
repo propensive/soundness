@@ -46,7 +46,7 @@ case class Pong(message: Text)
 trait Echo:
   @rpc def call(request: Ping): Pong
 
-object Tests extends Suite(m"Obligatory Tests"):
+object Tests extends Suite("rpc", m"Obligatory Tests"):
   def run(): Unit =
     suite(m"Unframing tests"):
       test(m"Unframe by carriage-return lines"):

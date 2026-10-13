@@ -49,7 +49,7 @@ import soundness.*
 import proscenium.{List, Set, Map, Sequence, Ledger, Array}
 import rudiments.occupied
 
-object Tests extends Suite(m"Proscenium consumer-view tests"):
+object Tests extends Suite("prelude-consumer", m"Proscenium consumer-view tests"):
   def run(): Unit =
     suite(m"The stdlib bridge"):
       test(m"a list crosses to the stdlib"):

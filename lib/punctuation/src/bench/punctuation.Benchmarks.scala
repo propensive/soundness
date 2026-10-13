@@ -54,7 +54,7 @@ import vacuous.*
 import denominative.dysasymptotics.linearSize
 import denominative.*
 
-object Benchmarks extends Suite(m"Punctuation benchmarks"):
+object Benchmarks extends Suite("markdown-bench", m"Punctuation benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)

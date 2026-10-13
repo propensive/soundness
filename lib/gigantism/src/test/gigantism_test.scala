@@ -48,7 +48,7 @@ object Colours:
 object Shapes:
   given square: Shape = Shape(t"square")
 
-object Tests extends Suite(m"Gigantism Tests"):
+object Tests extends Suite("macros", m"Gigantism Tests"):
   def run(): Unit =
     suite(m"Summoning every instance"):
       test(m"No instances are found when none are in scope"):

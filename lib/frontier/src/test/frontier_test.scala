@@ -35,7 +35,7 @@ package frontier
 import soundness.{every as _, *}
 import gigantism.every
 
-object Tests extends Suite(m"Frontier Tests"):
+object Tests extends Suite("givens", m"Frontier Tests"):
   trait Plug
 
   object NoPlugs:

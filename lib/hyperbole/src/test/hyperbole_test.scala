@@ -38,7 +38,7 @@ import soundness.*
 
 import scala.Predef.println
 
-object Tests extends Suite(m"Hyperbole Tests"):
+object Tests extends Suite("tasty", m"Hyperbole Tests"):
   def run(): Unit =
     test(m"Produce hello-world tree"):
       Introspect.syntax(true):

@@ -73,7 +73,7 @@ def pseudorandom(count: Int, modulus: Int): List[Int] =
 
   List.from(builder.result())
 
-object Tests extends Suite(m"Murmuration tests"):
+object Tests extends Suite("collections", m"Murmuration tests"):
   def run(): Unit =
     suite(m"has"):
       test(m"a list contains its element"):

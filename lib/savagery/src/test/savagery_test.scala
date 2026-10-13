@@ -39,7 +39,7 @@ import iridescence.WebColors.{Red, Blue, Green, Black, White}
 import strategies.throwUnsafely
 import denominative.dysasymptotics.linearSize
 
-object Tests extends Suite(m"Savagery tests"):
+object Tests extends Suite("svg", m"Savagery tests"):
   def run(): Unit =
     suite(m"Basic shapes"):
       test(m"Rectangle at origin"):

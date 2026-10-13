@@ -51,7 +51,7 @@ case class Receipt(id: Int, total: Int)
 
 case class Plain(id: Int)
 
-object NamespaceTests extends Suite(m"Xylophone namespace tests"):
+object NamespaceTests extends Suite("xml-namespaces", m"Xylophone namespace tests"):
   given svg: ("svg" is Namespace of "http://www.w3.org/2000/svg") = Namespace()
 
   // The document element of a parse result

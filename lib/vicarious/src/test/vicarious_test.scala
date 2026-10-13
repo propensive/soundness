@@ -36,7 +36,7 @@ import soundness.*
 
 import scala.language.dynamics
 
-object Tests extends Suite(m"Vicarious Tests"):
+object Tests extends Suite("proxy", m"Vicarious Tests"):
   trait Codec:
     type Self
     type Form

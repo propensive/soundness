@@ -53,7 +53,7 @@ class TestCourier() extends Courier:
 
 case class Report(title: Text, body: Text)
 
-object Tests extends Suite(m"Caduceus tests"):
+object Tests extends Suite("email", m"Caduceus tests"):
   def run(): Unit =
     val jack = unsafely(EmailAddress.parse(t"jack@example.com"))
     val jill = unsafely(EmailAddress.parse(t"jill@example.com"))

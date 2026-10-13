@@ -95,7 +95,7 @@ object DefaultShapeScope:
     (accrued.items.map(_(0).s).to[Set], accrued.items.size)
 
 
-object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
+object DecoderTests extends Suite("xml-decoder", m"Xylophone case-class decoder tests"):
 
   // Inline, with a directly-constructed `Validate`: a `raises … tracks …` function VALUE
   // cannot be typed under capture checking (its honest type is a curried dependent context

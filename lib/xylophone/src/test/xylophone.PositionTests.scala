@@ -38,7 +38,7 @@ import soundness.*
 import strategies.throwUnsafely
 import parsing.trackPositions
 
-object PositionTests extends Suite(m"Xylophone position-index tests"):
+object PositionTests extends Suite("xml-positions", m"Xylophone position-index tests"):
 
   private def line(p: Optional[Xml.Position]): Optional[Int] = p.let(_.line.n1)
   private def col(p: Optional[Xml.Position]): Optional[Int] = p.let(_.column.n1)

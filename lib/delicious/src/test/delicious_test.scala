@@ -49,7 +49,7 @@ import filesystemBackends.javaBaseFilesystem
 import threads.platformThreads
 import workingDirectories.javaBaseWorkingDirectory
 
-object Tests extends Suite(m"Delicious Tests"):
+object Tests extends Suite("diagnostics", m"Delicious Tests"):
   given palette: ScalaSyntaxPalette = new Palette:
     type Form = Srgb
     def background: Color in Srgb       = WebColors.Black

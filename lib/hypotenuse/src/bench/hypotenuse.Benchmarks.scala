@@ -55,7 +55,7 @@ import vacuous.*
 enum Engine:
   case Hypotenuse, Primitive
 
-object Benchmarks extends Suite(m"Hypotenuse arithmetic benchmarks"):
+object Benchmarks extends Suite("arithmetic-bench", m"Hypotenuse arithmetic benchmarks"):
   given device: BenchmarkDevice = LocalhostDevice
 
   val size: Int = 4096

@@ -88,7 +88,7 @@ extension (inline context: StringContext)
   transparent inline def slug: Interpolation = interpolation[Slug](context)
   transparent inline def rawParts: Interpolation = interpolation[Parts](context)
 
-object Tests extends Suite(m"Contextual Tests"):
+object Tests extends Suite("interpolation", m"Contextual Tests"):
   def run(): Unit =
     suite(m"Interpolation tests"):
       test(m"Interpolate a literal with no substitutions"):

@@ -12,9 +12,11 @@ Benchmarks live in a module's `src/bench` directory, in a file named
 named `Benchmarks`:
 
 ```scala
-object Benchmarks extends Suite(m"internal Benchmarks"):
+object Benchmarks extends Suite("paths-bench", m"Serpentine benchmarks"):
   def run(): Unit = ...
 ```
+
+The suite's id is the id of the module's tests with `-bench` after it.
 
 ## 2. Structure
 

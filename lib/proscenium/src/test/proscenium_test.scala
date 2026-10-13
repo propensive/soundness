@@ -34,7 +34,7 @@ package proscenium
 
 import soundness.*
 
-object Tests extends Suite(m"Proscenium Tests"):
+object Tests extends Suite("prelude", m"Proscenium Tests"):
   def run(): Unit =
     // Everything the opaque types hide from their users is transparent inside this package, so
     // the consumer's view is exercised from a subpackage instead.

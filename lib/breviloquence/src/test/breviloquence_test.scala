@@ -122,7 +122,7 @@ private def chunked(bytes: Data, size: Int): Chain[Data] =
      ( bytes.segment((0).z till split.z),
        chunked(bytes.segment(split.z till bytes.length.z), size) )
 
-object Tests extends Suite(m"Breviloquence Tests"):
+object Tests extends Suite("cbor", m"Breviloquence Tests"):
   def run(): Unit =
     suite(m"Parsing primitives"):
       test(m"Parse 0"):

@@ -36,7 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 
-object Tests extends Suite(m"Polyvinyl tests"):
+object Tests extends Suite("records", m"Polyvinyl tests"):
   val alice: Tree = Tree.Node(Map(
     t"name"   -> Tree.Leaf(t"Alice"),
     t"size"   -> Tree.Leaf(t"12345"),

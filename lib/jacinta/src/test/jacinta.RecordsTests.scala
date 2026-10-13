@@ -41,7 +41,7 @@ import emailAddressInterfaces.soundnessEmailAddress
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 
-object RecordsTests extends Suite(m"Jacinta records tests"):
+object RecordsTests extends Suite("json-records", m"Jacinta records tests"):
   def run(): Unit =
     val record = test(m"Construct a new record"):
 

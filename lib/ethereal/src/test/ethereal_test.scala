@@ -103,7 +103,7 @@ object Upgrades:
   def build(using resident: Resident): Text = resident.buildId.toString.tt
   def acknowledge(): Unit = Upgrade.acknowledge()
 
-object Tests extends Suite(m"Ethereal Tests"):
+object Tests extends Suite("daemon", m"Ethereal Tests"):
   def run(): Unit =
     supervise:
 

@@ -41,7 +41,7 @@ import cryptoPermits.permitNonCryptographicHashes
 
 case class Point(x: Int, y: Int)
 
-object Tests extends Suite(m"Ulysses tests"):
+object Tests extends Suite("bloom", m"Ulysses tests"):
   def run(): Unit =
     test(m"Check how many bits are required for a bloom filter"):
       val bloom = BloomFilter[Text](100, 0.01)

@@ -50,7 +50,7 @@ case object Reject extends Decision
 
 case object Defer  extends Decision
 
-object Tests extends Suite(m"Adversaria tests"):
+object Tests extends Suite("annotations", m"Adversaria tests"):
 
   def run(): Unit =
     test(m"access field annotations"):

@@ -38,7 +38,7 @@ import htmlDoms.whatwg
 import strategies.throwUnsafely
 import parsing.trackPositions
 
-object PositionTests extends Suite(m"Honeycomb position-index tests"):
+object PositionTests extends Suite("html-positions", m"Honeycomb position-index tests"):
 
   private def line(p: Optional[Html.Position]): Optional[Int] = p.let(_.line.n1)
   private def col(p: Optional[Html.Position]): Optional[Int] = p.let(_.column.n1)

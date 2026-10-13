@@ -39,7 +39,7 @@ import errorDiagnostics.stackTracesDiagnostics
 
 given Seed = Seed(1L)
 
-object Tests extends Suite(m"Monotonous tests"):
+object Tests extends Suite("serialization", m"Monotonous tests"):
 
   val numbers = Array[Byte](0, 1, 2, 3, -125, -126, -127, -128, -4, -3, -2, -1)
   val numberList = numbers.to[List]

@@ -46,7 +46,7 @@ extension (left: Data)
   @targetName("concatData")
   def ++ (right: Data): Data = Array.frozen(left.readable ++ right.readable)
 
-object Tests extends Suite(m"Phoenicia Tests"):
+object Tests extends Suite("fonts", m"Phoenicia Tests"):
 
   // Big-endian byte assembly for hand-built font fixtures.
   def u16(values: Int*): Data =

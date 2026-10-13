@@ -41,7 +41,7 @@ import Tel.given
 // `Framed` over an in-process `Duplex.pair()`, so no socket is opened: a request and its reply
 // crossing between a `Framed from Reply to Request` and its mirror image, messages queued before
 // any is read, and the two ways a record can be unreadable.
-object FramedTests extends Suite(m"Stratiform framed duplex tests"):
+object FramedTests extends Suite("tel-framed", m"Stratiform framed duplex tests"):
   case class Request(id: Int, text: Text) derives CanEqual
   case class Reply(id: Int, length: Int) derives CanEqual
 

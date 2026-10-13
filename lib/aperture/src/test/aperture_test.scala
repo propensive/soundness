@@ -175,7 +175,7 @@ class RelaySessional(using tick: Tick) extends Sessional:
 
 given relaySessional: (tick: Tick) => (RelaySessional^{tick}) = RelaySessional()
 
-object Tests extends Suite(m"Aperture Tests"):
+object Tests extends Suite("open", m"Aperture Tests"):
   def run(): Unit =
     test(m"An entity opens readably by default"):
       Ref(t"alpha").open[Doc]() { handle ?=> handle.title }

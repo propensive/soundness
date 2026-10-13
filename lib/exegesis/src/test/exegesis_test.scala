@@ -293,7 +293,7 @@ object ProxyFixture:
       Lsp.Server.streams(proxyOut, toProxy).session: connection ?=>
         lambda
 
-object Tests extends Suite(m"Exegesis Tests"):
+object Tests extends Suite("lsp", m"Exegesis Tests"):
   import Lsp.*
 
   def run(): Unit =
