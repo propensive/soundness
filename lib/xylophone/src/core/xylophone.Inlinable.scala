@@ -66,16 +66,19 @@ object Inlinable:
   // `Discriminable in Xml`. An `Inlinable` given is an
   // ordinary runtime value, so the generator can only call its `parse` by evaluating the given
   // inside the macro — which takes an in-macro staging compiler, and with it the compiler jars
-  // that core does not depend on. `xylophone.staged` registers the implementation as a
-  // service; without it on the classpath, a field whose type has only a user-written instance
+  // that core does not depend on. `xylophone.staged` holds the implementation by
+  // name; without it on the classpath, a field whose type has only a user-written instance
   // takes the runtime seam.
   object Stager:
+    // `xylophone.staged`, when it is on the macro classpath, holds the implementation as
+    // a nested object, whose singleton is its static `MODULE$` field. `Class.forName/1`
+    // searches this macro's own classloader, and unlike `ServiceLoader` it compiles for Scala
+    // Native.
     private lazy val loaded: Option[Stager] =
-      val services =
-        java.util.ServiceLoader.load(classOf[Stager], classOf[Stager].getClassLoader).nn
-
-      val iterator = services.iterator.nn
-      if iterator.hasNext then Some(iterator.next.nn) else None
+      try
+        val implementation = Class.forName("xylophone.InlinableStager$Implementation$").nn
+        Some(implementation.getField("MODULE$").nn.get(null).nn.asInstanceOf[Stager])
+      catch case _: ClassNotFoundException | _: LinkageError => None
 
     def summon[field: Type](using Quotes): Option[Inlinable] = loaded.flatMap(_.summon[field])
 

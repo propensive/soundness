@@ -210,9 +210,8 @@ object InlinableStager:
         case _: AssertionError               => None
         case _: Exception                    => None
 
-// The in-macro staging compiler behind `Inlinable.parsable` and
-// `Inlinable.printable`, registered as the `Inlinable.Stager` service: it
-// evaluates a user-written `Inlinable` given at expansion time, so that the
-// generator can call its `parse`, `measure` and `write`.
-final class InlinableStager() extends Inlinable.Stager:
-  def summon[field: Type](using Quotes): Option[Inlinable] = InlinableStager.evaluate[field]
+  // The in-macro staging compiler behind `Inlinable.parsable` and `Inlinable.printable`, which
+  // `Inlinable.Stager` loads by name: it evaluates a user-written `Inlinable` given at expansion
+  // time, so that the generator can call its `parse`, `measure` and `write`.
+  object Implementation extends Inlinable.Stager:
+    def summon[field: Type](using Quotes): Option[Inlinable] = InlinableStager.evaluate[field]

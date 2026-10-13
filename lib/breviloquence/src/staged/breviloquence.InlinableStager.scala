@@ -255,11 +255,11 @@ object InlinableStager:
         case _: AssertionError               => None
         case _: Exception                    => None
 
-// The in-macro staging compiler behind `Inlinable.parsable`, registered as the
-// `Inlinable.Stager` service: it evaluates a user-written `Inlinable` given, or a sum's
-// `Discriminable in Cbor`, at expansion time, so that the generator can consult it.
-final class InlinableStager() extends Inlinable.Stager:
-  def summon[field: Type](using Quotes): Option[Inlinable] = InlinableStager.evaluate[field]
+  // The in-macro staging compiler behind `Inlinable.parsable`, which `Inlinable.Stager` loads by
+  // name: it evaluates a user-written `Inlinable` given, or a sum's `Discriminable in Cbor`, at
+  // expansion time, so that the generator can consult it.
+  object Implementation extends Inlinable.Stager:
+    def summon[field: Type](using Quotes): Option[Inlinable] = InlinableStager.evaluate[field]
 
-  def discriminantKey[sum: Type](using Quotes): Option[String] =
-    InlinableStager.discriminantKey[sum]
+    def discriminantKey[sum: Type](using Quotes): Option[String] =
+      InlinableStager.discriminantKey[sum]

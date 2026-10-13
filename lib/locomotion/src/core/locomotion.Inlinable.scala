@@ -65,16 +65,19 @@ object Inlinable:
   // given is an ordinary runtime value, so the generator can only call its
   // `parse` by evaluating the given inside the macro — which takes an in-macro
   // staging compiler, and with it the compiler jars that core does not depend
-  // on. `locomotion.staged` registers the implementation as a service; without
+  // on. `locomotion.staged` holds the implementation by name; without
   // it on the classpath, a field whose type has only a user-written instance
   // takes the runtime seam through its `Decodable in Protobuf`.
   object Stager:
+    // `locomotion.staged`, when it is on the macro classpath, holds the implementation as
+    // a nested object, whose singleton is its static `MODULE$` field. `Class.forName/1`
+    // searches this macro's own classloader, and unlike `ServiceLoader` it compiles for Scala
+    // Native.
     private lazy val loaded: Option[Stager] =
-      val services =
-        java.util.ServiceLoader.load(classOf[Stager], classOf[Stager].getClassLoader).nn
-
-      val iterator = services.iterator.nn
-      if iterator.hasNext then Some(iterator.next.nn) else None
+      try
+        val implementation = Class.forName("locomotion.InlinableStager$Implementation$").nn
+        Some(implementation.getField("MODULE$").nn.get(null).nn.asInstanceOf[Stager])
+      catch case _: ClassNotFoundException | _: LinkageError => None
 
     def summon[field: Type](using Quotes): Option[Inlinable] = loaded.flatMap(_.summon[field])
 
