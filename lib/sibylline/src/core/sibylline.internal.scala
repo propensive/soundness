@@ -44,6 +44,13 @@ import rudiments.*
 import vacuous.*
 
 object internal:
+  // An argument decoded where a tool is invoked, or `Unset` if it is malformed. A method,
+  // rather than a `safely` written in the quote below: the closure `safely` takes would
+  // be read from TASTy at each expansion, with parameter types declared rather than
+  // inferred, and its `CanThrow` parameter could not take the capture set expected of it.
+  def argument[param](json: Json)(using param is Json.Decodable): Optional[param] =
+    safely(json.as[param])
+
   def toolkit[tools: Type](target: Expr[tools])(using Quotes): Expr[Toolkit] =
     import quotes.reflect.*
 
@@ -112,7 +119,7 @@ object internal:
 
                     val value: param =
                       $request.at(${Expr(param.name)}.tt)
-                      . let: json => safely(json.as[param])
+                      . let: json => internal.argument[param](json)
                       . or:
                           abort
                             ( Llm.Error

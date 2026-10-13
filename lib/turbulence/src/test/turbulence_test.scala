@@ -962,7 +962,8 @@ object Tests extends Suite("streams", m"Turbulence tests"):
           val counter = AtomicLong(0)
           val subscribers = Divergence(Meter(chunkStream(256), counter), 2)
           val eager = subscribers(0)
-          val stalled = subscribers(1)
+          // [test-harness] each subscriber is a ring of its own, not an alias of the first
+          val stalled = scala.caps.unsafe.unsafeAssumeSeparate(subscribers(1))
 
           // [construction-fresh] fresh transfer task handle sealed pure
           val taskA = caps.unsafe.unsafeAssumePure:
@@ -972,7 +973,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
           awaitStability(sci.IndexedSeq(counter))
           val gated = counter.get()
-          val gatheredB = Gather2().ingest(stalled)
+          val gatheredB = Gather2().ingest(scala.caps.unsafe.unsafeAssumeSeparate(stalled))
 
           ( gated <= 64L,
             taskA.await(),
@@ -989,9 +990,10 @@ object Tests extends Suite("streams", m"Turbulence tests"):
           val counter = AtomicLong(0)
           val subscribers = Divergence(Meter(chunkStream(256), counter), 2)
           val eager = subscribers(0)
-          val abandoned = subscribers(1)
+          // [test-harness] each subscriber is a ring of its own, not an alias of the first
+          val abandoned = scala.caps.unsafe.unsafeAssumeSeparate(subscribers(1))
           awaitStability(sci.IndexedSeq(counter))
-          abandoned.close()
+          scala.caps.unsafe.unsafeAssumeSeparate(abandoned.close())
           val gathered = Gather2().ingest(eager)
 
           ( gathered.data.readable.length,

@@ -93,8 +93,10 @@ object settings:
   // no fork-republished Native artifacts are needed. `scalaNativeScalaVersion` is the *base*
   // version those artifacts are published for (the fork's `-propensive` suffix is dropped).
   val scalaNativeVersion = "0.5.12"
-  // Nearest published base version (no RC4 Native artifacts yet); TASTy-identical to RC4.
-  val scalaNativeScalaVersion = "3.9.0-RC3"
+  // On 3.9, the nearest published base version (no RC4 Native artifacts yet; TASTy-identical
+  // to RC4). The plugin is built against compiler internals, so the 3.10 stream needs the
+  // artifacts published for 3.10: the 3.9 plugin fails there with a ClassCastException.
+  val scalaNativeScalaVersion = if scalaStream == "3.10" then "3.10.0" else "3.9.0-RC3"
   val scalaOptions = Seq(
     // The fork's opt-in behaviours, enabled by name (`-Z<name>`; a bare `-Z` lists
     // them). Soundness relies on every capture-checking repair the fork carries, on
@@ -3231,6 +3233,10 @@ object scintillate extends Library:
       mvn"org.http4s::http4s-circe:0.23.30",
       mvn"io.circe::circe-generic:0.14.16",
       mvn"dev.zio::zio-http:3.3.3",
+      // zio-http 3.3.3 brings ZIO 2.1.17, whose trace macro casts its `Expr` rather than
+      // the value it quotes; ZIO 2.1.26 casts the value, which Scala 3.10's check of a
+      // macro expansion's type accepts.
+      mvn"dev.zio::zio:2.1.26",
       mvn"dev.zio::zio-json:0.7.45",
       mvn"io.netty:netty-codec-http:4.2.18.Final",
       mvn"io.undertow:undertow-core:2.3.26.Final",

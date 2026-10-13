@@ -345,7 +345,7 @@ object Llm:
 
   // The response body as raw server-sent-event frames, one `Text` per event, decoded
   // incrementally off the live connection.
-  private[sibylline] def frames(consume response: Http.Response)
+  private[sibylline] def frames(response: Http.Response^)
     ( using tactic: Tactic[Error], diagnostics: Diagnostics )
   :   Iterator[Text]^ =
 
