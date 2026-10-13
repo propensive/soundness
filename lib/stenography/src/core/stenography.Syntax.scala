@@ -390,6 +390,39 @@ object Syntax:
     case Value(value) => value
     case _            => panic(m"expected a Value")
 
+  // A skolem, which the compiler writes `?1`, stands for a value with no stable path but a known
+  // type: the unstable argument of a dependent method, say. The Quotes API has no view of one,
+  // so it is recognised, and the type it stands for read, through the compiler's own types.
+  private def isSkolem(using Quotes)(repr: quotes.reflect.TypeRepr): Boolean =
+    repr.absolve match
+      case _: dotty.tools.dotc.core.Types.SkolemType => true
+      case _                                         => false
+
+  private def skolemInfo(using Quotes)(repr: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
+    repr.absolve match
+      case skolem: dotty.tools.dotc.core.Types.SkolemType =>
+        skolem.info.asInstanceOf[quotes.reflect.TypeRepr]
+
+  // What a type member aliases, where it is an alias rather than a bounded member, taken one
+  // step in, so that an alias the member names is kept rather than dealiased away. The Quotes
+  // API offers only a full `dealias`, so the member's info is read through the compiler's own
+  // types, which needs the context a macro's `Quotes` carries.
+  private def memberAlias(using Quotes)(ref: quotes.reflect.TypeRef)
+  :   Optional[quotes.reflect.TypeRepr] =
+
+    import dotty.tools.dotc.core.Types
+
+    quotes.absolve match
+      case impl: scala.quoted.runtime.impl.QuotesImpl =>
+        given dotty.tools.dotc.core.Contexts.Context = impl.ctx
+
+        ref.asInstanceOf[Types.TypeRef].info match
+          case Types.TypeAlias(alias) => alias.asInstanceOf[quotes.reflect.TypeRepr]
+          case _                      => Unset
+
+      case _ =>
+        Unset
+
   // A refinement of a single type member can be written with an infix type alias, where one
   // which refines that member is in scope: `Foo { type Form = Bar }` is `Foo in Bar`. Only an
   // alias member qualifies; `Foo { type Form <: Bar }` is not what `Foo in Bar` expands to, so
@@ -429,6 +462,18 @@ object Syntax:
         case typeRef@TypeRef(NoPrefix(), name) =>
           Simple(Designator.Top(name))
 
+        // A type member selected from a skolem, `?1.Alias`, is what the type the skolem stands
+        // for says it is: the member's alias, where that type aliases it, and otherwise, where
+        // it only bounds it, a projection on that type. The typer reduces such a selection itself
+        // when it can see the member in the type, so the ones which reach here have it behind a
+        // type alias, as a typeclass written `Foo is Bar to Baz` does.
+        case typeRef@TypeRef(prefix, name) if isSkolem(prefix) =>
+          memberAlias(typeRef).lay(Projection(apply(skolemInfo(prefix)), name))(apply(_))
+
+        // A bare skolem is written as the type it stands for.
+        case repr if isSkolem(repr) =>
+          apply(skolemInfo(repr))
+
         case typeRef@TypeRef(prefix, name) =>
           val module = typeRef.typeSymbol.flags.is(Flags.Module)
           val name2 = if module then name.dropRight(1) else name
@@ -451,8 +496,12 @@ object Syntax:
             case selection: Selection =>
               Selection(selection, name)
 
+            // Any other prefix is a type rather than a path, so this is a projection from it:
+            // an applied alias such as `Foo is Bar to Baz`, which is what the compiler leaves
+            // when it replaces a skolem with the type it stands for. As with a skolem, the
+            // member is written as its alias where the prefix aliases it.
             case other =>
-              Primitive("<unknown>")
+              memberAlias(typeRef).lay(Projection(other, name.tt))(apply(_))
 
         case termRef@TermRef(NoPrefix(), name) =>
           Value(Designator.Top(name))
@@ -710,10 +759,21 @@ enum Syntax:
 
   def qualified: Text = text(using Imports.empty)
 
+  // An infix alias is written infix when it can be written unqualified: its parent is imported,
+  // or it is reachable by its leaf through an export. The choice is made here, apart from the
+  // rendering, so that a rendering which parenthesises by the precedence of what it encloses
+  // can make it first.
+  private def infixed(using imports: Imports): Syntax = this match
+    case Application(Simple(Designator.Type(parent, name)), List(first, second), true)
+    if imports.has(parent) || imports.hasDirect(Designator.Type(parent, name)) =>
+      Infix(first, name, second)
+
+    case other =>
+      other
+
   def text(using imports: Imports): Text = this match
     case Simple(designator)      => designator.text
     case Symbolic(text)          => text
-    case Projection(base, text)  => s"${base.text}#$text".tt
     case Primitive(text)         => text
     case Selection(left, right)  => s"${left.text}.${right}"
     case Prefix(prefix, base)    => s"$prefix ${base.text}".tt
@@ -723,6 +783,13 @@ enum Syntax:
     case Sequence('{', elements) => s"{${joined(elements.map(_.text), ", ")}}".tt
     case Value(designator)       => s"${designator.text}.type".tt
     case Compound(syntaxes)      => joined(syntaxes.map(_.text)).tt
+
+    // A refinement or an infix type under a projection needs parentheses: `Foo { type Q = Int }#R`
+    // would project from `Int`.
+    case Projection(base, text) =>
+      val base2 = base.infixed
+      val base3 = if base2.precedence < precedence then Sequence('(', List(base2)) else base2
+      s"${base3.text}#$text".tt
 
     case Capturing(base, refs) =>
       val base2 = if base.precedence < precedence then Sequence('(', List(base)) else base
@@ -747,18 +814,10 @@ enum Syntax:
     case Declaration(method, syntaxes, result) =>
       s"${joined(syntaxes.map(_.text))}${if method then ": " else ""}${result.text}".tt
 
-    // An infix alias is written infix when it can be written unqualified: its parent is
-    // imported, or it is reachable by its leaf through an export.
-    case Application(left, elements, infix) =>
-      left match
-        case Simple(Designator.Type(parent, name))
-        if infix && (imports.has(parent) || imports.hasDirect(Designator.Type(parent, name))) =>
-          elements match
-            case List(first, second) => Infix(first, name, second).text
-            case _                   => left.text+joined(elements.map(_.text), ", ", "[", "]").tt
-
-        case _ =>
-          left.text+joined(elements.map(_.text), ", ", "[", "]").tt
+    case Application(left, elements, _) =>
+      infixed match
+        case infix: Infix => infix.text
+        case _            => left.text+joined(elements.map(_.text), ", ", "[", "]").tt
 
     // A refinement of type members which are each aliased by an infix type alias in scope
     // (`imports.aliases`, harvested by `Imports.resolve`) is written with those aliases:
