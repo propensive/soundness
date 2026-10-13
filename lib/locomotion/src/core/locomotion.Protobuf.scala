@@ -454,6 +454,38 @@ object Protobuf extends Protobuf1:
         printable.write(value, printer, sizes)
         ProtobufSizes.release(sizes)
 
+    // A message's bytes in blocks of the `Buffering` capacity, each handed to `deliver` as it
+    // fills: measured as `print` measures, then written block by block, so no array of the
+    // whole message is built. The bytes are those `print` returns.
+    def emit[value](value: value, consume deliver: Data => Unit)
+      ( using printable: (value is Protobuf.Printable)^, buffering: Buffering )
+    :   Unit =
+
+      val sizes = ProtobufSizes.acquire()
+      printable.measure(value, sizes)
+      sizes.rewind()
+      val printer = ProtobufPrinter.blocks(buffering.capacity(Substrate.Bytes), deliver)
+      printable.write(value, printer, sizes)
+      printer.flush()
+      ProtobufSizes.release(sizes)
+
+    // The pull form: the blocks as an iterator, written on a fiber as they are consumed, as
+    // `Protobuf.emit` hands out a tree's bytes. The fiber may capture nothing scoped, so the
+    // printer must be pure, as a generated one is.
+    def emit[value](value: value)
+      ( using printable: value is Protobuf.Printable )
+      ( using Monitor, Probate, Buffering )
+    :   Iterator[Data] =
+
+      val producer = Producer[Data]()
+      val output = producer.iterator
+
+      producer.transfer: (producer, _, _) ?=>
+        emit(value, producer().put(_))
+        producer().finish()
+
+      output
+
   // The direct-printing counterpart of `Encodable in Protobuf`: writes a value's fields
   // straight into the output array through a `ProtobufPrinter`, in two passes — `measure`
   // records every length-delimited size in a `ProtobufSizes`, `write` reads them back — so no
@@ -535,12 +567,16 @@ object Protobuf extends Protobuf1:
   // Synchronously assemble wire bytes of unknown length by running `lambda` against a
   // `ProtobufPrinter`, starting from a buffer of `hint` bytes.
   private def printed(hint: Int)(lambda: ProtobufPrinter^ => Unit): Data =
-    Array.collect[Byte](hint): scribe => lambda(ProtobufPrinter(scribe))
+    val printer = ProtobufPrinter.growing(hint)
+    lambda(printer)
+    printer.data()
 
   // The same, for wire bytes whose length is known: written into an array of exactly that
   // size, which is returned without a copy.
   private def sized(size: Int)(lambda: ProtobufPrinter^ => Unit): Data =
-    Array.scribe[Byte](size): scribe => _ => lambda(ProtobufPrinter(scribe))
+    val printer = ProtobufPrinter.exact(size)
+    lambda(printer)
+    printer.data()
 
   // A message from its fields' numbers and encoded values, in declaration order: one pass
   // sums their encoded size, the second writes them.

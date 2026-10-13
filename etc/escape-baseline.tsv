@@ -34,7 +34,7 @@ lib/bitumen/src/jvm/bitumen.TarBuilder.scala	0	0	1	0	0	1	0	0	0	0	0	0	0
 lib/bitumen/src/jvm/bitumen.TarFilesystem.scala	0	0	0	0	0	1	0	0	0	0	0	0	0
 lib/bitumen/src/test/bitumen_test.scala	0	4	0	0	1	0	16	0	0	0	0	0	0
 lib/breviloquence/src/bench/breviloquence.Benchmarks.scala	0	0	0	0	0	0	0	0	0	0	0	1	0
-lib/breviloquence/src/core/breviloquence.Cbor.scala	0	0	0	0	1	0	0	0	0	0	7	14	0
+lib/breviloquence/src/core/breviloquence.Cbor.scala	0	0	1	0	1	0	0	0	0	0	7	14	0
 lib/breviloquence/src/core/breviloquence.CborParser.scala	2	0	0	0	0	1	0	0	0	0	3	5	0
 lib/breviloquence/src/core/breviloquence.dynamicAccess.scala	0	0	0	0	0	0	0	0	0	1	0	0	0
 lib/breviloquence/src/staged/breviloquence.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0	4	0	0
@@ -228,7 +228,7 @@ lib/legerdemain/src/test/legerdemain_test.scala	0	0	1	0	0	0	0	0	0	0	0	0	0
 lib/locomotion/src/core/locomotion.Inlinable.scala	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/locomotion/src/core/locomotion.Protobuf.scala	0	0	0	0	3	3	0	0	0	0	5	5	0
 lib/locomotion/src/core/locomotion.ProtobufParser.scala	0	0	0	0	0	1	0	0	0	0	1	3	0
-lib/locomotion/src/core/locomotion.ProtobufPrinter.scala	0	0	0	0	1	0	0	0	0	0	0	1	0
+lib/locomotion/src/core/locomotion.ProtobufPrinter.scala	0	0	0	0	1	0	0	0	0	0	0	2	0
 lib/locomotion/src/core/locomotion.ProtobufReader.scala	0	0	0	0	0	0	0	0	0	0	2	2	0
 lib/locomotion/src/core/locomotion.ProtobufSizes.scala	0	0	0	0	0	0	0	0	0	0	1	5	0
 lib/locomotion/src/core/locomotion.inlining.scala	2	0	0	0	0	0	0	0	0	0	10	0	0
@@ -443,7 +443,7 @@ lib/xylophone/src/test/xylophone.PositionTests.scala	0	0	0	0	1	0	0	0	0	0	0	0	0
 lib/xylophone/src/test/xylophone_test.scala	0	0	0	0	5	0	0	0	0	0	0	0	0
 lib/yossarian/src/core/yossarian.Pty.scala	0	0	1	0	0	0	0	0	0	0	0	0	0
 lib/yossarian/src/core/yossarian.internal.scala	0	0	3	0	1	0	0	0	0	0	0	3	0
-lib/ypsiloid/src/core/ypsiloid.Yaml.scala	0	2	2	0	4	0	1	0	0	0	22	25	0
+lib/ypsiloid/src/core/ypsiloid.Yaml.scala	0	2	3	0	4	0	1	0	0	0	22	25	0
 lib/ypsiloid/src/core/ypsiloid.dynamicAccess.scala	0	0	0	0	0	0	0	0	0	1	0	0	0
 lib/ypsiloid/src/core/ypsiloid.internal.scala	0	0	0	0	0	0	0	0	0	0	1	3	0
 lib/ypsiloid/src/test/ypsiloid_conformance.scala	0	0	0	0	0	0	0	0	0	0	1	0	0

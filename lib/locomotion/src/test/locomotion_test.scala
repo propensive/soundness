@@ -948,3 +948,39 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
         list(batch.in[Data over Protobuf])
       . assert(_ == reference(4))
+
+    suite(m"Printing in blocks"):
+      // Sixteen-byte blocks (the smallest a printer takes), so the message spans several, and its
+      // long string overruns a whole block.
+      given Buffering:
+        def capacity(substrate: Substrate): Int = 16
+        def depth: Int = 2
+
+      given (Batch is Protobuf.Printable) = Inlinable.printable[Batch]
+      given (Person is Protobuf.Printable) = Inlinable.printable[Person]
+
+      val batch = Batch(List(Item(1, t"a"), Item(2, t"b"), Item(300, t"cee"), Item(4, t"dddd")))
+      val person = Person("x".repeat(40).nn.tt, 1)
+
+      def pushed[value: Protobuf.Printable](value: value)
+      :   (Int, scala.collection.immutable.List[Int]) =
+
+        val blocks = scala.collection.mutable.ListBuffer[Data]()
+        Protobuf.Printable.emit(value, blocks += _)
+        (blocks.length, blocks.toList.flatMap(_.to[List].stdlib.map(_ & 0xff)))
+
+      test(m"pushed blocks are the printed bytes"):
+        pushed(batch)(1)
+      . assert(_ == Protobuf.Printable.print(batch).to[List].stdlib.map(_ & 0xff))
+
+      test(m"a message spans several blocks"):
+        pushed(batch)(0)
+      . assert(_ > 1)
+
+      test(m"a string longer than a block is delivered whole"):
+        pushed(person)(1)
+      . assert(_ == Protobuf.Printable.print(person).to[List].stdlib.map(_ & 0xff))
+
+      test(m"pulled blocks are the printed bytes"):
+        supervise(Protobuf.Printable.emit(batch).toList).flatMap(_.to[List].stdlib.map(_ & 0xff))
+      . assert(_ == Protobuf.Printable.print(batch).to[List].stdlib.map(_ & 0xff))

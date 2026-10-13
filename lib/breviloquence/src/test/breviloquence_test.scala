@@ -401,6 +401,35 @@ object Tests extends Suite(m"Breviloquence Tests"):
             result
       . assert(_ == Point(3, 4))
 
+    suite(m"Emitting a tree a block at a time"):
+      // Eight-byte blocks, so every container in the value is split across several.
+      given Buffering:
+        def capacity(substrate: Substrate): Int = 8
+        def depth: Int = 2
+
+      val value = Wrapper(List(1, 2, 300, 70000), t"hello, world")
+      val cbor = value.in[Cbor]
+      val whole = Cbor.Ast.encodable.encoded(Cbor.unseal(cbor)).to[List].stdlib
+
+      test(m"the pulled blocks are the tree's bytes"):
+        Cbor.emit(cbor).flatMap(_.to[List].stdlib).toList
+      . assert(_ == whole)
+
+      test(m"a tree is emitted in several blocks"):
+        Cbor.emit(cbor).length
+      . assert(_ > 1)
+
+      test(m"the pushed blocks are the tree's bytes"):
+        val blocks = scala.collection.mutable.ListBuffer[Data]()
+        Cbor.emit(cbor, blocks += _)
+        blocks.toList.flatMap(_.to[List].stdlib)
+      . assert(_ == whole)
+
+      test(m"a streamed tree reads back as the value"):
+        val stream = summon[Cbor is Streamable by Data over Credit].stream(cbor)
+        summon[Data is Aggregable by Data].accept(stream).read[Wrapper in Cbor]
+      . assert(_ == value)
+
     suite(m"`in Cbor` decoder shorthand"):
       test(m"`read[T in Cbor]` resolves a value directly from bytes"):
         val original = Point(3, 4)

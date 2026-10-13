@@ -1344,6 +1344,42 @@ object Tests extends Suite("ypsiloid", m"Ypsiloid Tests"):
         astStable(t"[]")
       . assert(identity)
 
+    suite(m"Emitting a tree a block at a time"):
+      import formatting.blockYamlFormatting
+
+      // Eight-char blocks, so the document is split across many.
+      given Buffering:
+        def capacity(substrate: Substrate): Int = 8
+        def depth: Int = 2
+
+      val document =
+        t"name: \"quoted \\\"text\\\"\"\nitems:\n  - 1\n  - nested:\n      deep: [1, 2]\n  - {}\n"
+        . read[Yaml]
+
+      test(m"the pulled blocks are the rendered text"):
+        Yaml.emit(document).to(List).join
+      . assert(_ == document.show)
+
+      test(m"a tree is emitted in several blocks"):
+        Yaml.emit(document).length
+      . assert(_ > 1)
+
+      test(m"the pushed blocks are the rendered text"):
+        val blocks = scala.collection.mutable.ListBuffer[Text]()
+        Yaml.emit(document, blocks += _)
+        blocks.toList.join
+      . assert(_ == document.show)
+
+      test(m"a single scalar is emitted whole"):
+        Yaml.emit(t"just text".read[Yaml]).to(List).join
+      . assert(_ == t"just text".read[Yaml].show)
+
+      test(m"a streamed value reads back"):
+        import strategies.throwUnsafely
+        val stream = summon[Yaml is Streamable by Text over Credit].stream(Person(t"Zoë", 30).in[Yaml])
+        summon[Text is Aggregable by Text].accept(stream).read[Person in Yaml]
+      . assert(_ == Person(t"Zoë", 30))
+
     suite(m"HTTP content-type integration"):
       import codepages.utf8Codepage
       import formatting.blockYamlFormatting

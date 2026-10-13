@@ -119,8 +119,7 @@ trait Cbor2:
   given encodableOver: [value] => (encodable: (value is Encodable in Cbor)^)
   =>  ( (value is Encodable in (Data over Cbor))^{encodable} ) =
 
-    value =>
-      Cbor.Ast.encodable.encoded(encodable.encode(value).root).asInstanceOf[Data over Cbor]
+    value => Cbor.Ast.encodable.encoded(encodable.encode(value).root).asInstanceOf[Data over Cbor]
 
   inline given encodable: [value] => value is Encodable in Cbor = summonFrom:
     case given (`value` is Encodable in Text) => value => ast(Ast(value.encode.s))
@@ -367,107 +366,137 @@ object Cbor extends Cbor2, Dynamic:
 
     def size(cbor: Ast): Int = cbor.asInstanceOf[Array[Any]^{}].length/2
 
-    // Encodes a CBOR node to its binary form (RFC 8949 major types). The whole byte-level fold
-    // lives in this instance so `.encode` is the single route to CBOR bytes: integers take the
-    // shortest of the 1/2/4/8-byte head encodings, floats are always emitted as 64-bit, and arrays
-    // and maps are length-prefixed.
+    // Encodes a CBOR node to its binary form (RFC 8949 major types), through `write` below:
+    // integers take the shortest of the 1/2/4/8-byte head encodings, floats are always emitted
+    // as 64-bit, and arrays and maps are length-prefixed. `.encode` is the route to the whole
+    // value's bytes; `Cbor.emit` produces the same bytes a block at a time.
     given encodable: Ast is Encodable in Data = cbor =>
-      def u16(out: (Producer.Bytes)^, value: Int): Unit =
-        out.push(((value >>> 8) & 0xFF).toByte)
-        out.push((value & 0xFF).toByte)
-
-      def u32(out: (Producer.Bytes)^, value: Long): Unit =
-        out.push(((value >>> 24) & 0xFF).toByte)
-        out.push(((value >>> 16) & 0xFF).toByte)
-        out.push(((value >>> 8) & 0xFF).toByte)
-        out.push((value & 0xFF).toByte)
-
-      def u64(out: (Producer.Bytes)^, value: Long): Unit =
-        out.push(((value >>> 56) & 0xFF).toByte)
-        out.push(((value >>> 48) & 0xFF).toByte)
-        out.push(((value >>> 40) & 0xFF).toByte)
-        out.push(((value >>> 32) & 0xFF).toByte)
-        out.push(((value >>> 24) & 0xFF).toByte)
-        out.push(((value >>> 16) & 0xFF).toByte)
-        out.push(((value >>> 8) & 0xFF).toByte)
-        out.push((value & 0xFF).toByte)
-
-      def head(out: (Producer.Bytes)^, major: Int, value: Long): Unit =
-        val majorBits = major << 5
-
-        if value < 0 then
-          out.push((majorBits | 27).toByte)
-          u64(out, value)
-        else if value < 24 then
-          out.push((majorBits | value.toInt).toByte)
-        else if value < (1 << 8) then
-          out.push((majorBits | 24).toByte)
-          out.push(value.toByte)
-        else if value < (1 << 16) then
-          out.push((majorBits | 25).toByte)
-          u16(out, value.toInt)
-        else if value < (1L << 32) then
-          out.push((majorBits | 26).toByte)
-          u32(out, value)
-        else
-          out.push((majorBits | 27).toByte)
-          u64(out, value)
-
-      def write(out: (Producer.Bytes)^, cbor: Cbor.Ast): Unit =
-        if cbor.isInteger then
-          val long = cbor.asInstanceOf[Long]
-
-          if long >= 0 then head(out, 0, long) else head(out, 1, -1L - long)
-
-        else if cbor.isFloat then
-          out.push((0xE0 | 27).toByte)
-          u64(out, java.lang.Double.doubleToLongBits(cbor.asInstanceOf[Double]))
-
-        else if cbor.isTextString then
-          val text = cbor.asInstanceOf[String]
-          val bytes = Array.unsafeFrozen(text.getBytes(StandardCharsets.UTF_8).nn)
-          head(out, 3, bytes.length.toLong)
-          out.put(bytes)
-
-        else if cbor.isByteString then
-          // `CborBytes` *is* the frozen array, so the erased storage needs no launder.
-          val bytes = cbor.asInstanceOf[Array[Byte]^{}]
-          head(out, 2, bytes.length.toLong)
-          out.put(bytes)
-
-        else if cbor.isBoolean then
-          out.push(if cbor.asInstanceOf[Boolean] then 0xF5.toByte else 0xF4.toByte)
-
-        else if cbor.nullary then
-          out.push(0xF6.toByte)
-        else if cbor.unset then
-          out.push(0xF7.toByte)
-
-        else if cbor.isTag then
-          val tag = cbor.asInstanceOf[Cbor.Tag]
-          head(out, 6, tag.tag)
-          write(out, tag.value.asInstanceOf[Cbor.Ast])
-
-        else if cbor.isArray then
-          val count = cbor.elements
-          head(out, 4, count.toLong)
-          var index = 0
-
-          while index < count do
-            write(out, cbor.element(index))
-            index += 1
-
-        else if cbor.isMap then
-          val count = cbor.entries
-          head(out, 5, count.toLong)
-          var index = 0
-
-          while index < count do
-            write(out, cbor.key(index))
-            write(out, cbor.value(index))
-            index += 1
-
       Producer.collect[Data](): producer => write(producer, cbor)
+
+    // The whole tree, depth first.
+    private[breviloquence] def write(out: (Producer.Bytes)^, cbor: Cbor.Ast): Unit =
+      opening(out, cbor)
+
+      if cbor.isTag then write(out, cbor.asInstanceOf[Cbor.Tag].value.asInstanceOf[Cbor.Ast])
+      else if cbor.isArray then
+        val count = cbor.elements
+        var index = 0
+
+        while index < count do
+          write(out, cbor.element(index))
+          index += 1
+
+      else if cbor.isMap then
+        val count = cbor.entries
+        var index = 0
+
+        while index < count do
+          write(out, cbor.key(index))
+          write(out, cbor.value(index))
+          index += 1
+
+    // A node's own bytes: the whole of a leaf, but only the head of an array, a map or a tag,
+    // whose contents follow it. Returns the number of bytes written.
+    private[breviloquence] def opening(out: (Producer.Bytes)^, cbor: Cbor.Ast): Int =
+      if cbor.isInteger then
+        val long = cbor.asInstanceOf[Long]
+        if long >= 0 then head(out, 0, long) else head(out, 1, -1L - long)
+
+      else if cbor.isFloat then
+        out.push((0xE0 | 27).toByte)
+        fixed(out, java.lang.Double.doubleToLongBits(cbor.asInstanceOf[Double]), 8)
+        9
+
+      else if cbor.isTextString then
+        val text = cbor.asInstanceOf[String]
+        val bytes = Array.unsafeFrozen(text.getBytes(StandardCharsets.UTF_8).nn)
+        val size = head(out, 3, bytes.length.toLong)
+        out.put(bytes)
+        size + bytes.length
+
+      else if cbor.isByteString then
+        // `CborBytes` *is* the frozen array, so the erased storage needs no launder.
+        val bytes = cbor.asInstanceOf[Array[Byte]^{}]
+        val size = head(out, 2, bytes.length.toLong)
+        out.put(bytes)
+        size + bytes.length
+
+      else if cbor.isBoolean then
+        out.push(if cbor.asInstanceOf[Boolean] then 0xF5.toByte else 0xF4.toByte)
+        1
+
+      else if cbor.nullary then
+        out.push(0xF6.toByte)
+        1
+
+      else if cbor.unset then
+        out.push(0xF7.toByte)
+        1
+
+      else if cbor.isTag then
+        head(out, 6, cbor.asInstanceOf[Cbor.Tag].tag)
+
+      else if cbor.isArray then
+        head(out, 4, cbor.elements.toLong)
+
+      else if cbor.isMap then
+        head(out, 5, cbor.entries.toLong)
+
+      else
+        0
+
+    // A major type's head: its type and the shortest encoding of its argument. Returns the
+    // number of bytes written.
+    private def head(out: (Producer.Bytes)^, major: Int, value: Long): Int =
+      val majorBits = major << 5
+
+      if value < 0 then
+        out.push((majorBits | 27).toByte)
+        fixed(out, value, 8)
+        9
+      else if value < 24 then
+        out.push((majorBits | value.toInt).toByte)
+        1
+      else if value < (1 << 8) then
+        out.push((majorBits | 24).toByte)
+        out.push(value.toByte)
+        2
+      else if value < (1 << 16) then
+        out.push((majorBits | 25).toByte)
+        fixed(out, value, 2)
+        3
+      else if value < (1L << 32) then
+        out.push((majorBits | 26).toByte)
+        fixed(out, value, 4)
+        5
+      else
+        out.push((majorBits | 27).toByte)
+        fixed(out, value, 8)
+        9
+
+    // The low `width` bytes of `value`, big-endian.
+    private def fixed(out: (Producer.Bytes)^, value: Long, width: Int): Unit =
+      var shift = (width - 1)*8
+
+      repeat(width):
+        out.push(((value >>> shift) & 0xFF).toByte)
+        shift -= 8
+
+    // The nodes that follow a node's head, in order: a tag's value, an array's elements, or a
+    // map's keys and values, alternately; nothing for a leaf.
+    private[breviloquence] def contents(cbor: Cbor.Ast): List[Cbor.Ast] =
+      if cbor.isTag then
+        List(cbor.asInstanceOf[Cbor.Tag].value.asInstanceOf[Cbor.Ast])
+
+      else if cbor.isArray then
+        List.range(0, cbor.elements).map(cbor.element(_))
+
+      else if cbor.isMap then
+        def entry(index: Int): List[Cbor.Ast] = List(cbor.key(index), cbor.value(index))
+        List.range(0, cbor.entries).bind(entry)
+
+      else
+        List()
 
     // Renders a CBOR node in the RFC 8949 §8 diagnostic notation. The whole rendering lives in this
     // instance so `.show` is the single route to diagnostic text.
@@ -665,6 +694,42 @@ object Cbor extends Cbor2, Dynamic:
     override def equals(that: Any): Boolean = that match
       case that: Tag => tag == that.tag && value == that.value
       case _         => false
+
+  // A value's bytes a block at a time, as each is pulled: a depth-first walk over an explicit
+  // stack of the nodes still to write, so serialization pauses between blocks without a fiber.
+  // A block ends at the first node boundary past the `Buffering` capacity, so one long string
+  // may overrun it. The bytes are those `.encode` writes.
+  def emit(cbor: Cbor)(using buffering: Buffering): Iterator[Data] =
+    val block = buffering.capacity(summon[Data is Addressable].substrate)
+
+    new Iterator[Data]:
+      // [stdlib-iterator] the walk's stack in an anonymous Iterator
+      @caps.unsafe.untrackedCaptures
+      private var pending: List[Ast] = List(cbor.root)
+
+      def hasNext: Boolean = !pending.nil
+
+      def next(): Data =
+        if pending.nil then Iterator.empty.next()
+
+        Producer.collect[Data](block): out =>
+          var size = 0
+
+          while size < block && !pending.nil do pending match
+            case node :: rest =>
+              size += Ast.opening(out, node)
+              pending = List.concat(Ast.contents(node), rest)
+
+            case _ =>
+              ()
+
+  // The push form: serializes on the caller's thread, handing each block to `deliver` as it
+  // fills — the shape for writing to a file, a socket or an `OutputStream`.
+  def emit(cbor: Cbor, deliver: Data => Unit)(using Buffering): Unit =
+    Producer.sink[Data](deliver): producer => Ast.write(producer, cbor.root)
+
+  given streamable: Buffering => Cbor is Streamable by Data over Credit =
+    cbor => zephyrine.Stream(emit(cbor))
 
   def ast(value: Ast): Cbor = new Cbor(value)
   def unseal(cbor: Cbor): Ast = cbor.root

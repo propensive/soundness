@@ -37,28 +37,94 @@ import scala.caps
 import anticipation.*
 import rudiments.*
 
-// Writes Protocol Buffers wire bytes into a `Scribe[Byte]`. Varints are LEB128; fixed32/fixed64
-// are little-endian; a field is its tag varint followed by the value (length-prefixed for the
-// length-delimited wire type). A message's encoded children are already in hand, so its size is
-// known before it is written (`fieldSize`), and `Protobuf` writes it into an exact-size array.
-@unexported
-// Holds the exclusive scribe it drives, so the printer is itself a stateful
+// Writes Protocol Buffers wire bytes. Varints are LEB128; fixed32/fixed64 are little-endian; a
+// field is its tag varint followed by the value (length-prefixed for the length-delimited wire
+// type). A message's encoded children are already in hand, so its size is known before it is
+// written (`fieldSize`), and `Protobuf` writes it into an exact-size array.
+//
+// The printer owns its buffer, in one of three modes: an array of exactly the measured size,
+// returned by `data()` without a copy; a growable array, for bytes of unknown length; or a
+// block, handed to `deliver` whenever the next write would not fit, so that a message is
+// written as a stream of blocks rather than into one array. A write longer than a whole block
+// goes to `deliver` directly. Holding its buffer and cursor, the printer is a stateful
 // capability with update-classified writes.
-class ProtobufPrinter(out: Scribe[Byte]) extends caps.ExclusiveCapability, caps.Stateful:
-  update def byte(value: Int): Unit = out.append(value.toByte)
+@unexported
+class ProtobufPrinter private
+  ( buffer0: scala.Array[Byte], growable: Boolean, deliver: (Data => Unit) | Null )
+extends caps.ExclusiveCapability, caps.Stateful:
 
-  update def raw(data: Data): Unit = out.append(data)
+  // The raw JVM array appears here only, as the size table's scratch does.
+  private var buffer: scala.Array[Byte] = buffer0
+  private var position: Int = 0
+
+  // The cast re-asserts the exclusivity the field's type forgets, as the size table's writes do:
+  // the buffer is reached only through this (exclusive) printer.
+  private inline def target: scala.Array[Byte]^ = buffer.asInstanceOf[scala.Array[Byte]^]
+
+  // Room for `count` more bytes: in block mode the filled block is delivered first, and in
+  // growable mode the buffer doubles. An exact-size printer is never short of room, since its
+  // size was measured for exactly what it writes.
+  private update def room(count: Int): Unit =
+    if position + count > buffer.length then
+      if deliver != null then flush()
+      else if growable then
+        var capacity = (buffer.length*2).max(16)
+        while capacity < position + count do capacity *= 2
+        val bigger = new scala.Array[Byte](capacity)
+        System.arraycopy(buffer, 0, bigger, 0, position)
+        buffer = bigger
+
+  // In block mode, a write that a whole block could not hold.
+  private update def oversized(count: Int): Boolean = deliver != null && count > buffer.length
+
+  // In block mode, hands the bytes written so far to `deliver`, as a block of their own.
+  update def flush(): Unit =
+    if deliver != null && position > 0 then
+      deliver.nn(ProtobufPrinter.copied(buffer, 0, position))
+      position = 0
+
+  // The bytes written, in exact-size or growable mode. An exact-size printer's array is
+  // returned uncopied: nothing writes to it once its size is reached, as `Array.scribe`'s is.
+  def data(): Data =
+    if position == buffer.length then Array.unsafeFrozen(buffer)
+    else ProtobufPrinter.copied(buffer, 0, position)
+
+  update def byte(value: Int): Unit =
+    room(1)
+    target(position) = value.toByte
+    position += 1
+
+  update def raw(data: Data): Unit =
+    if oversized(data.length) then
+      flush()
+      deliver.nn(data)
+    else
+      room(data.length)
+      System.arraycopy(data.readable, 0, target, position, data.length)
+      position += data.length
 
   // A length-delimited payload: its length prefix, then its bytes.
   update def chunk(data: Data): Unit =
     varint(data.length.toLong)
     raw(data)
 
-  update def varint(value: Long): Unit = out.appendVarint(value)
+  update def varint(value: Long): Unit =
+    room(10)
+    position = Scribe.varintInto(target, position, value)
 
   // The UTF-8 encoding of `string`, encoded straight into the output; its length, which a
   // printer measures first, is `ProtobufPrinter.utf8Length(string)`.
-  update def utf8(string: String): Unit = out.appendUtf8(string)
+  update def utf8(string: String): Unit =
+    val count = Scribe.utf8Length(string)
+
+    if oversized(count) then
+      flush()
+      val bytes = Array.allocate[Byte](count)
+      Scribe.utf8Into(bytes.raw, 0, string, 0)
+      deliver.nn(Array.freeze(bytes))
+    else
+      room(count)
+      position = Scribe.utf8Into(target, position, string, 0)
 
   // A string the measuring pass stashed (`ProtobufSizes.stashText`): its length prefix, then
   // its bytes copied from the table's scratch.
@@ -66,8 +132,14 @@ class ProtobufPrinter(out: Scribe[Byte]) extends caps.ExclusiveCapability, caps.
     val offset = sizes.next()
     val length = sizes.next()
     varint(length.toLong)
-    // The scratch is read, never written, through this view, and only within this call.
-    out.append(Array.unsafeFrozen(sizes.scratchBytes), offset, length)
+
+    if oversized(length) then
+      flush()
+      deliver.nn(ProtobufPrinter.copied(sizes.scratchBytes, offset, length))
+    else
+      room(length)
+      System.arraycopy(sizes.scratchBytes, offset, target, position, length)
+      position += length
 
   update def fixed32(value: Int): Unit =
     var i = 0
@@ -96,6 +168,24 @@ class ProtobufPrinter(out: Scribe[Byte]) extends caps.ExclusiveCapability, caps.
 
 @unexported
 object ProtobufPrinter:
+  // `length` bytes of `source` from `offset`, copied out as a frozen array of their own.
+  private[locomotion] def copied(source: scala.Array[Byte], offset: Int, length: Int): Data =
+    val bytes = Array.allocate[Byte](length)
+    System.arraycopy(source, offset, bytes.raw, 0, length)
+    Array.freeze(bytes)
+
+  // A printer of exactly `size` bytes, whose `data()` is that array, uncopied.
+  def exact(size: Int): ProtobufPrinter^ = new ProtobufPrinter(new scala.Array[Byte](size), false, null)
+
+  // A printer of bytes of unknown length, from a buffer of `hint` bytes.
+  def growing(hint: Int): ProtobufPrinter^ =
+    new ProtobufPrinter(new scala.Array[Byte](hint.max(16)), true, null)
+
+  // A printer that hands each block of `size` bytes to `deliver` as it fills; `flush()` hands on
+  // the last, partial one.
+  def blocks(size: Int, consume deliver: Data => Unit): ProtobufPrinter^ =
+    new ProtobufPrinter(new scala.Array[Byte](size.max(16)), false, deliver)
+
   // Reasserts the capability of a printer that travelled as a neutral carrier, for the
   // generated printers spliced into user modules; inline for the reason `ProtobufParser.of` is.
   inline def of(carrier: AnyRef): ProtobufPrinter^ = carrier.asInstanceOf[ProtobufPrinter^]
