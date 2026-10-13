@@ -82,13 +82,29 @@ trait Dsv2:
   // cast — `value in Dsv` is just `value { type Form = Dsv }`, so the cast is a
   // no-op at runtime.
   given aggregableIn: [value: Decodable in Dsv] => (format: Dsv.Format)
-  =>  ( tactic: Tactic[Dsv.Error] )
+  =>  ( tactic: Tactic[Dsv.Error], buffering: Buffering )
   =>  ( ((value in Dsv) is Aggregable by Text)^{tactic} ) =
-    text =>
-      summon[Sheet is Aggregable by Text].aggregate(text).rows.readable.head.as[value]
-      . asInstanceOf[value in Dsv]
+
+    new Aggregable:
+      type Self = value in Dsv
+      type Operand = Text
+
+      def aggregate(text: Chain[Text]): value in Dsv =
+        summon[Sheet is Aggregable by Text].aggregate(text).rows.readable.head.as[value]
+        . asInstanceOf[value in Dsv]
+
+      // Only the first record is read from a stream, and only as far as it extends.
+      override def accept(stream: (Stream[Text] over Credit)^): value in Dsv =
+        Sheet.parseRows(Dsv.adopted(stream))
+        . next().as[value].asInstanceOf[value in Dsv]
 
 object Dsv extends Dsv2:
+  // The stream an `Aggregable`'s `accept` receives, handed on to a consuming parser. `accept`'s
+  // signature is pinned non-consuming, so ownership moves through a neutral reference: each
+  // call delivers a stream that is used exactly once, by construction.
+  private[caesura] def adopted(stream: (Stream[Text] over Credit)^): (Stream[Text] over Credit)^ =
+    stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]
+
   def apply(iterable: Iterable[Text]): Dsv =
     new Dsv(Array.from(iterable))
 
@@ -234,7 +250,7 @@ object Dsv extends Dsv2:
 
       override def accept(stream: (Stream[Text] over Credit)^): value in Dsv =
         val reader =
-          Sheet.directReader(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
+          Sheet.directReader(adopted(stream))
 
         if reader.nextRow() then parsable.parse(reader, 0).asInstanceOf[value in Dsv]
         else tactic.abort(Dsv.Error(format, Dsv.Error.Reason.Absent))
@@ -250,7 +266,7 @@ object Dsv extends Dsv2:
 
       override def accept(stream: (Stream[Text] over Credit)^): List[value] in Dsv =
         val reader =
-          Sheet.directReader(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
+          Sheet.directReader(adopted(stream))
 
         val buffer = scala.collection.mutable.ListBuffer[value]()
         while reader.nextRow() do buffer += parsable.parse(reader, 0)

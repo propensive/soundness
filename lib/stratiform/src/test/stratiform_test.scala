@@ -281,6 +281,11 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == Tests.Person(t"Alice", 30))
 
       CorpusLoader.streaming.filter(!_.check.s.contains("errors:")).each: testcase =>
+        test(m"${testcase.stem} yields its documents one at a time from one-byte chunks"):
+          dribble(testcase.source, 1).documents.map(TelCheckTree.of).to(List)
+        . assert(_ == CheckFormat.parseStream(testcase.check).map(_.tree))
+
+      CorpusLoader.streaming.filter(!_.check.s.contains("errors:")).each: testcase =>
         test(m"${testcase.stem} parses as documents in one-byte chunks"):
           summon[List[Tel] is Aggregable by Data].accept(dribble(testcase.source, 1))
           . map(TelCheckTree.of)

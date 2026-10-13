@@ -46,7 +46,7 @@ lib/cacophony/src/core/cacophony.Outlet.scala	0	0	0	0	0	1	0	0	0	0	0	0	0
 lib/cacophony/src/core/cacophony.Pcm.scala	0	0	0	0	0	1	0	0	0	0	0	0	0
 lib/caduceus/src/resend/caduceus_core.scala	1	1	0	0	0	0	0	0	0	0	0	0	0
 lib/caduceus/src/test/caduceus_test.scala	0	0	2	0	0	0	0	0	0	0	0	0	0
-lib/caesura/src/core/caesura.Dsv.scala	1	0	0	0	0	0	0	0	0	0	3	3	0
+lib/caesura/src/core/caesura.Dsv.scala	1	0	0	0	0	0	0	0	0	0	2	2	0
 lib/caesura/src/core/caesura.Sheet.scala	3	0	2	0	0	2	0	0	0	0	1	2	0
 lib/caesura/src/core/caesura.dynamicAccess.scala	0	0	0	0	0	0	0	0	0	1	0	0	0
 lib/caesura/src/core/caesura_core.scala	0	0	2	0	0	0	1	0	0	0	0	0	0
@@ -225,12 +225,12 @@ lib/jacinta/src/staged/jacinta.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0	3	0	0
 lib/jacinta/src/test/jacinta.ParserTests.scala	0	0	0	0	6	0	0	0	0	0	1	0	0
 lib/kaleidoscope/src/core/kaleidoscope.internal.scala	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/legerdemain/src/test/legerdemain_test.scala	0	0	1	0	0	0	0	0	0	0	0	0	0
+lib/locomotion/src/core/locomotion.Inlinable.scala	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/locomotion/src/core/locomotion.Protobuf.scala	0	0	0	0	3	3	0	0	0	0	5	5	0
 lib/locomotion/src/core/locomotion.ProtobufParser.scala	0	0	0	0	0	1	0	0	0	0	1	3	0
 lib/locomotion/src/core/locomotion.ProtobufPrinter.scala	0	0	0	0	1	0	0	0	0	0	0	1	0
 lib/locomotion/src/core/locomotion.ProtobufReader.scala	0	0	0	0	0	0	0	0	0	0	2	2	0
 lib/locomotion/src/core/locomotion.ProtobufSizes.scala	0	0	0	0	0	0	0	0	0	0	1	5	0
-lib/locomotion/src/core/locomotion.Inlinable.scala	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/locomotion/src/core/locomotion.inlining.scala	2	0	0	0	0	0	0	0	0	0	10	0	0
 lib/locomotion/src/test/locomotion_test.scala	0	5	0	0	0	0	0	0	0	0	0	0	0
 lib/mandible/src/core/mandible.Bytecode.scala	0	1	0	0	0	0	0	0	0	0	0	0	0
@@ -351,6 +351,7 @@ lib/stratiform/src/core/stratiform.Tels2.scala	0	0	0	0	0	0	4	1	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Varint.scala	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/stratiform/src/core/stratiform.dynamicAccess.scala	0	0	0	0	0	0	0	0	0	1	0	0	0
 lib/stratiform/src/core/stratiform.internal.scala	1	0	0	0	0	0	0	0	0	0	0	1	0
+lib/stratiform/src/core/stratiform_core.scala	0	0	3	0	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/staged/stratiform.stagedInternal.scala	1	0	0	0	0	0	0	0	0	0	3	0	0
 lib/stratiform/src/test/stratiform.AcceptanceTests.scala	0	0	0	0	2	1	0	0	0	0	0	0	0
 lib/stratiform/src/test/stratiform.AccrualTests.scala	0	0	1	0	0	0	0	0	0	0	0	0	0

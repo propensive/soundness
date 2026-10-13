@@ -252,6 +252,18 @@ object Tests extends Suite(m"Caesura tests"):
       t"greeting,name\nhello,world".read[Quux in Dsv]
     . assert(_ == Quux(t"world", t"hello"))
 
+    test(m"`read[T in Dsv]` decodes the first record of a one-char-chunk stream"):
+      import dsvFormats.csvFormat
+      val stream = "hello,world\nnext,row\n".grouped(1).nn.map(_.tt).stream
+      Dsv.aggregableIn[Foo].accept(stream)
+    . assert(_ == Foo(t"hello", t"world"))
+
+    test(m"`read[T in Dsv]` decodes by headings from a one-char-chunk stream"):
+      import dsvFormats.csvWithHeaderFormat
+      val stream = "greeting,name\nhello,world\n".grouped(1).nn.map(_.tt).stream
+      Dsv.aggregableIn[Quux].accept(stream)
+    . assert(_ == Quux(t"world", t"hello"))
+
     test(m"encode case class"):
       Foo(t"hello", t"world").dsv
     . assert(_ == Dsv(t"hello", t"world"))

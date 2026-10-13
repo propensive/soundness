@@ -36,7 +36,7 @@ export
   stratiform
   . { Bintel, Revision, Mutation, SchemaResolver, SchemaSignature,
       Stratiform, Tel, Telp, Tel2, Tel3, Tel4, TelReader, Tels, Tels2, Varint, bintel,
-      bintelDocument,
+      bintelDocument, documents,
       fulfil, retract, tel, telp, valueHash }
 
 // The `@assign` annotation as a type alone: an export of the class would also export its

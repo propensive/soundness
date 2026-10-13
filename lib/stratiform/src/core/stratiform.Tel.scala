@@ -3975,6 +3975,13 @@ object Tel extends Tel2:
       p.reset(cursor, Unset)
       p.parseAllDocuments()
 
+    // A parser of its own over `cursor`, not the shared per-thread one, for a caller that steps
+    // through the documents of a source across calls and must own the parser's state.
+    def owned(cursor: Cursor[Data, {}]^): Parser^ =
+      val parser = new Parser()
+      parser.reset(cursor, Unset)
+      parser
+
     def parseStream(input: Data): Chain[Tel.Document] raises Tel.Error =
       import zephyrine.Lineation.untrackedData
       // A dedicated parser instance, not the shared per-thread cache: the lazy
@@ -4896,6 +4903,25 @@ object Tel extends Tel2:
         Chain.empty
       else
         Chain(doc)
+
+    // One step of a multi-document parse, as `documentStream` takes them: the next document,
+    // if there is one, and whether another may follow it.
+    private[stratiform] update def stepDocument(first: Boolean)
+    :   (Tactic[Tel.Error]^) ?->{this} (Optional[Tel.Document], Boolean) =
+
+      if first then
+        syncFrom()
+        checkBom()
+      else
+        resetForNextDocument()
+
+      val doc = parseOneDocument()
+
+      if head.separator then
+        consumeSeparatorLine()
+        (doc, true)
+      else if documentIsEmpty(doc) then (Unset, false)
+      else (doc, false)
 
     // A document with no prologue and no children: the empty document yielded
     // between two separators, or the absence of any document at the end of a
