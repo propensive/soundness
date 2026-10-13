@@ -12,7 +12,7 @@
 #
 #   rep/sepcheck-probes/check.sh                 # the pinned toolchain (rep/toolchain.sh)
 #   rep/sepcheck-probes/check.sh <scalac...>     # specific compilers, one row each
-#   SOUNDNESS_SCALA_RELEASE=3.10.1-dev-p17 rep/sepcheck-probes/check.sh   # the other stream
+#   SOUNDNESS_SCALA_BASE=3.9.0 rep/sepcheck-probes/check.sh   # the 3.9 build
 set -uo pipefail
 cd "$(dirname "$0")"
 

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # The pinned proscala compiler, runnable from a shell:  rep/toolchain.sh <dotc arguments...>
 #
-# Resolves the toolchain `build.mill` compiles with — the release tag in `settings.scalaRelease`
-# (overridable with SOUNDNESS_SCALA_RELEASE, exactly as for Mill; SOUNDNESS_SCALA_HOME names a
-# locally-built `release` directory instead), cached by the build under
-# ~/.cache/soundness/proscala/<tag>/lib — and runs `dotc` from it with the fork's opt-in repairs
+# Resolves the toolchain `build.mill` compiles with — the build of Scala `settings.scalaBase` in
+# the Proscala release `settings.scalaRelease`, whose version is `settings.scalaVersion`
+# (overridable with SOUNDNESS_SCALA_RELEASE, SOUNDNESS_SCALA_BASE and SOUNDNESS_SCALA_VERSION,
+# exactly as for Mill; SOUNDNESS_SCALA_HOME names a locally-built `release` directory instead),
+# cached by the build under ~/.cache/soundness/proscala/<version>/lib — and runs `dotc` from it with the fork's opt-in repairs
 # (the `-Z` flags of `settings.scalaOptions`, read from build.mill so the two cannot drift), so
 # that a reproduction sees the same checker as the build does. A fix that is opt-in shows RED
 # without its flag (#1932 hit this in larceny), which is why the flags are never left to the
@@ -17,7 +18,7 @@
 #   rep/toolchain.sh --classpath                                  # print the compiler classpath
 #   rep/toolchain.sh --flags                                      # print the -Z flags
 #   REP_STOCK=1 rep/toolchain.sh ...                              # omit the -Z repairs
-#   SOUNDNESS_SCALA_RELEASE=3.10.1-dev-p17 rep/toolchain.sh ...   # the other stream
+#   SOUNDNESS_SCALA_BASE=3.9.0 rep/toolchain.sh ...               # the 3.9 build
 #
 # The compiler's own jars are also put on the compilation classpath (`-usejavacp`), so a
 # `-classpath` argument only needs to name the reproduction's own prerequisites.
@@ -25,17 +26,22 @@ set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
 build="$root/build.mill"
 
-release=${SOUNDNESS_SCALA_RELEASE:-$(sed -n 's/.*"SOUNDNESS_SCALA_RELEASE", "\([^"]*\)".*/\1/p' "$build" | head -1)}
+default() { sed -n "s/.*\"$1\", \"\([^\"]*\)\".*/\1/p" "$build" | head -1; }
+release=${SOUNDNESS_SCALA_RELEASE:-$(default SOUNDNESS_SCALA_RELEASE)}
+base=${SOUNDNESS_SCALA_BASE:-$(default SOUNDNESS_SCALA_BASE)}
+# A release from 1.0.0 on is built for several Scala versions; an earlier one is versioned as its tag
+if [[ "$release" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then version="$base-pro-$release"; else version="$release"; fi
+version=${SOUNDNESS_SCALA_VERSION:-$version}
 if [[ -n "${SOUNDNESS_SCALA_HOME:-}" ]]; then lib="$SOUNDNESS_SCALA_HOME/lib"
-else lib="$HOME/.cache/soundness/proscala/$release/lib"; fi
+else lib="$HOME/.cache/soundness/proscala/$version/lib"; fi
 
 if [[ ! -f "$lib/scala3-compiler.jar" ]]; then
   echo "rep/toolchain.sh: no compiler at $lib" >&2
-  echo "  fetch it with:  SOUNDNESS_SCALA_RELEASE=$release ./mill toolchain.distribution" >&2
+  echo "  fetch it with:  SOUNDNESS_SCALA_RELEASE=$release SOUNDNESS_SCALA_BASE=$base ./mill toolchain.distribution" >&2
   exit 2
 fi
 
-if [[ "$release" == 3.10* ]]
+if [[ "$version" == 3.10* ]]
 then asm=(org.ow2.asm:asm-util:9.10.1 org.ow2.asm:asm-commons:9.10.1)
 else asm=(org.scala-lang.modules:scala-asm:9.9.0-scala-1); fi
 third=$(cs fetch --classpath "${asm[@]}" \

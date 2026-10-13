@@ -27,7 +27,7 @@ is opt-in shows RED without its flag, so the flags are never left to the caller:
 
 ```bash
 REP_STOCK=1 rep/compile.sh <case>                            # the same compiler, no -Z repairs
-SOUNDNESS_SCALA_RELEASE=3.10.1-dev-p17 rep/compile.sh <case> # the other stream
+SOUNDNESS_SCALA_BASE=3.9.0 rep/compile.sh <case> # the 3.9 build
 rep/compile.sh --stock <case>                                # a self-contained case under the
                                                              # stock compiler its header names
 ```

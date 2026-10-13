@@ -13,7 +13,7 @@ never Mill (incremental compilation manufactures false greens under CC):
 
 ```bash
 rep/sepcheck-probes/check.sh                                       # the pinned toolchain
-SOUNDNESS_SCALA_RELEASE=3.10.1-dev-p17 rep/sepcheck-probes/check.sh # the other stream
+SOUNDNESS_SCALA_BASE=3.9.0 rep/sepcheck-probes/check.sh # the 3.9 build
 rep/sepcheck-probes/check.sh <scalac>                              # any other compiler
 ```
 
