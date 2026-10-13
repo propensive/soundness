@@ -89,6 +89,7 @@ automatic. A trace already in hand is resolved explicitly instead of by import, 
 
 ```scala
 import classloaders.threadContextClassloader
+import workingDirectories.javaBaseWorkingDirectory
 
 trace.resolved
 ```

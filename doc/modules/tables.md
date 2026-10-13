@@ -208,7 +208,10 @@ rounded corners, horizontal-only rules, or a minimal style with almost no furnit
 import, not of table code:
 
 ```scala
-import tableStyles.thinRoundedTableStyle
+val rounded =
+  import tableStyles.thinRoundedTableStyle
+
+  table.tabulate(libraries).grid(50).render
 ```
 
 `thinRoundedTableStyle` draws light rules throughout, with rounded corners:
@@ -363,13 +366,14 @@ slack will make it fit, however much the rest collapses.
 the width it was given, so a handler can say something useful rather than merely failing:
 
 ```scala
-import columnAttenuation.failAttenuation
+def narrow(): Unit =
+  import columnAttenuation.failAttenuation
 
-recover:
-  case Table.Error(minimum, available) =>
-    Out.println(t"The table needs a width of at least $minimum to be shown.")
-. protect:
-    Out.println(table.tabulate(libraries).grid(30))
+  recover:
+    case Table.Error(minimum, available) =>
+      Out.println(t"The table needs a width of at least $minimum to be shown.")
+  . protect:
+      Out.println(table.tabulate(libraries).grid(30))
 ```
 
 A report written to a file, where nobody will see that the columns were mangled, wants the

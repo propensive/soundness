@@ -120,7 +120,9 @@ order, ranking accents before case — and `codepointCollation` orders by code p
 and stable but places supplementary characters after the whole basic plane:
 
 ```scala
+import soundness.collationComparable
 import collations.unicodeCollation
+import sortingAlgorithms.timsort
 
 List(t"caff", t"café", t"cafe").sort   // List(t"cafe", t"café", t"caff")
 t"apple" < t"banana"                    // true
@@ -177,6 +179,7 @@ distance counts the single-character edits between them:
 
 ```scala
 import proximities.levenshteinProximity
+import caseSensitivity.caseSensitive
 
 t"Hello world".proximity(t"Hello orld")   // 1
 ```

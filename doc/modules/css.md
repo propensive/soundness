@@ -76,7 +76,7 @@ import errorDiagnostics.stackTracesDiagnostics
 
 t"a { color: red }".read[Css]
 
-capture[Css.Errors](t"a { colour: red }".read[Css]).errors(0).reason
+capture[Css.Errors](t"a { colour: red }".read[Css]).errors.prim.let(_.reason)
 // Css.Error.Reason.UnknownProperty(t"colour")
 ```
 
@@ -113,9 +113,9 @@ selector holds compounds joined by combinators, and a selector list holds altern
 is a typed case, so a program can ask what a selector actually matches:
 
 ```scala
-t"a > b".read[Css]        // a child combinator between two type selectors
-t"a:hover".read[Css]      // a type selector with a pseudo-class
-t"p::before".read[Css]    // a pseudo-element
+t"a > b { color: red }".read[Css]        // a child combinator between two type selectors
+t"a:hover { color: red }".read[Css]      // a type selector with a pseudo-class
+t"p::before { color: red }".read[Css]    // a pseudo-element
 ```
 
 Attribute selectors carry their matcher — presence, exact, prefix, suffix, substring, dash-match
@@ -151,6 +151,7 @@ them. Binding a stylesheet resource makes its names available at compiletime, an
 stylesheet declares — so a misspelled class name in a template is a compile error, and the right
 attribute is used without saying which:
 
+<!-- doccheck: skip -->
 ```scala
 import classloaders.threadContextClassloader
 

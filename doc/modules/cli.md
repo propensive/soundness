@@ -350,7 +350,7 @@ suggest values with a `Discoverable` instance, and how to read a chosen value wi
 ```scala
 case class Mode(name: Text)
 
-given Mode is Discoverable = _ => List(t"debug", t"release").map(Suggestion(_))
+given Mode is Discoverable = (_, _) => List(t"debug", t"release").map(Suggestion(_))
 
 given Mode is Interpretable = new Interpretable:
   type Self = Mode

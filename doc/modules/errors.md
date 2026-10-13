@@ -186,6 +186,8 @@ document — should gather every failure and report them together. `raise` (unli
 records an error and continues, and `accrue` folds the recorded errors into one:
 
 ```scala
+import dysasymptotics.linearSize
+
 case class Invalid(problems: List[Text])(using Diagnostics)
 extends Error(m"${problems.size} problems")
 
@@ -199,9 +201,12 @@ def validateAge(form: Form): Unit raises PortError =
 
 val form = Form(t"", t"nobody", -1)
 
+def collect(all: Invalid, error: Exception): Invalid = error match
+  case error: PortError => Invalid(all.problems :+ error.message.text)
+  case _                => all
+
 capture[Invalid]:
-  accrue(Invalid(Nil)) { (all, error) => Invalid(all.problems :+ error.message.text) }
-    { case error: PortError => () }
+  accrue(Invalid(Nil))(collect) { case error: PortError => () }
   . protect:
       validateName(form)
       validateAge(form)

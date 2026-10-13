@@ -63,6 +63,7 @@ edges flowing between them — the shape version-control history is drawn in:
 
 ```scala
 import laneDagStyles.boxDrawingLaneDagStyle
+import textMetrics.uniformMetric
 import strategies.throwUnsafely
 
 val history = Dag(t"C" -> Set(t"B"), t"B" -> Set(t"A"), t"A" -> Set())
@@ -85,6 +86,8 @@ itself: colored labels for one kind of node, annotations appended to another. Th
 characters stay the style's business, and the meaning stays the caller's.
 
 ```scala
+import dysasymptotics.linearSize
+
 diagram.nodes    // the node of each line, in drawing order
 diagram.tiles    // the tiles of each line
 diagram.map { tiles => node => t"${tiles.size} ${node.name}" }
@@ -140,5 +143,6 @@ suits showing what depends on what rather than what happened in what order. The 
 from the graph's `layered` arrangement, so `import rankings.balancedRanking` changes the
 drawing as it changes the layering.
 
-All three take a `Dag`, and all three raise a `Dag.Error` where the graph is not acyclic — a cycle
-has no drawing, so it is reported rather than approximated.
+All three take any graph with a topological order — a `Dag`, a frozen `Topology` or a `Hasse` —
+and so cannot fail: a `Digraph`, which may hold a cycle, has no drawing until `acyclic` has
+converted it.

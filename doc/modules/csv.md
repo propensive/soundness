@@ -196,7 +196,7 @@ the type asked for:
 import dynamicAccess.dynamicDsv
 
 val row = t"greeting,number\nhello,23".read[Sheet].rows(Prim)
-row.number[Int]   // 23
+row.let(_.number[Int])   // 23
 ```
 
 The import grants `Dsv is Dynamical` to the rest of its scope; `dynamically[Dsv]:` grants
@@ -213,6 +213,7 @@ it was found in, and `Validate` says how each fault joins it, focused on the `Ce
 decoder was reading:
 
 ```scala
+import dysasymptotics.linearSize
 import errorDiagnostics.stackTracesDiagnostics
 
 case class Issues(items: List[(Text, Dsv.Error)] = Nil)(using Diagnostics)
@@ -226,6 +227,6 @@ val damaged = t"name,age,height\nAlice,thirty,tall".read[Sheet].rows(Prim)
 Validate[Issues, [r] =>> r raises Dsv.Error, CellRef]
   ( Issues(),
     { case error: Dsv.Error => accrual + (prior.let(_.column).or(t"#"), error) } )
-. protect(damaged.as[Measurement])
+. protect(damaged.let(_.as[Measurement]))
 . items.map(_(0))   // List(t"age", t"height")
 ```

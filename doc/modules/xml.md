@@ -99,20 +99,28 @@ the element and its descendants. Every `Xml.Element` carries the bindings in for
 `scope`, and resolves its own name through them:
 
 ```scala
+import dynamicAccess.dynamicXml
+
 val doc = t"""<r xmlns:a="urn:a"><a:x>1</a:x></r>""".read[Xml]
-doc.`a:x`().namespace   // urn:a
-doc.`a:x`().localName   // x
-doc.`a:x`().qualified   // Xml.Name(urn:a, x), shown as {urn:a}x
+
+doc.`a:x`() match
+  case Xml.Fragment(element: Xml.Element) =>
+    element.namespace   // urn:a
+    element.localName   // x
+    element.qualified   // Xml.Name(urn:a, x), shown as {urn:a}x
 ```
 
 Two names are the same name when their namespace URIs and local parts agree, whatever prefixes
 bind them. A prefixed name selects by resolved name when its prefix is bound, whether by a
-declaration in the document or by a `Namespace` given in scope, so the prefix the code uses need
+declaration in the document or by an `Xml.Scope` given in scope, so the prefix the code uses need
 not be the one the document used:
 
 ```scala
 given svg: ("svg" is Namespace of "http://www.w3.org/2000/svg") = Namespace()
-picture.`svg:rect`()                                   // every rect in the SVG namespace
+given Xml.Scope = Xml.Scope(t"svg" -> t"http://www.w3.org/2000/svg")
+val picture = t"""<svg xmlns="http://www.w3.org/2000/svg"><rect/><rect/></svg>""".read[Xml]
+
+picture.`svg:rect`                                     // every rect in the SVG namespace
 picture.elements(Xml.Name(t"http://www.w3.org/2000/svg", t"rect"))
 ```
 
@@ -134,6 +142,8 @@ scope takes no part in equality: a parsed element equals the same element built 
 A derived codec puts a case class in a namespace with an annotation:
 
 ```scala
+case class Item(sku: Text, quantity: Int)
+
 @xmlns("urn:shop")
 case class Order(id: Int, item: Item)
 ```
@@ -435,7 +445,7 @@ what a program reads.
 
 ### Positions and errors
 
-A malformed document raises a `ParseError` whose position is not merely a line number but a range:
+A malformed document raises a `Parse.Error` whose position is not merely a line number but a range:
 the offset and length of the text at fault, so a tool can underline exactly the mismatched closing
 tag or the unterminated attribute rather than the whole line.
 

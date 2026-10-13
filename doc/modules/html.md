@@ -37,6 +37,7 @@ specification and the tag vocabulary it defines:
 
 ```scala
 import soundness.*
+import htmlDoms.whatwg
 import htmlDoms.whatwg.*
 import strategies.throwUnsafely
 import attributives.textAttributive
@@ -58,7 +59,7 @@ adds children:
 Br                                  // <br>
 Img(src = t"image.jpg")             // <img src="image.jpg">
 Div(Hr, P("Hello world"))           // <div><hr><p>Hello world</p></div>
-Textarea(name = "details", rows = 5)("Details go here")
+Textarea(name = t"details", rows = 5)("Details go here")
 // <textarea name="details" rows="5">Details go here</textarea>
 ```
 
@@ -180,7 +181,7 @@ Two values join with `+`, producing a fragment. A value statically known to be a
 marks which end — and an attribute is added, or replaced, by assignment:
 
 ```scala
-val image = h"""<img src="puppy.jpg">"""
+val image: Html.Element of "img" in Whatwg = Img(src = t"puppy.jpg")
 val described = image.alt = t"An image of a young dog"
 // <img src="puppy.jpg" alt="An image of a young dog">
 ```
@@ -246,7 +247,7 @@ Ol(Li("Alpha"), Li("Beta")).show
 ```
 
 For large documents or streaming output, a `Document[Html]` produces a chunked
-`Stream[Text]` (or `Stream[Bytes]`) instead, which runs concurrently and so needs the
+`Stream[Text]` instead, which runs concurrently and so needs the
 ambient concurrency context:
 
 ```scala

@@ -68,7 +68,7 @@ case class Person(name: Text, age: Int)
 
 ```scala
 Person(t"Simon", 72).inspect      // t"Person(name:t\"Simon\" ╱ age:72)"
-List(t"one", t"two").inspect      // t"""[t"one", t"two"]"""
+(List(t"one", t"two"): List[Text]).inspect   // t"""[t"one", t"two"]"""
 (5: Optional[Int]).inspect        // t"｢5｣"
 (Unset: Optional[Int]).inspect    // t"○"
 ```

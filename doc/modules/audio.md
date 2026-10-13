@@ -66,6 +66,7 @@ reads the same way through its handle, for the duration of a scope, as any
 [file](filesystem.md) does:
 
 ```scala
+import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 import pathInterfaces.pathOnLinux
 import temporaryDirectories.javaBaseTemporaryDirectory

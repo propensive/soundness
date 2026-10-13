@@ -88,6 +88,9 @@ A single request opens a connection and closes it. Where several requests go to 
 a *session* opens one connection and lends it to a scope, so the requests within share it:
 
 ```scala
+import soundness.httpUrlSessional
+import socketBackends.javaBaseSockets
+
 val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
 
 url"https://example.com".session: session ?=>

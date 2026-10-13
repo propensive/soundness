@@ -60,7 +60,7 @@ enum Status:
 
 given (Status is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")
 
-Status.Active(2020).in[Cbor].as[Status]   // Status.Active(2020)
+(Status.Active(2020): Status).in[Cbor].as[Status]   // Status.Active(2020)
 ```
 
 An `Optional` field is omitted from the map when it is unset and supplied as `Unset` when the map

@@ -24,6 +24,7 @@ are ordinary method calls. Everything comes from the `soundness` package:
 
 ```scala
 import soundness.*
+import decimalConverters.javaDecimalConverter
 import strategies.throwUnsafely
 ```
 

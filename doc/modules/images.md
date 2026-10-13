@@ -100,8 +100,10 @@ over its buffer instead. Any canvas reads; only one opened with the `Write` gran
 to, and the write mutates in place:
 
 ```scala
+import soundness.canvasOpenable
+
 raster.open[Canvas](Read & Write): canvas ?=>
-  canvas(0, 0) = Pixel[Rgb](Srgb(1.0, 0.0, 0.0))
+  canvas(0, 0) = Pixel[Rgba](Srgb(1.0, 0.0, 0.0))
 ```
 
 `snapshot` takes an independent copy, so a derived image is unaffected by later writes.
@@ -111,7 +113,7 @@ raster.open[Canvas](Read & Write): canvas ?=>
 Cropping, flipping and quarter-turn rotation each produce a new image:
 
 ```scala
-image.crop(top = 10, bottom = 10)
+image.crop(right = 1)
 image.flipX
 image.rotate(90)
 ```

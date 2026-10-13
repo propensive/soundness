@@ -55,7 +55,7 @@ t"hyphenation".hyphenate(hyphen = '-', leftMin = 4)   // t"hyphen-ation"
 through as segments of their own:
 
 ```scala
-t"the algorithm".syllables.to(List)
+t"the algorithm".syllables.to[List]
 // List(t"the", t" ", t"al", t"go", t"rithm")
 ```
 

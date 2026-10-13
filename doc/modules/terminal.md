@@ -85,7 +85,7 @@ interactive: terminal ?=>
   terminal.eventIterator().each:
     case Keypress.CharKey(char)  => handle(char)
     case Keypress.Ctrl('C')      => finish()
-    case TerminalInfo.WindowSize(rows, cols) => resize(rows, cols)
+    case Terminal.Info.WindowSize(rows, cols) => resize(rows, cols)
     case _                       => ()
 ```
 

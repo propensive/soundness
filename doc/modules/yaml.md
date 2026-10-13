@@ -27,6 +27,7 @@ package:
 ```scala
 import soundness.*
 import strategies.throwUnsafely
+import errorDiagnostics.stackTracesDiagnostics
 ```
 
 Decoding straight to a typed value, through the same derivation as every other format, is [correctness](../philosophy/correctness.md) with one definition of the data.

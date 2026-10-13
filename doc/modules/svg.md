@@ -173,6 +173,8 @@ produced elsewhere can be inspected, measured or altered rather than merely embe
 validated by the figure types, so no `XmlSchema` is needed in scope:
 
 ```scala
+import dysasymptotics.linearSize
+
 val svg = t"""<svg width="50" height="50"><rect x="0" y="0" width="10" height="10"/></svg>"""
         . read[Svg]
 

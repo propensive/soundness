@@ -105,10 +105,10 @@ A path matches in a pattern with the `/:` extractor, peeling names from the fron
 be taken apart as readily as it is built:
 
 ```scala
-val path = t"/home/work".as[Path on Linux]
+val path = t"/home/work".as[Path on Linux under %.type]
 
 path match
-  case root /: t"home" /: rest => rest   // ? / "work"
+  case root /: t"home" /: rest => rest   // t"work"
   case _                       => path.relative
 ```
 

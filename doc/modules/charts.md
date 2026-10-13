@@ -49,7 +49,7 @@ which a chart draws as an error bar or a band:
 val timings = Series(t"sort")((1000, Estimate(2.1, 1.9, 2.4)), (10000, Estimate(24.0, 22.5, 26.1)))
 ```
 
-A value may also carry a note — `Annotated(3.0, t"Paris")` — which a scatter plot or a line
+A value may also carry a note — `Noted(3.0, t"Paris")` — which a scatter plot or a line
 chart sets beside the point. A series' name, like a sample set's or a `Category`, is any showable value — text, an enum
 case, a number — rendered once when it is made. A series is immutable, and `add` appends a point
 in constant amortized time, which is what a chart
@@ -136,7 +136,7 @@ tick and whether it is rotated (`tickLabel`, with `labelRoom` telling the layout
 that takes), the stroke of each axis (`axisLine`), a break mark where a linear axis starts away
 from zero (`axisBreak`), arrowheads (`arrowhead`), the thickness of series lines (`line`), the
 size and colour of text (`fontStyle`, or `lettering` for every run of text), and the labelling of
-points that carry a note (`pointLabel`, for an `Annotated` value).
+points that carry a note (`pointLabel`, for a `Noted` value).
 
 Colors are a `ChartPalette`, named by role — the series ramp, the axes, the grid, the
 lettering — so that one style renders under any palette; a palette is chosen by importing one:
@@ -183,7 +183,7 @@ A `Duration` axis is titled `time`, and its gradations carry their own units —
 
 The text on a chart is placed by [cartouche](label-placement.md), so that labels do not collide.
 Tick labels, axis titles and legend entries hold still, and a tick label that would overlap its
-neighbour is left out. The note beside an `Annotated` point and the percentage in a pie's wedge
+neighbour is left out. The note beside a `Noted` point and the percentage in a pie's wedge
 move: a point's note is set to its right when that side is clear of other notes, markers and
 lines, on another side when it is not, and further off with a leader line back to the point when
 every side is taken. A wedge's percentage sits in its wedge, or is moved outward with a leader
@@ -221,9 +221,11 @@ the page. If the fit still accommodates the new data, the axes hold still and on
 differ are replaced; if a point falls outside them, the whole chart is redrawn:
 
 ```scala
+import dysasymptotics.linearSize
+
 val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
 val (next, revisions) = latency.revise(latency.data.add((5.0, 13.0)))
-revisions.length   // 1: a Chart.Revision.Replace of `series-0`
+revisions.size   // 1: a Chart.Revision.Replace of `series-0`
 ```
 
 A page holding the SVG needs only two operations, replace an element by its identifier and

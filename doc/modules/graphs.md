@@ -1,5 +1,7 @@
 ## Graphs
 
+<!-- doccheck: language captureChecking -->
+
 ### About
 
 A [directed acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph) — a set of nodes
@@ -69,7 +71,7 @@ every node after its dependencies, and otherwise in the order the nodes were giv
 reachability queries slice the graph around a node:
 
 ```scala
-dag.linearized         // List(2, 3, 4, 6, 8): dependencies before dependents
+dag.linearized         // List(2, 4, 3, 6, 8): dependencies before dependents
 dag.reachable(8)       // Set(8, 2, 3, 4, 6): 8 and everything it depends on, transitively
 dag.descendants(8)     // the sub-graph beneath 8
 dag.invert             // the graph with every edge reversed
@@ -97,8 +99,8 @@ dag.ancestors(2)       // the sub-graph that depends on 2
 dag.lineage(4)         // both directions together
 ```
 
-`reachable` raises a `Dag.Error` only for a node the graph does not have; on a `Digraph` it is
-total, since reachability is well defined whether or not the graph has a cycle.
+`reachable` raises a `Dag.Error` only for a node the graph does not have, on a `Dag` and a
+`Digraph` alike: reachability is well defined whether or not the graph has a cycle.
 
 ### Folding over a graph
 
@@ -106,7 +108,7 @@ A traversal computes a value for every node from the values of the nodes it depe
 order that guarantees the dependencies are computed first:
 
 ```scala
-dag.traversal[Int]((childValues, node) => childValues.sum + 1)   // one more than the sum beneath
+dag.traversal[Int]((childValues, node) => childValues.total + 1)   // one more than the sum beneath
 ```
 
 This is the shape of most real work over a dependency graph — computing a build order's costs,
@@ -153,6 +155,8 @@ Editing a `Dag` gives a new `Dag` where the edit cannot create a cycle, and a `D
 might:
 
 ```scala
+import dysasymptotics.linearSize
+
 dag.add(8, 3)              // a new dependency; raises Dag.Error if it would close a cycle
 dag.remove(8, 4)           // one edge fewer
 dag - 4                    // the node and its edges gone

@@ -112,6 +112,7 @@ its requests to write one. A read handler sees the `path`, and optionally a star
 ```scala
 import codepages.utf8Codepage
 import charsets.utf8Charset
+import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 
 def files(using Acp.Registry^): Unit =

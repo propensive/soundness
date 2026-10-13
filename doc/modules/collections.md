@@ -66,7 +66,6 @@ and `ter` read the first few directly:
 letters(Sec)                  // t"b"
 letters(Ordinal.zerary(7))    // Unset
 numbers.prim                  // 3
-numbers.last                  // 2
 ```
 
 Indexing a `List` by position is a walk from its head, so it, and the accessors that walk more
@@ -80,6 +79,7 @@ import dysasymptotics.{linearSize, linearAccess}
 
 numbers.size                  // 3
 numbers(Ter)                  // 2
+numbers.last                  // 2
 ```
 
 ### Traversing and transforming
@@ -205,13 +205,13 @@ already.
 
 ### Sets and maps
 
-A `Set` supports the operations of set theory — `insert`, `except`, `intersect` and `concat` for
+A `Set` supports the operations of set theory — `:+`, `except`, `intersect` and `concat` for
 union — and membership with `has`. A `Map` reads a value by key with `at`, as an `Optional`
 since the key may be absent, tests a key with `defines`, updates or adds with `define`, removes
 with `omit`, and exposes its `keys` and `values`:
 
 ```scala
-primes.insert(11)             // Set(2, 3, 5, 7, 11)
+primes :+ 11                  // Set(2, 3, 5, 7, 11)
 primes.intersect(Set(2, 4))   // Set(2)
 primes.except(Set(2, 3))      // Set(5, 7)
 

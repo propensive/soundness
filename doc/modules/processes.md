@@ -28,6 +28,7 @@ strategy in scope:
 ```scala
 import soundness.*
 
+import environments.javaBaseEnvironment
 import errorDiagnostics.stackTracesDiagnostics
 import logging.silentLogging
 import strategies.throwUnsafely
@@ -199,7 +200,7 @@ raises an `Exec.Error` carrying the command that failed, so the error names what
 rather than reporting an operating-system errno:
 
 ```scala
-capture[Exec.Error](sh"no-such-binary".exec[Text]()).command.arguments.prim
+capture[Exec.Error](sh"no-such-binary".exec[Text]()).command.arguments.head
 // t"no-such-binary"
 ```
 
