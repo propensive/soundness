@@ -85,6 +85,10 @@ object Tests extends Suite("parser", m"Parser tests")   // `fume run parser`
 object Tests extends Suite(m"Parser tests")             // `fume run parser-tests`
 ```
 
+Soundness's own suites always give one, naming what the module is for and not the module —
+`html` for Honeycomb's tests, `html-bench` for its benchmarks — as
+[the testing standard](../standards/testing.md) sets out.
+
 A given id is also a *type*: within the body of `Suite("parser", m"Parser tests")`, the
 contextual value which `test` and `suite` take is a `Testable of "parser"`, and each `suite`
 block passes the same topic on. So the compiler knows, of every test it compiles, which suite it
@@ -265,7 +269,7 @@ the `META-INF/services/probably.Suite` index of the jar it compiles, and the
 classpath, runs each one in-process, and renders the stream of `TestEvent`s a suite emits: live
 progress on a terminal, plain output on CI, each failure with its contrast, and a nonzero exit if
 any test failed — all a build needs to gate on. A project names its classpath once in
-`.fume/config.tel`, so a bare `fume run` runs everything. `fume list`, and the completion of test
+`.pyrocosm/fume/config.tel`, so a bare `fume run` runs everything. `fume list`, and the completion of test
 names in a shell, read the index of tests, and so run nothing.
 
 fume also accepts selection terms, so a subset can be run without editing the code. Hashes,
