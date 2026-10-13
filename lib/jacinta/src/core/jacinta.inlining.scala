@@ -39,6 +39,7 @@ import scala.quoted.*
 
 import anticipation.*
 import contingency.*
+import prepositional.*
 import vacuous.*
 import zephyrine.*
 
@@ -70,9 +71,73 @@ object inlining:
   // types whose generators are currently on the expansion stack — a
   // recursive occurrence (`Tree` with `children: List[Tree]`) must degrade
   // to the runtime seam rather than expand forever.
-  private final class Cache:
+  private class Cache:
     val instances: scm.HashMap[String, Option[Inlinable]] = scm.HashMap()
     val active: scm.Set[String] = scm.Set()
+    val roots: scm.HashMap[String, Expr[Any]] = scm.HashMap()
+
+  // A cache for generating a printer: its runtime tier resolves printers, not parsers.
+  private final class PrintingCache extends Cache
+
+  // The cache of the expansion in progress. A structural instance reached through
+  // `Inlinable.parse` (or `write`) carries no cache, so it continues this one rather than
+  // starting afresh: the active set then spans the whole expansion, and a mutually recursive
+  // record ties back to a generator already on the stack instead of expanding forever.
+  private val ongoing: scala.util.DynamicVariable[Option[Cache]] =
+    scala.util.DynamicVariable(None)
+
+  private def continued(): Cache = ongoing.value.getOrElse(Cache())
+
+  private def within[result](cache: Cache)(generate: => result): result =
+    ongoing.withValue(Some(cache))(generate)
+
+  // A recursive occurrence of the root type reads (or writes) through the instance being
+  // generated.
+  private def rootFor[fieldType: Type](using Quotes): Option[Expr[Any]] =
+    import quotes.reflect.*
+
+    val name = TypeRepr.of[fieldType].dealias.show
+
+    ongoing.value.flatMap(_.roots.get(name))
+
+  // Whether an implicit-search result is the `import codecs.direct` fallback given, which a
+  // nominal lookup must not take: it would expand this very generator again for the field.
+  private def blanket(using Quotes)(tree: quotes.reflect.Tree): Boolean =
+    import quotes.reflect.*
+
+    tree match
+      case Inlined(_, _, body)    => blanket(body)
+      case Apply(function, _)     => blanket(function)
+      case TypeApply(function, _) => blanket(function)
+      case Block(_, expression)   => blanket(expression)
+
+      case other =>
+        val symbol = other.symbol
+
+        val owners =
+          List(TypeRepr.of[Json.Parsable2].typeSymbol, TypeRepr.of[Json.Printable2].typeSymbol)
+
+        symbol.name == "generated" && owners.contains(symbol.owner)
+
+  // A type with any `Form` refinement removed: a read of `Foo in Json` infers the instance's
+  // type as `Foo { type Form = Json }`, whose codec is `Foo`'s.
+  private def formless(using Quotes)(tpe: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+
+    tpe.dealias match
+      case Refinement(parent, "Form", _) => formless(parent)
+      case other                         => other
+
+  // A record that encodes as text: the derived encoding writes it as a JSON string, ahead of
+  // its structure, so it is never printed structurally.
+  private def textual(using Quotes)(tpe: quotes.reflect.TypeRepr): Boolean =
+    import quotes.reflect.*
+
+    tpe.asType.absolve match
+      case '[value] =>
+        Implicits.search(TypeRepr.of[value is anticipation.Encodable in Text]) match
+          case _: ImplicitSearchSuccess => true
+          case _                        => false
 
   private def resolve[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
     import quotes.reflect.*
@@ -104,11 +169,54 @@ object inlining:
 
     def searched(target: TypeRepr): Option[Expr[Any]] =
       Implicits.search(target) match
-        case success: ImplicitSearchSuccess => Some(success.tree.asExpr)
-        case _                              => None
+        case success: ImplicitSearchSuccess if !blanket(success.tree) => Some(success.tree.asExpr)
+        case _                                                        => None
 
-    searched(TypeRepr.of[field is Json.Parsable]).map(RuntimeInlinable[field](_)).orElse:
-      searched(TypeRepr.of[field is Json.Field]).map(RuntimeInlinable[field](_))
+    ongoing.value match
+      case Some(_: PrintingCache) =>
+        rootFor[field].orElse(searched(TypeRepr.of[field is Json.Printable]))
+        . map(NominalPrinter[field](_))
+        . orElse:
+            searched(TypeRepr.of[field is anticipation.Encodable in Json])
+            . map(EncodedPrinter[field](_))
+
+      case _ =>
+        rootFor[field].orElse(searched(TypeRepr.of[field is Json.Parsable]))
+        . map(RuntimeInlinable[field](_))
+        . orElse(searched(TypeRepr.of[field is Json.Field]).map(RuntimeInlinable[field](_)))
+
+  // The printing counterparts of the runtime tiers: a nominal `Printable` (the recursion tie,
+  // or a hand-written one), called in place, and the `Encodable` seam, whose tree is written
+  // in place (an element encoding to an absent value is written as the derivation writes it;
+  // a record field is handled by `productWrite`, which leaves it out).
+  private final class NominalPrinter[value](printable: Expr[Any]) extends Inlinable:
+    type Self = value
+
+    def parse(reader: Expr[Json.Reader])(using Quotes, Type[value]): Expr[value] =
+      quotes.reflect.report.errorAndAbort("jacinta: a printer cannot parse")
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[value], out: Expr[AnyRef])(using Quotes, Type[value])
+    :   Expr[Unit] =
+
+      '{Json.Printable.writeField[value]($printable.asInstanceOf[AnyRef], $value, $out)}
+
+  private final class EncodedPrinter[value](val encodable: Expr[Any]) extends Inlinable:
+    type Self = value
+
+    def parse(reader: Expr[Json.Reader])(using Quotes, Type[value]): Expr[value] =
+      quotes.reflect.report.errorAndAbort("jacinta: a printer cannot parse")
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[value], out: Expr[AnyRef])(using Quotes, Type[value])
+    :   Expr[Unit] =
+
+      ' {
+          val typed = $encodable.asInstanceOf[value is anticipation.Encodable in Json]
+          Json.Printable.writeAst($out, Json.unseal(typed.encoded($value)))
+        }
 
   private final class RuntimeInlinable[value](parsing: Expr[Any]) extends Inlinable:
     type Self = value
@@ -166,9 +274,15 @@ object inlining:
     // (`Json.Parsable.dictionary` through the `Field` chain).
     val isMap = tpe.derivesFrom(Symbol.requiredClass("scala.collection.Map"))
 
-    if !isMap && tpe <:< TypeRepr.of[Iterable[Any]] then tpe match
+    // The opaque prelude `List`/`Set`/`Sequence` don't conform to `Iterable`, so recognize
+    // them by their type constructors; each is an array exactly like a stdlib collection (the
+    // element becomes the recursion point, so `List[Tree]` inside `Tree` degrades `Tree`, not
+    // the whole list).
+    val isAliasCollection = aliasCollectionUnderlying(tpe).isDefined
+
+    if !isMap && (tpe <:< TypeRepr.of[Iterable[Any]] || isAliasCollection) then tpe match
       case AppliedType(_, arguments) =>
-        arguments.last.asType match
+        arguments.last.asType.absolve match
           case '[element] =>
             resolve[element](cache).map: instance =>
               Inlinable.IterableInlinable[element]
@@ -181,6 +295,31 @@ object inlining:
     else if cache.active.contains(tpe.show) then None
     else if productSupported(tpe) then Some(Inlinable.ProductInlinable[field]())
     else None
+
+  // The opaque prelude `List`/`Set`/`Sequence` map to their underlying stdlib collection, at
+  // which a `Factory` is summoned (their companions expose only a `Conversion`); the result is
+  // cast back, a no-op at erasure.
+  private def aliasCollectionUnderlying(using Quotes)(tpe: quotes.reflect.TypeRepr)
+  :   Option[quotes.reflect.TypeRepr] =
+
+    import quotes.reflect.*
+
+    val listSym     = TypeRepr.of[proscenium.List[Any]].typeSymbol
+    val setSym      = TypeRepr.of[proscenium.Set[Any]].typeSymbol
+    val sequenceSym = TypeRepr.of[proscenium.Sequence[Any]].typeSymbol
+
+    tpe.dealias match
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == listSym =>
+        Some(TypeRepr.of[scala.collection.immutable.List].appliedTo(element))
+
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == setSym =>
+        Some(TypeRepr.of[scala.collection.immutable.Set].appliedTo(element))
+
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == sequenceSym =>
+        Some(TypeRepr.of[scala.collection.immutable.Vector].appliedTo(element))
+
+      case _ =>
+        None
 
   private def productSupported(using Quotes)(tpe: quotes.reflect.TypeRepr): Boolean =
     import quotes.reflect.*
@@ -218,13 +357,16 @@ object inlining:
 
     TypeRepr.of[collection].dealias match
       case AppliedType(_, arguments) =>
-        arguments.last.asType match
-          case '[element] =>
+        val factoryType =
+          aliasCollectionUnderlying(TypeRepr.of[collection]).getOrElse(TypeRepr.of[collection])
+
+        (arguments.last.asType, factoryType.asType).absolve match
+          case ('[element], '[stdlib]) =>
             val instance = element0.asInstanceOf[Inlinable { type Self = element }]
 
             ' {
                 def parseElement(): element = ${instance.parse(reader)}
-                val factory = infer[scala.collection.Factory[element, collection]]
+                val factory = infer[scala.collection.Factory[element, stdlib]]
                 val builder = factory.newBuilder
                 val foci = infer[Foci[Json.Focus]]
                 val focused = foci.active
@@ -244,7 +386,7 @@ object inlining:
                   index += 1
                   continue = parser.directElementNext()(using ptactic)
 
-                builder.result()
+                builder.result().asInstanceOf[collection]
               }
 
       case _ =>
@@ -264,7 +406,7 @@ object inlining:
   private[jacinta] def productBody[product: Type](reader: Expr[Json.Reader])(using Quotes)
   :   Expr[product] =
 
-    productBody[product](reader, Cache())
+    productBody[product](reader, continued())
 
   private def productBody[product: Type](reader: Expr[Json.Reader], cache: Cache)(using Quotes)
   :   Expr[product] =
@@ -582,8 +724,204 @@ object inlining:
         ${body('foci, 'focused, 'tactic, 'parser, 'ptactic)}
       }
 
+  // ── The printing side ──────────────────────────────────────────────────
+  // A generated printer writes compact JSON text exactly as the derived encoding renders it: a
+  // record is an object with its fields in order, leaving out a field whose encoding is
+  // absent, and a collection an array. A field with no printer of its own is encoded through
+  // its `Encodable in Json` and its tree written in place.
+
+  // How a record field is printed: through an instance that writes it in place, or through its
+  // `Encodable`, encoded first so that an absent field can be left out.
+  private enum Printing:
+    case Generated(instance: Inlinable)
+    case Seam(encodable: Expr[Any])
+
+  private def printingFor[fieldType: Type](cache: Cache)(using Quotes): Printing =
+    import quotes.reflect.*
+
+    def seam: Printing =
+      Implicits.search(TypeRepr.of[fieldType is anticipation.Encodable in Json]) match
+        case success: ImplicitSearchSuccess => Printing.Seam(success.tree.asExpr)
+
+        case _ =>
+          val name = TypeRepr.of[fieldType].show
+          report.errorAndAbort(s"jacinta: no Printable or Encodable in Json for $name")
+
+    val textEncoded = textual(TypeRepr.of[fieldType])
+
+    resolve[fieldType](cache) match
+      case Some(seam: EncodedPrinter[?])                         => Printing.Seam(seam.encodable)
+      case Some(_: Inlinable.ProductInlinable[?]) if textEncoded => seam
+      case Some(instance) if instance.prints                     => Printing.Generated(instance)
+      case _                                                     => seam
+
+  private[jacinta] def productWrite[product: Type](value: Expr[product], out: Expr[AnyRef])
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    import quotes.reflect.*
+
+    val cache = continued()
+    val tpe = TypeRepr.of[product].dealias
+    val name = tpe.show
+    cache.active += name
+
+    try
+      val classSymbol = tpe.classSymbol.get
+      val fields = classSymbol.caseFields
+      val fieldTypes = fields.map(tpe.memberType(_).dealias)
+
+      val printings: List[Printing] = fieldTypes.map: fieldType =>
+        fieldType.asType.absolve match
+          case '[fieldType] => printingFor[fieldType](cache)
+
+      def field(index: Int): Term = Select.unique(value.asTerm, fields(index).name)
+
+      // The separator before every field after the first written, and the key.
+      def opening(index: Int, written: Expr[Boolean]): Expr[Unit] =
+        val key = Expr(fields(index).name)
+
+        ' {
+            if $written then Json.Printable.writeAscii($out, ",")
+            Json.Printable.writeString($out, $key)
+            Json.Printable.writeAscii($out, ":")
+          }
+
+      def entries(index: Int, written: Expr[Boolean]): Expr[Unit] =
+        if index == fields.length then '{()}
+        else fieldTypes(index).asType.absolve match
+          case '[fieldType] =>
+            val typed = field(index).asExprOf[fieldType]
+
+            printings(index) match
+              case Printing.Seam(encodable) =>
+                ' {
+                    val codec = $encodable.asInstanceOf[fieldType is anticipation.Encodable in Json]
+                    val tree = Json.unseal(codec.encoded($typed))
+
+                    if Json.Printable.present(tree) then
+                      ${opening(index, written)}
+                      Json.Printable.writeAst($out, tree)
+                      ${entries(index + 1, '{true})}
+                    else
+                      ${entries(index + 1, written)}
+                  }
+
+              case Printing.Generated(instance) =>
+                val typedInstance = instance.asInstanceOf[Inlinable { type Self = fieldType }]
+
+                ' {
+                    ${opening(index, written)}
+                    ${typedInstance.write(typed, out)}
+                    ${entries(index + 1, '{true})}
+                  }
+
+      ' {
+          Json.Printable.writeAscii($out, "{")
+          ${entries(0, '{false})}
+          Json.Printable.writeAscii($out, "}")
+        }
+
+    finally cache.active -= name
+
+  private[jacinta] def iterableWrite[collection: Type]
+    ( value: Expr[collection], out: Expr[AnyRef], element0: Inlinable )
+    ( using Quotes )
+  :   Expr[Unit] =
+
+    import quotes.reflect.*
+
+    TypeRepr.of[collection].dealias match
+      case AppliedType(_, arguments) =>
+        arguments.last.asType.absolve match
+          case '[element] =>
+            val instance = element0.asInstanceOf[Inlinable { type Self = element }]
+
+            ' {
+                // The opaque prelude collections erase to their stdlib counterparts.
+                val elements = $value.asInstanceOf[Iterable[element]].iterator
+                Json.Printable.writeAscii($out, "[")
+                def write(element: element): Unit = ${instance.write('element, out)}
+
+                if elements.hasNext then write(elements.next())
+
+                while elements.hasNext do
+                  Json.Printable.writeAscii($out, ",")
+                  write(elements.next())
+
+                Json.Printable.writeAscii($out, "]")
+              }
+
+      case _ =>
+        report.errorAndAbort("jacinta: an inlinable collection requires an applied collection type")
+
+  // Whether the generator builds a type's codec structurally, as a record that does not encode
+  // as text: the condition on `import codecs.direct`'s generated instances. A cheap shape test,
+  // so a search under the mode stays cheap; anything else keeps the derived path.
+  def generates[value: Type](using Quotes): Expr[Inlinable.Generates[value]] =
+    import quotes.reflect.*
+
+    val tpe = formless(TypeRepr.of[value])
+
+    if productSupported(tpe) && !textual(tpe) then '{Inlinable.Generates[value]()}
+    else report.errorAndAbort(s"jacinta: ${tpe.show} has no generated codec")
+
+  def inlinablePrintable[value: Type](using Quotes): Expr[value is Json.Printable] =
+    import quotes.reflect.*
+
+    val tpe = formless(TypeRepr.of[value])
+
+    if tpe =:= TypeRepr.of[value].dealias then generatedPrintable[value]
+    else tpe.asType.absolve match
+      case '[formless] =>
+        '{${generatedPrintable[formless]}.asInstanceOf[value is Json.Printable]}
+
+  private def generatedPrintable[value: Type](using Quotes): Expr[value is Json.Printable] =
+    import quotes.reflect.*
+
+    val cache: Cache = PrintingCache()
+
+    val root: Inlinable = within(cache)(resolve[value](cache)).getOrElse:
+      report.errorAndAbort
+        ( s"jacinta: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not an " +
+          "inlinable product" )
+
+    val runtime = root.isInstanceOf[NominalPrinter[?]] || root.isInstanceOf[EncodedPrinter[?]]
+
+    if !root.prints || runtime then
+      report.errorAndAbort
+        ( s"jacinta: ${TypeRepr.of[value].show} has no generated printer; use its " +
+          "`Encodable in Json`" )
+
+    val instance = root.asInstanceOf[Inlinable { type Self = value }]
+    val name = TypeRepr.of[value].dealias.show
+
+    ' {
+        lazy val self: Json.Printable.Direct[value] =
+          new Json.Printable.Direct[value]:
+            protected def writeCarrier(value0: value, out0: AnyRef): Unit =
+              $ {
+                  cache.roots(name) = 'self
+                  within(cache)(instance.write('value0, 'out0))
+                }
+
+        // Sealed per the codec-thunk pattern, as `inlinableParsable`.
+        // [quote-wall] generated Printable sealed inside quote
+        caps.unsafe.unsafeAssumePure(self)
+      }
+
   // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Json.Parsable] =
+    import quotes.reflect.*
+
+    val tpe = formless(TypeRepr.of[value])
+
+    if tpe =:= TypeRepr.of[value].dealias then generatedParsable[value]
+    else tpe.asType.absolve match
+      case '[formless] =>
+        '{${generatedParsable[formless]}.asInstanceOf[value is Json.Parsable]}
+
+  private def generatedParsable[value: Type](using Quotes): Expr[value is Json.Parsable] =
     import quotes.reflect.*
 
     val cache: Cache = Cache()
@@ -601,15 +939,21 @@ object inlining:
           "`Json.Parsable.staged` or `derived` rather than `Inlinable.parsable`" )
 
     val instance = root.asInstanceOf[Inlinable { type Self = value }]
+    val name = TypeRepr.of[value].dealias.show
 
     ' {
-        // Sealed per the codec-thunk pattern, like the staged instances: the
-        // generated body resolves its capabilities where it is spliced.
-        // [quote-wall] staged Parsable generated inside quote
-        caps.unsafe.unsafeAssumePure:
+        lazy val self: Json.Parsable.Direct[value] =
           new Json.Parsable.Direct[value]:
             protected def parseCarrier(reader0: AnyRef): value =
               // A capability class cannot be quoted into a pure hole, so
               // every use casts from the neutral carrier afresh.
-              ${instance.parse('{reader0.asInstanceOf[Json.Reader]})}
+              $ {
+                  cache.roots(name) = 'self
+                  within(cache)(instance.parse('{reader0.asInstanceOf[Json.Reader]}))
+                }
+
+        // Sealed per the codec-thunk pattern, like the staged instances: the
+        // generated body resolves its capabilities where it is spliced.
+        // [quote-wall] staged Parsable generated inside quote
+        caps.unsafe.unsafeAssumePure(self)
       }

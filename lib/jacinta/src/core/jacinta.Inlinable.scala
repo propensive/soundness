@@ -46,6 +46,20 @@ object Inlinable:
   inline def parsable[value]: value is Json.Parsable =
     ${jacinta.inlining.inlinableParsable[value]}
 
+  // The writing counterpart: a monomorphic `Json.Printable` that writes a value's compact JSON
+  // text straight into a writer, composed through the same instances.
+  inline def printable[value]: value is Json.Printable =
+    ${jacinta.inlining.inlinablePrintable[value]}
+
+  // Evidence that the generator builds a type's codec structurally, as a record: the condition
+  // on `import codecs.direct`'s generated instances. Its given fails for any other type, so the
+  // search for a generated instance fails too, and the derived path resolves instead.
+  object Generates:
+    transparent inline given generates: [value] => Generates[value] =
+      ${jacinta.inlining.generates[value]}
+
+  final class Generates[value]()
+
   // The expansion-time evaluation of a user-written instance. An `Inlinable` given is an
   // ordinary runtime value, so the generator can only call its `parse` by evaluating the given
   // inside the macro — which takes an in-macro staging compiler, and with it the compiler jars
@@ -90,11 +104,25 @@ object Inlinable:
 
       delegate0.absent(tactic)
 
+    override def prints: Boolean = delegate0.prints
+
+    override def write(value: Expr[value], out: Expr[AnyRef])(using Quotes, Type[value])
+    :   Expr[Unit] =
+
+      delegate0.write(value, out)
+
   private[jacinta] final class ProductInlinable[product]() extends Inlinable:
     type Self = product
 
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[product]): Expr[product] =
       inlining.productBody[product](reader)
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[product], out: Expr[AnyRef])(using Quotes, Type[product])
+    :   Expr[Unit] =
+
+      inlining.productWrite[product](value, out)
 
   private[jacinta] final class IterableInlinable[element](element0: element is Inlinable)
   extends Inlinable:
@@ -104,6 +132,14 @@ object Inlinable:
     :   Expr[Iterable[element]] =
 
       inlining.iterableBody[Iterable[element]](reader, element0)
+
+    override def prints: Boolean = element0.prints
+
+    override def write(value: Expr[Iterable[element]], out: Expr[AnyRef])
+      ( using Quotes, Type[Iterable[element]] )
+    :   Expr[Unit] =
+
+      inlining.iterableWrite[Iterable[element]](value, out, element0)
 
   // ── Instances ──────────────────────────────────────────────────────────
   // The leaf generators mirror `Json.Parsable.staged`'s builtin arms; the
@@ -116,17 +152,38 @@ object Inlinable:
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[Int]): Expr[Int] =
       '{$reader.long().toInt}
 
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Int], out: Expr[AnyRef])(using Quotes, Type[Int])
+    :   Expr[Unit] =
+
+      '{Json.Printable.writeLong($out, $value.toLong)}
+
   given long: (Long is Inlinable) = new Inlinable:
     type Self = Long
 
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[Long]): Expr[Long] =
       '{$reader.long()}
 
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Long], out: Expr[AnyRef])(using Quotes, Type[Long])
+    :   Expr[Unit] =
+
+      '{Json.Printable.writeLong($out, $value)}
+
   given double: (Double is Inlinable) = new Inlinable:
     type Self = Double
 
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[Double]): Expr[Double] =
       '{$reader.double()}
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Double], out: Expr[AnyRef])(using Quotes, Type[Double])
+    :   Expr[Unit] =
+
+      '{Json.Printable.writeDouble($out, $value)}
 
   given float: (Float is Inlinable) = new Inlinable:
     type Self = Float
@@ -140,17 +197,38 @@ object Inlinable:
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[Boolean]): Expr[Boolean] =
       '{$reader.boolean()}
 
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Boolean], out: Expr[AnyRef])(using Quotes, Type[Boolean])
+    :   Expr[Unit] =
+
+      '{Json.Printable.writeBoolean($out, $value)}
+
   given text: (Text is Inlinable) = new Inlinable:
     type Self = Text
 
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[Text]): Expr[Text] =
       '{$reader.string()}
 
+    override def prints: Boolean = true
+
+    override def write(value: Expr[Text], out: Expr[AnyRef])(using Quotes, Type[Text])
+    :   Expr[Unit] =
+
+      '{Json.Printable.writeString($out, $value.s)}
+
   given string: (String is Inlinable) = new Inlinable:
     type Self = String
 
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[String]): Expr[String] =
       '{$reader.string().s}
+
+    override def prints: Boolean = true
+
+    override def write(value: Expr[String], out: Expr[AnyRef])(using Quotes, Type[String])
+    :   Expr[Unit] =
+
+      '{Json.Printable.writeString($out, $value)}
 
   given iterable: [collection <: Iterable, element]
   =>  ( element0: element is Inlinable )
@@ -176,6 +254,17 @@ object Inlinable:
 // runtime call through `Json.Field`.
 trait Inlinable extends Typeclass:
   def parse(reader: Expr[Json.Reader])(using Quotes, Type[Self]): Expr[Self]
+
+  // The printing side, for `Inlinable.printable`: whether the instance generates a printer, and
+  // if so the code that writes a value into the JSON writer, which travels as a neutral carrier
+  // (`Json.Printable`'s writers reassert it per use), since generated code is capture-erased. An
+  // instance that does not print — the default, so a parse-only instance stays honest — puts its
+  // field on the `Encodable in Json` seam.
+  def prints: Boolean = false
+
+  def write(value: Expr[Self], out: Expr[AnyRef])(using Quotes, Type[Self]): Expr[Unit] =
+    quotes.reflect.report.errorAndAbort
+      ( s"jacinta: the Inlinable for ${Type.show[Self]} generates no printer" )
 
   // What a field of this type yields when its key is absent from the object,
   // mirroring the runtime instances: an abort unless overridden.

@@ -684,7 +684,94 @@ trait Json2 extends Json3:
           variant(value): [variant <: derivation] =>
             value => discriminable.rewrite(variantNames(label).or(label), contextual.encode(value))
 
-object Json extends Json2, Dynamic:
+// The direct path: the instances that drive a `Json.Parsable` or a `Json.Printable` whenever
+// one exists. They sit above the derived path in `Json2`, and below `object Json`, where
+// `import codecs.derived` overrides them.
+trait Json1 extends Json2:
+  this: Json.type =>
+
+  // Direct parsing: when the value knows how to consume JSON tokens itself,
+  // the AST is never materialized. Declared here (not in `Json2`, where the
+  // `Decodable`-based `aggregableDirect` lives) so it wins whenever a
+  // `Json.Parsable` exists, and is otherwise inapplicable — existing code
+  // resolves exactly as before. Captures what it parses with, like `aggregable` above.
+  given aggregableParsed: [value]
+  =>  ( parsable: (value is Json.Parsable)^ )
+  =>  ( tactic: Tactic[Parse.Error], tracking: PositionTracking )
+  =>  ( ((value in Json) is Aggregable by Data)^{parsable, tactic} ) =
+
+    new Aggregable:
+      type Self = value in Json
+      type Operand = Data
+
+      def aggregate(bytes: Chain[Data]): value in Json =
+        // A single in-memory block — the common case — skips the iterator
+        // plumbing entirely.
+        // The single-block fast path peeks at the `Chain`'s head and tail, and the general
+        // path hands the parser an `Iterator`; neither has a native counterpart.
+        if !bytes.nil && bytes.stdlib.tail.isEmpty
+        then parseDirect(bytes.stdlib.head, parsable).asInstanceOf[value in Json]
+        else parseDirect(bytes.stdlib.iterator, parsable).asInstanceOf[value in Json]
+
+      override def accept(stream: (Stream[Data] over Credit)^): value in Json =
+        parseDirect(stream, parsable).asInstanceOf[value in Json]
+
+  // Whole-`Data` direct read: when the entire content is already in hand,
+  // parse it in place rather than wrapping it in a one-element stream —
+  // the `Readable.dataData` precedent. Concrete in `Data`, so it beats the
+  // composed `dataToData` pipeline by specificity. Captures what it parses with, like
+  // `aggregableParsed` above.
+  given readableParsed: [value]
+  =>  ( parsable: (value is Json.Parsable)^ )
+  =>  ( tactic: Tactic[Parse.Error], tracking: PositionTracking )
+  =>  ( (Data is Readable to (value in Json))^{parsable, tactic} ) =
+
+    data => parseDirect(data, parsable).asInstanceOf[value in Json]
+
+  // `in[Text over Json]`, printed directly wherever a `Printable` exists and the formatting is
+  // compact: above `Json2`'s `encodableOver`, which builds the tree and renders it, as it still
+  // does under indented formatting, which generated printers do not write.
+  given encodableOverPrinted: [value]
+  =>  ( printable: (value is Json.Printable)^ )
+  =>  ( encodable: (value is anticipation.Encodable in Json)^, formatting: Json.Formatting )
+  =>  ( (value is anticipation.Encodable in (Text over Json))^{printable, encodable} ) =
+
+    value =>
+      val text =
+        if formatting.indent.present then encodable.encode(value).show
+        else if formatting.trailingNewline then t"${Json.Printable.print(value)}\n"
+        else Json.Printable.print(value)
+
+      text.asInstanceOf[Text over Json]
+
+object Json extends Json1, Dynamic:
+  // `import codecs.derived`: the derived codecs, even for a type with a direct instance in
+  // scope. Each outranks its direct counterpart in `Json1`, and applies only where that would.
+  given aggregableDerived: [value: distillate.Decodable in Json]
+  =>  ( derived: Codecs.Derived, parsable: (value is Json.Parsable)^ )
+  =>  ( tactic: Tactic[Parse.Error], jsonTactic: Tactic[Json.Error], tracking: PositionTracking )
+  =>  ( (value in Json) is Aggregable by Data ) =
+
+    aggregableDirect[value]
+
+  given readableDerived: [value: distillate.Decodable in Json]
+  =>  ( derived: Codecs.Derived, parsable: (value is Json.Parsable)^ )
+  =>  ( tactic: Tactic[Parse.Error], jsonTactic: Tactic[Json.Error], tracking: PositionTracking )
+  =>  ( Data is Readable to (value in Json) ) =
+
+    // Sealed as `aggregableDirect` is: besides its tactics, the instance reaches `Json` through
+    // this companion, whose `this` the checker cannot see is pure.
+    // [field-purity] given Readable over tactic, codec-thunk seal
+    caps.unsafe.unsafeAssumePure:
+      data => aggregableDirect[value].aggregate(Chain(data))
+
+  given encodableOverDerived: [value]
+  =>  ( derived: Codecs.Derived, printable: (value is Json.Printable)^ )
+  =>  ( encodable: (value is anticipation.Encodable in Json)^, formatting: Json.Formatting )
+  =>  ( (value is anticipation.Encodable in (Text over Json))^{encodable} ) =
+
+    encodableOver[value]
+
   // Controls how a `Json` value is serialized. `indent` is the whitespace unit per nesting level;
   // `Unset` (the default) produces minimal, single-line JSON. `trailingNewline` appends a final
   // newline. Bundled as `formatting.compactJsonFormatting` / `formatting.indentedJsonFormatting`.
@@ -758,7 +845,108 @@ object Json extends Json2, Dynamic:
     type Form = Json
     def shape(): Morphology
 
-  object Parsable:
+  // The parser a type generated once, into its companion, with `derives Json.Direct`, and the
+  // printer likewise.
+  object Printable extends Printable2:
+    // The base of generated printers, as `Parsable.Direct` is of generated parsers: generated
+    // code is capture-erased, so the body receives the writer as a neutral carrier.
+    abstract class Direct[value] extends Json.Printable:
+      type Self = value
+
+      protected def writeCarrier(value: value, out: AnyRef): Unit
+
+      def write(value: value, out: Json.Ast.Out^): Unit =
+        writeCarrier(value, out.asInstanceOf[AnyRef])
+
+    // The bridge from the AST world: the value's tree, encoded and written compactly in place.
+    def fromEncodable[value](encodable: (value is anticipation.Encodable in Json)^)
+    :   ((value is Json.Printable)^{encodable}) =
+
+      new Json.Printable:
+        type Self = value
+
+        def write(value: value, out: Json.Ast.Out^): Unit =
+          Json.Ast.write(out, compact, encodable.encode(value).root)
+
+    given declared: [value] => (direct: Json.Direct[value]) => value is Json.Printable =
+      direct.printable
+
+    private val compact: Json.Formatting = Json.Formatting(Unset, trailingNewline = false)
+
+    // A value's compact JSON text through its `Printable`, whole.
+    def print[value](value: value)(using printable: (value is Json.Printable)^): Text =
+      Producer.collect[Text](): producer => printable.write(value, Json.Ast.Textual(producer))
+
+    // The same text in blocks of the `Buffering` capacity, each handed to `deliver` as it fills,
+    // so no text of the whole value is built.
+    def emit[value](value: value, deliver: Text => Unit)
+      ( using printable: (value is Json.Printable)^, buffering: Buffering )
+    :   Unit =
+
+      Producer.sink[Text](deliver): producer => printable.write(value, Json.Ast.Textual(producer))
+
+    // The writers generated printers call: the writer travels as a neutral carrier, and is
+    // reasserted here, at the audited point. Public because generated printers are spliced
+    // into user modules.
+    private inline def of(out: AnyRef): Json.Ast.Out^ = out.asInstanceOf[Json.Ast.Out^]
+
+    def writeAscii(out: AnyRef, value: String): Unit = of(out).ascii(value)
+    def writeString(out: AnyRef, value: String): Unit = of(out).string(value)
+    def writeLong(out: AnyRef, value: Long): Unit = of(out).long(value)
+    def writeDouble(out: AnyRef, value: Double): Unit = of(out).ascii(value.toString)
+    def writeAst(out: AnyRef, value: Json.Ast): Unit = Json.Ast.write(of(out), compact, value)
+
+    def writeBoolean(out: AnyRef, value: Boolean): Unit =
+      of(out).ascii(if value then "true" else "false")
+
+    // Whether a field's encoded tree is written at all: the derived encoding leaves out a
+    // field whose encoding is absent.
+    def present(value: Json.Ast): Boolean = !value.isAbsent
+
+    // The call point for a nominal `Printable` in a field position of a generated printer (a
+    // recursive record's own instance, or a hand-written one).
+    def writeField[value](printable: AnyRef, value: value, out: AnyRef): Unit =
+      printable.asInstanceOf[value is Json.Printable].write(value, of(out))
+
+  // The direct-printing counterpart of `Json.Encodable`: writes a value's compact JSON text
+  // straight into a writer, with no tree built. It is reached through `in[Text over Json]` and
+  // `in[Data over Json]`, and its surface is explicit instances, `Inlinable.printable`,
+  // `derives Json.Direct` and `import codecs.direct`.
+  trait Printable extends Typeclass:
+    def write(value: Self, out: Json.Ast.Out^): Unit
+
+  // `import codecs.direct`: a generated parser and printer for every record, expanded where
+  // each is needed. A type that is not a record fails `Generates`, and so takes the derived
+  // path. Below the companions' `declared` instances, so a type that derives `Json.Direct`
+  // uses the codec it generated once.
+  trait Parsable2:
+    inline given generated: [value]
+    =>  ( mode: Codecs.Direct, generates: Inlinable.Generates[value] )
+    =>  ( value is Json.Parsable ) =
+
+      ${jacinta.inlining.inlinableParsable[value]}
+
+  trait Printable2:
+    inline given generated: [value]
+    =>  ( mode: Codecs.Direct, generates: Inlinable.Generates[value] )
+    =>  ( value is Json.Printable ) =
+
+      ${jacinta.inlining.inlinablePrintable[value]}
+
+  // The `derives` carrier for a generated codec: `case class Foo(…) derives Json.Direct`
+  // generates `Foo`'s parser and printer once, into its companion. (A `Self`-typed typeclass
+  // has no type parameters, so it cannot appear in a `derives` clause itself.)
+  object Direct:
+    inline def derived[value]: Direct[value] =
+      Direct(Inlinable.parsable[value], Inlinable.printable[value])
+
+  final class Direct[value]
+    ( val parsable: value is Json.Parsable, val printable: value is Json.Printable )
+
+  object Parsable extends Parsable2:
+    given declared: [value] => (direct: Json.Direct[value]) => value is Json.Parsable =
+      direct.parsable
+
     // The base of generated parsers: generated code is capture-erased, so
     // the body receives the reader as a neutral carrier, and the capability
     // is asserted here at the rim — the audited point — like the reader's
@@ -1598,7 +1786,8 @@ object Json extends Json2, Dynamic:
     // render through the same code; `Bytes` writes UTF-8 straight into a byte block, escaping
     // and encoding each string in one pass over its characters and rendering numbers as digits
     // in place — the model of Jackson's generator — and delivers each block as it fills.
-    private[jacinta] trait Out extends caps.ExclusiveCapability, caps.Stateful:
+    // Public, as the medium a `Json.Printable` writes into; its implementations stay internal.
+    trait Out extends caps.ExclusiveCapability, caps.Stateful:
       // A literal known to be ASCII: punctuation, keywords, digits.
       update def ascii(text: String): Unit
 
@@ -2411,7 +2600,7 @@ object Json extends Json2, Dynamic:
   // the parser's lineation is enabled so parse errors carry real source
   // coordinates; there is no `PositionIndex` (nothing to index — the result
   // is the caller's value, not a `Json`).
-  private def parseDirect[value]
+  private[jacinta] def parseDirect[value]
     ( input: Iterator[Data], parsable: (value is Json.Parsable)^ )
     ( using tactic: Tactic[Parse.Error], tracking: PositionTracking, mode: NumberMode )
   :   value =
@@ -2428,7 +2617,7 @@ object Json extends Json2, Dynamic:
 
   // As above, but parsing a single in-memory block: no stream, no filler,
   // no credit — the cursor reads the block in place.
-  private def parseDirect[value]
+  private[jacinta] def parseDirect[value]
     ( input: Data, parsable: (value is Json.Parsable)^ )
     ( using tactic: Tactic[Parse.Error], tracking: PositionTracking, mode: NumberMode )
   :   value =
@@ -2445,7 +2634,7 @@ object Json extends Json2, Dynamic:
 
   // As above, but pulling from a demand-aware stream; see `readJson`'s note
   // on the neutral-reference hop.
-  private def parseDirect[value]
+  private[jacinta] def parseDirect[value]
     ( input: (Stream[Data] over Credit)^, parsable: (value is Json.Parsable)^ )
     ( using tactic: Tactic[Parse.Error], tracking: PositionTracking, mode: NumberMode )
   :   value =
@@ -2916,44 +3105,6 @@ object Json extends Json2, Dynamic:
       // The parser consumes an `Iterator`, which only the stdlib view of a `Chain` offers.
       def aggregate(bytes: Chain[Data]): Json = readJson(bytes.stdlib.iterator)
       override def accept(stream: (Stream[Data] over Credit)^): Json = readJson(stream)
-
-  // Direct parsing: when the value knows how to consume JSON tokens itself,
-  // the AST is never materialized. Declared here (not in `Json2`, where the
-  // `Decodable`-based `aggregableDirect` lives) so it wins whenever a
-  // `Json.Parsable` exists, and is otherwise inapplicable — existing code
-  // resolves exactly as before. Captures what it parses with, like `aggregable` above.
-  given aggregableParsed: [value]
-  =>  ( parsable: (value is Json.Parsable)^ )
-  =>  ( tactic: Tactic[Parse.Error], tracking: PositionTracking )
-  =>  ( ((value in Json) is Aggregable by Data)^{parsable, tactic} ) =
-
-    new Aggregable:
-      type Self = value in Json
-      type Operand = Data
-
-      def aggregate(bytes: Chain[Data]): value in Json =
-        // A single in-memory block — the common case — skips the iterator
-        // plumbing entirely.
-        // The single-block fast path peeks at the `Chain`'s head and tail, and the general
-        // path hands the parser an `Iterator`; neither has a native counterpart.
-        if !bytes.nil && bytes.stdlib.tail.isEmpty
-        then parseDirect(bytes.stdlib.head, parsable).asInstanceOf[value in Json]
-        else parseDirect(bytes.stdlib.iterator, parsable).asInstanceOf[value in Json]
-
-      override def accept(stream: (Stream[Data] over Credit)^): value in Json =
-        parseDirect(stream, parsable).asInstanceOf[value in Json]
-
-  // Whole-`Data` direct read: when the entire content is already in hand,
-  // parse it in place rather than wrapping it in a one-element stream —
-  // the `Readable.dataData` precedent. Concrete in `Data`, so it beats the
-  // composed `dataToData` pipeline by specificity. Captures what it parses with, like
-  // `aggregableParsed` above.
-  given readableParsed: [value]
-  =>  ( parsable: (value is Json.Parsable)^ )
-  =>  ( tactic: Tactic[Parse.Error], tracking: PositionTracking )
-  =>  ( (Data is Readable to (value in Json))^{parsable, tactic} ) =
-
-    data => parseDirect(data, parsable).asInstanceOf[value in Json]
 
   given showable: Formatting => Json is Showable = _.root.show
 
