@@ -63,7 +63,6 @@ import zephyrine.*
 
 import Protobuf.Error.Reason
 import fulminate.*
-import denominative.dysasymptotics.linearSize
 
 trait Protobuf2:
   this: Protobuf.type =>
@@ -748,13 +747,16 @@ object Protobuf extends Protobuf1:
       val list = values.to(List)
 
       if list.nil then Absent else
-        val hint = list.size*(packable.wireType match
-          case WireType.I64 => 8
-          case WireType.I32 => 4
-          case _            => 2)
+        // Each element is encoded once, summing their lengths, so that the concatenation is
+        // written into an array of exactly that size, with no growing and no final copy.
+        var size = 0
 
-        val bytes = printed(hint): printer =>
-          list.each: element => printer.raw(encodable.encode(element).payload)
+        val payloads = list.map: element =>
+          val payload = encodable.encode(element).payload
+          size += payload.length
+          payload
+
+        val bytes = sized(size): printer => payloads.each(printer.raw(_))
 
         Wire(WireType.Len, bytes)
 

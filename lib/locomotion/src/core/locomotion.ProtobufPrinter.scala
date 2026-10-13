@@ -49,7 +49,7 @@ import rudiments.*
 // goes to `deliver` directly. Holding its buffer and cursor, the printer is a stateful
 // capability with update-classified writes.
 @unexported
-class ProtobufPrinter private
+final class ProtobufPrinter private
   ( buffer0: scala.Array[Byte], growable: Boolean, deliver: (Data => Unit) | Null )
 extends caps.ExclusiveCapability, caps.Stateful:
 
@@ -64,15 +64,18 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // Room for `count` more bytes: in block mode the filled block is delivered first, and in
   // growable mode the buffer doubles. An exact-size printer is never short of room, since its
   // size was measured for exactly what it writes.
-  private update def room(count: Int): Unit =
-    if position + count > buffer.length then
-      if deliver != null then flush()
-      else if growable then
-        var capacity = (buffer.length*2).max(16)
-        while capacity < position + count do capacity *= 2
-        val bigger = new scala.Array[Byte](capacity)
-        System.arraycopy(buffer, 0, bigger, 0, position)
-        buffer = bigger
+  // Inline, so that the common case — room enough — is one comparison at each write.
+  private update inline def room(count: Int): Unit =
+    if position + count > buffer.length then makeRoom(count)
+
+  private update def makeRoom(count: Int): Unit =
+    if deliver != null then flush()
+    else if growable then
+      var capacity = (buffer.length*2).max(16)
+      while capacity < position + count do capacity *= 2
+      val bigger = new scala.Array[Byte](capacity)
+      System.arraycopy(buffer, 0, bigger, 0, position)
+      buffer = bigger
 
   // In block mode, a write that a whole block could not hold.
   private update def oversized(count: Int): Boolean = deliver != null && count > buffer.length
@@ -94,7 +97,17 @@ extends caps.ExclusiveCapability, caps.Stateful:
     target(position) = value.toByte
     position += 1
 
+  // The common case — the bytes fit — is one comparison and a copy, kept small so that it
+  // inlines where it is called; growing, flushing and oversized writes are out of line.
   update def raw(data: Data): Unit =
+    val count = data.length
+
+    if position + count <= buffer.length then
+      System.arraycopy(data.readable, 0, target, position, count)
+      position += count
+    else rawOverflowing(data)
+
+  private update def rawOverflowing(data: Data): Unit =
     if oversized(data.length) then
       flush()
       deliver.nn(data)
@@ -108,7 +121,13 @@ extends caps.ExclusiveCapability, caps.Stateful:
     varint(data.length.toLong)
     raw(data)
 
+  // A one-byte varint — a tag, a short length, a small number — is the common case, written as
+  // the byte it is.
+  // Kept small, so that it inlines where it is called; the longer encodings are out of line.
   update def varint(value: Long): Unit =
+    if (value & ~0x7fL) == 0L then byte(value.toInt) else longVarint(value)
+
+  private update def longVarint(value: Long): Unit =
     room(10)
     position = Scribe.varintInto(target, position, value)
 
