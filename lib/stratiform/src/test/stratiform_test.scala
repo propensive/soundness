@@ -252,6 +252,44 @@ object Tests extends Suite(m"Stratiform Tests"):
         == TelCheckTree.of(source.read[Tel])
       . assert(identity)
 
+    suite(m"Reading from a stream as it arrives"):
+      // The bytes as a stream of `size`-byte chunks, so that every token straddles a chunk
+      // boundary somewhere, and the readers' `accept` (not `aggregate`) is the path taken.
+      def dribble(bytes: Data, size: Int): Stream[Data] over Credit =
+        Iterator.range(0, bytes.length, size)
+        . map: start =>
+            bytes.segment(start.z till (start + size).min(bytes.length).z)
+        . stream
+
+      CorpusLoader.positive.each: testcase =>
+        if !treeDivergences.has(testcase.stem) then
+          List(1, 3, 64).each: size =>
+            test(m"${testcase.stem} parses in $size-byte chunks"):
+              val tel = summon[Tel is Aggregable by Data].accept(dribble(testcase.source, size))
+              TelCheckTree.of(tel)
+            . assert(_ == CheckFormat.parse(testcase.check).tree)
+
+      val person: Data = summon[Codepage].encoded(t"name Alice\nage 30\n")
+
+      test(m"a value decodes from a one-byte-chunk stream"):
+        summon[(Tests.Person in Tel) is Aggregable by Data].accept(dribble(person, 1))
+      . assert(_ == Tests.Person(t"Alice", 30))
+
+      test(m"a value parses directly from a one-byte-chunk stream"):
+        given Tests.Person is Tel.Parsable = Tel.Parsable.derived
+        summon[(Tests.Person in Tel) is Aggregable by Data].accept(dribble(person, 1))
+      . assert(_ == Tests.Person(t"Alice", 30))
+
+      CorpusLoader.streaming.filter(!_.check.s.contains("errors:")).each: testcase =>
+        test(m"${testcase.stem} parses as documents in one-byte chunks"):
+          summon[List[Tel] is Aggregable by Data].accept(dribble(testcase.source, 1))
+          . map(TelCheckTree.of)
+        . assert(_ == CheckFormat.parseStream(testcase.check).map(_.tree))
+
+      test(m"a document loads from a one-byte-chunk stream"):
+        summon[Tel is Loadable by Data].load(dribble(person, 1)).root.as[Tests.Person]
+      . assert(_ == Tests.Person(t"Alice", 30))
+
     suite(m"Streaming parser — positive corpus"):
       CorpusLoader.positive.each: testcase =>
         if !treeDivergences.has(testcase.stem) then

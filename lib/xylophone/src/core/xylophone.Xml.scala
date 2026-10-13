@@ -1835,32 +1835,78 @@ object Xml extends Tag.Container
       ${xylophone.internal.extractor[parts, origins]('scrutinee)}
 
 
+  // The stream an `Aggregable`'s `accept` receives, handed on to a consuming cursor. `accept`'s
+  // signature is pinned non-consuming, so ownership moves through a neutral reference: each
+  // call delivers a stream that is used exactly once, by construction.
+  private[xylophone] def adopted[operand](stream: (Stream[operand] over Credit)^)
+  :   (Stream[operand] over Credit)^ =
+
+    stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[operand] over Credit)^]
+
   // The parser reads UTF-8 bytes, so a byte source is parsed as it arrives; a text source
   // is encoded first (see `XmlParser`). A leading `<?xml …?>` declaration is accepted and
   // silently dropped, so a whole document reads as a fragment; `load` keeps it as metadata.
   given aggregable: [content <: Label: Reifiable to List[String]]
   =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
-  =>  ( tactic: Tactic[Parse.Error] )
+  =>  ( tactic: Tactic[Parse.Error], buffering: Buffering )
   =>  ( ((Xml of content) is Aggregable by Data)^{tactic} ) =
 
-    input => XmlParser.fromDataChain(input).parseXml(keepHeader = false).of[content]
+    new Aggregable:
+      type Self = Xml of content
+      type Operand = Data
+
+      def aggregate(input: Chain[Data]): Xml of content =
+        XmlParser.fromDataChain(input).parseXml(keepHeader = false).of[content]
+
+      override def accept(stream: (Stream[Data] over Credit)^): Xml of content =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        XmlParser.fromStream(adopted(stream)).parseXml(keepHeader = false).of[content]
 
   given aggregable2: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
-  =>  ( tactic: Tactic[Parse.Error] )
+  =>  ( tactic: Tactic[Parse.Error], buffering: Buffering )
   =>  ( (Xml is Aggregable by Data)^{tactic} ) =
-    input => XmlParser.fromDataChain(input).parseXml(keepHeader = false)
+
+    new Aggregable:
+      type Self = Xml
+      type Operand = Data
+
+      def aggregate(input: Chain[Data]): Xml =
+        XmlParser.fromDataChain(input).parseXml(keepHeader = false)
+
+      override def accept(stream: (Stream[Data] over Credit)^): Xml =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        XmlParser.fromStream(adopted(stream)).parseXml(keepHeader = false)
 
   given aggregableText: [content <: Label: Reifiable to List[String]]
   =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
-  =>  ( tactic: Tactic[Parse.Error] )
+  =>  ( tactic: Tactic[Parse.Error], buffering: Buffering )
   =>  ( ((Xml of content) is Aggregable by BaseText)^{tactic} ) =
 
-    input => XmlParser.fromChain(input).parseXml(keepHeader = false).of[content]
+    new Aggregable:
+      type Self = Xml of content
+      type Operand = BaseText
+
+      def aggregate(input: Chain[BaseText]): Xml of content =
+        XmlParser.fromChain(input).parseXml(keepHeader = false).of[content]
+
+      override def accept(stream: (Stream[BaseText] over Credit)^): Xml of content =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        XmlParser.fromTextStream(adopted(stream)).parseXml(keepHeader = false).of[content]
 
   given aggregableText2: (schema: XmlSchema, scope: Scope, namespacing: Namespacing)
-  =>  ( tactic: Tactic[Parse.Error] )
+  =>  ( tactic: Tactic[Parse.Error], buffering: Buffering )
   =>  ( (Xml is Aggregable by BaseText)^{tactic} ) =
-    input => XmlParser.fromChain(input).parseXml(keepHeader = false)
+
+    new Aggregable:
+      type Self = Xml
+      type Operand = BaseText
+
+      def aggregate(input: Chain[BaseText]): Xml =
+        XmlParser.fromChain(input).parseXml(keepHeader = false)
+
+      override def accept(stream: (Stream[BaseText] over Credit)^): Xml =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        XmlParser.fromTextStream(adopted(stream)).parseXml(keepHeader = false)
 
   // HTTP content-type integration. `Abstractable across HttpStreams` makes an
   // `Xml` value usable as an HTTP request/response body (telekinesis derives
@@ -1894,17 +1940,37 @@ object Xml extends Tag.Container
   =>  ( parsable: (value is Xml.Parsable)^ )
   =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
   =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
+  =>  ( buffering: Buffering )
   =>  ( ((value in Xml) is Aggregable by Data)^{parsable, tactic, xmlTactic} ) =
 
-    input => parseDirectData(input, parsable).asInstanceOf[value in Xml]
+    new Aggregable:
+      type Self = value in Xml
+      type Operand = Data
+
+      def aggregate(input: Chain[Data]): value in Xml =
+        parseDirectData(input, parsable).asInstanceOf[value in Xml]
+
+      override def accept(stream: (Stream[Data] over Credit)^): value in Xml =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        parseWith(XmlParser.fromStream(adopted(stream)), parsable).asInstanceOf[value in Xml]
 
   given aggregableParsedText: [value]
   =>  ( parsable: (value is Xml.Parsable)^ )
   =>  ( schema: XmlSchema, scope: Scope, namespacing: Namespacing )
   =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
+  =>  ( buffering: Buffering )
   =>  ( ((value in Xml) is Aggregable by BaseText)^{parsable, tactic, xmlTactic} ) =
 
-    input => parseDirect(input, parsable).asInstanceOf[value in Xml]
+    new Aggregable:
+      type Self = value in Xml
+      type Operand = BaseText
+
+      def aggregate(input: Chain[BaseText]): value in Xml =
+        parseDirect(input, parsable).asInstanceOf[value in Xml]
+
+      override def accept(stream: (Stream[BaseText] over Credit)^): value in Xml =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        parseWith(XmlParser.fromTextStream(adopted(stream)), parsable).asInstanceOf[value in Xml]
 
   // Whole-value direct reads: when the entire content is already in hand,
   // parse it in place rather than wrapping it in a one-element stream —
@@ -2043,7 +2109,7 @@ object Xml extends Tag.Container
     // The chunk chain view of the pull endpoint (the audited bridge); the parser encodes
     // each chunk to UTF-8 as it reaches it.
     val chunks =
-      zephyrine.chain(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[BaseText] over Credit)^])
+      zephyrine.chain(adopted(stream))
 
     val parser: XmlParser^ = tracking match
       case PositionTracking.On  => XmlParser.fromChainTracked(chunks)
@@ -2057,7 +2123,7 @@ object Xml extends Tag.Container
   =>  ( tactic: Tactic[Parse.Error], tracking: PositionTracking, buffering: Buffering )
   =>  ( (Xml is Loadable by Data)^{tactic} ) = stream =>
     // The non-consume `load` crosses to the consuming cursor as a neutral reference.
-    val bytes = stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]
+    val bytes = adopted(stream)
 
     val parser: XmlParser^ = tracking match
       case PositionTracking.On  => XmlParser.fromStreamTracked(bytes)
@@ -2799,6 +2865,17 @@ object Xml extends Tag.Container
 
     // The text-input forms encode to UTF-8 and read the bytes; their error offsets are
     // converted back to chars (`charOffsets`), the units of the text supplied.
+    // A text stream, encoded to UTF-8 as it arrives; its error offsets are converted back to
+    // chars, as `fromText`'s are.
+    def fromTextStream(consume input: (Stream[BaseText] over Credit)^)(using Buffering)
+      ( using XmlSchema, Scope, Namespacing )
+    :   XmlParser^ =
+
+      new XmlParser
+        ( Cursor[Data](input.via(hieroglyph.codepages.utf8Codepage)),
+          tracking = false,
+          charOffsets = true )
+
     def fromText(text: BaseText)(using XmlSchema, Scope, Namespacing): XmlParser^ =
       new XmlParser(Cursor[Data](utf8(text)), tracking = false, charOffsets = true)
 

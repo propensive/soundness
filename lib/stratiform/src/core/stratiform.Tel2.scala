@@ -210,8 +210,18 @@ trait Tel2 extends Tel3:
   // does not (all pre-`Parsable` code), this resolves exactly as before.
   given aggregableIn: [value: distillate.Decodable in Tel]
   =>  ( tactic: Tactic[Tel.Error], tracking: zephyrine.PositionTracking )
+  =>  ( buffering: zephyrine.Buffering )
   =>  ( ((value in Tel) is Aggregable by Data)^{tactic} ) =
-    source => Tel.parseTracking(Tel.concatenate(source)).as[value].asInstanceOf[value in Tel]
+
+    new Aggregable:
+      type Self = value in Tel
+      type Operand = Data
+
+      def aggregate(source: Chain[Data]): value in Tel =
+        Tel.parseTracking(Tel.concatenate(source)).as[value].asInstanceOf[value in Tel]
+
+      override def accept(stream: (zephyrine.Stream[Data] over zephyrine.Credit)^): value in Tel =
+        Tel.parseTracking(Tel.streamed(stream)).as[value].asInstanceOf[value in Tel]
 
   object ParsableDerivation extends Derivable[Tel.Field]:
     inline def conjunction[derivation <: Product: ProductReflection]

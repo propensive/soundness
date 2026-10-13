@@ -129,6 +129,30 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
         t"<root><name>Alice</name><age>30</age></root>".read[PWorker in Xml]
       . assert(_ == PWorker(t"Alice", 30))
 
+      // A stream of `size`-byte (or `size`-char) chunks, so the readers' `accept` is the path
+      // taken and every token straddles a chunk boundary somewhere.
+      def dribble(text: Text, size: Int): Stream[Data] over Credit =
+        val bytes: Data = codepages.utf8Codepage.encoded(text)
+
+        Iterator.range(0, bytes.length, size)
+        . map: start =>
+            bytes.segment(start.z till (start + size).min(bytes.length).z)
+        . stream
+
+      def dribbleText(text: Text, size: Int): Stream[Text] over Credit =
+        text.s.grouped(size).nn.map(_.tt).stream
+
+      val team = t"<root><name>Crew</name><members><name>Zoë</name><age>3</age></members>"+
+        t"<members><name>Bob</name><age>40</age></members></root>"
+
+      test(m"Parse directly from a one-byte-chunk stream"):
+        summon[(PTeam in Xml) is Aggregable by Data].accept(dribble(team, 1))
+      . assert(_ == PTeam(t"Crew", List(PWorker(t"Zoë", 3), PWorker(t"Bob", 40))))
+
+      test(m"Parse directly from a one-char-chunk text stream"):
+        summon[(PTeam in Xml) is Aggregable by Text].accept(dribbleText(team, 1))
+      . assert(_ == PTeam(t"Crew", List(PWorker(t"Zoë", 3), PWorker(t"Bob", 40))))
+
       test(m"`in[Text over Xml]` writes what `read[T in Xml]` reads"):
         PWorker(t"Alice", 30).in[Text over Xml].read[PWorker in Xml]
       . assert(_ == PWorker(t"Alice", 30))

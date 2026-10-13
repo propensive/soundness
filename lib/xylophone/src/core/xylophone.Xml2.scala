@@ -66,18 +66,36 @@ trait Xml2 extends Xml3:
   // `value { type Form = Xml }` so the cast is a no-op at runtime.
   given aggregableIn: [value: Decodable in Xml]
   =>  ( schema: XmlSchema, scope: Xml.Scope, namespacing: Xml.Namespacing )
-  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error] )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], buffering: Buffering )
   =>  ( ((value in Xml) is Aggregable by Data)^{tactic, xmlTactic} ) =
 
-    input =>
-      Xml.XmlParser.fromDataChain(input).parseXml(keepHeader = false).as[value]
-      . asInstanceOf[value in Xml]
+    new Aggregable:
+      type Self = value in Xml
+      type Operand = Data
+
+      def aggregate(input: Chain[Data]): value in Xml =
+        Xml.XmlParser.fromDataChain(input).parseXml(keepHeader = false).as[value]
+        . asInstanceOf[value in Xml]
+
+      override def accept(stream: (Stream[Data] over Credit)^): value in Xml =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        Xml.XmlParser.fromStream(Xml.adopted(stream)).parseXml(keepHeader = false).as[value]
+        . asInstanceOf[value in Xml]
 
   given aggregableInText: [value: Decodable in Xml]
   =>  ( schema: XmlSchema, scope: Xml.Scope, namespacing: Xml.Namespacing )
-  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error] )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], buffering: Buffering )
   =>  ( ((value in Xml) is Aggregable by Text)^{tactic, xmlTactic} ) =
 
-    input =>
-      Xml.XmlParser.fromChain(input).parseXml(keepHeader = false).as[value]
-      . asInstanceOf[value in Xml]
+    new Aggregable:
+      type Self = value in Xml
+      type Operand = Text
+
+      def aggregate(input: Chain[Text]): value in Xml =
+        Xml.XmlParser.fromChain(input).parseXml(keepHeader = false).as[value]
+        . asInstanceOf[value in Xml]
+
+      override def accept(stream: (Stream[Text] over Credit)^): value in Xml =
+        // Parsed as it arrives, not gathered first as the trait's default `accept` would.
+        Xml.XmlParser.fromTextStream(Xml.adopted(stream)).parseXml(keepHeader = false).as[value]
+        . asInstanceOf[value in Xml]

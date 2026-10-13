@@ -1550,6 +1550,39 @@ object Tests extends Suite(m"Xylophone tests"):
         . nonEmpty
       . assert(identity)
 
+    suite(m"Reading from a stream as it arrives"):
+      // A stream of `size`-byte (or `size`-char) chunks, so the readers' `accept` is the path
+      // taken and every token straddles a chunk boundary somewhere.
+      def dribble(text: Text, size: Int): Stream[Data] over Credit =
+        val bytes: Data = codepages.utf8Codepage.encoded(text)
+
+        Iterator.range(0, bytes.length, size)
+        . map: start =>
+            bytes.segment(start.z till (start + size).min(bytes.length).z)
+        . stream
+
+      def dribbleText(text: Text, size: Int): Stream[Text] over Credit =
+        text.s.grouped(size).nn.map(_.tt).stream
+
+      val bibliography = Bibliography(t"Zoë & Co", Book(t"Tales", t"978-0"))
+      val firm = bibliography.in[Xml].show
+
+      test(m"a tree parses from a one-byte-chunk stream"):
+        summon[Xml is Aggregable by Data].accept(dribble(firm, 1)).show
+      . assert(_ == firm.read[Xml].show)
+
+      test(m"a tree parses from a one-char-chunk text stream"):
+        summon[Xml is Aggregable by Text].accept(dribbleText(firm, 1)).show
+      . assert(_ == firm.read[Xml].show)
+
+      test(m"a value decodes from a one-byte-chunk stream"):
+        summon[(Bibliography in Xml) is Aggregable by Data].accept(dribble(firm, 1))
+      . assert(_ == bibliography)
+
+      test(m"a value decodes from a one-char-chunk text stream"):
+        summon[(Bibliography in Xml) is Aggregable by Text].accept(dribbleText(firm, 1))
+      . assert(_ == bibliography)
+
     suite(m"Optics"):
       import dynamicAccess.dynamicXml
       def doc: Xml = t"<doc><x>1</x><x>2</x><x>3</x></doc>".read[Xml]

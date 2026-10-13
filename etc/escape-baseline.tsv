@@ -432,7 +432,7 @@ lib/xenophile/src/native/xenophile.PanamaInvoke.scala	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/xenophile/src/nativeruntime/xenophile.ForeignLibrary.scala	0	0	1	0	0	0	0	0	0	0	0	0	0
 lib/xenophile/src/test/xenophile_test.scala	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/xylophone/src/bench/xylophone.Benchmarks.scala	0	0	0	0	5	0	0	0	0	0	0	0	0
-lib/xylophone/src/core/xylophone.Xml.scala	9	1	1	0	4	3	1	0	0	0	15	5	0
+lib/xylophone/src/core/xylophone.Xml.scala	9	1	1	0	4	3	1	0	0	0	14	4	0
 lib/xylophone/src/core/xylophone.Xml3.scala	2	0	0	0	0	0	0	0	0	0	0	0	0
 lib/xylophone/src/core/xylophone.dynamicAccess.scala	0	0	0	0	0	0	0	0	0	1	0	0	0
 lib/xylophone/src/core/xylophone.internal.scala	1	0	3	0	0	0	8	0	0	0	0	3	0
