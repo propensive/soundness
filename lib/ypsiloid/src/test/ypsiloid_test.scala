@@ -337,6 +337,18 @@ object Tests extends Suite("ypsiloid", m"Ypsiloid Tests"):
         t"{name: Alice, age: 30}".read[Person in Yaml]
       . assert(_ == Person(t"Alice", 30))
 
+      test(m"`in[Text over Yaml]` writes what `read[T in Yaml]` reads"):
+        import formatting.blockYamlFormatting
+        Person(t"Alice", 30).in[Text over Yaml].read[Person in Yaml]
+      . assert(_ == Person(t"Alice", 30))
+
+      test(m"`in[Data over Yaml]` writes what `read[T in Yaml]` reads"):
+        import formatting.blockYamlFormatting
+        import codepages.utf8Codepage
+        import charsets.utf8Charset, textSanitizers.strictSanitizer
+        Person(t"Zoë", 30).in[Data over Yaml].read[Person in Yaml]
+      . assert(_ == Person(t"Zoë", 30))
+
       test(m"`read[T in Yaml]` works for nested case classes"):
         t"{inner: {n: 7}}".read[Outer in Yaml]
       . assert(_ == Outer(Inner(7)))

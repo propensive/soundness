@@ -3555,6 +3555,15 @@ object Tests extends Suite(m"Stratiform Tests"):
         data.read[Tests.Tree in Tel]
       . assert(_ == Tests.Tree(t"root", List(Tests.Tree(t"a", Nil))))
 
+      test(m"`in[Text over Tel]` writes what `read[T in Tel]` reads"):
+        Tests.Person(t"Alice", 30).in[Text over Tel].read[Tests.Person in Tel]
+      . assert(_ == Tests.Person(t"Alice", 30))
+
+      test(m"`in[Data over Tel]` writes what `read[T in Tel]` reads"):
+        import codepages.utf8Codepage
+        Tests.Person(t"Zoë", 30).in[Data over Tel].read[Tests.Person in Tel]
+      . assert(_ == Tests.Person(t"Zoë", 30))
+
     suite(m"Compile-time error positioning"):
       test(m"an odd-indentation error's focus lands inside the literal"):
         demilitarize:

@@ -256,6 +256,21 @@ trait Json2 extends Json3:
   =>  value is Json.Parsable =
     Json.Parsable.optionality[inner, value](parsable)
 
+  // The write-side mirror of `read[Foo in Json]`: `foo.in[Text over Json]` is the value's
+  // JSON text, encoded to the tree and rendered in the `Json.Formatting` in scope, as `show`.
+  given encodableOver: [value]
+  =>  ( encodable: (value is anticipation.Encodable in Json)^, formatting: Json.Formatting )
+  =>  ( (value is anticipation.Encodable in (Text over Json))^{encodable} ) =
+
+    value => encodable.encode(value).show.asInstanceOf[Text over Json]
+
+  // `foo.in[Data over Json]`: the same text, encoded in the `Codepage` in scope.
+  given encodableOverData: [value]
+  =>  ( text: (value is anticipation.Encodable in (Text over Json))^, codepage: hieroglyph.Codepage )
+  =>  ( (value is anticipation.Encodable in (Data over Json))^{text} ) =
+
+    value => codepage.encoded(text.encode(value)).asInstanceOf[Data over Json]
+
   // The AST-materializing read path: parse the whole input into a `Json`,
   // then decode. Lives at this priority so `object Json`'s direct-parsing
   // `aggregableParsed` wins whenever the value has a `Json.Parsable`; when it

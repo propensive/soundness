@@ -114,6 +114,14 @@ trait Cbor2:
   =>  ( ((value in Cbor) is Aggregable by Data)^{tactic} ) =
     Cbor.aggregable.map(_.as[value].asInstanceOf[value in Cbor])
 
+  // The write-side mirror of `read[Foo in Cbor]`: `foo.in[Data over Cbor]` is the value's
+  // CBOR bytes, encoded to the tree and serialized.
+  given encodableOver: [value] => (encodable: (value is Encodable in Cbor)^)
+  =>  ( (value is Encodable in (Data over Cbor))^{encodable} ) =
+
+    value =>
+      Cbor.Ast.encodable.encoded(encodable.encode(value).root).asInstanceOf[Data over Cbor]
+
   inline given encodable: [value] => value is Encodable in Cbor = summonFrom:
     case given (`value` is Encodable in Text) => value => ast(Ast(value.encode.s))
     case given Reflection[`value`]            => EncodableDerivation.derived

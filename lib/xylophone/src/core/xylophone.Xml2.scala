@@ -45,6 +45,21 @@ import zephyrine.*
 // the value has an `Xml.Parsable`; when it does not (all pre-`Parsable`
 // code), this resolves exactly as before.
 trait Xml2 extends Xml3:
+  // The write-side mirror of `read[Foo in Xml]`: `foo.in[Text over Xml]` is the value's XML
+  // text, encoded to the tree and rendered in the `Xml.Formatting` in scope, as `show`.
+  given encodableOver: [value] => (encodable: (value is Encodable in Xml)^)
+  =>  ( formatting: Xml.Formatting )
+  =>  ( (value is Encodable in (Text over Xml))^{encodable} ) =
+
+    value => Xml.showable[Xml].text(encodable.encode(value)).asInstanceOf[Text over Xml]
+
+  // `foo.in[Data over Xml]`: the same text, encoded in the `Codepage` in scope.
+  given encodableOverData: [value]
+  =>  ( text: (value is Encodable in (Text over Xml))^, codepage: hieroglyph.Codepage )
+  =>  ( (value is Encodable in (Data over Xml))^{text} ) =
+
+    value => codepage.encoded(text.encode(value)).asInstanceOf[Data over Xml]
+
   // `source.read[Foo in Xml]` shorthand for `source.read[Xml].as[Foo]`.
   // Mirrors `jacinta`'s `aggregableDirect` for `value in Json`. The `Form`
   // type-tag is added by an `asInstanceOf` cast — `value in Xml` is just

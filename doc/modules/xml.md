@@ -182,6 +182,16 @@ t"<Worker><name>Alice</name><age>30</age></Worker>".read[Worker in Xml]
 // Worker(t"Alice", 30)
 ```
 
+`in[Text over Xml]` is the mirror of `read[Worker in Xml]`, encoding a value straight to its XML
+text:
+
+```scala
+Worker(t"Alice", 30).in[Text over Xml]
+// t"<Worker><name>Alice</name><age>30</age></Worker>"
+```
+
+`in[Data over Xml]` writes the same text as bytes, encoded in the `Codepage` in scope.
+
 A field marked `@attribute` becomes an attribute rather than a child element, and round-trips as
 one:
 

@@ -159,6 +159,14 @@ trait Protobuf2:
         Protobuf.message(Aggregable.bytesData.accept(stream)).as[value]
         . asInstanceOf[value in Protobuf]
 
+  // The write-side mirror of `read[Foo in Protobuf]`: `foo.in[Data over Protobuf]` is the
+  // message's wire bytes. `.in[Protobuf]` is already direct wherever a `Printable` exists (its
+  // wire value is the printed array, uncopied), so one instance serves both paths.
+  given encodableOver: [value] => (encodable: (value is Encodable in Protobuf)^)
+  =>  ( (value is Encodable in (Data over Protobuf))^{encodable} ) =
+
+    value => encodable.encode(value).payload.asInstanceOf[Data over Protobuf]
+
   // Unpacked `repeated`: each element is emitted as a separate field (one tag per
   // value). This is the fallback for elements with no `Packable` instance — strings,
   // byte arrays and embedded messages. Numeric scalars are handled by the

@@ -99,6 +99,16 @@ t"""{"rowers":[{"name":"Bob","age":40}],"cox":{"name":"Carol","age":25}}"""
 // Crew(List(Person(t"Bob", 40)), Person(t"Carol", 25), None)
 ```
 
+Writing has the mirror form: `in[Text over Json]` encodes a value straight to its JSON text, in
+the `Json.Formatting` in scope, as `show` renders it:
+
+```scala
+import formatting.compactJsonFormatting
+Person(t"Bob", 40).in[Text over Json]   // t"""{"name":"Bob","age":40}"""
+```
+
+`in[Data over Json]` writes the same text as bytes, encoded in the `Codepage` in scope.
+
 This is not a shorthand for parsing and then decoding. A type with a `Json.Parsable` instance is
 read *directly* from the source: the parser is composed for that type as the code compiles, and
 fields are taken from the token stream as they arrive, so no `Json` tree is ever built. What is

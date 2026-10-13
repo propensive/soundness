@@ -50,6 +50,13 @@ bytes.length                        // 15
 Chain(bytes).read[Person in Cbor]   // Person(t"Ada", 36)
 ```
 
+The two steps of writing combine in the same way. `in[Data over Cbor]` is the mirror of
+`read[Person in Cbor]`, encoding a value straight to its bytes:
+
+```scala
+Person(t"Ada", 36).in[Data over Cbor].read[Person in Cbor]   // Person(t"Ada", 36)
+```
+
 The `@name[Cbor]` [annotation](annotations.md) renames a field on the wire, and a sealed
 hierarchy encodes with a discriminator declared once:
 

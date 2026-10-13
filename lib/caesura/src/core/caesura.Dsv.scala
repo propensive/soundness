@@ -60,6 +60,21 @@ trait Dsv2:
   =>  ( (decodable is Decodable in Dsv)^{decodable} ) =
     value => decodable.decoded(value.data.readable.head)
 
+  // The write-side mirror of `read[Foo in Dsv]`: `foo.in[Text over Dsv]` is the value as a
+  // single DSV record, encoded to the row and rendered in the `Dsv.Format` in scope.
+  given encodableOver: [value] => (encodable: (value is Encodable in Dsv)^)
+  =>  ( format: Dsv.Format )
+  =>  ( (value is Encodable in (Text over Dsv))^{encodable} ) =
+
+    value => encodable.encode(value).show.asInstanceOf[Text over Dsv]
+
+  // `foo.in[Data over Dsv]`: the same text, encoded in the `Codepage` in scope.
+  given encodableOverData: [value]
+  =>  ( text: (value is Encodable in (Text over Dsv))^, codepage: hieroglyph.Codepage )
+  =>  ( (value is Encodable in (Data over Dsv))^{text} ) =
+
+    value => codepage.encoded(text.encode(value)).asInstanceOf[Data over Dsv]
+
   // `source.read[Foo in Dsv]` shorthand: decodes a single DSV record (the first
   // row) into `Foo` through the row AST. Held below `aggregableParsed` in
   // `object Dsv`, so a type with an explicit `Dsv.Parsable` takes the direct

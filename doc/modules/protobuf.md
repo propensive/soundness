@@ -125,8 +125,10 @@ given (Person is Protobuf.Parsable) = Inlinable.parsable[Person]
 Chain(bytes).read[Person in Protobuf]   // parsed without materializing the fields
 ```
 
-The derivation composes the parser at expansion time, so it lives in a separate module from the
-runtime codecs and is imported by name.
+The derivation composes the parser at expansion time and is imported by name. A message whose
+field types have hand-written `Inlinable` instances needs the `locomotion.staged` module too: it
+evaluates those instances as the code compiles, and without it such a field is decoded through its
+`Decodable in Protobuf`.
 
 Reading over a stream works the same way, and the input is never assembled first: the parser
 reads each chunk as it arrives, so a field split across two chunks reads exactly as one that
@@ -149,6 +151,38 @@ Person(t"Ada", 36).in[Protobuf].encode   // the same bytes, written once
 
 The bytes are exactly those the derived encoding writes, so a message may be printed directly
 on one side of a connection and decoded through the `Protobuf` value on the other.
+
+The bytes themselves are written with `in[Data over Protobuf]`, the mirror of
+`read[Person in Protobuf]`: it prints directly where a `Printable` exists, and encodes through the
+`Protobuf` value otherwise.
+
+```scala
+val bytes = Person(t"Ada", 36).in[Data over Protobuf]
+bytes.read[Person in Protobuf]   // Person(t"Ada", 36)
+```
+
+### Choosing the path for every type
+
+Declaring an instance per type is one way to opt in. A message can also generate both of its
+instances once, into its companion:
+
+```scala
+case class Person(name: Text, age: Int) derives Protobuf.Direct
+```
+
+and a single import selects the path for every message and oneof in scope, without any
+declaration:
+
+```scala
+import codecs.direct     // a generated parser and printer wherever a type is a message or oneof
+import codecs.derived    // the derived codecs, even where a direct instance is in scope
+```
+
+Under `codecs.direct`, a type that is neither a message nor a oneof — a generic case class, a
+collection — keeps the derived path, and a type that derives `Protobuf.Direct` uses the instances
+it generated once rather than generating them again at each use, which costs compile time. The
+results are the same on either path; only the speed, and the positions reported in errors,
+differ.
 
 ### Compatibility
 

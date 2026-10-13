@@ -1794,6 +1794,21 @@ object Yaml extends Yaml2, Dynamic:
 
     text => Chain(text).read[Yaml]
 
+  // The write-side mirror of `read[Foo in Yaml]`: `foo.in[Text over Yaml]` is the value's
+  // YAML text, encoded to the tree and rendered in the `Yaml.Formatting` in scope, as `show`.
+  given encodableOver: [value] => (encodable: (value is Encodable in Yaml)^)
+  =>  ( formatting: Yaml.Formatting )
+  =>  ( (value is Encodable in (Text over Yaml))^{encodable} ) =
+
+    value => encodable.encode(value).show.asInstanceOf[Text over Yaml]
+
+  // `foo.in[Data over Yaml]`: the same text, encoded in the `Codepage` in scope.
+  given encodableOverData: [value]
+  =>  ( text: (value is Encodable in (Text over Yaml))^, codepage: hieroglyph.Codepage )
+  =>  ( (value is Encodable in (Data over Yaml))^{text} ) =
+
+    value => codepage.encoded(text.encode(value)).asInstanceOf[Data over Yaml]
+
   // `source.read[Foo in Yaml]` shorthand for
   // `source.read[Yaml].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
   // for `value in Json`. The `Form` type-tag is added by an

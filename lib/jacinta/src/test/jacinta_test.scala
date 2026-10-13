@@ -919,6 +919,20 @@ object DirectTests extends Suite(m"Jacinta direct parsing and format tests"):
         tree.in[Json].show.read[Tree in Json]
       . assert(_ == Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))
 
+      test(m"`in[Text over Json]` writes what `read[T in Json]` reads"):
+        val tree = Tree(t"root", List(Tree(t"a", Nil)))
+        tree.in[Text over Json].read[Tree in Json]
+      . assert(_ == Tree(t"root", List(Tree(t"a", Nil))))
+
+      test(m"`in[Text over Json]` renders in the formatting in scope"):
+        Tree(t"x", Nil).in[Text over Json]
+      . assert(_ == Tree(t"x", Nil).in[Json].show)
+
+      test(m"`in[Data over Json]` writes what `read[T in Json]` reads"):
+        val tree = Tree(t"root", List(Tree(t"a", Nil)))
+        tree.in[Data over Json].read[Tree in Json]
+      . assert(_ == Tree(t"root", List(Tree(t"a", Nil))))
+
       test(m"an inlined Map field stays on the runtime seam"):
         given (Counts is Json.Parsable) = Inlinable.parsable[Counts]
         val counts = Counts(Map(t"a" -> 1, t"b" -> 2), t"tag")

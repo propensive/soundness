@@ -129,6 +129,15 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
         t"<root><name>Alice</name><age>30</age></root>".read[PWorker in Xml]
       . assert(_ == PWorker(t"Alice", 30))
 
+      test(m"`in[Text over Xml]` writes what `read[T in Xml]` reads"):
+        PWorker(t"Alice", 30).in[Text over Xml].read[PWorker in Xml]
+      . assert(_ == PWorker(t"Alice", 30))
+
+      test(m"`in[Data over Xml]` writes what `read[T in Xml]` reads"):
+        import codepages.utf8Codepage
+        PWorker(t"Zoë", 3).in[Data over Xml].read[PWorker in Xml]
+      . assert(_ == PWorker(t"Zoë", 3))
+
       test(m"Parse directly from bytes"):
         val bytes: Data =
           Array.unsafeFrozen(t"<root><name>Zoë</name><age>3</age></root>".s.getBytes("UTF-8").nn)

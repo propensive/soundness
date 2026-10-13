@@ -935,3 +935,16 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
         given (Declared is Decodable in Protobuf) = _ => Declared(0, t"derived")
         Protobuf.Printable.print(Declared(5, t"five")).read[Declared in Protobuf]
       . assert(_ == Declared(0, t"derived"))
+
+      test(m"`in[Data over Protobuf]` writes what `read[T in Protobuf]` reads"):
+        wrapper.in[Data over Protobuf].read[Wrapper in Protobuf]
+      . assert(_ == wrapper)
+
+      test(m"`in[Data over Protobuf]` is direct under `codecs.direct`"):
+        import codecs.direct
+
+        given itemSeam: (Item is Encodable in Protobuf) =
+          _ => panic(m"a generated printer encoded a repeated element through its Encodable")
+
+        list(batch.in[Data over Protobuf])
+      . assert(_ == reference(4))

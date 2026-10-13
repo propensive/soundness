@@ -408,6 +408,14 @@ object Tests extends Suite(m"Breviloquence Tests"):
         proscenium.Chain(bytes).read[Point in Cbor]
       . assert(_ == Point(3, 4))
 
+      test(m"`in[Data over Cbor]` writes what `read[T in Cbor]` reads"):
+        Point(3, 4).in[Data over Cbor].read[Point in Cbor]
+      . assert(_ == Point(3, 4))
+
+      test(m"`in[Data over Cbor]` writes the tree's bytes"):
+        (Point(3, 4).in[Data over Cbor]: Data).to[List]
+      . assert(_ == Cbor.Ast.encodable.encoded(Cbor.unseal(Point(3, 4).in[Cbor])).to[List])
+
       test(m"`read[T in Cbor]` works for nested case classes"):
         val original = Wrapper(List(1, 2, 3), t"hi")
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))

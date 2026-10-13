@@ -44,6 +44,16 @@ t"{name: Alice, age: 30}".read[Yaml].as[Person]   // Person(t"Alice", 30)
 t"name: Alice\nage: 30".read[Person in Yaml]      // block style, same result
 ```
 
+`in[Text over Yaml]` is the mirror, encoding a value straight to YAML text in the
+`Yaml.Formatting` in scope:
+
+```scala
+import formatting.blockYamlFormatting
+Person(t"Alice", 30).in[Text over Yaml].read[Person in Yaml]   // Person(t"Alice", 30)
+```
+
+`in[Data over Yaml]` writes the same text as bytes, encoded in the `Codepage` in scope.
+
 An `Optional` field reads as `Unset` when the mapping omits it or gives `null`, and a value the
 inner decoder rejects is an error; the `optionalityOptions` package varies each answer —
 `strictYamlAbsence`, `strictYamlNulls`, `lenientYamlFaults` — as [decoding](decoding.md)
