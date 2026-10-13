@@ -3166,6 +3166,11 @@ object Json extends Json2, Dynamic:
     inline final val KeyEnd = -1L
     inline final val KeyOpaque = -2L
 
+    // The interned name of an opaque key, for generated parsers: the reader travels as a
+    // neutral carrier, since generated code is capture-erased, and is reasserted here, at the
+    // audited point. Public because generated parsers are spliced into user modules.
+    def keyNameOf(reader: AnyRef): String | Null = reader.asInstanceOf[Json.Reader^].keyName()
+
     // Only jacinta's read path (`Json.parseDirect`) constructs readers, so the
     // parser-pool invariants (one exclusive `Parser` per thread) and the
     // resolution scope of the carried tactic are preserved by construction. The

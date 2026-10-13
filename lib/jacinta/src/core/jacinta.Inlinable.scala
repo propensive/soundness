@@ -44,7 +44,26 @@ object Inlinable:
   // instances: nested records, collection loops and custom leaf parsers all
   // inline into one flat parser.
   inline def parsable[value]: value is Json.Parsable =
-    ${jacinta.stagedInternal.inlinableParsable[value]}
+    ${jacinta.inlining.inlinableParsable[value]}
+
+  // The expansion-time evaluation of a user-written instance. An `Inlinable` given is an
+  // ordinary runtime value, so the generator can only call its `parse` by evaluating the given
+  // inside the macro — which takes an in-macro staging compiler, and with it the compiler jars
+  // that core does not depend on. `jacinta.staged` registers the implementation as a service;
+  // without it on the classpath, a field whose type has only a user-written instance takes the
+  // runtime seam.
+  object Stager:
+    private lazy val loaded: Option[Stager] =
+      val services =
+        java.util.ServiceLoader.load(classOf[Stager], classOf[Stager].getClassLoader).nn
+
+      val iterator = services.iterator.nn
+      if iterator.hasNext then Some(iterator.next.nn) else None
+
+    def summon[field: Type](using Quotes): Option[Inlinable] = loaded.flatMap(_.summon[field])
+
+  trait Stager:
+    def summon[field: Type](using Quotes): Option[Inlinable]
 
   // The structural instance for a case class: reflects `Self` when invoked
   // (no macro — `Type[Self]` arrives with the call).
@@ -75,7 +94,7 @@ object Inlinable:
     type Self = product
 
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[product]): Expr[product] =
-      stagedInternal.productBody[product](reader)
+      inlining.productBody[product](reader)
 
   private[jacinta] final class IterableInlinable[element](element0: element is Inlinable)
   extends Inlinable:
@@ -84,7 +103,7 @@ object Inlinable:
     def parse(reader: Expr[Json.Reader])(using Quotes, Type[Iterable[element]])
     :   Expr[Iterable[element]] =
 
-      stagedInternal.iterableBody[Iterable[element]](reader, element0)
+      inlining.iterableBody[Iterable[element]](reader, element0)
 
   // ── Instances ──────────────────────────────────────────────────────────
   // The leaf generators mirror `Json.Parsable.staged`'s builtin arms; the

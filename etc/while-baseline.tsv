@@ -117,6 +117,7 @@ lib/jacinta/src/core/jacinta.Json.Parser.scala	57	12	0
 lib/jacinta/src/core/jacinta.Json.scala	39	41	5
 lib/jacinta/src/core/jacinta.Json4.scala	0	0	0
 lib/jacinta/src/core/jacinta.JsonPointer.scala	1	0	4
+lib/jacinta/src/core/jacinta.inlining.scala	2	0	1
 lib/jacinta/src/core/jacinta.internal.scala	12	20	2
 lib/kaleidoscope/src/core/kaleidoscope.JavaBaseRegex.scala	1	0	0
 lib/kaleidoscope/src/core/kaleidoscope.Regex.scala	0	0	6
