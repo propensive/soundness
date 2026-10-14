@@ -110,6 +110,7 @@ object settings:
     "-Zinline-source-maps",
     "-Zopaque-mutability",
     "-Zpure-iarrays",
+    "-Zfrozen-pure",
     "-Zretains-bounds",
     "-Zretains-skolems",
     "-Zspreadable-varargs",
