@@ -40,7 +40,7 @@ import denominative.dysasymptotics.linearSize
 
 // The codec modes over XML, and the generated printer: a suite of its own, since the direct
 // parsing suite's object is at the class-file size limit.
-object CodecModeTests extends Suite(m"Xylophone codec mode tests"):
+object CodecModeTests extends Suite("xml-codecs", m"Xylophone codec mode tests"):
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
 
