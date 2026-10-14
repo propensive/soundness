@@ -718,8 +718,13 @@ trait protointernal extends caps.Pure:
     divide[u, v](left, right).asExprOf[Double]
 
 
+  // The operator macros are typed by the classes they construct, not by the `is`/`by` refinement
+  // their givens declare: Scala 3.10 dealiases the opaque `Quantity` in a refinement an
+  // expansion is checked against, to `Double`, which the class's own `Self = Quantity[u]` then
+  // fails to match. The given keeps the refinement for resolution, and its transparent expansion
+  // takes the class's type, whose inline `op` is what reaches primitive arithmetic.
   def makeAddOp[u <: Measure: Type, v <: Measure: Type](using Quotes)
-  :   Expr[Quantity[u] is AddOp by Quantity[v]] =
+  :   Expr[Quantity.QuantityAddOp[u, v, ? <: Measure]] =
 
     val left = UnitsMap[u]
     val right = UnitsMap[v]
@@ -738,7 +743,7 @@ trait protointernal extends caps.Pure:
 
 
   def makeSubOp[u <: Measure: Type, v <: Measure: Type](using Quotes)
-  :   Expr[Quantity[u] is SubOp by Quantity[v]] =
+  :   Expr[Quantity.QuantitySubOp[u, v, ? <: Measure]] =
 
     val left = UnitsMap[u]
     val right = UnitsMap[v]
@@ -754,7 +759,7 @@ trait protointernal extends caps.Pure:
 
 
   def makeMulOp[u <: Measure: Type, v <: Measure: Type](using Quotes)
-  :   Expr[Quantity[u] is MulOp by Quantity[v]] =
+  :   Expr[Quantity.QuantityMulOp[u, v, ? <: Measure] | Quantity.QuantityMulOpDouble[u, v]] =
 
     val left = UnitsMap[u]
     val right = UnitsMap[v]
@@ -770,7 +775,7 @@ trait protointernal extends caps.Pure:
 
 
   def makeDivOp[u <: Measure: Type, v <: Measure: Type](using Quotes)
-  :   Expr[Quantity[u] is DivOp by Quantity[v]] =
+  :   Expr[Quantity.QuantityDivOp[u, v, ? <: Measure] | Quantity.QuantityDivOpDouble[u, v]] =
 
     val left = UnitsMap[u]
     val right = UnitsMap[v]
