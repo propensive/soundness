@@ -43,6 +43,11 @@ trait Executive extends Findable:
   type Return
   type Interface <: Cli
 
+  // The erased capability an entry point's block receives: `Effectful` from an executive which
+  // runs the block only for real, so a flag read there is its value, or `Speculative` from one
+  // which may also run it to discover completions, so effects wait for `execute`.
+  type Permit
+
   def invocation
     ( fullArguments:    List[Text],
       environment:      Environment,

@@ -38,3 +38,7 @@ package exoskeleton
 // `summonFrom`, resolving to a deferred handle in the pure section and to a direct value
 // inside `execute`.
 sealed trait Effectful
+
+// The inert counterpart of `Effectful`, granted to an entry point's block by an executive which
+// may run it speculatively, to discover completions: it lets no effectful operation through.
+sealed trait Speculative

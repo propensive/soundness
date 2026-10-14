@@ -243,6 +243,7 @@ package executives:
   class CompletionsExecutive(using backstop: Backstop) extends Executive uses parasite.threads:
     type Interface = Cli
     type Return = Execution
+    type Permit = Speculative
 
 
     def invocation
