@@ -114,7 +114,8 @@ archive at all.
 
 A tar entry is one of the format's typed cases — a file, a directory, a hard or symbolic link, a
 character or block device, a FIFO — with its Unix metadata spelled out. `Tar.Entry` builds the
-common case, a file, defaulting the mode, owner and timestamp; the case classes take everything
+common case, a file, defaulting the mode and owner and stamping it with the current time;
+`Tar.Entry.at` takes the timestamp as any instant type; the case classes take everything
 explicitly:
 
 ```scala
