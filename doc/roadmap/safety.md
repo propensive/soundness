@@ -175,7 +175,7 @@ break it listed in `doc/standards/naming.md`.
 The gate exists: `etc/check-escape-count.py`, run by `make build` (and `make check-escapes`),
 keeps a per-file baseline in `etc/escape-baseline.tsv` of the four `caps.unsafe` hatches, the
 array wrappers that hide a capture (`Array.unsafeFrozen`, `Array.unsafeJvm`, `Array.frozen`,
-`unsafeMutable`/`unsafeImmutable`, the `!!` erased-evidence operator), and the hatches that carry no reason tag — with the same
+the `!!` erased-evidence operator), and the hatches that carry no reason tag — with the same
 `--update`/`--totals` semantics as `check-while-count.py`, plus `--tags` for the residue per
 reason tag (`safety-2`), whose closed vocabulary lives in the script. Seeded 2026-10-09:
 assumePure 366, assumeSeparate 261, untracked 397, erasedValue 50, unsafeFrozen 339, unsafeJvm

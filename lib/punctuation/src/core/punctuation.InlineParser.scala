@@ -67,7 +67,7 @@ private[punctuation] object InlineParser:
     Array.freeze(arr)
 
   private inline def isSpecial(inline c: Char): Boolean =
-    c < 128 && Specials.readable(c.toInt)
+    c < 128 && Specials.readUnchecked(c.toInt)
 
   // Bracket stack entry. `node` is the BracketData node in the inline list
   // marking the `[` or `![`. `sourceStart` is the source position

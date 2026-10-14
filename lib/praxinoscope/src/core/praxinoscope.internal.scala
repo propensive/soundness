@@ -42,7 +42,7 @@ import vacuous.*
 import Motif.Node
 
 object internal:
-  private def integers(values: scala.IArray[Int])(using Quotes): Expr[scala.IArray[Int]] =
+  private def integers(values: Array[Int])(using Quotes): Expr[Array[Int]] =
     var exprs: List[Expr[Int]] = Nil
     var index = values.length - 1
 
@@ -50,9 +50,9 @@ object internal:
       exprs = Expr(values(index)) :: exprs
       index -= 1
 
-    '{scala.IArray(${Lifts.varargs(exprs)}*)}
+    '{Array(${Lifts.varargs(exprs)}*)}
 
-  private def booleans(values: scala.IArray[Boolean])(using Quotes): Expr[scala.IArray[Boolean]] =
+  private def booleans(values: Array[Boolean])(using Quotes): Expr[Array[Boolean]] =
     var exprs: List[Expr[Boolean]] = Nil
     var index = values.length - 1
 
@@ -60,7 +60,7 @@ object internal:
       exprs = Expr(values(index)) :: exprs
       index -= 1
 
-    '{scala.IArray(${Lifts.varargs(exprs)}*)}
+    '{Array(${Lifts.varargs(exprs)}*)}
 
   given anchor: ToExpr[Node.Anchor]:
     def apply(anchor: Node.Anchor)(using Quotes): Expr[Node.Anchor] = anchor match
@@ -90,12 +90,12 @@ object internal:
       var index = program.ops.length - 1
 
       while index >= 0 do
-        exprs = Expr(program.ops(index)) :: exprs
+        exprs = Expr(program.ops.readUnchecked(index)) :: exprs
         index -= 1
 
       ' {
           Program
-            ( scala.IArray(${Lifts.varargs(exprs)}*),
+            ( Array(${Lifts.varargs(exprs)}*),
               ${Expr(program.slots)},
               ${Expr(program.captures)} )
         }
@@ -119,7 +119,7 @@ object internal:
     var opIndex = 0
 
     while opIndex < ops.length do
-      ops(opIndex) match
+      ops.readUnchecked(opIndex) match
         // The generated DFA has no notion of the symbol before the cursor, so a
         // context-dependent anchor falls back to the Pike VM.
         case Program.Op.Test
@@ -139,13 +139,14 @@ object internal:
       opIndex = 0
 
       while opIndex < ops.length do
-        ops(opIndex) match
+        ops.readUnchecked(opIndex) match
           case Program.Op.Symbol(bounds, _) =>
             var span = 0
 
             while span < bounds.length do
-              cutSet += bounds(span)
-              if bounds(span + 1) < Ranges.maxSymbol then cutSet += bounds(span + 1) + 1
+              cutSet += bounds.readUnchecked(span)
+              val upper = bounds.readUnchecked(span + 1)
+              if upper < Ranges.maxSymbol then cutSet += upper + 1
               span += 2
 
           case _ =>
@@ -153,7 +154,7 @@ object internal:
 
         opIndex += 1
 
-      val cuts: scala.IArray[Int] = scala.IArray.from(cutSet)
+      val cuts: Array[Int] = Array.from(cutSet)
       val classes = cuts.length
 
       // The ε-closure of `pcs`: reachable `Symbol` pcs, and whether `Accept` is reachable when
@@ -171,7 +172,7 @@ object internal:
           if !visited(pc) then
             visited(pc) = true
 
-            ops(pc) match
+            ops.readUnchecked(pc) match
               case Program.Op.Jump(target)       => stack = target :: stack
               case Program.Op.Split(left, right) => stack = left :: right :: stack
               case Program.Op.Save(_, next)      => stack = next :: stack
@@ -199,7 +200,7 @@ object internal:
           if !visited(pc) then
             visited(pc) = true
 
-            ops(pc) match
+            ops.readUnchecked(pc) match
               case Program.Op.Jump(target)       => stack = target :: stack
               case Program.Op.Split(left, right) => stack = left :: right :: stack
               case Program.Op.Save(_, next)      => stack = next :: stack
@@ -213,12 +214,12 @@ object internal:
 
         symbols.sorted
 
-      def within(bounds: scala.IArray[Int], symbol: Int): Boolean =
+      def within(bounds: Array[Int], symbol: Int): Boolean =
         var index = 0
         var found = false
 
         while !found && index < bounds.length do
-          found = symbol >= bounds(index) && symbol <= bounds(index + 1)
+          found = symbol >= bounds.readUnchecked(index) && symbol <= bounds.readUnchecked(index + 1)
           index += 2
 
         found
@@ -254,11 +255,11 @@ object internal:
         var klass = 0
 
         while klass < classes do
-          val symbol = cuts(klass)
+          val symbol = cuts.readUnchecked(klass)
           var successors: scala.List[Int] = scala.Nil
 
           pcs.foreach: pc =>
-            ops(pc) match
+            ops.readUnchecked(pc) match
               case Program.Op.Symbol(bounds, target) =>
                 if within(bounds, symbol) then successors = target :: successors
 
@@ -292,13 +293,13 @@ object internal:
 
           while lower < upper do
             val middle = (lower + upper + 1) >> 1
-            if cuts(middle) <= char then lower = middle else upper = middle - 1
+            if cuts.readUnchecked(middle) <= char then lower = middle else upper = middle - 1
 
           ascii(char) = lower
           char += 1
 
-        val asciiExpr = integers(scala.IArray.unsafeFromArray(ascii))
-        val tableExpr = integers(scala.IArray.unsafeFromArray(table))
+        val asciiExpr = integers(Array.unsafeFrozen(ascii))
+        val tableExpr = integers(Array.unsafeFrozen(table))
         val cutsExpr = integers(cuts)
 
         val acceptingExpr =
@@ -309,14 +310,14 @@ object internal:
             array(index) = accepting(index)
             index += 1
 
-          booleans(scala.IArray.unsafeFromArray(array))
+          booleans(Array.unsafeFrozen(array))
 
         val result: Expr[Fsa] =
           ' {
-              val cuts: scala.IArray[Int] = $cutsExpr
-              val ascii: scala.IArray[Int] = $asciiExpr
-              val table: scala.IArray[Int] = $tableExpr
-              val accepts: scala.IArray[Boolean] = $acceptingExpr
+              val cuts = $cutsExpr
+              val ascii = $asciiExpr
+              val table = $tableExpr
+              val accepts = $acceptingExpr
 
               Fsa: text =>
                 val input = text.s
@@ -329,19 +330,20 @@ object internal:
                   index += Character.charCount(symbol)
 
                   val klass =
-                    if symbol < 128 then ascii(symbol) else
+                    if symbol < 128 then ascii.readUnchecked(symbol) else
                       var lower = 0
                       var upper = cuts.length - 1
 
                       while lower < upper do
                         val middle = (lower + upper + 1) >> 1
-                        if cuts(middle) <= symbol then lower = middle else upper = middle - 1
+                        if cuts.readUnchecked(middle) <= symbol then lower = middle
+                        else upper = middle - 1
 
                       lower
 
-                  state = table(state*${Expr(classes)} + klass)
+                  state = table.readUnchecked(state*${Expr(classes)} + klass)
 
-                state >= 0 && accepts(state)
+                state >= 0 && accepts.readUnchecked(state)
             }
 
         result

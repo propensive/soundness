@@ -92,10 +92,11 @@ object Digestible extends Derivable[Digestible]:
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure: () => digestible
     (digestion, sequence) => sequence.each(dig().digest(digestion, _))
 
-  given iarray: [value] => (digestible: => value is Digestible) => (Array[value]^{}) is Digestible =
+  given frozenArray: [value] => (digestible: => value is Digestible)
+  =>  (Array[value]^{}) is Digestible =
     // [by-name-capture]
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure: () => digestible
-    (digestion, iarray) => iarray.each(dig().digest(digestion, _))
+    (digestion, array) => array.each(dig().digest(digestion, _))
 
   given map: [key, value] => (keyDigestible: => key is Digestible)
   =>  ( valueDigestible: => value is Digestible )

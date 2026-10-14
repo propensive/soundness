@@ -111,7 +111,7 @@ package columnar:
       // assertion (scala/scala3#24824), which surfaces as a positionless crash compiling this
       // whole module.
       Sequence.from:
-        lines.readable.to(IndexedSeq).bind(Flow.wrap(_, width)).toVector
+        lines.stdlib.to(IndexedSeq).bind(Flow.wrap(_, width)).toVector
 
   object ParagraphOrBreak extends Columnar:
     // Elastic between a single cell and its natural width: the strategy prefers word
@@ -134,7 +134,7 @@ package columnar:
       else
         // As above: the block form, not an eta-expanded `pipe`.
         Sequence.from:
-          lines.readable.to(IndexedSeq).bind(Flow.chop(_, width)).toVector
+          lines.stdlib.to(IndexedSeq).bind(Flow.chop(_, width)).toVector
 
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def flex(metrics: Metrics, maxWidth: Int): Flex = Flex(Metrics(fixedWidth), 0.0, fixedWidth)
@@ -147,7 +147,7 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   Sequence[text] =
 
-      Sequence.from(lines.readable.toVector.map(Flow.shorten(_, width, ellipsis)))
+      Sequence.from(lines.stdlib.toVector.map(Flow.shorten(_, width, ellipsis)))
 
   case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     // Elastic between one cell and its natural width, truncating whatever exceeds the
@@ -163,7 +163,7 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   Sequence[text] =
 
-      Sequence.from(lines.readable.toVector.map(Flow.shorten(_, width, ellipsis)))
+      Sequence.from(lines.stdlib.toVector.map(Flow.shorten(_, width, ellipsis)))
 
   case class Collapsible(threshold: Double) extends Columnar:
     // Rigid at its natural width, but drops from the table entirely when space runs out;

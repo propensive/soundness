@@ -162,9 +162,9 @@ object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs
   lazy val batches: scala.Vector[scala.Vector[Int]] =
     scala.Vector.tabulate(streamSize)(identity).grouped(chunkSize).toVector
 
-  lazy val valuesArray: IArray[Int] = IArray.tabulate(size)(identity)
-  lazy val batchArrays: List[IArray[Int]] =
-    List.tabulate(batches.size) { index => IArray.from(batches(index)) }
+  lazy val valuesArray: Array[Int] = Array.tabulate(size)(identity)
+  lazy val batchArrays: List[Array[Int]] =
+    List.tabulate(batches.size) { index => Array.from(batches(index)) }
 
   // An error a task raises to stand for the rivals' `RuntimeException with NoStackTrace`;
   // `emptyDiagnostics` likewise records no stack.
@@ -262,18 +262,18 @@ object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs
 
     // `concurrently` is the rivals' `Workers` construction exactly: a shared index, an indexed
     // output array, min(size, parallelism) tasks, joined together.
-    def workers(values: IArray[Int], parallelism: Int, rounds: Int)(using Threading)
-    :   IArray[Int] =
+    def workers(values: Array[Int], parallelism: Int, rounds: Int)(using Threading)
+    :   Array[Int] =
       running:
         concurrently(values.length, parallelism)(i => work(values(i), rounds))
 
       // The rivals start one fiber per element; a Soundness task is a thread, so the bounded form
       // is the idiom: eight workers over the elements, each element's failure caught where it
       // happens (`safely` on the typed `abort`), and the absent results dropped in order.
-    def collectSuccesses(values: IArray[Int], parallelism: Int, rounds: Int)(using Threading)
-    :   IArray[Int] =
+    def collectSuccesses(values: Array[Int], parallelism: Int, rounds: Int)(using Threading)
+    :   Array[Int] =
       running:
-        val results: IArray[Optional[Int]] =
+        val results: Array[Optional[Int]] =
           concurrently(values.length, parallelism): i =>
             val value = values(i)
             safely(if (value & 1023) == 0 then abort(Expected.Error()) else work(value, rounds))
@@ -288,11 +288,11 @@ object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs
             count += 1
           i += 1
 
-        IArray.unsafeFromArray(output.take(count))
+        Array.unsafeFrozen(output.take(count))
 
     // Each chunk is transformed whole, then folded: a nested loop, since a batch of ints needs
     // no stream.
-    def evalChunks(batches: List[IArray[Int]], rounds: Int): Long =
+    def evalChunks(batches: List[Array[Int]], rounds: Int): Long =
       var sum = 0L
       batches.each: batch =>
         val transformed = batch.map(work(_, rounds))
@@ -306,12 +306,12 @@ object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs
     // Soundness form keeps the same number of workers alive across the whole stream, each
     // transforming and folding whole batches in order of claim: the same bounded parallelism
     // and ordered result, without a spawn per batch or a barrier between batches.
-    def parallelChunks(batches: List[IArray[Int]], parallelism: Int, rounds: Int)(using Threading)
+    def parallelChunks(batches: List[Array[Int]], parallelism: Int, rounds: Int)(using Threading)
     :   Long =
       running:
-        val chunks: IArray[IArray[Int]] = IArray.from(batches.stdlib)
+        val chunks: Array[Array[Int]] = Array.from(batches.stdlib)
 
-        val sums: IArray[Long] =
+        val sums: Array[Long] =
           concurrently(chunks.length, parallelism): index =>
             val batch = chunks(index)
             var sum = 0L
@@ -330,7 +330,7 @@ object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs
 
     // A producer task hands each prebuilt chunk through a `Handoff` of `capacity` chunks; the
     // consumer takes exactly `batches.size` of them and transforms each as it arrives.
-    def queueChunks(batches: List[IArray[Int]], capacity: Int, rounds: Int)(using Threading)
+    def queueChunks(batches: List[Array[Int]], capacity: Int, rounds: Int)(using Threading)
     :   Long =
       running:
         val queue = Handoff(capacity)
@@ -341,7 +341,7 @@ object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs
         var taken = 0
         val count = batches.size
         while taken < count do
-          val batch = queue.take().asInstanceOf[IArray[Int]]
+          val batch = queue.take().asInstanceOf[Array[Int]]
           var i = 0
           while i < batch.length do
             sum += work(batch(i), rounds)

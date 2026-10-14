@@ -48,6 +48,6 @@ object Png:
     def encode(raster: Raster): Data = PngBackend.encode(this, raster)
 
     def sniff(data: Data): Boolean =
-      (data.length > 1 && (data.readable(0)&0xff) == 0x89 && data.readable(1) == 0x50)
+      (data.length > 1 && (data.readUnchecked(0)&0xff) == 0x89 && data.readUnchecked(1) == 0x50)
 
 sealed trait Png

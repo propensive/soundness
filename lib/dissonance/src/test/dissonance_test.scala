@@ -66,65 +66,65 @@ object Tests extends Suite("diff", m"Dissonance tests"):
       . assert(_ == Diff(Ins(0, 'a')))
 
       test(m"Deletion to become empty list"):
-        diff(Sequence.from(t"a".chars.readable), Sequence.from(t"".chars.readable))
+        diff(Sequence.from(t"a".chars.stdlib), Sequence.from(t"".chars.stdlib))
       . assert(_ == Diff(Del(0, 'a')))
 
       test(m"Prefix to short list"):
-        diff(Sequence.from(t"BC".chars.readable), Sequence.from(t"ABC".chars.readable))
+        diff(Sequence.from(t"BC".chars.stdlib), Sequence.from(t"ABC".chars.stdlib))
       . assert(_ == Diff(Ins(0, 'A'), Par(0, 1, 'B'), Par(1, 2, 'C')))
 
       test(m"Suffix to short list"):
-        diff(Sequence.from(t"AB".chars.readable), Sequence.from(t"ABC".chars.readable))
+        diff(Sequence.from(t"AB".chars.stdlib), Sequence.from(t"ABC".chars.stdlib))
       . assert(_ == Diff(Par(0, 0, 'A'), Par(1, 1, 'B'), Ins(2, 'C')))
 
       test(m"Insertion in middle of short list"):
-        diff(Sequence.from(t"AC".chars.readable), Sequence.from(t"ABC".chars.readable))
+        diff(Sequence.from(t"AC".chars.stdlib), Sequence.from(t"ABC".chars.stdlib))
       . assert(_ == Diff(Par(0, 0, 'A'), Ins(1, 'B'), Par(1, 2, 'C')))
 
       test(m"Deletion from middle of short list"):
-        diff(Sequence.from(t"ABC".chars.readable), Sequence.from(t"AC".chars.readable))
+        diff(Sequence.from(t"ABC".chars.stdlib), Sequence.from(t"AC".chars.stdlib))
       . assert(_ == Diff(Par(0, 0, 'A'), Del(1, 'B'), Par(2, 1, 'C')))
 
       test(m"Deletion from start of short list"):
-        diff(Sequence.from(t"ABC".chars.readable), Sequence.from(t"BC".chars.readable)).edits.to(List)
+        diff(Sequence.from(t"ABC".chars.stdlib), Sequence.from(t"BC".chars.stdlib)).edits.to(List)
       . assert(_ == List(Del(0, 'A'), Par(1, 0, 'B'), Par(2, 1, 'C')))
 
       test(m"Deletion from end of short list"):
-        diff(Sequence.from(t"ABC".chars.readable), Sequence.from(t"AB".chars.readable))
+        diff(Sequence.from(t"ABC".chars.stdlib), Sequence.from(t"AB".chars.stdlib))
       . assert(_ == Diff(Par(0, 0, 'A'), Par(1, 1, 'B'), Del(2, 'C')))
 
       test(m"Multiple inner keeps"):
-        diff(Sequence.from(t"BCD".chars.readable), Sequence.from(t"ABC".chars.readable))
+        diff(Sequence.from(t"BCD".chars.stdlib), Sequence.from(t"ABC".chars.stdlib))
       . assert(_ == Diff(Ins(0, 'A'), Par(0, 1, 'B'), Par(1, 2, 'C'), Del(2, 'D')))
 
       test(m"Example from blog"):
-        diff(Sequence.from(t"ABCABBA".chars.readable), Sequence.from(t"CBABAC".chars.readable)).edits.to(List)
+        diff(Sequence.from(t"ABCABBA".chars.stdlib), Sequence.from(t"CBABAC".chars.stdlib)).edits.to(List)
       . assert(_ == List(Del(0, 'A'), Del(1, 'B'), Par(2, 0, 'C'), Ins(1, 'B'), Par(3, 2, 'A'),
           Par(4, 3, 'B'), Del(5, 'B'), Par(6, 4, 'A'), Ins(5, 'C')))
 
       test(m"Reversed example from blog"):
-        diff(Sequence.from(t"CBABAC".chars.readable), Sequence.from(t"ABCABBA".chars.readable)).edits.to(List)
+        diff(Sequence.from(t"CBABAC".chars.stdlib), Sequence.from(t"ABCABBA".chars.stdlib)).edits.to(List)
       . assert(_ == List(Del(0, 'C'), Ins(0, 'A'), Par(1, 1, 'B'), Ins(2, 'C'), Par(2, 3, 'A'),
           Par(3, 4, 'B'), Ins(5, 'B'), Par(4, 6, 'A'), Del(5, 'C')))
 
       test(m"Item swap"):
-        diff(Sequence.from(t"AB".chars.readable), Sequence.from(t"BA".chars.readable))
+        diff(Sequence.from(t"AB".chars.stdlib), Sequence.from(t"BA".chars.stdlib))
       . assert(_ == Diff(Del(0, 'A'), Par(1, 0, 'B'), Ins(1, 'A')))
 
       test(m"Item change"):
-        diff(Sequence.from(t"A".chars.readable), Sequence.from(t"C".chars.readable))
+        diff(Sequence.from(t"A".chars.stdlib), Sequence.from(t"C".chars.stdlib))
       . assert(_ == Diff(Del(0, 'A'), Ins(0, 'C')))
 
       test(m"Item change between values"):
-        diff(Sequence.from(t"NAN".chars.readable), Sequence.from(t"NCN".chars.readable))
+        diff(Sequence.from(t"NAN".chars.stdlib), Sequence.from(t"NCN".chars.stdlib))
       . assert(_ == Diff(Par(0, 0, 'N'), Del(1, 'A'), Ins(1, 'C'), Par(2, 2, 'N')))
 
       test(m"Item swap between values"):
-        diff(Sequence.from(t"NABN".chars.readable), Sequence.from(t"NBAN".chars.readable))
+        diff(Sequence.from(t"NABN".chars.stdlib), Sequence.from(t"NBAN".chars.stdlib))
       . assert(_ == Diff(Par(0, 0, 'N'), Del(1, 'A'), Par(2, 1, 'B'), Ins(2, 'A'), Par(3, 3, 'N')))
 
       test(m"Item swap interspersed with values"):
-        diff(Sequence.from(t"AZB".chars.readable), Sequence.from(t"BZA".chars.readable))
+        diff(Sequence.from(t"AZB".chars.stdlib), Sequence.from(t"BZA".chars.stdlib))
       . assert(_ == Diff(Del(0, 'A'), Del(1, 'Z'), Par(2, 0, 'B'), Ins(1, 'Z'), Ins(2, 'A')))
 
       test(m"real-world example 1"):

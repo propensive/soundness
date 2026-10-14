@@ -280,7 +280,7 @@ def supervise[result](block: Monitor ?=> result)(using threading: Threading, cod
 def concurrently[result: ClassTag](count: Int, parallelism: Int)
   ( job: Int ->{caps.any.only[anticipation.Durable]} result )
   ( using monitor: Monitor^, probate: SharedProbate, codepoint: Codepoint )
-:   (Tactic[Async.Error]^) ?->{job, monitor, probate} scala.IArray[result] =
+:   (Tactic[Async.Error]^) ?->{job, monitor, probate} Array[result]^{} =
 
   val index: Atomic[Int] = Atomic(0)
 
@@ -308,7 +308,7 @@ def concurrently[result: ClassTag](count: Int, parallelism: Int)
   // through the stdlib bridge because a `Task` join inside an `each` lambda trips the compiler.
   tasks.stdlib.foreach: (task: Task[Unit]) => task.join()
 
-  scala.IArray.tabulate(count)(output.get(_).nn)
+  Array.tabulate(count)(output.get(_).nn)
 
 
 def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> value)

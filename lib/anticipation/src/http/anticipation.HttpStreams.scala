@@ -50,7 +50,7 @@ object HttpStreams:
       def next(limit: Int): Array[Byte]^{} | Null =
         if position >= data.length then null else
           val end = data.length.min(position + limit)
-          val chunk = Array.frozen(data.readable.slice(position, end))
+          val chunk = Array.from(data.stdlib.slice(position, end))
           position = end
           chunk
 

@@ -71,7 +71,8 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
         given random0: (Random^{random}) = random
         List.fill(size.generate(random))(randomizable.randomize(random)).to[Set]
 
-  given iarray: [element] => (randomizable: => element is Randomizable) => (tag: ClassTag[element])
+  given frozenArray: [element] => (randomizable: => element is Randomizable)
+  =>  ( tag: ClassTag[element] )
   =>  ( size: Random.Size )
   =>  (Array[element]^{}) is Randomizable =
 

@@ -65,8 +65,9 @@ object JavaBaseCrypto extends Crypto:
   def hmac(algorithm: Text): Crypto.Mac = new Crypto.Mac:
     def mac(key: Data, data: Data): Data =
       val mac = jc.Mac.getInstance(algorithm.s).nn
-      mac.init(SecretKeySpec(key.readable.to(scala.Array), algorithm.s))
-      Array.unsafeFrozen(mac.doFinal(data.readable.to(scala.Array)).nn)
+      mac.init(SecretKeySpec(key.stdlib.to(scala.Array), algorithm.s))
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      Array.unsafeFrozen(mac.doFinal(data.stdlib.to(scala.Array)).nn)
 
   def rsa: Crypto.PublicKeyCipher = new Crypto.PublicKeyCipher:
     private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("RSA").nn
@@ -78,6 +79,7 @@ object JavaBaseCrypto extends Crypto:
       // `getEncoded` return a fresh one.
       val key = keyFactory().generatePublic(jss.X509EncodedKeySpec(Array.unsafeJvm(publicKey)))
       instance.init(jc.Cipher.ENCRYPT_MODE, key)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
       Array.unsafeFrozen(instance.doFinal(Array.unsafeJvm(input)).nn)
 
     def decrypt(input: Data, privateKey: Data): Data =
@@ -87,11 +89,13 @@ object JavaBaseCrypto extends Crypto:
         keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(Array.unsafeJvm(privateKey)))
 
       instance.init(jc.Cipher.DECRYPT_MODE, key)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
       Array.unsafeFrozen(instance.doFinal(Array.unsafeJvm(input)).nn)
 
     def generateKeyPair(bits: Int): Data =
       val generator = js.KeyPairGenerator.getInstance("RSA").nn
       generator.initialize(bits)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
       Array.unsafeFrozen(generator.generateKeyPair().nn.getPrivate.nn.getEncoded.nn)
 
     def privateToPublic(privateKey: Data): Data =
@@ -103,6 +107,7 @@ object JavaBaseCrypto extends Crypto:
         case key: js.PrivateKey        => panic(m"unexpected private key type")
 
       val spec = jss.RSAPublicKeySpec(key.getModulus, key.getPublicExponent)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
       Array.unsafeFrozen(keyFactory().generatePublic(spec).nn.getEncoded.nn)
 
   def rsaSignature(digest: Text): Crypto.SignatureScheme =
@@ -111,7 +116,8 @@ object JavaBaseCrypto extends Crypto:
         val generator = js.KeyPairGenerator.getInstance("RSA").nn
         generator.initialize(bits)
 
-        generator.generateKeyPair().nn.getPrivate.nn.getEncoded.nn.unsafeImmutable(using Unsafe)
+        // [java-boundary] fresh array returned by the JDK, retained by nobody else
+        Array.unsafeFrozen(generator.generateKeyPair().nn.getPrivate.nn.getEncoded.nn)
 
       def privateToPublic(privateKey: Data): Data = JavaBaseCrypto.rsa.privateToPublic(privateKey)
 
@@ -130,8 +136,10 @@ object JavaBaseCrypto extends Crypto:
         generator.initialize(jss.ECGenParameterSpec(curve), js.SecureRandom())
         val pair = generator.generateKeyPair().nn
 
-        val privateKey = pair.getPrivate.nn.getEncoded.nn.unsafeImmutable(using Unsafe)
-        val publicKey = pair.getPublic.nn.getEncoded.nn.unsafeImmutable(using Unsafe)
+        // [java-boundary] fresh array returned by the JDK, retained by nobody else
+        val privateKey = Array.unsafeFrozen(pair.getPrivate.nn.getEncoded.nn)
+        // [java-boundary] fresh array returned by the JDK, retained by nobody else
+        val publicKey = Array.unsafeFrozen(pair.getPublic.nn.getEncoded.nn)
 
         embedPublicKey(privateKey, publicKey)
 
@@ -198,7 +206,8 @@ object JavaBaseCrypto extends Crypto:
       sig.initSign(keyFactory().generatePrivate(spec))
       sig.update(Array.unsafeJvm(data))
 
-      sig.sign().nn.unsafeImmutable(using Unsafe)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      Array.unsafeFrozen(sig.sign().nn)
 
     def verify(data: Data, signature0: Data, publicKey: Data): Boolean =
       val sig = instance()
@@ -214,8 +223,10 @@ object JavaBaseCrypto extends Crypto:
       val generator = mlDsaAvailable(js.KeyPairGenerator.getInstance(name).nn)
       val pair = generator.generateKeyPair().nn
 
-      val privateKey = pair.getPrivate.nn.getEncoded.nn.unsafeImmutable(using Unsafe)
-      val publicKey = pair.getPublic.nn.getEncoded.nn.unsafeImmutable(using Unsafe)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      val privateKey = Array.unsafeFrozen(pair.getPrivate.nn.getEncoded.nn)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      val publicKey = Array.unsafeFrozen(pair.getPublic.nn.getEncoded.nn)
 
       mlDsaEmbed(privateKey, publicKey)
 
@@ -295,7 +306,8 @@ object JavaBaseCrypto extends Crypto:
 
       sig.update(Array.unsafeJvm(data))
 
-      sig.sign().nn.unsafeImmutable(using Unsafe)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      Array.unsafeFrozen(sig.sign().nn)
 
     def verify(data: Data, signature0: Data, publicKey: Data): Boolean =
       val sig = instance()
@@ -316,29 +328,31 @@ object JavaBaseCrypto extends Crypto:
 
       sig.initSign
         ( keyFactory()
-          . generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.readable.to(scala.Array))) )
+          . generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.stdlib.to(scala.Array))) )
 
-      sig.update(data.readable.to(scala.Array))
+      sig.update(data.stdlib.to(scala.Array))
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
       Array.unsafeFrozen(sig.sign().nn)
 
     def verify(data: Data, signature0: Data, publicKey: Data): Boolean =
       val sig = signature()
 
       sig.initVerify
-        ( keyFactory().generatePublic(jss.X509EncodedKeySpec(publicKey.readable.to(scala.Array))) )
+        ( keyFactory().generatePublic(jss.X509EncodedKeySpec(publicKey.stdlib.to(scala.Array))) )
 
-      sig.update(data.readable.to(scala.Array))
-      verified(sig, signature0.readable.to(scala.Array))
+      sig.update(data.stdlib.to(scala.Array))
+      verified(sig, signature0.stdlib.to(scala.Array))
 
     def generateKeyPair(bits: Int): Data =
       val generator = js.KeyPairGenerator.getInstance("DSA").nn
       generator.initialize(bits, js.SecureRandom())
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
       Array.unsafeFrozen(generator.generateKeyPair().nn.getPrivate.nn.getEncoded.nn)
 
     def privateToPublic(privateKey: Data): Data =
       val key =
         keyFactory().generatePrivate
-          ( jss.PKCS8EncodedKeySpec(privateKey.readable.to(scala.Array)) )
+          ( jss.PKCS8EncodedKeySpec(privateKey.stdlib.to(scala.Array)) )
 
         . nn match
           case key: jsi.DSAPrivateKey => key
@@ -347,6 +361,7 @@ object JavaBaseCrypto extends Crypto:
       val params = key.getParams.nn
       val y = params.getG.nn.modPow(key.getX, params.getP)
       val spec = jss.DSAPublicKeySpec(y, params.getP, params.getQ, params.getG)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
       Array.unsafeFrozen(keyFactory().generatePublic(spec).nn.getEncoded.nn)
 
   // Shared implementation for all JCE block ciphers; `algorithm` is the bare key
@@ -363,6 +378,7 @@ object JavaBaseCrypto extends Crypto:
     def generateKey(bits: Int): Data =
       val keyGen = jc.KeyGenerator.getInstance(algorithm.s).nn
       keyGen.init(bits)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
       Array.unsafeFrozen(keyGen.generateKey().nn.getEncoded.nn)
 
     def encrypt(transformation: Text, key: Data, iv: Optional[Data], data: Data): Data =
@@ -370,12 +386,14 @@ object JavaBaseCrypto extends Crypto:
 
       iv.lay:
         cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key))
+        // [java-boundary] fresh array returned by the JDK, retained by nobody else
         Array.unsafeFrozen(cipher.doFinal(Array.unsafeJvm(data)).nn)
 
       .apply: iv =>
         // `IvParameterSpec` copies the IV, and `++` builds a fresh array from both operands.
         val ivBytes = Array.unsafeJvm(iv)
         cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key), IvParameterSpec(ivBytes))
+        // [java-boundary] fresh array returned by the JDK, retained by nobody else
         Array.unsafeFrozen(ivBytes ++ cipher.doFinal(Array.unsafeJvm(data)).nn)
 
     def decrypt(transformation: Text, key: Data, ivSize: Optional[Int], data: Data): Data =
@@ -385,10 +403,12 @@ object JavaBaseCrypto extends Crypto:
 
       ivSize.lay:
         cipher.init(jc.Cipher.DECRYPT_MODE, makeKey(key))
+        // [java-boundary] fresh array returned by the JDK, retained by nobody else
         Array.unsafeFrozen(cipher.doFinal(input).nn)
 
       .apply: size =>
         cipher.init(jc.Cipher.DECRYPT_MODE, makeKey(key), IvParameterSpec(input.take(size)))
+        // [java-boundary] fresh array returned by the JDK, retained by nobody else
         Array.unsafeFrozen(cipher.doFinal(input.drop(size)).nn)
 
     def stream(transformation: Text, key: Data, iv: Optional[Data]): Cipher.Session =
@@ -411,6 +431,8 @@ object JavaBaseCrypto extends Crypto:
           // whole input pending a complete block, and a fresh array otherwise.
           cipher.update(Array.unsafeJvm(chunk)) match
             case null                   => Data()
+            // [java-boundary] fresh array returned by the JDK, retained by nobody else
             case out: scala.Array[Byte] => Array.unsafeFrozen(out)
 
+        // [java-boundary] fresh array returned by the JDK, retained by nobody else
         def finish(): Data = Array.unsafeFrozen(cipher.doFinal().nn)

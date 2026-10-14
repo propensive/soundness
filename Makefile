@@ -40,6 +40,10 @@ check-while:
 check-escapes:
 	python3 etc/check-escape-count.py
 
+# The stdlib's `IArray` is not used: the frozen `Array[element]^{}` is the immutable array.
+check-iarray:
+	! grep -rnw --include='*.scala' --include='build.mill' IArray lib src tests build.mill
+
 # The unsafety census: the counts of every rule in .pyrocosm/flair/config.tel, over the sources,
 # as `flair metrics` records them in git notes commit by commit. Reports only: nothing here fails.
 unsafety:
@@ -54,6 +58,7 @@ plumbing:
 
 build:
 	./mill groupCheck.validate
+	$(MAKE) check-iarray
 	python3 etc/check-given-uniqueness.py
 	python3 etc/check-doc-coverage.py
 	./etc/check-stdlib-count.sh

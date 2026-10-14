@@ -67,7 +67,7 @@ private[facsimile] object Predictor:
         val end = ((row + 1)*rowLength).min(data.length)
 
         while i < end do
-          out(i) = (out.readable(i) + out.readable(i - colors)).toByte
+          out(i) = (out.readUnchecked(i) + out.readUnchecked(i - colors)).toByte
           i += 1
 
         row += 1

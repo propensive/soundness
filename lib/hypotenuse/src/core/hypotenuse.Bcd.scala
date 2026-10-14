@@ -39,11 +39,9 @@ import vacuous.*
 // A packed binary-coded-decimal number, moved here from `jacinta.internal` so that a YAML
 // library need not depend on a JSON library for it.
 
-// Represented as the stdlib's immutable array (pure by construction): the frozen
-// `Array[Double]^{}` form gives every `Bcd`-typed result a fresh `any.rd` capability,
-// which `unsafeAssumePure` call sites downstream cannot launder (it rejects read-only
-// references).
-opaque type Bcd = scala.IArray[Double]
+// The frozen `Array[Double]^{}` itself: pure under `-Zfrozen-pure`, which classifies an opaque
+// alias over a frozen array as deriving from no capability class.
+opaque type Bcd = Array[Double]^{}
 
 object Bcd:
   // Adopt a freshly-built `Array[Double]` as a `Bcd`. `Bcd` is a pure value — an opaque alias
@@ -75,7 +73,7 @@ object Bcd:
 
   // Internal: wrap a freshly-built header+data array as a `Bcd`.
   private[hypotenuse] inline def wrap(arr: scala.Array[Double]): Bcd =
-    Array.unsafeFrozen(arr).readable
+    Array.unsafeFrozen(arr)
 
   // Single-Long BCD encoding for arrays of numbers — see `Array[Long]` as
   // a `Json.Ast` array variant. One number per Long:
@@ -223,7 +221,7 @@ object Bcd:
     val arr = Array.allocate[Double](2)
     arr(0) = packHeaderDouble(negative, 15)
     arr(1) = packDataDouble(content)
-    Array.freeze(arr).readable
+    Array.freeze(arr)
 
   // Build a `Bcd` from a `BigDecimal`. Goes via `toPlainString` so the result
   // matches the in-AST representation a parser would produce for the same
@@ -327,7 +325,7 @@ object Bcd:
       arr(0) = packHeaderDouble(negative, nibbles)
       System.arraycopy(data, 0, arr, 1, wordIdx)
       if inWord > 0 then arr(1 + wordIdx) = packDataDouble(word)
-      Array.freeze(arr).readable
+      Array.freeze(arr)
 
     private update def ensureCapacity(needed: Int): Unit =
       if needed > data.length then

@@ -98,12 +98,12 @@ private[hallucination] object Vp8Encoder:
     private var vbuf: scala.Array[Int]^ = new scala.Array[Int](chromaWidth*mbHeight*8)
 
     private val quantIndex = 127 - quality.max(0).min(100)*127/100
-    private val ydc = dcQuant.readable(quantIndex)
-    private val yac = acQuant.readable(quantIndex)
-    private val y2dc = dcQuant.readable(quantIndex)*2
-    private val y2ac = (acQuant.readable(quantIndex)*155/100).max(8)
-    private val uvdc = dcQuant.readable(quantIndex)
-    private val uvac = acQuant.readable(quantIndex)
+    private val ydc = dcQuant.readUnchecked(quantIndex)
+    private val yac = acQuant.readUnchecked(quantIndex)
+    private val y2dc = dcQuant.readUnchecked(quantIndex)*2
+    private val y2ac = (acQuant.readUnchecked(quantIndex)*155/100).max(8)
+    private val uvdc = dcQuant.readUnchecked(quantIndex)
+    private val uvac = acQuant.readUnchecked(quantIndex)
 
     private val tokenProbs = coeffProbs
 
@@ -204,7 +204,7 @@ private[hallucination] object Vp8Encoder:
       i = 0
 
       while i < 1056 do
-        header.writeBool(false, coeffUpdateProbs.readable(i))
+        header.writeBool(false, coeffUpdateProbs.readUnchecked(i))
         i += 1
 
       header.writeLiteral(1, 0) // no macroblock skip-coefficient probability
@@ -283,7 +283,7 @@ private[hallucination] object Vp8Encoder:
       var i = firstCoeff
 
       while i < 16 do
-        val zi = zigzag.readable(i)
+        val zi = zigzag.readUnchecked(i)
         zigzagBlock(i) = block(offset + zi)/(if zi > 0 then acq else dcq)
         i += 1
 
@@ -298,7 +298,7 @@ private[hallucination] object Vp8Encoder:
 
       while i < endOfBlock do
         val coeff = zigzagBlock(i)
-        val band = coeffBands.readable(i)
+        val band = coeffBands.readUnchecked(i)
         val probOffset = coeffIndex(plane, band, complexity, 0)
         val startIndex = if skipEob then 2 else 0
         val absValue = math.abs(coeff)
@@ -337,12 +337,12 @@ private[hallucination] object Vp8Encoder:
                 category,
                 startIndex )
 
-            val extra = absValue - dctCatBase.readable(category - DctCat1)
+            val extra = absValue - dctCatBase.readUnchecked(category - DctCat1)
             var mask = if category == DctCat6 then 1 << 10 else 1 << (category - DctCat1)
             var c = (category - DctCat1)*12
 
-            while probDctCat.readable(c) != 0 do
-              partition.writeBool((extra & mask) > 0, probDctCat.readable(c))
+            while probDctCat.readUnchecked(c) != 0 do
+              partition.writeBool((extra & mask) > 0, probDctCat.readUnchecked(c))
               mask >>= 1
               c += 1
 
@@ -354,7 +354,7 @@ private[hallucination] object Vp8Encoder:
         i += 1
 
       if endOfBlock < 16 then
-        val band = coeffBands.readable(firstCoeff.max(endOfBlock))
+        val band = coeffBands.readUnchecked(firstCoeff.max(endOfBlock))
 
         partition.writeTree
           ( dctTokenTree.asInstanceOf[scala.Array[Int]],

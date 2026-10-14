@@ -355,7 +355,7 @@ object Pdf:
                     case _                      => Matrix(0.001, 0, 0, 0.001, 0, 0)
 
             // Type 3 widths are in glyph space; normalize them to thousandths of an em.
-            val scaled = Array.frozen(widths.readable.map(_*matrix.a*1000))
+            val scaled = Array.from(widths.stdlib.map(_*matrix.a*1000))
             Type3(matrix, common(false, Map(), defaultWidth).copy(widths = scaled))
 
           case "Type0" =>
@@ -474,7 +474,7 @@ object Pdf:
         val mapped: Optional[Text] = common.toUnicode.let(_(code)).or:
           common.differences(code).or:
             common.encoding.let: table =>
-              if code >= 0 && code < table.length then table.readable(code).show else Unset
+              if code >= 0 && code < table.length then table.readUnchecked(code).show else Unset
 
         val fallback: Text =
           if !common.twoByte && code >= 32 && code <= 126 then code.toChar.show else t"�"

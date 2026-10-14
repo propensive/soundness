@@ -53,19 +53,19 @@ object Classfile:
   extends fulminate.Error(293, 0)(m"there was an error reading the classfile")
 
   given aggregable: Classfile is Aggregable by Data =
-    stream => new Classfile(stream.read[Data].readable)
+    stream => new Classfile(stream.read[Data])
 
   def apply(name: Text)(using classloader: Classloader): Optional[Classfile] =
-    classloader(name).let: data => new Classfile(data.readable)
+    classloader(name).let: data => new Classfile(data)
 
   def apply[classtype: ClassTag](using classloader: Classloader): Optional[Classfile] =
     val cls = classtype.runtimeClass
     val name = t"${cls.getName().nn.replace('.', '/').nn}.class"
-    classloader(name).let: data => new Classfile(data.readable)
+    classloader(name).let: data => new Classfile(data)
 
 // `data` is the stdlib immutable array, not the frozen `Data`: a frozen-array constructor
 // field would make `Classfile` itself a capability. Conversion happens in the companion.
-class Classfile(data: scala.IArray[Byte]):
+class Classfile(data: Data):
   val sourceFile: Optional[Text] =
     model.attributes.nn.to[List].reap:
       case attribute: jlca.SourceFileAttribute =>

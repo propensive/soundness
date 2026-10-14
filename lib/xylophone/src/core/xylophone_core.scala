@@ -76,13 +76,13 @@ private def replaceNamedChild(xml: Xml, name: String, value: Xml)(using Xml.Scop
     children.iterate: index =>
       children.at(index) match
         case element: Xml.Element if !done && parent.selects(element, name.tt) =>
-          buffer ++= replacement.readable.toSeq
+          buffer ++= replacement.stdlib
           done = true
 
         case other =>
           buffer += other
 
-    if !done then buffer ++= replacement.readable.toSeq
+    if !done then buffer ++= replacement.stdlib
     Xml.Element(label, attributes, Array.from(buffer))
 
   case Xml.Fragment(node: Xml.Element) =>

@@ -48,7 +48,7 @@ object Catalog:
 
       Catalog(Array.tabulate(catalog.size): index =>
         partialFunction.applyOrElse
-          ( Proxy[key, value, index.type](index), _ => catalog.values.readable(index) ))
+          ( Proxy[key, value, index.type](index), _ => catalog.values.readUnchecked(index) ))
 
 //case class Catalog[key, value](values: Map[Text, value]):
 case class Catalog[key, value: ClassTag](values: Array[value]^{}) extends Findable:
@@ -58,7 +58,7 @@ case class Catalog[key, value: ClassTag](values: Array[value]^{}) extends Findab
     values(accessor(using Proxy(0)).id.or(panic(m"the Proxy phantom always assigns an id")))
 
   def map[value2: ClassTag](lambda: value => value2): Catalog[key, value2] =
-    Catalog(Array.frozen(values.readable.map(lambda)))
+    Catalog(Array.from(values.stdlib.map(lambda)))
 
 
   def tie[result](using proxy: Proxy[key, value, 0])
@@ -73,4 +73,4 @@ case class Catalog[key, value: ClassTag](values: Array[value]^{}) extends Findab
   :   Catalog[key, result] =
 
     Catalog(Array.tabulate(values.length): index =>
-      lambda(values.readable(index), right.values.readable(index)))
+      lambda(values.readUnchecked(index), right.values.readUnchecked(index)))

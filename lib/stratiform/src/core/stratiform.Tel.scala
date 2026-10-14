@@ -765,7 +765,7 @@ object Tel extends Tel2:
       while index < profiles.length do
         // The slot's atoms are a linked list, so `size` is a walk; `linearSize`
         // acknowledges it (the array has to be sized before it can be filled).
-        val atomList = assigned.readable(index)
+        val atomList = assigned.readUnchecked(index)
         val slot = new scala.Array[Text](atomList.size)
 
         atomList.each: atom => slot(ordinal.n0) = Positional.text(atom)
@@ -1432,7 +1432,7 @@ object Tel extends Tel2:
               case s: Tels.SelectRef =>
                 val selectDef = selectDefinitionOf(s, schema)
 
-                selectDef.variants.readable.zipWithIndex.find(_._1.keyword == atomText) match
+                selectDef.variants.stdlib.zipWithIndex.find(_._1.keyword == atomText) match
                   case Some((_, variantOffset)) =>
                     results += Tel.Element.Node(flatPos + variantOffset, Tels.Flag, Array.empty)
 
@@ -1531,8 +1531,8 @@ object Tel extends Tel2:
     :   Array[Tel.Element]^{} raises Tel.Error tracks Tel.Focus =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
-      results ++= atomElements.readable
-      results ++= childElements.readable
+      results ++= atomElements.stdlib
+      results ++= childElements.stdlib
 
       def flatWidth(member: Tels.Member): Int = member match
         case _: Tels.Field      => 1
@@ -1623,7 +1623,7 @@ object Tel extends Tel2:
             keyFlat.let: keyIdx =>
               var value: Optional[Text] = Unset
 
-              node.children.readable.foreach:
+              node.children.stdlib.foreach:
                 case Tel.Element.Value(idx, _, text) =>
                   if idx == keyIdx && value.absent then value = text
 
@@ -1969,7 +1969,7 @@ object Tel extends Tel2:
         else Unset
 
       count.let: n =>
-        val xor = data.readable.foldLeft(0): (acc, byte) => acc ^ (byte & 0xff)
+        val xor = data.stdlib.foldLeft(0): (acc, byte) => acc ^ (byte & 0xff)
         if xor == 0x79 then n else Unset
 
   trait Codec:
@@ -2011,7 +2011,7 @@ object Tel extends Tel2:
     // BASE-256 text.
     def apply(data: Data)(using Tactic[Bintel.Error], Tactic[Error]): Acceptance =
       val body: Data =
-        if data.readable.startsWith(Bintel.magic.readable) then
+        if data.stdlib.startsWith(Bintel.magic.stdlib) then
           val framed = Bintel.unframe(data)
 
           if !sameBytes(framed.signature, signatureData)
@@ -2066,7 +2066,7 @@ object Tel extends Tel2:
     // (3), every scalar carrying BASE-256 text.
     def apply(element: Tel.Element)(using Tactic[Error]): Acceptance = element match
       case Tel.Element.Node(_, _, children) =>
-        Acceptance(children.readable.to(List).map(alternative))
+        Acceptance(children.stdlib.to(List).map(alternative))
 
       case _ =>
         abort(Error(Error.Reason.Malformed))
@@ -2330,7 +2330,7 @@ object Tel extends Tel2:
 
     // Every compound keyword of a document, at any depth.
     private[stratiform] def keywords(document: Tel): scala.collection.immutable.Set[Text] =
-      document.childCompounds.readable.toList.flatMap: compound =>
+      document.childCompounds.stdlib.toList.flatMap: compound =>
         val child = Tel.make(compound)
         keywords(child) + child.keyword
 
@@ -2344,7 +2344,7 @@ object Tel extends Tel2:
       ( component: SchemaSignature.Lineage.Component, used: scala.collection.immutable.Set[Text] )
     :   Boolean =
 
-      component.layer.selects.readable.exists(_.excludes.readable.exists(used.contains))
+      component.layer.selects.exists(_.excludes.exists(used.contains))
 
     // One alternative for a lineage: its base alone as the requirement, and every layer and
     // atom it holds offered by the shortest prefix that denotes it.
@@ -2825,8 +2825,8 @@ object Tel extends Tel2:
       // the arena (null for an atom built from text), and the slice's offset and length in it.
       // Immutable for the reason `fromArena` gives: the slice is committed before the arena
       // changes.
-      private[stratiform] def arena: scala.IArray[Byte] | Null =
-        bytes.asInstanceOf[scala.IArray[Byte] | Null]
+      private[stratiform] def arena: Array[Byte]^{} | Null =
+        bytes.asInstanceOf[Array[Byte]^{} | Null]
 
       private[stratiform] def arenaOffset: Int = byteOff
       private[stratiform] def arenaLength: Int = byteLen
@@ -2902,9 +2902,9 @@ object Tel extends Tel2:
   // `Span`); those fall back to the keyword. Columns being 1-indexed makes 0
   // unambiguous.
   //
-  // Represented as the stdlib's immutable array (pure by construction): the frozen
-  // `Array[Int]^{}` form makes every `PositionIndex`-holding field carry a fresh `any.rd`.
-  opaque type PositionIndex = scala.IArray[Int]
+  // The frozen `Array[Int]^{}` itself: pure under `-Zfrozen-pure`, which classifies an opaque
+  // alias over a frozen array as deriving from no capability class.
+  opaque type PositionIndex = Array[Int]^{}
 
   // Ints per compound in the parser's flat pre-order record stream, and the fixed
   // part of a descriptor's header. Named once so the parser's append site and
@@ -2913,10 +2913,10 @@ object Tel extends Tel2:
   private[stratiform] inline val descriptorHeader = 7
 
   object PositionIndex:
-    private[stratiform] def apply(data: Array[Int]^{}): PositionIndex = data.readable
+    private[stratiform] def apply(data: Array[Int]^{}): PositionIndex = data
 
   extension (positionIndex: PositionIndex)
-    private[stratiform] def ints: Array[Int]^{} = Array.frozen(positionIndex)
+    private[stratiform] def ints: Array[Int]^{} = positionIndex
 
   // Parse `bytes` into a `Tel` carrying a `PositionIndex`, so that
   // `tel.locate(pointer)` / `tel.locateKey(pointer)` resolve a node's keyword
@@ -3199,17 +3199,17 @@ object Tel extends Tel2:
       case data #:: rest if rest.nil => data
 
       case _ =>
-        var acc    = scala.IArray.empty[Byte]
+        var acc    = scala.collection.immutable.ArraySeq.empty[Byte]
         // The stdlib view walks the chain cell-by-cell; its `head`/`tail`
         // force exactly one cell at a time, which the native surface
         // deliberately withholds on the lazy shape.
         var stream = source.stdlib
 
         while !stream.isEmpty do
-          acc = acc ++ stream.head.readable
+          acc = acc ++ stream.head.stdlib
           stream = stream.tail
 
-        Array.frozen(acc)
+        Array.from(acc)
 
   // `bytes.read[Tel]` for any Chain[Data] source: concatenates the
   // chunks and parses the result. The metadata (interpreter directive,
@@ -3810,14 +3810,14 @@ object Tel extends Tel2:
 
     var b = 0
     var found = false
-    val out = scala.collection.mutable.ArrayBuffer.from(blocks.readable)
+    val out = scala.collection.mutable.ArrayBuffer.from(blocks.stdlib)
 
     while b < out.length && !found do
       val cs = out(b).compounds
 
       cs.where(_.keyword == keyword).let: ordinal =>
         out(b) =
-          out(b).copy(compounds = Array.frozen(cs.readable.updated(ordinal.n0, compound)))
+          out(b).copy(compounds = Array.from(cs.stdlib.updated(ordinal.n0, compound)))
 
         found = true
 
@@ -3841,8 +3841,8 @@ object Tel extends Tel2:
 
     var offset = 0
 
-    Array.frozen:
-      blocks.readable.map: block =>
+    Array.from:
+      blocks.stdlib.map: block =>
         val compounds = block.compounds
         val base = offset
         offset += compounds.length
@@ -3851,8 +3851,8 @@ object Tel extends Tel2:
         then
           block.copy
             ( compounds =
-                Array.frozen
-                  ( compounds.readable.updated
+                Array.from
+                  ( compounds.stdlib.updated
                       ( index - base, transform(compounds.readUnchecked(index - base)) ) ) )
         else
           block
@@ -8190,8 +8190,8 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // this is always empty since the root has no atoms.
   def atomTexts: Array[Text]^{} = subtree match
     case c: Tel.Compound =>
-      Array.frozen:
-        c.atoms.readable.map:
+      Array.from:
+        c.atoms.stdlib.map:
           case Tel.Atom.Inline(text, _)  => text
           case Tel.Atom.Source(text)     => text
           case Tel.Atom.Literal(_, text) => text

@@ -43,12 +43,12 @@ private[enigmatic] object Inspection:
   // and a debug rendering must always be available, with no context; nothing is abbreviated,
   // since an inspection which dropped bytes would hide exactly what is being looked for.
   def hex(data: Data): Text =
-    val bytes = data.readable
+    val bytes = data
     val builder: StringBuilder = new StringBuilder()
     var index = 0
 
     while index < bytes.length do
-      val byte = bytes(index)
+      val byte = bytes.readUnchecked(index)
       builder.append(digits.charAt((byte & 0xf0) >>> 4))
       builder.append(digits.charAt(byte & 0x0f))
       index += 1

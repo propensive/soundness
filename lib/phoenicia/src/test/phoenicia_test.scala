@@ -44,7 +44,7 @@ import strategies.throwUnsafely
 // is defined here once for the fixtures.
 extension (left: Data)
   @targetName("concatData")
-  def ++ (right: Data): Data = Array.frozen(left.readable ++ right.readable)
+  def ++ (right: Data): Data = left + right
 
 object Tests extends Suite("fonts", m"Phoenicia Tests"):
 

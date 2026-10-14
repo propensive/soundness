@@ -77,7 +77,7 @@ private[pneumatic] object RangeCoder:
     Array.freeze(table)
 
   def bitPrice(prob: Int, bit: Int): Int =
-    prices.readable((prob ^ ((-bit) & (BitModelTotal - 1))) >>> MoveReducingBits).toInt
+    prices.readUnchecked((prob ^ ((-bit) & (BitModelTotal - 1))) >>> MoveReducingBits).toInt
 
   def directBitsPrice(count: Int): Int = count << BitPriceShiftBits
 

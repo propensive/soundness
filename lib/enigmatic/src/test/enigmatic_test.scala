@@ -238,8 +238,8 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         val plain = t"The quick brown fox jumps over the lazy dog".in[Data]
-        val encrypted = plain.readable.grouped(1).map(Array.frozen(_)).iterator.stream.encrypt(InitializationVector.random)
-        encrypted.memoize.readable.grouped(1).map(Array.frozen(_)).iterator.stream.decrypt.memoize.to[List]
+        val encrypted = plain.stdlib.grouped(1).map(Array.from(_)).iterator.stream.encrypt(InitializationVector.random)
+        encrypted.memoize.stdlib.grouped(1).map(Array.from(_)).iterator.stream.decrypt.memoize.to[List]
     . assert(_ == t"The quick brown fox jumps over the lazy dog".in[Data].to[List])
 
     test(m"CTR/NoPadding streams roundtrip (stream-aligned check at end)"):
@@ -256,8 +256,8 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         val plain = t"Hello world".in[Data]
-        val chunks = plain.readable.grouped(1).map { chunk => Array.frozen(chunk) }.to(Chain)
-        Array.frozen(chunks.encrypt(InitializationVector.random).stdlib.map(_.readable).reduce(_ ++ _)).decrypt.as[Text]
+        val chunks = plain.stdlib.grouped(1).map { chunk => Array.from(chunk) }.to(Chain)
+        chunks.encrypt(InitializationVector.random).fold(Array.empty[Byte])(_ + _).decrypt.as[Text]
     . assert(_ == t"Hello world")
 
     test(m"CBC encryption of the same plaintext differs run-to-run (random IV)"):
@@ -403,7 +403,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
         val chunks = Chain(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
-        Array.frozen(chunks.encrypt(InitializationVector.random).stdlib.map(_.readable).reduce(_ ++ _)).decrypt.as[Text]
+        chunks.encrypt(InitializationVector.random).fold(Array.empty[Byte])(_ + _).decrypt.as[Text]
     . assert(_ == t"Hello, streaming world!")
 
     test(m"Streaming and one-shot encryption agree for a fixed IV"):
@@ -411,7 +411,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
         val streamed =
-          Array.frozen(Chain(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data]).encrypt(iv).stdlib.map(_.readable).reduce(_ ++ _))
+          Chain(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data]).encrypt(iv).fold(Array.empty[Byte])(_ + _)
 
         streamed.serialize[Hex] == t"Hello, streaming world!".in[Data].encrypt(iv).serialize[Hex]
     . assert(_ == true)
@@ -464,7 +464,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
       test(m"Cose envelope is tagged with CBOR tag 17 (Mac0)"):
         val wire = Cose(payload, key).in[Data]
-        wire.readable(0).toInt & 0xFF
+        wire.stdlib(0).toInt & 0xFF
       . assert(_ == 0xD1)   // major type 6 (tag) | tag value 17 = 0xC0 | 17 = 0xD1
 
       test(m"Verification fails with the wrong key"):
@@ -480,7 +480,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         tampered.place(wire)
         // Flip a bit in the MAC tag near the end of the envelope.
         val index = wire.length - 5
-        tampered(index) = (tampered.readable(index) ^ 0xFF.toByte).toByte
+        tampered(index) = (tampered.stdlib(index) ^ 0xFF.toByte).toByte
         Array.freeze(tampered).authenticate[Cose](key)
       . assert(!_)
 
@@ -491,7 +491,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
       val key32: Data = t"a-32-byte-key-for-aes-256-cbc!!!".in[Data]
 
       test(m"RAND_bytes returns the requested number of bytes"):
-        OpensslCrypto.random.bytes(32).readable.length
+        OpensslCrypto.random.bytes(32).length
       . assert(_ == 32)
 
       test(m"HMAC-SHA256 agrees with the JDK provider"):
@@ -543,7 +543,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         key.uncloak:
           val chunks = Chain(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
-          Array.frozen(chunks.encrypt(InitializationVector.random).stdlib.map(_.readable).reduce(_ ++ _)).decrypt.as[Text]
+          chunks.encrypt(InitializationVector.random).fold(Array.empty[Byte])(_ + _).decrypt.as[Text]
       . assert(_ == t"Hello, streaming world!")
 
     suite(m"Keystores"):
@@ -767,9 +767,11 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
       test(m"A tampered ML-DSA signature fails to verify"):
         val key = PrivateKey.generate[MlDsa[65]]()
-        val bytes = key.sign(pangram).bytes.unsafeMutable(using Unsafe)
-        bytes(0) = (bytes(0) ^ 1).toByte
-        key.public.verify(pangram, Signature(Array.unsafeFrozen(bytes)))
+        val signed = key.sign(pangram).bytes
+        val bytes = Array.allocate[Byte](signed.length)
+        bytes.place(signed)
+        bytes(0) = (bytes.readUnchecked(0) ^ 1).toByte
+        key.public.verify(pangram, Signature(Array.freeze(bytes)))
       . assert(!_)
 
       // The JDK offers no route from an ML-DSA private key back to its public key, so enigmatic
@@ -816,7 +818,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
       // `openssl verify` agree with it, but cannot be run from here.
       def parse(certificate: Certificate): jsc.X509Certificate =
         val factory = jsc.CertificateFactory.getInstance("X.509").nn
-        val bytes = ji.ByteArrayInputStream(certificate.in[Der].data.unsafeMutable(using Unsafe))
+        val bytes = ji.ByteArrayInputStream(Array.unsafeJvm(certificate.in[Der].data))
 
         factory.generateCertificate(bytes).nn.asInstanceOf[jsc.X509Certificate]
 
@@ -837,10 +839,13 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
       test(m"A tampered certificate fails the JDK's signature check"):
         val certificate0 = certificate()
-        val bytes = certificate0.in[Der].data.unsafeMutable(using Unsafe).clone.nn
+        val data = certificate0.in[Der].data
+        val last = data.length - 1
+        val bytes = Array.allocate[Byte](data.length)
+        bytes.place(data)
         // Flip a bit inside the signature, which the structure keeps well-formed.
-        bytes(bytes.length - 1) = (bytes(bytes.length - 1) ^ 0xff.toByte).toByte
-        val tampered = Certificate(Der(bytes.unsafeImmutable(using Unsafe)).as[Asn1])
+        bytes(last) = (bytes.readUnchecked(last) ^ 0xff.toByte).toByte
+        val tampered = Certificate(Der(Array.freeze(bytes)).as[Asn1])
 
         try
           parse(tampered).verify(publicKey(certificate0))
@@ -1040,7 +1045,8 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         // subject key identifier is a bare OCTET STRING and the authority key identifier a
         // SEQUENCE whose `[0]` element is the same twenty bytes.
         def extension(certificate: jsc.X509Certificate, identifier: String): Data =
-          val value = certificate.getExtensionValue(identifier).nn.unsafeImmutable(using Unsafe)
+          // [java-boundary] fresh array returned by the JDK, retained by nobody else
+          val value = Array.unsafeFrozen(certificate.getExtensionValue(identifier).nn)
 
           Der(value).as[Asn1] match
             case Asn1.OctetString(bytes) => Der(bytes).as[Asn1] match
@@ -1056,9 +1062,12 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
       test(m"A tampered issued certificate fails against the issuer's key"):
         val (root, _, _, leaf) = chain()
-        val bytes = leaf.in[Der].data.unsafeMutable(using Unsafe).clone.nn
-        bytes(bytes.length - 1) = (bytes(bytes.length - 1) ^ 0xff.toByte).toByte
-        Certificate(Der(bytes.unsafeImmutable(using Unsafe)).as[Asn1]).verify(root.public)
+        val data = leaf.in[Der].data
+        val last = data.length - 1
+        val bytes = Array.allocate[Byte](data.length)
+        bytes.place(data)
+        bytes(last) = (bytes.readUnchecked(last) ^ 0xff.toByte).toByte
+        Certificate(Der(Array.freeze(bytes)).as[Asn1]).verify(root.public)
       . assert(!_)
 
       test(m"An issued certificate round-trips through DER byte-exactly"):
@@ -1083,7 +1092,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
         val privateKey =
           js.KeyFactory.getInstance("EC").nn.generatePrivate
-            ( js.spec.PKCS8EncodedKeySpec(leaf.pem(Divulgence).data.unsafeMutable(using Unsafe)) )
+            ( js.spec.PKCS8EncodedKeySpec(Array.unsafeJvm(leaf.pem(Divulgence).data)) )
 
         val keystore = js.KeyStore.getInstance("PKCS12").nn
         keystore.load(null, null)
@@ -1169,7 +1178,8 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
               val leaf0 = chain(0).nn
               val root0 = chain(1).nn
               leaf0.verify(root0.getPublicKey)
-              val leafDer = leaf0.getEncoded.nn.unsafeImmutable(using Unsafe).serialize[Hex]
+              // [java-boundary] fresh array returned by the JDK, retained by nobody else
+              val leafDer = Array.unsafeFrozen(leaf0.getEncoded.nn).serialize[Hex]
               val expected = leafCertificate.in[Der].data.serialize[Hex]
               if leafDer == expected then t"" else t"a different leaf"
 

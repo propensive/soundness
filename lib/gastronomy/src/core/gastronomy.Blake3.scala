@@ -72,7 +72,7 @@ object Blake3:
   private final val Schedule: Array[Int]^{} =
     @tailrec
     def permuted(times: Int, index: Int): Int =
-      if times == 0 then index else permuted(times - 1, MsgPermutation.readable(index))
+      if times == 0 then index else permuted(times - 1, MsgPermutation.readUnchecked(index))
 
     scala.Array.tabulate(112) { entry => permuted(entry/16, entry%16) }.asInstanceOf[Array[Int]^{}]
 
@@ -119,10 +119,10 @@ object Blake3:
 
     val state: scala.Array[Int]^ = new scala.Array[Int](16)
     System.arraycopy(chainingValue, 0, state, 0, 8)
-    state(8)  = Iv.readable(0)
-    state(9)  = Iv.readable(1)
-    state(10) = Iv.readable(2)
-    state(11) = Iv.readable(3)
+    state(8)  = Iv.readUnchecked(0)
+    state(9)  = Iv.readUnchecked(1)
+    state(10) = Iv.readUnchecked(2)
+    state(11) = Iv.readUnchecked(3)
     state(12) = counter.toInt
     state(13) = (counter >>> 32).toInt
     state(14) = blockLen

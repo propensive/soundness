@@ -390,12 +390,12 @@ extends caps.Mutable:
   private update def readBlockLength(table: scala.Array[Int]^{this}, offset: Int): Int =
     fillBitWindow()
     val code = readSymbol(table, offset)
-    blockLengthOffset.readable(code) + readBits(blockLengthNBits.readable(code))
+    blockLengthOffset.readUnchecked(code) + readBits(blockLengthNBits.readUnchecked(code))
 
   private def translateShortCodes(code: Int): Int =
     if code < NumDistanceShortCodes then
-      val index = (distRbIdx + distanceShortCodeIndexOffset.readable(code)) & 3
-      distRb(index) + distanceShortCodeValueOffset.readable(code)
+      val index = (distRbIdx + distanceShortCodeIndexOffset.readUnchecked(code)) & 3
+      distRb(index) + distanceShortCodeValueOffset.readUnchecked(code)
     else
       code - NumDistanceShortCodes + 1
 
@@ -486,11 +486,11 @@ extends caps.Mutable:
       var i = simpleCodeOrSkip
 
       while i < CodeLengthCodes && space > 0 do
-        val codeLenIdx = codeLengthCodeOrder.readable(i)
+        val codeLenIdx = codeLengthCodeOrder.readUnchecked(i)
         fillBitWindow()
         val p = ((accumulator >>> bitOffset).toInt) & 15
-        bitOffset += fixedTable.readable(p) >> 16
-        val v = fixedTable.readable(p) & 0xffff
+        bitOffset += fixedTable.readUnchecked(p) >> 16
+        val v = fixedTable.readUnchecked(p) & 0xffff
         codeLengthCodeLengths(codeLenIdx) = v
         if v != 0 then { space -= 32 >> v; numCodes += 1 }
         i += 1
@@ -553,8 +553,8 @@ extends caps.Mutable:
     literalTreeIndex = contextMap(contextMapSlice) & 0xff
     literalTree = hGroup0Trees(literalTreeIndex)
     val contextMode = contextModes(literalBlockType).toInt
-    contextLookupOffset1 = contextLookupOffsets.readable(contextMode)
-    contextLookupOffset2 = contextLookupOffsets.readable(contextMode + 1)
+    contextLookupOffset1 = contextLookupOffsets.readUnchecked(contextMode)
+    contextLookupOffset2 = contextLookupOffsets.readUnchecked(contextMode + 1)
 
   private update def decodeCommandBlockSwitch(): Unit =
     decodeBlockTypeAndLength(1)
@@ -631,8 +631,8 @@ extends caps.Mutable:
 
     contextMapSlice = 0
     distContextMapSlice = 0
-    contextLookupOffset1 = contextLookupOffsets.readable(contextModes(0).toInt)
-    contextLookupOffset2 = contextLookupOffsets.readable(contextModes(0).toInt + 1)
+    contextLookupOffset1 = contextLookupOffsets.readUnchecked(contextModes(0).toInt)
+    contextLookupOffset2 = contextLookupOffsets.readUnchecked(contextModes(0).toInt + 1)
     literalTreeIndex = 0
     literalTree = hGroup0Trees(0)
     treeCommandOffset = hGroup1Trees(0)
@@ -650,14 +650,15 @@ extends caps.Mutable:
       var rangeIdx = cmdCode >>> 6
       distanceCode = 0
       if rangeIdx >= 2 then { rangeIdx -= 2; distanceCode = -1 }
-      val insertCode = insertRangeLut.readable(rangeIdx) + ((cmdCode >>> 3) & 7)
-      val copyCode = copyRangeLut.readable(rangeIdx) + (cmdCode & 7)
+      val insertCode = insertRangeLut.readUnchecked(rangeIdx) + ((cmdCode >>> 3) & 7)
+      val copyCode = copyRangeLut.readUnchecked(rangeIdx) + (cmdCode & 7)
 
       insertLength =
-        insertLengthOffset.readable(insertCode) + readBits(insertLengthNBits.readable(insertCode))
+        insertLengthOffset.readUnchecked(insertCode) +
+            readBits(insertLengthNBits.readUnchecked(insertCode))
 
       copyLength =
-        copyLengthOffset.readable(copyCode) + readBits(copyLengthNBits.readable(copyCode))
+        copyLengthOffset.readUnchecked(copyCode) + readBits(copyLengthNBits.readUnchecked(copyCode))
 
       ensureCapacity(pos + insertLength)
 
@@ -680,8 +681,8 @@ extends caps.Mutable:
           if blockLength(0) == 0 then decodeLiteralBlockSwitch()
 
           val treeIndex = contextMap(contextMapSlice +
-            (contextLookup.readable(contextLookupOffset1 + prevByte1) |
-              contextLookup.readable(contextLookupOffset2 + prevByte2))) & 0xff
+            (contextLookup.readUnchecked(contextLookupOffset1 + prevByte1) |
+              contextLookup.readUnchecked(contextLookupOffset2 + prevByte2))) & 0xff
 
           blockLength(0) -= 1
           prevByte2 = prevByte1
@@ -723,9 +724,9 @@ extends caps.Mutable:
 
         if distance > maxDistance then
           if copyLength >= minWordLength && copyLength <= maxWordLength then
-            var offset = offsetsByLength.readable(copyLength)
+            var offset = offsetsByLength.readUnchecked(copyLength)
             val wordId = distance - maxDistance - 1
-            val shift = sizeBitsByLength.readable(copyLength)
+            val shift = sizeBitsByLength.readUnchecked(copyLength)
             val mask = (1 << shift) - 1
             val wordIdx = wordId & mask
             val transformIdx = wordId >>> shift
@@ -734,7 +735,7 @@ extends caps.Mutable:
             ensureCapacity(pos + maxTransformedWordLength)
 
             val len = BrotliDictionary.transformDictionaryWord(output, copyDst, dictData, offset,
-                copyLength, transforms.readable(transformIdx))
+                copyLength, transforms.readUnchecked(transformIdx))
 
             copyDst += len
             pos += len

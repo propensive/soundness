@@ -92,7 +92,7 @@ object Tls:
 
   private[coaxial] def load(keystore: Data, password: Text): js.KeyStore =
     val store = js.KeyStore.getInstance("PKCS12").nn
-    val in = ji.ByteArrayInputStream(keystore.unsafeMutable(using Unsafe))
+    val in = ji.ByteArrayInputStream(Array.unsafeJvm(keystore))
     try store.load(in, password.s.toCharArray) finally in.close()
     store
 

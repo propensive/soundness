@@ -104,9 +104,9 @@ object protointernal:
     val bytes = nibbles3.grouped(2).map(Integer.parseInt(_, 16).toByte).to(List)
 
     // The cast happens on the `Expr`, outside the quote: any frozen-array-typed term inside
-    // the quote picks up a fresh `any.rd` capability that cannot flow into `^{}`. The stdlib
-    // `IArray` operand is immutable, so asserting the frozen form is sound.
-    '{scala.IArray.from(${Expr(bytes.stdlib)}).asInstanceOf[Array[Byte]^{}]}
+    // the quote picks up a fresh `any.rd` capability that cannot flow into `^{}`.
+    // [quote-wall] a frozen literal built inside the quote re-minted at the splice
+    '{Array.from(${Expr(bytes.stdlib)})}
     . asInstanceOf[Expr[Array[Byte]^{}]]
 
   def parseU64(digits: Expr[String]): Macro[Long] = digits.value match

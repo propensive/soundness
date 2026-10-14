@@ -70,12 +70,12 @@ object Pike:
 
     def size: Int = pcs.size
 
-  private def within(bounds: scala.IArray[Int], symbol: Int): Boolean =
+  private def within(bounds: Array[Int], symbol: Int): Boolean =
     var index = 0
     var found = false
 
     while !found && index < bounds.length do
-      found = symbol >= bounds(index) && symbol <= bounds(index + 1)
+      found = symbol >= bounds.readUnchecked(index) && symbol <= bounds.readUnchecked(index + 1)
       index += 2
 
     found
@@ -88,7 +88,7 @@ object Pike:
   // to reach the end of the input.
   def run[input: Symbolizer as symbolizer]
     ( program: Program, input: input, start: Int, anchoredStart: Boolean, anchoredEnd: Boolean )
-  :   Optional[scala.IArray[Int]] =
+  :   Optional[Array[Int]] =
 
     val ops = program.ops
     val length = symbolizer.length(input)
@@ -117,7 +117,7 @@ object Pike:
       if !list.marked(pc) then
         list.mark(pc)
 
-        ops(pc) match
+        ops.readUnchecked(pc) match
           case Program.Op.Jump(target) =>
             add(list, target, saved, at)
 
@@ -177,7 +177,7 @@ object Pike:
         val pc = clist.pcs(thread)
         val saved = clist.regs(thread)
 
-        ops(pc) match
+        ops.readUnchecked(pc) match
           case Program.Op.Symbol(bounds, next) =>
             if index < length && within(bounds, symbolizer.symbol(input, index))
             then add(nlist, next, saved, following)
@@ -207,4 +207,4 @@ object Pike:
 
         if (anchoredStart || matched.present) && clist.size == 0 then done = true
 
-    matched.let: saved => scala.IArray.unsafeFromArray(saved.clone())
+    matched.let: saved => Array.unsafeFrozen(saved.clone())

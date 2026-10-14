@@ -99,7 +99,7 @@ object Tests extends Suite("unicode", m"Hieroglyph tests"):
       for chunk <- 1 to 25 do
         test(m"Decode Japanese text in chunks of size $chunk"):
           import textSanitizers.skipSanitizer
-          charsets.utf8Charset.decoded(japaneseData.readable.grouped(chunk).map(Array.frozen(_)).to(Chain)).join
+          charsets.utf8Charset.decoded(japaneseData.stdlib.grouped(chunk).map(Array.from(_)).to(Chain)).join
         . assert(_ == japanese)
 
       val badUtf8 = Data(45, -62, 49, 48)
@@ -122,7 +122,7 @@ object Tests extends Suite("unicode", m"Hieroglyph tests"):
       test(m"Ensure that decoding is finished"):
         import textSanitizers.strictSanitizer
         given Codepage = enc"UTF-8".encoder
-        capture[Charset.Error](charsets.utf8Charset.decoded(Array.frozen(t"café".in[Data].readable.dropRight(1))))
+        capture[Charset.Error](charsets.utf8Charset.decoded(Array.from(t"café".in[Data].stdlib.dropRight(1))))
       . assert(_ == Charset.Error(4, enc"UTF-8"))
 
     suite(m"Accruing decode errors"):
@@ -197,7 +197,7 @@ object Tests extends Suite("unicode", m"Hieroglyph tests"):
       val astral = t"\ud83d\ude00 smiles \ud83c\udf0d wide"
 
       def joined(chunks: Chain[Data]): Data =
-        Array.unsafeFrozen(chunks.stdlib.flatMap(_.readable.toSeq).toArray)
+        Array.unsafeFrozen(chunks.stdlib.flatMap(_.stdlib).toArray)
 
       test(m"encoding a whole text agrees with encoding it in one chunk"):
         joined(codepages.utf8Codepage.encoded(Chain(astral))).to[List]
@@ -390,8 +390,8 @@ object Tests extends Suite("unicode", m"Hieroglyph tests"):
         val lines = scala.io.Source.fromInputStream(stream).getLines().to(List)
 
         def compareCps(left: Array[Int], right: Array[Int]): Int =
-          val leftView = left.readable
-          val rightView = right.readable
+          val leftView = left.stdlib
+          val rightView = right.stdlib
           val limit = leftView.length.min(rightView.length)
           var index = 0
           var result = 0

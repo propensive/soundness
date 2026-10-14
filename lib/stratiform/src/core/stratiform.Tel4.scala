@@ -105,10 +105,10 @@ trait Tel4:
 
       val declared: scala.collection.immutable.Set[Text] =
         baseStruct.lay(scala.collection.immutable.Set()): struct =>
-          struct.members.readable.toList.collect { case field: Tels.Field => field.keyword }
+          struct.members.stdlib.toList.collect { case field: Tels.Field => field.keyword }
           . to(scala.collection.immutable.Set)
 
-      struct.members.readable.toList.flatMap:
+      struct.members.stdlib.toList.flatMap:
         case field: Tels.Field =>
           val layered = base.present && !declared.contains(field.keyword)
           scala.List(field.keyword -> memberOf(field, schema, base, layered))
@@ -117,7 +117,7 @@ trait Tel4:
         // keyword, optional since any one of them may be the one present
         case select: Tels.SelectRef =>
           schema.selects.seek(_.name == select.reference).lay(scala.Nil): definition =>
-            definition.variants.readable.toList.map: variant =>
+            definition.variants.stdlib.toList.map: variant =>
               val multiplicity =
                 if select.repeatable == Tels.Polarity.Loose then Multiplicity.Many
                 else Multiplicity.Optional
@@ -195,7 +195,7 @@ trait Tel4:
     // composed with, for a writer serving an acceptance.
     def layersOf(tel: Tel): List[Text] =
       tels.layers.to[proscenium.List].filter: layer =>
-        layer.overlay.members.readable.exists:
+        layer.overlay.members.exists:
           case field: Tels.Field => tel.field(field.keyword).present
           case _                 => false
 
@@ -236,16 +236,16 @@ trait Tel4:
     // since its absence reads as `false`
     private lazy val flags: scala.collection.immutable.Set[Text] =
       def within(members: Array[Tels.Member]^{}): scala.List[Text] =
-        members.readable.toList.flatMap:
+        members.stdlib.toList.flatMap:
           case Tels.Field(_, _, keyword, Tels.Flag, _, _, _)     => scala.List(keyword)
           case Tels.Field(_, _, _, struct: Tels.Struct, _, _, _) => within(struct.members)
           case _                                                 => scala.Nil
 
-      val variants = composed.selects.readable.toList.flatMap: select =>
-        select.variants.readable.toList.collect:
+      val variants = composed.selects.stdlib.toList.flatMap: select =>
+        select.variants.stdlib.toList.collect:
           case Tels.Variant(keyword, Tels.Flag, _) => keyword
 
-      val records = composed.records.readable.toList.flatMap: record => within(record.members)
+      val records = composed.records.stdlib.toList.flatMap: record => within(record.members)
 
       (within(composed.document.members) ++ records ++ variants).toSet
 
@@ -255,4 +255,4 @@ trait Tel4:
       if absent(tel) && !flags.contains(name) then abort(Tel.Error(Tel.Error.Reason.Absent))
       else tel
 
-    def repeated(name: Text, tel: Tel): List[Tel] = tel.fields(name).readable.to(List)
+    def repeated(name: Text, tel: Tel): List[Tel] = tel.fields(name).stdlib.to(List)

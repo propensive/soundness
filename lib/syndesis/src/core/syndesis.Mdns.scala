@@ -272,7 +272,7 @@ object Mdns:
     private def compareBytes(left: Data, right: Data, index: Int): Comparison =
       if index == left.length || index == right.length then Comparison(left.length - right.length)
       else
-        val difference = (left.readable(index) & 0xff) - (right.readable(index) & 0xff)
+        val difference = (left.readUnchecked(index) & 0xff) - (right.readUnchecked(index) & 0xff)
         if difference == 0 then compareBytes(left, right, index + 1) else Comparison(difference)
 
     // Each host's proposed records in order, compared pairwise; the first difference decides,

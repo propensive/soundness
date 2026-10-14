@@ -85,7 +85,7 @@ object Benchmarks extends Suite("compression-bench", m"Pneumatic benchmarks: XZ,
   // ~4 MB of prose-shaped text: words drawn from a small vocabulary by a fixed linear
   // congruential generator, so every run compresses exactly the same bytes.
   lazy val text: Data =
-    val vocabulary = IArray(
+    val vocabulary = Array(
       "the", "of", "and", "to", "in", "a", "is", "that", "for", "it", "as", "was", "with",
       "be", "by", "on", "not", "he", "this", "are", "or", "his", "from", "at", "which", "but",
       "have", "an", "had", "they", "you", "were", "their", "one", "all", "we", "can", "her",
@@ -122,7 +122,7 @@ object Benchmarks extends Suite("compression-bench", m"Pneumatic benchmarks: XZ,
   // framing and the LZMA2 decode from the CRC-64 pass the default stream also verifies.
   lazy val xzPatternUnchecked: Data =
     val chunks = Xz.drive(XzCompressorEngine(Xz.DefaultPreset, XzCheck.None), Chain(pattern))
-    Array.from(chunks.stdlib.map(_.readable).flatten)
+    Array.from(chunks.stdlib.map(_.stdlib).flatten)
 
   lazy val xzTextArray: scala.Array[Byte] = xzText.asInstanceOf[scala.Array[Byte]]
   lazy val lzma2Pattern: Data = pattern.stream.compress[Lzma2].memoize

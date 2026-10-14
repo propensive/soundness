@@ -63,7 +63,7 @@ import denominative.dysasymptotics.linearSize
 // fixtures readable.
 extension (left: Data)
   @targetName("concatData")
-  def ++ (right: Data): Data = Array.frozen(left.readable ++ right.readable)
+  def ++ (right: Data): Data = left + right
 
 object Tests extends Suite("pdf", m"Facsimile tests"):
   val noParms: Map[Text, Cos] = Map()
@@ -1108,7 +1108,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
         PdfFile(path).open(Read & Write): doc ?=>
           doc.set(Cos.Ref(1, 0), Cos.Dictionary(Map(t"Type" -> Cos.Name(t"Catalog"))))
 
-        String(fileBytes(path).unsafeMutable(using Unsafe), "ISO-8859-1").nn.tt.skip(source.length)
+        String(Array.unsafeJvm(fileBytes(path)), "ISO-8859-1").nn.tt.skip(source.length)
 
       test(m"an update over a cross-reference stream is itself a cross-reference stream"):
         val tail = appended(xrefStreamDocument())

@@ -61,14 +61,14 @@ object Flow:
     ( using measurable: Char is Measurable )
   :   Array[Int]^{} =
 
-    val clusters = boundaries.readable.length - 1
+    val clusters = boundaries.length - 1
     val buffer = Array.allocate[Int](clusters + 1)
     var total = 0
     var i = 0
     buffer(0) = 0
 
     while i < clusters do
-      total += clusterWidth(plain, boundaries.readable(i), boundaries.readable(i + 1))
+      total += clusterWidth(plain, boundaries.readUnchecked(i), boundaries.readUnchecked(i + 1))
       buffer(i + 1) = total
       i += 1
 
@@ -101,11 +101,11 @@ object Flow:
   // a cluster boundary.
   private def clusterAt(boundaries: Array[Int]^{}, position: Int): Int =
     var low = 0
-    var high = boundaries.readable.length - 1
+    var high = boundaries.length - 1
 
     while low <= high do
       val mid = (low + high)/2
-      val value = boundaries.readable(mid)
+      val value = boundaries.readUnchecked(mid)
 
       if value == position then return mid
       else if value < position then low = mid + 1
@@ -136,13 +136,13 @@ object Flow:
     val plain = content.plain.s
     val boundaries = GraphemeBreak.boundaries(content.plain)
     val widths = prefixWidths(plain, boundaries)
-    val clusters = boundaries.readable.length - 1
+    val clusters = boundaries.length - 1
     val hyphenText = textual(hyphen)
     val hyphenWidth = hyphen.metrics
     val leftMin = hyphenation.leftMin
     val rightMin = hyphenation.rightMin
 
-    def charStart(cluster: Int): Int = boundaries.readable(cluster)
+    def charStart(cluster: Int): Int = boundaries.readUnchecked(cluster)
 
     // Whether the char offset `position` lies strictly inside `span`: either edge of a span is
     // a fine place to break, since the span is then whole on one side.
@@ -180,7 +180,7 @@ object Flow:
       var end = toCluster
 
       while end > fromCluster && plain.charAt(charStart(end - 1)) == ' ' &&
-        widths.readable(end) - widths.readable(fromCluster) > width
+        widths.readUnchecked(end) - widths.readUnchecked(fromCluster) > width
       do end -= 1
 
       segment(fromCluster, end)
@@ -210,11 +210,12 @@ object Flow:
       var best = -1
       var index = 0
 
-      while index < breaks.readable.length do
-        val candidate = clusterAt(boundaries, start + breaks.readable(index))
+      while index < breaks.length do
+        val candidate = clusterAt(boundaries, start + breaks.readUnchecked(index))
 
         if candidate > 0 && breakable(candidate) then
-          val breakWidth = widths.readable(candidate) - widths.readable(lineStart) + hyphenWidth
+          val breakWidth =
+            widths.readUnchecked(candidate) - widths.readUnchecked(lineStart) + hyphenWidth
           if breakWidth <= width && candidate > best then best = candidate
 
         index += 1
@@ -233,7 +234,7 @@ object Flow:
       else if spaceBreak(cluster) then
         recur(cluster + 1, lineStart, cluster, acc)
       else
-        val widthSoFar = widths.readable(cluster + 1) - widths.readable(lineStart)
+        val widthSoFar = widths.readUnchecked(cluster + 1) - widths.readUnchecked(lineStart)
 
         if widthSoFar > width then
           val wordStart = if lastSpace > lineStart then lastSpace + 1 else lineStart
@@ -267,10 +268,11 @@ object Flow:
       val room = (width - ellipsis.metrics).max(0)
       var keep = 0
 
-      while keep < boundaries.readable.length - 1 && widths.readable(keep + 1) <= room do keep += 1
+      while keep < boundaries.length - 1 && widths.readUnchecked(keep + 1) <= room do keep += 1
 
       val kept =
-        if keep == 0 then textual(t"") else content.segment(0.z thru boundaries.readable(keep).u)
+        if keep == 0 then textual(t"")
+        else content.segment(0.z thru boundaries.readUnchecked(keep).u)
 
       kept + textual(ellipsis)
 
@@ -297,16 +299,17 @@ object Flow:
     val plain = content.plain.s
     val boundaries = GraphemeBreak.boundaries(content.plain)
     val widths = prefixWidths(plain, boundaries)
-    val clusters = boundaries.readable.length - 1
+    val clusters = boundaries.length - 1
 
     def segment(fromCluster: Int, toCluster: Int): textual =
-      content.segment(boundaries.readable(fromCluster).z thru boundaries.readable(toCluster).u)
+      content.segment
+        (boundaries.readUnchecked(fromCluster).z thru boundaries.readUnchecked(toCluster).u)
 
     def recur(cluster: Int, lineStart: Int, acc: List[textual]): List[textual] =
       if cluster >= clusters then
         if lineStart == cluster then acc else segment(lineStart, cluster) :: acc
       else if cluster > lineStart &&
-        widths.readable(cluster + 1) - widths.readable(lineStart) > width
+        widths.readUnchecked(cluster + 1) - widths.readUnchecked(lineStart) > width
       then
         recur(cluster + 1, cluster, segment(lineStart, cluster) :: acc)
       else
@@ -325,22 +328,22 @@ object Flow:
     val plain = content.plain.s
     val boundaries = GraphemeBreak.boundaries(content.plain)
     val widths = prefixWidths(plain, boundaries)
-    val clusters = boundaries.readable.length - 1
+    val clusters = boundaries.length - 1
     var max = 0
     var wordStart = 0
     var i = 0
 
     while i < clusters do
-      val char = plain.charAt(boundaries.readable(i))
+      val char = plain.charAt(boundaries.readUnchecked(i))
 
       if char == ' ' || char == '\n' || char == '\r' then
-        val wordWidth = widths.readable(i) - widths.readable(wordStart)
+        val wordWidth = widths.readUnchecked(i) - widths.readUnchecked(wordStart)
         if wordWidth > max then max = wordWidth
         wordStart = i + 1
 
       i += 1
 
-    val tailWidth = widths.readable(clusters) - widths.readable(wordStart)
+    val tailWidth = widths.readUnchecked(clusters) - widths.readUnchecked(wordStart)
     if tailWidth > max then max = tailWidth
     max
 
@@ -353,22 +356,22 @@ object Flow:
     val plain = content.plain.s
     val boundaries = GraphemeBreak.boundaries(content.plain)
     val widths = prefixWidths(plain, boundaries)
-    val clusters = boundaries.readable.length - 1
+    val clusters = boundaries.length - 1
     var max = 0
     var lineStart = 0
     var i = 0
 
     while i < clusters do
-      val char = plain.charAt(boundaries.readable(i))
+      val char = plain.charAt(boundaries.readUnchecked(i))
 
       if char == '\n' || char == '\r' then
-        val lineWidth = widths.readable(i) - widths.readable(lineStart)
+        val lineWidth = widths.readUnchecked(i) - widths.readUnchecked(lineStart)
         if lineWidth > max then max = lineWidth
         lineStart = i + 1
 
       i += 1
 
-    val tailWidth = widths.readable(clusters) - widths.readable(lineStart)
+    val tailWidth = widths.readUnchecked(clusters) - widths.readUnchecked(lineStart)
     if tailWidth > max then max = tailWidth
     max
 

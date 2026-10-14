@@ -140,7 +140,7 @@ object VerifyTests extends Suite("tel-verify", m"Stratiform verify tests"):
               field.repeatable -> field.fieldType
           . collect:
               case (repeatable, Tels.Reference(name)) =>
-                repeatable -> schema.records.readable.find(_.name == name).map: record =>
+                repeatable -> schema.records.stdlib.find(_.name == name).map: record =>
                   keywords(Tels.Struct(record.members, record.validators))
                 . getOrElse(List())
           . to(List)

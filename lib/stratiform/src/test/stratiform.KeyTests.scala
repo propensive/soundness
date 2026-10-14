@@ -100,8 +100,8 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
   def run(): Unit =
     suite(m"TELS axiom ordering"):
       test(m"Field record members put key at index 6, before default"):
-        val field = Tels.Axiom.tels.records.readable.find(_.name == t"Field").get
-        field.members.readable.toList.map:
+        val field = Tels.Axiom.tels.records.stdlib.find(_.name == t"Field").get
+        field.members.stdlib.toList.map:
           case f: Tels.Field => f.keyword.s
           case _             => "?"
       . assert(_ == List
@@ -112,8 +112,8 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
       // `SemanticReconstructor` reads these positions by index, so this order
       // is load-bearing, not decorative.
       test(m"Scalar record members put pattern at index 2, before encoding"):
-        val scalar = Tels.Axiom.tels.records.readable.find(_.name == t"Scalar").get
-        scalar.members.readable.toList.map:
+        val scalar = Tels.Axiom.tels.records.stdlib.find(_.name == t"Scalar").get
+        scalar.members.stdlib.toList.map:
           case f: Tels.Field => f.keyword.s
           case _             => "?"
       . assert(_ == List("name", "validate", "pattern", "encoding", "description"))
@@ -127,7 +127,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
                                   |document
                                   |  field user User
                                   |""".stripMargin))
-        val field = schema.records.readable.find(_.name == t"User").get.members.readable.head
+        val field = schema.records.stdlib.find(_.name == t"User").get.members.stdlib.head
         field.absolve match
           case f: Tels.Field => (f.key, f.default.absent)
       . assert(_ == (true, true))
@@ -138,7 +138,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
                                   |document
                                   |  field country String England
                                   |""".stripMargin))
-        schema.document.members.readable.head.absolve match
+        schema.document.members.stdlib.head.absolve match
           case f: Tels.Field => (f.key, f.default)
       . assert(_ == (false, t"England"))
 
@@ -148,7 +148,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
                                   |document
                                   |  field id Identifier key fallback
                                   |""".stripMargin))
-        schema.document.members.readable.head.absolve match
+        schema.document.members.stdlib.head.absolve match
           case f: Tels.Field => (f.key, f.default)
       . assert(_ == (true, t"fallback"))
 
@@ -159,7 +159,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
                                   |  field username Identifier
                                   |    key
                                   |""".stripMargin))
-        schema.document.members.readable.head.absolve match
+        schema.document.members.stdlib.head.absolve match
           case f: Tels.Field => f.key
       . assert(_ == true)
 
@@ -176,7 +176,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
                        |  record User
                        |    field username Identifier key
                        |""".stripMargin))
-        composed.records.readable.find(_.name == t"User").get.members.readable.head.absolve match
+        composed.records.stdlib.find(_.name == t"User").get.members.stdlib.head.absolve match
           case f: Tels.Field => f.key
       . assert(_ == true)
 

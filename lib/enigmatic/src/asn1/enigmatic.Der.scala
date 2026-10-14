@@ -68,7 +68,7 @@ object Der:
 
 final class Der(val data: Data):
   override def equals(that: Any): Boolean = that.asMatchable match
-    case der: Der => data.readable.sameElements(der.data.readable)
+    case der: Der => Array.same(data, der.data)
     case _        => false
 
   override def hashCode: Int = ju.Arrays.hashCode(Array.unsafeJvm(data))

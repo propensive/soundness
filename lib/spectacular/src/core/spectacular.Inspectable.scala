@@ -96,8 +96,8 @@ object Inspectable extends Inspectable2:
           val text = contextual.text(field)
           if this.tuple then text else s"$label:$text"
 
-        if rendered.readable.isEmpty && !this.tuple then typeName
-        else rendered.readable.mkString(if this.tuple then "(" else s"$typeName(", " ╱ ", ")").tt
+        if rendered.stdlib.isEmpty && !this.tuple then typeName
+        else rendered.stdlib.mkString(if this.tuple then "(" else s"$typeName(", " ╱ ", ")").tt
 
     inline def disjunction[derivation: SumReflection]: derivation is Inspectable = value =>
       variant(value):
@@ -495,18 +495,23 @@ object Inspectable extends Inspectable2:
 
       recur(stream, 3)
 
-  given iarray: [element] => (inspectable: => element is Inspectable)
+  given frozenArray: [element] => (inspectable: => element is Inspectable)
   =>  (Array[element]^{}) is Inspectable =
 
     // [by-name-capture] by-name inspectable laundered to pure thunk
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure: () => inspectable
 
-    iarray =>
-      iarray.readable.zipWithIndex.map: (value, index) =>
-        val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
-        subscript+insp().text(value).s.tt
+    array =>
+      val builder = new StringBuilder(arrayPrefix(array.toString)+"⁅")
+      var index = 0
 
-      . mkString(arrayPrefix(iarray.toString)+"⁅", "╱", "⁆").tt
+      while index < array.length do
+        if index > 0 then builder.append("╱")
+        val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
+        builder.append(subscript).append(insp().text(array.readUnchecked(index)).s)
+        index += 1
+
+      builder.append("⁆").toString.tt
 
   private def arrayPrefix(string: String): String =
     val brackets = string.count(_ == '[')

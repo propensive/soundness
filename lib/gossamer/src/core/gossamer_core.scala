@@ -126,7 +126,7 @@ extension (bytes: Data)
       val i = b&0xff
       (if i%0x80 <= 0x20 || i == 0x7f then i + 0x100 else i).toChar
 
-    . readable.mkString.tt
+    . stdlib.mkString.tt
 
 extension [textual](text: textual)
   def cut[delimiter](delimiter: delimiter, limit: Int = Int.MaxValue)
@@ -464,26 +464,29 @@ package proximities:
       var j = 1
 
       while j <= n do
-        old(j) = old.readable(j - 1) + 1
+        old(j) = old.readUnchecked(j - 1) + 1
         j += 1
 
       var i = 1
 
       while i <= m do
-        dist(0) = old.readable(0) + 1
+        dist(0) = old.readUnchecked(0) + 1
         j = 1
 
         while j <= n do
           val c =
             if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1
 
-          dist(j) = (old.readable(j - 1) + c).min(old.readable(j) + 1).min(dist.readable(j - 1) + 1)
+          dist(j) =
+            (old.readUnchecked(j - 1) + c)
+            . min(old.readUnchecked(j) + 1)
+            . min(dist.readUnchecked(j - 1) + 1)
           j += 1
 
         old.place(dist, 0, 0, n + 1)
         i += 1
 
-      if m == 0 then n else dist.readable(n)
+      if m == 0 then n else dist.readUnchecked(n)
 
   given normalizedLevenshteinProximity: CaseSensitivity => Proximity by Double =
     (left, right) =>
@@ -543,8 +546,8 @@ extension (text: Text)
 extension (iarray: Array[Char]^{}) def text: Text = String(Array.unsafeJvm(iarray)).tt
 
 // One `Joinable.Source`-driven block serves every receiver: the native shapes (`List`,
-// `Chain`, `Sequence`, `Set`, …) and external `Iterable`s through `Traversable`, and
-// `scala.IArray` through its own instance. A single generic block is load-bearing: a
+// `Chain`, `Sequence`, `Set`, the frozen array, …) and external `Iterable`s through
+// `Traversable`. A single generic block is load-bearing: a
 // competing receiver-specific block of the same name would make every receiver ambiguous,
 // because overload specificity cannot compare extension alternatives whose clause shapes
 // differ. Joining forces the whole stream, which is the caller's intent here, and a `Set`'s

@@ -58,7 +58,7 @@ private[hallucination] object PngCodec:
   def decode(data: Data): Raster raises Raster.Error =
     try
       val signed =
-        data.length >= 8 && signature.readable.indices.forall: index =>
+        data.length >= 8 && signature.stdlib.indices.forall: index =>
           u8(data, index) == signature.readUnchecked(index)
 
       if !signed then abort(Raster.Error(Png(), Reason.BadSignature))
@@ -147,7 +147,7 @@ private[hallucination] object PngCodec:
         case 4 => 2
         case _ => 4
 
-      val alpha = colorType == 4 || colorType == 6 || !transparency.readable.isEmpty
+      val alpha = colorType == 4 || colorType == 6 || !transparency.stdlib.isEmpty
       val maximum = (1 << depth) - 1
 
       // The `tRNS` samples for greyscale and truecolour are full-depth values.

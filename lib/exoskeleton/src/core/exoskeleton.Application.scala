@@ -44,4 +44,4 @@ abstract class Application:
   def invoke(using Cli): Exit
 
   def main(textArguments: Array[Text]^{}): Unit =
-    application(List.from(textArguments.readable))(invoke)
+    application(textArguments.to[List])(invoke)

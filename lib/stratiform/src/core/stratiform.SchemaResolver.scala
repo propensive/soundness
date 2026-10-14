@@ -101,7 +101,7 @@ object SchemaResolver:
 
       signature.length < initial || (base :: layers.map(_(1))).exists: (hash: Data) =>
         hash.length >= initial && (0 until initial).forall: index =>
-          hash.readable(index) == signature.readable(index)
+          hash.readUnchecked(index) == signature.readUnchecked(index)
 
   // Keyed by identity, since `Tel` does not override `equals`.
   private val fingerprints: ju.WeakHashMap[Tel, Fingerprint] = ju.WeakHashMap()
@@ -118,7 +118,7 @@ object SchemaResolver:
 
       // The frozen hashes are paired on the stdlib view, as in `accept` below.
       val layers =
-        schema.layers.readable.map(_.name).zip(components(1).stdlib).to(List)
+        schema.layers.stdlib.map(_.name).zip(components(1).stdlib).to(List)
 
       val result = Fingerprint(axiom, components(0), layers)
       fingerprints.synchronized(fingerprints.put(document, result))
@@ -149,7 +149,7 @@ object SchemaResolver:
 
       val components = SchemaSignature.componentHashes(tel, axiom)
       val chosen = Tels.Layers.select(schema, selection)
-      val names = schema.layers.readable.map(_.name)
+      val names = schema.layers.stdlib.map(_.name)
 
       // Frozen `Data` elements do not survive the generic `zip`/`to[Map]` pair (the
       // rebuilt element type loses its `^{}`), so the name-to-hash index is built on
@@ -263,7 +263,7 @@ object SchemaResolver:
       var equal = true
 
       while equal && i < a.length do
-        if a.readable(i) != b.readable(i) then equal = false
+        if a.readUnchecked(i) != b.readUnchecked(i) then equal = false
         i += 1
 
       equal

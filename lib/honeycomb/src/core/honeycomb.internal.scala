@@ -163,18 +163,18 @@ object internal:
         // the frozen array a reach capture (`children*.rd`) that cannot subsume into the
         // read shim's `any.rd` receiver.
         def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
-          if index == pattern.children.readable.length then expr else
+          if index == pattern.children.length then expr else
             val expr2 =
               descend
-                ( array, pattern.children.readable(index),
-                  '{$scrutinee.children.readable(${Expr(index)})}, '{true} )
+                ( array, pattern.children.readUnchecked(index),
+                  '{$scrutinee.children.readUnchecked(${Expr(index)})}, '{true} )
 
             elements(index + 1)('{$expr && $expr2})
 
         val elementsChecked = elements(0):
           ' {
               ${Expr(pattern.label)} == $scrutinee.label &&
-                $scrutinee.children.readable.length == ${Expr(pattern.children.readable.length)}
+                $scrutinee.children.length == ${Expr(pattern.children.length)}
             }
 
         '{$attributesChecked && $elementsChecked}
@@ -518,7 +518,7 @@ object internal:
           // Cast-erased: the per-element `Expr` types are fresh-decorated, which an
           // outer seal cannot reach.
           val elements =
-            '{Array(${Expr.ofList(children.flatMap(serialize(_)).asInstanceOf[Array[Expr[Html.Node]]^{}].readable.toList)}*)}
+            '{Array(${Expr.ofList(children.flatMap(serialize(_)).asInstanceOf[Array[Expr[Html.Node]]^{}].stdlib.toList)}*)}
 
           List('{Html.Element(${Expr(label)}, $attrs, $elements, ${Expr(foreign)})})
 
@@ -648,14 +648,12 @@ object internal:
     val attrsExpr = '{Attributes.from($presets2 + $supplied)}
     '{$tag.node($attrsExpr)}.asExprOf[result]
 
-  // Represented as the stdlib's immutable array, not the frozen `Array[String | Null]^{}`:
-  // dealiasing the mutable-classified opaque gives `Attributes`-typed fields a fresh
-  // `any.rd` capability that leaks into every enclosing type. The stdlib `IArray` is pure
-  // by construction; conversions happen at the construction/`storage` edges.
-  opaque type Attributes = scala.IArray[String | Null]
+  // The frozen `Array[String | Null]^{}` itself: pure under `-Zfrozen-pure`, which classifies
+  // an opaque alias over a frozen array as deriving from no capability class.
+  opaque type Attributes = Array[String | Null]^{}
 
   object Attributes:
-    val empty: Attributes = scala.IArray.empty[String | Null]
+    val empty: Attributes = Array.empty[String | Null]
 
     // The attributes render as they would appear in an element's start tag, braced and prefixed
     // `html`: distinct from a `Map`'s `{k → v}` (whose keys and values would show as `t"…"`
@@ -697,7 +695,7 @@ object internal:
           buffer(i*2 + 1) = pair._2.lay(null: String | Null)(_.s)
           i += 1
 
-        Array.freeze(buffer).readable
+        Array.freeze(buffer)
 
     def from(map: Map[Text, Optional[Text]]): Attributes =
       // The stdlib view is taken once: `Attributes` defines its own `nil`, `size` and
@@ -714,14 +712,14 @@ object internal:
           buffer(i*2 + 1) = v.lay(null: String | Null)(_.s)
           i += 1
 
-        Array.freeze(buffer).readable
+        Array.freeze(buffer)
 
     // Construct an `Attributes` directly from an interleaved frozen array. The
     // caller guarantees the array's length is even and that every key slot
     // (even index) holds a non-null `String`. Used by the parser, which
     // assembles the interleaved array as it tokenizes attributes.
     private[honeycomb] inline def fromInterleaved(array: Array[String | Null]^{}): Attributes =
-      array.readable
+      array
 
     // Unwrap to the raw `Array[String | Null]` for hot-path internal access.
     // Safe within the package: the storage is shared but never mutated outside
@@ -848,9 +846,9 @@ object internal:
 
         if idx < 0 then attrs else
           val nu = Array.allocate[String | Null](n - 2)
-          if idx > 0 then nu.place(Array.frozen(attrs), 0, 0, idx)
-          if idx < n - 2 then nu.place(Array.frozen(attrs), idx + 2, idx, n - 2 - idx)
-          Array.freeze(nu).readable
+          if idx > 0 then nu.place(attrs, 0, 0, idx)
+          if idx < n - 2 then nu.place(attrs, idx + 2, idx, n - 2 - idx)
+          Array.freeze(nu)
 
       inline def `-`(key: Text): Attributes = removed(key)
 
@@ -877,15 +875,15 @@ object internal:
 
         if idx >= 0 then
           val nu = Array.allocate[String | Null](n)
-          nu.place(Array.frozen(attrs), 0, 0, n)
+          nu.place(attrs, 0, 0, n)
           nu(idx + 1) = value.lay(null: String | Null)(_.s)
-          Array.freeze(nu).readable
+          Array.freeze(nu)
         else
           val nu = Array.allocate[String | Null](n + 2)
-          nu.place(Array.frozen(attrs), 0, 0, n)
+          nu.place(attrs, 0, 0, n)
           nu(n) = keyStr
           nu(n + 1) = value.lay(null: String | Null)(_.s)
-          Array.freeze(nu).readable
+          Array.freeze(nu)
 
       // Combines two `Attributes`, with the right-hand side overriding duplicate
       // keys (matching `Map ++` semantics). Order: left's keys first (preserving
@@ -936,10 +934,10 @@ object internal:
 
           val frozen = Array.freeze(nu)
 
-          if written == total then frozen.readable else
+          if written == total then frozen else
             val tu = Array.allocate[String | Null](written)
             tu.place(frozen, 0, 0, written)
-            Array.freeze(tu).readable
+            Array.freeze(tu)
 
       def `++`(other: Map[Text, Optional[Text]]): Attributes =
         // The stdlib view, as in `from` above: `Attributes` shadows the generic `nil`.

@@ -92,7 +92,7 @@ object Crc32:
       var index = 0
 
       while index < segment.length do
-        crc = table.readable((crc ^ segment.readable(index)) & 0xff) ^ (crc >>> 8)
+        crc = table.readUnchecked((crc ^ segment.readUnchecked(index)) & 0xff) ^ (crc >>> 8)
         index += 1
 
     crc ^ 0xffffffff
@@ -120,7 +120,7 @@ object Crc32:
 
       while length > 0 do
         length -= 1
-        c = table.readable((c ^ buffer(index)) & 0xff) ^ (c >>> 8)
+        c = table.readUnchecked((c ^ buffer(index)) & 0xff) ^ (c >>> 8)
         index += 1
 
       v = ~c
@@ -204,21 +204,21 @@ object Crc64:
         c ^= (low.toLong & 0xffffffffL) | (high.toLong << 32)
 
         c =
-          table.readable(7*256 + (c & 0xff).toInt) ^
-            table.readable(6*256 + ((c >>> 8) & 0xff).toInt) ^
-            table.readable(5*256 + ((c >>> 16) & 0xff).toInt) ^
-            table.readable(4*256 + ((c >>> 24) & 0xff).toInt) ^
-            table.readable(3*256 + ((c >>> 32) & 0xff).toInt) ^
-            table.readable(2*256 + ((c >>> 40) & 0xff).toInt) ^
-            table.readable(256 + ((c >>> 48) & 0xff).toInt) ^
-            table.readable((c >>> 56).toInt)
+          table.readUnchecked(7*256 + (c & 0xff).toInt) ^
+            table.readUnchecked(6*256 + ((c >>> 8) & 0xff).toInt) ^
+            table.readUnchecked(5*256 + ((c >>> 16) & 0xff).toInt) ^
+            table.readUnchecked(4*256 + ((c >>> 24) & 0xff).toInt) ^
+            table.readUnchecked(3*256 + ((c >>> 32) & 0xff).toInt) ^
+            table.readUnchecked(2*256 + ((c >>> 40) & 0xff).toInt) ^
+            table.readUnchecked(256 + ((c >>> 48) & 0xff).toInt) ^
+            table.readUnchecked((c >>> 56).toInt)
 
         index += 8
         length -= 8
 
       while length > 0 do
         length -= 1
-        c = table.readable(((c ^ buffer(index)) & 0xff).toInt) ^ (c >>> 8)
+        c = table.readUnchecked(((c ^ buffer(index)) & 0xff).toInt) ^ (c >>> 8)
         index += 1
 
       v = c

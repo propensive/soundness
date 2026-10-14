@@ -405,7 +405,7 @@ object internal:
 
 object Teletype2:
   given addable: Teletype2 is Addable by Teletype2 to Teletype2 = (left, right) =>
-    Teletype2(left.plain+right.plain, Array.frozen(left.ansi.readable ++ right.ansi.readable))
+    Teletype2(left.plain+right.plain, left.ansi + right.ansi)
 
 case class Teletype2(plain: Text, ansi: Array[escapade.internal.AnsiStyle]^{}):
   import escapade.internal.AnsiStyle

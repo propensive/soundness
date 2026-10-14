@@ -330,9 +330,9 @@ object Producer:
     // `data(offsets(code - 1) until offsets(code))`. Pure and flat, so the encoding loop tests
     // one byte per character.
     final class Escapes private[Utf8Writer]
-      ( val codes:   scala.IArray[Byte],
-        val offsets: scala.IArray[Int],
-        val data:    scala.IArray[Byte] )
+      ( val codes:   Array[Byte]^{},
+        val offsets: Array[Int]^{},
+        val data:    Array[Byte]^{} )
 
     // The table replacing each character in `entities`, which must be ASCII, with its entity.
     def escapes(entities: (Char, String)*): Escapes =
@@ -345,10 +345,11 @@ object Producer:
         data.write(entity(1).getBytes(java.nio.charset.StandardCharsets.US_ASCII).nn)
         offsets(index + 1) = data.size
 
+      // [construction-fresh] the three tables are filled above and never written again
       Escapes
-        ( scala.IArray.unsafeFromArray(codes),
-          scala.IArray.unsafeFromArray(offsets),
-          scala.IArray.unsafeFromArray(data.toByteArray.nn) )
+        ( Array.unsafeFrozen(codes),
+          Array.unsafeFrozen(offsets),
+          Array.unsafeFrozen(data.toByteArray.nn) )
 
     // Writes with `body` through a writer lending each block to `lending`, then flushes it.
     def lend(lending: Lending[Data], block: Optional[Int] = Unset)(using buffering: Buffering)
@@ -582,10 +583,9 @@ object Producer:
       val out = current
       val limit = block
 
-      // The table's codes, read as the plain array they are: `IArray`'s generic `apply` would box
-      // each byte.
+      // The table's codes, read as the plain JVM array they are.
       val codes: scala.Array[Byte] | Null =
-        if escapes == null then null else escapes.codes.asInstanceOf[scala.Array[Byte]]
+        if escapes == null then null else Array.unsafeJvm(escapes.codes)
 
       var k = from
       var at = index

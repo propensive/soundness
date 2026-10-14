@@ -38,7 +38,7 @@ import rudiments.*
 import vacuous.*
 
 object Unpackable:
-  given iarray: [pack: Debufferable] => ClassTag[pack] => (Array[pack]^{}) is Unpackable:
+  given frozenArray: [pack: Debufferable] => ClassTag[pack] => (Array[pack]^{}) is Unpackable:
     type Wrap[Type] = Int -> Type
 
     // The continuation records the (pure) backing data and start offset, and mints its own

@@ -66,7 +66,7 @@ extends Cipher, Signing, Symmetric:
       var index = 0
 
       while index < a.length do
-        diff |= (a.readable(index) ^ b.readable(index)) & 0xFF
+        diff |= (a.readUnchecked(index) ^ b.readUnchecked(index)) & 0xFF
         index += 1
 
       diff == 0

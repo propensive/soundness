@@ -45,10 +45,14 @@ object SymmetricKey:
   def generate[cipher <: Cipher & Symmetric]()(using cipher: cipher, cloak: Cloak^)
   :   SymmetricKey[cipher]^{cloak} =
 
-    // `Cloak.cloak` zeroes the array it is given, so this keeps the write launder rather than
-    // a named read-only view: the freshly-generated key is nobody else's, but `genKey`'s
-    // frozen `Data` result cannot say so, which is why the capability is still required here.
-    new SymmetricKey(cloak.cloak(cipher.genKey().unsafeMutable(using Unsafe)))
+    // `Cloak.cloak` zeroes the array it is given, so it gets its own exclusive copy of the
+    // key: a frozen `Data` cannot be written through. The provider's own copy is left to
+    // the collector, as the JDK's internal key objects already are; a `genKey` returning
+    // exclusive material, consumed by `cloak`, is the follow-up that removes the copy.
+    val key = cipher.genKey()
+    val material: Array[Byte]^ = Array.allocate[Byte](key.length)
+    material.place(key)
+    new SymmetricKey(cloak.cloak(material.raw))
 
   // Adopt externally-supplied key material — for example a key produced by a key-
   // derivation function — as a symmetric key, in contrast to `generate`'s fresh random
@@ -59,7 +63,7 @@ object SymmetricKey:
   // `apply` suppresses the synthetic constructor proxy, so these are the sole
   // `SymmetricKey(bytes)` constructors.
   def apply[cipher <: Cipher](bytes: Data)(using cloak: Cloak^): SymmetricKey[cipher]^{cloak} =
-    new SymmetricKey(cloak.cloak(bytes.readable.to(scala.Array)))
+    new SymmetricKey(cloak.cloak(bytes.stdlib.to(scala.Array)))
 
   // Adopt externally-supplied key material from a mutable array, which is zeroed as it is
   // cloaked, leaving the cloaked copy as the only key material. (The `@targetName`

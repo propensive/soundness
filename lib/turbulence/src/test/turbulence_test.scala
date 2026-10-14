@@ -92,11 +92,11 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
       shredded.each: stream =>
         test(m"correct length after shredding"):
-          stream.map(_.readable.length).stdlib.total
+          stream.map(_.length).stdlib.total
         . assert(_ == 1000)
 
         test(m"correct content after shredding"):
-          Array.frozen(stream.stdlib.map(_.readable).reduce(_ ++ _))
+          stream.fold(Array.empty[Byte])(_ + _)
         . assert(_ === data)
 
     suite(m"Streaming Unicode tests"):
@@ -117,13 +117,13 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         bs     <- 1 to 8
       do
         test(m"length tests"):
-          val stream = string.in[Data].readable.grouped(bs).map(Array.frozen(_)).to(proscenium.Chain)
+          val stream = string.in[Data].stdlib.grouped(bs).map(Array.from(_)).to(proscenium.Chain)
           val result = stream.read[Text]
-          result.in[Data].readable.length
-        . assert(_ == string.in[Data].readable.length)
+          result.in[Data].length
+        . assert(_ == string.in[Data].length)
 
         test(m"roundtrip tests"):
-          val stream = string.in[Data].readable.grouped(bs).map(Array.frozen(_)).to(proscenium.Chain)
+          val stream = string.in[Data].stdlib.grouped(bs).map(Array.from(_)).to(proscenium.Chain)
           val result = stream.read[Text]
 
           result.s
@@ -175,7 +175,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
       . assert(_ == qbf)
 
       test(m"Bridge Data source to Chain"):
-        Array.frozen(qbf.source[Data].chain.stdlib.map(_.readable).reduce(_ ++ _)).to[List]
+        qbf.source[Data].chain.fold(Array.empty[Byte])(_ + _).to[List]
       . assert(_ == qbfData.to[List])
 
       test(m"Read Text as Text"):
@@ -216,7 +216,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
       test(m"Read Text as Chain[Data]"):
         qbf.read[Chain[Data]]
-      . assert(stream => Array.frozen(stream.stdlib.map(_.readable).reduce(_ ++ _)).to[List] == qbfData.to[List])
+      . assert(stream => stream.fold(Array.empty[Byte])(_ + _).to[List] == qbfData.to[List])
 
       test(m"Read Data as Text"):
         qbfData.read[Text].s
@@ -232,7 +232,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
       test(m"Read Data as Chain[Data]"):
         qbfData.read[Chain[Data]]
-      . assert(stream => Array.frozen(stream.stdlib.map(_.readable).reduce(_ ++ _)).to[List] == qbfData.to[List])
+      . assert(stream => stream.fold(Array.empty[Byte])(_ + _).to[List] == qbfData.to[List])
 
       // test(m"Read Text as Lines"):
       //   qbf.read[Chain[Line]]
@@ -744,14 +744,14 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         val sink = summon[(ji.ByteArrayOutputStream is Sink by Data over Credit)^]
         source.stream(input).pump(sink.intake(output))
         Array.unsafeFrozen(output.toByteArray.nn).to[List]
-      . assert(_ == payload.readable.to(List))
+      . assert(_ == payload.stdlib.to(List))
 
       test(m"in-memory data source flows to output stream sink"):
         val output = ji.ByteArrayOutputStream()
         val sink = summon[(ji.ByteArrayOutputStream is Sink by Data over Credit)^]
         summon[Data is Streamable by Data over Credit].stream(payload).pump(sink.intake(output))
         Array.unsafeFrozen(output.toByteArray.nn).to[List]
-      . assert(_ == payload.readable.to(List))
+      . assert(_ == payload.stdlib.to(List))
 
       val original = t"The quick brown fox jumps over the lazy dog"*100
 
@@ -786,7 +786,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         val source = summon[Chain[Data] is Streamable by Data over Credit]
         source.stream(Chain(payload, payload)).pump(sink.intake(output))
         output.toByteArray.nn.length
-      . assert(_ == payload.readable.length*2)
+      . assert(_ == payload.length*2)
 
       test(m"a sink write failure raises Truncation.Error"):
         import unsafeExceptions.canThrowAny
@@ -825,7 +825,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
           val merged = Confluence(endpoints.map(_.asInstanceOf[Stream[Data] over Credit])*)
           val gathered = Gather2().ingest(merged)
-          gathered.data.readable.to(List).sorted
+          gathered.data.stdlib.to(List).sorted
       . assert(_ == (1 to 4).flatMap { index => List.fill(1000)(index.toByte) }.sorted.to(List))
 
       test(m"manifold delivers the whole stream to every subscriber"):
@@ -848,7 +848,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
       . assert(_ == List.fill(3)(payload.to[List]))
 
       val mixed: Data =
-        Array.frozen(Data.fill(50000) { index => (index%251).toByte }.readable ++ (t"repetition "*500).in[Data].readable)
+        Array.from(Data.fill(50000) { index => (index%251).toByte }.stdlib ++ (t"repetition "*500).in[Data].stdlib)
 
       // A duct-chain source has a transient window (its buffer is reused between
       // refills), so the fan-out must snapshot each chunk rather than share it.
@@ -886,8 +886,8 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
           val merged = Confluence(builder.result().map(_.asInstanceOf[Stream[Data] over Credit])*)
           val gathered = Gather2().ingest(merged)
-          gathered.data.readable.length
-      . assert(_ == mixed.readable.length*3)
+          gathered.data.length
+      . assert(_ == mixed.length*3)
 
       test(m"cancelling a detached flow blocked on an empty conduit releases it"):
         supervise:
@@ -924,7 +924,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
           ( bounded,
             counters.map(_.get()).all(_ == 4096L),
-            gathered.data.readable.length )
+            gathered.data.length )
       . assert(_ == ((true, true, 16384)))
 
       test(m"cancelling the confluence scope releases parked pumps"):
@@ -969,7 +969,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
           val taskA = caps.unsafe.unsafeAssumePure:
             (eager: (Stream[Data] over Credit)^).transfer: (eager, _, _) ?=>
               val gatheredA = Gather2().ingest(eager())
-              gatheredA.data.readable.length
+              gatheredA.data.length
 
           awaitStability(sci.IndexedSeq(counter))
           val gated = counter.get()
@@ -977,7 +977,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
           ( gated <= 64L,
             taskA.await(),
-            gatheredB.data.readable.length,
+            gatheredB.data.length,
             counter.get() )
       . assert(_ == ((true, 4096, 4096, 4096L)))
 
@@ -996,7 +996,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(abandoned.close())
           val gathered = Gather2().ingest(eager)
 
-          ( gathered.data.readable.length,
+          ( gathered.data.length,
             counter.get() )
       . assert(_ == ((4096, 4096L)))
 

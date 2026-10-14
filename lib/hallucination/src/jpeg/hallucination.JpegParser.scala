@@ -94,12 +94,12 @@ private[hallucination] final class JpegFrame
     val imageHeight:   Int,
     val mcuWidth:      Int,
     val mcuHeight:     Int,
-    val components:    scala.IArray[JpegComponent] )
+    val components:    Array[JpegComponent]^{} )
 
 private[hallucination] final class JpegScan
-  ( val componentIndices: scala.IArray[Int],
-    val dcTableIndices:   scala.IArray[Int],
-    val acTableIndices:   scala.IArray[Int],
+  ( val componentIndices: Array[Int]^{},
+    val dcTableIndices:   Array[Int]^{},
+    val acTableIndices:   Array[Int]^{},
     val spectralStart:     Int,
     val spectralEnd:       Int, // exclusive
     val successiveHigh:    Int,
@@ -214,7 +214,7 @@ private[hallucination] object JpegParser:
     // The freshly-built components array is frozen zero-copy.
     JpegFrame
       ( isBaseline, coding, precision, width, height, mcuWidth, mcuHeight,
-        components.asInstanceOf[scala.IArray[JpegComponent]] )
+        Array.unsafeFrozen(components) )
 
   // Section B.2.3: the Start Of Scan header.
   def parseSos(reader: JpegReader^, frame: JpegFrame)(using Tactic[Raster.Error]): JpegScan =
@@ -279,9 +279,9 @@ private[hallucination] object JpegParser:
 
     // As `parseSof`: the freshly-built index arrays are frozen zero-copy.
     JpegScan
-      ( componentIndices.asInstanceOf[scala.IArray[Int]],
-        dcTableIndices.asInstanceOf[scala.IArray[Int]],
-        acTableIndices.asInstanceOf[scala.IArray[Int]],
+      ( Array.unsafeFrozen(componentIndices),
+        Array.unsafeFrozen(dcTableIndices),
+        Array.unsafeFrozen(acTableIndices),
         spectralStart,
         spectralEnd + 1,
         successiveHigh,

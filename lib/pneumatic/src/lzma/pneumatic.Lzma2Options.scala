@@ -63,13 +63,13 @@ private[pneumatic] object Lzma2Options:
 
   def preset(level0: Int): Lzma2Options =
     val level = if level0 < 0 then 0 else if level0 > 9 then 9 else level0
-    val dictSize = presetDictSizes.readable(level)
+    val dictSize = presetDictSizes.readUnchecked(level)
 
     if level <= 3 then
       val niceLen = if level <= 1 then 128 else 273
 
       Lzma2Options(dictSize, LcDefault, LpDefault, PbDefault, ModeFast, niceLen, MatchFinderHc4,
-          fastDepths.readable(level))
+          fastDepths.readUnchecked(level))
     else
       val niceLen = if level == 4 then 16 else if level == 5 then 32 else 64
 

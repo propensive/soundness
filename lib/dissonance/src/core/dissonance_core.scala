@@ -73,11 +73,11 @@ def evolve[element: ClassTag]
             val right = inserts.to[Array]
 
             val updates: List[Atom[element]] =
-              diff(Sequence.from(left.readable), Sequence.from(right.readable), _.value == _.value)
+              diff(left.to[Sequence], right.to[Sequence], _.value == _.value)
               . edits.to(List).map:
                   case Ins(_, value)    => value
-                  case Del(index, _)    => left.readable(index)
-                  case Par(index, _, _) => left.readable(index).add(iteration)
+                  case Del(index, _)    => left.readUnchecked(index)
+                  case Par(index, _, _) => left.readUnchecked(index).add(iteration)
 
             updates + done
 
@@ -157,8 +157,9 @@ def diff[element]
     // serves every read; it is lazy because an empty stack is legal on the first step.
     lazy val row = rows.stdlib.head
 
-    val delPos = if deletes == 0 then 0 else count(row.readable(deletes - 1) + 1, inserts - deletes)
-    val insPos = if inserts == 0 then 0 else count(row.readable(deletes), inserts - deletes)
+    val delPos =
+      if deletes == 0 then 0 else count(row.readUnchecked(deletes - 1) + 1, inserts - deletes)
+    val insPos = if inserts == 0 then 0 else count(row.readUnchecked(deletes), inserts - deletes)
     val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
 
     if best == left.length && (best - deletes + inserts) == right.length
@@ -173,8 +174,8 @@ def diff[element]
     // As in `trace`, one lazy stdlib view of the row stack serves the head reads and the pop,
     // both of which the walk's invariants keep legal.
     lazy val rowStack = rows.stdlib
-    lazy val ins = rowStack.head.readable(deletes) - 1
-    lazy val del = rowStack.head.readable(deletes - 1)
+    lazy val ins = rowStack.head.readUnchecked(deletes) - 1
+    lazy val del = rowStack.head.readUnchecked(deletes - 1)
 
     if position == -1 && rightPosition == -1 then edits else if rows.nil
     then

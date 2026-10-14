@@ -379,7 +379,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
       val layout = scaffold.layout(40).extend(scaffold.cells(Person(t"Bob", 5)))
       val alice = scaffold.cells(Person(t"Alexandra", 30))
       val extended = layout.extend(alice)
-      (layout.accommodates(alice), extended eq layout, extended.aggregates.readable(0).natural)
+      (layout.accommodates(alice), extended eq layout, extended.aggregates.stdlib(0).natural)
     . assert(_ == (false, false, 9))
 
     test(m"a Fixed column accommodates any content"):
@@ -450,7 +450,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
       val tabulation = scaffold.tabulate(people)
-      tabulation.layout(40).widths.readable.to(List) == tabulation.grid(40).sections.prim.let(_.widths.readable.to(List)).or(Nil)
+      tabulation.layout(40).widths.stdlib.to(List) == tabulation.grid(40).sections.prim.let(_.widths.stdlib.to(List)).or(Nil)
     . assert(_ == true)
 
     // ─── Attenuation ────────────────────────────────────────────────────────

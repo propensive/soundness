@@ -48,7 +48,8 @@ import vacuous.*
 object Permutation:
   // The big-endian two's-complement bytes of the permutation's factoradic number.
   given encodable: Permutation is Encodable in Data = permutation =>
-    unsafely(permutation.factoradic.number.toByteArray.unsafeImmutable)
+    // [java-boundary] fresh array returned by the JDK, retained by nobody else
+    Array.unsafeFrozen(permutation.factoradic.number.toByteArray)
 
   def bySize(n: Int): Chain[Permutation] = Chain.range[BigInt](0, Factorial(n)).map: i =>
     Permutation(Factoradic(i))

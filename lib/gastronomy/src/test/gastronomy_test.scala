@@ -261,7 +261,7 @@ object Tests extends Suite("hashing", m"Gastronomy tests"):
         windowed(JavaBaseHashing.crc32.digestion())
       . assert(_ == whole(JavaBaseHashing.crc32.digestion()))
 
-      val chunked: Chain[Data] = payload.readable.grouped(7777).map(Array.frozen(_)).to(Chain)
+      val chunked: Chain[Data] = payload.stdlib.grouped(7777).map(Array.from(_)).to(Chain)
 
       test(m"a chunked stream's checksum matches the whole-value digest"):
         chunked.checksum[Sha2[256]].serialize[Hex]
@@ -449,7 +449,7 @@ object Tests extends Suite("hashing", m"Gastronomy tests"):
           text.s.grouped(2).map(java.lang.Integer.parseInt(_, 16).toByte).toArray
 
       def rendered(multihash: Multihash): Text =
-        multihash.serialize.readable.map(byte => String.format("%02x", Int.box(byte & 255))).mkString.tt
+        multihash.serialize.stdlib.map(byte => String.format("%02x", Int.box(byte & 255))).mkString.tt
 
       // The vectors' `input` column is the ASCII *string* of those hex characters — the
       // generator pipes lines of text into the `multihash` tool — not bytes to be decoded.

@@ -76,6 +76,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
       sh"git -C $dir config user.email octogenarian@test.local".exec[Exit]()
       sh"git -C $dir config user.name Octogenarian".exec[Exit]()
       sh"git -C $dir config commit.gpgsign false".exec[Exit]()
+      sh"git -C $dir config tag.gpgsign false".exec[Exit]()
       dir
 
     def gitCommit(dir: Path on Linux, name: Text, content: Text, message: Text): Git.Hash =
@@ -833,6 +834,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         sh"git clone -q $mirror $beta".exec[Exit]()
         sh"git -C $beta config user.email octogenarian@test.local".exec[Exit]()
         sh"git -C $beta config user.name Octogenarian".exec[Exit]()
+        sh"git -C $beta config commit.gpgsign false".exec[Exit]()
         gitCommit(beta, t"b", t"b\n", t"second")
         sh"git -C $beta push -q origin main".exec[Exit]()
         val pulled = alpha.open[Git.Worktree](Read & Write): worktree ?=>

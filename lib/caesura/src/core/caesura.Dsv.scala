@@ -58,7 +58,7 @@ trait Dsv2:
   // mirroring how distillate keeps its generic instance in `Decodable2`.
   given decoder: [decodable] => (decodable: (decodable is Decodable in Text)^)
   =>  ( (decodable is Decodable in Dsv)^{decodable} ) =
-    value => decodable.decoded(value.data.readable.head)
+    value => decodable.decoded(value.data.stdlib.head)
 
   // The write-side mirror of `read[Foo in Dsv]`: `foo.in[Text over Dsv]` is the value as a
   // single DSV record, encoded to the row and rendered in the `Dsv.Format` in scope.
@@ -90,7 +90,7 @@ trait Dsv2:
       type Operand = Text
 
       def aggregate(text: Chain[Text]): value in Dsv =
-        summon[(Sheet is Aggregable by Text)^].aggregate(text).rows.readable.head.as[value]
+        summon[(Sheet is Aggregable by Text)^].aggregate(text).rows.stdlib.head.as[value]
         . asInstanceOf[value in Dsv]
 
       // Only the first record is read from a stream, and only as far as it extends.
@@ -113,12 +113,12 @@ object Dsv extends Dsv2:
   // intermediate buffers must not be minted inside an inline expansion, where it leaks
   // into the expansion site's capture sets.
   private[caesura] def flatten(arrays: Array[Array[Text]^{}]^{caps.any.rd}): Dsv =
-    val raw = arrays.readable
+    val raw = arrays
     val builder = scala.collection.immutable.List.newBuilder[Text]
     var index = 0
 
     while index < raw.length do
-      raw(index).readable.foreach(builder += _)
+      raw.stdlib(index).stdlib.foreach(builder += _)
       index += 1
 
     Dsv(Array.from(builder.result()))
@@ -233,7 +233,7 @@ object Dsv extends Dsv2:
 
             append(format.quote)
 
-    cells.readable.join(format.delimiter.show)
+    cells.join(format.delimiter.show)
 
   // Direct-read entries, gated on an explicit `Dsv.Parsable` (they sit above
   // the AST-based `aggregableIn` in `Dsv2`, so opting in switches the path).
@@ -562,11 +562,11 @@ case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) 
     columns.let(_(field)).let { index => data.at(index.z) }.let(value.decoded(_))
 
   override def hashCode: Int =
-    data.readable.indices.fuse(0)(state*31 + data.readUnchecked(next).hashCode)
+    data.stdlib.indices.fuse(0)(state*31 + data.readUnchecked(next).hashCode)
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case row: Dsv =>
-      data.length == row.data.length && data.readable.indices.all: index =>
+      data.length == row.data.length && data.stdlib.indices.all: index =>
         data.readUnchecked(index) == row.data.readUnchecked(index)
 
     case _ =>

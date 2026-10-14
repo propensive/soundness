@@ -184,7 +184,7 @@ object Http:
     // owned material -- but it is consumed here and now, into a `Map`, and nothing writes to
     // an enum's `values`.
     private lazy val all: Map[Int, Status] =
-      Array.unsafeFrozen(values).readable.bi.map(_.code -> _).to(Map)
+      Array.unsafeFrozen(values).stdlib.bi.map(_.code -> _).to(Map)
 
     def unapply(code: Int): Option[Status] = all.at(code).option
 

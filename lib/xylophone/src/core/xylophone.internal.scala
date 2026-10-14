@@ -405,7 +405,8 @@ object internal:
   private def liftScope(bindings: SList[(Text, Text)])(using Quotes): Expr[Scope] =
     val pairs = bindings.map: (prefix, uri) => '{(${Expr(prefix.s)}.tt, ${Expr(uri.s)}.tt)}
 
-    '{Scope(${Expr.ofList(pairs)}*)}
+    // [quote-wall] the opaque is transparent here, so the quoted literal re-mints `any.rd`
+    '{Scope(${Expr.ofList(pairs)}*)}.asInstanceOf[Expr[Scope]]
 
   // Whether `namespaceOptions.lenientNamespaces` is in scope at the expansion site
   private def lenient(using Quotes): Boolean =
@@ -922,7 +923,7 @@ object internal:
       if !lenient then (undeclared -- bound).toList.sortBy(_.s).headOption.foreach: prefix =>
         halt(m"the prefix $prefix is not bound to a namespace here", macroPos)
 
-      val literalScope: Scope = Scope.xml ++ Scope(bindings*)
+      val literalScope: Scope = Scope.xml + Scope(bindings*)
 
       def serialize(xml: Xml, scope: Scope = literalScope): Seq[Expr[Xml.Node]] = xml match
         case fragment: Xml.Fragment => fragment.nodes.flatMap(serialize(_, scope))
@@ -961,7 +962,7 @@ object internal:
             . flatMap(serialize(_, own))
             . toList
 
-            '{Array.frozen(scala.IArray(${Expr.ofList(serialized)}*))}
+            '{Array(${Expr.ofList(serialized)}*)}
 
           val scopeExpr: Expr[Scope] =
             if own.bindings.isEmpty then '{Scope.empty}
@@ -1109,14 +1110,12 @@ object internal:
 
     '{$tag.node(Attributes.from(Map.from(${Expr.ofList(attributes)}.compact)))}.asExprOf[result]
 
-  // Represented as the stdlib's immutable array, not the frozen `Array[String]^{}`:
-  // dealiasing the mutable-classified opaque gives `Attributes`-typed fields a fresh
-  // `any.rd` capability that leaks into every enclosing type. The stdlib `IArray` is pure
-  // by construction; conversions happen at the construction/`storage` edges.
-  opaque type Attributes = scala.IArray[String]
+  // The frozen `Array[String]^{}` itself: pure under `-Zfrozen-pure`, which classifies an
+  // opaque alias over a frozen array as deriving from no capability class.
+  opaque type Attributes = Array[String]^{}
 
   object Attributes:
-    val empty: Attributes = scala.IArray.empty[String]
+    val empty: Attributes = Array.empty[String]
 
     // The pairs in document order, so `attributes.to[List]` (and `[Ledger]`, …) need no
     // hand-written conversion.
@@ -1167,7 +1166,7 @@ object internal:
           buffer(i*2 + 1) = pair._2.s
           i += 1
 
-        Array.freeze(buffer).readable
+        Array.freeze(buffer)
 
     def from(map: Map[Text, Text]): Attributes =
       val entries = map.stdlib
@@ -1182,35 +1181,41 @@ object internal:
           buffer(i*2 + 1) = v.s
           i += 1
 
-        Array.freeze(buffer).readable
+        Array.freeze(buffer)
 
     // Construct an `Attributes` directly from an interleaved frozen array. The
     // caller guarantees the array's length is even and that every key slot
     // (even index) holds a non-null `String`. Used by the parser, which
     // assembles the interleaved array as it tokenizes attributes.
     private[xylophone] inline def fromInterleaved(array: Array[String]^{}): Attributes =
-      array.readable
+      array
 
     // Unwrap to the raw `Array[String]` for hot-path internal access. Safe
     // within the package: the storage is shared but never mutated outside
     // construction.
-    private[xylophone] inline def storage(attrs: Attributes): scala.Array[String] =
-      attrs.asInstanceOf[scala.Array[String]]
+    // Not `inline`: an inline proxy over the transparent opaque re-types its argument with a
+    // `.rd` capability the frozen array does not carry.
+    private[xylophone] def storage(attrs: Attributes): scala.Array[String] =
+      Array.unsafeJvm(attrs)
 
     // The throwing lookup as a plain method: inside this file the opaque is transparent, so
-    // the stdlib `IArray` extensions intercept the extension forms; internal call sites (and
-    // the quotes compiled here) go through this instead.
-    private[xylophone] def pick(attrs: Attributes, key: Text): Text =
-      val a = storage(attrs)
+    // the frozen array's own extensions intercept the extension forms; internal call sites
+    // (and the quotes compiled here) go through this instead.
+    // Any readable reference: a frozen-typed parameter is read as `attrs.rd`, which its own
+    // `^{}` cannot absorb; callers in this file, where the opaque is transparent, conform.
+    private[xylophone] def pick(attrs: Array[String]^{caps.any.rd}, key: Text): Text =
+      val a = Array.unsafeJvm(attrs)
       val keyStr: String = key.s
       val n = a.length
       var i = 0
+      var found: String | Null = null
 
-      while i < n do
-        if a(i) == keyStr then return a(i + 1).asInstanceOf[Text]
+      while found == null && i < n do
+        if a(i) == keyStr then found = a(i + 1)
         i += 2
 
-      throw new NoSuchElementException(s"key not found: $key")
+      if found == null then throw new NoSuchElementException(s"key not found: $key")
+      else found.nn.asInstanceOf[Text]
 
     extension (attrs: Attributes)
       // Not `inline`: expansion outside this file re-typechecks the body where the opaque
@@ -1280,7 +1285,7 @@ object internal:
           def hasNext: Boolean = i < a.length
 
           def next(): Text =
-            val k = a.readable(i).asInstanceOf[Text]
+            val k = a.readUnchecked(i).asInstanceOf[Text]
             i += 2
             k
 
@@ -1295,7 +1300,7 @@ object internal:
           def hasNext: Boolean = i < a.length
 
           def next(): Text =
-            val v = a.readable(i).asInstanceOf[Text]
+            val v = a.readUnchecked(i).asInstanceOf[Text]
             i += 2
             v
 
@@ -1310,7 +1315,8 @@ object internal:
           def hasNext: Boolean = i < a.length
 
           def next(): (Text, Text) =
-            val pair = (a.readable(i).asInstanceOf[Text], a.readable(i + 1).asInstanceOf[Text])
+            val pair =
+              (a.readUnchecked(i).asInstanceOf[Text], a.readUnchecked(i + 1).asInstanceOf[Text])
             i += 2
             pair
 
@@ -1365,9 +1371,9 @@ object internal:
 
         if idx < 0 then attrs else
           val nu = Array.allocate[String](n - 2)
-          if idx > 0 then nu.place(Array.frozen(attrs), 0, 0, idx)
-          if idx < n - 2 then nu.place(Array.frozen(attrs), idx + 2, idx, n - 2 - idx)
-          Array.freeze(nu).readable
+          if idx > 0 then nu.place(attrs, 0, 0, idx)
+          if idx < n - 2 then nu.place(attrs, idx + 2, idx, n - 2 - idx)
+          Array.freeze(nu)
 
       inline def `-`(key: Text): Attributes = removed(key)
 
@@ -1390,15 +1396,15 @@ object internal:
 
         if idx >= 0 then
           val nu = Array.allocate[String](n)
-          nu.place(Array.frozen(attrs), 0, 0, n)
+          nu.place(attrs, 0, 0, n)
           nu(idx + 1) = value.s
-          Array.freeze(nu).readable
+          Array.freeze(nu)
         else
           val nu = Array.allocate[String](n + 2)
-          nu.place(Array.frozen(attrs), 0, 0, n)
+          nu.place(attrs, 0, 0, n)
           nu(n) = keyStr
           nu(n + 1) = value.s
-          Array.freeze(nu).readable
+          Array.freeze(nu)
 
       def `++`(other: Attributes): Attributes =
         val a = storage(attrs)
@@ -1446,10 +1452,10 @@ object internal:
 
           val frozen = Array.freeze(nu)
 
-          if written == total then frozen.readable else
+          if written == total then frozen else
             val tu = Array.allocate[String](written)
             tu.place(frozen, 0, 0, written)
-            Array.freeze(tu).readable
+            Array.freeze(tu)
 
       def `++`(other: Map[Text, Text]): Attributes =
         if other.stdlib.isEmpty then attrs else attrs ++ Attributes.from(other)
@@ -1518,19 +1524,19 @@ object internal:
   // `[p0, u0, p1, u1, ...]`, with `""` as the prefix of the default namespace and `""` as the URI
   // of an undeclared namespace (`xmlns=""`). A later binding of a prefix shadows an earlier
   // one, so a child's scope is its parent's with its own declarations appended, and a scope
-  // resolves by searching from the end. A stdlib `IArray` for the same reason as `Attributes`:
-  // it is pure, so the field it backs on `Element` adds no capture. Reached as `Xml.Scope`
+  // resolves by searching from the end. A frozen array, as `Attributes` is: pure under
+  // `-Zfrozen-pure`, so the field it backs on `Element` adds no capture. Reached as `Xml.Scope`
   // outside the package, since the umbrella already exports orthodoxy's `Scope`.
-  opaque type Scope = scala.IArray[String]
+  opaque type Scope = Array[String]^{}
 
   object Scope:
     val xmlNamespace: Text = t"http://www.w3.org/XML/1998/namespace"
     val xmlnsNamespace: Text = t"http://www.w3.org/2000/xmlns/"
 
-    val empty: Scope = scala.IArray.empty[String]
+    val empty: Scope = Array.empty[String]
 
     // The reserved `xml` prefix is bound in every document without a declaration
-    val xml: Scope = scala.IArray("xml", xmlNamespace.s)
+    val xml: Scope = Array("xml", xmlNamespace.s)
 
     // The scope a document is parsed in, and in which a prefixed name is selected, unless
     // another is in scope: only the reserved binding.
@@ -1558,7 +1564,7 @@ object internal:
           buffer(index*2) = binding(0).s
           buffer(index*2 + 1) = binding(1).s
 
-        Array.freeze(buffer).readable
+        Array.freeze(buffer)
 
     // The scope binding each prefix in the tuple through its `Namespace` given, over the
     // reserved binding: `Scope["svg", "xlink"]`.
@@ -1572,7 +1578,7 @@ object internal:
           val namespace = scala.compiletime.summonInline[Namespace { type Self = head }]
           bindAll[tail](scope.bind(namespace.prefix, namespace.uri))
 
-    private[xylophone] inline def fromInterleaved(array: Array[String]^{}): Scope = array.readable
+    private[xylophone] inline def fromInterleaved(array: Array[String]^{}): Scope = array
 
     // Bindings from attribute pairs keyed by prefix, the empty prefix for the default namespace
     private[xylophone] def fromAttributes(attributes: Attributes): Scope =
@@ -1595,7 +1601,7 @@ object internal:
           buffer += keyStr.substring(6).nn
           buffer += value.s
 
-      if buffer.isEmpty then parent else parent ++ (scala.IArray.from(buffer): Scope)
+      if buffer.isEmpty then parent else parent + (Array.from(buffer): Scope)
 
     // The first prefix used by the label or, if `checkAttributes`, by an attribute, which the
     // scope does not bind; `xmlns` is not a prefix
@@ -1676,10 +1682,10 @@ object internal:
       def bind(prefix: Optional[Text], uri: Text): Scope =
         val array = storage(scope)
         val buffer = Array.allocate[String](array.length + 2)
-        if array.length > 0 then buffer.place(Array.frozen(scope), 0, 0, array.length)
+        if array.length > 0 then buffer.place(scope, 0, 0, array.length)
         buffer(array.length) = prefix.let(_.s).or("")
         buffer(array.length + 1) = uri.s
-        Array.freeze(buffer).readable
+        Array.freeze(buffer)
 
       // This scope with the other's bindings appended, so the other's shadow this one's
       def ++ (that: Scope): Scope =
@@ -1687,9 +1693,9 @@ object internal:
           val left = storage(scope)
           val right = storage(that)
           val buffer = Array.allocate[String](left.length + right.length)
-          buffer.place(Array.frozen(scope), 0, 0, left.length)
-          buffer.place(Array.frozen(that), 0, left.length, right.length)
-          Array.freeze(buffer).readable
+          buffer.place(scope, 0, 0, left.length)
+          buffer.place(that, 0, left.length, right.length)
+          Array.freeze(buffer)
 
       // The bindings in order, later bindings shadowing earlier ones of the same prefix
       def bindings: List[(Optional[Text], Text)] =
@@ -1874,6 +1880,9 @@ object internal:
 
       // `@attribute` fields first: they are available from the element's
       // open tag, before any child is consumed.
+      // [quote-wall] the opaque is transparent here, so its synthesized `Type` re-mints `any.rd`
+      given Type[Attributes] = Type.of[Array[String]^{}].asInstanceOf[Type[Attributes]]
+
       val attributesSymbol =
         Symbol.newVal(owner, "attributes", TypeRepr.of[Attributes], Flags.EmptyFlags,
           Symbol.noSymbol)

@@ -236,7 +236,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
       val message = Json.make(seq = seq.incrementAndGet().in[Json], command = command.in[Json])
       val typed = message.updateDynamic("type")(t"request".in[Json])
       val full = typed.updateDynamic("arguments")(arguments)
-      toServer.write(DapTransport.frame(full.encode).unsafeMutable(using Unsafe))
+      toServer.write(Array.unsafeJvm(DapTransport.frame(full.encode)))
       toServer.flush()
 
     private def awaitMatch(predicate: Json => Boolean): Json =

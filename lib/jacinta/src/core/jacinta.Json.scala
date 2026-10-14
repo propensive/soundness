@@ -339,7 +339,7 @@ trait Json2 extends Json3:
       Json.Decodable({
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . pipe { array => array.readable.to(List) } // freshens the array
+          . pipe { array => array.stdlib.to(List) } // freshens the array
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -621,7 +621,7 @@ trait Json2 extends Json3:
       Json.Encodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . pipe { array => array.readable.to(List) } // freshens the array
+          . pipe { array => array.stdlib.to(List) } // freshens the array
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -793,8 +793,8 @@ object Json extends Json1, Dynamic:
   case object JsonNull
   type JsonNull    = JsonNull.type
   type JsonObject  = Array[Any]^{}
-  // The frozen forms are enumerated (`Array` is invariant, so `Array[Long]^{}` no longer
-  // subsumes into `Array[Any]^{}` the way the covariant `IArray` did).
+  // The frozen forms are enumerated: `Array` is invariant, so `Array[Long]^{}` does not
+  // subsume into `Array[Any]^{}`.
   type JsonArray   = Array[Any]^{} | Array[Long]^{} | Array[Int]^{}
 
   object Encodable:
@@ -1284,7 +1284,7 @@ object Json extends Json1, Dynamic:
 
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
-            (fields.readable.map { (key, parser, _) => (key.tt, parser.shape()) }.toList).to(List)
+            (fields.stdlib.map { (key, parser, _) => (key.tt, parser.shape()) }.toList).to(List)
 
           Morphology.Obj
             ( entries, entries.sweep { case (key, shape) if !shape.optional => key } )
@@ -1344,7 +1344,7 @@ object Json extends Json1, Dynamic:
           var failed = false
 
           while index < count do
-            if values.readable(index).asInstanceOf[AnyRef] eq AbsentSlot then
+            if values.readUnchecked(index).asInstanceOf[AnyRef] eq AbsentSlot then
               val fallback = entries.readUnchecked(index)(2).asInstanceOf[Optional[Any]]
 
               if fallback.present then values(index) = fallback
@@ -1464,7 +1464,7 @@ object Json extends Json1, Dynamic:
                 (((lowsFrozen.readUnchecked(probeIndex)*KeyTable.Scramble) ^
                   highsFrozen.readUnchecked(probeIndex)).toInt & (capacity - 1)).abs
 
-              if attempt.readable(slot) == 0 then attempt.raw(slot) = probeIndex + 1
+              if attempt.readUnchecked(slot) == 0 then attempt.raw(slot) = probeIndex + 1
               else clash = true
 
             probeIndex += 1
@@ -1560,15 +1560,15 @@ object Json extends Json1, Dynamic:
   // All internal references in a `PositionIndex` are stored as offsets
   // relative to the start of the containing node descriptor, so any slice
   // extracted at a descriptor boundary is itself a valid `PositionIndex`.
-  // Represented as the stdlib's immutable array (pure by construction): the frozen
-  // `Array[Int]^{}` form makes every `PositionIndex`-holding field carry a fresh `any.rd`.
-  opaque type PositionIndex = scala.IArray[Int]
+  // The frozen `Array[Int]^{}` itself: pure under `-Zfrozen-pure`, which classifies an opaque
+  // alias over a frozen array as deriving from no capability class.
+  opaque type PositionIndex = Array[Int]^{}
 
   object PositionIndex:
-    private[jacinta] def apply(data: Array[Int]^{}): PositionIndex = data.readable
+    private[jacinta] def apply(data: Array[Int]^{}): PositionIndex = data
 
   extension (positionIndex: PositionIndex)
-    private[jacinta] def ints: Array[Int]^{} = Array.frozen(positionIndex)
+    private[jacinta] def ints: Array[Int]^{} = positionIndex
 
   // Focus value tracked by Jacinta's decoders / encoders. `pointer` is the
   // JSON-pointer path to the current node. `position` is initially `Unset`
@@ -1929,8 +1929,8 @@ object Json extends Json1, Dynamic:
         if code == 'u' then
           byte('0')
           byte('0')
-          byte(Out.hexDigits.readable(char >> 4))
-          byte(Out.hexDigits.readable(char & 0xf))
+          byte(Out.hexDigits.readUnchecked(char >> 4))
+          byte(Out.hexDigits.readUnchecked(char & 0xf))
 
       // Encodes `text(from until end)` when `chars` is null, else `chars(from until end)`,
       // escaping for a JSON string when `escaping`. A short string is read through `charAt`,
@@ -1943,7 +1943,7 @@ object Json extends Json1, Dynamic:
         ( text: String, chars: scala.Array[Char] | Null, from: Int, end: Int, escaping: Boolean )
       :   Unit =
 
-        val table = Out.escapes.readable
+        val table = Out.escapes
         val out = current
         val limit = block
         var k = from
@@ -1953,7 +1953,7 @@ object Json extends Json1, Dynamic:
           val char = if chars == null then text.charAt(k) else chars(k)
 
           if char < 0x80 && pending == 0 then
-            val code: Byte = if escaping then table(char) else 0
+            val code: Byte = if escaping then table.readUnchecked(char) else 0
 
             if code == 0 then
               if at == limit then
@@ -2373,16 +2373,16 @@ object Json extends Json1, Dynamic:
           Json.Ast(smalls.readUnchecked(index))
 
         case _ =>
-          json.asInstanceOf[Array[Json.Ast]^{}].readable(index)
+          json.asInstanceOf[Array[Json.Ast]^{}].readUnchecked(index)
 
       // The number of key/value pairs in an object node.
       inline def objectSize: Int = json.asInstanceOf[Array[Any]^{}].length/2
 
       inline def objectKey(index: Int): String =
-        json.asInstanceOf[Array[Any]^{}].readable(index*2).asInstanceOf[String]
+        json.asInstanceOf[Array[Any]^{}].readUnchecked(index*2).asInstanceOf[String]
 
       inline def objectValue(index: Int): Json.Ast =
-        json.asInstanceOf[Array[Any]^{}].readable(index*2 + 1).asInstanceOf[Json.Ast]
+        json.asInstanceOf[Array[Any]^{}].readUnchecked(index*2 + 1).asInstanceOf[Json.Ast]
 
       // Linear scan for a key. Returns the value index (in pair units) or -1.
       def objectIndexOf(key: String): Int =
@@ -2464,7 +2464,7 @@ object Json extends Json1, Dynamic:
         if isBoolean then json.asInstanceOf[Boolean] else expected(Json.Primitive.Boolean) yet false
 
       // Returns a (keys, values) view over an object node. This *materialises*
-      // two new IArrays from the flat alternating layout, so prefer
+      // two new frozen arrays from the flat alternating layout, so prefer
       // `objectKey`/`objectValue` when you only need a few entries.
       def obj(using Tactic[Json.Error]): (Array[String]^{}, Array[Json.Ast]^{}) =
         if !isObject

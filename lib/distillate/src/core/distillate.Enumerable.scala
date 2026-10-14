@@ -55,7 +55,7 @@ object Enumerable:
 
 trait Enumerable:
   type Self <: reflect.Enum
-  private lazy val valuesMap: Map[Text, Self] = values.readable.toSeq.indexBy(_.toString.tt)
+  private lazy val valuesMap: Map[Text, Self] = values.stdlib.indexBy(_.toString.tt)
   val name: Text
   val values: Array[Self]^{}
 

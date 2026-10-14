@@ -219,7 +219,7 @@ object Html extends Tag.Container
     val positionIndex: Optional[PositionIndex] = tracking match
       case PositionTracking.On =>
         val index = parser.rootIndex
-        PositionIndex(if index == null then scala.IArray.empty[Int] else index)
+        PositionIndex(index)
 
       case PositionTracking.Off =>
         Unset
@@ -596,13 +596,13 @@ object Html extends Tag.Container
   // offsets are relative to the start of the containing element descriptor. An element the
   // parser inferred or cloned rather than read starts at the token that produced it, and an
   // element whose attributes it did not read (one closed by its tag's presets) has none.
-  opaque type PositionIndex = scala.IArray[Int]
+  opaque type PositionIndex = Array[Int]^{}
 
   object PositionIndex:
-    private[honeycomb] def apply(data: scala.IArray[Int]): PositionIndex = data
+    private[honeycomb] def apply(data: Array[Int]^{}): PositionIndex = data
 
   extension (positionIndex: PositionIndex)
-    private[honeycomb] def ints: scala.IArray[Int] = positionIndex
+    private[honeycomb] def ints: Array[Int]^{} = positionIndex
 
   // A `Document[Html]`'s metadata: the `Dom` it was parsed against, and the position index
   // when it was loaded with `parsing.trackPositions` in scope. The index is parse provenance,
@@ -638,7 +638,7 @@ object Html extends Tag.Container
   private object Locator:
     def walk
       ( html:   Html,
-        data:   scala.IArray[Int],
+        data:   Array[Int]^{},
         offset: Int,
         steps:  List[Path.Step],
         first:  Boolean )
@@ -646,7 +646,10 @@ object Html extends Tag.Container
 
       steps match
         case Nil =>
-          Position(data(offset + 1).z, data(offset + 2).z, length = data(offset + 3))
+          Position
+            ( data.readUnchecked(offset + 1).z,
+              data.readUnchecked(offset + 2).z,
+              length = data.readUnchecked(offset + 3) )
 
         case Path.Step.Attribute(name) :: _ =>
           html match
@@ -662,8 +665,8 @@ object Html extends Tag.Container
 
             case element: Element =>
               child(element, label, rank).let: (elementIndex, child) =>
-                val attrCount = data(offset + 4)
-                val childOffset = data(offset + 6 + attrCount + elementIndex)
+                val attrCount = data.readUnchecked(offset + 4)
+                val childOffset = data.readUnchecked(offset + 6 + attrCount + elementIndex)
                 walk(child, data, offset + childOffset, rest, false)
 
             case _ =>
@@ -671,15 +674,18 @@ object Html extends Tag.Container
 
     // The attribute's position, if the parser read it: an element may carry attributes it did
     // not read (see `PositionIndex`), so the index is checked against the recorded count.
-    private def attribute(element: Element, data: scala.IArray[Int], offset: Int, name: BaseText)
+    private def attribute(element: Element, data: Array[Int]^{}, offset: Int, name: BaseText)
     :   Optional[Position] =
 
       val index = element.attributes.keys.indexOf(name)
 
-      if index < 0 || index >= data(offset + 4) then Unset
+      if index < 0 || index >= data.readUnchecked(offset + 4) then Unset
       else
-        val base = offset + data(offset + 6 + index)
-        Position(data(base + 1).z, data(base + 2).z, length = data(base + 3))
+        val base = offset + data.readUnchecked(offset + 6 + index)
+        Position
+          ( data.readUnchecked(base + 1).z,
+            data.readUnchecked(base + 2).z,
+            length = data.readUnchecked(base + 3) )
 
     // The `ordinal`-th (1-based) child element labelled `label`, with its index among the
     // child elements, which is its slot in the parent descriptor's offset table.
@@ -800,15 +806,15 @@ object Html extends Tag.Container
     // `[line, column, offset, length, attrCount, (line, column, length)*]` — is keyed by the
     // element instance as it is built, and `buildIndex` flattens the records into the index
     // once the tree is complete.
-    val records: ju.IdentityHashMap[Element, scala.IArray[Int]] = ju.IdentityHashMap()
+    val records: ju.IdentityHashMap[Element, Array[Int]^{}] = ju.IdentityHashMap()
     // The start of each open element, parallel to `stack`: the char offset, the line and
     // column of the token that opened (or inferred) it, and its attribute positions.
     var startOffsets: scala.Array[Int]^ = new scala.Array[Int](4)
     var startLines:   scala.Array[Int]^ = new scala.Array[Int](4)
     var startColumns: scala.Array[Int]^ = new scala.Array[Int](4)
 
-    var startAttrs:   scala.Array[scala.IArray[Int] | Null]^ =
-      new scala.Array[scala.IArray[Int] | Null](4)
+    var startAttrs:   scala.Array[Array[Int]^{}]^ =
+      new scala.Array[Array[Int]^{}](4)
 
     // Scratch for the attribute positions of the tag being read, as `[line, column, length]*`,
     // parallel to `attrInterleaved`.
@@ -818,7 +824,7 @@ object Html extends Tag.Container
     var intsSize: Int = 0
 
     // Called just after `push`, so the element's slot is `depth - 1`.
-    update def pushStart(offset: Int, line: Int, column: Int, attrs: scala.IArray[Int] | Null)
+    update def pushStart(offset: Int, line: Int, column: Int, attrs: Array[Int]^{})
     :   Unit =
 
       if depth > startOffsets.length then
@@ -826,7 +832,7 @@ object Html extends Tag.Container
         val no = new scala.Array[Int](newCap)
         val nl = new scala.Array[Int](newCap)
         val nc = new scala.Array[Int](newCap)
-        val na = new scala.Array[scala.IArray[Int] | Null](newCap)
+        val na = new scala.Array[Array[Int]^{}](newCap)
         val sz = depth - 1
         jl.System.arraycopy(startOffsets, 0, no, 0, sz)
         jl.System.arraycopy(startLines, 0, nl, 0, sz)
@@ -852,41 +858,41 @@ object Html extends Tag.Container
       attrPositions(3*n + 1) = column
       attrPositions(3*n + 2) = length
 
-    // Snapshot the first `n` attribute positions; `null` when the tag had none.
-    def attrPositionsSnapshot(n: Int): scala.IArray[Int] | Null =
-      if n == 0 then null
+    // Snapshot the first `n` attribute positions; empty when the tag had none.
+    def attrPositionsSnapshot(n: Int): Array[Int]^{} =
+      if n == 0 then Array.empty[Int]
       else
         val result = new scala.Array[Int](3*n)
         jl.System.arraycopy(attrPositions, 0, result, 0, 3*n)
-        scala.IArray.unsafeFromArray(result)
+        Array.unsafeFrozen(result)
 
     // Record `element` as spanning `offset` to `end`, starting at `line`/`column`, with the
-    // attribute positions `attrs` (`null` for none).
+    // attribute positions `attrs` (empty for none).
     def record
       ( element: Element,
         line:    Int,
         column:  Int,
         offset:  Int,
         end:     Int,
-        attrs:   scala.IArray[Int] | Null )
+        attrs:   Array[Int]^{} )
     :   Unit =
 
-      val attrCount = if attrs == null then 0 else attrs.length/3
+      val attrCount = attrs.length/3
       val entry = new scala.Array[Int](5 + 3*attrCount)
       entry(0) = line
       entry(1) = column
       entry(2) = offset
       entry(3) = end - offset
       entry(4) = attrCount
-      if attrs != null then jl.System.arraycopy(attrs, 0, entry, 5, 3*attrCount)
-      records.put(element, scala.IArray.unsafeFromArray(entry))
+      if attrCount > 0 then jl.System.arraycopy(Array.unsafeJvm(attrs), 0, entry, 5, 3*attrCount)
+      records.put(element, Array.unsafeFrozen(entry))
 
     // Record `element`, the innermost open element, as closed at `end`; its attribute
     // positions are recorded only when it was built from the attributes the parser read.
     def recordOpen(element: Element, end: Int, withAttributes: Boolean): Unit =
       if depth > 0 then
         val slot = depth - 1
-        val attrs = if withAttributes then startAttrs(slot) else null
+        val attrs = if withAttributes then startAttrs(slot) else Array.empty[Int]
         record(element, startLines(slot), startColumns(slot), startOffsets(slot), end, attrs)
 
     update def emit(value: Int): Unit =
@@ -904,12 +910,12 @@ object Html extends Tag.Container
     update def buildIndex(element: Element): Unit =
       val base = intsSize
       val entry = records.get(element)
-      val attrCount = if entry == null then 0 else entry(4)
+      val attrCount = if entry == null then 0 else entry.readUnchecked(4)
       val elemCount = element.children.count(_.isInstanceOf[Element])
       emit(0)
-      emit(if entry == null then 0 else entry(0))
-      emit(if entry == null then 0 else entry(1))
-      emit(if entry == null then 0 else entry(3))
+      emit(if entry == null then 0 else entry.readUnchecked(0))
+      emit(if entry == null then 0 else entry.readUnchecked(1))
+      emit(if entry == null then 0 else entry.readUnchecked(3))
       emit(attrCount)
       emit(elemCount)
       val headerSize = 6 + attrCount + elemCount
@@ -919,9 +925,9 @@ object Html extends Tag.Container
 
       (0.z till attrCount.z).each: i =>
         emit(4)
-        emit(entry.nn(5 + 3*i.n0))
-        emit(entry.nn(6 + 3*i.n0))
-        emit(entry.nn(7 + 3*i.n0))
+        emit(entry.nn.readUnchecked(5 + 3*i.n0))
+        emit(entry.nn.readUnchecked(6 + 3*i.n0))
+        emit(entry.nn.readUnchecked(7 + 3*i.n0))
 
       var elementIndex = 0
 
@@ -937,10 +943,10 @@ object Html extends Tag.Container
 
       ints(base) = intsSize - base
 
-    def indexSnapshot(): scala.IArray[Int] =
+    def indexSnapshot(): Array[Int]^{} =
       val result = new scala.Array[Int](intsSize)
       jl.System.arraycopy(ints, 0, result, 0, intsSize)
-      scala.IArray.unsafeFromArray(result)
+      Array.unsafeFrozen(result)
 
     def findAncestorIndex(label: BaseText): Int =
       var i = 0
@@ -1155,7 +1161,7 @@ object Html extends Tag.Container
     private var lineationPos: Int = 0
 
     // The position index produced by a tracked parse, read by the `.load[Html]` given.
-    protected[honeycomb] var rootIndex: scala.IArray[Int] | Null = null
+    protected[honeycomb] var rootIndex: Array[Int]^{} = Array.empty[Int]
 
     private inline def syncTo(): Unit =
       cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
@@ -1352,8 +1358,8 @@ object Html extends Tag.Container
       def result(): BaseText = buffer.toString.tt.also(buffer.setLength(0))
       var content: BaseText = t""
       var extra: Attributes = Attributes.empty
-      // The positions of `extra`'s attributes (tracked parses only; `null` for none).
-      var extraPositions: scala.IArray[Int] | Null = null
+      // The positions of `extra`'s attributes (tracked parses only; empty for none).
+      var extraPositions: Array[Int]^{} = Array.empty[Int]
 
       // Record `element`, the innermost open element, as closed at the current position.
       inline def closed(element: Element, withAttributes: Boolean): Element =
@@ -1659,7 +1665,7 @@ object Html extends Tag.Container
 
                 n += 1
 
-        extraPositions = if tracking then state.attrPositionsSnapshot(n) else null
+        extraPositions = if tracking then state.attrPositionsSnapshot(n) else Array.empty[Int]
 
         if n == 0 then Attributes.empty
         else
@@ -2128,7 +2134,7 @@ object Html extends Tag.Container
                     if tracking then
                       val offset = position
                       reconcileLineation()
-                      state.pushStart(offset, cursor.line.n0, cursor.column.n0, null)
+                      state.pushStart(offset, cursor.line.n0, cursor.column.n0, Array.empty[Int])
 
                     val cloneChild = descend(tag, admissible, attrs)
                     state.pop()
@@ -2346,15 +2352,13 @@ object Html extends Tag.Container
         case fragment: Fragment =>
           Element
             ( label, attributes,
-              Array.frozen
-                ( Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}].readable ++
-                  children.readable )
+              ( Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}] + children )
 
               . asInstanceOf[Array[Node]^{}],
               foreign )
 
         case node: Node =>
-          Element(label, attributes, Array.frozen(children.readable.prepended(node)), foreign)
+          Element(label, attributes, Array.from(children.stdlib.prepended(node)), foreign)
 
       . of[this.Topic]
       . over[this.Transport]
@@ -2363,7 +2367,7 @@ object Html extends Tag.Container
     def +^ (html: Html of this.Transport): Element of this.Topic over this.Transport in this.Form =
       (html: Html).match
         case fragment: Fragment =>
-          Element(label, attributes, Array.frozen(children.readable ++ fragment.nodes), foreign)
+          Element(label, attributes, Array.from(children.stdlib ++ fragment.nodes), foreign)
 
         case node: Node =>
           Element(label, attributes, children :+ node, foreign)

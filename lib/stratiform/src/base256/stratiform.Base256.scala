@@ -74,7 +74,7 @@ object Base256:
     var i = 0
 
     while i < 256 do
-      table(alphabet.readable(i).toInt) = true
+      table(alphabet.readUnchecked(i).toInt) = true
       i += 1
 
     table.asInstanceOf[Array[Boolean]^{}]
@@ -82,7 +82,7 @@ object Base256:
   // Exact alphabet membership, used by the pragma parser to classify a
   // phrase as a schema signature by form (§8: length and membership are
   // checked at parse time; palimpsest decodability at resolution time).
-  def valid(char: Char): Boolean = membership.readable(char.toInt)
+  def valid(char: Char): Boolean = membership.readUnchecked(char.toInt)
 
   // Self-check the alphabet's defining property — every implementation
   // MUST verify it per §4. We do it at module load so a transcription
@@ -94,7 +94,7 @@ object Base256:
     var i = 0
 
     while i < 256 do
-      val c = alphabet.readable(i)
+      val c = alphabet.readUnchecked(i)
 
       if c.toInt % 256 != i then
         val hex = String.format("%04X", Integer.valueOf(c.toInt))
@@ -106,7 +106,7 @@ object Base256:
     var j = 0
 
     while j < 256 do
-      val ord = alphabet.readable(j).toInt
+      val ord = alphabet.readUnchecked(j).toInt
       if seen(ord) then sys.error(s"BASE-256 alphabet has duplicate char at index $j")
       seen(ord) = true
       j += 1
@@ -119,7 +119,7 @@ object Base256:
     var i = 0
 
     while i < data.length do
-      sb.append(alphabet.readable(data.readable(i) & 0xff))
+      sb.append(alphabet.readUnchecked(data.readUnchecked(i) & 0xff))
       i += 1
 
     Text(sb.toString)
@@ -156,7 +156,8 @@ object Base256:
 
     while i < s.length do
       val c = s.codePointAt(i)
-      if c > 0xffff || !membership.readable(c) then offenders = Base256.Offender(n, c) :: offenders
+      if c > 0xffff || !membership.readUnchecked(c)
+      then offenders = Base256.Offender(n, c) :: offenders
       out(n) = (c % 256).toByte
       n += 1
       i += Character.charCount(c)

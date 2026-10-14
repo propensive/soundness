@@ -47,12 +47,14 @@ object PrivateKey:
 
     PrivateKey(cipher.genKey())
 
-  // Adopts freshly-generated key material: the `Data` is ours, so it is zeroed in place
-  // (through a mutable view) as it is cloaked.
+  // Adopts freshly-generated key material. `Cloak.cloak` zeroes what it is given, so it
+  // gets an exclusive copy: a frozen `Data` cannot be written through (see `SymmetricKey`).
   private[enigmatic] def apply[cipher <: Cipher](data: Data)(using cloak: Cloak^)
   :   PrivateKey[cipher]^{cloak} =
 
-    new PrivateKey(cloak.cloak(data.unsafeMutable(using Unsafe)))
+    val material: Array[Byte]^ = Array.allocate[Byte](data.length)
+    material.place(data)
+    new PrivateKey(cloak.cloak(material.raw))
 
   // Redacted. `showable` uncloaks the key to fingerprint it; an inspection is produced in far
   // more places (test output, a debugger's variable pane, a nested rendering of an enclosing

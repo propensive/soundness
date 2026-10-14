@@ -46,8 +46,14 @@ private[gastronomy] object PureHashes:
   import HashConstants.*
 
   // SHA-256 and SHA-224 (a truncation of SHA-256 with a different initial state).
-  final class Sha256(initial: scala.IArray[Int], outputBytes: Int) extends BlockDigestion(64):
-    private var h: scala.Array[Int]^ = initial.toArray
+  // `initial` is a JVM copy of the constants, copied again into the state this class owns: a
+  // frozen field of this stateful class would give it a root of its own, distinct from its
+  // parent's.
+  final class Sha256(initial: scala.Array[Int], outputBytes: Int) extends BlockDigestion(64):
+    private var h: scala.Array[Int]^ =
+      val state = new scala.Array[Int](initial.length)
+      java.lang.System.arraycopy(initial, 0, state, 0, initial.length)
+      state
     private var w: scala.Array[Int]^ = new scala.Array[Int](64)
 
     protected def bitLengthBytes: Int = 8
@@ -78,7 +84,7 @@ private[gastronomy] object PureHashes:
       while i < 64 do
         val s1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)
         val ch = (e & f) ^ (~e & g)
-        val t1 = hh + s1 + ch + sha256K.readable(i) + w(i)
+        val t1 = hh + s1 + ch + sha256K.readUnchecked(i) + w(i)
         val s0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)
         val maj = (a & b) ^ (a & c) ^ (b & c)
         val t2 = s0 + maj
@@ -97,8 +103,11 @@ private[gastronomy] object PureHashes:
       Array.freeze(out)
 
   // SHA-512 and SHA-384 (a truncation of SHA-512 with a different initial state).
-  final class Sha512(initial: scala.IArray[Long], outputBytes: Int) extends BlockDigestion(128):
-    private var h: scala.Array[Long]^ = initial.toArray
+  final class Sha512(initial: scala.Array[Long], outputBytes: Int) extends BlockDigestion(128):
+    private var h: scala.Array[Long]^ =
+      val state = new scala.Array[Long](initial.length)
+      java.lang.System.arraycopy(initial, 0, state, 0, initial.length)
+      state
     private var w: scala.Array[Long]^ = new scala.Array[Long](80)
 
     // The message length is a 128-bit big-endian count of bits; inputs never approach 2^64 bytes,
@@ -133,7 +142,7 @@ private[gastronomy] object PureHashes:
       while i < 80 do
         val s1 = rotrL(e, 14) ^ rotrL(e, 18) ^ rotrL(e, 41)
         val ch = (e & f) ^ (~e & g)
-        val t1 = hh + s1 + ch + sha512K.readable(i) + w(i)
+        val t1 = hh + s1 + ch + sha512K.readUnchecked(i) + w(i)
         val s0 = rotrL(a, 28) ^ rotrL(a, 34) ^ rotrL(a, 39)
         val maj = (a & b) ^ (a & c) ^ (b & c)
         val t2 = s0 + maj
@@ -246,7 +255,7 @@ private[gastronomy] object PureHashes:
 
         val tmp = d
         d = c; c = b
-        b = b + rotl(a + f + md5T.readable(i) + m(g), shifts.readable(i))
+        b = b + rotl(a + f + md5T.readUnchecked(i) + m(g), shifts.readUnchecked(i))
         a = tmp
         i += 1
 
@@ -269,10 +278,10 @@ private[gastronomy] object PureHashes:
   def md5: Digestion^ = Md5()
 
   def sha2(bits: Int): Digestion^ = bits match
-    case 224 => Sha256(sha224H.readable, 28)
-    case 256 => Sha256(sha256H.readable, 32)
-    case 384 => Sha512(sha384H.readable, 48)
-    case _   => Sha512(sha512H.readable, 64)
+    case 224 => Sha256(Array.unsafeJvm(sha224H), 28)
+    case 256 => Sha256(Array.unsafeJvm(sha256H), 32)
+    case 384 => Sha512(Array.unsafeJvm(sha384H), 48)
+    case _   => Sha512(Array.unsafeJvm(sha512H), 64)
 
 // A block-oriented incremental hash: buffers input into `blockSize`-byte blocks, running
 // `compress` on each, and applies the standard Merkle–Damgård padding (a `0x80` byte, zero

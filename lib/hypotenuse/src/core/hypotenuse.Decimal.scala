@@ -60,11 +60,9 @@ import vacuous.*
 export decimalInternal.Decimal
 
 object decimalInternal:
-  // Represented as the stdlib`s immutable array, not the frozen `Array[Int]^{}`: dealiasing
-  // the mutable-classified opaque inside this file gives `Decimal` fields a fresh `any.rd`
-  // capability, and intersecting with `caps.Pure` breaks `raises`/`is` usages. The stdlib
-  // `IArray` is pure by construction, which is the whole point of the representation.
-  opaque type Decimal = scala.IArray[Int]
+  // The frozen `Array[Int]^{}` itself: pure under `-Zfrozen-pure`, which classifies an opaque
+  // alias over a frozen array as deriving from no capability class.
+  opaque type Decimal = Array[Int]^{}
 
   object Decimal:
     private val Base: Int = 1000000000 // 10⁹, the largest power of ten below 2³¹
@@ -73,7 +71,7 @@ object decimalInternal:
     private val powers: Array[Int]^{} =
       Array(1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, Base)
 
-    val Zero: Decimal = scala.IArray(0, 0)
+    val Zero: Decimal = Array(0, 0)
 
     enum Rounding:
       case Up, Down, Ceiling, Floor, HalfUp, HalfDown, HalfEven
@@ -188,35 +186,35 @@ object decimalInternal:
       val magnitude = Array.allocate[Int](count0)
       System.arraycopy(magnitude0, 0, magnitude.raw, 0, count0)
       var count = count0
-      while count > 0 && magnitude.readable(count - 1) == 0 do count -= 1
+      while count > 0 && magnitude.readUnchecked(count - 1) == 0 do count -= 1
 
       if count == 0 then Zero else
         var scale = scale0
 
         // A base-10⁹ number is divisible by ten exactly when its lowest limb is; whole zero
         // limbs strip nine digits at a time.
-        while count > 1 && magnitude.readable(0) == 0 do
+        while count > 1 && magnitude.readUnchecked(0) == 0 do
           var i = 0
 
           while i < count - 1 do
-            magnitude(i) = magnitude.readable(i + 1)
+            magnitude(i) = magnitude.readUnchecked(i + 1)
             i += 1
 
           count -= 1
           scale -= BaseDigits
 
-        while magnitude.readable(0)%10 == 0 && magnitude.readable(0) != 0 ||
-          count > 1 && magnitude.readable(0) == 0
+        while magnitude.readUnchecked(0)%10 == 0 && magnitude.readUnchecked(0) != 0 ||
+          count > 1 && magnitude.readUnchecked(0) == 0
         do
           divideSmall(magnitude.raw, count, 10)
-          if count > 1 && magnitude.readable(count - 1) == 0 then count -= 1
+          if count > 1 && magnitude.readUnchecked(count - 1) == 0 then count -= 1
           scale -= 1
 
         val result = Array.allocate[Int](count + 2)
         result(0) = signum
         result(1) = scale
         result.place(magnitude, 0, 2, count)
-        Array.freeze(result).readable
+        Array.freeze(result)
 
     // In-place small division, returning the remainder; `divisor` is at most 10⁹.
     private def divideSmall(magnitude: scala.Array[Int]^, count: Int, divisor: Int): Int =
@@ -470,7 +468,7 @@ object decimalInternal:
       var i = 0
 
       while i < array.length do
-        array(i) = decimal(i + 2)
+        array(i) = decimal.readUnchecked(i + 2)
         i += 1
 
       array
@@ -487,8 +485,8 @@ object decimalInternal:
 
     // The signed three-way comparison behind `Orderable`.
     def comparison(left: Decimal, right: Decimal): Int =
-      val leftSign = left(0)
-      val rightSign = right(0)
+      val leftSign = left.readUnchecked(0)
+      val rightSign = right.readUnchecked(0)
 
       if leftSign != rightSign then if leftSign < rightSign then -1 else 1
       else if leftSign == 0 then 0
@@ -498,22 +496,23 @@ object decimalInternal:
 
         // The count of digits before the decimal point decides all but same-width cases,
         // avoiding alignment across pathological scale differences.
-        val leftIntegral = digitLength(leftMagnitude, leftMagnitude.length) - left(1)
-        val rightIntegral = digitLength(rightMagnitude, rightMagnitude.length) - right(1)
+        val leftIntegral = digitLength(leftMagnitude, leftMagnitude.length) - left.readUnchecked(1)
+        val rightIntegral =
+          digitLength(rightMagnitude, rightMagnitude.length) - right.readUnchecked(1)
 
         val result =
           if leftIntegral != rightIntegral then if leftIntegral < rightIntegral then -1 else 1
           else
-            val scale = math.max(left(1), right(1))
+            val scale = math.max(left.readUnchecked(1), right.readUnchecked(1))
 
             val (leftAligned, leftCount) =
-              if left(1) < scale
-              then scaleUp(leftMagnitude, leftMagnitude.length, scale - left(1))
+              if left.readUnchecked(1) < scale
+              then scaleUp(leftMagnitude, leftMagnitude.length, scale - left.readUnchecked(1))
               else (leftMagnitude, leftMagnitude.length)
 
             val (rightAligned, rightCount) =
-              if right(1) < scale
-              then scaleUp(rightMagnitude, rightMagnitude.length, scale - right(1))
+              if right.readUnchecked(1) < scale
+              then scaleUp(rightMagnitude, rightMagnitude.length, scale - right.readUnchecked(1))
               else (rightMagnitude, rightMagnitude.length)
 
             compareMagnitude(leftAligned, leftCount, rightAligned, rightCount)
@@ -524,16 +523,18 @@ object decimalInternal:
     private[hypotenuse] def aligned(left: Decimal, right: Decimal)
     :   (scala.Array[Int], Int, scala.Array[Int], Int, Int) =
 
-      val scale = math.max(left(1), right(1))
+      val scale = math.max(left.readUnchecked(1), right.readUnchecked(1))
       val leftMagnitude = magnitudeOf(left)
       val rightMagnitude = magnitudeOf(right)
 
       val (leftAligned, leftCount) =
-        if left(1) < scale then scaleUp(leftMagnitude, leftMagnitude.length, scale - left(1))
+        if left.readUnchecked(1) < scale
+        then scaleUp(leftMagnitude, leftMagnitude.length, scale - left.readUnchecked(1))
         else (leftMagnitude, leftMagnitude.length)
 
       val (rightAligned, rightCount) =
-        if right(1) < scale then scaleUp(rightMagnitude, rightMagnitude.length, scale - right(1))
+        if right.readUnchecked(1) < scale
+        then scaleUp(rightMagnitude, rightMagnitude.length, scale - right.readUnchecked(1))
         else (rightMagnitude, rightMagnitude.length)
 
       (leftAligned, leftCount, rightAligned, rightCount, scale)
@@ -555,19 +556,19 @@ object decimalInternal:
       parsed(digits.tt).or(throw FromDigits.MalformedNumber(digits))
 
     def negation(value: Decimal): Decimal =
-      if value(0) == 0 then value else
+      if value.readUnchecked(0) == 0 then value else
         val result = Array.allocate[Int](value.length)
-        result.place(Array.frozen(value), 0, 0, value.length)
-        result(0) = -value(0)
-        Array.freeze(result).readable
+        result.place(value, 0, 0, value.length)
+        result(0) = -value.readUnchecked(0)
+        Array.freeze(result)
 
     def sum(left: Decimal, right: Decimal): Decimal =
-      if left(0) == 0 then right else if right(0) == 0 then left else
+      if left.readUnchecked(0) == 0 then right else if right.readUnchecked(0) == 0 then left else
         val (leftAligned, leftCount, rightAligned, rightCount, scale) = aligned(left, right)
 
-        if left(0) == right(0) then
+        if left.readUnchecked(0) == right.readUnchecked(0) then
           val (total, count) = addMagnitude(leftAligned, leftCount, rightAligned, rightCount)
-          compose(left(0), total, count, scale)
+          compose(left.readUnchecked(0), total, count, scale)
         else
           compareMagnitude(leftAligned, leftCount, rightAligned, rightCount) match
             case 0 =>
@@ -577,16 +578,16 @@ object decimalInternal:
               val (difference, count) =
                 subtractMagnitude(leftAligned, leftCount, rightAligned, rightCount)
 
-              compose(left(0), difference, count, scale)
+              compose(left.readUnchecked(0), difference, count, scale)
 
             case _ =>
               val (difference, count) =
                 subtractMagnitude(rightAligned, rightCount, leftAligned, leftCount)
 
-              compose(right(0), difference, count, scale)
+              compose(right.readUnchecked(0), difference, count, scale)
 
     def product(left: Decimal, right: Decimal): Decimal =
-      if left(0) == 0 || right(0) == 0 then Zero else
+      if left.readUnchecked(0) == 0 || right.readUnchecked(0) == 0 then Zero else
         val leftMagnitude = magnitudeOf(left)
         val rightMagnitude = magnitudeOf(right)
 
@@ -594,7 +595,8 @@ object decimalInternal:
           multiplyMagnitude
             ( leftMagnitude, leftMagnitude.length, rightMagnitude, rightMagnitude.length )
 
-        compose(left(0)*right(0), result, count, left(1) + right(1))
+        val sign = left.readUnchecked(0)*right.readUnchecked(0)
+        compose(sign, result, count, left.readUnchecked(1) + right.readUnchecked(1))
 
     // The standard arithmetic operators come from symbolism, so `+`, `-`, `*` and prefix
     // negation resolve through the generic operators without any Decimal-specific exports.
@@ -626,20 +628,21 @@ object decimalInternal:
     given textualizable: Decimal is Textualizable = value => text(value)
 
     extension (left: Decimal)
-      def signum: Int = left(0)
-      def scale: Int = left(1)
-      def abs: Decimal = if left(0) < 0 then Decimal.negation(left) else left
+      def signum: Int = left.readUnchecked(0)
+      def scale: Int = left.readUnchecked(1)
+      def abs: Decimal = if left.readUnchecked(0) < 0 then Decimal.negation(left) else left
 
       // Division to an explicit result scale and rounding policy — the quotient of two
       // decimals generally does not terminate, so both must be chosen by the caller.
       def divide(right: Decimal, scale: Int, rounding: Decimal.Rounding)
       :   Decimal raises Arithmetic.Error =
 
-        if right(0) == 0 then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
-        else if left(0) == 0 then Decimal.Zero
+        if right.readUnchecked(0) == 0
+        then abort(Arithmetic.Error(Arithmetic.Error.Reason.DivisionByZero))
+        else if left.readUnchecked(0) == 0 then Decimal.Zero
         else
-          val sign = left(0)*right(0)
-          val power = scale + right(1) - left(1)
+          val sign = left.readUnchecked(0)*right.readUnchecked(0)
+          val power = scale + right.readUnchecked(1) - left.readUnchecked(1)
           val leftMagnitude = Decimal.magnitudeOf(left)
           val rightMagnitude = Decimal.magnitudeOf(right)
 
@@ -685,16 +688,16 @@ object decimalInternal:
       // Plain decimal notation — no exponent, no trailing zeros — with `BigDecimal`'s
       // `stripTrailingZeros.toPlainString` semantics built into the canonical form.
       def text: Text =
-        if left(0) == 0 then "0".tt else
+        if left.readUnchecked(0) == 0 then "0".tt else
           val digits = StringBuilder()
-          if left(0) < 0 then digits.append('-')
+          if left.readUnchecked(0) < 0 then digits.append('-')
           val start = digits.length
           var i = left.length - 1
-          digits.append(left(i).toString)
+          digits.append(left.readUnchecked(i).toString)
           i -= 1
 
           while i >= 2 do
-            val group = left(i).toString
+            val group = left.readUnchecked(i).toString
             var pad = 9 - group.length
 
             while pad > 0 do
@@ -704,7 +707,7 @@ object decimalInternal:
             digits.append(group)
             i -= 1
 
-          val scale = left(1)
+          val scale = left.readUnchecked(1)
           val count = digits.length - start
 
           if scale <= 0 then
@@ -731,7 +734,7 @@ object decimalInternal:
       // decimal text is itself correctly rounded.
       def double: Double = java.lang.Double.parseDouble(text.s)
 
-      def whole: Boolean = left(1) <= 0
+      def whole: Boolean = left.readUnchecked(1) <= 0
 
     // DecimalError → Decimal.Error
     case class Error(text: Text)(using Diagnostics)

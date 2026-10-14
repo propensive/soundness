@@ -47,7 +47,8 @@ import vacuous.*
 object internal:
   object Vector:
     def apply(tuple: Tuple): Vector[Tuple.Union[tuple.type], Tuple.Size[tuple.type]] =
-      new Vector(Array.frozen(tuple.toIArray))
+      // [construction-fresh] the tuple's array is fresh and retained by nobody else
+      new Vector(Array.unsafeFrozen(tuple.toArray.asInstanceOf[scala.Array[Any]]))
 
     def take[element](list: List[element], size: Int): Optional[Vector[element, size.type]] =
       val buffer = Array.allocate[Any](size)
@@ -88,8 +89,8 @@ object internal:
           while i < length do
             array(i) =
               addable.add
-                ( left.data.readable(i).asInstanceOf[value],
-                  right.data.readable(i).asInstanceOf[value2] )
+                ( left.data.readUnchecked(i).asInstanceOf[value],
+                  right.data.readUnchecked(i).asInstanceOf[value2] )
 
             i += 1
 
@@ -126,8 +127,8 @@ object internal:
           while i < length do
             array(i) =
               subtractable.subtract
-                ( left.data.readable(i).asInstanceOf[value],
-                  right.data.readable(i).asInstanceOf[value2] )
+                ( left.data.readUnchecked(i).asInstanceOf[value],
+                  right.data.readUnchecked(i).asInstanceOf[value2] )
 
             i += 1
 
@@ -144,7 +145,7 @@ object internal:
 
       while index < vector.data.length do
         if index > 0 then builder.append(" ∣ ")
-        builder.append(element.text(vector.data.readable(index).asInstanceOf[element]).s)
+        builder.append(element.text(vector.data.readUnchecked(index).asInstanceOf[element]).s)
         index += 1
 
       builder.append("⟩").toString.tt
@@ -226,12 +227,12 @@ object internal:
 
 
   extension [size <: Int, left](left: Vector[left, size])
-    def element(index: Int): left = left.data.readable(index).asInstanceOf[left]
+    def element(index: Int): left = left.data.readUnchecked(index).asInstanceOf[left]
 
-    def apply(index: Int): left = left.data.readable(index).asInstanceOf[left]
+    def apply(index: Int): left = left.data.readUnchecked(index).asInstanceOf[left]
     def list: List[left] = left.data.to[List].asInstanceOf[List[left]]
     def iarray(using scala.reflect.ClassTag[left]): Array[left]^{} =
-      Array.frozen(left.data.readable.map(_.asInstanceOf[left]))
+      Array.from(left.data.stdlib.map(_.asInstanceOf[left]))
     def size(using ValueOf[size]): Int = valueOf[size]
 
 
@@ -257,7 +258,7 @@ object internal:
         var i = 0
 
         while i < length do
-          array(i) = fn(left.data.readable(i).asInstanceOf[left])
+          array(i) = fn(left.data.readUnchecked(i).asInstanceOf[left])
           i += 1
 
       new Vector[left2, size](arr)
@@ -277,7 +278,7 @@ object internal:
         var i = 0
 
         while i < length do
-          array(i) = left.data.readable(i).asInstanceOf[left]/magnitude
+          array(i) = left.data.readUnchecked(i).asInstanceOf[left]/magnitude
           i += 1
 
       new Vector[Double, size](arr)
@@ -299,7 +300,7 @@ object internal:
 
   class Vector[value, size <: Int](val data: Array[Any]^{}):
     override def equals(right: Any): Boolean = right.asMatchable match
-      case that: Vector[?, ?] => data.readable.sameElements(that.data.readable)
+      case that: Vector[?, ?] => Array.same(data, that.data)
       case _                  => false
 
     override def hashCode: Int =
@@ -309,9 +310,9 @@ object internal:
       var index = 0
 
       while index < data.length do
-        hash = scala.util.hashing.MurmurHash3.mix(hash, data.readable(index).##)
+        hash = scala.util.hashing.MurmurHash3.mix(hash, data.readUnchecked(index).##)
         index += 1
 
       scala.util.hashing.MurmurHash3.finalizeHash(hash, data.length)
 
-    override def toString: String = data.readable.mkString("Vector(", ", ", ")")
+    override def toString: String = data.stdlib.mkString("Vector(", ", ", ")")

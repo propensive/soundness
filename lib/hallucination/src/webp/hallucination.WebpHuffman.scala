@@ -205,7 +205,7 @@ private[hallucination] final class WebpHuffman
   def readSymbol(reader: WebpBitReader^)(using Tactic[Raster.Error]): Int =
     if single >= 0 then single else
       val value = reader.peekFull.toInt & 0xffff
-      val entry = primaryTable.readable(value & tableMask)
+      val entry = primaryTable.readUnchecked(value & tableMask)
 
       if (entry >>> 12) <= WebpHuffman.MaxTableBits then
         reader.consume(entry >>> 12)
@@ -214,7 +214,7 @@ private[hallucination] final class WebpHuffman
         val length = entry >>> 12
         val mask = (1 << (length - WebpHuffman.MaxTableBits)) - 1
         val secondaryIndex = (entry & 0xfff) + ((value >>> WebpHuffman.MaxTableBits) & mask)
-        val secondaryEntry = secondaryTable.readable(secondaryIndex)
+        val secondaryEntry = secondaryTable.readUnchecked(secondaryIndex)
         reader.consume(secondaryEntry & 0xf)
         secondaryEntry >>> 4
 
@@ -222,6 +222,6 @@ private[hallucination] final class WebpHuffman
   def peekSymbol(reader: WebpBitReader^): Optional[(Int, Int)] =
     if single >= 0 then (0, single) else
       val value = reader.peekFull.toInt & 0xffff
-      val entry = primaryTable.readable(value & tableMask)
+      val entry = primaryTable.readUnchecked(value & tableMask)
 
       if (entry >>> 12) <= WebpHuffman.MaxTableBits then (entry >>> 12, entry & 0xfff) else Unset

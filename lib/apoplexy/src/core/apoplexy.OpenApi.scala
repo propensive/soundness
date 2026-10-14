@@ -361,7 +361,7 @@ object OpenApi:
       val entries = node.asInstanceOf[Array[Any]]
       val size = node.objectSize
 
-      def key(index: Int): String = (entries.readable(index*2): Matchable) match
+      def key(index: Int): String = (entries.readUnchecked(index*2): Matchable) match
         case string: String   => string
         case long: Long       => long.toString
         case double: Double   => double.toString

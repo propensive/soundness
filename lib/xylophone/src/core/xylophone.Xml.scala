@@ -616,7 +616,7 @@ object Xml extends Tag.Container
         type Form = Xml
 
         private def childOf(entry: Element, label: BaseText): Xml =
-          val found = entry.children.readable.find:
+          val found = entry.children.stdlib.find:
             case element: Element => element.label == label
             case _                => false
 
@@ -1632,7 +1632,7 @@ object Xml extends Tag.Container
                   // Every occurrence of a repeatable field accumulates, in
                   // document order — the AST derivation's gather-all
                   // semantics.
-                  val buffer = values.readable(found) match
+                  val buffer = values.readUnchecked(found) match
                     case buffer: scm.ListBuffer[?] => buffer.asInstanceOf[scm.ListBuffer[Any]]
 
                     case _ =>
@@ -1651,7 +1651,7 @@ object Xml extends Tag.Container
                   // Unknown children are skipped, and a duplicate child keeps
                   // the first occurrence — the AST derivation's `HashMap`
                   // inserts only when the label is not yet present.
-                  if !(values.readable(found).asInstanceOf[AnyRef] eq AbsentSlot)
+                  if !(values.readUnchecked(found).asInstanceOf[AnyRef] eq AbsentSlot)
                   then reader.skipElement()
                   else values(found) =
                     if focused then
@@ -1668,7 +1668,7 @@ object Xml extends Tag.Container
                 // A repeatable field never consults the declared default:
                 // zero occurrences build the empty collection, exactly as
                 // the AST derivation decodes an empty synthetic fragment.
-                val elements: List[Any] = values.readable(index) match
+                val elements: List[Any] = values.readUnchecked(index) match
                   case buffer: scm.ListBuffer[?] => buffer.to(List)
                   case _                         => Nil
 
@@ -1680,7 +1680,7 @@ object Xml extends Tag.Container
                     gathering.gathered(elements)
 
               case _ =>
-                if values.readable(index).asInstanceOf[AnyRef] eq AbsentSlot then
+                if values.readUnchecked(index).asInstanceOf[AnyRef] eq AbsentSlot then
                   val declared = entries.readUnchecked(index)(2).asInstanceOf[Optional[Any]]
 
                   values(index) =
@@ -2793,15 +2793,15 @@ object Xml extends Tag.Container
   // slice extracted at a descriptor boundary is itself a valid
   // `PositionIndex`. See `XmlParser` (tracking mode) for the layout and
   // `Xml.Locator#walk` for the navigation algorithm.
-  // Represented as the stdlib's immutable array (pure by construction): the frozen
-  // `Array[Int]^{}` form makes every `PositionIndex`-holding field carry a fresh `any.rd`.
-  opaque type PositionIndex = scala.IArray[Int]
+  // The frozen `Array[Int]^{}` itself: pure under `-Zfrozen-pure`, which classifies an opaque
+  // alias over a frozen array as deriving from no capability class.
+  opaque type PositionIndex = Array[Int]^{}
 
   object PositionIndex:
-    private[xylophone] def apply(data: Array[Int]^{}): PositionIndex = data.readable
+    private[xylophone] def apply(data: Array[Int]^{}): PositionIndex = data
 
   extension (positionIndex: PositionIndex)
-    private[xylophone] def ints: Array[Int]^{} = Array.frozen(positionIndex)
+    private[xylophone] def ints: Array[Int]^{} = positionIndex
 
   // Focus value tracked by Xylophone's path-aware decoders / encoders.
   // `path` is the XPath to the current node; `position` is the source
@@ -5435,7 +5435,7 @@ object Xml extends Tag.Container
       val scope:      Scope = xylophone.internal.Scope.empty )
   extends Node, Topical, Transportive:
     override def toString(): String =
-      s"<$label>${children.readable.mkString}</$label>"
+      s"<$label>${children.stdlib.mkString}</$label>"
 
     // The bindings in force at this element: its scope, extended by any declarations among its
     // own attributes — which are all a hand-built element has

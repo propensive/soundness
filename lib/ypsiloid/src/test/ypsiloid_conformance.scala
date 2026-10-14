@@ -326,15 +326,15 @@ object Conformance:
 
     case Yaml.Ast.Sequence(items) =>
       val converted: Array[Any] =
-        Array.from(items.readable.map(item => Json.unseal(yamlAstToJson(item)).asInstanceOf[Any]))
+        Array.from(items.stdlib.map(item => Json.unseal(yamlAstToJson(item)).asInstanceOf[Any]))
       Json.ast(Json.Ast.arr(converted))
 
     case Yaml.Ast.Mapping(entries) =>
       val pairs = entries.sweep:
         case (Yaml.Ast.Str(s), v) => (s.s, Json.unseal(yamlAstToJson(v)))
 
-      val keys: Array[String] = Array.from(pairs.readable.map(_._1))
-      val values: Array[Any] = Array.from(pairs.readable.map(_._2.asInstanceOf[Any]))
+      val keys: Array[String] = Array.from(pairs.stdlib.map(_._1))
+      val values: Array[Any] = Array.from(pairs.stdlib.map(_._2.asInstanceOf[Any]))
       Json.ast(Json.Ast.obj(keys, values))
 
   private def jsonString(json: Json): String =
@@ -365,9 +365,9 @@ object Conformance:
       // count is even). Objects are rendered with sorted keys so the
       // comparison is independent of source order, which JSON treats
       // as insignificant.
-      // The read-only stdlib view: `IArray`'s member subscript serves the parity-indexed
+      // The read-only stdlib view: `ArraySeq`'s member subscript serves the parity-indexed
       // reads below, which are bounded by `n` on both sides.
-      val arr = items.asInstanceOf[Array[Any]].readable
+      val arr = items.asInstanceOf[Array[Any]].stdlib
       val n = arr.length
       if (n & 1) == 0 then
         val pairs = (0 until n/2).map: i =>

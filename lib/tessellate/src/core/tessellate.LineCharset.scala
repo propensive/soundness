@@ -50,4 +50,4 @@ enum LineCharset:
       left:   BoxLine = BoxLine.Blank )
   :   Char =
 
-    this().readable(left.ordinal + bottom.ordinal*4 + right.ordinal*16 + top.ordinal*64)
+    this().readUnchecked(left.ordinal + bottom.ordinal*4 + right.ordinal*16 + top.ordinal*64)

@@ -49,7 +49,11 @@ object Prependable:
 
   given frozenArray: [element: scala.reflect.ClassTag] => (complexity: Dysasymptotic.LinearSize)
   =>  (Array[element]^{}) is Prependable by element =
-    (array, element) => Array.frozen(array.readable.prepended(element))
+    (array, element) =>
+      val result: Array[element]^ = Array.allocate[element](array.length + 1)
+      result(0) = element
+      result.place(array, 1)
+      Array.freeze(result)
 
 trait Prependable extends Typeclass.Pure, Operable:
   def prepend(self: Self, element: Operand): Self

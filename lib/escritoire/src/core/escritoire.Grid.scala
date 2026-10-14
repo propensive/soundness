@@ -71,7 +71,7 @@ object Grid:
     val midEdge = Textual(t"${style.charset(top = style.innerLines, bottom = style.innerLines)}")
 
     (0 until row.height).map: lineNumber =>
-      widths.readable.indices.map: index =>
+      widths.stdlib.indices.map: index =>
         val cell = row(index)
 
         val offset = cell.verticalAlign match
@@ -104,7 +104,7 @@ object Grid:
 
     val width = widths.total + style.cost(widths.length)
 
-    def joints: sci.BitSet = widths.readable.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)
+    def joints: sci.BitSet = widths.stdlib.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)
 
     val ascenders = if above then joints else sci.BitSet()
     val descenders = if below then joints else sci.BitSet()

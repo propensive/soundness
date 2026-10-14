@@ -789,21 +789,21 @@ object internal:
     inline def apply(inline byte: Byte): B64 = byte.toLong
 
     def apply(bytes: Array[Byte]^{}, offset: Int = 0): B64 =
-      var b64: Long = (bytes.readable(offset) & 0xFF).toLong
+      var b64: Long = (bytes.readUnchecked(offset) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes.readable(offset + 1) & 0xFF).toLong
+      b64 |= (bytes.readUnchecked(offset + 1) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes.readable(offset + 2) & 0xFF).toLong
+      b64 |= (bytes.readUnchecked(offset + 2) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes.readable(offset + 3) & 0xFF).toLong
+      b64 |= (bytes.readUnchecked(offset + 3) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes.readable(offset + 4) & 0xFF).toLong
+      b64 |= (bytes.readUnchecked(offset + 4) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes.readable(offset + 5) & 0xFF).toLong
+      b64 |= (bytes.readUnchecked(offset + 5) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes.readable(offset + 6) & 0xFF).toLong
+      b64 |= (bytes.readUnchecked(offset + 6) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes.readable(offset + 7) & 0xFF).toLong
+      b64 |= (bytes.readUnchecked(offset + 7) & 0xFF).toLong
 
       b64
 
@@ -819,13 +819,13 @@ object internal:
     inline def apply(inline byte: Byte): B32 = byte.toInt
 
     def apply(bytes: Array[Byte]^{}, offset: Int = 0): B32 =
-      var b32: Int = (bytes.readable(offset) & 0xFF)
+      var b32: Int = (bytes.readUnchecked(offset) & 0xFF)
       b32 <<= 8
-      b32 |= (bytes.readable(offset + 1) & 0xFF)
+      b32 |= (bytes.readUnchecked(offset + 1) & 0xFF)
       b32 <<= 8
-      b32 |= (bytes.readable(offset + 2) & 0xFF)
+      b32 |= (bytes.readUnchecked(offset + 2) & 0xFF)
       b32 <<= 8
-      b32 |= (bytes.readable(offset + 3) & 0xFF)
+      b32 |= (bytes.readUnchecked(offset + 3) & 0xFF)
 
       b32
 
@@ -843,9 +843,9 @@ object internal:
     inline def apply(inline byte: Byte): B16 = byte.toShort
 
     def apply(bytes: Array[Byte]^{}, offset: Int = 0): B16 =
-      var b16: Int = (bytes.readable(offset) & 0xFF)
+      var b16: Int = (bytes.readUnchecked(offset) & 0xFF)
       b16 <<= 8
-      b16 |= (bytes.readable(offset + 1) & 0xFF)
+      b16 |= (bytes.readUnchecked(offset + 1) & 0xFF)
 
       b16.toShort
 

@@ -81,7 +81,7 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
       val file: Path on Linux = out/"Generated$$Code$$From$$Quoted.class"
       val code: Quotes ?=> Expr[Unit] = '{def _code(): Unit = $code0}
       staging.run(code)
-      val classfile: Classfile = new Classfile(file.read[Data].readable)
+      val classfile: Classfile = new Classfile(file.read[Data])
       classfile.methods.seek(_.name == t"_code$$1").let(_.bytecode)
       . lay(abort(Bytecode.Error(Bytecode.Error.Reason.ClassfileUnreadable)))(_.embed(codepoint))
 

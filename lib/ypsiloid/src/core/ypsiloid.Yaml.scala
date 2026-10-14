@@ -469,15 +469,15 @@ object Yaml extends Yaml2, Dynamic:
   // stored relative to the start of the containing descriptor, so any slice
   // taken at a descriptor boundary is itself a valid `PositionIndex` —
   // mirrors `jacinta.Json.PositionIndex`.
-  // Represented as the stdlib's immutable array (pure by construction): the frozen
-  // `Array[Int]^{}` form makes every `PositionIndex`-holding field carry a fresh `any.rd`.
-  opaque type PositionIndex = scala.IArray[Int]
+  // The frozen `Array[Int]^{}` itself: pure under `-Zfrozen-pure`, which classifies an opaque
+  // alias over a frozen array as deriving from no capability class.
+  opaque type PositionIndex = Array[Int]^{}
 
   object PositionIndex:
-    private[ypsiloid] def apply(data: Array[Int]^{}): PositionIndex = data.readable
+    private[ypsiloid] def apply(data: Array[Int]^{}): PositionIndex = data
 
   extension (positionIndex: PositionIndex)
-    private[ypsiloid] def ints: Array[Int]^{} = Array.frozen(positionIndex)
+    private[ypsiloid] def ints: Array[Int]^{} = positionIndex
 
   // The focus carried by `Yaml#as[T]` — a YAML-pointer path plus an
   // optional source position. The position is populated lazily by
@@ -1071,15 +1071,15 @@ object Yaml extends Yaml2, Dynamic:
       inline def arrayLength: Int = Yaml.Ast.sequenceLength(yaml.asInstanceOf[Array[Any]^{}])
 
       inline def arrayElement(index: Int): Yaml.Ast =
-        yaml.asInstanceOf[Array[Yaml.Ast]^{}].readable(index)
+        yaml.asInstanceOf[Array[Yaml.Ast]^{}].readUnchecked(index)
 
       inline def objectSize: Int = yaml.asInstanceOf[Array[Any]^{}].length/2
 
       inline def objectKey(index: Int): String =
-        yaml.asInstanceOf[Array[Any]^{}].readable(index*2).asInstanceOf[String]
+        yaml.asInstanceOf[Array[Any]^{}].readUnchecked(index*2).asInstanceOf[String]
 
       inline def objectValue(index: Int): Yaml.Ast =
-        yaml.asInstanceOf[Array[Any]^{}].readable(index*2 + 1).asInstanceOf[Yaml.Ast]
+        yaml.asInstanceOf[Array[Any]^{}].readUnchecked(index*2 + 1).asInstanceOf[Yaml.Ast]
 
       // Linear scan for a key — returns the pair-indexed position (i.e.
       // `objectKey(result)` retrieves the key, `objectValue(result)` the

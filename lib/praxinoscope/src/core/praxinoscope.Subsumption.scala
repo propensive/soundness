@@ -53,7 +53,7 @@ object Subsumption:
   // consumed. Word boundaries are context-dependent in a way this analysis does not model, so
   // programs containing them are rejected as `Unverifiable` upstream.
   private class Analysis(program: Program):
-    val ops: scala.IArray[Program.Op] = program.ops
+    val ops: Array[Program.Op] = program.ops
 
     private def traverse(pcs: List[Int], first: Boolean, ending: Boolean): (List[Int], Boolean) =
       val visited = new scala.Array[Boolean](ops.length)
@@ -68,7 +68,7 @@ object Subsumption:
           if !visited(pc) then
             visited(pc) = true
 
-            ops(pc) match
+            ops.readUnchecked(pc) match
               case Program.Op.Jump(target)        => stack = target :: stack
               case Program.Op.Split(left, right)  => stack = left :: right :: stack
               case Program.Op.Save(_, next)       => stack = next :: stack
@@ -95,23 +95,23 @@ object Subsumption:
       var successors: List[Int] = Nil
 
       symbolPcs.each: pc =>
-        ops(pc).absolve match
+        ops.readUnchecked(pc).absolve match
           case Program.Op.Symbol(bounds, next) =>
             if within(bounds, symbol) then successors = next :: successors
 
       successors
 
-    def bounds(pc: Int): scala.IArray[Int] = ops(pc).absolve match
+    def bounds(pc: Int): Array[Int] = ops.readUnchecked(pc).absolve match
       case Program.Op.Symbol(bounds, _) => bounds
 
   private def canonical(pcs: List[Int]): List[Int] = pcs.distinct.sort
 
-  private def within(bounds: scala.IArray[Int], symbol: Int): Boolean =
+  private def within(bounds: Array[Int], symbol: Int): Boolean =
     var index = 0
     var found = false
 
     while !found && index < bounds.length do
-      found = symbol >= bounds(index) && symbol <= bounds(index + 1)
+      found = symbol >= bounds.readUnchecked(index) && symbol <= bounds.readUnchecked(index + 1)
       index += 2
 
     found
@@ -120,7 +120,7 @@ object Subsumption:
     var index = 0
 
     while index < program.ops.length do
-      program.ops(index) match
+      program.ops.readUnchecked(index) match
         // Word and line boundaries are context-dependent in a way this analysis does not
         // model, so a program containing one cannot be decided either way.
         case Program.Op.Test
@@ -143,13 +143,14 @@ object Subsumption:
       var index = 0
 
       while index < program.ops.length do
-        program.ops(index) match
+        program.ops.readUnchecked(index) match
           case Program.Op.Symbol(bounds, _) =>
             var span = 0
 
             while span < bounds.length do
-              cuts += bounds(span)
-              if bounds(span + 1) < Ranges.maxSymbol then cuts += bounds(span + 1) + 1
+              cuts += bounds.readUnchecked(span)
+              val upper = bounds.readUnchecked(span + 1)
+              if upper < Ranges.maxSymbol then cuts += upper + 1
               span += 2
 
           case _ =>

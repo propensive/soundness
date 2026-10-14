@@ -129,15 +129,15 @@ object Alphabet:
                   val b0 = bytes(sourceOffset + consumed) & 0xff
                   val b1 = bytes(sourceOffset + consumed + 1) & 0xff
                   val b2 = bytes(sourceOffset + consumed + 2) & 0xff
-                  chars(targetOffset + produced) = table.readable(b0 >>> 2)
+                  chars(targetOffset + produced) = table.readUnchecked(b0 >>> 2)
 
                   chars(targetOffset + produced + 1) =
-                    table.readable(((b0 & 0x3) << 4) | (b1 >>> 4))
+                    table.readUnchecked(((b0 & 0x3) << 4) | (b1 >>> 4))
 
                   chars(targetOffset + produced + 2) =
-                    table.readable(((b1 & 0xf) << 2) | (b2 >>> 6))
+                    table.readUnchecked(((b1 & 0xf) << 2) | (b2 >>> 6))
 
-                  chars(targetOffset + produced + 3) = table.readable(b2 & 0x3f)
+                  chars(targetOffset + produced + 3) = table.readUnchecked(b2 & 0x3f)
                   consumed += 3
                   produced += 4
                   written += 4
@@ -145,7 +145,7 @@ object Alphabet:
               if accumulated >= base then
                 if produced < targetSpace then
                   chars(targetOffset + produced) =
-                    table.readable((accumulator >>> (accumulated - base)) & mask)
+                    table.readUnchecked((accumulator >>> (accumulated - base)) & mask)
 
                   produced += 1
                   accumulated -= base
@@ -324,7 +324,7 @@ extends caps.Pure:
     else abort(Serialization.Error(position, char))
 
   lazy val inverse: Map[Char, Int] =
-    tolerance + Map.from(chars.chars.readable.zipWithIndex)
+    tolerance + Map.from(chars.chars.stdlib.zipWithIndex)
 
   // Dense decode table, indexed directly by character code (-1 = invalid), so the
   // per-character hot path avoids boxed `Map` lookups.

@@ -703,12 +703,13 @@ object Cbor extends Cbor1, Dynamic:
       inline def elements: Int = Cbor.Ast.length(cbor)
       inline def entries: Int = Cbor.Ast.size(cbor)
 
-      def element(index: Int): Cbor.Ast = cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index)
+      def element(index: Int): Cbor.Ast = cbor.asInstanceOf[Array[Cbor.Ast]^{}].readUnchecked(index)
 
-      inline def key(index: Int): Cbor.Ast = cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index*2)
+      inline def key(index: Int): Cbor.Ast =
+        cbor.asInstanceOf[Array[Cbor.Ast]^{}].readUnchecked(index*2)
 
       inline def value(index: Int): Cbor.Ast =
-        cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index*2 + 1)
+        cbor.asInstanceOf[Array[Cbor.Ast]^{}].readUnchecked(index*2 + 1)
 
       def index(key: String): Int =
         val array = cbor.asInstanceOf[Array[Any]^{}]
@@ -750,7 +751,7 @@ object Cbor extends Cbor1, Dynamic:
           val full = cbor.asInstanceOf[Array[Cbor.Ast]^{}]
           val count = elements
 
-          if count == full.length then full else Array.tabulate(count)(full.readable(_))
+          if count == full.length then full else Array.tabulate(count)(full.readUnchecked(_))
         else
           expected(Primitive.Array)
           Array.empty[Cbor.Ast]

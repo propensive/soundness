@@ -134,7 +134,7 @@ object ClassSurface:
 
     . or(Nil)
 
-  def apply(data: scala.IArray[Byte]): ClassSurface =
+  def apply(data: Data): ClassSurface =
     val model = jlc.ClassFile.of().nn.parse(data.asInstanceOf[scala.Array[Byte]]).nn
 
     val fields = model.fields.nn.to[List].map: field =>

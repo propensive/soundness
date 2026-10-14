@@ -166,7 +166,7 @@ object Matrix:
 
     def multiply(left: left, right: scalar): Matrix[result, rows, columns] =
       val elements2 = Array.build[result](left.elements.length): array =>
-        left.elements.readable.indices.each: index =>
+        left.elements.stdlib.indices.each: index =>
           array(index) = left.elements.readUnchecked(index)*right
 
       new Matrix(left.rows, left.columns, elements2)
@@ -182,7 +182,7 @@ object Matrix:
 
     def divide(left: left, right: scalar): Matrix[result, rows, columns] =
       val elements2 = Array.build[result](left.elements.length): array =>
-        left.elements.readable.indices.each: index =>
+        left.elements.stdlib.indices.each: index =>
           array(index) = left.elements.readUnchecked(index)/right
 
       new Matrix(left.rows, left.columns, elements2)
@@ -888,7 +888,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     // The cast fixes the wildcard element type only: `sameElements` compares via `equals`,
     // which is safe across element types.
     case matrix: Matrix[?, ?, ?] =>
-      elements.readable.sameElements(matrix.elements.asInstanceOf[Array[element]^{}].readable)
+      elements.stdlib.sameElements(matrix.elements.asInstanceOf[Array[element]^{}].stdlib)
 
     case _                       => false
 

@@ -117,10 +117,10 @@ private[hallucination] object WebpCodec:
   private def fourcc(data: Data, offset: Int): String =
     String
       ( scala.Array
-          ( data.readable(offset),
-            data.readable(offset + 1),
-            data.readable(offset + 2),
-            data.readable(offset + 3) ),
+          ( data.readUnchecked(offset),
+            data.readUnchecked(offset + 1),
+            data.readUnchecked(offset + 2),
+            data.readUnchecked(offset + 3) ),
         "UTF-8" )
 
     . nn

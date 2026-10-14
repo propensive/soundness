@@ -67,7 +67,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
       var done = false
 
       while !done && i < bytes.length && shift < 64 do
-        val b = bytes.readable(i) & 0xff
+        val b = bytes.stdlib(i) & 0xff
         value |= (b & 0x7fL) << shift
         shift += 7
         i += 1
@@ -118,7 +118,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
     case node: Tel.Element.Node =>
       var result: Optional[Text] = Unset
 
-      node.children.readable.foreach: child =>
+      node.children.stdlib.foreach: child =>
         if result.absent then result = firstValue(child)
 
       result
@@ -130,7 +130,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
       test(m"C1: encoding is deterministic"):
         (DecimalVarint.encode(t"300"), DecimalVarint.encode(t"300")).absolve match
           case (Tel.Codec.Encoded.Bytes(a), Tel.Codec.Encoded.Bytes(b)) =>
-            a.readable.toSeq == b.readable.toSeq
+            a.stdlib == b.stdlib
       . assert(_ == true)
 
       test(m"C2: decode inverts encode over accepted texts"):
@@ -147,7 +147,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
             val bytes = Varint.encode(n)
             DecimalVarint.decode(bytes).absolve match
               case Tel.Codec.Decoded.Value(text) => DecimalVarint.encode(text).absolve match
-                case Tel.Codec.Encoded.Bytes(re) => re.readable.toSeq == bytes.readable.toSeq
+                case Tel.Codec.Encoded.Bytes(re) => re.stdlib == bytes.stdlib
       . assert(_ == true)
 
       test(m"non-canonical texts are rejected"):
@@ -200,8 +200,8 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
         val schema = schemaOf(amountSchema)
         val element = Tel.Type.assign(t"tel 1.0\n\namount 300\n".read[Tel], schema)
         // child count 1, keyword index 0, byte length 2, varint(300) = AC 02.
-        Bintel.encode(element, schema, bindings).readable.toSeq
-      . assert(_ == bytesOf(0x01, 0x00, 0x02, 0xAC, 0x02).readable.toSeq)
+        Bintel.encode(element, schema, bindings).stdlib
+      . assert(_ == bytesOf(0x01, 0x00, 0x02, 0xAC, 0x02).stdlib)
 
       test(m"atom-derived and default-derived scalars pass through the codec"):
         val schema = schemaOf(Text("""|tel 1.0
@@ -225,16 +225,16 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
                                   |""".stripMargin))
 
         val element = Tel.Type.assign(t"tel 1.0\n\nitem 300\n".read[Tel], schema)
-        Bintel.encode(element, schema, bindings).readable.toSeq
+        Bintel.encode(element, schema, bindings).stdlib
       . assert(_ == bytesOf(0x01, 0x00, 0x02, 0x00, 0x02, 0xAC, 0x02, 0x01, 0x01, 0x07)
-          . readable.toSeq)
+          . stdlib.toSeq)
 
       test(m"the value hash is taken over the codec bytes"):
         val schema = schemaOf(amountSchema)
         val element = Tel.Type.assign(t"tel 1.0\n\namount 300\n".read[Tel], schema)
         val digest = Blake3.hashOf(Bintel.encode(element, schema, bindings), 32)
         val expected = Blake3.hashOf(bytesOf(0x01, 0x00, 0x02, 0xAC, 0x02), 32)
-        digest.readable.toSeq == expected.readable.toSeq
+        digest.stdlib == expected.stdlib
       . assert(_ == true)
 
       test(m"encoding a codec-rejected value raises"):
@@ -294,7 +294,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
         val body = schemaDoc.bintel(Tels.Axiom.tels)
         val element = Bintel.decode(body, Tels.Axiom.tels)
         val reconstructed = element.as[Tels]
-        reconstructed.scalars.readable.find(_.name == t"Amount").map(_.encoding).getOrElse(Unset)
+        reconstructed.scalars.stdlib.find(_.name == t"Amount").map(_.encoding).getOrElse(Unset)
       . assert(_ == t"decimal-varint")
 
     suite(m"Staged parser (Bintel.Parsable) encoded scalars"):
@@ -306,14 +306,14 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
         Bintel.encode(element, schema, bindings)
 
       test(m"the derived schema carries the declared encoding"):
-        Tels.tels[Payment](t"payment").document.members.readable.head.absolve match
+        Tels.tels[Payment](t"payment").document.members.stdlib.head.absolve match
           case f: Tels.Field => f.fieldType.absolve match
             case s: Tels.Scalar => s.encoding
       . assert(_ == t"decimal-varint")
 
       test(m"an encoded scalar is written as codec bytes under the derived schema"):
-        paymentBytes.readable.toSeq
-      . assert(_ == bytesOf(0x01, 0x00, 0x02, 0xAC, 0x02).readable.toSeq)
+        paymentBytes.stdlib
+      . assert(_ == bytesOf(0x01, 0x00, 0x02, 0xAC, 0x02).stdlib)
 
       test(m"the generated parser decodes an encoded scalar through the codec"):
         Bintel.parse[Payment](paymentBytes, bindings).amount.value

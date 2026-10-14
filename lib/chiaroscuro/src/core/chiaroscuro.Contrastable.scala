@@ -222,7 +222,7 @@ object Contrastable:
     if left == right then Juxtaposition.Same(leftDebug) else
       val comparison =
         Array.from:
-          dissonance.diff(Sequence.from(left.readable), Sequence.from(right.readable))
+          dissonance.diff(left.to[Sequence], right.to[Sequence])
           . rdiff(_ == _, 10)
           . changes
           . map:

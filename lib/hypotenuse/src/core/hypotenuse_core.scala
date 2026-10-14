@@ -510,7 +510,7 @@ extension (shortObject: Short.type)
 
   @unexported
   def apply(bytes: Array[Byte]^{}): Short =
-    (((bytes.readable(0) & 0xFF) << 8) | (bytes.readable(1) & 0xff)).toShort
+    (((bytes.readUnchecked(0) & 0xFF) << 8) | (bytes.readUnchecked(1) & 0xff)).toShort
 
 extension (intObject: Int.type)
   @unexported
@@ -518,13 +518,13 @@ extension (intObject: Int.type)
 
   @unexported
   def apply(bytes: Array[Byte]^{}): Int =
-    var int: Int = (bytes.readable(0) & 0xFF).toInt
+    var int: Int = (bytes.readUnchecked(0) & 0xFF).toInt
     int <<= 8
-    int |= (bytes.readable(1) & 0xFF).toInt
+    int |= (bytes.readUnchecked(1) & 0xFF).toInt
     int <<= 8
-    int |= (bytes.readable(2) & 0xFF).toInt
+    int |= (bytes.readUnchecked(2) & 0xFF).toInt
     int <<= 8
-    int |= (bytes.readable(3) & 0xFF).toInt
+    int |= (bytes.readUnchecked(3) & 0xFF).toInt
 
     int
 
@@ -534,21 +534,21 @@ extension (longObject: Long.type)
 
   @unexported
   def apply(bytes: Array[Byte]^{}): Long =
-    var long: Long = (bytes.readable(0) & 0xFF).toLong
+    var long: Long = (bytes.readUnchecked(0) & 0xFF).toLong
     long <<= 8
-    long |= (bytes.readable(1) & 0xFF).toLong
+    long |= (bytes.readUnchecked(1) & 0xFF).toLong
     long <<= 8
-    long |= (bytes.readable(2) & 0xFF).toLong
+    long |= (bytes.readUnchecked(2) & 0xFF).toLong
     long <<= 8
-    long |= (bytes.readable(3) & 0xFF).toLong
+    long |= (bytes.readUnchecked(3) & 0xFF).toLong
     long <<= 8
-    long |= (bytes.readable(4) & 0xFF).toLong
+    long |= (bytes.readUnchecked(4) & 0xFF).toLong
     long <<= 8
-    long |= (bytes.readable(5) & 0xFF).toLong
+    long |= (bytes.readUnchecked(5) & 0xFF).toLong
     long <<= 8
-    long |= (bytes.readable(6) & 0xFF).toLong
+    long |= (bytes.readUnchecked(6) & 0xFF).toLong
     long <<= 8
-    long |= (bytes.readable(7) & 0xFF).toLong
+    long |= (bytes.readUnchecked(7) & 0xFF).toLong
 
     long
 

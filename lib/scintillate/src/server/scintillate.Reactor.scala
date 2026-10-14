@@ -493,12 +493,12 @@ final class Reactor
   // the flag is read by every lane thread and written once by `stop()`.
   private val running: Atomic[Boolean] = Atomic(true)
 
-  private val fleet: scala.IArray[Lane] =
-    scala.IArray.tabulate(count): index => Lane(jnc.Selector.open().nn)
+  private val fleet: Array[Lane]^{} =
+    Array.tabulate(count): index => Lane(jnc.Selector.open().nn)
 
-  private val threads: scala.IArray[Thread] =
-    scala.IArray.tabulate(count): index =>
-      val lane = fleet(index)
+  private val threads: Array[Thread]^{} =
+    Array.tabulate(count): index =>
+      val lane = fleet.readUnchecked(index)
 
       // Daemon: the reactor must never pin a JVM whose main thread has ended (the
       // zio-http Netty wedge, avoided); `stop()` still joins for orderly shutdown.
@@ -516,7 +516,7 @@ final class Reactor
       while running() do
         try
           val channel = listener.accept().nn
-          fleet(next).adopt(channel)
+          fleet.readUnchecked(next).adopt(channel)
           next = (next + 1)%count
         catch case _: java.io.IOException => ()
 
@@ -529,12 +529,12 @@ final class Reactor
     var index = 0
 
     while index < count do
-      fleet(index).selector.wakeup()
+      fleet.readUnchecked(index).selector.wakeup()
       index += 1
 
     boss.join()
     index = 0
 
     while index < count do
-      threads(index).join()
+      threads.readUnchecked(index).join()
       index += 1

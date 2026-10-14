@@ -182,11 +182,11 @@ private[hallucination] final class JpegHuffmanDecoder extends caps.Mutable:
     if numBits < 16 then readBits(reader)
 
     val lookup = peekBits(JpegHuffman.LutBits)
-    val size = table.lutSize.readable(lookup)
+    val size = table.lutSize.readUnchecked(lookup)
 
     if size > 0 then
       consumeBits(size)
-      table.lutValue.readable(lookup)
+      table.lutValue.readUnchecked(lookup)
     else
       val code0 = peekBits(16)
       var index = JpegHuffman.LutBits
@@ -195,9 +195,9 @@ private[hallucination] final class JpegHuffmanDecoder extends caps.Mutable:
       while result == -1 && index < 16 do
         val code = code0 >> (15 - index)
 
-        if code <= table.maxcode.readable(index) then
+        if code <= table.maxcode.readUnchecked(index) then
           consumeBits(index + 1)
-          result = table.values.readable(code + table.delta.readable(index))
+          result = table.values.readUnchecked(code + table.delta.readUnchecked(index))
 
         index += 1
 
@@ -212,10 +212,10 @@ private[hallucination] final class JpegHuffmanDecoder extends caps.Mutable:
     if !table.hasAcLut then false else
       if numBits < JpegHuffman.LutBits then readBits(reader)
       val lookup = peekBits(JpegHuffman.LutBits)
-      val runSize = table.acRunSize.readable(lookup)
+      val runSize = table.acRunSize.readUnchecked(lookup)
 
       if runSize == 0 then false else
-        fastAcValue = table.acValue.readable(lookup)
+        fastAcValue = table.acValue.readUnchecked(lookup)
         fastAcRun = runSize >> 4
         consumeBits(runSize & 0x0f)
         true

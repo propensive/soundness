@@ -127,7 +127,7 @@ final class StdlibDag(val adjacency: scm.HashMap[Int, Set[Int]]):
     adjacency -= node
 
 object StdlibDag:
-  def apply(count: Int, from: scala.IArray[Int], to: scala.IArray[Int]): StdlibDag =
+  def apply(count: Int, from: Array[Int], to: Array[Int]): StdlibDag =
     val adjacency = scm.HashMap[Int, Set[Int]]()
     var index = 0
 

@@ -87,7 +87,7 @@ private[hallucination] object WebpTransform:
 
       while blockX < blockWidth do
         val blockIndex = (y >> sizeBits)*blockWidth + blockX
-        val mode = u(predictorData.readable(blockIndex*4 + 1))
+        val mode = u(predictorData.readUnchecked(blockIndex*4 + 1))
         val start = (y*width + ((blockX << sizeBits).max(1)))*4
         val end = (y*width + (((blockX + 1) << sizeBits).min(width)))*4
         dispatch(mode, data, start, end, stride)
@@ -255,9 +255,9 @@ private[hallucination] object WebpTransform:
 
       while x < width do
         val block = rowTransform + (x >> sizeBits)*4
-        val redToBlue = transformData.readable(block).toByte
-        val greenToBlue = transformData.readable(block + 1).toByte
-        val greenToRed = transformData.readable(block + 2).toByte
+        val redToBlue = transformData.readUnchecked(block).toByte
+        val greenToBlue = transformData.readUnchecked(block + 1).toByte
+        val greenToRed = transformData.readUnchecked(block + 2).toByte
         val pixel = (y*width + x)*4
         val green = data(pixel + 1).toByte
         val red = (u(data(pixel)) + colorDelta(greenToRed, green)) & 0xff

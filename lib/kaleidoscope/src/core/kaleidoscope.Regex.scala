@@ -81,15 +81,16 @@ object Regex:
         scanner.nextStart match
           case index: Int =>
             motif(regex).slots(text, Ordinal.zerary(index), false).lay(false): slots =>
-              scanner.nextStart = slots(0) + 1
-              scanner.matchEnd = slots(1)
+              scanner.nextStart = slots.readUnchecked(0) + 1
+              scanner.matchEnd = slots.readUnchecked(1)
               true
 
           case _ =>
             motif(regex).matches(text)
 
       def seek(regex: Regex, input: Text, start: Ordinal): Optional[Interval] =
-        motif(regex).slots(input, start, false).let: slots => Interval.zerary(slots(0), slots(1))
+        motif(regex).slots(input, start, false).let: slots =>
+          Interval.zerary(slots.readUnchecked(0), slots.readUnchecked(1))
 
       def search(regex: Regex, input: Text, start: Ordinal, overlap: Boolean): Chain[Interval] =
         val compiled = motif(regex)
@@ -101,8 +102,8 @@ object Regex:
         def recur(from: Int): Chain[Interval] =
           if from > input.s.length then Chain() else
             compiled.slots(input, Ordinal.zerary(from), false).lay(Chain()): slots =>
-              val next = if overlap then slots(0) + 1 else slots(1) + 1
-              Interval.zerary(slots(0), slots(1)) #:: recur(next)
+              val next = if overlap then slots.readUnchecked(0) + 1 else slots.readUnchecked(1) + 1
+              Interval.zerary(slots.readUnchecked(0), slots.readUnchecked(1)) #:: recur(next)
 
         recur(start.n0)
 
@@ -119,8 +120,8 @@ object Regex:
         found.let: slots =>
           scanner.nextStart match
             case started: Int =>
-              scanner.nextStart = slots(0) + 1
-              scanner.matchEnd = slots(1)
+              scanner.nextStart = slots.readUnchecked(0) + 1
+              scanner.matchEnd = slots.readUnchecked(1)
 
             case _ =>
               ()
@@ -134,8 +135,10 @@ object Regex:
             def recur(from: Int, results: List[Text]): List[Text] =
               if from > region.s.length then results.reverse else
                 sub.slots(region, Ordinal.zerary(from), false).lay(results.reverse): bounds =>
-                  val skip = if bounds(1) > bounds(0) then bounds(1) else bounds(1) + 1
-                  recur(skip, region.s.substring(bounds(0), bounds(1)).nn.tt :: results)
+                  val first = bounds.readUnchecked(0)
+                  val last = bounds.readUnchecked(1)
+                  val skip = if last > first then last else last + 1
+                  recur(skip, region.s.substring(first, last).nn.tt :: results)
 
             recur(0, Nil)
 
@@ -148,8 +151,8 @@ object Regex:
 
             (todo, indices) match
               case (group :: groups, index :: rest) =>
-                val first = slots(2*index)
-                val last = slots(2*index + 1)
+                val first = slots.readUnchecked(2*index)
+                val last = slots.readUnchecked(2*index + 1)
                 val matched = if first < 0 then "".tt else text.s.substring(first, last).nn.tt
                 val optional = group.quantifier == Regex.Quantifier.Between(0, 1)
 

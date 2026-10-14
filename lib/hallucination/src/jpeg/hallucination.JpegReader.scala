@@ -40,10 +40,9 @@ import anticipation.*
 // in the reference (image-rs/jpeg-decoder); since Hallucination decodes from a materialised
 // `Data`, a position cursor serves the same role. Reads past the end throw
 // `IndexOutOfBoundsException`, caught by `JpegCodec` and reported as a truncated image.
-// `data` is the stdlib immutable array, not the frozen `Data`: a frozen-array constructor
-// field would make the holder's `this` a read-only capability, blocking exclusive use of
-// its other state.
-private[hallucination] final class JpegReader(data: scala.IArray[Byte], start: Int)
+// The frozen `data` field is pure under `-Zfrozen-pure`, so it leaves the holder's `this`
+// exclusive.
+private[hallucination] final class JpegReader(data: Data, start: Int)
 extends caps.Mutable:
   private var pos: Int = start
 

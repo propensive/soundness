@@ -66,7 +66,7 @@ object AccrualTests extends Suite("dsv-accrual", m"Caesura multi-error accrual t
             accrual + (prior.let(_.column).or(t"#"), error) } )
     . protect(decode(dsv))
 
-  private def row(text: Text): Dsv = text.read[Sheet].rows.readable.head
+  private def row(text: Text): Dsv = text.read[Sheet].rows.stdlib.head
 
   def run(): Unit =
     suite(m"Single-error decoding (sanity)"):

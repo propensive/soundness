@@ -73,8 +73,8 @@ object Hyphenation:
     val parsed = TexPatterns.parseFile(content)
 
     apply
-      ( parsed.patterns.readable.toSeq,
-        parsed.exceptions.readable.toSeq,
+      ( parsed.patterns.stdlib,
+        parsed.exceptions.stdlib,
         parsed.leftMin,
         parsed.rightMin )
 
@@ -151,7 +151,7 @@ object Hyphenation:
         val lastBreak = length - (if rightMin > 1 then rightMin else 1)
 
         while p <= lastBreak do
-          if (scores.readable(p + 1) & 1) == 1 then
+          if (scores.readUnchecked(p + 1) & 1) == 1 then
             breaks(count) = p
             count += 1
 
@@ -177,11 +177,11 @@ object Hyphenation:
       scores:       scala.Array[Byte]^ )
   :   Unit =
 
-    val children = trie.children.readable
-    val values = trie.values.readable
-    val fail = trie.fail.readable
-    val dictLink = trie.dictLink.readable
-    val depth = trie.depth.readable
+    val children = trie.children
+    val values = trie.values
+    val fail = trie.fail
+    val dictLink = trie.dictLink
+    val depth = trie.depth
     val alpha = trie.alphabet.size
     var node = 0
     var j = 0
@@ -200,8 +200,8 @@ object Hyphenation:
 
       if sl < 0 then node = 0 else
         // Follow failure links until we find a node whose child slot is set.
-        while node != 0 && children(node*alpha + sl) < 0 do node = fail(node)
-        val next = children(node*alpha + sl)
+        while node != 0 && children.readUnchecked(node*alpha + sl) < 0 do node = fail.readUnchecked(node)
+        val next = children.readUnchecked(node*alpha + sl)
         if next >= 0 then node = next
 
         // Emit every value reachable via the dictionary suffix chain — these
@@ -212,12 +212,12 @@ object Hyphenation:
         var emit = node
 
         while emit > 0 do
-          val v = values(emit)
+          val v = values.readUnchecked(emit)
 
           if v != null then
-            mergePattern(scores, j - depth(emit) + 1, v.asInstanceOf[Array[Byte]^{}])
+            mergePattern(scores, j - depth.readUnchecked(emit) + 1, v.asInstanceOf[Array[Byte]^{}])
 
-          emit = dictLink(emit)
+          emit = dictLink.readUnchecked(emit)
 
       j += 1
 

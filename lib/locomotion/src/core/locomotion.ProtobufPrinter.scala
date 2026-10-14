@@ -103,7 +103,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
     val count = data.length
 
     if position + count <= buffer.length then
-      System.arraycopy(data.readable, 0, target, position, count)
+      System.arraycopy(Array.unsafeJvm(data), 0, target, position, count)
       position += count
     else rawOverflowing(data)
 
@@ -113,7 +113,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
       deliver.nn(data)
     else
       room(data.length)
-      System.arraycopy(data.readable, 0, target, position, data.length)
+      System.arraycopy(Array.unsafeJvm(data), 0, target, position, data.length)
       position += data.length
 
   // A length-delimited payload: its length prefix, then its bytes.

@@ -35,10 +35,10 @@ package hypotenuse
 import prepositional.*
 
 object Checkable:
-  // The cast fixes the invariant element type only: `sameElements` compares via `equals`,
+  // The cast fixes the invariant element type only: `Array.same` compares via `equals`,
   // which is safe across element types.
-  given iarray: [left, right] => (Array[left]^{}) is Checkable against (Array[right]^{}) =
-    (left, right) => left.readable.sameElements(right.asInstanceOf[Array[left]^{}].readable)
+  given frozenArray: [left, right] => (Array[left]^{}) is Checkable against (Array[right]^{}) =
+    (left, right) => Array.same(left, right.asInstanceOf[Array[left]^{}])
 
   given stream: [left, right] => (left is Checkable against right)
   =>  Chain[left] is Checkable against Chain[right] =

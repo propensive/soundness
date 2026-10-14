@@ -130,7 +130,7 @@ object Debuggee:
         safely:
           job.stdout().chunks.each: chunk =>
             if target.port == 0 && !announced.ready then
-              heard.append(chunk.readable.map(_.toChar).mkString)
+              heard.append(chunk.stdlib.map(_.toChar).mkString)
               Debuggee.announcement(heard.toString).let(announced.offer(_))
 
             console.out.put(chunk)

@@ -57,12 +57,12 @@ extends caps.Mutable:
 
   // Emits a Huffman-coded symbol.
   update def encode(symbol: Int, table: JpegEncodeTable): Unit =
-    writeBits(table.codeOf.readable(symbol), table.sizeOf.readable(symbol))
+    writeBits(table.codeOf.readUnchecked(symbol), table.sizeOf.readUnchecked(symbol))
 
   // Emits a Huffman-coded symbol followed by `size` raw magnitude bits.
   update def encodeValue(size: Int, symbol: Int, value: Int, table: JpegEncodeTable): Unit =
-    val combined = (table.codeOf.readable(symbol) << size) | (value & ((1 << size) - 1))
-    writeBits(combined, size + table.sizeOf.readable(symbol))
+    val combined = (table.codeOf.readUnchecked(symbol) << size) | (value & ((1 << size) - 1))
+    writeBits(combined, size + table.sizeOf.readUnchecked(symbol))
 
   // Pads the final partial byte with 1-bits, as the JPEG bitstream requires.
   update def flushBits(): Unit =

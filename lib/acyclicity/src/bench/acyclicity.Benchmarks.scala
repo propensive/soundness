@@ -86,7 +86,7 @@ object Benchmarks extends Suite("dag-bench", m"Acyclicity benchmarks"):
 
   // `from` depends on `to`, pairwise. Built once per (shape, size) and cached; the lookup is
   // inside the timed region, identical for every engine.
-  case class Edges(count: Int, from: scala.IArray[Int], to: scala.IArray[Int])
+  case class Edges(count: Int, from: Array[Int], to: Array[Int])
 
   private val datasets: scm.HashMap[(Int, Int), Edges] = scm.HashMap()
 
@@ -146,7 +146,7 @@ object Benchmarks extends Suite("dag-bench", m"Acyclicity benchmarks"):
 
       node += 1
 
-    Edges(size, scala.IArray.from(from), scala.IArray.from(to))
+    Edges(size, Array.from(from), Array.from(to))
 
   // The built graph of each engine, per (shape, size), so the query cells time the query. The
   // topology is exclusive and cannot be held here; its cells build inside the timed body, with
@@ -742,8 +742,8 @@ object Benchmarks extends Suite("dag-bench", m"Acyclicity benchmarks"):
 
     // The cycle the old `Dag.hasCycle` missed: x -> a, x -> b, b -> a, a -> c, c -> b, with
     // x = 0, a = 1, b = 2, c = 3.
-    val cycleFrom = scala.IArray(0, 0, 2, 1, 3)
-    val cycleTo = scala.IArray(1, 2, 1, 3, 2)
+    val cycleFrom = Array(0, 0, 2, 1, 3)
+    val cycleTo = Array(1, 2, 1, 3, 2)
     check("digraph: cycle")(Digraph(0 -> 1, 0 -> 2, 2 -> 1, 1 -> 3, 3 -> 2).cycle.present)
     check("mirrored: cycle")(MirroredDag(4, cycleFrom, cycleTo).cycle.isDefined)
     check("stdlib: cycle")(StdlibDag(4, cycleFrom, cycleTo).sorted.isEmpty)

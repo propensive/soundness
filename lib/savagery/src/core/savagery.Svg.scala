@@ -335,7 +335,7 @@ object Svg:
       Polyline(points.to(List), closed, idAttr(elem), styleAttr(elem), transformsAttr(elem))
 
     private def decodeLettering(elem: Xml.Element): Lettering =
-      val text: Text = elem.children.readable.toList.collect { case Xml.Text(text) => text }
+      val text: Text = elem.children.stdlib.toList.collect { case Xml.Text(text) => text }
         . to(List).join
 
       val anchor: Lettering.Anchor = elem.attributes(t"text-anchor") match
@@ -376,7 +376,7 @@ object Svg:
 
       val stops: List[Stop[Color in Srgb]] =
 
-        elem.children.readable.toList.collect:
+        elem.children.stdlib.toList.collect:
           case e: Xml.Element if e.label == t"stop" => decodeStop(e)
 
         . to(List)

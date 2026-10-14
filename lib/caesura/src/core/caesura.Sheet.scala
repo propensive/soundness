@@ -129,7 +129,7 @@ object Sheet:
     t"Sheet(format:${sheet.format.lay(t"○")(_.inspect)} ╱ columns:$columns ╱ rows:$rows)"
 
   given streamable: Dsv.Format => Sheet is Streamable by Text over Credit = sheet =>
-    Stream(sheet.rows.readable.iterator.map(_.show+t"\n"))
+    Stream(sheet.rows.stdlib.iterator.map(_.show+t"\n"))
 
   // Parse rows from a pull endpoint as a single-consumer iterator, one
   // block-credit refill per chunk. Each call builds a fresh parser over the
@@ -420,9 +420,9 @@ case class Sheet
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case dsv: Sheet =>
-      dsv.rows.readable.sameElements(rows.readable) && dsv.format == format &&
+      Array.same(dsv.rows, rows) && dsv.format == format &&
         columns.lay(dsv.columns.absent): columns =>
-          dsv.columns.lay(false): other => columns.readable.sameElements(other.readable)
+          dsv.columns.lay(false): other => Array.same(columns, other)
 
     case _ =>
       false

@@ -21,7 +21,7 @@ The two concrete forms are:
 
 - **Allocate → mutate → freeze**: a mutable intermediate structure is allocated,
   passed to the caller's lambda for population, then frozen into an immutable
-  result. Examples: `Data.build`, `IArray.build`, `Text.build`.
+  result. Examples: `Data.build`, `Array.scribe`, `Text.build`.
 - **Callback-driven assembly from source data**: the caller supplies a function
   that specifies how to extract or transform fields from an origin value.
   Examples: `Specification.build`, `Addressable.build`.

@@ -89,7 +89,7 @@ object CanonicalCbor:
     var index = 0
 
     while index < n do
-      val diff = (a.readable(index) & 0xFF) - (b.readable(index) & 0xFF)
+      val diff = (a.readUnchecked(index) & 0xFF) - (b.readUnchecked(index) & 0xFF)
       if diff != 0 then return diff
       index += 1
 

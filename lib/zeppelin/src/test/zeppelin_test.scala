@@ -510,7 +510,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
         out.write(Array.unsafeJvm(inner))
         out.close()
         val zip = Zipfile.read(sfx)
-        (zip.prefix.lay(List())(_.readable.to(List)), zip.entries.map(_.read[Text]))
+        (zip.prefix.lay(List())(_.stdlib.to(List)), zip.entries.map(_.read[Text]))
       . assert(_ == (t"STUB-PREFIX-DATA".in[Data].to[List], List(t"data", t"data")))
 
     suite(m"Header fidelity"):

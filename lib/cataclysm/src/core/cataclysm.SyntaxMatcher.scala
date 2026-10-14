@@ -57,7 +57,7 @@ object SyntaxMatcher:
   // time (`CssData`).
   private lazy val rawComposites: Dictionary[Text] =
     val pairs = List.tabulate(CssData.syntaxNames.length): index =>
-      (CssData.syntaxNames(index).tt, CssData.syntaxSyntaxes(index).tt)
+      (CssData.syntaxNames.readUnchecked(index).tt, CssData.syntaxSyntaxes.readUnchecked(index).tt)
 
     Dictionary(pairs*)
 

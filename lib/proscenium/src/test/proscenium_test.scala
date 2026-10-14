@@ -76,7 +76,7 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
     suite(m"Array construction"):
       // Frozen arrays compare through `readable`: `==` on an array is reference identity.
       test(m"a literal array holds its elements"):
-        Array(1, 2, 3).readable.toList
+        Array(1, 2, 3).stdlib.toList
       . assert(_ == scala.List(1, 2, 3))
 
       test(m"an empty array has no elements"):
@@ -84,7 +84,7 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
       . assert(_ == 0)
 
       test(m"an allocated array is zero-filled"):
-        Array.allocate[Int](3).readable.toList
+        Array.allocate[Int](3).stdlib.toList
       . assert(_ == scala.List(0, 0, 0))
 
       test(m"an allocated array has the requested length"):
@@ -92,20 +92,20 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
       . assert(_ == 5)
 
       test(m"fill repeats its element"):
-        Array.fill(4)(7).readable.toList
+        Array.fill(4)(7).stdlib.toList
       . assert(_ == scala.List(7, 7, 7, 7))
 
       test(m"fill evaluates its element for each position"):
         var count = 0
-        Array.fill(4)({ count += 1; count }).readable.toList
+        Array.fill(4)({ count += 1; count }).stdlib.toList
       . assert(_ == scala.List(1, 2, 3, 4))
 
       test(m"tabulate applies its lambda to each index"):
-        Array.tabulate(4)(_*10).readable.toList
+        Array.tabulate(4)(_*10).stdlib.toList
       . assert(_ == scala.List(0, 10, 20, 30))
 
       test(m"range is end-exclusive"):
-        Array.range(2, 6).readable.toList
+        Array.range(2, 6).stdlib.toList
       . assert(_ == scala.List(2, 3, 4, 5))
 
       test(m"an empty range gives an empty array"):
@@ -113,7 +113,7 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
       . assert(_ == 0)
 
       test(m"from copies an iterable"):
-        Array.from(scala.List(9, 8, 7)).readable.toList
+        Array.from(scala.List(9, 8, 7)).stdlib.toList
       . assert(_ == scala.List(9, 8, 7))
 
     suite(m"Array access"):
@@ -133,13 +133,13 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
       test(m"an exclusive array is updated in place"):
         val buffer = Array.allocate[Int](3)
         buffer(1) = 42
-        buffer.readable.toList
+        buffer.stdlib.toList
       . assert(_ == scala.List(0, 42, 0))
 
       test(m"fill overwrites every position"):
         val buffer = Array.allocate[Int](3)
         buffer.fill(8)
-        buffer.readable.toList
+        buffer.stdlib.toList
       . assert(_ == scala.List(8, 8, 8))
 
       test(m"an array destructures by pattern"):
@@ -158,37 +158,37 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
 
     suite(m"Array transformation"):
       test(m"mapping a frozen array gives a frozen array"):
-        Array(1, 2, 3).map(_*2).readable.toList
+        Array(1, 2, 3).map(_*2).stdlib.toList
       . assert(_ == scala.List(2, 4, 6))
 
       test(m"mapping may change the element type"):
-        Array(1, 2, 3).map(_.toString).readable.toList
+        Array(1, 2, 3).map(_.toString).stdlib.toList
       . assert(_ == scala.List("1", "2", "3"))
 
       test(m"place transfers a window"):
         val buffer = Array.allocate[Int](4)
         buffer.place(Array(1, 2, 3, 4), 1, 0, 2)
-        buffer.readable.toList
+        buffer.stdlib.toList
       . assert(_ == scala.List(2, 3, 0, 0))
 
       test(m"growing preserves the existing content"):
         val buffer = Array.allocate[Int](2)
         buffer(0) = 5
         buffer(1) = 6
-        Array.grow(buffer, 4).readable.toList
+        Array.grow(buffer, 4).stdlib.toList
       . assert(_ == scala.List(5, 6, 0, 0))
 
       test(m"growing to a shorter size truncates"):
         val buffer = Array.allocate[Int](4)
         buffer.fill(3)
-        Array.grow(buffer, 2).readable.toList
+        Array.grow(buffer, 2).stdlib.toList
       . assert(_ == scala.List(3, 3))
 
       test(m"freezing preserves the content"):
         val buffer = Array.allocate[Int](2)
         buffer(0) = 1
         buffer(1) = 2
-        Array.freeze(buffer).readable.toList
+        Array.freeze(buffer).stdlib.toList
       . assert(_ == scala.List(1, 2))
 
     suite(m"Ledger"):

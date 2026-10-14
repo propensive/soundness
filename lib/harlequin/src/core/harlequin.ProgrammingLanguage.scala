@@ -64,8 +64,8 @@ object Scala extends ProgrammingLanguage:
 
   override def postprocess(code: SourceCode, context: Optional[Context]): SourceCode =
     context match
-      case Context.Term => code.copy(lines = Array.frozen(code.lines.readable.init.tail))
-      case Context.Type => code.copy(lines = Array.frozen(code.lines.readable.tail))
+      case Context.Term => code.copy(lines = Array.from(code.lines.stdlib.init.tail))
+      case Context.Type => code.copy(lines = Array.from(code.lines.stdlib.tail))
       case _            => code
 
 object Java extends ProgrammingLanguage:

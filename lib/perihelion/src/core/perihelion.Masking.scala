@@ -36,6 +36,7 @@ import java.security.SecureRandom
 
 import anticipation.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 // Which side of a WebSocket connection this endpoint is, and hence how frames are
@@ -76,9 +77,9 @@ object Masking:
         if index == 1 then (frame.readUnchecked(1).toInt | 0x80).toByte
         else frame.readUnchecked(index)
 
-      val prefix: Data = Array.frozen(header.readable ++ key.readable)
+      val prefix: Data = header + key
       val unmasked = Websocket.Frame.unmask(frame.skip(headerLength), key)
-      Array.frozen(prefix.readable ++ unmasked.readable)
+      prefix + unmasked
 
 trait Masking:
   // Mask a complete, self-generated (and therefore well-formed and unmasked) frame, or
