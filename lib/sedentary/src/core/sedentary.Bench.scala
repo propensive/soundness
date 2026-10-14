@@ -412,7 +412,7 @@ object Bench:
       sized((_: value) => Unset).over(axis)(body)
 
     inline def over[value <: reflect.Enum: Enumerable, report, topic <: Label]
-      ( companion: { def values: scala.Array[value] } )
+      ( companion: { def valueOf(name: String): value } )
       ( inline body: (References over Json) ?=> Quotes ?=> (value ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
@@ -440,7 +440,7 @@ object Bench:
       sized((_: left, _: right) => Unset).over(first, second)(body)
 
     inline def over[left <: reflect.Enum: Enumerable, right, report, topic <: Label]
-      ( first: { def values: scala.Array[left] }, second: Axis[right] )
+      ( first: { def valueOf(name: String): left }, second: Axis[right] )
       ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
@@ -454,7 +454,7 @@ object Bench:
       over(Axis(first), second)(body)
 
     inline def over[left, right <: reflect.Enum: Enumerable, report, topic <: Label]
-      ( first: Axis[left], second: { def values: scala.Array[right] } )
+      ( first: Axis[left], second: { def valueOf(name: String): right } )
       ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
@@ -472,7 +472,7 @@ object Bench:
         right <: reflect.Enum: Enumerable,
         report,
         topic <: Label ]
-      ( first: { def values: scala.Array[left] }, second: { def values: scala.Array[right] } )
+      ( first: { def valueOf(name: String): left }, second: { def valueOf(name: String): right } )
       ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],

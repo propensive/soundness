@@ -368,7 +368,7 @@ def cli[bus <: Matchable](using executive: Executive)
         // [closure-capture] logging lambda laundered to pure function
         val log0: DaemonLogEvent -> Unit = caps.unsafe.unsafeAssumePure: event => Log.info(event)
         val session: Session = Session(connection, in, descriptors, dispatch0, log0)
-        columns.let: columns => rows.let: rows => session.windowSize() = (columns, rows)
+        columns.let: columns => rows.let { rows => session.windowSize() = (columns, rows) }
         session.start()
 
         given environment: Environment = LazyEnvironment(env)

@@ -593,8 +593,15 @@ object KotlinFacade:
 
     import quotes.reflect.*
 
-    // The lambda's own declared parameter types, to decide which inputs expect facades.
-    val declared: List[TypeRepr] = argument.tpe.widen.dealias match
+    // The lambda's own declared parameter types, to decide which inputs expect facades. Scala
+    // 3.10 types a lambda whose parameter is a refinement (`Facade over T`) as a refined function
+    // type, `Function1[…] { def apply… }`, so the function type is read from under any
+    // refinement.
+    def functionType(repr: TypeRepr): TypeRepr = repr match
+      case Refinement(parent, _, _) => functionType(parent)
+      case other                    => other
+
+    val declared: List[TypeRepr] = functionType(solid(argument.tpe).dealias) match
       case AppliedType(_, arguments) => arguments.dropRight(1)
       case _                         => Nil
 

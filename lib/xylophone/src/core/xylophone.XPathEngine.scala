@@ -209,7 +209,7 @@ private[xylophone] object XPathEngine:
 
     (left, right) match
       case (Value.NodeSet(left), Value.NodeSet(right)) =>
-        left.exists: a => right.exists: b => test(numberOf(a), numberOf(b))
+        left.exists: a => right.exists { b => test(numberOf(a), numberOf(b)) }
 
       case (Value.NodeSet(loci), other) =>
         val number = other.number

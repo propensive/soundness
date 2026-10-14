@@ -61,6 +61,23 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
   // test-running host is not the JVM's — for launching it and for opening evaluations against.
   def fixtureClasspath: LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
 
+  // The dispatcher swallows whatever a handler throws, so a failing handler would leave its
+  // promise unfulfilled and the test waiting on it forever. Its failure is offered to a second
+  // promise instead, and `settled` rethrows it on the test's own thread.
+  def deliver[result](outcome: Promise[result], failure: Promise[Throwable])(handler: => result)
+  :   Unit =
+
+    try outcome.offer(handler)
+    catch case error: Throwable =>
+      failure.offer(error)
+      outcome.cancel()
+
+  def settled[result](outcome: Promise[result], failure: Promise[Throwable])(using Monitor)
+  :   result =
+
+    outcome.attend()
+    if failure.ready then throw failure.await() else outcome.await()
+
   // Launches a fixture under the JDWP agent, breaks once at `source`:`line`, runs `handler` there
   // and returns its result — the shared shape behind every live case. Call it inside a `supervise`
   // block: the handler is defined there, so its `Monitor` (needed to open an evaluation) resolves
@@ -78,6 +95,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
 
     val classpathText = fixtureClasspath()
     val outcome = Promise[result]()
+    val failure = Promise[Throwable]()
     val command: Command = sh"java -classpath $classpathText $fixtureClass"
     val debuggee: Debuggee = Debuggee(command, 0)
 
@@ -89,11 +107,11 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
       // ordering a frontend uses (breakpoints placed before resuming), exercised by every live
       // test.
       debug.breakpoint(source, line): stop ?=>
-        outcome.offer(handler(using stop))
+        deliver(outcome, failure)(handler(using stop))
         stop.remain()
 
       debug.resume()
-      outcome.await()
+      settled(outcome, failure)
 
   // Launches a fixture, breaks once at `source`:`line`, takes `count` logical steps of `depth`
   // from there, and returns the last landing: the display name of its method and its logical
@@ -278,16 +296,17 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
 
     val classpathText = fixtureClasspath()
     val outcome = Promise[result]()
+    val failure = Promise[Throwable]()
     val command: Command = sh"java -classpath $classpathText $fixtureClass"
     val debuggee: Debuggee = Debuggee(command, 0)
 
     debuggee.session:
       debug.exceptions(uncaught, caught, within = t"vivisection.*"): stop ?=>
-        outcome.offer(handler(using stop))
+        deliver(outcome, failure)(handler(using stop))
         stop.remain()
 
       debug.resume()
-      outcome.await()
+      settled(outcome, failure)
 
   def run(): Unit =
     val sizes = Jdwp.IdSizes.bootstrap

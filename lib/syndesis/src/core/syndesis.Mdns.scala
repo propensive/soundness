@@ -444,7 +444,7 @@ object Mdns:
         loans -= 1
 
         if loans > 0 then Unset else
-          val ending = live.let: transport => handles.let: handles2 => (transport, handles2)
+          val ending = live.let: transport => handles.let { handles2 => (transport, handles2) }
           live = Unset
           handles = Unset
           ending

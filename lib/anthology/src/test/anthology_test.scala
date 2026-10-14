@@ -731,17 +731,14 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
       . filter(_.contains(t"kotlin-stdlib"))
       . prim
 
-  // Locates a cached proscala release's `lib` directory, which carries the fork standard
-  // library and the Scala.js runtime JARs.
+  // Locates the cached `lib` directory of the proscala release whose compiler this suite embeds,
+  // which carries the fork standard library and the Scala.js runtime JARs; the compiler's own
+  // version names the directory. Any other release's library mixes versions: the newest by name
+  // sorts `3.9.1` after `3.10.0`, and 3.10's compiler crashes on 3.9's TASTy.
   def proscalaLibrary(): Optional[JnfPath] =
     val home = java.lang.System.getProperty("user.home").nn
-    val root = Paths.get(home, ".cache", "soundness", "proscala").nn
-
-    if !Files.isDirectory(root) then Unset else
-      Files.list(root).nn.iterator.nn.asScala.to(scala.List).sortBy(_.toString).reverse
-      . map(_.resolve("lib").nn)
-      . find { lib => Files.isDirectory(lib) && Files.exists(lib.resolve("scala3-library.jar")) }
-      . getOrElse(Unset)
+    val lib = Paths.get(home, ".cache", "soundness", "proscala", Scalac.version.s, "lib").nn
+    if Files.exists(lib.resolve("scala3-library.jar")) then lib else Unset
 
   // Yields the runtime JARs a portable compilation needs as a classpath, when cached.
   def sjsClasspath(): Optional[LocalClasspath] =
@@ -778,11 +775,17 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
         ( Paths.get(home, "Library", "Caches", "Coursier", "v1").nn,
           Paths.get(home, ".cache", "coursier", "v1").nn )
 
+    // The Scala version the stock Native artifacts are published for, as `build.mill`'s
+    // `scalaNativeScalaVersion` chooses it for the embedded compiler's stream: the 3.10 stream's
+    // release, and for the 3.9 stream, whose compiler is a `-dev` build with no artifacts of its
+    // own, the last published candidate.
+    val base: Text = if Scalac.version.s.startsWith("3.10") then t"3.10.0" else t"3.9.0-RC3"
+
     val artifacts: List[Text] =
       List
-        ( t"nscplugin_3.9.0-RC1/0.5.12/nscplugin_3.9.0-RC1-0.5.12.jar",
-          t"scala3lib_native0.5_3/3.9.0-RC1%2B0.5.12/scala3lib_native0.5_3-3.9.0-RC1%2B0.5.12.jar",
-          t"scalalib_native0.5_3/3.9.0-RC1%2B0.5.12/scalalib_native0.5_3-3.9.0-RC1%2B0.5.12.jar",
+        ( t"nscplugin_$base/0.5.12/nscplugin_$base-0.5.12.jar",
+          t"scala3lib_native0.5_3/$base%2B0.5.12/scala3lib_native0.5_3-$base%2B0.5.12.jar",
+          t"scalalib_native0.5_3/$base%2B0.5.12/scalalib_native0.5_3-$base%2B0.5.12.jar",
           t"javalib_native0.5_3/0.5.12/javalib_native0.5_3-0.5.12.jar",
           t"auxlib_native0.5_3/0.5.12/auxlib_native0.5_3-0.5.12.jar",
           t"clib_native0.5_3/0.5.12/clib_native0.5_3-0.5.12.jar",

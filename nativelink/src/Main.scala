@@ -69,7 +69,7 @@ object Main:
     val dir: Path on Linux = unsafely((% / "var" / "tmp" / "soundness-native-fs").on[Linux])
     if fs.exists(dir, false) then unsafely(fs.delete(dir))
     out.println("fs: exists before mkdir = "+fs.exists(dir, false))
-    unsafely(fs.createDirectory(dir))
+    unsafely(fs.createDirectory(dir, Unset))
     out.println("fs: exists after mkdir  = "+fs.exists(dir, false))
     unsafely(fs.delete(dir))
     out.println("fs: exists after delete = "+fs.exists(dir, false))
@@ -79,10 +79,10 @@ object Main:
     val file: Path on Linux = unsafely((% / "var" / "tmp" / "soundness-native-file").on[Linux])
     if fs.exists(file, false) then unsafely(fs.delete(file))
     unsafely:
-      fs.open(file, List(OpenFlag.Write, OpenFlag.Create)): handle =>
+      fs.open(file, List(OpenFlag.Write, OpenFlag.Create), Unset): handle =>
         handle.writer(Chain(t"hello native fs".in[Data]))
     out.println("fs: file size after write = "+unsafely(fs.stat(file, false)).size)
-    val readBytes = unsafely(fs.open(file, List(OpenFlag.Read))(_.reader().stdlib.map(_.length).sum))
+    val readBytes = unsafely(fs.open(file, List(OpenFlag.Read), Unset)(_.reader().stdlib.map(_.length).sum))
     out.println("fs: bytes read back       = "+readBytes)
     unsafely(fs.delete(file))
 
@@ -125,7 +125,7 @@ object Main:
     // the platform-thread twin (no Loom on native), and two workers running concurrently under
     // `supervise` prove forking, awaiting and cross-thread promise completion all work.
     locally:
-      import parasite.*, threading.virtualThreading, probates.cancelProbate
+      import parasite.*, threads.virtualThreads, probates.cancelProbate
       import contingency.strategies.throwUnsafely
 
       supervise:

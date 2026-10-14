@@ -129,7 +129,12 @@ object Scalac:
       def classfiles: Map[Path on Classpath, Data] =
         def walk(dir: dtio.AbstractFile, prefix: Text): scala.List[(Path on Classpath, Data)] =
           dir.iterator.toList.flatMap: file =>
-            val path: Text = t"$prefix/${file.name}"
+            // Scala 3.10's `VirtualDirectory.fileNamed` gives the file it creates its whole path
+            // as its name (`<session output>/pkg/Name.class`), where 3.9 gave it `Name.class`;
+            // the walk supplies the package prefix, so only the last segment is wanted.
+            val leaf: String = file.name.substring(file.name.lastIndexOf('/') + 1).nn
+            val name: Text = leaf.tt
+            val path: Text = t"$prefix/$name"
 
             if file.isDirectory then walk(file, path)
             // The compiler emits names which are valid classpath elements, so decoding

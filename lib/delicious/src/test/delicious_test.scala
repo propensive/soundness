@@ -363,12 +363,10 @@ object Tests extends Suite("diagnostics", m"Delicious Tests"):
       ownReifier.imports(sci.Set(Designator(t"no.such.scope")), sci.Set()).direct
     . assert(_ == sci.Set())
 
+  // The cached `lib` directory of the proscala release whose compiler this suite embeds, named
+  // by the compiler's own version: any other release's library would mix versions (the newest
+  // by name sorts `3.9.1` after `3.10.0`).
   def proscalaLibrary(): Optional[java.nio.file.Path] =
     val home = java.lang.System.getProperty("user.home").nn
-    val root = Paths.get(home, ".cache", "soundness", "proscala").nn
-
-    if !Files.isDirectory(root) then Unset else
-      Files.list(root).nn.iterator.nn.asScala.to(List).sortBy(_.toString).reverse
-      . map(_.resolve("lib").nn)
-      . find { lib => Files.isDirectory(lib) && Files.exists(lib.resolve("scala3-library.jar")) }
-      . getOrElse(Unset)
+    val lib = Paths.get(home, ".cache", "soundness", "proscala", Scalac.version.s, "lib").nn
+    if Files.exists(lib.resolve("scala3-library.jar")) then lib else Unset

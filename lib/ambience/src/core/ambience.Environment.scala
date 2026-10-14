@@ -60,7 +60,7 @@ object Environment extends Dynamic:
 
   inline def selectDynamic[variable](key: String)
     ( using environment:      Environment,
-            reader:           Variable[key.type, variable],
+            reader:           Variable[key.type, variable]^,
             environmentError: Tactic[Environment.Error] )
   :   variable =
 

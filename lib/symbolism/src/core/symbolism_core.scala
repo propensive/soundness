@@ -48,7 +48,7 @@ extension [self](operand: self)
     negatable.negate(operand)
 
 extension [augend](left: augend)
-  inline infix def + [addend](right: addend)(using addable: augend is Addable by addend)
+  inline infix def + [addend](right: addend)(using addable: (augend is Addable by addend)^)
   :   addable.Result =
 
     scala.compiletime.summonFrom:

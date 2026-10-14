@@ -76,7 +76,7 @@ object CborParser:
   // Joins the chunks of an indefinite-length string: one `System.arraycopy`
   // per chunk through `Scribe`'s bulk `append`.
   private def join(chunks: scm.ArrayBuffer[Array[Byte]^{}]): Array[Byte]^{} =
-    Array.collect[Byte](): buffer => chunks.foreach: chunk => buffer.append(chunk, 0, chunk.length)
+    Array.collect[Byte](): buffer => chunks.foreach { chunk => buffer.append(chunk, 0, chunk.length) }
 
   // One parser per parse: the parser owns no scratch arrays (the box cache is
   // shared here), so an instance is four fields and a cursor, and the

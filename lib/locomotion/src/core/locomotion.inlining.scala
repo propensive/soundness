@@ -1984,7 +1984,7 @@ object inlining:
 
   private def sumDispatch[sum: Type, result: Type](value: Expr[sum], cache: Cache)
     ( body: [variant] => (Int, Inlinable { type Self = variant }, Expr[variant])
-                         => Type[variant] ?=> Expr[result] )
+                         -> Type[variant] ?-> Expr[result] )
     ( using Quotes )
   :   Expr[result] =
 

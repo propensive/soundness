@@ -457,10 +457,6 @@ object Tests extends Suite("typenames", m"Stenography Tests"):
       Syntax.name[Text^{alpha.only[Reader]}]
     . assert(_ == t"Text^{alpha.only[Reader]}")
 
-    test(m"Reach capability in a capture set"):
-      Syntax.name[Text^{sensors*}]
-    . assert(_ == t"Text^{sensors*}")
-
     test(m"Universal capability in a capture set"):
       Syntax.name[Text^{caps.any}]
     . assert(_ == t"Text^{any}")

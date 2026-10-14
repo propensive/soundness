@@ -8132,7 +8132,7 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // needs a `Locus`-fixing mixin and a lowest-priority adapter given; here the
   // focus type is already fixed by the `tracks Tel.Focus` clause, so the
   // enrichment is called directly.)
-  inline def as[value: Decodable in Tel]: value raises Tel.Error tracks Tel.Focus =
+  inline def as[value](using value: (value is Decodable in Tel)^): value raises Tel.Error tracks Tel.Focus =
     val result = value.decoded(this)
     Tel.supplementPositions(this)
     result

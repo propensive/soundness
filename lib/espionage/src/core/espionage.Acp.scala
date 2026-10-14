@@ -693,8 +693,8 @@ object Acp:
 
     agent match
       case Agent.Streams(input, output) =>
-        val streamable = summon[ji.InputStream is Streamable by Data over Credit]
-        val sink = summon[ji.OutputStream is Sink by Data over Credit].intake(output)
+        val streamable = summon[(ji.InputStream is Streamable by Data over Credit)^]
+        val sink = summon[(ji.OutputStream is Sink by Data over Credit)^].intake(output)
 
         // The sink is owned, and finished, by the exchange's writer task.
         open(sink, Transport.pump(streamable.stream(input), observer)(_))

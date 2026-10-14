@@ -783,10 +783,9 @@ trait Tel2 extends Tel3:
   =>  ( absence: distillate.Decodable.Absence in Tel,
         fault:   distillate.Decodable.Fault in Tel,
         tactic:  Tactic[Tel.Error] )
-  =>  ( consume decodable0: => (inner is Tel.Decodable)^ )
-  =>  ( (value is Tel.Decodable)^ ) =
-    // Captures the tactic for the lenient-faults path, and the by-name inner decoder, which
-    // cannot be named in a capture set: hence a fresh capture rather than `^{tactic}`.
+  =>  ( decodable0: => (inner is Tel.Decodable)^ )
+  =>  ( (value is Tel.Decodable)^{tactic, decodable0} ) =
+    // Captures the tactic for the lenient-faults path, and the by-name inner decoder.
     new Tel.Decodable:
       type Self = value
       def shape(): Morphology = Morphology.Opt(decodable0.shape())
@@ -828,31 +827,31 @@ trait Tel2 extends Tel3:
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
-        consume element0:  => (element is Tel.Decodable)^ )
+        element0:  => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  ( (collection[element] is Tel.Decodable)^ ) =
+  =>  ( (collection[element] is Tel.Decodable)^{element0} ) =
     RepeatedDecodable[collection[element], element](element0, () => factory.newBuilder)
 
   // Alias counterparts: the opaque prelude collections do not conform to `Iterable`, so each
   // decodes at the underlying stdlib type and casts.
   given listDecodable: [list <: List, element]
-  =>  ( consume element0: => (element is Tel.Decodable)^ )
+  =>  ( element0: => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  ( (list[element] is Tel.Decodable)^ ) =
+  =>  ( (list[element] is Tel.Decodable)^{element0} ) =
     RepeatedDecodable[list[element], element]
       ( element0, () => scala.collection.immutable.List.newBuilder[element] )
 
   given setDecodable: [set <: Set, element]
-  =>  ( consume element0: => (element is Tel.Decodable)^ )
+  =>  ( element0: => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  ( (set[element] is Tel.Decodable)^ ) =
+  =>  ( (set[element] is Tel.Decodable)^{element0} ) =
     RepeatedDecodable[set[element], element]
       ( element0, () => scala.collection.immutable.Set.newBuilder[element] )
 
   given seriesDecodable: [sequence <: Sequence, element]
-  =>  ( consume element0: => (element is Tel.Decodable)^ )
+  =>  ( element0: => (element is Tel.Decodable)^ )
   =>  Tactic[Tel.Error]
-  =>  ( (sequence[element] is Tel.Decodable)^ ) =
+  =>  ( (sequence[element] is Tel.Decodable)^{element0} ) =
     RepeatedDecodable[sequence[element], element](element0, () => Vector.newBuilder[element])
 
   // A `Map` encodes as a sequence of `entries` compounds, each carrying a `key`

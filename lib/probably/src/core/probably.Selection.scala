@@ -193,7 +193,7 @@ case class Selection
   private def admitted(kind: Entry.Kind): Boolean = kinds.nil || kinds.has(kind)
 
   private def admitted(tags: List[Tag]): Boolean =
-    this.tags.all: alternatives => tags.exists: tag => alternatives.has(tag.text)
+    this.tags.all: alternatives => tags.exists { tag => alternatives.has(tag.text) }
 
   private def ancestry(id: Test.Id): List[Test.Id] =
     id :: id.suite.let { suite => ancestry(suite.id) }.or(Nil)

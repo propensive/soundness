@@ -90,7 +90,7 @@ trait Dsv2:
       type Operand = Text
 
       def aggregate(text: Chain[Text]): value in Dsv =
-        summon[Sheet is Aggregable by Text].aggregate(text).rows.readable.head.as[value]
+        summon[(Sheet is Aggregable by Text)^].aggregate(text).rows.readable.head.as[value]
         . asInstanceOf[value in Dsv]
 
       // Only the first record is read from a stream, and only as far as it extends.

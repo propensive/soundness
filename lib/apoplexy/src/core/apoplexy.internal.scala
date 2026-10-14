@@ -531,7 +531,10 @@ object Apoplexy:
   private def mediaTypeExpr(using Quotes)(media: Text): Optional[Expr[MediaType]] =
     try
       Media.parse(media)
-      Optional('{unsafely[MediaType.Error](Media.parse(${Expr(media.s)}.tt))})
+      // Already parsed above, so the generated parse cannot fail: it throws unsafely rather
+      // than going through an `unsafely` block, whose context function a spliced closure
+      // cannot match under Scala 3.10's capture checking.
+      Optional('{ { import contingency.strategies.throwUnsafely; Media.parse(${Expr(media.s)}.tt) } })
     catch case error: MediaType.Error => Unset
 
   // How a declared error response is raised: by the class of its status, a range class for
@@ -978,7 +981,8 @@ object Apoplexy:
         try server.as[HttpUrl]
         catch case error: Url.Error => halt(m"apoplexy: the spec's server URL $server is not valid")
 
-        '{unsafely[Url.Error]($serverExpr.tt.as[HttpUrl])}
+        // Validated above, so the generated decoding cannot fail (see `mediaTypeExpr`).
+        '{ { import contingency.strategies.throwUnsafely; $serverExpr.tt.as[HttpUrl] } }
 
       case supplied: Expr[HttpUrl] @unchecked =>
         if server.starts(t"/") then '{Api.extend($supplied, $serverExpr.tt)} else supplied

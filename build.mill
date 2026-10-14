@@ -45,42 +45,43 @@ import publish.*
 import os.Path
 
 object settings:
-  // The Scala compiler is the propensive/scala fork: the 3.9.0-RC4 tree merged with the
-  // capture-checking fix branches (the stock compiler mis-boxes pure values, mishandles quote
-  // type-holes, alias and context-result capabilities, cast type-arguments, and cycles on JDK 25
-  // sealed-classfile parsing — see rep/DECISIONS.md). It is consumed in one of two modes:
+  // The Scala compiler is Proscala (https://github.com/propensive/proscala), the Propensive fork
+  // of Scala 3: upstream Scala plus a set of patches, most of them capture-checking repairs
+  // (see rep/DECISIONS.md). It is consumed in one of two modes:
   //
-  //   1. Released (the default). The fork is published at
-  //      https://github.com/propensive/proscala/releases; each release ships a single
-  //      `proscala-<tag>.tar.gz` asset whose contents are a `lib` directory (the unversioned core
-  //      jars plus the versioned third-party jars). The `toolchain` module below downloads
-  //      `SOUNDNESS_SCALA_RELEASE` (default `3.9.1-dev-p20`, the latest in the 3.9 stream) and
-  //      extracts it into a shared cache, exposing its jars to every coursier resolution — no
-  //      local compiler build and no publishing step needed. Switch streams by setting
-  //      `SOUNDNESS_SCALA_RELEASE` (e.g. `3.10.1-dev-p17`).
+  //   1. Released (the default). Each Proscala release (`SOUNDNESS_SCALA_RELEASE`, default
+  //      `1.0.0`) is built for several upstream Scala versions, and ships each build as a
+  //      `proscala-<scala version>.tar.gz` asset whose contents are a `lib` directory of jars.
+  //      The build's Scala version is `<upstream>-pro-<release>`: the default is Scala 3.10.0
+  //      (`SOUNDNESS_SCALA_BASE`), so `3.10.0-pro-1.0.0`; `SOUNDNESS_SCALA_BASE=3.9.0` selects
+  //      the 3.9 build. The `toolchain` module below downloads that asset and extracts it into a
+  //      shared cache, exposing its jars to every coursier resolution — no local compiler build
+  //      and no publishing step needed. A release from before 1.0.0 (such as `3.9.1-dev-p20`)
+  //      is a single build, versioned as its tag, and is still accepted.
   //
   //   2. Local (fork developers). Point `SOUNDNESS_SCALA_HOME` at a `make`-built `release`
-  //      directory to use its `release/lib` jars directly instead of downloading. After
-  //      rebuilding the compiler, run `./mill clean`: the compiler and sbt-bridge paths are
-  //      content-hashed, but coursier may serve other repo artifacts from its cache under this
-  //      unchanging version string.
+  //      directory to use its `lib` jars directly instead of downloading, and
+  //      `SOUNDNESS_SCALA_VERSION` at the version they were built as. After rebuilding the
+  //      compiler, run `./mill clean`: the compiler and sbt-bridge paths are content-hashed, but
+  //      coursier may serve other repo artifacts from its cache under an unchanging version
+  //      string.
   //
   // `scalaVersion` is the *coordinate* version the toolchain force-versions every artifact to; it
   // must match the version string the jars were built with (`compiler.properties`), or
-  // coursier/zinc caches poison each other across compilers. The release tag
-  // (`SOUNDNESS_SCALA_RELEASE`) is a separate concept, though from `3.9.0-RC4-p1` on the two
-  // coincide (earlier releases shipped jars built as e.g. `3.9.0-RC1-propensive`). Override the
-  // coordinate with `SOUNDNESS_SCALA_VERSION`.
-  val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION", "3.9.1-dev-p20")
+  // coursier/zinc caches poison each other across compilers.
+  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "1.0.0")
+  val scalaBase = sys.env.getOrElse("SOUNDNESS_SCALA_BASE", "3.10.0")
+  val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION",
+    if scalaRelease.matches("[0-9]+\\.[0-9]+\\.[0-9]+") then s"$scalaBase-pro-$scalaRelease"
+    else scalaRelease)
 
   // The compiler *stream* — the major Scala version, without the patch level — which is what
   // decides the shape of the compiler-internal APIs a handful of modules wrap. Everything else
   // in Soundness is written once and compiles on every stream; where an API genuinely differs
   // (see the `Shim` component trait), this selects the sources that bridge it.
   val scalaStream = if scalaVersion.startsWith("3.10") then "3.10" else "3.9"
-  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "3.9.1-dev-p20")
-  // Empty by default → download `scalaRelease`. Set to a local `release` directory to use its
-  // `release/lib` jars directly (fork-developer mode).
+  // Empty by default → download `scalaVersion` from `scalaRelease`. Set to a local `release`
+  // directory to use its `lib` jars directly (fork-developer mode).
   val scalaHome = sys.env.getOrElse("SOUNDNESS_SCALA_HOME", "")
   val scalaJsVersion = "1.22.0-wasm.4"
   // Scala Native cross-compilation. The stock published `nscplugin`/`scala3lib_native` for the
@@ -89,8 +90,10 @@ object settings:
   // no fork-republished Native artifacts are needed. `scalaNativeScalaVersion` is the *base*
   // version those artifacts are published for (the fork's `-propensive` suffix is dropped).
   val scalaNativeVersion = "0.5.12"
-  // Nearest published base version (no RC4 Native artifacts yet); TASTy-identical to RC4.
-  val scalaNativeScalaVersion = "3.9.0-RC3"
+  // On 3.9, the nearest published base version (no RC4 Native artifacts yet; TASTy-identical
+  // to RC4). The plugin is built against compiler internals, so the 3.10 stream needs the
+  // artifacts published for 3.10: the 3.9 plugin fails there with a ClassCastException.
+  val scalaNativeScalaVersion = if scalaStream == "3.10" then "3.10.0" else "3.9.0-RC3"
   val scalaOptions = Seq(
     // The fork's opt-in behaviours, enabled by name (`-Z<name>`; a bare `-Z` lists
     // them). Soundness relies on every capture-checking repair the fork carries, on
@@ -209,22 +212,26 @@ object settings:
 // (including the modules that depend on the compiler API), `scala3-staging_3`, the sbt bridge, and
 // the Scala.js stdlib — is served from here.
 object toolchain extends Module:
-  // Downloads and extracts the `settings.scalaRelease` tarball from propensive/proscala into a
-  // *shared* cache dir outside the Mill `out/` tree, so the throwaway-worktree `make attest` build
-  // (clean `out/` every time) reuses it and stays offline after the first fetch. Each release is a
-  // single `proscala-<tag>.tar.gz` asset carrying a `lib/` directory of jars, extracted here into
-  // `<tag>/lib`. A `.complete` sentinel makes a fully-populated cache a no-op — no network, no
-  // GitHub API call. Returns the `lib` dir.
-  def downloadRelease(tag: String): os.Path =
-    val root = os.home / ".cache" / "soundness" / "proscala" / tag
+  // Downloads and extracts the `settings.scalaVersion` build of the `settings.scalaRelease`
+  // release of propensive/proscala into a *shared* cache dir outside the Mill `out/` tree, so the
+  // throwaway-worktree `make attest` build (clean `out/` every time) reuses it and stays offline
+  // after the first fetch. Each build is a `proscala-<version>.tar.gz` asset carrying a `lib/`
+  // directory of jars, extracted here into `<version>/lib`; a release from before 1.0.0 has just
+  // the one tarball. A `.complete` sentinel makes a fully-populated cache a no-op — no network,
+  // no GitHub API call. Returns the `lib` dir.
+  def downloadRelease(tag: String, version: String): os.Path =
+    val root = os.home / ".cache" / "soundness" / "proscala" / version
     val lib = root / "lib"
     val sentinel = lib / ".complete"
     if os.exists(sentinel) then lib else
       os.makeDir.all(root)
       val api = s"https://api.github.com/repos/propensive/proscala/releases/tags/$tag"
       val json = ujson.read(os.proc("curl", "-fsSL", api).call().out.text())
-      val asset = json("assets").arr.find(_("name").str.endsWith(".tar.gz")).getOrElse:
-        throw new Exception(s"no .tar.gz asset on proscala release $tag")
+      val tarballs = json("assets").arr.filter(_("name").str.endsWith(".tar.gz"))
+      val asset = tarballs.find(_("name").str == s"proscala-$version.tar.gz")
+        .orElse(if tarballs.length == 1 then tarballs.headOption else None)
+        .getOrElse:
+          throw new Exception(s"no build of Scala $version on proscala release $tag")
       val name = asset("name").str
       val url = asset("browser_download_url").str
       val tarball = root / name
@@ -238,8 +245,8 @@ object toolchain extends Module:
           if hex != digest.stripPrefix("sha256:") then
             os.remove(tarball)
             throw new Exception(s"checksum mismatch for $name (expected $digest, got sha256:$hex)")
-      // The tarball carries a `lib/` prefix, so extracting into `<tag>` lands the jars at
-      // `<tag>/lib/*.jar`. Clear any partial extract first (we only get here without the sentinel).
+      // The tarball carries a `lib/` prefix, so extracting into `<version>` lands the jars at
+      // `<version>/lib/*.jar`. Clear any partial extract first (we only get here without the sentinel).
       os.remove.all(lib)
       os.proc("tar", "-xzf", tarball.toString, "-C", root.toString).call()
       os.remove(tarball) // reclaim ~43 MB; the sentinel guards against re-fetching
@@ -248,10 +255,10 @@ object toolchain extends Module:
 
   // Content-fingerprints the fork's jars so a rebuilt or re-released compiler regenerates the
   // repository. `SOUNDNESS_SCALA_HOME` (if set) points at a local `release`; otherwise the
-  // `settings.scalaRelease` assets are downloaded and cached.
+  // `settings.scalaVersion` build of `settings.scalaRelease` is downloaded and cached.
   def distribution: T[PathRef] = Task.Input:
     if settings.scalaHome.nonEmpty then PathRef(os.Path(settings.scalaHome) / "lib")
-    else PathRef(downloadRelease(settings.scalaRelease))
+    else PathRef(downloadRelease(settings.scalaRelease, settings.scalaVersion))
 
   def repo: T[PathRef] = Task:
     val lib = distribution().path
@@ -3227,6 +3234,10 @@ object scintillate extends Library:
       mvn"org.http4s::http4s-circe:0.23.30",
       mvn"io.circe::circe-generic:0.14.16",
       mvn"dev.zio::zio-http:3.3.3",
+      // zio-http 3.3.3 brings ZIO 2.1.17, whose trace macro casts its `Expr` rather than
+      // the value it quotes; ZIO 2.1.26 casts the value, which Scala 3.10's check of a
+      // macro expansion's type accepts.
+      mvn"dev.zio::zio:2.1.26",
       mvn"dev.zio::zio-json:0.7.45",
       mvn"io.netty:netty-codec-http:4.2.18.Final",
       mvn"io.undertow:undertow-core:2.3.26.Final",

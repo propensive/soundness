@@ -71,7 +71,7 @@ object Upgrade:
     ( using environment: Environment,
             system:      System,
             diagnostics: Diagnostics,
-            readable:    source is Readable to Data )
+            readable:    (source is Readable to Data)^ )
   :   Unit raises Upgrade.Error =
 
     stageBytes(source.read[Data])

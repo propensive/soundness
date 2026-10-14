@@ -131,7 +131,7 @@ object Tests extends Suite("bloom", m"Ulysses tests"):
       filter.addAll(keys.take(500))
       BloomFilter.freeze(filter) == BloomFilter[Text](1000, 0.01) + t"one" ++ keys.take(500)
 
-    . assert(identity(_))
+    . check(identity(_))
 
     test(m"A frozen filter answers for everything added before it was frozen"):
       val filter = BloomFilter[Text](1000, 0.01)
@@ -139,7 +139,7 @@ object Tests extends Suite("bloom", m"Ulysses tests"):
       val frozen = BloomFilter.freeze(filter)
       keys.take(500).all(frozen.hits(_)) && !frozen.hits(t"other-1")
 
-    . assert(identity(_))
+    . check(identity(_))
 
     test(m"A case class can be an element"):
       val filter = BloomFilter[Point](100, 0.01) + Point(1, 2)

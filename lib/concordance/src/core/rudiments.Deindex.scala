@@ -58,7 +58,7 @@ import vacuous.*
 // the path-dependent `Operand` cannot be excluded before evidence resolution and the call
 // reports ambiguity.
 extension (interval: Interval)
-  inline def unsafeAttested[within](within: within)(using erased Unsafe): Interval in within.type =
+  inline def unsafeAttested[within](within: within)(using erased unsafe: Unsafe): Interval in within.type =
     interval.asInstanceOf[Interval in within.type]
 
 extension [self](value: self)(using applicable: Applicable { type Self = self })
@@ -94,7 +94,7 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
   // bound: the comment is the proof, as `Retained`'s construction-site mint is in dissonance.
   // The subsequent access (`value(index)`) is the EXISTING confined read: total, bare, no
   // second check. Same soundness boundary as `confine`: immutable receivers on stable paths.
-  def unsafeAttested(index: applicable.Operand)(using erased Unsafe)
+  def unsafeAttested(index: applicable.Operand)(using erased unsafe: Unsafe)
   :   applicable.Operand in value.type =
 
     index.asInstanceOf[applicable.Operand in value.type]
@@ -102,7 +102,7 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
   // The block-scoped form: the attestation's extent is the lambda —
   //     array.unsafeAttested(ordinal): ordinal => array(ordinal)   // total inside
   inline def unsafeAttested[result](index: applicable.Operand)
-    (inline lambda: (applicable.Operand in value.type) => result)(using erased Unsafe)
+    (inline lambda: (applicable.Operand in value.type) => result)(using erased unsafe: Unsafe)
   :   result =
 
     lambda(index.asInstanceOf[applicable.Operand in value.type])
