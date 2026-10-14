@@ -46,8 +46,14 @@ private[gastronomy] object PureHashes:
   import HashConstants.*
 
   // SHA-256 and SHA-224 (a truncation of SHA-256 with a different initial state).
-  final class Sha256(initial: scala.IArray[Int], outputBytes: Int) extends BlockDigestion(64):
-    private var h: scala.Array[Int]^ = initial.toArray
+  // `initial` is a JVM copy of the constants, copied again into the state this class owns: a
+  // frozen field of this stateful class would give it a root of its own, distinct from its
+  // parent's.
+  final class Sha256(initial: scala.Array[Int], outputBytes: Int) extends BlockDigestion(64):
+    private var h: scala.Array[Int]^ =
+      val state = new scala.Array[Int](initial.length)
+      java.lang.System.arraycopy(initial, 0, state, 0, initial.length)
+      state
     private var w: scala.Array[Int]^ = new scala.Array[Int](64)
 
     protected def bitLengthBytes: Int = 8
@@ -97,8 +103,11 @@ private[gastronomy] object PureHashes:
       Array.freeze(out)
 
   // SHA-512 and SHA-384 (a truncation of SHA-512 with a different initial state).
-  final class Sha512(initial: scala.IArray[Long], outputBytes: Int) extends BlockDigestion(128):
-    private var h: scala.Array[Long]^ = initial.toArray
+  final class Sha512(initial: scala.Array[Long], outputBytes: Int) extends BlockDigestion(128):
+    private var h: scala.Array[Long]^ =
+      val state = new scala.Array[Long](initial.length)
+      java.lang.System.arraycopy(initial, 0, state, 0, initial.length)
+      state
     private var w: scala.Array[Long]^ = new scala.Array[Long](80)
 
     // The message length is a 128-bit big-endian count of bits; inputs never approach 2^64 bytes,
@@ -269,10 +278,10 @@ private[gastronomy] object PureHashes:
   def md5: Digestion^ = Md5()
 
   def sha2(bits: Int): Digestion^ = bits match
-    case 224 => Sha256(sha224H.readable, 28)
-    case 256 => Sha256(sha256H.readable, 32)
-    case 384 => Sha512(sha384H.readable, 48)
-    case _   => Sha512(sha512H.readable, 64)
+    case 224 => Sha256(Array.unsafeJvm(sha224H), 28)
+    case 256 => Sha256(Array.unsafeJvm(sha256H), 32)
+    case 384 => Sha512(Array.unsafeJvm(sha384H), 48)
+    case _   => Sha512(Array.unsafeJvm(sha512H), 64)
 
 // A block-oriented incremental hash: buffers input into `blockSize`-byte blocks, running
 // `compress` on each, and applies the standard Merkle–Damgård padding (a `0x80` byte, zero

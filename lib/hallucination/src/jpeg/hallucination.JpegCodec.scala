@@ -53,7 +53,7 @@ private[hallucination] object JpegCodec:
       (data.readUnchecked(2) & 0xff) == 0xff
 
   def decode(data: Data): Raster raises Raster.Error =
-    try JpegDecoder(data.readable).decode()
+    try JpegDecoder(Array.unsafeJvm(data)).decode()
     catch case _: (IndexOutOfBoundsException | NegativeArraySizeException) =>
       abort(Raster.Error(Jpeg(), Reason.Truncated))
 
@@ -83,9 +83,14 @@ private[hallucination] object JpegColorConvert:
 
 // The `Tactic` is threaded through each method rather than captured by the class: a captured
 // tactic capability is not admitted by `Mutable`'s self capture set.
-// `data` is the stdlib immutable array: see the `JpegReader` comment.
-private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends caps.Mutable:
-  private var reader: JpegReader^ = JpegReader(data, 0)
+//
+// The image is held as the JVM array behind the caller's frozen `Data`, and each reader is
+// minted from it as a frozen view: a frozen `Data` *field* of this stateful holder would be
+// read through `this`, which the checker then charges to every reader made from it. Both
+// casts are read-only: nothing writes the image, here or in the reader.
+private[hallucination] final class JpegDecoder(bytes: scala.Array[Byte]) extends caps.Mutable:
+  // [aliased-read] the frozen image is shared, read-only, with the reader minted from it
+  private var reader: JpegReader^ = JpegReader(Array.unsafeFrozen(bytes), 0)
 
   private var frame: Optional[JpegFrame] = Unset
 

@@ -365,7 +365,7 @@ object Conformance:
       // count is even). Objects are rendered with sorted keys so the
       // comparison is independent of source order, which JSON treats
       // as insignificant.
-      // The read-only stdlib view: `IArray`'s member subscript serves the parity-indexed
+      // The read-only stdlib view: `ArraySeq`'s member subscript serves the parity-indexed
       // reads below, which are bounded by `n` on both sides.
       val arr = items.asInstanceOf[Array[Any]].stdlib
       val n = arr.length

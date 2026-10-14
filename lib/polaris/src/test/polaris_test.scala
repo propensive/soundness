@@ -162,33 +162,33 @@ object Tests extends Suite("packing", m"Polaris Tests"):
       val data = Array[Byte](0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3)
 
       test(m"Unpack an array of Ints"):
-        data.unpackFrom[Array[Int]](0)(3).to[List]
+        data.unpackFrom[Array[Int]^{}](0)(3).to[List]
       . assert(_ == List(1, 2, 3))
 
       test(m"Unpack a prefix of an array"):
-        data.unpackFrom[Array[Int]](0)(2).to[List]
+        data.unpackFrom[Array[Int]^{}](0)(2).to[List]
       . assert(_ == List(1, 2))
 
       test(m"Unpack an empty array"):
-        data.unpackFrom[Array[Int]](0)(0).to[List]
+        data.unpackFrom[Array[Int]^{}](0)(0).to[List]
       . assert(_ == Nil)
 
       test(m"Unpack an array from an offset"):
-        data.unpackFrom[Array[Int]](4)(2).to[List]
+        data.unpackFrom[Array[Int]^{}](4)(2).to[List]
       . assert(_ == List(2, 3))
 
       test(m"Unpack an array of products"):
-        Array[Byte](0, 1, 0, 2, 0, 3, 0, 4).unpackFrom[Array[Pair]](0)(2).to[List]
+        Array[Byte](0, 1, 0, 2, 0, 3, 0, 4).unpackFrom[Array[Pair]^{}](0)(2).to[List]
       . assert(_ == List(Pair(1.toShort, 2.toShort), Pair(3.toShort, 4.toShort)))
 
       test(m"An array continuation does not advance the caller's buffer"):
         data.sextant:
-          unpack[Array[Int]](3)
+          unpack[Array[Int]^{}](3)
           summon[Sextant].offset
       . assert(_ == 0)
 
       test(m"An array continuation can be invoked more than once"):
         data.sextant:
-          val read = unpack[Array[Int]]
+          val read = unpack[Array[Int]^{}]
           (read(1).to[List], read(2).to[List])
       . assert(_ == (List(1), List(1, 2)))

@@ -38,7 +38,7 @@ Only a receiver with a `Countable` instance has an `extent`, and only one with a
 a dysasymptotic acknowledgement — `List` and `Chain`.
 
 A loop over anything else has no confined form and is left alone. The receivers that come up
-and cannot be drained are the mutable `scala.Array`, `scala.IArray`, a varargs `Seq`, and an
+and cannot be drained are the mutable `scala.Array`, a varargs `Seq`, and an
 `IndexedSeq` whose elements carry capabilities, since the `Countable` instance is capture-free
 and a capability cannot flow into it. A mutable buffer being filled is not an exception to
 find a way around: write it through `Array.scribe`, whose handle brands its own indices.

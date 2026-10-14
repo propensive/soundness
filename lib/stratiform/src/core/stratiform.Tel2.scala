@@ -395,10 +395,10 @@ trait Tel2 extends Tel3:
       Tel.Decodable({ () =>
         val fields: List[(Text, Morphology)] =
           // Not `to[List]`: inline re-elaboration freshens the array, so the conversion
-          // goes through the underlying `IArray`.
+          // goes through the stdlib view.
 
             contexts[derivation](): [field] => context => (label, context.shape())
-            . readable.toList
+            . stdlib.toList
             . to(List)
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
@@ -526,7 +526,7 @@ trait Tel2 extends Tel3:
             // the array.
 
             contexts[derivation](): [field] => context => (label, context.shape())
-            . readable.toList
+            . stdlib.toList
             . to(List)
 
           Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })

@@ -126,7 +126,7 @@ extension (bytes: Data)
       val i = b&0xff
       (if i%0x80 <= 0x20 || i == 0x7f then i + 0x100 else i).toChar
 
-    . readable.mkString.tt
+    . stdlib.mkString.tt
 
 extension [textual](text: textual)
   def cut[delimiter](delimiter: delimiter, limit: Int = Int.MaxValue)
@@ -546,8 +546,8 @@ extension (text: Text)
 extension (iarray: Array[Char]^{}) def text: Text = String(Array.unsafeJvm(iarray)).tt
 
 // One `Joinable.Source`-driven block serves every receiver: the native shapes (`List`,
-// `Chain`, `Sequence`, `Set`, …) and external `Iterable`s through `Traversable`, and
-// `scala.IArray` through its own instance. A single generic block is load-bearing: a
+// `Chain`, `Sequence`, `Set`, the frozen array, …) and external `Iterable`s through
+// `Traversable`. A single generic block is load-bearing: a
 // competing receiver-specific block of the same name would make every receiver ambiguous,
 // because overload specificity cannot compare extension alternatives whose clause shapes
 // differ. Joining forces the whole stream, which is the caller's intent here, and a `Set`'s

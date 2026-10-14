@@ -2825,8 +2825,8 @@ object Tel extends Tel2:
       // the arena (null for an atom built from text), and the slice's offset and length in it.
       // Immutable for the reason `fromArena` gives: the slice is committed before the arena
       // changes.
-      private[stratiform] def arena: scala.IArray[Byte] | Null =
-        bytes.asInstanceOf[scala.IArray[Byte] | Null]
+      private[stratiform] def arena: Array[Byte]^{} | Null =
+        bytes.asInstanceOf[Array[Byte]^{} | Null]
 
       private[stratiform] def arenaOffset: Int = byteOff
       private[stratiform] def arenaLength: Int = byteLen
@@ -2902,9 +2902,9 @@ object Tel extends Tel2:
   // `Span`); those fall back to the keyword. Columns being 1-indexed makes 0
   // unambiguous.
   //
-  // Represented as the stdlib's immutable array (pure by construction): the frozen
-  // `Array[Int]^{}` form makes every `PositionIndex`-holding field carry a fresh `any.rd`.
-  opaque type PositionIndex = scala.IArray[Int]
+  // The frozen `Array[Int]^{}` itself: pure under `-Zfrozen-pure`, which classifies an opaque
+  // alias over a frozen array as deriving from no capability class.
+  opaque type PositionIndex = Array[Int]^{}
 
   // Ints per compound in the parser's flat pre-order record stream, and the fixed
   // part of a descriptor's header. Named once so the parser's append site and
@@ -2913,10 +2913,10 @@ object Tel extends Tel2:
   private[stratiform] inline val descriptorHeader = 7
 
   object PositionIndex:
-    private[stratiform] def apply(data: Array[Int]^{}): PositionIndex = data.readable
+    private[stratiform] def apply(data: Array[Int]^{}): PositionIndex = data
 
   extension (positionIndex: PositionIndex)
-    private[stratiform] def ints: Array[Int]^{} = Array.frozen(positionIndex)
+    private[stratiform] def ints: Array[Int]^{} = positionIndex
 
   // Parse `bytes` into a `Tel` carrying a `PositionIndex`, so that
   // `tel.locate(pointer)` / `tel.locateKey(pointer)` resolve a node's keyword
@@ -3199,7 +3199,7 @@ object Tel extends Tel2:
       case data #:: rest if rest.nil => data
 
       case _ =>
-        var acc    = scala.IArray.empty[Byte]
+        var acc    = scala.collection.immutable.ArraySeq.empty[Byte]
         // The stdlib view walks the chain cell-by-cell; its `head`/`tail`
         // force exactly one cell at a time, which the native surface
         // deliberately withholds on the lazy shape.
@@ -3209,7 +3209,7 @@ object Tel extends Tel2:
           acc = acc ++ stream.head.stdlib
           stream = stream.tail
 
-        Array.frozen(acc)
+        Array.from(acc)
 
   // `bytes.read[Tel]` for any Chain[Data] source: concatenates the
   // chunks and parses the result. The metadata (interpreter directive,

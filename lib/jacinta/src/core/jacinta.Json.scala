@@ -793,8 +793,8 @@ object Json extends Json1, Dynamic:
   case object JsonNull
   type JsonNull    = JsonNull.type
   type JsonObject  = Array[Any]^{}
-  // The frozen forms are enumerated (`Array` is invariant, so `Array[Long]^{}` no longer
-  // subsumes into `Array[Any]^{}` the way the covariant `IArray` did).
+  // The frozen forms are enumerated: `Array` is invariant, so `Array[Long]^{}` does not
+  // subsume into `Array[Any]^{}`.
   type JsonArray   = Array[Any]^{} | Array[Long]^{} | Array[Int]^{}
 
   object Encodable:
@@ -1560,15 +1560,15 @@ object Json extends Json1, Dynamic:
   // All internal references in a `PositionIndex` are stored as offsets
   // relative to the start of the containing node descriptor, so any slice
   // extracted at a descriptor boundary is itself a valid `PositionIndex`.
-  // Represented as the stdlib's immutable array (pure by construction): the frozen
-  // `Array[Int]^{}` form makes every `PositionIndex`-holding field carry a fresh `any.rd`.
-  opaque type PositionIndex = scala.IArray[Int]
+  // The frozen `Array[Int]^{}` itself: pure under `-Zfrozen-pure`, which classifies an opaque
+  // alias over a frozen array as deriving from no capability class.
+  opaque type PositionIndex = Array[Int]^{}
 
   object PositionIndex:
-    private[jacinta] def apply(data: Array[Int]^{}): PositionIndex = data.readable
+    private[jacinta] def apply(data: Array[Int]^{}): PositionIndex = data
 
   extension (positionIndex: PositionIndex)
-    private[jacinta] def ints: Array[Int]^{} = Array.frozen(positionIndex)
+    private[jacinta] def ints: Array[Int]^{} = positionIndex
 
   // Focus value tracked by Jacinta's decoders / encoders. `pointer` is the
   // JSON-pointer path to the current node. `position` is initially `Unset`
@@ -2464,7 +2464,7 @@ object Json extends Json1, Dynamic:
         if isBoolean then json.asInstanceOf[Boolean] else expected(Json.Primitive.Boolean) yet false
 
       // Returns a (keys, values) view over an object node. This *materialises*
-      // two new IArrays from the flat alternating layout, so prefer
+      // two new frozen arrays from the flat alternating layout, so prefer
       // `objectKey`/`objectValue` when you only need a few entries.
       def obj(using Tactic[Json.Error]): (Array[String]^{}, Array[Json.Ast]^{}) =
         if !isObject

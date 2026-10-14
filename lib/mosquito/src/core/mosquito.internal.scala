@@ -47,7 +47,8 @@ import vacuous.*
 object internal:
   object Vector:
     def apply(tuple: Tuple): Vector[Tuple.Union[tuple.type], Tuple.Size[tuple.type]] =
-      new Vector(Array.frozen(tuple.toIArray))
+      // [construction-fresh] the tuple's array is fresh and retained by nobody else
+      new Vector(Array.unsafeFrozen(tuple.toArray.asInstanceOf[scala.Array[Any]]))
 
     def take[element](list: List[element], size: Int): Optional[Vector[element, size.type]] =
       val buffer = Array.allocate[Any](size)

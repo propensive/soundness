@@ -121,11 +121,9 @@ object internal:
     textInterpolator(context, insertions, normalize = true)
 
   object opaques:
-    // Represented as the stdlib's immutable array, not `Data` (the frozen `Array[Byte]^{}`):
-    // dealiasing the mutable-classified opaque inside this file gives `Ascii`-typed fields a
-    // fresh `any.rd` capability, forcing enclosing objects to extend `Capability`. The stdlib
-    // `IArray` is pure by construction; `Data` conversions happen at the `bytes`/`apply` edge.
-    opaque type Ascii = scala.IArray[Byte]
+    // The frozen byte array itself (`Data`): pure under `-Zfrozen-pure`, which classifies an
+    // opaque alias over a frozen array as deriving from no capability class.
+    opaque type Ascii = Array[Byte]^{}
     opaque type Grapheme = String
 
     object Grapheme:
@@ -171,7 +169,7 @@ object internal:
         def chars: Int = grapheme.length
 
     object Ascii:
-      def apply(bytes: Data): Ascii = bytes.readable
+      def apply(bytes: Data): Ascii = bytes
 
       given showable: Ascii is Showable =
         // Read-only use of the underlying JVM array: the `String` constructor copies.
@@ -192,20 +190,20 @@ object internal:
         type Operand = Ascii
         def concat(left: Ascii, right: Ascii): Ascii = textual.concat(left, right)
 
-      extension (ascii: Ascii) def bytes: Data = Array.frozen(ascii)
+      extension (ascii: Ascii) def bytes: Data = ascii
 
       given textual: Ascii is Textual:
         type Result = Byte
         type Show[value] = value is Showable
 
-        val empty: Ascii = scala.IArray.empty[Byte]
+        val empty: Ascii = Array.empty[Byte]
 
         // The erasure of the opaque alias is the underlying JVM array, so the `ClassTag` is
         // the element tag's array form; synthesis cannot see through the stdlib's opaque.
         val classTag: ClassTag[Ascii] = summon[ClassTag[Byte]].wrap.asInstanceOf[ClassTag[Ascii]]
 
-        def apply(text: Text): Ascii = text.sysData.readable
-        def single(operand: Byte): Ascii = scala.IArray(operand)
+        def apply(text: Text): Ascii = text.sysData
+        def single(operand: Byte): Ascii = Array(operand)
         def fromChar(char: Char): Byte = char.toByte
         def length(ascii: Ascii): Int = ascii.size
 
@@ -213,8 +211,7 @@ object internal:
           String(ascii.asInstanceOf[scala.Array[Byte]], StandardCharsets.US_ASCII).nn.tt
 
         def access(ascii: Ascii, index: Ordinal): Byte =
-          import scala.IArray.apply
-          ascii(index.n0)
+          ascii.readUnchecked(index.n0)
 
         def builder(size: Optional[Int]): Builder[Ascii] = AsciiBuilder(size)
         def size(ascii: Ascii): Int = ascii.length
@@ -223,19 +220,17 @@ object internal:
 
         def concat(left: Ascii, right: Ascii): Ascii =
           Array.build[Byte](left.length + right.length): array =>
-            array.place(Array.frozen(left), Prim)
-            array.place(Array.frozen(right), left.length.z)
-
-          . readable
+            array.place(left, Prim)
+            array.place(right, left.length.z)
 
         def indexOf(ascii: Ascii, sub: Text, start: Ordinal): Optional[Ordinal] =
-          ascii.indexOfSlice(apply(sub)).puncture(-1).let(_.z)
+          ascii.stdlib.indexOfSlice(apply(sub).stdlib).puncture(-1).let(_.z)
 
         def show[value](value: value)(using show: Show[value]): Ascii =
           Ascii(show.text(value).sysData)
 
         def segment(ascii: Ascii, interval: Interval): Ascii =
-          ascii.slice(interval.start.n0, interval.limit.n0)
+          Array.from(ascii.stdlib.slice(interval.start.n0, interval.limit.n0))
 
   def ascii(context: Expr[StringContext], parts: Expr[Seq[Ascii]]): Macro[Ascii] =
     val dynamicParts: List[Expr[Ascii]] = parts.absolve match

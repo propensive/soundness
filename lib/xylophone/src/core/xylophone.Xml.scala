@@ -2793,15 +2793,15 @@ object Xml extends Tag.Container
   // slice extracted at a descriptor boundary is itself a valid
   // `PositionIndex`. See `XmlParser` (tracking mode) for the layout and
   // `Xml.Locator#walk` for the navigation algorithm.
-  // Represented as the stdlib's immutable array (pure by construction): the frozen
-  // `Array[Int]^{}` form makes every `PositionIndex`-holding field carry a fresh `any.rd`.
-  opaque type PositionIndex = scala.IArray[Int]
+  // The frozen `Array[Int]^{}` itself: pure under `-Zfrozen-pure`, which classifies an opaque
+  // alias over a frozen array as deriving from no capability class.
+  opaque type PositionIndex = Array[Int]^{}
 
   object PositionIndex:
-    private[xylophone] def apply(data: Array[Int]^{}): PositionIndex = data.readable
+    private[xylophone] def apply(data: Array[Int]^{}): PositionIndex = data
 
   extension (positionIndex: PositionIndex)
-    private[xylophone] def ints: Array[Int]^{} = Array.frozen(positionIndex)
+    private[xylophone] def ints: Array[Int]^{} = positionIndex
 
   // Focus value tracked by Xylophone's path-aware decoders / encoders.
   // `path` is the XPath to the current node; `position` is the source

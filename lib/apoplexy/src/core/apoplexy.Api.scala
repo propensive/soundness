@@ -183,6 +183,11 @@ object Api:
 
       Body.Content(mediaType, () => postable.stream(value))
 
+    // A frozen `Data` body, by a method whose signature names the frozen type in ordinary code:
+    // a frozen type spliced through a quote is re-minted with a fresh read capability (the
+    // quote wall), so the `invoke` macro cannot write `content[Data]` and have it mean `Data`.
+    def data(mediaType: MediaType, value: Data): Api.Body = content[Data](mediaType, value)
+
   enum Body derives CanEqual:
     case Empty
     case Content(mediaType: MediaType, spring: Spring[Data])

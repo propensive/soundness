@@ -138,14 +138,6 @@ object Array:
     // [java-boundary] trusted boundary cast: the caller retains no writer
     caps.unsafe.unsafeAssumePure(array.asInstanceOf[scala.Array[element]^])
 
-  // Rehomes a stdlib `IArray` -- immutable by construction -- as a frozen `Array`: the
-  // return path of the compat shims, which delegate to the stdlib's `IArray` operations.
-  // Not `inline`: inline expansion of the cast inside capturing lambdas crashes the
-  // capture checker's boxer (boxDeeply assertion).
-  def frozen[element](iarray: scala.IArray[element]): Array[element]^{} =
-    // [construction-fresh] immutable stdlib IArray rehomed as frozen Array
-    caps.unsafe.unsafeAssumePure(iarray.asInstanceOf[scala.Array[element]])
-
   // Pattern support for any readable reference: `case Array(a, b)` reads but never writes,
   // so frozen, shared and exclusive receivers all subsume into `^{caps.any.rd}`.
   def unapplySeq[element](array: Array[element]^{caps.any.rd}): Option[Seq[element]] =
@@ -228,11 +220,6 @@ object Array:
     def raw: scala.Array[element]^ = buffer
 
   extension [element](array: Array[element]^{caps.any.rd})
-    // The read-only stdlib view: any reference may read (separation excludes live
-    // writers), so the compat shims delegate through the stdlib's immutable `IArray`
-    // surface, which exposes no write operations.
-    inline def readable: scala.IArray[element] = array.asInstanceOf[scala.IArray[element]]
-
     // The greppable stdlib bridge, as `List.stdlib`: a zero-copy, read-only `ArraySeq` view
     // for the stdlib and Java APIs that want a `Seq`. Not for element access: its generic
     // `apply` boxes, and it is a partial read the collection vocabulary does not offer.

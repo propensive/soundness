@@ -72,7 +72,7 @@ object Tests extends Suite("prelude-consumer", m"Proscenium consumer-view tests"
         Ledger(t"b" -> 2, t"a" -> 1).stdlib.keys.toList
       . assert(_ == scala.collection.immutable.List(t"b", t"a"))
 
-      test(m"a frozen array crosses to the stdlib as an IArray"):
+      test(m"a frozen array crosses to the stdlib as an ArraySeq"):
         Array(1, 2, 3).stdlib.toList
       . assert(_ == scala.collection.immutable.List(1, 2, 3))
 

@@ -72,7 +72,7 @@ object Query extends Dynamic:
           // Via the stdlib view: inline re-elaboration freshens the frozen array, defeating
           // both `to[List]` and the compat `toList`.
           fields(value) { [field] => field => contextual.encoded(field).prefix(label) }
-          . readable.toList
+          . stdlib.toList
           . to(proscenium.List)
           . flatMap(_.values)
 

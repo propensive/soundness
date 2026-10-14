@@ -838,12 +838,28 @@ object Apoplexy:
 
         carrierRepr.asType.absolve match
           case '[carrier] =>
-            val postable = Expr.summon[carrier is Postable].getOrElse:
-              val advice = t"import its entry from `postables`"
-              val body = t"the $carrierRepr request body of $verb $locus"
-              halt(m"apoplexy: no `Postable` for $body is in scope; $advice")
+            // [quote-wall] a frozen `Data` carrier is re-minted as `Array[Byte]^{any.rd}` wherever
+            // it crosses a quote, so the body is built by `Api.Body.data`, whose signature names
+            // the frozen type in ordinary code.
+            def bare(tpe: TypeRepr): TypeRepr = tpe match
+              case AnnotatedType(parent, _) => bare(parent)
+              case other                    => other.dealias
 
-            if actual <:< carrierRepr then
+            val frozenData =
+              bare(carrierRepr).typeSymbol == bare(TypeRepr.of[Data]).typeSymbol &&
+                bare(carrierRepr).typeArgs.headOption.exists(_ =:= TypeRepr.of[Byte])
+
+            val postable: Expr[carrier is Postable] =
+              if frozenData then '{Postable.data}.asInstanceOf[Expr[carrier is Postable]]
+              else Expr.summon[carrier is Postable].getOrElse:
+                val advice = t"import its entry from `postables`"
+                val body = t"the $carrierRepr request body of $verb $locus"
+                halt(m"apoplexy: no `Postable` for $body is in scope; $advice")
+
+            if frozenData && actual <:< carrierRepr then
+              val value = argExpr.asExprOf[Data]
+              '{Api.Body.data($mediaExpr, $value)}
+            else if actual <:< carrierRepr then
               val value = argExpr.asExprOf[carrier]
               '{Api.Body.content[carrier]($mediaExpr, $value)(using $postable)}
             else

@@ -469,15 +469,15 @@ object Yaml extends Yaml2, Dynamic:
   // stored relative to the start of the containing descriptor, so any slice
   // taken at a descriptor boundary is itself a valid `PositionIndex` —
   // mirrors `jacinta.Json.PositionIndex`.
-  // Represented as the stdlib's immutable array (pure by construction): the frozen
-  // `Array[Int]^{}` form makes every `PositionIndex`-holding field carry a fresh `any.rd`.
-  opaque type PositionIndex = scala.IArray[Int]
+  // The frozen `Array[Int]^{}` itself: pure under `-Zfrozen-pure`, which classifies an opaque
+  // alias over a frozen array as deriving from no capability class.
+  opaque type PositionIndex = Array[Int]^{}
 
   object PositionIndex:
-    private[ypsiloid] def apply(data: Array[Int]^{}): PositionIndex = data.readable
+    private[ypsiloid] def apply(data: Array[Int]^{}): PositionIndex = data
 
   extension (positionIndex: PositionIndex)
-    private[ypsiloid] def ints: Array[Int]^{} = Array.frozen(positionIndex)
+    private[ypsiloid] def ints: Array[Int]^{} = positionIndex
 
   // The focus carried by `Yaml#as[T]` — a YAML-pointer path plus an
   // optional source position. The position is populated lazily by

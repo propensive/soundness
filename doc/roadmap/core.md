@@ -77,7 +77,7 @@ carrying the comment that names its invariant. A literal zero is not the goal: i
 derived from the data, and the combinators' own internals, stay as loops.
 
 The drain is bounded by which receivers can carry a brand, not by how many loops there are. A
-loop over a mutable `scala.Array`, a `scala.IArray`, a varargs `Seq` or a capability-carrying
+loop over a mutable `scala.Array`, a varargs `Seq` or a capability-carrying
 `IndexedSeq` has no confined form at all, so the reachable corpus is smaller than the count
 suggests. Interim gauge, ratcheted per file by `make build`:
 

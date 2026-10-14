@@ -140,7 +140,7 @@ trait Decomposable2 extends Decomposable3:
       value =>
         val map =
           (fields(value) { [field] => field => label -> contextual.decomposition(field) })
-          . readable
+          . stdlib
           . to(Map)
 
         Decomposition.Product(typeName, map, value)

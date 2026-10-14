@@ -419,7 +419,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
         contexts[derivation]():
           [field] => schema => label.unless(_ => schema.schema().optional)
 
-        . readable.compact
+        . stdlib.compact
         . to(proscenium.List)
 
       Object(properties = map, required = required)

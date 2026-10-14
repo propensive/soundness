@@ -39,7 +39,7 @@ Int Long Short Byte Char Boolean Double Float Unit String Nothing Any AnyRef Any
 Seq Some None Option Either Left Right Try Success Failure Tuple NamedTuple Product Function Vector Range
 Predef Math StringContext Class ClassTag Throwable Exception Error RuntimeException Iterable
 BigInt BigDecimal Numeric Integral Fractional Serializable Comparable Runnable Thread Object
-Nil List Set Map Text Data Optional Unset IArray Chain Progression Expr Type Quotes Tuple1 Tuple2
+Nil List Set Map Text Data Optional Unset Chain Progression Expr Type Quotes Tuple1 Tuple2
 Benchmarks Suite Tests
 '''.split())
 

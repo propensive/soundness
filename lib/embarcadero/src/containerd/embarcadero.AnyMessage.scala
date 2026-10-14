@@ -41,19 +41,19 @@ import locomotion.field
 import prepositional.*
 
 object AnyMessage:
-  opaque type Payload = scala.IArray[Byte]
+  opaque type Payload = Array[Byte]^{}
 
   object Payload:
-    val empty: Payload = scala.IArray.empty[Byte]
+    val empty: Payload = Array.empty[Byte]
 
-    def apply(data: Data): Payload = data.readable
+    def apply(data: Data): Payload = data
 
     given encodable: Payload is Encodable in Protobuf = payload =>
-      Protobuf.Wire(WireType.Len, Array.frozen(payload))
+      Protobuf.Wire(WireType.Len, payload)
 
-    given decodable: Payload is Decodable in Protobuf = _.payload.readable
+    given decodable: Payload is Decodable in Protobuf = _.payload
 
-  extension (payload: Payload) def data: Data = Array.frozen(payload)
+  extension (payload: Payload) def data: Data = payload
 
 // The protobuf well-known `google.protobuf.Any`: a serialized message tagged with its
 // type URL. containerd uses it to carry opaque payloads — notably a container's OCI

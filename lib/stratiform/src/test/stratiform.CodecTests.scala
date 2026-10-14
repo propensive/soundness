@@ -227,7 +227,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
         val element = Tel.Type.assign(t"tel 1.0\n\nitem 300\n".read[Tel], schema)
         Bintel.encode(element, schema, bindings).stdlib
       . assert(_ == bytesOf(0x01, 0x00, 0x02, 0x00, 0x02, 0xAC, 0x02, 0x01, 0x01, 0x07)
-          . readable.toSeq)
+          . stdlib.toSeq)
 
       test(m"the value hash is taken over the codec bytes"):
         val schema = schemaOf(amountSchema)
