@@ -91,13 +91,24 @@ object Tzdb:
     parse(name, lines)
 
   def parse(name: Text, lines: Chain[Text]): List[Tzdb.Entry] logs Tzdb.Event raises Tzdb.Error =
-    def parseDuration(lineNo: Int, string: Text) = string.cut(t":") match
-      case As[Base24](h) :: Nil                                   => Duration(h, 0, 0)
-      case As[Base24](h) :: As[Base60](m) :: Nil                  => Duration(h, m, 0)
-      case As[Base24](h) :: As[Base60](m) :: As[Base60](s) :: Nil => Duration(h, m, s)
+    // A `STDOFF` or `SAVE` field: west of Greenwich it is negative, and the sign applies to every
+    // component, since `-0:30` carries no sign on its hours. A `SAVE` may also exceed 24 hours.
+    def parseDuration(lineNo: Int, string: Text) =
+      val negative = string.starts(t"-")
+      val sign = if negative then -1 else 1
 
-      case other =>
-        abort(Tzdb.Error(Tzdb.Error.Reason.CouldNotParseTime(other.show), lineNo))
+      (if negative then string.skip(1) else string).cut(t":") match
+        case As[Int](h) :: Nil if h >= 0 =>
+          Duration(sign*h, 0, 0)
+
+        case As[Int](h) :: As[Base60](m) :: Nil if h >= 0 =>
+          Duration(sign*h, sign*m, 0)
+
+        case As[Int](h) :: As[Base60](m) :: As[Base60](s) :: Nil if h >= 0 =>
+          Duration(sign*h, sign*m, sign*s)
+
+        case other =>
+          abort(Tzdb.Error(Tzdb.Error.Reason.CouldNotParseTime(other.show), lineNo))
 
     def parseTime(lineNo: Int, string: Text) = string.cut(t":") match
       case As[Base24](h) :: r"${As[Base60](m)}([0-9]*)s" :: Nil   => Time(h, m, 0, 's')
