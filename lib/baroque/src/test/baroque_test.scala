@@ -125,6 +125,18 @@ object Tests extends Suite("complex", m"Baroque tests"):
       Complex(1, 3)*Complex(2, 4)
     . assert(_ == Complex(-10, 10))
 
+    test(m"Scale the imaginary unit by a real number"):
+      Complex(0.8, 0.0) + i*1.8
+    . assert(_ == Complex(0.8, 1.8))
+
+    test(m"Scale a complex number by a real number on the left"):
+      2.0*Complex(1.5, -0.5)
+    . assert(_ == Complex(3.0, -1.0))
+
+    test(m"Scale a complex quantity by a real number"):
+      Complex(1.0*Metre, 3.0*Metre)*2.0
+    . assert(_ == Complex(2.0*Metre, 6.0*Metre))
+
     test(m"Multiply complex quantities"):
       Complex(1*Metre, 3*Metre)*Complex(2*Metre, 4*Metre)
     . assert(_ == Complex(-10*Metre*Metre, 10*Metre*Metre))
