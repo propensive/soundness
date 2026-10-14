@@ -44,7 +44,7 @@ import codepages.asciiCodepage
 import strategies.throwUnsafely
 import denominative.dysasymptotics.linearSize
 
-object Tests extends Suite(m"Bitumen Tests"):
+object Tests extends Suite("tar", m"Bitumen Tests"):
   def run(): Unit =
     val helloFile = Tar.Entry.File
                      ( path  = t"hello.txt".as[Relative on Tar],

@@ -131,7 +131,7 @@ private def chunked(bytes: Data, size: Int): Chain[Data] =
      ( bytes.segment((0).z till split.z),
        chunked(bytes.segment(split.z till bytes.length.z), size) )
 
-object Tests extends Suite(m"Locomotion Protobuf Tests"):
+object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
   def run(): Unit =
     def wire[value: Encodable in Protobuf](value: value): List[Int] =
       value.in[Protobuf].encode.to[List].map(_.toInt & 0xff)

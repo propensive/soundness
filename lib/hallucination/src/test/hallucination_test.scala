@@ -39,7 +39,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 
-object Tests extends Suite(m"Hallucination Tests"):
+object Tests extends Suite("image", m"Hallucination Tests"):
 
   val jpeg = hex"""ffd8ffe000104a46494600010101012c012c0000ffdb0043000302020302020303030304030304050
                    805050404050a070706080c0a0c0c0b0a0b0b0d0e12100d0e110e0b0b1016101113141515150c0f17

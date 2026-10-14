@@ -41,7 +41,7 @@ import soundness.*
 // through the given's own `interpret`/`locate` surface, so the path a real `Cli`
 // exercises is the path under test. `locate` distinguishes a present flag with no
 // operands (`Nil`) from an absent one (`Unset`).
-object InterpreterTests extends Suite(m"Commandline interpreter tests"):
+object InterpreterTests extends Suite("cli-interpreter", m"Commandline interpreter tests"):
   // Renders a `locate` outcome as `Text` (the union `Optional[List[Text]]` has no
   // `CanEqual` against a plain list): `absent` for an unspecified flag, otherwise the
   // operands space-joined in brackets, so a present flag with no operands reads `[]`.

@@ -67,7 +67,7 @@ object Fahrenheit:
     def readRuntime(input: String): Fahrenheit =
       Fahrenheit(java.lang.Integer.parseInt(input.trim.nn))
 
-object Tests extends Suite(m"Prescience tests"):
+object Tests extends Suite("staging", m"Prescience tests"):
   def run(): Unit =
     suite(m"Tier A: static instances evaluated at expansion time"):
       // The leaf instances' runtime siblings throw, so these passing at all

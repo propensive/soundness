@@ -36,7 +36,7 @@ import soundness.*
 
 given decimalizer: Decimalizer = Decimalizer(3)
 
-object Tests extends Suite(m"Abacist Tests"):
+object Tests extends Suite("count", m"Abacist Tests"):
   def run(): Unit =
     suite(m"Quanta tests"):
       type Height = Quanta[Inches[1]] in (Feet[1])

@@ -34,7 +34,7 @@ package virility
 
 import soundness.*
 
-object Tests extends Suite(m"Virility Tests"):
+object Tests extends Suite("roff", m"Virility Tests"):
   def run(): Unit =
     suite(m"Escaping tests"):
       test(m"Hyphens become hyphen-minus escapes"):

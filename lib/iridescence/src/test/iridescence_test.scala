@@ -38,7 +38,7 @@ import soundness.*
 
 given Colorimetry = colorimetry.daylightColorimetry
 
-object Tests extends Suite(m"Iridescence tests"):
+object Tests extends Suite("color", m"Iridescence tests"):
   def run(): Unit =
     // A missing `Inspectable` is never a compile error, so coverage is held in place by
     // asserting on the renderings: `fallbacks` returns those which used a marked fallback.

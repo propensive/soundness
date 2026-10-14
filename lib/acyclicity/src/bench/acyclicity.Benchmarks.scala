@@ -78,7 +78,7 @@ enum Operation:
   case Construct, ConstructReversed, Build, Copy, Sorted, Reachable, Sources, Sinks, Closure,
       Reduction, Invert, AddBatch, Bypass
 
-object Benchmarks extends Suite(m"Acyclicity benchmarks"):
+object Benchmarks extends Suite("dag-bench", m"Acyclicity benchmarks"):
   given decimalizer: Decimalizer     = Decimalizer(2)
   given device:      BenchmarkDevice = LocalhostDevice
 

@@ -135,7 +135,7 @@ import probates.panicProbate
 // Running the queue rows at ~10⁵ repetitions also exposed a real race in `Handoff`: a consumer
 // observing `finish()` between its read of the tail index and its check of the finished flag
 // dropped the final item. `take`/`drain` now re-read the tail after seeing `done`.
-object Benchmarks extends Suite(m"Effect runtimes: Soundness vs cats-effect vs Kyo"):
+object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs cats-effect vs Kyo"):
   given decimalizer: Decimalizer     = Decimalizer(2)
   given device:      BenchmarkDevice = LocalhostDevice
 

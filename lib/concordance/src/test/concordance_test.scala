@@ -49,7 +49,7 @@ import rudiments.{pairs, triples, quads, adjacent}
 // receiver such as `Sequence` needs neither.
 import denominative.dysasymptotics.{linearSize, linearAccess}
 
-object Tests extends Suite(m"Concordance tests"):
+object Tests extends Suite("concat", m"Concordance tests"):
   def run(): Unit =
     suite(m"Bijection"):
       val bijection = Bijection(scala.collection.immutable.Map(1 -> t"one", 2 -> t"two"))

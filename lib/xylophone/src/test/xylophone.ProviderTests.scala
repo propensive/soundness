@@ -41,7 +41,7 @@ import strategies.throwUnsafely
 import textSanitizers.skipSanitizer
 import xmlSchemas.freeformXmlSchema
 
-object ProviderTests extends Suite(m"Xylophone type provider tests"):
+object ProviderTests extends Suite("xml-provider", m"Xylophone type provider tests"):
 
   import Xml.Provider.Error.Reason.*
 

@@ -62,7 +62,7 @@ object Orphans:
       def orphan()(using Testable): Test.Id = test(m"orphan")
     . map(_.message.tt.contains(t"a test must be declared for a Suite"))
 
-object Tests extends Suite("probably", m"Probably Tests"):
+object Tests extends Suite("testing", m"Probably Tests"):
   // The event sequence of a suite invoked with `terms`, as `label`s, with the exit status.
   def label(event: TestEvent): Text = event match
     case TestEvent.SuiteStarted(ref, _)             => t"suite-started:${ref.name}"
@@ -150,8 +150,8 @@ object Tests extends Suite("probably", m"Probably Tests"):
       test(m"the index names a suite object, and leaves out what an impromptu block declares"):
         val lines = indexed(t"probably_test.scala")
 
-        ( lines.exists(_.starts(t"suite\tprobably.Tests\tprobably\tProbably Tests\t")),
-          lines.exists(_.starts(t"open\tprobably\t")),
+        ( lines.exists(_.starts(t"suite\tprobably.Tests\ttesting\tProbably Tests\t")),
+          lines.exists(_.starts(t"open\ttesting\t")),
           lines.exists(_.contains(t"\tquick one\t")) )
       . assert(_ == (true, true, false))
 
@@ -161,7 +161,7 @@ object Tests extends Suite("probably", m"Probably Tests"):
 
       test(m"a method declares tests for a named suite, for any suite, or impromptu"):
         demilitarize:
-          def named()(using Testable of "probably"): Test.Id = test(m"named")
+          def named()(using Testable of "testing"): Test.Id = test(m"named")
           def shared[topic <: Label]()(using Testable of topic): Test.Id = test(m"shared")
           def unlisted()(using Testable of Impromptu): Test.Id = test(m"unlisted")
         . map(_.message)
@@ -173,20 +173,20 @@ object Tests extends Suite("probably", m"Probably Tests"):
           Suite.derive(t"Honeycomb Tests"),
           Suite.derive(t"  y\"…\" interpolator (v2) "),
           Suite.derive(t"…") )
-      . assert(_ == (t"probably", t"probe", t"honeycomb-tests", t"y-interpolator-v2", t"suite"))
+      . assert(_ == (t"testing", t"probe", t"honeycomb-tests", t"y-interpolator-v2", t"suite"))
 
       test(m"a suite's id heads the paths of its tests, and its title is still its name"):
         val id = impromptu(test(m"probe"))
         val ref = TestEvent.Ref.of(id)
         (ref.path.prim, TestEvent.Ref.of(Tests.id).name, TestEvent.Ref.of(Tests.id).moniker)
-      . assert(_ == (t"probably", t"Probably Tests", t"probably"))
+      . assert(_ == (t"testing", t"Probably Tests", t"testing"))
 
       test(m"a suite's id selects its tests, with or without a hyphen in it"):
         val hyphenated = Testable.of[Impromptu](m"Honeycomb Tests", Unset, Unset, t"html-5")
         val inside = Test.Id(m"inside", hyphenated, summon[Codepoint])
         val outside = impromptu(test(m"outside"))
 
-        List(t"html-5", t"probably", t"html-5/**", t"html").map: term =>
+        List(t"html-5", t"testing", t"html-5/**", t"html").map: term =>
           val selection = Selection.parse(List(term))
 
           ( selection.admits(inside, Entry.Kind.Check, Nil, Nil),

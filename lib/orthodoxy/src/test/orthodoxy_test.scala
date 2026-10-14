@@ -59,7 +59,7 @@ class TokenServer(canned: () => Http.Response) extends Http.Backend:
     lastBody = body().memoize.utf8
     canned()
 
-object Tests extends Suite(m"Orthodoxy Tests"):
+object Tests extends Suite("oauth", m"Orthodoxy Tests"):
   def run(): Unit =
     suite(m"PKCE"):
       test(m"the S256 challenge of RFC 7636's example verifier"):

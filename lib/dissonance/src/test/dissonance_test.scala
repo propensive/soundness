@@ -42,7 +42,7 @@ import errorDiagnostics.emptyDiagnostics
 
 import Redraft.Directive as D
 
-object Tests extends Suite(m"Dissonance tests"):
+object Tests extends Suite("diff", m"Dissonance tests"):
   def run(): Unit =
     suite(m"Diff tests"):
       test(m"Empty lists"):

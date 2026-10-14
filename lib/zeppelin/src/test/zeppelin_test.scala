@@ -52,7 +52,7 @@ import _root_.java.util.zip as juz
 import filesystemBackends.javaBaseFilesystem
 import denominative.dysasymptotics.linearSize
 
-object Tests extends Suite(m"Zeppelin tests"):
+object Tests extends Suite("zip", m"Zeppelin tests"):
   def run(): Unit =
     val workDir: Path on Linux = temporaryDirectory[Path on Linux]/Uuid().show
     workDir.create[Directory]()

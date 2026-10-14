@@ -34,5 +34,5 @@ package prepositional
 
 import soundness.*
 
-object Tests extends Suite(m"Prepositional Tests"):
+object Tests extends Suite("prepositions", m"Prepositional Tests"):
   def run(): Unit = ()

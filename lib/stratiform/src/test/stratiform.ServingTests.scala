@@ -42,7 +42,7 @@ import denominative.dysasymptotics.linearSize
 // `receive`): a writer holding a value under some composition serves the first alternative it
 // can, with the richest permitted composition, and a reader takes the first alternative whose
 // schema is a supertype of what arrived, projecting the document to it.
-object ServingTests extends Suite(m"Stratiform acceptance serving tests"):
+object ServingTests extends Suite("tel-serving", m"Stratiform acceptance serving tests"):
 
   private def resource(name: String): Data =
     val stream = getClass.getResourceAsStream(s"/stratiform/corpus/$name").nn

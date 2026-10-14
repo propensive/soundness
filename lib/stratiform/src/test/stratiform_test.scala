@@ -71,7 +71,7 @@ import threads.virtualThreads
 import probates.cancelProbate
 import Tel.given
 
-object Tests extends Suite(m"Stratiform Tests"):
+object Tests extends Suite("tel", m"Stratiform Tests"):
   case class Person(name: Text, age: Int) derives CanEqual
   case class Renamed(@name[Tel](t"full_name") fullName: Text, @name(t"yob") year: Int)
   derives CanEqual

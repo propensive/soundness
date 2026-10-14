@@ -49,7 +49,7 @@ import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import vacuous.*
 
-object Benchmarks extends Suite(m"Zephyrine benchmarks"):
+object Benchmarks extends Suite("parsing-bench", m"Zephyrine benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)

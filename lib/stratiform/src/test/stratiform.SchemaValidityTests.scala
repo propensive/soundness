@@ -43,7 +43,7 @@ import denominative.dysasymptotics.linearSize
 // field-type merges, E209/E217 reference resolution, and the layer
 // `exclude` operation (§20.3) with E211 (no such variant) and E212
 // (emptying a SelectDefinition referenced by a required SelectRef).
-object SchemaValidityTests extends Suite(m"Stratiform schema validity tests"):
+object SchemaValidityTests extends Suite("tel-schema-validity", m"Stratiform schema validity tests"):
 
   // An accrual accumulator, so a single value's codes can be observed in the
   // order they are reported rather than only the first. Codes are prepended

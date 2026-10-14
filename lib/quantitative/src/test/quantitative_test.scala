@@ -39,7 +39,7 @@ import scala.language.experimental.into
 
 given decimalizer: Decimalizer = Decimalizer(3)
 
-object Tests extends Suite(m"Quantitative Tests"):
+object Tests extends Suite("units", m"Quantitative Tests"):
   // `Hour`/`Minute` are no longer Quantitative unit values (those names are now aviation radices);
   // the tests still want them as physical quantities, so define them locally.
   val Hour: Quantity[Hours[1]] = Quantity(1.0)

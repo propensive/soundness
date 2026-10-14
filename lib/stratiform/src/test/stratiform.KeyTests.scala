@@ -42,7 +42,7 @@ import denominative.dysasymptotics.linearSize
 // constraints (E219–E221, §20.1), the monotone-OR layer merge (§20.3), the
 // load-bearing atom-phase ordering (`key` before `default` in the TELS
 // Field record, §20.5), and instance-level key uniqueness (E314, §21.6).
-object KeyTests extends Suite(m"Stratiform key field tests"):
+object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
 
   private def schemaOf(text: Text): Tels = text.read[Tel].as[Tels]
 

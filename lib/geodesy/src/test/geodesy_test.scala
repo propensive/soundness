@@ -39,7 +39,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 
-object Tests extends Suite(m"Geodesy tests"):
+object Tests extends Suite("geo", m"Geodesy tests"):
   def run(): Unit =
     // Latitude and longitude are each packed into 32 bits, so a location only returns the nearest
     // representable angles: about 8×10⁻⁸ degrees apart for longitude, half that for latitude.

@@ -39,7 +39,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 
-object Tests extends Suite(m"Metamorphose tests"):
+object Tests extends Suite("permutations", m"Metamorphose tests"):
   def run(): Unit =
     suite(m"Factorial tests"):
       test(m"Calculate 0!")(Factorial(0)).assert(_ == 1)

@@ -44,7 +44,7 @@ case class Tree(value: Text, children: List[Tree]) derives CanEqual
 enum Color:
   case Red, Green, Blue
 
-object Tests extends Suite(m"Austronesian tests"):
+object Tests extends Suite("pojo", m"Austronesian tests"):
   def run(): Unit =
     test(m"Serialize a case class")(Person("John", 30).pojo)
     . assert(_ === Pojo(scala.Array("John", java.lang.Integer.valueOf(30).nn)))

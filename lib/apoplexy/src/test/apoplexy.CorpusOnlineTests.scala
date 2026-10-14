@@ -42,7 +42,7 @@ import strategies.throwUnsafely
 // The descriptions too large to check in, fetched at a pinned commit. Attestation runs offline,
 // so the suite runs only when `SOUNDNESS_CI_ONLINE=1` was set for the daemon running it — read
 // from the environment the daemon was started with, since its own is sanitized.
-object CorpusOnlineTests extends Suite(m"OpenAPI online corpus tests"):
+object CorpusOnlineTests extends Suite("openapi-online", m"OpenAPI online corpus tests"):
   case class Remote(name: Text, url: HttpUrl, paths: Int)
 
   val remotes: List[Remote] = List

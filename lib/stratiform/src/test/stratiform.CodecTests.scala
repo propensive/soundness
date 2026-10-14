@@ -45,7 +45,7 @@ import denominative.dysasymptotics.linearSize
 // codec: canonical decimal integer text ↔ BinTEL varint bytes, with a
 // deliberately lenient decoder (overlong varints accepted) that the B15
 // canonicality test exploits.
-object CodecTests extends Suite(m"Stratiform codec tests"):
+object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
 
   object DecimalVarint extends Tel.Codec:
     def encode(text: Text): Tel.Codec.Encoded =

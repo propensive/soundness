@@ -39,7 +39,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import xylophone.XmlSchema
 
-object Tests extends Suite(m"Archimedes tests"):
+object Tests extends Suite("mathml", m"Archimedes tests"):
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
 

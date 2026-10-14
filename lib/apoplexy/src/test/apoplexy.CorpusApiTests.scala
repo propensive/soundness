@@ -56,7 +56,7 @@ object Swagger:
 
 // The typed client against real specifications: navigation, parameters, bodies and responses
 // are checked, at compile time, against documents as their vendors publish them.
-object CorpusApiTests extends Suite(m"OpenAPI corpus client tests"):
+object CorpusApiTests extends Suite("openapi-corpus-client", m"OpenAPI corpus client tests"):
   def run(): Unit =
     def ok(body: Text): Http.Response =
       Http.Response(Http.Ok, contentType = media"application/json")(body)

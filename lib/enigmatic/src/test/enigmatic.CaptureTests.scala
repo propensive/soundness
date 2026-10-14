@@ -51,7 +51,7 @@ import cloaks.heapCloak
 // capture checking confines the capability to that block: these tests demonstrate
 // that key material cannot be smuggled out — neither directly, nor closed over —
 // while legitimate use within the block remains unaffected.
-object CaptureTests extends Suite(m"Capability confinement tests"):
+object CaptureTests extends Suite("crypto-capture", m"Capability confinement tests"):
   def run(): Unit =
     test(m"uncloak still works as normal under capture checking"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()

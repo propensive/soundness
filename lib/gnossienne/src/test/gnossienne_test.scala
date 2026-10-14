@@ -40,7 +40,7 @@ case class Person(@primary email: Text, name: Text)
 
 case class Product(@primary code: Int, description: Text)
 
-object Tests extends Suite(m"Gnossienne Tests"):
+object Tests extends Suite("references", m"Gnossienne Tests"):
   def run(): Unit =
     val jack = Person(t"jack@example.com", t"Jack")
     val jill = Person(t"jill@example.com", t"Jill")

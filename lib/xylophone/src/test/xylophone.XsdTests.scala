@@ -40,7 +40,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import textSanitizers.skipSanitizer
 
-object XsdTests extends Suite(m"Xylophone XML Schema tests"):
+object XsdTests extends Suite("xsd", m"Xylophone XML Schema tests"):
   given XmlSchema = XmlSchema.Freeform
 
   def schema(resource: Resource): Xsd = Xsd.parse(resource.read[Text])

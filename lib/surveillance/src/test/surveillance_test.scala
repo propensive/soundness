@@ -43,7 +43,7 @@ import temporaryDirectories.systemTemporaryDirectory
 
 import filesystemBackends.javaBaseFilesystem
 
-object Tests extends Suite(m"Surveillance tests") uses surveillance.Watcher:
+object Tests extends Suite("watch", m"Surveillance tests") uses surveillance.Watcher:
   def run(): Unit =
     test(m"Watching a path beneath a nonexistent directory raises a Watch.Error"):
       val target = t"/surveillance-nonexistent-parent-9d3f17/child".as[Path on Local]

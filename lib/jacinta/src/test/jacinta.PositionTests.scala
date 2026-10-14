@@ -39,7 +39,7 @@ import codepages.utf8Codepage
 import strategies.throwUnsafely
 import parsing.trackPositions
 
-object PositionTests extends Suite(m"Jacinta position-index tests"):
+object PositionTests extends Suite("json-positions", m"Jacinta position-index tests"):
 
   private def at(line: Int, column: Int, length: Int): Json.Ast.Position =
     Json.Ast.Position(line, column, length = length)

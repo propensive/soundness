@@ -51,7 +51,7 @@ object StackFixture:
 
 extension (value: Int) def extended: Int = throw Exception("extension")
 
-object StackTests extends Suite(m"Stack-trace resolution tests"):
+object StackTests extends Suite("tasty-stack", m"Stack-trace resolution tests"):
   // The checkout this suite was compiled in, which is the `-sourceroot` its TASTy records source
   // paths relative to: under fume the suite runs in a daemon whose working directory is `/`.
   given workspace: WorkingDirectory = () => Workspace.root.tt

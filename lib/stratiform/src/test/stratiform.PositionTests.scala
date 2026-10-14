@@ -38,7 +38,7 @@ import codepages.utf8Codepage
 import parsing.trackPositions
 import strategies.throwUnsafely
 
-object PositionTests extends Suite(m"Stratiform position-index tests"):
+object PositionTests extends Suite("tel-positions", m"Stratiform position-index tests"):
 
   // A located region: 1-based line/column with its character length (mirrors
   // `jacinta.PositionTests.at`). `locateKey` gives a compound's keyword;

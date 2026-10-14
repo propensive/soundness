@@ -49,7 +49,7 @@ import temporaryDirectories.systemTemporaryDirectory
 import threads.platformThreads
 import denominative.dysasymptotics.linearSize
 
-object Tests extends Suite(m"Mandible tests"):
+object Tests extends Suite("bytecode", m"Mandible tests"):
 
   def run(): Unit =
     test(m"Locate a known method on a classfile"):

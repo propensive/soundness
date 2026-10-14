@@ -39,7 +39,7 @@ import textMetrics.uniformMetric
 
 given Decimalizer(4)
 
-object Tests extends Suite(m"Mosquito tests"):
+object Tests extends Suite("matrix", m"Mosquito tests"):
   def run(): Unit =
     test(m"Create a Vector of Ints"):
       Vector(1, 2, 3)

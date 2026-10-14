@@ -45,7 +45,7 @@ import dysasymptotics.linearSize
 
 import alphabets.hexUpperCase
 
-object Tests extends Suite(m"Enigmatic tests"):
+object Tests extends Suite("crypto", m"Enigmatic tests"):
 
   val request: Text = t"""
     |-----BEGIN CERTIFICATE REQUEST-----

@@ -62,7 +62,7 @@ import webserverErrorPages.minimalErrorPage
 // socket and no threads — so they measure the per-request CPU cost of the HTTP
 // machinery, isolated from OS-socket and Loom-scheduling overhead.
 object Benchmarks
-extends Suite("scintillate-bench", m"Scintillate socket-server benchmarks"):
+extends Suite("httpd-bench", m"Scintillate socket-server benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)
@@ -131,7 +131,7 @@ extends Suite("scintillate-bench", m"Scintillate socket-server benchmarks"):
 
   // Kept out of `run` as separate methods: two iterations in one method body trip a
   // compiler crash (wildApprox).
-  private def sweep(stress: Stress)(using Testable of "scintillate-bench")
+  private def sweep(stress: Stress)(using Testable of "httpd-bench")
   :   Unit =
 
     servers.each: (name, server) =>
@@ -139,7 +139,7 @@ extends Suite("scintillate-bench", m"Scintillate socket-server benchmarks"):
         roundtrip(server, HttpWorkload.Plaintext)
 
   private def capacity(stress: Stress, workload: Int, slo: Int)
-    ( using Testable of "scintillate-bench" )
+    ( using Testable of "httpd-bench" )
   :   Unit =
 
     servers.each: (name, server) =>

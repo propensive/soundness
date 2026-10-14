@@ -41,7 +41,7 @@ import soundness.*
 // forwarder with the enum itself, which keeps the cases precise.
 import clavichord.Keypress
 
-object Tests extends Suite(m"Clavichord tests"):
+object Tests extends Suite("keyboard", m"Clavichord tests"):
   def run(): Unit =
     def rendered(keypress: Keypress): Text = keypress.show
 

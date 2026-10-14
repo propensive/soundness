@@ -37,7 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 
-object Tests extends Suite(m"Kaleidoscope tests"):
+object Tests extends Suite("regex", m"Kaleidoscope tests"):
   def run(): Unit =
     suite(m"Regex tests"):
       import Regex.Group, Regex.Quantifier.*, Regex.Greed.*

@@ -82,7 +82,7 @@ object DefaultShapeScope:
     . protect(yaml.as[DShape])
     (issues.items.map(_(0).s).to[Set], issues.items.size)
 
-object DefaultTests extends Suite(m"Ypsiloid Default-driven sentinel tests"):
+object DefaultTests extends Suite("yaml-defaults", m"Ypsiloid Default-driven sentinel tests"):
 
   // Inline + direct `Validate` construction; see ypsiloid.AccrualTests and rep/DECISIONS.md.
   private inline def validateYaml[result](yaml: Yaml)

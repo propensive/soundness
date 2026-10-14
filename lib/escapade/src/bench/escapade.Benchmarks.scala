@@ -48,7 +48,7 @@ import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import vacuous.*
 
-object Benchmarks extends Suite(m"Escapade benchmarks"):
+object Benchmarks extends Suite("ansi-bench", m"Escapade benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Chars[Power <: Nat] extends Units[Power, Information]
   val Char: MetricUnit[Chars[1]] = MetricUnit(1.0)

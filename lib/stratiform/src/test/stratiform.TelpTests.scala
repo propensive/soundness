@@ -42,7 +42,7 @@ import denominative.dysasymptotics.linearSize
 // resolution over the semantic model (§4), the all-digit shadowing rule
 // (§5), same-keyword selector scope (§6), failure kinds (§7), and the §10
 // worked examples verbatim.
-object TelpTests extends Suite(m"Stratiform TELP tests"):
+object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
 
   // The §10 example schema and document.
   private val menagerie: Text =

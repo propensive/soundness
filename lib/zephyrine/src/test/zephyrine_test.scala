@@ -43,7 +43,7 @@ import threads.virtualThreads
 import strategies.throwUnsafely
 import probates.panicProbate
 
-object Tests extends Suite(m"Zephyrine tests"):
+object Tests extends Suite("parsing", m"Zephyrine tests"):
   val bytes = Data.fill(1000)(_.toByte)
   def run(): Unit = stochastic:
 

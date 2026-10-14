@@ -37,7 +37,7 @@ import soundness.*
 @deprecated("superseded by `current`", "0.1.0")
 def obsolete(): Int = 42
 
-object Tests extends Suite(m"Larceny Tests"):
+object Tests extends Suite("compile-errors", m"Larceny Tests"):
   def run(): Unit =
     suite(m"Error capture"):
       test(m"a type error is captured as an error"):

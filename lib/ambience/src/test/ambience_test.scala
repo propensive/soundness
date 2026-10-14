@@ -48,7 +48,7 @@ def fixedSystem(entries: (Text, Text)*): System =
   val map = entries.to(Map)
   name => map.at(name)
 
-object Tests extends Suite(m"Ambience Tests"):
+object Tests extends Suite("environment", m"Ambience Tests"):
   def run(): Unit =
     suite(m"Architecture tests"):
       test(m"Decode a 32-bit x86 architecture"):

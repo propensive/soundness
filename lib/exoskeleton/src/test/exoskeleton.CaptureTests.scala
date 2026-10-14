@@ -39,7 +39,7 @@ import strategies.throwUnsafely
 // `sandbox` lends the installed daemon to its block as a `Tool` capability, and `pane` lends
 // the shell's terminal as a `Pane` capability; capture checking confines each to its block
 // (the process is killed, and the session ended, afterwards).
-object CaptureTests extends Suite(m"Rig confinement tests"):
+object CaptureTests extends Suite("cli-capture", m"Rig confinement tests"):
   def run(): Unit =
     test(m"the Tool capability cannot be returned from sandbox"):
       demilitarize:

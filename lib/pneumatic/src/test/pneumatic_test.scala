@@ -46,7 +46,7 @@ import probates.panicProbate
 import errorDiagnostics.emptyDiagnostics
 
 
-object Tests extends Suite(m"Pneumatic tests"):
+object Tests extends Suite("compression", m"Pneumatic tests"):
   def run(): Unit =
     suite(m"Compression tests"):
       test(m"Compress a single block with GZip"):

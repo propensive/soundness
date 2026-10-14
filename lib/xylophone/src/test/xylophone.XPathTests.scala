@@ -36,7 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 
-object XPathTests extends Suite(m"Xylophone XPath evaluation tests"):
+object XPathTests extends Suite("xpath", m"Xylophone XPath evaluation tests"):
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
     import XPath.Value

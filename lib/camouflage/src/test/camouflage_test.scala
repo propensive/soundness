@@ -34,7 +34,7 @@ package camouflage
 
 import soundness.*
 
-object Tests extends Suite(m"Camouflage tests"):
+object Tests extends Suite("cache", m"Camouflage tests"):
   def run(): Unit =
     test(m"Check first entry is removed"):
       val cache = LruCache[Int, Text](4)

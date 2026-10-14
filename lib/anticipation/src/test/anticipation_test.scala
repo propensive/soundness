@@ -34,7 +34,7 @@ package anticipation
 
 import soundness.*
 
-object Tests extends Suite(m"Anticipation Tests"):
+object Tests extends Suite("typeclasses", m"Anticipation Tests"):
   def run(): Unit =
     // The bare-`Long` time givens are named for their unit, and the names are the only thing
     // standing between a call site and a duration a million times too short (issue #1920). These

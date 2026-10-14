@@ -36,7 +36,7 @@ import soundness.*
 
 given Decimalizer = Decimalizer(3)
 
-object Tests extends Suite(m"Baroque tests"):
+object Tests extends Suite("complex", m"Baroque tests"):
   def run(): Unit =
     test(m"Show a complex number"):
       Complex(1, 3).show

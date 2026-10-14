@@ -45,7 +45,7 @@ import strategies.throwUnsafely
 
 case class Example(name: Text, count: Long)
 
-object Tests extends Suite(m"Superlunary Tests"):
+object Tests extends Suite("remote", m"Superlunary Tests"):
   def run(): Unit =
     // Every dispatch below runs in a freshly-compiled, separately-loaded JVM, so a failure here
     // is a staging failure. It must be reported as one: this suite used to swallow every

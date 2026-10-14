@@ -34,5 +34,5 @@ package beneficence
 
 import soundness.*
 
-object Tests extends Suite(m"Beneficence Tests"):
+object Tests extends Suite("plugin", m"Beneficence Tests"):
   def run(): Unit = ()

@@ -51,7 +51,7 @@ object QProbe:
 case class QChecked(name: Text, email: Text) derives CanEqual:
   QProbe.constructions += 1
 
-object Tests extends Suite(m"Legerdemain tests"):
+object Tests extends Suite("forms", m"Legerdemain tests"):
 
   case class Issues(items: List[(Text, Query.Error)] = Nil)(using Diagnostics)
   extends Error(m"${items.size} query issues"):

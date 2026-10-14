@@ -50,7 +50,7 @@ import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
 import vacuous.*
 
-object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
+object Benchmarks extends Suite("cbor-bench", m"Breviloquence CBOR parser benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)

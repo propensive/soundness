@@ -39,7 +39,7 @@ import strategies.throwUnsafely
 // The session and its in-flight streamed response are capabilities scoped to the block a
 // provider's `session` lends them to; capture checking prevents either being retained beyond
 // it, while pure values — replies, messages, usage — may leave freely.
-object CaptureTests extends Suite(m"Confinement tests"):
+object CaptureTests extends Suite("llm-capture", m"Confinement tests"):
   def run(): Unit =
     test(m"the session cannot be stashed in an outer variable"):
       demilitarize:

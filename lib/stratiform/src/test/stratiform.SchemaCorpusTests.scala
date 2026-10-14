@@ -47,7 +47,7 @@ import denominative.dysasymptotics.linearSize
 // error raised during schema construction, schema validity checking, and
 // type assignment is collected. The case passes when the collected codes
 // meet the fixture's expected codes.
-object SchemaCorpusTests extends Suite(m"Stratiform schema corpus tests"):
+object SchemaCorpusTests extends Suite("tel-schema-corpus", m"Stratiform schema corpus tests"):
 
   // Codes this implementation can raise. Corpus cases whose expected codes
   // fall wholly outside this set are pending-implementation and skipped,

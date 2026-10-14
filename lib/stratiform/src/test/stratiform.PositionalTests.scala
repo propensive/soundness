@@ -55,7 +55,7 @@ case class PNote(body: Text) derives CanEqual
 case class PGuard(flag: Boolean, word: Text) derives CanEqual
 case class PGuardBox(item: PGuard) derives CanEqual
 
-object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
+object PositionalTests extends Suite("tel-positional", m"Stratiform positional assignment tests"):
   def run(): Unit =
     suite(m"Positional atom decoding (§19.2, AST path)"):
       test(m"inline atoms assign positionally to record fields (#1694)"):

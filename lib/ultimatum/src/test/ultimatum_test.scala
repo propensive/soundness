@@ -37,7 +37,7 @@ import java.io as ji
 import soundness.*
 import denominative.dysasymptotics.linearSize
 
-object Tests extends Suite(m"Ultimatum Tests"):
+object Tests extends Suite("tui", m"Ultimatum Tests"):
   def run(): Unit =
     suite(m"TerminalBoard"):
       // Capture everything a surface writes into an in-memory buffer.

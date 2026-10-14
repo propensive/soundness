@@ -65,7 +65,7 @@ extension (left: Data)
   @targetName("concatData")
   def ++ (right: Data): Data = Array.frozen(left.readable ++ right.readable)
 
-object Tests extends Suite(m"Facsimile tests"):
+object Tests extends Suite("pdf", m"Facsimile tests"):
   val noParms: Map[Text, Cos] = Map()
 
   def run(): Unit =

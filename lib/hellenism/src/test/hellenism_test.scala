@@ -53,7 +53,7 @@ object Outer:
 class Enclosing:
   class Inner
 
-object Tests extends Suite(m"Hellenism Tests"):
+object Tests extends Suite("classpath", m"Hellenism Tests"):
   def run(): Unit =
     test(m"check that a classpath file is accessible"):
       cp"/scala/Option.class"

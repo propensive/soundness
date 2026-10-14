@@ -49,7 +49,7 @@ case class Nested(header: Header, pair: Pair)
 object Nested:
   given debufferable: Nested is Debufferable = Debufferable.derived
 
-object Tests extends Suite(m"Polaris Tests"):
+object Tests extends Suite("packing", m"Polaris Tests"):
   def run(): Unit =
     suite(m"Width tests"):
       test(m"A Byte is one byte wide"):

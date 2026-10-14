@@ -39,7 +39,7 @@ import strategies.throwUnsafely
 // The handles lent to a handler — the document, the workspace and the client reached through
 // it — are capabilities scoped to one dispatch; capture checking prevents any of them (or the
 // registry lent to the registration block) being retained beyond its scope.
-object CaptureTests extends Suite(m"Handle confinement tests"):
+object CaptureTests extends Suite("lsp-capture", m"Handle confinement tests"):
   import Lsp.*
 
   def run(): Unit =

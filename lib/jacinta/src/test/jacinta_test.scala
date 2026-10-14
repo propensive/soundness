@@ -125,7 +125,7 @@ case class JPing(n: Int, pongs: List[JPong]) derives CanEqual
 case class JPong(n: Int, pings: List[JPing]) derives CanEqual
 
 
-object Tests extends Suite(m"Jacinta Tests"):
+object Tests extends Suite("json", m"Jacinta Tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
       test(m"Parse a number"):
@@ -916,7 +916,7 @@ object Tests extends Suite(m"Jacinta Tests"):
 // A second suite object: the first grew past the JVM's constant-pool limit for one class
 // (`Class too large: jacinta/Tests$`), so the direct-parsing, rendering, schema and
 // interpolator suites live here. The split is by class file, not by subject.
-object DirectTests extends Suite(m"Jacinta direct parsing and format tests"):
+object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and format tests"):
   def run(): Unit =
     suite(m"Codec modes"):
       val crew = Crew(Worker(t"al", 30), List(Worker(t"bo", 40), Worker(t"cy", 50)))

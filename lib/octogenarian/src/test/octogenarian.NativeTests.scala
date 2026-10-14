@@ -57,7 +57,7 @@ import denominative.dysasymptotics.linearSize
 
 // The native backend, checked against repositories the real `git` builds: every read must agree
 // with git's own answer, and every write must be one git accepts.
-object NativeTests extends Suite(m"Octogenarian native backend"):
+object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
   def run(): Unit =
 
     val scratch: Path on Linux =

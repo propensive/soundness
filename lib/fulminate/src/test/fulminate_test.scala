@@ -35,7 +35,7 @@ package fulminate
 import soundness.*
 import denominative.dysasymptotics.linearSize
 
-object Tests extends Suite(m"Fulminate Tests"):
+object Tests extends Suite("messages", m"Fulminate Tests"):
   def run(): Unit =
     suite(m"Existing behaviour"):
       test(m"Whitespace in strings embedded into text should be quoted"):

@@ -42,7 +42,7 @@ import denominative.dysasymptotics.linearSize
 case class APerson(name: Text, age: Int, email: Text) derives CanEqual
 case class AContact(person: APerson, company: Text) derives CanEqual
 
-object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
+object AccrualTests extends Suite("yaml-accrual", m"Ypsiloid multi-error accrual tests"):
 
   case class Issues(items: List[(Text, Yaml.Error)] = Nil)(using Diagnostics)
   extends Error(m"${items.size} validation issues"):

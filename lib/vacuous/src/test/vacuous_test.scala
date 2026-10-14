@@ -36,7 +36,7 @@ import scala.compiletime
 
 import soundness.*
 
-object Tests extends Suite(m"Vacuous Tests"):
+object Tests extends Suite("optional", m"Vacuous Tests"):
   def run(): Unit =
     test(m"String is concrete"):
       val x = summon[String is Concrete]

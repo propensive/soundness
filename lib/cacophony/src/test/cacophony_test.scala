@@ -38,7 +38,7 @@ import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import denominative.dysasymptotics.linearSize
 
-object Tests extends Suite(m"Cacophony Tests"):
+object Tests extends Suite("audio", m"Cacophony Tests"):
 
   // 1-channel, 16-bit signed little-endian PCM at 8 kHz, 4 frames
   // sample values: 100, 200, 300, 400

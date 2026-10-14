@@ -53,7 +53,7 @@ enum ColorVal:
 
 case class Pixel(x: Int, y: Int, color: ColorVal)
 
-object Tests extends Suite(m"Xylophone tests"):
+object Tests extends Suite("xml", m"Xylophone tests"):
 
   // The document element of a parse result
   def root(xml: Xml): Xml.Element = xml match

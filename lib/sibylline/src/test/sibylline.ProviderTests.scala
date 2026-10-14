@@ -41,7 +41,7 @@ import internetAccess.online
 import logging.silentLogging
 import strategies.throwUnsafely
 
-object OpenAITests extends Suite(m"OpenAI dialect tests"):
+object OpenAITests extends Suite("openai", m"OpenAI dialect tests"):
   import Llm.{Content, Role, Stop, Usage}
 
   val target: OpenAI = OpenAI.compatible(url"http://model.test/v1", t"gpt-test", t"sk-test")
@@ -174,7 +174,7 @@ object OpenAITests extends Suite(m"OpenAI dialect tests"):
       capture[Llm.Error](target.session(llm.ask(t"Ready?"))).reason
     . assert(_ == Llm.Error.Reason.Unauthorized)
 
-object ResponsesTests extends Suite(m"OpenAI Responses dialect tests"):
+object ResponsesTests extends Suite("openai-responses", m"OpenAI Responses dialect tests"):
   import Llm.{Content, Stop, Usage}
 
   val target: OpenAI.Responses =
@@ -246,7 +246,7 @@ object ResponsesTests extends Suite(m"OpenAI Responses dialect tests"):
       (reply.text, reply.usage, reply.id)
     . assert(_ == (t"fjord of Norway", Usage(11, 9), t"resp_2"))
 
-object GeminiTests extends Suite(m"Gemini dialect tests"):
+object GeminiTests extends Suite("gemini", m"Gemini dialect tests"):
   import Llm.{Content, Role, Stop, Usage}
 
   val target: Gemini = Gemini(t"gemini-test", t"g-key").on(url"http://model.test")

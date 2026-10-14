@@ -40,7 +40,7 @@ import denominative.dysasymptotics.linearAccess
 
 case class Person(name: Text, age: Int)
 
-object Tests extends Suite(m"Escritoire tests"):
+object Tests extends Suite("table", m"Escritoire tests"):
   val people: List[Person] = List(Person(t"Alice", 30), Person(t"Bob", 5))
 
   def render[row](scaffold: Scaffold[row, Text], data: List[row], width: Int)

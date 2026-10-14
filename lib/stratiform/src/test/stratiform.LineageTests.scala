@@ -45,7 +45,7 @@ import denominative.dysasymptotics.linearSize
 // against which a signature is decoded in two phases. The specification's worked acceptance
 // request names the layered contact schema's components, which ties the rendered hashes to the
 // reference implementation's.
-object LineageTests extends Suite(m"Stratiform lineage tests"):
+object LineageTests extends Suite("tel-lineage", m"Stratiform lineage tests"):
 
   private def resource(name: String): Data =
     val stream = getClass.getResourceAsStream(s"/stratiform/corpus/$name").nn

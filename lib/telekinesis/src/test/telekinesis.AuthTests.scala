@@ -37,7 +37,7 @@ import soundness.*
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 
-object AuthTests extends Suite(m"Authorization header tests"):
+object AuthTests extends Suite("http-auth", m"Authorization header tests"):
   def run(): Unit =
     test(m"Basic credentials encode as one base64 text"):
       Auth.Basic(t"user", t"pass").show

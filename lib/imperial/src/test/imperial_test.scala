@@ -46,7 +46,7 @@ given System =
 
 given Text is Instantiable across Paths from Text = identity(_)
 
-object Tests extends Suite(m"Imperial tests"):
+object Tests extends Suite("directories", m"Imperial tests"):
   def run(): Unit =
 
     test(m"Home directory"):

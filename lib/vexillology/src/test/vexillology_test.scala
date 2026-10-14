@@ -34,7 +34,7 @@ package vexillology
 
 import soundness.*
 
-object Tests extends Suite(m"Vexillology tests"):
+object Tests extends Suite("flags", m"Vexillology tests"):
   def run(): Unit =
 
     enum Color:

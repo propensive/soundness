@@ -44,7 +44,7 @@ import sedentary.*
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 
-object Benchmarks extends Suite(m"Serpentine benchmarks"):
+object Benchmarks extends Suite("paths-bench", m"Serpentine benchmarks"):
   given device: BenchmarkDevice = LocalhostDevice
 
   def run(): Unit =

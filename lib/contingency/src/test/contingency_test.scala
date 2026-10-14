@@ -51,7 +51,7 @@ extends Error(m"accumulated ${values.size} errors")
 // A validation accumulator need not be an error: it is only ever returned, never raised.
 case class Count(values: List[Int])
 
-object Tests extends Suite(m"Contingency"):
+object Tests extends Suite("errors", m"Contingency"):
 
   def action(): Unit raises VarargsError = ()
 

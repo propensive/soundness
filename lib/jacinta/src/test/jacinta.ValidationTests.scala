@@ -65,7 +65,7 @@ extends Error(m"${items.size} validation issues"):
 
 case class VOptionalAge(name: Text, age: Optional[Int])
 
-object ValidationTests extends Suite(m"Jacinta validation tests"):
+object ValidationTests extends Suite("json-validation", m"Jacinta validation tests"):
 
   // Inline, with a directly-constructed `Validate`: a `raises … tracks …` function VALUE
   // cannot be typed under capture checking (its honest type is a curried dependent context

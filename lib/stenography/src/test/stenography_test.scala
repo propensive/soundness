@@ -49,7 +49,7 @@ import symbolism.*
 trait Sensor extends caps.ExclusiveCapability
 trait Reader extends caps.SharedCapability, caps.Classifier
 
-object Tests extends Suite(m"Stenography Tests"):
+object Tests extends Suite("typenames", m"Stenography Tests"):
   def run(): Unit =
     test(m"Decode a term"):
       Designator(t"immutable.List")

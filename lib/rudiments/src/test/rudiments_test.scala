@@ -40,7 +40,7 @@ import soundness.sortingAlgorithms.timsort
 
 case class Person(name: Text, age: Int)
 
-object Tests extends Suite(m"Rudiments Tests"):
+object Tests extends Suite("core", m"Rudiments Tests"):
   def run(): Unit =
 
     test(m"Dual extraction"):

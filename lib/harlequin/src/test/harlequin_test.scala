@@ -60,7 +60,7 @@ object Creature extends Completable:
 trait Creature extends Dynamic:
   def selectDynamic(name: String): Text = t""
 
-object Tests extends Suite(m"Harlequin Tests"):
+object Tests extends Suite("highlighting", m"Harlequin Tests"):
   def run(): Unit =
     val snippet = t"val xs = List(1, 2, 3)"
 

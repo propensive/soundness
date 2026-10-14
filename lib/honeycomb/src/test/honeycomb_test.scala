@@ -38,7 +38,7 @@ import soundness.*
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 
-object Tests extends Suite(m"Honeycombd Tests"):
+object Tests extends Suite("html", m"Honeycombd Tests"):
   def run(): Unit =
     // A missing `Inspectable` is never a compile error, so coverage is held in place by
     // asserting on the renderings: `fallbacks` returns those which used a marked fallback.
@@ -1187,7 +1187,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
             case _                                         => false
 
 
-object Html4Tests extends Suite(m"HTML4 parsing tests"):
+object Html4Tests extends Suite("html4", m"HTML4 parsing tests"):
   def run(): Unit =
       import htmlDoms.html4Transitional
       import html4Transitional.*

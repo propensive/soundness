@@ -50,7 +50,7 @@ import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import vacuous.*
 
-object Benchmarks extends Suite(m"Panopticon benchmarks"):
+object Benchmarks extends Suite("optics-bench", m"Panopticon benchmarks"):
   given device: BenchmarkDevice = LocalhostDevice
 
   // ─── data shape ───────────────────────────────────────────────────────────

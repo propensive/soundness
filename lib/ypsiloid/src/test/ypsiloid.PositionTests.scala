@@ -38,7 +38,7 @@ import soundness.*
 import strategies.throwUnsafely
 import parsing.trackPositions
 
-object PositionTests extends Suite(m"Ypsiloid position-index tests"):
+object PositionTests extends Suite("yaml-positions", m"Ypsiloid position-index tests"):
 
   private def at(line: Int, column: Int, length: Int): Yaml.Ast.Position =
     Yaml.Ast.Position(line, column, length = length)

@@ -83,7 +83,7 @@ class Recorder(canned: () => Http.Response) extends Http.Backend:
     lastBody = if data.readable.isEmpty then Unset else data
     canned()
 
-object ApiTests extends Suite(m"Api client tests"):
+object ApiTests extends Suite("openapi-client", m"Api client tests"):
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
 

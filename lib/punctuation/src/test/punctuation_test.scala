@@ -43,7 +43,7 @@ import denominative.dysasymptotics.linearSize
 // an isolating classloader, not the system one.
 given testClassloader: Classloader = Classloader[Tests.type]
 
-object Tests extends Suite(m"Punctuation tests"):
+object Tests extends Suite("markdown", m"Punctuation tests"):
   def run(): Unit =
     case class Testcase
       ( markdown:   Text,

@@ -53,7 +53,7 @@ object Divergent:
 
 import Decomposition.*
 
-object Tests extends Suite(m"Chiaroscuro tests"):
+object Tests extends Suite("contrast", m"Chiaroscuro tests"):
   def run(): Unit =
     suite(m"Decomposition tests"):
       test(m"Decompose an unknown type"):

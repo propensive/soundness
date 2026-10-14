@@ -46,7 +46,7 @@ extends Error(m"${items.size} decoding issues"):
   def +(position: Int, error: Charset.Error): DecodeIssues =
     DecodeIssues(items :+ (position, error))
 
-object Tests extends Suite(m"Hieroglyph tests"):
+object Tests extends Suite("unicode", m"Hieroglyph tests"):
   def run(): Unit =
     val japanese = t"平ぱ記動テ使村方島おゃぎむ万離ワ学つス携"
     val japaneseData = Array.unsafeFrozen(japanese.s.getBytes("UTF-8").nn)

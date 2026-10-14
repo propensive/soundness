@@ -48,7 +48,7 @@ import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import vacuous.*
 
-object Benchmarks extends Suite(m"Ypsiloid YAML parser benchmarks"):
+object Benchmarks extends Suite("yaml-bench", m"Ypsiloid YAML parser benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)

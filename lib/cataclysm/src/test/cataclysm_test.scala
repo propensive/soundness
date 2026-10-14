@@ -43,7 +43,7 @@ import cataclysm.Css.Syntax
 import Css.Node.*
 import denominative.dysasymptotics.linearSize
 
-object Tests extends Suite(m"Cataclysm Tests"):
+object Tests extends Suite("css", m"Cataclysm Tests"):
   // ── CSS-structure helpers ───────────────────────────────────────────────
   def decl(key: Text, value: Text): Css.Node = Declaration(key, value)
   def at(name: Text, prelude: Text, body: Css.Node*): Css.Node =

@@ -48,7 +48,7 @@ object withPhone extends Tel.Layer("with-phone")
 object lean extends Tel.Layer("lean")
 object quiet extends Tel.Layer("quiet")
 
-object TypedAcceptanceTests extends Suite(m"Stratiform typed acceptance tests"):
+object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform typed acceptance tests"):
   // A protocol whose messages are a sum, some of which layers retract: `lean` excludes `ping` and
   // `data`, and `quiet` excludes `data` too.
   enum Message derives CanEqual:

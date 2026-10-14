@@ -39,7 +39,7 @@ import errorDiagnostics.emptyDiagnostics
 import codepages.utf8Codepage
 
 
-object Tests extends Suite(m"Corpuscular tests"):
+object Tests extends Suite("checksum", m"Corpuscular tests"):
   // The published check values for each algorithm, plus the edge cases the donor
   // implementations in pneumatic, hallucination and zeppelin had to get right: the empty
   // input, a single byte, and a segmented input whose parts must accumulate as one stream.

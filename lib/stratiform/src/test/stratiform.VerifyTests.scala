@@ -65,7 +65,7 @@ enum Tint derives CanEqual:
 object Tint:
   given encodable: Tint is Encodable in Text = _.toString.tt.lower
 
-object VerifyTests extends Suite(m"Stratiform verify tests"):
+object VerifyTests extends Suite("tel-verify", m"Stratiform verify tests"):
   def keywords(struct: Tels.Struct): List[Text] =
     struct.members.to[List].stdlib.collect:
       case field: Tels.Field => field.keyword

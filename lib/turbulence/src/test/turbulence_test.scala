@@ -49,7 +49,7 @@ import abstractables.millisecondsAbstractable
 import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 
-object Tests extends Suite(m"Turbulence tests"):
+object Tests extends Suite("streams", m"Turbulence tests"):
   def run(): Unit =
     suite(m"Stdio"):
       test(m"a capture keeps what the JVM's streams were given, beside the result"):

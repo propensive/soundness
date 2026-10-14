@@ -85,7 +85,7 @@ enum JsonParser:
 enum Document:
   case Example1, Example2, Example3, Users, Logs, Integers, Decimals
 
-object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
+object Benchmarks extends Suite("json-bench", m"Jacinta JSON parser benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
   val Byte: MetricUnit[Bytes[1]] = MetricUnit(1.0)

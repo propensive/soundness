@@ -47,7 +47,7 @@ extends Error(m"tally of ${values.size} errors")
 case class Located(items: List[(Text, Int)])(using Diagnostics)
 extends Error(m"${items.size} located errors")
 
-object CompositionTests extends Suite(m"Contingency composition"):
+object CompositionTests extends Suite("errors-composition", m"Contingency composition"):
 
   def failA(n: Int): Int raises CErrorA = raise(CErrorA(n)) yet -1
   def abortA(n: Int): Int raises CErrorA = abort(CErrorA(n))

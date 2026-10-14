@@ -36,7 +36,7 @@ import scala.collection.immutable.IndexedSeq
 
 import soundness.*
 
-object Tests extends Suite(m"Denominative Tests"):
+object Tests extends Suite("ordinal", m"Denominative Tests"):
   def run(): Unit =
     suite(m"Interval-construction tests"):
       test(m"subsequent yields an Interval of the requested size"):

@@ -41,7 +41,7 @@ import denominative.dysasymptotics.linearSize
 // The subtype relation of §24.3 (`Tels.Subtyping`), which decides compatibility between composed
 // schemas (§8.2), and the projection of §24.5 (`Tels.Projection`), which restricts an element
 // valid under a subtype to what its supertype can address, re-indexing it for BinTEL.
-object SubtypingTests extends Suite(m"Stratiform subtyping tests"):
+object SubtypingTests extends Suite("tel-subtyping", m"Stratiform subtyping tests"):
 
   private def resource(name: String): Data =
     val stream = getClass.getResourceAsStream(s"/stratiform/corpus/$name").nn

@@ -78,7 +78,7 @@ object Fraction:
       if fraction.denominator == 0 then None
       else Some((fraction.numerator, fraction.denominator))
 
-object Tests extends Suite(m"Symbolism Tests"):
+object Tests extends Suite("operators", m"Symbolism Tests"):
   def run(): Unit =
     suite(m"Addable tests"):
       test(m"Add two Ints through the typeclass"):

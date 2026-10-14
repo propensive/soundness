@@ -57,7 +57,7 @@ import filesystemOptions.createNonexistentParents
 import filesystemBackends.javaBaseFilesystem
 import denominative.dysasymptotics.linearSize
 
-object ParserTests extends Suite(m"Jacinta JSON parser tests"):
+object ParserTests extends Suite("json-parser", m"Jacinta JSON parser tests"):
   def run(): Unit =
     val work: Path on Linux = workingDirectory
     val localSuite: Path on Linux = work/"tests"/"JSONTestSuite"
