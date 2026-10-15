@@ -1,0 +1,33 @@
+{
+  "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAZcAAAAHc3NoLXJzYQAAAAMBAAEAAAGBANKeZiOgGy2ygR1XnKHjPk\nGD1dnDP8rPMDkaTfybosrPoQPXc6dnx28ZedTB+gQmW1RbBeFO4xOUWdP6MbJZbmQHko3e\n+OQAnqn8RD3zmJ4HYqG+OF1n9dS89tEG0yrlJaoMfWSm5uMK/iGeBVIAHPPPejKY41X0AP\nU/4G5o7+3Yv2JKcK/nB5vd1A0XBOnGJCOQGzOxxFAIX1t3btuEPyL04540eAOAtm6OxuMX\ntpy057iBQr89StE3OoQxU9Nxd8Qd0+6G1bqVjjdhhy+BU5D8Md3jkEyQP6Uan+nmcxA+TD\nG1m0ZNkusZqWtojXjgxqTCZqSiNO87JyyKtOpWLEeRlm9+hA7Xa8HPu8hsR+e0JhotXpLe\nxJvCBVK60ZTdzfmhCujT8GrXiRjMDMF7rHPyBaLIbUl5EuoU1yJyfu4pZdJgpxe1zHQX5I\nGGy8MXuOsJ9J2IqX9izuZINS5AsycfFX+Y1YvInzALxhAhEKjrsvyi/u3Kte/4hcoLvrbF\nwQAAAAxzb3VuZG5lc3MtY2kAAAAAAAAABnNoYTUxMgAAAZQAAAAMcnNhLXNoYTItNTEyAA\nABgMjIfC6l4eFzvhlMJ99ZmX9nqBEAlI3AR8GHG0y91+dcF5jFM5zojj4a6CfDiIPUbUKB\n9tEbqnU5q0gcTQRSYn9NgmCOuXp3XnLSb3pfvvOY5CKF1JkfHvV6G3iILkNY//Iu+7vZ1S\nica3KyRN/QdYFeke18Hjx+InrzXfHxcFxO2WVDJMeiaKfarhX9DeXqPt7onX5LIC+0CSWq\ncvIBdraPcPz7Atu28X1ZGRnZMHaTMG0Fgn5lhP6PFQiZU0+bxkvXZZyTn1zwhD8aa3HEOR\nKxexkJA2Jrd+mIFrE7/9083l8L1zt49+kL5mhZAiljOZcOuquJSH9ZXugkwCB8tL4RP8aO\n3r/wiyc3Y5vp66vi1FhYZIct/oPsPhwNWUWLdi4tNpE5vxXpMqp7Xf4ckOb10IzTbh423s\nhP7ZI/s9hjv496YVeZHwevo4a9G1FSSY86A2+5TBZ5jyV9F/mGF5R2t+14QWJStsH3RFSv\nC4ReXfrO22BhUorIlW7J5/hx5Q==\n-----END SSH SIGNATURE-----\n",
+  "statement": {
+    "_type": "https://in-toto.io/Statement/v1",
+    "predicate": {
+      "commands": [
+        "./mill --no-daemon -j 6 --ticker false soundness.all.compile",
+        "./mill --no-daemon -j 6 --ticker false soundness.js.compile",
+        "./mill --no-daemon -j 6 --ticker false soundness.native.compile",
+        "./mill --no-daemon -j 6 --ticker false test.assembly",
+        "make ci",
+        "make wasm-e2e (skipped: Proscala 1.0.0's scalalib cannot link Wasm, propensive/proscala#71)"
+      ],
+      "commit": "4479f2fd263d82f6cabdcfb7fcddb073d4a2d347",
+      "ranAt": "2026-10-14T17:23:46Z",
+      "ranBy": "jon.pretty@propensive.com",
+      "result": "pass",
+      "tooling": {
+        "mill": "1.1.5"
+      }
+    },
+    "predicateType": "https://soundness.dev/local-ci/v1",
+    "subject": [
+      {
+        "digest": {
+          "gitTree": "41c2d0bcb94a699dd3f361c490e1f53a420284ec",
+          "sha256": "c70fced6f02c50ae0378feebb6b29b1a978c2e4cbc07ceb964a2d6a21df8b56c"
+        },
+        "name": "soundness-ci-inputs"
+      }
+    ]
+  }
+}
