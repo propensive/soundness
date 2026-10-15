@@ -62,9 +62,9 @@ An archive reads from a path or from bytes; an entry is looked up by its path, a
 reads as any type:
 
 ```scala
-val zipfile = Zipfile.read(zipPath)
-zipfile.entries.map(_.ref.encode)                  // List(t"hello.txt")
-zipfile.entry(t"hello.txt".as[Path on Zip]).read[Text]   // t"Hello world"
+val hello = Zipfile.read(zipPath)
+hello.entries.map(_.ref.encode)                  // List(t"hello.txt")
+hello.entry(t"hello.txt".as[Path on Zip]).read[Text]   // t"Hello world"
 ```
 
 An entry read from an archive carries the header metadata around its content as well — the
@@ -84,13 +84,13 @@ does invalidate.
 
 An archive can also be *opened*, which makes its entries available for the duration of a scope
 and closes the underlying source at the end of it, in the same way as a
-[file](filesystem.md#reading-and-writing). Inside the scope, `zip` is the open handle:
+[file](filesystem.md#reading-and-writing). Inside the scope, `zipfile` is the open handle:
 
 ```scala
 import dysasymptotics.linearSize
 
 zipPath.open[Zip]():
-  zip.entries.size   // 1
+  zipfile.entries.size   // 1
 ```
 
 A JAR is a ZIP with a manifest, so opening one as `Jar` gives the same handle refined with the
@@ -103,7 +103,7 @@ val jarPath = work / "hello.jar"
 jarPath.write(Zipfile(List(manifest, entry)))
 
 jarPath.open[Jar]():
-  zip.manifest   // Map(t"Manifest-Version" -> t"1.0")
+  zipfile.manifest   // Map(t"Manifest-Version" -> t"1.0")
 ```
 
 Errors are `Zip.Error`s whose reason says what was wrong: `NotFound` for an entry that is not

@@ -250,8 +250,9 @@ extension [textual: Textual as instance](text: textual)
     case Rtl => if substring.nil then Unset else textual.lastIndexOf(text, substring)
 
   // Formerly `count(substring)`: as a generic-receiver extension it committed without falling
-  // through (the zeppelin-`zip` hazard), blocking the collections' `count` in any file
-  // importing gossamer, so the substring-occurrence counter takes its own name.
+  // through (the hazard that once kept `zip` out of `soundness`), blocking the collections'
+  // `count` in any file importing gossamer, so the substring-occurrence counter takes its own
+  // name.
   // Not `count`: extension ambiguity is decided from the receiver alone, before arguments are
   // considered, so a generic-receiver `count` here blocks the collections' `count(predicate)` in
   // every file importing gossamer — and no argument-side evidence (`CanEqual`, or even `<:<`,

@@ -35,8 +35,8 @@ package soundness
 export
   murmuration.{Traversable, Reshapable, Mappable, Reversible, Inclusive, Convertible, reverse,
       has, map, remap, bind, flatMap, filter, withFilter, foreach, exists, fold, flat, trace,
-      excerpt, group, distinct, deduplicate, batched, span, partition, sweep, Keyed, keys, values,
-      count, Intersectable, intersect, except, SortAlgorithm}
+      excerpt, group, distinct, deduplicate, zip, batched, span, partition, sweep, Keyed, keys,
+      values, count, Intersectable, intersect, except, SortAlgorithm}
 
 // Mirrors murmuration's own choice package, so that `import soundness.sortingAlgorithms.timsort`
 // selects a sorting algorithm for `sorted` and `order`.

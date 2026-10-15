@@ -129,6 +129,11 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       (0 to data.length - window).exists: i =>
         (0 until window).forall(j => (data.readUnchecked(i + j) & 0xff) == signature.stdlib(j))
 
+    suite(m"The umbrella's zip"):
+      test(m"the collection zip pairs elements beside the zipfile accessor"):
+        List(1, 2, 3).zip(List(t"a", t"b", t"c"))
+      . assert(_ == List((1, t"a"), (2, t"b"), (3, t"c")))
+
     suite(m"Zip.Entry construction and content"):
       test(m"entry built from a path and Text exposes its path"):
         Zip.Entry(zipRef(t"hello.txt"), t"Hello world".in[Data]).ref.encode
@@ -280,17 +285,17 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
       test(m"an archive opened as Zip lists its entries"):
         archive.open[Zip]():
-          zip.entries.map(_.ref.encode)
+          zipfile.entries.map(_.ref.encode)
       . assert(_ == List(t"a.txt", t"b/c.txt"))
 
       test(m"entry content resolves within the scope"):
         archive.open[Zip]():
-          zip.entry(zipRef(t"b/c.txt")).read[Text]
+          zipfile.entry(zipRef(t"b/c.txt")).read[Text]
       . assert(_ == t"gamma")
 
       test(m"in-memory data opens as Zip"):
         bytesOf(archive).open[Zip]():
-          zip.entries.map(_.ref.encode)
+          zipfile.entries.map(_.ref.encode)
       . assert(_ == List(t"a.txt", t"b/c.txt"))
 
       test(m"opening for writing is refused"):
@@ -309,7 +314,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
       test(m"A JAR's manifest main attributes are parsed"):
         jarArchive.open[Jar]():
-          zip.manifest
+          zipfile.manifest
       . assert(_ == Map
           ( t"Manifest-Version" -> t"1.0",
             t"Main-Class"       -> t"com.example.Main",
@@ -317,12 +322,12 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
       test(m"A JAR handle still lists entries like a Zip"):
         jarArchive.open[Jar]():
-          zip.entries.map(_.ref.encode).to[Set]
+          zipfile.entries.map(_.ref.encode).to[Set]
       . assert(_ == Set(t"META-INF/MANIFEST.MF", t"com/example/Main.class"))
 
       test(m"An archive without a manifest has no attributes"):
         writeZip(t"plain.jar", entry(t"a.txt", t"alpha")).open[Jar]():
-          zip.manifest
+          zipfile.manifest
       . assert(_ == Map())
 
     suite(m"Archiving directories"):
@@ -355,14 +360,14 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
         target.write(Zipfile(List(manifest, entry(t"com/example/Main.class", t"bytecode"))))
 
         target.open[Jar]():
-          zip.manifest
+          zipfile.manifest
       . assert(_ == Map(t"Manifest-Version" -> t"1.0", t"Main-Class" -> t"com.example.Main"))
 
       test(m"a long manifest value is wrapped and rejoined"):
         val target = workDir/t"long-manifest.jar"
         val value = t"x"*150
         target.write(Zipfile(List(Jar.manifest(t"Long" -> value))))
-        target.open[Jar]()(zip.manifest)
+        target.open[Jar]()(zipfile.manifest)
       . assert(_ == Map(t"Long" -> t"x"*150))
 
     suite(m"Interoperability with the JDK writer"):
