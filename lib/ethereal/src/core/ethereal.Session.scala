@@ -153,7 +153,7 @@ class SessionInput(stream: Text, credit: Long -> Unit) extends ji.InputStream:
 // A stream the daemon sends: buffered up to a chunk, and sent on `flush` — which the
 // invocation's `PrintStream`s do after every write — or when full, each chunk once
 // `allowance` grants it credit. Once the launcher reports the stream closed, or is gone, a
-// write raises `Outlet.Error`, as writing a broken pipe would end a process.
+// write raises `Egress.Error`, as writing a broken pipe would end a process.
 class SessionOutput(stream: Text, allowance: Int -> Int, emit: Data -> Unit)
 extends ji.OutputStream:
   private val buffer: ji.ByteArrayOutputStream = ji.ByteArrayOutputStream(Session.chunk)
@@ -186,7 +186,7 @@ extends ji.OutputStream:
         if allowed == 0 then
           import strategies.throwUnsafely
           severed() = true
-          abort(Outlet.Error(stream))
+          abort(Egress.Error(stream))
 
         emit(Array.unsafeFrozen(ju.Arrays.copyOfRange(bytes, position, position + allowed).nn))
         position += allowed

@@ -96,14 +96,15 @@ Some protocols over UDP are one datagram out and one back — a DNS query, an NT
 backend's `exchangeUdp` does exactly that from an ephemeral port, bounded by a
 `Socket.Option.Timeout` in scope; `coaxial.dns` builds a typed DNS client on it. A nameserver is
 an `Endpoint` of a UDP port, and `query` sends a `Dns.Message` and returns the reply that
-answers it, while `lookup` asks the common question directly:
+answers it, or, given a name and a record type (`A` by default), asks the common question
+directly and returns the answering records:
 
 <!-- doccheck: skip -->
 ```scala
 import socketBackends.javaBaseSockets
 
 val resolver = ip"9.9.9.9" on udp"domain"
-val addresses = resolver.lookup(dns"example.com").map(_.rdata)
+val addresses = resolver.query(dns"example.com").map(_.rdata)
 ```
 
 A reply whose ID or question differ from the query's — a stray datagram — is a

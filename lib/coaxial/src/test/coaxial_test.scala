@@ -486,7 +486,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
             (Localhost on port).query(Dns.Message.query(7, List(question))).answers
         . assert(_ == List(answer))
 
-        test(m"A lookup returns the answering records"):
+        test(m"A query by name returns the answering records"):
           val port = Port[Udp]()
 
           val nameserver = (packet: Packet) =>
@@ -494,7 +494,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
             UdpResponse.Reply(Dns.Message.response(query, List(answer)).in[Data])
 
           port.listen[Data](nameserver):
-            (Localhost on port).lookup(example)
+            (Localhost on port).query(example)
         . assert(_ == List(answer))
 
         test(m"A reply with the wrong ID is rejected"):

@@ -137,7 +137,7 @@ as a model ability.
 
 ### Structured answers
 
-`elicit` asks for an answer of a given type. The type's JSON schema is derived, and the document
+`solicit` asks for an answer of a given type. The type's JSON schema is derived, and the document
 the model supplies is decoded to the type — so the result is a value, not text to be parsed. How
 the schema reaches the model is the dialect's business: Anthropic's wire constrains the reply to
 it natively, and elsewhere it is presented as the one tool the model must call. The caller names
@@ -151,7 +151,7 @@ case class Verdict(ticker: Text, rating: Text, confidence: Double)
 <!-- doccheck: skip -->
 ```scala
 local.session:
-  llm.elicit[Verdict](t"Summarize your recommendation for AAPL.")
+  llm.solicit[Verdict](t"Summarize your recommendation for AAPL.")
 ```
 
 A reply that ignores the forced tool, or a document that does not decode, raises `Llm.Error`

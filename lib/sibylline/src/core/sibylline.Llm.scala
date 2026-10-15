@@ -580,7 +580,7 @@ object Llm:
           Content.ToolResult(call.id, List(Content.Textual(rendered)))
 
     // One turn in which the model is forced to call the single given tool: the mechanism
-    // behind `elicit`, which decodes the arguments the model supplies. All four wires support
+    // behind `solicit`, which decodes the arguments the model supplies. All four wires support
     // a forced tool choice, so this works identically across dialects.
     private[sibylline] update def forced(message: Message, answer: Tool): Reply =
       val turn =

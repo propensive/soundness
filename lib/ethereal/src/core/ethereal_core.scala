@@ -406,8 +406,8 @@ def cli[bus <: Matchable](using executive: Executive)
           if page == 65001 then jnc.StandardCharsets.UTF_8.nn
           else Encoding.unapply(t"cp$page").map(_.charset).optional
 
-        val stdout: ji.OutputStream = Outlet(t"stdout", session.stdout, session.stdout.severed)
-        val stderr: ji.OutputStream = Outlet(t"stderr", session.stderr, session.stderr.severed)
+        val stdout: ji.OutputStream = Egress(t"stdout", session.stdout, session.stdout.severed)
+        val stderr: ji.OutputStream = Egress(t"stderr", session.stderr, session.stderr.severed)
 
         def printStream(out: ji.OutputStream, page: Optional[Int]): ji.PrintStream =
           charset(page).lay(ji.PrintStream(out, true)): charset =>
@@ -508,7 +508,7 @@ def cli[bus <: Matchable](using executive: Executive)
           // A write to a stream whose reader is gone ends the invocation as `SIGPIPE` would
           // end a process, with the status a shell reports for that death (128 + 13). The
           // backstop is not consulted: it would write to the same stream.
-          case error: Outlet.Error =>
+          case error: Egress.Error =>
             exitStatus = Exit(141)
 
           case throwable: Throwable =>
