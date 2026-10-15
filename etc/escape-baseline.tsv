@@ -112,6 +112,7 @@ lib/exoskeleton/src/completions/exoskeleton.Completions.scala	0	1	0	0	0	0	0	0	0	
 lib/exoskeleton/src/completions/exoskeleton.Pathname.scala	0	2	0	0	0	0	0	0	0	0	0
 lib/exoskeleton/src/completions/exoskeleton_completions.scala	0	0	0	0	0	0	0	1	0	0	0
 lib/exoskeleton/src/core/exoskeleton.Invocation.scala	0	0	3	0	0	0	0	0	0	0	0
+lib/exoskeleton/src/core/exoskeleton_core.scala	0	0	0	0	0	0	0	1	0	0	0
 lib/exoskeleton/src/rig/exoskeleton.Pane.scala	0	0	0	0	0	1	0	0	0	0	0
 lib/exoskeleton/src/test/exoskeleton_test.scala	0	1	0	0	0	0	0	0	0	0	0
 lib/facsimile/src/core/facsimile.Gathering.scala	0	0	0	0	1	0	0	0	0	0	0

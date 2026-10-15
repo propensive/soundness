@@ -129,4 +129,5 @@ def application(using executive: Executive, interpreter: Interpreter, system: Sy
   signals.each: signal =>
     sm.Signal.handle(sm.Signal(signal.shortName.s), _ => cli.dispatchSignal(Signal(signal)))
 
+  // [erased-evidence] the executive's `Permit` is a marker with no runtime content.
   jl.System.exit(executive.process(cli)(block(using !![executive.Permit]))())
