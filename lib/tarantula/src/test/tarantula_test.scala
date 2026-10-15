@@ -461,9 +461,7 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
              t"""{"type":"keyUp","value":"A"},{"type":"keyUp","value":"\uE009"}]""" )
 
       test(m"nested modifiers nest their held keys"):
-        // Fully qualified: an `export` forwarder widens an enum case's singleton type, so
-        // `Shift`, whose parameter is `EditKey | FunctionKey`, will not take `soundness.Keypress`.
-        performed2(clavichord.Keypress.Ctrl(clavichord.Keypress.Shift(clavichord.Keypress.Enter)))
+        performed2(Keypress.Ctrl(Keypress.Shift(Keypress.Enter)))
       . assert(_.contains(t"""{"type":"keyDown","value":"\uE008"}"""))
 
       test(m"releasing actions is a DELETE"):

@@ -35,12 +35,6 @@ package clavichord
 
 import soundness.*
 
-// `soundness.Keypress` is an export forwarder, and reaching a case through it widens the case's
-// singleton type to `Keypress`. The `Shift`, `Alt`, `Ctrl` and `Meta` fields are unions of
-// singletons, so nothing built that way would typecheck; this by-name import shadows the
-// forwarder with the enum itself, which keeps the cases precise.
-import clavichord.Keypress
-
 object Tests extends Suite("keyboard", m"Clavichord tests"):
   def run(): Unit =
     def rendered(keypress: Keypress): Text = keypress.show
