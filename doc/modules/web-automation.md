@@ -52,14 +52,14 @@ values — but every operation on one needs the session in scope, so they are in
 ### Finding and using elements
 
 Elements are located by typed criteria — a CSS selector list, a validated DOM id, a class list, or
-an HTML tag — with `/` returning every match and `element` exactly one. Elements found within
+an HTML tag — with `\` returning every match and `element` exactly one. Elements found within
 elements descend the tree:
 
 <!-- doccheck: skip -->
 ```scala
 WebDriver.Chrome.headless.session:
   val heading = browser.element(H1)                    // by tag
-  val items = browser / SelectorList.read(t"nav li")   // by CSS selector
+  val items = browser \ SelectorList.read(t"nav li")   // by CSS selector
   val field = browser.element(Name[DomId](t"query"))   // by id
   val button = browser.element(Button)
 

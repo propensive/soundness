@@ -33,7 +33,6 @@
 package tarantula
 
 import anticipation.*
-import rudiments.bind
 import vacuous.*
 
 // The session in scope, for code that reads better as `browser.title()` than `session.title()`.
@@ -79,30 +78,8 @@ extension (element: WebDriver.Element)
 
     session.element(element, value)
 
-  @targetName("at")
-  infix def / [focus: Focusable](value: focus)(using session: WebDriver.Session^)
-  :   List[WebDriver.Element] =
-
-    session.elements(element, value)
-
 extension (root: WebDriver.ShadowRoot)
   def element[focus: Focusable](value: focus)(using session: WebDriver.Session^)
   :   WebDriver.Element =
 
     session.element(root, value)
-
-  @targetName("at")
-  infix def / [focus: Focusable](value: focus)(using session: WebDriver.Session^)
-  :   List[WebDriver.Element] =
-
-    session.elements(root, value)
-
-// The chained form the documentation has always shown — `browser / id"menu" / Li / cls"item"` —
-// which selects from every element found so far, deduplicating nothing: the protocol has no
-// batch find, so this is one request per element, as any WebDriver client must do.
-extension (elements: List[WebDriver.Element])
-  @targetName("at")
-  infix def / [focus: Focusable](value: focus)(using session: WebDriver.Session^)
-  :   List[WebDriver.Element] =
-
-    elements.bind(session.elements(_, value))
