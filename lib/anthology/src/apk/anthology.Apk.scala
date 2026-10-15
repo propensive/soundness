@@ -51,7 +51,7 @@ import vacuous.*
 // A complete, installable Android application package—dexed code, a binary manifest, aligned
 // and signed—bound to the Android runtime: the application node reached from `Classfile`
 // through `Dex`.
-object Apk extends Format.Application:
+object Apk extends Artifact.Application:
   def id: Text = t"apk"
 
   // ApkConfiguration → Apk.Configuration

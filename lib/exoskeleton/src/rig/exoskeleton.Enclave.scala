@@ -220,7 +220,7 @@ extends Rig uses parasite.threads:
           Toolchain(jarEdges()).produce
             ( Deliverable.Emission(out, Bundler.applicationClasspath),
               Universe.Classfile,
-              Jar,
+              Artifact.Jar,
               out,
               List(jarOptions.name(t"$name.jar")),
               List(EntryPoint(executor)) )

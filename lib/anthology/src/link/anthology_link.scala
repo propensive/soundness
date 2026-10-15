@@ -55,7 +55,7 @@ import rudiments.*
 import serpentine.*
 
 object linkerOptions:
-  private def applicable(format: Format): Boolean =
+  private def applicable(format: Artifact): Boolean =
     format.isInstanceOf[Js] || format == Wasm || format.isInstanceOf[Wasi]
 
   private def sjs(edit: StandardConfig => StandardConfig): Toolchain.Setting =
@@ -112,7 +112,7 @@ object sjsEdges:
         . withWitWorld(Some(world.world.s))
 
   private def edge
-    ( node:     Format.Application,
+    ( node:     Artifact.Application,
       base:     StandardConfig => StandardConfig,
       artifact: (Path on Linux) => (Path on Linux) )
   :   Edge =
@@ -120,7 +120,7 @@ object sjsEdges:
     Edge(Universe.Sjsir, node, SjsTool(node, base, artifact))
 
   private case class SjsTool
-    ( node:     Format.Application,
+    ( node:     Artifact.Application,
       base:     StandardConfig => StandardConfig,
       artifact: (Path on Linux) => (Path on Linux) )
   extends Tool:

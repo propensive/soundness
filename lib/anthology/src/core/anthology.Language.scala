@@ -41,7 +41,7 @@ import gossamer.*
 @unexported
 // The `id` is a parameter rather than a match on the case: matching a case compares formats with
 // `equals`, which compares their `id`s.
-enum Language(val id: Text) extends Format.Source:
+enum Language(val id: Text) extends Artifact.Source:
   case Scala extends Language(t"scala")
   case Java extends Language(t"java")
   case Kotlin extends Language(t"kotlin")

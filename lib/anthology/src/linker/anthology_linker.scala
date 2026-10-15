@@ -48,6 +48,8 @@ import prepositional.*
 import serpentine.*
 import vacuous.*
 
+import Artifact.Jar
+
 object jarOptions:
   // The filename of the JAR within the output directory, for both `Jar` and `Library` nodes.
   def name(name: Text): Toolchain.Setting =

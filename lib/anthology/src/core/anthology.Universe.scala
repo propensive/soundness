@@ -64,7 +64,7 @@ object Universe:
 // universe is an intermediate-representation node of a `Toolchain`.
 // The `id` is a parameter rather than a match on the case: matching a case compares formats with
 // `equals`, which compares their `id`s.
-enum Universe(val id: Text) extends Format.Ir:
+enum Universe(val id: Text) extends Artifact.Ir:
   case Classfile extends Universe(t"classfile")
   case Sjsir extends Universe(t"sjsir")
   case Nir extends Universe(t"nir")

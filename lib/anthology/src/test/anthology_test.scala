@@ -54,8 +54,8 @@ private type JnfPath = java.nio.file.Path
 
 // Inert graph fixtures for toolchain tests: parameterized nodes and pass-through tools which
 // record their executions in `executionLog` and never touch the filesystem.
-case class TestIr(id: Text) extends anthology.Format.Ir
-case class TestApp(id: Text) extends anthology.Format.Application
+case class TestIr(id: Text) extends Artifact.Ir
+case class TestApp(id: Text) extends Artifact.Application
 
 object executionLog:
   // [test-harness] test execution-log object var
@@ -82,7 +82,7 @@ def passTool(label: Text): Tool = new Tool:
 
 // The default settings of the tool on the edge producing `target`, for assertions on the
 // defaults each edge provider declares.
-def initialOf(edges: List[Edge], target: anthology.Format): Any =
+def initialOf(edges: List[Edge], target: Artifact): Any =
   edges.stdlib.find(_.target == target).get.tool.initial
 
 object Tests extends Suite("compiler", m"Anthology Tests"):
@@ -132,7 +132,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
     . assert(_ == List(t"dex", t"apk"))
 
     test(m"An executable JAR links directly from classfiles"):
-      android.path(Universe.Classfile, anthology.Jar).map(_.tool.name)
+      android.path(Universe.Classfile, Artifact.Jar).map(_.tool.name)
     . assert(_ == List(t"jar"))
 
     test(m"A format is a zero-length path from itself"):
@@ -176,43 +176,43 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
     . assert(_ == Link.Error.Reason.AmbiguousPath(t"a", t"c"))
 
     test(m"Native binaries for different triples are distinct formats"):
-      Binary(Triple.Arm64MacOs) == Binary(Triple.X64Linux)
+      Artifact.Binary(Triple.Arm64MacOs) == Artifact.Binary(Triple.X64Linux)
     . assert(_ == false)
 
     // Formats declared as data, as a registry declares them, alongside the built-in ones.
     test(m"A declared format is the built-in format of its kind and name"):
-      ( anthology.Format.ir(t"classfile") == Universe.Classfile,
-        anthology.Format.source(t"scala") == Language.Scala,
-        anthology.Format(anthology.Format.Kind.Application, t"apk") == Apk,
-        anthology.Format.application(t"js-es") == Js(Js.Module.Es) )
+      ( Artifact.ir(t"classfile") == Universe.Classfile,
+        Artifact.source(t"scala") == Language.Scala,
+        Artifact(Artifact.Kind.Application, t"apk") == Apk,
+        Artifact.application(t"js-es") == Js(Js.Module.Es) )
     . assert(_ == (true, true, true, true))
 
     test(m"A declared format hashes as the built-in format it equals"):
-      anthology.Format.ir(t"classfile").hashCode == Universe.Classfile.hashCode
+      Artifact.ir(t"classfile").hashCode == Universe.Classfile.hashCode
     . assert(identity)
 
     test(m"Formats of different kinds are distinct though their names agree"):
-      anthology.Format.source(t"wasm") == anthology.Format.application(t"wasm")
+      Artifact.source(t"wasm") == Artifact.application(t"wasm")
     . assert(_ == false)
 
     test(m"Declared formats are equal when their names are"):
-      (anthology.Format.source(t"proto") == anthology.Format.source(t"proto"), anthology.Format.source(t"proto").kind)
-    . assert(_ == (true, anthology.Format.Kind.Source))
+      (Artifact.source(t"proto") == Artifact.source(t"proto"), Artifact.source(t"proto").kind)
+    . assert(_ == (true, Artifact.Kind.Source))
 
     test(m"A toolchain routes through declared formats"):
-      val proto = anthology.Format.source(t"proto")
-      val descriptor = anthology.Format.ir(t"descriptor")
+      val proto = Artifact.source(t"proto")
+      val descriptor = Artifact.ir(t"descriptor")
 
       val edges =
         List
           ( Edge(proto, descriptor, passTool(t"protoc")),
-            Edge(descriptor, anthology.Format.application(t"bundle"), passTool(t"bundle")) )
+            Edge(descriptor, Artifact.application(t"bundle"), passTool(t"bundle")) )
 
-      Toolchain(edges).path(anthology.Format.source(t"proto"), anthology.Format.application(t"bundle")).map(_.tool.name)
+      Toolchain(edges).path(Artifact.source(t"proto"), Artifact.application(t"bundle")).map(_.tool.name)
     . assert(_ == List(t"protoc", t"bundle"))
 
     test(m"A declared format reaches the edges registered for its built-in"):
-      android.path(anthology.Format.ir(t"classfile"), anthology.Format.application(t"apk")).map(_.target.id)
+      android.path(Artifact.ir(t"classfile"), Artifact.application(t"apk")).map(_.target.id)
     . assert(_ == List(t"dex", t"apk"))
 
     supervise:
@@ -250,7 +250,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
             val toolchain = Toolchain(jarEdges())
 
             capture[Link.Error]
-              ( toolchain.produce(emission, Universe.Classfile, anthology.Jar, scratch, settings) )
+              ( toolchain.produce(emission, Universe.Classfile, Artifact.Jar, scratch, settings) )
             . reason
         . assert(_ == Link.Error.Reason.InapplicableSetting)
 
@@ -282,7 +282,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
     . assert(_ == Link.Error.Reason.NoPath(t"sjsir", t"library-nir"))
 
     test(m"An sjsir compilation cannot be packaged as an executable JAR"):
-      capture[Link.Error](Toolchain(jarEdges()).path(Universe.Sjsir, anthology.Jar)).reason
+      capture[Link.Error](Toolchain(jarEdges()).path(Universe.Sjsir, Artifact.Jar)).reason
     . assert(_ == Link.Error.Reason.NoPath(t"sjsir", t"jar"))
 
     test(m"A classfile compilation cannot be linked as JavaScript"):
@@ -509,7 +509,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
               Toolchain(jarEdges()).produce
                 ( Deliverable.Emission(out, classpath),
                   Universe.Classfile,
-                  anthology.Jar,
+                  Artifact.Jar,
                   linked,
                   List(jarOptions.name(t"app.jar")),
                   List(EntryPoint(Fqcn(t"Main"))) )
@@ -527,7 +527,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
                 toolchain.produce
                   ( Deliverable.Sources(Map(t"hello.scala" -> source), classpath),
                     Language.Scala,
-                    anthology.Jar,
+                    Artifact.Jar,
                     staged,
                     List(jarOptions.name(t"whole.jar")),
                     List(EntryPoint(Fqcn(t"Main"))) )
@@ -649,7 +649,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
                 Toolchain(edges).produce
                   ( Deliverable.Emission(out, classpath),
                     Universe.Nir,
-                    Binary(host),
+                    Artifact.Binary(host),
                     linked,
                     Nil,
                     List(EntryPoint(Fqcn(t"Main"))) )

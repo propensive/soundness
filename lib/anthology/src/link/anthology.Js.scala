@@ -52,5 +52,5 @@ object Js:
 // the given module system: one application node per module system. Unexported: `soundness`
 // already exports xenophile's `Js`.
 @unexported
-case class Js(module: Js.Module) extends Format.Application:
+case class Js(module: Js.Module) extends Artifact.Application:
   def id: Text = t"js-${module.id}"
