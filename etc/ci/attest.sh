@@ -125,26 +125,13 @@ done
 # single attest from swapping the machine. Override with SOUNDNESS_CI_JOBS.
 JOBS="${SOUNDNESS_CI_JOBS:-6}"
 
-# `make wasm-e2e` links the `.wasi` backends into a Wasm component, which Proscala 1.0.0's
-# Scala.js scalalib cannot do: its `ArrayBuilder`, `Buffer` and `IndexedBuffer` lack the
-# `core/isWebAssembly` guards, so the linker reaches JS interop under the Wasm-only module kind
-# (propensive/proscala#71). The stage is skipped for that release only — the toolchain
-# `build.mill` compiles with, unless a local build is named — and the skip is recorded in the
-# statement; a corrected release re-enables it by itself. Removing the case is #2272.
-RELEASE="${SOUNDNESS_SCALA_RELEASE:-$(sed -n 's/.*"SOUNDNESS_SCALA_RELEASE", "\([^"]*\)".*/\1/p' build.mill | head -1)}"
-if [[ -z "${SOUNDNESS_SCALA_HOME:-}" && "$RELEASE" == "1.0.0" ]]; then
-  WASM_STEP="make wasm-e2e (skipped: Proscala 1.0.0's scalalib cannot link Wasm, propensive/proscala#71)"
-else
-  WASM_STEP="make wasm-e2e"
-fi
+# `make wasm-e2e` links the `.wasi` backends into a Wasm component. Proscala 1.0.0's Scala.js
+# scalalib for Scala 3.10.0 could not link one (its `ArrayBuilder`, `Buffer` and `IndexedBuffer`
+# lacked the `core/isWebAssembly` guards), so the stage was skipped on that release; 1.0.1 fixes
+# it, and the stage runs on every toolchain.
+WASM_STEP="make wasm-e2e"
 
-wasm_e2e() {
-  if [[ "$WASM_STEP" != "make wasm-e2e" ]]; then
-    echo "wasm-e2e: skipped on Proscala $RELEASE (propensive/proscala#71; re-enabling is #2272)" >&2
-  else
-    CLAUDECODE=1 make wasm-e2e
-  fi
-}
+wasm_e2e() { CLAUDECODE=1 make wasm-e2e; }
 if [[ "${SOUNDNESS_CI_SKIP_BUILD:-0}" != "1" ]]; then
   mkdir -p out
   LOG="out/attest-$(date -u +%Y%m%dT%H%M%SZ).log"
