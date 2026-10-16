@@ -33,6 +33,8 @@
 package enigmatic
 
 import anticipation.*
+import gossamer.*
+import vacuous.*
 import gastronomy.Signing
 
 object Rsa:
@@ -40,6 +42,17 @@ object Rsa:
   =>  ( digest: Signature.Digest, crypto: Crypto )
   =>  Rsa[bits] =
     Rsa(crypto.rsa, crypto.rsaSignature(digest.token))
+
+  given keyAlgorithm: [bits <: 1024 | 2048 | 3072 | 4096: ValueOf] => Rsa[bits] is KeyAlgorithm =
+    new KeyAlgorithm:
+      type Self = Rsa[bits]
+      def name: Text = t"RSA-${valueOf[bits]}"
+      def sshName: Optional[Text] = t"ssh-rsa"
+
+      def conforms(algorithm: Asn1, material: KeyAlgorithm.Material): Boolean =
+        KeyAlgorithm.identifier(algorithm).lay(false): (arcs, _) =>
+          arcs == KeyAlgorithm.Rsa
+          && KeyAlgorithm.rsaModulus(material).lay(false)(_.bitLength == valueOf[bits])
 
 // RSA both encrypts and signs. The two are distinct primitives sharing one key pair: `encrypt`
 // and `decrypt` use raw RSA, while `sign` and `verify` use RSASSA-PKCS1-v1_5 over the digest

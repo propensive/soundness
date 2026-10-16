@@ -187,6 +187,24 @@ object JavaBaseCrypto extends Crypto:
 
       case _ => panic(m"the EC private key was not a PrivateKeyInfo")
 
+  // Ed25519 (RFC 8032), provided by the JDK from 15 (JEP 339). The key size is fixed by the curve,
+  // so `bits` is ignored. Like ML-DSA, the JDK offers no route from the private scalar to the
+  // public key, so the public key is embedded at generation and stripped before any JCA call.
+  def ed25519: Crypto.SignatureScheme = new Signatory(t"Ed25519", t"Ed25519"):
+    override def sign(data: Data, privateKey: Data): Data =
+      super.sign(data, stripTopLevel(privateKey))
+
+    def generateKeyPair(bits: Int): Data =
+      val generator = js.KeyPairGenerator.getInstance("Ed25519").nn
+      val pair = generator.generateKeyPair().nn
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      val privateKey = Array.unsafeFrozen(pair.getPrivate.nn.getEncoded.nn)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      val publicKey = Array.unsafeFrozen(pair.getPublic.nn.getEncoded.nn)
+      embedTopLevel(privateKey, publicKey)
+
+    def privateToPublic(privateKey: Data): Data = extractTopLevel(privateKey)
+
   // ML-DSA (FIPS 204), provided by the JDK from 24 (JEP 497). The parameterized algorithm names
   // pin the parameter set, so a key generated at one strength cannot be used at another. ML-DSA
   // signs the message directly, so no digest participates in the transformation name.
@@ -202,7 +220,7 @@ object JavaBaseCrypto extends Crypto:
 
     def sign(data: Data, privateKey: Data): Data =
       val sig = instance()
-      val spec = jss.PKCS8EncodedKeySpec(Array.unsafeJvm(mlDsaStrip(privateKey)))
+      val spec = jss.PKCS8EncodedKeySpec(Array.unsafeJvm(stripTopLevel(privateKey)))
       sig.initSign(keyFactory().generatePrivate(spec))
       sig.update(Array.unsafeJvm(data))
 
@@ -228,9 +246,9 @@ object JavaBaseCrypto extends Crypto:
       // [java-boundary] fresh array returned by the JDK, retained by nobody else
       val publicKey = Array.unsafeFrozen(pair.getPublic.nn.getEncoded.nn)
 
-      mlDsaEmbed(privateKey, publicKey)
+      embedTopLevel(privateKey, publicKey)
 
-    def privateToPublic(privateKey: Data): Data = mlDsaExtract(privateKey)
+    def privateToPublic(privateKey: Data): Data = extractTopLevel(privateKey)
 
   // A signature that is not even well-formed — the wrong length, a DER structure that does not
   // parse, an ML-DSA hint encoding that is out of range — makes the JDK throw where a merely wrong
@@ -245,16 +263,20 @@ object JavaBaseCrypto extends Crypto:
     try operation catch case error: js.NoSuchAlgorithmException =>
       panic(m"the JDK does not provide ML-DSA; JDK 24 or later is required")
 
-  // An ML-DSA private key offers no JCA route back to its public key, so — as with EC — the
-  // public key is embedded at generation. RFC 5958's `OneAsymmetricKey` reserves `[1]` at the
-  // top level of the `PrivateKeyInfo` sequence for exactly this, though it is written here in
+  // An ML-DSA or Ed25519 private key offers no JCA route back to its public key, so — as with EC
+  // — the public key is embedded at generation. RFC 5958's `OneAsymmetricKey` reserves `[1]` at
+  // the top level of the `PrivateKeyInfo` sequence for exactly this, though it is written here in
   // explicit form (the ASN.1 layer cannot round-trip implicit tags without a schema) and the
-  // version integer is left untouched. The embedded element never reaches the JDK: `mlDsaStrip`
+  // version integer is left untouched. The embedded element never reaches the JDK: `stripTopLevel`
   // reduces the key to its canonical three-element `PrivateKeyInfo` before any JCA call.
-  private def mlDsaEmbed(privateKey: Data, publicKey: Data): Data =
+  //
+  // `extractTopLevel` also accepts the field in its standard implicit form — a primitive `[1]`
+  // whose content octets are the BIT STRING's — which is how OpenSSL writes a key that carries
+  // its public half (RFC 8410 §7), and which the ASN.1 layer decodes as `Unknown`.
+  private def embedTopLevel(privateKey: Data, publicKey: Data): Data =
     val bits = decode(publicKey) match
       case Asn1.Sequence(List(_, bits: Asn1.BitString)) => bits
-      case _                                            => panic(m"the ML-DSA public key was bad")
+      case _ => panic(m"the public key was not a SubjectPublicKeyInfo")
 
     decode(privateKey) match
       case Asn1.Sequence(List(version, algorithm, octets: Asn1.OctetString)) =>
@@ -262,29 +284,31 @@ object JavaBaseCrypto extends Crypto:
         info.in[Der].data
 
       case _ =>
-        panic(m"the ML-DSA private key was not a PrivateKeyInfo")
+        panic(m"the private key was not a PrivateKeyInfo")
 
-  private def mlDsaStrip(privateKey: Data): Data =
+  private def stripTopLevel(privateKey: Data): Data =
     decode(privateKey) match
       case Asn1.Sequence(version :: algorithm :: (octets: Asn1.OctetString) :: _) =>
         val info: Asn1 = Asn1.Sequence(List(version, algorithm, octets))
         info.in[Der].data
 
       case _ =>
-        panic(m"the ML-DSA private key was not a PrivateKeyInfo")
+        panic(m"the private key was not a PrivateKeyInfo")
 
-  private def mlDsaExtract(privateKey: Data): Data =
+  private def extractTopLevel(privateKey: Data): Data =
     decode(privateKey) match
       case Asn1.Sequence(_ :: algorithm :: _ :: rest) =>
         val bits = rest.reap:
-          case Asn1.Tagged(1, _, bits: Asn1.BitString) => bits
+          case Asn1.Tagged(1, _, bits: Asn1.BitString)   => bits
+          // A public key is whole octets, so the BIT STRING's leading unused-bits count is zero.
+          case Asn1.Unknown(Asn1.Context, 1, false, octets) => Asn1.BitString(octets.skip(1), 0)
 
-        bits.lay(panic(m"the ML-DSA private key carried no public key")): bits =>
+        bits.lay(panic(m"the private key carried no public key")): bits =>
           val info: Asn1 = Asn1.Sequence(List(algorithm, bits))
           info.in[Der].data
 
       case _ =>
-        panic(m"the ML-DSA private key was not a PrivateKeyInfo")
+        panic(m"the private key was not a PrivateKeyInfo")
 
   // Key material this module generated itself; a failure to parse it back is a defect, not an
   // input error.
