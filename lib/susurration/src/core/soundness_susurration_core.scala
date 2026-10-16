@@ -32,4 +32,6 @@
                                                                                                   */
 package soundness
 
-export susurration.{Agent, Identity, KnownHosts, Signer, Ssh, SshConfig, Transport, Wire}
+export
+  susurration
+  . { Agent, Channel, Identity, KnownHosts, Session, Signer, Ssh, SshConfig, Transport, Wire }

@@ -194,14 +194,16 @@ object Transport:
 
     recur(first)
 
-// The state of one connection. A `caps.Mutable`: the sequence numbers, the codecs and the session
-// identifier change as the protocol advances, and one thread drives it.
+// The state of one connection: the sequence numbers, the codecs and the session identifier
+// change as the protocol advances. It is shared by the session and every channel opened on it,
+// so — as vivisection's JDWP connection is — it is a plain class whose state is held behind
+// untracked fields rather than a `caps.Mutable`, and the discipline that replaces the checker's
+// is that one thread drives it.
 class Transport(duplex: Duplex, hostname: Text, port: Int)
   ( using crypto:     Ssh.Provider,
           algorithms: Ssh.Algorithms,
           hostKeys:   Ssh.HostKeys,
-          sha256:     Hash in Sha2[256] )
-extends caps.Mutable:
+          sha256:     Hash in Sha2[256] ):
 
   import Transport.*
 
@@ -210,13 +212,36 @@ extends caps.Mutable:
   // [construction-fresh] fresh InputStream over the duplex's single read side, sealed at creation
   private val input: ji.InputStream = caps.unsafe.unsafeAssumePure(duplex.source.inputStream)
 
+  // [field-purity] packet sequence numbers, advanced by the one driving thread
+  @caps.unsafe.untrackedCaptures
   private var outgoing: Int = 0
+
+  // [field-purity] as above
+  @caps.unsafe.untrackedCaptures
   private var incoming: Int = 0
+
+  // [field-purity] the cipher states, replaced at NEWKEYS by the one driving thread
+  @caps.unsafe.untrackedCaptures
   private var encoder: Codec = Plain
+
+  // [field-purity] as above
+  @caps.unsafe.untrackedCaptures
   private var decoder: Codec = Plain
+
+  // [field-purity] negotiation results, set once by the one driving thread
+  @caps.unsafe.untrackedCaptures
   private var sessionId0: Optional[Data] = Unset
+
+  // [field-purity] as above
+  @caps.unsafe.untrackedCaptures
   private var negotiated0: Optional[Negotiated] = Unset
+
+  // [field-purity] as above
+  @caps.unsafe.untrackedCaptures
   private var serverVersion0: Optional[Text] = Unset
+
+  // [field-purity] the services granted so far
+  @caps.unsafe.untrackedCaptures
   private var services: List[Text] = Nil
 
   // The exchange hash of the first key exchange, which identifies the session (RFC 4253 §7.2)
@@ -226,7 +251,7 @@ extends caps.Mutable:
   def serverVersion: Optional[Text] = serverVersion0
 
   // The identification exchange and the first key exchange, leaving the connection encrypted.
-  update def connect()(using Tactic[Ssh.Error], Diagnostics): Unit =
+  def connect()(using Tactic[Ssh.Error], Diagnostics): Unit =
     // [java-boundary] fresh array returned by the JDK, retained by nobody else
     duplex.send(Stream(Array.unsafeFrozen(t"${Ssh.Version}\r\n".s.getBytes("UTF-8").nn)))
     val server = identification()
@@ -235,7 +260,7 @@ extends caps.Mutable:
 
   // Sends one packet with the given payload (RFC 4253 §6), padded to the cipher's block and
   // encrypted under the current keys.
-  update def send(payload: Data)(using Tactic[Ssh.Error], Diagnostics): Unit =
+  def send(payload: Data)(using Tactic[Ssh.Error], Diagnostics): Unit =
     val block = encoder.blockSize
     // With an AEAD cipher the length is not encrypted, so the alignment excludes it, as OpenSSH
     // computes it; a cleartext packet aligns its whole length.
@@ -255,7 +280,7 @@ extends caps.Mutable:
 
   // Receives the next packet's payload, handling the transport's own housekeeping messages
   // (`IGNORE`, `DEBUG`, `UNIMPLEMENTED`, `EXT_INFO`) itself and raising on `DISCONNECT`.
-  update def receive()(using Tactic[Ssh.Error], Diagnostics): Data =
+  def receive()(using Tactic[Ssh.Error], Diagnostics): Data =
     val head = readFully(4)
     val body = decoder.unseal(incoming, head, readFully).or(abort(Ssh.Error(Reason.Integrity)))
     incoming += 1
@@ -290,7 +315,7 @@ extends caps.Mutable:
         payload
 
   // Receives a packet, which must be of the given type.
-  update def expect(message: Byte)(using Tactic[Ssh.Error], Diagnostics): Wire.Reader^ =
+  def expect(message: Byte)(using Tactic[Ssh.Error], Diagnostics): Wire.Reader^ =
     val payload = receive()
     val reader = Wire.Reader(payload)
     given wire: Tactic[Wire.Error] = malformed
@@ -300,7 +325,7 @@ extends caps.Mutable:
 
   // Requests a service (`ssh-userauth`), which the server must accept. Requesting a service
   // already granted is a no-op.
-  update def service(name: Text)(using Tactic[Ssh.Error], Diagnostics): Unit =
+  def service(name: Text)(using Tactic[Ssh.Error], Diagnostics): Unit =
     if !services.exists(_ == name) then
       val writer = Wire.Writer()
       writer.byte(Ssh.Message.ServiceRequest)
@@ -315,7 +340,7 @@ extends caps.Mutable:
   // first asked whether it would accept the key at all, and only an acceptable key signs. The
   // signature covers the session identifier and the request, so it cannot be replayed on
   // another connection. Raises `Unauthenticated` when no signer is accepted.
-  update def authenticate(user: Text, signers: List[Signer])(using Tactic[Ssh.Error], Diagnostics)
+  def authenticate(user: Text, signers: List[Signer])(using Tactic[Ssh.Error], Diagnostics)
   :   Unit =
 
     given wire: Tactic[Wire.Error] = malformed
@@ -379,7 +404,7 @@ extends caps.Mutable:
     attempt(signers, t"")
 
   // Ends the connection politely (RFC 4253 §11.1).
-  update def disconnect()(using Tactic[Ssh.Error], Diagnostics): Unit =
+  def disconnect()(using Tactic[Ssh.Error], Diagnostics): Unit =
     val writer = Wire.Writer()
     writer.byte(Ssh.Message.Disconnect)
     writer.uint32(11) // SSH_DISCONNECT_BY_APPLICATION
@@ -436,7 +461,7 @@ extends caps.Mutable:
 
   // The key exchange (RFC 4253 §7 and RFC 5656 §4 / RFC 8731): KEXINIT both ways, one ECDH
   // round trip, the exchange hash, the host key's signature over it, and NEWKEYS.
-  private update def exchange(server: Text)(using Tactic[Ssh.Error], Diagnostics): Unit =
+  private def exchange(server: Text)(using Tactic[Ssh.Error], Diagnostics): Unit =
     given wire: Tactic[Wire.Error] = malformed
 
     val clientInit: Data =

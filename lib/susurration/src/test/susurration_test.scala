@@ -303,6 +303,7 @@ object Tests extends Suite("ssh", m"Susurration tests"):
           |StrictModes no
           |PasswordAuthentication no
           |KbdInteractiveAuthentication no
+          |AcceptEnv SUSURRATION_*
           |UsePAM no
           |LogLevel DEBUG1
           |""".s.stripMargin
@@ -463,6 +464,58 @@ object Tests extends Suite("ssh", m"Susurration tests"):
             signers.map(_.algorithm)
           finally agent.destroy()
         . assert(_ == List(t"ecdsa-sha2-nistp256"))
+
+        def sessioned[result](block: Session^ => result): result =
+          server: port =>
+            val key = contents(t"user_ed25519").read[PrivateKey[Ed25519] in Pem]
+            val endpoint = Ssh.Endpoint(t"127.0.0.1", port, user, List(Signer(key)))
+            endpoint.session: ssh ?=> block(ssh)
+
+        test(m"A command runs and its output and status come back"):
+          val result = sessioned(_.exec(t"echo hello"))
+          (result.stdout.read[Text], result.stderr.length, result.status)
+        . assert(_ == (t"hello\n", 0, 0))
+
+        test(m"A command's exit status is reported"):
+          sessioned(_.exec(t"exit 3").status)
+        . assert(_ == 3)
+
+        test(m"Standard error is kept apart from standard output"):
+          val result = sessioned(_.exec(t"echo err 1>&2; echo out"))
+          (result.stdout.read[Text], result.stderr.read[Text])
+        . assert(_ == (t"out\n", t"err\n"))
+
+        test(m"Standard input reaches the command"):
+          sessioned(_.exec(t"tr a-z A-Z", t"whisper".bytestream).stdout.read[Text])
+        . assert(_ == t"WHISPER")
+
+        test(m"Megabytes pass through in both directions, across window adjustments"):
+          val input: Data = Array.tabulate[Byte](3 << 20)(index => (index % 251).toByte)
+          Array.same(sessioned(_.exec(t"cat", input).stdout), input)
+        . assert(identity)
+
+        test(m"An environment variable the server accepts reaches the command"):
+          val environment = List((t"SUSURRATION_WORD", t"susurrus"))
+          sessioned(_.exec(t"echo $$SUSURRATION_WORD", Data(), environment))
+        . assert(_.stdout.read[Text] == t"susurrus\n")
+
+        test(m"Several commands run over one connection"):
+          sessioned: ssh =>
+            (ssh.exec(t"echo one").stdout.read[Text], ssh.exec(t"echo two").stdout.read[Text])
+        . assert(_ == (t"one\n", t"two\n"))
+
+        test(m"A channel streams its output chunk by chunk"):
+          sessioned: ssh =>
+            ssh.channel: channel =>
+              channel.exec(t"seq 1 200000")
+              channel.eof()
+              val chunks: List[Data] = channel.stdout().to[List]
+              (chunks.size > 1, chunks.map(_.length).fuse(0)(state + next), channel.exitStatus)
+        . assert(_ == (true, 1288895, 0))
+
+        test(m"A refused command is reported"):
+          sessioned(_.channel(_.request(t"nonsense", true)(_ => ())))
+        . assert(_ == false)
 
         test(m"Many packets pass in both directions under each cipher"):
           // `ssh-userauth` is requested repeatedly: each request is a packet each way.

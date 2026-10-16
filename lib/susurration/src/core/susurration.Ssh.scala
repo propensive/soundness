@@ -32,10 +32,19 @@
                                                                                                   */
 package susurration
 
+import scala.caps
+
 import anticipation.*
+import coaxial.*
+import contingency.*
 import enigmatic.*
 import fulminate.*
+import gastronomy.*
+import gigantism.*
 import gossamer.*
+import prepositional.*
+import urticose.*
+import vacuous.*
 
 // The SSH-2 protocol's constants and the decisions a client makes: which algorithms it offers,
 // and whether to trust a host's key.
@@ -61,6 +70,20 @@ object Ssh:
     val UserauthSuccess: Byte = 52
     val UserauthBanner: Byte = 53
     val UserauthPkOk: Byte = 60
+    val GlobalRequest: Byte = 80
+    val RequestSuccess: Byte = 81
+    val RequestFailure: Byte = 82
+    val ChannelOpen: Byte = 90
+    val ChannelOpenConfirmation: Byte = 91
+    val ChannelOpenFailure: Byte = 92
+    val ChannelWindowAdjust: Byte = 93
+    val ChannelData: Byte = 94
+    val ChannelExtendedData: Byte = 95
+    val ChannelEof: Byte = 96
+    val ChannelClose: Byte = 97
+    val ChannelRequest: Byte = 98
+    val ChannelSuccess: Byte = 99
+    val ChannelFailure: Byte = 100
 
   // The provider members the transport needs, beyond the baseline every provider has.
   type Provider = Crypto {
@@ -106,6 +129,59 @@ object Ssh:
   trait HostKeys:
     def accept(hostname: Text, port: Int, keyType: Text, key: Data): Boolean
 
+  // A destination: a host and port, the user to be, and the signers that prove it. A session
+  // (`endpoint.session: session ?=> …`) connects, verifies the host key against the `HostKeys`
+  // policy in scope, authenticates and lends an `Ssh.Session`.
+  object Endpoint:
+    given sessional: (online: Online)
+    =>  ( backend:    Socket.Backend,
+          options:    Every[Socket.Option.Tcp],
+          provider:   Provider,
+          algorithms: Algorithms,
+          hostKeys:   HostKeys,
+          sha256:     Hash in Sha2[256],
+          tactic:     Tactic[Ssh.Error],
+          diagnostics: Diagnostics )
+    =>  ( (EndpointSessional)^{online, tactic, caps.any} ) =
+      EndpointSessional()
+
+  case class Endpoint(host: Text, port: Int, user: Text, signers: List[Signer]):
+    def resolved(config: SshConfig): Endpoint =
+      val resolution = config.resolve(host)
+      Endpoint(resolution.hostName, resolution.port, resolution.user.or(user), signers)
+
+  // A named instance class rather than an anonymous given: an anonymous given freshens the
+  // inferred `Result` member.
+  class EndpointSessional()
+    ( using online:      Online,
+            backend:     Socket.Backend,
+            options:     Every[Socket.Option.Tcp],
+            provider:    Provider,
+            algorithms:  Algorithms,
+            hostKeys:    HostKeys,
+            sha256:      Hash in Sha2[256],
+            tactic:      Tactic[Ssh.Error],
+            diagnostics: Diagnostics )
+  extends aperture.Sessional:
+    type Self = Endpoint
+    type Result = Session^
+
+    def session[result](target: Endpoint)(lambda: (session: Session^) ?=> result): result =
+      if target.port < 1 || target.port > 65535
+      then abort(Ssh.Error(Error.Reason.Malformed(t"the port ${target.port} is out of range")))
+
+      val endpoint = urticose.Endpoint(target.host, urticose.Port.unsafe[urticose.Tcp](target.port))
+      val connectable = summon[(urticose.Endpoint[urticose.Tcp.Port] is Connectable)^]
+      val duplex = connectable.connect(endpoint, Unset)
+
+      try
+        val transport = Transport(duplex, target.host, target.port)
+        transport.connect()
+        transport.authenticate(target.user, target.signers)
+        val session: Session^ = Session(transport)
+        try lambda(using session) finally session.close()
+      finally duplex.close()
+
   object Error:
     given communicable: Reason is Communicable =
       case Reason.Malformed(detail)        => m"the server sent a malformed message: $detail"
@@ -119,6 +195,8 @@ object Ssh:
       case Reason.ServiceRefused(service)  => m"the server did not accept the service $service"
       case Reason.Unauthenticated(methods) => m"no identity was accepted; allowed: $methods"
       case Reason.Agent(detail)            => m"the SSH agent $detail"
+      case Reason.ChannelRefused(detail)   => m"the server refused to open a channel: $detail"
+      case Reason.RequestRefused(kind)     => m"the server refused the $kind request"
 
     enum Reason(val number: Int) extends Clarification:
       case Malformed(detail: Text) extends Reason(1)
@@ -132,6 +210,8 @@ object Ssh:
       case ServiceRefused(service: Text) extends Reason(9)
       case Unauthenticated(methods: Text) extends Reason(10)
       case Agent(detail: Text) extends Reason(11)
+      case ChannelRefused(detail: Text) extends Reason(12)
+      case RequestRefused(kind: Text) extends Reason(13)
 
   case class Error(reason: Error.Reason)(using Diagnostics)
   extends fulminate.Error(600, reason.number)(m"the SSH connection failed because $reason")
