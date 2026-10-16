@@ -194,3 +194,10 @@ extension [cipher <: Cipher](key: SymmetricKey[cipher]^)
     key.secret.uncloak: bytes =>
       algorithm.unseal(Array.unsafeFrozen(bytes), nonce, associated, ciphertext).or:
         abort(Crypto.Error(Crypto.Error.Reason.BadTag))
+
+// A keystream is applied through `xor`, which encrypts and decrypts alike; the counter lets a
+// protocol start partway through the stream, as OpenSSH does to keep block zero for the Poly1305
+// key.
+extension [cipher <: Cipher](key: SymmetricKey[cipher]^)
+  def xor(nonce: Data, counter: Int, data: Data)(using algorithm: cipher & Keystream): Data =
+    key.secret.uncloak(bytes => algorithm.xor(Array.unsafeFrozen(bytes), nonce, counter, data))

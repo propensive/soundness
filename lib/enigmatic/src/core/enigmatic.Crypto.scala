@@ -93,6 +93,12 @@ object Crypto:
     def privateToPublic(privateKey: Data): Data
     def agree(privateKey: Data, publicKey: Data): Data
 
+  // A stream cipher as a keystream: `xor` applies the keystream for the key, nonce and starting
+  // block counter to the data.
+  trait StreamCipher:
+    def generateKey(bits: Int): Data
+    def xor(key: Data, nonce: Data, counter: Int, data: Data): Data
+
   // Authenticated encryption with associated data. `seal` returns the ciphertext with the tag
   // appended; `unseal` returns `Unset` when the tag does not verify.
   trait Aead:

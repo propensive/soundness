@@ -37,11 +37,11 @@ package soundness
 export
   enigmatic
   . { Aes, AesGcm, agree, Agreeing, Authenticated, BlockCipher, BlockCipherMode,
-      BlockCipherPadding, Blowfish, Cbc, Cfb, Cipher, Cleartext, cleartext, Cloak, Crypto, Ctr,
+      BlockCipherPadding, Blowfish, Cbc, Cfb, ChaCha20, ChaCha20Poly1305, Cipher, Cleartext, cleartext, Cloak, Crypto, Ctr,
       decrypt, Decryptor, Des, Divulgence, Dsa, Ecb, Ecdh, Ecdsa, Ed25519, encrypt, Encryption,
-      Encryptor, Hmac, hmac, InitializationVector, Iso10126, JavaBaseCrypto, KeyAlgorithm, MlDsa,
-      NoPadding, Ofb, OpenSsh, Password, Permits, Pkcs7, Pkcs8, PrivateKey, PublicKey, Rc2,
-      Rsa, seal, Signature, Spki, Symmetric, SymmetricKey, TripleDes, uncloak, unseal, X25519 }
+      Encryptor, Hmac, hmac, InitializationVector, Iso10126, JavaBaseCrypto, KeyAlgorithm, Keystream, MlDsa,
+      NoPadding, Ofb, OpenSsh, Password, Permits, Pkcs7, Pkcs8, Poly1305, PrivateKey, PublicKey, Rc2,
+      Rsa, seal, Signature, Spki, Symmetric, SymmetricKey, TripleDes, uncloak, unseal, X25519, xor }
 
 package signatureDigests:
   export enigmatic.signatureDigests.{sha256Signature, sha384Signature, sha512Signature}
