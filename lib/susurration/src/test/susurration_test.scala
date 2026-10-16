@@ -39,6 +39,7 @@ import charsets.utf8Charset, codepages.utf8Codepage, textSanitizers.skipSanitize
 import dysasymptotics.linearSize
 import errorDiagnostics.stackTracesDiagnostics
 import providers.javaBaseProvider
+import cloaks.heapCloak
 import alphabets.hexUpperCase, alphabets.base64Standard
 import socketBackends.javaBaseSockets
 import logging.silentLogging
@@ -280,9 +281,18 @@ object Tests extends Suite("ssh", m"Susurration tests"):
         keygen(t"ed25519", t"host_ed25519")
         keygen(t"ecdsa", t"host_ecdsa")
         keygen(t"rsa", t"host_rsa")
-        keygen(t"ed25519", t"user")
+        keygen(t"ed25519", t"user_ed25519")
+        keygen(t"ecdsa", t"user_ecdsa")
+        keygen(t"rsa", t"user_rsa")
+        keygen(t"ed25519", t"stranger")
 
-        jnf.Files.copy(directory.resolve("user.pub").nn, directory.resolve("authorized_keys").nn)
+        def contents(name: Text): Text = jnf.Files.readString(directory.resolve(name.s).nn).nn.tt
+
+        val authorized = List(t"user_ed25519.pub", t"user_ecdsa.pub", t"user_rsa.pub")
+        val authorizedKeys = authorized.map(contents).join(t"\n").s
+        jnf.Files.writeString(directory.resolve("authorized_keys").nn, authorizedKeys)
+
+        val user: Text = java.lang.System.getProperty("user.name").nn.tt
 
         val configuration = t"""ListenAddress 127.0.0.1
           |HostKey ${file(t"host_ed25519")}
@@ -292,7 +302,9 @@ object Tests extends Suite("ssh", m"Susurration tests"):
           |AuthorizedKeysFile ${file(t"authorized_keys")}
           |StrictModes no
           |PasswordAuthentication no
+          |KbdInteractiveAuthentication no
           |UsePAM no
+          |LogLevel DEBUG1
           |""".s.stripMargin
 
         jnf.Files.writeString(directory.resolve("sshd_config").nn, configuration)
@@ -397,6 +409,60 @@ object Tests extends Suite("ssh", m"Susurration tests"):
         test(m"A server offering no common cipher is reported"):
           capture[Ssh.Error](connected(Ssh.Algorithms(cipher = List(t"none")))(_ => ())).reason
         . assert(_ == Ssh.Error.Reason.NoCommonAlgorithm(t"cipher"))
+
+        test(m"A loaded key's wire blob is the one in its .pub file"):
+          val key = contents(t"user_ed25519").read[PrivateKey[Ed25519] in Pem]
+          Signer(key).blob.serialize[Base64]
+        . assert: blob =>
+            contents(t"user_ed25519.pub").cut(t" ") match
+              case _ :: expected :: _ => blob == expected
+              case _                  => false
+
+        test(m"An Ed25519 key authenticates"):
+          val key = contents(t"user_ed25519").read[PrivateKey[Ed25519] in Pem]
+          connected()(_.authenticate(user, List(Signer(key))))
+        . assert()
+
+        test(m"An ECDSA key authenticates"):
+          val key = contents(t"user_ecdsa").read[PrivateKey[Ecdsa[256]] in Pem]
+          connected()(_.authenticate(user, List(Signer(key))))
+        . assert()
+
+        test(m"An RSA key authenticates under rsa-sha2-256"):
+          val key = contents(t"user_rsa").read[PrivateKey[Rsa[3072]] in Pem]
+          connected()(_.authenticate(user, List(Signer(key))))
+        . assert()
+
+        test(m"An unauthorized key is refused, naming the methods the server allows"):
+          val key = contents(t"stranger").read[PrivateKey[Ed25519] in Pem]
+          capture[Ssh.Error](connected()(_.authenticate(user, List(Signer(key))))).reason
+        . assert(_ == Ssh.Error.Reason.Unauthenticated(t"publickey"))
+
+        test(m"The first accepted signer of several authenticates"):
+          val stranger = contents(t"stranger").read[PrivateKey[Ed25519] in Pem]
+          val key = contents(t"user_ed25519").read[PrivateKey[Ed25519] in Pem]
+          connected()(_.authenticate(user, List(Signer(stranger), Signer(key))))
+        . assert()
+
+        test(m"Keys held by an ssh-agent authenticate"):
+          val socket = file(t"agent.sock")
+          val agent = ProcessBuilder("/usr/bin/ssh-agent", "-D", "-a", socket.s).start().nn
+
+          def bound: Boolean = jnf.Files.exists(jnf.Path.of(socket.s).nn)
+
+          def ready(attempts: Int): Boolean =
+            attempts > 0 && (bound || { Thread.sleep(50); ready(attempts - 1) })
+
+          try
+            ready(100)
+            val add = ProcessBuilder("/usr/bin/ssh-add", "-q", file(t"user_ecdsa").s)
+            add.environment().nn.put("SSH_AUTH_SOCK", socket.s)
+            add.start().nn.waitFor()
+            val signers = Agent(socket).identities()
+            connected()(_.authenticate(user, signers))
+            signers.map(_.algorithm)
+          finally agent.destroy()
+        . assert(_ == List(t"ecdsa-sha2-nistp256"))
 
         test(m"Many packets pass in both directions under each cipher"):
           // `ssh-userauth` is requested repeatedly: each request is a packet each way.

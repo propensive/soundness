@@ -4,8 +4,8 @@
 
 Susurration is a native SSH-2 client. It is being built in stages: this release has the wire
 encoding, the two files every client reads, `known_hosts` and `~/.ssh/config`, and the transport
-layer — the key exchange and encrypted packets over a coaxial connection; the authentication and
-connection protocols follow.
+layer — the key exchange and encrypted packets over a coaxial connection — and public-key
+authentication; the connection protocol follows.
 
 ```scala
 import soundness.*
@@ -67,6 +67,21 @@ Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
   transport.connect()
   transport.service(t"ssh-userauth")
   transport.negotiated   // Transport.Negotiated(t"curve25519-sha256", t"ssh-ed25519", t"chacha20-poly1305@openssh.com")
+```
+
+### Authentication
+
+A connected transport authenticates with public keys (RFC 4252): a `Signer` is a loaded
+`PrivateKey` of a cipher OpenSSH knows, or a key held by an `ssh-agent`, which signs without ever
+releasing the key. The first signer the server accepts wins:
+
+<!-- doccheck: skip -->
+```scala
+import cloaks.heapCloak
+
+val key = keyText.read[PrivateKey[Ed25519] in Pem]
+val agent = Agent(t"/tmp/ssh-agent.sock")
+transport.authenticate(t"git", Signer(key) :: agent.identities())
 ```
 
 ### The wire encoding

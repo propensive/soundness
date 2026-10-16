@@ -56,6 +56,11 @@ object Ssh:
     val NewKeys: Byte = 21
     val KexEcdhInit: Byte = 30
     val KexEcdhReply: Byte = 31
+    val UserauthRequest: Byte = 50
+    val UserauthFailure: Byte = 51
+    val UserauthSuccess: Byte = 52
+    val UserauthBanner: Byte = 53
+    val UserauthPkOk: Byte = 60
 
   // The provider members the transport needs, beyond the baseline every provider has.
   type Provider = Crypto {
@@ -112,6 +117,8 @@ object Ssh:
       case Reason.ClosedConnection         => m"the connection was closed"
       case Reason.Integrity                => m"a packet failed its integrity check"
       case Reason.ServiceRefused(service)  => m"the server did not accept the service $service"
+      case Reason.Unauthenticated(methods) => m"no identity was accepted; allowed: $methods"
+      case Reason.Agent(detail)            => m"the SSH agent $detail"
 
     enum Reason(val number: Int) extends Clarification:
       case Malformed(detail: Text) extends Reason(1)
@@ -123,6 +130,8 @@ object Ssh:
       case ClosedConnection extends Reason(7)
       case Integrity extends Reason(8)
       case ServiceRefused(service: Text) extends Reason(9)
+      case Unauthenticated(methods: Text) extends Reason(10)
+      case Agent(detail: Text) extends Reason(11)
 
   case class Error(reason: Error.Reason)(using Diagnostics)
   extends fulminate.Error(600, reason.number)(m"the SSH connection failed because $reason")

@@ -217,6 +217,7 @@ extends caps.Mutable:
   private var sessionId0: Optional[Data] = Unset
   private var negotiated0: Optional[Negotiated] = Unset
   private var serverVersion0: Optional[Text] = Unset
+  private var services: List[Text] = Nil
 
   // The exchange hash of the first key exchange, which identifies the session (RFC 4253 §7.2)
   // and which public-key authentication signs over.
@@ -270,11 +271,13 @@ extends caps.Mutable:
     if payload.length == 0 then abort(Ssh.Error(Reason.Malformed(t"an empty payload")))
 
     Array.unsafeJvm(payload)(0) match
-      case Ssh.Message.Ignore | Ssh.Message.Debug | Ssh.Message.Unimplemented =>
+      case Ssh.Message.Ignore | Ssh.Message.Debug | Ssh.Message.ExtInfo =>
         receive()
 
-      case Ssh.Message.ExtInfo =>
-        receive()
+      // The server did not understand something this client sent: a defect here, not a message
+      // to wait past.
+      case Ssh.Message.Unimplemented =>
+        abort(Ssh.Error(Reason.Unexpected(Ssh.Message.Unimplemented & 0xff)))
 
       case Ssh.Message.Disconnect =>
         val reader = Wire.Reader(payload)
@@ -295,15 +298,85 @@ extends caps.Mutable:
     if kind != message then abort(Ssh.Error(Reason.Unexpected(kind & 0xff)))
     reader
 
-  // Requests a service (`ssh-userauth`), which the server must accept.
+  // Requests a service (`ssh-userauth`), which the server must accept. Requesting a service
+  // already granted is a no-op.
   update def service(name: Text)(using Tactic[Ssh.Error], Diagnostics): Unit =
-    val writer = Wire.Writer()
-    writer.byte(Ssh.Message.ServiceRequest)
-    writer.text(name)
-    send(writer.data)
+    if !services.exists(_ == name) then
+      val writer = Wire.Writer()
+      writer.byte(Ssh.Message.ServiceRequest)
+      writer.text(name)
+      send(writer.data)
+      given wire: Tactic[Wire.Error] = malformed
+      val accepted = expect(Ssh.Message.ServiceAccept).text()
+      if accepted != name then abort(Ssh.Error(Reason.ServiceRefused(name)))
+      services = name :: services
+
+  // Public-key authentication (RFC 4252 §7) as `user`, with each signer in turn: the server is
+  // first asked whether it would accept the key at all, and only an acceptable key signs. The
+  // signature covers the session identifier and the request, so it cannot be replayed on
+  // another connection. Raises `Unauthenticated` when no signer is accepted.
+  update def authenticate(user: Text, signers: List[Signer])(using Tactic[Ssh.Error], Diagnostics)
+  :   Unit =
+
     given wire: Tactic[Wire.Error] = malformed
-    val accepted = expect(Ssh.Message.ServiceAccept).text()
-    if accepted != name then abort(Ssh.Error(Reason.ServiceRefused(name)))
+    val session = sessionId.or(abort(Ssh.Error(Reason.Malformed(t"no session yet"))))
+    service(t"ssh-userauth")
+
+    // The request, as a query (`signed` false, no signature), as the data the signature covers
+    // (`signed` true, no signature) or as the real thing (`signed` true, with the signature).
+    def request(signer: Signer, signed: Boolean, signature: Optional[Data]): Data =
+      val writer = Wire.Writer()
+      writer.byte(Ssh.Message.UserauthRequest)
+      writer.text(user)
+      writer.text(t"ssh-connection")
+      writer.text(t"publickey")
+      writer.boolean(signed)
+      writer.text(signer.algorithm)
+      writer.string(signer.blob)
+      signature.let(writer.string(_))
+      writer.data
+
+    // Replies until a decisive one: banners are skipped.
+    def reply(): (Byte, Wire.Reader^) =
+      val payload = receive()
+      val reader = Wire.Reader(payload)
+      val kind = reader.byte()
+      if kind == Ssh.Message.UserauthBanner then reply() else (kind, reader)
+
+    def attempt(signers: List[Signer], methods: Text): Unit = signers match
+      case signer :: rest =>
+        send(request(signer, false, Unset))
+
+        reply() match
+          case (Ssh.Message.UserauthPkOk, _) =>
+            val signed: Data =
+              val writer = Wire.Writer()
+              writer.string(session)
+              writer.bytes(request(signer, true, Unset))
+              writer.data
+
+            send(request(signer, true, signer.sign(signed)))
+
+            reply() match
+              case (Ssh.Message.UserauthSuccess, _) =>
+                ()
+
+              case (Ssh.Message.UserauthFailure, reader) =>
+                attempt(rest, reader.names().join(t","))
+
+              case (kind, _) =>
+                abort(Ssh.Error(Reason.Unexpected(kind & 0xff)))
+
+          case (Ssh.Message.UserauthFailure, reader) =>
+            attempt(rest, reader.names().join(t","))
+
+          case (kind, _) =>
+            abort(Ssh.Error(Reason.Unexpected(kind & 0xff)))
+
+      case _ =>
+        abort(Ssh.Error(Reason.Unauthenticated(methods)))
+
+    attempt(signers, t"")
 
   // Ends the connection politely (RFC 4253 §11.1).
   update def disconnect()(using Tactic[Ssh.Error], Diagnostics): Unit =
