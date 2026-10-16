@@ -48,6 +48,7 @@ import Ssh.Error.Reason
 // is the whole exchange — input written, output and status collected — while `channel` lends
 // the channel itself to a block, for a protocol that interleaves reading and writing, such as
 // git's.
+@unexported
 object Session:
   case class Result(stdout: Data, stderr: Data, status: Optional[Int])
 
@@ -57,6 +58,8 @@ object Session:
     writer.data
 
 // Like the transport it drives, a plain class with its one counter untracked.
+// Reached from the umbrella as a member of `Ssh`: see `soundness_susurration_core.scala`.
+@unexported
 class Session(transport: Transport):
   // [field-purity] the next local channel id, advanced by the one driving thread
   @caps.unsafe.untrackedCaptures

@@ -32,6 +32,6 @@
                                                                                                   */
 package soundness
 
-export
-  susurration
-  . { Agent, Channel, Identity, KnownHosts, Session, Signer, Ssh, SshConfig, Transport, Wire }
+// `Transport`, `Channel`, `Session`, `Signer`, `Identity` and `Agent` are reached as members of
+// `Ssh`: other libraries export those names.
+export susurration.{KnownHosts, Ssh, SshConfig, Wire}

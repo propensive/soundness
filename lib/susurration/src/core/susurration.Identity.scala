@@ -47,6 +47,7 @@ import vacuous.*
 // as `mpint`s for ECDSA (RFC 5656 §3.1.2), and under SHA-256 for RSA (RFC 8332; `ssh-rsa` with
 // SHA-1 is not offered). The instance summons its own cipher from the provider, so that an ECDSA
 // key signs under the digest its curve pairs with, whatever `Signature.Digest` is in scope.
+@unexported
 object Identity:
   given ed25519: (crypto: Ssh.Provider) => Ed25519 is Identity = new Identity:
     type Self = Ed25519
@@ -93,6 +94,8 @@ object Identity:
         given Rsa[bits] = Rsa(crypto.rsa, crypto.rsaSignature(t"SHA256"))
         key.sign(data).bytes
 
+// Reached from the umbrella as a member of `Ssh`: see `soundness_susurration_core.scala`.
+@unexported
 trait Identity extends Typeclass:
   type Self <: Cipher
   def algorithm: Text

@@ -1045,7 +1045,7 @@ object soundness extends Toolchain:
   object tool extends Bundle(anthology.core, degustation.core,
     harlequin.core, harlequin.typed, hellenism.core,
     hyperbole.tasty, hyperbole.core, octogenarian.core, octogenarian.cli, octogenarian.native,
-    octogenarian.http, octogenarian.ssh,
+    octogenarian.http, octogenarian.ssh, octogenarian.sshNative,
     revolution.core, revolution.semver,
     anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
@@ -2859,7 +2859,13 @@ object octogenarian extends Library:
     override def scalaJs = false // transitively JVM-only (process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, cli, native, http, ssh, telekinesis.jvm, eucalyptus.core):
+  // Remote repositories over susurration, the native SSH client: `gitTransports.soundnessSsh`.
+  object sshNative extends Component(native, susurration.core):
+    override def scalaJs = false // transitively JVM-only (networking)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test
+  extends Tests(core, cli, native, http, ssh, sshNative, telekinesis.jvm, eucalyptus.core, coaxial.jvm):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 

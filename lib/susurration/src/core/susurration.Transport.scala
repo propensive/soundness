@@ -67,6 +67,7 @@ import Ssh.Error.Reason
 // The ciphers offered are the AEAD ones (`chacha20-poly1305@openssh.com` and `aes*-gcm@
 // openssh.com`), which every current server has: they carry their own integrity, so no separate
 // MAC algorithm is negotiated into use. Re-keying after the RFC's limits is not yet done.
+@unexported
 object Transport:
   // The agreed algorithms of a key exchange.
   case class Negotiated(kex: Text, hostKey: Text, cipher: Text)
@@ -199,6 +200,8 @@ object Transport:
 // so — as vivisection's JDWP connection is — it is a plain class whose state is held behind
 // untracked fields rather than a `caps.Mutable`, and the discipline that replaces the checker's
 // is that one thread drives it.
+// Reached from the umbrella as a member of `Ssh`: see `soundness_susurration_core.scala`.
+@unexported
 class Transport(duplex: Duplex, hostname: Text, port: Int)
   ( using crypto:     Ssh.Provider,
           algorithms: Ssh.Algorithms,
