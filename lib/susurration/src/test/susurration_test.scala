@@ -40,8 +40,42 @@ import dysasymptotics.linearSize
 import errorDiagnostics.stackTracesDiagnostics
 import providers.javaBaseProvider
 import alphabets.hexUpperCase, alphabets.base64Standard
+import socketBackends.javaBaseSockets
+import logging.silentLogging
+import workingDirectories.javaBaseWorkingDirectory
+import environments.javaBaseEnvironment
+import threads.platformThreads
+import probates.awaitProbate
+
+import java.nio.file as jnf
 
 object Tests extends Suite("ssh", m"Susurration tests"):
+  // A plain entry point, so the suite can also run outside fume:
+  // `java -cp out/susurration/test/assembly.dest/out.jar susurration.Tests`.
+  def main(args: scala.Array[String]): Unit =
+    val passed = java.util.concurrent.atomic.AtomicInteger(0)
+    val failed = java.util.concurrent.atomic.AtomicInteger(0)
+    val out = java.lang.System.out.nn
+
+    def handle(event: probably.TestEvent): Unit = event match
+      case probably.TestEvent.TestCompleted(test, _, _, outcome, _, _) =>
+        (if outcome.outcome == t"pass" then passed else failed).incrementAndGet()
+        out.println(t"[${outcome.outcome}] ${test.path.join(t" / ")}".s)
+
+      case probably.TestEvent.DetailMessage(_, message)          => out.println(t"    $message".s)
+      case probably.TestEvent.DetailCompare(_, expected, found, _) =>
+        out.println(t"    expected: $expected".s)
+        out.println(t"    found:    $found".s)
+
+      case probably.TestEvent.RunTerminated(error, _, _) =>
+        out.println(t"suite threw: ${error.components.map(_.message).join(t"; ")}".s)
+
+      case other => out.println(other.toString)
+
+    val status = Tests.invoke(t"", handle)
+    out.println(t"${passed.get} passed, ${failed.get} failed".s)
+    java.lang.System.exit(status)
+
   val ed25519Blob: Data =
     t"AAAAC3NzaC1lZDI1NTE5AAAAIBGH6R8uL9Aww7+jnLISnQu3kiglJKYyOcKlvCJ7v+xS".deserialize[Base64]
 
@@ -223,3 +257,151 @@ object Tests extends Suite("ssh", m"Susurration tests"):
       test(m"An empty configuration resolves to the host itself"):
         SshConfig(t"").resolve(t"example.com")
       . assert(_ == SshConfig.Resolution(t"example.com", Unset, 22, Nil))
+
+    // The transport is exercised against a real server: the OpenSSH `sshd` every macOS and most
+    // Linux systems carry, run unprivileged on a free port with throwaway host keys, and skipped,
+    // with a notice, where there is none. Each test starts its own server: fume terminates a
+    // test's child processes when the test ends, so one cannot be shared across tests.
+    val sshd: jnf.Path = jnf.Path.of("/usr/sbin/sshd").nn
+
+    if !jnf.Files.isExecutable(sshd)
+    then java.lang.System.out.nn.println("No /usr/sbin/sshd; skipping the transport tests.")
+    else supervise:
+      suite(m"Transport against sshd"):
+        import internetAccess.online
+
+        val directory = jnf.Files.createTempDirectory(jnf.Path.of("/tmp").nn, "susurration-").nn
+
+        def file(name: Text): Text = directory.resolve(name.s).nn.toString.tt
+
+        def keygen(kind: Text, name: Text): Unit =
+          sh"ssh-keygen -q -t $kind -N ${t""} -f ${file(name)}".exec[Exit]()
+
+        keygen(t"ed25519", t"host_ed25519")
+        keygen(t"ecdsa", t"host_ecdsa")
+        keygen(t"rsa", t"host_rsa")
+        keygen(t"ed25519", t"user")
+
+        jnf.Files.copy(directory.resolve("user.pub").nn, directory.resolve("authorized_keys").nn)
+
+        val configuration = t"""ListenAddress 127.0.0.1
+          |HostKey ${file(t"host_ed25519")}
+          |HostKey ${file(t"host_ecdsa")}
+          |HostKey ${file(t"host_rsa")}
+          |PidFile none
+          |AuthorizedKeysFile ${file(t"authorized_keys")}
+          |StrictModes no
+          |PasswordAuthentication no
+          |UsePAM no
+          |""".s.stripMargin
+
+        jnf.Files.writeString(directory.resolve("sshd_config").nn, configuration)
+        val unrecorded: Text = t"ssh-ed25519 ${ed25519Blob.serialize[Base64]}"
+
+        def hostKeyLine(name: Text): Text =
+          jnf.Files.readString(directory.resolve(name.s).nn).nn.tt.trim
+
+        // A server on a free port, for the duration of the block.
+        def server[result](block: Int => result): result =
+          val port = summon[Tcp is Allocatable].unused()
+
+          val process =
+            ProcessBuilder
+              ( "/usr/sbin/sshd", "-D", "-p", port.toString, "-E", file(t"sshd.log").s, "-f",
+                file(t"sshd_config").s )
+            . start().nn
+
+          // The server is ready when the port accepts a connection.
+          def ready(attempts: Int): Boolean =
+            attempts > 0 && (
+              safely { java.net.Socket("127.0.0.1", port).close(); true }.or(false) ||
+              { Thread.sleep(50); ready(attempts - 1) } )
+
+          try
+            if !ready(100) then abort(Ssh.Error(Ssh.Error.Reason.ClosedConnection))
+            block(port)
+          finally process.destroy()
+
+        def connected[result](algorithms: Ssh.Algorithms = Ssh.Algorithms())
+          ( block: Transport^ => result )
+          ( using Ssh.HostKeys )
+        :   result =
+
+          given Ssh.Algorithms = algorithms
+
+          server: port =>
+            val endpoint: Endpoint[Tcp.Port] = Endpoint(t"127.0.0.1", Port[Tcp](port))
+
+            // Connected as perihelion connects: `.duplex` requires an empty capture set, which
+            // the `online`-capturing `Connectable` cannot satisfy from inside a method.
+            val duplex = summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset)
+
+            try
+              val transport = Transport(duplex, t"127.0.0.1", port)
+              transport.connect()
+              try block(transport) finally transport.disconnect()
+            finally duplex.close()
+
+        given Ssh.HostKeys = Ssh.HostKeys.insecurelyAcceptAll
+
+        test(m"The connection negotiates, verifies the host key and requests a service"):
+          connected(): transport =>
+            transport.service(t"ssh-userauth")
+            (transport.serverVersion.let(_.starts(t"SSH-2.0-OpenSSH")), transport.negotiated)
+        . assert(_ == (true, Transport.Negotiated(t"curve25519-sha256", t"ssh-ed25519",
+            t"chacha20-poly1305@openssh.com")))
+
+        for cipher <- List(t"aes256-gcm@openssh.com", t"aes128-gcm@openssh.com") do
+          test(m"The connection works under $cipher"):
+            connected(Ssh.Algorithms(cipher = List(cipher))): transport =>
+              transport.service(t"ssh-userauth")
+              transport.negotiated.let(_.cipher)
+          . assert(_ == cipher)
+
+        test(m"The connection works over ecdh-sha2-nistp256"):
+          connected(Ssh.Algorithms(kex = List(t"ecdh-sha2-nistp256"))): transport =>
+            transport.service(t"ssh-userauth")
+            transport.negotiated.let(_.kex)
+        . assert(_ == t"ecdh-sha2-nistp256")
+
+        for hostKey <- List(t"ecdsa-sha2-nistp256", t"rsa-sha2-512", t"rsa-sha2-256") do
+          test(m"The server's $hostKey host key verifies"):
+            connected(Ssh.Algorithms(hostKey = List(hostKey))): transport =>
+              transport.service(t"ssh-userauth")
+              transport.negotiated.let(_.hostKey)
+          . assert(_ == hostKey)
+
+        test(m"A known_hosts file accepts the server's recorded key"):
+          server: port =>
+            val known = KnownHosts(t"[127.0.0.1]:$port ${hostKeyLine(t"host_ed25519.pub")}")
+            given Ssh.HostKeys = Ssh.HostKeys.knownHosts(using known, summon)
+            val endpoint: Endpoint[Tcp.Port] = Endpoint(t"127.0.0.1", Port[Tcp](port))
+            val duplex = summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset)
+            val transport = Transport(duplex, t"127.0.0.1", port)
+            try
+              transport.connect()
+              transport.negotiated.let(_.hostKey)
+            finally duplex.close()
+        . assert(_ == t"ssh-ed25519")
+
+        test(m"A known_hosts file rejects an unrecorded key"):
+          server: port =>
+            val known = KnownHosts(t"[127.0.0.1]:$port $unrecorded")
+            given Ssh.HostKeys = Ssh.HostKeys.knownHosts(using known, summon)
+            val endpoint: Endpoint[Tcp.Port] = Endpoint(t"127.0.0.1", Port[Tcp](port))
+            val duplex = summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset)
+            try capture[Ssh.Error](Transport(duplex, t"127.0.0.1", port).connect()).reason
+            finally duplex.close()
+        . assert(_ == Ssh.Error.Reason.HostKeyRejected(t"ssh-ed25519"))
+
+        test(m"A server offering no common cipher is reported"):
+          capture[Ssh.Error](connected(Ssh.Algorithms(cipher = List(t"none")))(_ => ())).reason
+        . assert(_ == Ssh.Error.Reason.NoCommonAlgorithm(t"cipher"))
+
+        test(m"Many packets pass in both directions under each cipher"):
+          // `ssh-userauth` is requested repeatedly: each request is a packet each way.
+          List(t"chacha20-poly1305@openssh.com", t"aes256-gcm@openssh.com").map: cipher =>
+            connected(Ssh.Algorithms(cipher = List(cipher))): transport =>
+              (0 until 20).each(_ => transport.service(t"ssh-userauth"))
+              true
+        . assert(_ == List(true, true))

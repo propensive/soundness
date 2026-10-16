@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export susurration.{KnownHosts, SshConfig, Wire}
+export susurration.{KnownHosts, Ssh, SshConfig, Transport, Wire}

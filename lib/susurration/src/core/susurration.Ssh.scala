@@ -1,0 +1,128 @@
+                                                                                                  /*
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                  ┃
+┃                                                   ╭───╮                                          ┃
+┃                                                   │   │                                          ┃
+┃                                                   │   │                                          ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
+┃                                                                                                  ┃
+┃    Soundness, version 0.64.0.                                                                    ┃
+┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
+┃                                                                                                  ┃
+┃    The primary distribution site is:                                                             ┃
+┃                                                                                                  ┃
+┃        https://soundness.dev/                                                                    ┃
+┃                                                                                                  ┃
+┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
+┃    except in compliance with the License. You may obtain a copy of the License at                ┃
+┃                                                                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
+┃                                                                                                  ┃
+┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
+┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
+┃    either express or implied. See the License for the specific language governing permissions    ┃
+┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                                                                                  */
+package susurration
+
+import anticipation.*
+import enigmatic.*
+import fulminate.*
+import gossamer.*
+
+// The SSH-2 protocol's constants and the decisions a client makes: which algorithms it offers,
+// and whether to trust a host's key.
+object Ssh:
+  // The identification string this client sends (RFC 4253 §4.2).
+  val Version: Text = t"SSH-2.0-susurration_0.72"
+
+  // Message numbers (RFC 4250 §4.1.2).
+  object Message:
+    val Disconnect: Byte = 1
+    val Ignore: Byte = 2
+    val Unimplemented: Byte = 3
+    val Debug: Byte = 4
+    val ServiceRequest: Byte = 5
+    val ServiceAccept: Byte = 6
+    val ExtInfo: Byte = 7
+    val KexInit: Byte = 20
+    val NewKeys: Byte = 21
+    val KexEcdhInit: Byte = 30
+    val KexEcdhReply: Byte = 31
+
+  // The provider members the transport needs, beyond the baseline every provider has.
+  type Provider = Crypto {
+    def x25519: Crypto.KeyAgreement
+    def ecdh: Crypto.KeyAgreement
+    def ed25519: Crypto.SignatureScheme
+    def ecdsa(digest: Text): Crypto.SignatureScheme
+    def aesGcm: Crypto.Aead
+    def chaCha20: Crypto.StreamCipher
+  }
+
+  // The algorithms offered, in order of preference, as the names RFC 4250 registers them.
+  object Algorithms:
+    given default: Algorithms = Algorithms()
+
+  case class Algorithms
+    ( kex:         List[Text] = List(t"curve25519-sha256", t"curve25519-sha256@libssh.org",
+                                     t"ecdh-sha2-nistp256"),
+      hostKey:     List[Text] = List(t"ssh-ed25519", t"ecdsa-sha2-nistp256", t"rsa-sha2-512",
+                                     t"rsa-sha2-256"),
+      cipher:      List[Text] = List(t"chacha20-poly1305@openssh.com", t"aes256-gcm@openssh.com",
+                                     t"aes128-gcm@openssh.com"),
+      mac:         List[Text] = List(t"hmac-sha2-256"),
+      compression: List[Text] = List(t"none") )
+
+  // The decision on a host's key, made before anything is trusted: given the host, port, the
+  // key's type and OpenSSH's blob for it, whether to continue. A `KnownHosts` file is the usual
+  // policy; `trustOnFirstUse` is what `ssh` does with `StrictHostKeyChecking=accept-new`, and
+  // `insecurelyAcceptAll` is for tests against a server whose key is not worth recording.
+  object HostKeys:
+    given knownHosts: (known: KnownHosts, crypto: Crypto) => HostKeys =
+      (hostname, port, keyType, key) =>
+        known.verify(hostname, port, keyType, key) == KnownHosts.Verdict.Known
+
+    def trustOnFirstUse(known: KnownHosts)(using Crypto): HostKeys =
+      (hostname, port, keyType, key) =>
+        known.verify(hostname, port, keyType, key) match
+          case KnownHosts.Verdict.Known | KnownHosts.Verdict.Unknown => true
+          case _                                                     => false
+
+    val insecurelyAcceptAll: HostKeys = (_, _, _, _) => true
+
+  trait HostKeys:
+    def accept(hostname: Text, port: Int, keyType: Text, key: Data): Boolean
+
+  object Error:
+    given communicable: Reason is Communicable =
+      case Reason.Malformed(detail)        => m"the server sent a malformed message: $detail"
+      case Reason.Unexpected(message)      => m"the server sent an unexpected message $message"
+      case Reason.NoCommonAlgorithm(kind)  => m"the server offers no supported $kind algorithm"
+      case Reason.HostKeyRejected(keyType) => m"the server's $keyType host key was not accepted"
+      case Reason.BadSignature             => m"the server's signature over the exchange is wrong"
+      case Reason.Disconnected(code, text) => m"the server disconnected with code $code: $text"
+      case Reason.ClosedConnection         => m"the connection was closed"
+      case Reason.Integrity                => m"a packet failed its integrity check"
+      case Reason.ServiceRefused(service)  => m"the server did not accept the service $service"
+
+    enum Reason(val number: Int) extends Clarification:
+      case Malformed(detail: Text) extends Reason(1)
+      case Unexpected(message: Int) extends Reason(2)
+      case NoCommonAlgorithm(kind: Text) extends Reason(3)
+      case HostKeyRejected(keyType: Text) extends Reason(4)
+      case BadSignature extends Reason(5)
+      case Disconnected(code: Int, text: Text) extends Reason(6)
+      case ClosedConnection extends Reason(7)
+      case Integrity extends Reason(8)
+      case ServiceRefused(service: Text) extends Reason(9)
+
+  case class Error(reason: Error.Reason)(using Diagnostics)
+  extends fulminate.Error(600, reason.number)(m"the SSH connection failed because $reason")
