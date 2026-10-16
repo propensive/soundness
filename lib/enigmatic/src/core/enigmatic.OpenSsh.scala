@@ -194,6 +194,16 @@ object OpenSsh:
   :   Optional[Text] =
 
     algorithm.sshName.let: keyType =>
+      blob(key).let: blob =>
+        val encoded = blob.serialize[Base64]
+        comment.lay(t"$keyType $encoded")(comment => t"$keyType $encoded $comment")
+
+  // A public key in its wire form (RFC 4253 §6.6): the blob a line's base64 holds, which the
+  // protocol sends as the key in authentication and key exchange.
+  def blob[cipher <: Cipher](key: PublicKey[cipher])(using algorithm: cipher is KeyAlgorithm)
+  :   Optional[Data] =
+
+    algorithm.sshName.let: keyType =>
       safely(Der(key.bytes).as[Asn1]).let:
         case Asn1.Sequence(List(identifier, Asn1.BitString(bits, 0))) =>
           KeyAlgorithm.identifier(identifier).let: (arcs, parameters) =>
@@ -224,10 +234,7 @@ object OpenSsh:
                   case _ => false
               else false
 
-            if encoded then
-              val blob = writer.data.serialize[Base64]
-              comment.lay(t"$keyType $blob")(comment => t"$keyType $blob $comment")
-            else Unset
+            if encoded then writer.data else Unset
 
         case _ => Unset
 
