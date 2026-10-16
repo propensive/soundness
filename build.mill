@@ -3425,7 +3425,7 @@ object surveillance extends Library:
 object susurration extends Library:
   object core extends Component(enigmatic.core, coaxial.core, guillotine.core):
     override def scalaJs = false // transitively JVM-only, through enigmatic
-    override def scalaNative = true
+    override def scalaNative = false // guillotine has no native variant (process spawning)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, coaxial.jvm, guillotine.core, eucalyptus.core):
