@@ -48,6 +48,8 @@ object Rsa:
       type Self = Rsa[bits]
       def name: Text = t"RSA-${valueOf[bits]}"
       def sshName: Optional[Text] = t"ssh-rsa"
+      def algorithm: Optional[Asn1] =
+        Asn1.Sequence(List(Asn1.ObjectId(KeyAlgorithm.Rsa), Asn1.Null))
 
       def conforms(algorithm: Asn1, material: KeyAlgorithm.Material): Boolean =
         KeyAlgorithm.identifier(algorithm).lay(false): (arcs, _) =>

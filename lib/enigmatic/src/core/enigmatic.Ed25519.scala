@@ -53,6 +53,7 @@ object Ed25519:
     type Self = Ed25519
     def name: Text = t"Ed25519"
     def sshName: Optional[Text] = t"ssh-ed25519"
+    def algorithm: Optional[Asn1] = Asn1.Sequence(List(Asn1.ObjectId(KeyAlgorithm.Ed25519)))
 
     // RFC 8410 requires the parameters to be absent; a key is the curve's fixed 32 bytes.
     def conforms(algorithm: Asn1, material: KeyAlgorithm.Material): Boolean =

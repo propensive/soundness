@@ -56,6 +56,10 @@ object Ecdsa:
       def name: Text = t"ECDSA P-${valueOf[bits]}"
       def sshName: Optional[Text] = t"ecdsa-sha2-nistp${valueOf[bits]}"
 
+      def algorithm: Optional[Asn1] =
+        Asn1.Sequence
+          ( List(Asn1.ObjectId(KeyAlgorithm.Ec), Asn1.ObjectId(KeyAlgorithm.curve(valueOf[bits]))) )
+
       // The curve is in the parameters; the key material carries nothing the curve does not fix.
       def conforms(algorithm: Asn1, material: KeyAlgorithm.Material): Boolean =
         KeyAlgorithm.identifier(algorithm).lay(false): (arcs, parameters) =>

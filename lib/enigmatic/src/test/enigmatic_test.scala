@@ -950,6 +950,129 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         Array.same(read.public.bytes, key.public.bytes)
       . assert(identity)
 
+    suite(m"Key agreement and authenticated encryption"):
+      // RFC 7748 §6.1: Alice's and Bob's keys, and the secret they agree on.
+      val alicePrivate = t"77076D0A7318A57D3C16C17251B26645DF4C2F87EBC0992AB177FBA51DB92C2A"
+      val alicePublic = t"8520F0098930A754748B7DDCB43EF75A0DBF3A0D26381AF4EBA4A98EAA9B4E6A"
+      val bobPrivate = t"5DAB087E624A8A4B79E17F8B83800EE66F3BB1292618B6FD1C2F8B27FF88E0EB"
+      val bobPublic = t"DE9EDB7D7B7DC1B4D35B61C2ECE435373F8343C85B78674DADFC7E146F882B4F"
+      val shared = t"4A5D9D5BA4CE2DE1728E3BF480350F25E07E21C947D19E3376F09B3C1E161742"
+
+      // An X25519 private key in PKCS#8 form carrying its public key, as `PrivateKey.generate`
+      // writes one, from RFC 7748's raw scalar and point.
+      def x25519Key(scalar: Text, point: Text): PrivateKey[X25519] =
+        val seed: Asn1 = Asn1.OctetString(scalar.deserialize[Hex])
+        val public = Asn1.Tagged(1, true, Asn1.BitString(point.deserialize[Hex], 0))
+        val identifier = Asn1.Sequence(List(Asn1.ObjectId(KeyAlgorithm.X25519)))
+        val octets = Asn1.OctetString(seed.in[Der].data)
+        val info: Asn1 = Asn1.Sequence(List(Asn1.Integer(0), identifier, octets, public))
+        info.in[Der].as[PrivateKey[X25519]]
+
+      test(m"Two X25519 keys agree on the same secret"):
+        val alice = PrivateKey.generate[X25519]()
+        val bob = PrivateKey.generate[X25519]()
+        alice.agree(bob.public): one =>
+          bob.agree(alice.public): other =>
+            Array.same(one, other) && one.length == 32
+      . assert(identity)
+
+      test(m"A third X25519 key agrees on a different secret"):
+        val alice = PrivateKey.generate[X25519]()
+        val bob = PrivateKey.generate[X25519]()
+        val eve = PrivateKey.generate[X25519]()
+        alice.agree(bob.public)(one => eve.agree(alice.public)(other => Array.same(one, other)))
+      . assert(!_)
+
+      test(m"X25519 agrees on RFC 7748's shared secret"):
+        val alice = x25519Key(alicePrivate, alicePublic)
+        PublicKey.raw[X25519](bobPublic.deserialize[Hex]).let: bob =>
+          alice.agree(bob)(_.serialize[Hex])
+      . assert(_ == shared)
+
+      test(m"X25519 agrees on RFC 7748's shared secret from Bob's side"):
+        val bob = x25519Key(bobPrivate, bobPublic)
+        PublicKey.raw[X25519](alicePublic.deserialize[Hex]).let: alice =>
+          bob.agree(alice)(_.serialize[Hex])
+      . assert(_ == shared)
+
+      test(m"An X25519 public key's raw form is its 32-byte point"):
+        x25519Key(alicePrivate, alicePublic).public.raw.let(_.serialize[Hex])
+      . assert(_ == alicePublic)
+
+      test(m"A raw public key round-trips through its document form"):
+        val key = PrivateKey.generate[X25519]()
+        val raw = key.public.raw.or(Data())
+        PublicKey.raw[X25519](raw).let(_.bytes).let(Array.same(_, key.public.bytes))
+      . assert(_ == true)
+
+      test(m"Two ECDH P-256 keys agree on the same 32-byte secret"):
+        val alice = PrivateKey.generate[Ecdh[256]]()
+        val bob = PrivateKey.generate[Ecdh[256]]()
+        alice.agree(bob.public): one =>
+          bob.agree(alice.public): other =>
+            Array.same(one, other) && one.length == 32
+      . assert(identity)
+
+      test(m"Two ECDH P-384 keys agree on the same 48-byte secret"):
+        val alice = PrivateKey.generate[Ecdh[384]]()
+        val bob = PrivateKey.generate[Ecdh[384]]()
+        alice.agree(bob.public): one =>
+          bob.agree(alice.public): other =>
+            Array.same(one, other) && one.length == 48
+      . assert(identity)
+
+      test(m"An ECDH public key's raw form is an uncompressed point"):
+        val key = PrivateKey.generate[Ecdh[256]]()
+        key.public.raw.let(raw => raw.length == 65 && raw.readUnchecked(0) == 4)
+      . assert(_ == true)
+
+      test(m"An ECDSA key file reads as an ECDH key too"):
+        import KeyFixtures.sec1P256
+        val key = sec1P256.read[PrivateKey[Ecdh[256]] in Pem]
+        val other = PrivateKey.generate[Ecdh[256]]()
+        key.agree(other.public)(one => other.agree(key.public)(other => Array.same(one, other)))
+      . assert(identity)
+
+      val nonce: Data = Array.fill[Byte](12)(0)
+
+      test(m"AES-GCM seals and opens with associated data"):
+        val key = SymmetricKey.generate[AesGcm[256]]()
+        val box = key.seal(nonce, t"header".bytestream, pangram.bytestream)
+        key.unseal(nonce, t"header".bytestream, box).read[Text]
+      . assert(_ == pangram)
+
+      test(m"AES-GCM's ciphertext is the plaintext plus a 16-byte tag"):
+        val key = SymmetricKey.generate[AesGcm[128]]()
+        key.seal(nonce, Data(), pangram.bytestream).length - pangram.bytestream.length
+      . assert(_ == 16)
+
+      test(m"AES-GCM rejects a tampered ciphertext"):
+        val key = SymmetricKey.generate[AesGcm[256]]()
+        val box = key.seal(nonce, Data(), pangram.bytestream)
+        val tampered = Array.unsafeJvm(box).clone
+        tampered(0) = (tampered(0) ^ 1).toByte
+        capture[Crypto.Error](key.unseal(nonce, Data(), Array.unsafeFrozen(tampered))).reason
+      . assert(_ == Crypto.Error.Reason.BadTag)
+
+      test(m"AES-GCM rejects different associated data"):
+        val key = SymmetricKey.generate[AesGcm[256]]()
+        val box = key.seal(nonce, t"header".bytestream, pangram.bytestream)
+        capture[Crypto.Error](key.unseal(nonce, t"other".bytestream, box)).reason
+      . assert(_ == Crypto.Error.Reason.BadTag)
+
+      test(m"AES-GCM rejects a different nonce"):
+        val key = SymmetricKey.generate[AesGcm[256]]()
+        val box = key.seal(nonce, Data(), pangram.bytestream)
+        val other: Data = Array.fill[Byte](12)(1)
+        capture[Crypto.Error](key.unseal(other, Data(), box)).reason
+      . assert(_ == Crypto.Error.Reason.BadTag)
+
+      // NIST GCM specification test case 2: an all-zero key, nonce and block.
+      test(m"AES-128-GCM matches NIST's test case 2"):
+        val key = SymmetricKey[AesGcm[128]](Array.fill[Byte](16)(0))
+        key.seal(nonce, Data(), Array.fill[Byte](16)(0)).serialize[Hex]
+      . assert(_ == t"0388DACE60B6A392F328C2B971B2FE78AB6E47D42CEC13BDF53A67B21257BDDF")
+
     suite(m"X.509 certificates"):
       import java.io as ji
       import java.security as js, js.cert as jsc

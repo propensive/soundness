@@ -35,6 +35,7 @@ package enigmatic
 import anticipation.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import gastronomy.{Permit, ProcessingPermit}
 import prepositional.*
 import rudiments.*
@@ -158,3 +159,38 @@ extension [cipher <: Cipher](key: SymmetricKey[cipher]^)
     key.secret.uncloak: bytes =>
       val data = Array.unsafeFrozen(bytes)
       block(using Encryptor(data), Decryptor(data))
+
+// Key agreement lends the shared secret to the block as a transient `Data` view of an array
+// that is zeroed when the block exits, as `uncloak` lends key material: a protocol hashes the
+// secret into its session keys and has no use for it afterwards, so nothing of it should
+// outlive the block.
+extension [cipher <: Cipher](key: PrivateKey[cipher]^)
+  def agree[result](peer: PublicKey[cipher])(using algorithm: cipher & Agreeing)
+    ( block: Data => result )
+  :   result =
+
+    key.secret.uncloak: bytes =>
+      val shared = Array.unsafeJvm(algorithm.agree(Array.unsafeFrozen(bytes), peer.bytes))
+      try block(Array.unsafeFrozen(shared)) finally java.util.Arrays.fill(shared, 0.toByte)
+
+// Authenticated encryption needs no `Permit`: an AEAD cipher is not `Unauthenticated`, and the
+// nonce discipline it does need — never repeating one under a key — is the caller's, which is
+// why the nonce is a plain argument rather than an `InitializationVector` strategy.
+extension [cipher <: Cipher](key: SymmetricKey[cipher]^)
+  def seal(nonce: Data, associated: Data, plaintext: Data)(using algorithm: cipher & Authenticated)
+  :   Data =
+
+    key.secret.uncloak: bytes =>
+      algorithm.seal(Array.unsafeFrozen(bytes), nonce, associated, plaintext)
+
+  // A real `using` clause rather than the `raises` sugar: a context-function result hides the
+  // `key` parameter from the separation checker.
+  def unseal(nonce: Data, associated: Data, ciphertext: Data)
+    ( using algorithm:   cipher & Authenticated,
+            diagnostics: Diagnostics,
+            tactic:      Tactic[Crypto.Error] )
+  :   Data =
+
+    key.secret.uncloak: bytes =>
+      algorithm.unseal(Array.unsafeFrozen(bytes), nonce, associated, ciphertext).or:
+        abort(Crypto.Error(Crypto.Error.Reason.BadTag))

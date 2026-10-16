@@ -202,6 +202,29 @@ val sshPublicKey = OpenSsh.publicKey[Ed25519](line)
 OpenSsh.line(sshPublicKey, t"test@example") == line   // true
 ```
 
+### Key agreement and authenticated encryption
+
+Two parties who hold each other's public keys can agree on a shared secret with X25519 or ECDH;
+the secret is lent to a block and zeroed afterwards, since a protocol only ever hashes it into
+session keys:
+
+```scala
+val alice = PrivateKey.generate[X25519]()
+val bob = PrivateKey.generate[X25519]()
+alice.agree(bob.public) { secret => secret.length }   // 32
+```
+
+What the key agreement produces is then used with an authenticated cipher. AES-GCM seals a
+message under a nonce, which must never repeat under one key, together with associated data that
+is authenticated but not encrypted, and refuses to open anything that has been tampered with:
+
+```scala
+val sessionKey = SymmetricKey.generate[AesGcm[256]]()
+val nonce: Data = Array.fill[Byte](12)(0)
+val box = sessionKey.seal(nonce, t"header".bytestream, t"message".bytestream)
+sessionKey.unseal(nonce, t"header".bytestream, box).read[Text]   // t"message"
+```
+
 ### ASN.1 and DER
 
 The structures underneath PKIX — certificates, keys, signatures — are
