@@ -265,7 +265,11 @@ case class Command(arguments: Text*) extends Executable:
 
     Command.OnTerminal(this, width, height, termios)
 
-  def escape: Text = arguments.map { argument => t"'${argument.sub(t"'", t"\'")}'" }.join(t" ")
+  // The command as one line a POSIX shell parses back into these arguments: each is
+  // single-quoted, and a single quote within one is written as `'\''` — the quote closed, a
+  // backslash-escaped quote, the quote reopened — since nothing is escapable inside single
+  // quotes.
+  def escape: Text = arguments.map { argument => t"'${argument.sub(t"'", t"'\\''")}'" }.join(t" ")
 
 object Pipeline:
   given communicable: Pipeline is Communicable =

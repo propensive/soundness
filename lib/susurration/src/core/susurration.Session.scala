@@ -107,9 +107,11 @@ class Session(transport: Transport):
     val (remote, window, maxPacket) = recur()
     Channel(transport, local, remote, window, maxPacket)
 
-  // Runs a command with the given standard input and environment, and collects what it wrote
-  // and how it exited.
-  def exec(command: Text, input: Data = Data(), environment: List[(Text, Text)] = Nil)
+  // Runs a command — a `Text` the remote shell interprets, or a guillotine `Command`, quoted
+  // argument by argument — with the given standard input and environment, and collects what it
+  // wrote and how it exited.
+  def exec[command: Invocable as invocable]
+    ( command: command, input: Data = Data(), environment: List[(Text, Text)] = Nil )
     ( using Tactic[Ssh.Error], Diagnostics )
   :   Session.Result =
 
@@ -117,7 +119,7 @@ class Session(transport: Transport):
 
     try
       environment.each: (name, value) => channel.env(name, value)
-      channel.exec(command)
+      channel.exec(invocable.line(command))
       channel.write(input)
       channel.eof()
       val stdout = Session.join(channel.stdout().to[List])

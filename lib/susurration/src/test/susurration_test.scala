@@ -499,6 +499,16 @@ object Tests extends Suite("ssh", m"Susurration tests"):
           sessioned(_.exec(t"echo $$SUSURRATION_WORD", Data(), environment))
         . assert(_.stdout.read[Text] == t"susurrus\n")
 
+        test(m"A guillotine command keeps an argument with spaces and quotes intact"):
+          val argument = t"two words, a 'quote' and a $$sign"
+          sessioned(_.exec(sh"printf %s $argument").stdout.read[Text])
+        . assert(_ == t"two words, a 'quote' and a $$sign")
+
+        test(m"A guillotine command's arguments are not re-split by the remote shell"):
+          // `$0` is `x`; the two positional parameters are `a b` and `c`.
+          sessioned(_.exec(sh"sh -c ${t"echo $$#"} x ${t"a b"} c").stdout.read[Text])
+        . assert(_ == t"2\n")
+
         test(m"Several commands run over one connection"):
           sessioned: ssh =>
             (ssh.exec(t"echo one").stdout.read[Text], ssh.exec(t"echo two").stdout.read[Text])
