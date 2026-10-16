@@ -417,6 +417,22 @@ object WebDriver:
     given encodable: (Element is Encodable in Json) =
       element => ElementRef(element.elementId).in[Json]
 
+    // Selection by `\`, not `/`: symbolism's generic `/`, which `soundness` exports, would claim
+    // the name for every receiver, and a session-capturing `Divisible` is not allowed. Hosted in
+    // the companion, so it is in implicit scope for an `Element` and a `List[Element]` receiver.
+    extension (element: Element)
+      @targetName("at")
+      infix def \ [focus: Focusable](value: focus)(using session: Session^): List[Element] =
+        session.elements(element, value)
+
+    // The chained form, `element \ id"menu" \ Li \ cls"item"`, which selects from every element
+    // found so far, deduplicating nothing: the protocol has no batch find, so this is one request
+    // per element, as any WebDriver client must do.
+    extension (elements: List[Element])
+      @targetName("at")
+      infix def \ [focus: Focusable](value: focus)(using session: Session^): List[Element] =
+        elements.bind(session.elements(_, value))
+
   // An element handle: the opaque reference a driver returned for a node, meaningful only to the
   // session that produced it.
   //
@@ -437,6 +453,12 @@ object WebDriver:
   // The open shadow root hosted by an element: a separate handle because the protocol addresses it
   // separately, and because only `element`/`elements` are valid against one.
   case class ShadowRoot(shadowId: Text)
+
+  object ShadowRoot:
+    extension (root: ShadowRoot)
+      @targetName("at")
+      infix def \ [focus: Focusable](value: focus)(using session: Session^): List[Element] =
+        session.elements(root, value)
 
   object Session:
     // The bounding box of an element, or of a window, in CSS pixels.
@@ -973,6 +995,10 @@ object WebDriver:
 
     def elements[focus: Focusable](value: focus): List[Element] =
       handles(send(t"elements", locator(value)))
+
+    // Every match at page scope, as `browser \ Li`; see `Element`'s companion for why not `/`.
+    @targetName("at")
+    infix def \ [focus: Focusable](value: focus): List[Element] = elements(value)
 
     def element[focus: Focusable](element: Element, value: focus): Element =
       Element(handle(send(elementPath(element, t"element"), locator(value)), Wei))

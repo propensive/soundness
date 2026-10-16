@@ -2859,6 +2859,30 @@ object Tests extends Suite("time", m"Aviation Tests"):
       . matches:
           case _: Tzdb.Entry.Rule =>
 
+      test(m"parses a Zone line with a negative standard offset"):
+        val lines = Chain(t"Zone\tAmerica/Nowhere\t-5:00\t-\tEST")
+        Tzdb.parse(t"inline", lines).prim
+      . matches:
+          case Tzdb.Entry.Zone(_, _, info) if info.prim.let(_.stdoff) == Tzdb.Duration(-5, 0, 0) =>
+
+      test(m"a negative offset under one hour keeps its sign"):
+        val lines = Chain(t"Zone\tAmerica/Nowhere\t-0:30\t-\tXST")
+        Tzdb.parse(t"inline", lines).prim
+      . matches:
+          case Tzdb.Entry.Zone(_, _, info) if info.prim.let(_.stdoff) == Tzdb.Duration(0, -30, 0) =>
+
+      test(m"a negative offset with seconds negates every component"):
+        val lines = Chain(t"Zone\tAmerica/Nowhere\t-4:56:02\t-\tLMT")
+        Tzdb.parse(t"inline", lines).prim
+      . matches:
+          case Tzdb.Entry.Zone(_, _, info) if info.prim.let(_.stdoff) == Tzdb.Duration(-4, -56, -2) =>
+
+      test(m"a Rule may save a negative duration"):
+        val lines = Chain(t"Rule\tEire\t1971\tmax\t-\tOct\tlastSun\t2:00u\t-1:00\t-")
+        Tzdb.parse(t"inline", lines).prim
+      . matches:
+          case rule: Tzdb.Entry.Rule if rule.save == Tzdb.Duration(-1, 0, 0) =>
+
       test(m"parses a single Link line"):
         val lines = Chain(t"Link\tEurope/London\tEurope/Belfast")
         Tzdb.parse(t"inline", lines).prim

@@ -74,6 +74,7 @@ package executives:
   given directExecutive: (backstop: Backstop) => Executive:
     type Return = Exit
     type Interface = Invocation
+    type Permit = Effectful
 
 
     def invocation
@@ -104,7 +105,7 @@ inline def trap(handler: PartialFunction[Signal, SignalResponse])(using cli: Cli
 
 def application(using executive: Executive, interpreter: Interpreter, system: System)
   ( arguments: List[Text], signals: List[UnixSignal] = Nil )
-  ( block: Cli ?=> executive.Return )
+  ( block: (erased permit: executive.Permit) ?=> Cli ?=> executive.Return )
 :   Unit =
 
   val entrypoint = new Entrypoint:
@@ -128,4 +129,5 @@ def application(using executive: Executive, interpreter: Interpreter, system: Sy
   signals.each: signal =>
     sm.Signal.handle(sm.Signal(signal.shortName.s), _ => cli.dispatchSignal(Signal(signal)))
 
-  jl.System.exit(executive.process(cli)(block)())
+  // [erased-evidence] the executive's `Permit` is a marker with no runtime content.
+  jl.System.exit(executive.process(cli)(block(using !![executive.Permit]))())

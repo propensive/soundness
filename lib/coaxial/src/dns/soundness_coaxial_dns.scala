@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export coaxial.{lookup, query}
+export coaxial.query

@@ -131,3 +131,40 @@ object InterpreterTests extends Suite("cli-interpreter", m"Commandline interpret
       test(m"a long flag reads identically under both interpreters"):
         reading(posix, Flag("verbose"), t"--verbose")
       . assert(_ == t"[]")
+
+    suite(m"Switches"):
+      test(m"a switch's topic takes no operand"):
+        val switch = Switch(t"verbose", aliases = List('v'))
+        summon[switch.Topic is Interpretable].operand
+      . assert(_ == false)
+
+      test(m"a switch is read from its alias"):
+        reading(posix, Switch(t"verbose", aliases = List('v')), t"-v")
+      . assert(_ == t"[]")
+
+    suite(m"Executives"):
+      test(m"a flag read under the direct executive is its value"):
+        demilitarize:
+          import executives.directExecutive
+          import backstops.silentBackstop
+          import interpreters.posixInterpreter
+          import systems.javaBaseSystem
+
+          def tool(args: List[Text]): Unit = application(args):
+            val name: Optional[Text] = Flag(t"name", aliases = List('n'))()
+            Exit.Ok
+        . map(_.message)
+      . assert(_.isEmpty)
+
+      test(m"a flag read in a completions prelude is not yet its value"):
+        demilitarize:
+          import executives.completionsExecutive
+          import backstops.silentBackstop
+          import interpreters.posixInterpreter
+          import systems.javaBaseSystem
+
+          def tool(args: List[Text]): Unit = application(args):
+            val name: Optional[Text] = Flag(t"name", aliases = List('n'))()
+            execute(Exit.Ok)
+        . map(_.message)
+      . assert(_.nonEmpty)

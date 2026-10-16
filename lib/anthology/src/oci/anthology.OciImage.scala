@@ -38,5 +38,5 @@ import gossamer.*
 // A WASI component packaged as a Wasm OCI Artifact and written as an `oci-archive`—the form a
 // container runtime with a Wasm shim (`io.containerd.wasmtime.v1`) schedules, and a registry
 // distributes: the application node reached from `Sjsir` through the `wasip2` component.
-object OciImage extends Format.Application:
+object OciImage extends Artifact.Application:
   def id: Text = t"oci"

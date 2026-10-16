@@ -130,6 +130,20 @@ object Complex:
           ( left.real*right.real - left.imaginary*right.imaginary,
             left.real*right.imaginary + left.imaginary*right.real )
 
+  // Scaling by a real number, on either side, as in `i*1.8` or `2.0*i`.
+  given multiplicableByDouble: [component: Multiplicable by Double as multiplication]
+  =>  Complex[component] is Multiplicable by Double to Complex[multiplication.Result] =
+
+    Multiplicable[Complex[component], Double, Complex[multiplication.Result]]:
+      (complex, scalar) => Complex(complex.real*scalar, complex.imaginary*scalar)
+
+  given doubleMultiplicable: [component]
+  =>  ( multiplication: Double is Multiplicable by component )
+  =>  Double is Multiplicable by Complex[component] to Complex[multiplication.Result] =
+
+    Multiplicable[Double, Complex[component], Complex[multiplication.Result]]:
+      (scalar, complex) => Complex(scalar*complex.real, scalar*complex.imaginary)
+
   given divisible
   :   [ component, dividend <: Complex[component], component2, divisor <: Complex[component2] ]
   =>  ( multiplication:  component is Multiplicable by component2,

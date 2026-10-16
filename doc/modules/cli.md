@@ -273,6 +273,7 @@ enum Verbosity:
 
 def tool3(args: List[Text]): Unit =
   import executives.completionsExecutive
+  import enumIdentification.kebabCaseIdentifiable
   application(args):
     val verbose = Switch(t"verbose", aliases = List('v'))()
     val verbosity = if verbose.present then Flag[Verbosity](t"verbosity")() else Unset
@@ -282,7 +283,8 @@ def tool3(args: List[Text]): Unit =
       Exit.Ok
 ```
 
-Pressing `tab` after a bare `-` runs this prelude. `-v` is checked for, and so becomes a
+An enum flag reads its value by name, in the style the imported `enumIdentification` given
+chooses: here `--verbosity loud`. Pressing `tab` after a bare `-` runs this prelude. `-v` is checked for, and so becomes a
 candidate; if it is not yet on the command line, it is offered. If it *is* already there, the
 branch checking for `--verbosity` runs too, so `--verbosity` becomes a candidate as well — while
 `-v`, which makes sense only once, does not. No table of flag interdependencies was written
@@ -323,8 +325,9 @@ required in the help text.
 ### The executive, and effectful methods
 
 The *executive* is what determines the return type of an entry point's body and the contextual
-values available inside it. `directExecutive` expects an `Exit` and supplies `Stdio`;
-`completionsExecutive` expects an `Execution` and withholds `Stdio` until `execute`. Choosing
+values available inside it. `directExecutive` expects an `Exit` and supplies `Stdio` and, since
+it never runs the body speculatively, an `Effectful` too, so a flag read anywhere in the body is
+its value; `completionsExecutive` expects an `Execution` and withholds both until `execute`. Choosing
 one by import is what lets the entry-point API stay uniform while imposing genuinely different
 requirements on the code inside it.
 
@@ -335,8 +338,8 @@ purpose is that a user-defined method may *demand* it:
 def deleteEverything()(using Effectful): Unit = ()
 ```
 
-Since an `Effectful` can be obtained only inside an `execute` block, such a method cannot be
-called from the prelude — which is to say, it cannot run while the user is merely pressing
+Under the completions executive an `Effectful` can be obtained only inside an `execute` block,
+so such a method cannot be called from the prelude — which is to say, it cannot run while the user is merely pressing
 `tab`. Marking the genuinely irreversible operations this way makes it hard to invoke one by
 accident from code that completions will run. The `install` operation that writes completion
 scripts into place requires it, for exactly this reason.

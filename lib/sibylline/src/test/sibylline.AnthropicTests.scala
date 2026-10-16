@@ -207,7 +207,7 @@ object AnthropicTests extends Suite("anthropic", m"Anthropic dialect tests"):
       given fake: FakeModel = FakeModel: (_, _, _) =>
         FakeModel.answer(t"""{\\"ticker\\": \\"AAPL\\", \\"rating\\": \\"buy\\"}""")
 
-      val verdict = target.session(llm.elicit[Appraisal](t"Summarise."))
+      val verdict = target.session(llm.solicit[Appraisal](t"Summarise."))
       val json = sent(fake)
       val body = fake.exchanges.stdlib.reverse.head.body.option.get
 
@@ -221,7 +221,7 @@ object AnthropicTests extends Suite("anthropic", m"Anthropic dialect tests"):
 
     test(m"a structured reply that is not JSON raises Malformed"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer(t"not json"))
-      capture[Llm.Error](target.session(llm.elicit[Appraisal](t"Summarise."))).reason
+      capture[Llm.Error](target.session(llm.solicit[Appraisal](t"Summarise."))).reason
     . assert(_ == Llm.Error.Reason.Malformed)
 
     test(m"caching marks the system prompt as a cache breakpoint"):

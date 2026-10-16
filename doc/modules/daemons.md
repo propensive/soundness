@@ -69,7 +69,7 @@ Output must go through `Out` and `Err`. Scala's own `println` writes to the JVM'
 prints reaches no user and, in the ordinary case, is simply lost. `Out` and `Err` resolve the
 `Stdio` of the current invocation, which is the client's. When the reader of that stream goes
 away — `mytool | head -1`, once `head` has exited — the launcher says so, and the invocation's
-next write to it raises `Outlet.Error`, ending the invocation with status 141 as `SIGPIPE`
+next write to it raises `Egress.Error`, ending the invocation with status 141 as `SIGPIPE`
 would end a process writing a pipe.
 
 Arguments and environment values arrive as text. A byte sequence that is not valid UTF-8 in

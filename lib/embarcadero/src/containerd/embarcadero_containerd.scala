@@ -35,7 +35,8 @@ package embarcadero
 import aperture.*
 
 // Atomic modes selecting the workload grants, composed like aperture's `Read` and `Write`:
-// `container.open[Workload](Read & Launch & Signal)`. The default `Read` open creates the
-// container and its task but does not start it — an inspection scope.
+// `container.open[Workload](Read & Launch & Signalling)`. The default `Read` open creates the
+// container and its task but does not start it — an inspection scope. `Signalling`, not
+// `Signal`, which profanity's interrupt holds in `soundness`.
 val Launch: Mode granting Workload.Grant.Launch = new Mode { type Grants = Workload.Grant.Launch }
-val Signal: Mode granting Workload.Grant.Signal = new Mode { type Grants = Workload.Grant.Signal }
+val Signalling: Mode granting Workload.Grant.Signal = new Mode { type Grants = Workload.Grant.Signal }

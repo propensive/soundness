@@ -80,8 +80,9 @@ extension (endpoint: Endpoint[Udp.Port])
     reply
 
   // The records answering a question for `name`'s `rtype`, through the nameserver, with
-  // recursion requested, under a fresh ID.
-  def lookup(name: Dns.Name, rtype: Dns.Type = Dns.Type.A)
+  // recursion requested, under a fresh ID. An overload of `query` rather than a `lookup`, a name
+  // which anamnesis's `ref.lookup[T]` holds in `soundness`.
+  def query(name: Dns.Name, rtype: Dns.Type = Dns.Type.A)
     ( using backend: Socket.Backend, options: Every[Socket.Option.Udp] )
   :   List[Dns.Record] raises Dns.Error raises Socket.Error =
 

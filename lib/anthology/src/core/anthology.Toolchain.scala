@@ -66,13 +66,13 @@ object Toolchain:
 
     // Kahn's algorithm: a toolchain whose edges cannot be fully peeled from its indegree-zero
     // nodes contains a cycle.
-    val nodes = all.flatMap { edge => sci.List[Format](edge.source, edge.target) }.distinct
+    val nodes = all.flatMap { edge => sci.List[Artifact](edge.source, edge.target) }.distinct
     val outgoing = all.groupBy(_.source)
-    val indegree = scm.HashMap[Format, Int]().withDefaultValue(0)
+    val indegree = scm.HashMap[Artifact, Int]().withDefaultValue(0)
 
     all.foreach: edge => indegree(edge.target) = indegree(edge.target) + 1
 
-    var queue: sci.List[Format] = nodes.filter(indegree(_) == 0)
+    var queue: sci.List[Artifact] = nodes.filter(indegree(_) == 0)
     var remaining: Int = nodes.length
 
     while !queue.isEmpty do
@@ -93,10 +93,10 @@ object Toolchain:
   extends fulminate.Error(586, 0)(m"the native tool $tool is not available on the PATH")
 
   object Setting:
-    def apply[settings](applies: Format -> Boolean)(edit0: settings -> settings): Setting =
+    def apply[settings](applies: Artifact -> Boolean)(edit0: settings -> settings): Setting =
       new Setting:
-        def appliesTo(format: Format): Boolean = applies(format)
-        def edit(format: Format, settings0: Any): Any = edit0(settings0.asInstanceOf[settings])
+        def appliesTo(format: Artifact): Boolean = applies(format)
+        def edit(format: Artifact, settings0: Any): Any = edit0(settings0.asInstanceOf[settings])
 
   // A tool setting, addressed to the formats whose production it configures: a `Toolchain`
   // applies it, in order, to the initial settings of every path edge whose target satisfies
@@ -105,8 +105,8 @@ object Toolchain:
   // settings types (an Android API level configures both dexing and packaging) dispatches on its
   // `format` argument.
   trait Setting:
-    def appliesTo(format: Format): Boolean
-    def edit(format: Format, settings: Any): Any
+    def appliesTo(format: Artifact): Boolean
+    def edit(format: Artifact, settings: Any): Any
 
 // An in-memory toolchain: a directed acyclic graph whose nodes are formats and whose edges are
 // tools. Producing one format from another is path search: the unique shortest edge sequence
@@ -119,20 +119,20 @@ case class Toolchain private (edges: List[Edge]):
   // The unique shortest path between two formats. No route raises `NoPath`; two or more
   // shortest routes raise `AmbiguousPath`, resolved by producing an explicit intermediate
   // format in a separate step.
-  def path(source: Format, target: Format): List[Edge] raises Link.Error =
+  def path(source: Artifact, target: Artifact): List[Edge] raises Link.Error =
     if source == target then Nil else
       // Deliberate stdlib opt-out, as noted above: the BFS below is stdlib queue-and-map code.
       val adjacency = edges.stdlib.groupBy(_.source)
 
       // Level-synchronous breadth-first search, counting shortest routes (capped at two) to
       // detect ambiguity, and recording each node's discovering edge for reconstruction.
-      val discovery = scm.HashMap[Format, Edge]()
-      val routes = scm.HashMap[Format, Int](source -> 1)
-      var frontier: sci.List[Format] = sci.List(source)
-      var visited: sci.Set[Format] = sci.Set(source)
+      val discovery = scm.HashMap[Artifact, Edge]()
+      val routes = scm.HashMap[Artifact, Int](source -> 1)
+      var frontier: sci.List[Artifact] = sci.List(source)
+      var visited: sci.Set[Artifact] = sci.Set(source)
 
       while !frontier.isEmpty && !visited.contains(target) do
-        val next = scm.LinkedHashMap[Format, Int]()
+        val next = scm.LinkedHashMap[Artifact, Int]()
 
         frontier.foreach: node =>
           adjacency.getOrElse(node, sci.Nil).foreach: edge =>
@@ -151,7 +151,7 @@ case class Toolchain private (edges: List[Edge]):
       then abort(Link.Error(Link.Error.Reason.AmbiguousPath(source.id, target.id)))
 
       var route: List[Edge] = Nil
-      var current: Format = target
+      var current: Artifact = target
 
       while current != source do
         val edge = discovery(current)
@@ -166,8 +166,8 @@ case class Toolchain private (edges: List[Edge]):
   // target it applies to; a setting applying to none is rejected as inapplicable.
   def produce
     ( input:       Deliverable,
-      source:      Format,
-      target:      Format,
+      source:      Artifact,
+      target:      Artifact,
       out:         Path on Linux,
       settings:    List[Toolchain.Setting] = Nil,
       entryPoints: List[EntryPoint] = Nil )

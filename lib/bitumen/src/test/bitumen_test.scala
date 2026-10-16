@@ -89,6 +89,18 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         blocks.map(_.length).sum
       . assert(_ == 2048)
 
+    suite(m"Entry construction"):
+      test(m"an entry without a timestamp is stamped with the current time"):
+        Tar.Entry(t"README".as[Relative on Tar], t"Read me first".in[Data])
+      . matches:
+          case file: Tar.Entry.File if file.mtime.long > 0L =>
+
+      test(m"an entry at an explicit timestamp records it in seconds"):
+        import abstractables.epochMillisecondsAbstractable
+        Tar.Entry.at(t"README".as[Relative on Tar], t"Read me first".in[Data], 86400000L)
+      . matches:
+          case file: Tar.Entry.File if file.mtime.long == 86400L =>
+
     suite(m"Multi-entry archive"):
       val blocks = Tarfile(List(helloFile, emptyDir)).source[Data].chain.to[List].stdlib
 

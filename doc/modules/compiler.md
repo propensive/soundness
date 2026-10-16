@@ -112,19 +112,19 @@ want, and an output location, and runs each tool on the path between them:
 Toolchain(jarEdges()).produce
   ( Deliverable.Emission(output, classpath),
     Universe.Classfile,
-    Jar,
+    Artifact.Jar,
     destination,
     List(jarOptions.name(t"app.jar")),
     List(EntryPoint(fqcn"com.example.Main")) )
 ```
 
-From classfiles come an executable `Jar`, a `Dex` archive of Dalvik bytecode, a complete, signed
-and aligned Android `Apk`, and an `Xeq` bundle runnable straight from a shell. From Scala.js IR
+From classfiles come an executable `Artifact.Jar`, a `Dex` archive of Dalvik bytecode, a complete,
+signed and aligned Android `Apk`, and an `Xeq` bundle runnable straight from a shell. From Scala.js IR
 come `Js` — as an ECMAScript module, a CommonJS module or a plain script, the module system being
 part of the node's identity — a `Wasm` module with JavaScript glue, a standalone `Wasi` component
 at a stated generation, and an `OciImage` wrapping that component as an OCI artifact. From Scala
-Native IR comes a `Binary` per target triple. Every universe additionally produces a `Library`,
-packaging unlinked output for downstream assembly.
+Native IR comes an `Artifact.Binary` per target triple. Every universe additionally produces a
+`Library`, packaging unlinked output for downstream assembly.
 
 Formats several edges apart need no special handling: an `Apk` runs dexing and then packaging, and
 an `OciImage` links the component and then wraps it, because those are the paths. A build that
@@ -142,19 +142,18 @@ WASI generation an artifact's ABI follows, the target triple a binary runs on, t
 a bundle. A binary for `Triple.Arm64MacOs` is as distinct from one for `Triple.X64Linux` as a JAR
 is from a JavaScript bundle; that they share a linker does not make them interchangeable.
 
-The node set is open, too. `Format`, `Tool` and `Edge` are ordinary public types, so registering an
+The node set is open, too. `Artifact`, `Tool` and `Edge` are ordinary public types, so registering an
 edge for a format Soundness has never heard of extends the graph, and a format can be declared as
 data, by its kind and name, as a registry read at run time declares it:
 
 <!-- doccheck: skip -->
 ```scala
-val proto = anthology.Format.source(t"proto")
-val descriptor = anthology.Format(anthology.Format.Kind.Ir, t"descriptor")
+val proto = Artifact.source(t"proto")
+val descriptor = Artifact(Artifact.Kind.Ir, t"descriptor")
 ```
 
-(`Format` is qualified because `soundness` exports another type of that name.) A declared format
-is the same node as the built-in format of its kind and name, so `anthology.Format.ir(t"classfile")`
-reaches every edge registered for `Universe.Classfile`.
+A declared format is the same node as the built-in format of its kind and name, so
+`Artifact.ir(t"classfile")` reaches every edge registered for `Universe.Classfile`.
 
 ### Deliverables and paths
 
@@ -188,7 +187,7 @@ thread-context classloader — with its compiled output:
 Toolchain(jarEdges()).produce
   ( Deliverable.Emission(out, Bundler.applicationClasspath),
     Universe.Classfile,
-    Jar,
+    Artifact.Jar,
     out,
     List(jarOptions.name(t"$uuid.jar")),
     List(EntryPoint(executor)) )
@@ -252,7 +251,7 @@ val toolchain = Toolchain(nativeEdges(Triple.Arm64MacOs, Triple.X64Linux))
 toolchain.produce
   ( emission,
     Universe.Nir,
-    Binary(Triple.X64Linux),
+    Artifact.Binary(Triple.X64Linux),
     destination,
     List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
     List(EntryPoint(fqcn"com.example.Main")) )

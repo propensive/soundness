@@ -42,7 +42,7 @@ import rudiments.*
 
 import errorDiagnostics.emptyDiagnostics
 
-object Outlet:
+object Egress:
   // Raised by a write to an invocation's stdout or stderr after the launcher has reported
   // that the stream's reader is gone — `mytool | head -1`, once `head` has exited — the
   // daemon's equivalent of the `EPIPE` a process writing a pipe would get. Deliberately not
@@ -51,13 +51,13 @@ object Outlet:
   extends fulminate.Error(m"the invocation's $stream has no reader")
 
 // An invocation's stdout or stderr: a stream that delegates to the connection until the
-// launcher sends `closed` for it, after which every write raises `Outlet.Error`, so that a
+// launcher sends `closed` for it, after which every write raises `Egress.Error`, so that a
 // program which writes until it cannot ends, as it would were it writing a pipe.
-class Outlet(stream: Text, underlying: ji.OutputStream, severed: Atomic.Bool)
+class Egress(stream: Text, underlying: ji.OutputStream, severed: Atomic.Bool)
 extends ji.OutputStream:
   private def check(): Unit =
     import strategies.throwUnsafely
-    if severed() then abort(Outlet.Error(stream))
+    if severed() then abort(Egress.Error(stream))
 
   def write(byte: Int): Unit =
     check()

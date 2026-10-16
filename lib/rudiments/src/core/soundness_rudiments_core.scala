@@ -208,7 +208,3 @@ extension [self](inline value: self)
   inline def sec: vacuous.Optional[applicable.Result] = rudiments.sec(value)
   inline def ter: vacuous.Optional[applicable.Result] = rudiments.ter(value)
 
-// `zip` is deliberately NOT re-exported: zeppelin's contextual archive accessor owns the bare
-// name `zip` in this package, and a generic-receiver extension overload commits without falling
-// through when its givens fail. The extension remains available via `import rudiments.*`; the
-// collection aliases will host `zip` in their companions (implicit scope) once opaque.

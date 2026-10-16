@@ -42,9 +42,11 @@ import spectacular.*
 // profanity decodes terminal escape sequences into it, and tarantula renders it as the WebDriver
 // actions the protocol defines.
 object Keypress:
-  type EditKey = Tab.type | Home.type | End.type | PageUp.type | PageDown.type | Insert.type |
-    Delete.type | Enter.type | Backspace.type | Escape.type | Left.type | Right.type | Up.type |
-    Down.type
+  // A nominal marker rather than a union of the cases' singleton types: reached through an
+  // `export` forwarder, as `soundness.Keypress.Enter`, a case's singleton type names a different
+  // path, which a union of `clavichord.Keypress` singletons would not admit.
+  sealed trait Editing
+  type EditKey = Keypress & Editing
 
   // Renders a keypress with a Unicode symbol in square brackets for each special
   // key (and modifier), joining a modifier to the key it modifies with `+`; an
@@ -93,8 +95,20 @@ object Keypress:
   given showable: Keypress is Showable = render(_)
 
 enum Keypress:
-  case Tab, Home, End, PageUp, PageDown, Insert, Delete, Enter, Backspace, Escape, Left, Right, Up,
-    Down
+  case Tab extends Keypress, Keypress.Editing
+  case Home extends Keypress, Keypress.Editing
+  case End extends Keypress, Keypress.Editing
+  case PageUp extends Keypress, Keypress.Editing
+  case PageDown extends Keypress, Keypress.Editing
+  case Insert extends Keypress, Keypress.Editing
+  case Delete extends Keypress, Keypress.Editing
+  case Enter extends Keypress, Keypress.Editing
+  case Backspace extends Keypress, Keypress.Editing
+  case Escape extends Keypress, Keypress.Editing
+  case Left extends Keypress, Keypress.Editing
+  case Right extends Keypress, Keypress.Editing
+  case Up extends Keypress, Keypress.Editing
+  case Down extends Keypress, Keypress.Editing
 
   case CharKey(char: Char)
   case FunctionKey(number: Int)

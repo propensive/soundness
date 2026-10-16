@@ -36,8 +36,8 @@ package soundness
 // message type) into `soundness`, so a second toplevel `Message` makes any classpath carrying
 // both bundles a duplicate-toplevel-definition error. Import the websocket frame type by name:
 // `import perihelion.Message`.
-export perihelion.{Masking, Websocket, WsSessional, overIngressive,
-    overTransmissible, webSocket}
+export perihelion.{Masking, over, overIngressive, overTransmissible, Websocket, webSocket,
+    WsSessional}
 
 // `wsClient` and `wsSessional` are deliberately not exported: their types carry
 // capture-annotated refinements, which synthesized export forwarders lose (see the note in

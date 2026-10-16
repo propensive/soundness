@@ -418,6 +418,20 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
 
         . assert(_ == 5)
 
+    suite(m"Selection beside arithmetic"):
+      test(m"`\\` selects while `/` still divides quantities"):
+        demilitarize:
+          def find(element: WebDriver.Element, root: WebDriver.ShadowRoot)
+            ( using WebDriver.Session^ )
+          :   Unit =
+
+            val found: List[WebDriver.Element] = element \ t"a" \ t"b"
+            val inRoot: List[WebDriver.Element] = root \ t"c"
+            val onPage: List[WebDriver.Element] = browser \ t"d"
+            val speed = 1.0*Metre/Second
+        . map(_.message)
+      . assert(_.isEmpty)
+
     suite(m"Input actions"):
       def performed(steps: List[WebDriver.Session.Action]): Text =
         val fake = driver((_, _) => none)
@@ -461,9 +475,7 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
              t"""{"type":"keyUp","value":"A"},{"type":"keyUp","value":"\uE009"}]""" )
 
       test(m"nested modifiers nest their held keys"):
-        // Fully qualified: an `export` forwarder widens an enum case's singleton type, so
-        // `Shift`, whose parameter is `EditKey | FunctionKey`, will not take `soundness.Keypress`.
-        performed2(clavichord.Keypress.Ctrl(clavichord.Keypress.Shift(clavichord.Keypress.Enter)))
+        performed2(Keypress.Ctrl(Keypress.Shift(Keypress.Enter)))
       . assert(_.contains(t"""{"type":"keyDown","value":"\uE008"}"""))
 
       test(m"releasing actions is a DELETE"):

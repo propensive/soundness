@@ -58,5 +58,5 @@ object Wasi:
 
 // A standalone WebAssembly artifact bound to a version of the WASI system interface: one
 // application node per version.
-case class Wasi(version: Wasi.Version) extends Format.Application:
+case class Wasi(version: Wasi.Version) extends Artifact.Application:
   def id: Text = version.id

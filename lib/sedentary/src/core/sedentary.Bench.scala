@@ -556,7 +556,7 @@ private[sedentary] def stageOn(device: BenchmarkDevice, out: Path on Linux)(usin
       Toolchain(jarEdges()).produce
         ( Deliverable.Emission(out, Bundler.applicationClasspath),
           Universe.Classfile,
-          Jar,
+          Artifact.Jar,
           out,
           List(jarOptions.name(t"$uuid.jar")),
           List(EntryPoint(fqcn"superlunary.Executor")) )

@@ -267,19 +267,35 @@ object Tar:
     Tar.Archivable[plane]
 
   object Entry:
-    def apply[data: Streamable by Data over Credit, instant: Abstractable across Instants to Long]
+    // A file stamped with the current time. An explicit timestamp takes `at`, in the manner of
+    // zeppelin's `Zip.Entry`: as an optional parameter, its type would be left uninferred.
+    def apply[data: Streamable by Data over Credit]
       ( name:  Tar.Ref,
         data:  data,
-        mode:  UnixMode          = UnixMode(),
-        user:  UnixUser          = UnixUser(0),
-        group: UnixGroup         = UnixGroup(0),
-        mtime: Optional[instant] = Unset )
+        mode:  UnixMode  = UnixMode(),
+        user:  UnixUser  = UnixUser(0),
+        group: UnixGroup = UnixGroup(0) )
     :   Entry =
 
-      val mtimeU32: U32 =
-        (mtime.let(_.generic).or(System.currentTimeMillis)/1000).toInt.bits.u32
+      file(name, data, mode, user, group, System.currentTimeMillis)
 
-      Entry.File(name, mode, user, group, mtimeU32, Archive.Body(data.source[Data].memoize))
+    def at[data: Streamable by Data over Credit, instant: Abstractable across Instants to Long]
+      ( name:  Tar.Ref,
+        data:  data,
+        mtime: instant,
+        mode:  UnixMode  = UnixMode(),
+        user:  UnixUser  = UnixUser(0),
+        group: UnixGroup = UnixGroup(0) )
+    :   Entry =
+
+      file(name, data, mode, user, group, mtime.generic)
+
+    private def file[data: Streamable by Data over Credit]
+      ( name: Tar.Ref, data: data, mode: UnixMode, user: UnixUser, group: UnixGroup, millis: Long )
+    :   Entry =
+
+      val mtime: U32 = (millis/1000).toInt.bits.u32
+      Entry.File(name, mode, user, group, mtime, Archive.Body(data.source[Data].memoize))
 
     private[bitumen] val paxRef: Tar.Ref =
       import strategies.throwUnsafely

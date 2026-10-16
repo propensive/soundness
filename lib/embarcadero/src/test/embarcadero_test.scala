@@ -681,7 +681,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
             given containerd: (Containerd^) = Containerd(endpoint, t"example")
             val spec = Container(t"web", image = t"img:1")
 
-            val (pid, exit) = spec.open[Workload](Read & embarcadero.Launch & Signal): workload ?=>
+            val (pid, exit) = spec.open[Workload](Read & embarcadero.Launch & Signalling): workload ?=>
               (workload.pid, workload.await().exitStatus)
 
             (pid, exit, calls.synchronized(calls.to(List)))

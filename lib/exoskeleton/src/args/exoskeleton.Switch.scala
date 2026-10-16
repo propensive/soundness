@@ -35,6 +35,7 @@ package exoskeleton
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
+import prepositional.*
 import vacuous.*
 
 object Switch:
@@ -44,6 +45,7 @@ object Switch:
       aliases:     List[Text | Char] = Nil,
       description: Optional[Text]    = Unset,
       secret:      Boolean           = false )
-  :   Flag =
+  :   Flag of Unit =
 
-    Flag(name, repeatable, aliases, description, secret)
+    // A switch takes no operand: its topic is `Unit`, whose `Interpretable` reads only presence.
+    Flag[Unit](name, repeatable, aliases, description, secret)

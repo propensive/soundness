@@ -38,8 +38,8 @@ import gossamer.*
 // The LIRA `wasm-object` universe: relocatable WebAssembly objects, composing by the symbols of
 // their linking sections — what `rustc --target wasm32` and clang emit, linked by `wasm-ld` into
 // a WASI 0.1 module or lifted by component tools into the `component` universe. It is a
-// `Format.Ir` rather than a `Universe`, since no Scala compilation emits it. No edge yet
+// `Artifact.Ir` rather than a `Universe`, since no Scala compilation emits it. No edge yet
 // produces or consumes it; the node exists so that foreign compilers and wasm linkers can
 // register theirs.
-object WasmObject extends Format.Ir:
+object WasmObject extends Artifact.Ir:
   def id: Text = t"wasm-object"

@@ -52,7 +52,7 @@ extension (session: Llm.Session^)
   // model is forced to call one synthetic tool, `answer`, taking that schema as its arguments.
   // Either way the document the model supplies is decoded as the result: the caller names a
   // type and receives a value.
-  def elicit[value]
+  def solicit[value]
     ( prompt: Text )
     ( using schematic: value is Schematic over JsonSchema )
     ( using decodable: (value is distillate.Decodable in Json at Json.Focus)^ )

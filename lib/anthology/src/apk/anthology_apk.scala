@@ -58,9 +58,9 @@ object apkOptions:
   // manifest (`Apk`) and the dexing that precedes it on the path (`Dex`), so this one setting
   // addresses both nodes, dispatching to each node's own configuration type.
   def minApi(level: Int): Toolchain.Setting = new Toolchain.Setting:
-    def appliesTo(format: Format): Boolean = format == Apk || format == Dex
+    def appliesTo(format: Artifact): Boolean = format == Apk || format == Dex
 
-    def edit(format: Format, settings: Any): Any = format match
+    def edit(format: Artifact, settings: Any): Any = format match
       case Dex => settings.asInstanceOf[DexConfiguration].copy(minApi = level)
       case _   => settings.asInstanceOf[Apk.Configuration].copy(minApi = level)
 

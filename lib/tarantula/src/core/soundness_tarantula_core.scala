@@ -34,4 +34,4 @@ package soundness
 
 export tarantula.{WebDriver, browser, click, clear, innerText, tagName, enabled,
     selected, displayed, role, label, cssValue, shadowRoot, rect, value, screenshotData, attribute,
-    property, element, `/`}
+    property, element}
