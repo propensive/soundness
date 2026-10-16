@@ -57,6 +57,9 @@ object MlDsa:
       def name: Text = t"ML-DSA-${valueOf[level]}"
       def sshName: Optional[Text] = Unset
 
+      def algorithm: Optional[Asn1] =
+        Asn1.Sequence(List(Asn1.ObjectId(KeyAlgorithm.MlDsa(valueOf[level]))))
+
       // One identifier per parameter set (RFC 9881), with the parameters absent.
       def conforms(algorithm: Asn1, material: KeyAlgorithm.Material): Boolean =
         KeyAlgorithm.identifier(algorithm).lay(false): (arcs, parameters) =>

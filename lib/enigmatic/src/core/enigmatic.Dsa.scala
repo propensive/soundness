@@ -49,6 +49,7 @@ object Dsa:
       type Self = Dsa[bits]
       def name: Text = t"DSA-${valueOf[bits]}"
       def sshName: Optional[Text] = Unset
+      def algorithm: Optional[Asn1] = Unset
 
       // The key's size is the size of the prime `p`, the first of the domain parameters.
       def conforms(algorithm: Asn1, material: KeyAlgorithm.Material): Boolean =

@@ -85,6 +85,14 @@ object PublicKey:
         val found = t"a ${Pem.Label.showable.text(other).lower} block"
         abort(PublicKey.Error(Error.Reason.Mismatch(t"public", found)))
 
+  // A public key from its raw form — the content of a SubjectPublicKeyInfo's BIT STRING, which
+  // is what a wire protocol such as SSH or TLS carries: 32 bytes for X25519 or Ed25519, an
+  // uncompressed point for an EC key. The algorithm must have a fixed identifier.
+  def raw[cipher <: Cipher](bits: Data)(using algorithm: cipher is KeyAlgorithm)
+  :   Optional[PublicKey[cipher]] =
+
+    algorithm.algorithm.let(identifier => PublicKey(Spki.wrap(identifier, bits)))
+
   private[enigmatic] def adopt[cipher <: Cipher](data: Data)
     ( using algorithm: cipher is KeyAlgorithm )
     ( using Tactic[PublicKey.Error], Diagnostics )
@@ -122,3 +130,9 @@ case class PublicKey[cipher <: Cipher](bytes: Data):
 
 
   def pem: Pem = Pem(Pem.Label.PublicKey, bytes)
+
+  // The raw key — the SubjectPublicKeyInfo's BIT STRING content — or `Unset` if the document is
+  // not one; the inverse of `PublicKey.raw`.
+  def raw: Optional[Data] = safely(Der(bytes).as[Asn1]) match
+    case Asn1.Sequence(List(_, Asn1.BitString(bits, 0))) => bits
+    case _                                               => Unset
