@@ -257,7 +257,7 @@ object OpenSsh:
   // `malformed` error, through the tactic each read takes, so the reader itself captures no
   // capability. Positions are checked before every read, so the JVM array behind the frozen data
   // is indexed within its bounds.
-  class Reader[error <: fulminate.Error](data: Data)(malformed: Text -> error)
+  private[enigmatic] class Reader[error <: fulminate.Error](data: Data)(malformed: Text -> error)
   extends caps.Mutable:
     private val bytes: scala.Array[Byte] = Array.unsafeJvm(data)
     private var position: Int = 0
@@ -301,7 +301,7 @@ object OpenSsh:
       String(Array.unsafeJvm(data), jnc.StandardCharsets.UTF_8).tt
 
   // The writing counterpart, for a public key's blob.
-  class Writer() extends caps.Mutable:
+  private[enigmatic] class Writer() extends caps.Mutable:
     private val buffer: ji.ByteArrayOutputStream = ji.ByteArrayOutputStream()
 
     update def uint32(value: Int): Unit =
