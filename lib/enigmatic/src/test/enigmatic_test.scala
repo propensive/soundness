@@ -795,6 +795,161 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
           case _                                                       => false
       . assert(identity)
 
+    suite(m"Key reading"):
+      import KeyFixtures.*
+
+      test(m"An Ed25519 signature verifies against the matching public key"):
+        val key = PrivateKey.generate[Ed25519]()
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"An Ed25519 signature fails against a different key"):
+        val key = PrivateKey.generate[Ed25519]()
+        val other = PrivateKey.generate[Ed25519]()
+        other.public.verify(pangram, key.sign(pangram))
+      . assert(!_)
+
+      test(m"An OpenSSH Ed25519 key reads and signs"):
+        val key = sshEd25519.read[PrivateKey[Ed25519] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"An OpenSSH Ed25519 key's public half is its .pub line"):
+        val key = sshEd25519.read[PrivateKey[Ed25519] in Pem]
+        Array.same(OpenSsh.publicKey[Ed25519](sshEd25519Public).bytes, key.public.bytes)
+      . assert(identity)
+
+      test(m"An OpenSSH ECDSA P-256 key reads and signs"):
+        val key = sshEcdsa256.read[PrivateKey[Ecdsa[256]] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"An OpenSSH ECDSA P-256 key's public half is its .pub line"):
+        val key = sshEcdsa256.read[PrivateKey[Ecdsa[256]] in Pem]
+        Array.same(OpenSsh.publicKey[Ecdsa[256]](sshEcdsa256Public).bytes, key.public.bytes)
+      . assert(identity)
+
+      test(m"An OpenSSH ECDSA P-521 key reads and signs"):
+        val key = sshEcdsa521.read[PrivateKey[Ecdsa[521]] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"An OpenSSH RSA key reads and signs"):
+        val key = sshRsa2048.read[PrivateKey[Rsa[2048]] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"An OpenSSH RSA key's public half is its .pub line"):
+        val key = sshRsa2048.read[PrivateKey[Rsa[2048]] in Pem]
+        Array.same(OpenSsh.publicKey[Rsa[2048]](sshRsa2048Public).bytes, key.public.bytes)
+      . assert(identity)
+
+      test(m"An Ed25519 public key renders back to its OpenSSH line"):
+        OpenSsh.line(OpenSsh.publicKey[Ed25519](sshEd25519Public), t"test@example")
+      . assert(_ == sshEd25519Public)
+
+      test(m"An ECDSA public key renders back to its OpenSSH line"):
+        OpenSsh.line(OpenSsh.publicKey[Ecdsa[256]](sshEcdsa256Public), t"test@example")
+      . assert(_ == sshEcdsa256Public)
+
+      test(m"An RSA public key renders back to its OpenSSH line"):
+        OpenSsh.line(OpenSsh.publicKey[Rsa[2048]](sshRsa2048Public), t"test@example")
+      . assert(_ == sshRsa2048Public)
+
+      test(m"A PKCS#8 RSA key reads and signs"):
+        val key = pkcs8Rsa2048.read[PrivateKey[Rsa[2048]] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"A PKCS#1 RSA key reads and signs"):
+        val key = pkcs1Rsa2048.read[PrivateKey[Rsa[2048]] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"PKCS#1 and PKCS#8 forms of a key have the same public key"):
+        val pkcs1 = pkcs1Rsa2048.read[PrivateKey[Rsa[2048]] in Pem]
+        val pkcs8 = pkcs8Rsa2048.read[PrivateKey[Rsa[2048]] in Pem]
+        Array.same(pkcs1.public.bytes, pkcs8.public.bytes)
+      . assert(identity)
+
+      test(m"A PEM public key is the private key's public half"):
+        val key = pkcs8Rsa2048.read[PrivateKey[Rsa[2048]] in Pem]
+        Array.same(spkiRsa2048.read[PublicKey[Rsa[2048]] in Pem].bytes, key.public.bytes)
+      . assert(identity)
+
+      test(m"A SEC1 EC key reads and signs"):
+        val key = sec1P256.read[PrivateKey[Ecdsa[256]] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"A SEC1 EC key's signature verifies against its PEM public key"):
+        val key = sec1P256.read[PrivateKey[Ecdsa[256]] in Pem]
+        spkiP256.read[PublicKey[Ecdsa[256]] in Pem].verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"A PKCS#8 EC P-384 key reads and signs"):
+        val key = pkcs8P384.read[PrivateKey[Ecdsa[384]] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"A key read as a PEM block, then decoded, is the same key"):
+        val key = pkcs8Rsa2048.read[Pem].as[PrivateKey[Rsa[2048]]]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"A key read from DER is the same key"):
+        val key = pkcs8Rsa2048.read[Pem].as[Der].as[PrivateKey[Rsa[2048]]]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"Reading a key as the wrong size is a mismatch"):
+        capture[PrivateKey.Error](pkcs8Rsa2048.read[PrivateKey[Rsa[4096]] in Pem]).reason
+      . assert(_ == PrivateKey.Error.Reason.Mismatch(t"RSA-4096", t"RSA-2048"))
+
+      test(m"Reading a key as the wrong algorithm is a mismatch"):
+        capture[PrivateKey.Error](sshEd25519.read[PrivateKey[Rsa[2048]] in Pem]).reason
+      . assert(_ == PrivateKey.Error.Reason.Mismatch(t"RSA-2048", t"Ed25519"))
+
+      test(m"Reading an EC key over the wrong curve is a mismatch"):
+        capture[PrivateKey.Error](sec1P256.read[PrivateKey[Ecdsa[384]] in Pem]).reason
+      . assert(_ == PrivateKey.Error.Reason.Mismatch(t"ECDSA P-384", t"ECDSA P-256"))
+
+      test(m"Reading a public key as the wrong algorithm is a mismatch"):
+        capture[PublicKey.Error](spkiEd25519.read[PublicKey[Ecdsa[256]] in Pem]).reason
+      . assert(_ == PublicKey.Error.Reason.Mismatch(t"ECDSA P-256", t"Ed25519"))
+
+      test(m"Reading an OpenSSH line as the wrong algorithm is a mismatch"):
+        capture[PublicKey.Error](OpenSsh.publicKey[Rsa[2048]](sshEd25519Public)).reason
+      . assert(_ == PublicKey.Error.Reason.Mismatch(t"RSA-2048", t"Ed25519"))
+
+      test(m"A passphrase-protected OpenSSH key is reported as encrypted"):
+        capture[PrivateKey.Error](sshEd25519Encrypted.read[PrivateKey[Ed25519] in Pem]).reason
+      . assert(_ == PrivateKey.Error.Reason.Encrypted)
+
+      test(m"A PBES2-encrypted PKCS#8 key is reported as encrypted"):
+        capture[PrivateKey.Error](pkcs8Rsa2048Encrypted.read[PrivateKey[Rsa[2048]] in Pem]).reason
+      . assert(_ == PrivateKey.Error.Reason.Encrypted)
+
+      test(m"An Ed25519 PKCS#8 key without its public key is rejected"):
+        capture[PrivateKey.Error](pkcs8Ed25519.read[PrivateKey[Ed25519] in Pem]).reason
+      . assert(_ == PrivateKey.Error.Reason.PublicKeyAbsent)
+
+      test(m"A public-key block read as a private key is a mismatch"):
+        capture[PrivateKey.Error](spkiRsa2048.read[PrivateKey[Rsa[2048]] in Pem]).reason
+      . assert(_ == PrivateKey.Error.Reason.Mismatch(t"private", t"a public key block"))
+
+      test(m"A generated Ed25519 key round-trips through PEM"):
+        val key = PrivateKey.generate[Ed25519]()
+        val read = key.pem(Divulgence).serialize.read[PrivateKey[Ed25519] in Pem]
+        Array.same(read.public.bytes, key.public.bytes)
+      . assert(identity)
+
+      test(m"A generated ECDSA key round-trips through PEM"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+        val read = key.pem(Divulgence).serialize.read[PrivateKey[Ecdsa[256]] in Pem]
+        Array.same(read.public.bytes, key.public.bytes)
+      . assert(identity)
+
     suite(m"X.509 certificates"):
       import java.io as ji
       import java.security as js, js.cert as jsc
@@ -826,6 +981,11 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
       test(m"The JDK parses a generated certificate and checks its signature"):
         val certificate0 = certificate()
+        parse(certificate0).verify(publicKey(certificate0))
+        true
+      test(m"The JDK parses an Ed25519 self-signed certificate and checks its signature"):
+        val key = PrivateKey.generate[Ed25519]()
+        val certificate0 = Certificate.selfSigned(subject, key, period, BigInt(7))
         parse(certificate0).verify(publicKey(certificate0))
         true
       . assert(identity)

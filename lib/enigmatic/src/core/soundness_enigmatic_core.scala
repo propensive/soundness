@@ -39,10 +39,10 @@ export
   . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
       Cleartext, cleartext, Cloak, Crypto, Ctr, decrypt, Decryptor,
       Des, Divulgence,
-      Dsa, Ecb, Ecdsa, encrypt, Encryptor, Encryption,
-      Hmac, hmac, InitializationVector, Iso10126, JavaBaseCrypto,
-      MlDsa, NoPadding, Ofb, Password,
-      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature,
+      Dsa, Ecb, Ecdsa, Ed25519, encrypt, Encryptor, Encryption,
+      Hmac, hmac, InitializationVector, Iso10126, JavaBaseCrypto, KeyAlgorithm,
+      MlDsa, NoPadding, Ofb, OpenSsh, Password,
+      Permits, Pkcs7, Pkcs8, PrivateKey, PublicKey, Rc2, Rsa, Signature, Spki,
       Symmetric, SymmetricKey, TripleDes, uncloak }
 
 package signatureDigests:
