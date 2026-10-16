@@ -144,9 +144,13 @@ class Channel private[susurration]
       writer.text(name)
       writer.text(value)
 
-  // Starts the command; the server must accept it.
-  def exec(command: Text)(using Tactic[Ssh.Error], Diagnostics): Unit =
-    if !request(t"exec", true)(_.text(command))
+  // Starts the command — a `Text` the remote shell interprets, or a guillotine `Command`, quoted
+  // argument by argument; the server must accept it.
+  def exec[command: Invocable as invocable](command: command)
+    ( using Tactic[Ssh.Error], Diagnostics )
+  :   Unit =
+
+    if !request(t"exec", true)(_.text(invocable.line(command)))
     then abort(Ssh.Error(Reason.RequestRefused(t"exec")))
 
   // Writes to the process's standard input, in packets the server's window and packet size

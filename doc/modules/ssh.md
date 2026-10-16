@@ -88,9 +88,19 @@ endpoint.session: ssh ?=>
   result.status              // 0
 ```
 
-`exec` writes the input, collects both output streams and waits for the exit status. For a
-protocol that interleaves reading and writing, `ssh.channel` lends the channel itself, whose
-`stdout()` is a lazy chain of chunks and whose `write` and `eof` drive the command's input.
+`exec` writes the input, collects both output streams and waits for the exit status. The command
+may be a `Text` the remote shell interprets, or a Guillotine `Command`, whose arguments are
+quoted one by one so that a value with spaces or shell characters stays a single argument:
+
+<!-- doccheck: skip -->
+```scala
+val branch = t"feature/one two"
+endpoint.session: ssh ?=>
+  ssh.exec(sh"git log -1 --format=%s $branch").stdout.read[Text]
+```
+
+For a protocol that interleaves reading and writing, `ssh.channel` lends the channel itself,
+whose `stdout()` is a lazy chain of chunks and whose `write` and `eof` drive the command's input.
 
 ### Git over SSH
 

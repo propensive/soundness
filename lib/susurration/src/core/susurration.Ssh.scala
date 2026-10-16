@@ -64,6 +64,8 @@ object Ssh:
   val Identity: susurration.Identity.type = susurration.Identity
   type Agent = susurration.Agent
   val Agent: susurration.Agent.type = susurration.Agent
+  type Invocable = susurration.Invocable
+  val Invocable: susurration.Invocable.type = susurration.Invocable
 
   // The identification string this client sends (RFC 4253 §4.2).
   val Version: Text = t"SSH-2.0-susurration_0.72"
