@@ -35,12 +35,27 @@ package enigmatic
 import scala.reflect.Selectable.reflectiveSelectable
 
 import anticipation.*
+import gossamer.*
+import vacuous.*
 import gastronomy.Signing
 
 object Dsa:
   given value: [bits <: 512 | 1024 | 2048 | 3072: ValueOf]
   =>  ( crypto: Crypto { def dsa: Crypto.SignatureScheme } )
   =>  Dsa[bits] = Dsa(crypto.dsa)
+
+  given keyAlgorithm: [bits <: 512 | 1024 | 2048 | 3072: ValueOf] => Dsa[bits] is KeyAlgorithm =
+    new KeyAlgorithm:
+      type Self = Dsa[bits]
+      def name: Text = t"DSA-${valueOf[bits]}"
+      def sshName: Optional[Text] = Unset
+
+      // The key's size is the size of the prime `p`, the first of the domain parameters.
+      def conforms(algorithm: Asn1, material: KeyAlgorithm.Material): Boolean =
+        KeyAlgorithm.identifier(algorithm).lay(false): (arcs, parameters) =>
+          arcs == KeyAlgorithm.Dsa && (parameters match
+            case Asn1.Sequence(Asn1.Integer(p) :: _) => p.bitLength == valueOf[bits]
+            case _                                   => false)
 
 class Dsa[bits <: 512 | 1024 | 2048 | 3072: ValueOf](scheme: Crypto.SignatureScheme)
 extends Cipher, Signing:

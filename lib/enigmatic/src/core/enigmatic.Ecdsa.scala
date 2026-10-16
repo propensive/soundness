@@ -35,6 +35,8 @@ package enigmatic
 import scala.reflect.Selectable.reflectiveSelectable
 
 import anticipation.*
+import gossamer.*
+import vacuous.*
 import gastronomy.Signing
 
 // ECDSA over a NIST prime curve, with the curve chosen by key size: 256 is P-256 (`secp256r1`),
@@ -47,6 +49,17 @@ object Ecdsa:
         crypto: Crypto { def ecdsa(digest: Text): Crypto.SignatureScheme } )
   =>  Ecdsa[bits] =
     Ecdsa(crypto.ecdsa(digest.token))
+
+  given keyAlgorithm: [bits <: 256 | 384 | 521: ValueOf] => Ecdsa[bits] is KeyAlgorithm =
+    new KeyAlgorithm:
+      type Self = Ecdsa[bits]
+      def name: Text = t"ECDSA P-${valueOf[bits]}"
+      def sshName: Optional[Text] = t"ecdsa-sha2-nistp${valueOf[bits]}"
+
+      // The curve is in the parameters; the key material carries nothing the curve does not fix.
+      def conforms(algorithm: Asn1, material: KeyAlgorithm.Material): Boolean =
+        KeyAlgorithm.identifier(algorithm).lay(false): (arcs, parameters) =>
+          arcs == KeyAlgorithm.Ec && parameters == Asn1.ObjectId(KeyAlgorithm.curve(valueOf[bits]))
 
 class Ecdsa[bits <: 256 | 384 | 521: ValueOf](scheme: Crypto.SignatureScheme)
 extends Cipher, Signing:

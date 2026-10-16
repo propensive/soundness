@@ -54,6 +54,11 @@ object SignatureAlgorithm:
     arc(digest, t"SHA256" -> 2, t"SHA384" -> 3, t"SHA512" -> 4).let: last =>
       Asn1.Sequence(List(Asn1.ObjectId(List(1, 2, 840, 10045, 4, 3, last))))
 
+  // Ed25519's identifier (RFC 8410) names the curve alone, with the parameters field absent, since
+  // the scheme fixes its own hash; the digest is ignored, as for ML-DSA.
+  given ed25519: Ed25519 is SignatureAlgorithm = _ =>
+    Asn1.Sequence(List(Asn1.ObjectId(List(1, 3, 101, 112))))
+
   // ML-DSA identifiers live under the NIST signature-algorithm arc (RFC 9881), one per parameter
   // set, and the parameters field is absent. ML-DSA signs the message itself rather than a digest
   // of it, so the digest plays no part in the identifier and is ignored.
