@@ -49,6 +49,22 @@ import vacuous.*
 // The SSH-2 protocol's constants and the decisions a client makes: which algorithms it offers,
 // and whether to trust a host's key.
 object Ssh:
+  // The library's classes, reached as `Ssh.Session`, `Ssh.Signer` and so on from the `soundness`
+  // package, whose other libraries already export a `Transport`, `Channel`, `Session`, `Agent`
+  // and `Identity` of their own.
+  type Transport = susurration.Transport
+  val Transport: susurration.Transport.type = susurration.Transport
+  type Channel = susurration.Channel
+  val Channel: susurration.Channel.type = susurration.Channel
+  type Session = susurration.Session
+  val Session: susurration.Session.type = susurration.Session
+  type Signer = susurration.Signer
+  val Signer: susurration.Signer.type = susurration.Signer
+  type Identity = susurration.Identity
+  val Identity: susurration.Identity.type = susurration.Identity
+  type Agent = susurration.Agent
+  val Agent: susurration.Agent.type = susurration.Agent
+
   // The identification string this client sends (RFC 4253 §4.2).
   val Version: Text = t"SSH-2.0-susurration_0.72"
 
@@ -128,6 +144,25 @@ object Ssh:
 
   trait HostKeys:
     def accept(hostname: Text, port: Int, keyType: Text, key: Data): Boolean
+
+  // Where a client's identities come from, for a transport that is given only a URL: the user
+  // to be at a host (if the URL does not say), and the signers to try there.
+  object Credentials:
+    // The same signers for every host, with no opinion about the user.
+    def apply(all: Signer*): Credentials = new Credentials:
+      def user(host: Text): Optional[Text] = Unset
+      def signers(host: Text, user: Text): List[Signer] = List(all*)
+
+    // Every key the agent at the socket holds.
+    def agent(socket: Text)(using Socket.Backend, Diagnostics): Credentials = new Credentials:
+      def user(host: Text): Optional[Text] = Unset
+
+      def signers(host: Text, user: Text): List[Signer] =
+        safely(Agent(socket).identities()).or(Nil)
+
+  trait Credentials:
+    def user(host: Text): Optional[Text]
+    def signers(host: Text, user: Text): List[Signer]
 
   // A destination: a host and port, the user to be, and the signers that prove it. A session
   // (`endpoint.session: session ?=> …`) connects, verifies the host key against the `HostKeys`

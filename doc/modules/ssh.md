@@ -50,7 +50,7 @@ config.resolve(t"work")   // SshConfig.Resolution(t"git.example.com", t"alice", 
 
 ### The transport
 
-A `Transport` over a connected `Duplex` performs the identification exchange and key exchange
+An `Ssh.Transport` over a connected `Duplex` performs the identification exchange and key exchange
 with `connect`, checking the server's host key against the `Ssh.HostKeys` policy in scope — a
 `KnownHosts` file, or `Ssh.HostKeys.trustOnFirstUse(known)` — and then moves encrypted packets
 with `send` and `receive`. The algorithms offered are `Ssh.Algorithms`, whose default prefers
@@ -63,7 +63,7 @@ import internetAccess.online, socketBackends.javaBaseSockets, logging.silentLogg
 given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
 
 Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
-  val transport = Transport(duplex, t"github.com", 22)
+  val transport = Ssh.Transport(duplex, t"github.com", 22)
   transport.connect()
   transport.service(t"ssh-userauth")
   transport.negotiated   // Transport.Negotiated(t"curve25519-sha256", t"ssh-ed25519", t"chacha20-poly1305@openssh.com")
@@ -73,14 +73,14 @@ Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
 
 Everything above is assembled by a session on an `Ssh.Endpoint`: it connects, checks the host
 key against the `Ssh.HostKeys` policy in scope, authenticates with the endpoint's signers, and
-lends a `Session` that runs commands over channels of the connection protocol:
+lends a `Ssh.Session` that runs commands over channels of the connection protocol:
 
 <!-- doccheck: skip -->
 ```scala
 import cloaks.heapCloak
 
 val key = keyText.read[PrivateKey[Ed25519] in Pem]
-val endpoint = Ssh.Endpoint(t"example.com", 22, t"alice", List(Signer(key)))
+val endpoint = Ssh.Endpoint(t"example.com", 22, t"alice", List(Ssh.Signer(key)))
 
 endpoint.session: ssh ?=>
   val result = ssh.exec(t"uname -a")
@@ -92,9 +92,26 @@ endpoint.session: ssh ?=>
 protocol that interleaves reading and writing, `ssh.channel` lends the channel itself, whose
 `stdout()` is a lazy chain of chunks and whose `write` and `eof` drive the command's input.
 
+### Git over SSH
+
+Octogenarian's native git backend reaches remote repositories through this client with the
+`gitTransports.soundnessSsh` transport: no `ssh` binary is spawned, the host key is checked
+against the `Ssh.HostKeys` policy in scope, and the identities come from `Ssh.Credentials` —
+loaded keys, or everything an `ssh-agent` holds:
+
+<!-- doccheck: skip -->
+```scala
+import gitBackends.soundnessGit, gitTransports.soundnessSsh
+
+given Ssh.Credentials = Ssh.Credentials.agent(t"/tmp/ssh-agent.sock")
+given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+
+Git.clone(t"git@github.com:propensive/soundness.git", directory)
+```
+
 ### Authentication
 
-A connected transport authenticates with public keys (RFC 4252): a `Signer` is a loaded
+A connected transport authenticates with public keys (RFC 4252): an `Ssh.Signer` is a loaded
 `PrivateKey` of a cipher OpenSSH knows, or a key held by an `ssh-agent`, which signs without ever
 releasing the key. The first signer the server accepts wins:
 
@@ -103,8 +120,8 @@ releasing the key. The first signer the server accepts wins:
 import cloaks.heapCloak
 
 val key = keyText.read[PrivateKey[Ed25519] in Pem]
-val agent = Agent(t"/tmp/ssh-agent.sock")
-transport.authenticate(t"git", Signer(key) :: agent.identities())
+val agent = Ssh.Agent(t"/tmp/ssh-agent.sock")
+transport.authenticate(t"git", Ssh.Signer(key) :: agent.identities())
 ```
 
 ### The wire encoding

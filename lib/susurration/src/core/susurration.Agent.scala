@@ -52,6 +52,7 @@ import Ssh.Error.Reason
 // socket `SSH_AUTH_SOCK` names, which lists its public keys and signs with the private ones
 // without ever releasing them. Each operation is one request and one reply over a fresh
 // connection, framed as a `uint32` length and a message.
+@unexported
 object Agent:
   private val RequestIdentities: Byte = 11
   private val IdentitiesAnswer: Byte = 12
@@ -61,6 +62,8 @@ object Agent:
   // `rsa-sha2-256` is requested by flag (§4.5.1) for an RSA key; other keys sign as themselves.
   private val Sha256Flag: Int = 2
 
+// Reached from the umbrella as a member of `Ssh`: see `soundness_susurration_core.scala`.
+@unexported
 class Agent(path: Text)(using backend: Socket.Backend, diagnostics: Diagnostics):
   import Agent.*
 

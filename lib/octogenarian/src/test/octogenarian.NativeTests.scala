@@ -54,6 +54,11 @@ import gitBackends.soundnessGit
 
 import filesystemBackends.javaBaseFilesystem
 import denominative.dysasymptotics.linearSize
+import providers.javaBaseProvider
+import cloaks.heapCloak
+import socketBackends.javaBaseSockets
+
+import java.nio.file as jnf
 
 // The native backend, checked against repositories the real `git` builds: every read must agree
 // with git's own answer, and every write must be one git accepts.
@@ -1000,6 +1005,80 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
             repo.push(t"shell", List(Git.Refspec(Git.Refs.heads(t"main")))).value.values.to[List]
           (outcomes.exists(_.isInstanceOf[Git.Push.Outcome.Updated]), gitOut(mirror, t"log", t"-1", t"--format=%s", t"main"))
       .assert(_ == ((true, t"third")))
+
+      // The native SSH client against the system's `sshd`, run unprivileged on a free port with
+      // throwaway keys, as susurration's own tests run it; skipped where there is none. Each test
+      // starts its own server: fume terminates a test's child processes when the test ends.
+      if jnf.Files.isExecutable(jnf.Path.of("/usr/sbin/sshd").nn) then
+        val sshDir = freshDir()
+        def sshFile(name: Text): Text = (sshDir / name).encode
+        def sshPath(name: Text): jnf.Path = jnf.Path.of(sshFile(name).s).nn
+
+        def keygen(kind: Text, name: Text): Unit =
+          sh"ssh-keygen -q -t $kind -N ${t""} -f ${sshFile(name)}".exec[Exit]()
+
+        keygen(t"ed25519", t"host")
+        keygen(t"ed25519", t"user")
+        jnf.Files.copy(sshPath(t"user.pub"), sshPath(t"authorized_keys"))
+
+        val sshdConfig = t"""ListenAddress 127.0.0.1
+          |HostKey ${sshFile(t"host")}
+          |PidFile none
+          |AuthorizedKeysFile ${sshFile(t"authorized_keys")}
+          |StrictModes no
+          |PasswordAuthentication no
+          |KbdInteractiveAuthentication no
+          |AcceptEnv GIT_PROTOCOL
+          |UsePAM no
+          |""".s.stripMargin
+
+        jnf.Files.writeString(sshPath(t"sshd_config"), sshdConfig)
+        val sshUser: Text = java.lang.System.getProperty("user.name").nn.tt
+
+        def withSshd[result](block: Int => result): result =
+          val port = summon[Tcp is Allocatable].unused()
+
+          val process =
+            ProcessBuilder("/usr/sbin/sshd", "-D", "-p", port.toString, "-f", sshFile(t"sshd_config").s)
+            . start().nn
+
+          def ready(attempts: Int): Boolean =
+            attempts > 0 && (
+              safely { java.net.Socket("127.0.0.1", port).close(); true }.or(false) ||
+              { Thread.sleep(50); ready(attempts - 1) } )
+
+          try
+            ready(100)
+            block(port)
+          finally process.destroy()
+
+        given Ssh.HostKeys = Ssh.HostKeys.insecurelyAcceptAll
+
+        given Ssh.Credentials =
+          val keyText = jnf.Files.readString(sshPath(t"user")).nn.tt
+          Ssh.Credentials(Ssh.Signer(keyText.read[PrivateKey[Ed25519] in Pem]))
+
+        test(m"a native fetch over the native SSH client matches the repository"):
+          val (source, mirror) = populated()
+          val other = gitRepo()
+          withSshd: port =>
+            given Git.Backend = Native(List(SshNative()))
+            other.open[Git.Repo](Read & Write): repo ?=>
+              repo.addRemote(t"origin", t"ssh://$sshUser@127.0.0.1:$port${mirror.encode}")
+              repo.fetch(t"origin", tags = true)
+            (gitOut(other, t"log", t"--format=%s", t"refs/remotes/origin/main"), gitOut(other, t"fsck", t"--strict", t"--no-dangling"))
+        .assert(_ == ((t"second\nfirst", t"")))
+
+        test(m"a native push over the native SSH client is accepted by receive-pack"):
+          val (source, mirror) = populated()
+          gitCommit(source, t"c", t"c\n", t"third")
+          withSshd: port =>
+            given Git.Backend = Native(List(SshNative()))
+            val outcomes = source.open[Git.Repo](Read & Write): repo ?=>
+              repo.addRemote(t"native", t"ssh://$sshUser@127.0.0.1:$port${mirror.encode}")
+              repo.push(t"native", List(Git.Refspec(Git.Refs.heads(t"main")))).value.values.to[List]
+            (outcomes.exists(_.isInstanceOf[Git.Push.Outcome.Updated]), gitOut(mirror, t"log", t"-1", t"--format=%s", t"main"))
+        .assert(_ == ((true, t"third")))
 
     suite(m"Signatures"):
 

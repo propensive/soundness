@@ -57,6 +57,7 @@ import Ssh.Error.Reason
 // a mutable handle over a shared capability is what the separation checker rightly refuses, so
 // — as vivisection's JDWP connection does — the transport and the channel's state are held
 // behind untracked fields, and the channel is driven, like the transport, by one thread.
+@unexported
 object Channel:
   // What the server may send before this client adjusts, and what it may send in one packet.
   val InitialWindow: Int = 2 << 20
@@ -71,6 +72,8 @@ object Channel:
     case Eof
     case Closed
 
+// Reached from the umbrella as a member of `Ssh`: see `soundness_susurration_core.scala`.
+@unexported
 class Channel private[susurration]
   ( transport:  Transport,
     local:      Int,
