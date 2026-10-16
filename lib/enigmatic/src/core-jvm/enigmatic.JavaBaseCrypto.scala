@@ -272,6 +272,41 @@ object JavaBaseCrypto extends Crypto:
       try Array.unsafeFrozen(instance.doFinal(Array.unsafeJvm(ciphertext)).nn)
       catch case _: jc.AEADBadTagException => Unset
 
+  // ChaCha20 as a keystream (JEP 329, JDK 11). The JDK refuses to reuse a nonce on one `Cipher`
+  // instance, so each call takes a fresh one.
+  def chaCha20: Crypto.StreamCipher = new Crypto.StreamCipher:
+    def generateKey(bits: Int): Data = JavaBaseCrypto.random.bytes(32)
+
+    def xor(key: Data, nonce: Data, counter: Int, data: Data): Data =
+      val instance = jc.Cipher.getInstance("ChaCha20").nn
+      val spec = ChaCha20ParameterSpec(Array.unsafeJvm(nonce), counter)
+      instance.init(jc.Cipher.ENCRYPT_MODE, SecretKeySpec(Array.unsafeJvm(key), "ChaCha20"), spec)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      Array.unsafeFrozen(instance.doFinal(Array.unsafeJvm(data)).nn)
+
+  // ChaCha20-Poly1305 (RFC 8439), likewise from JDK 11.
+  def chaCha20Poly1305: Crypto.Aead = new Crypto.Aead:
+    def generateKey(bits: Int): Data = JavaBaseCrypto.random.bytes(32)
+
+    private def cipher(mode: Int, key: Data, nonce: Data, associated: Data): jc.Cipher =
+      val instance = jc.Cipher.getInstance("ChaCha20-Poly1305").nn
+      val spec = IvParameterSpec(Array.unsafeJvm(nonce))
+      instance.init(mode, SecretKeySpec(Array.unsafeJvm(key), "ChaCha20"), spec)
+      instance.updateAAD(Array.unsafeJvm(associated))
+      instance
+
+    def seal(key: Data, nonce: Data, associated: Data, plaintext: Data): Data =
+      val instance = cipher(jc.Cipher.ENCRYPT_MODE, key, nonce, associated)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      Array.unsafeFrozen(instance.doFinal(Array.unsafeJvm(plaintext)).nn)
+
+    def unseal(key: Data, nonce: Data, associated: Data, ciphertext: Data): Optional[Data] =
+      val instance = cipher(jc.Cipher.DECRYPT_MODE, key, nonce, associated)
+
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      try Array.unsafeFrozen(instance.doFinal(Array.unsafeJvm(ciphertext)).nn)
+      catch case _: jc.AEADBadTagException => Unset
+
   // ML-DSA (FIPS 204), provided by the JDK from 24 (JEP 497). The parameterized algorithm names
   // pin the parameter set, so a key generated at one strength cannot be used at another. ML-DSA
   // signs the message directly, so no digest participates in the transformation name.

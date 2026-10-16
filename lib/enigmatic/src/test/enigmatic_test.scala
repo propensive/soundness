@@ -1073,6 +1073,74 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         key.seal(nonce, Data(), Array.fill[Byte](16)(0)).serialize[Hex]
       . assert(_ == t"0388DACE60B6A392F328C2B971B2FE78AB6E47D42CEC13BDF53A67B21257BDDF")
 
+    suite(m"ChaCha20 and Poly1305"):
+      // RFC 8439's vectors: §2.4.2 (the keystream), §2.5.2 (the authenticator) and §2.8.2 (the AEAD).
+      val sunscreen = t"Ladies and Gentlemen of the class of '99: If I could offer you only one tip for the future, sunscreen would be it."
+
+      test(m"ChaCha20 produces RFC 8439's keystream"):
+        val key = SymmetricKey[ChaCha20](t"000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".deserialize[Hex])
+        key.xor(t"000000000000004A00000000".deserialize[Hex], 1, sunscreen.bytestream).serialize[Hex]
+      . assert(_ == t"6E2E359A2568F98041BA0728DD0D6981E97E7AEC1D4360C20A27AFCCFD9FAE0BF91B65C5524733AB8F593DABCD62B3571639D624E65152AB8F530C359F0861D807CA0DBF500D6A6156A38E088A22B65E52BC514D16CCF806818CE91AB77937365AF90BBF74A35BE6B40B8EEDF2785E42874D")
+
+      test(m"Applying the keystream twice restores the plaintext"):
+        val key = SymmetricKey.generate[ChaCha20]()
+        val nonce: Data = Array.fill[Byte](12)(7)
+        key.xor(nonce, 1, key.xor(nonce, 1, sunscreen.bytestream)).read[Text]
+      . assert(_ == sunscreen)
+
+      test(m"Poly1305 produces RFC 8439's tag"):
+        val key = t"85D6BE7857556D337F4452FE42D506A80103808AFB0DB2FD4ABFF6AF4149F51B".deserialize[Hex]
+        Poly1305.mac(key, t"Cryptographic Forum Research Group".bytestream).serialize[Hex]
+      . assert(_ == t"A8061DC1305136C6C22B8BAF0C0127A9")
+
+      test(m"Poly1305 of an empty message is the key's second half"):
+        val key = t"85D6BE7857556D337F4452FE42D506A80103808AFB0DB2FD4ABFF6AF4149F51B".deserialize[Hex]
+        Poly1305.mac(key, Data()).serialize[Hex]
+      . assert(_ == t"0103808AFB0DB2FD4ABFF6AF4149F51B")
+
+      test(m"Poly1305 agrees with the JDK's fused ChaCha20-Poly1305 on every length"):
+        // RFC 8439 §2.8: the tag is Poly1305, under block zero of the keystream, over the padded
+        // associated data, the padded ciphertext, and their lengths.
+        val key = SymmetricKey.generate[ChaCha20]()
+        val aead = SymmetricKey[ChaCha20Poly1305](key.data(Divulgence))
+        val nonce: Data = Array.fill[Byte](12)(3)
+
+        def join(parts: Data*): Data =
+          Array.unsafeFrozen(parts.map(Array.unsafeJvm(_)).reduce(_ ++ _))
+
+        def pad(data: Data): Data =
+          if data.length % 16 == 0 then data else join(data, Array.fill[Byte](16 - data.length % 16)(0))
+
+        def le64(value: Long): Data = Array.tabulate[Byte](8)(index => (value >>> (8*index)).toByte)
+
+        (0 until 40).forall: length =>
+          val plaintext: Data = Array.tabulate[Byte](length)(_.toByte)
+          val associated: Data = Array.tabulate[Byte](length % 7)(index => (index + 100).toByte)
+          val box = aead.seal(nonce, associated, plaintext)
+          val ciphertext = box.keep(length)
+          val tag = box.skip(length)
+          val otk = key.xor(nonce, 0, Array.fill[Byte](32)(0))
+          val authenticated =
+            join(pad(associated), pad(ciphertext), le64(associated.length), le64(length))
+          Array.same(Poly1305.mac(otk, authenticated), tag)
+      . assert(identity)
+
+      test(m"ChaCha20-Poly1305 produces RFC 8439's ciphertext and tag"):
+        val key = SymmetricKey[ChaCha20Poly1305](t"808182838485868788898A8B8C8D8E8F909192939495969798999A9B9C9D9E9F".deserialize[Hex])
+        val nonce = t"070000004041424344454647".deserialize[Hex]
+        val associated = t"50515253C0C1C2C3C4C5C6C7".deserialize[Hex]
+        key.seal(nonce, associated, sunscreen.bytestream).serialize[Hex]
+      . assert(_ == t"D31A8D34648E60DB7B86AFBC53EF7EC2A4ADED51296E08FEA9E2B5A736EE62D63DBEA45E8CA9671282FAFB69DA92728B1A71DE0A9E060B2905D6A5B67ECD3B3692DDBD7F2D778B8C9803AEE328091B58FAB324E4FAD675945585808B4831D7BC3FF4DEF08E4B7A9DE576D26586CEC64B61161AE10B594F09E26A7E902ECBD0600691")
+
+      test(m"ChaCha20-Poly1305 rejects a tampered tag"):
+        val key = SymmetricKey.generate[ChaCha20Poly1305]()
+        val nonce: Data = Array.fill[Byte](12)(0)
+        val box = key.seal(nonce, Data(), sunscreen.bytestream)
+        val tampered = Array.unsafeJvm(box).clone
+        tampered(tampered.length - 1) = (tampered(tampered.length - 1) ^ 1).toByte
+        capture[Crypto.Error](key.unseal(nonce, Data(), Array.unsafeFrozen(tampered))).reason
+      . assert(_ == Crypto.Error.Reason.BadTag)
+
     suite(m"X.509 certificates"):
       import java.io as ji
       import java.security as js, js.cert as jsc
