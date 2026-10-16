@@ -4,8 +4,8 @@
 
 Susurration is a native SSH-2 client. It is being built in stages: this release has the wire
 encoding, the two files every client reads, `known_hosts` and `~/.ssh/config`, and the transport
-layer — the key exchange and encrypted packets over a coaxial connection — and public-key
-authentication; the connection protocol follows.
+layer — the key exchange and encrypted packets over a coaxial connection — public-key
+authentication, and the connection protocol that runs commands.
 
 ```scala
 import soundness.*
@@ -68,6 +68,29 @@ Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
   transport.service(t"ssh-userauth")
   transport.negotiated   // Transport.Negotiated(t"curve25519-sha256", t"ssh-ed25519", t"chacha20-poly1305@openssh.com")
 ```
+
+### Running commands
+
+Everything above is assembled by a session on an `Ssh.Endpoint`: it connects, checks the host
+key against the `Ssh.HostKeys` policy in scope, authenticates with the endpoint's signers, and
+lends a `Session` that runs commands over channels of the connection protocol:
+
+<!-- doccheck: skip -->
+```scala
+import cloaks.heapCloak
+
+val key = keyText.read[PrivateKey[Ed25519] in Pem]
+val endpoint = Ssh.Endpoint(t"example.com", 22, t"alice", List(Signer(key)))
+
+endpoint.session: ssh ?=>
+  val result = ssh.exec(t"uname -a")
+  result.stdout.read[Text]   // the output
+  result.status              // 0
+```
+
+`exec` writes the input, collects both output streams and waits for the exit status. For a
+protocol that interleaves reading and writing, `ssh.channel` lends the channel itself, whose
+`stdout()` is a lazy chain of chunks and whose `write` and `eof` drive the command's input.
 
 ### Authentication
 
