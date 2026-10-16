@@ -3,8 +3,9 @@
 ### About
 
 Susurration is a native SSH-2 client. It is being built in stages: this release has the wire
-encoding and the two files every client reads, `known_hosts` and `~/.ssh/config`; the transport,
-authentication and connection protocols follow.
+encoding, the two files every client reads, `known_hosts` and `~/.ssh/config`, and the transport
+layer — the key exchange and encrypted packets over a coaxial connection; the authentication and
+connection protocols follow.
 
 ```scala
 import soundness.*
@@ -45,6 +46,27 @@ Host work
 """)
 
 config.resolve(t"work")   // SshConfig.Resolution(t"git.example.com", t"alice", 2222, List(t"~/.ssh/id_work"))
+```
+
+### The transport
+
+A `Transport` over a connected `Duplex` performs the identification exchange and key exchange
+with `connect`, checking the server's host key against the `Ssh.HostKeys` policy in scope — a
+`KnownHosts` file, or `Ssh.HostKeys.trustOnFirstUse(known)` — and then moves encrypted packets
+with `send` and `receive`. The algorithms offered are `Ssh.Algorithms`, whose default prefers
+Curve25519, Ed25519 and ChaCha20-Poly1305:
+
+<!-- doccheck: skip -->
+```scala
+import internetAccess.online, socketBackends.javaBaseSockets, logging.silentLogging
+
+given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
+
+Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
+  val transport = Transport(duplex, t"github.com", 22)
+  transport.connect()
+  transport.service(t"ssh-userauth")
+  transport.negotiated   // Transport.Negotiated(t"curve25519-sha256", t"ssh-ed25519", t"chacha20-poly1305@openssh.com")
 ```
 
 ### The wire encoding

@@ -3417,12 +3417,12 @@ object surveillance extends Library:
 // `known_hosts` and `~/.ssh/config` files, and — to come — the transport, authentication and
 // connection protocols over coaxial's sockets.
 object susurration extends Library:
-  object core extends Component(enigmatic.core):
+  object core extends Component(enigmatic.core, coaxial.core):
     override def scalaJs = false // transitively JVM-only, through enigmatic
     override def scalaNative = true
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core):
+  object test extends Tests(core, coaxial.jvm, guillotine.core, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
