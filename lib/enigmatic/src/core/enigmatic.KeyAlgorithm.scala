@@ -62,6 +62,7 @@ object KeyAlgorithm:
   val Rsa: List[Int] = List(1, 2, 840, 113549, 1, 1, 1)
   val Ec: List[Int] = List(1, 2, 840, 10045, 2, 1)
   val Ed25519: List[Int] = List(1, 3, 101, 112)
+  val X25519: List[Int] = List(1, 3, 101, 110)
   val Dsa: List[Int] = List(1, 2, 840, 10040, 4, 1)
 
   // One identifier per ML-DSA parameter set (RFC 9881).
@@ -102,6 +103,7 @@ object KeyAlgorithm:
     identifier(algorithm).lay(t"an unrecognized algorithm"): (arcs, parameters) =>
       if arcs == Rsa then rsaModulus(material).lay(t"RSA")(modulus => t"RSA-${modulus.bitLength}")
       else if arcs == Ed25519 then t"Ed25519"
+      else if arcs == X25519 then t"X25519"
       else if arcs == Ec then parameters match
         case Asn1.ObjectId(P256) => t"ECDSA P-256"
         case Asn1.ObjectId(P384) => t"ECDSA P-384"
@@ -118,6 +120,10 @@ object KeyAlgorithm:
 trait KeyAlgorithm extends Typeclass:
   def name: Text
   def sshName: Optional[Text]
+
+  // The `AlgorithmIdentifier` of a key of this type, for building a key document around raw key
+  // material, or `Unset` where the identifier carries parameters only the key knows (DSA).
+  def algorithm: Optional[Asn1]
 
   // Whether `algorithm` (an `AlgorithmIdentifier`) names this algorithm, with its parameters, and
   // `material` is key material of this algorithm's size.

@@ -205,6 +205,73 @@ object JavaBaseCrypto extends Crypto:
 
     def privateToPublic(privateKey: Data): Data = extractTopLevel(privateKey)
 
+  // X25519 (RFC 7748), provided by the JDK from 11 (JEP 324). As for Ed25519, the public key is
+  // embedded at generation and stripped before any JCA call; the shared secret is the raw
+  // 32-byte output of the agreement, with no key derivation applied.
+  def x25519: Crypto.KeyAgreement = new Crypto.KeyAgreement:
+    private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("XDH").nn
+
+    def generateKeyPair(bits: Int): Data =
+      val pair = js.KeyPairGenerator.getInstance("X25519").nn.generateKeyPair().nn
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      val privateKey = Array.unsafeFrozen(pair.getPrivate.nn.getEncoded.nn)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      val publicKey = Array.unsafeFrozen(pair.getPublic.nn.getEncoded.nn)
+      embedTopLevel(privateKey, publicKey)
+
+    def privateToPublic(privateKey: Data): Data = extractTopLevel(privateKey)
+
+    def agree(privateKey: Data, publicKey: Data): Data =
+      val agreement = jc.KeyAgreement.getInstance("X25519").nn
+      val stripped = Array.unsafeJvm(stripTopLevel(privateKey))
+      agreement.init(keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(stripped)))
+      val peer = keyFactory().generatePublic(jss.X509EncodedKeySpec(Array.unsafeJvm(publicKey)))
+      agreement.doPhase(peer, true)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      Array.unsafeFrozen(agreement.generateSecret().nn)
+
+  // ECDH over the NIST prime curve of the given size, sharing `ecdsa`'s key generation (an EC key
+  // is an EC key) and its RFC 5915 public-key embedding. The shared secret is the x-coordinate of
+  // the agreed point, as RFC 5656 and TLS both use it.
+  def ecdh: Crypto.KeyAgreement = new Crypto.KeyAgreement:
+    private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("EC").nn
+    def generateKeyPair(bits: Int): Data = JavaBaseCrypto.ecdsa(t"SHA256").generateKeyPair(bits)
+    def privateToPublic(privateKey: Data): Data = extractPublicKey(privateKey)
+
+    def agree(privateKey: Data, publicKey: Data): Data =
+      val agreement = jc.KeyAgreement.getInstance("ECDH").nn
+      val own = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(Array.unsafeJvm(privateKey)))
+      agreement.init(own)
+      val peer = keyFactory().generatePublic(jss.X509EncodedKeySpec(Array.unsafeJvm(publicKey)))
+      agreement.doPhase(peer, true)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      Array.unsafeFrozen(agreement.generateSecret().nn)
+
+  // AES-GCM with a 128-bit tag. The JDK refuses to reuse a nonce under one key within a single
+  // `Cipher` instance, so each call takes a fresh instance; the caller's nonce discipline is its
+  // own.
+  def aesGcm: Crypto.Aead = new Crypto.Aead:
+    def generateKey(bits: Int): Data = JavaBaseCrypto.aes.generateKey(bits)
+
+    private def cipher(mode: Int, key: Data, nonce: Data, associated: Data): jc.Cipher =
+      val instance = jc.Cipher.getInstance("AES/GCM/NoPadding").nn
+      val spec = GCMParameterSpec(128, Array.unsafeJvm(nonce))
+      instance.init(mode, SecretKeySpec(Array.unsafeJvm(key), "AES"), spec)
+      instance.updateAAD(Array.unsafeJvm(associated))
+      instance
+
+    def seal(key: Data, nonce: Data, associated: Data, plaintext: Data): Data =
+      val instance = cipher(jc.Cipher.ENCRYPT_MODE, key, nonce, associated)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      Array.unsafeFrozen(instance.doFinal(Array.unsafeJvm(plaintext)).nn)
+
+    def unseal(key: Data, nonce: Data, associated: Data, ciphertext: Data): Optional[Data] =
+      val instance = cipher(jc.Cipher.DECRYPT_MODE, key, nonce, associated)
+
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      try Array.unsafeFrozen(instance.doFinal(Array.unsafeJvm(ciphertext)).nn)
+      catch case _: jc.AEADBadTagException => Unset
+
   // ML-DSA (FIPS 204), provided by the JDK from 24 (JEP 497). The parameterized algorithm names
   // pin the parameter set, so a key generated at one strength cannot be used at another. ML-DSA
   // signs the message directly, so no digest participates in the transformation name.
