@@ -34,6 +34,7 @@ package zephyrine
 
 import scala.annotation.targetName
 import scala.caps
+import scala.compiletime
 import scala.compiletime.erasedValue
 
 import anticipation.Data
@@ -552,50 +553,41 @@ object Cursor:
   // is deliberately distinct from raw `Int` so that arithmetic or
   // `Byte`/`Char` confusion can't happen silently — comparison with the
   // expected literal is via the dedicated `Datum.==` overloads, which still
-  // compile to a single `int == int`. Two extensions disambiguated by
-  // `@targetName` (they erase to the same JVM signature) — callers just
-  // write `cursor.peek` without caring whether the cursor is byte- or
-  // char-based.
-  extension [cap^](cursor: Cursor[Data, cap])
-    @targetName("peekByte")
+  // compile to a single `int == int`. One definition serves both media,
+  // selected at compile time: a `Data` cursor by its medium, and a `Text`
+  // cursor — whose opaque type argument an inline match cannot see — by the
+  // `Operand` of the medium's `Addressable`, summoned at the call site where
+  // it is the concrete `text` instance. (The medium comes first because a
+  // call site inside a `Stream` body sees the stream's own `addressable`
+  // member, whose unrefined type would not reduce.)
+  extension [data, cap^](cursor: Cursor[data, cap])(using addressable: data is Addressable)
     inline def peek: Datum =
       if cursor.finished then Datum.End
-      else
-        val buffer = cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Byte]]
-        Datum.fromRaw(buffer(cursor.unsafePos(using Unsafe)) & 0xff)
+      else inline erasedValue[data] match
+        case _: Data =>
+          val buffer = cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Byte]]
+          Datum.fromRaw(buffer(cursor.unsafePos(using Unsafe)) & 0xff)
 
-  extension [cap^](cursor: Cursor[Text, cap])
-    @targetName("peekChar")
-    inline def peek: Datum =
-      if cursor.finished then Datum.End
-      else
-        val buffer = cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Char]]
-        Datum.fromRaw(buffer(cursor.unsafePos(using Unsafe)).toInt)
+        case _ => inline erasedValue[addressable.Operand] match
+          case _: Char =>
+            val buffer = cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Char]]
+            Datum.fromRaw(buffer(cursor.unsafePos(using Unsafe)).toInt)
 
-  // Match the cursor's current operand against `target`. On a match, advance
-  // past it; on a mismatch (or EOF), raise `failure` via the ambient
-  // `Tactic`. Replaces the hand-rolled `if cursor.peek != X then raise(…);
-  // cursor.next()` pair that every header / framer parser was writing. The
-  // target is `Char` for both variants so callers don't need `'X'.toByte`
-  // on `Cursor[Data]`; for ASCII targets the `Datum`-vs-`Char` comparison
-  // compiles to a single primitive `int == int`.
-  //
-  // The match consumes with `advance()`, not `next()`: `peek` has already
-  // confirmed the operand is present, and `next()`'s trailing `more` would
-  // force a blocking refill for the byte *after* the match — fatal when
-  // `expect` consumes the final delimiter of a message on a keep-alive
-  // stream whose peer sends nothing more until we reply (issue #1301).
-  extension [cap^](cursor: Cursor[Data, cap])
-    @targetName("expectByte")
-    inline def expect[error <: Hazard](target: Char)
-      ( inline failure: Diagnostics ?=> error )
-      ( using Tactic[error] )
-    :   Unit =
+          case _ => compiletime.error("peek is defined only for byte and char cursors")
 
-      if cursor.peek == target then cursor.advance() else raise(failure)
-
-  extension [cap^](cursor: Cursor[Text, cap])
-    @targetName("expectChar")
+    // Match the cursor's current operand against `target`. On a match, advance
+    // past it; on a mismatch (or EOF), raise `failure` via the ambient
+    // `Tactic`. Replaces the hand-rolled `if cursor.peek != X then raise(…);
+    // cursor.next()` pair that every header / framer parser was writing. The
+    // target is `Char` for both media so callers don't need `'X'.toByte`
+    // on `Cursor[Data]`; for ASCII targets the `Datum`-vs-`Char` comparison
+    // compiles to a single primitive `int == int`.
+    //
+    // The match consumes with `advance()`, not `next()`: `peek` has already
+    // confirmed the operand is present, and `next()`'s trailing `more` would
+    // force a blocking refill for the byte *after* the match — fatal when
+    // `expect` consumes the final delimiter of a message on a keep-alive
+    // stream whose peer sends nothing more until we reply (issue #1301).
     inline def expect[error <: Hazard](target: Char)
       ( inline failure: Diagnostics ?=> error )
       ( using Tactic[error] )
@@ -739,6 +731,10 @@ extends caps.Mutable:
   // concrete type at the field boundary, and the parser-side hot loops
   // would otherwise pay an `invokeinterface` on every character advance.
   private val lineationActive: Boolean = lineation.active
+
+  // Cached for the same reason: `seek` selects its scan by the medium once per call, not by
+  // an interface dispatch per element.
+  private val substrate: Substrate = addressable.substrate
 
   // Parallel arrays (not deques) of unboxed `Long`-typed `Mark` and `Offset`
   // values for the currently-held region. Using `Array[Long]` rather than
@@ -1081,7 +1077,36 @@ extends caps.Mutable:
   // current operand not yet loaded. Reading `datum` before a refill would
   // then see stale storage. Stopping on a match performs no further refill,
   // so `seek` never reads past the operand it finds.
-  inline update def seek(target: addressable.Operand): Boolean =
+  // The target arrives through the erased `Operand` (every caller's `cursor.addressable.Operand`
+  // is abstract), so it is unboxed once here and each element is compared at the primitive
+  // type from the concrete array; through `addressable.storageAddress` the comparison would
+  // box every element (see `unsafeBuffer`). Boxed media compare as references.
+  update def seek(target: addressable.Operand): Boolean = substrate match
+    case Substrate.Bytes => seekByte(target.asInstanceOf[Byte])
+    case Substrate.Chars => seekChar(target.asInstanceOf[Char])
+    case Substrate.Boxes => seekBoxed(target)
+
+  private update def seekByte(target: Byte): Boolean =
+    var found = false
+    var continue = more
+
+    while continue do
+      found = buffer.asInstanceOf[scala.Array[Byte]](pos) == target
+      continue = !found && next()
+
+    found
+
+  private update def seekChar(target: Char): Boolean =
+    var found = false
+    var continue = more
+
+    while continue do
+      found = buffer.asInstanceOf[scala.Array[Char]](pos) == target
+      continue = !found && next()
+
+    found
+
+  private update def seekBoxed(target: addressable.Operand): Boolean =
     var found = false
     var continue = more
 
