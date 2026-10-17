@@ -3156,3 +3156,36 @@ noise here is ±10–25% (rival rows that touch none of our code swing that much
 branch runs), so only the consistent deltas mean anything: "Scan all tokens" 10.2/10.5 µs vs
 12.7, "Parse example 6 (Full / Bcd)" 35.9/36.2 µs vs 48.5, the tracked parse 65.4/65.3 µs vs
 64.1 (+2%, the one row that now reconciles lineation through the trait's `reconcile`).
+
+## Inline traits: why the arithmetic templates are not possible (2026-10-17)
+
+Follow-up to the `Cursor.Snapshot` entry, after #2279 merged. The remaining candidates from
+that assessment — hypotenuse's F64/F32, U64…S8 and Q64/Q32 companions, the per-width
+`extension` blocks, `CheckOverflow`'s 24 objects, and `Specialized` arithmetic behind mosquito
+and sorting — were probed under the same flags and all fail, each on a compiler error:
+
+- `Inline traits may not define inner classes or traits.` A nested `object` in an inline
+  trait is rejected. Every hypotenuse companion is built from nested singleton instance
+  objects (`object Addition extends Arithmetic.Addition[F64, …]`, the `Widening` objects),
+  which is what makes `a + b` inline to one instruction, so no companion can be a template.
+- An `extension` method copied from an inline trait into a receiver companion is not found
+  through the companion's implicit scope ("could be made available as an extension method:
+  import N32.doubled"). The ~800 lines of `extension (s32: S32) …` blocks cannot be templated.
+- `Deferred inline method wrap in trait Numeric cannot be invoked`: a template cannot be
+  parameterised by abstract inline operations, neither as its own abstract inline members nor
+  through an inline-ops typeclass taken as a trait parameter. So "one body over `repr`,
+  instantiated at `Int` and `Long`" has no way to write `+` on `repr` that still compiles to
+  `iadd`/`ladd`.
+- With the earlier finding that anonymous `Specialized` instances (`new Vec[T](…) {}`) fail
+  under capture checking, interface specialisation of symbolism's typeclasses would need both
+  named receivers and a rewrite of the `is … by … to …` type-member vocabulary into type
+  parameters — a repo-wide API change, not an optimisation.
+
+What inline traits are good for here, then, is exactly the `Snapshot` shape: a body of
+*methods and fields* over a type parameter, copied into named classes, with the receiver's
+varying behaviour behind abstract hooks. The growable primitive array needs no new type:
+`rudiments.Scribe` (concordance) already holds an untyped buffer behind inline-cast accessors,
+so a concrete element type gets primitive array access; the remaining
+`scm.ArrayBuffer[Int|Long|Byte|Boolean]` uses (ypsiloid, jacinta and xylophone index buffers,
+gossamer, turbulence, escapade, hieroglyph, praxinoscope, exegesis, facsimile) are an adoption
+task for it, not an inline-trait one.
