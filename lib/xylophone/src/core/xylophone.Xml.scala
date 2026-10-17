@@ -3236,7 +3236,7 @@ object Xml extends Tag.Container
 
     // ─── tracking-mode bookkeeping ─────────────────────────────────────────
     //
-    // Per-nesting-level pool of `ArrayBuffer[Int]` index buffers, mirroring
+    // Per-nesting-level pool of `Scroll[Int]` index buffers, mirroring
     // `nodeBuffers`. Each `readElementTracked` call acquires up to three
     // scratch buffers: one for attribute descriptors, one for child
     // element descriptors back-to-back, and one for child end positions
@@ -3244,16 +3244,15 @@ object Xml extends Tag.Container
     // depth seen and is reused across parses on the same `XmlParser`.
     private var indexBufferId: Int = -1
 
-    private val indexBuffers: scala.collection.mutable.ArrayBuffer
-      [ scala.collection.mutable.ArrayBuffer[Int] ] =
+    private val indexBuffers: scala.collection.mutable.ArrayBuffer[Scroll[Int]] =
       scala.collection.mutable.ArrayBuffer.empty
 
     // Not `inline`, as `getNodeBuffer` above.
-    private update def getIndexBuffer(): scala.collection.mutable.ArrayBuffer[Int] =
+    private update def getIndexBuffer(): Scroll[Int] =
       indexBufferId += 1
 
       if indexBuffers.length <= indexBufferId then
-        val nu = scala.collection.mutable.ArrayBuffer.empty[Int]
+        val nu = Scroll[Int]()
         indexBuffers += nu
         nu
       else
@@ -3280,11 +3279,11 @@ object Xml extends Tag.Container
     // descriptors / their end positions the same way. See the layout
     // comment on `Xml.PositionIndex`.
     private update def emitElementDescriptor
-      ( out:         scala.collection.mutable.ArrayBuffer[Int],
-        attrDescs:   scala.collection.mutable.ArrayBuffer[Int],
-        attrEnds:    scala.collection.mutable.ArrayBuffer[Int],
-        childDescs:  scala.collection.mutable.ArrayBuffer[Int],
-        childEnds:   scala.collection.mutable.ArrayBuffer[Int],
+      ( out:         Scroll[Int],
+        attrDescs:   Scroll[Int],
+        attrEnds:    Scroll[Int],
+        childDescs:  Scroll[Int],
+        childEnds:   Scroll[Int],
         startLine:   Int,
         startColumn: Int,
         startMark:   Long )
@@ -3296,12 +3295,12 @@ object Xml extends Tag.Container
       val sourceLength = (cursor.position.n0 - startMark).toInt
       val sizeSlot = out.length
 
-      out += 0
-      out += startLine
-      out += startColumn
-      out += sourceLength
-      out += attrCount
-      out += elemCount
+      out.append(0)
+      out.append(startLine)
+      out.append(startColumn)
+      out.append(sourceLength)
+      out.append(attrCount)
+      out.append(elemCount)
 
       val headerSize = 6 + attrCount + elemCount
 
@@ -3310,21 +3309,21 @@ object Xml extends Tag.Container
       var prevEnd = 0
 
       while i < attrCount do
-        out += headerSize + prevEnd
+        out.append(headerSize + prevEnd)
         prevEnd = attrEnds(i)
         i += 1
 
       i = 0
-      prevEnd = attrEnds.lastOption.getOrElse(0)
-      val attrsTotal = attrEnds.lastOption.getOrElse(0)
+      prevEnd = (if attrEnds.isEmpty then 0 else attrEnds.last)
+      val attrsTotal = (if attrEnds.isEmpty then 0 else attrEnds.last)
 
       while i < elemCount do
-        out += headerSize + attrsTotal + prevEnd
+        out.append(headerSize + attrsTotal + prevEnd)
         prevEnd = childEnds(i)
         i += 1
 
-      out ++= attrDescs
-      out ++= childDescs
+      out.append(attrDescs)
+      out.append(childDescs)
       out(sizeSlot) = out.length - sizeSlot
 
     // The current byte for an error message: an ASCII byte as itself, a multi-byte
@@ -4191,7 +4190,7 @@ object Xml extends Tag.Container
         if nodes.length == 1 then nodes(0) else Fragment(nodes.toSeq*)
 
       relinquishNodeBuffer()
-      rootIndex = Array.from(rootBuf)
+      rootIndex = rootBuf.freeze
       relinquishIndexBuffer()
       result
 
@@ -4200,7 +4199,7 @@ object Xml extends Tag.Container
     // `out` is the parent's index buffer; the element's descriptor is
     // appended to it.
     private update def readElementTracked
-      ( out:         scala.collection.mutable.ArrayBuffer[Int],
+      ( out:         Scroll[Int],
         startLine:   Int,
         startColumn: Int,
         startMark:   Long )
@@ -4266,8 +4265,8 @@ object Xml extends Tag.Container
 
     private update def readAttributesTracked
       ( tag:       BaseText,
-        attrDescs: scala.collection.mutable.ArrayBuffer[Int],
-        attrEnds:  scala.collection.mutable.ArrayBuffer[Int] )
+        attrDescs: Scroll[Int],
+        attrEnds:  Scroll[Int] )
       ( using Tactic[Parse.Error] )
     :   Attributes =
 
@@ -4349,11 +4348,11 @@ object Xml extends Tag.Container
           // Emit attribute descriptor [size=4, line, column, length].
           syncTo()
           val attrLength = (cursor.position.n0 - attrStartMark).toInt
-          attrDescs += 4
-          attrDescs += attrLine
-          attrDescs += attrColumn
-          attrDescs += attrLength
-          attrEnds  += attrDescs.length
+          attrDescs.append(4)
+          attrDescs.append(attrLine)
+          attrDescs.append(attrColumn)
+          attrDescs.append(attrLength)
+          attrEnds.append(attrDescs.length)
 
       if n == 0 then Attributes.empty
       else
@@ -4363,8 +4362,8 @@ object Xml extends Tag.Container
 
     private update def readChildrenTracked
       ( parentName: BaseText,
-        childDescs: scala.collection.mutable.ArrayBuffer[Int],
-        childEnds:  scala.collection.mutable.ArrayBuffer[Int] )
+        childDescs: Scroll[Int],
+        childEnds:  Scroll[Int] )
       ( using Tactic[Parse.Error] )
     :   Array[Node]^{} =
 
@@ -4420,7 +4419,7 @@ object Xml extends Tag.Container
             children += readProcessingInstruction()
           else
             children += readElementTracked(childDescs, childLine, childColumn, childStartMark)
-            childEnds += childDescs.length
+            childEnds.append(childDescs.length)
         else
           val text = readText(parentName)
           if text.length > 0 then children += Text(text)

@@ -42,7 +42,7 @@ import rudiments.*
 import vacuous.*
 
 class StreamOutputStream() extends ji.OutputStream:
-  private val buffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+  private val buffer: Scroll[Byte] = Scroll[Byte]()
   private val chunks: Relay[Data] = Relay()
 
   def stream: Chain[Data] = chunks.chain
@@ -61,6 +61,6 @@ class StreamOutputStream() extends ji.OutputStream:
     flush()
     if bytes != null then chunks.put(Array.unsafeFrozen(bytes.slice(offset, offset + length)))
 
-  override def flush(): Unit = if !buffer.nil then
-    chunks.put(Array.unsafeFrozen(buffer.toArray))
+  override def flush(): Unit = if !buffer.isEmpty then
+    chunks.put(buffer.freeze)
     buffer.clear()
