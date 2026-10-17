@@ -166,17 +166,9 @@ object CborParser:
 // refill may compact, reallocate or adopt a new buffer, after which `bytes`
 // and `pos` are re-read and `base` re-anchored, so `position` — the absolute
 // stream offset reported in every `Cbor.Error` — survives compaction.
-final class CborParser private[breviloquence] () extends caps.ExclusiveCapability, caps.Stateful:
+final class CborParser private[breviloquence] ()
+extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   import CborParser.{Break, boxLong}
-
-  // The cursor's storage, as zephyrine types it (`Addressable.bytes.Storage`): the one
-  // place the raw JVM array appears, so reads compile to BALOAD.
-  private var bytes:  scala.Array[Byte] = null.asInstanceOf[scala.Array[Byte]]
-  private var pos:    Int = 0
-  private var bufEnd: Int = 0
-
-  // The absolute stream offset of `bytes(0)`, re-anchored by every `syncFrom()`.
-  private var base: Long = 0L
 
   // The high word of the last key packed by `directKeyWord()` (its low word is
   // the return value).
@@ -185,13 +177,13 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
   private[breviloquence] update def resetData(input: Data): Unit =
     import Lineation.untrackedData
     val fresh = Cursor[Data](input)
-    cursor = fresh
+    cursor0 = fresh.asInstanceOf[AnyRef]
     syncFrom()
 
   private[breviloquence] update def resetChain(input: Chain[Data]): Unit =
     import Lineation.untrackedData
     val fresh = Cursor[Data](input)
-    cursor = fresh
+    cursor0 = fresh.asInstanceOf[AnyRef]
     syncFrom()
 
   private[breviloquence] update def resetStream(consume input: (Stream[Data] over Credit)^)
@@ -199,66 +191,12 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
 
     import Lineation.untrackedData
     val fresh = Cursor[Data](input)
-    cursor = fresh
+    cursor0 = fresh.asInstanceOf[AnyRef]
     syncFrom()
 
-  // ── Substrate ──────────────────────────────────────────────────────────
-
-  // The absolute stream offset of the next byte: the position every error
-  // reports, unchanged by buffer compaction.
-  inline def position: Long = base + pos
-
-  // Push the parser's `pos` back to the cursor, before any cursor operation
-  // that consults it (refill, mark, cue).
-  private update def syncTo(): Unit =
-    val parserPos = pos
-    val current = cursor
-    current.unsafeAdvanceBy(parserPos - current.unsafePos(using Unsafe))(using Unsafe)
-
-  // Refresh the snapshot from the cursor, after any cursor operation that may
-  // have changed the buffer, the read position or the write end. Each cursor
-  // read is block-scoped so the parser-field writes that follow stay legal.
-  private update def syncFrom(): Unit =
-    val snapshot =
-      locally:
-        val current = cursor
-        current.unsafeDataBuffer(using Unsafe)
-
-    val readPos =
-      locally:
-        val current = cursor
-        current.unsafePos(using Unsafe)
-
-    val writeEnd =
-      locally:
-        val current = cursor
-        current.unsafeWriteEnd(using Unsafe)
-
-    val absolute =
-      locally:
-        val current = cursor
-        current.position.n0.toLong
-
-    bytes  = snapshot
-    pos    = readPos
-    bufEnd = writeEnd
-    base   = absolute - readPos
-
-  // Whether another byte is available, refilling from the source if the
-  // buffer is exhausted. The slow path is out of line so the JIT keeps
-  // `pos < bufEnd` as one register comparison in hot loops.
-  update def more: Boolean = pos < bufEnd || moreSlow()
-
-  private update def moreSlow(): Boolean =
-    syncTo()
-
-    val hasMore =
-      locally:
-        val current = cursor
-        current.more
-
-    syncFrom()
-    hasMore
+  // CBOR positions are byte offsets: there is no lineation to reconcile before a refill.
+  protected update def reconcile(): Unit = ()
+  protected update def resynced(): Unit = ()
 
   // Buffers `count` contiguous bytes from the read position, pulling from
   // the source as needed: the buffer is held while it fills, so compaction
@@ -358,7 +296,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
   // ── Primitive reads, over the buffered bytes ───────────────────────────
 
   private inline update def readByte(): Int =
-    (bytes(pos)&0xFF).also(pos += 1)
+    (cells(pos)&0xFF).also(pos += 1)
 
   private update def readUInt8()(using Tactic[Cbor.Error]): Int =
     expect(1)
@@ -368,29 +306,29 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
     expect(2)
     val start = pos
     pos = start + 2
-    ((bytes(start) & 0xFF) << 8) | (bytes(start + 1) & 0xFF)
+    ((cells(start) & 0xFF) << 8) | (cells(start + 1) & 0xFF)
 
   private update def readUInt32()(using Tactic[Cbor.Error]): Long =
     expect(4)
     val start = pos
     pos = start + 4
-    ((bytes(start) & 0xFFL) << 24) |
-      ((bytes(start + 1) & 0xFFL) << 16) |
-      ((bytes(start + 2) & 0xFFL) << 8) |
-      (bytes(start + 3) & 0xFFL)
+    ((cells(start) & 0xFFL) << 24) |
+      ((cells(start + 1) & 0xFFL) << 16) |
+      ((cells(start + 2) & 0xFFL) << 8) |
+      (cells(start + 3) & 0xFFL)
 
   private update def readUInt64()(using Tactic[Cbor.Error]): Long =
     expect(8)
     val start = pos
     pos = start + 8
-    ((bytes(start) & 0xFFL) << 56) |
-      ((bytes(start + 1) & 0xFFL) << 48) |
-      ((bytes(start + 2) & 0xFFL) << 40) |
-      ((bytes(start + 3) & 0xFFL) << 32) |
-      ((bytes(start + 4) & 0xFFL) << 24) |
-      ((bytes(start + 5) & 0xFFL) << 16) |
-      ((bytes(start + 6) & 0xFFL) << 8) |
-      (bytes(start + 7) & 0xFFL)
+    ((cells(start) & 0xFFL) << 56) |
+      ((cells(start + 1) & 0xFFL) << 48) |
+      ((cells(start + 2) & 0xFFL) << 40) |
+      ((cells(start + 3) & 0xFFL) << 32) |
+      ((cells(start + 4) & 0xFFL) << 24) |
+      ((cells(start + 5) & 0xFFL) << 16) |
+      ((cells(start + 6) & 0xFFL) << 8) |
+      (cells(start + 7) & 0xFFL)
 
   // Decodes the additional-info length field, returning the unsigned value as
   // a `Long`. A negative result means indefinite length.
@@ -423,11 +361,11 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
   // Copies `length` already-buffered bytes out as a frozen array.
   private update def readBytes(length: Int): Array[Byte]^{} =
     val result = Array.allocate[Byte](length)
-    System.arraycopy(bytes, pos, result.raw, 0, length)
+    System.arraycopy(cells, pos, result.raw, 0, length)
     pos += length
     Array.freeze(result)
 
-  // Checks a definite length fits an array and buffers that many bytes.
+  // Checks a definite length fits an array and buffers that many cells.
   private update def boundedLength(length: Long, headOffset: Long)
     ( using Tactic[Cbor.Error] )
   :   Int =
@@ -458,7 +396,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
 
     while !done do
       expect(1)
-      val head = bytes(pos) & 0xFF
+      val head = cells(pos) & 0xFF
 
       if head == Break then
         pos += 1
@@ -518,7 +456,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
   // Fails with `Truncated` at the current position unless a byte is available.
   private inline update def head()(using Tactic[Cbor.Error]): Int =
     if pos >= bufEnd && !more then abort(Cbor.Error(Reason.Truncated(position)))
-    bytes(pos) & 0xFF
+    cells(pos) & 0xFF
 
   // ── The AST path ───────────────────────────────────────────────────────
 
@@ -544,7 +482,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
     if head >= 0x60 && head < 0x78 then
       val length = head & 0x1F
       expect(length)
-      val str = new String(bytes, pos, length, java.nio.charset.StandardCharsets.UTF_8)
+      val str = new String(cells, pos, length, java.nio.charset.StandardCharsets.UTF_8)
       pos += length
       return Cbor.Ast(str)
 
@@ -579,7 +517,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
         if info == 31 then Cbor.Ast(readIndefiniteTextString())
         else
           val length = boundedLength(readLength(info, headOffset), headOffset)
-          val str = decodeUtf8(bytes, pos, length, headOffset)
+          val str = decodeUtf8(cells, pos, length, headOffset)
           pos += length
           Cbor.Ast(str)
 
@@ -594,7 +532,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
           while !done do
             expect(1)
 
-            if (bytes(pos) & 0xFF) == Break then
+            if (cells(pos) & 0xFF) == Break then
               pos += 1
               done = true
             else
@@ -640,7 +578,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
           while !done do
             expect(1)
 
-            if (bytes(pos) & 0xFF) == Break then
+            if (cells(pos) & 0xFF) == Break then
               pos += 1
               done = true
             else
@@ -761,7 +699,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
       val length = head & 0x1F
       pos += 1
       expect(length)
-      val str = new String(bytes, pos, length, java.nio.charset.StandardCharsets.UTF_8)
+      val str = new String(cells, pos, length, java.nio.charset.StandardCharsets.UTF_8)
       pos += length
       str
     else if (head >>> 5) == 3 then
@@ -770,7 +708,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
 
       if (head & 0x1F) == 31 then readIndefiniteTextString() else
         val length = boundedLength(readLength(head & 0x1F, headOffset), headOffset)
-        val str = decodeUtf8(bytes, pos, length, headOffset)
+        val str = decodeUtf8(cells, pos, length, headOffset)
         pos += length
         str
     else
@@ -797,7 +735,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
   // The undefined-item peek for optional wrappers: a wire `undefined`
   // (0xF7) reads as an absent value, exactly as the AST path's `optional`.
   update def directIsUndefined: Boolean =
-    (pos < bufEnd || more) && (bytes(pos) & 0xFF) == 0xF7
+    (pos < bufEnd || more) && (cells(pos) & 0xFF) == 0xF7
 
   update def directUndefined(): Unit = pos += 1
 
@@ -860,7 +798,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
   // general step then reports the truncation.
   update def directKeyWord(): Long =
     if pos >= bufEnd && !more then return Cbor.Reader.KeyOpaque
-    val head = bytes(pos) & 0xFF
+    val head = cells(pos) & 0xFF
 
     if head > 0x60 && head <= 0x70 then
       val length = head & 0x1F
@@ -871,7 +809,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
       var index = 0
 
       while index < length do
-        val byte = bytes(pos + 1 + index).toLong & 0xFF
+        val byte = cells(pos + 1 + index).toLong & 0xFF
         ascii |= byte.toInt
 
         if index < 8 then low |= byte << (index*8) else high |= byte << ((index - 8)*8)
@@ -917,7 +855,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
 
           while !done do
             expect(1)
-            val chunkHead = bytes(pos) & 0xFF
+            val chunkHead = cells(pos) & 0xFF
 
             if chunkHead == Break then
               pos += 1
@@ -998,7 +936,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
       result
 
   private update def scanDiscriminant(key: String)(using Tactic[Cbor.Error]): String | Null =
-    val head = if pos < bufEnd || more then bytes(pos) & 0xFF else 0
+    val head = if pos < bufEnd || more then cells(pos) & 0xFF else 0
     if (head >>> 5) != 5 then return null
     val headOffset = position
     pos += 1
@@ -1017,7 +955,7 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
       val name = directKeyName()
 
       if name != null && name == key then
-        val valueHead = if pos < bufEnd || more then bytes(pos) & 0xFF else 0
+        val valueHead = if pos < bufEnd || more then cells(pos) & 0xFF else 0
         return if (valueHead >>> 5) == 3 then directString() else null
       else
         directSkipValue()
@@ -1025,8 +963,3 @@ final class CborParser private[breviloquence] () extends caps.ExclusiveCapabilit
       remaining -= 1
 
     null
-
-  // No INLINE member may read this field: the synthesized accessor's exclusive result
-  // type acts as a template-level hider that bars other member definitions (the
-  // member-order rule). Methods that touch the cursor are therefore plain (non-inline).
-  private var cursor: Cursor[Data, {}]^ = null.asInstanceOf[Cursor[Data, {}]^]

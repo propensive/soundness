@@ -4063,7 +4063,8 @@ object Tel extends Tel2:
 
   // Holds an exclusive cursor in a field, so the parser is itself a capability
   // (fresh per instance; one per thread via the pool).
-  private[stratiform] final class Parser() extends caps.ExclusiveCapability, caps.Mutable:
+  private[stratiform] final class Parser()
+  extends caps.ExclusiveCapability, caps.Mutable, Cursor.Snapshot[Data, Byte]:
     import java.lang as jl
     import java.nio.charset.StandardCharsets
     import scala.language.unsafeNulls
@@ -4083,32 +4084,16 @@ object Tel extends Tel2:
     // the parser is cached per-thread and reset across calls. `reset()`
     // re-binds both before each `parse()` invocation.
 
-    // [registry-lifetime] cast-erased AnyRef cursor in per-thread cached parser
-    @scala.caps.unsafe.untrackedCaptures
-    var cursor0: AnyRef = null
-
-    // An exclusive view of the bound cursor: the untracked field reads as
-    // read-only, and a per-use fresh capability keeps it apart from `this`.
-    private inline def cursor: Cursor[Data, {}]^ = cursor0.asInstanceOf[Cursor[Data, {}]^]
     var schema: Optional[Tels] = Unset
-    // [cursor-snapshot] parser's AnyRef copy of cursor buffer bytes
-    @scala.caps.unsafe.untrackedCaptures
-    var bytes0: AnyRef = null
-
-    // An exclusive view of the buffer snapshot: the untracked `AnyRef` field
-    // keeps the mutable array's capture out of the parser's fields.
-    private inline def bytes: scala.Array[Byte]^ = bytes0.asInstanceOf[scala.Array[Byte]^]
-    var pos:    Int = 0
-    var bufEnd: Int = 0
 
     // Incrementally tracked 1-indexed source line number of the current
     // cursor position. Bumped at every LF-consumption point — `consumeLineEnding`
     // and the two raw `advance()` calls over LF in `parseLiteralAtom`. Stays
     // valid across hold boundaries (and therefore across buffer compaction)
-    // because it doesn't depend on resident buffer bytes. The cursor's own
+    // because it doesn't depend on resident buffer cells. The cursor's own
     // `lineation` is left disabled on the hot path; we don't drive
     // `cursor.unsafeBumpLine` because column reconstruction is done from the
-    // current buffer (always inside a hold containing the line's bytes) by
+    // current buffer (always inside a hold containing the line's cells) by
     // `columnForCurrentBytePos`, which doesn't depend on the cursor's
     // `columnNo`.
     var lineNo: Int = 1
@@ -4211,7 +4196,7 @@ object Tel extends Tel2:
     //
     // `inFlightStart` is the arena offset where the currently-open atom
     // started; -1 when no atom is open. On a mid-atom arena growth we carry
-    // the in-flight bytes (`atomArena(inFlightStart..arenaPos)`) into the
+    // the in-flight cells (`atomArena(inFlightStart..arenaPos)`) into the
     // new array at offset 0 so the atom remains contiguous; the old array
     // (which still holds completed atoms) stays alive via their Inline
     // references.
@@ -4229,7 +4214,7 @@ object Tel extends Tel2:
     // at all. Numeric modes parse the value out of the arena bytes with no
     // `String` at all; only the `Text` mode materializes one. The value is
     // captured on commit (not deferred) because a later atom on the same line
-    // may grow the arena and move the bytes.
+    // may grow the arena and move the cells.
     private inline val PrimaryText = 0
     private inline val PrimaryLong = 1
     private inline val PrimaryBoolean = 2
@@ -4289,7 +4274,7 @@ object Tel extends Tel2:
 
     // Non-inline: keep the slow path out of the inline budget. Allocates a
     // fresh arena array sized to at least `arenaPos + n`, copies the
-    // in-flight atom's bytes (if any) into it starting at offset 0, and
+    // in-flight atom's cells (if any) into it starting at offset 0, and
     // resets `arenaPos` accordingly. Already-committed atoms continue to
     // reference the previous array.
     update def growArena(n: Int): Unit =
@@ -4453,32 +4438,15 @@ object Tel extends Tel2:
     // 64-slot two-Long fingerprint cache. The byte-level variant: the first
     // four bytes pack into `low` and the next four into `high`. ASCII keywords
     // fingerprint injectively; multibyte UTF-8 keywords fingerprint by raw
-    // bytes (still injective for ≤8 bytes).
+    // cells (still injective for ≤8 cells).
     val keyCache:     scala.Array[String]^ = new scala.Array[String](64)
     val keyCacheLow:  scala.Array[Long]^   = new scala.Array[Long](64)
     val keyCacheHigh: scala.Array[Long]^   = new scala.Array[Long](64)
 
-    // ── Substrate ─────────────────────────────────────────────────────────────
-
-    update def syncTo(): Unit =
-      cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
-
-    update def syncFrom(): Unit =
-      // The cast erases the buffer view's capture: it is confined to this parser.
-      bytes0 = cursor.unsafeDataBuffer(using Unsafe).asInstanceOf[AnyRef]
-      pos    = cursor.unsafePos(using Unsafe)
-      bufEnd = cursor.unsafeWriteEnd(using Unsafe)
-
-    private update inline def more: Boolean = pos < bufEnd || moreSlow()
-
-    update def moreSlow(): Boolean =
-      syncTo()
-
-      if cursor.more then { syncFrom(); true } else { syncFrom(); false }
-
-    private inline def peek: Byte = bytes(pos)
-
-    private update inline def advance(): Unit = pos += 1
+    // Lines are counted as line endings are consumed (`lineNo`), and columns reconstructed
+    // from the line's bytes, so there is no lineation to reconcile before a refill.
+    protected update def reconcile(): Unit = ()
+    protected update def resynced(): Unit = ()
 
     // Ensure that at least `n` bytes are available from the current position
     // (or that we are at EOF). Pulls chunks from the cursor as needed. After
@@ -4508,7 +4476,7 @@ object Tel extends Tel2:
     // Returns -1 if there is no byte one past the current position.
     private update def peekNext(): Int =
       ensureLookahead(2)
-      if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
+      if pos + 1 < bufEnd then cells(pos + 1) & 0xff else -1
 
     // ── SWAR in-buffer scans ─────────────────────────────────────────────────
     // Each `scanUntilN` method advances the parser-local `pos` until either a
@@ -4516,10 +4484,10 @@ object Tel extends Tel2:
     // NOT refill the cursor — callers wrap the call in a refill loop when
     // they need to scan across chunk boundaries.
 
-    // Advance pos until bytes(pos) == target1, or pos == bufEnd.
+    // Advance pos until cells(pos) == target1, or pos == bufEnd.
     private update def scanUntil1(target1: Byte, repl1: Long): Unit =
       while pos + 8 <= bufEnd do
-        val v = Words.load(bytes, pos)
+        val v = Words.load(cells, pos)
         val mask = Words.matches(v, repl1)
 
         if mask != 0L then
@@ -4528,12 +4496,12 @@ object Tel extends Tel2:
 
         pos += 8
 
-      while pos < bufEnd && bytes(pos) != target1 do pos += 1
+      while pos < bufEnd && cells(pos) != target1 do pos += 1
 
-    // Advance pos until bytes(pos) ∈ {target1, target2}, or pos == bufEnd.
+    // Advance pos until cells(pos) ∈ {target1, target2}, or pos == bufEnd.
     private update def scanUntil2(target1: Byte, target2: Byte, repl1: Long, repl2: Long): Unit =
       while pos + 8 <= bufEnd do
-        val v = Words.load(bytes, pos)
+        val v = Words.load(cells, pos)
         val combined = Words.matches(v, repl1) | Words.matches(v, repl2)
 
         if combined != 0L then
@@ -4542,16 +4510,16 @@ object Tel extends Tel2:
 
         pos += 8
 
-      while pos < bufEnd && bytes(pos) != target1 && bytes(pos) != target2 do pos += 1
+      while pos < bufEnd && cells(pos) != target1 && cells(pos) != target2 do pos += 1
 
-    // Advance pos until bytes(pos) ∈ {a, b, c}, or pos == bufEnd.
+    // Advance pos until cells(pos) ∈ {a, b, c}, or pos == bufEnd.
     private update def scanUntil3
       ( a: Byte, b: Byte, c: Byte,
         rA: Long, rB: Long, rC: Long )
     :   Unit =
 
       while pos + 8 <= bufEnd do
-        val v = Words.load(bytes, pos)
+        val v = Words.load(cells, pos)
 
         val combined =
           Words.matches(v, rA) | Words.matches(v, rB) | Words.matches(v, rC)
@@ -4562,16 +4530,16 @@ object Tel extends Tel2:
 
         pos += 8
 
-      while pos < bufEnd && bytes(pos) != a && bytes(pos) != b && bytes(pos) != c do pos += 1
+      while pos < bufEnd && cells(pos) != a && cells(pos) != b && cells(pos) != c do pos += 1
 
-    // Advance pos until bytes(pos) ∈ {a, b, c, d}, or pos == bufEnd.
+    // Advance pos until cells(pos) ∈ {a, b, c, d}, or pos == bufEnd.
     private update def scanUntil4
       ( a: Byte, b: Byte, c: Byte, d: Byte,
         rA: Long, rB: Long, rC: Long, rD: Long )
     :   Unit =
 
       while pos + 8 <= bufEnd do
-        val v = Words.load(bytes, pos)
+        val v = Words.load(cells, pos)
 
         val combined =
           Words.matches(v, rA) | Words.matches(v, rB) | Words.matches(v, rC) | Words.matches(v, rD)
@@ -4582,7 +4550,7 @@ object Tel extends Tel2:
 
         pos += 8
 
-      while pos < bufEnd && bytes(pos) != a && bytes(pos) != b && bytes(pos) != c && bytes(pos) != d
+      while pos < bufEnd && cells(pos) != a && cells(pos) != b && cells(pos) != c && cells(pos) != d
       do pos += 1
 
     // ── Errors ────────────────────────────────────────────────────────────────
@@ -4596,7 +4564,7 @@ object Tel extends Tel2:
       var i = pos - 1
       var col = 1
 
-      while i >= 0 && bytes(i) != LF do
+      while i >= 0 && cells(i) != LF do
         col += 1
         i -= 1
 
@@ -4703,12 +4671,12 @@ object Tel extends Tel2:
     // (scratch buffers, ancestors, sb) are cleared in place so we don't pay
     // their allocation again. The atom arena is REPLACED with a fresh array
     // because previously-parsed Inlines reference the old one — we cannot
-    // overwrite their bytes. The keyword-fingerprint cache is preserved
+    // overwrite their cells. The keyword-fingerprint cache is preserved
     // across resets so frequent keywords stay interned.
     private[stratiform] update def reset(c: Cursor[Data, {}]^, s: Optional[Tels]): Unit =
       cursor0 = c.asInstanceOf[AnyRef]
       schema = s
-      bytes0 = null
+      cells  = null.asInstanceOf[scala.Array[Byte]]
       pos    = 0
       bufEnd = 0
       lineNo = 1
@@ -5064,7 +5032,7 @@ object Tel extends Tel2:
       // one load usually decides.
       while pos + 8 <= bufEnd && {
         val nonSpace =
-          ~Words.matches(Words.load(bytes, pos), Parser.SpRepl) & Words.HighBits
+          ~Words.matches(Words.load(cells, pos), Parser.SpRepl) & Words.HighBits
 
         if nonSpace == 0L then
           pos += 8
@@ -5123,11 +5091,11 @@ object Tel extends Tel2:
     private update def startsWithPragma(): Boolean =
       ensureLookahead(4)
       if pos + 2 < bufEnd &&
-        bytes(pos) == 't'.toByte && bytes(pos + 1) == 'e'.toByte &&
-        bytes(pos + 2) == 'l'.toByte
+        cells(pos) == 't'.toByte && cells(pos + 1) == 'e'.toByte &&
+        cells(pos + 2) == 'l'.toByte
       then
         if pos + 3 < bufEnd
-        then bytes(pos + 3) == SP || bytes(pos + 3) == LF || bytes(pos + 3) == CR
+        then cells(pos + 3) == SP || cells(pos + 3) == LF || cells(pos + 3) == CR
         else true  // exactly "tel" at EOF
       else
         false
@@ -5528,8 +5496,8 @@ object Tel extends Tel2:
     private update def headLineIsSeparator(): Boolean =
       ensureLookahead(3)
       pos + 1 < bufEnd &&
-        bytes(pos) == sigil && bytes(pos + 1) == sigil &&
-        (pos + 2 >= bufEnd || bytes(pos + 2) == LF || bytes(pos + 2) == CR)
+        cells(pos) == sigil && cells(pos + 1) == sigil &&
+        (pos + 2 >= bufEnd || cells(pos + 2) == LF || cells(pos + 2) == CR)
 
     // ── parseChildren ────────────────────────────────────────────────────────
 
@@ -5678,7 +5646,7 @@ object Tel extends Tel2:
           val compoundLeadingSpaces = head.leadingSpaces
           val compoundLine = head.startLine
           // §16.2: validate tabulated rows BEFORE parseCompoundLine consumes
-          // the row's bytes. validateTabulatedRowInline uses mark + cue so the
+          // the row's cells. validateTabulatedRowInline uses mark + cue so the
           // cursor remains parked at the row start for parseCompoundLine.
           if tabulationHeader != null then
             validateTabulatedRowInline(compoundLeadingSpaces, tabulationHeader, compoundLine)
@@ -6100,8 +6068,8 @@ object Tel extends Tel2:
                 if !sigilNext then false
                 else
                   ensureLookahead(3)
-                  val afterSigil = if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
-                  afterSigil == SP.toInt && (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
+                  val afterSigil = if pos + 1 < bufEnd then cells(pos + 1) & 0xff else -1
+                  afterSigil == SP.toInt && (pos + 2 >= bufEnd || cells(pos + 2) != SP)
               if isRemark then
                 // Remark terminates column validation.
                 while more && peek != LF && peek != CR do { advance(); col += 1 }
@@ -6563,10 +6531,10 @@ object Tel extends Tel2:
             else if ch == sigil && !atomOpen then
               // Could be remark introducer: sigil + soft space + non-space.
               ensureLookahead(3)
-              val afterSigil = if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
+              val afterSigil = if pos + 1 < bufEnd then cells(pos + 1) & 0xff else -1
 
               val softSpaceAfter =
-                afterSigil == SP.toInt && (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
+                afterSigil == SP.toInt && (pos + 2 >= bufEnd || cells(pos + 2) != SP)
               if softSpaceAfter then
                 // Consume sigil + space, then read remark text until LF/CR.
                 advance()  // sigil
@@ -6580,24 +6548,24 @@ object Tel extends Tel2:
                 advance()
                 atomOpen = true
             else
-              // Read a run of non-space, non-sigil, non-LF, non-CR bytes,
+              // Read a run of non-space, non-sigil, non-LF, non-CR cells,
               // copying them into the parser's atom arena. After a refill
               // compacts the cursor buffer, the source content stays valid
               // because we read it out into our own arena before the next
               // refill can fire.
               val runStart = pos
               while pos < bufEnd &&
-                bytes(pos) != SP &&
-                bytes(pos) != LF &&
-                bytes(pos) != CR &&
-                (atomOpen || bytes(pos) != sigil)
+                cells(pos) != SP &&
+                cells(pos) != LF &&
+                cells(pos) != CR &&
+                (atomOpen || cells(pos) != sigil)
               do pos += 1
 
               val runLen = pos - runStart
 
               if runLen > 0 then
                 if !atomOpen then beginInFlightAtom()
-                appendToArenaRange(bytes, runStart, runLen)
+                appendToArenaRange(cells, runStart, runLen)
                 atomOpen = true
               else
                 // Defensive: only reachable if the outer guards were ever
@@ -6623,10 +6591,10 @@ object Tel extends Tel2:
         // so recording the error and continuing yields the stripped line.
         // The trailing run itself is the offending text: walk back over it (still
         // inside the hold, so those bytes are resident) to span exactly the spaces.
-        if remark.absent && more && (peek == LF || peek == CR) && pos > 0 && bytes(pos - 1) == SP
+        if remark.absent && more && (peek == LF || peek == CR) && pos > 0 && cells(pos - 1) == SP
         then
           var back = pos
-          while back > 0 && bytes(back - 1) == SP do back -= 1
+          while back > 0 && cells(back - 1) == SP do back -= 1
           val trailing = pos - back
 
           recoverAt
@@ -6651,8 +6619,8 @@ object Tel extends Tel2:
       var len = 0
 
       while
-        while pos < bufEnd && bytes(pos) != SP && bytes(pos) != LF && bytes(pos) != CR do
-          val b = bytes(pos)
+        while pos < bufEnd && cells(pos) != SP && cells(pos) != LF && cells(pos) != CR do
+          val b = cells(pos)
 
           if len < 4 then
             low |= (b & 0xff).toLong << (len * 8)
@@ -6700,7 +6668,7 @@ object Tel extends Tel2:
     // computes anyway is the whole result (`directKeywordPacked`), and its
     // text materializes only if `directKeywordText` is later consulted (an
     // opaque general dispatch, an unknown sum variant, an error). A keyword
-    // that cannot pack — empty, longer than eight bytes, or carrying bytes
+    // that cannot pack — empty, longer than eight cells, or carrying bytes
     // outside printable ASCII, whose packed form could alias a shorter
     // keyword's or a sentinel — is sliced eagerly, exactly as `readKeyword`
     // would, and reported `KeywordOpaque`.
@@ -6712,7 +6680,7 @@ object Tel extends Tel2:
       var slow = true
 
       if pos + 8 <= bufEnd then
-        val word: Long = Words.load(bytes, pos)
+        val word: Long = Words.load(cells, pos)
         val stops = Parser.contentStops(word)
 
         if stops != 0L then
@@ -6731,7 +6699,7 @@ object Tel extends Tel2:
               slow = false
         else if pos + 8 < bufEnd then
           // No stop in the first eight bytes: exactly eight, or oversized.
-          val b8 = bytes(pos + 8)
+          val b8 = cells(pos + 8)
 
           if (b8 == SP || b8 == LF || b8 == CR) && Parser.printableWord(word, 8) then
             directKeywordLow = word & 0xFFFFFFFFL
@@ -6751,8 +6719,8 @@ object Tel extends Tel2:
       var len = 0
 
       while
-        while pos < bufEnd && bytes(pos) != SP && bytes(pos) != LF && bytes(pos) != CR do
-          val b = bytes(pos)
+        while pos < bufEnd && cells(pos) != SP && cells(pos) != LF && cells(pos) != CR do
+          val b = cells(pos)
 
           if len < 4 then
             low |= (b & 0xff).toLong << (len * 8)
@@ -6857,7 +6825,7 @@ object Tel extends Tel2:
     var directKeywordHigh: Long = 0L
     var directKeywordLen:  Int = 0
 
-    // The fast step's result — the keyword's packed bytes, or
+    // The fast step's result — the keyword's packed cells, or
     // `TelReader.KeywordOpaque` — and whether `directEntryKeyword` is stale,
     // its text pending lazy materialization from the fingerprint.
     var directKeywordPacked:    Long = 0L
@@ -6999,7 +6967,7 @@ object Tel extends Tel2:
               if mayBeMisplacedPragma && directKeywordLen == 3 && directKeywordLow == 0x6C6574L
               then recoverAt(Reason.PragmaNotFirst, directEntryLine, 1, directKeywordLen)(())
 
-              // A packable keyword is at most eight printable-ASCII bytes, so
+              // A packable keyword is at most eight printable-ASCII cells, so
               // its byte length is also its character length.
               directEntryKeywordLen = directKeywordLen
 
@@ -7059,7 +7027,7 @@ object Tel extends Tel2:
     // parsers that compare keywords against literal constants: the keyword's
     // bytes 0–7, LSB-first (`TelReader.KeywordEnd` once the entry region
     // ends, or `TelReader.KeywordOpaque` for a keyword that cannot pack —
-    // empty, longer than eight bytes, or carrying bytes outside printable
+    // empty, longer than eight cells, or carrying bytes outside printable
     // ASCII, whose packed form could alias a shorter keyword's or a
     // sentinel). An opaque keyword is still consumed: `directKeywordText`
     // identifies it for the caller's general dispatch.
@@ -7252,7 +7220,7 @@ object Tel extends Tel2:
             var scan = pos
 
             while endPos < 0 && scan + 8 <= bufEnd do
-              val word: Long = Words.load(bytes, scan)
+              val word: Long = Words.load(cells, scan)
               val stops = Parser.contentStops(word)
 
               if stops != 0L
@@ -7286,7 +7254,7 @@ object Tel extends Tel2:
                     var index = startPos
                     var neg = false
 
-                    if bytes(index) == '-'.toByte then
+                    if cells(index) == '-'.toByte then
                       neg = true
                       index += 1
 
@@ -7298,7 +7266,7 @@ object Tel extends Tel2:
                     var value = 0L
 
                     while ok && index < endPos do
-                      val digit = bytes(index) - '0'.toByte
+                      val digit = cells(index) - '0'.toByte
 
                       if digit < 0 || digit > 9 then ok = false else
                         value = value*10L + digit
@@ -7328,18 +7296,18 @@ object Tel extends Tel2:
                   case PrimaryBoolean =>
                     directPrimaryPresent = true
 
-                    if len == 4 && bytes(startPos) == 't'.toByte &&
-                      bytes(startPos + 1) == 'r'.toByte &&
-                      bytes(startPos + 2) == 'u'.toByte &&
-                      bytes(startPos + 3) == 'e'.toByte
+                    if len == 4 && cells(startPos) == 't'.toByte &&
+                      cells(startPos + 1) == 'r'.toByte &&
+                      cells(startPos + 2) == 'u'.toByte &&
+                      cells(startPos + 3) == 'e'.toByte
                     then
                       directPrimaryOk = true
                       directPrimaryBoolVal = true
-                    else if len == 5 && bytes(startPos) == 'f'.toByte &&
-                      bytes(startPos + 1) == 'a'.toByte &&
-                      bytes(startPos + 2) == 'l'.toByte &&
-                      bytes(startPos + 3) == 's'.toByte &&
-                      bytes(startPos + 4) == 'e'.toByte
+                    else if len == 5 && cells(startPos) == 'f'.toByte &&
+                      cells(startPos + 1) == 'a'.toByte &&
+                      cells(startPos + 2) == 'l'.toByte &&
+                      cells(startPos + 3) == 's'.toByte &&
+                      cells(startPos + 4) == 'e'.toByte
                     then
                       directPrimaryOk = true
                       directPrimaryBoolVal = false

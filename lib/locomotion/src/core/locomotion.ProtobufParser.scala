@@ -372,30 +372,22 @@ object ProtobufParser:
 // and `pos` are re-read and `base` re-anchored, so `position` — the absolute
 // stream offset reported in every `Protobuf.Error` — survives compaction.
 @unexported
-final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Stateful:
+final class ProtobufParser private ()
+extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   import ProtobufParser.Unbounded
-
-  // The cursor's storage, as zephyrine types it (`Addressable.bytes.Storage`): the one
-  // place the raw JVM array appears, so reads compile to BALOAD.
-  private var bytes:  scala.Array[Byte] = null.asInstanceOf[scala.Array[Byte]]
-  private var pos:    Int = 0
-  private var bufEnd: Int = 0
-
-  // The absolute stream offset of `bytes(0)`, re-anchored by every `syncFrom()`.
-  private var base: Long = 0L
 
   // Whether the buffer is the whole input (`resetData`): there is no cursor to pull from.
   private var static: Boolean = false
 
   // The window's end as an absolute offset (`Unbounded`: the end of the input), and the
-  // same relative to `bytes(0)`, clamped — the hot-path bound, re-derived with `base`.
+  // same relative to `cells(0)`, clamped — the hot-path bound, re-derived with `base`.
   private var boundary: Long = Unbounded
   private var limit:    Int = Int.MaxValue
 
   // A whole message in memory needs no cursor: its array is the buffer, borrowed and never
   // written, and the source is already exhausted — `static` makes every refill say so.
   private[locomotion] update def resetData(input: Data): Unit =
-    bytes = Array.unsafeJvm(input)
+    cells = Array.unsafeJvm(input)
     pos = 0
     bufEnd = input.length
     base = 0L
@@ -406,22 +398,18 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
   private[locomotion] update def resetChain(input: Chain[Data]): Unit =
     import Lineation.untrackedData
     val fresh = Cursor[Data](input)
-    cursor = fresh
+    cursor0 = fresh.asInstanceOf[AnyRef]
     boundary = Unbounded
     syncFrom()
 
   private[locomotion] update def resetStream(consume input: (Stream[Data] over Credit)^): Unit =
     import Lineation.untrackedData
     val fresh = Cursor[Data](input)
-    cursor = fresh
+    cursor0 = fresh.asInstanceOf[AnyRef]
     boundary = Unbounded
     syncFrom()
 
   // ── Substrate ──────────────────────────────────────────────────────────
-
-  // The absolute stream offset of the next byte: the position every error
-  // reports, unchanged by buffer compaction.
-  private inline def position: Long = base + pos
 
   private inline def offset: Int = position.toInt
 
@@ -429,50 +417,11 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
     val relative = boundary - base
     limit = if relative > Int.MaxValue then Int.MaxValue else relative.toInt
 
-  private update def syncTo(): Unit =
-    val parserPos = pos
-    val current = cursor
-    current.unsafeAdvanceBy(parserPos - current.unsafePos(using Unsafe))(using Unsafe)
+  // The window's relative end moves with the buffer's scale.
+  protected update def resynced(): Unit = relimit()
 
-  private update def syncFrom(): Unit =
-    val snapshot =
-      locally:
-        val current = cursor
-        current.unsafeDataBuffer(using Unsafe)
-
-    val readPos =
-      locally:
-        val current = cursor
-        current.unsafePos(using Unsafe)
-
-    val writeEnd =
-      locally:
-        val current = cursor
-        current.unsafeWriteEnd(using Unsafe)
-
-    val absolute =
-      locally:
-        val current = cursor
-        current.position.n0.toLong
-
-    bytes  = snapshot
-    pos    = readPos
-    bufEnd = writeEnd
-    base   = absolute - readPos
-    relimit()
-
-  update def more: Boolean = pos < bufEnd || moreSlow()
-
-  private update def moreSlow(): Boolean = if static then false else
-    syncTo()
-
-    val hasMore =
-      locally:
-        val current = cursor
-        current.more
-
-    syncFrom()
-    hasMore
+  // Protobuf positions are byte offsets: there is no lineation to reconcile before a refill.
+  protected update def reconcile(): Unit = ()
 
   // Buffers `count` contiguous bytes from the read position, pulling from
   // the source as needed under a hold, so a multi-byte value split across
@@ -566,7 +515,7 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
   // Copies `length` already-buffered bytes out as a frozen array.
   private update def copyOut(length: Int): Data =
     val result = Array.allocate[Byte](length)
-    System.arraycopy(bytes, pos, result.raw, 0, length)
+    System.arraycopy(cells, pos, result.raw, 0, length)
     pos += length
     Array.freeze(result)
 
@@ -581,9 +530,9 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
     val start = pos
     pos += length
 
-    if static && ProtobufParser.ascii(bytes, start, start + length)
-    then ProtobufParser.latin1(bytes, start, length)
-    else java.lang.String(bytes, start, length, java.nio.charset.StandardCharsets.UTF_8)
+    if static && ProtobufParser.ascii(cells, start, start + length)
+    then ProtobufParser.latin1(cells, start, length)
+    else java.lang.String(cells, start, length, java.nio.charset.StandardCharsets.UTF_8)
 
   // ── The direct rim ─────────────────────────────────────────────────────
 
@@ -605,8 +554,8 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
   // buffered; a longer one whose ten possible bytes are all buffered and within the window
   // is read without per-byte end tests; only the remainder reach the general loop.
   update def directVarint()(using Tactic[Protobuf.Error]): Long =
-    if pos < limit && pos < bufEnd && bytes(pos) >= 0 then
-      val value = bytes(pos).toLong
+    if pos < limit && pos < bufEnd && cells(pos) >= 0 then
+      val value = cells(pos).toLong
       pos += 1
       value
     else if limit - pos >= 10 && bufEnd - pos >= 10 then varintShort(offset)
@@ -616,22 +565,22 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
   // values — read straight through, with no per-byte state; longer ones continue in
   // `varintBuffered` from the fifth byte. Ten bytes are known to be buffered and in window.
   private update def varintShort(start: Int)(using Tactic[Protobuf.Error]): Long =
-    val byte0 = bytes(pos)
-    val byte1 = bytes(pos + 1)
+    val byte0 = cells(pos)
+    val byte1 = cells(pos + 1)
     var result = (byte0 & 0x7f).toLong | ((byte1 & 0x7f).toLong << 7)
 
     if byte1 >= 0 then
       pos += 2
       result
     else
-      val byte2 = bytes(pos + 2)
+      val byte2 = cells(pos + 2)
       result |= (byte2 & 0x7f).toLong << 14
 
       if byte2 >= 0 then
         pos += 3
         result
       else
-        val byte3 = bytes(pos + 3)
+        val byte3 = cells(pos + 3)
         result |= (byte3 & 0x7f).toLong << 21
 
         if byte3 >= 0 then
@@ -650,7 +599,7 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
   :   Long =
 
     if shift >= 70 then abort(Protobuf.Error(Reason.MalformedVarint(start)))
-    val byte = bytes(pos) & 0xff
+    val byte = cells(pos) & 0xff
     pos += 1
     if shift == 63 && (byte & 0x7f) > 1 then abort(Protobuf.Error(Reason.Overflow(start)))
     val next = if shift < 64 then result | ((byte.toLong & 0x7f) << shift) else result
@@ -669,7 +618,7 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
       then abort(Protobuf.Error(Reason.Truncated(offset)))
 
       if shift >= 70 then abort(Protobuf.Error(Reason.MalformedVarint(start)))
-      val byte = bytes(pos) & 0xff
+      val byte = cells(pos) & 0xff
       pos += 1
 
       // The 10th byte (shift == 63) may only contribute bit 63; any higher bit set
@@ -687,9 +636,9 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
     var result = 0
     var index = 0
 
-    // Ends on a constant: four buffered bytes.
+    // Ends on a constant: four buffered cells.
     while index < 4 do
-      result |= (bytes(pos + index) & 0xff) << (index*8)
+      result |= (cells(pos + index) & 0xff) << (index*8)
       index += 1
 
     pos += 4
@@ -701,9 +650,9 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
     var result = 0L
     var index = 0
 
-    // Ends on a constant: eight buffered bytes.
+    // Ends on a constant: eight buffered cells.
     while index < 8 do
-      result |= (bytes(pos + index).toLong & 0xff) << (index*8)
+      result |= (cells(pos + index).toLong & 0xff) << (index*8)
       index += 1
 
     pos += 8
@@ -720,7 +669,7 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
       then abort(Protobuf.Error(Reason.Truncated(offset + count)))
 
       if count >= 10 then abort(Protobuf.Error(Reason.MalformedVarint(offset)))
-      done = (bytes(pos + count) & 0x80) == 0
+      done = (cells(pos + count) & 0x80) == 0
       count += 1
 
     count
@@ -729,7 +678,7 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
   // `fields` slices for the field's payload — returning the enclosing
   // boundary for `directLeaveField`. For a length-delimited field the length
   // prefix is consumed; for a varint field the window covers the varint's
-  // own bytes, mirroring the `segment(start till pos)` payload. An
+  // own cells, mirroring the `segment(start till pos)` payload. An
   // unbounded enclosing window cannot prove a field's bytes exist on entry;
   // its reads report the truncation instead, at the same offset.
   update def directEnterField(code: Int)(using Tactic[Protobuf.Error])
@@ -765,7 +714,7 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
 
   // Restores the enclosing window, consuming whatever of the field's value
   // remains — a parse may legitimately read less than the payload, as the
-  // AST accessors ignore a payload's trailing bytes. The remainder is
+  // AST accessors ignore a payload's trailing cells. The remainder is
   // skipped, not buffered.
   update def directLeaveField(saved: Int)(using Tactic[Protobuf.Error])
   :   Unit =
@@ -893,8 +842,3 @@ final class ProtobufParser private () extends caps.ExclusiveCapability, caps.Sta
     val end = (saved & 0xFFFFFFFFL).toInt
     boundary = if end == Int.MaxValue then Unbounded else end.toLong
     relimit()
-
-  // No INLINE member may read this field: the synthesized accessor's exclusive result
-  // type acts as a template-level hider that bars other member definitions (the
-  // member-order rule). Methods that touch the cursor are therefore plain (non-inline).
-  private var cursor: Cursor[Data, {}]^ = null.asInstanceOf[Cursor[Data, {}]^]

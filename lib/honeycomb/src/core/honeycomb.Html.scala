@@ -1116,114 +1116,21 @@ object Html extends Tag.Container
       val permissive: Boolean      = false,
       val tracking:   Boolean      = false )
     ( using dom: Dom )
-  extends caps.ExclusiveCapability, caps.Stateful:
-    // A neutral carrier with an inline accessor (the `perihelion.Reader` pattern):
-    // an exclusive-typed field would hide the cursor from the parser's own methods.
-    private val cursor0: AnyRef = cursor1.asInstanceOf[AnyRef]
-    private inline def cursor: Cursor[BaseText, ?]^ = cursor0.asInstanceOf[Cursor[BaseText, ?]^]
+  extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[BaseText, Char]:
+    // The parser-local snapshot (`Cursor.Snapshot`) takes the consumed cursor.
+    cursor0 = cursor1.asInstanceOf[AnyRef]
     private var heldToken: Cursor.Held | Null = null
 
     type Anchor = Cursor.Mark
 
-    // ─── parser-local snapshot of the cursor's buffer / position ───────────
-    //
-    // The cursor remains the source of truth at refill, mark, slice and
-    // error points, but for the per-char hot loops (`peek`, `advance`,
-    // `more`) the parser maintains its own snapshot of the current buffer
-    // reference, read position, and write end. Keeping all three as parser
-    // fields rather than re-reading them through cursor accessors on every
-    // char lets the JIT keep them in registers across the parser's many
-    // tight `@tailrec` scans (tagname, key, value, unquoted, comment,
-    // cdata, doctype) and across `lay` / `let` peeks.
-    //
-    // Invariant: between `syncTo()` and `syncFrom()` calls, `pos` is the
-    // authoritative read position; `cursor.unsafePos` is allowed to lag.
-    // Whenever a cursor operation that depends on `pos` is performed
-    // (refill via `more`'s slow path, mark, slice, error reporting,
-    // backtracking via `cue`) the parser pushes `pos` to the cursor
-    // first, then refreshes its snapshot from the cursor afterwards —
-    // refill may compact the buffer, reallocate it, or reset `pos`.
-    // Untracked: the snapshot intentionally aliases the parser-owned cursor's
-    // buffer (see the invariant note below). Initialized empty — a field may
-    // not derive from a constructor parameter under the provenance rule — and
-    // populated by `syncFrom()` at the top of `parseHtml`.
-    // [cursor-snapshot] parser's snapshot of cursor buffer
-    @caps.unsafe.untrackedCaptures
-    private var bytes:  scala.Array[Char] = new scala.Array[Char](0)
-
-    private var pos:    Int = 0
-    private var bufEnd: Int = 0
-
-    // Buffer offset up to which `cursor.line`/`cursor.column` are current (tracked parses
-    // only). The hot loop advances `pos` without lineation (`syncTo`); `reconcileLineation`
-    // catches the cursor up at every capture point (`begin`) and before a refill discards
-    // consumed chars (`moreSlow`).
-    private var lineationPos: Int = 0
+    // A tracked parse catches the cursor's lineation up before each refill, while the
+    // consumed chars can still be walked; columns count code points, so low surrogates add
+    // nothing (`Cursor.Snapshot`).
+    protected update def reconcile(): Unit = if tracking then reconcileUtf16()
+    protected update def resynced(): Unit = ()
 
     // The position index produced by a tracked parse, read by the `.load[Html]` given.
     protected[honeycomb] var rootIndex: Array[Int]^{} = Array.empty[Int]
-
-    private inline def syncTo(): Unit =
-      cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
-
-    // Non-inline: a field assignment expanded from an inline method falsely
-    // trips the separation checker's provenance rule (the lifted expansion
-    // binding reads as "parameter x$0"). Called on slow paths only.
-    private update def syncFrom(): Unit =
-      bytes  = cursor.unsafeTextBuffer(using Unsafe)
-      pos    = cursor.unsafePos(using Unsafe)
-      bufEnd = cursor.unsafeWriteEnd(using Unsafe)
-      lineationPos = pos
-
-    // Bring the cursor's line and column up to `pos` (tracked parses only).
-    private update def reconcileLineation(): Unit =
-      val end = pos
-
-      if lineationPos < end then
-        var newlines = 0
-        var lastNewlineAt = -1
-        // Columns count code points: the low half of a surrogate pair adds nothing.
-        var lowSurrogates = 0
-
-        (lineationPos.z till end.z).each: i =>
-          val char = bytes(i.n0)
-
-          if char == '\n' then
-            newlines += 1
-            lastNewlineAt = i.n0
-            lowSurrogates = 0
-          else if jl.Character.isLowSurrogate(char) then
-            lowSurrogates += 1
-
-        if newlines > 0 then
-          cursor.unsafeBumpLine(newlines)(using Unsafe)
-          cursor.unsafeSetColumn(end - lastNewlineAt - 1 - lowSurrogates)(using Unsafe)
-        else
-          cursor.unsafeBumpColumn(end - lineationPos - lowSurrogates)(using Unsafe)
-
-        lineationPos = end
-
-    protected inline def more: Boolean = pos < bufEnd || moreSlow()
-
-    // Out-of-line slow path so `more`'s inline budget stays small enough
-    // for the JIT to keep `pos < bufEnd` as one register comparison in
-    // hot loops.
-    update private def moreSlow(): Boolean =
-      syncTo()
-      if tracking then reconcileLineation()
-
-      if cursor.more then { syncFrom(); true }
-      else
-        // Re-anchor even at EOF, so a later `position` reflects the compacted buffer.
-        if tracking then syncFrom()
-        false
-
-    protected inline def peek: Char = bytes(pos)
-    protected inline def advance(): Unit = pos += 1
-
-    protected inline def position: Int =
-      syncTo()
-      cursor.position.n0
 
     // Non-`inline` so that `cursor.mark`'s expansion is emitted once in
     // its own method rather than re-expanded into every call site,
@@ -1232,7 +1139,7 @@ object Html extends Tag.Container
     // hot call sites via its own inlining heuristics.
     protected update def begin(): Cursor.Mark =
       syncTo()
-      if tracking then reconcileLineation()
+      if tracking then reconcileUtf16()
       cursor.mark(using heldToken.nn)
 
     protected def slice(start: Cursor.Mark, end: Cursor.Mark): BaseText =
@@ -1267,7 +1174,7 @@ object Html extends Tag.Container
       val cursor1: Cursor[BaseText, ?]^ = cursor
       cursor1.clone(start, end)(target.asInstanceOf[cursor1.addressable.Target])
 
-    protected def computePosition
+    protected update def computePosition
       ( start: Optional[Cursor.Mark] = Unset,
         end:   Optional[Cursor.Mark] = Unset )
     :   Position =
@@ -1288,7 +1195,7 @@ object Html extends Tag.Container
       var i = 0
 
       while i < pos do
-        if bytes(i) == '\n' then
+        if cells(i) == '\n' then
           line += 1
           col = 0
         else
@@ -1363,7 +1270,7 @@ object Html extends Tag.Container
 
       // Record `element`, the innermost open element, as closed at the current position.
       inline def closed(element: Element, withAttributes: Boolean): Element =
-        if tracking then state.recordOpen(element, position, withAttributes)
+        if tracking then state.recordOpen(element, position.toInt, withAttributes)
         element
       // Resolved `Tag` for the current opening token. `tag()` already walks
       // `dom.elements` to look up the tag definition; stash the result so that
@@ -1525,7 +1432,7 @@ object Html extends Tag.Container
 
       @tailrec
       def value(mark: Mark): BaseText = lay(fail(ExpectedMore)):
-        case '\u0000' => callback.let(_(position.z, Hole.Text)) yet next() yet value(mark)
+        case '\u0000' => callback.let(_(position.toInt.z, Hole.Text)) yet next() yet value(mark)
 
         case '"' =>
           cloneTo(mark, begin())(buffer)
@@ -1601,7 +1508,7 @@ object Html extends Tag.Container
             case '>' | '/' => done = true
 
             case '\u0000' =>
-              callback.let(_(position.z, Hole.Tagbody))
+              callback.let(_(position.toInt.z, Hole.Tagbody))
               next()
               skip()
               state.attrAppend(n, "\u0000", null)
@@ -1651,7 +1558,7 @@ object Html extends Tag.Container
                   case '\'' => next() yet singleQuoted(begin())
 
                   case '\u0000' =>
-                    callback.let(_(position.z, Hole.Attribute(tag, key2)))
+                    callback.let(_(position.toInt.z, Hole.Attribute(tag, key2)))
                     next() yet t"\u0000"
 
                   case _ =>
@@ -1661,7 +1568,7 @@ object Html extends Tag.Container
                 state.attrAppend(n, key2Str, assignment.lay(null: String | Null)(_.s))
 
                 if tracking
-                then state.attrPositionAppend(n, attrLine, attrColumn, position - attrMark)
+                then state.attrPositionAppend(n, attrLine, attrColumn, position.toInt - attrMark)
 
                 n += 1
 
@@ -1797,7 +1704,7 @@ object Html extends Tag.Container
               var hit: Char = 1.toChar // sentinel: "no delimiter found"
 
               while p < limit && hit == 1.toChar do
-                val c = bytes(p)
+                val c = cells(p)
 
                 if c == '<' || c == 0.toChar then hit = c
                 else if c == '&' && entities then hit = c
@@ -1823,7 +1730,7 @@ object Html extends Tag.Container
             case _   => comment(mark)
 
         case '\u0000' =>
-          callback.let(_(position.z, Hole.Comment))
+          callback.let(_(position.toInt.z, Hole.Comment))
           next() yet comment(mark)
 
         case char =>
@@ -1947,7 +1854,7 @@ object Html extends Tag.Container
 
         lay(finish(parent, map, count)):
           case '\u0000' =>
-            callback.let(_(position.z, Hole.Node(parent.label)))
+            callback.let(_(position.toInt.z, Hole.Node(parent.label)))
             next()
             state.append(Text("\u0000"))
             read(parent, admissible, map, count + 1)
@@ -1976,7 +1883,7 @@ object Html extends Tag.Container
 
                 if tracking then
                   val start = mark.absolute.toInt
-                  state.record(element, markLine, markColumn, start, position, extraPositions)
+                  state.record(element, markLine, markColumn, start, position.toInt, extraPositions)
 
               // Every caller has `reset(mark)`, so the parent's source ends at the token.
               inline def close(): Unit =
@@ -2007,7 +1914,7 @@ object Html extends Tag.Container
               next()
 
               if lay(false)(_ == '\u0000') then
-                callback.let(_(position.z, Hole.Element(parent.label)))
+                callback.let(_(position.toInt.z, Hole.Element(parent.label)))
                 content = t"\u0000"
                 node()
                 expect('>')
@@ -2132,8 +2039,8 @@ object Html extends Tag.Container
 
                     // A clone starts where its content does: it has no tag of its own.
                     if tracking then
-                      val offset = position
-                      reconcileLineation()
+                      val offset = position.toInt
+                      reconcileUtf16()
                       state.pushStart(offset, cursor.line.n0, cursor.column.n0, Array.empty[Int])
 
                     val cloneChild = descend(tag, admissible, attrs)

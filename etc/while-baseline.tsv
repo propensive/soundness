@@ -125,7 +125,7 @@ lib/hypotenuse/src/core/hypotenuse.Decimal.scala	35	55	18
 lib/hypotenuse/src/core/hypotenuse.internal.scala	4	14	0
 lib/hypotenuse/src/core/hypotenuse.rationalInternal.scala	33	0	19
 lib/hypotenuse/src/core/hypotenuse_core.scala	4	14	0
-lib/jacinta/src/core/jacinta.Json.Parser.scala	57	12	0
+lib/jacinta/src/core/jacinta.Json.Parser.scala	56	12	0
 lib/jacinta/src/core/jacinta.Json.scala	39	49	5
 lib/jacinta/src/core/jacinta.Json4.scala	0	0	0
 lib/jacinta/src/core/jacinta.JsonPointer.scala	1	0	4
@@ -256,7 +256,7 @@ lib/xylophone/src/core/xylophone.inlining.scala	1	0	1
 lib/xylophone/src/core/xylophone.internal.scala	22	22	2
 lib/yossarian/src/core/yossarian.Pty.scala	14	2	0
 lib/yossarian/src/core/yossarian.internal.scala	3	0	0
-lib/ypsiloid/src/core/ypsiloid.Yaml.scala	128	21	18
+lib/ypsiloid/src/core/ypsiloid.Yaml.scala	127	21	18
 lib/ypsiloid/src/core/ypsiloid.YamlPath.scala	1	0	4
 lib/ypsiloid/src/core/ypsiloid.internal.scala	12	13	0
 lib/ypsiloid/src/core/ypsiloid_core.scala	5	0	3
