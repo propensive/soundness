@@ -1078,12 +1078,24 @@ extends caps.Mutable:
   // then see stale storage. Stopping on a match performs no further refill,
   // so `seek` never reads past the operand it finds.
   // The target arrives through the erased `Operand` (every caller's `cursor.addressable.Operand`
-  // is abstract), so it is unboxed once here and each element is compared at the primitive
-  // type from the concrete array; through `addressable.storageAddress` the comparison would
-  // box every element (see `unsafeBuffer`). Boxed media compare as references.
+  // is abstract, so callers write `Lf.toByte.asInstanceOf[cursor.addressable.Operand]` — a
+  // boxed `Byte`, whatever the medium), so it is unboxed once here and each element is
+  // compared at the primitive type from the concrete array; through
+  // `addressable.storageAddress` the comparison would box every element (see `unsafeBuffer`).
+  // A target of the other primitive type compares as the boxed equality it replaces did: by
+  // numeric value, so a byte matches the ASCII char of the same value and nothing else.
+  // Boxed media compare as references.
   update def seek(target: addressable.Operand): Boolean = substrate match
-    case Substrate.Bytes => seekByte(target.asInstanceOf[Byte])
-    case Substrate.Chars => seekChar(target.asInstanceOf[Char])
+    case Substrate.Bytes => (target: Any) match
+      case byte: Byte => seekByte(byte)
+      case char: Char => char <= 127 && seekByte(char.toByte)
+      case other      => seekBoxed(target)
+
+    case Substrate.Chars => (target: Any) match
+      case char: Char => seekChar(char)
+      case byte: Byte => byte >= 0 && seekChar(byte.toChar)
+      case other      => seekBoxed(target)
+
     case Substrate.Boxes => seekBoxed(target)
 
   private update def seekByte(target: Byte): Boolean =
