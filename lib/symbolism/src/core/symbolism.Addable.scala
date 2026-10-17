@@ -47,29 +47,75 @@ object Addable:
       def add(augend: augend, addend: addend): result = lambda(augend, addend)
 
 
-  given double: Double is Addable by Double to Double = Addable:
-    (augend, addend) => augend + addend
+  // The primitive instances are objects, named by their singleton types: an operator inlined
+  // through one of them resolves `add` to the `inline def` here, so `a + b` on two `Double`s
+  // compiles to the one instruction, with no instance and no boxing (hypotenuse's
+  // `CheckOverflow` explains the mechanism). Through the trait type — a `using` parameter of a
+  // non-inline method — they still dispatch, as any instance does.
+  object DoubleAddition extends Addable:
+    type Self = Double
+    type Operand = Double
+    type Result = Double
 
-  given float: Float is Addable by Float to Float = Addable:
-    (augend, addend) => augend + addend
+    inline def add(augend: Double, addend: Double): Double = augend + addend
 
-  given long: Long is Addable by Long to Long = Addable:
-    (augend, addend) => augend + addend
+  object FloatAddition extends Addable:
+    type Self = Float
+    type Operand = Float
+    type Result = Float
 
-  given int: Int is Addable by Int to Int = Addable:
-    (augend, addend) => augend + addend
+    inline def add(augend: Float, addend: Float): Float = augend + addend
 
-  given int2: Int is Addable by Double to Double = Addable:
-    (augend, addend) => augend + addend
+  object LongAddition extends Addable:
+    type Self = Long
+    type Operand = Long
+    type Result = Long
 
-  given int3: Double is Addable by Int to Double = Addable:
-    (augend, addend) => augend + addend
+    inline def add(augend: Long, addend: Long): Long = augend + addend
 
-  given short: Short is Addable by Short to Short = Addable:
-    (augend, addend) => (augend + addend).toShort
+  object IntAddition extends Addable:
+    type Self = Int
+    type Operand = Int
+    type Result = Int
 
-  given byte: Byte is Addable by Byte to Byte = Addable:
-    (augend, addend) => (augend + addend).toByte
+    inline def add(augend: Int, addend: Int): Int = augend + addend
+
+  object IntDoubleAddition extends Addable:
+    type Self = Int
+    type Operand = Double
+    type Result = Double
+
+    inline def add(augend: Int, addend: Double): Double = augend + addend
+
+  object DoubleIntAddition extends Addable:
+    type Self = Double
+    type Operand = Int
+    type Result = Double
+
+    inline def add(augend: Double, addend: Int): Double = augend + addend
+
+  object ShortAddition extends Addable:
+    type Self = Short
+    type Operand = Short
+    type Result = Short
+
+    inline def add(augend: Short, addend: Short): Short = (augend + addend).toShort
+
+  object ByteAddition extends Addable:
+    type Self = Byte
+    type Operand = Byte
+    type Result = Byte
+
+    inline def add(augend: Byte, addend: Byte): Byte = (augend + addend).toByte
+
+  inline given double: DoubleAddition.type = DoubleAddition
+  inline given float: FloatAddition.type = FloatAddition
+  inline given long: LongAddition.type = LongAddition
+  inline given int: IntAddition.type = IntAddition
+  inline given int2: IntDoubleAddition.type = IntDoubleAddition
+  inline given int3: DoubleIntAddition.type = DoubleIntAddition
+  inline given short: ShortAddition.type = ShortAddition
+  inline given byte: ByteAddition.type = ByteAddition
 
   given concatenable: [left, right] => (concatenable: left is Concatenable by right)
   =>  left is Addable by right to concatenable.Result =
