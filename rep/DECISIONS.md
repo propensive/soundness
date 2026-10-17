@@ -3147,3 +3147,12 @@ expanded `CheckOverflow` objects (a template, not a speed win — and `Widening`
 objects cannot move, inline traits forbid inner classes). Not a job for it: the `@targetName`
 `peek`/`expect` pairs, the `Lineation` pairs and the three boxed `Addressable` instances,
 which are ordinary refactors.
+
+PERF GUARD check (the one DECISIONS asks for when the snapshot's shape changes): `make
+bench.jacinta` on this branch twice against `origin/main` once, same machine. The copied body
+reads `cells`/`pos` through the receiver's trivial `inline$` accessors rather than `getfield`;
+the JIT inlines them, and the numbers say so — no Merino row is consistently worse. Run-to-run
+noise here is ±10–25% (rival rows that touch none of our code swing that much between the two
+branch runs), so only the consistent deltas mean anything: "Scan all tokens" 10.2/10.5 µs vs
+12.7, "Parse example 6 (Full / Bcd)" 35.9/36.2 µs vs 48.5, the tracked parse 65.4/65.3 µs vs
+64.1 (+2%, the one row that now reconciles lineation through the trait's `reconcile`).
