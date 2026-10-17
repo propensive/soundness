@@ -3156,3 +3156,24 @@ noise here is ±10–25% (rival rows that touch none of our code swing that much
 branch runs), so only the consistent deltas mean anything: "Scan all tokens" 10.2/10.5 µs vs
 12.7, "Parse example 6 (Full / Bcd)" 35.9/36.2 µs vs 48.5, the tracked parse 65.4/65.3 µs vs
 64.1 (+2%, the one row that now reconciles lineation through the trait's `reconcile`).
+
+## Inline givens, inline members and allocation: the three forms, measured (2026-10-17)
+
+Why symbolism's primitive arithmetic instances became `object`s with singleton-typed `inline
+given`s rather than structural givens with an `inline def`. Same `add`, three forms, consumer
+`x + y` (symbolism's inline `+`) compiled in a *separate unit* from the instance, as every
+symbolism user is:
+
+| form | bytecode of `x + y` |
+|---|---|
+| `given a: (A is Addable by A to A) = new Addable: … inline def add` | `invokeinterface Addable.add(Object,Object)Object` + `boxToDouble`×2 + `unboxToDouble`: not inlined. The declared type is the trait refinement; across units the inliner has only that. In a single unit it *does* give `dadd` (the inliner sees the `new`), which makes this form a trap: a local test passes, a downstream module boxes. |
+| `inline given a: Addable:` + `type Self = B …` + `inline def add` | `dadd`, but `new B$addable` + `<init>` per operation — the inline given's body is an instantiation, inlined per use (`CheckOverflow`'s note). hypotenuse's `Orderable`/`Commensurable` instances are this form. |
+| `object Addition extends Addable { inline def add }` + `inline given a: Addition.type` | `getstatic` of the module, `dadd`: inlined, nothing allocated. |
+
+Also: `inline given … = new Addable { inline def add }` is rejected ("nested inline methods
+are not supported"), and the structural head cannot take the `is … by … to …` chain ("not a
+class type"); the type members go in the body. For the containers (mosquito, baroque) the
+instance form is necessary but not sufficient: a given that takes the element typeclass as a
+*parameter* and calls `addable.add` on it boxes regardless — the element instance must be
+`summonInline`d inside an inline body — and the container's storage must be primitive
+(`Matrix` is; `Vector`'s `Array[Any]` and `Complex`'s erased fields are not).

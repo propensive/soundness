@@ -46,44 +46,111 @@ object Divisible:
       def divide(dividend: dividend, divisor: divisor): result = lambda(dividend, divisor)
 
 
-  given double: Double is Divisible by Double to Double = Divisible:
-    (dividend, divisor) => dividend/divisor
+  // Objects named by their singleton types, as `Addable`'s: `a/b` inlines to one instruction.
+  object DoubleDivision extends Divisible:
+    type Self = Double
+    type Operand = Double
+    type Result = Double
 
-  given double2: Double is Divisible by Int to Double = Divisible:
-    (dividend, divisor) => dividend/divisor
+    inline def divide(dividend: Double, divisor: Double): Double = dividend/divisor
 
-  given float: Float is Divisible by Float to Float = Divisible:
-    (dividend, divisor) => dividend/divisor
+  object DoubleIntDivision extends Divisible:
+    type Self = Double
+    type Operand = Int
+    type Result = Double
 
-  given float2: Float is Divisible by Int to Float = Divisible:
-    (dividend, divisor) => dividend/divisor
+    inline def divide(dividend: Double, divisor: Int): Double = dividend/divisor
 
-  given float3: Float is Divisible by Double to Double = Divisible:
-    (dividend, divisor) => dividend/divisor
+  object FloatDivision extends Divisible:
+    type Self = Float
+    type Operand = Float
+    type Result = Float
 
-  given long: Long is Divisible by Long to Long = Divisible:
-    (dividend, divisor) => dividend/divisor
+    inline def divide(dividend: Float, divisor: Float): Float = dividend/divisor
 
-  given long2: Long is Divisible by Double to Double = Divisible:
-    (dividend, divisor) => dividend/divisor
+  object FloatIntDivision extends Divisible:
+    type Self = Float
+    type Operand = Int
+    type Result = Float
 
-  given int: Int is Divisible by Int to Int = Divisible:
-    (dividend, divisor) => dividend/divisor
+    inline def divide(dividend: Float, divisor: Int): Float = dividend/divisor
 
-  given int2: Int is Divisible by Double to Double = Divisible:
-    (dividend, divisor) => dividend/divisor
+  object FloatDoubleDivision extends Divisible:
+    type Self = Float
+    type Operand = Double
+    type Result = Double
 
-  given short: Short is Divisible by Short to Short = Divisible:
-    (dividend, divisor) => (dividend/divisor).toShort
+    inline def divide(dividend: Float, divisor: Double): Double = dividend/divisor
 
-  given short2: Short is Divisible by Double to Double = Divisible:
-    (dividend, divisor) => dividend/divisor
+  object LongDivision extends Divisible:
+    type Self = Long
+    type Operand = Long
+    type Result = Long
 
-  given byte: Byte is Divisible by Byte to Byte = Divisible:
-    (dividend, divisor) => (dividend/divisor).toByte
+    inline def divide(dividend: Long, divisor: Long): Long = dividend/divisor
 
-  given byte2: Byte is Divisible by Double to Double = Divisible:
-    (dividend, divisor) => dividend/divisor
+  object LongDoubleDivision extends Divisible:
+    type Self = Long
+    type Operand = Double
+    type Result = Double
+
+    inline def divide(dividend: Long, divisor: Double): Double = dividend/divisor
+
+  object IntDivision extends Divisible:
+    type Self = Int
+    type Operand = Int
+    type Result = Int
+
+    inline def divide(dividend: Int, divisor: Int): Int = dividend/divisor
+
+  object IntDoubleDivision extends Divisible:
+    type Self = Int
+    type Operand = Double
+    type Result = Double
+
+    inline def divide(dividend: Int, divisor: Double): Double = dividend/divisor
+
+  object ShortDivision extends Divisible:
+    type Self = Short
+    type Operand = Short
+    type Result = Short
+
+    inline def divide(dividend: Short, divisor: Short): Short = (dividend/divisor).toShort
+
+  object ShortDoubleDivision extends Divisible:
+    type Self = Short
+    type Operand = Double
+    type Result = Double
+
+    inline def divide(dividend: Short, divisor: Double): Double = dividend/divisor
+
+  object ByteDivision extends Divisible:
+    type Self = Byte
+    type Operand = Byte
+    type Result = Byte
+
+    inline def divide(dividend: Byte, divisor: Byte): Byte = (dividend/divisor).toByte
+
+  object ByteDoubleDivision extends Divisible:
+    type Self = Byte
+    type Operand = Double
+    type Result = Double
+
+    inline def divide(dividend: Byte, divisor: Double): Double = dividend/divisor
+
+  inline given double: DoubleDivision.type = DoubleDivision
+  inline given double2: DoubleIntDivision.type = DoubleIntDivision
+  inline given float: FloatDivision.type = FloatDivision
+  inline given float2: FloatIntDivision.type = FloatIntDivision
+  inline given float3: FloatDoubleDivision.type = FloatDoubleDivision
+  inline given long: LongDivision.type = LongDivision
+  inline given long2: LongDoubleDivision.type = LongDoubleDivision
+  inline given int: IntDivision.type = IntDivision
+  inline given int2: IntDoubleDivision.type = IntDoubleDivision
+  inline given short: ShortDivision.type = ShortDivision
+  inline given short2: ShortDoubleDivision.type = ShortDoubleDivision
+  inline given byte: ByteDivision.type = ByteDivision
+  inline given byte2: ByteDoubleDivision.type = ByteDoubleDivision
 
 trait Divisible extends Typeclass.Pure, Operable, Resultant:
   type Dividend = Self

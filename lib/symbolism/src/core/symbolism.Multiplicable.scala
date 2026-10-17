@@ -47,23 +47,55 @@ object Multiplicable:
         lambda(multiplicand, multiplier)
 
 
-  given double: Double is Multiplicable by Double to Double = Multiplicable:
-    (multiplicand, multiplier) => multiplicand*multiplier
+  // Objects named by their singleton types, as `Addable`'s: `a*b` inlines to one instruction.
+  object DoubleMultiplication extends Multiplicable:
+    type Self = Double
+    type Operand = Double
+    type Result = Double
 
-  given long: Long is Multiplicable by Long to Long = Multiplicable:
-    (multiplicand, multiplier) => multiplicand*multiplier
+    inline def multiply(multiplicand: Double, multiplier: Double): Double = multiplicand*multiplier
 
-  given int: Int is Multiplicable by Int to Int = Multiplicable:
-    (multiplicand, multiplier) => multiplicand*multiplier
+  object LongMultiplication extends Multiplicable:
+    type Self = Long
+    type Operand = Long
+    type Result = Long
 
-  given float: Float is Multiplicable by Float to Float = Multiplicable:
-    (multiplicand, multiplier) => multiplicand*multiplier
+    inline def multiply(multiplicand: Long, multiplier: Long): Long = multiplicand*multiplier
 
-  given short: Short is Multiplicable by Short to Short = Multiplicable:
-    (multiplicand, multiplier) => (multiplicand*multiplier).toShort
+  object IntMultiplication extends Multiplicable:
+    type Self = Int
+    type Operand = Int
+    type Result = Int
 
-  given byte: Byte is Multiplicable by Byte to Byte = Multiplicable:
-    (multiplicand, multiplier) => (multiplicand*multiplier).toByte
+    inline def multiply(multiplicand: Int, multiplier: Int): Int = multiplicand*multiplier
+
+  object FloatMultiplication extends Multiplicable:
+    type Self = Float
+    type Operand = Float
+    type Result = Float
+
+    inline def multiply(multiplicand: Float, multiplier: Float): Float = multiplicand*multiplier
+
+  object ShortMultiplication extends Multiplicable:
+    type Self = Short
+    type Operand = Short
+    type Result = Short
+
+    inline def multiply(multiplicand: Short, multiplier: Short): Short = (multiplicand*multiplier).toShort
+
+  object ByteMultiplication extends Multiplicable:
+    type Self = Byte
+    type Operand = Byte
+    type Result = Byte
+
+    inline def multiply(multiplicand: Byte, multiplier: Byte): Byte = (multiplicand*multiplier).toByte
+
+  inline given double: DoubleMultiplication.type = DoubleMultiplication
+  inline given long: LongMultiplication.type = LongMultiplication
+  inline given int: IntMultiplication.type = IntMultiplication
+  inline given float: FloatMultiplication.type = FloatMultiplication
+  inline given short: ShortMultiplication.type = ShortMultiplication
+  inline given byte: ByteMultiplication.type = ByteMultiplication
 
   given concatenable: [textual: Concatenable by textual to textual: Zeroic]
   =>  textual is Multiplicable:

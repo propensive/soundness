@@ -42,16 +42,49 @@ object Negatable:
 
       def negate(operand: Self): Result = lambda(operand)
 
-  given double: Double is Negatable to Double = Negatable(-_)
-  given float: Float is Negatable to Float = Negatable(-_)
-  given long: Long is Negatable to Long = Negatable(-_)
-  given int: Int is Negatable to Int = Negatable(-_)
+  // Objects named by their singleton types, as `Addable`'s: `-a` inlines to one instruction.
+  object DoubleNegation extends Negatable:
+    type Self = Double
+    type Result = Double
 
-  given short: Short is Negatable to Short = Negatable:
-    operand => (-operand).toShort
+    inline def negate(operand: Double): Double = -operand
 
-  given byte: Byte is Negatable to Byte = Negatable:
-    operand => (-operand).toByte
+  object FloatNegation extends Negatable:
+    type Self = Float
+    type Result = Float
+
+    inline def negate(operand: Float): Float = -operand
+
+  object LongNegation extends Negatable:
+    type Self = Long
+    type Result = Long
+
+    inline def negate(operand: Long): Long = -operand
+
+  object IntNegation extends Negatable:
+    type Self = Int
+    type Result = Int
+
+    inline def negate(operand: Int): Int = -operand
+
+  object ShortNegation extends Negatable:
+    type Self = Short
+    type Result = Short
+
+    inline def negate(operand: Short): Short = (-operand).toShort
+
+  object ByteNegation extends Negatable:
+    type Self = Byte
+    type Result = Byte
+
+    inline def negate(operand: Byte): Byte = (-operand).toByte
+
+  inline given double: DoubleNegation.type = DoubleNegation
+  inline given float: FloatNegation.type = FloatNegation
+  inline given long: LongNegation.type = LongNegation
+  inline given int: IntNegation.type = IntNegation
+  inline given short: ShortNegation.type = ShortNegation
+  inline given byte: ByteNegation.type = ByteNegation
 
 trait Negatable extends Typeclass.Pure, Resultant:
   def negate(operand: Self): Result
