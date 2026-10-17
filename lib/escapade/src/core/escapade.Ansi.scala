@@ -109,7 +109,7 @@ object Ansi extends Ansi2:
 
   class State:
     val plain: StringBuilder = StringBuilder()
-    val styles: scm.ArrayBuffer[Long] = scm.ArrayBuffer.empty
+    val styles: Scroll[Long] = Scroll[Long]()
     val hyperlinks: scm.HashMap[Int, Text] = scm.HashMap.empty
     val insertions: scm.TreeMap[Int, Text] = scm.TreeMap.empty
     // [field-purity] plain mutable var in non-Stateful parse State
@@ -136,7 +136,7 @@ object Ansi extends Ansi2:
       plain.append(char)
       val base = currentStyle.styleWord
       val styled = if linkArmed then base | StyleWord.HyperlinkChange else base
-      styles += styled
+      styles.append(styled)
       linkArmed = false
 
     def appendChars(text: Text): Unit =
@@ -157,7 +157,7 @@ object Ansi extends Ansi2:
         plain.append(text.plain.s.charAt(i))
         var combined = StyleWord.combine(outer, text.styleAt(i))
         if i == 0 && triggerLink then combined = combined | StyleWord.HyperlinkChange
-        styles += combined
+        styles.append(combined)
         i += 1
 
       if triggerLink then linkArmed = false
@@ -321,10 +321,10 @@ object Ansi extends Ansi2:
       if !state.stack.nil then throw Error(m"the closing brace does not match an opening brace")
 
       val tail = if state.linkArmed then StyleWord.HyperlinkChange else 0L
-      state.styles += tail
+      state.styles.append(tail)
 
       val plainText = state.plain.toString.tt
-      val denseStyles = Array.unsafeFrozen(state.styles.toArray)
+      val denseStyles = state.styles.freeze
       val (newStyles, newBoundaries) = Teletype.compressIfBeneficial(plainText, denseStyles)
 
       Teletype

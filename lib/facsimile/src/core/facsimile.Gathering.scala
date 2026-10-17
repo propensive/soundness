@@ -48,8 +48,7 @@ private[facsimile] class Gathering(transform: Data => Data) extends Duct[Data, D
   type Transport = Credit
   type Upstream = Credit
 
-  private val gathered: scala.collection.mutable.ArrayBuffer[Byte] =
-    scala.collection.mutable.ArrayBuffer()
+  private val gathered: Scroll[Byte] = Scroll[Byte]()
 
   private var result: Optional[Data] = Unset
   private var delivered: Int = 0
@@ -61,12 +60,12 @@ private[facsimile] class Gathering(transform: Data => Data) extends Duct[Data, D
     (target: Slate[Data])(space: Interval in target.type)
   :   Duct.Progress =
 
-    source.visit(range): index => gathered += source(index)
+    source.visit(range): index => gathered.append(source(index))
     Duct.Progress((range: Interval).size, 0)
 
   override update def flush(target: Slate[Data])(space: Interval in target.type): Int =
     val data = result.or:
-      val transformed = transform(Array.unsafeFrozen(gathered.toArray))
+      val transformed = transform(gathered.freeze)
       result = transformed
       transformed
 
