@@ -172,7 +172,12 @@ object settings:
     "-language:experimental.saferExceptions",
     "-language:experimental.strictEqualityPatternMatching",
     "-language:experimental.subCases",
-    "-language:experimental.multiSpreads"
+    "-language:experimental.multiSpreads",
+    // Inline traits (Scala 3.10, Pre-SIP): a trait whose body is copied into each extending
+    // class with its type parameters substituted, so a parser's `Cursor.Snapshot[Data, Byte,
+    // {}]` holds a `byte[]`. Only the defining module needs the flag — the body travels in
+    // TASTy — but it is set once, here, like the other experimental features.
+    "-language:experimental.inlineTraits"
   )
 
   val scalaOptionsCC = scalaOptions ++ Seq("-Ycc-new")

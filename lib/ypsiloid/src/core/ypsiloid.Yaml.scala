@@ -2016,32 +2016,14 @@ object Yaml extends Yaml2, Dynamic:
 
   // Holds an exclusive cursor in a field, so the parser is itself a capability
   // (fresh per instance; one per thread via the pool).
-  private[ypsiloid] final class Parser extends caps.ExclusiveCapability, caps.Mutable:
+  private[ypsiloid] final class Parser
+  extends caps.ExclusiveCapability, caps.Mutable, Cursor.Snapshot[Data, Byte]:
     import scala.annotation.{switch, tailrec}
     import scala.collection.mutable.ArrayBuffer
     import Yaml.Ast.Byte.*
     import Yaml.Ast.Issue
 
-    // Parser-local snapshot of the cursor's buffer, mirroring Jacinta's
-    // pattern: keep `bytes`/`pos`/`bufEnd` as plain fields so the JIT can
-    // hold them in registers across hot byte loops. Sync to the cursor
-    // before mark/slice/refill operations and refresh after.
-    // Held as an `AnyRef` field with an exclusive-view accessor (the `Tel.Reader.parser0`
-    // pattern): a typed capability field poisons every later access to this parser.
-    // [registry-lifetime] cast-erased AnyRef cursor handle in parser
-    @scala.caps.unsafe.untrackedCaptures
-    private var cursor1: AnyRef = null.asInstanceOf[AnyRef]
-
-    private inline def cursor: Cursor[Data, {}]^ = cursor1.asInstanceOf[Cursor[Data, {}]^]
     private var heldToken: Cursor.Held | Null = null
-    // `AnyRef` field + accessor, as `cursor1` above.
-    // [cursor-snapshot] parser's AnyRef snapshot of cursor buffer bytes
-    @scala.caps.unsafe.untrackedCaptures
-    private var bytes1: AnyRef = null.asInstanceOf[AnyRef]
-
-    private inline def bytes: scala.Array[Byte]^ = bytes1.asInstanceOf[scala.Array[Byte]^]
-    var pos:       Int               = 0
-    var bufEnd:    Int               = 0
 
     // When true, the cursor is built with a line-feed-tracking `Lineation`
     // so `cursor.line` / `cursor.column` reflect real source coordinates,
@@ -2053,14 +2035,6 @@ object Yaml extends Yaml2, Dynamic:
     // Finalised root-level position index produced by the previous `parse()`
     // call when `tracking` was on. Reset to `null` at the start of every parse.
     protected[ypsiloid] var rootIndex: Array[Int]^{} | Null = null
-
-    // Local-buffer offset up to which `cursor.lineNo` / `cursor.columnNo`
-    // have been brought up to date. The hot-loop `syncTo()` bypasses the
-    // cursor's lineation tracking via `unsafeAdvanceBy`, so the parser
-    // keeps track of how far ahead `cursor.pos` has been pushed and
-    // catches lineation up here only at tracking-mode capture points and
-    // before any refill discards consumed bytes.
-    var lineationPos: Int = 0
 
     // Pool of `Array[Int]^{}` buffers shared between sibling composite
     // descriptors during a tracked parse. Mirrors the `bufferPool` below
@@ -2127,13 +2101,11 @@ object Yaml extends Yaml2, Dynamic:
     update def resetText(input: Text): Unit =
       import hieroglyph.codepages.utf8Codepage
       val data: Data = input.in[Data]
-      val cursor0 = makeCursor(data)
-      cursor1 = cursor0.asInstanceOf[AnyRef]
+      cursor0 = makeCursor(data).asInstanceOf[AnyRef]
       resetParserState()
 
     update def resetData(input: Data): Unit =
-      val cursor0 = makeCursor(input)
-      cursor1 = cursor0.asInstanceOf[AnyRef]
+      cursor0 = makeCursor(input).asInstanceOf[AnyRef]
       resetParserState()
 
     // As `resetData`, over a pull endpoint: the cursor refills from the
@@ -2141,8 +2113,7 @@ object Yaml extends Yaml2, Dynamic:
     // block. The stream is adopted by the cursor — single ownership passes
     // with the call, by the `accept` convention.
     update def resetStream(consume input: (Stream[Data] over Credit)^)(using Buffering): Unit =
-      val cursor0 = makeStreamCursor(input)
-      cursor1 = cursor0.asInstanceOf[AnyRef]
+      cursor0 = makeStreamCursor(input).asInstanceOf[AnyRef]
       resetParserState()
 
     // Build a `Cursor[Data, {}]` with the appropriate `Lineation`. The two
@@ -2188,75 +2159,10 @@ object Yaml extends Yaml2, Dynamic:
       anchors.clear()
       tagHandles.clear()
 
-    // ── Substrate ────────────────────────────────────────────────────────────
-
-    // Push the parser's local `pos` back to the cursor. Required before any
-    // cursor operation that consults `pos` (mark, slice, refill, position).
-    // Stays zero-branch on the hot path; tracking-mode callers separately
-    // invoke `reconcileLineation()` when they need accurate
-    // `cursor.line` / `cursor.column`.
-    private update inline def syncTo(): Unit =
-      cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
-
-    // Refresh the parser's snapshot from the cursor. Required after any
-    // cursor operation that may have changed the buffer reference, the
-    // read position, or the write end. Re-anchors `lineationPos` because
-    // a refill may have compacted the buffer (bytes 0..old-pos are
-    // discarded; subsequent walks would read different data).
-    private update inline def syncFrom(): Unit =
-      bytes1 = cursor.unsafeDataBuffer(using Unsafe).asInstanceOf[AnyRef]
-      pos    = cursor.unsafePos(using Unsafe)
-      bufEnd = cursor.unsafeWriteEnd(using Unsafe)
-      lineationPos = pos
-
-    // Walk the buffer bytes between `lineationPos` and the cursor's current
-    // position, bumping `cursor.lineNo` / `cursor.columnNo` accordingly.
-    // Called at tracking-mode capture points and before any refill that
-    // would discard consumed bytes. Without this, `syncTo()` advances
-    // `cursor.pos` via `unsafeAdvanceBy` (which bypasses lineation), so
-    // captured `cursor.line` / `cursor.column` would stay at their initial
-    // values and every descriptor would read `(1, 1)`.
-    private update def reconcileLineation(): Unit =
-      // Bookkeeping over this parser's own cursor; there is no aliased writer.
-      // [aliased-read] bytes array read while parser's cursor held exclusively"}
-      scala.caps.unsafe.unsafeAssumeSeparate:
-        val end = cursor.unsafePos(using Unsafe)
-
-        if lineationPos < end then
-          var i = lineationPos
-          var newlines = 0
-          var lastNewlineAt = -1
-
-          while i < end do
-            if bytes(i) == Newline then
-              newlines += 1
-              lastNewlineAt = i
-
-            i += 1
-
-          if newlines > 0 then
-            cursor.unsafeBumpLine(newlines)(using Unsafe)
-            cursor.unsafeSetColumn(end - lastNewlineAt - 1)(using Unsafe)
-          else
-            cursor.unsafeBumpColumn(end - lineationPos)(using Unsafe)
-
-          lineationPos = end
-
-    private update inline def more: Boolean = pos < bufEnd || moreSlow()
-
-    // Refill the parser's snapshot from the cursor. In tracking mode,
-    // reconcile lineation before the cursor compacts the buffer (otherwise
-    // the now-discarded bytes can no longer be walked for newlines), and
-    // resync afterwards even if no more data was produced so that any
-    // post-refill position reads see the new buffer scale.
-    update def moreSlow(): Boolean =
-      syncTo()
-      if tracking then reconcileLineation()
-
-      if cursor.more then { syncFrom(); true }
-      else
-        if tracking then syncFrom()
-        false
+    // A tracked parse catches the cursor's lineation up before each refill, while the
+    // consumed bytes can still be walked (`Cursor.Snapshot`).
+    protected update def reconcile(): Unit = if tracking then reconcileLineation()
+    protected update def resynced(): Unit = ()
 
     // Assemble a composite (sequence or mapping) descriptor in `indexOut`.
     // `scratch` holds the concatenated child / entry descriptors back-to-
@@ -2294,9 +2200,6 @@ object Yaml extends Yaml2, Dynamic:
       indexOut ++= scratch
       indexOut(sizeSlot) = indexOut.length - sizeSlot
 
-    private inline def peek: Byte = bytes(pos)
-
-    private update inline def advance(): Unit = pos += 1
 
     // ── Errors ──────────────────────────────────────────────────────────────
 
@@ -2497,7 +2400,7 @@ object Yaml extends Yaml2, Dynamic:
 
             if sameLineAsMarker then
               var end = pos
-              while end < bufEnd && bytes(end) != Newline do end += 1
+              while end < bufEnd && cells(end) != Newline do end += 1
               docStartLineEnd = end
             else
               docStartLineEnd = -1
@@ -2582,7 +2485,7 @@ object Yaml extends Yaml2, Dynamic:
 
               if sameLineAsMarker then
                 var end = pos
-                while end < bufEnd && bytes(end) != Newline do end += 1
+                while end < bufEnd && cells(end) != Newline do end += 1
                 docStartLineEnd = end
               else
                 docStartLineEnd = -1
@@ -2643,11 +2546,11 @@ object Yaml extends Yaml2, Dynamic:
         advance() // %
         val nameStart = pos
         while more && peek != Space && peek != Tab && peek != Newline do advance()
-        val name = new String(bytes, nameStart, pos - nameStart)
+        val name = new String(cells, nameStart, pos - nameStart)
         while more && (peek == Space || peek == Tab) do advance()
         val argStart = pos
         while more && peek != Newline do advance()
-        val rawArgs = new String(bytes, argStart, pos - argStart)
+        val rawArgs = new String(cells, argStart, pos - argStart)
         val hashIdx = rawArgs.indexOf(" #")
 
         val argText =
@@ -2712,9 +2615,9 @@ object Yaml extends Yaml2, Dynamic:
     private update def isDocumentMarker(b: Byte): Boolean =
       buffered(4)
 
-      pos + 2 < bufEnd && bytes(pos) == b && bytes(pos+1) == b && bytes(pos+2) == b &&
+      pos + 2 < bufEnd && cells(pos) == b && cells(pos+1) == b && cells(pos+2) == b &&
         (pos + 3 >= bufEnd || {
-            val nb = bytes(pos+3)
+            val nb = cells(pos+3)
             nb == Newline || nb == Space || nb == Tab || nb == Return
           })
 
@@ -2762,7 +2665,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Try to consume three of `b` in a row. Returns true on success.
     private update def tryConsume3(b: Byte): Boolean =
-      if pos + 2 < bufEnd && bytes(pos) == b && bytes(pos + 1) == b && bytes(pos + 2) == b then
+      if pos + 2 < bufEnd && cells(pos) == b && cells(pos + 1) == b && cells(pos + 2) == b then
         pos += 3
         true
       else
@@ -2958,8 +2861,8 @@ object Yaml extends Yaml2, Dynamic:
     // line — disallowed for an implicit-key construct.
     private update def newlineImmediatelyPrecedes(at: Int): Boolean =
       var j = at - 1
-      while j >= 0 && (bytes(j) == Space || bytes(j) == Tab) do j -= 1
-      j >= 0 && bytes(j) == Newline
+      while j >= 0 && (cells(j) == Space || cells(j) == Tab) do j -= 1
+      j >= 0 && cells(j) == Newline
 
     // Read an identifier-like word (anchor or alias name).
     private update def readWord(): Text =
@@ -3031,7 +2934,7 @@ object Yaml extends Yaml2, Dynamic:
           scalar
 
         case Colon =>
-          val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+          val nextByte = if pos + 1 < bufEnd then cells(pos + 1) else -1
 
           if
             nextByte == Space || nextByte == Tab || nextByte == Newline ||
@@ -3173,14 +3076,14 @@ object Yaml extends Yaml2, Dynamic:
       var lineStart = stringCursor
 
       while more do
-        // Fast-prefix ASCII run: bulk-copy printable bytes (>= 0x20) that
+        // Fast-prefix ASCII run: bulk-copy printable cells (>= 0x20) that
         // are neither potential terminators (#, :) nor UTF-8 lead bytes
         // (which are negative as signed Bytes, so excluded by >= 0x20).
         val runStart = pos
 
         while
           pos < bufEnd && {
-            val b = bytes(pos)
+            val b = cells(pos)
             b >= 0x20 && b != Hash && b != Colon
           }
         do pos += 1
@@ -3192,7 +3095,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            chars(stringCursor + k) = (cells(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -3225,7 +3128,7 @@ object Yaml extends Yaml2, Dynamic:
           // or end-of-input. The whole input is loaded at parser reset
           // (`Cursor[Data, {}]` over a single `Data` buffer), so a direct
           // bounds check on the snapshot suffices — no refill needed.
-          val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+          val nextByte = if pos + 1 < bufEnd then cells(pos + 1) else -1
 
           if
             nextByte == Space || nextByte == Tab || nextByte == Newline ||
@@ -3234,7 +3137,7 @@ object Yaml extends Yaml2, Dynamic:
             return PlainOutcome.Mapping
           // else: `:foo` is part of the scalar; fall through.
 
-        // Slow-path single-byte handling (control chars, UTF-8 lead bytes,
+        // Slow-path single-byte handling (control chars, UTF-8 lead cells,
         // or `:` not followed by whitespace).
         appendByteAsChar(b)
         advance()
@@ -3319,21 +3222,21 @@ object Yaml extends Yaml2, Dynamic:
       val u = lead & 0xFF
 
       if (u & 0xE0) == 0xC0 then
-        val b2 = if pos + 1 < bufEnd then bytes(pos + 1) & 0x3F else 0
+        val b2 = if pos + 1 < bufEnd then cells(pos + 1) & 0x3F else 0
         val cp = ((u & 0x1F) << 6) | b2
         // advance lead handled by caller
         pos += 1
         appendChar(cp.toChar)
       else if (u & 0xF0) == 0xE0 then
-        val b2 = if pos + 1 < bufEnd then bytes(pos + 1) & 0x3F else 0
-        val b3 = if pos + 2 < bufEnd then bytes(pos + 2) & 0x3F else 0
+        val b2 = if pos + 1 < bufEnd then cells(pos + 1) & 0x3F else 0
+        val b3 = if pos + 2 < bufEnd then cells(pos + 2) & 0x3F else 0
         val cp = ((u & 0x0F) << 12) | (b2 << 6) | b3
         pos += 2
         appendChar(cp.toChar)
       else if (u & 0xF8) == 0xF0 then
-        val b2 = if pos + 1 < bufEnd then bytes(pos + 1) & 0x3F else 0
-        val b3 = if pos + 2 < bufEnd then bytes(pos + 2) & 0x3F else 0
-        val b4 = if pos + 3 < bufEnd then bytes(pos + 3) & 0x3F else 0
+        val b2 = if pos + 1 < bufEnd then cells(pos + 1) & 0x3F else 0
+        val b3 = if pos + 2 < bufEnd then cells(pos + 2) & 0x3F else 0
+        val b4 = if pos + 3 < bufEnd then cells(pos + 3) & 0x3F else 0
         val cp = ((u & 0x07) << 18) | (b2 << 12) | (b3 << 6) | b4
         pos += 3
         // Encode as surrogate pair if non-BMP
@@ -3563,7 +3466,7 @@ object Yaml extends Yaml2, Dynamic:
 
         while
           pos < bufEnd && {
-            val b = bytes(pos)
+            val b = cells(pos)
             b >= 0x20 && b != Quote && b != Backslash
           }
         do pos += 1
@@ -3575,7 +3478,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            chars(stringCursor + k) = (cells(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -3676,7 +3579,7 @@ object Yaml extends Yaml2, Dynamic:
 
         while
           pos < bufEnd && {
-            val b = bytes(pos)
+            val b = cells(pos)
             b >= 0x20 && b != Apostrophe
           }
         do pos += 1
@@ -3688,7 +3591,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            chars(stringCursor + k) = (cells(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -3779,7 +3682,7 @@ object Yaml extends Yaml2, Dynamic:
           val first: Yaml.Ast =
             if
               peek == Question && {
-                val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+                val nb = if pos + 1 < bufEnd then cells(pos + 1) else -1
                 nb == Space || nb == Tab || nb == Newline || nb == Return ||
                   nb == Comma || nb == CloseBracket || nb == Colon
               }
@@ -3792,7 +3695,7 @@ object Yaml extends Yaml2, Dynamic:
               else parseFlowNode()
             else if
               peek == Colon && {
-                val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+                val nb = if pos + 1 < bufEnd then cells(pos + 1) else -1
                 nb == Space || nb == Tab || nb == Newline || nb == Return ||
                   nb == Comma || nb == CloseBracket
               }
@@ -3857,7 +3760,7 @@ object Yaml extends Yaml2, Dynamic:
           val key: Yaml.Ast =
             if
               peek == Question && {
-                val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+                val nb = if pos + 1 < bufEnd then cells(pos + 1) else -1
                 nb == Space || nb == Tab || nb == Newline || nb == Return ||
                   nb == Comma || nb == CloseBrace || nb == Colon
               }
@@ -3870,7 +3773,7 @@ object Yaml extends Yaml2, Dynamic:
               else parseFlowNode()
             else if
               peek == Colon && {
-                val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+                val nb = if pos + 1 < bufEnd then cells(pos + 1) else -1
                 nb == Space || nb == Tab || nb == Newline || nb == Return ||
                   nb == Comma || nb == CloseBrace
               }
@@ -3966,7 +3869,7 @@ object Yaml extends Yaml2, Dynamic:
         else if c == Space || c == Tab || c == Return then
           advance()
         else if c == Hash then
-          val prev = if pos > 0 then bytes(pos - 1) else -1
+          val prev = if pos > 0 then cells(pos - 1) else -1
 
           if prev == Space || prev == Tab || prev == Newline || prev == Return then
             while more && peek != Newline do advance()
@@ -3999,7 +3902,7 @@ object Yaml extends Yaml2, Dynamic:
             // The flow node is empty — caller will consume the terminator.
             Yaml.Ast.Null
           else if headByte == Colon && {
-            val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+            val next = if pos + 1 < bufEnd then cells(pos + 1) else -1
             next == Space || next == Tab || next == Newline || next == Return ||
               next == Comma || next == CloseBracket ||
               next == CloseBrace || next == -1
@@ -4037,7 +3940,7 @@ object Yaml extends Yaml2, Dynamic:
         val first = peek
 
         if first == Minus || first == Question || first == Colon then
-          val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+          val next = if pos + 1 < bufEnd then cells(pos + 1) else -1
 
           if
             next == Space || next == Tab || next == Comma ||
@@ -4050,12 +3953,12 @@ object Yaml extends Yaml2, Dynamic:
       var done = false
       while !done && more do
         // Fast-prefix ASCII run: bulk-copy bytes that are neither flow
-        // terminators nor UTF-8 lead bytes.
+        // terminators nor UTF-8 lead cells.
         val runStart = pos
 
         while
           pos < bufEnd && {
-            val b = bytes(pos)
+            val b = cells(pos)
             b >= 0x20 && b != Comma && b != CloseBracket && b != CloseBrace &&
               b != Colon && b != Hash
           }
@@ -4068,7 +3971,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            chars(stringCursor + k) = (cells(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -4080,7 +3983,7 @@ object Yaml extends Yaml2, Dynamic:
           if b == Comma || b == CloseBracket || b == CloseBrace then done = true
           else if b == Newline then consumeMultilineFold()
           else if b == Colon then
-            val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+            val nextByte = if pos + 1 < bufEnd then cells(pos + 1) else -1
 
             if
               nextByte == Space || nextByte == Tab || nextByte == Newline ||
@@ -4107,7 +4010,7 @@ object Yaml extends Yaml2, Dynamic:
     // marker. The disambiguation is the byte after `-`: if space/tab/
     // newline/EOF, it's a sequence marker.
     private update def parseMinus(indent: Int)(using Tactic[Parse.Error]): Yaml.Ast =
-      val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+      val nextByte = if pos + 1 < bufEnd then cells(pos + 1) else -1
 
       if
         nextByte == Space || nextByte == Tab || nextByte == Newline ||
@@ -4120,10 +4023,10 @@ object Yaml extends Yaml2, Dynamic:
         // over space/tab and landing on any of these is the allowed
         // shape.
         var j = pos - 1
-        while j >= 0 && (bytes(j) == Space || bytes(j) == Tab) do j -= 1
-        val ok = j < 0 || bytes(j) == Newline || bytes(j) == Return ||
-          bytes(j) == Minus || bytes(j) == Colon ||
-          bytes(j) == Question
+        while j >= 0 && (cells(j) == Space || cells(j) == Tab) do j -= 1
+        val ok = j < 0 || cells(j) == Newline || cells(j) == Return ||
+          cells(j) == Minus || cells(j) == Colon ||
+          cells(j) == Question
         if !ok then errorAt(Issue.BlockSequenceIndicatorNotAtLineStart)
         // Use the dash's actual column, not the caller's indent param —
         // an inline-value sequence (`: - v`, `? k\n: - v`) starts where
@@ -4139,7 +4042,7 @@ object Yaml extends Yaml2, Dynamic:
     // first dash isn't at the caller's `indent`.
     private update def currentColumn(): Int =
       var j = pos - 1
-      while j >= 0 && bytes(j) != Newline do j -= 1
+      while j >= 0 && cells(j) != Newline do j -= 1
       pos - j - 1
 
     // Caller has seen a `?` at node-head. When followed by whitespace or
@@ -4308,7 +4211,7 @@ object Yaml extends Yaml2, Dynamic:
         else
           // Need to verify it's `-` followed by whitespace (sequence
           // marker), not a plain scalar starting with `-`.
-          val byteAfterDash = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+          val byteAfterDash = if pos + 1 < bufEnd then cells(pos + 1) else -1
 
           if
             byteAfterDash != Space && byteAfterDash != Tab &&
@@ -4386,7 +4289,7 @@ object Yaml extends Yaml2, Dynamic:
     // explicit mapping key (followed by space/tab/newline/EOF).
     private update def isExplicitKeyIndicator: Boolean =
       more && peek == Question && {
-        val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+        val nb = if pos + 1 < bufEnd then cells(pos + 1) else -1
         nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
       }
 
@@ -4418,7 +4321,7 @@ object Yaml extends Yaml2, Dynamic:
           else if keyIndent == indent then
             if
               more && peek == Minus && {
-                val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+                val nb = if pos + 1 < bufEnd then cells(pos + 1) else -1
                 nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
               }
             then
@@ -4438,7 +4341,7 @@ object Yaml extends Yaml2, Dynamic:
       val value: Yaml.Ast =
         if
           markerIndent == indent && more && peek == Colon && {
-            val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+            val nb = if pos + 1 < bufEnd then cells(pos + 1) else -1
             nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
           }
         then
@@ -4481,7 +4384,7 @@ object Yaml extends Yaml2, Dynamic:
         // patterns are allowed because the explicit-key construct
         // already disambiguates the layout.
         if !isExplicitValue && peek == Minus then
-          val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+          val next = if pos + 1 < bufEnd then cells(pos + 1) else -1
 
           if
             next == Space || next == Tab || next == Newline || next == Return || next == -1
@@ -4527,7 +4430,7 @@ object Yaml extends Yaml2, Dynamic:
       else if childIndent == parentIndent then
         if
           peek == Minus && {
-            val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+            val nb = if pos + 1 < bufEnd then cells(pos + 1) else -1
             nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
           }
         then
@@ -4579,7 +4482,7 @@ object Yaml extends Yaml2, Dynamic:
         advance()
 
       if more && peek == Hash then
-        val prev = if pos > 0 then bytes(pos - 1) else -1
+        val prev = if pos > 0 then cells(pos - 1) else -1
 
         if prev != Space && prev != Tab then
           errorAt(Issue.BlockScalarHeaderCommentMissingWhitespace)
@@ -4736,13 +4639,13 @@ object Yaml extends Yaml2, Dynamic:
 
     // Read the non-newline content of the current line into the chars
     // buffer. Bulk-copies printable ASCII via the fast prefix loop and
-    // falls back to per-byte handling for tabs and UTF-8 lead bytes.
+    // falls back to per-byte handling for tabs and UTF-8 lead cells.
     private update def readBlockScalarLineContent(): Unit =
       var done = false
 
       while !done do
         val runStart = pos
-        while pos < bufEnd && bytes(pos) >= 0x20 do pos += 1
+        while pos < bufEnd && cells(pos) >= 0x20 do pos += 1
         val runLen = pos - runStart
 
         if runLen > 0 then
@@ -4750,7 +4653,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            chars(stringCursor + k) = (cells(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -4867,7 +4770,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Emit a 4-int Null descriptor (zero length) at the current cursor
     // position. Used when a node resolves to `Null` without consuming any
-    // bytes (empty inline value, missing explicit-pair value, etc.).
+    // cells (empty inline value, missing explicit-pair value, etc.).
     private update inline def emitNullHere(indexOut: ArrayBuffer[Int]): Unit =
       syncTo()
       reconcileLineation()
@@ -5125,7 +5028,7 @@ object Yaml extends Yaml2, Dynamic:
             scalar
 
           case Colon =>
-            val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+            val nextByte = if pos + 1 < bufEnd then cells(pos + 1) else -1
 
             if
               nextByte == Space || nextByte == Tab || nextByte == Newline ||
@@ -5271,7 +5174,7 @@ object Yaml extends Yaml2, Dynamic:
           pos = lineStart
           done = true
         else
-          val byteAfterDash = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+          val byteAfterDash = if pos + 1 < bufEnd then cells(pos + 1) else -1
 
           if
             byteAfterDash != Space && byteAfterDash != Tab &&
@@ -5468,7 +5371,7 @@ object Yaml extends Yaml2, Dynamic:
           val first: Yaml.Ast =
             if
               peek == Question && {
-                val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+                val nb = if pos + 1 < bufEnd then cells(pos + 1) else -1
                 nb == Space || nb == Tab || nb == Newline || nb == Return ||
                   nb == Comma || nb == CloseBracket || nb == Colon
               }
@@ -5481,7 +5384,7 @@ object Yaml extends Yaml2, Dynamic:
               else parseFlowNode()
             else if
               peek == Colon && {
-                val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+                val nb = if pos + 1 < bufEnd then cells(pos + 1) else -1
                 nb == Space || nb == Tab || nb == Newline || nb == Return ||
                   nb == Comma || nb == CloseBracket
               }
@@ -5634,7 +5537,7 @@ object Yaml extends Yaml2, Dynamic:
           val key: Yaml.Ast =
             if
               peek == Question && {
-                val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+                val nb = if pos + 1 < bufEnd then cells(pos + 1) else -1
                 nb == Space || nb == Tab || nb == Newline || nb == Return ||
                   nb == Comma || nb == CloseBrace || nb == Colon
               }
@@ -5647,7 +5550,7 @@ object Yaml extends Yaml2, Dynamic:
               else parseFlowNode()
             else if
               peek == Colon && {
-                val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+                val nb = if pos + 1 < bufEnd then cells(pos + 1) else -1
                 nb == Space || nb == Tab || nb == Newline || nb == Return ||
                   nb == Comma || nb == CloseBrace
               }
@@ -5734,7 +5637,7 @@ object Yaml extends Yaml2, Dynamic:
             emitNullHere(indexOut)
             Yaml.Ast.Null
           else if headByte == Colon && {
-            val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+            val next = if pos + 1 < bufEnd then cells(pos + 1) else -1
             next == Space || next == Tab || next == Newline || next == Return ||
               next == Comma || next == CloseBracket ||
               next == CloseBrace || next == -1
@@ -5823,17 +5726,17 @@ object Yaml extends Yaml2, Dynamic:
       ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
-      val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+      val nextByte = if pos + 1 < bufEnd then cells(pos + 1) else -1
 
       if
         nextByte == Space || nextByte == Tab || nextByte == Newline ||
           nextByte == Return || nextByte == -1
       then
         var j = pos - 1
-        while j >= 0 && (bytes(j) == Space || bytes(j) == Tab) do j -= 1
-        val ok = j < 0 || bytes(j) == Newline || bytes(j) == Return ||
-          bytes(j) == Minus || bytes(j) == Colon ||
-          bytes(j) == Question
+        while j >= 0 && (cells(j) == Space || cells(j) == Tab) do j -= 1
+        val ok = j < 0 || cells(j) == Newline || cells(j) == Return ||
+          cells(j) == Minus || cells(j) == Colon ||
+          cells(j) == Question
 
         if !ok then errorAt(Issue.BlockSequenceIndicatorNotAtLineStart)
 
@@ -5899,13 +5802,13 @@ object Yaml extends Yaml2, Dynamic:
           val nodeAttempt =
             if peek == Minus &&
               {
-                val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+                val nb = if pos + 1 < bufEnd then cells(pos + 1) else -1
                 nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
               }
             then
               parseNodeHereTracked(currentColumn(), scratch)
             else
-              if pos > 0 && bytes(pos - 1) != Newline then parseNodeHereTracked(indent + 2, scratch)
+              if pos > 0 && cells(pos - 1) != Newline then parseNodeHereTracked(indent + 2, scratch)
               else parseNodeHereTracked(consumeLeadingSpacesPeek(), scratch)
 
           nodeAttempt
@@ -5939,7 +5842,7 @@ object Yaml extends Yaml2, Dynamic:
       val value: Yaml.Ast =
         if
           markerIndent == indent && more && peek == Colon && {
-            val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+            val nb = if pos + 1 < bufEnd then cells(pos + 1) else -1
             nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
           }
         then
@@ -5986,7 +5889,7 @@ object Yaml extends Yaml2, Dynamic:
     private update inline def consumeLeadingSpacesPeek(): Int =
       var n = 0
       var p = pos
-      while p < bufEnd && bytes(p) == Space do { n += 1; p += 1 }
+      while p < bufEnd && cells(p) == Space do { n += 1; p += 1 }
       n
 
     // Tracked variant of `parseMappingValue`. The caller has just appended
@@ -6019,7 +5922,7 @@ object Yaml extends Yaml2, Dynamic:
         pickValueOrNullTracked(parentIndent, childIndent, lineStart, scratch)
       else
         if !isExplicitValue && peek == Minus then
-          val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+          val next = if pos + 1 < bufEnd then cells(pos + 1) else -1
 
           if
             next == Space || next == Tab || next == Newline || next == Return || next == -1
@@ -6055,7 +5958,7 @@ object Yaml extends Yaml2, Dynamic:
         else if childIndent == parentIndent then
           if
             peek == Minus && {
-              val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+              val nb = if pos + 1 < bufEnd then cells(pos + 1) else -1
               nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
             }
           then

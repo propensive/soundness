@@ -3135,13 +3135,17 @@ object Xml extends Tag.Container
       fromChainTracked(Chain.from(input))
 
   private[xylophone] final class XmlParser
-    ( val cursor:               Cursor[Data, ?]^,
-     protected[xylophone] val tracking: Boolean,
-     callback:                  (Ordinal, Hole) ->{caps.any} Unit = (_, _) => (),
-     charOffsets:               Boolean = false )
+    ( cursor1:                           Cursor[Data, ?]^,
+      protected[xylophone] val tracking: Boolean,
+      callback:                          (Ordinal, Hole) ->{caps.any} Unit = (_, _) => (),
+      charOffsets:                       Boolean = false )
     ( using schema: XmlSchema, scope0: Scope, namespacing: Namespacing )
-  extends caps.ExclusiveCapability, caps.Stateful:
+  extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
     type Region = Cursor.Mark
+
+    // The parser-local snapshot (`Cursor.Snapshot`) starts in step with the cursor.
+    cursor0 = cursor1.asInstanceOf[AnyRef]
+    syncFrom()
 
     private var heldToken: Cursor.Held | Null = null
 
@@ -3264,43 +3268,11 @@ object Xml extends Tag.Container
     // `XmlParser.fromText/Iterator(Tracked)` callers.
     protected[xylophone] var rootIndex: Array[Int]^{} | Null = null
 
-    // Local-buffer offset up to which `cursor.line` / `cursor.column` have
-    // been brought up to date. The hot-loop `syncTo()` bypasses the
-    // cursor's lineation tracking via `unsafeAdvanceBy`, so the parser
-    // catches lineation up at tracking-mode capture points and before
-    // any refill that would discard consumed bytes.
-    private var lineationPos: Int = cursor.unsafePos(using Unsafe)
-
-    private update def reconcileLineation(): Unit =
-      val end = cursor.unsafePos(using Unsafe)
-
-      if lineationPos < end then
-        var i = lineationPos
-        var newlines = 0
-        var lastNewlineAt = -1
-
-        // Columns count code points, not bytes: a continuation byte adds nothing.
-        var continuations = 0
-
-        while i < end do
-          val b = bytes(i)
-
-          if b == '\n' then
-            newlines += 1
-            lastNewlineAt = i
-            continuations = 0
-          else if Utf8.continuation(b) then
-            continuations += 1
-
-          i += 1
-
-        if newlines > 0 then
-          cursor.unsafeBumpLine(newlines)(using Unsafe)
-          cursor.unsafeSetColumn(end - lastNewlineAt - 1 - continuations)(using Unsafe)
-        else
-          cursor.unsafeBumpColumn(end - lineationPos - continuations)(using Unsafe)
-
-        lineationPos = end
+    // A tracked parse catches the cursor's lineation up before each refill, while the
+    // consumed bytes can still be walked; columns count code points, so continuation bytes
+    // add nothing (`Cursor.Snapshot`).
+    protected update def reconcile(): Unit = if tracking then reconcileUtf8()
+    protected update def resynced(): Unit = ()
 
     // Assemble an element descriptor in `out`. `attrDescs` and `attrEnds`
     // hold attribute descriptors back-to-back and their end positions
@@ -3355,62 +3327,6 @@ object Xml extends Tag.Container
       out ++= childDescs
       out(sizeSlot) = out.length - sizeSlot
 
-    // ─── parser-local snapshot of the cursor's buffer / position ───────────
-    //
-    // The cursor remains the source of truth at refill, mark, slice and
-    // error points, but for the per-char hot loops (`peek`, `advance`,
-    // `more`) the parser maintains its own snapshot of the current buffer
-    // reference, read position, and write end. Keeping all three as parser
-    // fields rather than re-reading them through cursor accessors on every
-    // char lets the JIT keep them in registers across long inner loops —
-    // the same trick Jacinta uses for its tight number / string scans.
-    //
-    // Invariant: between `syncTo()` and `syncFrom()` calls, `pos` is the
-    // authoritative read position; `cursor.unsafePos` is allowed to lag.
-    // Whenever a cursor operation that depends on `pos` is performed
-    // (refill via `more`'s slow path, mark, slice, error reporting,
-    // backtracking via `cue`) the parser pushes `pos` to the cursor first,
-    // then refreshes its snapshot from the cursor afterwards — refill may
-    // compact the buffer, reallocate it, or reset `pos`.
-    // Held as an `AnyRef` field with an exclusive-view accessor (the `Tel.Reader.parser0`
-    // pattern): a typed array field's snapshot of the cursor's buffer trips both the
-    // classifier and the consume checks.
-    // [cursor-snapshot] parser's AnyRef snapshot of cursor buffer
-    @scala.caps.unsafe.untrackedCaptures
-    private var bytes0: AnyRef = cursor.unsafeDataBuffer(using Unsafe).asInstanceOf[AnyRef]
-
-    private inline def bytes: scala.Array[Byte]^ = bytes0.asInstanceOf[scala.Array[Byte]^]
-    private var pos:    Int = cursor.unsafePos(using Unsafe)
-    private var bufEnd: Int = cursor.unsafeWriteEnd(using Unsafe)
-
-    private inline update def syncTo(): Unit =
-      cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
-
-    private inline update def syncFrom(): Unit =
-      bytes0 = cursor.unsafeDataBuffer(using Unsafe).asInstanceOf[AnyRef]
-      pos    = cursor.unsafePos(using Unsafe)
-      bufEnd = cursor.unsafeWriteEnd(using Unsafe)
-      lineationPos = pos
-
-    protected inline update def more: Boolean = pos < bufEnd || moreSlow()
-
-    // Out-of-line slow path so `more`'s inline budget stays small enough
-    // for the JIT to keep `pos < bufEnd` as one register comparison in
-    // hot loops. In tracking mode, lineation is reconciled and the
-    // parser-local `pos` is re-anchored even on EOF so that the next
-    // `cursor.position` read reflects the compacted buffer's basePos.
-    private update def moreSlow(): Boolean =
-      syncTo()
-      if tracking then reconcileLineation()
-
-      if cursor.more then { syncFrom(); true }
-      else
-        if tracking then syncFrom()
-        false
-
-    protected inline def peek: Byte = bytes(pos)
-    protected inline update def advance(): Unit = pos += 1
-
     // The current byte for an error message: an ASCII byte as itself, a multi-byte
     // sequence as its code point's first char, and a malformed one as U+FFFD.
     protected update def peekChar: Char =
@@ -3419,7 +3335,7 @@ object Xml extends Tag.Container
       if b >= 0 then b.toChar
       else
         ensureAvailable(4)
-        val point = Utf8.point(bytes, pos, bufEnd)
+        val point = Utf8.point(cells, pos, bufEnd)
         if point < 0 then '\ufffd' else Character.toChars(point).nn(0)
 
     // Makes at least `n` bytes available from the current position, unless the input ends
@@ -3429,7 +3345,7 @@ object Xml extends Tag.Container
     private update def ensureAvailable(n: Int): Unit =
       if pos + n > bufEnd then
         syncTo()
-        if tracking then reconcileLineation()
+        if tracking then reconcileUtf8()
         val mark = cursor.mark(using heldToken.nn)
         var steps = 0
 
@@ -3444,13 +3360,7 @@ object Xml extends Tag.Container
     // holding the first stop byte (or fewer than eight bytes from the buffer's end) for the
     // byte-by-byte loop that follows to examine.
     private inline update def skipWords(inline clear: Long => Boolean): Unit =
-      while pos + 8 <= bufEnd && clear(Words.load(bytes, pos)) do pos += 8
-
-    // Not `inline`: nested inside another inline update method's expansion, the parser's `this`
-    // is bound as a read-only proxy, and the cursor sync in `syncTo` is then rejected.
-    protected update def position: Int =
-      syncTo()
-      cursor.position.n0
+      while pos + 8 <= bufEnd && clear(Words.load(cells, pos)) do pos += 8
 
     // Non-`inline` so that `cursor.mark`'s expansion is emitted once in its
     // own method rather than re-expanded into every call site, keeping
@@ -3521,7 +3431,7 @@ object Xml extends Tag.Container
       var i = 0
 
       while i < pos do
-        val b = bytes(i)
+        val b = cells(i)
 
         if b == '\n' then
           line += 1
@@ -3543,7 +3453,7 @@ object Xml extends Tag.Container
           var j = 0
 
           while j < byteOffset do
-            val b = bytes(j)
+            val b = cells(j)
             // A four-byte sequence is a surrogate pair: two chars.
             if !Utf8.continuation(b) then count += (if (b & 0xf8) == 0xf0 then 2 else 1)
             j += 1
@@ -3578,7 +3488,7 @@ object Xml extends Tag.Container
     // it does not, or is malformed or incomplete at the end of the input.
     private update def nameWidth(start: Boolean): Int =
       ensureAvailable(4)
-      val point = Utf8.point(bytes, pos, bufEnd)
+      val point = Utf8.point(cells, pos, bufEnd)
 
       val named =
         point >= 0 &&
@@ -3783,7 +3693,7 @@ object Xml extends Tag.Container
             // we report it but include U+0000 in the value text so the
             // macro post-processor can locate it.
             appendSlice(segStart, buf)
-            callback(position.z, Hole.Attribute(tag, t""))
+            callback(position.toInt.z, Hole.Attribute(tag, t""))
             buf.append('\u0000')
             advance()
             segStart = begin()
@@ -3830,7 +3740,7 @@ object Xml extends Tag.Container
 
         if ch == '>' || ch == '/' || ch == '?' then done = true
         else if ch == '\u0000' then
-          callback(position.z, Hole.Tagbody)
+          callback(position.toInt.z, Hole.Tagbody)
           advance()
           skipWs()
           ensureCapacity()
@@ -3863,7 +3773,7 @@ object Xml extends Tag.Container
 
           val value =
             if q == '\u0000' then
-              callback(position.z, Hole.Attribute(tag, key))
+              callback(position.toInt.z, Hole.Attribute(tag, key))
               advance()
               t"\u0000"
             else if q == '"' || q == '\'' then
@@ -3933,7 +3843,7 @@ object Xml extends Tag.Container
             else if c == '\u0000' then
               if buf == null then buf = jl.StringBuilder()
               appendSlice(segStart, buf.nn)
-              callback(position.z, Hole.Node(parentLabel))
+              callback(position.toInt.z, Hole.Node(parentLabel))
               buf.nn.append('\u0000')
               advance()
               segStart = begin()
@@ -4102,7 +4012,7 @@ object Xml extends Tag.Container
     protected update def readElement()(using Tactic[Parse.Error]): Element =
       // Detect `<\u0000` (macro element hole)
       if more && peek == '\u0000' then
-        callback(position.z, Hole.Element(t""))
+        callback(position.toInt.z, Hole.Element(t""))
         advance()
         if !more then fail(Issue.ExpectedMore)
         if peek != '>' then fail(Issue.Unexpected(peekChar))
@@ -4233,7 +4143,7 @@ object Xml extends Tag.Container
           if text.length > 0 then nodes += Text(text)
         else
           syncTo()
-          reconcileLineation()
+          reconcileUtf8()
           val startLine = cursor.line.n0
           val startColumn = cursor.column.n0
           val startMark = cursor.position.n0.toLong
@@ -4300,7 +4210,7 @@ object Xml extends Tag.Container
       // Macro element holes can't carry meaningful positions; emit an empty
       // attribute / child set and a zero-length descriptor.
       if more && peek == '\u0000' then
-        callback(position.z, Hole.Element(t""))
+        callback(position.toInt.z, Hole.Element(t""))
         advance()
         if !more then fail(Issue.ExpectedMore)
         if peek != '>' then fail(Issue.Unexpected(peekChar))
@@ -4382,7 +4292,7 @@ object Xml extends Tag.Container
 
         if ch == '>' || ch == '/' || ch == '?' then done = true
         else if ch == '\u0000' then
-          callback(position.z, Hole.Tagbody)
+          callback(position.toInt.z, Hole.Tagbody)
           advance()
           skipWs()
           ensureCapacity()
@@ -4392,7 +4302,7 @@ object Xml extends Tag.Container
         else
           // Capture attribute start position before reading the name.
           syncTo()
-          reconcileLineation()
+          reconcileUtf8()
           val attrLine = cursor.line.n0
           val attrColumn = cursor.column.n0
           val attrStartMark = cursor.position.n0.toLong
@@ -4422,7 +4332,7 @@ object Xml extends Tag.Container
 
           val value =
             if q == '\u0000' then
-              callback(position.z, Hole.Attribute(tag, key))
+              callback(position.toInt.z, Hole.Attribute(tag, key))
               advance()
               t"\u0000"
             else if q == '"' || q == '\'' then
@@ -4470,7 +4380,7 @@ object Xml extends Tag.Container
           // child element. Non-element branches (comment, CDATA, PI, close)
           // simply ignore the captured values.
           syncTo()
-          reconcileLineation()
+          reconcileUtf8()
           val childLine = cursor.line.n0
           val childColumn = cursor.column.n0
           val childStartMark = cursor.position.n0.toLong

@@ -3076,3 +3076,83 @@ classifier. Now:
   classified the variable `Durable` and rejected the block's capture of its own task's tactic.
 - Verified against the scratch fork build before release: the whole tree and every test suite
   compile, the 635-file upstream captures corpus is unchanged, and the probes pass.
+
+## Inline traits: `Cursor.Snapshot` and what the feature does under cc (2026-10-17)
+
+Scala 3.10's inline traits (`-language:experimental.inlineTraits`, Pre-SIP scala/scala3#26156)
+are in the pinned proscala. Assessed against the tree; the one genuine job for them is the
+parser-local cursor snapshot — the `bytes`/`pos`/`bufEnd` + `syncTo`/`syncFrom`/`more`/
+`moreSlow`/`peek`/`advance` block that jacinta, honeycomb, xylophone, stratiform, ypsiloid,
+locomotion and breviloquence each wrote out by hand (40–80 lines apiece, in four textual
+styles) because an ordinary trait's `Array[operand]` field erases to `Object`. It is now
+`zephyrine.Cursor.Snapshot[medium, operand]`, copied into each parser: jacinta's `Parser` has a
+`private byte[] cells` and 194 `baload`s, honeycomb's a `char[]` and `caload`s (`javap`).
+
+What the spike (eight probes under zephyrine's exact flags, `-Ycc-new` + separation checking,
+`-Yno-predef -Yimports:java.lang,proscenium`) established, and what the tree now relies on:
+
+- An inline trait extended by a **named** class compiles under capture and separation
+  checking, with `update def` members (the trait must `extends caps.Stateful`),
+  `@caps.unsafe.untrackedCaptures` on a copied field, `inline update def` members calling a
+  `private` non-inline slow path, and `inline erasedValue[operand] match` inside its inline
+  members. The body is copied from TASTy: a consumer module needs no language flag.
+- `T: Specialized` works in the same setting and the call through the trait type goes
+  through the `$sp$` interface unboxed (`Cell$$sp$scala$Int.get:()I` + `iadd`) — but only for
+  named receivers. The anonymous form `new Cell[T](x) {}` (the `$impl$` class) fails under
+  `-language:experimental.captureChecking` with "object creation impossible, since def get is
+  not defined"; it is fine without cc. Nothing in the tree uses it.
+- ★ **An inline trait's own calls to a member the receiver overrides bind to the trait's copy,
+  not to the override.** An overridden member is inlined under a mangled name
+  (`zephyrine$Cursor$Snapshot$$syncFrom`) and the copied body's calls follow it there
+  (`invokespecial`), while calls to non-overridden members dispatch normally. So the
+  "overridable hook with a default body" pattern is silently dead: jacinta's `reconcile`
+  override was never reached from the copied `moreSlow` (its tests passed because capture
+  points reconcile too; locomotion's `syncFrom` override lost `relimit()` on the refill path
+  and three chunk-straddling reads failed). Overriding `moreSlow` instead does not help
+  either: the trait's `inline update def more` expands at the parser's call sites to a call
+  of the trait's *copy* of `moreSlow` (through an `inline$` accessor), so the override is
+  reached only from the parser's own direct calls. The hooks are therefore **abstract**
+  (`reconcile()` before a refill, `resynced()` after every `syncFrom()`) — nothing to bind
+  to, and the compiler makes every parser implement them — and no parser overrides any other
+  member. Any future member of `Snapshot` that a parser might vary must be abstract, or the
+  parser must accept that the trait will not see the override.
+- A wildcard capture set as a type argument to an inline trait (`Snapshot[Data, Byte, ?]`,
+  honeycomb's and xylophone's `Cursor[…, ?]^`) crashes `SepCheck` (`assertion failed: NoType`
+  in `TypeBounds`). The trait took no capture parameter in the end: every parser reaches its
+  cursor through the untracked `AnyRef` carrier, which has already erased the loader's
+  capture from the checker's view, so the view is `Cursor[medium, {}]^` for all of them.
+- `tracked val` parameters do not survive the copy usefully: the receiver's argument is
+  reported as "needs `override`", and the copied body's `addressable.Storage` is a different
+  path from the receiver's. This, with the fact that inline members are *deleted from the
+  interface* (every `Cursor[Data, {}]^`-typed consumer would lose `more`/`advance`/`seek`),
+  is why `Cursor` itself is not an inline trait, and why specialising it would need
+  `Operand` as a type parameter and a factory redesign — deferred.
+- `protected` members of the trait are not reachable from the receiver's companion object
+  (`CborParser`'s driver reads `parser.more`/`parser.position`), so those two are public.
+- An inline match on the *medium* type cannot see an opaque `Text` argument
+  (`erasedValue[data] match case _: Text` falls through, even past `_: AnyRef`); dispatch on
+  `addressable.Operand` (`Byte`/`Char`) instead — which is how a single `peek` can serve
+  both media.
+- Name shadowing: an explicit `import zephyrine.*` outranks a same-package definition in
+  another file, so a trait named `Substrate` in a spike package was silently the zephyrine
+  enum. The snapshot's array is `cells` (not `bytes`, since honeycomb's are chars, and not
+  `buffer`, which every parser already uses for locals that would have captured the rename).
+
+Where else the feature would pay, assessed and left for their own tasks: symbolism's
+runtime-dispatched arithmetic and `Comparable` instances behind mosquito's `Vector`/`Matrix`
+and `rudiments.sorting`/`SortAlgorithm` (the documented `Vec[T: {Specialized, Numeric}]`
+case); one growable primitive array behind pneumatic `ByteSink`, the remaining
+`ArrayBuffer[Byte|Int|Long|Boolean]` uses and concordance `Scribe`; hypotenuse's 24 hand-
+expanded `CheckOverflow` objects (a template, not a speed win — and `Widening`'s nested
+objects cannot move, inline traits forbid inner classes). Not a job for it: the `@targetName`
+`peek`/`expect` pairs, the `Lineation` pairs and the three boxed `Addressable` instances,
+which are ordinary refactors.
+
+PERF GUARD check (the one DECISIONS asks for when the snapshot's shape changes): `make
+bench.jacinta` on this branch twice against `origin/main` once, same machine. The copied body
+reads `cells`/`pos` through the receiver's trivial `inline$` accessors rather than `getfield`;
+the JIT inlines them, and the numbers say so — no Merino row is consistently worse. Run-to-run
+noise here is ±10–25% (rival rows that touch none of our code swing that much between the two
+branch runs), so only the consistent deltas mean anything: "Scan all tokens" 10.2/10.5 µs vs
+12.7, "Parse example 6 (Full / Bcd)" 35.9/36.2 µs vs 48.5, the tracked parse 65.4/65.3 µs vs
+64.1 (+2%, the one row that now reconciles lineation through the trait's `reconcile`).

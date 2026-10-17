@@ -34,6 +34,8 @@ package zephyrine
 
 import scala.annotation.targetName
 import scala.caps
+import scala.compiletime
+import scala.compiletime.erasedValue
 
 import anticipation.Data
 import anticipation.Text
@@ -130,6 +132,180 @@ object Cursor:
           if found < 0 then index += shifts.readUnchecked(probe & 0xff)
 
         found
+
+  // ─── parser-local snapshot ────────────────────────────────────────────────
+  //
+  // The fields and the sync protocol a fast parser keeps beside its cursor. The cursor
+  // remains the source of truth at refill, mark, slice and error points, but for the
+  // per-element hot loops (`peek`, `advance`, `more`) the parser holds its own copy of the
+  // buffer reference, read position and write end: plain fields the JIT keeps in registers
+  // across tight scans, where re-reading them through the cursor's accessors would not.
+  // Reads of `cells` are direct array loads — a `byte[]` or a `char[]`, never the erased
+  // `Object` that `addressable.storageAddress` returns (see `unsafeBuffer`).
+  //
+  // Invariant: between `syncTo()` and `syncFrom()`, `pos` is the authoritative read
+  // position and `cursor.unsafePos` may lag. Every cursor operation that consults the
+  // position (a refill through `more`'s slow path, mark, slice, cue, error reporting) is
+  // preceded by `syncTo()` and, if it may compact, grow or adopt a buffer, followed by
+  // `syncFrom()`.
+  //
+  // An inline trait: its body is copied into each parser with `operand` substituted, so a
+  // parser extending `Snapshot[Data, Byte]` gets a `byte[]` field and `baload`s, and one
+  // extending `Snapshot[Text, Char]` a `char[]` field and `caload`s — the specialisation
+  // an ordinary trait cannot express, since its members erase to `Object`. The parser is
+  // the receiver: `this` in the copied body is the parser, so the fields are the parser's
+  // own, exactly as when each parser wrote them out by hand. A consumer needs no language
+  // flag: the body travels in zephyrine's TASTy.
+  //
+  // The cursor is held as a neutral `AnyRef` with an exclusive-view accessor, so the
+  // parser's own methods are not hidden by an exclusive-typed field (the `Tel.Reader.parser0`
+  // pattern), and so a pooled parser can re-point it at each reset. The view's capture set is
+  // empty whatever the cursor's loader captured: the neutral carrier has already erased it
+  // from the checker's view, so the parser is the audited point of confinement. (A capture
+  // parameter in its place — `Snapshot[Data, Byte, ?]` — crashes the separation checker.)
+  inline trait Snapshot[medium, operand] extends caps.Stateful:
+    // [registry-lifetime] cast-erased AnyRef cursor handle in parser
+    @caps.unsafe.untrackedCaptures
+    protected var cursor0: AnyRef = null.asInstanceOf[AnyRef]
+
+    protected inline def cursor: Cursor[medium, {}]^ = cursor0.asInstanceOf[Cursor[medium, {}]^]
+
+    // [cursor-snapshot] parser's snapshot of cursor buffer
+    @caps.unsafe.untrackedCaptures
+    protected var cells:  scala.Array[operand] = null.asInstanceOf[scala.Array[operand]]
+
+    protected var pos:    Int = 0
+    protected var bufEnd: Int = 0
+
+    // The absolute stream offset of `cells(0)`, re-anchored by every `syncFrom()`, so that
+    // `position` survives compaction.
+    protected var base: Long = 0L
+
+    // The offset up to which the cursor's line and column are current: the hot loop
+    // advances `pos` without lineation (`syncTo`), and the `reconcile…` methods catch the
+    // cursor up from here at each capture point, and before a refill discards the elements.
+    protected var lineationPos: Int = 0
+
+    // The absolute stream offset of the next element: the position every error reports.
+    // Public, as `more` is: a parser's driver asks both of a finished parse.
+    inline def position: Long = base + pos
+
+    // Push the parser's `pos` back to the cursor, before any cursor operation that
+    // consults it. Zero-branch on the hot path; a tracked parse reconciles lineation
+    // separately.
+    protected update def syncTo(): Unit =
+      cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
+
+    // Refresh the snapshot from the cursor, after any cursor operation that may have
+    // changed the buffer reference, the read position or the write end. Not inline: a
+    // field assignment expanded from an inline method trips the separation checker's
+    // provenance rule, and this is a slow path.
+    protected update def syncFrom(): Unit =
+      cells  = cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[operand]]
+      pos    = cursor.unsafePos(using Unsafe)
+      bufEnd = cursor.unsafeWriteEnd(using Unsafe)
+      base   = cursor.position.n0.toLong - pos
+      lineationPos = pos
+      resynced()
+
+    // Called after every `syncFrom()`: a parser that derives anything from the buffer's scale
+    // (a window's end relative to `cells(0)`, say) re-derives it here; one that does not
+    // implements it as `()`. Abstract for the reason `reconcile` is.
+    protected update def resynced(): Unit
+
+    // Called before every refill, after `syncTo()`: a parser that tracks positions
+    // reconciles the cursor's lineation here, while the consumed elements can still be
+    // walked; one that does not implements it as `()`. Abstract, deliberately: the copied
+    // body's calls to a member the receiver *overrides* bind to the trait's own copy of it,
+    // not to the override (an overridden member is inlined under a mangled name, and the
+    // trait's calls follow it there), so a hook with a default body would never reach the
+    // parser's version. An abstract member has no copy to bind to.
+    protected update def reconcile(): Unit
+
+    // Whether another element is available, refilling from the source if the buffer is
+    // exhausted. The slow path is out of line so the JIT keeps `pos < bufEnd` as one
+    // register comparison in hot loops.
+    inline update def more: Boolean = pos < bufEnd || moreSlow()
+
+    // A snapshot may stand over a whole input with no cursor at all (`cells` is the input's
+    // own array, `cursor0` null): then the input ends at `bufEnd`. A parser in that mode
+    // must guard its own cursor operations the same way.
+    protected update def moreSlow(): Boolean = if cursor0 == null then false else
+      syncTo()
+      reconcile()
+      val hasMore = cursor.more
+      // Re-anchored even at the end of the input: a compaction has changed the buffer's
+      // scale, which a later `position` read must reflect.
+      syncFrom()
+      hasMore
+
+    protected inline def peek: operand = cells(pos)
+    protected inline update def advance(): Unit = pos += 1
+
+    // Catch the cursor's line and column up to `pos`, one column per element.
+    protected inline update def reconcileLineation(): Unit =
+      inline erasedValue[operand] match
+        case _: Byte => reconcileBytes(false)
+        case _: Char => reconcileChars(false)
+
+    // As `reconcileLineation`, counting UTF-8 code points: a continuation byte adds no
+    // column.
+    protected inline update def reconcileUtf8(): Unit = reconcileBytes(true)
+
+    // As `reconcileLineation`, counting UTF-16 code points: a low surrogate adds no column.
+    protected inline update def reconcileUtf16(): Unit = reconcileChars(true)
+
+    private update def reconcileBytes(utf8: Boolean): Unit =
+      val end = pos
+
+      if lineationPos < end then
+        val bytes = cells.asInstanceOf[scala.Array[Byte]]
+        var newlines = 0
+        var lastNewlineAt = -1
+        var skipped = 0
+
+        (lineationPos.z till end.z).each: index =>
+          val byte = bytes(index.n0)
+
+          if byte == '\n' then
+            newlines += 1
+            lastNewlineAt = index.n0
+            skipped = 0
+          else if utf8 && Utf8.continuation(byte) then skipped += 1
+
+        bumpLineation(end, newlines, lastNewlineAt, skipped)
+
+    private update def reconcileChars(utf16: Boolean): Unit =
+      val end = pos
+
+      if lineationPos < end then
+        val chars = cells.asInstanceOf[scala.Array[Char]]
+        var newlines = 0
+        var lastNewlineAt = -1
+        var skipped = 0
+
+        (lineationPos.z till end.z).each: index =>
+          val char = chars(index.n0)
+
+          if char == '\n' then
+            newlines += 1
+            lastNewlineAt = index.n0
+            skipped = 0
+          else if utf16 && Character.isLowSurrogate(char) then skipped += 1
+
+        bumpLineation(end, newlines, lastNewlineAt, skipped)
+
+    // Lineation caught up to `end`: `newlines` lines, and the elements since the last
+    // newline (or since `lineationPos`) as columns, less the `skipped` ones that add none.
+    private update def bumpLineation(end: Int, newlines: Int, lastNewlineAt: Int, skipped: Int)
+    :   Unit =
+
+      if newlines > 0 then
+        cursor.unsafeBumpLine(newlines)(using Unsafe)
+        cursor.unsafeSetColumn(end - lastNewlineAt - 1 - skipped)(using Unsafe)
+      else cursor.unsafeBumpColumn(end - lineationPos - skipped)(using Unsafe)
+
+      lineationPos = end
 
   object Mark:
     final val Initial: Mark = 0L
@@ -377,50 +553,41 @@ object Cursor:
   // is deliberately distinct from raw `Int` so that arithmetic or
   // `Byte`/`Char` confusion can't happen silently — comparison with the
   // expected literal is via the dedicated `Datum.==` overloads, which still
-  // compile to a single `int == int`. Two extensions disambiguated by
-  // `@targetName` (they erase to the same JVM signature) — callers just
-  // write `cursor.peek` without caring whether the cursor is byte- or
-  // char-based.
-  extension [cap^](cursor: Cursor[Data, cap])
-    @targetName("peekByte")
+  // compile to a single `int == int`. One definition serves both media,
+  // selected at compile time: a `Data` cursor by its medium, and a `Text`
+  // cursor — whose opaque type argument an inline match cannot see — by the
+  // `Operand` of the medium's `Addressable`, summoned at the call site where
+  // it is the concrete `text` instance. (The medium comes first because a
+  // call site inside a `Stream` body sees the stream's own `addressable`
+  // member, whose unrefined type would not reduce.)
+  extension [data, cap^](cursor: Cursor[data, cap])(using addressable: data is Addressable)
     inline def peek: Datum =
       if cursor.finished then Datum.End
-      else
-        val buffer = cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Byte]]
-        Datum.fromRaw(buffer(cursor.unsafePos(using Unsafe)) & 0xff)
+      else inline erasedValue[data] match
+        case _: Data =>
+          val buffer = cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Byte]]
+          Datum.fromRaw(buffer(cursor.unsafePos(using Unsafe)) & 0xff)
 
-  extension [cap^](cursor: Cursor[Text, cap])
-    @targetName("peekChar")
-    inline def peek: Datum =
-      if cursor.finished then Datum.End
-      else
-        val buffer = cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Char]]
-        Datum.fromRaw(buffer(cursor.unsafePos(using Unsafe)).toInt)
+        case _ => inline erasedValue[addressable.Operand] match
+          case _: Char =>
+            val buffer = cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Char]]
+            Datum.fromRaw(buffer(cursor.unsafePos(using Unsafe)).toInt)
 
-  // Match the cursor's current operand against `target`. On a match, advance
-  // past it; on a mismatch (or EOF), raise `failure` via the ambient
-  // `Tactic`. Replaces the hand-rolled `if cursor.peek != X then raise(…);
-  // cursor.next()` pair that every header / framer parser was writing. The
-  // target is `Char` for both variants so callers don't need `'X'.toByte`
-  // on `Cursor[Data]`; for ASCII targets the `Datum`-vs-`Char` comparison
-  // compiles to a single primitive `int == int`.
-  //
-  // The match consumes with `advance()`, not `next()`: `peek` has already
-  // confirmed the operand is present, and `next()`'s trailing `more` would
-  // force a blocking refill for the byte *after* the match — fatal when
-  // `expect` consumes the final delimiter of a message on a keep-alive
-  // stream whose peer sends nothing more until we reply (issue #1301).
-  extension [cap^](cursor: Cursor[Data, cap])
-    @targetName("expectByte")
-    inline def expect[error <: Hazard](target: Char)
-      ( inline failure: Diagnostics ?=> error )
-      ( using Tactic[error] )
-    :   Unit =
+          case _ => compiletime.error("peek is defined only for byte and char cursors")
 
-      if cursor.peek == target then cursor.advance() else raise(failure)
-
-  extension [cap^](cursor: Cursor[Text, cap])
-    @targetName("expectChar")
+    // Match the cursor's current operand against `target`. On a match, advance
+    // past it; on a mismatch (or EOF), raise `failure` via the ambient
+    // `Tactic`. Replaces the hand-rolled `if cursor.peek != X then raise(…);
+    // cursor.next()` pair that every header / framer parser was writing. The
+    // target is `Char` for both media so callers don't need `'X'.toByte`
+    // on `Cursor[Data]`; for ASCII targets the `Datum`-vs-`Char` comparison
+    // compiles to a single primitive `int == int`.
+    //
+    // The match consumes with `advance()`, not `next()`: `peek` has already
+    // confirmed the operand is present, and `next()`'s trailing `more` would
+    // force a blocking refill for the byte *after* the match — fatal when
+    // `expect` consumes the final delimiter of a message on a keep-alive
+    // stream whose peer sends nothing more until we reply (issue #1301).
     inline def expect[error <: Hazard](target: Char)
       ( inline failure: Diagnostics ?=> error )
       ( using Tactic[error] )
@@ -564,6 +731,10 @@ extends caps.Mutable:
   // concrete type at the field boundary, and the parser-side hot loops
   // would otherwise pay an `invokeinterface` on every character advance.
   private val lineationActive: Boolean = lineation.active
+
+  // Cached for the same reason: `seek` selects its scan by the medium once per call, not by
+  // an interface dispatch per element.
+  private val substrate: Substrate = addressable.substrate
 
   // Parallel arrays (not deques) of unboxed `Long`-typed `Mark` and `Offset`
   // values for the currently-held region. Using `Array[Long]` rather than
@@ -906,7 +1077,48 @@ extends caps.Mutable:
   // current operand not yet loaded. Reading `datum` before a refill would
   // then see stale storage. Stopping on a match performs no further refill,
   // so `seek` never reads past the operand it finds.
-  inline update def seek(target: addressable.Operand): Boolean =
+  // The target arrives through the erased `Operand` (every caller's `cursor.addressable.Operand`
+  // is abstract, so callers write `Lf.toByte.asInstanceOf[cursor.addressable.Operand]` — a
+  // boxed `Byte`, whatever the medium), so it is unboxed once here and each element is
+  // compared at the primitive type from the concrete array; through
+  // `addressable.storageAddress` the comparison would box every element (see `unsafeBuffer`).
+  // A target of the other primitive type compares as the boxed equality it replaces did: by
+  // numeric value, so a byte matches the ASCII char of the same value and nothing else.
+  // Boxed media compare as references.
+  update def seek(target: addressable.Operand): Boolean = substrate match
+    case Substrate.Bytes => (target: Any) match
+      case byte: Byte => seekByte(byte)
+      case char: Char => char <= 127 && seekByte(char.toByte)
+      case other      => seekBoxed(target)
+
+    case Substrate.Chars => (target: Any) match
+      case char: Char => seekChar(char)
+      case byte: Byte => byte >= 0 && seekChar(byte.toChar)
+      case other      => seekBoxed(target)
+
+    case Substrate.Boxes => seekBoxed(target)
+
+  private update def seekByte(target: Byte): Boolean =
+    var found = false
+    var continue = more
+
+    while continue do
+      found = buffer.asInstanceOf[scala.Array[Byte]](pos) == target
+      continue = !found && next()
+
+    found
+
+  private update def seekChar(target: Char): Boolean =
+    var found = false
+    var continue = more
+
+    while continue do
+      found = buffer.asInstanceOf[scala.Array[Char]](pos) == target
+      continue = !found && next()
+
+    found
+
+  private update def seekBoxed(target: addressable.Operand): Boolean =
     var found = false
     var continue = more
 

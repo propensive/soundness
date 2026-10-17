@@ -224,18 +224,14 @@ private[jacinta] object Parser:
 // through its direct rim — but acquiring the instance behind a live read is
 // sealed inside `Json.Reader.rawParser`, which only jacinta's own generated
 // splices can reach; the pool and every reset entry point remain private.
-final class Parser extends caps.ExclusiveCapability, caps.Stateful:
+final class Parser
+extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   import scala.annotation.switch
   import scala.collection.mutable.ArrayBuffer
   import Json.Ast.AsciiByte.*
   import Json.Ast.{Issue, Position}
 
   import Parser.*
-
-  // Parser-local snapshot (see comment above).
-  private var bytes:  scala.Array[Byte] = null.asInstanceOf[scala.Array[Byte]]
-  private var pos:    Int = 0
-  private var bufEnd: Int = 0
 
   protected[jacinta] var holes: Boolean = false
 
@@ -267,14 +263,6 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // call when `tracking` was on. Reset to `null` at the start of every parse.
   protected[jacinta] var rootIndex: Array[Int]^{} | Null = null
 
-  // Local-buffer offset up to which `cursor.lineNo` / `cursor.columnNo`
-  // have been brought up to date. The hot-loop `syncTo()` bypasses the
-  // cursor's lineation tracking via `unsafeAdvanceBy`, so the parser
-  // keeps track of how far ahead `cursor.pos` has been pushed and
-  // catches lineation up here only at tracking-mode capture points and
-  // before any refill discards consumed bytes.
-  private var lineationPos: Int = 0
-
   // Small open-addressed cache of recently-seen object keys. Index is
   // `hash & (KeyCacheSize - 1)`; on a hash collision the existing entry is
   // overwritten. Persisted across parses (per-thread, since the parser
@@ -288,7 +276,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // < 32), every distinct ASCII key produces a distinct (low, high) pair.
   // Lookup is then a pair of Long equality checks — *no* byte-by-byte
   // comparison, and *no* hash-collision false positives. Keys longer than
-  // 16 bytes (rare for typical record-shape JSON) bypass the cache and
+  // 16 cells (rare for typical record-shape JSON) bypass the cache and
   // allocate normally.
   private inline val KeyCacheSize = 256
   private inline val KeyCacheMaxBytes = 16
@@ -300,11 +288,11 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     if tracking then
       import zephyrine.lineation.linefeedByte
       val fresh = Cursor[Data](input)
-      cursor = fresh
+      cursor0 = fresh.asInstanceOf[AnyRef]
     else
       import Lineation.untrackedData
       val fresh = Cursor[Data](input)
-      cursor = fresh
+      cursor0 = fresh.asInstanceOf[AnyRef]
 
     syncFrom()
     stringCursor = 0
@@ -318,11 +306,11 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     if tracking then
       import zephyrine.lineation.linefeedByte
       val fresh = Cursor[Data](input)
-      cursor = fresh
+      cursor0 = fresh.asInstanceOf[AnyRef]
     else
       import Lineation.untrackedData
       val fresh = Cursor[Data](input)
-      cursor = fresh
+      cursor0 = fresh.asInstanceOf[AnyRef]
 
     syncFrom()
     stringCursor = 0
@@ -336,11 +324,11 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     if tracking then
       import zephyrine.lineation.linefeedByte
       val fresh = Cursor[Data](input)
-      cursor = fresh
+      cursor0 = fresh.asInstanceOf[AnyRef]
     else
       import Lineation.untrackedData
       val fresh = Cursor[Data](input)
-      cursor = fresh
+      cursor0 = fresh.asInstanceOf[AnyRef]
 
     syncFrom()
     stringCursor = 0
@@ -368,119 +356,10 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     val current = cursor
     current.position.n0.toLong
 
-  // Push the parser's local `pos` back to the cursor. Required before any
-  // cursor operation that consults `pos` (mark, slice, refill, position).
-  // This must stay zero-branch on the hot path; tracking-mode callers
-  // separately invoke `reconcileLineation()` when they need accurate
-  // `cursor.line` / `cursor.column`.
-  private update def syncTo(): Unit =
-    val parserPos = pos
-    val current = cursor
-    current.unsafeAdvanceBy(parserPos - current.unsafePos(using Unsafe))(using Unsafe)
-
-  // Walk the buffer bytes between the last lineation-reconciled position
-  // and `cursor.unsafePos`, bumping `cursor.lineNo` / `cursor.columnNo`
-  // accordingly. Called at tracking-mode capture points (`parseValue`,
-  // `parseObject`) and before any refill in `moreSlow()` so that
-  // consumed bytes are accounted for before they're discarded.
-  private update def reconcileLineation(): Unit =
-    // The cursor work is block-scoped: binding an exclusive cursor read (explicitly, or
-    // via an inline method's synthesized receiver proxy) hides this parser's own
-    // capability for as long as the binder is visible, so parser state may not be
-    // touched afterwards in the same scope (cap-parameterized classes only — see
-    // rep/DECISIONS.md). Parser state is read before the block and written after it.
-    val startPos = lineationPos
-    val snapshot = bytes
-
-    val end =
-      locally:
-        val current = cursor
-        val end0 = current.unsafePos(using Unsafe)
-
-        if startPos < end0 then
-          var i = startPos
-          var newlines = 0
-          var lastNewlineAt = -1
-
-          while i < end0 do
-            if snapshot(i) == Newline then
-              newlines += 1
-              lastNewlineAt = i
-
-            i += 1
-
-          if newlines > 0 then
-            current.unsafeBumpLine(newlines)(using Unsafe)
-            current.unsafeSetColumn(end0 - lastNewlineAt - 1)(using Unsafe)
-          else
-            current.unsafeBumpColumn(end0 - startPos)(using Unsafe)
-
-        end0
-
-    if startPos < end then lineationPos = end
-
-  // Refresh the parser's snapshot from the cursor. Required after any
-  // cursor operation that may have changed the buffer reference, the read
-  // position, or the write end (refill, cue).
-  //
-  // `lineationPos` is re-anchored to the cursor's current position because
-  // refill compacts the buffer (bytes 0..old-pos are discarded; subsequent
-  // walks would read different data).
-  private update def syncFrom(): Unit =
-    // Each cursor read is block-scoped so the parser-field writes that follow stay
-    // legal (see `reconcileLineation`).
-    val snapshot =
-      locally:
-        val current = cursor
-        current.unsafeDataBuffer(using Unsafe)
-
-    val readPos =
-      locally:
-        val current = cursor
-        current.unsafePos(using Unsafe)
-
-    val writeEnd =
-      locally:
-        val current = cursor
-        current.unsafeWriteEnd(using Unsafe)
-
-    bytes  = snapshot
-    pos    = readPos
-    bufEnd = writeEnd
-    lineationPos = readPos
-
-  protected update def more: Boolean = pos < bufEnd || moreSlow()
-
-  // Out-of-line slow path so the inline budget for `more` stays small enough
-  // for the JIT to keep `pos < bufEnd` as a single register comparison in
-  // hot loops.
-  //
-  // In tracking mode the parser later reads `cursor.position` to compute
-  // descriptor lengths; if `cursor.refill()` compacts the buffer here we
-  // must re-anchor the parser's local `pos` against the new buffer scale
-  // even when there's no more data, otherwise subsequent `syncTo()` calls
-  // would advance the cursor by a now-stale delta. Lineation also needs
-  // to be reconciled before compaction discards the consumed bytes.
-  private update def moreSlow(): Boolean =
-    locally:
-      syncTo()
-
-    if tracking then reconcileLineation()
-
-    // Block-scoped for the same reason as in `reconcileLineation` above.
-    val hasMore =
-      locally:
-        val current = cursor
-        current.more
-
-    if hasMore then { syncFrom(); true }
-    else
-      if tracking then syncFrom()
-      false
-
-  protected inline update def peek: Byte = bytes(pos)
-
-  protected inline update def advance(): Unit = pos += 1
+  // A tracked parse catches the cursor's lineation up before each refill, while the
+  // consumed bytes can still be walked (`Cursor.Snapshot`).
+  protected update def reconcile(): Unit = if tracking then reconcileLineation()
+  protected update def resynced(): Unit = ()
 
   protected update def errorAt(issue: Issue, start: Optional[Cursor.Mark] = Unset)
     ( using Tactic[Parse.Error] )
@@ -758,14 +637,14 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // closes inside the current window is materialized straight from the
     // local snapshot — no marks, no hold, no cursor sync — scanning eight
     // bytes per step. Falls back (without moving) for escapes, control or
-    // non-ASCII bytes, and the window's end.
+    // non-ASCII cells, and the window's end.
     val start = pos
     val limit = bufEnd
     var i = start
     var scanning = true
 
     while scanning && i <= limit - 8 do
-      val word: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], i)
+      val word: Long = Words.load(cells.asInstanceOf[scala.Array[Byte]], i)
       val stops = stringStops(word)
 
       if stops == 0L then i += 8
@@ -774,10 +653,10 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         scanning = false
 
     if scanning then
-      while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
+      while i < limit && StringScanContinue.readUnchecked(cells(i) & 0xFF) != 0 do i += 1
 
-    if i < limit && bytes(i) == Quote then
-      val out = new String(bytes, start, i - start, java.nio.charset.StandardCharsets.ISO_8859_1)
+    if i < limit && cells(i) == Quote then
+      val out = new String(cells, start, i - start, java.nio.charset.StandardCharsets.ISO_8859_1)
       pos = i + 1
       out
     else
@@ -822,7 +701,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     var scanning = true
 
     while scanning && i <= limit - 8 do
-      val word: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], i)
+      val word: Long = Words.load(cells.asInstanceOf[scala.Array[Byte]], i)
       val stops = stringStops(word)
 
       if stops == 0L then i += 8
@@ -831,14 +710,14 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         scanning = false
 
     if scanning then
-      while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
+      while i < limit && StringScanContinue.readUnchecked(cells(i) & 0xFF) != 0 do i += 1
 
-    if i < limit && bytes(i) == Quote then
+    if i < limit && cells(i) == Quote then
       val length = i - start
 
       if length <= KeyCacheMaxBytes && length > 0 then
-        val packedLow = packBytes(bytes, start, math.min(length, 8))
-        val packedHigh = if length > 8 then packBytes(bytes, start + 8, length - 8) else 0L
+        val packedLow = packBytes(cells, start, math.min(length, 8))
+        val packedHigh = if length > 8 then packBytes(cells, start + 8, length - 8) else 0L
 
         val index = ((packedLow.toInt ^ (packedLow >>> 32).toInt) ^
           (packedHigh.toInt ^ (packedHigh >>> 32).toInt)) & (KeyCacheSize - 1)
@@ -850,14 +729,14 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         then cached
         else
           val fresh =
-            new String(bytes, start, length, java.nio.charset.StandardCharsets.ISO_8859_1)
+            new String(cells, start, length, java.nio.charset.StandardCharsets.ISO_8859_1)
 
           keyCache(index) = fresh
           keyCacheLow(index) = packedLow
           keyCacheHigh(index) = packedHigh
           fresh
       else
-        val out = new String(bytes, start, length, java.nio.charset.StandardCharsets.ISO_8859_1)
+        val out = new String(cells, start, length, java.nio.charset.StandardCharsets.ISO_8859_1)
         pos = i + 1
         out
     else
@@ -1006,11 +885,11 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // byte-by-byte `expect` chain only at a buffer boundary.
     if pos + 5 <= bufEnd then
       val word: Long =
-        (bytes(pos)     & 0xFFL)         |
-          ((bytes(pos + 1) & 0xFFL) <<  8) |
-          ((bytes(pos + 2) & 0xFFL) << 16) |
-          ((bytes(pos + 3) & 0xFFL) << 24) |
-          ((bytes(pos + 4) & 0xFFL) << 32)
+        (cells(pos)     & 0xFFL)         |
+          ((cells(pos + 1) & 0xFFL) <<  8) |
+          ((cells(pos + 2) & 0xFFL) << 16) |
+          ((cells(pos + 3) & 0xFFL) << 24) |
+          ((cells(pos + 4) & 0xFFL) << 32)
 
       if word != FalseWord then errorAt(Issue.ExpectedFalse)
       pos += 5
@@ -1026,10 +905,10 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   private update def parseTrue()(using Tactic[Parse.Error]): true =
     if pos + 4 <= bufEnd then
       val word: Int =
-        (bytes(pos)     & 0xFF)         |
-          ((bytes(pos + 1) & 0xFF) <<  8) |
-          ((bytes(pos + 2) & 0xFF) << 16) |
-          ((bytes(pos + 3) & 0xFF) << 24)
+        (cells(pos)     & 0xFF)         |
+          ((cells(pos + 1) & 0xFF) <<  8) |
+          ((cells(pos + 2) & 0xFF) << 16) |
+          ((cells(pos + 3) & 0xFF) << 24)
 
       if word != TrueWord then errorAt(Issue.ExpectedTrue)
       pos += 4
@@ -1044,10 +923,10 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   private update def parseNull()(using Tactic[Parse.Error]): Json.JsonNull.type =
     if pos + 4 <= bufEnd then
       val word: Int =
-        (bytes(pos)     & 0xFF)         |
-          ((bytes(pos + 1) & 0xFF) <<  8) |
-          ((bytes(pos + 2) & 0xFF) << 16) |
-          ((bytes(pos + 3) & 0xFF) << 24)
+        (cells(pos)     & 0xFF)         |
+          ((cells(pos + 1) & 0xFF) <<  8) |
+          ((cells(pos + 2) & 0xFF) << 16) |
+          ((cells(pos + 3) & 0xFF) << 24)
 
       if word != NullWord then errorAt(Issue.ExpectedNull)
       pos += 4
@@ -2225,7 +2104,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       var scanning = true
 
       while scanning && i <= limit - 8 do
-        val word: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], i)
+        val word: Long = Words.load(cells.asInstanceOf[scala.Array[Byte]], i)
         val stops = stringStops(word)
 
         if stops == 0L then i += 8
@@ -2281,14 +2160,14 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       // current window is materialized straight from the local snapshot —
       // no marks, no hold, no cursor sync — scanning eight bytes per step.
       // Falls back (without moving) for escapes, control or non-ASCII
-      // bytes, and the window's end.
+      // cells, and the window's end.
       val start = pos
       val limit = bufEnd
       var i = start
       var scanning = true
 
       while scanning && i <= limit - 8 do
-        val word: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], i)
+        val word: Long = Words.load(cells.asInstanceOf[scala.Array[Byte]], i)
         val stops = stringStops(word)
 
         if stops == 0L then i += 8
@@ -2297,10 +2176,10 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
           scanning = false
 
       if scanning then
-        while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
+        while i < limit && StringScanContinue.readUnchecked(cells(i) & 0xFF) != 0 do i += 1
 
-      if i < limit && bytes(i) == Quote then
-        val out = new String(bytes, start, i - start, java.nio.charset.StandardCharsets.ISO_8859_1)
+      if i < limit && cells(i) == Quote then
+        val out = new String(cells, start, i - start, java.nio.charset.StandardCharsets.ISO_8859_1)
         pos = i + 1
         out
       else
@@ -2375,26 +2254,26 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     var i = start
     var negative = false
 
-    if i < limit && bytes(i) == Minus then
+    if i < limit && cells(i) == Minus then
       negative = true
       i += 1
 
     val first = i
     var value = 0L
 
-    while i < limit && i - first < 18 && bytes(i) >= Num0 && bytes(i) <= Num9 do
-      value = value*10 + (bytes(i) - Num0)
+    while i < limit && i - first < 18 && cells(i) >= Num0 && cells(i) <= Num9 do
+      value = value*10 + (cells(i) - Num0)
       i += 1
 
     val digits = i - first
 
     if digits >= 1 && i < limit then
-      val next = bytes(i)
+      val next = cells(i)
 
       val numberContinues =
         (next >= Num0 && next <= Num9) || next == Period || next == LowerE || next == UpperE
 
-      if !numberContinues && !(digits > 1 && bytes(first) == Num0) then
+      if !numberContinues && !(digits > 1 && cells(first) == Num0) then
         pos = i
         return if negative then -value else value
 
@@ -2431,7 +2310,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     var i = start
     var negative = false
 
-    if i < limit && bytes(i) == Minus then
+    if i < limit && cells(i) == Minus then
       negative = true
       i += 1
 
@@ -2441,8 +2320,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     var decimalDigits = 0
     var ok = i < limit
 
-    while i < limit && digits < 16 && bytes(i) >= Num0 && bytes(i) <= Num9 do
-      mantissa = mantissa*10 + (bytes(i) - Num0)
+    while i < limit && digits < 16 && cells(i) >= Num0 && cells(i) <= Num9 do
+      mantissa = mantissa*10 + (cells(i) - Num0)
       digits += 1
       i += 1
 
@@ -2451,14 +2330,14 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // JSON forbids a leading zero before another digit, and requires at
     // least one integer digit; the general path raises the exact error.
     if integerDigits == 0 || digits >= 16 then ok = false
-    if integerDigits > 1 && bytes(digitsStart) == Num0 then ok = false
+    if integerDigits > 1 && cells(digitsStart) == Num0 then ok = false
 
-    if ok && i < limit && bytes(i) == Period then
+    if ok && i < limit && cells(i) == Period then
       i += 1
       val fractionStart = i
 
-      while i < limit && digits < 16 && bytes(i) >= Num0 && bytes(i) <= Num9 do
-        mantissa = mantissa*10 + (bytes(i) - Num0)
+      while i < limit && digits < 16 && cells(i) >= Num0 && cells(i) <= Num9 do
+        mantissa = mantissa*10 + (cells(i) - Num0)
         digits += 1
         decimalDigits += 1
         i += 1
@@ -2469,18 +2348,18 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     var expSign = 1
     var floating = decimalDigits > 0
 
-    if ok && i < limit && (bytes(i) == LowerE || bytes(i) == UpperE) then
+    if ok && i < limit && (cells(i) == LowerE || cells(i) == UpperE) then
       floating = true
       i += 1
 
-      if i < limit && (bytes(i) == Minus || bytes(i) == Plus) then
-        if bytes(i) == Minus then expSign = -1
+      if i < limit && (cells(i) == Minus || cells(i) == Plus) then
+        if cells(i) == Minus then expSign = -1
         i += 1
 
       val expStart = i
 
-      while i < limit && explicitExp < 1000 && bytes(i) >= Num0 && bytes(i) <= Num9 do
-        explicitExp = explicitExp*10 + (bytes(i) - Num0)
+      while i < limit && explicitExp < 1000 && cells(i) >= Num0 && cells(i) <= Num9 do
+        explicitExp = explicitExp*10 + (cells(i) - Num0)
         i += 1
 
       if i == expStart || explicitExp >= 1000 then ok = false
@@ -2488,7 +2367,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // The number must demonstrably end inside the window: at the window's
     // edge more digits may follow in the next chunk.
     if ok && i < limit then
-      val next = bytes(i)
+      val next = cells(i)
       if next >= Num0 && next <= Num9 then ok = false
     else
       ok = false
@@ -2605,14 +2484,14 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     while
       i < limit && {
-        val b = bytes(i)
+        val b = cells(i)
         b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
       }
     do i += 1
 
     if i >= limit then return Int.MinValue
     val seen = directSeen()
-    var b = bytes(i)
+    var b = cells(i)
 
     if b == CloseBrace then
       pos = i + 1
@@ -2625,13 +2504,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
       while
         i < limit && {
-          val b2 = bytes(i)
+          val b2 = cells(i)
           b2 <= Space && (b2 == Space || b2 == Tab || b2 == Newline || b2 == Return)
         }
       do i += 1
 
       if i >= limit then return Int.MinValue
-      b = bytes(i)
+      b = cells(i)
 
     if b != Quote then return Int.MinValue
     val start = i + 1
@@ -2640,7 +2519,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // find the closing quote are the packed form. Window-edge keys take the
     // general step.
     if start + 8 > limit then return Int.MinValue
-    val word0: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start)
+    val word0: Long = Words.load(cells.asInstanceOf[scala.Array[Byte]], start)
     val stops0 = stringStops(word0)
     var low = 0L
     var high = 0L
@@ -2653,7 +2532,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return Int.MinValue
-      val word1: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
+      val word1: Long = Words.load(cells.asInstanceOf[scala.Array[Byte]], start + 8)
       val stops1 = stringStops(word1)
       low = word0
 
@@ -2664,19 +2543,19 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         if length1 > 0 then high = word1 & ((1L << (length1*8)) - 1)
       else
         j = start + 16
-        if j >= limit || bytes(j) != Quote then return Int.MinValue
+        if j >= limit || cells(j) != Quote then return Int.MinValue
         high = word1
 
     var k = j + 1
 
     while
       k < limit && {
-        val b3 = bytes(k)
+        val b3 = cells(k)
         b3 <= Space && (b3 == Space || b3 == Tab || b3 == Newline || b3 == Return)
       }
     do k += 1
 
-    if k >= limit || bytes(k) != Colon then return Int.MinValue
+    if k >= limit || cells(k) != Colon then return Int.MinValue
 
     if !seen then directMark()
     pos = k + 1
@@ -2702,14 +2581,14 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     while
       i < limit && {
-        val b = bytes(i)
+        val b = cells(i)
         b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
       }
     do i += 1
 
     if i >= limit then return -2L
     val seen = directSeen()
-    var b = bytes(i)
+    var b = cells(i)
 
     if b == CloseBrace then
       pos = i + 1
@@ -2722,13 +2601,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
       while
         i < limit && {
-          val b2 = bytes(i)
+          val b2 = cells(i)
           b2 <= Space && (b2 == Space || b2 == Tab || b2 == Newline || b2 == Return)
         }
       do i += 1
 
       if i >= limit then return -2L
-      b = bytes(i)
+      b = cells(i)
 
     if b != Quote then return -2L
     val start = i + 1
@@ -2739,7 +2618,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // scanning. A key at the window's edge takes the general step, exactly
     // like an escaped or oversized one.
     if start + 8 > limit then return -2L
-    val word0: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start)
+    val word0: Long = Words.load(cells.asInstanceOf[scala.Array[Byte]], start)
     val stops0 = stringStops(word0)
     var low = 0L
     var high = 0L
@@ -2754,7 +2633,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return -2L
-      val word1: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
+      val word1: Long = Words.load(cells.asInstanceOf[scala.Array[Byte]], start + 8)
       val stops1 = stringStops(word1)
       low = word0
 
@@ -2764,21 +2643,21 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         if ((word1 >>> (length1*8)) & 0xFFL) != Quote then return -2L
         if length1 > 0 then high = word1 & ((1L << (length1*8)) - 1)
       else
-        // Exactly sixteen bytes, or too long for the fast path.
+        // Exactly sixteen cells, or too long for the fast path.
         j = start + 16
-        if j >= limit || bytes(j) != Quote then return -2L
+        if j >= limit || cells(j) != Quote then return -2L
         high = word1
 
     var k = j + 1
 
     while
       k < limit && {
-        val b3 = bytes(k)
+        val b3 = cells(k)
         b3 <= Space && (b3 == Space || b3 == Tab || b3 == Newline || b3 == Return)
       }
     do k += 1
 
-    if k >= limit || bytes(k) != Colon then return -2L
+    if k >= limit || cells(k) != Colon then return -2L
 
     if !seen then directMark()
     pos = k + 1
@@ -2797,13 +2676,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     while
       i < limit && {
-        val b = bytes(i)
+        val b = cells(i)
         b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
       }
     do i += 1
 
     if i >= limit then return -2L
-    val b = bytes(i)
+    val b = cells(i)
 
     if b == CloseBrace then
       pos = i + 1
@@ -2819,7 +2698,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // scanning. A key at the window's edge takes the general step, exactly
     // like an escaped or oversized one.
     if start + 8 > limit then return -2L
-    val word0: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start)
+    val word0: Long = Words.load(cells.asInstanceOf[scala.Array[Byte]], start)
     val stops0 = stringStops(word0)
     var low = 0L
     var high = 0L
@@ -2834,7 +2713,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return -2L
-      val word1: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
+      val word1: Long = Words.load(cells.asInstanceOf[scala.Array[Byte]], start + 8)
       val stops1 = stringStops(word1)
       low = word0
 
@@ -2844,21 +2723,21 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         if ((word1 >>> (length1*8)) & 0xFFL) != Quote then return -2L
         if length1 > 0 then high = word1 & ((1L << (length1*8)) - 1)
       else
-        // Exactly sixteen bytes, or too long for the fast path.
+        // Exactly sixteen cells, or too long for the fast path.
         j = start + 16
-        if j >= limit || bytes(j) != Quote then return -2L
+        if j >= limit || cells(j) != Quote then return -2L
         high = word1
 
     var k = j + 1
 
     while
       k < limit && {
-        val b3 = bytes(k)
+        val b3 = cells(k)
         b3 <= Space && (b3 == Space || b3 == Tab || b3 == Newline || b3 == Return)
       }
     do k += 1
 
-    if k >= limit || bytes(k) != Colon then return -2L
+    if k >= limit || cells(k) != Colon then return -2L
 
     directMark()
     pos = k + 1
@@ -2871,13 +2750,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     while
       i < limit && {
-        val b = bytes(i)
+        val b = cells(i)
         b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
       }
     do i += 1
 
     if i >= limit then return -2L
-    var b = bytes(i)
+    var b = cells(i)
 
     if b == CloseBrace then
       pos = i + 1
@@ -2889,13 +2768,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     while
       i < limit && {
-        val b2 = bytes(i)
+        val b2 = cells(i)
         b2 <= Space && (b2 == Space || b2 == Tab || b2 == Newline || b2 == Return)
       }
     do i += 1
 
     if i >= limit then return -2L
-    b = bytes(i)
+    b = cells(i)
 
     if b != Quote then return -2L
     val start = i + 1
@@ -2906,7 +2785,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // scanning. A key at the window's edge takes the general step, exactly
     // like an escaped or oversized one.
     if start + 8 > limit then return -2L
-    val word0: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start)
+    val word0: Long = Words.load(cells.asInstanceOf[scala.Array[Byte]], start)
     val stops0 = stringStops(word0)
     var low = 0L
     var high = 0L
@@ -2921,7 +2800,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return -2L
-      val word1: Long = Words.load(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
+      val word1: Long = Words.load(cells.asInstanceOf[scala.Array[Byte]], start + 8)
       val stops1 = stringStops(word1)
       low = word0
 
@@ -2931,21 +2810,21 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         if ((word1 >>> (length1*8)) & 0xFFL) != Quote then return -2L
         if length1 > 0 then high = word1 & ((1L << (length1*8)) - 1)
       else
-        // Exactly sixteen bytes, or too long for the fast path.
+        // Exactly sixteen cells, or too long for the fast path.
         j = start + 16
-        if j >= limit || bytes(j) != Quote then return -2L
+        if j >= limit || cells(j) != Quote then return -2L
         high = word1
 
     var k = j + 1
 
     while
       k < limit && {
-        val b3 = bytes(k)
+        val b3 = cells(k)
         b3 <= Space && (b3 == Space || b3 == Tab || b3 == Newline || b3 == Return)
       }
     do k += 1
 
-    if k >= limit || bytes(k) != Colon then return -2L
+    if k >= limit || cells(k) != Colon then return -2L
 
     pos = k + 1
     directKeyHigh = high
@@ -2995,13 +2874,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     val limit = bufEnd
     var i = start
 
-    while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
+    while i < limit && StringScanContinue.readUnchecked(cells(i) & 0xFF) != 0 do i += 1
 
     val index =
-      if i < limit && bytes(i) == Quote && i - start <= 16 && i > start then
+      if i < limit && cells(i) == Quote && i - start <= 16 && i > start then
         val length = i - start
-        val low = packBytes(bytes, start, math.min(length, 8))
-        val high = if length > 8 then packBytes(bytes, start + 8, length - 8) else 0L
+        val low = packBytes(cells, start, math.min(length, 8))
+        val high = if length > 8 then packBytes(cells, start + 8, length - 8) else 0L
         pos = i + 1
         table.indexOf(low, high)
       else
@@ -3037,14 +2916,14 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     val limit = bufEnd
     var i = start
 
-    while i < limit && StringScanContinue.readUnchecked(bytes(i) & 0xFF) != 0 do i += 1
+    while i < limit && StringScanContinue.readUnchecked(cells(i) & 0xFF) != 0 do i += 1
 
-    if i < limit && bytes(i) == Quote then
+    if i < limit && cells(i) == Quote then
       val length = i - start
 
       if length <= KeyCacheMaxBytes then
-        val packedLow = packBytes(bytes, start, math.min(length, 8))
-        val packedHigh = if length > 8 then packBytes(bytes, start + 8, length - 8) else 0L
+        val packedLow = packBytes(cells, start, math.min(length, 8))
+        val packedHigh = if length > 8 then packBytes(cells, start + 8, length - 8) else 0L
 
         val index = ((packedLow.toInt ^ (packedLow >>> 32).toInt) ^
           (packedHigh.toInt ^ (packedHigh >>> 32).toInt)) & (KeyCacheSize - 1)
@@ -3055,13 +2934,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         if cached != null && keyCacheLow(index) == packedLow && keyCacheHigh(index) == packedHigh
         then cached
         else
-          val fresh = new String(bytes, start, length, java.nio.charset.StandardCharsets.ISO_8859_1)
+          val fresh = new String(cells, start, length, java.nio.charset.StandardCharsets.ISO_8859_1)
           keyCache(index) = fresh
           keyCacheLow(index) = packedLow
           keyCacheHigh(index) = packedHigh
           fresh
       else
-        val out = new String(bytes, start, length, java.nio.charset.StandardCharsets.ISO_8859_1)
+        val out = new String(cells, start, length, java.nio.charset.StandardCharsets.ISO_8859_1)
         pos = i + 1
         out
     else
@@ -3085,13 +2964,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     while
       i < limit && {
-        val b = bytes(i)
+        val b = cells(i)
         b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
       }
     do i += 1
 
     if i < limit then
-      val b = bytes(i)
+      val b = cells(i)
 
       if b == CloseBracket then
         pos = i + 1
@@ -3120,13 +2999,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     while
       i < limit && {
-        val b = bytes(i)
+        val b = cells(i)
         b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
       }
     do i += 1
 
     if i < limit then
-      val b = bytes(i)
+      val b = cells(i)
 
       if b == CloseBracket then
         pos = i + 1
@@ -3145,13 +3024,13 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     while
       i < limit && {
-        val b = bytes(i)
+        val b = cells(i)
         b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
       }
     do i += 1
 
     if i < limit then
-      val b = bytes(i)
+      val b = cells(i)
 
       if b == CloseBracket then
         pos = i + 1
@@ -3244,25 +3123,3 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
   private[jacinta] update def directFail(issue: Issue)(using Tactic[Parse.Error]): Nothing =
     errorAt(issue)
-
-  // No INLINE member may read this field: the synthesized `inline$cursor` accessor's
-  // exclusive result type acts as a template-level hider that bars other member
-  // definitions (the member-order rule, rep/sepcheck-probes P7). Methods that touch the
-  // cursor are therefore plain (non-inline).
-  // The cursor remains the source of truth at refill, mark, slice and error
-  // points, but for the per-byte hot loops (`peek`, `advance`, `more`) the
-  // parser maintains its own snapshot of the current buffer reference and
-  // read position. Keeping `pos` and `bytes` as parser fields (rather than
-  // accessing them through the cursor on every byte) gives the JIT the
-  // freedom to keep both in registers across long inner loops, recovering
-  // most of the per-byte cost of the Direct/Streaming split removed during
-  // the substrate unification.
-  //
-  // Invariant: between `syncTo()` and `syncFrom()` calls, `pos` is the
-  // authoritative read position; `cursor.unsafePos` is allowed to lag.
-  // Whenever a cursor operation that depends on `pos` is performed (refill
-  // via `more`'s slow path, mark, slice, error reporting, BOM probing) the
-  // parser pushes `pos` to the cursor first, then refreshes its snapshot
-  // from the cursor afterwards — refill may compact the buffer, reallocate
-  // it, or reset `pos`.
-  private var cursor: Cursor[Data, {}]^ = null.asInstanceOf[Cursor[Data, {}]^]
